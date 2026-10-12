@@ -1,5 +1,67 @@
 # Aktuell handoff — Scoutgaming
 
+## Nästa uppdrag: lanes blir bara sammansättning, 12 oktober 2026
+
+Jakobs mål: en mycket enklare modell. Behåll sammansättningen (dealer, bord,
+bakgrund, placering). Lane-lagret ska inte finnas kvar som eget begrepp. Nivå 1
+ska kunna bocka i och ur dealers per spelbolag och publicera. Ingen kod är
+ändrad för detta ännu.
+
+Nuläge (läst i produktion 12 oktober):
+- Två lane-begrepp finns. Presentation lane = sammansättning: `project.lanes` i
+  Studio-dokumentet, fryst i `operator_packages.lanes` vid publicering;
+  spelrummet pekar med `room.presentationLaneId`. Game lane = intern
+  uppspelningskonfiguration: `administration.gameLanes`
+  (`gameLaneConfiguration` i `web/public/game-lanes.mjs`); spelrummet pekar
+  med `room.gameLaneId`, och Render väljer med `?lane=`.
+- Kompatibilitetsrester: URL-parametern `lane` (Studio skickar `composition`),
+  `?lane=layer-preview&rehearsal=1` och flaggan
+  `CROUPIER_STREAM_LANE=lissabon-stream-lane`.
+- Sammansättningar: `mobile-phone` ("Mobile Phone Lane": amira, paow, astrid,
+  vera) och `johns-johanna` ("Johns spelbolag · Johanna": johanna, astrid,
+  paow; standarddealer paow). Namnen är missvisande. Bolag: sg-test (paket v15),
+  johns-spelbolag (v14), nordic-bet (v1), kevins-spelbolag (v1, tomt).
+- Omfång: `lane` finns i cirka 230 käll- och testfiler (web 43, lab/lib 38,
+  lab/components 31, test 40, lab/test 55).
+
+Fasta gränser: frysning vid publicering och publicerad historik skyddas;
+befintliga rum ska spela oförändrat och gamla paket läsas som de är.
+Lagringsfältet `lanes` och stabila ID:n behålls tills en migration är godkänd,
+och en Studio-migration körs mot produktion före merge. Spelmotor, plånbok och
+mediegodkännande rörs inte.
+
+Start för nästa agent:
+1. Läs lab/docs/TERMINOLOGI.md, AGENTS.md, docs/CLOUD-MIGRATION.md,
+   web/public/game-lanes.mjs, web/presentation-room-contract.mjs och
+   web/game-entry-operator.mjs.
+2. Kartlägg utan att ändra var varje lane skapas, läses och fryses. Avgör om
+   game lane kan härledas automatiskt från sammansättning plus spelrum.
+3. Lägg en etappvis plan och vänta på Jakobs ja: (a) ordet lane syns aldrig i
+   gränssnittet, och en kryssvy "Dealers hos bolaget" på nivå 1 skriver bolagets
+   egen sammansättning; (b) game lane skapas bakom spelrummet; (c) först sist
+   eventuellt schema- och fältnamn.
+4. Provspela rummen hos sg-test, Johns och Nordic Bet före och efter varje etapp.
+
+## Studio låst till Node 24, 12 oktober 2026
+
+lab/package.json och låsfilens rotmetadata anger nu Node 24.x, samma
+huvudversion som Studios GitHub-kontroller. Framtida huvudversioner väljs
+därmed inte automatiskt av Vercel; minor- och säkerhetsuppdateringar tillåts.
+Verifiering: JSON-/låsfilsparitet, diffkontroll och full precommit-regression
+med Node 24.21.0 passerar. Vercels nya buildlogg återstår att verifiera.
+
+## Dealer Forge i produktion, 12 oktober 2026
+
+/control/dealer-forge (Studio) genererar en dealers klippbank via Runway från ett
+VILA-foto; se lab/docs/README.md. Levererat i #16 (jobbjournal, idempotenta
+beställningar, felklassning), #17 (skofacken) och #18 (seed vid samtidiga försök).
+Migration 008 kördes ~11:08 som croupier_game; ledgern är 001–008 och båda
+runtime-kontrollerna kräver nu exakt 001–008. Testat: 24 Dealer Forge-tester
+inklusive felinjektion, migrations- och runtimetester samt läsfråga mot produktion.
+Kvar: skapandet av Runway-avatar journalförs inte (ett nätfel kan ge en extra
+avatar, ingen dubbel klippdebitering). Första riktiga genereringen granskas i
+Dealers & klipp innan något publiceras.
+
 ## Publik bolagskatalog: äldre frysta paket, 12 oktober 2026
 
 /play laddade men /api/operators gav 503 efter det valfria skoeventet.

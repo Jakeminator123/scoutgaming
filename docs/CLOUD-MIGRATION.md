@@ -121,6 +121,10 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   Att köra 008 mot produktion **före** steg 1 bryter den körande koden
   (`studio_migration_ambiguous_ledger`: ledgern har fler rader än koden känner). Precedens: 007
   levererades så (`508c8f33`, "Prepare optional Studio branding drafts migration").
+  - [x] 008 genomförd 12 oktober 2026: steg 1 i #16, steg 2 körd ~11:08 som rollen `croupier_game`
+    mot databasen `croupier_game` (`appliedNow: ["008"]`, ledger 001–008, `forge_dealers`/`forge_jobs`
+    ägs av `croupier_game`), steg 3 i uppföljnings-PR:en: flaggan borttagen och Lab, Render och
+    speech-importen kräver exakt 001–008. Mekanismen finns kvar för nästa isolerade funktion.
   Åtkomstjournal för operatörsskrivningar saknas; `audit_events` tar bara dokument/media.
   Delsteg 6 oktober: `web/partner-access-policy.mjs` har explicita
   operatörsrättigheter, scope-/organisationsbindning och begränsad rolltilldelning.

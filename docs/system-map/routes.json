@@ -2953,7 +2953,7 @@
       "handlerFile": "lab/app/api/forge/[[...path]]/route.ts",
       "serving": "Vercel native Lab; Dealer Forge state, anchors, Runway generation jobs and polling",
       "access": "Live scoped admin; exact same-origin writes and reauthorization before mutation",
-      "boundary": "Runway is the only provider and never receives Blob credentials. Anchors are private source images; finished clips are re-hashed and registered as review uploads in their exact slot through media_records, layers through project.layerAssets by CAS. Job journal lives in migration 008 (deployment-optional); without it the route reports forge_migration_pending and generates nothing.",
+      "boundary": "Runway is the only provider and never receives Blob credentials. Anchors are private source images; finished clips are re-hashed and registered as review uploads in their exact slot through media_records, layers through project.layerAssets by CAS. Job journal lives in migration 008 (required by both Studio runtimes since 2026-10-12); without its tables the route reports forge_migration_pending and generates nothing.",
       "groupId": "studio-media",
       "sources": [
         {

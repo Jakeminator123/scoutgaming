@@ -56,7 +56,7 @@ test('bundled source paths load all six migrations without asset URLs', async ()
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
   assert.equal(actual.length, 8);
   assert.equal(actual.at(-1).file, '008-dealer-forge.sql');
-  assert.equal(actual.at(-1).deploymentOptional, true);
+  assert.equal(actual.some(row => row.deploymentOptional), false);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });
 
