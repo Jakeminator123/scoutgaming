@@ -40,13 +40,13 @@ sviten passerar nu (1 664 godkända, två miljövillkorade undantag), liksom
 produktionsbygget med typkontroll. Tom spelstart ger avsiktligt 503 även för
 gamla alias; bord, kort, saldo och omstart fungerar i isolerade prov. Samma
 regressioner ingår nu även i commitkontrollen.
-Commit 7eb9f7a verifierades på main, med grön GitHub-körning 38200519251,
-Vercel READY på www.scoutgaming.tech och Render live med samma SHA. Hela
-lokala commitkontrollen passerade med 2 871 godkända prov och 11 villkorliga
+Commit 5df1a454 verifierades på main, med grön GitHub-körning 38202259662,
+Vercel READY på www.scoutgaming.tech. Spelmotorn verifierades live på Render med 7eb9f7a. Hela
+lokala commitkontrollen passerade med 2 872 godkända prov och 11 villkorliga
 undantag. Inloggad Chrome-läsning verifierade fyra verkliga bolag, Johns tre
 spelrum och paketversion 14 i både N1 och N2, samt partnerkatalogens riktiga
 bolag. Interna länkar behöll bolags- och rumskontext. Den gamla etiketten
-Mobile Phone Lane i N2:s paketval normaliseras till Standardsammansättning;
+Mobile Phone Lane normaliseras i N2:s paketval, översikt och rumstabell;
 sparade identifierare och paketdata behålls. Provspelningen visar rums- och
 bolagsnamn; tekniska ID:n styr fortsatt observationens identitet.
 Arkiveringsförhandsvisningen för PAOW hämtade aktuell påverkan på klipp,
