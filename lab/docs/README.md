@@ -1,12 +1,12 @@
 # Scoutgaming: användarguide
 
-Ordlista för teamet: [`TERMINOLOGI.md`](TERMINOLOGI.md).
+Produktmodell och ord har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
-Tre nivåer delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). De är inte färdiga.
+Tre ytor delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). Övergången pågår.
 
-- **Nivå 1, intern personal**: [/control](https://www.scoutgaming.tech/control). Menyn består av **Studio**, **Spelbolag**, **Drift** och **System**. Studio bygger innehållet; Spelbolag hanterar bolag, team, rum och publicering. Relaterade alternativ öppnas inom arbetsytan; se [menykartan](TERMINOLOGI.md#meny-och-adresser).
+- **Intern personal**: [/admin](https://www.scoutgaming.tech/admin) är ny ingång. `/control` fungerar under övergången. Studio bygger innehållet; Bolag hanterar operatörer, team, spel, rum och publicering.
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Spelbolag → Bolag & team på `/control/companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom sammansättningen av en medlem med `presentations.configure`.
-- **Nivå 3, spelare**: [/play](https://www.scoutgaming.tech/play), [profil](https://www.scoutgaming.tech/play/profil), [historik](https://www.scoutgaming.tech/play/historik) och [Blackjack](https://www.scoutgaming.tech/play/blackjack). Lobby, profil och historik finns. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn låter dig välja bland bolag som har spelbara publicerade rum. `?operator=` öppnar bolagets rum direkt. Vercels `/play/blackjack` utan valt spelmål går till lobbyn; enbart `?operator=` går till bolagets lobby. Rummets startlänk begränsar dealer och miljö till paketet. Renders direkta `/blackjack?operator=` behåller sin spelväg. Acceptans av dealermedia sker i rehearsal: `?dealer=<namn>&rehearsal=1` (en länk per dealer) och `?lane=layer-preview&rehearsal=1` för lagerlanen; se [terminologin](TERMINOLOGI.md#acceptans-och-prov).
+- **Spelare**: [/lobby](https://www.scoutgaming.tech/lobby) är ny ingång. `/play` och äldre speladresser fungerar under övergången. Ett öppet spel erbjuder tillåtna bakgrunder/rum, dealers och bord; spelarens val bildar scenen. Provspelning av dealer görs i den faktiska spelklienten; se [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 Partnerportalen är nivå 2. Intern adminpersonal når riktiga registrerade bolag med samma konto som i Kontrollpanelen. Inloggningen sker via Kontrollpanelen; på `/partner/login` leder knappen **Logga in som intern administratör** dit och tillbaka till `/partner`. Operatörens personal loggar in på `/partner/login` och ser bara sina aktiva medlemskap. Den vanliga portalen ersätter aldrig bolagsdata med demonstrationer. Spelare, transaktioner och rapporter från spelmotorn är ännu inte anslutna.
 
@@ -18,7 +18,7 @@ Bord & bakgrunder: gemensamt filbibliotek utan att ändra en scen
 Sammansättning: bord, bakgrund, placering och tillåtna val
               → Spara → Provspela
 Spelrum & publicering: välj bolag → öppna rum eller skapa + publicera i samma steg
-/play: välj bolag → rum → dealer/miljö → spela
+/lobby: välj bolag → spel → rum/bakgrund → tillåten dealer och bord → spela
 ```
 
 **Byt basklipp** är synligt för egna dealers under Grundloop. Även ett uppladdat idle-klipp som används som variation kan väljas. Det ersätter det valda basklippet och behåller övriga basklipp, deras andelar och andra variationer. Den tidigare videon finns kvar bland uppladdade klipp. AI-talets referensbild ändras separat under Tal & automatik. Spara inställningar och publicera paketet igen för att använda bytet i spelet.
@@ -214,7 +214,7 @@ exakt tal. **AI-småprat vid inaktivitet** ligger under Studio. Det separata tex
 skapar inte ljud eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
 Ett syntetiskt textprov är inte en skapad eller spelad film.
 
-Administration visar 11 sektioner under drift/spelintegritet, spel/lanes/bord,
+Äldre Administration visar 11 sektioner under drift/spelintegritet, spelkonfiguration/bord,
 konton, partner, betalningar/journal och talgranskning. Lägga till, ta bort och
 kontoåtgärder öppnas vid behov; listor och aktuella värden visas först.
 Turneringar och pitboss-inställningar har tagits bort från gränssnittet eftersom
@@ -228,12 +228,13 @@ Andra dealers visar bara de klippkategorier som stöds; Astrids talinitiativ
 och familjeuppladdning visas inte som verktyg för Vera, Amira eller Mei.
 
 **Publicering:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
-presentationskoden visar kort och spelar media. En lane väljer vilken
-presentation och mediesamling som används. Partnerns spelrum väljer sin tilldelade
-presentation via paketet. I Administration → Bord & spelrum finns den tekniska
-hanteringen av spellanes; vanliga Studioflödet kopplar dem automatiskt.
-Om sista lanen tas bort stoppas ny Blackjack-start tills en lane läggs till.
-Delad kod, media och sparade spel raderas inte av lane-knappen; medierensning
+presentationskoden visar kort och spelar media. En sparad spelkonfiguration
+väljer vilken presentation och mediesamling som används. Partnerns spelrum
+väljer sin tilldelade presentation via paketet. I äldre Administration →
+Bord & spelrum finns teknisk hantering av spelkonfigurationer; vanliga
+Studioflödet kopplar dem automatiskt. Om den sista tas bort stoppas ny
+Blackjack-start tills en spelkonfiguration läggs till.
+Delad kod, media och sparade spel raderas inte av den åtgärden; medierensning
 kräver en separat kontroll av återstående användning, inklusive QA.
 
 Native administration på `/control` använder de befintliga kontonas rollkontroller och

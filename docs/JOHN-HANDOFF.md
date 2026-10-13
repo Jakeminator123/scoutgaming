@@ -1,5 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
+## En produktmodell och papperskorg i rumslistan, 13 oktober
+
+`lab/docs/TERMINOLOGI.md` är nu källan för orden bolag, spel, rum/bakgrund,
+dealer, bord och sammansättning. Den har kortats från 169 till 85 rader.
+`AGENTS.md`, användarguiden och runtime-referensen hänvisar dit. Ett spel
+erbjuder kompatibla bakgrunder, dealers och bord; spelarens val bildar scenen.
+Samma bakgrundsfil kan användas av flera bolag utan delade rums-ID eller
+behörigheter. Format och äldre fullbildsklipp har uttryckliga regler.
+
+Registrerad admin och klippkarta visar spel före rum. Rumslistan i både
+`/admin` och `/control` har en direkt ingång till bolags- och rumpapperskorgen.
+Smala tester som låste gamla `lane`-länkar och standardnamn är borttagna;
+ägarskap, publicering och raderingsskydd är fortsatt testade. Tekniska ID:n,
+frysta paket och gamla länkar är oförändrade.
+
+Efter synk till `main` `cc63db71` passerar 101 riktade UI-/dokumentationsprov,
+10 raderingsgrindsprov, admin/lobby typkontroll och bygge. Full commit-hook
+återstår. Ingen produktdata eller Blobfil ändrades. Fortsatt arbete är att
+knyta varje aktivt rumsval entydigt till en bakgrund och prova publicerade
+dealer-/bordskombinationer i själva spelet.
+
 ## Tillägg 13 oktober: gemensam Studioassistent
 
 `/admin/ai/chat`, bubblan nere till höger och `/admin/clips?tool=import`
@@ -114,8 +135,8 @@ Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
 runtimebindningstester passerar. Efter sammanslagning med senaste `main` och
 navigeringsrättningen passerar full regressionshook med 3 174 godkända,
 11 överhoppade och 0 fel;
-typkontroll och bygge passerar också på samma revision. PR-kontroller och
-produktionsvisning återstår efter push respektive merge.
+typkontroll och bygge passerar också på samma revision. PR70 är sammanslagen
+i `main` som `e51f30d3`.
 
 ## Tillägg 13 oktober: roulettefack och alfa för Anna-prov
 
