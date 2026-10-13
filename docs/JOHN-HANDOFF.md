@@ -33,6 +33,95 @@ Privata original, genererade filer, offlineprov och kvitton ligger i
 inga binärer eller konversationsexporter läggs i Git. Slutlig regressionsstatus
 och exakt leveranshead redovisas i PR:en.
 
+
+PR #55:s äldre lobby-UI-ändringar är avgränsade från PR #63: de tre lobbykomponenterna återgår till main och porträtt-/playbackhjälpare som Studio använder ligger under admin/lib med sina tester. Diffen mot main i lobby och test/public-lobby.mjs är tom. Tidigare lobbyversion finns i privat verifierad Git-bundle på checkpoint 6244d13b. Ingen PR63-kod har tagits in.
+
+
+Aktuell main `d595e6b7` inklusive Control-papperskorg och Labba är förenad. Admin skiljer nu aktiva bolag, papperskorg (verifierad arkivmetadata) och äldre avstängda bolag. Aktiva väljare, strukturkort och antal filtrerar bort arkiverade/avstängda; direkta arkiverade bolagslänkar öppnar inte en dealerbank. 32 riktade katalog-, struktur-, kontext- och lifecycle-API-tester passerade.
+
+Senare produktionsläsning visade Back to Basic i PAOW · Studio. Detta är ett senare val från annan vy; bordsintaget ändrade inga kopplingar. Första serverrenderade biblioteksbesöket gav felreferens 2050080826 och nästa omladdning fungerade. Detta kvarstår som driftfynd; ingen full produktionsacceptans hävdas.
+
+
+Senare HTTP-test täcker v11 GET/HEAD och bevarat v10. Aktuell main `7e417e46` med dealerbild/Labba är förenad. Bolagsvyn reagerar även på paketrevision, status och arkivering när ett bolag utan rum lämnar administrationsrevisionen oförändrad; 14 verkliga lifecycle-API-tester är gröna.
+
+
+## SIDOR3: fem separata bord och förenad papperskorg, 13 oktober
+
+Jakob korrigerade att borden inte hör ihop som grundbord/variationer. Alla
+fem oförändrade original är registrerade i produktionsbiblioteket och
+återlästa/avkodade efter omladdning: grön filt, svart filt, Oak, Purple Rain
+och Back to Basic. Namn, design-ID, källhashar och upload-ID följer den
+gemensamma katalogen och teknikreferensen. Biblioteket har sju bord inklusive
+de två äldre; vid intaget var de nya originalen obundna och inga publiceringar ändrades.
+Framtida blinksekvenser dokumenteras som uttryckliga frames med accepterad
+gemensam geometri. Ingen variantkoppling eller blinkuppspelning har skapats.
+
+PR #55 förenar bakgrunds-PR #58 och papperskorgs-PR #60. Runtime v10 behåller
+dealerSets; v11 innehåller både dealerSets och materialTrash. Skyddad
+readiness kräver rätt version före mutation, även när båda fälten förekommer.
+66 riktade kontrakt-/material-/livscykeltester och 17 kvitto-/UI-tester gröna.
+
+`/admin/assets` har riktigt bibliotek, originaluppladdning och gemensam
+impact-tokenstyrd materialpapperskorg. Kompositionspanelen återanvänder samma
+API. `/admin/admin/operators` återanvänder Control-kontroller för bolag och
+rum med färska administrations-/paketrevisioner. Dealer/klipp använder sina
+befintliga skyddade livscykelklienter. Osparat Studio-utkast spärrar direkta
+livscykeländringar; efter sparande synkas bibliotekets revision. Inga mockade
+kvitton eller automatiska återkopplingar används i produktkod.
+
+Isolerad QA på 53764: verklig skyddad HTTP-dispatcher/materialplan med separat
+beständig fillagring, inga publicerade paket eller produktions-SQL. Browsern
+verifierade flytt, omladdning, restore som obundet val, utkastspärr, 401 samt
+återanslutning med bevarat bordval och lyckat sparande. Detta är ingen
+produktionsacceptans av nya `/admin`. Separat chatt äger Control-slutkontroll
+och eventuell Your Company-städning; den utförs inte här. Multi-game-rummens
+övergång, fullfile-taldriver, generell ändringslogg och visuell spelacceptans
+kvarstår enligt tidigare WIP. Ingen Neon-migration eller betald körning gjord.
+
+## SIDOR3: anslutningar och bordsintag, 13 oktober
+
+PR #55 (`codex/studio-workspace`) förenas med `main` `8c77d05a` i egen
+arbetsgren. Importer använder nu `packages/presentation/runtime`. `/admin`
+använder befintlig NativeAdministration för drift, konton, spelare, betalningar
+och API samt befintlig OpenClaw-modellvy och skyddad agentchatt. De tidigare
+simulerade sidkomponenterna används inte av entrypunkten. Varje API-fel visas;
+generell ändringslogg saknar läs-API och märks fortfarande som saknad.
+
+Bolag väljs före rum/bakgrund och spelet läses ur det registrerade rummet.
+Dealerlistan använder den sparade sammansättningens tillåtna aktiva dealer-ID;
+ingen annan bank väljs vid saknad koppling. Bakgrundsval och befintlig
+bakgrundsautomation finns i rummets panel, inklusive lokal regelpreview.
+Ändrade gemensamma triggers ingår i sparandets förhandsvisade rumspåverkan.
+Ett rum med flera spel kräver fortfarande den uttryckliga övergången från
+gamla enspelsrum; den är inte utförd genom UI-ändringen.
+
+Kanonisk materialkatalog `web/public/material-catalog.mjs` innehåller
+`blackjack-green-felt` / **Blackjack · grön filt** och
+`blackjack-black-felt` / **Blackjack · svart filt**. Oförändrade 1672 × 941 PNG
+med alpha säkrades privat och används som riktiga filer i beständig isolerad
+QA på port 53764. Båda borden är nu registrerade i det riktiga privata
+biblioteket, återlästa och avkodade efter omladdning; de har ännu ingen
+sammansättningstilldelning. Lager-ID och källhashar finns i teknikreferensen.
+Bakgrundsagentens gemensamma katalog finns i PR #58, commit `92941487`;
+rumsval eller publicerade paket ersätts aldrig automatiskt. Domänregeln är
+även tillagd i `AGENTS.md`. Fullfile-taldriver och produktionsacceptans från
+föregående WIP är fortfarande öppna; inga betalda genereringar utfördes.
+
+Konfliktjämförelsen förenar separata fält i samma sammansättning via stabilt
+ID. Samma fält, radering mot redigering och samtidig omordning kräver fortsatt
+uttryckligt val. Sparning och återläsning över QA-omstart, verklig 409 och
+N1-blockering är webbläsarverifierade. Återanslutningsvägen tillåter skyddad
+omläsning utan skrivmandat före verifierad session. Det avslutande UI-provet
+är nu slutfört i Chrome: 401 behöll utkastet, återanslutning jämförde senaste
+revision och efterföljande sparande lyckades.
+
+Verifiering på checkpoint `90aab25d`: ordinarie full hook 3 048 godkända,
+11 hoppade, 0 fel; Studio-produktionsbygge passerade. Senare serverkontroll
+för kända materials speltyp har 84 riktade kontrakt-/publiceringstester gröna.
+Integrationsvyn får betrodd spelorigin från N1-sessionens serverkonfiguration;
+saknad origin aktiverar inte launch-länkar. Gemensam papperskorg i befintlig
+Control ägs av separat backendarbete; v11 reserveras för materialTrash med
+v10/dealerSets-kontraktet bevarat. Senare slutkontroller redovisas i PR #55.
 ## Tillägg 13 oktober: papperskorg i befintliga Control
 
 `codex/control-trash` bygger vidare på bakgrunds-PR #58. Bolagsarkivering
@@ -62,13 +151,12 @@ visas som Standardsammansättning. Det interna `mobile-phone`-ID:t behålls.
 Rensning av återstående Your Company-varianter är inte utförd: de har
 referenser som nu kan visas och hanteras i det nya bekräftelseflödet.
 
-Integration: materialpapperskorgen förhandlar runtime **v11**. PR #55 äger
-v10 `dealerSets: 'authoring-categories-v1'`; den här fristående grenen
-annonserar inte v10. När grenarna förenas måste v11 även innehålla det
-faktiskt implementerade dealerSets-stödet och readiness-/kontraktstesterna
-förenas innan gemensam driftsättning. Nya `/admin` får återanvända samma
-serverkontrakt; dess UI-integration ägs av SIDOR3. Ingen Neon-migration
-krävs. Detta tillägg är kodleverans, inte bevis på driftsättning.
+Integration: materialpapperskorgen förhandlar runtime **v11**. PR #55 förenar
+nu v10 `dealerSets: 'authoring-categories-v1'` och v11 med både dealerSets och
+materialTrash, inklusive readiness-/kontraktstester. Nya `/admin` återanvänder
+samma serverkontrakt. PR #60 är fortsatt en fristående Control-leverans tills
+den förenade PR #55 driftsätts. Ingen Neon-migration krävs. Detta tillägg är
+kodleverans, inte bevis på driftsättning.
 
 Verifiering: riktade server-/UI-tester för bekräftelse, samtidiga ändringar,
 tenantgränser, återställning, skyddad historik och full rollback; Lab-
@@ -199,6 +287,49 @@ Läget 12 oktober 2026 skrevs om mot koden på `jakob/repo-ordning`.
 `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
 
 ## 1. Aktuellt läge
+
+### Nya Studio-ytan: första granskningsversion, 13 oktober 2026
+
+Pågående WIP i `codex/studio-workspace`, egen arbetsyta
+`C:/Users/jakem/.codex/worktrees/studio-workspace/croupier`, bas
+`415afa05053496990211ca29a07f6a21ef55a19d`. Originalets klippcanvas är
+designreferens. `/admin` har åtta kompakta kort med exakta fack/varianter,
+layoutåterställning, en liten meny och nivå 1/2/3 uppe till höger.
+`/admin/structure` är en separat systemkarta. Tal-, policy-, lager- och
+livscykelpanelerna ligger i Studio. Inga Control-utgångar krävs där.
+
+Första visningen kör på `http://127.0.0.1:53764/admin` med en isolerad
+QA-fixtur, syntetiska register och riktiga byggda UI/API-moduler. Den är
+tydligt märkt som testdata och hålls öppen medan Jakob granskar riktningen.
+Designbygge och typkontroller passerar; riktade isolerade prov omfattar
+exakta klippval med native selector, kategori-/medieskydd och talförberedelse.
+Den nya samlade browserregressionen återstår. Fullhooken på källcommit
+`8dd6ed7a35cdc08f5fed675ead42524b9ff2eefc` passerar: 3 037 godkända,
+11 villkorade skips, 0 fel. Studio-produktionsbygge och byggspårskontroll
+passerar. Nya kategori-/policy-/taltester ingår i ordinarie hook.
+Källcommitten är pushad och remote-verifierad i draft-PR #55
+(`codex/studio-workspace` → `main`). PR:n har mergekonflikter mot aktuell
+main; ingen konfliktlösning eller merge har gjorts vid denna WIP-säkring.
+En privat hashverifierad återställningsbackup och Git-bundle finns utanför
+Git, med exakta vägar i chatten. Leveransen är för kontinuitet,
+inte godkänd produktdesign.
+Inget har mergats, publicerats eller skrivits i produktionsdata.
+Inga betalda genereringsjobb eller mediebytesändringar har gjorts.
+
+Inte accepterat eller färdigt: verkliga sju videobakgrunder/två bord visas
+inte i denna QA-vy. Den senaste kontextmodellen bolag → rum/bakgrund →
+speltyp → tillåten dealeruppsättning återstår; befintligt register har
+ett spel per publicerat rum. `paow3` är ett faktiskt rumsnamn, inte bevis
+för en tredje dealeruppsättning. Målkontrakt/inventering finns i separata
+docs-PR #54, head `47d6fbc8c8b95f1517dafe750e90b30d94244e77`.
+
+Nya `dealerSets` är fristående arbetskategorier med delade klippreferenser,
+arkiv/återställning och CAS-/ägarskydd; de är inga publicerade versioner.
+De kräver capability v10 hos spelmotorn före sparande. Talpanelen har 17
+exakta SV/EN-mallar och förbered → explicit bygge → resultat, men native
+Studio saknar en etablerad fullfil-driver för produktionsbyggen. Arbiträra
+dealerprofiler är därför inte produktionsklara. Tal-/läppsynksacceptans,
+publicering och spelbeslut behåller sina befintliga skydd.
 
 Publik sajt: https://www.scoutgaming.tech (apex `scoutgaming.tech` är 308 till www).
 Vercel-projekt `scoutgaming`. Spelmotor och plånbok: Render `croupier-v2`.
@@ -337,7 +468,7 @@ Källzippar och ursprungliga SHA-256: `packages/design-preview/source-provenance
 Zipparnas API:er, SQL och miljöinställningar importerades inte. Separata React/CSS-byggen
 bevarar Tailwind 3 respektive 4 och serveras från privata `lab/design-preview-build`.
 Svar är `private, no-store`; exakta sökvägar, filgränser, Range/HEAD och N1-returer
-kontrolleras. CSP tillåter endast anrop till samma origin och inga formulärpostningar.
+  kontrolleras. Lobby-CSP tillåter endast anrop till samma origin och inga formulärpostningar.
 
 Start: `node lab/start.mjs --offline --no-open`. Offlinekörning har INTE produktionsregister
 och visar därför datakällans otillgänglighet. Bygg: `npm --prefix packages/design-preview run build`.
@@ -378,6 +509,61 @@ felstatus och återförsök. Inga adminanrop eller speltransaktioner utfördes.
 Detta är inte ett nytt produktionsprov av `/lobby`; det görs efter separat
 godkänd merge/deploy. Frontend-/design-/Studio-produktionsbyggen och riktad
 lobbyregression ingår i leveranskontrollen.
+
+### Central Studio och dealerporträtt, 13 oktober 2026
+
+Första anslutna etappen på `codex/central-studio-map`, utgående från main
+`bb63beabd028b8d35618a98250af8620ab856f67`. `/admin`, `/admin/clips` och gamla
+Studio-adresser inom `/admin` visar samma klippkarta. Menyn har en Studio-ingång;
+rum, dealer och lager visas som kontextpaneler. Kartan har inga Control-utgångar.
+`/control` finns kvar. Drift och ekonomi är fortfarande märkta designexempel.
+
+Kortplatser kommer från sparade events och exakta registrerade mediafamiljer.
+Urval, förhandsvisning, drop och filval använder det befintliga privata
+uppladdningsflödet: grant, Blob, verifierad commit och exakt återläsning.
+Uppladdning registrerar filen; explicit koppling ändrar utkastet. Spara använder
+befintliga N1-skyddade `/studio/api/project`, aktuella serverkontroller och
+`expectedRevision`. Inga nya skriv-API:er, migrationer eller publiceringsflöden.
+Omläsning fryser ändringar, revisionsfel behåller utkast och navigation/växling
+skyddar osparat arbete. Bolag, verkligt rum, dealer och sammansättning följer URL.
+Endast det N1-skyddade admin-dokumentets CSP öppnar Blob-SDK:s avgränsade
+`https://vercel.com/api/blob`-endpoint; lobbyn behåller sin läsande policy.
+
+Bord och bakgrund väljs ur den sparade sammansättningens tillåtna lager.
+Roulettebord är skrivskyddat i denna panel tills Jakob lämnat designunderlag.
+Dealerbankens val byter inte rummets dealer. Rumspublicering, taluppladdningens
+hela text/ljud/video-uppsättning, flerbaspooler/frekvenser, bibliotekets uppladdning
+och mobil/desktopjustering är ännu inte anslutna till den nya panelen. Dessa
+luckor visas uttryckligen. Hela Studio-ersättningen och produktacceptansen är öppna.
+
+`public.zip` innehåller byte-identiska filer som redan finns i designens public.
+Färsk N1-registerläsning 12 oktober 23:47 verifierade aktiv `astrid`/Astrid och
+`paow-v2`/PAOW; Dragge/Mårten saknades och äldre `paow` var arkiverad.
+Endast de två aktiva identiteterna får sina namngivna bilder/MP4. Lobbyn behåller
+den kanoniska publiceringens dealerurval. Samma 1:1-utsnitt används för bild/video;
+tysta inline-gester spelas en gång med 45–55 sekunders variation, och avbryts när
+kort/flik är osynliga eller användaren valt reduced motion. Admins dealerpanel
+använder samma lookup och schemaläggare. Inga assetbytes, talmedia, HERO eller
+spelanimationer ändrades.
+
+Verifierat isolerat med riktiga byggda UI-filer och befintliga API-/uploadservice-
+implementationer: drop → grant → Blob-fixture → verifierad registercommit →
+explicit koppling → revisionssparande → omladdning → samma klippförhandsvisning.
+Browserprov på 1440/390 px täcker även N1-fel, utkast, konflikt och kontext.
+Porträttagentens 13 browserfall använde riktiga MP4 med posteråtergång,
+gemensam geometri, dold flik/offscreen och reduced motion. Nya riktade tester,
+designbygge, typkontroller och Studio-produktionsbygge passerade.
+Inga produktionsskrivningar, insatser eller speltransaktioner gjordes.
+Den gamla instruktionens `pipeline/audit-dealer-sync.mjs --probe` kan inte köras:
+filen finns inte på den aktuella main-basen. Speech/player-rehearsal är inte
+verifierad av denna porträttändring; mediefilerna är oförändrade.
+
+Den tidigare inloggade produktionsverifieringen av PR #43/#46 ska bevaras:
+4 bolag, 2 rum, 7 aktiva dealers; Nordic Bets paow3/blackjack och roulette med
+PAOW; korrekta `/play/{game}`-länkar med operator/table/dealer; återställt dealerval
+vid rumsbyte; partner- och spelarportaler öppnades med internadmin. Det är ett
+tidigare prov, inte acceptans av den nya skrivande klippkartan eller ett nytt
+produktionsprov i denna etapp. Full spel- och behörighetsacceptans återstår.
 
 ### Talström: röst medan GPU-sessionen startar, 12 oktober 2026
 

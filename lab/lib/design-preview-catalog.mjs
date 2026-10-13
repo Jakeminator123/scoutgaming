@@ -3,6 +3,7 @@ import { validatePublicOperatorRooms } from '../../web/public/operator-rooms-con
 import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
 import { isPresentationRoom, roomGame, resolvePackageRoom } from '../../web/presentation-room-contract.mjs';
 import { readPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import { readOperatorLifecycle } from '../../web/storage/operator-lifecycle.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { designPreviewHeaders } from './design-preview.mjs';
 
@@ -21,7 +22,8 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     const pack = await store.getCurrentPackage(row.id);
     if (pack && pack.operatorId !== row.id) unavailable();
     packages.set(row.id, pack);
-    operators.push({ id: row.id, slug: row.slug, name: row.name, status: row.status, packageRevision: pack?.revision ?? null });
+    operators.push({ id: row.id, slug: row.slug, name: row.name, status: row.status, packageRevision: pack?.revision ?? null,
+      archivedAt: readOperatorLifecycle(pack?.branding).operator?.archivedAt ?? null });
   }
   // Each public room is checked by the same selector used at game entry, using
   // captured data throughout the response. Game entry revalidates on launch.

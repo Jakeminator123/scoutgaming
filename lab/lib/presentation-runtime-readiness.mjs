@@ -28,13 +28,15 @@ function documentFeatures(kind, value) {
   const frozen = kind === 'presentation-package' && [2, 3].includes(value?.schemaVersion);
   const frozenEvents = kind === 'presentation-package' && value?.schemaVersion === 3;
   const lifecycle = cascade || kind === 'project' && Object.hasOwn(value ?? {}, 'dealerTrash');
+  // Even an empty field is rejected by the older strict project validator.
+  const dealerSets = kind === 'project' && Object.hasOwn(value ?? {}, 'dealerSets');
   const generic = dealers.some(id => id !== 'nora');
   const backgroundPlayback = ['project', 'presentation-package'].includes(kind)
     && [...(Array.isArray(value?.lanes) ? value.lanes : []), ...(Array.isArray(value?.dealerTrash) ? value.dealerTrash : [])
       .flatMap(entry => Array.isArray(entry?.compositions) ? entry.compositions : [])]
       .some(lane => object(lane) && Object.hasOwn(lane, 'backgroundPlayback'));
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, materialTrash };
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash };
 }
 function mediaFeatures(metadata) {
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
@@ -58,6 +60,7 @@ function mutationFeatures(input) {
     cascade: features.some(value => value.cascade),
     backgroundPlayback: features.some(value => value.backgroundPlayback),
     roulette: features.some(value => value.roulette),
+    dealerSets: features.some(value => value.dealerSets),
     materialTrash: features.some(value => value.materialTrash),
   };
 }
@@ -102,6 +105,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.cascade || active.features.cascade)
       && (!features.backgroundPlayback || active.features.backgroundPlayback)
       && (!features.roulette || active.features.roulette)
+      && (!features.dealerSets || active.features.dealerSets)
       && (!features.materialTrash || active.features.materialTrash)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
@@ -116,7 +120,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.materialTrash ? 11 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

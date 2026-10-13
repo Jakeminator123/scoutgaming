@@ -8,6 +8,10 @@ export function nativeStudioAdminEnabled(env?: Record<string,string | undefined>
 export function nativeStudioAdminConfiguration(env?: Record<string,string | undefined>): NativeStudioConfiguration | null;
 export function assertNativeStudioRequest(request: Request, config: NativeStudioConfiguration | null): void;
 export interface NativeStudioRuntime {
+  /** Server-only derived signer; never include in a client payload. */
+  readonly speechReceiptKey: Uint8Array;
+  /** Optional established server-only capability; native initialization never creates it. */
+  readonly speechBuildDriver?: {generate(input:any):Promise<any>;media(input:any):Promise<any>};
   config: NativeStudioConfiguration; authorize(request: Request): Promise<NativeStudioSession>;
   api: {handle(request: Request): Promise<Response>; availableActions(session: NativeStudioSession): string[]};
   repository: any; gamePolicy: any;

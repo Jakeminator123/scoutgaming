@@ -6,7 +6,7 @@ import { loadLobbyCatalog, lobbySelection, type LobbyCatalog, type Dealer, type 
 export const STEP_IDS = { operator: 'bolag', room: 'spelrum', dealer: 'dealers' } as const;
 export type LobbyStep = 1 | 2 | 3 | 4;
 export function scrollToSection(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
 }
 type SelectOptions = { advance?: boolean };
 type LobbyContextValue = LobbyCatalog & {

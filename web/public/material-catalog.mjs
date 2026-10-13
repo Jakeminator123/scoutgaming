@@ -12,6 +12,15 @@ export const MATERIALS=Object.freeze([
   Object.freeze({id:'blackjack-black-felt',role:'table',game:'blackjack',label:'Blackjack · svart filt',sources:Object.freeze([
     Object.freeze({kind:'image',contentType:'image/png',sha256:'c43a150457216aeb8649f802c5feb8719e257631704f98db46be2530214b8b19',size:1842659,width:1672,height:941,hasAlpha:true}),
   ])}),
+  Object.freeze({id:'blackjack-oak',role:'table',game:'blackjack',label:'Blackjack · Oak',sources:Object.freeze([
+    Object.freeze({kind:'image',contentType:'image/png',sha256:'e63e0d89ca4a5693590f50c9dd5dedafabc771982c5c76a8d7693dda1e3c6ee2',size:1628240,width:1672,height:941,hasAlpha:true}),
+  ])}),
+  Object.freeze({id:'blackjack-purple-rain',role:'table',game:'blackjack',label:'Blackjack · Purple Rain',sources:Object.freeze([
+    Object.freeze({kind:'image',contentType:'image/png',sha256:'2296933c247e88e0733a66ef5a566b3c7f94d45f487ccdee3ab2e5e9df826ee4',size:1610517,width:1672,height:941,hasAlpha:true}),
+  ])}),
+  Object.freeze({id:'blackjack-back-to-basic',role:'table',game:'blackjack',label:'Blackjack · Back to Basic',sources:Object.freeze([
+    Object.freeze({kind:'image',contentType:'image/png',sha256:'e5d61652646d8ef3d5bf17da06183867fc72b2eb86f95de2172e91544eaa6590',size:1442958,width:1774,height:887,hasAlpha:true}),
+  ])}),
 ]);
 
 export function materialById(id) {return MATERIALS.find(row=>row.id===id)??null;}

@@ -62,14 +62,14 @@ async function request(method: 'GET' | 'PATCH', signal: AbortSignal, body?: unkn
   return value;
 }
 
-function OpenClawModelTabs() {
+function OpenClawModelTabs({navigation}:{navigation?:{models:string;chat:string;studio:string}}) {
   return <>
-    <a href={labUrl('/control/openclaw')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
-    <a href={labUrl('/control/openclaw?tab=chat')}>Chatt</a>
+    <a href={navigation?.models??labUrl('/control/openclaw')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
+    <a href={navigation?.chat??labUrl('/control/openclaw?tab=chat')}>Chatt</a>
   </>;
 }
 
-export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) {
+export function OpenClawWorkspace({ dashboardUrl,navigation }: { dashboardUrl?: unknown;navigation?:{models:string;chat:string;studio:string} }) {
   const url = openClawDashboardUrl(dashboardUrl);
   const [data, setData] = useState<Snapshot | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -183,7 +183,7 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
       eyebrow="// OPENCLAW"
       title="OpenClaw"
       intro="Välj modell för en agent och spara. Du använder din Studio-inloggning."
-      tabs={<OpenClawModelTabs />}
+      tabs={<OpenClawModelTabs navigation={navigation}/>}
     />
     <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
     <div className={styles.feedback} aria-live="polite">
@@ -234,7 +234,7 @@ export function OpenClawWorkspace({ dashboardUrl }: { dashboardUrl?: unknown }) 
       <div><h2 id="openclaw-advanced">Fler inställningar</h2><p>Agentchatt, sessioner och avancerade inställningar finns i OpenClaws egen dashboard.</p></div>
       {url ? <a className={styles.secondary} href={url}>Öppna OpenClaw-dashboard ↗</a>
         : <p role="alert">Dashboardadressen är ogiltig.</p>}
-      <p className={styles.advancedNote}>Dashboarden kan begära OpenClaws befintliga webbläsargodkännande. Ändra dealerns klipp och regler i <a href={labUrl('/')}>Studio</a>.</p>
+      <p className={styles.advancedNote}>Dashboarden kan begära OpenClaws befintliga webbläsargodkännande. Ändra dealerns klipp och regler i <a href={navigation?.studio??labUrl('/')}>Studio</a>.</p>
     </section>
     {changedAgents.length > 0 ? <UnsavedBar count={changedAgents.length} onSave={() => { const agent = changedAgents[0]; if (agent) void save(agent); }} onUndo={undoAll} /> : null}
   </main>;

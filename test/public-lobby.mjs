@@ -108,3 +108,34 @@ test('unavailable or malformed public data fails closed; empty and withdrawn roo
   const injected = publication('alpha'); injected.rooms[0].playUrl = 'https://elsewhere.example/play';
   await assert.rejects(loadLobbyCatalog({ fetchImpl: async path => Response.json(path === '/api/operators' ? directory : injected) }));
 });
+
+import { animateScrollTo } from '../packages/design-preview/lobby/lib/scroll-motion.mjs';
+
+test('cinematic scroll reaches its target and removes frames/listeners on finish, input or disposal', () => {
+  for (const exit of ['complete', 'wheel', 'touchstart', 'keydown', 'pointerdown', 'unmount']) {
+    let nextId = 0, done = 0;
+    const frames = new Map(), listeners = new Map(), scrolls = [];
+    const viewport = {
+      scrollY: 10, performance: { now: () => 0 },
+      requestAnimationFrame(fn) { frames.set(++nextId, fn); return nextId; },
+      cancelAnimationFrame(id) { frames.delete(id); },
+      addEventListener(name, fn) { listeners.set(name, fn); },
+      removeEventListener(name) { listeners.delete(name); },
+      scrollTo(options) { scrolls.push(options.top); },
+    };
+    const cancel = animateScrollTo(1000, 2400, () => done++, viewport);
+    const tick = now => { const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn(now)); };
+    tick(1200);
+    assert.equal(scrolls[0], 505);
+    if (exit === 'complete') tick(2400);
+    else if (exit === 'unmount') cancel();
+    else listeners.get(exit)();
+    const count = scrolls.length;
+    tick(3000); cancel();
+    assert.equal(done, 1, exit);
+    assert.equal(frames.size, 0, exit);
+    assert.equal(listeners.size, 0, exit);
+    assert.equal(scrolls.length, count, exit);
+    assert.equal(scrolls.at(-1), exit === 'complete' ? 1000 : 505);
+  }
+});
