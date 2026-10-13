@@ -131,7 +131,7 @@ test('a piece splits into one access unit per frame at its delimiters, the first
 
 test('the worker makes what is needed on screen soonest first: a new map for now, then the next line, then a later answer', async () => {
   const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
-  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{},horizonMs:60_000});
   clearInterval(r.timer);
   const order=[],s=r.s.get('paow');
   s.info={rutor_per_s:60};
@@ -144,6 +144,23 @@ test('the worker makes what is needed on screen soonest first: a new map for now
   done.push(r.speak('paow','rum',{id:'remap-now',kartaStart:now-3000,line:'/a.mp4'},[],{fran:10}));
   await Promise.all(done);
   assert.deepEqual(order,['first','remap-now','line-soon','answer-later']);
+});
+
+test('a line is made only shortly before it is needed, and only its last version', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{},horizonMs:3000});
+  clearInterval(r.timer);
+  const made=[],s=r.s.get('paow');
+  s.info={rutor_per_s:60};
+  s.ws={readyState:1,off(){},send(m){const j=JSON.parse(m);if(j.t==='start')made.push([j.id,Date.now()]);},
+    on(ev,f){if(ev==='message')setTimeout(()=>f(JSON.stringify({t:'done',id:made.at(-1)[0]})),5);}};
+  const now=Date.now(),talk={id:'insurance',kartaStart:now+3200,line:'/a.mp4'};
+  const v1=r.speak('paow','rum',talk,[]);
+  const v2=r.speak('paow','rum',talk,[]);   // the plan changed before the line was made
+  await Promise.all([v1,v2]);
+  assert.equal(made.length,1,'one version made');
+  assert.ok(made[0][1]-now>=150,'not before its horizon');
+  assert.equal(r.index('insurance').ver,2);
 });
 
 test('a worker that goes away mid-line ends that line at once, so the lines behind it do not wait', async () => {

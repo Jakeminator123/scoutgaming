@@ -96,10 +96,13 @@ const MIN_FPS = 30;
 
 export class RorligLipsync {
   constructor({ endpointId, apiKey, publicBase, publicDir, dealers = ['paow'], log = console.log, fetchImpl = fetch,
-    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300 }) {
+    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000 }) {
     // ttlS: one session per ~55 min (the endpoint allows jobs of 1 h). Every renewal can land on a cold or slow machine,
     // and with 9 min sessions that happened every 6.5 min of play; a session still ends 8 min after the table goes quiet
-    Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS });
+    // horizonMs: a line is made no earlier than this before it is needed (a line takes ~1.5 s, its first patch ~0.5 s).
+    // Made sooner, every new plan remade it again (insurance 3–4 times) and the worker was busy with that when a hit
+    // during an answer needed its remap at once (staging 13 Oct)
+    Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs });
     this.token = randomBytes(24).toString('hex');   // per process: only the sessions we ordered can dial in
     this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], busy: false, waiters: [], recent: [] }]));
     this.talks = new Map();   // talk id -> {room, pieces:[{meta, bytes}], done, error, at}
@@ -190,7 +193,7 @@ export class RorligLipsync {
     // One line at a time per worker, the one needed on screen soonest first (earliest deadline): a line starting in a
     // second goes before an answer made for later, and a new map for what is on screen now goes before both.
     return new Promise(resolve => {
-      s.jobs.push({ deadline: talk.kartaStart + fran * 1000 / 24, run: () => run().then(resolve, resolve) });
+      s.jobs.push({ deadline: talk.kartaStart + fran * 1000 / 24, stale: () => rec !== this.talks.get(talk.id), run: () => run().then(resolve, resolve) });
       this.#pump(dealer);
     });
   }
@@ -198,14 +201,21 @@ export class RorligLipsync {
   #pump(dealer) {
     const s = this.s.get(dealer);
     if (s.busy) return;
-    if (!s.jobs.length) { for (const f of s.waiters.splice(0)) f(); return; }
+    // a line remade since it was queued: the old version ends at once, it is never made
+    for (const j of s.jobs.filter(j => j.stale())) j.run();
+    s.jobs = s.jobs.filter(j => !j.stale());
+    if (!s.jobs.length) return;
     s.jobs.sort((a, b) => a.deadline - b.deadline);
+    clearTimeout(s.later);
+    const wait = s.jobs[0].deadline - Date.now() - this.horizonMs;
+    if (wait > 0) { s.later = setTimeout(() => this.#pump(dealer), wait); return; }
     const job = s.jobs.shift();
     s.busy = true;
-    job.run().finally(() => { s.busy = false; this.#pump(dealer); });
+    job.run().finally(() => { s.busy = false; for (const f of s.waiters.splice(0)) f(); this.#pump(dealer); });
   }
 
-  #idle(s) { return !s.busy && !s.jobs.length ? Promise.resolve() : new Promise(r => s.waiters.push(r)); }
+  // the worker has no line in hand (lines still waiting go to whichever worker is current when their time comes)
+  #idle(s) { return !s.busy ? Promise.resolve() : new Promise(r => s.waiters.push(r)); }
 
   piece(talkId, del, ver) { const t = this.talks.get(talkId); return t && (!ver || t.ver === ver) ? t.pieces.find(p => p.meta.del === del) ?? null : null; }
   index(talkId) {
