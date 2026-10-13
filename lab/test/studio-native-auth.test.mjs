@@ -1,8 +1,54 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, createHmac } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
+import * as legacyAuth from '../lib/studio-native-auth.mjs';
+import * as sharedAuth from '../../packages/studio-access/studio-native-auth.mjs';
+import * as sharedScope from '../../packages/studio-access/studio-scope.mjs';
+import { StudioStorageError, studioStorageFailure, validateStudioEnvironmentId, validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
+
+test('legacy imports retain the shared auth, scope and error identities', async () => {
+  assert.deepEqual(Object.keys(legacyAuth), Object.keys(sharedAuth));
+  for (const name of Object.keys(sharedAuth)) assert.equal(legacyAuth[name], sharedAuth[name]);
+  assert.equal(StudioStorageError, sharedScope.StudioStorageError);
+  assert.equal(validateStudioEnvironmentId, sharedScope.validateStudioEnvironmentId);
+  assert.equal(validateStudioScope, sharedScope.validateStudioScope);
+  assert.throws(() => sharedScope.validateStudioScope({ environment: 'fixture', workspaceId: '' }), error => {
+    assert.ok(error instanceof StudioStorageError);
+    assert.equal(studioStorageFailure(error), error);
+    assert.equal(error.code, 'studio_invalid_scope');
+    assert.equal(error.statusCode, 422);
+    return true;
+  });
+  const authorize = sharedAuth.createStudioNativeAuth({ boDb: { prepare() { throw Error('must not query'); } }, scope });
+  await assert.rejects(authorize(new Request('https://studio.example.invalid/')), error => {
+    assert.ok(error instanceof legacyAuth.NativeStudioAuthError);
+    assert.equal(error.code, 'studio_login_required');
+    assert.equal(error.statusCode, 401);
+    return true;
+  });
+});
+
+test('shared auth loads and fails closed without Studio, OpenClaw or storage implementations', () => {
+  const entry = new URL('../../packages/studio-access/studio-native-auth.mjs', import.meta.url).href;
+  const root = new URL('../../', import.meta.url);
+  const blocked = ['lab/', 'open-claw/', 'web/storage/'].map(path => new URL(path, root).href);
+  execFileSync(process.execPath, ['--input-type=module', '-e', `
+    import { registerHooks } from 'node:module';
+    import assert from 'node:assert/strict';
+    registerHooks({ load(url, context, nextLoad) {
+      if (${JSON.stringify(blocked)}.some(prefix => url.startsWith(prefix))) throw Error('unexpected_runtime_dependency');
+      return nextLoad(url, context);
+    } });
+    const { createStudioNativeAuth, NativeStudioAuthError } = await import(${JSON.stringify(entry)});
+    const authorize = createStudioNativeAuth({ boDb: { prepare() { throw Error('must not query'); } },
+      scope: { environment: 'fixture', workspaceId: 'croupier' } });
+    await assert.rejects(authorize(new Request('https://studio.example.invalid/')),
+      error => error instanceof NativeStudioAuthError && error.statusCode === 401);
+  `], { timeout: 10000, stdio: 'pipe' });
+});
 
 const secret = 'a'.repeat(64), bearer = 'b'.repeat(64), clock = 2_000_000;
 const scope = { environment: 'fixture', workspaceId: 'croupier' };
