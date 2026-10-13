@@ -2142,3 +2142,32 @@ på högst cirka 0,5 s, rörligt talunderlag med små neutrala kroppsrörelser o
 en fristående kroppsslinga får inte ersätta den synkade talvideon. Alla
 nya takes behöver exakta hash-/bildindex-/kalibreringskvitton och visuell
 acceptans. Dessa steg är planerade, inte genomförda av röstväljar-PR:en.
+
+## Anna som lobbydealer, 13 oktober 2026
+
+Lobbyregistret har ett femte dekorativt porträtt, Anna, med Jakobs oförändrade
+anna.png och anna.mp4. Samma porträttkomponent ger stillbild, tyst kortvideo,
+reducerad-rörelse-stöd och låst förhandsvisning före bolags-/rumsval. Gridet
+rymmer fem kort på bred skärm. Anna matchas endast mot exakt registrerat
+dealer-ID anna; bilden registrerar ingen person, publicerar inget rum och
+ger inga nya spelbehörigheter. Ingen namngissning eller automatisk upplåsning.
+
+Identiteten kan finnas i både blackjack och roulette, men valt publicerat
+rum bestämmer spel och startlänk. Lobbyvideon lagras separat under
+packages/design-preview/lobby/public och förs inte in i spelens klippbanker,
+scheman, speech-profiler eller publiceringar. PR #84 äger den separata
+utbyggnaden av spelmärkta filmfack och materialspärrar; inga av dess källfiler
+ändras här. PR #84 mergades under arbetet och ingår nu via main 6ee5d3aa; produktionsacceptans är separat.
+
+Originalkontroll: PNG 2 019 747 byte, SHA256
+3b5f263126c9dfbe151f322ddea764aa027f90000f76577616a6b11d74e3d904.
+MP4 2 896 687 byte, SHA256
+e97f6cb18bf24389e68fdf8c36c9ba1b2e5835f5712e9d34e430e56a9c192d1c;
+H.264, 1440×1440, 24 fps, 4,04 sekunder, utan ljudspår.
+Studio-/designbygget och 17 riktade lobbytester passerar. Isolerad
+webbläsarfixtur verifierar fem låsta kort, upplåsning enbart för publicerad
+Anna, rätt startlänk för båda spelen, två avslutade porträttuppspelningar och
+mobil utan horisontell överströmning. Detta är lobbyacceptans, inte ett prov
+av Annas framtida spelklipp eller produktionspublicering. Ingen livekatalog,
+databas, spelregistrering eller modellkonfiguration ändras. PR:ns kontroller
+anger slutlig full regressionsstatus; merge/deploy görs inte i denna uppgift.
