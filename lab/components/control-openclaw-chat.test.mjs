@@ -60,7 +60,8 @@ test('operator chat tab shows OpenClaw chat without a project save button', () =
   assert.match(html, new RegExp(`href="${studioHref('/control/openclaw', { tab: 'chat' }).replace(/[?]/g, '\\?')}"`));
   assert.match(html, /Öppna bordschatten/);
   assert.match(html, /Urvalsläge/);
-  assert.match(html, /Prata med OpenClaw/);
+  assert.match(html, /Äldre OpenClaw-rådgivare/);
+  assert.match(html, /data-scout-assistant="openclaw"[^>]*>Öppna Adminroboten · OpenClaw/);
   assert.doesNotMatch(html, /<button[^>]*>[^<]*Spara projekt/);
   assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|studio-footer|Croupier Lab/);
   const tabs = renderToStaticMarkup(React.createElement(OpenClawTabLinks, { active: 'models' }));

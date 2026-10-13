@@ -1,61 +1,19 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { ArrowUpRight, MessageCircle, Minus } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { DealerImportAssistant } from './dealer-import-assistant';
 
-// One mounted session moves between an inline, nonmodal dialog and the drawer.
-// Changing presentation never clones files, aborts uploads or creates a second writer.
-export function DealerAssistantShell({pageMode,onShowPage}:{pageMode:'chat'|'import'|null;onShowPage:(mode:'chat'|'import')=>boolean|void}) {
-  const pageAvailable=pageMode!==null;
-  const [drawerOpen,setDrawerOpen] = useState(false);
-  const [drawerMode,setDrawerMode] = useState<'chat'|'import'>('chat');
-  const [started,setStarted] = useState(pageAvailable);
-  const [busy,setBusy] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null), launcher = useRef<HTMLButtonElement>(null), close = useRef<HTMLButtonElement>(null);
-  const previousModal = useRef(false);
-  const inline = pageAvailable && !drawerOpen;
-  const mode=drawerOpen?drawerMode:pageMode??drawerMode;
-  useEffect(()=>{if(pageAvailable)setStarted(true);},[pageAvailable]);
-  useLayoutEffect(()=>{
-    const element=dialog.current;if(!element)return;
-    element.querySelectorAll('video,audio').forEach(media=>(media as HTMLMediaElement).pause());
-    const wasModal=previousModal.current;
-    if(element.open)element.close();
-    if(drawerOpen){element.showModal();close.current?.focus();}
-    else if(inline)element.setAttribute('open','');
-    if(wasModal&&!drawerOpen)launcher.current?.focus();
-    previousModal.current=drawerOpen;
-  },[inline,drawerOpen]);
-  useEffect(()=>{pausePreviews();if(drawerOpen)dialog.current?.querySelector('.dealer-assistant-body')?.scrollTo(0,0);},[mode,drawerOpen]);
-  function pausePreviews(){dialog.current?.querySelectorAll('video,audio').forEach(media=>(media as HTMLMediaElement).pause());}
-  function minimize(){pausePreviews();setDrawerOpen(false);}
-  function open(){setStarted(true);setDrawerOpen(true);}
-  function showPage(){if(busy||onShowPage(mode)===false)return;pausePreviews();setDrawerOpen(false);}
-  function trapTab(event:KeyboardEvent<HTMLDialogElement>) {
-    if(!drawerOpen||event.key!=='Tab')return;
-    const targets=Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex="0"]'))
-      .filter(element=>element.getClientRects().length>0&&!element.closest('[hidden]'));
-    const first=targets[0],last=targets.at(-1);
-    if(!first){event.preventDefault();close.current?.focus();return;}
-    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
-    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
-  }
+// Clip import owns one persistent draft, separate from the site-wide
+// administrator and OpenClaw conversations.
+export function DealerAssistantShell({pageMode}:{pageMode:'chat'|'import'|null;onShowPage:(mode:'chat'|'import')=>boolean|void}) {
+  const [started,setStarted]=useState(pageMode==='import');
+  useEffect(()=>{if(pageMode==='import')setStarted(true);},[pageMode]);
   return <>
-    {pageAvailable&&drawerOpen&&<div className="dealer-assistant-placeholder"><MessageCircle size={20}/><p>Studioassistenten är öppen i panelen. Samma filer och samtal följer med.</p><button onClick={minimize}>Visa på sidan</button></div>}
-    <dialog ref={dialog} id="studio-assistant-dialog" className={`dealer-assistant-dialog ${inline?'is-inline':'is-drawer'}`}
-      aria-labelledby={drawerOpen?'studio-assistant-dialog-title':'dealer-import-title'} aria-modal={drawerOpen?true:undefined}
-      role={inline?'region':'dialog'} onKeyDown={trapTab} onCancel={event=>{event.preventDefault();minimize();}}
-      onClick={event=>{if(drawerOpen&&event.target===event.currentTarget)minimize();}}>
-      <header className="dealer-assistant-drawer-header" hidden={!drawerOpen}>
-        <div><MessageCircle size={18}/><h2 id="studio-assistant-dialog-title">Studioassistent</h2><span>Samtal & klippbank</span></div>
-        <button ref={close} type="button" onClick={minimize} aria-label="Minimera assistenten"><Minus size={19}/></button>
-        <nav aria-label="I assistenten"><button type="button" aria-pressed={mode==='chat'} onClick={()=>setDrawerMode('chat')}>Samtal</button><button type="button" aria-pressed={mode==='import'} onClick={()=>setDrawerMode('import')}>Filer</button>
-          <button type="button" disabled={busy} onClick={showPage}>{mode==='chat'?'Visa hela chatten':'Visa hela importvyn'} <ArrowUpRight size={13}/></button></nav>
-      </header>
-      <div className="dealer-assistant-body">{started&&<DealerImportAssistant active={inline||drawerOpen} mode={mode} onBusyChange={setBusy}/>}</div>
-    </dialog>
-    <button ref={launcher} className="dealer-assistant-launcher" type="button" aria-label="Öppna Studioassistenten" aria-haspopup="dialog"
-      aria-controls="studio-assistant-dialog" aria-expanded={drawerOpen} hidden={drawerOpen} onClick={open}>
-      <MessageCircle size={22}/><span>Studioassistent</span>{busy&&<span className="dealer-assistant-working" aria-label="Arbete pågår"/>}
-    </button>
+    <div hidden={pageMode!=='import'}>{started&&<DealerImportAssistant active={pageMode==='import'} mode="import"/>}</div>
+    {pageMode==='chat'&&<section className="dealer-import dealer-import-panel" aria-labelledby="adminrobot-title">
+      <p className="dealer-import-eyebrow">Nivå 1 · Scoutgaming</p><h1 id="adminrobot-title">Adminroboten</h1>
+      <p>Undersök dealers, material, bolag, spelrum och ansluten drift. Robotens förslag ändrar ingenting förrän du har granskat konsekvenserna och bekräftat åtgärden.</p>
+      <div className="dealer-import-actions"><button type="button" data-scout-assistant="admin">Öppna Adminroboten</button>
+        <button type="button" data-scout-assistant="openclaw">OpenClaw · drift och modeller</button></div>
+      <p>Scoutguiden ger snabb hjälp på alla sidor. Klippassistenten sorterar filer i importvyn. Spelbordets dealerchatt är separat.</p>
+    </section>}
   </>;
 }

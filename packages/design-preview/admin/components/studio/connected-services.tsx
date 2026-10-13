@@ -34,7 +34,7 @@ function Administration({group}:{group:string}) {
 
 export function ConnectedServices({path}:{path:string}) {
   if(path==='/admin/ekonomi')return <ConnectedEconomy/>;
-  if(path==='/admin/ai/models')return <div className="p-5"><p className="studio-detail-panel p-4 text-sm">Gatewayinställningarna nedan gäller OpenClaw. <a href="/admin/ai/chat" className="text-sg-lime underline">Studioassistenten</a> har egna fasta roller: Luna 5.6 för samtal och Sol 5.6 High för klippkartläggning.</p><OpenClawWorkspace navigation={{models:'/admin/ai/models',chat:'/admin/ai/chat',studio:'/admin/clips'}}/></div>;
+  if(path==='/admin/ai/models')return <div className="p-5"><p className="studio-detail-panel p-4 text-sm">Gatewayinställningarna nedan gäller OpenClaw. <a href="/admin/ai/chat" className="text-sg-lime underline">Adminroboten</a> använder Sol 6.1 High för intern administration och OpenClaw. Scoutguiden använder Luna 6. Klippassistenten har separat importgranskning med Sol 6.1 High. Modellnamnen är begärda val; tillgänglighet verifieras först vid ett lyckat anrop.</p><OpenClawWorkspace navigation={{models:'/admin/ai/models',chat:'/admin/ai/chat',studio:'/admin/clips'}}/></div>;
   if(groups[path])return <Administration group={groups[path]}/>;
   return <section className="studio-detail-panel p-5"><h1>Ändringslogg</h1><p>Den gemensamma ändringsloggen har ännu inget anslutet läs-API. Bolagets beständiga ändringsjournal finns i Bolag & team.</p></section>;
 }

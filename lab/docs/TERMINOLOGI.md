@@ -95,3 +95,13 @@ Klippens användarord är **grundloop**, **händelsekategori**,
 **klippuppsättning**, **villkor** och **urvalsregler**. Exakta event-ID:n,
 klippfack, talset och provspelningskrav finns i
 [guiden](README.md) och [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+
+## Chatt och assistenter
+
+| Namn | Uppgift |
+| --- | --- |
+| Scoutguiden | Publik hjälp på alla sidor, Luna 6, utan interna data eller åtgärder. |
+| Adminroboten | N1-assistent med Sol 6.1: läser aktuell inventering och föreslår avgränsade ändringar. Servergranskning och popupbekräftelse krävs för varje skrivning. |
+| OpenClaw-läge | N1 i webbchatten: läser Gatewaystatus och föreslår bekräftat modellbyte. Vercel kör chatten; Director på Render förmedlar till Gateway. |
+| Klippassistenten | Separat importhjälp; användaren granskar och sparar placeringarna. |
+| Dealerspelchatt | Spelarens samtal med dealern. Ger inga administrativa rättigheter. |

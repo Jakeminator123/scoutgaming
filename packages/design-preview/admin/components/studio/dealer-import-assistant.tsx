@@ -66,7 +66,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
   useEffect(() => {
     if (!pending && !busy && !question.trim() && !chat.length) return;
     let approvedClick=false;
-    const leave = () => busyRef.current ? false : window.confirm('Vill du lämna Studioassistenten? Vid omladdning eller ny sida försvinner samtalet, oskickad text och den lokala fillistan.');
+    const leave = () => busyRef.current ? false : window.confirm('Vill du lämna Klippassistenten? Vid omladdning eller ny sida försvinner samtalet, oskickad text och den lokala fillistan.');
     const beforeUnload = (event:BeforeUnloadEvent) => {event.preventDefault();event.returnValue='';};
     const beforeNavigate = (event:Event) => {
       if(busyRef.current){event.preventDefault();return;}
@@ -155,8 +155,8 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
 
   return <section className={`dealer-import ${mode==='chat'?'is-chat':''}`} aria-labelledby="dealer-import-title">
     <header className="dealer-import-heading"><div><p className="dealer-import-eyebrow">Studio · Registrerade dealers</p>
-      <h1 id="dealer-import-title">{mode==='chat'?'Studioassistent':'Låt assistenten sortera klippen'}</h1>
-      <p>{mode==='chat'?'Ställ frågor om Studio, dealers och klipp. Samma samtal följer med till bubblan och importvyn.':'Välj dealer, lägg in dina filer och beskriv dem. Granska förslaget innan du sparar i klippbanken.'}</p></div>
+      <h1 id="dealer-import-title">{mode==='chat'?'Klippassistent':'Låt assistenten sortera klippen'}</h1>
+      <p>{mode==='chat'?'Ställ frågor om dealers och klippimport. Detta samtal är separat från Adminroboten.':'Välj dealer, lägg in dina filer och beskriv dem. Granska förslaget innan du sparar i klippbanken.'}</p></div>
       <span className="dealer-import-badge"><ShieldCheck size={15}/> Du godkänner varje import</span>
     </header>
     {loading ? <p role="status">Läser registrerade dealers och exakta klippfack…</p> : !catalog ? <div className="dealer-import-panel">
@@ -179,7 +179,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
           </div>
           <label>Din kontext<textarea value={context} maxLength={4000} rows={3} disabled={Boolean(busy)} placeholder="Exempel: Vänster arm mot skon. Box 1–7 är spelarplatser från vänster. Filen redo.png är posen vid skon. Materialet är 1080 × 1920 med grön bakgrund." onChange={event=>{setContext(event.target.value);invalidate();}}/></label>
           <p className="dealer-import-help">Filnamn och kontext kan skickas till den konfigurerade textmodellen när du ber om ett förslag. Endast MP4 och WebM kan sparas just nu, efter ditt godkännande. Ljud och posebilder kan granskas lokalt och få fack, men måste tas bort ur denna import innan videorna kan sparas. Originalfilerna på din dator påverkas inte.</p>
-          <p className="dealer-import-help">{catalog.provider.configured?'Kartläggning: Sol 5.6 · High.':'AI-kartläggning är inte ansluten; filnamnsregler används.'}</p>
+          <p className="dealer-import-help">{catalog.provider.configured?'Kartläggning: Sol 6.1 · High.':'AI-kartläggning är inte ansluten; filnamnsregler används.'}</p>
           <button className="dealer-import-primary" disabled={!dealerApproved||Boolean(busy)||!rows.some(row=>row.state==='ready')} onClick={()=>void ask('mapping')}><MessageCircle size={16}/>{busy==='mapping'?'Kartlägger klippen…':'Kartlägg klipp'}</button>
         </section>
         {rows.length>0 && <section className="dealer-import-panel" aria-labelledby="dealer-import-mapping" hidden={mode==='chat'}><div className="dealer-import-heading"><h2 id="dealer-import-mapping"><span>3</span> Granska {rows.length} filer</h2>
@@ -220,7 +220,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
       </div><aside className="dealer-import-panel dealer-import-chat" aria-labelledby="dealer-import-chat-title"><h2 id="dealer-import-chat-title"><MessageCircle size={18}/> Samtal</h2>
         <p className="dealer-import-provider">{catalog.provider.configured?'Chatt: Luna 5.6':'AI-chatt är inte ansluten'}</p>
         <p>Du kan fråga utan att välja dealer. Luna svarar på frågor; Sol High kartlägger klipp när du väljer Kartlägg klipp. Samtalet ändrar inga placeringar.</p>
-        <div className="dealer-import-conversation" role="log" aria-label="Samtal med Studioassistenten" aria-live="polite">{chat.length?chat.map((entry,index)=><div key={index} className={entry.speaker==='Du'?'is-user':''}><strong>{entry.speaker}</strong><p>{entry.text}</p></div>):<div><strong>Assistent</strong><p>Vad vill du ha hjälp med i Studio? Du kan fråga direkt. Välj och bekräfta en befintlig dealer först när du vill importera klipp.</p></div>}</div>
+        <div className="dealer-import-conversation" role="log" aria-label="Samtal med Klippassistenten" aria-live="polite">{chat.length?chat.map((entry,index)=><div key={index} className={entry.speaker==='Du'?'is-user':''}><strong>{entry.speaker}</strong><p>{entry.text}</p></div>):<div><strong>Assistent</strong><p>Vad vill du ha hjälp med i Studio? Du kan fråga direkt. Välj och bekräfta en befintlig dealer först när du vill importera klipp.</p></div>}</div>
         <form onSubmit={event=>void ask('chat',event)}><label>Meddelande till assistenten<textarea value={question} maxLength={2000} rows={3} disabled={Boolean(busy)} placeholder="Vad är skillnaden mellan vila och redo?" onChange={event=>setQuestion(event.target.value)}/></label>
           <button disabled={Boolean(busy)||!question.trim()} type="submit">{busy==='chat'?'Svarar…':'Fråga assistenten'}</button></form>
         <p className="dealer-import-help">De senaste fyra lyckade chattutbytena kan följa med som sammanhang. Samtalet och filvalen sparas inte när sidan laddas om.</p>

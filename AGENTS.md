@@ -48,6 +48,8 @@ Follow `agent-talk/README.md`. Run `node tools/agent-talk.mjs status <your-id>` 
 
 ## Active documentation and private archive
 
+Rensa aktivt: radera tydligt förbrukade rester och flytta tveksamma äldre filer till rotens kanoniska, gitignorerade `arkiv/<datum>/<ursprunglig-sökväg>` för återhämtning; skapa inga nya parallella arkivmappar.
+
 Use `lab/docs/TERMINOLOGI.md` as the sole source for product terms and ownership, `lab/docs/README.md` for user steps, and `docs/LOCAL-PRESENTATION-RUNTIME.md` for technical reality and formats. Keep at most five Markdown files under `docs/`: `JOHN-HANDOFF.md`, `CLOUD-MIGRATION.md`, `LOCAL-PRESENTATION-RUNTIME.md`, `ENVIRONMENT-RESTORATION.md`, and `ENVIRONMENT-VARIABLES.md`. Update them in place. New reports and sprint documentation are paused.
 
 Do not read `random-stuff-jakob/jakob-docs/arkiv/`, including restored copies, Git history, or external backups, unless Jakob explicitly asks for a specific historical document. Ordinary file searches must honor `.ignore`. That file still hides heavy tracked media (`media/**/source`, `media/**/staging`, `media/layout.json`, `media/blob-index.json`), binaries and secrets from ripgrep. `.cursorignore` keeps secrets and private data (`.env*`, `lab/data/`, `web/data/`, the private archive). Harmless heavy project text (`media/layout.json`, `media/blob-index.json`, `media/**/source/*.json`, `media/**/staging/*.md`) is listed in `.cursorindexingignore`, so it is not indexed and can still be read explicitly. Do not use `rg --no-ignore`. Do not scan media binaries or generated artifacts for ordinary documentation questions.
