@@ -3,7 +3,7 @@
 import re, html, json
 from pathlib import Path
 here = Path(__file__).resolve().parent / 'public/docs'
-md = (here / 'partner-api.md').read_text()
+md = (here / 'partner-api.md').read_text(encoding='utf-8')
 def inline(t):
     t = html.escape(t); t = re.sub(r'`([^`]+)`', r'<code>\1</code>', t); t = re.sub(r'\*\*([^*]+)\*\*', r'<b>\1</b>', t); t = re.sub(r'(?<!\*)\*([^*]+)\*(?!\*)', r'<i>\1</i>', t); return t
 sections = []
@@ -17,7 +17,7 @@ for i, part in enumerate(re.split(r'\n(?=## )', md)):
             continue
         if inpre: out.append(html.escape(line)); continue
         if line.startswith('|'):
-            cells = [c.strip() for c in line.strip('|').split('|')]
+            cells = [c.strip().replace(r'\|', '|') for c in re.split(r'(?<!\\)\|', line.strip('|'))]
             if all(re.fullmatch(r'-+', c) for c in cells): continue
             tag = 'td' if intable else 'th'
             if not intable: out.append('<table>'); intable = True
@@ -47,4 +47,4 @@ document.querySelectorAll('[data-view-md]').forEach(b=>b.onclick=()=>{const v=do
 page = ('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Croupier Partner API v1</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + css + '</style></head><body><main>'
     '<div class="brand"><span>SCOUT GAMING GROUP &middot; LIVE CASINO &middot; PARTNER DOCUMENTATION</span><span class="tools"><button data-copy-all>Copy whole page for LLM</button><a href="/docs/partner-api.md" download style="font-size:10px">Download .md</a></span></div>'
     + body + '</main><script>const MD=' + mdjson + ';\n' + js + '</script></body></html>')
-(here / 'partner-api.html').write_text(page); print('html rebuilt:', len(sections), 'sections,', len(page), 'bytes')
+(here / 'partner-api.html').write_text(page, encoding='utf-8', newline='\n'); print('html rebuilt:', len(sections), 'sections,', len(page), 'bytes')
