@@ -72,6 +72,18 @@ full obligatorisk regression på `52a0aa46` passerade: 3 348 godkända,
 11 miljöberoende skips, 0 fel. Kallstart kan fortfarande överskrida
 förberedelsefönstret; två hela liveprov återstår efter leverans.
 
+PR #99:s transportgranskning hittade dessutom Vercels gräns på 120 sekunder
+utan data från extern backend. Den befintliga NDJSON-strömmen upprepar nu
+bara aktuell offentlig status var 15:e sekund under väntan. Ingen extra
+svarstext, media eller providerbeställning skickas. Långsam mottagare får
+inga köade heartbeat-rutor; färdigt svar, fel, avbrott och stängd anslutning
+städar timern. Befintliga ägar-/rund-/minneskontroller är oförändrade.
+66 riktade chatt- och transporttester passerar. En riktig lokal HTTP-proxy
+med tidsgräns provar lång förberedelse, nekad gammal ägare och avbruten
+klient; utan heartbeat kapas samma prov. Testtiderna är skalade och använder
+inga betalda leverantörer. Full regression körs vid commit. Detta ersätter
+inte de två väntande liveproven genom den verkliga Vercel/Render-vägen.
+
 Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
 `paow`. Den sparade talprofilen återlästes från servern med ElevenLabs
 `WZVEBKUreb9jAKojf0QF`, `eleven_v3`, svenska och egen referensvideo
