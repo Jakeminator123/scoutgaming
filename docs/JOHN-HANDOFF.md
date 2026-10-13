@@ -1,5 +1,21 @@
 # Aktuell handoff — Scoutgaming
 
+## Separat draft: blågul spelorb, rehearsal återstår
+
+`codex/dealer-orb-rehearsal-acceptance` bevarar de fyra orb-filerna från
+`10824b35`, hashkontrollerade vid uppdelningen. Ändringen är avgränsad från
+Studioassistenten i PR #61. Den textmärkta blågula kontrollen öppnar ljud,
+mikrofon, kamera och röstlogg med ett tryck, behåller befintligt samtycke och
+fungerar med tangentbord, Escape och reduced motion.
+
+Gränssnittsprovet i fyra skärmstorlekar är grönt men mockar playback och
+bevisar inte faktisk dealeruppspelning. Före merge krävs två på varandra
+följande uppspelningar i den gemensamma isolerade rehearsalspelaren med
+godkända registrerade klipp och rätt dealer-/rumskontext. Inventeringen fann
+ingen sådan lokal miljö; den befintliga Studio-fixturen saknar accepterade
+klipp och spelbart rum. Starta ingen betald generering och använd inte
+produktionsdata för att fylla detta bevisgap. Inga mediebytes har ändrats.
+
 ## Tillägg 13 oktober: gemensam Studioassistent
 
 `/admin/ai/chat`, bubblan nere till höger och `/admin/clips?tool=import`

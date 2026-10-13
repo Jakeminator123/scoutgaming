@@ -1,16 +1,34 @@
-#astrid-camera.astrid-voice-controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; max-width: min(340px, calc(100vw - 24px)); padding: 6px; border-radius: 12px; background: #101618e8; }
-#astrid-camera .astrid-voice-button { width: 44px; height: 44px; padding: 0; font-size: 14px; touch-action: manipulation; user-select: none; }
-#astrid-camera .astrid-voice-button[aria-pressed="true"] { border-color: #d6ff3a; color: #d6ff3a; }
-#astrid-camera .astrid-voice-button[data-error="true"] { border-color: #e5a365; }
+/* A lightweight state indicator; no microphone access or WebGL render loop. */
+.astrid-voice-ui #chat, #astrid-camera { --dealer-voice-surface: #0b151b; --dealer-voice-yellow: #ffd97a; --dealer-voice-blue: #7fb2ff; --dealer-voice-muted: #b9cbea; }
+#astrid-camera.astrid-voice-controls { display: flex; align-items: center; flex: 0 0 auto; padding: 0; }
 #astrid-camera [hidden] { display: none !important; }
-.astrid-voice-error { position: static; flex-basis: 100%; max-width: 300px; color: #c1d0cb; font: 11px/1.35 Inter, sans-serif; text-align: right; overflow-wrap: anywhere; } .astrid-voice-error[data-error="true"] { color: #edc096; }
-.astrid-voice-dialog, .astrid-voice-debug { color: #f2f1ed; background: #101618; border: 1px solid #52605e; border-radius: 14px; padding: 18px; box-sizing: border-box; font: 13px/1.5 Inter, sans-serif; box-shadow: 0 16px 38px #000b; }
-.astrid-voice-dialog { width: min(450px, calc(100vw - 28px)); max-height: 85dvh; overflow: auto; }
-.astrid-voice-dialog::backdrop { background: #0009; }
-.astrid-voice-debug { position: fixed; z-index: 105; right: 12px; top: 78px; width: min(420px, calc(100vw - 24px)); max-height: 75dvh; overflow: auto; }
-#hud-top:has(#astrid-camera[data-panel-open="true"]) { z-index: 105; }
-#astrid-camera .astrid-voice-dialog button, #astrid-camera .astrid-voice-debug button { width: auto; height: auto; padding: 8px 12px; margin: 5px 8px 5px 0; border-radius: 8px; }
-.astrid-voice-dialog h2, .astrid-voice-debug h2 { margin: 0 0 10px; font-size: 17px; }
+#astrid-camera .astrid-voice-launcher { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 52px; height: auto; box-sizing: border-box; padding: 6px 12px 6px 7px; border-radius: 999px; border-color: #7fb2ff66; background: #0b151bf5; text-align: left; touch-action: manipulation; }
+.astrid-voice-launcher-copy { display: grid; gap: 2px; color: #f2f1ed; font: 600 13px/1.2 Inter, sans-serif; }
+.astrid-voice-launcher-copy small { font: 10px/1.2 Inter, sans-serif; color: var(--dealer-voice-muted); }
+.astrid-voice-orb { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #ffd97a 0%, #7fb2ff 28%, #0044cc 60%, #0b151b 100%); box-shadow: inset -4px -4px 8px #002a80aa, inset 2px 2px 7px #ffffff55, 0 0 0 1px #7fb2ff55; }
+[data-state="listening"] .astrid-voice-orb, [data-state="recording"] .astrid-voice-orb { background: radial-gradient(circle at 30% 25%, #fff4d6, #ffd97a 30%, #d9c06a 50%, #0044cc 80%, #0b151b); animation: dealer-orb-breathe 2s ease-in-out infinite; }
+[data-state="recording"] .astrid-voice-orb { animation-duration: 1s; }
+[data-state="thinking"] .astrid-voice-orb, [data-state="starting"] .astrid-voice-orb { background: radial-gradient(circle at 30% 25%, #f2f1ed, #7fb2ff 32%, #0044cc 65%, #002a80); animation: dealer-orb-breathe 2.5s ease-in-out infinite; }
+[data-state="error"] .astrid-voice-orb { background: radial-gradient(circle at 30% 25%, #ffd9d4, #e5484d 38%, #7e2f24 70%, #0b151b); }
+#astrid-camera button:focus-visible { outline: 3px solid var(--dealer-voice-yellow); outline-offset: 3px; }
+.astrid-voice-panel, .astrid-voice-dialog { color: #f2f1ed; background: var(--dealer-voice-surface); border: 1px solid #7fb2ff66; border-radius: 18px; padding: 20px; box-sizing: border-box; font: 13px/1.5 Inter, sans-serif; box-shadow: 0 16px 38px #000b; width: min(450px, calc(100vw - 28px)); max-height: calc(100dvh - 32px); overflow: auto; overscroll-behavior: contain; }
+.astrid-voice-panel::backdrop, .astrid-voice-dialog::backdrop { background: #0b151bb3; }
+.astrid-voice-panel h2, .astrid-voice-dialog h2, .astrid-voice-debug h2 { margin: 0 0 10px; font-size: 18px; }
+.astrid-voice-panel > p { color: var(--dealer-voice-muted); margin: 12px 0; }
+.astrid-voice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 16px; }
+#astrid-camera .astrid-voice-button, #astrid-camera .astrid-voice-close, #astrid-camera .astrid-voice-dialog button, #astrid-camera .astrid-voice-debug button { width: auto; min-height: 44px; height: auto; padding: 10px 12px; font: 600 13px/1.35 Inter, sans-serif; touch-action: manipulation; border-radius: 10px; }
+#astrid-camera .astrid-voice-close { margin: 0 0 4px; }
+#astrid-camera .astrid-voice-button[aria-pressed="true"], #astrid-camera .astrid-voice-button[aria-pressed="true"]:hover { border-color: var(--dealer-voice-yellow); color: var(--dealer-voice-surface); background: var(--dealer-voice-yellow); }
+#astrid-camera .astrid-voice-button[data-error="true"], #astrid-camera .astrid-voice-button[data-error="true"]:hover { border-color: #e5484d; color: #ffd9d4; background: #401d23; }
+#astrid-camera .astrid-voice-dialog button { margin: 5px 8px 5px 0; }
+.astrid-voice-error { display: block; color: var(--dealer-voice-muted); font: 12px/1.5 Inter, sans-serif; overflow-wrap: anywhere; }
+.astrid-voice-error[data-error="true"] { color: #ffd9d4; }
+.astrid-voice-debug { margin-top: 18px; padding-top: 16px; border-top: 1px solid #7fb2ff55; }
 .astrid-voice-events { white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.5 monospace; max-height: 28dvh; overflow: auto; }
 .astrid-voice-chat-debug { position: relative; }
-@media (max-width: 860px) { .astrid-voice-debug { top: 100px; max-height: calc(100dvh - 112px); } }
+@keyframes dealer-orb-breathe { 50% { transform: scale(.91); filter: brightness(1.2); } }
+@media (max-width: 860px) {
+  #astrid-camera .astrid-voice-launcher { width: 76px; flex-direction: column; gap: 4px; padding: 7px 4px; border-radius: 18px; text-align: center; }
+  .astrid-voice-panel { margin: auto auto max(12px, env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { #astrid-camera .astrid-voice-orb { animation: none; } }
