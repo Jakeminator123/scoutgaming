@@ -10,22 +10,22 @@ const require = createRequire(import.meta.url), ts = require('typescript');
 const filename = fileURLToPath(new URL('../components/player/player-scene-canvas.tsx',import.meta.url));
 const code = ts.transpileModule(readFileSync(filename,'utf8'),{fileName:filename,compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
 const sharedFilename = fileURLToPath(new URL('../../../web/public/published-scene.mjs',import.meta.url));
-const sharedCode = ts.transpileModule(readFileSync(sharedFilename,'utf8'),{fileName:'published-scene.ts',compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+const sharedCode = ts.transpileModule(readFileSync(sharedFilename,'utf8'),{fileName:'published-scene.ts',compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
 const source = (name='dealer',contentType='video/mp4')=>({src:'/api/operators/fixture/preview/'+name,contentType});
 const settle = ()=>new Promise(resolve=>setImmediate(resolve));
 
-function mount({reduced=false,defer=false,props={},sharedOptions={}}={}) {
+function mount({reduced=false,defer=false,deferVariants=false,props={},sharedOptions={},videoSize=[1080,1920],variantSize=videoSize}={}) {
   const refs=[],states=[],effects=[],elements=[],frames=new Map(),renders=[];
-  let ready=0,failures=0,nextFrame=0,renderCalls=0;
+  let ready=0,failures=0,nextFrame=0,renderCalls=0,sharedScene;
   class Canvas extends EventTarget {
     width=720; height=1280;
-    context={draws:[],clearRect(){},drawImage(...args){renderCalls++;this.lastDraw=args;this.draws.push({args,operation:this.globalCompositeOperation});}};
+    context={draws:[],clearRect(){},fillRect(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){},getImageData(){return {data:new Uint8ClampedArray([30,25,20,255,180,140,100,255])};},putImageData(pixels){this.pixels=pixels;},drawImage(...args){renderCalls++;this.lastDraw=args;this.draws.push({args,operation:this.globalCompositeOperation});}};
     getContext(){return this.context;}
   }
   class Video extends EventTarget {
     src=''; currentTime=0; videoWidth=1080; videoHeight=1920; paused=true; muted=false; defaultMuted=false; loadCalls=0; playCalls=0;
     get currentSrc(){return this.src;}
-    load(){this.loadCalls++;if(this.src&&!defer)queueMicrotask(()=>this.dispatchEvent(new Event('loadeddata')));}
+    load(){this.loadCalls++;[this.videoWidth,this.videoHeight]=this.src.includes('variant')?variantSize:videoSize;if(this.src&&!defer&&!(deferVariants&&this.src.includes('variant')))queueMicrotask(()=>this.dispatchEvent(new Event('loadeddata')));}
     play(){this.playCalls++;this.paused=false;return Promise.resolve();}
     pause(){this.paused=true;}
     removeAttribute(name){if(name==='src')this.src='';}
@@ -60,12 +60,13 @@ function mount({reduced=false,defer=false,props={},sharedOptions={}}={}) {
   const localRequire=specifier=>{
     if(specifier.endsWith('/published-scene.mjs')) {
       const shared={...context,module:{exports:{}},exports:null};shared.exports=shared.module.exports;
-      vm.runInNewContext(sharedCode,shared,{filename:sharedFilename});return {mountPublishedScene:(canvas,options)=>shared.module.exports.mountPublishedScene(canvas,{...options,...sharedOptions})};
+      vm.runInNewContext(sharedCode,shared,{filename:sharedFilename});return {mountPublishedScene:(canvas,options)=>(sharedScene=shared.module.exports.mountPublishedScene(canvas,{...options,...sharedOptions}))};
     }
     if(specifier==='react')return React;
     if(specifier==='react/jsx-runtime')return {jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})};
     if(specifier==='/composition-runtime/compositor.js')return {Compositor};
     if(specifier.includes('composition-settings.mjs'))return require('../../../web/public/composition-settings.mjs');
+    if(specifier.includes('dealer-framing.mjs'))return require('../../../web/public/dealer-framing.mjs');
     throw Error('Unexpected module: '+specifier);
   };
   const context={module:{exports:{}},exports:null,require:localRequire,document,window:{matchMedia:()=>motion,IntersectionObserver:Observer},Image:Picture,HTMLVideoElement:Video,IntersectionObserver:Observer,AbortController,Event,queueMicrotask,setTimeout,clearTimeout,
@@ -77,7 +78,7 @@ function mount({reduced=false,defer=false,props={},sharedOptions={}}={}) {
   const root=PlayerSceneCanvas(allProps),tree=root.type(root.props);
   const cleanup=effects[0]();
   return {tree,root,PlayerSceneCanvas,allProps,states,refs,stage,elements,frames,renders,document,motion,observer:Observer.current,cleanup,
-    get ready(){return ready;},get failures(){return failures;},get renderCalls(){return renderCalls;},
+    get ready(){return ready;},get failures(){return failures;},get renderCalls(){return renderCalls;},get scene(){return sharedScene;},
     async visible(value){Observer.current.change(value);await settle();},
     async hidden(value){document.hidden=value;document.dispatchEvent(new Event('visibilitychange'));await settle();},
     async toggle(){refs[1].current();await settle();},
@@ -219,4 +220,45 @@ test('misregistered or animated table masks fail closed',async()=>{
     try{await settle();assert.equal(view.ready,0);assert.equal(view.failures,1);assert.equal(view.frames.size,0);}
     finally{view.cleanup();}
   }
+});
+
+test('roulette hands share the framed actor and optional variants wait until a round ends',async()=>{
+  const framing={scale:.66,x:.15,y:-.148},clips=[];
+  const dealer={...source('base','video/webm'),framing,foregroundPolygons:[[[.5,0],[.9,0],[.9,.85],[.5,.85]]],variants:[{...source('variant','video/webm'),framing}]};
+  const view=mount({videoSize:[1916,1080],props:{settings:defaultCompositionSettings()},sharedOptions:{dealer,layout:'desktop',background:source('background'),table:source('table','image/png'),onDealerClip:value=>clips.push(value)}});
+  try{
+    await settle();await view.visible(true);
+    const rendered=view.renders.at(-1),base=view.elements.find(e=>e.src?.endsWith('/base')),variant=view.elements.find(e=>e.src?.endsWith('/variant'));
+    assert.equal(rendered.actor.width,1920);assert.equal(rendered.actor.height,1080);
+    assert.equal(rendered.scene.handmatte,'dealer-foreground');assert.equal(rendered.scene.layerMode,'split');
+    assert.equal(rendered.assets.get('dealer-foreground').el.context.pixels.data[0],0);
+    assert.equal(rendered.assets.get('dealer-foreground').el.context.pixels.data[4],255);
+    assert.equal(rendered.actor.context.lastDraw[0],base);assert.equal(variant.playCalls,0);
+    view.scene.setRoundActive(true);
+    for(let i=0;i<4;i++){base.dispatchEvent(new Event('ended'));await settle();}
+    assert.equal(variant.playCalls,0);assert.equal(base.paused,false);
+    view.scene.setRoundActive(false);base.dispatchEvent(new Event('ended'));await settle();
+    assert.equal(variant.paused,false);assert.equal(base.paused,true);assert.equal(clips.at(-1).variant,true);
+    variant.dispatchEvent(new Event('ended'));await settle();
+    assert.equal(base.paused,false);assert.equal(variant.paused,true);assert.equal(clips.at(-1).variant,false);
+    variant.dispatchEvent(new Event('error'));await settle();
+    assert.equal(view.failures,0);assert.equal(base.loop,true);
+  }finally{view.cleanup();}
+});
+
+test('roulette rejects differently sized variants before playback without losing its base',async()=>{
+  const framing={scale:1,x:0,y:0};
+  const view=mount({videoSize:[1916,1080],variantSize:[1080,1920],props:{settings:defaultCompositionSettings()},sharedOptions:{dealer:{...source('base'),framing,variants:[{...source('variant'),framing}]}}});
+  try{await settle();await view.visible(true);assert.equal(view.ready,1);assert.equal(view.failures,0);const videos=view.elements.filter(e=>'playCalls'in e);assert.equal(videos[0].paused,false);assert.equal(videos[1].playCalls,0);assert.equal(videos[1].src,'');}
+  finally{view.cleanup();}
+});
+
+test('slow optional roulette takes do not delay base readiness and close aborts every load',async()=>{
+  const framing={scale:1,x:0,y:0};
+  const view=mount({deferVariants:true,props:{settings:defaultCompositionSettings()},sharedOptions:{dealer:{...source('base'),framing,variants:[1,2,3].map(i=>({...source('variant-'+i),framing}))}}});
+  await settle();await view.visible(true);
+  assert.equal(view.ready,1);assert.equal(view.elements.filter(e=>'playCalls'in e&&e.playCalls>0).length,1);
+  const count=view.elements.length;view.cleanup();await settle();
+  assert.equal(view.elements.length,count);assert.ok(view.elements.filter(e=>'playCalls'in e).every(e=>e.src===''&&e.paused));
+  assert.equal(view.failures,0);
 });

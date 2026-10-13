@@ -144,7 +144,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     if(!presentation)return [];
     const {gameLanes}=gameLaneConfiguration(document.value);
     return listPackageRooms({administration:document.value,package:pack,operatorId:pack.operatorId}).filter(room=>room.state==='live'
-      && isPresentationRoomLaneCompatible(gameLanes.find(lane=>lane.id===room.gameLaneId),presentation.lanes.find(lane=>lane.id===room.presentationLaneId),presentation));
+      && isPresentationRoomLaneCompatible(gameLanes.find(lane=>lane.id===room.gameLaneId),presentation.lanes.find(lane=>lane.id===room.presentationLaneId),presentation,room.game??'blackjack'));
   }
   function cleanDraft(draft) {
     return !draft||draft.action==='draft.publish'?null:{revision:draft.revision,basePackageRevision:draft.basePackageRevision,

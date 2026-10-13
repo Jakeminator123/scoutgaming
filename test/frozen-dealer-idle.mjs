@@ -4,6 +4,8 @@ import { addDealer, createSeedProject, defaultPresentationLane } from '../lab/li
 import { BASE_DEALER_IDS } from '../web/dealer-identity.mjs';
 import { buildPresentationPackage } from '../web/presentation-layers.mjs';
 import { encodePresentationPackage, decodePresentationPackage } from '../web/storage/presentation-package.mjs';
+import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
+import {validateRouletteIdleBinding,validateRouletteForegroundPolygons} from '../web/public/roulette-idle-contract.mjs';
 import {
   captureFrozenRegisteredDealers, validateFrozenRegisteredDealers,
   resolveFrozenDealerIdle, assertFrozenMediaPreconditions,
@@ -40,6 +42,56 @@ function fixture() {
 }
 const resolve = entries => resolveFrozenDealerIdle(entries, { dealerId: 'johanna', allowedDealerIds: ['johanna'] });
 const code = (expected, status = 422) => error => error.code === expected && error.statusCode === status;
+
+function rouletteFixture() {
+  const input=fixture(),dealer=input.project.dealers.find(row=>row.id==='johanna');
+  const records=['breathing','glasses-clean'].map((action,i)=>{
+    const id=`20000000-0000-4000-8000-00000000000${i+1}`,sha256=String(i+3).repeat(64);
+    return {id,sha256,size:4096,contentType:'video/webm',pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.webm`,
+      classification:{dealerId:'johanna',eventId:'roulette.idle',kind:'idle',role:'standard',situation:action,label:action,notes:'',playback:'once',
+        game:'roulette',action,startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}}};
+  });
+  dealer.rouletteIdle={videoId:records[0].id,variantVideoIds:[records[1].id],foregroundPolygons:[[[.2,.2],[.4,.2],[.4,.4]]]};
+  input.inventory.videos.push(...records.map(video));input.mediaRows.push(...records.map((row,i)=>({...row,revision:'roulette-'+i})));
+  input.requiredRouletteIdleDealerIds=['johanna'];return {input,records,dealer};
+}
+test('explicit roulette base and glasses variant freeze separately from blackjack with every media CAS precondition',()=>{
+  const {input,records,dealer}=rouletteFixture(),before=structuredClone(input);
+  const result=captureFrozenRegisteredDealers(input),entry=result.registeredDealers[0];
+  assert.equal(entry.idle.id,JOHANNA_ID);assert.deepEqual(entry.rouletteIdle.base,records[0]);assert.deepEqual(entry.rouletteIdle.variants,[records[1]]);
+  assert.equal(resolveFrozenDealerIdle(result.registeredDealers,{dealerId:'johanna',allowedDealerIds:['johanna'],game:'roulette'}).id,records[0].id);
+  assert.equal(resolve(result.registeredDealers).id,JOHANNA_ID);
+  assert.equal(resolveFrozenDealerIdle(result.registeredDealers,{dealerId:'johanna',allowedDealerIds:['nora'],game:'roulette'}),null);
+  const capture=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:input.project.revision,value:input.project},
+    administrationDocument:{kind:'administration',revision:'admin-one',value:{rooms:[]}},mediaRows:input.mediaRows},
+    inventory:input.inventory,selectedLaneIds:input.selectedLaneIds,requiredRouletteIdleDealerIds:['johanna']});
+  assert.deepEqual(capture.mediaPreconditions.map(row=>row.id).sort(),[JOHANNA_ID,...records.map(row=>row.id)].sort());
+  assert.deepEqual(decodePresentationPackage(encodePresentationPackage(capture.presentation)).registeredDealers[0].rouletteIdle,entry.rouletteIdle);
+  const changed=structuredClone(input.mediaRows);changed.find(row=>row.id===records[1].id).revision='changed';
+  assert.throws(()=>assertFrozenMediaPreconditions(capture.mediaPreconditions,changed),code('studio_conflict',409));
+  assert.deepEqual(input,before);dealer.rouletteIdle.videoId=records[1].id;assert.equal(entry.rouletteIdle.base.id,records[0].id);
+});
+test('roulette capture never substitutes inventory, blackjack, a different dealer or a non-idle action',()=>{
+  for(const mutate of [
+    ({dealer})=>delete dealer.rouletteIdle,
+    ({dealer})=>dealer.rouletteIdle.videoId=JOHANNA_ID,
+    ({input,records})=>input.inventory.videos.find(row=>row.id===records[0].id).available=false,
+    ({input,records})=>input.mediaRows.find(row=>row.id===records[1].id).classification.dealerId='nora',
+    ({input,records})=>{for(const row of [input.mediaRows.find(row=>row.id===records[1].id),input.inventory.videos.find(row=>row.id===records[1].id)])row.classification.framing.x=.1;},
+    ({dealer,records})=>dealer.rouletteIdle.variantVideoIds=[records[0].id],
+  ]) {const f=rouletteFixture();mutate(f);assert.throws(()=>captureFrozenRegisteredDealers(f.input));}
+  const f=rouletteFixture();delete f.dealer.rouletteIdle;f.input.requiredRouletteIdleDealerIds=[];
+  const captured=captureFrozenRegisteredDealers(f.input);
+  assert.equal(resolveFrozenDealerIdle(captured.registeredDealers,{dealerId:'johanna',allowedDealerIds:['johanna'],game:'roulette'}),null);
+});
+test('roulette binding and foreground parser reject decorated, oversized, duplicate and unsafe data',()=>{
+  const {dealer}=rouletteFixture();assert.deepEqual(validateRouletteIdleBinding(dealer.rouletteIdle),dealer.rouletteIdle);
+  for(const change of [v=>v.variantVideoIds=Array(4).fill(NEW_ID),v=>v.unknown=true,v=>v.videoId='anna.webm',v=>v.foregroundPolygons=[[[0,0],[1,1],[2,0]]]]) {
+    const value=structuredClone(dealer.rouletteIdle);change(value);assert.throws(()=>validateRouletteIdleBinding(value));
+  }
+  let called=false;const getter={get videoId(){called=true;return NEW_ID;}};assert.throws(()=>validateRouletteIdleBinding(getter));assert.equal(called,false);
+  for(const value of [[],Array(5).fill([[0,0],[1,0],[1,1]]),[[[0,0],[0,0],[1,1]]],[[[0,0],[.5,.5],[1,1]]]])assert.throws(()=>validateRouletteForegroundPolygons(value));
+});
 
 test('Johanna captures her own UUID/path with unchanged Nora source bytes and no borrowed metadata', () => {
   const input = fixture(), before = structuredClone(input), result = captureFrozenRegisteredDealers(input);

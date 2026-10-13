@@ -1,8 +1,9 @@
 import {sceneForComposition} from './composition-settings.mjs';
+import {drawDealerFrame,dealerFrameRect} from './dealer-framing.mjs';
 
 // One published, silent idle scene renderer for the lobby and game rooms.
 // Call close when replacing the scene to release media, GPU resources and listeners.
-export function mountPublishedScene(stage, {dealer=null, background=null, table=null, tableMask=null, settings=null, layout='mobile', compositing, still=false, onReady=()=>{}, onFailure=()=>{}, onPlaying=()=>{}}) {
+export function mountPublishedScene(stage, {dealer=null, background=null, table=null, tableMask=null, settings=null, layout='mobile', compositing, still=false, onReady=()=>{}, onFailure=()=>{}, onPlaying=()=>{}, onDealerClip=()=>{}}) {
     const abort = new AbortController();
     const assets = new Map();
     const elements = [];
@@ -15,6 +16,10 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
     let outputContext = null, actorVersion = '';
     let scene = null;
     let maskedTable = null;
+    let foregroundMatte = null;
+    let roundActive = false, idleLoops = 0, variantCursor = 0;
+    const dealerAssets = [], dealerElements = new Set();
+    const playableVideos = ()=>videos.filter(video=>!dealerElements.has(video)||video===assets.get('dealer')?.el);
 
     const canPlay = ()=>!still && active && loaded && !failed && requestedPlay && inView && !document.hidden;
     function pause() {
@@ -46,9 +51,25 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
         if (renderer && actor && actorContext && scene) {
           const version = selected ? selected.el instanceof HTMLVideoElement ? `${selected.el.currentSrc}@${selected.el.currentTime}` : dealer.src : '';
           if (selected && actorVersion !== version) {
-            contain(actorContext,selected,1080,1920);
+            if (dealer?.framing) drawDealerFrame(actorContext,selected.el,actor.width,actor.height,dealer.framing);
+            else contain(actorContext,selected,actor.width,actor.height);
             actor.src = version;
             actorVersion = version;
+            if(foregroundMatte){
+              const {mask,context,region}=foregroundMatte;
+              context.globalCompositeOperation='source-over';context.clearRect(0,0,mask.width,mask.height);
+              context.drawImage(actor,0,0,mask.width,mask.height);
+              const pixels=context.getImageData(0,0,mask.width,mask.height);
+              for(let i=0;i<pixels.data.length;i+=4){
+                const r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2],a=pixels.data[i+3];
+                // The calibrated region admits skin and the white sleeves; the
+                // dark waistcoat must stay behind the rim when hands are raised.
+                const value=a>16&&r>70&&g>53&&b>35?255:0;
+                pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=value;pixels.data[i+3]=255;
+              }
+              context.putImageData(pixels,0,0);context.globalCompositeOperation='destination-in';
+              context.drawImage(region,0,0);context.globalCompositeOperation='source-over';mask.src=version;
+            }
           }
           if (maskedTable) {
             const {source,mask,canvas,context} = maskedTable;
@@ -78,7 +99,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       if (playingNow || starting) return;
       const generation = ++playGeneration;
       starting = true;
-      void Promise.all(videos.map(video=>video.play())).then(()=>{
+      void Promise.all(playableVideos().map(video=>video.play())).then(()=>{
         if (!active || generation !== playGeneration || !canPlay()) {
           // A pending play promise may complete after visibility or source changes.
           if (!canPlay()) videos.forEach(video=>video.pause());
@@ -113,11 +134,69 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
     observer?.observe(stage);
     stage.addEventListener('webglcontextlost',fail,{signal:abort.signal});
 
+    function nextDealerClip(event) {
+      if (!active || failed || dealerAssets.length<2 || event?.target!==assets.get('dealer')?.el) return;
+      const current=assets.get('dealer');
+      if (current===dealerAssets[0]) idleLoops++;
+      const useVariant=current===dealerAssets[0]&&!roundActive&&idleLoops>=3;
+      const next=useVariant?dealerAssets[1+(variantCursor++%(dealerAssets.length-1))]:dealerAssets[0];
+      if (useVariant) idleLoops=0;
+      pause();
+      next.el.currentTime=0;
+      assets.set('dealer',next);
+      actorVersion='';
+      onDealerClip({src:next.el.currentSrc||next.el.src,variant:next!==dealerAssets[0]});
+      render();
+      syncPlayback();
+    }
+
+    function prepareForegroundMask(source) {
+      if (!dealer?.foregroundPolygons?.length) return;
+      if (!dealer.framing) throw Error('Foreground mask requires explicit framing');
+      const mask=document.createElement('canvas');mask.width=480;mask.height=270;
+      const context=mask.getContext('2d');
+      if (!context) throw Error('Foreground mask unavailable');
+      const region=document.createElement('canvas');region.width=mask.width;region.height=mask.height;
+      const regionContext=region.getContext('2d');
+      if(!regionContext)throw Error('Foreground region unavailable');
+      const [x,y,w,h]=dealerFrameRect(source.width,source.height,mask.width,mask.height,dealer.framing);
+      regionContext.fillStyle='#fff';
+      for (const polygon of dealer.foregroundPolygons) {
+        regionContext.beginPath();
+        polygon.forEach(([u,v],index)=>regionContext[index?'lineTo':'moveTo'](x+u*w,y+v*h));
+        regionContext.closePath();regionContext.fill();
+      }
+      foregroundMatte={mask,context,region};
+      assets.set('dealer-foreground',{el:mask,width:mask.width,height:mask.height,kind:'image'});
+      scene.handmatte='dealer-foreground';scene.layerMode='split';scene.tableFront=false;
+    }
+
+    async function loadVariants(base) {
+      const variants=await Promise.all((dealer.variants??[]).map(async(variant,index)=>{
+        const role='dealer-variant-'+index;
+        try {
+          await load(role,variant);
+          const asset=assets.get(role);
+          if (!asset || asset.width!==base.width || asset.height!==base.height
+            || ['scale','x','y'].some(key=>variant.framing?.[key]!==dealer.framing?.[key])) {
+            asset?.el.removeAttribute('src');return null;
+          }
+          return asset;
+        } catch { return null; }
+      }));
+      if(!active||failed)return;
+      dealerAssets.push(...variants.filter(Boolean));
+      if(dealerAssets.length>1)for(const asset of dealerAssets){
+        asset.el.loop=false;asset.el.addEventListener('ended',nextDealerClip,{signal:abort.signal});
+      }
+    }
+
     async function load(role, source) {
-      if (!source) return;
+      if (!source || !active || failed || abort.signal.aborted) return;
       const isVideo = source.contentType.startsWith('video/');
       const element = isVideo ? document.createElement('video') : new Image();
       elements.push(element);
+      if (role==='dealer'||role.startsWith('dealer-variant-')) dealerElements.add(element);
       if (element instanceof HTMLVideoElement) {
         element.muted = true;
         element.defaultMuted = true;
@@ -148,7 +227,15 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       const height = element instanceof HTMLVideoElement ? element.videoHeight : element.naturalHeight;
       if (!width || !height) throw new Error('Preview unavailable');
       assets.set(role,{id:role,el:element,width,height,kind:isVideo?'video':'image'});
-      element.addEventListener('error',fail,{signal:abort.signal});
+      element.addEventListener('error',()=>{
+        if (!role.startsWith('dealer-variant-')) { fail(); return; }
+        const index=dealerAssets.findIndex(asset=>asset.el===element);
+        const selected=assets.get('dealer')?.el===element;
+        if(index>0)dealerAssets.splice(index,1);
+        element.pause();
+        if(selected){pause();assets.set('dealer',dealerAssets[0]);dealerAssets[0].el.currentTime=0;actorVersion='';render();syncPlayback();}
+        if(dealerAssets.length===1)dealerAssets[0].el.loop=true;
+      },{signal:abort.signal});
     }
     async function init() {
       if (settings) {
@@ -163,10 +250,17 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
         ]);
         if (!active || failed) return;
         actor = document.createElement('canvas');
-        actor.width = 1080;
-        actor.height = 1920;
+        actor.width = dealer?.framing ? 1920 : 1080;
+        actor.height = dealer?.framing ? 1080 : 1920;
+        if (dealer?.framing) scene.dealerAspect=actor.width/actor.height;
         actorContext = actor.getContext('2d');
         if (!actorContext) throw new Error('Preview unavailable');
+        const base=assets.get('dealer');
+        if (base) {
+          dealerAssets.push(base);dealerElements.add(base.el);
+          prepareForegroundMask(base);
+          onDealerClip({src:base.el.currentSrc||base.el.src,variant:false});
+        }
         if (tableMask) {
           const source=assets.get('table'), mask=assets.get('tableMask');
           // A registered static alpha mask, never an unsynchronised second video.
@@ -194,9 +288,10 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       if (failed) return;
       onReady();
       syncPlayback();
+      if(settings&&dealerAssets[0]&&!still)void loadVariants(dealerAssets[0]);
     }
     void init().catch(fail);
-    return {toggle, close:()=>{
+    return {toggle, setRoundActive:value=>{roundActive=Boolean(value);}, close:()=>{
       active = false;
       abort.abort();
       pause();

@@ -1,5 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
+## Anna i roulettespelaren, 13 oktober — codex/roulette-anna-binding
+
+Separat rouletteIdle-bas/varianter/handregion i Studio → frozen capture →
+rum och preview → gemensam spelarrenderer. Admin kan koppla/spara samma
+kontrakt. Kräver runtime v14 före nya bindningar; ingen SQL-migration.
+Legacyroulette fortsätter utan dealer om roulettefil saknas. Blackjackmedia
+kan inte väljas eller hämtas genom roulettepreview/legacydealer-endpoint.
+
+Nytt frilagt bord från Jakobs godkända bild, spelbunden katalogidentitet och
+egna klickytor. Annas befintliga alpha-WebM och MP4-bakgrund återanvänds med
+ny inramning och bildsynkron handmatta. Glasögon-v2 togs ur slutprovet efter
+synliga alfahål i händer/fluga; variantstödet finns för en korrigerad film.
+Ingen ny betald film.
+Två UI-rundor körda utan omladdning genom riktig capture/preview/spelarkod
+med isolerad SQLite: 33 svart och 6 svart i slutprovet. Inga produktionsregister ändrade.
+Detaljer, hash/prompt och bevis: docs/games/roulette/README.md samt UTFALLSFILMER.md.
+Detta är inte godkända fullständiga spelfilmer: kula/hjulstart, 37 korrekta
+utfall och hjulsiffror återstår. Färgheuristiken för händer kräver ny
+granskning vid ändrade bytes/inramning/kläder. Visuell målbild är fortsatt
+Jakobs referens; den nya rörliga passningen inväntar hans bedömning.
+
 ## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
 
 Integrerad med main `60defa57` inför PR92-granskningen. Endast denna handoff

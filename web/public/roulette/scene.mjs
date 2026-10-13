@@ -4,7 +4,7 @@ import {validatePublicOperatorPreview} from '/operator-preview-contract.mjs';
 import {readChoices} from '/player-choices.mjs';
 import {ROULETTE_TABLE,ROULETTE_TABLE_MASK,rouletteSceneSettings} from './media.mjs';
 
-export async function mountRoomScene(room) {
+export async function mountRoomScene(room,{onTable=()=>{},onDealerClip=()=>{}}={}) {
   const host=document.getElementById('dealer-scene');
   const status=document.getElementById('scene-status');
   const toggle=document.getElementById('scene-toggle');
@@ -44,6 +44,7 @@ export async function mountRoomScene(room) {
       ? tableIds.filter(id=>tableDefinition.allowed.some(row=>row.id===id))
         .map(id=>preview.media.tables.find(row=>row.id===id)).find(Boolean)??null : null;
     const table=publishedTable??ROULETTE_TABLE;
+    const settings=publishedTable?preview.settings:rouletteSceneSettings(preview.settings);
     // A baked legacy scene cannot be placed behind a different game table.
     // No guessed dealer, crop or media URL: wait for a published separable take.
     const dealer=preview.independentLayers&&preview.media.dealer?.compositing?preview.media.dealer:null;
@@ -51,16 +52,18 @@ export async function mountRoomScene(room) {
     canvas.role='img';canvas.setAttribute('aria-label','Roulettebord'+(dealer?' med '+preview.dealer.label:'')+' i '+room.name);canvas.hidden=true;
     host.append(canvas);
     scene=mountPublishedScene(canvas,{dealer,background,table,tableMask:publishedTable?null:ROULETTE_TABLE_MASK,
-      settings:publishedTable?preview.settings:rouletteSceneSettings(preview.settings),layout:'desktop',compositing:dealer?.compositing,
+      settings,layout:'desktop',compositing:dealer?.compositing,onDealerClip,
       onReady:()=>{
         fallback.hidden=true;canvas.hidden=false;
+        onTable({designId:publishedTable?(publishedTable.designId??'unknown'):null,placement:settings.desktop.table});
         mediaMessage(dealer?'':'En frilagd dealer för det här bordet saknas. Du kan spela ändå.');
         document.getElementById('scene-caption').textContent=dealer?preview.dealer.label+' · '+room.operatorName:'Europeisk roulette · '+room.operatorName;
         toggle.hidden=![dealer,background,table].some(source=>source?.contentType.startsWith('video/'));
       },
-      onFailure:()=>{fallback.hidden=false;canvas.hidden=true;toggle.hidden=true;mediaMessage('Rummets media kunde inte visas. Bordet och spelet är fortfarande tillgängliga.');},
+      onFailure:()=>{fallback.hidden=false;canvas.hidden=true;toggle.hidden=true;onTable();mediaMessage('Rummets media kunde inte visas. Bordet och spelet är fortfarande tillgängliga.');},
       onPlaying:playing=>{toggle.textContent=playing?'Pausa video':'Spela video';toggle.setAttribute('aria-pressed',String(playing));},
     });
     toggle.addEventListener('click',()=>scene.toggle(),{signal:controller.signal});
+    return scene;
   }catch{scene?.close();if(!closed)mediaMessage('Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.');}
 }

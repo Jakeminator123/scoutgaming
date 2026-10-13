@@ -11,6 +11,7 @@ import { validateMediaPolicy } from './media-family-policy.mjs';
 import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
 import { validateLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { dealerSetErrors } from './dealer-sets.mjs';
+import { validateRouletteIdleBinding } from '../../web/public/roulette-idle-contract.mjs';
 
 
 // Pure, browser-safe policy model. This file never reads environment, network,
@@ -400,7 +401,11 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const dealerIds = new Set();
   if (array(project.dealers, 'dealers', 0, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
-    if (!keys(dealer, ['id', 'label'], at, ['speechProfile'])) return;
+    if (!keys(dealer, ['id', 'label'], at, ['speechProfile','rouletteIdle'])) return;
+    if (Object.hasOwn(dealer,'rouletteIdle')) {
+      try { validateRouletteIdleBinding(dealer.rouletteIdle); }
+      catch (cause) { error(at + '.rouletteIdle', cause.message); }
+    }
     if (Object.hasOwn(dealer, 'speechProfile')) {
       try { normalizeDealerSpeechProfile(dealer.speechProfile); }
       catch (cause) { error(at + '.speechProfile', cause.message); }

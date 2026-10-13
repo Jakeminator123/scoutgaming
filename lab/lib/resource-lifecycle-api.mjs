@@ -29,7 +29,7 @@ function restoreBlockers({operator,pack,administration,project},entry){
  if(gameLane&&!same(gameLane,entry.gameLane))blockers.push('playback_configuration_changed');
  if(!gameLane&&gameLanes.length>=32)blockers.push('playback_configuration_limit');
  if(!project?.dealers?.some(row=>row.id===entry.gameLane.dealer))blockers.push('dealer_not_available');
- if(lane&&!isPresentationRoomLaneCompatible(gameLane??entry.gameLane,lane,presentation))blockers.push('presentation_incompatible');
+ if(lane&&!isPresentationRoomLaneCompatible(gameLane??entry.gameLane,lane,presentation,entry.room.game??'blackjack'))blockers.push('presentation_incompatible');
  if(administration.rooms.length>=1000)blockers.push('room_limit');
  return blockers;
 }
@@ -172,7 +172,7 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   const room=saved.administration.rooms.find(row=>row.id===body.roomId);if(!isPresentationRoom(room)||room.operatorId!==body.operatorId)fail('studio_room_not_found',404);
   if(body.state==='live'){
    const presentation=readPackagePresentation(saved.pack),gameLane=gameLaneConfiguration(saved.administration).gameLanes.find(row=>row.id===room.gameLaneId);
-   if(saved.operator.status!=='active'||!saved.pack?.tables.includes(room.id)||!presentation||!isPresentationRoomLaneCompatible(gameLane,presentation.lanes.find(row=>row.id===room.presentationLaneId),presentation))fail('studio_room_activation_blocked');
+   if(saved.operator.status!=='active'||!saved.pack?.tables.includes(room.id)||!presentation||!isPresentationRoomLaneCompatible(gameLane,presentation.lanes.find(row=>row.id===room.presentationLaneId),presentation,room.game??'blackjack'))fail('studio_room_activation_blocked');
   }
   room.state=body.state;
   const changed=await repository.saveDocument('administration',{value:validateStudioGameAdministration(saved.administration),expectedRevision:saved.administrationRevision,actor:context.actor.user});

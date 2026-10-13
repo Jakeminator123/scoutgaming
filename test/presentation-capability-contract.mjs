@@ -6,7 +6,7 @@ import {
 } from '../web/presentation-capability-contract.mjs';
 
 const parsed = version => JSON.parse(JSON.stringify(presentationCapabilitiesForVersion(version)));
-const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 const invalid = error => error.code === 'presentation_capability_invalid' && error.statusCode === 503;
 const unsupported = error => error.code === 'presentation_capability_version_unsupported' && error.statusCode === 406;
 
@@ -26,7 +26,8 @@ test('negotiation preserves default v2 and opts into v3-v11 only with one exact 
   assert.equal(negotiatePresentationCapabilityVersion('11'), 11);
   assert.equal(negotiatePresentationCapabilityVersion('12'), 12);
   assert.equal(negotiatePresentationCapabilityVersion('13'), 13);
-  for (const malformed of ['', '1', '14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
+  assert.equal(negotiatePresentationCapabilityVersion('14'), 14);
+  for (const malformed of ['', '1', '15', '014', '14, 14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
     assert.throws(() => negotiatePresentationCapabilityVersion(malformed), unsupported);
   }
 });
@@ -46,6 +47,7 @@ test('v1-v11 exact representations advertise features while the legacy ID list n
   assert.deepEqual(presentationCapabilitiesForVersion(11), {...presentationCapabilitiesForVersion(10),schemaVersion:11,materialTrash:'detached-assets-v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(12), {...presentationCapabilitiesForVersion(11),schemaVersion:12,mediaAlpha:'png-vp9-v1',rouletteMedia:'action-pose-slots-v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(13), {...presentationCapabilitiesForVersion(12),schemaVersion:13,tableGame:'immutable-game-v1'});
+  assert.deepEqual(presentationCapabilitiesForVersion(14), {...presentationCapabilitiesForVersion(13),schemaVersion:14,rouletteIdle:'explicit-game-idle-v1'});
   assert.deepEqual(presentationCapabilitiesForVersion(8), {...presentationCapabilitiesForVersion(7),schemaVersion:8,backgroundPlayback:'rules-v1'});
   for (const version of versions) {
     const input = parsed(version), checked = validatePresentationCapabilities(input);
@@ -63,7 +65,7 @@ test('expected-version validation rejects downgrade even when the old response i
       assert.throws(() => validatePresentationCapabilities(parsed(version), { expectedVersion: expected }), invalid);
     }
   }
-  for (const version of [undefined, null, 0, 14, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
+  for (const version of [undefined, null, 0, 15, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
   assert.throws(() => validatePresentationCapabilities(parsed(3), { expectedVersion: '3' }), invalid);
 });
 

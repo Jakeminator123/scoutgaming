@@ -35,6 +35,25 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+test('explicit roulette idle requires v14 before project save or frozen publication including archived dealers',async()=>{
+  const binding={videoId:'20000000-0000-4000-8000-000000000001',variantVideoIds:[]};
+  for(const descriptor of [
+    {kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:binding}]}},
+    {kind:'project',value:{dealerTrash:[{dealer:{id:'astrid',rouletteIdle:binding}}]}},
+    {kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[{id:'astrid',rouletteIdle:{base:{classification:{game:'roulette',compositing:{mode:'alpha'}}},variants:[]}}]}},
+  ])for(const version of [13,14]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value}),descriptor);
+    if(version===13)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'14');assert.equal(f.writes.length,version===14?1:0);
+  }
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(13))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveDocument('project',{value:{dealers:[{id:'astrid',rouletteIdle:binding}]}}),blocked);
+  },{kind:'project',value:{layerAssets:[{game:'roulette'}]}});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
 const extendedMedia=[
   {dealerId:'astrid',compositing:{mode:'alpha'}},
   {dealerId:'astrid',mediaType:'image'},

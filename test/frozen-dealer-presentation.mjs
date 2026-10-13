@@ -37,6 +37,13 @@ function fixture() {
 const status = value => error => error.statusCode === value;
 const mediaUrl = value => `https://game.example.invalid/api/presentation/registered-idle/${value.operatorSlug}/${value.roomId}/${value.packageRevision}/${value.dealerId}`;
 
+test('roulette room identity cannot authorize the blackjack playback configuration or bytes',async()=>{
+  const f=fixture(); f.saved.administration.rooms[0].game='roulette';
+  await assert.rejects(f.service.configuration(input),status(404));
+  assert.equal((await f.service.response(new Request(mediaUrl(input)))).status,404);
+  assert.equal(f.served.length,0);
+});
+
 test('Johanna receives only her frozen public descriptor, display label and exact revision URL', async () => {
   const f = fixture(), configuration = await f.service.configuration(input);
   assert.equal(configuration.configurationSource, 'operator-package-v2');

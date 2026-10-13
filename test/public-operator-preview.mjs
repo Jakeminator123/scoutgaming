@@ -18,7 +18,7 @@ function asset(role,n) {
     sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};
   return {...row,pathname:layerAssetPath(row)};
 }
-function fixture({schemaVersion=3,compositing=true}={}) {
+function fixture({schemaVersion=3,compositing=true,roulette=false}={}) {
   const project=[['johanna','Johanna'],['nora','Nora'],['astrid','Astrid']].reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
   const lane=defaultPresentationLane('johanna');lane.id='north-presentation';lane.label='Published scene';project.lanes=[lane];
   lane.dealers=['johanna','nora','astrid'];lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
@@ -34,6 +34,16 @@ function fixture({schemaVersion=3,compositing=true}={}) {
       classification:{dealerId,eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:dealerId,notes:'SECRET_DRAFT_NOTES',playback:'once',
         ...(compositing?{compositing:compositing==='alpha'?{mode:'alpha'}:{mode:'green-screen',threshold:.2,softness:.1,despill:0}}:{})},revision:'media-'+dealerId};
   });
+  if(roulette) {
+    const records=['breathing','glasses-clean'].map((action,i)=>{
+      const id=`20000000-0000-4000-8000-00000000000${i+1}`,sha256=String(i+4).repeat(64);
+      return {id,sha256,size:8192,contentType:'video/webm',pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.webm`,revision:'roulette-'+i,
+        classification:{dealerId:'johanna',game:'roulette',eventId:'roulette.idle',action,situation:action,startPose:'VILA',endPose:'VILA',
+          kind:'idle',role:'standard',label:action,notes:'SECRET_ROULETTE',playback:'once',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}}};
+    });
+    project.dealers.find(row=>row.id==='johanna').rouletteIdle={videoId:records[0].id,variantVideoIds:[records[1].id],foregroundPolygons:[[[0,0],[1,0],[1,1]]]};
+    mediaRows.push(...records);for(const row of project.layerAssets)if(row.role==='table')row.game='roulette';
+  }
   const inventory={videos:mediaRows.map(record=>({id:record.id,sha256:record.sha256,bytes:record.size,dealer:record.classification.dealerId,
     available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
   let presentation=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:project.revision,value:project},
@@ -45,6 +55,7 @@ function fixture({schemaVersion=3,compositing=true}={}) {
     administration:{gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Room',
       renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}],rooms:[room]},
     package:{operatorId:'north-id',revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({},presentation)}};
+  if(roulette){room.game='roulette';saved.package.games=['blackjack','roulette'];}
   const reads=[],served=[];
   const api=createPublicOperatorPreview({readCurrentContext:async slug=>{reads.push(slug);return clone(saved);},
     privateMedia:async(record,request)=>{
@@ -60,6 +71,37 @@ function fixture({schemaVersion=3,compositing=true}={}) {
 }
 const request=(f,path=descriptor,init)=>f.api.handle(new Request('https://www.example.test'+path,init));
 const body=async f=>{const response=await request(f);assert.equal(response.status,200);return response.json();};
+
+test('roulette exposes only its explicitly frozen base, variants and foreground profile through revision-bound bytes',async()=>{
+  const f=fixture({roulette:true}),before=clone(f.saved),value=await body(f),frozen=readPackagePresentation(f.saved.package);
+  const binding=frozen.registeredDealers.find(row=>row.id==='johanna').rouletteIdle;
+  assert.equal(value.media.dealer.src,previewMediaPath(context,'dealer',binding.base.id));
+  assert.deepEqual(value.media.dealer.foregroundPolygons,binding.foregroundPolygons);
+  assert.equal(value.media.dealer.variants.length,1);assert.equal(value.media.dealer.variants[0].src,previewMediaPath(context,'dealer',binding.variants[0].id));
+  assert.equal(value.media.tables.length,1);assert.equal(value.media.backgrounds.length,2);
+  assert.doesNotMatch(JSON.stringify(value),/pathname|sha256|classification|SECRET/);
+  for(const row of [value.media.dealer,...value.media.dealer.variants]) {
+    const response=await request(f,row.src,{headers:{Range:'bytes=0-15'}});assert.equal(response.status,206);assert.equal(response.headers.get('content-type'),'video/webm');
+  }
+  assert.equal((await request(f,previewMediaPath(context,'dealer',f.mediaRows[0].id))).status,404);
+  assert.deepEqual(f.served.map(row=>row.record.sha256),[binding.base.sha256,binding.variants[0].sha256]);assert.deepEqual(f.saved,before);
+  f.saved.administration.rooms[0].game='blackjack';
+  assert.equal((await body(f)).media.dealer.src,previewMediaPath(context,'dealer',f.mediaRows[0].id));
+  for(const row of [value.media.dealer,...value.media.dealer.variants])assert.equal((await request(f,row.src)).status,404);
+});
+test('roulette variant removal, changed revision and cross-room descriptor mutations fail before provider bytes',async()=>{
+  const f=fixture({roulette:true}),value=await body(f),src=value.media.dealer.variants[0].src;
+  for(const change of [v=>v.media.dealer.variants.push(v.media.dealer.variants[0]),
+    v=>v.media.dealer.variants[0].src=v.media.dealer.src,
+    v=>v.media.dealer.variants[0].framing.x=.3,
+    v=>v.media.dealer.variants[0].src=v.media.dealer.variants[0].src.replace('/room-north/','/room-other/'),
+    v=>v.media.dealer.foregroundPolygons=[[[0,0],[1,1],[2,0]]]]) {
+    const copy=clone(value);change(copy);assert.throws(()=>validatePublicOperatorPreview(copy,context));
+  }
+  f.rewrite(pack=>pack.registeredDealers.find(row=>row.id==='johanna').rouletteIdle.variants=[]);
+  assert.equal((await request(f,src)).status,404);assert.equal(f.served.length,0);
+  f.saved.package.revision=8;assert.equal((await request(f,value.media.dealer.src)).status,409);assert.equal(f.served.length,0);
+});
 
 test('historical roulette packages hide incompatible tables in descriptors and byte routes',async()=>{
   const f=fixture();f.saved.administration.rooms[0].game='roulette';f.saved.package.games=['roulette'];

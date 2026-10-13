@@ -247,3 +247,42 @@ Spårning får inte användas för att bestämma spelutfallet. Den kan mäta syn
 ## Fråga att ge en specialistagent
 
 > Utforma en lokal, reproducerbar kalibreringskedja för ett förinspelat europeiskt roulettehjul (37 fack, låst kamera, 1916×1080, 24 fps). Vi vill återanvända en grundfilm och styra exakt en separat kula till serverns redan fastställda nummer. Jämför OpenCV-landmärken/optiskt flöde och perspektivmodell mot anpassad YOLO-tracking och SAM 2-masker. Originalets nummerkrans är ännu inte godkänd och kulsläppsrutan saknar kalibrering: ange vad som måste bytas eller märkas manuellt, och avvisa gissningar vid morfning/ocklusion. Föreslå minsta dataset, mätbara acceptansgränser, kontrollrutor, hårdvarutest och versionsbundet JSON/maskformat. Skilj faktisk observation från syntetisk bana. Håll dealerhandlingar spelspecifika och återanvänd befintlig roulette-idle. Analysen ska ske före publicering, inte styra pengar eller utfall. Serverns reveal-gräns gäller även saldo, historik och valda medie-URL:er. Leverera kod-/licensalternativ och en liten verifierbar första milstolpe, utan produktionsskrivningar eller betalda jobb.
+# Annas kopplade scen, 13 oktober 2026
+
+Aktuell geometripassning ersätter de underkända tidigare provprofilerna.
+Godkänd målbild: `f1039dd96a028745b68f9e975ed51c0c07d02b2e552032e30d11528373684c78`.
+Transparent bord: `web/public/roulette/assets/anna-roulette-table-v1.png`,
+1708×920, 1079892 byte, SHA-256
+`dde67a019edbaf972e0a14d1cd359fb8b6de76d2bf518c954cfaf62a2eaf0966`.
+Katalog-ID `roulette-anna-v1`, alltid game `roulette`. Hjulets AI-siffror
+är fortfarande felaktiga; bilden är inget bevis på en korrekt utfallsbank.
+
+Logisk spelaryta 1920×1080. Både Annas andningsfilm och glasögon-v2 är
+1916×1080 och har `framing={scale:0.66,x:0.15,y:-0.16}`.
+Dealer-/bakgrundstransform `{scale:1,x:0,y:0}`; bord
+`{width:1.044565,x:0,y:0}`. Normaliserad handregion i källvideon:
+`[[[0.585,0.65],[0.87,0.65],[0.87,0.77],[0.71,0.82],[0.64,0.845],[0.615,0.848],[0.595,0.82]]]`.
+Den gemensamma rendereraren ritar kroppen och händerna ur samma avkodade ruta.
+En 480×270 arbetsmatta inom regionen släpper fram hud/ljusa ärmar, inte västen,
+och uppdateras med videorutan. Detta är en kalibrerad färgheuristik, inte en
+generell segmenteringsmodell; annan klädsel/ljussättning behöver ny granskning.
+Bytt basfilm i Admin rensar tidigare handmask och varianter.
+
+Privata bevis ligger i Codex visualizations/2026/10/13/
+01a13532-b75d-75f0-8507-e70a6c69612e/roulette-stop:
+`anna-scene-manifest.json`, `anna-accepted-base-round-1.png`, `anna-accepted-base-round-2.png`,
+`anna-base-two-rounds-evidence.json` (33 svart, 6 svart). Filnamnets accepted
+anger agentens val av tekniskt fungerande bas, inte Jakobs visuella godkännande.
+De innehåller två faktiska motorutslag med
+ett isolerat testsaldo, inte produktionspublicering. Matchande hjulstart och
+utfallsanimering återstår; UI visar idag serverns resultat direkt.
+
+**Ny visuell bedömning:** glasögon-v2:s alfaspår är tekniskt giltigt men
+filmen har synliga hål i händer och fluga mot MP4-bakgrunden. Den togs ur
+det slutliga Anna-manifestet; start-/slutpose är fortfarande unverified.
+Behåll originalet som underlag men publicera inte detta klipp.
+
+Bildgenerator: inbyggd imagegen, transparent_background=true, godkänd målbild
+som enda referens. Exakt prompt:
+
+> Use case: background-extraction. Edit target: the supplied approved roulette scene. Deliver a transparent PNG foreground table layer for a layered game scene. Remove the entire woman, including her hands, arms, and clothing, and remove the entire casino background. Keep ONLY the roulette table and roulette wheel. Preserve the table's EXACT position, scale, shape, perspective, lighting, materials, green felt and printed layout within the original wide image canvas. Do not center, zoom, tilt, extend or reframe the table. Keep the empty transparent upper region where the room and woman were. Reconstruct only the small wooden rim that was hidden under her hands. Preserve the front edge being cropped at the image's bottom. Do not invent another table or add chips, balls or people. All space outside the table must have actual alpha transparency, not a checkerboard. This is an extraction of the approved composition; keep the original approximately 1673:901 aspect ratio and spatial registration.

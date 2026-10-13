@@ -4,6 +4,8 @@ import { validateProject } from './studio-model.mjs';
 import { validateVideoBindings } from '../../packages/presentation/runtime/selection.mjs';
 import { resolveLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { validateDealerSetBindings } from './dealer-sets.mjs';
+import {validateVideoMetadata} from './video-intake.mjs';
+import {validateFrozenRouletteIdle} from '../../web/public/roulette-idle-contract.mjs';
 
 const fail = (code, statusCode = 422) => {throw new StudioStorageError(code,statusCode);};
 function checkedVideo(videos,id,dealerId,eventId) {
@@ -28,6 +30,15 @@ export function createStudioProjectBindings({videoRegistry,legacyControls} = {})
       catch { fail('studio_speech_reference_invalid'); }
     }
     if (videos.size !== registry.videos.length || families.size !== registry.families.length) fail('studio_media_registry_unavailable',503);
+    for(const dealer of project.dealers) if(dealer.rouletteIdle) {
+      const binding=dealer.rouletteIdle;
+      try {
+        const read=id=>checkedVideo(videos,id,dealer.id,'roulette.idle');
+        validateFrozenRouletteIdle({base:read(binding.videoId),variants:(binding.variantVideoIds??[]).map(read),
+          ...(binding.foregroundPolygons?{foregroundPolygons:binding.foregroundPolygons}:{})},dealer.id,
+          video=>{validateVideoMetadata(video.classification);return video;});
+      } catch {fail('studio_media_binding_invalid');}
+    }
     try { validateDealerSetBindings(project, registry); }
     catch { fail('studio_media_binding_invalid'); }
     try {await validateVideoBindings(project,{registry});}

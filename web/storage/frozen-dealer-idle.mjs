@@ -6,6 +6,7 @@ import { validateFrozenDealerPlayback } from '../frozen-dealer-playback.mjs';
 import { videoFitsLine } from '../../lab/lib/video-intake.mjs';
 import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
 import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../presentation-layers.mjs';
+import {validateRouletteIdleBinding, validateFrozenRouletteIdle} from '../public/roulette-idle-contract.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson,
   validateDocumentValue, validateRevision, validateStudioMedia,
@@ -61,7 +62,7 @@ export function validateFrozenRegisteredDealers(entries, { dealerIds: selectedId
 /** Pure capture from ONE project/media snapshot. Provider availability must be
  * established outside SQL before calling; publication must recheck returned
  * mediaPreconditions inside its write transaction after any provider I/O. */
-export function captureFrozenRegisteredDealers({ project, selectedLaneIds, inventory, mediaRows, requiredIdleDealerIds = [] } = {}) {
+export function captureFrozenRegisteredDealers({ project, selectedLaneIds, inventory, mediaRows, requiredIdleDealerIds = [], requiredRouletteIdleDealerIds = [] } = {}) {
   const snapshot = cloneStudioJson(project);
   const saved = validateDocumentValue('project', snapshot, snapshot?.revision, { allowLegacyRead: true });
   const selected = cloneStudioJson(array(selectedLaneIds, 32));
@@ -72,7 +73,8 @@ export function captureFrozenRegisteredDealers({ project, selectedLaneIds, inven
   const extras = dealerIds(selectedDealers);
   if (extras.some(id => !isActiveDealerId(id))) fail();
   const required = dealerIds(requiredIdleDealerIds);
-  if (required.some(id => !extras.includes(id))) fail();
+  const requiredRoulette = dealerIds(requiredRouletteIdleDealerIds);
+  if ([...required,...requiredRoulette].some(id => !extras.includes(id))) fail();
   if (!extras.length) return freeze({ registeredDealers: [], mediaPreconditions: [] });
   if (!inventory || !Array.isArray(inventory.videos) || inventory.summary?.readable === false || inventory.summary?.snapshotReadable === false)
     fail('studio_media_registry_unavailable', 503);
@@ -80,34 +82,44 @@ export function captureFrozenRegisteredDealers({ project, selectedLaneIds, inven
   if (videos.some(video => !video || typeof video.id !== 'string') || new Set(videos.map(video => video.id)).size !== videos.length)
     fail('studio_media_registry_unavailable', 503);
   const rows = rowMap(mediaRows), mediaPreconditions = [], used = new Set();
+  function capture(video) {
+    const captured=video&&rows.get(video.id);
+    if(!captured||video.available!==true||video.integrity==='unavailable'
+      ||captured.record.sha256!==video.sha256||captured.record.size!==video.bytes
+      ||canonicalStudioJson(captured.record.classification)!==canonicalStudioJson(video.classification)) fail('studio_media_binding_invalid');
+    const record=captured.record;
+    if(!used.has(record.id)){used.add(record.id);mediaPreconditions.push({id:record.id,revision:captured.revision,record});}
+    return record;
+  }
   const registeredDealers = extras.map(id => {
     const dealer = saved.dealers.find(row => row.id === id);
     if (!dealer) fail();
     const video = ownDealerIdle(saved, inventory, id);
-    if (!video) {
-      if (required.includes(id)) fail('studio_dealer_idle_required');
-      return { id, label: dealer.label, idle: null };
+    if (!video && required.includes(id)) fail('studio_dealer_idle_required');
+    const idle=video?idleRecord(capture(video),id):null;
+    let rouletteIdle;
+    if(Object.hasOwn(dealer,'rouletteIdle')) {
+      const binding=validateRouletteIdleBinding(dealer.rouletteIdle);
+      rouletteIdle=validateFrozenRouletteIdle({base:capture(videos.find(row=>row.id===binding.videoId)),
+        variants:(binding.variantVideoIds??[]).map(videoId=>capture(videos.find(row=>row.id===videoId))),
+        ...(binding.foregroundPolygons?{foregroundPolygons:binding.foregroundPolygons}:{})},id,validateStudioMedia);
     }
-    const captured = rows.get(video.id);
-    if (!captured || captured.record.sha256 !== video.sha256 || captured.record.size !== video.bytes
-      || canonicalStudioJson(captured.record.classification) !== canonicalStudioJson(video.classification)
-      || video.integrity === 'unavailable') fail('studio_media_binding_invalid');
-    const record = idleRecord(captured.record, id);
-    if (!used.has(record.id)) { used.add(record.id); mediaPreconditions.push({ id: record.id, revision: captured.revision, record }); }
-    return { id, label: dealer.label, idle: record };
+    if(requiredRoulette.includes(id)&&!rouletteIdle) fail('studio_roulette_idle_required');
+    return { id, label: dealer.label, idle,...(rouletteIdle?{rouletteIdle}:{}) };
   });
   return freeze({ registeredDealers: validateFrozenRegisteredDealers(registeredDealers, { dealerIds: selectedDealers }), mediaPreconditions });
 }
 
 /** The caller passes allowedDealerIds from the EXACT frozen lane resolved for
  * this operator/room. Neither this list nor entries may come from the browser. */
-export function resolveFrozenDealerIdle(entries, { dealerId, allowedDealerIds } = {}) {
+export function resolveFrozenDealerIdle(entries, { dealerId, allowedDealerIds, game = 'blackjack' } = {}) {
   const allowed = dealerIds(allowedDealerIds);
   if (!isActiveDealerId(dealerId) || !allowed.includes(dealerId)) return null;
   const copied = cloneStudioJson(array(entries));
   const ids = copied.map(entry => entry?.id);
   const checked = validateFrozenRegisteredDealers(copied, { dealerIds: ids });
-  return checked.find(entry => entry.id === dealerId)?.idle ?? null;
+  const entry=checked.find(entry => entry.id === dealerId);
+  return game==='roulette'?entry?.rouletteIdle?.base??null:game==='blackjack'?entry?.idle??null:null;
 }
 
 /** Run against rows reread on the bound transaction's SQL client. A changed

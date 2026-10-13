@@ -1,5 +1,37 @@
 # Roulette
 
+## Aktuell spelarkoppling, 13 oktober 2026
+
+`codex/roulette-anna-binding` kopplar en uttrycklig `dealers[].rouletteIdle`
+till den befintliga `/play/roulette`-spelaren. Admins andnings-/glasögonkort
+kan kopplas, sparas och återläsas som utkast. Publicering fryser bas, högst tre
+varianter, inramning och handpolygoner med exakta medierevisioner. Blackjack
+använder fortsatt sitt eget idle. Nya bindningar kräver runtime **v14**;
+ingen SQL-migration. Äldre rouletterum utan sådan bindning förblir spelbara
+med `dealer:null`, aldrig med blackjackfilmen.
+
+Anna-provet använder den befintliga andningsfilmen i alpha-WebM, MP4-bakgrunden
+och `web/public/roulette/assets/anna-roulette-table-v1.png`. Glasögon-v2 har
+nu underkänts visuellt: friläggningen ger hål i händer och fluga. Filen är
+bortvald i slutprovet; variantstödet inväntar korrigerade bytes. Bilden är ett nytt
+transparent bordslager från den godkända målbilden, genererat med den inbyggda
+bildgeneratorn; [prompt och kalibrering](UTFALLSFILMER.md#annas-kopplade-scen-13-oktober-2026)
+finns sparade. Det ersätter inte andra bord. Bordets exakta katalogidentitet
+väljer rätt klickgeometri; ett okänt bord får använda satsningsmenyn.
+
+Två på varandra följande UI-rundor kördes utan omladdning i faktisk spelarkod,
+med riktig frozen-capture och offentliga preview-/room-läsare men isolerad
+SQLite och lokala mediebytes: **33 svart, sedan 6 svart**, testsaldo 500 → 495
+→ 500 USD. Det är inte en livepublicering eller godkännande av kompletta
+spelfilmer. Hjulstart, exakt kula/37 utfall och korrigerade hjulsiffror återstår.
+Bakgrund och Anna fortsätter mellan rundorna; en valfri variant startar tidigast
+efter tre basloopar och inte under en pågående serverbegäran.
+
+`tools/roulette-ui-fixture.mjs --scene-manifest <privat JSON>` återspelar samma
+kedja utan produktionskonto. Manifestet anger explicit lokala filer och SHA-256,
+framing, foregroundPolygons samt vanliga composition settings. Test-UUID:n är
+isolerade och får inte användas som produktionsregistrets identiteter.
+
 [Signaler, materialinventering och klippkarta](KLIPPKARTA.md) beskriver de
 separata blackjack-/roulettefacken, bild-/videolagren och vad som återstår
 före automatisk spelkoppling.

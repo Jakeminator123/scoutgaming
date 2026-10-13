@@ -10,19 +10,21 @@ import {createRoulettePreview} from '../web/games/roulette/preview.mjs';
 import {createSpinResult} from '../web/games/roulette/index.mjs';
 import {defaultCompositionSettings,validateCompositionSettings} from '../web/public/composition-settings.mjs';
 import {previewMediaPath} from '../web/public/operator-preview-contract.mjs';
+import {rouletteSceneFixture} from './roulette-scene-fixture.mjs';
 
 // Explicit local file copies only; no provider import, publication or guessed IDs.
 // --dealer-video accepts already verified silent alpha WebM, not opaque MP4.
 const args=process.argv.slice(2);
 const options=new Map();
 for(let i=0;i<args.length;i+=2) {
-  if(!['--background-video','--dealer-video','--scene-settings'].includes(args[i])||!args[i+1]||options.has(args[i]))
+  if(!['--background-video','--dealer-video','--scene-settings','--scene-manifest'].includes(args[i])||!args[i+1]||options.has(args[i]))
     throw Error('Usage: [--background-video <local.mp4>] [--dealer-video <verified-alpha.webm>] [--scene-settings <composition.json>]');
   options.set(args[i],args[i+1]);
 }
 if(options.has('--dealer-video')&&!options.get('--dealer-video').toLowerCase().endsWith('.webm'))throw Error('Dealer fixture requires verified alpha WebM');
 const videoBytes=options.has('--background-video')?await readFile(options.get('--background-video')):null;
 const dealerBytes=options.has('--dealer-video')?await readFile(options.get('--dealer-video')):null;
+const frozenScene=options.has('--scene-manifest')?await rouletteSceneFixture(options.get('--scene-manifest')):null;
 const settings=options.has('--scene-settings')?validateCompositionSettings(JSON.parse(await readFile(options.get('--scene-settings'),'utf8'))):defaultCompositionSettings();
 const backgroundId='00000000-0000-4000-8000-000000000001';
 const dealerMediaId='00000000-0000-4000-8000-000000000002';
@@ -36,7 +38,7 @@ db.exec(`CREATE TABLE players(id TEXT PRIMARY KEY,name TEXT,currency TEXT,balanc
 let draws=0,dropNext=false,player='roulette-ui-qa',preview;
 const requests=[];
 const run=createSqliteRouletteCommand({db,draw:context=>{draws++;return createSpinResult(context);}});
-const room={id:'isolated-room',operatorId:'isolated-operator',name:'Roulette · isolerad UI-test',operator:'isolated',operatorName:'UI-labb',dealer:'fixture',packageRevision:1};
+const room={id:'isolated-room',operatorId:'isolated-operator',name:'Roulette · isolerad UI-test',operator:'isolated',operatorName:'UI-labb',dealer:frozenScene?'anna-jonsson':'fixture',packageRevision:1};
 const mediaPath=previewMediaPath({operatorSlug:room.operator,roomId:room.id,packageRevision:1,dealerId:room.dealer},'background',backgroundId);
 const dealerPath=previewMediaPath({operatorSlug:room.operator,roomId:room.id,packageRevision:1,dealerId:room.dealer},'dealer',dealerMediaId);
 const server=createServer(async(req,res)=>{
@@ -45,6 +47,11 @@ const server=createServer(async(req,res)=>{
     const json=(code,value)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
     if(req.headers.host!==new URL(base).host){json(403,{error:'fixture_host_required'});return;}
     if(req.method==='POST'&&req.headers.origin!==base){json(403,{error:'fixture_origin_required'});return;}
+    if(frozenScene){
+      const response=await frozenScene.preview.handle(new Request(base+req.url,{method:req.method,headers:req.headers}));
+      if(response){res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));return;}
+      if(await frozenScene.rooms.handle(req,res,url.pathname))return;
+    }
     if((videoBytes||dealerBytes) && req.method==='GET') {
       if(videoBytes&&url.pathname===mediaPath){res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':videoBytes.length,'Cache-Control':'no-store'});res.end(videoBytes);return;}
       if(dealerBytes&&url.pathname===dealerPath){res.writeHead(200,{'Content-Type':'video/webm','Content-Length':dealerBytes.length,'Cache-Control':'no-store'});res.end(dealerBytes);return;}
@@ -60,6 +67,9 @@ const server=createServer(async(req,res)=>{
         res.end(`<!doctype html><html lang="sv"><title>Isolerad MP4-maskkontroll</title><h1>Isolerad MP4-maskkontroll</h1><canvas id="scene" style="width:80vw;aspect-ratio:16/9"></canvas><p id="status">Laddar</p><button id="toggle">Spela/pausa</button><script type="module">import {mountPublishedScene} from '/published-scene.mjs';import {rouletteSceneSettings} from '/roulette/media.mjs';const scene=mountPublishedScene(document.querySelector('canvas'),{dealer:null,table:{src:'${mediaPath}',contentType:'video/mp4'},tableMask:{src:'/roulette/assets/roulette-bord.png',contentType:'image/png'},settings:rouletteSceneSettings(),layout:'desktop',onReady:()=>document.querySelector('#status').textContent='Masken är laddad',onFailure:()=>document.querySelector('#status').textContent='Mediafel',onPlaying:playing=>document.querySelector('button').textContent=playing?'Pausa video':'Spela video'});document.querySelector('button').onclick=()=>scene.toggle();addEventListener('pagehide',()=>scene.close(),{once:true});</script>`);return;
       }
     }
+    if(['/roulette-idle-contract.mjs','/material-catalog.mjs','/background-materials.mjs'].includes(url.pathname)){
+      res.writeHead(200,{'Content-Type':'text/javascript'});res.end(await readFile(new URL('../web/public'+url.pathname,import.meta.url)));return;
+    }
     if(['/composition-runtime/compositor.js','/composition-runtime/geometry.js'].includes(url.pathname)){
       res.writeHead(200,{'Content-Type':'text/javascript'});res.end(await readFile(new URL('../packages/presentation/compositor/'+url.pathname.split('/').at(-1),import.meta.url)));return;
     }
@@ -67,7 +77,7 @@ const server=createServer(async(req,res)=>{
       res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
       res.end('<!doctype html><html lang="sv"><title>Isolerad roulettefixtur</title><h1>Isolerad roulettefixtur</h1><p>SQLite i minnet. Ingen produktionsanslutning.</p><form method="post" action="/fixture/drop"><button>Tappa nästa svar efter commit</button></form><form method="post" action="/fixture/switch"><button>Byt testkonto</button></form><a href="/play/roulette?operator=isolated&table=isolated-room">Öppna rouletterummet</a><p><a href="/roulette-test#experiments">Öppna rörelselabbet</a></p></html>');return;
     }
-    if(url.pathname==='/fixture/evidence'&&req.method==='GET') {json(200,{draws,requests,media:mediaEvidence,settings,players:db.prepare('SELECT * FROM players').all(),ledger:db.prepare('SELECT * FROM transactions').all()});return;}
+    if(url.pathname==='/fixture/evidence'&&req.method==='GET') {json(200,{draws,requests,media:frozenScene?.evidence??mediaEvidence,settings:frozenScene?.settings??settings,productionCapture:Boolean(frozenScene),players:db.prepare('SELECT * FROM players').all(),ledger:db.prepare('SELECT * FROM transactions').all()});return;}
     if(req.method==='POST'&&['/fixture/drop','/fixture/switch'].includes(url.pathname)) {
       req.resume();if(url.pathname.endsWith('/drop'))dropNext=true;else player=player==='roulette-ui-qa'?'roulette-ui-other':'roulette-ui-qa';
       res.writeHead(303,{Location:'/play/roulette?operator=isolated&table=isolated-room'});res.end();return;

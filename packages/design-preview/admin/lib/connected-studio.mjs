@@ -6,7 +6,7 @@ import { uploadNativeVideo } from '../../../../lab/lib/upload-native-video.mjs';
 import { materialForAsset } from '../../../../web/public/material-catalog.mjs';
 import { defaultCompositionSettings } from '../../../../web/public/composition-settings.mjs';
 import { workspaceSurfacePath } from '../../../../lab/lib/workspace-surfaces.mjs';
-import {rouletteClipSlots,rouletteClipMatches} from './roulette-clip-map.mjs';
+import {rouletteClipSlots,rouletteClipMatches,rouletteConfiguredClipIds,bindRouletteClip} from './roulette-clip-map.mjs';
 import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
 import {layerAssetFitsGame} from '../../../../web/layer-asset-contract.mjs';
 
@@ -73,7 +73,7 @@ function exactSlotVariants(project, inventory, dealerId, slot, line) {
     row.triggerIds.some(id=>project.triggers.some(trigger=>trigger.id===id && trigger.path===path && trigger.op==='eq' && trigger.value===value))));
 }
 export function currentClipId(project, dealerId, slot, variantId, inventory) {
-  if(slot.game==='roulette')return '';
+  if(slot.game==='roulette')return rouletteConfiguredClipIds(project,dealerId,slot)[0]??'';
   const line = project.lines.find(row => row.dealerId === dealerId && row.eventId === slot.eventId);
   if (slot.eventId === 'idle.ready') return project.dealerIdlePolicies?.find(row => row.dealerId === dealerId)?.policy.base[0]?.videoId
     ?? (slot.family ? project.idlePolicy?.base[0]?.videoId : null)
@@ -88,7 +88,7 @@ export function currentClipId(project, dealerId, slot, variantId, inventory) {
   return line?.variants.find(row => row.id === (variantId || line.baselineVariantId))?.videoGenerationId ?? '';
 }
 export function configuredClipIds(project, dealerId, slot, variantId, inventory) {
-  if(slot.game==='roulette')return [];
+  if(slot.game==='roulette')return rouletteConfiguredClipIds(project,dealerId,slot);
   if (!slot.family && slot.situation && slot.eventId!=='idle.ready') {
     const line=project.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
     return [...new Set(exactSlotVariants(project,inventory,dealerId,slot,line).map(row=>row.videoGenerationId))];
@@ -101,8 +101,8 @@ export function configuredClipIds(project, dealerId, slot, variantId, inventory)
 // The existing server still validates exact media bindings, role, scope, current
 // session and expected revision. A local edit neither publishes nor creates a room.
 export function bindClip(project, inventory, dealerId, slot, videoId, { variantId, durationMs } = {}) {
-  if(slot.game==='roulette')throw Error('Roulettefilen registreras i sitt eget fack. Spelkoppling och publicering är ännu inte anslutna.');
   validateProject(project);
+  if(slot.game==='roulette')return validateProject(bindRouletteClip(project,inventory,dealerId,slot,videoId));
   const registeredSlot=clipSlots(project,inventory,dealerId).find(row=>row.id===slot.id);
   if (!registeredSlot || registeredSlot.eventId!==slot.eventId || registeredSlot.situation!==slot.situation
     || registeredSlot.sourceType!==slot.sourceType || registeredSlot.family?.id!==slot.family?.id) throw Error('Kortplatsen har ändrats. Välj den registrerade platsen igen.');

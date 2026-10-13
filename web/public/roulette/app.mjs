@@ -1,10 +1,11 @@
 import { BETS, BET_BY_ID, LIMITS, pocketColor } from '/roulette-rules.mjs';
-import {TABLE_ARTWORK,tableBetGeometry,polygonButtonStyle,chipBreakdown} from './table-layout.mjs';
+import {TABLE_ARTWORK,tableArtwork,tableBetGeometry,polygonButtonStyle,chipBreakdown} from './table-layout.mjs';
 
 const $ = id => document.getElementById(id);
 const context = Object.fromEntries(new URL(location.href).searchParams);
 const colourNames = { red:'Röd', black:'Svart', green:'Grön' };
 let state, pending, pendingKey, busy = true, chip = 5;
+let roomScene=null,tableDesignId=null,tablePlacement={width:.8,x:0,y:.2};
 let draft = new Map(), undo = [];
 const betButtons = new Map();
 const money = (value, currency = state?.currency ?? 'USD') => new Intl.NumberFormat('sv-SE', { style:'currency', currency }).format(value);
@@ -24,11 +25,11 @@ function addBet(id) {
 }
 
 function boardButton(def) {
-  const {polygon}=tableBetGeometry(def);
+  const {polygon}=tableBetGeometry(def,tableDesignId);
   if(!polygon)return;
   const id=def.id, button = node('button',undefined,'table-bet');
   button.type='button'; button.dataset.bet=id;
-  const rect=polygonButtonStyle(polygon);
+  const rect=polygonButtonStyle(polygon,tableDesignId);
   Object.assign(button.style,{left:rect.left+'%',top:rect.top+'%',width:rect.width+'%',height:rect.height+'%',clipPath:`polygon(${rect.clip})`});
   button.title=def.label;
   button.addEventListener('click',event=>{
@@ -36,6 +37,17 @@ function boardButton(def) {
     addBet(id);
   });
   betButtons.set(id,button); $('board').append(button);
+}
+function configureTable({designId=null,placement={width:.8,x:0,y:.2}}={}) {
+  tableDesignId=designId;tablePlacement=placement;
+  const artwork=tableArtwork(designId);
+  for(const id of ['board','table-markers']) {
+    const layer=$(id);layer.hidden=!artwork;
+    if(artwork)Object.assign(layer.style,{left:100*((1-placement.width)/2+placement.x)+'%',top:placement.y*100+'%',width:placement.width*100+'%',aspectRatio:artwork.width+'/'+artwork.height});
+  }
+  $('board').replaceChildren();betButtons.clear();
+  if(artwork)BETS.forEach(boardButton);
+  renderDraft();showResult(state?.rounds[0]);
 }
 function buildBoard() {
   BETS.forEach(boardButton);
@@ -59,11 +71,12 @@ function openTable(id='straight-2') {
   $('table-zoom').showModal();
   $('zoom-viewport').append($('dealer-scene'));
   $('zoom-controls').append(document.querySelector('.controls'));
-  const {anchor}=tableBetGeometry(BET_BY_ID[id]);
+  const {anchor}=tableBetGeometry(BET_BY_ID[id],tableArtwork(tableDesignId)?tableDesignId:null);
   const visual=$('dealer-scene'),viewport=$('zoom-viewport');
   const width=visual.clientWidth,height=visual.clientHeight;
-  viewport.scrollLeft=width*(.1+.8*anchor[0]/TABLE_ARTWORK.width)-viewport.clientWidth/2;
-  viewport.scrollTop=height*.2+width*.8*anchor[1]/TABLE_ARTWORK.width-60;
+  const artwork=tableArtwork(tableDesignId)??TABLE_ARTWORK;
+  viewport.scrollLeft=width*((1-tablePlacement.width)/2+tablePlacement.x+tablePlacement.width*anchor[0]/artwork.width)-viewport.clientWidth/2;
+  viewport.scrollTop=height*tablePlacement.y+width*tablePlacement.width*anchor[1]/artwork.width-60;
 }
 $('show-table').addEventListener('click',()=>openTable());
 $('table-zoom').addEventListener('close',()=>{
@@ -85,9 +98,10 @@ function renderDraft() {
     const def=BET_BY_ID[id];
     button.setAttribute('aria-label',`${def.label}${def.type==='straight'?', '+colourNames[pocketColor(def.numbers[0])] : ''}, vinst ${def.payout}:1${value?', satsat '+money(value/100):''}`);
   }
-  $('table-markers').replaceChildren(...[...draft].map(([id,amount])=>{
-    const {anchor}=tableBetGeometry(BET_BY_ID[id]), marker=node('span',undefined,'table-marker');
-    marker.style.left=100*anchor[0]/TABLE_ARTWORK.width+'%';marker.style.top=100*anchor[1]/TABLE_ARTWORK.height+'%';
+  $('table-markers').replaceChildren(...(tableArtwork(tableDesignId)?[...draft]:[]).map(([id,amount])=>{
+    const {anchor}=tableBetGeometry(BET_BY_ID[id],tableDesignId), marker=node('span',undefined,'table-marker');
+    const artwork=tableArtwork(tableDesignId)??TABLE_ARTWORK;
+    marker.style.left=100*anchor[0]/artwork.width+'%';marker.style.top=100*anchor[1]/artwork.height+'%';
     const chips=chipBreakdown(amount/100);
     chips.forEach((value,index)=>{const disc=node('i',undefined,'c'+value);disc.style.setProperty('--n',index);marker.append(disc);});
     marker.append(node('b',String(amount/100)));return marker;
@@ -108,6 +122,7 @@ function renderDraft() {
   $('phase').textContent=busy?(state?'RUNDAN PÅGÅR':'ANSLUTER'):pending?'INVÄNTAR KVITTO':state?'SATSNINGAR ÖPPNA':'EJ ANSLUTEN';
   syncStatusVisibility();
   $('board').setAttribute('aria-busy',String(busy));
+  roomScene?.setRoundActive(Boolean(busy||pending));
 }
 function showResult(round) {
   if(!round) return;
@@ -181,7 +196,9 @@ async function init() {
     renderState();busy=false;renderDraft();
     if(pending) { $('retry').hidden=false;message('En tidigare runda inväntar bekräftelse. Kontrollera den igen.',true); }
     else message('Välj marker och klicka på bordet. Ditt saldo är gemensamt med blackjack.');
-    if(state.room.operator) void import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room)).catch(()=>{
+    if(state.room.operator) void import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room,{onTable:configureTable})).then(scene=>{
+      roomScene=scene;roomScene?.setRoundActive(Boolean(busy||pending));
+    }).catch(()=>{
       $('scene-status').textContent='Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.';
     });
   } catch(error) {

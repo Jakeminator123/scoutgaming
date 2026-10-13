@@ -18,7 +18,7 @@ import { StudioCompositionPanel } from './studio-composition-panel';
 import { registerCompositionLayer } from '../../../../../lab/lib/studio-composition.mjs';
 import { rebaseProjectDraft } from '../../../../../lab/lib/project-rebase.mjs';
 import { validateProject } from '../../../../../lab/lib/studio-model.mjs';
-import {rouletteReferencePreview} from '../../lib/roulette-clip-map.mjs';
+import {rouletteReferencePreview,unbindRouletteClip} from '../../lib/roulette-clip-map.mjs';
 import { studioContext } from '../../lib/studio-context.mjs';
 import {isActiveOperator} from '../../lib/studio-resource-lifecycle.mjs';
 
@@ -230,7 +230,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
       data:{group,slot,clips,boundId,boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId,data!.inventory),selectedId,localPreviewUrl:slot.localOnly&&localReference?.dealerId===dealer?.id?referenceUrl:undefined,busy:locked||loading||!authorized,variantId,variants:slot.family ? [] : line?.variants.map(row=>({id:row.id,label:row.label})) ?? [],
         onSlot:id=>setCardSlots(current=>({...current,[group.id]:id})),onSettings:()=>{if(busyRef.current)return;setSettingsSlot(slot);setPanel(slot.sourceType==='speak'?'room':'policy');},
         onSelect:id=>setSelected(current=>({...current,[slot.id]:id})),onVariant:id=>{setVariants(current=>({...current,[slot.id]:id}));setSelected(current=>({...current,[slot.id]:''}));},
-        onBind:()=>{void link(slot,selectedId);},onFile:file=>stage(file,slot)}};
+        onBind:()=>{void link(slot,selectedId);},onUnbind:()=>{void work(async()=>{edit(validateProject(unbindRouletteClip(data!.project,dealer!.id,slot,selectedId)));});},onFile:file=>stage(file,slot)}};
   });
   const impacts = registry?.rooms.filter(row => row.dealerIds.includes(dealer?.id ?? '') || row.compositionId === lane?.id) ?? [];
   const changedRooms = data&&base ? affectedRooms(base,data.project,registry?.rooms??[]) : [];
@@ -256,7 +256,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     {notice&&<span role="status" className="studio-notice">{notice}</span>}
     {game==='roulette'&&<div className="flex flex-wrap items-center gap-3 border-b border-sg-line px-6 py-3 text-xs text-sg-text-soft" aria-label="Roulettens filmflöde">
       {localVilaUrl?<img className="h-20 w-24 object-contain" src={localVilaUrl} alt="Lokal VILA-referens, inte sparad"/>:rouletteReference&&(rouletteReference.classification?.mediaType==='image'?<img className="h-20 w-24 object-contain" src={rouletteReference.previewUrl} alt="Roulettens VILA-referens"/>:<video className="h-20 w-24 object-contain" src={rouletteReference.previewUrl} muted playsInline preload="auto" aria-label="Första tillgängliga roulette-idle som viloreserv"/>)}
-      <p>Vila → insatser → serverkvitto → kulsläpp + hjulfilm → resultat → vila.<br/>Bakgrund, dealer och bord är separata bild- eller videolager. Filvalen här gäller bara roulette. {localVilaUrl?'Lokal VILA-bild visas, inte sparad.':rouletteReference?rouletteReference.classification?.mediaType==='image'?'VILA-bild finns.':'VILA-bild saknas; första tillgängliga roulette-idle visas som reserv.':'VILA och roulette-idle saknas.'} Registrering är inte spelkoppling eller visuell acceptans.</p>
+      <p>Vila → insatser → serverkvitto → kulsläpp + hjulfilm → resultat → vila.<br/>Bakgrund, dealer och bord är separata bild- eller videolager. Filvalen här gäller bara roulette. {localVilaUrl?'Lokal VILA-bild visas, inte sparad.':rouletteReference?rouletteReference.classification?.mediaType==='image'?'VILA-bild finns.':'VILA-bild saknas; första tillgängliga roulette-idle visas som reserv.':'VILA och roulette-idle saknas.'} Koppla grundloop och glasögonvarianter uttryckligen, spara utkastet och publicera rummet separat. Registrering är ingen visuell acceptans.</p>
       <button className="studio-button" disabled={locked} onClick={()=>togglePanel('layers')}>Bakgrund och bord · bild/video</button>
     </div>}
     {reviewSave&&<div className="studio-review-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="studio-save-review" className="studio-review"><h2 id="studio-save-review">Berörda användningar</h2><p>Ändringarna sparas som utkast. Publicerade versioner behålls.</p><ul>{changedRooms.length?changedRooms.map(row=><li key={row.id}>{registry?.operators.find(op=>op.id===row.operatorId)?.name} · {row.name} · {row.game}{row.published?' · publicerad':''}</li>):<li>Inga registrerade rum använder det ändrade materialet.</li>}</ul><div><button className="studio-button studio-save" disabled={locked||loading||!authorized||conflictPaths.length>0||configDirty} onClick={()=>{void save().then(()=>setReviewSave(false));}}>Bekräfta sparande</button><button className="studio-button" disabled={busy} onClick={()=>setReviewSave(false)}>Tillbaka</button></div></section></div>}
