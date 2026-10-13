@@ -109,6 +109,22 @@ test('changing only a voice preserves an unchanged own reference; replaced bytes
   h.field(tree,'Röst').props.onChange({target:{value:'dragge'}});tree=h.render();assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true);
   h.button(tree,'Lägg talprofil').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,'WZVEBKUreb9jAKojf0QF');
 });
+
+for(const failure of ['alpha','decode'])test(`admin blocks ${failure} reference even when it was already saved as enabled`,async()=>{
+  const h=await panelHarness(),ref={kind:'video-frame',videoId:'paow-idle',sha256:'a'.repeat(64),offsetMs:200};
+  h.props.dealerId='paow';h.props.project={...h.props.project,dealers:[{id:'paow',label:'Paow',speechProfile:{schemaVersion:2,state:'enabled',voice:{provider:'elevenlabs',voiceId:'older',modelId:'eleven_v3'},reference:ref}}]};
+  h.props.inventory.videos=[{id:ref.videoId,dealer:'paow',available:true,bytes:100,sha256:ref.sha256,previewUrl:'/studio/api/videos/paow-idle',...(failure==='alpha'?{compositing:{mode:'alpha'}}:{})}];
+  h.render();h.flush();let tree=h.render();
+  h.field(tree,'Röst').props.onChange({target:{value:'paow'}});tree=h.render();
+  if(failure==='decode'){h.nodes(tree,node=>node.type==='video')[0].props.onError();tree=h.render();}
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true);
+  h.button(tree,'Lägg talprofil').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,'older');
+  assert.equal(h.field(tree,'Begär AI-tal').props.disabled,false,'turning an incompatible profile off remains possible');
+  h.field(tree,'Begär AI-tal').props.onChange({target:{checked:false}});tree=h.render();
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);
+  h.button(tree,'Lägg talprofil').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.state,'preparation');
+  assert.equal(h.calls.length,0);
+});
 test('roulette selects only unchanged game-neutral SV/EN library captions; Blackjack keeps 17',()=>{
   assert.deepEqual(studioSpeechLineIds('roulette'),['placebets','goodluck','chatter2','farewell']);
   assert.deepEqual(studioSpeechLineIds('blackjack'),Object.keys(SPEECH_LINES));assert.equal(studioSpeechLineIds().length,17);

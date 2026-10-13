@@ -2,4 +2,5 @@ export interface DealerSpeechProfile {schemaVersion:1|2;state:'preparation'|'ena
 export function normalizeDealerSpeechProfile(value:unknown):DealerSpeechProfile;
 export function dealerSpeechPreparation(value:DealerSpeechProfile|undefined):{active:false;requested:boolean;missing:string[];message:string};
 export function isSpeechReferenceVideo(video:any,dealerId:string):boolean;
+export function dealerSpeechReferenceCheck(video:any,dealerId:string):{canEnable:boolean;message:string};
 export function validateDealerSpeechReference(profile:unknown,video:any,dealerId:string):void;
