@@ -19,6 +19,31 @@ test('documentation and indexing-only changes use quick checks', () => {
   ]), 'documentation');
 });
 
+test('reviewed folder guides use quick checks without exempting sibling code or arbitrary README files', () => {
+  const guides = [
+    'apps/croupier-frontend/README.md',
+    'packages/presentation/README.md', 'packages/design-preview/README.md',
+    'packages/presentation/docs/INTEGRATION.md',
+    'pipeline/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
+    'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
+    'services/astrid-gpu-worker/gateway/README.md',
+    'web/README.md', 'web/public/README.md', 'web/storage/README.md',
+  ];
+  for (const status of ['A', 'M', 'D']) {
+    assert.equal(mode(guides.map(path => change(path, status))), 'documentation', status);
+  }
+  for (const path of [
+    'pipeline/encode.sh', 'packages/design-preview/build.mjs',
+    'services/astrid-gpu-worker/.github/workflows/checks.yml',
+    'services/astrid-gpu-worker/gateway/auth.mjs', 'web/storage/package.json',
+    'pipeline/runtime-bundle/README.md', 'web/public/lab/README.md',
+    'web/../pipeline/README.md', 'web\\README.md',
+  ]) {
+    assert.equal(mode([...guides.map(path => change(path)), change(path)]), 'full', path);
+  }
+  assert.equal(mode([change('web/README.md', 'T')]), 'full', 'guide symlink/type changes');
+});
+
 test('code, deletion, runtime prompts and machine metadata retain full regression', () => {
   for (const path of [
     'web/public/app.mjs', 'test/player-auth.mjs', 'docs/dealer-sync-baseline.json',

@@ -1,5 +1,8 @@
 // Join an empty-hand pose transition to an existing measured delivery. Contact
 // frames and corner measurements are shifted, never retracked or interpolated.
+// Legacy recipe: writes to Astrid's removed runtime/indexed/performance bank.
+// Existing inputs and target manifest must be reviewed before use; retaining
+// this tool is not an instruction to restore that bank. See pipeline/README.md.
 import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';

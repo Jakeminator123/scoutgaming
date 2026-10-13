@@ -1,5 +1,8 @@
 // Build a separately staged, measured candidate. This never changes approval
 // flags or replaces existing dealer speech streams.
+// Legacy Astrid performance recipe: requires an existing target manifest and
+// writes candidate media/manifest there. Review its resolved destination before
+// use; this is not the current clip-library upload flow. See pipeline/README.md.
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';

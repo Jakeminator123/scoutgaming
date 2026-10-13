@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Mux every speech clip with its audio at the SHIPPED delay into a preview mp4
-# - the backoffice Voice Lines board plays these, so what Kevin hears there is
-# byte-for-byte what the game plays. Run after any clip/audio/delay change.
+# Legacy indexed speech previews: combine each recorded clip and exact audio
+# at its stored delay, then re-encode to 720x720 MP4. These are not byte-identical
+# to the source and do not prove visual lip sync. Missing banks are skipped;
+# this is not the current clip-library upload flow. See pipeline/README.md.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 for base in media/dealers/vera/runtime/indexed media/dealers/astrid/runtime/indexed media/dealers/amira/runtime/indexed media/dealers/mei/runtime/indexed; do

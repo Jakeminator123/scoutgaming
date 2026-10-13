@@ -1,5 +1,30 @@
 # Aktuell handoff — Scoutgaming
 
+## Tydligare mappansvar och legacyinstruktioner, 13 oktober
+
+Förenklingen utgår från `main` `978f3bce` i eget worktree och har därefter
+synkats med dokumenttillägget på `ba2eb2bd`. Rotguiden är
+kortad och hänvisar till ordlistan som enda produktmodell. Befintliga guider
+och fem nya mapp-README skiljer aktiv frontend/Studio/spelserver/presentation,
+talservice och medieverktyg från referensytor och genererade byggmappar.
+Gamla kvadratiska/indexerade exportrecept är märkta i fem skripthuvuden;
+deras körbara kod är oförändrad. Inaktiv nästlad worker-CI är borttagen;
+rotens worker-/gatewaykontroller kvarstår. Dokumentationsläget har en exakt
+lista för dessa guider; kod, config, CI och typändringar behåller full regression.
+
+Studio-produktionsbygge och 94 byggspår, 37 riktade repository-/hookprov,
+21 gatewayprov, 15 Python-workerprov, 29 rouletteprov samt 95 lokala
+dokumentlänkar passerar. Full lokal hook: 3 229 godkända, sju skips, ett fel
+i det befintliga processidentitetsprovet. Node-PID och `/proc` har olika
+PID-namespaces här; samma oförändrade kod/test på `main` saknar då
+födelseidentitet. Isolerad omkörning reproducerar det. GitHub CI återstår
+efter push. GitGuardians main-suite var `queued`; incident-/API-täckning
+har inte lästs i denna miljö.
+
+Aktiva Astrid-/dealer-talvägar, klipp, kalibrering, lagrade ID:n, publiceringar
+och data är bevarade. Gemensamma imports mellan appar/paket och SL-10:s
+handmatteaudit är fortsatt öppna; mappnamnen innebär ingen slutförd avveckling.
+
 ## PR-städning och CI, 13 oktober 2026
 
 På Jakobs uppdrag är #75 och #73 mergade. #74 behåller rouletteunderlaget
