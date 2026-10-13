@@ -32,7 +32,7 @@ under de fyra gamla dealernas mappar och två gamla borden har hämtats till
 lokal disk och hashverifierats (145 404 657 byte). Inga
 produktionsdata har gallrats och ingen ny PAOW är ännu registrerad.
 
-## Anna-demorum: slutkoppling pågår, 13 oktober
+## Anna-demorum: publicerat och två liveprov klara, 14 oktober
 
 Admin-editorn kan nu spara exakt startfilm, bordsdesign, tider och handregion;
 idle-mask och SHA/CAS-granskning av pose/framing är tillgängliga. Bibliotek och
@@ -51,15 +51,32 @@ start har sina granskade handregioner i sparat rouletteutkast. Sammansättningen
 har Anna, roulettespecifikt bord och MP4-salongen; inga blackjackbord tillåtna.
 Admin avrundar bordets bredd till 1,04 i båda formaten (lokalt prov 1,044565);
 övriga lager är 1/0/0, bordets x/y 0/0 och tableFront=false.
-Det nya lobbyrummet är ännu inte publicerat: klientens förkontroll använder
-blackjack även efter byte till roulette och avvisar dessutom svarsversion v15.
-En avgränsad uppföljning rättar spelbunden förkontroll och versionsvalidering.
-Rouletteval hämtar nu en ny förkontroll med rätt spel, och skapandets
-omkontroll använder samma spelval. Exakta stödda v14/v15-svar accepteras;
-äldre blackjackanrop bevaras. 110 riktade tester, Lab-typkontroll och
-Studio-produktionsbygge passerar. Nytt rum och två spel från lobbyn återstår.
-Inga befintliga PAOW-rum eller användarsaldon ändrade. Två slutrundor från
-den publicerade lobbyn ska verifieras innan detta markeras färdigt.
+PR114 rättar förkontrollen och är live som `1fd552d3`: rouletteval och
+skapandets sista kontroll använder samma spel; exakta v14/v15-svar accepteras.
+110 riktade tester, Lab-typkontroll, Studio-bygge och full pre-commit
+(3498 pass, 0 fail, 11 skip) passerar. Alla PR-kontroller var gröna.
+
+Det separata bolaget `scoutgaming-demo` (Scoutgaming Demo) har nu paketversion
+1 och det öppna rummet `room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea`,
+**Anna · Roulette · Demo**. Skapat via Admins ordinarie atomiska publicering,
+med serverkvitto och frysta Blob/Neon-referenser. SG-tests äldre paketversion
+16 och dess två arkiverade rum är bevarade. Dess konvertering blockerades
+av befintligt legacy-skydd; ingen sådan konvertering eller skyddsändring gjordes.
+Inga andra bolags rum ändrades och inga nya teammedlemmar bjöds in.
+
+Två sammanhängande spel öppnades via `/lobby` → Scoutgaming Demo → Anna,
+utan omladdning, på det av Jakob uttryckligen godkända demokontot:
+5 på rött gav 17 svart (−5); 5 på svart gav 15 svart (+5). Demosaldot
+återgick till startvärdet. Båda serverkvittorna var nya, inte återspelade.
+Annas startfilm, hjul/kula, resultat och återgång till idle granskades i
+synlig produktionsspelare, med MP4-bakgrund och bordbredd 1,04. Bilder och
+kvitton ligger privat som `anna-live-acceptance.json`, `anna-live-round-1.png`
+och `anna-live-round-2.png` i roulette-stop. Inga konsolfel observerades.
+[Öppna demorummet](https://www.scoutgaming.tech/play/roulette?operator=scoutgaming-demo&table=room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea&dealer=anna-jonsson).
+Detta är demoacceptans med låtsasmarker. Serverstyrd pending/reveal återstår;
+resultatet finns fortfarande i nätverkssvaret före den visuella landningen.
+
+Tidigare lokala regressioner och leveransunderlag:
 Admin typecheck, 49 editorprov och Studio-produktionsbygge passerar.
 Kodcommit `b8e5e20c` är pushad med main `f22cb718` integrerad:
 Studio-produktionsbygge och full pre-commit 3486 pass, 0 fail, 11 skip.

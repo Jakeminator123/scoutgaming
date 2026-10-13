@@ -39,10 +39,19 @@ privata Blob/Neon-flöde. Startprofilen ovan och idle-handregionen är sparade.
 Sammansättningen tillåter endast Anna, Anna-roulettebordet och MP4-salongen.
 Admin avrundar bordbredden till 1,04 i mobil och desktop; övrig kalibrering
 är lager 1/0/0, bordets x/y 0/0 och tableFront=false. Den lilla skillnaden
-mot lokalt prov (1,044565) ska kontrolleras visuellt i lobbyacceptansen.
-PR101 är live som `a6509318`, v15 bekräftad. Demorummet återstår eftersom
-publiceringsklientens förkontroll ännu använder blackjack vid rouletteval;
-uppföljningen rättar även klientens acceptans av v15-svar.
+mot lokalt prov (1,044565) granskades i de två produktionsspelningarna:
+Annas placering och händer vid bordskanten bevaras.
+PR101 är live som `a6509318`, v15 bekräftad. PR114 (`1fd552d3`) rättar
+spelbunden förkontroll och v15-acceptans. **14 oktober 2026:** eget bolag
+`scoutgaming-demo`, paketversion 1, har publicerat rummet
+`room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea` via ordinarie Admin-flöde.
+SG-tests äldre paket och två arkiverade rum konverterades inte.
+Två spel genom `/lobby`, utan omladdning, gav 17 svart och 15 svart;
+5 på rött förlorade 5, sedan gav 5 på svart 10 tillbaka. Slutligt demosaldo
+var samma som före provet. Startfilm och återgång till idle fungerade båda
+gångerna med MP4-bakgrund. Agentens visuella demoacceptans och serverkvitton
+är sparade privat i `anna-live-acceptance.json` och två `anna-live-round-*.png`.
+[Spela Anna-demot](https://www.scoutgaming.tech/play/roulette?operator=scoutgaming-demo&table=room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea&dealer=anna-jonsson).
 V1-starten och den opaka v2-friläggningen får inte publiceras.
 
 Admin har uttryckliga starttider/bordval och handregion för exakt idle-fil.
@@ -52,7 +61,7 @@ acceptans görs i den riktiga spelaren, inte i kompositionseditorns provbild.
 
 [Flödesschema i Asymptote](underlag/roulette-filmflode.asy) visar det föreslagna pending/reveal-flödet. Asymptote-kompilator saknas lokalt; källan är inte renderingsverifierad.
 
-**Status 13 oktober 2026:** Den riktiga `/play/roulette`-spelaren ritar nu 37 korrekta fack och en kula mot serverkvittots nummer. Rundans ID ger reproducerbar variation i slutvinkel, 3–5 rotorvarv, 5–7 kulvarv och 8,5–12 sekunders visning. Anna-bordets perspektiv och MP4-bakgrund bevaras. Provet använder isolerad databas; livepublicering och serverstyrd pending/reveal återstår. Privata original bevaras.
+**Status 14 oktober 2026:** Den riktiga `/play/roulette`-spelaren ritar 37 korrekta fack och en kula mot serverkvittots nummer. Rundans ID ger reproducerbar variation i slutvinkel, 3–5 rotorvarv, 5–7 kulvarv och 8,5–12 sekunders visning. Anna-bordets perspektiv och MP4-bakgrund bevaras. Demorummet är publicerat och två spel med låtsasmarker är verifierade. Serverstyrd pending/reveal återstår: utfallet kan fortfarande läsas i nätverkssvaret före den visuella landningen. Privata original bevaras.
 
 ## Ny startfilm och variationsspelning
 
