@@ -81,7 +81,8 @@ städar timern. Befintliga ägar-/rund-/minneskontroller är oförändrade.
 66 riktade chatt- och transporttester passerar. En riktig lokal HTTP-proxy
 med tidsgräns provar lång förberedelse, nekad gammal ägare och avbruten
 klient; utan heartbeat kapas samma prov. Testtiderna är skalade och använder
-inga betalda leverantörer. Full regression körs vid commit. Detta ersätter
+inga betalda leverantörer. Full regression på `c20de5ed`: 3 358 godkända,
+11 miljöberoende skips, 0 fel. Detta ersätter
 inte de två väntande liveproven genom den verkliga Vercel/Render-vägen.
 
 Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
