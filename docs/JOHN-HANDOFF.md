@@ -15,7 +15,7 @@ Inga mediebytes, produktionsdata eller rumspubliceringar ändras av arbetet.
 
 Efter #55/c8f9b99 gav verkliga projekt-/videoanrop 200 men katalogen 422 med sanerat studio_native_unavailable; den publika katalogen blev också 503. Hotfixen bevarar historiska frysta spelgrants: nya materialtaggar är diagnostik vid läsning, medan operator-, room-, lane-, dealer- och paketauktoriteten fortsätter styra. inspectPackageRooms rapporterar den precisa typade katalogmismatchen utan att ändra paketet. Admin visar en materialvarning. Samma historiska Blackjack- och Roulette-syskon behåller urval, playUrl och giltig spelstart. Nya publiceringar kontrolleras fortfarande strikt och avvisas med 422 vid fel material. Verkliga struktur-/lagringsfel slår fortsatt igenom.
 
-34 riktade tester använder verkliga serialiserade frysta paket, admin/publickatalog och spelstart: oförändrade bytes/data och befintliga grants, samt oförsvagad publiceringsassert. Ingen DB-, schema- eller mediemutation. Faktiskt efter-deploy-200-kvitto och exakt live-rum med taggvarning återstår och ska verifieras innan backend kallas klar.
+34 riktade tester använder verkliga serialiserade frysta paket, admin/publickatalog och spelstart: oförändrade bytes/data och befintliga grants, samt oförsvagad publiceringsassert. Ingen DB-, schema- eller mediemutation. Efter driftsättning verifierades `027ceb03` på både www/Vercel och Render, med admin catalog/project/videos och publika kataloganrop 200. Varningsrummet är Nordic Bet Roulette med Back to Basic-materialets blackjacktagg; den historiska spelbehörigheten bevaras.
 
 ## SIDOR3: fem separata bord och förenad papperskorg, 13 oktober
 
