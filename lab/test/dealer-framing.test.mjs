@@ -22,6 +22,18 @@ test('framing is bounded metadata and preserves all exact clip bindings',()=>{
   for(const framing of [null,[],{scale:Infinity,x:0,y:0},{scale:7,x:0,y:0},{scale:1,x:0},{scale:1,x:3,y:0},{scale:1,x:0,y:0,url:'unsafe'}])assert.throws(()=>validateDealerFraming(framing));
   assert.equal(validateVideoMetadata(metadata).framing,undefined);
 });
+
+test('images and videos with the same source dimensions share the exact placement',()=>{
+  for(const [width,height] of [[1080,1920],[1672,941]]){
+    const calls=[],context={clearRect(){},drawImage(source,...rect){calls.push({source,rect});}};
+    const video={videoWidth:width,videoHeight:height},image={naturalWidth:width,naturalHeight:height};
+    const framing={scale:1.7,x:.1,y:.25};
+    drawDealerFrame(context,video,1920,1080,framing);
+    drawDealerFrame(context,image,1920,1080,framing);
+    assert.equal(calls[1].source,image);assert.deepEqual(calls[1].rect,calls[0].rect);
+    assert.ok(calls[1].rect.every(Number.isFinite));
+  }
+});
 test('green padding is optional and green removal preserves existing alpha and neutral subject pixels',()=>{
   const calls=[],context={clearRect(){},fillRect(...args){calls.push(['fill',this.fillStyle,...args]);},drawImage(...args){calls.push(['draw',...args]);}};
   const video={videoWidth:1080,videoHeight:1920};drawDealerFrame(context,video,1920,1080,undefined,true);
