@@ -1,6 +1,6 @@
 import {suitColor} from './renderer-support.js';
 import { svgNode } from './renderer-support.js';
-import { total } from './renderer-support.js';
+import { total, totalLabel } from './renderer-support.js';
 import { faceAtTime, triangleMatrices } from './card-face-projection.js';
 import { DEAL_CONTACT, cardPose, feltMatrix, dealerFanOffset, splitHandAnchor } from './card-table-layout.js';
 import { dealerHandClip } from './dealer-hand-occlusion.js';
@@ -146,12 +146,19 @@ export function createGameCards(svg, manifest) {
       const dealer = hand.seat === 'dealer';
       const x = dealer ? cx + dealerFanOffset(0, hand.cards.length).x - 73 : cx;
       const split = hand.splitCount > 1;
-      const y = dealer ? cy : cy + (split && hand.splitCount > 2 ? 32 : 60);
-      const value = total(hand.cards.filter(c => c.r));
-      const badge = svgNode('g', { transform: `translate(${x} ${y})`, 'data-seat':hand.seat, 'data-hand':hand.index ?? 'dealer', 'data-active':Boolean(hand.active),
-        'aria-label': `${dealer ? 'Astrid' : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${value}${hand.active ? ', active hand' : ''}` });
-      badge.append(svgNode('rect', { x: -36, y: split ? -16 : -22, width: 72, height: split ? 32 : 44, rx: 22, fill: hand.active ? '#dec68e' : '#17231fe0' }),
-        svgNode('text', { y: split ? 6 : 9, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': split ? 20 : 29, 'font-family':'JetBrains Mono', 'font-weight': 500 }, `${split ? `${hand.number} · ` : ''}${value}${value > 21 ? ' ×' : ''}`));
+      const y = dealer ? cy : cy + (split && hand.splitCount > 2 ? 48 : 60);
+      const shown = hand.cards.filter(c => c.r), value = total(shown), label = totalLabel(shown);
+      const text = `${label}${value > 21 ? ' ×' : ''}`;
+      const fontSize = split ? 20 : 29;
+      // Split columns are 71 px apart. A separate hand caption keeps even
+      // "10/20" readable inside its own column instead of widening over a sibling.
+      const badgeWidth = split ? 68 : Math.max(72, Math.ceil(text.length * fontSize * .6) + 20);
+      // Wider soft totals grow away from the dealer fan, preserving its clearance.
+      const badge = svgNode('g', { transform: `translate(${dealer ? x - (badgeWidth - 72) / 2 : x} ${y})`, 'data-seat':hand.seat, 'data-hand':hand.index ?? 'dealer', 'data-active':Boolean(hand.active),
+        'aria-label': `${dealer ? 'Astrid' : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${label}${hand.active ? ', active hand' : ''}` });
+      badge.append(svgNode('rect', { x: -badgeWidth / 2, y: -22, width: badgeWidth, height: 44, rx: 22, fill: hand.active ? '#dec68e' : '#17231fe0' }));
+      if (split) badge.append(svgNode('text', { y: -8, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': 10, 'font-family':'JetBrains Mono' }, `HAND ${hand.number}`));
+      badge.append(svgNode('text', { y: split ? 13 : 9, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': fontSize, 'font-family':'JetBrains Mono', 'font-weight': 500 }, text));
       badges.append(badge);
     }
     for (const [draw, entry] of nodes) if (!keep.has(draw)) { entry.group.remove(); entry.clip.remove(); nodes.delete(draw); }

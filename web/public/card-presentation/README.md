@@ -10,8 +10,9 @@ commit `0d12b7a559d328a333598b7e583b980e88d7925c` (Kevin review delivery).
 - `card-table-layout.js`, `card-face-projection.js`, `card-face-tracks.js`,
   `dealer-hand-occlusion.js`, `dealer-hand-tracks.js`: unchanged source files
   from `public/`. Includes hole/flip measurements, now activated with their exact source media.
-- `game-cards.js`: source `public/game-cards.js`; only helper imports and back
-  asset URL adapted. `back-scout.png` is the source `public/media/cards/` image.
+- `game-cards.js`: source `public/game-cards.js`; helper imports and back
+  asset URL adapted, with later presentation-only changes noted below.
+  `back-scout.png` is the source `public/media/cards/` image.
 - `renderer-support.js`: minimal product DOM/color/display-total adapters.
   No game engine, wallet, provider, login or server code imported.
 - `calibration.mjs`: source manifest positions/dimensions plus the ten
@@ -44,3 +45,12 @@ not call selectors, models or game commands. A different selected variant
 replaces the preparation. No iOS verification bypass is imported.
 
 See `docs/JOHN-HANDOFF.md` for browser evidence and remaining limits.
+
+## Soft totals — 2026-10-13
+
+Adapted Kevin's `public/game-events.js` total label and `public/game-cards.js`
+badge sizing from reference `f15b2af`. Both product card renderers now show
+soft hands as `7/17` and completed 21 as `21`. Labels only use presented cards;
+hidden hole cards remain excluded. Wider badges preserve the dealer fan's
+clearance. Card coordinates, measured contact frames and media are unchanged.
+`test/local-card-overlay.mjs` covers these display and hidden-card boundaries.

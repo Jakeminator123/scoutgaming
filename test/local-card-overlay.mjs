@@ -71,6 +71,16 @@ test('a retried film hides its half-presented incoming face and ignores the old 
 import { createGameCards } from '../web/public/card-presentation/game-cards.js';
 import { DEAL_CONTACT } from '../web/public/card-presentation/card-table-layout.js';
 import { dealerHandClip } from '../web/public/card-presentation/dealer-hand-occlusion.js';
+import { totalLabel } from '../web/public/card-presentation/renderer-support.js';
+
+test('soft totals display both values until 21, with no extra ace value on hard or busted hands', () => {
+  const cards = (...ranks) => ranks.map(r => ({ r }));
+  for (const [ranks, label] of [
+    [['A', '6'], '7/17'], [['A', 'A'], '2/12'], [['A', '2', '3'], '6/16'],
+    [['A', 'A', '9'], '21'], [['A', 'K'], '21'], [['K', '7'], '17'],
+    [['A', '6', '9'], '16'], [['K', '9', '5'], '24'], [[], '0'],
+  ]) assert.equal(totalLabel(cards(...ranks)), label);
+});
 
 // Minimal SVG tree: records removals, including re-appending an existing node.
 // This tests renderer lifetime/occlusion, not browser paint or video decoding.
@@ -99,6 +109,60 @@ const all=n=>[n,...n.children.flatMap(all)];
 const card=(r,s,shoeDraw)=>({r,s,shoeDraw});
 const fixture=()=>({phase:'decisions',active:0,holeDraw:4,dealer:[card('6','♣',2)],hands:[{box:3,cards:[card('4','♥',1),card('7','♠',3)]}]});
 function setup(){const svg=new Node('svg');svg.id='test';return {svg,cards:createGameCards(svg,manifest)};}
+test('rendered badges use only visible cards, fit soft split totals and keep dealer fan clearance', () => {
+  const { svg, cards } = setup(), round = splitFixture();
+  round.dealer = [card('A', '♣', 2), card('K', '♥', 4)];
+  round.hands[0].cards = [card('A', '♥', 1), card('6', '♣', 5)];
+  const visible = new Set([1, 2, 3, 4, 5, 6]);
+  cards.render(round, visible, false, 0);
+  const badges = () => all(svg).filter(node => node.attrs['aria-label']);
+  const dealer = badges().find(node => node.attrs['data-seat'] === 'dealer');
+  assert.equal(dealer.children[1].textContent, '1/11', 'the hidden king must not affect the total');
+  assert.match(dealer.attrs['aria-label'], /: 1\/11$/);
+  const dealerRight = Number(dealer.attrs.transform.match(/translate\(([-\d.]+)/)[1]) + Number(dealer.children[0].attrs.width) / 2;
+  round.dealer[0] = card('6', '♣', 2);
+  cards.render(round, visible, false, 0);
+  const hardDealer = badges().find(node => node.attrs['data-seat'] === 'dealer');
+  assert.equal(Number(hardDealer.attrs.transform.match(/translate\(([-\d.]+)/)[1]) + Number(hardDealer.children[0].attrs.width) / 2, dealerRight);
+  const player = badges().find(node => node.attrs['data-seat'] === '4' && node.attrs['data-hand'] === '0');
+  assert.equal(player.children[1].textContent, 'HAND 1');
+  assert.equal(player.children[2].textContent, '7/17');
+  assert.match(player.attrs['aria-label'], /7\/17, active hand$/);
+  assert.ok(Number(player.children[0].attrs.width) >= '10/20'.length * 20 * .6 + 8);
+  round.dealer[0] = card('A', '♣', 2);
+  cards.render(round, visible, true, 0);
+  assert.equal(badges().find(node => node.attrs['data-seat'] === 'dealer').children[1].textContent, '21');
+});
+
+test('two to four split total badges do not overlap after focus changes or compact seat offsets', () => {
+  const bounds = node => {
+    const [x, y] = node.attrs.transform.match(/-?\d+(?:\.\d+)?/g).map(Number);
+    const rect = node.children[0];
+    return { x: x + Number(rect.attrs.x), y: y + Number(rect.attrs.y), width: Number(rect.attrs.width), height: Number(rect.attrs.height) };
+  };
+  for (const count of [2, 3, 4]) for (const offset of [0, 120]) {
+    const { svg, cards } = setup();
+    const round = { ...fixture(), hands: Array.from({ length: count }, (_, index) => ({ box: 3,
+      cards: [card('A', '♥', 10 + index * 2), card('9', '♣', 11 + index * 2)] })) };
+    const visible = new Set([2, 4, ...round.hands.flatMap(hand => hand.cards.map(card => card.shoeDraw))]);
+    cards.setSeatOffsets({ '4': offset });
+    for (let focus = 0; focus < count; focus++) {
+      round.active = focus;
+      cards.render(round, visible, false, focus);
+      const badges = all(svg).filter(node => node.attrs['data-seat'] === '4' && node.attrs['aria-label']);
+      assert.equal(badges.length, count);
+      for (let i = 0; i < badges.length; i++) {
+        const a = bounds(badges[i]);
+        assert.equal(badges[i].children[2].textContent, '10/20');
+        for (let j = i + 1; j < badges.length; j++) {
+          const b = bounds(badges[j]);
+          assert.ok(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y,
+            `${count} split hands, focus ${focus}, offset ${offset}: badges ${i + 1}/${j + 1} overlap`);
+        }
+      }
+    }
+  }
+});
 test('resize during a calibrated deal revokes contact while preserving the server draw',()=>{
   const {svg,cards}=setup();let aligned=true;
   const cursor=createCardCursor(cards,{canTrack:()=>aligned});cursor.sync(fixture());
