@@ -142,12 +142,12 @@
       "project": "scoutgaming",
       "team": "scoutgaming",
       "gitBranch": "main",
-      "rootDirectory": "apps/croupier-frontend",
+      "rootDirectory": ".",
       "configuredTargets": [
         "production",
         "preview"
       ],
-      "storageConnections": "2026-10-08: Neon resource croupier-production (store_f0uLTbYiQKqQjLCY) and Blob store croupier-media-private (store_AqwvebTbBHarOjvG) were transferred from team jakeminator123s-projects to team scoutgaming and connected to this project (Production, Preview; Sensitive). The connections inject the managed names below with custom prefixes so the hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN stay authoritative and unchanged. Code does not read the managed names.",
+      "storageConnections": "2026-10-08: Neon resource croupier-production (store_f0uLTbYiQKqQjLCY) and Blob store croupier-media-private (store_AqwvebTbBHarOjvG) were transferred from team jakeminator123s-projects to team scoutgaming and connected to this project (Production, Preview; Sensitive). The connections inject managed names with custom prefixes so CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN stay authoritative. 2026-10-13: only the unused CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY project env was removed from Production and Preview at Jakob's explicit request; the private store, project connection and token remained. The managed list below describes the remaining names. Code does not read them; reconnecting storage can provision metadata again.",
       "required": [],
       "firstBoot": [],
       "conditional": [
@@ -178,8 +178,7 @@
         "CROUPIER_NEON_POSTGRES_URL_NO_SSL",
         "CROUPIER_NEON_POSTGRES_URL_NON_POOLING",
         "CROUPIER_NEON_POSTGRES_USER",
-        "CROUPIER_MEDIA_STORE_ID",
-        "CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY"
+        "CROUPIER_MEDIA_STORE_ID"
       ],
       "blocked": []
     },

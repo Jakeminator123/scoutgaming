@@ -116,37 +116,26 @@ ihop namn i admin, partner, lobby och spel. Katalogen registrerar eller
 publicerar aldrig ett operatörsrum. Bibliotekets lager-UUID är separat från
 design-ID:t; en identisk etikett är inte bevis för identiska bytes.
 
-Jakobs första två tillförda bordsoriginal är **Blackjack · grön filt**
-(`blackjack-green-felt`) och **Blackjack · svart filt**
-(`blackjack-black-felt`). Båda är PNG, 1672 × 941, med alpha (0–255).
-Originalens SHA256 är respektive
-`1a88e822883374b6e855fa75d0da6a4dd02be0840bd4ddb7865345fe12c988b4` och
-`c43a150457216aeb8649f802c5feb8719e257631704f98db46be2530214b8b19`.
-De är byteverifierat säkrade i privat materialintag och registrerade i det
-riktiga privata produktionsbiblioteket. Grön filt har lager-ID
-`ca96f462-9dcd-4160-bb11-e898c2feb934`, svart filt har
-`a9ccb310-dfa5-4e05-860e-b6d8e3b9eabd`. Båda återlästes efter sidomladdning
-och avkodades som 1672 × 941 i webbläsaren; biblioteket gick från två till
-fyra bord. Båda är ännu oanvända och valbara i Sammansättningar. Ingen
-publicerad sammansättning eller bolagsinställning ändrades vid bordsintaget.
-Alpha/dimensioner är verifierade; bordsplacering och spelgeometri behöver
-visuell acceptans. Isolerad QA använder separata lager-UUID och beständig
-testsparning; dessa är inte produktions-ID:n.
-
-Ytterligare tre oförändrade PNG-original registrerades och avkodades efter
-omladdning. Biblioteket innehåller nu sju bord, varav fem är Jakobs nya original.
-Alla fem är separata designer: Jakob korrigerade uttryckligen att de inte
-hör ihop som grundbord och variationer. Ingen koppling har skapats mellan dem.
+Fem oförändrade PNG-original är registrerade i det privata produktionsbiblioteket
+och återlästa/avkodade efter omladdning. Det verifierade registret har sju bord,
+inklusive två äldre. Alla fem tillförda bord är separata designer: Jakob
+korrigerade uttryckligen att de inte är grundbord och variationer av varandra.
+Ingen variantkoppling eller blinksekvens har skapats.
 
 | Kanoniskt namn / design-ID | Lager-ID i det privata biblioteket | Originalmått |
 | --- | --- | --- |
+| Blackjack · grön filt / `blackjack-green-felt` | `ca96f462-9dcd-4160-bb11-e898c2feb934` | 1672 × 941 |
+| Blackjack · svart filt / `blackjack-black-felt` | `a9ccb310-dfa5-4e05-860e-b6d8e3b9eabd` | 1672 × 941 |
 | Blackjack · Oak / `blackjack-oak` | `f00be01d-fe7c-4a43-85b9-952e378f7331` | 1672 × 941 |
 | Blackjack · Purple Rain / `blackjack-purple-rain` | `257e6711-9152-49f2-83ae-6127ce3bc420` | 1672 × 941 |
 | Blackjack · Back to Basic / `blackjack-back-to-basic` | `073ed70c-d764-4902-860c-6a56300abfaf` | 1774 × 887 |
 
 Källhashar, storlek, MIME och alpha finns i samma kanoniska materialkatalog.
-Registreringen ändrade inga tilldelningar eller publiceringar. Originalfiler
-och privata ursprungssökvägar bevaras utanför Git.
+Registreringen gav inga tilldelningar eller publiceringar. Back to Basic valdes
+senare i PAOW · Studio; det är ett separat sammansättningsval. Alpha och mått
+är verifierade, medan placering och spelgeometri behöver visuell acceptans.
+Isolerad QA använder separata lager-UUID som inte är produktions-ID:n.
+Originalfiler och privata ursprungssökvägar bevaras utanför Git.
 
 ### Framtida bordsekvenser
 
