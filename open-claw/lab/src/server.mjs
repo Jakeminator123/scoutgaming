@@ -166,14 +166,14 @@ export async function createLabServer({ settings: settingsProvider = readSetting
           '/api/studio/companion': ['POST'],
           [PRODUCT_SPEECH_PATH]: ['POST'],
           [PRODUCT_PROBE_PATH]: ['POST'], '/api/studio/probe': ['POST'],
-          [STUDIO_OPENCLAW_ADMIN_PATH]: ['GET', 'PATCH'],
+          [STUDIO_OPENCLAW_ADMIN_PATH]: ['GET', 'PATCH', 'POST'],
         };
         if (!allowed[path]) throw new GatewayError('not_found', 404);
         if (!allowed[path].includes(req.method)) throw new GatewayError('method_not_allowed', 405);
         let body = ['POST', 'PUT', 'PATCH'].includes(req.method) ? await bodyJson(req) : undefined;
         if (path === STUDIO_OPENCLAW_ADMIN_PATH) {
           if (settings.remoteUrl) throw new GatewayError('openclaw_admin_not_configured', 503);
-          return respond(res, 200, req.method === 'GET' ? await studioAdmin.get(settings) : await studioAdmin.patch(body, settings));
+          return respond(res, 200, req.method === 'GET' ? await studioAdmin.get(settings) : req.method === 'POST' ? await studioAdmin.dashboard(body, settings) : await studioAdmin.patch(body, settings));
         }
         if (path === PRODUCT_PROBE_PATH || path === '/api/studio/probe') {
           if (settings.remoteUrl) throw new GatewayError('probe_relay_not_supported',503);

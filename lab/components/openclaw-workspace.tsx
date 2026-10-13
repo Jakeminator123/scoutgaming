@@ -37,6 +37,7 @@ function failure(status?: number, code?: unknown): Failure {
   if (status === 401) message = 'Din session har löpt ut. Logga in i Studio igen.';
   else if (status === 403) message = 'Ditt Studio-konto saknar behörighet att ändra OpenClaw.';
   else if (status === 409) message = 'Inställningarna har ändrats av någon annan. Ditt utkast finns kvar. Hämta aktuella val innan du sparar igen.';
+  else if (code === 'openclaw_dashboard_unavailable') message = 'Direktöppningen är inte tillgänglig ännu. Den behöver den uppdaterade Director- och Gateway-tjänsten.';
   else if (code === 'openclaw_admin_not_configured' || code === 'openclaw_admin_device_not_configured') message = 'OpenClaw-administrationen är inte konfigurerad ännu.';
   else if (code === 'openclaw_admin_pairing_required') message = 'Anslutningen till OpenClaw behöver godkännas av en administratör.';
   else if (code === 'openclaw_admin_scope_required') message = 'Anslutningen till OpenClaw saknar behörighet för modellinställningar.';
@@ -46,7 +47,7 @@ function failure(status?: number, code?: unknown): Failure {
   else if (status === 400) message = 'Modellvalet kunde inte sparas. Hämta aktuella val och kontrollera modellen.';
   return Object.assign(new Error(message), { status });
 }
-async function request(method: 'GET' | 'PATCH', signal: AbortSignal, body?: unknown) {
+async function request(method: 'GET' | 'PATCH' | 'POST', signal: AbortSignal, body?: unknown) {
   let response: Response;
   try {
     response = await fetch(labUrl('/api/openclaw/admin'), {
@@ -174,6 +175,24 @@ export function OpenClawWorkspace({ dashboardUrl,navigation }: { dashboardUrl?: 
     }
   }
 
+  async function openDashboard() {
+    if (!url || controller.current) return;
+    const active = new AbortController(); controller.current=active;
+    setBusy('dashboard'); setError(''); setNotice('');
+    try {
+      const result = await request('POST',active.signal,{version:1,action:'dashboard.open'});
+      if (!record(result) || typeof result.browserUrl !== 'string' || typeof result.expiresAtMs !== 'number'
+        || result.expiresAtMs <= Date.now() || result.expiresAtMs > Date.now()+600000) throw failure();
+      const target = new URL(result.browserUrl), fragment=new URLSearchParams(target.hash.slice(1));
+      if (target.origin+target.pathname !== url || target.username || target.password || target.search
+        || fragment.size !== 3 || fragment.get('bootstrapProfile') !== 'owner'
+        || fragment.get('gatewayUrl') !== url.replace('https:','wss:').replace(/\/$/,'')
+        || !/^[a-zA-Z0-9_-]{32,256}$/.test(fragment.get('bootstrapToken') || '')) throw failure();
+      if (alive.current && !active.signal.aborted) window.location.assign(target.href);
+    } catch(cause) { if(alive.current && !active.signal.aborted) setError((cause as Error).message); }
+    finally { if(controller.current===active) { controller.current=null; if(alive.current)setBusy(null); } }
+  }
+
   function undoAll() {
     setDrafts({});
     setNotice('');
@@ -188,23 +207,31 @@ export function OpenClawWorkspace({ dashboardUrl,navigation }: { dashboardUrl?: 
     <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
     <div className={styles.feedback} aria-live="polite">
       {busy === 'load' && <p role="status">Hämtar inställningar från OpenClaw…</p>}
-      {busy && busy !== 'load' && <p role="status">Sparar och kontrollerar modellvalet…</p>}
+      {busy === 'dashboard' && <p role="status">Öppnar OpenClaws egen dashboard…</p>}
+      {busy && !['load','dashboard'].includes(busy) && <p role="status">Sparar och kontrollerar modellvalet…</p>}
       {notice && <p role="status">{notice}</p>}
       {error && <p role="alert" className={styles.error}>{error}</p>}
     </div>
     {data && <section className={styles.panel} aria-labelledby="agent-models">
-      <div className={styles.panelHeading}><h2 id="agent-models">Modellval</h2><span>{dirty ? 'Osparade ändringar' : 'Senast hämtade val'}</span></div>
+      <div className={styles.panelHeading}><h2 id="agent-models">Registrerade agentroller</h2><span>{dirty ? 'Osparade ändringar' : 'Senast hämtade val'}</span></div>
       <p className={styles.runtimeState}>{needsRefresh ? 'De här valen kommer från senaste lyckade hämtningen. Hämta aktuella val för att kontrollera statusen.'
         : data.gateway.applied === true ? 'Gateway använder de hämtade inställningarna.'
         : data.gateway.applied === false ? 'Inställningarna är sparade. Gateway har ännu inte tagit dem i bruk.'
           : 'Gateway är nåbar. Det går inte att bekräfta vilka inställningar som används i körningen.'}</p>
+      <p>Rollerna har olika uppgifter och kan dela modell. Listan visar konfiguration, inte att alla körs just nu. Tal kan välja en annan modell för ett enskilt anrop.</p>
       {data.agents.length === 0 && <p className={styles.empty}>Inga Croupier-agenter kunde läsas från OpenClaw.</p>}
       {data.agents.map(agent => {
         const primary = drafts[agent.id] ?? agent.model.primary;
         const changed = primary !== agent.model.primary;
         const inCatalog = data.models.some(item => item.id === primary);
         return <article key={agent.id} className={styles.agent} aria-labelledby={`agent-${agent.id}`}>
-          <div className={styles.identity}><h3 className={styles.modelName} id={`agent-${agent.id}`}>{agent.id}</h3><p>Aktuell: <code>{agent.model.primary}</code></p>
+          <div className={styles.identity}><h3 className={styles.modelName} id={`agent-${agent.id}`}>{agent.id}</h3><p>{({
+              'croupier-director':'Presentationsråd vid spelhändelser när rådgivning är aktiverad.',
+              'croupier-chat':'Äldre frågechatt om sparat Studio-projekt.',
+              'croupier-operator':'Administrationsagent i OpenClaws egen dashboard; separat från Adminroboten.',
+              'croupier-social':'Sociala samtal och sällskapsfunktioner för Astrid.',
+              'croupier-speech':'Produktens taltext; modell kan väljas separat per anrop.',
+            } as Record<string,string>)[agent.id] ?? 'Registrerad agentroll.'}</p><p>Aktuell: <code>{agent.model.primary}</code></p>
             {agent.model.fallbacks.length > 0 && <details className={styles.details}><summary>Reservmodeller · {agent.model.fallbacks.length}</summary><p>Behålls när du sparar.</p><ol>{agent.model.fallbacks.map((fallback, index) => <li key={`${index}-${fallback}`}><code>{fallback}</code></li>)}</ol></details>}
           </div>
           <label className={styles.field}>Modell för {agent.id}
@@ -232,9 +259,9 @@ export function OpenClawWorkspace({ dashboardUrl,navigation }: { dashboardUrl?: 
     </section>}
     <section className={styles.advanced} aria-labelledby="openclaw-advanced">
       <div><h2 id="openclaw-advanced">Fler inställningar</h2><p>Agentchatt, sessioner och avancerade inställningar finns i OpenClaws egen dashboard.</p></div>
-      {url ? <a className={styles.secondary} href={url}>Öppna OpenClaw-dashboard ↗</a>
+      {url ? <button type="button" className={styles.secondary} disabled={!!busy || dirty} onClick={() => void openDashboard()}>Öppna OpenClaws egen dashboard ↗</button>
         : <p role="alert">Dashboardadressen är ogiltig.</p>}
-      <p className={styles.advancedNote}>Dashboarden kan begära OpenClaws befintliga webbläsargodkännande. Ändra dealerns klipp och regler i <a href={navigation?.studio??labUrl('/')}>Studio</a>.</p>
+      <p className={styles.advancedNote}>Din nivå 1-inloggning öppnar dashboarden utan lösenord eller terminalkommando. OpenClaw skapar en egen webbläsarsession som finns kvar när du loggar ut från sajten. Ändra dealerns klipp och regler i <a href={navigation?.studio??labUrl('/')}>Studio</a>.</p>
     </section>
     {changedAgents.length > 0 ? <UnsavedBar count={changedAgents.length} onSave={() => { const agent = changedAgents[0]; if (agent) void save(agent); }} onUndo={undoAll} /> : null}
   </main>;

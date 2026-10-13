@@ -136,3 +136,25 @@ test('oversized and invalid UTF8 input is rejected before any remote mutation', 
   const malformed = new Request(`${publicOrigin}/studio/api/openclaw/admin`, { method:'PATCH', headers:{ origin:publicOrigin, 'sec-fetch-site':'same-origin', 'content-type':'application/json' }, body:Uint8Array.from([0xff]) });
   assert.equal((await f.api.handle(malformed)).status, 400); assert.equal(f.calls.length, 0);
 });
+
+
+const dashboardRequest=(body={version:1,action:'dashboard.open'},headers={})=>new Request(publicOrigin+'/studio/api/openclaw/admin',{method:'POST',headers:{origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json',cookie:'bo_jwt=synthetic-session',...headers},body:JSON.stringify(body)});
+test('N1 dashboard handoff retains only single-use token, fixed destination and expiry',async()=>{
+ const token='synthetic-bootstrap-token-'.repeat(2),expiresAtMs=Date.now()+590000;
+ const f=fixture({response:{bootstrapToken:token,expiresAtMs,password:'PRIVATE',browserUrl:'https://evil.invalid'}});
+ const response=await f.api.handle(dashboardRequest());assert.equal(response.status,200);
+ const value=await response.json(),url=new URL(value.browserUrl);
+ assert.equal(url.origin+url.pathname,'https://croupier-lab-director.onrender.com/openclaw/');assert.equal(url.search,'');
+ const hash=new URLSearchParams(url.hash.slice(1));assert.equal(hash.get('bootstrapToken'),token);assert.equal(hash.get('bootstrapProfile'),'owner');assert.equal(hash.get('gatewayUrl'),'wss://croupier-lab-director.onrender.com/openclaw');
+ assert.equal(value.expiresAtMs,expiresAtMs);assert.doesNotMatch(JSON.stringify(value),/PRIVATE|evil/);
+ assert.equal(f.calls[0].options.method,'POST');assert.deepEqual(JSON.parse(f.calls[0].options.body),{version:1,action:'dashboard.open'});
+});
+test('dashboard handoff rejects non-N1, CSRF, extra commands, revoked sessions and stale tokens',async()=>{
+ for(const role of ['reader','player','operator']) {const f=fixture({authorize:async()=>({user:'u',role,scope})});assert.equal((await f.api.handle(dashboardRequest())).status,403);assert.equal(f.calls.length,0);}
+ for(const [body,headers] of [[{version:1,action:'dashboard.open',url:'https://evil.invalid'},{}],[{version:1,action:'dashboard.open'},{origin:'https://evil.invalid'}]]) {const f=fixture();assert.ok([400,403].includes((await f.api.handle(dashboardRequest(body,headers))).status));assert.equal(f.calls.length,0);}
+ let reads=0;const revoked=fixture({authorize:async()=>++reads<3?{user:'operator',role:'admin',scope}:null,response:{bootstrapToken:'a'.repeat(48),expiresAtMs:Date.now()+590000}});
+ assert.equal((await revoked.api.handle(dashboardRequest())).status,401);assert.equal(revoked.calls.length,1);
+ const expired=fixture({response:{bootstrapToken:'a'.repeat(48),expiresAtMs:Date.now()-1}});assert.equal((await expired.api.handle(dashboardRequest())).status,503);
+});
+
+test('an older Director tells the dashboard button that rollout is still needed',async()=>{const f=fixture({status:405,response:{error:'method_not_allowed'}});const r=await f.api.handle(dashboardRequest());assert.equal(r.status,503);assert.deepEqual(await r.json(),{error:'openclaw_dashboard_unavailable'});});

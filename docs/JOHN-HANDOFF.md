@@ -1,8 +1,47 @@
 # Aktuell handoff — Scoutgaming
 
+## OpenClaw direkt från N1, 13 oktober 2026
+
+Kod i codex/openclaw-access. /admin/ai/models och /control/openclaw visar
+registrerade agentroller och deras skilda uppgifter; det är inte trafikstatistik.
+Direktöppning använder aktuell N1-session → Vercel → Director → befintlig privat
+helper på Gatewayport 18790 → den låsta OpenClaw-CLI:ns dashboard --json.
+Endast dess kortlivade engångsbootstrap skickas till webbläsaren; CLI:ns gamla
+lösenordsfält kastas bort. Varken nya credentials eller fria kommandon införs.
+Native Gateway behåller lösenord, device-identitet och egen beständig
+webbläsarsession. Sajtens logout återkallar inte den native-sessionen.
+
+Driftsättning kräver Gateway (ny helperfil i befintlig image), Director
+(ny POST-operation) och Vercel (N1-knapp/API). Gateway → Director → Vercel
+är lämplig ordning. Blueprinten open-claw/lab/render.yaml har
+autoDeployTrigger: off för båda Render-tjänsterna, alltså manuell deploy
+enligt repo. Samordnaren verifierade även live att båda har autoDeploy off
+i workspace tea-d19jsa63jp1c73ch0sc0, version 19c44902. Gamla kombinationer kan inte utfärda länken och visar
+ett tydligt fel. Efteråt ska en ny webbläsarprofil med N1 testas från knappen
+utan lösenord/terminal, följt av partner/spelar/utloggad nekad åtkomst.
+Ingen liveändring, omstart eller credentialsrotation utförd i denna gren.
+
+Levande katalog kontrollerad läsande: gpt-5.4-mini, gpt-5.6-terra,
+gpt-6-luna och gpt-6-sol. Alla fem rollernas grundval är Terra. Sol 6.1
+saknas i Gatewaykatalogen; Adminrobotens verifierade direktadapter är separat.
+Ingen faktisk användningsfrekvens exponeras av dagens begränsade admin-API.
+Denna separata OpenClaw-förbättring lägger idempotent till Sol 6.1 som
+textmodell i befintlig officiell OpenAI-providerkatalog vid Gatewaydeploy.
+Alla roller, primary/fallback-val, talmodellernas tillåtna val och befintliga
+metadata bevaras. Ny katalogpost betyder inte att ett Gatewayanrop har lyckats:
+samordnaren provar ett syntetiskt operatoranrop efter deploy före modellbyte.
+
+Verifiering: full hook 3 298 tester, 3 287 godkända, 11 miljöberoende skips,
+0 fel. Admin/Studio-produktionsbygget passerade. 47 fokuserade tester godkända för N1/CSRF/revokering, fasta mål,
+bootstrapvalidering, hemlighetsprojektion, helpergränser och UI-navigering.
+Den officiella CLI:n verifierades via källan för låsta v2026.9.5; det riktiga
+container-till-webbläsarflödet återstår efter driftsättning.
+
+
 ## Adminroboten och separata chattlägen, 13 oktober 2026
 
-Kod i PR #82, ännu inte driftsatt. Knappen finns på publik sajt,
+PR #82 mergad som b76510af; GitHub CI och Vercel-preview godkända.
+Vercels modellanslutning saknas ännu och hanteras separat av samordnaren. Knappen finns på publik sajt,
 admin/Studio, partner och spelarsidor. Scoutguiden använder Luna 6 och statisk
 publik kunskap. Inloggad N1 kan välja Adminroboten eller OpenClaw med Sol 6.1/high.
 Klippassistenten behåller sitt separata importflöde; dealerspelchatten och den

@@ -1,5 +1,26 @@
 # OpenClaws egen dashboard
 
+## Öppna via din nivå 1-inloggning
+
+På /admin/ai/models (även /control/openclaw under övergången) finns
+**Öppna OpenClaws egen dashboard**. Efter driftsättning av Gateway, Director
+och Vercel skapar knappen en ny engångslänk med OpenClaws officiella
+owner-bootstrap. Du behöver inte skriva Gateway-lösenord eller köra
+kommandot i Render Shell. Länken gäller högst tio minuter och kan bara
+lösas in av en webbläsaridentitet. Dela den inte.
+
+OpenClaw skapar därefter sin egen beständiga webbläsarsession. Utloggning
+från Scoutgaming avslutar inte den sessionen; återkalla en förlorad
+webbläsaridentitet i OpenClaws Devices. Modellsidan och Adminroboten
+fortsätter kontrollera aktuell N1-inloggning för sina egna åtgärder.
+
+Tekniskt används den befintliga privata helpern på 18790 och samma
+servercredential; endast den fasta dashboard --json-operationen har
+lagts till. CLI:s legacy-password/token-fält returneras aldrig till sajten.
+Installationen kräver redeploy av båda Render-tjänsterna plus Vercel.
+Nedanstående manuella väg finns kvar för äldre deployment/återställning.
+
+
 Detta är OpenClaws **Control UI** för agentchatt, tools, sessions och inställningar,
 inte labbets katalogeditor och inte IDE-agenternas GitLab-inbox.
 

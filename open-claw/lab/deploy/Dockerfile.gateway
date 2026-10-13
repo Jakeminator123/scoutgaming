@@ -2,7 +2,7 @@
 FROM ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
 USER root
 RUN mkdir -p /data/openclaw /opt/croupier-gateway && chown -R node:node /data/openclaw /opt/croupier-gateway
-COPY --chown=node:node deploy/gateway-config.mjs deploy/start-gateway.mjs deploy/runtime-bundle.mjs deploy/companion-search-server.mjs /opt/croupier-gateway/
+COPY --chown=node:node deploy/gateway-config.mjs deploy/start-gateway.mjs deploy/runtime-bundle.mjs deploy/companion-search-server.mjs deploy/dashboard-handoff.mjs /opt/croupier-gateway/
 COPY --chown=node:node deploy/runtime-bundle/ /opt/croupier-gateway/runtime-bundle/
 ENV OPENCLAW_STATE_DIR=/data/openclaw \
     OPENCLAW_CONFIG_PATH=/data/openclaw/openclaw.json \
