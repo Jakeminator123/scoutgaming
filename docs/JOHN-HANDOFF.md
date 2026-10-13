@@ -48,7 +48,13 @@ Mergeagenten har integrerat main `40fc0d83`, inklusive #77:s mappguider
 och #78:s rumsval/mallskydd. Kod och båda utökningarna av administrationens
 regressionstest gick ihop utan manuell kodändring. 168 riktade tester
 passerar på kombinationen; systemkartan och orphan-kontrollen är godkända.
-Slutlig full GitHub CI krävs före merge.
+Första integrerade GitHub-körningen hittade ett dolt testberoende:
+Admin-fixturens JSX-runtime laddades från designpaketets ännu oinstallerade
+beroenden. Testladdaren använder nu samma React-runtime som Lab-renderaren.
+Felet reproducerades utan designpaketets node_modules; efter rättningen
+passerar alla 1 856 Lab-prov (två plattformsskips) i det läget. Inget test
+tas bort och inget extra produktionsbygge krävs. Full CI körs på rättningen
+före merge.
 
 ## Tillägg 13 oktober: avgränsad förenkling av legacy och rumsval
 
