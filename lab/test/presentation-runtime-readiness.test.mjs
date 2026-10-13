@@ -35,6 +35,17 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+test('persistent material trash requires exact runtime v11 before a mutation or later project save',async()=>{
+ for(const descriptor of [{kind:'material-trash',value:{}},{kind:'project',value:{layerAssetTrash:[]}}]){
+  for(const accepted of [false,true]){
+   const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(accepted?11:9))});
+   const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument('project',{value:{layerAssetTrash:[]}}),descriptor);
+   if(accepted){await work();assert.equal(f.writes.length,1);}else{await assert.rejects(work,blocked);assert.equal(f.writes.length,0);}
+   assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'11');
+  }
+ }
+});
+
 test('background policy in project, archived composition and frozen package requires exact v8 before writes',async()=>{
   const lane={backgroundPlayback:{schemaVersion:1,rules:[]}};
   const descriptors=[{kind:'project',value:{lanes:[lane]}},

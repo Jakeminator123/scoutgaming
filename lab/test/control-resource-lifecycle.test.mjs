@@ -96,7 +96,7 @@ test('old suspended companies are distinct from archived companies that can be r
   const h=harness({kind:'operator'});await h.ready(snapshot({operators:[company('north',{status:'suspended'})]}));
   assert.match(h.html(),/avstängt sedan tidigare/);assert.equal(h.button('Återställ bolag'),undefined);
   h.input.refreshKey=1;h.render();await h.reply(1,snapshot({operators:[company('north',{status:'suspended',archivedAt:'2026-10-12T00:00:00Z'})]}));
-  assert.ok(h.button('Återställ bolag'));h.button('Återställ bolag').props.onClick();assert.match(h.html(),/Rum som tidigare var öppna/);
+  assert.ok(h.button('Återställ bolag'));h.button('Återställ bolag').props.onClick();assert.match(h.html(),/Spelrummen stannar i papperskorgen/);
 });
 
 test('foreign receipts block retries until a fresh read and never update another tenant',async()=>{
@@ -166,7 +166,7 @@ test('operator archive readback must confirm both suspended status and the recor
   const archived=company('north',{status:'suspended',archivedAt:'2026-10-12T00:00:00Z',packageRevision:5});
   for(const returned of [archived,{...archived,status:'active'},{...archived,archivedAt:null},{...archived,archivedAt:'2026-10-12T01:00:00Z'}]){
     const h=harness({kind:'operator'});await h.ready();h.button('Arkivera bolag').props.onClick();h.button('Bekräfta').props.onClick();
-    await h.reply(1,{ok:true,operator:archived,packageRevision:5});await h.reply(2,snapshot({operators:[returned]}));
+    await h.reply(1,{ok:true,operator:archived,packageRevision:5,administrationRevision:'admin-1'});await h.reply(2,snapshot({operators:[returned]}));
     if(returned===archived){assert.equal(h.uncertain.length,0);assert.equal(h.button('Återställ bolag').props.disabled,false);assert.match(h.html(),/North är arkiverat/);}
     else{assert.equal(h.uncertain.length,1);assert.equal(h.button('Arkivera bolag').props.disabled,true);assert.doesNotMatch(h.html(),/North är arkiverat/);}
   }

@@ -68,17 +68,33 @@ test('stale revisions and concurrent archive requests cannot partially change do
 });
 test('journal and package failures roll back room state and operator status atomically',async()=>{
  for(const action of ['room-lifecycle','operator-lifecycle'])for(const fault of ['publish-package','audit-write']){
-  const f=await fixture(),before=f.pool.snapshot(),body=action==='room-lifecycle'?await f.body():{operatorId:'north',archived:true,expectedPackageRevision:1};
+  const f=await fixture(),before=f.pool.snapshot(),body=action==='room-lifecycle'?await f.body():{operatorId:'north',archived:true,expectedPackageRevision:1,expectedAdministrationRevision:(await f.repository.readDocument('administration')).revision};
   f.pool.fail(fault);assert.equal((await f.post(action,body)).status,503);assert.deepEqual(f.pool.snapshot(),before);
  }
 });
-test('operator archive revokes its active state, retains rooms and membership data, and restore is explicit',async()=>{
+test('company trash detaches its rooms and generated adapters; company restore does not reopen them',async()=>{
  const f=await fixture();
- const archived=await f.post('operator-lifecycle',{operatorId:'north',archived:true,expectedPackageRevision:1});assert.equal(archived.status,200);assert.equal(archived.body.operator.status,'suspended');assert.ok(archived.body.operator.archivedAt);
- assert.equal((await f.get()).operators.find(row=>row.id==='north').roomCount,1);
- const restored=await f.post('operator-lifecycle',{operatorId:'north',archived:false,expectedPackageRevision:archived.body.packageRevision});assert.equal(restored.status,200);assert.equal(restored.body.operator.status,'active');assert.equal(restored.body.operator.archivedAt,null);
- const empty=await f.post('operator-lifecycle',{operatorId:'other',archived:true,expectedPackageRevision:null});assert.equal(empty.status,200);
- assert.equal((await f.post('operator-lifecycle',{operatorId:'other',archived:false,expectedPackageRevision:empty.body.packageRevision})).status,200);
+ const archiveBody={operatorId:'north',archived:true,expectedPackageRevision:1,expectedAdministrationRevision:(await f.repository.readDocument('administration')).revision};
+ const archived=await f.post('operator-lifecycle',archiveBody);assert.equal(archived.status,200);assert.equal(archived.body.operator.status,'suspended');assert.ok(archived.body.operator.archivedAt);
+ const read=await f.get();assert.equal(read.operators.find(row=>row.id==='north').roomCount,0);assert.equal(read.operators.find(row=>row.id==='north').archivedRoomCount,1);
+ assert.deepEqual((await f.repository.readDocument('administration')).value.rooms,[]);assert.deepEqual((await f.pack()).tables,[]);
+ assert.equal((await f.repository.readDocument('administration')).value.gameLanes.some(row=>row.id===f.gameLane.id),false);
+ const expectedAdministrationRevision=archived.body.administrationRevision;
+ const restored=await f.post('operator-lifecycle',{operatorId:'north',archived:false,expectedPackageRevision:archived.body.packageRevision,expectedAdministrationRevision});assert.equal(restored.status,200);assert.equal(restored.body.operator.status,'active');assert.equal(restored.body.operator.archivedAt,null);
+ assert.equal((await f.get()).rooms[0].state,'archived');assert.deepEqual((await f.pack()).tables,[]);
+ const empty=await f.post('operator-lifecycle',{operatorId:'other',archived:true,expectedPackageRevision:null,expectedAdministrationRevision});assert.equal(empty.status,200);
+ assert.equal((await f.post('operator-lifecycle',{operatorId:'other',archived:false,expectedPackageRevision:empty.body.packageRevision,expectedAdministrationRevision})).status,200);
+ assert.equal((await f.post('room-lifecycle',await f.body({archived:false}))).body.room.state,'pending');
+});
+
+test('company trash rejects a changed structure and preserves another company sharing the adapter',async()=>{
+ const f=await fixture({shared:true}),before=f.pool.snapshot();
+ const body={operatorId:'north',archived:true,expectedPackageRevision:1,expectedAdministrationRevision:'stale'};
+ assert.equal((await f.post('operator-lifecycle',body)).status,409);assert.deepEqual(f.pool.snapshot(),before);
+ body.expectedAdministrationRevision=(await f.repository.readDocument('administration')).revision;
+ assert.equal((await f.post('operator-lifecycle',body)).status,200);
+ const admin=(await f.repository.readDocument('administration')).value;
+ assert.deepEqual(admin.rooms.map(row=>row.id),['room-other']);assert.ok(admin.gameLanes.some(row=>row.id===f.gameLane.id));
 });
 test('ordinary publication preserves current lifecycle metadata and cannot replay archived table ids',async()=>{
  const f=await fixture(),old=await f.pack();assert.equal((await f.post('room-lifecycle',await f.body())).status,200);

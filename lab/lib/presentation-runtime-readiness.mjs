@@ -21,7 +21,8 @@ function documentFeatures(kind, value) {
   const composition = Boolean(kind === 'project' && Array.isArray(value?.lanes)
     && value.lanes.some(lane => object(lane) && Object.hasOwn(lane, 'composition')));
   const cascade = kind === 'dealer-archive' || kind === 'project' && value?.dealerTrash?.some?.(entry=>entry?.schemaVersion===2);
-  const resourceLifecycle = cascade || kind === 'resource-lifecycle';
+  const materialTrash = kind === 'material-trash' || kind === 'project' && Object.hasOwn(value ?? {}, 'layerAssetTrash');
+  const resourceLifecycle = materialTrash || cascade || kind === 'resource-lifecycle';
   const rooms = resourceLifecycle || Boolean(kind === 'administration' && value?.rooms?.some?.(room => room?.schemaVersion === 2));
   const roulette = Boolean(kind === 'administration' && value?.rooms?.some?.(room => room?.game === 'roulette'));
   const frozen = kind === 'presentation-package' && [2, 3].includes(value?.schemaVersion);
@@ -33,7 +34,7 @@ function documentFeatures(kind, value) {
       .flatMap(entry => Array.isArray(entry?.compositions) ? entry.compositions : [])]
       .some(lane => object(lane) && Object.hasOwn(lane, 'backgroundPlayback'));
   return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette };
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, materialTrash };
 }
 function mediaFeatures(metadata) {
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
@@ -57,6 +58,7 @@ function mutationFeatures(input) {
     cascade: features.some(value => value.cascade),
     backgroundPlayback: features.some(value => value.backgroundPlayback),
     roulette: features.some(value => value.roulette),
+    materialTrash: features.some(value => value.materialTrash),
   };
 }
 function trustedOrigin(env) {
@@ -100,6 +102,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.cascade || active.features.cascade)
       && (!features.backgroundPlayback || active.features.backgroundPlayback)
       && (!features.roulette || active.features.roulette)
+      && (!features.materialTrash || active.features.materialTrash)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -113,7 +116,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.materialTrash ? 11 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

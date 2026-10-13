@@ -19,7 +19,7 @@ const labels={table:'Bord',background:'Bakgrunder'};
 
 export function ControlLayerLibraryPage({initialProject,initialVideos,initialStatus,initialRole='table'}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialRole?:Role}) {
   const session=useStudioProjectSession({initialProject,initialVideos,initialStatus});
-  const {project,projectRef,dirty,saving,save,modelEdit,error,notice,setError,setNotice,conflict,setConflict,savedJson,setSavedJson,setProject}=session;
+  const {project,projectRef,dirty,saving,save,error,notice,setError,setNotice,conflict,setConflict,savedJson,setSavedJson,setProject}=session;
   const [role,setRole]=useState<Role>(initialRole),[uploading,setUploading]=useState(false);
   const uploadingRef=useRef(false),savedBaseline=useRef(savedJson);savedBaseline.current=savedJson;
   const blocked=saving||uploading||conflict;
@@ -45,7 +45,7 @@ export function ControlLayerLibraryPage({initialProject,initialVideos,initialSta
       window.history.replaceState(null,'',url.pathname+url.search+url.hash);
     }
   }
-  return <PageTemplate eyebrow="// STUDIO" title="Bord & bakgrunder" intro="Gemensamma filer för dina sammansättningar. Ladda upp, granska användning och ta bort oanvända filer här."
+  return <PageTemplate eyebrow="// STUDIO" title="Bord & bakgrunder" intro="Gemensamma filer för dina sammansättningar. Ladda upp, granska användning och hantera papperskorgen här."
     primary={<button type="button" className="sg-btn sg-btn-primary" disabled={!dirty||blocked} onClick={()=>{if(!uploadingRef.current&&!saving&&!conflict)void save();}}>{saving?'Sparar…':'Spara bibliotek'}</button>}>
     <div className="sg-page-body">
       <nav className={styles.breadcrumbs} aria-label="Brödsmulor i Studio"><a href={labUrl('/control/clips')}>Studio</a><span aria-hidden="true">/</span><span aria-current="page">Bord & bakgrunder</span></nav>
@@ -68,7 +68,9 @@ export function ControlLayerLibraryPage({initialProject,initialVideos,initialSta
             const uses=layerAssetReferences(project,asset.id),src=labUrl(`/api/layer-assets/${encodeURIComponent(asset.id)}`);
             return <li className={styles.asset} key={asset.id}><div className={styles.preview}>{asset.contentType.startsWith('video/')?<video src={src} controls playsInline preload="none" aria-label={asset.label}/>:<img src={src} alt={asset.label} loading="lazy"/>}</div><div className={styles.assetInfo}><h3>{asset.label}</h3><p>{asset.contentType.startsWith('video/')?'Video':'Bild'} · {asset.width} × {asset.height}</p>{uses.length?<p>Används i {uses.map((use,index)=><span key={use.id}>{index?', ':''}<a href={labUrl(`/control/compositions?composition=${encodeURIComponent(use.id)}`)}>{use.label}</a></span>)}</p>:<p>Ledig att välja i en sammansättning.</p>}</div></li>;
           })}</ul>:<p className={styles.empty}>Inga {item==='table'?'bord':'bakgrunder'} ännu. Ladda upp den första filen ovan.</p>}
-          <div className={styles.management}><LayerAssetManager project={project} role={item} disabled={blocked} expanded onEdit={change=>{if(!uploadingRef.current&&!saving&&!conflict)modelEdit(change);}}/></div>
+          <div className={styles.management}>{dirty?<p>Spara eller lös ditt utkast innan du använder papperskorgen.</p>:null}<LayerAssetManager project={project} role={item} disabled={blocked||dirty} expanded onBusyChange={busyChanged} onSaved={remote=>{
+            savedBaseline.current=JSON.stringify(remote);setSavedJson(savedBaseline.current);projectRef.current=remote;setProject(remote);setConflict(false);
+          }}/></div>
         </section>;
       })}
     </div>
