@@ -8,10 +8,11 @@ import { ConnectedClipMap } from './components/studio/connected-clip-map';
 import { ConnectedServices } from './components/studio/connected-services';
 import { SystemOverview } from './components/studio/system-overview';
 import { RegisteredMaterialLibrary } from './components/studio/registered-material-library';
+import Clips from './app/control/(studio)/clips/page';
 import { AdminHome } from './components/studio/admin-home';
 
 // Native readers and mutations keep their existing session, scopes and revisions.
-const servicePaths = new Set(['/control/drift','/control/ekonomi','/control/admin/accounts','/control/admin/players','/control/admin/payments','/control/admin/api','/control/admin/log','/control/ai/models','/control/ai/chat']);
+const servicePaths = new Set(['/control/drift','/control/ekonomi','/control/admin/accounts','/control/admin/players','/control/admin/payments','/control/admin/api','/control/admin/log','/control/ai/models']);
 
 const pages: Record<string, string> = {
   '/control': 'Översikt',
@@ -21,7 +22,7 @@ const pages: Record<string, string> = {
   '/control/assets': 'Bord & bakgrunder',
   '/control/drift': 'Drift', '/control/ekonomi': 'Ekonomi', '/control/admin/accounts': 'Konton & åtkomst',
   '/control/admin/operators': 'Spelbolag', '/control/admin/players': 'Spelare', '/control/admin/payments': 'Betalningar',
-  '/control/admin/api': 'API', '/control/admin/log': 'Ändringslogg', '/control/ai/models': 'Agentmodeller', '/control/ai/chat': 'Agentchatt',
+  '/control/admin/api': 'API', '/control/admin/log': 'Ändringslogg', '/control/ai/models': 'Agentmodeller', '/control/ai/chat': 'Studioassistent',
 };
 function App() {
   const path = usePathname();
@@ -49,11 +50,11 @@ function App() {
       <label className="preview-mobile-nav">Sida <select value={studio ? '/control/clips' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      {studioVisited&&<div className="studio-workspace-mount" hidden={!studio}><ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/></div>}
+      <Clips active={studio} chatActive={path==='/control/ai/chat'}>{studioVisited&&<ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
       {libraryVisited&&<div hidden={path!=='/control/assets'}><RegisteredMaterialLibrary disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
       {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
       {path==='/control'&&!studio&&<AdminHome />}
-      {!studio && path!=='/control' && path!=='/control/assets' && !servicePaths.has(path) && (path==='/control/structure' ? <SystemOverview /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty} onChanged={materialChanged}/>)}
+      {!studio && path!=='/control' && path!=='/control/ai/chat' && path!=='/control/assets' && !servicePaths.has(path) && (path==='/control/structure' ? <SystemOverview /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty} onChanged={materialChanged}/>)}
     </main>
   </div>;
 }

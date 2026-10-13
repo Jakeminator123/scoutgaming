@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { designPreviewFile, serveDesignPreview, designPreviewAuthRedirect } from '../lib/design-preview.mjs';
+import { designPreviewFile, serveDesignPreview, servePublicLobby, designPreviewAuthRedirect } from '../lib/design-preview.mjs';
 import { studioLoginReturnTo, studioLoginDestination } from '../lib/studio-login-client.mjs';
 import { platformConfiguration, platformRoute } from '../../apps/croupier-frontend/lib/platform-routing.mjs';
 
@@ -15,19 +15,6 @@ test('preview documents and assets have exact route boundaries', () => {
   for (const path of [['api'], ['_assets','admin','..','private.js'], ['_assets','admin','.env'],
     ['_assets','admin','index.html'], ['_assets','elsewhere','file.js'], ['%2e%2e'], ['admin','payments','delete'], ['admin\\accounts']])
     assert.equal(designPreviewFile(path), null);
-});
-
-test('only N1 admin document permits the private Blob SDK upload endpoint',async()=>{
-  const root=await mkdtemp(join(tmpdir(),'croupier-design-csp-'));
-  try {
-    for(const surface of ['admin','lobby']){await mkdir(join(root,surface));await writeFile(join(root,surface,'index.html'),'<html></html>');}
-    const options={root,authorize:async()=>{}};
-    const admin=await serveDesignPreview(new Request('http://127.0.0.1/admin'),[],options);
-    const lobby=await serveDesignPreview(new Request('http://127.0.0.1/admin/lobby'),['lobby'],options);
-    assert.match(admin.headers.get('content-security-policy'),/connect-src 'self' https:\/\/vercel.com\/api\/blob/);
-    assert.doesNotMatch(lobby.headers.get('content-security-policy'),/vercel.com/);
-    await admin.body.cancel();await lobby.body.cancel();
-  }finally{await rm(root,{recursive:true,force:true});}
 });
 
 test('login returns only to known preview documents; never assets, queries or another origin', () => {
@@ -93,5 +80,38 @@ test('every asset request reauthorizes, rejects writes, streams ranges and sends
     assert.equal(authorized, 2);
     assert.equal((await serveDesignPreview(new Request(url, { headers: { range: 'bytes=100-' } }), segments, { root, authorize })).status, 416);
     assert.equal((await serveDesignPreview(new Request(url), ['_assets','lobby','missing.mp4'], { root, authorize })).status, 404);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('staff Studio documents permit only Blob API paths; assets and both lobbies remain same-origin', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'croupier-design-import-'));
+  try {
+    for (const surface of ['admin', 'lobby', 'public-lobby']) {
+      await mkdir(join(root, surface));
+      await writeFile(join(root, surface, 'index.html'), '<!doctype html>');
+      await writeFile(join(root, surface, 'app.js'), 'void 0;');
+    }
+    let authorizations = 0;
+    const authorize = async () => { authorizations++; };
+    const documents = [[], ['clips'], ['structure'], ['dealers'], ['rooms'], ['assets'], ['admin', 'accounts']];
+    for (const segments of [...documents, ['lobby'], ['_assets', 'admin', 'app.js'], ['_assets', 'lobby', 'app.js']]) {
+      const response = await serveDesignPreview(new Request('https://studio.test/admin/' + segments.join('/')), segments, { root, authorize });
+      assert.equal(response.status, 200);
+      const csp = response.headers.get('content-security-policy');
+      const connect = csp.split(';').find(directive => directive.trim().startsWith('connect-src')).trim();
+      assert.equal(connect, documents.includes(segments) ? "connect-src 'self' https://vercel.com/api/blob https://vercel.com/api/blob/" : "connect-src 'self'");
+      assert.match(csp, /script-src 'self';/);
+      assert.match(csp, /img-src 'self' blob: data:;/);
+      assert.match(csp, /media-src 'self' blob:;/);
+      await response.text();
+    }
+    assert.equal(authorizations, documents.length + 3);
+    for (const segments of [[], ['_assets', 'lobby', 'app.js']]) {
+      const response = await servePublicLobby(new Request('https://studio.test/lobby/' + segments.join('/')), segments, { root });
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get('content-security-policy'), /connect-src 'self';/);
+      assert.doesNotMatch(response.headers.get('content-security-policy'), /vercel.com/);
+      await response.text();
+    }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
