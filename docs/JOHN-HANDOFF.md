@@ -54,6 +54,22 @@ hjulimpuls/kulsläpp, en korrekt 37-facksrotor och serverns pending/reveal
 
 ## Paows talgrund och materialkontroll, 13 oktober 2026
 
+PR #93 är mergad som `60defa57` och verifierades i den faktiska Render-
+processen efter deploy. Fyra efterföljande talprov stoppades däremot före
+uppspelning med `generated_speech_session_start_timeout`. RunPods befintliga
+driftvy visade kall modellstart på 136 sekunder och förberedelse av vald
+dealerbild på 64,7 sekunder; en observerad jobbtid fram till redo var cirka
+112 sekunder. Den tidigare startgränsen på 90 sekunder räckte inte.
+
+Starten får nu använda det befintliga förberedelsefönstret på 180 sekunder
+i både fil- och SQL-journalvägen. Uppspelningens 45-sekundersgräns,
+GPU-sessionens livslängd, reservationer och kostnadstak behålls. Avveckling
+av gammal dealer får fortfarande högst 90 sekunder efter befintlig dränering.
+Ingen automatisk ombeställning eller extra betald worker införs. Riktade
+tester täcker lyckad start efter 135 sekunder, timeout vid 180 sekunder,
+omedelbart avbrott och oförändrad avveckling. Kallstart kan fortfarande
+överskrida förberedelsefönstret; två hela liveprov återstår efter leverans.
+
 Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
 `paow`. Den sparade talprofilen återlästes från servern med ElevenLabs
 `WZVEBKUreb9jAKojf0QF`, `eleven_v3`, svenska och egen referensvideo

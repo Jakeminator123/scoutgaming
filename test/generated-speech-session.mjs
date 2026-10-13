@@ -70,6 +70,26 @@ test('cost amounts are exact micro-USD and missing/unconfirmed configuration fai
   f.create(); assert.equal(f.calls.length, 0, 'no startup worker or billing loop');
 });
 
+test('default admission accepts a cold worker after 90 seconds without another paid job', async t => {
+  const f=await fixture(t);let elapsed=0,allowConnection=true;
+  const manager=f.create({}, {readyTimeoutMs:undefined,now:()=>Date.parse('2026-09-29T08:00:00Z')+elapsed,
+    sleep:async ms=>{elapsed+=ms;},workerState:()=>{const ready=allowConnection&&elapsed>=135000;return {workers:Number(ready),busy:0,available:Number(ready)};}});
+  await manager.ensure(f.input);
+  assert.equal(elapsed,135000);assert.equal(starts(f.calls).length,1);
+  assert.equal(f.calls.filter(call=>call.url.includes('/cancel/')).length,0);
+  assert.equal(JSON.parse(starts(f.calls)[0].body).input.ttl,540);
+  allowConnection=false;
+});
+
+test('default cold-start allowance still cancels once at the bounded admission deadline', async t => {
+  const f=await fixture(t,{connect:false});let elapsed=0;
+  const manager=f.create({}, {readyTimeoutMs:undefined,now:()=>Date.parse('2026-09-29T08:00:00Z')+elapsed,sleep:async ms=>{elapsed+=ms;}});
+  await assert.rejects(manager.ensure(f.input),{code:'generated_speech_session_start_timeout'});
+  assert.equal(elapsed,SPEECH_SESSION_POLICY.admissionWindowMs);
+  assert.equal(starts(f.calls).length,1);
+  assert.equal(f.calls.filter(call=>call.url.includes('/cancel/')).length,1);
+});
+
 test('authenticated demand bootstraps a private ledger, pays once and reuses session across requests/restarts', async t => {
   const f = await fixture(t), manager = f.create();
   await assert.rejects(manager.ensure({ beforeCostly: async () => { throw Error('stale owner'); } }), /stale owner/);

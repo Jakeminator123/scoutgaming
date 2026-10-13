@@ -31,7 +31,9 @@ const utcDay = milliseconds => new Date(milliseconds).toISOString().slice(0, 10)
 export function createSpeechSessionManager(configuration, {
   workerState, stopWorker = () => {}, fetchImpl = fetch, now = Date.now,
   sleep = (ms, signal) => pause(ms, undefined, { signal }),
-  readyTimeoutMs = 90000, pollMs = 500, idleTimeoutMs = 60000,
+  // A cold worker also prepares the selected avatar. Use the existing
+  // admission window; playback and provider execution limits stay separate.
+  readyTimeoutMs = SPEECH_SESSION_POLICY.admissionWindowMs, pollMs = 500, idleTimeoutMs = 60000,
   journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1', leaseManager,
 } = {}) {
   if (journalRequired || journal) requireSpeechJournal(journal);
@@ -166,7 +168,7 @@ export function createSpeechSessionManager(configuration, {
       const receipt = await optional(`${prefix(job.id)}.terminal.json`);
       const status = terminal.has(receipt?.status) ? receipt.status : await inspect(job, signal);
       if (terminal.has(status) && !workerState(job.workerId).workers) return;
-      if (now() - started >= readyTimeoutMs) fail('generated_speech_session_stop_timeout', 504);
+      if (now() - started >= Math.min(readyTimeoutMs, 90000)) fail('generated_speech_session_stop_timeout', 504);
       await sleep(pollMs, signal);
     }
   }
