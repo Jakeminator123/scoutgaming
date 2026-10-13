@@ -1,38 +1,5 @@
 # Aktuell handoff — Scoutgaming
 
-## Återställbar lokal tröskelarkivering, 13 oktober 2026
-
-Efter en lyckad lokal projektsparning arkiveras de äldsta återställningskopiorna
-när `lab/data/history` passerar 100 filer eller 64 MiB. Efter en avslutad
-observationsinspelning gäller 20 sessioner eller 128 MiB för
-`lab/data/observations`. Minst de två nyaste objekten behålls även om deras
-storlek överstiger gränsen; förhandsvisningen redovisar det. Ändra gränserna i
-`tools/retention-policy.json`. Ofärdiga inspelningar utan `session.json` lämnas
-kvar. Okända filer, länkar eller avvikande sessionsinnehåll tas inte med.
-
-`node tools/retention-archive.mjs` förhandsvisar utan skrivning. `--apply`
-flyttar till `arkiv/<datum>/retention-<id>/<ursprunglig-sökväg>`. Manifestet
-skrivs före flytten och innehåller sökvägar, byteantal och SHA256, så även en
-avbruten flytt kan återställas. `--restore arkiv/<datum>/retention-<id>`
-kontrollerar återställningen; lägg till `--apply` för att kopiera tillbaka.
-Befintliga mål skrivs aldrig över, kontrollsummor verifieras och arkivet
-behålls. Låsningen tillåter endast en arkivering/återställning åt gången. Ett
-kvarlämnat `arkiv/.retention.lock` ger ett tydligt busy-fel; kontrollera att
-föregående körning avslutats innan endast den tomma låskatalogen tas bort.
-
-Automatiken gäller bara denna checkouts kanoniska lokala `lab/data` och
-misslyckad arkivering stoppar inte en lyckad projektsparning. Den berör inte
-Vercel, Neon, Blob, Gatewayloggar, aktiva verksamhetsrader, publiceringshistorik,
-video, konton eller spelarminne. Adminrobotens nuvarande webbhistorik sparas
-bara i minnet och har ingen beständig logg att rotera. Ingen schemalagd tjänst
-eller molnmutation införs. Arkivet är privat och Git-ignorerat, frigör inte
-diskutrymme och behöver ingå i egen extern säkerhetskopiering.
-
-Verifiering: riktade isolerade tester täcker gränser, aktiva inspelningar,
-bytebevarande återställning, avbruten flytt, samtidighetslås, ändrade arkiv,
-sökvägs-/länkskydd och failsoft. Ingen verklig sparad data har flyttats i QA.
-
-
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
 PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen
@@ -2204,3 +2171,35 @@ mobil utan horisontell överströmning. Detta är lobbyacceptans, inte ett prov
 av Annas framtida spelklipp eller produktionspublicering. Ingen livekatalog,
 databas, spelregistrering eller modellkonfiguration ändras. PR:ns kontroller
 anger slutlig full regressionsstatus; merge/deploy görs inte i denna uppgift.
+
+## Återställbar lokal tröskelarkivering, 13 oktober 2026
+
+Efter en lyckad lokal projektsparning arkiveras de äldsta återställningskopiorna
+när `lab/data/history` passerar 100 filer eller 64 MiB. Efter en avslutad
+observationsinspelning gäller 20 sessioner eller 128 MiB för
+`lab/data/observations`. Minst de två nyaste objekten behålls även om deras
+storlek överstiger gränsen; förhandsvisningen redovisar det. Ändra gränserna i
+`tools/retention-policy.json`. Ofärdiga inspelningar utan `session.json` lämnas
+kvar. Okända filer, länkar eller avvikande sessionsinnehåll tas inte med.
+
+`node tools/retention-archive.mjs` förhandsvisar utan skrivning. `--apply`
+flyttar till `arkiv/<datum>/retention-<id>/<ursprunglig-sökväg>`. Manifestet
+skrivs före flytten och innehåller sökvägar, byteantal och SHA256, så även en
+avbruten flytt kan återställas. `--restore arkiv/<datum>/retention-<id>`
+kontrollerar återställningen; lägg till `--apply` för att kopiera tillbaka.
+Befintliga mål skrivs aldrig över, kontrollsummor verifieras och arkivet
+behålls. Låsningen tillåter endast en arkivering/återställning åt gången. Ett
+kvarlämnat `arkiv/.retention.lock` ger ett tydligt busy-fel; kontrollera att
+föregående körning avslutats innan endast den tomma låskatalogen tas bort.
+
+Automatiken gäller bara denna checkouts kanoniska lokala `lab/data` och
+misslyckad arkivering stoppar inte en lyckad projektsparning. Den berör inte
+Vercel, Neon, Blob, Gatewayloggar, aktiva verksamhetsrader, publiceringshistorik,
+video, konton eller spelarminne. Adminrobotens nuvarande webbhistorik sparas
+bara i minnet och har ingen beständig logg att rotera. Ingen schemalagd tjänst
+eller molnmutation införs. Arkivet är privat och Git-ignorerat, frigör inte
+diskutrymme och behöver ingå i egen extern säkerhetskopiering.
+
+Verifiering: Studio-produktionsbygget och fullhook passerar (3 348 tester, 3 337 pass, 11 skip, 0 fail). Riktade isolerade tester täcker gränser, aktiva inspelningar,
+bytebevarande återställning, avbruten flytt, samtidighetslås, ändrade arkiv,
+sökvägs-/länkskydd och failsoft. Ingen verklig sparad data har flyttats i QA.
