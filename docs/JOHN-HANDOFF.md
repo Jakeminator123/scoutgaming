@@ -1,5 +1,66 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: gemensam Studioassistent
+
+`/admin/ai/chat`, bubblan nere till höger och `/admin/clips?tool=import`
+använder samma Studioassistent, samtal, lokala filer och importutkast.
+Assistenten finns direkt på adminstartsidan; klippkartan laddas först vid
+Studio-besök och behålls därefter. PR #70:s startsida, ekonomivy, registrerade
+rumslista, kontextlänkar och skydd för osparade utkast är bevarade.
+Äldre `/control` behåller sin separata Gateway-chatt och sitt API.
+
+Fasta serverroller väljer `gpt-5.6-luna` med `medium` för vanligt samtal och
+`gpt-5.6-sol` med `high` för uttrycklig kartläggning. Samtalet behöver ingen
+vald dealer och får aldrig ändra filfack eller godkännanden. Högst fyra
+lyckade fråge-/svarspar följer med som opålitlig kontext, även till Sol.
+Rådgivaren läser en begränsad dealer-/fackkatalog, inte ekonomi, drift eller
+rum. Session, scope och origin kontrolleras; behörighet och katalog läses
+om efter modellanropet. Modellen har inga skrivverktyg eller rätt att godkänna.
+
+Import kräver bekräftad befintlig dealer, högst tio filer, granskning av
+placeringarna och ett separat slutgodkännande. Redigering återkallar detta.
+Importer sparas som alternativ genom befintlig N1-/Blob-/registerkontroll;
+standardklipp, publiceringar, rumsinställningar och speldata ersätts inte.
+Osäkra kvitton försöks aldrig om automatiskt. Navigation, minimering och
+415/503-fel behåller filer, fack och samtal.
+
+PR #71:s MIME-spärr ingår. PostgreSQL 001–008 medger bara MP4/WebM i
+`media_records`. Hela listan med osparade filer kontrolleras före första
+save-API, hash eller uppladdning, även rader med tidigare fel. Bild och ljud
+kan granskas lokalt men måste tas bort före videoimport. Samma begränsning
+förklaras av UI, serverägda varningar och båda modellrollerna. Alfa och
+roulette är fortsatt spärrade i denna importassistent tills dess egen
+preflight och granskning är accepterad; det är inget allmänt alfaförbud.
+
+Spelarens blågula orbändring bevaras separat för fortsatt rehearsalacceptans.
+Den ingår inte i assistentleveransen; spelarens nuvarande kontroller består.
+Assistenten får inga spelbefogenheter och inga mediefiler ändras.
+
+Verifiering efter integration med main #70 och MIME-rättningen #71:
+1 843 Lab-tester passerar, med två plattformsberoende skips och inga fel.
+Studio-produktionsbygget och kontrollen av 94 byggspår passerar.
+159 riktade import-/native-/repositorytester passerar, inklusive tio nya
+integrationstester och hela listans förkontroll. Designbygge och admin-/lobby-
+typkontroll passerar. Isolerad Chromium vid 320, 390 och 1280 px verifierar
+startsida före Studio, samma samtal/File/fack/godkännande genom vybyten,
+osparad karta, legacy-kontextlänkar, registrerade rum, fokus och navigationsveto.
+Blandade format ger noll save-anrop/hash/uppladdning; borttagning kräver ny
+granskning. 415 och båda runtime-503-fallen behåller utkast utan återförsök.
+API, Blob och modeller är mockade; dessa prover är inte PostgreSQL-, codec-
+eller produktionsacceptans. PR #71:s riktiga PostgreSQL-bevis redovisas nedan.
+
+Orbfixturen verifierar fyra skärmstorlekar, tangentbord/fokus/Escape, reduced
+motion och noll enhetsåtkomst före samtycke. Den kör inte den faktiska spelaren;
+två följande rehearsal-uppspelningar återstår före orbens separata mergeacceptans.
+Lokal inventering hittade endast en Studio-fixtur utan accepterade dealerklipp
+eller spelbart rum. Ingen ny server eller betald generering startades.
+Produktionsmodell och verklig molnimport är inte verifierade. Den 13 oktober
+kl. 11:19 saknades `CROUPIER_DEALER_IMPORT_AI` och `OPENCLAW_MODEL_API_KEY`
+i produktionsprojektets metadata. Ingen provider eller konfiguration ändrades.
+Utan AI-konfiguration ger kartläggning uttryckliga filnamnsregler och chatten
+visar att AI:n är otillgänglig. Bildanalys, pose-/läppsynkflöde och automatisk
+rumsproduktion återstår. Se [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#dealerimport-och-samtalskontroll-13-oktober-2026).
+
 ## Tillägg 13 oktober: faktisk MIME-gräns i PostgreSQL
 
 PR #65:s PNG-/ljudregistrering är **inte färdig för PostgreSQL**. Migration

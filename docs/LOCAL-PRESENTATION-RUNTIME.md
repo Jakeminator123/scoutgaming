@@ -1,5 +1,105 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Dealerimport och samtalskontroll, 13 oktober 2026
+
+`/admin/clips` har en importassistent mot Studios registrerade dealers och
+exakta fack. Den anslutna klippkartan och servicesidorna från PR #55 behålls;
+importen ersätter inte den riktiga kartan med ett designexempel.
+Internchatten på `/admin/ai/chat`, importvyn och bubblan använder samma
+Studioassistent och rådgivar-API. Äldre `/control` behåller sin
+`/studio/api/chat`-väg och Gateway-konfiguration.
+Operatören väljer och bekräftar en befintlig dealer, väljer högst tio filer,
+ger kontext, granskar förslag, rättar fack och godkänner sammanställningen.
+Alla importer registreras som alternativ via befintlig privat Blob-upload;
+ingen standard, grundloop, sammansättning eller publicering byts automatiskt.
+Varje fil får eget resultat. Ett oklart registerkvitto kräver återläsning,
+inte automatisk omkörning. Hela batchen är inte en gemensam transaktion.
+En känd formatbegränsning stoppar däremot hela importlistan före sparning:
+endast MP4/WebM får ingå. Osparade bild-/ljudposter, även med tidigare fel,
+måste tas bort ur listan innan någon video kan laddas upp. De kan först
+granskas lokalt och få rådgivande fack; samtal och val behålls. Kontrollen
+görs både före granskning och på nytt före sparåtgärdens första API-anrop.
+
+En bubbla nere till höger i `/admin` öppnar samma assistent som chattsidan
+på `/admin/ai/chat` och importvyn på `/admin/clips?tool=import`. Den anslutna klippkartan är
+standard utan `tool=import`. Dealer, bolag, rum, sammansättning och spel
+behålls i länkkontexten. En gemensam monterad instans behåller dealer, filer,
+samtal och godkännanden när man växlar vy eller minimerar. Första öppningen
+av importen laddar dess katalog; en oöppnad bubbla gör inga
+rådgivningsanrop. Öppning, stängning och vybyte sparar inget. Assistentpanelen
+är monterad även på adminstartsidan före första Studio-besöket.
+Klippkartan är ett separat barn som monteras först vid klipp-, rum- eller
+dealerbesök och sedan behålls. Spelarens
+samtalsorb är en separat yta och delar inga administrativa behörigheter.
+Lokala förhandsvisningar pausas när vyn döljs. Panelen avmonteras inte vid
+minimering; pågående anrop och resultat finns kvar. Besökta servicesidor och
+Studio-utkast behålls också monterade. Både importens och Studios veto
+kontrolleras vid intern navigation och bakåt/framåt. Intern SPA-navigation
+behåller utkastet, medan fullständiga sidbyten och externa länkar varnar
+för osparade filer även när panelen är stängd. Pågående anrop spärrar
+navigationskommandon och länkar; webbläsarens omladdning har sitt eget
+innan-lämna-skydd.
+
+`GET/POST /studio/api/dealers/import-proposal` kräver aktuell N1-session och
+rätt scope. POST kräver samma origin och läser om både användare och katalog
+efter rådgivningen. Filnamnsregler stöder bland annat pos1–7 → box0–6,
+pos6b som alternativ, till/från skon, skilda utdelnings-/vändningsklipp och
+exakta talfack. Okända eller motstridiga namn lämnas för manuellt val.
+AI-läget är separat och uttryckligen opt-in, utan verktyg eller skrivmandat;
+se [miljövariabler](ENVIRONMENT-VARIABLES.md#dealerimportens-begränsade-rådgivare-13-oktober-2026).
+`intent: mapping` använder `gpt-5.6-sol` med `high` för placeringsförslag;
+utelämnad intent är mapping för bakåtkompatibilitet. `intent: chat` använder
+`gpt-5.6-luna` med `medium` och returnerar enbart text, aldrig nya placeringar.
+Vanlig chatt kan användas utan dealer; kartläggning och import kräver vald,
+bekräftad dealer i gränssnittet. En dealer som skickas till API:t måste finnas
+i den aktuella katalogen även vid chatt. Servern väljer modell och
+resonemangsnivå; klienten får inte ange egna modellparametrar. Chatt behåller
+manuella fack, granskning och godkännande även vid fel. Samtalet och osänd text
+finns kvar när man växlar mellan ytorna. Chatt skickar högst fyra tidigare
+lyckade fråge-/svarspar, högst 3 000 tecken per meddelande och 12 000 totalt;
+aktuell fråga är separat och högst 2 000 tecken. Samma historik kan följa med
+till Sol när man begär kartläggning. Historiken är opålitlig
+indata, inte instruktioner eller bevis för sparade ändringar. Rådgivaren får
+en begränsad projektion av verklig dealer-/fackkatalog, inga ekonomi-, drift-
+eller rumsregister. Den måste skilja allmänna råd från tillgängliga Studiouppgifter.
+Utan modell används tydligt märkta filnamnsregler för mapping. Chatt rapporterar
+otillgänglig AI; den kör inte filnamnsregler eller applicerar rader som ett svar.
+Kartläggningens 60-sekunderstimeout ryms i routens 75-sekundersgräns. Ingen
+automatisk modellväxling eller omkörning görs vid fel eller avbruten begäran.
+
+VILA/REDO-bilder visas endast lokalt som referenser. Bildrutor och media skickas
+inte till modellen. Grundposebyte och inspelning/läppsynk går fortsatt via
+befintliga Control-flöden och deras acceptanskrav; denna import genererar
+inga filmer. Grön bakgrund kräver operatörens bekräftelse. Frilagda alfaklipp
+kan förhandsvisas lokalt men blockeras i denna importassistent tills dess
+förkontroll har verifierats. Den gemensamma medievägen stöder nu alfa enligt
+#65; ett formatval bevisar inte avkodad alfa eller fungerande kanter i spelaren.
+Automatisk rums-/bakgrundsproduktion och koppling till spelbolag återstår.
+Importkatalogen tar endast med fack för stödda projekthändelser. Kommande
+roulettefack utanför dessa ignoreras, så att en gemensam katalogutökning inte
+stoppar blackjack eller vanlig chatt. Det innebär inte stöd för rouletteimport.
+
+Blackjack- och ljudmetadata använder inga `game/action/startPose/endPose`-fält;
+dessa är reserverade för roulette och avvisas i blackjackfack. Vanlig grön video
+behåller sina befintliga runtimekrav. Databasens registrerade 001-kontrakt
+tillåter däremot bara `video/mp4` och `video/webm` i `media_records`.
+MP3/WAV/PNG kräver separat schemastöd; godkänd v12-förkontroll eller en
+skrivning i minnespoolen bevisar inte att PostgreSQL godtar dem. Ljud- och
+bildimport får inte öppnas innan detta stöd har verifierats. Ingen migration
+eller produktionsskrivning ingår i assistentändringen. Den gemensamma skrivvägen
+kräver exakt v12 med `mediaAlpha=png-vp9-v1` och
+`rouletteMedia=action-pose-slots-v1` för de utökade medietyperna. Kontroll sker
+före uppladdningsbehörighet och på nytt i registreringens transaktion.
+Ett 503-fel om runtimeuppdatering behåller importfilen och dess fackval,
+markerar raden som fel och återställer slutgodkännandet. Inget automatiskt
+återförsök eller alternativt sparflöde används; andra batchrader får fortfarande
+ett första försök. En fil som redan nått Blob kräver avstämning mot biblioteket.
+
+Spelarens föreslagna blågula samtalsorb levereras separat från assistenten.
+Den har tydliga kontroller för ljud, mikrofon, kamera och röstlogg med samma
+samtycke, men kräver två följande uppspelningar i den faktiska gemensamma
+rehearsalspelaren före merge. Kontrollerna ändras inte av assistentleveransen.
+
 ## Central Studio: rum, spel och lager, 13 oktober 2026
 
 Detta är målkontraktet för nya `/admin`, enligt Jakobs senaste krav. Det är
@@ -656,9 +756,13 @@ box0–6. Grundloop, talreplik och dealer-up/dealer-hole förblir skilda fack.
 Registrering i biblioteket sparas direkt; val av aktivt klipp i projektet och
 publicering är separata steg under Spelinställningar och Publicering.
 
-MP4/WebM samt MP3/WAV stöds upp till 128 MB per fil. Ljud måste klassificeras
-med mediaType=audio och exakt talreplik; det kan aldrig kopplas som videoklipp
-eller räknas som godkänd lipsynk. Uppladdning använder privat Blob-grant,
+Native registrering stöder MP4/WebM upp till 128 MB per fil. Parsern känner
+även till ljud och bilder, men PostgreSQL-kontraktet i 001–008 tillåter bara
+MP4/WebM i mediaregistret. MP3/WAV/PNG behöver separat migrering och verifiering
+enligt CLOUD-MIGRATION.md; de får inte beskrivas som fungerande native intag.
+Ljudmetadata kräver mediaType=audio och exakt talreplik; den får aldrig
+användas som videoklipp eller bevis för godkänd läppsynk.
+Uppladdning använder privat Blob-grant,
 SHA-256-readback och autentiserad commit. En batch återförsöker inte osäkra
 commits automatiskt och laddar inte om redan sparade rader.
 

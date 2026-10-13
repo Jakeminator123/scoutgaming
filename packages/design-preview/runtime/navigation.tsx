@@ -7,9 +7,12 @@ export function previewHref(href: string) {
 const subscribers = new Set<() => void>();
 let previousHref = '';
 const notifySubscribers = () => subscribers.forEach(notify => notify());
+// Import uploads must veto first: Studio's context listener may update its draft.
+const canNavigate = (href:string) => window.dispatchEvent(new CustomEvent('studio:before-navigate', {cancelable:true,detail:{href}}))
+  && window.dispatchEvent(new CustomEvent('scout:navigate', {cancelable:true,detail:{href}}));
 const changed = () => {
   const href = location.pathname + location.search;
-  if (!window.dispatchEvent(new CustomEvent('scout:navigate', { cancelable:true,detail:{href} }))) {
+  if (!canNavigate(href)) {
     history.pushState(null,'',previousHref); return;
   }
   previousHref = href; notifySubscribers();
@@ -32,13 +35,14 @@ export function useRouter() {
 }
 export function navigate(href: string, replace = false) {
   href=withAdminContext(href,location.search);
-  if (!window.dispatchEvent(new CustomEvent('scout:navigate', { cancelable:true,detail:{href} }))) return;
+  if (!canNavigate(href)) return false;
   window.history[replace ? 'replaceState' : 'pushState'](null, '', href);
   previousHref = href; notifySubscribers();
+  return true;
 }
 export default function Link({ href = '', onClick, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) {
   const target = previewHref(href);
-  return <a {...props} href={target} onClick={event => {
+  return <a {...props} href={target} data-studio-navigation={!props.target && target.startsWith('/admin') && isInternalAdminPathname(new URL(target,location.origin).pathname) ? 'true' : undefined} onClick={event => {
     onClick?.(event);
     if (!event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
       && !props.target && target.startsWith('/admin') && isInternalAdminPathname(new URL(target,location.origin).pathname)) {
