@@ -71,7 +71,8 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   useEffect(()=>{onDirtyChange?.(dirty||configDirty||Boolean(pending)||locked);},[dirty,configDirty,pending,locked,onDirtyChange]);
   useEffect(()=>{if(base)onRevisionChange?.(base.revision);},[base?.revision,onRevisionChange]);
   const registry = data?.catalog.administration;
-  const resolved=data?studioContext(data.catalog,data.project,{operatorId,roomId,dealerId}):null;
+  const requestedRoom=registry?.rooms.find(row=>row.id===roomId&&(!operatorId||row.operatorId===operatorId));
+  const resolved=data?studioContext(data.catalog,data.project,{operatorId,game:requestedRoom?.game??game,roomId,dealerId}):null;
   const {operator,room,lane,dealer}=resolved??{};
   const rooms=resolved?.rooms??[],dealers=resolved?.dealers??[];
   useEffect(()=>{if(room&&['blackjack','roulette'].includes(room.game))setGame(room.game as 'blackjack'|'roulette');},[room?.id,room?.game]);
@@ -124,9 +125,11 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
           if(registry&&['operator','table','dealer','game'].some(key=>query.has(key))) {
             const requestedRoom=registry.rooms.find(row=>row.id===query.get('table'));
             const nextOperator=query.get('operator')??requestedRoom?.operatorId??operator?.id??'';
-            const nextRoom=requestedRoom?.operatorId===nextOperator?requestedRoom.id:query.get('table')??room?.id??'';
+            const nextRoom=requestedRoom?.operatorId===nextOperator?requestedRoom.id:query.has('table')?query.get('table')??'':query.has('game')?'':room?.id??'';
             const nextDealer=query.get('dealer')??dealer?.id??'';
-            const nextGame=query.get('game')==='roulette'||requestedRoom?.game==='roulette'?'roulette':'blackjack';
+            const nextGame=requestedRoom?.operatorId===nextOperator
+              ? (requestedRoom.game==='roulette'?'roulette':'blackjack')
+              : (query.get('game')==='roulette'?'roulette':'blackjack');
             if(nextOperator!==operator?.id||nextRoom!==room?.id||nextDealer!==dealer?.id||nextGame!==game) {
               if(!changeContext(()=>{setOperatorId(nextOperator);setRoomId(nextRoom);setDealerId(nextDealer);setGame(nextGame);})){event.preventDefault();return;}
             }
@@ -223,12 +226,12 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   useEffect(()=>{setFlowNodes(current=>nodes.map(node=>({...current.find(row=>row.id===node.id),...node})));},[data,dealer?.id,category,game,cardSlots,selected,variants,locked,loading,authorized,positions,canvasWidth]);
   return <section className="flex min-h-0 flex-1 flex-col" aria-label="Central Studio">
     <header className="studio-workspace-header">
-      <div className="studio-workspace-toolbar"><p>Spelbolag → rum / bakgrund → spel → dealeruppsättning</p>
+      <div className="studio-workspace-toolbar"><p>Spelbolag → spel → rum / bakgrund → dealer och bord</p>
         <div className="studio-save-actions"><span className={dirty?'text-sg-amber':'text-sg-lime'}>{loading?'Läser…':dirty?'Osparat utkast':data?'Sparat':'Ej inläst'}</span><button className="studio-button studio-save" disabled={locked||loading||!authorized||!dirty||Boolean(pending)||configDirty||conflictPaths.length>0} onClick={()=>setReviewSave(true)}>Spara utkast</button><button className="studio-icon-button" aria-label="Läs om register" title="Läs om register" disabled={locked||loading} onClick={()=>{if((dirty||pending)&&!confirm('Kasta utkastet och läs om serverns revision?'))return;setPending(null);void load();}}><RotateCcw size={15}/></button></div></div>
       {registry&&<div className="studio-context-row">
         <label className="studio-field">Spelbolag<select value={operator?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setOperatorId(event.target.value);setRoomId('');setDealerId('');})}>{!operator&&<option value="" disabled>Välj ett aktivt bolag</option>}{registry.operators.filter(isActiveOperator).map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
-        <label className="studio-field">Rum / bakgrund<select value={room?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setRoomId(event.target.value);setDealerId('');})}>{rooms.length?rooms.map(row=><option key={row.id} value={row.id}>{row.name}</option>):<option value="">Inget registrerat rum</option>}</select></label>
-        <label className="studio-field">Spel<select value={room?.game??''} disabled><option value={room?.game??''}>{room?.game==='roulette'?'Roulette':room?'Blackjack':'Inget spel kopplat'}</option></select></label>
+        <label className="studio-field">Spel<select value={game} disabled={locked||loading} onChange={event=>changeContext(()=>{setGame(event.target.value as 'blackjack'|'roulette');setRoomId('');setDealerId('');})}><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option></select></label>
+        <label className="studio-field">Rum / bakgrund<select value={room?.id??''} disabled={locked||loading||!rooms.length} onChange={event=>changeContext(()=>{setRoomId(event.target.value);setDealerId('');})}>{rooms.length?rooms.map(row=><option key={row.id} value={row.id}>{row.name}</option>):<option value="">Inga rum för valt spel</option>}</select></label>
         <label className="studio-field">Dealeruppsättning<select aria-label="Dealerbank" value={dealer?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>setDealerId(event.target.value))}>{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
         <label className="studio-field">Bord<select aria-label="Bord" value={lane?.layers.table.default??''} disabled={locked||loading||!authorized||!room||!lane?.layers.table.enabled||room.game!=='blackjack'} onChange={event=>{try{edit(selectLayer(data!.project,room!, 'table',event.target.value));}catch(cause){setError((cause as Error).message);}}}><option value="" disabled>Inget bord valt</option>{lane?.layers.table.allowed.map(id=><option key={id} value={id}>{data!.project.layerAssets?.find(row=>row.id===id)?.label??id}</option>)}</select></label>
         <button className="studio-button" disabled={!room||locked} onClick={()=>togglePanel('layers')}>Redigera rummets bakgrund</button>

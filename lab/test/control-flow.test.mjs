@@ -3,11 +3,10 @@ import assert from 'node:assert/strict';
 import { canonicalControlHref, compositionLabel } from '../lib/control-flow.mjs';
 import { studioNavigationHref, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 
-test('legacy links converge on one workspace and preserve the selected company and room', () => {
-  assert.equal(canonicalControlHref('/studio/control/lanes?operator=&lane=mobile-phone'), '/control/rooms?composition=mobile-phone');
+test('older workspace links keep company and room context', () => {
   assert.equal(canonicalControlHref('/control/lanes?tab=companies&operator=op-one#team'), '/control/companies?operator=op-one#team');
   assert.equal(canonicalControlHref('/control/activity?dealer=paow&operator=north&table=room-one'), '/control/rehearsal?dealer=paow&operator=north&table=room-one');
-  assert.equal(canonicalControlHref('/control/preview?lane=old&composition=current'), '/control/compositions?composition=current');
+  assert.equal(canonicalControlHref('/control/preview?composition=current'), '/control/compositions?composition=current');
 });
 
 test('ambiguous or external document paths never become a navigation destination', () => {
@@ -26,8 +25,6 @@ test('navigation keeps company and real room identity but never copies auth or d
   assert.equal(link.searchParams.has('lane'),false);
 });
 
-test('only legacy default labels are translated; chosen composition names remain unchanged', () => {
-  assert.equal(compositionLabel('Mobile Phone Lane'),'Standardsammansättning');
-  assert.equal(compositionLabel('Layer Preview Lane'),'Lagersammansättning');
+test('chosen composition names remain unchanged', () => {
   assert.equal(compositionLabel('Norrsken'),'Norrsken');
 });

@@ -4,9 +4,9 @@
 
 Utgå från `/admin` och befintlig Labba/Sammansättningar; `/control` är kvar
 under övergången. N1 är intern administration, Studio är innehållsredigering
-inom N1, N2 är partner och N3 spelare. Målmodellen är spelbolag → rum/miljö
-→ spel → uttryckligt tillåtna bord/dealerklippset. Ändra inte legacy-ID:n
-eller kalla multi-game-lagringen färdig. Se den rättade
+inom N1, N2 är partner och N3 spelare. Produktmodellen följer den gemensamma ordlistan: spelbolag → spel →
+rum/bakgrund med uttryckligt tillåtna bord och dealers. Ändra inte legacy-ID:n
+eller beskriv rum/bakgrund-övergången som färdig. Se
 [ordlistan](../lab/docs/TERMINOLOGI.md) och runtimekontraktet.
 
 Uppdrag: återanvänd laborationsytan för roulette och visa samma scen på
@@ -41,6 +41,27 @@ MP4/WebM-/v12-grind. AI-aktivering, frameanalys, lipsync och rumsgenerering
 0–36-filmval; återförsök behåller requestId/version/satsningar. Saknade filmer
 ger stillbord och resultattext. 37-filmsbank, handträff, sömlösa loopar och
 produktionsacceptans för Anna är fortfarande **inte godkända**.
+
+## En produktmodell och papperskorg i rumslistan, 13 oktober
+
+`lab/docs/TERMINOLOGI.md` är nu källan för orden bolag, spel, rum/bakgrund,
+dealer, bord och sammansättning. Den har kortats från 169 till 85 rader.
+`AGENTS.md`, användarguiden och runtime-referensen hänvisar dit. Ett spel
+erbjuder kompatibla bakgrunder, dealers och bord; spelarens val bildar scenen.
+Samma bakgrundsfil kan användas av flera bolag utan delade rums-ID eller
+behörigheter. Format och äldre fullbildsklipp har uttryckliga regler.
+
+Registrerad admin och klippkarta visar spel före rum. Rumslistan i både
+`/admin` och `/control` har en direkt ingång till bolags- och rumpapperskorgen.
+Smala tester som låste gamla `lane`-länkar och standardnamn är borttagna;
+ägarskap, publicering och raderingsskydd är fortsatt testade. Tekniska ID:n,
+frysta paket och gamla länkar är oförändrade.
+
+Efter synk till `main` `cc63db71` passerar 101 riktade UI-/dokumentationsprov,
+10 raderingsgrindsprov, admin/lobby typkontroll och bygge. Den fulla
+commit-hooken passerade utan fel. Ingen produktdata eller Blobfil ändrades. Fortsatt arbete är att
+knyta varje aktivt rumsval entydigt till en bakgrund och prova publicerade
+dealer-/bordskombinationer i själva spelet.
 
 ## Tillägg 13 oktober: gemensam Studioassistent
 
@@ -156,8 +177,8 @@ Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
 runtimebindningstester passerar. Efter sammanslagning med senaste `main` och
 navigeringsrättningen passerar full regressionshook med 3 174 godkända,
 11 överhoppade och 0 fel;
-typkontroll och bygge passerar också på samma revision. PR-kontroller och
-produktionsvisning återstår efter push respektive merge.
+typkontroll och bygge passerar också på samma revision. PR70 är sammanslagen
+i `main` som `e51f30d3`.
 
 ## Tillägg 13 oktober: roulettefack och alfa för Anna-prov
 
@@ -253,91 +274,47 @@ utan att ändra det tidigare paketet. Regressionen föll före rättningen.
 PR #63:s levererade HERO, porträtt och dealergrindar bevaras vid integration.
 Inga mediebytes, produktionsdata eller rumspubliceringar ändras av arbetet.
 
-## SIDOR3: historisk materialläsning, 13 oktober
+## SIDOR3: avslutad Studioleverans, 13 oktober 2026
 
-Efter #55/c8f9b99 gav verkliga projekt-/videoanrop 200 men katalogen 422 med sanerat studio_native_unavailable; den publika katalogen blev också 503. Hotfixen bevarar historiska frysta spelgrants: nya materialtaggar är diagnostik vid läsning, medan operator-, room-, lane-, dealer- och paketauktoriteten fortsätter styra. inspectPackageRooms rapporterar den precisa typade katalogmismatchen utan att ändra paketet. Admin visar en materialvarning. Samma historiska Blackjack- och Roulette-syskon behåller urval, playUrl och giltig spelstart. Nya publiceringar kontrolleras fortfarande strikt och avvisas med 422 vid fel material. Verkliga struktur-/lagringsfel slår fortsatt igenom.
+PR #55, #67 och #69 är mergade. Admin använder registrerade Studio-data,
+befintliga skyddade tjänster och tydliga felstatusar. Biblioteket och
+kompositionspanelen delar originaluppladdning och impact-tokenstyrd papperskorg.
+Osparade utkast spärrar direkta livscykeländringar; sparning använder aktuella
+revisioner och konfliktjämförelse per stabilt ID. Ingen annan dealerbank väljs
+automatiskt vid saknad koppling. Senare import-, ekonomi- och startsidesarbete
+bevaras och redovisas i sina egna avsnitt ovan.
 
-34 riktade tester använder verkliga serialiserade frysta paket, admin/publickatalog och spelstart: oförändrade bytes/data och befintliga grants, samt oförsvagad publiceringsassert. Ingen DB-, schema- eller mediemutation. PR #67 är mergad som 027ceb03; Vercel och Render har verifierats på exakt version. Faktisk adminläsning av katalog, projekt och videoregister samt publik bolags- och rumslista svarar 200. Nordic Bet Roulette (room-1bc1b407-9538-9ae8-f7e2-fecf951989a2) har katalogvarningen med det sparade Blackjack-bordet Back to Basic; både dess och Blackjack in Snows befintliga playUrl/published/playable består. De fem originalborden avkodades åter från det skyddade produktionsbiblioteket. Detta är ett läskvitto, inte nytt media- eller läppsynksgodkännande.
+Alla fem oförändrade Blackjack-original är registrerade och återlästa/avkodade
+från det privata produktionsbiblioteket. De är fem separata designer, med
+gemensamma namn/design-ID och exakt källhash. Bibliotekets lager-UUID är en
+separat lagringsidentitet. Importen gav inga tilldelningar eller publiceringar;
+Back to Basic valdes senare i PAOW · Studio. Namn, ID och originalmått finns
+i [teknikreferensen](LOCAL-PRESENTATION-RUNTIME.md#begrepp-och-ägarskap).
 
-Materiallistor och papperskorg i admin får separat enkel styling med tydliga rader, knappar, tangentbordsfokus och mobilanpassning. Mobilrader följer naturlig DOM-ordning: filnamn, hänvisningar, därefter åtgärd. Samma befintliga kontroller och API används; inga nya mutationer eller ändrade regler. Ekonomi- och anslutna tjänsteytor ägs av den parallella ekonomichatten och ingår inte här.
+Efter #67 verifierades admin catalog/project/videos och publika bolags-/rumslistor
+med 200 i drift. Nordic Bet Roulette har materialvarning för Back to Basics
+blackjacktagg. Dess och Blackjack in Snows historiska spelbehörigheter och
+playUrl består; nya publiceringar avvisar fel spelmaterial. Detta är ett
+läs-/behörighetskvitto, inte ett nytt visuellt media- eller läppsynksgodkännande.
 
-## SIDOR3: fem separata bord och förenad papperskorg, 13 oktober
+Slutlig källversion för #69 är `c9e9116765ded44b66ecf09ae4452661c5b4416f`.
+Ordinarie hook: 3 114 godkända, 11 överhoppade, 0 fel; designbygge, admin-typer
+och CI gröna. Verklig LayerAssetManager-markup verifierade namn och hänvisningar
+före knappen i fyra aktiva mobilrader och en trashrad; desktopens två kolumner
+bevaras. Isolerad HTTP-/browser-QA verifierade sparning/omstart, 409,
+401/återanslutning med bevarat utkast, flytt och restore som obundet val.
+Kontrollerna ändrade inte produktionsdata och innebär ingen ny scenacceptans.
 
-Jakob korrigerade att borden inte hör ihop som grundbord/variationer. Alla
-fem oförändrade original är registrerade i produktionsbiblioteket och
-återlästa/avkodade efter omladdning: grön filt, svart filt, Oak, Purple Rain
-och Back to Basic. Namn, design-ID, källhashar och upload-ID följer den
-gemensamma katalogen och teknikreferensen. Biblioteket har sju bord inklusive
-de två äldre; vid intaget var de nya originalen obundna och inga publiceringar ändrades.
-Framtida blinksekvenser dokumenteras som uttryckliga frames med accepterad
-gemensam geometri. Ingen variantkoppling eller blinkuppspelning har skapats.
+Vidare produktarbete: uttrycklig övergång från dagens enspelsrum, blinksekvenser
+för bord, fullfile-taldriver, generell ändringsloggs läs-API och visuell
+spel-/mediacceptans. Följ den aktuella domänmodellen i teknikreferensen och
+`lab/docs/TERMINOLOGI.md`; UI-rubriker är inte bevis för genomförd lagringsmigrering.
+Det finns ingen osparad produktkod eller återstående aktivering i denna chatt.
+Privat verifierad säkerhetskopia innehåller källbundlar, de fem originalen och
+kvitton (`studio-delivery-final-c9e91167.zip`); inga binärer eller nyckelvärden
+ligger i Git. Vercel-/lokalenvrättningen dokumenteras separat i
+[miljövariabler](ENVIRONMENT-VARIABLES.md#avslutsrättning-13-oktober-2026-vercel-och-blob-metadata).
 
-PR #55 förenar bakgrunds-PR #58 och papperskorgs-PR #60. Runtime v10 behåller
-dealerSets; v11 innehåller både dealerSets och materialTrash. Skyddad
-readiness kräver rätt version före mutation, även när båda fälten förekommer.
-66 riktade kontrakt-/material-/livscykeltester och 17 kvitto-/UI-tester gröna.
-
-`/admin/assets` har riktigt bibliotek, originaluppladdning och gemensam
-impact-tokenstyrd materialpapperskorg. Kompositionspanelen återanvänder samma
-API. `/admin/admin/operators` återanvänder Control-kontroller för bolag och
-rum med färska administrations-/paketrevisioner. Dealer/klipp använder sina
-befintliga skyddade livscykelklienter. Osparat Studio-utkast spärrar direkta
-livscykeländringar; efter sparande synkas bibliotekets revision. Inga mockade
-kvitton eller automatiska återkopplingar används i produktkod.
-
-Isolerad QA på 53764: verklig skyddad HTTP-dispatcher/materialplan med separat
-beständig fillagring, inga publicerade paket eller produktions-SQL. Browsern
-verifierade flytt, omladdning, restore som obundet val, utkastspärr, 401 samt
-återanslutning med bevarat bordval och lyckat sparande. Detta är ingen
-produktionsacceptans av nya `/admin`. Separat chatt äger Control-slutkontroll
-och eventuell Your Company-städning; den utförs inte här. Multi-game-rummens
-övergång, fullfile-taldriver, generell ändringslogg och visuell spelacceptans
-kvarstår enligt tidigare WIP. Ingen Neon-migration eller betald körning gjord.
-
-## SIDOR3: anslutningar och bordsintag, 13 oktober
-
-PR #55 (`codex/studio-workspace`) förenas med `main` `8c77d05a` i egen
-arbetsgren. Importer använder nu `packages/presentation/runtime`. `/admin`
-använder befintlig NativeAdministration för drift, konton, spelare, betalningar
-och API samt befintlig OpenClaw-modellvy och skyddad agentchatt. De tidigare
-simulerade sidkomponenterna används inte av entrypunkten. Varje API-fel visas;
-generell ändringslogg saknar läs-API och märks fortfarande som saknad.
-
-Bolag väljs före rum/bakgrund och spelet läses ur det registrerade rummet.
-Dealerlistan använder den sparade sammansättningens tillåtna aktiva dealer-ID;
-ingen annan bank väljs vid saknad koppling. Bakgrundsval och befintlig
-bakgrundsautomation finns i rummets panel, inklusive lokal regelpreview.
-Ändrade gemensamma triggers ingår i sparandets förhandsvisade rumspåverkan.
-Ett rum med flera spel kräver fortfarande den uttryckliga övergången från
-gamla enspelsrum; den är inte utförd genom UI-ändringen.
-
-Kanonisk materialkatalog `web/public/material-catalog.mjs` innehåller
-`blackjack-green-felt` / **Blackjack · grön filt** och
-`blackjack-black-felt` / **Blackjack · svart filt**. Oförändrade 1672 × 941 PNG
-med alpha säkrades privat och används som riktiga filer i beständig isolerad
-QA på port 53764. Båda borden är nu registrerade i det riktiga privata
-biblioteket, återlästa och avkodade efter omladdning; de har ännu ingen
-sammansättningstilldelning. Lager-ID och källhashar finns i teknikreferensen.
-Bakgrundsagentens gemensamma katalog finns i PR #58, commit `92941487`;
-rumsval eller publicerade paket ersätts aldrig automatiskt. Domänregeln är
-även tillagd i `AGENTS.md`. Fullfile-taldriver och produktionsacceptans från
-föregående WIP är fortfarande öppna; inga betalda genereringar utfördes.
-
-Konfliktjämförelsen förenar separata fält i samma sammansättning via stabilt
-ID. Samma fält, radering mot redigering och samtidig omordning kräver fortsatt
-uttryckligt val. Sparning och återläsning över QA-omstart, verklig 409 och
-N1-blockering är webbläsarverifierade. Återanslutningsvägen tillåter skyddad
-omläsning utan skrivmandat före verifierad session. Det avslutande UI-provet
-är nu slutfört i Chrome: 401 behöll utkastet, återanslutning jämförde senaste
-revision och efterföljande sparande lyckades.
-
-Verifiering på checkpoint `90aab25d`: ordinarie full hook 3 048 godkända,
-11 hoppade, 0 fel; Studio-produktionsbygge passerade. Senare serverkontroll
-för kända materials speltyp har 84 riktade kontrakt-/publiceringstester gröna.
-Integrationsvyn får betrodd spelorigin från N1-sessionens serverkonfiguration;
-saknad origin aktiverar inte launch-länkar. Gemensam papperskorg i befintlig
-Control ägs av separat backendarbete; v11 reserveras för materialTrash med
-v10/dealerSets-kontraktet bevarat. Senare slutkontroller redovisas i PR #55.
 ## Tillägg 13 oktober: papperskorg i befintliga Control
 
 `codex/control-trash` bygger vidare på bakgrunds-PR #58. Bolagsarkivering

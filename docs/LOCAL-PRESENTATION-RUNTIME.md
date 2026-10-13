@@ -102,51 +102,42 @@ rehearsalspelaren före merge. Kontrollerna ändras inte av assistentleveransen.
 
 ## Central Studio: rum, spel och lager, 13 oktober 2026
 
-Detta är målkontraktet för nya `/admin`, enligt Jakobs senaste krav. Det är
-inte ett kvitto på genomförd datamigrering eller godkänd speluppspelning.
-Nuläget nedan lästes i produktion utan skrivningar; kodreferenserna granskades
-på `main` `a5441feb1fd1761ca95d12b4f51beed2f689c57b`. `/control` och dess
-publicerade paket fortsätter fungera medan den nya ytan granskas.
+Produktmodellens enda källa är [TERMINOLOGI.md](../lab/docs/TERMINOLOGI.md).
+Det här dokumentet beskriver teknisk lagring, format, uppspelning och
+övergångsbegränsningar. Målmodellen är inte ett kvitto på genomförd
+datamigrering eller godkänd speluppspelning. Den äldre inventeringen nedan
+lästes i produktion utan skrivningar på `main`
+`a5441feb1fd1761ca95d12b4f51beed2f689c57b`; `/control` och frysta
+paket fortsätter fungera medan `/admin` utvecklas.
 
 ### Begrepp och ägarskap
 
-Regeln gäller även framtida agentarbete via `AGENTS.md`. Kanoniska nya material
-finns i `web/public/material-catalog.mjs`: design-ID och exakt filhash knyter
+Kanoniska nya material finns i `web/public/material-catalog.mjs`: design-ID
+och exakt filhash knyter
 ihop namn i admin, partner, lobby och spel. Katalogen registrerar eller
 publicerar aldrig ett operatörsrum. Bibliotekets lager-UUID är separat från
 design-ID:t; en identisk etikett är inte bevis för identiska bytes.
 
-Jakobs första två tillförda bordsoriginal är **Blackjack · grön filt**
-(`blackjack-green-felt`) och **Blackjack · svart filt**
-(`blackjack-black-felt`). Båda är PNG, 1672 × 941, med alpha (0–255).
-Originalens SHA256 är respektive
-`1a88e822883374b6e855fa75d0da6a4dd02be0840bd4ddb7865345fe12c988b4` och
-`c43a150457216aeb8649f802c5feb8719e257631704f98db46be2530214b8b19`.
-De är byteverifierat säkrade i privat materialintag och registrerade i det
-riktiga privata produktionsbiblioteket. Grön filt har lager-ID
-`ca96f462-9dcd-4160-bb11-e898c2feb934`, svart filt har
-`a9ccb310-dfa5-4e05-860e-b6d8e3b9eabd`. Båda återlästes efter sidomladdning
-och avkodades som 1672 × 941 i webbläsaren; biblioteket gick från två till
-fyra bord. Båda är ännu oanvända och valbara i Sammansättningar. Ingen
-publicerad sammansättning eller bolagsinställning ändrades vid bordsintaget.
-Alpha/dimensioner är verifierade; bordsplacering och spelgeometri behöver
-visuell acceptans. Isolerad QA använder separata lager-UUID och beständig
-testsparning; dessa är inte produktions-ID:n.
-
-Ytterligare tre oförändrade PNG-original registrerades och avkodades efter
-omladdning. Biblioteket innehåller nu sju bord, varav fem är Jakobs nya original.
-Alla fem är separata designer: Jakob korrigerade uttryckligen att de inte
-hör ihop som grundbord och variationer. Ingen koppling har skapats mellan dem.
+Fem oförändrade PNG-original är registrerade i det privata produktionsbiblioteket
+och återlästa/avkodade efter omladdning. Det verifierade registret har sju bord,
+inklusive två äldre. Alla fem tillförda bord är separata designer: Jakob
+korrigerade uttryckligen att de inte är grundbord och variationer av varandra.
+Ingen variantkoppling eller blinksekvens har skapats.
 
 | Kanoniskt namn / design-ID | Lager-ID i det privata biblioteket | Originalmått |
 | --- | --- | --- |
+| Blackjack · grön filt / `blackjack-green-felt` | `ca96f462-9dcd-4160-bb11-e898c2feb934` | 1672 × 941 |
+| Blackjack · svart filt / `blackjack-black-felt` | `a9ccb310-dfa5-4e05-860e-b6d8e3b9eabd` | 1672 × 941 |
 | Blackjack · Oak / `blackjack-oak` | `f00be01d-fe7c-4a43-85b9-952e378f7331` | 1672 × 941 |
 | Blackjack · Purple Rain / `blackjack-purple-rain` | `257e6711-9152-49f2-83ae-6127ce3bc420` | 1672 × 941 |
 | Blackjack · Back to Basic / `blackjack-back-to-basic` | `073ed70c-d764-4902-860c-6a56300abfaf` | 1774 × 887 |
 
 Källhashar, storlek, MIME och alpha finns i samma kanoniska materialkatalog.
-Registreringen ändrade inga tilldelningar eller publiceringar. Originalfiler
-och privata ursprungssökvägar bevaras utanför Git.
+Registreringen gav inga tilldelningar eller publiceringar. Back to Basic valdes
+senare i PAOW · Studio; det är ett separat sammansättningsval. Alpha och mått
+är verifierade, medan placering och spelgeometri behöver visuell acceptans.
+Isolerad QA använder separata lager-UUID som inte är produktions-ID:n.
+Originalfiler och privata ursprungssökvägar bevaras utanför Git.
 
 ### Framtida bordsekvenser
 
@@ -170,27 +161,24 @@ sitt befintliga kontrakt och behöver separat granskad klassificering.
 
 ```mermaid
 flowchart LR
-  Operator[Spelbolag] --> Room[Rum / bakgrundsmiljö]
-  Room --> BJ[Blackjack]
-  Room --> Roulette[Roulette]
-  BJ --> BJDealer[Tillåtna dealeruppsättningar]
-  Roulette --> RDealer[Tillåtna dealeruppsättningar]
-  BJ --> BJTable[Blackjackbord]
-  Roulette --> RTable[Roulettebord]
-  BJDealer --> Clips[Grundloop, händelseklipp och exakt tal]
-  RDealer --> Clips
+  Scoutgaming --> Operator[Bolag / operatör]
+  Operator --> Game[Publicerat spel]
+  Game --> Room[Rum = valbar bakgrund]
+  Game --> Dealer[Tillåtna dealers och klipp]
+  Game --> Table[Tillåtna bord för spelet]
+  Room --> Asset[Versionerad bakgrundsfil]
+  Dealer --> Scene[Spelarens valda scen]
+  Table --> Scene
+  Room --> Scene
 ```
 
-| Begrepp | Kontrakt för nya ytan |
-| --- | --- |
-| Spelbolag | Äger sina rum, tilldelningar och publiceringar. Ett bolags val ger aldrig åtkomst till ett annat bolags utkast. |
-| Rum / bakgrund | En namngiven miljö med en vald grundbakgrund: bild eller video. Detta är ett och samma val i användarflödet. Rummet får innehålla både Blackjack och Roulette. |
-| Bakgrundsfil | En versionsbunden lagerresurs med eget ID, roll, MIME och hash. Flera filer kan vara varianter inom samma miljö. Ett biblioteksobjekt skapar inte automatiskt ett publicerat rum. Samma fil kan återanvändas i flera bolags rum utan att deras rumsidentiteter slås ihop. |
-| Spel | Ett aktiverat spel i ett visst rum, med egen adapter, bord/geometri och tillåtna dealeruppsättningar. Insatsgränser hör hit; VIP är inte en separat rumstyp eller automatisk etikett. |
-| Dealer | Personens registrerade identitet. Visningsnamnet räcker inte som nyckel. |
-| Dealeruppsättning | En namngiven uppsättning klippreferenser för en dealer och avsett spel. Exempelvis PAOW och PAOW 3 kan vara uppsättningsnamn, men endast om registret faktiskt beskriver dem så. |
-| Bord | Förgrundslagret och spelets placeringsgeometri. Bordet är varken rum, bakgrund eller dealer. Bordsfärg är en uttrycklig tillåten bordsegenskap. |
-| Sammansättning | Den tekniska sammanställningen av miljö, dealer, bord, klipp och placering för mobil/desktop. Befintliga `lane`-ID behålls som kompatibilitet tills en granskad övergång är klar. |
+Rums-ID:t är bolagets spelbara bakgrundsval i ett spel; det är inte samma ID
+som den underliggande delbara filen. Ett spel får erbjuda flera rum, dealers
+och bord. Spelaren väljer en tillåten kombination och får en scen med ett
+giltigt dealer- och bordsförval om inga egna val görs. En ny kombination
+skapar ingen ny dealer, inget nytt biblioteksobjekt och inget nytt permanent
+rum. Äldre publicerade rum, sammansättningar och tekniska ID:n bevaras tills
+de kan överföras med rätt ägarskap och kompatibilitet.
 
 En dealer får bara väljas om den uttryckligen är tillåten och har nödvändigt
 material för spelet. Ett blackjackpaket blir inte ett roulettepaket genom
@@ -203,9 +191,9 @@ Struktur ligger utanför Studio och visar Scoutgaming → Studio, Drift,
 Ekonomi, AI och Admin samt verkliga relationer och antal. Simulerade data
 och saknade anslutningar ska märkas i själva förhandsvisningen.
 
-Studio har en central klippkarta. Kontexten följer **spelbolag → rum/bakgrund
-→ spel → dealeruppsättning**. Blackjack/Roulette får vara flikar, men visar
-spelvalet inom det valda rummet. Bakgrundens filer/varianter redigeras i
+Studio har en central klippkarta. Kontexten följer **spelbolag → spel →
+rum/bakgrund → dealer**. Blackjack/Roulette är spelval; rummets bakgrund
+väljs inom det valda spelet. Bakgrundens filer/varianter redigeras i
 rummets panel; en andra fristående bakgrundsväljare får inte skapa en
 motsägande rumskoppling. Bord och grundloop är kontextuella val vid kartan.
 Nivå 1/2/3 leder till intern administration, spelbolagsportal och spelarvy
@@ -312,14 +300,15 @@ status, aldrig en tyst ersättning med mallens bild eller en annan dealers film.
 
 I `web/presentation-room-contract.mjs` är dagens rum en operatörsägd
 spelbar ingång med ett `presentationLaneId`, ett `gameLaneId` och **ett**
-`game` (äldre poster utan fält läses som Blackjack). `gameLaneId` och URL-
-parametern `table` är tekniska spel-/rumsidentiteter, inte bordsbilder.
-Därför kan ett rum med två spel inte införas enbart genom nya rubriker.
-Övergången måste uttryckligen mappa befintliga spelrum till en gemensam
-miljö med separata spelbindningar, bevara gamla rums-ID/länkar och kontrollera
-behörigheter och publiceringsrevisioner. Gruppera aldrig på bara namn eller
-bakgrundsfil: två bolags rum och olika spelinställningar måste hållas isär.
-Detta dokument väljer inte ett nytt lagringsschema och genomför ingen migrering.
+`game` (äldre poster utan fält läses som Blackjack). Det passar regeln att
+spelet erbjuder flera rum, men ett äldre rum behöver inte ännu ha en entydig
+bakgrund: dess sammansättning kan innehålla flera tillåtna filer och en separat
+standard. `gameLaneId` och URL-parametern `table` är tekniska spel-/rums-ID:n,
+inte bordsbilder. Övergången ska knyta varje aktivt rumsval till rätt
+bakgrund och spel utan att förlora gamla rums-ID/länkar, delade filmfiler,
+behörigheter eller publiceringsrevisioner. Gruppera aldrig på enbart namn
+eller filhash. Det behövs ingen ny resurstyp för en spelares tillåtna
+dealer-/bordskombination; den är ett val i spelet.
 
 Rumsarkivering påverkar den spelbara ingången; den får inte radera dealer,
 sammansättning eller delade filer. Arkivering av en uppsättningskategori
@@ -334,7 +323,7 @@ och lipsynclogiken ska finnas kvar även när en kategori tas bort.
 Första UI-preview ska granskas innan ytterligare menyombyggnad. Därefter
 behövs verklig inläsning av ovanstående lager, isolerad verifiering av
 släpp/uppladdning och återläsning, säkra livscykelflöden, migrationsbeslut
-för rum med flera spel och visuell acceptans i respektive spel. Testdata,
+för tydlig rum/bakgrund-koppling och visuell acceptans i respektive spel. Testdata,
 registrerade rum eller gröna enhetstester är inte detta acceptanskvitto.
 
 ## Medieformat för roulette och blackjack
@@ -795,7 +784,11 @@ media- eller spelarändring körs testerna i `.githooks/pre-commit`. Berörda
 registrerade dealers granskas med `?dealer=<name>&rehearsal=1`, två uppspelningar
 i rad. Provspelningen använder den faktiska spelaren.
 
-## Studioflöde, 9 oktober 2026
+## Äldre Studioflöde, 9 oktober 2026
+
+Det här avsnittet beskriver de bevarade `/control`-länkarna och de frysta
+paketens fältnamn. Det är inte meny- eller begreppskontraktet för `/admin`;
+se [produktmodellen](../lab/docs/TERMINOLOGI.md).
 
 Sammansättning (/control/preview) är navet. Innehåll (/control/clips) samlar
 klipp och når bibliotek, händelser samt talinställningar med dealer/situation.
@@ -895,14 +888,17 @@ Aktuell speluppspelning, QA-version och acceptansgränser redovisas i
 [handoffen](JOHN-HANDOFF.md). QA:s AI-flaggor är OFF; journaler och
 reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
-## Tre nivåer och gemensamma begrepp
+## Tre produktytor och äldre runtimeadresser
+
+Produktmodell och aktuella namn finns i [TERMINOLOGI.md](../lab/docs/TERMINOLOGI.md).
+Tabellen här anger fungerande tekniska ingångar under övergången.
 
 | Nivå | Adress | Ansvar och faktisk status |
 | --- | --- | --- |
-| 1 · intern personal | `/control` | Gemensam ingång på sidmallen. Översikt, Innehåll `/control/clips`, Klippbibliotek `/control/videos`, Händelser `/control/events` (översikt utan `?event=`, redigerare med), Sammansättning `/control/preview` (lagerprov, material i `packages/presentation/preview/site`), Publicering `/control/lanes` (publicera paket samt kortet Bolag för bolag, roller och medlemskap; Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser paketet), Agentmodeller `/control/openclaw`, Chatt `/control/openclaw?tab=chat`, Administration `/control/administration` med djuplänkar `?tab=`, Uppspelning `/control/activity`, Tal vid inaktivitet `/control/probe`, Guide & hjälp `/control/guide`. `/control/tree` leder till Händelser. `/control/operator-chat` leder till chattfliken. `/control/backgrounds` leder till `/control/zones`. `/studio` är labbets basePath, inte ytans namn. Kräver intern admin. |
-| 2 · Partnerportal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). Intern admin utan `partner_session` ser fixturförhandsvisning, inte `/control`. Operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`). Bolag, roller och medlemskap skapas i kortet Bolag på `/control/lanes`; ny e-post får aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av en medlem med `presentations.configure`. Spelare, transaktioner och rapporter är inte anslutna (N2.4). |
-| 3 · Spelaryta | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spellobby, egen profil (namn, saldo, valuta) och egen historik. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar Spelar hos från `?operator=`. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` begränsar lane och dealer till paketet; dealerraden följer paketet. Acceptans av dealermedia i rehearsal: `?dealer=<namn>&rehearsal=1`. Historiksidan anropar `POST /api/history`, se raden under. |
-| 3 · Spelarresultat | `/api/history` | Spelare. Egna aggregerade resultat. Samma session som `/api/player`. |
+| Intern personal | `/admin`; äldre `/control` | Hanterar Studio, bolag, publicering och drift. Äldre länkar och sparade konfigurationer fortsätter fungera. Kräver intern behörighet. |
+| Operatörens personal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Ser endast bolag där medlemskapet är aktivt. Publicerade alternativ och rättigheter kontrolleras på servern. |
+| Spelare | `/lobby`; äldre `/play`, `/play/blackjack` och Renders `/blackjack` | Ser öppna rum och tillåtna dealer-/bordsval i bolagets publicerade paket. Den faktiska spelmotorn avgör kort, saldo och utfall. |
+| Spelarresultat | `/api/history` | Egna aggregerade resultat i samma session som `/api/player`. |
 
 ### Lagring
 
@@ -911,16 +907,16 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 | `wandering-hill-60561912` | eu-central-1, Frankfurt | Produktion: databasen `croupier_game` med schemana `croupier_game`, `croupier_auth` och `croupier_studio`. Samma projekt: QA-databaserna `croupier_game_qa` och `croupier_studio_qa_abc92154cb15`. |
 | `blue-king-49830878` (`croupier-preview-neon`) | us-east-1 | Äldre tom förhandsvisning. |
 
-En **lane** är en presentationsprofil: klippuppsättningar, varianter, idle,
-bakgrund och urvalsregler som spelaren får använda. En lane är varken ett
-spelarkonto, en videofil eller själva spelmotorn. Nuvarande sparade profiler
-och lane-ID:n behålls. Ett **operatörspaket** är vilka lanes, spel/bord och varumärkesval en operatör
-tilldelas. Fixturförhandsvisningen använder exempeldata. Operatörens snapshot
+I äldre lagring är `lane` en presentationsprofil med klippuppsättningar,
+grundloop, bakgrund och urvalsregler. Fältet och dess sparade ID:n behålls
+för frysta paket och länkar; användartermen är **sammansättning**. Ett
+**operatörspaket** är de publicerade sammansättningar, spel, rums-ID:n och
+varumärkesval ett bolag tilldelas. Fixturförhandsvisningen använder exempeldata. Operatörens snapshot
 kan visa ett sparat pakets revision. Renders `/blackjack?operator=` och Vercels `/play/blackjack?operator=` läser det publicerade paketet; slugen bärs genom spelarinloggningen och dealerraden följer paketet.
 
 ```mermaid
 flowchart LR
-  C["Nivå 1 /control: producerar och sparar lane"] --> L["Godkänd lane / presentationsprofil"]
+  C["Intern Studio: sparar sammansättning"] --> L["Godkänd presentationskonfiguration"]
   G["Spelmotor på Render: kort, regler, saldo"] --> A["Presentationsadapter: spelsignal till behov"]
   A --> D["Urval / Presentation Director"]
   L --> D

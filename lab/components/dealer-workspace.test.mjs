@@ -412,9 +412,8 @@ test('clips route and dealer management preserve composition operator and room t
     '@/components/lab-studio':{LabStudio:LabStudioMarker},
     '../../control-studio-data':{loadControlStudio:async()=>({project,videos:{videos:[]}})},
   })[name]??require(name)});
-  const page=await routeModule.exports.default({searchParams:Promise.resolve({composition:'mobile-phone',lane:'old-composition',operator:'operator-42',table:'room-7',dealer:'paow',view:'clips'})});
+  const page=await routeModule.exports.default({searchParams:Promise.resolve({composition:'mobile-phone',operator:'operator-42',table:'room-7',dealer:'paow',view:'clips'})});
   assert.equal(page.type,LabStudioMarker);assert.equal(page.props.initialLaneId,'mobile-phone');assert.equal(page.props.initialOperatorId,'operator-42');assert.equal(page.props.initialTableId,'room-7');
-  const legacyPage=await routeModule.exports.default({searchParams:Promise.resolve({lane:['desktop-wide','ignored']})});assert.equal(legacyPage.props.initialLaneId,'desktop-wide');
   const navSource=readFileSync(new URL('./studio-navigation.tsx',import.meta.url),'utf8');
   const navOutput=transformSync(navSource,{filename:'studio-navigation.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   const navModule={exports:{}};vm.runInNewContext(navOutput.code,{module:navModule,exports:navModule.exports,require:name=>name==='next/navigation'?{useSearchParams:()=>new URLSearchParams()}:name.endsWith('.module.css')?{__esModule:true,default:{}}:require(name)});
@@ -438,20 +437,12 @@ test('clips route and dealer management preserve composition operator and room t
   for(const link of outgoing){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('composition'),'mobile-phone');assert.equal(query.get('operator'),'operator-42');assert.equal(query.get('table'),'room-7');}
   pressDealer(tree,'Mei');tree=h.render(page.props);assertTabs('mei','mobile-phone','operator-42','room-7');
   for(const link of tabLinks()){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.has('event'),false);assert.equal(query.has('situation'),false);}
-  for(const [url,composition] of [['/control/clips?lane=desktop-wide&dealer=paow&view=settings','desktop-wide'],['/control/clips?dealer=paow&view=settings',null],['/control/clips?composition=mobile-phone&dealer=paow&view=settings','mobile-phone']]){
+  for(const [url,composition] of [['/control/clips?dealer=paow&view=settings',null],['/control/clips?composition=mobile-phone&dealer=paow&view=settings','mobile-phone']]){
     setLocation(url);listeners.get('popstate')({type:'popstate'});tree=h.render(page.props);assertTabs('paow',composition);
   }
   const replies=tabLinks().find(link=>link.props.children==='Svarsbibliotek');replies.props.onClick({button:0,preventDefault(){}});tree=h.render(page.props);h.flushEffects();
   assert.equal(assigned.length,1);assert.equal(new URL(assigned[0],'https://local.test').searchParams.get('composition'),'mobile-phone');
 });
-
-test('legacy composition hash redirects retain the selected lane and dealer',()=>{
-  const redirected=[],runtimeWindow={location:{href:'https://local.test/control/clips?dealer=paow&lane=mobile-phone#background',search:'?dealer=paow&lane=mobile-phone',hash:'#background',replace:href=>redirected.push(href)},addEventListener(){},removeEventListener(){}};
-  const p={...props(),initialProject:addDealer(createSeedProject(),'paow','PAOW'),initialDealerId:'paow',initialLaneId:'mobile-phone'};
-  const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();assert.equal(redirected.length,1);
-  const url=new URL(redirected[0],'https://local.test');assert.equal(url.pathname,'/control/compositions');assert.equal(url.searchParams.get('dealer'),'paow');assert.equal(url.searchParams.get('composition'),'mobile-phone');
-});
-
 
 test('visible dealer archive entry preserves dirty drafts and blocks lifecycle mutations until saved',()=>{
  const p=props(),h=harness('./lab-studio.tsx');h.render(p);

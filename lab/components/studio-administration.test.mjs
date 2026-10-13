@@ -671,7 +671,7 @@ test('isolated legacy and active account forms emit established payloads with CA
   formFor('Spara rum').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ state: 'pending' }) });
   formFor('Spara dealer').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ dealer: 'mei' }) });
   assert.equal(calls.length, 2); assert.ok(calls.every(call => call.body.expectedRevision === 'studio-v1'));
-  formFor('Spara aktiv lane').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ lane: 'mobile-phone' }) });
+  formFor('Spara aktiv spelkonfiguration').props.onSubmit({ preventDefault() {}, currentTarget: new Form({ lane: 'mobile-phone' }) });
   assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1))), { action: 'game-lane', body: { lane: 'mobile-phone', expectedRevision: 'studio-v1' } });
   tree = h.StudioAdministrationView({ ...viewProps('admin'), command: (action, body) => calls.push({ action, body }) });
   const playerForm = new Form({ username: 'test-one', name: 'Tester', password: 'temporary-password', currency: 'SEK', reason: 'Demo' });

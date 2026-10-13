@@ -38,6 +38,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const [companyView,setCompanyView]=useState<'active'|'trash'|'suspended'>('active');
   const [lifecycleBusy,setLifecycleBusy]=useState(false);
   const [operatorId, setOperatorId] = useState(()=>new URLSearchParams(location.search).get('operator')??'');
+  const [game,setGame]=useState(()=>new URLSearchParams(location.search).get('game')??'');
   const [roomId, setRoomId] = useState(()=>new URLSearchParams(location.search).get('table')??'');
   useEffect(() => {
     const controller = new AbortController();
@@ -63,22 +64,31 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
     rooms:complete.rooms.filter(room=>room.state!=='archived'&&groups.active.some(row=>row.id===room.operatorId))}:null;
   const operator = data?.operators.find(row => row.id === operatorId) ?? data?.operators[0];
   const operatorRooms = data?.rooms.filter(row => row.operatorId === operator?.id) ?? [];
-  const selectedRoom = operatorRooms.find(row => row.id === roomId) ?? operatorRooms[0];
+  const requestedRoom=operatorRooms.find(row=>row.id===roomId);
+  const selectedGame=requestedRoom?.game??(operatorRooms.some(row=>row.game===game)?game:operatorRooms[0]?.game??'');
+  const gameRooms=operatorRooms.filter(row=>row.game===selectedGame);
+  const selectedRoom = gameRooms.find(row => row.id === roomId) ?? gameRooms[0];
   const dealerName = (id: string) => data?.dealers.find(row => row.id === id)?.name ?? id;
   const editHref = controlLink('/control/rooms', operator, selectedRoom);
   return <>
     <nav aria-label="Registrerad struktur" className="flex flex-wrap items-center gap-3 border-b border-sg-line bg-sg-panel/60 px-6 py-3 text-xs">
       <label className="flex items-center gap-2 text-sg-muted">Spelbolag
         <select aria-label="Välj spelbolag" className="max-w-48 rounded border border-sg-line bg-sg-bg p-1.5 text-sg-text" value={operator?.id ?? ''} disabled={!data?.operators.length||lifecycleBusy}
-          onChange={event => { setOperatorId(event.target.value); setRoomId(''); }}>
+          onChange={event => { setOperatorId(event.target.value); setGame(''); setRoomId(''); }}>
           {!data?.operators.length && <option value="">Inga val tillgängliga</option>}
           {data?.operators.map(row => <option value={row.id} key={row.id}>{row.name}</option>)}
         </select>
       </label><span className="text-sg-muted" aria-hidden>›</span>
+      <label className="flex items-center gap-2 text-sg-muted">Spel
+        <select aria-label="Välj spel" className="max-w-48 rounded border border-sg-line bg-sg-bg p-1.5 text-sg-text" value={selectedGame} disabled={!operatorRooms.length||lifecycleBusy} onChange={event=>{setGame(event.target.value);setRoomId('');}}>
+          {!operatorRooms.length&&<option value="">Inga spel registrerade</option>}
+          {[...new Set(operatorRooms.map(row=>row.game))].map(id=><option key={id} value={id}>{labels[id]??id}</option>)}
+        </select>
+      </label><span className="text-sg-muted" aria-hidden>›</span>
       <label className="flex items-center gap-2 text-sg-muted">Rum
-        <select aria-label="Välj rum" className="max-w-48 rounded border border-sg-line bg-sg-bg p-1.5 text-sg-text" value={selectedRoom?.id ?? ''} disabled={!operatorRooms.length} onChange={event => setRoomId(event.target.value)}>
-          {!operatorRooms.length && <option value="">Inga rum registrerade</option>}
-          {operatorRooms.map(row => <option value={row.id} key={row.id}>{row.name}</option>)}
+        <select aria-label="Välj rum" className="max-w-48 rounded border border-sg-line bg-sg-bg p-1.5 text-sg-text" value={selectedRoom?.id ?? ''} disabled={!gameRooms.length||lifecycleBusy} onChange={event => setRoomId(event.target.value)}>
+          {!gameRooms.length && <option value="">Inga rum för valt spel</option>}
+          {gameRooms.map(row => <option value={row.id} key={row.id}>{row.name}</option>)}
         </select>
       </label>
       <a href="/admin/lobby" className={cn(linkClass, 'ml-auto')}>Öppna spellobbyn <ArrowUpRight size={13} /></a>
@@ -86,12 +96,12 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
     <section className="flex flex-1 flex-col gap-6 px-6 py-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-sg-lime">{'// Studio · Register'}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{path === '/control' || path === '/control/structure' ? 'Spelbolag → Rum → Spel → Bord & dealer' : title}</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{path === '/control' || path === '/control/structure' ? 'Spelbolag → Spel → Rum / bakgrund → Dealer & bord' : title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-sg-muted">Registrerade bolag och rum använder samma skyddade register och papperskorg som Control. Team och publicering nås via bolagets länkar.</p>
         </div>
-        <button type="button" disabled={state.status === 'loading'||lifecycleBusy} onClick={() => setRefresh(value => value + 1)} className="inline-flex items-center gap-2 rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-50"><RefreshCw size={13} /> Uppdatera</button>
+        <div className="flex items-center gap-3">{path==='/control/rooms'&&operator&&<button type="button" className={linkClass} onClick={()=>document.getElementById('room-trash')?.scrollIntoView({block:'start'})}>Papperskorg och återställning</button>}<button type="button" disabled={state.status === 'loading'||lifecycleBusy} onClick={() => setRefresh(value => value + 1)} className="inline-flex items-center gap-2 rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-50"><RefreshCw size={13} /> Uppdatera</button></div>
       </header>
-      {complete&&path==='/control/admin/operators'&&<div role="group" aria-label="Bolagsvy">{(['active','trash','suspended'] as const).map(view=><button key={view} className="studio-button" aria-pressed={companyView===view} disabled={lifecycleBusy} onClick={()=>{setCompanyView(view);setOperatorId('');setRoomId('');}}>{({active:'Aktiva bolag',trash:'Papperskorg',suspended:'Avstängda bolag'})[view]} ({groups[view].length})</button>)}</div>}
+      {complete&&path==='/control/admin/operators'&&<div role="group" aria-label="Bolagsvy">{(['active','trash','suspended'] as const).map(view=><button key={view} className="studio-button" aria-pressed={companyView===view} disabled={lifecycleBusy} onClick={()=>{setCompanyView(view);setOperatorId('');setGame('');setRoomId('');}}>{({active:'Aktiva bolag',trash:'Papperskorg',suspended:'Avstängda bolag'})[view]} ({groups[view].length})</button>)}</div>}
       {!connectedPaths.has(path) ? <div className={cn(panelClass, 'p-6')}>
         <h2 className="font-semibold">{title} ansluts i nästa steg</h2>
         <p className="my-3 text-sm text-sg-muted">Den här delen har ännu ingen datakoppling. Exempelsiffror och simulerade ändringar visas inte bland de registrerade uppgifterna.</p>
@@ -113,8 +123,8 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
             {data.operators.map(row => <li key={row.id} className={cn(panelClass, 'p-4')}><Building2 size={20} className="mb-3 text-sg-lime" /><h2 className="font-semibold">{row.name}</h2><p className="my-2 text-xs text-sg-muted">{row.archivedAt?'I papperskorgen':labels[row.status] ?? row.status} · {data.rooms.filter(room => room.operatorId === row.id).length} rum · {row.packageRevision === null ? 'Inget publicerat paket' : `Paket ${row.packageRevision}`}</p><div className="mt-4 flex flex-wrap gap-4"><a className={linkClass} href={controlLink('/control/companies', row)}>Bolag & team ↗</a>{row.status === 'active' && <a className={linkClass} href={'/partner/' + encodeURIComponent(row.slug)}>Spelbolagsportal ↗</a>}</div></li>)}
           </ul> : path === '/control/rooms' ? <div>
             <div className="mb-4 flex flex-wrap justify-between gap-3"><h2 className="font-semibold">{operator?.name ?? 'Inga registrerade spelbolag'}</h2>{operator && <a href={editHref} className={linkClass}>Spelrum & publicering i Control ↗</a>}</div>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{operatorRooms.map(room => <RoomCard key={room.id} room={room} operator={operator!} dealers={data.dealers} />)}</div>
-            {!operatorRooms.length && <p className="text-sm text-sg-muted">Inga rum är registrerade för bolaget.</p>}
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{gameRooms.map(room => <RoomCard key={room.id} room={room} operator={operator!} dealers={data.dealers} />)}</div>
+            {!gameRooms.length && <p className="text-sm text-sg-muted">Inga rum är registrerade för det valda spelet.</p>}
           </div> : <ul className="flex flex-col gap-4">
             {!data.operators.length && <li className="text-sm text-sg-muted">Inga spelbolag är registrerade.</li>}
             {data.operators.map(row => <li key={row.id} className={cn(panelClass, row.id === operator?.id && 'border-sg-lime/50')}>
@@ -126,7 +136,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
           </ul>}
           {selectedRoom && <p className="text-xs text-sg-muted">Valt rum: {selectedRoom.name} · {selectedRoom.dealerIds.map(dealerName).join(', ') || 'Inga dealers kopplade'}</p>}
           {selectedRoom?.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Granska materialets katalogtagg och spelets bord före nästa publicering.</p>}
-          {operator&&path==='/control/admin/operators'&&<RegisteredResourceLifecycle operatorId={operator.id} disabled={disabled} onBusyChange={setLifecycleBusy} onChanged={()=>{setRefresh(value=>value+1);onChanged?.();}}/>}
+          {operator&&(path==='/control/admin/operators'||path==='/control/rooms')&&<div id="room-trash"><RegisteredResourceLifecycle operatorId={operator.id} disabled={disabled} onBusyChange={setLifecycleBusy} onChanged={()=>{setRefresh(value=>value+1);onChanged?.();}}/></div>}
         </>}
       <footer className="mt-auto border-t border-sg-line pt-4 text-xs text-sg-muted">Ny arbetsyta · {state.status === 'ready' ? `Register läst ${new Date(state.value.readAt).toLocaleString('sv-SE')}` : 'Datastatus visas ovan'} · <a href="/control" className="underline">Nuvarande Control</a></footer>
     </section>

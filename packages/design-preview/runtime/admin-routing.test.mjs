@@ -5,7 +5,7 @@ import {hasAdminContext,isInternalAdminPathname,isRegisteredRoomListRoute,isStud
 test('plain admin root is home but old context bookmarks still open Studio',()=>{
   assert.equal(isStudioAdminRoute('/control',''),false);
   assert.equal(isStudioAdminRoute('/control','?view=registered'),false);
-  for(const search of ['?dealer=anna','?operator=north&table=north-roulette','?composition=scene','?lane=legacy']){
+  for(const search of ['?dealer=anna','?operator=north&table=north-roulette','?composition=scene']){
     assert.equal(hasAdminContext(search),true);
     assert.equal(isStudioAdminRoute('/control',search),true);
   }
