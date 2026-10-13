@@ -1,3 +1,5 @@
+import { materialLabel } from '../../web/public/material-catalog.mjs';
+
 // Matches game-entry-operator: composition settings enable separate layers;
 // older lanes retain their approved full-frame dealer playback.
 export function effectivePartnerAdjustments(lane) {
@@ -15,7 +17,7 @@ export function partnerLaneState(lane, branding = {}, assets = [], registeredDea
     const choice = selected && layer.allowed.includes(branding[role]) ? branding[role] : layer.default;
     const dealerLabel = role === 'dealer' ? registeredDealers.find(row => row.id === choice)?.label : null;
     const asset = role === 'dealer' ? null : assets.find(item => item.id === choice && item.role === role);
-    return [role, { ...layer, selected: choice, label: asset?.label ?? dealerLabel ?? choice ?? 'Inget lager', ...(asset ? { contentType: asset.contentType, width: asset.width, height: asset.height } : {}) }];
+    return [role, { ...layer, selected: choice, label: (asset ? materialLabel(asset) : null) ?? dealerLabel ?? choice ?? 'Inget lager', ...(asset ? { contentType: asset.contentType, width: asset.width, height: asset.height } : {}) }];
   }));
   return { id: lane.id, name: lane.label, compatibility: lane.composition ? 'per-clip' : 'full-frame', layers, adjustable: effectivePartnerAdjustments(lane) };
 }

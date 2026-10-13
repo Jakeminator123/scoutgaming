@@ -2,6 +2,8 @@
 
 ## Three product surfaces
 
+Jakob's direction, 13 October 2026: `/admin` is the new backoffice surface and `/lobby` is the new player lobby. New UI work should use those names and entry points. `/control` and the older `/play`/`/game` entry points are being phased out, but the transition is not complete. Preserve working legacy routes, authentication, game launches and saved links until their replacements are implemented and verified. Do not describe the old surfaces as already retired. The runtime paths and controls below remain relevant during this transition; `/lobby` does not replace the actual game engine.
+
 Public site: https://www.scoutgaming.tech. Apex `scoutgaming.tech` is a 308 to www.
 Vercel project name is `scoutgaming`. The game engine stays on Render service `croupier-v2`.
 
