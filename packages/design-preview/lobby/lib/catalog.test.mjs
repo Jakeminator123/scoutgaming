@@ -39,6 +39,22 @@ test('roulette rooms preserve their game and launch endpoint alongside blackjack
   assert.equal(playUrlFor(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'nora' })), '/play/blackjack?operator=alpha&table=shared-table&dealer=nora');
 });
 
+test('room artwork comes from a single published background, never an editable default or admin image', () => {
+  const source = publication('alpha', 'nora', 'Johanna');
+  const background = { id: '11111111-1111-1111-1111-111111111111', label: 'Salongen' };
+  Object.assign(source.rooms[0].dealers[0], { presentation: 'layered', independentLayers: true,
+    background: { enabled: true, default: background.id, allowed: [background], mode: 'image' } });
+  const first = parseLobbyCatalog(payload([source])).rooms[0];
+  assert.equal(first.environmentFixed, true);
+  assert.equal(first.environmentLabel, 'Salongen');
+  assert.equal(first.image, '/api/presentation/layers/alpha/' + background.id);
+  source.rooms[0].dealers[0].background.allowed.push({ id: '22222222-2222-2222-2222-222222222222', label: 'Lounge' });
+  const multiple = parseLobbyCatalog(payload([source])).rooms[0];
+  assert.equal(multiple.environmentFixed, false);
+  assert.equal(multiple.environmentKind, 'variable');
+  assert.equal(multiple.image, undefined);
+});
+
 test('a changed tenant or room revokes stale downstream selections and cross-room launch links', () => {
   const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Johanna'), publication('beta', 'amira', 'Amira')]));
   const wrongTenant = lobbySelection(catalog, { operatorId: 'beta', roomKey: 'alpha:shared-table', dealerId: 'nora' });
