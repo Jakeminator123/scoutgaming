@@ -10,7 +10,7 @@ Här finns en gemensam dokumentationsingång per spel:
 
 Koden bestämmer vad den levererade produkten gör. Spelmanualerna beskriver den koden och visar separat vad som bara är ett förslag. Registrerade medier och bolagets frysta publicerade paket bestämmer vilken scen ett faktiskt rum använder. Ingen lokal måttmall eller generell dealerplan ersätter en publicering.
 
-Kodgranskningens bas är main `426fa11417695025e2a0ee194825110f48f6b4af`. PR47:s senare roulettearbete beskrivs uttryckligen som utkast. Kontrollera ny main och senaste PR-head före implementation; denna inventering är daterad 13 oktober 2026.
+Den ursprungliga kodinventeringens bas är main `426fa11417695025e2a0ee194825110f48f6b4af`. Roulettevyn i PR47 är därefter mergad som `161957f1ca56bf35bdb09a2926b6a48c384b3e9a` och verifierad live 13 oktober 2026; dess leveransstatus finns i rouletteguiden. Medieprototyper och de 37 utfallsfilmernas ännu oimplementerade stöd hålls separat. Kontrollera ny main och senaste PR-head före implementation.
 
 ## Ändra på ett ställe
 
