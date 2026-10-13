@@ -2,22 +2,52 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject, defaultPresentationLane, addVariant } from '../../../../lab/lib/studio-model.mjs';
 import { kindForEvent } from '../../../../lab/lib/video-intake.mjs';
-import { bindClip, clipSlots, clipsForSlot, configuredClipIds, currentClipId, createStudioClient, selectLayer, uploadMetadata } from './connected-studio.mjs';
+import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, currentClipId, createStudioClient, navigationKeepsStudioTab, roomChoicesPath, selectCompositionLayer, uploadMetadata } from './connected-studio.mjs';
 import { selectPresentation } from '../../../../packages/presentation/runtime/selection.mjs';
 import { createStudioProjectBindings } from '../../../../lab/lib/studio-project-bindings.mjs';
 import { materialSource } from '../../../../web/public/material-catalog.mjs';
 import { layerAssetPath } from '../../../../web/layer-asset-contract.mjs';
 const id1='11111111-1111-4111-8111-111111111111', id2='22222222-2222-4222-8222-222222222222';
+test('room choices in another tab preserve drafts while same-tab navigation retains its leave guard',()=>{
+  const event={button:0,metaKey:false,ctrlKey:false,shiftKey:false,altKey:false},anchor={target:'',hasAttribute:()=>false};
+  assert.equal(navigationKeepsStudioTab(event,{...anchor,target:'_blank'}),true);
+  assert.equal(navigationKeepsStudioTab(event,{...anchor,target:'room-choices'}),true);
+  for(const patch of [{button:1},{metaKey:true},{ctrlKey:true},{shiftKey:true},{altKey:true}])assert.equal(navigationKeepsStudioTab({...event,...patch},anchor),true);
+  assert.equal(navigationKeepsStudioTab(event,{...anchor,hasAttribute:name=>name==='download'}),true);
+  for(const target of ['','_self','_top','_parent'])assert.equal(navigationKeepsStudioTab(event,{...anchor,target}),false);
+});
+test('room-choice links keep the exact published room and registered company slug',()=>{
+  const operator={id:'north',slug:'north-casino'},room={id:'vip-room',operatorId:'north',state:'live',published:true};
+  assert.equal(roomChoicesPath(operator,room),'/partner/north-casino/rooms?room=vip-room');
+  for(const changed of [{operatorId:'south'},{state:'archived'},{state:'preview'},{published:false},{id:'../other'}])
+    assert.equal(roomChoicesPath(operator,{...room,...changed}),null);
+  for(const slug of ['../other','https://outside.invalid','login'])assert.equal(roomChoicesPath({...operator,slug},room),null);
+  assert.equal(roomChoicesPath(undefined,room),null);assert.equal(roomChoicesPath(operator,undefined),null);
+});
+test('shared-template usage lists exact nonarchived room bindings across companies',()=>{
+  const catalog={administration:{operators:[{id:'north',name:'North'},{id:'south',name:'South'}],rooms:[
+    {id:'north-main',name:'Main',operatorId:'north',compositionId:'shared',state:'live'},
+    {id:'north-vip',name:'VIP',operatorId:'north',compositionId:'shared',state:'preview'},
+    {id:'south-main',name:'Main',operatorId:'south',compositionId:'shared',state:'live'},
+    {id:'retired',operatorId:'south',compositionId:'shared',state:'archived'},
+    {id:'same-name',name:'Main',operatorId:'south',compositionId:'other',state:'live'},
+  ]}};
+  assert.deepEqual(compositionUses(catalog,'shared'),[
+    {roomId:'north-main',roomName:'Main',operatorName:'North'},
+    {roomId:'north-vip',roomName:'VIP',operatorName:'North'},
+    {roomId:'south-main',roomName:'Main',operatorName:'South'},
+  ]);assert.deepEqual(compositionUses(catalog,undefined),[]);
+});
 test('supplied blackjack table is a foreground choice and keeps operator room identity',()=>{
   const project=createSeedProject(),lane=defaultPresentationLane('astrid'),source=materialSource('blackjack-green-felt');
   const {kind,hasAlpha,...metadata}=source;
   const asset={schemaVersion:1,id:id1,role:'table',label:'Blackjack · grön filt',...metadata};asset.pathname=layerAssetPath(asset);
   project.layerAssets=[asset];lane.layers.table.allowed=[asset.id];project.lanes=[lane];
   const room={id:'room-a',operatorId:'operator-a',compositionId:lane.id,game:'blackjack'};
-  const next=selectLayer(project,room,'table',asset.id);
+  const next=selectCompositionLayer(project,room,'table',asset.id);
   assert.equal(next.lanes[0].layers.table.default,asset.id);assert.equal(next.lanes[0].composition.tableFront,true);
   assert.equal(project.lanes[0].layers.table.default,null);assert.equal(room.id,'room-a');
-  assert.throws(()=>selectLayer(project,{...room,game:'roulette'},'table',asset.id));
+  assert.throws(()=>selectCompositionLayer(project,{...room,game:'roulette'},'table',asset.id));
 });
 function fixture() {
   const project=createSeedProject();
@@ -73,9 +103,9 @@ test('layer selection uses only the current composition allowlist; roulette tabl
   const f=fixture(),lane=defaultPresentationLane('astrid');f.project.lanes=[lane];
   lane.layers.background={enabled:true,mode:'image',default:'bg-a',allowed:['bg-a','bg-b']};
   const room={compositionId:lane.id,game:'blackjack'};
-  const next=selectLayer(f.project,room,'background','bg-b');assert.equal(next.lanes[0].layers.background.default,'bg-b');
-  assert.throws(()=>selectLayer(f.project,room,'background','foreign'));
-  assert.throws(()=>selectLayer(f.project,{...room,game:'roulette'},'table',lane.layers.table.default));
+  const next=selectCompositionLayer(f.project,room,'background','bg-b');assert.equal(next.lanes[0].layers.background.default,'bg-b');
+  assert.throws(()=>selectCompositionLayer(f.project,room,'background','foreign'));
+  assert.throws(()=>selectCompositionLayer(f.project,{...room,game:'roulette'},'table',lane.layers.table.default));
 });
 test('upload metadata remains exact and rejects speech sets and unsupported files',()=>{
   const f=fixture(),file=new File([new Uint8Array(20)],'own.mp4',{type:'video/mp4'});

@@ -103,7 +103,7 @@ Detta stänger inget JN2-steg och ingen medieacceptans. Det är trädläget efte
 Efterarbetet 13 oktober (bas `426fa114`, branch `jakob/ordning-slutfix`) har gett SL-raderna nedan:
 
 - [x] SL-01/SL-02: `tools/raderingsgrind.mjs` räknar den gamla sökvägen vid rename som borttagen, så länge ingen shim finns kvar. `--strict` ger exit 1 för trasiga importer eller aktiva registerrader; historiska omnämnanden är diagnostik. `--staged` läser indexets diff, kod och register; standardläget läser HEAD. Egna verkliga Git-prov: 10/10, inklusive de fyra tidigare läsfelsskyddsproven. Den byteidentiska gamla grinden på `426fa114` och `8c77d05a` faller på de nya regressionerna.
-- [ ] SL-03: ett nytt rum på samma sammansättning kan byta ett publicerat rums frysta miljöfilm. Beteendet finns på `426fa114` (`mergePresentation` i `lab/lib/presentation-room-api.mjs`) och stoppas inte av #50 på `90de86e7`. Reproduktion och acceptanskrav står som kommentar på #50; rättningen hör till #50:s ägare.
+- [x] SL-03, kodskydd återkontrollerat 13 oktober på `cc63db71`: `preservePublishedRoomEnvironment` nekar ändrad bakgrund/policy och jämför hela den frysta viloposten för inbakad miljö. `presentation-room-api.test.mjs` provar oförändrad delad miljö, konflikt utan skrivning och bevarad film vid nya rum. Uppgiften på `426fa114` ovan är historisk; detta lokala regressionsbevis ersätter inte den öppna produktions-/rehearsalacceptansen.
 - [x] SL-04: `astrid-select-baseline` arkiverar hela urvalets importkedja, inklusive `web/public/dealer-speech-profile.mjs`. Utan `--write`: 160 fall, 0 avvikelser mot HEAD och guldresultaten, inga nätverksanrop. Basens version ger exit 1 (`ERR_MODULE_NOT_FOUND`). Nytt test kräver att `ARCHIVE_PATHS` täcker importgrafen.
 - [x] SL-05: aktiva krav på den borttagna `pipeline/audit-dealer-sync.mjs --probe` är ersatta med `.githooks/pre-commit` och provspelning av berörda registrerade dealers. Daterade kvitton står kvar som historik.
 - [ ] SL-06: `node tools/migrate-media-layout.mjs --verify` faller på `dealers/astrid/runtime/presentation/repliker/bank.json`, som togs ur Git i `c474544c` (5 oktober, före planen) men står kvar i `media/layout.json` och `media/blob-index.json`. `astrid-zones-manual-snapshot-2026-09-29.json` är en giltig ospårad källa (hash och storlek stämmer). Raden tas bort med B18:s journal, inte separat.
@@ -115,7 +115,22 @@ Efterarbetet 13 oktober (bas `426fa114`, branch `jakob/ordning-slutfix`) har get
 
 ## Flödesomstrukturering, 12 oktober 2026
 
-N1 samlas i Studio, Spelbolag, Drift och System. Kanoniska adresser är `/control/compositions`, `/control/companies`, `/control/rooms` och kontextuell `/control/rehearsal`; gamla adresser leder vidare. Sammansättning ersätter presentationslane i användarflödet, medan kompatibla lagrings-ID:n och intern uppspelningskonfiguration behålls. N2 samlar rummets inställningar på `/partner/{slug}/rooms` med bevarade utkast och navigationsskydd.
+N1:s nya huvudyta är `/admin`; `/control/compositions`, `/control/companies`, `/control/rooms` och kontextuell `/control/rehearsal` behåller fungerande övergångsverktyg. Sammansättning ersätter presentationslane i användarflödet, medan kompatibla lagrings-ID:n och intern uppspelningskonfiguration behålls. N2 samlar rummets inställningar på `/partner/{slug}/rooms` med bevarade utkast och navigationsskydd.
+
+Förenklingen 13 oktober skiljer rummets befintliga `roomOverrides` från den
+gemensamma sammansättningsmallen. Adminens rumsval öppnar exakt bolag och rum
+i partnereditorn; mallredigering visar alla berörda rum innan redigering.
+Moderna administrationsdokument behöver inte historiska tiers/pitboss/turneringar.
+Historiska rum behåller sitt kontrakt och inga sparade fält tas bort automatiskt.
+Både Studio och spelmotorn måste ha denna validering innan ett separat explicit
+intag använder dokument utan legacyfälten. Ingen SQL-migration ingår.
+
+Senaste mains produktmodell i `TERMINOLOGI.md` gäller; rapportens förslag om
+flerspelsrum blir inget nytt krav här. Eventuell utökad miljöidentitet med
+bakgrundsvarianter eller publicerad klipp-/mallversion per användning behöver
+ett separat kontrakt. Singleton- och konfliktspärrarna behålls tills nya
+skrivare, läsare och faktisk runtime har motsvarande isoleringsbevis.
+Studio 009/010 förblir reserverade för B18/B19.
 
 Bolags- och rumsarkiv bevarar historik och har revisionskontroll. Ingen SQL-migration eller produktionsdatastädning ingår. De nya mutationerna kräver spelmotorns capability v6 `resourceLifecycle: operator-room-archive-v1`; äldre runtime nekar dem före skrivning. Ägarlösa gamla rum och tidigare avstängda bolag utan arkivmarkör får ingen gissad ägare/automatisk återaktivering. Dealerarkivets samlade konsekvensplan och atomiska avpublicering kräver dessutom capability v7 `dealerArchiveCascade: dealer-compositions-rooms-v1`. Historiska paket behålls; återställning ger utkast utan att starta AI-tal eller spelrum. Full leverans-, UI- och runtimeverifiering redovisas i aktuell handoff; denna kodändring stänger inte JN2 eller medieacceptans.
 

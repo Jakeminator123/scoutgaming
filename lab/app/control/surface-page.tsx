@@ -61,11 +61,16 @@ function statusOf(error: unknown) {
     ? Number((error as { statusCode?: number }).statusCode) : undefined;
 }
 
-export async function WorkspaceSurfacePage({ surface, path = [] }: {
-  surface: 'partner' | 'control'; path?: string[];
+export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId }: {
+  surface: 'partner' | 'control'; path?: string[]; initialRoomId?:string|string[];
 }) {
   const route = resolveWorkspaceSurfacePath('/' + [surface, ...path].join('/'));
   if (!route || route.surface !== surface) notFound();
+  let returnPath = route.publicPath;
+  if (surface === 'partner' && route.view === 'bj' && initialRoomId !== undefined) {
+    returnPath = typeof initialRoomId === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(initialRoomId)
+      ? `${route.publicPath}?room=${initialRoomId}` : '/admin';
+  }
   const h = await headers();
   // Absolute public URL so Next does not prefix the /studio basePath.
   if (route.legacyPath !== null) redirect(publicAbsoluteUrl(h, route.legacyPath));
@@ -79,7 +84,7 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
       // Match the backend's fail-closed N1 priority, including stale N1 cookies.
       // A partner login cannot repair an expired administrator credential.
       if (status === 401) redirect(internalSessionPresent(request)
-        ? nextStudioLoginRedirect(route.publicPath) : partnerLoginAbsoluteUrl(h));
+        ? nextStudioLoginRedirect(returnPath) : partnerLoginAbsoluteUrl(h));
       if (status === 404) notFound();
       throw error;
     }
@@ -110,5 +115,5 @@ export async function WorkspaceSurfacePage({ surface, path = [] }: {
       operators={data.snapshot.operators.map(({ slug, name }: { slug: string; name: string }) => ({ slug, name }))} />;
   }
   return <KevinBackoffice surface="partner"
-    initialSnapshot={data.snapshot} initialView={route.view} apiBase={data.apiBase} user={user} />;
+    initialSnapshot={data.snapshot} initialView={route.view} {...(initialRoomId===undefined?{}:{initialRoomId})} apiBase={data.apiBase} user={user} />;
 }

@@ -53,6 +53,12 @@ Startkod och lokala profilval finns här. `lissabon-stream-lane` är ett kvarvar
 internt profil-/anslutnings-ID i startaren och spelservern, inte ett eget spelrum
 eller en produktadress. Äldre alias och sparade ID:n behålls för kompatibilitet.
 
+`CROUPIER_STREAM_LANE=lissabon-stream-lane` är fortfarande aktiv i
+`start.mjs`, `policies/local-profile.json`, lokal anslutning och molnkonfiguration.
+Den används bland annat för chattens `playResults`, kameragrinden och
+beständiga lokala profiler. Behåll flaggan och Astrids tal-/videoväg vid
+förenkling av produktnamn; de är inte en separat Lissabon-produkt.
+
 ```powershell
 # Reproducerbart prov: tom temporär databas, befintliga filmer, inga externa tjänster.
 node lab/start.mjs --offline --no-open
@@ -100,7 +106,11 @@ Efter nya mediefiler: kör `node pipeline/build-lab-video-manifest.mjs`,
 granska diffen och kör `--check`. Lab:s **Läs in nya filer** använder samma byggare.
 En ny hash är inte ett visuellt godkännande.
 
-## Arbetsytor och gemensam Guide
+## Befintliga editorer och gemensam Guide
+
+Adresserna nedan beskriver de fungerande `/control`-verktygen. Nya `/admin`
+återanvänder deras komponenter och native-API; skapa inget parallellt
+projektregister för den nya menyn. Se [guiden](docs/README.md) för ingångarna.
 
 - **Guide & hjälp (`/control/guide`; `/guide` omdirigerar dit):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
@@ -224,7 +234,10 @@ börjar utan dealers och linjer. Rörelseindexet har 64 klipp.
 Tre alternativ per linje och 256 variantposter finns inte i demo-/fixturseedet.
 Högst fyra alternativ plus standard kan redigeras.
 Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
-Spelväljaren med Roulette är borta från `/control`. Roulette är inte ett spel här.
+Den äldre händelseeditorns seed beskriver blackjack. Publicerade spelrum kan
+däremot vara blackjack eller roulette, enligt `web/presentation-room-contract.mjs`.
+Ett rum har ett spel; spelet kan erbjuda flera rum/bakgrunder med tillåtna
+dealers och bord. Produktmodellens källa är [TERMINOLOGI.md](docs/TERMINOLOGI.md).
 
 Partner-API:ts **sex presentationstyper** är `speak`, `deal`, `reveal`, `turn`, `settle`, `idle`.
 De **16 noderna** är labbets begripliga mappningar, inte 16 nya motor-events.

@@ -1,5 +1,26 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Aktiva ytor och kompatibilitetsgräns
+
+Fortsatt UI-utveckling sker i `/admin` och `/lobby`; `/partner` är bolagens
+arbetsyta. `lab/` är den aktiva applikationens källmapp och `/studio` dess
+tekniska basePath för befintliga API:er och tillgångar. Äldre `/control`,
+`/play` och spelstarter är fortsatt fungerande kontrakt under övergången.
+Detaljerade äldre adresser och daterade verifieringar nedan beskriver dessa
+implementationer, inte en uppmaning att bygga nya gränssnitt där.
+
+`CROUPIER_STREAM_LANE=lissabon-stream-lane` används fortfarande i lokal och
+molnbaserad start, chattens `playResults`, kameragrinden och lokala profiler
+(`lab/start.mjs`, `open-claw/lab/deploy/local-connection.mjs`,
+`ops/cloud/config.mjs`, `web/server.mjs`). Bevara dessa flöden och Astrids
+tal-/videokopplingar när gamla produktnamn förenklas.
+
+`web/storage/studio-game-policy.mjs` skiljer modern rumsadministration från
+historiska rum och sektioner som `tiers`, `pitboss` och `tournaments`.
+Moderna rum kräver inte dessa sektioner. Om de finns valideras de strikt;
+historiska rumsposter behåller sina äldre krav. Läsning och sparning hittar
+inte på gamla defaults eller migrerar sparade data.
+
 ## Dealerimport och samtalskontroll, 13 oktober 2026
 
 `/admin/clips` har en importassistent mot Studios registrerade dealers och
@@ -313,7 +334,10 @@ dealer-/bordskombination; den är ett val i spelet.
 Rumsarkivering påverkar den spelbara ingången; den får inte radera dealer,
 sammansättning eller delade filer. Arkivering av en uppsättningskategori
 behåller filerna. Bortkoppling av ett enskilt klipp respektive alla klipp i
-en uppsättning är separata handlingar med förhandsvisad påverkan. Visa
+en uppsättning är separata handlingar med förhandsvisad påverkan. Ett
+återställt bolag återpublicerar eller öppnar inga rum; ett separat återställt
+rum blir `pending` och måste öppnas uttryckligen. Källan är
+`lab/lib/resource-lifecycle-api.mjs`. Visa
 objekttyp, ID, användningar och berörda publiceringar före bekräftelse.
 Beständig fysisk radering kräver att inga skyddade/delade referenser finns
 och en separat uttrycklig handling. Papperskorg/återställning återställer
@@ -574,8 +598,8 @@ bordsgeometri eller kontaktankare till blackjack.
 > spelneutrala publicerade bild-/MP4-bakgrunder och förberedd statisk alfamask
 > för framtida bordsvideo. Läs medieformaten i docs/LOCAL-PRESENTATION-RUNTIME.md
 > och den uppmätta leveransen i web/games/roulette/media-specification.json.
-> Utgå från spelbolag → tillgängligt spel → spelrum → tillåten sammansättning
-> och dealer. Håll spelneutral bakgrund, spelspecifikt bord och frilagd dealer
+> Följ TERMINOLOGI.md: spelbolag → spel → rum/bakgrund, med tillåtna dealers och bord.
+> Håll spelneutral bakgrund, spelspecifikt bord och frilagd dealer
 > separata. Visa mediaformat, beskärning/ankare, mask, hash och acceptansstatus
 > före förhandsvisning/publicering. Mottagen MP4 är en ogranskad prototyp;
 > bordsvideo/mask återstår att integrera i det frysta publiceringskontraktet.
@@ -790,10 +814,17 @@ Det här avsnittet beskriver de bevarade `/control`-länkarna och de frysta
 paketens fältnamn. Det är inte meny- eller begreppskontraktet för `/admin`;
 se [produktmodellen](../lab/docs/TERMINOLOGI.md).
 
-Sammansättning (/control/preview) är navet. Innehåll (/control/clips) samlar
-klipp och når bibliotek, händelser samt talinställningar med dealer/situation.
-Publicering (/control/lanes) fryser sparade presentationer i bolagspaket.
-Bolag och team nås på /control/lanes?tab=companies; ingen separat datakopia skapas.
+Nya `/admin/clips` återanvänder Studio-komponenterna och native-API:t.
+En gemensam sammansättningsmall kan användas av flera bolag och rum; dealer-,
+klipp- och lagerändringar i mallen hör till projektets utkast. De ändrar inte
+ett enda rum enbart för att dess ID är valt i menyn, och de påverkar inte
+frysta paket utan ny publicering. Rummets tillåtna utseendeval nås separat på
+`/partner/{slug}/rooms?room=<rum-id>` och använder befintliga `roomOverrides`,
+ägarkontroll, revisionsskydd, granskning och publicering.
+
+Äldre `/control/compositions` redigerar samma mallar, `/control/clips` deras
+dealerinnehåll och `/control/rooms` publicerar bolagspaket. Bolag och team
+finns på `/control/companies`; äldre preview/lanes-adresser är omdirigeringar.
 Presentationslane och spellane behåller sina tekniska ID:n. Spelarplatser box0–6
 och dealer-up/dealer-hole är skilda destinationer; UI-översättningen ändrar inte
 handIndex, card, replik-ID eller mediasynk.
@@ -943,19 +974,18 @@ Ordlistans källa är `lab/policies/studio-contract.json` och visas i användarg
 
 ### Adresser och begränsningar
 
-`/partner` har två lägen. Utan `partner_session` är ingången en adminskyddad
-fixturförhandsvisning; demonstrationer är inte anslutna kunder. Det finns ingen
-automatisk standardkund. Operatör loggar in på `/partner/login` och når bara
-egna aktiva medlemskap. Adminens val bland anslutna kunder väntar på
-onboarding-UI. Kundlistan ska komma från aktiva, serververifierade
-organisationsanslutningar, inte fixturelistan, API-nycklar, ett varumärkesnamn
-eller URL:en. Båda lägena kräver färsk serverkontroll. T2 är påbörjad, inte klar.
+`/partner` visar serververifierade registrerade bolag för intern admin och
+aktiva operatörsmedlemskap för partnerpersonal. Operatören loggar in på
+`/partner/login`; intern admin använder sin befintliga N1-session.
+Diagnostiska fixturer måste väljas uttryckligen och används aldrig som
+reserv vid läsfel. Ett varumärkesnamn eller URL ger ingen åtkomst.
+T2 är påbörjad, inte klar.
 
-Partnerns meny använder exempelvis `/partner/demo-north/presentation`,
-`/partner/demo-north/tables` och `/partner/demo-north/lanes`.
-Gamla kortformer och hashbokmärken läses som kompatibilitet och leder till
-den aktuella adressen; menyn skapar inga nya länkar med `#theme` eller `#tx`.
-Nivå 1 använder verktygen under `/control`. Gamla interna klipp-, tal-,
+Partnerns meny använder `/partner/{slug}/rooms`, Team & behörigheter och
+Integration. Tidigare presentation/tables/lanes-adresser leder till samma
+rumsvy. Explicit `room` väljer ett auktoriserat registrerat rum, aldrig ett
+annat rum som reserv. Nivå 1 fortsätter utvecklas på `/admin`; befintliga
+verktyg under `/control` fungerar under övergången. Gamla interna klipp-, tal-,
 medie- och kontoadresser leder dit; oanslutna prototypvyer får en förklaring
 i adminingången. Kevin-komponentens exempelvyer renderas bara för nivå 2
 (`/partner`), inte i kontrollpanelen. `/studio` är labbets basePath, inte
@@ -1041,10 +1071,11 @@ loggas; inga miljövärden, authheaders eller anslutningssträngar.
 
 ### Nya personalytor
 
-Överföringen av backoffice använder `/control` (intern personal) och `/partner`
-(operatörspersonal) på samma publika origin. Frontenden skriver om enbart
-godkända dokumentvägar till motsvarande `/studio/control` och `/studio/partner`
-under labbets basePath. `/studio` är inte personalens produktnamn.
+Backoffice-utvecklingen använder `/admin` (intern personal) och `/partner`
+(operatörspersonal) på samma publika origin; `/lobby` är ny spelaringång.
+Äldre `/control` fortsätter fungera. Frontenden skriver om enbart
+godkända dokumentvägar till Studio-rutter, däribland `/studio/control` och
+`/studio/partner`, under labbets basePath. `/studio` är inte personalens produktnamn.
 Befintliga labbvägar och spelkontrakt behålls. API-anrop har inga allmänna nya alias.
 
 Den interna förhandsvisningen är `/studio/api/partner-preview`: enbart GET,
@@ -1124,7 +1155,8 @@ aldrig. Ingen tredje server eller alternativ spelmotor har tillkommit.
 
 ## Sparad policy och chatt
 
-Personalens arbetsyta är `/control`. `/partner` är antingen intern fixturförhandsvisning eller operatörens inloggade snapshot. Native administration använder
+Personalens nya arbetsyta är `/admin`, med äldre editorer på `/control`.
+`/partner` visar verkliga auktoriserade bolag; fixturförhandsvisning väljs separat. Native administration använder
 befintliga konton och deras rollkontroller. **Dealer & klipp** visar exakta
 klippflöden för alla fyra dealers och behåller Studiofamiljerna. Äldre
 BO-tilldelningar är historik och används inte som parallell policykälla.

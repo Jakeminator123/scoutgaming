@@ -410,6 +410,16 @@ test('actual rendered native administration forms explicitly use POST, including
   assert.ok(forms >= 12); assert.match(renderToStaticMarkup(h.StudioAdministrationView(viewProps('superadmin', 'accounts'))), /type="password"/);
 });
 
+test('legacy administration view tolerates absent historical sections without creating tier forms', () => {
+  const h = harness(), data = resources();
+  for (const key of ['tiers', 'pitboss', 'tournaments']) delete data.config.payload[key];
+  const before = structuredClone(data);
+  const html = renderToStaticMarkup(h.StudioAdministrationView({ ...viewProps('superadmin', 'tables'), resources: data }));
+  assert.match(html, /Test room/);
+  assert.doesNotMatch(html, /Spara dealer/);
+  assert.deepEqual(data, before);
+});
+
 test('unknown identities/roles/groups fail closed, including inherited and prototype values', () => {
   const h = harness();
   for (const value of [null, [], {}, 'admin', actor('constructor'), actor('__proto__'), actor('player'), { username: '', role: 'reader' }, Object.create(actor('superadmin')), { username: 'x\u0000y', role: 'admin' }]) assert.equal(h.studioAdminActor(value), null);

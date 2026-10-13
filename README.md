@@ -3,7 +3,8 @@
 Croupier is the working casino demo with server-owned game state and shared
 playback for registered dealers. Start with blackjack; roulette has its own
 server and presentation contracts. Current acceptance and unfinished work are
-recorded in [the handoff](docs/JOHN-HANDOFF.md).
+recorded in [the handoff](docs/JOHN-HANDOFF.md). This development demo is not a
+certified RNG/RGS or a real-money system.
 
 Public site: [www.scoutgaming.tech](https://www.scoutgaming.tech/).
 The single Vercel project **scoutgaming**, on team **scoutgaming**, builds the
@@ -29,7 +30,8 @@ checklist before calling a surface complete.
 `/lissabon`, `/lab`, `/labb` and `/bo` are retired product aliases. Some stored
 IDs, local guest profile tables, filenames and the `lissabon-stream-lane` flag
 remain compatibility details. Do not rename saved identities or remove their
-consumers just because the old name survives. New UI work belongs in `/admin`
+consumers just because the old name survives. The flag still controls chat
+context, camera checks and saved local profiles. New UI work belongs in `/admin`
 and `/lobby`; the [user guide](lab/docs/README.md) describes working tools.
 
 ## Source and folder map
@@ -64,6 +66,8 @@ sammansättning. Do not derive another model from folder names or legacy lane
 fields. [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md)
 records the implemented storage/runtime limits and media formats. Keep
 published package, room, dealer and asset identities stable during transition.
+Shared composition drafts are not room-specific writes; allowed room appearance
+is saved through the existing scoped partner room editor.
 
 `web/server.mjs` owns cards, shoe, wallet and payouts. Native commands expose
 public state through `/api/table`; partner commands use `/api/v1/table` and

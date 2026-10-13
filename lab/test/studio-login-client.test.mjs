@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioLoginClient, StudioLoginUiError, studioLoginReturnTo, studioLoginDestination, studioPasswordToken } from '../lib/studio-login-client.mjs';
+test('exact partner room survives login while foreign paths and arbitrary query fields remain blocked',()=>{
+  const target='/partner/north-casino/rooms?room=vip-room';
+  for(const prefix of ['','/studio'])assert.equal(studioLoginReturnTo(prefix+target),target);
+  for(const authBase of ['/api/auth','/studio/api/auth'])assert.equal(studioLoginDestination(target,authBase),target);
+  for(const value of ['/partner/north-casino/rooms?room=vip-room&room=main-room','/partner/north-casino/rooms?room=vip-room&token=x',
+    '/partner/north-casino/rooms?room=','/partner/north-casino/rooms?room=https://outside.invalid','/partner/north-casino/rooms?room=../main-room',
+    '/partner/north-casino/team?room=vip-room','/partner/login/rooms?room=vip-room','//outside.invalid/partner/north-casino/rooms?room=vip-room'])
+    assert.equal(studioLoginReturnTo(value),'/studio',value);
+});
 
 test('native login returnTo preserves current Studio views or one-use BO handoff without a cross-host cookie handoff', () => {
   for (const value of ['/studio','/studio/administration','/studio/openclaw','/studio/operator-chat',

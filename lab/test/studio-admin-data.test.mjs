@@ -39,6 +39,21 @@ test('configuration reads are saved revision only; missing data never seeds', as
   assert.deepEqual(f.state.writes, []);
 });
 
+test('modern administration readouts and room edits never synthesize legacy sections', async () => {
+  const f = fixture();
+  delete f.state.document.value.tiers;
+  delete f.state.document.value.tournaments;
+  for (const action of ['config', 'overview']) {
+    const result = await f.call('GET', action);
+    assert.deepEqual(result.rooms, f.state.document.value.rooms);
+    for (const key of ['tiers', 'pitboss', 'tournaments']) assert.equal(result[key], undefined);
+  }
+  assert.deepEqual(f.state.writes, []);
+  await f.call('POST', 'room', { id: 'one', state: 'live', expectedRevision: 'studio-original' });
+  assert.equal(f.state.document.value.rooms[0].state, 'live');
+  for (const key of ['tiers', 'pitboss', 'tournaments']) assert.equal(Object.hasOwn(f.state.document.value, key), false);
+});
+
 test('active lane requires admin and a current revision; it preserves the other administration data',async () => {
   const f=fixture(),body={lane:'mobile-phone',expectedRevision:'studio-original'};
   const handler=f.data.handlers.get('POST /studio/api/admin/game-lane');

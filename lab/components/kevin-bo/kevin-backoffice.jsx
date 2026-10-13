@@ -46,7 +46,7 @@ export function KevinBackoffice(props) {
   return <PreviewSession key={`${props.surface}:${props.initialSnapshot?.operator?.id}:${props.user}`} {...props}/>;
 }
 
-function PreviewSession({surface,initialSnapshot,apiBase,user,initialView='ops'}) {
+function PreviewSession({surface,initialSnapshot,apiBase,user,initialRoomId,initialView='ops'}) {
   const preferences=usePartnerPreferences(),{copy,language,theme}=preferences;
   const [snapshot,setSnapshot]=React.useState(()=>validatePreviewSnapshot(initialSnapshot));
   const [view,setView]=React.useState(()=>initialSnapshot?.preview===false?partnerWorkspaceView(normalizeView(initialView,surface)||'ops'):normalizeView(initialView,surface)||'ops');
@@ -169,7 +169,7 @@ function PreviewSession({surface,initialSnapshot,apiBase,user,initialView='ops'}
         {surface==='partner'&&!real&&['theme','design','background','bj','dealers','test'].includes(view)&&<section className="kevin-lane-status" aria-label="Presentationslane och spelkoppling"><div><strong>Visad presentationslane: {snapshot.presentations.map(profile=>compositionLabel(profile.name,language)).join(', ')||'Ingen tilldelad presentationslane'} <span>· exempel</span></strong><p>Ingen publicerad presentationslane är ansluten till denna förhandsvisning. Marker, kort, bord och bakgrund kan provas lokalt men skickas inte till spelet.</p></div><span className="kevin-connection-label">Spelkoppling saknas</span><p>Operatören väljer bland tilldelade, godkända presentationslanes. Klipp, masker, urvalsregler och publicering hanteras i Kontrollpanelen.</p></section>}
         {page&&(real?<header className="kevin-page-header"><p className="kevin-eyebrow">{snapshot.operator.name}</p><h1 className="kevin-shell-heading">{page.label}</h1>{['ops','bj'].includes(view)&&<p className="kevin-page-intro">{view==='ops'?copy.overviewIntro:copy.tablesIntro}</p>}</header>:!disconnected&&<h2 className="kevin-shell-heading">{page.label}</h2>)}
         {real&&appearanceDirty&&view!=='bj'&&<div className="kevin-draft-reminder" role="status"><a href={viewPath('bj')}>{copy.draftKept} →</a></div>}
-        <ViewBoundary key={`${real?'workspace':view}:${snapshot.operator.id}:${snapshot.generatedAt}`}><PreviewView original={original} runtime={runtime} view={view} copy={copy} language={language} notify={notify} apiBase={apiBase} onAppearanceDirty={onAppearanceDirty} onAppearanceSaved={saved=>setSnapshot(current=>{
+        <ViewBoundary key={`${real?'workspace':view}:${snapshot.operator.id}:${snapshot.generatedAt}`}><PreviewView initialRoomId={initialRoomId} original={original} runtime={runtime} view={view} copy={copy} language={language} notify={notify} apiBase={apiBase} onAppearanceDirty={onAppearanceDirty} onAppearanceSaved={saved=>setSnapshot(current=>{
           if(current?.preview!==false||current.operator.id!==saved.operatorId||!saved.presentation)return current;
           const previous=Number(current.packageRevision??current.operator.packageRevision);
           if(Number.isSafeInteger(previous)&&saved.packageRevision<=previous)return current;
@@ -196,14 +196,14 @@ function OperatorScope({snapshot,surface,loading,copy,onFixtureChange,onOperator
   return <div className="side-op"><label htmlFor="kevin-operator" className="side-opl"><span className="muted">Exempeloperatör</span><b>{snapshot.operator.name}</b></label>{surface==='partner'?<select id="kevin-operator" className="select side-scope" value={snapshot.operator.id} disabled={loading} onChange={event=>onFixtureChange(event.target.value)}>{snapshot.operators.map(operator=><option key={operator.id} value={operator.id}>{operator.name}</option>)}</select>:<span className="muted">Byt exempeloperatör i nivå 2</span>}</div>;
 }
 
-export function PreviewView({original,runtime,view,copy,language,notify,apiBase,onAppearanceSaved,onAppearanceDirty}) {
+export function PreviewView({original,runtime,view,copy,language,notify,apiBase,initialRoomId,onAppearanceSaved,onAppearanceDirty}) {
   const [tables,setTables]=React.useState(runtime.data.tables),[attention,setAttention]=React.useState([]);
   const [roomsVisited,setRoomsVisited]=React.useState(view==='bj');
   React.useEffect(()=>{if(view==='bj')setRoomsVisited(true);},[view]);
   if(runtime.surface==='partner'&&runtime.snapshot.preview===false){
     const Team=runtime.teamView;
     return <>
-      {(roomsVisited||view==='bj')&&<div hidden={view!=='bj'} className="kevin-room-workspace"><PartnerRoomWorkspace active={view==='bj'} snapshot={runtime.snapshot} copy={copy} language={language} apiBase={apiBase} onSaved={onAppearanceSaved} onDirtyChange={onAppearanceDirty}/></div>}
+      {(roomsVisited||view==='bj')&&<div hidden={view!=='bj'} className="kevin-room-workspace"><PartnerRoomWorkspace initialRoomId={initialRoomId} active={view==='bj'} snapshot={runtime.snapshot} copy={copy} language={language} apiBase={apiBase} onSaved={onAppearanceSaved} onDirtyChange={onAppearanceDirty}/></div>}
       {view==='ops'?<PartnerLiveOverview snapshot={runtime.snapshot} copy={copy} language={language}/>:view==='team'&&typeof Team==='function'?<Team snapshot={runtime.snapshot} runtime={runtime} surface={runtime.surface} toast={notify} language={language}/>:view!=='bj'?<PartnerDisconnected snapshot={runtime.snapshot} view={view} copy={copy}/>:null}
     </>;
   }
