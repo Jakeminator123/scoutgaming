@@ -35,8 +35,12 @@ Inga branchskydd, media-, databas- eller providerinställningar ändras.
 Lokalt verifierat: verkliga Git-mergar och ytlig checkout, äldre kodändring
 följd av dokumentpush, runtimefil flyttad till docs, symboliska länkar och
 slutjobbets felvägar. Miljö-, leverans- och orphan-kontroller körs också.
-GitHub kör full produktkontroll på workflow-PR:n före merge. GitGuardian-
-PR-status läses separat; incidentlista och historisk täckning är inte verifierade.
+Workflow-PR #76 är mergad som `f00d63ba` efter grön full GitHub-körning
+`38392397953` på `16f6fd3`: Studio, dealerregression, OpenClaw-startprov,
+isolerad SQL/omstart/HTTPS, worker och slutjobbet CI passerade. GitGuardian
+och Vercel var gröna på samma PR-commit. Incidentlista och historisk
+säkerhetstäckning är inte verifierade. Denna dokumentuppdatering provar
+separat den korta PR-vägen; full regression fortsätter köras på main.
 
 ## Nästa agent: roulette i N1:s Labba-yta
 
