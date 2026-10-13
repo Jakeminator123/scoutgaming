@@ -1,3 +1,4 @@
+import {readAssistantData,assistantNavigation} from './assistant-reads.mjs';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {canonicalStudioJson,validateStudioScope} from '../../web/storage/studio-contract.mjs';
 import {normalizeNativeStudioRequest} from './studio-native-request.mjs';
@@ -29,7 +30,7 @@ function chatInput(body){
   return body;
 }
 export function createAssistantApi({config,runtime=studioNativeRuntime,configuration=assistantConfiguration(),
-  ask=askAssistant,readContext=readAssistantContext,prepare=prepareAssistantAction,execute=executeAssistantAction,limit=limiter,now=Date.now}={}){
+  ask=askAssistant,readContext=readAssistantContext,readData=readAssistantData,prepare=prepareAssistantAction,execute=executeAssistantAction,limit=limiter,now=Date.now}={}){
   async function principal(native,request){
     const actor=await native.authorize(request);
     if(!actor||!['admin','superadmin'].includes(actor.role)||typeof actor.user!=='string'||!actor.user.trim()||!actor.accountId
@@ -59,27 +60,35 @@ export function createAssistantApi({config,runtime=studioNativeRuntime,configura
       if(![base,config.apiBase==='/studio/api/admin'?'/api/assistant':base].includes(url.pathname))fail('assistant_route_unknown',404);
       if(!['GET','POST'].includes(request.method))return json({error:'assistant_method_invalid'},405);
       if(request.method==='GET'){
-        let access='help', identity='public';
+        let access='none', identity='public';
         try{if(/(?:^|;\s*)(?:bo_jwt|lab_session)=/.test(request.headers.get('cookie')??'')){const actor=await principal(await runtime(),request);access='n1';identity=owner(actor,request);}}catch(error){if(![401,403,503].includes(error?.statusCode))throw error;}
-        return json({access,identity,models:ASSISTANT_MODELS,configured:Boolean(configuration)});
+        return json(access==='n1'?{access,identity,models:ASSISTANT_MODELS,configured:Boolean(configuration)}:{access,identity});
       }
       if(request.headers.get('origin')!==url.origin||!['same-origin','none'].includes(request.headers.get('sec-fetch-site')))fail('assistant_origin_rejected',403);
       if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type')??''))fail('assistant_json_required',415);
       const body=await assistantJson(request,32000);
       if(body.operation==='chat'){
-        const input=chatInput(body);let native,actor,binding;
-        if(input.mode!=='help'){native=await runtime();actor=await principal(native,request);binding=owner(actor,request);}
-        // Only Vercel's trusted connection header is eligible as a public rate
-        // key; other environments share a conservative anonymous bucket.
-        release=limit.enter(binding??('public:'+assistantDigest(request.headers.get('x-vercel-forwarded-for')??'shared')));
-        const context=native?await readContext(native,request,{mode:input.mode}):PUBLIC_KNOWLEDGE;
-        if(native&&owner(await principal(native,request),request)!==binding)fail('assistant_access_changed',403);
-        request.signal.throwIfAborted();
-        const answer=await ask({configuration,...input,context,signal:request.signal});
-        if(native&&owner(await principal(native,request),request)!==binding)fail('assistant_access_changed',403);
+        const input=chatInput(body),native=await runtime(),actor=await principal(native,request),binding=owner(actor,request);
+        release=limit.enter(binding);
+        const context=input.mode==='help'?PUBLIC_KNOWLEDGE:await readContext(native,request,{mode:input.mode});
+        const refresh=async()=>{if(owner(await principal(native,request),request)!==binding)fail('assistant_access_changed',403);};
+        await refresh();request.signal.throwIfAborted();
+        const signal=AbortSignal.any([request.signal,AbortSignal.timeout(105000)]);
+        const observations=[];let answer;
+        for(let attempt=0;attempt<4;attempt++){
+          await refresh();signal.throwIfAborted();
+          answer=await ask({configuration,...input,context:observations.length?{...context,requestedData:observations,readsRemaining:3-attempt}:context,signal});
+          await refresh();signal.throwIfAborted();
+          if(!answer.read)break;
+          if(input.mode!=='admin'||answer.proposal||answer.navigation||attempt===3)fail('assistant_invalid_response',503);
+          try{observations.push(await readData(native,request,answer.read));}
+          catch(error){if([401,403].includes(error?.statusCode))throw error;observations.push({source:answer.read.source,status:'unavailable',complete:false,items:[],notice:'Registret kunde inte läsas. Det bevisar inte att det är tomt.'});}
+          await refresh();
+        }
         if(input.mode==='help'&&answer.proposal!==null)fail('assistant_invalid_response',503);
-        request.signal.throwIfAborted();
-        return json({...answer,model:ASSISTANT_MODELS[input.mode],observedAt:context.observedAt??null,coverage:context.coverage??null});
+        signal.throwIfAborted();
+        return json({reply:answer.reply,proposal:answer.proposal,navigation:assistantNavigation(answer.navigation),model:ASSISTANT_MODELS[input.mode],
+          observedAt:context.observedAt??null,coverage:context.coverage??null,reads:observations.map(({source,total,complete})=>({source,total,complete}))});
       }
       const native=await runtime(),actor=await principal(native,request),binding=owner(actor,request);
       release=limit.enter(binding);

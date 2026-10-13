@@ -189,6 +189,40 @@ Den officiella CLI:n verifierades via källan för låsta v2026.9.5; faktisk
 browsernavigering återstår enligt liveacceptansen ovan.
 
 
+## Adminrobotens N1-verktyg, 13 oktober 2026
+
+Alla tre chattlägen kräver nu färsk N1-behörighet. Widgeten är dold före
+kontroll och för utloggade/N2/N3; kontobyte tömmer samtal och granskning.
+Snabbhjälpen använder fortfarande Luna 6, administration/OpenClaw Sol 6.1 High.
+Modelldetaljer ligger under Detaljer. Befintlig privat/no-store, CSRF,
+revisionskontroll och separat bekräftelse med exakt resurs-ID bevaras.
+
+Robotens nya läsverktyg söker och bläddrar bland sparade dealers, material,
+sammansättningar, mediaregister, bolag och rum. Högst tre läsningar per svar;
+varje sida är begränsad och visar fortsatt offset/ofullständig täckning.
+Blobregister betyder metadata, inte analys av själva videon. Databasnycklar,
+lagringssökvägar, signerade URL:er, spelaruppgifter och fri SQL exponeras inte.
+Nya granskade skrivningar: dealer.create samt media.rename/archive/restore/delete,
+via samma native-API:er som Studio. Permanent klippradering gäller endast
+berättigade arkiverade uppladdningar; frysta/aktiva/publicerade filer skyddas.
+En ny dealer får tomma klippfack och läggs inte automatiskt till något rum.
+Befintlig bolags-/rums-/material-/dealerlivscykel och Gatewaymodellbyte kvarstår.
+
+Svar kan länka till godkända /admin-vyer, inklusive import för exakt dealer-ID.
+Filval och uppladdning görs i importassistenten; chattrutan laddar inte upp filer.
+Den separata dealer/import-grenen lägger till Skapa dealer och frigör sparade
+rader från tiogränsen. Den bör levereras tillsammans med dessa navigeringslänkar.
+
+Verifiering: 35 fokustester för N1, återkallad session under dataläsning, läsbudget,
+projektrevision, arkivberoenden och filidentitet genom permanent purge.
+Studio byggd. Ett verkligt Sol 6.1-formatprov med syntetiska uppgifter gav
+dealer.create och importnavigation, utan någon dataskrivning. Isolerat webbläsarprov med syntetiska svar: dold N3, N1:s tre lägen,
+svarets importlänk, konsekvensdialog samt N1→utloggad→N1 med tömt samtal.
+Ingen produktionsdealer skapades, ingen fil raderades. Produktion kräver
+merge/deploy och separat acceptans; mergearbetet ägs av nästa mergechatt.
+Kanoniska AI-flödet ska uppdateras i docs/AI/scoutgaming-agentflode.md när den
+pågående dokumentgrenen inför dess nu separat ägda filer.
+
 ## Adminroboten och separata chattlägen, 13 oktober 2026
 
 PR #82 mergad som b76510af; GitHub CI och Vercel-preview godkända.

@@ -1,8 +1,10 @@
+import {createStudioMediaApi} from './studio-media-api.mjs';
+import {addDealer} from './studio-model.mjs';
 import {createHash} from 'node:crypto';
 import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import {createStudioDealerApi} from './studio-dealer-api.mjs';
 import {createStudioDocumentApi} from './studio-document-api.mjs';
-import {assistantRequest,assistantRead,assistantServices} from './assistant-context.mjs';
+import {assistantRequest,assistantRead,assistantWrite,assistantServices} from './assistant-context.mjs';
 import {validateAssistantProposal,assistantFailure as fail} from './assistant-model.mjs';
 
 export const assistantDigest=value=>createHash('sha256').update(canonicalStudioJson(value)).digest('hex');
@@ -18,7 +20,7 @@ const required=value=>{if(!value)fail('assistant_target_unavailable',409);return
 export async function prepareAssistantAction(runtime,request,proposal,{services=assistantServices(runtime)}={}){
   validateAssistantProposal(proposal);
   const {action,targetId,value}=proposal;
-  if(!['resource.rename','openclaw.model'].includes(action)&&value!==null)fail('assistant_invalid_proposal');
+  if(!['resource.rename','openclaw.model','dealer.create','media.rename'].includes(action)&&value!==null)fail('assistant_invalid_proposal');
   let path,method='POST',body,impact,label,kind='admin',permanent=false,mediaSignature=null;
   if(action==='openclaw.model'){
     const current=await services.openclaw(request),agent=required(current.agents.find(row=>row.id===targetId));
@@ -27,9 +29,40 @@ export async function prepareAssistantAction(runtime,request,proposal,{services=
     body={version:1,baseHash:current.baseHash,agentId:targetId,model:{primary:value,fallbacks:[]}};
     kind='openclaw';method='PATCH';path='/openclaw/admin';label=targetId;
     impact={before:agent.model,after:body.model,notice:'Byter agentens modell och tar bort reservmodeller. Gateway kan startas om. Övriga agenters modeller och verktygsbehörigheter ändras inte.'};
+  }else if(action.startsWith('media.')){
+    const row=required(await runtime.repository.getMedia(targetId));
+    if(row.retainedBank||row.deletion)fail('assistant_target_unavailable',409);
+    label=name(row.classification);kind='media';permanent=action==='media.delete';
+    if(permanent){
+      body={id:targetId,sha256:row.sha256,expectedRevision:row.revision};
+      const check=await assistantRead(await createStudioMediaApi(runtime).handle(assistantRequest(request,runtime,'/videos/delete-check','POST',body)));
+      if(check.allowed!==true)fail('assistant_delete_blocked',409);
+      path='/videos/delete';impact={notice:'Raderar denna arkiverade fil permanent från lagringen. Kan inte ångras. Befintlig beroendekontroll måste godkänna den.',dealerId:row.classification.dealerId};
+      mediaSignature=assistantDigest({id:row.id,sha256:row.sha256,pathname:row.pathname,classification:row.classification});
+    }else if(action==='media.rename'){
+      if(row.classification.familyId)fail('assistant_media_immutable',409);
+      if(typeof value!=='string'||!value.trim()||value.trim().length>100)fail('assistant_invalid_proposal');
+      if(label===value.trim())fail('assistant_no_change',409);
+      path='/videos/classify';body={id:targetId,sha256:row.sha256,previous:row.classification,metadata:{...row.classification,label:value.trim()}};
+      impact={before:label,after:value.trim(),notice:'Byter klippets namn i det sparade mediaregistret. Filens bytes och placering bevaras.'};
+    }else{
+      const archived=action==='media.archive';
+      if(Boolean(row.classification.archived)===archived)fail('assistant_no_change',409);
+      const usage=await runtime.repository.findMediaReferences(targetId);
+      if(!Array.isArray(usage?.references))fail('assistant_dependency_unavailable',503);
+      if(archived&&usage.references.some(item=>!item.historical))fail('assistant_media_in_use',409);
+      path='/videos/archive';body={id:targetId,sha256:row.sha256,previous:row.classification,archived};
+      impact={dealerId:row.classification.dealerId,notice:archived?'Flyttar det oanvända klippet till papperskorgen. Fil och historik finns kvar.':'Återställer klippet till biblioteket. Ingen placering i spel väljs automatiskt.'};
+    }
   }else if(action.startsWith('dealer.')||action.startsWith('material.')||action==='resource.rename'){
     const saved=required(await runtime.repository.readDocument('project')),p=saved.value;
-    if(action==='resource.rename'){
+    if(action==='dealer.create'){
+      if(typeof value!=='string'||!value.trim()||value.trim().length>100)fail('assistant_invalid_proposal');
+      let next;try{next=addDealer(p,targetId,value.trim());}catch{fail('assistant_invalid_dealer',422);}
+      label=value.trim();kind='document';path='/project';method='PUT';body={project:next,expectedRevision:saved.revision};
+      impact={after:label,dealerId:targetId,notice:'Registrerar en ny dealer med tomma klippfack. Kopierar inga filmer och lägger inte till dealern i något rum. Du kan sedan ladda upp filer.'};
+    }else if(action==='resource.rename'){
+
       if(typeof value!=='string'||!value.trim()||value.length>100)fail('assistant_invalid_proposal');
       const matches=[...(p.dealers??[]),...(p.layerAssets??[]),...(p.lanes??[])].filter(row=>row.id===targetId);
       if(matches.length!==1)fail('assistant_target_ambiguous',409);
@@ -93,12 +126,22 @@ export async function prepareAssistantAction(runtime,request,proposal,{services=
   const visibleImpact=structuredClone(impact);delete visibleImpact.token;
   return {plan,review:{action,targetId,label,permanent,impact:visibleImpact,
     confirmation:permanent?'RADERA '+targetId:targetId,
-    question:`Är du säker på att du vill ${action==='resource.rename'?'byta namn på':action==='openclaw.model'?'byta modell för':action.endsWith('.restore')?'återställa':action.endsWith('.open')?'öppna':action.endsWith('.pause')?'stänga':permanent?'permanent radera':'flytta till papperskorgen'} "${label}"?`},
+    question:`Är du säker på att du vill ${action==='dealer.create'?'skapa dealern':action==='resource.rename'||action==='media.rename'?'byta namn på':action==='openclaw.model'?'byta modell för':action.endsWith('.restore')?'återställa':action.endsWith('.open')?'öppna':action.endsWith('.pause')?'stänga':permanent?'permanent radera':'flytta till papperskorgen'} "${label}"?`},
     fingerprint:assistantDigest(plan)};
 }
 export async function executeAssistantAction(runtime,request,prepared,{services=assistantServices(runtime)}={}){
   const {kind,path,method,body}=prepared.plan;
   if(kind==='openclaw')return services.openclaw(request,method,body);
+  if(kind==='media'){
+    let guarded=runtime;
+    if(prepared.plan.permanent)guarded={...runtime,mediaDeletion:{...runtime.mediaDeletion,
+      remove:(input,options)=>runtime.mediaDeletion.remove(input,{...options,stillAuthorized:async()=>{
+        const actor=await options.stillAuthorized(),row=required(await runtime.repository.getMedia(input.id));
+        if(assistantDigest({id:row.id,sha256:row.sha256,pathname:row.pathname,classification:row.classification})!==prepared.plan.mediaSignature)fail('assistant_review_changed',409);
+        return actor;
+      }})}};
+    return assistantWrite(await createStudioMediaApi(guarded).handle(assistantRequest(request,runtime,path,method,body)));
+  }
   if(kind==='dealer'&&prepared.plan.permanent){
     // Verify exact objects again INSIDE the existing tombstone transaction and
     // before each external purge. Our own tombstones change revisions, not
@@ -109,9 +152,9 @@ export async function executeAssistantAction(runtime,request,prepared,{services=
         if(await dealerMediaSignature(runtime,input.dealerId)!==prepared.plan.mediaSignature)fail('assistant_review_changed',409);
         return actor;
       }})}};
-    return assistantRead(await createStudioDealerApi(guarded).handle(assistantRequest(request,runtime,path,method,body)));
+    return assistantWrite(await createStudioDealerApi(guarded).handle(assistantRequest(request,runtime,path,method,body)));
   }
-  if(kind==='dealer')return assistantRead(await createStudioDealerApi(runtime).handle(assistantRequest(request,runtime,path,method,body)));
-  if(kind==='document')return assistantRead(await createStudioDocumentApi(runtime).handle(assistantRequest(request,runtime,path,method,body)));
-  return services.admin(request,path.slice('/admin/'.length),method,body);
+  if(kind==='dealer')return assistantWrite(await createStudioDealerApi(runtime).handle(assistantRequest(request,runtime,path,method,body)));
+  if(kind==='document')return assistantWrite(await createStudioDocumentApi(runtime).handle(assistantRequest(request,runtime,path,method,body)));
+  return services.admin(request,path.slice('/admin/'.length),method,body,{ackOnly:true});
 }

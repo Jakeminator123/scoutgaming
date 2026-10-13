@@ -25,15 +25,15 @@ function fixture(options={}){
  return {state,native,api,post:body=>api.handle(req(body)),prepare:()=>api.handle(req({operation:'prepare',proposal})).then(response=>response.json())};
 }
 const chat=(mode='admin')=>({operation:'chat',mode,message:'Vad finns här?',history:[]});
-test('public help never initializes the database, reads internal data or emits actions',async()=>{
+test('N1 quick help authorizes the user but reads no internal data and emits no actions',async()=>{
  const h=fixture();const result=await h.post(chat('help'));assert.equal(result.status,200);
- assert.equal(h.state.runtimeCalls,0);assert.equal(h.state.reads,0);assert.deepEqual(h.state.sent.context,PUBLIC_KNOWLEDGE);
+ assert.equal(h.state.runtimeCalls,1);assert.equal(h.state.reads,0);assert.deepEqual(h.state.sent.context,PUBLIC_KNOWLEDGE);
  assert.equal((await result.json()).proposal,null);
 });
 test('anonymous, partner, player and reader cannot read or prepare internal work',async()=>{
  for(const user of [null,{...actor,role:'partner'},{...actor,role:'player'},{...actor,role:'reader'},{...actor,scope:{...scope,workspaceId:'other'}}]){
   const h=fixture();h.state.actor=user;
-  for(const body of [chat(),chat('openclaw'),{operation:'prepare',proposal},{operation:'execute',token:'fake',confirmation:'north',accepted:true}])
+  for(const body of [chat(),chat('help'),chat('openclaw'),{operation:'prepare',proposal},{operation:'execute',token:'fake',confirmation:'north',accepted:true}])
    assert.equal((await h.post(body)).status,403);
   assert.equal(h.state.reads,0);assert.equal(h.state.models,0);assert.equal(h.state.executions,0);
  }
@@ -98,7 +98,7 @@ test('capability identity changes across login sessions without leaking cookie o
  const h=fixture();const first=await(await h.api.handle(req())).json();
  const second=await(await h.api.handle(req(null,{headers:{cookie:'lab_session=changed'}}))).json();
  assert.equal(first.access,'n1');assert.notEqual(first.identity,second.identity);assert.ok(!JSON.stringify(first).includes(actor.user));
- h.state.actor=null;assert.equal((await(await h.api.handle(req())).json()).access,'help');
+ h.state.actor=null;assert.equal((await(await h.api.handle(req())).json()).access,'none');
 });
 function actionFixture(){
  const state={calls:[],project:{revision:'p1',dealers:[{id:'astrid',label:'Astrid'}],layerAssets:[{id:'table',label:'Bord',role:'table'}],lanes:[]},
@@ -149,12 +149,12 @@ test('read context is allowlisted and marks missing database/OpenClaw coverage h
 });
 test('model adapter requests Sol 6.1 for administration with no tools, no storage or automatic fallback',async()=>{
  let captured;const response=await askAssistant({configuration:{api:'openai-responses',endpoint:'https://model.invalid/responses',apiKey:'fixture'},mode:'admin',message:'test',history:[],context:{},
-  fetchImpl:async(_url,options)=>{captured=JSON.parse(options.body);return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Klar',proposal:null})}]}]});}});
+  fetchImpl:async(_url,options)=>{captured=JSON.parse(options.body);return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Klar',proposal:null,read:null,navigation:null})}]}]});}});
  assert.equal(response.reply,'Klar');assert.equal(captured.model,ASSISTANT_MODELS.admin.id);assert.equal(captured.reasoning.effort,'high');assert.equal(captured.store,false);assert.deepEqual(captured.tools,[]);
 });
 test('public model action or unexpected tool call is rejected',async()=>{
  for(const output of [{status:'completed',output:[{type:'function_call',name:'delete'}]},
- {status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Klar',proposal})}]}]}]){
+ {status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Klar',proposal,read:null,navigation:null})}]}]}]){
   await assert.rejects(askAssistant({configuration:{api:'openai-responses',endpoint:'https://model.invalid/responses',apiKey:'fixture'},mode:'help',message:'test',history:[],context:{},fetchImpl:async()=>Response.json(output)}));
  }
 });
@@ -181,4 +181,27 @@ test('permanent dealer approval binds media identity through tombstoning and eve
   else await assert.rejects(executeAssistantAction(native,req(),p));
   assert.equal(purged,change==='none');
  }
+});
+
+
+test('anonymous capability response hides models and does not open a database',async()=>{
+ const h=fixture(),response=await h.api.handle(req(undefined,{headers:{cookie:''}}));
+ assert.deepEqual(await response.json(),{access:'none',identity:'public'});assert.equal(h.state.runtimeCalls,0);
+});
+test('N1 read loop feeds scoped observations to the next model turn and never executes',async()=>{
+ let calls=0,h;h=fixture({ask:async args=>{calls++;if(calls===1)return {reply:'Läser',proposal:null,read:{source:'media',query:'astrid',offset:0}};
+ assert.equal(args.context.requestedData[0].items[0].label,'Saved clip');return {reply:'Hittade klippet',proposal:null,navigation:{page:'import',targetId:'astrid'}};},
+ readData:async()=>({source:'media',total:1,complete:true,items:[{label:'Saved clip'}]})});
+ const result=await(await h.post(chat())).json();assert.equal(calls,2);assert.equal(result.navigation.href,'/admin/clips?tool=import&dealer=astrid');assert.equal(h.state.executions,0);
+});
+test('revocation during a scoped read prevents a second model call and private response',async()=>{
+ let h,calls=0;h=fixture({ask:async()=>{calls++;return {reply:'Läser',proposal:null,read:{source:'media',query:'',offset:0}};},readData:async()=>{h.state.actor=null;return {private:'SECRET'};}});
+ const response=await h.post(chat());assert.equal(response.status,403);assert.equal(calls,1);assert.ok(!(await response.text()).includes('SECRET'));
+});
+test('read loops are bounded and failed coverage is not reported as an empty database',async()=>{
+ let calls=0;const endless=fixture({ask:async()=>{calls++;return {reply:'Läser',proposal:null,read:{source:'media',query:'',offset:0}};},readData:async()=>({items:[]})});
+ assert.equal((await endless.post(chat())).status,503);assert.equal(calls,4);
+ let step=0;const unavailable=fixture({readData:async()=>{throw Error('secret DB connection');},ask:async({context})=>{if(!step++)return {reply:'Läser',proposal:null,read:{source:'media',query:'',offset:0}};
+ assert.equal(context.requestedData[0].status,'unavailable');assert.equal(context.requestedData[0].complete,false);assert.ok(!JSON.stringify(context).includes('secret DB'));return {reply:'Registret kunde inte läsas.',proposal:null};}});
+ assert.equal((await unavailable.post(chat())).status,200);
 });
