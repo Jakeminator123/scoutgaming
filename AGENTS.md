@@ -48,7 +48,7 @@ Follow `agent-talk/README.md`. Run `node tools/agent-talk.mjs status <your-id>` 
 
 ## Active documentation and private archive
 
-Rensa aktivt: radera tydligt förbrukade rester och flytta tveksamma äldre filer till rotens kanoniska, gitignorerade `arkiv/<datum>/<ursprunglig-sökväg>` för återhämtning; skapa inga nya parallella arkivmappar.
+Rensa aktivt: radera tydligt förbrukade rester och flytta tveksamma äldre filer till rotens kanoniska, gitignorerade `arkiv/<datum>/<ursprunglig-sökväg>` för återhämtning; skapa inga nya parallella arkivmappar. Lokal tröskelarkivering av projektsnapshots och avslutade observationsloggar styrs av `tools/retention-policy.json`; förhandsgranska/återställ med `node tools/retention-archive.mjs`.
 
 Use `lab/docs/TERMINOLOGI.md` as the sole source for product terms and ownership, `lab/docs/README.md` for user steps, and `docs/LOCAL-PRESENTATION-RUNTIME.md` for technical reality and formats. Keep at most five Markdown files under `docs/`: `JOHN-HANDOFF.md`, `CLOUD-MIGRATION.md`, `LOCAL-PRESENTATION-RUNTIME.md`, `ENVIRONMENT-RESTORATION.md`, and `ENVIRONMENT-VARIABLES.md`. Update them in place. New reports and sprint documentation are paused.
 
