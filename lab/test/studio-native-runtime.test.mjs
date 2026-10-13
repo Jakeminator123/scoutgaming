@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, createNativeStudioRequestHandlers, handleNativeAdmin, handleNativeSession,nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
+import { readFileSync } from 'node:fs';
+import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, createNativeStudioRequestHandlers, handleNativeAdmin, handleNativeSession,nativeStudioErrorResponse,readAssistantDatabaseInventory } from '../lib/studio-native-runtime.mjs';
 import {StudioStorageError} from '../../web/storage/studio-contract.mjs';
 
 test('unsupported media format returns its fixed typed 415 without database details',async()=>{
@@ -18,6 +19,31 @@ const env = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_PUBLIC_ORIGIN: 'https:
   CROUPIER_LAB_UI_ORIGIN: 'https://studio.example.invalid', CROUPIER_LAB_BASE_PATH: '/studio',
   CROUPIER_STUDIO_ENVIRONMENT_ID: 'fixture', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
   CROUPIER_GAME_DATABASE_URL: 'postgres://fixture:fixture@fixture.neon.tech/fixture?sslmode=require' };
+
+test('assistant inventory reads only table names in the actual game, auth and Studio schemas', async () => {
+  const schemas = ['../../ops/neon-game/product-schema.sql','../../ops/neon-studio/001-studio-metadata.sql']
+    .flatMap(path => [...readFileSync(new URL(path, import.meta.url),'utf8').matchAll(/CREATE SCHEMA (?:IF NOT EXISTS )?(\w+);/g)].map(match=>match[1])).sort();
+  assert.deepEqual(schemas,['croupier_auth','croupier_game','croupier_studio']);
+  let calls=0;
+  const pool={async query(sql,...parameters) {
+    calls++;assert.equal(parameters.length,0);
+    assert.match(sql,/^SELECT table_schema, table_name FROM information_schema\.tables WHERE table_schema IN \(/);
+    const allowed=[...sql.matchAll(/'(croupier_\w+)'/g)].map(match=>match[1]).sort();
+    assert.deepEqual(allowed,schemas);assert.match(sql,/AND table_type='BASE TABLE' ORDER BY table_schema, table_name LIMIT 501$/);
+    assert.doesNotMatch(sql,/CALLER_SQL|public|SELECT \*/);
+    return {rows:schemas.map(schema=>({table_schema:schema,table_name:'fixture_table',privateRow:'PRIVATE'}))};
+  }};
+  const inventory=await readAssistantDatabaseInventory(pool,{sql:'CALLER_SQL',schema:'public'});
+  assert.equal(calls,1);assert.equal(inventory.partial,false);
+  assert.deepEqual(inventory.tables,schemas.map(schema=>({schema,name:'fixture_table'})));
+  assert.doesNotMatch(JSON.stringify(inventory),/PRIVATE|privateRow/);
+});
+
+test('assistant table inventory bounds returned metadata and reports truncation', async () => {
+  const rows=Array.from({length:501},(_,i)=>({table_schema:'croupier_studio',table_name:`fixture_${i}`}));
+  const inventory=await readAssistantDatabaseInventory({query:async()=>({rows})});
+  assert.equal(inventory.tables.length,500);assert.equal(inventory.partial,true);
+});
 test('native mode is explicit, scoped and never substitutes zone/general database', () => {
   assert.equal(nativeStudioAdminConfiguration({}), null);
   const config = nativeStudioAdminConfiguration(env);
