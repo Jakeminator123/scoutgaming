@@ -7,7 +7,7 @@ import {partnerLaneState} from '../lab/lib/partner-package-view.mjs';
 const uploaded=(material,source,id='upload-uuid')=>({id,role:material.role,label:'Old upload name',...source});
 
 test('the five supplied blackjack boards retain separate identities and original dimensions',()=>{
-  const tables=MATERIALS.filter(row=>row.role==='table');
+  const tables=MATERIALS.filter(row=>row.role==='table'&&row.game==='blackjack');
   assert.deepEqual(tables.map(row=>row.label),['Blackjack · grön filt','Blackjack · svart filt','Blackjack · Oak','Blackjack · Purple Rain','Blackjack · Back to Basic']);
   assert.equal(new Set(MATERIALS.map(row=>row.id)).size,MATERIALS.length);
   assert.equal(new Set(tables.map(row=>row.sources[0].sha256)).size,5);

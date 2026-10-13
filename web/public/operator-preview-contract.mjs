@@ -2,6 +2,9 @@ import {isGameLaneId,isOperatorSlug} from './game-lanes.mjs';
 import {isDealerId} from './dealer-identity.mjs';
 import {validateCompositionSettings} from './composition-settings.mjs';
 import {validateDealerFraming} from './dealer-framing.mjs';
+import {validateRouletteForegroundPolygons} from './roulette-idle-contract.mjs';
+import {validateRouletteStartProfile} from './roulette-start-contract.mjs';
+import {materialById} from './material-catalog.mjs';
 
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const types=new Set(['image/png','image/jpeg','image/webp','video/mp4','video/webm']);
@@ -38,12 +41,44 @@ export function validatePublicOperatorPreview(value,expected={}) {
   if(value.independentLayers!==(value.settings!==null))fail();
   if(value.media.dealer!==null) {
     const media=value.media.dealer;
-    exact(media,['src','contentType'],['compositing','framing']);
-    if(!['video/mp4','video/webm'].includes(media.contentType)||typeof media.src!=='string')fail();
-    const id=media.src.split('/').at(-1);
-    if(media.src!==previewMediaPath(context,'dealer',id))fail();
-    if(media.compositing!==undefined)compositing(media.compositing);
-    if(media.framing!==undefined)validateDealerFraming(media.framing);
+    exact(media,['src','contentType'],['compositing','framing','variants','foregroundPolygons','wheelStart']);
+    function clip(row) {
+      if(!['video/mp4','video/webm'].includes(row.contentType)||typeof row.src!=='string')fail();
+      const id=row.src.split('/').at(-1);
+      if(row.src!==previewMediaPath(context,'dealer',id))fail();
+      if(row.compositing!==undefined)compositing(row.compositing);
+      if(row.framing!==undefined)validateDealerFraming(row.framing);
+    }
+    clip(media);
+    if(Object.hasOwn(media,'variants')) {
+      const rows=media.variants;
+      if(!Array.isArray(rows)||Object.getPrototypeOf(rows)!==Array.prototype||rows.length>3
+        ||Object.getOwnPropertySymbols(rows).length||Object.getOwnPropertyNames(rows).length!==rows.length+1
+        ||Object.keys(rows).length!==rows.length)fail();
+      const sources=new Set([media.src]);
+      for(let i=0;i<rows.length;i++) {
+        if(!Object.hasOwn(Object.getOwnPropertyDescriptor(rows,i)??{},'value'))fail();
+        const row=rows[i];exact(row,['src','contentType'],['compositing','framing']);clip(row);
+        if(sources.has(row.src)||row.contentType!=='video/webm'||row.compositing?.mode!=='alpha')fail();sources.add(row.src);
+        const frame=value=>value?JSON.stringify(Object.entries(value).sort()):'null';
+        if(frame(row.framing)!==frame(media.framing))fail();
+      }
+      if(media.contentType!=='video/webm'||media.compositing?.mode!=='alpha')fail();
+    }
+    if(Object.hasOwn(media,'foregroundPolygons')) {
+      validateRouletteForegroundPolygons(media.foregroundPolygons);
+      if(!media.framing||media.contentType!=='video/webm'||media.compositing?.mode!=='alpha')fail();
+    }
+    if(Object.hasOwn(media,'wheelStart')) {
+      const row=media.wheelStart;
+      exact(row,['src','contentType','compositing','framing','tableDesignId','durationMs','wheelImpulseMs','ballReleaseMs'],['foregroundPolygons']);
+      clip(row);
+      const {src,contentType,compositing:mode,framing,...profile}=row;
+      validateRouletteStartProfile(profile);
+      if(!value.independentLayers||contentType!=='video/webm'||mode.mode!=='alpha'
+        ||media.contentType!=='video/webm'||media.compositing?.mode!=='alpha'
+        ||[media.src,...(media.variants??[]).map(variant=>variant.src)].includes(src))fail();
+    }
   }
   for(const [key,role] of [['tables','table'],['backgrounds','background']]) {
     const rows=value.media[key];
@@ -53,11 +88,13 @@ export function validatePublicOperatorPreview(value,expected={}) {
     const ids=new Set();
     for(let i=0;i<rows.length;i++) {
       if(!Object.hasOwn(Object.getOwnPropertyDescriptor(rows,i)??{},'value'))fail();
-      const row=rows[i];exact(row,['id','label','src','contentType']);label(row.label,80);
+      const row=rows[i];exact(row,['id','label','src','contentType'],role==='table'?['designId']:[]);label(row.label,80);
+      if(Object.hasOwn(row,'designId')&&materialById(row.designId)?.role!=='table')fail();
       if(ids.has(row.id)||!types.has(row.contentType)
         ||row.src!==previewMediaPath(context,role,row.id))fail();
       ids.add(row.id);
     }
   }
+  if(value.media.dealer?.wheelStart&&!value.media.tables.some(row=>row.designId===value.media.dealer.wheelStart.tableDesignId))fail();
   return structuredClone(value);
 }

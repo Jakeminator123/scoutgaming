@@ -62,7 +62,9 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
       || !Array.isArray(pack.tables) || !Array.isArray(pack.lanes)) fail('studio_presentation_idle_context_unavailable', 503);
     const rooms = administration.rooms.filter(room => room?.id === context.roomId);
     const room = rooms.length === 1 ? rooms[0] : null;
-    if (!isPresentationRoom(room) || room.operatorId !== operator.id || room.state !== 'live' || !pack.tables.includes(room.id)) {
+    // This endpoint exposes the blackjack playback contract. Roulette has its
+    // own explicit idle descriptor and byte allowlist in public preview.
+    if (!isPresentationRoom(room) || room.game==='roulette' || room.operatorId !== operator.id || room.state !== 'live' || !pack.tables.includes(room.id)) {
       fail('studio_presentation_idle_room_unavailable', 404);
     }
     const presentation = readPresentation(pack);

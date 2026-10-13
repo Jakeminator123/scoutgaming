@@ -5,7 +5,7 @@ import { RotateCcw, Image, Layers, Users, Volume2, Trash2 } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import { ConnectedClipCard, type CardNode } from './connected-clip-card';
 import { DealerIdentityPortrait } from './dealer-identity-portrait';
-import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, createStudioClient, currentClipId, navigationKeepsStudioTab, roomChoicesPath, uploadMetadata, type ClipSlot, type Workspace } from '../../lib/connected-studio.mjs';
+import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, createStudioClient, currentClipId, navigationKeepsStudioTab, roomChoicesPath, uploadMetadata, type ClipSlot, type Workspace, type VideoInventory } from '../../lib/connected-studio.mjs';
 import { readIdleVideoDuration } from '../../../../../lab/lib/idle-video-duration.mjs';
 import type { StudioProject } from '../../../../../lab/lib/studio-model.mjs';
 import { replaceContext } from '../../../runtime/navigation';
@@ -15,10 +15,12 @@ import { StudioSpeechPanel } from './studio-speech-panel';
 import { StudioLifecyclePanel } from './studio-lifecycle-panel';
 import { StudioPolicyPanel } from './studio-policy-panel';
 import { StudioCompositionPanel } from './studio-composition-panel';
+import { RouletteStartEditor } from './roulette-start-editor';
+import { RouletteIdleEditor } from './roulette-idle-editor';
 import { registerCompositionLayer } from '../../../../../lab/lib/studio-composition.mjs';
 import { rebaseProjectDraft } from '../../../../../lab/lib/project-rebase.mjs';
 import { validateProject } from '../../../../../lab/lib/studio-model.mjs';
-import {rouletteReferencePreview} from '../../lib/roulette-clip-map.mjs';
+import {rouletteReferencePreview,unbindRouletteClip} from '../../lib/roulette-clip-map.mjs';
 import { studioContext } from '../../lib/studio-context.mjs';
 import {isActiveOperator} from '../../lib/studio-resource-lifecycle.mjs';
 
@@ -42,7 +44,11 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   const [busy, setBusy] = useState(false);
   const [childBusy, setChildBusy] = useState(false);
   const [materialReload,setMaterialReload]=useState(false);
-  const [configDirty, setConfigDirty] = useState(false);
+  const [speechDirty, setConfigDirty] = useState(false);
+  const [startDirty,setStartDirty]=useState(false);
+  const [startVideoId,setStartVideoId]=useState('');
+  const [panelEpoch,setPanelEpoch]=useState(0);
+  const configDirty=speechDirty||startDirty;
   const locked = busy || childBusy;
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
@@ -51,7 +57,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   const [dealerId, setDealerId] = useState(() => new URLSearchParams(location.search).get('dealer') ?? '');
   const [category, setCategory] = useState('all');
   const [game, setGame] = useState<'blackjack'|'roulette'>(()=>new URLSearchParams(location.search).get('game')==='roulette'?'roulette':'blackjack');
-  const [panel, setPanel] = useState<'room'|'dealer'|'layers'|'policy'|null>(()=>new URLSearchParams(location.search).get('panel')==='layers'?'layers':null);
+  const [panel, setPanel] = useState<'room'|'dealer'|'layers'|'policy'|'roulette-start'|'roulette-media'|null>(()=>new URLSearchParams(location.search).get('panel')==='layers'?'layers':null);
   const [speechDealer,setSpeechDealer]=useState('');
   const [settingsSlot, setSettingsSlot] = useState<ClipSlot|null>(null);
   const [selected, setSelected] = useState<Record<string,string>>({});
@@ -145,7 +151,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
               if(!changeContext(()=>{setOperatorId(nextOperator);setRoomId(nextRoom);setDealerId(nextDealer);setGame(nextGame);})){event.preventDefault();return;}
             }
           }
-          if(query.get('panel')==='layers')setPanel('layers');
+          if(query.get('panel')==='layers'&&!openPanel('layers'))event.preventDefault();
           return;
         }
       }
@@ -170,6 +176,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     finally { busyRef.current = false; setBusy(false); }
   }
   function edit(project:StudioProject) { setData(current => current && ({...current,project})); setError(''); setNotice('Ändringen finns i utkastet. Spara när du har granskat berörda rum.'); }
+  const updateInventory=useCallback((inventory:VideoInventory)=>setData(current=>current&&({...current,inventory})),[]);
   async function link(slot:ClipSlot, id:string) {
     if (!data || !dealer) return;
     await work(async signal => {
@@ -216,13 +223,18 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   }
   function changeContext(action:()=>void) {
     if (busyRef.current) return false;
-    if (configDirty && !confirm('Det finns en röstprofil som ännu inte har lagts i utkastet. Kasta formulärändringen och byt kontext?')) return false;
+    if (configDirty && !confirm('Det finns formulärändringar som ännu inte har lagts i utkastet. Kasta dem och byt kontext?')) return false;
     if (pending && !confirm('Kasta videovalet som ännu inte har laddats upp och byt kontext?')) return false;
     setPending(null);setLocalReference(null); setSelected({}); setVariants({}); setPanel(null);setSettingsSlot(null);setPositions({}); action();
     if (dirty) setNotice('Det gemensamma projektutkastet är kvar, även för tidigare vald dealer och sammansättning.');
     return true;
   }
-  function togglePanel(next:typeof panel) { if(busyRef.current)return;setPanel(panel===next?null:next); }
+  function openPanel(next:typeof panel) {
+    if(busyRef.current)return false;
+    if(startDirty&&!confirm('Kasta filmformulärets osparade ändringar?'))return false;
+    setStartDirty(false);setPanelEpoch(value=>value+1);setPanel(next);return true;
+  }
+  function togglePanel(next:typeof panel) {openPanel(panel===next?null:next);}
   const cardGroups = groupSlots(slots).filter(group=>category==='all'||group.slots.some(slot=>slot.sourceType===category));
   const nodes:CardNode[] = cardGroups.map((group,index) => {
     const slot = group.slots.find(slot=>slot.id===cardSlots[group.id]) ?? group.slots[0];
@@ -234,17 +246,17 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     const columns=canvasWidth<610?1:canvasWidth<1100?2:4;
     return {id:group.id,type:'registeredClip',position:positions[group.id]??{x:index%columns*306,y:Math.floor(index/columns)*(game==='roulette'?440:355)},
       data:{group,slot,clips,boundId,boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId,data!.inventory),selectedId,localPreviewUrl:slot.localOnly&&localReference?.dealerId===dealer?.id?referenceUrl:undefined,busy:locked||loading||!authorized,variantId,variants:slot.family ? [] : line?.variants.map(row=>({id:row.id,label:row.label})) ?? [],
-        onSlot:id=>setCardSlots(current=>({...current,[group.id]:id})),onSettings:()=>{if(busyRef.current)return;setSettingsSlot(slot);setPanel(slot.sourceType==='speak'?'room':'policy');},
+        onSlot:id=>setCardSlots(current=>({...current,[group.id]:id})),onSettings:()=>{if(!openPanel(slot.eventId==='roulette.wheel-start'?'roulette-start':slot.game==='roulette'?'roulette-media':slot.sourceType==='speak'?'room':'policy'))return;setSettingsSlot(slot);setStartVideoId(selectedId||boundId);},
         onSelect:id=>setSelected(current=>({...current,[slot.id]:id})),onVariant:id=>{setVariants(current=>({...current,[slot.id]:id}));setSelected(current=>({...current,[slot.id]:''}));},
-        onBind:()=>{void link(slot,selectedId);},onFile:file=>stage(file,slot)}};
+        onBind:()=>{void link(slot,selectedId);},onUnbind:()=>{void work(async()=>{edit(validateProject(unbindRouletteClip(data!.project,dealer!.id,slot,selectedId)));});},onFile:file=>stage(file,slot)}};
   });
   const impacts = registry?.rooms.filter(row => row.dealerIds.includes(dealer?.id ?? '') || row.compositionId === lane?.id) ?? [];
   const changedRooms = data&&base ? affectedRooms(base,data.project,registry?.rooms??[]) : [];
-  useEffect(()=>{setFlowNodes(current=>nodes.map(node=>({...current.find(row=>row.id===node.id),...node})));},[data,dealer?.id,category,game,cardSlots,selected,variants,locked,loading,authorized,positions,canvasWidth,referenceUrl,localReference]);
+  useEffect(()=>{setFlowNodes(current=>nodes.map(node=>({...current.find(row=>row.id===node.id),...node})));},[data,dealer?.id,category,game,cardSlots,selected,variants,locked,loading,authorized,positions,canvasWidth,referenceUrl,localReference,startDirty]);
   return <section className="flex min-h-0 flex-1 flex-col" aria-label="Central Studio">
     <header className="studio-workspace-header">
       <div className="studio-workspace-toolbar"><p>Spelbolag → spel → rum / bakgrund → dealer och bord</p>
-        <div className="studio-save-actions"><span className={dirty?'text-sg-amber':'text-sg-lime'}>{loading?'Läser…':dirty?'Osparat utkast':data?'Sparat':'Ej inläst'}</span><button className="studio-button studio-save" disabled={locked||loading||!authorized||!dirty||Boolean(pending)||configDirty||conflictPaths.length>0} onClick={()=>setReviewSave(true)}>Spara utkast</button><button className="studio-icon-button" aria-label="Läs om register" title="Läs om register" disabled={locked||loading} onClick={()=>{if((dirty||pending)&&!confirm('Kasta utkastet och läs om serverns revision?'))return;setPending(null);void load();}}><RotateCcw size={15}/></button></div></div>
+        <div className="studio-save-actions"><span className={dirty||configDirty?'text-sg-amber':'text-sg-lime'}>{loading?'Läser…':configDirty?'Osparat formulär':dirty?'Osparat utkast':data?'Sparat':'Ej inläst'}</span><button className="studio-button studio-save" disabled={locked||loading||!authorized||!dirty||Boolean(pending)||configDirty||conflictPaths.length>0} onClick={()=>setReviewSave(true)}>Spara utkast</button><button className="studio-icon-button" aria-label="Läs om register" title="Läs om register" disabled={locked||loading} onClick={()=>{if((dirty||pending||configDirty)&&!confirm('Kasta utkast och formulärändringar och läs om serverns revision?'))return;setPending(null);setPanel(null);setSpeechDealer('');setStartDirty(false);setConfigDirty(false);void load();}}><RotateCcw size={15}/></button></div></div>
       {registry&&<div className="studio-context-row">
         <label className="studio-field">Spelbolag<select value={operator?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setOperatorId(event.target.value);setRoomId('');setDealerId('');})}>{!operator&&<option value="" disabled>Välj ett aktivt bolag</option>}{registry.operators.filter(isActiveOperator).map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
         <label className="studio-field">Spel<select value={game} disabled={locked||loading} onChange={event=>changeContext(()=>{setGame(event.target.value as 'blackjack'|'roulette');setRoomId('');setDealerId('');})}><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option></select></label>
@@ -263,11 +275,13 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     {notice&&<span role="status" className="studio-notice">{notice}</span>}
     {game==='roulette'&&<div className="flex flex-wrap items-center gap-3 border-b border-sg-line px-6 py-3 text-xs text-sg-text-soft" aria-label="Roulettens filmflöde">
       {localVilaUrl?<img className="h-20 w-24 object-contain" src={localVilaUrl} alt="Lokal VILA-referens, inte sparad"/>:rouletteReference&&(rouletteReference.classification?.mediaType==='image'?<img className="h-20 w-24 object-contain" src={rouletteReference.previewUrl} alt="Roulettens VILA-referens"/>:<video className="h-20 w-24 object-contain" src={rouletteReference.previewUrl} muted playsInline preload="auto" aria-label="Första tillgängliga roulette-idle som viloreserv"/>)}
-      <p>Vila → insatser → serverkvitto → kulsläpp + hjulfilm → resultat → vila.<br/>Bakgrund, dealer och bord är separata bild- eller videolager. Filvalen här gäller bara roulette. {localVilaUrl?'Lokal VILA-bild visas, inte sparad.':rouletteReference?rouletteReference.classification?.mediaType==='image'?'VILA-bild finns.':'VILA-bild saknas; första tillgängliga roulette-idle visas som reserv.':'VILA och roulette-idle saknas.'} Registrering är inte spelkoppling eller visuell acceptans.</p>
+      <p>Vila → insatser → serverkvitto → kulsläpp + hjulfilm → resultat → vila.<br/>Bakgrund, dealer och bord är separata bild- eller videolager. Filvalen här gäller bara roulette. {localVilaUrl?'Lokal VILA-bild visas, inte sparad.':rouletteReference?rouletteReference.classification?.mediaType==='image'?'VILA-bild finns.':'VILA-bild saknas; första tillgängliga roulette-idle visas som reserv.':'VILA och roulette-idle saknas.'} Koppla grundloop och glasögonvarianter uttryckligen, spara utkastet och publicera rummet separat. Registrering är ingen visuell acceptans.</p>
       <button className="studio-button" disabled={locked} onClick={()=>togglePanel('layers')}>Bakgrund och bord · bild/video</button>
     </div>}
     {reviewSave&&<div className="studio-review-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="studio-save-review" className="studio-review"><h2 id="studio-save-review">Berörda användningar</h2><p>Ändringarna sparas som utkast. Publicerade versioner behålls.</p><ul>{changedRooms.length?changedRooms.map(row=><li key={row.id}>{registry?.operators.find(op=>op.id===row.operatorId)?.name} · {row.name} · {row.game}{row.published?' · publicerad':''}</li>):<li>Inga registrerade rum använder det ändrade materialet.</li>}</ul><div><button className="studio-button studio-save" disabled={locked||loading||!authorized||conflictPaths.length>0||configDirty} onClick={()=>{void save().then(()=>setReviewSave(false));}}>Bekräfta sparande</button><button className="studio-button" disabled={busy} onClick={()=>setReviewSave(false)}>Tillbaka</button></div></section></div>}
-    {data&&dealer&&<aside hidden={!panel} className="studio-drawer" aria-label="Kontextpanel"><header><h2>{panel==='room'?'Röst & tal':panel==='dealer'?'Dealer & användning':panel==='layers'?'Gemensam sammansättningsmall':settingsSlot?slotCaption(settingsSlot):'Klippinställningar'}</h2><button className="studio-button" disabled={locked} onClick={()=>setPanel(null)}>Stäng</button></header>
+    {data&&dealer&&<aside hidden={!panel} className="studio-drawer" aria-label="Kontextpanel"><header><h2>{panel==='room'?'Röst & tal':panel==='dealer'?'Dealer & användning':panel==='layers'?'Gemensam sammansättningsmall':settingsSlot?slotCaption(settingsSlot):'Klippinställningar'}</h2><button className="studio-button" disabled={locked} onClick={()=>openPanel(null)}>Stäng</button></header>
+      {panel==='roulette-start'&&<RouletteStartEditor key={`${dealer.id}:${startVideoId}:${panelEpoch}`} project={data.project} inventory={data.inventory} dealerId={dealer.id} laneId={lane?.id??''} videoId={startVideoId} blocked={locked||loading||!authorized} onEdit={edit} onDirtyChange={setStartDirty} onInventory={updateInventory} onBusyChange={childOperation}/>}
+      {panel==='roulette-media'&&data.inventory.videos.filter(video=>video.id===startVideoId).map(video=><RouletteIdleEditor key={`${dealer.id}:${video.id}:${panelEpoch}`} project={data.project} inventory={data.inventory} video={video} dealerId={dealer.id} blocked={locked||loading||!authorized} onEdit={edit} onSaved={updateInventory} onDirtyChange={setStartDirty} onBusyChange={childOperation}/>)}
       <div hidden={panel!=='room'||game==='roulette'}>{game!=='roulette'&&(panel==='room'||speechDealer===dealer.id)&&<StudioSpeechPanel game={game} project={data.project} inventory={data.inventory} dealerId={dealer.id} blocked={busy || loading || !authorized} projectDirty={dirty} onEdit={edit} onBusyChange={childOperation} onDirtyChange={setConfigDirty}/>}</div>
       {panel==='dealer'&&<><div className="studio-dealer-summary"><DealerIdentityPortrait dealer={dealer} className="h-16 w-16 shrink-0"/><div><strong>{dealer.label}</strong><small>Identitet: {dealer.id}</small><p>{impacts.length} rum använder dealern / sammansättningen</p></div></div><StudioLifecyclePanel project={data.project} inventory={data.inventory} catalog={data.catalog} dealerId={dealer.id} blocked={busy || loading || !authorized || dirty} editBlocked={busy || loading || !authorized || Boolean(pending)} onEdit={edit} onReload={load} onBusyChange={childOperation}/></>}
       {panel==='policy'&&settingsSlot&&<StudioPolicyPanel project={data.project} inventory={data.inventory} dealerId={dealer.id} slot={settingsSlot} blocked={busy || loading || !authorized} onEdit={edit} onBusyChange={childOperation}/>}

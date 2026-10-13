@@ -28,7 +28,7 @@ test('room document preserves login context and serves only explicit public asse
   assert.match(page.headers.get('content-security-policy'),/connect-src 'self' https:\/\/api\.d-id\.com;/);
   assert.match(page.headers.get('content-security-policy'),/script-src 'self';/);
   assert.equal(page.headers.get('cache-control'),'private, no-store');
-  for(const asset of ['/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs']) {
+  for(const asset of ['/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs']) {
     assert.equal(backendPlatformPath(asset),true);assert.equal((await get(asset)).status,200);
   }
   const image=await get('/roulette/assets/roulette-bord.png');
@@ -79,7 +79,7 @@ test('split and corner stacks stay on shared boundaries; chip stacks preserve th
   assert.equal(chipBreakdown(2000).length,9);
 });
 
-function sceneFixture(){
+function sceneFixture({deferReady=false,playWheelStart}={}){
   const ids=['00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000003'];
   const context={operatorSlug:'north',roomId:'room-one',packageRevision:7,dealerId:'astrid'};
   const table={enabled:true,default:ids[0],allowed:ids.slice(0,2).map((id,index)=>({id,label:`Table ${index}`}))};
@@ -95,22 +95,51 @@ function sceneFixture(){
     media:{dealer:null,tables,backgrounds:[]}};
   const room={operator:'north',id:'room-one',packageRevision:7,dealer:'astrid',name:'Roulette',operatorName:'North'};
   const prototype={src:'/roulette/assets/roulette-bord.png',contentType:'image/png'},prototypeMask={src:'/prototype-mask.png',contentType:'image/png'};
-  const elements=new Map(),calls=[],fetches=[],stored={},windowListeners={};
+  const elements=new Map(),calls=[],fetches=[],stored={},windowListeners={},wheelCalls=[],wheelOptions=[];
   const element=()=>({hidden:false,attributes:{},listeners:{},classList:{toggle(){}},setAttribute(name,value){this.attributes[name]=value;},
     addEventListener(name,listener){this.listeners[name]=listener;},append(){}});
   const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element};
   const sceneSource=readFileSync(new URL('../web/public/roulette/scene.mjs',import.meta.url),'utf8').replace(/^import .*;\r?$/gm,'').replace('export async function mountRoomScene','async function mountRoomScene');
   let closed=0;
-  const mount=runInNewContext(sceneSource+'\nmountRoomScene;',{document,URLSearchParams,AbortController,AbortSignal,
+  const mount=runInNewContext(sceneSource+'\nmountRoomScene;',{document,URLSearchParams,AbortController,AbortSignal,setTimeout,clearTimeout,performance,
     window:{addEventListener(name,listener){windowListeners[name]=listener;}},localStorage:{getItem:key=>stored[key]??null},
     fetch:async url=>{fetches.push(url);return Response.json(url.endsWith('/rooms')?catalog:preview);},
     validatePublicOperatorRooms,validatePublicOperatorPreview,readChoices,ROULETTE_TABLE:prototype,ROULETTE_TABLE_MASK:prototypeMask,
     rouletteSceneSettings:value=>({...value,prototypeGeometry:true}),
-    mountPublishedScene(_canvas,options){calls.push(options);options.onReady();return {close(){closed++;},toggle(){}};},
+    mountRouletteWheel:()=>({play:(number,id,options)=>{wheelCalls.push(number);wheelOptions.push(options);return Promise.resolve();},showOutcome(){},close(){}}),
+    mountPublishedScene(_canvas,options){calls.push(options);if(!deferReady)options.onReady();return {close(){closed++;},toggle(){},playWheelStart};},
   });
-  return {ids,catalog,table,preview,room,calls,elements,fetches,prototype,prototypeMask,windowListeners,
+  return {ids,catalog,table,preview,room,calls,elements,fetches,prototype,prototypeMask,windowListeners,wheelCalls,wheelOptions,
     choose:id=>{stored[choicesStorageKey('north')]=JSON.stringify({tableAsset:id});},run:()=>mount(room),closed:()=>closed};
 }
+
+test('only the selected table gets its start film and video cues start one authoritative spin',async()=>{
+  for(const match of [true,false]){
+    let starts=0;
+    const f=sceneFixture({playWheelStart:async({onFrame})=>{starts++;onFrame(2000);assert.equal(f.wheelCalls.length,0);onFrame(2500);onFrame(4500);assert.equal(f.wheelOptions[0].clock(),2000);return true;}});
+    if(match)f.preview.media.tables[0].designId='roulette-anna-v1';
+    const context={operatorSlug:'north',roomId:'room-one',packageRevision:7,dealerId:'astrid'};
+    const clip={src:previewMediaPath(context,'dealer',f.ids[0]),contentType:'video/webm',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}};
+    f.preview.media.dealer={...clip,wheelStart:{...clip,src:previewMediaPath(context,'dealer',f.ids[2]),tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2500,ballReleaseMs:4500}};
+    // Another allowed design can appear in the preview but must not activate
+    // this action when the player chose a different table.
+    f.preview.media.tables[1].designId='roulette-anna-v1';
+    const scene=await f.run();await scene.playRound(8,'same-round');
+    assert.equal(starts,match?1:0);assert.deepEqual(f.wheelCalls,[8]);
+    if(match)assert.equal(f.wheelOptions[0].ballDelayMs,2000);
+    scene.close();
+  }
+});
+
+test('a fast confirmed round waits for scene readiness; failure or page close releases it',async()=>{
+  for(const ending of ['ready','failure','close']){
+    const f=sceneFixture({deferReady:true}),scene=await f.run();
+    let done=false;const playing=scene.playRound(6).then(()=>{done=true;});await Promise.resolve();
+    assert.equal(done,false);assert.deepEqual(f.wheelCalls,[]);
+    if(ending==='ready')f.calls[0].onReady();else if(ending==='failure')f.calls[0].onFailure();else scene.close();
+    await playing;assert.equal(done,true);assert.deepEqual(f.wheelCalls,ending==='ready'?[6]:[]);scene.close();
+  }
+});
 
 test('roulette scene uses the authorized default image with its published geometry, not the prototype mask',async()=>{
   const f=sceneFixture();await f.run();assert.equal(f.calls.length,1);

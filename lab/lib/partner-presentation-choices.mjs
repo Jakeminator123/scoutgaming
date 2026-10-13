@@ -9,10 +9,12 @@ export function partnerPresentationDealerChoices({administration,package:pack,pr
   const rooms=listPackageRooms({administration,package:pack,operatorId});
   const portraitDealerIds=presentation.schemaVersion===3?presentation.registeredDealers.map(row=>row.id):[];
   return Object.fromEntries(presentation.lanes.map(presentationLane=>{
-    const lanes=rooms.filter(room=>room.state==='live'&&room.presentationLaneId===presentationLane.id)
-      .map(room=>gameLanes.find(lane=>lane.id===room.gameLaneId))
-      .filter(lane=>isPresentationRoomLaneCompatible(lane,presentationLane,presentation));
-    const choices=lanes.map(lane=>gameChoicesForLane(presentation.lanes,presentationLane.id,lane,{portraitDealerIds}).dealers);
+    const matched=rooms.filter(room=>room.state==='live'&&room.presentationLaneId===presentationLane.id)
+      .map(room=>({room,lane:gameLanes.find(lane=>lane.id===room.gameLaneId)}))
+      .filter(({room,lane})=>isPresentationRoomLaneCompatible(lane,presentationLane,presentation,room.game??'blackjack'));
+    const choices=matched.map(({room,lane})=>gameChoicesForLane(presentation.lanes,presentationLane.id,lane,
+      {portraitDealerIds:room.game==='roulette'&&presentation.registeredDealers?.find(row=>row.id===presentationLane.layers.dealer.default)?.rouletteIdle
+        ?portraitDealerIds.filter(id=>presentation.registeredDealers.some(row=>row.id===id&&row.rouletteIdle?.base)):portraitDealerIds}).dealers);
     return [presentationLane.id,choices.length?presentationLane.layers.dealer.allowed.filter(id=>choices.every(list=>list.includes(id))):[]];
   }));
 }

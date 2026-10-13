@@ -1,5 +1,126 @@
 # Aktuell handoff — Scoutgaming
 
+## Anna-demorum: slutkoppling pågår, 13 oktober
+
+Admin-editorn kan nu spara exakt startfilm, bordsdesign, tider och handregion;
+idle-mask och SHA/CAS-granskning av pose/framing är tillgängliga. Bibliotek och
+sammansättningar filtrerar roulettebord separat från blackjack. Hjul/kula
+komponeras i bordslagret under Annas händer. Startgest v2 och återgång till
+vila är visuellt granskade i faktisk lokal spelarkod. Exakta bytes och cues:
+docs/games/roulette/UTFALLSFILMER.md#startgest-v2-och-live-registrering.
+
+Live: Anna-idle och MP4-bakgrund finns i Blob/Neon samt en egen sparad
+Anna-sammansättning. Startfil, bord och nytt publicerat lobbyrum återstår.
+Inga befintliga PAOW-rum eller användarsaldon ändrade. Två slutrundor från
+den publicerade lobbyn ska verifieras innan detta markeras färdigt.
+Admin typecheck, 49 editorprov och Studio-produktionsbygge passerar.
+Kodcommit `b8e5e20c` är pushad med main `f22cb718` integrerad:
+Studio-produktionsbygge och full pre-commit 3486 pass, 0 fail, 11 skip.
+Två lokala rundor efter handfixen: 26 svart → 28 svart, saldo 490 → 485 → 480.
+Under dold appvy kan skärmbilder vara inaktuella; synlig IAB verifierade
+slutkulan i rätt fack. Slutacceptans ska göras med spelvyn synlig.
+Nytt spelarprov bekräftar att handmasken ligger framför sifferringen.
+Slutgranskningen hittade en paus/återstart-kapplöpning: en köad statisk
+hjuluppdatering kunde hindra videornas nästa animationsruta. Refresh återtar
+nu renderloopen om uppspelning har återupptagits. Regressionen och 26 riktade
+scen-/hjulprov passerar; rättningen ändrar inga mediebytes eller kalibreringar.
+Canvas2D-reservvägen återläser nu även rörliga handmasker per bildrevision,
+tid och dimensioner; 25 riktade kompositorprov passerar. Två nya lokala
+spelningar med sluträttningarna gav 7 röd → 26 svart och saldo
+500 → 505 → 500. Därefter fortsatte Jakob själv i det isolerade provrummet.
+Kvitton/bilder sparades privat; detta är fortfarande inte lobbyacceptans.
+Migrations-/budgetrelease PR108 är nu mergad som `4df384ab` och integreras
+i roulettebranchen. Vercel rapporterar READY för denna main-version.
+Admin går att öppna igen efter driftsättningen; slutuppladdning/publicering
+återstår. Ingen adminsessionsnyckel har exporterats. Render-budgetens
+livekvitto hanteras av den separata merge-chatten före nästa release.
+Säkerhetsstatus 13 oktober: ny öppen
+incident 38176586 utan tillgänglig filplats; täckning ofullständig.
+
+## Anna-startfilm och varierad roulette, 13 oktober — PR101 fortsättning
+
+Valfri exakt rouletteStart med egen framing/handregion/tider, engångsspelning
+och återgång till idle. Videotid styr hjulstart och kulsläpp; varierad slutvinkel
+och fart härleds från rundans ID. Fullare landskapsscen/helskärmsknapp; ingen
+ändring av serverns utfall, wallet eller MP4-bytes. 33 riktade spel-/scenprov gröna.
+Full pre-commit för `ed973933`: 3409 pass, 0 fail, 11 skip.
+Efter integration med main `6a9be6d2` passerade full pre-commit för
+`dc764fa16c62247f393a4b36986f43883b871fab`: **3456 pass, 0 fail, 11 skip**.
+Denna kodhead är pushad och PR101 förblir draft. Senare main `4d6b1ebc`
+har en enda ny mergekonflikt i denna handoff; kodkonflikter saknas i merge-tree.
+Ingen ytterligare main-integration görs under parallellt driftsarbete.
+Två sammanhängande UI-rundor med ny frilagd film: 8 svart → 3 röd, saldo
+500 → 495 → 500 USD i isolerad SQLite. Kvitton och bilder sparade privat.
+
+Betald tiosekundersfilm skapad efter uttryckligt uppladdnings-/kreditgodkännande.
+**Gesten är ännu inte godkänd:** ett presenterande svep, inte tydlig hjulimpuls
+och kulsläpp. Tekniska cue-tider är provisoriska. Ingen live mediaregistrering,
+Blob-uppladdning, rums-publicering eller merge till main. Nästa mediesteg är att rätta
+gesten och godkänna kontakt/övergångar; sedan registrera godkända bytes i Blob.
+Exakta hash, uppgifter och avgränsningar: docs/games/roulette/UTFALLSFILMER.md.
+
+Versionskrock med #102 rättad: v1–14 bevarar mains exakta kontrakt; v14 gäller
+dealerCategoryTrash. **Både rouletteIdle och rouletteStart kräver v15** med
+separata featuregrindar. Ingen SQL-migration. Äldre v14-referenser nedan är
+historiska testanteckningar, inte aktuellt publiceringskrav.
+Integrationsbas: main `6a9be6d2`. Studio produktionsbygge och Admin/lobby
+TypeScript gröna efter konfliktlösning. Admins tidseditor för startfilmens
+cue-profil återstår, liksom liveacceptans; befintliga idle-kort fungerar.
+
+## Rouletthjul och kula, 13 oktober — fortsättning på PR101
+
+Anna-bordets sifferring ersätts vid uppspelning av 37 exakta fack från
+motorns europeiska `WHEEL`. Endast katalogdesign `roulette-anna-v1` använder
+denna kalibrering. En separat kula snurrar motsols, faller in i kvittots
+nummerfack och följer rotorns inbromsning under nio sekunder. Annas film,
+inramning, handmatta och MP4-bakgrund har oförändrade bytes/inställningar.
+Inga nya filmer eller betalda jobb. Detta animerar hjulet, inte ett nytt
+handkast från Anna. Den fotografiska mässingsaxeln ligger framför rotorn.
+
+Bekräftat kvitto inväntar scenladdning och visning; mediefel, reducerad
+rörelse, bakgrundsflik och stängning får inte skapa ny debitering eller låsa
+spelknappen. Omladdning visar redan bokfört resultat i slutläge. Resultatet
+finns fortfarande i nätverk/saldo före landningen: verklig serverstyrd
+pending/reveal återstår. Inga produktionskonton eller publiceringar ändrade.
+
+Fokuserat: 14 tester gröna (alla 37 utfall, kontinuerlig bana, två rundor,
+sen scenladdning, stängning, renderingsfel och kvittots visningsordning).
+Full pre-commit för `07b33c4f`: 3392 pass, 0 fail, 11 skip.
+Efter omladdning kördes två sammanhängande faktiska UI-rundor: 30 röd,
+sedan 2 svart; saldo 495 → 490 → 495 USD i isolerad SQLite. Kula och
+resultat stämde vid landning; inga browservarningar/fel observerade.
+Privata bevis: `anna-wheel-final-round-1.png`, `anna-wheel-final-round-2.png`
+och `anna-wheel-two-rounds-evidence.json` under samma roulette-stop-mapp.
+Kalibrering och avgränsningar: docs/games/roulette/UTFALLSFILMER.md.
+
+## Anna i roulettespelaren, 13 oktober — codex/roulette-anna-binding
+
+Separat rouletteIdle-bas/varianter/handregion i Studio → frozen capture →
+rum och preview → gemensam spelarrenderer. Admin kan koppla/spara samma
+kontrakt. Kräver runtime v14 före nya bindningar; ingen SQL-migration.
+Legacyroulette fortsätter utan dealer om roulettefil saknas. Blackjackmedia
+kan inte väljas eller hämtas genom roulettepreview/legacydealer-endpoint.
+
+Nytt frilagt bord från Jakobs godkända bild, spelbunden katalogidentitet och
+egna klickytor. Annas befintliga alpha-WebM och MP4-bakgrund återanvänds med
+ny inramning och bildsynkron handmatta. Glasögon-v2 togs ur slutprovet efter
+synliga alfahål i händer/fluga; variantstödet finns för en korrigerad film.
+Ingen ny betald film.
+Två UI-rundor körda utan omladdning genom riktig capture/preview/spelarkod
+med isolerad SQLite: 33 svart och 6 svart i slutprovet. Inga produktionsregister ändrade.
+Detaljer, hash/prompt och bevis: docs/games/roulette/README.md samt UTFALLSFILMER.md.
+Det tidigare basprovet omfattade inte kula/hjulstart eller korrekta hjulsiffror;
+den efterföljande implementationen beskrivs ovan. Färgheuristiken för händer kräver ny
+granskning vid ändrade bytes/inramning/kläder. Visuell målbild är fortsatt
+Jakobs referens; den nya rörliga passningen inväntar hans bedömning.
+
+Verifierat för kodcommit `a0c7d708`: Studio-produktionsbygge och Admin-typkontroll
+gröna. Ordinarie fulla pre-commit: **3385 godkända, 0 fel, 11 skip**.
+Riktade tester täcker dessutom variantväxling, avbruten laddning, fel bildmått
+och handmatta ur samma bildruta. GitGuardian-läsningen visade 0 öppna/17
+ignorerade incidenter, aktiv övervakning; historisk scan `too_large`, platsdata
+delvis tillgängliga och main-check köad. Detta är ingen fullständig historisk
+friskförklaring.
 ## GPU-testbudget 20 USD, 13 oktober
 
 Jakob höjde uttryckligen dygnstaket till 20 USD. Dagssumman avser konservativa

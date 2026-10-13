@@ -96,8 +96,13 @@ export function createOperatorPackageApi({ pool, scope, project, gameLanes, repo
     const current = await operators.getCurrentPackage(operatorId);
     if (expectedPackageRevision !== undefined && (current?.revision ?? null) !== expectedPackageRevision) fail(409);
     const inventory = hasDealers ? await videoRegistry.loadCaptured(snapshot) : null;
+    const rooms=(snapshot.administrationDocument.value.rooms??[]).filter(room=>room.operatorId===operatorId&&current?.tables?.includes(room.id));
+    const blackjackLanes=lanes.filter(id=>!rooms.some(room=>room.presentationLaneId===id)
+      ||rooms.some(room=>room.presentationLaneId===id&&(room.game??'blackjack')==='blackjack'));
+    const rouletteLanes=lanes.filter(id=>rooms.some(room=>room.presentationLaneId===id&&room.game==='roulette'));
     const captured = captureFrozenPresentation({snapshot, selectedLaneIds:lanes, inventory,
-      requiredIdleDealerIds:selectedRegisteredIdleDefaults(source, lanes)});
+      requiredIdleDealerIds:selectedRegisteredIdleDefaults(source, blackjackLanes),
+      requiredRouletteIdleDealerIds:selectedRegisteredIdleDefaults(source, rouletteLanes)});
     if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
     const value = Object.freeze({operatorId, lanes:Object.freeze([...lanes]), ...captured, expectedPackageRevision:current?.revision ?? null});
     preparedValues.add(value);

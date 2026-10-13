@@ -137,7 +137,7 @@ test('unsaved composition invokes guarded save before the next-step navigation',
   let prevented=false;next.props.onClick({preventDefault(){prevented=true;}});await Promise.resolve();assert.equal(prevented,true);assert.equal(saves,1);
 });
 
-function previewHarness({dirty=true,conflict=false,saveResult=true,project:initialProject,inventory={videos:[]},previewClient=createStudioPreview}={}) {
+function previewHarness({dirty=true,conflict=false,saveResult=true,project:initialProject,inventory={videos:[]},previewClient=createStudioPreview,initialGame,initialLaneId}={}) {
   const project=initialProject??createSeedProject(),state=[],refs=[],effects=[],savedProjects=[];let stateIndex=0,refIndex=0,saves=0;
   const session={project,projectRef:{current:project},videos:inventory,setVideos:value=>{session.videos=value;},savedJson:JSON.stringify(project),dirty,saving:false,conflict,
     save:async()=>{saves++;savedProjects.push(structuredClone(session.projectRef.current));if(saveResult)session.dirty=false;return saveResult;},
@@ -153,10 +153,36 @@ function previewHarness({dirty=true,conflict=false,saveResult=true,project:initi
     '../lib/studio-preview-client.mjs':{createStudioPreview:previewClient},
     '../lib/studio-model.mjs':{...model,validateProject:value=>model.validateProject(structuredClone(value))},
   });
-  function render(){stateIndex=0;refIndex=0;effects.length=0;return ControlPreviewPage({initialProject:project,initialVideos:inventory,initialStatus:{provider:'neon'}});}
+  function render(){stateIndex=0;refIndex=0;effects.length=0;return ControlPreviewPage({initialProject:project,initialVideos:inventory,initialStatus:{provider:'neon'},initialGame,initialLaneId});}
   function find(node,predicate){if(!node||typeof node!=='object')return null;if(predicate(node))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const found=find(child,predicate);if(found)return found;}return null;}
   return {session,render,find,effects,savedProjects,saves:()=>saves};
 }
+
+test('standalone roulette composition chooses/uploads only roulette tables and preserves other lanes and shared background',()=>{
+  const project=createSeedProject(),first=structuredClone(project.lanes[0]),lane={...structuredClone(first),id:'roulette-draft',label:'New roulette composition'};
+  project.lanes.push(lane);
+  const assets=['roulette','blackjack','background'].map((kind,index)=>{
+    const asset={schemaVersion:1,id:`10000000-0000-4000-8000-00000000000${index}`,role:kind==='background'?'background':'table',label:kind,sha256:'a'.repeat(64),size:128,contentType:kind==='background'?'video/mp4':'image/png',width:1920,height:1080,...(kind==='background'?{}:{game:kind})};
+    return {...asset,pathname:layerAssetPath(asset)};
+  });project.layerAssets=assets;
+  lane.layers.table={enabled:true,allowed:[assets[1].id],default:assets[1].id};lane.layers.background={enabled:true,mode:'video',allowed:[assets[2].id],default:assets[2].id};
+  const inventory={videos:[{id:'bj',dealer:'astrid',label:'BJ',available:true,previewUrl:'/blackjack',classification:{dealerId:'astrid',eventId:'idle.ready',role:'standard'}}]};
+  const h=previewHarness({project,inventory,dirty:false,initialGame:'roulette',initialLaneId:lane.id,previewClient:()=>assert.fail('roulette must not start a blackjack preview')});
+  let tree=h.render(),preview=h.find(tree,node=>node.type?.name==='CompositionPreview');
+  assert.equal(preview.props.dealer,null);assert.equal(preview.props.table,null);assert.equal(preview.props.background.contentType,'video/mp4');
+  let selector=h.find(tree,node=>node.type?.name==='LayerAssetSelect'&&node.props.role==='table');assert.equal(selector.props.game,'roulette');assert.equal(selector.props.lane.id,lane.id);
+  assert.equal(h.find(tree,node=>node.type?.name==='LayerLibrary'&&node.props.role==='table').props.game,'roulette');
+  assert.equal(previewButton(h,tree).props.disabled,true);previewButton(h,tree).props.onClick();
+  const changed=structuredClone(lane);changed.layers.table={enabled:true,allowed:[assets[0].id],default:assets[0].id};selector.props.onChange(changed);tree=h.render();
+  assert.deepEqual(h.session.project.lanes[0],first);assert.equal(h.session.project.lanes[1].layers.table.default,assets[0].id);
+  assert.equal(h.find(tree,node=>node.type?.name==='CompositionPreview').props.table.contentType,'image/png');
+  const before=structuredClone(h.session.project);
+  h.find(tree,node=>node.type==='select'&&node.props['aria-label']==='Spel för materialval').props.onChange({target:{value:'blackjack'}});tree=h.render();
+  assert.deepEqual(h.session.project,before,'game filter does not rewrite a lane or room');
+  assert.equal(h.find(tree,node=>node.type?.name==='LayerLibrary'&&node.props.role==='table').props.game,'blackjack');
+  assert.equal(h.find(tree,node=>node.type?.name==='CompositionPreview').props.table,null);
+  assert.match(h.find(tree,node=>node.type?.name==='CompositionPreview').props.dealer.url,/blackjack/);
+});
 
 test('save and continue navigates only after a clean rendered save, and repeated clicks share one request',async()=>{
   const harness=previewHarness(),navigations=[];

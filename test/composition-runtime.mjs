@@ -48,6 +48,51 @@ test('compositor uses the same actor frame with explicit table order and never p
     Compositor.prototype.render.call(compositor,scene,actor,new Map([['table',table]]),[],null);
     assert.deepEqual(calls,tableFront?['actor','table','project-cards']:['table','project-cards','actor']);}
 });
+
+function withCpuCompositor(run) {
+  const names=['document','HTMLVideoElement','ImageData'],previous=names.map(name=>Object.getOwnPropertyDescriptor(globalThis,name));
+  let reads=0;
+  class Canvas {
+    width=360;height=640;
+    context={clearRect(){},setTransform(){},fillRect(){},scale(){},drawImage(source){this.source=source;},
+      getImageData(){reads++;return {data:Uint8ClampedArray.from(this.source.pixels)};},putImageData(image){this.output=image.data;}};
+    getContext(kind){return kind==='webgl'?null:this.context;}
+  }
+  // A one-pixel fixture exercises the real alpha split without allocating full frames.
+  class Pixels {constructor(source){this.data=source instanceof Uint8ClampedArray?source:new Uint8ClampedArray(4);}}
+  try {
+    globalThis.document={createElement:()=>new Canvas()};globalThis.HTMLVideoElement=class {};globalThis.ImageData=Pixels;
+    const compositor=new Compositor(new Canvas(),()=>{});
+    const scene=sceneForComposition(defaultCompositionSettings(),'desktop',{background:false,table:false});scene.layerMode='split';scene.handmatte='hands';
+    const actor={src:'actor-1',width:1920,height:1080,pixels:[180,130,90,255]};
+    const hand={src:'hand-1',width:480,height:270,pixels:[0,0,0,255]},assets=new Map([['hands',{el:hand}]]);
+    return run({compositor,scene,actor,hand,assets,get reads(){return reads;},render:()=>compositor.render(scene,actor,assets,[],null)});
+  } finally {names.forEach((name,index)=>{if(previous[index])Object.defineProperty(globalThis,name,previous[index]);else delete globalThis[name];});}
+}
+
+test('Canvas2D follows moving hand-mask frames and retains unchanged mask caches',()=>withCpuCompositor(f=>{
+  const {cpu}=f.compositor;f.render();
+  assert.equal(cpu.hands.context.output[3],0);assert.equal(cpu.body.context.output[3],255);
+  const cached=cpu.mask(f.hand),initialReads=f.reads;f.render();
+  assert.equal(f.reads,initialReads);assert.equal(cpu.mask(f.hand),cached);
+  f.actor.src='actor-2';f.hand.src='hand-2';f.hand.pixels=[255,255,255,255];f.render();
+  assert.equal(cpu.hands.context.output[3],255);assert.equal(cpu.body.context.output[3],0);
+  assert.notEqual(cpu.mask(f.hand),cached);
+  // A mask-only update must invalidate the prepared actor, even while it is paused.
+  f.hand.src='hand-3';f.hand.pixels=[0,0,0,255];f.render();
+  assert.equal(cpu.hands.context.output[3],0);assert.equal(cpu.body.context.output[3],255);
+}));
+
+test('Canvas2D invalidates resized, replaced, timed and removed masks without changing the actor source',()=>withCpuCompositor(f=>{
+  const {cpu}=f.compositor;f.render();
+  f.hand.width++;f.hand.pixels=[255,255,255,255];f.render();assert.equal(cpu.hands.context.output[3],255);
+  f.hand.height++;f.hand.pixels=[0,0,0,255];f.render();assert.equal(cpu.hands.context.output[3],0);
+  const next={...f.hand,pixels:[255,255,255,255]};f.assets.set('hands',{el:next});f.render();assert.equal(cpu.hands.context.output[3],255);
+  next.currentTime=1;next.pixels=[0,0,0,255];f.render();assert.equal(cpu.hands.context.output[3],0);
+  f.scene.matte='cutout';f.assets.set('cutout',{el:{src:'matte',width:1,height:1,pixels:[0,0,0,255]}});f.render();assert.equal(cpu.full.context.output[3],0);
+  f.assets.delete('cutout');f.render();assert.equal(cpu.full.context.output[3],255);
+  f.assets.delete('hands');f.render();assert.equal(cpu.mask(null),null);assert.equal(cpu.lastHand,null);
+}));
 test('published Nora uses the frozen named registry and rejects query requests for another dealer',async()=>{
   const {project,administration,pack,presentation}=fixture();
   const policy={readGameConfiguration(){},readSaved:async()=>({project,administration})};
