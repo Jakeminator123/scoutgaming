@@ -4,6 +4,29 @@
   fill: #e6e8eb;
 }
 
+/* Shared material actions use the admin's own presentation in both Studio views. */
+.studio-material-controls {font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.studio-material-controls > section,.studio-material-controls > details {border:1px solid #33363b;border-radius:8px;padding:16px;background:#181a1d}
+.studio-material-controls h3 {font-size:14px;font-weight:600}
+.studio-material-controls p {margin:10px 0;color:#a3a8b0}
+.studio-material-controls ul {margin:12px 0;padding:0;list-style:none}
+.studio-material-controls li {padding:10px 0;border-bottom:1px solid #2b2e33}
+.studio-material-controls > :is(section,details) > ul > li,.studio-material-controls details > ul > li {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 16px;color:#a3a8b0}
+.studio-material-controls li > strong {grid-column:1;color:#e6e8eb;font-weight:500}
+.studio-material-controls li > button {grid-column:2;grid-row:1 / span 2;align-self:center}
+.studio-material-controls button {display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 11px;border:1px solid #363b42;border-radius:5px;background:#1c1e21;color:#b8bec6;font-size:11px;cursor:pointer}
+.studio-material-controls button:hover:not(:disabled) {border-color:#78818e;color:#e6e8eb}
+.studio-material-controls button:disabled {opacity:.4;cursor:default}
+.studio-material-controls :focus-visible {outline:2px solid #d6ff3a;outline-offset:3px}
+.studio-material-controls summary {cursor:pointer;padding:8px 0;color:#e6e8eb}
+.studio-material-controls details > details,.studio-material-controls section > details {margin-top:16px;border-top:1px solid #33363b;padding-top:8px}
+.studio-material-controls :is(section,details) > fieldset {margin-top:16px;padding:16px;border:1px solid #596346;border-radius:6px;background:#20251a}
+.studio-material-controls legend {padding:0 6px;color:#e6e8eb;font-weight:500}
+.studio-material-controls fieldset button + button {margin-left:8px}
+.studio-material-controls [role=alert] {color:#ff7a59}
+.studio-material-controls [role=status] {color:#d6ff3a}
+@media(max-width:600px){.studio-material-controls > :is(section,details) > ul > li,.studio-material-controls details > ul > li {grid-template-columns:minmax(0,1fr)}.studio-material-controls li > button {grid-column:1;grid-row:auto;justify-self:start;margin-top:6px}}
+
 .react-flow__controls-button:hover {
   background: #2c2e32;
 }
