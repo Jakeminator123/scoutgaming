@@ -54,6 +54,34 @@ hjulimpuls/kulsläpp, en korrekt 37-facksrotor och serverns pending/reveal
 
 ## Paows talgrund och materialkontroll, 13 oktober 2026
 
+**Två hela talförlopp har nu avslutats tekniskt i följd**, utan omladdning,
+i riktiga `/play/blackjack?dealer=paow-v2&rehearsal=1` efter att PR #99:s
+main `982d541f` verifierats live på Vercel och Render. Båda sade exakt
+"Hej Jakob, välkommen tillbaka till mitt bord." och gav spelarens
+`state: ended`, `completed: true`, tom felstatus och återgång till idle.
+Bakgrund → dealer → bord var synliga i båda proven. Inga spelknappar eller
+insatser användes.
+
+| Prov | Request-ID | Svar redo | Talstart | Hela förloppet klart |
+| --- | --- | --- | --- | --- |
+| 1 | `18c930e8-6e63-457a-b1e3-c97b0f25c304` | 11,57 s | 15,65 s | 18,66 s |
+| 2 | `dd6a1bdf-df4b-474c-9a24-8d9ab334f75e` | 5,92 s | 10,09 s | 13,27 s |
+
+Ett föregående försök blev redo efter 78,48 s men avbröts vid flikbyte;
+det räknas inte som ett lyckat prov. Periodiska statuspaket kom fram under
+kallstarten. Prov 2 fångades komplett: 78 WebSocket-paket, 4 315 708 byte,
+73 bildrutor, H.264 + AAC, 3,084 s. SHA-256:
+`bf4ed6637249b3317c77c28f99ccba19110dcd5384f9d1685509c24fc9e3fc0a`.
+Worker: 2 225 ms totalt, `input_wait: 0`. Prov 1 har spelarens slutkvitto
+och skärmbild; nätverksfångsten hade stoppats, så ingen komplett MP4 hävdas.
+Privata kvitton och media finns i Paow-chattens `paow-982d541f-*`-artefakter.
+
+**Visuell/hörbar slutacceptans återstår:** båda kvittona har fortfarande
+`reviewStatus: pending`. Detta bevisar teknisk uppspelning och lagerordning,
+inte godkänd läppsynk eller perceptuell röstlikhet. Granska det fångade
+klippet före roulette/rörliga body-dealers; ändra ingen godkännandestatus
+utifrån hash, statistik eller enstaka skärmbilder.
+
 PR #93 är mergad som `60defa57` och verifierades i den faktiska Render-
 processen efter deploy. Fyra efterföljande talprov stoppades däremot före
 uppspelning med `generated_speech_session_start_timeout`. RunPods befintliga
@@ -70,7 +98,7 @@ tester täcker lyckad start efter 135 sekunder, timeout vid 180 sekunder,
 omedelbart avbrott och oförändrad avveckling: 49 godkända. Lab-bygge och
 full obligatorisk regression på `52a0aa46` passerade: 3 348 godkända,
 11 miljöberoende skips, 0 fel. Kallstart kan fortfarande överskrida
-förberedelsefönstret; två hela liveprov återstår efter leverans.
+förberedelsefönstret; liveutfallet på den levererade fixen står ovan.
 
 PR #99:s transportgranskning hittade dessutom Vercels gräns på 120 sekunder
 utan data från extern backend. Den befintliga NDJSON-strömmen upprepar nu
@@ -82,8 +110,8 @@ städar timern. Befintliga ägar-/rund-/minneskontroller är oförändrade.
 med tidsgräns provar lång förberedelse, nekad gammal ägare och avbruten
 klient; utan heartbeat kapas samma prov. Testtiderna är skalade och använder
 inga betalda leverantörer. Full regression på `c20de5ed`: 3 358 godkända,
-11 miljöberoende skips, 0 fel. Detta ersätter
-inte de två väntande liveproven genom den verkliga Vercel/Render-vägen.
+11 miljöberoende skips, 0 fel. Liveproven ovan använder den verkliga
+Vercel/Render-vägen; skalade transporttester ersätter inte visuell acceptans.
 
 Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
 `paow`. Den sparade talprofilen återlästes från servern med ElevenLabs
@@ -109,10 +137,10 @@ på full buffert, förlängd timeout eller extra TTS-betalning införs.
 Verifiering: 45 material/UI/FFmpeg-tester samt 32 strömtjänsttester godkända;
 Lab-bygget godkänt. Full obligatorisk regression efter buffertfixen: 3 335
 godkända, 11 miljöberoende överhoppade, inga fel (exit 0).
-Liveacceptans återstår efter leverans: två hela talförlopp i följd, utan
-avbrott, med granskad röst/läppsynk och alla tre lager. Gå inte vidare till
-roulette/rörliga body-dealers innan detta passerar. Inget klipp är godkänt
-enbart från hash, workerstatistik eller en bild av munnen.
+Två hela talförlopp och lagerkontrollen är nu tekniskt verifierade enligt
+kvittot ovan. Röstens och läppsynkens visuella/hörbara slutacceptans återstår
+före roulette/rörliga body-dealers. Inget klipp är godkänt enbart från hash,
+workerstatistik eller en bild av munnen.
 
 Paow använder gemensam GPU-tjänst med exakt dealer-/bild-/profilbindning
 och den gemensamma OpenClaw-talagenten. Ingen separat instans behövs för
