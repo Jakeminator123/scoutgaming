@@ -117,12 +117,20 @@ visas som Standardsammansättning. Det interna `mobile-phone`-ID:t behålls.
 Rensning av återstående Your Company-varianter är inte utförd: de har
 referenser som nu kan visas och hanteras i det nya bekräftelseflödet.
 
-Integration: materialpapperskorgen förhandlar runtime **v11**. PR #55 förenar
-nu v10 `dealerSets: 'authoring-categories-v1'` och v11 med både dealerSets och
-materialTrash, inklusive readiness-/kontraktstester. Nya `/admin` återanvänder
-samma serverkontrakt. PR #60 är fortsatt en fristående Control-leverans tills
-den förenade PR #55 driftsätts. Ingen Neon-migration krävs. Detta tillägg är
-kodleverans, inte bevis på driftsättning.
+Integration: PR #60 är mergad som `d595e6b7`, och PR #55 förenar samma
+papperskorg med nya `/admin` i `c8f9b99b`. Main-CI och båda driftsättningarna
+är verifierade för `c8f9b99b`. Render annonserar runtime **v11**, med både
+`dealerSets: 'authoring-categories-v1'` och `materialTrash: 'detached-assets-v1'`.
+Ingen Neon-migration krävs. Slutregression för PR #60: 2 988 godkända,
+11 överhoppade, 0 fel; den förenade PR #55: 3 093 godkända, 11 överhoppade,
+0 fel samt passerat Lab-produktionsbygge och admin-typkontroll.
+
+Produktionsacceptans för `/admin` är fortfarande öppen: efter driftsättningen
+svarar `/studio/api/project` och `/studio/api/videos` med 200, men
+`/admin/_data/catalog` med 422 (`studio_native_unavailable`). Detta är
+observerat från sidans vanliga registeruppdatering. SIDOR3 äger rättningen;
+MERGE håller nästa release medan felet utreds. `/control/library` läser
+registret, men den planerade Your Company-rensningen är ännu inte utförd.
 
 Verifiering: riktade server-/UI-tester för bekräftelse, samtidiga ändringar,
 tenantgränser, återställning, skyddad historik och full rollback; Lab-
