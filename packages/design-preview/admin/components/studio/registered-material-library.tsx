@@ -37,7 +37,7 @@ export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey}:{disab
         {asset.contentType.startsWith('video/')?<video src={'/studio/api/layer-assets/'+asset.id} controls playsInline preload="none" aria-label={materialLabel(asset)}/>:<img src={'/studio/api/layer-assets/'+asset.id} alt={materialLabel(asset)} loading="lazy" className="h-40 w-full object-contain"/>}
         <h2>{materialLabel(asset)}</h2><p>{asset.width} × {asset.height}</p>
       </li>)}</ul>
-      <LayerAssetManager key={role} project={project} role={role} disabled={blocked} expanded onBusyChange={value=>operation('trash',value)} onSaved={saved}/>
+      <div className="studio-material-controls"><LayerAssetManager key={role} project={project} role={role} disabled={blocked} expanded onBusyChange={value=>operation('trash',value)} onSaved={saved}/></div>
     </div>}
   </section>;
 }
