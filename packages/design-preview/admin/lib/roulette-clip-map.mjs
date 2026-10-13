@@ -1,17 +1,18 @@
 import {ROULETTE_MEDIA_EVENTS} from '../../../../lab/lib/roulette-media.mjs';
 import {validateVideoMetadata} from '../../../../lab/lib/video-intake.mjs';
-import {assertRouletteIdleRecord,validateRouletteIdleBinding} from '../../../../web/public/roulette-idle-contract.mjs';
+import {assertRouletteIdleRecord,validateRouletteIdleBinding,validateFrozenRouletteIdle} from '../../../../web/public/roulette-idle-contract.mjs';
+import {validateRouletteStartBinding} from '../../../../web/public/roulette-start-contract.mjs';
 
 // Explicit roulette authoring. These records never become blackjack lines.
 const descriptions={
   'roulette.reference':'Prova VILA som lokal PNG. Dealerregistret stöder ännu inte PNG. Saknas bilden används första tillgängliga roulette-idle i förhandsvisningen.',
   'roulette.idle':'Koppla en grundloop och högst tre glasögonvarianter till utkastet. Start och slut behöver matcha VILA. Ny grundloop rensar handmask och tidigare variationer. Publicera rummet separat.',
-  'roulette.wheel-start':'Efter serverns sparade kvitto. Handkontakt och exakt ruta för kulsläpp behöver kalibreras.',
+  'roulette.wheel-start':'Koppla en granskad VILA → VILA-startfilm med explicit borddesign, filmlängd, hjulimpuls och kulsläpp. Spelas efter serverns sparade kvitto.',
 };
 export function rouletteClipSlots() {
   return [...ROULETTE_MEDIA_EVENTS.flatMap(event=>event.situations.map(situation=>({
     id:`${event.id}/${situation}`,eventId:event.id,situation,title:event.label,
-    description:descriptions[event.id],sourceType:event.sourceType,family:null,game:'roulette',intakeOnly:event.id!=='roulette.idle',localOnly:event.id==='roulette.reference',
+    description:descriptions[event.id],sourceType:event.sourceType,family:null,game:'roulette',intakeOnly:!['roulette.idle','roulette.wheel-start'].includes(event.id),localOnly:event.id==='roulette.reference',
   }))),
   {id:'roulette.plan.betting',eventId:'roulette.plan.betting',situation:'betting',title:'Insatser och välkomsttal',description:'Välkommen, lägg era insatser, inga fler insatser. Eget roulette-talset med exakt text, ljud och video behövs.',sourceType:'speak',family:null,game:'roulette',intakeOnly:true,planned:true},
   {id:'roulette.plan.outcome',eventId:'roulette.plan.outcome',situation:'outcome',title:'Hjulutfall 0–36',description:'37 filmer i ett separat bordsspår. Servernumret väljer filmen; spela en gång och håll slutbilden. Bankkoppling återstår.',sourceType:'settle',family:null,game:'roulette',intakeOnly:true,planned:true},
@@ -29,6 +30,10 @@ function idleSlot(slot) {
     &&rouletteClipSlots().some(row=>row.id===slot.id&&row.eventId===slot.eventId&&row.situation===slot.situation);
 }
 export function rouletteConfiguredClipIds(project,dealerId,slot) {
+  if(slot?.game==='roulette'&&slot.id==='roulette.wheel-start/wheel-start'&&slot.eventId==='roulette.wheel-start'&&slot.situation==='wheel-start') {
+    const binding=project.dealers.find(row=>row.id===dealerId)?.rouletteStart;
+    return binding?[validateRouletteStartBinding(binding).videoId]:[];
+  }
   if(!idleSlot(slot))return [];
   const binding=project.dealers.find(row=>row.id===dealerId)?.rouletteIdle;
   if(!binding)return [];
@@ -68,6 +73,23 @@ export function unbindRouletteClip(project,dealerId,slot,videoId) {
   if(slot.situation==='breathing'&&dealer.rouletteIdle?.videoId===videoId)delete dealer.rouletteIdle;
   else if(slot.situation==='glasses-clean'&&dealer.rouletteIdle)dealer.rouletteIdle.variantVideoIds=(dealer.rouletteIdle.variantVideoIds??[]).filter(id=>id!==videoId);
   return draft;
+}
+export function setRouletteIdleForeground(project,inventory,dealerId,videoId,text) {
+  const current=project.dealers.find(row=>row.id===dealerId)?.rouletteIdle;
+  if(!current||current.videoId!==videoId)throw Error('Handregionen måste kopplas till den uttryckligt valda roulette-grundloopen.');
+  const binding=structuredClone(current);
+  if(!text.trim())delete binding.foregroundPolygons;
+  else {
+    try{binding.foregroundPolygons=JSON.parse(text);validateRouletteIdleBinding(binding);}
+    catch{throw Error('Ange 1–4 polygoner som JSON, med 3–12 unika punkter per polygon och koordinater 0–1.');}
+    const base=inventory.videos.find(row=>row.id===videoId),variants=(binding.variantVideoIds??[]).map(id=>inventory.videos.find(row=>row.id===id));
+    try{validateFrozenRouletteIdle({base,variants,foregroundPolygons:binding.foregroundPolygons},dealerId,record=>{
+      const slot=rouletteClipSlots().find(row=>row.eventId==='roulette.idle'&&row.situation===record?.classification?.situation);
+      if(!slot||!rouletteClipMatches(record,dealerId,slot))throw Error('media');return record;
+    });}catch{throw Error('Grundloop och varianter måste vara tillgängliga roulettefilmer för denna dealer med samma explicita inramning.');}
+  }
+  validateRouletteIdleBinding(binding);
+  const draft=structuredClone(project);draft.dealers.find(row=>row.id===dealerId).rouletteIdle=binding;return draft;
 }
 // Stable editor-only fallback, never automatic publication or visual approval.
 export function rouletteReferencePreview(inventory,dealerId) {

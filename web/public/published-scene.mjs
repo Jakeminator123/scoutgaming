@@ -3,7 +3,7 @@ import {drawDealerFrame,dealerFrameRect} from './dealer-framing.mjs';
 
 // One published, silent idle scene renderer for the lobby and game rooms.
 // Call close when replacing the scene to release media, GPU resources and listeners.
-export function mountPublishedScene(stage, {dealer=null, background=null, table=null, tableMask=null, settings=null, layout='mobile', compositing, still=false, onReady=()=>{}, onFailure=()=>{}, onPlaying=()=>{}, onDealerClip=()=>{}}) {
+export function mountPublishedScene(stage, {dealer=null, background=null, table=null, tableMask=null, tableOverlay=null, settings=null, layout='mobile', compositing, still=false, onReady=()=>{}, onFailure=()=>{}, onPlaying=()=>{}, onDealerClip=()=>{}}) {
     const abort = new AbortController();
     const assets = new Map();
     const elements = [];
@@ -16,6 +16,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
     let outputContext = null, actorVersion = '';
     let scene = null;
     let maskedTable = null;
+    let animatedTable = null, tableRevision = 0;
     let foregroundMatte = null;
     let roundActive = false, idleLoops = 0, variantCursor = 0;
     let startReady=Promise.resolve(null), actionRun=null, startBroken=false;
@@ -85,6 +86,14 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
               context.globalCompositeOperation='source-over';
               canvas.src=version;
             }
+          }
+          if(animatedTable){
+            const {source,canvas,context}=animatedTable;
+            context.clearRect(0,0,canvas.width,canvas.height);
+            context.drawImage(source.el,0,0,canvas.width,canvas.height);
+            const overlay=tableOverlay();
+            if(overlay&&!overlay.hidden)context.drawImage(overlay,0,0,canvas.width,canvas.height);
+            canvas.src='table-frame-'+(++tableRevision);
           }
           renderer.render(scene,actor,assets,[],undefined);
           if(actionRun && selected===actionRun.asset)actionRun.onFrame(selected.el.currentTime*1000);
@@ -313,6 +322,15 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
           maskedTable={source,mask,canvas,context};
           assets.set('table',{...source,el:canvas});
         }
+        // Dynamic game graphics belong to the table pass, below the exact
+        // dealer hand matte. They must not be a DOM overlay above her fingers.
+        if(tableOverlay&&assets.get('table')){
+          const source=assets.get('table'),canvas=document.createElement('canvas');
+          canvas.width=source.width;canvas.height=source.height;
+          const context=canvas.getContext('2d');if(!context)throw Error('Table canvas unavailable');
+          animatedTable={source,canvas,context};
+          assets.set('table',{...source,el:canvas});
+        }
         // The shared renderer can fall back to Canvas2D without treating its
         // informational WebGL notice as a broken public preview.
         renderer = new runtime.Compositor(stage,()=>{});
@@ -332,7 +350,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       if(settings&&dealerAssets[0]&&!still)void loadVariants(dealerAssets[0]);
     }
     void init().catch(fail);
-    return {toggle, playWheelStart, setRoundActive:value=>{roundActive=Boolean(value);}, close:()=>{
+    return {toggle, playWheelStart, refresh:()=>{if(active&&!playingNow&&!frame)frame=requestAnimationFrame(()=>{frame=0;render();});}, setRoundActive:value=>{roundActive=Boolean(value);}, close:()=>{
       active = false;
       abort.abort();
       pause();

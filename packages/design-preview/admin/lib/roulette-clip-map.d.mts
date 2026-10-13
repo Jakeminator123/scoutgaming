@@ -6,3 +6,4 @@ export function rouletteReferencePreview(inventory:VideoInventory,dealerId:strin
 export function rouletteConfiguredClipIds(project:StudioProject,dealerId:string,slot:ClipSlot):string[];
 export function bindRouletteClip(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string):StudioProject;
 export function unbindRouletteClip(project:StudioProject,dealerId:string,slot:ClipSlot,videoId:string):StudioProject;
+export function setRouletteIdleForeground(project:StudioProject,inventory:VideoInventory,dealerId:string,videoId:string,text:string):StudioProject;

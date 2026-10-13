@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 import {createSeedProject} from '../../../../lab/lib/studio-model.mjs';
 import {clipSlots,clipsForSlot,bindClip,currentClipId,configuredClipIds,uploadMetadata,createStudioClient} from './connected-studio.mjs';
 import {groupSlots,slotCaption} from './studio-layout.mjs';
-import {rouletteReferencePreview,unbindRouletteClip} from './roulette-clip-map.mjs';
+import {rouletteReferencePreview,unbindRouletteClip,setRouletteIdleForeground} from './roulette-clip-map.mjs';
 import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
 const project=createSeedProject(),dealer='astrid';
 const slots=clipSlots(project,{videos:[]},dealer,'roulette');
@@ -83,6 +83,23 @@ test('roulette binding rejects wrong dealer, archived media, opaque video, forei
   let next=draft;for(let i=0;i<3;i++)next=bindClip(next,f.inventory,dealer,f.glasses,`40000000-0000-4000-8000-00000000000${i}`);
   assert.throws(()=>bindClip(next,f.inventory,dealer,f.glasses,'40000000-0000-4000-8000-000000000003'),/Högst tre/);
 });
+
+test('idle hand calibration binds only the exact saved base, validates shared framing and survives save',async()=>{
+  const f=bindingFixture(),draft=bindClip(bindClip(project,f.inventory,dealer,f.idle,baseId),f.inventory,dealer,f.glasses,variantId),before=structuredClone(draft);
+  const polygon=[[[.2,.3],[.8,.3],[.7,.5],[.3,.5]]];
+  const calibrated=setRouletteIdleForeground(draft,f.inventory,dealer,baseId,JSON.stringify(polygon));
+  assert.deepEqual(draft,before);assert.deepEqual(calibrated.lines,before.lines);
+  const client=createStudioClient({fetchImpl:async(url,options)=>Response.json({project:{...JSON.parse(options.body).project,revision:'mask-saved'}})});
+  const saved=await client.save(calibrated);assert.deepEqual(saved.dealers.find(row=>row.id===dealer).rouletteIdle,{videoId:baseId,variantVideoIds:[variantId],foregroundPolygons:polygon});
+  assert.deepEqual(setRouletteIdleForeground(saved,f.inventory,dealer,baseId,'').dealers.find(row=>row.id===dealer).rouletteIdle,{videoId:baseId,variantVideoIds:[variantId]});
+  for(const bad of ['not-json','[]','[[[0,0],[1,1],[2,2]]]','[[[0,0],[0,0],[1,1]]]'])assert.throws(()=>setRouletteIdleForeground(draft,f.inventory,dealer,baseId,bad));
+  assert.throws(()=>setRouletteIdleForeground(draft,f.inventory,dealer,otherId,JSON.stringify(polygon)));
+  assert.throws(()=>setRouletteIdleForeground(draft,f.inventory,'vera',baseId,JSON.stringify(polygon)));
+  for(const mutate of [x=>delete x.base.classification.framing,x=>x.variant.classification.framing.x=.4,x=>x.base.available=false,x=>x.variant.classification.game='blackjack']){
+    const x=bindingFixture();mutate(x);assert.throws(()=>setRouletteIdleForeground(draft,x.inventory,dealer,baseId,JSON.stringify(polygon)));
+  }
+  assert.equal(bindClip(calibrated,f.inventory,dealer,f.idle,otherId).dealers.find(row=>row.id===dealer).rouletteIdle.foregroundPolygons,undefined);
+});
 test('VILA fallback is stable, scoped, editor-only and never takes a blackjack idle',()=>{
   const idle=slots.find(slot=>slot.situation==='breathing'),reference=slots.find(slot=>slot.situation==='VILA');
   const a=video(idle,'a'),b=video(idle,'b'),still=video(reference,'z');
@@ -123,4 +140,6 @@ test('roulette cards allow explicit idle binding while reference and planned car
   const idle=render(slots.find(slot=>slot.situation==='breathing'));
   assert.match(idle,/Koppla till utkast/);assert.match(idle,/Saknar koppling/);assert.doesNotMatch(idle,/Registrerat · ej spelkopplat|aria-label="Inställningar/);
   const glasses=render(slots.find(slot=>slot.situation==='glasses-clean'));assert.match(glasses,/Koppla till utkast/);
+  const start=render(slots.find(slot=>slot.eventId==='roulette.wheel-start'));
+  assert.match(start,/Kalibrera startfilm/);assert.doesNotMatch(start,/Koppla till utkast|Registrerat · ej spelkopplat/);
 });

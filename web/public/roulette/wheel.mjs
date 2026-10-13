@@ -3,7 +3,7 @@ import {createSpin,presentationForRound,TAU} from './wheel-motion.mjs';
 
 // Calibrated only against catalog design roulette-anna-v1 (1708 x 920).
 // This replaces the generated number ring; it never determines a game result.
-export function mountRouletteWheel(host,{designId,placement},{
+export function mountRouletteWheel(host,{designId,placement,embedded=false,onPaint=()=>{}},{
   now=()=>performance.now(),requestFrame=cb=>requestAnimationFrame(cb),cancelFrame=id=>cancelAnimationFrame(id),
   reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches,
 }={}) {
@@ -37,6 +37,7 @@ export function mountRouletteWheel(host,{designId,placement},{
     ctx.save();ctx.globalCompositeOperation='destination-out';ctx.beginPath();
     for(const [i,[x,y]] of [[824,339],[874,339],[874,403],[860,412],[857,433],[868,447],[876,460],[874,474],[865,481],[832,481],[823,473],[822,459],[833,444],[839,432],[840,409],[824,399]].entries())i?ctx.lineTo(x,y):ctx.moveTo(x,y);
     ctx.closePath();ctx.fill();ctx.restore();
+    onPaint();
   }
   const stop=()=>{if(frame!==undefined)cancelFrame(frame);clearTimeout(timer);frame=undefined;const done=complete;complete=null;done?.();};
   function showOutcome(number,roundId){
@@ -62,6 +63,6 @@ export function mountRouletteWheel(host,{designId,placement},{
       timer=setTimeout(finish,profile.duration+(clock?5500:250));tick();
     });
   }
-  paint();host.append(canvas);
-  return {play,showOutcome,close(){closed=true;stop();canvas.remove();}};
+  paint();if(!embedded)host.append(canvas);
+  return {canvas,play,showOutcome,close(){closed=true;stop();canvas.remove();}};
 }

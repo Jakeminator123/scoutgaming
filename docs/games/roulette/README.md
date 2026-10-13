@@ -2,6 +2,21 @@
 
 ## Aktuell spelarkoppling, 13 oktober 2026
 
+Demorummet färdigställs via det ordinarie registret. Anna Jonsson är den
+befintliga dealern `anna-jonsson`. Vilofilmen har registrerats i Blob/Neon
+som `8852479c-8aea-46d2-a033-16df41f10b8f` och MP4-bakgrunden som
+`2c7feba2-70f1-44ee-9b6f-19e478313385`. Egen sparad sammansättning:
+`anna-roulette-demorum-fc7785ae-6747-4a5e-b229-04c1ce4247c4`.
+Detta är ännu inte ett publicerat rum. Befintliga PAOW-rum ändras inte.
+
+Admin har nu uttrycklig editor för startfilm, borddesign, cue-tider och
+handregion samt granskning av pose/inramning på exakt SHA. Bordbiblioteket
+och sammansättningsvyn skiljer mellan roulette och blackjack. Hjul och kula
+komponeras in i bordslagret före Annas handmask. Den förbättrade startfilmen
+och återgången till vila har granskats i den faktiska spelarkoden; se
+[materialrevisionen](UTFALLSFILMER.md#startgest-v2-och-live-registrering).
+Livepublicering och två slutrundor från lobbyn återstår.
+
 `codex/roulette-anna-binding` kopplar en uttrycklig `dealers[].rouletteIdle`
 till den befintliga `/play/roulette`-spelaren. Admins andnings-/glasögonkort
 kan kopplas, sparas och återläsas som utkast. Publicering fryser bas, högst tre
@@ -32,10 +47,10 @@ sekretessgräns](UTFALLSFILMER.md#exakt-rotor-och-en-kula-i-den-riktiga-spelaren
 Bakgrund och Anna fortsätter mellan rundorna; en valfri variant startar tidigast
 efter tre basloopar och inte under en pågående serverbegäran.
 
-En ny tiosekunders startfilm är skapad och frilagd efter Jakobs godkännande.
+En första tiosekunders startfilm skapades och frilades efter Jakobs godkännande.
 Valfritt `rouletteStart` kopplar filmens egen tid till hjulstart/kulsläpp och
-återgång till idle. Två tekniska UI-rundor gav 8 svart → 3 röd. Gesten behöver
-förbättras före produktionsgodkännande; se [granskningen](UTFALLSFILMER.md#ny-startfilm-och-variationsspelning).
+återgång till idle. Två tekniska UI-rundor gav 8 svart → 3 röd. Den första gesten
+underkändes; se [granskningen](UTFALLSFILMER.md#ny-startfilm-och-variationsspelning).
 Godkänt material ska gå via mediebank och Vercel Blob, inte Runways tillfälliga URL.
 
 `tools/roulette-ui-fixture.mjs --scene-manifest <privat JSON>` återspelar samma

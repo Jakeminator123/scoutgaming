@@ -57,14 +57,13 @@ export async function mountRoomScene(room,{onTable=()=>{},onDealerClip=()=>{}}={
     const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;
     canvas.role='img';canvas.setAttribute('aria-label','Roulettebord'+(dealer?' med '+preview.dealer.label:'')+' i '+room.name);canvas.hidden=true;
     host.append(canvas);
+    wheel=mountRouletteWheel(host,{designId:publishedTable?.designId,placement:settings.desktop.table,embedded:true,onPaint:()=>scene?.refresh()});
     scene=mountPublishedScene(canvas,{dealer,background,table,tableMask:publishedTable?null:ROULETTE_TABLE_MASK,
-      settings,layout:'desktop',compositing:dealer?.compositing,onDealerClip,
+      settings,layout:'desktop',compositing:dealer?.compositing,onDealerClip,tableOverlay:()=>wheel?.canvas,
       onReady:()=>{
         if(closed)return;
         fallback.hidden=true;canvas.hidden=false;
         onTable({designId:publishedTable?(publishedTable.designId??'unknown'):null,placement:settings.desktop.table});
-        wheel?.close();
-        wheel=mountRouletteWheel(host,{designId:publishedTable?.designId,placement:settings.desktop.table});
         if(lastOutcome)wheel?.showOutcome(lastOutcome.number,lastOutcome.roundId);
         finishReady(true);
         mediaMessage(dealer?'':'En frilagd dealer för det här bordet saknas. Du kan spela ändå.');

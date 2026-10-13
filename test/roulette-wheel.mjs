@@ -60,8 +60,9 @@ function fixture({reduced=false,fail=false}={}){
     setTimeout(fn){const key=++id;timers.set(key,fn);return key;},clearTimeout:key=>timers.delete(key),
   });
   const options={now:()=>time,requestFrame:fn=>{const key=++id;frames.set(key,fn);return key;},cancelFrame:key=>frames.delete(key),reducedMotion:()=>reduced};
-  const host={append(){}};
-  return {mount:(designId='roulette-anna-v1')=>mount(host,{designId,placement:{width:1.044565,x:0,y:0}},options),canvas,labels,frames,timers,
+  let appended=0,paints=0;const host={append(){appended++;}};
+  return {mount:(designId='roulette-anna-v1',embedded=false)=>mount(host,{designId,placement:{width:1.044565,x:0,y:0},embedded,onPaint:()=>paints++},options),canvas,labels,frames,timers,
+    get appended(){return appended;},get paints(){return paints;},
     advance(ms){time+=ms;const callbacks=[...frames.values()];frames.clear();callbacks.forEach(fn=>fn());},
     timeout(){[...timers.values()].forEach(fn=>fn());}};
 }
@@ -87,6 +88,13 @@ test('wheel follows video time during buffering and completes after the clock re
 test('rotor draws each exact number once, and refuses other game/table designs',()=>{
   const f=fixture();assert.equal(f.mount('blackjack'),null);assert.equal(f.mount('unknown'),null);
   const wheel=f.mount();assert.deepEqual(f.labels,WHEEL.map(String));wheel.close();
+});
+
+test('embedded rotor supplies the table pass without covering the dealer in a DOM overlay',async()=>{
+  const f=fixture(),wheel=f.mount('roulette-anna-v1',true);
+  assert.equal(wheel.canvas,f.canvas);assert.equal(f.appended,0);
+  const initial=f.paints,play=wheel.play(8,'embedded');f.advance(12000);await play;
+  assert.ok(f.paints>initial);wheel.close();assert.equal(f.canvas.removed,true);
 });
 test('two consecutive plays finish and leave no pending frame or timer; close resolves an active play',async()=>{
   const f=fixture(),wheel=f.mount();

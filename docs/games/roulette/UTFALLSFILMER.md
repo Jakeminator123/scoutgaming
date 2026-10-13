@@ -2,6 +2,45 @@
 
 [Till spelmanualen](README.md) · [Gemensamma klipp och format](../KLIPP-OCH-FORMAT.md)
 
+## Startgest v2 och live-registrering
+
+Efter beställningen att färdigställa demorummet skapades v2 i Jakobs Runway-
+workspace, task `c1bbe9de-e213-43fa-ac29-4f560ea43eb2`. Käll-MP4:
+1920×1080, 24 fps, 10,042 s, SHA-256
+`961958a45ad2cff6a6dd1e618e6b8666c246e0d838d323020c4acb71b02f78c9`.
+Friläggning `ac90a0e2-8b28-4089-889c-84668184d29e` med ämnet
+`the woman` gav fungerande alfa. Den tidigare körningen med lång ämnestext
+gav helt opak alfa trots alpha-metadata och är underkänd.
+
+Slutfil `anna-wheel-start-v2-clean.webm`, 13 223 797 byte, SHA-256
+`c03eac6a3d4e4776cce6eeaa5d4d4ce4000cfd4ebfd972017e52d65a6b485b85`.
+En isolerad rest i vänster bildkant avlägsnades genom crop av 10 pixlar och
+transparent pad tillbaka till samma 1920×1080. Inga dealerpixlar flyttades.
+FFmpeg använde libvpx-vp9-avkodning och förlustfri yuva420p-kodning.
+Original, exakt prompt och granskningsbilder sparas privat i roulette-stop.
+
+Demoprofil: VILA → VILA, framing `{scale:1,x:0,y:0}`, längd 10042 ms,
+impuls 3208 ms, kulsläpp 5000 ms, design `roulette-anna-v1`, handregion
+`[[[0.47,0.34],[0.84,0.34],[0.84,0.62],[0.47,0.62]]]`.
+Agentens visuella kontroll visar handkontakt/svep över hjulet, återgång till
+vila och bibehållen placering. Kulsläppet är en animerad visualisering;
+detta är ingen fysisk mätning av en verklig roulettekula eller ett nytt
+mänskligt godkännande. Hjulets canvas komponeras nu i bordslagret före
+handmasken, så att de korrigerade siffrorna inte ritas ovanpå fingrarna.
+
+Live registrerat via Admins ordinarie Blob/Neon-flöde: vilofilm
+`8852479c-8aea-46d2-a033-16df41f10b8f` och MP4-bakgrund
+`2c7feba2-70f1-44ee-9b6f-19e478313385`. Viloposer och framing
+`{scale:0.66,x:0.15,y:-0.16}` är sparade. Egen sammansättning:
+`anna-roulette-demorum-fc7785ae-6747-4a5e-b229-04c1ce4247c4`.
+Startfil, bord och publicerat demorum är ännu inte registrerade/slutförda.
+V1-starten och den opaka v2-friläggningen får inte publiceras.
+
+Admin har uttryckliga starttider/bordval och handregion för exakt idle-fil.
+Pose/inramning sparas separat med SHA och tidigare metadata som CAS-villkor.
+Spelvalet skiljer borden i bibliotek och sammansättningar; maskens visuella
+acceptans görs i den riktiga spelaren, inte i kompositionseditorns provbild.
+
 [Flödesschema i Asymptote](underlag/roulette-filmflode.asy) visar det föreslagna pending/reveal-flödet. Asymptote-kompilator saknas lokalt; källan är inte renderingsverifierad.
 
 **Status 13 oktober 2026:** Den riktiga `/play/roulette`-spelaren ritar nu 37 korrekta fack och en kula mot serverkvittots nummer. Rundans ID ger reproducerbar variation i slutvinkel, 3–5 rotorvarv, 5–7 kulvarv och 8,5–12 sekunders visning. Anna-bordets perspektiv och MP4-bakgrund bevaras. Provet använder isolerad databas; livepublicering och serverstyrd pending/reveal återstår. Privata original bevaras.

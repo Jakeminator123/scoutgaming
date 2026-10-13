@@ -13,6 +13,7 @@ export function ConnectedClipCard({ data }:NodeProps<CardNode>) {
   const [drag,setDrag]=useState(false),[preview,setPreview]=useState(false),[library,setLibrary]=useState(false);
   const selected=data.clips.find(row=>row.id===data.selectedId);
   const image=data.slot.eventId==='roulette.reference',intake=data.slot.intakeOnly,planned=data.slot.planned;
+  const wheelStart=data.slot.game==='roulette'&&data.slot.eventId==='roulette.wheel-start';
   useEffect(()=>setPreview(false),[selected?.id]);
   const ready=data.clips.some(row=>data.boundIds.includes(row.id));
   return <article className={`studio-clip-card ${drag?'is-dragging':''}`} style={{'--clip-color':data.group.color} as CSSProperties}
@@ -33,8 +34,10 @@ export function ConnectedClipCard({ data }:NodeProps<CardNode>) {
       {library&&<label className="studio-card-select">Klipp i biblioteket<select aria-label={`Befintligt klipp ${data.slot.id}`} value={data.selectedId} disabled={data.busy} onChange={event=>data.onSelect(event.target.value)}><option value="">Välj registrerad video…</option>{data.clips.map(row=><option key={row.id} value={row.id}>{row.label}{data.boundIds.includes(row.id)?' · kopplad':''}</option>)}</select></label>}
       {!planned&&<div className="studio-card-actions"><button disabled={data.busy} onClick={()=>setLibrary(!library)}><Film size={12}/>{library?'Stäng bibliotek':'Välj befintligt'}</button>
         {data.slot.sourceType==='speak'?<button disabled={data.busy} onClick={data.onSettings}>Talset</button>:<label><Upload size={12}/>{data.slot.localOnly?'Prova PNG lokalt':'Ladda upp'}<input aria-label={`${data.slot.localOnly?'Prova lokalt':'Ladda upp'} ${data.slot.id}`} type="file" accept={image?'.png,image/png':'.mp4,.webm,video/mp4,video/webm'} disabled={data.busy} onChange={event=>{const file=event.target.files?.[0];if(file)data.onFile(file);event.target.value='';}}/></label>}</div>}
-      {selected&&!intake&&!data.boundIds.includes(selected.id)&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onBind}>Koppla till utkast</button>}
-      {selected&&data.slot.game==='roulette'&&!intake&&data.boundIds.includes(selected.id)&&data.onUnbind&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onUnbind}>Ta bort koppling</button>}
+      {wheelStart&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Kalibrera startfilm</button>}
+      {selected&&data.slot.game==='roulette'&&data.slot.eventId==='roulette.idle'&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Granska poser och inramning</button>}
+      {selected&&!wheelStart&&!intake&&!data.boundIds.includes(selected.id)&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onBind}>Koppla till utkast</button>}
+      {selected&&!wheelStart&&data.slot.game==='roulette'&&!intake&&data.boundIds.includes(selected.id)&&data.onUnbind&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onUnbind}>Ta bort koppling</button>}
     </div><footer><span>{planned?'Spelkoppling återstår':image?'PNG · VILA':data.slot.sourceType==='speak'?'Exakt ljud + talvideo':drag?'Släpp videon här':'Släpp video på kortet'}</span><span>{data.clips.length} filer</span></footer>
   </article>;
 }

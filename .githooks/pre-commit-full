@@ -26,6 +26,7 @@ run_node_tests lab/test/assistant.test.mjs lab/test/assistant-reads.test.mjs lab
 run_node_tests lab/test/dealer-import.test.mjs lab/test/dealer-import-integration.test.mjs packages/design-preview/admin/lib/dealer-import.test.mjs
 run_node_tests test/room-environment.mjs
 run_node_tests packages/design-preview/admin/lib/economy-journal.test.mjs
+run_node_tests packages/design-preview/admin/lib/roulette-start-editor.test.mjs packages/design-preview/admin/lib/roulette-media-review.test.mjs packages/design-preview/admin/lib/roulette-idle-editor.test.mjs packages/design-preview/admin/lib/registered-material-library.test.mjs
 run_node_tests packages/design-preview/runtime/admin-routing.test.mjs
 run_node_tests lab/test/admin-workspace.test.mjs
 run_node_tests packages/design-preview/admin/lib/dealer-directory.test.mjs packages/design-preview/admin/lib/dealer-chat-import.test.mjs

@@ -1,5 +1,24 @@
 # Aktuell handoff — Scoutgaming
 
+## Anna-demorum: slutkoppling pågår, 13 oktober
+
+Admin-editorn kan nu spara exakt startfilm, bordsdesign, tider och handregion;
+idle-mask och SHA/CAS-granskning av pose/framing är tillgängliga. Bibliotek och
+sammansättningar filtrerar roulettebord separat från blackjack. Hjul/kula
+komponeras i bordslagret under Annas händer. Startgest v2 och återgång till
+vila är visuellt granskade i faktisk lokal spelarkod. Exakta bytes och cues:
+docs/games/roulette/UTFALLSFILMER.md#startgest-v2-och-live-registrering.
+
+Live: Anna-idle och MP4-bakgrund finns i Blob/Neon samt en egen sparad
+Anna-sammansättning. Startfil, bord och nytt publicerat lobbyrum återstår.
+Inga befintliga PAOW-rum eller användarsaldon ändrade. Två slutrundor från
+den publicerade lobbyn ska verifieras innan detta markeras färdigt.
+Admin typecheck, 49 editorprov och Studio-produktionsbygge passerar.
+Nytt spelarprov bekräftar att handmasken ligger framför sifferringen.
+Leverans väntar även på separat migrations-/budgetrelease PR107; blanda
+inte dess schema med äldre runtime. Säkerhetsstatus 13 oktober: ny öppen
+incident 38176586 utan tillgänglig filplats; täckning ofullständig.
+
 ## Anna-startfilm och varierad roulette, 13 oktober — PR101 fortsättning
 
 Valfri exakt rouletteStart med egen framing/handregion/tider, engångsspelning
