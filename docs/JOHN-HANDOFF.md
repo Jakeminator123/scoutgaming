@@ -2050,3 +2050,24 @@ bundna strömticket/avbrytning och integrering i scenens gemensamma kompositor.
 Det får inte lösas genom att skicka blackjackkontext eller lägga ljud på en
 fortsatt idle-loop. Rörlig body-läppsynk och protokoll-3-worker i drift
 behöver fortfarande verifieras med exakt dealerreferens och två spelningar.
+
+### Nästa steg enligt Jakob, 13 oktober
+
+En egen granskad referensbild är reservläget för tal. Börja med en dealer:
+verifiera röståtkomst, den driftsatta protokoll-3-workern och två fullständiga
+talprov i den gemensamma spelaren. Därefter kopplas roulette till sin egen
+serverägda rum-/paket-/rundkontext och samma avbrott/ljudklocka.
+Rörlig body-läppsynk ska portas nära Emils exakta metod i en avgränsad adapter,
+utan ändringar i spelregler eller ekonomilogik. Den hänvisade workerkällan
+`EmaCodeHero/croupier-lipsync-worker` gav fortfarande 404 med befintlig
+GitHub-åtkomst den 13 oktober; tillgång, exakt revision/image och protokoll
+behövs före portningen. En separat installation per dealer krävs inte av
+den generiska bildvägen; aktuell molnreläkonfiguration begränsar dock till
+en worker/session åt gången, så fler samtidiga samtal är en separat uppgift.
+
+Underlag att skapa per dealer: vald referensbild, diskret inandningsövergång
+på högst cirka 0,5 s, rörligt talunderlag med små neutrala kroppsrörelser och
+återgång till idle. Talunderlaget måste synkas mot den faktiska repliken;
+en fristående kroppsslinga får inte ersätta den synkade talvideon. Alla
+nya takes behöver exakta hash-/bildindex-/kalibreringskvitton och visuell
+acceptans. Dessa steg är planerade, inte genomförda av röstväljar-PR:en.
