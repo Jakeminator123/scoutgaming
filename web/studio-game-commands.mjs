@@ -1,7 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
 import { validateStudioScope, canonicalStudioJson } from './storage/studio-contract.mjs';
-import { studioAdminActionPolicy, meetsStudioAdminActionRole } from '../lab/lib/studio-access-policy.mjs';
+import { studioAdminActionPolicy, meetsStudioAdminActionRole } from '../packages/studio-access/studio-access-policy.mjs';
 
 const actions = new Set(['players/status', 'players/password', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const fail = (statusCode = 403) => { throw Object.assign(new Error('studio_game_command_rejected'), { statusCode }); };

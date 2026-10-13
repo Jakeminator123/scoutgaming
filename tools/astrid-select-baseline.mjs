@@ -41,6 +41,7 @@ export const HEAD_SELECTION_ENTRIES = Object.freeze([
 ]);
 export const ARCHIVE_PATHS = Object.freeze([
   'packages/presentation/runtime',
+  'packages/studio-access/studio-scope.mjs',
   'lab/lib',
   'lab/policies',
   'lab/schemas',

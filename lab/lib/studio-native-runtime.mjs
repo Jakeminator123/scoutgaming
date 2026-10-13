@@ -7,7 +7,7 @@ import { createPostgresStore, validateGameConnection } from '../../web/storage/p
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
-import { createStudioNativeAuth } from './studio-native-auth.mjs';
+import { createStudioNativeAuth } from '../../packages/studio-access/studio-native-auth.mjs';
 import { createStudioAdminApi } from './studio-admin-api.mjs';
 import { createStudioAdminData } from './studio-admin-data.mjs';
 import { createStudioGamePolicy, studioGamePolicyConfiguration } from '../../web/storage/studio-game-policy.mjs';

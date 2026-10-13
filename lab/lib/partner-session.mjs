@@ -9,8 +9,8 @@ import { createStudioRepository } from '../../web/storage/studio-repository.mjs'
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
-import { createStudioNativeAuth } from './studio-native-auth.mjs';
-import { normalizeStudioRole } from './studio-access-policy.mjs';
+import { createStudioNativeAuth } from '../../packages/studio-access/studio-native-auth.mjs';
+import { normalizeStudioRole } from '../../packages/studio-access/studio-access-policy.mjs';
 import { assertNativeStudioRequest, nativeStudioAdminConfiguration } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { PARTNER_TEAM_CONFLICTS, createPartnerTeamApi } from './partner-team-api.mjs';
