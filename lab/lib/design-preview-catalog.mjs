@@ -76,7 +76,7 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
       compositionId: row.presentationLaneId, laneId: row.gameLaneId, published, playable: Boolean(playable),
       dealerIds, dealers: roomDealers, dealerSource: published ? 'published' : 'saved',
       playUrl: playable?.playUrl ?? null,
-      ...(publication&&!publication.materialsCompatible?{playabilityReason:'game_material_mismatch'}:{}) };
+      ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}) };
   });
   const result = { schemaVersion: 1, source: 'registered', readAt: new Date(now()).toISOString(),
     administration: { revisions: { project: saved.projectRevision, administration: saved.administrationRevision },

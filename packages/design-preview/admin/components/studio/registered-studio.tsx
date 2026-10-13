@@ -6,7 +6,7 @@ import {operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
 
 type Operator = { id: string; slug: string; name: string; status: string; archivedAt:string|null;packageRevision: number | null };
 type Dealer = { id: string; name: string; archived: boolean };
-type Room = { id: string; name: string; operatorId: string; game: string; state: string; compositionId: string;
+type Room = { id: string; name: string; operatorId: string; game: string; state: string; compositionId: string;materialWarning?:string;
   laneId: string; published: boolean; playable: boolean; dealerIds: string[]; dealers: { id: string; name: string }[]; dealerSource: 'published' | 'saved'; playUrl: string | null };
 type Registry = { schemaVersion: 1; source: 'registered'; readAt: string; administration: {
   operators: Operator[]; dealers: Dealer[]; rooms: Room[];
@@ -124,6 +124,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
             </li>)}
           </ul>}
           {selectedRoom && <p className="text-xs text-sg-muted">Valt rum: {selectedRoom.name} · {selectedRoom.dealerIds.map(dealerName).join(', ') || 'Inga dealers kopplade'}</p>}
+          {selectedRoom?.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Granska materialets katalogtagg och spelets bord före nästa publicering.</p>}
           {operator&&path==='/control/admin/operators'&&<RegisteredResourceLifecycle operatorId={operator.id} disabled={disabled} onBusyChange={setLifecycleBusy} onChanged={()=>{setRefresh(value=>value+1);onChanged?.();}}/>}
         </>}
       <footer className="mt-auto border-t border-sg-line pt-4 text-xs text-sg-muted">Ny arbetsyta · {state.status === 'ready' ? `Register läst ${new Date(state.value.readAt).toLocaleString('sv-SE')}` : 'Datastatus visas ovan'} · <a href="/control" className="underline">Nuvarande Control</a></footer>

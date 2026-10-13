@@ -43,7 +43,7 @@ test('registered admin and published lobby share exact identities without privat
   assert.equal(playUrlFor(choice), '/play/blackjack?operator=north&table=' + f.room.id + '&dealer=johanna');
   assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'johanna' }).dealer, null);
 });
-test('admin reads all registered rooms while one incompatible historical sibling loses only game eligibility',async()=>{
+test('admin and public readers preserve historical sibling grants and expose the new catalogue warning',async()=>{
   const f=fixture(),frozen=structuredClone(readPackagePresentation(f.pack));
   const {kind,hasAlpha,...source}=materialSource('blackjack-green-felt');
   const table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000992',role:'table',label:'Supplied blackjack',...source};table.pathname=layerAssetPath(table);
@@ -53,9 +53,9 @@ test('admin reads all registered rooms while one incompatible historical sibling
   const before=JSON.stringify({saved:f.saved,pack:f.pack});
   const result=await registeredDesignCatalog(f),good=result.administration.rooms.find(row=>row.id===f.room.id),historical=result.administration.rooms.find(row=>row.id===bad.id);
   assert.equal(good.published,true);assert.equal(good.playable,true);assert.ok(good.playUrl);
-  assert.equal(historical.published,true);assert.equal(historical.playable,false);assert.equal(historical.playUrl,null);
-  assert.equal(historical.playabilityReason,'game_material_mismatch');
-  assert.deepEqual(result.lobby.catalogs[0].rooms.map(row=>row.id),[f.room.id]);
+  assert.equal(historical.published,true);assert.equal(historical.playable,true);assert.ok(historical.playUrl);
+  assert.equal(historical.materialWarning,'catalog_game_material_mismatch');
+  assert.deepEqual(result.lobby.catalogs[0].rooms.map(row=>row.id),[f.room.id,bad.id]);
   assert.equal(JSON.stringify({saved:f.saved,pack:f.pack}),before);
 });
 test('registered catalog exposes protected archive identity separately from legacy suspended companies',async()=>{

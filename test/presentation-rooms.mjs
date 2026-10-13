@@ -33,7 +33,7 @@ test('administration validates the closed legacy/v2 union without rewriting lega
   const duplicate = structuredClone(administration); duplicate.rooms[1].id = legacy.id;
   assert.throws(() => validateStudioGameAdministration(duplicate));
 });
-test('one historical material mismatch preserves published history and healthy sibling game entry',async()=>{
+test('new material tags preserve both authorised historical sibling game entries while new publication stays strict',async()=>{
   const f=fixture(),frozen=structuredClone(readPackagePresentation(f.pack));
   const {kind,hasAlpha,...source}=materialSource('blackjack-green-felt');
   const table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000991',role:'table',label:'Supplied blackjack',...source};table.pathname=layerAssetPath(table);
@@ -43,11 +43,11 @@ test('one historical material mismatch preserves published history and healthy s
   const before=JSON.stringify({pack:f.pack,administration:f.administration});
   const input={administration:f.administration,package:f.pack,operatorId:'north'};
   assert.deepEqual(inspectPackageRooms(input).map(row=>[row.room.id,row.materialsCompatible]),[[room.id,true],[bad.id,false]]);
-  assert.deepEqual(listPackageRooms(input).map(row=>row.id),[room.id]);
-  assert.equal(resolvePackageRoom({...input,roomId:bad.id}),null);
+  assert.deepEqual(listPackageRooms(input).map(row=>row.id),[room.id,bad.id]);
+  assert.equal(resolvePackageRoom({...input,roomId:bad.id}).id,bad.id);
   const select=createGameEntrySelector({policy:f.policy,packages:{resolve:async()=>({operator:{id:'north',slug:'north',status:'active'},package:f.pack})},game:'any',log(){}});
   assert.equal((await select('operator=north&table='+room.id)).status,200);
-  assert.equal((await select('operator=north&table='+bad.id)).status,404);
+  assert.equal((await select('operator=north&table='+bad.id)).status,200);
   assert.throws(()=>assertPresentationRoomMaterials(frozen,bad),error=>error.code==='studio_presentation_game_material_mismatch'&&error.statusCode===422);
   assert.equal(JSON.stringify({pack:f.pack,administration:f.administration}),before);
 });

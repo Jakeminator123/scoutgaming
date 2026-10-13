@@ -49,10 +49,11 @@ export function inspectPackageRooms({ administration, package: pack, operatorId:
   }
   return result;
 }
-// Only compatible rooms reach public choices and explicit game entry.
-// Package table IDs alone never establish ownership or game eligibility.
+// Existing frozen room/dealer/operator grants remain the read authority.
+// New catalogue tags cannot revoke a historical publication; publishers check
+// the current material contract before issuing a new immutable package.
 export function listPackageRooms(input = {}) {
-  return inspectPackageRooms(input).filter(row=>row.materialsCompatible).map(row=>row.room);
+  return inspectPackageRooms(input).map(row=>row.room);
 }
 export function resolvePackageRoom(input = {}) {
   return listPackageRooms(input).find(room => room.id === input.roomId) ?? null;
