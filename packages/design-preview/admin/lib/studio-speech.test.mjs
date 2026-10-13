@@ -70,8 +70,11 @@ test('unrelated project revision does not erase unstaged voice fields',async()=>
 
 for(const game of ['blackjack','roulette'])test(`${game} body dealer defaults to the confirmed original voice without activation or generation`,async()=>{
   const h=await panelHarness();h.props.game=game;h.props.dealerId='body-7';h.props.project={...h.props.project,dealers:[{id:'body-7',label:'Paow'}]};
-  h.render();h.flush();let tree=h.render();
+  h.render();h.flush();let tree=h.render();h.flush();
   assert.equal(h.field(tree,'Röst').props.value,'paow','the explicit pairing needs no extra voice menu');
+  assert.equal(h.props.profileDirty,false,'an untouched voice proposal must not block navigation');
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false,'the proposal can still be deliberately staged');
+  assert.equal(h.button(tree,'Förbered').props.disabled,true,'the suggestion is not a saved profile');
   assert.equal(h.props.project.dealers[0].speechProfile,undefined,'opening does not mutate the saved project');
   assert.equal(h.field(tree,'Voice-ID').props.value,'WZVEBKUreb9jAKojf0QF');assert.equal(h.field(tree,'Röstmodell').props.value,'eleven_v3');
   assert.equal(h.field(tree,'Stabilitet').props.value,'0.5');assert.equal(h.field(tree,'Begär AI-tal').props.checked,false);
@@ -96,6 +99,15 @@ test('switching dealers refreshes the default and keeps an existing explicit voi
     assert.equal(h.field(tree,'Begär AI-tal').props.checked,false);
   }
   assert.equal(h.calls.length,0);
+});
+
+for(const [label,target] of [['Röst',{value:'paow'}],['Röstspråk',{value:'en'}],['Voice-ID',{value:'user-edited-voice'}],['Röstmodell',{value:'user-edited-model'}],['Stabilitet',{value:'0.6'}],['Egna röstinställningar',{checked:false}]])test(`Dragan voice proposal is clean but a real ${label} change remains protected`,async()=>{
+  const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='dragan';h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};
+  const initial=structuredClone(h.props.project);h.render();h.flush();let tree=h.render();h.flush();
+  assert.equal(h.props.profileDirty,false);assert.equal(h.field(tree,'Röst').props.value,'dragge');
+  h.field(tree,label).props.onChange({target});tree=h.render();h.flush();tree=h.render();
+  assert.equal(h.props.profileDirty,true);assert.equal(h.button(tree,'Förbered').props.disabled,true);
+  assert.deepEqual(h.props.project,initial);assert.equal(h.calls.length,0,'a form edit cannot start provider work or save a profile');
 });
 
 test('changing only a voice preserves an unchanged own reference; replaced bytes require a fresh preview',async()=>{

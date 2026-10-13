@@ -32,7 +32,7 @@
   document.body.append(host);
   const $ = selector => root.querySelector(selector);
   const panel=$('.panel'),launch=$('.launch'),messages=$('.messages'),input=$('textarea'),select=$('select'),dialog=$('dialog');
-  let access='none',identity=null,mode='admin',busy=false,abort=null,review=null,history=[],opened=false,accessCheck=0,clipImport=null;
+  let access='none',identity=null,mode='admin',busy=false,abort=null,review=null,history=[],opened=false,accessCheck=0,clipImport=null,publicChat=null;
   const title=()=>mode==='help'?'Scoutguiden':mode==='openclaw'?'Adminroboten · OpenClaw':'Adminroboten';
   function status(value){$('.status').textContent=value;}
   function reset(){clipImport?.reset();history=[];messages.replaceChildren();review=null;if(dialog.open)dialog.close();}
@@ -66,9 +66,18 @@
   }
   async function refresh(){
     const check=++accessCheck;
-    let value;try{value=await api();}catch(error){if(check===accessCheck)lock();throw error;}
+    let value;try{value=await api();}catch(error){if(check===accessCheck){lock();publicChat?.dispose();publicChat=null;}throw error;}
     if(check!==accessCheck)return false;
-    if(value.access!=='n1'){lock();return false;}
+    if(value.access!=='n1'){
+      lock();
+      if(!publicChat){
+        const {installPublicAssistant}=await import(new URL('public-assistant.js',source).href);
+        if(check!==accessCheck)return false;
+        publicChat=installPublicAssistant({source:source.href,authorize:async()=>{await refresh();return Boolean(publicChat)&&access!=='n1';}});
+      }
+      return false;
+    }
+    publicChat?.dispose();publicChat=null;
     const changed=identity!==null&&identity!==value.identity;
     if(changed){abort?.abort();reset();input.value='';mode='admin';status('Kontot eller sessionen ändrades. Samtalet har tömts.');}
     identity=value.identity;access=value.access;host.hidden=document.hidden;
@@ -83,7 +92,7 @@
   }
   async function open(requested){
     if(busy)return;
-    try{if(!await refresh()||access!=='n1')return;
+    try{if(!await refresh()||access!=='n1'){void publicChat?.open();return;}
       opened=true;panel.hidden=false;launch.hidden=true;
       const chosen=requested??(/^\/(admin|control)(\/|$)/.test(location.pathname)&&access==='n1'?'admin':mode);
       if(chosen!==mode){mode=access==='n1'?chosen:'help';reset();select.value=mode;renderMode();await refresh();}
@@ -174,7 +183,8 @@
   });
   document.addEventListener('visibilitychange',()=>{host.hidden=true;if(document.hidden){if(dialog.open){review=null;dialog.close();}}else void refresh().catch(()=>{});});
   window.addEventListener('focus',()=>{if(!busy)void refresh().catch(()=>{});});
-  window.addEventListener('pagehide',()=>{abort?.abort();reset();});
+  window.addEventListener('pagehide',()=>{abort?.abort();reset();publicChat?.dispose();publicChat=null;});
+  window.addEventListener('pageshow',event=>{if(event.persisted)void refresh().catch(()=>{});});
   renderMode();
   void refresh().catch(()=>{});
 })();

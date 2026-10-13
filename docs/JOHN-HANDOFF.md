@@ -14,6 +14,10 @@ Anna-sammansättning. Startfil, bord och nytt publicerat lobbyrum återstår.
 Inga befintliga PAOW-rum eller användarsaldon ändrade. Två slutrundor från
 den publicerade lobbyn ska verifieras innan detta markeras färdigt.
 Admin typecheck, 49 editorprov och Studio-produktionsbygge passerar.
+Kodcommit `b972fa47` är pushad: full pre-commit 3470 pass, 0 fail, 11 skip.
+Två lokala rundor efter handfixen: 26 svart → 28 svart, saldo 490 → 485 → 480.
+Under dold appvy kan skärmbilder vara inaktuella; synlig IAB verifierade
+slutkulan i rätt fack. Slutacceptans ska göras med spelvyn synlig.
 Nytt spelarprov bekräftar att handmasken ligger framför sifferringen.
 Leverans väntar även på separat migrations-/budgetrelease PR107; blanda
 inte dess schema med äldre runtime. Säkerhetsstatus 13 oktober: ny öppen
@@ -103,6 +107,50 @@ och handmatta ur samma bildruta. GitGuardian-läsningen visade 0 öppna/17
 ignorerade incidenter, aktiv övervakning; historisk scan `too_large`, platsdata
 delvis tillgängliga och main-check köad. Detta är ingen fullständig historisk
 friskförklaring.
+## Publik Scoutguide med D-ID, 13 oktober
+
+Besökare, N2 och N3 får en separat Scoutguide genom den gemensamma chattknappen.
+N1 behåller Adminrobotens tre lägen, filimport och granskade åtgärder.
+`/studio/api/public-assistant` använder Luna 6 med låg resonemangsnivå och
+endast fast publik sajtinformation. Den har inga databasläsare, verktyg eller
+åtgärder; den befintliga N1-endpointens behörighetskrav är oförändrade.
+
+Den befintliga D-ID-agenten `v2_agt_UuD7CYFA` används i SDK-läget
+`DirectPlayback`: sajtens server skriver svaret, D-ID läser upp det med sin
+befintliga svenska röst. SDK laddas först när chatten öppnas. Minimering,
+sidbyte, dold flik och två minuters inaktivitet stänger avataranslutningen.
+Text fungerar även när avatar eller ljud inte kan starta. Privat D-ID-nyckel
+används inte av webbchatten; dess publika embednyckel är domänbegränsad.
+Begränsningen av modelltrafik är per serverprocess, inte en global kvot.
+
+Kontroll hittills: 41 riktade API-/N1-tester gröna, Studio-bygge grönt och
+riktigt Luna-svar verifierat i lokal webbläsarfixtur. N1-växling visar enbart
+Adminroboten. D-ID accepterar produktionsdomänen och nekar testadressen;
+verifiering av riktig avatar och produktionssidornas laddning återstår vid
+publicering. Ingen ny D-ID-agent eller testnyckel skapades.
+
+## Teaminbox: Jakobs laptop och stationdata, 13 oktober
+
+`jakob-bgvp01j` adresserar Jakobs laptop och `jakob-dator2` Jakobs stationdata
+via separata GitHub-etiketter. Båda tillhör Jakob; personregistret och
+grenägarskapet är oförändrade. `tools/inbox.mjs register --device <alias>
+--email <ChatGPT-mejl>` sparar datorns konto, värdnamn och automatiskt avlästa
+reposökväg endast i gitignorerade `inbox/local-device.json`.
+
+`list --to me` använder registrerad dator, annars den tidigare grenägaren.
+Avsändarnamnet visar datorn; konto och sökväg publiceras inte i GitHub.
+En profil från fel dator/sökväg stoppas med instruktion att registrera igen.
+Regressionsprov täcker separata etiketter, gemensam personägare, båda datorernas
+routning, profilbyte, felaktiga/kopierade profiler och meddelandets visningsnamn.
+Verifierat: 12/12 inboxtester passerar. Laptopens lokala registrering och
+gitignorering är kontrollerade; båda datorernas GitHub-etiketter finns och
+`list --to me` läser laptopens inbox. Inget testmeddelande har skickats.
+Full ordinarie kontrollkedja: 3 415 godkända, 11 skips, 0 fel i 72 grupper.
+De versionslåsta beroendena i `packages/design-preview` behövde installeras
+efter main-synkningen; inga beroende- eller låsfiler ändrades. Jakob har
+uttryckligen godkänt leverans via `codex/inbox-devices` och PR-merge efter gröna kontroller.
+Den andra datorn behöver synka ändringen och registrera sitt eget konto enligt
+`inbox/README.md`. Ingen automatisk väckning eller bakgrundspollning införs.
 
 ## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
 
@@ -2578,9 +2626,51 @@ produktionsdata. Bolag & team öppnades i Admin och Dealers → Dragan → impor
 behöll rätt dealer. Det senaste filväljarprovet avbröts när webbläsarverktyget
 slutade svara; det är inte ett godkänt uppladdningsprov. Testservern är avslutad.
 30-filers chattimport har verifierats med injicerad uppladdning, inklusive oklara
-fack och förlorade kvitton. Verklig Blob-uppladdning med Jakobs filer och
-spelacceptans återstår efter release av både Studio och Render-runtime.
+fack och förlorade kvitton. Produktionsproven nedan ersätter den tidigare
+luckan för verklig Blob-uppladdning; spelacceptans är fortfarande separat.
 Systemkartan har ingen röd inventeringsavvikelse. Befintliga gula bevisluckor
 är kvar. GitGuardian på main 982d541f: aktiv övervakning, 0 öppna och 17
 ignorerade incidenter; check-suite queued, historik too_large och platsmetadata
 delvis ofullständig. Ingen incidentstatus eller produktionskonfiguration ändras.
+
+**Produktionsprov efter PR #102, 13 oktober:** main `bfbfaf4a` är verifierad
+på både Vercel och Render med capability v14. De tolv återanvända verktygen
+öppnas under `/admin` och behåller Dragan-kontext. Sammansättningsvyn visar
+en befintlig varning om ett inaktivt Amira-val; ingen sådan mall ändrades.
+`lab/` är fortsatt aktiv källkod och har inte tagits bort.
+
+Jakob gav uttryckligt undantag för ett avgränsat produktionsprov med
+`Adminprov 2026-10-13`. Skapa → papperskorg → återställ → papperskorg är
+verifierat efter omladdning. Provdealern ligger kvar återställbar i
+papperskorgen med noll klipp och inga rumskopplingar.
+
+Dragan har nu **21 klipp**: de 14 befintliga samt sju nya alternativ från
+Kevins `f15b2af1`. Sex sparades tillsammans med ett OK i dealerimporten;
+`v2/pos2.mp4` sparades direkt genom Adminrobotens importuppdrag utan extra
+godkännandesteg. Samtliga sju filhashar, dealerbindningar, privata Blobobjekt
+och exakta fack verifierades i färskt register. Ett nytt klipp spelades till
+slut i bibliotekets förhandsvisning utan mediafel. Ingen spelpublicering,
+vald grundloop eller visuell loop-/läppsynksacceptans ändrades.
+
+De elva MP4-filerna i Jakobs angivna skrivbordsmapp matchar redan sparade
+produktionsfiler och dubblerades inte. Den privata ZIP-kopian från Kevin
+innehåller 206 filmer, fem bilder, tre JSON-filer samt källmanifest med
+gren, commit, exakta reposökvägar och SHA-256. Alla 214 källfiler verifierades
+mot Git och det färdiga arkivet. ZIP och produktionskvitton ligger i denna
+chats privata artefakter, utanför Git.
+
+Proven hittade två navigeringsfel: föreslagen röst räknades som osparad
+ändring även i ett orört formulär; avslutad import lämnade en spärr på grund
+av samtalshistoriken när nästa Admin-verktyg krävde ny sidladdning. Den
+avgränsade uppföljningen skiljer verkliga utkast från förslag och sparad
+historik. Pågående uppladdning, osparade filer och ändrade talprofiler ska
+fortfarande skyddas. Ny livekontroll krävs efter att uppföljningen släppts.
+
+Uppföljningen är integrerad med main `6a9be6d2`. De 52 talformulärsproven
+och 30 import-/routingproven passerar; nya felregressioner var först röda.
+Slutbygget, 96 byggspår och Admin/Lobby-typkontrollen passerar. Läsgranskning
+har inga kvarvarande fynd. Full ordinarie regression körs av commit-hooken.
+Senaste säkerhetsläsningen på denna main har queued GitGuardian-suite och
+incident-API HTTP 429; aktuell incidenttäckning är därför ofullständig.
+Den tidigare fullständiga läsningen på `bfbfaf4a` gav 0 öppna/17 ignorerade,
+aktiv övervakning, historik too_large och delvis ofullständig platsmetadata.

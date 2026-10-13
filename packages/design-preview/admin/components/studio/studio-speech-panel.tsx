@@ -56,8 +56,11 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   const referenceCheck=dealerSpeechReferenceCheck(selected,dealerId)
   const sourceKey=selected?selected.id+':'+(selected as typeof selected&{sha256?:string}).sha256:''
   const referenceUnchanged=Boolean((!enabled||saved?.state==='enabled')&&selected&&saved?.reference?.videoId===selected.id&&saved.reference.sha256===(selected as typeof selected&{sha256?:string}).sha256&&saved.reference.offsetMs===offsetMs)
-  const profileDirty=JSON.stringify(voiceDraft)!==JSON.stringify(dealerVoiceDraft(saved?.voice))||videoId!==(saved?.reference?.videoId??'')||offsetMs!==(saved?.reference?.offsetMs??0)||enabled!==(saved?.state==='enabled')
-  useEffect(()=>{onDirtyChange?.(profileDirty)},[profileDirty,onDirtyChange])
+  const referenceDirty=videoId!==(saved?.reference?.videoId??'')||offsetMs!==(saved?.reference?.offsetMs??0)||enabled!==(saved?.state==='enabled')
+  const profileDirty=JSON.stringify(voiceDraft)!==JSON.stringify(dealerVoiceDraft(saved?.voice))||referenceDirty
+  // Suggestions can be left untouched; applying one still requires the normal save flow.
+  const formDirty=JSON.stringify(voiceDraft)!==JSON.stringify(initialDealerVoiceDraft(dealer,saved?.voice))||referenceDirty
+  useEffect(()=>{onDirtyChange?.(formDirty)},[formDirty,onDirtyChange])
   useEffect(()=>{setFrameReviewed(false);setDurationMs(0);setReferenceError('')},[sourceKey])
   useEffect(()=>{setFrameReviewed(false);const video=preview.current;if(video&&video.readyState>=1)video.currentTime=offsetMs/1000},[sourceKey,offsetMs])
   useEffect(()=>{setPlan(null);setResults([])},[game])

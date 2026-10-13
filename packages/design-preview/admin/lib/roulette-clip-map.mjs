@@ -15,7 +15,7 @@ export function rouletteClipSlots() {
     description:descriptions[event.id],sourceType:event.sourceType,family:null,game:'roulette',intakeOnly:!['roulette.idle','roulette.wheel-start'].includes(event.id),localOnly:event.id==='roulette.reference',
   }))),
   {id:'roulette.plan.betting',eventId:'roulette.plan.betting',situation:'betting',title:'Insatser och välkomsttal',description:'Välkommen, lägg era insatser, inga fler insatser. Eget roulette-talset med exakt text, ljud och video behövs.',sourceType:'speak',family:null,game:'roulette',intakeOnly:true,planned:true},
-  {id:'roulette.plan.outcome',eventId:'roulette.plan.outcome',situation:'outcome',title:'Hjulutfall 0–36',description:'37 filmer i ett separat bordsspår. Servernumret väljer filmen; spela en gång och håll slutbilden. Bankkoppling återstår.',sourceType:'settle',family:null,game:'roulette',intakeOnly:true,planned:true},
+  {id:'roulette.plan.outcome',eventId:'roulette.plan.outcome',situation:'outcome',title:'Hjulutfall 0–36',description:'Anna-bordet visar 37 korrekta fack och en animerad kula. Servernumret bestämmer utfallet; stoppvinkel och fart varierar mellan rundor. Ingen separat film per nummer behövs.',sourceType:'settle',family:null,game:'roulette',intakeOnly:true,planned:true},
   {id:'roulette.plan.result',eventId:'roulette.plan.result',situation:'result',title:'Resultat och återgång',description:'Nummer/färg och eventuell reaktion på nettot. Återgå till vila. Kräver eget roulette-talset och sekvensstyrning.',sourceType:'settle',family:null,game:'roulette',intakeOnly:true,planned:true}];
 }
 export function rouletteClipMatches(video,dealerId,slot) {

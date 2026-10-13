@@ -28,6 +28,8 @@ media/.migration/
 # Session-gated preview build. Served by lab/app/preview, never from public/.
 /lab/preview-build/
 /lab/design-preview-build/
+/lab/public/public-assistant.js
+/lab/public/did-chunks/
 
 # Local env backups made while consolidating .env files (never commit)
 /random/env-backup-*/
@@ -53,3 +55,7 @@ __pycache__/
 # Canonical local recovery archive; only the empty folder marker is versioned.
 /arkiv/*
 !/arkiv/.gitkeep
+
+# Per-checkout inbox identity; account email and local paths stay off GitHub.
+/inbox/local-device.json
+/inbox/local-device.json.*.tmp
