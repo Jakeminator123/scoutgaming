@@ -8,7 +8,18 @@ registreras separat. Privat native uppladdning/återläsning stöder PNG;
 `compositing.mode=alpha` bevarar PNG/VP9-transparens i den gemensamma previewn.
 Browsern avkodar tre stickprov före alfauppladdning/omklassificering; servern
 kontrollerar PNG-pixlar respektive VP9-alfaspår/payload. Svart/opak film är inte
-en fungerande alfamatta. Blackjackfack, Studio seed och runtime v11 ändras inte.
+en fungerande alfamatta. Blackjackfack och Studio seed ändras inte.
+
+MERGE fångade en rolling-deploy-blockerare: PNG/roulette/alfa utökar den
+gemensamma strikta StudioMediaRecord. Native intag och omklassificering kräver
+nu exakt annonserad capability **v12** (`mediaAlpha=png-vp9-v1`,
+`rouletteMedia=action-pose-slots-v1`) före Blob-grant, medieläsning och skrivning,
+samt samma featurekontroll i den inre transaktionen. Frysta paket med dessa
+media kräver också v12. V11:s dealerSets/materialTrash bevaras oförändrat.
+Render ska stödja v12 före första nya registrering; äldre motor ger fast 503
+och lämnar utkastet kvar. Ingen datamigration eller produktdataändring ingår.
+85 riktade prover är gröna, inklusive noll SQL/grants på v11, avvisat äldre
+transaktionsklartecken och positiv registerskrivning/återförsök med v12.
 
 Samordnat med mediaagenten och SIDOR3. Den nya separata mediaassistenten måste
 anslutas till `dealerMediaEvents(project)` av sin ägare; detta ändrar nuvarande

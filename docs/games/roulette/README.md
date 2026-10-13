@@ -19,6 +19,19 @@ Poser väljs separat bland VILA, WHEEL och unverified. En film med samma poser k
 
 Native privat uppladdning stöder PNG för VILA-referensen och bevarar bytes/hash. `compositing: {mode: "alpha"}` behåller originalets alfa och stänger av grönnycklingen, även på gröna detaljer i dealern. Grön MP4 kan fortfarande väljas som green-screen. En svart bakgrund är inte alfa.
 
+**Ordning vid driftsättning:** nya PNG-/alfa-/roulettefält kräver ett exakt
+v12-svar från Render (`mediaAlpha=png-vp9-v1`, `rouletteMedia=action-pose-slots-v1`).
+V11:s dealerSets och materialTrash behålls. Native prepare, commit och classify
+kontrollerar stödet före Blob-grant/bytehämtning och utanför SQL; registrering och
+omklassificering kontrollerar samma avgränsade rättighet igen inne i transaktionen.
+Ett klartecken för äldre metadata ger inte rätt att lägga till alfa eller
+roulettefält. Frysta paket med nya media omfattas också. Äldre/downgrade-svar
+eller saknade flaggor ger `studio_presentation_runtime_update_required` (503),
+utan ny registerskrivning. Motorn måste stödja v12 före första nya registrering;
+en redan uppdaterad webbapp håller utkastet spärrat tills dess. Efter registrering
+får motorn inte rullas tillbaka till en parser som saknar stöd för sparade records.
+Ingen migration eller automatisk publicering behövs för denna spärr.
+
 Kontrollen har två nivåer: servern kontrollerar PNG:s avkodade alfapixlar respektive VP9-WebM:s alfamarkering och BlockAdditional-payload; webbläsaren avkodar början, mitten och slutet före alfauppladdning/omklassificering. Helt opaka och helt tomma rutor avvisas. Tre stickprov bevisar inte alla filmrutor, fina hårkanter eller rätt handkontakt. Serverns spårkontroll ensam bevisar inte en användbar matta. Godkänn varje klipp visuellt innan publicering. Förhandsvisningen stöder både PNG och video med samma friläggnings-/visningsprofil.
 
 ### Faktiskt producerad startuppsättning
