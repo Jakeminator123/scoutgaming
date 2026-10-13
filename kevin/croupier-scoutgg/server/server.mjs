@@ -89,7 +89,7 @@ const makeRorlig = apiKey => new RorligLipsync({
   apiKey,
   publicBase: () => publicOrigin,
   publicDir: PUBLIC,
-  dealers: (process.env.RORLIG_DEALERS ?? "paow").split(",").map(s => s.trim()).filter(Boolean),
+  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge").split(",").map(s => s.trim()).filter(Boolean),
   log: s => console.log(s),
   // each piece goes out with its bytes right behind it on the room socket: no request of its own, which at the start of a
   // round queued behind the clip downloads and came too late for the first frames

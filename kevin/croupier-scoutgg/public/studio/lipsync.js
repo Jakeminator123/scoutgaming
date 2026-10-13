@@ -1,10 +1,11 @@
 // Voice and lip-sync keys for a staging server (server.mjs, studio/lipsync-keys): shows which are set and saves new ones.
 const state = document.querySelector('#state'), form = document.querySelector('#keys'), button = form.querySelector('button');
 const yes = (on, text) => `<span class="${on ? 'ok' : 'bad'}">${on ? '✓' : '✗'} ${text}</span>`;
+const NAMES = { paow: 'Paow', dragge: 'Dragan', marten: 'Mårten' };
 function show(j) {
-  const w = j.lipsync?.paow;
-  state.innerHTML = [yes(j.runpod, 'RunPod key'), yes(j.elevenlabs, 'ElevenLabs key'),
-    w ? yes(w.ready, w.ready ? `Lip-sync worker ready (${w.info?.gpu ?? ''})` : 'Lip-sync worker starts when someone plays at a Paow table') : yes(false, 'Lip sync off')].join('<br>');
+  const workers = Object.entries(j.lipsync ?? {}).map(([id, w]) => { const name = NAMES[id] ?? id;
+    return yes(w.ready, w.ready ? `${name}: lip-sync worker ready (${w.info?.gpu ?? ''})` : `${name}: lip-sync worker starts when someone plays at a ${name} table`); });
+  state.innerHTML = [yes(j.runpod, 'RunPod key'), yes(j.elevenlabs, 'ElevenLabs key'), ...(workers.length ? workers : [yes(false, 'Lip sync off')])].join('<br>');
 }
 async function load() {
   const r = await fetch('/api/studio/lipsync-keys');
