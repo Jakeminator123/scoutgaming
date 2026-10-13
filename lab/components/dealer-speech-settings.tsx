@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {DealerVoicePicker} from './dealer-voice-picker';
-import {dealerVoiceDraft,dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../web/public/dealer-voice-catalog.mjs';
+import {dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../web/public/dealer-voice-catalog.mjs';
 import type {StudioProject} from '../lib/studio-model.mjs';
 import {dealerSpeechPreparation,dealerSpeechReferenceCheck,isSpeechReferenceVideo,normalizeDealerSpeechProfile,type DealerSpeechProfile} from '../../web/public/dealer-speech-profile.mjs';
 import type {VideoInventory} from './studio-types';
@@ -16,11 +16,12 @@ export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,exp
   const [durationMs,setDurationMs]=useState(0);
   const [referenceError,setReferenceError]=useState('');
   const player=useRef<HTMLVideoElement>(null);
-  const localDirty=JSON.stringify([enabled,voiceDraft,videoId,kind,offsetMs])!==JSON.stringify([saved?.state==='enabled',dealerVoiceDraft(saved?.voice),saved?.reference?.videoId??'',saved?.reference?.kind??'video-frame',saved?.reference?.offsetMs??0]);
+  // A prefilled voice proposal is not a user edit, including while this tab is hidden.
+  const localDirty=JSON.stringify([enabled,voiceDraft,videoId,kind,offsetMs])!==JSON.stringify([saved?.state==='enabled',initialDealerVoiceDraft(dealer,saved?.voice),saved?.reference?.videoId??'',saved?.reference?.kind??'video-frame',saved?.reference?.offsetMs??0]);
   useEffect(()=>{onDraftChange?.(localDirty);},[localDirty,onDraftChange]);
   useEffect(()=>()=>onDraftChange?.(false),[onDraftChange]);
   function restoreForm(profile: typeof saved) {
-    setEnabled(profile?.state==='enabled');setVoiceDraft(dealerVoiceDraft(profile?.voice));
+    setEnabled(profile?.state==='enabled');setVoiceDraft(initialDealerVoiceDraft(dealer,profile?.voice));
     setVideoId(profile?.reference?.videoId??'');setKind(profile?.reference?.kind??'video-frame');setOffsetMs(profile?.reference?.offsetMs??0);setReviewed(false);
   }
   const videos=(inventory?.videos??[]).filter(row=>isSpeechReferenceVideo(row,dealer.id));

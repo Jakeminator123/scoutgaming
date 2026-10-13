@@ -379,6 +379,25 @@ test('real navigation click changes local tabs while the actual unapplied voice 
 });
 
 
+for(const dealer of [{id:'dragan',label:'Dragan'},{id:'paow-v2',label:'Paow'}])test(`${dealer.id} suggested voice does not block a clean hidden speech form; real edits still do`,()=>{
+  const p={...props(),initialDealerId:dealer.id,initialView:'idle'},listeners=new Map();
+  p.initialProject=addDealer(p.initialProject,dealer.id,dealer.label);
+  const initial=structuredClone(p.initialProject),runtimeWindow={location:{href:`https://local.test/admin/dealer-studio?dealer=${dealer.id}`,search:`?dealer=${dealer.id}`,hash:''},history:{pushState(){},replaceState(){}},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(key,value){if(listeners.get(key)===value)listeners.delete(key);}};
+  const h=harness('./lab-studio.tsx',[],{window:runtimeWindow}),speech=harness('./dealer-speech-settings.tsx');let tree,form;
+  const render=()=>{tree=h.render(p);h.flushEffects();tree=h.render(p);const mounted=nodes(tree,node=>node.props?.expanded&&node.props?.dealer)[0];form=speech.render(mounted.props);speech.flushEffects();tree=h.render(p);h.flushEffects();};render();
+  const guarded=()=>{const event={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(event);return Boolean(event.blocked);};
+  const input=()=>nodes(form,node=>node.type==='input'&&node.props.placeholder==='Röstens ID, ingen API-nyckel')[0];
+  const button=label=>nodes(form,node=>node.type==='button'&&node.props.children===label)[0];
+  assert.equal(h.state('workspaceView'),'idle');assert.equal(h.state('speechDraft'),false);assert.equal(guarded(),false);
+  assert.ok(input().props.value,'the explicitly paired voice remains available as a proposal');assert.deepEqual(h.state('project'),initial);
+  const proposedVoice=input().props.value;
+  input().props.onChange({target:{value:'user-edited-voice'}});render();assert.equal(h.state('speechDraft'),true);assert.equal(guarded(),true);
+  button('Ångra ändringar i talformuläret').props.onClick();render();assert.equal(h.state('speechDraft'),false);assert.equal(guarded(),false);assert.equal(input().props.value,proposedVoice);
+  button('Använd talunderlag i utkastet').props.onClick();render();assert.equal(h.state('speechDraft'),false);assert.equal(guarded(),true,'the deliberately staged profile still requires project save');
+  assert.equal(h.state('project').dealers.find(row=>row.id===dealer.id).speechProfile.voice.voiceId,proposedVoice);
+  assert.deepEqual(p.initialProject,initial,'opening and staging never mutate the supplied saved project');
+});
+
 test('unapplied actual speech edits protect dealer and route exits, remain across tabs, and can be undone or applied',()=>{
   const p={...props(),initialDealerId:'vera',initialView:'speech'},listeners=new Map(),assigned=[];
   const runtimeWindow={location:{href:'https://local.test/control/clips?dealer=vera&view=speech',search:'?dealer=vera&view=speech',hash:'',assign:href=>assigned.push(href)},history:{pushState(_s,_t,url){runtimeWindow.location.href=String(url);runtimeWindow.location.search=new URL(url).search;},replaceState(){}},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(key,value){if(listeners.get(key)===value)listeners.delete(key);}};

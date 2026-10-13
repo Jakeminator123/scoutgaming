@@ -73,7 +73,8 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange,re
   useEffect(()=>()=>controller.current?.abort(),[]);
   useEffect(()=>{onBusyChange?.(busy!==null);},[busy,onBusyChange]);
   useEffect(() => {
-    if (!pending && !busy && !question.trim() && !chat.length) return;
+    // Saved receipts and completed conversation history are not unsaved work.
+    if (!pending && !busy && !question.trim()) return;
     let approvedClick=false;
     const leave = () => busyRef.current ? false : window.confirm('Vill du lämna Klippassistenten? Vid omladdning eller ny sida försvinner samtalet, oskickad text och den lokala fillistan.');
     const beforeUnload = (event:BeforeUnloadEvent) => {event.preventDefault();event.returnValue='';};
@@ -98,7 +99,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange,re
     window.addEventListener('studio:before-navigate',beforeNavigate);
     document.addEventListener('click',click,true);
     return ()=>{window.removeEventListener('beforeunload',beforeUnload);window.removeEventListener('studio:before-navigate',beforeNavigate);document.removeEventListener('click',click,true);};
-  },[pending,busy,question,chat.length]);
+  },[pending,busy,question]);
 
   function invalidate() {setNotice('');}
   function update(id:string, patch:Partial<ImportRow>, changed=true) {setRows(items=>items.map(row=>row.id === id ? {...row,...patch} : row));if(changed)invalidate();}
