@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Build the hands-matte track: for every deployed dealer stream, a small
+# Legacy Vera-only hands-matte recipe. Its indexed Vera input bank was removed;
+# retained runtime/hands output does not make this recipe runnable on main.
+# Review source availability and camera/frame alignment before rebuilding.
+# See pipeline/README.md and docs/CLOUD-MIGRATION.md (SL-10).
+# Build the hands-matte track: for every supplied Vera stream, a small
 # grayscale h264 stream marking which pixels of the frame's bottom band are
 # HER below the table rail. The engine decodes it next to the main stream and
 # uses it as alpha to repaint her forearms/hands ABOVE the table art
@@ -16,7 +20,7 @@
 # Vision masks are cached in media/dealers/vera/staging/hands-masks/<name>/ keyed by the stream
 # file's mtime, so matte-math changes re-run in seconds, not minutes.
 #
-# Usage: build-hands.sh [name ...]   (default: every stream except supervisor)
+# Usage: build-hands.sh [name ...]   (default: Vera streams except supervisor)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

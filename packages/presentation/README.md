@@ -1,12 +1,17 @@
 # packages/presentation
 
 Paketet äger presentationskompositorn, layer-previewn och urvals-/idlereglerna.
+Det används av dagens Studio och spelserver även om vissa verktyg, filnamn och
+klippregler kommer från äldre Lab-/Lissabon-spår. Sammansättning är en
+presentation; ett sparat lane-ID är en kompatibilitetsidentitet, inte en extra
+produktnivå. Gemensamma begrepp och rumsmodellen definieras i
+[runtimekontraktet](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 - `compositor/` — spelare, kompositor, brygga, geometri och den fristående redigeraren (`app.js`, `index.html`, `viewer.*`). Redigeraren följer med men serveras inte.
 - [Speldokumentation](../../docs/games/README.md) — blackjack och roulette på en gemensam ingång.
-- `docs/` — paketets `INTEGRATION.md` och en hänvisning till den flyttade formatlåsningen.
+- `docs/` — referens för den fristående kompositorexporten och en hänvisning till den gemensamma formatlåsningen; ingen separat produktplan.
 - `preview/` — `prepare.mjs` och det granskade materialet i `preview/site/`.
-- `runtime/` — urval, idle, filmfamiljer, legacy-klipp och skobyten. Lab, Web och OpenClaw läser modulen. Importerna tillbaka till `lab/`, `web/` och `open-claw/` är kvar till A22.
+- `runtime/` — urval, idle, filmfamiljer, legacy-klipp och skobyten. Lab, Web och OpenClaw läser modulen. Importer tillbaka till `lab/`, `web/` och `open-claw/` finns kvar; vidare uppdelning är en öppen punkt i molnchecklistan.
 
 Dessa läser paketet:
 
@@ -19,4 +24,20 @@ Dessa läser paketet:
 
 Publika adresser är stabila: `/composition-runtime/*`, `/layer-packs/*`, `/presentation-runtime/*` och Studio `/preview/*` (publikt `/studio/preview/*`). Filhashar för källfilerna ändras inte när bara sökvägen flyttas.
 
-Python-verkstaden fanns bara på den raderade grenen `test-video-jakob`. Mediabitarna stannar som filer. De går inte till blob eller databas.
+## Byggkällor och kompatibilitet
+
+`preview/site/` och `media-hashes.json` är granskade byggkällor. Behåll dem;
+`lab/preview-build/` är den genererade kopian och kan byggas om med
+`node lab/tools/prepare-preview.mjs`. Den äldre frontendfunktionen
+`preview/prepare.mjs` är begränsad till Vercels `test-video-jakob`-preview;
+Studio använder sin egen förberedare utan det branchvillkoret.
+
+`compositor/` innehåller både aktiv motor och fristående referens-UI. Bedöm
+konsumenterna var för sig före radering. `runtime/` behåller äldre klipp- och
+filmfamiljsregler för deras verkliga konsumenter; de anger inte hur varje ny
+registrerad dealer måste organiseras. Radera inte kortkalibrering eller
+publicerade identiteter för att ett lane-namn pensioneras.
+
+För aktuella mediaformat och acceptans, använd [spelguiderna](../../docs/games/README.md)
+och [handoffen](../../docs/JOHN-HANDOFF.md). En lokal referensexport innebär
+ingen automatisk publicering eller verifierad läppsynk.

@@ -1,40 +1,44 @@
-# Root container build context
+# Produktcontainerns byggkontext
 
-The repository root now has a `.dockerignore` for a future Croupier product and
-Lissabon image. It does not change local files or the existing OpenClaw images,
-which build from `open-claw/lab/` and have their own ignore file. No root Docker
-image has been built or deployed.
+`ops/cloud/Dockerfile` använder reporoten som byggkontext:
 
-The root context retains `web/`, `lab/` application code and `lab/docs/guide.json`,
-`lab/policies/project.seed.json`, `packages/presentation/runtime/`, `open-claw/lab/src/`,
-`emil/dealklipp-v1/` with its exact video manifest, `web/public/` with the
-published dealer and table assets, `content/dealers/`, and `content/persona/`. It also
-retains `pipeline/`: `lab/lib/video-registry.mjs` imports
-`pipeline/build-lab-video-manifest.mjs` at runtime for operator rescans.
+```sh
+docker build -f ops/cloud/Dockerfile .
+```
 
-The ignore file omits Git metadata, local agent state, development caches,
-installed dependencies, secrets, mutable databases/project files, tests, root
-documentation, and reference or staging material. Persistent player and studio
-state must be mounted or supplied by an external store, never copied from a
-developer's machine into an image. Environment variables must be supplied by
-the deployment platform. `content/staging/` contains review and source renders;
-runtime presentation media is retained in its published locations above.
-The old editable trees `assets/astrid-3d/` and `assets/blackjack-3d/` were
-removed on 12 October 2026 with the 3D track. `.dockerignore` still names
-them so a restored checkout is not sent as build context. This is a static
-dependency check, not a built-image test.
+Dockerfilen kopierar kontexten efter `.dockerignore`, installerar beroenden
+för Web, Lab och talreläet, och bygger Lab med `/studio` som `basePath` som
+standard. `container-entry.mjs` startar sedan runtime i `start.mjs` efter
+lagringskontroller och byte till användaren `node`. `lab/` är Studios
+källmapp; Lissabon är ingen separat produkt eller image.
 
-On this workstation, targeted metadata inspection found approximately
-2,075 MiB in `content/staging/`, 1,084 MiB in `lab/.next`, `.next-probe`, and
-`node_modules` combined, and 2,760 MiB in `.git`. These three categories alone
-represent about 3.1 GiB of working files plus 2.7 GiB of Git metadata that a
-local root Docker build should no longer send. Actual savings depend on the
-builder, its context directory, and generated files present at build time.
+| Innehåll som kontexten behåller | Nuvarande roll |
+| --- | --- |
+| `web/`, `lab/`, `apps/croupier-frontend/` | Spelserver, Studio och spelargränssnittets källkod. `web/public/` behåller publik kod och resurser; media använder även sin katalog. |
+| `packages/`, `tools/`, `ops/` | Gemensamma paket, byggverktyg och produktstart. Guide- och policydata under `lab/docs/` och `lab/policies/` följer också med. |
+| `services/astrid-gpu-worker/gateway/` | Talreläet vars beroenden denna Dockerfil installerar. GPU-imagen har en egen Dockerfil och byggs inte av kommandot ovan. |
+| `media/**/runtime`, `media/layout.json`, `media/blob-index.json`, `media/catalog/` | Filer och metadata som kontextreglerna behåller. Att en fil följer med ändrar inte dess identitet eller åtkomstgräns. |
+| `pipeline/` | Bevarade verktyg och byggrecept, beskrivna i [mappguiden](../../pipeline/README.md). Mappen följer med men är ingen tjänst som containern startar. |
 
-Docker is not installed on this workstation. Before the first deployment,
-build an image with the repository root as its context and verify that the
-studio can read its video manifest, that registered playback and gameplay
-video serve the retained files, and that no local `.env` or database entered
-the image. The current `.dockerignore` does not make the product cloud ready;
-`docs/CLOUD-MIGRATION.md` tracks storage, authentication, HTTPS, and runtime
-work that remains.
+`lab/lib/video-registry.mjs` läser mediemanifest och referenser; den
+importerar inte längre `pipeline/build-lab-video-manifest.mjs`. Den gamla
+lokala omskanningen svarar 410. De tidigare rötterna `emil/dealklipp-v1/`
+och `content/dealers/` är inte bankens kanoniska lagringsplatser.
+
+`.dockerignore` utesluter bland annat Git, lokala cache-/beroendemappar,
+hemligheter, muterbara Web-/Lab-/OpenClaw-data, `docs/`, `test/`, `lab/test/`
+och mediernas `source`, `staging`, `review`. Vissa redan borttagna mappnamn
+står kvar bland undantagen för att filtrera en återställd äldre kopia.
+Reglerna filtrerar byggkontexten och raderar inga lokala filer.
+
+OpenClaw-imagerna använder egna Dockerfiler och ignore-filer
+(`open-claw/lab/.dockerignore` eller `Dockerfile.dockerignore` beroende på
+byggkontext). Kommandot ovan publicerar inte dessa imager.
+
+Konfiguration och beständiga data kommer från driftsmiljön, inte från en
+kopierad `.env` eller lokal databas. Uppstarten accepterar de lagringslägen
+som `container-entry.mjs` och `config.mjs` uttryckligen validerar. Efter en
+kontextändring ska den byggda imagen, uppstart, inloggning och åtkomst till
+de medier produkten använder verifieras. Denna guide beskriver kod och
+kopieringsregler; driftsacceptans följs i den befintliga
+[molnplanen](../../docs/CLOUD-MIGRATION.md).

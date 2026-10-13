@@ -1,9 +1,26 @@
 # astrid-gpu-worker
 
-MuseTalk-worker och fristående streamingrelä, importerade i Croupiers
-`Jakeminator123/github-work` på `main`. Exakt upstream och lokal härkomst
+MuseTalk-worker för läppsynk och återanvändbara streamingmoduler i
+`Jakeminator123/scoutgaming` på `main`. Katalognamnet kommer från Astrids
+ursprungliga implementation; sessionsvägen stöder också registrerade dealers
+med egna verifierade referensbilder. Exakt upstream och lokal härkomst
 finns i [SOURCE.md](SOURCE.md); den äldre importens testkvitton finns i
 [implementationshistoriken](docs/IMPLEMENTATION-HANDOFF.md).
+
+## Ansvar och kopplingar
+
+| Del | Ansvar |
+| --- | --- |
+| `handler.py`, `workers/`, `assets/`, `Dockerfile` | RunPod-worker, MuseTalk och bildförberedelse. De två medföljande Astrid-avatarerna behövs av den bevarade fullfilsvägen. |
+| `gateway/` | WebSocket-relä, biljetter, workerbindning och PCM-adaptrar för Cartesia/ElevenLabs. Modulerna importeras av spelservern; `server.mjs` och referensspelaren är separata protokollfixturer. |
+| [`web/generated-speech-stream.mjs`](../../web/generated-speech-stream.mjs), [`web/dealer-speech-runtime.mjs`](../../web/dealer-speech-runtime.mjs) | Spelserverns integration: aktuella dealerprofiler, sessionens ägare, åtkomst, röst och exakt referensbild. |
+| [`web/speech-journal-runtime.mjs`](../../web/speech-journal-runtime.mjs) | Molnsessionens budget, RunPod-jobb och workerberedskap. |
+
+Workern väljer inte svarstext, spelregler, bolag eller rum. OpenClaw och
+Lab/admin använder andra moduler för rådgivning och administration; detta är
+talets GPU- och transportdel. Importerna ovan gör att katalogen behöver
+finnas kvar i samma repo. Katalogens `docs/` är importhistorik, inte en separat
+produktplan eller instruktion att starta ännu en backoffice.
 
 Aktuell drift, QA och återstående AI/GPU-acceptans finns i
 [molnkartan](../../docs/CLOUD-MIGRATION.md) och
@@ -48,14 +65,27 @@ kontrollmeddelanden, ägarbindning, engångsbiljetter, avbrott och gränser finn
 [gatewayguiden](gateway/README.md).
 
 Croupier använder sin gemensamma spelare i `web/public`, med samma talkö,
-idlegrindar och kvitton för alla fyra dealers. Referensspelaren i `gateway`
+idlegrindar och kvitton för registrerade dealers. Referensspelaren i `gateway`
 är för isolerad protokollverifiering. Ett streamingkvitto är inte en godkänd,
 hashverifierad fullfilstake.
 
 ## Avatarer och validering
 
 Dockerbygget förbereder `astrid_talk2x` och `astrid_spel2x`; `AVATAR_ID`
-väljer avatar. Bevara exakta bild-/ljud-/videohashar och kalibrering vid
+väljer den medföljande avataren. `lipsync` och `faces` använder denna äldre
+fullfilsväg och accepterar inte en ny dealers `avatar`.
+
+För registrerade dealers skickar spelservern en serverägd `avatar` med
+`schemaVersion: 1`, `dealerId`, `profileRevision`, `imageSha256` och
+`imageBase64` i sessionsjobbet. Bilden måste vara en hashverifierad 1080×1920
+PNG; `workers/dealer_avatar.py` förbereder och städar den tillfälliga avataren.
+Workeranslutningen binder dealer, profilrevision och bildhash med protokoll
+3. WebSocket-medieflödet använder fortsatt protokoll 2 och `astrid-v2` som
+kompatibilitetsnamn; det innebär inte att en annan dealer använder Astrids bild.
+Röst och referensbild hämtas från den aktuella registrerade dealerprofilen,
+inte från en ungefärlig klipplängd eller ett namn i en legacy-mapp.
+
+Bevara exakta bild-/ljud-/videohashar och kalibrering vid
 ändringar. Bygg ersättningstakes separat och följ repo-reglerna för
 mediaaudit och två uppspelningar av varje dealer. Syntetisk video,
 första fragment eller lyckat bildbygge godkänner inte läppsynken.
