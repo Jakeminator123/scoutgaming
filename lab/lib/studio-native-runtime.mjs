@@ -91,8 +91,8 @@ export async function readAssistantDatabaseInventory(pool) {
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
   schemaCheck = async pool => {
     const plan = await planStudioMigrations({ pool, directory: resolve(schemaRoot(), 'neon-studio') });
-    // 008 (Dealer Forge) is deployment-optional: the runtime starts before and after it is applied.
-    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004,005,006,007,008') unavailable();
+    // Require the exact reviewed ledger including mandatory daily-budget evolution.
+    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004,005,006,007,008,011') unavailable();
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
   policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,

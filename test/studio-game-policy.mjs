@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createSeedProject } from '../lab/lib/studio-model.mjs';
@@ -264,7 +265,9 @@ test('generic portrait syntax cannot authorize a dealer absent from the saved St
 
  test('Render startup rejects a missing budget migration or unknown ledger version', async () => {
   const {createRenderStudioPolicy}=await import('../web/storage/studio-runtime.mjs');
-  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:'postgresql://croupier_game:synthetic@fixture.neon.tech/croupier_game?sslmode=require'};
+  const connection=new URL('postgresql://fixture.neon.tech/croupier_game?sslmode=require');
+  connection.username='croupier_game';connection.password=randomUUID();
+  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection.href};
   const storage={pool:{},db:{assertInstalled:async()=>{}}};
   for(const versions of [['001','002','003','004','005','006','007','008'],['001','002','003','004','005','006','007','008','011','012']]){
     await assert.rejects(createRenderStudioPolicy({storage,env,schemaCheck:async()=>({toApply:[],applied:versions.map(version=>({version}))})}),error=>error.message==='studio_game_schema_unavailable');
