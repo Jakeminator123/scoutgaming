@@ -1,8 +1,8 @@
 import { useSyncExternalStore, type AnchorHTMLAttributes, type ImgHTMLAttributes } from 'react';
-import {isInternalAdminPathname,withAdminContext} from './admin-routing.mjs';
+import {adminHref,adminPathname,isInternalAdminPathname,withAdminContext} from './admin-routing.mjs';
 
 export function previewHref(href: string) {
-  return href === '/control' || href.startsWith('/control/') ? '/admin' + href.slice(8) : href;
+  return adminHref(href);
 }
 const subscribers = new Set<() => void>();
 let previousHref = '';
@@ -11,20 +11,20 @@ const notifySubscribers = () => subscribers.forEach(notify => notify());
 const canNavigate = (href:string) => window.dispatchEvent(new CustomEvent('studio:before-navigate', {cancelable:true,detail:{href}}))
   && window.dispatchEvent(new CustomEvent('scout:navigate', {cancelable:true,detail:{href}}));
 const changed = () => {
-  const href = location.pathname + location.search;
+  const href = location.pathname + location.search + location.hash;
   if (!canNavigate(href)) {
     history.pushState(null,'',previousHref); return;
   }
   previousHref = href; notifySubscribers();
 };
 const subscribe = (notify: () => void) => {
-  if (!subscribers.size) { previousHref = location.pathname + location.search; window.addEventListener('popstate',changed); }
+  if (!subscribers.size) { previousHref = location.pathname + location.search + location.hash; window.addEventListener('popstate',changed); }
   subscribers.add(notify);
   return () => { subscribers.delete(notify); if (!subscribers.size) window.removeEventListener('popstate',changed); };
 };
 export function replaceContext(href:string) { history.replaceState(null,'',href); previousHref = href; }
 export function usePathname() {
-  return useSyncExternalStore(subscribe, () => '/control' + window.location.pathname.slice(6), () => '/control');
+  return useSyncExternalStore(subscribe, () => adminPathname(window.location.pathname), () => '/admin');
 }
 export function useSearchParams() {
   const query=useSyncExternalStore(subscribe,()=>location.search,()=> '');
@@ -34,7 +34,7 @@ export function useRouter() {
   return { push: (href: string) => navigate(previewHref(href)), replace: (href: string) => navigate(previewHref(href), true) };
 }
 export function navigate(href: string, replace = false) {
-  href=withAdminContext(href,location.search);
+  href=withAdminContext(previewHref(href),location.search);
   if (!canNavigate(href)) return false;
   window.history[replace ? 'replaceState' : 'pushState'](null, '', href);
   previousHref = href; notifySubscribers();

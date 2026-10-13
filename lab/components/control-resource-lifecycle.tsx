@@ -6,6 +6,7 @@ import styles from './control-resource-lifecycle.module.css';
 type Operator = {id:string;slug:string;name:string;status:string;lanes:string[];packageRevision:number|null;archivedAt:string|null;roomCount:number;archivedRoomCount:number};
 type Room = {id:string;name:string;operatorId:string;presentationLaneId:string;state:string;archivedAt:string|null;packageRevision:number|null;published:boolean;canArchive:boolean;canRestore:boolean;restoreBlockers:string[]};
 export type LifecycleSnapshot = {administrationRevision:string;operators:Operator[];rooms:Room[]};
+export type ResourceLifecycleNavigation = {compositionHref:(operator:Operator,room:Room)=>string;rehearsalLabel?:string};
 const blockers:Record<string,string> = {operator_archived:'Återställ bolaget först.',room_identity_in_use:'Ett annat rum använder samma identitet.',presentation_not_published:'Publicera rummets sammansättning först.',playback_configuration_changed:'Uppspelningsinställningarna behöver granskas.',playback_configuration_limit:'Gränsen för uppspelningsinställningar är nådd.',dealer_not_available:'Rummets dealer är inte tillgänglig.',presentation_incompatible:'Sammansättningen behöver anpassas för rummet.',room_limit:'Gränsen för antal rum är nådd.'};
 type Intent = {kind:'operator'|'room'|'state';operatorId:string;id:string;name:string;archived?:boolean;state?:'live'|'pending'};
 const revision = (value:unknown) => value === null || Number.isSafeInteger(value) && Number(value)>0;
@@ -20,9 +21,10 @@ export function validLifecycleSnapshot(value:unknown):value is LifecycleSnapshot
       && typeof row.canArchive==='boolean' && typeof row.canRestore==='boolean' && Array.isArray(row.restoreBlockers)));
 }
 
-export function ControlResourceLifecycle({operatorId,kind,available,disabled=false,refreshKey=0,onChanged,onBusyChange,onRefreshNeeded}:{
+export function ControlResourceLifecycle({operatorId,kind,available,disabled=false,refreshKey=0,onChanged,onBusyChange,onRefreshNeeded,navigation}:{
   operatorId:string;kind:'operator'|'rooms';available:boolean;disabled?:boolean;refreshKey?:number;
   onChanged?:(snapshot:LifecycleSnapshot)=>void;onBusyChange?:(busy:boolean)=>void;onRefreshNeeded?:()=>void;
+  navigation?:ResourceLifecycleNavigation;
 }) {
   const [snapshot,setSnapshot]=useState<LifecycleSnapshot|null>(null);
   const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[stale,setStale]=useState(false),[problem,setProblem]=useState(''),[notice,setNotice]=useState('');
@@ -112,8 +114,8 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
         <div><h3>{room.name}</h3><p>{room.archivedAt?'I papperskorgen':room.state==='live'&&operator.status==='active'&&room.published?'Öppet för spelare':'Pausat'}</p></div>
         <div className={styles.actions}>
           {!room.archivedAt?<>
-            <a className="sg-btn sg-btn-secondary" href={labUrl('/control/compositions?'+new URLSearchParams({operator:operator.id,composition:room.presentationLaneId}))}>Redigera sammansättning</a>
-            {room.state==='live'&&operator.status==='active'&&room.published?<a className="sg-btn sg-btn-secondary" href={labUrl('/control/rehearsal?'+new URLSearchParams({operator:operator.slug,table:room.id,composition:room.presentationLaneId}))}>Provspela & följ</a>:null}
+            <a className="sg-btn sg-btn-secondary" href={navigation?.compositionHref(operator,room)??labUrl('/control/compositions?'+new URLSearchParams({operator:operator.id,composition:room.presentationLaneId}))}>Redigera sammansättning</a>
+            {room.state==='live'&&operator.status==='active'&&room.published?<a className="sg-btn sg-btn-secondary" href={labUrl('/control/rehearsal?'+new URLSearchParams({operator:operator.slug,table:room.id,composition:room.presentationLaneId}))}>{navigation?.rehearsalLabel??'Provspela & följ'}</a>:null}
             <button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff||operator.status!=='active'||!room.published} onClick={()=>setIntent({kind:'state',operatorId,id:room.id,name:room.name,state:room.state==='live'?'pending':'live'})}>{room.state==='live'?'Pausa rum':'Öppna rum'}</button>
             <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff||!room.canArchive} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:true})}>Flytta till papperskorgen</button>
           </>:<button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff||!room.canRestore} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:false})}>Återställ rum</button>}

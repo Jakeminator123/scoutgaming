@@ -104,6 +104,44 @@ function nodes(node, predicate) {
   if (Array.isArray(node)) return node.flatMap(child => nodes(child, predicate));
   return [...(predicate(node) ? [node] : []), ...nodes(node.props?.children, predicate)];
 }
+
+test('native administration preserves its standalone shell and embeds without a second main landmark', () => {
+  const module = { exports: {} }, views = [];
+  const nativeSource = readFileSync(new URL('./native-administration.tsx', import.meta.url), 'utf8');
+  vm.runInNewContext(transformSync(nativeSource, {
+    filename: 'native-administration.tsx',
+    jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } },
+    module: { type: 'commonjs' },
+  }).code, { module, exports: module.exports,
+    require: name => name === './studio-administration'
+      ? { StudioAdministration: props => { views.push(props); return React.createElement('section', { 'data-native-view': true }); }, StudioAdminUiError: Error }
+      : name === '../lib/studio-login-client.mjs'
+        ? { createStudioLoginClient: () => assert.fail('render must not change the session'), StudioLoginUiError: Error }
+        : name.endsWith('.module.css')
+          ? { __esModule: true, default: { shell: 'standalone-shell', embedded: 'embedded-shell' } } : require(name),
+  });
+  const props = { apiBase: '/studio/api/admin', availableActions: ['GET overview'], gameOrigin: 'https://game.fixture.invalid', initialGroup: 'integrations', initialDealerId: 'astrid' };
+  const standalone = renderToStaticMarkup(React.createElement(module.exports.NativeAdministration, props));
+  assert.match(standalone, /^<main class="standalone-shell">/);
+  assert.equal(renderToStaticMarkup(React.createElement(module.exports.NativeAdministration, { ...props, embedded: false })), standalone);
+  const embedded = renderToStaticMarkup(React.createElement('main', { 'data-admin-shell': true }, React.createElement(module.exports.NativeAdministration, { ...props, embedded: true })));
+  assert.equal([...embedded.matchAll(/<main\b/g)].length, 1, 'the surrounding Admin owns the page landmark');
+  assert.match(embedded, /<div class="embedded-shell"><section data-native-view="true">/);
+  for (const view of views) {
+    for (const name of ['apiBase', 'availableActions', 'gameOrigin', 'initialGroup', 'initialDealerId']) assert.equal(view[name], props[name]);
+    assert.equal(view.readIdentity, 'response-headers-v1');
+    assert.equal(typeof view.session, 'function');
+    assert.equal(view.sessionAction.type, 'button');
+    assert.equal(view.sessionAction.props.children, 'Logga ut');
+  }
+  for (const view of views.slice(0, 2)) {
+    assert.equal(view.roomsHref, undefined);
+    assert.equal(view.companyTeamLabel, undefined);
+  }
+  assert.equal(views[2].roomsHref, '/admin/rooms?view=registered');
+  assert.equal(views[2].companyTeamLabel, 'Bolag & team (äldre editor)');
+});
+
 function buttons(tree, text) { return nodes(tree, node => node.type === 'button' && node.props.children === text); }
 function reply(payload, status = 200) { return new Response(JSON.stringify(payload), { status, headers: { 'Content-Type': 'application/json' } }); }
 function nativeReply(payload, code = 200, current = actor('admin')) {
@@ -153,6 +191,26 @@ function resources() {
 }
 const viewProps = (role = 'superadmin', group = 'accounts') => ({ actor: actor(role), group, resources: resources(), busy: false, available, command() { throw new Error('Unexpected render mutation'); } });
 const flush = () => new Promise(resolve => setImmediate(resolve));
+
+test('administration notices use the enclosing room destination and label team compatibility without changing its editor', () => {
+  for (const group of ['tables', 'accounts', 'partners']) {
+    const h = harness(), props = { apiBase: '/studio/api/admin', session: async () => actor('admin'), availableActions: allActions, initialGroup: group };
+    const href = group === 'tables' ? '/control/rooms' : '/control/companies';
+    const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === href)[0];
+    assert.ok(original, group);
+    assert.equal(original.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team');
+    const embedded = h.render({ ...props, roomsHref: '/admin/rooms?view=registered', companyTeamLabel: 'Bolag & team (äldre editor)' });
+    const links = nodes(embedded, node => node.type === 'a');
+    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms?view=registered' : '/control/companies'));
+    assert.ok(target, group);
+    assert.equal(target.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team (äldre editor)');
+    if (group === 'tables') {
+      assert.equal(links.some(node => node.props.href === '/control/rooms'), false);
+      assert.match(renderToStaticMarkup(embedded), /Bolagets spelbara rum och publicering hanteras via/);
+    }
+    h.unmount();
+  }
+});
 
 // Real native authorization + admin response boundary over isolated in-memory
 // rows. This never opens a database connection or mutates a real account.

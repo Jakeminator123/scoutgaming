@@ -1,6 +1,6 @@
-import { SPEECH_LINES } from '../../../../web/public/speech-lines.mjs';
-import { ASTRID_VOICE_PROFILE } from '../../../../web/public/astrid-voice-profile.mjs';
-import { normalizeDealerSpeechProfile, validateDealerSpeechReference } from '../../../../web/public/dealer-speech-profile.mjs';
+import { SPEECH_LINES } from './speech-lines.mjs';
+import { ASTRID_VOICE_PROFILE } from './astrid-voice-profile.mjs';
+import { normalizeDealerSpeechProfile, validateDealerSpeechReference } from './dealer-speech-profile.mjs';
 
 // New generation templates. Existing recorded banks retain their own exact
 // captions; choosing Swedish never relabels or approves English recorded media.

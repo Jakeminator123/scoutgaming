@@ -119,7 +119,7 @@ export function EconomyView() {
         title="Avtal per spelbolag"
         meta={canEdit ? "Ändringar kräver anledning" : "Läsläge · nivå 1 krävs för ändringar"}
         action={
-          <Link href="/control/admin/log" className="text-xs text-sg-muted hover:text-sg-lime">
+          <Link href="/admin/admin/log" className="text-xs text-sg-muted hover:text-sg-lime">
             Protokoll →
           </Link>
         }

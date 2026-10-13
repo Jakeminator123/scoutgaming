@@ -1,5 +1,5 @@
 import {createHash,createHmac,randomBytes,timingSafeEqual} from 'node:crypto';
-import {STUDIO_ASTRID_VOICE,STUDIO_SPEECH_TEMPLATE_REVISION,studioSpeechLines,studioSpeechBuildCompatibility} from '../../packages/design-preview/admin/lib/studio-speech.mjs';
+import {STUDIO_ASTRID_VOICE,STUDIO_SPEECH_TEMPLATE_REVISION,studioSpeechLines,studioSpeechBuildCompatibility} from '../../web/public/studio-speech.mjs';
 import {canonicalStudioJson,validateActor,validateStudioScope} from '../../web/storage/studio-contract.mjs';
 import {normalizeSpeechPackage} from '../../web/public/speech-package.mjs';
 import {assertNativeStudioRequest,nativeStudioAdminEnabled,studioNativeRuntime} from './studio-native-runtime.mjs';

@@ -167,7 +167,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
           <label>Dealer i registret<select value={dealerId} disabled={Boolean(busy)} onChange={event=>chooseDealer(event.target.value)}>
             <option value="">{mode==='chat'?'Allmän fråga · ingen dealer':'Välj en dealer…'}</option>{catalog.dealers.map(row=><option key={row.id} value={row.id}>{row.label} · {row.id}</option>)}
           </select></label>
-          {!catalog.dealers.length && <p>Inga aktiva dealers finns i registret. Skapa en dealer i <a href="/control/clips">Control</a> först.</p>}
+          {!catalog.dealers.length && <p>Inga aktiva dealers finns i registret. Skapa en dealer i <a href="/admin/clips">Studio</a> först.</p>}
           {dealer && <label className="dealer-import-check" hidden={mode==='chat'}><input type="checkbox" checked={dealerApproved} disabled={Boolean(busy)} onChange={event=>{setDealerApproved(event.target.checked);invalidate();}}/>
             <span>Jag bekräftar att filerna hör till den befintliga dealern <strong>{dealer.label}</strong> ({dealer.id}).</span></label>}
         </section>
@@ -225,11 +225,11 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
           <button disabled={Boolean(busy)||!question.trim()} type="submit">{busy==='chat'?'Svarar…':'Fråga assistenten'}</button></form>
         <p className="dealer-import-help">De senaste fyra lyckade chattutbytena kan följa med som sammanhang. Samtalet och filvalen sparas inte när sidan laddas om.</p>
         <details><summary>Det här ingår i första steget</summary><p>Filnamn och textkontext ger förslag. Du kan granska början och slutet lokalt. Automatisk bildanalys, posebyte och skapande av rum ingår inte ännu.</p><p>Tal och läppsynk behöver matchande text, ljud, video och provspelning.</p></details>
-        <a href={'/control/clips'+(dealerId?'?dealer='+encodeURIComponent(dealerId):'')}>Öppna dealer, tal och läppsynk i Control <ArrowUpRight size={14}/></a>
+        <a href={'/admin/clips'+(dealerId?'?dealer='+encodeURIComponent(dealerId):'')}>Öppna dealer, tal och läppsynk i Studio <ArrowUpRight size={14}/></a>
       </aside></div>
       {error && <p role="alert" className="dealer-import-error dealer-import-panel">{importErrorMessage(error)}</p>}
       {notice && <p role="status" className="dealer-import-notice dealer-import-panel">{notice}</p>}
-      {rows.some(row=>row.state==='error') && <p className="dealer-import-help">Filer med fel försöks inte om automatiskt. Kontrollera <a href={'/control/clips'+(dealerId?'?dealer='+encodeURIComponent(dealerId):'')}>dealerns bibliotek</a> innan du lägger till filen igen.</p>}
+      {rows.some(row=>row.state==='error') && <p className="dealer-import-help">Filer med fel försöks inte om automatiskt. Kontrollera <a href={'/admin/clips'+(dealerId?'?dealer='+encodeURIComponent(dealerId):'')}>dealerns bibliotek</a> innan du lägger till filen igen.</p>}
     </>}
   </section>;
 }

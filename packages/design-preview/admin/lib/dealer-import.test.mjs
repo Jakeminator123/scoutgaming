@@ -84,3 +84,29 @@ test('proposal cannot change saved rows, files, dealer or upload classification'
   assert.equal(next[0].classification,undefined);
   assert.ok(importFileError({name:'unknown.svg',size:100})); assert.ok(importFileError({name:'idle.mp4',size:134217729}));
 });
+
+async function importAssistantHarness(dealers=catalog.dealers){
+  const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
+  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
+  const helpers=await import('./dealer-import.mjs'),module={exports:{}},slots=[],effects=[];let cursor=0;
+  const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
+    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(initial){return slots[cursor++]??={current:initial}},useEffect(effect){effects.push(effect);}};
+  const source=readFileSync(new URL('../components/studio/dealer-import-assistant.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'});
+  runInNewContext(output.code,{module,exports:module.exports,AbortController,URL,URLSearchParams,crypto:globalThis.crypto,
+    fetch:async()=>Response.json({...catalog,dealers,limits:{...catalog.limits,maxFiles:10},provider:{configured:false}}),require:name=>name==='react'?react
+      :name.includes('upload-native-video.mjs')?{uploadNativeVideo(){throw Error('no upload expected')}}
+      :name.includes('media-upload-batch.mjs')?{uploadMediaBatch(){throw Error('no upload expected')}}
+      :name.includes('dealer-import.mjs')?helpers:require(name)});
+  const render=()=>{cursor=0;return module.exports.DealerImportAssistant({})};
+  const all=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
+  render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
+  return {nodes:predicate=>all(render(),predicate),html:()=>renderToStaticMarkup(render())};
+}
+test('import recovery and dealer links keep the selected registered dealer in Admin',async()=>{
+  const h=await importAssistantHarness();h.nodes(node=>node.type==='select')[0].props.onChange({target:{value:'nora'}});
+  h.nodes(node=>node.type==='input'&&node.props.type==='checkbox')[0].props.onChange({target:{checked:true}});
+  h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[{name:'unsupported.mov',size:100,lastModified:1}]}});
+  const links=h.nodes(node=>node.type==='a');assert.equal(links.length,2);assert.ok(links.every(node=>node.props.href==='/admin/clips?dealer=nora'));
+  assert.match(h.html(),/Filer med fel försöks inte om automatiskt/);assert.doesNotMatch(h.html(),/href="\/control/);
+  const empty=await importAssistantHarness([]);assert.ok(empty.nodes(node=>node.type==='a').every(node=>node.props.href==='/admin/clips'));
+});

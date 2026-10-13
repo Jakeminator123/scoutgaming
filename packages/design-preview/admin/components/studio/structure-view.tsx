@@ -90,7 +90,7 @@ export function StructureView() {
                                   return (
                                     <li key={item.id}>
                                       <Link
-                                        href="/control/clips"
+                                        href="/admin/clips"
                                         onClick={() => studio.selectDealerPath(item.id)}
                                         className={cn(
                                           "group flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-sg-panel",

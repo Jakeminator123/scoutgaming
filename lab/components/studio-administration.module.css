@@ -57,4 +57,10 @@
 .review audio { display: block; max-width: 100%; margin: 12px 0; }
 .review form { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }
 .shell { composes: workspace from './studio-theme.module.css'; padding: 22px 24px 40px; max-width: 1368px; margin: auto; min-height: calc(100vh - 64px); }
+.embedded { composes: workspace from './studio-theme.module.css'; width: 100%; min-width: 0; }
+@media (max-width: 640px) {
+  .embedded .administration { grid-template-columns: minmax(0, 1fr); }
+  .embedded .administration :global(.sg-page-head) { grid-column: 1; grid-row: auto; padding-right: 0; }
+  .embedded .headerActions { grid-column: 1; grid-row: auto; justify-content: flex-start; }
+}
 @media (max-width: 640px) { .shell { padding: 18px 14px 32px; } .section { padding: 14px; } .groups button { flex: 1 1 45%; } .row { display: grid; grid-template-columns: minmax(0, 1fr); } .headerActions { width: 100%; } .inlineForm label { max-width: none; } }

@@ -175,7 +175,7 @@ function DeleteConfirm({ operator, summary, onCancel }: { operator: Operator; su
       <p className="text-xs">
         <span className="font-semibold text-sg-red">{`Radera ${operator.name}? `}</span>
         <span className="text-sg-muted">{summary} Journal och avräkningar ligger kvar enligt lagkrav. </span>
-        <Link href="/control/admin/payments" className="text-sg-muted underline underline-offset-2 hover:text-sg-text">
+        <Link href="/admin/admin/payments" className="text-sg-muted underline underline-offset-2 hover:text-sg-text">
           Se avräkningar
         </Link>
       </p>

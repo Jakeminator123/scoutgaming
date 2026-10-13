@@ -44,7 +44,7 @@ export function ApiAdmin() {
         description="En nyckel och en webhook per spelbolag. Tjänsternas hälsa visas i Drift, här hanteras bara åtkomsten."
         aside={
           gameApi && (
-            <Link href="/control/drift" className="flex items-center gap-2 rounded-md border border-sg-line bg-sg-panel px-3 py-2 text-xs hover:border-sg-lime/50">
+            <Link href="/admin/drift" className="flex items-center gap-2 rounded-md border border-sg-line bg-sg-panel px-3 py-2 text-xs hover:border-sg-lime/50">
               <span className="text-sg-muted">Spel-API</span>
               <StatusBadge status={gameApi.status} />
             </Link>
