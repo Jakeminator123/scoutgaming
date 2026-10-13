@@ -7,6 +7,11 @@ och återgång till idle. Videotid styr hjulstart och kulsläpp; varierad slutvi
 och fart härleds från rundans ID. Fullare landskapsscen/helskärmsknapp; ingen
 ändring av serverns utfall, wallet eller MP4-bytes. 33 riktade spel-/scenprov gröna.
 Full pre-commit för `ed973933`: 3409 pass, 0 fail, 11 skip.
+Efter integration med main `6a9be6d2` passerade full pre-commit för
+`dc764fa16c62247f393a4b36986f43883b871fab`: **3456 pass, 0 fail, 11 skip**.
+Denna kodhead är pushad och PR101 förblir draft. Senare main `4d6b1ebc`
+har en enda ny mergekonflikt i denna handoff; kodkonflikter saknas i merge-tree.
+Ingen ytterligare main-integration görs under parallellt driftsarbete.
 Två sammanhängande UI-rundor med ny frilagd film: 8 svart → 3 röd, saldo
 500 → 495 → 500 USD i isolerad SQLite. Kvitton och bilder sparade privat.
 
