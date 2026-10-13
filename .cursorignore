@@ -67,3 +67,6 @@ vendor/
 # listed here: .cursorindexingignore stops indexing, and an explicit read
 # is allowed. See AGENTS.md.
 /media/.migration/
+
+# Canonical recovery archive; inspect only when needed.
+/arkiv/

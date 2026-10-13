@@ -49,3 +49,7 @@ __pycache__/
 .venv/
 *.tsbuildinfo
 *.log
+
+# Canonical local recovery archive; only the empty folder marker is versioned.
+/arkiv/*
+!/arkiv/.gitkeep

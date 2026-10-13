@@ -2,7 +2,7 @@
 
 ## Adminroboten och separata chattlägen, 13 oktober 2026
 
-Kod i codex/adminrobot, ännu inte driftsatt. Knappen finns på publik sajt,
+Kod i PR #82, ännu inte driftsatt. Knappen finns på publik sajt,
 admin/Studio, partner och spelarsidor. Scoutguiden använder Luna 6 och statisk
 publik kunskap. Inloggad N1 kan välja Adminroboten eller OpenClaw med Sol 6.1/high.
 Klippassistenten behåller sitt separata importflöde; dealerspelchatten och den
@@ -34,6 +34,10 @@ Riktiga syntetiska modellprov genom lokal leverantör gav svar från både
 Sol 6.1 och Luna 6; det verifierar inte Vercels produktionskonfiguration.
 Status-only läsning av levande Gateway gav OpenClaw 2026.9.5, ansluten, och
 alla fem roller på lab-provider/gpt-5.6-terra; inget livebyte gjordes.
+
+Jakobs städriktlinje använder nu rotens gitignorerade arkiv/ som kanonisk
+reservplats; den ersatta assistentbubblans källfil ligger där med ursprunglig
+sökväg. En tom markör versioneras, inget arkivinnehåll.
 
 Kvar: PR-granskning/merge, deployment och liveprov av N1, alla sidytor,
 Studio-konfiguration samt aktuella Gatewaymodeller. Ingen migration behövs.

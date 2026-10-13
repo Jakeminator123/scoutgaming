@@ -71,3 +71,6 @@ vendor/
 /media/**/staging/
 /media/layout.json
 /media/blob-index.json
+
+# Canonical recovery archive; inspect only when needed.
+/arkiv/
