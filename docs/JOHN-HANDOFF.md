@@ -2439,6 +2439,8 @@ MP4/WebM stöds; zip, ljud och transparent assistentimport återstår. Ingen
 publicering, spelacceptans eller läppsynksacceptans sker genom importen.
 
 Lab-produktionsbygge, Admin-typkontroll och frontendens TypeScript har passerat.
+Ordinarie pre-commit på implementationen: 3 414 godkända, 11 skips, 0 fel
+över 72 testgrupper med Node 24.21.0 och fyra lokala arbetare.
 Isolerade webbprov verifierade skapa, arkivera, återställa och mallkoppling utan
 produktionsdata. Bolag & team öppnades i Admin och Dealers → Dragan → import
 behöll rätt dealer. Det senaste filväljarprovet avbröts när webbläsarverktyget
