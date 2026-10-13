@@ -11,16 +11,11 @@ utan att ändra det tidigare paketet. Regressionen föll före rättningen.
 PR #63:s levererade HERO, porträtt och dealergrindar bevaras vid integration.
 Inga mediebytes, produktionsdata eller rumspubliceringar ändras av arbetet.
 
-PR #55:s äldre lobby-UI-ändringar är avgränsade från PR #63: de tre lobbykomponenterna återgår till main och porträtt-/playbackhjälpare som Studio använder ligger under admin/lib med sina tester. Diffen mot main i lobby och test/public-lobby.mjs är tom. Tidigare lobbyversion finns i privat verifierad Git-bundle på checkpoint 6244d13b. Ingen PR63-kod har tagits in.
+## SIDOR3: historisk materialläsning, 13 oktober
 
+Efter #55/c8f9b99 gav verkliga projekt-/videoanrop 200 men katalogen 422 med sanerat studio_native_unavailable; den publika katalogen blev också 503. Hotfixen bevarar historiska frysta spelgrants: nya materialtaggar är diagnostik vid läsning, medan operator-, room-, lane-, dealer- och paketauktoriteten fortsätter styra. inspectPackageRooms rapporterar den precisa typade katalogmismatchen utan att ändra paketet. Admin visar en materialvarning. Samma historiska Blackjack- och Roulette-syskon behåller urval, playUrl och giltig spelstart. Nya publiceringar kontrolleras fortfarande strikt och avvisas med 422 vid fel material. Verkliga struktur-/lagringsfel slår fortsatt igenom.
 
-Aktuell main `d595e6b7` inklusive Control-papperskorg och Labba är förenad. Admin skiljer nu aktiva bolag, papperskorg (verifierad arkivmetadata) och äldre avstängda bolag. Aktiva väljare, strukturkort och antal filtrerar bort arkiverade/avstängda; direkta arkiverade bolagslänkar öppnar inte en dealerbank. 32 riktade katalog-, struktur-, kontext- och lifecycle-API-tester passerade.
-
-Senare produktionsläsning visade Back to Basic i PAOW · Studio. Detta är ett senare val från annan vy; bordsintaget ändrade inga kopplingar. Första serverrenderade biblioteksbesöket gav felreferens 2050080826 och nästa omladdning fungerade. Detta kvarstår som driftfynd; ingen full produktionsacceptans hävdas.
-
-
-Senare HTTP-test täcker v11 GET/HEAD och bevarat v10. Aktuell main `7e417e46` med dealerbild/Labba är förenad. Bolagsvyn reagerar även på paketrevision, status och arkivering när ett bolag utan rum lämnar administrationsrevisionen oförändrad; 14 verkliga lifecycle-API-tester är gröna.
-
+34 riktade tester använder verkliga serialiserade frysta paket, admin/publickatalog och spelstart: oförändrade bytes/data och befintliga grants, samt oförsvagad publiceringsassert. Ingen DB-, schema- eller mediemutation. Faktiskt efter-deploy-200-kvitto och exakt live-rum med taggvarning återstår och ska verifieras innan backend kallas klar.
 
 ## SIDOR3: fem separata bord och förenad papperskorg, 13 oktober
 

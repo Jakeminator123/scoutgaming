@@ -6,6 +6,9 @@ import { addDealer } from '../lib/studio-model.mjs';
 import { parseLobbyCatalog, lobbySelection, playUrlFor } from '../../packages/design-preview/lobby/lib/catalog.mjs';
 import {withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
 import {operatorLifecycleGroups} from '../../packages/design-preview/admin/lib/studio-resource-lifecycle.mjs';
+import {readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {materialSource} from '../../web/public/material-catalog.mjs';
+import {layerAssetPath} from '../../web/presentation-layers.mjs';
 
 function fixture() {
   const f = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'johanna' });
@@ -43,6 +46,21 @@ test('registered admin and published lobby share exact identities without privat
   assert.equal(adminRoom.environment.fixed, choice.room.environmentFixed);
   assert.equal(playUrlFor(choice), '/play/blackjack?operator=north&table=' + f.room.id + '&dealer=johanna');
   assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'johanna' }).dealer, null);
+});
+test('admin and public readers preserve historical sibling grants and expose the new catalogue warning',async()=>{
+  const f=fixture(),frozen=structuredClone(readPackagePresentation(f.pack));
+  const {kind,hasAlpha,...source}=materialSource('blackjack-green-felt');
+  const table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000992',role:'table',label:'Supplied blackjack',...source};table.pathname=layerAssetPath(table);
+  frozen.assets=[...frozen.assets,table];frozen.lanes[0].layers.table={...frozen.lanes[0].layers.table,enabled:true,default:table.id,allowed:[table.id]};
+  const bad={...f.room,id:'historical-roulette',name:'Historical roulette',game:'roulette'};
+  f.administration.rooms.push(bad);f.pack.tables.push(bad.id);f.pack.games.push('roulette');f.pack.branding=withPackagePresentation(f.pack.branding,frozen);
+  const before=JSON.stringify({saved:f.saved,pack:f.pack});
+  const result=await registeredDesignCatalog(f),good=result.administration.rooms.find(row=>row.id===f.room.id),historical=result.administration.rooms.find(row=>row.id===bad.id);
+  assert.equal(good.published,true);assert.equal(good.playable,true);assert.ok(good.playUrl);
+  assert.equal(historical.published,true);assert.equal(historical.playable,true);assert.ok(historical.playUrl);
+  assert.equal(historical.materialWarning,'catalog_game_material_mismatch');
+  assert.deepEqual(result.lobby.catalogs[0].rooms.map(row=>row.id),[f.room.id,bad.id]);
+  assert.equal(JSON.stringify({saved:f.saved,pack:f.pack}),before);
 });
 test('registered catalog exposes protected archive identity separately from legacy suspended companies',async()=>{
   const f=fixture(),archivedAt='2026-10-13T00:00:00.000Z';f.operators[0].status='suspended';
