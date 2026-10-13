@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { suppliedDealerArtwork } from '../../../lobby/lib/dealer-artwork.mjs';
-import { createPortraitPlayback, type PortraitPlayback } from '../../../lobby/hooks/dealer-playback.mjs';
+import { suppliedDealerArtwork } from '../../lib/dealer-artwork.mjs';
+import { createPortraitPlayback, type PortraitPlayback } from '../../lib/dealer-playback.mjs';
 
 type DealerIdentityPortraitProps = { dealer: { id: string; label: string }; className?: string };
 const mediaStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 50%' } as const;

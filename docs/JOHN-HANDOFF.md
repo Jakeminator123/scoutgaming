@@ -1,5 +1,8 @@
 # Aktuell handoff — Scoutgaming
 
+PR #55:s äldre lobby-UI-ändringar är avgränsade från PR #63: de tre lobbykomponenterna återgår till main och porträtt-/playbackhjälpare som Studio använder ligger under admin/lib med sina tester. Diffen mot main i lobby och test/public-lobby.mjs är tom. Tidigare lobbyversion finns i privat verifierad Git-bundle på checkpoint 6244d13b. Ingen PR63-kod har tagits in.
+
+
 Aktuell main `d595e6b7` inklusive Control-papperskorg och Labba är förenad. Admin skiljer nu aktiva bolag, papperskorg (verifierad arkivmetadata) och äldre avstängda bolag. Aktiva väljare, strukturkort och antal filtrerar bort arkiverade/avstängda; direkta arkiverade bolagslänkar öppnar inte en dealerbank. 32 riktade katalog-, struktur-, kontext- och lifecycle-API-tester passerade.
 
 Senare produktionsläsning visade Back to Basic i PAOW · Studio. Detta är ett senare val från annan vy; bordsintaget ändrade inga kopplingar. Första serverrenderade biblioteksbesöket gav felreferens 2050080826 och nästa omladdning fungerade. Detta kvarstår som driftfynd; ingen full produktionsacceptans hävdas.
@@ -15,7 +18,7 @@ fem oförändrade original är registrerade i produktionsbiblioteket och
 återlästa/avkodade efter omladdning: grön filt, svart filt, Oak, Purple Rain
 och Back to Basic. Namn, design-ID, källhashar och upload-ID följer den
 gemensamma katalogen och teknikreferensen. Biblioteket har sju bord inklusive
-de två äldre; nya original är obundna och inga publiceringar ändrades.
+de två äldre; vid intaget var de nya originalen obundna och inga publiceringar ändrades.
 Framtida blinksekvenser dokumenteras som uttryckliga frames med accepterad
 gemensam geometri. Ingen variantkoppling eller blinkuppspelning har skapats.
 
