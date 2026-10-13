@@ -1,5 +1,29 @@
 # Aktuell handoff — Scoutgaming
 
+## Gatewayns monterade diskkatalog, 13 oktober 2026
+
+Det misslyckade operator-modellbytet nådde config.patch men nekades med
+EPERM/fchmod. Läsande SSH med Renders officiella Frankfurt-hostnyckel
+bekräftade /data/openclaw som uid=0, gid=1000, mode=2775; själva
+openclaw.json ägs redan av 1000:1000 med mode=600. Byggnadens chown sker
+innan Render monterar disken och kan därför inte ge katalogen rätt ägare.
+
+Imagen startar nu en rootägd bootstrap som öppnar exakt mountkatalogen utan
+att följa symlänkar, ändrar bara dess ägare/grupp till 1000:1000 och därefter
+släpper grupper/gid/uid innan den befintliga starten importeras. Bootstrapens
+föräldrakatalog ägs också av root; node kan inte ersätta bootstrapfilen.
+Gateway, helper och konfigläsning körs som node. Ingen rekursiv chown/chmod,
+konfigflytt, sessionradering, credential- eller modelländring införs. Direkt
+start av Gateway som root nekas även om Dockerkommandot skulle åsidosättas.
+Live Render-konfiguration har inget sådant kommandoöverskrivande.
+
+37 fokuserade bootstrap/startup/runtime/handoff-tester passerade. Ett isolerat
+Ubuntu/Node 22.22-prov återskapade en rootägd 2775-katalog och verifierade
+uid/gid/ägare 1000, efterföljande chmod 0700, bevarade konfigbytes och ny
+skrivning. Barnprocessen kunde inte återta uid 0; testkatalogen städades.
+Ny Gatewaydeploy krävs; loggen ska visa runtime uid=1000 gid=1000, och sedan
+ska N1-modellbytet provas med färsk revision och uttrycklig återläsning.
+
 ## OpenClaw-länk och webbläsarklocka, 13 oktober 2026
 
 Efter #83 driftsatts gav både Director-provet och sajtens N1-POST HTTP 200
