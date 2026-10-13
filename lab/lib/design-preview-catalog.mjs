@@ -1,7 +1,7 @@
 import { createPublicOperatorRooms, isUnplayableOperatorRooms } from '../../web/public-operator-rooms.mjs';
 import { validatePublicOperatorRooms } from '../../web/public/operator-rooms-contract.mjs';
 import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
-import { isPresentationRoom, roomGame, resolvePackageRoom } from '../../web/presentation-room-contract.mjs';
+import { isPresentationRoom, roomGame, inspectPackageRooms } from '../../web/presentation-room-contract.mjs';
 import { readPackagePresentation } from '../../web/storage/presentation-package.mjs';
 import { readOperatorLifecycle } from '../../web/storage/operator-lifecycle.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
@@ -39,6 +39,8 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
       administrationRevision: saved.administrationRevision, configurationSource: saved.configurationSource }),
   } });
   const catalogs = [], unavailableOperators = [];
+  const publications=new Map(operators.map(operator=>[operator.id,new Map(inspectPackageRooms({administration:saved.administration,
+    package:packages.get(operator.id),operatorId:operator.id}).map(row=>[row.room.id,row]))]));
   for (const operator of operators.filter(row => row.status === 'active')) {
     try {
       const value = await roomReader.read(operator.slug);
@@ -62,7 +64,8 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     const operator = operators.find(item => item.id === row.operatorId);
     const pack = packages.get(row.operatorId);
     const frozen = pack ? readPackagePresentation(pack) : null;
-    const published = Boolean(pack && resolvePackageRoom({ administration: saved.administration, package: pack, operatorId: row.operatorId, roomId: row.id }));
+    const publication=publications.get(row.operatorId)?.get(row.id);
+    const published = Boolean(publication);
     const playable = catalogs.find(item => item.operator.slug === operator?.slug)?.rooms.find(item => item.id === row.id);
     const composition = compositions.find(item => item.id === row.presentationLaneId);
     const frozenLane = published ? frozen.lanes.find(item => item.id === row.presentationLaneId) : null;
@@ -72,7 +75,8 @@ export async function registeredDesignCatalog({ store, policy, now = Date.now })
     return { id: row.id, name: row.name, operatorId: row.operatorId, game: roomGame(row), state: row.state,
       compositionId: row.presentationLaneId, laneId: row.gameLaneId, published, playable: Boolean(playable),
       dealerIds, dealers: roomDealers, dealerSource: published ? 'published' : 'saved',
-      playUrl: playable?.playUrl ?? null };
+      playUrl: playable?.playUrl ?? null,
+      ...(publication&&!publication.materialsCompatible?{materialWarning:'catalog_game_material_mismatch'}:{}) };
   });
   const result = { schemaVersion: 1, source: 'registered', readAt: new Date(now()).toISOString(),
     administration: { revisions: { project: saved.projectRevision, administration: saved.administrationRevision },

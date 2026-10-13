@@ -61,7 +61,9 @@ blinksekvens. Sekvensmodell, redigerare och uppspelning är framtida arbete.
 
 `web/presentation-material-game.mjs` kontrollerar kända källhashar, lagerroll,
 metadata och spelets tillåtna bord på servern före rums-/paketpublicering
-och vid läsning av paketets rum. Även tillåtna valpooler kontrolleras.
+och vid återpublicering. Även tillåtna valpooler kontrolleras. Historiska
+frysta paket behåller sin befintliga operator-/rum-/dealerauktoritet; nya
+katalogtaggar visas som designvarning och återkallar inga gamla spelgrants.
 Namnbyte eller felaktigt deklarerade dimensioner kan inte göra de nya
 blackjackborden till roulettebord. Äldre okatalogiserade tillgångar behåller
 sitt befintliga kontrakt och behöver separat granskad klassificering.
