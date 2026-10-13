@@ -1,6 +1,6 @@
 # Terminologi
 
-Aktiv ordlista, samordnad med lokal Studio-kod 12 oktober 2026. Namnen gäller
+Aktiv ordlista, samordnad med N1-målkontraktet 13 oktober 2026. Namnen gäller
 dokumentation och nya gränssnitt; produktionsstatus finns i
 [handoffen](../../docs/JOHN-HANDOFF.md) och handhavande i [guiden](README.md).
 
@@ -8,23 +8,33 @@ dokumentation och nya gränssnitt; produktionsstatus finns i
 
 | Namn | Vem | Adress |
 |---|---|---|
-| Kontrollrum, nivå 1 | Intern personal | `/control` |
+| Intern administration / kontrollrum, nivå 1 | Intern personal | `/admin`; `/control` bevaras under övergången |
 | Partnerportal, nivå 2 | Operatörens personal | `/partner/{operatorSlug}` |
-| Spelaryta, nivå 3 | Spelare: lobby, profil och historik | `/play` |
-| Spelklient | Spelaren vid bordet | `/play/blackjack` |
+| Spelaryta, nivå 3 | Spelare: lobby, profil och historik | `/lobby`; äldre `/play`-länkar bevaras |
+| Spelklient | Spelaren vid bordet | `/play/blackjack`, `/play/roulette`; spelmotorn finns på Render |
 
 Servern kontrollerar identitet, rättighet, medlemskap och resursägarskap.
-Produktåtkomst och repobehörighet är separata. `/studio` är ett tekniskt basePath.
+Produktåtkomst och repobehörighet är separata. Studio är innehållsredigering
+inom nivå 1. `/studio` är ett tekniskt basePath, inte en fjärde produktnivå.
+Nya N1-ytor använder `/admin`; fungerande äldre routes, inloggningar och
+sparade spellänkar får inte beskrivas som redan avvecklade.
 
 ## Ett sammanhängande flöde
 
-**Dealer → sammansättning → spelrum hos ett spelbolag → partnerportal och spelare.**
+**Spelbolag → rum (= bakgrundsmiljö) → spel → uttryckligt tillåtna bord och dealerklippsuppsättningar.**
 
-Studio äger det gemensamma innehållet. En **sammansättning** samlar dealer, bord, bakgrund och bolagets tillåtna val. Ett **spelrum** är bolagets spelbara ingång till en publicerad version av sammansättningen. Flera rum kan använda samma sammansättning. **Bord** betyder det visuella bordslagret; i menyerna heter den spelbara resursen alltid **spelrum**.
+Detta är målmodellen för nya admin. Ett bolagsägt rum kan ha flera spel med
+separata spelbindningar. Rum, bakgrundstillgång, bord, dealer och sammansättning
+har olika identiteter. Ett bord är ett visuellt förgrundslager, aldrig ett rum.
+En sammansättning beskriver presentationen med valda lager och profiler.
+Bakgrunder kan återanvändas mellan spel; bord/dealerklipp måste vara uttryckligt
+tillåtna för respektive spel. Äldre enspelsrum och frysta paket behåller sina
+ID:n. Detta är inte ett kvitto på färdig multi-game-migrering; följ
+[runtimekontraktet](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 **Bolag & team** hanterar organisation och åtkomst. **Spelrum & publicering** hanterar samma bolags spelutbud. Valt bolag följer länkarna. Partnerns **Spelrum** visar samma rum och tillåtna val, utan en separat kopia av innehållet. **Provspelning & logg** hör till den valda dealern eller det valda rummet och visar observerad uppspelning, inte global drift.
 
-**Arkivera** döljer och avaktiverar en resurs med dess historik bevarad. Ett återställt spelrum blir väntande och öppnas separat. Ett återställt bolag återfår åtkomst, inklusive rum som tidigare var öppna. Dealerarkivering samlar AI-avstängning, klipp, berörda sammansättningar och avpublicering av spelrum i en bekräftad åtgärd. Återställning ger utkast med tal avstängt och öppnar inga rum. Permanent mediaradering är en separat, beroendekontrollerad åtgärd.
+**Arkivera** döljer och avaktiverar en resurs med dess historik bevarad. Ett återställt spelrum blir väntande och öppnas separat. Bolagets papperskorg kopplar loss dess rum; återställning av bolaget öppnar inga rum automatiskt. Dealerarkivering samlar AI-avstängning, klipp, berörda sammansättningar och avpublicering av spelrum i en bekräftad åtgärd. Återställning ger utkast med tal avstängt och öppnar inga rum. Permanent mediaradering är en separat, beroendekontrollerad åtgärd.
 
 ## Begrepp
 
@@ -70,7 +80,8 @@ Studio äger det gemensamma innehållet. En **sammansättning** samlar dealer, b
 | Preview clip | Förhandsvisa klipp | Lokalt provval; publicerar eller binder inget runtimeklipp. |
 | Composition | Sammansättning | Nivå 1:s gemensamma redigering av dealer, bord, bakgrund samt storlek och placering per format. Namnet väljs av användaren; ett stabilt tekniskt ID skapas automatiskt. Geometrin fryses vid publicering; nivå 2 väljer tillåtna, kompatibla alternativ. |
 | Publish | Publicering | Fryser sparade presentationer i ett bolagspaket. |
-| Room / table | Spelrum | Bolagsägd spelresurs med eget stabilt ID. Kopplar en publicerad sammansättning till intern uppspelningskonfiguration. |
+| Room | Spelrum / miljö | Bolagsägd spelresurs med eget stabilt ID och separata spelbindningar i målmodellen. Äldre enspelsrum bevaras. |
+| Table asset | Bord | Spelspecifikt visuellt förgrundslager med egen identitet. Äldre URL-parametern `table` anger däremot ett verkligt rums-ID; den döps inte om här. |
 | Frozen dealer idle | Publicerad grundloop | Egen dealers exakt registrerade film, filhash och inställningar vid publicering; påverkas inte av senare utkast. |
 | Frozen dealer events | Publicerade händelseklipp | Paket v3 fryser egna dealers sparade händelsekopplingar, grundloopschema och exakta filmer. Biblioteksklipp utan koppling eller schemaval ingår inte. V2-paket behöver återpubliceras, och runtime måste stödja v3. |
 | Dealer idle policy | Dealerns grundloopschema | Separat sparade basklipp och variationer med Automatik, OpenClaw eller Bara manuellt. Samma uppspelningsstyrning används för varje dealer. Egna dealers stöder även Regler med explicit sparat villkor för utdelning/vändning och Klippval=Regler. Grunddealerns äldre idleeditor har inte den regelkopplingen. |

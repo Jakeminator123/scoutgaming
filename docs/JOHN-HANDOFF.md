@@ -1,5 +1,45 @@
 # Aktuell handoff — Scoutgaming
 
+## Nästa agent: roulette i N1:s Labba-yta
+
+Utgå från `/admin` och befintlig Labba/Sammansättningar; `/control` är kvar
+under övergången. N1 är intern administration, Studio är innehållsredigering
+inom N1, N2 är partner och N3 spelare. Målmodellen är spelbolag → rum/miljö
+→ spel → uttryckligt tillåtna bord/dealerklippset. Ändra inte legacy-ID:n
+eller kalla multi-game-lagringen färdig. Se den rättade
+[ordlistan](../lab/docs/TERMINOLOGI.md) och runtimekontraktet.
+
+Uppdrag: återanvänd laborationsytan för roulette och visa samma scen på
+mobil/desktop, utan nya hjul-/kulanimationer eller betalda genereringsjobb.
+Bakgrund är ett separat återanvändbart bild-/MP4-miljölager; blackjack och
+roulette har egna bord och geometrier. Samma dealerfilm och avkodade frame
+används för kropp bakom bordet och maskerade händer/armar framför.
+
+Senaste privata provprofilen är logisk **1920×1080**, origo uppe till vänster:
+bord `(x=134,4; y=270; bredd=1651,2)`, Anna VILA/nya landskapsklipp
+`(580; 42; 1104)`, ursprunglig porträtt-hjulstart `(551; −82; 1048)`.
+Höjd följer respektive källformats proportioner. Mobil skalar samma scen
+och kan använda närbild, utan ny dealerfilm. Detta är provvärden; gesten
+träffar ännu inte hjulet korrekt och handmasken är heuristisk.
+
+Det äldre underlagets bord på 2,4×1,35 meter, 25–30° kameravinkel,
+desktop-/mobilhörn och centrerade dealer är produktionsförslag, inte denna
+provprofil. Blanda inte heller den äldre handkontaktguidens `(960,330)` /
+skala 2/3 med profilen ovan. Befintliga filmer har uppmätta mått och 24 fps;
+ändra inte mått, bildkvot eller position utifrån filnamn. 4K/16:9 och 30 fps
+är ett tidigare föreslaget miljömasterformat, inte ett verifierat krav för
+dessa klipp. Format/promptar finns i rouletteunderlaget; aktuell PostgreSQL-
+formatgräns finns nedan och i CLOUD-MIGRATION.
+
+Kvar: bygg/kalibrera återanvändbar roulette-Labba med bevarad
+operator/room/game/composition/dealer-kontext och växling tillbaka till
+editorn. Använd privat stillbild/MP4/WebM-prov; ingen produktionsregistrering
+av PNG/ljud, publicering eller saldoändring. PR #61:s assistent/importflöde
+är en separat leverans. Serverkvitto/rund-ID ska styra framtida hjulgest och
+0–36-filmval; återförsök behåller requestId/version/satsningar. Saknade filmer
+ger stillbord och resultattext. 37-filmsbank, handträff, sömlösa loopar och
+produktionsacceptans för Anna är fortfarande **inte godkända**.
+
 ## Tillägg 13 oktober: faktisk MIME-gräns i PostgreSQL
 
 PR #65:s PNG-/ljudregistrering är **inte färdig för PostgreSQL**. Migration
