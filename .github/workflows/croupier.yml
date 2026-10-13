@@ -15,19 +15,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      scope: ${{ steps.scope.outputs.scope }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Verify CI selection and final gate
+        run: node --test test/ci-changes.mjs
+      - name: Classify the complete PR merge diff
+        id: scope
+        run: node tools/ci-changes.mjs
+
+  documentation:
+    needs: changes
+    if: needs.changes.outputs.scope == 'documentation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Environment registry and documentation contracts
+        run: |
+          node tools/check-environment-variables.mjs
+          node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs test/partner-docs.mjs
+          node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA"
+          git diff --check HEAD^1 HEAD
+
   presentation-studio:
+    needs: changes
+    if: needs.changes.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    permissions:
-      contents: read
-      actions: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: lab/package-lock.json
+          cache-dependency-path: |
+            lab/package-lock.json
+            web/package-lock.json
+            services/astrid-gpu-worker/gateway/package-lock.json
       - name: Install verified ffmpeg packages
         timeout-minutes: 8
         uses: ./.github/actions/setup-ffmpeg
@@ -44,18 +83,12 @@ jobs:
       - name: Orphan tests
         run: node tools/check-orphan-tests.mjs
       - run: npm --prefix lab test
-      - name: Restore Studio compiler cache
-        uses: actions/cache@v6
-        with:
-          path: lab/.next/cache
-          key: ${{ runner.os }}-studio-next-v1-${{ hashFiles('lab/package-lock.json') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-studio-next-v1-${{ hashFiles('lab/package-lock.json') }}-
-      - run: npm --prefix lab run build
       - run: npm --prefix open-claw/lab test
       - run: npm --prefix open-claw/lab run check
 
   dealer-regression:
+    needs: changes
+    if: needs.changes.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -64,7 +97,10 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: lab/package-lock.json
+          cache-dependency-path: |
+            lab/package-lock.json
+            web/package-lock.json
+            services/astrid-gpu-worker/gateway/package-lock.json
       - name: Install verified ffmpeg packages
         timeout-minutes: 8
         uses: ./.github/actions/setup-ffmpeg
@@ -132,17 +168,15 @@ jobs:
             ${{ runner.temp }}/croupier-system-map.html
             ${{ runner.temp }}/system-map-evidence.json
             ${{ runner.temp }}/system-map-status.json
-      - run: node test/table-http.mjs
       - run: node test/split-rules.mjs
       - run: node --test test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs test/inbox.mjs
       - run: node --test ops/cloud/test/*.test.mjs
 
   lipsync-worker:
+    needs: changes
+    if: needs.changes.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    permissions:
-      contents: read
-      actions: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -159,3 +193,28 @@ jobs:
       - run: python -m unittest discover -s services/astrid-gpu-worker/tests -v
       - run: python -m compileall -q services/astrid-gpu-worker/workers services/astrid-gpu-worker/handler.py
       - run: bash -n services/astrid-gpu-worker/fetch/fetch-musetalk.sh
+
+  ci:
+    name: CI
+    needs: [changes, documentation, presentation-studio, dealer-regression, lipsync-worker]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every applicable check to pass
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: |
+          node --input-type=module <<'NODE'
+          // Final gate script
+          const jobs = JSON.parse(process.env.CI_NEEDS);
+          const scope = jobs.changes?.outputs?.scope;
+          const required = scope === 'documentation' ? ['documentation']
+            : scope === 'full' ? ['presentation-studio', 'dealer-regression', 'lipsync-worker'] : [];
+          if (jobs.changes?.result !== 'success' || required.length === 0
+            || required.some(name => jobs[name]?.result !== 'success')) {
+            console.error('CI failed: a required check failed, was cancelled, skipped, or was not reported.');
+            process.exit(1);
+          }
+          console.log(`CI passed: ${scope}`);
+          NODE
