@@ -614,3 +614,30 @@ Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepak
 eller publika loggar. Aktuella runtimekontrakt finns i
 [presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md);
 OpenClaws versionsbundna källor nås via [dess källindex](../../open-claw/lab/docs/README.md).
+
+## Välj dealerns röst
+
+I Admins befintliga **Röst & tal**, och i Controls **Röst och läppsynk**,
+finns samma kompakta röstväljare. Välj **Paow** eller **Dragge** och röstspråk.
+Original-ID, modell och prövade inställningar fylls i tillsammans. Paow
+använder Eleven v3 för svenska och Multilingual v2 för andra språk; Dragge
+använder Multilingual v2. **Astrid · Victoria** behåller Astrids befintliga
+Cartesia-röst. Ett namn kan ge ett förslag, men ingen röst väljs automatiskt.
+Egna profiler finns kvar och kan redigeras under **Detaljer**.
+
+Lägg talprofilen i projektutkastet och spara projektet. En redan sparad,
+oförändrad egen videoreferens kan behållas vid röstbyte. Ändrad referens eller
+ny begäran om AI-tal kräver bildgranskning. Röstvalet startar ingen betald
+generering och intygar inte åtkomst till leverantörens konto eller godkänd
+läppsynk. Servern verifierar den exakta rösten och bilden före varje session.
+
+Katalogen är `web/public/dealer-voice-catalog.json`; den innehåller offentliga
+röst-ID:n och modellinställningar, inga API-nycklar. Den sparade profilen
+innehåller exakta värden, så en katalogändring skriver inte om gamla profiler.
+
+Samma dealerprofil kan förberedas för blackjack och roulette/body-dealers.
+Det fungerande strömmande chattsvaret använder fortfarande den gemensamma
+ljud-/videospelaren. Roulettes spelvy saknar ännu dealerchatt och den
+serverägda roulettekontext som behövs för den; ett sparat röstval aktiverar
+inte det flödet. Naturligt rörligt kroppsunderlag är fortsatt förberedelse,
+inte verifierad rörlig läppsynk. **Talbibliotek** är en separat, hopfälld del.

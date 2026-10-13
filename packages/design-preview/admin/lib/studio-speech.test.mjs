@@ -28,16 +28,19 @@ test('media previews reject arbitrary providers, cross-origin and credential lin
 
 async function panelHarness(){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
-  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../web/public/studio-speech.mjs'),profile=await import('../../../../web/public/dealer-speech-profile.mjs');
+  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../web/public/studio-speech.mjs'),profile=await import('../../../../web/public/dealer-speech-profile.mjs'),voices=await import('../../../../web/public/dealer-voice-catalog.mjs');
+  const pickerModule={exports:{}},pickerSource=readFileSync(new URL('../../../../lab/components/dealer-voice-picker.tsx',import.meta.url),'utf8');
+  runInNewContext(transformSync(pickerSource,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module:pickerModule,exports:pickerModule.exports,require:name=>name.includes('dealer-voice-catalog.mjs')?voices:require(name)});
+  const {DealerVoicePicker}=pickerModule.exports;
   const source=readFileSync(new URL('../components/studio/studio-speech-panel.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),slots=[],effects=[];
   let cursor=0,queue=[],calls=[];const module={exports:{}};
   const fakeReact={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next}]},useRef(initial){const index=cursor++;return slots[index]??={current:initial}},useEffect(effect,deps){const index=cursor++,previous=effects[index];if(!previous||deps.some((value,i)=>!Object.is(value,previous.deps[i])))queue.push({index,effect,deps})}};
-  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});
+  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-catalog.mjs')?voices:name.includes('studio-speech.mjs')?helpers:name.includes('dealer-speech-profile.mjs')?profile:require(name),AbortController,fetch:async(url,init)=>{calls.push({url,init});return {ok:true,json:async()=>({plan:{dealerId:'astrid',revision:'r2',configured:false,lines:[],voice:STUDIO_ASTRID_VOICE}})}}});
   const props={project:{schemaVersion:1,revision:'r1',dealers:[{id:'astrid',label:'Astrid'}]},inventory:{videos:[]},dealerId:'astrid',blocked:false,projectDirty:true,onEdit:next=>{props.project=next},onDirtyChange:dirty=>{props.profileDirty=dirty}};
   const render=()=>{cursor=0;return module.exports.StudioSpeechPanel(props)},flush=()=>{const pending=queue;queue=[];for(const item of pending){effects[item.index]?.cleanup?.();effects[item.index]={deps:item.deps,cleanup:item.effect()}}};
-  const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
+  const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):node.type===DealerVoicePicker?nodes(DealerVoicePicker(node.props),predicate):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
   const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
-  const field=(tree,label)=>nodes(nodes(tree,node=>node.type==='label'&&text(node).startsWith(label))[0],node=>['input','select'].includes(node.type))[0];
+  const field=(tree,label)=>nodes(nodes(tree,node=>node.type==='label'&&text(node).trimStart().startsWith(label))[0],node=>['input','select'].includes(node.type))[0];
   const button=(tree,label)=>nodes(tree,node=>node.type==='button'&&text(node).startsWith(label))[0];
   return {props,render,flush,field,button,nodes,calls};
 }
@@ -53,6 +56,38 @@ test('speech profile stages while shared project is dirty; generation waits for 
 test('unrelated project revision does not erase unstaged voice fields',async()=>{
   const h=await panelHarness();h.render();h.flush();let tree=h.render();h.field(tree,'Voice-ID').props.onChange({target:{value:'own-unsaved-voice'}});tree=h.render();h.flush();assert.equal(h.props.profileDirty,true);
   h.props.project={...h.props.project,revision:'unrelated-r2',clipLabels:{'other-clip':'New label'}};tree=h.render();h.flush();tree=h.render();assert.equal(h.field(tree,'Voice-ID').props.value,'own-unsaved-voice');assert.equal(h.button(tree,'Förbered').props.disabled,true);
+});
+
+for(const game of ['blackjack','roulette'])test(`${game} body dealer chooses an original voice in one menu without activation or generation`,async()=>{
+  const h=await panelHarness();h.props.game=game;h.props.dealerId='body-7';h.props.project={...h.props.project,dealers:[{id:'body-7',label:'Paow'}]};
+  h.render();h.flush();let tree=h.render();
+  assert.equal(h.field(tree,'Röst').props.value,'','a suggested name does not assign a voice');
+  h.field(tree,'Röst').props.onChange({target:{value:'paow'}});tree=h.render();h.flush();tree=h.render();
+  assert.equal(h.field(tree,'Voice-ID').props.value,'WZVEBKUreb9jAKojf0QF');assert.equal(h.field(tree,'Röstmodell').props.value,'eleven_v3');
+  assert.equal(h.field(tree,'Stabilitet').props.value,'0.5');assert.equal(h.field(tree,'Begär AI-tal').props.checked,false);
+  assert.equal(h.nodes(tree,node=>node.type==='details'&&node.props.open===true).length,0,'known voice details stay compact');
+  h.field(tree,'Röstspråk').props.onChange({target:{value:'en'}});tree=h.render();
+  assert.equal(h.field(tree,'Röstmodell').props.value,'eleven_multilingual_v2');assert.equal(h.field(tree,'Stil').props.value,'0.3');
+  h.button(tree,'Lägg talprofil').props.onClick();tree=h.render();h.flush();tree=h.render();
+  const profile=h.props.project.dealers[0].speechProfile;
+  assert.equal(profile.state,'preparation');assert.equal(profile.reference,null);assert.equal(profile.voice.language,'en');assert.equal(profile.voice.settings.stability,.38);
+  assert.equal(h.calls.length,0,'choosing and saving a preset makes no provider/build request');
+  h.field(tree,'Röst').props.onChange({target:{value:'dragge'}});tree=h.render();
+  assert.equal(h.field(tree,'Voice-ID').props.value,'7f95xPL4S3ySZ4OS1pw8');assert.equal(h.field(tree,'Stil').props.value,'0.15');
+  h.field(tree,'Voice-ID').props.onChange({target:{value:'other-owned-voice'}});tree=h.render();
+  assert.equal(h.field(tree,'Egna röstinställningar').props.checked,false,'another voice never inherits the original clone tuning');
+});
+
+test('changing only a voice preserves an unchanged own reference; replaced bytes require a fresh preview',async()=>{
+  const h=await panelHarness(),ref={kind:'video-frame',videoId:'paow-idle',sha256:'a'.repeat(64),offsetMs:200};
+  h.props.dealerId='paow';h.props.project={...h.props.project,dealers:[{id:'paow',label:'Paow',speechProfile:{schemaVersion:2,state:'preparation',voice:{provider:'elevenlabs',voiceId:'older',modelId:'eleven_v3'},reference:ref}}]};
+  h.props.inventory.videos=[{id:ref.videoId,dealer:'paow',available:true,bytes:100,sha256:ref.sha256}];
+  h.render();h.flush();let tree=h.render();h.field(tree,'Röst').props.onChange({target:{value:'paow'}});tree=h.render();
+  assert.equal(h.button(tree,'Lägg talprofil').props.disabled,false);h.button(tree,'Lägg talprofil').props.onClick();
+  assert.deepEqual(h.props.project.dealers[0].speechProfile.reference,ref);
+  tree=h.render();h.flush();tree=h.render();h.props.inventory.videos[0].sha256='b'.repeat(64);tree=h.render();
+  h.field(tree,'Röst').props.onChange({target:{value:'dragge'}});tree=h.render();assert.equal(h.button(tree,'Lägg talprofil').props.disabled,true);
+  h.button(tree,'Lägg talprofil').props.onClick();assert.equal(h.props.project.dealers[0].speechProfile.voice.voiceId,'WZVEBKUreb9jAKojf0QF');
 });
 test('roulette selects only unchanged game-neutral SV/EN library captions; Blackjack keeps 17',()=>{
   assert.deepEqual(studioSpeechLineIds('roulette'),['placebets','goodluck','chatter2','farewell']);

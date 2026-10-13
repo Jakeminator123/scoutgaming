@@ -1917,3 +1917,34 @@ ur trädet. Ingen ny plats är känd.
 ## 4. Äldre avsnitt
 
 Äldre avsnitt: `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
+
+## Kompakt gemensamt röstval, 13 oktober 2026
+
+Eget worktree från main b76510af. Admins befintliga Röst & tal och Controls
+Röst och läppsynk använder samma kontrollerade väljare. Ingen ny sidomeny.
+Offentliga original-ID:n och Kevins tuning finns i
+`web/public/dealer-voice-catalog.json`: Dragge 7f95xPL4S3ySZ4OS1pw8
+(multilingual v2), Paow WZVEBKUreb9jAKojf0QF (v3 för sv, annars v2).
+Astrid/Victoria hämtas från befintlig kanonisk Cartesia-profil.
+
+Namn ger endast förslag. Val fyller i exakta värden i utkastet; egna profiler
+och sparade referenser bevaras, ingen befintlig profil migreras. Modell, ID
+och tuning ligger under Detaljer. Talbiblioteket är hopfällt. Oförändrad egen
+referens kan behållas vid enbart röstbyte; nya bytes eller ny talaktivering
+kräver referensgranskning. Serverns ägarskap, hashvalidering, CAS och
+providerverifiering är oförändrade. Inga nycklar, flaggor eller media ändras.
+
+Verifiering dokumenteras i PR:en: fokuserade UI-/profilprov, Admin- och
+Studio-byggen, typkontroll och isolerad Edge-fixtur med de verkliga
+komponenterna på desktop/mobil. Fixturen väljer Paow, växlar SV/EN och sparar
+exakt profil utan provideranrop. Detta är inte betald TTS/GPU eller visuell
+läppsynkacceptans. Full ordinarie precommit och GitHub CI krävs före leverans.
+
+Runtimegränsen är viktig: generisk registrerad dealerström finns, men
+roulettevyn saknar dealerchatt. Nuvarande chattautorisering kräver blackjack
+och läser blackjackrundan. Roulettes publicerade scen är en tyst idle-spelare.
+Full rouletteparitet behöver en serverägd roulettechattkontext, samma
+bundna strömticket/avbrytning och integrering i scenens gemensamma kompositor.
+Det får inte lösas genom att skicka blackjackkontext eller lägga ljud på en
+fortsatt idle-loop. Rörlig body-läppsynk och protokoll-3-worker i drift
+behöver fortfarande verifieras med exakt dealerreferens och två spelningar.

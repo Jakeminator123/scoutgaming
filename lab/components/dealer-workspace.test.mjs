@@ -16,6 +16,11 @@ const realStudioTypes=(()=>{
   const output=transformSync(source,{filename:'studio-types.ts',jsc:{parser:{syntax:'typescript'}},module:{type:'commonjs'}});
   const module={exports:{}};vm.runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,require});return module.exports;
 })();
+const realVoicePicker=(()=>{
+  const source=readFileSync(new URL('./dealer-voice-picker.tsx',import.meta.url),'utf8');
+  const output=transformSync(source,{filename:'dealer-voice-picker.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+  const module={exports:{}};vm.runInNewContext(output.code,{module,exports:module.exports,require});return module.exports.DealerVoicePicker;
+})();
 const empty = () => null;
 const marker = name => props => React.createElement('div', { 'data-component': name, 'data-dealer': props.dealerId }, props.slotEditor);
 function harness(file, initialStates = [], overrides = {}) {
@@ -37,6 +42,7 @@ function harness(file, initialStates = [], overrides = {}) {
     './dealer-forge-page': {DealerMaterialCreator: marker('dealer-material')},
     './dealer-registration': {DealerRegistration: empty},
     './dealer-speech-settings': {DealerSpeechSettings: marker('speech-settings')},
+    './dealer-voice-picker': {DealerVoicePicker:realVoicePicker},
     './studio-navigation': {StudioNavigation: props => React.createElement('nav', {'aria-label':'Dealerflikar'}, studioNavigationTabs(props).map(tab => React.createElement('a', {key:tab.id,href:tab.href,'aria-current':tab.id===props.active?'page':undefined,onClick:event=>props.onNavigate(event,tab.href)},tab.label)))},
     './dealer-removal': {DealerRemoval: marker('remove-dealer')},
     './registered-idle-editor': {RegisteredIdleEditor: marker('own-idle')},
@@ -63,6 +69,7 @@ function harness(file, initialStates = [], overrides = {}) {
 function nodes(node, predicate) {
   if (!node || typeof node !== 'object') return [];
   if (Array.isArray(node)) return node.flatMap(child => nodes(child, predicate));
+  if (node.type===realVoicePicker) return nodes(realVoicePicker(node.props),predicate);
   return [...(predicate(node) ? [node] : []), ...nodes(node.props?.children, predicate), ...nodes(node.props?.slotEditor, predicate)];
 }
 function pressDealer(tree, label) {
@@ -387,8 +394,8 @@ test('unapplied actual speech edits protect dealer and route exits, remain acros
   pressDealer(tree,'Mei');render();assert.equal(h.state('dealerId'),'vera');assert.match(h.state('notice'),/talformuläret/);
   nodes(form,node=>node.type==='button'&&node.props.children==='Ångra ändringar i talformuläret')[0].props.onClick();render();assert.equal(h.state('speechDraft'),false);assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'');
   const clean={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(clean);assert.equal(clean.blocked,undefined);
-  nodes(form,node=>node.type==='select'&&node.props.children.some?.(option=>option.props?.value==='cartesia'))[0].props.onChange({target:{value:'cartesia'}});
-  input('Röstens ID, ingen API-nyckel').props.onChange({target:{value:'  chosen-voice  '}});input('Modellens ID').props.onChange({target:{value:'chosen-model'}});render();assert.equal(h.state('speechDraft'),true);
+  nodes(form,node=>node.type==='select'&&node.props.children.some?.(option=>option.props?.value==='cartesia'))[0].props.onChange({target:{value:'cartesia'}});render();
+  input('Röstens ID, ingen API-nyckel').props.onChange({target:{value:'  chosen-voice  '}});render();input('Modellens ID').props.onChange({target:{value:'chosen-model'}});render();assert.equal(h.state('speechDraft'),true);
   nodes(form,node=>node.type==='button'&&node.props.children==='Använd talunderlag i utkastet')[0].props.onClick();render();assert.equal(h.state('speechDraft'),false);
   const savedProfile=h.state('project').dealers.find(row=>row.id==='vera').speechProfile;assert.equal(savedProfile.voice.voiceId,'chosen-voice');assert.equal(savedProfile.state,'preparation');assert.equal(savedProfile.reference,null);assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'chosen-voice');assert.deepEqual(assigned,[]);
   const projectDirty={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(projectDirty);assert.equal(projectDirty.blocked,true,'applied project changes still need explicit save');
