@@ -114,8 +114,15 @@ projektvägen får inte kringgå materialens livscykelkontroll.
 
 Synliga gamla Mobile Phone Lane-namn i biblioteksreferenser och speltitel
 visas som Standardsammansättning. Det interna `mobile-phone`-ID:t behålls.
-Rensning av återstående Your Company-varianter är inte utförd: de har
-referenser som nu kan visas och hanteras i det nya bekräftelseflödet.
+Your Company-rensningen är utförd i produktion den 13 oktober: bakgrund
+`c0035fc4-cb47-45dc-83de-adb44c14e9fd` flyttades via `/admin/assets` och
+`6cd2bf56-4d42-4c7b-848a-087398b38563` via `/control/library`. Varje färsk
+påverkanskontroll visade endast Standardsammansättning och inga publicerade
+spelrum. Båda vyerna återlästes efter omladdning: 10 aktiva bakgrunder och
+två återställbara poster i papperskorgen. Enda kvarvarande aktiva varianten
+är `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4`, tidigare provspelad till slut
+(10,041667 sekunder utan videofel). De sex nya bild-/videofilerna och
+PAOW · Studios val av Studio · turkos bevarades. Ingen permanent radering.
 
 Integration: PR #60 är mergad som `d595e6b7`, och PR #55 förenar samma
 papperskorg med nya `/admin` i `c8f9b99b`. Main-CI och båda driftsättningarna
@@ -125,12 +132,16 @@ Ingen Neon-migration krävs. Slutregression för PR #60: 2 988 godkända,
 11 överhoppade, 0 fel; den förenade PR #55: 3 093 godkända, 11 överhoppade,
 0 fel samt passerat Lab-produktionsbygge och admin-typkontroll.
 
-Produktionsacceptans för `/admin` är fortfarande öppen: efter driftsättningen
-svarar `/studio/api/project` och `/studio/api/videos` med 200, men
-`/admin/_data/catalog` med 422 (`studio_native_unavailable`). Detta är
-observerat från sidans vanliga registeruppdatering. SIDOR3 äger rättningen;
-MERGE håller nästa release medan felet utreds. `/control/library` läser
-registret, men den planerade Your Company-rensningen är ännu inte utförd.
+Katalogregressionen efter PR #55 rättades i PR #67, mergad som `027ceb03`.
+En ny materialregel hade slagit ut läsningen av historiskt publicerade rum.
+Befintliga spelrum och behörigheter bevaras; inkompatibla material får en
+adminvarning och nya publiceringar valideras fortsatt strikt. MERGE verifierade
+57/57 main-CI-steg, www/Vercel READY och Render LIVE/version på exakt
+`027ceb03`, health 200 och bibehållna v11-förmågor. Publik bolagskatalog och
+Nordic Bets två rum svarade 200; admin catalog/project/videos svarade också
+200. Rensningen ovan skedde därefter under ett samordnat stabilt releasefönster.
+Varningen för Nordic Bet Roulette gäller Back to Basic-materialets blackjacktagg;
+historiska publiceringar och frysta PAOW-paket ändrades inte av denna rättning.
 
 Verifiering: riktade server-/UI-tester för bekräftelse, samtidiga ändringar,
 tenantgränser, återställning, skyddad historik och full rollback; Lab-
