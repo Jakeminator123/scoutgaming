@@ -12,8 +12,8 @@ test('administrator is the only Studio role and owns every existing section/acti
   // Hidden historical sections keep their existing API permissions until retirement.
   assert.ok(BACKOFFICE_SECTIONS.every(section => STUDIO_ADMIN_SECTIONS.some(policy => policy.id === section.id)));
   assert.equal(STUDIO_ADMIN_SECTIONS.length, 15);
-  assert.equal(STUDIO_ADMIN_ACTIONS.length, 47);
-  assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 47);
+  assert.equal(STUDIO_ADMIN_ACTIONS.length, 49);
+  assert.equal(new Set(STUDIO_ADMIN_ACTIONS.map(action => action.id)).size, 49);
   for (const id of ['resource-lifecycle', 'operator-lifecycle', 'room-lifecycle', 'room-state']) {
     assert.equal(studioAdminActionPolicy(id)?.minimumRole, 'admin');
     for (const role of ['player', 'partner', 'staff', undefined]) assert.equal(meetsStudioAdminActionRole(role, id), false);

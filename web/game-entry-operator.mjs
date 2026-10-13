@@ -1,6 +1,7 @@
 import { isPresentationRoomLaneCompatible } from './storage/frozen-presentation-capture.mjs';
 import { isActiveDealerId, isRegisteredDealer } from './dealer-identity.mjs';
 import { validateFrozenRegisteredDealers } from './storage/frozen-dealer-idle.mjs';
+import {materialLabel} from './public/material-catalog.mjs';
 // Server-owned /blackjack selection with optional operator context. Without
 // ?operator= the lane, dealer and presentation stay on the saved catalogue
 // path. gameChoices is still attached from the active presentation lane so
@@ -122,7 +123,7 @@ export function createGameEntrySelector({ policy, packages = null, log = console
         dealer:{enabled:layers.dealer.enabled,compatibility:next.presentation !== 'original' && presentationLane.composition?'per-clip':'full-frame'},
         ...(presentationLane.composition?{settings:structuredClone(presentationLane.composition)}:{}),
         ...(presentationLane.backgroundPlayback?{backgroundPlayback:structuredClone(presentationLane.backgroundPlayback)}:{}),
-        assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(({id,role,label,contentType})=>({id,role,label,contentType,src:`/api/presentation/layers/${slug}/${id}`}))};
+        assets:frozen.assets.filter(asset=>layers[asset.role].allowed.includes(asset.id)).map(asset=>({id:asset.id,role:asset.role,label:materialLabel(asset),contentType:asset.contentType,src:`/api/presentation/layers/${slug}/${asset.id}`}))};
     }
     if (room) next.roomId = room.id;
     return {status:200,selection:next,...(game === 'roulette' ? {room:structuredClone(room)} : {})};

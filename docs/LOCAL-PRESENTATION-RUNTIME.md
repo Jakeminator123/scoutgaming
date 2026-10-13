@@ -16,7 +16,7 @@ ihop namn i admin, partner, lobby och spel. Katalogen registrerar eller
 publicerar aldrig ett operatörsrum. Bibliotekets lager-UUID är separat från
 design-ID:t; en identisk etikett är inte bevis för identiska bytes.
 
-Jakobs två tillförda bordsoriginal är **Blackjack · grön filt**
+Jakobs första två tillförda bordsoriginal är **Blackjack · grön filt**
 (`blackjack-green-felt`) och **Blackjack · svart filt**
 (`blackjack-black-felt`). Båda är PNG, 1672 × 941, med alpha (0–255).
 Originalens SHA256 är respektive
@@ -32,6 +32,32 @@ publicerad sammansättning eller bolagsinställning ändrades vid bordsintaget.
 Alpha/dimensioner är verifierade; bordsplacering och spelgeometri behöver
 visuell acceptans. Isolerad QA använder separata lager-UUID och beständig
 testsparning; dessa är inte produktions-ID:n.
+
+Ytterligare tre oförändrade PNG-original registrerades och avkodades efter
+omladdning. Biblioteket innehåller nu sju bord, varav fem är Jakobs nya original.
+Alla fem är separata designer: Jakob korrigerade uttryckligen att de inte
+hör ihop som grundbord och variationer. Ingen koppling har skapats mellan dem.
+
+| Kanoniskt namn / design-ID | Lager-ID i det privata biblioteket | Originalmått |
+| --- | --- | --- |
+| Blackjack · Oak / `blackjack-oak` | `f00be01d-fe7c-4a43-85b9-952e378f7331` | 1672 × 941 |
+| Blackjack · Purple Rain / `blackjack-purple-rain` | `257e6711-9152-49f2-83ae-6127ce3bc420` | 1672 × 941 |
+| Blackjack · Back to Basic / `blackjack-back-to-basic` | `073ed70c-d764-4902-860c-6a56300abfaf` | 1774 × 887 |
+
+Källhashar, storlek, MIME och alpha finns i samma kanoniska materialkatalog.
+Registreringen ändrade inga tilldelningar eller publiceringar. Originalfiler
+och privata ursprungssökvägar bevaras utanför Git.
+
+### Framtida bordsekvenser
+
+Ett framtida blinkande bord får bestå av en uttryckligen vald grunddesign och
+en ordnad följd bildrutor med angiven längd i frames samt fast bildfrekvens.
+Upprepningar och återgång till grundbilden ska vara uttryckliga. Variationerna
+måste dela godkänd geometri, dimensioner, placering och speltyp med grundbordet;
+visuell likhet eller ett närliggande namn är inte tillräckligt. Endast
+bordslagret växlar: bolag, rum/bakgrund, dealerklipp och serverns kort-, sko-
+och plånbokstillstånd behålls. Nuvarande statiska bilder har ingen automatisk
+blinksekvens. Sekvensmodell, redigerare och uppspelning är framtida arbete.
 
 `web/presentation-material-game.mjs` kontrollerar kända källhashar, lagerroll,
 metadata och spelets tillåtna bord på servern före rums-/paketpublicering

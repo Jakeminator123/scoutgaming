@@ -192,6 +192,8 @@ export function createStudioRepository({ pool, scope } = {}) {
             && !previous.value.dealers.some(existing => existing.id === dealer.id))) fail('studio_dealer_inactive');
           const lifecycle = options.lifecycleAuthority === lifecycleAuthority;
           if (!lifecycle && canonicalStudioJson(previous.value.dealerTrash ?? []) !== canonicalStudioJson(prepared.value.dealerTrash ?? [])) fail('studio_dealer_lifecycle_required');
+          if (!lifecycle && canonicalStudioJson(previous.value.layerAssetTrash ?? []) !== canonicalStudioJson(prepared.value.layerAssetTrash ?? [])) fail('studio_material_lifecycle_required');
+          if (!lifecycle && (previous.value.layerAssets??[]).some(asset=>!(prepared.value.layerAssets??[]).some(next=>next.id===asset.id))) fail('studio_material_lifecycle_required');
           const removed = previous.value.dealers.filter(dealer => !prepared.value.dealers.some(next => next.id === dealer.id));
           const rows = await api.listMedia({limit:5000});
           // Validate authoring membership against the current transactional

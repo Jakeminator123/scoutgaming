@@ -5,6 +5,7 @@ import { Network, LayoutDashboard, Activity, CircleDollarSign, Settings, Cpu } f
 const main = [
   {label:'Struktur',href:'/control/structure',icon:Network},
   {label:'Studio',href:'/control/clips',icon:LayoutDashboard},
+  {label:'Bord & bakgrunder',href:'/control/assets',icon:LayoutDashboard},
   {label:'Drift',href:'/control/drift',icon:Activity},
   {label:'Ekonomi',href:'/control/ekonomi',icon:CircleDollarSign},
 ];

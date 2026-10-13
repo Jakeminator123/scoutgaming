@@ -57,6 +57,29 @@ test('a preflight without set support cannot introduce membership after SQL begi
   }, { kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: 'roulette' }] } });
   assert.equal(input.fetches.length, 1); assert.equal(input.writes.length, 0);
 });
+test('persistent material trash requires exact runtime v11 before a mutation or later project save',async()=>{
+ for(const descriptor of [{kind:'material-trash',value:{}},{kind:'project',value:{layerAssetTrash:[]}}]){
+  for(const accepted of [false,true]){
+   const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(accepted?11:9))});
+   const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument('project',{value:{layerAssetTrash:[]}}),descriptor);
+   if(accepted){await work();assert.equal(f.writes.length,1);}else{await assert.rejects(work,blocked);assert.equal(f.writes.length,0);}
+   assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'11');
+  }
+ }
+});
+
+test('combined material trash and authoring sets negotiate v11 before SQL and reject a v9-only payload',async()=>{
+  for(const accepted of [false,true]){
+    const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(accepted?11:9))});
+    const value={dealers:[],lanes:[],dealerSets:[],layerAssetTrash:[]};
+    let begun=0;input.repository.transaction=async work=>{begun++;return work(input.repository);};
+    const write=()=>input.wrapped.transaction(repo=>repo.saveDocument('project',{value}),{presentationMutation:{kind:'project',value}});
+    if(accepted){await write();assert.equal(begun,1);assert.equal(input.writes.length,1);}
+    else{await assert.rejects(write,blocked);assert.equal(begun,0);assert.equal(input.writes.length,0);}
+    assert.equal(input.fetches.length,1);
+    assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'11');
+  }
+});
 
 test('background policy in project, archived composition and frozen package requires exact v8 before writes',async()=>{
   const lane={backgroundPlayback:{schemaVersion:1,rules:[]}};

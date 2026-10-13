@@ -27,7 +27,7 @@ const input = 'min-w-0 rounded border border-sg-line bg-sg-panel p-2 text-xs';
 const groups = ['idle', 'transition', 'deal', 'reveal', 'speak', 'turn', 'settle'];
 const studioAliases = new Set(['/admin', '/admin/structure', '/admin/clips', '/admin/rooms', '/admin/dealers', '/admin/assets']);
 
-function WorkspaceMap() {
+function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChange?:(dirty:boolean)=>void;onRevisionChange?:(revision:string)=>void;refreshKey?:number}) {
   const { setViewport } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement|null>(null);
   const [canvasWidth,setCanvasWidth] = useState(1200);
@@ -39,6 +39,7 @@ function WorkspaceMap() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [childBusy, setChildBusy] = useState(false);
+  const [materialReload,setMaterialReload]=useState(false);
   const [configDirty, setConfigDirty] = useState(false);
   const locked = busy || childBusy;
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,8 @@ function WorkspaceMap() {
   const busyRef = useRef(false);
   const childOperation = useCallback((value:boolean)=>{busyRef.current=value;setChildBusy(value);},[]);
   const dirty = Boolean(data && base && JSON.stringify(data.project) !== JSON.stringify(base));
+  useEffect(()=>{onDirtyChange?.(dirty||configDirty||Boolean(pending)||locked);},[dirty,configDirty,pending,locked,onDirtyChange]);
+  useEffect(()=>{if(base)onRevisionChange?.(base.revision);},[base?.revision,onRevisionChange]);
   const registry = data?.catalog.administration;
   const resolved=data?studioContext(data.catalog,data.project,{operatorId,roomId,dealerId}):null;
   const {operator,room,lane,dealer}=resolved??{};
@@ -87,7 +90,8 @@ function WorkspaceMap() {
     catch (cause) { if (!controller.signal.aborted) { setAuthorized(false); setError(cause instanceof Error ? cause.message : 'Registret kunde inte läsas.'); } }
     finally { if (!controller.signal.aborted) { setLoading(false); busyRef.current = false; } }
   }, []);
-  useEffect(() => { void load(); return () => { activeRequest.current?.abort(); busyRef.current = false; }; }, [load]);
+  useEffect(() => { void load(); return () => { activeRequest.current?.abort(); busyRef.current = false; }; }, [load,refreshKey]);
+  useEffect(()=>{if(materialReload&&!locked){setMaterialReload(false);void load();}},[materialReload,locked,load]);
   useEffect(() => {
     if (!pending) { setLocalUrl(''); return; }
     const url = URL.createObjectURL(pending.file); setLocalUrl(url); return () => URL.revokeObjectURL(url);
@@ -231,10 +235,10 @@ function WorkspaceMap() {
       <div hidden={panel!=='room'}><StudioSpeechPanel game={game} project={data.project} inventory={data.inventory} dealerId={dealer.id} blocked={busy || loading || !authorized} projectDirty={dirty} onEdit={edit} onBusyChange={childOperation} onDirtyChange={setConfigDirty}/></div>
       {panel==='dealer'&&<><div className="studio-dealer-summary"><DealerIdentityPortrait dealer={dealer} className="h-16 w-16 shrink-0"/><div><strong>{dealer.label}</strong><small>Identitet: {dealer.id}</small><p>{impacts.length} rum använder banken / sammansättningen</p></div></div><StudioLifecyclePanel project={data.project} inventory={data.inventory} catalog={data.catalog} dealerId={dealer.id} blocked={busy || loading || !authorized || dirty} editBlocked={busy || loading || !authorized || Boolean(pending)} onEdit={edit} onReload={load} onBusyChange={childOperation}/></>}
       {panel==='policy'&&settingsSlot&&<StudioPolicyPanel project={data.project} inventory={data.inventory} dealerId={dealer.id} slot={settingsSlot} blocked={busy || loading || !authorized} onEdit={edit} onBusyChange={childOperation}/>}
-      {panel==='layers'&&<StudioCompositionPanel project={data.project} inventory={data.inventory} dealerId={dealer.id} room={room} blocked={busy || loading || !authorized} onEdit={edit} onBusyChange={childOperation} onRegistered={(remote,id,role)=>{try{if(!base||!lane)throw Error('Sammansättningen saknas. Filen är registrerad; utkastet är kvar.');const result=registerCompositionLayer(base,data.project,remote,{id,role,laneId:lane.id});setBase(structuredClone(remote));setData(current=>current&&({...current,project:result.project}));setConflictPaths(result.conflicts);if(result.conflicts.length)setError('Filen är registrerad. Dessa utkastfält behöver granskas: '+result.conflicts.join(', '));else setNotice('Lagret är registrerat och valt i utkastet.');}catch(cause){setError((cause as Error).message);}}}/>}
+      {panel==='layers'&&<StudioCompositionPanel project={data.project} inventory={data.inventory} dealerId={dealer.id} room={room} blocked={busy || loading || !authorized} projectDirty={dirty||configDirty||Boolean(pending)||revisionConflict} onSaved={remote=>{setBase(structuredClone(remote));setData(current=>current&&({...current,project:remote}));setMaterialReload(true);}} onEdit={edit} onBusyChange={childOperation} onRegistered={(remote,id,role)=>{try{if(!base||!lane)throw Error('Sammansättningen saknas. Filen är registrerad; utkastet är kvar.');const result=registerCompositionLayer(base,data.project,remote,{id,role,laneId:lane.id});setBase(structuredClone(remote));setData(current=>current&&({...current,project:result.project}));setConflictPaths(result.conflicts);if(result.conflicts.length)setError('Filen är registrerad. Dessa utkastfält behöver granskas: '+result.conflicts.join(', '));else setNotice('Lagret är registrerat och valt i utkastet.');}catch(cause){setError((cause as Error).message);}}}/>}
     </aside>}
     {data&&dealer&&<div ref={canvasRef} className="studio-canvas"><ReactFlow key={`${dealer.id}:${category}`} defaultViewport={{x:24,y:24,zoom:.9}} nodes={flowNodes} edges={[]} nodeTypes={nodeTypes} nodesDraggable={!locked} onNodesChange={changes=>{onFlowNodesChange(changes);if(!changes.some(change=>change.type==='position'&&change.position))return;setPositions(current=>{const next={...current};let moved=false;for(const change of changes)if(change.type==='position'&&change.position&&(!current[change.id]||current[change.id].x!==change.position.x||current[change.id].y!==change.position.y)){next[change.id]=change.position;moved=true;}return moved?next:current;});}} nodesConnectable={false} edgesReconnectable={false} minZoom={0.2} maxZoom={1.5} colorMode="dark" proOptions={{hideAttribution:true}}><Background variant={BackgroundVariant.Dots} gap={22} color="#33363b"/><Controls showInteractive={false}/><MiniMap pannable zoomable nodeColor={node=>(node.data as CardNode['data']).group.color}/></ReactFlow></div>}
     {pending&&<dialog ref={uploadDialog} onCancel={event=>{event.preventDefault();if(!busyRef.current)setPending(null);}} aria-labelledby="upload-heading" className="w-full max-w-md space-y-4 rounded-lg border border-sg-line bg-sg-panel p-5"><h2 id="upload-heading" className="font-semibold">Registrera video i kortplats</h2><p className="text-xs">{dealer?.label} · {pending.slot.title} · {pending.slot.situation||'standard'} · {pending.file.name}</p>{localUrl&&<video src={localUrl} controls muted playsInline className="max-h-52 w-full object-contain"/>}<label className="flex flex-col gap-1 text-xs">Bakgrund i filen<select className={input} disabled={busy} value={compositing} onChange={event=>setCompositing(event.target.value as typeof compositing)}><option value="green-screen">Grön skärm</option><option value="opaque">Inbakad bakgrund</option></select></label><p className="text-xs text-sg-muted">Filen sparas i det befintliga privata registret. Koppling och rumspublicering är separata steg.</p>{error&&<p role="alert" className="text-xs text-sg-red">{error}</p>}<div className="flex gap-2"><button className={button} disabled={locked||loading||!authorized} onClick={()=>{void upload();}}>{busy?'Registrerar…':'Ladda upp till registret'}</button><button className={button} disabled={busy} onClick={()=>setPending(null)}>Avbryt videoval</button></div></dialog>}
   </section>;
 }
-export function ConnectedClipMap() { return <ReactFlowProvider><WorkspaceMap/></ReactFlowProvider>; }
+export function ConnectedClipMap(props:{onDirtyChange?:(dirty:boolean)=>void;onRevisionChange?:(revision:string)=>void;refreshKey?:number}) { return <ReactFlowProvider><WorkspaceMap {...props}/></ReactFlowProvider>; }

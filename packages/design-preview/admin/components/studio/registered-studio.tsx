@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, Building2, DoorOpen, RefreshCw, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {RegisteredResourceLifecycle} from './registered-resource-lifecycle';
 
 type Operator = { id: string; slug: string; name: string; status: string; packageRevision: number | null };
 type Dealer = { id: string; name: string; archived: boolean };
@@ -29,11 +30,11 @@ const existing: Record<string, string> = {
 };
 const connectedPaths = new Set(['/control', '/control/structure', '/control/admin/operators', '/control/rooms', '/control/dealers']);
 
-export function RegisteredStudio({ path, title }: { path: string; title: string }) {
+export function RegisteredStudio({ path, title,disabled=false,onChanged }: { path: string; title: string;disabled?:boolean;onChanged?:()=>void }) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refresh, setRefresh] = useState(0);
-  const [operatorId, setOperatorId] = useState('');
-  const [roomId, setRoomId] = useState('');
+  const [operatorId, setOperatorId] = useState(()=>new URLSearchParams(location.search).get('operator')??'');
+  const [roomId, setRoomId] = useState(()=>new URLSearchParams(location.search).get('table')??'');
   useEffect(() => {
     const controller = new AbortController();
     setState({ status: 'loading' });
@@ -78,8 +79,8 @@ export function RegisteredStudio({ path, title }: { path: string; title: string 
     <section className="flex flex-1 flex-col gap-6 px-6 py-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-sg-lime">{'// Studio · Register'}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{path === '/control' || path === '/control/structure' ? 'Spelbolag → Spel → Rum → Dealer' : title}</h1>
-          <p className="mt-2 max-w-2xl text-sm text-sg-muted">Registrerade uppgifter läses från samma källa som Control. Redigering och publicering görs tills vidare i den befintliga arbetsytan.</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{path === '/control' || path === '/control/structure' ? 'Spelbolag → Rum → Spel → Bord & dealer' : title}</h1>
+          <p className="mt-2 max-w-2xl text-sm text-sg-muted">Registrerade bolag och rum använder samma skyddade register och papperskorg som Control. Team och publicering nås via bolagets länkar.</p>
         </div>
         <button type="button" disabled={state.status === 'loading'} onClick={() => setRefresh(value => value + 1)} className="inline-flex items-center gap-2 rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-50"><RefreshCw size={13} /> Uppdatera</button>
       </header>
@@ -116,6 +117,7 @@ export function RegisteredStudio({ path, title }: { path: string; title: string 
             </li>)}
           </ul>}
           {selectedRoom && <p className="text-xs text-sg-muted">Valt rum: {selectedRoom.name} · {selectedRoom.dealerIds.map(dealerName).join(', ') || 'Inga dealers kopplade'}</p>}
+          {operator&&path==='/control/admin/operators'&&<RegisteredResourceLifecycle operatorId={operator.id} disabled={disabled} onChanged={()=>{setRefresh(value=>value+1);onChanged?.();}}/>}
         </>}
       <footer className="mt-auto border-t border-sg-line pt-4 text-xs text-sg-muted">Ny arbetsyta · {state.status === 'ready' ? `Register läst ${new Date(state.value.readAt).toLocaleString('sv-SE')}` : 'Datastatus visas ovan'} · <a href="/control" className="underline">Nuvarande Control</a></footer>
     </section>

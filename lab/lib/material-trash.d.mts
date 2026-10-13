@@ -1,0 +1,1 @@
+export interface MaterialTrashImpact {token:string;id:string;archived:boolean;label:string;role:'table'|'background';compositions:{id:string;label:string}[];rooms:{id:string;name:string;operatorId:string}[];operators:{id:string;name:string}[]}
