@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {ControlResourceLifecycle,type LifecycleSnapshot} from '../../../../../lab/components/control-resource-lifecycle';
+import {lifecycleSnapshotKey} from '../../lib/studio-resource-lifecycle.mjs';
 
 export function RegisteredResourceLifecycle({operatorId,disabled,onChanged}:{operatorId:string;disabled:boolean;onChanged:()=>void}){
   const revision=useRef(''),operations=useRef(new Set<string>());
@@ -8,7 +9,7 @@ export function RegisteredResourceLifecycle({operatorId,disabled,onChanged}:{ope
     const leave=(event:Event)=>event.preventDefault();
     window.addEventListener('beforeunload',unload);window.addEventListener('scout:navigate',leave);
     return()=>{window.removeEventListener('beforeunload',unload);window.removeEventListener('scout:navigate',leave);};},[busy]);
-  function changed(snapshot:LifecycleSnapshot){const previous=revision.current;revision.current=snapshot.administrationRevision;if(previous&&previous!==snapshot.administrationRevision)onChanged();}
+  function changed(snapshot:LifecycleSnapshot){const previous=revision.current;revision.current=lifecycleSnapshotKey(snapshot);if(previous&&previous!==revision.current)onChanged();}
   function operation(key:string,value:boolean){if(value)operations.current.add(key);else operations.current.delete(key);setBusy(operations.current.size>0);}
   return <section className="rounded border border-sg-line p-4 space-y-4" aria-label="Bolagets och rummens papperskorg">
     <h2 className="font-semibold">Papperskorg · bolag och rum</h2>

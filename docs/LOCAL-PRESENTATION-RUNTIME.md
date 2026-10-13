@@ -379,10 +379,11 @@ ny visuell acceptans. Det här dokumentet godkänner inte någon dealer-take.
 
 ### Mottagen videospecifikation och uppmätt leverans
 
-Källfilerna finns lokalt i `C:/Users/jakem/Desktop/videoskapare/roulette/bord/`.
-PNG:n är kopierad byteidentiskt till runtime-sökvägen ovan. MP4-originalet
-ligger kvar i källmappen och är inte uppladdat, registrerat eller publicerat
-av denna ändring. Den sammanförda JSON-filen nedan är metadata, inte en
+Den mottagna prototypen kom från `C:/Users/jakem/Desktop/videoskapare/roulette/bord/`.
+PNG:n är kopierad byteidentiskt till runtime-sökvägen ovan. Läsande lokal
+kontroll 13 oktober visar att MP4:n inte längre finns på den tidigare
+källsökvägen. Det bevarade mätkvittot nedan gäller den tidigare mottagna
+filmen; filmen är inte aktiverad i spelrummet. Den sammanförda JSON-filen är metadata, inte en
 beställning att generera fler animationer.
 
 Den bifogade `roulette_specifikation.json` är sammanförd som källunderlag i

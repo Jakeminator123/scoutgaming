@@ -312,6 +312,14 @@ finns i [Git före städningen](https://github.com/Jakeminator123/github-work/bl
 
 ### Origins och privata medier
 
+Källinventeringen omfattar de aktiva `lab/lib/cloud-media-store.mjs` och
+`lab/lib/video-registry.mjs` för både Render och Studio samt Studios
+`lab/lib/legacy-clip-inventory.mjs`. De har inte flyttats eller tagits bort.
+Studio läser även `LAB_PUBLIC_URL` som betrodd proxy-origin och
+`CROUPIER_DATA_DIR` som lokal inventeringsreserv; namnen är villkorade i
+registret. Detta dokumenterar befintliga kodläsningar och kräver ingen
+ny tjänsteinställning eller ändring av hemliga värden.
+
 Render-ingress: `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`,
 `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_GAME_ORIGIN` och
 `BETTALOTTO_PARTNER_BASE_URL` anger samma exakta publika Vercel-origin.

@@ -1,6 +1,6 @@
 # Roulette
 
-Samlad ingång för implementerat spel och mottaget medieunderlag. Kodbas: main `426fa11417695025e2a0ee194825110f48f6b4af`, läst 13 oktober 2026. Underlagets bedömda fullständighet är **75 %**. [Källregler](../README.md), [teknisk referens](TEKNIK.md) och [källregister](KALLOR.json).
+Samlad ingång för implementerat spel och mottaget medieunderlag. Ursprunglig kodinventering: main `426fa11417695025e2a0ee194825110f48f6b4af`; roulettevyn är senare levererad på `161957f1ca56bf35bdb09a2926b6a48c384b3e9a`, verifierat 13 oktober 2026. Underlagets bedömda fullständighet är **75 %**. [Källregler](../README.md), [teknisk referens](TEKNIK.md) och [källregister](KALLOR.json).
 
 ## Implementerat på main
 
@@ -37,13 +37,13 @@ Beställningen begärde 15 sekunder, 1080p och stilla kamera. Beställd timing �
 
 Svart videobakgrund är inte alfa. Global borttagning av svart skulle även skada svarta nummerfält och räcken. En statisk mask kan skydda bordets omgivning men bevisar inte korrekt sifferföljd inne i rotorn. Förslaget om separat stel rotor och kontrollerad vinkel är en produktionsidé, inte implementerat utfallsstöd.
 
-## Senare arbete i PR47 — ännu utkast
+## Levererad roulettevy i PR47
 
-[PR47](https://github.com/Jakeminator123/scoutgaming/pull/47), läst på e90fa70ece0c35340746c5684cea3094985af8d4, har senare källmetadata i [media-specification.json](https://github.com/Jakeminator123/scoutgaming/blob/e90fa70ece0c35340746c5684cea3094985af8d4/web/games/roulette/media-specification.json). Det är inte med i granskad main.
+[PR47](https://github.com/Jakeminator123/scoutgaming/pull/47), sluthead `c2623d9bde84904df85c53927ca30e8a40e314f9`, är mergad till main som `161957f1ca56bf35bdb09a2926b6a48c384b3e9a`. Senare källmetadata finns i [media-specification.json](../../../web/games/roulette/media-specification.json). Egna leveranskontroller 13 oktober: samtliga faktiska PR-/main-CI-steg gröna, Vercel Production READY med www på exakt merge-SHA och Render LIVE med exakt `/__cloud/version` och HTTP200 health. De sex publika UI-filerna gav HTTP200 och hashmatch mot mergekoden. Ägarens separata browserkontroll omfattade huvudvyn, Mer och fokusåtergång utan satsningar.
 
 Ägarens kvitto där beskriver MP4/H.264/yuv420p, 1916×1080, 361 rutor, 24 fps, 15,041667 sekunder, 10 317 238 byte, inget ljud/alfa; hash 7702cec6f0ec5ec2e1767608781588e8f6b182a0fbc652a952706f8288314195. Rutor 0/180/360 uppges granskade. Full rörelse, skarv, maskregistrering och utfallsmappning är inte godkända. Detta är senare dokumenterat ägarbevis, inte en egen ny mätning i denna uppgift.
 
-Utkastet lägger satsningar på fotografiskt bord med mobilförstoring och tillgänglig dialog. Det föreslår statisk PNG-alpha-mask och dealer till spelarens högra sida. Ankare för ögon/händer är uttryckligen okalibrerade. Utkastets blackjack-template med null-geometri ersätter inte blackjackens befintliga Forge-kontrakt.
+Den levererade vyn lägger satsningar på fotografiskt bord med mobilförstoring och tillgänglig dialog. Marker, ångra, Spela och Mer finns i huvudvyn; övriga val ligger i Mer. Runtime har frivilligt stöd för statisk PNG-alpha-mask. Förslagen om ny dealer till spelarens högra sida och ankare för ögon/händer är fortfarande okalibrerade. Nya privata dealerfiler är inte publicerade eller accepterade som idle. Blackjack-template med null-geometri ersätter inte blackjackens befintliga Forge-kontrakt.
 
 ## Vad saknas före godkänd medieintegration?
 

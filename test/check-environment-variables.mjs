@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { blueprintNames, compareKeys, hasEnvChange, parseEnvNames, referencedNames, templateNames, validateRegistry } from '../tools/check-environment-variables.mjs';
+
+test('active media sources belong to their deployed service inventories', () => {
+  const registry = JSON.parse(readFileSync(new URL('../docs/environment-variables.json', import.meta.url), 'utf8'));
+  for (const service of ['render-game', 'vercel-lab-ui']) {
+    for (const file of ['lab/lib/cloud-media-store.mjs', 'lab/lib/video-registry.mjs']) assert.ok(registry.services[service].sources.includes(file), service + ': ' + file);
+  }
+  const studio = registry.services['vercel-lab-ui'];
+  assert.ok(studio.sources.includes('lab/lib/legacy-clip-inventory.mjs'));
+  for (const name of ['LAB_PUBLIC_URL', 'CROUPIER_DATA_DIR']) assert.ok(studio.conditional.includes(name), name);
+});
 
 test('detects newly read deployment variable names', () => {
   assert.deepEqual([...referencedNames('env.NEW_KEY; process.env.PORT; env["BRACKET_KEY"]; env[name];')].sort(), ['BRACKET_KEY', 'NEW_KEY', 'PORT']);

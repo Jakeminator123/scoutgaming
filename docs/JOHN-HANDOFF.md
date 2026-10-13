@@ -1,5 +1,8 @@
 # Aktuell handoff — Scoutgaming
 
+Senare HTTP-test täcker v11 GET/HEAD och bevarat v10. Aktuell main `7e417e46` med dealerbild/Labba är förenad. Bolagsvyn reagerar även på paketrevision, status och arkivering när ett bolag utan rum lämnar administrationsrevisionen oförändrad; 14 verkliga lifecycle-API-tester är gröna.
+
+
 ## SIDOR3: fem separata bord och förenad papperskorg, 13 oktober
 
 Jakob korrigerade att borden inte hör ihop som grundbord/variationer. Alla
@@ -119,6 +122,39 @@ produktionsbygget passerar. Full pre-commit för `133b74f5` passerade:
 2 977 godkända tester, 11 överhoppade och 0 fel. Detta är inte en ny
 acceptans av externa PostgreSQL-miljöer eller av visuell dealerkomposition.
 Inga dealerfilmer, kalibreringar eller rouletteoriginal har ändrats.
+## Tillägg 13 oktober: dealerbilder och Labba i sammansättningar
+
+Samordnat med SIDOR3 och MERGE. Den gemensamma förhandsvisningen ritade
+tidigare bara video trots att bildfiler kunde läsas. Den ritar nu även
+keystone/VILA/REDO-bilder med samma höjdbaserade placeringsfunktion.
+En ny Labba-knapp öppnar befintliga lokala lagerprov och behåller filval
+och utkast när man växlar tillbaka. Lokala dealerprov accepterar både bild
+och video; filernas marginaler bevaras och bara dealerlagret greenscreenas.
+Ingen ny route införs under övergången till `/admin`; detta lagar den
+befintliga sammansättningsytan och kan återanvändas av central Studio.
+
+Verifierat: 39 riktade tester och Lab TypeScript-kontroll. Regressionerna
+täcker bild → video → bild, fördröjt uppspelningssvar, placering utan
+omladdning samt Labba utan automatisk sparning. Full ordinarie regression
+körs som commitgrind. Inga spelregler, saldon eller publiceringsval ändras.
+
+Anna Jonsson (`anna-jonsson`) är sparad i dealerregistret efter Jakobs
+uttryckliga beställning. Hennes oförändrade källfiler ligger fortfarande
+utanför Git och har endast provats privat: 1920×1080-scen, separata profiler
+för liggande VILA och stående hjulstart, en avkodad videobild för både kropp
+bakom och maskerade händer framför bordet. Mobil och desktop använder samma
+placering; två hela hjulstarter är kontrollerade. Detta är inte rehearsal-
+eller produktionsacceptans. Handmasken är ett prov och den faktiska handen
+når ännu inte exakt hjulspindeln. Bild/film har olika pose och bildutsnitt.
+
+Öppet: korrekt registrering av rouletteåtgärden `roulette.wheel-start` och
+oförändrad alfa-keystone. Nuvarande klippfack och Forge-normalisering är
+blackjackorienterade; Annas hjulstart ska inte läggas i ett kortfack eller
+registreras som viloloop. Ingen Anna-media eller nytt rum har publicerats.
+Hjulstart bör senare utlösas en gång av serverns accepterade rundkvitto,
+kopplat till samma requestId även vid återförsök. Val av marker startar inte
+gesten. Hjulstarten ersätter inte de 37 resultatbundna filmerna i
+[roulettehandboken](games/roulette/README.md).
 
 ## Tillägg 13 oktober: tre valbara originalbakgrunder
 
@@ -865,14 +901,32 @@ uppspelningskontroller passerar. Inga pensionerade medier eller verktyg återst�
 
 ## 3. Senaste leveranser
 
+**Slutfix 2, 13 oktober 2026 (`codex/ordning-slutfix-2`, bas `161957f1`).**
+SL-01/02 har rename-kontroll, strikt stopp och en separat indexjämförelse;
+egna verkliga Git-regressioner passerar 10/10. SL-11:s genererade tabell och
+Copy-for-LLM kontrolleras av ett nytt synkprov, inlagt i fullkroken. SL-08:s
+aktiva mediekällor och befintliga variabelnamn finns nu i inventeringen;
+åtta namn-/inventeringsprov samt CLI-kontrollen passerar. SL-09 är läsande
+utredd: 307 på Render och 303 till spelarlogin på www, inget 503 före
+inloggning; inloggad rehearsal är fortfarande öppen. Partnerdokumentets
+åtkomst är oförändrad (404 på www, 421 direkt på Render). Inga
+produktionsskrivningar, migrationer eller medieändringar i slutfixen.
+Detaljer och kvarvarande SL-03/06/07/09/10 står i `CLOUD-MIGRATION.md`.
+
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
 **Ordning 2026-10 avslutad, 12 oktober (`jakob/ordning-avslut`).**
 Planen i `ordning/` (baslinje `00ea55c5`) är genomförd och mappen är borttagen;
 historiken har den, till exempel på `faf0e822`. Den generiska raderingsspärren
-står kvar som `tools/raderingsgrind.mjs`, med sina fyra prov i
-`test/raderingsgrind.mjs` i kroken. Leveranser: V1 #19 (plan och
+står kvar som `tools/raderingsgrind.mjs`, med sina prov i
+`test/raderingsgrind.mjs` i kroken. Före borttagning eller flytt av filer:
+staga den avsedda ändringen och kör
+`node tools/raderingsgrind.mjs HEAD --staged --strict`.
+Efter commit används jämförelsebasen med `--strict`, utan `--staged`.
+Rapporten anger exakt jämförelse och läser samma HEAD-/indexversion av
+importer och register. Trasiga importer och aktiva registerrader stoppar;
+historiska textomnämnanden rapporteras för granskning. Leveranser: V1 #19 (plan och
 regler), V2 #23 (A10–A18: döda moduler, granskningssidor, pipeline, ops och
 dokument), #30 (adminlänk på partnerinloggningen), V3a #34 (A20:
 `test-videoeditor/` till `packages/presentation/{compositor,docs,preview}`), #44
