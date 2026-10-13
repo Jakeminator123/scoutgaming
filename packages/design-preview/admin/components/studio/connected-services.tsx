@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { OpenClawWorkspace } from '../../../../../lab/components/openclaw-workspace';
 import { NativeAdministration } from '../../../../../lab/components/native-administration';
+import { ConnectedEconomy } from './connected-economy';
 
 const groups: Record<string,string> = {
-  '/control/drift':'operations', '/control/ekonomi':'finance',
+  '/control/drift':'operations',
   '/control/admin/accounts':'accounts', '/control/admin/players':'accounts',
   '/control/admin/payments':'finance', '/control/admin/api':'partners',
 };
@@ -53,6 +54,7 @@ function AgentChat() {
 }
 
 export function ConnectedServices({path}:{path:string}) {
+  if(path==='/control/ekonomi')return <ConnectedEconomy/>;
   if(path==='/control/ai/models')return <div className="p-5"><OpenClawWorkspace navigation={{models:'/admin/ai/models',chat:'/admin/ai/chat',studio:'/admin/clips'}}/></div>;
   if(path==='/control/ai/chat')return <AgentChat/>;
   if(groups[path])return <Administration group={groups[path]}/>;

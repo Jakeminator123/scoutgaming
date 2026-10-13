@@ -1,5 +1,30 @@
 # Aktuell handoff — Scoutgaming
 
+## Ekonomi: enkel översikt i admin, 13 oktober
+
+`/admin/ekonomi` återfår nyckeltal och två diagram i den nya designen;
+hela den äldre administrationspanelen bäddas inte längre in på denna sida.
+Journalen är en utfällbar detalj. Valuta och 7/30-dagarsfilter arbetar på
+serverns högst 100 senaste journalposter, med synlig avgränsning och UTC.
+Valutor, även historiska `USD`, `usd` och `USDT`, hålls i separata grupper.
+Endast verifierade kontoändringar (insättningar, saldojusteringar och
+spelhändelser) summeras. Öppningssaldo och valutabyte visas i journalen och
+händelsediagrammet som saldoobservationer utan att räknas som rörelser.
+Okända typer behåller sin råtyp men påverkar inte beloppen. Kontorörelser
+presenteras inte som GGR, intäkt eller revshare; sådant rapportunderlag
+saknas fortfarande. Inga seedade exempelsiffror används som produktionsdata.
+
+Läsningen använder befintligt skyddat transactions-API, aktuell N1-session,
+tillåtna actions och verifierad svarsidentitet. Vid navigering, omladdning
+eller läsfel rensas tidigare data. Isolerad webbläsaracceptans med testdata
+verifierar valutabyte, 7/30 dagar, journal, tomt svar, 401, 503 och återhämtning.
+Fem modelltester täcker summering, UTC-gränser, historiska valutor,
+saldoobservationer, kända/okända typer och feldata; de ingår i den gemensamma
+regressionshooken. Admin-typkontroll och Lab-produktionsbygge passerade på
+denna rättning. Full regressionshook: 3 119 godkända, 11 överhoppade, 0 fel.
+Produktionsacceptans återstår efter deploy.
+Ingen ekonomisk transaktion, behörighetsändring eller databasmigration utförs.
+
 ## PR #50: fast rumsmiljö och bevarad fryst film
 
 Nya rum kräver en entydig sparad bakgrund. Om en sammansättning redan
