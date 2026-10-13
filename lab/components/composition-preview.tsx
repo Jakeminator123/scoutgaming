@@ -76,13 +76,14 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
       function render(time:number){
         if(!active)return;
         try{
-          const video=videos.current.dealer;
-          if(video&&context&&video.readyState>=2&&(video.currentTime!==actorTime||lastFraming!==frameSettings.current)){
-            actorTime=video.currentTime;lastFraming=frameSettings.current;
+          const media=assets.get('dealer')?.el;
+          const mediaTime=media instanceof HTMLVideoElement?media.currentTime:0;
+          if(media&&context&&(!(media instanceof HTMLVideoElement)||media.readyState>=2)&&(mediaTime!==actorTime||lastFraming!==frameSettings.current)){
+            actorTime=mediaTime;lastFraming=frameSettings.current;
             // Legacy and local files need the same height fit as classified clips.
             const width=1920,height=1080;if(actor.width!==width||actor.height!==height){actor.width=width;actor.height=height;}
-            drawDealerFrame(context,video,width,height,lastFraming);
-            actor.src=`${video.currentSrc}@${actorTime}/${JSON.stringify(lastFraming)}`;
+            drawDealerFrame(context,media,width,height,lastFraming);
+            actor.src=`${media.src}@${actorTime}/${JSON.stringify(lastFraming)}`;
           }
           if(scene.current)renderer.current?.render(scene.current,actor,assets,[],undefined);
           if(time-lastInfo>400){lastInfo=time;setMediaInfo([...assets.entries()].map(([role,asset])=>{const title=role==='dealer'?'Dealer':role==='table'?t('Bord','Table'):t('Bakgrund','Background');return asset.el instanceof HTMLVideoElement?title+': '+(asset.el.paused?t('pausad','paused'):t('spelar','playing'))+' · '+asset.el.currentTime.toFixed(2)+' / '+asset.el.duration.toFixed(2)+' s · '+asset.width+' × '+asset.height:title+t(': bild · ',': image · ')+asset.width+' × '+asset.height;}).join('\n'));}
@@ -159,7 +160,7 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
     </div>
     <p role="status">{status}</p>{error?<p role="alert">{error}</p>:null}
     {backgroundStatus?<p role="status">{backgroundStatus}</p>:null}
-    <details><summary>{t('Avancerat · uppspelning','Advanced · playback')}</summary><button className="sg-btn sg-btn-secondary" disabled={!loaded||!sources.dealer} onClick={()=>void play(2)}>{t('Spela två gånger','Play twice')}</button><pre aria-live="off" style={{whiteSpace:'pre-wrap',fontSize:12}}>{mediaInfo}</pre></details>
+    <details><summary>{t('Avancerat · uppspelning','Advanced · playback')}</summary><button className="sg-btn sg-btn-secondary" disabled={!loaded||!sources.dealer?.contentType.startsWith('video/')} onClick={()=>void play(2)}>{t('Spela två gånger','Play twice')}</button><pre aria-live="off" style={{whiteSpace:'pre-wrap',fontSize:12}}>{mediaInfo}</pre></details>
     <small>{Object.values(sources).filter(Boolean).map(media=>media!.label).join(' · ')}</small>
   </div>;
 }

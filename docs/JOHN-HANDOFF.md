@@ -20,6 +20,8 @@ uppspelningen kan undvika att även gröna detaljer nycklas bort.
 
 Spelarens textmärkta orb öppnar mikrofon-, kamera-, ljud- och loggkontroller
 med ett tryck. Femsekundersgreppet är borta. Befintligt samtycke kvarstår.
+Orb och samtalspanel följer spelarvyns mörkblå/guldgula palett, med blå
+skuggning, gula aktiva val och fokusmarkeringar samt separat felindikering.
 Ingen mediefil, spelmotor eller runtime-provider ändras.
 
 Verifierat: 19 import-/säkerhetstester, Studio-typkontroll, fullständigt
@@ -31,6 +33,40 @@ posereferens utan automatisk omkörning. Orben klarade fyra skärmstorlekar,
 tangentbord/fokus/Escape och reduced motion utan enhetsåtkomst.
 Produktionsmodell, verklig molnimport och dealerrehearsal två gånger är
 fortfarande ej verifierade. Se [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#dealerimport-och-samtalskontroll-13-oktober-2026).
+
+## Tillägg 13 oktober: dealerbilder och Labba i sammansättningar
+
+Samordnat med SIDOR3 och MERGE. Den gemensamma förhandsvisningen ritade
+tidigare bara video trots att bildfiler kunde läsas. Den ritar nu även
+keystone/VILA/REDO-bilder med samma höjdbaserade placeringsfunktion.
+En ny Labba-knapp öppnar befintliga lokala lagerprov och behåller filval
+och utkast när man växlar tillbaka. Lokala dealerprov accepterar både bild
+och video; filernas marginaler bevaras och bara dealerlagret greenscreenas.
+Ingen ny route införs under övergången till `/admin`; detta lagar den
+befintliga sammansättningsytan och kan återanvändas av central Studio.
+
+Verifierat: 39 riktade tester och Lab TypeScript-kontroll. Regressionerna
+täcker bild → video → bild, fördröjt uppspelningssvar, placering utan
+omladdning samt Labba utan automatisk sparning. Full ordinarie regression
+körs som commitgrind. Inga spelregler, saldon eller publiceringsval ändras.
+
+Anna Jonsson (`anna-jonsson`) är sparad i dealerregistret efter Jakobs
+uttryckliga beställning. Hennes oförändrade källfiler ligger fortfarande
+utanför Git och har endast provats privat: 1920×1080-scen, separata profiler
+för liggande VILA och stående hjulstart, en avkodad videobild för både kropp
+bakom och maskerade händer framför bordet. Mobil och desktop använder samma
+placering; två hela hjulstarter är kontrollerade. Detta är inte rehearsal-
+eller produktionsacceptans. Handmasken är ett prov och den faktiska handen
+når ännu inte exakt hjulspindeln. Bild/film har olika pose och bildutsnitt.
+
+Öppet: korrekt registrering av rouletteåtgärden `roulette.wheel-start` och
+oförändrad alfa-keystone. Nuvarande klippfack och Forge-normalisering är
+blackjackorienterade; Annas hjulstart ska inte läggas i ett kortfack eller
+registreras som viloloop. Ingen Anna-media eller nytt rum har publicerats.
+Hjulstart bör senare utlösas en gång av serverns accepterade rundkvitto,
+kopplat till samma requestId även vid återförsök. Val av marker startar inte
+gesten. Hjulstarten ersätter inte de 37 resultatbundna filmerna i
+[roulettehandboken](games/roulette/README.md).
 
 ## Tillägg 13 oktober: tre valbara originalbakgrunder
 

@@ -493,6 +493,27 @@ test('preview maps known failures without exposing server text and never retries
 });
 
 const previewButton=(h,tree)=>h.find(tree,node=>node.type==='button'&&node.props['aria-describedby']==='studio-preview-help');
+test('Labba preserves a local keystone and draft when toggling views and replaces only the chosen file',()=>{
+  const h=previewHarness({dirty:false});let tree=h.render();
+  const toggle=()=>h.find(tree,node=>node.type==='button'&&node.props['aria-controls']==='composition-lab');
+  const panel=()=>h.find(tree,node=>node.props?.id==='composition-lab');
+  const preview=()=>h.find(tree,node=>node.type?.name==='CompositionPreview');
+  const file=()=>h.find(tree,node=>node.type==='input'&&node.props.type==='file');
+  const original=structuredClone(h.session.project);
+  assert.equal(toggle().props['aria-expanded'],false);toggle().props.onClick();tree=h.render();
+  assert.equal(panel().props.open,true);assert.match(file().props.accept,/image\/png/);
+  file().props.onChange({target:{files:[new File(['still'],'VILA.png',{type:'image/png'})]}});tree=h.render();
+  const still=preview().props.dealer;assert.equal(still.contentType,'image/png');assert.match(still.url,/^blob:/);
+  assert.equal(preview().props.framing,undefined);assert.deepEqual(h.session.project,original);
+  toggle().props.onClick();tree=h.render();assert.equal(panel().props.open,false);
+  assert.equal(preview().props.dealer.url,still.url);assert.equal(h.saves(),0);assert.equal(h.session.dirty,false);
+  toggle().props.onClick();tree=h.render();
+  file().props.onChange({target:{files:[new File(['clip'],'spin.webm',{type:'video/webm'})]}});tree=h.render();
+  assert.equal(preview().props.dealer.contentType,'video/webm');assert.notEqual(preview().props.dealer.url,still.url);
+  assert.deepEqual(h.session.project,original);assert.equal(h.saves(),0);
+  h.effects[0]()();
+});
+
 test('preview waits for its receipt, locks repeated clicks and mutations, then navigates in the same tab',async()=>{
   let resolve,calls=0,request,signal;
   const h=previewHarness({dirty:false,previewClient:(value,options)=>{calls++;request=value;signal=options.signal;return new Promise(done=>resolve=done);}});

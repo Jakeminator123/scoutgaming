@@ -1,6 +1,17 @@
 /* Shared conversation dock. The log opens only when the player requests it. */
 .astrid-voice-ui #sound-btn { display: none !important; }
 .astrid-voice-ui #chat { width: auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+.astrid-voice-ui #chat button { color: var(--dealer-voice-yellow); background: #102747; border-color: #7fb2ff55; }
+.astrid-voice-ui #chat button:hover { border-color: var(--dealer-voice-yellow); background: #183759; }
+.astrid-voice-ui #chat button:focus-visible, .astrid-voice-ui #chat input:focus-visible, .astrid-voice-ui #chat-memory summary:focus-visible { outline: 3px solid var(--dealer-voice-yellow); outline-offset: 3px; }
+.astrid-voice-ui #chat input { background: var(--dealer-voice-surface); border-color: #7fb2ff55; }
+.astrid-voice-ui #chat input::placeholder { color: var(--dealer-voice-muted); }
+.astrid-voice-ui #chat input:focus { border-color: var(--dealer-voice-yellow); }
+.astrid-voice-ui #chat-log, .astrid-voice-ui #chat-memory > div { background: #0b151bf2; border-color: #7fb2ff66; }
+.astrid-voice-ui #chat-log .msg b { color: var(--dealer-voice-yellow); }
+.astrid-voice-ui #chat-log .msg.user b { color: var(--dealer-voice-blue); }
+.astrid-voice-ui #chat-log .msg.pending p, .astrid-voice-ui #chat-memory small { color: var(--dealer-voice-muted); }
+.astrid-voice-ui #chat-log::-webkit-scrollbar-thumb { background: #ffd97a66; }
 .astrid-voice-ui #astrid-camera [hidden] { display: none !important; }
 .astrid-voice-ui #chat-log { width: min(360px, calc(100vw - 24px)); box-sizing: border-box; max-height: min(280px, 30dvh); }
 .astrid-voice-ui #chat-log:not(.open) { display: none !important; }
