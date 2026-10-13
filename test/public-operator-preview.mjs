@@ -8,6 +8,7 @@ import {layerAssetPath} from '../web/presentation-layers.mjs';
 import {createPublicOperatorPreview} from '../web/public-operator-preview.mjs';
 import {previewMediaPath,validatePublicOperatorPreview} from '../web/public/operator-preview-contract.mjs';
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
+import {materialSource} from '../web/public/material-catalog.mjs';
 
 const context={operatorSlug:'north',roomId:'room-north',packageRevision:7,dealerId:'johanna'};
 const descriptor='/api/operators/north/rooms/room-north/preview?dealer=johanna&revision=7';
@@ -72,6 +73,17 @@ test('v2/v3 published descriptor selects one frozen dealer and only allowed laye
     assert.deepEqual(f.reads,['north']);assert.equal(f.served.length,0);assert.deepEqual(f.saved,before);
   }
 });
+test('preview labels match canonical supplied material while byte paths remain publication-scoped',async()=>{
+  const f=fixture(),{kind,...signature}=materialSource('studio-teal','video');
+  f.rewrite(pack=>{const asset=pack.assets[0];Object.assign(asset,signature);asset.pathname=layerAssetPath(asset);});
+  const before=clone(f.saved),value=await body(f);
+  assert.equal(value.media.backgrounds[0].label,'Studio · turkos');
+  assert.equal(value.media.backgrounds[0].contentType,'video/mp4');
+  assert.equal(value.media.backgrounds[0].src,previewMediaPath(context,'background',f.project.layerAssets[0].id));
+  assert.equal(value.media.backgrounds.length,2);assert.equal(value.media.backgrounds[1].label,'background 2');
+  assert.deepEqual(f.saved,before);
+});
+
 test('GET/HEAD forward Range and exact immutable storage tuple; every media read is fresh and uncached',async()=>{
   const f=fixture(),value=await body(f);
   for(const src of [value.media.dealer.src,value.media.tables[0].src,value.media.backgrounds[0].src]) {

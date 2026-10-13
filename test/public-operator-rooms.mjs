@@ -9,6 +9,7 @@ import {buildPresentationPackage,layerAssetPath} from '../web/presentation-layer
 import {createPublicOperatorRooms,isUnplayableOperatorRooms} from '../web/public-operator-rooms.mjs';
 import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
+import {materialSource} from '../web/public/material-catalog.mjs';
 
 function asset(role,n) {
   const row={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:`${role} ${n}`,
@@ -107,6 +108,18 @@ test('public catalog freezes dealer and asset labels and honors company defaults
   assert.doesNotMatch(JSON.stringify(value),/never-expose|north-id|sha256|pathname|contentType|branding|_scoutPresentation|croupier\/media|Draft only/);
   assert.deepEqual(f.state.pack,before.pack);assert.deepEqual(f.state.administration,before.administration);
   assert.deepEqual(f.calls,{operators:1,packages:1,snapshots:1});
+});
+
+test('public room choices use canonical material names without granting unpublished catalog assets',async()=>{
+  const f=fixture(),source=materialSource('studio-teal'),{kind,...signature}=source;
+  const presentation=structuredClone(f.presentation),asset=presentation.assets[0];
+  Object.assign(asset,signature);asset.pathname=layerAssetPath(asset);
+  f.state.pack.branding=withPackagePresentation(f.state.pack.branding,presentation);
+  const before=structuredClone(f.state),room=(await f.api.read('north')).rooms[0];
+  assert.equal(room.id,'room-north');
+  assert.deepEqual(room.dealers[0].background.allowed,[{id:asset.id,label:'Studio · turkos'},
+    {id:f.presentation.assets[1].id,label:'background 2'}]);
+  assert.deepEqual(f.state,before);
 });
 
 test('historical opaque or unspecified own idle keeps explicitly allowed independent layers',async()=>{

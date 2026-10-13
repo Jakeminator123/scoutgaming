@@ -2,6 +2,7 @@ import {previewMediaPath,validatePublicOperatorPreview} from './public/operator-
 import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
 import {isActiveDealerId as isDealerId} from './public/dealer-identity.mjs';
 import {defaultCompositionSettings} from './public/composition-settings.mjs';
+import {materialLabel} from './public/material-catalog.mjs';
 
 const route=/^\/api\/operators\/([^/]+)\/rooms\/([^/]+)\/preview(?:\/media\/([^/]+)\/([^/]+)\/(dealer|table|background)\/([^/]+))?$/;
 const uuid=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
@@ -63,8 +64,8 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
       dealer:{id:context.dealerId,label},independentLayers,
       settings:independentLayers?(selection.composition?.settings??defaultCompositionSettings()):null,
       media:{dealer:idle?{...item(idle,'dealer'),...(idle.classification.compositing?.mode==='green-screen'?{compositing:idle.classification.compositing}:{}),...(idle.classification.framing?{framing:idle.classification.framing}:{})}:null,
-        tables:assets.table.map(asset=>({id:asset.id,label:asset.label,...item(asset,'table')})),
-        backgrounds:assets.background.map(asset=>({id:asset.id,label:asset.label,...item(asset,'background')}))},
+        tables:assets.table.map(asset=>({id:asset.id,label:materialLabel(asset),...item(asset,'table')})),
+        backgrounds:assets.background.map(asset=>({id:asset.id,label:materialLabel(asset),...item(asset,'background')}))},
     },context);
     return {descriptor,idle,assets};
   }
