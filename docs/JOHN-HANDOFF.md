@@ -11,8 +11,8 @@ En inaktiv bildruteadapter förbereder worker-kartor för Paow och
 Dragan/dragge, binder tal/version/ljud/media och släpper bara exakta
 frame-matchningar till dealerlagret före beskärning/keying. Den ändrar
 inte liveplayer, OpenClaw, röster, providerinställningar eller spelmotor.
-Riktade kontrakttester är tillagda i full pre-commit. Build/full regression
-redovisas vid leverans. Livejobb och två visuella talprov per dealer återstår.
+Riktade kontrakttester ingår i full pre-commit.
+Full regression passerade: 3564 godkända, 11 överhoppade och 0 fel. Lab-produktionsbygget passerade med 97 kontrollerade byggspår. Livejobb och två visuella talprov per dealer återstår.
 
 ## Admin: återstående kompatibilitetsluckor, 13 oktober
 

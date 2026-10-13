@@ -137,6 +137,10 @@ RunPods läs-API bekräftar endpointen `mq7eiwanda72fg`, namnet
 `croupier-lipsync-staging` och template `61hsh8i4r0`. Imagen är
 `ghcr.io/emacodehero/croupier-lipsync-worker:6c80fe50806979d902a6457f43ec74ca8ee5d421`.
 Detta är en observerad tagg, inte en verifierad digest eller källcommit.
+Hälsokontrollen svarade 200 med fyra redo/inaktiva workers och ingen kö vid
+kontrollen; det är inte ett talprov eller bevis på rätt avatarer. ElevenLabs
+GET voice svarade 200 för båda angivna ID:n och namnen Paow respektive
+Dragge med samma lokala nyckelfil; ingen TTS-generering utfördes.
 Den lokala, Git-ignorerade `.env.emil` gav fungerande API-åtkomst; dess
 angivna endpoint-ID gav däremot 404. Ingen nyckel eller driftinställning
 ändrades. Registret gav 401 anonymt och 403 vid manifestläsning med befintlig
