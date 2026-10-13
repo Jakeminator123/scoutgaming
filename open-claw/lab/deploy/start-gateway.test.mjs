@@ -52,6 +52,19 @@ test('startup normalizes either credential name and drops the legacy child crede
   assert.equal(await readFile(first.configPath, 'utf8'), bytes);
 });
 
+test('startup reports validation phase without replacing the config on CLI failure', async (t) => {
+  const env=await fixture(t);
+  const phases=[];
+  const first=await prepareGatewayConfig(env,{validateConfig:validateFixture});
+  const original=await readFile(first.configPath,'utf8');
+  await assert.rejects(prepareGatewayConfig(env,{
+    onPhase:phase=>phases.push(phase),
+    validateConfig:async()=>{throw Object.assign(Error('test-only-private detail'),{code:'GATEWAY_CONFIG_VALIDATION_FAILED'});},
+  }),{code:'GATEWAY_CONFIG_VALIDATION_FAILED'});
+  assert.deepEqual(phases,['environment','config-read','config-plan','config-validate']);
+  assert.equal(await readFile(first.configPath,'utf8'),original);
+});
+
 test('first start seeds once; a native settings edit and its raw formatting survive the next start', async (t) => {
   const env = await fixture(t);
   const first = await prepareGatewayConfig(env, { validateConfig: validateFixture });
