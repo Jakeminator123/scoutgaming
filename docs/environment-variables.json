@@ -406,7 +406,8 @@
         "CROUPIER_DEALER_IMPORT_AI",
         "OPENCLAW_MODEL_API_KEY",
         "OPENCLAW_MODEL_API",
-        "OPENCLAW_MODEL_BASE_URL"
+        "OPENCLAW_MODEL_BASE_URL",
+        "OPENAI_API_KEY"
       ],
       "managed": [],
       "blocked": [

@@ -5,7 +5,10 @@
 Klippassistenten använder en stateless modelladapter i importvyn under
 `/admin/clips`. Den gemensamma Adminroboten beskrivs separat nedan.
 Den är avstängd tills `CROUPIER_DEALER_IMPORT_AI=1` och de serverägda
-`OPENCLAW_MODEL_API_KEY` finns i **Studio-tjänsten**.
+`OPENCLAW_MODEL_API_KEY` finns i **Studio-tjänsten**. För officiella
+OpenAI-API:t fungerar även sajtens befintliga `OPENAI_API_KEY` om den särskilda
+nyckeln inte är angiven. En uttryckligen tom särskild nyckel stänger av
+kopplingen; OpenAI-nyckeln skickas aldrig till en anpassad leverantör.
 Gatewayns befintliga inställningar innebär inte att Studio har dessa värden.
 `OPENCLAW_MODEL_API` stöder `openai-responses` (förval) och `openai-completions`;
 `OPENCLAW_MODEL_BASE_URL` är en HTTPS-bas, med `https://api.openai.com/v1` som förval.

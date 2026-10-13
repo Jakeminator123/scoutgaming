@@ -56,6 +56,13 @@ OpenClaw-läget kan föreslå modellbyte för en befintlig roll till en katalogm
 Renderkontots loggar/diskfiler, nya Gatewayverktyg, fri SQL och
 bakgrundsövervakning är inte anslutna. Ingen generell molnkontobehörighet tilldelas.
 
+Vercel-production för #82 är nu READY och befintlig N1-inloggning visar de
+interna chattlägena; oinloggat adminanrop ger 401. Adapterrättningen använder
+sajtens befintliga OPENAI_API_KEY för officiella OpenAI-API:t när separat
+modellnyckel saknas. Opt-in och explicit separat nyckel behåller företräde.
+Riktade prov kontrollerar att nyckeln aldrig följer med till en egen API-bas.
+Modellsvar ska verifieras efter adapterrättningens deployment.
+
 Tillåtna förslag: arkivera/återställa dealer, material, bolag eller rum; öppna/
 stänga rum; namnbyte på dealer/material/sammansättning; separat permanent
 radering av redan arkiverad dealer; Gatewaymodellbyte. Varje skrivning kräver
