@@ -2780,3 +2780,17 @@ Senaste säkerhetsläsningen på denna main har queued GitGuardian-suite och
 incident-API HTTP 429; aktuell incidenttäckning är därför ofullständig.
 Den tidigare fullständiga läsningen på `bfbfaf4a` gav 0 öppna/17 ignorerade,
 aktiv övervakning, historik too_large och delvis ofullständig platsmetadata.
+
+## Stabilt fontbygge, 13 oktober
+
+Frontendens tre Google-typsnitt är nu lokala WOFF2-filer via `next/font/local`.
+Inter, Cormorant Garamond och Geist Mono behåller CSS-variabler, normala stilar
+och använda viktintervall. Kompletta källglypher, inklusive ÅÄÖåäö, finns kvar.
+SIL-licenser och fryst Google Fonts-källa/hash dokumenteras i appens fontmapp.
+Detta tar bort det reproducerade byggfelet i Googles URL-/filändelsehantering.
+
+Både landing- och fulla Vercel-UI-produktionsbyggen passerar med ett tomt
+mockat Google Fonts-svar (varje Google-import skulle då avvisas). Studio-
+produktionsbygget passerar också. Produktionspublicering verifieras efter
+ordinarie PR-leverans; inga gameplay-, media-, wallet- eller databaskopplingar
+ändras av fontfixen.
