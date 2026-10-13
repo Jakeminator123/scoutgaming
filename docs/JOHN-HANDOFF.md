@@ -1,5 +1,57 @@
 # Aktuell handoff — Scoutgaming
 
+## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
+
+Integrerad med main `60defa57` inför PR92-granskningen. Endast denna handoff
+behövde konfliktlösning; roulette- och Paow-sektionerna är båda bevarade.
+Alfafixen, fixturen och den dokumenterade visuella målbilden behåller samma
+omfattning. Denna integration ändrar inga mediefiler eller publiceringsval
+utöver innehållet som redan finns på main. Full regression körs vid commit.
+
+**Visuell återkoppling:** Jakob underkände den lokala spelarplaceringens
+bordshöjd/perspektiv och dolda händer. Därefter godkände han den bifogade
+stillbildens komposition som målbild (SHA-256 `f1039dd9…84c78`, 1673×901).
+Exakt bilaga är bevarad privat och dokumenterad i
+`docs/games/roulette/UTFALLSFILMER.md`. Önskemålet om cirka 25 grader är inte
+en uppmätt kameravinkel eller en ytterligare rotation som ska läggas på
+målbilden. Hjulsiffror, mask/passning och rörliga lager behöver färdigställas;
+två tekniskt fungerande UI-spel är inte godkända rehearsal-spelningar.
+Denna uppdatering ändrar bara dokumentation; bildkopians hash/storlek har
+verifierats och dokumentationskontroller körs vid commit.
+
+Fortsättning från mergad `6ee5d3aa` i `codex/roulette-anna-runtime`.
+Publicerad preview tappade `compositing: {mode:'alpha'}`; den följer nu med
+från fryst post. V2/v3, exakt byteväg och fortsatt spärr för blackjack-idle
+i roulette är regressionsprovade. Ingen registrering eller publicering ändras.
+
+Den befintliga `tools/roulette-ui-fixture.mjs` kan läsa en förhandsverifierad
+lokal alpha-WebM, MP4-bakgrund och valfri strikt kompositions-JSON. Den kör
+riktiga `/play/roulette`, scenrenderaren och roulettekommandot med SQLite i
+minnet på 127.0.0.2. Fasta fixture-descriptorer ersätter enbart publicerings-
+svaret. Det bevisar inte att Anna redan är registrerad/publicerad i produktion.
+
+Annas andningsfilm (`02700429…1a34`, 897 456 byte) och tidigare gardinfilm
+(`b08fdc4d…1854`, 3 455 652 byte) har visats tillsammans bakom produktens
+roulettebord. Två efterföljande UI-spel återgick till öppna satsningar utan
+omladdning eller loggade JS-fel. Privata hashkvitton, provplacering och
+skärmbild finns i denna chats `roulette-stop`-artefakter. Detta är inte
+acceptans av skarvar, poser, lipsync eller produktionens rumsbindningar.
+
+Full ordinarie pre-commit: **3 329 godkända, 11 skips, 0 fel**, Node 24.21.0;
+17 riktade preview-prov passerar. Underagentens läsande granskning hittade
+ingen försämrad spelavgränsning. GitGuardian: 0 öppna/17 ignorerade incidenter,
+aktiv övervakning, main-suite queued; historikskanningen är too_large och
+platsmetadata delvis ofullständig. Inga incidentstatusar ändras.
+
+Jakob har valt bort det fristående schematiska kulprovet för produktion.
+Uppdaterad plan i `docs/games/roulette/UTFALLSFILMER.md` jämför Three.js och
+den granskade CSS-baserade Gravity.js. Nästa steg kräver explicit sparat
+roulette-idle, fryst kontrakt och readinessgrind; behåll `dealer:null` tills
+hela bindningen finns. Registrering, native-frame-passning, godkänd
+hjulimpuls/kulsläpp, en korrekt 37-facksrotor och serverns pending/reveal
+återstår. PNG-nativeintag är fortfarande spärrat; README:s äldre påstående
+är korrigerat. Inga nya betalda filmer, nya bibliotek eller live-writes.
+
 ## Paows talgrund och materialkontroll, 13 oktober 2026
 
 Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade

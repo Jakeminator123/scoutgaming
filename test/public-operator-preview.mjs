@@ -28,10 +28,11 @@ function fixture({schemaVersion=3,compositing=true}={}) {
   lane.layers.table={enabled:true,default:project.layerAssets[2].id,allowed:[project.layerAssets[2].id],colors:[]};
   const mediaRows=lane.dealers.map((dealerId,index)=>{
     const id='10000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),sha256=String(index+1).repeat(64);
+    const format=compositing==='alpha'?'webm':'mp4';
     project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
-    return {id,sha256,size:4096,contentType:'video/mp4',pathname:'croupier/media/dealers/'+dealerId+'/review/uploads/'+id+'/'+sha256+'.mp4',
+    return {id,sha256,size:4096,contentType:'video/'+format,pathname:'croupier/media/dealers/'+dealerId+'/review/uploads/'+id+'/'+sha256+'.'+format,
       classification:{dealerId,eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:dealerId,notes:'SECRET_DRAFT_NOTES',playback:'once',
-        ...(compositing?{compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}}:{})},revision:'media-'+dealerId};
+        ...(compositing?{compositing:compositing==='alpha'?{mode:'alpha'}:{mode:'green-screen',threshold:.2,softness:.1,despill:0}}:{})},revision:'media-'+dealerId};
   });
   const inventory={videos:mediaRows.map(record=>({id:record.id,sha256:record.sha256,bytes:record.size,dealer:record.classification.dealerId,
     available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
@@ -91,6 +92,22 @@ test('v2/v3 published descriptor selects one frozen dealer and only allowed laye
     assert.deepEqual(f.reads,['north']);assert.equal(f.served.length,0);assert.deepEqual(f.saved,before);
   }
 });
+test('frozen alpha survives the public descriptor and immutable byte route without weakening game isolation',async()=>{
+  for(const schemaVersion of [2,3]) {
+    const f=fixture({schemaVersion,compositing:'alpha'}),before=clone(f.saved),value=await body(f);
+    assert.deepEqual(value.media.dealer.compositing,{mode:'alpha'});
+    assert.equal(value.media.dealer.contentType,'video/webm');
+    assert.deepEqual(validatePublicOperatorPreview(value,context),value);
+    const response=await request(f,value.media.dealer.src);
+    assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'video/webm');
+    assert.deepEqual(f.saved,before);
+    f.saved.administration.rooms[0].game='roulette';f.saved.package.games=['roulette'];
+    assert.equal((await body(f)).media.dealer,null);
+    assert.equal((await request(f,value.media.dealer.src)).status,404);
+    assert.equal(f.served.length,1,'roulette cannot fetch even an alpha blackjack idle');
+  }
+});
+
 test('preview labels match canonical supplied material while byte paths remain publication-scoped',async()=>{
   const f=fixture(),{kind,...signature}=materialSource('studio-teal','video');
   f.rewrite(pack=>{const asset=pack.assets[0];Object.assign(asset,signature);asset.pathname=layerAssetPath(asset);});

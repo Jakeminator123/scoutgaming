@@ -1,4 +1,6 @@
-// Proposed contract, not the current roulette API. Compile: asy -f pdf roulette-filmflode.asy
+// Proposed production-player contract, not the current roulette API.
+// The separate schematic HTML experiment is NOT production material.
+// Compile: asy -f pdf roulette-filmflode.asy
 size(680, 550);
 defaultpen(fontsize(10pt));
 pen edge=rgb(0.25,0.38,0.36);
@@ -11,7 +13,7 @@ box((0,390),"VILA: samma roulette-dealer");
 box((0,320),"SPELA: spara kommando och requestId");
 box((0,250),"Server: pending, dolt utfall, reveal-tid",280);
 box((-160,165),"Dealer: hjulimpuls och kulslapp",270);
-box((160,165),"Hjul + en kula: neutral rorelse",270);
+box((160,165),"Videoscen + en kula: neutral rorelse",270);
 box((160,85),"Server reveal: utfall blir offentligt",270);
 box((160,5),"Ett av 37 mal / korta avslut",270);
 box((160,-75),"Ratt slutbild och resultat",270);
