@@ -194,7 +194,19 @@ bild/video i editor. Roulettespelaren väljer dessutom publicerat bord som
 bild eller videoloop, med publicerad geometri och utan prototypens mask.
 Se [materialinventering och signalflöde](games/roulette/KLIPPKARTA.md).
 
-Återstår: fryst roulettebank för dealerhandlingar, 37 servervalda utfallsfilmer,
+Senare materialkontroll samma dag: levererade filmer och VILA-PNG är identifierade
+med hash. PNG ligger under croupier/idle, inte bord/videos. Eyes-filen är tidigare
+underkänd opak glasögon-v1; rätt v2 återfanns och kopierades separat, med faktisk
+alfa i samtliga 241 rutor. Originalen är orörda. Ett privat schematiskt prov klarar
+37 mål × tre varianter och exporterad WebM; jämförbart tvåsekunders ROI-prov är
+182 381 byte mot helbildens 382 128. Det är ingen fotorealistisk bank eller
+spelacceptans. [Utfallsplanen](games/roulette/UTFALLSFILMER.md) ersätter kravet på
+37 stora filmer med gemensamt hjul + separat kula/korta avslut, och dokumenterar
+att dagens API avslöjar resultat/saldo före filmen. Serverstyrd pending/reveal
+samt korrekt hjul och kulsläppskalibrering återstår. Ingen betald generering
+eller plånboksändring gjordes.
+
+Återstår: fryst roulettebank för dealerhandlingar, 37 servervalda utfall,
 engångsuppspelning/synkronisering, separat talset och visuell acceptans med
 två spel i följd. Ingen privat originalfil har flyttats eller godkänts,
 och ingen produktionsdata, publicering eller provider har ändrats.

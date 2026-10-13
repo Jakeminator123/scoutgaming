@@ -2,7 +2,7 @@
 
 Kodgrund kontrollerad 13 oktober 2026 på `54522581`. Tilläggen nedan hör till
 `codex/roulette-clip-map`; detta är inte ett kvitto på produktionspublicering.
-[Spelmanual](README.md) · [Motorkontrakt](TEKNIK.md) · [37 utfallsfilmer](UTFALLSFILMER.md).
+[Spelmanual](README.md) · [Motorkontrakt](TEKNIK.md) · [37 kompakta utfall](UTFALLSFILMER.md).
 
 ## Ägarskap och separation
 
@@ -26,8 +26,10 @@ kan inte märkas om. Se [gemensamma ordlistan](../../../lab/docs/TERMINOLOGI.md)
 | Rummet öppnas, `op: state` | Serverläget läses; ingen buy-in | VILA/idle, valfri hälsning |
 | Marker läggs, tas bort, ångras, återläggs | Lokalt utkast; ingen debitering eller motorsignal per klick | Behåll idle; eventuell kort bekräftelse begränsas i frekvens |
 | Spela, `op: spin` | Samma requestId/version/valuta/satsningar sparas före anropet | Lås kontroller och vänta på kvitto |
-| `roulette.spin.resolved` | Serverevent i ett redan sparat rundkvitto, nummer/färg samt avräkning | Starta dealerhandling en gång per spelare/bolag/rum/rund-ID |
-| Kulsläppsruta | Behöver kalibreras i rätt filhash | Starta rätt 0–36-film i hjulspåret |
+| `roulette.spin.resolved` | Serverevent i ett redan sparat rundkvitto, nummer/färg samt avräkning | Dagens resultat är redan offentligt; ger ingen hemlig filmfas |
+| Accepterad satsning / pending | Föreslaget kontrakt, saknas idag | Starta neutral dealer-/hjulrörelse en gång per spelar-/rumsscope och rund-ID |
+| Serverns reveal | Föreslaget kontrakt, saknas idag | Frigör utfallet och välj korrekt avslut; spärren gäller även saldo/historik |
+| Kulsläppsruta | Behöver kalibreras i rätt filhash | Släpp en kula i hjulspåret; utfallsberoende avslut först efter serverns reveal |
 | Filmens stopp/resultatruta | Behöver implementeras | Håll rätt slutbild; resultatannonsering och eventuell nettoreaktion |
 | Ny runda | Personliga rundor, ingen gemensam nedräkning | Tillbaka till kompatibel vila |
 | Utträde | Ingen separat cash-out i roulette | Valfritt farväl vid ordnat utträde; flikstängning garanterar inget klipp |
@@ -39,20 +41,25 @@ fristående klienttriggers. Återbetalning kan vara större än noll trots negat
 netto. Filmavslut får aldrig ändra pengarna. Gemensamt demosaldo delas med
 blackjack; externa partnerkontons rouletteplånbok stöds inte ännu.
 
+Föreslaget flöde, **inte dagens direkt avgjorda API**:
+
 ```text
-Öppna rum → VILA/IDLE ←─────────────────────────────┐
-                │                                 │
-          Placera marker                          │
-                ↓                                 │
-             SPELA → sparat serverkvitto           │
-                         ├─ DEALER: hjulgest → idle │
-                         └─ HJUL: nummerfilm 0–36   │
-                                      ↑           │
-                            synkat kulsläpp        │
-                                      ↓           │
-                         slutbild → resultat ──────┘
+Öppna rum → VILA/IDLE → placera marker → SPELA
+                                         ↓
+                              accepterad satsning / pending
+                                 ├─ DEALER: impuls + kulsläpp
+                                 └─ HJUL: neutral snurr, en kula
+                                         ↓
+                              SERVER REVEAL: offentligt utfall
+                                         ↓
+                              ett av 37 kalibrerade avslut
+                                         ↓
+                              slutbild → resultat → VILA
 BAKGRUND: separat tyst bild/videolager genom scenen
 ```
+
+[Asymptote-källa](underlag/roulette-filmflode.asy). Filmen får ingen sekretess
+genom att bara dölja ett redan mottaget resultat.
 
 ## Klippkartan och uppladdning
 
@@ -66,7 +73,7 @@ flytta och har egna förhandsvisningar. Sparade blackjacklinjer ändras inte.
 | Vänta, variant | `roulette.idle/glasses-clean`, MP4/WebM | Registrerar lugn variation |
 | Starta | `roulette.wheel-start/wheel-start`, MP4/WebM | Registrerar hjulgest, initialt overifierade poser |
 | Insatser | Välkommen, lägg insatser, inga fler insatser | Planerat roulette-talset; ingen falsk koppling till blackjacktal |
-| Hjul | 37 nummerfilmer och resultatstillbilder | Planerad versionsbunden bank; inte en vanlig loopande bordsfilm |
+| Hjul | 37 slutlägen och resultatstillbilder | Planerad versionsbunden bank; inte en vanlig loopande bordsfilm |
 | Resultat | Nummer/färg, nettoreaktion, återgång | Planerad spel- och talstyrning |
 
 **Registrerat är inte spelkopplat.** De tre videofacken använder befintlig
@@ -104,7 +111,7 @@ Underagentens kontroll av källkod, metadata och befintliga dokument gav:
 | `runway-table-source.mp4` | Underkänd geometri; får inte fylla ett utfallsfack |
 | 0–36-banken | Ingen verifierad komplett bank eller spelkoppling |
 
-Privata original har inte öppnats, flyttats eller återgodkänts i denna kontroll.
+Den första inventeringen ovan byggde på dokumentation. De nu uttryckligen levererade originalen har därefter öppnats och verifierats enligt nästa avsnitt; de har inte flyttats eller produktionsgodkänts.
 Detaljer och tidigare privata prov finns i [materialavsnittet](README.md#faktiskt-producerad-startuppsättning).
 De fem kända blackjackborden ska ligga kvar som separata blackjackdesigner.
 Ingen fysisk omflyttning behövs; problemen gäller felaktiga kopplingar och
@@ -132,3 +139,27 @@ inte en serverstyrd utfallsfilm. Bakgrundsvideo stöds också som separat lager.
 Nya spelmärkta bord kräver motsvarande runtimekapabilitet före registrering
 och publicering. Ingen produktion, databas eller lagrad fil har ändrats av
 att detta dokument och verktygsförslag levereras.
+
+## Nya lokala original, 13 oktober
+
+Verifierat direkt i `Desktop/videoskapare/roulette`; relativa namn nedan avser den katalogen. Alla fyra videor är ljudlösa, 1916×1080 och 24 fps. Exakta bytes/hash är identiteten; ett liknande filnamn ger inget godkännande.
+
+| Fil | Byte / längd | Rätt destination och kontroll |
+| --- | --- | --- |
+| `bord/videos/roulette-bord-start-stop.mp4` | 10 317 238 / 15,041667 s, 361 rutor | Bord-/hjulprototyp. Nummerkransen är inte verifierad; ersätter inte en korrekt 37-bank |
+| `croupier/idle/idle.mp4` | 3 629 162 / 10,041667 s, 241 rutor | Bevara som källfilm; H.264 saknar alfa, svart får inte antas vara transparent |
+| `croupier/idle/idle.webm` | 897 456 / 10,042 s | `roulette.idle/breathing`. Hash matchar dokumenterad andningsvila; avkodade alfaprov har både 0 och 255 |
+| `croupier/idle/variant/anna-variant-idle-eyes.webm` | 826 571 / 10,042 s | Glasögonhandling, inte bara ögonvariant. **Underkänd alfa:** provrutor är helt opaka trots alfamarkering. Hash matchar tidigare underkänd v1 |
+| `croupier/idle/Anna-Joihnson-VILA.png` | 603 108 / 1672×941 RGBA | Rätt befintlig sökväg till referensbilden. Den angivna sökvägen under `bord/videos` finns inte |
+
+SHA-256 i samma ordning:
+
+- Bord: `7702cec6f0ec5ec2e1767608781588e8f6b182a0fbc652a952706f8288314195`.
+- Idle MP4: `b89a56277d7bf08e993997f4bd71f5d13692fb0f32d818e2fb53156ec7ea2eda`.
+- Idle WebM: `02700429c0536003694dd0e595f3b5d5864bf12e580c0539c252f1793d8a1a34`.
+- Eyes/v1: `b6025b2cad75cb82406f29a8b116fe44957b013cf1de25b11cf9983d312cd224`.
+- VILA PNG: `bb91fc8a9fc9e1e749d68c0d1b38d7dfac1a781663dcc586e93527ac86ceb737`.
+
+Den redan korrigerade `runway-glasses-alpha-v2.webm` återfanns i det uttryckligen dokumenterade privata provet från 12 oktober: **2 438 993 byte**, SHA-256 `f64d2b014bb28704ed99d5f220268466b4153fc489044eb6204a16aa647ffcb4`. En separat leveranskopia heter `anna-glasses-clean-alpha-v2.webm` i det nya `roulette-stop`-provet. Alla **241 avkodade rutor** har både helt transparenta och helt opaka pixlar. Detta verifierar användbar alfaomfattning, inte fina kantdetaljer, handkontakt eller en godkänd viloskarv. Koppla denna hash till `roulette.idle/glasses-clean`; använd inte eyes/v1 som reserv. Ingen ny generering behövdes och originalet skrevs inte över.
+
+Föreslagen prioritet: behåll befintlig vila, använd rätt glasögonfil efter visuell granskning, lås korrekt hjulgeometri och beställ separat kulsläpp/hjulimpuls. Därefter kan en kort blick/smile-variant läggas till. [Utfallsplanen](UTFALLSFILMER.md) beskriver masker, 37 mål, OpenClaw-spärrar och resultatsekretess.
