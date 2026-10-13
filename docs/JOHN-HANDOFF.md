@@ -17,7 +17,8 @@ verifierar valutabyte, 7/30 dagar, journal, tomt svar, 401, 503 och återhämtni
 Fyra modelltester täcker summering, UTC-gränser, okända typer och feldata;
 de ingår i den gemensamma regressionshooken. Admin-typkontroll och Lab-
 produktionsbygge är verifierade efter synk till main `fcdae2bd`. Full
-regressionshook körs vid leverans; produktionsacceptans återstår efter deploy.
+regressionshook: 3 118 godkända, 11 överhoppade, 0 fel. Produktionsacceptans
+återstår efter deploy.
 Ingen ekonomisk transaktion, behörighetsändring eller databasmigration utförs.
 
 ## PR #50: fast rumsmiljö och bevarad fryst film
