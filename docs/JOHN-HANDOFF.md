@@ -10,6 +10,13 @@ inga standardklipp, publiceringar, rumsinställningar eller speldata ersätts.
 Osäkra kvitton försöks inte om automatiskt. Dubbla filval och förlorade
 godkännanden efter redigering är skyddade; interna sidbyten behåller listan.
 
+Importassistenten är också åtkomlig från en bubbla nere till höger i hela
+`/admin`. Bubblans panel och den stora vyn på `/admin/clips` använder samma
+monterade importutkast och samtal. Katalogen laddas först när assistenten
+öppnas eller klippvyn besöks. Minimering sparar inget och raderar inte utkastet;
+dealer- och importgodkännandena gäller på båda ytorna. Spelarens samtalsorb
+är separat och får inga administrativa befogenheter.
+
 Rådgivar-API:t har ingen skrivbehörighet. Det begränsar filnamn, kontext,
 fack och modellutdata, kontrollerar session/scope/origin och läser om
 behörighet/katalog efter modellen. Separat AI är opt-in i Studio; utan
@@ -31,8 +38,58 @@ skippat. Tiofilsfixture med verklig byggd klient och
 Blob-SDK men mockad server gav åtta sparade, ett tydligt fel och en lokal
 posereferens utan automatisk omkörning. Orben klarade fyra skärmstorlekar,
 tangentbord/fokus/Escape och reduced motion utan enhetsåtkomst.
+Adminbubblan är dessutom verifierad i Chromium vid 320, 390 och 1280 px:
+en gemensam dealer/lista/chatt/godkännande över panel, helsida, sidbyten och
+bakåtknapp; ingen katalogläsning från oöppnad bubbla; pausad lokal video när
+vyn döljs; fokus/Escape och spärrade sidbyten vid minimerad uppladdning.
+Samma isolerade Blob-fixture behöll nio prepare, åtta commit och ett tydligt
+filfel utan återspelning eller automatisk sparning vid vybyte.
 Produktionsmodell, verklig molnimport och dealerrehearsal två gånger är
 fortfarande ej verifierade. Se [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#dealerimport-och-samtalskontroll-13-oktober-2026).
+
+## Tillägg 13 oktober: papperskorg i befintliga Control
+
+`codex/control-trash` bygger vidare på bakgrunds-PR #58. Bolagsarkivering
+tar nu bort bolagets rum från aktiv administration och publicering, samt
+oanvända genererade uppspelningsadaptrar. Delade adaptrar och andra bolag
+behålls. `operator-lifecycle` kräver även `expectedAdministrationRevision`.
+Återställt bolag återöppnar inga rum; varje rum återställs separat som pausat.
+
+`/control/library` har beständig papperskorg för både bord och bakgrunder.
+`material-trash-check` tar `{id, archived, expectedRevision}` och visar
+berörda sammansättningar, rum och bolag. `material-trash` kräver samma
+kropp plus `impactToken`, kontrollerar aktuella projekt-/administrations-
+och paketrevisioner och sparar hela ändringen atomiskt. Berörda publicerade
+sammansättningar avpubliceras och deras rum flyttas till befintligt rumsarkiv.
+Aktiva och arkiverade dealerutkast kopplas loss från materialet. Återställning
+gör filen valbar igen utan automatiska kopplingar eller publiceringar.
+
+`project.layerAssetTrash` innehåller högst 128 metadata-poster; media kopieras
+inte och en borttagning skapar ingen databasrad per beroende. Originalfiler,
+pakethistorik och befintlig revisionshistorik behålls. Det är ingen generell
+databasstädning eller permanent filradering. Dealers och klipp använder sina
+befintliga papperskorgar och skydd för publicerad media. Den gamla direkta
+projektvägen får inte kringgå materialens livscykelkontroll.
+
+Synliga gamla Mobile Phone Lane-namn i biblioteksreferenser och speltitel
+visas som Standardsammansättning. Det interna `mobile-phone`-ID:t behålls.
+Rensning av återstående Your Company-varianter är inte utförd: de har
+referenser som nu kan visas och hanteras i det nya bekräftelseflödet.
+
+Integration: materialpapperskorgen förhandlar runtime **v11**. PR #55 äger
+v10 `dealerSets: 'authoring-categories-v1'`; den här fristående grenen
+annonserar inte v10. När grenarna förenas måste v11 även innehålla det
+faktiskt implementerade dealerSets-stödet och readiness-/kontraktstesterna
+förenas innan gemensam driftsättning. Nya `/admin` får återanvända samma
+serverkontrakt; dess UI-integration ägs av SIDOR3. Ingen Neon-migration
+krävs. Detta tillägg är kodleverans, inte bevis på driftsättning.
+
+Verifiering: riktade server-/UI-tester för bekräftelse, samtidiga ändringar,
+tenantgränser, återställning, skyddad historik och full rollback; Lab-
+produktionsbygget passerar. Full pre-commit för `133b74f5` passerade:
+2 977 godkända tester, 11 överhoppade och 0 fel. Detta är inte en ny
+acceptans av externa PostgreSQL-miljöer eller av visuell dealerkomposition.
+Inga dealerfilmer, kalibreringar eller rouletteoriginal har ändrats.
 
 ## Tillägg 13 oktober: dealerbilder och Labba i sammansättningar
 
@@ -112,8 +169,8 @@ version 8. Rouletterummet är kvar. Demo North/South återfanns endast i
 diagnostiska fixtures, inte bland de registrerade bolagen.
 AGENTS anger nu `/admin` och `/lobby` som riktning, med befintliga ytor
 kvar under övergången. Den begärda gemensamma papperskorgen för samtliga
-resurstyper i både `/control` och `/admin` samt granskning av äldre
-Mobile Phone Lane-kopplingar är fortsatt arbete, inte färdig funktion.
+resurstyper fortsätter i tillägget ovan; `/admin`-integrationen och faktisk
+driftsättning ska verifieras separat.
 
 ## Tillägg 13 oktober: samlade spelmanualer
 

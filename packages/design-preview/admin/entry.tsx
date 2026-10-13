@@ -1,5 +1,4 @@
 import { createRoot } from 'react-dom/client';
-import { useEffect, useState } from 'react';
 import { StudioSidebar } from './components/studio/studio-sidebar';
 import { navigate, previewHref, usePathname } from '../runtime/navigation';
 import { RegisteredStudio } from './components/studio/registered-studio';
@@ -34,15 +33,13 @@ const pages: Record<string, string> = {
 };
 function App() {
   const path = usePathname();
-  const [clipsOpened,setClipsOpened] = useState(path === '/control/clips');
-  useEffect(()=>{if(path === '/control/clips')setClipsOpened(true);},[path]);
   const Example = examples[path];
   return <div className="preview-admin flex bg-sg-bg text-sg-text">
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
       <label className="preview-mobile-nav">Sida <select value={path === '/control' ? '/control/structure' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      {clipsOpened && <div hidden={path !== '/control/clips'} className="dealer-import-route"><Clips active={path === '/control/clips'}/></div>}
+      <div className={path==='/control/clips'?'dealer-import-route':'dealer-assistant-background'}><Clips active={path === '/control/clips'}/></div>
       {path === '/control/clips' ? null : Example ? <StudioProvider>
         <div className="border-b border-sg-line px-6 py-2 text-xs text-sg-muted" role="note">
           Designexempel · {pages[path]} är ännu inte anslutet. Uppgifter och ändringar här är simulerade och påverkar inga riktiga register.

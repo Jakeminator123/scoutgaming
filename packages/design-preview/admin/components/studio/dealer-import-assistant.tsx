@@ -38,7 +38,7 @@ function LocalPreview({file}:{file:File}) {
   </div>;
 }
 
-export function DealerImportAssistant({active=true}:{active?:boolean}) {
+export function DealerImportAssistant({active=true,onBusyChange}:{active?:boolean;onBusyChange?:(busy:boolean)=>void}) {
   const [catalog,setCatalog] = useState<ImportCatalog|null>(null), [loadCount,setLoadCount] = useState(0);
   const [loading,setLoading] = useState(true), [error,setError] = useState(''), [notice,setNotice] = useState('');
   const [dealerId,setDealerId] = useState(''), [dealerApproved,setDealerApproved] = useState(false);
@@ -62,17 +62,26 @@ export function DealerImportAssistant({active=true}:{active?:boolean}) {
     return ()=>abort.abort();
   },[loadCount]);
   useEffect(()=>()=>controller.current?.abort(),[]);
+  useEffect(()=>{onBusyChange?.(busy!==null);},[busy,onBusyChange]);
   useEffect(() => {
     if (!pending && !busy) return;
     let approvedClick=false;
     const leave = () => busyRef.current ? false : window.confirm('Du har lokala filer i importen. Vill du lämna importen? Vid omladdning eller ny sida försvinner den osparade listan.');
     const beforeUnload = (event:BeforeUnloadEvent) => {event.preventDefault();event.returnValue='';};
-    const beforeNavigate = (event:Event) => {if(!active)return;if(approvedClick){approvedClick=false;return;}if (!leave()) event.preventDefault();};
+    const beforeNavigate = (event:Event) => {
+      if(busyRef.current){event.preventDefault();return;}
+      // Internal SPA routes preserve this exact session. Full page anchors do not.
+      const href=(event as CustomEvent<{href?:string}>).detail?.href;
+      if(href?.startsWith('/admin/')&&!href.startsWith('/admin/lobby'))return;
+      if(approvedClick){approvedClick=false;return;}if (!leave()) event.preventDefault();
+    };
     const click = (event:MouseEvent) => {
-      if(!active)return;
       const anchor = (event.target as Element)?.closest?.('a');
       if (!anchor || anchor.target === '_blank' || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       const target = new URL(anchor.href,window.location.href);
+      if(anchor.dataset.studioNavigation==='true'&&target.origin===window.location.origin&&target.pathname.startsWith('/admin/')&&!target.pathname.startsWith('/admin/lobby')) {
+        if(busyRef.current){event.preventDefault();event.stopPropagation();}return;
+      }
       if (!leave()) {event.preventDefault();event.stopPropagation();}
       else if(target.origin === window.location.origin && target.pathname.startsWith('/admin/')) {approvedClick=true;setTimeout(()=>{approvedClick=false;},0);}
     };

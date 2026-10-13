@@ -11,6 +11,19 @@ ingen standard, grundloop, sammansättning eller publicering byts automatiskt.
 Varje fil får eget resultat. Ett oklart registerkvitto kräver återläsning,
 inte automatisk omkörning. Hela batchen är inte en gemensam transaktion.
 
+En bubbla nere till höger i `/admin` öppnar samma importassistent som den
+stora klippvyn. En gemensam monterad instans behåller dealer, filer, samtal
+och godkännanden när man växlar vy eller minimerar. Den första öppningen
+eller ett besök på klippsidan laddar katalogen; en oöppnad bubbla gör inga
+rådgivningsanrop. Öppning, stängning och vybyte sparar inget. Spelarens
+samtalsorb är en separat yta och delar inga administrativa behörigheter.
+Lokala förhandsvisningar pausas när vyn döljs. Panelen avmonteras inte vid
+minimering; pågående anrop och resultat finns kvar. Intern SPA-navigation
+behåller utkastet, medan fullständiga sidbyten och externa länkar varnar
+för osparade filer även när panelen är stängd. Pågående anrop spärrar
+navigationskommandon och länkar; webbläsarens omladdning har sitt eget
+innan-lämna-skydd.
+
 `GET/POST /studio/api/dealers/import-proposal` kräver aktuell N1-session och
 rätt scope. POST kräver samma origin och läser om både användare och katalog
 efter rådgivningen. Filnamnsregler stöder bland annat pos1–7 → box0–6,

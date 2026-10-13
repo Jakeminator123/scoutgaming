@@ -36,6 +36,9 @@ test('existing frozen v3 opaque metadata remains readable with its exact saved e
 });
 test('v1 canonical bytes and gzip envelope remain exactly compatible with the pre-integration fixture',()=>{
   const project=createSeedProject();project.lanes=[defaultPresentationLane('astrid')];project.revision='v1-frozen-fixture';
+  // Historical packages retain their stored name even though new drafts use
+  // the current UI terminology. The immutable reference bytes stay unchanged.
+  project.lanes[0].label='Mobile Phone Lane';
   const legacy=buildPresentationPackage(project,[project.lanes[0].id],[]);
   const envelope=encodePresentationPackage(legacy);
   const historicalEnvelope={format:'croupier-lanes-v1',encoding:'gzip-base64url',sha256:'cb46fe439c10e9584e978b784812c83043bec71084e88824eb3121318f359784',

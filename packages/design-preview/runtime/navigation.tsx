@@ -20,7 +20,7 @@ export function navigate(href: string, replace = false) {
 }
 export default function Link({ href = '', onClick, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) {
   const target = previewHref(href);
-  return <a {...props} href={target} onClick={event => {
+  return <a {...props} href={target} data-studio-navigation={!props.target && target.startsWith('/admin/') && !target.startsWith('/admin/lobby') ? 'true' : undefined} onClick={event => {
     onClick?.(event);
     if (!event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
       && !props.target && target.startsWith('/admin/') && !target.startsWith('/admin/lobby')) {
