@@ -1,5 +1,24 @@
 # Aktuell handoff — Scoutgaming
 
+## GPU-testbudget 20 USD, 13 oktober
+
+Jakob höjde uttryckligen dygnstaket till 20 USD. Dagssumman avser konservativa
+GPU-reservationer per UTC-dygn, inte RunPods faktura eller separat LLM-/TTS-trafik.
+Avläsning 19:47 UTC: 14 sessioner à 0,50 USD = 7 USD; även avbrutna försök räknas.
+
+Kodens dygnsgräns är nu 20 USD. Effektivt tak är fortfarande det lägsta av
+Render-inställningen och sparad Neon-policy. Sessionsreserven 0,50 USD och
+fullfilsreserven 1 USD behålls; per-jobbgränsen är fortsatt 10 USD. Ingen historik,
+reservation, återbetalning eller befintlig QA-kampanj ändras av höjningen.
+
+Obligatorisk Studio-migration 011 vidgar endast budgetpolicyns exakta CHECK.
+009/010 är fortsatt reserverade för B18/B19. Äldre SQL-/strukturchecksummor
+bevaras och verifieras genom exakt versionerad strukturevolution; okänd drift
+eller saknad 011-ledger nekas. Migrationen körs före merge. Först efter deploy
+av koden uppdateras produktionspolicyn och Render-variabeln till 20 USD.
+149 riktade tester och ett verkligt Neon-migrationsprov med full rollback PASS.
+Två tekniskt färdiga Paow-spelningar ersätter inte visuell läppsynkacceptans.
+
 ## Publik Scoutguide med D-ID, 13 oktober
 
 Besökare, N2 och N3 får en separat Scoutguide genom den gemensamma chattknappen.
