@@ -114,8 +114,9 @@ De senaste `kevin`/`kevin-staging`-träden kontrollerades även för incheckad
 worker, Dockerfile och Python-implementation: de innehåller klient/relay men
 inte denna worker. `emil` på `01b5aa490e1aa43938bceab9d49dfc7d931fefeb`
 innehåller den äldre `services/astrid-gpu-worker`, inte `worker/motor.py`.
-GitHub-läsning med Jakobs konto gav 404 den 13 oktober; koden/image-digesten
-och den körande deploymenten är därför inte verifierade. Vår
+GitHub-läsning med Jakobs konto gav 404 den 13 oktober. Konfigurationen på
+RunPod verifierades därefter enligt nedan; källkoden och image-digesten är
+fortfarande inte åtkomliga. Vår
 `services/astrid-gpu-worker` kommer från en annan, äldre källrevision och
 generiska dealerprofiler förbereder fortfarande en stillbild. Denna leverans
 aktiverar inte rörlig lipsync, ändrar inga providerinställningar och importerar
@@ -129,6 +130,56 @@ giv/omplanering mitt i talet, avbrott och reservväg. Kontrollera röst, läppar
 kortkontakt, masker och lager visuellt/hörbart. Tidigare Paow-godkännande
 följer inte automatiskt med nya film-/ljudhashar. Rörligt tal är öppet tills
 dessa kontroller passerar; källpaketets checksumma ersätter dem inte.
+
+### Förberedd bildruteadapter, 14 oktober 2026
+
+RunPods läs-API bekräftar endpointen `mq7eiwanda72fg`, namnet
+`croupier-lipsync-staging` och template `61hsh8i4r0`. Imagen är
+`ghcr.io/emacodehero/croupier-lipsync-worker:6c80fe50806979d902a6457f43ec74ca8ee5d421`.
+Detta är en observerad tagg, inte en verifierad digest eller källcommit.
+Hälsokontrollen svarade 200 med fyra redo/inaktiva workers och ingen kö vid
+kontrollen; det är inte ett talprov eller bevis på rätt avatarer. ElevenLabs
+GET voice svarade 200 för båda angivna ID:n och namnen Paow respektive
+Dragge med samma lokala nyckelfil; ingen TTS-generering utfördes.
+Den lokala, Git-ignorerade `.env.emil` gav fungerande API-åtkomst; dess
+angivna endpoint-ID gav däremot 404. Ingen nyckel eller driftinställning
+ändrades. Registret gav 401 anonymt och 403 vid manifestläsning med befintlig
+GitHub-inloggning. Ingen GPU beställdes. Template har min 0/max 4 workers,
+180 s idle timeout och ingen kopplad nätverksvolym. Det bevisar inte var
+avatarbanken ligger eller att workern levererar rätt rutor.
+
+`web/moving-speech-plan.mjs` förbereder en ren, inaktiv adaptergräns:
+
+- Den tar en redan auktoriserad serverbindning (dealer, worker-avatar,
+  session, tal, revision, röstprofil och text-/ljud-/avatarhashar), exakta
+  publicerade källklipp och en explicit tidslinje av källrutor vid 24 fps.
+  Dragan kan bindas till worker-avatar `dragge` utan att dealer-ID ändras.
+- Den bygger Kevins `karta` och PCM-start/slutmeddelanden med 24 kHz,
+  `fran_ruta` för omplanering och 220 ms ljudförskjutning. Hållna slutrutor
+  blir egna runs; vilobilden är uttryckligen `vila`, inte en gissad film.
+  Planen begränsas till 600 rutor (25 s), inklusive förtid före ljudet.
+- `matchFrame` kräver samma plan, dealer, session, röst/ljud, exakta
+  källbytes, tagning, kroppsruta och talruta. Ingen sökning ±48 rutor görs.
+  Felaktiga, avbrutna eller gamla svar ger inget renderingsunderlag.
+  Resultatet pekar endast på dealerbilden före beskärning och keying;
+  bakgrund, bord och auktoritativa kort förblir separata.
+
+Modulen verifierar formen på tillförda hashar, inte mediebytes eller
+provideråtkomst. Den är ännu inte inkopplad i server/player och startar inga
+jobb. Den ersätter inte befintlig stillbildsväg. Nästa integration måste
+verifiera paket/PCM/worker-avatar mot dessa hashar, använda befintlig
+admission och GPU-acceptans före TTS, auktorisera worker-relay och para ihop
+metadata med rätt avkodad bild. Vid omplanering ska gammal plan avbrytas
+både lokalt (`cancel()`) och hos workern; lokalt cancel avslutar inte ett
+RunPod-jobb. Befintlig budget, 60 s idle-gräns och avbrott gäller fortsatt.
+Spelarens faktiskt presenterade `mediaTime` och ljudklocka måste ge de två
+bildruteindexen. En renderingsbeskrivning är inte visuell synkacceptans.
+
+`test/moving-speech-plan.mjs` körs i full pre-commit och provar Paow,
+Dragan/dragge, vilobild, hållna rutor, fel media/röst/session, omplanering,
+avbrott och maskgränser. Ingen shader, liveavkodare, ny provider eller
+ny meny har aktiverats. Två riktiga talprov per dealer återstår efter
+worker-/avatarverifiering och inkoppling.
 
 ## Aktiva ytor och kompatibilitetsgräns
 
