@@ -1,14 +1,17 @@
 'use client';
 import type {StudioLane, LayerAsset} from '../lib/studio-model.mjs';
+import {layerAssetFitsGame} from '../../web/layer-asset-contract.mjs';
 
-export function LayerAssetSelect({role,lane,assets,onChange,permissions=true}:{role:'background'|'table';lane:StudioLane;assets:LayerAsset[];onChange:(lane:StudioLane)=>void;permissions?:boolean}) {
-  const rows = assets.filter(asset=>asset.role===role), layer=lane.layers[role];
+export function LayerAssetSelect({role,lane,assets,onChange,permissions=true,game='blackjack'}:{role:'background'|'table';lane:StudioLane;assets:LayerAsset[];onChange:(lane:StudioLane)=>void;permissions?:boolean;game?:'blackjack'|'roulette'}) {
+  const rows = assets.filter(asset=>asset.role===role&&layerAssetFitsGame(asset,game)), layer=lane.layers[role];
+  const mismatched=role==='table'?[...new Set([...layer.allowed,...(layer.default?[layer.default]:[])])].filter(id=>!rows.some(row=>row.id===id)):[];
   const backgroundRules=role==='background'?lane.backgroundPlayback?.rules??[]:[];
   const inUse=(id:string)=>backgroundRules.length>0&&(layer.default===id||backgroundRules.some(rule=>rule.assetId===id));
   const edit = (change:(next:StudioLane)=>void) => {const next=structuredClone(lane);change(next);onChange(next);};
   const title=role==='background'?'Bakgrund':'Bord';
   return <fieldset className="field"><legend>{title}</legend>
-    <label>{role==='background'?'Standard · bild eller videoloop':'Standard'}<select value={layer.default??''} onChange={event=>{if(backgroundRules.length&&!event.target.value)return;edit(next=>{
+    {mismatched.length>0?<p role="alert">Mallen innehåller {mismatched.length} bord som inte passar {game==='roulette'?'Roulette':'Blackjack'}. {permissions?<button type="button" onClick={()=>edit(next=>{next.layers.table.allowed=layer.allowed.filter(id=>!mismatched.includes(id));if(next.layers.table.default&&mismatched.includes(next.layers.table.default))next.layers.table.default=null;})}>Ta bort dessa val ur mallen</button>:null}</p>:null}
+    <label>{role==='background'?'Standard · bild eller videoloop':'Standard · bild eller scenloop'}<select value={rows.some(row=>row.id===layer.default)?layer.default??'':''} onChange={event=>{if(backgroundRules.length&&!event.target.value)return;if(event.target.value&&!rows.some(row=>row.id===event.target.value))return;edit(next=>{
       next.layers[role].default=event.target.value||null;
       if(event.target.value&&!next.layers[role].allowed.includes(event.target.value))next.layers[role].allowed.push(event.target.value);
       if(role==='background'&&!event.target.value)next.layers.background.mode='baked';
@@ -22,6 +25,6 @@ export function LayerAssetSelect({role,lane,assets,onChange,permissions=true}:{r
         next.layers[role].allowed=event.target.checked?[...layer.allowed,asset.id]:layer.allowed.filter(id=>id!==asset.id);
         if(!event.target.checked&&next.layers[role].default===asset.id)next.layers[role].default=null;
       });}}/>{asset.label}{inUse(asset.id)?' · används av bakgrundsregler':''}
-    </label>)}<small>{role==='background'?'En videobakgrund loopas under spelet.':'Välj en bild för ett statiskt bord.'} Partnern kan bara välja publicerade alternativ som bolaget får ändra.</small></fieldset>:null}
+    </label>)}<small>{role==='background'?'En videobakgrund loopas under spelet.':'Bordsvideo är en scenloop. Rouletteutfall 0–36 kräver en separat godkänd filmbank.'} Partnern kan bara välja publicerade alternativ som bolaget får ändra.</small></fieldset>:null}
   </fieldset>;
 }

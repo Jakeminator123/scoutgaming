@@ -24,6 +24,11 @@ export function createLayerUploadService({repository,scope,ticketKey,env = proce
   const key = Buffer.from(ticketKey), checkedEnv = Object.freeze({...env});
   const mediaOptions = {...options,env:checkedEnv,cacheDir:options.cacheDir ?? join(tmpdir(),'croupier-private-media')};
   function configured() {if (!isCloudMediaConfigured(checkedEnv)) fail('studio_media_storage_unavailable');}
+  async function ready(record) {
+    if(record.game===undefined)return;
+    if(typeof repository.withMutationContext!=='function')fail('studio_presentation_runtime_update_required');
+    await repository.withMutationContext(()=>{}, {kind:'project',value:{layerAssets:[record]}});
+  }
   const sign = data => {
     const encoded = Buffer.from(canonicalStudioJson(data)).toString('base64url');
     return `${encoded}.${createHmac('sha256',key).update(`studio-layer-upload-v1\0${encoded}`).digest('base64url')}`;
@@ -43,13 +48,14 @@ export function createLayerUploadService({repository,scope,ticketKey,env = proce
   return Object.freeze({
     async prepare(body,{actor} = {}) {
       configured(); actor = validateActor(actor);
-      if (!exact(body,['operation','sha256','size','contentType','role','label','width','height']) || body.operation !== 'prepare') fail('studio_invalid_request',400);
+      if (!exact(body,['operation','sha256','size','contentType','role','label','width','height',...(Object.hasOwn(body??{},'game')?['game']:[])]) || body.operation !== 'prepare') fail('studio_invalid_request',400);
       if (!LAYER_ASSET_TYPES[body.contentType] || !Number.isSafeInteger(body.size)
         || body.size < 16 || body.size > MAX_LAYER_ASSET_BYTES || !/^[a-f0-9]{64}$/.test(body.sha256)) fail('studio_invalid_media',422);
       const id = randomUUID();
       const draft = {schemaVersion:1,id,sha256:body.sha256,size:body.size,contentType:body.contentType,
-        role:body.role,label:body.label,width:body.width,height:body.height};
+        role:body.role,label:body.label,width:body.width,height:body.height,...(Object.hasOwn(body,'game')?{game:body.game}:{})};
       const record = validateLayerAsset({...draft,pathname:layerAssetPath(draft)});
+      await ready(record);
       const expiresAt = now()+TTL;
       // Exact immutable path, bounded MIME/bytes/time, no overwrite. This short
       // client capability cannot authorize reads, deletes or another pathname.
@@ -65,6 +71,7 @@ export function createLayerUploadService({repository,scope,ticketKey,env = proce
       if (typeof mutationTransaction !== 'function') fail('studio_mutation_transaction_required');
       const record = grant(body.ticket,actor), storage = validatePrivateMedia({provider:'vercel-blob',
         pathname:record.pathname,sha256:record.sha256,size:record.size,contentType:record.contentType});
+      await ready(record);
       // getPrivateMedia hashes every newly fetched complete object, validates
       // exact private URL/type/size and serves this prefix from the same bytes.
       const response = await privateMedia(storage,new Request(request.url,{headers:{Range:'bytes=0-31'}}),mediaOptions);

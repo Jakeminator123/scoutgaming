@@ -25,7 +25,22 @@ test('a table cannot become a background by moving its reference',()=>{
   const presentation=fixture();presentation.assets[0].role='background';presentation.lanes[0].layers.background={allowed:[asset.id],default:asset.id};presentation.lanes[0].layers.table={allowed:[],default:null};
   assert.throws(()=>assertPresentationRoomMaterials(presentation,room),mismatch);
 });
-test('unknown historical assets preserve their bindings without name inference',()=>{
+test('unknown historical tables remain blackjack-only without name inference',()=>{
   const presentation=fixture();presentation.assets[0].sha256='0'.repeat(64);presentation.assets[0].label='Blackjack · grön filt';
-  assert.doesNotThrow(()=>assertPresentationRoomMaterials(presentation,{...room,game:'roulette'}));
+  assert.doesNotThrow(()=>assertPresentationRoomMaterials(presentation,room));
+  assert.throws(()=>assertPresentationRoomMaterials(presentation,{...room,game:'roulette'}),mismatch);
+});
+test('explicit table game isolates unknown videos while shared backgrounds remain reusable',()=>{
+  for(const contentType of ['video/mp4','video/webm']){
+    const presentation=fixture();Object.assign(presentation.assets[0],{sha256:'0'.repeat(64),contentType,game:'roulette'});
+    assert.doesNotThrow(()=>assertPresentationRoomMaterials(presentation,{...room,game:'roulette'}));
+    assert.throws(()=>assertPresentationRoomMaterials(presentation,room),mismatch);
+    presentation.assets.push({id:'background',role:'background',sha256:'1'.repeat(64),contentType});
+    presentation.lanes[0].layers.background={default:'background',allowed:['background']};
+    assert.doesNotThrow(()=>assertPresentationRoomMaterials(presentation,{...room,game:'roulette'}));
+  }
+});
+test('a known blackjack hash cannot be reclassified by a forged roulette tag',()=>{
+  const presentation=fixture();presentation.assets[0].game='roulette';
+  for(const game of ['blackjack','roulette'])assert.throws(()=>assertPresentationRoomMaterials(presentation,{...room,game}),mismatch);
 });

@@ -17,6 +17,9 @@ function documentFeatures(kind, value) {
     ? [...(value?.registeredDealers??[]).map(row=>row?.idle),...(value?.playback?.media??[])]
       .map(row=>extendedDealerMediaFeatures(row?.classification)) : [];
   const mediaAlpha=media.some(row=>row.mediaAlpha),rouletteMedia=media.some(row=>row.rouletteMedia);
+  const tableGame=['project','presentation-package'].includes(kind)
+    && [...(value?.layerAssets??[]),...(value?.assets??[]),...(value?.layerAssetTrash??[]).map(row=>row?.asset)]
+      .some(asset=>object(asset)&&Object.hasOwn(asset,'game'));
   const dealers = kind === 'project' && Array.isArray(value?.dealers)
     ? value.dealers.map(row => row?.id).filter(extraDealer)
     : kind === 'administration' && Array.isArray(value?.gameLanes)
@@ -40,8 +43,8 @@ function documentFeatures(kind, value) {
     && [...(Array.isArray(value?.lanes) ? value.lanes : []), ...(Array.isArray(value?.dealerTrash) ? value.dealerTrash : [])
       .flatMap(entry => Array.isArray(entry?.compositions) ? entry.compositions : [])]
       .some(lane => object(lane) && Object.hasOwn(lane, 'backgroundPlayback'));
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia };
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame };
 }
 function mediaFeatures(metadata) {
   const {mediaAlpha,rouletteMedia}=extendedDealerMediaFeatures(metadata);
@@ -70,6 +73,7 @@ function mutationFeatures(input) {
     materialTrash: features.some(value => value.materialTrash),
     mediaAlpha: features.some(value => value.mediaAlpha),
     rouletteMedia: features.some(value => value.rouletteMedia),
+    tableGame: features.some(value => value.tableGame),
   };
 }
 function trustedOrigin(env) {
@@ -117,6 +121,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.materialTrash || active.features.materialTrash)
       && (!features.mediaAlpha || active.features.mediaAlpha)
       && (!features.rouletteMedia || active.features.rouletteMedia)
+      && (!features.tableGame || active.features.tableGame)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -130,7 +135,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

@@ -2,6 +2,24 @@
 
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
+PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen
+dep-db73kps9v7es73ac7ms0 misslyckades efter uid/gid-kvittot och återställde
+föregående instans. Docker USER root lämnar HOME=/root efter setuid. Ett
+läsande jämförande CLI-prov som uid 1000 gav config validate exit 0 med
+HOME=/home/node, exit 1 med HOME=/root och åter exit 0 med HOME=/home/node.
+Bootstrappen sätter därför nu HOME=/home/node, USER=node och LOGNAME=node
+efter verifierad rättighetssänkning, innan starter/CLI laddas. Fel rapporterar
+endast en fast fas och allowlistad felkod, aldrig fria felmeddelanden, stigar,
+konfiguration eller CLI-utdata. Det skiljer import, konfigvalidering och bundle
+utan att röja hemligheter. 41 riktade tester passerade. Ett verkligt isolerat
+Linuxprov verifierade rätt miljö även i barnprocessen och att root inte kunde
+återtas. Ny Gatewaydeploy och startupacceptans återstår för denna rättning.
+
+Efter #88:s beständiga ägarbyte lyckades ett ordinarie CAS-modellbyte via
+Director: HTTP 200/saved=true och uttrycklig GET återläste connected/applied
+samt croupier-operator=lab-provider/gpt-6.1-sol. Övriga fyra rollernas Terra-
+modeller och samtliga fallbacks bevarades. Bekräfta samma värden efter deploy.
+
 Det misslyckade operator-modellbytet nådde config.patch men nekades med
 EPERM/fchmod. Läsande SSH med Renders officiella Frankfurt-hostnyckel
 bekräftade /data/openclaw som uid=0, gid=1000, mode=2775; själva
@@ -21,8 +39,8 @@ Live Render-konfiguration har inget sådant kommandoöverskrivande.
 Ubuntu/Node 22.22-prov återskapade en rootägd 2775-katalog och verifierade
 uid/gid/ägare 1000, efterföljande chmod 0700, bevarade konfigbytes och ny
 skrivning. Barnprocessen kunde inte återta uid 0; testkatalogen städades.
-Ny Gatewaydeploy krävs; loggen ska visa runtime uid=1000 gid=1000, och sedan
-ska N1-modellbytet provas med färsk revision och uttrycklig återläsning.
+Det första deployprovet verifierade ägarbytet men upptäckte HOME-felet ovan;
+uid/gid-kvittot ensamt är inte bevis för en lyckad Gatewaystart.
 
 ## OpenClaw-länk och webbläsarklocka, 13 oktober 2026
 
@@ -312,6 +330,59 @@ och Vercel var gröna på samma PR-commit. Incidentlista och historisk
 säkerhetstäckning är inte verifierade. Dokument-PR #79 verifierade den korta
 vägen i körning `38393298682`: 46 sekunder från första jobbstart till grönt
 slutjobb. Full regression fortsätter köras på main.
+
+## Tillägg 13 oktober: separat rouletteklippkarta
+
+`/admin/clips` har egna flyttbara roulettekort, exakt spel-/dealerfiltrering
+och VILA→idle-reserv i editorpreview. VILA-PNG är ett lokalt prov, inte native
+lagring. MP4/WebM registreras i befintliga roulettefack; framtida fack
+markeras utan falska bindningar. Blackjackens talpanel och `idle.ready`
+används inte för roulette. Samma person och bakgrund får fortfarande delas.
+
+Bord har oföränderlig speltyp genom uppladdning, utkast, paket och publika
+media-GET. Runtimekapabilitet v13 krävs för spelmärkta bord; ingen SQL- eller
+livemigrering ingår. Omärkta äldre bord behandlas som blackjack och exponeras
+inte för roulette, medan historisk rumstillgång bevaras. Tre lager stöder
+bild/video i editor. Roulettespelaren väljer dessutom publicerat bord som
+bild eller videoloop, med publicerad geometri och utan prototypens mask.
+Se [materialinventering och signalflöde](games/roulette/KLIPPKARTA.md).
+
+Senare materialkontroll samma dag: levererade filmer och VILA-PNG är identifierade
+med hash. PNG ligger under croupier/idle, inte bord/videos. Eyes-filen är tidigare
+underkänd opak glasögon-v1; rätt v2 återfanns och kopierades separat, med faktisk
+alfa i samtliga 241 rutor. Originalen är orörda. Ett privat schematiskt prov klarar
+37 mål × tre varianter och exporterad WebM; jämförbart tvåsekunders ROI-prov är
+182 381 byte mot helbildens 382 128. Det är ingen fotorealistisk bank eller
+spelacceptans. [Utfallsplanen](games/roulette/UTFALLSFILMER.md) ersätter kravet på
+37 stora filmer med gemensamt hjul + separat kula/korta avslut, och dokumenterar
+att dagens API avslöjar resultat/saldo före filmen. Serverstyrd pending/reveal
+samt korrekt hjul och kulsläppskalibrering återstår. Ingen betald generering
+eller plånboksändring gjordes.
+
+Fortsättningsplanen finns nu i samma utfallsdokument: verifierat intag först,
+korrekt rotor, lokal OpenCV-baslinje och vid behov YOLO/SAM 2 för kalibrering
+och masker. Analysen föreslås ske en gång per källhash; inga nya modeller har
+installerats eller benchmarkats. Officiella källor och en specialistfråga är
+sparade. Det privata kulprovets exakta renderarskript finns också i Git som
+`docs/games/roulette/underlag/roulette-stop-test.html`, utan privata filmberoenden.
+Ett separat lokalt intagspaket mappar VILA, andningsvila och rätt glasögon-v2
+med låsta hashvärden; det portabla underlaget sparas i samma dokumentmapp.
+33 isolerade kontroller passerar, inklusive två byteidentiska WebM-intag och
+förväntad PNG-spärr före grant. Alla 241 rutor i båda WebM har avkodad alfa.
+Paketet är inte live-registrerat och saknar avsiktligt verkliga dealer-/media-ID.
+
+Återstår: fryst roulettebank för dealerhandlingar, 37 servervalda utfall,
+engångsuppspelning/synkronisering, separat talset och visuell acceptans med
+två spel i följd. Ingen privat originalfil har flyttats eller godkänts,
+och ingen produktionsdata, publicering eller provider har ändrats.
+
+Verifierat: fokustester för roulettekort, native metadata, spelavgränsade
+bord, offentliga media-GET, lokal VILA och publicerade scenbord passerar.
+Admin/Lobby-typkontroll och designbygge passerar. Isolerad browserfixture
+visar separata blackjack-/roulettekort och lagerpanelen utan produktions-API.
+Full regressionshook passerar: 3 275 godkända, 11 villkorade skips, inga fel. Studio-produktionsbygget och 94 byggspår passerar också. GitGuardian 13 oktober: 0 öppna och 17
+ignorerade incidenter i läst källa; övervakning aktiv, main-suite queued,
+historikskanning `too_large` och platsmetadata delvis otillgänglig.
 
 ## Nästa agent: roulette i N1:s Labba-yta
 
@@ -2017,6 +2088,61 @@ Efter Jakobs uttryckliga godkännande 13 oktober raderades 38 mergade
 featurebrancher via GitHub API efter ny head-/ancestrykontroll. Kevin,
 Kevin-staging, John, Emil, parkerade och pågående brancher bevarades.
 
+## Kompakt gemensamt röstval, 13 oktober 2026
+
+Eget worktree från main b76510af, integrerat med 0e420ad4. Admins befintliga Röst & tal och Controls
+Röst och läppsynk använder samma kontrollerade väljare. Ingen ny sidomeny.
+Offentliga original-ID:n och Kevins tuning finns i
+`web/public/dealer-voice-catalog.json`: Dragge 7f95xPL4S3ySZ4OS1pw8
+(multilingual v2), Paow WZVEBKUreb9jAKojf0QF (v3 för sv, annars v2).
+Astrid/Victoria hämtas från befintlig kanonisk Cartesia-profil.
+
+Jakobs uttryckliga Paow/Dragge-parning förväljs nu när ID eller namn matchar
+entydigt och sparad röst saknas. Andra eller motstridiga namn får inget förval.
+Exakta värden fylls i utkastet; egna sparade röster
+och referenser bevaras, ingen befintlig profil migreras. Modell, ID
+och tuning ligger under Detaljer. Talbiblioteket är hopfällt. Oförändrad egen
+referens kan behållas vid enbart röstbyte; nya bytes eller ny talaktivering
+kräver referensgranskning. Serverns ägarskap, hashvalidering, CAS och
+providerverifiering är oförändrade. Inga nycklar, flaggor eller media ändras.
+
+Verifierat: 55 UI-/profil-/navigationsprov, 37 runtime-/providerprov, full
+ordinarie precommit, Admin- och
+Studio-byggen, typkontroll och isolerad Edge-fixtur med de verkliga
+komponenterna på desktop/mobil. Fixturen förväljer Paow, växlar SV/EN och sparar
+exakt profil utan provideranrop. Detta är inte betald TTS/GPU eller visuell
+läppsynkacceptans. GitHub CI krävs före merge.
+
+Runtimegränsen är viktig: generisk registrerad dealerström finns, men
+roulettevyn saknar dealerchatt. Nuvarande chattautorisering kräver blackjack
+och läser blackjackrundan. Roulettes publicerade scen är en tyst idle-spelare.
+Full rouletteparitet behöver en serverägd roulettechattkontext, samma
+bundna strömticket/avbrytning och integrering i scenens gemensamma kompositor.
+Det får inte lösas genom att skicka blackjackkontext eller lägga ljud på en
+fortsatt idle-loop. Rörlig body-läppsynk och protokoll-3-worker i drift
+behöver fortfarande verifieras med exakt dealerreferens och två spelningar.
+
+### Nästa steg enligt Jakob, 13 oktober
+
+En egen granskad referensbild är reservläget för tal. Börja med en dealer:
+verifiera röståtkomst, den driftsatta protokoll-3-workern och två fullständiga
+talprov i den gemensamma spelaren. Därefter kopplas roulette till sin egen
+serverägda rum-/paket-/rundkontext och samma avbrott/ljudklocka.
+Rörlig body-läppsynk ska portas nära Emils exakta metod i en avgränsad adapter,
+utan ändringar i spelregler eller ekonomilogik. Den hänvisade workerkällan
+`EmaCodeHero/croupier-lipsync-worker` gav fortfarande 404 med befintlig
+GitHub-åtkomst den 13 oktober; tillgång, exakt revision/image och protokoll
+behövs före portningen. En separat installation per dealer krävs inte av
+den generiska bildvägen; aktuell molnreläkonfiguration begränsar dock till
+en worker/session åt gången, så fler samtidiga samtal är en separat uppgift.
+
+Underlag att skapa per dealer: vald referensbild, diskret inandningsövergång
+på högst cirka 0,5 s, rörligt talunderlag med små neutrala kroppsrörelser och
+återgång till idle. Talunderlaget måste synkas mot den faktiska repliken;
+en fristående kroppsslinga får inte ersätta den synkade talvideon. Alla
+nya takes behöver exakta hash-/bildindex-/kalibreringskvitton och visuell
+acceptans. Dessa steg är planerade, inte genomförda av röstväljar-PR:en.
+
 ## Anna som lobbydealer, 13 oktober 2026
 
 Lobbyregistret har ett femte dekorativt porträtt, Anna, med Jakobs oförändrade
@@ -2031,7 +2157,7 @@ rum bestämmer spel och startlänk. Lobbyvideon lagras separat under
 packages/design-preview/lobby/public och förs inte in i spelens klippbanker,
 scheman, speech-profiler eller publiceringar. PR #84 äger den separata
 utbyggnaden av spelmärkta filmfack och materialspärrar; inga av dess källfiler
-ändras här. Dess fulla skydd ska inte räknas som driftsatt innan PR:n levererats.
+ändras här. PR #84 mergades under arbetet och ingår nu via main 6ee5d3aa; produktionsacceptans är separat.
 
 Originalkontroll: PNG 2 019 747 byte, SHA256
 3b5f263126c9dfbe151f322ddea764aa027f90000f76577616a6b11d74e3d904.

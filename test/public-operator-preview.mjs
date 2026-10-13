@@ -60,6 +60,24 @@ function fixture({schemaVersion=3,compositing=true}={}) {
 const request=(f,path=descriptor,init)=>f.api.handle(new Request('https://www.example.test'+path,init));
 const body=async f=>{const response=await request(f);assert.equal(response.status,200);return response.json();};
 
+test('historical roulette packages hide incompatible tables in descriptors and byte routes',async()=>{
+  const f=fixture();f.saved.administration.rooms[0].game='roulette';f.saved.package.games=['roulette'];
+  const before=clone(f.saved),value=await body(f);
+  assert.deepEqual(value.media.tables,[]);assert.equal(value.media.backgrounds.length,2);
+  assert.equal((await request(f,previewMediaPath(context,'table',f.project.layerAssets[2].id))).status,404);
+  assert.equal(f.served.length,0);assert.deepEqual(f.saved,before);
+});
+
+test('roulette never exposes the same persons blackjack idle or its media route',async()=>{
+  const f=fixture();f.saved.administration.rooms[0].game='roulette';f.saved.package.games=['roulette'];
+  f.rewrite(pack=>{for(const asset of pack.assets)if(asset.role==='table')asset.game='roulette';});
+  const value=await body(f);
+  assert.equal(value.media.dealer,null);
+  assert.equal(value.media.backgrounds.length,2);
+  const result=await request(f,previewMediaPath(context,'dealer',f.mediaRows[0].id));
+  assert.equal(result.status,404);assert.equal(f.served.length,0);
+});
+
 test('v2/v3 published descriptor selects one frozen dealer and only allowed layers without private records',async()=>{
   for(const schemaVersion of [2,3]) {
     const f=fixture({schemaVersion}),before=clone(f.saved),value=await body(f);

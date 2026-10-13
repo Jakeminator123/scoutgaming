@@ -53,6 +53,8 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/storage/studio-contract.mjs',
   'web/public/background-playback-policy.mjs',
   'web/public/background-playback.mjs',
+  'web/public/background-materials.mjs',
+  'web/public/material-catalog.mjs',
   'web/public/card-presentation/calibration.mjs',
   'web/public/composition-settings.mjs',
   'web/public/dealer-compositing.mjs',

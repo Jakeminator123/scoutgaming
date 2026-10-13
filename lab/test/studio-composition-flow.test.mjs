@@ -66,9 +66,9 @@ function uploadFixture(options={}) {
   let record;
   const dependencies={signal:controller.signal,post:async(body)=>{
     calls.push(body.operation);
-    if(body.operation==='prepare') {record={schemaVersion:1,id,role:body.role,label:body.label,sha256:body.sha256,size:body.size,contentType:body.contentType,width:body.width,height:body.height};record.pathname=layerAssetPath(record);return {id,pathname:options.badGrant?'other/path':record.pathname,clientToken:'bounded-token',ticket:'signed-ticket'};}
+    if(body.operation==='prepare') {record={schemaVersion:1,id,role:body.role,label:body.label,sha256:body.sha256,size:body.size,contentType:body.contentType,width:body.width,height:body.height,...(body.game===undefined?{}:{game:body.game})};record.pathname=layerAssetPath(record);return {id,pathname:options.badGrant?'other/path':record.pathname,clientToken:'bounded-token',ticket:'signed-ticket'};}
     if(options.failCommit)throw new Error('commit failed');
-    const project=createSeedProject();project.layerAssets=[options.badReceipt?{...record,sha256:'f'.repeat(64)}:record];return {id,project};
+    const project=createSeedProject();project.layerAssets=[options.badGame?{...record,game:'blackjack'}:options.badReceipt?{...record,sha256:'f'.repeat(64)}:record];return {id,project};
   },put:async(pathname,_file,putOptions)=>{
     calls.push('put');assert.equal(putOptions.access,'private');assert.equal(putOptions.abortSignal,controller.signal);
     if(options.abortAfterPut)controller.abort();return {pathname:options.badPut?'wrong/path':pathname};
@@ -81,6 +81,19 @@ test('file selection protocol validates prepare, immutable put and committed rec
   const result=await uploadCompositionLayer(file,metadata,dependencies);
   assert.equal(result.id,id);assert.deepEqual(calls,['prepare','put','commit-start','commit']);
   assert.equal(result.project.layerAssets[0].label,'Kväll');assert.equal(result.project.layerAssets[0].size,file.size);
+});
+
+test('roulette table uploads preserve their exact game and MIME in the verified receipt',async()=>{
+  for(const contentType of ['video/mp4','video/webm']){
+    const f=uploadFixture(),file=new File([new Uint8Array(24)],'table',{type:contentType});
+    const result=await uploadCompositionLayer(file,{...f.metadata,role:'table',game:'roulette'},f.dependencies);
+    assert.equal(result.project.layerAssets[0].game,'roulette');assert.equal(result.project.layerAssets[0].contentType,contentType);
+  }
+  const f=uploadFixture({badGame:true});
+  await assert.rejects(uploadCompositionLayer(f.file,{...f.metadata,role:'table',game:'roulette'},f.dependencies),/registreringen kunde inte verifieras/);
+  const background=uploadFixture();
+  await assert.rejects(uploadCompositionLayer(background.file,{...background.metadata,game:'roulette'},background.dependencies),/spelet som bordet/);
+  assert.deepEqual(background.calls,[]);
 });
 
 test('cancel before upload or after transfer never sends the registration commit',async()=>{

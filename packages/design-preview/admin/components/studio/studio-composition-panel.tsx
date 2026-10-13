@@ -9,9 +9,11 @@ import { LayerAssetManager } from '../../../../../lab/components/layer-asset-man
 import { CompositionPreview } from '../../../../../lab/components/composition-preview';
 import { BackgroundPlaybackEditor } from '../../../../../lab/components/background-playback-editor';
 import { effectiveDealerCompositing } from '../../../../../web/public/dealer-compositing.mjs';
+import { layerAssetFitsGame } from '../../../../../web/layer-asset-contract.mjs';
+import { rouletteReferencePreview } from '../../lib/roulette-clip-map.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
 
-export function StudioCompositionPanel({project,inventory,room,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{project:StudioProject;inventory:VideoInventory;room?:Room;dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
+export function StudioCompositionPanel({localReferenceUrl,project,inventory,room,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{localReferenceUrl?:string;project:StudioProject;inventory:VideoInventory;room?:Room;dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[error,setError]=useState('');
   const [uploadBusy,setUploadBusy]=useState(false);
   const [editingCompositionId,setEditingCompositionId]=useState('');
@@ -21,9 +23,11 @@ export function StudioCompositionPanel({project,inventory,room,dealerId,uses,roo
   const lane=project.lanes?.find(row=>row.id===room?.compositionId),assets=project.layerAssets??[];
   const editing=Boolean(lane&&editingCompositionId===lane.id),locked=blocked||uploadBusy||!editing;
   const settings=lane?.composition??defaultCompositionSettings();
+  const game=room?.game==='roulette'?'roulette':'blackjack';
   const baseline=project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready');
-  const video=inventory.videos.find(row=>row.id===baseline?.variants.find(item=>item.id===baseline.baselineVariantId)?.videoGenerationId&&row.available);
-  const media=(id:string|null|undefined)=>{const asset=assets.find(row=>row.id===id);return asset?{url:'/studio/api/layer-assets/'+asset.id,label:asset.label,contentType:asset.contentType}:null;};
+  const selected=game==='roulette'?rouletteReferencePreview(inventory,dealerId):inventory.videos.find(row=>row.id===baseline?.variants.find(item=>item.id===baseline.baselineVariantId)?.videoGenerationId&&row.available&&!row.classification?.archived&&row.classification?.game!=='roulette'&&row.integrity!=='unavailable');
+  const video=selected&&['image/png','video/mp4','video/webm'].includes(selected.contentType??'')?selected:null;
+  const media=(id:string|null|undefined)=>{const asset=assets.find(row=>row.id===id&&layerAssetFitsGame(row,game));return asset?{url:'/studio/api/layer-assets/'+asset.id,label:asset.label,contentType:asset.contentType}:null;};
   function change(next:StudioLane) { if(locked||!lane)return;try{onEdit(validateProject({...project,lanes:project.lanes?.map(row=>row.id===lane.id?next:row)}));setError('');}catch(cause){setError((cause as Error).message);} }
   function placement(role:'dealer'|'background'|'table',field:'x'|'y'|'scale'|'width',value:number) {
     if(!lane)return;const next=structuredClone(lane),composition=structuredClone(settings);
@@ -38,10 +42,11 @@ export function StudioCompositionPanel({project,inventory,room,dealerId,uses,roo
     {roomChoicesPath?<a className="studio-button" href={roomChoicesPath} target="_blank" rel="noopener">Ändra bara {room?.name} · ny flik ↗</a>:<p>Rumsbundna val blir tillgängliga när rummets paket är publicerat.</p>}
     <button className="studio-button" disabled={blocked||uploadBusy} aria-pressed={editing} onClick={()=>setEditingCompositionId(editing?'':lane.id)}>{editing?'Avsluta mallredigering':'Redigera gemensam mall'}</button>
     <div className="studio-game-tabs" role="tablist" aria-label="Kompositionsstorlek">{(['mobile','desktop'] as const).map(id=><button key={id} role="tab" aria-selected={layout===id} onClick={()=>setLayout(id)}>{id==='mobile'?'Mobil':'Desktop'}</button>)}</div>
-    <CompositionPreview dealer={video?{url:video.previewUrl,label:video.label,contentType:'video/mp4'}:null} background={media(lane.layers.background.default)} table={media(lane.layers.table.default)} settings={settings} layout={layout} show={{dealer:true,background:true,table:true}} compositing={video?effectiveDealerCompositing(video.classification?.compositing):undefined} backgroundPlayback={lane.backgroundPlayback} backgroundAssets={assets.filter(row=>row.role==='background'&&lane.layers.background.allowed.includes(row.id)).map(row=>({id:row.id,url:'/studio/api/layer-assets/'+row.id,label:row.label,contentType:row.contentType}))} previewBackgroundRuleId={backgroundPreview.id} previewBackgroundRequest={backgroundPreview.request}/>
+    {game==='roulette'?<p>Förhandsvisningen använder dealerns roulette-VILA, annars första tillgängliga roulette-idle. Detta är ett materialprov; spelkoppling och godkännande återstår.</p>:null}
+    <CompositionPreview dealer={game==='roulette'&&localReferenceUrl?{url:localReferenceUrl,label:'Lokal VILA · inte sparad',contentType:'image/png'}:video?{url:video.previewUrl,label:video.label,contentType:video.contentType!}:null} background={media(lane.layers.background.default)} table={media(lane.layers.table.default)} settings={settings} layout={layout} show={{dealer:true,background:true,table:true}} compositing={game==='roulette'&&localReferenceUrl?{mode:'alpha'}:video?effectiveDealerCompositing(video.classification?.compositing):undefined} backgroundPlayback={lane.backgroundPlayback} backgroundAssets={assets.filter(row=>row.role==='background'&&lane.layers.background.allowed.includes(row.id)).map(row=>({id:row.id,url:'/studio/api/layer-assets/'+row.id,label:row.label,contentType:row.contentType}))} previewBackgroundRuleId={backgroundPreview.id} previewBackgroundRequest={backgroundPreview.request}/>
     <fieldset disabled={locked} className="space-y-4">{(['background','table'] as const).map(role=><div key={role} className="space-y-3">
-      {role==='table'&&room?.game==='roulette'?<p>Välj ett godkänt roulettebord när det finns i registret.</p>:<LayerAssetSelect role={role} lane={lane} assets={assets} permissions onChange={change}/>}
-      <LayerLibrary role={role} disabled={locked||role==='table'&&room?.game==='roulette'} onBusyChange={value=>uploading(role,value)} onRegistered={(remote,id)=>onRegistered(remote,id,role)}/>
+      <LayerAssetSelect role={role} lane={lane} assets={assets} game={game} permissions onChange={change}/>
+      <LayerLibrary role={role} game={game} disabled={locked} onBusyChange={value=>uploading(role,value)} onRegistered={(remote,id)=>onRegistered(remote,id,role)}/>
       {projectDirty&&<p>Spara eller lös ditt utkast innan du använder papperskorgen.</p>}
       <div className="studio-material-controls"><LayerAssetManager project={project} role={role} disabled={locked||projectDirty} onSaved={onSaved} onBusyChange={value=>uploading('trash-'+role,value)}/></div>
     </div>)}</fieldset>

@@ -195,6 +195,12 @@ export function createStudioRepository({ pool, scope } = {}) {
           if (!lifecycle && canonicalStudioJson(previous.value.dealerTrash ?? []) !== canonicalStudioJson(prepared.value.dealerTrash ?? [])) fail('studio_dealer_lifecycle_required');
           if (!lifecycle && canonicalStudioJson(previous.value.layerAssetTrash ?? []) !== canonicalStudioJson(prepared.value.layerAssetTrash ?? [])) fail('studio_material_lifecycle_required');
           if (!lifecycle && (previous.value.layerAssets??[]).some(asset=>!(prepared.value.layerAssets??[]).some(next=>next.id===asset.id))) fail('studio_material_lifecycle_required');
+          const priorLayers=[...(previous.value.layerAssets??[]),...(previous.value.layerAssetTrash??[]).map(row=>row.asset)];
+          const nextLayers=new Map([...(prepared.value.layerAssets??[]),...(prepared.value.layerAssetTrash??[]).map(row=>row.asset)].map(asset=>[asset.id,asset]));
+          for(const asset of priorLayers){
+            const next=nextLayers.get(asset.id);
+            if(next&&['schemaVersion','role','game','sha256','size','contentType','pathname','width','height'].some(key=>next[key]!==asset[key]))fail('studio_layer_asset_immutable');
+          }
           const removed = previous.value.dealers.filter(dealer => !prepared.value.dealers.some(next => next.id === dealer.id));
           const rows = await api.listMedia({limit:5000});
           // Validate authoring membership against the current transactional

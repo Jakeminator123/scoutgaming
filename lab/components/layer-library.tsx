@@ -25,7 +25,7 @@ function dimensions(file:File,signal:AbortSignal) {
   });
 }
 
-export function LayerLibrary({role,onRegistered,available=true,disabled=false,onBusyChange}:{role:Role;available?:boolean;disabled?:boolean;onRegistered:(project:StudioProject,id:string)=>void;onBusyChange?:(busy:boolean)=>void}) {
+export function LayerLibrary({role,game='blackjack',onRegistered,available=true,disabled=false,onBusyChange}:{role:Role;game?:'blackjack'|'roulette';available?:boolean;disabled?:boolean;onRegistered:(project:StudioProject,id:string)=>void;onBusyChange?:(busy:boolean)=>void}) {
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[label,setLabel]=useState(''),[progress,setProgress]=useState<number|null>(null),[committing,setCommitting]=useState(false);
   const request=useRef<AbortController|null>(null),mounted=useRef(true),commitStarted=useRef(false),busyCallback=useRef(onBusyChange);
   busyCallback.current=onBusyChange;
@@ -37,7 +37,7 @@ export function LayerLibrary({role,onRegistered,available=true,disabled=false,on
     setBusy(true);setCommitting(false);setError('');setProgress(null);busyCallback.current?.(true);
     try {
       const size=await dimensions(file,controller.signal);
-      const result=await uploadCompositionLayer(file,{role,label:label.trim()||file.name.replace(/\.[^.]+$/,'').slice(0,80)||'Lager',...size},{
+      const result=await uploadCompositionLayer(file,{role,...(role==='table'?{game}:{}),label:label.trim()||file.name.replace(/\.[^.]+$/,'').slice(0,80)||'Lager',...size},{
         signal:controller.signal,
         post:async(body,signal)=>{
           const response=await fetch(labUrl('/api/layer-assets/upload'),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});
@@ -53,6 +53,7 @@ export function LayerLibrary({role,onRegistered,available=true,disabled=false,on
   }
   return <div>
     <label className="field">Ladda upp {role==='background'?'bakgrund':'bord'}<input type="file" disabled={busy||disabled||!available} accept="image/png,image/jpeg,image/webp,video/mp4,video/webm" onChange={event=>void upload(event.currentTarget)}/></label>
+    {role==='table'?<p>Bordet registreras för {game==='roulette'?'Roulette':'Blackjack'}. Bild eller tyst scenloop; detta registrerar ingen utfallsfilm och godkänner inte materialet.</p>:null}
     <details><summary>Namn vid uppladdning</summary><label className="field">Namn · valfritt<input maxLength={80} value={label} disabled={busy||disabled} onChange={event=>setLabel(event.target.value)}/></label></details>
     {busy?<div><p role="status">{committing?'Registrerar filen…':progress===null?'Kontrollerar filen…':`Laddar upp · ${progress} %`}</p><button type="button" className="sg-btn sg-btn-secondary" disabled={committing} onClick={()=>request.current?.abort()}>Avbryt uppladdning</button></div>:null}
     {!available?<p>Uppladdning kräver ansluten Studio.</p>:null}

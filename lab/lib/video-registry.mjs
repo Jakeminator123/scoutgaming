@@ -5,6 +5,7 @@ import { access, lstat, open, realpath } from 'node:fs/promises';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { readUploads, uploadDirectory } from './video-uploads.mjs';
+import {MEDIA_FILE_TYPES} from './media-file-types.mjs';
 import { readClassifications } from './video-classifications.mjs';
 import { mediaDefinitionForPath, readLabVideoManifest } from './lab-video-manifest.mjs';
 import { StudioError } from './project-store.mjs';
@@ -124,10 +125,11 @@ function text(value, max = 100) {
 }
 
 function publicEntry(entry, available, integrity, family) {
+  const contentType=entry.storage?.contentType??Object.entries(MEDIA_FILE_TYPES).find(([,extension])=>extension===entry.extension)?.[0];
   if (entry.classification) return {
     id: entry.id, label: entry.classification.label, dealer: entry.classification.dealerId,
     fileName: entry.retainedBank ? basename(entry.retainedBank.originalRelativePath) : `${entry.id}.${entry.extension}`, verdict: 'unrated', bytes: entry.size,
-    sha256: entry.sha256, available, previewUrl: labUrl(`/api/videos/${entry.id}`),
+    sha256: entry.sha256, available, contentType, previewUrl: labUrl(`/api/videos/${entry.id}`),
     reviewStatus: 'unreviewed', integrity, suggestedEventId: entry.classification.eventId,
     bindingScope: 'lab-only', source: entry.retainedBank ? 'emil' : 'upload', classification: entry.classification, addedAt: entry.addedAt,
     ...(entry.retainedBank ? {retainedBank:true} : {}),

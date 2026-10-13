@@ -1,9 +1,17 @@
 import { SPEECH_LINES } from '../../../../web/public/speech-lines.mjs';
 const captions = { greeting:'Välkommen', placebets:'Lägg insatser', goodluck:'Lycka till', insurance:'Försäkring', double:'Dubbling', peek:'Kontrollera kort', blackjack:'Blackjack', dealerblackjack:'Dealerns blackjack', bust:'Spelaren över 21', dealerbust:'Dealern över 21', win:'Vinst', push:'Lika', lose:'Förlust', sidebet:'Sidospel', chatter1:'Småprat 1', chatter2:'Småprat 2', farewell:'Tack för spelet', 'to-shoe':'Till skon', 'from-shoe':'Från skon', 'dealer-up':'Öppet kort', 'dealer-hole':'Dolt kort' };
 const results = new Set(['blackjack','dealerblackjack','bust','dealerbust','win','push','lose','sidebet']);
-export function slotCaption(slot) { return captions[slot.situation] ?? (/^box[0-6]$/.test(slot.situation) ? `Plats ${Number(slot.situation.slice(3))+1}` : slot.title); }
+export function slotCaption(slot) { return ({VILA:'VILA-bild',breathing:'Andningsvila','glasses-clean':'Glasögonvariation','wheel-start':'Hjulstart och kulsläpp'})[slot.situation] ?? captions[slot.situation] ?? (/^box[0-6]$/.test(slot.situation) ? `Plats ${Number(slot.situation.slice(3))+1}` : slot.title); }
 export function slotSpeech(slot) { return slot.sourceType === 'speak' ? SPEECH_LINES[slot.situation] ?? '' : ''; }
 export function groupSlots(slots) {
+  if(slots.some(slot=>slot.game==='roulette'))return [
+    ['roulette-reference','Vila','Referensbild','#d6ff3a','roulette.reference'],
+    ['roulette-idle','Vänta','Dealer · grundloop','#d6ff3a','roulette.idle'],
+    ['roulette-betting','Insatser','Dealer · tal','#9d8cff','roulette.plan.betting'],
+    ['roulette-start','Starta','Dealer · kulsläpp','#3ad6c4','roulette.wheel-start'],
+    ['roulette-outcome','Hjul','Bord · 37 utfall','#ffb547','roulette.plan.outcome'],
+    ['roulette-result','Resultat','Dealer · tillbaka till vila','#9d8cff','roulette.plan.result'],
+  ].map(([id,title,subtitle,color,eventId])=>({id,title,subtitle,color,slots:slots.filter(slot=>slot.game==='roulette'&&slot.eventId===eventId)})).filter(group=>group.slots.length);
   const definitions = [
     ['wait','Vänta','Grundloop','#d6ff3a',slot=>slot.sourceType==='idle'],
     ['ready','Redo','Till / från skon','#3ad6c4',slot=>slot.sourceType==='transition'],

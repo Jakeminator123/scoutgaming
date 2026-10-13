@@ -8,6 +8,8 @@ import {wrapNativePresentationRepository} from '../lab/lib/presentation-runtime-
 import {presentationCapabilitiesForVersion} from '../web/presentation-capability-contract.mjs';
 import {createLayerUploadService} from '../lab/lib/layer-upload-service.mjs';
 import {createLayerAssetApi} from '../lab/lib/layer-asset-api.mjs';
+import {validateLayerAsset,layerAssetPath,layerAssetFitsGame} from '../web/layer-asset-contract.mjs';
+import {materialSource} from '../web/public/material-catalog.mjs';
 const scope={environment:'test',workspaceId:'layers'},actor='layer-admin';
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:['https://public.example','https://studio.example'],publicHosts:['public.example','studio.example']};
 const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-not-a-secret'};
@@ -85,8 +87,62 @@ async function nativeLayerFixture({capabilityVersion=3,onPreflight,onLock}={}) {
   const prepare={operation:'prepare',sha256:'a'.repeat(64),size:128,contentType:'image/png',role:'table',label:'Bord · Svart och guld',width:1440,height:2560};
   const prepared=await post(prepare);assert.equal(prepared.status,200);const grant=await prepared.json();
   return {api,pool,rawRepository,repository,post,prepare,grant,events,descriptors,capabilities,
+    setCapabilityVersion:value=>{capabilityVersion=value;},
     counts:()=>({tokens,blobReads}),commit:()=>post({operation:'commit',ticket:grant.ticket})};
 }
+
+test('table game is strict, background-shared and immutable for known catalog hashes',()=>{
+  const base={schemaVersion:1,id:'00000000-0000-4000-8000-000000000001',role:'table',label:'Bord',sha256:'a'.repeat(64),size:128,contentType:'video/webm',width:1920,height:1080};
+  const record={...base,pathname:layerAssetPath(base)};
+  for(const game of ['blackjack','roulette']){
+    assert.equal(validateLayerAsset({...record,game}).game,game);
+    assert.equal(layerAssetFitsGame({...record,game},game),true);
+    assert.equal(layerAssetFitsGame({...record,game},game==='blackjack'?'roulette':'blackjack'),false);
+  }
+  for(const game of [null,'','shared','baccarat',undefined])assert.throws(()=>validateLayerAsset({...record,game}));
+  const background={...base,role:'background'},shared={...background,pathname:layerAssetPath(background)};
+  assert.throws(()=>validateLayerAsset({...shared,game:'roulette'}));
+  assert.equal(layerAssetFitsGame(shared,'blackjack'),true);assert.equal(layerAssetFitsGame(shared,'roulette'),true);
+  assert.equal(layerAssetFitsGame(record,'blackjack'),true);assert.equal(layerAssetFitsGame(record,'roulette'),false);
+  const {kind,hasAlpha,...source}=materialSource('blackjack-green-felt');
+  const known={...base,...source},saved={...known,pathname:layerAssetPath(known)};
+  assert.throws(()=>validateLayerAsset({...saved,game:'roulette'}));
+  assert.equal(validateLayerAsset({...saved,game:'blackjack'}).game,'blackjack');
+});
+
+test('tagged tables require v13 before grants and fresh v13 before commit Blob reads',async()=>{
+  const f=await nativeLayerFixture({capabilityVersion:12}),before=f.pool.snapshot();
+  const tagged={...f.prepare,game:'roulette'};
+  const rejected=await f.post(tagged);assert.equal(rejected.status,503);
+  assert.equal((await rejected.json()).code,'studio_presentation_runtime_update_required');
+  assert.deepEqual(f.counts(),{tokens:1,blobReads:0});assert.deepEqual(f.pool.snapshot(),before);
+  f.setCapabilityVersion(13);
+  const prepared=await f.post(tagged);assert.equal(prepared.status,200);const grant=await prepared.json();
+  const payload=JSON.parse(Buffer.from(grant.ticket.split('.')[0],'base64url').toString('utf8'));
+  assert.equal(payload.record.game,'roulette');
+  f.setCapabilityVersion(12);
+  assert.equal((await f.post({operation:'commit',ticket:grant.ticket})).status,503);
+  assert.deepEqual(f.counts(),{tokens:2,blobReads:0});assert.deepEqual(f.pool.snapshot(),before);
+  f.setCapabilityVersion(13);
+  const committed=await f.post({operation:'commit',ticket:grant.ticket});assert.equal(committed.status,200);
+  const receipt=await committed.json();assert.equal(receipt.project.layerAssets[0].game,'roulette');
+  assert.equal(f.capabilities.every(call=>call.version==='13'),true);
+  const replay=await f.post({operation:'commit',ticket:grant.ticket});assert.equal((await replay.json()).duplicate,true);
+});
+
+test('an uploaded layer cannot change game or bytes through project PUT, while labels remain editable',async()=>{
+  const f=await nativeLayerFixture({capabilityVersion:13});
+  const prepared=await f.post({...f.prepare,game:'roulette'}),grant=await prepared.json();
+  assert.equal((await f.post({operation:'commit',ticket:grant.ticket})).status,200);
+  const saved=await f.rawRepository.readDocument('project');
+  for(const patch of [{game:'blackjack'},{game:undefined},{width:800},{size:512}]){
+    const value=structuredClone(saved.value);Object.assign(value.layerAssets[0],patch);
+    if(patch.game===undefined&&Object.hasOwn(patch,'game'))delete value.layerAssets[0].game;
+    await assert.rejects(f.rawRepository.saveDocument('project',{value,expectedRevision:saved.revision,actor}),error=>error.code==='studio_layer_asset_immutable');
+  }
+  const renamed=structuredClone(saved.value);renamed.layerAssets[0].label='Nytt namn';
+  await f.rawRepository.saveDocument('project',{value:renamed,expectedRevision:saved.revision,actor});
+});
 
 test('native Johanna layer commit preflights the real project and verified grant before SQL; same-ticket retry is idempotent',async()=>{
   const f=await nativeLayerFixture(),before=f.pool.snapshot();

@@ -23,6 +23,7 @@ export interface RegistryVideo {
   label: string;
   dealer?: string;
   fileName: string;
+  contentType?: string;
   verdict: 'want' | 'no' | 'unrated';
   bytes: number;
   sha256: string;
