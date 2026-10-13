@@ -1,5 +1,12 @@
 # Aktuell handoff — Scoutgaming
 
+## SIDOR3: historisk materialläsning, 13 oktober
+
+Efter #55/c8f9b99 svarade verkliga projekt-/videoanrop 200, men adminens katalog 422 med sanerat studio_native_unavailable. Läsrättningen skiljer publiceringsbindning från materials spelbarhet: inspectPackageRooms behåller giltig historisk koppling och rapporterar endast den precisa typade materialmismatchen. listPackageRooms/spelstart släpper bara kompatibla rum; felaktigt explicit rum ger 404 utan fallback. Admin visar publicerat/ospelbart med game_material_mismatch, medan friska syskon behåller playUrl. Paket, bilder och publiceringshistorik ändras inte.
+
+34 riktade tester använder verkliga serialiserade frysta paket, katalog och spelstart. De verifierar två syskonrum, oförändrade paket och fortsatt 422 före nya publiceringar. Generella lagrings-/strukturfel slår fortfarande igenom. Inga produktionsdata-, schema- eller medieändringar gjorda. Faktiskt 200-/UI-kvitto efter leverans återstår; den tidigare sanerade 422:ans exakta rum bevisas först vid denna återläsning.
+
+
 PR #55:s äldre lobby-UI-ändringar är avgränsade från PR #63: de tre lobbykomponenterna återgår till main och porträtt-/playbackhjälpare som Studio använder ligger under admin/lib med sina tester. Diffen mot main i lobby och test/public-lobby.mjs är tom. Tidigare lobbyversion finns i privat verifierad Git-bundle på checkpoint 6244d13b. Ingen PR63-kod har tagits in.
 
 
