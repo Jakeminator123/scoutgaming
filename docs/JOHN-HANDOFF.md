@@ -39,7 +39,9 @@ krävs. Detta tillägg är kodleverans, inte bevis på driftsättning.
 
 Verifiering: riktade server-/UI-tester för bekräftelse, samtidiga ändringar,
 tenantgränser, återställning, skyddad historik och full rollback; Lab-
-produktionsbygget passerar. Ordinarie full regression körs före commit.
+produktionsbygget passerar. Full pre-commit för `133b74f5` passerade:
+2 977 godkända tester, 11 överhoppade och 0 fel. Detta är inte en ny
+acceptans av externa PostgreSQL-miljöer eller av visuell dealerkomposition.
 Inga dealerfilmer, kalibreringar eller rouletteoriginal har ändrats.
 
 ## Tillägg 13 oktober: tre valbara originalbakgrunder
