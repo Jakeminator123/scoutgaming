@@ -99,7 +99,7 @@ test('an answer is said at once on the table clock, before recorded lines still 
     t.send('paow','join',{name:'Kevin',seats:[3]});
     const between=t.s.addTalk('paow',{text:'Hej!',lang:'sv',dur:2});
     assert.equal(between.talk.flex,false,'also between rounds it runs on the table clock');
-    assert.equal(between.talk.startAt,t.box.time+1200);
+    assert.equal(between.talk.startAt,t.box.time+1600);
     assert.equal(between.talk.ljud,`/api/lip/${between.talk.id}/ljud`);
     assert.equal(t.st('paow').talk.at(-1).id,between.talk.id,'every viewer sees it on the talk track');
     t.send('paow','bet',{seat:3,field:'main',chip:5});t.send('paow','ready');

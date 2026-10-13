@@ -372,13 +372,15 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
    * answers mid-deal, not after the last card). Only a line already speaking goes first; a recorded line still to come
    * moves after the answer (a late good luck is dropped). → {talk, moved (lines with a new time), steg, ready}.
    */
+  // an answer starts this long after it is made: Dragan's first lip-synced patch takes 1.15–1.3 s (staging 13 Oct)
+  const ANSWER_LEAD=1600;
   function addTalk(session,input) {
     const id=sessionName(session);
     db.exec('BEGIN IMMEDIATE');
     try{
       const r=load(id),t=now(),live=(r.talk??[]).filter(x=>x.endAt>t),tid=randomUUID();
-      const speaking=live.filter(x=>x.startAt<=t+1200);
-      const start=Math.round(Math.max(t+1200,...speaking.map(x=>x.endAt+250)));
+      const speaking=live.filter(x=>x.startAt<=t+ANSWER_LEAD);
+      const start=Math.round(Math.max(t+ANSWER_LEAD,...speaking.map(x=>x.endAt+250)));
       const talk={id:tid,kind:'answer',...input,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`};
       let free=talk.endAt+250;const later=[],moved=[];
       for(const x of live.filter(x=>!speaking.includes(x)).sort((a,b)=>a.startAt-b.startAt)){
