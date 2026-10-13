@@ -35,8 +35,8 @@ Verifiering för denna dokumentationsleverans: källkontrakt och synligt
 produktregister jämförda; ordinarie dokumentationshook passerade (35 tester).
 Rumsövergång, riktiga lager i preview och spelacceptans återstår.
 
-Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
-`jakob/repo-ordning` och ajour med `origin/main` `ff1d6e53`.
+Läget 12 oktober 2026 skrevs om mot koden på `jakob/repo-ordning`.
+`origin/main` 13 oktober 2026 är `426fa114` (#54). Planens merge #51 är `a5441feb`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
 `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
 
@@ -117,9 +117,11 @@ kräver nu exakt 001–008 (`91969107`). Historikrensningen är publicerad:
 video, frame-index, kalibrering och acceptansnotering. Annan ljud- eller
 videohash upphäver tidigare visuellt godkännande. Välj inte talvideo på
 ungefärlig längd, loopa inte en inspelad mening över fortsatt ljud, och använd
-inte inklistrade munöverlägg. `node pipeline/audit-dealer-sync.mjs --probe`
-plus två rehearsal-uppspelningar per dealer är kravet vid media- eller
-spelarändring. Probe som matchar baslinjen är inte ett nytt läppsynkgodkännande.
+inte inklistrade munöverlägg. Vid media- eller spelarändring körs testerna i
+`.githooks/pre-commit` (kroken anropar `tools/precommit-checks.mjs`). Berörda
+registrerade dealers granskas med `?dealer=<name>&rehearsal=1`, två
+uppspelningar i rad. Provspelningen använder den faktiska spelaren. En hash,
+vågform eller grönt test är inte ett nytt läppsynkgodkännande.
 12 oktober: alla fyra medieset matchade befintlig baslinje; inget nytt visuellt
 godkännande. Tidigare saknade, ej godkända tagningar står kvar. Per-rad-resultat
 och de daterade goodluck-kvittona ligger i den frysta handoffen, avsnitten
@@ -478,13 +480,19 @@ regler), V2 #23 (A10–A18: döda moduler, granskningssidor, pipeline, ops och
 dokument), #30 (adminlänk på partnerinloggningen), V3a #34 (A20:
 `test-videoeditor/` till `packages/presentation/{compositor,docs,preview}`), #44
 (PAOW-grundloopen), V4 #40 (B11: indexerade banken, läppsynkverktygen och
-bankauditarna) och denna leverans (A21: `presentation-runtime/` till
-`packages/presentation/runtime/`, URL:en `/presentation-runtime/*` oförändrad,
-plus A99). En enradig shim `presentation-runtime/live-idle.mjs` finns kvar för
-`web/public/local-presentation.mjs`, som laddas både i webbläsaren och i Node.
-#51 är mergad som `a5441feb` och kontrollerad i produktion.
-`/presentation-runtime/idle-policy.mjs` har nya bytes bara i två relativa
-importvägar (`../` blev `../../../`), som i webbläsaren pekar på samma adresser.
+bankauditarna) och denna leverans (A21: källkoden `presentation-runtime/` till
+`packages/presentation/runtime/`, publik URL `/presentation-runtime/*` oförändrad,
+plus A99). En enradig shim `presentation-runtime/live-idle.mjs` finns kvar avsiktligt för
+`web/public/local-presentation.mjs`, som laddas i både Node och webbläsare.
+#51 är mergad som `a5441feb` (13 oktober 00:35). Det är ett historiskt leveranskvitto.
+Delkvitton 13 oktober, inte full produktacceptans. Efterarbetets egen läsande
+kontroll cirka 01:03: Render och Vercel körde `a5441feb`, publika sökvägar svarade
+som förut och runtime-hasharna var oförändrade. Rum paow3 hos nordic-bet
+provspelades av föregående agent 00:45 på `a5441feb`; det provet är inte gjort om.
+#53 (`36d6d13f`) är dokumentmergen efter planen. Därefter kom #54 (`426fa114`).
+Efterarbetet SL-01..SL-11 (bas `426fa114`, branch `jakob/ordning-slutfix`) har
+status per rad i `docs/CLOUD-MIGRATION.md`, "Repo-ordning, slutläge". Rättat där:
+SL-04 och SL-05. SL-03 hör till #50. SL-01/SL-02, SL-08, SL-09 och SL-11 är öppna.
 
 | Mått | Före `00ea55c5` | Efter `e602ea91` |
 | --- | --- | --- |
@@ -495,13 +503,21 @@ importvägar (`../` blev `../../../`), som i webbläsaren pekar på samma adress
 | `pipeline/`, skript | 109, varav 87 utan konsument | 21, varav 10 utan konsument |
 | Testfiler | 359 · 0 föräldralösa | 355 · 0 föräldralösa |
 | Importer `lab/lib → web(server)` · `pipeline → web/public` | 125 · 46 | 135 · 18 |
-| Systemkarta | gul · 0 röda · 165 varningar | gul · 0 röda · 5 varningar efter ny baslinje |
+| Systemkarta | gul · 0 röda · 165 varningar | gul · 0 röda · 5 varningar kvar efter ny baslinje |
 | GitGuardian | 0 öppna · 17 ignorerade | 0 öppna · 17 ignorerade |
 
+Efter att planmappen tagits bort har `a5441feb` 2 817 spårade filer och 388,03 MB.
+Måttet är spårade filer i trädet, inte `.git`-storlek och inte molnlagring.
+Systemkartan är gul med 0 röda. Varningarna gick från 165 till 5 när baslinjen
+byttes. Ny baslinje och färre varningar är inte borttagna fel. 5 varningar kvarstår.
+
 Importerna mellan Studio och spelmotorn ökade med ny kod på main under arbetet;
-de är A22:s område. Prov för A21 på V4-huvudet: Studio- och frontendbygget ger
-samma 74 genererade filer byte för byte, full pre-commit, 0 föräldralösa prov,
-0 röda i systemkartan och raderingsspärren 0. Kvar finns som punkter i
+de är A22:s område. Byggjämförelsen i A20/A21 gav 74 genererade filer med 0 byte
+skillnad. Separat kontroll av serverade runtime-moduler: `live-idle.mjs` är
+byteidentisk; `idle-policy.mjs` fick nya bytes bara i två relativa importvägar
+(`../` blev `../../../`) som pekar på samma serverade adresser. Övriga prov på
+V4-huvudet: full pre-commit, 0 föräldralösa prov, 0 röda i systemkartan och
+raderingsspärren 0. Kvar finns som punkter i
 `docs/CLOUD-MIGRATION.md` under "Repo-ordning, slutläge", bland annat B18, B19,
 A22b och acceptansen efter deploy.
 
@@ -518,9 +534,11 @@ raderade. `runtime/presentation` (83 filer) är orörd. Läppsynkverktygen i
 `lipsync-overrides.json`) är också borta, på Jakobs beslut, eftersom de hörde
 till bankens inspelade talklipp. En ny väg som automatiskt genererar talklipp
 från dealerns vilobild, på svenska och engelska, utreds separat. Röstprofiler,
-ElevenLabs- och Cartesia-källorna och GPU-workerns läppsynk är orörda. Partnerdokumentet visar
-tomma `streams`, `deals` och `speech`, och att `/dealer/…` och `/dealers/…`
-svarar 410. API-beteendet är oförändrat. `AGENTS.md` kräver nu kroken och
+ElevenLabs- och Cartesia-källorna, GPU-workerns läppsynk och dess CI-jobb är inte
+avvecklade. Filen `partner-api.html` beskriver tomma `streams`, `deals` och
+`speech`, och att `/dealer/…` och `/dealers/…` svarar 410. www ger 404 och Render
+direkt 421 för `partner-api.html`. Det är ett rapporterat läge, inte ett beslut
+att exponera dokumentet. API-beteendet i övrigt är oförändrat. `AGENTS.md` kräver nu kroken och
 provspelning av berörda registrerade dealers i stället för den borttagna proben.
 
 Prov, lokalt med Node 24:
