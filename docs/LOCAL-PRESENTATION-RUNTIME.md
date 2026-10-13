@@ -170,13 +170,13 @@ utgör sex av de tio aktiva bakgrunderna. Äldre bakgrunders status efter rensni
 
 | Namn | Lager-ID | Status och användning |
 | --- | --- | --- |
-| Bakgrund · Casino | `6ca45a4e-f696-4849-a3f7-a15dc872862f` | Aktiv: Standardsammansättning, Johns sammansättning |
-| bakground | `06e3be0d-0a54-4b8e-8d38-edeefd189ce7` | Aktiv: Standardsammansättning |
+| Bakgrund · Casino | `6ca45a4e-f696-4849-a3f7-a15dc872862f` | Aktiv: Johns sammansättning |
+| bakground | `06e3be0d-0a54-4b8e-8d38-edeefd189ce7` | Aktiv: ledig att välja i en sammansättning |
 | background-ditt-spelbolag | `c0035fc4-cb47-45dc-83de-adb44c14e9fd` | Papperskorg: lossad från Standardsammansättning, återställbar |
 | background-ditt-spelbolag | `6cd2bf56-4d42-4c7b-848a-087398b38563` | Papperskorg: lossad från Standardsammansättning, återställbar |
 | background-ditt-spelbolag | `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4` | Enda aktiva Your Company-varianten, ledig att välja |
 | background-ditt-spelbolag | `800eb6ee-9e55-40c1-9757-159694422dd2` | Tidigare borttagen ur biblioteket på Jakobs instruktion |
-| A_nearly_still__seamless_loop_ambient_background_plate_for_a_layered_web_game__A | `bff63892-6b6d-4c39-b2d3-4a8ecd7c8d28` | Aktiv: Standardsammansättning |
+| A_nearly_still__seamless_loop_ambient_background_plate_for_a_layered_web_game__A | `bff63892-6b6d-4c39-b2d3-4a8ecd7c8d28` | Aktiv: ledig att välja i en sammansättning |
 
 Likadana namn är skilda ID; de får inte slås ihop på namn. De två flyttarna
 påverkade inga publicerade rum; original och historik bevaras.
