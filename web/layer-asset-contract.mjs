@@ -1,4 +1,6 @@
 // Browser-safe immutable layer assets, shared by project and package validation.
+import {MATERIALS} from './public/material-catalog.mjs';
+const knownSources = new Map(MATERIALS.flatMap(material=>material.sources.map(source=>[source.sha256,{material,source}])));
 export const LAYER_ASSET_ROLES = Object.freeze(['background', 'table']);
 export const LAYER_ASSET_TYPES = Object.freeze({
   'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp',
@@ -29,10 +31,26 @@ export function layerAssetPath(asset) {
   return `croupier/media/${asset.role === 'background' ? 'backgrounds' : 'tables'}/${asset.id}/${asset.sha256}.${extension}`;
 }
 export function validateLayerAsset(value) {
-  exact(value, ['schemaVersion', 'id', 'role', 'label', 'sha256', 'size', 'contentType', 'pathname', 'width', 'height']);
+  exact(value, ['schemaVersion', 'id', 'role', 'label', 'sha256', 'size', 'contentType', 'pathname', 'width', 'height'], ['game']);
   if (value.schemaVersion !== 1 || !Number.isSafeInteger(value.size) || value.size < 16 || value.size > MAX_LAYER_ASSET_BYTES
     || ![value.width, value.height].every(n => Number.isSafeInteger(n) && n >= 1 && n <= 16384)
     || value.pathname !== layerAssetPath(value)) reject();
   text(value.label);
+  if (Object.hasOwn(value,'game') && (value.role !== 'table' || !['blackjack','roulette'].includes(value.game))) reject();
+  const known=knownSources.get(value.sha256);
+  if (known && (known.material.role!==value.role
+    || ['size','contentType','width','height'].some(key=>value[key]!==known.source[key])
+    || value.game!==undefined && value.game!==known.material.game)) reject();
   return structuredClone(value);
+}
+
+// Legacy tables remain blackjack-only. Labels never establish game identity.
+export function layerAssetFitsGame(asset, game='blackjack') {
+  if (!asset || !['blackjack','roulette'].includes(game)) return false;
+  const known=knownSources.get(asset.sha256);
+  if (known && (known.material.role!==asset.role
+    || ['size','contentType','width','height'].some(key=>asset[key]!==known.source[key])
+    || asset.game!==undefined && asset.game!==known.material.game)) return false;
+  if (asset.role==='background') return asset.game===undefined;
+  return asset.role==='table' && (asset.game ?? known?.material.game ?? 'blackjack')===game;
 }

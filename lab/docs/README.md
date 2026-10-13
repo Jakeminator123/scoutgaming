@@ -2,6 +2,13 @@
 
 Produktmodell och ord har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
+Roulette: öppna `/admin/clips`, välj spelbolag, Roulette, rum och dealer.
+De flyttbara korten visar VILA, idle, insatser, hjulstart, utfall och resultat.
+Endast befintliga videofack kan laddas upp; planerade fack är märkta och
+VILA-PNG provas lokalt utan att sparas. Under **Bakgrund och bord · bild/video**
+väljs separata bild-/videolager; bord filtreras efter speltyp.
+Se [signaler, filmer och återstående spelkoppling](../../docs/games/roulette/KLIPPKARTA.md).
+
 Tre ytor delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). Övergången pågår.
 
 - **Intern personal**: [/admin](https://www.scoutgaming.tech/admin) är ny ingång. `/control` fungerar under övergången. Studio bygger innehållet; Bolag hanterar operatörer, team, spel, rum och publicering.

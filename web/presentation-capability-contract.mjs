@@ -19,16 +19,17 @@ const contracts = Object.freeze({
   10: Object.freeze({schemaVersion:10,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1',dealerSets:'authoring-categories-v1'}),
   11: Object.freeze({schemaVersion:11,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1',dealerSets:'authoring-categories-v1',materialTrash:'detached-assets-v1'}),
   12: Object.freeze({schemaVersion:12,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1',dealerSets:'authoring-categories-v1',materialTrash:'detached-assets-v1',mediaAlpha:'png-vp9-v1',rouletteMedia:'action-pose-slots-v1'}),
+  13: Object.freeze({schemaVersion:13,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1',dealerSets:'authoring-categories-v1',materialTrash:'detached-assets-v1',mediaAlpha:'png-vp9-v1',rouletteMedia:'action-pose-slots-v1',tableGame:'immutable-game-v1'}),
 });
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3-v12. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3-v13. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
@@ -43,6 +44,7 @@ export function negotiatePresentationCapabilityVersion(header) {
   if (header === '10') return 10;
   if (header === '11') return 11;
   if (header === '12') return 12;
+  if (header === '13') return 13;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

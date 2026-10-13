@@ -3,6 +3,7 @@ import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
 import {isActiveDealerId as isDealerId} from './public/dealer-identity.mjs';
 import {defaultCompositionSettings} from './public/composition-settings.mjs';
 import {materialLabel} from './public/material-catalog.mjs';
+import {layerAssetFitsGame} from './layer-asset-contract.mjs';
 
 const route=/^\/api\/operators\/([^/]+)\/rooms\/([^/]+)\/preview(?:\/media\/([^/]+)\/([^/]+)\/(dealer|table|background)\/([^/]+))?$/;
 const uuid=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
@@ -46,7 +47,9 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
     const registered=frozen.registeredDealers?.find(row=>row.id===context.dealerId);
     const label=registered?.label;
     if(!label)fail();
-    const idle=resolveFrozenDealerIdle(frozen.registeredDealers,{
+    // Frozen idle.ready is a blackjack binding. Roulette intake cannot inherit
+    // it from the same person; a game-scoped frozen playback contract is pending.
+    const idle=room.game==='roulette'?null:resolveFrozenDealerIdle(frozen.registeredDealers,{
       dealerId:context.dealerId,allowedDealerIds:selection.choices.dealers});
     const assets={table:[],background:[]};
     for(const role of ['table','background']) {
@@ -56,7 +59,7 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
         const asset=frozen.assets.find(row=>row.id===id&&row.role===role);
         if(!asset)fail();
         return validateLayerAsset(asset);
-      });
+      }).filter(asset=>role!=='table'||layerAssetFitsGame(asset,room.game??'blackjack'));
     }
     const item=(record,kind)=>({src:previewMediaPath(context,kind,record.id),contentType:record.contentType});
     const descriptor=validatePublicOperatorPreview({

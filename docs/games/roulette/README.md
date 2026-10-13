@@ -1,8 +1,17 @@
 # Roulette
 
+[Signaler, materialinventering och klippkarta](KLIPPKARTA.md) beskriver de
+separata blackjack-/roulettefacken, bild-/videolagren och vad som återstår
+före automatisk spelkoppling.
+
+[Genomförandeplan och trackingutredning](UTFALLSFILMER.md#genomförandeplan-säkert-material-först)
+anger nästa steg, jämför OpenCV/Ultralytics/SAM 2 och innehåller en färdig
+fråga till en specialistagent. [Kulprovet](underlag/roulette-stop-test.html)
+är fristående versionshanterad HTML; privata originalfilmer behövs inte för att köra det.
+
 ## Anna Jonsson: roulettefack, alfa och Runway-prov (13 oktober 2026)
 
-**Status:** implementerat på featuregrenen `codex/roulette-alpha-media`, inte ett kvitto på publicerad Anna eller färdig utfallsbank. Jakob beställde uttryckligen Runway-prov denna dag. Originalen, genererade filmer, exakta promptar, mätningar och ett fristående scenprov sparas privat utanför Git i Codex visualizations/2026/10/12/01a1319d-73c5-7801-8e65-27e47532075b. Ingen ny kodanimerad kula har byggts.
+**Status för den ursprungliga startuppsättningen:** implementerat på featuregrenen `codex/roulette-alpha-media`, inte ett kvitto på publicerad Anna eller färdig utfallsbank. Jakob beställde uttryckligen Runway-prov denna dag. Originalen, genererade filmer, exakta promptar, mätningar och ett fristående scenprov sparas privat utanför Git i Codex visualizations/2026/10/12/01a1319d-73c5-7801-8e65-27e47532075b. Senare samma dag tillkom [kompakt utfallsplan och isolerat kulprov](UTFALLSFILMER.md) samt [verifiering av levererade original](KLIPPKARTA.md#nya-lokala-original-13-oktober). De ändrar ingen spelmotor eller plånbok.
 
 ### Importkontrakt till mediaagenten
 
@@ -80,12 +89,12 @@ Privat maskprov: 270×480 arbetsmask, ljus skjorta/hud (R>70, G>53, B>35), begr�
 
 1. Laddad scen visar VILA; reducerad rörelse visar stillbild. Att välja marker/ändra insats startar ingen hjulgest.
 2. **Spela** skickar sparat kommando med requestId, version och satsningar. Vid tappat svar återförsöks exakt samma kommando. Ingen ny dragning och ingen gissad vinnarfilm.
-3. Först efter serverns bekräftade kvitto startar hjulgesten en gång, deduplicerad per spelar-/rumsscope + rund-ID. Ett återläst kvitto får inte starta gesten två gånger.
-4. En kalibrerad releaseFrame i gesten anger när kulan släpps. Klockan för bord/ballfilm startas vid denna cue. Den fristående neutrala filmen får aldrig antyda ett annat vinnande nummer.
-5. Vinnarfilmen väljs enbart ur den godkända 0–36-banken med serverns kvitto. Saknad/underkänd film ger stillbord + begriplig resultattext; ingen proceduranimerad reservkula. Se UTFALLSFILMER.md.
+3. Först efter serverns bekräftade satsning startar hjulgesten en gång, deduplicerad per spelar-/rumsscope + rund-ID. Ett återläst kvitto får inte starta gesten två gånger. Dagens API lämnar redan slutresultatet; sekretess under filmen kräver det ännu inte implementerade pending/reveal-kontraktet i UTFALLSFILMER.md.
+4. En kalibrerad releaseFrame i en separat kulsläppsgest anger när en enda kula lämnar handen. Hjulimpulsens cue styr rotorn; kulsläppets cue styr kulan. Den neutrala gemensamma rörelsen får inte antyda ett annat slututfall.
+5. Serverns offentliggjorda utfall väljer ett av 37 godkända slutlägen: separat styrd kula eller kort hjulavslut. Före reveal ger mediafel neutral väntvy; efter reveal stillbord + begriplig resultattext. En felande bana får inte ersättas av lokal slump eller fel nummer. Se UTFALLSFILMER.md.
 6. Återgång sker till en kompatibel VILA-pose efter sekvensen. Sessionsbyte avbryter tidigare scope. Glasögonvarianten får köras under lugn vila, aldrig över hjulstart/resultat; låt den avsluta säkert eller använd verifierad övergång.
 
-Det nya importstödet bygger inte denna orkestrering, en 37-filmsbank eller en publicerad Anna-konfiguration. De privata spelknapparna provar bara en gång per klick. Framtida releaseFrame, kontaktyta och posegodkännande måste bindas till filens hash, inte dess namn.
+Det nya importstödet bygger inte denna orkestrering, en 37-utfallsbank eller en publicerad Anna-konfiguration. De privata spelknapparna provar bara en gång per klick. Framtida releaseFrame, kontaktyta och posegodkännande måste bindas till filens hash, inte dess namn.
 
 Bakgrund: befintlig background-playback-policy har intervallstöd. För prov kan regeln vara everyMs=25000, maxDurationMs=10000, cooldownMs=25000, maxPerMinute=3, maxSecondsPerMinute=30. Budgeten kan skjuta upp starter; 25 sekunder är ungefärligt. Använd första rutan i den genererade filmen som stillposter med samma geometri. Lägg en prioriteringsspärr för hjulgest/resultat innan detta kopplas till roulette. Pausa vid dold flik och använd stillbild vid reducerad rörelse. Ingen sådan ny rumsregel är publicerad här.
 
@@ -116,7 +125,7 @@ Samlad ingång för implementerat spel och mottaget medieunderlag. Ursprunglig k
 
 ## Implementerat på main
 
-För klippbegrepp och format, börja i [gemensamma referensen](../KLIPP-OCH-FORMAT.md). [37 utfallsfilmer](UTFALLSFILMER.md) beskriver det nya produktionsmålet, kopplingen till sparade serverkvitton och acceptanskraven. Filmstödet är ännu inte implementerat på granskad main. Webbplatsens AI-funktion ingår inte i dokumentationsuppdraget.
+För klippbegrepp och format, börja i [gemensamma referensen](../KLIPP-OCH-FORMAT.md). [37 kompakta utfall](UTFALLSFILMER.md) beskriver det nya produktionsmålet, kopplingen till sparade serverkvitton och acceptanskraven. Utfallsstödet är ännu inte implementerat på granskad main. Webbplatsens AI-funktion ingår inte i dokumentationsuppdraget.
 
 Europeisk roulette med enkel nolla, 37 fack och oberoende serverdrag via crypto.randomInt(0,37). [Generatorn](../../../web/games/roulette/index.mjs) accepterar operatörs-, rums- och rund-ID, inte seed eller önskat nummer. Nollan ingår inte i röd/svart, jämn/udda eller låg/hög. [Satsningskatalogen](../../../web/games/roulette/rules.mjs) har straight, split, street/trio, corner, six-line, dozen, column och outside. Nettovinster: 35:1, 17:1, 11:1, 8:1, 5:1, 2:1 respektive 1:1. Ingen La Partage eller En Prison. Gränser: 1–2 000 per fält och 10 000 per runda.
 
@@ -137,7 +146,7 @@ Den separata /roulette-test är en publik noindex-testyta utan spelkonton, insat
 | Gemensam publicerad scen | [published-scene.mjs](../../../web/public/published-scene.mjs) |
 | Bolag, game och rum | [presentation-room-contract.mjs](../../../web/presentation-room-contract.mjs) |
 
-Scenen läser /api/operators/<slug>/rooms/<room-id>/preview med revision och dealer. Ett rum har en speltyp; återanvända bakgrunder gör inte blackjackens rörelsebank till en roulettebank. Publicerad tyst idle används. Serverns kvitto bestämmer resultat och saldo; bildens eller en AI-films sista nummer gör det aldrig.
+Scenen läser /api/operators/<slug>/rooms/<room-id>/preview med revision och dealer. Ett rum har en speltyp; återanvända bakgrunder gör inte blackjackens rörelsebank till en roulettebank. Den frysta blackjackkopplingen `idle.ready` lämnas inte ut för roulette. En egen publicerad roulettekoppling för dealer återstår. Serverns kvitto bestämmer resultat och saldo; bildens eller en AI-films sista nummer gör det aldrig.
 
 ## Mottagen bordsspecifikation
 

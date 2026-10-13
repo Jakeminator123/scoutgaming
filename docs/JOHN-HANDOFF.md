@@ -331,6 +331,59 @@ säkerhetstäckning är inte verifierade. Dokument-PR #79 verifierade den korta
 vägen i körning `38393298682`: 46 sekunder från första jobbstart till grönt
 slutjobb. Full regression fortsätter köras på main.
 
+## Tillägg 13 oktober: separat rouletteklippkarta
+
+`/admin/clips` har egna flyttbara roulettekort, exakt spel-/dealerfiltrering
+och VILA→idle-reserv i editorpreview. VILA-PNG är ett lokalt prov, inte native
+lagring. MP4/WebM registreras i befintliga roulettefack; framtida fack
+markeras utan falska bindningar. Blackjackens talpanel och `idle.ready`
+används inte för roulette. Samma person och bakgrund får fortfarande delas.
+
+Bord har oföränderlig speltyp genom uppladdning, utkast, paket och publika
+media-GET. Runtimekapabilitet v13 krävs för spelmärkta bord; ingen SQL- eller
+livemigrering ingår. Omärkta äldre bord behandlas som blackjack och exponeras
+inte för roulette, medan historisk rumstillgång bevaras. Tre lager stöder
+bild/video i editor. Roulettespelaren väljer dessutom publicerat bord som
+bild eller videoloop, med publicerad geometri och utan prototypens mask.
+Se [materialinventering och signalflöde](games/roulette/KLIPPKARTA.md).
+
+Senare materialkontroll samma dag: levererade filmer och VILA-PNG är identifierade
+med hash. PNG ligger under croupier/idle, inte bord/videos. Eyes-filen är tidigare
+underkänd opak glasögon-v1; rätt v2 återfanns och kopierades separat, med faktisk
+alfa i samtliga 241 rutor. Originalen är orörda. Ett privat schematiskt prov klarar
+37 mål × tre varianter och exporterad WebM; jämförbart tvåsekunders ROI-prov är
+182 381 byte mot helbildens 382 128. Det är ingen fotorealistisk bank eller
+spelacceptans. [Utfallsplanen](games/roulette/UTFALLSFILMER.md) ersätter kravet på
+37 stora filmer med gemensamt hjul + separat kula/korta avslut, och dokumenterar
+att dagens API avslöjar resultat/saldo före filmen. Serverstyrd pending/reveal
+samt korrekt hjul och kulsläppskalibrering återstår. Ingen betald generering
+eller plånboksändring gjordes.
+
+Fortsättningsplanen finns nu i samma utfallsdokument: verifierat intag först,
+korrekt rotor, lokal OpenCV-baslinje och vid behov YOLO/SAM 2 för kalibrering
+och masker. Analysen föreslås ske en gång per källhash; inga nya modeller har
+installerats eller benchmarkats. Officiella källor och en specialistfråga är
+sparade. Det privata kulprovets exakta renderarskript finns också i Git som
+`docs/games/roulette/underlag/roulette-stop-test.html`, utan privata filmberoenden.
+Ett separat lokalt intagspaket mappar VILA, andningsvila och rätt glasögon-v2
+med låsta hashvärden; det portabla underlaget sparas i samma dokumentmapp.
+33 isolerade kontroller passerar, inklusive två byteidentiska WebM-intag och
+förväntad PNG-spärr före grant. Alla 241 rutor i båda WebM har avkodad alfa.
+Paketet är inte live-registrerat och saknar avsiktligt verkliga dealer-/media-ID.
+
+Återstår: fryst roulettebank för dealerhandlingar, 37 servervalda utfall,
+engångsuppspelning/synkronisering, separat talset och visuell acceptans med
+två spel i följd. Ingen privat originalfil har flyttats eller godkänts,
+och ingen produktionsdata, publicering eller provider har ändrats.
+
+Verifierat: fokustester för roulettekort, native metadata, spelavgränsade
+bord, offentliga media-GET, lokal VILA och publicerade scenbord passerar.
+Admin/Lobby-typkontroll och designbygge passerar. Isolerad browserfixture
+visar separata blackjack-/roulettekort och lagerpanelen utan produktions-API.
+Full regressionshook passerar: 3 275 godkända, 11 villkorade skips, inga fel. Studio-produktionsbygget och 94 byggspår passerar också. GitGuardian 13 oktober: 0 öppna och 17
+ignorerade incidenter i läst källa; övervakning aktiv, main-suite queued,
+historikskanning `too_large` och platsmetadata delvis otillgänglig.
+
 ## Nästa agent: roulette i N1:s Labba-yta
 
 Utgå från `/admin` och befintlig Labba/Sammansättningar; `/control` är kvar
