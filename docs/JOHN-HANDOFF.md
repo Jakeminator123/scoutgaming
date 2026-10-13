@@ -1,27 +1,5 @@
 # Aktuell handoff — Scoutgaming
 
-## Ny dealer och fler importomgångar, 13 oktober 2026
-
-Läsande N1-kontroll fann nio registrerade dealers och ingen Dragge. Admins
-import krävde en sparad dealer men saknade skapandekontroll. `/admin/clips`
-har nu fliken **Ny dealer / flera filmer**: skapa namnet med ordinarie N1-
-skyddad projekt-PUT och färsk revision, välj dealern och godkänn filmimporten.
-Skapande spärras vid osparat kartutkast eller osparade importfiler. Sparandet
-försöks aldrig om blint; rum, publicering och andras klipp ändras inte.
-
-Importeraren tillåter tio osparade filer per omgång, 128 MiB per fil. Sparade
-rader tog tidigare upp nästa omgångs platser; de ersätts nu när nya filer väljs.
-Osäkra/felande rader behålls och dubbletter kontrolleras innan sparade kvitton
-frigörs. Detta är en kögräns, inte belagd lagringsbrist. Registrets 32-dealersgräns
-inkluderar arkiverade dealers. `?tool=import&dealer=<id>` väljer bara ett exakt
-registrerat id och bevarar pågående import. Inget automatisk filval eller
-godkännande görs.
-
-55 riktade regressions-/integrationstester och Admins produktionsbygge med
-typkontroll passerade. Inga livepersoner eller filer skapades. Inga playback-
-eller mediebytes ändrades; verklig uppladdning och eventuell efterföljande
-spelacceptans återstår med Jakobs egna filer efter driftsättning.
-
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
 PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen
@@ -2193,3 +2171,25 @@ mobil utan horisontell överströmning. Detta är lobbyacceptans, inte ett prov
 av Annas framtida spelklipp eller produktionspublicering. Ingen livekatalog,
 databas, spelregistrering eller modellkonfiguration ändras. PR:ns kontroller
 anger slutlig full regressionsstatus; merge/deploy görs inte i denna uppgift.
+
+## Ny dealer och fler importomgångar, 13 oktober 2026
+
+Läsande N1-kontroll fann nio registrerade dealers och ingen Dragge. Admins
+import krävde en sparad dealer men saknade skapandekontroll. `/admin/clips`
+har nu fliken **Ny dealer / flera filmer**: skapa namnet med ordinarie N1-
+skyddad projekt-PUT och färsk revision, välj dealern och godkänn filmimporten.
+Skapande spärras vid osparat kartutkast eller osparade importfiler. Sparandet
+försöks aldrig om blint; rum, publicering och andras klipp ändras inte.
+
+Importeraren tillåter tio osparade filer per omgång, 128 MiB per fil. Sparade
+rader tog tidigare upp nästa omgångs platser; de ersätts nu när nya filer väljs.
+Osäkra/felande rader behålls och dubbletter kontrolleras innan sparade kvitton
+frigörs. Detta är en kögräns, inte belagd lagringsbrist. Registrets 32-dealersgräns
+inkluderar arkiverade dealers. `?tool=import&dealer=<id>` väljer bara ett exakt
+registrerat id och bevarar pågående import. Inget automatisk filval eller
+godkännande görs.
+
+55 riktade regressions-/integrationstester och Admins produktionsbygge med
+typkontroll passerade. Inga livepersoner eller filer skapades. Inga playback-
+eller mediebytes ändrades; verklig uppladdning och eventuell efterföljande
+spelacceptans återstår med Jakobs egna filer efter driftsättning.
