@@ -8,6 +8,16 @@ import { StudioStorageError, cloneStudioJson, studioStorageFailure, validateStud
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../web/storage/studio-contract.mjs';
 
+test('unsupported media MIME rejects before opening SQL and cannot be accepted by the memory pool',async()=>{
+  for(const contentType of ['image/png','audio/wav','audio/mpeg']){
+    const pool=createStudioMemoryPool(),repo=repository(pool),id='11111111-1111-4111-8111-111111111111',sha256='a'.repeat(64);
+    const classification=contentType==='image/png'?{dealerId:'astrid',eventId:'roulette.reference',kind:'idle',role:'alternative',situation:'VILA',label:'Reference',notes:'',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}}:{dealerId:'astrid',eventId:'speak.goodluck',kind:'speech',role:'alternative',situation:'goodluck',label:'Audio',notes:'',mediaType:'audio'};
+    const ext=contentType==='image/png'?'png':contentType==='audio/wav'?'wav':'mp3';
+    await assert.rejects(repo.registerMedia({id,sha256,size:32,contentType,classification,pathname:`croupier/media/dealers/astrid/review/uploads/${id}/${sha256}.${ext}`},{actor:'tester'}),e=>e.code==='studio_media_content_type_unsupported'&&e.statusCode===415);
+    assert.equal(pool.calls.length,0);assert.equal(pool.snapshot().media.size,0);assert.equal(pool.snapshot().audits.length,0);
+  }
+});
+
 test('explicit retained originals are scoped immutable records with audited idempotent registration',async()=>{
   const pool=createStudioMemoryPool(),repo=repository(pool),other=createStudioRepository({pool,scope:{...scope,workspaceId:'other'}});
   for(const tuple of RETAINED_BANK_VARIANTS){

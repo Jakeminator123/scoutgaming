@@ -1,5 +1,6 @@
 import {assertMediaAlpha} from './media-alpha.mjs';
 import {assertNativeMediaReadiness} from './native-media-readiness.mjs';
+import {assertStudioMediaStorageType} from '../../web/storage/studio-media-storage.mjs';
 import { MEDIA_FILE_TYPES, mediaHeaderMatches } from './media-file-types.mjs';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { join } from 'node:path';
@@ -62,6 +63,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
       const record = validateStudioMedia({id,sha256:body.sha256,size:body.size,contentType:body.contentType,
         classification:writeMetadata(body.classification),pathname:mediaBlobPath(`dealers/${body.classification?.dealerId}/review/uploads`,id,body.sha256,MEDIA_FILE_TYPES[body.contentType])});
       if (record.classification.archived) fail('studio_invalid_media',422);
+      assertStudioMediaStorageType(record.contentType);
       await assertNativeMediaReadiness(repository,record.classification);
       await requireSavedVideoDealer(repository,record.classification.dealerId);
       const expiresAt = now()+TTL;
@@ -79,6 +81,7 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
       if (typeof mutationTransaction !== 'function') fail('studio_mutation_transaction_required');
       const record = grant(body.ticket,actor), storage = validatePrivateMedia({provider:'vercel-blob',
         pathname:record.pathname,sha256:record.sha256,size:record.size,contentType:record.contentType});
+      assertStudioMediaStorageType(record.contentType);
       await assertNativeMediaReadiness(repository,record.classification);
       await requireSavedVideoDealer(repository,record.classification.dealerId);
       // getPrivateMedia hashes every newly fetched complete object, validates

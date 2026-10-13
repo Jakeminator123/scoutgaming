@@ -1,10 +1,36 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: faktisk MIME-gräns i PostgreSQL
+
+PR #65:s PNG-/ljudregistrering är **inte färdig för PostgreSQL**. Migration
+001:s `media_records_check`, oförändrad av 002–008, accepterar bara MP4/WebM.
+Status-only systemmetadata verifierade samma constraint i Neon project
+`wandering-hill-60561912`, main `br-flat-fog-b161a6r8`, `croupier_game`,
+`croupier_studio.media_records`. Ingen produktrad eller DDL ändrades.
+
+Riktig isolerad PostgreSQL 16.15 med faktiska 001–008 reproducerade felet:
+PNG/WAV/MP3 gav SQLSTATE 23514; MP4/WebM registrerades med audit. Rättningen
+returnerar `studio_media_content_type_unsupported` (415) före Blob-grant,
+runtimeprobe, bytehämtning och SQL. Äldre signerade tickets spärras också.
+Repositoryts `registerMedia` har samma kontroll före transaktionsstart, så
+minnespoolen kan inte längre ge falskt positivt intagskvitto för dessa MIME.
+Typed API-svar förklarar gränsen utan databasdetaljer. Forge registrerar MP4;
+dess privata bildankare/lager ligger i andra strukturer och är inte ändrade.
+
+55 riktade prover och 18 verkliga PostgreSQL-kontroller, inklusive omstart,
+är gröna. Två egna localhost-kluster är stoppade. Tidigare fyra Anna-importer
+bevisade bytes/preview i minnesfixtur, **inte** PostgreSQL-stöd. V12/parser
+och WebM-alfa är en separat acceptansgräns. Migrerings-/aktiveringsplan finns
+i [CLOUD-MIGRATION](CLOUD-MIGRATION.md#png-och-ljud-i-studios-mediaregister).
+001/ledger/checksummor och reserverade 009/010 ändras inte; ingen ny migration
+eller produktionsregistrering aktiveras av denna rättning.
+
 ## Tillägg 13 oktober: roulettefack och alfa för Anna-prov
 
 `codex/roulette-alpha-media` lägger till separata roulettefack för VILA-PNG,
 andningsvila, glasögonvariant och hjulstart. Handling, spel och start-/slutpose
-registreras separat. Privat native uppladdning/återläsning stöder PNG;
+registreras separat. PNG-validering/preview finns; native PostgreSQL-intag
+för PNG är spärrat enligt den senare MIME-kontrollen ovan.
 `compositing.mode=alpha` bevarar PNG/VP9-transparens i den gemensamma previewn.
 Browsern avkodar tre stickprov före alfauppladdning/omklassificering; servern
 kontrollerar PNG-pixlar respektive VP9-alfaspår/payload. Svart/opak film är inte

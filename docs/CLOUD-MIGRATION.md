@@ -7,6 +7,62 @@ Privata kvitton, FAIL-historik, journaler och backups bevaras på sina platser.
 Aktuell terminologi och flödeskarta finns i [systembeskrivningen](LOCAL-PRESENTATION-RUNTIME.md).
 Senare kodversion uppgraderar inte ett äldre acceptansprov automatiskt.
 
+## PNG och ljud i Studios mediaregister
+
+**Inte aktiverat, 13 oktober 2026.** Status-only systemmetadata verifierar
+`media_records_check` i project `wandering-hill-60561912`, main
+`br-flat-fog-b161a6r8`, databas `croupier_game`: bara `video/mp4` och
+`video/webm` tillåts. Faktiska 001–008 i isolerad PostgreSQL 16.15 ger samma
+23514 för PNG/WAV/MP3. Parser/v12, alfaprov eller en positiv minnespool
+ersätter inte detta databasprov. Den omedelbara rättningen spärrar övriga
+MIME med typed 415 före native grant/bytes och repositorytransaktion.
+
+Plan för separat granskad leverans; ingen SQL eller ledgerändring ingår här:
+
+1. Samordna ett nytt migrationsnummer **011 eller senare**. 009 är reserverad
+   för B18 och 010 för B19. Ändra aldrig 001–008 eller deras checksummor.
+   Lägg den nya migrationen i den ordinarie explicita migrationslistan och
+   gör den obligatorisk. Ingen `deploymentOptional` för ett befintligt bord.
+2. Utöka endast MIME-villkoret, med transaktion, migrationslås, exakt
+   target/constraintkontroll och ordinarie checksum-/structure-ledger.
+   Behåll alla tidigare identitets-, objekt- och hashvillkor. Föreslagen DDL:
+
+   ```sql
+   ALTER TABLE croupier_studio.media_records
+     DROP CONSTRAINT media_records_check;
+   ALTER TABLE croupier_studio.media_records
+     ADD CONSTRAINT media_records_check CHECK (
+       jsonb_typeof(record) = 'object'
+       AND record ?& ARRAY['id','sha256','contentType']
+       AND record->>'id' = id::text
+       AND record->>'sha256' ~ '^[a-f0-9]{64}$'
+       AND record->>'contentType' IN (
+         'video/mp4','video/webm','image/png','audio/mpeg','audio/wav'
+       )
+     );
+   ```
+
+3. Kör hela faktiska kedjan före/efter i ny isolerad PostgreSQL, även med
+   giltiga äldre videorader. Verifiera bevarade id/hash/object-spärrar,
+   ogiltig MIME, korrekt PNG/MP3/WAV, register/audit-atomicitet, rollback,
+   återförsök, omstart och att kontrollprovet inte längre bara använder minne.
+4. Förbered den separata aktiverings-PR:en. Behåll tidig formatspärr tills
+   den erforderliga migrationen är verifierad; utökad whitelist ska bindas
+   till den nya obligatoriska schemaversionen, inte till filnamn, AI eller
+   enbart Render v12. Ofullständigt schema får inte utfärda Blob-grant.
+5. Först med separat uttryckligt mandat får operatören applicera den
+   granskade migrationen mot produktions-Neon, **före kodmerge**, enligt
+   befintlig `check-migration-readiness.mjs`-procedur. CI-readiness måste
+   sedan vara grön; ingen bypass eller försvagad CHECK används.
+6. Efter deploy verifieras ett separat godkänt medieintag med faktisk
+   PNG/ljudregistrering, avkodning, exakt privat återläsning, audit och retry.
+   Ingen dealer/rumsregel publiceras automatiskt. Runtime v12 måste fortfarande
+   stödja alfa/roulette. Tidiga mediefiler kräver sina separata visuella prov.
+
+Rollback efter nya records innebär att intake spärras och en läsande
+kompatibel runtime behålls. Återställ inte video-only-constrainten över
+nya giltiga records och radera inte sådana records för att göra rollback grön.
+
 ## Avvecklade arbetsanteckningar, 12 oktober 2026
 
 Spårade arbetsanteckningar och de åtta planfilerna tas bort ur trädet i denna leverans. Git-historiken på `00ea55c5` behåller dem. Lokala ignorerade env-kopior och bildmappar är oförändrade och ingår inte i produkten.

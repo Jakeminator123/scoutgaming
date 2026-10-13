@@ -25,7 +25,16 @@ före providersubmission och innan ett genereringsjobb sparas. `videoFitsLine`
 och `videoFitsEvent` avvisar roulette i blackjackens runtime. En roulette-Forge
 kräver eget accepterat rörelse-/geometrikontrakt innan den kan öppnas.
 
-Native privat uppladdning stöder PNG för VILA-referensen och bevarar bytes/hash. `compositing: {mode: "alpha"}` behåller originalets alfa och stänger av grönnycklingen, även på gröna detaljer i dealern. Grön MP4 kan fortfarande väljas som green-screen. En svart bakgrund är inte alfa.
+PNG för VILA stöds i validering och privat preview, men **inte ännu i native
+PostgreSQL-registrering**. Faktiska migrationer 001–008 och produktionsconstrainten
+accepterar endast MP4/WebM. Prepare och commit av PNG/WAV/MP3 ger fast typed
+415 `studio_media_content_type_unsupported` före Blob-grant/bytehämtning och SQL;
+äldre signerade tickets spärras också. Repositoryt spärrar samma typer före SQL.
+Tidigare minnesfixturer bevisade inte denna databasgräns. Se
+[migreringsplanen](../../CLOUD-MIGRATION.md#png-och-ljud-i-studios-mediaregister).
+`compositing: {mode: "alpha"}` behåller originalets alfa och stänger av
+grönnycklingen, även på gröna dealerdetaljer. Grön MP4 fungerar fortsatt.
+En svart bakgrund är inte alfa. WebM-alfa och PNG-preview har egna pixelprov.
 
 **Ordning vid driftsättning:** nya PNG-/alfa-/roulettefält kräver ett exakt
 v12-svar från Render (`mediaAlpha=png-vp9-v1`, `rouletteMedia=action-pose-slots-v1`).
@@ -109,7 +118,17 @@ Formuleringen ”ivory ball track” var fel för originalbordet och får inte �
 
 ### Bevis och gränser
 
-Privata kvitton: `anna-intake-receipts.json` (fyra faktiska filer genom isolerad native uppladdning/återläsning, idempotent commit, ny repository-instans och oförändrade originalhashar), `anna-browser-alpha-receipts.json` (avkodade pixlar och avvisat opakt motexempel), `runway-measurements.json` (faktiska mått/fps/hash), `runway-starter-manifest.json` (prompt/jobbreferenser). Testcachen använder simulerad privat Blob och isolerad minnespool, **inte produktions-Neon eller en verklig Blob-publicering**. Desktop- och mobilprov har sparats; det är Chromium med emulerad mobilbredd, inte fysisk iOS-/Android-acceptans. Kantkvalitet, helrörelse, sömlös skarv och handkontakt är fortsatt manuell acceptans före produktion.
+Privata kvitton: `anna-intake-receipts.json` (fyra faktiska filer genom
+minnesfixtur, idempotent commit, ny repository-instans och oförändrade hashvärden;
+**PNG-kvittot är inte PostgreSQL-acceptans och intaget är nu spärrat**),
+`anna-browser-alpha-receipts.json` (avkodade pixlar och avvisat opakt motexempel),
+`runway-measurements.json` (mått/fps/hash), `runway-starter-manifest.json`
+(prompt/jobbreferenser). `media-pg-before-gate.log` reproducerar verklig
+001–008-formatspärr; `media-pg-after-gate-and-restart.log` visar typed-spärren
+och 18 faktiska SQL-kontroller inklusive omstart. Ingen produktionsskrivning
+eller verklig Blob-publicering gjordes. Desktop/mobil är Chromium med emulerad
+mobilbredd, inte fysisk iOS-/Android-acceptans. Kantkvalitet, helrörelse,
+sömlös skarv och handkontakt återstår som manuell acceptans före produktion.
 
 
 Samlad ingång för implementerat spel och mottaget medieunderlag. Ursprunglig kodinventering: main `426fa11417695025e2a0ee194825110f48f6b4af`; roulettevyn är senare levererad på `161957f1ca56bf35bdb09a2926b6a48c384b3e9a`, verifierat 13 oktober 2026. Underlagets bedömda fullständighet är **75 %**. [Källregler](../README.md), [teknisk referens](TEKNIK.md) och [källregister](KALLOR.json).
