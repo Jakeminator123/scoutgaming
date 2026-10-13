@@ -23,6 +23,21 @@ Spelmotor, autentisering och fungerande äldre länkar ska behållas under den.
 registrerad media och provspelning. Mappnamnet är därför inte ett skäl att
 ta bort den kopplingen. `lab-speech-bridge.mjs` ingår också i spelklientens talväg.
 
+`studio-game-commands.mjs` hämtar det rena signeringskontraktet från
+`packages/shared/studio-game-command.mjs`. Spelservern behöver därför inte
+importera Studios HTTP-adapter `lab/lib/studio-game-authority.mjs` för att
+kontrollera en kommandosignatur. Den gamla signeringsexporten finns kvar där
+för kompatibilitet. Befintlig behörighetspolicy och lagringskontraktet i
+`web/storage/studio-contract.mjs` används fortfarande.
+
+OpenClaw-kopplingarna är aktiva: `openclaw-chat.mjs` använder minnes-/
+kameraformat, inställningar och produktens taltransport; `presentation-api.mjs`
+använder Director-beslut; `probe-runtime.mjs` och `player-probe-store.mjs`
+använder provtal respektive minnesprojektion. `server.mjs` använder också
+kameranormalisering och `native-p6-qa-hook.mjs` talets envelope-kontrakt.
+`storage/studio-contract.mjs` validerar fortfarande social policy via OpenClaw.
+Dessa importer från `open-claw/lab/src/` är kvar, liksom Astrids talväg.
+
 `lissabon-profiles.mjs` är en avgränsad lokal profilfunktion: SQLite, gästdemo,
 `HOST=127.0.0.1`, inga spelarkonton och flaggan `lissabon-stream-lane`.
 Den aktiveras inte i PostgreSQL-läget. Lissabon är inget nytt produktområde;

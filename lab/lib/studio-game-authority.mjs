@@ -1,6 +1,10 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+import { studioCommandSignature } from '../../packages/shared/studio-game-command.mjs';
 import { validateStudioScope, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
 import { normalizeStudioRole } from './studio-access-policy.mjs';
+
+// Retain the established import path for existing Studio callers.
+export { studioCommandSignature };
 
 const actions = new Set(['players/password', 'players/status', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
 const fail = (statusCode = 503) => { throw Object.assign(new Error('studio_game_authority_unavailable'), { statusCode }); };
@@ -9,10 +13,6 @@ function origin(value) {
   if (url.origin !== value || url.protocol !== 'https:' || url.username || url.password || ['localhost','127.0.0.1','[::1]'].includes(url.hostname)) fail();
   return value;
 }
-export function studioCommandSignature(secret, timestamp, body) {
-  return createHmac('sha256', secret).update(`studio-game-command-v1\n${timestamp}\n${body}`).digest('hex');
-}
-
 // This boundary transports commands to the engine. It never changes a wallet
 // or player status on Vercel and never retries an uncertain mutation.
 export function createStudioGameAuthority({ env = process.env, scope, fetchImpl = fetch, now = Date.now } = {}) {

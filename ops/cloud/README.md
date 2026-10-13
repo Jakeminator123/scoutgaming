@@ -1,6 +1,25 @@
-# Single-host cloud pilot runtime
+# Cloud runtime and compatibility launch
 
-## Render without a custom domain
+## Current deployment and storage
+
+Vercel team/project `scoutgaming` serves the public web and Studio Services.
+Render `croupier-v2` owns the authoritative game engine and live transport.
+Production accounts, game state and Studio data/revisions use Neon; media and
+finished speech packages use private Blob. See the current
+[deployment map and acceptance](../../docs/CLOUD-MIGRATION.md#ytor-och-datalagring--produktion-och-nya-qa).
+
+`web/server.mjs` selects PostgreSQL only with `CROUPIER_DATABASE=postgres`.
+The retained SQLite adapter/default is for compatible local/isolated operation;
+its presence does not establish which backend production uses.
+`config.mjs` and `container-entry.mjs` support a mountless container with
+PostgreSQL, Neon Studio policy and private Blob. They reject retired product
+disk-directory settings; `config.mjs` also requires the media Blob index for
+mountless operation. Do not restore an old product disk to follow the pilot
+instructions below. Isolated QA and separate Director/Gateway state can still
+have disks. No runtime mode, environment value or provider setting is changed
+by this documentation.
+
+## Retained single-origin compatibility mode
 
 Set `CROUPIER_CLOUD_LAYOUT=single-origin`. The exact game origin is taken from
 `PUBLIC_URL` or Render's `RENDER_EXTERNAL_URL`; BO and Lab default to that same
@@ -17,14 +36,19 @@ mode, build with `--build-arg CROUPIER_LAB_BASE_PATH=` and select
 `CROUPIER_CLOUD_LAYOUT=separate-hosts` (the config's compatibility default).
 Local development still uses an empty base path.
 
-For this Docker image mount the disk at `/var/data` and set
-`CROUPIER_CLOUD_DATA_ROOT=/var/data`. The entrypoint can adjust ownership of
+For the disk-backed compatibility mode, the image uses `/var/data` with
+`CROUPIER_CLOUD_DATA_ROOT=/var/data`; this is not required by the mountless
+Neon/Blob production mode above. The entrypoint can adjust ownership of
 only that exact directory, then drops root and supplementary groups before
 loading the application. It never recursively changes ownership or seeds
 private databases. Already non-root launches must be the image's node user.
-Actual Render disk persistence and container startup still require verification.
+Disk persistence and startup must be verified for the specific isolated deployment.
 
 ## 2026-09-29: explicit pilot launch
+
+The following records the original pilot and retained compatibility paths,
+not the current production topology or its acceptance status. Consult the
+deployment map above for subsequent Neon/Blob migration and dated receipts.
 
 The former unconditional stop has been replaced by an explicit
 `CROUPIER_CLOUD_LAUNCH=pilot` selection. This is not production acceptance.
@@ -40,23 +64,23 @@ HTTPS login, cookies, a complete game round, media, restart survival and
 database backup/restore must still be accepted on the chosen host. GPU and
 camera retain their separate opt-in flags; selecting pilot does not enable
 either. No service, image publication or paid job was created by this change.
-See [current launch handoff](../../docs/CLOUD-LAUNCH-HANDOFF.md).
+See [current delivery and remaining acceptance](../../docs/CLOUD-MIGRATION.md).
 
-This package prepares one long-lived Node host for Web and Next Lab on one
-durable filesystem. A BO-to-Lab admin sign-in handoff, per-request Lab session
+The original pilot prepared one long-lived Node host for Web and Next Lab on
+one durable filesystem. A BO-to-Lab admin sign-in handoff, per-request Lab session
 check, route partition, and private Lab authorization header are implemented in
 this checkout. The explicit pilot launch enables host verification without
 claiming the public HTTPS, persistence or full media flow already works.
 No image has been built or deployed from this package as part of this change.
 
 Build context is the repository root (`docker build -f ops/cloud/Dockerfile .`).
-The existing `.dockerignore` excludes local secrets and mutable data. Mount one
-durable disk at an absolute path outside the checkout, supply it as
-`CROUPIER_CLOUD_DATA_ROOT`, and supply secrets through the hosting platform.
-The runtime derives `players`, `studio`, `generations`, and `speech` directories
-on that disk. Web and Lab use the same `studio` path. Do not seed the disk from
-private local databases by default. A directory check cannot prove persistence;
-backup and restore, restart survival, and mount ownership need deployment tests.
+The existing `.dockerignore` excludes local secrets and mutable data. Supply
+secrets through the hosting platform. The current config derives `players`
+under `CROUPIER_CLOUD_DATA_ROOT` only for SQLite or explicit storage export;
+the former shared `studio`, `generations` and `speech` product directories are
+retired. Do not seed a compatibility disk from private local databases.
+A directory check cannot prove persistence; use the
+[backup and restoration rules](../../docs/ENVIRONMENT-RESTORATION.md).
 
 For **separate-hosts**, required configuration: `NODE_ENV=production`, public `PORT`, exact HTTPS
 origins in `PUBLIC_URL`, `BO_URL`, `LAB_PUBLIC_URL`, `CROUPIER_GAME_ORIGIN`, and
@@ -111,9 +135,9 @@ Camera and paid media have explicit opt-in configuration, but
 their provider and browser paths have not passed a staged deployment test;
 this is not yet a complete remote Astrid experience.
 
-The variable placement, blank-value example, manual GHCR image workflow and
-reproducible GPU acceptance protocol are in
-[Astrid's cloud test plan](../../docs/ASTRID-GPU-CLOUD-TEST.md). The two stream
+Variable placement and remaining acceptance are documented in the
+[current environment register](../../docs/ENVIRONMENT-VARIABLES.md) and
+[cloud acceptance checklist](../../docs/CLOUD-MIGRATION.md). The two stream
 secrets must differ and reach only Web; RunPod receives the worker token as a
 private sessionsjobb input. No paid worker is started by this package.
 
