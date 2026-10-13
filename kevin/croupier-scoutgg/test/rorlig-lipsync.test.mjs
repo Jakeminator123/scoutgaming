@@ -136,7 +136,7 @@ test('the worker makes what is needed on screen soonest first: a new map for now
   const order=[],s=r.s.get('paow');
   s.info={rutor_per_s:60};
   s.ws={readyState:1,off(){},send(m){const j=JSON.parse(m);if(j.t==='start')order.push(j.id);},
-    on(ev,f){if(ev==='message')setTimeout(()=>f(JSON.stringify({t:'done',id:order.at(-1)}),false),5);}};
+    on(ev,f){if(ev==='message')setTimeout(()=>f(JSON.stringify({t:'done',id:order.at(-1)}),false),5);}};   // one lane: the line's own id
   const now=Date.now(),done=[];
   done.push(r.speak('paow','rum',{id:'first',kartaStart:now+9000,line:'/a.mp4'},[]));   // the worker is free: it starts at once
   done.push(r.speak('paow','rum',{id:'answer-later',kartaStart:now+5000,line:'/a.mp4'},[]));
@@ -161,6 +161,32 @@ test('a line is made only shortly before it is needed, and only its last version
   assert.equal(made.length,1,'one version made');
   assert.ok(made[0][1]-now>=150,'not before its horizon');
   assert.equal(r.index('insurance').ver,2);
+});
+
+test('a two-lane worker takes an urgent remap at once beside a long line, and stops the version it replaces', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
+  clearInterval(r.timer);
+  const sent=[],h=[],s=r.s.get('paow');
+  s.info={rutor_per_s:60,spar:2};
+  s.ws={readyState:1,off(ev,f){const i=h.indexOf(f);if(i>=0)h.splice(i,1);},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);}};
+  const msg=m=>[...h].forEach(f=>f(JSON.stringify(m),false));
+  const now=Date.now();
+  const line=r.speak('paow','rum',{id:'insurance',kartaStart:now+1500,line:'/a.mp4'},[]);
+  const answer={id:'answer',kartaStart:now+1000};
+  const v1=r.speak('paow','rum',answer,[],{pcm:Buffer.alloc(4800)});
+  assert.deepEqual(sent.filter(m=>m.t==='start').map(m=>m.id),['insurance#1','answer#1'],'the answer takes the second lane');
+  const v2=r.speak('paow','rum',answer,[],{fran:30});   // a hit: new cards under the answer
+  assert.ok(sent.some(m=>m.t==='avbryt'&&m.id==='answer#1'),'the old version is stopped');
+  msg({t:'error',id:'answer#1',reason:'avbruten'});
+  await v1;await new Promise(r=>setImmediate(r));   // the lane is freed right after
+  const st=sent.filter(m=>m.t==='start').at(-1);
+  assert.equal(st.id,'answer#2');
+  assert.equal(st.ljud_id,'answer');
+  assert.equal(st.samma_ljud,true,'the voice is not sent again');
+  msg({t:'done',id:'answer#2'});msg({t:'done',id:'insurance#1'});
+  await Promise.all([v2,line]);
+  assert.equal(r.index('answer').fel,null);
 });
 
 test('a worker that goes away mid-line ends that line at once, so the lines behind it do not wait', async () => {

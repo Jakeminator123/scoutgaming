@@ -96,15 +96,17 @@ const MIN_FPS = 30;
 
 export class RorligLipsync {
   constructor({ endpointId, apiKey, publicBase, publicDir, dealers = ['paow'], log = console.log, fetchImpl = fetch,
-    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000 }) {
+    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000, urgentMs = 2500 }) {
     // ttlS: one session per ~55 min (the endpoint allows jobs of 1 h). Every renewal can land on a cold or slow machine,
     // and with 9 min sessions that happened every 6.5 min of play; a session still ends 8 min after the table goes quiet
     // horizonMs: a line is made no earlier than this before it is needed (a line takes ~1.5 s, its first patch ~0.5 s).
     // Made sooner, every new plan remade it again (insurance 3–4 times) and the worker was busy with that when a hit
     // during an answer needed its remap at once (staging 13 Oct)
-    Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs });
+    // urgentMs: a worker with two lanes (pong spar: 2) takes a second line at once only when it is needed this soon — a
+    // remap after a hit during an answer waited 1.3–1.6 s behind a line for later (staging 13 Oct)
+    Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs, urgentMs });
     this.token = randomBytes(24).toString('hex');   // per process: only the sessions we ordered can dial in
-    this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], busy: false, waiters: [], recent: [] }]));
+    this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], running: 0, waiters: [], recent: [] }]));
     this.talks = new Map();   // talk id -> {room, pieces:[{meta, bytes}], done, error, at}
     this.durations = new Map();
     this.timer = setInterval(() => this.#tick(), 5000);
@@ -151,6 +153,7 @@ export class RorligLipsync {
   speak(dealer, room, talk, karta, { pcm = null, fran = 0 } = {}) {
     const s = this.s.get(dealer);
     const old = this.talks.get(talk.id);
+    old?.abort?.();   // the worker stops making the version this map replaces
     const rec = { room, ver: (old?.ver ?? 0) + 1, pieces: [], done: false, error: null, at: Date.now(), pcm: pcm ?? old?.pcm ?? null, pcmWs: old?.pcmWs ?? null, talk };
     this.talks.set(talk.id, rec);
     const base = this.publicBase();
@@ -160,8 +163,10 @@ export class RorligLipsync {
       if (!this.ready(dealer) || (!rec.pcm && !base)) { rec.error = 'no worker'; rec.done = true; return resolve(); }
       // timings of the last lines (in /api/lipsync-status): queue = waited behind other lines, first = sent until the
       // first patch, spare = how long before its first frame is on screen the first patch came (negative = late)
+      // a two-lane worker may make two versions of one answer at once: each run has its own id, the voice its answer's
+      const lanes = (s.info?.spar ?? 1) >= 2, jid = lanes ? `${talk.id}#${rec.ver}` : talk.id;
       const sent = Date.now(), tm = { what: talk.event ?? talk.kind, ver: rec.ver, fran, queue: sent - rec.at, first: null, total: null, spare: null, steg: null, error: null };
-      const finish = (err) => { clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
+      const finish = (err) => { rec.abort = null; clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
       let pending = null;
       const onMsg = (data, isBinary) => {
         if (isBinary) {
@@ -169,10 +174,10 @@ export class RorligLipsync {
           return;
         }
         let m; try { m = JSON.parse(String(data)); } catch { return; }
-        if (m.id !== talk.id) return;
+        if (m.id !== jid) return;
         if (m.t === 'lapp') pending = { del: m.del, fran: m.fran, till: m.till, rutor: m.rutor };
         else if (m.t === 'done') { tm.steg = m.steg ?? null; this.log(`läppsynk rörlig [${dealer}]: ${talk.event ?? 'replik'} klar, första bit ${m.forsta_bit_ms} ms, ${m.ms} ms`); finish(null); }
-        else if (m.t === 'error') { this.log(`läppsynk rörlig [${dealer}]: fel ${m.reason}`); finish(m.reason); }
+        else if (m.t === 'error') { if (m.reason !== 'avbruten') this.log(`läppsynk rörlig [${dealer}]: fel ${m.reason}`); finish(m.reason); }
       };
       // a worker that goes away mid-line (terminated, its machine lost) ends the line at once: the queue behind it waited
       // 30 s before; a line takes under 4 s, so 15 s means the worker hangs
@@ -180,18 +185,19 @@ export class RorligLipsync {
       const timer = setTimeout(() => finish('timeout'), 15_000);
       ws.on('message', onMsg);
       ws.on('close', onClose);
+      if (lanes) rec.abort = () => { try { ws.send(JSON.stringify({ t: 'avbryt', id: jid })); } catch {} };
       // fran: the first frame the viewers still need (a new map while it speaks): the worker makes only the rest
       // a new map for an answer this worker already has the voice of: not the voice again (~0.5 s when it matters most)
-      if (rec.pcm && rec.pcmWs === ws && s.info?.samma_ljud) ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta, fran_ruta: fran, samma_ljud: true }));
+      if (rec.pcm && rec.pcmWs === ws && lanes) ws.send(JSON.stringify({ t: 'start', id: jid, ljud_id: talk.id, rate: 24000, karta, fran_ruta: fran, samma_ljud: true }));
       else if (rec.pcm) {
-        ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta, fran_ruta: fran }));
+        ws.send(JSON.stringify({ t: 'start', id: jid, ljud_id: talk.id, rate: 24000, karta, fran_ruta: fran }));
         for (let i = 0; i < rec.pcm.length; i += 32768) ws.send(rec.pcm.subarray(i, i + 32768));
         rec.pcmWs = ws;
-      } else ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta, ljud_url: base + talk.line, fran_ruta: fran }));
-      ws.send(JSON.stringify({ t: 'end', id: talk.id }));
+      } else ws.send(JSON.stringify({ t: 'start', id: jid, rate: 24000, karta, ljud_url: base + talk.line, fran_ruta: fran }));
+      ws.send(JSON.stringify({ t: 'end', id: jid }));
     });
-    // One line at a time per worker, the one needed on screen soonest first (earliest deadline): a line starting in a
-    // second goes before an answer made for later, and a new map for what is on screen now goes before both.
+    // The line needed on screen soonest first (earliest deadline): a line starting in a second goes before an answer made
+    // for later, and a new map for what is on screen now goes before both. One at a time, a second only when urgent.
     return new Promise(resolve => {
       s.jobs.push({ deadline: talk.kartaStart + fran * 1000 / 24, stale: () => rec !== this.talks.get(talk.id), run: () => run().then(resolve, resolve) });
       this.#pump(dealer);
@@ -200,22 +206,22 @@ export class RorligLipsync {
 
   #pump(dealer) {
     const s = this.s.get(dealer);
-    if (s.busy) return;
     // a line remade since it was queued: the old version ends at once, it is never made
     for (const j of s.jobs.filter(j => j.stale())) j.run();
     s.jobs = s.jobs.filter(j => !j.stale());
-    if (!s.jobs.length) return;
-    s.jobs.sort((a, b) => a.deadline - b.deadline);
     clearTimeout(s.later);
-    const wait = s.jobs[0].deadline - Date.now() - this.horizonMs;
+    if (!s.jobs.length || s.running >= Math.min(2, s.info?.spar ?? 1)) return;
+    s.jobs.sort((a, b) => a.deadline - b.deadline);
+    const wait = s.jobs[0].deadline - Date.now() - (s.running ? this.urgentMs : this.horizonMs);
     if (wait > 0) { s.later = setTimeout(() => this.#pump(dealer), wait); return; }
     const job = s.jobs.shift();
-    s.busy = true;
-    job.run().finally(() => { s.busy = false; for (const f of s.waiters.splice(0)) f(); this.#pump(dealer); });
+    s.running++;
+    job.run().finally(() => { s.running--; if (!s.running) for (const f of s.waiters.splice(0)) f(); this.#pump(dealer); });
+    this.#pump(dealer);   // the second lane, when the next one is urgent
   }
 
   // the worker has no line in hand (lines still waiting go to whichever worker is current when their time comes)
-  #idle(s) { return !s.busy ? Promise.resolve() : new Promise(r => s.waiters.push(r)); }
+  #idle(s) { return !s.running ? Promise.resolve() : new Promise(r => s.waiters.push(r)); }
 
   piece(talkId, del, ver) { const t = this.talks.get(talkId); return t && (!ver || t.ver === ver) ? t.pieces.find(p => p.meta.del === del) ?? null : null; }
   index(talkId) {
