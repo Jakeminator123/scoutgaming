@@ -4,6 +4,7 @@ import { mkdir, writeFile, appendFile, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { sanitizeObservation } from '../lab/lib/partner-trace.mjs';
+import { autoArchiveLocalArtifacts } from './retention-archive.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const startedAt = new Date().toISOString();
@@ -53,4 +54,5 @@ try {
   clearInterval(poll); clearTimeout(deadline);
   await save('session.json', { startedAt, endedAt: new Date().toISOString(), reason, records: count, rounds: roundCount, receivedBytes: bytes, source: 'Local lab observer -> Partner SSE', originalPlayerTelemetry: false, replay: false });
   console.log(JSON.stringify({ directory, reason, records: count, rounds: roundCount }));
+  await autoArchiveLocalArtifacts('observations');
 }

@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createEmptyProject, normalizeProject, validateProject } from './studio-model.mjs';
 import lockfile from 'proper-lockfile';
+import { autoArchiveLocalArtifacts } from '../../tools/retention-archive.mjs';
 
 export class StudioError extends Error {
   constructor(message, statusCode = 400) { super(message); this.statusCode = statusCode; }
@@ -45,6 +46,7 @@ export function createProjectStore(dataDir = resolve(process.cwd(), 'data')) {
       if (compromised) throw new StudioError('Skrivlåset ändrades. Projektet har inte ersatts.', 423);
       await rename(temp, file);
       temp = undefined;
+      await autoArchiveLocalArtifacts('projectHistory', { dataDir });
       return saved;
     } finally {
       if (temp) await unlink(temp).catch(() => {});

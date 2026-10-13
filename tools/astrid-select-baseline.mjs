@@ -47,6 +47,8 @@ export const ARCHIVE_PATHS = Object.freeze([
   'open-claw/lab',
   'pipeline',
   'tools/media-layout.mjs',
+  'tools/retention-archive.mjs',
+  'tools/retention-policy.json',
   'web/dealer-identity.mjs',
   'web/layer-asset-contract.mjs',
   'web/managed-media-contract.mjs',
