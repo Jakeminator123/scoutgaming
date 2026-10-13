@@ -25,7 +25,17 @@ Plan för separat granskad leverans; ingen SQL eller ledgerändring ingår här:
    gör den obligatorisk. Ingen `deploymentOptional` för ett befintligt bord.
 2. Utöka endast MIME-villkoret, med transaktion, migrationslås, exakt
    target/constraintkontroll och ordinarie checksum-/structure-ledger.
-   Behåll alla tidigare identitets-, objekt- och hashvillkor. Föreslagen DDL:
+   **Nuvarande runner kan inte utföra detta ensam:** `migrations.mjs`
+   jämför varje äldre `structure_checksum` med aktuell tabelldefinition.
+   En ALTER skulle därför göra 001:s fingerprint avvikande. Förbered först
+   en explicit versionerad strukturevolution för exakt denna CHECK:
+   bevara alla äldre ledgerposter/checksummor och validera både tidigare
+   historisk struktur och den nya tillåtna strukturen mot rätt version.
+   Oförklarad drift, saknad ny ledgerpost eller fel tidigare fingerprint
+   måste fortsatt nekas. Testa även att den äldre runtimeversionen nekar
+   det nya schemat; använd inte ett generellt driftundantag.
+   Behåll alla tidigare identitets-, objekt- och hashvillkor. DDL-utkast,
+   **inte ett direkt körkommando med dagens runner**:
 
    ```sql
    ALTER TABLE croupier_studio.media_records

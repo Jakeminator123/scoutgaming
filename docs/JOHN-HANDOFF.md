@@ -17,7 +17,7 @@ minnespoolen kan inte längre ge falskt positivt intagskvitto för dessa MIME.
 Typed API-svar förklarar gränsen utan databasdetaljer. Forge registrerar MP4;
 dess privata bildankare/lager ligger i andra strukturer och är inte ändrade.
 
-55 riktade prover och 18 verkliga PostgreSQL-kontroller, inklusive omstart,
+88 riktade prover och 18 verkliga PostgreSQL-kontroller, inklusive omstart,
 är gröna. Två egna localhost-kluster är stoppade. Tidigare fyra Anna-importer
 bevisade bytes/preview i minnesfixtur, **inte** PostgreSQL-stöd. V12/parser
 och WebM-alfa är en separat acceptansgräns. Migrerings-/aktiveringsplan finns
