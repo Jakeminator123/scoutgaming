@@ -96,15 +96,16 @@ const MIN_FPS = 30;
 
 export class RorligLipsync {
   constructor({ endpointId, apiKey, publicBase, publicDir, dealers = ['paow'], log = console.log, fetchImpl = fetch,
-    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000, urgentMs = 2500 }) {
+    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000, urgentMs = 2500, maxLanes = 1 }) {
     // ttlS: one session per ~55 min (the endpoint allows jobs of 1 h). Every renewal can land on a cold or slow machine,
     // and with 9 min sessions that happened every 6.5 min of play; a session still ends 8 min after the table goes quiet
     // horizonMs: a line is made no earlier than this before it is needed (a line takes ~1.5 s, its first patch ~0.5 s).
     // Made sooner, every new plan remade it again (insurance 3–4 times) and the worker was busy with that when a hit
     // during an answer needed its remap at once (staging 13 Oct)
-    // urgentMs: a worker with two lanes (pong spar: 2) takes a second line at once only when it is needed this soon — a
-    // remap after a hit during an answer waited 1.3–1.6 s behind a line for later (staging 13 Oct)
-    Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs, urgentMs });
+    // maxLanes/urgentMs: a worker that can (pong spar: 2) may take a second line when it is needed within urgentMs. Off:
+    // on staging 13 Oct two lines at once on one GPU took 2.5–12 s to a first patch and one hung. A remap after a hit
+    // during an answer instead stops the version it replaces (abort), which frees the one lane at once
+    Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs, urgentMs, maxLanes });
     this.token = randomBytes(24).toString('hex');   // per process: only the sessions we ordered can dial in
     this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], running: 0, waiters: [], recent: [] }]));
     this.talks = new Map();   // talk id -> {room, pieces:[{meta, bytes}], done, error, at}
@@ -197,7 +198,7 @@ export class RorligLipsync {
       ws.send(JSON.stringify({ t: 'end', id: jid }));
     });
     // The line needed on screen soonest first (earliest deadline): a line starting in a second goes before an answer made
-    // for later, and a new map for what is on screen now goes before both. One at a time, a second only when urgent.
+    // for later, and a new map for what is on screen now goes before both. One at a time (maxLanes).
     return new Promise(resolve => {
       s.jobs.push({ deadline: talk.kartaStart + fran * 1000 / 24, stale: () => rec !== this.talks.get(talk.id), run: () => run().then(resolve, resolve) });
       this.#pump(dealer);
@@ -210,14 +211,14 @@ export class RorligLipsync {
     for (const j of s.jobs.filter(j => j.stale())) j.run();
     s.jobs = s.jobs.filter(j => !j.stale());
     clearTimeout(s.later);
-    if (!s.jobs.length || s.running >= Math.min(2, s.info?.spar ?? 1)) return;
+    if (!s.jobs.length || s.running >= Math.min(this.maxLanes, s.info?.spar ?? 1)) return;
     s.jobs.sort((a, b) => a.deadline - b.deadline);
     const wait = s.jobs[0].deadline - Date.now() - (s.running ? this.urgentMs : this.horizonMs);
     if (wait > 0) { s.later = setTimeout(() => this.#pump(dealer), wait); return; }
     const job = s.jobs.shift();
     s.running++;
     job.run().finally(() => { s.running--; if (!s.running) for (const f of s.waiters.splice(0)) f(); this.#pump(dealer); });
-    this.#pump(dealer);   // the second lane, when the next one is urgent
+    this.#pump(dealer);   // a second lane (maxLanes 2), when the next one is urgent
   }
 
   // the worker has no line in hand (lines still waiting go to whichever worker is current when their time comes)
