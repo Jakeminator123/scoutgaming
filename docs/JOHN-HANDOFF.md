@@ -20,8 +20,9 @@ Separat navigationsprov med riktig byggd Studio-fixtur bekräftar rumslistan,
 äldre bokmärken samt Översikt under laddning och från ett osparat utkast;
 utkastet finns kvar när Studio öppnas igen. Fixturen skriver ingen produktdata.
 Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
-runtimebindningstester passerar. Efter sammanslagning med senaste `main`
-passerar full regressionshook med 3 170 godkända, 11 överhoppade och 0 fel;
+runtimebindningstester passerar. Efter sammanslagning med senaste `main` och
+navigeringsrättningen passerar full regressionshook med 3 174 godkända,
+11 överhoppade och 0 fel;
 typkontroll och bygge passerar också på samma revision. PR-kontroller och
 produktionsvisning återstår efter push respektive merge.
 
