@@ -21,6 +21,14 @@ utfall och hjulsiffror återstår. Färgheuristiken för händer kräver ny
 granskning vid ändrade bytes/inramning/kläder. Visuell målbild är fortsatt
 Jakobs referens; den nya rörliga passningen inväntar hans bedömning.
 
+Verifierat för kodcommit `a0c7d708`: Studio-produktionsbygge och Admin-typkontroll
+gröna. Ordinarie fulla pre-commit: **3385 godkända, 0 fel, 11 skip**.
+Riktade tester täcker dessutom variantväxling, avbruten laddning, fel bildmått
+och handmatta ur samma bildruta. GitGuardian-läsningen visade 0 öppna/17
+ignorerade incidenter, aktiv övervakning; historisk scan `too_large`, platsdata
+delvis tillgängliga och main-check köad. Detta är ingen fullständig historisk
+friskförklaring.
+
 ## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
 
 Integrerad med main `60defa57` inför PR92-granskningen. Endast denna handoff
