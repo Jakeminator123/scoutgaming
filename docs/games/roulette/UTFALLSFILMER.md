@@ -33,7 +33,16 @@ Live registrerat via Admins ordinarie Blob/Neon-flöde: vilofilm
 `2c7feba2-70f1-44ee-9b6f-19e478313385`. Viloposer och framing
 `{scale:0.66,x:0.15,y:-0.16}` är sparade. Egen sammansättning:
 `anna-roulette-demorum-fc7785ae-6747-4a5e-b229-04c1ce4247c4`.
-Startfil, bord och publicerat demorum är ännu inte registrerade/slutförda.
+Startfilm `96deca4e-3716-4db8-9a51-997ffa906a3b` och bord
+`7e31ab32-8074-4b63-b1bb-4e6bee772421` är också registrerade via ordinarie
+privata Blob/Neon-flöde. Startprofilen ovan och idle-handregionen är sparade.
+Sammansättningen tillåter endast Anna, Anna-roulettebordet och MP4-salongen.
+Admin avrundar bordbredden till 1,04 i mobil och desktop; övrig kalibrering
+är lager 1/0/0, bordets x/y 0/0 och tableFront=false. Den lilla skillnaden
+mot lokalt prov (1,044565) ska kontrolleras visuellt i lobbyacceptansen.
+PR101 är live som `a6509318`, v15 bekräftad. Demorummet återstår eftersom
+publiceringsklientens förkontroll ännu använder blackjack vid rouletteval;
+uppföljningen rättar även klientens acceptans av v15-svar.
 V1-starten och den opaka v2-friläggningen får inte publiceras.
 
 Admin har uttryckliga starttider/bordval och handregion för exakt idle-fil.

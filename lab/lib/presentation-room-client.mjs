@@ -38,7 +38,7 @@ function validContext(context) {
   return object(context?.operator) && identifier(context.operator.id) && workspaceSurfacePath('partner', 'ops', context.operator.slug) !== null
     && laneId(context?.presentation?.id) && revision(context.projectRevision);
 }
-function preflight(value, context) {
+function preflight(value, context, game) {
   if (!object(value) || value.ok !== true || !object(value.operator) || value.operator.id !== context.operator.id
     || value.operator.slug !== context.operator.slug || typeof value.operator.name !== 'string'
     || value.presentationLaneId !== context.presentation.id || !revision(value.projectRevision) || !revision(value.administrationRevision)
@@ -53,7 +53,8 @@ function preflight(value, context) {
     || !['baked', 'image', 'video', 'variable'].includes(environment.kind) || typeof environment.fixed !== 'boolean'
     || !roomName(environment.label, 120) || value.ready && !environment.fixed
     || environment.kind === 'variable' && environment.fixed)) invalid();
-  if (value.ready && (value.reason !== null || ![2, 3, 4, 9].includes(capabilities?.schemaVersion))) invalid();
+  if (value.ready && (value.reason !== null || ![2, 3, 4, 9, 14, 15].includes(capabilities?.schemaVersion)
+    || game === 'roulette' && capabilities.schemaVersion < 9)) invalid();
   const seen = new Set();
   const rooms = value.rooms.map(room => {
     if (!sameKeys(room, ['id', 'name', 'playUrl']) || !laneId(room.id) || !roomName(room.name) || seen.has(room.id)) invalid();
@@ -102,10 +103,11 @@ export function createPresentationRoomClient({ fetchImpl = fetch } = {}) {
     try { return await response.json(); } catch { throw new PresentationRoomError('Svaret kunde inte verifieras.', { uncertain: writing }); }
   }
   return Object.freeze({
-    async read(context, { signal } = {}) {
-      if (!validContext(context)) invalid();
+    async read(context, { signal, game = 'blackjack' } = {}) {
+      if (!validContext(context) || !['blackjack', 'roulette'].includes(game)) invalid();
       const query = new URLSearchParams({ operatorId: context.operator.id, presentationLaneId: context.presentation.id });
-      return preflight(await request(labUrl(ENDPOINT) + '?' + query, { method: 'GET', signal }, false), context);
+      if (game === 'roulette') query.set('game', game);
+      return preflight(await request(labUrl(ENDPOINT) + '?' + query, { method: 'GET', signal }, false), context, game);
     },
     async create(context, payload, { signal } = {}) {
       if (!validContext(context) || payload?.operatorId !== context.operator.id || payload?.presentationLaneId !== context.presentation.id
@@ -139,7 +141,7 @@ export function createPresentationRoomController({ client = createPresentationRo
     generation++; active?.abort(); active = null; locked = false;
   }
   async function read(token, signal) {
-    const prepared = await client.read(context, { signal });
+    const prepared = await client.read(context, { signal, game: state.game });
     if (!current(token)) return null;
     return prepared;
   }
@@ -175,26 +177,28 @@ export function createPresentationRoomController({ client = createPresentationRo
       const editable = state.preflight?.ready && state.preflight.projectRevision === context.projectRevision && !['conflict', 'unavailable'].includes(state.status);
       notify({ name: value, receipt: null, message: editable ? null : state.message, status: editable ? 'ready' : state.status });
     },
-    setGame(value) {
-      if (locked || attempts.has(state.key) || !['blackjack','roulette'].includes(value)) return;
-      notify({game:value,receipt:null,status:state.preflight?.ready?'ready':state.status});
+    async setGame(value) {
+      if (locked || attempts.has(state.key) || !['blackjack','roulette'].includes(value) || value === state.game) return false;
+      cancel();
+      notify({game:value,receipt:null,preflight:null,status:'idle',message:null});
+      return refresh();
     },
     refresh,
     async create(expectedKey) {
       const previous = attempts.get(state.key);
       if (locked || !enabled() || expectedKey !== state.key || !previous && (!state.preflight?.ready || state.preflight.projectRevision !== context.projectRevision)
         || !['ready', 'uncertain', 'error'].includes(state.status)) return null;
-      const key = state.key, chosen = structuredClone(context), name = state.name.trim();
+      const key = state.key, chosen = structuredClone(context), name = state.name.trim(), game = state.game;
       let attempt = attempts.get(key);
       if (!attempt && !roomName(name)) { notify({ message: 'Ange ett rumsnamn med högst 100 tecken.' }); return null; }
       locked = true; const token = generation, controller = new AbortController(); active = controller;
       notify({ status: 'busy', message: null, receipt: null });
       try {
         if (!attempt) {
-          const prepared = await client.read(chosen, { signal: controller.signal }); if (!current(token)) return null;
+          const prepared = await client.read(chosen, { signal: controller.signal, game }); if (!current(token)) return null;
           const message = readinessMessage(prepared, chosen);
           if (message) { notify({ preflight: prepared, status: 'unavailable', message }); return null; }
-          const payload = Object.freeze({ operatorId: chosen.operator.id, presentationLaneId: chosen.presentation.id, name, idempotencyKey: newKey(), ...(state.game==='roulette'?{game:'roulette'}:{}),
+          const payload = Object.freeze({ operatorId: chosen.operator.id, presentationLaneId: chosen.presentation.id, name, idempotencyKey: newKey(), ...(game==='roulette'?{game:'roulette'}:{}),
             expectedProjectRevision: prepared.projectRevision, expectedAdministrationRevision: prepared.administrationRevision, expectedPackageRevision: prepared.packageRevision });
           attempt = { payload }; attempts.set(key, attempt); notify({ preflight: prepared });
         }

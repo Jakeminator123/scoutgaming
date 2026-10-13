@@ -41,8 +41,23 @@ komponeras i bordslagret under Annas händer. Startgest v2 och återgång till
 vila är visuellt granskade i faktisk lokal spelarkod. Exakta bytes och cues:
 docs/games/roulette/UTFALLSFILMER.md#startgest-v2-och-live-registrering.
 
-Live: Anna-idle och MP4-bakgrund finns i Blob/Neon samt en egen sparad
-Anna-sammansättning. Startfil, bord och nytt publicerat lobbyrum återstår.
+PR101 är mergad som `a6509318`; samma version är verifierad READY i Vercel
+och live i Render. Motorn svarar 200 med rouletteIdle/rouletteStart i v15.
+Anna-idle, startfilm och MP4-bakgrund finns nu i Blob/Neon, liksom bord
+`7e31ab32-8074-4b63-b1bb-4e6bee772421` och en egen sparad Anna-sammansättning.
+Startvideo `96deca4e-3716-4db8-9a51-997ffa906a3b` har sparad VILA → VILA,
+framing 1/0/0, 10042 ms, impuls 3208 ms och släpp 5000 ms. Både idle och
+start har sina granskade handregioner i sparat rouletteutkast. Sammansättningen
+har Anna, roulettespecifikt bord och MP4-salongen; inga blackjackbord tillåtna.
+Admin avrundar bordets bredd till 1,04 i båda formaten (lokalt prov 1,044565);
+övriga lager är 1/0/0, bordets x/y 0/0 och tableFront=false.
+Det nya lobbyrummet är ännu inte publicerat: klientens förkontroll använder
+blackjack även efter byte till roulette och avvisar dessutom svarsversion v15.
+En avgränsad uppföljning rättar spelbunden förkontroll och versionsvalidering.
+Rouletteval hämtar nu en ny förkontroll med rätt spel, och skapandets
+omkontroll använder samma spelval. Exakta stödda v14/v15-svar accepteras;
+äldre blackjackanrop bevaras. 110 riktade tester, Lab-typkontroll och
+Studio-produktionsbygge passerar. Nytt rum och två spel från lobbyn återstår.
 Inga befintliga PAOW-rum eller användarsaldon ändrade. Två slutrundor från
 den publicerade lobbyn ska verifieras innan detta markeras färdigt.
 Admin typecheck, 49 editorprov och Studio-produktionsbygge passerar.
@@ -63,9 +78,9 @@ spelningar med sluträttningarna gav 7 röd → 26 svart och saldo
 Kvitton/bilder sparades privat; detta är fortfarande inte lobbyacceptans.
 Migrations-/budgetrelease PR108 är nu mergad som `4df384ab` och integreras
 i roulettebranchen. Vercel rapporterar READY för denna main-version.
-Admin går att öppna igen efter driftsättningen; slutuppladdning/publicering
-återstår. Ingen adminsessionsnyckel har exporterats. Render-budgetens
-livekvitto hanteras av den separata merge-chatten före nästa release.
+Admin fungerar via den befintliga appflikens vanliga länkar. Ingen
+adminsessionsnyckel har exporterats. Render-budgetens tidigare releasefönster
+är avslutat; PR101 driftsattes först efter gröna kontroller.
 Säkerhetsstatus 13 oktober: ny öppen
 incident 38176586 utan tillgänglig filplats; täckning ofullständig.
 
