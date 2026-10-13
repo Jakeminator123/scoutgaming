@@ -6,7 +6,7 @@ import { webcrypto } from 'node:crypto';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer, validateProject } from '../lib/studio-model.mjs';
 import { studioNavigationTabs } from '../lib/studio-navigation.mjs';
 
 const require = createRequire(import.meta.url);
@@ -502,4 +502,40 @@ test('room observation loads saved evidence without a dealer session and retains
  assert.equal(writes.length,0);h.flushEffects();tree=h.render(p);h.flushEffects();
  const entries=h.state('activities');assert.equal(entries.length,2);assert.equal(entries[0],saved);assert.equal(entries[1].title,'New frame');assert.equal(entries[1].data.token,'[dolt]');assert.equal(writes.at(-1),entries);
  h.render({...p,initialDealerId:'vera'});h.flushEffects();assert.equal(h.state('activities'),entries,'choosing an explicit dealer keeps earlier evidence');
+});
+
+
+function ownIdleWorkspace(){
+  const p=props();p.initialProject=addDealer(addDealer(p.initialProject,'paow','PAOW'),'nora','Nora');p.initialDealerId='paow';
+  const policy=dealerId=>({schemaVersion:1,familyId:dealerId+'/idle.ready/ready',base:[{videoId:'11111111-1111-4111-8111-111111111111',weight:100,durationMs:3000}],variants:[]});
+  p.initialProject.dealerIdlePolicies=['paow','nora'].map(dealerId=>({dealerId,policy:policy(dealerId)}));
+  for(const line of p.initialProject.lines.filter(row=>['paow','nora'].includes(row.dealerId)&&row.eventId==='idle.ready'))line.variants[0].videoGenerationId=policy(line.dealerId).base[0].videoId;
+  p.initialProject.dealers.find(row=>row.id==='paow').speechProfile={schemaVersion:2,state:'preparation',voice:{provider:'elevenlabs',voiceId:'own-voice',modelId:'fixture-model'},reference:null};
+  return p;
+}
+const ownIdleNode=tree=>nodes(tree,row=>row.props?.dealerId==='paow'&&typeof row.props?.onBusyChange==='function')[0];
+
+test('detaching a registered ground loop atomically saves a valid empty connection and preserves voice and other dealers',async()=>{
+  const p=ownIdleWorkspace(),before=structuredClone(p.initialProject),requests=[];
+  const h=harness('./lab-studio.tsx',[],{'./studio-types':{async requestJson(url,options){requests.push({url,...options});return {project:{...JSON.parse(options.body).project,revision:'saved-empty-idle'}};}}});
+  let tree=h.render(p);assert.equal(typeof ownIdleNode(tree).props.onDetach,'function');ownIdleNode(tree).props.onDetach();tree=h.render(p);
+  const next=h.state('project');assert.equal(validateProject(next),next);
+  assert.deepEqual(next.dealerIdlePolicies,before.dealerIdlePolicies.filter(row=>row.dealerId!=='paow'));
+  const line=next.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready');assert.equal(line.variants[0].videoGenerationId,null);assert.equal(line.baselineVariantId,'paow.idle.ready.standard');assert.equal(line.variants.length,1);
+  assert.deepEqual(next.dealers,before.dealers);assert.deepEqual(next.idlePolicy,before.idlePolicy);assert.deepEqual(next.lines.filter(row=>row!==line),before.lines.filter(row=>row.dealerId!=='paow'||row.eventId!=='idle.ready'));
+  assert.deepEqual(p.initialProject,before);assert.equal(h.state('videos'),p.initialVideos);
+  const save=nodes(tree,row=>row.type==='button'&&row.props.children==='Spara inställningar')[0];assert.equal(save.props.disabled,false);save.props.onClick();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.length,1);const body=JSON.parse(requests[0].body);assert.equal(body.expectedRevision,before.revision);assert.equal(body.project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready').variants[0].videoGenerationId,null);
+  assert.equal(h.state('project').revision,'saved-empty-idle');assert.equal(h.state('saved'),JSON.stringify(h.state('project')));
+});
+
+test('detaching and stale draft callbacks respect saving, busy, connection and dealer guards',()=>{
+  for(const scenario of ['saving','busy','offline','dealer']){
+    const p=ownIdleWorkspace(),h=harness('./lab-studio.tsx');let tree=h.render(p);const stale=ownIdleNode(tree);assert.equal(typeof stale.props.onDetach,'function');
+    if(scenario==='saving')h.state('saving',true);
+    if(scenario==='busy')stale.props.onBusyChange(true);
+    if(scenario==='offline')p.connectedLane=false;
+    if(scenario==='dealer')h.state('dealerId','nora');
+    tree=h.render(p);stale.props.onDetach();assert.equal(h.state('project'),p.initialProject,scenario);
+  }
 });

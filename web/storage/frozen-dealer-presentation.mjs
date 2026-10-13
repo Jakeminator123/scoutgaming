@@ -1,4 +1,4 @@
-import { registeredIdlePolicy, registeredIdleInventory } from '../../presentation-runtime/registered-idle-policy.mjs';
+import { registeredIdlePolicy, registeredIdleInventory } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { frozenPlaybackProject } from '../frozen-dealer-playback.mjs';
 import { isPresentationRoomLaneCompatible } from './frozen-presentation-capture.mjs';
 import { createOperatorStore } from './operator-store.mjs';

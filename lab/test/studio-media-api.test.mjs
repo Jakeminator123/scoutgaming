@@ -6,6 +6,9 @@ import { createStudioMediaApi } from '../lib/studio-media-api.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../web/storage/studio-contract.mjs';
+import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
+import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
+import { negotiatePresentationCapabilityVersion, presentationCapabilitiesForVersion, PRESENTATION_CAPABILITY_VERSION_HEADER } from '../../web/presentation-capability-contract.mjs';
 
 test('native classification cannot rewrite a retained original identity or bank family',async()=>{
   const {api,repository,pool}=await fixture(),record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
@@ -184,4 +187,73 @@ test('archive refuses current references and classification cannot bypass the ar
   const blocked=await api.handle(request('/studio/api/videos/archive','POST',{...body,archived:true}));
   assert.equal(blocked.status,409);assert.equal((await blocked.json()).error,'studio_media_in_use');
   assert.equal((await api.handle(request('/studio/api/videos/classify','POST',{...body,metadata:{...record.classification,archived:true}}))).status,400);
+});
+
+async function archiveReadinessFixture({dealerId='fixture-dealer',compositing,available=true,afterPreflight=()=>{}}={}) {
+  const pool=createStudioMemoryPool(),rawRepository=createStudioRepository({pool,scope}),phases=[],versions=[];
+  let project=createSeedProject(),insideTransaction=false;
+  if(!project.dealers.some(row=>row.id===dealerId))project=addDealer(project,dealerId,'Fixture dealer');
+  seedSavedVideoProject(pool,scope,project);
+  const classification={dealerId,eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Fixture clip',notes:'',
+    ...(compositing?{compositing}:{})};
+  const record={id:mediaId,sha256,size:32,contentType:'video/mp4',pathname:`croupier/media/dealers/${dealerId}/review/uploads/${mediaId}/${sha256}.mp4`,classification};
+  await rawRepository.registerMedia(record,{actor:'fixture'});
+  const principal={user:'Operator',role:'admin',scope};
+  const repository=wrapNativePresentationRepository({...rawRepository,transaction:async(work,options)=>{
+    assert.equal(insideTransaction,true);phases.push('media-transaction');
+    return rawRepository.transaction(work,options);
+  }},{env:{CROUPIER_BACKEND_ORIGIN:'https://runtime.example.invalid'},fetchImpl:async(url,options)=>{
+    assert.equal(insideTransaction,false,'capability HTTP must precede either transaction');
+    assert.equal(url,'https://runtime.example.invalid/api/presentation/capabilities');
+    phases.push('capabilities');
+    const version=negotiatePresentationCapabilityVersion(options.headers[PRESENTATION_CAPABILITY_VERSION_HEADER]);versions.push(version);
+    afterPreflight(principal);
+    return available?Response.json(presentationCapabilitiesForVersion(version)):new Response(null,{status:503});
+  }});
+  const api=createStudioMediaApi({repository,config,authorize:async()=>principal,
+    videoRegistry:async()=>({videos:await repository.listMedia()}),
+    mutationTransaction:(work,options={})=>repository.withMutationContext(async()=>{
+      phases.push('product-transaction');insideTransaction=true;
+      try{return await work();}finally{insideTransaction=false;}
+    },options.presentationMutation),
+  });
+  const body={id:record.id,sha256:record.sha256,previous:record.classification,archived:true};
+  return {api,body,record,repository:rawRepository,pool,phases,versions};
+}
+
+test('archive readiness preflights generic dealers and compositing before SQL, including restore',async()=>{
+  for(const options of [{},{dealerId:'astrid',compositing:{mode:'green-screen',threshold:0.3,softness:0.1,despill:0.2}}]){
+    const {api,body,record,repository,phases,versions}=await archiveReadinessFixture(options);
+    assert.equal((await api.handle(request('/studio/api/videos/archive','POST',body))).status,200);
+    const archived=await repository.getMedia(record.id);assert.equal(archived.classification.archived,true);
+    assert.equal((await api.handle(request('/studio/api/videos/archive','POST',{...body,previous:archived.classification,archived:false}))).status,200);
+    const restored=await repository.getMedia(record.id);assert.equal(restored.classification.archived,false);
+    assert.equal(restored.pathname,record.pathname);assert.equal(restored.sha256,record.sha256);
+    assert.deepEqual(phases,['capabilities','product-transaction','media-transaction','capabilities','product-transaction','media-transaction']);
+    assert.deepEqual(versions,options.dealerId?[2,2]:[3,3]);
+  }
+});
+
+test('archive readiness refuses an unavailable runtime before SQL without changing media or audits',async()=>{
+  const {api,body,pool,phases}=await archiveReadinessFixture({available:false}),before=pool.snapshot();
+  const response=await api.handle(request('/studio/api/videos/archive','POST',body));
+  assert.equal(response.status,503);assert.equal((await response.json()).code,'studio_presentation_runtime_update_required');
+  assert.deepEqual(phases,['capabilities']);assert.deepEqual(pool.snapshot(),before);
+});
+
+test('archive readiness preserves current authorization, metadata CAS and active-reference guards',async()=>{
+  for(const guard of ['authorization','stale','references']){
+    const {api,body,repository,pool}=await archiveReadinessFixture({
+      afterPreflight:principal=>{if(guard==='authorization')principal.role='reader';},
+    });
+    if(guard==='stale')body.previous={...body.previous,label:'Stale clip'};
+    if(guard==='references'){
+      const document=await repository.readDocument('project'),value=structuredClone(document.value);
+      value.lines.find(row=>row.dealerId===body.previous.dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=body.id;
+      await repository.saveDocument('project',{value,expectedRevision:document.revision,actor:'fixture'});
+    }
+    const before=pool.snapshot(),response=await api.handle(request('/studio/api/videos/archive','POST',body));
+    assert.equal(response.status,guard==='authorization'?403:409);
+    assert.deepEqual(pool.snapshot(),before);
+  }
 });

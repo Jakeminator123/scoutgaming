@@ -15,7 +15,7 @@ import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
 import { StudioNavigation } from './studio-navigation';
 import { studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { DealerSpeechSettings } from './dealer-speech-settings';
-import { ownDealerIdle } from '../../presentation-runtime/registered-idle.mjs';
+import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
 import { activeStudioDealers, requestJson, resolveStudioDealerId, studioHref, type VideoInventory } from './studio-types';
 import { isActiveDealerId } from '../../web/public/dealer-identity.mjs';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
@@ -66,6 +66,8 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const [laneId, setLaneId] = useState(initialLaneId ?? '');
   const [operatorId, setOperatorId] = useState(initialOperatorId ?? '');
   const [tableId, setTableId] = useState(initialTableId ?? '');
+  const registeredIdleAccess=useRef({dealerId,blocked:saving||!connectedLane,busy:uploading||dealerBusy||intakePending});
+  registeredIdleAccess.current={dealerId,blocked:saving||!connectedLane,busy:uploading||dealerBusy||intakePending};
   const navigationRef = useRef({ dealerId, blocked: false, busy: false, speechDraft: false, generationDraft: false, href: '' });
   navigationRef.current = { ...navigationRef.current, dealerId, blocked: uploading || dealerBusy || intakePending || speechDraft || generationStatus.dirty, busy: uploading || dealerBusy || generationStatus.busy, speechDraft, generationDraft:generationStatus.dirty };
   useEffect(()=>{if(workspaceView==='generate')setGenerationDealerId(dealerId);},[workspaceView,dealerId]);
@@ -240,12 +242,24 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     });
   }
   function updateRegisteredIdle(policy: IdlePolicy) {
+    if(savingRef.current||registeredIdleAccess.current.blocked||registeredIdleAccess.current.dealerId!==dealerId)return;
     edit(draft => {
       const line = draft.lines.find(row => row.dealerId === dealerId && row.eventId === 'idle.ready');
       const baseline = line?.variants.find(row => row.id === line.baselineVariantId);
       if (!baseline) return;
       draft.dealerIdlePolicies = [...(draft.dealerIdlePolicies ?? []).filter(row => row.dealerId !== dealerId), {dealerId,policy}];
       baseline.videoGenerationId = policy.base[0].videoId;
+    });
+  }
+  function detachRegisteredIdle() {
+    const access=registeredIdleAccess.current;
+    if(savingRef.current||access.blocked||access.busy||access.dealerId!==dealerId)return;
+    edit(draft=>{
+      const line=draft.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready');
+      const baseline=line?.variants.find(row=>row.id===line.baselineVariantId);
+      if(!baseline)return;
+      draft.dealerIdlePolicies=(draft.dealerIdlePolicies??[]).filter(row=>row.dealerId!==dealerId);
+      baseline.videoGenerationId=null;
     });
   }
   const definition = selection && project.events.find(event => event.id === selection.eventId);
@@ -269,7 +283,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
     {view==='idle'&&familyWorkspace?<section><div className={styles.sectionHeader}><span/><button type="button" className="text-button" disabled={refreshing} onClick={()=>void refresh()}>{refreshing?'Läser…':'Uppdatera klipplistan'}</button></div><fieldset disabled={saving||!connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy??createDefaultIdlePolicy()} inventory={videos} blocked={saving} clipLabels={project.clipLabels} onChange={policy=>edit(draft=>{draft.idlePolicy=policy;})} onBusyChange={()=>{}} onImportBusyChange={setUploading}/></fieldset></section>:null}
     {(view==='deal'||view==='clips')&&familyWorkspace&&media&&variant?<fieldset disabled={saving||!connectedLane} className={styles.editor}><div>{video?<DealerClipPreview key={video.id} url={video.previewUrl} framing={video.classification?.framing} compositing={video.classification?.compositing}/>:<p>Ingen tillgänglig film för detta fack.</p>}</div><MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={media.line.variants} selectedId={variant.id} onSelect={setVariantId} onPolicy={updatePolicy} onRefresh={()=>void refresh()} refreshing={refreshing}/></fieldset>:null}
     {!familyWorkspace&&!customDealer?<fieldset className={styles.fields} disabled={saving||!connectedLane}><LegacyClipEditor project={project} dealerId={dealerId} section={view} onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></fieldset>:null}
-    {customDealer&&view==='idle'?<RegisteredIdleEditor key={dealerId} project={project} inventory={videos} dealerId={dealerId} blocked={saving||!connectedLane} onChange={updateRegisteredIdle} onBusyChange={setUploading} onInventory={setVideos}/>:null}
+    {customDealer&&view==='idle'?<RegisteredIdleEditor key={dealerId} project={project} inventory={videos} dealerId={dealerId} blocked={saving||!connectedLane} onChange={updateRegisteredIdle} onDetach={detachRegisteredIdle} onBusyChange={setUploading} onInventory={setVideos}/>:null}
     {view==='clips'&&familyWorkspace&&category==='speech'?<section className={styles.help}><h3>Inspelade tal-klipp</h3><LegacyClipEditor project={project} dealerId={dealerId} section="clips" onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></section>:null}
     {saveButton}
   </section> : null;

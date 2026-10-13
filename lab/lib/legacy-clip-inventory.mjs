@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LEGACY_DEALERS, LEGACY_ENGINE_PARTS, resolveLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
+import { LEGACY_DEALERS, LEGACY_ENGINE_PARTS, resolveLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { validateContactTake, validateContinuation } from '../../web/public/performance-contact.mjs';
 import { resolveMediaAbsolutePath } from '../../tools/media-layout.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
@@ -11,7 +11,17 @@ import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 // otherwise interprets the directory as an asset dependency to resolve.
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const BASES = { vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' };
+const indexedRegister = /(?:^|[\\/])(?:dealer|dealers[\\/](?:astrid|amira|mei))[\\/](?:streams[\\/]index\.json|audio[\\/]en[\\/]bank\.json|performance[\\/]manifest\.json)$/;
 const readLocalJson = async path => { try { return JSON.parse(await readFile(resolveMediaAbsolutePath(path), 'utf8')); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
+// Only the retired indexed registers may be absent from the catalog; a missing
+// catalog or any other unreadable entry still fails the whole inventory.
+const readOptionalJson = async (readMetadata, path) => {
+  try { return await readMetadata(path); }
+  catch (error) {
+    if (indexedRegister.test(String(path)) && String(error?.message || '').startsWith('Runtime metadata missing:')) return null;
+    throw error;
+  }
+};
 const DEFAULTS = { idle: 'idle-1/idle/idle', headTilt: 'idle-1/idle/idle-breathe-head-tilt', deal: 'idle-1/actions/action-deal', dealWatch: 'idle-1/actions/action-deal-watch', think: 'idle-1/actions/action-think', gest: 'idle-1/actions/gesticulate1' };
 const safeFile = (root, relative) => {
   if (typeof relative !== 'string' || relative.includes('\\') || relative.startsWith('/') || relative.split('/').some(part => part === '..')) return false;
@@ -32,7 +42,7 @@ function stagedParts(take) {
 }
 
 export async function loadLegacyClipInventory({ repository = repositoryRoot, publicRoot = join(repository, 'web/public'), dataDirectory = process.env.CROUPIER_DATA_DIR || join(repository, 'web/data'), administration, mediaAvailable, readMetadata = readLocalJson } = {}) {
-  const readJson = readMetadata;
+  const readJson = path => readOptionalJson(readMetadata, path);
   const clips = [];
   const native = typeof mediaAvailable === 'function';
   const available = file => native ? mediaAvailable(file) : safeFile(publicRoot,file);

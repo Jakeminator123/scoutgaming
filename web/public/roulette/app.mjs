@@ -9,7 +9,10 @@ let draft = new Map(), undo = [];
 const betButtons = new Map();
 const money = (value, currency = state?.currency ?? 'USD') => new Intl.NumberFormat('sv-SE', { style:'currency', currency }).format(value);
 const sum = () => [...draft.values()].reduce((a,b)=>a+b,0);
-const message = (text, error = false) => { $('status').textContent = text; $('status').classList.toggle('error',error); };
+function syncStatusVisibility() {
+  document.querySelector('.status-row').classList.toggle('quiet',!busy&&!pending&&!$('status').classList.contains('error')&&$('retry').hidden&&$('login').hidden);
+}
+const message = (text, error = false) => { $('status').textContent = text; $('status').classList.toggle('error',error); syncStatusVisibility(); };
 const node = (tag, text, className) => { const el = document.createElement(tag); if(text !== undefined) el.textContent=text; if(className) el.className=className; return el; };
 
 function addBet(id) {
@@ -51,6 +54,8 @@ function buildBoard() {
 }
 
 function openTable(id='straight-2') {
+  if($('more').open)$('more').close();
+  if($('table-zoom').open){$('zoom-viewport').focus();return;}
   $('table-zoom').showModal();
   $('zoom-viewport').append($('dealer-scene'));
   $('zoom-controls').append(document.querySelector('.controls'));
@@ -64,8 +69,13 @@ $('show-table').addEventListener('click',()=>openTable());
 $('table-zoom').addEventListener('close',()=>{
   $('scene-home').append($('dealer-scene'));
   $('controls-home').append(document.querySelector('.controls'));
-  $('show-table').focus();
+  $('show-more').focus();
 });
+$('show-more').addEventListener('click',()=>$('more').showModal());
+$('more').addEventListener('close',()=>{
+  if(!document.querySelector('#rules[open],#inside[open],#table-zoom[open]'))$('show-more').focus();
+});
+for(const id of ['rules','inside']) $(id).addEventListener('close',()=>$('show-more').focus());
 
 function renderDraft() {
   const locked = busy || Boolean(pending) || !state;
@@ -96,6 +106,7 @@ function renderDraft() {
   $('show-inside').disabled=locked; $('add-inside').disabled=locked;
   $('inside-chip').textContent='Lägg en marker på '+money(chip)+'.';
   $('phase').textContent=busy?(state?'RUNDAN PÅGÅR':'ANSLUTER'):pending?'INVÄNTAR KVITTO':state?'SATSNINGAR ÖPPNA':'EJ ANSLUTEN';
+  syncStatusVisibility();
   $('board').setAttribute('aria-busy',String(busy));
 }
 function showResult(round) {
@@ -138,6 +149,7 @@ async function command(request) {
 function clearPending() { sessionStorage.removeItem(pendingKey);pending=null;$('retry').hidden=true; }
 async function submit() {
   if(busy||!pending) return;
+  if($('more').open)$('more').close();
   if($('table-zoom').open)$('table-zoom').close();
   busy=true;$('retry').hidden=true;renderDraft();message('Satsningarna är låsta. Rundan avgörs…');
   try {
@@ -178,11 +190,13 @@ async function init() {
   }
 }
 $('login').href='/player-login?returnTo='+encodeURIComponent(location.pathname+location.search);
-$('show-rules').addEventListener('click',()=>$('rules').showModal());
-$('show-inside').addEventListener('click',()=>$('inside').showModal());
+function openOption(id){$('more').close();$(id).showModal();}
+$('show-rules').addEventListener('click',()=>openOption('rules'));
+$('show-inside').addEventListener('click',()=>openOption('inside'));
 $('undo').addEventListener('click',()=>{draft=undo.pop()??new Map();renderDraft();});
-$('clear').addEventListener('click',()=>{undo.push(new Map(draft));draft=new Map();renderDraft();});
+$('clear').addEventListener('click',()=>{undo.push(new Map(draft));draft=new Map();$('more').close();message('Satsningarna är rensade.');renderDraft();});
 $('rebet').addEventListener('click',()=>{
+  $('more').close();
   const bets=state.rounds[0]?.bets;if(!bets) return;
   if(bets.reduce((n,bet)=>n+Math.round(bet.amount*100),0)>Math.round(state.balance*100)) return message('Demosaldot räcker inte för att upprepa satsningarna.',true);
   undo.push(new Map(draft));draft=new Map(bets.map(bet=>[bet.id,Math.round(bet.amount*100)]));renderDraft();message('Föregående satsningar är utlagda. Snurra när du vill.');

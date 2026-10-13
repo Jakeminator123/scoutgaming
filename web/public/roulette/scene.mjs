@@ -9,6 +9,12 @@ export async function mountRoomScene(room) {
   const status=document.getElementById('scene-status');
   const toggle=document.getElementById('scene-toggle');
   const fallback=document.getElementById('scene-fallback');
+  const mediaMessage=text=>{
+    status.textContent=text;
+    const more=document.getElementById('show-more');
+    more.classList.toggle('has-media-note',Boolean(text));
+    more.setAttribute('aria-label',text?'Mer, rumsinformation finns':'Mer');
+  };
   const controller=new AbortController();
   let scene,closed=false;
   const close=()=>{closed=true;controller.abort();scene?.close();};
@@ -39,13 +45,13 @@ export async function mountRoomScene(room) {
       settings:rouletteSceneSettings(preview.settings),layout:'desktop',compositing:dealer?.compositing,
       onReady:()=>{
         fallback.hidden=true;canvas.hidden=false;
-        status.textContent=dealer?'':'En frilagd dealer för det här bordet saknas. Du kan spela ändå.';
+        mediaMessage(dealer?'':'En frilagd dealer för det här bordet saknas. Du kan spela ändå.');
         document.getElementById('scene-caption').textContent=dealer?preview.dealer.label+' · '+room.operatorName:'Europeisk roulette · '+room.operatorName;
         toggle.hidden=![dealer,background,ROULETTE_TABLE].some(source=>source?.contentType.startsWith('video/'));
       },
-      onFailure:()=>{fallback.hidden=false;canvas.hidden=true;toggle.hidden=true;status.textContent='Rummets media kunde inte visas. Bordet och spelet är fortfarande tillgängliga.';},
+      onFailure:()=>{fallback.hidden=false;canvas.hidden=true;toggle.hidden=true;mediaMessage('Rummets media kunde inte visas. Bordet och spelet är fortfarande tillgängliga.');},
       onPlaying:playing=>{toggle.textContent=playing?'Pausa video':'Spela video';toggle.setAttribute('aria-pressed',String(playing));},
     });
     toggle.addEventListener('click',()=>scene.toggle(),{signal:controller.signal});
-  }catch{scene?.close();if(!closed)status.textContent='Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.';}
+  }catch{scene?.close();if(!closed)mediaMessage('Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.');}
 }

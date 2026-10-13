@@ -1,5 +1,23 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: central Studio och rumsmodell
+
+Målkontraktet för nya `/admin` finns i
+[LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md#central-studio-rum-spel-och-lager-13-oktober-2026):
+spelbolag → rum/bakgrund → spel → dealeruppsättning; bord separat och
+bakgrundsautomation på miljön. Det skiljer målmodellen från dagens rum med
+ett spel per post. Ingen produktkod, media eller produktionsdata ändrades.
+
+Read-only produktläsning fann `paow3` som öppet Nordic Bet-rum, samma
+PAOW-sammansättning som rouletterummet, samt sju videobakgrunder och två
+bordsbilder. ID, referenser, filformatregler och kvarstående visuell
+acceptans dokumenteras i kontraktet. Sju videor avkodades och spelades till
+slut i webbläsaren utan mediefel; codecprofil/loopskarv är inte granskade.
+SIDOR3 äger UI-arbetet; första preview använder isolerat QA-underlag.
+Verifiering för denna dokumentationsleverans: källkontrakt och synligt
+produktregister jämförda; ordinarie dokumentationshook passerade (35 tester).
+Rumsövergång, riktiga lager i preview och spelacceptans återstår.
+
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
 `jakob/repo-ordning` och ajour med `origin/main` `ff1d6e53`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
@@ -109,6 +127,80 @@ diskreserv eller fröprojekt. Den långa listan står i den frysta handoffen und
 "Funktionella regler som aldrig får komprimeras bort".
 
 ## 2. Öppna kontroller och kända fel
+
+### Ny administration och lobby, 12 oktober 2026
+
+`/admin` och `/admin/lobby` är separata interna arbetsytor. `/control`,
+`/partner` och `/play` behåller sina befintliga roller. Den gröna toppbaren
+och den simulerade rollväljaren är borta; nivålänkar går till befintliga portaler.
+N1 kontrolleras av `authorizeUiPage` på varje dokument, tillgång och kataloganrop.
+En partner- eller spelarinloggning ger inte intern åtkomst.
+
+`GET /admin/_data/catalog` läser samma scoped operatörsregister och sparade
+Studio-policy som produkten. Administrationen visar bolag, rum och dealers;
+lobbyn visar endast rum godkända av den kanoniska publicerade rumsväljaren.
+Publicerade rum behåller paketets frysta dealers även när rummet inte är live.
+Sparad, opublicerad sammansättning märks separat. Blackjack och roulette länkar
+till befintlig `/play/{game}` med `operator`, verkligt `table` och tillåten `dealer`.
+Spelmotorn omprövar behörighet och publicering vid inträde. Inga DB-skrivningar,
+migrationer, nya konton eller publiceringsåtgärder ingår i anslutningen.
+
+Registerfel stänger med tydlig felstatus utan exempeldata som reserv. Övriga
+adminvyer, såsom statistik, är kvar som uttryckligen märkta designexempel;
+deras simulerade ändringar påverkar inga register. Porträtt, insatser och
+statistik hittas inte på för riktiga bolag/dealers. Redigering sker tills vidare
+via kontextbevarande länkar till Control. Nuvarande Control ska inte ersättas
+innan arbetsytorna är accepterade.
+
+Designprincip för fortsatt integration: den nya, rena layouten styr. Återanvänd
+befintliga datakällor och behörigheter; importera inte Controls gamla komponenter
+eller hela menyer. Lägg endast till kontroller som behövs för den aktuella uppgiften.
+
+Källzippar och ursprungliga SHA-256: `packages/design-preview/source-provenance.json`.
+Zipparnas API:er, SQL och miljöinställningar importerades inte. Separata React/CSS-byggen
+bevarar Tailwind 3 respektive 4 och serveras från privata `lab/design-preview-build`.
+Svar är `private, no-store`; exakta sökvägar, filgränser, Range/HEAD och N1-returer
+kontrolleras. CSP tillåter endast anrop till samma origin och inga formulärpostningar.
+
+Start: `node lab/start.mjs --offline --no-open`. Offlinekörning har INTE produktionsregister
+och visar därför datakällans otillgänglighet. Bygg: `npm --prefix packages/design-preview run build`.
+Studio-start/-bygge förbereder designerna och deras typkontroll automatiskt.
+Inga nya miljövariabler krävs i den befintliga native-deploymenten.
+
+Verifierat: designbyggen, Studio-produktionsbygge/typkontroll och 32 riktade
+auth-/routing-/katalogtest på Node 24.21.0. Full pre-commit-kontroll passerade;
+katalogtesterna ingår nu i den. Alla fyra medieset matchar befintlig baslinje.
+En separat granskning hittade och fick en regression för sammanblandning av sparade
+och publicerade dealers. Mediebaslinje är inte nytt läppsynkgodkännande.
+PR #43 finns på main `438a48a9`; Vercels produktionsbygge är READY. Det anonyma
+liveprovet upptäckte att Route Handler-login tappade `/studio`-prefixet. Admins
+egen redirect adapter återställer nu monterad loginadress och no-store; katalog
+och tillgångar ger 401 i stället för att omdirigeras. Nytt regressionstest täcker
+monterad/friliggande login, tillåtna retursidor och nekade resursanrop.
+Det tidigare adminarbetets inloggade produktionsprov den 12 oktober, efter
+PR #46 (`e3805b87`), visade 4 bolag, 2 rum och 7 aktiva dealers. Nordic Bets
+publicerade blackjack- och rouletterum gav rätt `/play/{game}`-länk med bolag,
+verkligt rum och PAOW; rumsbyte återställde dealervalet. Partnerportalen öppnades
+med samma internadmin och spelarvyn gick att nå. Provet omfattade läsning och
+valflöde, inga insatser eller transaktioner; full spel- och behörighetsacceptans
+återstår. Lokal offlinevy eller injicerade testdata ersätter inte detta liveprov.
+
+**Publik lobbyadress, 12 oktober (`codex/public-lobby-entry`).** Startsidan får
+knappen Lobby till `/lobby`. Den återanvänder lobbyns design i ett separat bygge,
+med befintliga publika läsningar `/api/operators` och `/api/operators/{slug}/rooms`.
+Bara kanoniska publicerade spelbara rum och deras tillåtna dealers blir valbara;
+registerfel ger felstatus, utan exempeldata som reserv. Startsideslänken i den
+publika designen leder hem till `/`. Lobbyfiler och typsnitt har egna begränsade
+`/lobby/_assets/`-rutter. `/admin`, `/admin/lobby` och adminkatalogen fortsätter
+kräva N1, medan nuvarande Control är kvar. Ingen DB-skrivning, publicering,
+speltransaktion eller ändring av roulettebord/animationer ingår. Denna PR är
+en adress- och läsanslutning; fortsatt lobbydesign sker i separat arbete.
+Verifierat med byggda UI-filer och isolerade publika API-fixturer på 1440 och
+390 px: startsidesknapp, båda speltypernas valflöde, återställning efter bolagsbyte,
+felstatus och återförsök. Inga adminanrop eller speltransaktioner utfördes.
+Detta är inte ett nytt produktionsprov av `/lobby`; det görs efter separat
+godkänd merge/deploy. Frontend-/design-/Studio-produktionsbyggen och riktad
+lobbyregression ingår i leveranskontrollen.
 
 ### Talström: röst medan GPU-sessionen startar, 12 oktober 2026
 
@@ -325,8 +417,8 @@ Start för nästa agent:
    eventuellt schema- och fältnamn.
 4. Provspela rummen hos sg-test, Johns och Nordic Bet före och efter varje etapp.
 
-Samordning: ordningsplanens strukturvåg (`ordning/`, våg 3) flyttar samma
-centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidigt.
+Samordning: plattformsflytten A22 (`packages/platform`, se `docs/CLOUD-MIGRATION.md`)
+flyttar samma centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidigt.
 
 ### Övrigt öppet
 
@@ -350,7 +442,7 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
   (`studio_request_rejected`). Manuell länk och omladdning fungerade i det
   provet. Ingen skyddsregel lättades.
 - Objektens existens i Blob och full visuell liveuppspelning är inte
-  verifierade (`ordning/BASLINJE.md` §8).
+  verifierade (`ordning/BASLINJE.md` §8 på `faf0e822`).
 - Upload-anteckningen om `kortflipp_kling_1080p.mp4` står kvar i
   `docs/CLOUD-MIGRATION.md`. Den är inte stängd här.
 - Vercel-byggets nya logg för Node 24-låsningen (`12a12fd6`) är inte verifierad.
@@ -456,10 +548,119 @@ canvas genom förstoring/återställning; paus och markerplacering är kontrolle
 Dealer-audit --probe matchar fyra baseline-
 set; nya dealerklipp/mediaacceptans och framtida MP4-registrering återstår.
 
+### Roulette: ren spelvy och Mer, 13 oktober 2026
+
+Huvudvyn visar bordet, små saldo-/senaste-resultatfält och marker, ångra,
+Spela och Mer. Regler, historik, satsningslista, upprepa/rensa, förstoring,
+video och rumsinformation ligger i Mer. Normal hjälptext är tillgänglig
+för skärmläsare; laddning, saldofel, sessionsfel och osäkra kvitton är synliga.
+Dialoger återställer fokus till Mer. Samma scen och kontroller flyttas vid
+förstoring, utan en extra dealer- eller bakgrundsspelare. Inga nya animationer,
+gester eller utfallsfilmer är byggda; resultat visas direkt från serverkvittot.
+
+Samordnat med MERGE: canonical spelmanualer ägs av dokumentationsgrenen
+`codex/game-documentation`, med `docs/games/roulette/UTFALLSFILMER.md` för 37
+utfall och `docs/games/KLIPP-OCH-FORMAT.md` för medie-/pose-/formatbegrepp.
+UI-grenen inför inget parallellt filmkontrakt. Mediaagentens granskningsflöde
+är underlag för nästa implementation, inte färdig automatisk klassificering.
+Main `426fa114` är integrerad; central-/admin-målkontrakt och tidigare
+rouletteformat är bevarade vid konfliktlösningen.
+
+29 roulettekontroller och isolerad browser på 1440/390/320 px passerar:
+Mer-dialoger, fokus, placering/ångra, synligt saldofel och historik. Tappat
+svar följt av omladdning/återförsök gav samma requestId/version/bets,
+en slumpning och en debitering. Det gamla AGENTS-kommandot
+`pipeline/audit-dealer-sync.mjs --probe` finns inte längre på aktuell main;
+den nuvarande obligatoriska hooken innehåller registrerade/frysna dealer-
+uppspelningskontroller. Inga pensionerade medier eller verktyg återställs här.
+
 ## 3. Senaste leveranser
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
+
+**Ordning 2026-10 avslutad, 12 oktober (`jakob/ordning-avslut`).**
+Planen i `ordning/` (baslinje `00ea55c5`) är genomförd och mappen är borttagen;
+historiken har den, till exempel på `faf0e822`. Den generiska raderingsspärren
+står kvar som `tools/raderingsgrind.mjs`, med sina fyra prov i
+`test/raderingsgrind.mjs` i kroken. Leveranser: V1 #19 (plan och
+regler), V2 #23 (A10–A18: döda moduler, granskningssidor, pipeline, ops och
+dokument), #30 (adminlänk på partnerinloggningen), V3a #34 (A20:
+`test-videoeditor/` till `packages/presentation/{compositor,docs,preview}`), #44
+(PAOW-grundloopen), V4 #40 (B11: indexerade banken, läppsynkverktygen och
+bankauditarna) och denna leverans (A21: `presentation-runtime/` till
+`packages/presentation/runtime/`, URL:en `/presentation-runtime/*` oförändrad,
+plus A99). En enradig shim `presentation-runtime/live-idle.mjs` finns kvar för
+`web/public/local-presentation.mjs`, som laddas både i webbläsaren och i Node.
+#51 är mergad som `a5441feb` och kontrollerad i produktion.
+`/presentation-runtime/idle-policy.mjs` har nya bytes bara i två relativa
+importvägar (`../` blev `../../../`), som i webbläsaren pekar på samma adresser.
+
+| Mått | Före `00ea55c5` | Efter `e602ea91` |
+| --- | --- | --- |
+| Spårade filer | 4 412 · 790,18 MB | 2 868 · 388,44 MB |
+| `media/` | 2 455 · 731,74 MB | 857 · 289,33 MB |
+| `web/public`, källfiler | 122: 95 produkt, 12 bara granskning, 11 bara test, 2 bara pipeline, 2 ingen | 102: 99 produkt, 1 bara test, 2 bara pipeline |
+| Studio utan importör | 4 | 2 (behållna på beslut) |
+| `pipeline/`, skript | 109, varav 87 utan konsument | 21, varav 10 utan konsument |
+| Testfiler | 359 · 0 föräldralösa | 355 · 0 föräldralösa |
+| Importer `lab/lib → web(server)` · `pipeline → web/public` | 125 · 46 | 135 · 18 |
+| Systemkarta | gul · 0 röda · 165 varningar | gul · 0 röda · 5 varningar efter ny baslinje |
+| GitGuardian | 0 öppna · 17 ignorerade | 0 öppna · 17 ignorerade |
+
+Importerna mellan Studio och spelmotorn ökade med ny kod på main under arbetet;
+de är A22:s område. Prov för A21 på V4-huvudet: Studio- och frontendbygget ger
+samma 74 genererade filer byte för byte, full pre-commit, 0 föräldralösa prov,
+0 röda i systemkartan och raderingsspärren 0. Kvar finns som punkter i
+`docs/CLOUD-MIGRATION.md` under "Repo-ordning, slutläge", bland annat B18, B19,
+A22b och acceptansen efter deploy.
+
+**Indexerad dealerbank borttagen, 12 oktober (V4, `jakob/repo-ordning`).**
+`media/dealers/{astrid,amira,vera,mei}/runtime/indexed` är borta ur Git (598 av
+632 filer, cirka 278,0 MiB), liksom layoutrader, blob-indexrader och de auditar som bara
+läste banken (`audit-dealer-sync`, `audit-performance`, `audit-astrid-actor`)
+och deras baslinje `docs/dealer-sync-baseline.json`. Kvar under
+`runtime/indexed/audio/en` står 34 MP3 (17 Astrid, 17 Amira, 1,0 MiB) med
+oförändrade layout- och blob-indexrader: de bevarade green-speak-talparen kräver
+exakt det ljudet. Blob-objekt är inte
+raderade. `runtime/presentation` (83 filer) är orörd. Läppsynkverktygen i
+`pipeline/` (`sync-audio-warp.py`, `retime-video-warp.py` m.fl. och
+`lipsync-overrides.json`) är också borta, på Jakobs beslut, eftersom de hörde
+till bankens inspelade talklipp. En ny väg som automatiskt genererar talklipp
+från dealerns vilobild, på svenska och engelska, utreds separat. Röstprofiler,
+ElevenLabs- och Cartesia-källorna och GPU-workerns läppsynk är orörda. Partnerdokumentet visar
+tomma `streams`, `deals` och `speech`, och att `/dealer/…` och `/dealers/…`
+svarar 410. API-beteendet är oförändrat. `AGENTS.md` kräver nu kroken och
+provspelning av berörda registrerade dealers i stället för den borttagna proben.
+
+Prov, lokalt med Node 24:
+- Studio- och frontendbygget och full pre-commit är gröna.
+- `build-runtime-media-catalog --check` och `build-lab-video-manifest --check`
+  är gröna. Det finns 0 föräldralösa prov och 0 röda i systemkartan.
+- Raderingsspärren visar 0 kvarvarande importer och 0 registerrader.
+- Efter granskningen av PR #40: inventeringen avbryts igen när runtime-katalogen
+  saknas; bara de tre pensionerade registren får saknas i katalogen. Den riktiga
+  inventeringen ger 34 av 34 green-speak-talpar tillgängliga, lokalt och mot
+  katalogen. Det generiska negativa hand-proxy-provet ligger nu i
+  `test/performance-contact.mjs` med syntetiska data. `partner-api.html` är
+  synkad med Markdown. Mutationsprov: den gamla ENOENT-fångsten och en
+  försvagad proxyregel fäller var sitt nytt prov.
+
+Kvar: handmattorna i `runtime/hands` har ingen audit, och B9-byggarna nämner den
+borttagna banken som tidigare källa. Raderna `act` och `insurance` i
+`partner-api.html` är felrenderade sedan tidigare (`\|` i kod delar cellen).
+
+**PAOW: grundloopen väljs och kopplas loss uttryckligen, 12 oktober (`jakob/paow-media-controls`).**
+Merge-samordnarens patch, levererad av orkestratorn. Studio väljer och kopplar
+loss grundloopen uttryckligen. Röst, andra dealers och filbytes bevaras, och
+readiness-beskrivningen för arkivering och återställning är normaliserad.
+Behörighet, revisionskontroll och referensskydd är oförändrade
+(`findMediaReferences`, `expectedRevision`). Prov: 42 API- och readinessprov,
+50 UI-prov och full commit-hook. Separat datautfall på Jakobs uttryckliga
+bekräftelse: 20 av 26 registrerade PAOW-klipp är permanent raderade genom appens
+beroendekontroll. Sex skyddas fortfarande av fryst publiceringshistorik, och
+ingen spärr kringgicks. Det är inget nytt kvitto på media- eller
+talacceptans.
 
 **Kompositorn ligger i `packages/presentation`, 12 oktober.** Paketet äger
 `compositor/`, `docs/` och `preview/`. Publika adresser
@@ -699,8 +900,8 @@ borttagna funktionen dolde felet och är borttagen. Fyra prov föll med exakt
 skärmbildens ReferenceError före rättningen; 17 riktade prov passerar efteråt.
 Ett nytt bindningsprov i ordinarie pre-commit granskar spelklientens, urvalets
 och kompositorns JavaScript utan runtime-stubbar. Kompositorns katalog är
-`packages/presentation/compositor/`. A21 flyttar fortfarande `presentation-runtime/`
-i samma lista.
+`packages/presentation/compositor/`. Urval och idle ligger i
+`packages/presentation/runtime/`. Webbläsarens adress `/presentation-runtime/*` är oförändrad.
 
 Läsande jämförelse: main `dbc925c3`, Kevin `8837bcc5`, omorganisations-PR #19
 `f3892c47`. 119 JavaScript-filer granskades utan ytterligare odefinierade

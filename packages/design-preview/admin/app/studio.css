@@ -1,0 +1,13 @@
+.react-flow__controls-button {
+  background: #232427;
+  border-bottom-color: #33363b;
+  fill: #e6e8eb;
+}
+
+.react-flow__controls-button:hover {
+  background: #2c2e32;
+}
+
+.react-flow__edge-textbg {
+  rx: 3;
+}

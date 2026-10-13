@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject, createEmptyProject, addDealer } from '../lab/lib/studio-model.mjs';
-import { ownDealerIdle } from '../presentation-runtime/registered-idle.mjs';
+import { ownDealerIdle } from '../packages/presentation/runtime/registered-idle.mjs';
 
 const VIDEO_ID = '00000000-0000-4000-8000-000000000001';
 const OTHER_ID = '00000000-0000-4000-8000-000000000002';

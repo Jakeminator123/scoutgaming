@@ -207,8 +207,9 @@ Grundloopen visar vila/andning. Variationer kan till exempel visa att dealern kl
 **Stäng av** ändrar policyn och behåller filen. **Ta bort** i biblioteket arkiverar oanvända uppladdningar med möjlighet att återställa. Originalspelarens media ändras inte av att navigera mellan dessa vyer.
 
 Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
-och Mei visar sina egna exakta medieregister och originalspelarens klippval;
-de ärver inte Astrids idle/Probe-inställningar. Fasta repliker är inspelat
+och Mei ärver inte Astrids idle/Probe-inställningar. Den indexerade
+originalbanken som tidigare fyllde deras klipplistor är borta ur Git;
+listorna är tomma där ingen registrerad film finns. Fasta repliker är inspelat
 exakt tal. **AI-småprat vid inaktivitet** ligger under Studio. Det separata textprovet
 skapar inte ljud eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
 Ett syntetiskt textprov är inte en skapad eller spelad film.

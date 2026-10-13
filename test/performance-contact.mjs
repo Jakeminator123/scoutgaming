@@ -39,6 +39,20 @@ test('a fully calibrated candidate can be reviewed in-game without declaring it 
   assert.equal(selectContactTake(manifest,'deal-centre'),null);
   delete manifest.reviewCandidate;assert.equal(selectContactTake(manifest,'deal-centre',{staged:true}),null);
 });
+test('an estimated hand proxy stays a staged review candidate and cannot masquerade as contact-approved',()=>{
+  const take=fixture();take.status='review';delete take.review;
+  take.tracking={kind:'hand-proxy',sourceSha256:'c'.repeat(64),sourceStart:0,sourceStop:12,shoulder:[.7,.3]};
+  for(const frame of take.frames)frame.contact={measured:false,method:'synthetic hand proxy',finger:[.6,.5]};
+  take.calibrationSha256=createHash('sha256').update(calibrationPayload(take)).digest('hex');
+  assert.deepEqual(validateContactTake(take),[]);
+  const manifest={status:'review',takes:[take],reviewCandidates:[take.id]};
+  assert.equal(selectContactTake(manifest,'deal-centre',{staged:true}),take);
+  assert.equal(selectContactTake(manifest,'deal-centre'),null);
+  assert.ok(validateContactTake(take,{approved:true}).length);
+  for(const status of ['contact-approved','approved']){const forged=structuredClone(take);forged.status=status;assert.ok(validateContactTake(forged).length);}
+  const changed=structuredClone(take);changed.tracking.sourceStart++;
+  assert.notEqual(createHash('sha256').update(calibrationPayload(changed)).digest('hex'),take.calibrationSha256);
+});
 test('presented timestamps select their measured frame without a second animation clock',()=>{
   const take=fixture();assert.equal(contactFrame(take,4/24),take.frames[4]);
   assert.equal(contactFrame(take,9/24),take.frames[9]);assert.equal(contactFrame(take,100),take.frames[11]);

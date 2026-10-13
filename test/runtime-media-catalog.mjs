@@ -35,8 +35,10 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   assert.equal(await idle('paow',{...project,lines:[]}),null,'registered identity alone cannot supply an idle');
   const voices=await createRegisteredVoiceLines({env,repositoryRoot:root})();
   assert.deepEqual(voices.dealers.map(row=>row.dealer),['vera','astrid','amira','mei']);
-  for(const dealer of voices.dealers)assert.ok(dealer.lines.length>0);
+  for(const dealer of voices.dealers)assert.equal(dealer.lines.length,0);
   const inventory=await media.videoRegistry();assert.equal(inventory.videos.find(row=>row.id===id).dealer,'paow');assert.ok(inventory.families.length>0);
-  const legacy=await media.legacyControls(project);for(const dealer of ['astrid','vera','amira','mei'])assert.ok(legacy.clips.some(row=>row.dealerId===dealer));
+  const legacy=await media.legacyControls(project);
+  for(const dealer of ['astrid','amira'])assert.ok(legacy.clips.some(row=>row.dealerId===dealer));
+  for(const dealer of ['vera','mei'])assert.equal(legacy.clips.some(row=>row.dealerId===dealer),false);
   assert.equal(legacy.clips.some(row=>row.dealerId==='paow'),false);
 });

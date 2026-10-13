@@ -5,8 +5,8 @@ import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
-import * as registered from '../../presentation-runtime/registered-idle-policy.mjs';
-import * as ownIdle from '../../presentation-runtime/registered-idle.mjs';
+import * as registered from '../../packages/presentation/runtime/registered-idle-policy.mjs';
+import * as ownIdle from '../../packages/presentation/runtime/registered-idle.mjs';
 import * as idlePolicy from '../lib/idle-policy.mjs';
 import * as clipLabels from '../lib/clip-label.mjs';
 
@@ -24,7 +24,7 @@ function harness(file,read){
     useState(initial){const index=stateIndex++;if(!(index in values))values[index]=typeof initial==='function'?initial():initial;return [values[index],value=>values[index]=typeof value==='function'?value(values[index]):value];},
     useEffect(run,deps){const index=effectIndex++,old=effects[index];effects[index]={...old,run,deps,changed:!old||!deps||deps.some((value,key)=>old.deps?.[key]!==value)};}};
   const SharedEditor=()=>null;
-  const mocks={'./dealer-video-surface':{DealerVideoSurface:({children})=>children},'./dealer-file-settings':{DealerFileSettings:()=>null},'../../presentation-runtime/registered-idle-policy.mjs':registered,'../../presentation-runtime/registered-idle.mjs':ownIdle,
+  const mocks={'./dealer-video-surface':{DealerVideoSurface:({children})=>children},'./dealer-file-settings':{DealerFileSettings:()=>null},'../../packages/presentation/runtime/registered-idle-policy.mjs':registered,'../../packages/presentation/runtime/registered-idle.mjs':ownIdle,
     '../lib/idle-video-duration.mjs':{readIdleVideoDuration:read},'../lib/idle-policy.mjs':idlePolicy,'../lib/clip-label.mjs':clipLabels,'./idle-policy-editor':{IdlePolicyEditor:SharedEditor},'./presentation-frame':{PresentationFrame:({children})=>children}};
   const output=transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{filename:file,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   const module={exports:{}};
@@ -39,8 +39,8 @@ function fixture(dealerId='johanna'){
   project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=ids[0];
   const inventory={videos:ids.map((id,index)=>({id,dealer:dealerId,available:true,sha256:'a'.repeat(64),fileName:id+'.mp4',previewUrl:'/own/'+id+'.mp4',
     classification:{dealerId,eventId:'idle.ready',kind:'idle',role:index?'alternative':'standard',playback:'once',situation:'',label:'Idle',notes:''}}))};
-  const changes=[],busy=[];
-  return {project,inventory,dealerId,blocked:false,onChange:policy=>changes.push(policy),onBusyChange:value=>busy.push(value),changes,busy};
+  const changes=[],busy=[],detached=[];
+  return {project,inventory,dealerId,blocked:false,onChange:policy=>changes.push(policy),onDetach:()=>detached.push(dealerId),onBusyChange:value=>busy.push(value),changes,busy,detached};
 }
 
 test('own idle starts unconfigured and uses probed baseline only after explicit action',async()=>{
@@ -214,4 +214,88 @@ test('own upload labels and filename fallback are visible while the original ban
   const f=replacementFixture(),h=harness('./idle-policy-editor.tsx',()=>{throw Error('no read');});let tree=h.render(f.props);h.flush();assert.match(text(replacementSelect(tree)),/dealer_desktop/);assert.match(text(nodes(tree,row=>row.type==='select'&&row.props.value===ids[0])[0]),/dealer_mobile/);
   const inventory=clone(f.props.inventory),candidate=inventory.videos.find(row=>row.id===ids[1]);delete candidate.label;delete candidate.classification.label;tree=h.render({...f.props,inventory});h.flush();assert.match(text(replacementSelect(tree)),/dealer_desktop/);
   tree=h.render({...f.props,editableBase:false});h.flush();assert.equal(nodes(tree,row=>row.props?.['aria-label']==='Byt basklipp').length,0);assert.match(text(nodes(tree,row=>row.type==='select'&&row.props.value===ids[0])[0]),/Lugn blick/);assert.doesNotMatch(text(nodes(tree,row=>row.type==='select'&&row.props.value===ids[0])[0]),/dealer_mobile/);
+});
+
+
+test('detach is available for one last base, an unavailable baseline and a mismatched policy without deleting media',()=>{
+  for(const scenario of ['baseline','policy','unavailable','mismatch']){
+    const p=fixture('paow');
+    if(scenario!=='baseline')p.project.dealerIdlePolicies=[{dealerId:'paow',policy:registered.createRegisteredIdlePolicy({dealerId:'paow',baselineVideoId:scenario==='mismatch'?ids[1]:ids[0],durationMs:3000})}];
+    if(scenario==='unavailable')p.inventory.videos=[];
+    const before=clone(p),h=harness('./registered-idle-editor.tsx',()=>{throw Error('detach needs no metadata');});
+    const tree=h.render(p);h.flush();const detach=button(tree,'Koppla loss grundloop');
+    assert.equal(detach.props.disabled,false,scenario);
+    assert.equal(nodes(tree,row=>row.type==='fieldset').some(row=>nodes(row,node=>node===detach).length),false,'detach remains outside the mismatched schema lock');
+    detach.props.onClick();assert.deepEqual(p.detached,['paow']);assert.deepEqual(p.changes,[]);
+    assert.deepEqual(p.project,before.project);assert.deepEqual(p.inventory,before.inventory);
+  }
+});
+
+test('detach respects readonly and nested import locks without aborting its own child editor',()=>{
+  const p=fixture('paow');p.project.dealerIdlePolicies=[{dealerId:'paow',policy:registered.createRegisteredIdlePolicy({dealerId:'paow',baselineVideoId:ids[0],durationMs:3000})}];
+  const h=harness('./registered-idle-editor.tsx',()=>{throw Error('unexpected metadata');});
+  let tree=h.render(p);h.flush();const staleDetach=button(tree,'Koppla loss grundloop');
+  const child=nodes(tree,row=>row.type===h.SharedEditor)[0];child.props.onImportBusyChange(true);
+  staleDetach.props.onClick();tree=h.render(p);h.flush();
+  assert.equal(button(tree,'Koppla loss grundloop').props.disabled,true);assert.deepEqual(p.detached,[]);
+  assert.equal(nodes(tree,row=>row.type===h.SharedEditor)[0].props.blocked,false,'the child must finish its own import');
+  child.props.onImportBusyChange(false);tree=h.render({...p,blocked:true});h.flush();
+  assert.equal(button(tree,'Koppla loss grundloop').props.disabled,true);button(tree,'Koppla loss grundloop').props.onClick();assert.deepEqual(p.detached,[]);
+});
+
+test('first own ground loop is chosen explicitly from compatible videos and reads its duration',async()=>{
+  const p=fixture('paow'),line=p.project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready');line.variants[0].videoGenerationId=null;
+  p.inventory.videos[1].dealer='astrid';p.inventory.videos[2].available=false;
+  const requests=[],h=harness('./registered-idle-editor.tsx',async url=>{requests.push(url);return 2400;});
+  let tree=h.render(p);h.flush();const select=nodes(tree,row=>row.type==='select'&&row.props['aria-label']==='Välj grundloop')[0];assert.ok(select);
+  assert.deepEqual(nodes(select,row=>row.type==='option').map(row=>row.props.value).filter(Boolean),[ids[0]]);
+  assert.equal(button(tree,'Använd som grundloop').props.disabled,true);assert.equal(p.changes.length,0);
+  select.props.onChange({target:{value:ids[0]}});tree=h.render(p);h.flush();button(tree,'Använd som grundloop').props.onClick();await tick();
+  assert.deepEqual(requests,[p.inventory.videos[0].previewUrl]);assert.equal(p.changes[0].base[0].videoId,ids[0]);assert.equal(p.changes[0].base[0].durationMs,2400);
+  assert.equal(line.variants[0].videoGenerationId,null,'only the project owner applies the draft');
+});
+
+test('pending metadata cannot reattach after clearing, losing access or replacing inventory bytes',async()=>{
+  for(const scenario of ['detached','blocked','inventory']){
+    const p=fixture('paow'),probe=deferred(),h=harness('./registered-idle-editor.tsx',()=>probe.promise);
+    let tree=h.render(p);h.flush();button(tree,'Anpassa grundloop').props.onClick();
+    tree=h.render(p);h.flush();const detach=button(tree,'Koppla loss grundloop');assert.equal(detach.props.disabled,true);detach.props.onClick();assert.deepEqual(p.detached,[]);
+    if(scenario==='detached'){p.project=clone(p.project);p.project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;}
+    if(scenario==='blocked')p.blocked=true;
+    if(scenario==='inventory'){p.inventory=clone(p.inventory);p.inventory.videos[0].sha256='b'.repeat(64);}
+    h.render(p);h.flush();probe.resolve(3000);await tick();assert.deepEqual(p.changes,[],scenario);assert.equal(p.busy.at(-1),false);
+  }
+});
+
+
+test('file settings also lock detaching while their save is pending',()=>{
+  const p={...fixture('paow'),onInventory(){}},h=harness('./registered-idle-editor.tsx',()=>{throw Error('unexpected metadata');});
+  let tree=h.render(p);h.flush();const stale=button(tree,'Koppla loss grundloop');
+  const settings=nodes(tree,row=>row.props?.video&&typeof row.props.onSaved==='function')[0];assert.ok(settings);settings.props.onBusyChange(true);
+  stale.props.onClick();tree=h.render(p);h.flush();assert.equal(button(tree,'Koppla loss grundloop').props.disabled,true);assert.deepEqual(p.detached,[]);
+  settings.props.onBusyChange(false);tree=h.render(p);h.flush();button(tree,'Koppla loss grundloop').props.onClick();assert.deepEqual(p.detached,['paow']);assert.deepEqual(p.busy,[true,false]);
+});
+
+
+test('the first-ground-loop picker excludes archived and deletion-pending media before any metadata request',async()=>{
+  for(const lifecycle of ['archived','pending','deleted']){
+    const p=fixture('paow');p.project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
+    if(lifecycle==='archived')p.inventory.videos[0].classification.archived=true;else p.inventory.videos[0].deletion={state:lifecycle,requestedAt:'2026-10-12T17:00:00Z'};
+    const requests=[],h=harness('./registered-idle-editor.tsx',async url=>{requests.push(url);return 3000;});let tree=h.render(p);h.flush();
+    const select=nodes(tree,row=>row.type==='select'&&row.props['aria-label']==='Välj grundloop')[0];assert.ok(select);
+    assert.equal(nodes(select,row=>row.type==='option'&&row.props.value===ids[0]).length,0,lifecycle);
+    select.props.onChange({target:{value:ids[0]}});tree=h.render(p);h.flush();button(tree,'Använd som grundloop').props.onClick();await tick();
+    assert.deepEqual(requests,[],lifecycle);assert.deepEqual(p.changes,[]);
+  }
+});
+
+test('a first-ground-loop selection cannot attach media archived or queued for deletion while metadata is pending',async()=>{
+  for(const lifecycle of ['archived','pending']){
+    const p=fixture('paow');p.project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
+    const probe=deferred(),h=harness('./registered-idle-editor.tsx',()=>probe.promise);let tree=h.render(p);h.flush();
+    nodes(tree,row=>row.type==='select'&&row.props['aria-label']==='Välj grundloop')[0].props.onChange({target:{value:ids[0]}});
+    tree=h.render(p);h.flush();button(tree,'Använd som grundloop').props.onClick();
+    p.inventory=clone(p.inventory);if(lifecycle==='archived')p.inventory.videos[0].classification.archived=true;else p.inventory.videos[0].deletion={state:'pending',requestedAt:'2026-10-12T17:00:00Z'};
+    h.render(p);h.flush();probe.resolve(3000);await tick();assert.deepEqual(p.changes,[],lifecycle);assert.equal(p.busy.at(-1),false);
+  }
 });
