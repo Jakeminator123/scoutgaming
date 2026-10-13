@@ -35,15 +35,15 @@ export function SystemOverview() {
     { title:'Studio', icon:Layers, path:'/admin/clips', status:'Ansluten', accent:'text-sg-lime',
       summary:counts ? `${counts.dealers} dealers · ${counts.compositions} sammansättningar` : 'Dealers & sammansättningar',
       items:['Dealer + rum / bakgrund + bord','Klipp · Tal · Provspelning'] },
-    { title:'Drift', icon:Activity, path:'/admin/drift', status:'Simulerad', accent:'text-sg-teal',
-      summary:'Speldrift & uppföljning', items:['Spelrum · Uppspelning · Logg','Driftvyn visar designexempel'] },
-    { title:'Ekonomi', icon:Wallet, path:'/admin/ekonomi', status:'Simulerad', accent:'text-sg-amber',
-      summary:'Intäkter & avtal', items:['Bolag · Fördelning · Avtal','Ekonomivyn visar designexempel'] },
-    { title:'AI', icon:Bot, path:'/admin/ai/models', status:'Simulerad', accent:'text-sg-teal',
-      summary:'Agentmodeller & agentchatt', items:['OpenClaw · Verktyg · Modeller','AI-vyerna visar designexempel'] },
+    { title:'Drift', icon:Activity, path:'/admin/drift', status:'Server-API', accent:'text-sg-teal',
+      summary:'Speldrift & integritet', items:['Spelstatus · Kortlek','N1-session och anslutning kontrolleras i vyn'] },
+    { title:'Ekonomi', icon:Wallet, path:'/admin/ekonomi', status:'Server-API', accent:'text-sg-amber',
+      summary:'Betalningar & journal', items:['Transaktioner · Journal','N1-session och anslutning kontrolleras i vyn'] },
+    { title:'AI', icon:Bot, path:'/admin/ai/models', status:'Server-API', accent:'text-sg-teal',
+      summary:'Agentmodeller & agentchatt', items:['OpenClaw · Modeller','Gateway och behörigheter kontrolleras i vyn'] },
     { title:'Admin', icon:ShieldCheck, path:'/admin/admin/operators', status:'Bolagsregister', accent:'text-sg-lime',
       summary:counts ? `${counts.operators} registrerade spelbolag` : 'Bolag & team',
-      items:['Bolag · Team · Åtkomst','Övriga adminvyer är designexempel'] },
+      items:['Bolag · Team · Åtkomst','Konton och integrationer läser skyddade server-API:er'] },
   ];
 
   return <section className="system-overview flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 lg:px-6">

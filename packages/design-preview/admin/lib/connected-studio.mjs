@@ -1,8 +1,10 @@
 import { videoFitsLine, validateVideoMetadata, kindForEvent, situationsForEvent, MAX_VIDEO_BYTES } from '../../../../lab/lib/video-intake.mjs';
-import { upsertMediaVariantPolicy, mediaVariantPolicy } from '../../../../presentation-runtime/media-family-policy.mjs';
-import { createRegisteredIdlePolicy } from '../../../../presentation-runtime/registered-idle-policy.mjs';
+import { upsertMediaVariantPolicy, mediaVariantPolicy } from '../../../../packages/presentation/runtime/media-family-policy.mjs';
+import { createRegisteredIdlePolicy } from '../../../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES } from '../../../../lab/lib/studio-model.mjs';
 import { uploadNativeVideo } from '../../../../lab/lib/upload-native-video.mjs';
+import { materialForAsset } from '../../../../web/public/material-catalog.mjs';
+import { defaultCompositionSettings } from '../../../../web/public/composition-settings.mjs';
 
 export function clipSlots(project, inventory, dealerId) {
   return project.events.flatMap(event => {
@@ -177,6 +179,9 @@ export function selectLayer(project, room, role, assetId) {
   // The legacy table registry has no game tag. Do not infer that a blackjack
   // table is valid for roulette before Jakob supplies and accepts that design.
   if (role === 'table' && room.game !== 'blackjack') throw Error('Roulettens bord behöver separat designunderlag.');
+  const material=materialForAsset(draft.layerAssets?.find(row=>row.id===assetId));
+  if(role==='table'&&material&&material.game!==room.game)throw Error('Bordet tillhör ett annat spel.');
+  if(role==='table'&&material){lane.composition??=defaultCompositionSettings();lane.composition.tableFront=true;}
   lane.layers[role].default = assetId;
   return validateProject(draft);
 }

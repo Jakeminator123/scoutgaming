@@ -22,6 +22,10 @@ export function replaceContext(href:string) { history.replaceState(null,'',href)
 export function usePathname() {
   return useSyncExternalStore(subscribe, () => '/control' + window.location.pathname.slice(6), () => '/control');
 }
+export function useSearchParams() {
+  const query=useSyncExternalStore(subscribe,()=>location.search,()=> '');
+  return new URLSearchParams(query);
+}
 export function useRouter() {
   return { push: (href: string) => navigate(previewHref(href)), replace: (href: string) => navigate(previewHref(href), true) };
 }

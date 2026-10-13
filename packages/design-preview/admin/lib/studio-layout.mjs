@@ -24,6 +24,8 @@ export function affectedRooms(before, after, rooms) {
   ).map(dealer=>dealer.id));
   for (const id of new Set([...(before.mediaPolicy??[]).map(row=>row.familyId),...(after.mediaPolicy??[]).map(row=>row.familyId)])) if (JSON.stringify(before.mediaPolicy?.find(row=>row.familyId===id))!==JSON.stringify(after.mediaPolicy?.find(row=>row.familyId===id))) changedDealers.add(id.split('/')[0]);
   if (JSON.stringify(before.idlePolicy)!==JSON.stringify(after.idlePolicy)) changedDealers.add(after.idlePolicy?.familyId?.split('/')[0] ?? before.idlePolicy?.familyId?.split('/')[0]);
+  const changedTriggers=new Set([...before.triggers,...after.triggers].filter(trigger=>JSON.stringify(before.triggers.find(row=>row.id===trigger.id))!==JSON.stringify(after.triggers.find(row=>row.id===trigger.id))).map(trigger=>trigger.id));
+  for(const line of [...before.lines,...after.lines])if(line.variants.some(variant=>variant.triggerIds.some(id=>changedTriggers.has(id))))changedDealers.add(line.dealerId);
   const changedLanes = new Set((after.lanes ?? []).filter(lane=>JSON.stringify(before.lanes?.find(row=>row.id===lane.id))!==JSON.stringify(lane)).map(lane=>lane.id));
   return rooms.filter(room=>room.dealerIds.some(id=>changedDealers.has(id))||changedLanes.has(room.compositionId));
 }

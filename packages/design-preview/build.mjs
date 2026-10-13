@@ -29,6 +29,7 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
     external: ['/composition-runtime/compositor.js'],
     define: { 'process.env.NODE_ENV': '"production"', 'process.env.NEXT_PUBLIC_LAB_BASE_PATH': '"/studio"' },
     alias: { ...(publicLobby ? { '@/lib/catalog.mjs': resolve(root, 'runtime/public-lobby-catalog.mjs') } : {}),
+      'react': resolve(root, 'node_modules/react'), 'react-dom': resolve(root, 'node_modules/react-dom'),
       '@': source, 'next/link': resolve(root, 'runtime/navigation.tsx'),
       'next/navigation': resolve(root, 'runtime/navigation.tsx'), 'next/image': resolve(root, 'runtime/image.ts') },
     // Keep the imported internal design intact. The independent public bundle

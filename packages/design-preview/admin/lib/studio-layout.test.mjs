@@ -23,3 +23,10 @@ test('removed family policies remain visible in save impact',()=>{
   before.mediaPolicy=[{familyId:'astrid/deal.player.left/box0',variants:[]}];after.mediaPolicy=[];
   assert.deepEqual(affectedRooms(before,after,rooms).map(row=>row.id),['a']);
 });
+test('editing a shared trigger reports each dealer bank and room using it',()=>{
+  const before=createSeedProject(),after=structuredClone(before);
+  before.triggers=[{id:'shared',value:1}];after.triggers=[{id:'shared',value:2}];
+  for(const project of [before,after])for(const line of project.lines.filter(row=>['astrid','vera'].includes(row.dealerId)))line.variants[0].triggerIds=['shared'];
+  const rooms=[{id:'a',dealerIds:['astrid'],compositionId:'one'},{id:'b',dealerIds:['vera'],compositionId:'two'},{id:'c',dealerIds:['mei'],compositionId:'three'}];
+  assert.deepEqual(affectedRooms(before,after,rooms).map(row=>row.id),['a','b']);
+});

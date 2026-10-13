@@ -17,7 +17,7 @@ const RETIRED_DISK_ENVIRONMENT = [
 export const SOURCE_FILES = [
   'web/server.mjs', 'web/shoe-game.mjs', 'web/native-table.mjs',
   'web/partner-presentation.mjs', 'web/partner-api.mjs',
-  'presentation-runtime/selection.mjs', 'web/public/local-presentation.mjs',
+  'packages/presentation/runtime/selection.mjs', 'web/public/local-presentation.mjs',
   'web/public/performance-player.mjs', 'web/presentation-api.mjs',
   'lab/lib/http-guard.mjs', 'lab/lib/project-store.mjs', 'lab/lib/partner-observer.mjs',
   'web/lissabon-profiles.mjs', 'web/generated-speech.mjs',

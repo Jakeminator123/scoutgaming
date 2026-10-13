@@ -3,9 +3,22 @@ import assert from 'node:assert/strict';
 import { createSeedProject, defaultPresentationLane, addVariant } from '../../../../lab/lib/studio-model.mjs';
 import { kindForEvent } from '../../../../lab/lib/video-intake.mjs';
 import { bindClip, clipSlots, clipsForSlot, configuredClipIds, currentClipId, createStudioClient, selectLayer, uploadMetadata } from './connected-studio.mjs';
-import { selectPresentation } from '../../../../presentation-runtime/selection.mjs';
+import { selectPresentation } from '../../../../packages/presentation/runtime/selection.mjs';
 import { createStudioProjectBindings } from '../../../../lab/lib/studio-project-bindings.mjs';
+import { materialSource } from '../../../../web/public/material-catalog.mjs';
+import { layerAssetPath } from '../../../../web/layer-asset-contract.mjs';
 const id1='11111111-1111-4111-8111-111111111111', id2='22222222-2222-4222-8222-222222222222';
+test('supplied blackjack table is a foreground choice and keeps operator room identity',()=>{
+  const project=createSeedProject(),lane=defaultPresentationLane('astrid'),source=materialSource('blackjack-green-felt');
+  const {kind,hasAlpha,...metadata}=source;
+  const asset={schemaVersion:1,id:id1,role:'table',label:'Blackjack · grön filt',...metadata};asset.pathname=layerAssetPath(asset);
+  project.layerAssets=[asset];lane.layers.table.allowed=[asset.id];project.lanes=[lane];
+  const room={id:'room-a',operatorId:'operator-a',compositionId:lane.id,game:'blackjack'};
+  const next=selectLayer(project,room,'table',asset.id);
+  assert.equal(next.lanes[0].layers.table.default,asset.id);assert.equal(next.lanes[0].composition.tableFront,true);
+  assert.equal(project.lanes[0].layers.table.default,null);assert.equal(room.id,'room-a');
+  assert.throws(()=>selectLayer(project,{...room,game:'roulette'},'table',asset.id));
+});
 function fixture() {
   const project=createSeedProject();
   const classification={label:'A',dealerId:'astrid',eventId:'deal.player.left',kind:kindForEvent(project.events.find(row=>row.id==='deal.player.left')),role:'standard',situation:'box0',playback:'once',notes:'',compositing:{mode:'green-screen',threshold:.38,softness:.12,despill:.6}};

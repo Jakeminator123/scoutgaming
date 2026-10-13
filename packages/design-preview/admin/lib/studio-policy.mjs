@@ -1,7 +1,7 @@
 import { validateProject } from '../../../../lab/lib/studio-model.mjs';
-import { validateIdlePolicy } from '../../../../presentation-runtime/idle-policy.mjs';
-import { createRegisteredIdlePolicy } from '../../../../presentation-runtime/registered-idle-policy.mjs';
-import { isAstridDealFamily, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../presentation-runtime/media-family-policy.mjs';
+import { validateIdlePolicy } from '../../../../packages/presentation/runtime/idle-policy.mjs';
+import { createRegisteredIdlePolicy } from '../../../../packages/presentation/runtime/registered-idle-policy.mjs';
+import { isAstridDealFamily, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../packages/presentation/runtime/media-family-policy.mjs';
 import { clipSlots, clipsForSlot } from './connected-studio.mjs';
 
 const fail = message => { throw Error(message); };

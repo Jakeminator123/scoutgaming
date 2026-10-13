@@ -1,5 +1,51 @@
 # Aktuell handoff — Scoutgaming
 
+## SIDOR3: anslutningar och bordsintag, 13 oktober
+
+PR #55 (`codex/studio-workspace`) förenas med `main` `426fa114` i egen
+arbetsgren. Importer använder nu `packages/presentation/runtime`. `/admin`
+använder befintlig NativeAdministration för drift, konton, spelare, betalningar
+och API samt befintlig OpenClaw-modellvy och skyddad agentchatt. De tidigare
+simulerade sidkomponenterna används inte av entrypunkten. Varje API-fel visas;
+generell ändringslogg saknar läs-API och märks fortfarande som saknad.
+
+Bolag väljs före rum/bakgrund och spelet läses ur det registrerade rummet.
+Dealerlistan använder den sparade sammansättningens tillåtna aktiva dealer-ID;
+ingen annan bank väljs vid saknad koppling. Bakgrundsval och befintlig
+bakgrundsautomation finns i rummets panel, inklusive lokal regelpreview.
+Ändrade gemensamma triggers ingår i sparandets förhandsvisade rumspåverkan.
+Ett rum med flera spel kräver fortfarande den uttryckliga övergången från
+gamla enspelsrum; den är inte utförd genom UI-ändringen.
+
+Kanonisk materialkatalog `web/public/material-catalog.mjs` innehåller
+`blackjack-green-felt` / **Blackjack · grön filt** och
+`blackjack-black-felt` / **Blackjack · svart filt**. Oförändrade 1672 × 941 PNG
+med alpha säkrades privat och används som riktiga filer i beständig isolerad
+QA på port 53764. Produktionsregistreringen är obekräftad efter tappad
+Chrome-filväljaranslutning. Bakgrundsagenten äger tre nya bild/videopar och
+föreslaget `BACKGROUND_MATERIALS` i separat `background-materials.mjs`; inga
+rumsval eller publicerade paket ska ersättas automatiskt. Domänregeln är
+även tillagd i `AGENTS.md`. Fullfile-taldriver och produktionsacceptans från
+föregående WIP är fortfarande öppna; inga betalda genereringar utfördes.
+
+## Tillägg 13 oktober: central Studio och rumsmodell
+
+Målkontraktet för nya `/admin` finns i
+[LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md#central-studio-rum-spel-och-lager-13-oktober-2026):
+spelbolag → rum/bakgrund → spel → dealeruppsättning; bord separat och
+bakgrundsautomation på miljön. Det skiljer målmodellen från dagens rum med
+ett spel per post. Ingen produktkod, media eller produktionsdata ändrades.
+
+Read-only produktläsning fann `paow3` som öppet Nordic Bet-rum, samma
+PAOW-sammansättning som rouletterummet, samt sju videobakgrunder och två
+bordsbilder. ID, referenser, filformatregler och kvarstående visuell
+acceptans dokumenteras i kontraktet. Sju videor avkodades och spelades till
+slut i webbläsaren utan mediefel; codecprofil/loopskarv är inte granskade.
+SIDOR3 äger UI-arbetet; första preview använder isolerat QA-underlag.
+Verifiering för denna dokumentationsleverans: källkontrakt och synligt
+produktregister jämförda; ordinarie dokumentationshook passerade (35 tester).
+Rumsövergång, riktiga lager i preview och spelacceptans återstår.
+
 Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
 `jakob/repo-ordning` och ajour med `origin/main` `ff1d6e53`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
@@ -497,8 +543,8 @@ Start för nästa agent:
    eventuellt schema- och fältnamn.
 4. Provspela rummen hos sg-test, Johns och Nordic Bet före och efter varje etapp.
 
-Samordning: ordningsplanens strukturvåg (`ordning/`, våg 3) flyttar samma
-centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidigt.
+Samordning: plattformsflytten A22 (`packages/platform`, se `docs/CLOUD-MIGRATION.md`)
+flyttar samma centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidigt.
 
 ### Övrigt öppet
 
@@ -522,7 +568,7 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
   (`studio_request_rejected`). Manuell länk och omladdning fungerade i det
   provet. Ingen skyddsregel lättades.
 - Objektens existens i Blob och full visuell liveuppspelning är inte
-  verifierade (`ordning/BASLINJE.md` §8).
+  verifierade (`ordning/BASLINJE.md` §8 på `faf0e822`).
 - Upload-anteckningen om `kortflipp_kling_1080p.mp4` står kvar i
   `docs/CLOUD-MIGRATION.md`. Den är inte stängd här.
 - Vercel-byggets nya logg för Node 24-låsningen (`12a12fd6`) är inte verifierad.
@@ -531,6 +577,42 @@ centrala moduler. Kör inte flytt och lane-förenkling på samma moduler samtidi
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
+
+**Ordning 2026-10 avslutad, 12 oktober (`jakob/ordning-avslut`).**
+Planen i `ordning/` (baslinje `00ea55c5`) är genomförd och mappen är borttagen;
+historiken har den, till exempel på `faf0e822`. Den generiska raderingsspärren
+står kvar som `tools/raderingsgrind.mjs`, med sina fyra prov i
+`test/raderingsgrind.mjs` i kroken. Leveranser: V1 #19 (plan och
+regler), V2 #23 (A10–A18: döda moduler, granskningssidor, pipeline, ops och
+dokument), #30 (adminlänk på partnerinloggningen), V3a #34 (A20:
+`test-videoeditor/` till `packages/presentation/{compositor,docs,preview}`), #44
+(PAOW-grundloopen), V4 #40 (B11: indexerade banken, läppsynkverktygen och
+bankauditarna) och denna leverans (A21: `presentation-runtime/` till
+`packages/presentation/runtime/`, URL:en `/presentation-runtime/*` oförändrad,
+plus A99). En enradig shim `presentation-runtime/live-idle.mjs` finns kvar för
+`web/public/local-presentation.mjs`, som laddas både i webbläsaren och i Node.
+#51 är mergad som `a5441feb` och kontrollerad i produktion.
+`/presentation-runtime/idle-policy.mjs` har nya bytes bara i två relativa
+importvägar (`../` blev `../../../`), som i webbläsaren pekar på samma adresser.
+
+| Mått | Före `00ea55c5` | Efter `e602ea91` |
+| --- | --- | --- |
+| Spårade filer | 4 412 · 790,18 MB | 2 868 · 388,44 MB |
+| `media/` | 2 455 · 731,74 MB | 857 · 289,33 MB |
+| `web/public`, källfiler | 122: 95 produkt, 12 bara granskning, 11 bara test, 2 bara pipeline, 2 ingen | 102: 99 produkt, 1 bara test, 2 bara pipeline |
+| Studio utan importör | 4 | 2 (behållna på beslut) |
+| `pipeline/`, skript | 109, varav 87 utan konsument | 21, varav 10 utan konsument |
+| Testfiler | 359 · 0 föräldralösa | 355 · 0 föräldralösa |
+| Importer `lab/lib → web(server)` · `pipeline → web/public` | 125 · 46 | 135 · 18 |
+| Systemkarta | gul · 0 röda · 165 varningar | gul · 0 röda · 5 varningar efter ny baslinje |
+| GitGuardian | 0 öppna · 17 ignorerade | 0 öppna · 17 ignorerade |
+
+Importerna mellan Studio och spelmotorn ökade med ny kod på main under arbetet;
+de är A22:s område. Prov för A21 på V4-huvudet: Studio- och frontendbygget ger
+samma 74 genererade filer byte för byte, full pre-commit, 0 föräldralösa prov,
+0 röda i systemkartan och raderingsspärren 0. Kvar finns som punkter i
+`docs/CLOUD-MIGRATION.md` under "Repo-ordning, slutläge", bland annat B18, B19,
+A22b och acceptansen efter deploy.
 
 **Indexerad dealerbank borttagen, 12 oktober (V4, `jakob/repo-ordning`).**
 `media/dealers/{astrid,amira,vera,mei}/runtime/indexed` är borta ur Git (598 av
@@ -817,8 +899,8 @@ borttagna funktionen dolde felet och är borttagen. Fyra prov föll med exakt
 skärmbildens ReferenceError före rättningen; 17 riktade prov passerar efteråt.
 Ett nytt bindningsprov i ordinarie pre-commit granskar spelklientens, urvalets
 och kompositorns JavaScript utan runtime-stubbar. Kompositorns katalog är
-`packages/presentation/compositor/`. A21 flyttar fortfarande `presentation-runtime/`
-i samma lista.
+`packages/presentation/compositor/`. Urval och idle ligger i
+`packages/presentation/runtime/`. Webbläsarens adress `/presentation-runtime/*` är oförändrad.
 
 Läsande jämförelse: main `dbc925c3`, Kevin `8837bcc5`, omorganisations-PR #19
 `f3892c47`. 119 JavaScript-filer granskades utan ytterligare odefinierade

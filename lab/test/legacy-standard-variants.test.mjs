@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSeedProject, createEmptyProject, addDealer, normalizeProject, validateProject } from '../lib/studio-model.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
-import { LEGACY_CLIP_PARTS } from '../../presentation-runtime/legacy-clip-policy.mjs';
-import { LEGACY_PART_PLACEMENTS, legacySituationLine, applyLegacyStandardVariants } from '../../presentation-runtime/legacy-standard-variants.mjs';
+import { LEGACY_CLIP_PARTS } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
+import { LEGACY_PART_PLACEMENTS, legacySituationLine, applyLegacyStandardVariants } from '../../packages/presentation/runtime/legacy-standard-variants.mjs';
 
 const clip = (dealer, part) => `${dealer}:legacy/${part}`;
 const policyFor = dealer => LEGACY_CLIP_PARTS.map(part => ({ dealerId: dealer, part, clipId: clip(dealer, part) }));

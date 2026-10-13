@@ -73,7 +73,7 @@ Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
 | Ansvar | Källa | Kontroll |
 | --- | --- | --- |
 | Event-ID, källtyper och begrepp | `policies/studio-contract.json` | `test/studio-contract.test.mjs` |
-| Filmfamiljer, standardfiler, variantmappar | `../presentation-runtime/media-families.mjs` | Byggare och validator importerar samma register |
+| Filmfamiljer, standardfiler, variantmappar | `../packages/presentation/runtime/media-families.mjs` | Byggare och validator importerar samma register |
 | Faktiska filer, storlek och SHA-256 | `../media/dealers/astrid/runtime/presentation/lab-video-manifest.json` | `node pipeline/build-lab-video-manifest.mjs --check` från reporoten |
 | Format/validering | `schemas/`, `lib/lab-video-manifest.mjs` | Manifest- och kontraktstester |
 | Sparade operatörsval | vald datakatalogs `project.json` | Revisionslås + historik |

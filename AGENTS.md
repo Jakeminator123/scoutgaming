@@ -2,6 +2,8 @@
 
 ## Three product surfaces
 
+The domain contract is **operator → rooms (= background environments) → games → explicitly allowed tables and dealer clip sets**. One operator may own several rooms; a room may support several games with separate game bindings. A table is a foreground asset and never a room or background. Follow `docs/LOCAL-PRESENTATION-RUNTIME.md` (Central Studio contract) and the canonical names/immutable hashes in `web/public/material-catalog.mjs` across admin, partner, lobby and game. Catalogue design IDs, uploaded layer UUIDs, dealer IDs and operator-owned room IDs are different identities. Legacy single-game rooms and frozen packages must keep their IDs; do not group environments by matching names or shared files, or claim the multi-game transition is complete before its storage/runtime acceptance.
+
 Public site: https://www.scoutgaming.tech. Apex `scoutgaming.tech` is a 308 to www.
 Vercel project name is `scoutgaming`. The game engine stays on Render service `croupier-v2`.
 
