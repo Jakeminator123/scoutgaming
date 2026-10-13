@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, createNativeStudioRequestHandlers, handleNativeAdmin, handleNativeSession } from '../lib/studio-native-runtime.mjs';
+import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, createNativeStudioRequestHandlers, handleNativeAdmin, handleNativeSession,nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
+import {StudioStorageError} from '../../web/storage/studio-contract.mjs';
+
+test('unsupported media format returns its fixed typed 415 without database details',async()=>{
+  const error=new StudioStorageError('studio_media_content_type_unsupported',415);error.detail='private-db-detail';
+  const response=nativeStudioErrorResponse(error),body=await response.json();
+  assert.equal(response.status,415);assert.equal(body.code,'studio_media_content_type_unsupported');assert.match(body.error,/MP4 och WebM/);
+  assert.equal(JSON.stringify(body).includes('private-db-detail'),false);assert.equal(response.headers.get('cache-control'),'private, no-store');
+});
 
 const env = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.invalid',
   CROUPIER_STUDIO_NEON_POLICY: '1',

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { randomBytes } from 'node:crypto';
+import { randomBytes,randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
@@ -30,6 +30,25 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     assert.equal(applied.toApply.length, 0); assert.equal(applied.optionalPending.length, 0);
     await applyStudioMigrations({ pool, expectedTarget: applied.target, confirm: true });
     assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 8);
+  });
+
+  await check('actual 001-008 media constraint and repository reject PNG and audio without records or audit',async()=>{
+    const mimeScope={environment:`qa_mime_${suffix()}`,workspaceId:'integration'},repo=createStudioRepository({pool,scope:mimeScope});
+    const constraints=(await pool.query("SELECT conname,pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid='croupier_studio.media_records'::regclass AND contype='c'")).rows;
+    assert.equal(constraints.length,1);assert.equal(constraints[0].conname,'media_records_check');
+    assert.match(constraints[0].definition,/'video\/mp4'/);assert.match(constraints[0].definition,/'video\/webm'/);
+    for(const contentType of ['video/mp4','video/webm','image/png','audio/wav','audio/mpeg']){
+      const id=randomUUID(),sha256='d'.repeat(64),ext=contentType==='image/png'?'png':contentType==='audio/wav'?'wav':contentType==='audio/mpeg'?'mp3':contentType.split('/')[1];
+      const classification=contentType==='image/png'?{dealerId:'astrid',eventId:'roulette.reference',kind:'idle',role:'alternative',situation:'VILA',label:'Reference',notes:'',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}}:contentType.startsWith('audio/')?{dealerId:'astrid',eventId:'speak.goodluck',kind:'speech',role:'alternative',situation:'goodluck',label:'Audio',notes:'',mediaType:'audio'}:{dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Video',notes:'',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}};
+      const record={id,sha256,size:32,contentType,pathname:`croupier/media/dealers/astrid/review/uploads/${id}/${sha256}.${ext}`,classification};
+      if(contentType.startsWith('video/'))await repo.registerMedia(record,{actor:'isolated-qa'});
+      else{
+        await assert.rejects(repo.registerMedia(record,{actor:'isolated-qa'}),error=>error.code==='studio_media_content_type_unsupported'&&error.statusCode===415);
+        await assert.rejects(pool.query('INSERT INTO croupier_studio.media_records (environment_id,workspace_id,id,revision,record) VALUES ($1,$2,$3,$4,$5::jsonb)',[mimeScope.environment,mimeScope.workspaceId,id,'raw-fixture',JSON.stringify(record)]),error=>error.code==='23514'&&error.constraint==='media_records_check');
+      }
+    }
+    const counts=(await pool.query('SELECT (SELECT count(*)::int FROM croupier_studio.media_records WHERE environment_id=$1) AS records,(SELECT count(*)::int FROM croupier_studio.audit_events WHERE environment_id=$1) AS audits',[mimeScope.environment])).rows[0];
+    assert.deepEqual(counts,{records:2,audits:2});
   });
 
   const scope = { environment: `qa_${suffix()}`, workspaceId: 'integration' };

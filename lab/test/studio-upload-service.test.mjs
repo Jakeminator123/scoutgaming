@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import assert from 'node:assert/strict';
-import { createHash,createHmac } from 'node:crypto';
+import { createHash,createHmac,randomUUID } from 'node:crypto';
 import { mkdtemp,rm } from 'node:fs/promises';
 import { basename,dirname,join,resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -13,7 +13,7 @@ import { createStudioRepository } from '../../web/storage/studio-repository.mjs'
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import sharp from 'sharp';
-import {inspectWebmAlpha} from '../lib/media-alpha.mjs';
+import {inspectWebmAlpha,assertMediaAlpha} from '../lib/media-alpha.mjs';
 
 test('an upload grant cannot register retained bank status even with a valid server signature',async t=>{
   const {settings,context,pool}=await fixture(t),record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
@@ -29,7 +29,7 @@ test('an upload grant cannot register retained bank status even with a valid ser
 const scope=Object.freeze({environment:'test',workspaceId:'studio-test'}),key=Buffer.alloc(32,8),origin='https://studio.example.invalid';
 const classification={dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Uploaded clip',notes:''};
 
-test('v11 blocks PNG, alpha and roulette prepare before any SQL read, Blob grant or registry write',async t=>{
+test('storage MIME or v11 readiness blocks prepare before any SQL read, Blob grant or registry write',async t=>{
   const candidates=[
     {contentType:'image/png',metadata:{...classification,eventId:'roulette.reference',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}}},
     {contentType:'video/webm',metadata:{...classification,compositing:{mode:'alpha'}}},
@@ -37,10 +37,12 @@ test('v11 blocks PNG, alpha and roulette prepare before any SQL read, Blob grant
   ];
   for(const input of candidates){
     const f=await fixture(t,{...input,runtimeVersion:11}),before=f.pool.calls.length;
-    await assert.rejects(f.prepare(),e=>e.code==='studio_presentation_runtime_update_required');
+    const unsupported=input.contentType==='image/png';
+    await assert.rejects(f.prepare(),e=>e.code===(unsupported?'studio_media_content_type_unsupported':'studio_presentation_runtime_update_required'));
     assert.equal(f.pool.calls.length,before);assert.equal(f.tokenCalls.length,0);assert.equal(f.objects.size,0);
     assert.equal(f.pool.snapshot().media.size,0);assert.equal(f.pool.snapshot().audits.length,0);
-    assert.equal(f.capabilityCalls[0]['X-Presentation-Capability-Version'],'12');
+    if(unsupported)assert.equal(f.capabilityCalls.length,0);
+    else assert.equal(f.capabilityCalls[0]['X-Presentation-Capability-Version'],'12');
   }
 });
 test('v12 grant cannot commit after Render returns v11; no Blob fetch or SQL executes',async t=>{
@@ -58,30 +60,27 @@ test('new media cannot bypass readiness through an unwrapped upload repository',
   await assert.rejects(service.commit({operation:'commit',ticket:grant.ticket},f.context),e=>e.code==='studio_presentation_runtime_update_required');
   assert.equal(f.pool.calls.length,before);assert.equal(f.tokenCalls.length,1);assert.equal(f.pool.snapshot().media.size,0);
 });
-test('Render downgrade at transaction admission cannot register verified PNG bytes',async t=>{
-  const bytes=await sharp(Buffer.from([10,200,30,255,20,220,40,0]),{raw:{width:2,height:1,channels:4}}).png().toBuffer();
-  const metadata={...classification,eventId:'roulette.reference',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}};
-  const f=await fixture(t,{bytes,contentType:'image/png',metadata,runtimeVersion:12}),grant=await f.prepare();f.objects.set(grant.pathname,bytes);
+test('Render downgrade at transaction admission cannot register roulette video',async t=>{
+  const metadata={...classification,kind:'action',eventId:'roulette.wheel-start',situation:'wheel-start',game:'roulette',action:'wheel-start',startPose:'VILA',endPose:'WHEEL'};
+  const f=await fixture(t,{metadata,runtimeVersion:12}),grant=await f.prepare();f.objects.set(grant.pathname,f.bytes);
   const context={...f.context,mutationTransaction:(work,options)=>{f.setRuntime(11);return f.context.mutationTransaction(work,options);}};
   await assert.rejects(f.service.commit({operation:'commit',ticket:grant.ticket},context),e=>e.code==='studio_presentation_runtime_update_required');
   assert.equal(f.pool.snapshot().media.size,0);assert.equal(f.pool.snapshot().audits.length,0);
 });
 
-test('roulette PNG is stored byte-for-byte after decoded alpha verification, and replay preserves identity',async t=>{
+test('verified roulette PNG remains blocked by storage before capability, SQL and Blob grant',async t=>{
   const bytes=await sharp(Buffer.from([10,200,30,255,20,220,40,0]),{raw:{width:2,height:1,channels:4}}).png().toBuffer();
   const metadata={...classification,eventId:'roulette.reference',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}};
-  const {prepare,service,objects,context,repository,pool}=await fixture(t,{bytes,contentType:'image/png',metadata});
-  const grant=await prepare();objects.set(grant.pathname,bytes);
-  await service.commit({operation:'commit',ticket:grant.ticket},context);
-  const row=await repository.getMedia(grant.id);assert.deepEqual(row.classification,metadata);assert.equal(row.contentType,'image/png');
-  assert.equal(row.sha256,createHash('sha256').update(bytes).digest('hex'));assert.deepEqual(objects.get(grant.pathname),bytes);
-  assert.deepEqual(await service.commit({operation:'commit',ticket:grant.ticket},context),{id:grant.id,duplicate:true});assert.equal(pool.snapshot().media.size,1);
+  await assertMediaAlpha(bytes,'image/png');
+  const f=await fixture(t,{bytes,contentType:'image/png',metadata}),before=f.pool.calls.length;
+  await assert.rejects(f.prepare(),error=>error.code==='studio_media_content_type_unsupported'&&error.statusCode===415);
+  assert.equal(f.pool.calls.length,before);assert.equal(f.capabilityCalls.length,0);assert.equal(f.tokenCalls.length,0);assert.equal(f.objects.size,0);
+  assert.equal(f.pool.snapshot().media.size,0);assert.equal(f.pool.snapshot().audits.length,0);
 });
 test('opaque PNG and MP4 cannot be labelled as verified alpha',async t=>{
   const bytes=await sharp({create:{width:2,height:2,channels:4,background:{r:20,g:20,b:20,alpha:1}}}).png().toBuffer();
   const metadata={...classification,eventId:'roulette.reference',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}};
-  const {prepare,service,objects,context,pool}=await fixture(t,{bytes,contentType:'image/png',metadata});const grant=await prepare();objects.set(grant.pathname,bytes);
-  await assert.rejects(service.commit({operation:'commit',ticket:grant.ticket},context),error=>error.code==='studio_media_alpha_required');assert.equal(pool.snapshot().media.size,0);
+  await assert.rejects(assertMediaAlpha(bytes,'image/png'),error=>error.code==='studio_media_alpha_required');
   const wrong=await fixture(t,{metadata:{...classification,compositing:{mode:'alpha'}}});await assert.rejects(wrong.prepare(),error=>error.code==='studio_invalid_media');
   assert.throws(()=>inspectWebmAlpha(Buffer.from('filename_spin_transparent.webm')),error=>error.code==='studio_media_alpha_required');
 });
@@ -184,18 +183,24 @@ test('complete Blob verification stays outside the product lock; revocation at l
   assert.equal(pool.snapshot().audits.length,1);
 });
 
-test('WAV speech is hashed, signed, privately read back and registered with its exact speech slot',async t=>{
+test('WAV and MP3 speech fail before grants, capability probes and any SQL or Blob IO',async t=>{
   const metadata={...classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',mediaType:'audio'};
-  const {prepare,service,objects,bytes,context,repository,tokenCalls}=await fixture(t,{bytes:Buffer.from('RIFF0000WAVEfmt 000000000000000000'),contentType:'audio/wav',metadata});
-  const grant=await prepare();objects.set(grant.pathname,bytes);
-  assert.ok(grant.pathname.endsWith('.wav'));assert.deepEqual(tokenCalls[0].allowedContentTypes,['audio/wav']);
-  await service.commit({operation:'commit',ticket:grant.ticket},context);
-  assert.equal((await repository.getMedia(grant.id)).classification.situation,'goodluck');
+  for(const contentType of ['audio/wav','audio/mpeg']){
+    const f=await fixture(t,{contentType,metadata}),before=f.pool.calls.length;
+    await assert.rejects(f.prepare(),error=>error.code==='studio_media_content_type_unsupported'&&error.statusCode===415);
+    assert.equal(f.pool.calls.length,before);assert.equal(f.capabilityCalls.length,0);assert.equal(f.tokenCalls.length,0);assert.equal(f.objects.size,0);
+  }
 });
-test('audio MIME cannot disguise video bytes as a speech recording',async t=>{
-  const metadata={...classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',mediaType:'audio'};
-  const {prepare,service,objects,bytes,context,pool}=await fixture(t,{contentType:'audio/wav',metadata});
-  const grant=await prepare();objects.set(grant.pathname,bytes);
-  await assert.rejects(service.commit({operation:'commit',ticket:grant.ticket},context),error=>error.code==='studio_invalid_media_format');
-  assert.equal(pool.snapshot().media.size,0);
+test('previously signed PNG and audio tickets cannot fetch bytes or register on the current schema',async t=>{
+  for(const contentType of ['image/png','audio/wav','audio/mpeg']){
+    const metadata=contentType==='image/png'?{...classification,eventId:'roulette.reference',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}}:{...classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',mediaType:'audio'};
+    const f=await fixture(t,{contentType,metadata}),id=randomUUID(),sha256='a'.repeat(64),ext=contentType==='image/png'?'png':contentType==='audio/wav'?'wav':'mp3';
+    const record={id,sha256,size:32,contentType,classification:metadata,pathname:`croupier/media/dealers/astrid/review/uploads/${id}/${sha256}.${ext}`};
+    const payload=Buffer.from(canonicalStudioJson({v:1,actor:'Operator',scope,record,expiresAt:2000})).toString('base64url');
+    const ticket=`${payload}.${createHmac('sha256',key).update(`studio-upload-v1\0${payload}`).digest('base64url')}`;
+    let reads=0,transactions=0;const before=f.pool.calls.length;
+    const service=createStudioUploadService({...f.settings,privateMedia:async()=>{reads++;assert.fail('must not fetch');}});
+    await assert.rejects(service.commit({operation:'commit',ticket},{...f.context,mutationTransaction:async()=>{transactions++;assert.fail('must not write');}}),error=>error.code==='studio_media_content_type_unsupported'&&error.statusCode===415);
+    assert.equal(reads,0);assert.equal(transactions,0);assert.equal(f.pool.calls.length,before);assert.equal(f.capabilityCalls.length,0);
+  }
 });

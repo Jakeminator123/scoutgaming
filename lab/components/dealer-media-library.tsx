@@ -4,7 +4,7 @@ import type {StudioProject} from '../lib/studio-model.mjs';
 import {DEALER_MEDIA_CATEGORIES,dealerMediaSlots,mediaClassification,dealerLibraryVideos,draftUsesMedia,mediaMatchesSlot,dealerSlotStatus,mediaPage,mediaUsage,type DealerMediaSlot} from '../lib/dealer-media-library.mjs';
 import {clipLabel} from '../lib/clip-label.mjs';
 import {mediaContentType} from '../lib/media-file-types.mjs';
-import {MAX_VIDEO_BYTES} from '../lib/video-intake.mjs';
+import {NATIVE_MEDIA_ACCEPT,nativeMediaFileError,assertNativeMediaFiles} from '../lib/native-media-intake.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {uploadNativeVideo} from '../lib/upload-native-video.mjs';
 import {requestJson,studioHref,type VideoEntry,type VideoInventory} from './studio-types';
@@ -25,7 +25,7 @@ function LocalPreview({file,framing,compositing}:{file:File;framing?:DealerFrami
 function IntakePreview({row,disabled,update}:{row:IntakeRow;disabled:boolean;update:(id:string,patch:Partial<IntakeRow>)=>void}){
   const [open,setOpen]=useState(row.slotId==='idle.ready/');
   return <details open={open} onToggle={event=>setOpen(event.currentTarget.open)}><summary>{row.file.name} · {(row.file.size/1024/1024).toFixed(1)} MB · bildformat och bakgrund</summary>
-    {open?<fieldset disabled={disabled}>{row.framing?<><VideoCompositingFields value={row.compositing} onChange={compositing=>update(row.id,{compositing})}/><DealerFramingFields value={row.framing} onChange={framing=>update(row.id,{framing})}/></>:null}
+    {open&&!nativeMediaFileError(row.file)?<fieldset disabled={disabled}>{row.framing?<><VideoCompositingFields value={row.compositing} onChange={compositing=>update(row.id,{compositing})}/><DealerFramingFields value={row.framing} onChange={framing=>update(row.id,{framing})}/></>:null}
       <LocalPreview file={row.file} framing={row.framing} compositing={row.compositing}/></fieldset>:null}
   </details>;
 }
@@ -56,7 +56,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
     if(queue.length+selected.length>50){setError('Ladda upp högst 50 filer åt gången.');return;}
     setQueue(rows=>[...rows,...selected.map(file=>{
       const type=mediaContentType(file.name),choices=type.startsWith('audio/')?allSlots.filter(slot=>slot.category==='speech'&&(!selectedSlot||slot.id===selectedSlot.id)):(selectedSlot?[selectedSlot]:slots);
-      const invalid=!type?'Välj PNG, MP4, WebM, MP3 eller WAV.':file.size<16||file.size>MAX_VIDEO_BYTES?'Filen måste vara mellan 16 byte och 128 MB.':'';
+      const invalid=nativeMediaFileError(file,type);
       return {id:crypto.randomUUID(),file,label:file.name.replace(/\.[^.]+$/,'').slice(0,120),slotId:choices.length===1?choices[0].id:'',state:invalid?'error' as const:'ready' as const,message:invalid,...(!type.startsWith('audio/')?{framing:{...DEFAULT_DEALER_FRAMING},compositing:type==='image/png'?{mode:'alpha' as const}:{...DEFAULT_GREEN_SCREEN}}:{})};
     })]);setError('');if(input.current)input.current.value='';
   }
@@ -66,7 +66,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
     const ready=queue.filter(row=>row.state==='ready');
     if(!ready.length)return;
     let prepared;
-    try{prepared=ready.map(row=>({row,classification:{...mediaClassification(project,{dealerId,slotId:row.slotId,label:row.label,contentType:mediaContentType(row.file.name)}),...(row.framing?{framing:row.framing,compositing:row.compositing}:{})}}));}
+    try{assertNativeMediaFiles(queue.filter(row=>row.state!=='saved').map(row=>row.file));prepared=ready.map(row=>({row,classification:{...mediaClassification(project,{dealerId,slotId:row.slotId,label:row.label,contentType:mediaContentType(row.file.name)}),...(row.framing?{framing:row.framing,compositing:row.compositing}:{})}}));}
     catch(cause){setError(cause instanceof Error?cause.message:'Kontrollera facken.');return;}
     busyRef.current=true;setBusy(true);setError('');setNotice('');
     const abort=new AbortController();controller.current=abort;
@@ -117,8 +117,8 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
     {!archived?slotEditor:null}
     {error?<p className={styles.error} role="alert">{error}</p>:null}{notice?<p role="status">{notice}</p>:null}
     {!archived?<><div className={styles.dropzone} onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();if(!disabled)addFiles(event.dataTransfer.files);}}>
-      <strong>Lägg in flera filer samtidigt</strong><p>Dra hit filer eller välj från datorn. PNG, MP4, WebM, MP3 och WAV · högst 128 MB per fil.</p>
-      <label className={"sg-btn sg-btn-primary "+styles.fileButton}>Välj filer<input aria-label="Välj filer att ladda upp" ref={input} type="file" multiple accept=".png,.mp4,.webm,.mp3,.wav" disabled={busy||disabled} onChange={event=>addFiles(event.target.files)} /></label>
+      <strong>Lägg in flera filer samtidigt</strong><p>Dra hit filer eller välj från datorn. MP4 och WebM · högst 128 MB per fil. PNG och ljud kräver en senare databasuppdatering.</p>
+      <label className={"sg-btn sg-btn-primary "+styles.fileButton}>Välj filer<input aria-label="Välj filer att ladda upp" ref={input} type="file" multiple accept={NATIVE_MEDIA_ACCEPT} disabled={busy||disabled} onChange={event=>addFiles(event.target.files)} /></label>
     </div>{queue.length?<section className={styles.intake} aria-label="Filer att mappa"><div className={styles.heading}><h3>Mappa {queue.length} filer</h3><button disabled={busy} onClick={()=>setQueue([])}>Töm listan</button></div>
       <p>Dealer och kategori följer med. För Deal väljer du exakt box; för tal väljer du repliken. Sparade filer laddas inte upp igen.</p>
       {queue.map(row=><article key={row.id} className={styles.intakeRow}>
@@ -130,7 +130,7 @@ export function DealerMediaLibrary({project,inventory,dealerId,onInventory,onPro
         })}</select></label>
         <div role="status">{row.state==='saving'?'Laddar upp '+row.progress+' %':row.message??'Klar att mappa'}</div>
         <button aria-label={'Ta bort '+row.file.name+' ur listan'} disabled={busy} onClick={()=>setQueue(rows=>rows.filter(item=>item.id!==row.id))}>Ta bort</button>
-      </article>)}<button className="sg-btn sg-btn-primary" disabled={busy||disabled||!queue.some(row=>row.state==='ready')||queue.some(row=>row.state==='ready'&&(!row.slotId||!row.label.trim()))} onClick={()=>void upload()}>{busy?'Sparar…':'Ladda upp och spara facken'}</button>
+      </article>)}<button className="sg-btn sg-btn-primary" disabled={busy||disabled||!queue.some(row=>row.state==='ready')||queue.some(row=>row.state!=='saved'&&nativeMediaFileError(row.file))||queue.some(row=>row.state==='ready'&&(!row.slotId||!row.label.trim()))} onClick={()=>void upload()}>{busy?'Sparar…':'Ladda upp och spara facken'}</button>
     </section>:null}</>:null}
     <div className={styles.heading}><h3>{archived?'Papperskorg':'Filer i kategorin'} · {displayed.length}</h3><button disabled={busy} onClick={()=>void requestJson<VideoInventory>('/api/videos').then(onInventory).catch(cause=>setError(cause.message))}>Uppdatera</button></div>
     {archived&&removalDisabledReason?<p role="status">{removalDisabledReason}</p>:null}

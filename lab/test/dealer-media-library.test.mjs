@@ -51,10 +51,20 @@ test('audio contract requires exact speech identity, MIME/path agreement and mat
   assert.equal(mediaHeaderMatches('audio/mpeg',Buffer.from('ID3abcdefghijklmno')),true);
 });
 test('a ten-file batch preserves successes, skips saved rows and never automatically retries an uncertain commit',async()=>{
-  const items=Array.from({length:10},(_,i)=>({row:{id:String(i),file:i,state:i===0?'saved':'ready'},classification:{dealerId:'paow'}}));
+  const items=Array.from({length:10},(_,i)=>({row:{id:String(i),file:new File(['0000ftypisom00000fixture'],`clip-${i}.mp4`),state:i===0?'saved':'ready'},classification:{dealerId:'paow'}}));
   const calls=[],states=new Map();
-  const saved=await uploadMediaBatch(items,{upload:async file=>{calls.push(file);if(file===4)throw Error('Lost commit response');},onChange:(id,patch)=>states.set(id,{...states.get(id),...patch})});
+  const saved=await uploadMediaBatch(items,{upload:async file=>{const index=Number(file.name.match(/clip-(\d+)/)[1]);calls.push(index);if(index===4)throw Error('Lost commit response');},onChange:(id,patch)=>states.set(id,{...states.get(id),...patch})});
   assert.equal(saved,8);assert.deepEqual(calls,[1,2,3,4,5,6,7,8,9]);assert.equal(states.get('4').state,'error');assert.equal(states.get('9').state,'saved');
+});
+
+test('a mixed native batch rejects unsupported files before its first video upload or progress change',async()=>{
+  for(const extension of ['png','mp3','wav'])for(const state of ['ready','error']){
+    const video=new File(['0000ftypisom00000fixture'],'first.mp4'),unsupported=new File(['00000000000000000fixture'],`last.${extension}`);
+    let uploads=0,changes=0;
+    const items=[{row:{id:'video',file:video,state:'ready'},classification:{dealerId:'paow'}},{row:{id:'unsupported',file:unsupported,state},classification:{dealerId:'paow'}}];
+    await assert.rejects(uploadMediaBatch(items,{upload:async()=>{uploads++;},onChange:()=>{changes++;}}),/MP4 eller WebM/);
+    assert.equal(uploads,0);assert.equal(changes,0);
+  }
 });
 
 test('required idle uses only available own registry clips and explicit saved choices',()=>{
