@@ -7,7 +7,8 @@ import {operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
 type Operator = { id: string; slug: string; name: string; status: string; archivedAt:string|null;packageRevision: number | null };
 type Dealer = { id: string; name: string; archived: boolean };
 type Room = { id: string; name: string; operatorId: string; game: string; state: string; compositionId: string;materialWarning?:string;
-  laneId: string; published: boolean; playable: boolean; dealerIds: string[]; dealers: { id: string; name: string }[]; dealerSource: 'published' | 'saved'; playUrl: string | null };
+  laneId: string; published: boolean; playable: boolean; dealerIds: string[]; dealers: { id: string; name: string }[]; dealerSource: 'published' | 'saved'; playUrl: string | null;
+  environment?: { kind: string; fixed: boolean; label: string; image?: string } | null };
 type Registry = { schemaVersion: 1; source: 'registered'; readAt: string; administration: {
   operators: Operator[]; dealers: Dealer[]; rooms: Room[];
   compositions: { id: string; name: string; dealerIds: string[]; defaultDealerId: string }[];
@@ -135,6 +136,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
 function RoomCard({ room, operator, dealers }: { room: Room; operator: Operator; dealers: Dealer[] }) {
   return <article className="flex flex-col rounded-md border border-sg-line bg-sg-bg">
     <div className="flex items-start gap-2 border-b border-sg-line px-3 py-3"><DoorOpen size={16} className="mt-0.5 text-sg-amber" /><div><h3 className="text-sm font-medium">{room.name}</h3><p className="mt-1 text-[11px] text-sg-muted">{labels[room.game] ?? room.game} · {labels[room.state] ?? room.state} · {room.playable ? 'Spelbart' : room.published ? 'Publicerat, inte spelbart' : 'Inte publicerat'}</p></div></div>
+    <div className="border-b border-sg-line px-3 py-3 text-xs"><p className="font-medium">Miljö: {room.environment?.label ?? 'Granska i sammansättningen'}</p>{room.environment && !room.environment.fixed && <p className="mt-1 text-sg-amber">Rummet saknar en entydig miljö. Nya rum ska ha en fast miljö.</p>}</div>
     <ul className="flex flex-col gap-2 p-3">{room.dealerIds.map(id => {
       const dealer = dealers.find(row => row.id === id);
       return <li key={id}><a href={controlLink('/control/clips', operator, room, dealer ?? { id, name: id, archived: false })} className="flex items-center gap-2 text-xs hover:text-sg-lime"><UserRound size={14} className="text-sg-teal" />{room.dealers.find(row => row.id === id)?.name ?? id}<ArrowUpRight size={12} /></a></li>;

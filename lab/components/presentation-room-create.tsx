@@ -58,7 +58,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!ready || busy) return;
+    if ((!ready && !unresolved) || busy) return;
     callbacks.current.onBusyChange?.(true);
     void controller.create(key).finally(()=>callbacks.current.onBusyChange?.(controller.getSnapshot().status==='busy'));
   }
@@ -66,24 +66,29 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
     : !projectSaved ? 'Spara sammansättningen först.'
       : !operator || !presentation ? 'Välj bolag och sammansättning.'
         : current ? state.message : null;
-  const staleProject = current && Boolean(state.preflight && state.preflight.projectRevision !== projectRevision);
-  const packageConflict = current && state.preflight?.reason === 'presentation_package_conflict';
-  const needsComposition = current && ['presentation_lane_incompatible', 'presentation_package_too_large'].includes(state.preflight?.reason ?? '');
+  const staleProject = current && !unresolved && Boolean(state.preflight && state.preflight.projectRevision !== projectRevision);
+  const packageConflict = current && !unresolved && state.preflight?.reason === 'presentation_package_conflict';
+  const needsEnvironment = current && !unresolved && state.preflight?.reason === 'presentation_room_environment_required';
+  const needsComposition = current && !unresolved && ['presentation_lane_incompatible', 'presentation_package_too_large', 'presentation_room_environment_required'].includes(state.preflight?.reason ?? '');
   const reloadHref = labUrl('/control/rooms?' + new URLSearchParams({ operator: operator?.id ?? '', composition: presentation?.id ?? '' }));
   const compositionHref = labUrl('/control/compositions?' + new URLSearchParams({ composition: presentation?.id ?? '' }));
   const conflictCode = !staleProject && packageConflict ? state.preflight?.conflictCode : null;
   const recovery = ['presentation_shared_dealer_conflict', 'presentation_shared_layer_conflict', 'presentation_legacy_package_conflict'].includes(conflictCode ?? '')
     ? { href: '#operator-package-selection', label: 'Granska hela paketurvalet' }
+    : conflictCode === 'presentation_room_environment_conflict'
+      ? { href: compositionHref, label: 'Skapa en separat sammansättning' }
     : conflictCode === 'presentation_room_binding_conflict' || conflictCode === 'presentation_game_lane_conflict'
       ? { href: labUrl('/control/rooms?' + new URLSearchParams({ operator: operator?.id ?? '' })), label: 'Kontrollera spelrummet' } : null;
   const refresh = current && !staleProject && !packageConflict && !needsComposition && (state.status === 'conflict' || state.status === 'unavailable' || state.status === 'error' && !state.preflight);
-  const canCreate = ready && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
+  const canCreate = enabled && (ready || unresolved) && ['ready', 'uncertain', 'error'].includes(state.status) && (unresolved || Boolean(state.name.trim()));
   const receipt = current && projectSaved && storeAvailable ? state.receipt : null;
 
   const rooms = current && enabled ? state.preflight?.rooms : undefined;
   return <section className={styles.card} aria-label="Spelrum">
     <div className={styles.heading}><div><span className={styles.eyebrow}>SPELARENS INGÅNG</span><h2>Spelrum</h2></div>{rooms ? <span className={styles.count}>{rooms.length} befintliga rum</span> : null}</div>
     {operator && presentation ? <p className={styles.context}>{operator.name} · {presentation.label}</p> : null}
+    {current && state.preflight?.environment ? <p><strong>Rummets miljö:</strong> {state.preflight.environment.label}
+      {state.preflight.environment.kind === 'baked' ? ' · inbakad miljö' : state.preflight.environment.fixed ? ' · fast bakgrund' : ' · behöver avgränsas'}</p> : null}
     <p>Spelaren väljer ett rum i bolagets lobby. Återanvänd rummet när du ändrar utseende eller klipp.</p>
     {!hideExisting&&operator&&(rooms?.length||receipt)?<p><a className="sg-btn sg-btn-primary" href={'/play?operator='+encodeURIComponent(operator.slug)}>Öppna bolagets spellobby</a></p>:null}
     {!hideExisting&&rooms?.length ? <ul aria-label="Befintliga spelrum">{rooms.map(room=><li key={room.id}><a href={room.playUrl}>Öppna {room.name}</a></li>)}</ul>
@@ -104,7 +109,7 @@ export function PresentationRoomCreate({ operator, presentation, projectRevision
         {recovery ? null : staleProject || packageConflict ? <a className="sg-btn sg-btn-primary" href={reloadHref} aria-disabled={!enabled}
           onClick={event => { if (!enabled) event.preventDefault(); }}>Läs in aktuella uppgifter</a>
           : needsComposition ? <a className="sg-btn sg-btn-primary" href={compositionHref} aria-disabled={!enabled}
-            onClick={event => { if (!enabled) event.preventDefault(); }}>Kontrollera sammansättningen</a>
+            onClick={event => { if (!enabled) event.preventDefault(); }}>{needsEnvironment ? 'Välj och lås miljön i Sammansättningar' : 'Kontrollera sammansättningen'}</a>
           : refresh ? <button className="sg-btn sg-btn-primary" type="button" disabled={!enabled}
           onClick={() => { if (enabled) void controller.refresh(); }}>Uppdatera uppgifter</button>
           : receipt ? <a className="sg-btn sg-btn-primary" href={receipt.playUrl}>Öppna spelrummet</a>

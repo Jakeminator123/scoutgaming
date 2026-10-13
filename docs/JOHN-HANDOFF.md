@@ -1,5 +1,16 @@
 # Aktuell handoff — Scoutgaming
 
+## PR #50: fast rumsmiljö och bevarad fryst film
+
+Nya rum kräver en entydig sparad bakgrund. Om en sammansättning redan
+används av publicerade rum jämförs även hela den infångade vilofilmen:
+media-ID, hash, sökväg, MIME, storlek och friläggning. Kontrollen sker både
+vid förberedelse och under publiceringens revision-/transaktionsskydd.
+Ett identiskt nytt rum och exakt retry fungerar; en annan film ger 409
+utan att ändra det tidigare paketet. Regressionen föll före rättningen.
+PR #63:s levererade HERO, porträtt och dealergrindar bevaras vid integration.
+Inga mediebytes, produktionsdata eller rumspubliceringar ändras av arbetet.
+
 ## SIDOR3: historisk materialläsning, 13 oktober
 
 Efter #55/c8f9b99 gav verkliga projekt-/videoanrop 200 men katalogen 422 med sanerat studio_native_unavailable; den publika katalogen blev också 503. Hotfixen bevarar historiska frysta spelgrants: nya materialtaggar är diagnostik vid läsning, medan operator-, room-, lane-, dealer- och paketauktoriteten fortsätter styra. inspectPackageRooms rapporterar den precisa typade katalogmismatchen utan att ändra paketet. Admin visar en materialvarning. Samma historiska Blackjack- och Roulette-syskon behåller urval, playUrl och giltig spelstart. Nya publiceringar kontrolleras fortfarande strikt och avvisas med 422 vid fel material. Verkliga struktur-/lagringsfel slår fortsatt igenom.
