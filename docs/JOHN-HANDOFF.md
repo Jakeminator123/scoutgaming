@@ -1,5 +1,52 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: avgränsad förenkling av legacy och rumsval
+
+Arbetet började på `cc63db71` och är integrerat med senare `main`
+`978f3bc` (#73/#75). Leveransen ligger i ett eget worktree på
+`codex/simplify-studio-legacy`, med en PR till `main` för Jakobs granskning.
+Adminens personväljare heter **Dealer**. Rummets egna val öppnar det befintliga
+rumsbundna utseendeflödet för exakt bolag och rum i en ny flik, så Studio-utkastet
+behålls. Felaktiga, främmande eller inte längre publicerade rum visar ett hinder
+i stället för att öppna bolagets standardinställningar.
+
+Bakgrund/bord/geometri i Studio hör till en gemensam sammansättningsmall.
+Den gamla direkta bordsväljaren i rumskontexten är borttagen; mallpanelen visar
+berörda bolag/rum och aktiveras genom **Redigera gemensam mall**. Rummets val
+använder befintliga `roomOverrides`, revisioner och granskad publicering. Ingen
+ny parallell skrivmodell eller automatisk publicering tillkommer.
+
+Moderna operatorägda rum valideras utan obligatoriska `classic/high/vip`,
+pitboss eller turneringar. Historiska rumsrader kräver fortfarande dessa
+domäner; varje legacyfält som finns valideras strikt. Sparningar bevarar
+befintliga fält, CAS, historik och audit. Ingen produktionsrad migreras.
+
+`lab/` är fortfarande aktiv Studio-kod och används även av gemensamma
+domänfunktioner. `open-claw/lab/` hör till AI-/talanslutningen.
+`lissabon-stream-lane` är en fungerande runtimeflagga för bland annat kamera,
+spelresultat och hälsokontroller. `web/lissabon-profiles.mjs` behåller lokala
+demoprofiler, avstängda för PostgreSQL/produktion. Astrids tal-/klippkedja,
+mediebytes och frysta publiceringar ändras inte av denna PR.
+
+Aktiva guider och agentinstruktioner följer nu `/admin`, `/partner`, `/lobby`
+och tre visuella lager, med gamla rutter som kompatibilitet. Ordlistan skiljer
+dealeridentitet från klippkategori och återställning av bolag öppnar inte rum.
+SL-03:s daterade felpåstående är rättat mot nuvarande kod och regressioner.
+Senaste mains produktmodell och spelval bevaras; rapportens flerspelsförslag
+införs inte som ett nytt krav. Utökade miljövarianter och publiceringsversion
+per användning kräver separata kontrakt och genomförs inte genom namnbyte
+eller borttagna konfliktspärrar.
+
+Lokalt: hela Lab-sviten 1 851 godkända/två skips, båda typkontrollerna och
+Studio-/designbyggen passerar; noll föräldralösa tester. Full ordinarie hook
+körd på den integrerade koden: 3 246 godkända, sju skips och ett oförändrat
+OS-test som saknar processens födelseidentitet i denna körmiljö. Loopbackproven
+körs med 127.0.0.2 utanför miljöns nätproxy. Webbläsarinstallation kunde inte
+slutföras; React-/SSR-/navigationstester är inte visuell browseracceptans.
+Slutlig PR-head och ordinarie CI-resultat redovisas i PR:en. Produktionsdatabas,
+driftkonfiguration, publicering och betald generering ingår inte.
+
+
 ## En produktmodell och papperskorg i rumslistan, 13 oktober
 
 `lab/docs/TERMINOLOGI.md` är nu källan för orden bolag, spel, rum/bakgrund,

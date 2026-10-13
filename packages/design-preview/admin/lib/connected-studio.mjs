@@ -5,6 +5,7 @@ import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES } from '../..
 import { uploadNativeVideo } from '../../../../lab/lib/upload-native-video.mjs';
 import { materialForAsset } from '../../../../web/public/material-catalog.mjs';
 import { defaultCompositionSettings } from '../../../../web/public/composition-settings.mjs';
+import { workspaceSurfacePath } from '../../../../lab/lib/workspace-surfaces.mjs';
 
 export function clipSlots(project, inventory, dealerId) {
   return project.events.flatMap(event => {
@@ -171,7 +172,9 @@ export function bindClip(project, inventory, dealerId, slot, videoId, { variantI
   return validateProject(draft);
 }
 
-export function selectLayer(project, room, role, assetId) {
+// This edits the shared template, never the choices of an individual room.
+// Room choices use the existing scoped branding draft/review/publication API.
+export function selectCompositionLayer(project, room, role, assetId) {
   const draft = structuredClone(project);
   const lane = draft.lanes?.find(row => row.id === room.compositionId);
   if (!lane || !['background', 'table'].includes(role) || !lane.layers[role].enabled
@@ -184,6 +187,26 @@ export function selectLayer(project, room, role, assetId) {
   if(role==='table'&&material){lane.composition??=defaultCompositionSettings();lane.composition.tableFront=true;}
   lane.layers[role].default = assetId;
   return validateProject(draft);
+}
+
+export function roomChoicesPath(operator, room) {
+  if (!operator || !room || room.operatorId !== operator.id || room.state !== 'live' || !room.published
+    || !/^[a-z][a-z0-9-]{0,63}$/.test(room.id)) return null;
+  const path = workspaceSurfacePath('partner', 'bj', operator.slug);
+  return path ? `${path}?${new URLSearchParams({ room: room.id })}` : null;
+}
+
+export function navigationKeepsStudioTab(event, anchor) {
+  const target = anchor.target?.toLowerCase();
+  return Boolean(event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+    || anchor.hasAttribute('download') || target && !['_self', '_top', '_parent'].includes(target));
+}
+
+export function compositionUses(catalog, compositionId) {
+  if (!compositionId) return [];
+  return catalog.administration.rooms.filter(room => room.compositionId === compositionId && room.state !== 'archived')
+    .map(room => ({ roomId: room.id, roomName: room.name,
+      operatorName: catalog.administration.operators.find(operator => operator.id === room.operatorId)?.name ?? room.operatorId }));
 }
 
 export function uploadMetadata(project, dealerId, slot, file, compositing) {

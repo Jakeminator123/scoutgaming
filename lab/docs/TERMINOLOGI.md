@@ -29,6 +29,8 @@ Spelarens scen: vald bakgrund → vald dealer → valt bord → spelkontroller
 - En **dealer** är en registrerad person med egna klipp och uppsättningar.
   Dealern kan väljas till flera kompatibla rum. En ny kombination av dealer
   och bakgrund skapar aldrig en ny dealeridentitet.
+  `dealerSets` är författarens namngivna klippkategorier för samma person;
+  kategorinamnet registrerar ingen dealer och väljer ingen runtimeuppspelning.
 - Ett **bord** är det separata visuella förgrundslagret med spelets geometri,
   inte ett rum. Bordet kan återanvändas där spelet och geometrin tillåter det.
 - Spelaren får välja en tillåten dealer och ett tillåtet bord till rummets
@@ -38,6 +40,12 @@ Spelarens scen: vald bakgrund → vald dealer → valt bord → spelkontroller
 - En **sammansättning** sparar lagerplacering, kompatibilitet och tillåtna
   val för uppspelningen. Den är en teknisk konfiguration, inte ett andra rum,
   en dealer eller en bakgrund. Visa den bara när dess inställningar behövs.
+
+En gemensam sammansättningsmall kan användas av flera bolag och rum.
+Mallredigering ändrar projektets utkast; vald rumskontext begränsar inte
+mallens räckvidd. Rummets tillåtna utseendeval redigeras separat på
+`/partner/{slug}/rooms?room=<rum-id>` med `presentations.configure`,
+serverkontrollerad ägare, granskning och revisionsskydd.
 
 **Normal scen:** bakgrund bakom en frilagd dealer; bord framför kroppen;
 kort, marker och spelkontroller över scenen. Rörliga händer som ska ligga
@@ -71,6 +79,10 @@ struktur. Befintliga tekniska ID:n och frysta paket behålls under övergången.
 spelarens lobby. `/control`, `/play` och `/game` fungerar under övergången;
 nya menyer och instruktioner använder de nya namnen. `/studio` är endast
 labbtjänstens tekniska basePath.
+
+`lab/` är aktiv källkod. Runtimeflaggan `lissabon-stream-lane` används
+fortfarande för chattkontext, kameragrind och lokala profiler; äldre
+Lab/Lissabon-namn betyder inte att Astrids tal-/videoflöden kan tas bort.
 
 `lane`, `gameLaneId`, `presentationLaneId`, `table` i en äldre URL och
 `mobile-phone` är befintliga lagrings- eller länknamn. De betyder inte

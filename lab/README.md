@@ -1,12 +1,15 @@
-# Lab — utvecklarreferens
+# Studio (`lab/`) — utvecklarreferens
 
 **Användarguide: [Guide & hjälp](https://www.scoutgaming.tech/control/guide).**
 `/studio/guide` omdirigerar dit. Denna README är utvecklarreferens.
 Källa och begreppsägarskap: [lab/docs](docs/README.md).
 
-**Moln:** personalytan är [/control](https://www.scoutgaming.tech/control).
-`/studio` är labbets basePath, inte en fjärde produkt. Vercel-projektet
-`scoutgaming` visar gränssnitten. Render-tjänsten `croupier-v2` äger spelmotorn
+**Moln:** fortsätt personalens UI-arbete på [/admin](https://www.scoutgaming.tech/admin)
+och den nya spellobbyn på [/lobby](https://www.scoutgaming.tech/lobby).
+`/control` behåller äldre fungerande editorer och guiden under övergången.
+`lab/` är aktiv källkod, och `/studio` är dess tekniska basePath med API och
+tillgångar. Vercel-teamet och projektet `scoutgaming` visar gränssnitten.
+Render-tjänsten `croupier-v2` äger spelmotorn
 och live-transporten. Sparade studio-projekt ligger i Neon; lokalt i `lab/data`.
 **Lokalt:** samma arbetsyta körs på det enda serverparet som `node lab/start.mjs`
 startar. [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
@@ -35,9 +38,17 @@ Video-intake: [lägg in standardtagningar och alternativ, välj användning och 
 
 ## Starta
 
-Lokalt öppnas Lab på `/`. I molnet är personalytan `/control`; `/studio` är labbets basePath.
-`/lissabon` omdirigerar till `/control`. Lab-roten `/` omdirigerar permanent till `/control/clips`.
+Lokalt finns nya personalytan på `/admin` och spellobbyn på `/lobby`.
+Den tekniska roten `/` omdirigerar fortfarande till `/control/clips`;
+`/lissabon` behåller sin omdirigering. Detta gör inte `/control` till målet
+för nytt UI-arbete. I molnet monteras Studio under basePath `/studio`.
 Startkod, standardprojekt och lokala profilval finns nu här i Lab.
+
+`CROUPIER_STREAM_LANE=lissabon-stream-lane` är fortfarande aktiv i
+`start.mjs`, `policies/local-profile.json`, lokal anslutning och molnkonfiguration.
+Den används bland annat för chattens `playResults`, kameragrinden och
+beständiga lokala profiler. Behåll flaggan och Astrids tal-/videoväg vid
+förenkling av produktnamn; de är inte en separat Lissabon-produkt.
 
 ```powershell
 # Reproducerbart prov: tom temporär databas, befintliga filmer, inga externa tjänster.
@@ -63,7 +74,7 @@ Standardprojektet skapas från
 behövs inte. Exakt oförändrade gamla demoexempel tas bort vid uppgradering;
 egna ändringar/bindningar bevaras och hela föregående revision sparas i historik.
 
-Node 22.16+ och installerade beroenden krävs för lokal start. Molndrift är
+Lab följer Node-versionen i `package.json` (`24.x`) och kräver installerade beroenden. Molndrift är
 Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
 [docs/CLOUD-MIGRATION.md](../docs/CLOUD-MIGRATION.md).
 [ops/cloud/README.md](../ops/cloud/README.md) är en äldre Docker-pilot, inte startkommandot.
@@ -83,7 +94,11 @@ Efter nya mediefiler: kör `node pipeline/build-lab-video-manifest.mjs`,
 granska diffen och kör `--check`. Lab:s **Läs in nya filer** använder samma byggare.
 En ny hash är inte ett visuellt godkännande.
 
-## Arbetsytor och gemensam Guide
+## Befintliga editorer och gemensam Guide
+
+Adresserna nedan beskriver de fungerande `/control`-verktygen. Nya `/admin`
+återanvänder deras komponenter och native-API; skapa inget parallellt
+projektregister för den nya menyn. Se [guiden](docs/README.md) för ingångarna.
 
 - **Guide & hjälp (`/control/guide`; `/guide` omdirigerar dit):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
@@ -203,7 +218,10 @@ en variant per linje (64 poster, fyra dealers). Rörelseindexet har 64 klipp.
 Tre alternativ per linje och 256 variantposter finns inte i seedet.
 Högst fyra alternativ plus standard kan redigeras.
 Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
-Spelväljaren med Roulette är borta från `/control`. Roulette är inte ett spel här.
+Den äldre händelseeditorns seed beskriver blackjack. Publicerade spelrum kan
+däremot vara blackjack eller roulette, enligt `web/presentation-room-contract.mjs`.
+Ett rum har ett spel; spelet kan erbjuda flera rum/bakgrunder med tillåtna
+dealers och bord. Produktmodellens källa är [TERMINOLOGI.md](docs/TERMINOLOGI.md).
 
 Partner-API:ts **sex presentationstyper** är `speak`, `deal`, `reveal`, `turn`, `settle`, `idle`.
 De **16 noderna** är labbets begripliga mappningar, inte 16 nya motor-events.

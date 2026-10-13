@@ -184,9 +184,10 @@ test('published Johanna skips nonfrozen speech/deal despite newly edited live me
   f.saved.package.revision=8;const stale=await api.invoke('/api/presentation/select',{method:'POST',body:{dealerId:'johanna',mode:'off',version:2,event:api.source,presentationContext:input}});assert.equal(stale.status,409);assert.equal(JSON.parse(stale.body).code,'studio_presentation_idle_package_changed');assert.equal(api.liveReads,0);
 });
 
-function readerFixture({badAdmin=false,commitRollback=false,withHistory=false,changedFrozen=false}={}){
+function readerFixture({badAdmin=false,modernAdmin=false,commitRollback=false,withHistory=false,changedFrozen=false}={}){
   const scope={environment:'test',workspaceId:'croupier'},f=fixture(),trace=[];
   const admin={...f.saved.administration,gameLane:'portrait-johanna',tiers:{classic:'vera',high:'astrid',vip:'amira'},pitboss:{payout10x:true,streak5:true,randomWalkMin:45},tournaments:[]};
+  if(modernAdmin)for(const key of ['tiers','pitboss','tournaments'])delete admin[key];
   const live={operator:operatorRow(scope,'north-id','north'),package:packageRow(scope,'north-id',7,['vip-presentation']),admin};
   if(withHistory)live.package.branding=canonicalStudioJson({_scoutPresentation:{sha256:'same',data:'frozen'},color:'#445566'});
   const previous=withHistory?{...clone(live.package),package_revision:6,branding:canonicalStudioJson({_scoutPresentation:{sha256:changedFrozen?'other':'same',data:'frozen'},color:'#112233'})}:null;
@@ -199,7 +200,7 @@ function readerFixture({badAdmin=false,commitRollback=false,withHistory=false,ch
     if(text.includes('operator-by-slug')){live.package.package_revision=8;live.admin.rooms[0].state='preview';return {rows:[snapshot.operator]};}
     if(text.includes('current-package'))return {rows:[snapshot.package]};
     if(text.includes('package-by-revision')){assert.deepEqual(values,['test','croupier','north-id',6]);return {rows:previous?[previous]:[]};}
-    if(text.includes('frozen-dealer:administration'))return {rows:[{value:badAdmin?{rooms:[]}:snapshot.admin}]};throw Error('Unexpected SQL');
+    if(text.includes('frozen-dealer:administration'))return {rows:[{value:badAdmin?{...snapshot.admin,tiers:{classic:'vera',high:'astrid',vip:'foreign'}}:snapshot.admin}]};throw Error('Unexpected SQL');
   },release(){releases++;}};}};
   return {scope,pool,trace,live,get active(){return active;},get releases(){return releases;}};
 }
@@ -214,6 +215,13 @@ test('uncached SQL context reader uses one scoped read-only snapshot and release
 
 test('reader rolls back invalid administration and never treats a COMMIT rollback as an authorized snapshot',async()=>{
   for(const options of [{badAdmin:true},{commitRollback:true}]){const f=readerFixture(options),reader=createFrozenDealerContextReader(f);await assert.rejects(reader('north'));assert.equal(f.active,false);assert.equal(f.releases,1);assert.equal(f.trace.at(-1).text,options.badAdmin?'ROLLBACK':'COMMIT');}
+});
+
+test('frozen context reader accepts modern administration without restoring historical settings',async()=>{
+  const f=readerFixture({modernAdmin:true}),reader=createFrozenDealerContextReader(f),saved=await reader('north');
+  assert.equal(saved.package.revision,7);assert.equal(saved.administration.rooms[0].state,'live');
+  for(const key of ['tiers','pitboss','tournaments'])assert.equal(Object.hasOwn(saved.administration,key),false);
+  assert.equal(f.trace.at(-1).text,'COMMIT');assert.equal(f.active,false);assert.equal(f.releases,1);
 });
 
 test('administrative portrait drift cannot serve an allowed neighbour instead of the frozen default dealer',async()=>{

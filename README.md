@@ -1,22 +1,28 @@
 # Croupier
 
-Croupier is the working blackjack demo with server-owned game state and a
-shared playback path for four AI dealers. It is a development product, not a
+Croupier is the working casino demo with server-owned game state and a
+shared playback path for registered dealers. It is a development product, not a
 certified RNG/RGS or a real-money system.
 
 Public site: [www.scoutgaming.tech](https://www.scoutgaming.tech/). Apex
-`scoutgaming.tech` is a 308 to www. The Vercel project name is `scoutgaming`.
+`scoutgaming.tech` is a 308 to www. The Vercel team and project are `scoutgaming`.
 The game engine stays on Render service `croupier-v2`.
 
 The public surfaces are not feature-complete:
 
 | Level | Who | Path |
 | --- | --- | --- |
-| 1 | Internal staff | [/control](https://www.scoutgaming.tech/control) |
+| 1 | Internal staff | [/admin](https://www.scoutgaming.tech/admin) |
 | 2 | Operator | [/partner](https://www.scoutgaming.tech/partner) and `/partner/{operatorSlug}` |
-| 3 | Player | [/play](https://www.scoutgaming.tech/play), [/play/profil](https://www.scoutgaming.tech/play/profil), [/play/historik](https://www.scoutgaming.tech/play/historik) and [/play/blackjack](https://www.scoutgaming.tech/play/blackjack) |
+| 3 | Player | [/lobby](https://www.scoutgaming.tech/lobby); existing `/play/profil`, `/play/historik` and `/play/{game}` launches remain available |
 
-The staff menu has four groups (`lab/lib/scout-navigation.mjs`). Studio:
+Continue new backoffice and lobby work in `/admin` and `/lobby`. The older
+`/control` editors and `/play` player area still work during the transition;
+their URLs, authentication and published packages are compatibility contracts.
+The current `/admin` mounts the existing Studio and service components rather
+than introducing another policy store or game engine.
+
+The older staff menu has four groups (`lab/lib/scout-navigation.mjs`). Studio:
 Dealers & klipp `/control/clips`, Dealer Forge `/control/dealer-forge`,
 Bord & bakgrunder `/control/library`, Sammansättningar `/control/compositions`.
 Spelbolag: Bolag & team `/control/companies`, Spelrum & publicering
@@ -53,9 +59,21 @@ The lobby, `/play/profil` and `/play/historik` exist. The profile can be edited
 Render's `/blackjack?operator=` and Vercel's `/play/blackjack?operator=` limit
 lane and dealer to the package.
 
-`/studio` is the Next.js basePath of the lab service, not a fourth product and
-not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired
-aliases. A stream-lane flag named `lissabon-stream-lane` is not a product URL.
+`lab/` is active source for Studio, native administration, partner pages and
+the new admin/lobby surfaces. `/studio` is that service's deployed Next.js
+basePath, including its APIs and assets. Older `/lissabon`, `/lab`, `/labb`
+and `/bo` URLs are compatibility aliases. The separate runtime flag
+`CROUPIER_STREAM_LANE=lissabon-stream-lane` still enables existing chat context,
+camera checks and saved local profiles. Its name does not make it unused.
+
+The product model's single source is [TERMINOLOGI.md](lab/docs/TERMINOLOGI.md):
+**operator → games → operator-owned room/background choices**, with compatible
+allowed tables and dealers. A stored room has one game; reusing a background
+file does not merge room identities or permissions. Scene layers are
+**background → dealer → table**, with the engine's cards and UI above them.
+Dealer identity, clip category, material design ID, uploaded file ID and room
+ID remain distinct. Shared composition drafts are not room-specific writes;
+allowed room appearance is saved through the scoped partner room editor.
 
 See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
 The single `scoutgaming` Vercel project builds the web and lab apps as two
@@ -102,10 +120,7 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
 Deliver on a feature branch (`jakob/*`, `codex/*` or `cursor/*`) and open a pull
 request into `main`. Those branches are the allowed push targets, without
 force-push, branch deletion or tags. A direct push to `main` is only an explicit
-admin emergency path. The push hook still only names `main` until that rule is
-applied in the hook. This repository-cleanup work is collected on
-`jakob/repo-ordning`; each wave reaches `main` as its own pull request after
-Jakob’s approval.
+admin emergency path. Follow `tools/repository-policy.json` and `AGENTS.md`.
 Kevin’s reviewed source is imported selectively; no push to his branch is authorized.
 
 ## Documentation navigation

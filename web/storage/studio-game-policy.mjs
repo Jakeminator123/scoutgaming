@@ -1,4 +1,4 @@
-import { isRegisteredDealer, isActiveDealerId } from '../dealer-identity.mjs';
+import { BASE_DEALER_IDS, isRegisteredDealer, isActiveDealerId } from '../dealer-identity.mjs';
 import { createHash } from 'node:crypto';
 import { validateGameConnection } from './postgres-store.mjs';
 import { gameLaneConfiguration } from '../public/game-lanes.mjs';
@@ -10,7 +10,6 @@ import {
 } from './studio-contract.mjs';
 
 export const STUDIO_GAME_CONFIGURATION_SOURCE = 'neon/croupier_studio';
-const dealerIds = Object.freeze(['vera', 'astrid', 'amira', 'mei']);
 const tierIds = Object.freeze(['classic', 'high', 'vip']);
 const fail = (code, status = 503) => { throw new StudioStorageError(code, status); };
 const object = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -34,32 +33,26 @@ export function studioGamePolicyConfiguration(env = process.env) {
   } catch { fail('studio_invalid_configuration'); }
 }
 
-// Validate the actual game-facing domains, without creating any default rooms,
-// tiers or policy. Old clipAssignments/neverAgain belong to an explicit import
-// decision and are rejected by validateDocumentValue, never silently dropped.
-export function validateStudioGameAdministration(input) {
-  const value = validateDocumentValue('administration', input, 'validation');
+// Historical room rows and their independent administration domains stay
+// readable. Operator-owned rooms do not depend on these demo-era settings.
+function isLegacyGameRoom(room) {
+  return exact(room, ['id', 'name', 'scene', 'felt', 'dealer', 'state'])
+    && ['id', 'name', 'scene', 'felt'].every(key => text(room[key], key === 'scene' ? 300 : 100))
+    && BASE_DEALER_IDS.includes(room.dealer) && ['live', 'preview', 'pending'].includes(room.state);
+}
+
+function validateLegacyAdministration(value, { required }) {
   const invalid = () => fail('studio_invalid_game_policy', 422);
-  if (!exact(value.tiers, tierIds) || Object.values(value.tiers).some(id => !dealerIds.includes(id))
-    || !Array.isArray(value.rooms) || value.rooms.length > 1000
-    || !exact(value.pitboss, ['payout10x', 'streak5', 'randomWalkMin'])
-    || typeof value.pitboss.payout10x !== 'boolean' || typeof value.pitboss.streak5 !== 'boolean'
-    || !Number.isInteger(value.pitboss.randomWalkMin) || value.pitboss.randomWalkMin < 1 || value.pitboss.randomWalkMin > 1440
-    || !Array.isArray(value.tournaments) || value.tournaments.length > 1000) invalid();
-  const roomIds = new Set();
-  if (Object.hasOwn(value, 'legacyClipReview')) {
-    const review = value.legacyClipReview;
-    if (!exact(review, ['neverAgain', 'sourceSha256']) || !object(review.neverAgain) || !/^[a-f0-9]{64}$/.test(review.sourceSha256)
-      || Object.entries(review.neverAgain).some(([clipId, record]) => !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(clipId)
-        || clipId.includes('..') || !object(record))) invalid();
+  if (required || Object.hasOwn(value, 'tiers')) {
+    if (!exact(value.tiers, tierIds) || Object.values(value.tiers).some(id => !BASE_DEALER_IDS.includes(id))) invalid();
   }
-  for (const room of value.rooms) {
-    const legacy = exact(room, ['id', 'name', 'scene', 'felt', 'dealer', 'state'])
-      && ['id', 'name', 'scene', 'felt'].every(key => text(room[key], key === 'scene' ? 300 : 100))
-      && dealerIds.includes(room.dealer) && ['live', 'preview', 'pending'].includes(room.state);
-    if ((!legacy && !isPresentationRoom(room)) || roomIds.has(room.id)) invalid();
-    roomIds.add(room.id);
+  if (required || Object.hasOwn(value, 'pitboss')) {
+    if (!exact(value.pitboss, ['payout10x', 'streak5', 'randomWalkMin'])
+      || typeof value.pitboss.payout10x !== 'boolean' || typeof value.pitboss.streak5 !== 'boolean'
+      || !Number.isInteger(value.pitboss.randomWalkMin) || value.pitboss.randomWalkMin < 1 || value.pitboss.randomWalkMin > 1440) invalid();
   }
+  if (!required && !Object.hasOwn(value, 'tournaments')) return;
+  if (!Array.isArray(value.tournaments) || value.tournaments.length > 1000) invalid();
   const tournamentIds = new Set();
   for (const tournament of value.tournaments) {
     if (!exact(tournament, ['id', 'name', 'format', 'buyin', 'pool', 'entries', 'cap', 'starts', 'state'])
@@ -69,6 +62,30 @@ export function validateStudioGameAdministration(input) {
       || !['draft', 'registering', 'live', 'completed', 'cancelled'].includes(tournament.state)) invalid();
     tournamentIds.add(tournament.id);
   }
+}
+
+// Validate saved room/game configuration without creating default rooms or
+// legacy settings. Old clipAssignments/neverAgain require an explicit import
+// decision and are rejected by validateDocumentValue, never silently dropped.
+export function validateStudioGameAdministration(input) {
+  const value = validateDocumentValue('administration', input, 'validation');
+  const invalid = () => fail('studio_invalid_game_policy', 422);
+  if (!Array.isArray(value.rooms) || value.rooms.length > 1000) invalid();
+  const roomIds = new Set();
+  if (Object.hasOwn(value, 'legacyClipReview')) {
+    const review = value.legacyClipReview;
+    if (!exact(review, ['neverAgain', 'sourceSha256']) || !object(review.neverAgain) || !/^[a-f0-9]{64}$/.test(review.sourceSha256)
+      || Object.entries(review.neverAgain).some(([clipId, record]) => !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(clipId)
+        || clipId.includes('..') || !object(record))) invalid();
+  }
+  let legacyRooms = false;
+  for (const room of value.rooms) {
+    const legacy = isLegacyGameRoom(room);
+    if ((!legacy && !isPresentationRoom(room)) || roomIds.has(room.id)) invalid();
+    legacyRooms ||= legacy;
+    roomIds.add(room.id);
+  }
+  validateLegacyAdministration(value, { required: legacyRooms });
   return value;
 }
 
@@ -141,9 +158,10 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
     async readGameConfiguration() {
       const saved = await readSaved();
       // Review verdicts and other administration-only metadata stay private.
-      return freeze({ tiers: saved.administration.tiers, rooms: saved.administration.rooms,
+      const legacy = Object.fromEntries(['tiers', 'pitboss', 'tournaments']
+        .filter(key => Object.hasOwn(saved.administration, key)).map(key => [key, saved.administration[key]]));
+      return freeze({ ...legacy, rooms: saved.administration.rooms,
         ...gameLaneConfiguration(saved.administration),
-        pitboss: saved.administration.pitboss, tournaments: saved.administration.tournaments,
         revision: saved.revision, projectRevision: saved.projectRevision,
         administrationRevision: saved.administrationRevision, configurationSource: saved.configurationSource });
     },
