@@ -31,6 +31,12 @@ på stöd i importassistenten. Befintliga alpha-klipp bevaras.
 med dealern. Källfiler och publiceringshistorik bevaras. Användning av samma
 media hos en annan dealer visas som ett hinder som behöver lösas först.
 
+Den röda raden **Radering** öppnar ett beroendeträd. Där syns bolag → spel
+→ rum samt dealers och deras registrerade filer och materialets användningar.
+Delade objekt visas en gång med länkar från de platser där de används.
+Vyn redovisar vilka register och historiska kopplingar som har kunnat läsas;
+frånvaro av en synlig koppling är inte ett besked att en fil är oanvänd.
+
 **Kopplingar** visar bolag → spel → rum med dealers, bakgrunder och bord.
 **Ändra mallens kopplingar** öppnar den gemensamma mallen och visar vilka rum
 som delar den. Välj **Redigera gemensam mall** för att ändra tillåtna dealers,

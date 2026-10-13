@@ -10,7 +10,9 @@ clips-länkar med dealerId får rätt destination och kontext. Missvisande
 
 Sju regressioner gav rött före rättning; 33 riktade prov är gröna.
 Produktionsbygget (97 byggspår) och Admin/lobby-typkontrollen passerar.
-Full regression och produktions-SHA kompletteras efter commit och leverans.
+Full regression efter integration med budgetleveransen: 3 493 pass, 11 skip,
+0 fel. Studio-bygget passerar med 97 kontrollerade byggspår.
+Produktions-SHA kompletteras efter leverans; lokala prov är inte liveacceptans.
 Den befintliga migrationsloggen i CLOUD-MIGRATION.md skiljer funktionerna
 i Admin från framtida avveckling av hostnamn och källkod. lab/ behövs av
 Admin, autentisering, API:er, SQL och Render; inga tjänster eller data tas bort.
@@ -19,6 +21,36 @@ Kevins aktuella Git-ref är inventerad separat: 274 kodrefererade filer för
 Dragan och Paow i ett privat ZIP, med exakta fack, sökvägar och hashvärden.
 Sju av Dragans 21 produktionsposter matchar; ingen av Paows sex matchar.
 Ingen ny publicering eller visuell medieacceptans följer av denna inventering.
+
+Röd Radering-meny och ett anslutet beroendeträd finns i den nya koden.
+Det visar bolag/spel/rum, dealers/filer och bakgrund/dealer/bord utan att
+duplicera delade resurskort. Läsfel och ofullständig historik visas öppet.
+Permanent datarensning är ett separat uttryckligt användarmandat med
+skyddade resurser och konkret inventering i CLOUD-MIGRATION.md. Ren
+offlineplanering och lokal backup är förberedda. Alla 232 inventerade objekt
+under de fyra gamla dealernas mappar och två gamla borden har hämtats till
+lokal disk och hashverifierats (145 404 657 byte). Inga
+produktionsdata har gallrats och ingen ny PAOW är ännu registrerad.
+
+## GPU-testbudget 20 USD, 13 oktober
+
+Jakob höjde uttryckligen dygnstaket till 20 USD. Dagssumman avser konservativa
+GPU-reservationer per UTC-dygn, inte RunPods faktura eller separat LLM-/TTS-trafik.
+Avläsning 19:47 UTC: 14 sessioner à 0,50 USD = 7 USD; även avbrutna försök räknas.
+
+Kodens dygnsgräns är nu 20 USD. Effektivt tak är fortfarande det lägsta av
+Render-inställningen och sparad Neon-policy. Sessionsreserven 0,50 USD och
+fullfilsreserven 1 USD behålls; per-jobbgränsen är fortsatt 10 USD. Ingen historik,
+reservation, återbetalning eller befintlig QA-kampanj ändras av höjningen.
+
+Obligatorisk Studio-migration 011 vidgar endast budgetpolicyns exakta CHECK.
+009/010 är fortsatt reserverade för B18/B19. Äldre SQL-/strukturchecksummor
+bevaras och verifieras genom exakt versionerad strukturevolution; okänd drift
+eller saknad 011-ledger nekas. Migrationen körs före merge. Först efter deploy
+av koden uppdateras produktionspolicyn och Render-variabeln till 20 USD.
+150 riktade tester och ett verkligt Neon-migrationsprov med full rollback PASS.
+Render-startens exakta ledgerkontroll inkluderar också 011; CI kör verklig isolerad SQL-/omstartsacceptans.
+Två tekniskt färdiga Paow-spelningar ersätter inte visuell läppsynkacceptans.
 
 ## Publik Scoutguide med D-ID, 13 oktober
 
@@ -41,6 +73,29 @@ riktigt Luna-svar verifierat i lokal webbläsarfixtur. N1-växling visar enbart
 Adminroboten. D-ID accepterar produktionsdomänen och nekar testadressen;
 verifiering av riktig avatar och produktionssidornas laddning återstår vid
 publicering. Ingen ny D-ID-agent eller testnyckel skapades.
+
+## Teaminbox: Jakobs laptop och stationdata, 13 oktober
+
+`jakob-bgvp01j` adresserar Jakobs laptop och `jakob-dator2` Jakobs stationdata
+via separata GitHub-etiketter. Båda tillhör Jakob; personregistret och
+grenägarskapet är oförändrade. `tools/inbox.mjs register --device <alias>
+--email <ChatGPT-mejl>` sparar datorns konto, värdnamn och automatiskt avlästa
+reposökväg endast i gitignorerade `inbox/local-device.json`.
+
+`list --to me` använder registrerad dator, annars den tidigare grenägaren.
+Avsändarnamnet visar datorn; konto och sökväg publiceras inte i GitHub.
+En profil från fel dator/sökväg stoppas med instruktion att registrera igen.
+Regressionsprov täcker separata etiketter, gemensam personägare, båda datorernas
+routning, profilbyte, felaktiga/kopierade profiler och meddelandets visningsnamn.
+Verifierat: 12/12 inboxtester passerar. Laptopens lokala registrering och
+gitignorering är kontrollerade; båda datorernas GitHub-etiketter finns och
+`list --to me` läser laptopens inbox. Inget testmeddelande har skickats.
+Full ordinarie kontrollkedja: 3 415 godkända, 11 skips, 0 fel i 72 grupper.
+De versionslåsta beroendena i `packages/design-preview` behövde installeras
+efter main-synkningen; inga beroende- eller låsfiler ändrades. Jakob har
+uttryckligen godkänt leverans via `codex/inbox-devices` och PR-merge efter gröna kontroller.
+Den andra datorn behöver synka ändringen och registrera sitt eget konto enligt
+`inbox/README.md`. Ingen automatisk väckning eller bakgrundspollning införs.
 
 ## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
 

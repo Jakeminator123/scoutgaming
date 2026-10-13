@@ -71,11 +71,63 @@ samt 70 repliker. Ytterligare tio är preview/fallback och elva bara förladdade
 77 Dragan- och 62 Paow-filmer väljs inte i den granskade spelvägen. Det privata
 paketet `kevin-active-dragan-paow-f15b2af1.zip` innehåller 274 kodrefererade
 filer med manifest och dealer/fack/sökväg/hash-CSV; SHA-256
-`07bd02e3c1395c3e715f86d66859f1c3a43f5e622b85e3622df6bef2aef4b633`.
-Samtliga 420 inventerade källfiler hashverifierades. Sju Dragan-poster i
+`a69caf28bd1aa1db0a703d63e4a17aad37fd2da2222763c1bc83c208996a8866`.
+Arkivet är 325 280 137 byte. Alla 274 källfiler kontrollerades mot Git-blob
+och disk, och samtliga 279 ZIP-poster öppnades och hashverifierades.
+Sju Dragan-poster i
 produktionen matchar Kevins material; ingen av de sex Paow-posterna matchar.
 Detta är filproveniens och urval, inte godkänd pose/läppsynk eller publicering.
 Staging-grenens villkorade dynamiska talväg ingår inte i Admin-migreringen.
+
+### Uttrycklig rensning och bevarat material
+
+Jakob har begärt permanent borttagning av gamla `paow`, `paow-v2`, Amira
+och Johanna, deras exklusiva klipp och övergivna sammansättningar, samt de
+fyra bolagen Johns spelbolag, Kevins Spelbolag, SG test och Nordic Bet med
+gamla rum. Efter ett motstridigt besked från en annan chatt bekräftade han
+åter att även gamla `paow-v2` ska ersättas med ren PAOW från Kevins material.
+Detta är ett avgränsat rensningsmandat, inte en ändring av vanlig papperskorg.
+
+Dragan, Astrid, nya PAOW, Anna och roulettens tillhörande material ska
+bevaras, liksom alla bakgrundsfiler och de fem nya standardborden.
+`Nordic Bet Roulette` är ett gammalt rum bundet till PAOW Studio, inte
+Annas separata roulettekonfiguration. Rumsborttagning får inte radera filerna.
+`mobile-phone` delas av flera dealers; gammalt dealerval tas bort utan att
+hela mallen eller Astrids fungerande spel-/talväg försvinner.
+
+- [ ] Leverera den röda menyraden Radering med anslutet beroendeträd och
+  tydlig skillnad mellan sparad mall, publicerade val och tillgänglig historik.
+- [x] Läsande lokal registerbackup: 3 dokument, 60 mediaposter, 43 paket,
+  157 dokumenthistorikposter och befintliga Forge-/bolagsberoenden exporterade
+  i en read-only repeatable-read-transaktion. Filen hålls privat utanför Git.
+  De 12 bolagsrollerna kompletterar exporten i en separat privat fil.
+- [x] Fysisk lokal kopia av 232 inventerade objekt under fyra gamla
+  dealerprefix och två gamla bord: 145 404 657 byte, alla SHA-256 verifierade.
+  Ingen extra kopia skapades i Blob.
+- [ ] Slutför exakt objektägande och kvarvarande konsumenter före radering.
+  Den lästa databasen har 28 gamla dealer-mediaposter, varav 20 redan är
+  raderingstombstones; Forge har dessutom två privata PAOW-ankarbilder.
+- [ ] Avsluta gamla Forge-jobbets möjliga commit-väg, gallra beroenden och
+  radera överenskomna objekt permanent. Ingen gallring är ännu utförd.
+- [ ] Registrera ren PAOW och mappa Kevins utvalda klipp till riktiga
+  spelhändelser/poser. Ny registrering får inte återanvända gammal Forge-profil.
+- [ ] Slutverifiera i produktion, inklusive att skyddade material och dealers
+  är kvar och att borttagna identiteter inte skapas som syntetiska lobbykort.
+
+Två gamla uppladdade bord ligger endast i aktuell materialpapperskorg:
+`4b688411-d186-4229-8f8a-046cd1b0a2c5` och
+`b52b9077-de4e-4691-a570-a41a90312f6a`. De har samma bildhash men olika
+Blob-sökvägar. De refereras av 112 respektive 105 historiska projektrader,
+inklusive delade Astrid-mallar, men inget av de 43 operatörspaketen.
+Historikrader ska därför inte raderas i sin helhet som en genväg.
+Johannas och en Astrid-fil har också samma hash men olika objektvägar;
+hashlikhet är aldrig bevis för ägande eller tillstånd att radera båda.
+
+`tools/studio-retirement-plan.mjs` är en ren offlineplan/transform med
+exakta ID:n, komplett inventeringskrav och revisions-/hashkontroll.
+Den gör inga databas- eller Blob-anrop. Faktisk verkställighet måste läsa om
+aktuellt underlag och bevara skyddade resurser. Spelarkonton, saldo,
+transaktioner och roulettens aktiva arbete ingår inte i rensningen.
 
 ## OpenClaw dashboard utan terminal — liveacceptans öppen
 

@@ -17,7 +17,7 @@ const same = (a,b) => canonicalStudioJson(a) === canonicalStudioJson(b);
 const exact = (value, names) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...names].sort().join(',');
 const integer = value => Number.isSafeInteger(value) && value >= 0 && value <= 8640000000000000 - GPU_RESERVATION_WINDOW_MS;
 const iso = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
-const amount = value => Number.isSafeInteger(value) && value > 0 && value <= 10000000;
+const amount = (value, maximum = 10000000) => Number.isSafeInteger(value) && value > 0 && value <= maximum;
 function frozen(value) { if (value && typeof value === 'object') { Object.values(value).forEach(frozen); Object.freeze(value); } return value; }
 const clone = value => { try { return JSON.parse(canonicalStudioJson(value)); } catch { fail(); } };
 const list = value => Array.isArray(value) && value.length <= 16384;
@@ -35,7 +35,7 @@ function preparedSource(input, expectedScope, expectedChecksum) {
   const stamp = Date.parse(s.observedAt), provenance = value => typeof value.sourceId === 'string' && sha.test(value.sourceSha256)
     && s.sourceHashes[value.sourceId] === value.sourceSha256;
   if (s.budgetPolicy !== null && (!exact(s.budgetPolicy,['version','dailyBudgetMicroUsd','createdAt']) || s.budgetPolicy.version !== 1
-    || !amount(s.budgetPolicy.dailyBudgetMicroUsd) || !integer(s.budgetPolicy.createdAt) || s.budgetPolicy.createdAt > stamp)) fail();
+    || !amount(s.budgetPolicy.dailyBudgetMicroUsd, 20000000) || !integer(s.budgetPolicy.createdAt) || s.budgetPolicy.createdAt > stamp)) fail();
   const sessionIds = new Set(), jobs = new Set();
   for (const row of s.sessions) {
     if (!exact(row,['sourceId','sourceSha256','sessionId','endpointId','workerId','state','jobId','createdAt','cancelRequestedAt','terminalStatus','terminalReason','releasedAt'])
@@ -210,7 +210,7 @@ export async function applyLegacySpeechLedgerSnapshot({ pool, prepared, expected
   const importChecksum = hash(canonicalStudioJson({sourceId:source.sourceId,sourceChecksum:source.checksum,scope:rows.scope,costRows:wanted,retainedOperatorQa:rows.retainedOperatorQa}));
   const eventId = identityUuid(canonicalStudioJson({sourceId:source.sourceId,scope:rows.scope}));
   const plan = await schemaCheck({pool});
-  if (!plan.schemaPresent || plan.toApply.length || plan.applied.map(row=>row.version).join(',') !== '001,002,003,004,005,006,007,008'
+  if (!plan.schemaPresent || plan.toApply.length || plan.applied.map(row=>row.version).join(',') !== '001,002,003,004,005,006,007,008,011'
     || plan.applied.some(row=>!sha.test(row.checksum) || !sha.test(row.structureChecksum)) || !same(plan.target,target)) fail('studio_speech_import_schema_unverified',409);
   let client, began = false;
   const query = async (tag,sql,values=[]) => client.query(`/* speech-import:${tag} */ ${sql}`,values);
