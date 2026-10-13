@@ -143,7 +143,7 @@ test('opt-in preserves local/cloud guards and never enables cloud guests', () =>
   assert.equal(generatedSpeechStreamConfiguration(cloud).configuration.overlapAudio, true);
   assert.equal(generatedSpeechStreamConfiguration({ ...cloud, CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_GENERATED_SPEECH_DIR:undefined }).configured, true,
     'Neon session/request journals replace the cloud stream directory');
-  for (const patch of [{ CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '10.01' }, { RUNPOD_API_KEY: '' }]) {
+  for (const patch of [{ CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '20.000001' }, { RUNPOD_API_KEY: '' }]) {
     assert.equal(generatedSpeechStreamConfiguration({ ...cloud, ...patch }).configured, false);
   }
 });

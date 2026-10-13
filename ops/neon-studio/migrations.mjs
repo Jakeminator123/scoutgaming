@@ -25,7 +25,12 @@ const sources = Object.freeze([
     tables: ['operator_branding_drafts'], indexes: ['operator_branding_drafts_time_idx'] },
   { version: '008', file: '008-dealer-forge.sql',
     tables: ['forge_dealers', 'forge_jobs'], indexes: ['forge_jobs_dealer_idx'] },
+  // 009/010 remain reserved for B18/B19. This reviewed evolution creates no tables.
+  { version: '011', file: '011-gpu-daily-budget.sql', tables: [], indexes: [], fingerprintTables: ['gpu_budget_policies'] },
 ]);
+const budgetConstraint = 'gpu_budget_policies_daily_budget_micro_usd_check';
+const budgetDefinition = ceiling => `CHECK (daily_budget_micro_usd >= 1 AND daily_budget_micro_usd <= ${ceiling})`;
+const budgetAlter = 'ALTER TABLE croupier_studio.gpu_budget_policies DROP CONSTRAINT gpu_budget_policies_daily_budget_micro_usd_check, ADD CONSTRAINT gpu_budget_policies_daily_budget_micro_usd_check CHECK (daily_budget_micro_usd BETWEEN 1 AND 20000000)';
 const migrationLock = Object.freeze([1129467987, 1398035778]);
 
 function statements(sql) {
@@ -47,6 +52,11 @@ function statements(sql) {
 }
 
 function validateSql(source, sql) {
+  if (source.version === '011') {
+    const parts = statements(sql);
+    if (parts.length !== 1 || parts[0].replace(/\s+/g, ' ') !== budgetAlter) refuse('studio_migration_invalid_source', 422);
+    return;
+  }
   const tables = [], indexes = []; let createsSchema = 0;
   for (const statement of statements(sql)) {
     const table = /^CREATE TABLE croupier_studio\.([a-z_]+)\s*\(/.exec(statement);
@@ -79,7 +89,7 @@ export async function loadStudioMigrations({ directory } = {}) {
     if (Buffer.byteLength(bytes, 'utf8') > 1024 * 1024 || bytes.includes('\0')) refuse('studio_migration_invalid_source', 422);
     const sql = bytes.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
     validateSql(source, sql);
-    loaded.push(Object.freeze({ ...source, tables: Object.freeze([...source.tables]), indexes: Object.freeze([...source.indexes]), sql, checksum: hash(sql) }));
+    loaded.push(Object.freeze({ ...source, ...(source.fingerprintTables ? { fingerprintTables: Object.freeze([...source.fingerprintTables]) } : {}), tables: Object.freeze([...source.tables]), indexes: Object.freeze([...source.indexes]), sql, checksum: hash(sql) }));
   }
   return Object.freeze(loaded);
 }
@@ -135,9 +145,10 @@ async function catalog(client) {
 }
 
 function fingerprint(objects, migration) {
-  const belongs = row => migration.tables.includes(row.table_name);
+  const tables = migration.fingerprintTables ?? migration.tables;
+  const belongs = row => tables.includes(row.table_name);
   return hash(canonicalStudioJson({
-    relations: objects.relations.filter(row => migration.tables.includes(row.name) || belongs(row)),
+    relations: objects.relations.filter(row => tables.includes(row.name) || belongs(row)),
     columns: objects.columns.filter(belongs), constraints: objects.constraints.filter(belongs), indexes: objects.indexes.filter(belongs),
   }));
 }
@@ -165,7 +176,16 @@ async function inspect(client, migrations, objects) {
   }
   const installed = migrations.slice(0, rows.length);
   verifyObjects(objects, installed);
-  if (rows.some((row, index) => row.structure_checksum !== fingerprint(objects, installed[index]))) refuse('studio_migration_structure_mismatch');
+  // Preserve 002's historical fingerprint byte for byte. Only ledgered 011 may
+  // project this exact constraint back to its historical 10 USD definition.
+  const evolved = installed.some(row => row.version === '011');
+  let historical = objects;
+  if (evolved) {
+    const matches = objects.constraints.filter(row => row.table_name === 'gpu_budget_policies' && row.name === budgetConstraint);
+    if (matches.length !== 1 || matches[0].definition !== budgetDefinition(20000000)) refuse('studio_migration_structure_mismatch');
+    historical = { ...objects, constraints: objects.constraints.map(row => row === matches[0] ? { ...row, definition: budgetDefinition(10000000) } : row) };
+  }
+  if (rows.some((row, index) => row.structure_checksum !== fingerprint(evolved && row.version === '002' ? historical : objects, installed[index]))) refuse('studio_migration_structure_mismatch');
   return { objects, applied: rows.map(row => ({ version: row.version, checksum: row.checksum, structureChecksum: row.structure_checksum })), toApply: migrations.slice(rows.length) };
 }
 
