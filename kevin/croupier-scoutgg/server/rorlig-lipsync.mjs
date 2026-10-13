@@ -13,7 +13,7 @@
 // ← {t:'done', id, …} | {t:'error', id, reason}. Patch k belongs to the map's frame k; the line's sound starts
 // LJUD_FORE after the map's first frame.
 import { randomBytes } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { WebSocket } from 'ws';
 
@@ -222,11 +222,23 @@ export class RorligLipsync {
       const old = s.ws;
       s.ws = ws; s.info = m; s.at = Date.now(); s.askedAt = 0;
       this.log(`läppsynk rörlig [${dealer}]: arbetare uppkopplad (${m.gpu}, första bit ${m.forsta_bit_ms} ms, ${m.rutor_per_s} rutor/s)`);
+      // the lines said at round start have the least time to spare: the worker fetches their sound now, not then
+      const base = this.publicBase();
+      if (base) try { ws.send(JSON.stringify({ t: 'forhamta', urls: this.#roundStartLines(dealer).map(u => base + u) })); } catch {}
       // the session it replaces says goodbye once its line queue is empty
       if (old && old !== ws) this.#idle(s).then(() => { try { old.send(JSON.stringify({ t: 'bye' })); } catch {} });
     });
     ws.on('close', () => { if (s.ws === ws) { s.ws = null; s.info = null; this.log(`läppsynk rörlig [${dealer}]: arbetaren kopplade ner`); } });
     ws.on('error', () => {});
+  }
+
+  #roundStartLines(dealer) {
+    const urls = [];
+    for (const lang of ['en', 'sv']) {
+      const dir = path.join(this.publicDir, 'media', 'dealers', dealer, 'repliker', lang);
+      try { for (const f of readdirSync(dir)) if (/^goodluck_\d+\.mp4$/.test(f)) urls.push(`/media/dealers/${dealer}/repliker/${lang}/${f}`); } catch {}
+    }
+    return urls;
   }
 
   #api(p, init = {}) {
