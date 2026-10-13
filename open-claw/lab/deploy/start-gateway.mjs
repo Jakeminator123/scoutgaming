@@ -158,7 +158,8 @@ export async function prepareGatewayRuntime(env, options = {}) {
   return { ...prepared, bundle };
 }
 
-async function main() {
+export async function startGateway() {
+  if (process.getuid?.() === 0) throw new Error('Gateway must run as an unprivileged user.');
   const { gatewayEnv, action, bundle, config } = await prepareGatewayRuntime(process.env);
   if (action === 'migrate-legacy') {
     console.info('Migrated the exact legacy lab configuration; a private backup was retained and agent state was preserved.');
@@ -179,7 +180,7 @@ async function main() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((error) => {
+  startGateway().catch((error) => {
     // Known validation messages are static. Filesystem/spawn errors can include
     // user data in their messages, so report only their standard error code.
     console.error(error.code ? `OpenClaw setup failed (${error.code}).` : error.message);
