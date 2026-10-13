@@ -118,7 +118,7 @@ export function defaultPresentationLane(dealerId) {
   if (!isActiveDealerId(dealerId)) throw new StudioValidationError(['sammansättning: välj en aktiv dealer innan du skapar den']);
   return {
     id: 'mobile-phone',
-    label: 'Mobile Phone Lane',
+    label: 'Standardsammansättning',
     renderer: 'layered',
     dealers: [dealerId],
     layers: {
@@ -376,7 +376,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const label = (value, at, max = LABEL_MAX) => { if (typeof value !== 'string' || !value.trim() || value.length > max) error(at, `ska vara text med 1–${max} tecken`); };
   const array = (value, at, min, max) => { if (!Array.isArray(value) || value.length < min || value.length > max) { error(at, `ska ha ${min}–${max} poster`); return false; } return true; };
   const duplicate = (set, value, at) => { if (set.has(value)) error(at, `dubblerat ID ${value}`); set.add(value); };
-  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'dealerIdlePolicies', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets', 'dealerTrash'])) throw new StudioValidationError(errors);
+  if (!keys(project, ['schemaVersion', 'revision', 'gameId', 'dealers', 'events', 'triggers', 'lines', 'assets'], 'project', ['idlePolicy', 'dealerIdlePolicies', 'mediaPolicy', 'probePolicy', 'legacyClipPolicy', 'lanes', 'clipLabels', 'layerAssets', 'dealerTrash', 'layerAssetTrash'])) throw new StudioValidationError(errors);
   if (Object.hasOwn(project, 'legacyClipPolicy')) {
     try { validateLegacyClipPolicy(project.legacyClipPolicy); }
     catch (cause) { error('legacyClipPolicy', cause.message); }
@@ -506,6 +506,20 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   if (Object.hasOwn(project, 'dealerIdlePolicies')) {
     try { validateRegisteredIdlePolicies(project.dealerIdlePolicies,project); }
     catch (cause) { error('dealerIdlePolicies', cause.message); }
+  }
+  if (Object.hasOwn(project, 'layerAssetTrash')) {
+    const seen=new Set((project.layerAssets??[]).map(asset=>asset.id));
+    if(array(project.layerAssetTrash,'layerAssetTrash',0,128))for(const entry of project.layerAssetTrash){
+      try{
+        if(!keys(entry,['asset','archivedAt'],'layerAssetTrash'))continue;
+        validateLayerAsset(entry.asset);
+        if(seen.has(entry.asset.id)||typeof entry.archivedAt!=='string'||!Number.isFinite(Date.parse(entry.archivedAt))||new Date(entry.archivedAt).toISOString()!==entry.archivedAt)throw Error();
+        seen.add(entry.asset.id);
+        for(const lane of [...(project.lanes??[]),...(project.dealerTrash??[]).flatMap(row=>row.compositions??[])]){
+          if(['table','background'].some(role=>lane.layers[role].default===entry.asset.id||lane.layers[role].allowed.includes(entry.asset.id)))throw Error();
+        }
+      }catch{error('layerAssetTrash','ogiltig, dubblerad eller fortfarande ansluten lagerfil');}
+    }
   }
   if (Object.hasOwn(project, 'dealerTrash')) {
     const trash = project.dealerTrash, seen = new Set(dealerIds);

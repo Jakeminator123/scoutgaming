@@ -91,7 +91,7 @@ test('library route keeps shared authorization and renders visible usage/removal
   assert.match(html,/id="library-panel-table"[^>]*hidden=""/);
   assert.match(html,/<h3>Hantera bord · 1 filer<\/h3>/);assert.doesNotMatch(html,/<summary>Hantera/);
   assert.match(html,new RegExp(`/control/compositions\\?composition=${project.lanes[0].id}`));
-  assert.match(html,/disabled="">Ta bort ur biblioteket/);assert.match(html,/Spara bibliotek/);
+  assert.match(html,/Flytta till papperskorgen/);assert.match(html,/Papperskorg · 0/);assert.match(html,/Spara bibliotek/);
 });
 
 test('upload callback advances CAS baseline while preserving removal drafts and synchronously blocks save',()=>{
