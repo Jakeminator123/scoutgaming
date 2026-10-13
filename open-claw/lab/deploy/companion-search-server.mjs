@@ -92,12 +92,23 @@ export function createSearchService({ directory, key, enabled = true, now = Date
   return { search, close: () => db.close() };
 }
 
-export function createSearchServer({ token, ...options }) {
-  const service = createSearchService(options); let active = 0;
+export function createSearchServer({ token, dashboardHandoff, ...options }) {
+  const service = createSearchService(options); let active = 0, handoffActive = false, handoffWindow = 0, handoffCount = 0;
   const send = (res, status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
   const server = createServer(async (req, res) => {
     const received = Buffer.from(req.headers.authorization || ''), expected = Buffer.from(`Bearer ${token}`);
     if (!token || received.length !== expected.length || !timingSafeEqual(received, expected)) { req.resume(); send(res, 401, result('unauthorized')); return; }
+    if (req.method === 'POST' && req.url === '/dashboard' && !req.headers.origin && typeof dashboardHandoff === 'function') {
+      req.resume();
+      if (Number(req.headers['content-length'] || 0) !== 0 || req.headers['transfer-encoding']) { send(res,400,{error:'openclaw_dashboard_unavailable'}); return; }
+      if (Date.now() > handoffWindow) { handoffWindow=Date.now()+60000; handoffCount=0; }
+      if (handoffActive || ++handoffCount > 6) { send(res,429,{error:'openclaw_dashboard_busy'}); return; }
+      handoffActive=true;
+      try { send(res,200,await dashboardHandoff()); }
+      catch { send(res,503,{error:'openclaw_dashboard_unavailable'}); }
+      finally { handoffActive=false; }
+      return;
+    }
     if (req.method !== 'POST' || req.url !== '/search' || req.headers.origin) { req.resume(); send(res, 400, result('invalid_request')); return; }
     if (active >= 2) { req.resume(); send(res, 429, result('busy')); return; }
     active++;

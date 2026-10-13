@@ -1,58 +1,47 @@
 # Aktuell handoff — Scoutgaming
 
-## Tillägg 13 oktober: ägarkontroll före agentmerge
+## OpenClaw direkt från N1, 13 oktober 2026
 
-`AGENTS.md` kräver nu aktuell PR-författare, källrepo, branchägare och fryst
-head före varje agentmerge. Jakobs generella mergeuppdrag gäller hans egna
-PR:ar. Kevin-/John-/Emil-brancher, annan författare eller okänd ägare kräver
-en tydlig separat fråga med PR och head, även när Jakobs konto öppnade PR:en.
-Ett redan givet direkt godkännande gäller samma oförändrade PR/head.
-Detta är en agentregel; GitHubs vanliga mergeknapp får ingen egen popup.
-Vid inventeringen hade GitHub 47 brancher, varav 39 sidobranchers commits
-fanns på main. Automatisk branchradering var avstängd. Ingen fjärrbranch
-eller GitHub-behörighet har ändrats genom denna inventering.
+Kod i codex/openclaw-access. /admin/ai/models och /control/openclaw visar
+registrerade agentroller och deras skilda uppgifter; det är inte trafikstatistik.
+Direktöppning använder aktuell N1-session → Vercel → Director → befintlig privat
+helper på Gatewayport 18790 → den låsta OpenClaw-CLI:ns dashboard --json.
+Endast dess kortlivade engångsbootstrap skickas till webbläsaren; CLI:ns gamla
+lösenordsfält kastas bort. Varken nya credentials eller fria kommandon införs.
+Native Gateway behåller lösenord, device-identitet och egen beständig
+webbläsarsession. Sajtens logout återkallar inte den native-sessionen.
 
-### Läsande röst- och läppsynkjämförelse
+Driftsättning kräver Gateway (ny helperfil i befintlig image), Director
+(ny POST-operation) och Vercel (N1-knapp/API). Gateway → Director → Vercel
+är lämplig ordning. Blueprinten open-claw/lab/render.yaml har
+autoDeployTrigger: off för båda Render-tjänsterna, alltså manuell deploy
+enligt repo. Samordnaren verifierade även live att båda har autoDeploy off
+i workspace tea-d19jsa63jp1c73ch0sc0, version 19c44902. Gamla kombinationer kan inte utfärda länken och visar
+ett tydligt fel. Efteråt ska en ny webbläsarprofil med N1 testas från knappen
+utan lösenord/terminal, följt av partner/spelar/utloggad nekad åtkomst.
+Ingen liveändring, omstart eller credentialsrotation utförd i denna gren.
 
-Jämförelsen är fryst på main `54522581`, Kevin `f15b2af1` och
-Kevin-staging `73897d4a`. Kevins Dragge/Paow-karta i
-`kevin/croupier-scoutgg/server/dragge-voice.mjs` anger originalklonerna
-`7f95xPL4S3ySZ4OS1pw8` respektive `WZVEBKUreb9jAKojf0QF`.
-Dragge använder `eleven_multilingual_v2` med stability 0,5, similarity 0,85,
-style 0,15 och speaker boost. Paow använder `eleven_v3` för svenska
-(stability 0,5, similarity 0,85, speaker boost) och annars v2
-(stability 0,38, similarity 0,8, style 0,3, speaker boost).
-Koden normaliserar ljudet till -16 LUFS; transporten är PCM s16le mono 24 kHz.
-Astrid på main använder Cartesia/Victoria, inte dessa ElevenLabs-kloner.
-Staging-katalogen anger uttryckligen att Mårten saknar röst och inspelade
-repliker; han är dold publikt och finns inte i den dynamiska röstkartan.
+Levande katalog kontrollerad läsande: gpt-5.4-mini, gpt-5.6-terra,
+gpt-6-luna och gpt-6-sol. Alla fem rollernas grundval är Terra. Sol 6.1
+saknas i Gatewaykatalogen; Adminrobotens verifierade direktadapter är separat.
+Ingen faktisk användningsfrekvens exponeras av dagens begränsade admin-API.
+Denna separata OpenClaw-förbättring lägger idempotent till Sol 6.1 som
+textmodell i befintlig officiell OpenAI-providerkatalog vid Gatewaydeploy.
+Alla roller, primary/fallback-val, talmodellernas tillåtna val och befintliga
+metadata bevaras. Ny katalogpost betyder inte att ett Gatewayanrop har lyckats:
+samordnaren provar ett syntetiskt operatoranrop efter deploy före modellbyte.
 
-Kevins stagingväg spelar läppsynk över rörliga klipp: 24 fps, tagning/ruta
-och läpprektangel, 0,22 s ljudförsprång i kartan och 0,5 s H.264-fragment.
-Den separat hänvisade staging-workern kunde inte läsas med vår
-GitHub-anslutning (404); dess implementation och image är inte verifierade.
-Kevin har också en alternativ alltid varm pod utan vår 60-sekunders
-inaktivitetssläckning. Det är separata drift- och spelarkontrakt.
+Verifiering: full hook 3 298 tester, 3 287 godkända, 11 miljöberoende skips,
+0 fel. Admin/Studio-produktionsbygget passerade. 47 fokuserade tester godkända för N1/CSRF/revokering, fasta mål,
+bootstrapvalidering, hemlighetsprojektion, helpergränser och UI-navigering.
+Den officiella CLI:n verifierades via källan för låsta v2026.9.5; det riktiga
+container-till-webbläsarflödet återstår efter driftsättning.
 
-Main använder den gemensamma kompositorn och videons ljudklocka, utan separat
-tidsstyrt munlager. Dealerprofiler har egen provider/röst/modell/språk/tuning
-och hashbunden videoreferens. Aktivering kräver en stillbildsreferens,
-serverägda profil-/bildrevisioner och worker-attestering med protokoll 3;
-en motion-video-kandidat i Studio är inte aktiverat stöd för stagingvägen.
-Paows språkberoende modellbyte följer inte automatiskt med från Kevin.
 
-24 isolerade profil-/runtime-/ElevenLabs-tester passerade. De använde mockad
-leverantörsaccess, inte betald TTS eller visuell läppsynkacceptans.
-`ENVIRONMENT-VARIABLES.md` anger, från kontrollen 12 oktober, Kevins Pro-
-workspace som driftens originalröstkälla och avstängd dealerprofilaktivering.
-Det är dokumentation, inte färsk live-verifiering: Render CLI läste tjänstens
-metadata, men SSH stängdes innan flagg-/röstläsningen kördes och Render-MCP
-svarade INVALID_ARGUMENT. Namnsökning i ElevenLabs-kopplingen gav andra
-röster och bevisar inte åtkomst till originalklonerna. Nycklar, flaggor,
-media, GPU-jobb och produktion ändrades inte.
 ## Adminroboten och separata chattlägen, 13 oktober 2026
 
-Kod i PR #82, ännu inte driftsatt. Knappen finns på publik sajt,
+PR #82 mergad som b76510af; GitHub CI och Vercel-preview godkända.
+Vercels modellanslutning saknas ännu och hanteras separat av samordnaren. Knappen finns på publik sajt,
 admin/Studio, partner och spelarsidor. Scoutguiden använder Luna 6 och statisk
 publik kunskap. Inloggad N1 kan välja Adminroboten eller OpenClaw med Sol 6.1/high.
 Klippassistenten behåller sitt separata importflöde; dealerspelchatten och den
@@ -66,6 +55,13 @@ Via befintlig Director på Render läses Gatewaystatus och modellkatalog.
 OpenClaw-läget kan föreslå modellbyte för en befintlig roll till en katalogmodell.
 Renderkontots loggar/diskfiler, nya Gatewayverktyg, fri SQL och
 bakgrundsövervakning är inte anslutna. Ingen generell molnkontobehörighet tilldelas.
+
+Vercel-production för #82 är nu READY och befintlig N1-inloggning visar de
+interna chattlägena; oinloggat adminanrop ger 401. Adapterrättningen använder
+sajtens befintliga OPENAI_API_KEY för officiella OpenAI-API:t när separat
+modellnyckel saknas. Opt-in och explicit separat nyckel behåller företräde.
+Riktade prov kontrollerar att nyckeln aldrig följer med till en egen API-bas.
+Modellsvar ska verifieras efter adapterrättningens deployment.
 
 Tillåtna förslag: arkivera/återställa dealer, material, bolag eller rum; öppna/
 stänga rum; namnbyte på dealer/material/sammansättning; separat permanent
@@ -1921,3 +1917,58 @@ ur trädet. Ingen ny plats är känd.
 ## 4. Äldre avsnitt
 
 Äldre avsnitt: `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
+
+## Tillägg 13 oktober: ägarkontroll före agentmerge
+
+`AGENTS.md` kräver nu aktuell PR-författare, källrepo, branchägare och fryst
+head före varje agentmerge. Jakobs generella mergeuppdrag gäller hans egna
+PR:ar. Kevin-/John-/Emil-brancher, annan författare eller okänd ägare kräver
+en tydlig separat fråga med PR och head, även när Jakobs konto öppnade PR:en.
+Ett redan givet direkt godkännande gäller samma oförändrade PR/head.
+Detta är en agentregel; GitHubs vanliga mergeknapp får ingen egen popup.
+Vid inventeringen hade GitHub 47 brancher, varav 39 sidobranchers commits
+fanns på main. Automatisk branchradering var avstängd. Ingen fjärrbranch
+eller GitHub-behörighet har ändrats genom denna inventering.
+
+### Läsande röst- och läppsynkjämförelse
+
+Jämförelsen är fryst på main `54522581`, Kevin `f15b2af1` och
+Kevin-staging `73897d4a`. Kevins Dragge/Paow-karta i
+`kevin/croupier-scoutgg/server/dragge-voice.mjs` anger originalklonerna
+`7f95xPL4S3ySZ4OS1pw8` respektive `WZVEBKUreb9jAKojf0QF`.
+Dragge använder `eleven_multilingual_v2` med stability 0,5, similarity 0,85,
+style 0,15 och speaker boost. Paow använder `eleven_v3` för svenska
+(stability 0,5, similarity 0,85, speaker boost) och annars v2
+(stability 0,38, similarity 0,8, style 0,3, speaker boost).
+Koden normaliserar ljudet till -16 LUFS; transporten är PCM s16le mono 24 kHz.
+Astrid på main använder Cartesia/Victoria, inte dessa ElevenLabs-kloner.
+Staging-katalogen anger uttryckligen att Mårten saknar röst och inspelade
+repliker; han är dold publikt och finns inte i den dynamiska röstkartan.
+
+Kevins stagingväg spelar läppsynk över rörliga klipp: 24 fps, tagning/ruta
+och läpprektangel, 0,22 s ljudförsprång i kartan och 0,5 s H.264-fragment.
+Den separat hänvisade staging-workern kunde inte läsas med vår
+GitHub-anslutning (404); dess implementation och image är inte verifierade.
+Kevin har också en alternativ alltid varm pod utan vår 60-sekunders
+inaktivitetssläckning. Det är separata drift- och spelarkontrakt.
+
+Main använder den gemensamma kompositorn och videons ljudklocka, utan separat
+tidsstyrt munlager. Dealerprofiler har egen provider/röst/modell/språk/tuning
+och hashbunden videoreferens. Aktivering kräver en stillbildsreferens,
+serverägda profil-/bildrevisioner och worker-attestering med protokoll 3;
+en motion-video-kandidat i Studio är inte aktiverat stöd för stagingvägen.
+Paows språkberoende modellbyte följer inte automatiskt med från Kevin.
+
+24 isolerade profil-/runtime-/ElevenLabs-tester passerade. De använde mockad
+leverantörsaccess, inte betald TTS eller visuell läppsynkacceptans.
+`ENVIRONMENT-VARIABLES.md` anger, från kontrollen 12 oktober, Kevins Pro-
+workspace som driftens originalröstkälla och avstängd dealerprofilaktivering.
+Det är dokumentation, inte färsk live-verifiering: Render CLI läste tjänstens
+metadata, men SSH stängdes innan flagg-/röstläsningen kördes och Render-MCP
+svarade INVALID_ARGUMENT. Namnsökning i ElevenLabs-kopplingen gav andra
+röster och bevisar inte åtkomst till originalklonerna. Nycklar, flaggor,
+media, GPU-jobb och produktion ändrades inte.
+
+Efter Jakobs uttryckliga godkännande 13 oktober raderades 38 mergade
+featurebrancher via GitHub API efter ny head-/ancestrykontroll. Kevin,
+Kevin-staging, John, Emil, parkerade och pågående brancher bevarades.

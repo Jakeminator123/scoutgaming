@@ -20,12 +20,15 @@ export function dealerImportSelectedModel(intent = 'mapping') {
 
 export function dealerImportModelConfiguration(env = process.env) {
   if (env.CROUPIER_DEALER_IMPORT_AI !== '1') return null;
-  const apiKey = env.OPENCLAW_MODEL_API_KEY?.trim();
   const api = env.OPENCLAW_MODEL_API || 'openai-responses';
-  if (!apiKey || /[\r\n]/.test(apiKey)
-    || !['openai-responses', 'openai-completions'].includes(api)) return null;
+  if (!['openai-responses', 'openai-completions'].includes(api)) return null;
   let base; try { base = new URL(env.OPENCLAW_MODEL_BASE_URL || 'https://api.openai.com/v1'); } catch { return null; }
   if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash) return null;
+  // Reuse the site's existing OpenAI key only for the official API. An explicit
+  // provider key (including an empty one) still overrides this fallback.
+  const official = base.href.replace(/\/$/, '') === 'https://api.openai.com/v1';
+  const apiKey = (env.OPENCLAW_MODEL_API_KEY ?? (official ? env.OPENAI_API_KEY : undefined))?.trim();
+  if (!apiKey || /[\r\n]/.test(apiKey)) return null;
   return Object.freeze({ apiKey, api, endpoint: `${base.href.replace(/\/$/, '')}/${api === 'openai-responses' ? 'responses' : 'chat/completions'}` });
 }
 

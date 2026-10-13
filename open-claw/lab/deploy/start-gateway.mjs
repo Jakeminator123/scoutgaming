@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { dashboardOrigin, planGatewayConfig, requireGatewaySecrets, gatewayAuthenticationKey } from './gateway-config.mjs';
 import { syncRuntimeBundle } from './runtime-bundle.mjs';
 import { createSearchServer, openAiSearchKey } from './companion-search-server.mjs';
+import { issueDashboardHandoff } from './dashboard-handoff.mjs';
 
 const OPENCLAW_ENTRY = '/app/openclaw.mjs';
 
@@ -165,7 +166,7 @@ async function main() {
   console.info(`Croupier runtime bundle: ${JSON.stringify(bundle)}`);
   // Private helper: existing credential, no native tools or public ingress.
   const search = createSearchServer({ directory: gatewayEnv.OPENCLAW_STATE_DIR,
-    token: gatewayEnv.OPENCLAW_GATEWAY_PASSWORD, key: openAiSearchKey(gatewayEnv, config),
+    token: gatewayEnv.OPENCLAW_GATEWAY_PASSWORD, dashboardHandoff: () => issueDashboardHandoff(gatewayEnv), key: openAiSearchKey(gatewayEnv, config),
     enabled: gatewayEnv.LAB_COMPANION_WEB_ENABLED !== 'false' && gatewayEnv.LAB_COMPANION_ENABLED !== 'false' });
   search.on('error', () => console.error('Private companion search listener is unavailable.'));
   search.listen(18790, '0.0.0.0', () => console.info('Private companion search ready on 18790; budget 5 SEK/hour.'));

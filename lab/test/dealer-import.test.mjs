@@ -183,6 +183,19 @@ test('provider configuration requires deliberate Studio opt-in and rejects unsup
   assert.equal(Object.hasOwn(dealerImportModelConfiguration(env), 'model'), false);
 });
 
+test('existing OpenAI key is used only for the official opted-in endpoint', () => {
+  const existing = { CROUPIER_DEALER_IMPORT_AI:'1', OPENAI_API_KEY:'fixture-existing-openai-key' };
+  assert.equal(dealerImportModelConfiguration(existing).apiKey, existing.OPENAI_API_KEY);
+  assert.equal(dealerImportModelConfiguration(existing).endpoint, 'https://api.openai.com/v1/responses');
+  assert.equal(dealerImportModelConfiguration({ ...existing, CROUPIER_DEALER_IMPORT_AI:'0' }), null);
+  assert.equal(dealerImportModelConfiguration({ ...existing, OPENCLAW_MODEL_API_KEY:'' }), null);
+  assert.equal(dealerImportModelConfiguration({ ...existing, OPENCLAW_MODEL_API_KEY:'fixture-specific' }).apiKey, 'fixture-specific');
+  for (const base of ['https://provider.example/v1','https://api.openai.com.example/v1','https://api.openai.com/other','https://api.openai.com:444/v1'])
+    assert.equal(dealerImportModelConfiguration({ ...existing, OPENCLAW_MODEL_BASE_URL:base }), null);
+  assert.equal(dealerImportModelConfiguration({ ...existing, OPENAI_API_KEY:'bad\nkey' }), null);
+  assert.equal(dealerImportModelConfiguration({ ...existing, OPENCLAW_MODEL_BASE_URL:'https://api.openai.com/v1/' }).apiKey, existing.OPENAI_API_KEY);
+});
+
 test('chat completion providers use the configured API and reject tool calls', async () => {
   const configuration = dealerImportModelConfiguration({ ...env, OPENCLAW_MODEL_API: 'openai-completions' }), body = input([file('idle.webm')]), catalog = dealerImportCatalog(createSeedProject());
   const result = await askDealerImportModel(configuration, body, catalog, { fetchImpl: async (url, options) => {

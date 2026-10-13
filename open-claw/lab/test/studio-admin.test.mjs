@@ -108,7 +108,7 @@ test('Director admin route requires distinct server Gateway credential even on l
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await rm(dataDir, { recursive:true, force:true }); });
   const url = `http://127.0.0.1:${server.address().port}${STUDIO_OPENCLAW_ADMIN_PATH}`;
-  for (const credential of ['', 'synthetic-runtime-key']) for (const method of ['GET', 'PATCH']) {
+  for (const credential of ['', 'synthetic-runtime-key']) for (const method of ['GET', 'PATCH', 'POST']) {
     const response = await fetch(url, { method, headers:{ Authorization:`Bearer ${credential}`, ...(method === 'PATCH' ? { 'Content-Type':'application/json' } : {}) }, ...(method === 'PATCH' ? { body:JSON.stringify(patch) } : {}) });
     assert.equal(response.status, 401); assert.equal(calls, 0);
   }
@@ -120,4 +120,14 @@ test('Director admin route requires distinct server Gateway credential even on l
   settings.gatewayKey = key;
   settings.apiToken = key;
   assert.equal((await fetch(url, { headers:{ Authorization:`Bearer ${key}` } })).status, 503); assert.equal(calls, 1);
+});
+
+
+test('dashboard opens only through the fixed private helper and projects no legacy credentials',async()=>{
+ const token='synthetic-bootstrap-token-'.repeat(2), expiresAtMs=Date.now()+590000;let calls=0;
+ const admin=createStudioOpenClawAdmin({fetchImpl:async(url,options)=>{calls++;assert.equal(url.href,'http://private-gateway:18790/dashboard');assert.equal(options.method,'POST');assert.equal(options.headers.Authorization,'Bearer synthetic-key');assert.equal(options.redirect,'error');return Response.json({bootstrapToken:token,expiresAtMs,password:'PRIVATE'});}});
+ const settings={baseUrl:'http://private-gateway:18789/v1',gatewayKey:'synthetic-key'};
+ assert.deepEqual(await admin.dashboard({version:1,action:'dashboard.open'},settings),{bootstrapToken:token,expiresAtMs});
+ for(const baseUrl of ['https://public.invalid/v1','http://foreign.invalid/v1','http://private-gateway/v1?x=1'])await assert.rejects(admin.dashboard({version:1,action:'dashboard.open'},{...settings,baseUrl}),/openclaw_dashboard_unavailable/);
+ await assert.rejects(admin.dashboard({version:1,action:'dashboard.open',command:'shell'},settings),/openclaw_admin_invalid_request/);assert.equal(calls,1);
 });

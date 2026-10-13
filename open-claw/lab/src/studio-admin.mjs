@@ -1,4 +1,6 @@
 import { OpenClawAdminError, withGatewayAdminRpc } from './gateway-rpc.mjs';
+import { validDashboardHandoff, validDashboardRequest } from './dashboard-handoff-contract.mjs';
+import { boundedJson } from './openclaw.mjs';
 
 export const STUDIO_OPENCLAW_ADMIN_PATH = '/api/studio/openclaw/admin';
 export const CROUPIER_ADMIN_AGENTS = Object.freeze(['croupier-director', 'croupier-chat', 'croupier-operator', 'croupier-social', 'croupier-speech']);
@@ -41,11 +43,28 @@ function snapshot(input, version) {
       ? input.configRevisionHash === input.appliedConfigHash : null }, agents, models:[...models.values()].sort((a, b) => a.id.localeCompare(b.id)) };
 }
 
-/** Finite model-only surface. Neither providers, auth, tools nor arbitrary RPC are writable. */
-export function createStudioOpenClawAdmin({ rpc = withGatewayAdminRpc, now = Date.now } = {}) {
+/** Finite model edits plus a separate native owner dashboard handoff.
+ * Provider/auth/tool configuration and arbitrary RPC remain unavailable here. */
+export function createStudioOpenClawAdmin({ rpc = withGatewayAdminRpc, now = Date.now, fetchImpl = fetch } = {}) {
   let writing = false;
   return Object.freeze({
     get(settings) { return rpc(settings, async connection => snapshot(await connection.call('config.get'), connection.version)); },
+    async dashboard(input, settings) {
+      if (!validDashboardRequest(input)) fail();
+      try {
+        const url = new URL(settings.baseUrl);
+        if (url.protocol !== 'http:' || url.username || url.password || url.search || url.hash
+          || !/^(?:[a-z0-9-]+(?:\.internal)?|127\.0\.0\.1|\[::1\])$/i.test(url.hostname)
+          || !['/', '/v1', '/v1/'].includes(url.pathname) || !settings.gatewayKey?.trim() || /[\r\n]/.test(settings.gatewayKey)) throw Error();
+        url.port='18790'; url.pathname='/dashboard';
+        const response = await fetchImpl(url, { method:'POST', redirect:'error', cache:'no-store', signal:AbortSignal.timeout(25000),
+          headers:{ Authorization:'Bearer '+settings.gatewayKey.trim() } });
+        if (!response.ok) { await response.body?.cancel(); throw Error(); }
+        const value = await boundedJson(response, 4096);
+        if (!validDashboardHandoff(value,now())) throw Error();
+        return { bootstrapToken:value.bootstrapToken, expiresAtMs:value.expiresAtMs };
+      } catch { fail('openclaw_dashboard_unavailable',503); }
+    },
     async patch(input, settings) {
       const patch = validateOpenClawAdminPatch(input);
       if (writing) fail('openclaw_admin_conflict', 409);

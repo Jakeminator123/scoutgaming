@@ -14,7 +14,7 @@ function load(file, overrides = {}, globals = {}) {
   const source = readFileSync(new URL(file, import.meta.url), 'utf8');
   const output = transformSync(source, { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const module = { exports: {} };
-  vm.runInNewContext(output.code, { module, exports: module.exports, Request, AbortController, AbortSignal,
+  vm.runInNewContext(output.code, { module, exports: module.exports, Request, AbortController, AbortSignal, URL, URLSearchParams,
     fetch() { throw new Error('Unexpected real fetch'); }, ...globals,
     require: name => overrides[name] ?? (name.endsWith('.module.css') ? { __esModule: true, default: {} }
       : name === '../lib/openclaw-dashboard.mjs' ? dashboard : name === '../lib/lab-url.mjs' ? labUrls : require(name)) });
@@ -24,7 +24,7 @@ const { OpenClawWorkspace } = load('./openclaw-workspace.tsx');
 const render = props => renderToStaticMarkup(React.createElement(OpenClawWorkspace, props));
 
 function harness(fetchImpl) {
-  const hooks = []; const pending = []; const listeners = new Map(); let cursor = 0;
+  const hooks = []; const pending = []; const listeners = new Map(); const navigations=[]; let cursor = 0;
   const fakeReact = { ...React,
     useState(initial) { const index = cursor++; if (!(index in hooks)) hooks[index] = typeof initial === 'function' ? initial() : initial;
       return [hooks[index], next => { hooks[index] = typeof next === 'function' ? next(hooks[index]) : next; }]; },
@@ -32,11 +32,11 @@ function harness(fetchImpl) {
     useEffect(fn, deps) { const index = cursor++; const old = hooks[index];
       if (!old || deps.some((value, i) => value !== old.deps[i])) pending.push(() => { old?.cleanup?.(); hooks[index] = { deps, cleanup: fn() }; }); },
   };
-  const window = { addEventListener: (type, fn) => listeners.set(type, fn),
+  const window = { location:{assign:value=>navigations.push(value)}, addEventListener: (type, fn) => listeners.set(type, fn),
     removeEventListener: (type, fn) => { if (listeners.get(type) === fn) listeners.delete(type); } };
   const component = load('./openclaw-workspace.tsx', { react: fakeReact }, { fetch: fetchImpl, window }).OpenClawWorkspace;
   return {
-    listeners,
+    listeners, navigations,
     render() { cursor = 0; return component({}); },
     effects() { while (pending.length) pending.shift()(); },
     unmount() { for (const hook of hooks) hook?.cleanup?.(); },
@@ -210,7 +210,7 @@ test('unmount aborts pending reads and prevents a late response from changing st
 
 test('initial render uses existing Studio login, native advanced link and makes no connection claim or request', () => {
   const html = render();
-  assert.ok(html.includes(`href="${dashboard.OPENCLAW_DASHBOARD_URL}"`));
+  assert.match(html, /Öppna OpenClaws egen dashboard/);
   assert.match(html, /Studio-inloggning/);
   assert.match(html, /Hämtar inställningar/);
   assert.doesNotMatch(html, /<iframe|type="password"|type="hidden"|Gateway använder|bekräftad|Render-konsolen/);
@@ -220,14 +220,15 @@ test('clip policy remains in Studio and advanced dashboard keeps browser-approva
   const html = render();
   assert.match(html, /dealerns klipp och regler/);
   assert.ok(html.includes(`href="${labUrls.labUrl('/')}"`));
-  assert.match(html, /befintliga webbläsargodkännande/);
+  assert.match(html, /utan lösenord eller terminalkommando/);
+  assert.match(html, /egen webbläsarsession/);
   assert.doesNotMatch(html, /Starta om|Stoppa Gateway/);
 });
 
 test('invalid explicit dashboard is not replaced with the default or reflected', () => {
   const html = render({ dashboardUrl: 'https://user:secret@bad.invalid/?token=secret' });
   assert.match(html, /role="alert"/);
-  assert.doesNotMatch(html, /Öppna OpenClaw-dashboard|bad.invalid|token=secret|user:secret/);
+  assert.doesNotMatch(html, /Öppna OpenClaws egen dashboard|bad.invalid|token=secret|user:secret/);
 });
 
 test('page authorizes request before rendering and never fetches project or video state', async () => {
@@ -247,4 +248,18 @@ test('page authorizes request before rendering and never fetches project or vide
     '@/components/openclaw-workspace': { OpenClawWorkspace },
   });
   await assert.rejects(denied.default(), /denied/);
+});
+
+
+test('dashboard button obtains a fresh N1 handoff before navigating and never renders the credential',async()=>{
+ const bootstrapToken='a'.repeat(48),browserUrl=dashboard.OPENCLAW_DASHBOARD_URL+'#'+new URLSearchParams({bootstrapToken,bootstrapProfile:'owner',gatewayUrl:'wss://croupier-lab-director.onrender.com/openclaw'});
+ let calls=0;const h=await started(async(url,init)=>{calls++;if(init.method==='GET')return reply(before());assert.equal(init.method,'POST');assert.deepEqual(JSON.parse(init.body),{version:1,action:'dashboard.open'});return reply({browserUrl,expiresAtMs:Date.now()+590000});});
+ const open=nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0];
+ open.props.onClick();await flush();view(h);assert.equal(calls,2);assert.deepEqual(h.navigations,[browserUrl]);assert.doesNotMatch(html(h),new RegExp(bootstrapToken));h.unmount();
+});
+test('dashboard never follows foreign or expired handoff URL and explains a missing deployed helper',async()=>{
+ for(const value of [{browserUrl:'https://evil.invalid/#token=secret',expiresAtMs:Date.now()+50000},{browserUrl:dashboard.OPENCLAW_DASHBOARD_URL,expiresAtMs:0},{error:'openclaw_dashboard_unavailable'}]) {
+  const h=await started(async(url,init)=>init.method==='GET'?reply(before()):reply(value,value.error?503:200));
+  nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0].props.onClick();await flush();view(h);assert.equal(h.navigations.length,0);assert.match(html(h),/role="alert"/);assert.doesNotMatch(html(h),/evil.invalid|token=secret/);h.unmount();
+ }
 });

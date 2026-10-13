@@ -1,3 +1,4 @@
+import { validDashboardHandoff, validDashboardRequest, dashboardBrowserUrl } from '../../open-claw/lab/src/dashboard-handoff-contract.mjs';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { CROUPIER_ADMIN_AGENTS, validateOpenClawAdminPatch, validAdminHash } from '../../open-claw/lab/src/studio-admin.mjs';
 import { normalizeStudioRole } from './studio-access-policy.mjs';
@@ -8,7 +9,7 @@ import { resolve, basename } from 'node:path';
 
 const DIRECTOR = 'https://croupier-lab-director.onrender.com';
 const ENDPOINT = '/api/studio/openclaw/admin';
-const SAFE_ERRORS = new Set(['openclaw_admin_not_configured', 'openclaw_admin_device_not_configured', 'openclaw_admin_pairing_required',
+const SAFE_ERRORS = new Set(['openclaw_dashboard_unavailable', 'openclaw_admin_not_configured', 'openclaw_admin_device_not_configured', 'openclaw_admin_pairing_required',
   'openclaw_admin_scope_required', 'openclaw_admin_version_mismatch', 'openclaw_admin_unavailable', 'openclaw_admin_save_uncertain',
   'openclaw_admin_conflict', 'openclaw_admin_model_unavailable', 'openclaw_admin_invalid_request']);
 const fail = (statusCode, code = 'openclaw_admin_unavailable') => { throw Object.assign(new Error(code), { statusCode, code }); };
@@ -67,13 +68,15 @@ export function createOpenClawAdminApi({ config, authorize, settings = settingsN
       const url = new URL(request.url);
       const paths = config.apiBase === '/studio/api/admin' ? ['/studio/api/openclaw/admin', '/api/openclaw/admin'] : ['/api/openclaw/admin'];
       if (!paths.includes(url.pathname)) fail(404, 'studio_request_rejected');
-      if (!['GET', 'PATCH'].includes(request.method)) return json({ error:'openclaw_admin_invalid_request' }, 405, { Allow:'GET, PATCH' });
+      if (!['GET', 'PATCH', 'POST'].includes(request.method)) return json({ error:'openclaw_admin_invalid_request' }, 405, { Allow:'GET, PATCH, POST' });
       const actor = principal(await authorize(request), config);
       let body;
-      if (request.method === 'PATCH') {
+      if (['PATCH','POST'].includes(request.method)) {
         if (request.headers.get('origin') !== url.origin || !['same-origin', 'none'].includes(request.headers.get('sec-fetch-site'))) fail(403, 'studio_request_rejected');
         if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type') || '')) fail(415, 'openclaw_admin_invalid_request');
-        body = validateOpenClawAdminPatch(await boundedJson(request));
+        const input = await boundedJson(request);
+        if (request.method === 'POST') { if (!validDashboardRequest(input)) fail(400,'openclaw_admin_invalid_request'); body={version:1,action:'dashboard.open'}; }
+        else body = validateOpenClawAdminPatch(input);
         if (principal(await authorize(request), config).user !== actor.user) fail(403, 'studio_request_rejected');
       }
       const current = settings();
@@ -86,8 +89,14 @@ export function createOpenClawAdminApi({ config, authorize, settings = settingsN
       catch { fail(503, request.method === 'PATCH' ? 'openclaw_admin_save_uncertain' : 'openclaw_admin_unavailable'); }
       let value; try { value = await boundedJson(response); } catch { fail(503, request.method === 'PATCH' ? 'openclaw_admin_save_uncertain' : 'openclaw_admin_unavailable'); }
       if (!response.ok) {
+        if (request.method === 'POST' && [404,405].includes(response.status)) fail(503,'openclaw_dashboard_unavailable');
         const status = [400,409,422,503].includes(response.status) ? response.status : 503;
         fail(status, SAFE_ERRORS.has(value?.error) ? value.error : 'openclaw_admin_unavailable');
+      }
+      if (request.method === 'POST') {
+        if (principal(await authorize(request),config).user !== actor.user) fail(403,'studio_request_rejected');
+        if (!validDashboardHandoff(value)) fail(503,'openclaw_dashboard_unavailable');
+        return json({ browserUrl:dashboardBrowserUrl(value), expiresAtMs:value.expiresAtMs });
       }
       return json(projection(value, request.method));
     } catch (error) {
