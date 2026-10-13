@@ -55,3 +55,7 @@ __pycache__/
 # Canonical local recovery archive; only the empty folder marker is versioned.
 /arkiv/*
 !/arkiv/.gitkeep
+
+# Per-checkout inbox identity; account email and local paths stay off GitHub.
+/inbox/local-device.json
+/inbox/local-device.json.*.tmp

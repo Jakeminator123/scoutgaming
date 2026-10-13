@@ -10,7 +10,9 @@ and `till:<name>`. People and their branches are in `inbox/people.json`
 (jakob → main, john → john, kevin → kevin, emil → emil). Requires `gh auth login`.
 
 - Ask someone: `node tools/inbox.mjs ping --to kevin --message "Fråga"`; show the returned link.
-- Read what is addressed to the owner of this checkout: `node tools/inbox.mjs list --to me`.
+- Device recipients: `jakob-bgvp01j` is Jakobs laptop; `jakob-dator2` is Jakobs stationdata. Their shared owner stays Jakob.
+- Register this checkout once with `node tools/inbox.mjs register --device <alias> --email <verified-ChatGPT-email>`; hostname and repo path are automatic. Use `identity` to inspect the local, Git-ignored registration. Never copy its file between computers or guess another account's email.
+- Read this device's inbox: `node tools/inbox.mjs list --to me`. Without registration, `me` falls back to the branch owner. `list --to jakob` still reads Jakob's shared person inbox.
 - Reply in the thread: `node tools/inbox.mjs reply <nummer> --message "Svar"`.
 - Close only issues you opened yourself: `node tools/inbox.mjs done <nummer>`.
 - Decisions carry `--decision`; answer with row number and letter.

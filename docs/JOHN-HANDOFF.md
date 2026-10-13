@@ -22,6 +22,29 @@ Adminroboten. D-ID accepterar produktionsdomänen och nekar testadressen;
 verifiering av riktig avatar och produktionssidornas laddning återstår vid
 publicering. Ingen ny D-ID-agent eller testnyckel skapades.
 
+## Teaminbox: Jakobs laptop och stationdata, 13 oktober
+
+`jakob-bgvp01j` adresserar Jakobs laptop och `jakob-dator2` Jakobs stationdata
+via separata GitHub-etiketter. Båda tillhör Jakob; personregistret och
+grenägarskapet är oförändrade. `tools/inbox.mjs register --device <alias>
+--email <ChatGPT-mejl>` sparar datorns konto, värdnamn och automatiskt avlästa
+reposökväg endast i gitignorerade `inbox/local-device.json`.
+
+`list --to me` använder registrerad dator, annars den tidigare grenägaren.
+Avsändarnamnet visar datorn; konto och sökväg publiceras inte i GitHub.
+En profil från fel dator/sökväg stoppas med instruktion att registrera igen.
+Regressionsprov täcker separata etiketter, gemensam personägare, båda datorernas
+routning, profilbyte, felaktiga/kopierade profiler och meddelandets visningsnamn.
+Verifierat: 12/12 inboxtester passerar. Laptopens lokala registrering och
+gitignorering är kontrollerade; båda datorernas GitHub-etiketter finns och
+`list --to me` läser laptopens inbox. Inget testmeddelande har skickats.
+Full ordinarie kontrollkedja: 3 415 godkända, 11 skips, 0 fel i 72 grupper.
+De versionslåsta beroendena i `packages/design-preview` behövde installeras
+efter main-synkningen; inga beroende- eller låsfiler ändrades. Jakob har
+uttryckligen godkänt leverans via `codex/inbox-devices` och PR-merge efter gröna kontroller.
+Den andra datorn behöver synka ändringen och registrera sitt eget konto enligt
+`inbox/README.md`. Ingen automatisk väckning eller bakgrundspollning införs.
+
 ## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
 
 Integrerad med main `60defa57` inför PR92-granskningen. Endast denna handoff
