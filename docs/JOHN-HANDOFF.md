@@ -13,9 +13,10 @@ försvinner. Ingen spel-, publicerings- eller databaslogik ändras.
 Verifierat i isolerad byggd adminvy: startsidan visar endast vägvalen, länken
 till ekonomin öppnar den fungerande diagramvyn och Översikt återgår hem.
 Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
-runtimebindningstester passerar. Full regressionshook passerar med 3 119
-godkända, 11 överhoppade och 0 fel. PR-kontroller och produktionsvisning
-återstår efter push respektive merge.
+runtimebindningstester passerar. Efter sammanslagning med senaste `main`
+passerar full regressionshook med 3 170 godkända, 11 överhoppade och 0 fel;
+typkontroll och bygge passerar också på samma revision. PR-kontroller och
+produktionsvisning återstår efter push respektive merge.
 
 ## Tillägg 13 oktober: roulettefack och alfa för Anna-prov
 
