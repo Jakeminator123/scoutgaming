@@ -23,7 +23,11 @@ Två på varandra följande UI-rundor kördes utan omladdning i faktisk spelarko
 med riktig frozen-capture och offentliga preview-/room-läsare men isolerad
 SQLite och lokala mediebytes: **33 svart, sedan 6 svart**, testsaldo 500 → 495
 → 500 USD. Det är inte en livepublicering eller godkännande av kompletta
-spelfilmer. Hjulstart, exakt kula/37 utfall och korrigerade hjulsiffror återstår.
+spelfilmer. Det tidigare basprovet saknade hjulstart och utfallsanimation.
+Fortsättningen ritar nu exakta 37 hjulsiffror från motorns `WHEEL` och en
+separat kula som under nio sekunder landar i serverkvittots fack. Annas
+placering och MP4-filen är oförändrade. [Kalibrering, tester och kvarvarande
+sekretessgräns](UTFALLSFILMER.md#exakt-rotor-och-en-kula-i-den-riktiga-spelaren).
 Bakgrund och Anna fortsätter mellan rundorna; en valfri variant startar tidigast
 efter tre basloopar och inte under en pågående serverbegäran.
 

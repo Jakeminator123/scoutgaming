@@ -323,3 +323,14 @@ i ordinarie fulla pre-commit. De provar alla 37 slutnummer vid flera
 startvinklar, fångat fack under inbromsning, kontinuitet, två efterföljande
 spelningar, reducerad rörelse, dold flik, mediafel och långsam scenstart.
 Mänsklig rörelsebedömning och ett separat accepterat Anna-handkast återstår.
+
+Slutkontroll av `07b33c4f`: full pre-commit 3392 pass, 0 fail, 11 skip.
+I faktisk spelare med oförändrat Anna-/MP4-manifest gick två rundor efter
+omladdning i följd: **30 röd, 2 svart**. Saldo 495 → 490 → 495 USD;
+varje runda hade en insats på 5 USD och ett unikt kvitto. Första kvittot gav
+ingen payout, andra 10 USD. Slutkulan låg i motsvarande fack. Inga fångade
+browserfel/varningar. Två skärmbilder och `anna-wheel-two-rounds-evidence.json`
+sparades privat i samma roulette-stop-mapp. Den tidigare rundan 19 i samma
+testserver föregick omladdningen och ingår inte i dessa två slutrundor.
+Detta verifierar lokal produktkod med isolerad databas, inte driftsatt
+produktionspublicering eller ett mänskligt slutgodkännande av rörelsen.

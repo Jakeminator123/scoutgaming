@@ -18,7 +18,12 @@ pending/reveal återstår. Inga produktionskonton eller publiceringar ändrade.
 
 Fokuserat: 14 tester gröna (alla 37 utfall, kontinuerlig bana, två rundor,
 sen scenladdning, stängning, renderingsfel och kvittots visningsordning).
-Slutlig full regression och browserbevis dokumenteras efter leveranskontrollen.
+Full pre-commit för `07b33c4f`: 3392 pass, 0 fail, 11 skip.
+Efter omladdning kördes två sammanhängande faktiska UI-rundor: 30 röd,
+sedan 2 svart; saldo 495 → 490 → 495 USD i isolerad SQLite. Kula och
+resultat stämde vid landning; inga browservarningar/fel observerade.
+Privata bevis: `anna-wheel-final-round-1.png`, `anna-wheel-final-round-2.png`
+och `anna-wheel-two-rounds-evidence.json` under samma roulette-stop-mapp.
 Kalibrering och avgränsningar: docs/games/roulette/UTFALLSFILMER.md.
 
 ## Anna i roulettespelaren, 13 oktober — codex/roulette-anna-binding
