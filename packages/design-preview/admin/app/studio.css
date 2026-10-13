@@ -25,7 +25,7 @@
 .studio-material-controls fieldset button + button {margin-left:8px}
 .studio-material-controls [role=alert] {color:#ff7a59}
 .studio-material-controls [role=status] {color:#d6ff3a}
-@media(max-width:600px){.studio-material-controls > :is(section,details) > ul > li,.studio-material-controls details > ul > li {grid-template-columns:minmax(0,1fr)}.studio-material-controls li > button {grid-column:1;grid-row:auto;justify-self:start;margin-top:6px}}
+@media(max-width:600px){.studio-material-controls > :is(section,details) > ul > li,.studio-material-controls details > ul > li {display:block}.studio-material-controls li > strong {display:block}.studio-material-controls li > button {display:block;margin-top:8px}}
 
 .react-flow__controls-button:hover {
   background: #2c2e32;

@@ -17,7 +17,7 @@ Efter #55/c8f9b99 gav verkliga projekt-/videoanrop 200 men katalogen 422 med san
 
 34 riktade tester använder verkliga serialiserade frysta paket, admin/publickatalog och spelstart: oförändrade bytes/data och befintliga grants, samt oförsvagad publiceringsassert. Ingen DB-, schema- eller mediemutation. PR #67 är mergad som 027ceb03; Vercel och Render har verifierats på exakt version. Faktisk adminläsning av katalog, projekt och videoregister samt publik bolags- och rumslista svarar 200. Nordic Bet Roulette (room-1bc1b407-9538-9ae8-f7e2-fecf951989a2) har katalogvarningen med det sparade Blackjack-bordet Back to Basic; både dess och Blackjack in Snows befintliga playUrl/published/playable består. De fem originalborden avkodades åter från det skyddade produktionsbiblioteket. Detta är ett läskvitto, inte nytt media- eller läppsynksgodkännande.
 
-Materiallistor och papperskorg i admin får separat enkel styling med tydliga rader, knappar, tangentbordsfokus och mobilanpassning. Samma befintliga kontroller och API används; inga nya mutationer eller ändrade regler. Ekonomi- och anslutna tjänsteytor ägs av den parallella ekonomichatten och ingår inte här.
+Materiallistor och papperskorg i admin får separat enkel styling med tydliga rader, knappar, tangentbordsfokus och mobilanpassning. Mobilrader följer naturlig DOM-ordning: filnamn, hänvisningar, därefter åtgärd. Samma befintliga kontroller och API används; inga nya mutationer eller ändrade regler. Ekonomi- och anslutna tjänsteytor ägs av den parallella ekonomichatten och ingår inte här.
 
 ## SIDOR3: fem separata bord och förenad papperskorg, 13 oktober
 
@@ -122,15 +122,34 @@ projektvägen får inte kringgå materialens livscykelkontroll.
 
 Synliga gamla Mobile Phone Lane-namn i biblioteksreferenser och speltitel
 visas som Standardsammansättning. Det interna `mobile-phone`-ID:t behålls.
-Rensning av återstående Your Company-varianter är inte utförd: de har
-referenser som nu kan visas och hanteras i det nya bekräftelseflödet.
+Your Company-rensningen är utförd i produktion den 13 oktober: bakgrund
+`c0035fc4-cb47-45dc-83de-adb44c14e9fd` flyttades via `/admin/assets` och
+`6cd2bf56-4d42-4c7b-848a-087398b38563` via `/control/library`. Varje färsk
+påverkanskontroll visade endast Standardsammansättning och inga publicerade
+spelrum. Båda vyerna återlästes efter omladdning: 10 aktiva bakgrunder och
+två återställbara poster i papperskorgen. Enda kvarvarande aktiva varianten
+är `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4`, tidigare provspelad till slut
+(10,041667 sekunder utan videofel). De sex nya bild-/videofilerna och
+PAOW · Studios val av Studio · turkos bevarades. Ingen permanent radering.
 
-Integration: materialpapperskorgen förhandlar runtime **v11**. PR #55 förenar
-nu v10 `dealerSets: 'authoring-categories-v1'` och v11 med både dealerSets och
-materialTrash, inklusive readiness-/kontraktstester. Nya `/admin` återanvänder
-samma serverkontrakt. PR #60 är fortsatt en fristående Control-leverans tills
-den förenade PR #55 driftsätts. Ingen Neon-migration krävs. Detta tillägg är
-kodleverans, inte bevis på driftsättning.
+Integration: PR #60 är mergad som `d595e6b7`, och PR #55 förenar samma
+papperskorg med nya `/admin` i `c8f9b99b`. Main-CI och båda driftsättningarna
+är verifierade för `c8f9b99b`. Render annonserar runtime **v11**, med både
+`dealerSets: 'authoring-categories-v1'` och `materialTrash: 'detached-assets-v1'`.
+Ingen Neon-migration krävs. Slutregression för PR #60: 2 988 godkända,
+11 överhoppade, 0 fel; den förenade PR #55: 3 093 godkända, 11 överhoppade,
+0 fel samt passerat Lab-produktionsbygge och admin-typkontroll.
+
+Katalogregressionen efter PR #55 rättades i PR #67, mergad som `027ceb03`.
+En ny materialregel hade slagit ut läsningen av historiskt publicerade rum.
+Befintliga spelrum och behörigheter bevaras; inkompatibla material får en
+adminvarning och nya publiceringar valideras fortsatt strikt. MERGE verifierade
+57/57 main-CI-steg, www/Vercel READY och Render LIVE/version på exakt
+`027ceb03`, health 200 och bibehållna v11-förmågor. Publik bolagskatalog och
+Nordic Bets två rum svarade 200; admin catalog/project/videos svarade också
+200. Rensningen ovan skedde därefter under ett samordnat stabilt releasefönster.
+Varningen för Nordic Bet Roulette gäller Back to Basic-materialets blackjacktagg;
+historiska publiceringar och frysta PAOW-paket ändrades inte av denna rättning.
 
 Verifiering: riktade server-/UI-tester för bekräftelse, samtidiga ändringar,
 tenantgränser, återställning, skyddad historik och full rollback; Lab-
@@ -209,7 +228,9 @@ visuell acceptans i rehearsal återstår tills bakgrunderna används där.
 
 Efter separat instruktion från Jakob togs den oanvända
 `background-ditt-spelbolag`-posten `800eb6ee-9e55-40c1-9757-159694422dd2`
-ur biblioteket. Tre andra varianter är fortsatt refererade och bevarade.
+ur biblioteket. Vid den första inventeringen bevarades tre andra varianter;
+den senare verifierade rensningen ovan flyttade `c0035fc4` och `6cd2bf56`
+till återställbar papperskorg. Endast `e98f61ca` är nu aktiv och valbar.
 Jakob valde uttryckligen borttagning av `paow3`: rummet
 `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e` arkiverades genom ordinarie
 API, togs ur den aktiva strukturen och avpublicerades i Nordic Bet-paket
@@ -217,8 +238,8 @@ version 8. Rouletterummet är kvar. Demo North/South återfanns endast i
 diagnostiska fixtures, inte bland de registrerade bolagen.
 AGENTS anger nu `/admin` och `/lobby` som riktning, med befintliga ytor
 kvar under övergången. Den begärda gemensamma papperskorgen för samtliga
-resurstyper fortsätter i tillägget ovan; `/admin`-integrationen och faktisk
-driftsättning ska verifieras separat.
+resurstyper beskrivs i tillägget ovan. `/admin`-integrationen och driften är
+verifierade på `027ceb03`, inklusive riktig flytt och återläsning i båda ytorna.
 
 ## Tillägg 13 oktober: samlade spelmanualer
 
