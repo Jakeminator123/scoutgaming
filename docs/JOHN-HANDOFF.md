@@ -2496,9 +2496,51 @@ produktionsdata. Bolag & team öppnades i Admin och Dealers → Dragan → impor
 behöll rätt dealer. Det senaste filväljarprovet avbröts när webbläsarverktyget
 slutade svara; det är inte ett godkänt uppladdningsprov. Testservern är avslutad.
 30-filers chattimport har verifierats med injicerad uppladdning, inklusive oklara
-fack och förlorade kvitton. Verklig Blob-uppladdning med Jakobs filer och
-spelacceptans återstår efter release av både Studio och Render-runtime.
+fack och förlorade kvitton. Produktionsproven nedan ersätter den tidigare
+luckan för verklig Blob-uppladdning; spelacceptans är fortfarande separat.
 Systemkartan har ingen röd inventeringsavvikelse. Befintliga gula bevisluckor
 är kvar. GitGuardian på main 982d541f: aktiv övervakning, 0 öppna och 17
 ignorerade incidenter; check-suite queued, historik too_large och platsmetadata
 delvis ofullständig. Ingen incidentstatus eller produktionskonfiguration ändras.
+
+**Produktionsprov efter PR #102, 13 oktober:** main `bfbfaf4a` är verifierad
+på både Vercel och Render med capability v14. De tolv återanvända verktygen
+öppnas under `/admin` och behåller Dragan-kontext. Sammansättningsvyn visar
+en befintlig varning om ett inaktivt Amira-val; ingen sådan mall ändrades.
+`lab/` är fortsatt aktiv källkod och har inte tagits bort.
+
+Jakob gav uttryckligt undantag för ett avgränsat produktionsprov med
+`Adminprov 2026-10-13`. Skapa → papperskorg → återställ → papperskorg är
+verifierat efter omladdning. Provdealern ligger kvar återställbar i
+papperskorgen med noll klipp och inga rumskopplingar.
+
+Dragan har nu **21 klipp**: de 14 befintliga samt sju nya alternativ från
+Kevins `f15b2af1`. Sex sparades tillsammans med ett OK i dealerimporten;
+`v2/pos2.mp4` sparades direkt genom Adminrobotens importuppdrag utan extra
+godkännandesteg. Samtliga sju filhashar, dealerbindningar, privata Blobobjekt
+och exakta fack verifierades i färskt register. Ett nytt klipp spelades till
+slut i bibliotekets förhandsvisning utan mediafel. Ingen spelpublicering,
+vald grundloop eller visuell loop-/läppsynksacceptans ändrades.
+
+De elva MP4-filerna i Jakobs angivna skrivbordsmapp matchar redan sparade
+produktionsfiler och dubblerades inte. Den privata ZIP-kopian från Kevin
+innehåller 206 filmer, fem bilder, tre JSON-filer samt källmanifest med
+gren, commit, exakta reposökvägar och SHA-256. Alla 214 källfiler verifierades
+mot Git och det färdiga arkivet. ZIP och produktionskvitton ligger i denna
+chats privata artefakter, utanför Git.
+
+Proven hittade två navigeringsfel: föreslagen röst räknades som osparad
+ändring även i ett orört formulär; avslutad import lämnade en spärr på grund
+av samtalshistoriken när nästa Admin-verktyg krävde ny sidladdning. Den
+avgränsade uppföljningen skiljer verkliga utkast från förslag och sparad
+historik. Pågående uppladdning, osparade filer och ändrade talprofiler ska
+fortfarande skyddas. Ny livekontroll krävs efter att uppföljningen släppts.
+
+Uppföljningen är integrerad med main `6a9be6d2`. De 52 talformulärsproven
+och 30 import-/routingproven passerar; nya felregressioner var först röda.
+Slutbygget, 96 byggspår och Admin/Lobby-typkontrollen passerar. Läsgranskning
+har inga kvarvarande fynd. Full ordinarie regression körs av commit-hooken.
+Senaste säkerhetsläsningen på denna main har queued GitGuardian-suite och
+incident-API HTTP 429; aktuell incidenttäckning är därför ofullständig.
+Den tidigare fullständiga läsningen på `bfbfaf4a` gav 0 öppna/17 ignorerade,
+aktiv övervakning, historik too_large och delvis ofullständig platsmetadata.

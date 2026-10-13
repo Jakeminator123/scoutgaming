@@ -131,12 +131,15 @@ async function importAssistantHarness(dealers=catalog.dealers,props={},options={
   if(props.props||props.request){options={...options,request:props.request};props=props.props??{};}
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
-  const helpers=await import('./dealer-import.mjs'),module={exports:{}},slots=[],effects=[];let cursor=0;
+  const helpers=await import('./dealer-import.mjs'),module={exports:{}},slots=[],effects=[],cleanups=[];let cursor=0;
+  const windowListeners=new Map(),documentListeners=new Map(),prompts=[];
+  const events=listeners=>({addEventListener:(type,listener)=>listeners.set(type,listener),removeEventListener(type,listener){if(listeners.get(type)===listener)listeners.delete(type);}});
+  const runtimeWindow={...events(windowListeners),location:new URL('https://admin.test/admin/dealers?dealer=dragan&tool=import'),confirm:message=>{prompts.push(message);return options.confirm?.(message)??true;}};
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
-    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(initial){return slots[cursor++]??={current:initial}},useEffect(effect,deps){const i=cursor++;if(!slots[i]||deps.some((dep,j)=>dep!==slots[i][j])){slots[i]=deps;effects.push(effect);}}};
+    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(initial){return slots[cursor++]??={current:initial}},useEffect(effect,deps){const i=cursor++;if(!slots[i]||deps.some((dep,j)=>dep!==slots[i][j])){slots[i]=deps;effects.push(()=>{cleanups[i]?.();cleanups[i]=effect();});}}};
   const source=readFileSync(new URL('../components/studio/dealer-import-assistant.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'});
-  runInNewContext(output.code,{module,exports:module.exports,AbortController,URL,URLSearchParams,crypto:globalThis.crypto,window:{addEventListener(){},removeEventListener(){},confirm:()=>true},document:{addEventListener(){},removeEventListener(){}},
-    fetch:options.request??(async(path)=>Response.json(options.response?.(path)??{...catalog,dealers,limits:{...catalog.limits,maxFiles:30},provider:{configured:false}})),require:name=>name==='react'?react
+  runInNewContext(output.code,{module,exports:module.exports,AbortController,URL,URLSearchParams,crypto:globalThis.crypto,window:runtimeWindow,document:events(documentListeners),setTimeout,
+    fetch:options.request??(async(path,init)=>Response.json(options.response?.(path,init)??{...catalog,dealers,limits:{...catalog.limits,maxFiles:30},provider:{configured:false}})),require:name=>name==='react'?react
       :name.includes('upload-native-video.mjs')?{uploadNativeVideo(){throw Error('no upload expected')}}
       :name.includes('media-upload-batch.mjs')?{uploadMediaBatch:options.uploadMediaBatch??(()=>{throw Error('no upload expected')})}
       :name.includes('dealer-import.mjs')?helpers:require(name)});
@@ -144,7 +147,10 @@ async function importAssistantHarness(dealers=catalog.dealers,props={},options={
   const all=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
   const settle=async()=>{for(let i=0;i<4;i++){render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));}};
   await settle();
-  return {props,settle,flush:settle,nodes:predicate=>all(render(),predicate),html:()=>renderToStaticMarkup(render())};
+  const dispatch=(listeners,type,details={})=>{const event={defaultPrevented:false,preventDefault(){this.defaultPrevented=true;},stopPropagation(){},...details};listeners.get(type)?.(event);return event;};
+  return {props,settle,flush:settle,nodes:predicate=>all(render(),predicate),html:()=>renderToStaticMarkup(render()),prompts,
+    navigate:href=>dispatch(windowListeners,'studio:before-navigate',{detail:{href}}),unload:()=>dispatch(windowListeners,'beforeunload'),
+    click:href=>dispatch(documentListeners,'click',{target:{closest:()=>({href:new URL(href,runtimeWindow.location.href).href,target:'',dataset:{},closest:()=>({})})}})};
 }
 test('import recovery and dealer links keep the selected registered dealer in Admin',async()=>{
   const h=await importAssistantHarness();h.nodes(node=>node.type==='select')[0].props.onChange({target:{value:'nora'}});
@@ -199,6 +205,31 @@ test('one explicit OK saves exact dealer and slots after preflight; duplicate cl
   assert.equal(batches.length,1);assert.equal(batches[0][0].classification.dealerId,'dragan');
   assert.equal(batches[0][0].classification.situation,'box0');assert.equal(batches[0][0].classification.role,'alternative');
   assert.match(h.html(),/1 av 1 filer sparades hos Dragan/);assert.match(h.html(),/Sparad i valt fack/);
+});
+
+test('a completed import keeps its receipt and chat but releases document navigation; new unsent text is protected',async()=>{
+  const h=await importAssistantHarness([{id:'dragan',label:'Dragan'}],{requestedDealerId:'dragan'},{confirm:()=>false,
+    response:(path,init)=>path.endsWith('/api/videos')?{uploadMode:'private-client-blob'}:init?.body?{dealerId:'dragan',intent:'mapping',source:'filename-rules',assistantMessage:'Kartläggningen är klar.',rows:JSON.parse(init.body).files.map(file=>({fileId:file.id,slotId:catalog.slots[0].id,reason:'Exakt fack',confidence:'high'}))}:undefined,
+    uploadMediaBatch:async(prepared,{onChange})=>{for(const {row} of prepared)onChange(row.id,{state:'saved'});return prepared.length;},
+  });
+  addVideo(h);placeVideo(h);h.nodes(node=>node.type==='button'&&[].concat(node.props.children).includes('Sortera klippen'))[0].props.onClick();await h.settle();
+  assert.match(h.html(),/Kartläggningen är klar/);assert.equal(h.unload().defaultPrevented,true);
+  saveButton(h).props.onClick();await h.settle();assert.match(h.html(),/1 av 1 filer sparades hos Dragan/);assert.match(h.html(),/Kartläggningen är klar/);
+  assert.equal(h.navigate('/admin/videos?dealer=dragan').defaultPrevented,false);assert.equal(h.click('/admin/videos?dealer=dragan').defaultPrevented,false);
+  assert.equal(h.unload().defaultPrevented,false,'completed history must not leave a beforeunload blocker');assert.equal(h.prompts.length,0);
+  h.nodes(node=>node.type==='textarea'&&node.props.placeholder==='Vad är skillnaden mellan vila och redo?')[0].props.onChange({target:{value:'En ny oskickad fråga'}});await h.settle();
+  assert.equal(h.unload().defaultPrevented,true,'the next unsent question restores the existing document-exit guard');
+});
+
+test('an upload in progress blocks internal and document navigation without discarding files',async()=>{
+  let finish;
+  const h=await importAssistantHarness([{id:'dragan',label:'Dragan'}],{requestedDealerId:'dragan'},{response:path=>path.endsWith('/api/videos')?{uploadMode:'private-client-blob'}:undefined,
+    uploadMediaBatch:(prepared,{onChange})=>new Promise(resolve=>{finish=()=>{for(const {row} of prepared)onChange(row.id,{state:'saved'});resolve(prepared.length);};}),
+  });
+  addVideo(h);placeVideo(h);saveButton(h).props.onClick();await h.settle();
+  for(const path of ['/admin/dealers','/admin/videos'])assert.equal(h.navigate(path).defaultPrevented,true);
+  assert.equal(h.unload().defaultPrevented,true);assert.equal(h.prompts.length,0);assert.match(h.html(),/dragan-box1.mp4/);
+  finish();await h.settle();assert.equal(h.unload().defaultPrevented,false);
 });
 
 test('a changed slot meaning at preflight cannot be approved by an earlier OK',async()=>{
