@@ -586,6 +586,7 @@ Main `426fa114` är integrerad; central-/admin-målkontrakt och tidigare
 rouletteformat är bevarade vid konfliktlösningen.
 
 Fullständig aktuell pre-commit-kontroll passerar på `c3055fc0` (Node 24.21.0).
+Även den slutliga manualintegrationen `40926297` passerar hela hooken.
 29 roulettekontroller och isolerad browser på 1440/390/320 px passerar:
 Mer-dialoger, fokus, placering/ångra, synligt saldofel och historik. Tappat
 svar följt av omladdning/återförsök gav samma requestId/version/bets,
