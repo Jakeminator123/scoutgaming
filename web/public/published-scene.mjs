@@ -154,7 +154,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       if (settings) {
         scene = sceneForComposition(settings,layout,{
           dealer:Boolean(dealer), background:Boolean(background), table:Boolean(table), cards:false,
-        },compositing ? {...compositing,mode:'composite',enabled:true} : undefined);
+        },compositing ? {...compositing,mode:'composite',enabled:compositing.mode!=='alpha'} : undefined);
         const moduleUrl = '/composition-runtime/compositor.js';
         const [runtime] = await Promise.all([
           import(/* webpackIgnore: true */ moduleUrl),

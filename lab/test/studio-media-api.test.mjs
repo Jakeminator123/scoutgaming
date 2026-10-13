@@ -10,6 +10,29 @@ import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
 import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
 import { negotiatePresentationCapabilityVersion, presentationCapabilitiesForVersion, PRESENTATION_CAPABILITY_VERSION_HEADER } from '../../web/presentation-capability-contract.mjs';
 
+test('native classify blocks alpha and roulette on v11 before SQL, bytes or transaction admission',async()=>{
+  for(const change of [{compositing:{mode:'alpha'}},{kind:'action',eventId:'roulette.wheel-start',situation:'wheel-start',game:'roulette',action:'wheel-start',startPose:'VILA',endPose:'WHEEL'}]){
+    const f=await fixture(),before=f.pool.calls.length;let bytes=0,admissions=0;
+    const repository=wrapNativePresentationRepository(f.repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.fixture.invalid'},fetchImpl:async(_url,init)=>{assert.equal(init.headers[PRESENTATION_CAPABILITY_VERSION_HEADER],'12');return Response.json(presentationCapabilitiesForVersion(11));}});
+    const api=createStudioMediaApi({repository,config,authorize:async()=>({user:'Operator',role:'admin',scope}),videoRegistry:async()=>({videos:[]}),videoResponse:async()=>{bytes++;assert.fail('must not fetch bytes');},mutationTransaction:async()=>{admissions++;assert.fail('must not begin SQL');}});
+    const response=await api.handle(request('/studio/api/videos/classify','POST',{id:f.record.id,sha256:f.record.sha256,previous:f.record.classification,metadata:{...f.record.classification,...change}}));
+    assert.equal(response.status,503);assert.equal((await response.json()).code,'studio_presentation_runtime_update_required');
+    assert.equal(bytes,0);assert.equal(admissions,0);assert.equal(f.pool.calls.length,before);assert.equal(f.pool.snapshot().audits.length,1);
+  }
+});
+test('native roulette classify with v12 reuses exact readiness inside SQL and preserves file identity',async()=>{
+  const f=await fixture(),before=f.pool.snapshot();let probes=0;
+  const repository=wrapNativePresentationRepository(f.repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.fixture.invalid'},fetchImpl:async()=>{probes++;return Response.json(presentationCapabilitiesForVersion(12));}});
+  const api=createStudioMediaApi({repository,config,authorize:async()=>({user:'Operator',role:'admin',scope}),videoRegistry:async()=>({videos:await repository.listMedia()}),mutationTransaction:(work,options)=>repository.withMutationContext(work,options.presentationMutation)});
+  const metadata={...f.record.classification,kind:'action',eventId:'roulette.wheel-start',situation:'wheel-start',game:'roulette',action:'wheel-start',startPose:'VILA',endPose:'WHEEL'};
+  const response=await api.handle(request('/studio/api/videos/classify','POST',{id:f.record.id,sha256:f.record.sha256,previous:f.record.classification,metadata}));
+  assert.equal(response.status,200);const row=await repository.getMedia(f.record.id);
+  assert.deepEqual({...row.classification,compositing:undefined},{...metadata,compositing:undefined});
+  assert.equal(row.sha256,f.record.sha256);assert.equal(row.pathname,f.record.pathname);assert.equal(row.size,f.record.size);
+  assert.equal(probes,2,'one outer preflight, one admission probe, none while SQL is active');
+  assert.equal(f.pool.snapshot().audits.length,before.audits.length+1);
+});
+
 test('native classification cannot rewrite a retained original identity or bank family',async()=>{
   const {api,repository,pool}=await fixture(),record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
   await repository.registerMedia(record,{actor:'explicit-import'});const before=pool.snapshot();

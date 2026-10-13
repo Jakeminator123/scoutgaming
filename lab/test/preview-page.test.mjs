@@ -55,7 +55,7 @@ test('Sammansättning edits three saved lane choices and keeps the separated dea
   assert.match(html, /aria-label="Tre lager"/);
   assert.match(html, /<legend>Bord<\/legend>/);
   assert.match(html, /<legend>Bakgrund<\/legend>/);
-  assert.match(html, /Grön bakgrund tas alltid bort/);
+  assert.match(html, /Grön nyckling/);
   assert.doesNotMatch(html, /Fullbildsklippet behåller sin bild/);
   assert.doesNotMatch(html, /Frilagda dealerpaket|lagerprov/);
   assert.match(html, /<button[^>]*disabled[^>]*>Spara<\/button>/);

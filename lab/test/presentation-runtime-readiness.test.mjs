@@ -35,6 +35,43 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+const extendedMedia=[
+  {dealerId:'astrid',compositing:{mode:'alpha'}},
+  {dealerId:'astrid',mediaType:'image'},
+  {dealerId:'astrid',eventId:'roulette.wheel-start',game:'roulette',action:'wheel-start',startPose:'VILA',endPose:'WHEEL',compositing:{mode:'green-screen'}},
+  ...['game','action','startPose','endPose'].map(key=>({dealerId:'astrid',[key]:'unverified'})),
+];
+test('alpha, PNG and every new roulette record field require exact v12 before register/classify',async()=>{
+  for(const metadata of extendedMedia)for(const version of [2,11,12])for(const operation of ['register','classify']){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const write=()=>operation==='register'?f.wrapped.registerMedia({classification:metadata}):f.wrapped.classifyMedia('id',{metadata});
+    if(version===12){await write();assert.equal(f.writes.length,1);}else{await assert.rejects(write(),blocked);assert.equal(f.writes.length,0);}
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'12');
+  }
+});
+test('legacy verified transaction cannot inherit alpha or roulette permissions after SQL begins',async()=>{
+  for(const metadata of extendedMedia){
+    const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version']??2)))});
+    await f.wrapped.withMutationContext(async()=>{
+      await assert.rejects(f.wrapped.registerMedia({classification:metadata}),blocked);
+      await assert.rejects(f.wrapped.classifyMedia('id',{metadata}),blocked);
+    },{metadata:{dealerId:'astrid',compositing:{mode:'green-screen'}}});
+    assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+  }
+  const metadata={dealerId:'astrid',compositing:{mode:'alpha'}};
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(12))});
+  await f.wrapped.withMutationContext(()=>f.wrapped.registerMedia({classification:metadata}),{metadata});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,1);
+});
+test('frozen alpha and roulette media require v12 even when the package format itself is older',async()=>{
+  for(const metadata of extendedMedia.slice(0,3))for(const location of ['idle','playback'])for(const version of [11,12]){
+    const value={schemaVersion:3,registeredDealers:[{id:'astrid',...(location==='idle'?{idle:{classification:metadata}}:{})}],playback:{media:location==='playback'?[{classification:metadata}]:[]}};
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    if(version===12)await f.wrapped.saveDocument('presentation-package',{value});else await assert.rejects(f.wrapped.saveDocument('presentation-package',{value}),blocked);
+    assert.equal(f.writes.length,version===12?1:0);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'12');
+  }
+});
+
 test('authoring sets, including an empty explicit field, require exact v10 before any SQL mutation', async () => {
   for (const dealerSets of [[], [{ id: 'paow3', name: 'PAOW3', dealerId: 'paow-v2', clipIds: [], archived: true }]]) {
     for (const version of [9, 10]) {

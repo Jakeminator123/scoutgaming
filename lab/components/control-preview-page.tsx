@@ -110,10 +110,11 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     const asset=project.layerAssets?.find(row=>row.id===lane.layers[role].default);
     return asset?{url:labUrl(`/api/layer-assets/${asset.id}`),contentType:asset.contentType,label:asset.label}:null;
   }
-  const dealer=localMedia.dealer??(clip?{url:labUrl(clip.previewUrl),label:clipName(clip),contentType:'video/mp4'}:null);
+  const dealer=localMedia.dealer??(clip?{url:labUrl(clip.previewUrl),label:clipName(clip),contentType:clip.classification?.mediaType==='image'?'image/png':clip.fileName?.endsWith('.webm')?'video/webm':'video/mp4'}:null);
   const background=localMedia.background??savedMedia('background'),table=localMedia.table??savedMedia('table');
   const storedCompositing=clip?.classification?.compositing;
-  const compositing=localMedia.dealer?defaultKey:storedCompositing?.mode==='green-screen'?storedCompositing:defaultKey;
+  const [localAlpha,setLocalAlpha]=useState(false);
+  const compositing=localMedia.dealer?(localAlpha?{mode:'alpha' as const}:defaultKey):storedCompositing&&storedCompositing.mode!=='opaque'?storedCompositing:defaultKey;
   const legacyBackground=!localMedia.dealer&&storedCompositing?.mode==='opaque';
   function chooseDealer(id:string){
     if(previewAttempt.current||saving||uploading||!dealers.some(row=>row.id===id))return;
@@ -246,7 +247,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
         <p>Prova VILA-/REDO-bilder och händelseklipp i samma scen. Lokala filer laddas inte upp. Storlek och placering ändrar utkastet; spara uttryckligen för att behålla dem. Du kan växla tillbaka utan att tappa filprovet.</p>
         <fieldset disabled={previewBusy||saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} disabled={role==='background'&&Boolean(lane.backgroundPlayback?.rules.length)} onChange={event=>{if(role==='background'&&lane.backgroundPlayback?.rules.length)return;const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}{lane.backgroundPlayback?.rules.length?<p>Ta bort bakgrundsklippen under Bakgrund innan du döljer bakgrundslagret.</p>:null}</fieldset>
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={previewBusy||saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
-        <details><summary>Klippets greenscreen</summary><p>Grön bakgrund tas alltid bort. Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p><a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>
+        <details><summary>Klippets friläggning</summary>{localMedia.dealer?<label><input type="checkbox" checked={localAlpha} onChange={event=>setLocalAlpha(event.target.checked)}/>Lokalt prov med befintlig alfa · ingen grön nyckling</label>:null}{compositing.mode==='alpha'?<p>Originalets alfa bevaras utan grön nyckling.</p>:<p>Grön nyckling · Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p>}<a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>
         <section aria-label="Snabbprov med tre lokala filer"><h3>Snabbprov med tre lokala filer</h3><div>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" disabled={previewBusy||saving||uploading} accept="image/png,image/jpeg,image/webp,video/mp4,video/webm" onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><p>Dealer: bild eller video, frilagd eller med grön bakgrund. Grönt tas bort bara i dealerlagret. Filens marginaler behålls; stående och liggande källor visas höjdbaserat. Bord och miljö visas separat. Händelseklipp spelas en gång; Spela två gånger kontrollerar upprepning.</p><button className="sg-btn sg-btn-secondary" disabled={!temporary||saving||uploading} onClick={clearLocal}>Till sparade filer</button></section>
       </div></details>
     </div>

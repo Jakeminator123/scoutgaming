@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { PRESENTATION_CAPABILITY_VERSION_HEADER, validatePresentationCapabilities } from '../../web/presentation-capability-contract.mjs';
 import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
+import {extendedDealerMediaFeatures} from '../../web/dealer-media-features.mjs';
 
 export const PRESENTATION_RUNTIME_UPDATE_REQUIRED = 'studio_presentation_runtime_update_required';
 export const PRESENTATION_RUNTIME_UPDATE_MESSAGE = 'Spelservern beh\u00f6ver uppdateras innan presentationen kan sparas. Ditt utkast \u00e4r kvar.';
@@ -12,6 +13,10 @@ const fail = () => { throw new StudioStorageError(PRESENTATION_RUNTIME_UPDATE_RE
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const extraDealer = value => typeof value === 'string' && !baseDealers.has(value);
 function documentFeatures(kind, value) {
+  const media=kind==='presentation-package'
+    ? [...(value?.registeredDealers??[]).map(row=>row?.idle),...(value?.playback?.media??[])]
+      .map(row=>extendedDealerMediaFeatures(row?.classification)) : [];
+  const mediaAlpha=media.some(row=>row.mediaAlpha),rouletteMedia=media.some(row=>row.rouletteMedia);
   const dealers = kind === 'project' && Array.isArray(value?.dealers)
     ? value.dealers.map(row => row?.id).filter(extraDealer)
     : kind === 'administration' && Array.isArray(value?.gameLanes)
@@ -35,13 +40,14 @@ function documentFeatures(kind, value) {
     && [...(Array.isArray(value?.lanes) ? value.lanes : []), ...(Array.isArray(value?.dealerTrash) ? value.dealerTrash : [])
       .flatMap(entry => Array.isArray(entry?.compositions) ? entry.compositions : [])]
       .some(lane => object(lane) && Object.hasOwn(lane, 'backgroundPlayback'));
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash };
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia };
 }
 function mediaFeatures(metadata) {
+  const {mediaAlpha,rouletteMedia}=extendedDealerMediaFeatures(metadata);
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
   const composition = Boolean(object(metadata) && Object.hasOwn(metadata, 'compositing'));
-  return { required: dealers.length > 0 || composition, dealers, composition, generic: dealers.some(id => id !== 'nora'), frozen: false };
+  return { required: dealers.length > 0 || composition || mediaAlpha || rouletteMedia, dealers, composition, generic: dealers.some(id => id !== 'nora'), frozen: false,mediaAlpha,rouletteMedia };
 }
 function mutationFeatures(input) {
   const entries = Array.isArray(input) ? input : [input];
@@ -62,6 +68,8 @@ function mutationFeatures(input) {
     roulette: features.some(value => value.roulette),
     dealerSets: features.some(value => value.dealerSets),
     materialTrash: features.some(value => value.materialTrash),
+    mediaAlpha: features.some(value => value.mediaAlpha),
+    rouletteMedia: features.some(value => value.rouletteMedia),
   };
 }
 function trustedOrigin(env) {
@@ -107,6 +115,8 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.roulette || active.features.roulette)
       && (!features.dealerSets || active.features.dealerSets)
       && (!features.materialTrash || active.features.materialTrash)
+      && (!features.mediaAlpha || active.features.mediaAlpha)
+      && (!features.rouletteMedia || active.features.rouletteMedia)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -120,7 +130,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

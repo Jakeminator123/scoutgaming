@@ -3,7 +3,7 @@
 // Geometry is the canonical 1080x1920 / 24 fps portrait master shared with
 // packages/presentation (Paow catalog) and the layered player; desktop is a crop,
 // never a new camera. Prompts request geometry; they are not acceptance.
-import { dealerMediaSlots } from './dealer-media-library.mjs';
+import { blackjackMediaSlots } from './dealer-media-library.mjs';
 
 export const FORGE_CANVAS = Object.freeze({ width: 1080, height: 1920, fps: 24 });
 export const FORGE_CARD = Object.freeze({ width: 79, height: 106 });
@@ -81,7 +81,7 @@ function eventSlot(slot) {
 
 /** Matrix rows for one dealer: project events (exact slots) plus forge-only pose/transition/layer slots. */
 export function forgeSlots(project) {
-  const fromProject = dealerMediaSlots(project).map(eventSlot);
+  const fromProject = blackjackMediaSlots(project).map(eventSlot);
   const ids = new Set(fromProject.map(slot => slot.id));
   const extras = EXTRA_SLOTS.filter(slot => !ids.has(slot.id)).map(slot => ({ ...slot, fromProject: false,
     // transition slots only become registrable once the saved project carries the event.
