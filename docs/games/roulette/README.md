@@ -6,8 +6,10 @@ före automatisk spelkoppling.
 
 [Genomförandeplan och trackingutredning](UTFALLSFILMER.md#genomförandeplan-säkert-material-först)
 anger nästa steg, jämför OpenCV/Ultralytics/SAM 2 och innehåller en färdig
-fråga till en specialistagent. [Kulprovet](underlag/roulette-stop-test.html)
-är fristående versionshanterad HTML; privata originalfilmer behövs inte för att köra det.
+fråga till en specialistagent. Det gamla [kulprovet](underlag/roulette-stop-test.html)
+bevaras enbart som historiskt geometriprov. Jakob har uttryckligen valt bort det
+som produktionsunderlag. Fortsättningen använder riktiga `/play/roulette` och
+dess befintliga videosystem; se [aktuellt genomförande](UTFALLSFILMER.md#produktionsspår-threejs-och-annas-spelarkoppling).
 
 ## Anna Jonsson: roulettefack, alfa och Runway-prov (13 oktober 2026)
 
@@ -34,7 +36,13 @@ före providersubmission och innan ett genereringsjobb sparas. `videoFitsLine`
 och `videoFitsEvent` avvisar roulette i blackjackens runtime. En roulette-Forge
 kräver eget accepterat rörelse-/geometrikontrakt innan den kan öppnas.
 
-Native privat uppladdning stöder PNG för VILA-referensen och bevarar bytes/hash. `compositing: {mode: "alpha"}` behåller originalets alfa och stänger av grönnycklingen, även på gröna detaljer i dealern. Grön MP4 kan fortfarande väljas som green-screen. En svart bakgrund är inte alfa.
+Metadataformatet beskriver PNG för VILA-referensen, men aktuell native
+prepare-väg avvisar PNG med `studio_media_content_type_unsupported` före grant.
+VILA är därför en lokal bildreferens tills lagringskedjan stöder den; tidigare
+PNG-kvitton är inte bevis för dagens API. WebM-intaget bevarar bytes/hash.
+`compositing: {mode: "alpha"}` behåller originalets alfa och stänger av
+grönnycklingen, även på gröna detaljer i dealern. Grön MP4 kan fortfarande
+väljas som green-screen. En svart bakgrund är inte alfa.
 
 **Ordning vid driftsättning:** nya PNG-/alfa-/roulettefält kräver ett exakt
 v12-svar från Render (`mediaAlpha=png-vp9-v1`, `rouletteMedia=action-pose-slots-v1`).

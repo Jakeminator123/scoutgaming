@@ -1,5 +1,40 @@
 # Aktuell handoff — Scoutgaming
 
+## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
+
+Fortsättning från mergad `6ee5d3aa` i `codex/roulette-anna-runtime`.
+Publicerad preview tappade `compositing: {mode:'alpha'}`; den följer nu med
+från fryst post. V2/v3, exakt byteväg och fortsatt spärr för blackjack-idle
+i roulette är regressionsprovade. Ingen registrering eller publicering ändras.
+
+Den befintliga `tools/roulette-ui-fixture.mjs` kan läsa en förhandsverifierad
+lokal alpha-WebM, MP4-bakgrund och valfri strikt kompositions-JSON. Den kör
+riktiga `/play/roulette`, scenrenderaren och roulettekommandot med SQLite i
+minnet på 127.0.0.2. Fasta fixture-descriptorer ersätter enbart publicerings-
+svaret. Det bevisar inte att Anna redan är registrerad/publicerad i produktion.
+
+Annas andningsfilm (`02700429…1a34`, 897 456 byte) och tidigare gardinfilm
+(`b08fdc4d…1854`, 3 455 652 byte) har visats tillsammans bakom produktens
+roulettebord. Två efterföljande UI-spel återgick till öppna satsningar utan
+omladdning eller loggade JS-fel. Privata hashkvitton, provplacering och
+skärmbild finns i denna chats `roulette-stop`-artefakter. Detta är inte
+acceptans av skarvar, poser, lipsync eller produktionens rumsbindningar.
+
+Full ordinarie pre-commit: **3 329 godkända, 11 skips, 0 fel**, Node 24.21.0;
+17 riktade preview-prov passerar. Underagentens läsande granskning hittade
+ingen försämrad spelavgränsning. GitGuardian: 0 öppna/17 ignorerade incidenter,
+aktiv övervakning, main-suite queued; historikskanningen är too_large och
+platsmetadata delvis ofullständig. Inga incidentstatusar ändras.
+
+Jakob har valt bort det fristående schematiska kulprovet för produktion.
+Uppdaterad plan i `docs/games/roulette/UTFALLSFILMER.md` jämför Three.js och
+den granskade CSS-baserade Gravity.js. Nästa steg kräver explicit sparat
+roulette-idle, fryst kontrakt och readinessgrind; behåll `dealer:null` tills
+hela bindningen finns. Registrering, native-frame-passning, godkänd
+hjulimpuls/kulsläpp, en korrekt 37-facksrotor och serverns pending/reveal
+återstår. PNG-nativeintag är fortfarande spärrat; README:s äldre påstående
+är korrigerat. Inga nya betalda filmer, nya bibliotek eller live-writes.
+
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
 PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen

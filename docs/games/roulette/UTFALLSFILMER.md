@@ -107,7 +107,7 @@ Originalfilerna har inte skrivits över. Proven ändrar ingen spelmotor, publice
 
 ## Genomförandeplan: säkert material först
 
-Planen uppdaterades efter Jakobs uppdrag den 13 oktober att spara, committa och pusha arbetet samt undersöka rörelsespårning. Det fristående [geometriprovet](underlag/roulette-stop-test.html) är nu versionshanterad källkod som går att öppna direkt i en webbläsare. Det kräver inga paket, privata videor, nätanrop eller spelkonto. Original, frilagda filmer och provexporter bevaras privat; deras identiteter finns i [klippkartan](KLIPPKARTA.md#nya-lokala-original-13-oktober).
+Planen uppdaterades efter Jakobs uppdrag den 13 oktober att spara, committa och pusha arbetet samt undersöka rörelsespårning. Det fristående [geometriprovet](underlag/roulette-stop-test.html) är versionshanterat som historiskt underlag, men Jakob har därefter uttryckligen avvisat det för produktion. Det får inte kopplas till spelet, publiceras som spelmaterial eller ersätta den riktiga roulettevyn. Original, frilagda filmer och provexporter bevaras privat; deras identiteter finns i [klippkartan](KLIPPKARTA.md#nya-lokala-original-13-oktober).
 
 | Ordning | Arbete | Klart när |
 | --- | --- | --- |
@@ -119,6 +119,75 @@ Planen uppdaterades efter Jakobs uppdrag den 13 oktober att spara, committa och 
 | 6 | Koppla granskad geometri och 37 mål till fryst presentation och serverns pending/reveal-kontrakt | Isolerade tester för samtliga utfall, saldo/historik, retry/reload och mediefel; mobil/desktop och två riktiga spelprov godkända |
 
 Steg 1 är teknisk förberedelse. Native PNG-lagring är spärrad i den aktuella kodversionen, så VILA stannar som lokal referens. Verklig dealer, bolag, rum och kompositionsrevision måste väljas ur de sparade registren före beständig import. Vi fyller inte luckorna med påhittade UUID:er. Steg 2–6 är kvarvarande implementation/acceptans, inte redan aktiverade funktioner.
+
+## Produktionsspår: Three.js och Annas spelarkoppling
+
+Utgångspunkt är mergad grund `6ee5d3aa`, `/play/roulette` →
+`roulette/scene.mjs` → `published-scene.mjs` → den gemensamma WebGL-kompositorn.
+Lagerordningen förblir bakgrundsvideo → frilagd Anna → roulettebord. Annas
+lobbyteaser är separat material och får inte användas som roulettehandling.
+
+**Rekommendation:** prova Three.js för exakt en kula och vid behov en korrekt
+rotor i samma scen. [Three.js VideoTexture](https://threejs.org/docs/pages/VideoTexture.html)
+kan använda ett befintligt videoelement och
+[WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html) ger en
+3D-renderingsväg. Repot använder redan en lokal Three.js-distribution i
+`web/public/actor-compositor.mjs`; roulettekompositorn använder egen WebGL.
+Återanvänd befintlig version efter kompatibilitetskontroll. Installera inte en
+ny motor eller byt hela scenuppspelningen enbart för kulans skull.
+
+Det finns flera projekt med namnet Gravity.js. Den granskade
+[@idevgames/Gravity-JS](https://idev-games.github.io/Gravity-JS/) beskriver
+CSS-/DOM-kroppar och kollisioner. Den löser inte vår kamerapassning,
+videoocklusion eller exakta slutposition. Valet av Three.js är en
+arkitekturbedömning, inte ett färdigt eller prestandamätt rouletteutfall.
+
+Kulan behöver en granskad kamera, radie, hjulplan, 37 korrekta fack, djupmask
+för hjulkanten och en tidsbestämd bana. Samma dekoder/tidsbas ska bära Annas
+kropp och händer. Fri fysiksimulering får aldrig välja ett annat nummer än
+servern. Utfall får inte skickas i förväg bara för att renderaren behöver det;
+pending/reveal-kontraktet ovan måste omfatta hela klientens insyn.
+
+### Verifierat material och nästa implementation
+
+- Andningsfilmen och glasögon-v2 med verifierad alfa finns. Ingen ny betald
+  film har genererats i denna fortsättning. Hjulimpuls, exakt kulsläpp och
+  godkända återgångar till VILA återstår; gamla felaktiga handtagningen ersätter
+  inte dessa. De 37 slutlägena är ännu inte färdiga spelmedier.
+- Ett fel i publicerad preview är rättat: `alpha` följer nu med från den
+  frysta posten till klienten, precis som `green-screen`. Regressionen provar
+  v2/v3, bytehämtning och att samma persons blackjack-idle fortfarande nekas
+  i roulette. Det tillför ingen automatisk roulettebindning.
+- `tools/roulette-ui-fixture.mjs` kan nu ta `--dealer-video <alpha.webm>`,
+  `--background-video <background.mp4>` och valfria
+  `--scene-settings <composition.json>`. Filerna ska vara förhandsverifierade;
+  verktyget mäter hash/storlek men verifierar inte alfa eller visuell kvalitet.
+  Det kör produktens riktiga roulettekod med SQLite i minnet på 127.0.0.2.
+  Descriptorerna är fixturer: provet går inte genom verklig import/publicering.
+- Anna har visats bakom produktens roulettebord tillsammans med befintlig
+  gardin-MP4. Bakgrunden har SHA256
+  `b08fdc4da326534d6e5e1c448f5da364ebf373c1a581eb96e3e64e24666c1854`,
+  3 455 652 byte. Andningsfilmens hash finns i klippkartan. Två efterföljande
+  testspel återgick till öppna satsningar utan omladdning eller loggade JS-fel.
+  Detta godkänner inte poseövergångar, lipsync, loopskarvar eller livepublicering.
+
+Provplaceringen sparas privat som `anna-player-settings-unapproved.json`.
+Standardplaceringen gömde den breda Anna-filen bakom bordet: renderaren
+använder fortfarande en 1080×1920-aktöryta. Den tillfälliga kompositionen
+kompenserar för detta matematiskt; den är inte godkänd hand-/hjulkalibrering.
+Bakgrundens 2206×946 beskärs med befintlig cover-passning. Lås samma utsnitt
+för stillposter före skarpa bakgrundsbyten.
+
+Nästa fullständiga kodsteg är ett **explicit sparat roulette-idle-val per
+registrerad dealer**, separat från `idle.ready`. Det måste gå genom
+projektvalidering, UI, fryst paketvalidering/capture, rumskompatibilitet och
+paketsammanslagning samt versions-/readinessgrind och previewns byteväg.
+Nya mediepreconditions måste förenas med befintliga playback-preconditions;
+dagens `events?.mediaPreconditions ?? captured.mediaPreconditions` får inte
+tappa rouletteposterna. En inventariefil eller ett mänskligt namn är ingen
+publiceringsauktoritet. Spelarvyn behåller därför `dealer:null` för roulette
+tills en egen fryst bindning finns. Därefter väljs faktiskt sparad Anna,
+bolag och rum, med två sammanhängande riktiga rehearsal-spel före acceptans.
 
 ## Kan Ultralytics eller Python hjälpa?
 
