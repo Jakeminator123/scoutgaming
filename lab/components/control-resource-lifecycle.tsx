@@ -65,7 +65,7 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
     if(intent.kind==='operator' ? intent.id!==operatorId || (intent.archived ? operator.status!=='active' : !operator.archivedAt)
       : !room || (intent.kind==='room' ? intent.archived ? !room.canArchive : !room.canRestore : operator.status!=='active'||Boolean(room.archivedAt)))return;
     const action=intent.kind==='operator'?'operator-lifecycle':intent.kind==='room'?'room-lifecycle':'room-state';
-    const body=intent.kind==='operator'?{operatorId,archived:intent.archived,expectedPackageRevision:operator.packageRevision}
+    const body=intent.kind==='operator'?{operatorId,archived:intent.archived,expectedPackageRevision:operator.packageRevision,expectedAdministrationRevision:snapshot.administrationRevision}
       :{operatorId,roomId:intent.id,expectedAdministrationRevision:snapshot.administrationRevision,expectedPackageRevision:room!.packageRevision,...(intent.kind==='state'?{state:intent.state}:{archived:intent.archived})};
     const confirmsIntent=(value:unknown)=>{
       const target=value as Partial<Operator & Room>|null;
@@ -82,7 +82,7 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
       const response=await fetch(endpoint+action,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json'},body:JSON.stringify(body)});
       const result=await response.json().catch(()=>null);
       const target=intent.kind==='operator'?result?.operator:result?.room;
-      const administrationConfirmed=intent.kind==='operator'||typeof result?.administrationRevision==='string'&&Boolean(result.administrationRevision)&&result.administrationRevision!==snapshot.administrationRevision;
+      const administrationConfirmed=typeof result?.administrationRevision==='string'&&Boolean(result.administrationRevision)&&(intent.kind==='operator'||result.administrationRevision!==snapshot.administrationRevision);
       const packageConfirmed=revision(result?.packageRevision)&&result.packageRevision===(intent.kind==='state'?body.expectedPackageRevision:(body.expectedPackageRevision??0)+1);
       if(!response.ok||result?.ok!==true||!confirmsIntent(target)||!administrationConfirmed||!packageConfirmed)throw Error(result?.code==='studio_presentation_runtime_update_required'?'Spelmotorn behöver uppdateras innan bolag eller spelrum kan ändras.':response.status===409?'Uppgifterna har ändrats eller ett beroende hindrar åtgärden. Läs in aktuella uppgifter och försök igen.':'Ändringen kunde inte bekräftas. Läs in aktuella uppgifter innan du försöker igen.');
       if(ticket!==epoch.current)return;
@@ -90,7 +90,7 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
       const nextOperator=value.operators.find(row=>row.id===operatorId);
       const nextTarget=intent.kind==='operator'?nextOperator:value.rooms.find(row=>row.id===intent.id&&row.operatorId===operatorId);
       if(!nextOperator||nextOperator.packageRevision!==result.packageRevision||!confirmsIntent(nextTarget)||nextTarget?.archivedAt!==target.archivedAt
-        ||(intent.kind!=='operator'&&(value.administrationRevision!==result.administrationRevision||nextTarget?.packageRevision!==result.packageRevision)))throw Error('Ändringen är sparad men aktuella uppgifter kunde inte bekräftas. Uppdatera vyn innan du fortsätter.');
+        ||value.administrationRevision!==result.administrationRevision||(intent.kind!=='operator'&&nextTarget?.packageRevision!==result.packageRevision))throw Error('Ändringen är sparad men aktuella uppgifter kunde inte bekräftas. Uppdatera vyn innan du fortsätter.');
       if(ticket!==epoch.current)return;
       setSnapshot(value);setIntent(null);setStale(false);callbacks.current.onChanged?.(value);
       setNotice(intent.kind==='state'?(intent.state==='live'?'Spelrummet är öppet.':'Spelrummet är pausat.'):intent.archived?intent.name+' är arkiverat.':intent.kind==='room'?'Rummet är återställt och pausat. Öppna det när det är klart.':'Bolaget är återställt.');
@@ -99,33 +99,33 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
   }
   if(!available)return null;
   if(!operatorId)return problem?<p role="alert">{problem} <button type="button" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Försök igen</button></p>:null;
-  return <section className={styles.panel} aria-label={kind==='rooms'?'Bolagets spelrum':'Bolagets arkiv'}>
-    <header className={styles.heading}><div><p className={styles.eyebrow}>{kind==='rooms'?'BOLAGETS SPELUTBUD':'HANTERA BOLAG'}</p><h2>{kind==='rooms'?'Spelrum':'Arkivera & återställ'}</h2></div>
+  return <section className={styles.panel} aria-label={kind==='rooms'?'Bolagets spelrum':'Bolagets papperskorg'}>
+    <header className={styles.heading}><div><p className={styles.eyebrow}>{kind==='rooms'?'BOLAGETS SPELUTBUD':'HANTERA BOLAG'}</p><h2>{kind==='rooms'?'Spelrum':'Papperskorg & återställning'}</h2></div>
       <button className="sg-btn sg-btn-ghost" type="button" disabled={disabled||busy||loading} onClick={()=>setReload(value=>value+1)}>Uppdatera</button></header>
     {loading?<p role="status">Hämtar aktuella uppgifter…</p>:null}
     {problem?<p role="alert" className={styles.feedback}>{problem}</p>:null}
     {notice?<p role="status" className={styles.feedback}>{notice}</p>:null}
     {!loading&&snapshot&&!operator?<p role="status">Bolaget finns inte i den aktuella förteckningen.</p>:null}
     {kind==='rooms'&&operator?<>
-      <div className={styles.tabs} role="group" aria-label="Visa spelrum"><button type="button" aria-pressed={!showArchive} onClick={()=>setShowArchive(false)}>Spelrum ({rooms.filter(room=>!room.archivedAt).length})</button><button type="button" aria-pressed={showArchive} onClick={()=>setShowArchive(true)}>Arkiv ({rooms.filter(room=>room.archivedAt).length})</button></div>
-      {!visible.length?<p>{showArchive?'Inga arkiverade spelrum.':'Inga spelrum ännu. Välj en sammansättning nedan och skapa det första.'}</p>:<ul className={styles.rooms}>{visible.map(room=><li key={room.id} className={styles.room}>
-        <div><h3>{room.name}</h3><p>{room.archivedAt?'Arkiverat':room.state==='live'&&operator.status==='active'&&room.published?'Öppet för spelare':'Pausat'}</p></div>
+      <div className={styles.tabs} role="group" aria-label="Visa spelrum"><button type="button" aria-pressed={!showArchive} onClick={()=>setShowArchive(false)}>Spelrum ({rooms.filter(room=>!room.archivedAt).length})</button><button type="button" aria-pressed={showArchive} onClick={()=>setShowArchive(true)}>Papperskorg ({rooms.filter(room=>room.archivedAt).length})</button></div>
+      {!visible.length?<p>{showArchive?'Inga spelrum i papperskorgen.':'Inga spelrum ännu. Välj en sammansättning nedan och skapa det första.'}</p>:<ul className={styles.rooms}>{visible.map(room=><li key={room.id} className={styles.room}>
+        <div><h3>{room.name}</h3><p>{room.archivedAt?'I papperskorgen':room.state==='live'&&operator.status==='active'&&room.published?'Öppet för spelare':'Pausat'}</p></div>
         <div className={styles.actions}>
           {!room.archivedAt?<>
             <a className="sg-btn sg-btn-secondary" href={labUrl('/control/compositions?'+new URLSearchParams({operator:operator.id,composition:room.presentationLaneId}))}>Redigera sammansättning</a>
             {room.state==='live'&&operator.status==='active'&&room.published?<a className="sg-btn sg-btn-secondary" href={labUrl('/control/rehearsal?'+new URLSearchParams({operator:operator.slug,table:room.id,composition:room.presentationLaneId}))}>Provspela & följ</a>:null}
             <button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff||operator.status!=='active'||!room.published} onClick={()=>setIntent({kind:'state',operatorId,id:room.id,name:room.name,state:room.state==='live'?'pending':'live'})}>{room.state==='live'?'Pausa rum':'Öppna rum'}</button>
-            <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff||!room.canArchive} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:true})}>Arkivera</button>
+            <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff||!room.canArchive} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:true})}>Flytta till papperskorgen</button>
           </>:<button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff||!room.canRestore} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:false})}>Återställ rum</button>}
         </div>
         {room.archivedAt&&!room.canRestore?<p>{room.restoreBlockers.map(code=>blockers[code]??'Rummets beroenden behöver granskas.').join(' ')}</p>:null}
       </li>)}</ul>}
     </>:kind==='operator'&&operator?<div className={styles.company}>
-      <p>{operator.status==='active'?'Arkivera bolaget för att stänga åtkomsten till portalen och spelrummen. Team, media och historik bevaras.':operator.archivedAt?'Bolaget är arkiverat. Team, media och publiceringshistorik finns kvar.':'Bolaget är avstängt sedan tidigare och kan inte återställas via arkivet.'}</p>
-      {operator.status==='active'||operator.archivedAt?<button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff} onClick={()=>setIntent({kind:'operator',operatorId,id:operator.id,name:operator.name,archived:operator.status==='active'})}>{operator.status==='active'?'Arkivera bolag':'Återställ bolag'}</button>:null}
+      <p>{operator.status==='active'?`Flytta bolaget och dess ${operator.roomCount} spelrum till papperskorgen. Rummen kopplas loss från den aktiva strukturen. Team, gemensamma media och historik bevaras.`:operator.archivedAt?'Bolaget ligger i papperskorgen. Team, media och publiceringshistorik finns kvar.':'Bolaget är avstängt sedan tidigare och kan inte återställas via arkivet.'}</p>
+      {operator.status==='active'||operator.archivedAt?<button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff} onClick={()=>setIntent({kind:'operator',operatorId,id:operator.id,name:operator.name,archived:operator.status==='active'})}>{operator.status==='active'?'Flytta bolag till papperskorgen':'Återställ bolag'}</button>:null}
     </div>:null}
-    {intent&&intent.operatorId===operatorId?<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna':'Pausa'):intent.archived?'Arkivera':'Återställ'} {intent.name}</legend>
-      <p>{intent.kind==='operator'?(intent.archived?'Bolagets portal och spelrum blir otillgängliga. Arkiveringen kan återställas.':'Bolagets åtkomst återställs. Rum som tidigare var öppna blir tillgängliga igen.'):intent.kind==='state'?(intent.state==='live'?'Rummet blir tillgängligt i bolagets spellobby.':'Rummet döljs från spellobbyn.'):intent.archived?'Rummet avpubliceras och flyttas till arkivet. Media och historik behålls.':'Rummet återställs som pausat, så att du kan granska det innan det öppnas.'}</p>
+    {intent&&intent.operatorId===operatorId?<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna':'Pausa'):intent.archived?'Flytta till papperskorgen:':'Återställ'} {intent.name}</legend>
+      <p>{intent.kind==='operator'?(intent.archived?'Bolagets portal stängs och alla dess spelrum avpubliceras och flyttas till papperskorgen. Återställning sker uttryckligen, ett rum i taget.':'Bolagets åtkomst återställs. Spelrummen stannar i papperskorgen tills du återställer dem som pausade rum.'):intent.kind==='state'?(intent.state==='live'?'Rummet blir tillgängligt i bolagets spellobby.':'Rummet döljs från spellobbyn.'):intent.archived?'Rummet avpubliceras och flyttas till papperskorgen. Media och historik behålls.':'Rummet återställs som pausat, så att du kan granska det innan det öppnas.'}</p>
       <div className={styles.actions}><button className="sg-btn sg-btn-primary" type="button" onClick={()=>void apply()}>{busy?'Sparar…':'Bekräfta'}</button><button className="sg-btn sg-btn-ghost" type="button" onClick={()=>setIntent(null)}>Avbryt</button></div>
     </fieldset>:null}
   </section>;

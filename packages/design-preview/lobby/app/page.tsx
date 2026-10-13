@@ -1,3 +1,4 @@
+import { DealerKeyFilter } from "@/components/dealer-key-filter";
 import { Header } from "@/components/header";
 
 import { LobbyProvider } from "@/components/lobby-provider";
@@ -12,6 +13,7 @@ import { FooterSection } from "@/components/sections/footer-section";
 export default function Home() {
   return (
     <LobbyProvider>
+      <DealerKeyFilter />
 
       <main className="min-h-screen bg-background">
         <Header />

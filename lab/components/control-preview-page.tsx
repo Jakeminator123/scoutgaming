@@ -44,6 +44,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const previewAttempt=useRef<AbortController|null>(null);
   const modelEdit:typeof sessionEdit=change=>{if(!previewAttempt.current)sessionEdit(change);};
   const [activeRole,setActiveRole]=useState<Role>('dealer');
+  const [labMode,setLabMode]=useState(false);
   const layerTabs=useRef<Partial<Record<Role,HTMLButtonElement>>>({});
   const objectUrls=useRef<Partial<Record<Role,string>>>({}),savedBaseline=useRef(savedJson),continuing=useRef(false),uploadLock=useRef(false),uploads=useRef(new Set<string>());
   savedBaseline.current=savedJson;
@@ -127,8 +128,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   }
   function chooseLocal(role:Role,file:File|undefined){
     if(!file||previewAttempt.current)return;
-    const valid=role==='dealer'?['video/mp4','video/webm']:['video/mp4','video/webm','image/png','image/jpeg','image/webp'];
-    if(!valid.includes(file.type)){setLocalError(role==='dealer'?'Välj en dealerfilm i MP4 eller WebM.':'Välj PNG, JPEG, WebP, MP4 eller WebM.');return;}
+    const valid=['video/mp4','video/webm','image/png','image/jpeg','image/webp'];
+    if(!valid.includes(file.type)){setLocalError('Välj PNG, JPEG, WebP, MP4 eller WebM.');return;}
     const previous=objectUrls.current[role];if(previous)URL.revokeObjectURL(previous);
     const url=URL.createObjectURL(file);objectUrls.current[role]=url;setLocalMedia(current=>({...current,[role]:{url,label:file.name,contentType:file.type}}));setLocalError('');
   }
@@ -209,7 +210,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       </aside>:null}
       <div className={styles.workspace}>
         <section className={styles.preview} aria-label="Komposition">
-          <div className={styles.sceneHeader}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format"><button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div></div>
+          <div className={styles.sceneHeader} style={{flexWrap:'wrap'}}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format"><button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div><button type="button" className="sg-btn sg-btn-secondary" aria-expanded={labMode} aria-controls="composition-lab" onClick={()=>setLabMode(value=>!value)}>{labMode?'Till sammansättningen':'Labba'}</button></div>
           {legacyBackground?<p role="alert" className={styles.hint}>Äldre bakgrundsinställning behöver åtgärdas före publicering. Om en miljö är inbakad i dealerfilmen behöver den ersättas med en grön originalfilm.</p>:null}
           {temporary?<p className={styles.hint} role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
           <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing} framing={localMedia.dealer?undefined:clip?.classification?.framing} backgroundPlayback={temporary?undefined:lane.backgroundPlayback} backgroundAssets={backgroundAssets} previewBackgroundRuleId={previewBackgroundRuleId} previewBackgroundRequest={previewBackgroundRequest}/>
@@ -241,11 +242,12 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
         </section>
       </div>
       {project.lanes?.some(row=>row.id===lane.id)?<CompositionSettings key={lane.id} project={project} lane={lane} onEdit={modelEdit} disabled={previewBusy||saving||uploading||conflict}/>:null}
-      <details className={styles.advanced}><summary>Avancerat · lager och filprov</summary><div>
+      <details id="composition-lab" className={styles.advanced} open={labMode} onToggle={event=>setLabMode(event.currentTarget.open)}><summary>Avancerat · lager och filprov</summary><div>
+        <p>Prova VILA-/REDO-bilder och händelseklipp i samma scen. Lokala filer laddas inte upp. Storlek och placering ändrar utkastet; spara uttryckligen för att behålla dem. Du kan växla tillbaka utan att tappa filprovet.</p>
         <fieldset disabled={previewBusy||saving}><legend>Synliga lager</legend>{roles.map(role=><label className="check-field" key={role}><input type="checkbox" checked={lane.layers[role].enabled} disabled={role==='background'&&Boolean(lane.backgroundPlayback?.rules.length)} onChange={event=>{if(role==='background'&&lane.backgroundPlayback?.rules.length)return;const next=structuredClone(lane);next.layers[role].enabled=event.target.checked;edit(next);}}/>{labels[role]}</label>)}{lane.backgroundPlayback?.rules.length?<p>Ta bort bakgrundsklippen under Bakgrund innan du döljer bakgrundslagret.</p>:null}</fieldset>
         <label className="check-field"><input type="checkbox" checked={settings.tableFront} disabled={previewBusy||saving} onChange={event=>{const next=structuredClone(lane);next.composition={...structuredClone(settings),tableFront:event.target.checked};edit(next);}}/>Bord framför dealern</label>
         <details><summary>Klippets greenscreen</summary><p>Grön bakgrund tas alltid bort. Tröskel {compositing.threshold.toFixed(2)} · Mjukhet {compositing.softness.toFixed(2)} · Grön färgreduktion {compositing.despill.toFixed(2)}</p><a href={uploadHref} onClick={event=>{event.preventDefault();void continueTo(uploadHref);}}>Klippets filinställningar →</a></details>
-        <details><summary>Snabbprov med tre lokala filer</summary><div>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" disabled={previewBusy||saving||uploading} accept={role==='dealer'?'video/mp4,video/webm':'image/png,image/jpeg,image/webp,video/mp4,video/webm'} onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><p>Dealerfilmen ska ha grön bakgrund, som alltid tas bort. Bord och miljö visas separat.</p><button className="sg-btn sg-btn-secondary" disabled={!temporary||saving||uploading} onClick={clearLocal}>Till sparade filer</button></details>
+        <section aria-label="Snabbprov med tre lokala filer"><h3>Snabbprov med tre lokala filer</h3><div>{roles.map(role=><label className="field" key={role}>{labels[role]} · lokal fil<input type="file" disabled={previewBusy||saving||uploading} accept="image/png,image/jpeg,image/webp,video/mp4,video/webm" onChange={event=>chooseLocal(role,event.target.files?.[0])}/></label>)}</div><p>Dealer: bild eller video, frilagd eller med grön bakgrund. Grönt tas bort bara i dealerlagret. Filens marginaler behålls; stående och liggande källor visas höjdbaserat. Bord och miljö visas separat. Händelseklipp spelas en gång; Spela två gånger kontrollerar upprepning.</p><button className="sg-btn sg-btn-secondary" disabled={!temporary||saving||uploading} onClick={clearLocal}>Till sparade filer</button></section>
       </div></details>
     </div>
   </PageTemplate>;

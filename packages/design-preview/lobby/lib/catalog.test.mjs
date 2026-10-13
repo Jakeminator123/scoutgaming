@@ -97,3 +97,35 @@ test('catalog read carries session and cancellation, disables cache, and rejects
   for (const status of [401, 403, 503]) await assert.rejects(loadLobbyCatalog({ fetchImpl: async () => new Response('private details', { status }) }), error => !error.message.includes('private details'));
   await assert.rejects(loadLobbyCatalog({ fetchImpl: async () => Response.json({}) }));
 });
+
+// Visual teasers must never become a second source of playable dealer IDs.
+import { dealerCards, portraitFor } from './dealer-portraits.mjs';
+
+test('four locked portraits do not grant access, including an empty or unavailable catalog', () => {
+  const cards = dealerCards();
+  assert.deepEqual(cards.map(row => row.id), ['astrid', 'marten', 'paow', 'dragge']);
+  assert.ok(cards.every(row => !row.available));
+  const catalog = parseLobbyCatalog(payload([]));
+  assert.equal(lobbySelection(catalog, { dealerId: 'astrid' }).dealer, null);
+  assert.equal(portraitFor({ id: 'unknown', name: 'Astrid' }), undefined);
+});
+
+test('portrait alias preserves PAOW publication ID and cannot unlock her in another room', () => {
+  const catalog = parseLobbyCatalog(payload([publication('alpha', 'paow-v2', 'PAOW'), publication('beta', 'nora', 'Nora')]));
+  const chosen = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'paow-v2' });
+  assert.deepEqual(dealerCards(chosen.availableDealers).filter(row => row.available).map(row => row.id), ['paow-v2']);
+  assert.equal(portraitFor(chosen.dealer).id, 'paow');
+  assert.equal(playUrlFor(chosen), '/play/blackjack?operator=alpha&table=shared-table&dealer=paow-v2');
+  assert.equal(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'paow' }).dealer, null);
+  const other = lobbySelection(catalog, { operatorId: 'beta', roomKey: 'beta:shared-table', dealerId: 'paow-v2' });
+  assert.equal(other.dealer, null);
+  assert.deepEqual(dealerCards(other.availableDealers).filter(row => row.available).map(row => row.id), ['nora']);
+  assert.equal(portraitFor({ id: 'nora', name: 'PAOW' }), undefined);
+});
+
+test('all registered choices survive, including two explicitly mapped versions of a portrait', () => {
+  const registered = [{ id: 'paow', name: 'Paow' }, { id: 'paow-v2', name: 'PAOW' }, { id: 'new-dealer', name: 'New' }];
+  const cards = dealerCards(registered);
+  assert.deepEqual(cards.filter(row => row.available).map(row => row.id), registered.map(row => row.id));
+  assert.equal(new Set(cards.map(row => row.id)).size, cards.length);
+});

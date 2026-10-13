@@ -1,5 +1,496 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Central Studio: rum, spel och lager, 13 oktober 2026
+
+Detta är målkontraktet för nya `/admin`, enligt Jakobs senaste krav. Det är
+inte ett kvitto på genomförd datamigrering eller godkänd speluppspelning.
+Nuläget nedan lästes i produktion utan skrivningar; kodreferenserna granskades
+på `main` `a5441feb1fd1761ca95d12b4f51beed2f689c57b`. `/control` och dess
+publicerade paket fortsätter fungera medan den nya ytan granskas.
+
+### Begrepp och ägarskap
+
+Regeln gäller även framtida agentarbete via `AGENTS.md`. Kanoniska nya material
+finns i `web/public/material-catalog.mjs`: design-ID och exakt filhash knyter
+ihop namn i admin, partner, lobby och spel. Katalogen registrerar eller
+publicerar aldrig ett operatörsrum. Bibliotekets lager-UUID är separat från
+design-ID:t; en identisk etikett är inte bevis för identiska bytes.
+
+Jakobs första två tillförda bordsoriginal är **Blackjack · grön filt**
+(`blackjack-green-felt`) och **Blackjack · svart filt**
+(`blackjack-black-felt`). Båda är PNG, 1672 × 941, med alpha (0–255).
+Originalens SHA256 är respektive
+`1a88e822883374b6e855fa75d0da6a4dd02be0840bd4ddb7865345fe12c988b4` och
+`c43a150457216aeb8649f802c5feb8719e257631704f98db46be2530214b8b19`.
+De är byteverifierat säkrade i privat materialintag och registrerade i det
+riktiga privata produktionsbiblioteket. Grön filt har lager-ID
+`ca96f462-9dcd-4160-bb11-e898c2feb934`, svart filt har
+`a9ccb310-dfa5-4e05-860e-b6d8e3b9eabd`. Båda återlästes efter sidomladdning
+och avkodades som 1672 × 941 i webbläsaren; biblioteket gick från två till
+fyra bord. Båda är ännu oanvända och valbara i Sammansättningar. Ingen
+publicerad sammansättning eller bolagsinställning ändrades vid bordsintaget.
+Alpha/dimensioner är verifierade; bordsplacering och spelgeometri behöver
+visuell acceptans. Isolerad QA använder separata lager-UUID och beständig
+testsparning; dessa är inte produktions-ID:n.
+
+Ytterligare tre oförändrade PNG-original registrerades och avkodades efter
+omladdning. Biblioteket innehåller nu sju bord, varav fem är Jakobs nya original.
+Alla fem är separata designer: Jakob korrigerade uttryckligen att de inte
+hör ihop som grundbord och variationer. Ingen koppling har skapats mellan dem.
+
+| Kanoniskt namn / design-ID | Lager-ID i det privata biblioteket | Originalmått |
+| --- | --- | --- |
+| Blackjack · Oak / `blackjack-oak` | `f00be01d-fe7c-4a43-85b9-952e378f7331` | 1672 × 941 |
+| Blackjack · Purple Rain / `blackjack-purple-rain` | `257e6711-9152-49f2-83ae-6127ce3bc420` | 1672 × 941 |
+| Blackjack · Back to Basic / `blackjack-back-to-basic` | `073ed70c-d764-4902-860c-6a56300abfaf` | 1774 × 887 |
+
+Källhashar, storlek, MIME och alpha finns i samma kanoniska materialkatalog.
+Registreringen ändrade inga tilldelningar eller publiceringar. Originalfiler
+och privata ursprungssökvägar bevaras utanför Git.
+
+### Framtida bordsekvenser
+
+Ett framtida blinkande bord får bestå av en uttryckligen vald grunddesign och
+en ordnad följd bildrutor med angiven längd i frames samt fast bildfrekvens.
+Upprepningar och återgång till grundbilden ska vara uttryckliga. Variationerna
+måste dela godkänd geometri, dimensioner, placering och speltyp med grundbordet;
+visuell likhet eller ett närliggande namn är inte tillräckligt. Endast
+bordslagret växlar: bolag, rum/bakgrund, dealerklipp och serverns kort-, sko-
+och plånbokstillstånd behålls. Nuvarande statiska bilder har ingen automatisk
+blinksekvens. Sekvensmodell, redigerare och uppspelning är framtida arbete.
+
+`web/presentation-material-game.mjs` kontrollerar kända källhashar, lagerroll,
+metadata och spelets tillåtna bord på servern före rums-/paketpublicering
+och vid läsning av paketets rum. Även tillåtna valpooler kontrolleras.
+Namnbyte eller felaktigt deklarerade dimensioner kan inte göra de nya
+blackjackborden till roulettebord. Äldre okatalogiserade tillgångar behåller
+sitt befintliga kontrakt och behöver separat granskad klassificering.
+
+```mermaid
+flowchart LR
+  Operator[Spelbolag] --> Room[Rum / bakgrundsmiljö]
+  Room --> BJ[Blackjack]
+  Room --> Roulette[Roulette]
+  BJ --> BJDealer[Tillåtna dealeruppsättningar]
+  Roulette --> RDealer[Tillåtna dealeruppsättningar]
+  BJ --> BJTable[Blackjackbord]
+  Roulette --> RTable[Roulettebord]
+  BJDealer --> Clips[Grundloop, händelseklipp och exakt tal]
+  RDealer --> Clips
+```
+
+| Begrepp | Kontrakt för nya ytan |
+| --- | --- |
+| Spelbolag | Äger sina rum, tilldelningar och publiceringar. Ett bolags val ger aldrig åtkomst till ett annat bolags utkast. |
+| Rum / bakgrund | En namngiven miljö med en vald grundbakgrund: bild eller video. Detta är ett och samma val i användarflödet. Rummet får innehålla både Blackjack och Roulette. |
+| Bakgrundsfil | En versionsbunden lagerresurs med eget ID, roll, MIME och hash. Flera filer kan vara varianter inom samma miljö. Ett biblioteksobjekt skapar inte automatiskt ett publicerat rum. Samma fil kan återanvändas i flera bolags rum utan att deras rumsidentiteter slås ihop. |
+| Spel | Ett aktiverat spel i ett visst rum, med egen adapter, bord/geometri och tillåtna dealeruppsättningar. Insatsgränser hör hit; VIP är inte en separat rumstyp eller automatisk etikett. |
+| Dealer | Personens registrerade identitet. Visningsnamnet räcker inte som nyckel. |
+| Dealeruppsättning | En namngiven uppsättning klippreferenser för en dealer och avsett spel. Exempelvis PAOW och PAOW 3 kan vara uppsättningsnamn, men endast om registret faktiskt beskriver dem så. |
+| Bord | Förgrundslagret och spelets placeringsgeometri. Bordet är varken rum, bakgrund eller dealer. Bordsfärg är en uttrycklig tillåten bordsegenskap. |
+| Sammansättning | Den tekniska sammanställningen av miljö, dealer, bord, klipp och placering för mobil/desktop. Befintliga `lane`-ID behålls som kompatibilitet tills en granskad övergång är klar. |
+
+En dealer får bara väljas om den uttryckligen är tillåten och har nödvändigt
+material för spelet. Ett blackjackpaket blir inte ett roulettepaket genom
+namnbyte eller genom att återanvända samma sammansättning. Saknas godkänd
+roulettedealer visas detta som saknat material, aldrig som en färdig reservdealer.
+
+### Meny och översta kontexten
+
+Struktur ligger utanför Studio och visar Scoutgaming → Studio, Drift,
+Ekonomi, AI och Admin samt verkliga relationer och antal. Simulerade data
+och saknade anslutningar ska märkas i själva förhandsvisningen.
+
+Studio har en central klippkarta. Kontexten följer **spelbolag → rum/bakgrund
+→ spel → dealeruppsättning**. Blackjack/Roulette får vara flikar, men visar
+spelvalet inom det valda rummet. Bakgrundens filer/varianter redigeras i
+rummets panel; en andra fristående bakgrundsväljare får inte skapa en
+motsägande rumskoppling. Bord och grundloop är kontextuella val vid kartan.
+Nivå 1/2/3 leder till intern administration, spelbolagsportal och spelarvy
+med befintliga behörighetskontroller. Inga gula omvägar till Control behövs
+för att slutföra Studio-arbetet.
+
+Varje klippkort visar valt händelsefack, variant och befintliga filer samt
+uppladdning/släppyta. Byte av variant får inte skriva över grannfack eller
+gömma en befintlig koppling. **Återställ kortlayout** återställer endast
+placering och zoom; sparade klipp, referenser, röstprofiler och publiceringar
+ska förbli oförändrade. Språkval och exakt taltext är en del av talsetet,
+inte en slumpvis ersättning av en inspelad replik. Röst-ID är inte API-nyckel.
+
+### Lager och automation
+
+Ordningen bakifrån är **bakgrund → frilagd dealer → bord → spelets kort,
+markeringar och gränssnitt**. Samma lagerprincip gäller Blackjack och
+Roulette, med spelens egna geometrier. Grundloopen tillhör dealern;
+bakgrundsvideon är ett separat, ljudlöst lager. Den får inte ersätta,
+blockera eller synka om dealerns tal, kortlogik eller resultat.
+
+Bakgrundsbyte, tidsintervall, slumpvariation och eventuell OpenClaw-styrning
+konfigureras på rummets bakgrundspolicy. De får endast välja tillåtna
+bakgrunds-ID inom miljön, inte byta bolag, rum eller bord. En annan miljö
+är ett uttryckligt rumsval. Om bordsautomation införs måste den vara separat,
+välja enbart tillåtna bords-ID för spelet och bevara spelgeometrin; ett byte
+får inte ske mitt i en pågående giv/omgång. Det är inte en redan verifierad
+funktion. En kontroll på ett bordskort får aldrig styra bakgrundspoolen.
+
+Den befintliga `backgroundPlayback`-policyn ligger i sammansättningen och
+följer det frysta paketet. UI bör redigera den via rummet utan att skapa en
+konkurrerande timer. Dagens runtime stöder validerade händelser/intervall
+och budgetar (se nästa avsnitt); designexemplets Slump/Ordning/OpenClaw är
+inte bevis för att varje sådant läge redan finns i produktionsruntime.
+
+Äldre inbakade bord, miljöer och färger i dealerfilm kan inte göras fristående
+genom en ny etikett eller ett färgfält. `web/public/dealer-compositing.mjs`
+kräver friläggningsbart grönt källmaterial; godtycklig inbakad miljö är inte
+ett giltigt alternativ. Materialets pixlar måste granskas. Äldre fält och
+Kevin-vyer får inte skapa ett andra defaultsystem vid sidan av registrerad
+sammansättning och bolagets uttryckligen tillåtna val. Rensa först efter
+referenskontroll; ändra inte historiska paket eller gemensam spelarlogik.
+
+### Verifierat nuläge: paow3 och biblioteket
+
+Read-only i `/control/rooms?operator=nordic-bet` den 13 oktober: Nordic Bet
+har publicerad version 7, två öppna rum och ett arkiverat rum. **paow3 är
+ett registrerat rum**, ID `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e`.
+`Nordic Bet Roulette`, ID `room-1bc1b407-9538-9ae8-f7e2-fecf951989a2`, är
+ett annat rum. Båda refererar sammansättningen **PAOW · Studio**,
+`paow-studio-14b6c188-ef58-4ad9-9028-4f6fb58a6de9`. Dess editor visar
+dealer `paow-v2`, bord **Bord · Svart och guld** och en bakgrund med namnet
+`background-ditt-spelbolag`. Dessa namn bevisar inte en separat PAOW 3-bank
+eller att roulettematerialet är accepterat. Ingen av posterna ändrades.
+
+Biblioteksvyn visar två bordsbilder. Båda laddades i webbläsaren med faktisk
+storlek 1440 × 2560: **Bord · Svart och guld**, lager-ID
+`4b688411-d186-4229-8f8a-046cd1b0a2c5` (används av tre sammansättningar), och
+**e14100b1-0dad-4700-9d0a-a5bc081cadc4**, lager-ID
+`b52b9077-de4e-4691-a570-a41a90312f6a` (används av Mobile Phone Lane).
+Det andra bordets UUID-liknande visningsnamn är alltså inte filens ID.
+De sju bakgrunderna visas som video, samtliga registrerade som 1920 × 1080:
+
+| Namn | Lager-ID | Användning enligt biblioteket |
+| --- | --- | --- |
+| Bakgrund · Casino | `6ca45a4e-f696-4849-a3f7-a15dc872862f` | PAOW · Studio, Mobile Phone Lane, Johns sammansättning |
+| bakground | `06e3be0d-0a54-4b8e-8d38-edeefd189ce7` | PAOW · Studio, Mobile Phone Lane |
+| background-ditt-spelbolag | `c0035fc4-cb47-45dc-83de-adb44c14e9fd` | Mobile Phone Lane |
+| background-ditt-spelbolag | `6cd2bf56-4d42-4c7b-848a-087398b38563` | Mobile Phone Lane |
+| background-ditt-spelbolag | `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4` | PAOW · Studio |
+| background-ditt-spelbolag | `800eb6ee-9e55-40c1-9757-159694422dd2` | Ingen sammansättning angiven |
+| A_nearly_still__seamless_loop_ambient_background_plate_for_a_layered_web_game__A | `bff63892-6b6d-4c39-b2d3-4a8ecd7c8d28` | Mobile Phone Lane |
+
+De fyra likadana namnen är skilda ID; de får inte slås ihop på namn.
+ID lästes från respektive synligt videoelements källadress. Efter start via
+bibliotekets spelkontroller nådde samtliga sju `readyState=4`, 1920 × 1080,
+10,042 sekunder och `ended=true` utan mediefel. Avkodning och ett genomspel
+i den här webbläsaren är därmed verifierade. Specifik codec, loopskarv och
+scenens visuella formatacceptans är ännu inte granskade.
+Designmallens tre bakgrunder och två exempelbord är inte detta
+register. Nya `/admin` ska läsa `project.layerAssets` med samma ID och
+roller, visa video som video och även visa registrerade men ännu oanvända filer.
+
+### Format: tillåten fil är inte samma sak som godkänd scen
+
+`web/layer-asset-contract.mjs` tillåter PNG, JPEG, WebP, MP4 och WebM för
+lager. Storlek: 16 byte till 128 MiB; registrerad bredd/höjd: heltal 1–16384.
+Det finns inget generellt krav på exakt 1920 × 1080 i detta kontrakt.
+`lab/components/layer-library.tsx` läser dimensioner i webbläsaren innan
+uppladdning. `lab/lib/layer-upload-service.mjs` verifierar lagrade bytes,
+MIME/storlek/hash och filsignatur innan registreringen skrivs med revisionsskydd.
+
+Kontrollen är inte en fullständig serververifiering av codec, bildfrekvens,
+duration, alpha eller visuell kvalitet. MP4 som behållare är tillåten;
+varje verklig MP4 måste fortfarande kunna avkodas och provas i rätt scen.
+Bakgrunder granskas i 16:9 och 9:16 med verklig beskärning, två loopvarv och
+fri yta bakom dealer/bord. Bord behöver korrekt friläggning och geometri;
+JPEG saknar alpha även om filtypen accepteras. Klippen kan registreras utan
+att automatiskt bli godkända/publicerade. Bristande media ska ge en tydlig
+status, aldrig en tyst ersättning med mallens bild eller en annan dealers film.
+
+### Livscykel och övergång från dagens rum
+
+I `web/presentation-room-contract.mjs` är dagens rum en operatörsägd
+spelbar ingång med ett `presentationLaneId`, ett `gameLaneId` och **ett**
+`game` (äldre poster utan fält läses som Blackjack). `gameLaneId` och URL-
+parametern `table` är tekniska spel-/rumsidentiteter, inte bordsbilder.
+Därför kan ett rum med två spel inte införas enbart genom nya rubriker.
+Övergången måste uttryckligen mappa befintliga spelrum till en gemensam
+miljö med separata spelbindningar, bevara gamla rums-ID/länkar och kontrollera
+behörigheter och publiceringsrevisioner. Gruppera aldrig på bara namn eller
+bakgrundsfil: två bolags rum och olika spelinställningar måste hållas isär.
+Detta dokument väljer inte ett nytt lagringsschema och genomför ingen migrering.
+
+Rumsarkivering påverkar den spelbara ingången; den får inte radera dealer,
+sammansättning eller delade filer. Arkivering av en uppsättningskategori
+behåller filerna. Bortkoppling av ett enskilt klipp respektive alla klipp i
+en uppsättning är separata handlingar med förhandsvisad påverkan. Visa
+objekttyp, ID, användningar och berörda publiceringar före bekräftelse.
+Beständig fysisk radering kräver att inga skyddade/delade referenser finns
+och en separat uttrycklig handling. Papperskorg/återställning återställer
+utkast, inte tyst återpublicering eller betald talgenerering. Genererings-
+och lipsynclogiken ska finnas kvar även när en kategori tas bort.
+
+Första UI-preview ska granskas innan ytterligare menyombyggnad. Därefter
+behövs verklig inläsning av ovanstående lager, isolerad verifiering av
+släpp/uppladdning och återläsning, säkra livscykelflöden, migrationsbeslut
+för rum med flera spel och visuell acceptans i respektive spel. Testdata,
+registrerade rum eller gröna enhetstester är inte detta acceptanskvitto.
+
+## Medieformat för roulette och blackjack
+
+Produktions- och acceptanskraven för de 37 utfallsfilmerna ägs av den
+gemensamma spelmanualen, samordnad med MERGE i [PR #56](https://github.com/Jakeminator123/scoutgaming/pull/56):
+[37 utfallsfilmer](games/roulette/UTFALLSFILMER.md)
+och [klipp och format](games/KLIPP-OCH-FORMAT.md).
+Manualerna finns på main efter dokumentations-PR:ns merge till `ba7601dd`.
+Avsnittet nedan beskriver den mottagna prototypen och nuvarande UI-registrering;
+det skapar inget parallellt filmkontrakt eller automatisk mediaagent.
+
+Aktuellt produktionsbeslut 12 oktober 2026: Jakob levererar roulettevideo
+separat. Inga nya kodgenererade hjul-/kulanimationer, parallax eller gester
+byggs. Följande format är produktionsunderlaget; nya dealerklipp är ännu
+inte inspelade eller visuellt accepterade.
+
+### Gemensam bakgrund och lager
+
+Rumsbakgrunden är spelneutral: inga inbakade bord, dealers, satsningar eller
+resultat. Samma registrerade tillgång kan tillåtas i både ett blackjackrum
+och ett rouletterum. Publicering och bolagets tillåtna lager gäller fortsatt;
+roulette väljer bara en publicerad bakgrund, inklusive spelarens redan
+sparade tillåtna val. Ingen valfri URL från query/localStorage får hämtas.
+
+| Material | Leverans | Anmärkning |
+| --- | --- | --- |
+| Bakgrund, master | 3840 × 2160 PNG/WebP, 16:9 | Samma kamera, ljus och perspektiv för båda spelen. |
+| Bakgrund, webbvideo | 1920 × 1080 MP4/H.264, 30 fps CFR, kvadratiska pixlar, SDR Rec.709, utan ljud | Låst kamera, försiktig miljörörelse. Fast utsnitt och stillbildsreserv. |
+| Roulettebord, master | 1920 × 1080 transparent PNG; gärna äkta 4K-original senare | Spelets egen geometri. Ingen extra keystone-förvrängning. |
+| Roulettebord, video | 1920 × 1080 MP4/H.264, 30 fps CFR, utan ljud | Identisk registrering med bordets PNG och mask; ingen svart rektangel får täcka rummet. |
+| Bordsmask | PNG med alfakanal, samma bildyta som bordsvideon | Opakt visar bordet, transparent visar underliggande lager. RGB-färgen ignoreras. En svartvit bild utan alpha fungerar **inte** som denna runtime-mask. |
+| Dealer | Godkänd keystonebild och en enda frilagd idle-master | Samma klipp för mobil och desktop; ingen separat tagning per skärm. |
+
+Vanlig H.264/MP4 behandlas som opak video. En statisk PNG-alfamask stöds
+för ett bord vars ytterkontur är konstant. Rörliga objekt måste hålla sig
+inom masken; en silhuett som ändras kräver en annan, synkroniserad masklösning
+som **inte** ingår här. Ingen grönnyckling av den gröna bordfilten.
+Källa för webbformat: [MDN, video codecs](https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Video_codecs).
+
+Lagerordning: bakgrund → frilagd dealer → spelbord → separata spelkontroller.
+Detta placerar kroppen bakom bordet. Händer ovanpå bordet behöver godkänd
+handmask eller en kontaktpose som inte skyms; ingen sådan ny mask är levererad.
+Befintliga inspelningar med inbakat blackjackbord återanvänds inte som en
+frilagd roulette-dealer. Ingen dealeridentitet hårdkodas eller publiceras om.
+
+### Roulette: bordets koordinater och aktuella referens
+
+Koordinater gäller en logisk 1920 × 1080-scen, origo uppe till vänster.
+Bordets bildyta placeras vid **x=192, y=216, bredd=1536**, med proportionerlig
+höjd. En exakt 16:9-leverans blir 864 px hög. I kompositionsformatet motsvarar
+detta `desktop.table={width:0.8,x:0,y:0.2}`, `tableFront=true`.
+Obs: `x=0` i Studio är centrerad förskjutning, inte bildens vänsterkant.
+
+| Ankare i slutscenen | Produktionsmål, px |
+| --- | --- |
+| Bakgrund | x=0, y=0, bredd=1920, höjd=1080 |
+| Bordets bildyta | x=192, y=216, bredd=1536, höjd≈864 |
+| Bordets främre mittpunkt | x=960, y≈1080 |
+| Dealerns mittlinje, bakom bordet till höger i bild | x≈1410 |
+| Dealerns ögon | x≈1410, y≈150 |
+| Båda händerna, kontaktområde på bakre högra kanten | x=1240–1480, y=405–455 |
+
+Detta är kompositionsmål, inte bevisad kontaktkalibrering för befintliga
+klipp. Dealerplaceringen följer den publicerade kompositionens desktopvärden.
+En ny take kalibreras och granskas mot ankaren före publicering.
+
+Den användarlevererade `roulette-bord.png` ligger oförändrad i
+`web/public/roulette/assets/roulette-bord.png`: 1672 × 941 RGBA,
+SHA-256 `dcf2fe0eb5332bce7d599f3e41bc210b14a3bc9605444acc41634a2c2e28976b`.
+Detta är en designreferens, inte granskad nummergrafik eller resultatvisning.
+Proportionerna är nästan 16:9; aktuell höjd blir cirka 864,46 px. Inför MP4
+passas originalet proportionerligt in på exakt 1920 × 1080 och alpha-masken
+exporteras från samma registrering. Uppskalning skapar inte ny bilddetalj.
+
+Mobilen visar samma 16:9-scen med genomskinliga satsningsytor på bordets filt.
+Vid 1080 px scenbredd multipliceras alla scenkoordinater med 0,5625;
+vid faktisk CSS-bredd W används W/1920. Huvudvyn visar hela bordet; en separat
+förstoringsvy låter spelaren rulla över samma bild/video för precisa tryck.
+Ingen sträckning eller separat dealerfilm. Serverns kvitto är auktoritativt.
+
+### Satsningsytor och marker, 13 oktober 2026
+
+Det separata röda/svarta numrerrutnätet är borttaget. Roulette följer samma
+interaktion som blackjack: välj markervärde, tryck på bordet, se markerstapeln,
+ångra/rensa och starta rundan. Marker sätts direkt utan flyg-/landningsanimation.
+"Senaste utfall" och historiken finns kvar som en kompakt rad.
+
+`web/public/roulette/table-layout.mjs` registrerar målpolygoner i den orörda
+PNG:ns 1672 × 941-koordinater. Lagret följer bildytans x=10 %, y=20 %,
+bredd=80 % av scenen. Nummerfältens hörn är (703,393), (971,393),
+(1018,721), (646,721); radernas y-gränser är 393,416,439,463,486,511,537,
+565,595,624,655,687,721. Dussinens och utsidessatsningarnas polygoner ligger
+på sina tryckta etiketter. Ingen separat nummergrafik eller numrering ritas.
+Delnings-/hörnsatsningar får marker mellan respektive nummer; gata/sexrad
+ligger på fältets vänstra kant. Alla satsningstyper kan väljas i en tillgänglig
+dialog. Källbilden saknar tryckta 2:1-fält: kolumner väljs i dialogen och markeras
+vid respektive kolumnfot, utan nya fält på bordet.
+
+Förstoringsvyn flyttar samma scen och kontroller till en dialog; den skapar
+ingen extra videospelare eller dealeruppspelning. Första trycket i mobilens
+översiktsvy öppnar den större vyn och debiterar/lägger inga marker. Den större
+vyn har minst 26 px höga nummerträffytor; kontrollerna har minst 44 px höjd.
+Escape/stäng återställer scenen och fokus. Snurra/återförsök stänger vyn och
+visar det bekräftade resultatet i huvudvyn. Tangentbord och satsningsdialog
+fungerar också direkt från översikten. En ny bild-/videoexport behöver ny
+registrering om filten eller bildytan flyttas; nuvarande mål godkänner inte
+framtida filmer automatiskt.
+
+### Roulette: croupier som keystonebild och idle-video
+
+1. Skapa först en stillbild i scenens 1920 × 1080-mall med referensbordet
+   som registreringshjälp. Dealern står bakom bordet **till höger för betraktaren**, med
+   överkroppen lätt vänd mot mitten och blicken mot spelaren. Spelaren står också; kameran ser snett ned mot bordet.
+2. Utgångspunkt för scenbygge: bord 240 × 150 cm, höjd 95 cm, hjul cirka
+   80 cm. Kamera cirka 165 cm över golvet och 25° nedåtvinkel. Dessa är
+   föreslagna arbetsmått, inte uppmätta mått ur bilden. Referensens perspektiv
+   och kontaktpunkter styr slutlig kamerakalibrering. Lås kameran därefter.
+3. Leverera både sammansatt kontrollbild och frilagd dealer-PNG. Runtime-
+   materialet kan vara 1080 × 1920, med 2160 × 3840-original om källan medger.
+   Hela huvud, armbågar, händer och kropp en bit under bordskanten ska finnas
+   kvar. Spara beskärningsruta och ankare så den frilagda personen går att
+   placera tillbaka exakt i kontrollbilden. Ingen inbakad roulette-/blackjack-
+   geometri i dealerfilen. Ett grönt original måste registreras och nycklas
+   genom befintligt godkänt compositingflöde.
+4. Idle utgår från den godkända keystonebilden: en 8–10 sekunders master,
+   30 fps CFR, utan ljud/tal. Endast naturlig andning och diskreta blinkningar.
+   Händerna vilar stabilt; inga kort, marker, hjulrörelser eller nya gester.
+   Samma ljus, fokus, skala och kontur i första och sista bilden. En generator
+   garanterar inte sömlöshet; kontrollera och justera skarven vid behov.
+
+**Prompt för keystonebild (engelska):**
+
+> Photorealistic adult casino croupier standing behind the rear-right corner of the supplied roulette table, on the viewer's right. The torso is turned slightly toward the center of the table and the gaze meets the standing player. Use a locked 1920 by 1080 composition: the dealer's eyes are approximately at pixel (1410,150); both hands rest naturally on the rear-right contact area around x=1240–1480, y=405–455. Match the reference perspective, camera and lighting; the wheel and betting field remain unobstructed. Relaxed shoulders, calm attentive expression, realistic anatomy and stable fingers. Soft neutral key light from camera left, warm room lighting. Keep the complete head, elbows, hands and lower torso available. Deliver a composition reference and a separate isolated dealer layer with identical framing; the roulette table is a placement reference only and is not baked into the isolated dealer layer.
+
+**Separat prompt för idle från den godkända bilden:**
+
+> The locked-off camera remains perfectly still. The croupier stays behind the table on the viewer's right and maintains the approved reference pose, with gentle breathing and a subtle natural blink. Lips remain gently closed. Both hands and every finger stay at their original resting contact points. The framing, exposure, focus and lighting remain constant. A calm neutral resting pose at both ends of the clip, suitable for an unobtrusive idle loop.
+
+Acceptans: två följande uppspelningar på mobil och desktop; kontrollera
+skarv, händer, kroppens ocklusion, hudkanter, ljus och frånvaro av inbakat bord.
+Spara källa, filhash, dimensioner, fps, längd, alpha/key-inställningar,
+beskärning, kontaktankare och granskningsnotering. Ändrad mediahash behöver
+ny visuell acceptans. Det här dokumentet godkänner inte någon dealer-take.
+
+### Mottagen videospecifikation och uppmätt leverans
+
+Den mottagna prototypen kom från `C:/Users/jakem/Desktop/videoskapare/roulette/bord/`.
+PNG:n är kopierad byteidentiskt till runtime-sökvägen ovan. Läsande lokal
+kontroll 13 oktober visar att MP4:n inte längre finns på den tidigare
+källsökvägen. Det bevarade mätkvittot nedan gäller den tidigare mottagna
+filmen; filmen är inte aktiverad i spelrummet. Den sammanförda JSON-filen är metadata, inte en
+beställning att generera fler animationer.
+
+Den bifogade `roulette_specifikation.json` är sammanförd som källunderlag i
+[media-specification.json](../web/games/roulette/media-specification.json).
+Originalets beställningsstatus och önskemål är bevarade under
+`receivedSpecification`; aktuella filfakta finns under `verification` och
+Jakobs nuvarande riktning under `currentDecision`. Dokumentets äldre förslag
+om kodstyrd rotor är inte ett uppdrag: inga egna nya animationer byggs.
+
+`lyxigt_europeiskt_roulettebord.png` och `roulette-bord.png` är byteidentiska.
+Båda är 1672 × 941, 2 229 281 byte och har SHA-256 ovan. Alphakontrollen
+bekräftar 526 913 helt transparenta, 295 helt opaka och 1 046 144 delvis
+transparenta pixlar; vanligaste icke-nollvärdet är 253. Ingen färgprofil är
+inbäddad. sRGB är ett arbetsantagande, inte verifierad källmetadata.
+
+| `roulette-bord-start-stop.mp4` | Uppmätt fil |
+| --- | --- |
+| Dimensioner | 1916 × 1080; inte exakt 1920 × 1080 |
+| Container / codec / pixel-format | MP4 / H.264 / yuv420p |
+| Bildfrekvens | 24 fps, 361 bildrutor; samtliga frame durations 0,041667 s |
+| Längd | 15,041667 s |
+| Storlek | 10 317 238 byte |
+| Ljud / alpha | Ingen ljudström / ingen alfakanal |
+| SHA-256 | `7702cec6f0ec5ec2e1767608781588e8f6b182a0fbc652a952706f8288314195` |
+
+30 fps och 1920 × 1080 ovan är föreslaget gemensamt leveransformat, inte krav
+att interpolera den mottagna filmen. Behåll originalet i 24 fps. Nästa export
+bör ha fast, gemensam bildyta. Ändra inte hastigheten för att få 30 fps.
+
+Bildrutor 0, 180 och 360 har inspekterats: svart bakgrund är inbakad och
+rotorn är olika i början/mitten/slutet. Detta bevisar inte perfekt låst kamera,
+stabila siffror genom hela filmen, pixelidentisk slutruta eller sömlös loop.
+Källspecifikationen markerar dessutom originalets hjulsiffror/nummerföljd som
+ogranskade och delvis felaktiga. Varken PNG eller MP4 är godkänd resultatgrafik.
+
+Denna 1916 × 1080-video och originalets PNG har olika proportioner. Runtime-
+maskens proportionskontroll ska neka en direkt felregistrerad kombination;
+släpp inte igenom den genom att höja toleransen. Förbered en separat mask mot
+**videons verkliga bildruta**, kontrollera bordets kanter vid start/mitt/slut
+mot valda bakgrunder och behåll PNG:n som reserv. Svart får inte nycklas bort
+över hela bilden eftersom bordet också innehåller svarta detaljer.
+
+Filmen är mottagen och analyserad, men inte aktiverad i spelrummet eller
+kopplad till serverutfall. Runtime visar fortfarande den bifogade PNG:n.
+Ny dealer ska produceras bakom bordet **till höger i bild**, enligt ankaren
+och prompterna ovan; detta ersätter tidigare förslag om centrerad dealer.
+
+### Runtime och nästa MP4-leverans
+
+`web/public/roulette/media.mjs` väljer tills vidare enbart den bifogade PNG:n.
+`ROULETTE_TABLE_MASK` är null för denna PNG, som redan har alpha. Vid framtida
+MP4-leverans registreras dess exakta tillgång och en matchande PNG-alpha via
+`mountPublishedScene(...,{table,tableMask,layout:'desktop',settings})`.
+En ny lokal fil behöver även läggas i den explicita HTTP-/proxylistan; ingen
+sökväg eller URL får hämtas direkt från användarinmatning. En administrerbar
+bordsvideo/mask i det frysta publiceringskontraktet är en separat integration;
+ingen ny Studio-maskkontroll eller publicering är gjord i den här ändringen.
+
+Den gemensamma `published-scene.mjs` läser redan bild och MP4/WebM för
+bakgrunder och bord. Roulette använder samma publicerade bakgrunds-ID:n som
+blackjack. Tillagda layout-/maskalternativ är frivilliga; befintliga anrop
+behåller sin mobila standardkomposition. Video pausas i dold flik, utanför
+bild och vid reducerad rörelse, med möjlighet till ett uttryckligt Spela-val.
+Vid mediefel visar rouletten PNG-reserven och spelkontrollerna fungerar.
+
+En framtida film med snurrande roulette kan användas som dekorativ bakgrund.
+Den får inte föreställa den aktuella rundans slututfall om den inte är kopplad
+till samma bekräftade serverresultat. Ingen sådan koppling implementeras här.
+Resultatrutan uppdateras direkt från kvittot. RNG, insats, plånbok och exakt
+återförsök med oförändrat requestId/version/bets ändras inte.
+
+### Blackjack: formatmall att fylla i
+
+Avsiktligt reserverad, ännu inte kalibrerad eller godkänd. Gemensamma
+bakgrunds- och videokrav ovan kan återanvändas. Kopiera inte roulettes
+bordsgeometri eller kontaktankare till blackjack.
+
+| Uppgift | Blackjackvärde |
+| --- | --- |
+| Keystonebild / referensfil | — |
+| Bildformat / originaldimensioner | — |
+| Bordsmått och kamerakalibrering | — |
+| Bordets placering i 1920 × 1080 | — |
+| Dealer, beskärning och handankare | — |
+| Idle-video, codec, fps och längd | — |
+| Bordsvideo och alpha-mask | — |
+| Gemensamma bakgrunds-ID:n | — |
+| Mobil-/desktopacceptans och hash | — |
+
+### Kort överlämningsprompt till N1-/backoffice-agenten
+
+> Fortsätt utveckla Scoutgamings interna kontrollrum på nivå 1. Läs AGENTS.md
+> och följ målkontraktet Central Studio ovan för nya `/admin`. Befintliga
+> `/control` och dess publicerade paket fungerar under övergången. Roulette
+> har nu en gemensam 16:9-scen med PNG-bord,
+> spelneutrala publicerade bild-/MP4-bakgrunder och förberedd statisk alfamask
+> för framtida bordsvideo. Läs medieformaten i docs/LOCAL-PRESENTATION-RUNTIME.md
+> och den uppmätta leveransen i web/games/roulette/media-specification.json.
+> Utgå från spelbolag → tillgängligt spel → spelrum → tillåten sammansättning
+> och dealer. Håll spelneutral bakgrund, spelspecifikt bord och frilagd dealer
+> separata. Visa mediaformat, beskärning/ankare, mask, hash och acceptansstatus
+> före förhandsvisning/publicering. Mottagen MP4 är en ogranskad prototyp;
+> bordsvideo/mask återstår att integrera i det frysta publiceringskontraktet.
+> Återanvänd befintliga revisioner, behörigheter och livscykelkontroller och
+> undersök blackjack-legacy innan ändringar. Hårdkoda ingen dealer, ändra inte
+> aktiva publiceringar automatiskt och bygg inga nya hjul-/kulanimationer.
+
 ## Bakgrundens uppspelning, 12 oktober 2026
 
 Sammansättningens valfria `backgroundPlayback` följer med det frysta paketet
@@ -85,21 +576,24 @@ borttagna Caddy-filen. Aktuell Caddy-drift: `kevin/croupier-scoutgg/drift/`.
 
 ### Verktyg som finns kvar
 
-Manuella byggare, enda källa till media som produkten läser:
+Den indexerade dealerbanken (`media/dealers/{astrid,amira,vera,mei}/runtime/indexed`)
+är borta ur Git och ur Render-imagen, utom 34 MP3 i `runtime/indexed/audio/en`
+(Astrid och Amira) som de bevarade green-speak-talparen kräver. Presentationsbanken
+`media/dealers/*/runtime/presentation` står kvar. Blob-objekten är inte raderade;
+raderna i `media/blob-index.json` för de borttagna filerna är det.
 
-- `pipeline/build-previews.sh` — förhandsvisningar av röstrepliker
-- `pipeline/encode.sh` — Annex-B
-- `pipeline/build-hands.sh` — handmattor
-- `pipeline/build-contact-review.mjs` och `pipeline/prepend-contact-entry.mjs` — uppmätta kontaktkandidater
+Manuella byggare som B9 behöll (kontrollerat 13 oktober på `426fa114`):
 
-Läppsynk och kalibrering: `sync-existing.py`, `sync-audio-warp.py`,
-`auto-phrase-warp.py`, `measure-lipsync.py`, `measure-onset.py`,
-`retime-video-map.py`, `retime-video-warp.py`, `apply-lipsync.py`,
-`trim-speak-start.py`, `mouth-crops.json` och `encode.sh`.
+- `pipeline/build-hands.sh` — enda byggaren för bevarade `runtime/hands`, men indata är borttagna Vera-strömmar; kan inte köras om utan banken
+- `pipeline/build-previews.sh` — förhandsvisningar av de gamla röstreplikerna; gör ingenting utan `streams/index.json`
+- `pipeline/prepend-contact-entry.mjs` — skriver till borttagna `runtime/indexed/performance`
+- `pipeline/build-contact-review.mjs` — mål är `dealers/astrid/performance`; nämner inte banken
+- `pipeline/encode.sh` — Annex-B, generell; nämner inte banken
 
-Krok och CI: `audit-dealer-sync.mjs`, `audit-performance.mjs`,
-`audit-astrid-actor.mjs`, `build-lab-video-manifest.mjs`, `build-index.mjs`,
-`pack-contact-media.mjs`.
+Läppsynkskripten som bara läste banken är borta tillsammans med
+`audit-dealer-sync.mjs`, `audit-performance.mjs` och `audit-astrid-actor.mjs`.
+`pipeline/mouth-crops.json` står kvar. Krok och CI kör fortfarande
+`build-lab-video-manifest.mjs`, `build-index.mjs` och `pack-contact-media.mjs`.
 
 ## Egen talprofil för registrerade dealers, 11 oktober 2026
 
@@ -175,8 +669,10 @@ Neon äger dealerposter, klippmetadata och projektkopplingar; privat Blob äger
 mediebytes. Native Studio läser gemensam driftmetadata från
 media/catalog/presentation.json och media/catalog/legacy.json tillsammans med
 media/layout.json och media/blob-index.json. Ingen lokal dealermapp skapas när
-en dealer registreras. Originalens media/dealers-mappar är fortsatt underlag
-för lokala pipelines och kalibrering, men behövs inte i Studios molnartefakt.
+en dealer registreras. `runtime/indexed` är borta utom green-speak-talparens
+34 MP3. Kvarvarande
+`runtime/presentation` och övriga dealer-mappar behövs inte som reserv för
+Studios molnuppspelning.
 tools/build-runtime-media-catalog.mjs bygger katalogen explicit;
 --check och isolerade tester med helt frånvarande dealer-mappar verifierar den.
 Saknad eller felaktig katalog ersätts aldrig med tyst tomt register.
@@ -184,10 +680,13 @@ Katalogens version 2 bevarar originalens exakta JSON-byte, så talgranskningens
 SHA-256- och storlekskontroller gäller även utan lokala dealerfiler. Native
 grundloop, talmetadata och klippinventering läser samtliga katalogen.
 
-Verifiering: riktade API-/UI-/bulk-/ljudtester och audit-dealer-sync --probe
-bevarar regressionen för fyra originaldealers. Inga inspelade byte byttes.
-Detta innebär inget nytt visuellt lipsynkgodkännande eller prov av automatisk
-talaktivering för PAOW. Ljudet i biblioteket är en källa, ingen ny TTS-profil.
+Verifiering av den leveransen: riktade API-/UI-/bulk-/ljudtester och dåvarande
+`audit-dealer-sync --probe`. Inga inspelade byte byttes. Det är inget nytt
+visuellt lipsynkgodkännande och inget prov av automatisk talaktivering för PAOW.
+Ljudet i biblioteket är en källa, ingen ny TTS-profil. Proben är borta. Vid
+media- eller spelarändring körs testerna i `.githooks/pre-commit`. Berörda
+registrerade dealers granskas med `?dealer=<name>&rehearsal=1`, två uppspelningar
+i rad. Provspelningen använder den faktiska spelaren.
 
 ## Studioflöde, 9 oktober 2026
 
@@ -326,7 +825,7 @@ flowchart LR
 
 Diagrammets namn beskriver ansvar. Det inför inga nya tjänster eller påstår
 att ett nytt generellt planformat redan är installerat. I koden ligger mycket
-av urvalet i `presentation-runtime/selection.mjs`, befintliga adaptrar och
+av urvalet i `packages/presentation/runtime/selection.mjs`, befintliga adaptrar och
 Webs spelare. Spelmotorn bestämmer utfallet; presentationen visar det.
 Valfri OpenClaw-rådgivning får bara föreslå redan tillåtna klipp. Rådet måste
 valideras och skuggläge spelar inte förslaget. Studio-assistentens hjälp med
@@ -503,7 +1002,7 @@ Ingen kontoflytt, plånboksjustering eller schemaändring ingår.
 ## Ägarskap och ordning
 
 Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordning.
-`presentation-runtime/selection.mjs` väljer exakt familj och tillåten variant
+`packages/presentation/runtime/selection.mjs` väljer exakt familj och tillåten variant
 med samma triggers, regler, slump och Director-kontrakt som Händelser (`/control/events`).
 Labbets tidigare moduler återexporterar den gemensamma implementationen.
 
@@ -591,8 +1090,8 @@ Inga mediabytes, kalibreringar eller visuella godkännanden ändras här.
 Sparade `gameLanes`/`gameLane` styr renderer, dealer och mediesamling.
 Mobile Phone Lane är förval. Äldre `original` migreras vid läsning till Mobile;
 gamla `dealer`/`presentation`-parametrar återaktiverar inte den pensionerade lanen.
-En uttryckligen registrerad `indexed-video`-lane kan använda den gemensamma
-indexspelaren för dealerbanken. Ingen automatisk videofallback införs.
+En sparad `indexed-video`-lane ger inga dealers och startar inte banken.
+Spelaren kräver `local` eller `layered`. Ingen automatisk videofallback införs.
 Källkontrakt: `web/public/game-lanes.mjs`.
 
 Verifiering och kvarstående arbete dokumenteras vid leverans i
@@ -623,6 +1122,6 @@ bildåtkomst måste verifieras separat. Syntetiska adapter-/bildprov är
 inte slutgodkännande av fysisk mikrofon/kamera eller exakt läppsynk.
 
 Källkontrakt: `lab/policies/studio-contract.json` (sex eventtyper/16 grupper),
-`media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `presentation-runtime/`.
+`media/dealers/astrid/runtime/presentation/lab-video-manifest.json` och `packages/presentation/runtime/`.
 Studio följer native-kvitton; Partner-SSE är kompletterande instruktioner.
 Transportanslutning är inte speldata, valt klipp är inte spelat klipp.

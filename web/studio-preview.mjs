@@ -10,7 +10,7 @@ import {decorateGameEntryHtml} from './public/game-entry-contract.mjs';
 import {defaultCompositionSettings} from './public/composition-settings.mjs';
 import {validateLayerAsset} from './presentation-layers.mjs';
 import {normalizeProject} from '../lab/lib/studio-model.mjs';
-import {ownDealerIdle} from '../presentation-runtime/registered-idle.mjs';
+import {ownDealerIdle} from '../packages/presentation/runtime/registered-idle.mjs';
 import {canonicalStudioJson, validateRevision, validateStudioScope, validateStudioMedia} from './storage/studio-contract.mjs';
 
 const uuid='[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}';

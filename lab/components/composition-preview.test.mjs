@@ -22,7 +22,7 @@ const id='00000000-0000-4000-8000-000000000002';
 // the real background scheduler retains its rolling budget and cancellation.
 function fixture(t){
   let time=0,serial=0,cursor=0,dirty=true,mounted=true,tree,props,renderedBackground=null;
-  const slots=[],pending=new Map(),timers=new Map(),frames=new Map(),videos=[],renderers=[],players=[];
+  const slots=[],pending=new Map(),timers=new Map(),frames=new Map(),videos=[],renderers=[],players=[],draws=[];
   const schedule=(fn,ms)=>{const token=++serial;timers.set(token,{fn,at:time+ms});return token;};
   const cancel=token=>timers.delete(token);
   class Video extends EventTarget {
@@ -58,7 +58,7 @@ function fixture(t){
     useEffect(fn,deps){const n=cursor++;if(!slots[n]||changed(slots[n].deps,deps))pending.set(n,{fn,deps});},
   };
   const overrides={react:hooks,'../lib/lab-url.mjs':{labUrl:path=>path},
-    '../../web/public/dealer-framing.mjs':{drawDealerFrame(){}},
+    '../../web/public/dealer-framing.mjs':{drawDealerFrame(_context,source,width,height,framing){draws.push({source,width,height,framing});}},
     '../../web/public/background-playback.mjs':{createBackgroundPlayback(policy,options){
       const player=createBackgroundPlayback(policy,{...options,now:()=>time,setTimeout:schedule,clearTimeout:cancel});
       const observed={starts:0,closes:0};players.push(observed);
@@ -100,8 +100,31 @@ function fixture(t){
     hide(){document.hidden=true;document.dispatchEvent(new Event('visibilitychange'));},
     show(){document.hidden=false;document.dispatchEvent(new Event('visibilitychange'));},
     get dealer(){return videos.find(video=>video.src==='/dealer.mp4');},get eventVideos(){return videos.filter(video=>video.playCalls&&video!==this.dealer);},
-    videos,players,renderers,button,get background(){return renderedBackground;},get pendingTimers(){return timers.size;},get pendingFrames(){return frames.size;}};
+    videos,players,renderers,draws,button,get background(){return renderedBackground;},get pendingTimers(){return timers.size;},get pendingFrames(){return frames.size;}};
 }
+
+test('keystone draws once, reframes without reload and switches to video and back without stale playback',async t=>{
+  const h=fixture(t);await h.ready();
+  const initialVideo=h.dealer;
+  const still={url:'/vila.png',label:'VILA',contentType:'image/png'};
+  await h.update({dealer:still});h.frame();
+  const image=h.draws.at(-1).source;
+  assert.equal(image.src,still.url);assert.equal(image.tagName,'IMG');
+  assert.equal(initialVideo.src,'');assert.equal(initialVideo.paused,true);
+  assert.equal(h.button('Spela två gånger').props.disabled,true);
+  const count=h.draws.length;h.frame();assert.equal(h.draws.length,count,'unchanged still is cached');
+  const framing={scale:1.4,x:.1,y:-.2};
+  await h.update({framing});h.frame();
+  assert.equal(h.draws.at(-1).source,image);assert.deepEqual(h.draws.at(-1).framing,framing);
+  await h.update({dealer:{url:'/dealer.mp4',label:'Spin',contentType:'video/mp4'}});h.frame();
+  const video=h.dealer;assert.notEqual(video,initialVideo);assert.equal(h.draws.at(-1).source,video);
+  assert.equal(h.button('Spela två gånger').props.disabled,false);
+  const release=video.holdNextPlay();h.click('Spela');
+  await h.update({dealer:still});release();await h.flush();h.frame();
+  assert.equal(video.paused,true);assert.equal(video.src,'');
+  assert.equal(h.draws.at(-1).source.tagName,'IMG');assert.equal(h.draws.at(-1).source.src,still.url);
+  assert.equal(h.button('Spela').props.disabled,true);assert.equal(h.pendingTimers,0);
+});
 
 test('hidden preview stays paused when an earlier dealer play promise resolves',async t=>{
   const h=fixture(t);await h.ready();const dealer=h.dealer,release=dealer.holdNextPlay();

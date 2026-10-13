@@ -386,6 +386,18 @@ test('uncertain room creation retries its exact payload after the saved environm
   assert.equal(h.controller.getSnapshot().receipt.duplicate, true); assert.equal(h.keys, 1); ui.unmount();
 });
 
+test('fixed environment accepts the full registered layer label limit without widening room names', async () => {
+  const valid = fixture(); await valid.ready(context, { environment: { kind: 'image', fixed: true, label: 'A'.repeat(120) } });
+  assert.equal(valid.controller.getSnapshot().status, 'ready');
+  assert.equal(valid.controller.getSnapshot().preflight.environment.label.length, 120);
+  const invalid = fixture(); await invalid.ready(context, { environment: { kind: 'image', fixed: true, label: 'A'.repeat(121) } });
+  assert.equal(invalid.controller.getSnapshot().status, 'error');
+  valid.controller.setName('A'.repeat(101));
+  const requests = valid.requests.length;
+  assert.equal(await valid.controller.create(presentationRoomContextKey(context)), null);
+  assert.equal(valid.requests.length, requests);
+});
+
 test('preflight rejects contradictory environment metadata', async () => {
   for (const environment of [
     { kind: 'variable', fixed: false, label: 'Flera miljöval' },

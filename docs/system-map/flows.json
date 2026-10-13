@@ -208,7 +208,7 @@
               "label": "Återläsning av serverns presentationskvitto"
             },
             {
-              "path": "presentation-runtime/selection.mjs",
+              "path": "packages/presentation/runtime/selection.mjs",
               "line": 56,
               "label": "Gemensam urvalsimplementation för Web och Lab"
             },
@@ -279,11 +279,6 @@
               "path": "test/speech-playback.mjs",
               "line": 1,
               "label": "Gemensamt inspelat tal"
-            },
-            {
-              "path": "test/dealer-sync-audit.mjs",
-              "line": 1,
-              "label": "Synk- och assetkontrakt; inte visuell approval"
             }
           ]
         }
@@ -816,7 +811,7 @@
     {
       "id": "speech-versus-director",
       "title": "Speech och Director har olika mandat",
-      "detail": "croupier-speech väljer recordedLine/generatedText/silence och exact-echo:ar request/dealer/session/round. croupier-director väljer endast variantId ur en redan kompatibilitetsfiltrerad katalog och echo:ar requestId/catalogRevision. Ingendera äger RNG, saldo, regler, kortdestination eller spelkö. Det gemensamma urvalet ligger i presentation-runtime/selection.mjs; Lab beslutscache är processlokal och är inte distribuerad produktionsexklusivitet.",
+      "detail": "croupier-speech väljer recordedLine/generatedText/silence och exact-echo:ar request/dealer/session/round. croupier-director väljer endast variantId ur en redan kompatibilitetsfiltrerad katalog och echo:ar requestId/catalogRevision. Ingendera äger RNG, saldo, regler, kortdestination eller spelkö. Det gemensamma urvalet ligger i packages/presentation/runtime/selection.mjs; Lab beslutscache är processlokal och är inte distribuerad produktionsexklusivitet.",
       "sources": [
         {
           "path": "open-claw/lab/deploy/runtime-bundle/roles/croupier-speech.md",

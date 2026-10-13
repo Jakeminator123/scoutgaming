@@ -9,7 +9,7 @@ const uuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const revision = identifier;
 const packageRevision = value => Number.isSafeInteger(value) && value > 0;
-const roomName = value => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= 100 && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
+const roomName = (value, maximum = 100) => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= maximum && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
 const reasons = new Set(['studio_presentation_runtime_update_required', 'presentation_lane_incompatible', 'presentation_package_conflict', 'presentation_package_too_large', 'presentation_room_environment_required']);
 const conflictMessages = Object.freeze({
   presentation_shared_dealer_conflict: 'En dealer har olika sparade definitioner i paketets presentationer, till exempel klipp eller automatik. Granska hela bolagets nuvarande paketurval och publicera alla dessa presentationer tillsammans först. Behåll befintliga rum och dealers.',
@@ -51,7 +51,7 @@ function preflight(value, context) {
   const environment = value.environment ?? null;
   if (environment !== null && (!sameKeys(environment, ['kind', 'fixed', 'label'])
     || !['baked', 'image', 'video', 'variable'].includes(environment.kind) || typeof environment.fixed !== 'boolean'
-    || !roomName(environment.label) || value.ready && !environment.fixed
+    || !roomName(environment.label, 120) || value.ready && !environment.fixed
     || environment.kind === 'variable' && environment.fixed)) invalid();
   if (value.ready && (value.reason !== null || ![2, 3, 4, 9].includes(capabilities?.schemaVersion))) invalid();
   const seen = new Set();

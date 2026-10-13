@@ -21,3 +21,9 @@ test('archived dealer compositions retain their layer references until explicitl
   assert.deepEqual(layerAssetReferences(project,asset.id),[{id:lane.id,label:lane.label}]);
   assert.throws(()=>removeLayerAsset(project,asset.id),/Koppla loss/);
 });
+
+test('legacy lane names display as compositions while stored identities and snapshots stay intact',()=>{
+  const {project,asset}=fixture();project.lanes[0].label='Mobile Phone Lane';project.lanes[0].layers.background.allowed=[asset.id];
+  assert.deepEqual(layerAssetReferences(project,asset.id),[{id:'mobile-phone',label:'Standardsammansättning'}]);
+  assert.equal(project.lanes[0].label,'Mobile Phone Lane');assert.equal(defaultPresentationLane('astrid').label,'Standardsammansättning');
+});

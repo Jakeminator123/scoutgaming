@@ -20,10 +20,12 @@ run_node_tests() {
   fi
 }
 node docs/system-map/verify.mjs --check
-run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/lobby/hooks/use-hero-sequence.test.mjs test/public-lobby.mjs test/room-environment.mjs
+run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/admin/lib/dealer-artwork.test.mjs packages/design-preview/admin/lib/dealer-playback.test.mjs packages/design-preview/admin/lib/connected-studio.test.mjs packages/design-preview/admin/lib/studio-layout.test.mjs packages/design-preview/admin/lib/system-overview.test.mjs packages/design-preview/admin/lib/studio-policy.test.mjs packages/design-preview/admin/lib/studio-lifecycle.test.mjs packages/design-preview/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
+run_node_tests lab/test/material-trash.test.mjs lab/test/material-trash-ui.test.mjs
+run_node_tests test/room-environment.mjs
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
-run_node_tests ordning/verktyg/raderingsgrind.test.mjs
+run_node_tests test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs packages/design-preview/admin/lib/studio-context.test.mjs
 run_node_tests test/browser-runtime-bindings.mjs
 run_node_tests lab/test/dealer-material-navigation.test.mjs lab/components/dealer-forge-page.test.mjs
 run_node_tests test/backup-lab-state.mjs test/migrate-lab-state.mjs
@@ -69,17 +71,14 @@ run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-cre
 run_node_tests ops/cloud/test/runtime.test.mjs ops/cloud/test/shutdown.test.mjs ops/cloud/test/native-p6-router-hook.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs lab/test/video-registry.test.mjs lab/test/blob-source-routing.test.mjs
 node test/craig-login.mjs
 node test/bo-game-auth.mjs
-node pipeline/audit-dealer-sync.mjs
-node pipeline/audit-performance.mjs
-node pipeline/audit-astrid-actor.mjs
-run_node_tests test/build-index.mjs test/dealer-sync-audit.mjs test/speech-playback.mjs
+run_node_tests test/build-index.mjs test/speech-playback.mjs
 run_node_tests test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/chat-presentation-context.mjs test/registered-chat-context.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
 run_node_tests test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs test/astrid-chat-visibility.mjs
 run_node_tests test/activate-native-ai-qa.mjs test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs test/registered-chat-memory.mjs
 run_node_tests test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/native-p6-game-playback.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
 run_node_tests test/player-probe.mjs
 run_node_tests test/performance-contact.mjs test/performance-player-source.mjs test/pack-contact-media.mjs test/table-audio.mjs
-run_node_tests test/dealer-rhythm.mjs test/dealer-smooth60.mjs test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
+run_node_tests test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
 run_node_tests test/idle-video-loop.mjs
 run_node_tests test/action-placement.mjs test/bugshot-report.mjs
 run_node_tests test/generations-api.mjs

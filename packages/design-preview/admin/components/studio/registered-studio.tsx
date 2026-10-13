@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, Building2, DoorOpen, RefreshCw, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {RegisteredResourceLifecycle} from './registered-resource-lifecycle';
+import {operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
 
-type Operator = { id: string; slug: string; name: string; status: string; packageRevision: number | null };
+type Operator = { id: string; slug: string; name: string; status: string; archivedAt:string|null;packageRevision: number | null };
 type Dealer = { id: string; name: string; archived: boolean };
 type Room = { id: string; name: string; operatorId: string; game: string; state: string; compositionId: string;
   laneId: string; published: boolean; playable: boolean; dealerIds: string[]; dealers: { id: string; name: string }[]; dealerSource: 'published' | 'saved'; playUrl: string | null;
@@ -30,11 +32,13 @@ const existing: Record<string, string> = {
 };
 const connectedPaths = new Set(['/control', '/control/structure', '/control/admin/operators', '/control/rooms', '/control/dealers']);
 
-export function RegisteredStudio({ path, title }: { path: string; title: string }) {
+export function RegisteredStudio({ path, title,disabled=false,onChanged }: { path: string; title: string;disabled?:boolean;onChanged?:()=>void }) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refresh, setRefresh] = useState(0);
-  const [operatorId, setOperatorId] = useState('');
-  const [roomId, setRoomId] = useState('');
+  const [companyView,setCompanyView]=useState<'active'|'trash'|'suspended'>('active');
+  const [lifecycleBusy,setLifecycleBusy]=useState(false);
+  const [operatorId, setOperatorId] = useState(()=>new URLSearchParams(location.search).get('operator')??'');
+  const [roomId, setRoomId] = useState(()=>new URLSearchParams(location.search).get('table')??'');
   useEffect(() => {
     const controller = new AbortController();
     setState({ status: 'loading' });
@@ -53,7 +57,10 @@ export function RegisteredStudio({ path, title }: { path: string; title: string 
     })();
     return () => controller.abort();
   }, [refresh]);
-  const data = state.status === 'ready' ? state.value.administration : null;
+  const complete=state.status==='ready'?state.value.administration:null;
+  const groups=operatorLifecycleGroups(complete?.operators??[]);
+  const data=complete?{...complete,operators:path==='/control/admin/operators'?groups[companyView]:groups.active,
+    rooms:complete.rooms.filter(room=>room.state!=='archived'&&groups.active.some(row=>row.id===room.operatorId))}:null;
   const operator = data?.operators.find(row => row.id === operatorId) ?? data?.operators[0];
   const operatorRooms = data?.rooms.filter(row => row.operatorId === operator?.id) ?? [];
   const selectedRoom = operatorRooms.find(row => row.id === roomId) ?? operatorRooms[0];
@@ -62,7 +69,7 @@ export function RegisteredStudio({ path, title }: { path: string; title: string 
   return <>
     <nav aria-label="Registrerad struktur" className="flex flex-wrap items-center gap-3 border-b border-sg-line bg-sg-panel/60 px-6 py-3 text-xs">
       <label className="flex items-center gap-2 text-sg-muted">Spelbolag
-        <select aria-label="Välj spelbolag" className="max-w-48 rounded border border-sg-line bg-sg-bg p-1.5 text-sg-text" value={operator?.id ?? ''} disabled={!data?.operators.length}
+        <select aria-label="Välj spelbolag" className="max-w-48 rounded border border-sg-line bg-sg-bg p-1.5 text-sg-text" value={operator?.id ?? ''} disabled={!data?.operators.length||lifecycleBusy}
           onChange={event => { setOperatorId(event.target.value); setRoomId(''); }}>
           {!data?.operators.length && <option value="">Inga val tillgängliga</option>}
           {data?.operators.map(row => <option value={row.id} key={row.id}>{row.name}</option>)}
@@ -79,11 +86,12 @@ export function RegisteredStudio({ path, title }: { path: string; title: string 
     <section className="flex flex-1 flex-col gap-6 px-6 py-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-sg-lime">{'// Studio · Register'}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{path === '/control' || path === '/control/structure' ? 'Spelbolag → Spel → Rum → Dealer' : title}</h1>
-          <p className="mt-2 max-w-2xl text-sm text-sg-muted">Registrerade uppgifter läses från samma källa som Control. Redigering och publicering görs tills vidare i den befintliga arbetsytan.</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{path === '/control' || path === '/control/structure' ? 'Spelbolag → Rum → Spel → Bord & dealer' : title}</h1>
+          <p className="mt-2 max-w-2xl text-sm text-sg-muted">Registrerade bolag och rum använder samma skyddade register och papperskorg som Control. Team och publicering nås via bolagets länkar.</p>
         </div>
-        <button type="button" disabled={state.status === 'loading'} onClick={() => setRefresh(value => value + 1)} className="inline-flex items-center gap-2 rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-50"><RefreshCw size={13} /> Uppdatera</button>
+        <button type="button" disabled={state.status === 'loading'||lifecycleBusy} onClick={() => setRefresh(value => value + 1)} className="inline-flex items-center gap-2 rounded border border-sg-line px-3 py-2 text-xs disabled:opacity-50"><RefreshCw size={13} /> Uppdatera</button>
       </header>
+      {complete&&path==='/control/admin/operators'&&<div role="group" aria-label="Bolagsvy">{(['active','trash','suspended'] as const).map(view=><button key={view} className="studio-button" aria-pressed={companyView===view} disabled={lifecycleBusy} onClick={()=>{setCompanyView(view);setOperatorId('');setRoomId('');}}>{({active:'Aktiva bolag',trash:'Papperskorg',suspended:'Avstängda bolag'})[view]} ({groups[view].length})</button>)}</div>}
       {!connectedPaths.has(path) ? <div className={cn(panelClass, 'p-6')}>
         <h2 className="font-semibold">{title} ansluts i nästa steg</h2>
         <p className="my-3 text-sm text-sg-muted">Den här delen har ännu ingen datakoppling. Exempelsiffror och simulerade ändringar visas inte bland de registrerade uppgifterna.</p>
@@ -95,14 +103,14 @@ export function RegisteredStudio({ path, title }: { path: string; title: string 
           <a href="/admin" className={linkClass}>Öppna administrationen igen <ArrowUpRight size={13} /></a>
         </div> : data && <>
           <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[
-            ['Spelbolag', data.operators.length], ['Rum', data.rooms.length], ['Aktiva dealers', data.dealers.filter(row => !row.archived).length], ['Spelbara rum', data.rooms.filter(row => row.playable).length],
+            ['Aktiva spelbolag', groups.active.length], ['Rum', data.rooms.length], ['Aktiva dealers', data.dealers.filter(row => !row.archived).length], ['Spelbara rum', data.rooms.filter(row => row.playable).length],
           ].map(([label, count]) => <div key={label} className={cn(panelClass, 'px-4 py-3')}><dt className="font-mono text-[10px] uppercase tracking-wider text-sg-muted">{label}</dt><dd className="mt-1 text-2xl font-semibold tabular-nums">{count}</dd></div>)}</dl>
           {path === '/control/dealers' ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {!data.dealers.length && <p className="text-sm text-sg-muted">Inga dealers är registrerade.</p>}
             {data.dealers.map(dealer => <article key={dealer.id} className={cn(panelClass, 'p-4')}><UserRound size={20} className="mb-3 text-sg-teal" /><h2 className="font-semibold">{dealer.name}</h2><p className="mt-1 text-xs text-sg-muted">{dealer.archived ? 'Arkiverad' : 'Registrerad'} · {dealer.id}</p><a className={cn(linkClass, 'mt-4')} href={controlLink('/control/clips', undefined, undefined, dealer)}>Öppna dealer i Control <ArrowUpRight size={13} /></a></article>)}
           </div> : path === '/control/admin/operators' ? <ul className="grid gap-3 sm:grid-cols-2">
             {!data.operators.length && <li className="text-sm text-sg-muted">Inga spelbolag är registrerade.</li>}
-            {data.operators.map(row => <li key={row.id} className={cn(panelClass, 'p-4')}><Building2 size={20} className="mb-3 text-sg-lime" /><h2 className="font-semibold">{row.name}</h2><p className="my-2 text-xs text-sg-muted">{labels[row.status] ?? row.status} · {data.rooms.filter(room => room.operatorId === row.id).length} rum · {row.packageRevision === null ? 'Inget publicerat paket' : `Paket ${row.packageRevision}`}</p><div className="mt-4 flex flex-wrap gap-4"><a className={linkClass} href={controlLink('/control/companies', row)}>Bolag & team ↗</a>{row.status === 'active' && <a className={linkClass} href={'/partner/' + encodeURIComponent(row.slug)}>Spelbolagsportal ↗</a>}</div></li>)}
+            {data.operators.map(row => <li key={row.id} className={cn(panelClass, 'p-4')}><Building2 size={20} className="mb-3 text-sg-lime" /><h2 className="font-semibold">{row.name}</h2><p className="my-2 text-xs text-sg-muted">{row.archivedAt?'I papperskorgen':labels[row.status] ?? row.status} · {data.rooms.filter(room => room.operatorId === row.id).length} rum · {row.packageRevision === null ? 'Inget publicerat paket' : `Paket ${row.packageRevision}`}</p><div className="mt-4 flex flex-wrap gap-4"><a className={linkClass} href={controlLink('/control/companies', row)}>Bolag & team ↗</a>{row.status === 'active' && <a className={linkClass} href={'/partner/' + encodeURIComponent(row.slug)}>Spelbolagsportal ↗</a>}</div></li>)}
           </ul> : path === '/control/rooms' ? <div>
             <div className="mb-4 flex flex-wrap justify-between gap-3"><h2 className="font-semibold">{operator?.name ?? 'Inga registrerade spelbolag'}</h2>{operator && <a href={editHref} className={linkClass}>Spelrum & publicering i Control ↗</a>}</div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{operatorRooms.map(room => <RoomCard key={room.id} room={room} operator={operator!} dealers={data.dealers} />)}</div>
@@ -110,13 +118,14 @@ export function RegisteredStudio({ path, title }: { path: string; title: string 
           </div> : <ul className="flex flex-col gap-4">
             {!data.operators.length && <li className="text-sm text-sg-muted">Inga spelbolag är registrerade.</li>}
             {data.operators.map(row => <li key={row.id} className={cn(panelClass, row.id === operator?.id && 'border-sg-lime/50')}>
-              <button type="button" onClick={() => { setOperatorId(row.id); setRoomId(''); }} className="flex w-full flex-wrap items-center gap-2 border-b border-sg-line px-4 py-3 text-left"><Building2 size={16} className="text-sg-lime" /><span className="font-semibold">{row.name}</span><span className="font-mono text-[10px] text-sg-muted">{labels[row.status] ?? row.status}</span></button>
+              <button type="button" onClick={() => { setOperatorId(row.id); setRoomId(''); }} className="flex w-full flex-wrap items-center gap-2 border-b border-sg-line px-4 py-3 text-left"><Building2 size={16} className="text-sg-lime" /><span className="font-semibold">{row.name}</span><span className="font-mono text-[10px] text-sg-muted">{row.archivedAt?'I papperskorgen':labels[row.status] ?? row.status}</span></button>
               <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">{data.rooms.filter(room => room.operatorId === row.id).map(room => <RoomCard key={room.id} room={room} operator={row} dealers={data.dealers} />)}
                 {!data.rooms.some(room => room.operatorId === row.id) && <p className="text-xs text-sg-muted">Inga rum registrerade ännu.</p>}
               </div>
             </li>)}
           </ul>}
           {selectedRoom && <p className="text-xs text-sg-muted">Valt rum: {selectedRoom.name} · {selectedRoom.dealerIds.map(dealerName).join(', ') || 'Inga dealers kopplade'}</p>}
+          {operator&&path==='/control/admin/operators'&&<RegisteredResourceLifecycle operatorId={operator.id} disabled={disabled} onBusyChange={setLifecycleBusy} onChanged={()=>{setRefresh(value=>value+1);onChanged?.();}}/>}
         </>}
       <footer className="mt-auto border-t border-sg-line pt-4 text-xs text-sg-muted">Ny arbetsyta · {state.status === 'ready' ? `Register läst ${new Date(state.value.readAt).toLocaleString('sv-SE')}` : 'Datastatus visas ovan'} · <a href="/control" className="underline">Nuvarande Control</a></footer>
     </section>

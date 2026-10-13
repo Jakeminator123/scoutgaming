@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STEP_IDS, scrollToSection, useLobby } from "@/components/lobby-provider";
 import { HeroKeystone } from "@/components/hero-keystone";
@@ -50,9 +50,8 @@ export function HeroSection() {
     };
   }, []);
 
-  const motionProgress = sequence.reducedMotion ? 0 : scrollProgress;
-  const textOpacity = Math.max(0, 1 - motionProgress / 0.25);
-  const imageProgress = Math.max(0, Math.min(1, (motionProgress - 0.2) / 0.8));
+  const textOpacity = Math.max(0, 1 - scrollProgress / 0.25);
+  const imageProgress = Math.max(0, Math.min(1, (scrollProgress - 0.2) / 0.8));
   const eased = 1 - Math.pow(1 - imageProgress, 3);
 
   const perSide = isMobile ? 1 : 2;
@@ -69,13 +68,7 @@ export function HeroSection() {
 
   return (
     <section id="hero" ref={sectionRef} className="relative bg-background">
-      <div className={cn("top-0 h-screen overflow-hidden", sequence.reducedMotion ? 'relative' : 'sticky')}>
-        <div className="absolute right-5 top-20 z-20 md:right-10 lg:right-16">
-          {sequence.reducedMotion ? <span className="rounded-full border border-border bg-background/80 px-3 py-2 text-xs text-muted-foreground">Rörelser avstängda</span> :
-            <button type="button" onClick={sequence.replay} className="inline-flex items-center gap-2 rounded-full border border-off/25 bg-background/70 px-3 py-2 text-xs text-off/80 backdrop-blur-md transition-colors hover:border-lime hover:text-off focus-visible:outline-lime">
-              <RotateCcw size={12} aria-hidden />{sequence.phase === 'idle' || sequence.phase === 'armed' ? 'Spela intro' : 'Spela intro igen'}
-            </button>}
-        </div>
+      <div className="sticky top-0 h-screen overflow-hidden">
         <div
           className="relative flex h-full w-full items-stretch justify-center"
           style={{ gap: `${gap}px`, perspective: "1400px", paddingBlock: `${frameInset}px` }}
@@ -101,12 +94,12 @@ export function HeroSection() {
             }}
           >
             <HeroKeystone
-              key={sequence.run}
               phase={sequence.phase}
               scale={1 + eased * 0.08}
               videoRef={sequence.videoRef}
               onPlaying={sequence.onPlaying}
               onEnded={sequence.onEnded}
+              onError={sequence.onError}
             />
             <div
               className={cn(
@@ -122,6 +115,7 @@ export function HeroSection() {
 
             <div
               className="absolute inset-0 flex flex-col justify-end px-5 pb-28 pt-24 md:px-10 md:pb-32 lg:px-16"
+              inert={cinematic || textOpacity < 0.05}
               style={{ opacity: textOpacity, pointerEvents: textOpacity < 0.05 || cinematic ? "none" : "auto" }}
             >
               <div
@@ -137,9 +131,9 @@ export function HeroSection() {
                   </span>
 
                   <h1 className="display mt-6 text-[clamp(3.25rem,10vw,8.5rem)] leading-[0.92] text-off">
-                    <span className="block animate-[slideUp_0.8s_ease-out_forwards] opacity-0 motion-reduce:animate-none motion-reduce:opacity-100">Ditt bolag.</span>
+                    <span className="block animate-[slideUp_0.8s_ease-out_forwards] opacity-0">Ditt bolag.</span>
                     <span
-                      className="block animate-[slideUp_0.8s_ease-out_forwards] text-lime opacity-0 motion-reduce:animate-none motion-reduce:opacity-100"
+                      className="block animate-[slideUp_0.8s_ease-out_forwards] text-lime opacity-0"
                       style={{ animationDelay: "120ms" }}
                     >
                       Ditt bord.
@@ -147,7 +141,7 @@ export function HeroSection() {
                   </h1>
 
                   <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-foreground/80 md:text-xl">
-                    Börja med ditt spelbolag. Då öppnas bolagets spelrum – och i rummet väljer du dealer.
+                    Börja med ditt spelbolag. Då öppnas bolagets spelrum – och i rummet väljer du dealer och miljö.
                   </p>
 
                   <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -198,7 +192,7 @@ export function HeroSection() {
                 <span
                   className={cn("flex items-center gap-2 transition-opacity duration-700", cinematic ? "opacity-0" : "opacity-100")}
                 >
-                  <ArrowDown className="h-3 w-3 motion-safe:animate-bounce" aria-hidden />
+                  <ArrowDown className="h-3 w-3 animate-bounce" aria-hidden />
                   Scrolla för att öppna dörrarna
                 </span>
                 <span
@@ -218,7 +212,7 @@ export function HeroSection() {
                   cinematic ? "opacity-0" : "opacity-100",
                 )}
               >
-                01 Bolag → 02 Spelrum → 03 Dealer
+                01 Bolag → 02 Spelrum → 03 Dealer & miljö
               </span>
             </div>
           </div>
@@ -236,7 +230,7 @@ export function HeroSection() {
         </div>
       </div>
 
-      {!sequence.reducedMotion && <div style={{ height: `${HERO_PARALLAX_VH * 100}vh` }} />}
+      <div style={{ height: `${HERO_PARALLAX_VH * 100}vh` }} />
     </section>
   );
 }

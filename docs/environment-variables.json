@@ -5,6 +5,8 @@
     "render-game": {
       "sources": [
         "ops/cloud/config.mjs",
+        "lab/lib/cloud-media-store.mjs",
+        "lab/lib/video-registry.mjs",
         "ops/cloud/gateway.mjs",
         "ops/cloud/start.mjs",
         "ops/cloud/container-entry.mjs",
@@ -361,6 +363,9 @@
         "web/storage/studio-game-policy.mjs",
         "lab/lib/studio-game-authority.mjs",
         "lab/lib/neon-video-registry.mjs",
+        "lab/lib/cloud-media-store.mjs",
+        "lab/lib/video-registry.mjs",
+        "lab/lib/legacy-clip-inventory.mjs",
         "lab/lib/voice-preview.mjs",
         "lab/lib/studio-voice-lines.mjs",
         "lab/lib/openclaw-admin.mjs",
@@ -393,6 +398,8 @@
         "CROUPIER_MEDIA_BLOB_INDEX",
         "BLOB_READ_WRITE_TOKEN",
         "LAB_STUDIO_DATA_DIR",
+        "LAB_PUBLIC_URL",
+        "CROUPIER_DATA_DIR",
         "OPENCLAWAPI_KEY",
         "RUNWAY_API_KEY",
         "OPENCLAW_API_KEY"

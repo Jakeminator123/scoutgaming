@@ -75,8 +75,8 @@ test('all companies load even without a selection and switching companies does n
 });
 
 test('archiving confirms a concrete room and sends exactly its tenant and observed revisions',async()=>{
-  const h=harness();await h.ready();h.button('Arkivera').props.onClick();
-  assert.equal(h.requests.length,1);assert.match(h.html(),/Arkivera Nordiska rummet/);
+  const h=harness();await h.ready();h.button('Flytta till papperskorgen').props.onClick();
+  assert.equal(h.requests.length,1);assert.match(h.html(),/Flytta till papperskorgen: Nordiska rummet/);
   const confirm=h.button('Bekräfta');confirm.props.onClick();confirm.props.onClick();assert.equal(h.requests.length,2);
   assert.deepEqual(JSON.parse(h.requests[1].options.body),{operatorId:'north',roomId:'room-one',expectedAdministrationRevision:'admin-1',expectedPackageRevision:4,archived:true});
   assert.equal(h.busy.at(-1),true);
@@ -88,7 +88,7 @@ test('archiving confirms a concrete room and sends exactly its tenant and observ
 });
 
 test('a selected confirmation cannot operate on another company after a context switch',async()=>{
-  const h=harness({kind:'operator'});await h.ready();h.button('Arkivera bolag').props.onClick();
+  const h=harness({kind:'operator'});await h.ready();h.button('Flytta bolag till papperskorgen').props.onClick();
   h.input.operatorId='south';h.render();assert.equal(h.button('Bekräfta'),undefined);assert.equal(h.requests.length,1);
 });
 
@@ -96,15 +96,15 @@ test('old suspended companies are distinct from archived companies that can be r
   const h=harness({kind:'operator'});await h.ready(snapshot({operators:[company('north',{status:'suspended'})]}));
   assert.match(h.html(),/avstängt sedan tidigare/);assert.equal(h.button('Återställ bolag'),undefined);
   h.input.refreshKey=1;h.render();await h.reply(1,snapshot({operators:[company('north',{status:'suspended',archivedAt:'2026-10-12T00:00:00Z'})]}));
-  assert.ok(h.button('Återställ bolag'));h.button('Återställ bolag').props.onClick();assert.match(h.html(),/Rum som tidigare var öppna/);
+  assert.ok(h.button('Återställ bolag'));h.button('Återställ bolag').props.onClick();assert.match(h.html(),/Spelrummen stannar i papperskorgen/);
 });
 
 test('foreign receipts block retries until a fresh read and never update another tenant',async()=>{
-  const h=harness();await h.ready();h.button('Arkivera').props.onClick();h.button('Bekräfta').props.onClick();
+  const h=harness();await h.ready();h.button('Flytta till papperskorgen').props.onClick();h.button('Bekräfta').props.onClick();
   await h.reply(1,{ok:true,room:room({operatorId:'south'}),administrationRevision:'admin-2',packageRevision:5});
   assert.equal(h.requests.length,2);assert.equal(h.changed.length,1);assert.equal(h.uncertain.length,1);
-  assert.equal(h.button('Arkivera').props.disabled,true);assert.equal(h.button('Bekräfta'),undefined);
-  h.button('Uppdatera').props.onClick();h.render();await h.reply(2,snapshot());assert.equal(h.button('Arkivera').props.disabled,false);
+  assert.equal(h.button('Flytta till papperskorgen').props.disabled,true);assert.equal(h.button('Bekräfta'),undefined);
+  h.button('Uppdatera').props.onClick();h.render();await h.reply(2,snapshot());assert.equal(h.button('Flytta till papperskorgen').props.disabled,false);
 });
 
 test('failed readback after a saved mutation blocks another write and retains a visible recovery action',async()=>{
@@ -116,8 +116,8 @@ test('failed readback after a saved mutation blocks another write and retains a 
 
 test('an external write lock and missing package both disable mutations, and unmounted reads are ignored',async()=>{
   const h=harness({disabled:true});await h.ready(snapshot({operators:[company('north',{packageRevision:null,lanes:[]})],rooms:[room({packageRevision:null,published:false,canArchive:false})]}));
-  assert.equal(h.button('Arkivera').props.disabled,true);assert.equal(h.button('Pausa rum').props.disabled,true);
-  h.button('Arkivera').props.onClick();h.button('Bekräfta').props.onClick();assert.equal(h.requests.length,1);
+  assert.equal(h.button('Flytta till papperskorgen').props.disabled,true);assert.equal(h.button('Pausa rum').props.disabled,true);
+  h.button('Flytta till papperskorgen').props.onClick();h.button('Bekräfta').props.onClick();assert.equal(h.requests.length,1);
   const late=harness();late.render();late.unmount();await late.reply(0,snapshot());assert.equal(late.changed.length,0);
 });
 
@@ -165,10 +165,10 @@ test('a confirmed room pause updates the visible status and releases writes only
 test('operator archive readback must confirm both suspended status and the recorded archive',async()=>{
   const archived=company('north',{status:'suspended',archivedAt:'2026-10-12T00:00:00Z',packageRevision:5});
   for(const returned of [archived,{...archived,status:'active'},{...archived,archivedAt:null},{...archived,archivedAt:'2026-10-12T01:00:00Z'}]){
-    const h=harness({kind:'operator'});await h.ready();h.button('Arkivera bolag').props.onClick();h.button('Bekräfta').props.onClick();
-    await h.reply(1,{ok:true,operator:archived,packageRevision:5});await h.reply(2,snapshot({operators:[returned]}));
+    const h=harness({kind:'operator'});await h.ready();h.button('Flytta bolag till papperskorgen').props.onClick();h.button('Bekräfta').props.onClick();
+    await h.reply(1,{ok:true,operator:archived,packageRevision:5,administrationRevision:'admin-1'});await h.reply(2,snapshot({operators:[returned]}));
     if(returned===archived){assert.equal(h.uncertain.length,0);assert.equal(h.button('Återställ bolag').props.disabled,false);assert.match(h.html(),/North är arkiverat/);}
-    else{assert.equal(h.uncertain.length,1);assert.equal(h.button('Arkivera bolag').props.disabled,true);assert.doesNotMatch(h.html(),/North är arkiverat/);}
+    else{assert.equal(h.uncertain.length,1);assert.equal(h.button('Flytta bolag till papperskorgen').props.disabled,true);assert.doesNotMatch(h.html(),/North är arkiverat/);}
   }
 });
 

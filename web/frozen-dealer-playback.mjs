@@ -1,4 +1,4 @@
-import { validateRegisteredIdlePolicies } from '../presentation-runtime/registered-idle-policy.mjs';
+import { validateRegisteredIdlePolicies } from '../packages/presentation/runtime/registered-idle-policy.mjs';
 import seed from '../lab/policies/project.seed.json' with { type: 'json' };
 import { validateProject } from '../lab/lib/studio-model.mjs';
 import { validateManagedStudioMedia } from './managed-media-contract.mjs';

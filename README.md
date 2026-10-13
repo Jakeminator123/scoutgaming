@@ -95,8 +95,9 @@ OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-
 - [Croupier documentation · V5](https://github.com/Jakeminator123/animation-events-v1)
   is the source repository for the interactive documentation canvas. It does
   not own game outcomes or runtime contracts.
-- Repo documentation is limited to five current Markdown files in `docs/`.
-  Update them in place; further reports and sprint documents are paused.
+- Shared project documentation stays in the five current Markdown files directly in `docs/`.
+  [Game manuals](docs/games/README.md) collect blackjack and roulette under `docs/games/`, as requested by Jakob.
+  Update those canonical documents in place; further reports and sprint documents are paused.
 
 Deliver on a feature branch (`jakob/*`, `codex/*` or `cursor/*`) and open a pull
 request into `main`. Those branches are the allowed push targets, without
@@ -158,17 +159,14 @@ for current commands and the actual addresses printed by the launcher.
 
 ## Validation
 
-The repository hook runs the media/player audits and regression suites:
+The repository hook runs the media/player checks and regression suites:
 
 ```sh
 .githooks/pre-commit
 ```
 
-For any media or player change, also run:
-
-```sh
-node pipeline/audit-dealer-sync.mjs --probe
-```
+The indexed dealer bank and `pipeline/audit-dealer-sync.mjs` are no longer in
+the tree. Rehearsal of registered clips stays in the real player.
 
 Passing hashes and tests protect against regressions but do not prove visual
 quality, lip sync or physical card contact. See

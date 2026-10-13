@@ -1,0 +1,2388 @@
+{
+  "$schema": "SCENKONTRAKT.schema.json",
+  "schemaVersion": "1.0.0",
+  "contractId": "croupier.media.mobile-master.v1",
+  "packageVersion": "1.0.0",
+  "createdDate": "2026-10-12",
+  "language": "sv-SE",
+  "status": "LOCAL_AUTHORING_CONTRACT_NOT_DEPLOYED",
+  "summary": "Gemensamt mobilkoordinatplan. Ett original per pose, samma höjdskalning i mobil och desktop. JSON skiljer källvärden från nya rekommendationer och oprövade kalibreringar.",
+  "authority": {
+    "knownCoordinates": "Paow/Dragge emil-mobile-v3 only",
+    "newRecommendations": "Package-specific authoring/delivery defaults, not claimed existing runtime requirements",
+    "uncalibratedValues": "Draft table silhouette, editable hand regions, camera intrinsics, shoe point and physical depth must not be presented as measured truth",
+    "changingContract": "Create a new contract version and revalidate dependent poses/clips; AI review cannot mutate this document."
+  },
+  "sources": [
+    {
+      "id": "uploaded_legacy_coordinates_inverse",
+      "file": "Dealerverkstad.zip/Dealerverkstad/config/coordinates.json",
+      "sha256": "1da39e9f09ec3c42469ab1e4f980f6e0126adb59ed695386d42eb0720c7d55a7",
+      "mapping": "canonical x = legacy x - 420; canonical y = legacy y + 108",
+      "sourceSpace": "desktop-1920x1080"
+    },
+    {
+      "id": "previous_geometry_review",
+      "file": "Dealerverkstad-geometrikontroll/FORMATKONTRAKT_FORSLAG.json",
+      "sha256": "a3d1d730331f55a5e52de5550dd543bbdd35bdc231733ab788c2d5d9e751c593"
+    },
+    {
+      "id": "repo_snapshot",
+      "repository": "Jakeminator123/scoutgaming",
+      "commit": "7ccc2f6cba2a03241e2aabdd9fa36082edac5a9e",
+      "readPaths": [
+        "packages/presentation/preview/site/catalog.json",
+        "packages/presentation/compositor/geometry.js",
+        "web/public/dealer-framing.mjs"
+      ],
+      "scope": "Read-only snapshot. No GitHub writes or deploys."
+    },
+    {
+      "id": "openai_vision",
+      "url": "https://developers.openai.com/api/docs/guides/images-vision",
+      "checked": "2026-10-12"
+    },
+    {
+      "id": "openai_images",
+      "url": "https://developers.openai.com/api/reference/resources/images/methods/edit",
+      "checked": "2026-10-12"
+    },
+    {
+      "id": "openai_mask_limits",
+      "url": "https://developers.openai.com/api/docs/guides/image-generation",
+      "checked": "2026-10-12",
+      "note": "Mask is model guidance, not pixel lock. Local composite is the actual pixel-preservation step."
+    },
+    {
+      "id": "runway_inputs",
+      "url": "https://docs.dev.runwayml.com/assets/inputs/",
+      "checked": "2026-10-12"
+    },
+    {
+      "id": "runway_api",
+      "url": "https://docs.dev.runwayml.com/api/",
+      "checked": "2026-10-12"
+    },
+    {
+      "id": "ffmpeg_formats",
+      "url": "https://ffmpeg.org/ffmpeg-formats.html",
+      "checked": "2026-10-12"
+    },
+    {
+      "id": "web_codecs",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Video_codecs",
+      "checked": "2026-10-12"
+    }
+  ],
+  "coordinateSystem": {
+    "id": "emil-mobile-v3",
+    "width": 1080,
+    "height": 1920,
+    "origin": "top-left",
+    "xPositive": "right_in_image",
+    "yPositive": "down_in_image",
+    "units": "reference_pixels",
+    "pointMeaning": "card_center",
+    "rectConvention": "[left,top,right,bottom), continuous edge coordinates",
+    "pixelCenters": "(column + 0.5, row + 0.5)",
+    "normalizedFormula": {
+      "u": "x / 1080",
+      "v": "y / 1920"
+    },
+    "handedness": "Viewer-left and dealer-left differ. Never mirror media implicitly. Box 1 is viewer-left.",
+    "spatialDimension": "2D image registration; NOT physical centimetres or 3D coordinates",
+    "card": {
+      "width": 79,
+      "height": 106,
+      "rotationDegrees": 0,
+      "family": "Paow/Dragge-v3",
+      "status": "SOURCE_COORDINATE"
+    },
+    "positions": {
+      "1": {
+        "cx": 110,
+        "cy": 1025,
+        "normalized": {
+          "x": 0.10185185185185185,
+          "y": 0.5338541666666666
+        },
+        "boundsLTRB": [
+          70.5,
+          972,
+          149.5,
+          1078
+        ],
+        "label": "Box 1",
+        "status": "SOURCE_COORDINATE",
+        "source": "uploaded_legacy_coordinates_inverse",
+        "meaning": "card_center",
+        "geometryTolerancePx": 2
+      },
+      "2": {
+        "cx": 253,
+        "cy": 1075,
+        "normalized": {
+          "x": 0.23425925925925925,
+          "y": 0.5598958333333334
+        },
+        "boundsLTRB": [
+          213.5,
+          1022,
+          292.5,
+          1128
+        ],
+        "label": "Box 2",
+        "status": "SOURCE_COORDINATE",
+        "source": "uploaded_legacy_coordinates_inverse",
+        "meaning": "card_center",
+        "geometryTolerancePx": 2
+      },
+      "3": {
+        "cx": 396,
+        "cy": 1105,
+        "normalized": {
+          "x": 0.36666666666666664,
+          "y": 0.5755208333333334
+        },
+        "boundsLTRB": [
+          356.5,
+          1052,
+          435.5,
+          1158
+        ],
+        "label": "Box 3",
+        "status": "SOURCE_COORDINATE",
+        "source": "uploaded_legacy_coordinates_inverse",
+        "meaning": "card_center",
+        "geometryTolerancePx": 2
+      },
+      "4": {
+        "cx": 540,
+        "cy": 1115,
+        "normalized": {
+          "x": 0.5,
+          "y": 0.5807291666666666
+        },
+        "boundsLTRB": [
+          500.5,
+          1062,
+          579.5,
+          1168
+        ],
+        "label": "Box 4",
+        "status": "SOURCE_COORDINATE",
+        "source": "uploaded_legacy_coordinates_inverse",
+        "meaning": "card_center",
+        "geometryTolerancePx": 2
+      },
+      "5": {
+        "cx": 684,
+        "cy": 1105,
+        "normalized": {
+          "x": 0.6333333333333333,
+          "y": 0.5755208333333334
+        },
+        "boundsLTRB": [
+          644.5,
+          1052,
+          723.5,
+          1158
+        ],
+        "label": "Box 5",
+        "status": "SOURCE_COORDINATE",
+        "source": "uploaded_legacy_coordinates_inverse",
+        "meaning": "card_center",
+        "geometryTolerancePx": 2
+      },
+      "6": {
+        "cx": 827,
+        "cy": 1075,
+        "normalized": {
+          "x": 0.7657407407407407,
+          "y": 0.5598958333333334
+        },
+        "boundsLTRB": [
+          787.5,
+          1022,
+          866.5,
+          1128
+        ],
+        "label": "Box 6",
+        "status": "SOURCE_COORDINATE",
+        "source": "uploaded_legacy_coordinates_inverse",
+        "meaning": "card_center",
+        "geometryTolerancePx": 2
+      },
+      "7": {
+        "cx": 970,
+        "cy": 1025,
+        "normalized": {
+          "x": 0.8981481481481481,
+          "y": 0.5338541666666666
+        },
+        "boundsLTRB": [
+          930.5,
+          972,
+          1009.5,
+          1078
+        ],
+        "label": "Box 7",
+        "status": "SOURCE_COORDINATE",
+        "source": "uploaded_legacy_coordinates_inverse",
+        "meaning": "card_center",
+        "geometryTolerancePx": 2
+      },
+      "dealer": {
+        "cx": 540,
+        "cy": 895,
+        "normalized": {
+          "x": 0.5,
+          "y": 0.4661458333333333
+        },
+        "boundsLTRB": [
+          500.5,
+          842,
+          579.5,
+          948
+        ],
+        "label": "Dealer",
+        "status": "SOURCE_COORDINATE",
+        "source": "uploaded_legacy_coordinates_inverse",
+        "meaning": "card_center",
+        "geometryTolerancePx": 2
+      }
+    },
+    "shoe": {
+      "cx": 931.48,
+      "cy": 802.25,
+      "status": "LEGACY_USER_CLICK_REQUIRES_REVIEW",
+      "approvedForThisContract": false,
+      "legacySourceApproved": true,
+      "source": "Inverse of uploaded user calibration, not a measured universal dealer pickup location",
+      "normalized": {
+        "x": 0.8624814814814815,
+        "y": 0.4178385416666667
+      }
+    },
+    "camera": {
+      "projection": "locked reference image",
+      "focalLengthMm": null,
+      "fieldOfViewDegrees": null,
+      "cameraHeightM": null,
+      "cameraDistanceM": null,
+      "vanishingPoint": null,
+      "status": "UNKNOWN_NOT_MEASURED"
+    },
+    "otherFamilies": {
+      "Astrid_legacy": {
+        "cardWidth": 63,
+        "cardHeight": 85,
+        "coordinateSpace": "native-1920x1080",
+        "compatibleWithoutRecalibration": false,
+        "policy": "Keep separate. Do not replace Astrid values globally with these values."
+      }
+    }
+  },
+  "transforms": {
+    "mobile_1080": {
+      "width": 1080,
+      "height": 1920,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "offsetX": 0.0,
+      "offsetY": 0,
+      "affine3x3": [
+        [
+          1.0,
+          0,
+          0.0
+        ],
+        [
+          0,
+          1.0,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "positions": {
+        "1": {
+          "cx": 110.0,
+          "cy": 1025.0
+        },
+        "2": {
+          "cx": 253.0,
+          "cy": 1075.0
+        },
+        "3": {
+          "cx": 396.0,
+          "cy": 1105.0
+        },
+        "4": {
+          "cx": 540.0,
+          "cy": 1115.0
+        },
+        "5": {
+          "cx": 684.0,
+          "cy": 1105.0
+        },
+        "6": {
+          "cx": 827.0,
+          "cy": 1075.0
+        },
+        "7": {
+          "cx": 970.0,
+          "cy": 1025.0
+        },
+        "dealer": {
+          "cx": 540.0,
+          "cy": 895.0
+        }
+      },
+      "cardSize": {
+        "width": 79.0,
+        "height": 106.0
+      },
+      "sampleAspectRatio": "1:1",
+      "note": "Height fit; extra width changes the visible sides, not scene zoom. Coordinates are continuous; do not round before drawing."
+    },
+    "mobile_720": {
+      "width": 720,
+      "height": 1280,
+      "scaleX": 0.6666666666666666,
+      "scaleY": 0.6666666666666666,
+      "offsetX": 0.0,
+      "offsetY": 0,
+      "affine3x3": [
+        [
+          0.6666666666666666,
+          0,
+          0.0
+        ],
+        [
+          0,
+          0.6666666666666666,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "positions": {
+        "1": {
+          "cx": 73.33333333,
+          "cy": 683.33333333
+        },
+        "2": {
+          "cx": 168.66666667,
+          "cy": 716.66666667
+        },
+        "3": {
+          "cx": 264.0,
+          "cy": 736.66666667
+        },
+        "4": {
+          "cx": 360.0,
+          "cy": 743.33333333
+        },
+        "5": {
+          "cx": 456.0,
+          "cy": 736.66666667
+        },
+        "6": {
+          "cx": 551.33333333,
+          "cy": 716.66666667
+        },
+        "7": {
+          "cx": 646.66666667,
+          "cy": 683.33333333
+        },
+        "dealer": {
+          "cx": 360.0,
+          "cy": 596.66666667
+        }
+      },
+      "cardSize": {
+        "width": 52.666666666666664,
+        "height": 70.66666666666666
+      },
+      "sampleAspectRatio": "1:1",
+      "note": "Height fit; extra width changes the visible sides, not scene zoom. Coordinates are continuous; do not round before drawing."
+    },
+    "mobile_540": {
+      "width": 540,
+      "height": 960,
+      "scaleX": 0.5,
+      "scaleY": 0.5,
+      "offsetX": 0.0,
+      "offsetY": 0,
+      "affine3x3": [
+        [
+          0.5,
+          0,
+          0.0
+        ],
+        [
+          0,
+          0.5,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "positions": {
+        "1": {
+          "cx": 55.0,
+          "cy": 512.5
+        },
+        "2": {
+          "cx": 126.5,
+          "cy": 537.5
+        },
+        "3": {
+          "cx": 198.0,
+          "cy": 552.5
+        },
+        "4": {
+          "cx": 270.0,
+          "cy": 557.5
+        },
+        "5": {
+          "cx": 342.0,
+          "cy": 552.5
+        },
+        "6": {
+          "cx": 413.5,
+          "cy": 537.5
+        },
+        "7": {
+          "cx": 485.0,
+          "cy": 512.5
+        },
+        "dealer": {
+          "cx": 270.0,
+          "cy": 447.5
+        }
+      },
+      "cardSize": {
+        "width": 39.5,
+        "height": 53.0
+      },
+      "sampleAspectRatio": "1:1",
+      "note": "Height fit; extra width changes the visible sides, not scene zoom. Coordinates are continuous; do not round before drawing."
+    },
+    "desktop_1080": {
+      "width": 1920,
+      "height": 1080,
+      "scaleX": 0.5625,
+      "scaleY": 0.5625,
+      "offsetX": 656.25,
+      "offsetY": 0,
+      "affine3x3": [
+        [
+          0.5625,
+          0,
+          656.25
+        ],
+        [
+          0,
+          0.5625,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "positions": {
+        "1": {
+          "cx": 718.125,
+          "cy": 576.5625
+        },
+        "2": {
+          "cx": 798.5625,
+          "cy": 604.6875
+        },
+        "3": {
+          "cx": 879.0,
+          "cy": 621.5625
+        },
+        "4": {
+          "cx": 960.0,
+          "cy": 627.1875
+        },
+        "5": {
+          "cx": 1041.0,
+          "cy": 621.5625
+        },
+        "6": {
+          "cx": 1121.4375,
+          "cy": 604.6875
+        },
+        "7": {
+          "cx": 1201.875,
+          "cy": 576.5625
+        },
+        "dealer": {
+          "cx": 960.0,
+          "cy": 503.4375
+        }
+      },
+      "cardSize": {
+        "width": 44.4375,
+        "height": 59.625
+      },
+      "sampleAspectRatio": "1:1",
+      "note": "Height fit; extra width changes the visible sides, not scene zoom. Coordinates are continuous; do not round before drawing."
+    },
+    "desktop_720": {
+      "width": 1280,
+      "height": 720,
+      "scaleX": 0.375,
+      "scaleY": 0.375,
+      "offsetX": 437.5,
+      "offsetY": 0,
+      "affine3x3": [
+        [
+          0.375,
+          0,
+          437.5
+        ],
+        [
+          0,
+          0.375,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "positions": {
+        "1": {
+          "cx": 478.75,
+          "cy": 384.375
+        },
+        "2": {
+          "cx": 532.375,
+          "cy": 403.125
+        },
+        "3": {
+          "cx": 586.0,
+          "cy": 414.375
+        },
+        "4": {
+          "cx": 640.0,
+          "cy": 418.125
+        },
+        "5": {
+          "cx": 694.0,
+          "cy": 414.375
+        },
+        "6": {
+          "cx": 747.625,
+          "cy": 403.125
+        },
+        "7": {
+          "cx": 801.25,
+          "cy": 384.375
+        },
+        "dealer": {
+          "cx": 640.0,
+          "cy": 335.625
+        }
+      },
+      "cardSize": {
+        "width": 29.625,
+        "height": 39.75
+      },
+      "sampleAspectRatio": "1:1",
+      "note": "Height fit; extra width changes the visible sides, not scene zoom. Coordinates are continuous; do not round before drawing."
+    },
+    "desktop_4k_reference_only": {
+      "width": 3840,
+      "height": 2160,
+      "scaleX": 1.125,
+      "scaleY": 1.125,
+      "offsetX": 1312.5,
+      "offsetY": 0,
+      "affine3x3": [
+        [
+          1.125,
+          0,
+          1312.5
+        ],
+        [
+          0,
+          1.125,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "positions": {
+        "1": {
+          "cx": 1436.25,
+          "cy": 1153.125
+        },
+        "2": {
+          "cx": 1597.125,
+          "cy": 1209.375
+        },
+        "3": {
+          "cx": 1758.0,
+          "cy": 1243.125
+        },
+        "4": {
+          "cx": 1920.0,
+          "cy": 1254.375
+        },
+        "5": {
+          "cx": 2082.0,
+          "cy": 1243.125
+        },
+        "6": {
+          "cx": 2242.875,
+          "cy": 1209.375
+        },
+        "7": {
+          "cx": 2403.75,
+          "cy": 1153.125
+        },
+        "dealer": {
+          "cx": 1920.0,
+          "cy": 1006.875
+        }
+      },
+      "cardSize": {
+        "width": 88.875,
+        "height": 119.25
+      },
+      "sampleAspectRatio": "1:1",
+      "note": "Height fit; extra width changes the visible sides, not scene zoom. Coordinates are continuous; do not round before drawing."
+    },
+    "wide_pixel_master": {
+      "width": 3414,
+      "height": 1920,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "offsetX": 1167.0,
+      "offsetY": 0,
+      "affine3x3": [
+        [
+          1.0,
+          0,
+          1167.0
+        ],
+        [
+          0,
+          1.0,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "positions": {
+        "1": {
+          "cx": 1277.0,
+          "cy": 1025.0
+        },
+        "2": {
+          "cx": 1420.0,
+          "cy": 1075.0
+        },
+        "3": {
+          "cx": 1563.0,
+          "cy": 1105.0
+        },
+        "4": {
+          "cx": 1707.0,
+          "cy": 1115.0
+        },
+        "5": {
+          "cx": 1851.0,
+          "cy": 1105.0
+        },
+        "6": {
+          "cx": 1994.0,
+          "cy": 1075.0
+        },
+        "7": {
+          "cx": 2137.0,
+          "cy": 1025.0
+        },
+        "dealer": {
+          "cx": 1707.0,
+          "cy": 895.0
+        }
+      },
+      "cardSize": {
+        "width": 79.0,
+        "height": 106.0
+      },
+      "sampleAspectRatio": "1:1",
+      "note": "Height fit; extra width changes the visible sides, not scene zoom. Coordinates are continuous; do not round before drawing."
+    },
+    "openai_pose_work": {
+      "width": 1152,
+      "height": 2048,
+      "scaleX": 1.0666666666666667,
+      "scaleY": 1.0666666666666667,
+      "offsetX": 0.0,
+      "offsetY": 0,
+      "affine3x3": [
+        [
+          1.0666666666666667,
+          0,
+          0.0
+        ],
+        [
+          0,
+          1.0666666666666667,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "positions": {
+        "1": {
+          "cx": 117.33333333,
+          "cy": 1093.33333333
+        },
+        "2": {
+          "cx": 269.86666667,
+          "cy": 1146.66666667
+        },
+        "3": {
+          "cx": 422.4,
+          "cy": 1178.66666667
+        },
+        "4": {
+          "cx": 576.0,
+          "cy": 1189.33333333
+        },
+        "5": {
+          "cx": 729.6,
+          "cy": 1178.66666667
+        },
+        "6": {
+          "cx": 882.13333333,
+          "cy": 1146.66666667
+        },
+        "7": {
+          "cx": 1034.66666667,
+          "cy": 1093.33333333
+        },
+        "dealer": {
+          "cx": 576.0,
+          "cy": 954.66666667
+        }
+      },
+      "cardSize": {
+        "width": 84.26666666666667,
+        "height": 113.06666666666666
+      },
+      "sampleAspectRatio": "1:1",
+      "note": "Exact 9:16. Uniform scale 16/15 from canonical, inverse 15/16. No crop or padding."
+    }
+  },
+  "rendering": {
+    "canonicalScale": 1,
+    "canonicalOffset": [
+      0,
+      0
+    ],
+    "formula": {
+      "s": "viewportHeight / 1920",
+      "x": "viewportWidth/2 + (canonicalX-540)*s",
+      "y": "canonicalY*s",
+      "wideAssetLeft": "viewportWidth/2 - 3414*s/2"
+    },
+    "sameSizeMeaning": "Same viewport height -> same actor pixel height, irrespective of viewport width. Not the same physical size on different displays.",
+    "mobileApertureInWideMaster": {
+      "left": 1167,
+      "top": 0,
+      "width": 1080,
+      "height": 1920
+    },
+    "wideMaster": {
+      "width": 3414,
+      "height": 1920,
+      "paddingLeft": 1167,
+      "paddingRight": 1167,
+      "scale": 1,
+      "exact16by9": false,
+      "ideal16by9WidthAt1920Height": 3413.3333333333335,
+      "differencePixels": 0.6666666666666666,
+      "note": "Even integer-pixel source for exact centre copy, not a native provider/video requirement."
+    },
+    "desktop1080FromWide": {
+      "scale": 0.5625,
+      "idealRenderedWidth": 1920.375,
+      "cropEachSideAtOutputPx": 0.1875,
+      "doNotStretch": true,
+      "note": "Height-based resampling with fractional centre crop; exact geometry, not byte-identical RGB after resampling."
+    },
+    "maxPreviewSize": [
+      1280,
+      720
+    ],
+    "doNotCopyLegacyPerViewportZoom": {
+      "mobileScale": 1.04,
+      "desktopScale": 1.4,
+      "desktopOffsetY": 0.18,
+      "source": "Paow coordinate preview in repo; not global live room settings"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "z": 0,
+      "alpha": false,
+      "separate": true,
+      "content": "Room only. No foreground blackjack table, dealer, cards, chips or UI.",
+      "placement": "wide-centred-height-fit",
+      "independentCoverZoom": false
+    },
+    {
+      "id": "dealer_body",
+      "z": 10,
+      "alpha": true,
+      "source": "same actor frame as hands",
+      "mask": "complement of approved hands/foreground mask",
+      "note": "Optional split needed if table must cover lower body; not a second independently decoded video."
+    },
+    {
+      "id": "table",
+      "z": 20,
+      "alpha": true,
+      "content": "Table only, transparent outside, no dealer or baked room.",
+      "placement": "wide-centred-height-fit"
+    },
+    {
+      "id": "cards",
+      "z": 30,
+      "alpha": true,
+      "content": "Engine-driven separate card assets at registered targets. Never duplicate a generated physical card without a handoff mask.",
+      "placement": "canonical-height-fit"
+    },
+    {
+      "id": "dealer_hands",
+      "z": 40,
+      "alpha": true,
+      "source": "same actor frame as body",
+      "mask": "approved moving-foreground mask",
+      "note": "Arbitrary automatic y-split is not anatomically correct across every action."
+    },
+    {
+      "id": "foreground",
+      "z": 50,
+      "alpha": true,
+      "content": "Optional table rail/props requiring separate occlusion."
+    },
+    {
+      "id": "ui",
+      "z": 100,
+      "alpha": true,
+      "content": "Screen-space interface, independent of world coordinate geometry."
+    }
+  ],
+  "mediaProfiles": {
+    "dealer_keystone": {
+      "role": "VILA_or_REDO",
+      "master": {
+        "width": 1080,
+        "height": 1920,
+        "extension": "png",
+        "mime": "image/png",
+        "mode": "RGBA_or_RGB_green",
+        "bitDepthPerChannel": 8,
+        "colorSpace": "sRGB",
+        "alphaConvention": "straight/unassociated",
+        "cropForbidden": true
+      },
+      "wideOptional": {
+        "width": 3414,
+        "height": 1920,
+        "method": "pad_only",
+        "fill": "transparent_or_00FF00",
+        "centrePixelIdentityRequired": true
+      },
+      "web": "PNG or lossless WebP; no JPEG for locked pose comparisons"
+    },
+    "table": {
+      "recommendedMaster": {
+        "width": 3414,
+        "height": 1920,
+        "extension": "png",
+        "mode": "RGBA",
+        "bitDepthPerChannel": 8,
+        "colorSpace": "sRGB",
+        "alphaConvention": "straight/unassociated"
+      },
+      "mobileDerivative": {
+        "width": 1080,
+        "height": 1920,
+        "sourceRect": [
+          1167,
+          0,
+          2247,
+          1920
+        ],
+        "resize": false
+      },
+      "recommendedRuntime": {
+        "extension": "webp",
+        "mime": "image/webp",
+        "lossless": true,
+        "alpha": true,
+        "sameCanvasAsMaster": true
+      },
+      "fallback": "PNG RGBA",
+      "sourceEditing": "Layered PSD/Krita/Blender allowed as authoring sources; export registered PNG to this tool. These sources are not runtime formats.",
+      "avoid": [
+        "JPEG because no alpha",
+        "green screen on static table",
+        "transparent auto-trim without placement metadata",
+        "resize based only on visible object bounds",
+        "baked dealer or room"
+      ],
+      "cropPolicy": "Full-scene transparent canvas by default; trimmed assets require explicit placement and registration (not imported automatically by Light).",
+      "animation": "Prefer static table. Animated table needs separately tested alpha-video delivery, not ordinary H.264 MP4."
+    },
+    "background_still": {
+      "recommendedMaster": {
+        "width": 3414,
+        "height": 1920,
+        "extension": "png",
+        "mode": "RGB",
+        "colorSpace": "sRGB",
+        "bitDepthPerChannel": 8
+      },
+      "mobileDerivative": {
+        "width": 1080,
+        "height": 1920,
+        "sourceRect": [
+          1167,
+          0,
+          2247,
+          1920
+        ],
+        "resize": false
+      },
+      "recommendedRuntime": {
+        "extension": "webp",
+        "mime": "image/webp",
+        "quality": 86,
+        "lossless": false,
+        "alpha": false
+      },
+      "fallback": {
+        "extension": "jpg",
+        "quality": 90
+      },
+      "note": "Quality values are starting recommendations, not guaranteed file size or visual quality. Use lossless for flat diagrams/text. Use the same framing for poster and loop."
+    },
+    "background_video": {
+      "recommendedContainer": "mp4",
+      "mime": "video/mp4",
+      "codec": "H.264/AVC",
+      "ffmpegEncoder": "libx264",
+      "pixelFormat": "yuv420p",
+      "bitDepthPerChannel": 8,
+      "alpha": false,
+      "fps": 24,
+      "fpsMode": "CFR",
+      "scan": "progressive",
+      "sampleAspectRatio": "1:1",
+      "colorPrimaries": "bt709",
+      "transfer": "bt709",
+      "matrix": "bt709",
+      "range": "limited",
+      "audio": false,
+      "faststart": true,
+      "defaultLoopSeconds": 4,
+      "recommendedLoopRangeSeconds": [
+        4,
+        10
+      ],
+      "recommendedMaster": "Keep the original best-quality video or lossless frame sequence outside the lightweight package.",
+      "delivery": {
+        "desktop": [
+          1920,
+          1080
+        ],
+        "mobile": [
+          1080,
+          1920
+        ],
+        "mobileLight": [
+          720,
+          1280
+        ],
+        "desktopLight": [
+          1280,
+          720
+        ]
+      },
+      "crf": 22,
+      "suggestedCrfRange": [
+        20,
+        24
+      ],
+      "encodingPreset": "medium",
+      "gopFrames": 48,
+      "sceneCutKeyframes": false,
+      "illustrativeBitrateMbps": {
+        "desktop1080": [
+          3,
+          6
+        ],
+        "mobile1080": [
+          3,
+          6
+        ],
+        "mobile720": [
+          1.5,
+          3
+        ]
+      },
+      "bitrateIsNotQualityGuarantee": true,
+      "sizeFormula": "approx MB = bitrate_Mbps * seconds / 8, plus container overhead",
+      "exactFrameCount": "round(duration_seconds*24)",
+      "loopPolicy": "Cyclic animation with F(N)=F(0); stored frames 0..N-1. Do not normally store duplicate frame N. Compare seam and motion, not just first/last bytes.",
+      "browser": {
+        "autoplay": true,
+        "muted": true,
+        "loop": true,
+        "playsinline": true,
+        "posterRequired": true,
+        "reducedMotion": "Use poster instead of autoplay when prefers-reduced-motion is reduce",
+        "preload": "metadata; actual buffering must be tested",
+        "delivery": "HTTP(S), correct MIME, byte-range requests; local viewer is only a preview."
+      },
+      "noMotionInTableZone": true,
+      "noCameraMotion": true,
+      "noExposurePumping": true
+    },
+    "dealer_video": {
+      "recommendedContainer": "mp4",
+      "mime": "video/mp4",
+      "codec": "H.264/AVC",
+      "ffmpegEncoder": "libx264",
+      "pixelFormat": "yuv420p",
+      "bitDepthPerChannel": 8,
+      "alpha": false,
+      "background": "green",
+      "fps": 24,
+      "fpsMode": "CFR",
+      "scan": "progressive",
+      "sampleAspectRatio": "1:1",
+      "masterDelivery": [
+        1080,
+        1920
+      ],
+      "lightDelivery": [
+        720,
+        1280
+      ],
+      "crf": 18,
+      "recommendedCrfRange": [
+        16,
+        20
+      ],
+      "audio": false,
+      "gopFrames": 24,
+      "faststart": true,
+      "colorPrimaries": "bt709",
+      "transfer": "bt709",
+      "matrix": "bt709",
+      "range": "limited",
+      "nativeResolutionMetadataRequired": true,
+      "note": "A 720x1280 generation resized to 1080x1920 is upscaled, NOT native 1080. H.264 changes pixels; keystone equality is checked at the correct comparison level.",
+      "alphaAlternatives": [
+        {
+          "format": "WebM VP9 alpha",
+          "status": "OPTIONAL_NOT_DEFAULT",
+          "requires": "Actual decode+alpha tests on target browsers and both GPU/CPU compositor paths"
+        },
+        {
+          "format": "ProRes 4444 MOV or RGBA PNG sequence",
+          "status": "EDITING_MASTER_ONLY",
+          "requires": "Large storage; not browser fallback"
+        }
+      ]
+    },
+    "mask": {
+      "extension": "png",
+      "mode": "L",
+      "bitDepthPerChannel": 8,
+      "canonicalSize": [
+        1080,
+        1920
+      ],
+      "wideSize": [
+        3414,
+        1920
+      ],
+      "meaning": "Local edit mask: 0 = keep original; 255 = accept edited candidate; intermediate = blend.",
+      "openaiMaskConversion": "RGBA alpha = 255 - localEditMask; transparent pixels are editable. Same dimensions as FIRST reference image.",
+      "hardPreservation": "After model output, Image.composite(candidate,locked_original,local_mask). Outside local mask original RGBA is copied exactly.",
+      "status": "Template masks are DRAFT; inspect before first use for each camera/dealer."
+    }
+  },
+  "keying": {
+    "defaultGreenRGB": [
+      0,
+      255,
+      0
+    ],
+    "defaultGreenHex": "#00FF00",
+    "actualReferenceMayDiffer": true,
+    "threshold": 0.23,
+    "softness": 0.15,
+    "despill": 0.5,
+    "formula": "dominance=(G-max(R,B))/max(G,0.001); alpha *= 1-smoothstep(threshold,threshold+softness,dominance)*smoothstep(0.012,0.065,G)",
+    "preserveExistingAlpha": true,
+    "onlyApplyToRole": "dealer",
+    "notASegmentationModel": true,
+    "warning": "Green clothing, reflections and table rails need visual review; chroma key cannot separate an embedded non-green room."
+  },
+  "tableAuthoring": {
+    "status": "DRAFT_SHAPE_REQUIRES_REFERENCE_REVIEW",
+    "coordinates": "canonical, including negative x for side extensions",
+    "sourceOfShape": "New illustrative footprint; NOT recovered from camera calibration",
+    "path": [
+      [
+        "M",
+        -360,
+        740
+      ],
+      [
+        "L",
+        1440,
+        740
+      ],
+      [
+        "C",
+        1510,
+        850,
+        1270,
+        1710,
+        540,
+        1740
+      ],
+      [
+        "C",
+        -190,
+        1710,
+        -430,
+        850,
+        -360,
+        740
+      ],
+      [
+        "Z"
+      ]
+    ],
+    "maskFile": "02_MALLAR/bord_silhuett_WIDE_L.png",
+    "anchorPolicy": "Card targets are authoritative for this family; table outline may be designed around them but must fit the approved dealer camera.",
+    "referenceBackRailY": 740,
+    "referenceBackRailStatus": "DRAFT_NOT_MEASURED",
+    "contactAndOcclusion": "Hands must rest on the table surface; separate foreground rail if necessary. Keep card targets on visible surface."
+  },
+  "backgroundAuthoring": {
+    "keepClearCanonical": {
+      "rectLTRB": [
+        160,
+        80,
+        1040,
+        920
+      ],
+      "status": "DRAFT_COMPOSITION_GUIDE",
+      "meaning": "Avoid high-contrast distracting movement behind head/hands; not a mathematical alpha cutout."
+    },
+    "conservativeNoAnimationBelowY": 700,
+    "noAnimationStatus": "NEW_RECOMMENDED_SAFE_LIMIT_NOT_EXISTING_REPO_RULE",
+    "sampleLoopAnimatedRegionInWide": [
+      180,
+      150,
+      480,
+      270
+    ],
+    "prohibit": [
+      "foreground blackjack table",
+      "foreground dealer",
+      "cards/chips/UI",
+      "camera zoom/pan",
+      "lighting color/exposure flicker"
+    ],
+    "sideContent": "A mobile room image has no true side information. Outpaint/render sides while preserving centre; do not stretch mobile to wide."
+  },
+  "poseWorkflow": {
+    "states": [
+      "IDENTITY_INPUT",
+      "VILA_CANDIDATE",
+      "VILA_LOCKED",
+      "REDO_CANDIDATE",
+      "REDO_LOCKED",
+      "CLIP_CANDIDATE",
+      "QA_REVIEW",
+      "EXPORT_PREVIEW"
+    ],
+    "defaultTemplate": "paow",
+    "templateChoiceIndependentOfIdentity": true,
+    "newVila": "Identity image plus explicit VILA pose/camera reference. No universal .65 scale. Generate candidate, compare, adjust locally if needed, then lock.",
+    "newRedo": "Locked VILA is first reference; REDO is pose guidance. Approve a local hand/arm edit mask, composite back unchanged pixels outside mask.",
+    "locking": "Store immutable PNG and sha256, contract sha256, input hashes and original transform history. Replacing VILA invalidates REDO and marks dependent jobs stale.",
+    "doNotRepeatBakedTransform": true,
+    "legacyRestoredVila": {
+      "oldScale": 0.66,
+      "oldOffsetY": -158,
+      "oldSpace": "desktop-1920x1080",
+      "alreadyBaked": true,
+      "downstreamScale": 1,
+      "downstreamOffset": [
+        0,
+        0
+      ]
+    },
+    "automaticAnatomyGuarantee": false,
+    "automaticExactCardContactGuarantee": false,
+    "speechLipsync": "Catalog retained; Light does not implement speech/lipsync."
+  },
+  "inputRouting": [
+    {
+      "input": "941x1672 photo, arbitrary portrait or cutout",
+      "classification": "identity_reference_or_unknown",
+      "action": "Inspect and choose role. Preserve original. Never infer registered pose from portrait aspect ratio."
+    },
+    {
+      "input": "1080x1920 or exact 9:16 image",
+      "classification": "possible_mobile_asset",
+      "action": "Role is still required. For pose require visual approval; for table alpha required; for background mobile-only unless sides supplied."
+    },
+    {
+      "input": "720x1280 / 1152x2048",
+      "classification": "same_ratio_different_resolution",
+      "action": "Uniform scale only; record native size and upscaled flag. No aspect distortion."
+    },
+    {
+      "input": "1088x1920",
+      "classification": "near_portrait_unknown_crop",
+      "action": "BLOCK automatic registered import. Extra 8 columns may be real content. Only trim 4+4 when metadata explicitly proves padding."
+    },
+    {
+      "input": "1920x1080 dealer",
+      "classification": "ambiguous_landscape_or_legacy_crop",
+      "action": "BLOCK automatic pose normalization. Legacy restoration requires explicit provenance. Real wide source needs a different registered transform."
+    },
+    {
+      "input": "3414x1920 full-scene table/background",
+      "classification": "wide_pixel_master",
+      "action": "Keep wide original; centre crop [1167,0,2247,1920] for mobile."
+    },
+    {
+      "input": "1920x1080 or 2560x1440 background",
+      "classification": "wide_room_lower_or_higher_resolution",
+      "action": "Role-selected uniform height-fit with tiny symmetric edge padding to 3414x1920, logged as resampled/upscaled where applicable. Never apply this rule to dealer or table."
+    },
+    {
+      "input": "1024x1536 generated pose",
+      "classification": "2:3_not_9:16",
+      "action": "BLOCK; need planned crop with validated safe content or regenerate correct ratio. Do not squeeze to 1080x1920."
+    },
+    {
+      "input": "MOV/HEVC/HDR/variable fps video",
+      "classification": "source_video",
+      "action": "Probe, retain original, reject HDR from this SDR pipeline, require explicit conversion; CFR conversion may duplicate/drop frames, timing must be rechecked."
+    },
+    {
+      "input": "PSD/.blend/SVG/unknown",
+      "classification": "editing_source_not_runtime",
+      "action": "Keep authoring source. Export registered PNG/video first. Never execute embedded content."
+    }
+  ],
+  "providerProfiles": {
+    "openaiReview": {
+      "enabledByDefault": false,
+      "api": "responses",
+      "model": "gpt-6-astra",
+      "imageDetail": "high",
+      "maxThumbnailEdge": 1536,
+      "schema": "01_SPEC/AI_REVIEW.schema.json",
+      "store": false,
+      "temperature": null,
+      "allowedAction": "Return advisory structured JSON only; no tools or writes",
+      "cacheKey": "image SHA256 + role + contract SHA256 + model + prompt version",
+      "modelAvailability": "Project specific; no silent fallback."
+    },
+    "openaiPose": {
+      "enabledByDefault": false,
+      "api": "images/edits",
+      "model": "gpt-image-2.5-sunburst",
+      "size": "1152x2048",
+      "quality": "high",
+      "output_format": "png",
+      "background": "opaque",
+      "n": 1,
+      "exactAspectRatio": "9:16",
+      "canonicalToWorkScale": 1.0666666666666667,
+      "workToCanonicalScale": 0.9375,
+      "requiresDivisibleBy16": true,
+      "nativeResolution": [
+        1152,
+        2048
+      ],
+      "note": "All pose references are resampled uniformly. Mask guidance is not hard preservation. Unexpected output size blocks automatic normalization."
+    },
+    "runwayPreview": {
+      "enabledByDefault": false,
+      "api": "image_to_video",
+      "model": "seedance2",
+      "ratio": "720:1280",
+      "nativeExpected": [
+        720,
+        1280
+      ],
+      "durationSeconds": 5,
+      "firstFrame": true,
+      "lastFrame": true,
+      "audio": false,
+      "modelRequestField": "audio",
+      "role": "two-anchor candidate, not guaranteed exact endpoints"
+    },
+    "runwayHigh": {
+      "enabledByDefault": false,
+      "api": "image_to_video",
+      "model": "seedance2",
+      "ratio": "1080:1920",
+      "nativeExpected": [
+        1080,
+        1920
+      ],
+      "durationSeconds": 5,
+      "firstFrame": true,
+      "lastFrame": true,
+      "audio": false,
+      "modelRequestField": "audio",
+      "role": "two-anchor candidate, verify output metadata"
+    },
+    "singleFrameModelPolicy": {
+      "gen4_turbo": {
+        "allowExactTwoAnchorClaim": false,
+        "supportedByLightSubmitter": false,
+        "note": "Deliberately excluded from two-anchor submitter. No silent replacement of end-constrained model."
+      }
+    },
+    "apiVersion": "2024-11-06",
+    "checkedDate": "2026-10-12",
+    "availabilityVerifiedForUserLocalApiKey": false,
+    "prices": null,
+    "billing": "Always explicit confirmation per generation. Price shown as unknown rather than an invented number. API billing is separate from ChatGPT subscriptions/MCP workspace plans.",
+    "automaticPaidRetries": 0,
+    "timeoutState": "UNKNOWN_SUBMISSION; keep local attempt, request ID/task ID, do not resubmit automatically."
+  },
+  "clipCatalog": {
+    "coreCount": 30,
+    "optionalCount": 1,
+    "generatedNow": 0,
+    "source": "Uploaded config/clips.json, old desktop-coordinate prompt overrides intentionally removed",
+    "clips": [
+      {
+        "id": "idle",
+        "label": "Idle · endast andning",
+        "folder": "idle",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "idle",
+        "eventId": "idle.ready",
+        "situation": "",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "to-shoe",
+        "label": "Till skon",
+        "folder": "ready/to_shoe",
+        "start": "VILA",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "transition.shoe",
+        "situation": "to-shoe",
+        "required": true,
+        "target": null,
+        "referenceFrames": 22,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 0.9166666666666666,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "from-shoe",
+        "label": "Från skon",
+        "folder": "ready/from_shoe",
+        "start": "REDO",
+        "end": "VILA",
+        "kind": "action",
+        "eventId": "transition.shoe",
+        "situation": "from-shoe",
+        "required": true,
+        "target": null,
+        "referenceFrames": 22,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 0.9166666666666666,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "ready-hold",
+        "label": "Redo · stilla andning (valfri)",
+        "folder": "ready/hold",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "idle",
+        "eventId": null,
+        "situation": "",
+        "required": false,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "box1",
+        "label": "Dela till plats 1",
+        "folder": "deal/box_01",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.player.left",
+        "situation": "box0",
+        "required": true,
+        "target": "1",
+        "referenceFrames": 26,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.0833333333333333,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "box2",
+        "label": "Dela till plats 2",
+        "folder": "deal/box_02",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.player.left",
+        "situation": "box1",
+        "required": true,
+        "target": "2",
+        "referenceFrames": 26,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.0833333333333333,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "box3",
+        "label": "Dela till plats 3",
+        "folder": "deal/box_03",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.player.centre",
+        "situation": "box2",
+        "required": true,
+        "target": "3",
+        "referenceFrames": 27,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.125,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "box4",
+        "label": "Dela till plats 4",
+        "folder": "deal/box_04",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.player.centre",
+        "situation": "box3",
+        "required": true,
+        "target": "4",
+        "referenceFrames": 26,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.0833333333333333,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "box5",
+        "label": "Dela till plats 5",
+        "folder": "deal/box_05",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.player.centre",
+        "situation": "box4",
+        "required": true,
+        "target": "5",
+        "referenceFrames": 26,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.0833333333333333,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "box6",
+        "label": "Dela till plats 6",
+        "folder": "deal/box_06",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.player.right",
+        "situation": "box5",
+        "required": true,
+        "target": "6",
+        "referenceFrames": 26,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.0833333333333333,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "box7",
+        "label": "Dela till plats 7",
+        "folder": "deal/box_07",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.player.right",
+        "situation": "box6",
+        "required": true,
+        "target": "7",
+        "referenceFrames": 26,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.0833333333333333,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "dealer-up",
+        "label": "Öppet kort till dealern",
+        "folder": "deal/dealer/up",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.dealer",
+        "situation": "dealer-up",
+        "required": true,
+        "target": "dealer",
+        "referenceFrames": 28,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.1666666666666667,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "dealer-hole",
+        "label": "Dolt kort till dealern",
+        "folder": "deal/dealer/hole",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "deal.dealer",
+        "situation": "dealer-hole",
+        "required": true,
+        "target": "dealer",
+        "referenceFrames": 28,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.1666666666666667,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "reveal",
+        "label": "Vänd dolt kort",
+        "folder": "deal/dealer/reveal",
+        "start": "REDO",
+        "end": "REDO",
+        "kind": "action",
+        "eventId": "reveal.dealer",
+        "situation": "dealer-hole",
+        "required": true,
+        "target": "dealer",
+        "referenceFrames": 28,
+        "seconds": 5,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": 5,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": 1.1666666666666667,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": true,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-greeting",
+        "label": "Välkomsthälsning",
+        "folder": "speech/greeting",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "greeting",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Welcome to the table.",
+          "sv": "Välkommen till bordet."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-placebets",
+        "label": "Insatser öppna",
+        "folder": "speech/placebets",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "placebets",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Place your bets when you are ready.",
+          "sv": "Lägg din insats när du är redo."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-goodluck",
+        "label": "Insatser stängda",
+        "folder": "speech/goodluck",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.goodluck",
+        "situation": "goodluck",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Bets are closed. Good luck.",
+          "sv": "Insatserna är stängda. Lycka till."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-sidebet",
+        "label": "Sidospel",
+        "folder": "speech/sidebet",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "sidebet",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Your side bet wins.",
+          "sv": "Ditt sidospel vinner."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-insurance",
+        "label": "Försäkring",
+        "folder": "speech/insurance",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.insurance",
+        "situation": "insurance",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Insurance is available.",
+          "sv": "Försäkring erbjuds."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-double",
+        "label": "Dubblering",
+        "folder": "speech/double",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.double",
+        "situation": "double",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Doubling down. One more card.",
+          "sv": "Du dubblar. Ett kort till."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-bust",
+        "label": "Spelaren över 21",
+        "folder": "speech/bust",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "bust",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "That hand is over twenty-one.",
+          "sv": "Den handen är över tjugoett."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-blackjack",
+        "label": "Blackjack",
+        "folder": "speech/blackjack",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "blackjack",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Blackjack.",
+          "sv": "Blackjack."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-dealerblackjack",
+        "label": "Dealern har blackjack",
+        "folder": "speech/dealerblackjack",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "dealerblackjack",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "The dealer has blackjack.",
+          "sv": "Dealern har blackjack."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-dealerbust",
+        "label": "Dealern över 21",
+        "folder": "speech/dealerbust",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "dealerbust",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "The dealer is over twenty-one.",
+          "sv": "Dealern är över tjugoett."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-win",
+        "label": "Vinst",
+        "folder": "speech/win",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "win",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Your hand wins.",
+          "sv": "Din hand vinner."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-push",
+        "label": "Oavgjort",
+        "folder": "speech/push",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "push",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "A push. Your stake is returned.",
+          "sv": "Oavgjort. Du får tillbaka din insats."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-lose",
+        "label": "Förlust",
+        "folder": "speech/lose",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "lose",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "The house wins this hand.",
+          "sv": "Huset vinner den här handen."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-peek",
+        "label": "Kontrollera hålkort",
+        "folder": "speech/peek",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "peek",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Let me check the hole card.",
+          "sv": "Jag kontrollerar det dolda kortet."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-farewell",
+        "label": "Avsked",
+        "folder": "speech/farewell",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "farewell",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Thank you for playing.",
+          "sv": "Tack för att du spelade."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-chatter1",
+        "label": "Småprat 1",
+        "folder": "speech/chatter1",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "chatter1",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Welcome back.",
+          "sv": "Välkommen tillbaka."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      },
+      {
+        "id": "speech-chatter2",
+        "label": "Småprat 2",
+        "folder": "speech/chatter2",
+        "start": "VILA",
+        "end": "VILA",
+        "kind": "speech",
+        "eventId": "speak.other",
+        "situation": "chatter2",
+        "required": true,
+        "target": null,
+        "referenceFrames": null,
+        "seconds": 10,
+        "text": {
+          "en": "Take your time.",
+          "sv": "Ta den tid du behöver."
+        },
+        "textApproved": false,
+        "source": "Uploaded Dealerverkstad 0.3.0 clip catalog",
+        "generationDurationSeconds": null,
+        "targetPlaybackFrames": null,
+        "referenceTimingOnly": true,
+        "referenceDurationSeconds": null,
+        "status": "PLANNED_NOT_GENERATED",
+        "supportedByLightGenerator": false,
+        "landFrameIndex": null,
+        "landFrameIndexBase": 0,
+        "note": "Never assume card contact at end of clip. Calibrate land frame in decoded output. Speech/lipsync is a separate pipeline."
+      }
+    ]
+  },
+  "qa": {
+    "technicalAndVisualAreSeparate": true,
+    "mustCheck": [
+      "native dimensions",
+      "aspect ratio",
+      "source hashes",
+      "alpha or real green",
+      "CFR/24fps for exported videos",
+      "SAR 1:1",
+      "SDR BT.709 for video",
+      "no stale pose dependencies",
+      "mask coverage",
+      "head and shoulder framing",
+      "hand/table contact",
+      "card landing position and frame",
+      "loop seam",
+      "mobile/desktop height parity"
+    ],
+    "pixelPerfectClaims": {
+      "wideCentreCopy": "May be verified byte-for-byte decoded RGBA for PNG centre region",
+      "maskedRedoOutsideRegion": "May be verified byte-for-byte decoded RGBA after local composite",
+      "resampledImage": "Not byte-identical to source; verify transformed geometry",
+      "h264VsPng": "Not byte-identical; report decoded error and visual seam separately"
+    },
+    "silhouetteComparison": "Coarse QA, not anatomical landmarks. Arms differ between poses; bbox alone never approves a pose.",
+    "motionQa": "No automatic approval from equal first/last frames; velocity and acceleration across the seam also matter.",
+    "loopRetiming": "No automatic ping-pong for dealing. It makes cards reverse physically. No speed-up to reference frame count by default."
+  },
+  "logging": {
+    "format": "JSONL",
+    "path": "arbetsyta/logs/events.jsonl",
+    "fields": [
+      "timestampUtc",
+      "event",
+      "contractHash",
+      "sourceHash",
+      "role",
+      "measuredNativeSize",
+      "suggestedRoute",
+      "decision",
+      "outputHashes",
+      "providerModel",
+      "requestId",
+      "taskId",
+      "usage",
+      "warnings"
+    ],
+    "neverLog": [
+      "API keys",
+      "Authorization headers",
+      "signed URLs",
+      "base64 images",
+      "entire environment",
+      "private original paths unless user puts them into free text"
+    ],
+    "aiLearnedPatterns": "Local observation summaries/cached reviews only. No fine-tuning and no self-changing rules.",
+    "sourceRetention": "Original files are not overwritten; work copies and immutable result revisions remain local."
+  },
+  "integration": {
+    "automaticRepoChanges": false,
+    "automaticDeploy": false,
+    "importFormat": "Light-specific manifest, not claimed a drop-in live engine package",
+    "bridgeNeeded": true,
+    "preserve": [
+      "engine authority over cards/results",
+      "existing Astrid family",
+      "existing room publication bindings"
+    ],
+    "recommendedNextStep": "Import to isolated composition preview, map source coordinate space and layer order, verify device/GPU and event bindings before release."
+  },
+  "references": [
+    {
+      "id": "paow_VILA",
+      "path": "03_REFERENSER/paow/VILA.png",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "7274b6858430119e80149aa342efae4fd059dec3363eef1d5df19b77cbd9b2f4",
+      "role": "pose_reference",
+      "source": "Original production PNG from user archive, carried forward byte-for-byte from geometry package",
+      "identityUsage": "pose/camera only; new subject identity comes from selected photo",
+      "productionApprovalForNewDealer": false
+    },
+    {
+      "id": "paow_REDO",
+      "path": "03_REFERENSER/paow/REDO.png",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "3600248f74d4ed711ef3d23f86b9e0a1b0d4c1c7d010afa06e03ea02131e7217",
+      "role": "pose_reference",
+      "source": "Original production PNG from user archive, carried forward byte-for-byte from geometry package",
+      "identityUsage": "pose/camera only; new subject identity comes from selected photo",
+      "productionApprovalForNewDealer": false
+    },
+    {
+      "id": "dragge_VILA",
+      "path": "03_REFERENSER/dragge/VILA.png",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "b83b74adddd722ea8829be6ceb2ada9c9b9a64d09d32a65d0d9fec8003786744",
+      "role": "pose_reference",
+      "source": "Original production PNG from user archive, carried forward byte-for-byte from geometry package",
+      "identityUsage": "pose/camera only; new subject identity comes from selected photo",
+      "productionApprovalForNewDealer": false
+    },
+    {
+      "id": "dragge_REDO",
+      "path": "03_REFERENSER/dragge/REDO.png",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "6558929d3d1b76ba0438b7dc4716fbeb0615bfbc2715d671f64a8ccf70da7958",
+      "role": "pose_reference",
+      "source": "Original production PNG from user archive, carried forward byte-for-byte from geometry package",
+      "identityUsage": "pose/camera only; new subject identity comes from selected photo",
+      "productionApprovalForNewDealer": false
+    },
+    {
+      "id": "jakob_existing_locked_vila_restored",
+      "path": "03_REFERENSER/jakob_VILA_aterford_1080x1920.png",
+      "sha256": "7abca26e231c6ea99ee8a908494fe2e52ae552ec39fad45a9a43fe7faa2500e3",
+      "width": 1080,
+      "height": 1920,
+      "role": "restored_previous_pose",
+      "note": "Previously baked scale .66 and y -158 on legacy 1920x1080. Do NOT repeat. No new REDO is approved. Import explicitly to lock in a new local project.",
+      "productionApprovalForNewDealer": false
+    }
+  ],
+  "packageLimits": {
+    "networksRequiredOnlyFor": "Dependency first install and explicitly confirmed API operations",
+    "notIncluded": [
+      ".env files",
+      "API keys",
+      "virtual environments",
+      "model weights",
+      "original 110 MB RAR",
+      "full old job history",
+      "font files",
+      "live runtime deployment"
+    ],
+    "notImplemented": [
+      "speech/lipsync",
+      "automatic 3D camera recovery",
+      "guaranteed AI hand anatomy",
+      "fully automatic publish approval",
+      "transparent animated table encode"
+    ]
+  }
+}

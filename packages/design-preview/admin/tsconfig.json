@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022", "lib": ["dom", "dom.iterable", "esnext"], "strict": true,
-    "skipLibCheck": true, "noEmit": true, "esModuleInterop": true, "module": "esnext",
+    "skipLibCheck": true, "noEmit": true, "allowJs": true, "esModuleInterop": true, "module": "esnext",
     "moduleResolution": "bundler", "jsx": "react-jsx", "baseUrl": ".",
     "paths": { "@/*": ["./*"], "next/link": ["../runtime/navigation.tsx"], "next/navigation": ["../runtime/navigation.tsx"] }
   },

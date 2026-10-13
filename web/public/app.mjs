@@ -81,7 +81,7 @@ if (!['local', 'layered'].includes(entrySelection.presentation)) {
   throw new Error('Presentation requires registered cloud media');
 }
 const localPresentationEnabled = true;
-if (entrySelection.lane === 'mobile-phone') document.title = 'Mobile Phone Lane · Croupier Blackjack';
+if (entrySelection.lane === 'mobile-phone') document.title = 'Standardsammansättning · Croupier Blackjack';
 if (entrySelection.lane === 'layer-preview') document.title = 'Layer Preview Lane · Croupier Blackjack';
 let localPresentation = null;
 let localCards = null;

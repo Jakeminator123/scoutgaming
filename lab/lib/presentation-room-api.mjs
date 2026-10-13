@@ -16,6 +16,7 @@ import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCaptur
 import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { validatePresentationCapabilities } from '../../web/presentation-capability-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
+import {assertPresentationRoomMaterials} from '../../web/presentation-material-game.mjs';
 
 const operatorIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const keyPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -69,16 +70,28 @@ function roomEnvironment(project, id) {
 function requireRoomEnvironment(project, id) {
   if (!roomEnvironment(project, id).fixed) fail(422, 'studio_presentation_room_environment_required');
 }
-function preservePublishedRoomEnvironment(saved, id) {
+function preservePublishedRoomEnvironment(saved, id, captured) {
   if (!saved.administration.rooms.some(room => isPresentationRoom(room) && room.operatorId === saved.operator.id
     && room.presentationLaneId === id && saved.pack?.tables.includes(room.id))) return;
-  const previous = readPackagePresentation(saved.pack)?.lanes.find(lane => lane.id === id);
-  const next = saved.project.lanes.find(lane => lane.id === id);
+  const frozen = readPackagePresentation(saved.pack);
+  const previous = frozen?.lanes.find(lane => lane.id === id);
+  const next = captured?.lanes.find(lane => lane.id === id);
   const environment = lane => ({ background: lane.layers.background, playback: lane.backgroundPlayback ?? { schemaVersion: 1, rules: [] },
     ...(lane.layers.background.mode === 'baked' && !lane.layers.background.allowed.length
       ? { dealers: [...new Set([...lane.dealers, ...lane.layers.dealer.allowed])].sort() } : {}) });
-  if (!previous || canonicalStudioJson(environment(previous)) !== canonicalStudioJson(environment(next)))
+  if (!previous || !next || canonicalStudioJson(environment(previous)) !== canonicalStudioJson(environment(next)))
     fail(409, 'studio_presentation_room_environment_conflict');
+  if (previous.layers.background.mode === 'baked' && !previous.layers.background.allowed.length) {
+    // The dealer ID is not the environment: the entire captured idle record
+    // includes the film identity, hash, path, MIME, size and compositing.
+    // Compare immutable captures rather than rereading provider state here.
+    for (const dealerId of previous.layers.dealer.allowed) {
+      const before = frozen.registeredDealers?.find(row => row.id === dealerId)?.idle;
+      const after = captured.registeredDealers?.find(row => row.id === dealerId)?.idle;
+      if (!before || !after || canonicalStudioJson(before) !== canonicalStudioJson(after))
+        fail(409, 'studio_presentation_room_environment_conflict');
+    }
+  }
 }
 function lanePlan(presentation, administration, frozen) {
   const config = gameLaneConfiguration(administration), candidates = config.gameLanes.filter(lane => lane.dealer === presentation.layers.dealer.default && isPresentationRoomLaneCompatible(lane, presentation, frozen));
@@ -194,8 +207,8 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       }));
       if ((saved.pack?.revision ?? null) !== body.expectedPackageRevision) fail(409);
       requireRoomEnvironment(saved.project, body.presentationLaneId);
-      preservePublishedRoomEnvironment(saved, body.presentationLaneId);
       captured = await capture(snapshotValue, body.presentationLaneId);
+      preservePublishedRoomEnvironment(saved, body.presentationLaneId, captured.presentation);
       publicationPresentation = mergePresentation(saved.pack, captured.presentation);
     } else {
       if (!isPresentationRoom(existing) || intentHash(existing) !== intentHash(body) || existing.state !== 'live') fail(409);
@@ -204,6 +217,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       if (!room) fail(409);
       publicationPresentation = assertReplayBinding(saved, room);
     }
+    assertPresentationRoomMaterials(publicationPresentation,{presentationLaneId:body.presentationLaneId,game:roomGame(body)});
     if (!runtimeAccepts(await capabilities(publicationPresentation,roomGame(body)), publicationPresentation,roomGame(body))) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
     const freeze = value => { if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); } return value; };
     const value = freeze({ body: canonicalStudioJson(body), game: roomGame(body), publicationPresentation, ...captured });
@@ -226,7 +240,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration, merged);
       try { assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation: merged }); }
       catch (error) { if (error?.statusCode === 409) fail(409, 'studio_presentation_room_binding_conflict'); throw error; }
-      preservePublishedRoomEnvironment(saved, id);
+      preservePublishedRoomEnvironment(saved, id, selected.presentation);
     } catch (error) {
       if (error?.statusCode === 409) {
         packageReason = 'presentation_package_conflict';
@@ -274,7 +288,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
         || (saved.pack?.revision ?? null) !== body.expectedPackageRevision
         || saved.projectRevision !== prepared.projectRevision || saved.administrationRevision !== prepared.administrationRevision) fail(409);
       requireRoomEnvironment(saved.project, body.presentationLaneId);
-      preservePublishedRoomEnvironment(saved, body.presentationLaneId);
+      preservePublishedRoomEnvironment(saved, body.presentationLaneId, prepared.presentation);
       await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
       const presentation = mergePresentation(saved.pack, prepared.presentation), plan = lanePlan(prepared.presentation.lanes[0], saved.administration, presentation);
       assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation });

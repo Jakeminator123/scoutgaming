@@ -32,11 +32,11 @@ alternativ lånar aldrig standardens film. **Bara 2D** finns kvar.
 Ingen projektfil skrivs om och inga råfiler flyttas. Detta ändrar alltså hur
 en tom standardkoppling förhandsvisas, inte det sparade projektformatet.
 
-Native MP4, indexerad H.264 med exakt ljud och packad staged-video spelas
-genom produktens befintliga spelarmoduler. De är olika materialformat och
-ska inte behandlas som utbytbara MP4-filer. Staged-förval gäller endast de
-registrerade destinationerna; senare kort, split, reveal och övergångar
-får inte antas vara täckta. Den avvisade Astrid-actionfilen används inte.
+Registrerad MP4 spelas genom produktens befintliga spelarmoduler.
+Den indexerade H.264-banken (`runtime/indexed`) är borta ur Git och är inte
+ett spelformat. Packad staged-video från den banken följde med bort.
+Staged-förval gäller endast de registrerade destinationerna; senare kort,
+split, reveal och övergångar får inte antas vara täckta.
 
 Katalogen omfattar 84 lokalt tillgängliga poster, varav 22 för Astrid vid
 kontrollen. Det är inventering, inte identitetskontroll, visuell acceptans
@@ -155,6 +155,7 @@ Alla kommandon i `.githooks/pre-commit` kördes. De tre integritetsauditerna
 och övriga tillgängliga regressioner passerade. Sex tester kunde inte passera
 på denna maskin: fem kräver saknade `ffmpeg`/`ffprobe`, ett kräver `jq`.
 `audit-dealer-sync.mjs --probe` stoppades också av saknat `ffprobe`.
+Den kontrollen är senare borttagen tillsammans med den indexerade banken.
 Jira-anslutning saknades; inga CAC-statusar ändrades. Full dealer-QA och
 hashbunden visuell acceptans är inte utförda av detta labbarbete.
 # Aktuell ingång och kategoriavgränsning

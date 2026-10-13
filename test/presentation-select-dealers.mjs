@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import { createPresentationApi } from '../web/presentation-api.mjs';
 import { createSeedProject, addDealer, normalizeProject } from '../lab/lib/studio-model.mjs';
-import { selectPresentation } from '../presentation-runtime/selection.mjs';
+import { selectPresentation } from '../packages/presentation/runtime/selection.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };

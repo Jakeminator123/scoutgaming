@@ -15,7 +15,7 @@ import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
 import { StudioNavigation } from './studio-navigation';
 import { studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { DealerSpeechSettings } from './dealer-speech-settings';
-import { ownDealerIdle } from '../../presentation-runtime/registered-idle.mjs';
+import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
 import { activeStudioDealers, requestJson, resolveStudioDealerId, studioHref, type VideoInventory } from './studio-types';
 import { isActiveDealerId } from '../../web/public/dealer-identity.mjs';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';

@@ -1,8 +1,9 @@
 import { validateDealerSpeechReference } from '../../web/public/dealer-speech-profile.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { validateProject } from './studio-model.mjs';
-import { validateVideoBindings } from '../../presentation-runtime/selection.mjs';
-import { resolveLegacyClipPolicy } from '../../presentation-runtime/legacy-clip-policy.mjs';
+import { validateVideoBindings } from '../../packages/presentation/runtime/selection.mjs';
+import { resolveLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
+import { validateDealerSetBindings } from './dealer-sets.mjs';
 
 const fail = (code, statusCode = 422) => {throw new StudioStorageError(code,statusCode);};
 function checkedVideo(videos,id,dealerId,eventId) {
@@ -27,6 +28,8 @@ export function createStudioProjectBindings({videoRegistry,legacyControls} = {})
       catch { fail('studio_speech_reference_invalid'); }
     }
     if (videos.size !== registry.videos.length || families.size !== registry.families.length) fail('studio_media_registry_unavailable',503);
+    try { validateDealerSetBindings(project, registry); }
+    catch { fail('studio_media_binding_invalid'); }
     try {await validateVideoBindings(project,{registry});}
     catch {fail('studio_media_binding_invalid');}
     // Even manifest-owned dealers cannot persist hidden references to another

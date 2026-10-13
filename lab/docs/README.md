@@ -207,8 +207,9 @@ Grundloopen visar vila/andning. Variationer kan till exempel visa att dealern kl
 **Stäng av** ändrar policyn och behåller filen. **Ta bort** i biblioteket arkiverar oanvända uppladdningar med möjlighet att återställa. Originalspelarens media ändras inte av att navigera mellan dessa vyer.
 
 Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
-och Mei visar sina egna exakta medieregister och originalspelarens klippval;
-de ärver inte Astrids idle/Probe-inställningar. Fasta repliker är inspelat
+och Mei ärver inte Astrids idle/Probe-inställningar. Den indexerade
+originalbanken som tidigare fyllde deras klipplistor är borta ur Git;
+listorna är tomma där ingen registrerad film finns. Fasta repliker är inspelat
 exakt tal. **AI-småprat vid inaktivitet** ligger under Studio. Det separata textprovet
 skapar inte ljud eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
 Ett syntetiskt textprov är inte en skapad eller spelad film.
@@ -587,9 +588,10 @@ Anslutning, urval och laddning ersätter inte spelarens faktiska start-/bild-/sl
 Behåll tangentbordsflöden, synligt fokus och `prefers-reduced-motion`.
 Dessa krav är inte ett nytt driftprov eller en visuell acceptans.
 
-Medie-/spelarändringar kräver dealer-audit `--probe`, de obligatoriska
-regressionerna och granskning av alla fyra dealers i faktisk rehearsal,
-inklusive två uppspelningar i följd, enligt [AGENTS.md](../../AGENTS.md).
+Medie-/spelarändringar kräver testerna i `.githooks/pre-commit` och granskning
+av berörda registrerade dealers med `?dealer=<name>&rehearsal=1`, två
+uppspelningar i rad. Provspelningen använder den faktiska spelaren. Samma
+formulering står i [AGENTS.md](../../AGENTS.md).
 Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepaket
 eller publika loggar. Aktuella runtimekontrakt finns i
 [presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md);

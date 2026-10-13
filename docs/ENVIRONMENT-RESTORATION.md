@@ -188,7 +188,8 @@ rad-/sekvensparitet. De vägrar zon-databas och import med aktiv extern wallet.
 Bevara orörda SQLite-backuper utanför Git. Efter första nya Neon-skrivning
 kräver återgång senaste data/ledger; starta aldrig blindt en äldre SQLite-kopia.
 
-Bevara råmedia, kalibreringar och `dealer-sync-baseline.json`. Varje taländring
+Bevara råmedia och kalibreringar för det som finns kvar. `dealer-sync-baseline.json`
+följde med den indexerade banken ut ur trädet. Varje taländring
 är ett paket: exakt text, audio, video, frame-index, kalibrering och mänskligt
 acceptanskvitto. Ny audio-/videohash ogiltigförklarar tidigare godkännande.
 Bygg ersättningstagningar i separat staging. Kringgå aldrig indexets spärr
@@ -201,9 +202,9 @@ ljud. Källor: `web/public/local-presentation.mjs`,
 `pipeline/build-index.mjs`.
 Äldre automatiska warp-/offsetrecept är ingen generell instruktion för nya takes.
 
-För spelar-/mediaändring: kör hooken och
-`node pipeline/audit-dealer-sync.mjs --probe`; granska Vera, Amira, Mei och
-Astrid med `?dealer=<name>&rehearsal=1`, två uppspelningar i följd.
+För spelar-/mediaändring: kör hooken. `audit-dealer-sync.mjs` följde med
+den indexerade banken ut ur trädet. Granska registrerade dealers i den
+riktiga spelaren med `?dealer=<name>&rehearsal=1`, två uppspelningar i följd.
 Hash, waveform, första munrörelse och tester godkänner inte synk/kortkontakt.
 Uppdatera endast avsiktligt granskade baselineposter med per-line-resultat.
 Kända kvarvarande fel: [JOHN-HANDOFF.md](JOHN-HANDOFF.md).

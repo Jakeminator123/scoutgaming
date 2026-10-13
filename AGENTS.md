@@ -2,6 +2,12 @@
 
 ## Three product surfaces
 
+The domain contract is **operator → rooms (= background environments) → games → explicitly allowed tables and dealer clip sets**. One operator may own several rooms; a room may support several games with separate game bindings. A table is a foreground asset and never a room or background. Follow `docs/LOCAL-PRESENTATION-RUNTIME.md` (Central Studio contract) and the canonical names/immutable hashes in `web/public/material-catalog.mjs` across admin, partner, lobby and game. Catalogue design IDs, uploaded layer UUIDs, dealer IDs and operator-owned room IDs are different identities. Legacy single-game rooms and frozen packages must keep their IDs; do not group environments by matching names or shared files, or claim the multi-game transition is complete before its storage/runtime acceptance.
+Jakob confirmed that the five supplied blackjack boards are separate designs. Do not infer parent/variant relationships. Future blinking frame sequences need explicit grouping and accepted shared geometry; follow the technical reference before implementing them.
+Jakob's direction, 13 October 2026: `/admin` is the new backoffice surface and `/lobby` is the new player lobby. New UI work should use those names and entry points. `/control` and the older `/play`/`/game` entry points are being phased out, but the transition is not complete. Preserve working legacy routes, authentication, game launches and saved links until their replacements are implemented and verified. Do not describe the old surfaces as already retired. The runtime paths and controls below remain relevant during this transition; `/lobby` does not replace the actual game engine.
+
+Lifecycle controls must also work in the existing `/control` layout during the transition. Use “sammansättning” for a presentation; display the legacy “Mobile Phone Lane” as “Standardsammansättning” without changing its stored ID. Company trash detaches its rooms; restoring the company never reopens rooms automatically. Material trash previews dependencies and removes active links atomically, retains source files and publication history, and restores an asset as an unassigned library choice. Do not implement trash as a hidden filter over still-active structures or purge historical database rows as a side effect of ordinary deletion.
+
 Public site: https://www.scoutgaming.tech. Apex `scoutgaming.tech` is a 308 to www.
 Vercel project name is `scoutgaming`. The game engine stays on Render service `croupier-v2`.
 
@@ -58,11 +64,11 @@ At task start and before commit/push, read remote `main` security status with `n
 ## Dealer speech, media, cards, and wallet
 
 - Preserve dirty files, especially raw media and calibration scripts. Do not reset or replace the whole media directory.
-- Keep all four dealers on the shared playback path. Never choose a speaking video by approximate duration or loop a recorded sentence over continuing audio.
+- Keep every registered dealer on the shared playback path. Never choose a speaking video by approximate duration or loop a recorded sentence over continuing audio.
 - Each speech change is a set: exact text, recorded audio, video, frame index, calibration, and acceptance notes. A different audio/video hash invalidates prior visual approval.
 - Build replacement takes in a separate staging directory. `build-index.mjs` refuses to overwrite calibrated video with different bytes. Do not delete live-index metadata to bypass that check.
-- Run `node pipeline/audit-dealer-sync.mjs --probe` and the tests in `.githooks/pre-commit` for every media/player change. Review all four dealers with `?dealer=<name>&rehearsal=1`, including two consecutive plays. Rehearsal uses the actual game player.
-- The asset baseline is not proof of lip sync. Do not mark a take approved from a hash, waveform, test pass, or first-mouth onset. Update the baseline only after inspecting intentional changes and recording the per-line result. Never regenerate unrelated approved assets while repairing one take. Do not use pasted mouth overlays.
+- Run the tests in `.githooks/pre-commit` for every media/player change. Review the affected registered dealers with `?dealer=<name>&rehearsal=1`, including two consecutive plays. Rehearsal uses the actual game player.
+- A hash, waveform or test pass is not proof of lip sync. Do not mark a take approved from a hash, waveform, test pass, or first-mouth onset. Never regenerate unrelated approved assets while repairing one take. Do not use pasted mouth overlays.
 - Keep server-owned cards, shoe counts, wallet, and payouts authoritative. Do not manipulate the real user database for testing. Use an isolated server/database and a different hostname.
 - A Studio migration ships in two steps: run it against production Neon first, then merge the code. CI's migration readiness step enforces this; do not add continue-on-error to it. The one exception is a `deploymentOptional` version (a table only a new, isolated feature needs): tolerant code deploys first, the operator applies afterwards, and a follow-up PR pins it required. See the fixed procedure in `docs/CLOUD-MIGRATION.md`.
 - Temporary guest access stays on for local product development until the user asks otherwise. Do not treat this demo as ready for real money.

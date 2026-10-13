@@ -566,6 +566,44 @@ test('creating an unrelated original dealer room preserves the previously frozen
   assert.deepEqual(final.lanes.find(lane => lane.id === f.lane.id), old.lanes[0]); assert.ok(JSON.parse(row.tables).includes(first.room.id));
 });
 
+test('another room may share an identical baked capture without changing the first room', async () => {
+  const f = await registeredFixture(), first = await f.create(await f.registeredPayload());
+  const before = f.pool.snapshot().packages.at(-1), original = JSON.parse(before.branding);
+  const second = await f.create(await f.registeredPayload({ name: 'Same environment', idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' }));
+  const after = f.pool.snapshot().packages.at(-1);
+  assert.deepEqual(JSON.parse(after.branding), original);
+  assert.deepEqual(new Set(JSON.parse(after.tables)), new Set([first.room.id, second.room.id]));
+  const retry = await f.create(await f.registeredPayload({ name: 'Same environment', idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' }));
+  assert.equal(retry.duplicate, true); assert.deepEqual(retry.room, second.room);
+});
+
+test('a new room on the same baked composition preserves the entire frozen idle and exact retry', async () => {
+  for (const change of ['id', 'hash', 'path', 'compositing']) {
+    const f = await registeredFixture(), firstBody = await f.registeredPayload(), first = await f.create(firstBody);
+    const changed = clone(f.record);
+    if (change === 'id') { changed.id = '00000000-0000-4000-8000-000000000002'; changed.pathname = changed.pathname.replace(f.record.id, changed.id); }
+    if (change === 'hash') { changed.sha256 = 'b'.repeat(64); changed.pathname = changed.pathname.replace(f.record.sha256, changed.sha256); }
+    if (change === 'path') { changed.contentType = 'video/webm'; changed.pathname = changed.pathname.replace(/\.mp4$/, '.webm'); }
+    if (change === 'compositing') changed.classification.compositing.threshold = .7;
+    f.pool.setMedia(changed, 'media-replacement');
+    const saved = await f.repository.readDocument('project');
+    saved.value.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready').variants[0].videoGenerationId = changed.id;
+    const project = await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
+    const administration = await f.repository.readDocument('administration'), before = f.pool.snapshot();
+    const ready = await f.prepare('north', f.lane.id);
+    assert.equal(ready.ready, false, change); assert.equal(ready.conflictCode, 'presentation_room_environment_conflict', change);
+    await assert.rejects(f.create({ ...firstBody, name: 'Second room', idempotencyKey: '0bbb0000-1111-4222-8333-444444444444',
+      expectedProjectRevision: project.revision, expectedAdministrationRevision: administration.revision, expectedPackageRevision: first.packageRevision }),
+      error => error.statusCode === 409 && error.code === 'studio_presentation_room_environment_conflict', change);
+    assert.deepEqual(f.pool.snapshot(), before, change);
+    const retry = await f.create(firstBody);
+    assert.equal(retry.duplicate, true); assert.deepEqual(retry.room, first.room); assert.deepEqual(f.pool.snapshot(), before, change);
+    const raw = before.packages.at(-1), frozen = readPackagePresentation({ operatorId: 'north', revision: raw.package_revision,
+      lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) });
+    assert.deepEqual(frozen.registeredDealers.find(row => row.id === 'johanna').idle, f.record, change);
+  }
+});
+
 test('a selected generic idle cannot silently replace the idle of another frozen presentation', async () => {
   const f = await registeredFixture(); await f.create(await f.registeredPayload());
   const saved = await f.repository.readDocument('project'), next = clone(saved.value), second = clone(next.lanes.find(row => row.id === f.lane.id));

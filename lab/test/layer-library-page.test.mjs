@@ -56,10 +56,21 @@ test('unsaved removal and multiple remote uploads merge by asset id without resu
 test('conflicting scene edits stay explicit and invalid upload receipts cannot modify the draft',()=>{
   const {base,draft,remote,uploaded}=fixture();draft.lanes[0].label='Mitt val';remote.lanes[0].label='Sparat val';
   const result=registerLibraryLayer(base,draft,remote,uploaded);
-  assert.deepEqual(result.conflicts,['lanes']);assert.equal(result.project.lanes[0].label,'Mitt val');
+  assert.deepEqual(result.conflicts,[`lanes.${base.lanes[0].id}.label`]);assert.equal(result.project.lanes[0].label,'Mitt val');
   const before=structuredClone(draft);
   assert.throws(()=>registerLibraryLayer(base,draft,remote,{...uploaded,role:'table'}),/registrering kunde inte verifieras/);
   assert.deepEqual(draft,before);
+});
+test('independent settings of the same composition rebase without dropping remote fields',()=>{
+  const {base,draft,remote,uploaded}=fixture();draft.lanes[0].label='Mitt val';remote.lanes[0].openclaw.probe='shadow';
+  const result=registerLibraryLayer(base,draft,remote,uploaded);
+  assert.deepEqual(result.conflicts,[]);assert.equal(result.project.lanes[0].label,'Mitt val');assert.equal(result.project.lanes[0].openclaw.probe,'shadow');
+});
+test('concurrent edit versus removal stays explicit at the composition identity',()=>{
+  const {base,draft,remote}=fixture();draft.lanes[0].label='Mitt val';remote.lanes=[];
+  const result=rebaseProjectDraft(base,draft,remote);
+  assert.deepEqual(result.conflicts,[`lanes.${base.lanes[0].id}`]);assert.equal(result.project.lanes[0].label,'Mitt val');
+  assert.deepEqual(rebaseProjectDraft(base,draft,remote,'remote').project.lanes,[]);
 });
 
 test('the same library file changed in both views remains a conflict instead of silently replacing either edit',()=>{
@@ -91,7 +102,7 @@ test('library route keeps shared authorization and renders visible usage/removal
   assert.match(html,/id="library-panel-table"[^>]*hidden=""/);
   assert.match(html,/<h3>Hantera bord · 1 filer<\/h3>/);assert.doesNotMatch(html,/<summary>Hantera/);
   assert.match(html,new RegExp(`/control/compositions\\?composition=${project.lanes[0].id}`));
-  assert.match(html,/disabled="">Ta bort ur biblioteket/);assert.match(html,/Spara bibliotek/);
+  assert.match(html,/Flytta till papperskorgen/);assert.match(html,/Papperskorg · 0/);assert.match(html,/Spara bibliotek/);
 });
 
 test('upload callback advances CAS baseline while preserving removal drafts and synchronously blocks save',()=>{

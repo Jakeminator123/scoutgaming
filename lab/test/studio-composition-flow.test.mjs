@@ -42,7 +42,7 @@ test('video and table registration configure the correct role and do not change 
 test('a simultaneous remote lane edit remains an explicit conflict and retains the local draft',()=>{
   const {base,draft,remote,selection}=fixture();remote.lanes[0].label='Serverval';draft.lanes[0].label='Mitt osparade val';
   const result=registerCompositionLayer(base,draft,remote,selection);
-  assert.deepEqual(result.conflicts,['lanes']);assert.equal(result.project.lanes[0].label,'Mitt osparade val');
+  assert.deepEqual(result.conflicts,[`lanes.${base.lanes[0].id}.label`]);assert.equal(result.project.lanes[0].label,'Mitt osparade val');
   assert.equal(result.project.lanes[0].layers.background.default,id);
 });
 

@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { FadeImage } from '@/components/fade-image';
-import { DealerPortrait, type ApprovedDealerVideo } from '@/components/dealer-portrait';
 import { cn } from '@/lib/utils';
 
 type ArtworkProps = {
   name: string; kind: 'room' | 'dealer'; image?: string; backdrop?: string;
-  approvedVideo?: ApprovedDealerVideo;
   game?: 'blackjack' | 'roulette'; className?: string; selected?: boolean; fadeDelay?: number;
 };
 
-/** Catalogue images only. Dealer video support remains dormant until approved catalogue metadata exists. */
-export function CatalogueArtwork({ name, kind, image, approvedVideo, backdrop, game = 'blackjack', className, selected = false, fadeDelay = 0 }: ArtworkProps) {
+/** Public room imagery; dealer fallback stays neutral beside the verified portraits. */
+export function CatalogueArtwork({ name, kind, image, game = 'blackjack', className, selected = false, fadeDelay = 0 }: ArtworkProps) {
   const [failedSource, setFailedSource] = useState<string | null>(null);
-  if (kind === 'dealer') return <DealerPortrait name={name} image={image} approvedVideo={approvedVideo} backdrop={backdrop} selected={selected} fadeDelay={fadeDelay} className={className} />;
+  if (kind === 'dealer') return <div aria-hidden className={cn('relative flex items-center justify-center overflow-hidden bg-secondary text-brass', className)}
+    style={{ backgroundImage: 'radial-gradient(ellipse at 30% 10%, #b49a5633, transparent 70%)' }}>
+    <span className="absolute inset-5 rounded-full border border-brass/20" /><span className="absolute inset-10 rounded-full border border-brass/10" />
+    <span className="font-serif text-7xl opacity-70 md:text-8xl">{Array.from(name)[0]}</span>
+    <span className="absolute bottom-3 inset-x-2 text-center font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">Porträtt ej kopplat</span>
+  </div>;
   const actualImage = image && image !== failedSource ? image : undefined;
   const illustration = '/admin/_assets/lobby/images/lobby/room-salongen.png';
   return <div className={cn('relative overflow-hidden bg-secondary text-brass', className)}>

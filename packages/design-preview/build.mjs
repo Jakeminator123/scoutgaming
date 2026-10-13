@@ -27,8 +27,9 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
     // The shared room validator reaches this lazy game-only browser import.
     // It is served by the game runtime and is never used by the design lobby.
     external: ['/composition-runtime/compositor.js'],
-    define: { 'process.env.NODE_ENV': '"production"' },
+    define: { 'process.env.NODE_ENV': '"production"', 'process.env.NEXT_PUBLIC_LAB_BASE_PATH': '"/studio"' },
     alias: { ...(publicLobby ? { '@/lib/catalog.mjs': resolve(root, 'runtime/public-lobby-catalog.mjs') } : {}),
+      'react': resolve(root, 'node_modules/react'), 'react-dom': resolve(root, 'node_modules/react-dom'),
       '@': source, 'next/link': resolve(root, 'runtime/navigation.tsx'),
       'next/navigation': resolve(root, 'runtime/navigation.tsx'), 'next/image': resolve(root, 'runtime/image.ts') },
     // Keep the imported internal design intact. The independent public bundle
@@ -73,4 +74,4 @@ await mkdir(resolve(output, 'fonts'), { recursive: true });
 for (const [name, original] of Object.entries({ inter: 'inter-latin-wght-normal', space: 'space-grotesk-latin-wght-normal', mono: 'jetbrains-mono-latin-wght-normal' })) {
   await cp(resolve(root, '../../lab/app/fonts', original + '.woff2'), resolve(output, 'fonts', name + '.woff2'));
 }
-console.log('Design workspaces built: /admin, /admin/lobby and /lobby (registered catalogues, no writes).');
+console.log('Workspaces built: /admin (Studio drafts), /admin/lobby and /lobby (registered catalogues).');

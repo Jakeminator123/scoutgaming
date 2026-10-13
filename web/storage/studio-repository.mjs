@@ -1,4 +1,5 @@
 import {isActiveDealerId} from '../dealer-identity.mjs';
+import {validateDealerSetRecordOwners,dealerSetsForClip} from '../../lab/lib/dealer-sets.mjs';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash, randomUUID } from 'node:crypto';
 import {
@@ -191,8 +192,14 @@ export function createStudioRepository({ pool, scope } = {}) {
             && !previous.value.dealers.some(existing => existing.id === dealer.id))) fail('studio_dealer_inactive');
           const lifecycle = options.lifecycleAuthority === lifecycleAuthority;
           if (!lifecycle && canonicalStudioJson(previous.value.dealerTrash ?? []) !== canonicalStudioJson(prepared.value.dealerTrash ?? [])) fail('studio_dealer_lifecycle_required');
+          if (!lifecycle && canonicalStudioJson(previous.value.layerAssetTrash ?? []) !== canonicalStudioJson(prepared.value.layerAssetTrash ?? [])) fail('studio_material_lifecycle_required');
+          if (!lifecycle && (previous.value.layerAssets??[]).some(asset=>!(prepared.value.layerAssets??[]).some(next=>next.id===asset.id))) fail('studio_material_lifecycle_required');
           const removed = previous.value.dealers.filter(dealer => !prepared.value.dealers.some(next => next.id === dealer.id));
           const rows = await api.listMedia({limit:5000});
+          // Validate authoring membership against the current transactional
+          // media rows, not the earlier HTTP inventory snapshot.
+          try { validateDealerSetRecordOwners(prepared.value, rows); }
+          catch { fail('studio_media_in_use'); }
           if (!lifecycle && removed.some(dealer => rows.some(row => row.classification.dealerId === dealer.id))) fail('studio_dealer_lifecycle_required');
           const {dealerTrash, ...activeProject} = prepared.value;
           for (const row of rows) if ((row.deletion || row.classification.archived) && contains(activeProject,row.id)) fail('studio_media_in_use');
@@ -271,6 +278,8 @@ export function createStudioRepository({ pool, scope } = {}) {
         if (previous.deletion) fail('studio_media_deletion_pending');
         if (previous.revision !== prepared.expectedRevision || previous.sha256 !== sha256) fail('studio_conflict');
         const { revision: oldRevision, updatedAt, ...record } = previous;
+        const project = await loadDocument('project');
+        if (project && dealerSetsForClip(project.value, prepared.id).some(set => set.dealerId !== metadata?.dealerId || metadata?.archived)) fail('studio_media_in_use');
         const next = validateStudioMedia({ ...record, classification: metadata }), revision = newRevision('media');
         const row = (await query(`/* studio:classify-media */ UPDATE croupier_studio.media_records SET revision=$4,record=$5::jsonb,updated_at=now()
           WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid AND revision=$6 RETURNING id,revision,record,updated_at`,

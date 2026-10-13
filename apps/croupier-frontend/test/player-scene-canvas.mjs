@@ -14,12 +14,12 @@ const sharedCode = ts.transpileModule(readFileSync(sharedFilename,'utf8'),{fileN
 const source = (name='dealer',contentType='video/mp4')=>({src:'/api/operators/fixture/preview/'+name,contentType});
 const settle = ()=>new Promise(resolve=>setImmediate(resolve));
 
-function mount({reduced=false,defer=false,props={}}={}) {
+function mount({reduced=false,defer=false,props={},sharedOptions={}}={}) {
   const refs=[],states=[],effects=[],elements=[],frames=new Map(),renders=[];
   let ready=0,failures=0,nextFrame=0,renderCalls=0;
   class Canvas extends EventTarget {
     width=720; height=1280;
-    context={clearRect(){},drawImage(...args){renderCalls++;this.lastDraw=args;}};
+    context={draws:[],clearRect(){},drawImage(...args){renderCalls++;this.lastDraw=args;this.draws.push({args,operation:this.globalCompositeOperation});}};
     getContext(){return this.context;}
   }
   class Video extends EventTarget {
@@ -32,7 +32,7 @@ function mount({reduced=false,defer=false,props={}}={}) {
   }
   class Picture extends EventTarget {
     value=''; naturalWidth=800; naturalHeight=1200;
-    set src(value){this.value=value;if(value&&!defer)queueMicrotask(()=>this.dispatchEvent(new Event('load')));}
+    set src(value){this.value=value;if(value.includes('alpha-mask')){this.naturalWidth=1080;this.naturalHeight=1920;}if(value&&!defer)queueMicrotask(()=>this.dispatchEvent(new Event('load')));}
     get src(){return this.value;}
     removeAttribute(name){if(name==='src')this.value='';}
   }
@@ -60,7 +60,7 @@ function mount({reduced=false,defer=false,props={}}={}) {
   const localRequire=specifier=>{
     if(specifier.endsWith('/published-scene.mjs')) {
       const shared={...context,module:{exports:{}},exports:null};shared.exports=shared.module.exports;
-      vm.runInNewContext(sharedCode,shared,{filename:sharedFilename});return shared.module.exports;
+      vm.runInNewContext(sharedCode,shared,{filename:sharedFilename});return {mountPublishedScene:(canvas,options)=>shared.module.exports.mountPublishedScene(canvas,{...options,...sharedOptions})};
     }
     if(specifier==='react')return React;
     if(specifier==='react/jsx-runtime')return {jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})};
@@ -180,4 +180,43 @@ test('still dealer cards draw one composited video frame and never play or sched
     const moving=view.PlayerSceneCanvas({...view.allProps,still:false});
     assert.notEqual(moving.key,view.root.key);
   } finally {view.cleanup();}
+});
+
+
+test('landscape roulette can render shared background and table without a legacy dealer',async()=>{
+  const view=mount({props:{settings:defaultCompositionSettings()},sharedOptions:{dealer:null,layout:'desktop',background:source('room','image/webp'),table:source('table','image/png')}});
+  try{
+    await settle();await view.visible(true);
+    assert.equal(view.ready,1);assert.equal(view.failures,0);assert.equal(view.frames.size,0);
+    assert.equal(view.renders[0].scene.layout,'desktop');assert.equal(view.renders[0].scene.show.dealer,false);
+    assert.equal(view.renders[0].assets.has('dealer'),false);assert.equal(view.renders[0].assets.size,2);
+  }finally{view.cleanup();}
+});
+
+test('MP4 table uses a registered alpha mask and playback follows visibility and user pause',async()=>{
+  const view=mount({props:{settings:defaultCompositionSettings()},sharedOptions:{dealer:null,layout:'desktop',background:source('room-video'),table:source('table-video'),tableMask:source('alpha-mask','image/png')}});
+  try{
+    await settle();await view.visible(true);
+    assert.equal(view.ready,1);assert.equal(view.failures,0);
+    const assets=view.renders[0].assets,table=assets.get('table').el;
+    assert.equal(table.context.draws[0].operation,'source-over');
+    assert.equal(table.context.draws[1].operation,'destination-in');
+    assert.equal(table.context.draws[1].args[0],assets.get('tableMask').el);
+    const videos=view.elements.filter(element=>'playCalls' in element);
+    assert.equal(videos.length,2);assert.ok(videos.every(video=>!video.paused&&video.muted&&video.loop));
+    const tableVideo=videos.find(video=>video.src.endsWith('table-video'));tableVideo.currentTime=1;
+    const callback=view.frames.values().next().value;view.frames.clear();callback();
+    assert.equal(table.context.draws.length,4);assert.match(table.src,/@1$/);
+    await view.hidden(true);assert.ok(videos.every(video=>video.paused));
+    await view.hidden(false);await view.toggle();assert.ok(videos.every(video=>video.paused));
+    assert.equal(view.frames.size,0);
+  }finally{view.cleanup();}
+});
+
+test('misregistered or animated table masks fail closed',async()=>{
+  for(const tableMask of [source('wrong-ratio','image/png'),source('mask-video')]){
+    const view=mount({props:{settings:defaultCompositionSettings()},sharedOptions:{dealer:null,table:source('table-video'),tableMask}});
+    try{await settle();assert.equal(view.ready,0);assert.equal(view.failures,1);assert.equal(view.frames.size,0);}
+    finally{view.cleanup();}
+  }
 });

@@ -8,6 +8,7 @@ import {gameLaneConfiguration} from '../../web/public/game-lanes.mjs';
 import {isPresentationRoomLaneCompatible} from '../../web/storage/frozen-presentation-capture.mjs';
 import {operatorAuditContext} from './operator-audit-context.mjs';
 import {isStudioRole} from './studio-access-policy.mjs';
+import {materialTrashPlan} from './material-trash.mjs';
 const fail=(code='studio_resource_lifecycle_rejected',status=409)=>{throw new StudioStorageError(code,status);};
 const exact=(body,fields)=>{if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).sort().join(',')!==[...fields].sort().join(','))fail('studio_invalid_request',400);};
 const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
@@ -75,15 +76,55 @@ export function createResourceLifecycleApi({repository,scope,now=Date.now}={}){
   return result;
  });
  endpoint('POST','operator-lifecycle',async(context,operators)=>{
-  const body=context.body;exact(body,['operatorId','archived','expectedPackageRevision']);
+  const body=context.body;exact(body,['operatorId','archived','expectedPackageRevision','expectedAdministrationRevision']);
   if(!id(body.operatorId)||typeof body.archived!=='boolean'||!revision(body.expectedPackageRevision))fail('studio_invalid_request',400);
+  validateRevision(body.expectedAdministrationRevision);
+  const saved=await documents();
+  if(saved.administrationRevision!==body.expectedAdministrationRevision)fail('studio_conflict');
   const {operator,pack,lifecycle}=await selected(operators,body.operatorId);
   if((pack?.revision??null)!==body.expectedPackageRevision)fail('studio_conflict');
   if(body.archived?operator.status!=='active'||lifecycle.operator!==null:operator.status!=='suspended'||lifecycle.operator===null)fail('studio_conflict');
-  lifecycle.operator=body.archived?{archivedAt:new Date(now()).toISOString()}:null;
-  const changed=await operators.changeOperatorStatus({...packageInput(context,operator.id,pack,withOperatorLifecycle(pack?.branding,lifecycle),{resourceType:'operator',resourceId:operator.id,archived:body.archived}),
+  const archivedAt=body.archived?new Date(now()).toISOString():lifecycle.operator.archivedAt;
+  lifecycle.operator=body.archived?{archivedAt}:null;
+  const input=packageInput(context,operator.id,pack,structuredClone(pack?.branding??{}),{resourceType:'operator',resourceId:operator.id,archived:body.archived});
+  let administrationRevision=saved.administrationRevision;
+  if(body.archived||saved.administration.rooms.some(room=>room.operatorId===operator.id)){
+   const administration=structuredClone(saved.administration),config=gameLaneConfiguration(administration);
+   const rooms=administration.rooms.filter(room=>room.operatorId===operator.id);
+   for(const room of rooms){
+    const gameLane=config.gameLanes.find(row=>row.id===room.gameLaneId);
+    if(!isPresentationRoom(room)||!gameLane||!pack)fail('studio_room_configuration_missing');
+    if(lifecycle.rooms.some(entry=>entry.room.id===room.id))fail('studio_conflict');
+    lifecycle.rooms.push({archivedAt,room:structuredClone(room),gameLane:structuredClone(gameLane),sourcePackageRevision:pack.revision});
+   }
+   const ids=new Set(rooms.map(room=>room.id));
+   administration.rooms=administration.rooms.filter(room=>!ids.has(room.id));
+   const adapters=new Set(rooms.map(room=>room.gameLaneId));
+   administration.gameLanes=config.gameLanes.filter(lane=>!adapters.has(lane.id)||!lane.id.startsWith('room-lane-')||administration.rooms.some(room=>room.gameLaneId===lane.id));
+   administration.gameLane=administration.gameLanes.some(lane=>lane.id===config.gameLane)?config.gameLane:administration.gameLanes[0]?.id??null;
+   input.tables=input.tables.filter(value=>!ids.has(value));
+   if(input.branding.roomOverrides)for(const roomId of ids)delete input.branding.roomOverrides[roomId];
+   if(rooms.length)administrationRevision=(await repository.saveDocument('administration',{value:validateStudioGameAdministration(administration),expectedRevision:saved.administrationRevision,actor:context.actor.user})).revision;
+  }
+  // Restoring a company never republishes its rooms. Each room is restored
+  // explicitly as pending through the existing room lifecycle contract.
+  input.branding=withOperatorLifecycle(input.branding,lifecycle);
+  const changed=await operators.changeOperatorStatus({...input,
    status:body.archived?'suspended':'active',expectedStatus:operator.status});
-  return {ok:true,operator:{id:operator.id,slug:operator.slug,name:operator.name,status:changed.operator.status,archivedAt:lifecycle.operator?.archivedAt??null},packageRevision:changed.package.revision};
+  return {ok:true,operator:{id:operator.id,slug:operator.slug,name:operator.name,status:changed.operator.status,archivedAt:lifecycle.operator?.archivedAt??null},administrationRevision,packageRevision:changed.package.revision};
+ });
+ for(const action of ['material-trash-check','material-trash'])endpoint('POST',action,async(context,operators)=>{
+  const body=context.body;exact(body,['id','archived','expectedRevision',...(action==='material-trash'?['impactToken']:[])]);
+  if(!id(body.id)||typeof body.archived!=='boolean')fail('studio_invalid_request',400);
+  validateRevision(body.expectedRevision);
+  const plan=await materialTrashPlan({repository,operators,id:body.id,archived:body.archived,expectedRevision:body.expectedRevision,now});
+  if(action==='material-trash-check')return {impact:plan.impact};
+  if(typeof body.impactToken!=='string'||body.impactToken!==plan.impact.token)fail('studio_conflict');
+  const saved=await repository.saveDealerLifecycle(plan.project,{expectedRevision:body.expectedRevision,actor:context.actor.user});
+  if(!same(plan.administration,plan.administrationDocument.value))await repository.saveDocument('administration',{
+   value:validateStudioGameAdministration(plan.administration),expectedRevision:plan.administrationDocument.revision,actor:context.actor.user});
+  for(const change of plan.changes)await operators.publishPackage({...change,actor:context.actor.user,audit:operatorAuditContext(context.actor)});
+  return {ok:true,project:saved.value,impact:plan.impact};
  });
  endpoint('POST','room-lifecycle',async(context,operators)=>{
   const body=context.body;exact(body,['operatorId','roomId','archived','expectedAdministrationRevision','expectedPackageRevision']);

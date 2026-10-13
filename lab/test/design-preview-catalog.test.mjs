@@ -4,6 +4,8 @@ import { registeredDesignCatalog, serveDesignCatalog } from '../lib/design-previ
 import { createPortraitRoomEntryFixture } from '../../test/fixtures/portrait-room-entry.mjs';
 import { addDealer } from '../lib/studio-model.mjs';
 import { parseLobbyCatalog, lobbySelection, playUrlFor } from '../../packages/design-preview/lobby/lib/catalog.mjs';
+import {withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
+import {operatorLifecycleGroups} from '../../packages/design-preview/admin/lib/studio-resource-lifecycle.mjs';
 
 function fixture() {
   const f = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'johanna' });
@@ -41,6 +43,14 @@ test('registered admin and published lobby share exact identities without privat
   assert.equal(adminRoom.environment.fixed, choice.room.environmentFixed);
   assert.equal(playUrlFor(choice), '/play/blackjack?operator=north&table=' + f.room.id + '&dealer=johanna');
   assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'johanna' }).dealer, null);
+});
+test('registered catalog exposes protected archive identity separately from legacy suspended companies',async()=>{
+  const f=fixture(),archivedAt='2026-10-13T00:00:00.000Z';f.operators[0].status='suspended';
+  f.pack.branding=withOperatorLifecycle(f.pack.branding,{schemaVersion:1,operator:{archivedAt},rooms:[]});
+  const result=await registeredDesignCatalog(f),groups=operatorLifecycleGroups(result.administration.operators);
+  assert.deepEqual(groups.active,[]);assert.deepEqual(groups.trash.map(row=>row.slug),['north']);
+  assert.equal(groups.trash[0].archivedAt,archivedAt);assert.deepEqual(groups.suspended.map(row=>row.slug),['another']);
+  assert.equal(groups.suspended[0].archivedAt,null);assert.deepEqual(result.lobby.catalogs,[]);
 });
 
 test('preview rooms and suspended operators never enter the playable lobby; genuine empty data stays empty', async () => {

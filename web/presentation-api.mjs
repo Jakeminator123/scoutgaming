@@ -1,8 +1,8 @@
 import { isActiveDealerId as isDealerId } from './dealer-identity.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
-import { selectRegisteredIdleRule } from '../presentation-runtime/registered-idle-rules.mjs';
-import { registeredIdlePolicy, registeredIdleInventory } from '../presentation-runtime/registered-idle-policy.mjs';
-import { ownDealerIdle } from '../presentation-runtime/registered-idle.mjs';
+import { selectRegisteredIdleRule } from '../packages/presentation/runtime/registered-idle-rules.mjs';
+import { registeredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';
+import { ownDealerIdle } from '../packages/presentation/runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -12,11 +12,11 @@ import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../lab/lib/studio-model.mjs';
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
-import { selectPresentation } from '../presentation-runtime/selection.mjs';
+import { selectPresentation } from '../packages/presentation/runtime/selection.mjs';
 import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const publicModules = new Map(['live-idle', 'idle-policy'].map(name => [`/presentation-runtime/${name}.mjs`, `presentation-runtime/${name}.mjs`]));
+const publicModules = new Map(['live-idle', 'idle-policy'].map(name => [`/presentation-runtime/${name}.mjs`, `packages/presentation/runtime/${name}.mjs`]));
 publicModules.set('/lab/policies/idle-policy.seed.json', 'lab/policies/idle-policy.seed.json');
 publicModules.set('/web/public/dealer-identity.mjs', 'web/public/dealer-identity.mjs');
 const publicVideo = item => item ? {
