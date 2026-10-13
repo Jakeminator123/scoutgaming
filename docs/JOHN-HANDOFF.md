@@ -14,8 +14,10 @@ Full regression efter integration med roulette- och budgetleveranserna:
 3 552 pass, 11 skip, 0 fel. Studio-bygget passerar med 97 kontrollerade byggspår.
 PR110 är mergad som `1595fb451cf19fbcbba1ece04e4bb8c7c74a9bc6`:
 Vercel READY och Render live på samma SHA, alla CI-kontroller gröna.
-Ny visuell kontroll av inloggat beroendeträd återstår eftersom Codex-appens
-webbläsartransport stängdes. Utloggad route bevarar returnTo till `/admin/deletion`.
+Inloggat beroendeträd kontrollerat på huvuddomänen 14 oktober: röda menyn,
+komplett registerläsning och separata Anna-/Dragan-kopplingar visas.
+Dealers visar Dragan med 21 klipp; importlänken behåller Dragan och erbjuder
+30 filer per omgång. Utloggad route bevarar returnTo till `/admin/deletion`.
 Den befintliga migrationsloggen i CLOUD-MIGRATION.md skiljer funktionerna
 i Admin från framtida avveckling av hostnamn och källkod. lab/ behövs av
 Admin, autentisering, API:er, SQL och Render; inga tjänster eller data tas bort.
@@ -44,9 +46,10 @@ stängs med dealer-/jobb-/leasekontroll under samma Studio-lås som skrivningen;
 registreringen i samma transaktion, med game → Studio som i native Admin.
 Samtidig projektsparning och chatt ingår i regressionen. Kodleverans och faktisk
 produktionsrensning återstår; nuvarande current project har återlästs separat
-för att bevara nytillkommet Anna-arbete.
+för att bevara nytillkommet Anna-arbete. Fullhook på `2f7b891a`:
+3 585 pass, 11 skip, 0 fel i 74 testgrupper. Kodreview fann inga blockerare.
 
-## Anna-demorum: slutkoppling pågår, 13 oktober
+## Anna-demorum: publicerat och två liveprov klara, 14 oktober
 
 Admin-editorn kan nu spara exakt startfilm, bordsdesign, tider och handregion;
 idle-mask och SHA/CAS-granskning av pose/framing är tillgängliga. Bibliotek och
@@ -65,15 +68,32 @@ start har sina granskade handregioner i sparat rouletteutkast. Sammansättningen
 har Anna, roulettespecifikt bord och MP4-salongen; inga blackjackbord tillåtna.
 Admin avrundar bordets bredd till 1,04 i båda formaten (lokalt prov 1,044565);
 övriga lager är 1/0/0, bordets x/y 0/0 och tableFront=false.
-Det nya lobbyrummet är ännu inte publicerat: klientens förkontroll använder
-blackjack även efter byte till roulette och avvisar dessutom svarsversion v15.
-En avgränsad uppföljning rättar spelbunden förkontroll och versionsvalidering.
-Rouletteval hämtar nu en ny förkontroll med rätt spel, och skapandets
-omkontroll använder samma spelval. Exakta stödda v14/v15-svar accepteras;
-äldre blackjackanrop bevaras. 110 riktade tester, Lab-typkontroll och
-Studio-produktionsbygge passerar. Nytt rum och två spel från lobbyn återstår.
-Inga befintliga PAOW-rum eller användarsaldon ändrade. Två slutrundor från
-den publicerade lobbyn ska verifieras innan detta markeras färdigt.
+PR114 rättar förkontrollen och är live som `1fd552d3`: rouletteval och
+skapandets sista kontroll använder samma spel; exakta v14/v15-svar accepteras.
+110 riktade tester, Lab-typkontroll, Studio-bygge och full pre-commit
+(3498 pass, 0 fail, 11 skip) passerar. Alla PR-kontroller var gröna.
+
+Det separata bolaget `scoutgaming-demo` (Scoutgaming Demo) har nu paketversion
+1 och det öppna rummet `room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea`,
+**Anna · Roulette · Demo**. Skapat via Admins ordinarie atomiska publicering,
+med serverkvitto och frysta Blob/Neon-referenser. SG-tests äldre paketversion
+16 och dess två arkiverade rum är bevarade. Dess konvertering blockerades
+av befintligt legacy-skydd; ingen sådan konvertering eller skyddsändring gjordes.
+Inga andra bolags rum ändrades och inga nya teammedlemmar bjöds in.
+
+Två sammanhängande spel öppnades via `/lobby` → Scoutgaming Demo → Anna,
+utan omladdning, på det av Jakob uttryckligen godkända demokontot:
+5 på rött gav 17 svart (−5); 5 på svart gav 15 svart (+5). Demosaldot
+återgick till startvärdet. Båda serverkvittorna var nya, inte återspelade.
+Annas startfilm, hjul/kula, resultat och återgång till idle granskades i
+synlig produktionsspelare, med MP4-bakgrund och bordbredd 1,04. Bilder och
+kvitton ligger privat som `anna-live-acceptance.json`, `anna-live-round-1.png`
+och `anna-live-round-2.png` i roulette-stop. Inga konsolfel observerades.
+[Öppna demorummet](https://www.scoutgaming.tech/play/roulette?operator=scoutgaming-demo&table=room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea&dealer=anna-jonsson).
+Detta är demoacceptans med låtsasmarker. Serverstyrd pending/reveal återstår;
+resultatet finns fortfarande i nätverkssvaret före den visuella landningen.
+
+Tidigare lokala regressioner och leveransunderlag:
 Admin typecheck, 49 editorprov och Studio-produktionsbygge passerar.
 Kodcommit `b8e5e20c` är pushad med main `f22cb718` integrerad:
 Studio-produktionsbygge och full pre-commit 3486 pass, 0 fail, 11 skip.
@@ -95,8 +115,11 @@ i roulettebranchen. Vercel rapporterar READY för denna main-version.
 Admin fungerar via den befintliga appflikens vanliga länkar. Ingen
 adminsessionsnyckel har exporterats. Render-budgetens tidigare releasefönster
 är avslutat; PR101 driftsattes först efter gröna kontroller.
-Säkerhetsstatus 13 oktober: ny öppen
-incident 38176586 utan tillgänglig filplats; täckning ofullständig.
+Säkerhetsstatus uppdaterad 14 oktober: samordnaren återläste incident 38176586
+som IGNORED/test_credential efter hantering av den syntetiska testfixturen.
+Denna chats efterföljande statusläsning visar 18 observerade, 0 öppna och
+18 ignorerade incidenter. Incidenttäckningen är fortfarande partiell och
+historisk skanning ofullständig; detta är inte ett generellt säkerhetsfrikännande.
 
 ## Anna-startfilm och varierad roulette, 13 oktober — PR101 fortsättning
 

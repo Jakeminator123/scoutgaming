@@ -105,7 +105,8 @@ hela mallen eller Astrids fungerande spel-/talväg försvinner.
 
 - [x] Leverera den röda menyraden Radering med anslutet beroendeträd och
   tydlig skillnad mellan sparad mall, publicerade val och tillgänglig historik.
-  PR110 är driftsatt; den inloggade visuella slutkontrollen är fortfarande öppen.
+  PR110 är driftsatt; den inloggade visuella kontrollen på huvuddomänen
+  14 oktober verifierar röd meny, registerläsning och Anna-/Dragan-kopplingar.
 - [x] Läsande lokal registerbackup: 3 dokument, 60 mediaposter, 43 paket,
   157 dokumenthistorikposter och befintliga Forge-/bolagsberoenden exporterade
   i en read-only repeatable-read-transaktion. Filen hålls privat utanför Git.
@@ -153,8 +154,12 @@ ett samtidighetsprov omfattar de separata anslutningarna.
 Produktionsgallring väntar på levererad rättning och färskt CAS-underlag.
 Ett nytt sparat projekt upptäcktes; endast current project och dess fyra
 tillkomna historikrader återlästes för att bevara det parallella Anna-arbetet.
-Den privata, granskade planen bevarar samtliga 161 historikrader och gör
-163 exakta dokumentuppdateringar samt 139 raderingar av gamla beroenden.
+Senare adminändring har också återlästs separat. Backupens förlust av
+mikrosekunder i tidsstämplar är reproducerad; exakt precision kompletterar
+originalet utan att skriva om det. Färsk read-only serverkontroll matchar
+samtliga 304 målposter. Planen bevarar samtliga 162 historikrader och gör
+164 exakta dokumentuppdateringar samt 139 raderingar av gamla beroenden.
+Fullhook på `2f7b891a` passerar: 3 585 pass, 11 skip, 0 fel (74 grupper).
 En separat Blob-kontroll håller Studio-skrivlåset genom färsk referenskontroll,
 exakt objektradering och återläsning. 15 isolerade prov omfattar återstart
 efter två avbrott och förlust av låsanslutningen; ingen livekörning följer av dem.
