@@ -1,5 +1,37 @@
 # Aktuell handoff — Scoutgaming
 
+## Admin: återstående kompatibilitetsluckor, 13 oktober
+
+Talgranskning finns i Admins verktyg och öppnar befintlig granskningskomponent
+med vald dealer, samma session/grants och samma native-API. Materialbiblioteket
+bevarar bakgrundsfliken efter omladdning. Äldre lanes/companies-bokmärken och
+clips-länkar med dealerId får rätt destination och kontext. Missvisande
+”äldre editor/vy”-etiketter är borttagna när komponenterna visas i Admin.
+
+Sju regressioner gav rött före rättning; 33 riktade prov är gröna.
+Produktionsbygget (97 byggspår) och Admin/lobby-typkontrollen passerar.
+Full regression efter integration med roulette- och budgetleveranserna:
+3 552 pass, 11 skip, 0 fel. Studio-bygget passerar med 97 kontrollerade byggspår.
+Produktions-SHA kompletteras efter leverans; lokala prov är inte liveacceptans.
+Den befintliga migrationsloggen i CLOUD-MIGRATION.md skiljer funktionerna
+i Admin från framtida avveckling av hostnamn och källkod. lab/ behövs av
+Admin, autentisering, API:er, SQL och Render; inga tjänster eller data tas bort.
+
+Kevins aktuella Git-ref är inventerad separat: 274 kodrefererade filer för
+Dragan och Paow i ett privat ZIP, med exakta fack, sökvägar och hashvärden.
+Sju av Dragans 21 produktionsposter matchar; ingen av Paows sex matchar.
+Ingen ny publicering eller visuell medieacceptans följer av denna inventering.
+
+Röd Radering-meny och ett anslutet beroendeträd finns i den nya koden.
+Det visar bolag/spel/rum, dealers/filer och bakgrund/dealer/bord utan att
+duplicera delade resurskort. Läsfel och ofullständig historik visas öppet.
+Permanent datarensning är ett separat uttryckligt användarmandat med
+skyddade resurser och konkret inventering i CLOUD-MIGRATION.md. Ren
+offlineplanering och lokal backup är förberedda. Alla 232 inventerade objekt
+under de fyra gamla dealernas mappar och två gamla borden har hämtats till
+lokal disk och hashverifierats (145 404 657 byte). Inga
+produktionsdata har gallrats och ingen ny PAOW är ännu registrerad.
+
 ## Anna-demorum: slutkoppling pågår, 13 oktober
 
 Admin-editorn kan nu spara exakt startfilm, bordsdesign, tider och handregion;
@@ -121,6 +153,7 @@ och handmatta ur samma bildruta. GitGuardian-läsningen visade 0 öppna/17
 ignorerade incidenter, aktiv övervakning; historisk scan `too_large`, platsdata
 delvis tillgängliga och main-check köad. Detta är ingen fullständig historisk
 friskförklaring.
+
 ## GPU-testbudget 20 USD, 13 oktober
 
 Jakob höjde uttryckligen dygnstaket till 20 USD. Dagssumman avser konservativa
