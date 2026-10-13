@@ -98,8 +98,11 @@ i roulettebranchen. Vercel rapporterar READY för denna main-version.
 Admin fungerar via den befintliga appflikens vanliga länkar. Ingen
 adminsessionsnyckel har exporterats. Render-budgetens tidigare releasefönster
 är avslutat; PR101 driftsattes först efter gröna kontroller.
-Säkerhetsstatus 13 oktober: ny öppen
-incident 38176586 utan tillgänglig filplats; täckning ofullständig.
+Säkerhetsstatus uppdaterad 14 oktober: samordnaren återläste incident 38176586
+som IGNORED/test_credential efter hantering av den syntetiska testfixturen.
+Denna chats efterföljande statusläsning visar 18 observerade, 0 öppna och
+18 ignorerade incidenter. Incidenttäckningen är fortfarande partiell och
+historisk skanning ofullständig; detta är inte ett generellt säkerhetsfrikännande.
 
 ## Anna-startfilm och varierad roulette, 13 oktober — PR101 fortsättning
 
