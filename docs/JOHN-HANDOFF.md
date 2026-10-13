@@ -1,34 +1,5 @@
 # Aktuell handoff — Scoutgaming
 
-## Tillägg 13 oktober: separat rouletteklippkarta
-
-`/admin/clips` har egna flyttbara roulettekort, exakt spel-/dealerfiltrering
-och VILA→idle-reserv i editorpreview. VILA-PNG är ett lokalt prov, inte native
-lagring. MP4/WebM registreras i befintliga roulettefack; framtida fack
-markeras utan falska bindningar. Blackjackens talpanel och `idle.ready`
-används inte för roulette. Samma person och bakgrund får fortfarande delas.
-
-Bord har oföränderlig speltyp genom uppladdning, utkast, paket och publika
-media-GET. Runtimekapabilitet v13 krävs för spelmärkta bord; ingen SQL- eller
-livemigrering ingår. Omärkta äldre bord behandlas som blackjack och exponeras
-inte för roulette, medan historisk rumstillgång bevaras. Tre lager stöder
-bild/video i editor. Roulettespelaren väljer dessutom publicerat bord som
-bild eller videoloop, med publicerad geometri och utan prototypens mask.
-Se [materialinventering och signalflöde](games/roulette/KLIPPKARTA.md).
-
-Återstår: fryst roulettebank för dealerhandlingar, 37 servervalda utfallsfilmer,
-engångsuppspelning/synkronisering, separat talset och visuell acceptans med
-två spel i följd. Ingen privat originalfil har flyttats eller godkänts,
-och ingen produktionsdata, publicering eller provider har ändrats.
-
-Verifierat: fokustester för roulettekort, native metadata, spelavgränsade
-bord, offentliga media-GET, lokal VILA och publicerade scenbord passerar.
-Admin/Lobby-typkontroll och designbygge passerar. Isolerad browserfixture
-visar separata blackjack-/roulettekort och lagerpanelen utan produktions-API.
-Full regression körs vid commit. GitGuardian 13 oktober: 0 öppna och 17
-ignorerade incidenter i läst källa; övervakning aktiv, main-suite queued,
-historikskanning `too_large` och platsmetadata delvis otillgänglig.
-
 ## Tillägg 13 oktober: Admins navigering och delade funktioner
 
 `/admin` är huvudspåret för N1. Sidval, menyer, ekonomi och tjänstepaneler
@@ -206,6 +177,35 @@ och Vercel var gröna på samma PR-commit. Incidentlista och historisk
 säkerhetstäckning är inte verifierade. Dokument-PR #79 verifierade den korta
 vägen i körning `38393298682`: 46 sekunder från första jobbstart till grönt
 slutjobb. Full regression fortsätter köras på main.
+
+## Tillägg 13 oktober: separat rouletteklippkarta
+
+`/admin/clips` har egna flyttbara roulettekort, exakt spel-/dealerfiltrering
+och VILA→idle-reserv i editorpreview. VILA-PNG är ett lokalt prov, inte native
+lagring. MP4/WebM registreras i befintliga roulettefack; framtida fack
+markeras utan falska bindningar. Blackjackens talpanel och `idle.ready`
+används inte för roulette. Samma person och bakgrund får fortfarande delas.
+
+Bord har oföränderlig speltyp genom uppladdning, utkast, paket och publika
+media-GET. Runtimekapabilitet v13 krävs för spelmärkta bord; ingen SQL- eller
+livemigrering ingår. Omärkta äldre bord behandlas som blackjack och exponeras
+inte för roulette, medan historisk rumstillgång bevaras. Tre lager stöder
+bild/video i editor. Roulettespelaren väljer dessutom publicerat bord som
+bild eller videoloop, med publicerad geometri och utan prototypens mask.
+Se [materialinventering och signalflöde](games/roulette/KLIPPKARTA.md).
+
+Återstår: fryst roulettebank för dealerhandlingar, 37 servervalda utfallsfilmer,
+engångsuppspelning/synkronisering, separat talset och visuell acceptans med
+två spel i följd. Ingen privat originalfil har flyttats eller godkänts,
+och ingen produktionsdata, publicering eller provider har ändrats.
+
+Verifierat: fokustester för roulettekort, native metadata, spelavgränsade
+bord, offentliga media-GET, lokal VILA och publicerade scenbord passerar.
+Admin/Lobby-typkontroll och designbygge passerar. Isolerad browserfixture
+visar separata blackjack-/roulettekort och lagerpanelen utan produktions-API.
+Full regressionshook passerar: 3 275 godkända, 11 villkorade skips, inga fel. Studio-produktionsbygget och 94 byggspår passerar också. GitGuardian 13 oktober: 0 öppna och 17
+ignorerade incidenter i läst källa; övervakning aktiv, main-suite queued,
+historikskanning `too_large` och platsmetadata delvis otillgänglig.
 
 ## Nästa agent: roulette i N1:s Labba-yta
 
