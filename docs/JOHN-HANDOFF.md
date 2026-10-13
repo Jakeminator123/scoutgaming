@@ -16,7 +16,8 @@ Obligatorisk Studio-migration 011 vidgar endast budgetpolicyns exakta CHECK.
 bevaras och verifieras genom exakt versionerad strukturevolution; okänd drift
 eller saknad 011-ledger nekas. Migrationen körs före merge. Först efter deploy
 av koden uppdateras produktionspolicyn och Render-variabeln till 20 USD.
-149 riktade tester och ett verkligt Neon-migrationsprov med full rollback PASS.
+150 riktade tester och ett verkligt Neon-migrationsprov med full rollback PASS.
+Render-startens exakta ledgerkontroll inkluderar också 011; CI kör verklig isolerad SQL-/omstartsacceptans.
 Två tekniskt färdiga Paow-spelningar ersätter inte visuell läppsynkacceptans.
 
 ## Publik Scoutguide med D-ID, 13 oktober
