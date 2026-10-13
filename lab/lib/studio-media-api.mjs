@@ -1,3 +1,6 @@
+import {assertMediaAlpha} from './media-alpha.mjs';
+import {assertNativeMediaReadiness} from './native-media-readiness.mjs';
+import {DEFAULT_DEALER_COMPOSITING} from '../../web/public/dealer-compositing.mjs';
 import { canonicalStudioJson, StudioStorageError, validateActor, validateMediaId, validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
@@ -100,6 +103,22 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         validateMediaId(body.id);
         if (typeof repository?.transaction !== 'function' || typeof videoRegistry !== 'function') fail('studio_media_registry_unavailable');
         if (typeof mutationTransaction !== 'function') fail('studio_mutation_transaction_required');
+        const proposedMetadata={...body.metadata,...(body.metadata?.mediaType==='audio'?{}:{compositing:body.metadata?.compositing??DEFAULT_DEALER_COMPOSITING})};
+        await assertNativeMediaReadiness(repository,proposedMetadata);
+        if(body.metadata?.compositing?.mode==='alpha'){
+          const source=await repository.getMedia(body.id);
+          if(source?.retainedBank)fail('studio_retained_media_immutable',409);
+          if(!source||source.sha256!==body.sha256)fail('studio_conflict',409);
+          writeMetadata(body.metadata);
+          if(source.classification.compositing?.mode!=='alpha'){
+            if(typeof videoResponse!=='function')fail('studio_media_registry_unavailable');
+            const response=await videoResponse(body.id,new Request(request.url));
+            if(!response.ok)fail('studio_media_bytes_unavailable',503);
+            const bytes=Buffer.from(await response.arrayBuffer());
+            if(bytes.length!==source.size)fail('studio_invalid_media_format',415);
+            await assertMediaAlpha(bytes,source.contentType);
+          }
+        }
         await mutationTransaction(async () => {
           await refresh();
           return repository.transaction(async () => {
@@ -111,9 +130,9 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
               || canonicalStudioJson(body.previous) !== canonicalStudioJson(current.classification)) fail('studio_conflict',409);
             if (Boolean(body.metadata?.archived) !== Boolean(current.classification.archived)) fail('studio_invalid_request',400);
             await requireSavedVideoDealer(repository,body.metadata?.dealerId);
-            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:writeMetadata(body.metadata),actor});
-          }, {presentationMutation:{metadata:body.metadata}});
-        }, {presentationMutation:{metadata:body.metadata}});
+            await repository.classifyMedia(body.id,{sha256:body.sha256,expectedRevision:current.revision,metadata:writeMetadata(proposedMetadata),actor});
+          }, {presentationMutation:{metadata:proposedMetadata}});
+        }, {presentationMutation:{metadata:proposedMetadata}});
         return json(await videoRegistry());
       }
       if (request.method === 'POST' && path === base) fail('studio_media_upload_not_ready');
@@ -123,7 +142,10 @@ export function createStudioMediaApi({repository, authorize, config, videoRegist
         return await videoResponse(id,request);
       }
       fail('studio_media_unknown',404);
-    } catch (error) {return nativeStudioErrorResponse(error);}
+    } catch (error) {
+      if(error?.code==='studio_media_alpha_required')return Response.json({code:error.code,error:'Filen saknar verifierbar alfa. Välj en frilagd PNG eller VP9-WebM; svart bakgrund är inte genomskinlig.'},{status:422,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+      return nativeStudioErrorResponse(error);
+    }
   }});
 }
 export async function handleNativeStudioMedia(request) {

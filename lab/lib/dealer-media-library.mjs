@@ -1,23 +1,35 @@
+import {dealerMediaEvents,rouletteMediaEvent,rouletteMediaDefaults} from './roulette-media.mjs';
 import {kindForEvent,situationsForEvent,validateVideoMetadata} from './video-intake.mjs';
 import {clipSituationLabel} from './clip-label.mjs';
-export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'idle',label:'Idle / Grundloop'},{id:'transition',label:'Övergångar'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
-export function eventMediaCategory(event){if(event.sourceType==='transition'||event.id==='transition.shoe')return 'transition';if(event.id.startsWith('deal.')||event.id.startsWith('reveal.'))return 'deal';return kindForEvent(event);}
+import contract from '../policies/studio-contract.json' with {type:'json'};
+const blackjackEventIds=new Set(contract.events.map(event=>event.id));
+export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'roulette',label:'Roulette'},{id:'idle',label:'Idle / Grundloop'},{id:'transition',label:'Övergångar'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
+export function eventMediaCategory(event){if(rouletteMediaEvent(event.id))return 'roulette';if(event.sourceType==='transition'||event.id==='transition.shoe')return 'transition';if(event.id.startsWith('deal.')||event.id.startsWith('reveal.'))return 'deal';return kindForEvent(event);}
 export function dealerMediaSlots(project,category='all'){
-  return project.events.filter(event=>category==='all'||eventMediaCategory(event)===category).flatMap(event=>{
+  return slotsForEvents(dealerMediaEvents(project),category);
+}
+// The existing Forge and runtime use blackjack's canonical event contract.
+// Intake-only roulette slots never acquire prompts, shoe geometry or billing.
+export function blackjackMediaSlots(project,category='all'){
+  return slotsForEvents(project.events.filter(event=>blackjackEventIds.has(event.id)),category);
+}
+function slotsForEvents(events,category){
+  return events.filter(event=>category==='all'||eventMediaCategory(event)===category).flatMap(event=>{
     const situations=situationsForEvent(event);
-    return (situations.length?situations:['']).map(situation=>({id:event.id+'/'+situation,eventId:event.id,situation,category:eventMediaCategory(event),label:event.id==='idle.ready'?'Grundloop':situation?clipSituationLabel(event.id,situation):event.label}));
+    return (situations.length?situations:['']).map(situation=>({id:event.id+'/'+situation,eventId:event.id,situation,category:eventMediaCategory(event),label:event.id==='idle.ready'?'Grundloop':rouletteMediaEvent(event.id)?event.label+' · '+situation:situation?clipSituationLabel(event.id,situation):event.label}));
   }).sort((a,b)=>(a.category==='idle'?0:1)-(b.category==='idle'?0:1));
 }
 export function mediaClassification(project,{dealerId,slotId,label,contentType}){
   const slot=dealerMediaSlots(project).find(row=>row.id===slotId);
   if(!slot||!project.dealers.some(row=>row.id===dealerId))throw Error('Välj dealer och ett exakt fack.');
-  const audio=contentType.startsWith('audio/');
+  const audio=contentType.startsWith('audio/'),image=contentType.startsWith('image/');
+  if(image!==(slot.eventId==='roulette.reference'))throw Error('Välj VILA-bildens eget fack för PNG och ett handlingsfack för video.');
   if(audio&&slot.category!=='speech')throw Error('Välj ett talfack för ljudfilen.');
-  return validateVideoMetadata({dealerId,eventId:slot.eventId,situation:slot.situation,label,kind:kindForEvent(project.events.find(row=>row.id===slot.eventId)),role:'standard',playback:'once',notes:'',...(audio?{mediaType:'audio'}:{})});
+  return validateVideoMetadata({dealerId,eventId:slot.eventId,situation:slot.situation,label,kind:kindForEvent(dealerMediaEvents(project).find(row=>row.id===slot.eventId)),role:'standard',playback:'once',notes:'',...(audio?{mediaType:'audio'}:{}),...(image?{mediaType:'image',compositing:{mode:'alpha'}}:{}),...(rouletteMediaEvent(slot.eventId)?rouletteMediaDefaults(slot.eventId,slot.situation):{})});
 }
 export function dealerLibraryVideos(project,inventory,dealerId,category='all',archived=false){
   return inventory.videos.filter(video=>(video.dealer??video.classification?.dealerId??video.familyId?.split('/')[0])===dealerId&&Boolean(video.classification?.archived)===archived
-    &&(category==='all'||eventMediaCategory(project.events.find(event=>event.id===(video.classification?.eventId??video.eventId??video.suggestedEventId))??{id:'',sourceType:''})===category));
+    &&(category==='all'||eventMediaCategory(dealerMediaEvents(project).find(event=>event.id===(video.classification?.eventId??video.eventId??video.suggestedEventId))??{id:'',sourceType:''})===category));
 }
 export function draftUsesMedia(project,id){const {clipLabels,dealerTrash,...active}=project;return JSON.stringify(active).includes(JSON.stringify(id));}
 

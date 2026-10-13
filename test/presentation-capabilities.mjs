@@ -4,6 +4,15 @@ import { presentationCapabilitiesResponse } from '../web/presentation-capabiliti
 import { validatePresentationCapabilities } from '../web/presentation-capability-contract.mjs';
 const endpoint = 'https://engine.example.invalid/api/presentation/capabilities';
 
+test('v12 announces strict PNG/VP9 alpha and roulette media while preserving v11 features',async()=>{
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'12'}}));
+  assert.equal(response.status,200);const cap=validatePresentationCapabilities(await response.json(),{expectedVersion:12});
+  assert.equal(cap.mediaAlpha,'png-vp9-v1');assert.equal(cap.rouletteMedia,'action-pose-slots-v1');
+  assert.equal(cap.dealerSets,'authoring-categories-v1');assert.equal(cap.materialTrash,'detached-assets-v1');
+  const old=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'11'}})).json();
+  assert.equal(Object.hasOwn(old,'mediaAlpha'),false);assert.equal(Object.hasOwn(old,'rouletteMedia'),false);
+});
+
 test('default feature HTTP response remains exact v2 and negotiation returns exact v3 without credentials or reads', async () => {
   const legacy = presentationCapabilitiesResponse(new Request(endpoint));
   assert.equal(legacy.status, 200); assert.equal(validatePresentationCapabilities(await legacy.json(), { expectedVersion: 2 }).schemaVersion, 2);
@@ -16,7 +25,7 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }

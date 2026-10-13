@@ -146,7 +146,7 @@ test('family upload does not borrow Astrid families for Nora and disables submis
 test('dealer backgrounds are always keyed with bounded controls and retain the exact event and situation', () => {
   const { VideoCompositingFields, VideoMetadataFields } = load('./video-metadata-fields.tsx');
   const values = []; let tree = VideoCompositingFields({ value: { mode: 'opaque' }, onChange: value => values.push(value) });
-  assert.equal(nodes(tree,node=>node.type==='select').length,0,'no opaque/background retention option');
+  assert.deepEqual(nodes(tree,node=>node.type==='option').map(node=>node.props.value),['green-screen','alpha'],'only keying or source alpha; no baked background retention');
   assert.match(renderToStaticMarkup(tree),/Äldre bakgrundsinställning behöver uppdateras/);
   nodes(tree, node => node.type === 'input')[0].props.onChange({ target: { valueAsNumber: .23 } });
   assert.equal(validateVideoCompositing(values[0]).mode, 'green-screen');

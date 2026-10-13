@@ -1,5 +1,62 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: roulettefack och alfa för Anna-prov
+
+`codex/roulette-alpha-media` lägger till separata roulettefack för VILA-PNG,
+andningsvila, glasögonvariant och hjulstart. Handling, spel och start-/slutpose
+registreras separat. Privat native uppladdning/återläsning stöder PNG;
+`compositing.mode=alpha` bevarar PNG/VP9-transparens i den gemensamma previewn.
+Browsern avkodar tre stickprov före alfauppladdning/omklassificering; servern
+kontrollerar PNG-pixlar respektive VP9-alfaspår/payload. Svart/opak film är inte
+en fungerande alfamatta. Blackjackfack och Studio seed ändras inte.
+
+MERGE fångade en rolling-deploy-blockerare: PNG/roulette/alfa utökar den
+gemensamma strikta StudioMediaRecord. Native intag och omklassificering kräver
+nu exakt annonserad capability **v12** (`mediaAlpha=png-vp9-v1`,
+`rouletteMedia=action-pose-slots-v1`) före Blob-grant, medieläsning och skrivning,
+samt samma featurekontroll i den inre transaktionen. Frysta paket med dessa
+media kräver också v12. V11:s dealerSets/materialTrash bevaras oförändrat.
+Render ska stödja v12 före första nya registrering; äldre motor ger fast 503
+och lämnar utkastet kvar. Ingen datamigration eller produktdataändring ingår.
+85 riktade prover är gröna, inklusive noll SQL/grants på v11, avvisat äldre
+transaktionsklartecken och positiv registerskrivning/återförsök med v12.
+
+CI fångade ytterligare en konsumentgräns: intagskatalogens fyra roulettefack
+får inte bli blackjackens genereringsjobb. `blackjackMediaSlots(project)`
+läser endast canonical blackjack-event; Forge behåller sina 40 fack och
+avvisar roulette före providersubmission och jobbregistrering. Övriga
+`dealerMediaSlots`-konsumenter är bibliotek/intag och navigation. Runtime-
+linjer/event accepterar inte rouletteklassificering; seed/kontrakt ändras inte.
+Canvasen skiljer bild/video via DOM-taggen och har separat PNG-/alfa-prov.
+Forge-, canonical-kontrakt- och canvasproven ingår nu också i fullhooken.
+Hela lab-sviten efter CI-reparationen: 1 800 passerade, två avsiktligt
+hoppade över, noll fel (fyra arbetare). Produktionsbygge och TypeScript är
+gröna. Cacheprovets avsiktliga filbyte har en deterministisk tidsstämpel på
+Windows; produktens cachebeteende ändras inte.
+
+Samordnat med mediaagenten och SIDOR3. Den nya separata mediaassistenten måste
+anslutas till `dealerMediaEvents(project)` av sin ägare; detta ändrar nuvarande
+bibliotek/intag och preview. Ingen dealer eller rumsregel publiceras automatiskt.
+
+Runway har producerat andning och glasögonrengöring med avkodad alfa. Första
+glasögonmattan var helt opak och underkänd; v2 fungerar i privat scenprov.
+Fyra faktiska Anna-filer har importerats/återlästs byteidentiskt i en isolerad
+fixture, med idempotent commit och ny repository-instans. Desktop/mobilbredd
+och två starter har provats. Kropp/händer använder en och samma videobildruta.
+Detta är inte acceptans på fysisk mobil eller en produktionstestad publicering.
+
+Bordsprovet ändrade hjulrännan och är underkänt. Bakgrundsfilmen är ett separat
+10-sekunders prov med matchande stillposter. Ursprunglig handgest träffar ännu
+inte spindeln exakt; masken är en heuristisk prototyp. Ingen 37-filmsbank eller
+ny spelorkestrering är implementerad. Format, exakta promptar, geometri,
+resultatstyrd händelsekedja och bevisgränser finns i
+[rouletteguiden](games/roulette/README.md#anna-jonsson-roulettefack-alfa-och-runway-prov-13-oktober-2026).
+
+Privata original, genererade filer, offlineprov och kvitton ligger i
+`C:/Users/jakem/.codex/visualizations/2026/10/12/01a1319d-73c5-7801-8e65-27e47532075b/`;
+inga binärer eller konversationsexporter läggs i Git. Slutlig regressionsstatus
+och exakt leveranshead redovisas i PR:en.
+
 ## Ekonomi: enkel översikt i admin, 13 oktober
 
 `/admin/ekonomi` återfår nyckeltal och två diagram i den nya designen;

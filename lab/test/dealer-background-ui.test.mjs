@@ -48,6 +48,21 @@ test('the actual dealer canvas keys legacy and classified frames and clears fail
   const css=readFileSync(new URL('../components/dealer-video-surface.module.css',import.meta.url),'utf8');assert.match(css,/video\{visibility:hidden/);
 });
 
+test('dealer PNG canvas preserves alpha and green pixels without depending on DOM constructors',()=>{
+  const h=hooks(),frames=new Map(),events=new Map();let serial=0,pixels=new Uint8ClampedArray(8),draws=0;
+  const image={tagName:'IMG',src:'/vila.png',naturalWidth:2,naturalHeight:1,complete:true};
+  const expected=[0,255,0,255,255,0,0,0];
+  const context={clearRect(){pixels.fill(0);},drawImage(){draws++;pixels.set(expected);},getImageData(){return {data:pixels.slice()};},putImageData(frame){pixels=frame.data.slice();}};
+  const root={querySelector:()=>image,addEventListener:(name,fn)=>events.set(name,fn),removeEventListener:name=>events.delete(name)},canvas={getContext:()=>context};
+  const {DealerVideoSurface}=load('../components/dealer-video-surface.tsx',{react:h.react},{requestAnimationFrame:fn=>{frames.set(++serial,fn);return serial;},cancelAnimationFrame:id=>frames.delete(id)});
+  const tree=h.render(DealerVideoSurface,{compositing:{mode:'alpha'},children:React.createElement('img',{src:image.src})});
+  tree.props.ref.current=root;nodes(tree,node=>node.type==='canvas')[0].props.ref.current=canvas;h.effects();
+  const paint=()=>{const [id,fn]=frames.entries().next().value;frames.delete(id);fn();};
+  paint();assert.deepEqual([...pixels],expected);paint();assert.equal(draws,1,'a still image does not redraw as a video clock');
+  image.complete=false;paint();assert.equal(pixels.some(Boolean),false);
+  h.unmount();assert.equal(frames.size,0);assert.equal(events.size,0);
+});
+
 test('legacy clip settings require keyed output on explicit save without altering the old compare-and-swap value',async()=>{
   const h=hooks(),calls=[];
   const old={dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Legacy',notes:'',compositing:{mode:'opaque'}};

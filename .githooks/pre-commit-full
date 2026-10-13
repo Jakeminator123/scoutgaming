@@ -66,6 +66,7 @@ run_node_tests test/check-environment-variables.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node tools/build-runtime-media-catalog.mjs --check
 run_node_tests test/runtime-media-catalog.mjs lab/test/dealer-media-library.test.mjs
+run_node_tests lab/test/dealer-forge.test.mjs lab/test/studio-contract.test.mjs lab/test/dealer-background-ui.test.mjs
 node test/player-auth.mjs
 node test/table-http.mjs
 run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs apps/croupier-frontend/test/player-ui-build.mjs

@@ -9,7 +9,7 @@ import {createBackgroundPlayback} from '../../web/public/background-playback.mjs
 import type {BackgroundPlaybackPolicy} from '../../web/public/background-playback-policy.mjs';
 
 export type CompositionMedia={url:string;label:string;contentType:string};
-export type VideoCompositing={mode:'green-screen';threshold:number;softness:number;despill:number};
+export type VideoCompositing=import('../../web/public/dealer-compositing.mjs').DealerCompositing;
 type Role='dealer'|'background'|'table';
 type MediaElement=HTMLVideoElement|HTMLImageElement;
 type Asset={id:string;el:MediaElement;width:number;height:number;kind:'video'|'image'};
@@ -25,12 +25,12 @@ export function CompositionPreview({dealer,background,table,settings,layout,show
   const backgroundPlayer=useRef<ReturnType<typeof createBackgroundPlayback>|null>(null),sceneAssets=useRef(new Map<string,Asset>()),baseBackground=useRef<Asset|null>(null),playbackActive=useRef(false);
   const [backgroundStatus,setBackgroundStatus]=useState('');
   const [mediaInfo,setMediaInfo]=useState(''),[status,setStatus]=useState(t('Välj ett klipp eller ett lager.','Choose a clip or layer.')),[error,setError]=useState(''),[loaded,setLoaded]=useState(false),[playing,setPlaying]=useState(false);
-  const keyed=useMemo(()=>effectiveDealerCompositing(compositing),[compositing?.threshold,compositing?.softness,compositing?.despill]);
+  const keyed=useMemo(()=>effectiveDealerCompositing(compositing),[compositing]);
   const visible=compositionPreviewLayers(show,keyed,Boolean(dealer));
   const sources={dealer:visible.dealer?dealer:null,background:visible.background?background:null,table:visible.table?table:null};
   const sourceKey=JSON.stringify(sources);
   const frameSettings=useRef(framing);frameSettings.current=framing;
-  useEffect(()=>{scene.current={...sceneForComposition(settings,layout,visible,{...keyed,mode:'composite',enabled:true}),dealerAspect:16/9};},[settings,layout,show,keyed,framing]);
+  useEffect(()=>{scene.current={...sceneForComposition(settings,layout,visible,{...keyed,mode:'composite',enabled:keyed.mode!=='alpha'}),dealerAspect:16/9};},[settings,layout,show,keyed,framing]);
 
   useEffect(()=>{
     const stage=canvas.current;if(!stage)return;stage.width=1080;stage.height=1920;

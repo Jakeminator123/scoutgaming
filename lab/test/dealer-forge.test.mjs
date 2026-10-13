@@ -2,13 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
-import { forgeSlots, slotPlan, slotPrompt, anchorsFor, validateProfile, validatePositions, DEFAULT_POSITIONS } from '../lib/dealer-forge-catalog.mjs';
+import { forgeSlots, slotById, slotPlan, slotPrompt, anchorsFor, validateProfile, validatePositions, DEFAULT_POSITIONS } from '../lib/dealer-forge-catalog.mjs';
+import {dealerMediaSlots} from '../lib/dealer-media-library.mjs';
+import {ROULETTE_MEDIA_EVENTS} from '../lib/roulette-media.mjs';
 import { ForgeError } from '../lib/dealer-forge-service.mjs';
 import { fixture, sha, scope, PNG, MP4 } from './fixtures/dealer-forge-fixture.mjs';
 import { createDealerForgeStore } from '../lib/dealer-forge-store.mjs';
 import { createRunwayClient, RunwayError } from '../lib/runway-client.mjs';
 
 const actor = { actor: 'tester' };
+
+test('roulette intake never becomes a blackjack Forge slot, provider submission or saved job',async()=>{
+  const project=addDealer(createSeedProject(),'paow','Paow'),roulette=dealerMediaSlots(project,'roulette');
+  assert.equal(roulette.length,4);assert.equal(forgeSlots(project).length,40);
+  const tampered={...project,events:[...project.events,...ROULETTE_MEDIA_EVENTS]};
+  assert.deepEqual(forgeSlots(tampered),forgeSlots(project));
+  const f=fixture();
+  for(const slot of roulette){
+    assert.throws(()=>slotById(project,slot.id),e=>e.code==='forge_slot_unknown');
+    await assert.rejects(f.service.createJob('paow',{requestId:randomUUID(),slotId:slot.id,quality:'720'},actor),e=>e.code==='forge_slot_unknown');
+  }
+  assert.equal(f.submitted.length,0);assert.equal(f.store.jobs.size,0);assert.equal(f.registered.length,0);
+});
 
 test('catalog: 40 slots in group order, deal slots carry targets and frames, transitions come from the project event', () => {
   const project = addDealer(createSeedProject(), 'paow', 'Paow');

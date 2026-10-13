@@ -7,6 +7,7 @@ import { MAX_VIDEO_BYTES, validateVideoMetadata } from './video-intake.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
 import { isCloudMediaConfigured, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, mediaBlobPath } from './cloud-media-store.mjs';
 import { BASE_DEALER_IDS, registeredDealerIds } from '../../web/dealer-identity.mjs';
+import {assertMediaAlpha} from './media-alpha.mjs';
 const MAX_INDEX_BYTES = 8 * 1024 * 1024;
 async function localDealerIds(options) {
   const project = options.projectStore ? await options.projectStore.load() : options.project;
@@ -90,6 +91,7 @@ export async function uploadVideo(request, options = {}) {
     const validHeader = extension === 'mp4' ? head.length >= 16 && head.toString('ascii', 4, 8) === 'ftyp' : head.length >= 16 && head.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]));
     if (!validHeader) throw new StudioError('Filen har inte rätt MP4/WebM-format.', 415);
     await handle.sync(); await handle.close(); handle = null;
+    if(metadata.compositing?.mode==='alpha')await assertMediaAlpha(await readFile(temp),type);
     try { release = await lockfile.lock(dir, { lockfilePath: join(dir, '.index.lock'), retries: 0, onCompromised: () => { compromised = true; } }); }
     catch (error) { if (error.code === 'ELOCKED') throw new StudioError('En annan video sparas. Försök igen.', 423); throw error; }
     const videos = await readUploads(options), sha256 = hash.digest('hex');

@@ -4,4 +4,4 @@ export const DEFAULT_GREEN_SCREEN: Readonly<{mode:'green-screen';threshold:numbe
 export function validateDealerFraming(value:unknown):DealerFraming;
 export function dealerFrameRect(sourceWidth:number,sourceHeight:number,width:number,height:number,framing?:DealerFraming):[number,number,number,number];
 export function drawDealerFrame(context:CanvasRenderingContext2D,video:HTMLVideoElement|HTMLImageElement,width:number,height:number,framing?:DealerFraming,green?:boolean):void;
-export function keyGreenPixels(data:Uint8ClampedArray,key:{threshold:number;softness:number;despill:number}):Uint8ClampedArray;
+export function keyGreenPixels(data:Uint8ClampedArray,key:{mode:'alpha'}|{mode?:'green-screen';threshold:number;softness:number;despill:number}):Uint8ClampedArray;

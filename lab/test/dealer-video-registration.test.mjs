@@ -20,13 +20,14 @@ test('registered dealer IDs are bounded and cannot inject unsafe Blob paths',()=
   const pathname=mediaBlobPath('dealers/nora/review/uploads',id,sha256,'mp4');
   assert.equal(validatePrivateMedia({provider:'vercel-blob',pathname,sha256,size:32,contentType:'video/mp4'}).pathname,pathname);
 });
-test('legacy metadata remains readable while all new dealer video writes require green-screen',()=>{
+test('legacy metadata remains readable while new dealer writes require green-screen or alpha',()=>{
   assert.deepEqual(validateVideoMetadata(classification).compositing,classification.compositing);
   assert.deepEqual(videoCompositing(),{mode:'opaque'});
   assert.deepEqual(videoCompositing({classification:{...classification,compositing:undefined}}),{mode:'opaque'});
   assert.deepEqual(validateVideoCompositing({mode:'opaque'}),{mode:'opaque'});
   const legacy={...classification,compositing:{mode:'opaque'}},before=JSON.stringify(legacy);
-  assert.throws(()=>validateVideoMetadata(legacy,{forWrite:true}),/grön bakgrund/);
+  assert.throws(()=>validateVideoMetadata(legacy,{forWrite:true}),/alfa/);
+  assert.deepEqual(validateVideoMetadata({...classification,compositing:{mode:'alpha'}},{forWrite:true}).compositing,{mode:'alpha'});
   assert.equal(JSON.stringify(legacy),before);
   assert.deepEqual(validateVideoMetadata({...classification,compositing:undefined},{forWrite:true}).compositing,DEFAULT_DEALER_COMPOSITING);
   assert.deepEqual(effectiveDealerCompositing(legacy.compositing),DEFAULT_DEALER_COMPOSITING);
