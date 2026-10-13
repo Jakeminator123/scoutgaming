@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeDealerSpeechProfile,validateDealerSpeechReference,dealerSpeechPreparation} from '../../web/public/dealer-speech-profile.mjs';
+import {normalizeDealerSpeechProfile,validateDealerSpeechReference,dealerSpeechPreparation,dealerSpeechReferenceCheck} from '../../web/public/dealer-speech-profile.mjs';
 import {addDealer,createSeedProject,createEmptyProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
 import {createStudioProjectBindings} from '../lib/studio-project-bindings.mjs';
 import {captureFrozenRegisteredDealers} from '../../web/storage/frozen-dealer-idle.mjs';
@@ -55,6 +55,21 @@ test('own unchanged available video plus in-range selected timestamp are require
   for(const patch of [{dealer:'astrid'},{sha256:'b'.repeat(64)},{available:false},{integrity:'unavailable'},{duration:.2},{classification:{mediaType:'audio'}},{classification:{archived:true}}]){
     assert.throws(()=>validateDealerSpeechReference(profile(),{...video(),...patch},'paow'));
   }
+});
+
+test('incompatible reference can stay in preparation but cannot enable speech over the three layers',()=>{
+  const enabled={...profile(),schemaVersion:2,state:'enabled'};
+  for(const patch of [{compositing:{mode:'alpha'}},{compositing:{mode:'opaque'}},{bytes:256*1024*1024+1},
+    {contentType:'image/png'},{duration:0},{classification:{dealerId:'astrid'}},{compositing:{mode:'green-screen',threshold:2}}]){
+    const source={...video(),...patch};
+    assert.equal(dealerSpeechReferenceCheck(source,'paow').canEnable,false);
+    assert.throws(()=>validateDealerSpeechReference(enabled,source,'paow'),/speech_reference_/);
+  }
+  const alpha={...video(),compositing:{mode:'alpha'}};
+  assert.doesNotThrow(()=>validateDealerSpeechReference(profile(),alpha,'paow'));
+  assert.match(dealerSpeechReferenceCheck(alpha,'paow').message,/Alfa.*talmotorn/);
+  assert.equal(dealerSpeechReferenceCheck(video(),'paow').canEnable,true);
+  assert.doesNotThrow(()=>validateDealerSpeechReference(enabled,video(),'paow'));
 });
 test('save binding checks own source, hash and archive state on authoritative registry',async()=>{
   const project=addDealer(createSeedProject(),'paow','PAOW');delete project.idlePolicy;
@@ -111,6 +126,10 @@ for(const dealerId of ['astrid','vera','mei','paow'])test('speech settings uses 
   tree=render();assert.equal(nodes(tree,node=>node.type==='button')[0].props.disabled,true,'changing the profile never bypasses reference review');
   nodes(tree,node=>node.type==='video')[0].props.onLoadedData();tree=render();nodes(tree,node=>node.type==='button')[0].props.onClick();
   assert.deepEqual(edited.dealers[0].speechProfile,{...saved,schemaVersion:2,state:'enabled'});
+  tree=render();nodes(tree,node=>node.type==='video')[0].props.onError();tree=render();
+  assert.equal(nodes(tree,node=>node.type==='button')[0].props.disabled,true,'a known decode failure blocks activation even after an earlier review');
+  assert.equal(nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox').at(-1).props.disabled,false,'a broken enabled profile can always be turned off');
+  nodes(tree,node=>node.type==='video')[0].props.onLoadedData();tree=render();
   tree=render();nodes(tree,node=>node.type==='select'&&node.props.value==='video-frame')[0].props.onChange({target:{value:'motion-video'}});
   tree=render();const disabled=nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox').at(-1);
   assert.equal(disabled.props.disabled,true);assert.equal(disabled.props.checked,false);

@@ -46,6 +46,20 @@ test('hash mismatch, wrong dealer, missing readiness intent and stale revision s
   await assert.rejects(f.service.prepare({...f.options(),profile:{...profile(),state:'preparation'}}));
   assert.equal(f.stats().calls,0);
 });
+
+test('alpha and opaque references stop before file reads and cached references cannot bypass compatibility',async()=>{
+  for(const mode of ['alpha','opaque']){
+    const f=fixture();f.setSource({...video(),compositing:{mode}});
+    await assert.rejects(f.service.prepare(f.options()),/speech_reference_incompatible/);
+    assert.equal(f.stats().calls,0);assert.equal(f.stats().decodes,0);
+  }
+  const f=fixture(),prepared=await f.service.prepare(f.options());
+  assert.equal(prepared.compositing.mode,'green-screen');
+  assert.equal(prepared.compositing.threshold,.23);
+  f.setSource({...video(),compositing:{mode:'alpha'}});
+  await assert.rejects(f.service.prepare(f.options()),/speech_reference_incompatible/);
+  assert.equal(f.stats().calls,1);
+});
 test('freshness and cancellation prevent later extraction or return after source changes',async()=>{
   const f=fixture();let n=0;
   await assert.rejects(f.service.prepare({...f.options(),beforeCostlyStep:async()=>{if(++n===3)throw Error('publication_changed');}}),/publication_changed/);
@@ -68,6 +82,10 @@ test('real FFmpeg extracts a bounded portrait PNG from a synthetic video',async 
     const service=createDealerSpeechReferenceService({readVideoRegistry:async()=>({videos:[{...video(),sha256:hash(bytes),bytes:bytes.length,duration:.5}]}),readVideoResponse:async()=>new Response(bytes,{headers:{'content-type':'video/mp4'}})});
     const image=(await service.prepare({dealerId:'paow',profile:p,beforeCostlyStep:async()=>{}})).image;
     assert.equal(image.bytes.readUInt32BE(16),1080);assert.equal(image.bytes.readUInt32BE(20),1920);assert.equal(hash(image.bytes),image.sha256);
+    const frame=join(directory,'frame.png');await writeFile(frame,image.bytes);
+    const corner=spawnSync('ffmpeg',['-v','error','-i',frame,'-vf','crop=1:1:0:0','-frames:v','1','-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{windowsHide:true,timeout:20000});
+    assert.equal(corner.status,0);
+    assert.ok(corner.stdout[1]>240&&corner.stdout[0]<15&&corner.stdout[2]<15,'padding must key out rather than cover the background and table with black');
   }finally{assert.equal(dirname(resolve(directory)),resolve(tmpdir()));assert.ok(basename(directory).startsWith('croupier-reference-test-'));await rm(directory,{recursive:true,force:true});}
 });
 

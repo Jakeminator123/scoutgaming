@@ -24,7 +24,7 @@ function DealerArtwork({ dealer, selected = false, available = false, detail = f
     colored={selected || detail}
     playOnMount={detail}
     alt={detail ? `Porträtt av ${dealer.name}` : ''}
-    sizes={detail ? '(min-width: 768px) 384px, 100vw' : '(min-width: 768px) 25vw, 50vw'}
+    sizes={detail ? '(min-width: 768px) 384px, 100vw' : '(min-width: 1280px) 20vw, (min-width: 768px) 33vw, 50vw'}
     className="aspect-square"
   />;
 }
@@ -54,7 +54,7 @@ export function DealersSection() {
       </div>}
       <div className="relative mt-8">
         <ul aria-label="Dealers" aria-hidden={locked} className={cn(
-          'grid grid-cols-2 gap-3 transition-[opacity,filter] duration-500 motion-reduce:transition-none md:grid-cols-4 md:gap-4',
+          'grid grid-cols-2 gap-3 transition-[opacity,filter] duration-500 motion-reduce:transition-none md:grid-cols-3 md:gap-4 xl:grid-cols-5',
           locked && 'pointer-events-none select-none opacity-40 blur-[2px]',
         )}>
           {cards.map((item, i) => {

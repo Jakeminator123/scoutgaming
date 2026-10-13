@@ -3,7 +3,7 @@ import {spawn} from 'node:child_process';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,dirname,basename,resolve} from 'node:path';
-import {clipCompositing} from './public/presentation-composition.mjs';
+import {effectiveDealerCompositing} from './public/dealer-compositing.mjs';
 import {normalizeDealerSpeechProfile,validateDealerSpeechReference} from './public/dealer-speech-profile.mjs';
 
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -71,7 +71,7 @@ export function createDealerSpeechReferenceService({readVideoRegistry,readVideoR
     try{
       const video=await readSource(),key=dealerId+':'+revision;
       const candidate=video.compositing??video.classification?.compositing;
-      const compositing=clipCompositing(candidate)?{...candidate}:null;
+      const compositing=effectiveDealerCompositing(candidate);
       if(cache.has(key)){await guard();const item=cache.get(key);return {...item,compositing,image:{...item.image,bytes:Buffer.from(item.image.bytes)}};}
       if(busy)fail('speech_reference_busy');busy=true;ownsWork=true;
       const response=await readVideoResponse(video.id,new Request('https://studio.invalid/api/dealer-speech-reference',{signal:controller.signal}));
@@ -86,7 +86,7 @@ export function createDealerSpeechReferenceService({readVideoRegistry,readVideoR
       if(!stream||!Number.isInteger(stream.width)||!Number.isInteger(stream.height)||stream.width<32||stream.height<32
         ||stream.width>4096||stream.height>4096||!Number.isFinite(duration)||duration<=0||normalized.reference.offsetMs>=duration*1000)fail('speech_reference_frame_out_of_range');
       await guard();
-      await runProcess(ffmpegPath,['-hide_banner','-loglevel','error','-nostdin','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-threads','2','-ss',String(normalized.reference.offsetMs/1000),'-i',input,'-map','0:v:0','-an','-sn','-dn','-frames:v','1','-vf','scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1','-pix_fmt','rgb24','-threads','2','-fs',String(MAX_IMAGE),'-f','image2',output],{signal:controller.signal});
+      await runProcess(ffmpegPath,['-hide_banner','-loglevel','error','-nostdin','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-threads','2','-ss',String(normalized.reference.offsetMs/1000),'-i',input,'-map','0:v:0','-an','-sn','-dn','-frames:v','1','-vf','scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=0x00FF00,setsar=1','-pix_fmt','rgb24','-threads','2','-fs',String(MAX_IMAGE),'-f','image2',output],{signal:controller.signal});
       const image=await readFile(output);validatePng(image);
       const refreshed=await readSource();await guard();
       if(JSON.stringify(refreshed.compositing??refreshed.classification?.compositing)!==JSON.stringify(candidate))fail('speech_reference_source_changed');

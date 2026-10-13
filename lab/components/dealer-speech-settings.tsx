@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {DealerVoicePicker} from './dealer-voice-picker';
 import {dealerVoiceDraft,dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../web/public/dealer-voice-catalog.mjs';
 import type {StudioProject} from '../lib/studio-model.mjs';
-import {dealerSpeechPreparation,isSpeechReferenceVideo,normalizeDealerSpeechProfile,type DealerSpeechProfile} from '../../web/public/dealer-speech-profile.mjs';
+import {dealerSpeechPreparation,dealerSpeechReferenceCheck,isSpeechReferenceVideo,normalizeDealerSpeechProfile,type DealerSpeechProfile} from '../../web/public/dealer-speech-profile.mjs';
 import type {VideoInventory} from './studio-types';
 
 export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,expanded=false,idleReferenceId,onDraftChange}:{expanded?:boolean;idleReferenceId?:string;onDraftChange?:(dirty:boolean)=>void;dealer:StudioProject['dealers'][number];inventory?:VideoInventory;disabled?:boolean;onEdit:(edit:(current:StudioProject)=>StudioProject)=>void}) {
@@ -14,6 +14,7 @@ export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,exp
   const [offsetMs,setOffsetMs]=useState(saved?.reference?.offsetMs??0),[reviewed,setReviewed]=useState(false);
   const [error,setError]=useState(''),[notice,setNotice]=useState('');
   const [durationMs,setDurationMs]=useState(0);
+  const [referenceError,setReferenceError]=useState('');
   const player=useRef<HTMLVideoElement>(null);
   const localDirty=JSON.stringify([enabled,voiceDraft,videoId,kind,offsetMs])!==JSON.stringify([saved?.state==='enabled',dealerVoiceDraft(saved?.voice),saved?.reference?.videoId??'',saved?.reference?.kind??'video-frame',saved?.reference?.offsetMs??0]);
   useEffect(()=>{onDraftChange?.(localDirty);},[localDirty,onDraftChange]);
@@ -25,10 +26,11 @@ export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,exp
   const videos=(inventory?.videos??[]).filter(row=>isSpeechReferenceVideo(row,dealer.id));
   const idleReference=videos.find(row=>row.id===idleReferenceId);
   const selected=videos.find(row=>row.id===videoId);
+  const referenceCheck=dealerSpeechReferenceCheck(selected,dealer.id);
   const referenceUnchanged=Boolean((!enabled||saved?.state==='enabled')&&selected&&saved?.reference?.videoId===selected.id&&saved.reference.sha256===selected.sha256&&saved.reference.offsetMs===offsetMs&&saved.reference.kind===kind);
   const sourceKey=selected?selected.id+':'+selected.sha256:'';
   useEffect(()=>{setReviewed(false);setNotice('');},[sourceKey,offsetMs]);
-  useEffect(()=>{setDurationMs(0);},[sourceKey]);
+  useEffect(()=>{setDurationMs(0);setReferenceError('');},[sourceKey]);
   useEffect(()=>{
     const video=player.current;if(!video||!selected)return;
     setReviewed(false);
@@ -36,11 +38,12 @@ export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,exp
   },[sourceKey,offsetMs]);
   function frameReady(){
     const video=player.current;
-    if(video&&video.readyState>=2&&!video.seeking&&Math.abs(video.currentTime*1000-offsetMs)<60)setReviewed(true);
+    if(video&&video.readyState>=2&&!video.seeking&&Math.abs(video.currentTime*1000-offsetMs)<60){setReviewed(true);setReferenceError('');}
   }
   function save(){
     try{
       if(!dealer||disabled)return;
+      if(enabled&&(!referenceCheck.canEnable||referenceError))throw Error(referenceError||referenceCheck.message);
       if(videoId&&!referenceUnchanged&&(!selected||!reviewed||!durationMs||offsetMs>=durationMs))throw Error('Granska den valda videopositionen innan du sparar referensen.');
       const voice=dealerVoiceFromDraft(voiceDraft);
       const reference=selected?{kind,videoId:selected.id,sha256:selected.sha256,offsetMs}:null;
@@ -65,15 +68,16 @@ export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,exp
         <label className="field">Underlag för avatarberedning<select value={kind} onChange={event=>{setKind(event.target.value as typeof kind);setEnabled(false);}}><option value="video-frame">Stillbild från vald videoposition</option><option value="motion-video">Video med naturlig rörelse – endast förberedelse</option></select></label>
         <video key={sourceKey} ref={player} src={selected.previewUrl} muted playsInline preload="metadata" style={{width:'100%',maxWidth:420,maxHeight:440,objectFit:'contain',background:'#111'}} aria-label={'Talreferens för '+dealer.label}
           onLoadedMetadata={()=>{const video=player.current;if(video&&Number.isFinite(video.duration)&&video.duration>0){setDurationMs(Math.floor(video.duration*1000));video.currentTime=offsetMs/1000;}}} onLoadedData={frameReady} onSeeked={frameReady}
-          onError={()=>{setReviewed(false);setError('Videoreferensen kunde inte visas. Ingen ny referens sparas.');}}/>
+          onError={()=>{setReviewed(false);setReferenceError('Videoreferensen kunde inte visas. Kontrollera filen innan AI-tal aktiveras.');}}/>
         <label className="field">Startposition: {(offsetMs/1000).toFixed(2)} s<input type="range" min={0} max={Math.max(0,durationMs-1)} step={10} value={offsetMs} onChange={event=>{setReviewed(false);setOffsetMs(Number(event.target.value));}}/></label>
         <p>{reviewed?'Videopositionen visas.':'Laddar videopositionen…'} Välj en tydlig neutral pose med synligt ansikte. Servern tar fram en stillbild från exakt den sparade videon och positionen när en talsession förbereds.</p>
         <p>{kind==='motion-video'?'Rörligt underlag kan sparas för senare. Den gemensamma talmotorn stöder ännu bara en stillbild, så AI-tal kan inte aktiveras med detta val.':'En stillbild kan användas av en förberedd avatar. Läppsynk mot en stillbild skapar inte naturliga kroppsrörelser.'}</p>
       </div>:null}
-      <label><input type="checkbox" checked={enabled} disabled={kind!=='video-frame'||!selected||!voiceDraft.provider||!voiceDraft.voiceId.trim()||!voiceDraft.modelId.trim()} onChange={event=>setEnabled(event.target.checked)}/> Använd egen röst och läppsynk för chattsvar</label>
+      {videoId?<p role={referenceError||!referenceCheck.canEnable?'alert':'status'}>{referenceError||referenceCheck.message}</p>:null}
+      <label><input type="checkbox" checked={enabled} disabled={!enabled&&(kind!=='video-frame'||!referenceCheck.canEnable||Boolean(referenceError)||!voiceDraft.provider||!voiceDraft.voiceId.trim()||!voiceDraft.modelId.trim())} onChange={event=>setEnabled(event.target.checked)}/> Använd egen röst och läppsynk för chattsvar</label>
       <p>Röst-id måste finnas hos vald leverantör. Servern kontrollerar åtkomst och förbereder just denna dealer. Om det misslyckas spelas ingen annan dealers röst eller avatar.</p>
       {localDirty?<p role="status">Talformuläret har ändringar som inte lagts till i projektutkastet. Använd talunderlaget eller ångra ändringarna innan du byter dealer eller lämnar sidan.</p>:null}
-      <button type="button" className="sg-btn sg-btn-secondary" onClick={save} disabled={Boolean(videoId)&&!referenceUnchanged&&(!selected||!reviewed||!durationMs||offsetMs>=durationMs)}>Använd talunderlag i utkastet</button>
+      <button type="button" className="sg-btn sg-btn-secondary" onClick={save} disabled={enabled&&(!referenceCheck.canEnable||Boolean(referenceError))||Boolean(videoId)&&!referenceUnchanged&&(!selected||!reviewed||!durationMs||offsetMs>=durationMs)}>Använd talunderlag i utkastet</button>
       <button type="button" className="sg-btn sg-btn-secondary" disabled={!localDirty} onClick={()=>{restoreForm(saved);setError('');setNotice('Ändringarna i talformuläret är ångrade.');}}>Ångra ändringar i talformuläret</button>
     </fieldset>
     <p>Sparad profil är inte ett godkänt talprov. Granska uttal, läppsynk och övergången till grundloopen i spelet innan dealern används för spelare. Att spara startar ingen generation.</p>

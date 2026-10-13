@@ -2,6 +2,12 @@
 
 ## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
 
+Integrerad med main `60defa57` inför PR92-granskningen. Endast denna handoff
+behövde konfliktlösning; roulette- och Paow-sektionerna är båda bevarade.
+Alfafixen, fixturen och den dokumenterade visuella målbilden behåller samma
+omfattning. Denna integration ändrar inga mediefiler eller publiceringsval
+utöver innehållet som redan finns på main. Full regression körs vid commit.
+
 **Visuell återkoppling:** Jakob underkände den lokala spelarplaceringens
 bordshöjd/perspektiv och dolda händer. Därefter godkände han den bifogade
 stillbildens komposition som målbild (SHA-256 `f1039dd9…84c78`, 1673×901).
@@ -45,6 +51,44 @@ hela bindningen finns. Registrering, native-frame-passning, godkänd
 hjulimpuls/kulsläpp, en korrekt 37-facksrotor och serverns pending/reveal
 återstår. PNG-nativeintag är fortfarande spärrat; README:s äldre påstående
 är korrigerat. Inga nya betalda filmer, nya bibliotek eller live-writes.
+
+## Paows talgrund och materialkontroll, 13 oktober 2026
+
+Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
+`paow`. Den sparade talprofilen återlästes från servern med ElevenLabs
+`WZVEBKUreb9jAKojf0QF`, `eleven_v3`, svenska och egen referensvideo
+`13d044b3-0582-4f8f-a754-75bb099a0237` vid 0 ms. Kontots röstuppslag
+bekräftade Paow. Profilen är aktiverad; detta är inte ett visuellt godkännande.
+
+Samma kompakta materialkontroll finns nu i Control och Admin. Främmande,
+trasig eller inkompatibel referens kan inte aktivera AI-tal. Alfa kan sparas
+som förberedelse, men den nuvarande GPU-vägen bevarar inte alfa. Inbakad
+bakgrund nekas för tal. Gröna referenser får gröna utfyllnadsytor, så att
+bakgrund, dealer och bord kan behålla sina separata lager. Filhash, ägare,
+verklig avkodning, profilrevision och workerbindning kontrolleras fortfarande.
+
+Två ostörda liveprov på main 6ee5d3aa startade med Paows referens men
+avbröts av spelarens 45-sekundersgräns. Det korta provets worker gav 79
+bildrutor/3,33 sekunder media, 42,81 sekunder totalt, varav 40,64 sekunder
+väntan på ljudindata och 1,40 sekunder inferens. Redan förhämtat ljud
+dräneras nu i högst 64 KiB i stället för leverantörens små transportpaket;
+varje block behåller kontrollen av aktuell session och profil. Ingen väntan
+på full buffert, förlängd timeout eller extra TTS-betalning införs.
+
+Verifiering: 45 material/UI/FFmpeg-tester samt 32 strömtjänsttester godkända;
+Lab-bygget godkänt. Full obligatorisk regression efter buffertfixen: 3 335
+godkända, 11 miljöberoende överhoppade, inga fel (exit 0).
+Liveacceptans återstår efter leverans: två hela talförlopp i följd, utan
+avbrott, med granskad röst/läppsynk och alla tre lager. Gå inte vidare till
+roulette/rörliga body-dealers innan detta passerar. Inget klipp är godkänt
+enbart från hash, workerstatistik eller en bild av munnen.
+
+Paow använder gemensam GPU-tjänst med exakt dealer-/bild-/profilbindning
+och den gemensamma OpenClaw-talagenten. Ingen separat instans behövs för
+identiteten. Historiska Astrid-funktioner som samtalsminne, kamera och vissa
+routningsregler är ännu Astrid-specifika och ska inte beskrivas som färdiga
+för alla dealers. Rörligt tal enligt Emil samt diskret inandning/tal-idle
+kommer senare, efter den verifierade stillbildsgrunden.
 
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
@@ -2188,3 +2232,32 @@ på högst cirka 0,5 s, rörligt talunderlag med små neutrala kroppsrörelser o
 en fristående kroppsslinga får inte ersätta den synkade talvideon. Alla
 nya takes behöver exakta hash-/bildindex-/kalibreringskvitton och visuell
 acceptans. Dessa steg är planerade, inte genomförda av röstväljar-PR:en.
+
+## Anna som lobbydealer, 13 oktober 2026
+
+Lobbyregistret har ett femte dekorativt porträtt, Anna, med Jakobs oförändrade
+anna.png och anna.mp4. Samma porträttkomponent ger stillbild, tyst kortvideo,
+reducerad-rörelse-stöd och låst förhandsvisning före bolags-/rumsval. Gridet
+rymmer fem kort på bred skärm. Anna matchas endast mot exakt registrerat
+dealer-ID anna; bilden registrerar ingen person, publicerar inget rum och
+ger inga nya spelbehörigheter. Ingen namngissning eller automatisk upplåsning.
+
+Identiteten kan finnas i både blackjack och roulette, men valt publicerat
+rum bestämmer spel och startlänk. Lobbyvideon lagras separat under
+packages/design-preview/lobby/public och förs inte in i spelens klippbanker,
+scheman, speech-profiler eller publiceringar. PR #84 äger den separata
+utbyggnaden av spelmärkta filmfack och materialspärrar; inga av dess källfiler
+ändras här. PR #84 mergades under arbetet och ingår nu via main 6ee5d3aa; produktionsacceptans är separat.
+
+Originalkontroll: PNG 2 019 747 byte, SHA256
+3b5f263126c9dfbe151f322ddea764aa027f90000f76577616a6b11d74e3d904.
+MP4 2 896 687 byte, SHA256
+e97f6cb18bf24389e68fdf8c36c9ba1b2e5835f5712e9d34e430e56a9c192d1c;
+H.264, 1440×1440, 24 fps, 4,04 sekunder, utan ljudspår.
+Studio-/designbygget och 17 riktade lobbytester passerar. Isolerad
+webbläsarfixtur verifierar fem låsta kort, upplåsning enbart för publicerad
+Anna, rätt startlänk för båda spelen, två avslutade porträttuppspelningar och
+mobil utan horisontell överströmning. Detta är lobbyacceptans, inte ett prov
+av Annas framtida spelklipp eller produktionspublicering. Ingen livekatalog,
+databas, spelregistrering eller modellkonfiguration ändras. PR:ns kontroller
+anger slutlig full regressionsstatus; merge/deploy görs inte i denna uppgift.

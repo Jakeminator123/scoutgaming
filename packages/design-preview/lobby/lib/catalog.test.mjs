@@ -26,17 +26,21 @@ test('published names and parent-scoped choices survive colliding room IDs witho
 });
 
 test('roulette rooms preserve their game and launch endpoint alongside blackjack', () => {
-  const original = publication('alpha', 'nora', 'Johanna');
+  const original = publication('alpha', 'anna', 'Anna');
   const roulette = {
     ...original.rooms[0], id: 'roulette-room', name: 'Rouletterummet', game: 'roulette',
     playUrl: '/play/roulette?operator=alpha&table=roulette-room',
   };
   const catalog = parseLobbyCatalog(payload([{ ...original, rooms: [...original.rooms, roulette] }]));
-  const selection = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:roulette-room', dealerId: 'nora' });
+  const selection = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:roulette-room', dealerId: 'anna' });
   assert.equal(selection.room.game, 'roulette');
-  assert.equal(playUrlFor(selection), '/play/roulette?operator=alpha&table=roulette-room&dealer=nora');
+  assert.equal(playUrlFor(selection), '/play/roulette?operator=alpha&table=roulette-room&dealer=anna');
   assert.equal(catalog.rooms[0].game, 'blackjack');
-  assert.equal(playUrlFor(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'nora' })), '/play/blackjack?operator=alpha&table=shared-table&dealer=nora');
+  assert.equal(portraitFor(selection.dealer).id, 'anna');
+  assert.equal('clips' in selection.dealer, false, 'lobby video never becomes gameplay configuration');
+  assert.equal(playUrlFor({ ...selection, room: { ...selection.room, game: 'blackjack' } }), undefined,
+    'the same dealer cannot change a roulette room into a blackjack launch');
+  assert.equal(playUrlFor(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'anna' })), '/play/blackjack?operator=alpha&table=shared-table&dealer=anna');
 });
 
 test('room artwork comes from a single published background, never an editable default or admin image', () => {
@@ -101,9 +105,9 @@ test('catalog read carries session and cancellation, disables cache, and rejects
 // Visual teasers must never become a second source of playable dealer IDs.
 import { dealerCards, portraitFor } from './dealer-portraits.mjs';
 
-test('four locked portraits do not grant access, including an empty or unavailable catalog', () => {
+test('locked portraits including Anna do not grant access, including an empty or unavailable catalog', () => {
   const cards = dealerCards();
-  assert.deepEqual(cards.map(row => row.id), ['astrid', 'marten', 'paow', 'dragge']);
+  assert.deepEqual(cards.map(row => row.id), ['astrid', 'marten', 'paow', 'dragge', 'anna']);
   assert.ok(cards.every(row => !row.available));
   const catalog = parseLobbyCatalog(payload([]));
   assert.equal(lobbySelection(catalog, { dealerId: 'astrid' }).dealer, null);
