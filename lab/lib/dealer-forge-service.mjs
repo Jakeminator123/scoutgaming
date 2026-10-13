@@ -7,7 +7,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { StudioStorageError, validateActor } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError, validateActor, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
 import { validateLayerAsset, layerAssetPath } from '../../web/layer-asset-contract.mjs';
 import { SPEECH_LINES } from '../../web/public/speech-lines.mjs';
 import { isDealerId } from '../../web/dealer-identity.mjs';
@@ -69,6 +69,21 @@ export function createDealerForgeService({ repository, scope, env = process.env,
   async function saveProfile(dealerId, current, next, actor) {
     const checked = validateProfile(next);
     return store.saveProfile(dealerId, checked, { expectedRevision: current.revision, actor });
+  }
+  // The provider download happens outside SQL. Recheck the exact lease and
+  // dealer under the same scope lock as every resulting database write.
+  async function withCommit(job, work) {
+    return repository.transaction(async () => {
+      const current = await store.getJob(job.jobId);
+      const saved = await repository.readDocument('project');
+      if (!current || current.status !== 'committing' || canonicalStudioJson(current) !== canonicalStudioJson(job)) {
+        throw new StudioStorageError('studio_forge_conflict', 409);
+      }
+      if (!saved?.value.dealers?.some(row => row.id === job.dealerId)) {
+        throw new StudioStorageError('studio_dealer_inactive', 409);
+      }
+      return work();
+    });
   }
   async function readPrivate(record) {
     const storage = validatePrivateMedia({ provider: 'vercel-blob', pathname: record.pathname, sha256: record.sha256, size: record.size, contentType: record.contentType });
@@ -238,7 +253,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     const id = forgeUuid(job.jobId, 'clip');
     const record = { id, sha256, size: bytes.byteLength, contentType: 'video/mp4', classification, pathname: mediaBlobPath(`dealers/${job.dealerId}/review/uploads`, id, sha256, 'mp4') };
     await putImmutable(record.pathname, bytes, { sha256, size: bytes.byteLength, contentType: 'video/mp4' });
-    await mutationTransaction(async () => repository.registerMedia(record, { actor: job.actor }), { presentationMutation: { metadata: classification } });
+    await mutationTransaction(() => withCommit(job, () => repository.registerMedia(record, { actor: job.actor })), { presentationMutation: { metadata: classification } });
     return { mediaId: id, sha256, size: bytes.byteLength, credits, role: classification.role, label };
   }
 
@@ -254,13 +269,13 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     const withAsset = value => (value.layerAssets ?? []).some(row => row.id === id) ? null : { ...value, layerAssets: [...(value.layerAssets ?? []), record] };
     if (withAsset(captured.value)) {
       const presentationMutation = { kind: 'project', value: withAsset(captured.value) };
-      await mutationTransaction(async () => repository.transaction(async () => {
+      await mutationTransaction(async () => withCommit(job, async () => {
         const saved = await repository.readDocument('project');
         // Inside the repository transaction only StudioStorageError codes survive sanitization.
         if (!saved || saved.revision !== captured.revision) throw new StudioStorageError('studio_forge_conflict', 409);
         const next = withAsset(saved.value);
         return next ? repository.saveDocument('project', { expectedRevision: saved.revision, value: next, actor: job.actor }) : saved;
-      }, { presentationMutation }), { presentationMutation });
+      }), { presentationMutation });
     }
     return { assetId: id, sha256: record.sha256, size: record.size, width: record.width, height: record.height, credits, label: record.label };
   }
@@ -270,7 +285,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     const anchor = await storeAnchor(job.dealerId, normalized, forgeUuid(job.jobId, 'pose'));
     let adopted = profile.anchors.redo?.pathname === anchor.pathname;
     if (!profile.anchors.redo) {
-      await saveProfile(job.dealerId, current, { ...profile, anchors: { ...profile.anchors, redo: anchor } }, job.actor);
+      await withCommit(job, () => saveProfile(job.dealerId, current, { ...profile, anchors: { ...profile.anchors, redo: anchor } }, job.actor));
       adopted = true;
     }
     return { anchor, adopted, credits };
@@ -485,7 +500,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
         // A commit lease older than the function budget belongs to a dead worker. The paid output URL is
         // still in result, so reclaim and register it instead of leaving the job stuck.
         if (now() - job.updatedAt < COMMIT_LEASE_MS) return publicJob(job);
-        job = await store.updateJob(jobId, { expectedStatus: 'committing', status: 'generated', error: 'Registreringen avbröts; försöker igen.' });
+        job = await withCommit(job, () => store.updateJob(jobId, { expectedStatus: 'committing', status: 'generated', error: 'Registreringen avbröts; försöker igen.' }));
       }
       if (job.status !== 'generated') {
         if (!job.taskId) return publicJob(job);
@@ -510,12 +525,12 @@ export function createDealerForgeService({ repository, scope, env = process.env,
             : slot.kind === 'pose' ? await commitPose(job, bytes, current.profile, current, job.result.credits)
               : await commitLayer(job, bytes, slot, current.profile, job.result.credits);
         }
-        return publicJob(await store.updateJob(jobId, { expectedStatus: 'committing', status: 'succeeded', error: null, result: { ...job.result, ...result, output: undefined, committedAt: new Date(now()).toISOString() } }));
+        return publicJob(await withCommit(job, () => store.updateJob(jobId, { expectedStatus: 'committing', status: 'succeeded', error: null, result: { ...job.result, ...result, output: undefined, committedAt: new Date(now()).toISOString() } })));
       } catch (cause) {
         // Keep the task output reference so the next poll retries the commit instead of paying again. If this
         // write fails too, the commit lease expires and the next poll reclaims the job.
         const message = (cause instanceof ForgeError || cause instanceof RunwayError || cause?.statusCode) ? cause.message : 'Efterarbetet misslyckades; nästa pollning försöker igen.';
-        await store.updateJob(jobId, { expectedStatus: 'committing', status: 'generated', error: String(message).slice(0, 2000) }).catch(() => {});
+        await withCommit(job, () => store.updateJob(jobId, { expectedStatus: 'committing', status: 'generated', error: String(message).slice(0, 2000) })).catch(() => {});
         throw cause;
       }
     },

@@ -56,3 +56,91 @@ for(const asynchronous of [false,true]){
     }
   });
 }
+
+const studioScope={environment:'production',workspaceId:'synthetic-memory-test'};
+async function registeredFixture(t){
+  const db=new DatabaseSync(':memory:');t.after(()=>db.close());createSyncMemory(db);
+  const state={project:{dealers:[{id:'paow'},{id:'astrid'}],dealerTrash:[]},trace:[],unavailable:false,beforeLock:null};
+  const adapter={prepare(sql){
+    if(sql.includes('croupier_studio.documents'))return {async get(...values){
+      assert.deepEqual(values,[studioScope.environment,studioScope.workspaceId]);
+      state.trace.push('registry');if(state.unavailable)throw Error('private database failure');
+      return state.project?{value:state.project}:undefined;
+    }};
+    state.trace.push(sql);return db.prepare(sql);
+  },async transaction(work,options){
+    if(options?.studioScope){assert.deepEqual(options.studioScope,studioScope);await state.beforeLock?.();state.trace.push('studio-lock');}
+    db.exec('BEGIN IMMEDIATE');try{const result=await work();db.exec('COMMIT');return result;}
+    catch(error){db.exec('ROLLBACK');throw error;}
+  }};
+  const memory=await createAsyncMemory(adapter,{studioScope});state.trace=[];
+  return {db,state,memory};
+}
+
+test('cloud memory rechecks registration after a waiting request and before any memory write',async t=>{
+  const {db,state,memory}=await registeredFixture(t);
+  const initial=await memory.profile(scope);
+  // The route already authorized this dealer. Retirement commits while the
+  // following memory operation waits for the shared Studio scope lock.
+  assert(state.project.dealers.some(row=>row.id===scope.dealerId));
+  state.beforeLock=()=>{
+    state.project.dealers=state.project.dealers.filter(row=>row.id!==scope.dealerId);
+    db.prepare('DELETE FROM player_chat_memory_profiles WHERE dealer_id=?').run(scope.dealerId);
+  };
+  for(const invoke of [
+    ()=>memory.profile(scope),()=>memory.forget(scope),
+    ()=>memory.begin({...scope,requestId:'after-retirement',message:'Previously authorized'}),
+    ()=>memory.playedInitiative({...scope,expectedRevision:initial.revision,text:'Previously played'}),
+  ]){
+    state.trace=[];
+    await assert.rejects(invoke,e=>e.code==='player_memory_dealer_unavailable'&&e.statusCode===403);
+    assert.deepEqual(state.trace,['studio-lock','registry'],'No pruning or creation may precede registration');
+    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM player_chat_memory_profiles').get().n,0);
+    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM player_chat_memory_requests').get().n,0);
+  }
+});
+
+test('missing, malformed or unavailable cloud registry cannot create a memory profile',async t=>{
+  const {db,state,memory}=await registeredFixture(t);
+  for(const project of [null,{dealers:null},{dealers:[{id:'paow'},{id:'paow'}]}, {dealers:[{id:'paow'}],dealerTrash:{}}]){
+    state.project=project;
+    await assert.rejects(()=>memory.profile(scope),e=>e.code==='player_memory_registry_unavailable'&&e.statusCode===503);
+  }
+  state.unavailable=true;
+  await assert.rejects(()=>memory.profile(scope),e=>e.message==='player_memory_registry_unavailable');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM player_chat_memory_profiles').get().n,0);
+});
+
+test('archived dealers are refused while registered dealers retain rollback-safe memory',async t=>{
+  const {state,memory}=await registeredFixture(t);
+  state.project.dealerTrash=[{dealer:{id:'paow'}}];
+  await assert.rejects(()=>memory.profile(scope),e=>e.code==='player_memory_dealer_unavailable');
+  const astrid={...scope,dealerId:'astrid'},before=await memory.profile(astrid);
+  await assert.rejects(()=>memory.playedInitiative({...astrid,expectedRevision:before.revision,text:'Must roll back'},()=>{throw Error('receipt failed');}),/receipt failed/);
+  assert.deepEqual(await memory.profile(astrid),before);
+  const turn=await memory.begin({...astrid,requestId:'still-registered',message:'Keep existing flow'});
+  await turn.commit({kind:'generatedText',exactText:'Still registered.'});
+  assert.equal((await memory.profile(astrid)).history.length,2);
+});
+
+test('a reply reserved before retirement cannot recreate memory or overwrite a re-registered dealer',async t=>{
+  const {db,state,memory}=await registeredFixture(t);
+  const input={...scope,requestId:'same-request',message:'Old request.'};
+  const pending=await memory.begin(input);
+  state.project.dealers=state.project.dealers.filter(row=>row.id!==scope.dealerId);
+  db.prepare('DELETE FROM player_chat_memory_requests WHERE dealer_id=?').run(scope.dealerId);
+  db.prepare('DELETE FROM player_chat_memory_profiles WHERE dealer_id=?').run(scope.dealerId);
+  await assert.rejects(()=>pending.commit(reply),e=>e.code==='player_memory_stale');
+  assert.equal(await pending.fail(),false);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM player_chat_memory_profiles').get().n,0);
+  await assert.rejects(()=>memory.profile(scope),e=>e.code==='player_memory_dealer_unavailable');
+  state.project.dealers.push({id:scope.dealerId});
+  const fresh=await memory.begin({...input,message:'New registration.'});
+  assert.notEqual(fresh.revision,pending.revision);assert.deepEqual(fresh.history,[]);
+  await assert.rejects(()=>pending.commit(reply),e=>e.code==='player_memory_stale');
+  assert.equal(await pending.fail(),false,'An old reservation cannot cancel the new one');
+  await fresh.commit({kind:'generatedText',exactText:'New reply.'});
+  assert.deepEqual((await memory.profile(scope)).history,[
+    {role:'user',text:'New registration.'},{role:'assistant',text:'New reply.'},
+  ]);
+});

@@ -266,6 +266,7 @@ export function createStudioRepository({ pool, scope } = {}) {
         if (!prepared.record.retainedBank && (await mediaAliases(prepared.record)).length) fail('studio_media_owned_elsewhere');
         const project = await loadDocument('project');
         if (project?.value.dealerTrash?.some(entry => entry.dealer.id === prepared.record.classification.dealerId)) fail('studio_dealer_archived');
+        if (project && !project.value.dealers?.some(dealer => dealer.id === prepared.record.classification.dealerId)) fail('studio_dealer_inactive');
         const existing = await loadMedia(prepared.record.id);
         if (existing?.deletion) fail('studio_media_deletion_pending');
         if (existing) {
@@ -291,6 +292,11 @@ export function createStudioRepository({ pool, scope } = {}) {
         const { revision: oldRevision, updatedAt, ...record } = previous;
         const project = await loadDocument('project');
         if (project && dealerSetsForClip(project.value, prepared.id).some(set => set.dealerId !== metadata?.dealerId || metadata?.archived)) fail('studio_media_in_use');
+        // The atomic archive/restore cascade classifies media while its own
+        // identity is in trash. Permanent absence must still fence every write.
+        const retainedOwner = previous.classification.dealerId === metadata?.dealerId
+          && project?.value.dealerTrash?.some(entry => entry.dealer.id === metadata?.dealerId);
+        if (project && !retainedOwner && !project.value.dealers?.some(dealer => dealer.id === metadata?.dealerId)) fail('studio_dealer_inactive');
         const next = validateStudioMedia({ ...record, classification: metadata }), revision = newRevision('media');
         const row = (await query(`/* studio:classify-media */ UPDATE croupier_studio.media_records SET revision=$4,record=$5::jsonb,updated_at=now()
           WHERE environment_id=$1 AND workspace_id=$2 AND id=$3::uuid AND revision=$6 RETURNING id,revision,record,updated_at`,

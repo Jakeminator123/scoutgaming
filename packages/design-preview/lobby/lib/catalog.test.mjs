@@ -113,11 +113,12 @@ test('empty or unavailable catalogs do not recreate dealers from supplied portra
   assert.equal(portraitFor({ id: 'unknown', name: 'Astrid' }), undefined);
 });
 
-test('portrait alias preserves PAOW publication ID and cannot unlock her in another room', () => {
+test('retired PAOW artwork cannot return through old publication aliases', () => {
   const catalog = parseLobbyCatalog(payload([publication('alpha', 'paow-v2', 'PAOW'), publication('beta', 'nora', 'Nora')]));
   const chosen = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'paow-v2' });
   assert.deepEqual(dealerCards(chosen.availableDealers).map(row => row.id), ['paow-v2']);
-  assert.equal(portraitFor(chosen.dealer).id, 'paow');
+  assert.equal(portraitFor(chosen.dealer), undefined);
+  assert.equal(portraitFor({ id: 'paow', name: 'PAOW' }), undefined);
   assert.equal(playUrlFor(chosen), '/play/blackjack?operator=alpha&table=shared-table&dealer=paow-v2');
   assert.equal(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'paow' }).dealer, null);
   const other = lobbySelection(catalog, { operatorId: 'beta', roomKey: 'beta:shared-table', dealerId: 'paow-v2' });

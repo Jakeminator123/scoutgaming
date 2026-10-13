@@ -2,12 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { suppliedDealerArtwork, isSuppliedPortraitVideo } from './dealer-artwork.mjs';
 
-test('supplied PAOW portrait matches existing published identity and its exact corresponding video', () => {
-  const artwork = suppliedDealerArtwork({ id: 'paow-v2', name: 'PAOW' });
-  assert.equal(artwork.image, '/admin/_assets/lobby/images/dealers/paow.jpg');
-  assert.equal(artwork.approvedVideo.src, '/admin/_assets/lobby/videos/dealers/paow-hair.mp4');
-  assert.equal(isSuppliedPortraitVideo(artwork.image, artwork.approvedVideo), true);
-  assert.deepEqual(suppliedDealerArtwork({ id: 'paow-v2', name: ' paow ' }), artwork);
+test('retired Paow identities never inherit a supplied portrait or approved clip', () => {
+  for (const id of ['paow', 'paow-v2']) assert.equal(suppliedDealerArtwork({ id, name: 'PAOW' }), undefined);
+  assert.equal(isSuppliedPortraitVideo('/admin/_assets/lobby/images/dealers/paow.jpg', { src: '/admin/_assets/lobby/videos/dealers/paow-hair.mp4', approved: true, source: 'supplied-portrait' }), false);
 });
 
 test('unverified identity, label mismatch and unpublished slots never inherit another person\'s portrait', () => {
@@ -26,7 +23,7 @@ test('registered Astrid receives her supplied pair without creating a dealer or 
 });
 
 test('portrait playback requires an explicit static poster/video pair, no arbitrary URL or private catalogue value', () => {
-  const { image, approvedVideo } = suppliedDealerArtwork({ id: 'paow-v2', name: 'PAOW' });
+  const { image, approvedVideo } = suppliedDealerArtwork({ id: 'astrid', name: 'Astrid' });
   assert.equal(isSuppliedPortraitVideo('/admin/_assets/lobby/images/dealers/dragge.jpg', approvedVideo), false);
   assert.equal(isSuppliedPortraitVideo(image, { ...approvedVideo, src: 'https://private.invalid/take.mp4' }), false);
   assert.equal(isSuppliedPortraitVideo(image, { ...approvedVideo, approved: false }), false);

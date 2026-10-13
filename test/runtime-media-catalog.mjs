@@ -34,11 +34,44 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   assert.deepEqual(await idle('paow',project),{dealerId:'paow',mediaId:id,sha256,available:true});
   assert.equal(await idle('paow',{...project,lines:[]}),null,'registered identity alone cannot supply an idle');
   const voices=await createRegisteredVoiceLines({env,repositoryRoot:root})();
-  assert.deepEqual(voices.dealers.map(row=>row.dealer),['vera','astrid','amira','mei']);
+  assert.deepEqual(voices.dealers.map(row=>row.dealer),['vera','astrid','mei']);
   for(const dealer of voices.dealers)assert.equal(dealer.lines.length,0);
   const inventory=await media.videoRegistry();assert.equal(inventory.videos.find(row=>row.id===id).dealer,'paow');assert.ok(inventory.families.length>0);
   const legacy=await media.legacyControls(project);
-  for(const dealer of ['astrid','amira'])assert.ok(legacy.clips.some(row=>row.dealerId===dealer));
-  for(const dealer of ['vera','mei'])assert.equal(legacy.clips.some(row=>row.dealerId===dealer),false);
+  for(const dealer of ['astrid'])assert.ok(legacy.clips.some(row=>row.dealerId===dealer));
+  for(const dealer of ['vera','amira','mei'])assert.equal(legacy.clips.some(row=>row.dealerId===dealer),false);
   assert.equal(legacy.clips.some(row=>row.dealerId==='paow'),false);
+});
+
+test('deployment catalog builds after Amira source removal without changing Astrid metadata',async t=>{
+ const {readFile,writeFile}=await import('node:fs/promises');
+ const root=await mkdtemp(join(tmpdir(),'croupier-retired-catalog-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ const put=async(path,content)=>{const file=join(root,path);await mkdir(dirname(file),{recursive:true});await writeFile(file,content);};
+ await put('media/layout.json',await readFile(join(source,'media/layout.json')));
+ const legacy=JSON.parse(await readFile(join(source,'media/catalog/legacy.json'),'utf8'));
+ for(const [path,content]of Object.entries(legacy.entries))if(!path.includes('/amira/'))await put(path,content);
+ await put('media/dealers/astrid/runtime/presentation/lab-video-manifest.json',await readFile(join(source,'media/catalog/presentation.json')));
+ const result=await buildRuntimeMediaCatalog(root);assert.equal(result.metadataSources,2);
+ const generated=JSON.parse(await readFile(join(root,'media/catalog/legacy.json'),'utf8'));
+ assert.equal(Object.keys(generated.entries).some(path=>path.includes('/amira/')),false);
+ for(const [path,content]of Object.entries(generated.entries))assert.equal(content,legacy.entries[path]);
+});
+test('retired Amira aliases and Blob pointers disappear while Astrid remains registered',async()=>{
+ const {readFile}=await import('node:fs/promises');const {resolvePublicMedia}=await import('../tools/media-layout.mjs');
+ assert.equal(resolvePublicMedia('/review/amira-green-speak/win.mp4'),null);assert.ok(resolvePublicMedia('/review/astrid-green-speak/win.mp4'));
+ const index=JSON.parse(await readFile(join(source,'media/blob-index.json'),'utf8'));
+ assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/amira/')),false);assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/astrid/')),true);
+});
+test('retired IDs cannot acquire the older frontend portrait fallback',async()=>{
+ const {dealerPortrait}=await import('../apps/croupier-frontend/lib/player-room-preview.mjs');
+ for(const id of ['amira','paow','paow-v2','johanna'])assert.equal(dealerPortrait(id),null);
+ assert.equal(dealerPortrait('astrid'),'/images/lobby/astrid-portrait.jpg');assert.equal(dealerPortrait('dragge'),'/images/lobby/dragge-portrait.jpg');
+});
+
+test('old Paow preview cannot return through a registry entry without preview choices',async t=>{
+ const {dealerVersionPath}=await import('../web/public/dealer-version-switcher.mjs');
+ const previous=globalThis.document;t.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
+ globalThis.document={documentElement:{dataset:{gamePresentation:'layered',gameLane:'layer-preview',gameRegisteredDealers:JSON.stringify([{id:'paow',label:'PAOW'}])}}};
+ assert.throws(()=>dealerVersionPath('paow',1),/not registered/);
+ assert.match(dealerVersionPath('dragge',1),/dealer=dragge/);
 });

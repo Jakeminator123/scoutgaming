@@ -20,7 +20,8 @@ test('the requested branch gets only reviewed playback media and shared player c
     assert.equal(result.enabled, true);
     const dest = join(output, 'public/test');
     const catalog = JSON.parse(await readFile(join(dest,'catalog.json'),'utf8'));
-    assert.equal(catalog.lanes.length,2);
+    assert.deepEqual(catalog.lanes.map(lane=>lane.name),['Dragge']);
+    assert.equal(catalog.assets.length,3);
     const seen = new Set();
     for (const lane of catalog.lanes) {
       assert.equal(Object.keys(lane.dealer.variants).length,1);

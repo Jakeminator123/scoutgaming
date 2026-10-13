@@ -1,10 +1,12 @@
-import {isDealerId} from '../public/dealer-identity.mjs';
+import {isDealerId, registeredDealerIds} from '../public/dealer-identity.mjs';
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { validateStudioScope } from '../../packages/studio-access/studio-scope.mjs';
 
 const DAY = 86400000;
 // Callers authorize registered identities against the current published room.
-// Persistence only validates syntax; it does not grant registration or access.
+// The cloud writer also rechecks registration under the Studio lock; this
+// persistence check does not grant room access or replace published auth.
 const HISTORY_STATUS = 'generated-not-playback-confirmed';
 export const PLAYER_CHAT_MEMORY_LIMITS = Object.freeze({
   history: 30, historyChars: 8000, message: 1000, retentionDays: 30,
@@ -27,10 +29,23 @@ const safeRequestId = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z
 //
 // Inject the persistent asynchronous PostgreSQL repository. The caller retains
 // ownership of it; this module does not open/close databases or read env vars.
-export async function createPlayerChatMemory(db, { now = Date.now } = {}) {
-
-
+export async function createPlayerChatMemory(db, { now = Date.now, studioScope } = {}) {
+  if(studioScope!==undefined)studioScope=validateStudioScope(studioScope);
   const transaction = async work => (await db.transaction(work));
+  const registeredTransaction = async (scope, work) => db.transaction(async()=>{
+    if(studioScope){
+      let project, dealers;
+      try{
+        const row=await db.prepare("SELECT value FROM croupier_studio.documents WHERE environment_id=? AND workspace_id=? AND kind='project'")
+          .get(studioScope.environment,studioScope.workspaceId);
+        project=row?.value; dealers=registeredDealerIds(project);
+        if(!Array.isArray(project.dealerTrash??[]))throw Error('Invalid dealer trash');
+      }catch{reject('player_memory_registry_unavailable',503);}
+      if(!dealers.has(scope.dealerId)
+        || (project.dealerTrash??[]).some(item=>item?.dealer?.id===scope.dealerId))reject('player_memory_dealer_unavailable',403);
+    }
+    return work();
+  },studioScope?{studioScope}:undefined);
   const secret = (await transaction(async () => {
     if (!(await db.prepare('SELECT 1 FROM player_chat_memory_meta WHERE key=?').get('hmac-v1'))
       && ((await db.prepare('SELECT 1 FROM player_chat_memory_profiles LIMIT 1').get())
@@ -96,7 +111,7 @@ export async function createPlayerChatMemory(db, { now = Date.now } = {}) {
     async playedInitiative(input, commitReceipt = () => {}) {
       const scope = identity(input);
       if (!safeText(input.text)) reject('player_memory_invalid_result', 400);
-      return (await transaction(async () => {
+      return (await registeredTransaction(scope, async () => {
         const at = now(); (await prune(at));
         const row = (await ensureProfile(scope, at));
         if (row.revision !== input.expectedRevision) reject('player_memory_stale');
@@ -112,11 +127,11 @@ export async function createPlayerChatMemory(db, { now = Date.now } = {}) {
     },
     async profile(input) {
       const scope = identity(input);
-      return (await transaction(async () => { const at = now(); (await prune(at)); return snapshot(scope, (await ensureProfile(scope, at))); }));
+      return (await registeredTransaction(scope, async () => { const at = now(); (await prune(at)); return snapshot(scope, (await ensureProfile(scope, at))); }));
     },
     async forget(input) {
       const scope = identity(input);
-      return (await transaction(async () => {
+      return (await registeredTransaction(scope, async () => {
         const at = now(); (await prune(at)); (await ensureProfile(scope, at));
         (await db.prepare('UPDATE player_chat_memory_profiles SET history=?, revision=?, touched=? WHERE player_ref=? AND dealer_id=?')
           .run('[]', randomUUID(), at, scope.playerRef, scope.dealerId));
@@ -135,7 +150,7 @@ export async function createPlayerChatMemory(db, { now = Date.now } = {}) {
       const requestRef = digest('native-memory-request-v1', scope.playerRef, scope.dealerId, input.requestId);
       const fingerprint = digest('native-memory-message-v1', message);
       const reservation = randomUUID();
-      const initial = (await transaction(async () => {
+      const initial = (await registeredTransaction(scope, async () => {
         const at = now(); (await prune(at));
         const old = (await readRequest(scope, requestRef));
         if (old) {

@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { randomUUID, randomBytes, scryptSync } from 'node:crypto';
 import { createHash, createHmac } from 'node:crypto';
 import { createPostgresStore,postgresStatement,validateGameConnection } from '../web/storage/postgres-store.mjs';
+import { createStudioRepository } from '../web/storage/studio-repository.mjs';
+import { createStudioDocumentApi } from '../lab/lib/studio-document-api.mjs';
 import { createPostgresNativeTableCommand } from '../web/postgres-native-table.mjs';
 import { createPlayerAdministration } from '../web/storage/player-administration.mjs';
 import { playerAuth } from '../web/storage/async-player-auth.mjs';
@@ -44,6 +46,109 @@ test('Postgres facade shares nested work on one client and rolls back on failure
   assert.equal(statements.filter(sql=>sql.startsWith('BEGIN;')).length,1);assert.ok(statements.includes('ROLLBACK'));assert.equal(statements.at(-1),'release');
   await assert.rejects(store.db.exec('BEGIN IMMEDIATE'),/transaction/);
   await assert.rejects(store.db.transaction(async()=>{try{await store.db.transaction(async()=>{throw Error('caught inner failure');});}catch{}}),/caught inner failure/);
+});
+
+test('memory transaction takes the game lock before the canonical Studio lock and uses one client',async()=>{
+  const statements=[],client={async query(sql,values=[]){statements.push({sql,values});return{rows:[],fields:[],rowCount:0};},release(){}};
+  let connects=0;
+  const pool={async connect(){connects++;return client;},query(){throw Error('No query may bypass the transaction');}};
+  const {db}=createPostgresStore({pool}),studioScope={workspaceId:'croupier',environment:'production'};
+  await db.transaction(async()=>{
+    await db.prepare("SELECT value FROM croupier_studio.documents WHERE environment_id=? AND workspace_id=? AND kind='project'").get('production','croupier');
+    await db.transaction(async()=>db.prepare('SELECT 1 FROM player_chat_memory_profiles').get(),{studioScope});
+  },{studioScope});
+  const expected=createHash('sha256').update('croupier-studio\0{"environment":"production","workspaceId":"croupier"}').digest();
+  assert.equal(connects,1);
+  assert(statements[0].sql.endsWith('; SELECT pg_advisory_xact_lock(1129467984)'));
+  assert.deepEqual(statements[1],{sql:'SELECT pg_advisory_xact_lock($1::integer, $2::integer)',values:[expected.readInt32BE(0),expected.readInt32BE(4)]});
+  assert(statements[2].sql.includes('FROM croupier_studio.documents'));
+  assert.equal(statements.filter(({sql})=>sql.includes('pg_advisory_xact_lock')).length,2);
+  assert.equal(statements.at(-1).sql,'COMMIT');
+});
+
+test('nested Studio lock escalation or scope mismatch rolls back instead of reversing lock order',async()=>{
+  const statements=[],client={async query(sql){statements.push(sql);return{rows:[],fields:[],rowCount:0};},release(){}};
+  const {db}=createPostgresStore({pool:{connect:async()=>client,query:sql=>client.query(sql)}});
+  const scope={environment:'production',workspaceId:'croupier'};
+  for(const outer of [{},{studioScope:scope}]){
+    statements.length=0;
+    await assert.rejects(db.transaction(async()=>{
+      try{await db.transaction(()=>assert.fail('Rejected nested callback must not run'),{studioScope:{...scope,workspaceId:'other'}});}catch{}
+    },outer),/Studio transaction scope mismatch/);
+    assert(statements.includes('ROLLBACK'));assert(!statements.includes('COMMIT'));
+  }
+});
+
+test('nested scoped memory cannot escalate from a Studio-only transaction to the game lock',async()=>{
+  const statements=[],client={async query(sql){statements.push(sql);return{rows:[],fields:[],rowCount:0};},release(){}};
+  const {db}=createPostgresStore({pool:{connect:async()=>client,query:sql=>client.query(sql)}});
+  const studioScope={environment:'production',workspaceId:'croupier'};
+  for(const nested of [{studioScope},{}]){
+    statements.length=0;
+    await assert.rejects(db.transaction(async()=>{
+      try{await db.transaction(()=>assert.fail('Escalated callback must not run'),nested);}catch{}
+    },{studioScope,serialize:false}),/Studio transaction lock escalation/);
+    assert(statements.includes('ROLLBACK'));assert(!statements.includes('COMMIT'));
+    assert(!statements.some(sql=>sql.includes('1129467984')));
+  }
+});
+
+test('native project PUT and scoped memory serialize game then Studio without cross-client deadlock',{timeout:3000},async t=>{
+  const holders=new Map(),waiting=new Map(),trace=[];
+  const nativeSaving=Promise.withResolvers(),chatAttempted=Promise.withResolvers();
+  let connects=0;
+  function grant(client,key){holders.set(key,client);trace.push(`acquire:${client}:${key}`);}
+  async function lock(client,key){
+    trace.push(`request:${client}:${key}`);
+    if(client===2)chatAttempted.resolve();
+    if(holders.has(key)&&holders.get(key)!==client){
+      await new Promise((resolve,reject)=>{const queue=waiting.get(key)??[];queue.push({client,resolve,reject});waiting.set(key,queue);});
+    }else grant(client,key);
+  }
+  function unlock(client){
+    for(const [key,owner] of holders){
+      if(owner!==client)continue;
+      holders.delete(key);const next=waiting.get(key)?.shift();
+      if(next){grant(next.client,key);next.resolve();}
+    }
+  }
+  t.after(()=>{for(const queue of waiting.values())for(const item of queue)item.reject(Error('Fixture closed'));});
+  const pool={query(){throw Error('Query bypassed transaction');},async connect(){
+    const client=++connects;
+    return {release(){assert(![...holders.values()].includes(client),'Connection released while holding a lock');},async query(sql,values=[]){
+      if(sql==='COMMIT'||sql==='ROLLBACK')unlock(client);
+      else if(sql.includes('pg_advisory_xact_lock(1129467984)'))await lock(client,'game');
+      else if(sql.includes('pg_advisory_xact_lock($1::integer, $2::integer)'))await lock(client,`studio:${values.join(':')}`);
+      return {rows:[],fields:[],rowCount:0,command:sql};
+    }};
+  }};
+  const store=createPostgresStore({pool}),studioScope={environment:'test',workspaceId:'native-lock-order'};
+  const repository=createStudioRepository({pool,scope:studioScope}),origin='https://admin.example.invalid';
+  const api=createStudioDocumentApi({repository,
+    config:{scope:studioScope,apiBase:'/api/admin',allowedOrigins:[origin,'https://studio.example.invalid'],publicHosts:['admin.example.invalid','studio.example.invalid']},
+    authorize:async()=>({user:'synthetic-admin',role:'admin',scope:studioScope}),validateProjectBindings:async()=>{},
+    // The native runtime keeps the auth/game transaction outside the separate
+    // Studio repository connection. Moving Studio onto that outer client would
+    // make its own repository connection wait forever for the same lock.
+    mutationTransaction:work=>store.boDb.transaction(work),
+    gamePolicy:{projectStore:()=>({async save(project,expectedRevision){
+      assert.equal(expectedRevision,'before');nativeSaving.resolve();await chatAttempted.promise;
+      return repository.transaction(async()=>{trace.push('native:saved');return {...project,revision:'after'};});
+    }})},
+  });
+  const native=api.handle(new Request(origin+'/api/project',{method:'PUT',
+    headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},
+    body:JSON.stringify({project:{},expectedRevision:'before'})}));
+  const early=await Promise.race([nativeSaving.promise.then(()=>null),native]);
+  if(early)assert.fail(`Native fixture returned before save: ${early.status} ${await early.text()}`);
+  const memory=store.db.transaction(async()=>{trace.push('memory:read');},{studioScope});
+  const [response]=await Promise.all([native,memory]);
+  assert.equal(response.status,200);assert.equal((await response.json()).project.revision,'after');
+  assert.equal(connects,3,'Native auth, native Studio and concurrent memory each use their own client');
+  assert(trace.indexOf('native:saved')<trace.indexOf('memory:read'));
+  for(const client of [1,2])assert(trace.includes(`acquire:${client}:game`));
+  assert(trace.indexOf('acquire:2:game')<trace.findIndex(event=>event.startsWith('acquire:2:studio:')));
+  assert.equal(holders.size,0);
 });
 
 test('Postgres partner sessions require a current internal-wallet authority and fail closed',async()=>{

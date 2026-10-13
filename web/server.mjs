@@ -148,7 +148,7 @@ const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGa
 const dataDir = postgres ? null : resolve(process.env.CROUPIER_DATA_DIR ?? join(fileURLToPath(new URL('.', import.meta.url)), 'data'));
 if (dataDir) mkdirSync(dataDir, { recursive: true });
 const db = storage?.db ?? new DatabaseSync(join(dataDir, 'croupier.db'));
-const playerChatMemory = (await createPlayerChatMemory(db));
+const playerChatMemory = (await createPlayerChatMemory(db, {studioScope:studioPolicyRuntime?.scope}));
 let presentationApi;
 const activePlayerChats = new Map();
 let speechStreamService = null;
