@@ -1,6 +1,7 @@
 "use client"
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Background, BackgroundVariant, Controls, ReactFlow, ReactFlowProvider, type Edge } from '@xyflow/react';
+import { Background, BackgroundVariant, Controls, ReactFlow, ReactFlowProvider, MiniMap, useReactFlow, useNodesState } from '@xyflow/react';
+import { RotateCcw, Image, Layers, Users, Volume2, Trash2 } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import { ConnectedClipCard, type CardNode } from './connected-clip-card';
 import { DealerIdentityPortrait } from './dealer-identity-portrait';
@@ -8,6 +9,15 @@ import { bindClip, clipSlots, clipsForSlot, configuredClipIds, createStudioClien
 import { readIdleVideoDuration } from '../../../../../lab/lib/idle-video-duration.mjs';
 import type { StudioProject } from '../../../../../lab/lib/studio-model.mjs';
 import { replaceContext } from '../../../runtime/navigation';
+import { groupSlots, affectedRooms, slotCaption } from '../../lib/studio-layout.mjs';
+import { StudioSpeechPanel } from './studio-speech-panel';
+import { StudioLifecyclePanel } from './studio-lifecycle-panel';
+import { StudioPolicyPanel } from './studio-policy-panel';
+import { StudioCompositionPanel } from './studio-composition-panel';
+import { registerCompositionLayer } from '../../../../../lab/lib/studio-composition.mjs';
+import { rebaseProjectDraft } from '../../../../../lab/lib/project-rebase.mjs';
+import { validateProject } from '../../../../../lab/lib/studio-model.mjs';
+import { studioSpeechLineIds } from '../../lib/studio-speech.mjs';
 
 const client = createStudioClient();
 const nodeTypes = { registeredClip: ConnectedClipCard };
@@ -17,47 +27,64 @@ const groups = ['idle', 'transition', 'deal', 'reveal', 'speak', 'turn', 'settle
 const studioAliases = new Set(['/admin', '/admin/structure', '/admin/clips', '/admin/rooms', '/admin/dealers', '/admin/assets']);
 
 function WorkspaceMap() {
+  const { setViewport } = useReactFlow();
+  const canvasRef = useRef<HTMLDivElement|null>(null);
+  const [canvasWidth,setCanvasWidth] = useState(1200);
+  const [positions,setPositions] = useState<Record<string,{x:number;y:number}>>({});
+  const [flowNodes,setFlowNodes,onFlowNodesChange] = useNodesState<CardNode>([]);
   const [data, setData] = useState<Workspace|null>(null);
   const [base, setBase] = useState<StudioProject|null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [childBusy, setChildBusy] = useState(false);
+  const [configDirty, setConfigDirty] = useState(false);
+  const locked = busy || childBusy;
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [operatorId, setOperatorId] = useState(() => new URLSearchParams(location.search).get('operator') ?? '');
   const [roomId, setRoomId] = useState(() => new URLSearchParams(location.search).get('table') ?? '');
   const [dealerId, setDealerId] = useState(() => new URLSearchParams(location.search).get('dealer') ?? '');
   const [category, setCategory] = useState('all');
-  const [panel, setPanel] = useState<'room'|'dealer'|'layers'|null>(null);
+  const [game, setGame] = useState<'blackjack'|'roulette'>(()=>new URLSearchParams(location.search).get('game')==='roulette'?'roulette':'blackjack');
+  const [panel, setPanel] = useState<'room'|'dealer'|'layers'|'policy'|null>(null);
+  const [settingsSlot, setSettingsSlot] = useState<ClipSlot|null>(null);
   const [selected, setSelected] = useState<Record<string,string>>({});
   const [variants, setVariants] = useState<Record<string,string>>({});
+  const [cardSlots, setCardSlots] = useState<Record<string,string>>({});
   const [pending, setPending] = useState<{file:File;slot:ClipSlot}|null>(null);
+  const [reviewSave, setReviewSave] = useState(false);
+  const [conflictPaths, setConflictPaths] = useState<string[]>([]);
+  const [revisionConflict, setRevisionConflict] = useState(false);
   const [localUrl, setLocalUrl] = useState('');
   const [compositing, setCompositing] = useState<'green-screen'|'opaque'>('green-screen');
   const activeRequest = useRef<AbortController|null>(null);
   const uploadDialog = useRef<HTMLDialogElement|null>(null);
   const busyRef = useRef(false);
+  const childOperation = useCallback((value:boolean)=>{busyRef.current=value;setChildBusy(value);},[]);
   const dirty = Boolean(data && base && JSON.stringify(data.project) !== JSON.stringify(base));
   const registry = data?.catalog.administration;
   const operator = registry?.operators.find(row => row.id === operatorId) ?? registry?.operators[0];
-  const rooms = registry?.rooms.filter(row => row.operatorId === operator?.id) ?? [];
+  const rooms = registry?.rooms.filter(row => row.operatorId === operator?.id && row.game === game) ?? [];
   const room = rooms.find(row => row.id === roomId) ?? rooms[0];
-  const dealers = data?.project.dealers ?? [];
+  const dealers = data?.project.dealers.filter(row=>registry?.dealers.some(item=>item.id===row.id&&!item.archived)) ?? [];
   const dealer = dealers.find(row => row.id === dealerId) ?? dealers.find(row => row.id === room?.dealerIds[0]) ?? dealers[0];
   const lane = data?.project.lanes?.find(row => row.id === room?.compositionId);
+  useEffect(()=>{if(!canvasRef.current)return;const observer=new ResizeObserver(entries=>setCanvasWidth(entries[0].contentRect.width));observer.observe(canvasRef.current);return()=>observer.disconnect();},[Boolean(data),dealer?.id]);
   const slots = useMemo(() => data && dealer ? clipSlots(data.project, data.inventory, dealer.id) : [], [data, dealer]);
   const context = new URLSearchParams();
   if (operator) context.set('operator', operator.id);
   if (room) context.set('table', room.id);
   if (lane) context.set('composition', lane.id);
   if (dealer) context.set('dealer', dealer.id);
+  context.set('game',game);
 
   const load = useCallback(async () => {
     if (busyRef.current) return;
     busyRef.current = true;
     setLoading(true); setError('');
     const controller = new AbortController(); activeRequest.current?.abort(); activeRequest.current = controller;
-    try { const value = await client.load(controller.signal); if (controller.signal.aborted) return; setData(value); setBase(structuredClone(value.project)); setSelected({}); setVariants({}); setAuthorized(true); setNotice('Riktiga register och sparad revision inlästa.'); }
+    try { const value = await client.load(controller.signal); if (controller.signal.aborted) return; setData(value); setBase(structuredClone(value.project)); setSelected({}); setVariants({}); setAuthorized(true); setConflictPaths([]);setRevisionConflict(false); setNotice('Register och sparad revision inlästa.'); }
     catch (cause) { if (!controller.signal.aborted) { setAuthorized(false); setError(cause instanceof Error ? cause.message : 'Registret kunde inte läsas.'); } }
     finally { if (!controller.signal.aborted) { setLoading(false); busyRef.current = false; } }
   }, []);
@@ -70,33 +97,49 @@ function WorkspaceMap() {
   useEffect(() => {
     if (!data || !dealer) return;
     const query = new URLSearchParams(location.search);
-    ['operator','table','composition','dealer'].forEach(key => query.delete(key)); query.delete('lane');
+    ['operator','table','composition','dealer','game'].forEach(key => query.delete(key)); query.delete('lane');
     context.forEach((value,key) => query.set(key,value));
     replaceContext(`${location.pathname}?${query}`);
-  }, [operator?.id, room?.id, lane?.id, dealer?.id]);
+  }, [operator?.id, room?.id, lane?.id, dealer?.id, game]);
   useEffect(() => {
-    const blocked = () => busyRef.current || dirty || Boolean(pending);
+    const blocked = () => busyRef.current || dirty || configDirty || Boolean(pending);
     const unload = (event:BeforeUnloadEvent) => { if (blocked()) { event.preventDefault(); event.returnValue = ''; } };
     const leave = (event:Event) => {
       const target = (event as CustomEvent<{href:string}>).detail?.href;
-      if (target && studioAliases.has(new URL(target,location.origin).pathname)) return;
+      if (target) {
+        const url=new URL(target,location.origin);
+        if(/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')) {
+          const query=url.searchParams;
+          if(registry&&['operator','table','dealer','game'].some(key=>query.has(key))) {
+            const requestedRoom=registry.rooms.find(row=>row.id===query.get('table'));
+            const nextOperator=query.get('operator')??requestedRoom?.operatorId??operator?.id??'';
+            const nextRoom=requestedRoom?.operatorId===nextOperator?requestedRoom.id:query.get('table')??room?.id??'';
+            const nextDealer=query.get('dealer')??dealer?.id??'';
+            const nextGame=query.get('game')==='roulette'||requestedRoom?.game==='roulette'?'roulette':'blackjack';
+            if(nextOperator!==operator?.id||nextRoom!==room?.id||nextDealer!==dealer?.id||nextGame!==game) {
+              if(!changeContext(()=>{setOperatorId(nextOperator);setRoomId(nextRoom);setDealerId(nextDealer);setGame(nextGame);})){event.preventDefault();return;}
+            }
+          }
+          return;
+        }
+      }
       if (busyRef.current || blocked() && !confirm('Det finns ett osparat Studio-utkast. Lämna sidan och kasta utkastet?')) event.preventDefault();
     };
     const click = (event:MouseEvent) => {
       const anchor = (event.target as Element)?.closest?.('a'); if (!anchor || event.defaultPrevented || !blocked()) return;
-      if (new URL(anchor.href,location.origin).origin === location.origin && new URL(anchor.href).pathname.startsWith('/admin/') && !anchor.target) return;
+      if (new URL(anchor.href,location.origin).origin === location.origin && new URL(anchor.href).pathname.startsWith('/admin/') && !new URL(anchor.href).pathname.startsWith('/admin/lobby') && !anchor.target) return;
       if (busyRef.current || !confirm('Det finns ett osparat Studio-utkast. Lämna sidan och kasta utkastet?')) { event.preventDefault(); event.stopPropagation(); }
     };
     window.addEventListener('beforeunload',unload); window.addEventListener('scout:navigate',leave); document.addEventListener('click',click,true);
     return () => { window.removeEventListener('beforeunload',unload); window.removeEventListener('scout:navigate',leave); document.removeEventListener('click',click,true); };
-  }, [dirty,pending]);
+  }, [dirty,pending,configDirty,registry,operator?.id,room?.id,dealer?.id,game]);
 
   async function work(action:(signal:AbortSignal)=>Promise<void>) {
     if (busyRef.current || !authorized) return;
     busyRef.current = true; setBusy(true); setError(''); setNotice('');
     const controller = new AbortController(); activeRequest.current = controller;
     try { await action(controller.signal); }
-    catch (cause) { if (!controller.signal.aborted) { if ([401,403].includes((cause as {statusCode?:number})?.statusCode??0)) setAuthorized(false); setError(cause instanceof Error ? cause.message : 'Åtgärden misslyckades. Utkastet finns kvar.'); } }
+    catch (cause) { if (!controller.signal.aborted) { const status=(cause as {statusCode?:number})?.statusCode??0;if ([401,403].includes(status)) setAuthorized(false);if(status===409)setRevisionConflict(true); setError(cause instanceof Error ? cause.message : 'Åtgärden misslyckades. Utkastet finns kvar.'); } }
     finally { busyRef.current = false; setBusy(false); }
   }
   function edit(project:StudioProject) { setData(current => current && ({...current,project})); setError(''); setNotice('Ändringen finns i utkastet. Spara när du har granskat berörda rum.'); }
@@ -127,58 +170,69 @@ function WorkspaceMap() {
     });
   }
   async function save() {
-    if (!data || !dirty) return;
+    if (!data || !dirty || conflictPaths.length) return;
     await work(async signal => {
       const saved = await client.save(data.project,signal);
       setData(current => current && ({...current,project:saved})); setBase(structuredClone(saved));
+      setRevisionConflict(false);
       setNotice('Utkastet är sparat med ny serverrevision. Rumspublicering hanteras separat.');
     });
   }
-  function changeContext(action:()=>void) {
-    if (busyRef.current) return;
-    if (pending && !confirm('Kasta videovalet som ännu inte har laddats upp och byt kontext?')) return;
-    setPending(null); setSelected({}); setVariants({}); action();
-    if (dirty) setNotice('Det gemensamma projektutkastet är kvar, även för tidigare vald dealer och sammansättning.');
+  async function compareRevision() {
+    if(!data||!base)return;
+    await work(async signal=>{const remote=await client.load(signal);const result=rebaseProjectDraft(base,data.project,remote.project);const project=validateProject(result.project);setData({...remote,project});setBase(structuredClone(remote.project));setConflictPaths(result.conflicts);setRevisionConflict(false);setNotice('Senaste revisionen är jämförd; dina utkaständringar är kvar.');});
   }
-  const nodes:CardNode[] = slots.filter(slot => category === 'all' || slot.sourceType === category).map((slot,index,all) => {
+  function changeContext(action:()=>void) {
+    if (busyRef.current) return false;
+    if (configDirty && !confirm('Det finns en röstprofil som ännu inte har lagts i utkastet. Kasta formulärändringen och byt uppsättning?')) return false;
+    if (pending && !confirm('Kasta videovalet som ännu inte har laddats upp och byt kontext?')) return false;
+    setPending(null); setSelected({}); setVariants({}); setPanel(null);setSettingsSlot(null);setPositions({}); action();
+    if (dirty) setNotice('Det gemensamma projektutkastet är kvar, även för tidigare vald dealer och sammansättning.');
+    return true;
+  }
+  function togglePanel(next:typeof panel) { if(busyRef.current)return;setPanel(panel===next?null:next); }
+  const cardGroups = groupSlots(game==='roulette'?slots.filter(slot=>slot.sourceType==='idle'||studioSpeechLineIds(game).includes(slot.situation)):slots).filter(group=>category==='all'||group.slots.some(slot=>slot.sourceType===category));
+  const nodes:CardNode[] = cardGroups.map((group,index) => {
+    const slot = group.slots.find(slot=>slot.id===cardSlots[group.id]) ?? group.slots[0];
     const line = data!.project.lines.find(row => row.dealerId === dealer!.id && row.eventId === slot.eventId);
     const variantId = variants[slot.id] ?? line?.baselineVariantId ?? '';
     const clips = clipsForSlot(data!.inventory,dealer!.id,slot);
-    const boundId = currentClipId(data!.project,dealer!.id,slot,variantId);
+    const boundId = currentClipId(data!.project,dealer!.id,slot,variantId,data!.inventory);
     const selectedId = selected[slot.id] ?? (clips.some(row => row.id === boundId) ? boundId : '');
-    const column = Math.max(0,groups.indexOf(slot.sourceType));
-    return {id:slot.id,type:'registeredClip',position:{x:column*340,y:all.slice(0,index).filter(row => row.sourceType === slot.sourceType).length*570},
-      data:{slot,clips,boundId,boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId),selectedId,busy:busy||loading||!authorized,variantId,variants:slot.family ? [] : line?.variants.map(row=>({id:row.id,label:row.label})) ?? [],
+    const columns=canvasWidth<610?1:canvasWidth<1100?2:4;
+    return {id:group.id,type:'registeredClip',position:positions[group.id]??{x:index%columns*306,y:Math.floor(index/columns)*355},
+      data:{group,slot,clips,boundId,boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId,data!.inventory),selectedId,busy:locked||loading||!authorized,variantId,variants:slot.family ? [] : line?.variants.map(row=>({id:row.id,label:row.label})) ?? [],
+        onSlot:id=>setCardSlots(current=>({...current,[group.id]:id})),onSettings:()=>{if(busyRef.current)return;setSettingsSlot(slot);setPanel(slot.sourceType==='speak'?'room':'policy');},
         onSelect:id=>setSelected(current=>({...current,[slot.id]:id})),onVariant:id=>{setVariants(current=>({...current,[slot.id]:id}));setSelected(current=>({...current,[slot.id]:''}));},
         onBind:()=>{void link(slot,selectedId);},onFile:file=>stage(file,slot)}};
   });
-  const mainRow = nodes.filter(node=>node.position.y===0).sort((a,b)=>a.position.x-b.position.x);
-  const edges:Edge[] = mainRow.slice(1).map((node,index)=>({id:`group-${node.id}`,source:mainRow[index].id,target:node.id,type:'smoothstep',style:{stroke:'#3ad6c4'},selectable:false}));
   const impacts = registry?.rooms.filter(row => row.dealerIds.includes(dealer?.id ?? '') || row.compositionId === lane?.id) ?? [];
+  const changedRooms = data&&base ? affectedRooms(base,data.project,registry?.rooms??[]) : [];
+  useEffect(()=>{setFlowNodes(current=>nodes.map(node=>({...current.find(row=>row.id===node.id),...node})));},[data,dealer?.id,category,game,cardSlots,selected,variants,locked,loading,authorized,positions,canvasWidth]);
   return <section className="flex min-h-0 flex-1 flex-col" aria-label="Central Studio">
-    <header className="space-y-3 border-b border-sg-line p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-lg font-semibold">Klippkarta</h1><p className="mt-1 text-xs text-sg-muted">Dealerbank och rumssammansättning · riktiga register</p></div>
-        <div className="flex flex-wrap items-center gap-2"><span className={`text-xs ${dirty ? 'text-sg-amber':'text-sg-lime'}`}>{dirty ? 'Osparat utkast':'Sparad revision'}</span>
-          <button className={button} disabled={busy||loading||!authorized||!dirty||Boolean(pending)} onClick={()=>{void save();}}>Spara utkast</button>
-          <button className={button} disabled={busy||loading} onClick={()=>{if ((dirty||pending)&&!confirm('Kasta utkastet och läs om serverns revision?'))return;setPending(null);void load();}}>Läs om register</button></div></div>
-      {registry && <div className="grid gap-3 sm:grid-cols-3">
-        <label className="flex min-w-0 flex-col gap-1 text-xs">Spelbolag<select className={input} value={operator?.id??''} disabled={busy||loading} onChange={event=>changeContext(()=>{setOperatorId(event.target.value);setRoomId('');setDealerId('');})}>{registry.operators.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
-        <label className="flex min-w-0 flex-col gap-1 text-xs">Spelrum<select className={input} value={room?.id??''} disabled={busy||loading} onChange={event=>changeContext(()=>{setRoomId(event.target.value);setDealerId('');})}>{rooms.length?rooms.map(row=><option key={row.id} value={row.id}>{row.name} · {row.game}</option>):<option value="">Inga registrerade rum</option>}</select></label>
-        <label className="flex min-w-0 flex-col gap-1 text-xs">Dealerbank<select className={input} value={dealer?.id??''} disabled={busy||loading} onChange={event=>changeContext(()=>setDealerId(event.target.value))}>{dealers.map(row=><option key={row.id} value={row.id}>{row.label}{room?.dealerIds.includes(row.id)?' · i rummet':''}</option>)}</select></label>
+    <header className="studio-workspace-header">
+      <div className="studio-workspace-toolbar"><div className="studio-game-tabs" role="tablist" aria-label="Spel">{(['blackjack','roulette'] as const).map(id=><button key={id} role="tab" aria-selected={game===id} disabled={locked||loading} onClick={()=>changeContext(()=>{setGame(id);setRoomId('');setDealerId('');})}>{id==='blackjack'?'Blackjack':'Roulette'}</button>)}</div>
+        <div className="studio-save-actions"><span className={dirty?'text-sg-amber':'text-sg-lime'}>{loading?'Läser…':dirty?'Osparat utkast':data?'Sparat':'Ej inläst'}</span><button className="studio-button studio-save" disabled={locked||loading||!authorized||!dirty||Boolean(pending)||configDirty||conflictPaths.length>0} onClick={()=>setReviewSave(true)}>Spara utkast</button><button className="studio-icon-button" aria-label="Läs om register" title="Läs om register" disabled={locked||loading} onClick={()=>{if((dirty||pending)&&!confirm('Kasta utkastet och läs om serverns revision?'))return;setPending(null);void load();}}><RotateCcw size={15}/></button></div></div>
+      {registry&&<div className="studio-context-row">
+        <label className="studio-field">Spelbolag<select value={operator?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setOperatorId(event.target.value);setRoomId('');setDealerId('');})}>{registry.operators.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+        <label className="studio-field">Rum / bakgrund<select value={room?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setRoomId(event.target.value);setDealerId('');})}>{rooms.length?rooms.map(row=><option key={row.id} value={row.id}>{row.name}</option>):<option value="">Inget registrerat rum</option>}</select></label>
+        <label className="studio-field">Dealeruppsättning<select aria-label="Dealerbank" value={dealer?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>setDealerId(event.target.value))}>{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+        {(['background','table'] as const).map(role=><label key={role} className="studio-field">{role==='background'?'Bakgrund':'Bord'}<select aria-label={role==='background'?'Bakgrund':'Bord'} value={lane?.layers[role].default??''} disabled={locked||loading||!authorized||!room||!lane?.layers[role].enabled||role==='table'&&room.game!=='blackjack'} onChange={event=>{try{edit(selectLayer(data!.project,room!,role,event.target.value));}catch(cause){setError((cause as Error).message);}}}>{lane?.layers[role].allowed.length?lane.layers[role].allowed.map(id=><option key={id} value={id}>{data!.project.layerAssets?.find(row=>row.id===id)?.label??id}</option>):<option value="">Ej valt</option>}</select></label>)}
       </div>}
-      {data && <div className="flex flex-wrap gap-2"><button className={button} onClick={()=>setPanel(panel==='room'?null:'room')}>Rum & publicerad revision</button><button className={button} onClick={()=>setPanel(panel==='dealer'?null:'dealer')}>Dealer & användning</button><button className={button} onClick={()=>setPanel(panel==='layers'?null:'layers')}>Bord, bakgrund & sammansättning</button><select aria-label="Klippgrupp" className={input} value={category} onChange={event=>setCategory(event.target.value)}><option value="all">Alla kortplatser</option>{groups.map(group=><option key={group} value={group}>{group}</option>)}</select></div>}
-      {loading&&<p role="status" className="text-xs">Läser riktiga register…</p>}{error&&<p role="alert" className="text-sm text-sg-red">{error} {!data&&<button className={button} onClick={()=>{void load();}}>Försök igen</button>}</p>}{notice&&<p role="status" className="text-xs text-sg-teal">{notice}</p>}
-      {dirty&&<p className="text-xs text-sg-amber">Granska påverkan: klipp hör till dealerbanken och kan användas av flera rum. Spara uppdaterar det befintliga projektutkastet; publicerade rum behåller sin frysta version.</p>}
+      {error&&<p role="alert" className="studio-error">{error} {!data&&<button className="studio-button" onClick={()=>{void load();}}>Försök igen</button>} {revisionConflict&&<button className="studio-button" disabled={locked||!authorized} onClick={()=>{void compareRevision();}}>Jämför senaste revision</button>}</p>}
+      {conflictPaths.length>0&&<div className="studio-error" role="alert"><p>Samtidiga ändringar: {conflictPaths.join(', ')}. Ditt utkast är kvar; sparande är spärrat tills du väljer.</p><button className="studio-button" onClick={()=>setConflictPaths([])}>Behåll mitt utkast för dessa fält</button></div>}
     </header>
-    {panel&&data&&<aside className="space-y-3 border-b border-sg-line bg-sg-panel p-4 text-xs" aria-label="Kontextpanel">
-      {panel==='room'&&<><p>{room ? `${room.name} · ${room.game} · ${room.state} · ${room.published?'publicerad':'ej publicerad'} · ${room.playable?'spelbar':'ej spelbar'}`:'Bolaget har inga registrerade rum.'}</p><p>Publicerad bolagsrevision: {operator?.packageRevision??'saknas'} · Sparad projektrevision: {data.project.revision}</p><p>Rummets dealers: {room?.dealers.map(row=>row.name).join(', ')||'saknas'}</p><p>Dealerbyte och rumspublicering kräver separat samordning.</p></>}
-      {panel==='dealer'&&<><div className="flex items-center gap-4">{dealer&&<DealerIdentityPortrait dealer={dealer} className="h-28 w-28 shrink-0"/>}<p>{dealer?.label} · {room?.dealerIds.includes(dealer?.id??'')?'tillåten i valt rum':'dealerbanken är vald utanför detta rum; inget dealerbyte utförs'}</p></div><p>Berörda rum/sammansättningar: {impacts.map(row=>`${row.name} (${row.game})`).join(', ')||'inga registrerade kopplingar'}</p><p>Grundloopens kort visar den gemensamma basfilmen. Exakt text, ljud och video för talmedia behöver en separat godkänd uppsättning.</p></>}
-      {panel==='layers'&&<><p>{lane?.label??'Rummets sparade sammansättning saknas.'} · Mobil och desktop använder samma dealerbank; deras kompositioner sparas separat i sammansättningen.</p>
-        <div className="flex flex-wrap gap-4">{(['background','table'] as const).map(role=><label key={role} className="flex flex-col gap-1">{role==='background'?'Bakgrund':'Bord'}<select aria-label={role==='background'?'Bakgrund':'Bord'} className={input} value={lane?.layers[role].default??''} disabled={busy||loading||!authorized||!room||!lane?.layers[role].enabled||role==='table'&&room.game!=='blackjack'} onChange={event=>{try{edit(selectLayer(data.project,room!,role,event.target.value));}catch(cause){setError((cause as Error).message);}}}>{lane?.layers[role].allowed.length?lane.layers[role].allowed.map(id=><option key={id} value={id}>{data.project.layerAssets?.find(row=>row.id===id)?.label??id}</option>):<option value="">Inget lager valt</option>}</select></label>)}</div>
-        {room?.game==='roulette'&&<p>Roulettens bord ändras efter separat designunderlag.</p>}<p>Valen gäller registrerade tillåtna lager i utkastet. Biblioteksuppladdning och kompositionernas mobil/desktopjustering är ännu inte anslutna till denna panel. Publicerat utseende följer rummets bolagsrevision.</p></>}
+    <div className="studio-canvas-toolbar"><h1>KLIPPVIDEOS <span>{cardGroups.length} kort · {slots.length} fack</span></h1><div><button className="studio-button" disabled={locked} onClick={()=>togglePanel('dealer')}><Users size={13}/>Uppsättning</button><button className="studio-button" disabled={locked} onClick={()=>togglePanel('room')}><Volume2 size={13}/>Röst & tal</button><button className="studio-button" disabled={locked} onClick={()=>togglePanel('layers')}><Layers size={13}/>Komposition</button><button className="studio-icon-button" title="Återställ kortlayout" aria-label="Återställ kortlayout" onClick={()=>{setPositions({});void setViewport({x:24,y:24,zoom:canvasWidth<610?1:.9},{duration:250});}}><RotateCcw size={14}/></button></div></div>
+    {notice&&<span role="status" className="studio-notice">{notice}</span>}
+    {reviewSave&&<div className="studio-review-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="studio-save-review" className="studio-review"><h2 id="studio-save-review">Berörda användningar</h2><p>Ändringarna sparas som utkast. Publicerade versioner behålls.</p><ul>{changedRooms.length?changedRooms.map(row=><li key={row.id}>{registry?.operators.find(op=>op.id===row.operatorId)?.name} · {row.name} · {row.game}{row.published?' · publicerad':''}</li>):<li>Inga registrerade rum använder det ändrade materialet.</li>}</ul><div><button className="studio-button studio-save" disabled={locked||loading||!authorized||conflictPaths.length>0||configDirty} onClick={()=>{void save().then(()=>setReviewSave(false));}}>Bekräfta sparande</button><button className="studio-button" disabled={busy} onClick={()=>setReviewSave(false)}>Tillbaka</button></div></section></div>}
+    {data&&dealer&&<aside hidden={!panel} className="studio-drawer" aria-label="Kontextpanel"><header><h2>{panel==='room'?'Röst & tal':panel==='dealer'?'Uppsättningar & användning':panel==='layers'?'Rumskomposition':settingsSlot?slotCaption(settingsSlot):'Klippinställningar'}</h2><button className="studio-button" disabled={locked} onClick={()=>setPanel(null)}>Stäng</button></header>
+      <div hidden={panel!=='room'}><StudioSpeechPanel game={game} project={data.project} inventory={data.inventory} dealerId={dealer.id} blocked={busy || loading || !authorized} projectDirty={dirty} onEdit={edit} onBusyChange={childOperation} onDirtyChange={setConfigDirty}/></div>
+      {panel==='dealer'&&<><div className="studio-dealer-summary"><DealerIdentityPortrait dealer={dealer} className="h-16 w-16 shrink-0"/><div><strong>{dealer.label}</strong><small>Identitet: {dealer.id}</small><p>{impacts.length} rum använder banken / sammansättningen</p></div></div><StudioLifecyclePanel project={data.project} inventory={data.inventory} catalog={data.catalog} dealerId={dealer.id} blocked={busy || loading || !authorized || dirty} editBlocked={busy || loading || !authorized || Boolean(pending)} onEdit={edit} onReload={load} onBusyChange={childOperation}/></>}
+      {panel==='policy'&&settingsSlot&&<StudioPolicyPanel project={data.project} inventory={data.inventory} dealerId={dealer.id} slot={settingsSlot} blocked={busy || loading || !authorized} onEdit={edit} onBusyChange={childOperation}/>}
+      {panel==='layers'&&<StudioCompositionPanel project={data.project} inventory={data.inventory} dealerId={dealer.id} room={room} blocked={busy || loading || !authorized} onEdit={edit} onBusyChange={childOperation} onRegistered={(remote,id,role)=>{try{if(!base||!lane)throw Error('Sammansättningen saknas. Filen är registrerad; utkastet är kvar.');const result=registerCompositionLayer(base,data.project,remote,{id,role,laneId:lane.id});setBase(structuredClone(remote));setData(current=>current&&({...current,project:result.project}));setConflictPaths(result.conflicts);if(result.conflicts.length)setError('Filen är registrerad. Dessa utkastfält behöver granskas: '+result.conflicts.join(', '));else setNotice('Lagret är registrerat och valt i utkastet.');}catch(cause){setError((cause as Error).message);}}}/>}
     </aside>}
-    {data&&dealer&&<div className="min-h-[560px] flex-1"><ReactFlow key={`${dealer.id}:${category}`} defaultViewport={{x:20,y:20,zoom:0.72}} nodes={nodes} edges={edges} nodeTypes={nodeTypes} nodesDraggable={false} nodesConnectable={false} edgesReconnectable={false} minZoom={0.12} maxZoom={1.5} colorMode="dark" proOptions={{hideAttribution:true}}><Background variant={BackgroundVariant.Dots} gap={22} color="#33363b"/><Controls showInteractive={false}/></ReactFlow></div>}
-    {pending&&<dialog ref={uploadDialog} onCancel={event=>{event.preventDefault();if(!busyRef.current)setPending(null);}} aria-labelledby="upload-heading" className="w-full max-w-md space-y-4 rounded-lg border border-sg-line bg-sg-panel p-5"><h2 id="upload-heading" className="font-semibold">Registrera video i kortplats</h2><p className="text-xs">{dealer?.label} · {pending.slot.title} · {pending.slot.situation||'standard'} · {pending.file.name}</p>{localUrl&&<video src={localUrl} controls muted playsInline className="max-h-52 w-full object-contain"/>}<label className="flex flex-col gap-1 text-xs">Bakgrund i filen<select className={input} disabled={busy} value={compositing} onChange={event=>setCompositing(event.target.value as typeof compositing)}><option value="green-screen">Grön skärm</option><option value="opaque">Inbakad bakgrund</option></select></label><p className="text-xs text-sg-muted">Filen sparas i det befintliga privata registret. Koppling och rumspublicering är separata steg.</p>{error&&<p role="alert" className="text-xs text-sg-red">{error}</p>}<div className="flex gap-2"><button className={button} disabled={busy||loading||!authorized} onClick={()=>{void upload();}}>{busy?'Registrerar…':'Ladda upp till registret'}</button><button className={button} disabled={busy} onClick={()=>setPending(null)}>Avbryt videoval</button></div></dialog>}
+    {data&&dealer&&<div ref={canvasRef} className="studio-canvas"><ReactFlow key={`${dealer.id}:${category}`} defaultViewport={{x:24,y:24,zoom:.9}} nodes={flowNodes} edges={[]} nodeTypes={nodeTypes} nodesDraggable={!locked} onNodesChange={changes=>{onFlowNodesChange(changes);if(!changes.some(change=>change.type==='position'&&change.position))return;setPositions(current=>{const next={...current};let moved=false;for(const change of changes)if(change.type==='position'&&change.position&&(!current[change.id]||current[change.id].x!==change.position.x||current[change.id].y!==change.position.y)){next[change.id]=change.position;moved=true;}return moved?next:current;});}} nodesConnectable={false} edgesReconnectable={false} minZoom={0.2} maxZoom={1.5} colorMode="dark" proOptions={{hideAttribution:true}}><Background variant={BackgroundVariant.Dots} gap={22} color="#33363b"/><Controls showInteractive={false}/><MiniMap pannable zoomable nodeColor={node=>(node.data as CardNode['data']).group.color}/></ReactFlow></div>}
+    {pending&&<dialog ref={uploadDialog} onCancel={event=>{event.preventDefault();if(!busyRef.current)setPending(null);}} aria-labelledby="upload-heading" className="w-full max-w-md space-y-4 rounded-lg border border-sg-line bg-sg-panel p-5"><h2 id="upload-heading" className="font-semibold">Registrera video i kortplats</h2><p className="text-xs">{dealer?.label} · {pending.slot.title} · {pending.slot.situation||'standard'} · {pending.file.name}</p>{localUrl&&<video src={localUrl} controls muted playsInline className="max-h-52 w-full object-contain"/>}<label className="flex flex-col gap-1 text-xs">Bakgrund i filen<select className={input} disabled={busy} value={compositing} onChange={event=>setCompositing(event.target.value as typeof compositing)}><option value="green-screen">Grön skärm</option><option value="opaque">Inbakad bakgrund</option></select></label><p className="text-xs text-sg-muted">Filen sparas i det befintliga privata registret. Koppling och rumspublicering är separata steg.</p>{error&&<p role="alert" className="text-xs text-sg-red">{error}</p>}<div className="flex gap-2"><button className={button} disabled={locked||loading||!authorized} onClick={()=>{void upload();}}>{busy?'Registrerar…':'Ladda upp till registret'}</button><button className={button} disabled={busy} onClick={()=>setPending(null)}>Avbryt videoval</button></div></dialog>}
   </section>;
 }
 export function ConnectedClipMap() { return <ReactFlowProvider><WorkspaceMap/></ReactFlowProvider>; }

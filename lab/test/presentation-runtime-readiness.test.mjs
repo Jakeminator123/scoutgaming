@@ -35,6 +35,29 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+test('authoring sets, including an empty explicit field, require exact v10 before any SQL mutation', async () => {
+  for (const dealerSets of [[], [{ id: 'paow3', name: 'PAOW3', dealerId: 'paow-v2', clipIds: [], archived: true }]]) {
+    for (const version of [9, 10]) {
+      const input = fixture({ fetcher: async () => Response.json(presentationCapabilitiesForVersion(version)) });
+      const descriptor = { kind: 'project', value: { dealers: [], lanes: [], dealerSets } };
+      let begun = 0;
+      input.repository.transaction = async work => { begun++; return work(input.repository); };
+      const write = () => input.wrapped.transaction(repo => repo.saveDocument('project', { value: descriptor.value }), { presentationMutation: descriptor });
+      if (version === 9) { await assert.rejects(write(), blocked); assert.equal(begun, 0); assert.equal(input.writes.length, 0); }
+      else { await write(); assert.equal(begun, 1); assert.equal(input.writes.length, 1); }
+      assert.equal(input.fetches.length, 1);
+      assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'], '10');
+    }
+  }
+});
+test('a preflight without set support cannot introduce membership after SQL begins', async () => {
+  const input = fixture({ fetcher: async () => Response.json(presentationCapabilitiesForVersion(9)) });
+  await input.wrapped.withMutationContext(async () => {
+    await assert.rejects(input.wrapped.saveDocument('project', { value: { dealers: [], dealerSets: [] } }), blocked);
+  }, { kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: 'roulette' }] } });
+  assert.equal(input.fetches.length, 1); assert.equal(input.writes.length, 0);
+});
+
 test('background policy in project, archived composition and frozen package requires exact v8 before writes',async()=>{
   const lane={backgroundPlayback:{schemaVersion:1,rules:[]}};
   const descriptors=[{kind:'project',value:{lanes:[lane]}},

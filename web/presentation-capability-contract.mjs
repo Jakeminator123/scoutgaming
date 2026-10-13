@@ -16,16 +16,17 @@ const contracts = Object.freeze({
   7: Object.freeze({schemaVersion:7,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1'}),
   8: Object.freeze({schemaVersion:8,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1'}),
   9: Object.freeze({schemaVersion:9,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1'}),
+  10: Object.freeze({schemaVersion:10,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1',dealerSets:'authoring-categories-v1'}),
 });
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3-v9. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3-v10. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
@@ -37,6 +38,7 @@ export function negotiatePresentationCapabilityVersion(header) {
   if (header === '7') return 7;
   if (header === '8') return 8;
   if (header === '9') return 9;
+  if (header === '10') return 10;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

@@ -29,7 +29,7 @@ export function navigate(href: string, replace = false) {
   if (['/admin','/admin/clips','/admin/structure','/admin/rooms','/admin/dealers','/admin/assets'].includes(href)) {
     const context = new URLSearchParams(location.search);
     const query = new URLSearchParams();
-    for (const key of ['operator','table','dealer','composition','lane']) if (context.has(key)) query.set(key,context.get(key)!);
+    for (const key of ['operator','table','dealer','composition','lane','game']) if (context.has(key)) query.set(key,context.get(key)!);
     if (query.size) href += `?${query}`;
   }
   if (!window.dispatchEvent(new CustomEvent('scout:navigate', { cancelable:true,detail:{href} }))) return;

@@ -7,6 +7,42 @@ Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
 
 ## 1. Aktuellt läge
 
+### Nya Studio-ytan: första granskningsversion, 13 oktober 2026
+
+Pågående WIP i `codex/studio-workspace`, egen arbetsyta
+`C:/Users/jakem/.codex/worktrees/studio-workspace/croupier`, bas
+`415afa05053496990211ca29a07f6a21ef55a19d`. Originalets klippcanvas är
+designreferens. `/admin` har åtta kompakta kort med exakta fack/varianter,
+layoutåterställning, en liten meny och nivå 1/2/3 uppe till höger.
+`/admin/structure` är en separat systemkarta. Tal-, policy-, lager- och
+livscykelpanelerna ligger i Studio. Inga Control-utgångar krävs där.
+
+Första visningen kör på `http://127.0.0.1:53764/admin` med en isolerad
+QA-fixtur, syntetiska register och riktiga byggda UI/API-moduler. Den är
+tydligt märkt som testdata och hålls öppen medan Jakob granskar riktningen.
+Designbygge och typkontroller passerar; riktade isolerade prov omfattar
+exakta klippval med native selector, kategori-/medieskydd och talförberedelse.
+Den nya samlade browserregressionen återstår. Den fulla commit-hooken körs
+vid WIP-säkringen och nya kategori-/policy-/taltester ingår där.
+Leveransen är en draft för kontinuitet, inte godkänd produktdesign.
+Inget har mergats, publicerats eller skrivits i produktionsdata.
+Inga betalda genereringsjobb eller mediebytesändringar har gjorts.
+
+Inte accepterat eller färdigt: verkliga sju videobakgrunder/två bord visas
+inte i denna QA-vy. Den senaste kontextmodellen bolag → rum/bakgrund →
+speltyp → tillåten dealeruppsättning återstår; befintligt register har
+ett spel per publicerat rum. `paow3` är ett faktiskt rumsnamn, inte bevis
+för en tredje dealeruppsättning. Målkontrakt/inventering finns i separata
+docs-PR #54, head `47d6fbc8c8b95f1517dafe750e90b30d94244e77`.
+
+Nya `dealerSets` är fristående arbetskategorier med delade klippreferenser,
+arkiv/återställning och CAS-/ägarskydd; de är inga publicerade versioner.
+De kräver capability v10 hos spelmotorn före sparande. Talpanelen har 17
+exakta SV/EN-mallar och förbered → explicit bygge → resultat, men native
+Studio saknar en etablerad fullfil-driver för produktionsbyggen. Arbiträra
+dealerprofiler är därför inte produktionsklara. Tal-/läppsynksacceptans,
+publicering och spelbeslut behåller sina befintliga skydd.
+
 Publik sajt: https://www.scoutgaming.tech (apex `scoutgaming.tech` är 308 till www).
 Vercel-projekt `scoutgaming`. Spelmotor och plånbok: Render `croupier-v2`.
 `/studio` är labbets Next-basePath, inte en produkt. Kort, sko, saldo och

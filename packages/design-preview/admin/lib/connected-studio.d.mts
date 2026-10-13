@@ -8,8 +8,8 @@ export type Catalog = { source:'registered'; readAt:string; administration:{ rev
 export type ClipSlot = { id:string; eventId:string; situation:string; title:string; description:string; sourceType:StudioEvent['sourceType']; family:MediaFamily|null };
 export function clipSlots(project:StudioProject,inventory:VideoInventory,dealerId:string):ClipSlot[];
 export function clipsForSlot(inventory:VideoInventory,dealerId:string,slot:ClipSlot):VideoEntry[];
-export function currentClipId(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string):string;
-export function configuredClipIds(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string):string[];
+export function currentClipId(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string,inventory?:VideoInventory):string;
+export function configuredClipIds(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string,inventory?:VideoInventory):string[];
 export function bindClip(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,options?:{variantId?:string;durationMs?:number}):StudioProject;
 export function selectLayer(project:StudioProject,room:Room,role:'background'|'table',assetId:string):StudioProject;
 export function uploadMetadata(project:StudioProject,dealerId:string,slot:ClipSlot,file:File,compositing:VideoMetadata['compositing']):VideoMetadata;
