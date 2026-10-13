@@ -16,6 +16,11 @@ Repositoryts `registerMedia` har samma kontroll före transaktionsstart, så
 minnespoolen kan inte längre ge falskt positivt intagskvitto för dessa MIME.
 Typed API-svar förklarar gränsen utan databasdetaljer. Forge registrerar MP4;
 dess privata bildankare/lager ligger i andra strukturer och är inte ändrade.
+Controls aktiva native-väljare erbjuder endast MP4/WebM. Droppad PNG/ljud
+markeras som fel och blockerar hela den osparade kön tills filen tas bort.
+Batchen gör en egen förkontroll före första upload; enskild upload avvisar
+typen före filbytes, hash och alfaprov. Parser/v12 och annan lagerlagring
+behåller sina bredare format för separat framtida aktivering.
 
 88 riktade prover och 18 verkliga PostgreSQL-kontroller, inklusive omstart,
 är gröna. Två egna localhost-kluster är stoppade. Tidigare fyra Anna-importer
@@ -123,7 +128,9 @@ Inga mediebytes, produktionsdata eller rumspubliceringar ändras av arbetet.
 
 Efter #55/c8f9b99 gav verkliga projekt-/videoanrop 200 men katalogen 422 med sanerat studio_native_unavailable; den publika katalogen blev också 503. Hotfixen bevarar historiska frysta spelgrants: nya materialtaggar är diagnostik vid läsning, medan operator-, room-, lane-, dealer- och paketauktoriteten fortsätter styra. inspectPackageRooms rapporterar den precisa typade katalogmismatchen utan att ändra paketet. Admin visar en materialvarning. Samma historiska Blackjack- och Roulette-syskon behåller urval, playUrl och giltig spelstart. Nya publiceringar kontrolleras fortfarande strikt och avvisas med 422 vid fel material. Verkliga struktur-/lagringsfel slår fortsatt igenom.
 
-34 riktade tester använder verkliga serialiserade frysta paket, admin/publickatalog och spelstart: oförändrade bytes/data och befintliga grants, samt oförsvagad publiceringsassert. Ingen DB-, schema- eller mediemutation. Efter driftsättning verifierades `027ceb03` på både www/Vercel och Render, med admin catalog/project/videos och publika kataloganrop 200. Varningsrummet är Nordic Bet Roulette med Back to Basic-materialets blackjacktagg; den historiska spelbehörigheten bevaras.
+34 riktade tester använder verkliga serialiserade frysta paket, admin/publickatalog och spelstart: oförändrade bytes/data och befintliga grants, samt oförsvagad publiceringsassert. Ingen DB-, schema- eller mediemutation. PR #67 är mergad som 027ceb03; Vercel och Render har verifierats på exakt version. Faktisk adminläsning av katalog, projekt och videoregister samt publik bolags- och rumslista svarar 200. Nordic Bet Roulette (room-1bc1b407-9538-9ae8-f7e2-fecf951989a2) har katalogvarningen med det sparade Blackjack-bordet Back to Basic; både dess och Blackjack in Snows befintliga playUrl/published/playable består. De fem originalborden avkodades åter från det skyddade produktionsbiblioteket. Detta är ett läskvitto, inte nytt media- eller läppsynksgodkännande.
+
+Materiallistor och papperskorg i admin får separat enkel styling med tydliga rader, knappar, tangentbordsfokus och mobilanpassning. Mobilrader följer naturlig DOM-ordning: filnamn, hänvisningar, därefter åtgärd. Samma befintliga kontroller och API används; inga nya mutationer eller ändrade regler. Ekonomi- och anslutna tjänsteytor ägs av den parallella ekonomichatten och ingår inte här.
 
 ## SIDOR3: fem separata bord och förenad papperskorg, 13 oktober
 

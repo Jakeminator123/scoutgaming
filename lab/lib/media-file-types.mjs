@@ -1,4 +1,6 @@
 export const MEDIA_FILE_TYPES = Object.freeze({'image/png':'png','video/mp4':'mp4','video/webm':'webm','audio/mpeg':'mp3','audio/wav':'wav'});
+// Current native media_records storage; broader parsers/layer storage stay separate.
+export const NATIVE_MEDIA_FILE_TYPES = Object.freeze({'video/mp4':MEDIA_FILE_TYPES['video/mp4'],'video/webm':MEDIA_FILE_TYPES['video/webm']});
 export function mediaContentType(name) { const extension=name.split('.').at(-1)?.toLowerCase(); return Object.keys(MEDIA_FILE_TYPES).find(type=>MEDIA_FILE_TYPES[type]===extension) ?? ''; }
 export function mediaHeaderMatches(type,header) {
   if(header.length<16)return false;

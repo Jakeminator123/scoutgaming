@@ -3,10 +3,29 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
 import {alphaPixelEvidence,inspectAlphaSource} from '../lib/media-alpha-browser.mjs';
+import {NATIVE_MEDIA_ACCEPT,nativeMediaFileError} from '../lib/native-media-intake.mjs';
 
 const bytes=Buffer.from('0000ftypisom00000native-browser-upload-fixture'),file=new Blob([bytes],{type:'video/mp4'});
 const id='00000000-0000-4000-8000-000000000001',sha256=createHash('sha256').update(bytes).digest('hex');
 const classification={dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Browser upload',notes:''};
+
+test('native selection accepts only MP4/WebM while the broad parser remains separate',()=>{
+  assert.equal(NATIVE_MEDIA_ACCEPT,'.mp4,.webm');
+  for(const name of ['valid.MP4','valid.webm'])assert.equal(nativeMediaFileError(new File([bytes],name)), '');
+  for(const name of ['reference.png','speech.mp3','speech.wav'])assert.match(nativeMediaFileError(new File([bytes],name)),/MP4 eller WebM/);
+});
+
+test('unsupported native MIME never reads file bytes, hashes, decodes alpha or contacts the provider',async()=>{
+  for(const contentType of ['image/png','audio/mpeg','audio/wav']){
+    const counts={bytes:0,hash:0,alpha:0,fetch:0,put:0},unsupported=new Blob([bytes],{type:contentType});
+    unsupported.arrayBuffer=async()=>{counts.bytes++;assert.fail('must not read bytes');};
+    await assert.rejects(uploadNativeVideo(unsupported,{...classification,compositing:{mode:'alpha'}},contentType,{
+      cryptoImpl:{subtle:{digest:async()=>{counts.hash++;assert.fail('must not hash');}}},
+      inspectAlpha:async()=>{counts.alpha++;assert.fail('must not decode');},fetchImpl:async()=>{counts.fetch++;assert.fail('must not request');},putImpl:async()=>{counts.put++;assert.fail('must not upload');},
+    }),/MP4 eller WebM/);
+    assert.deepEqual(counts,{bytes:0,hash:0,alpha:0,fetch:0,put:0});
+  }
+});
 
 test('alpha pixel evidence rejects opaque and empty mattes but preserves green dealer pixels',()=>{
   assert.throws(()=>alphaPixelEvidence(new Uint8Array([0,0,0,255,0,180,0,255])),/Alfaprovet/);
