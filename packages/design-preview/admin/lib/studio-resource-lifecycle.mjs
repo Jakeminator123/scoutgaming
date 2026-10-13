@@ -5,3 +5,9 @@ export function lifecycleSnapshotKey(snapshot){
     .sort((left,right)=>left[0].localeCompare(right[0]));
   return JSON.stringify([snapshot.administrationRevision,operators]);
 }
+
+export const isActiveOperator=row=>row.status==='active'&&!row.archivedAt;
+export function operatorLifecycleGroups(operators){
+  return {active:operators.filter(isActiveOperator),trash:operators.filter(row=>Boolean(row.archivedAt)),
+    suspended:operators.filter(row=>row.status==='suspended'&&!row.archivedAt)};
+}

@@ -1,9 +1,12 @@
 // Counts come only from the authenticated registered workspace. A published
 // room is not necessarily playable, and a background is not a player room.
+import {isActiveOperator} from './studio-resource-lifecycle.mjs';
 export function systemOverview(workspace, search = '') {
   const { catalog, project } = workspace;
   if (catalog.source !== 'registered') throw Error('Registrerade uppgifter krävs.');
-  const { operators, rooms, dealers } = catalog.administration;
+  const { dealers } = catalog.administration;
+  const operators=catalog.administration.operators.filter(isActiveOperator);
+  const rooms=catalog.administration.rooms.filter(row=>row.state!=='archived'&&operators.some(operator=>operator.id===row.operatorId));
   const query = new URLSearchParams(search);
   const requestedRoom = rooms.find(row => row.id === query.get('table'));
   const operator = operators.find(row => row.id === query.get('operator'))

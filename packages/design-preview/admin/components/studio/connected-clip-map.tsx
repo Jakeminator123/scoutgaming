@@ -19,6 +19,7 @@ import { rebaseProjectDraft } from '../../../../../lab/lib/project-rebase.mjs';
 import { validateProject } from '../../../../../lab/lib/studio-model.mjs';
 import { studioSpeechLineIds } from '../../lib/studio-speech.mjs';
 import { studioContext } from '../../lib/studio-context.mjs';
+import {isActiveOperator} from '../../lib/studio-resource-lifecycle.mjs';
 
 const client = createStudioClient();
 const nodeTypes = { registeredClip: ConnectedClipCard };
@@ -63,6 +64,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   const activeRequest = useRef<AbortController|null>(null);
   const uploadDialog = useRef<HTMLDialogElement|null>(null);
   const busyRef = useRef(false);
+  const observedRefresh=useRef(refreshKey);
   const childOperation = useCallback((value:boolean)=>{busyRef.current=value;setChildBusy(value);},[]);
   const dirty = Boolean(data && base && JSON.stringify(data.project) !== JSON.stringify(base));
   useEffect(()=>{onDirtyChange?.(dirty||configDirty||Boolean(pending)||locked);},[dirty,configDirty,pending,locked,onDirtyChange]);
@@ -90,7 +92,12 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     catch (cause) { if (!controller.signal.aborted) { setAuthorized(false); setError(cause instanceof Error ? cause.message : 'Registret kunde inte läsas.'); } }
     finally { if (!controller.signal.aborted) { setLoading(false); busyRef.current = false; } }
   }, []);
-  useEffect(() => { void load(); return () => { activeRequest.current?.abort(); busyRef.current = false; }; }, [load,refreshKey]);
+  useEffect(() => { void load(); return () => { activeRequest.current?.abort(); busyRef.current = false; }; }, [load]);
+  useEffect(()=>{
+    if(observedRefresh.current===refreshKey)return;observedRefresh.current=refreshKey;
+    if(dirty||configDirty||pending||busyRef.current){setRevisionConflict(true);setNotice('Registret har ändrats. Ditt utkast är kvar; jämför senaste revisionen innan du fortsätter.');return;}
+    void load();
+  },[refreshKey,dirty,configDirty,pending,load]);
   useEffect(()=>{if(materialReload&&!locked){setMaterialReload(false);void load();}},[materialReload,locked,load]);
   useEffect(() => {
     if (!pending) { setLocalUrl(''); return; }
@@ -217,7 +224,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
       <div className="studio-workspace-toolbar"><p>Spelbolag → rum / bakgrund → spel → dealeruppsättning</p>
         <div className="studio-save-actions"><span className={dirty?'text-sg-amber':'text-sg-lime'}>{loading?'Läser…':dirty?'Osparat utkast':data?'Sparat':'Ej inläst'}</span><button className="studio-button studio-save" disabled={locked||loading||!authorized||!dirty||Boolean(pending)||configDirty||conflictPaths.length>0} onClick={()=>setReviewSave(true)}>Spara utkast</button><button className="studio-icon-button" aria-label="Läs om register" title="Läs om register" disabled={locked||loading} onClick={()=>{if((dirty||pending)&&!confirm('Kasta utkastet och läs om serverns revision?'))return;setPending(null);void load();}}><RotateCcw size={15}/></button></div></div>
       {registry&&<div className="studio-context-row">
-        <label className="studio-field">Spelbolag<select value={operator?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setOperatorId(event.target.value);setRoomId('');setDealerId('');})}>{registry.operators.map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+        <label className="studio-field">Spelbolag<select value={operator?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setOperatorId(event.target.value);setRoomId('');setDealerId('');})}>{!operator&&<option value="" disabled>Välj ett aktivt bolag</option>}{registry.operators.filter(isActiveOperator).map(row=><option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
         <label className="studio-field">Rum / bakgrund<select value={room?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>{setRoomId(event.target.value);setDealerId('');})}>{rooms.length?rooms.map(row=><option key={row.id} value={row.id}>{row.name}</option>):<option value="">Inget registrerat rum</option>}</select></label>
         <label className="studio-field">Spel<select value={room?.game??''} disabled><option value={room?.game??''}>{room?.game==='roulette'?'Roulette':room?'Blackjack':'Inget spel kopplat'}</option></select></label>
         <label className="studio-field">Dealeruppsättning<select aria-label="Dealerbank" value={dealer?.id??''} disabled={locked||loading} onChange={event=>changeContext(()=>setDealerId(event.target.value))}>{dealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>

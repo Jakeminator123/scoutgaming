@@ -5,6 +5,7 @@ import { Activity, ArrowRight, ArrowUpRight, Bot, Building2, Gamepad2, Layers, N
 import Link from '../../../runtime/navigation';
 import { createStudioClient, type Workspace } from '../../lib/connected-studio.mjs';
 import { systemHref, systemOverview } from '../../lib/system-overview.mjs';
+import {isActiveOperator} from '../../lib/studio-resource-lifecycle.mjs';
 
 const client = createStudioClient();
 type State = { status:'loading' } | { status:'error'; message:string; authentication:boolean } | { status:'ready'; workspace:Workspace };
@@ -124,7 +125,7 @@ export function SystemOverview() {
             <p className="text-right"><span className="text-lg font-semibold tabular-nums">{game.rooms}</span><span className="ml-1 text-xs text-sg-muted">rum</span></p>
           </div>)}</div>
           {!counts.rooms && <p className={`${detail} mt-3`}>Inga spelrum är registrerade.</p>}
-          <div className="mt-3 flex flex-wrap gap-2">{workspace.catalog.administration.operators.map(operator => <Link key={operator.id}
+          <div className="mt-3 flex flex-wrap gap-2">{workspace.catalog.administration.operators.filter(isActiveOperator).map(operator => <Link key={operator.id}
             href={systemHref('/admin/admin/operators',{operator:operator.id})} className="rounded border border-sg-line px-2 py-1 text-[11px] text-sg-muted hover:text-sg-lime">
             {operator.name} · {workspace.catalog.administration.rooms.filter(room => room.operatorId === operator.id).length} rum
           </Link>)}</div>

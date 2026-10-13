@@ -1,10 +1,13 @@
 // Resolve ownership first. Shared assets, labels and a published dealer list
 // never establish another operator's draft permissions.
+import {isActiveOperator} from './studio-resource-lifecycle.mjs';
 export function studioContext(catalog, project, selection = {}) {
   const registry=catalog.administration;
+  const operators=registry.operators.filter(isActiveOperator);
   const requestedRoom=registry.rooms.find(row=>row.id===selection.roomId);
-  const operator=registry.operators.find(row=>row.id===selection.operatorId)
-    ?? registry.operators.find(row=>row.id===requestedRoom?.operatorId) ?? registry.operators[0];
+  const requestedOperator=registry.operators.find(row=>row.id===selection.operatorId||!selection.operatorId&&row.id===requestedRoom?.operatorId);
+  const operator=requestedOperator&&!isActiveOperator(requestedOperator)?undefined:operators.find(row=>row.id===selection.operatorId)
+    ?? operators.find(row=>row.id===requestedRoom?.operatorId) ?? operators[0];
   const rooms=registry.rooms.filter(row=>row.operatorId===operator?.id&&row.state!=='archived');
   const room=rooms.find(row=>row.id===selection.roomId)??rooms[0];
   const lane=project.lanes?.find(row=>row.id===room?.compositionId);

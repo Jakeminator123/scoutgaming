@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { systemOverview, systemHref } from './system-overview.mjs';
 
 const workspace = () => ({ catalog: { source: 'registered', administration: {
-  operators: [{ id:'a',name:'A' }, { id:'b',name:'B' }],
+  operators: [{ id:'a',name:'A',status:'active',archivedAt:null }, { id:'b',name:'B',status:'active',archivedAt:null }],
   dealers: [{ id:'one',archived:false }, { id:'two',archived:false }, { id:'old',archived:true }],
   rooms: [
     {id:'a-1',operatorId:'a',game:'blackjack',compositionId:'scene-a',dealerIds:['one'],published:true,playable:false},
@@ -16,6 +16,13 @@ test('registered game and room counts distinguish publication from playable room
   const value = systemOverview(workspace());
   assert.deepEqual(value.counts, { operators:2,rooms:3,gameTypes:2,dealers:2,compositions:2,published:2,playable:1 });
   assert.deepEqual(value.games, [ {kind:'blackjack',name:'Blackjack',rooms:2,playable:0}, {kind:'roulette',name:'Roulette',rooms:1,playable:1} ]);
+});
+test('archived and legacy suspended operators never enter active structure counts or room context',()=>{
+  const data=workspace();data.catalog.administration.operators[0]={...data.catalog.administration.operators[0],status:'suspended',archivedAt:'2026-10-13T00:00:00Z'};
+  data.catalog.administration.operators.push({id:'suspended',name:'Legacy suspended',status:'suspended',archivedAt:null});
+  const value=systemOverview(data,'?operator=a&table=a-1');
+  assert.equal(value.counts.operators,1);assert.equal(value.counts.rooms,1);
+  assert.deepEqual(value.context,{operator:'b',table:'b-1',composition:'scene-b',dealer:'two'});
 });
 test('links retain the requested real room and derive its own operator, composition and dealer', () => {
   const { context } = systemOverview(workspace(), '?table=b-1&dealer=one&composition=scene-a');

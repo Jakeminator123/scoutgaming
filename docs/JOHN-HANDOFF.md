@@ -1,5 +1,10 @@
 # Aktuell handoff — Scoutgaming
 
+Aktuell main `d595e6b7` inklusive Control-papperskorg och Labba är förenad. Admin skiljer nu aktiva bolag, papperskorg (verifierad arkivmetadata) och äldre avstängda bolag. Aktiva väljare, strukturkort och antal filtrerar bort arkiverade/avstängda; direkta arkiverade bolagslänkar öppnar inte en dealerbank. 32 riktade katalog-, struktur-, kontext- och lifecycle-API-tester passerade.
+
+Senare produktionsläsning visade Back to Basic i PAOW · Studio. Detta är ett senare val från annan vy; bordsintaget ändrade inga kopplingar. Första serverrenderade biblioteksbesöket gav felreferens 2050080826 och nästa omladdning fungerade. Detta kvarstår som driftfynd; ingen full produktionsacceptans hävdas.
+
+
 Senare HTTP-test täcker v11 GET/HEAD och bevarat v10. Aktuell main `7e417e46` med dealerbild/Labba är förenad. Bolagsvyn reagerar även på paketrevision, status och arkivering när ett bolag utan rum lämnar administrationsrevisionen oförändrad; 14 verkliga lifecycle-API-tester är gröna.
 
 
@@ -122,6 +127,7 @@ produktionsbygget passerar. Full pre-commit för `133b74f5` passerade:
 2 977 godkända tester, 11 överhoppade och 0 fel. Detta är inte en ny
 acceptans av externa PostgreSQL-miljöer eller av visuell dealerkomposition.
 Inga dealerfilmer, kalibreringar eller rouletteoriginal har ändrats.
+
 ## Tillägg 13 oktober: dealerbilder och Labba i sammansättningar
 
 Samordnat med SIDOR3 och MERGE. Den gemensamma förhandsvisningen ritade

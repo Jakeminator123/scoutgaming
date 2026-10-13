@@ -21,7 +21,7 @@ export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey}:{disab
     const leave=(event:Event)=>{if(busyRef.current)event.preventDefault();};
     window.addEventListener('beforeunload',unload);window.addEventListener('scout:navigate',leave);
     return()=>{window.removeEventListener('beforeunload',unload);window.removeEventListener('scout:navigate',leave);};},[]);
-  const blocked=disabled||busy||loading;
+  const blocked=disabled||busy||loading||Boolean(error);
   function operation(key:string,value:boolean){if(value)active.current.add(key);else active.current.delete(key);busyRef.current=active.current.size>0;setBusy(busyRef.current);}
   function saved(remote:StudioProject){validateProject(remote);setProject(remote);setError('');onChanged();}
   return <section className="p-6 space-y-5" aria-label="Bord och bakgrunder">

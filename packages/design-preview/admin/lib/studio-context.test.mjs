@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {studioContext} from './studio-context.mjs';
-const catalog={administration:{operators:[{id:'a'},{id:'b'}],rooms:[
+const catalog={administration:{operators:[{id:'a',status:'active',archivedAt:null},{id:'b',status:'active',archivedAt:null}],rooms:[
   {id:'bj',operatorId:'a',game:'blackjack',compositionId:'one'},
   {id:'roulette',operatorId:'a',game:'roulette',compositionId:'two'},
   {id:'other',operatorId:'b',game:'blackjack',compositionId:'three'},
@@ -17,6 +17,11 @@ test('operator owns the selectable rooms before their game is resolved',()=>{
   assert.deepEqual(context.rooms.map(row=>row.id),['bj','roulette']);
   assert.equal(context.game,'roulette');assert.equal(context.dealer.id,'paow-v2');
   assert.deepEqual(context.dealers.map(row=>row.id),['paow-v2']);
+});
+test('a direct archived company link cannot reopen its room or inherit an active dealer bank',()=>{
+  const saved=structuredClone(catalog);saved.administration.operators[0].status='suspended';saved.administration.operators[0].archivedAt='2026-10-13T00:00:00Z';
+  const context=studioContext(saved,project,{operatorId:'a',roomId:'bj',dealerId:'astrid'});
+  assert.equal(context.operator,undefined);assert.equal(context.room,undefined);assert.equal(context.dealer,undefined);assert.deepEqual(context.rooms,[]);
 });
 test('a cross-operator room cannot redirect the selected operator or dealer',()=>{
   const context=studioContext(catalog,project,{operatorId:'a',roomId:'other',dealerId:'removed'});
