@@ -48,7 +48,10 @@
         "settle.push",
         "settle.other",
         "idle.ready",
-        "transition.shoe"
+        "transition.shoe",
+        "roulette.reference",
+        "roulette.idle",
+        "roulette.wheel-start"
       ]
     },
     "kind": {
@@ -122,6 +125,18 @@
               "maximum": 1
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode"
+          ],
+          "properties": {
+            "mode": {
+              "const": "alpha"
+            }
+          }
         }
       ]
     },
@@ -130,7 +145,8 @@
     },
     "mediaType": {
       "enum": [
-        "audio"
+        "audio",
+        "image"
       ]
     },
     "framing": {
@@ -158,6 +174,31 @@
         }
       },
       "additionalProperties": false
+    },
+    "game": {
+      "const": "roulette"
+    },
+    "action": {
+      "enum": [
+        "reference",
+        "breathing",
+        "glasses-clean",
+        "wheel-start"
+      ]
+    },
+    "startPose": {
+      "enum": [
+        "VILA",
+        "WHEEL",
+        "unverified"
+      ]
+    },
+    "endPose": {
+      "enum": [
+        "VILA",
+        "WHEEL",
+        "unverified"
+      ]
     }
   },
   "allOf": [

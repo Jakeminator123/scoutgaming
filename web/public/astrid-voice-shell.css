@@ -1,17 +1,6 @@
 /* Shared conversation dock. The log opens only when the player requests it. */
 .astrid-voice-ui #sound-btn { display: none !important; }
 .astrid-voice-ui #chat { width: auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
-.astrid-voice-ui #chat button { color: var(--dealer-voice-yellow); background: #102747; border-color: #7fb2ff55; }
-.astrid-voice-ui #chat button:hover { border-color: var(--dealer-voice-yellow); background: #183759; }
-.astrid-voice-ui #chat button:focus-visible, .astrid-voice-ui #chat input:focus-visible, .astrid-voice-ui #chat-memory summary:focus-visible { outline: 3px solid var(--dealer-voice-yellow); outline-offset: 3px; }
-.astrid-voice-ui #chat input { background: var(--dealer-voice-surface); border-color: #7fb2ff55; }
-.astrid-voice-ui #chat input::placeholder { color: var(--dealer-voice-muted); }
-.astrid-voice-ui #chat input:focus { border-color: var(--dealer-voice-yellow); }
-.astrid-voice-ui #chat-log, .astrid-voice-ui #chat-memory > div { background: #0b151bf2; border-color: #7fb2ff66; }
-.astrid-voice-ui #chat-log .msg b { color: var(--dealer-voice-yellow); }
-.astrid-voice-ui #chat-log .msg.user b { color: var(--dealer-voice-blue); }
-.astrid-voice-ui #chat-log .msg.pending p, .astrid-voice-ui #chat-memory small { color: var(--dealer-voice-muted); }
-.astrid-voice-ui #chat-log::-webkit-scrollbar-thumb { background: #ffd97a66; }
 .astrid-voice-ui #astrid-camera [hidden] { display: none !important; }
 .astrid-voice-ui #chat-log { width: min(360px, calc(100vw - 24px)); box-sizing: border-box; max-height: min(280px, 30dvh); }
 .astrid-voice-ui #chat-log:not(.open) { display: none !important; }
@@ -19,11 +8,12 @@
 .astrid-voice-ui #chat-status { display: block; }
 .astrid-voice-ui #chat-status:empty, .astrid-voice-ui #caption:empty { display: none; }
 @media (max-width: 860px) {
-  .astrid-voice-ui #chat { position: fixed; left: auto; right: 8px; width: 76px; box-sizing: border-box; flex-direction: column; gap: 6px; top: calc(env(safe-area-inset-top, 0px) + 78px); max-width: calc(100vw - 20px); z-index: 60; align-items: center; }
+  .astrid-voice-ui #chat { position: fixed; left: auto; right: 8px; width: 56px; box-sizing: border-box; flex-direction: column; gap: 6px; top: calc(env(safe-area-inset-top, 0px) + 78px); max-width: calc(100vw - 20px); z-index: 60; align-items: flex-start; }
   .astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-input,
   .astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-send { display: none; }
   .astrid-voice-ui #chat-log-toggle { width: 44px; height: 44px; }
-  .astrid-voice-ui #astrid-camera.astrid-voice-controls { width: 76px; min-width: 0; box-sizing: border-box; }
+  .astrid-voice-ui #astrid-camera.astrid-voice-controls { width: 56px; max-width: 56px; min-width: 0; box-sizing: border-box; flex-direction: column; align-items: center; gap: 7px; }
+  .astrid-voice-ui .astrid-voice-error { min-width: 0; max-width: 100%; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .astrid-voice-ui #chat:has(#chat-log.open) { width: min(340px, calc(100vw - 20px)); flex-direction: row; align-items: flex-start; }
   .astrid-voice-ui #chat:has(#chat-log.open) #chat-log { top: calc(100% + 8px); bottom: auto; }
   .astrid-voice-ui #chat-log { position: absolute; right: 0; bottom: calc(100% + 8px); }

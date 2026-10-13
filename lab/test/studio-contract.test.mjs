@@ -11,12 +11,15 @@ import { validateVideoMetadata, videoFitsLine, videoFitsEvent } from '../lib/vid
 import { classifyVideo, readClassifications } from '../lib/video-classifications.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
+import {ROULETTE_MEDIA_EVENTS} from '../lib/roulette-media.mjs';
+import {blackjackMediaSlots,dealerMediaSlots,mediaClassification} from '../lib/dealer-media-library.mjs';
+import {validateProject} from '../lib/studio-model.mjs';
 
 const metadata = { label:'QA left', dealerId:'astrid', eventId:'deal.player.left', kind:'action', role:'standard', situation:'box0', notes:'', playback:'once' };
 test('canonical manifest, seed, schema and runtime classifications agree for every dealer/group/situation', () => {
   assert.deepEqual(contract.dealers, seed.dealers.map(d=>d.id));
   assert.deepEqual(contract.events.map(e=>({id:e.id,sourceType:e.sourceType})),seed.events.map(e=>({id:e.id,sourceType:e.sourceType})));
-  assert.deepEqual(schema.properties.eventId.enum,contract.events.map(e=>e.id));
+  assert.deepEqual(schema.properties.eventId.enum,[...contract.events.map(e=>e.id),...ROULETTE_MEDIA_EVENTS.map(e=>e.id)]);
   assert.equal(schema.properties.dealerId.pattern,'^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$');
   assert.doesNotThrow(()=>validateVideoMetadata({...metadata,dealerId:'nora'}));
   assert.deepEqual(schema.properties.kind.enum,Object.keys(contract.videoKinds));
@@ -31,6 +34,22 @@ test('canonical manifest, seed, schema and runtime classifications agree for eve
       assert.equal(videoFitsLine({classification:m},dealerId,event.id),true);
     }
   }
+});
+test('roulette intake has its own exact metadata and never widens canonical runtime lines or events',()=>{
+  const before=structuredClone(seed),runtime=blackjackMediaSlots(seed),intake=dealerMediaSlots(seed);
+  assert.deepEqual(intake.filter(slot=>!slot.eventId.startsWith('roulette.')),runtime);
+  const slots=intake.filter(slot=>slot.eventId.startsWith('roulette.'));
+  assert.deepEqual(slots.map(slot=>slot.id),['roulette.reference/VILA','roulette.idle/breathing','roulette.idle/glasses-clean','roulette.wheel-start/wheel-start']);
+  for(const slot of slots){
+    const value=mediaClassification(seed,{dealerId:'astrid',slotId:slot.id,label:'Roulette intake',contentType:slot.eventId==='roulette.reference'?'image/png':'video/webm'});
+    assert.doesNotThrow(()=>validateVideoMetadata(value));
+    for(const key of ['game','action','startPose','endPose']){const missing={...value};delete missing[key];assert.throws(()=>validateVideoMetadata(missing));}
+    for(const event of seed.events){assert.equal(videoFitsLine({classification:value},'astrid',event.id),false);assert.equal(videoFitsEvent({classification:value},event),false);}
+    assert.equal(videoFitsLine({classification:value},'astrid',slot.eventId),false);
+    assert.equal(seed.events.some(event=>event.id===slot.eventId),false);
+  }
+  assert.deepEqual(seed,before);
+  assert.throws(()=>validateProject({...structuredClone(seed),events:[...seed.events,{...seed.events[0],id:'roulette.wheel-start'}]}));
 });
 test('unknown, unclassified, wrong kind/dealer/group, imprecise and proposed loop metadata fail closed',()=>{
   assert.equal(videoFitsLine({},'astrid','idle.ready'),false);

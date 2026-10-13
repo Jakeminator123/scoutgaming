@@ -53,3 +53,7 @@ test('wide actor plane fills desktop height and crops on mobile without moving c
     assert.equal(card[2]/card[3],9/16);assert.equal(card[1],dealer[1]);
   }
 });
+test('native alpha bypasses chroma removal and preserves green clothing and partial alpha',()=>{
+  const rgba=new Uint8ClampedArray([0,255,0,192,22,44,33,0]);
+  assert.deepEqual(keyGreenPixels(rgba,{mode:'alpha'}),new Uint8ClampedArray([0,255,0,192,22,44,33,0]));
+});

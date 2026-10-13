@@ -2,6 +2,16 @@ import { validateVideoMetadata } from '../../../../lab/lib/video-intake.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../../../web/public/dealer-compositing.mjs';
 export { labUrl } from '../../../../lab/lib/lab-url.mjs';
 
+// Format for display only; keep the original failure on its file for review.
+export function importErrorMessage(message) {
+  if (message === 'studio_media_content_type_unsupported' || message.startsWith('studio_media_content_type_unsupported ')) {
+    return 'Endast MP4 och WebM kan sparas just nu. Filen och dina val finns kvar; inget nytt försök görs automatiskt.';
+  }
+  return message.includes('studio_presentation_runtime_update_required')
+    ? 'Spelmotorn behöver uppdateras innan filen kan registreras. Dina filer och val finns kvar; inget nytt försök görs automatiskt.'
+    : message;
+}
+
 // Only successful chat exchanges enter model history. Remove complete pairs so
 // every request starts with a user and ends with the corresponding assistant.
 export function appendAssistantHistory(history, message, answer) {
@@ -12,6 +22,12 @@ export function appendAssistantHistory(history, message, answer) {
 
 const MIME = Object.freeze({mp4:'video/mp4', webm:'video/webm', mp3:'audio/mpeg', wav:'audio/wav', png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', webp:'image/webp'});
 export function importContentType(name) { return MIME[String(name).split('.').pop().toLowerCase()] ?? ''; }
+// Check every unsaved row before classification or any upload work. An error
+// row is still part of the user's batch and must not be silently skipped.
+export function importBatchError(rows) {
+  const unsupported = rows.some(row => row.state !== 'saved' && !['video/mp4','video/webm'].includes(importContentType(row.file.name)));
+  return unsupported ? 'Endast MP4 och WebM kan sparas. Ta bort ljud, posebilder och andra filformat ur denna import innan videorna kan sparas. Originalfilerna på din dator påverkas inte.' : '';
+}
 export function importFileError(file, maximum = 134217728) {
   if (!importContentType(file.name)) return 'Välj MP4, WebM, MP3, WAV, PNG, JPEG eller WebP.';
   return file.size < 16 || file.size > maximum ? 'Filen måste vara mellan 16 byte och 128 MB.' : '';
@@ -37,7 +53,7 @@ export function importClassification(row, dealerId, catalog) {
   if (!compatibleImportSlot(row.file, slot) || slot.pose) throw Error('Välj ett exakt fack för ljud eller video. Posebilder är endast lokala referenser.');
   if (importFileError(row.file, catalog.limits.maxFileBytes)) throw Error(importFileError(row.file, catalog.limits.maxFileBytes));
   const audio = importContentType(row.file.name).startsWith('audio/');
-  if (!audio && row.background === 'alpha') throw Error('Transparent material behöver en separat verifierad uppspelningsväg. Filen finns kvar för lokal granskning; den sparas inte i denna import.');
+  if (!audio && row.background === 'alpha') throw Error('Assistentens kontroll och granskning av transparent material är inte färdig. Filen finns kvar för lokal granskning; den sparas inte i denna import.');
   if (!audio && row.background !== 'green-screen') throw Error('Bekräfta grön bakgrund för varje video.');
   return validateVideoMetadata({ dealerId, eventId: slot.eventId, situation: slot.situation,
     kind: slot.kind, label: row.label.trim(), role: 'alternative', playback: 'once', notes: '',

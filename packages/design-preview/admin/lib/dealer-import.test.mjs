@@ -1,6 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importClassification, importFileError, uniqueImportFiles } from './dealer-import.mjs';
+import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importErrorMessage, importFileError, uniqueImportFiles } from './dealer-import.mjs';
+
+test('runtime readiness error is explained without rewriting the retained failure',()=>{
+  const failure={message:'studio_presentation_runtime_update_required Kontrollera biblioteket innan filen läggs till igen.'};
+  assert.match(importErrorMessage(failure.message),/Spelmotorn behöver uppdateras/);
+  assert.match(importErrorMessage(failure.message),/inget nytt försök görs automatiskt/);
+  assert.match(failure.message,/^studio_presentation_runtime_update_required/);
+  assert.equal(importErrorMessage('Behörigheten har gått ut.'),'Behörigheten har gått ut.');
+});
+
+test('unsupported content type is explained while retaining unrelated failures',()=>{
+  const failure={message:'studio_media_content_type_unsupported Kontrollera biblioteket innan filen läggs till igen.'};
+  assert.match(importErrorMessage(failure.message),/Endast MP4 och WebM kan sparas/);
+  assert.match(importErrorMessage(failure.message),/inget nytt försök görs automatiskt/);
+  assert.match(failure.message,/^studio_media_content_type_unsupported/);
+  assert.equal(importErrorMessage('studio_media_content_type_unsupported_extra'),'studio_media_content_type_unsupported_extra');
+  assert.equal(importErrorMessage('Behörigheten har gått ut.'),'Behörigheten har gått ut.');
+});
 
 test('shared assistant history retains complete recent pairs within message and total bounds',()=>{
   let history=[];
@@ -20,6 +37,22 @@ const catalog = {dealers:[{id:'nora',label:'Nora'}],limits:{maxFileBytes:1342177
 ]};
 const row = (patch={}) => ({id:'file-1',file:{name:'nora-box1.mp4',size:100},label:'Plats 1',slotId:catalog.slots[0].id,background:'green-screen',state:'ready',...patch});
 
+test('unsupported unsaved rows block the whole batch, including failed rows, without changing files or placements',()=>{
+  const video=row({background:'alpha'});
+  for(const name of ['pose.png','pose.jpg','pose.jpeg','pose.webp','speech.mp3','speech.wav','unknown.mov','unknown']){
+    for(const state of ['ready','error']){
+      const unsupported=row({id:'unsupported',file:{name,size:100},slotId:'pose/vila',state});
+      const batch=[video,unsupported],before=structuredClone(batch);
+      assert.match(importBatchError(batch),/Ta bort ljud, posebilder och andra filformat/);
+      assert.match(importBatchError(batch),/innan videorna kan sparas/);
+      assert.deepEqual(batch,before);assert.equal(batch[0],video);assert.equal(batch[1],unsupported);
+    }
+  }
+  assert.equal(importBatchError([row(),row({file:{name:'clip.WEBM',size:100}})]),'');
+  assert.equal(importBatchError([row(),row({file:{name:'old.wav',size:100},state:'saved'})]),'');
+  assert.equal(importBatchError([]),'');
+});
+
 test('reviewed classification preserves exact box and dealer with alternative role', () => {
   const result = importClassification(row(), 'nora', catalog);
   assert.equal(result.dealerId,'nora'); assert.equal(result.situation,'box0'); assert.equal(result.eventId,'deal.player.left');
@@ -27,7 +60,7 @@ test('reviewed classification preserves exact box and dealer with alternative ro
   assert.throws(()=>importClassification(row(),'invented-dealer',catalog));
   assert.throws(()=>importClassification(row({slotId:'deal.player.left/box7'}),'nora',catalog));
   assert.throws(()=>importClassification(row({background:''}),'nora',catalog));
-  assert.throws(()=>importClassification(row({background:'alpha'}),'nora',catalog),/separat verifierad/);
+  assert.throws(()=>importClassification(row({background:'alpha'}),'nora',catalog),/Assistentens kontroll och granskning.*inte färdig/);
 });
 test('same local file is not added twice, including saved and uncertain rows', () => {
   const file={name:'nora-pos1.mp4',size:100,lastModified:42};

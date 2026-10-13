@@ -21,6 +21,7 @@ export function previewMediaPath({operatorSlug,roomId,packageRevision,dealerId},
   return '/api/operators/'+operatorSlug+'/rooms/'+roomId+'/preview/media/'+packageRevision+'/'+dealerId+'/'+kind+'/'+id;
 }
 function compositing(value) {
+  if(value?.mode==='alpha'){exact(value,['mode']);return;}
   exact(value,['mode','threshold','softness','despill']);
   if(value.mode!=='green-screen'||value.softness<=0||['threshold','softness','despill'].some(key=>!Number.isFinite(value[key])||value[key]<0||value[key]>1))fail();
 }

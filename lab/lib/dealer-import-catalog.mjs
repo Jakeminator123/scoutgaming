@@ -8,6 +8,7 @@ import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 
 export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 10, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,
   maxHistoryMessages: 8, maxHistoryMessage: 3000, maxHistoryChars: 12000, vision: false });
+export const DEALER_IMPORT_STORAGE_WARNING = 'Endast MP4 och WebM kan sparas i klippbanken just nu. Bilder och ljud kan få rådgivande fack eller vara lokala referenser, men måste tas bort ur importlistan innan videor sparas, även om raden har ett tidigare fel.';
 const TYPES = new Set(['video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav', 'image/png', 'image/jpeg', 'image/webp']);
 const exact = (value, required, optional = []) => value && typeof value === 'object' && !Array.isArray(value)
   && required.every(key => Object.hasOwn(value, key)) && Object.keys(value).every(key => [...required, ...optional].includes(key));
@@ -149,15 +150,17 @@ export function finishDealerImportRows(rows, input, catalog) {
     const row = rows.find(item => item.fileId === file.id);
     const slot = catalog.slots.find(item => item.id === row.slotId);
     let classification = null;
-    const warnings = [];
+    // Advice is not storage support. Keep this server-owned warning even when
+    // the model omits it, the slot is unknown, or another guard rejects the row.
+    const warnings = ['video/mp4', 'video/webm'].includes(file.type) ? [] : [DEALER_IMPORT_STORAGE_WARNING];
     const name = `-${normalizedName(file.name)}-`;
     const namedOtherDealer = catalog.dealers.find(dealer => dealer.id !== input.dealerId
       && [dealer.id, dealer.label].some(label => name.includes(`-${normalizedName(label)}-`)));
     if (namedOtherDealer) return { ...row, slotId: null, confidence: 'low', classification,
-      warnings: [`Filnamnet nämner ${namedOtherDealer.label}, men du har valt en annan dealer. Kontrollera identiteten innan du väljer fack.`] };
+      warnings: [...warnings, `Filnamnet nämner ${namedOtherDealer.label}, men du har valt en annan dealer. Kontrollera identiteten innan du väljer fack.`] };
     const image = file.type.startsWith('image/'), audio = file.type.startsWith('audio/');
     if (slot && (image !== (slot.kind === 'pose') || audio && slot.kind !== 'speech')) {
-      return { ...row, slotId: null, confidence: 'low', classification, warnings: ['Filtypen passar inte det föreslagna facket. Välj ett kompatibelt fack.'] };
+      return { ...row, slotId: null, confidence: 'low', classification, warnings: [...warnings, 'Filtypen passar inte det föreslagna facket. Välj ett kompatibelt fack.'] };
     }
     if (slot?.kind === 'pose') warnings.push('Referensbilden sparas inte i klippbanken. Hantera VILA/REDO separat i Skapa material; ett posebyte kräver ny granskning.');
     else if (slot) {
@@ -165,9 +168,9 @@ export function finishDealerImportRows(rows, input, catalog) {
         kind: slot.kind, role: 'alternative', playback: 'once', label: file.name.slice(0, 120), notes: 'Importförslag · innehållet är inte visuellt godkänt.',
         ...(audio ? { mediaType: 'audio' } : { compositing: { ...DEFAULT_DEALER_COMPOSITING } }) }, { forWrite: true });
       if (slot.kind === 'speech') warnings.push('Kontrollera exakt manus, ljud, läppsynk och cue-data. Replik-ID eller filnamn bevisar inte att talet stämmer.');
-      if (!audio) warnings.push('Kontrollera grön bakgrund och mobilformat. Frilagda alfaklipp kan förhandsvisas men är spärrade för import tills uppspelningsvägen är verifierad. Ingen beskärning eller formatkonvertering utförs.');
+      if (!audio) warnings.push('Kontrollera grön bakgrund och mobilformat. Frilagda alfaklipp kan förhandsvisas men är spärrade för import tills assistentens kontroll och granskning är färdig. Ingen beskärning eller formatkonvertering utförs.');
     }
-    if ((counts.get(row.slotId) ?? 0) > 1) warnings.push('Flera filer föreslås till samma fack. De sparas som separata alternativ; ingen standard ersätts.');
+    if ((counts.get(row.slotId) ?? 0) > 1) warnings.push('Flera filer föreslås till samma fack. Granska varje alternativ; förslaget ersätter ingen standard.');
     return { ...row, classification, warnings };
   });
 }

@@ -14,6 +14,11 @@ Alla importer registreras som alternativ via befintlig privat Blob-upload;
 ingen standard, grundloop, sammansättning eller publicering byts automatiskt.
 Varje fil får eget resultat. Ett oklart registerkvitto kräver återläsning,
 inte automatisk omkörning. Hela batchen är inte en gemensam transaktion.
+En känd formatbegränsning stoppar däremot hela importlistan före sparning:
+endast MP4/WebM får ingå. Osparade bild-/ljudposter, även med tidigare fel,
+måste tas bort ur listan innan någon video kan laddas upp. De kan först
+granskas lokalt och få rådgivande fack; samtal och val behålls. Kontrollen
+görs både före granskning och på nytt före sparåtgärdens första API-anrop.
 
 En bubbla nere till höger i `/admin` öppnar samma assistent som chattsidan
 på `/admin/ai/chat` och importvyn på `/admin/clips?tool=import`. Den anslutna klippkartan är
@@ -21,7 +26,10 @@ standard utan `tool=import`. Dealer, bolag, rum, sammansättning och spel
 behålls i länkkontexten. En gemensam monterad instans behåller dealer, filer,
 samtal och godkännanden när man växlar vy eller minimerar. Första öppningen
 av importen laddar dess katalog; en oöppnad bubbla gör inga
-rådgivningsanrop. Öppning, stängning och vybyte sparar inget. Spelarens
+rådgivningsanrop. Öppning, stängning och vybyte sparar inget. Assistentpanelen
+är monterad även på adminstartsidan före första Studio-besöket.
+Klippkartan är ett separat barn som monteras först vid klipp-, rum- eller
+dealerbesök och sedan behålls. Spelarens
 samtalsorb är en separat yta och delar inga administrativa behörigheter.
 Lokala förhandsvisningar pausas när vyn döljs. Panelen avmonteras inte vid
 minimering; pågående anrop och resultat finns kvar. Besökta servicesidor och
@@ -63,19 +71,34 @@ VILA/REDO-bilder visas endast lokalt som referenser. Bildrutor och media skickas
 inte till modellen. Grundposebyte och inspelning/läppsynk går fortsatt via
 befintliga Control-flöden och deras acceptanskrav; denna import genererar
 inga filmer. Grön bakgrund kräver operatörens bekräftelse. Frilagda alfaklipp
-kan förhandsvisas lokalt men blockeras för import i detta steg: dagens
-gemensamma friläggning nycklar även grönt i förgrunden. Ett formatval bevisar
-inte avkodad alfa eller fungerande kanter i spelaren.
+kan förhandsvisas lokalt men blockeras i denna importassistent tills dess
+förkontroll har verifierats. Den gemensamma medievägen stöder nu alfa enligt
+#65; ett formatval bevisar inte avkodad alfa eller fungerande kanter i spelaren.
 Automatisk rums-/bakgrundsproduktion och koppling till spelbolag återstår.
 Importkatalogen tar endast med fack för stödda projekthändelser. Kommande
 roulettefack utanför dessa ignoreras, så att en gemensam katalogutökning inte
 stoppar blackjack eller vanlig chatt. Det innebär inte stöd för rouletteimport.
 
-Spelarens samtalskontroll öppnas med en kompakt, textmärkt orb. Dialogen
-har explicita kontroller för ljud, mikrofon, kamera och röstlogg. Loggen
-öppnas med ett tryck; det tidigare femsekundersgreppet är borttaget.
-Mikrofon/kamera använder samma befintliga samtycke. Visningen använder CSS
-och spelarens verkliga tillstånd; ingen ny ElevenLabs-/WebGL-anslutning införs.
+Blackjack- och ljudmetadata använder inga `game/action/startPose/endPose`-fält;
+dessa är reserverade för roulette och avvisas i blackjackfack. Vanlig grön video
+behåller sina befintliga runtimekrav. Databasens registrerade 001-kontrakt
+tillåter däremot bara `video/mp4` och `video/webm` i `media_records`.
+MP3/WAV/PNG kräver separat schemastöd; godkänd v12-förkontroll eller en
+skrivning i minnespoolen bevisar inte att PostgreSQL godtar dem. Ljud- och
+bildimport får inte öppnas innan detta stöd har verifierats. Ingen migration
+eller produktionsskrivning ingår i assistentändringen. Den gemensamma skrivvägen
+kräver exakt v12 med `mediaAlpha=png-vp9-v1` och
+`rouletteMedia=action-pose-slots-v1` för de utökade medietyperna. Kontroll sker
+före uppladdningsbehörighet och på nytt i registreringens transaktion.
+Ett 503-fel om runtimeuppdatering behåller importfilen och dess fackval,
+markerar raden som fel och återställer slutgodkännandet. Inget automatiskt
+återförsök eller alternativt sparflöde används; andra batchrader får fortfarande
+ett första försök. En fil som redan nått Blob kräver avstämning mot biblioteket.
+
+Spelarens föreslagna blågula samtalsorb levereras separat från assistenten.
+Den har tydliga kontroller för ljud, mikrofon, kamera och röstlogg med samma
+samtycke, men kräver två följande uppspelningar i den faktiska gemensamma
+rehearsalspelaren före merge. Kontrollerna ändras inte av assistentleveransen.
 
 ## Central Studio: rum, spel och lager, 13 oktober 2026
 
@@ -138,7 +161,9 @@ blinksekvens. Sekvensmodell, redigerare och uppspelning är framtida arbete.
 
 `web/presentation-material-game.mjs` kontrollerar kända källhashar, lagerroll,
 metadata och spelets tillåtna bord på servern före rums-/paketpublicering
-och vid läsning av paketets rum. Även tillåtna valpooler kontrolleras.
+och vid återpublicering. Även tillåtna valpooler kontrolleras. Historiska
+frysta paket behåller sin befintliga operator-/rum-/dealerauktoritet; nya
+katalogtaggar visas som designvarning och återkallar inga gamla spelgrants.
 Namnbyte eller felaktigt deklarerade dimensioner kan inte göra de nya
 blackjackborden till roulettebord. Äldre okatalogiserade tillgångar behåller
 sitt befintliga kontrakt och behöver separat granskad klassificering.
@@ -224,45 +249,46 @@ Kevin-vyer får inte skapa ett andra defaultsystem vid sidan av registrerad
 sammansättning och bolagets uttryckligen tillåtna val. Rensa först efter
 referenskontroll; ändra inte historiska paket eller gemensam spelarlogik.
 
-### Verifierat nuläge: paow3 och biblioteket
+### Verifierat efter rensningen den 13 oktober: rum och bibliotek
 
-Read-only i `/control/rooms?operator=nordic-bet` den 13 oktober: Nordic Bet
-har publicerad version 7, två öppna rum och ett arkiverat rum. **paow3 är
-ett registrerat rum**, ID `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e`.
-`Nordic Bet Roulette`, ID `room-1bc1b407-9538-9ae8-f7e2-fecf951989a2`, är
-ett annat rum. Båda refererar sammansättningen **PAOW · Studio**,
-`paow-studio-14b6c188-ef58-4ad9-9028-4f6fb58a6de9`. Dess editor visar
-dealer `paow-v2`, bord **Bord · Svart och guld** och en bakgrund med namnet
-`background-ditt-spelbolag`. Dessa namn bevisar inte en separat PAOW 3-bank
-eller att roulettematerialet är accepterat. Ingen av posterna ändrades.
+`paow3`, ID `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e`, arkiverades
+på Jakobs instruktion och togs ur det aktiva Nordic Bet-paketet i version 8.
+`Nordic Bet Roulette`, ID `room-1bc1b407-9538-9ae8-f7e2-fecf951989a2`,
+bevarades. Den tidigare observationen av paow3 som öppet rum avsåg version 7
+före rensningen. Namn bevisar inte någon separat PAOW 3-bank eller visuell
+acceptans av roulette. Vid återläsningen efter bakgrundsrensningen använder
+**PAOW · Studio** bakgrunden **Studio · turkos**.
 
-Biblioteksvyn visar två bordsbilder. Båda laddades i webbläsaren med faktisk
-storlek 1440 × 2560: **Bord · Svart och guld**, lager-ID
-`4b688411-d186-4229-8f8a-046cd1b0a2c5` (används av tre sammansättningar), och
-**e14100b1-0dad-4700-9d0a-a5bc081cadc4**, lager-ID
-`b52b9077-de4e-4691-a570-a41a90312f6a` (används av Mobile Phone Lane).
-Det andra bordets UUID-liknande visningsnamn är alltså inte filens ID.
-De sju bakgrunderna visas som video, samtliga registrerade som 1920 × 1080:
+På `027ceb03` läser både `/admin/assets` och `/control/library` samma
+register: **7 bord, 10 aktiva bakgrunder och 2 återställbara bakgrunder**.
+Fem nya separata bordsoriginal kompletterar de två äldre 1440 × 2560-bilderna:
+**Bord · Svart och guld**, lager-ID `4b688411-d186-4229-8f8a-046cd1b0a2c5`,
+och **e14100b1-0dad-4700-9d0a-a5bc081cadc4**, lager-ID
+`b52b9077-de4e-4691-a570-a41a90312f6a`. Det senare visningsnamnet är inte filens ID.
+De tre nya bild-/videoparen Studio · turkos, Studio · mörk och Lounge · varm
+utgör sex av de tio aktiva bakgrunderna. Äldre bakgrunders status efter rensningen:
 
-| Namn | Lager-ID | Användning enligt biblioteket |
+| Namn | Lager-ID | Status och användning |
 | --- | --- | --- |
-| Bakgrund · Casino | `6ca45a4e-f696-4849-a3f7-a15dc872862f` | PAOW · Studio, Mobile Phone Lane, Johns sammansättning |
-| bakground | `06e3be0d-0a54-4b8e-8d38-edeefd189ce7` | PAOW · Studio, Mobile Phone Lane |
-| background-ditt-spelbolag | `c0035fc4-cb47-45dc-83de-adb44c14e9fd` | Mobile Phone Lane |
-| background-ditt-spelbolag | `6cd2bf56-4d42-4c7b-848a-087398b38563` | Mobile Phone Lane |
-| background-ditt-spelbolag | `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4` | PAOW · Studio |
-| background-ditt-spelbolag | `800eb6ee-9e55-40c1-9757-159694422dd2` | Ingen sammansättning angiven |
-| A_nearly_still__seamless_loop_ambient_background_plate_for_a_layered_web_game__A | `bff63892-6b6d-4c39-b2d3-4a8ecd7c8d28` | Mobile Phone Lane |
+| Bakgrund · Casino | `6ca45a4e-f696-4849-a3f7-a15dc872862f` | Aktiv: Johns sammansättning |
+| bakground | `06e3be0d-0a54-4b8e-8d38-edeefd189ce7` | Aktiv: ledig att välja i en sammansättning |
+| background-ditt-spelbolag | `c0035fc4-cb47-45dc-83de-adb44c14e9fd` | Papperskorg: lossad från Standardsammansättning, återställbar |
+| background-ditt-spelbolag | `6cd2bf56-4d42-4c7b-848a-087398b38563` | Papperskorg: lossad från Standardsammansättning, återställbar |
+| background-ditt-spelbolag | `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4` | Enda aktiva Your Company-varianten, ledig att välja |
+| background-ditt-spelbolag | `800eb6ee-9e55-40c1-9757-159694422dd2` | Tidigare borttagen ur biblioteket på Jakobs instruktion |
+| A_nearly_still__seamless_loop_ambient_background_plate_for_a_layered_web_game__A | `bff63892-6b6d-4c39-b2d3-4a8ecd7c8d28` | Aktiv: ledig att välja i en sammansättning |
 
-De fyra likadana namnen är skilda ID; de får inte slås ihop på namn.
-ID lästes från respektive synligt videoelements källadress. Efter start via
-bibliotekets spelkontroller nådde samtliga sju `readyState=4`, 1920 × 1080,
+Likadana namn är skilda ID; de får inte slås ihop på namn. De två flyttarna
+påverkade inga publicerade rum; original och historik bevaras.
+Vid den historiska inventeringen före rensningen lästes ID från respektive
+videoelement. Efter start via bibliotekets spelkontroller nådde alla dåvarande
+sju videor `readyState=4`, 1920 × 1080,
 10,042 sekunder och `ended=true` utan mediefel. Avkodning och ett genomspel
 i den här webbläsaren är därmed verifierade. Specifik codec, loopskarv och
 scenens visuella formatacceptans är ännu inte granskade.
 Designmallens tre bakgrunder och två exempelbord är inte detta
-register. Nya `/admin` ska läsa `project.layerAssets` med samma ID och
-roller, visa video som video och även visa registrerade men ännu oanvända filer.
+register. Nya `/admin` läser `project.layerAssets` med samma ID och roller,
+visar video som video och även registrerade men ännu oanvända filer.
 
 ### Format: tillåten fil är inte samma sak som godkänd scen
 
@@ -730,9 +756,13 @@ box0–6. Grundloop, talreplik och dealer-up/dealer-hole förblir skilda fack.
 Registrering i biblioteket sparas direkt; val av aktivt klipp i projektet och
 publicering är separata steg under Spelinställningar och Publicering.
 
-MP4/WebM samt MP3/WAV stöds upp till 128 MB per fil. Ljud måste klassificeras
-med mediaType=audio och exakt talreplik; det kan aldrig kopplas som videoklipp
-eller räknas som godkänd lipsynk. Uppladdning använder privat Blob-grant,
+Native registrering stöder MP4/WebM upp till 128 MB per fil. Parsern känner
+även till ljud och bilder, men PostgreSQL-kontraktet i 001–008 tillåter bara
+MP4/WebM i mediaregistret. MP3/WAV/PNG behöver separat migrering och verifiering
+enligt CLOUD-MIGRATION.md; de får inte beskrivas som fungerande native intag.
+Ljudmetadata kräver mediaType=audio och exakt talreplik; den får aldrig
+användas som videoklipp eller bevis för godkänd läppsynk.
+Uppladdning använder privat Blob-grant,
 SHA-256-readback och autentiserad commit. En batch återförsöker inte osäkra
 commits automatiskt och laddar inte om redan sparade rader.
 

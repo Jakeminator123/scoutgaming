@@ -31,46 +31,29 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   };
   const root = element('div', '', 'astrid-voice-controls'); root.id = 'astrid-camera';
   const stylesheet = element('link'); stylesheet.rel = 'stylesheet'; stylesheet.href = '/astrid-voice-control.css';
-  const launcher = element('button', '', 'astrid-voice-launcher'); launcher.type = 'button';
-  launcher.setAttribute('aria-haspopup', 'dialog'); launcher.setAttribute('aria-controls', 'dealer-voice-panel');
-  const orb = element('span', '', 'astrid-voice-orb'); orb.setAttribute('aria-hidden', 'true');
-  const launcherCopy = element('span', '', 'astrid-voice-launcher-copy');
-  const launcherLabel = element('span', 'Talk');
-  const launcherState = element('small', 'Voice off');
-  launcherCopy.append(launcherLabel, launcherState); launcher.append(orb, launcherCopy);
-  const panel = element('dialog', '', 'astrid-voice-panel'); panel.id = 'dealer-voice-panel'; panel.hidden = true;
-  panel.setAttribute('aria-labelledby', 'dealer-voice-heading');
-  const panelHeading = element('h2', 'Talk to ' + dealerName); panelHeading.id = 'dealer-voice-heading';
-  const panelNote = element('p', 'Choose how to talk. Microphone and camera are off until you enable them. Close this panel to keep playing.');
-  const closePanel = element('button', 'Back to game', 'astrid-voice-close'); closePanel.type = 'button';
-  const actions = element('div', '', 'astrid-voice-actions');
-  const playback = element('button', '', 'astrid-voice-button'); playback.type = 'button';
-  const record = element('button', '', 'astrid-voice-button'); record.type = 'button';
-  const camera = element('button', '', 'astrid-voice-button'); camera.type = 'button';
-  const logToggle = element('button', 'Voice log', 'astrid-voice-button'); logToggle.type = 'button';
-  logToggle.setAttribute('aria-controls', 'dealer-voice-log');
+  const playback = element('button', '▶', 'astrid-voice-button'); playback.type = 'button';
+  const record = element('button', '●', 'astrid-voice-button'); record.type = 'button';
+  const camera = element('button', '▣', 'astrid-voice-button'); camera.type = 'button';
   let cameraOptIn = false;
   const status = element('span', '', 'astrid-voice-error'); status.setAttribute('role', 'status'); status.hidden = true;
   const video = element('video'); video.autoplay = true; video.muted = true; video.playsInline = true; video.hidden = true;
   const consent = element('dialog', '', 'astrid-voice-dialog'); consent.hidden = true; consent.setAttribute('aria-label', 'Enable voice and optional camera');
   const consentHeading = element('h2', 'Enable voice and optional camera?');
   const consentText = element('p', 'In wake-word mode, this browser listens locally for the selected dealer name and keeps a short audio buffer in memory. Nothing is uploaded before the wake word. After detection, that buffer, including the moments just before the word, and the following speech (up to 30 seconds total) are automatically sent to OpenAI for speech translation into English. The English text is automatically sent to OpenClaw and its model provider after you pause. Camera is off by default. Only when you switch the camera button on, up to two snapshots are included if the model supports images. There is no preview or Send step.');
-  const consentPrivacy = element('p', 'Enabling voice also turns on dealer playback so you can hear her replies. Muting playback stops voice listening. Providers process the audio, text and images. Text and images may be retained in conversation history. Croupier does not save your raw microphone audio. Generated dealer replies may be stored in the private reply library. Use Stop microphone to stop. Voice is always off when this page loads.');
-  const manualText = element('p', 'Record one message starts the microphone immediately after your click, without a wake word. After you pause, up to 30 seconds of audio are sent to OpenAI for English translation; that text and up to two optional camera snapshots are sent to the selected dealer. Recording then switches off. Use Stop microphone during capture to cancel without sending.');
+  const consentPrivacy = element('p', 'Enabling voice also turns on dealer playback so you can hear her replies. Muting playback stops voice listening. Providers process the audio, text and images. Text and images may be retained in conversation history. Croupier does not save your raw microphone audio. Generated dealer replies may be stored in the private reply library. Press Record again to stop. Voice is always off when this page loads.');
+  const manualText = element('p', 'Record one message starts the microphone immediately after your click, without a wake word. After you pause, up to 30 seconds of audio are sent to OpenAI for English translation; that text and up to two optional camera snapshots are sent to the selected dealer. Recording then switches off. Press Record again during capture to cancel without sending.');
   const accept = element('button', 'Enable voice'); accept.type = 'button';
   const manual = element('button', 'Record one message'); manual.type = 'button';
   const decline = element('button', 'Keep off'); decline.type = 'button';
   consent.append(consentHeading, consentText, consentPrivacy, manualText, accept, manual, decline);
-  const debug = element('section', '', 'astrid-voice-debug'); debug.id = 'dealer-voice-log'; debug.hidden = true; debug.setAttribute('aria-label', 'Voice log');
+  const debug = element('section', '', 'astrid-voice-debug'); debug.hidden = true; debug.setAttribute('aria-label', 'Voice log');
   const logHeading = element('h2', 'Voice log');
   const logNote = element('p', 'Temporary log for this page only. No images or raw audio are stored here.');
   const closeLog = element('button', 'Close log'); closeLog.type = 'button';
   const log = element('pre', '', 'astrid-voice-events');
   const debugContainer = element('div', '', 'astrid-voice-chat-debug');
   debug.append(logHeading, logNote, closeLog, log, debugContainer);
-  actions.append(playback, record, camera, logToggle);
-  panel.append(panelHeading, closePanel, panelNote, status, actions, debug);
-  root.append(stylesheet, launcher, panel, video, consent); container.append(root);
+  root.append(stylesheet, playback, record, camera, status, video, consent, debug); container.append(root);
 
   let enabled = false, visionEnabled = false, profileRevision = null, blockedReason = '', visionReason = '';
   let consentGranted = false, recordingMode = 'wake', mode = false, modeStarting = false, modeOwner = null, wake = null;
@@ -78,7 +61,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   let wakeStream = null, cameraStream = null, armedReady = false, turnConfig = null;
   let transcribing = false, sending = false, heardAudio = false, recordingAbort = null, transcriptionAbort = null;
   let captureTimeout = null, identityTimer = null, lastStatus = 'Voice off.', statusIsError = false;
-  const entries = [];
+  const entries = [], cancelPresses = [];
   const busy = () => Boolean(pending || stream || session || transcribing || sending);
   const current = token => token === epoch && mode && !document.hidden && sameIdentity(modeOwner, identity());
   function appendLog(message) {
@@ -87,29 +70,21 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   }
   function render() {
     const playing = getPlaybackEnabled() === true;
-    const active = mode || modeStarting || busy();
-    const state = blockedReason || statusIsError ? 'error' : transcribing || sending ? 'thinking'
-      : session || stream ? 'recording' : modeStarting || pending ? 'starting' : mode ? 'listening' : 'off';
-    const stateText = { off: 'Voice off', error: 'Check voice', thinking: 'Sending', recording: 'Recording', starting: 'Starting', listening: 'Listening' }[state];
-    launcherState.textContent = stateText; launcher.setAttribute('data-state', state);
-    launcher.setAttribute('aria-label', 'Talk to ' + dealerName + '. ' + stateText);
-    launcher.setAttribute('aria-expanded', String(!panel.hidden));
-    playback.textContent = playing ? 'Mute dealer' : 'Hear dealer';
-    playback.setAttribute('aria-label', playback.textContent + ' ' + dealerName);
-    playback.setAttribute('aria-pressed', String(playing)); playback.title = `${playing ? 'Mute' : 'Enable'} ${dealerName} playback.`;
-    record.textContent = active ? 'Stop microphone' : recordingMode === 'manual' ? 'Record one message' : 'Enable microphone';
-    record.setAttribute('aria-label', record.textContent);
-    record.setAttribute('aria-pressed', String(active));
-    record.title = `${blockedReason || lastStatus}${visionReason ? ` ${visionReason}` : ''}`;
+    playback.textContent = playing ? '❚❚' : '▶';
+    playback.setAttribute('aria-label', playing ? 'Mute ' + dealerName + ' playback' : 'Enable ' + dealerName + ' playback');
+    playback.setAttribute('aria-pressed', String(playing)); playback.title = `${playing ? 'Mute' : 'Enable'} ${dealerName} playback. Hold 5 seconds for the log.`;
+    record.textContent = mode || modeStarting || busy() ? '■' : '●';
+    record.setAttribute('aria-label', mode || modeStarting || busy() ? 'Stop voice listening'
+      : recordingMode === 'manual' ? 'Record one message' : 'Enable voice listening');
+    record.setAttribute('aria-pressed', String(mode || modeStarting || busy()));
+    record.title = `${blockedReason || lastStatus}${visionReason ? ` ${visionReason}` : ''} Hold 5 seconds for the log.`;
     record.setAttribute('data-error', String(Boolean(blockedReason || statusIsError)));
-    camera.textContent = cameraOptIn ? 'Camera on · turn off' : 'Camera off · include images';
-    camera.setAttribute('aria-label', camera.textContent);
+    camera.setAttribute('aria-label', cameraOptIn ? 'Turn camera off' : 'Include optional camera images');
     camera.setAttribute('aria-pressed', String(cameraOptIn));
     camera.title = cameraOptIn ? 'Camera images enabled for the next recording' : 'Camera off; click to include images';
     status.textContent = blockedReason || lastStatus; status.hidden = false;
     status.setAttribute('data-error', String(Boolean(blockedReason || statusIsError)));
-    logToggle.setAttribute('aria-expanded', String(!debug.hidden));
-    root.setAttribute('data-panel-open', String(!panel.hidden || !consent.hidden));
+    root.setAttribute('data-panel-open', String(!debug.hidden || !consent.hidden));
   }
   function report(message, error = false) { lastStatus = message; statusIsError = error; appendLog(message); render(); }
   function applyConfig(config) {
@@ -133,11 +108,11 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
     const fail = text => { throw Object.assign(new Error('configuration_failed'), { configurationReason: text }); };
     let response, config;
     try { response = await fetchImpl('/api/dealer/observation?' + new URLSearchParams({ dealer: identity()?.dealerId ?? '', ...(presentationContext() ? { presentationContext: JSON.stringify(presentationContext()) } : {}) }), { cache: 'no-store', ...(signal ? { signal } : {}) }); }
-    catch { fail('Cannot reach the server. Check the connection and try the microphone again.'); }
+    catch { fail('Cannot reach the server. Check the connection and try Record again.'); }
     if (response.ok === false) fail(response.status === 401 ? 'Your session has expired. Sign in or select your profile again.'
-      : `Cannot read server settings${Number.isInteger(response.status) ? ` (HTTP ${response.status})` : ''}. Try the microphone again.`);
-    try { config = await response.json(); } catch { fail('The server returned invalid settings. Try the microphone again.'); }
-    if (!config || typeof config.enabled !== 'boolean' || (config.enabled && !/^[a-f0-9]{64}$/.test(config.profileRevision))) fail('The server returned invalid settings. Try the microphone again.');
+      : `Cannot read server settings${Number.isInteger(response.status) ? ` (HTTP ${response.status})` : ''}. Try Record again.`);
+    try { config = await response.json(); } catch { fail('The server returned invalid settings. Try Record again.'); }
+    if (!config || typeof config.enabled !== 'boolean' || (config.enabled && !/^[a-f0-9]{64}$/.test(config.profileRevision))) fail('The server returned invalid settings. Try Record again.');
     return config;
   }
   async function refreshConfig() {
@@ -153,11 +128,6 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
     }
   }
   function closeConsent() { consent.close?.(); consent.open = false; consent.hidden = true; render(); }
-  function showPanel(open) {
-    if (open) { panel.hidden = false; panel.showModal?.(); panel.open = true; closePanel.focus?.(); void refreshConfig(); }
-    else { panel.close?.(); panel.open = false; panel.hidden = true; launcher.focus?.(); }
-    render();
-  }
   function showLog(open = debug.hidden) {
     debug.hidden = !open; if (open) { log.textContent = entries.join('\n'); void refreshConfig(); }
     onLogToggle(open); render();
@@ -178,15 +148,15 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
     clearInterval(identityTimer); identityTimer = null;
     transcriptionAbort?.abort(); transcriptionAbort = null; transcribing = false; sending = false;
     releaseCapture(); heardAudio = false; modeOwner = null;
-    closeConsent();
-    if (changedProfile) { entries.length = 0; log.textContent = ''; showLog(false); showPanel(false); }
+    cancelPresses.forEach(cancel => cancel()); closeConsent();
+    if (changedProfile) { entries.length = 0; log.textContent = ''; showLog(false); }
     // Host callers may use internal/non-English reasons; keep the user log English.
     const message = typeof reason === 'string' && /^[A-Z][\x20-\x7e]*$/.test(reason) ? reason : 'Voice off.';
     report(blockedReason || message, Boolean(blockedReason) || error);
   }
   function wakeFailure(error) {
     const code = String(error?.code || '');
-    return /network/i.test(code) ? 'Local wake-word recognition failed. Voice is off; try the microphone again.'
+    return /network/i.test(code) ? 'Local wake-word recognition failed. Voice is off; try Record again.'
       : /permission|not.allowed/i.test(code) ? 'Microphone permission was denied. Voice is off.'
         : 'Local wake-word recognition is unavailable. Voice is off; no cloud fallback is used.';
   }
@@ -269,13 +239,13 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
         // current-context checks below once the server configuration is ready.
         if (!enabled || recordingMode !== 'manual') {
           modeStarting = false;
-          report(blockedReason || 'Voice is ready. Press Enable microphone again to enable local listening.', Boolean(blockedReason));
+          report(blockedReason || 'Voice is ready. Press Record again to enable local listening.', Boolean(blockedReason));
           return;
         }
       }
       if (document.hidden || !sameIdentity(requestedOwner, identity())) { stop('Context changed. Voice off.'); return; }
       if (!isDealerId(requestedOwner?.dealerId)) { stop('Select a dealer before recording.', true); return; }
-      if (recordingMode === 'manual' && !canStart()) { stop('Wait until the dealer has finished speaking, then press Record one message again.'); return; }
+      if (recordingMode === 'manual' && !canStart()) { stop('Wait until the dealer has finished speaking, then press Record again.'); return; }
       // Only an explicit Record/Enable voice action opts into audible replies.
       // Automatic wake rearming and autosend must never undo a later mute.
       if (!getPlaybackEnabled()) {
@@ -305,7 +275,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   }
   async function beginCapture(token) {
     if (!current(token) || busy() || !armedReady || !recorder || !wakeStream) return;
-    if (!canStart()) { stop('Wait until the dealer has finished speaking, then try the microphone again.'); return; }
+    if (!canStart()) { stop('Wait until the dealer has finished speaking, then enable Record again.'); return; }
     const turn = captureRevision, captureCurrent = () => current(token) && turn === captureRevision;
     stream = wakeStream; wakeStream = null; armedReady = false;
     pending = true; heardAudio = false; onActivity(); report(recordingMode === 'manual' ? 'Recording one message.' : `${dealerName} heard. Starting the microphone.`);
@@ -360,7 +330,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
     if (!current(token)) { configCheck?.controller.abort(); bytes?.fill(0); images.length = 0; stop('Context changed. Recording discarded.'); return; }
     if (!bytes || !heardAudio) {
       configCheck?.controller.abort(); bytes?.fill(0); images.length = 0;
-      if (recordingMode === 'manual') stop('No speech detected. Press Record one message to try again.');
+      if (recordingMode === 'manual') stop('No speech detected. Press Record to try again.');
       else { report('No speech detected.'); void startWake(token); }
       return;
     }
@@ -408,7 +378,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       if (token === epoch) {
         transcriptionAbort = null; transcribing = false; sending = false; render();
         if (resume && current(token)) {
-          if (recordingMode === 'manual') stop('Recording complete. Press Record one message for another message.');
+          if (recordingMode === 'manual') stop('Recording complete. Press Record for another message.');
           else void startWake(token);
         }
         else if (mode && !current(token)) stop('Context changed. Voice off.');
@@ -427,16 +397,39 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   decline.onclick = () => { closeConsent(); report('Voice stays off.'); };
   consent.addEventListener('cancel', event => { event.preventDefault(); closeConsent(); report('Voice stays off.'); });
   closeLog.onclick = () => showLog(false);
-  launcher.onclick = () => showPanel(panel.hidden);
-  closePanel.onclick = () => showPanel(false);
-  panel.addEventListener('cancel', event => { event.preventDefault(); showPanel(false); });
-  logToggle.onclick = () => showLog();
+  function longPress(button, action) {
+    let timer = null, held = false, source = null, suppressClick = false;
+    const cancel = () => { clearTimeout(timer); timer = null; source = null; };
+    const begin = kind => {
+      cancel(); held = false; suppressClick = false; source = kind;
+      timer = setTimeout(() => { timer = null; held = true; suppressClick = true; showLog(); }, 5000);
+    };
+    cancelPresses.push(cancel);
+    button.addEventListener('pointerdown', event => { if (event.button === undefined || event.button === 0) begin('pointer'); });
+    button.addEventListener('pointerup', () => { if (source === 'pointer') cancel(); });
+    button.addEventListener('pointercancel', cancel); button.addEventListener('pointerleave', cancel);
+    button.addEventListener('keydown', event => {
+      if (!['Enter', ' '].includes(event.key)) return;
+      event.preventDefault(); if (!event.repeat) begin('keyboard');
+    });
+    button.addEventListener('keyup', event => {
+      if (!['Enter', ' '].includes(event.key) || source !== 'keyboard') return;
+      event.preventDefault(); const short = !held; cancel(); suppressClick = true;
+      if (short) action();
+    });
+    button.addEventListener('blur', cancel);
+    button.onclick = event => {
+      event?.preventDefault?.();
+      if (suppressClick) { suppressClick = false; return; }
+      cancel(); action();
+    };
+  }
   camera.onclick = () => { cameraOptIn = !cameraOptIn; if (!cameraOptIn) { for (const track of cameraStream?.getTracks() ?? []) track.stop(); cameraStream = null; video.srcObject = null; } render(); };
-  // Native buttons provide Enter/Space and touch activation without hold timers.
-  record.onclick = recordClick;
-  playback.onclick = () => { Promise.resolve().then(() => onPlaybackToggle()).then(render).catch(() => report('Playback audio could not be changed.', true)); };
+  longPress(record, recordClick);
+  longPress(playback, () => { Promise.resolve().then(() => onPlaybackToggle()).then(render).catch(() => report('Playback audio could not be changed.', true)); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
   window.addEventListener('pagehide', () => stop());
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !debug.hidden) { event.preventDefault(); showLog(false); } });
   report('Voice off.'); void refreshConfig();
   return { stop, debugContainer, refreshPlayback() {
     if ((mode || modeStarting || busy()) && !getPlaybackEnabled()) stop('Dealer playback muted. Voice off.');

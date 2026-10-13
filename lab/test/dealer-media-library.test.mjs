@@ -7,6 +7,21 @@ import {validateManagedStudioMedia} from '../../web/managed-media-contract.mjs';
 import {mediaHeaderMatches} from '../lib/media-file-types.mjs';
 import {videoFitsLine} from '../lib/video-intake.mjs';
 const project=addDealer(createSeedProject(),'paow','PAOW');
+
+test('roulette reference and action slots stay separate from blackjack, audio and runtime bindings',()=>{
+  const slots=dealerMediaSlots(project,'roulette');assert.equal(slots.length,4);
+  const image=mediaClassification(project,{dealerId:'paow',slotId:'roulette.reference/VILA',label:'Anna VILA',contentType:'image/png'});
+  assert.equal(image.mediaType,'image');assert.equal(image.game,'roulette');assert.deepEqual(image.compositing,{mode:'alpha'});
+  assert.equal(image.startPose,'VILA');assert.equal(videoFitsLine({classification:image},'paow','roulette.reference'),false);
+  const action=mediaClassification(project,{dealerId:'paow',slotId:'roulette.wheel-start/wheel-start',label:'Hjulstart',contentType:'video/webm'});
+  assert.equal(action.kind,'action');assert.equal(action.action,'wheel-start');assert.equal(action.startPose,'unverified');
+  assert.equal(videoFitsLine({classification:action},'paow','idle.ready'),false);
+  assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:'roulette.wheel-start/wheel-start',label:'Wrong',contentType:'image/png'}));
+  assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:'idle.ready/',label:'Wrong',contentType:'image/png'}));
+  assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:'roulette.reference/VILA',label:'Wrong',contentType:'video/webm'}));
+  const rows=dealerLibraryVideos(project,{videos:[{id:'r',classification:action},{id:'b',classification:{...action,eventId:'deal.player.left',game:undefined}}]},'paow','roulette');
+  assert.deepEqual(rows.map(row=>row.id),['r']);
+});
 test('every deal destination maps to its exact box for every dealer, without borrowing Astrid family',()=>{
   const slots=dealerMediaSlots(project,'deal');
   for(const slot of slots)for(const dealer of project.dealers){
@@ -36,10 +51,20 @@ test('audio contract requires exact speech identity, MIME/path agreement and mat
   assert.equal(mediaHeaderMatches('audio/mpeg',Buffer.from('ID3abcdefghijklmno')),true);
 });
 test('a ten-file batch preserves successes, skips saved rows and never automatically retries an uncertain commit',async()=>{
-  const items=Array.from({length:10},(_,i)=>({row:{id:String(i),file:i,state:i===0?'saved':'ready'},classification:{dealerId:'paow'}}));
+  const items=Array.from({length:10},(_,i)=>({row:{id:String(i),file:new File(['0000ftypisom00000fixture'],`clip-${i}.mp4`),state:i===0?'saved':'ready'},classification:{dealerId:'paow'}}));
   const calls=[],states=new Map();
-  const saved=await uploadMediaBatch(items,{upload:async file=>{calls.push(file);if(file===4)throw Error('Lost commit response');},onChange:(id,patch)=>states.set(id,{...states.get(id),...patch})});
+  const saved=await uploadMediaBatch(items,{upload:async file=>{const index=Number(file.name.match(/clip-(\d+)/)[1]);calls.push(index);if(index===4)throw Error('Lost commit response');},onChange:(id,patch)=>states.set(id,{...states.get(id),...patch})});
   assert.equal(saved,8);assert.deepEqual(calls,[1,2,3,4,5,6,7,8,9]);assert.equal(states.get('4').state,'error');assert.equal(states.get('9').state,'saved');
+});
+
+test('a mixed native batch rejects unsupported files before its first video upload or progress change',async()=>{
+  for(const extension of ['png','mp3','wav'])for(const state of ['ready','error']){
+    const video=new File(['0000ftypisom00000fixture'],'first.mp4'),unsupported=new File(['00000000000000000fixture'],`last.${extension}`);
+    let uploads=0,changes=0;
+    const items=[{row:{id:'video',file:video,state:'ready'},classification:{dealerId:'paow'}},{row:{id:'unsupported',file:unsupported,state},classification:{dealerId:'paow'}}];
+    await assert.rejects(uploadMediaBatch(items,{upload:async()=>{uploads++;},onChange:()=>{changes++;}}),/MP4 eller WebM/);
+    assert.equal(uploads,0);assert.equal(changes,0);
+  }
 });
 
 test('required idle uses only available own registry clips and explicit saved choices',()=>{

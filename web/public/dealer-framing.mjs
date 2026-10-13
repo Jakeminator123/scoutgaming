@@ -24,6 +24,7 @@ const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3
 // Matches the shared compositor's key. Soft alpha and spill correction preserve
 // the source alpha and touch only keyed pixels, as in the reviewed Gronstripp method.
 export function keyGreenPixels(data,key) {
+  if(key.mode==='alpha')return data;
   for(let i=0;i<data.length;i+=4){
     const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255;
     const green=smooth(key.threshold,key.threshold+key.softness,(g-Math.max(r,b))/Math.max(g,.001))*smooth(.012,.065,g);

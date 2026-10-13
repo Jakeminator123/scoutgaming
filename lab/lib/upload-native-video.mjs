@@ -1,14 +1,17 @@
 import { MEDIA_FILE_TYPES } from './media-file-types.mjs';
 import { labUrl } from './lab-url.mjs';
-import { MAX_VIDEO_BYTES } from './video-intake.mjs';
+import {nativeMediaFileError} from './native-media-intake.mjs';
+import {inspectAlphaFile} from './media-alpha-browser.mjs';
 
 // Only the file goes browser -> private Blob. The Vercel route receives small
 // grant/commit JSON. Classification and draft bindings remain separate actions.
 export async function uploadNativeVideo(file,classification,contentType,{fetchImpl=fetch,
-  putImpl=async (...args) => (await import('@vercel/blob/client')).put(...args), cryptoImpl=globalThis.crypto,signal,onUploadProgress,
+  putImpl=async (...args) => (await import('@vercel/blob/client')).put(...args), cryptoImpl=globalThis.crypto,signal,onUploadProgress,inspectAlpha=inspectAlphaFile,
 } = {}) {
   signal?.throwIfAborted();
-  if (!(file instanceof Blob) || file.size < 16 || file.size > MAX_VIDEO_BYTES || !Object.hasOwn(MEDIA_FILE_TYPES,contentType)) throw new Error('Välj MP4, WebM, MP3 eller WAV upp till 128 MB.');
+  const invalid=nativeMediaFileError(file,contentType);if(invalid)throw Error(invalid);
+  if(classification.compositing?.mode==='alpha')await inspectAlpha(file,contentType,{signal});
+  signal?.throwIfAborted();
   const hash = new Uint8Array(await cryptoImpl.subtle.digest('SHA-256',await file.arrayBuffer()));
   signal?.throwIfAborted();
   const sha256 = [...hash].map(byte => byte.toString(16).padStart(2,'0')).join('');

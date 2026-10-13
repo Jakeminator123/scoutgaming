@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, Check, FileVideo, MessageCircle, RefreshCw, ShieldCheck, Upload, X } from 'lucide-react';
 import { uploadNativeVideo } from '../../../../../lab/lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../../../../../lab/lib/media-upload-batch.mjs';
-import { labUrl, appendAssistantHistory, applyImportProposals, compatibleImportSlot, importClassification, importContentType, importFileError, uniqueImportFiles,
+import { labUrl, appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importContentType, importErrorMessage, importFileError, uniqueImportFiles,
   type AssistantHistoryEntry, type ImportCatalog, type ImportProposal, type ImportRow, type ImportIntent, type ImportModel } from '../../lib/dealer-import.mjs';
 
 type Answer = {dealerId:string|null;intent:ImportIntent;selectedModel:ImportModel;source:'ai'|'filename-rules'|'unavailable';assistantMessage:string;rows:ImportProposal[];warnings:string[]};
@@ -50,9 +50,8 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
   const pending = rows.some(row => row.state !== 'saved');
   const dealer = catalog?.dealers.find(row => row.id === dealerId);
   const uploadRows = rows.filter(row => row.state === 'ready' && !importContentType(row.file.name).startsWith('image/'));
-  const referenceRows = rows.filter(row => importContentType(row.file.name).startsWith('image/'));
-  let reviewError = '';
-  try {if (catalog) uploadRows.forEach(row => importClassification(row,dealerId,catalog));} catch (cause) {reviewError = cause instanceof Error ? cause.message : 'Kontrollera facken.';}
+  let reviewError = importBatchError(rows);
+  try {if (!reviewError && catalog) uploadRows.forEach(row => importClassification(row,dealerId,catalog));} catch (cause) {reviewError = cause instanceof Error ? cause.message : 'Kontrollera facken.';}
 
   useEffect(() => {
     const abort = new AbortController(); setLoading(true); setError('');
@@ -134,7 +133,10 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
     finally {busyRef.current=false;setBusy(null);controller.current=null;}
   }
   async function save() {
-    if (busyRef.current || !approved || !review || !dealerApproved || !catalog || !dealer || !uploadRows.length) return;
+    if (busyRef.current) return;
+    const batchError = importBatchError(rows);
+    if (batchError) {invalidate();setError(batchError);return;}
+    if (!approved || !review || !dealerApproved || !catalog || !dealer || !uploadRows.length) return;
     busyRef.current=true;setBusy('upload');setError('');setNotice('');
     const abort=new AbortController();controller.current=abort;
     try {
@@ -158,7 +160,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
       <span className="dealer-import-badge"><ShieldCheck size={15}/> Du godkänner varje import</span>
     </header>
     {loading ? <p role="status">Läser registrerade dealers och exakta klippfack…</p> : !catalog ? <div className="dealer-import-panel">
-      <p role="alert">{error||'Importkatalogen kunde inte läsas.'}</p><div className="dealer-import-actions"><button onClick={()=>setLoadCount(value=>value+1)}><RefreshCw size={14}/> Försök igen</button><a href="/admin">Logga in igen</a></div>
+      <p role="alert">{importErrorMessage(error||'Importkatalogen kunde inte läsas.')}</p><div className="dealer-import-actions"><button onClick={()=>setLoadCount(value=>value+1)}><RefreshCw size={14}/> Försök igen</button><a href="/admin">Logga in igen</a></div>
     </div> : <>
       <div className="dealer-import-layout"><div className="dealer-import-main">
         <section className="dealer-import-panel" aria-labelledby="dealer-import-dealer"><h2 id="dealer-import-dealer">{mode==='chat'?'Dealer som sammanhang · valfritt':<><span>1</span> Välj befintlig dealer</>}</h2>
@@ -176,7 +178,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
             <label className="dealer-import-file-button">Välj filer<input ref={input} type="file" multiple accept=".mp4,.webm,.mp3,.wav,.png,.jpg,.jpeg,.webp" disabled={!dealerApproved||Boolean(busy)} onChange={event=>addFiles(event.target.files)}/></label>
           </div>
           <label>Din kontext<textarea value={context} maxLength={4000} rows={3} disabled={Boolean(busy)} placeholder="Exempel: Vänster arm mot skon. Box 1–7 är spelarplatser från vänster. Filen redo.png är posen vid skon. Materialet är 1080 × 1920 med grön bakgrund." onChange={event=>{setContext(event.target.value);invalidate();}}/></label>
-          <p className="dealer-import-help">Filnamn och kontext kan skickas till den konfigurerade textmodellen när du ber om ett förslag. Video och ljud laddas upp när du godkänner importen. Referensbilder och förhandsvisningar stannar på din dator.</p>
+          <p className="dealer-import-help">Filnamn och kontext kan skickas till den konfigurerade textmodellen när du ber om ett förslag. Endast MP4 och WebM kan sparas just nu, efter ditt godkännande. Ljud och posebilder kan granskas lokalt och få fack, men måste tas bort ur denna import innan videorna kan sparas. Originalfilerna på din dator påverkas inte.</p>
           <p className="dealer-import-help">{catalog.provider.configured?'Kartläggning: Sol 5.6 · High.':'AI-kartläggning är inte ansluten; filnamnsregler används.'}</p>
           <button className="dealer-import-primary" disabled={!dealerApproved||Boolean(busy)||!rows.some(row=>row.state==='ready')} onClick={()=>void ask('mapping')}><MessageCircle size={16}/>{busy==='mapping'?'Kartlägger klippen…':'Kartlägg klipp'}</button>
         </section>
@@ -199,19 +201,20 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
               {slot && <p className="dealer-import-help">{slot.start&&slot.end?`${slot.start} → ${slot.end} · `:''}{slot.id}</p>}
               {row.reason && <p>{row.confidence==='low'?'Osäkert förslag · ':''}{row.reason}</p>}
               {row.warnings?.map((warning,index)=><p key={index} className="dealer-import-warning">{warning}</p>)}
-              {image && <p className="dealer-import-warning">Lokal posereferens. VILA/REDO-bilden sparas inte och ersätter ingen låst pose i denna import.</p>}
-              {video && row.background==='alpha' && <p className="dealer-import-warning">Transparent material behöver en separat verifierad uppspelningsväg. Du kan granska filen lokalt, men behöver ta bort den ur denna omgång för att importera övriga filer. Den konverteras inte till grön bakgrund.</p>}
+              {image && <p className="dealer-import-warning">Lokal posereferens. Bilden ersätter ingen låst pose och måste tas bort ur denna import innan videorna kan sparas.</p>}
+              {video && row.background==='alpha' && <p className="dealer-import-warning">Assistentens kontroll och granskning av transparent material är inte färdig. Du kan granska filen lokalt, men behöver ta bort den ur denna omgång för att importera övriga filer. Den konverteras inte till grön bakgrund.</p>}
+              {type.startsWith('audio/') && <p className="dealer-import-warning">Ljud kan förhandsvisas och få ett fack, men måste tas bort ur denna import innan videorna kan sparas. Endast MP4 och WebM kan sparas.</p>}
               {type && <details><summary>Visa lokal fil · början och slut</summary><LocalPreview file={row.file}/></details>}
-              <p role="status" className={row.state==='error'?'dealer-import-error':''}>{row.state==='saving'?`Laddar upp ${row.progress??0} %…`:row.state==='saved'?'✓ Sparad i valt fack':row.message||'Väntar på din granskning'}</p>
+              <p role="status" className={row.state==='error'?'dealer-import-error':''}>{row.state==='saving'?`Laddar upp ${row.progress??0} %…`:row.state==='saved'?'✓ Sparad i valt fack':importErrorMessage(row.message||'Väntar på din granskning')}</p>
             </article>;
           })}</div>
           {reviewError && <p className="dealer-import-warning">{reviewError}</p>}
           {!review ? <button className="dealer-import-primary" disabled={Boolean(busy)||!dealerApproved||!uploadRows.length||Boolean(reviewError)} onClick={()=>{setReview(true);setApproved(false);}}>Granska importen · {uploadRows.length} filer</button>
             : <section className="dealer-import-review" aria-labelledby="dealer-import-review-title"><h3 id="dealer-import-review-title">Spara {uploadRows.length} filer hos {dealer?.label}</h3>
               <ul>{uploadRows.map(row=><li key={row.id}><span>{row.file.name}</span><strong>{catalog.slots.find(slot=>slot.id===row.slotId)?.label}</strong></li>)}</ul>
-              <p>Varje fil sparas som ett alternativ i det angivna facket. Klippval, låsta poser och publicerade rum ändras inte. {referenceRows.length>0?`${referenceRows.length} lokala referensbilder följer inte med.`:''}</p>
+              <p>Varje fil sparas som ett alternativ i det angivna facket. Klippval, låsta poser och publicerade rum ändras inte.</p>
               <label className="dealer-import-check"><input type="checkbox" checked={approved} disabled={Boolean(busy)} onChange={event=>setApproved(event.target.checked)}/><span>Jag har granskat filerna och godkänner dessa placeringar för <strong>{dealer?.label}</strong>.</span></label>
-              <div className="dealer-import-actions"><button className="dealer-import-primary" disabled={!approved||Boolean(busy)} onClick={()=>void save()}><Check size={16}/>{busy==='upload'?'Sparar…':'Bekräfta och spara'}</button><button disabled={Boolean(busy)} onClick={()=>{setReview(false);setApproved(false);}}>Fortsätt redigera</button></div>
+              <div className="dealer-import-actions"><button className="dealer-import-primary" disabled={!approved||Boolean(busy)||Boolean(reviewError)} onClick={()=>void save()}><Check size={16}/>{busy==='upload'?'Sparar…':'Bekräfta och spara'}</button><button disabled={Boolean(busy)} onClick={()=>{setReview(false);setApproved(false);}}>Fortsätt redigera</button></div>
             </section>}
         </section>}
       </div><aside className="dealer-import-panel dealer-import-chat" aria-labelledby="dealer-import-chat-title"><h2 id="dealer-import-chat-title"><MessageCircle size={18}/> Samtal</h2>
@@ -224,7 +227,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
         <details><summary>Det här ingår i första steget</summary><p>Filnamn och textkontext ger förslag. Du kan granska början och slutet lokalt. Automatisk bildanalys, posebyte och skapande av rum ingår inte ännu.</p><p>Tal och läppsynk behöver matchande text, ljud, video och provspelning.</p></details>
         <a href={'/control/clips'+(dealerId?'?dealer='+encodeURIComponent(dealerId):'')}>Öppna dealer, tal och läppsynk i Control <ArrowUpRight size={14}/></a>
       </aside></div>
-      {error && <p role="alert" className="dealer-import-error dealer-import-panel">{error}</p>}
+      {error && <p role="alert" className="dealer-import-error dealer-import-panel">{importErrorMessage(error)}</p>}
       {notice && <p role="status" className="dealer-import-notice dealer-import-panel">{notice}</p>}
       {rows.some(row=>row.state==='error') && <p className="dealer-import-help">Filer med fel försöks inte om automatiskt. Kontrollera <a href={'/control/clips'+(dealerId?'?dealer='+encodeURIComponent(dealerId):'')}>dealerns bibliotek</a> innan du lägger till filen igen.</p>}
     </>}

@@ -22,7 +22,10 @@ run_node_tests() {
 node docs/system-map/verify.mjs --check
 run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/admin/lib/dealer-artwork.test.mjs packages/design-preview/admin/lib/dealer-playback.test.mjs packages/design-preview/admin/lib/connected-studio.test.mjs packages/design-preview/admin/lib/studio-layout.test.mjs packages/design-preview/admin/lib/system-overview.test.mjs packages/design-preview/admin/lib/studio-policy.test.mjs packages/design-preview/admin/lib/studio-lifecycle.test.mjs packages/design-preview/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
 run_node_tests lab/test/material-trash.test.mjs lab/test/material-trash-ui.test.mjs
-run_node_tests lab/test/dealer-import.test.mjs packages/design-preview/admin/lib/dealer-import.test.mjs
+run_node_tests lab/test/dealer-import.test.mjs lab/test/dealer-import-integration.test.mjs packages/design-preview/admin/lib/dealer-import.test.mjs
+run_node_tests test/room-environment.mjs
+run_node_tests packages/design-preview/admin/lib/economy-journal.test.mjs
+run_node_tests packages/design-preview/runtime/admin-routing.test.mjs
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
 run_node_tests test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs packages/design-preview/admin/lib/studio-context.test.mjs
@@ -65,6 +68,7 @@ run_node_tests test/check-environment-variables.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node tools/build-runtime-media-catalog.mjs --check
 run_node_tests test/runtime-media-catalog.mjs lab/test/dealer-media-library.test.mjs
+run_node_tests lab/test/dealer-forge.test.mjs lab/test/studio-contract.test.mjs lab/test/dealer-background-ui.test.mjs
 node test/player-auth.mjs
 node test/table-http.mjs
 run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs apps/croupier-frontend/test/player-ui-build.mjs

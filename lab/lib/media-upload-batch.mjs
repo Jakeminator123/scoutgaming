@@ -1,6 +1,9 @@
 // Run once per explicit user action. Successful rows are never replayed;
 // an uncertain commit remains an error for reconciliation, without blind retry.
+import {assertNativeMediaFiles} from './native-media-intake.mjs';
 export async function uploadMediaBatch(items,{upload,onChange,signal}={}){
+  signal?.throwIfAborted();
+  assertNativeMediaFiles(items.filter(({row})=>row.state!=='saved').map(({row})=>row.file));
   let saved=0;
   for(const {row,classification} of items){
     if(row.state!=='ready')continue;

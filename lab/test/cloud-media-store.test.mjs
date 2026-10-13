@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, readdir, readFile, rm, writeFile, open, stat, rename, utimes } from 'node:fs/promises';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync,utimesSync } from 'node:fs';
 import { join,dirname,resolve,basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { putPrivateMedia, getPrivateMedia, deletePrivateMedia, isCloudMediaConfigured, validatePrivateMedia, privateContentTypeMatches,mediaBlobPath } from '../lib/cloud-media-store.mjs';
@@ -99,7 +99,11 @@ test('changed bytes during a memoized response fail the stream and invalidate th
   const original=prototype.createReadStream;let changed=false;
   t.mock.method(prototype,'createReadStream',function(options){
     const stream=original.call(this,options),read=stream.read;
-    if(options.end!==undefined)stream.read=function(...args){const chunk=read.apply(this,args);if(chunk&&!changed){changed=true;writeFileSync(path,Buffer.alloc(bytes.length,0x7a));}return chunk;};
+    if(options.end!==undefined)stream.read=function(...args){const chunk=read.apply(this,args);if(chunk&&!changed){changed=true;writeFileSync(path,Buffer.alloc(bytes.length,0x7a));
+      // Windows may coalesce two fast writes into the same filesystem tick.
+      // Make this deliberate in-flight file change observably deterministic.
+      utimesSync(path,new Date(0),new Date(0));
+    }return chunk;};
     return stream;
   });
   const response=await getPrivateMedia(record,request({range:'bytes=0-3'}),options);assert.equal(response.status,206);

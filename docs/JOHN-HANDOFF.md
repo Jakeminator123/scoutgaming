@@ -1,108 +1,223 @@
 # Aktuell handoff — Scoutgaming
 
-## Tillägg 13 oktober: gemensam Studioassistent och mobil samtalskontroll
+## Tillägg 13 oktober: gemensam Studioassistent
 
-`/admin/clips` har en importvy tillsammans med den anslutna klippkartan från
-PR #55. Integrationen utgår från main `c8f9b99b`; de anslutna servicesidorna,
-behålls. Inga simulerade kartor återinförs. Internchatten på `/admin/ai/chat`
-och importassistenten använder nu samma Studioassistent och begränsade
-Sol/Luna-rådgivare. Äldre `/control` behåller sin Gateway-chatt och sitt API.
-En befintlig dealer bekräftas före filval. Högst tio filer får förslag till
-exakta fack, lokal preview och en separat sammanställning att godkänna.
-Importer sparas som alternativ med befintlig N1-/Blob-/registerkontroll;
-inga standardklipp, publiceringar, rumsinställningar eller speldata ersätts.
-Osäkra kvitton försöks inte om automatiskt. Dubbla filval och förlorade
-godkännanden efter redigering är skyddade; interna sidbyten behåller listan.
+`/admin/ai/chat`, bubblan nere till höger och `/admin/clips?tool=import`
+använder samma Studioassistent, samtal, lokala filer och importutkast.
+Assistenten finns direkt på adminstartsidan; klippkartan laddas först vid
+Studio-besök och behålls därefter. PR #70:s startsida, ekonomivy, registrerade
+rumslista, kontextlänkar och skydd för osparade utkast är bevarade.
+Äldre `/control` behåller sin separata Gateway-chatt och sitt API.
 
-Studioassistenten är också åtkomlig från en bubbla nere till höger i hela
-`/admin`. Chattsidan, bubblans panel och importhelvyn på `/admin/clips?tool=import`
-använder samma monterade importutkast och samtal. Den riktiga klippkartan är standard;
-importkatalogen laddas först när assistenten öppnas. Dealer- och rumskontext
-bevaras vid vybyte. Minimering sparar inget och raderar inte utkastet;
-dealer- och importgodkännandena gäller på alla ytor. Besökta servicesidor
-behålls monterade. Assistentens samtal och osända fråga följer med mellan vyerna. Spelarens samtalsorb
-är separat och får inga administrativa befogenheter.
+Fasta serverroller väljer `gpt-5.6-luna` med `medium` för vanligt samtal och
+`gpt-5.6-sol` med `high` för uttrycklig kartläggning. Samtalet behöver ingen
+vald dealer och får aldrig ändra filfack eller godkännanden. Högst fyra
+lyckade fråge-/svarspar följer med som opålitlig kontext, även till Sol.
+Rådgivaren läser en begränsad dealer-/fackkatalog, inte ekonomi, drift eller
+rum. Session, scope och origin kontrolleras; behörighet och katalog läses
+om efter modellanropet. Modellen har inga skrivverktyg eller rätt att godkänna.
 
-Rådgivar-API:t har ingen skrivbehörighet. Det begränsar filnamn, kontext,
-fack och modellutdata, kontrollerar session/scope/origin och läser om
-behörighet/katalog efter modellen. Separat AI är opt-in i Studio; utan
-konfiguration använder kartläggning uttryckligen filnamnsregler och chatt
-visar att AI:n är otillgänglig. Fasta serverroller väljer `gpt-5.6-sol` med
-`high` för kartläggning och `gpt-5.6-luna` med `medium` för vanliga frågor.
-Vanlig chatt fungerar utan vald dealer och får aldrig ändra filernas fack
-eller gransknings-/spargodkännanden. Import kräver fortsatt bekräftad dealer.
-Chatt får högst fyra tidigare lyckade fråge-/svarspar och en begränsad läsning
-av Studios dealer-/fackkatalog; ekonomi, drift och rum läses inte av rådgivaren.
-Samma historik följer med till Sol vid uttrycklig kartläggning, som opålitlig
-kontext utan rätt att godkänna något. Gatewaymodeller och Studioassistentens
-fasta roller förklaras separat i Agentmodeller. Kommande roulettefack filtreras
-bort i importkatalogen så att de inte kan stoppa blackjack eller vanlig chatt;
-det öppnar inte roulette- eller alfaimport.
-Gatewayns separata modellförval ändras inte. Ingen provider aktiverades.
-VILA/REDO-bilder stannar lokalt. Modellens bildanalys, nytt pose-/läppsynkflöde
-och automatisk rumsproduktion återstår. Alfaklipp blockeras vid import tills
-uppspelningen kan undvika att även gröna detaljer nycklas bort.
+Import kräver bekräftad befintlig dealer, högst tio filer, granskning av
+placeringarna och ett separat slutgodkännande. Redigering återkallar detta.
+Importer sparas som alternativ genom befintlig N1-/Blob-/registerkontroll;
+standardklipp, publiceringar, rumsinställningar och speldata ersätts inte.
+Osäkra kvitton försöks aldrig om automatiskt. Navigation, minimering och
+415/503-fel behåller filer, fack och samtal.
 
-Spelarens textmärkta orb öppnar mikrofon-, kamera-, ljud- och loggkontroller
-med ett tryck. Femsekundersgreppet är borta. Befintligt samtycke kvarstår.
-Orb och samtalspanel följer spelarvyns mörkblå/guldgula palett, med blå
-skuggning, gula aktiva val och fokusmarkeringar samt separat felindikering.
-Ingen mediefil, spelmotor eller runtime-provider ändras.
+PR #71:s MIME-spärr ingår. PostgreSQL 001–008 medger bara MP4/WebM i
+`media_records`. Hela listan med osparade filer kontrolleras före första
+save-API, hash eller uppladdning, även rader med tidigare fel. Bild och ljud
+kan granskas lokalt men måste tas bort före videoimport. Samma begränsning
+förklaras av UI, serverägda varningar och båda modellrollerna. Alfa och
+roulette är fortsatt spärrade i denna importassistent tills dess egen
+preflight och granskning är accepterad; det är inget allmänt alfaförbud.
 
-Verifierat: 27 import-/säkerhetstester, Studio-typkontroll, fullständigt
-Studio-produktionsbygge och regressionshookens grupper samt Chromium på
-mobil och desktop. Windowskontrollen lämnar det särskilda Linuxprovet
-skippat. Tiofilsfixture med verklig byggd klient och
-Blob-SDK men mockad server gav åtta sparade, ett tydligt fel och en lokal
-posereferens utan automatisk omkörning. Orben klarade fyra skärmstorlekar,
-tangentbord/fokus/Escape och reduced motion utan enhetsåtkomst.
-Adminbubblan är dessutom verifierad i Chromium vid 320, 390 och 1280 px:
-en gemensam dealer/lista/chatt/godkännande över panel, helsida, sidbyten och
-bakåtknapp; ingen katalogläsning från oöppnad bubbla; pausad lokal video när
-vyn döljs; fokus/Escape och spärrade sidbyten vid minimerad uppladdning.
-Samma isolerade Blob-fixture behöll nio prepare, åtta commit och ett tydligt
-filfel utan återspelning eller automatisk sparning vid vybyte.
-Separat routingkontroll täcker båda API-formaten, exakta modeller/nivåer,
-avbrutna anrop och att felaktiga chattrader aldrig blir placeringsförslag.
-Chromiumkontrollen behåller fack och godkännande vid chattfel, manipulerade
-rader och fel svarstyp. Produktionsprojektets env-lista saknade den 13 oktober
-AI-flaggan och modellnyckeln; ingen riktig modellbegäran har därför verifierats.
-Kartläggningens resonemangsbudget är avgränsad men ännu inte utvärderad på
-verkliga tioklippimporter.
-Integrationen med main `c8f9b99b` har separat Chromiumkontroll vid 320, 390
-och 1280 px: riktig karta som standard, osparad videokoppling och internchattens
-meddelande kvar genom vybyten, bibehållen frågekontext, avböjt dealerbyte och
-importens veto före Studios kontextändring även via bakåtknappen. Minimap och
-bubbla har verifierat avstånd och fungerande pekarträff även efter mobilscroll.
-Förenat designbygge/typkontroll, 29 riktade CSP-/importtester och fullständigt
-Studio-produktionsbygge passerade. Windows första byggförsök fick EPERM i
-`.next`; omkörningen med normal lokal filåtkomst och byggspårskontrollen gick igenom.
-Produktionsmodell, verklig molnimport och dealerrehearsal två gånger är
-fortfarande ej verifierade. Se [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#dealerimport-och-samtalskontroll-13-oktober-2026).
+Spelarens blågula orbändring bevaras separat för fortsatt rehearsalacceptans.
+Den ingår inte i assistentleveransen; spelarens nuvarande kontroller består.
+Assistenten får inga spelbefogenheter och inga mediefiler ändras.
 
-Den gemensamma assistenten har dessutom verifierats med fem klienttester,
-designbygge/typkontroll och en isolerad Chromiumfixture vid 320, 390 och 1280 px.
-Chattsida, bubbla och import har samma samtal och oskickade text; allmän fråga
-utan dealer fungerar, historik når båda modellrollerna och slutgodkännandet
-bevaras genom chattsidans vybyte. Inga gamla `/api/chat`-anrop görs från nya
-admin. Fixture-transporten är mockad; inga riktiga modell- eller produktionsanrop
-gjordes. Oöppnad bubbla laddar ingen assistentkatalog och ingen uppladdning
-startar före handgodkännandet. Kartans osparade kopplingar och navigationsveto
-bevaras. Minimap, panel och fokus fungerar utan horisontellt överflöde.
-Den förenade versionens Studio-produktionsbygge och kontroll av 94 byggspår
-passerade. Bygget kördes med vanlig begränsad filåtkomst efter att automatisk
-granskning av utökad filåtkomst först saknade kapacitet och sedan fick timeout.
+Verifiering efter integration med main #70 och MIME-rättningen #71:
+1 843 Lab-tester passerar, med två plattformsberoende skips och inga fel.
+Studio-produktionsbygget och kontrollen av 94 byggspår passerar.
+159 riktade import-/native-/repositorytester passerar, inklusive tio nya
+integrationstester och hela listans förkontroll. Designbygge och admin-/lobby-
+typkontroll passerar. Isolerad Chromium vid 320, 390 och 1280 px verifierar
+startsida före Studio, samma samtal/File/fack/godkännande genom vybyten,
+osparad karta, legacy-kontextlänkar, registrerade rum, fokus och navigationsveto.
+Blandade format ger noll save-anrop/hash/uppladdning; borttagning kräver ny
+granskning. 415 och båda runtime-503-fallen behåller utkast utan återförsök.
+API, Blob och modeller är mockade; dessa prover är inte PostgreSQL-, codec-
+eller produktionsacceptans. PR #71:s riktiga PostgreSQL-bevis redovisas nedan.
 
-PR #55:s äldre lobby-UI-ändringar är avgränsade från PR #63: de tre lobbykomponenterna återgår till main och porträtt-/playbackhjälpare som Studio använder ligger under admin/lib med sina tester. Diffen mot main i lobby och test/public-lobby.mjs är tom. Tidigare lobbyversion finns i privat verifierad Git-bundle på checkpoint 6244d13b. Ingen PR63-kod har tagits in.
+Orbfixturen verifierar fyra skärmstorlekar, tangentbord/fokus/Escape, reduced
+motion och noll enhetsåtkomst före samtycke. Den kör inte den faktiska spelaren;
+två följande rehearsal-uppspelningar återstår före orbens separata mergeacceptans.
+Lokal inventering hittade endast en Studio-fixtur utan accepterade dealerklipp
+eller spelbart rum. Ingen ny server eller betald generering startades.
+Produktionsmodell och verklig molnimport är inte verifierade. Den 13 oktober
+kl. 11:19 saknades `CROUPIER_DEALER_IMPORT_AI` och `OPENCLAW_MODEL_API_KEY`
+i produktionsprojektets metadata. Ingen provider eller konfiguration ändrades.
+Utan AI-konfiguration ger kartläggning uttryckliga filnamnsregler och chatten
+visar att AI:n är otillgänglig. Bildanalys, pose-/läppsynkflöde och automatisk
+rumsproduktion återstår. Se [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#dealerimport-och-samtalskontroll-13-oktober-2026).
 
+## Tillägg 13 oktober: faktisk MIME-gräns i PostgreSQL
 
-Aktuell main `d595e6b7` inklusive Control-papperskorg och Labba är förenad. Admin skiljer nu aktiva bolag, papperskorg (verifierad arkivmetadata) och äldre avstängda bolag. Aktiva väljare, strukturkort och antal filtrerar bort arkiverade/avstängda; direkta arkiverade bolagslänkar öppnar inte en dealerbank. 32 riktade katalog-, struktur-, kontext- och lifecycle-API-tester passerade.
+PR #65:s PNG-/ljudregistrering är **inte färdig för PostgreSQL**. Migration
+001:s `media_records_check`, oförändrad av 002–008, accepterar bara MP4/WebM.
+Status-only systemmetadata verifierade samma constraint i Neon project
+`wandering-hill-60561912`, main `br-flat-fog-b161a6r8`, `croupier_game`,
+`croupier_studio.media_records`. Ingen produktrad eller DDL ändrades.
 
-Senare produktionsläsning visade Back to Basic i PAOW · Studio. Detta är ett senare val från annan vy; bordsintaget ändrade inga kopplingar. Första serverrenderade biblioteksbesöket gav felreferens 2050080826 och nästa omladdning fungerade. Detta kvarstår som driftfynd; ingen full produktionsacceptans hävdas.
+Riktig isolerad PostgreSQL 16.15 med faktiska 001–008 reproducerade felet:
+PNG/WAV/MP3 gav SQLSTATE 23514; MP4/WebM registrerades med audit. Rättningen
+returnerar `studio_media_content_type_unsupported` (415) före Blob-grant,
+runtimeprobe, bytehämtning och SQL. Äldre signerade tickets spärras också.
+Repositoryts `registerMedia` har samma kontroll före transaktionsstart, så
+minnespoolen kan inte längre ge falskt positivt intagskvitto för dessa MIME.
+Typed API-svar förklarar gränsen utan databasdetaljer. Forge registrerar MP4;
+dess privata bildankare/lager ligger i andra strukturer och är inte ändrade.
+Controls aktiva native-väljare erbjuder endast MP4/WebM. Droppad PNG/ljud
+markeras som fel och blockerar hela den osparade kön tills filen tas bort.
+Batchen gör en egen förkontroll före första upload; enskild upload avvisar
+typen före filbytes, hash och alfaprov. Parser/v12 och annan lagerlagring
+behåller sina bredare format för separat framtida aktivering.
 
+88 riktade prover och 18 verkliga PostgreSQL-kontroller, inklusive omstart,
+är gröna. Två egna localhost-kluster är stoppade. Tidigare fyra Anna-importer
+bevisade bytes/preview i minnesfixtur, **inte** PostgreSQL-stöd. V12/parser
+och WebM-alfa är en separat acceptansgräns. Migrerings-/aktiveringsplan finns
+i [CLOUD-MIGRATION](CLOUD-MIGRATION.md#png-och-ljud-i-studios-mediaregister).
+001/ledger/checksummor och reserverade 009/010 ändras inte; ingen ny migration
+eller produktionsregistrering aktiveras av denna rättning.
 
-Senare HTTP-test täcker v11 GET/HEAD och bevarat v10. Aktuell main `7e417e46` med dealerbild/Labba är förenad. Bolagsvyn reagerar även på paketrevision, status och arkivering när ett bolag utan rum lämnar administrationsrevisionen oförändrad; 14 verkliga lifecycle-API-tester är gröna.
+## Adminstart: välj arbetsyta före redigering, 13 oktober
 
+`/admin` öppnar en enkel översikt med fem tydliga ingångar: dealers och klipp,
+spelbolag och rum, ekonomi, drift samt system. Studio-redigeraren ligger kvar på
+`/admin/clips`; befintliga länkar till `/admin/structure`, `/admin/assets` och
+övriga arbetsytor behåller sina mål. Sidomenyn har en egen Översikt-länk och
+logotypen går hem. Den avancerade klippkartan laddas först när Studio besöks;
+redigeraren hålls därefter monterad vid sidbyte så ett påbörjat utkast inte
+försvinner. Äldre `/admin?dealer=…` och `/admin?operator=…&table=…` öppnar
+fortfarande Studio med sin kontext; en uttrycklig Översikt-klickning rensar den.
+`/admin/rooms` fortsätter öppna redigeraren, medan startsidans **Visa spelrum**
+använder `/admin/rooms?view=registered` för den riktiga registrerade rumslistan.
+Ingen spel-, publicerings- eller databaslogik ändras.
+
+Verifierat i isolerad byggd adminvy: startsidan visar endast vägvalen, länken
+till ekonomin öppnar den fungerande diagramvyn och Översikt återgår hem.
+Separat navigationsprov med riktig byggd Studio-fixtur bekräftar rumslistan,
+äldre bokmärken samt Översikt under laddning och från ett osparat utkast;
+utkastet finns kvar när Studio öppnas igen. Fixturen skriver ingen produktdata.
+Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
+runtimebindningstester passerar. Efter sammanslagning med senaste `main` och
+navigeringsrättningen passerar full regressionshook med 3 174 godkända,
+11 överhoppade och 0 fel;
+typkontroll och bygge passerar också på samma revision. PR-kontroller och
+produktionsvisning återstår efter push respektive merge.
+
+## Tillägg 13 oktober: roulettefack och alfa för Anna-prov
+
+`codex/roulette-alpha-media` lägger till separata roulettefack för VILA-PNG,
+andningsvila, glasögonvariant och hjulstart. Handling, spel och start-/slutpose
+registreras separat. PNG-validering/preview finns; native PostgreSQL-intag
+för PNG är spärrat enligt den senare MIME-kontrollen ovan.
+`compositing.mode=alpha` bevarar PNG/VP9-transparens i den gemensamma previewn.
+Browsern avkodar tre stickprov före alfauppladdning/omklassificering; servern
+kontrollerar PNG-pixlar respektive VP9-alfaspår/payload. Svart/opak film är inte
+en fungerande alfamatta. Blackjackfack och Studio seed ändras inte.
+
+MERGE fångade en rolling-deploy-blockerare: PNG/roulette/alfa utökar den
+gemensamma strikta StudioMediaRecord. Native intag och omklassificering kräver
+nu exakt annonserad capability **v12** (`mediaAlpha=png-vp9-v1`,
+`rouletteMedia=action-pose-slots-v1`) före Blob-grant, medieläsning och skrivning,
+samt samma featurekontroll i den inre transaktionen. Frysta paket med dessa
+media kräver också v12. V11:s dealerSets/materialTrash bevaras oförändrat.
+Render ska stödja v12 före första nya registrering; äldre motor ger fast 503
+och lämnar utkastet kvar. Ingen datamigration eller produktdataändring ingår.
+85 riktade prover är gröna, inklusive noll SQL/grants på v11, avvisat äldre
+transaktionsklartecken och positiv registerskrivning/återförsök med v12.
+
+CI fångade ytterligare en konsumentgräns: intagskatalogens fyra roulettefack
+får inte bli blackjackens genereringsjobb. `blackjackMediaSlots(project)`
+läser endast canonical blackjack-event; Forge behåller sina 40 fack och
+avvisar roulette före providersubmission och jobbregistrering. Övriga
+`dealerMediaSlots`-konsumenter är bibliotek/intag och navigation. Runtime-
+linjer/event accepterar inte rouletteklassificering; seed/kontrakt ändras inte.
+Canvasen skiljer bild/video via DOM-taggen och har separat PNG-/alfa-prov.
+Forge-, canonical-kontrakt- och canvasproven ingår nu också i fullhooken.
+Hela lab-sviten efter CI-reparationen: 1 800 passerade, två avsiktligt
+hoppade över, noll fel (fyra arbetare). Produktionsbygge och TypeScript är
+gröna. Cacheprovets avsiktliga filbyte har en deterministisk tidsstämpel på
+Windows; produktens cachebeteende ändras inte.
+
+Samordnat med mediaagenten och SIDOR3. Den nya separata mediaassistenten måste
+anslutas till `dealerMediaEvents(project)` av sin ägare; detta ändrar nuvarande
+bibliotek/intag och preview. Ingen dealer eller rumsregel publiceras automatiskt.
+
+Runway har producerat andning och glasögonrengöring med avkodad alfa. Första
+glasögonmattan var helt opak och underkänd; v2 fungerar i privat scenprov.
+Fyra faktiska Anna-filer har importerats/återlästs byteidentiskt i en isolerad
+fixture, med idempotent commit och ny repository-instans. Desktop/mobilbredd
+och två starter har provats. Kropp/händer använder en och samma videobildruta.
+Detta är inte acceptans på fysisk mobil eller en produktionstestad publicering.
+
+Bordsprovet ändrade hjulrännan och är underkänt. Bakgrundsfilmen är ett separat
+10-sekunders prov med matchande stillposter. Ursprunglig handgest träffar ännu
+inte spindeln exakt; masken är en heuristisk prototyp. Ingen 37-filmsbank eller
+ny spelorkestrering är implementerad. Format, exakta promptar, geometri,
+resultatstyrd händelsekedja och bevisgränser finns i
+[rouletteguiden](games/roulette/README.md#anna-jonsson-roulettefack-alfa-och-runway-prov-13-oktober-2026).
+
+Privata original, genererade filer, offlineprov och kvitton ligger i
+`C:/Users/jakem/.codex/visualizations/2026/10/12/01a1319d-73c5-7801-8e65-27e47532075b/`;
+inga binärer eller konversationsexporter läggs i Git. Slutlig regressionsstatus
+och exakt leveranshead redovisas i PR:en.
+
+## Ekonomi: enkel översikt i admin, 13 oktober
+
+`/admin/ekonomi` återfår nyckeltal och två diagram i den nya designen;
+hela den äldre administrationspanelen bäddas inte längre in på denna sida.
+Journalen är en utfällbar detalj. Valuta och 7/30-dagarsfilter arbetar på
+serverns högst 100 senaste journalposter, med synlig avgränsning och UTC.
+Valutor, även historiska `USD`, `usd` och `USDT`, hålls i separata grupper.
+Endast verifierade kontoändringar (insättningar, saldojusteringar och
+spelhändelser) summeras. Öppningssaldo och valutabyte visas i journalen och
+händelsediagrammet som saldoobservationer utan att räknas som rörelser.
+Okända typer behåller sin råtyp men påverkar inte beloppen. Kontorörelser
+presenteras inte som GGR, intäkt eller revshare; sådant rapportunderlag
+saknas fortfarande. Inga seedade exempelsiffror används som produktionsdata.
+
+Läsningen använder befintligt skyddat transactions-API, aktuell N1-session,
+tillåtna actions och verifierad svarsidentitet. Vid navigering, omladdning
+eller läsfel rensas tidigare data. Isolerad webbläsaracceptans med testdata
+verifierar valutabyte, 7/30 dagar, journal, tomt svar, 401, 503 och återhämtning.
+Fem modelltester täcker summering, UTC-gränser, historiska valutor,
+saldoobservationer, kända/okända typer och feldata; de ingår i den gemensamma
+regressionshooken. Admin-typkontroll och Lab-produktionsbygge passerade på
+denna rättning. Full regressionshook: 3 119 godkända, 11 överhoppade, 0 fel.
+Produktionsacceptans återstår efter deploy.
+Ingen ekonomisk transaktion, behörighetsändring eller databasmigration utförs.
+
+## PR #50: fast rumsmiljö och bevarad fryst film
+
+Nya rum kräver en entydig sparad bakgrund. Om en sammansättning redan
+används av publicerade rum jämförs även hela den infångade vilofilmen:
+media-ID, hash, sökväg, MIME, storlek och friläggning. Kontrollen sker både
+vid förberedelse och under publiceringens revision-/transaktionsskydd.
+Ett identiskt nytt rum och exakt retry fungerar; en annan film ger 409
+utan att ändra det tidigare paketet. Regressionen föll före rättningen.
+PR #63:s levererade HERO, porträtt och dealergrindar bevaras vid integration.
+Inga mediebytes, produktionsdata eller rumspubliceringar ändras av arbetet.
+
+## SIDOR3: historisk materialläsning, 13 oktober
+
+Efter #55/c8f9b99 gav verkliga projekt-/videoanrop 200 men katalogen 422 med sanerat studio_native_unavailable; den publika katalogen blev också 503. Hotfixen bevarar historiska frysta spelgrants: nya materialtaggar är diagnostik vid läsning, medan operator-, room-, lane-, dealer- och paketauktoriteten fortsätter styra. inspectPackageRooms rapporterar den precisa typade katalogmismatchen utan att ändra paketet. Admin visar en materialvarning. Samma historiska Blackjack- och Roulette-syskon behåller urval, playUrl och giltig spelstart. Nya publiceringar kontrolleras fortfarande strikt och avvisas med 422 vid fel material. Verkliga struktur-/lagringsfel slår fortsatt igenom.
+
+34 riktade tester använder verkliga serialiserade frysta paket, admin/publickatalog och spelstart: oförändrade bytes/data och befintliga grants, samt oförsvagad publiceringsassert. Ingen DB-, schema- eller mediemutation. PR #67 är mergad som 027ceb03; Vercel och Render har verifierats på exakt version. Faktisk adminläsning av katalog, projekt och videoregister samt publik bolags- och rumslista svarar 200. Nordic Bet Roulette (room-1bc1b407-9538-9ae8-f7e2-fecf951989a2) har katalogvarningen med det sparade Blackjack-bordet Back to Basic; både dess och Blackjack in Snows befintliga playUrl/published/playable består. De fem originalborden avkodades åter från det skyddade produktionsbiblioteket. Detta är ett läskvitto, inte nytt media- eller läppsynksgodkännande.
+
+Materiallistor och papperskorg i admin får separat enkel styling med tydliga rader, knappar, tangentbordsfokus och mobilanpassning. Mobilrader följer naturlig DOM-ordning: filnamn, hänvisningar, därefter åtgärd. Samma befintliga kontroller och API används; inga nya mutationer eller ändrade regler. Ekonomi- och anslutna tjänsteytor ägs av den parallella ekonomichatten och ingår inte här.
 
 ## SIDOR3: fem separata bord och förenad papperskorg, 13 oktober
 
@@ -181,7 +296,6 @@ Integrationsvyn får betrodd spelorigin från N1-sessionens serverkonfiguration;
 saknad origin aktiverar inte launch-länkar. Gemensam papperskorg i befintlig
 Control ägs av separat backendarbete; v11 reserveras för materialTrash med
 v10/dealerSets-kontraktet bevarat. Senare slutkontroller redovisas i PR #55.
-
 ## Tillägg 13 oktober: papperskorg i befintliga Control
 
 `codex/control-trash` bygger vidare på bakgrunds-PR #58. Bolagsarkivering
@@ -208,15 +322,34 @@ projektvägen får inte kringgå materialens livscykelkontroll.
 
 Synliga gamla Mobile Phone Lane-namn i biblioteksreferenser och speltitel
 visas som Standardsammansättning. Det interna `mobile-phone`-ID:t behålls.
-Rensning av återstående Your Company-varianter är inte utförd: de har
-referenser som nu kan visas och hanteras i det nya bekräftelseflödet.
+Your Company-rensningen är utförd i produktion den 13 oktober: bakgrund
+`c0035fc4-cb47-45dc-83de-adb44c14e9fd` flyttades via `/admin/assets` och
+`6cd2bf56-4d42-4c7b-848a-087398b38563` via `/control/library`. Varje färsk
+påverkanskontroll visade endast Standardsammansättning och inga publicerade
+spelrum. Båda vyerna återlästes efter omladdning: 10 aktiva bakgrunder och
+två återställbara poster i papperskorgen. Enda kvarvarande aktiva varianten
+är `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4`, tidigare provspelad till slut
+(10,041667 sekunder utan videofel). De sex nya bild-/videofilerna och
+PAOW · Studios val av Studio · turkos bevarades. Ingen permanent radering.
 
-Integration: materialpapperskorgen förhandlar runtime **v11**. PR #55 förenar
-nu v10 `dealerSets: 'authoring-categories-v1'` och v11 med både dealerSets och
-materialTrash, inklusive readiness-/kontraktstester. Nya `/admin` återanvänder
-samma serverkontrakt. PR #60 är fortsatt en fristående Control-leverans tills
-den förenade PR #55 driftsätts. Ingen Neon-migration krävs. Detta tillägg är
-kodleverans, inte bevis på driftsättning.
+Integration: PR #60 är mergad som `d595e6b7`, och PR #55 förenar samma
+papperskorg med nya `/admin` i `c8f9b99b`. Main-CI och båda driftsättningarna
+är verifierade för `c8f9b99b`. Render annonserar runtime **v11**, med både
+`dealerSets: 'authoring-categories-v1'` och `materialTrash: 'detached-assets-v1'`.
+Ingen Neon-migration krävs. Slutregression för PR #60: 2 988 godkända,
+11 överhoppade, 0 fel; den förenade PR #55: 3 093 godkända, 11 överhoppade,
+0 fel samt passerat Lab-produktionsbygge och admin-typkontroll.
+
+Katalogregressionen efter PR #55 rättades i PR #67, mergad som `027ceb03`.
+En ny materialregel hade slagit ut läsningen av historiskt publicerade rum.
+Befintliga spelrum och behörigheter bevaras; inkompatibla material får en
+adminvarning och nya publiceringar valideras fortsatt strikt. MERGE verifierade
+57/57 main-CI-steg, www/Vercel READY och Render LIVE/version på exakt
+`027ceb03`, health 200 och bibehållna v11-förmågor. Publik bolagskatalog och
+Nordic Bets två rum svarade 200; admin catalog/project/videos svarade också
+200. Rensningen ovan skedde därefter under ett samordnat stabilt releasefönster.
+Varningen för Nordic Bet Roulette gäller Back to Basic-materialets blackjacktagg;
+historiska publiceringar och frysta PAOW-paket ändrades inte av denna rättning.
 
 Verifiering: riktade server-/UI-tester för bekräftelse, samtidiga ändringar,
 tenantgränser, återställning, skyddad historik och full rollback; Lab-
@@ -295,7 +428,9 @@ visuell acceptans i rehearsal återstår tills bakgrunderna används där.
 
 Efter separat instruktion från Jakob togs den oanvända
 `background-ditt-spelbolag`-posten `800eb6ee-9e55-40c1-9757-159694422dd2`
-ur biblioteket. Tre andra varianter är fortsatt refererade och bevarade.
+ur biblioteket. Vid den första inventeringen bevarades tre andra varianter;
+den senare verifierade rensningen ovan flyttade `c0035fc4` och `6cd2bf56`
+till återställbar papperskorg. Endast `e98f61ca` är nu aktiv och valbar.
 Jakob valde uttryckligen borttagning av `paow3`: rummet
 `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e` arkiverades genom ordinarie
 API, togs ur den aktiva strukturen och avpublicerades i Nordic Bet-paket
@@ -303,8 +438,8 @@ version 8. Rouletterummet är kvar. Demo North/South återfanns endast i
 diagnostiska fixtures, inte bland de registrerade bolagen.
 AGENTS anger nu `/admin` och `/lobby` som riktning, med befintliga ytor
 kvar under övergången. Den begärda gemensamma papperskorgen för samtliga
-resurstyper fortsätter i tillägget ovan; `/admin`-integrationen och faktisk
-driftsättning ska verifieras separat.
+resurstyper beskrivs i tillägget ovan. `/admin`-integrationen och driften är
+verifierade på `027ceb03`, inklusive riktig flytt och återläsning i båda ytorna.
 
 ## Tillägg 13 oktober: samlade spelmanualer
 

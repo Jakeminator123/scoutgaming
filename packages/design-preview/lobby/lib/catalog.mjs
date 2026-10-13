@@ -1,4 +1,5 @@
 import { validatePublicOperatorRooms } from '../../../../web/public/operator-rooms-contract.mjs';
+import { roomEnvironment } from '../../../../web/public/room-environment.mjs';
 
 /** Validate the published subcatalog, never use administration objects as playable data. */
 export function parseLobbyCatalog(payload) {
@@ -14,6 +15,7 @@ export function parseLobbyCatalog(payload) {
     seen.add(slug);
     const dealerIds = new Set();
     for (const room of catalog.rooms) {
+      const environment = roomEnvironment(room, slug);
       for (const dealer of room.dealers) {
         dealerIds.add(dealer.id);
         if (!dealerMap.has(dealer.id)) dealerMap.set(dealer.id, { id: dealer.id, name: dealer.label });
@@ -21,6 +23,8 @@ export function parseLobbyCatalog(payload) {
       rooms.push({
         id: room.id, key: `${slug}:${room.id}`, operatorId: slug, name: room.name,
         game: room.game ?? 'blackjack', presentation: room.presentation.label,
+        environmentLabel: environment.label, environmentFixed: environment.fixed, environmentKind: environment.kind,
+        ...(environment.image ? { image: environment.image } : {}),
         dealers: room.dealers.map(dealer => ({ id: dealer.id, name: dealer.label })),
         playUrl: room.playUrl,
       });

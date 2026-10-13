@@ -1,4 +1,5 @@
 import {isActiveDealerId} from '../dealer-identity.mjs';
+import {assertStudioMediaStorageType} from './studio-media-storage.mjs';
 import {validateDealerSetRecordOwners,dealerSetsForClip} from '../../lab/lib/dealer-sets.mjs';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash, randomUUID } from 'node:crypto';
@@ -249,7 +250,11 @@ export function createStudioRepository({ pool, scope } = {}) {
       }, true);
     },
     registerMedia(record, { actor } = {}) {
-      return operation(() => ({ record: validateStudioMedia(record), actor: validateActor(actor) }), async prepared => {
+      return operation(() => {
+        const validated=validateStudioMedia(record);
+        assertStudioMediaStorageType(validated.contentType);
+        return {record:validated,actor:validateActor(actor)};
+      }, async prepared => {
         if (prepared.record.deletion) fail('studio_media_deletion_pending');
         await lockMediaObject(prepared.record.pathname);
         if (!prepared.record.retainedBank && (await mediaAliases(prepared.record)).length) fail('studio_media_owned_elsewhere');

@@ -9,6 +9,7 @@ import { bindClip, clipSlots, clipsForSlot, configuredClipIds, createStudioClien
 import { readIdleVideoDuration } from '../../../../../lab/lib/idle-video-duration.mjs';
 import type { StudioProject } from '../../../../../lab/lib/studio-model.mjs';
 import { replaceContext } from '../../../runtime/navigation';
+import {isInternalAdminPathname} from '../../../runtime/admin-routing.mjs';
 import { groupSlots, affectedRooms, slotCaption } from '../../lib/studio-layout.mjs';
 import { StudioSpeechPanel } from './studio-speech-panel';
 import { StudioLifecyclePanel } from './studio-lifecycle-panel';
@@ -118,7 +119,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
       const target = (event as CustomEvent<{href:string}>).detail?.href;
       if (target) {
         const url=new URL(target,location.origin);
-        if(/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')) {
+        if(url.origin===location.origin&&isInternalAdminPathname(url.pathname)) {
           const query=url.searchParams;
           if(registry&&['operator','table','dealer','game'].some(key=>query.has(key))) {
             const requestedRoom=registry.rooms.find(row=>row.id===query.get('table'));
@@ -137,7 +138,8 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     };
     const click = (event:MouseEvent) => {
       const anchor = (event.target as Element)?.closest?.('a'); if (!anchor || event.defaultPrevented || !blocked()) return;
-      if (new URL(anchor.href,location.origin).origin === location.origin && new URL(anchor.href).pathname.startsWith('/admin/') && !new URL(anchor.href).pathname.startsWith('/admin/lobby') && !anchor.target) return;
+      const target=new URL(anchor.href,location.origin);
+      if(target.origin===location.origin&&isInternalAdminPathname(target.pathname)&&!anchor.target)return;
       if (busyRef.current || !confirm('Det finns ett osparat Studio-utkast. Lämna sidan och kasta utkastet?')) { event.preventDefault(); event.stopPropagation(); }
     };
     window.addEventListener('beforeunload',unload); window.addEventListener('scout:navigate',leave); document.addEventListener('click',click,true);
@@ -234,6 +236,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
       {error&&<p role="alert" className="studio-error">{error} {!data&&<button className="studio-button" onClick={()=>{void load();}}>Försök igen</button>} {revisionConflict&&<button className="studio-button" disabled={locked||!authorized} onClick={()=>{void compareRevision();}}>Jämför senaste revision</button>} {data&&!authorized&&<><a href={'/control/login?returnTo='+encodeURIComponent(location.pathname+location.search)} target="_blank" rel="noopener">Logga in i ny flik</a><button className="studio-button" disabled={locked} onClick={()=>{void compareRevision();}}>Återanslut och behåll utkast</button></>}</p>}
       {conflictPaths.length>0&&<div className="studio-error" role="alert"><p>Samtidiga ändringar: {conflictPaths.join(', ')}. Ditt utkast är kvar; sparande är spärrat tills du väljer.</p><button className="studio-button" onClick={()=>setConflictPaths([])}>Behåll mitt utkast för dessa fält</button></div>}
       {data&&!dealer&&<p role="alert" className="studio-error">Rummet saknar en aktiv dealer i sin sparade sammansättning. Ingen annan dealerbank har valts automatiskt.</p>}
+      {room?.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Materialet har en annan katalogtagg; granska rummets bord och spel före nästa publicering.</p>}
     </header>
     <div className="studio-canvas-toolbar"><h1>KLIPPVIDEOS <span>{cardGroups.length} kort · {slots.length} fack</span></h1><div><button className="studio-button" disabled={locked} onClick={()=>togglePanel('dealer')}><Users size={13}/>Uppsättning</button><button className="studio-button" disabled={locked} onClick={()=>togglePanel('room')}><Volume2 size={13}/>Röst & tal</button><button className="studio-button" disabled={locked} onClick={()=>togglePanel('layers')}><Layers size={13}/>Komposition</button><button className="studio-icon-button" title="Återställ kortlayout" aria-label="Återställ kortlayout" onClick={()=>{setPositions({});void setViewport({x:24,y:24,zoom:canvasWidth<610?1:.9},{duration:250});}}><RotateCcw size={14}/></button></div></div>
     {notice&&<span role="status" className="studio-notice">{notice}</span>}

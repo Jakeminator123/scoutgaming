@@ -36,6 +36,7 @@ export function validateComposition(value) {
 }
 export function clipCompositing(value) {
   value=effectiveDealerCompositing(value);
+  if(value.mode==='alpha')return {enabled:false,mode:'composite'};
   if(!value||Object.keys(value).sort().join(',')!=='despill,mode,softness,threshold'||value.mode!=='green-screen'
     ||!Number.isFinite(value.threshold)||value.threshold<0||value.threshold>1
     ||!Number.isFinite(value.softness)||value.softness<=0||value.softness>1

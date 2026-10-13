@@ -32,6 +32,8 @@ export function validateManagedStudioMedia(record) {
     || !Object.hasOwn(MEDIA_FILE_TYPES,copy.contentType)) fail();
   try { copy.classification = validateVideoMetadata(copy.classification); } catch { fail(); }
   if (copy.contentType.startsWith('audio/') !== (copy.classification.mediaType === 'audio')) fail();
+  if(copy.contentType.startsWith('image/') !== (copy.classification.mediaType==='image'))fail();
+  if(copy.classification.compositing?.mode==='alpha'&&!['image/png','video/webm'].includes(copy.contentType))fail();
   const extension = MEDIA_FILE_TYPES[copy.contentType];
   const expected = `croupier/media/dealers/${copy.classification.dealerId}/review/uploads/${copy.id}/${copy.sha256}.${extension}`;
   if (copy.pathname !== expected) fail();
