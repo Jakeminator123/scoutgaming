@@ -1,5 +1,43 @@
 # Aktuell handoff — Scoutgaming
 
+## PR-städning och CI, 13 oktober 2026
+
+På Jakobs uppdrag är #75 och #73 mergade. #74 behåller rouletteunderlaget
+men följer samma ordlista som #73. De tre samtidiga arbetsgrenarna för
+adminfrikoppling, mappförenkling och Studio/legacy har separata ägare;
+deras lokala filer ändras inte av mergearbetet.
+
+- #41 är stängd som äldre plan; B19-beslut och pilotkrav finns kvar i
+  CLOUD-MIGRATION. Den borttagna planmappen återinförs inte.
+- #64 är parkerad/stängd utan merge. Kod finns på
+  `codex/verified-event-preloading`, commit `0945a25af67f3e6ddc372020aef9372e60dee40c`.
+  Återuppta med synk till main, två verkliga rehearsal-uppspelningar per
+  berörd dealer samt mobil-/latensprov. Inga uppmätta latensvinster påstås.
+- #72 är parkerad/stängd utan merge. Kod finns på
+  `codex/dealer-orb-rehearsal-acceptance`, commit `be84e5dad64a5b3552a962cb60b847de2597dc55`.
+  Två verkliga rehearsal-uppspelningar med godkända klipp och giltig
+  dealer-/rumskontext återstår. De befintliga spelarkontrollerna består.
+
+GitHub-workflowet väljer kort kontroll för rena dokumentations-PR:ar från
+hela testmergens diff mot dess första förälder. Okända filer, maskinregister,
+runtime-promptar, kod, media och konfiguration kör full kontroll. Main och
+manuell körning är alltid fulla. Dokumentationsvägen kräver miljöregister,
+leverans-/dokumentationskontrakt och systemkarta. Den rapporterar inte
+spel-/mediaacceptans. Lokal pre-commit-policy ändras i separat mappuppdrag.
+
+Studio byggs en gång, i dealer-regression, där launcher- och isolerade
+SQL-/omstarts-/HTTPS-prov använder bygget. Befintliga tester och produktions-
+migrationens readiness finns kvar; endast den dubbla table-http-körningen
+är borttagen. Npm-cache följer alla tre installerade lockfilerna. Slutjobbet
+`CI` blir rött om en tillämplig kontroll misslyckas, avbryts eller saknas.
+Inga branchskydd, media-, databas- eller providerinställningar ändras.
+
+Lokalt verifierat: verkliga Git-mergar och ytlig checkout, äldre kodändring
+följd av dokumentpush, runtimefil flyttad till docs, symboliska länkar och
+slutjobbets felvägar. Miljö-, leverans- och orphan-kontroller körs också.
+GitHub kör full produktkontroll på workflow-PR:n före merge. GitGuardian-
+PR-status läses separat; incidentlista och historisk täckning är inte verifierade.
+
 ## Nästa agent: roulette i N1:s Labba-yta
 
 Utgå från `/admin` och befintlig Labba/Sammansättningar; `/control` är kvar
