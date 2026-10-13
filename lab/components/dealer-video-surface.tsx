@@ -16,38 +16,41 @@ export function DealerVideoSurface({children,framing,compositing}:{children:Reac
     const root=host.current,output=canvas.current;if(!root||!output)return;
     const context=output.getContext('2d',{willReadFrequently:true});if(!context){setError('Förhandsvisningen kan inte friläggas i den här webbläsaren.');return;}
     output.width=960;output.height=540;
-    let raf=0,lastVideo:HTMLVideoElement|null=null,lastTime=-1,lastWidth=0,lastSource='',failedSource='';
+    let raf=0,lastVideo:HTMLVideoElement|HTMLImageElement|null=null,lastTime=-1,lastWidth=0,lastSource='',failedSource='';
     setError('');
     const reset=()=>{context.clearRect(0,0,960,540);lastVideo=null;lastTime=-1;lastWidth=0;lastSource='';failedSource='';setError('');};
     root.addEventListener('loadstart',reset,true);root.addEventListener('emptied',reset,true);
     const paint=()=>{
-      const video=root.querySelector('video');
+      const video=root.querySelector('video,img') as HTMLVideoElement|HTMLImageElement|null;
       const source=video?.src??'';
+      const width=video instanceof HTMLImageElement?video.naturalWidth:video?.videoWidth??0;
+      const time=video instanceof HTMLImageElement?0:video?.currentTime??0;
+      const ready=video instanceof HTMLImageElement?video.complete&&width>0:(video?.readyState??0)>=2;
       if(source!==lastSource&&failedSource){failedSource='';setError('');}
       try{
-        if(!video||video.readyState<2){context.clearRect(0,0,960,540);lastVideo=null;lastTime=-1;}
-        else if(video.videoWidth&&source!==failedSource&&(lastVideo!==video||lastTime!==video.currentTime||lastWidth!==video.videoWidth||lastSource!==source)){
+        if(!video||!ready){context.clearRect(0,0,960,540);lastVideo=null;lastTime=-1;}
+        else if(width&&source!==failedSource&&(lastVideo!==video||lastTime!==time||lastWidth!==width||lastSource!==source)){
           drawDealerFrame(context,video,960,540,framing,false);
           const frame=context.getImageData(0,0,960,540);keyGreenPixels(frame.data,keyed);context.putImageData(frame,0,0);
-          lastVideo=video;lastTime=video.currentTime;lastWidth=video.videoWidth;lastSource=source;
+          lastVideo=video;lastTime=time;lastWidth=width;lastSource=source;
         }
-      }catch{failedSource=source;lastSource=source;context.clearRect(0,0,960,540);video?.pause();setError('Förhandsvisningen kunde inte friläggas. Kontrollera filen och försök igen.');}
+      }catch{failedSource=source;lastSource=source;context.clearRect(0,0,960,540);if(video instanceof HTMLVideoElement)video.pause();setError('Förhandsvisningen kunde inte friläggas. Kontrollera filen och försök igen.');}
       raf=requestAnimationFrame(paint);
     };
     raf=requestAnimationFrame(paint);return()=>{cancelAnimationFrame(raf);root.removeEventListener('loadstart',reset,true);root.removeEventListener('emptied',reset,true);};
-  },[framing?.scale,framing?.x,framing?.y,keyed.threshold,keyed.softness,keyed.despill]);
+  },[framing?.scale,framing?.x,framing?.y,JSON.stringify(keyed)]);
   return <div ref={host} className={`stage-video dealer-video-surface ${styles.surface}`} data-keyed="true">
     {children}<canvas ref={canvas} aria-label="Anpassad dealerbild"/>{error?<p role="alert">{error}</p>:null}
     {compositing?.mode==='opaque'?<p role="alert" className={styles.legacy}>Äldre klipp behöver uppdateras före publicering. Om filmen har en inbakad miljö: ersätt den med en grön originalfilm.</p>:null}
   </div>;
 }
 
-export function DealerClipPreview({url,framing,compositing,label='Förhandsvisa vald fil',muted=false,onError}:{url:string;framing?:DealerFraming;compositing?:VideoCompositing;label?:string;muted?:boolean;onError?:()=>void}){
+export function DealerClipPreview({url,framing,compositing,label='Förhandsvisa vald fil',muted=false,onError,mediaType}:{url:string;framing?:DealerFraming;compositing?:VideoCompositing;label?:string;muted?:boolean;onError?:()=>void;mediaType?:'image'}){
   const video=useRef<HTMLVideoElement>(null),[error,setError]=useState('');
   return <div><PresentationFrame label="Dealerklipp"><DealerVideoSurface framing={framing} compositing={compositing}>
-    <video ref={video} src={url} playsInline muted={muted} preload="metadata" aria-label={label} onError={()=>{setError('Videon kunde inte läsas.');onError?.();}}/>
+    {mediaType==='image'?<img src={url} alt={label} style={{visibility:'hidden',position:'absolute',width:1,height:1}} onError={()=>{setError('Bilden kunde inte läsas.');onError?.();}}/>:<video ref={video} src={url} playsInline muted={muted} preload="metadata" aria-label={label} onError={()=>{setError('Videon kunde inte läsas.');onError?.();}}/>}
   </DealerVideoSurface></PresentationFrame>
-    <button type="button" onClick={()=>{const element=video.current;if(element?.paused)void element.play().catch(()=>setError('Videon kunde inte starta.'));else element?.pause();}}>Spela / pausa</button>
+    {mediaType!=='image'?<button type="button" onClick={()=>{const element=video.current;if(element?.paused)void element.play().catch(()=>setError('Videon kunde inte starta.'));else element?.pause();}}>Spela / pausa</button>:null}
     {error?<p role="alert">{error}</p>:null}
   </div>;
 }

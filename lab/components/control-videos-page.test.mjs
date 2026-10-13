@@ -49,10 +49,11 @@ function render(props) {
   return renderToStaticMarkup(React.createElement(ControlVideosPage, { ...base, ...props }));
 }
 
-test('clip library drops the inner sidebar, roulette and chat shortcuts', () => {
+test('clip library keeps dedicated roulette media slots without old sidebar or chat shortcuts', () => {
   const html = render({ initialVideos: astridVideos });
   assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|Croupier Lab|Osparade ändringar|Exportera projekt/);
-  assert.doesNotMatch(html, /Roulette/);
+  assert.match(html, /Roulette/);
+  assert.doesNotMatch(html, /href="[^\"]*(?:play\/roulette|roulette-test)/);
   assert.match(html, /class="sg-chip" aria-pressed="true"/);
   assert.match(html, /A Astrid/);
   assert.match(html, /<h1>Dealerns media<\/h1>/);

@@ -7,6 +7,21 @@ import {validateManagedStudioMedia} from '../../web/managed-media-contract.mjs';
 import {mediaHeaderMatches} from '../lib/media-file-types.mjs';
 import {videoFitsLine} from '../lib/video-intake.mjs';
 const project=addDealer(createSeedProject(),'paow','PAOW');
+
+test('roulette reference and action slots stay separate from blackjack, audio and runtime bindings',()=>{
+  const slots=dealerMediaSlots(project,'roulette');assert.equal(slots.length,4);
+  const image=mediaClassification(project,{dealerId:'paow',slotId:'roulette.reference/VILA',label:'Anna VILA',contentType:'image/png'});
+  assert.equal(image.mediaType,'image');assert.equal(image.game,'roulette');assert.deepEqual(image.compositing,{mode:'alpha'});
+  assert.equal(image.startPose,'VILA');assert.equal(videoFitsLine({classification:image},'paow','roulette.reference'),false);
+  const action=mediaClassification(project,{dealerId:'paow',slotId:'roulette.wheel-start/wheel-start',label:'Hjulstart',contentType:'video/webm'});
+  assert.equal(action.kind,'action');assert.equal(action.action,'wheel-start');assert.equal(action.startPose,'unverified');
+  assert.equal(videoFitsLine({classification:action},'paow','idle.ready'),false);
+  assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:'roulette.wheel-start/wheel-start',label:'Wrong',contentType:'image/png'}));
+  assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:'idle.ready/',label:'Wrong',contentType:'image/png'}));
+  assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:'roulette.reference/VILA',label:'Wrong',contentType:'video/webm'}));
+  const rows=dealerLibraryVideos(project,{videos:[{id:'r',classification:action},{id:'b',classification:{...action,eventId:'deal.player.left',game:undefined}}]},'paow','roulette');
+  assert.deepEqual(rows.map(row=>row.id),['r']);
+});
 test('every deal destination maps to its exact box for every dealer, without borrowing Astrid family',()=>{
   const slots=dealerMediaSlots(project,'deal');
   for(const slot of slots)for(const dealer of project.dealers){

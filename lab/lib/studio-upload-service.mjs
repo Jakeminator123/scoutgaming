@@ -1,3 +1,4 @@
+import {assertMediaAlpha} from './media-alpha.mjs';
 import { MEDIA_FILE_TYPES, mediaHeaderMatches } from './media-file-types.mjs';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { join } from 'node:path';
@@ -79,11 +80,13 @@ export function createStudioUploadService({repository,scope,ticketKey,env = proc
       await requireSavedVideoDealer(repository,record.classification.dealerId);
       // getPrivateMedia hashes every newly fetched complete object, validates
       // exact private URL/type/size and serves this prefix from the same bytes.
-      const response = await privateMedia(storage,new Request(request.url,{headers:{Range:'bytes=0-31'}}),mediaOptions);
+      const alpha=record.classification.compositing?.mode==='alpha';
+      const response = await privateMedia(storage,new Request(request.url,alpha?{}:{headers:{Range:'bytes=0-31'}}),mediaOptions);
       if (!response.ok) {await response.body?.cancel();fail('studio_upload_bytes_unavailable',503);}
       const header = Buffer.from(await response.arrayBuffer());
       const validHeader = mediaHeaderMatches(record.contentType,header);
       if (!validHeader) fail('studio_invalid_media_format',415);
+      if(alpha){if(header.length!==record.size)fail('studio_invalid_media_format',415);await assertMediaAlpha(header,record.contentType);}
       return mutationTransaction(async () => {
         if (typeof stillAuthorized !== 'function' || await stillAuthorized() !== true) fail('studio_request_rejected',403);
         await requireSavedVideoDealer(repository,record.classification.dealerId);

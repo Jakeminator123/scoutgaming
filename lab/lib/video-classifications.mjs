@@ -38,6 +38,13 @@ export async function classifyVideo(body, registry, options = {}) {
   let metadata;
   try { metadata = validateVideoMetadata(body.metadata, {forWrite:true}); }
   catch (error) { throw new StudioError(error.message); }
+  if(metadata.compositing?.mode==='alpha'&&video.classification?.compositing?.mode!=='alpha'){
+    const {getVideoResponse}=await import('./video-registry.mjs');
+    const response=await getVideoResponse(video.id,new Request('http://localhost/media'),options);
+    if(!response.ok)throw new StudioError('Alfafilen kunde inte läsas.',503);
+    const {assertMediaAlpha}=await import('./media-alpha.mjs');
+    await assertMediaAlpha(Buffer.from(await response.arrayBuffer()),response.headers.get('content-type')?.split(';')[0]);
+  }
   const dir = uploadDirectory(options);
   await safeDirectory(dir, true);
   let release, compromised = false;

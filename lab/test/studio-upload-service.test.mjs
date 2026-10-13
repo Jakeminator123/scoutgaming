@@ -9,6 +9,8 @@ import { createStudioUploadService } from '../lib/studio-upload-service.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
+import sharp from 'sharp';
+import {inspectWebmAlpha} from '../lib/media-alpha.mjs';
 
 test('an upload grant cannot register retained bank status even with a valid server signature',async t=>{
   const {settings,context,pool}=await fixture(t),record=createRetainedStudioMedia(RETAINED_BANK_VARIANTS[0].id);
@@ -23,6 +25,25 @@ test('an upload grant cannot register retained bank status even with a valid ser
 
 const scope=Object.freeze({environment:'test',workspaceId:'studio-test'}),key=Buffer.alloc(32,8),origin='https://studio.example.invalid';
 const classification={dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Uploaded clip',notes:''};
+
+test('roulette PNG is stored byte-for-byte after decoded alpha verification, and replay preserves identity',async t=>{
+  const bytes=await sharp(Buffer.from([10,200,30,255,20,220,40,0]),{raw:{width:2,height:1,channels:4}}).png().toBuffer();
+  const metadata={...classification,eventId:'roulette.reference',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}};
+  const {prepare,service,objects,context,repository,pool}=await fixture(t,{bytes,contentType:'image/png',metadata});
+  const grant=await prepare();objects.set(grant.pathname,bytes);
+  await service.commit({operation:'commit',ticket:grant.ticket},context);
+  const row=await repository.getMedia(grant.id);assert.deepEqual(row.classification,metadata);assert.equal(row.contentType,'image/png');
+  assert.equal(row.sha256,createHash('sha256').update(bytes).digest('hex'));assert.deepEqual(objects.get(grant.pathname),bytes);
+  assert.deepEqual(await service.commit({operation:'commit',ticket:grant.ticket},context),{id:grant.id,duplicate:true});assert.equal(pool.snapshot().media.size,1);
+});
+test('opaque PNG and MP4 cannot be labelled as verified alpha',async t=>{
+  const bytes=await sharp({create:{width:2,height:2,channels:4,background:{r:20,g:20,b:20,alpha:1}}}).png().toBuffer();
+  const metadata={...classification,eventId:'roulette.reference',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}};
+  const {prepare,service,objects,context,pool}=await fixture(t,{bytes,contentType:'image/png',metadata});const grant=await prepare();objects.set(grant.pathname,bytes);
+  await assert.rejects(service.commit({operation:'commit',ticket:grant.ticket},context),error=>error.code==='studio_media_alpha_required');assert.equal(pool.snapshot().media.size,0);
+  const wrong=await fixture(t,{metadata:{...classification,compositing:{mode:'alpha'}}});await assert.rejects(wrong.prepare(),error=>error.code==='studio_invalid_media');
+  assert.throws(()=>inspectWebmAlpha(Buffer.from('filename_spin_transparent.webm')),error=>error.code==='studio_media_alpha_required');
+});
 async function fixture(t,{bytes=Buffer.from('0000ftypisom00000private-upload-fixture'),contentType='video/mp4',metadata=classification}={}) {
   const cacheDir=await mkdtemp(join(tmpdir(),'croupier-upload-service-'));
   t.after(() => {assert.equal(dirname(resolve(cacheDir)),resolve(tmpdir()));assert.match(basename(cacheDir),/^croupier-upload-service-/);return rm(cacheDir,{recursive:true,force:true});});

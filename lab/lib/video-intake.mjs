@@ -1,3 +1,4 @@
+import {rouletteMediaEvent,validateRouletteMedia} from './roulette-media.mjs';
 import seed from '../policies/project.seed.json' with { type: 'json' };
 import contract from '../policies/studio-contract.json' with { type: 'json' };
 import schema from '../schemas/video.schema.json' with { type: 'json' };
@@ -15,14 +16,16 @@ export function kindForEvent(event) {
   return contract.sourceTypes[event.sourceType]?.kind;
 }
 export function situationsForEvent(event) {
-  return [...(contract.events.find(e => e.id === event.id)?.situations ?? [])];
+  return [...((rouletteMediaEvent(event.id) ?? contract.events.find(e => e.id === event.id))?.situations ?? [])];
 }
 export function validateVideoMetadata(input, { allowLegacySituation = false, forWrite = false } = {}) {
   const allowed = Object.keys(schema.properties);
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(k => !allowed.includes(k))) throw new Error('Ogiltiga videofält.');
   if (input.archived !== undefined && typeof input.archived !== 'boolean') throw new Error('Ogiltig biblioteksstatus.');
-  if (input.mediaType !== undefined && (input.mediaType !== 'audio' || input.kind !== 'speech' || input.familyId)) throw new Error('Ljud behöver ett exakt talfack.');
-  const event = seed.events.find(e => e.id === input.eventId);
+  if (input.mediaType !== undefined && (!['audio','image'].includes(input.mediaType) || input.mediaType === 'audio' && (input.kind !== 'speech' || input.familyId))) throw new Error('Ljud behöver ett exakt talfack.');
+  validateRouletteMedia(input);
+  if(input.mediaType==='image'&&(input.eventId!=='roulette.reference'||input.compositing?.mode!=='alpha'))throw Error('Bilder hör till roulettens VILA-referensfack och ska behålla sin alfa.');
+  const event = rouletteMediaEvent(input.eventId) ?? seed.events.find(e => e.id === input.eventId);
   if (!isDealerId(input.dealerId) || !event) throw new Error('Välj dealer och event.');
   if (!schema.properties.role.enum.includes(input.role)) throw new Error('Välj standard eller alternativ.');
   if (input.playback !== undefined && !contract.playback.supported.includes(input.playback)) throw new Error('Labbet stöder endast en gång (once). Loop är ännu ett förslag.');
@@ -48,8 +51,8 @@ export function validateVideoMetadata(input, { allowLegacySituation = false, for
 }
 export function validateVideoCompositing(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Ogiltig friläggning.');
-  const expected = value.mode === 'opaque' ? ['mode'] : ['despill', 'mode', 'softness', 'threshold'];
-  if (!['opaque', 'green-screen'].includes(value.mode) || Object.keys(value).sort().join(',') !== expected.join(',')) throw new Error('Ogiltig friläggning.');
+  const expected = ['opaque','alpha'].includes(value.mode) ? ['mode'] : ['despill', 'mode', 'softness', 'threshold'];
+  if (!['opaque', 'alpha', 'green-screen'].includes(value.mode) || Object.keys(value).sort().join(',') !== expected.join(',')) throw new Error('Ogiltig friläggning.');
   if (value.mode === 'green-screen' && ['threshold', 'softness', 'despill'].some(key => !Number.isFinite(value[key]) || value[key] < (key === 'softness' ? 0.001 : 0) || value[key] > 1)) throw new Error('Ogiltiga värden för grön nyckling.');
   return structuredClone(value);
 }
@@ -59,12 +62,12 @@ export function videoCompositing(video) {
 // Classification is operator supplied. This checks declared compatibility, not visual quality.
 export function videoFitsLine(video, dealerId, eventId) {
   const m = video?.classification;
-  if (!m || m.mediaType === 'audio' || m.dealerId !== dealerId || m.eventId !== eventId) return false;
+  if (!m || ['audio','image'].includes(m.mediaType) || m.dealerId !== dealerId || m.eventId !== eventId) return false;
   try { validateVideoMetadata(m); return true; } catch { return false; }
 }
 export function videoFitsEvent(video, event) {
   const m = video?.classification;
-  if (!m) return false;
+  if (!m || m.mediaType==='image' || m.game==='roulette') return false;
   if (m.eventId === 'transition.shoe' || m.situation === 'to-shoe' || m.situation === 'from-shoe') return false;
   if (!m?.situation) return true;
   if (m.kind === 'speech') return event.line === m.situation;
