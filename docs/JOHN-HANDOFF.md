@@ -1,5 +1,37 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: avgränsad förladdning från Kevin
+
+`codex/verified-event-preloading` utgår från main `d595e6b7` och anpassar
+köprincipen i Kevins `video-buffer.js` på `f15b2af1`. Ingen hel commit eller
+spelarmotor har importerats. Frysta v3-paket lämnar nu `eventPreloads` från
+dealerns uttryckliga standardbindningar: medie-ID, event och exakt situation.
+Klienten förbereder ett kommande klipp med befintlig `prepareLocalClip()`.
+Slutvalet görs fortfarande av servern; varken slump, råd eller framtida
+spelutfall körs i förladdningen. V2 och befintliga familjbaserade previews
+behåller sina vägar. Ingen migration eller ompublicering behövs.
+
+Den verifierade cachen har högst fyra samtidiga hämtningar, med väntande
+uppspelning före spekulativ förberedelse. SHA-256, befintlig 96 MiB-cachebudget,
+delade hämtningar och låsta blob-URL:er under uppspelning består. Aktiva lån
+kan som tidigare tillfälligt överskrida cachebudgeten. Paketbyte, dold flik,
+ny rundrevision och stängning avbryter förberedelser. En förladdning räknas
+aldrig som presenterad bildruta. Inga mediafiler, poser, kortspår, saldon,
+bolagspaket, åtkomstregler eller publicerade data ändras.
+
+Egna prov: 101 riktade tester passerar, inklusive verkligt fryst paket,
+exakt plats/replik/dealer, två spelarcykler med kontrollerade videoelement,
+prioritet, avbrott, verifieringsfel och bevarade bildrutekvitton. Studio-
+produktionsbygget passerar. Full lokal hook stoppade i fem befintliga
+roulette-HTTP-prov med socketfel mot 127.0.0.2. De efterföljande testgrupperna
+kördes separat: 173 passerade, ett sessionsprov saknade OS-startidentitet
+i exekveringsmiljön. Full CI-verifiering följs i PR:n.
+Chromium saknas i miljön och kunde inte installeras, så verklig avkodning,
+mobilprov, två rehearsal-uppspelningar per berörd registrerad dealer och
+prestandajämförelse är fortfarande öppna. PR:n levereras därför som utkast.
+GitGuardian-suite på main är köad; incident-/plats-/historiktäckning är
+inte återläst. Detta är ingen ny mediaacceptans eller produktionsleverans.
+
 ## Tillägg 13 oktober: papperskorg i befintliga Control
 
 `codex/control-trash` bygger vidare på bakgrunds-PR #58. Bolagsarkivering

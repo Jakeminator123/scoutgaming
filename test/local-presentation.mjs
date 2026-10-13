@@ -457,24 +457,112 @@ test('card motion receives each presented media frame and stops at cancellation'
   assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.equal(video.frames.size, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off'} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', eventPreloads, omitInventory = false} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
-  globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
+  const listeners = new Map(), prepared = [];
+  let revision = 2, cancellations = 0;
+  globalThis.document = { hidden: false, createElement: element, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) };
   const selected = inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
-  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
+  globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory: omitInventory ? undefined : inventory, eventPreloads, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
     : { video: missingPosition ? null : selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0;
-  const player = { playLocalClip(take, options) { return new Promise((resolve, reject) => {
+  const player = { prepareLocalClip: take => prepared.push(take), cancelLocalPreparation: () => cancellations++, playLocalClip(take, options) { return new Promise((resolve, reject) => {
     const job = { take, options, resolve, reject }; jobs.push(job);
     options.signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError')), { once: true });
   }); } };
-  const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => 2,
+  const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => revision,
     receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
-  return { controller, jobs, receipts, requests, elements, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
+  return { controller, jobs, receipts, requests, elements, prepared, get cancellations() { return cancellations; },
+    setVersion(value) { revision = value; }, visibility(hidden) { document.hidden = hidden; listeners.get('visibilitychange')?.(); },
+    setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
 }
+
+function preloadFixture() {
+  const eventPreloads = [
+    ['deal.player.centre','box3'], ['deal.dealer','dealer-up'],
+    ['deal.dealer','dealer-hole'], ['reveal.dealer','dealer-hole'], ['speak.goodluck','goodluck'],
+  ].map(([eventId,situation],i) => ({dealerId:'johanna',eventId,situation,videoId:'hint-'+i}));
+  const videos = eventPreloads.map((hint,i) => ({id:hint.videoId,src:'/api/presentation/registered-video/north/room-johanna/7/johanna/'+hint.videoId,
+    sha256:String(i+1).repeat(64),available:true}));
+  // The selector deliberately returns another valid video. Warming the standard
+  // must not replace a server-selected rules/random/advice result.
+  videos.push({id:'chosen',fileName:'deal_pos4.mp4',src:'/selected-alternative',sha256:'f'.repeat(64),available:true});
+  return {dealerId:'johanna',eventPreloads,customInventory:{families:[],videos}};
+}
+
+test('frozen hints warm exactly one matching clip without selecting or emitting playback receipts', async t => {
+  const f = await controllerFixture(t, preloadFixture());
+  for (const [event,index] of [
+    [{type:'deal',to:'box',box:3},0], [{type:'deal',to:'dealer',faceDown:false},1],
+    [{type:'deal',to:'dealer',faceDown:true},2], [{type:'reveal',to:'dealer'},3], [{type:'speak',line:'goodluck'},4],
+  ]) {
+    f.controller.prepareSequence([event]);
+    assert.equal(f.prepared.at(-1).media.sha256, String(index+1).repeat(64));
+  }
+  assert.equal(f.prepared.length,5); assert.equal(f.requests.length,1); assert.equal(f.jobs.length,0);
+  assert.deepEqual(f.receipts.map(row => row.event), ['configuration']);
+});
+
+test('missing or foreign hint never substitutes a neighbouring position, line, dealer or legacy family', async t => {
+  const options = preloadFixture();
+  options.eventPreloads.push({dealerId:'nora',eventId:'speak.win',situation:'win',videoId:'chosen'});
+  options.customInventory.families.push({dealerId:'johanna',eventId:'deal.player.centre',situation:'box4',standardIds:['chosen']});
+  const f = await controllerFixture(t, options);
+  for (const event of [
+    {type:'deal',to:'box',box:4}, {type:'deal',to:'dealer'}, {type:'deal',to:'dealer',faceDown:'yes'},
+    {type:'reveal',to:'box',box:3}, {type:'speak',line:'win'}, {type:'idle',to:'box',box:3},
+  ]) f.controller.prepareSequence([event]);
+  assert.equal(f.prepared.length,0); assert.equal(f.cancellations,6); assert.equal(f.requests.length,1);
+});
+
+test('preloading preserves the caller sequence and the server choice, advancing only after actual start', async t => {
+  const f = await controllerFixture(t, preloadFixture()), events = [source,{type:'speak',line:'goodluck'}];
+  const original = structuredClone(events);
+  f.controller.prepareSequence(events); assert.equal(f.prepared.length,1);
+  const playback = f.controller.present(source); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.jobs[0].take.media.src,'/selected-alternative');
+  assert.equal(f.prepared.length,1, 'selection alone does not advance the preparation');
+  f.jobs[0].options.onReceipt({state:'start'});
+  assert.equal(f.prepared.length,2); assert.equal(f.prepared[1].media.sha256,'5'.repeat(64));
+  assert.deepEqual(events,original);
+  f.jobs[0].resolve(); assert.equal(await playback,true);
+});
+
+test('hidden tabs, new revisions, empty sequences and close cancel speculative preparation', async t => {
+  const f = await controllerFixture(t, preloadFixture());
+  f.controller.prepareSequence([source]); assert.equal(f.prepared.length,1);
+  f.visibility(true); let cancelled = f.cancellations;
+  f.controller.prepareSequence([source]); assert.equal(f.prepared.length,1); assert.ok(f.cancellations > cancelled);
+  f.visibility(false); f.controller.prepareSequence([source]);
+  cancelled = f.cancellations; f.setVersion(3); f.controller.state({action:true}); assert.ok(f.cancellations > cancelled);
+  cancelled = f.cancellations; f.controller.prepareSequence([]); assert.ok(f.cancellations > cancelled);
+  f.controller.prepareSequence([source]); cancelled = f.cancellations; f.controller.close(); assert.ok(f.cancellations > cancelled);
+  const count = f.prepared.length; f.controller.prepareSequence([source]); assert.equal(f.prepared.length,count);
+});
+
+test('a revoked frozen package stops preparation as well as playback', async t => {
+  const f = await controllerFixture(t, {...preloadFixture(),entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+  f.controller.prepareSequence([source]); f.setConfigStatus(409);
+  assert.equal(await f.controller.present(source),false);
+  assert.equal(f.jobs.length,0); assert.ok(f.cancellations > 0);
+  f.controller.prepareSequence([source]); assert.equal(f.prepared.length,1);
+  assert.match(f.status.textContent,/paketet har ändrats/);
+});
+
+test('idle-only v2 configurations tolerate preparation without an inventory', async t => {
+  const f = await controllerFixture(t, {customInventory:{videos:[],families:[]},omitInventory:true});
+  assert.doesNotThrow(() => f.controller.prepareSequence([source])); assert.equal(f.prepared.length,0);
+});
+
+test('existing family previews still warm their standard without v3 hints', async t => {
+  const options = preloadFixture(); delete options.eventPreloads;
+  options.customInventory.families = [{dealerId:'johanna',eventId:'deal.player.centre',situation:'box3',standardIds:['hint-0']}];
+  const legacy = await controllerFixture(t, options); legacy.controller.prepareSequence([source]);
+  assert.equal(legacy.prepared.length,1); assert.equal(legacy.prepared[0].media.sha256,'1'.repeat(64));
+});
 
 test('native configuration and actual film receipts preserve their saved project revision and selection id', async t => {
   const { controller, jobs, receipts } = await controllerFixture(t);

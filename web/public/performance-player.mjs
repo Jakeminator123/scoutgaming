@@ -27,7 +27,7 @@ export class PerformancePlayer {
     const abortPrepared = () => slot?.cancel();
     if (prepared) signal?.addEventListener('abort', abortPrepared, { once: true });
     try {
-      if (prepared) { lease = await slot.job; video = slot.video; }
+      if (prepared) { this.localBuffer?.prioritize(take.media); lease = await slot.job; video = slot.video; }
       else { slot?.cancel(); lease = await (this.localBuffer ??= createVerifiedVideoBuffer()).acquire(take.media, signal); }
       signal?.throwIfAborted();
       const mediaReadyMs = performance.now() - started;
@@ -48,7 +48,7 @@ export class PerformancePlayer {
     const slot = { key: take.media.sha256, video,
       cancel: () => { controller.abort(); video.pause(); video.removeAttribute('src'); video.load(); lease?.release(); } };
     this.localPrepared = slot;
-    slot.job = (this.localBuffer ??= createVerifiedVideoBuffer()).acquire(take.media, controller.signal).then(value => {
+    slot.job = (this.localBuffer ??= createVerifiedVideoBuffer()).acquire(take.media, controller.signal, { priority: 1 }).then(value => {
       lease = value;
       if (controller.signal.aborted) { lease.release(); throw new DOMException('Preparation replaced', 'AbortError'); }
       video.src = lease.src; video.load(); return lease;

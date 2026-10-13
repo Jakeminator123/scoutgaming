@@ -103,11 +103,20 @@ export function createFrozenDealerPresentationContext({ readCurrentContext, read
   }
   async function configuration(input) {
     const resolved = await resolve(input);
+    // Hints only: warm the frozen baseline, never run selection/advice or sample
+    // a future variant. Media access and the final event are checked as usual.
+    const eventPreloads = (resolved.project?.lines ?? []).flatMap(line => {
+      if (line.dealerId !== resolved.dealer.id || !/^(deal\.|reveal\.|speak\.)/.test(line.eventId)) return [];
+      const id = line.variants.find(row => row.id === line.baselineVariantId)?.videoGenerationId;
+      const record = resolved.records.find(row => row.id === id && row.classification.eventId === line.eventId);
+      if (!record?.classification.situation) return [];
+      return [{ dealerId: resolved.dealer.id, eventId: line.eventId, situation: record.classification.situation, videoId: id }];
+    });
     return { owner: 'web', configurationSource: resolved.configurationSource,
       projectRevision: resolved.projectRevision, packageRevision: resolved.context.packageRevision,
       operator: resolved.context.operatorSlug, roomId: resolved.context.roomId, dealer: resolved.dealer,
       dealerIdle: { [resolved.dealer.id]: publicIdle(resolved.record, resolved.context) },
-      ...(resolved.schemaVersion === 3 ? {idlePolicy:resolved.idlePolicy,inventory:{families:structuredClone(resolved.idleInventory.families),videos:resolved.records.map(row => {
+      ...(resolved.schemaVersion === 3 ? {eventPreloads,idlePolicy:resolved.idlePolicy,inventory:{families:structuredClone(resolved.idleInventory.families),videos:resolved.records.map(row => {
         const idle = resolved.idleInventory.videos.find(video => video.id === row.id);
         return {...publicVideo(resolved,row.id),available:true,...(idle ? {familyId:idle.familyId,role:idle.role,dealer:resolved.dealer.id} : {})};
       })}} : {}) };

@@ -15,14 +15,23 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   const config = await response.json();
   let upcoming = [], queueVersion;
   const prepare = event => {
-    if (!event || queueVersion !== version() || closed) return;
-    const family = config.inventory.families?.find(row => row.dealerId === dealerId && (
+    if (!event || queueVersion !== version() || closed || packageChanged || document.hidden) {
+      player.cancelLocalPreparation?.(); return;
+    }
+    const matches = row => row.dealerId === dealerId && (
       event.type === 'speak' ? row.eventId.startsWith('speak.') && row.situation === event.line :
-      event.type === 'reveal' ? row.eventId === 'reveal.dealer' :
-      event.to === 'dealer' ? row.eventId === 'deal.dealer' && row.situation === (event.faceDown ? 'dealer-hole' : 'dealer-up') :
-      row.eventId.startsWith('deal.player.') && row.situation === `box${event.box}`));
-    const video = config.inventory.videos.find(row => family?.standardIds.includes(row.id) && row.available);
+      event.type === 'reveal' ? event.to === 'dealer' && row.eventId === 'reveal.dealer' && row.situation === 'dealer-hole' :
+      event.type !== 'deal' ? false :
+      event.to === 'dealer' ? row.eventId === 'deal.dealer' && (event.faceDown === true || event.faceDown === false)
+        && row.situation === (event.faceDown ? 'dealer-hole' : 'dealer-up') :
+      event.to === 'box' && Number.isInteger(event.box) && row.eventId.startsWith('deal.player.') && row.situation === `box${event.box}`);
+    // V3 uses explicit frozen bindings, not the live media-family catalog.
+    // Older/preview configurations can still use their existing families.
+    const hint = config.eventPreloads?.find(matches);
+    const family = config.eventPreloads == null ? config.inventory?.families?.find(matches) : null;
+    const video = config.inventory?.videos.find(row => (hint ? row.id === hint.videoId : family?.standardIds.includes(row.id)) && row.available);
     if (video) player.prepareLocalClip?.({ media: { src: mediaUrl(video), sha256: video.sha256 } });
+    else player.cancelLocalPreparation?.();
   };
   let action = false, speech = false, ready = false, closed = false, active = null, serial = 0, mode = !preview && config.defaultMode === 'active' ? 'active' : 'off', presentationKind = null, packageChanged = false;
   const configurationSource = config.configurationSource || 'lab/project.json';
@@ -106,7 +115,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   }
   function requireReload(error) {
     if (error.code !== 'studio_presentation_idle_package_changed' && !(preview && error.code?.startsWith('studio_preview_'))) return false;
-    pendingRule = null; packageChanged = true; ++serial; stop(); idle?.close(); control.disabled = true; status.textContent = error.message + ' ';
+    pendingRule = null; packageChanged = true; upcoming = []; player.cancelLocalPreparation?.(); ++serial; stop(); idle?.close(); control.disabled = true; status.textContent = error.message + ' ';
     const button = document.createElement('button'); button.type = 'button'; button.textContent = 'Ladda om';
     button.onclick = () => globalThis.location?.reload(); status.append(button);
     return true;
@@ -153,7 +162,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     // may revoke the current card's owner. Apply those flags on action release.
     if (action && ['deal', 'reveal'].includes(presentationKind) && !Object.hasOwn(patch, 'action') && !document.hidden) return;
     if (action || speech || document.hidden) adviceController?.abort();
-    if (document.hidden) { pendingRule = null; upcoming = []; player.cancelLocalPreparation?.(); }
+    if (document.hidden) pendingRule = null;
+    if (document.hidden || queueVersion !== undefined && queueVersion !== version()) { upcoming = []; player.cancelLocalPreparation?.(); }
     ++serial; stop(); idleRun = 0;
     idle?.updateScene({ actionBusy: action, speechPlaying: speech, speechReady: ready, visible: !document.hidden, revision: `${version()}:${mode}` });
     offerPendingRule();
@@ -225,7 +235,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
   control.onchange = () => { pendingRule = null; idle?.clearOffers(); adviceController?.abort(); mode = preview&& !['off','rules','random'].includes(control.value)?'off':control.value; control.value=mode; state({}); receipt({ event: 'configuration', state: 'selected', mode, projectRevision: config.projectRevision || config.revision, configurationSource }); };
   const visibility = () => state({}); document.addEventListener('visibilitychange', visibility);
   return { present, state, observeChat, start: resumeIdle,
-    prepareSequence(events) { queueVersion = version(); upcoming = events; prepare(upcoming[0]); },
+    prepareSequence(events) { queueVersion = version(); upcoming = [...events]; prepare(upcoming[0]); },
     get idleBackground() { return !closed && !action && !speech && presentationKind === 'idle'; },
     close() { pendingRule = null; closed = true; upcoming = []; player.cancelLocalPreparation?.(); adviceController?.abort(); ++serial; stop(); idle?.close(); document.removeEventListener('visibilitychange', visibility); status.remove(); control.remove(); still.remove(); } };
 }

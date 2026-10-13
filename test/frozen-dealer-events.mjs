@@ -47,6 +47,51 @@ function serviceFor(presentation) {
 }
 const context = {operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'};
 
+test('v3 preloading describes only frozen exact baselines, preserving selection and private media scope', async () => {
+  const input = fixture({ secondDealer: true }), project = input.snapshot.projectDocument.value;
+  const records = [record('johanna','deal.player.centre',5,'box3'),
+    record('johanna','deal.dealer',6,'dealer-up'), record('johanna','reveal.dealer',7,'dealer-hole')];
+  records[2].classification.kind = 'action';
+  for (const row of records) {
+    input.snapshot.mediaRows.push({ ...row, revision: 'media-1' });
+    input.inventory.videos.push({ id:row.id, sha256:row.sha256, bytes:row.size, dealer:'johanna', available:true, classification:row.classification });
+    project.lines.find(line => line.dealerId === 'johanna' && line.eventId === row.classification.eventId).variants[0].videoGenerationId = row.id;
+  }
+  const alternative = record('johanna','speak.goodluck',8,'goodluck');
+  input.snapshot.mediaRows.push({ ...alternative, revision:'media-1' });
+  input.inventory.videos.push({ id:alternative.id, sha256:alternative.sha256, bytes:alternative.size, dealer:'johanna', available:true, classification:alternative.classification });
+  const speech = project.lines.find(line => line.dealerId === 'johanna' && line.eventId === 'speak.goodluck');
+  speech.variants.push({ ...speech.variants[0], id:'johanna.speak.goodluck.alternative', videoGenerationId:alternative.id, selection:{ rules:true, random:true, model:true } });
+  const presentation = captureFrozenPresentation(input).presentation, before = structuredClone(presentation);
+  const f = serviceFor(presentation), config = await f.service.configuration(context);
+  assert.deepEqual(config.eventPreloads.map(({eventId,situation,videoId}) => [eventId,situation,videoId]).sort(), [
+    ['deal.player.centre','box3',uuid(5)], ['deal.dealer','dealer-up',uuid(6)],
+    ['reveal.dealer','dealer-hole',uuid(7)], ['speak.goodluck','goodluck',uuid(2)],
+  ].sort());
+  assert.ok(config.eventPreloads.every(row => row.dealerId === 'johanna'));
+  assert.ok(config.eventPreloads.every(row => config.inventory.videos.some(video => video.id === row.videoId && video.sha256 && video.src.includes('/north/room-johanna/7/johanna/'))));
+  assert.ok(config.inventory.videos.some(row => row.id === uuid(8)), 'eligible alternative is retained for later server selection');
+  assert.ok(config.inventory.families.every(row => row.eventId === 'idle.ready'), 'hints do not fabricate selection families');
+  assert.equal(JSON.stringify(config).includes('pathname'), false);
+  assert.deepEqual(f.saved.package.frozen, before); assert.deepEqual(f.served, [], 'configuration never fetches private media');
+  speech.variants[0].videoGenerationId = alternative.id;
+  assert.deepEqual((await f.service.configuration(context)).eventPreloads, config.eventPreloads, 'live edits do not change frozen hints');
+  const nora = await f.service.configuration({ ...context, dealerId:'nora' });
+  assert.deepEqual(nora.eventPreloads, [{dealerId:'nora',eventId:'speak.goodluck',situation:'goodluck',videoId:uuid(4)}]);
+  f.saved.package.revision++;
+  await assert.rejects(f.service.configuration(context), error => error.statusCode === 409);
+});
+
+test('v2 and unbound baselines do not invent event preload candidates', async () => {
+  const presentation = captureFrozenPresentation(fixture()).presentation;
+  const {playback, ...v2} = presentation; v2.schemaVersion = 2;
+  const config = await serviceFor(v2).service.configuration(context);
+  assert.equal(Object.hasOwn(config,'eventPreloads'), false);
+  const input = fixture();
+  input.snapshot.projectDocument.value.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].videoGenerationId = null;
+  assert.deepEqual((await serviceFor(captureFrozenPresentation(input).presentation).service.configuration(context)).eventPreloads, []);
+});
+
 test('published 16-event packages remain readable after the optional shoe slot is added', async () => {
   const current = captureFrozenPresentation(fixture({secondDealer:true})).presentation;
   const legacy = structuredClone(current);
