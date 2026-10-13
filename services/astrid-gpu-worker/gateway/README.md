@@ -1,13 +1,19 @@
 # Streaming relay and browser reference
 
-The relay and shared player are integrated into Croupier behind explicit
-streaming flags. The standalone server below does not create a Render service
-or launch a paid GPU worker. See the
+The relay, ticket authentication, worker binding and Cartesia/ElevenLabs PCM
+adapters are imported by Croupier's game server. The integration lives in
+[`web/generated-speech-stream.mjs`](../../../web/generated-speech-stream.mjs),
+[`web/dealer-speech-runtime.mjs`](../../../web/dealer-speech-runtime.mjs) and
+[`web/speech-journal-runtime.mjs`](../../../web/speech-journal-runtime.mjs).
+The shared game player in `web/public` owns actual playback.
+`browser-player.mjs` and `server.mjs` here are protocol references. The
+standalone server below does not create a Render service or launch a paid GPU
+worker. See the
 [runtime guide](../../../docs/LOCAL-PRESENTATION-RUNTIME.md) and
 [John handoff](../../../docs/JOHN-HANDOFF.md) for current deployment and
 GPU acceptance; the retired integration report is no longer a separate source.
 
-## Run
+## Standalone protocol checks
 
 Node 22+, `npm ci`, then `npm test` or `npm start` in this directory. Configure:
 
@@ -28,8 +34,9 @@ warm or restart workers: the application must own that lifecycle and budget.
 
 ## Integrating the application
 
-1. Import `attachSpeechRelay` into the Render Node service, or run the provided
-   dedicated service. Keep game state authoritative in the existing game engine.
+1. Import `attachSpeechRelay` into the application Node service. Croupier already
+   does this in its game server; the standalone fixture is not an additional
+   production service. Keep game state authoritative in the existing game engine.
 2. Add an authenticated, CSRF-protected application endpoint that verifies the
    requesting user owns the game session, applies a per-account spend/rate limit,
    and calls `issueTicket(TICKET_SECRET, {userId, sessionId})`. Never accept
@@ -37,8 +44,9 @@ warm or restart workers: the application must own that lifecycle and budget.
 3. Return only the short-lived ticket and relay URL to that user. The browser
    connects with protocols `astrid-v2` and `ticket.<ticket>`; tickets are single
    use. Proxy logging must redact `Sec-WebSocket-Protocol` on this route.
-4. Import `SpeechStreamPlayer`, construct it with the actual game's video
-   element and call `await player.connect(url, ticket)` from a user interaction.
+4. In an isolated reference integration, import `SpeechStreamPlayer`, construct
+   it with the test's video element and call `await player.connect(url, ticket)`
+   from a user interaction.
    The browser is receive-only by default. The fMP4 includes AAC audio: do not
    play a separate TTS audio source.
 5. On the trusted application server, use `onSessionReady(identity)` to start
@@ -60,7 +68,7 @@ warm or restart workers: the application must own that lifecycle and budget.
 The existing TTS adapter must deliver PCM with the declared rate, and the game
 must switch to this player without running its legacy MP4 or audio player in
 parallel. Croupier's application integration exists; consult the handoff for
-the current four-dealer and GPU acceptance instead of this reference fixture.
+registered-dealer and GPU acceptance instead of this reference fixture.
 No LLM or TTS API credentials are needed by this relay itself. The standalone
 `server.mjs` only exposes health and socket attachment; a production application
 must import the module and wire `onSessionReady` to its TTS adapter. There is
@@ -109,6 +117,15 @@ automatic fallback to full-file rendering: failures stay observable.
 All controls are JSON with discriminator `t`. All binary client input is PCM16;
 all binary worker output is fragmented MP4 containing H264 and AAC.
 
+The browser transport retains `astrid-v2` and protocol 2 for compatibility.
+Registered-dealer worker connections additionally attest `X-Dealer-Id`,
+`X-Speech-Profile-Revision`, `X-Speech-Image-Sha256` and `X-Speech-Protocol: 3`.
+`worker-binding.mjs` validates these against the server-owned session avatar;
+the application supplies `authenticateWorker` and selects the exact worker.
+Legacy sessions without an avatar must not advertise a registered-dealer
+binding. The standalone `server.mjs` does not implement these application
+profile, budget or RunPod lifecycle checks.
+
 - Browser receives `ready{id,protocol:2}`; trusted server source starts TTS.
 - Relay sends worker `start{id,rate,protocol:2}`, followed by PCM messages.
 - Worker sends `stream{id,mime}` before init/media bytes.
@@ -139,3 +156,8 @@ timeout, browser disconnect or an early iterator return. The existing
 ownership/round check belongs in `beforeCostly`. Keep voice/model values tied
 to the existing server voice profile. This removes full-audio buffering but
 does not itself stream incomplete LLM text.
+
+`elevenlabs-source.mjs` provides the equivalent bounded PCM iterator for
+ElevenLabs. `web/dealer-speech-runtime.mjs` selects the adapter from the current
+dealer's private speech profile and verifies its voice; neither adapter
+silently changes provider or chooses another dealer's voice.

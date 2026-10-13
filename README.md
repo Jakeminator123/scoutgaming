@@ -1,174 +1,129 @@
-# Croupier
+# Scoutgaming / Croupier
 
-Croupier is the working blackjack demo with server-owned game state and a
-shared playback path for four AI dealers. It is a development product, not a
+Croupier is the working casino demo with server-owned game state and shared
+playback for registered dealers. Start with blackjack; roulette has its own
+server and presentation contracts. Current acceptance and unfinished work are
+recorded in [the handoff](docs/JOHN-HANDOFF.md). This development demo is not a
 certified RNG/RGS or a real-money system.
 
-Public site: [www.scoutgaming.tech](https://www.scoutgaming.tech/). Apex
-`scoutgaming.tech` is a 308 to www. The Vercel project name is `scoutgaming`.
-The game engine stays on Render service `croupier-v2`.
+Public site: [www.scoutgaming.tech](https://www.scoutgaming.tech/).
+The single Vercel project **scoutgaming**, on team **scoutgaming**, builds the
+frontend and Studio Services. Render service **croupier-v2** owns the game
+engine and live transport. See [cloud and storage](docs/CLOUD-MIGRATION.md).
 
-The public surfaces are not feature-complete:
+## Product entry points
 
-| Level | Who | Path |
+| Surface | Current entry | Transition |
 | --- | --- | --- |
-| 1 | Internal staff | [/control](https://www.scoutgaming.tech/control) |
-| 2 | Operator | [/partner](https://www.scoutgaming.tech/partner) and `/partner/{operatorSlug}` |
-| 3 | Player | [/play](https://www.scoutgaming.tech/play), [/play/profil](https://www.scoutgaming.tech/play/profil), [/play/historik](https://www.scoutgaming.tech/play/historik) and [/play/blackjack](https://www.scoutgaming.tech/play/blackjack) |
+| Internal administration | `/admin` | New backoffice. Existing `/control` tools, permissions and contextual links still work where the replacement is incomplete. |
+| Operator portal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Real registered operators and scoped memberships; ordinary routes do not use demo fallback data. |
+| Player lobby | `/lobby` | New lobby. Existing `/play`, `/play/profil`, `/play/historik` and `/play/blackjack` remain during the transition. |
 
-The staff menu has four groups (`lab/lib/scout-navigation.mjs`). Studio:
-Dealers & klipp `/control/clips`, Dealer Forge `/control/dealer-forge`,
-Bord & bakgrunder `/control/library`, Sammansättningar `/control/compositions`.
-Spelbolag: Bolag & team `/control/companies`, Spelrum & publicering
-`/control/rooms`. Drift: Spelstatus & integritet
-`/control/administration?tab=operations`, Betalningar & journal `?tab=finance`.
-System: Konton & åtkomst `?tab=accounts`, API & integrationer `?tab=partners`,
-Agentmodeller `/control/openclaw`, Intern agentchatt `/control/openclaw?tab=chat`.
-The footer is Översikt `/control` and Guide & hjälp `/control/guide`.
-Provspelning & logg `/control/rehearsal` stays contextual to dealer, composition,
-operator and room. Pages that remain without their own menu row: Spelhändelser
-& villkor `/control/events` (overview without `?event=`, editor with it),
-Klippbibliotek `/control/videos`, Svarsbibliotek `/control/replies` and Probe
-`/control/probe`. `/control/preview` redirects to `/control/compositions`.
-`/control/lanes` redirects to `/control/rooms`, and `?tab=companies` to
-`/control/companies`. `/control/activity` redirects to `/control/rehearsal`.
-`/control/zones` and `/zones` redirect to `/control/preview`, which then goes to
-compositions. `/control/backgrounds` redirects to `/control/compositions`.
-`/control/tree` redirects to `/control/events` with its query.
-`/control/operator-chat` redirects to the chat tab. Old `lane` query values are
-accepted; Studio links emit `composition`.
+`/admin` and `/lobby` are served by the Lab service from
+`packages/design-preview/`. Their names do not imply that every old workflow
+has moved. The lobby launches the existing game engine; it does not replace it.
+Partner team access and branding drafts exist. Operator game data/reports,
+chips and partner password reset still have open work; consult the cloud
+checklist before calling a surface complete.
 
-The partner portal is level 2. Operator staff sign in at `/partner/login` and see
-only active memberships. Internal admins use the same N1 login. Normal partner
-routes do not fall back to demo data. The menu is Översikt, Spelrum
-(`/partner/{operatorSlug}/rooms`), Team & behörigheter and Integration.
-Operators, roles and memberships are created from Bolag & team on
-`/control/companies`; a new e-mail receives an activation link to
-`/partner/set-password`. Company appearance (`branding`, table colour) is read
-and written with `presentations.configure`, with revision checks. Players,
-transactions and reports are not connected (N2.4). Chips (L4) and partner
-password reset are not done.
-The lobby, `/play/profil` and `/play/historik` exist. The profile can be edited
-(display name and language). The lobby shows Spelar hos from `?operator=`.
-Render's `/blackjack?operator=` and Vercel's `/play/blackjack?operator=` limit
-lane and dealer to the package.
+`/studio` is the Lab service's Next.js basePath. It is not another product.
+`/lissabon`, `/lab`, `/labb` and `/bo` are retired product aliases. Some stored
+IDs, local guest profile tables, filenames and the `lissabon-stream-lane` flag
+remain compatibility details. Do not rename saved identities or remove their
+consumers just because the old name survives. The flag still controls chat
+context, camera checks and saved local profiles. New UI work belongs in `/admin`
+and `/lobby`; the [user guide](lab/docs/README.md) describes working tools.
 
-`/studio` is the Next.js basePath of the lab service, not a fourth product and
-not the name to use in the UI. `/lissabon`, `/lab`, `/labb`, and `/bo` are retired
-aliases. A stream-lane flag named `lissabon-stream-lane` is not a product URL.
+## Source and folder map
 
-See [start and architecture](lab/README.md) and the [user guide](lab/docs/README.md).
-The single `scoutgaming` Vercel project builds the web and lab apps as two
-Services from this repository's main branch, both in Frankfurt. Render owns the
-authoritative game engine and live transport. Lab admin uses native Neon policy
-and private Blob. Isolated QA remains separate. Full AI/GPU acceptance remains open in the migration checklist. Partner sign-in
-and the player lobby exist. T2 and T4 are not done: the audit journal table,
-chips and game data for operators remain (N2.4). Render's `/blackjack?operator=`
-and Vercel's `/play/blackjack?operator=` limit lane and dealer to the package.
-Neon `croupier-production` and Blob `croupier-media-private` live on the
-`scoutgaming` Vercel team and are connected to the project.
-Existing backoffice tools keep their original permissions. Observation follows the game
-player's receipts; a separate lab preview requires an explicit action.
-See the [current cloud and storage map](docs/CLOUD-MIGRATION.md)
-and [route guide](docs/LOCAL-PRESENTATION-RUNTIME.md).
-For a disposable local preview with existing films and no external providers:
+| Folder | Responsibility | Guide |
+| --- | --- | --- |
+| `apps/croupier-frontend/` | Public Next frontend, player pages and ingress to the game/Studio services | [Frontend](apps/croupier-frontend/README.md) |
+| `lab/` | Studio server, staff/operator APIs, local launcher and UI build integration | [Lab](lab/README.md) |
+| `web/` | Authoritative game server, authentication, wallet, persistence and game client source | [Game server](web/README.md) |
+| `packages/presentation/` | Shared compositor, presentation selection, idle rules and reviewed layer preview | [Presentation](packages/presentation/README.md) |
+| `packages/design-preview/` | Active admin/lobby UI source and browser bundle builder | [Admin/lobby](packages/design-preview/README.md) |
+| `services/astrid-gpu-worker/` | GPU lip sync plus shared speech transport; the historical name does not restrict sessions to Astrid | [Speech service](services/astrid-gpu-worker/README.md) |
+| `pipeline/` | Media utilities with separate inputs, banks and export formats | [Media tools](pipeline/README.md) |
+| `media/` | Registered runtime assets, source/review/staging files and identity manifests | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |
+| `open-claw/` | OpenClaw/Gateway integration and its deployment tools | [OpenClaw](open-claw/README.md) |
+| `ops/`, `tools/`, `test/` | Deployment tooling, repository utilities and regression tests | [Cloud](docs/CLOUD-MIGRATION.md), [container context](ops/cloud/CONTAINER-CONTEXT.md) |
+
+These are source responsibilities, not independent products. For example,
+Vercel's `web` Service builds `apps/croupier-frontend/`; the root `web/` folder
+is the game server and client. Imports still cross some app/package boundaries;
+a neutral package name alone does not make that code independent.
+
+There is no tracked root `random/` folder. Ignore rules allow private local
+backups/screenshots there; those files are not project instructions. Personal
+archives and conversation exports stay outside active agent reading paths.
+
+## Runtime and shared terms
+
+[TERMINOLOGI](lab/docs/TERMINOLOGI.md) is the single source for the product
+model, ownership and the terms bolag, spel, rum, bakgrund, dealer, bord and
+sammansättning. Do not derive another model from folder names or legacy lane
+fields. [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md)
+records the implemented storage/runtime limits and media formats. Keep
+published package, room, dealer and asset identities stable during transition.
+Shared composition drafts are not room-specific writes; allowed room appearance
+is saved through the existing scoped partner room editor.
+
+`web/server.mjs` owns cards, shoe, wallet and payouts. Native commands expose
+public state through `/api/table`; partner commands use `/api/v1/table` and
+`presentation[]` (also delivered as `round.events` over SSE). The game client
+uses the shared local/layered presentation path. Studio observation follows
+the player's real receipts; a separate preview needs an explicit action.
+Generated speech uses the registered dealer's profile and the speech gateway,
+not an independent Lab player. The retained full-file GPU path is Astrid-specific.
+
+## Run locally
+
+For an isolated preview without external providers:
 
 ```powershell
 node lab/start.mjs --offline --no-open
 ```
 
-`node lab/start.mjs --no-open` starts the existing connected profile.
-Private saved projects, history and players now live
-in `lab/data`, after a verified backup outside Git. See the restoration guide.
-In the cloud, dealers and clips are edited at `/control/clips`, compositions at
-`/control/compositions`, and event conditions at `/control/events`. Key names and locations
-(no secret values) are listed in [environment variables](docs/ENVIRONMENT-VARIABLES.md).
-OpenClaw/Gateway and the existing Render blueprint live under [open-claw/](open-claw/README.md).
+For the existing connected profile:
 
-## Sources of truth
+```powershell
+node lab/start.mjs --no-open
+```
 
-- The private [GitHub repository](https://github.com/Jakeminator123/scoutgaming)
-  is the active source on `main`. Keep it private.
-  Tag `Jakobs-v1` identifies filtered checkpoint `b9355ab`; original media history is preserved in the private recovery backup. See [recovery](docs/ENVIRONMENT-RESTORATION.md).
-- [Cloud and storage map](docs/CLOUD-MIGRATION.md) describes services and delivery.
-- GitLab inbox, wiki, and mirror are paused. New code and documentation are delivered to GitHub only.
-- [Croupier documentation · V5](https://github.com/Jakeminator123/animation-events-v1)
-  is the source repository for the interactive documentation canvas. It does
-  not own game outcomes or runtime contracts.
-- Shared project documentation stays in the five current Markdown files directly in `docs/`.
-  [Game manuals](docs/games/README.md) collect blackjack and roulette under `docs/games/`, as requested by Jakob.
-  Update those canonical documents in place; further reports and sprint documents are paused.
+The launcher enforces one product/Lab server pair through
+`open-claw/lab/deploy/local-session.mjs`. Stop it before changing environments.
+Saved local projects, history and players live in `lab/data`; they are not cache.
+Use the [Lab guide](lab/README.md) for installation and start options.
 
-Deliver on a feature branch (`jakob/*`, `codex/*` or `cursor/*`) and open a pull
-request into `main`. Those branches are the allowed push targets, without
-force-push, branch deletion or tags. A direct push to `main` is only an explicit
-admin emergency path. The push hook still only names `main` until that rule is
-applied in the hook. This repository-cleanup work is collected on
-`jakob/repo-ordning`; each wave reaches `main` as its own pull request after
-Jakob’s approval.
-Kevin’s reviewed source is imported selectively; no push to his branch is authorized.
+`node_modules/` contains installed dependencies; `.next/` contains Next build
+output and cache. Both are normal local generated folders and excluded from
+Git/indexing. Reinstall/rebuild if removed with the relevant process stopped.
+`lab/preview-build/` and `lab/design-preview-build/` are also generated;
+`packages/presentation/preview/site/` and the tracked `web/public/` sources are
+build inputs. Keep manifests, lockfiles, calibration and source media.
 
-## Documentation navigation
+## Documentation and delivery
 
-- [Latest verified work and open checks](docs/JOHN-HANDOFF.md).
-- [Deployment and storage map](docs/CLOUD-MIGRATION.md).
+The active source is [Jakeminator123/scoutgaming](https://github.com/Jakeminator123/scoutgaming),
+branch `main`. The old `github-work` address redirects here. GitLab inbox, wiki
+and mirror are paused; reviewed upstream code is imported selectively.
+
+Use these documents in place instead of adding competing status reports:
+
+- [Handoff and open acceptance](docs/JOHN-HANDOFF.md).
+- [Cloud migration and delivery](docs/CLOUD-MIGRATION.md).
 - [Data restoration and media rules](docs/ENVIRONMENT-RESTORATION.md).
 - [Environment variable registry](docs/ENVIRONMENT-VARIABLES.md).
 - [Presentation runtime](docs/LOCAL-PRESENTATION-RUNTIME.md).
+- [Game manuals](docs/games/README.md) and the [user guide](lab/docs/README.md).
 
-Keep these five documents short and update in place. New reports and sprint
-documentation are paused. Personal archives remain outside agent reading paths.
+Deliver from `jakob/*`, `codex/*` or `cursor/*` with one pull request to `main`.
+`tools/repository-policy.json` and the pre-push hook enforce the allowed targets;
+`node tools/push-github-work.mjs` pushes the feature branch. Direct `main` push
+requires the explicit emergency option. Never force-push or push to Kevin's branch.
 
-## Runtime map
-
-| Area | Main implementation |
-| --- | --- |
-| Blackjack rules and cryptographic demo shuffle | `web/public/blackjack.mjs` |
-| Persistent shoe, commands and public game view | `web/shoe-game.mjs` |
-| Roulette generator, result events and `/roulette-test` diagnostics (no bets or wallet) | [`web/games/roulette/`](web/games/roulette/README.md) |
-| Wallet, persistence and HTTP server | `web/server.mjs` |
-| Partner transport and presentation events | `web/partner-api.mjs`, `web/partner-presentation.mjs` |
-| Dealer playback | Game client: `web/public/local-presentation.mjs`, `web/public/layered-presentation.mjs`, `web/public/performance-player.mjs`. `web/public/app.mjs` accepts only `local` or `layered`. Studio's original-media reserve is retired; registered video stays on the shared stage |
-| Media build and validation | `pipeline/` |
-
-The code has two public client paths:
-
-- Native: server command → `/api/table` public state → client choreography.
-- Partner: server command → `/api/v1/table` public state and `presentation[]`;
-  the same presentation list can be delivered as `round.events` over SSE.
-
-The Partner transport and the native player's observation feed have different
-contracts. Lab observation follows the native player's real playback receipts
-when observation is configured. The ordinary game can be opened independently;
-the lab service does not run a competing Astrid video. See the route guide above for
-recorded media, observation and generated speech streams.
-
-Internal round events are implementation details unless a public contract
-explicitly exposes them.
-
-## Run locally
-
-Use `node lab/start.mjs --offline --no-open` shown
-above for an isolated, temporary preview. Use `node lab/start.mjs --no-open` for the saved
-connected profile. Both go through `acquireLocalSession` in
-`open-claw/lab/deploy/local-session.mjs`. Stop the current
-product/Lab pair before changing environments; never bypass the guard with
-a direct server command or another port. A stopped environment stays stopped
-until a new start is requested. Follow [the user guide](lab/docs/README.md)
-for current commands and the actual addresses printed by the launcher.
-
-## Validation
-
-The repository hook runs the media/player checks and regression suites:
-
-```sh
-.githooks/pre-commit
-```
-
-The indexed dealer bank and `pipeline/audit-dealer-sync.mjs` are no longer in
-the tree. Rehearsal of registered clips stays in the real player.
-
-Passing hashes and tests protect against regressions but do not prove visual
-quality, lip sync or physical card contact. See
-[`docs/JOHN-HANDOFF.md`](docs/JOHN-HANDOFF.md) for the latest verified state and
-known gaps.
+Run `.githooks/pre-commit` before delivery. The dispatcher uses bounded checks
+for explicitly listed folder guides and documentation-only commits. Code,
+configuration, media, CI and `--full` retain full regression. Test passes and
+matching hashes do not establish visual lip sync or card contact acceptance.

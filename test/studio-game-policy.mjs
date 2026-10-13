@@ -5,6 +5,8 @@ import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { StudioStorageError } from '../web/storage/studio-contract.mjs';
 import { createStudioGamePolicy, studioGamePolicyConfiguration, exactRegisteredDealerIdle } from '../web/storage/studio-game-policy.mjs';
+import { createPortraitRoomEntryFixture } from './fixtures/portrait-room-entry.mjs';
+import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
 
 const scope = Object.freeze({ environment: 'test', workspaceId: 'croupier' });
 const idle = dealerId => ({ dealerId, mediaId:'11111111-1111-4111-8111-111111111111',sha256:'a'.repeat(64),available:true });
@@ -37,6 +39,57 @@ test('saved lane is shared across policy instances with CAS and preserves every 
   assert.deepEqual(unchanged,before.value);
   await assert.rejects(policy.saveAdministration({...before.value,gameLane:'mobile-phone',gameLanes},before.revision,{actor:'other'}),rejected('studio_conflict',409));
   assert.equal((await second.readGameConfiguration()).gameLane,'mobile-phone');
+});
+
+test('operator rooms save and launch without legacy administration or invented defaults', async () => {
+  const roomFixture = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'johanna' });
+  const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope });
+  await repository.initializeDocument('project', { value: roomFixture.project, revision: 'modern-project', actor: 'import' });
+  await repository.initializeDocument('administration', { value: roomFixture.administration, revision: 'modern-admin', actor: 'import' });
+  const policy = createStudioGamePolicy({ repository, scope, dealerIdle: idle });
+  const original = await policy.readAdministration();
+  const draft = structuredClone(original.value);
+  draft.rooms[0].name = 'Operator-owned room';
+  const saved = await policy.saveAdministration(draft, original.revision, { actor: 'operator' });
+  const publicConfig = await policy.readGameConfiguration();
+  for (const key of ['tiers', 'pitboss', 'tournaments']) {
+    assert.equal(Object.hasOwn(saved.value, key), false);
+    assert.equal(Object.hasOwn(publicConfig, key), false);
+  }
+  const select = createGameEntrySelector({ policy, packages: {
+    resolve: async () => ({ operator: { id: roomFixture.room.operatorId, slug: 'north', status: 'active' }, package: roomFixture.pack }),
+  } });
+  const entry = await select(roomFixture.query);
+  assert.equal(entry.status, 200);
+  assert.equal(entry.selection.roomId, roomFixture.room.id);
+  assert.equal(entry.selection.dealer, 'johanna');
+  assert.equal(entry.selection.packageRevision, roomFixture.pack.revision);
+  const history = await repository.listDocumentHistory('administration');
+  assert.equal(history.length, 1);
+  assert.deepEqual(history[0].value, original.value);
+  await assert.rejects(policy.saveAdministration(draft, original.revision, { actor: 'operator' }), rejected('studio_conflict', 409));
+});
+
+test('modern documents still reject malformed legacy sections and mixed legacy rooms retain their contract', async () => {
+  const { policy } = await fixture();
+  const original = await policy.readSaved();
+  const room = { schemaVersion: 2, id: 'modern-room', name: 'Modern room', operatorId: 'operator',
+    presentationLaneId: 'mobile-phone', gameLaneId: 'mobile-phone', state: 'preview' };
+  const minimal = { rooms: [room] };
+  for (const section of [{ tiers: {} }, { tiers: { classic: 'vera', high: 'astrid', vip: 'foreign' } },
+    { pitboss: {} }, { pitboss: { payout10x: true, streak5: true, randomWalkMin: 0 } },
+    { tournaments: null }, { tournaments: [{ id: 'incomplete' }] }]) {
+    await assert.rejects(policy.saveAdministration({ ...minimal, ...section }, original.administrationRevision, { actor: 'operator' }), rejected('studio_invalid_game_policy', 422));
+  }
+  const mixed = { ...original.administration, rooms: [...original.administration.rooms, room] };
+  for (const key of ['tiers', 'pitboss', 'tournaments']) {
+    const incomplete = structuredClone(mixed);
+    delete incomplete[key];
+    await assert.rejects(policy.saveAdministration(incomplete, original.administrationRevision, { actor: 'operator' }), rejected('studio_invalid_game_policy', 422));
+  }
+  const saved = await policy.saveAdministration(mixed, original.administrationRevision, { actor: 'operator' });
+  for (const key of ['tiers', 'pitboss', 'tournaments']) assert.deepEqual(saved.value[key], original.administration[key]);
+  assert.deepEqual(saved.value.rooms[0], original.administration.rooms[0]);
 });
 
 test('shared configuration is explicitly enabled, Neon-scoped, inert and never substitutes zones or defaults', () => {

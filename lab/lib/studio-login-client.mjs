@@ -7,6 +7,16 @@ import { designPreviewReturnTo } from './design-preview-paths.mjs';
 const returns = new Set(['/studio','/studio/administration','/studio/openclaw','/studio/operator-chat',
   '/studio/tree','/studio/activity','/studio/guide','/studio/zones','/studio/videos','/studio/events','/studio/probe']);
 const handoff = /^\/api\/bo\/(?:game|lab)-login\?state=[a-f0-9]{64}$/;
+function partnerRoomReturn(value) {
+  if (typeof value !== 'string' || value.length > 250 || /[#\\\x00-\x20]/.test(value)) return null;
+  const parts = value.split('?');
+  if (parts.length !== 2) return null;
+  const route = resolveWorkspaceSurfacePath(parts[0]);
+  if (route?.surface !== 'partner' || route.view !== 'bj' || !route.operatorSlug) return null;
+  const query = new URLSearchParams(parts[1]);
+  if (query.size !== 1 || !/^[a-z][a-z0-9-]{0,63}$/.test(query.get('room') ?? '')) return null;
+  return `${route.canonicalPath}?room=${query.get('room')}`;
+}
 function publicationReturn(value) {
   if (typeof value !== 'string' || value.length > 900 || /[#\\\x00-\x20]/.test(value)) return null;
   const parts = value.split('?');
@@ -28,6 +38,8 @@ export function studioLoginReturnTo(value) {
   const preview = designPreviewReturnTo(value);
   if (preview) return preview;
   if (returns.has(value) || handoff.test(value)) return value;
+  const room = partnerRoomReturn(value);
+  if (room) return room;
   const publication = publicationReturn(value);
   if (publication) return publication;
   return resolveWorkspaceSurfacePath(value)?.publicPath || '/studio';
@@ -37,7 +49,7 @@ export function studioLoginDestination(value,authBase = '/studio/api/auth') {
   if (authBase !== '/api/auth') return target;
   if (designPreviewReturnTo(target)) return target;
   if (returns.has(target)) return target.slice('/studio'.length) || '/';
-  if (resolveWorkspaceSurfacePath(target) || publicationReturn(target)) return target;
+  if (resolveWorkspaceSurfacePath(target) || publicationReturn(target) || partnerRoomReturn(target)) return target;
   // Host-only authentication must not be forwarded to a different origin.
   return '/';
 }

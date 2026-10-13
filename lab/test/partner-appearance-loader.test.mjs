@@ -47,3 +47,10 @@ test('late read from previous company cannot replace a newer scoped package',asy
 test('loader rejects a foreign operator response instead of mounting controls',async()=>{
  const h=loaderHarness(async()=>ok(receipt('op-foreign'))),props={apiBase:'/api/partner',operatorId:'op-a',operatorSlug:'alpha'};h.render(props);await h.flush();const view=h.render(props);assert.equal(view.props.role,'alert');
 });
+test('an explicit room missing from the fresh package never mounts company-default controls',async()=>{
+ const data={...receipt('op-a'),rooms:[{id:'available-room'}]},h=loaderHarness(async()=>ok(data));
+ const props={apiBase:'/api/partner',operatorId:'op-a',operatorSlug:'alpha',roomId:'withdrawn-room'};
+ h.render(props);await h.flush();const unavailable=h.render(props);assert.equal(unavailable.props.role,'alert');assert.match(unavailable.props.children,/Rummet är inte tillgängligt/);
+ const valid=h.render({...props,roomId:'available-room'});assert.equal(valid.props.children.props.roomId,'available-room');
+ assert.equal(valid.props.children.props.initial.operatorId,'op-a');
+});

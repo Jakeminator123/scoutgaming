@@ -1,29 +1,32 @@
 {
   "title": "Scoutgaming: tre nivåer, en gemensam produkt",
-  "intro": "Kontrollrummet är nivå 1. Börja i Dealers & klipp för dealerns grundloop och händelseklipp. Sammansättning samlar redigeringen av dealer, bord och bakgrund. Publicering tilldelar sparade presentationer till ett bolagspaket. Partnerportalen är nivå 2 och begränsar bolagets små designjusteringar till paketet och rättigheterna. Spelarytan är nivå 3; spelmotorn äger kort, saldo och utfall.",
+  "intro": "Administration på /admin är nivå 1 och /lobby är den nya spellobbyn. Fortsätt nytt UI-arbete där; äldre /control-editorer och /play-spelstarter fungerar under övergången. Studio hanterar dealerklipp och gemensamma sammansättningar. Publicering tilldelar sparade presentationer till bolagspaket. Partnerportalen är nivå 2 och begränsar rumsvisa designval till paketet och rättigheterna. Spelmotorn äger kort, saldo och utfall.",
   "steps": [
     {
       "view": "lab",
-      "href": "/control/clips",
+      "href": "/admin/clips",
       "title": "1. Välj dealer och ordna klippen",
       "body": "Grundloop är vänteläget som tekniskt heter idle. Basklippet återkommer när dealern väntar; variationer är korta avbrott där stöd finns. För en egen dealer publiceras det valda basklippet som grundloop. Utdelning och Repliker redigeras här också. En tom utdelningsposition stoppar inte publicering eller serverns kort."
     },
     {
       "view": "videos",
-      "href": "/control/preview",
+      "href": "/control/compositions",
       "title": "2. Sätt ihop presentationen",
       "body": "Välj eller skapa en sammansättning med ett namn; tekniskt ID skapas automatiskt. Välj dealer, bord och bakgrund, Mobil eller Desktop och Storlek och placering för varje lager. Dealerfliken länkar till dealerns klippredigering; bord och bakgrunder laddas upp vid respektive lager. Klippval och villkor hanteras i dealerns klippfack. Bordsfärger och bolagets tillåtna justeringar finns under Avancerat. Förhandsvisa klipp är ett provval. Fullbildsklipp har inbakat bord och bakgrund; ett frilagt klipp behövs för separata lager. Spara och välj Provspela för att öppna blackjack i samma flik. Provet använder sparade biblioteksval i en tidsbegränsad adminsession, utan bolagspublicering eller riktiga spelarkonton. Startdealern behöver en grundloop; andra ofullständiga dealers visas med orsak. Standard, Regler och Slump kan provas; externa OpenClaw-anrop och genererat tal är avstängda. Till Sammansättning tar dig tillbaka."
     },
     {
       "view": "tree",
-      "href": "/control/lanes",
+      "href": "/control/rooms",
       "title": "3. Publicera och skapa spelrum",
       "body": "Välj bolag och vilka sparade presentationer bolaget ska få. Kryssrutorna utgår från bolagets publicerade paket. Återanvänd befintligt spelrum; Skapa spelrum används när en ny ingång behövs och sparar rum och paket tillsammans. Lager redigeras i Sammansättning; klippval och villkor finns i Dealers & klipp. Nivå 2 granskar och gör små designjusteringar inom tilldelade rättigheter."
     }
   ],
   "boundaries": [
+    "Produktmodellens källa är lab/docs/TERMINOLOGI.md: spelbolag → spel → rum/bakgrund, med kompatibla tillåtna dealers och bord. Ett rum har eget ID och ett spel; en delad bakgrundsfil slår inte ihop rumsidentiteter eller behörigheter. Scenen har tre lager: bakgrund → dealer → bord, följt av spelets kort och gränssnitt.",
+    "En dealer är en registrerad person. En namngiven klippkategori grupperar filmer för samma dealer och väljer inte uppspelning. En gemensam sammansättningsmall kan användas av flera bolag och rum; vald rumskontext gör inte mallredigeringen rumsspecifik. Rummets tillåtna utseendeval redigeras separat i partnerns Spelrum med granskning och publicering.",
+    "Arkivering av ett bolag kopplar loss dess rum med historiken bevarad. Återställning av bolaget öppnar eller återpublicerar inga rum. Ett separat återställt rum är väntande och måste öppnas uttryckligen när beroendena är giltiga.",
     "En presentation samlar dealer, bord, bakgrund, placering och tillåtna alternativ. Publicering fryser dessa i ett versionsbundet bolagspaket. Nivå 2 väljer inom paketets rättigheter och spelrummens kompatibilitet. Spelmotorn äger kort, regler, saldo och resultat.",
-    "Nivå 2 kräver partnerinloggning och aktivt medlemskap i bolaget. Dealer, bord och bakgrund hämtas från det publicerade paketet och sparas på servern med rättighet och revisionskontroll. Bara publicerade alternativ som är tillåtna för bolaget och fungerar i dess spelrum kan väljas. Storlek och placering ändras i nivå 1 och följer med vid publicering. Den märkta N2-demonstrationens marker- och kortprototyper är separata lokala prov, inte kundens produktionsinställningar. Bolag, roller och medlemskap hanteras under Administration → Bolag & team; ett bolag utan medlem får ingen partnerinloggning automatiskt.",
+    "Operatörspersonal på nivå 2 kräver partnerinloggning och aktivt medlemskap i bolaget; intern admin använder sin befintliga N1-session. Dealer, bord och bakgrund hämtas från det publicerade paketet och sparas på servern med rättighet och revisionskontroll. Bara publicerade alternativ som är tillåtna för bolaget och fungerar i dess spelrum kan väljas. Storlek och placering ändras i nivå 1 och följer med vid publicering. Den märkta N2-demonstrationens marker- och kortprototyper är separata lokala prov, inte kundens produktionsinställningar. Bolag, roller och medlemskap hanteras under Administration → Bolag & team; ett bolag utan medlem får ingen partnerinloggning automatiskt.",
     "Konton hanteras i Administration, fliken Konton & roller (?tab=accounts). Övriga djuplänkar är Bord & spelrum (?tab=tables), Spelintegritet (?tab=operations) och Betalningar & journal (?tab=finance). Admin använder samma användarnamn eller e-post och lösenord i spelet och på /control; spelare nekas /control. Aktiv eller blockerad spelare med eget spelarlösenord kan få ett nytt lösenord med bekräftelse och anledning. Gamla sessioner återkallas, saldo och spelhistorik behålls. Stängda konton kan inte återställas. Administratörer använder invitation och återställningslänkar. Resend är konfigurerat i produktion och transporten är provad mot sandbox; full riktig kontoaktivering och återställning återstår att verifiera.",
     "Aktiva originalklipp för Vera, Astrid, Amira och Mei väljs under Dealers & klipp. Valen sparas med projektets vanliga knapp och revisionshistorik. Ladda om originalspelaren mellan händer efter sparning. Astrids presentation=local använder sina exakta familjer; deal/repliker läses inför nästa beslut och idle efter omladdning. Äldre BO-val är inaktiva, skrivskyddade och importeras bara uttryckligen vid exakt match.",
     "Uppspelning och spår observerar en spelare. Anslutning, återanslutning och Ny observation startar aldrig en extra Lab-uppspelning. Separat Lab-preview kräver ett uttryckligt val. Klippval, nedladdning och registrering är inte bevis på uppspelning; native-kvittot måste visa faktisk bild/talstart. Partner-SSE och genererat tal visas som egna tydligt märkta flöden.",
@@ -45,28 +48,32 @@
   ],
   "surfaces": [
     {
+      "name": "Studio · /admin/clips",
+      "purpose": "Den nya administrativa klippkartan använder Studios sparade dealers, exakta fack och serverkontroller. Administrationens startsida på /admin öppnar inget redigeringsverktyg automatiskt. Gemensamma sammansättningsmallar och rummets tillåtna utseende har olika skrivscope."
+    },
+    {
       "name": "Översikt · /control",
       "purpose": "Startsida med dealer → sammansättning → publicering → spelrum, valt bolags status och nästa steg. Bolagets öppna rum, dealers och paketversion hämtas från samma publicerade rumslista som spellobbyn. Sparade Studioändringar visas separat. Fel eller demonstration visas aldrig som bekräftad driftstatus. Bolagsvalet följer länkarna till team och publicering."
     },
     {
       "name": "Partnerportal · /partner",
-      "purpose": "Intern adminpersonal når nivå 1, 2 och 3 med samma konto. Utan partner_session visas tydligt märkta demonstrationer. Inloggning på /partner/login visar bolagets snapshot. Varje bolag nås på /partner/{operatorSlug}. Bolagets utseende (branding, bordsfärg) läses och skrivs inom lanen av en medlem med presentations.configure. Spelare och transaktioner är inte kopplade (N2.4). Publicerade bord och bakgrunder sparas på servern inom paketets rättigheter. Marker och kort i den märkta demonstrationen är lokala prov."
+      "purpose": "Intern adminpersonal når nivå 1, 2 och 3 med samma konto. Den vanliga portalen visar verkliga registrerade bolag, aldrig demonstrationer som reserv. Operatörspersonal loggar in på /partner/login och ser bara aktiva medlemskap. Varje bolag nås på /partner/{operatorSlug}; Spelrum visar dess publicerade rum och tillåtna utseendeval. Ändringar kräver presentations.configure, ägarkontroll och rätt revision. Spelare och transaktioner är inte kopplade (N2.4). Publicerade bord och bakgrunder sparas på servern inom paketets rättigheter. Marker och kort i den uttryckliga diagnostikfixturen är lokala prov."
     },
     {
-      "name": "Spelaryta · /play",
-      "purpose": "Nivå 3: spellobby på /play, egen profil på /play/profil (namn och språk; saldo är serverägt), egen historik på /play/historik och Blackjack på /play/blackjack. Lobbyn visar Spelar hos från ?operator=. Renders /blackjack?operator= och Vercels /play/blackjack?operator= begränsar lane och dealer till paketet."
+      "name": "Spellobby · /lobby",
+      "purpose": "Nivå 3: ny spellobby på /lobby. Äldre /play-lobby, /play/profil, /play/historik och /play/{spel} behåller sina fungerande kontrakt. Namn och språk kan redigeras; saldo är serverägt. Bolagets slug i operator och verkligt rums-ID i table begränsar spelstart, dealer och miljö till det publicerade paketet."
     },
     {
       "name": "Spelhändelser & villkor · /control/events",
       "purpose": "Spelmotorns händelse och vald dealer ger ett exakt klippfack: plats, utfall eller replik-ID. Översikten utan ?event= behåller situationen i länkarna. Med ?event= öppnas Klippval & villkor för standard, regler, slump och OpenClaw. Äldre samlingsgrupper som Deal vänster och testanimationer finns kvar under stängd Avancerat. Eventtestets chattsignal, språk och spelarhistorik är simulerade värden. Vanligt klippval får den publika spelhändelsen och tillåtna varianter; felaktigt AI-råd ger standard. Skuggläge loggar men spelar standard. Astrids utdelningsfrekvenser väljer lokalt utan modell. Äldre varianter för Vera, Amira och Mei används inte av spelet ännu (L19). /control/tree omdirigerar hit och behåller frågesträngen."
     },
     {
-      "name": "Sammansättning · /control/preview",
+      "name": "Sammansättning · /control/compositions",
       "purpose": "Den enda editorn för presentationer: välj, skapa och namnge sammansättningen samt välj dealer, bord, bakgrund och placering. De inaktiva lane-fälten för fasval, probe och idle visas inte; gamla sparade värden bevaras. Aktiva klipp och grundloopscheman finns i Dealers & klipp; AI-småprat har egen sida. Bolagets justeringsrättigheter har egna inställningar. Bord och bakgrund laddas upp här; dealerklipp hanteras i Dealers & klipp. Spara och fortsätt inväntar sparresultat. Klippförhandsvisning och lokala filprov är separata från provspelning i blackjack. Provspela startar uttryckligen ett isolerat blackjackprov efter sparning; alla sparade dealers och lager kan granskas före bolagstilldelning. Startdealern behöver en grundloop och andra ofullständiga dealers kan inte väljas."
     },
     {
-      "name": "Publicering · /control/lanes",
-      "purpose": "Välj bolag och presentationer i partnerpaketet. Återanvänd befintliga spelrum; Skapa spelrum publicerar vald presentation och skapar en ny spelbar ingång atomiskt. Redigering nås via länken till vald sammansättning. Bolag och team hanteras under Administration → Bolag & team på /control/lanes?tab=companies."
+      "name": "Publicering · /control/rooms",
+      "purpose": "Välj bolag och presentationer i partnerpaketet. Återanvänd befintliga spelrum; Skapa spelrum publicerar vald presentation och skapar en ny spelbar ingång atomiskt. Redigering nås via länken till vald sammansättning. Bolag och team hanteras på /control/companies. Dessa äldre editorer fungerar under övergången till /admin."
     },
     {
       "name": "Klippbibliotek · /control/videos",
@@ -86,5 +93,5 @@
     }
   ],
   "storage": "Vercel visar alla tre nivåer och kör Studio/admin-API. Neon sparar revisionsstyrd produktpolicy, metadata och journaler; game-Neon äger spelarkonton och saldo. Privat Blob innehåller medier. Render driver spelmotorn och live-transporten; dess tidigare produktdisk är avvecklad. Director/Gateway har egna kvarvarande diskar och behöver separat backup. Anslutna N2-paketval sparas på servern. Endast den märkta demonstrationens lokala designprov försvinner vid omladdning eller operatörsbyte. Äldre zondata finns kvar i sin separata lagring. Sparad deal/replikpolicy läses inför nästa beslut; grundloopen kräver omladdning mellan händer. HTTP 409 kräver uttrycklig konflikthantering. Hemligheter stannar på serversidan.",
-  "authority": "Aktuell kod och verifierad drift avgör vad som fungerar. Terminologi-PDF:erna är underlag; full aktuell karta finns i docs/LOCAL-PRESENTATION-RUNTIME.md och öppna krav i docs/CLOUD-MIGRATION.md. Ordlistan, sex tekniska eventtyper och 16 händelsekategorier finns i lab/policies/studio-contract.json. Namnbyten ändrar inte tekniska ID:n. GitLab/Emil/Kevin är källproveniens, inte separata aktiva plattformar. OpenClaw-konfiguration börjar i open-claw/lab/docs/README.md."
+  "authority": "Aktuell kod och verifierad drift avgör vad som fungerar. Full aktuell karta finns i docs/LOCAL-PRESENTATION-RUNTIME.md och öppna krav i docs/CLOUD-MIGRATION.md. Ordlistan, sex tekniska eventtyper och 16 händelsekategorier finns i lab/policies/studio-contract.json. Namnbyten ändrar inte tekniska ID:n. lab/ är aktiv källkod och /studio dess tekniska basePath. Gamla Lab/Lissabon-adresser är kompatibilitet; runtimeflaggan lissabon-stream-lane används fortfarande för chattkontext, kamera och lokala profiler. GitLab/Emil/Kevin är källproveniens, inte separata aktiva plattformar. OpenClaw-konfiguration börjar i open-claw/lab/docs/README.md."
 }

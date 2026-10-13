@@ -6,6 +6,15 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const documentationFiles = new Set([
   'README.md', 'AGENTS.md', 'CLAUDE.md',
   'lab/README.md', 'lab/docs/README.md',
+  // Folder guides describe source ownership; runtime prompts, package metadata
+  // and arbitrary Markdown outside docs/ still require the full regression.
+  'apps/croupier-frontend/README.md',
+  'packages/presentation/README.md', 'packages/design-preview/README.md',
+  'packages/presentation/docs/INTEGRATION.md',
+  'pipeline/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
+  'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
+  'services/astrid-gpu-worker/gateway/README.md',
+  'web/README.md', 'web/public/README.md', 'web/storage/README.md',
   'open-claw/README.md', 'open-claw/lab/README.md', 'open-claw/lab/docs/README.md',
   '.ignore', '.cursorignore', '.cursorindexingignore',
 ]);

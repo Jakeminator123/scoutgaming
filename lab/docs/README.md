@@ -8,6 +8,11 @@ Tre ytor delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgamin
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Spelbolag → Bolag & team på `/control/companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom sammansättningen av en medlem med `presentations.configure`.
 - **Spelare**: [/lobby](https://www.scoutgaming.tech/lobby) är ny ingång. `/play` och äldre speladresser fungerar under övergången. Ett öppet spel erbjuder tillåtna bakgrunder/rum, dealers och bord; spelarens val bildar scenen. Provspelning av dealer görs i den faktiska spelklienten; se [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
+`lab/` är aktiv källkod och `/studio` dess tekniska basePath med API och
+tillgångar. Runtimeflaggan `lissabon-stream-lane` används fortfarande för
+chattkontext, kameragrind och lokala profiler. Gamla Lab/Lissabon-namn är
+inte grund för att ta bort Astrids fungerande tal-/videoflöden.
+
 Partnerportalen är nivå 2. Intern adminpersonal når riktiga registrerade bolag med samma konto som i Kontrollpanelen. Inloggningen sker via Kontrollpanelen; på `/partner/login` leder knappen **Logga in som intern administratör** dit och tillbaka till `/partner`. Operatörens personal loggar in på `/partner/login` och ser bara sina aktiva medlemskap. Den vanliga portalen ersätter aldrig bolagsdata med demonstrationer. Spelare, transaktioner och rapporter från spelmotorn är ännu inte anslutna.
 
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
@@ -57,7 +62,13 @@ En enda egen grundloop räcker för att testa flödet. Händelseklipp kan lägga
 - **Bakgrundsklipp**: valfria ljudlösa MP4/WebM-klipp som startar vid en spelhändelse eller automatiskt. När klippet slutar, når sin maxlängd eller inte kan läsas visas grundbakgrunden igen. En grundfilm fortsätter loopa under klippet.
 - **Sammansättning**: dealer, bord, bakgrund, tillåtna alternativ och placering per format.
 - **Publicerad version**: bolagets tilldelade sammansättningar och val. Den fryses när du publicerar.
-- **Spelrum**: bolagets spelbara rum med en publicerad sammansättning. Samma rum visas i partnerportalen och för spelaren.
+- **Spelrum**: bolagets spelbara bakgrundsval i ett spel, med eget ID och en publicerad sammansättning. Samma rum visas i partnerportalen och för spelaren. En delad bakgrundsfil slår inte ihop rumsidentiteter eller behörigheter.
+
+En sammansättningsmall kan delas av flera bolag och rum. Ändringar i den är
+gemensamma projektutkast och slår inte igenom i frysta publiceringar förrän
+paketet publiceras igen. Rummets egna tillåtna utseendeval redigeras på
+`/partner/{slug}/rooms?room=<rum-id>` med separat granskning och publicering.
+Ett rum i den översta väljaren gör inte malländringar rumsspecifika.
 
 I äldre kod betyder `lane` två olika saker: sammansättningen och spelmotorns interna uppspelningskonfiguration. Den senare skapas eller återanvänds automatiskt för spelrummet. Du hanterar därför **Sammansättningar** och **Spelrum** i det vanliga flödet.
 Börja i **Dealers & klipp**: välj dealer och redigera grundloop och händelseklipp. Öppna sedan **Sammansättning**, där du väljer, skapar och namnger presentationen. Öppna Dealer, Bord eller Bakgrund i lagerpanelen. Filval och **Storlek och placering** ligger tillsammans för valt lager. Mobil och Desktop har egna inställningar; återställning gäller bara valt lager i aktuellt format. Scenen visas intill reglagen på större skärmar. På mobil ligger den i sidans vanliga flöde så att lagerknapparna är åtkomliga. Spara och fortsätt till **Spelrum & publicering**.
@@ -92,7 +103,7 @@ Under **Hantera dealers** väljer du **Arkivera dealer**. Spara pågående utkas
 
 **Enskilda klipp:** Flytta oanvända uppladdningar till bibliotekets **Papperskorg**, eller återställ dem därifrån. Ett referensklipp för AI-tal måste först bytas eller kopplas loss och projektet sparas. **Radera permanent** är en separat åtgärd med beroendekontroll och egen bekräftelse. Servern skyddar aktuella användningar, publicerade paket, andra arbetsytors filer och originalbanken. Äldre projekthistorik kan finnas kvar, men kan inte återaktivera raderade filer. Nya uppladdningstillåtelser måste löpa ut innan permanent radering; väntetiden visas. Om lagringen inte svarar behålls en raderingsspärr och **Slutför radering** försöker igen.
 
-Bord och bakgrunder kan tas ur presentationens tillåtna val; publicera om paketet när bolagets utbud ändras. Borttagning eller avstängning av själva bolaget saknas fortfarande. Stäng av för en medlem stänger endast medlemskapet.
+Bord och bakgrunder kan tas ur presentationens tillåtna val; publicera om paketet när bolagets utbud ändras. Ett bolag kan arkiveras via Bolag & team. Det avaktiverar bolaget och kopplar loss dess spelrum med historiken bevarad. Återställning återöppnar inga rum. Stäng av för en medlem stänger endast medlemskapet.
 
 I Sammansättning ändrar **Dealer** presentationens startdealer. **Tillåtna dealers i sammansättningen** visar uttryckligen vilka dealers som följer med; avmarkera äldre dealers som bolaget inte ska få välja. Startdealern ingår alltid. Byte av startdealer behåller övriga val tills du ändrar dem. Bord och Bakgrund visar på samma sätt sina tillåtna alternativ.
 **Förhandsvisa klipp** byter endast provfilm. **Dealerklipp, grundloop och händelser** öppnar Dealers & klipp för det sparade basklippet och andra händelser.
@@ -166,11 +177,11 @@ Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
 Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
-**Personalens yta är `/control`.** `/studio` är Next.js-basePath för labb-servicen.
+**Personalens nya yta är `/admin`; äldre editorer finns på `/control`.** `/studio` är Next.js-basePath för Studio-servicen.
 Dess rot omdirigerar permanent till `/control/clips` och bevarar query-parametrar;
 tidigare återexporterade roten samma klippkomponent och visade därför samma innehåll.
 API och tillgångar under basePath behålls. I molnet öppnar du
-[`/control`](https://www.scoutgaming.tech/control). Render-tjänsten `croupier-v2` äger
+[`/admin`](https://www.scoutgaming.tech/admin). Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
 Lokalt finns samma arbetsyta på Lab-paret som `node lab/start.mjs` startar, på `/`.
@@ -183,7 +194,7 @@ ingen separat spelström.
 **Vad betyder projekt här?** Ett sparat projekt är inställningar
 för spelets presentation: exempelvis vilka dealerklipp som används och när
 de spelas. "Lab-projekt" är inget separat projekt; det syftar på samma
-sparning. Lab är arbetsmiljön. Personalens ingång är `/control`, inte `/studio`. Inställningarna och äldre
+sparning. `lab/` är applikationens källmapp. Personalens nya ingång är `/admin`, och `/studio` är tekniskt basePath. Inställningarna och äldre
 versioner sparas i Neon i både produktion och den isolerade native-QA-miljön.
 Själva mediefilerna finns i privat Vercel
 Blob och konton/saldo finns i Neon. Ett Vercel-projekt betyder i stället
@@ -222,6 +233,10 @@ de saknar verifierad koppling till den aktuella spelvägen. Policyn
 `STUDIO_ADMIN_SECTIONS` listar fortfarande 15 poster, inklusive pit och turneringar.
 Äldre sparade värden,
 API-kontrakt och originalspelarens separata supervisor-logik finns kvar.
+Modern administration kräver inte `tiers`, `pitboss` eller `tournaments`.
+Om sådana sektioner finns valideras de fortfarande strikt; gamla rumsposter
+behåller sitt historiska kontrakt. Inga defaults läggs till eller skrivs om
+vid vanlig läsning eller sparning av moderna rum.
 De tidigare rena informationspanelerna för klipp och AI-generering är borta;
 klipparbete finns under Dealers & klipp. E-postmallar är förhandsvisningar.
 Andra dealers visar bara de klippkategorier som stöds; Astrids talinitiativ
@@ -316,8 +331,8 @@ Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslutna profilen.
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
-dit. `/lissabon`, `/lab`, `/labb` och `/bo` är avvecklade alias.
-Personalens ingång är `/control`. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Spelhändelser & villkor (`/control/events`), `chat` på OpenClaw och `operations`, `finance`, `accounts`, `partners` eller `media-review` på Administration. `tab=tables` leder till `/control/rooms`. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till `/control/probe`, `/control/compositions` och `/control/rehearsal` (Provspelning & logg). Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
+dit. `/lissabon`, `/lab`, `/labb` och `/bo` är äldre kompatibilitetsadresser.
+Personalens nya ingång är `/admin`; följande querykontrakt gäller de befintliga Studio-verktygen. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Spelhändelser & villkor (`/control/events`), `chat` på OpenClaw och `operations`, `finance`, `accounts`, `partners` eller `media-review` på Administration. `tab=tables` leder till `/control/rooms`. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till `/control/probe`, `/control/compositions` och `/control/rehearsal` (Provspelning & logg). Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
 (lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).
@@ -364,7 +379,7 @@ stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
 
 ## Arkivera, återställa och provspela
 
-På **Bolag & team** kan ett bolag arkiveras efter bekräftelse. Det försvinner från aktiva val och dess åtkomst stoppas; historiken bevaras. **Visa arkiverade bolag** visar återställning. Återställning av ett bolag kan återöppna tidigare öppna rum, vilket anges före bekräftelsen.
+På **Bolag & team** kan ett bolag arkiveras efter bekräftelse. Det försvinner från aktiva val, åtkomsten stoppas och spelrummen kopplas loss; historiken bevaras. **Visa arkiverade bolag** visar återställning. Återställning av bolaget öppnar eller återpublicerar inga rum. Återställ varje rum separat och öppna det därefter när beroendena är giltiga.
 
 På **Spelrum & publicering** kan du pausa/öppna rum samt arkivera dem. Växla till arkivet för återställning; ett återställt rum är väntande tills du öppnar det. Saknade eller ändrade publiceringsberoenden visas före återställning. Åtgärderna läser tillbaka serverns aktuella version och kräver en kompatibel spelmotor.
 

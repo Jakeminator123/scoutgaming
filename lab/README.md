@@ -1,13 +1,23 @@
-# Lab — utvecklarreferens
+# Studio-tjänsten (`lab/`) — utvecklarreferens
 
 **Användarguide: [Guide & hjälp](https://www.scoutgaming.tech/control/guide).**
 `/studio/guide` omdirigerar dit. Denna README är utvecklarreferens.
 Källa och begreppsägarskap: [lab/docs](docs/README.md).
 
-**Moln:** personalytan är [/control](https://www.scoutgaming.tech/control).
-`/studio` är labbets basePath, inte en fjärde produkt. Vercel-projektet
-`scoutgaming` visar gränssnitten. Render-tjänsten `croupier-v2` äger spelmotorn
-och live-transporten. Sparade studio-projekt ligger i Neon; lokalt i `lab/data`.
+**Produktens riktning:** [/admin](https://www.scoutgaming.tech/admin) är den nya
+personalytan och [/lobby](https://www.scoutgaming.tech/lobby) den nya
+spelarlobbyn. Övergången pågår: `/control`, `/partner` och `/play` behövs
+fortfarande för befintliga verktyg, inloggning och spelstarter. De detaljerade
+`/control`-adresserna längre ned beskriver de verktyg som finns kvar.
+
+**Teknisk roll:** `lab/` är den aktiva Next.js-tjänsten `studio` i
+Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
+`/partner` och deras Studio-API:er. `/studio` är tjänstens basePath i molnet.
+`packages/design-preview` äger den nya admin-/lobbydesignen; labbets bygge
+förbereder och serverar den från `design-preview-build/`. Behörighet, scoped
+data, mediaregister och anslutningar finns kvar i denna tjänst.
+Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
+Sparade studio-projekt ligger i Neon; lokalt i `lab/data`.
 **Lokalt:** samma arbetsyta körs på det enda serverparet som `node lab/start.mjs`
 startar. [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
@@ -22,9 +32,10 @@ flikar. Källreferenser skickas inte till modellen. `decision.director` visar
 ägare, cacheåterbruk och att uppspelning ännu inte är bekräftad. Explicit bundna
 alternativ med otillgänglig eller felmatchad video utesluts före modellval.
 
-Den nya Next.js-arbetsytan. Den riktiga spelklienten och OpenClaws egen
-dashboard är separata. Sparade klippval påverkar den angivna spelvägen;
-osparade utkast och manuella förhandsvisningar påverkar endast Lab-provet.
+Den riktiga spelklienten och OpenClaws egen dashboard är separata.
+Sparade klippval påverkar den angivna spelvägen; osparade utkast och manuella
+förhandsvisningar påverkar endast Studio-provet. Katalognamnet `lab` är inte
+skäl att radera tjänsten: nya `/admin` och `/lobby` använder också den.
 
 [Aktiv systemkarta: studio, JSON och lagring](../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
@@ -35,9 +46,18 @@ Video-intake: [lägg in standardtagningar och alternativ, välj användning och 
 
 ## Starta
 
-Lokalt öppnas Lab på `/`. I molnet är personalytan `/control`; `/studio` är labbets basePath.
+Lokalt öppnas tjänsten på `/`. Befintliga verktyg ligger på `/control`;
+`/studio` är tjänstens basePath i molnet.
 `/lissabon` omdirigerar till `/control`. Lab-roten `/` omdirigerar permanent till `/control/clips`.
-Startkod, standardprojekt och lokala profilval finns nu här i Lab.
+Startkod och lokala profilval finns här. `lissabon-stream-lane` är ett kvarvarande
+internt profil-/anslutnings-ID i startaren och spelservern, inte ett eget spelrum
+eller en produktadress. Äldre alias och sparade ID:n behålls för kompatibilitet.
+
+`CROUPIER_STREAM_LANE=lissabon-stream-lane` är fortfarande aktiv i
+`start.mjs`, `policies/local-profile.json`, lokal anslutning och molnkonfiguration.
+Den används bland annat för chattens `playResults`, kameragrinden och
+beständiga lokala profiler. Behåll flaggan och Astrids tal-/videoväg vid
+förenkling av produktnamn; de är inte en separat Lissabon-produkt.
 
 ```powershell
 # Reproducerbart prov: tom temporär databas, befintliga filmer, inga externa tjänster.
@@ -58,12 +78,15 @@ Sparat projekt, historik och profiler finns i `lab/data`; speldata i dess
 `players/`. Den gamla katalogen är avvecklad med verifierad privat
 backup enligt [återställningsguiden](../docs/ENVIRONMENT-RESTORATION.md).
 Äldre checkouter måste migreras med `tools/migrate-lab-state.mjs` före start.
-Standardprojektet skapas från
-`policies/project.seed.json` och profilens få idleval. En separat projektsnapshot
-behövs inte. Exakt oförändrade gamla demoexempel tas bort vid uppgradering;
+En ny arbetsyta skapas av `createEmptyProject()` utan förregistrerade dealers,
+linjer eller sammansättningar. `policies/project.seed.json` innehåller även
+historiska demo-/fixturdata; de är inte produktionens startinnehåll.
+En separat projektsnapshot behövs inte. Exakt oförändrade gamla demoexempel
+tas bort vid uppgradering;
 egna ändringar/bindningar bevaras och hela föregående revision sparas i historik.
 
-Node 22.16+ och installerade beroenden krävs för lokal start. Molndrift är
+Node 24.x enligt `package.json` och installerade beroenden krävs för lokal
+start. Molndrift är
 Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
 [docs/CLOUD-MIGRATION.md](../docs/CLOUD-MIGRATION.md).
 [ops/cloud/README.md](../ops/cloud/README.md) är en äldre Docker-pilot, inte startkommandot.
@@ -83,7 +106,11 @@ Efter nya mediefiler: kör `node pipeline/build-lab-video-manifest.mjs`,
 granska diffen och kör `--check`. Lab:s **Läs in nya filer** använder samma byggare.
 En ny hash är inte ett visuellt godkännande.
 
-## Arbetsytor och gemensam Guide
+## Befintliga editorer och gemensam Guide
+
+Adresserna nedan beskriver de fungerande `/control`-verktygen. Nya `/admin`
+återanvänder deras komponenter och native-API; skapa inget parallellt
+projektregister för den nya menyn. Se [guiden](docs/README.md) för ingångarna.
 
 - **Guide & hjälp (`/control/guide`; `/guide` omdirigerar dit):** den avskalade arbetsgången, gemensamma begrepp och tydliga gränser för vad som gäller nu respektive är förslag.
 
@@ -147,8 +174,9 @@ Chattgenvägarna ovanför de andra sidorna är borta.
 Ingen fråga skickas av navigationen.
 
 2D-biblioteket innehåller 64 unika rörelsefiler, fyra per eventgrupp, plus
-en separat social rörelse. Startprojektet har 64 linjer och en variant per linje.
-Tre alternativ per linje och 256 variantposter finns inte i seedet.
+en separat social rörelse. Demo-/fixturprojektet har 64 linjer och en variant
+per linje; en ny arbetsyta börjar tom. Tre alternativ per linje och
+256 variantposter finns inte i demo-/fixturseedet.
 De är schematiska rörelseprov, inte fullständig spelkoreografi:
 alla kortsekvenser, sju exakta platser, split, övergångar och läppsynk täcks inte.
 
@@ -159,7 +187,7 @@ API:er, nyckelroller och miljöfiler finns i
 
 ```text
 lab/
-  policies/project.seed.json   startprojekt: blackjack, 4 dealers, 16 noder
+  policies/project.seed.json   eventkontrakt och historiska demo-/fixturdata
   policies/social.seed.json    startpolicy för Astrids sociala chattprov
   schemas/studio.schema.json   struktur och tillåtna värden
   schemas/social.schema.json   format för den separata sociala policyn
@@ -179,11 +207,13 @@ lab/
   components/                 editor, scen, videobank och OpenClaw-panel
 ```
 
-`policies` betyder här startregler; `schemas` beskriver strukturkraven.
-`data/` skapas vid sparning och ersätter inte startprojektet i Git. Ingen separat
+`policies` betyder här regler och kontrakt; `schemas` beskriver strukturkraven.
+`data/` skapas vid lokal sparning och ersätter inte reglerna i Git. Ingen separat
 projektmanifest behövs. Rörelsebibliotekets lilla `animations/index.json`
 listar däremot vilka rörelsefiler som ingår. `.next/` och `node_modules/` är
-genererade verktygsmappar. [Rörelsernas format](animations/README.md).
+genererade verktygsmappar. `preview-build/` och `design-preview-build/` skapas
+också av byggverktygen. Alla är Git-ignorerade; de ersätter inte källan i
+`app/`, `lib/`, `components/` eller `packages/`. [Rörelsernas format](animations/README.md).
 
 Fristående ElevenLabs-prov (inte scen-/chattintegration):
 `node tools/elevenlabs-lab-preview.mjs --check` från repots rot, eller
@@ -198,12 +228,16 @@ Partner-presentationstyperna beskriver bara en del av systemets händelser.
 `box` är plats 0–6, inte en identifierad spelare. Variant-ID är ett beslut
 efter indata; längd och landningstid kommer från materialets metadata.
 
-En linje hör till en croupier och ett event. Startprojektet har 64 linjer och
-en variant per linje (64 poster, fyra dealers). Rörelseindexet har 64 klipp.
-Tre alternativ per linje och 256 variantposter finns inte i seedet.
+En linje hör till en croupier och ett event. Det historiska demo-/fixturprojektet
+har 64 linjer och en variant per linje (64 poster, fyra dealers); en ny arbetsyta
+börjar utan dealers och linjer. Rörelseindexet har 64 klipp.
+Tre alternativ per linje och 256 variantposter finns inte i demo-/fixturseedet.
 Högst fyra alternativ plus standard kan redigeras.
 Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
-Spelväljaren med Roulette är borta från `/control`. Roulette är inte ett spel här.
+Den äldre händelseeditorns seed beskriver blackjack. Publicerade spelrum kan
+däremot vara blackjack eller roulette, enligt `web/presentation-room-contract.mjs`.
+Ett rum har ett spel; spelet kan erbjuda flera rum/bakgrunder med tillåtna
+dealers och bord. Produktmodellens källa är [TERMINOLOGI.md](docs/TERMINOLOGI.md).
 
 Partner-API:ts **sex presentationstyper** är `speak`, `deal`, `reveal`, `turn`, `settle`, `idle`.
 De **16 noderna** är labbets begripliga mappningar, inte 16 nya motor-events.
@@ -220,8 +254,8 @@ vilka urvalslägen den får delta i. Nya alternativ börjar manuellt.
 [Detaljer om policyerna](policies/README.md) och [videointake](VIDEO-LIBRARY.md).
 
 **Spara projekt** validerar, kontrollerar revision och skriver atomiskt med
-historik. Ett annat fönsters nyare ändringar skrivs inte över. Startfilen
-används endast när `data/project.json` saknas. Export-knappen ger JSON för
+historik. Ett annat fönsters nyare ändringar skrivs inte över. I den lokala
+diskadaptern ger saknad `data/project.json` ett tomt projekt. Export-knappen ger JSON för
 granskning/versionering; ingen import- eller publiceringsknapp finns ännu.
 `LAB_STUDIO_DATA_DIR` kan välja en separat datamapp för QA.
 

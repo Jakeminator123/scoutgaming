@@ -50,8 +50,8 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
   return { ...shared, KevinBackoffice, ControlWorkspace, PartnerWorkspace, control, partner };
 }
 
-async function renderPage(page, path) {
-  const element = await page.default({ params: Promise.resolve(path === undefined ? {} : { path }) });
+async function renderPage(page, path, query) {
+  const element = await page.default({ params: Promise.resolve(path === undefined ? {} : { path }), ...(query===undefined?{}:{searchParams:Promise.resolve(query)}) });
   return element.type(element.props);
 }
 
@@ -144,6 +144,43 @@ test('authorized SSR passes only the selected live snapshot, view, operator and 
     assert.equal(element.props.user, 'fixture-admin'); assert.equal(element.props.session, undefined);
     assert.deepEqual(Object.keys(element.props).sort(), ['apiBase', 'initialSnapshot', 'initialView', 'surface', 'user']);
     assert.equal(requests.at(-1).options.operatorSlug, 'johns-spelbolag');
+  }
+});
+
+test('room deep links pass the exact query only after authorizing the registered operator',async()=>{
+  const snapshot={preview:false,operator:{id:'north',slug:'north-casino'}},requests=[];
+  const loaded=pages(async(request,options)=>{requests.push(options);return {snapshot,apiBase:'/studio/api/partner/snapshot',session:{user:'fixture-admin',accessClass:'internal-admin'}};});
+  for(const room of ['vip-room',['main-room','vip-room']]){
+    const element=await renderPage(loaded.partner,['north-casino','rooms'],{room});
+    assert.equal(element.type,loaded.KevinBackoffice);assert.equal(element.props.initialSnapshot,snapshot);
+    assert.equal(JSON.stringify(element.props.initialRoomId),JSON.stringify(room));
+    assert.equal(requests.at(-1).operatorSlug,'north-casino');
+  }
+  const denied=pages(async()=>{throw Object.assign(new Error('denied'),{statusCode:403});});
+  await assert.rejects(renderPage(denied.partner,['north-casino','rooms'],{room:'vip-room'}),error=>error.statusCode===403);
+});
+
+test('expired N1 session keeps a safe exact room link through login recovery',async()=>{
+  const loaded=pages(async()=>{throw Object.assign(new Error('expired'),{statusCode:401});},new Headers({host:'studio.fixture.invalid',cookie:'bo_jwt=expired'}));
+  await assert.rejects(renderPage(loaded.partner,['north-casino','rooms'],{room:'vip-room'}),error=>{
+    const login=new URL(redirectLocation(error,''),'https://studio.fixture.invalid');
+    assert.equal(login.pathname,'/login');assert.equal(login.searchParams.get('returnTo'),'/partner/north-casino/rooms?room=vip-room');return true;
+  });
+});
+
+test('expired N1 session sends malformed explicit room links to admin instead of selecting another room',async()=>{
+  const loaded=pages(async()=>{throw Object.assign(new Error('expired'),{statusCode:401});},new Headers({host:'studio.fixture.invalid',cookie:'bo_jwt=expired'}));
+  for(const [query,expected] of [[{},'/partner/north-casino/rooms'],
+    [{room:['main-room','vip-room']},'/admin'],[{room:''},'/admin'],
+    [{room:'../vip-room'},'/admin'],[{room:'https://outside.invalid'},'/admin']]){
+    for(const basePath of ['','/studio']){
+      await assert.rejects(renderPage(loaded.partner,['north-casino','rooms'],query),error=>{
+        const login=new URL(redirectLocation(error,basePath),'https://studio.fixture.invalid');
+        assert.equal(login.pathname,basePath+'/login');
+        assert.equal(login.searchParams.get('returnTo'),expected);
+        assert.equal(login.searchParams.size,1);return true;
+      });
+    }
   }
 });
 

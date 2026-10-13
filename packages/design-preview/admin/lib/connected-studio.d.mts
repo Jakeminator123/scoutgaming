@@ -11,7 +11,11 @@ export function clipsForSlot(inventory:VideoInventory,dealerId:string,slot:ClipS
 export function currentClipId(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string,inventory?:VideoInventory):string;
 export function configuredClipIds(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string,inventory?:VideoInventory):string[];
 export function bindClip(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot,videoId:string,options?:{variantId?:string;durationMs?:number}):StudioProject;
-export function selectLayer(project:StudioProject,room:Room,role:'background'|'table',assetId:string):StudioProject;
+export function selectCompositionLayer(project:StudioProject,room:Room,role:'background'|'table',assetId:string):StudioProject;
+export function roomChoicesPath(operator:Catalog['administration']['operators'][number]|undefined,room:Room|undefined):string|null;
+export function navigationKeepsStudioTab(event:Pick<MouseEvent,'button'|'metaKey'|'ctrlKey'|'shiftKey'|'altKey'>,anchor:Pick<HTMLAnchorElement,'target'|'hasAttribute'>):boolean;
+export type CompositionUse = {roomId:string;roomName:string;operatorName:string};
+export function compositionUses(catalog:Catalog,compositionId?:string):CompositionUse[];
 export function uploadMetadata(project:StudioProject,dealerId:string,slot:ClipSlot,file:File,compositing:VideoMetadata['compositing']):VideoMetadata;
 export type Workspace = {catalog:Catalog;project:StudioProject;inventory:VideoInventory};
 export function createStudioClient(options?:{fetchImpl?:typeof fetch;uploadImpl?:typeof import('../../../../lab/lib/upload-native-video.mjs').uploadNativeVideo}):{

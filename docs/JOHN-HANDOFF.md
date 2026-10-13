@@ -44,6 +44,91 @@ main är queued; incidentlista och övrig API-/historiktäckning är inte lästa
 Detta är en UI-/beroenderättning; den är inte en genomförd avveckling av
 Control eller ny produktionsacceptans av Astrids tal och video.
 
+Mergeagenten har integrerat main `40fc0d83`, inklusive #77:s mappguider
+och #78:s rumsval/mallskydd. Kod och båda utökningarna av administrationens
+regressionstest gick ihop utan manuell kodändring. 168 riktade tester
+passerar på kombinationen; systemkartan och orphan-kontrollen är godkända.
+Slutlig full GitHub CI krävs före merge.
+
+## Tillägg 13 oktober: avgränsad förenkling av legacy och rumsval
+
+Arbetet började på `cc63db71` och är integrerat med senare `main`
+`1d1f4c12` (#73/#75/#76/#77/#79). Leveransen ligger i ett eget worktree på
+`codex/simplify-studio-legacy`, med en PR till `main` för Jakobs granskning.
+Adminens personväljare heter **Dealer**. Rummets egna val öppnar det befintliga
+rumsbundna utseendeflödet för exakt bolag och rum i en ny flik, så Studio-utkastet
+behålls. Felaktiga, främmande eller inte längre publicerade rum visar ett hinder
+i stället för att öppna bolagets standardinställningar.
+
+Bakgrund/bord/geometri i Studio hör till en gemensam sammansättningsmall.
+Den gamla direkta bordsväljaren i rumskontexten är borttagen; mallpanelen visar
+berörda bolag/rum och aktiveras genom **Redigera gemensam mall**. Rummets val
+använder befintliga `roomOverrides`, revisioner och granskad publicering. Ingen
+ny parallell skrivmodell eller automatisk publicering tillkommer.
+
+Moderna operatorägda rum valideras utan obligatoriska `classic/high/vip`,
+pitboss eller turneringar. Historiska rumsrader kräver fortfarande dessa
+domäner; varje legacyfält som finns valideras strikt. Sparningar bevarar
+befintliga fält, CAS, historik och audit. Ingen produktionsrad migreras.
+
+`lab/` är fortfarande aktiv Studio-kod och används även av gemensamma
+domänfunktioner. `open-claw/lab/` hör till AI-/talanslutningen.
+`lissabon-stream-lane` är en fungerande runtimeflagga för bland annat kamera,
+spelresultat och hälsokontroller. `web/lissabon-profiles.mjs` behåller lokala
+demoprofiler, avstängda för PostgreSQL/produktion. Astrids tal-/klippkedja,
+mediebytes och frysta publiceringar ändras inte av denna PR.
+
+Aktiva guider och agentinstruktioner följer nu `/admin`, `/partner`, `/lobby`
+och tre visuella lager, med gamla rutter som kompatibilitet. Ordlistan skiljer
+dealeridentitet från klippkategori och återställning av bolag öppnar inte rum.
+SL-03:s daterade felpåstående är rättat mot nuvarande kod och regressioner.
+Senaste mains produktmodell och spelval bevaras; rapportens flerspelsförslag
+införs inte som ett nytt krav. Utökade miljövarianter och publiceringsversion
+per användning kräver separata kontrakt och genomförs inte genom namnbyte
+eller borttagna konfliktspärrar.
+
+Lokalt: hela Lab-sviten 1 851 godkända/två skips, båda typkontrollerna och
+Studio-/designbyggen passerar; noll föräldralösa tester. Full ordinarie hook
+körd på den integrerade koden: 3 246 godkända, sju skips och ett oförändrat
+OS-test som saknar processens födelseidentitet i denna körmiljö. Loopbackproven
+körs med 127.0.0.2 utanför miljöns nätproxy. Webbläsarinstallation kunde inte
+slutföras; React-/SSR-/navigationstester är inte visuell browseracceptans.
+Slutlig PR-head och ordinarie CI-resultat redovisas i PR:en. Produktionsdatabas,
+driftkonfiguration, publicering och betald generering ingår inte.
+
+Mergegranskningen bevarar #77:s korta mappguider och sammanför dessa med
+rumsvalens tekniska förtydliganden. 180 riktade regressionsprov passerar på
+den kombinerade versionen, inklusive behöriga rumsval, inloggning, explicita
+malländringar, frysta paket, legacyvalidering och CI-/hookgränser. Inga tester
+är föräldralösa. PR #78 är mergad som `40fc0d83` efter grön full CI
+(`38394400537`), GitGuardian och Vercel på `5963f4c`. Slutträdet matchar
+exakt den granskade versionen.
+
+## Tydligare mappansvar och legacyinstruktioner, 13 oktober
+
+Förenklingen utgår från `main` `978f3bce` i eget worktree och har därefter
+synkats med dokumenttillägget på `ba2eb2bd`. Rotguiden är
+kortad och hänvisar till ordlistan som enda produktmodell. Befintliga guider
+och fem nya mapp-README skiljer aktiv frontend/Studio/spelserver/presentation,
+talservice och medieverktyg från referensytor och genererade byggmappar.
+Gamla kvadratiska/indexerade exportrecept är märkta i fem skripthuvuden;
+deras körbara kod är oförändrad. Inaktiv nästlad worker-CI är borttagen;
+rotens worker-/gatewaykontroller kvarstår. Dokumentationsläget har en exakt
+lista för dessa guider; kod, config, CI och typändringar behåller full regression.
+
+Studio-produktionsbygge och 94 byggspår, 37 riktade repository-/hookprov,
+21 gatewayprov, 15 Python-workerprov, 29 rouletteprov samt 95 lokala
+dokumentlänkar passerar. Full lokal hook: 3 229 godkända, sju skips, ett fel
+i det befintliga processidentitetsprovet. Node-PID och `/proc` har olika
+PID-namespaces här; samma oförändrade kod/test på `main` saknar då
+födelseidentitet. Isolerad omkörning reproducerar det. PR #77 är mergad
+som `1d1f4c12` efter grön full GitHub CI, GitGuardian och Vercel på `b32c0bd`. GitGuardians main-suite var `queued`; incident-/API-täckning
+har inte lästs i denna miljö.
+
+Aktiva Astrid-/dealer-talvägar, klipp, kalibrering, lagrade ID:n, publiceringar
+och data är bevarade. Gemensamma imports mellan appar/paket och SL-10:s
+handmatteaudit är fortsatt öppna; mappnamnen innebär ingen slutförd avveckling.
+
 ## PR-städning och CI, 13 oktober 2026
 
 På Jakobs uppdrag är #75 och #73 mergade. #74 behåller rouletteunderlaget
@@ -83,8 +168,9 @@ Workflow-PR #76 är mergad som `f00d63ba` efter grön full GitHub-körning
 `38392397953` på `16f6fd3`: Studio, dealerregression, OpenClaw-startprov,
 isolerad SQL/omstart/HTTPS, worker och slutjobbet CI passerade. GitGuardian
 och Vercel var gröna på samma PR-commit. Incidentlista och historisk
-säkerhetstäckning är inte verifierade. Denna dokumentuppdatering provar
-separat den korta PR-vägen; full regression fortsätter köras på main.
+säkerhetstäckning är inte verifierade. Dokument-PR #79 verifierade den korta
+vägen i körning `38393298682`: 46 sekunder från första jobbstart till grönt
+slutjobb. Full regression fortsätter köras på main.
 
 ## Nästa agent: roulette i N1:s Labba-yta
 
