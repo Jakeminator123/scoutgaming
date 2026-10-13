@@ -269,12 +269,13 @@ Den indexerade dealerbanken (`media/dealers/{astrid,amira,vera,mei}/runtime/inde
 `media/dealers/*/runtime/presentation` står kvar. Blob-objekten är inte raderade;
 raderna i `media/blob-index.json` för de borttagna filerna är det.
 
-Manuella byggare som B9 behöll, och som fortfarande namnger den borttagna banken:
+Manuella byggare som B9 behöll (kontrollerat 13 oktober på `426fa114`):
 
-- `pipeline/build-previews.sh` — förhandsvisningar av de gamla röstreplikerna
-- `pipeline/encode.sh` — Annex-B, generell
-- `pipeline/build-hands.sh` — handmattor; indata var bankens strömmar, utdata är `runtime/hands`
-- `pipeline/build-contact-review.mjs` och `pipeline/prepend-contact-entry.mjs` — kontaktkandidater mot den borttagna performance-mappen
+- `pipeline/build-hands.sh` — enda byggaren för bevarade `runtime/hands`, men indata är borttagna Vera-strömmar; kan inte köras om utan banken
+- `pipeline/build-previews.sh` — förhandsvisningar av de gamla röstreplikerna; gör ingenting utan `streams/index.json`
+- `pipeline/prepend-contact-entry.mjs` — skriver till borttagna `runtime/indexed/performance`
+- `pipeline/build-contact-review.mjs` — mål är `dealers/astrid/performance`; nämner inte banken
+- `pipeline/encode.sh` — Annex-B, generell; nämner inte banken
 
 Läppsynkskripten som bara läste banken är borta tillsammans med
 `audit-dealer-sync.mjs`, `audit-performance.mjs` och `audit-astrid-actor.mjs`.
@@ -366,10 +367,13 @@ Katalogens version 2 bevarar originalens exakta JSON-byte, så talgranskningens
 SHA-256- och storlekskontroller gäller även utan lokala dealerfiler. Native
 grundloop, talmetadata och klippinventering läser samtliga katalogen.
 
-Verifiering: riktade API-/UI-/bulk-/ljudtester och audit-dealer-sync --probe
-bevarar regressionen för fyra originaldealers. Inga inspelade byte byttes.
-Detta innebär inget nytt visuellt lipsynkgodkännande eller prov av automatisk
-talaktivering för PAOW. Ljudet i biblioteket är en källa, ingen ny TTS-profil.
+Verifiering av den leveransen: riktade API-/UI-/bulk-/ljudtester och dåvarande
+`audit-dealer-sync --probe`. Inga inspelade byte byttes. Det är inget nytt
+visuellt lipsynkgodkännande och inget prov av automatisk talaktivering för PAOW.
+Ljudet i biblioteket är en källa, ingen ny TTS-profil. Proben är borta. Vid
+media- eller spelarändring körs testerna i `.githooks/pre-commit`. Berörda
+registrerade dealers granskas med `?dealer=<name>&rehearsal=1`, två uppspelningar
+i rad. Provspelningen använder den faktiska spelaren.
 
 ## Studioflöde, 9 oktober 2026
 
