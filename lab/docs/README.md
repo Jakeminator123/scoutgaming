@@ -220,7 +220,7 @@ Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
 Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
-**Personalens nya yta är `/admin`; äldre editorer finns på `/control`.** `/studio` är Next.js-basePath för Studio-servicen.
+**Personalens arbetsyta är `/admin` på huvuddomänen.** Dealers finns direkt i sidomenyn; Bolag & team, Rum & publicering, Talgranskning och de övriga etablerade editorerna finns under Verktyg. Gamla `/control`-länkar är kompatibilitetsingångar. `/studio` är tekniskt Next.js-basePath för samma tjänsts API:er och tillgångar; `lab/` är fortfarande aktiv källkod.
 Dess rot omdirigerar permanent till `/control/clips` och bevarar query-parametrar;
 tidigare återexporterade roten samma klippkomponent och visade därför samma innehåll.
 API och tillgångar under basePath behålls. I molnet öppnar du

@@ -1,5 +1,82 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## Admin på huvuddomänen — migrationslogg 13 oktober 2026
+
+Denna logg skiljer flytten av N1-arbetsytan till `/admin` från en framtida
+avveckling av gamla hostnamn och från flytt av källkoden i `lab/`. Ingen
+procentangivelse ersätter verifiering av varje flöde. Startpunkt: main
+`4d6b1ebc` (PR104), Vercel READY och Render live.
+
+### Arbetsytan och verifiering
+
+- [x] Dealers i `/admin`: skapa, arkivera, återställ och lämna i papperskorgen
+  verifierat med det uttryckligen godkända produktionsprovet Adminprov 2026-10-13.
+- [x] Verklig Dragan-import: sex filer med ett gemensamt OK och en direkt via
+  Adminroboten; 21 registrerade klipp efter återläsning. Den separata importen
+  tar upp till 30 videor per omgång. Filer i banken är inte spelpublicering.
+- [x] PR104:s rena talformulär och avslutade importchatt kan lämnas i produktion
+  utan falsk varning. Verkliga utkast och pågående uppladdningar skyddas.
+- [x] Befintliga bolag/team, rum/publicering, sammansättningar, dealerinställningar,
+  medier, svar, provspelning, regler, småprat, dealeragent och guide öppnar inom
+  Admin. PR102 återanvänder samma sparade data, API:er och granskade skrivningar.
+- [ ] Täpp till identifierad paritetslucka: talgranskningens gamla länk
+  `administration?tab=media-review` hamnar i Drift och tappar dealer.
+- [ ] Täpp till identifierad paritetslucka: materialbibliotekets bakgrundsval
+  behöver bevaras för både `tab=backgrounds` och `role=background` vid omladdning.
+- [ ] Bevara äldre bokmärken: `lanes?tab=companies` ska öppna bolag och
+  `clips?dealerId=dragan` ska behålla dealer-valet.
+- [ ] Slutverifiera rättningarna och full rutt-/funktionsinventering, inklusive
+  autentisering, behörigheter, kontext och skydd för osparat arbete, på levererad SHA.
+
+Global ändringslogg saknar ännu eget anslutet API; det fanns inte heller ett
+motsvarande fungerande Control-flöde. Bolagets journal finns i Bolag & team.
+Det är separat produktarbete och ska inte döljas bakom påstådd migrationsparitet.
+
+### Underlag inför senare frikoppling
+
+- Vercelprojektet `scoutgaming` (`prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`) äger
+  www/apex och de tidigare Studio/frontend-aliasen. På 4d6b1ebc består bygget
+  av `web`, `studio` och `speech`: två Next-appar samt taltransport. En äldre
+  Lab-adress är inte automatiskt ett separat aktivt projekt.
+- Det dokumenterade reservprojektet `prj_I6KkhVlk4qMSPlAwSPZdnz4aVQ2s` gav
+  404 i nuvarande scoutgaming-scope. Det bevisar inte radering; verifiera
+  ägarskap/scope och faktisk återställningskälla före eventuell avveckling.
+- `/studio` är fortfarande teknisk basePath på huvuddomänen för Admin,
+  partner/lobby, autentisering, API:er och mediefiler. Behåll tjänsten/routningen.
+- `lab/lib/studio-native-runtime.mjs` och `studio-native-request.mjs` kräver
+  fortfarande två olika tillåtna HTTPS-origins. Ta inte bort
+  `CROUPIER_LAB_UI_ORIGIN` innan Host-/originvalideringen ändrats och positiva
+  samt negativa autentiseringsprov passerat. Inga origin-/miljöändringar ingår här.
+- Admin importerar modeller och komponenter från `lab/`; Render importerar
+  bland annat media-, Blob- och projektkod och bygger Lab i Docker.
+  Mappen får tas bort först efter flytt av samtliga konsumenter, byggspår,
+  SQL/migrationsspår och autentisering. Behåll `open-claw/lab/` och aktiva
+  legacyflaggor tills deras egna konsumenter har ersatts.
+- Neon/Blob-data, konton, publiceringshistorik och frysta paket är samma källa
+  genom flytten. Behåll gamla länkar som kompatibilitet och verifiera verklig
+  N1→publicering→N2→N3 samt spelstart innan någon beroende tjänst stängs.
+
+### Kevins aktiva dealerfiler
+
+Färsk kontroll av refs: `kevin` = `f15b2af16ea7113d451f5c5da14fda031901392a`,
+`kevin-staging` = `a56e25fb2c006302cf36442e724bc9b458b2030a`. Materialet
+sorteras efter faktiska kodreferenser för Dragan/Dragge och Paow, inte efter
+alla filer i mapparna. Senaste Git-build är inte bevis för senaste körande
+Kevin-deployment. Manifest, kopior och hashjämförelse hålls privat utanför Git.
+Produktionsregistret återlästes via ordinarie UI/API: Dragan 21, paow 5,
+paow-v2 1. Dealeridentiteter och tidigare granskningar slås inte ihop.
+
+Per dealer refererar ordinarie spelkod 35 giv-/vändningsklipp, tre grundloopar
+samt 70 repliker. Ytterligare tio är preview/fallback och elva bara förladdade.
+77 Dragan- och 62 Paow-filmer väljs inte i den granskade spelvägen. Det privata
+paketet `kevin-active-dragan-paow-f15b2af1.zip` innehåller 274 kodrefererade
+filer med manifest och dealer/fack/sökväg/hash-CSV; SHA-256
+`07bd02e3c1395c3e715f86d66859f1c3a43f5e622b85e3622df6bef2aef4b633`.
+Samtliga 420 inventerade källfiler hashverifierades. Sju Dragan-poster i
+produktionen matchar Kevins material; ingen av de sex Paow-posterna matchar.
+Detta är filproveniens och urval, inte godkänd pose/läppsynk eller publicering.
+Staging-grenens villkorade dynamiska talväg ingår inte i Admin-migreringen.
+
 ## OpenClaw dashboard utan terminal — liveacceptans öppen
 
 - [ ] Driftsätt Gateway, Director och Vercel med N1-engångslänken. Befintlig

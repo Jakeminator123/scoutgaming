@@ -1,5 +1,25 @@
 # Aktuell handoff — Scoutgaming
 
+## Admin: återstående kompatibilitetsluckor, 13 oktober
+
+Talgranskning finns i Admins verktyg och öppnar befintlig granskningskomponent
+med vald dealer, samma session/grants och samma native-API. Materialbiblioteket
+bevarar bakgrundsfliken efter omladdning. Äldre lanes/companies-bokmärken och
+clips-länkar med dealerId får rätt destination och kontext. Missvisande
+”äldre editor/vy”-etiketter är borttagna när komponenterna visas i Admin.
+
+Sju regressioner gav rött före rättning; 33 riktade prov är gröna.
+Produktionsbygget (97 byggspår) och Admin/lobby-typkontrollen passerar.
+Full regression och produktions-SHA kompletteras efter commit och leverans.
+Den befintliga migrationsloggen i CLOUD-MIGRATION.md skiljer funktionerna
+i Admin från framtida avveckling av hostnamn och källkod. lab/ behövs av
+Admin, autentisering, API:er, SQL och Render; inga tjänster eller data tas bort.
+
+Kevins aktuella Git-ref är inventerad separat: 274 kodrefererade filer för
+Dragan och Paow i ett privat ZIP, med exakta fack, sökvägar och hashvärden.
+Sju av Dragans 21 produktionsposter matchar; ingen av Paows sex matchar.
+Ingen ny publicering eller visuell medieacceptans följer av denna inventering.
+
 ## Publik Scoutguide med D-ID, 13 oktober
 
 Besökare, N2 och N3 får en separat Scoutguide genom den gemensamma chattknappen.

@@ -23,7 +23,7 @@ export function RegisteredResourceLifecycle({operatorId,rooms=[],disabled,onChan
         if(context)query.set('game',context.game);
         return '/admin/clips?'+query;
       },
-      rehearsalLabel:'Provspela & följ (äldre vy)',
+      rehearsalLabel:'Provspela & följ',
     }}/>
   </section>;
 }
