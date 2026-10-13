@@ -1,5 +1,7 @@
 import { validateVideoMetadata } from '../../../../lab/lib/video-intake.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../../../web/public/dealer-compositing.mjs';
+import { addDealer, validateProject } from '../../../../lab/lib/studio-model.mjs';
+import { MAX_DEALERS, isActiveDealerId } from '../../../../web/public/dealer-identity.mjs';
 export { labUrl } from '../../../../lab/lib/lab-url.mjs';
 
 // Format for display only; keep the original failure on its file for review.
@@ -38,6 +40,47 @@ export function uniqueImportFiles(files, rows) {
   let duplicates=0;
   for(const file of files) {const identity=key(file);if(seen.has(identity)){duplicates++;continue;}seen.add(identity);accepted.push(file);}
   return {files:accepted,duplicates};
+}
+
+// Finished rows are receipts, not occupied slots in the next upload batch.
+// Retain failed/uncertain rows, and check duplicates before retiring receipts.
+export function planImportFiles(files, rows, maximum) {
+  const selected = uniqueImportFiles(files, rows);
+  const pending = rows.filter(row => row.state !== 'saved');
+  if (pending.length + selected.files.length > maximum) {
+    throw Error(`Högst ${maximum} osparade filer per omgång. ${pending.length} finns redan i listan. Spara dem eller ta bort valda filer ur listan först.`);
+  }
+  return {...selected, rows: selected.files.length ? pending : rows};
+}
+
+export function importDealerId(name) {
+  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40).replace(/-$/,'');
+}
+
+// The normal N1 project writer owns authorization and compare-and-swap. Load the
+// current project, add only this person, and never retry an uncertain save.
+export async function registerImportDealer({id, name}, request) {
+  id=id.trim();name=name.trim();
+  if(!name || name.length>120)throw Error('Ange dealerns namn, högst 120 tecken.');
+  if(!isActiveDealerId(id))throw Error('Ange ett ledigt dealer-id som börjar med en bokstav och bara innehåller små bokstäver, siffror eller bindestreck.');
+  const {project} = await request('/api/project');
+  validateProject(project);
+  if (project.dealers.length + (project.dealerTrash?.length ?? 0) >= MAX_DEALERS) {
+    throw Error(`Dealerregistret har nått gränsen ${MAX_DEALERS}, inklusive arkiverade dealers. Kontakta administrationen för att granska registret.`);
+  }
+  if (project.dealers.some(row => row.id === id) || project.dealerTrash?.some(row => row.dealer.id === id)) {
+    throw Error('Dealer-id finns redan. Välj den befintliga dealern eller ett annat id.');
+  }
+  const next = addDealer(project, id, name);
+  let result;
+  try {
+    result = await request('/api/project', {method:'PUT', body:JSON.stringify({project:next,expectedRevision:project.revision})});
+    validateProject(result.project);
+    if (result.project.revision === project.revision || !result.project.dealers.some(row => row.id === id.trim() && row.label === name.trim())) throw Error();
+  } catch {
+    throw Error('Registreringen kunde inte bekräftas. Läs om dealerlistan innan du försöker igen; ditt namn och id finns kvar.');
+  }
+  return result.project;
 }
 export function compatibleImportSlot(file, slot) {
   const type = importContentType(file.name);

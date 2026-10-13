@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, Check, FileVideo, MessageCircle, RefreshCw, ShieldCheck, Upload, X } from 'lucide-react';
 import { uploadNativeVideo } from '../../../../../lab/lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../../../../../lab/lib/media-upload-batch.mjs';
-import { labUrl, appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importContentType, importErrorMessage, importFileError, uniqueImportFiles,
+import { labUrl, appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importContentType, importErrorMessage, importFileError, planImportFiles, importDealerId, registerImportDealer,
   type AssistantHistoryEntry, type ImportCatalog, type ImportProposal, type ImportRow, type ImportIntent, type ImportModel } from '../../lib/dealer-import.mjs';
 
 type Answer = {dealerId:string|null;intent:ImportIntent;selectedModel:ImportModel;source:'ai'|'filename-rules'|'unavailable';assistantMessage:string;rows:ImportProposal[];warnings:string[]};
@@ -38,15 +38,17 @@ function LocalPreview({file}:{file:File}) {
   </div>;
 }
 
-export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{active?:boolean;mode?:'chat'|'import';onBusyChange?:(busy:boolean)=>void}) {
+export function DealerImportAssistant({active=true,mode='import',onBusyChange,registrationBlocked=false,onRegistered,requestedDealerId=''}:{active?:boolean;mode?:'chat'|'import';onBusyChange?:(busy:boolean)=>void;registrationBlocked?:boolean;onRegistered?:()=>void;requestedDealerId?:string}) {
   const [catalog,setCatalog] = useState<ImportCatalog|null>(null), [loadCount,setLoadCount] = useState(0);
   const [loading,setLoading] = useState(true), [error,setError] = useState(''), [notice,setNotice] = useState('');
   const [dealerId,setDealerId] = useState(''), [dealerApproved,setDealerApproved] = useState(false);
   const [rows,setRows] = useState<ImportRow[]>([]), [context,setContext] = useState(''), [question,setQuestion] = useState('');
-  const [chat,setChat] = useState<ChatEntry[]>([]), [busy,setBusy] = useState<ImportIntent|'upload'|null>(null);
+  const [chat,setChat] = useState<ChatEntry[]>([]), [busy,setBusy] = useState<ImportIntent|'upload'|'register'|null>(null);
+  const [newDealerName,setNewDealerName] = useState(''),[newDealerId,setNewDealerId] = useState(''),[idEdited,setIdEdited] = useState(false);
   const [history,setHistory] = useState<AssistantHistoryEntry[]>([]);
   const [review,setReview] = useState(false), [approved,setApproved] = useState(false);
   const busyRef = useRef(false), controller = useRef<AbortController|null>(null), input = useRef<HTMLInputElement>(null);
+  const observedDealerRequest=useRef('');
   const pending = rows.some(row => row.state !== 'saved');
   const dealer = catalog?.dealers.find(row => row.id === dealerId);
   const uploadRows = rows.filter(row => row.state === 'ready' && !importContentType(row.file.name).startsWith('image/'));
@@ -60,7 +62,15 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
       .catch(cause=>{if(!abort.signal.aborted){setCatalog(null);setError(cause.message);}})
       .finally(()=>{if(!abort.signal.aborted)setLoading(false);});
     return ()=>abort.abort();
-  },[loadCount]);
+  },[loadCount,active]);
+  useEffect(()=>{
+    if(!catalog||!active||!requestedDealerId||observedDealerRequest.current===requestedDealerId)return;
+    if(!catalog.dealers.some(row=>row.id===requestedDealerId))return;
+    observedDealerRequest.current=requestedDealerId;
+    if(requestedDealerId===dealerId)return;
+    if(pending||busyRef.current){setNotice('Din pågående import behålls. Byt dealer när den är klar.');return;}
+    setDealerId(requestedDealerId);setDealerApproved(false);setRows([]);invalidate();setError('');
+  },[catalog,active,requestedDealerId,pending,dealerId]);
   useEffect(()=>()=>controller.current?.abort(),[]);
   useEffect(()=>{onBusyChange?.(busy!==null);},[busy,onBusyChange]);
   useEffect(() => {
@@ -100,14 +110,37 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
   }
   function addFiles(files:FileList|null) {
     if (!files || !catalog || !dealerApproved || busyRef.current) return;
-    const selected=uniqueImportFiles(Array.from(files),rows);
-    if (rows.length+selected.files.length > catalog.limits.maxFiles) {setError(`Välj högst ${catalog.limits.maxFiles} filer per omgång.`);return;}
+    const candidates=Array.from(files);
+    // Clear the native input even when the batch is full, so choosing the same
+    // files after fixing the queue still produces an onChange event.
+    if(input.current)input.current.value='';
+    let selected;
+    try { selected=planImportFiles(candidates,rows,catalog.limits.maxFiles); }
+    catch(cause){setError((cause as Error).message);return;}
     const additions = selected.files.map(file=>{
       const invalid = importFileError(file,catalog.limits.maxFileBytes);
       return {id:crypto.randomUUID(),file,label:file.name.replace(/\.[^.]+$/,'').slice(0,120),slotId:'',background:'',
         state:invalid?'error' as const:'ready' as const,...(invalid?{message:invalid}:{})};
     });
-    setRows(items=>[...items,...additions]);setError(selected.duplicates?`${selected.duplicates} filer fanns redan i listan och lades inte till igen.`:'');invalidate();if(input.current)input.current.value='';
+    setRows([...selected.rows,...additions]);setError(selected.duplicates?`${selected.duplicates} filer fanns redan i listan och lades inte till igen.`:'');invalidate();
+  }
+  async function registerDealer(event:FormEvent) {
+    event.preventDefault();
+    if(busyRef.current||registrationBlocked||pending)return;
+    busyRef.current=true;setBusy('register');setError('');setNotice('');
+    const abort=new AbortController();controller.current=abort;
+    try {
+      const id=newDealerId.trim(),name=newDealerName.trim();
+      await registerImportDealer({id,name},(path,options)=>jsonRequest(path,{...options,signal:abort.signal}));
+      onRegistered?.();
+      setDealerId(id);setDealerApproved(false);setRows([]);invalidate();
+      setNotice(`${name} är registrerad. Bekräfta dealern och välj filmer.`);
+      setNewDealerName('');setNewDealerId('');setIdEdited(false);
+      const fresh=validateCatalog(await jsonRequest<ImportCatalog>('/api/dealers/import-proposal',{signal:abort.signal}));
+      if(!fresh.dealers.some(row=>row.id===id))throw Error('Dealern är sparad, men listan behöver läsas om. Skapa inte en ny kopia.');
+      setCatalog(fresh);
+    }catch(cause){if(!abort.signal.aborted)setError(cause instanceof Error?cause.message:'Registreringen kunde inte bekräftas. Läs om dealerlistan.');}
+    finally{busyRef.current=false;setBusy(null);controller.current=null;}
   }
   async function ask(intent:ImportIntent,event?:FormEvent) {
     event?.preventDefault();
@@ -148,7 +181,7 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
       if(capability.uploadMode!=='private-client-blob') throw Error('Importen kräver Studios anslutna privata medielagring.');
       const count=await uploadMediaBatch(prepared,{signal:abort.signal,onChange:(id,patch)=>update(id,patch,false),
         upload:(file,classification,onUploadProgress)=>uploadNativeVideo(file,classification,importContentType(file.name),{signal:abort.signal,onUploadProgress})});
-      setNotice(`${count} av ${prepared.length} filer sparades hos ${dealer.label}. Sparade filer ligger i de valda facken som alternativ. Välj dem i Control för provspelning och publicering.`);
+      setNotice(`${count} av ${prepared.length} filer sparades hos ${dealer.label}. Du kan välja nästa omgång nu. Klippval och provspelning görs i Studio.`);
     } catch(cause) {if(!abort.signal.aborted)setError(cause instanceof Error?cause.message:'Importen kunde inte slutföras. Kontrollera biblioteket.');}
     finally {busyRef.current=false;setBusy(null);controller.current=null;setApproved(false);setReview(false);}
   }
@@ -163,17 +196,26 @@ export function DealerImportAssistant({active=true,mode='import',onBusyChange}:{
       <p role="alert">{importErrorMessage(error||'Importkatalogen kunde inte läsas.')}</p><div className="dealer-import-actions"><button onClick={()=>setLoadCount(value=>value+1)}><RefreshCw size={14}/> Försök igen</button><a href="/admin">Logga in igen</a></div>
     </div> : <>
       <div className="dealer-import-layout"><div className="dealer-import-main">
-        <section className="dealer-import-panel" aria-labelledby="dealer-import-dealer"><h2 id="dealer-import-dealer">{mode==='chat'?'Dealer som sammanhang · valfritt':<><span>1</span> Välj befintlig dealer</>}</h2>
+        <section className="dealer-import-panel" aria-labelledby="dealer-import-dealer"><h2 id="dealer-import-dealer">{mode==='chat'?'Dealer som sammanhang · valfritt':<><span>1</span> Välj eller skapa dealer</>}</h2>
           <label>Dealer i registret<select value={dealerId} disabled={Boolean(busy)} onChange={event=>chooseDealer(event.target.value)}>
             <option value="">{mode==='chat'?'Allmän fråga · ingen dealer':'Välj en dealer…'}</option>{catalog.dealers.map(row=><option key={row.id} value={row.id}>{row.label} · {row.id}</option>)}
           </select></label>
-          {!catalog.dealers.length && <p>Inga aktiva dealers finns i registret. Skapa en dealer i <a href="/admin/clips">Studio</a> först.</p>}
+          <div className="dealer-import-actions"><button type="button" disabled={Boolean(busy)} onClick={()=>setLoadCount(value=>value+1)}>Läs om dealerlistan</button></div>
+          {mode==='import'&&<details><summary>Skapa ny dealer</summary>
+            <form onSubmit={event=>void registerDealer(event)}><fieldset disabled={Boolean(busy)||registrationBlocked||pending}>
+              <label>Namn på ny dealer<input required maxLength={120} value={newDealerName} onChange={event=>{setNewDealerName(event.target.value);if(!idEdited)setNewDealerId(importDealerId(event.target.value));}}/></label>
+              <details><summary>Dealer-id</summary><label>Unikt dealer-id<input maxLength={40} value={newDealerId} onChange={event=>{setIdEdited(true);setNewDealerId(event.target.value);}}/></label></details>
+              <button className="dealer-import-primary" type="submit">{busy==='register'?'Registrerar…':'Skapa dealer och fortsätt'}</button>
+            </fieldset></form>
+            {registrationBlocked?<p role="status">Spara eller avsluta ändringarna i klippkartan först.</p>:pending?<p role="status">Spara eller töm den osparade fillistan innan du skapar en annan dealer.</p>:<p>Registrera namnet först. Lägg sedan till filmer; rum och uppspelning kopplas separat.</p>}
+          </details>}
           {dealer && <label className="dealer-import-check" hidden={mode==='chat'}><input type="checkbox" checked={dealerApproved} disabled={Boolean(busy)} onChange={event=>{setDealerApproved(event.target.checked);invalidate();}}/>
             <span>Jag bekräftar att filerna hör till den befintliga dealern <strong>{dealer.label}</strong> ({dealer.id}).</span></label>}
         </section>
         <section className="dealer-import-panel" aria-labelledby="dealer-import-files" hidden={mode==='chat'}><h2 id="dealer-import-files"><span>2</span> Filer och sammanhang</h2>
           <div className="dealer-import-drop" onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();addFiles(event.dataTransfer.files);}}>
-            <Upload size={24}/><strong>Upp till {catalog.limits.maxFiles} filer i samma omgång</strong>
+            <Upload size={24}/><strong>Upp till {catalog.limits.maxFiles} filer per omgång</strong>
+            <p>{rows.filter(row=>row.state!=='saved').length} av {catalog.limits.maxFiles} platser används. Sparade filmer tar ingen plats i nästa omgång.</p>
             <p>MP4, WebM, MP3, WAV eller referensbilder · max 128 MB per fil</p>
             <label className="dealer-import-file-button">Välj filer<input ref={input} type="file" multiple accept=".mp4,.webm,.mp3,.wav,.png,.jpg,.jpeg,.webp" disabled={!dealerApproved||Boolean(busy)} onChange={event=>addFiles(event.target.files)}/></label>
           </div>

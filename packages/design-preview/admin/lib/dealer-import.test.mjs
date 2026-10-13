@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importErrorMessage, importFileError, uniqueImportFiles } from './dealer-import.mjs';
+import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importErrorMessage, importFileError, uniqueImportFiles, planImportFiles, importDealerId, registerImportDealer } from './dealer-import.mjs';
+import { createSeedProject, addDealer } from '../../../../lab/lib/studio-model.mjs';
 
 test('runtime readiness error is explained without rewriting the retained failure',()=>{
   const failure={message:'studio_presentation_runtime_update_required Kontrollera biblioteket innan filen läggs till igen.'};
@@ -69,6 +70,47 @@ test('same local file is not added twice, including saved and uncertain rows', (
   const other={...file,name:'nora-pos1-alt.mp4'};
   assert.deepEqual(uniqueImportFiles([other],[row({file})]),{files:[other],duplicates:0});
 });
+
+test('new upload batches retire saved receipts while retaining uncertain files and duplicate protection',()=>{
+  const saved=Array.from({length:10},(_,i)=>row({id:`saved-${i}`,state:'saved',file:{name:`old-${i}.mp4`,size:100,lastModified:i}}));
+  const fresh=Array.from({length:10},(_,i)=>({name:`new-${i}.mp4`,size:100,lastModified:i}));
+  const next=planImportFiles(fresh,saved,10);
+  assert.equal(next.files.length,10);assert.deepEqual(next.rows,[]);assert.equal(saved.length,10);
+  assert.deepEqual(planImportFiles([saved[0].file],saved,10),{files:[],duplicates:1,rows:saved});
+  const uncertain=row({id:'uncertain',state:'error',file:{name:'uncertain.mp4',size:100,lastModified:1}});
+  assert.throws(()=>planImportFiles(fresh,[...saved,uncertain],10),/1 finns redan/);
+  const partial=planImportFiles(fresh.slice(0,9),[...saved,uncertain],10);
+  assert.deepEqual(partial.rows,[uncertain]);assert.equal(partial.rows[0].state,'error');
+  assert.throws(()=>planImportFiles([{name:'extra.mp4',size:100,lastModified:1}],fresh.map((file,i)=>row({id:String(i),file})),10),/10 finns redan/);
+});
+
+test('dealer registration adds only an empty identity with current CAS revision through the normal project writer',async()=>{
+  const original=createSeedProject(),calls=[];
+  const saved=await registerImportDealer({id:'dragge',name:'Dragge'},async(path,options)=>{
+    calls.push({path,options});if(!options)return {project:original};
+    const body=JSON.parse(options.body);
+    assert.equal(path,'/api/project');assert.equal(options.method,'PUT');assert.equal(body.expectedRevision,original.revision);
+    return {project:{...body.project,revision:'new-revision'}};
+  });
+  assert.equal(calls.length,2);assert.equal(saved.dealers.at(-1).id,'dragge');
+  assert.deepEqual(saved.dealers.slice(0,-1),original.dealers);assert.deepEqual(saved.lanes,original.lanes);
+  assert.ok(saved.lines.filter(line=>line.dealerId==='dragge').every(line=>line.variants.every(variant=>variant.videoGenerationId===null)));
+  assert.equal(original.dealers.some(row=>row.id==='dragge'),false);
+  assert.equal(importDealerId('  Drägge Ny  '),'dragge-ny');
+});
+
+test('dealer registration rejects duplicates/capacity and never replays uncertain writes',async()=>{
+  const original=addDealer(createSeedProject(),'dragge','Dragge');let puts=0;
+  const request=async(_path,options)=>{if(options){puts++;throw Error('network failed');}return {project:original};};
+  await assert.rejects(registerImportDealer({id:'dragge',name:'Dragge'},request),/finns redan/);
+  assert.equal(puts,0);
+  await assert.rejects(registerImportDealer({id:'new-dealer',name:'New'},request),/Läs om dealerlistan/);
+  assert.equal(puts,1);
+  for(const input of [{id:'../other',name:'Test'},{id:'admin',name:'Test'},{id:'valid',name:' '}])
+    await assert.rejects(registerImportDealer(input,()=>assert.fail('invalid identity must not request')));
+  let full=createSeedProject();for(let i=full.dealers.length;i<32;i++)full=addDealer(full,`own-${i}`,`Own ${i}`);
+  await assert.rejects(registerImportDealer({id:'one-more',name:'More'},async(_path,options)=>{assert.equal(options,undefined);return {project:full};}),/gränsen 32/);
+});
 test('images stay local references, audio only uses exact speech slots', () => {
   assert.equal(compatibleImportSlot({name:'VILA.png'},catalog.slots[2]),true);
   assert.equal(compatibleImportSlot({name:'VILA.png'},catalog.slots[0]),false);
@@ -85,7 +127,7 @@ test('proposal cannot change saved rows, files, dealer or upload classification'
   assert.ok(importFileError({name:'unknown.svg',size:100})); assert.ok(importFileError({name:'idle.mp4',size:134217729}));
 });
 
-async function importAssistantHarness(dealers=catalog.dealers){
+async function importAssistantHarness(dealers=catalog.dealers,{request,props={}}={}){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const helpers=await import('./dealer-import.mjs'),module={exports:{}},slots=[],effects=[];let cursor=0;
@@ -93,14 +135,16 @@ async function importAssistantHarness(dealers=catalog.dealers){
     return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(initial){return slots[cursor++]??={current:initial}},useEffect(effect){effects.push(effect);}};
   const source=readFileSync(new URL('../components/studio/dealer-import-assistant.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'});
   runInNewContext(output.code,{module,exports:module.exports,AbortController,URL,URLSearchParams,crypto:globalThis.crypto,
-    fetch:async()=>Response.json({...catalog,dealers,limits:{...catalog.limits,maxFiles:10},provider:{configured:false}}),require:name=>name==='react'?react
+    window:{addEventListener(){},removeEventListener(){},confirm:()=>true},document:{addEventListener(){},removeEventListener(){}},
+    fetch:request??(async()=>Response.json({...catalog,dealers,limits:{...catalog.limits,maxFiles:10},provider:{configured:false}})),require:name=>name==='react'?react
       :name.includes('upload-native-video.mjs')?{uploadNativeVideo(){throw Error('no upload expected')}}
       :name.includes('media-upload-batch.mjs')?{uploadMediaBatch(){throw Error('no upload expected')}}
       :name.includes('dealer-import.mjs')?helpers:require(name)});
-  const render=()=>{cursor=0;return module.exports.DealerImportAssistant({})};
+  const render=()=>{cursor=0;return module.exports.DealerImportAssistant(props)};
   const all=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
   render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
-  return {nodes:predicate=>all(render(),predicate),html:()=>renderToStaticMarkup(render())};
+  return {nodes:predicate=>all(render(),predicate),html:()=>renderToStaticMarkup(render()),
+    flush:async()=>{effects.splice(0);render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));}};
 }
 test('import recovery and dealer links keep the selected registered dealer in Admin',async()=>{
   const h=await importAssistantHarness();h.nodes(node=>node.type==='select')[0].props.onChange({target:{value:'nora'}});
@@ -109,4 +153,43 @@ test('import recovery and dealer links keep the selected registered dealer in Ad
   const links=h.nodes(node=>node.type==='a');assert.equal(links.length,2);assert.ok(links.every(node=>node.props.href==='/admin/clips?dealer=nora'));
   assert.match(h.html(),/Filer med fel försöks inte om automatiskt/);assert.doesNotMatch(h.html(),/href="\/control/);
   const empty=await importAssistantHarness([]);assert.ok(empty.nodes(node=>node.type==='a').every(node=>node.props.href==='/admin/clips'));
+});
+
+test('Admin import creates the typed dealer once, refreshes the list, and requires explicit file ownership approval',async()=>{
+  let project=createSeedProject(),puts=0,changed=0;
+  const request=async(url,options)=>{
+    if(url.endsWith('/api/project')){
+      if(options.method==='PUT'){puts++;project={...JSON.parse(options.body).project,revision:'created-revision'};}
+      return Response.json({project});
+    }
+    return Response.json({...catalog,dealers:project.dealers,limits:{...catalog.limits,maxFiles:10},provider:{configured:false}});
+  };
+  const h=await importAssistantHarness([],{request,props:{onRegistered:()=>changed++}});
+  h.nodes(node=>node.type==='input'&&node.props.maxLength===120)[0].props.onChange({target:{value:'Dragge'}});
+  await h.nodes(node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});
+  // The onSubmit deliberately does not expose its promise to React.
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(puts,1);assert.equal(changed,1);assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'dragge');
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='checkbox')[0].props.checked,false);
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.disabled,true);
+  assert.match(h.html(),/Dragge är registrerad/);
+});
+
+test('Admin import blocks registration while the map has an unsaved draft',async()=>{
+  const h=await importAssistantHarness(catalog.dealers,{props:{registrationBlocked:true}});
+  assert.equal(h.nodes(node=>node.type==='fieldset')[0].props.disabled,true);
+  await h.nodes(node=>node.type==='form')[0].props.onSubmit({preventDefault(){}});
+  assert.match(h.html(),/Spara eller avsluta ändringarna i klippkartan/);
+});
+
+test('dealer navigation selects only an exact registered dealer and preserves pending files',async()=>{
+  const props={requestedDealerId:'nora'};
+  const h=await importAssistantHarness([...catalog.dealers,{id:'dragge',label:'Dragge'}],{props});
+  await h.flush();assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'nora');
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='checkbox')[0].props.checked,false);
+  h.nodes(node=>node.type==='input'&&node.props.type==='checkbox')[0].props.onChange({target:{checked:true}});
+  h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[{name:'own.mp4',size:100,lastModified:1}]}});
+  props.requestedDealerId='dragge';await h.flush();
+  assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'nora');assert.match(h.html(),/own.mp4/);
+  props.requestedDealerId='unknown';await h.flush();assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'nora');
 });
