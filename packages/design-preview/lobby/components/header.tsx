@@ -140,7 +140,7 @@ export function Header() {
 
           <StepButton
             index="03"
-            label={dealer ? dealer.name : "Dealer & miljö"}
+            label={dealer ? dealer.name : "Dealer"}
             state={states[STEP_IDS.dealer]}
             inView={inView === STEP_IDS.dealer}
             lockedHint="Välj spelrum först"
@@ -237,7 +237,7 @@ export function Header() {
             />
             <MobileRow
               index="03"
-              label={dealer ? dealer.name : "Dealer & miljö"}
+              label={dealer ? dealer.name : "Dealer"}
               state={states[STEP_IDS.dealer]}
               onClick={() => {
                 scrollToSection(STEP_IDS.dealer);

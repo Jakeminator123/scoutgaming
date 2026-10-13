@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import { defaultPresentationLane } from '../lab/lib/studio-model.mjs';
 import { cloudPresentationFixture } from '../lab/test/fixtures/cloud-presentation.mjs';
 import { validateStudioGameAdministration } from '../web/storage/studio-game-policy.mjs';
-import { isPresentationRoom, listPackageRooms, resolvePackageRoom } from '../web/presentation-room-contract.mjs';
+import { isPresentationRoom, listPackageRooms, resolvePackageRoom,inspectPackageRooms } from '../web/presentation-room-contract.mjs';
 import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
 import { layerAssetPath } from '../web/presentation-layers.mjs';
 import { defaultCompositionSettings } from '../web/public/composition-settings.mjs';
-import { withPackagePresentation } from '../web/storage/presentation-package.mjs';
+import { withPackagePresentation,readPackagePresentation } from '../web/storage/presentation-package.mjs';
+import {materialSource} from '../web/public/material-catalog.mjs';
+import {assertPresentationRoomMaterials} from '../web/presentation-material-game.mjs';
 
 const legacy = { id: 'old-room', name: 'Old', scene: 'Dark', felt: 'Green', dealer: 'vera', state: 'live' };
 const room = { schemaVersion: 2, id: 'room-one', name: 'North table', operatorId: 'north', presentationLaneId: 'mobile-phone', gameLaneId: 'mobile-phone', state: 'live' };
@@ -30,6 +32,24 @@ test('administration validates the closed legacy/v2 union without rewriting lega
   }
   const duplicate = structuredClone(administration); duplicate.rooms[1].id = legacy.id;
   assert.throws(() => validateStudioGameAdministration(duplicate));
+});
+test('new material tags preserve both authorised historical sibling game entries while new publication stays strict',async()=>{
+  const f=fixture(),frozen=structuredClone(readPackagePresentation(f.pack));
+  const {kind,hasAlpha,...source}=materialSource('blackjack-green-felt');
+  const table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000991',role:'table',label:'Supplied blackjack',...source};table.pathname=layerAssetPath(table);
+  frozen.assets=[...frozen.assets,table];frozen.lanes[0].layers.table={...frozen.lanes[0].layers.table,enabled:true,default:table.id,allowed:[table.id]};
+  const bad={...room,id:'room-roulette',name:'Historical roulette',game:'roulette'};
+  f.administration.rooms.push(bad);f.pack.tables.push(bad.id);f.pack.games=['blackjack','roulette'];f.pack.branding=withPackagePresentation(f.pack.branding,frozen);
+  const before=JSON.stringify({pack:f.pack,administration:f.administration});
+  const input={administration:f.administration,package:f.pack,operatorId:'north'};
+  assert.deepEqual(inspectPackageRooms(input).map(row=>[row.room.id,row.materialsCompatible]),[[room.id,true],[bad.id,false]]);
+  assert.deepEqual(listPackageRooms(input).map(row=>row.id),[room.id,bad.id]);
+  assert.equal(resolvePackageRoom({...input,roomId:bad.id}).id,bad.id);
+  const select=createGameEntrySelector({policy:f.policy,packages:{resolve:async()=>({operator:{id:'north',slug:'north',status:'active'},package:f.pack})},game:'any',log(){}});
+  assert.equal((await select('operator=north&table='+room.id)).status,200);
+  assert.equal((await select('operator=north&table='+bad.id)).status,200);
+  assert.throws(()=>assertPresentationRoomMaterials(frozen,bad),error=>error.code==='studio_presentation_game_material_mismatch'&&error.statusCode===422);
+  assert.equal(JSON.stringify({pack:f.pack,administration:f.administration}),before);
 });
 test('package room IDs alone never grant ownership; readers require owner, package tables and both lanes', () => {
   const { administration, pack } = fixture();

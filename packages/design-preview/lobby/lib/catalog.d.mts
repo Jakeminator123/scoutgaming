@@ -1,7 +1,8 @@
-export type Dealer = { id: string; name: string };
+export type Dealer = { id: string; name: string; image?: string };
 export type Room = {
   id: string; key: string; operatorId: string; name: string;
   game: 'blackjack' | 'roulette'; presentation: string; dealers: Dealer[]; playUrl: string;
+  environmentLabel: string; environmentFixed: boolean; environmentKind: 'image' | 'video' | 'baked' | 'variable'; image?: string;
 };
 export type Operator = {
   id: string; name: string; monogram: string; accent: string; status: 'open' | 'empty';

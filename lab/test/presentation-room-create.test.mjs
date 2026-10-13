@@ -336,6 +336,8 @@ test('preflight causes provide distinct recovery without silently creating or re
     [{ ready: false, reason: 'presentation_package_conflict' }, 'Läs in aktuella uppgifter', '/control/rooms?operator=sg-test&composition=portrait-live'],
     [{ ready: false, reason: 'presentation_lane_incompatible' }, 'Kontrollera sammansättningen', '/control/compositions?composition=portrait-live'],
     [{ ready: false, reason: 'presentation_package_too_large' }, 'Kontrollera sammansättningen', '/control/compositions?composition=portrait-live'],
+    [{ ready: false, reason: 'presentation_room_environment_required', environment: { kind: 'variable', fixed: false, label: 'Välj en fast bakgrund för rummet' } },
+      'Välj och lås miljön i Sammansättningar', '/control/compositions?composition=portrait-live'],
   ]) {
     const h = fixture(), ui = componentHarness(h.controller);
     ui.render(context); h.reply(0, prepared(context, extra)); await tick();
@@ -346,6 +348,77 @@ test('preflight causes provide distinct recovery without silently creating or re
     assert.equal(h.requests.length, 1, 'a blocked preflight never submits');
     assert.equal(h.keys, 0); ui.unmount();
   }
+});
+
+test('form displays the saved fixed or baked environment without extra writes or a false room preview', async () => {
+  for (const environment of [
+    { kind: 'image', fixed: true, label: 'Casino' },
+    { kind: 'baked', fixed: true, label: 'Miljö i dealerfilmen' },
+  ]) {
+    const h = fixture(), ui = componentHarness(h.controller);
+    ui.render(context); h.reply(0, prepared(context, { environment })); await tick();
+    const html = renderToStaticMarkup(ui.render(context));
+    assert.match(html, /Rummets miljö/); assert.ok(html.includes(environment.label));
+    assert.match(html, environment.kind === 'baked' ? /inbakad miljö/ : /fast bakgrund/);
+    assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
+  }
+});
+
+test('uncertain room creation retries its exact payload after the saved environment is no longer eligible', async () => {
+  const h = fixture(); await h.ready(); const attempt = await h.start('Mitt rum');
+  attempt.post.reject(Error('lost response')); await attempt.pending;
+  await h.ready(context, { ready: false, reason: 'presentation_room_environment_required',
+    projectRevision: 'new-draft', environment: { kind: 'variable', fixed: false, label: 'Flera miljöval' } });
+  assert.equal(h.controller.getSnapshot().status, 'uncertain');
+  const ui = componentHarness(h.controller);
+  // Mounting starts another read; the pending original intent must survive it.
+  const readIndex = h.requests.length; ui.render(context);
+  h.reply(readIndex, prepared(context, { ready: false, reason: 'presentation_room_environment_required',
+    projectRevision: 'new-draft', environment: { kind: 'variable', fixed: false, label: 'Flera miljöval' } }));
+  await tick();
+  const tree = ui.render(context), html = renderToStaticMarkup(tree);
+  assert.match(html, /Försök igen/); assert.doesNotMatch(html, /Välj och lås miljön/);
+  const postIndex = h.requests.length;
+  find(tree, 'form').props.onSubmit({ preventDefault() {} }); await tick();
+  assert.equal(h.requests[postIndex].options.method, 'POST');
+  assert.deepEqual(JSON.parse(h.requests[postIndex].options.body), attempt.payload);
+  h.reply(postIndex, created(attempt.payload, context, { duplicate: true })); await tick();
+  assert.equal(h.controller.getSnapshot().receipt.duplicate, true); assert.equal(h.keys, 1); ui.unmount();
+});
+
+test('fixed environment accepts the full registered layer label limit without widening room names', async () => {
+  const valid = fixture(); await valid.ready(context, { environment: { kind: 'image', fixed: true, label: 'A'.repeat(120) } });
+  assert.equal(valid.controller.getSnapshot().status, 'ready');
+  assert.equal(valid.controller.getSnapshot().preflight.environment.label.length, 120);
+  const invalid = fixture(); await invalid.ready(context, { environment: { kind: 'image', fixed: true, label: 'A'.repeat(121) } });
+  assert.equal(invalid.controller.getSnapshot().status, 'error');
+  valid.controller.setName('A'.repeat(101));
+  const requests = valid.requests.length;
+  assert.equal(await valid.controller.create(presentationRoomContextKey(context)), null);
+  assert.equal(valid.requests.length, requests);
+});
+
+test('preflight rejects contradictory environment metadata', async () => {
+  for (const environment of [
+    { kind: 'variable', fixed: false, label: 'Flera miljöval' },
+    { kind: 'variable', fixed: true, label: 'Flera miljöval' },
+    { kind: 'image', fixed: true, label: 'Casino', pathname: 'private/blob' },
+  ]) {
+    const h = fixture(); await h.ready(context, { environment });
+    assert.equal(h.controller.getSnapshot().status, 'error');
+    assert.equal(h.controller.getSnapshot().preflight, null);
+  }
+});
+
+test('a shared published environment conflict directs to a separate composition without submitting', async () => {
+  const h = fixture(), ui = componentHarness(h.controller);
+  ui.render(context);
+  h.reply(0, prepared(context, { ready: false, reason: 'presentation_package_conflict', conflictCode: 'presentation_room_environment_conflict' }));
+  await tick(); const tree = ui.render(context), html = renderToStaticMarkup(tree);
+  assert.match(html, /Skapa en separat sammansättning/); assert.match(html, /redan av publicerade rum/);
+  assert.equal(find(tree, 'a').props.href, labBasePath() + '/control/compositions?composition=portrait-live');
+  find(tree, 'form').props.onSubmit({ preventDefault() {} });
+  assert.equal(h.requests.length, 1); assert.equal(h.keys, 0); ui.unmount();
 });
 
 test('a valid existing room stays visible when changed draft content blocks another room creation', async () => {
