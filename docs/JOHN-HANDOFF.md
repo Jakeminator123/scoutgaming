@@ -1,5 +1,50 @@
 # Aktuell handoff — Scoutgaming
 
+## Adminroboten och separata chattlägen, 13 oktober 2026
+
+Kod i PR #82, ännu inte driftsatt. Knappen finns på publik sajt,
+admin/Studio, partner och spelarsidor. Scoutguiden använder Luna 6 och statisk
+publik kunskap. Inloggad N1 kan välja Adminroboten eller OpenClaw med Sol 6.1/high.
+Klippassistenten behåller sitt separata importflöde; dealerspelchatten och den
+äldre Gatewayrådgivaren är egna flöden.
+
+Vercel kör webbchatten och kontrollerar aktuell N1-session. Adminroboten läser
+avgränsade inventarier från Studio/Neon: dealers, material, sammansättningar,
+bolag, rum, tabellnamn och aggregerad spelstatus. Listor anger begränsning och
+saknad täckning. Inga kontouppgifter, nycklar eller mediebytes går till modellen.
+Via befintlig Director på Render läses Gatewaystatus och modellkatalog.
+OpenClaw-läget kan föreslå modellbyte för en befintlig roll till en katalogmodell.
+Renderkontots loggar/diskfiler, nya Gatewayverktyg, fri SQL och
+bakgrundsövervakning är inte anslutna. Ingen generell molnkontobehörighet tilldelas.
+
+Tillåtna förslag: arkivera/återställa dealer, material, bolag eller rum; öppna/
+stänga rum; namnbyte på dealer/material/sammansättning; separat permanent
+radering av redan arkiverad dealer; Gatewaymodellbyte. Varje skrivning kräver
+serverförhandsvisning, inmatat mål och aktiv kryssruta i ”Är du säker…”-dialog.
+Signerad femminutersbekräftelse binds till session, mål, exakta ändringar och
+beroenden. Aktuell behörighet/revision kontrolleras igen; ursprungliga API:ers
+transaktioner, revisionskontroller och medieskydd gäller. Ändrad filinventering
+stoppar permanent radering även vid kontrollen inne i borttagningsflödet.
+Historik hålls enbart i sidans minne och töms vid kontobyte eller lägesbyte.
+
+Verifierat: full lokal precommit-regression, riktade behörighets-/livscykelprov,
+admin/lobby-byggen och Studio Next-produktionsbygge. Isolerat webbläsarprov
+bekräftar dialog, spärrad knapp, syntetiskt kvitto och rensning vid utloggning.
+Riktiga syntetiska modellprov genom lokal leverantör gav svar från både
+Sol 6.1 och Luna 6; det verifierar inte Vercels produktionskonfiguration.
+Status-only läsning av levande Gateway gav OpenClaw 2026.9.5, ansluten, och
+alla fem roller på lab-provider/gpt-5.6-terra; inget livebyte gjordes.
+
+Jakobs städriktlinje använder nu rotens gitignorerade arkiv/ som kanonisk
+reservplats; den ersatta assistentbubblans källfil ligger där med ursprunglig
+sökväg. En tom markör versioneras, inget arkivinnehåll.
+
+Kvar: PR-granskning/merge, deployment och liveprov av N1, alla sidytor,
+Studio-konfiguration samt aktuella Gatewaymodeller. Ingen migration behövs.
+TalkingHead avvaktar: kompatibel riggad GLB och tal-/läppsynkkoppling gör det
+till en separat integration, inte ett enkelt inkopplat ansikte.
+
+
 ## Tillägg 13 oktober: Admins navigering och delade funktioner
 
 `/admin` är huvudspåret för N1. Sidval, menyer, ekonomi och tjänstepaneler

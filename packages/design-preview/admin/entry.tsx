@@ -22,7 +22,7 @@ const pages: Record<string, string> = {
   '/admin/assets': 'Bord & bakgrunder',
   '/admin/drift': 'Drift', '/admin/ekonomi': 'Ekonomi', '/admin/admin/accounts': 'Konton & åtkomst',
   '/admin/admin/operators': 'Spelbolag', '/admin/admin/players': 'Spelare', '/admin/admin/payments': 'Betalningar',
-  '/admin/admin/api': 'API', '/admin/admin/log': 'Ändringslogg', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Studioassistent',
+  '/admin/admin/api': 'API', '/admin/admin/log': 'Ändringslogg', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Adminroboten',
 };
 function App() {
   const path = usePathname();

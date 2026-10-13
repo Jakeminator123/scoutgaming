@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Cormorant_Garamond, Geist_Mono, Inter } from "next/font/google"
+import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         {children}
         <Analytics />
+        <Script src="/studio/assistant-widget.js" strategy="afterInteractive" />
       </body>
     </html>
   )

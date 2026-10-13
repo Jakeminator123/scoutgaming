@@ -6,7 +6,7 @@ const SYSTEM = `You are the shared Swedish Studio assistant for ordinary questio
 // Roles are owned by this feature, not the caller or the global OpenClaw model.
 // Token caps include reasoning tokens; mapping needs room for high reasoning.
 const ROLES = Object.freeze({
-  mapping: Object.freeze({ id: 'gpt-5.6-sol', reasoningEffort: 'high', maxOutputTokens: 12000, timeoutMs: 60_000 }),
+  mapping: Object.freeze({ id: 'gpt-6.1-sol', reasoningEffort: 'high', maxOutputTokens: 12000, timeoutMs: 60_000 }),
   chat: Object.freeze({ id: 'gpt-5.6-luna', reasoningEffort: 'medium', maxOutputTokens: 2600, timeoutMs: 20_000 }),
 });
 function roleFor(intent = 'mapping') {

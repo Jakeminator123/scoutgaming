@@ -4590,6 +4590,33 @@
           "path": "lab/lib/studio-native-request.mjs"
         }
       ]
+    },
+    {
+      "id": "studio-api-assistant",
+      "path": "/api/assistant",
+      "publicPath": "/studio/api/assistant",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/assistant/route.ts",
+      "serving": "Vercel Studio. Public help uses static knowledge; N1 uses current scoped native readers and action APIs.",
+      "access": "Internal data and every prepare/execute require current N1 account and matching scope. Public help has no internal data. Same-origin POST, bounded input and rate limit.",
+      "boundary": "Model can only propose. Actor/session-bound expiring signed review, typed target and checkbox; fresh dependency fingerprint and original API CAS/auth before execution. No arbitrary SQL, shell, provider credentials or automatic writes.",
+      "groupId": "studio-dealer-import",
+      "sources": [
+        {
+          "path": "lab/lib/assistant-api.mjs"
+        },
+        {
+          "path": "lab/lib/assistant-actions.mjs"
+        },
+        {
+          "path": "lab/test/assistant.test.mjs"
+        }
+      ]
     }
   ],
   "retiredLanes": [
