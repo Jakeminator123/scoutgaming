@@ -4,18 +4,24 @@
 
 Studio kan använda en separat, stateless modelladapter för förslag i `/admin/clips`.
 Den är avstängd tills `CROUPIER_DEALER_IMPORT_AI=1` och de serverägda
-`OPENCLAW_MODEL_API_KEY` och `OPENCLAW_MODEL_ID` finns i **Studio-tjänsten**.
+`OPENCLAW_MODEL_API_KEY` finns i **Studio-tjänsten**.
 Gatewayns befintliga inställningar innebär inte att Studio har dessa värden.
 `OPENCLAW_MODEL_API` stöder `openai-responses` (förval) och `openai-completions`;
 `OPENCLAW_MODEL_BASE_URL` är en HTTPS-bas, med `https://api.openai.com/v1` som förval.
+Modellrollerna är fasta på servern: kartläggning använder `gpt-5.6-sol` med
+`high`, chatt använder `gpt-5.6-luna` med `medium`. Studios importassistent
+läser inte `OPENCLAW_MODEL_ID`; Gatewayns modellinställning är separat.
 Ingen nyckel kopieras, tjänst aktiveras eller leverantör konfigureras av kodleveransen.
 
 Modellen får högst tio filbeskrivningar, avgränsad användarkontext och tillåtna fack.
 Inga bildrutor, mediebytes, verktyg, hemligheter eller skrivbehörigheter följer med.
-Begäran anger `store:false`, högst 2 600 outputtokens och 20 sekunders timeout.
+Begäran anger `store:false`. Kartläggning har högst 12 000 outputtokens och
+60 sekunders timeout; chatt har 2 600 och 20 sekunder. Budgeten inkluderar
+resonemangstokens. Ofullständiga svar får inte bli placeringsförslag.
 Två samtidiga anrop och sex anrop per minut/användare begränsas per serverprocess;
 det är inte en gemensam kostnadsgräns mellan instanser. Utan modell eller vid fel
-visar gränssnittet uttryckligen filnamnsregler. Sparandet använder befintlig
+visar kartläggningen uttryckligen filnamnsregler. Chatt visar i stället att AI-svaret
+inte är tillgängligt och lämnar placeringar/godkännanden orörda. Sparandet använder befintlig
 N1-behörighet och privata Blob-/registerflöden efter separat mänskligt godkännande.
 
 Detta är den läsbara nyckelnamnsförteckningen. Den maskinläsbara listan finns i

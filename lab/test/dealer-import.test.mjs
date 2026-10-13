@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject } from '../lib/studio-model.mjs';
 import { dealerImportCatalog, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, validateDealerImportAdvice } from '../lib/dealer-import-catalog.mjs';
-import { dealerImportModelConfiguration, askDealerImportModel } from '../lib/dealer-import-model.mjs';
+import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../lib/dealer-import-model.mjs';
 import { createDealerImportApi, createDealerImportLimiter } from '../lib/dealer-import-api.mjs';
 
 const origin = 'https://studio.example.invalid', scope = { environment: 'test', workspaceId: 'studio-test' };
@@ -10,10 +10,12 @@ const config = { scope, apiBase: '/studio/api/admin', authBase: '/studio/api/aut
 const env = { CROUPIER_DEALER_IMPORT_AI: '1', OPENCLAW_MODEL_ID: 'fixture-model', OPENCLAW_MODEL_API_KEY: 'fixture-private-key', OPENCLAW_MODEL_BASE_URL: 'https://provider.example.invalid/v1' };
 const file = (name, id = 'file1', type = 'video/webm') => ({ id, name, size: 1000, type });
 const input = files => ({ dealerId: 'astrid', files, context: '' });
-const request = (body, { path = '/studio/api/dealers/import-proposal', headers = {}, method = body === undefined ? 'GET' : 'POST' } = {}) => new Request(origin + path, { method,
+const request = (body, { path = '/studio/api/dealers/import-proposal', headers = {}, method = body === undefined ? 'GET' : 'POST', signal } = {}) => new Request(origin + path, { method, signal,
   headers: { ...(body === undefined ? {} : { origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' }), ...headers }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 const validAdvice = (body, slots = body.files.map(() => 'idle.ready/')) => ({ assistantMessage: 'Ett granskningsbart förslag.', rows: body.files.map((row, index) => ({ fileId: row.id, slotId: slots[index], confidence: 'medium', reason: 'Kontexten beskriver detta fack.' })) });
 const modelResponse = advice => Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(advice) }] }] });
+const chatInput = (files = []) => ({ ...input(files), intent: 'chat', message: 'Vad betyder REDO?' });
+const chatReply = { assistantMessage: 'REDO är referensposen där handen är vid skon. Ingen placering har ändrats.' };
 function fixture(options = {}) {
   let project = createSeedProject(), reads = 0;
   const repository = new Proxy({ readDocument: async kind => { assert.equal(kind, 'project'); reads++; return { value: structuredClone(project) }; } },
@@ -85,7 +87,9 @@ test('catalog reads only the saved project, labels heuristics honestly and disab
   const { api } = fixture();
   const response = await api.handle(request()); assert.equal(response.status, 200); assert.match(response.headers.get('cache-control'), /no-store/);
   const catalog = await response.json(); assert.ok(catalog.dealers.some(row => row.id === 'astrid')); assert.equal(catalog.provider.configured, false); assert.equal(catalog.limits.vision, false);
+  assert.deepEqual(catalog.provider.roles, { mapping: { id: 'gpt-5.6-sol', reasoningEffort: 'high' }, chat: { id: 'gpt-5.6-luna', reasoningEffort: 'medium' } });
   const proposal = await (await api.handle(request(input([file('pos1.webm')])))).json();
+  assert.equal(proposal.intent, 'mapping'); assert.deepEqual(proposal.selectedModel, catalog.provider.roles.mapping);
   assert.equal(proposal.source, 'filename-rules'); assert.match(proposal.assistantMessage, /inte AI/); assert.equal(proposal.rows[0].classification.dealerId, 'astrid');
 });
 
@@ -106,6 +110,8 @@ test('AI request is tool-free, stateless, schema-constrained and receives no rep
   const { api } = fixture({ env, fetchImpl: async (url, options) => { captured = { url, options, body: JSON.parse(options.body) }; return modelResponse(validAdvice(body)); } });
   const result = await (await api.handle(request(body))).json();
   assert.equal(result.source, 'ai'); assert.equal(captured.url, 'https://provider.example.invalid/v1/responses');
+  assert.equal(result.intent, 'mapping'); assert.equal(captured.body.model, 'gpt-5.6-sol');
+  assert.deepEqual(captured.body.reasoning, { effort: 'high' }); assert.equal(captured.body.max_output_tokens, 12000);
   assert.equal(captured.options.redirect, 'error'); assert.equal(captured.body.store, false); assert.equal(captured.body.tool_choice, 'none'); assert.deepEqual(captured.body.tools, []);
   assert.equal(captured.body.text.format.strict, true); assert.equal(captured.body.text.format.schema.additionalProperties, false);
   const user = JSON.parse(captured.body.input[0].content); assert.deepEqual(Object.keys(user).sort(), ['context', 'dealerId', 'files', 'question', 'slots']);
@@ -117,6 +123,10 @@ test('provider configuration requires deliberate Studio opt-in and rejects unsup
   assert.equal(dealerImportModelConfiguration({ ...env, OPENCLAW_MODEL_API: 'anthropic-messages' }), null);
   for (const url of ['http://provider.invalid/v1', 'https://user:pass@provider.invalid/v1', 'https://provider.invalid/v1?key=secret', 'bad-url']) assert.equal(dealerImportModelConfiguration({ ...env, OPENCLAW_MODEL_BASE_URL: url }), null);
   assert.equal(dealerImportModelConfiguration({ ...env, OPENCLAW_MODEL_API_KEY: '' }), null);
+  // The separate assistant never inherits an operator's global model identity.
+  assert.ok(dealerImportModelConfiguration({ ...env, OPENCLAW_MODEL_ID: '' }));
+  assert.ok(dealerImportModelConfiguration({ ...env, OPENCLAW_MODEL_ID: 'malicious\nmodel' }));
+  assert.equal(Object.hasOwn(dealerImportModelConfiguration(env), 'model'), false);
 });
 
 test('chat completion providers use the configured API and reject tool calls', async () => {
@@ -124,11 +134,114 @@ test('chat completion providers use the configured API and reject tool calls', a
   const result = await askDealerImportModel(configuration, body, catalog, { fetchImpl: async (url, options) => {
     assert.equal(url, 'https://provider.example.invalid/v1/chat/completions');
     const sent = JSON.parse(options.body); assert.equal(sent.response_format.json_schema.strict, true);
+    assert.equal(sent.model, 'gpt-5.6-sol'); assert.equal(sent.reasoning_effort, 'high'); assert.equal(sent.max_completion_tokens, 12000);
     assert.equal(Object.hasOwn(sent, 'tools'), false); assert.equal(Object.hasOwn(sent, 'tool_choice'), false); assert.equal(sent.store, false);
     return Response.json({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(validAdvice(body)) } }] });
   } });
   assert.deepEqual(result, validAdvice(body));
   await assert.rejects(askDealerImportModel(configuration, body, catalog, { fetchImpl: async () => Response.json({ choices: [{ finish_reason: 'stop', message: { content: '{}', tool_calls: [{ id: 'evil' }] } }] }) }));
+});
+
+test('intent is an exact allowlist, chat requires a question, and caller model knobs never reach the provider', async () => {
+  const catalog = dealerImportCatalog(createSeedProject()), good = input([file('idle.webm')]);
+  assert.equal(validateDealerImportInput(good, catalog).intent, 'mapping');
+  assert.equal(validateDealerImportInput({ ...good, intent: 'mapping' }, catalog).intent, 'mapping');
+  assert.equal(validateDealerImportInput(chatInput(), catalog).intent, 'chat');
+  const badInputs = [
+    ...['CHAT', 'system', '', null, 1, {}, [], '__proto__'].map(intent => ({ ...good, intent })),
+    ...[undefined, '', ' \n '].map(message => ({ ...good, intent: 'chat', message })),
+    ...['model', 'reasoning', 'reasoning_effort', 'max_output_tokens', 'timeoutMs', 'selectedModel'].map(key => ({ ...good, [key]: 'attacker-choice' })),
+  ];
+  let calls = 0;
+  const { api } = fixture({ env, fetchImpl: async () => { calls++; throw Error('must never call'); } });
+  for (const bad of badInputs) {
+    assert.throws(() => validateDealerImportInput(bad, catalog));
+    assert.equal((await api.handle(request(bad))).status, 400);
+  }
+  assert.equal(calls, 0); assert.throws(() => dealerImportSelectedModel('__proto__'));
+});
+
+test('chat uses Luna medium on both supported transports and has no mapping schema or returned rows', async () => {
+  for (const apiKind of ['openai-responses', 'openai-completions']) {
+    const body = chatInput([file('pos1.webm')]); let captured;
+    const { api } = fixture({ env: { ...env, OPENCLAW_MODEL_API: apiKind }, fetchImpl: async (_url, options) => {
+      captured = JSON.parse(options.body);
+      return apiKind === 'openai-responses' ? modelResponse(chatReply)
+        : Response.json({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(chatReply) } }] });
+    } });
+    const response = await api.handle(request(body)); assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.equal(result.intent, 'chat'); assert.equal(result.source, 'ai'); assert.deepEqual(result.rows, []);
+    assert.deepEqual(result.selectedModel, { id: 'gpt-5.6-luna', reasoningEffort: 'medium' });
+    assert.equal(captured.model, 'gpt-5.6-luna'); assert.equal(captured.store, false);
+    const responses = apiKind === 'openai-responses';
+    assert.equal(responses ? captured.reasoning.effort : captured.reasoning_effort, 'medium');
+    assert.equal(responses ? captured.max_output_tokens : captured.max_completion_tokens, 2600);
+    const schema = responses ? captured.text.format.schema : captured.response_format.json_schema.schema;
+    assert.deepEqual(schema.required, ['assistantMessage']); assert.equal(schema.additionalProperties, false);
+    assert.deepEqual(Object.keys(schema.properties), ['assistantMessage']);
+    assert.match(responses ? captured.instructions : captured.messages[0].content, /CHAT ONLY/);
+  }
+});
+
+test('chat without files answers catalog questions but rejects any model-supplied mapping rows', async () => {
+  const catalog = dealerImportCatalog(createSeedProject()), body = chatInput();
+  assert.deepEqual(validateDealerImportAdvice(chatReply, body, catalog), { ...chatReply, rows: [] });
+  for (const rows of [[], validAdvice(input([file('pos1.webm')])).rows]) {
+    assert.throws(() => validateDealerImportAdvice({ ...chatReply, rows }, body, catalog));
+  }
+  const { api } = fixture({ env, fetchImpl: async () => modelResponse(chatReply) });
+  const result = await (await api.handle(request(body))).json();
+  assert.equal(result.source, 'ai'); assert.deepEqual(result.rows, []);
+});
+
+test('disabled, failed, incomplete or forged chat replies remain unavailable and never fall back to filename mapping', async () => {
+  const body = chatInput([file('pos1.webm')]);
+  const cases = [null, () => Response.json({ error: 'PRIVATE PROVIDER ERROR' }, { status: 503 }),
+    () => modelResponse({ ...chatReply, rows: [] }), () => modelResponse(validAdvice(body)),
+    () => Response.json({ status: 'incomplete', output: [] }), () => new Response('x'.repeat(70_000)),
+    () => { throw new DOMException('PRIVATE TIMEOUT', 'TimeoutError'); }];
+  for (const reply of cases) {
+    let calls = 0;
+    const { api } = fixture({ env: reply ? env : {}, fetchImpl: async () => { calls++; return reply(); } });
+    const response = await api.handle(request(body)); assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.equal(result.intent, 'chat'); assert.equal(result.source, 'unavailable'); assert.deepEqual(result.rows, []);
+    assert.match(result.assistantMessage, /inte tillgänglig/); assert.match(result.assistantMessage, /inte besvarats/);
+    assert.doesNotMatch(JSON.stringify(result), /PRIVATE|fixture-private-key/); assert.equal(calls, reply ? 1 : 0);
+  }
+});
+
+test('request cancellation before or during either role never becomes a successful fallback and releases capacity', async () => {
+  for (const intent of ['mapping', 'chat']) {
+    for (const phase of ['before', 'during']) {
+      const controller = new AbortController(), body = { ...chatInput([file('pos1.webm')]), intent };
+      let calls = 0, active = 0, providerSignal;
+      const { api } = fixture({ env, limit: { enter() { active++; return () => { active--; }; } }, fetchImpl: async (_url, options) => {
+        calls++; providerSignal = options.signal; controller.abort();
+        // Even a provider stub ignoring cancellation cannot return success.
+        return modelResponse(intent === 'chat' ? chatReply : validAdvice(body));
+      } });
+      if (phase === 'before') controller.abort();
+      const response = await api.handle(request(body, { signal: controller.signal }));
+      assert.equal(response.status, 499); assert.deepEqual(await response.json(), { error: 'studio_import_cancelled' });
+      assert.equal(calls, phase === 'before' ? 0 : 1); assert.equal(active, 0);
+      if (phase === 'during') assert.equal(providerSignal.aborted, true);
+    }
+  }
+});
+
+test('model deadlines are bounded by the server role and pre-aborted adapter calls never dispatch', async context => {
+  const configuration = dealerImportModelConfiguration(env), catalog = dealerImportCatalog(createSeedProject()), durations = [];
+  context.mock.method(AbortSignal, 'timeout', duration => { durations.push(duration); return new AbortController().signal; });
+  for (const intent of ['mapping', 'chat']) {
+    const body = { ...chatInput(), intent };
+    await askDealerImportModel(configuration, body, catalog, { fetchImpl: async () => modelResponse(intent === 'chat' ? chatReply : validAdvice(body)) });
+  }
+  assert.deepEqual(durations, [60_000, 20_000]);
+  const controller = new AbortController(); controller.abort();
+  await assert.rejects(askDealerImportModel(configuration, chatInput(), catalog, { signal: controller.signal,
+    fetchImpl: async () => { assert.fail('cancelled request reached provider'); } }), { name: 'AbortError' });
 });
 
 test('malformed, truncated, oversized, failed and tool-containing model replies fall back without retry or leaked diagnostics', async () => {
@@ -146,13 +259,16 @@ test('malformed, truncated, oversized, failed and tool-containing model replies 
 });
 
 test('revocation and changed dealer registry during model wait invalidate the entire proposal', async () => {
-  const body = input([file('idle.webm')]); let calls = 0;
-  const revoked = fixture({ env, authorize: async () => ++calls === 1 ? { user: 'Importer', role: 'admin', scope } : null,
-    fetchImpl: async () => modelResponse(validAdvice(body)) });
-  assert.equal((await revoked.api.handle(request(body))).status, 403);
-  let changed;
-  changed = fixture({ env, fetchImpl: async () => { const project = changed.project(); project.dealers = project.dealers.filter(row => row.id !== 'astrid'); changed.setProject(project); return modelResponse(validAdvice(body)); } });
-  assert.equal((await changed.api.handle(request(body))).status, 409);
+  for (const intent of ['mapping', 'chat']) {
+    const body = { ...chatInput([file('idle.webm')]), intent }; let calls = 0;
+    const reply = () => modelResponse(intent === 'chat' ? chatReply : validAdvice(body));
+    const revoked = fixture({ env, authorize: async () => ++calls === 1 ? { user: 'Importer', role: 'admin', scope } : null,
+      fetchImpl: async () => reply() });
+    assert.equal((await revoked.api.handle(request(body))).status, 403);
+    let changed;
+    changed = fixture({ env, fetchImpl: async () => { const project = changed.project(); project.dealers = project.dealers.filter(row => row.id !== 'astrid'); changed.setProject(project); return reply(); } });
+    assert.equal((await changed.api.handle(request(body))).status, 409);
+  }
 });
 
 test('process limits bound simultaneous and repeated advisory calls, and release cleanly', async () => {

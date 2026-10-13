@@ -3,9 +3,9 @@ import { ArrowUpRight, Check, FileVideo, MessageCircle, RefreshCw, ShieldCheck, 
 import { uploadNativeVideo } from '../../../../../lab/lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../../../../../lab/lib/media-upload-batch.mjs';
 import { labUrl, applyImportProposals, compatibleImportSlot, importClassification, importContentType, importFileError, uniqueImportFiles,
-  type ImportCatalog, type ImportProposal, type ImportRow } from '../../lib/dealer-import.mjs';
+  type ImportCatalog, type ImportProposal, type ImportRow, type ImportIntent, type ImportModel } from '../../lib/dealer-import.mjs';
 
-type Answer = {dealerId:string;source:'ai'|'filename-rules';assistantMessage:string;rows:ImportProposal[];warnings:string[]};
+type Answer = {dealerId:string;intent:ImportIntent;selectedModel:ImportModel;source:'ai'|'filename-rules'|'unavailable';assistantMessage:string;rows:ImportProposal[];warnings:string[]};
 type ChatEntry = {speaker:'Du'|'Assistent';text:string};
 async function jsonRequest<T>(path:string, options:RequestInit = {}):Promise<T> {
   const response = await fetch(labUrl(path), {...options, credentials:'same-origin', cache:'no-store', redirect:'error',
@@ -43,7 +43,7 @@ export function DealerImportAssistant({active=true,onBusyChange}:{active?:boolea
   const [loading,setLoading] = useState(true), [error,setError] = useState(''), [notice,setNotice] = useState('');
   const [dealerId,setDealerId] = useState(''), [dealerApproved,setDealerApproved] = useState(false);
   const [rows,setRows] = useState<ImportRow[]>([]), [context,setContext] = useState(''), [question,setQuestion] = useState('');
-  const [chat,setChat] = useState<ChatEntry[]>([]), [busy,setBusy] = useState<'proposal'|'upload'|null>(null);
+  const [chat,setChat] = useState<ChatEntry[]>([]), [busy,setBusy] = useState<ImportIntent|'upload'|null>(null);
   const [review,setReview] = useState(false), [approved,setApproved] = useState(false);
   const busyRef = useRef(false), controller = useRef<AbortController|null>(null), input = useRef<HTMLInputElement>(null);
   const pending = rows.some(row => row.state !== 'saved');
@@ -109,24 +109,26 @@ export function DealerImportAssistant({active=true,onBusyChange}:{active?:boolea
     });
     setRows(items=>[...items,...additions]);setError(selected.duplicates?`${selected.duplicates} filer fanns redan i listan och lades inte till igen.`:'');invalidate();if(input.current)input.current.value='';
   }
-  async function propose(event?:FormEvent) {
+  async function ask(intent:ImportIntent,event?:FormEvent) {
     event?.preventDefault();
     if (busyRef.current || !catalog || !dealer || !dealerApproved) return;
-    const message=question.trim();
-    if (!message && !rows.some(row=>row.state==='ready')) return;
-    busyRef.current=true;setBusy('proposal');setError('');invalidate();
+    const message=intent==='chat'?question.trim():'';
+    if (intent==='chat'?!message:!rows.some(row=>row.state==='ready')) return;
+    busyRef.current=true;setBusy(intent);setError('');
     const abort=new AbortController();controller.current=abort;
     const descriptors=rows.filter(row=>row.state==='ready').map(row=>({id:row.id,name:row.file.name,size:row.file.size,type:importContentType(row.file.name)}));
     try {
       const response=await jsonRequest<Answer>('/api/dealers/import-proposal',{method:'POST',signal:abort.signal,
-        body:JSON.stringify({dealerId,files:descriptors,context,...(message?{message}:{})})});
-      if(response.dealerId!==dealerId || !Array.isArray(response.rows) || typeof response.assistantMessage!=='string') throw Error('Importförslaget kunde inte verifieras. Dina filer finns kvar.');
-      setRows(current=>applyImportProposals(current,response.rows,catalog.slots));
-      setChat(current=>[...current,{speaker:'Du' as const,text:message||'Föreslå fack för mina filer.'},
+        body:JSON.stringify({intent,dealerId,files:descriptors,context,...(message?{message}:{})})});
+      if(response.dealerId!==dealerId || response.intent!==intent || !Array.isArray(response.rows) || typeof response.assistantMessage!=='string') throw Error('Assistentens svar kunde inte verifieras. Dina filer och val finns kvar.');
+      // The chat lane has no ability to change placements, including a malformed
+      // server/model answer containing rows. Only an explicit mapping request can.
+      if(intent==='mapping'){invalidate();setRows(current=>applyImportProposals(current,response.rows,catalog.slots));}
+      setChat(current=>[...current,{speaker:'Du' as const,text:message||'Kartlägg mina klipp.'},
         {speaker:'Assistent' as const,text:response.assistantMessage+(response.warnings?.length?'\n\n'+response.warnings.join('\n'):'')}].slice(-12));
-      setQuestion('');
-      setNotice(response.source==='ai'?'AI-förslaget är klart. Granska och rätta varje fack.':'Förslaget bygger på filnamnsregler. Granska och rätta varje fack.');
-    } catch(cause) {if(!abort.signal.aborted)setError(cause instanceof Error?cause.message:'Förslaget misslyckades. Dina filer finns kvar.');}
+      if(intent==='chat')setQuestion('');
+      else setNotice(response.source==='ai'?'AI-förslaget är klart. Granska och rätta varje fack.':'Förslaget bygger på filnamnsregler. Granska och rätta varje fack.');
+    } catch(cause) {if(!abort.signal.aborted)setError(cause instanceof Error?cause.message:'Assistenten kunde inte svara. Dina filer och val finns kvar.');}
     finally {busyRef.current=false;setBusy(null);controller.current=null;}
   }
   async function save() {
@@ -173,7 +175,8 @@ export function DealerImportAssistant({active=true,onBusyChange}:{active?:boolea
           </div>
           <label>Din kontext<textarea value={context} maxLength={4000} rows={3} disabled={Boolean(busy)} placeholder="Exempel: Vänster arm mot skon. Box 1–7 är spelarplatser från vänster. Filen redo.png är posen vid skon. Materialet är 1080 × 1920 med grön bakgrund." onChange={event=>{setContext(event.target.value);invalidate();}}/></label>
           <p className="dealer-import-help">Filnamn och kontext kan skickas till den konfigurerade textmodellen när du ber om ett förslag. Video och ljud laddas upp när du godkänner importen. Referensbilder och förhandsvisningar stannar på din dator.</p>
-          <button className="dealer-import-primary" disabled={!dealerApproved||Boolean(busy)||!rows.some(row=>row.state==='ready')} onClick={()=>void propose()}><MessageCircle size={16}/>{busy==='proposal'?'Läser filnamnen…':'Föreslå placeringar'}</button>
+          <p className="dealer-import-help">{catalog.provider.configured?'Kartläggning: Sol 5.6 · High.':'AI-kartläggning är inte ansluten; filnamnsregler används.'}</p>
+          <button className="dealer-import-primary" disabled={!dealerApproved||Boolean(busy)||!rows.some(row=>row.state==='ready')} onClick={()=>void ask('mapping')}><MessageCircle size={16}/>{busy==='mapping'?'Kartlägger klippen…':'Kartlägg klipp'}</button>
         </section>
         {rows.length>0 && <section className="dealer-import-panel" aria-labelledby="dealer-import-mapping"><div className="dealer-import-heading"><h2 id="dealer-import-mapping"><span>3</span> Granska {rows.length} filer</h2>
           <button disabled={Boolean(busy)} onClick={()=>{if(window.confirm('Töm den lokala fillistan? Redan sparade filer finns kvar i registret.')){setRows([]);invalidate();}}}>Töm listan</button></div>
@@ -210,11 +213,11 @@ export function DealerImportAssistant({active=true,onBusyChange}:{active?:boolea
             </section>}
         </section>}
       </div><aside className="dealer-import-panel dealer-import-chat" aria-labelledby="dealer-import-chat-title"><h2 id="dealer-import-chat-title"><MessageCircle size={18}/> Importassistent</h2>
-        <p className="dealer-import-provider">{catalog.provider.configured?catalog.provider.label:'Filnamnsregler · AI-modell ej ansluten'}</p>
-        <p>Assistenten kan föreslå klippfack och svara om VILA, REDO, utdelning och tal. Den kan inte ändra eller publicera ditt spel.</p>
+        <p className="dealer-import-provider">{catalog.provider.configured?'Chatt: Luna 5.6':'AI-chatt är inte ansluten'}</p>
+        <p>Fråga om VILA, REDO, utdelning och tal. Samtalet ändrar inga placeringar. Använd Kartlägg klipp för separata placeringsförslag.</p>
         <div className="dealer-import-conversation" role="log" aria-label="Samtal om importen" aria-live="polite">{chat.length?chat.map((entry,index)=><div key={index} className={entry.speaker==='Du'?'is-user':''}><strong>{entry.speaker}</strong><p>{entry.text}</p></div>):<div><strong>Assistent</strong><p>Börja med att välja och bekräfta en dealer. Jag föreslår placeringar utifrån dina filnamn och din beskrivning. Du har sista ordet.</p></div>}</div>
-        <form onSubmit={event=>void propose(event)}><label>Fråga om importen<textarea value={question} maxLength={1000} rows={3} disabled={Boolean(busy)} placeholder="Vad är skillnaden mellan vila och redo?" onChange={event=>setQuestion(event.target.value)}/></label>
-          <button disabled={!dealerApproved||Boolean(busy)||!question.trim()} type="submit">{busy==='proposal'?'Vänta…':'Skicka fråga'}</button></form>
+        <form onSubmit={event=>void ask('chat',event)}><label>Fråga om importen<textarea value={question} maxLength={1000} rows={3} disabled={Boolean(busy)} placeholder="Vad är skillnaden mellan vila och redo?" onChange={event=>setQuestion(event.target.value)}/></label>
+          <button disabled={!dealerApproved||Boolean(busy)||!question.trim()} type="submit">{busy==='chat'?'Svarar…':'Fråga assistenten'}</button></form>
         <details><summary>Det här ingår i första steget</summary><p>Filnamn och textkontext ger förslag. Du kan granska början och slutet lokalt. Automatisk bildanalys, posebyte och skapande av rum ingår inte ännu.</p><p>Tal och läppsynk behöver matchande text, ljud, video och provspelning.</p></details>
         <a href={'/control/clips'+(dealerId?'?dealer='+encodeURIComponent(dealerId):'')}>Öppna dealer, tal och läppsynk i Control <ArrowUpRight size={14}/></a>
       </aside></div>

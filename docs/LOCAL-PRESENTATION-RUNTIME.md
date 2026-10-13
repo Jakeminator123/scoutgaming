@@ -31,7 +31,17 @@ pos6b som alternativ, till/från skon, skilda utdelnings-/vändningsklipp och
 exakta talfack. Okända eller motstridiga namn lämnas för manuellt val.
 AI-läget är separat och uttryckligen opt-in, utan verktyg eller skrivmandat;
 se [miljövariabler](ENVIRONMENT-VARIABLES.md#dealerimportens-begränsade-rådgivare-13-oktober-2026).
-Utan modell används tydligt märkta filnamnsregler, inte simulerade AI-svar.
+`intent: mapping` använder `gpt-5.6-sol` med `high` för placeringsförslag;
+utelämnad intent är mapping för bakåtkompatibilitet. `intent: chat` använder
+`gpt-5.6-luna` med `medium` och returnerar enbart text, aldrig nya placeringar.
+Båda kräver vald, bekräftad dealer i gränssnittet. Servern väljer modell och
+resonemangsnivå; klienten får inte ange egna modellparametrar. Chatt behåller
+manuella fack, granskning och godkännande även vid fel. Samtalet finns kvar i
+gränssnittet, men tidigare meddelanden skickas inte automatiskt till modellen.
+Utan modell används tydligt märkta filnamnsregler för mapping. Chatt rapporterar
+otillgänglig AI; den kör inte filnamnsregler eller applicerar rader som ett svar.
+Kartläggningens 60-sekunderstimeout ryms i routens 75-sekundersgräns. Ingen
+automatisk modellväxling eller omkörning görs vid fel eller avbruten begäran.
 
 VILA/REDO-bilder visas endast lokalt som referenser. Bildrutor och media skickas
 inte till modellen. Grundposebyte och inspelning/läppsynk går fortsatt via

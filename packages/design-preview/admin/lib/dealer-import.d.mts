@@ -1,7 +1,9 @@
 import type { VideoMetadata } from '../../../../lab/lib/video-intake.mjs';
 export function labUrl(path:string):string;
 export type ImportSlot = {id:string;label:string;eventId:string;situation:string;category:string;kind:VideoMetadata['kind'];start:string;end:string;pose?:string|boolean};
-export type ImportCatalog = {dealers:{id:string;label:string}[];slots:ImportSlot[];limits:{maxFiles:number;maxFileBytes:number};provider:{configured:boolean;label:string};warnings:string[]};
+export type ImportIntent = 'mapping'|'chat';
+export type ImportModel = {id:'gpt-5.6-sol'|'gpt-5.6-luna';reasoningEffort:'high'|'medium'};
+export type ImportCatalog = {dealers:{id:string;label:string}[];slots:ImportSlot[];limits:{maxFiles:number;maxFileBytes:number};provider:{configured:boolean;label:string;roles?:Record<ImportIntent,ImportModel>};warnings:string[]};
 export type ImportRow = {id:string;file:File;label:string;slotId:string;background:string;state:'ready'|'saving'|'saved'|'error';reason?:string;confidence?:string;warnings?:string[];message?:string;progress?:number};
 export type ImportProposal = {fileId:string;slotId:string|null;reason:string;confidence:string;warnings?:string[]};
 export function importContentType(name:string):string;

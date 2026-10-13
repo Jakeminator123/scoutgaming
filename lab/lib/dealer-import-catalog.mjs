@@ -30,9 +30,12 @@ export function dealerImportCatalog(project) {
 }
 
 export function validateDealerImportInput(body, catalog) {
-  if (!exact(body, ['dealerId', 'files', 'context'], ['message']) || !catalog.dealers.some(row => row.id === body.dealerId)
+  if (!exact(body, ['dealerId', 'files', 'context'], ['message', 'intent']) || !catalog.dealers.some(row => row.id === body.dealerId)
     || !clean(body.context, DEALER_IMPORT_LIMITS.maxContext) || !clean(body.message ?? '', DEALER_IMPORT_LIMITS.maxMessage)
     || !Array.isArray(body.files) || body.files.length > DEALER_IMPORT_LIMITS.maxFiles) fail();
+  const intent = Object.hasOwn(body, 'intent') ? body.intent : 'mapping';
+  const message = (body.message ?? '').trim();
+  if (!['mapping', 'chat'].includes(intent) || intent === 'chat' && !message) fail();
   const ids = new Set();
   const files = body.files.map(file => {
     if (!exact(file, ['id', 'name', 'size', 'type']) || !/^[A-Za-z0-9_-]{1,80}$/.test(file.id)
@@ -41,7 +44,7 @@ export function validateDealerImportInput(body, catalog) {
     ids.add(file.id);
     return { id: file.id, name: file.name, size: file.size, type: file.type };
   });
-  return { dealerId: body.dealerId, files, context: body.context.trim(), message: (body.message ?? '').trim() };
+  return { dealerId: body.dealerId, files, context: body.context.trim(), message, intent };
 }
 
 function filenameHints(file) {
@@ -82,6 +85,12 @@ export function filenameDealerImportRows(input, catalog) {
 }
 
 export function validateDealerImportAdvice(value, input, catalog) {
+  // Chat has no mapping field even in the provider schema. Extra rows are a
+  // rejected reply, never proposals waiting for a caller to accidentally apply.
+  if (input.intent === 'chat') {
+    if (!exact(value, ['assistantMessage']) || !clean(value.assistantMessage, 3000) || !value.assistantMessage.trim()) throw Error('invalid_import_advice');
+    return { assistantMessage: value.assistantMessage, rows: [] };
+  }
   if (!exact(value, ['assistantMessage', 'rows']) || !clean(value.assistantMessage, 3000) || !value.assistantMessage.trim()
     || !Array.isArray(value.rows) || value.rows.length !== input.files.length) throw Error('invalid_import_advice');
   const seen = new Set();

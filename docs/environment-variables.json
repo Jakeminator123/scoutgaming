@@ -406,7 +406,6 @@
         "OPENCLAW_API_KEY",
         "CROUPIER_DEALER_IMPORT_AI",
         "OPENCLAW_MODEL_API_KEY",
-        "OPENCLAW_MODEL_ID",
         "OPENCLAW_MODEL_API",
         "OPENCLAW_MODEL_BASE_URL"
       ],

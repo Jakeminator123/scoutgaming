@@ -3,7 +3,7 @@ import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRunti
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
 import { dealerImportCatalog, validateDealerImportInput, filenameDealerImportRows, validateDealerImportAdvice, finishDealerImportRows } from './dealer-import-catalog.mjs';
-import { dealerImportModelConfiguration, dealerImportProviderStatus, askDealerImportModel } from './dealer-import-model.mjs';
+import { dealerImportModelConfiguration, dealerImportProviderStatus, dealerImportSelectedModel, askDealerImportModel } from './dealer-import-model.mjs';
 
 const fail = (code, status = 403) => { throw new StudioStorageError(code, status); };
 const json = value => Response.json(value, { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
@@ -49,20 +49,26 @@ export function createDealerImportApi({ repository, authorize, config }, { env =
       if (url.pathname !== `${base}/dealers/import-proposal`) fail('studio_dealer_unknown', 404);
       if (!['GET', 'POST'].includes(request.method)) return new Response(null, { status: 405, headers: { Allow: 'GET, POST', 'Cache-Control': 'private, no-store' } });
       const original = await principal(request);
+      request.signal.throwIfAborted();
       if (request.method === 'GET') return json({ ...await readCatalog(), provider, warnings });
       if (request.headers.get('origin') !== url.origin || !['same-origin', 'none'].includes(request.headers.get('sec-fetch-site'))) fail('studio_request_rejected');
       const catalog = await readCatalog();
       const input = validateDealerImportInput(await readStudioDocumentJson(request), catalog);
+      request.signal.throwIfAborted();
       release = limit.enter(original.actor);
-      let rows = filenameDealerImportRows(input, catalog), source = 'filename-rules';
-      let assistantMessage = 'Det här är förslag från filnamnsregler, inte AI. Kontrollera varje fack. Plats 1–7 motsvarar box0–box6; utdelning av dolt kort och vändning är olika klipp.';
+      const chat = input.intent === 'chat', selectedModel = dealerImportSelectedModel(input.intent);
+      let rows = chat ? [] : filenameDealerImportRows(input, catalog), source = chat ? 'unavailable' : 'filename-rules';
+      let assistantMessage = chat ? 'AI-chatten är inte tillgänglig just nu. Frågan har inte besvarats och inga placeringar har ändrats.'
+        : 'Det här är förslag från filnamnsregler, inte AI. Kontrollera varje fack. Plats 1–7 motsvarar box0–box6; utdelning av dolt kort och vändning är olika klipp.';
       const notes = [...warnings];
       if (model) {
         try {
           const advice = validateDealerImportAdvice(await askDealerImportModel(model, input, catalog, { fetchImpl, signal: request.signal }), input, catalog);
           rows = advice.rows; assistantMessage = advice.assistantMessage; source = 'ai';
         } catch {
-          notes.push('AI-anropet gav inget verifierat förslag. Endast filnamnsregler används; anropet försöks inte automatiskt igen.');
+          request.signal.throwIfAborted();
+          notes.push(chat ? 'AI-chatten gav inget verifierat svar. Ingen filnamnsmappning görs; anropet försöks inte automatiskt igen.'
+            : 'AI-anropet gav inget verifierat förslag. Endast filnamnsregler används; anropet försöks inte automatiskt igen.');
         }
       } else notes.push(provider.label);
       const current = await principal(request);
@@ -70,8 +76,12 @@ export function createDealerImportApi({ repository, authorize, config }, { env =
       // Revalidate the current saved dealer and slot set after the provider wait.
       const fresh = await readCatalog();
       if (canonicalStudioJson(fresh) !== canonicalStudioJson(catalog)) fail('studio_conflict', 409);
-      return json({ dealerId: input.dealerId, source, assistantMessage, rows: finishDealerImportRows(rows, input, fresh), warnings: notes, provider });
+      request.signal.throwIfAborted();
+      return json({ dealerId: input.dealerId, intent: input.intent, selectedModel, source, assistantMessage,
+        rows: chat ? [] : finishDealerImportRows(rows, input, fresh), warnings: notes, provider });
     } catch (error) {
+      if (request.signal.aborted) return Response.json({ error: 'studio_import_cancelled' },
+        { status: 499, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
       if (error?.code === 'studio_import_busy') return Response.json({ error: 'studio_import_busy', message: 'Flera förslag har begärts. Vänta en minut och försök igen.' },
         { status: 429, headers: { 'Cache-Control': 'private, no-store', 'Retry-After': '60', 'X-Content-Type-Options': 'nosniff' } });
       return nativeStudioErrorResponse(error);

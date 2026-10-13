@@ -20,7 +20,11 @@ dealer- och importgodkännandena gäller på båda ytorna. Spelarens samtalsorb
 Rådgivar-API:t har ingen skrivbehörighet. Det begränsar filnamn, kontext,
 fack och modellutdata, kontrollerar session/scope/origin och läser om
 behörighet/katalog efter modellen. Separat AI är opt-in i Studio; utan
-konfiguration visas uttryckligen filnamnsregler. Ingen provider aktiverades.
+konfiguration använder kartläggning uttryckligen filnamnsregler och chatt
+visar att AI:n är otillgänglig. Fasta serverroller väljer `gpt-5.6-sol` med
+`high` för kartläggning och `gpt-5.6-luna` med `medium` för vanliga frågor.
+Chatt får aldrig ändra filernas fack eller gransknings-/spargodkännanden.
+Gatewayns separata modellförval ändras inte. Ingen provider aktiverades.
 VILA/REDO-bilder stannar lokalt. Modellens bildanalys, nytt pose-/läppsynkflöde
 och automatisk rumsproduktion återstår. Alfaklipp blockeras vid import tills
 uppspelningen kan undvika att även gröna detaljer nycklas bort.
@@ -31,7 +35,7 @@ Orb och samtalspanel följer spelarvyns mörkblå/guldgula palett, med blå
 skuggning, gula aktiva val och fokusmarkeringar samt separat felindikering.
 Ingen mediefil, spelmotor eller runtime-provider ändras.
 
-Verifierat: 19 import-/säkerhetstester, Studio-typkontroll, fullständigt
+Verifierat: 21 import-/säkerhetstester, Studio-typkontroll, fullständigt
 Studio-produktionsbygge och regressionshookens grupper samt Chromium på
 mobil och desktop. Windowskontrollen lämnar det särskilda Linuxprovet
 skippat. Tiofilsfixture med verklig byggd klient och
@@ -44,6 +48,13 @@ bakåtknapp; ingen katalogläsning från oöppnad bubbla; pausad lokal video nä
 vyn döljs; fokus/Escape och spärrade sidbyten vid minimerad uppladdning.
 Samma isolerade Blob-fixture behöll nio prepare, åtta commit och ett tydligt
 filfel utan återspelning eller automatisk sparning vid vybyte.
+Separat routingkontroll täcker båda API-formaten, exakta modeller/nivåer,
+avbrutna anrop och att felaktiga chattrader aldrig blir placeringsförslag.
+Chromiumkontrollen behåller fack och godkännande vid chattfel, manipulerade
+rader och fel svarstyp. Produktionsprojektets env-lista saknade den 13 oktober
+AI-flaggan och modellnyckeln; ingen riktig modellbegäran har därför verifierats.
+Kartläggningens resonemangsbudget är avgränsad men ännu inte utvärderad på
+verkliga tioklippimporter.
 Produktionsmodell, verklig molnimport och dealerrehearsal två gånger är
 fortfarande ej verifierade. Se [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#dealerimport-och-samtalskontroll-13-oktober-2026).
 
