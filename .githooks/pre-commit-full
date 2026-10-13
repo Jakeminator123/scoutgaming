@@ -24,6 +24,7 @@ run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.
 run_node_tests lab/test/material-trash.test.mjs lab/test/material-trash-ui.test.mjs
 run_node_tests test/room-environment.mjs
 run_node_tests packages/design-preview/admin/lib/economy-journal.test.mjs
+run_node_tests packages/design-preview/runtime/admin-routing.test.mjs
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
 run_node_tests test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs packages/design-preview/admin/lib/studio-context.test.mjs
