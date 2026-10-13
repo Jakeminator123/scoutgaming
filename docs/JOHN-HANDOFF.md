@@ -2,7 +2,8 @@
 
 ## Tydligare mappansvar och legacyinstruktioner, 13 oktober
 
-Förenklingen utgår från `main` `978f3bce` i eget worktree. Rotguiden är
+Förenklingen utgår från `main` `978f3bce` i eget worktree och har därefter
+synkats med dokumenttillägget på `ba2eb2bd`. Rotguiden är
 kortad och hänvisar till ordlistan som enda produktmodell. Befintliga guider
 och fem nya mapp-README skiljer aktiv frontend/Studio/spelserver/presentation,
 talservice och medieverktyg från referensytor och genererade byggmappar.
@@ -23,6 +24,48 @@ har inte lästs i denna miljö.
 Aktiva Astrid-/dealer-talvägar, klipp, kalibrering, lagrade ID:n, publiceringar
 och data är bevarade. Gemensamma imports mellan appar/paket och SL-10:s
 handmatteaudit är fortsatt öppna; mappnamnen innebär ingen slutförd avveckling.
+
+## Nästa agent: roulette i N1:s Labba-yta
+
+Utgå från `/admin` och befintlig Labba/Sammansättningar; `/control` är kvar
+under övergången. N1 är intern administration, Studio är innehållsredigering
+inom N1, N2 är partner och N3 spelare. Produktmodellen följer den gemensamma ordlistan: spelbolag → spel →
+rum/bakgrund med uttryckligt tillåtna bord och dealers. Ändra inte legacy-ID:n
+eller beskriv rum/bakgrund-övergången som färdig. Se
+[ordlistan](../lab/docs/TERMINOLOGI.md) och runtimekontraktet.
+
+Uppdrag: återanvänd laborationsytan för roulette och visa samma scen på
+mobil/desktop, utan nya hjul-/kulanimationer eller betalda genereringsjobb.
+Bakgrund är ett separat återanvändbart bild-/MP4-miljölager; blackjack och
+roulette har egna bord och geometrier. Samma dealerfilm och avkodade frame
+används för kropp bakom bordet och maskerade händer/armar framför.
+
+Senaste privata provprofilen är logisk **1920×1080**, origo uppe till vänster:
+bord `(x=134,4; y=270; bredd=1651,2)`, Anna VILA/nya landskapsklipp
+`(580; 42; 1104)`, ursprunglig porträtt-hjulstart `(551; −82; 1048)`.
+Höjd följer respektive källformats proportioner. Mobil skalar samma scen
+och kan använda närbild, utan ny dealerfilm. Detta är provvärden; gesten
+träffar ännu inte hjulet korrekt och handmasken är heuristisk.
+
+Det äldre underlagets bord på 2,4×1,35 meter, 25–30° kameravinkel,
+desktop-/mobilhörn och centrerade dealer är produktionsförslag, inte denna
+provprofil. Blanda inte heller den äldre handkontaktguidens `(960,330)` /
+skala 2/3 med profilen ovan. De uppmätta provfilmerna här har 24 fps;
+ändra inte mått, bildkvot eller position utifrån filnamn. 4K/16:9 och 30 fps
+är ett tidigare föreslaget miljömasterformat, inte ett verifierat krav för
+dessa klipp. Format/promptar finns i rouletteunderlaget; aktuell PostgreSQL-
+formatgräns finns nedan och i CLOUD-MIGRATION.
+
+Kvar: bygg/kalibrera återanvändbar roulette-Labba med bevarad
+operator/table (= rum-ID)/game/composition/dealer-kontext och växling tillbaka till
+editorn. Använd privat stillbild/MP4/WebM-prov; ingen produktionsregistrering
+av PNG/ljud, publicering eller saldoändring. N1-assistenten i PR #61 är en separat, mergad leverans. Dess import har
+fortfarande alfa och roulette avstängda; manuell native-upload har sin egen
+MP4/WebM-/v12-grind. AI-aktivering, frameanalys, lipsync och rumsgenerering
+är inte verifierade eller färdiga där. Serverkvitto/rund-ID ska styra framtida hjulgest och
+0–36-filmval; återförsök behåller requestId/version/satsningar. Saknade filmer
+ger stillbord och resultattext. 37-filmsbank, handträff, sömlösa loopar och
+produktionsacceptans för Anna är fortfarande **inte godkända**.
 
 ## En produktmodell och papperskorg i rumslistan, 13 oktober
 
