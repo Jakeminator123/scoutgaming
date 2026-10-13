@@ -25,3 +25,11 @@ test('each dealer speaks with its own voice and read: Dragge calm, Paow the read
   assert.deepEqual(voiceSettings('dragge', 'sv'), { stability: 0.5, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true });   // Dragge unchanged
   assert.deepEqual(voiceSettings('paow', 'en'), { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true });
 });
+
+test('Astrid 2.0 speaks with the voice of her recorded lines and has no rest-image lip sync: only the moving one draws her mouth', async () => {
+  const seen = [];
+  await assert.rejects(draggeSay('Place your bets.', 'en', path.join(os.tmpdir(), 'dealer-voice-test'), { fetchImpl: fakeFetch(seen), dealer: 'astrid2' }), /no rest-image lip sync/);
+  assert.equal(seen.length, 1);
+  assert.ok(seen[0].url.includes('/d1PjUBrElTJTH5EkXPZp'));
+  assert.equal(seen[0].body.model_id, 'eleven_multilingual_v2');
+});

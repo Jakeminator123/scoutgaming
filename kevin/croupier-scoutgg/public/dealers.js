@@ -1,6 +1,7 @@
 import { DRAGGE_FACE_TRACKS } from './dealer-card-tracks-dragge.js';
 import { PAOW_FACE_TRACKS } from './dealer-card-tracks-paow.js';
 import { MARTEN_FACE_TRACKS } from './dealer-card-tracks-marten.js';
+import { ASTRID2_FACE_TRACKS } from './dealer-card-tracks-astrid2.js';
 
 // Dealer picker. Astrid is the filmed default (Emil's clips); Dragge and Paow are the
 // alternatives, keyed into Astrid's room. The choice is per viewer and never changes
@@ -25,6 +26,15 @@ const DRAGGE_READY = { in: 27, land: { 1: 29, 2: 27, 3: 27, 4: 24, 5: 26, 6: 27,
 const idlesFor = id => [['breath', 40, 'andas lugnt, blinkar'], ['glance', 12, 'blicken ned mot bordet'], ['smile', 4, 'litet leende och nick']]
   .map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/${id}/idle-v2/${k}.mp4${V}`, vikt, beskrivning, dur: 5.04 }));
 const PAOW_READY = { in: 21, land: { 1: 28, 2: 33, 3: 27, 4: 27, 5: 26, 6: 27, 7: 28, dealer: 37, hole: 29, flip: 31, '1v': 34, '2v': 33, '3v': 31, '4v': 37, '5v': 31, '6v': 31, '7v': 34, dealerv: 23 }, card: [78, 106] };
+// Astrid 2.0 (Emil 13 Oct): Astrid on Paow's green plate, H3 takes with the one-hand technique for 5-7 and the dealer
+// (KLARA_ASTRID, metodik/videoklipp/skript/greenscreen/bygg-spelklipp.py). land = build-tracks.py's printout.
+const ASTRID2_READY = { in: 24, land: { 1: 27, 2: 31, 3: 28, 4: 27, 5: 26, 6: 26, 7: 23, dealer: 24, hole: 37, flip: 25, '1v': 26, '2v': 26, '3v': 23, '4v': 24, '5v': 25, '6v': 23, '7v': 22, dealerv: 37 }, card: [79, 106] };
+// Her idles are H3 takes from rest to rest (3 s, kor-idle.sh): breathing plus at most one small thing each.
+const ASTRID2_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt'], ['djupandetag', 8, 'ett djupare andetag'],
+  ['blickvanster', 6, 'blicken mot spelarna till vänster'], ['blickhoger', 4, 'blicken mot spelarna till höger'],
+  ['blickhogerb', 4, 'blicken mot spelarna till höger'], ['huvud', 3, 'lutar huvudet lite'], ['huvudb', 3, 'lutar huvudet lite'],
+  ['fingrar', 4, 'fingrarna rör sig lätt']]
+  .map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/astrid2/idle-v2/${k}.mp4${V}`, vikt, beskrivning, dur: 3.04 }));
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
 export const DEALERS = {
@@ -44,6 +54,12 @@ export const DEALERS = {
   marten: { id: 'marten', name: 'Mårten', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/marten.jpg' + V,
     keyed: { still: '/media/dealers/marten/v2/vila.png' + V }, layerScale: 1, ready: MARTEN_READY,
     clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: null, idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
+  // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
+  // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
+  // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
+  astrid2: { id: 'astrid2', name: 'Astrid', label: 'Astrid 2.0', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/astrid2.jpg' + V,
+    keyed: { still: '/media/dealers/astrid2/v2/vila.png' + V }, layerScale: 1, ready: ASTRID2_READY,
+    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en'], linesDir: '/media/dealers/astrid2/repliker/', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS },
 };
 
 // Kevin 12 Oct: Mårten is for Svenska Spel. The public demo never shows him; a Table Studio table built with him

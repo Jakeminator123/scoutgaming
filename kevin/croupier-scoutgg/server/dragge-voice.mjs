@@ -21,6 +21,10 @@ const DEALER_VOICES = {
   paow: { voice: 'WZVEBKUreb9jAKojf0QF', endpoint: process.env.PAOW_LIPSYNC_ENDPOINT ?? '7tcfouz8jib4wb',
     reads: { sv: { model: 'eleven_v3', settings: { stability: 0.5, similarity_boost: 0.85, use_speaker_boost: true } },
       any: { model: 'eleven_multilingual_v2', settings: { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true } } } },
+  // Astrid 2.0 (Emil 13 Oct): the voice her recorded lines have (ElevenLabs Helena). She is lip-synced by the moving lip
+  // sync (rorlig-lipsync.mjs) only: no rest-image endpoint exists for her, so without that worker her answer is text.
+  astrid2: { voice: 'd1PjUBrElTJTH5EkXPZp', endpoint: process.env.ASTRID2_LIPSYNC_ENDPOINT ?? null,
+    reads: { any: { model: 'eleven_multilingual_v2', settings: { stability: 0.5, similarity_boost: 0.8, style: 0.2, use_speaker_boost: true } } } },
 };
 export const voiceRead = (dealer, language) => DEALER_VOICES[dealer].reads[language] ?? DEALER_VOICES[dealer].reads.any;
 export const voiceSettings = (dealer, language) => voiceRead(dealer, language).settings;
@@ -69,6 +73,7 @@ const H = () => ({ Authorization: `Bearer ${RP()}`, 'Content-Type': 'application
 /** One lip-sync job: runsync answers directly when a worker is warm; a cold start falls back to fast polling. */
 async function lipsync(input, fetchImpl = fetch, dealer = 'dragge') {
   const ENDPOINT = DEALER_VOICES[dealer].endpoint;
+  if (!ENDPOINT) throw new Error(`no rest-image lip sync for ${dealer}`);
   let job = await fetchImpl(`https://api.runpod.ai/v2/${ENDPOINT}/runsync`, { method: 'POST', headers: H(), body: JSON.stringify({ input }), signal: AbortSignal.timeout(120000) }).then(r => r.json());
   const t0 = Date.now();
   while (job.status !== 'COMPLETED') {
@@ -83,7 +88,7 @@ async function lipsync(input, fetchImpl = fetch, dealer = 'dragge') {
 // Dragge viewer arrives takes that hit before anyone asks him anything (at most every 4 minutes).
 const warmedAt = {};
 export function draggeWarm(dealer = 'dragge') {
-  if (!hasVoice(dealer) || onPod(dealer) || !draggeVoiceReady(dealer) || Date.now() - (warmedAt[dealer] ?? 0) < 240000) return;
+  if (!hasVoice(dealer) || onPod(dealer) || !DEALER_VOICES[dealer].endpoint || !draggeVoiceReady(dealer) || Date.now() - (warmedAt[dealer] ?? 0) < 240000) return;
   warmedAt[dealer] = Date.now();
   const pcm = Buffer.alloc(RATE * 2 * 0.8); for (let i = 0; i < pcm.length; i += 2) pcm.writeInt16LE(Math.round((Math.random() - .5) * 40), i);
   lipsync({ op: 'lipsync', wav_b64: wav(pcm).toString('base64'), crf: 13, preset: 'ultrafast' }, fetch, dealer).catch(() => { warmedAt[dealer] = 0; });

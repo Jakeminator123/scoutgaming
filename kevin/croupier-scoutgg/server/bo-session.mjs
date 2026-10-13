@@ -17,7 +17,7 @@ export function createBoSession({ base = process.env.BO_AUTH_URL ?? process.env.
     if (!r.ok) throw Error('Back office unavailable');
     const me = await r.json();
     // Dealers the BO hides for this account (Kevin 12 Oct: chosen per aggregator invite). Unknown ids are dropped.
-    const hiddenDealers = Array.isArray(me?.hiddenDealers) ? me.hiddenDealers.filter(d => typeof d === 'string' && /^[a-z]{1,20}$/.test(d)) : [];
+    const hiddenDealers = Array.isArray(me?.hiddenDealers) ? me.hiddenDealers.filter(d => typeof d === 'string' && /^[a-z0-9]{1,20}$/.test(d)) : [];
     return typeof me?.user === 'string' && ROLES.includes(me.role) ? { user: me.user, role: me.role, hiddenDealers } : null;
   }
 

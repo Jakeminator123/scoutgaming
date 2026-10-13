@@ -28,7 +28,7 @@ test('variant URLs, offsets and files exist for every ready dealer', () => {
   assert.equal(variantOffset('iu', 'flip'), 0);
   assert.equal(variantOffset('iu', '4'), dealer.ready.in / 24);
   assert.equal(dealerClipVariants(dealerClipUrl('/media/deal/hole.mp4')).length, 4);
-  for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.marten]) {
+  for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.marten, DEALERS.astrid2]) {
     for (const take of ['pos1', 'pos2', 'pos3', 'pos4', 'pos5', 'pos6', 'pos7', 'posdealer', 'hole', 'flip'])
       for (const v of ['', '-i', '-u', '-iu'])
         assert.ok(existsSync(new URL(`../public${d.clips}${take}${v}.mp4`, import.meta.url)), `${d.id} ${take}${v}`);
@@ -44,7 +44,7 @@ test('every run variant ends inside the slot the shared table gives its take', a
   const { readFileSync } = await import('node:fs');
   const manifest = JSON.parse(readFileSync(new URL('../public/media/manifest.json', import.meta.url), 'utf8'));
   const slot = Object.fromEntries(manifest.deal.map(d => [d.id.replace('deal_pos', '').replace('deal_', ''), d.dur * 24]));
-  for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.marten]) {
+  for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.marten, DEALERS.astrid2]) {
     const meta = JSON.parse(readFileSync(new URL(`../public${d.clips}meta.json`, import.meta.url), 'utf8'));
     for (const [take, variants] of Object.entries(meta.frames))
       for (const [v, frames] of Object.entries(variants))
@@ -85,4 +85,17 @@ test('every card he deals or turns follows its planar track from face-up until i
     assert.ok(DEAL_CONTACT[k].contactFrame >= t.firstFrame && DEAL_CONTACT[k].contactFrame <= DEAL_CONTACT[k].clearFrame, k);
     for (const f of t.frames) assert.ok(f.q.length === 4 && f.paper.length === 3);
   }
+});
+
+test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded lines in English, under her own name', () => {
+  const a = DEALERS.astrid2;
+  assert.equal(a.name, 'Astrid');
+  assert.equal(a.label, 'Astrid 2.0');
+  assert.deepEqual(a.lines, ['en']);
+  for (const idle of a.idles) assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id);
+  assert.ok(a.idles[0].vikt >= 10);
+  for (const line of ['greeting_1', 'goodluck_1', 'win_1', 'greet_guest', 'greet_emil', 'remark_hit17_1', 'banter_1', 'table_cash_1'])
+    assert.ok(existsSync(new URL(`../public${a.linesDir}en/${line}.mp4`, import.meta.url)), line);
+  for (const f of [a.keyed.still, a.face, '/studio/assets/astrid2.jpg', '/studio/assets/cut-astrid2.png', '/studio/assets/felt-mask-astrid2-v2.png'])
+    assert.ok(existsSync(new URL(`../public${f.split('?')[0]}`, import.meta.url)), f);
 });

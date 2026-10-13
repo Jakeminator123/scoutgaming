@@ -336,11 +336,11 @@ function setThinking(on, queued) {
 let ws, tries = 0;
 // While Dragge is chosen, keep his lip-sync GPU awake (it sleeps after 5 quiet minutes); the server
 // sends at most one tiny warm-up job per 4 minutes.
-setInterval(()=>{ if (["dragge", "paow"].includes(dealer.id) && ws?.readyState === 1 && !document.hidden) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); }, 120000);
+setInterval(()=>{ if (["dragge", "paow", "astrid2"].includes(dealer.id) && ws?.readyState === 1 && !document.hidden) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); }, 120000);
 function connect() {
   ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + `/?session=${encodeURIComponent(tableSession)}`);
   ws.onopen = () => { tries = 0; const n = store.get("astrid.name"); if (n) ws.send(JSON.stringify({ t: "name", name: n }));
-    if (["dragge", "paow"].includes(dealer.id)) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); };   // wakes his lip-sync GPU before the first question
+    if (["dragge", "paow", "astrid2"].includes(dealer.id)) ws.send(JSON.stringify({ t: "warm", dealer: dealer.id })); };   // wakes his lip-sync GPU before the first question
   ws.binaryType = "arraybuffer";
   let lipMeta = null;   // a {t:'lip'} piece whose bytes come in the next binary frame
   ws.onmessage = (ev) => {
@@ -536,7 +536,7 @@ $("#toggleChat").addEventListener("click", e => {
   const dealerChoices = tableDealer ? [DEALERS[tableDealer]] : Object.values(DEALERS).filter(d => !PUBLIC_HIDDEN.includes(d.id));   // Mårten only on his own studio tables
   const picker = document.querySelector("#dealerPick");
   if (picker) {
-    picker.innerHTML = dealerChoices.map(d => `<option value="${d.id}">${d.name}</option>`).join("");
+    picker.innerHTML = dealerChoices.map(d => `<option value="${d.id}">${d.label ?? d.name}</option>`).join("");
     picker.value = dealer.id;
     picker.addEventListener("change", () => {
       if (gameTable?.playing) { picker.value = dealer.id; sys("Change dealer between rounds."); return; }
@@ -546,7 +546,7 @@ $("#toggleChat").addEventListener("click", e => {
   // Left panel: pick the dealer by face, and the room behind a keyed dealer.
   const faces = document.querySelector("#studioDealers"), rooms = document.querySelector("#studioRooms"), note = document.querySelector("#studioNote");
   if (faces && rooms) {
-    faces.innerHTML = dealerChoices.map(d => `<button type="button" class="studio-face" data-dealer="${d.id}" aria-pressed="${d.id === dealer.id}"><img src="${d.face}" alt=""><span>${d.name}</span></button>`).join("");
+    faces.innerHTML = dealerChoices.map(d => `<button type="button" class="studio-face" data-dealer="${d.id}" aria-pressed="${d.id === dealer.id}"><img src="${d.face}" alt=""><span>${d.label ?? d.name}</span></button>`).join("");
     faces.addEventListener("click", e => {
       const b = e.target.closest("[data-dealer]");
       if (!b || b.dataset.dealer === dealer.id) return;

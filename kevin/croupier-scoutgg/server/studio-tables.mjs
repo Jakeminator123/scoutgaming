@@ -17,7 +17,7 @@ const LOGO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
 export const LOGO_MAX = 400000;
 
 export const STUDIO_CHOICES = Object.freeze({
-  dealer: ["astrid", "dragge", "paow", "marten"],
+  dealer: ["astrid", "dragge", "paow", "marten", "astrid2"],
   room: ["darkhall", "mahogany", "golden", "azure"],
   felt: ["prive", "emerald", "midnight", "burgundy", "custom"],
   lang: ["en", "es", "fr", "sv", "zh"],

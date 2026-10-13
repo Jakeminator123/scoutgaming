@@ -12,7 +12,7 @@ const fakeBo = async (url, init = {}) => {
   }
   if (u.pathname === '/api/bo/me') {
     const c = init.headers?.cookie ?? '';
-    return res(200, c === 'bo_jwt=good.jwt.sig' ? { user: 'kevin', role: 'superadmin' } : c === 'bo_jwt=partner.jwt.sig' ? { user: 'partner' } : c === 'bo_jwt=agg.jwt.sig' ? { user: 'agg@op.com', role: 'aggregator', hiddenDealers: ['dragge', 'paow', 7, '<x>'] } : {});
+    return res(200, c === 'bo_jwt=good.jwt.sig' ? { user: 'kevin', role: 'superadmin' } : c === 'bo_jwt=partner.jwt.sig' ? { user: 'partner' } : c === 'bo_jwt=agg.jwt.sig' ? { user: 'agg@op.com', role: 'aggregator', hiddenDealers: ['dragge', 'paow', 'astrid2', 7, '<x>'] } : {});
   }
   return res(404, {});
 };
@@ -50,5 +50,5 @@ test('the back office must be a local service, and an unreachable one fails clos
 
 test('an aggregator brings the dealers the back office hides for it, unknown values dropped (Kevin 12 Oct)', async () => {
   const bo = createBoSession({ fetcher: fakeBo });
-  assert.deepEqual(await bo.user({ cookie: 'bo_jwt=agg.jwt.sig' }), { user: 'agg@op.com', role: 'aggregator', hiddenDealers: ['dragge', 'paow'] });
+  assert.deepEqual(await bo.user({ cookie: 'bo_jwt=agg.jwt.sig' }), { user: 'agg@op.com', role: 'aggregator', hiddenDealers: ['dragge', 'paow', 'astrid2'] });
 });
