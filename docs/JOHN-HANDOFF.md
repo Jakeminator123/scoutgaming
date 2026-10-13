@@ -176,8 +176,11 @@ worker och generiska speechProfile kan inte aktivera den andra tekniken bara
 genom byte av endpoint. Workeråtkomst, exakta avatarfiler, variantadapter,
 auktoriserad relay och två riktiga talprov per dealer återstår före aktivering.
 Testkvitto: 175 berörda tester godkända på Node 24.21.0. Efter integration
-med main `ed584be7` passerade Studio-produktionsbygget och full pre-commit:
-3497 godkända, 0 fel, 11 överhoppade. PR-kontroller redovisas i leveransen.
+med main `1595fb45` passerade Studio-produktionsbygget och full pre-commit:
+3555 godkända, 0 fel, 11 överhoppade. Leverans: PR #113.
+RunPod-spåret är identifierat: staging anger endpoint `mq7eiwanda72fg`;
+läs template/image/digest och avatarbank när rätt kontoåtkomst finns.
+En otillgänglig GitHub-länk bevisar inte att den driftsatta workern saknas.
 
 ## GPU-testbudget 20 USD, 13 oktober
 

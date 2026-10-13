@@ -98,6 +98,16 @@ tagning, fel ruta, fel språk och avbrutet tal. Klippbyte eller dolt/stängt
 fönster måste frigöra GPU-jobb och avkodade bildrutor. Använd VILA/stillbildens
 befintliga talväg som uttrycklig reserv när rörlig worker eller avkodning saknas.
 
+Kevins `server/server.mjs` väljer en separat RunPod Serverless-endpoint via
+`RORLIG_ENDPOINT_ID`, annars `mq7eiwanda72fg` (`croupier-lipsync-staging`).
+Detta är Kevins stagingkonfiguration, inte ett nytt reglage i vår runtime.
+En driftsatt container på RunPod kan finnas även när GitHub-källan inte går
+att läsa. Nästa driftkontroll är konto/endpoint → template → exakt image och
+digest → avatarbank och worker-kontrakt; inga jobb behöver startas för att
+läsa konfigurationen. Endpointen ensam bevisar inte tillgänglighet, rätt
+version eller hållbar kapacitet. Dedikerad GPU-drift är ett separat senare
+kapacitetsbeslut och ska inte läggas in som krav på en GPU per dealer.
+
 Den separata rörliga workern anges i källan som
 `EmaCodeHero/croupier-lipsync-worker`, med kontrakt i `worker/motor.py`.
 De senaste `kevin`/`kevin-staging`-träden kontrollerades även för incheckad
