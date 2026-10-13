@@ -2833,7 +2833,7 @@
       "groupId": "studio-media",
       "sources": [
         {"path": "lab/lib/studio-speech-build-service.mjs", "line": 1},
-        {"path": "packages/design-preview/admin/lib/studio-speech.mjs", "line": 1}
+        {"path": "web/public/studio-speech.mjs", "line": 1}
       ],
       "tests": [
         "lab/lib/studio-speech-build-service.test.mjs",

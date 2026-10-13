@@ -1,5 +1,49 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: Admins navigering och delade funktioner
+
+`/admin` är huvudspåret för N1. Sidval, menyer, ekonomi och tjänstepaneler
+använder nu riktiga Admin-adresser även internt. Den lilla adaptern för gamla
+designlänkar finns kvar och hanterar också query/hash på rotadressen.
+Bakåtnavigering behåller fragmentet när ett pågående utkast stoppar sidbytet.
+Registrerade dealer-, rums-, sammansättnings- och importlänkar öppnar Admin med
+befintliga bolags-, rums-, dealer-, spel- och sammansättningsidentiteter.
+
+Bolagets teameditor, skapande/publicering av spelrum och riktig rehearsal
+saknar fortfarande fullständiga Admin-ersättningar. Dessa länkar är tydligt
+märkta som äldre editor/vy och bevarar kontext. De är kompatibilitet under
+övergången, inte mål för ny UI-utveckling. PR #73:s spelval, rumsfiltrering
+och tillgängliga rumspapperskorg är bevarade.
+
+Gemensamma talmallar och kompatibilitetsregler ligger i
+`web/public/studio-speech.mjs` med delade typer. Servern importerar därifrån
+i stället för från Admins designpaket. Text, röst, mallrevision och
+medievalidering är oförändrade; inga medier, godkännanden, databasrader,
+publiceringar eller providerinställningar ändras. `lab/lib` innehåller
+fortfarande aktiva delade tjänster och får inte raderas utifrån mappnamnet.
+
+NativeAdministration har ett inbäddat läge för Admin. Där används hela
+föräldrabredden utan den äldre sidans centrering, extra sidpadding eller ett
+nästlat `main`-landmärke. Fristående Control behåller sitt befintliga skal.
+Admin tillhandahåller dessutom avgränsade temavariabler och knapp-/rubrikstilar
+för återanvända Studio-paneler. Mobilens rubrik och åtgärder ligger på separata
+rader så den äldre tvåkolumnslayouten inte trycker ihop rubriktexten.
+
+Verifierat efter integration med main `fd0e315`: Studio-produktionsbygge och
+94 byggspår, Admin/Lobby-typkontroll och slutligt designbygge passerar.
+14 kontroller av kompilerad navigering, 16 Chromium-flödesprov med isolerade
+API:er på desktop/mobil samt två slutliga layoutprov passerar. Konto-/temavy,
+kontext, utkast, veto och Back är kontrollerade; inga produktionsskrivningar.
+Full regressionshook gav 3 238 godkända, 7 villkorade skips och ett miljöfel i
+oförändrade `local-session.test.mjs`: aktuell process saknar OS-startidentitet
+i denna körmiljö. CI på vanlig runner behöver verifiera det. Testspärren är
+oförändrad. Loopbackproven kördes utan miljöproxy för 127.0.0.1/127.0.0.2.
+Inkommande CI-planerares fyra tester och kontrollen av 377 testfiler passerar
+(0 föräldralösa); diffkontrollen passerar. GitGuardian-suite på senast lästa
+main är queued; incidentlista och övrig API-/historiktäckning är inte lästa.
+Detta är en UI-/beroenderättning; den är inte en genomförd avveckling av
+Control eller ny produktionsacceptans av Astrids tal och video.
+
 ## PR-städning och CI, 13 oktober 2026
 
 På Jakobs uppdrag är #75 och #73 mergade. #74 behåller rouletteunderlaget

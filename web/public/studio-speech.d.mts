@@ -1,6 +1,4 @@
-import type {StudioProject} from '../../../../lab/lib/studio-model.mjs';
-import type {DealerSpeechProfile} from '../../../../web/public/dealer-speech-profile.mjs';
-import type {VideoInventory} from './connected-studio.mjs';
+import type {StudioProject} from '../../lab/lib/studio-model.mjs';
 export type SpeechLanguage='sv'|'en';
 export type SpeechLine={id:string;label:string;language:SpeechLanguage;exactText:string};
 export const STUDIO_SPEECH_TEMPLATE_REVISION:string;
@@ -9,7 +7,7 @@ export function studioSpeechLineIds(game?:'blackjack'|'roulette'):string[];
 export const STUDIO_ASTRID_VOICE:Readonly<{dealerId:'astrid';name:string;provider:'cartesia';voiceId:string;modelId:string;profileRevision:string;source:string}>;
 export function studioSpeechLines(language:SpeechLanguage,ids?:string[]):SpeechLine[];
 export function studioSpeechBuildCompatibility(project:StudioProject,dealerId:string):{supported:boolean;message:string};
-export function applyStudioSpeechProfile(project:StudioProject,inventory:VideoInventory,dealerId:string,input:unknown):StudioProject;
+export function applyStudioSpeechProfile(project:StudioProject,inventory:{videos:{id:string}[]},dealerId:string,input:unknown):StudioProject;
 export function studioSpeechMediaUrl(value:unknown):string|null;
 export type SpeechBuildPlan={token:string;dealerId:string;revision:string;templateRevision:string;language:SpeechLanguage;lines:SpeechLine[];voice:typeof STUDIO_ASTRID_VOICE&{verified:boolean};expiresAt:number;configured:boolean;message:string};
 export type SpeechBuildResult={lineId:string;exactText:string;language:SpeechLanguage;state:'succeeded'|'failed';packageId?:string;audioUrl?:string;videoUrl?:string;audioSha256?:string;videoSha256?:string;textSha256?:string;frameCount?:number;fps?:number;audioDelayMs?:number;calibrationRevision?:string;reviewStatus?:'pending';error?:string};

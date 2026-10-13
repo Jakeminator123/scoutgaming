@@ -9,7 +9,7 @@ export default function ClipsPage({active=true,chatActive=false,children}:{activ
   function showTool(tool:'map'|'import') {
     const next=new URLSearchParams(location.search);
     if(tool==='import')next.set('tool','import');else next.delete('tool');
-    return router.push(`/control/clips${next.size?`?${next}`:''}`);
+    return router.push(`/admin/clips${next.size?`?${next}`:''}`);
   }
   return <>
     <nav className="dealer-import-tabs" aria-label="Klippverktyg" hidden={!active}>
@@ -18,6 +18,6 @@ export default function ClipsPage({active=true,chatActive=false,children}:{activ
     </nav>
     <div className="studio-workspace-mount" hidden={!active||importing}>{children}</div>
     <DealerAssistantShell pageMode={chatActive?'chat':active&&importing?'import':null}
-      onShowPage={mode=>mode==='chat'?router.push('/control/ai/chat'):showTool('import')}/>
+      onShowPage={mode=>mode==='chat'?router.push('/admin/ai/chat'):showTool('import')}/>
   </>;
 }

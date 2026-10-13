@@ -18,7 +18,7 @@ import { StudioCompositionPanel } from './studio-composition-panel';
 import { registerCompositionLayer } from '../../../../../lab/lib/studio-composition.mjs';
 import { rebaseProjectDraft } from '../../../../../lab/lib/project-rebase.mjs';
 import { validateProject } from '../../../../../lab/lib/studio-model.mjs';
-import { studioSpeechLineIds } from '../../lib/studio-speech.mjs';
+import { studioSpeechLineIds } from '../../../../../web/public/studio-speech.mjs';
 import { studioContext } from '../../lib/studio-context.mjs';
 import {isActiveOperator} from '../../lib/studio-resource-lifecycle.mjs';
 

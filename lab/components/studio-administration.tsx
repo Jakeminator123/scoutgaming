@@ -31,6 +31,10 @@ export type StudioAdministrationProps = {
   /** Group id from ?tab=. Unknown values open Spelstatus & integritet. */
   initialGroup?: string;
   initialDealerId?: string;
+  /** Enclosing backoffice destination; existing standalone links stay compatible. */
+  roomsHref?: string;
+  /** Explain a legacy team editor when this view is embedded in the new Admin. */
+  companyTeamLabel?: string;
 };
 type Resource = { payload?: JsonObject; error?: StudioAdminUiError };
 type Resources = Record<string, Resource>;
@@ -721,9 +725,9 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     <PageTemplate eyebrow={area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
     {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealerId} disabled={busy||dirty} onChange={event=>{setReviewDealerId(event.target.value);const url=new URL(window.location.href);url.searchParams.set('dealer',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}>{!reviewDealers.some(row=>row.id===reviewDealerId)?<option value={reviewDealerId}>{reviewDealerLabel}</option>:null}{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
-    {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum skapas i <a href={labUrl('/control/rooms')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
-    {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/companies')}>Bolag & team</a>. Här hanterar du interna konton och spelare.</p>}
-    {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/control/companies')}>Bolag & team</a>.</p>}
+    {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum och publicering hanteras via <a href={props.roomsHref ?? labUrl('/control/rooms')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
+    {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
+    {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/control/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}
     {fatal && <p role="alert" className={styles.error}>{fatal.message}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {oneTime && actor && <section className={styles.section} aria-label="Engångsresultat från partneråtgärd">

@@ -1,5 +1,15 @@
 export const adminContextKeys=Object.freeze(['operator','table','dealer','composition','lane','game']);
 
+// Compatibility for imported design links only. Admin components and route
+// selection use their real /admin pathnames, never a virtual Control pathname.
+export function adminHref(href){
+  return href.replace(/^\/control(?=[/?#]|$)/,'/admin');
+}
+
+export function adminPathname(pathname){
+  return pathname.replace(/^\/studio(?=\/admin(?:\/|$))/,'');
+}
+
 export function isInternalAdminPathname(pathname){
   return /^\/admin(?:\/|$)/.test(pathname)&&!/^\/admin\/lobby(?:\/|$)/.test(pathname);
 }
@@ -10,14 +20,14 @@ export function hasAdminContext(search){
 }
 
 export function isRegisteredRoomListRoute(path,search){
-  return path==='/control/rooms'&&new URLSearchParams(search).get('view')==='registered';
+  return path==='/admin/rooms'&&new URLSearchParams(search).get('view')==='registered';
 }
 
 export function isStudioAdminRoute(path,search){
-  return path==='/control'&&hasAdminContext(search)
-    || path==='/control/clips'
-    || path==='/control/dealers'
-    || path==='/control/rooms'&&!isRegisteredRoomListRoute(path,search);
+  return path==='/admin'&&hasAdminContext(search)
+    || path==='/admin/clips'
+    || path==='/admin/dealers'
+    || path==='/admin/rooms'&&!isRegisteredRoomListRoute(path,search);
 }
 
 export function withAdminContext(href,currentSearch){

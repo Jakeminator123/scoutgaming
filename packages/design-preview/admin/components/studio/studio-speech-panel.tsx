@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import type {StudioProject} from '../../../../../lab/lib/studio-model.mjs'
 import type {VideoInventory} from '../../lib/connected-studio.mjs'
 import {isSpeechReferenceVideo,type DealerSpeechProfile} from '../../../../../web/public/dealer-speech-profile.mjs'
-import {STUDIO_ASTRID_VOICE,STUDIO_SPEECH_LINES,studioSpeechLineIds,applyStudioSpeechProfile,studioSpeechLines,studioSpeechBuildCompatibility,studioSpeechMediaUrl,type SpeechBuildPlan,type SpeechBuildResult,type SpeechLanguage} from '../../lib/studio-speech.mjs'
+import {STUDIO_ASTRID_VOICE,STUDIO_SPEECH_LINES,studioSpeechLineIds,applyStudioSpeechProfile,studioSpeechLines,studioSpeechBuildCompatibility,studioSpeechMediaUrl,type SpeechBuildPlan,type SpeechBuildResult,type SpeechLanguage} from '../../../../../web/public/studio-speech.mjs'
 
 export interface StudioSpeechPanelProps {
   project:StudioProject

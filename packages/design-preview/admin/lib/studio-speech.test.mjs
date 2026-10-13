@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SPEECH_LINES} from '../../../../web/public/speech-lines.mjs';
-import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl} from './studio-speech.mjs';
+import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl} from '../../../../web/public/studio-speech.mjs';
 
 test('17 explicit SV/EN generation templates preserve authoritative English captions',()=>{
   assert.equal(STUDIO_SPEECH_LINES.length,17);assert.deepEqual(Object.fromEntries(studioSpeechLines('en').map(row=>[row.id,row.exactText])),SPEECH_LINES);
@@ -28,7 +28,7 @@ test('media previews reject arbitrary providers, cross-origin and credential lin
 
 async function panelHarness(){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
-  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('./studio-speech.mjs'),profile=await import('../../../../web/public/dealer-speech-profile.mjs');
+  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../web/public/studio-speech.mjs'),profile=await import('../../../../web/public/dealer-speech-profile.mjs');
   const source=readFileSync(new URL('../components/studio/studio-speech-panel.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),slots=[],effects=[];
   let cursor=0,queue=[],calls=[];const module={exports:{}};
   const fakeReact={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next}]},useRef(initial){const index=cursor++;return slots[index]??={current:initial}},useEffect(effect,deps){const index=cursor++,previous=effects[index];if(!previous||deps.some((value,i)=>!Object.is(value,previous.deps[i])))queue.push({index,effect,deps})}};

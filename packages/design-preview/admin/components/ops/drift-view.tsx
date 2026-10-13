@@ -121,7 +121,7 @@ export function DriftView() {
           {rooms.length === 0 && (
             <p className="px-4 py-6 text-xs text-sg-muted">
               Inga rum. Skapa dem i{" "}
-              <Link href="/control/structure" className="text-sg-lime underline-offset-2 hover:underline">
+              <Link href="/admin/structure" className="text-sg-lime underline-offset-2 hover:underline">
                 Studio › Struktur
               </Link>
               .

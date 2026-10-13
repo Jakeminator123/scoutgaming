@@ -18,7 +18,7 @@ export function ConnectedEconomy() {
   const [state,setState] = useState<State>({status:'loading'});
   const [refresh,setRefresh] = useState(0), [currency,setCurrency] = useState(''), [days,setDays] = useState(0);
   useEffect(()=>{
-    if(path!=='/control/ekonomi'){setState({status:'idle'});return;}
+    if(path!=='/admin/ekonomi'){setState({status:'idle'});return;}
     const controller = new AbortController(); setState({status:'loading'});
     void (async()=>{
       try {
