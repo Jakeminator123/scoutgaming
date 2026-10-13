@@ -17,6 +17,13 @@ och återgången till vila har granskats i den faktiska spelarkoden; se
 [materialrevisionen](UTFALLSFILMER.md#startgest-v2-och-live-registrering).
 Livepublicering och två slutrundor från lobbyn återstår.
 
+Levererad kod `b8e5e20c` inkluderar main `f22cb718`, med godkänt
+Studio-produktionsbygge och 3486 passerade tester (0 fel, 11 överhoppade).
+Slutkopplingen väntar på åtkomst till Admin och kompatibel driftsatt runtime.
+Neon använder befintliga dealer-, medie-, sammansättnings-, rums- och
+publiceringsregister; roulette kräver ingen ny SQL-migration. Blob lagrar
+mediebytes, medan Neon lagrar identiteter, kopplingar och frysta publiceringar.
+
 `codex/roulette-anna-binding` kopplar en uttrycklig `dealers[].rouletteIdle`
 till den befintliga `/play/roulette`-spelaren. Admins andnings-/glasögonkort
 kan kopplas, sparas och återläsas som utkast. Publicering fryser bas, högst tre

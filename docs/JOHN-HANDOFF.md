@@ -14,13 +14,18 @@ Anna-sammansättning. Startfil, bord och nytt publicerat lobbyrum återstår.
 Inga befintliga PAOW-rum eller användarsaldon ändrade. Två slutrundor från
 den publicerade lobbyn ska verifieras innan detta markeras färdigt.
 Admin typecheck, 49 editorprov och Studio-produktionsbygge passerar.
-Kodcommit `b972fa47` är pushad: full pre-commit 3470 pass, 0 fail, 11 skip.
+Kodcommit `b8e5e20c` är pushad med main `f22cb718` integrerad:
+Studio-produktionsbygge och full pre-commit 3486 pass, 0 fail, 11 skip.
 Två lokala rundor efter handfixen: 26 svart → 28 svart, saldo 490 → 485 → 480.
 Under dold appvy kan skärmbilder vara inaktuella; synlig IAB verifierade
 slutkulan i rätt fack. Slutacceptans ska göras med spelvyn synlig.
 Nytt spelarprov bekräftar att handmasken ligger framför sifferringen.
-Leverans väntar även på separat migrations-/budgetrelease PR107; blanda
-inte dess schema med äldre runtime. Säkerhetsstatus 13 oktober: ny öppen
+Studioåtkomst stoppas för närvarande av `ERR_BLOCKED_BY_CLIENT`; ingen
+adminsessionsnyckel har exporterats. Leverans väntar även på separat
+migrations-/budgetrelease PR108 (ersätter PR107); blanda inte dess schema
+med äldre runtime. Vercels senaste main-bygge `f22cb718` misslyckades i
+webbtjänstens `next/font`; senaste observerade READY är `4d6b1ebc`.
+Säkerhetsstatus 13 oktober: ny öppen
 incident 38176586 utan tillgänglig filplats; täckning ofullständig.
 
 ## Anna-startfilm och varierad roulette, 13 oktober — PR101 fortsättning
