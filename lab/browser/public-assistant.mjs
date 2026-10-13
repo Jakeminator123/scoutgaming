@@ -1,4 +1,4 @@
-export function installPublicAssistant({source,authorize}){
+export function installPublicAssistant({source,authorize,loadSdk=()=>import('@d-id/client-sdk')}){
  const host=document.createElement('div');host.id='scout-public-assistant';const root=host.attachShadow({mode:'open'});
  root.innerHTML=`<style>
  :host{position:fixed;bottom:20px;right:20px;z-index:9000;color:#eef3f5;font:14px/1.5 system-ui,sans-serif;color-scheme:dark}*{box-sizing:border-box}[hidden]{display:none!important}
@@ -20,13 +20,13 @@ export function installPublicAssistant({source,authorize}){
  function idle(){clearTimeout(idleTimer);idleTimer=setTimeout(()=>{stopAvatar();status('Avataren är pausad. Den startar igen när du skickar ett meddelande.');},120000);}
  async function play(){try{await video.play();$('.audio').hidden=true;}catch{$('.audio').hidden=false;}}
  async function connect(){
-  if(disposed||!opened||!avatarEnabled||document.hidden)return null;if(manager)return manager;if(connecting)return connecting;
+  if(disposed||!opened||!avatarEnabled||document.hidden)return null;if(connecting)return connecting;if(manager)return manager;
   const current=++generation;let streamObject=null;
   connecting=(async()=>{let candidate;
    try{
     if(!config){const r=await fetch(endpoint,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error();config=await r.json();$('.model').textContent=config.model.id;}
     if(current!==generation)return null;
-    const {createAgentManager,ChatMode}=await import('@d-id/client-sdk');
+    const {createAgentManager,ChatMode}=await loadSdk();
     if(current!==generation)return null;
     candidate=await createAgentManager(config.avatar.agentId,{auth:{type:'key',clientKey:config.avatar.clientKey},mode:ChatMode.DirectPlayback,
      streamOptions:{compatibilityMode:'auto',streamWarmup:true},callbacks:{

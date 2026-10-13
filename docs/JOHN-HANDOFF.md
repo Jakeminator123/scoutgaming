@@ -2,6 +2,13 @@
 
 ## Publik Scoutguide med D-ID, 13 oktober
 
+PR103 är mergad och live (`b2dda8ab`, Vercel READY och main-CI grön).
+Riktigt publikt textsvar fungerar i cookiefri produktionsvy. Första avatarprovet
+fångade en anslutningskapplöpning: ett snabbt modellsvar kunde anropa `speak`
+innan `connect` var klar. Uppföljningen väntar på den pågående anslutningen
+och provar både snabbt svar och panelstängning under start. Nytt avatarprov
+görs efter att rättningen publicerats.
+
 Besökare, N2 och N3 får en separat Scoutguide genom den gemensamma chattknappen.
 N1 behåller Adminrobotens tre lägen, filimport och granskade åtgärder.
 `/studio/api/public-assistant` använder Luna 6 med låg resonemangsnivå och
