@@ -91,6 +91,9 @@ export function scheduleTalks(talks, steps, { free = 0, end = 0, gap = 250 } = {
  * Sessions on the endpoint, one per dealer (avatar), plus the patches it sends. publicBase() gives this server's public
  * https origin (the worker dials it); dealers lists the avatars the image carries.
  */
+// A worker slower than this cannot keep ahead of the picture (a healthy 4090 makes 55–63 frames/s)
+const MIN_FPS = 30;
+
 export class RorligLipsync {
   constructor({ endpointId, apiKey, publicBase, publicDir, dealers = ['paow'], log = console.log, fetchImpl = fetch,
     onPiece = () => {}, inactivityMs = 480_000, ttlS = 540 }) {
@@ -111,7 +114,7 @@ export class RorligLipsync {
 
   ready(dealer) {
     const s = this.s.get(dealer);
-    return Boolean(s?.ws?.readyState === WebSocket.OPEN && s.info && (s.info.rutor_per_s ?? 0) >= 30);
+    return Boolean(s?.ws?.readyState === WebSocket.OPEN && s.info && (s.info.rutor_per_s ?? 0) >= MIN_FPS);
   }
 
   /** A table with this dealer is in use: keep (or get) a warm worker. */
@@ -219,6 +222,14 @@ export class RorligLipsync {
     ws.once('message', data => {
       let m; try { m = JSON.parse(String(data)); } catch { ws.close(); return; }
       if (m.t !== 'pong') { ws.close(); return; }
+      // a slow machine (14.5 frames/s on 13 Oct) must not take over from a working worker: it is sent away (and
+      // replaced by RunPod) and a new session is ordered in ~15 s; the one in use keeps speaking meanwhile
+      if ((m.rutor_per_s ?? 0) < MIN_FPS) {
+        this.log(`läppsynk rörlig [${dealer}]: arbetaren för långsam (${m.gpu}, ${m.rutor_per_s} rutor/s) — skickas bort, ny beställs`);
+        try { ws.send(JSON.stringify({ t: 'bye' })); } catch {}
+        s.askedAt = Date.now() - 225_000;
+        return;
+      }
       const old = s.ws;
       s.ws = ws; s.info = m; s.at = Date.now(); s.askedAt = 0;
       this.log(`läppsynk rörlig [${dealer}]: arbetare uppkopplad (${m.gpu}, första bit ${m.forsta_bit_ms} ms, ${m.rutor_per_s} rutor/s)`);

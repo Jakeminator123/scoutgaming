@@ -146,6 +146,20 @@ test('the worker makes what is needed on screen soonest first: a new map for now
   assert.deepEqual(order,['first','remap-now','line-soon','answer-later']);
 });
 
+test('a worker too slow to keep ahead of the picture is sent away and never replaces the one speaking', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>null,publicDir:'.',log:()=>{}});
+  clearInterval(r.timer);
+  const s=r.s.get('paow'),dial=pong=>{const sent=[],h={};const ws={readyState:1,sent,send(m){sent.push(JSON.parse(m).t);},once(ev,f){h[ev]=f;},on(){},close(){}};
+    r.adoptWorker(ws,new URL(`https://x/lipsync-rorlig?token=${r.token}&avatar=paow`));h.message(JSON.stringify({t:'pong',gpu:'4090',...pong}));return ws;};
+  const good=dial({rutor_per_s:56});
+  assert.equal(s.ws,good);
+  const slow=dial({rutor_per_s:14.5});
+  assert.equal(s.ws,good);
+  assert.deepEqual(slow.sent,['bye']);
+  assert.ok(Date.now()-s.askedAt>200_000);   // a new order may go out at once
+});
+
 test('the next decision opens once the last card has landed; a card asked for then starts after the take, never cutting it', async () => {
   const {DatabaseSync}=await import('node:sqlite');
   const manifest={deal:[1,2,3,4,5,6,7,'dealer'].map(i=>({id:`deal_pos${i}`,url:`/media/deal/pos${i}.mp4`,dur:.1})).concat(['hole','flip'].map(i=>({id:`deal_${i}`,url:`/media/deal/${i}.mp4`,dur:.1}))),repliker:[],idle:[]};
