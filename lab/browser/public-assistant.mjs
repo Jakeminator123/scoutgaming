@@ -31,7 +31,7 @@ export function installPublicAssistant({source,authorize,loadSdk=()=>import('@d-
     candidate=await createAgentManager(config.avatar.agentId,{auth:{type:'key',clientKey:config.avatar.clientKey},mode:ChatMode.DirectPlayback,
      streamOptions:{compatibilityMode:'auto',streamWarmup:true},callbacks:{
       onSrcObjectReady(stream){streamObject=stream;if(current===generation){video.muted=true;video.srcObject=stream;$('.avatar').hidden=false;void play();}return stream;},
-      onVideoStateChange(state){if(current!==generation)return;if(state==='START'){video.removeAttribute('src');video.srcObject=streamObject;video.muted=false;void play();}else if(candidate?.agent.presenter.idle_video){video.srcObject=null;video.src=candidate.agent.presenter.idle_video;video.loop=true;video.muted=true;void play();}idle();},
+      onVideoStateChange(state){if(current!==generation)return;if(state==='START'){video.removeAttribute('src');video.srcObject=streamObject;video.muted=false;void play();}else if(candidate?.agent?.idle_video){video.srcObject=null;video.src=candidate.agent.idle_video;video.loop=true;video.muted=true;void play();}idle();},
       onError(){if(current===generation)status('Avataren kunde inte ansluta. Du kan fortsätta med text.');},
      }});
     if(current!==generation){await candidate.disconnect();return null;}
