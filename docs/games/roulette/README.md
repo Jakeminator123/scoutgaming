@@ -4,6 +4,11 @@
 separata blackjack-/roulettefacken, bild-/videolagren och vad som återstår
 före automatisk spelkoppling.
 
+[Genomförandeplan och trackingutredning](UTFALLSFILMER.md#genomförandeplan-säkert-material-först)
+anger nästa steg, jämför OpenCV/Ultralytics/SAM 2 och innehåller en färdig
+fråga till en specialistagent. [Kulprovet](underlag/roulette-stop-test.html)
+är fristående versionshanterad HTML; privata originalfilmer behövs inte för att köra det.
+
 ## Anna Jonsson: roulettefack, alfa och Runway-prov (13 oktober 2026)
 
 **Status för den ursprungliga startuppsättningen:** implementerat på featuregrenen `codex/roulette-alpha-media`, inte ett kvitto på publicerad Anna eller färdig utfallsbank. Jakob beställde uttryckligen Runway-prov denna dag. Originalen, genererade filmer, exakta promptar, mätningar och ett fristående scenprov sparas privat utanför Git i Codex visualizations/2026/10/12/01a1319d-73c5-7801-8e65-27e47532075b. Senare samma dag tillkom [kompakt utfallsplan och isolerat kulprov](UTFALLSFILMER.md) samt [verifiering av levererade original](KLIPPKARTA.md#nya-lokala-original-13-oktober). De ändrar ingen spelmotor eller plånbok.

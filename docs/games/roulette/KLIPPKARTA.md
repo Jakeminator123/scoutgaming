@@ -163,3 +163,26 @@ SHA-256 i samma ordning:
 Den redan korrigerade `runway-glasses-alpha-v2.webm` återfanns i det uttryckligen dokumenterade privata provet från 12 oktober: **2 438 993 byte**, SHA-256 `f64d2b014bb28704ed99d5f220268466b4153fc489044eb6204a16aa647ffcb4`. En separat leveranskopia heter `anna-glasses-clean-alpha-v2.webm` i det nya `roulette-stop`-provet. Alla **241 avkodade rutor** har både helt transparenta och helt opaka pixlar. Detta verifierar användbar alfaomfattning, inte fina kantdetaljer, handkontakt eller en godkänd viloskarv. Koppla denna hash till `roulette.idle/glasses-clean`; använd inte eyes/v1 som reserv. Ingen ny generering behövdes och originalet skrevs inte över.
 
 Föreslagen prioritet: behåll befintlig vila, använd rätt glasögonfil efter visuell granskning, lås korrekt hjulgeometri och beställ separat kulsläpp/hjulimpuls. Därefter kan en kort blick/smile-variant läggas till. [Utfallsplanen](UTFALLSFILMER.md) beskriver masker, 37 mål, OpenClaw-spärrar och resultatsekretess.
+
+### Förberett intag och exakt mappning
+
+[Portabelt mappningsunderlag](underlag/material-mapping.json) sparar rätt fack,
+klassificering och hash utan dealer-/media-ID. Det är dokumentationsdata,
+**inte ett färdigt API-payload eller registrering i Studio**. De tre oförändrade
+filkopiorna, reproduktionsskriptet och kvittona finns privat i
+`roulette-stop/intake` bredvid det tidigare geometriprovet.
+
+Underagentens isolerade intag på kodrevision `7a8d719a` klarar **33 kontroller**:
+de två WebM-filerna genom prepare/commit, idempotent retry, ny repository-instans
+och byteidentisk återläsning från mockad Blob. Båda filmernas 241 rutor har
+avkodad alfa 0–255. PNG:s pixelfalfa är giltig, men native prepare avvisar den
+före uppladdningsgrant med 415 `studio_media_content_type_unsupported`, vilket
+är aktuell förväntad lagringsspärr. Historiska PNG-intagskvitton ersätter inte
+denna kontroll.
+
+VILA ska därför användas i lokal förhandsvisning. Videorna hör enbart till
+`roulette.idle/breathing` respektive `roulette.idle/glasses-clean`, med poser
+`unverified` tills de granskats. `playback: once` i intagsklassificeringen är
+inte en godkänd automatisk loop. Välj verklig sparad dealer och rätt rum innan
+beständig registrering; en tidigare fixtureidentitet är inte bevis på ett
+aktuellt registerval. Ingen verklig databas, publicering eller provider användes.

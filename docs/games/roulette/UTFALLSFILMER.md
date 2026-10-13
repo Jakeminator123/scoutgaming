@@ -104,3 +104,47 @@ Proven ligger utanför Git i `Codex visualizations/2026/10/13/01a13532-b75d-75f0
 | `roulette-stopp-17-teknikprov.webm` | Verklig browserexport, VP9, 960×580, cirka 8,01 s, 909 951 byte | Ett visuellt prov; browserinspelning är ingen låst produktionsprofil |
 
 Originalfilerna har inte skrivits över. Proven ändrar ingen spelmotor, publicerad rumsinställning eller ekonomisk hantering.
+
+## Genomförandeplan: säkert material först
+
+Planen uppdaterades efter Jakobs uppdrag den 13 oktober att spara, committa och pusha arbetet samt undersöka rörelsespårning. Det fristående [geometriprovet](underlag/roulette-stop-test.html) är nu versionshanterad källkod som går att öppna direkt i en webbläsare. Det kräver inga paket, privata videor, nätanrop eller spelkonto. Original, frilagda filmer och provexporter bevaras privat; deras identiteter finns i [klippkartan](KLIPPKARTA.md#nya-lokala-original-13-oktober).
+
+| Ordning | Arbete | Klart när |
+| --- | --- | --- |
+| 1 | Lås VILA-PNG, befintlig andnings-WebM och rätt glasögon-v2 till exakta roulettefack och hash. Behåll videoposer som unverified | Isolerat intagsprov bevarar bytes och spel/handling; opak v1 och blackjackfack avvisas. Ingen slutsats om verklig dealerregistrering eller publicering från fixture-ID |
+| 2 | Lås en korrekt nummerkrans och stabil kamera. Markera hjulcentrum, 37 fack, skala/perspektiv och ett rent underlag utan gammal kula | Numren stämmer mot rules.mjs, geometri håller hela klippet och det finns en definierad plats för en enda kula |
+| 3 | Prova lokal OpenCV-spårning på en kopia av hjulfilmen. Börja med rotorlandmärken/optiskt flöde; verifiera manuella referensrutor | Sparad vinkelbana, markerade bortfall och felmått mot handmärkta rutor. Ingen accepterad bana byggd på morfande siffror |
+| 4 | Vid behov jämför SAM 2-masker och specialtränad YOLO-detektering med den enklare baslinjen | Bättre uppmätt noggrannhet på samma provrutor; hårdvara, versioner, licens och bearbetningstid dokumenterade |
+| 5 | Skapa matchande hjulimpuls/kulsläpp, kontrollera en kula från hand till ytterbana, därefter en extra kort vilovariant | Släpp-/kontaktrutor, masker och start/slutposer godkända per hash, två sammanhängande visningar utan hopp |
+| 6 | Koppla granskad geometri och 37 mål till fryst presentation och serverns pending/reveal-kontrakt | Isolerade tester för samtliga utfall, saldo/historik, retry/reload och mediefel; mobil/desktop och två riktiga spelprov godkända |
+
+Steg 1 är teknisk förberedelse. Native PNG-lagring är spärrad i den aktuella kodversionen, så VILA stannar som lokal referens. Verklig dealer, bolag, rum och kompositionsrevision måste väljas ur de sparade registren före beständig import. Vi fyller inte luckorna med påhittade UUID:er. Steg 2–6 är kvarvarande implementation/acceptans, inte redan aktiverade funktioner.
+
+## Kan Ultralytics eller Python hjälpa?
+
+**Ja, som mätverktyg vid förberedelsen av filmerna.** Vår rekommendation är analys en gång per källhash och därefter granskade koordinater/masker vid uppspelning. Förinspelat material behöver inte analyseras med en stor modell under varje spelares runda. Detta är vår arkitekturbedömning, inte ett uppmätt prestandalöfte.
+
+Det är modeller och algoritmer, inte en bildbank som ger färdiga roulettefilmer. Detektion hittar exempelvis en kula i en ruta; tracking kopplar samma objekt mellan rutor; segmentering ger pixelmasken. En tränad modell innehåller inlärda vikter. Modellens befintliga kategorier och upplösning garanterar inte att en liten blank roulettekula hittas.
+
+| Metod | Relevant funktion | Vår föreslagna roll |
+| --- | --- | --- |
+| [OpenCV: optiskt flöde](https://docs.opencv.org/4.x/d4/dee/tutorial_optical_flow.html) | Lucas–Kanade följer bildpunkter mellan rutor; Farnebäck ger ett tätare rörelsefält | Första baslinje för hjullandmärken och rörelse med låst kamera |
+| [OpenCV: homografi](https://docs.opencv.org/4.x/d9/dab/tutorial_homography.html) | Relaterar en plan yta mellan perspektiv | Mappa hjulplanet; kulan ovanför planet och händer kräver ytterligare djupmodell/mask |
+| [Ultralytics Track](https://docs.ultralytics.com/modes/track/) | Kombinerar detektion och objekt-ID över tiden, exempelvis med ByteTrack eller BoT-SORT | Kandidat om en anpassad detektor behövs för kulan; prova beskuren hjulregion och märk rouletteexempel för träning/utvärdering |
+| [Meta SAM 2](https://github.com/facebookresearch/sam2) | Punkt-/boxstyrd segmentering och spridning av objektmasker genom video | Kandidat för händer framför bordet och kulmask, med manuella korrigeringar vid bortfall |
+
+Ingen modell är installerad eller benchmarkad i detta arbete. Nära realtid går inte att lova från en leverantörs demo: det beror på hårdvara, modell, bildstorlek och avkodning. Lås paket-/modellversioner och kontrollera [Ultralytics licensalternativ](https://www.ultralytics.com/license) innan kod eller vikter införs i produkten. Metas originaldistribution och Ultralytics paketering är olika distributionsvägar; granska den faktiskt valda koden och vikterna.
+
+Spårning får inte användas för att bestämma spelutfallet. Den kan mäta synlig rörelse men varken laga felordnade AI-genererade siffror, upptäcka en osynlig/saknad kula med säkerhet eller ge sekretess för redan skickade resultat.
+
+### Minsta jämförelseprov
+
+- Använd den låsta källhashen och en lokal arbetskopia. Märk referensrutor över hela förloppet och tätare runt släpp/landning; håll tränings- och kontrollrutor isär om en detektor tränas.
+- Mät rotorvinkelfel, kulcentrumfel relativt kuldiametern, maskkvalitet, bortfall och felaktiga detektioner. Följ synlighet uttryckligen: gissad/interpolerad position är inte en observation. Bortfall får aldrig bli ett godkänt slutläge.
+- Föreslagen första kontrollgräns är centrumfel högst en fjärdedel av synlig kuldiameter på manuellt märkta kontrollrutor, noll objektbyten och exakt rätt fack för alla 37 renderade utfall. Gränsen ska låsas efter att kulans verkliga pixelstorlek och mätosäkerhet fastställts; den är inte uppnådd nu.
+- Rapportera total tid, avkodning separat, bildrutor/sekund samt CPU/GPU/minne på faktisk maskin. Jämför samma källrutor och upplösning. Vi prioriterar reproducerbar kvalitet före livehastighet.
+- Exportförslag: källhash, frameIndex med indexbas 0, faktisk presentationstid, rotorvinkel, kulcentrum/radie, synlighet, osäkerhet, maskreferens och metod-/modellversion. Formatet behöver valideras innan det blir ett runtimekontrakt; inga påhittade fält antas lagras av dagens API.
+
+## Fråga att ge en specialistagent
+
+> Utforma en lokal, reproducerbar kalibreringskedja för ett förinspelat europeiskt roulettehjul (37 fack, låst kamera, 1916×1080, 24 fps). Vi vill återanvända en grundfilm och styra exakt en separat kula till serverns redan fastställda nummer. Jämför OpenCV-landmärken/optiskt flöde och perspektivmodell mot anpassad YOLO-tracking och SAM 2-masker. Originalets nummerkrans är ännu inte godkänd och kulsläppsrutan saknar kalibrering: ange vad som måste bytas eller märkas manuellt, och avvisa gissningar vid morfning/ocklusion. Föreslå minsta dataset, mätbara acceptansgränser, kontrollrutor, hårdvarutest och versionsbundet JSON/maskformat. Skilj faktisk observation från syntetisk bana. Håll dealerhandlingar spelspecifika och återanvänd befintlig roulette-idle. Analysen ska ske före publicering, inte styra pengar eller utfall. Serverns reveal-gräns gäller även saldo, historik och valda medie-URL:er. Leverera kod-/licensalternativ och en liten verifierbar första milstolpe, utan produktionsskrivningar eller betalda jobb.

@@ -1,0 +1,110 @@
+{
+  "schema": "documentation-only-roulette-intake-v1",
+  "officialApiPayload": false,
+  "sourceRevision": "7a8d719ab08d1dc0b79ec5ada6c8d8a60a45379d",
+  "registered": false,
+  "published": false,
+  "requiredContext": {
+    "selectAndVerifyExistingSavedDealer": true,
+    "dealerIdNotAssigned": true,
+    "mediaIdsNotAssigned": true
+  },
+  "evidence": "Private intake/verification.json: isolated memory fixture and decoded alpha, not live registration or visual acceptance.",
+  "assets": [
+    {
+      "file": "media/anna-vila.png",
+      "slotId": "roulette.reference/VILA",
+      "contentType": "image/png",
+      "size": 603108,
+      "sha256": "bb91fc8a9fc9e1e749d68c0d1b38d7dfac1a781663dcc586e93527ac86ceb737",
+      "classificationWithoutDealer": {
+        "eventId": "roulette.reference",
+        "situation": "VILA",
+        "label": "anna-vila.png",
+        "kind": "idle",
+        "role": "standard",
+        "playback": "once",
+        "notes": "",
+        "mediaType": "image",
+        "compositing": {
+          "mode": "alpha"
+        },
+        "game": "roulette",
+        "action": "reference",
+        "startPose": "VILA",
+        "endPose": "VILA"
+      },
+      "destination": "local VILA reference preview only; native image storage currently blocked",
+      "visualAcceptance": "required before production; pose transitions and looping are not approved"
+    },
+    {
+      "file": "media/anna-breathing-alpha.webm",
+      "slotId": "roulette.idle/breathing",
+      "contentType": "video/webm",
+      "size": 897456,
+      "sha256": "02700429c0536003694dd0e595f3b5d5864bf12e580c0539c252f1793d8a1a34",
+      "classificationWithoutDealer": {
+        "eventId": "roulette.idle",
+        "situation": "breathing",
+        "label": "anna-breathing-alpha.webm",
+        "kind": "idle",
+        "role": "standard",
+        "playback": "once",
+        "notes": "",
+        "game": "roulette",
+        "action": "breathing",
+        "startPose": "unverified",
+        "endPose": "unverified",
+        "compositing": {
+          "mode": "alpha"
+        }
+      },
+      "destination": "existing roulette dealer video intake slot after selecting and verifying saved dealer",
+      "visualAcceptance": "required before production; pose transitions and looping are not approved"
+    },
+    {
+      "file": "media/anna-glasses-clean-alpha-v2.webm",
+      "slotId": "roulette.idle/glasses-clean",
+      "contentType": "video/webm",
+      "size": 2438993,
+      "sha256": "f64d2b014bb28704ed99d5f220268466b4153fc489044eb6204a16aa647ffcb4",
+      "classificationWithoutDealer": {
+        "eventId": "roulette.idle",
+        "situation": "glasses-clean",
+        "label": "anna-glasses-clean-alpha-v2.webm",
+        "kind": "idle",
+        "role": "standard",
+        "playback": "once",
+        "notes": "",
+        "game": "roulette",
+        "action": "glasses-clean",
+        "startPose": "unverified",
+        "endPose": "unverified",
+        "compositing": {
+          "mode": "alpha"
+        }
+      },
+      "destination": "existing roulette dealer video intake slot after selecting and verifying saved dealer",
+      "visualAcceptance": "required before production; pose transitions and looping are not approved"
+    }
+  ],
+  "excluded": [
+    {
+      "name": "anna-variant-idle-eyes.webm / glasses v1",
+      "reason": "opaque decoded alpha; rejected",
+      "sha256": "b6025b2cad75cb82406f29a8b116fe44957b013cf1de25b11cf9983d312cd224"
+    },
+    {
+      "name": "idle.mp4",
+      "reason": "preserved source only; no alpha"
+    },
+    {
+      "name": "roulette-bord-start-stop.mp4",
+      "reason": "table prototype, not an accepted outcome bank"
+    },
+    {
+      "name": "roulette.wheel-start/wheel-start",
+      "reason": "no accepted hand-to-wheel/ball release calibration in this package"
+    }
+  ]
+}

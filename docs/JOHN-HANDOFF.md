@@ -206,6 +206,18 @@ att dagens API avslöjar resultat/saldo före filmen. Serverstyrd pending/reveal
 samt korrekt hjul och kulsläppskalibrering återstår. Ingen betald generering
 eller plånboksändring gjordes.
 
+Fortsättningsplanen finns nu i samma utfallsdokument: verifierat intag först,
+korrekt rotor, lokal OpenCV-baslinje och vid behov YOLO/SAM 2 för kalibrering
+och masker. Analysen föreslås ske en gång per källhash; inga nya modeller har
+installerats eller benchmarkats. Officiella källor och en specialistfråga är
+sparade. Det privata kulprovets exakta renderarskript finns också i Git som
+`docs/games/roulette/underlag/roulette-stop-test.html`, utan privata filmberoenden.
+Ett separat lokalt intagspaket mappar VILA, andningsvila och rätt glasögon-v2
+med låsta hashvärden; det portabla underlaget sparas i samma dokumentmapp.
+33 isolerade kontroller passerar, inklusive två byteidentiska WebM-intag och
+förväntad PNG-spärr före grant. Alla 241 rutor i båda WebM har avkodad alfa.
+Paketet är inte live-registrerat och saknar avsiktligt verkliga dealer-/media-ID.
+
 Återstår: fryst roulettebank för dealerhandlingar, 37 servervalda utfall,
 engångsuppspelning/synkronisering, separat talset och visuell acceptans med
 två spel i följd. Ingen privat originalfil har flyttats eller godkänts,
