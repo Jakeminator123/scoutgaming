@@ -1,8 +1,18 @@
 export const JOURNAL_LIMIT = 100;
 const unavailable = () => { throw Error('Journalen kunde inte läsas. Försök igen.'); };
-const titles = { open: 'Öppningssaldo', start: 'Insats · Blackjack', collect: 'Utbetalning · Blackjack',
-  roulette_bet: 'Insats · Roulette', roulette_payout: 'Utbetalning · Roulette' };
-export function journalType(type) { return Object.hasOwn(titles,type) ? titles[type] : 'Övriga händelser'; }
+const titles = { open: 'Öppningssaldo', deposit: 'Insättning', sync: 'Saldojustering', fx: 'Valutabyte · nytt saldo',
+  start: 'Insats · Blackjack', act: 'Spelåtgärd · Blackjack', insurance: 'Försäkring · Blackjack',
+  collect: 'Utbetalning · Blackjack', roulette_bet: 'Insats · Roulette', roulette_payout: 'Utbetalning · Roulette' };
+const movementTypes = new Set(['deposit','sync','start','act','insurance','collect','roulette_bet','roulette_payout']);
+export function journalType(type) { return Object.hasOwn(titles,type) ? titles[type] : `Okänd händelse · ${type}`; }
+export function formatJournalAmount(amount,currency) {
+  if (!currency) return '—';
+  if (/^[A-Z]{3}$/.test(currency)) {
+    try { return new Intl.NumberFormat('sv-SE',{style:'currency',currency,maximumFractionDigits:2}).format(amount); }
+    catch { /* A legacy token may not be a supported ISO currency. */ }
+  }
+  return `${new Intl.NumberFormat('sv-SE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(amount)} ${currency}`;
+}
 
 // The existing endpoint returns the latest 100 rows, not an accounting period.
 // Keep currencies separate and never infer GGR or revenue from this sample.
@@ -10,7 +20,8 @@ export function readEconomyJournal(payload) {
   if (!payload || !Array.isArray(payload.tx) || payload.tx.length > JOURNAL_LIMIT) unavailable();
   return payload.tx.map((row, index) => {
     if (!row || typeof row.at !== 'string' || row.at.length > 40 || !Number.isFinite(Date.parse(row.at))
-      || typeof row.currency !== 'string' || !/^[A-Z]{3}$/.test(row.currency)
+      || typeof row.currency !== 'string' || !row.currency.trim() || row.currency.length > 64
+      || /[\u0000-\u001f\u007f]/.test(row.currency)
       || typeof row.type !== 'string' || !row.type || row.type.length > 100
       || typeof row.player_id !== 'string' || row.player_id.length > 254
       || !['number','string'].includes(typeof row.amount)
@@ -32,11 +43,12 @@ export function summarizeEconomyJournal(journal, {currency, days = 0, now = Date
   const byDay = new Map(), byType = new Map();
   let credit = 0, debit = 0;
   for (const row of rows) {
+    const type = journalType(row.type); byType.set(type,(byType.get(type) ?? 0) + 1);
+    if (!movementTypes.has(row.type)) continue;
     const day = row.at.slice(0,10), point = byDay.get(day) ?? {day, credit:0, debit:0, count:0};
     if (row.amount >= 0) {credit += row.amount; point.credit += row.amount;}
     else {debit -= row.amount; point.debit -= row.amount;}
     point.count += 1; byDay.set(day,point);
-    const type = journalType(row.type); byType.set(type,(byType.get(type) ?? 0) + 1);
   }
   const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
   const dates = journal.map(row => row.at).sort();
