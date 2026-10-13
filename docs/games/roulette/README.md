@@ -17,6 +17,14 @@ Biblioteket får en egen Roulette-grupp via `lab/lib/roulette-media.mjs` och `de
 
 Poser väljs separat bland VILA, WHEEL och unverified. En film med samma poser kan ha en annan handling. Roulettefack är registrering och provning, **inte automatisk spelkoppling**. `videoFitsEvent` accepterar inte dem som blackjackhändelser. Den nya separata mediaassistentens utkast måste anslutas till samma katalog av dess ägare; den kopplingen ingår inte här.
 
+Forge använder uttryckligen `blackjackMediaSlots(project)` och behåller sin
+canonical katalog med 40 blackjackfack inklusive poser/lager. Roulettefacken
+hör till den utökade intagskatalogen `dealerMediaSlots`; de kan inte bli
+ospecificerade givnings-, sko- eller reaktionsjobb. Ett roulette-slotId avvisas
+före providersubmission och innan ett genereringsjobb sparas. `videoFitsLine`
+och `videoFitsEvent` avvisar roulette i blackjackens runtime. En roulette-Forge
+kräver eget accepterat rörelse-/geometrikontrakt innan den kan öppnas.
+
 Native privat uppladdning stöder PNG för VILA-referensen och bevarar bytes/hash. `compositing: {mode: "alpha"}` behåller originalets alfa och stänger av grönnycklingen, även på gröna detaljer i dealern. Grön MP4 kan fortfarande väljas som green-screen. En svart bakgrund är inte alfa.
 
 **Ordning vid driftsättning:** nya PNG-/alfa-/roulettefält kräver ett exakt

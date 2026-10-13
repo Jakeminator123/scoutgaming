@@ -21,6 +21,19 @@ och lämnar utkastet kvar. Ingen datamigration eller produktdataändring ingår.
 85 riktade prover är gröna, inklusive noll SQL/grants på v11, avvisat äldre
 transaktionsklartecken och positiv registerskrivning/återförsök med v12.
 
+CI fångade ytterligare en konsumentgräns: intagskatalogens fyra roulettefack
+får inte bli blackjackens genereringsjobb. `blackjackMediaSlots(project)`
+läser endast canonical blackjack-event; Forge behåller sina 40 fack och
+avvisar roulette före providersubmission och jobbregistrering. Övriga
+`dealerMediaSlots`-konsumenter är bibliotek/intag och navigation. Runtime-
+linjer/event accepterar inte rouletteklassificering; seed/kontrakt ändras inte.
+Canvasen skiljer bild/video via DOM-taggen och har separat PNG-/alfa-prov.
+Forge-, canonical-kontrakt- och canvasproven ingår nu också i fullhooken.
+Hela lab-sviten efter CI-reparationen: 1 800 passerade, två avsiktligt
+hoppade över, noll fel (fyra arbetare). Produktionsbygge och TypeScript är
+gröna. Cacheprovets avsiktliga filbyte har en deterministisk tidsstämpel på
+Windows; produktens cachebeteende ändras inte.
+
 Samordnat med mediaagenten och SIDOR3. Den nya separata mediaassistenten måste
 anslutas till `dealerMediaEvents(project)` av sin ägare; detta ändrar nuvarande
 bibliotek/intag och preview. Ingen dealer eller rumsregel publiceras automatiskt.

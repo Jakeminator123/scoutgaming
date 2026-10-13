@@ -5,6 +5,9 @@ import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mj
 import type {VideoCompositing} from '../lib/video-intake.mjs';
 import {PresentationFrame} from './presentation-frame';
 import styles from './dealer-video-surface.module.css';
+function isDealerImage(source:HTMLVideoElement|HTMLImageElement|null):source is HTMLImageElement{
+  return source?.tagName==='IMG';
+}
 
 // The existing video remains the sole playback clock and owns all receipts.
 // This canvas changes only the visible pixels, including while paused.
@@ -23,9 +26,9 @@ export function DealerVideoSurface({children,framing,compositing}:{children:Reac
     const paint=()=>{
       const video=root.querySelector('video,img') as HTMLVideoElement|HTMLImageElement|null;
       const source=video?.src??'';
-      const width=video instanceof HTMLImageElement?video.naturalWidth:video?.videoWidth??0;
-      const time=video instanceof HTMLImageElement?0:video?.currentTime??0;
-      const ready=video instanceof HTMLImageElement?video.complete&&width>0:(video?.readyState??0)>=2;
+      const width=isDealerImage(video)?video.naturalWidth:video?.videoWidth??0;
+      const time=isDealerImage(video)?0:video?.currentTime??0;
+      const ready=isDealerImage(video)?video.complete&&width>0:(video?.readyState??0)>=2;
       if(source!==lastSource&&failedSource){failedSource='';setError('');}
       try{
         if(!video||!ready){context.clearRect(0,0,960,540);lastVideo=null;lastTime=-1;}
@@ -34,7 +37,7 @@ export function DealerVideoSurface({children,framing,compositing}:{children:Reac
           const frame=context.getImageData(0,0,960,540);keyGreenPixels(frame.data,keyed);context.putImageData(frame,0,0);
           lastVideo=video;lastTime=time;lastWidth=width;lastSource=source;
         }
-      }catch{failedSource=source;lastSource=source;context.clearRect(0,0,960,540);if(video instanceof HTMLVideoElement)video.pause();setError('Förhandsvisningen kunde inte friläggas. Kontrollera filen och försök igen.');}
+      }catch{failedSource=source;lastSource=source;context.clearRect(0,0,960,540);if(video&&!isDealerImage(video))video.pause();setError('Förhandsvisningen kunde inte friläggas. Kontrollera filen och försök igen.');}
       raf=requestAnimationFrame(paint);
     };
     raf=requestAnimationFrame(paint);return()=>{cancelAnimationFrame(raf);root.removeEventListener('loadstart',reset,true);root.removeEventListener('emptied',reset,true);};

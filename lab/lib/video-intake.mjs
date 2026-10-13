@@ -62,7 +62,7 @@ export function videoCompositing(video) {
 // Classification is operator supplied. This checks declared compatibility, not visual quality.
 export function videoFitsLine(video, dealerId, eventId) {
   const m = video?.classification;
-  if (!m || ['audio','image'].includes(m.mediaType) || m.dealerId !== dealerId || m.eventId !== eventId) return false;
+  if (!m || m.game==='roulette' || ['audio','image'].includes(m.mediaType) || m.dealerId !== dealerId || m.eventId !== eventId) return false;
   try { validateVideoMetadata(m); return true; } catch { return false; }
 }
 export function videoFitsEvent(video, event) {
