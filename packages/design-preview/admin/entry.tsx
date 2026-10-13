@@ -1,7 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { useCallback, useEffect, useState } from 'react';
 import { StudioSidebar } from './components/studio/studio-sidebar';
-import Link, { navigate, previewHref, usePathname } from '../runtime/navigation';
+import Link, { navigate, previewHref, usePathname, useSearchParams } from '../runtime/navigation';
+import {isStudioAdminRoute} from '../runtime/admin-routing.mjs';
 import { RegisteredStudio } from './components/studio/registered-studio';
 import { ConnectedClipMap } from './components/studio/connected-clip-map';
 import { ConnectedServices } from './components/studio/connected-services';
@@ -16,6 +17,7 @@ const pages: Record<string, string> = {
   '/control': 'Översikt',
   '/control/structure': 'Struktur',
   '/control/clips': 'Klippkarta',
+  '/control/rooms': 'Spelrum',
   '/control/assets': 'Bord & bakgrunder',
   '/control/drift': 'Drift', '/control/ekonomi': 'Ekonomi', '/control/admin/accounts': 'Konton & åtkomst',
   '/control/admin/operators': 'Spelbolag', '/control/admin/players': 'Spelare', '/control/admin/payments': 'Betalningar',
@@ -23,7 +25,8 @@ const pages: Record<string, string> = {
 };
 function App() {
   const path = usePathname();
-  const studio = ['/control/clips','/control/rooms','/control/dealers'].includes(path);
+  const search=useSearchParams().toString();
+  const studio=isStudioAdminRoute(path,search);
   const [studioDirty,setStudioDirty]=useState(false),[studioRefresh,setStudioRefresh]=useState(0);
   const [studioRevision,setStudioRevision]=useState('');
   const materialChanged=useCallback(()=>setStudioRefresh(value=>value+1),[]);
@@ -49,7 +52,7 @@ function App() {
       {studioVisited&&<div className="studio-workspace-mount" hidden={!studio}><ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/></div>}
       {libraryVisited&&<div hidden={path!=='/control/assets'}><RegisteredMaterialLibrary disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
       {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
-      {path==='/control'&&<AdminHome />}
+      {path==='/control'&&!studio&&<AdminHome />}
       {!studio && path!=='/control' && path!=='/control/assets' && !servicePaths.has(path) && (path==='/control/structure' ? <SystemOverview /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty} onChanged={materialChanged}/>)}
     </main>
   </div>;

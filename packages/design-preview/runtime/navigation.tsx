@@ -1,4 +1,5 @@
 import { useSyncExternalStore, type AnchorHTMLAttributes, type ImgHTMLAttributes } from 'react';
+import {isInternalAdminPathname,withAdminContext} from './admin-routing.mjs';
 
 export function previewHref(href: string) {
   return href === '/control' || href.startsWith('/control/') ? '/admin' + href.slice(8) : href;
@@ -30,12 +31,7 @@ export function useRouter() {
   return { push: (href: string) => navigate(previewHref(href)), replace: (href: string) => navigate(previewHref(href), true) };
 }
 export function navigate(href: string, replace = false) {
-  if (/^\/admin(?:\/[^?]*)?$/.test(href) && !href.startsWith('/admin/lobby')) {
-    const context = new URLSearchParams(location.search);
-    const query = new URLSearchParams();
-    for (const key of ['operator','table','dealer','composition','lane','game']) if (context.has(key)) query.set(key,context.get(key)!);
-    if (query.size) href += `?${query}`;
-  }
+  href=withAdminContext(href,location.search);
   if (!window.dispatchEvent(new CustomEvent('scout:navigate', { cancelable:true,detail:{href} }))) return;
   window.history[replace ? 'replaceState' : 'pushState'](null, '', href);
   previousHref = href; notifySubscribers();
@@ -45,7 +41,7 @@ export default function Link({ href = '', onClick, ...props }: AnchorHTMLAttribu
   return <a {...props} href={target} onClick={event => {
     onClick?.(event);
     if (!event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
-      && !props.target && target.startsWith('/admin/') && !target.startsWith('/admin/lobby')) {
+      && !props.target && target.startsWith('/admin') && isInternalAdminPathname(new URL(target,location.origin).pathname)) {
       event.preventDefault(); navigate(target);
     }
   }} />;

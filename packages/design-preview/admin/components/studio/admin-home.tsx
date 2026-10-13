@@ -3,7 +3,7 @@ import Link from '../../../runtime/navigation';
 
 const destinations = [
   { title:'Dealers och klipp', description:'Arbeta med dealerklipp och sammansättningar.', href:'/control/clips', icon:Clapperboard, secondary:{label:'Bord och bakgrunder',href:'/control/assets'} },
-  { title:'Spelbolag och rum', description:'Se bolag, spelrum och deras kopplingar till spel och dealers.', href:'/control/admin/operators', icon:Building2, secondary:{label:'Visa spelrum',href:'/control/rooms'} },
+  { title:'Spelbolag och rum', description:'Se bolag, spelrum och deras kopplingar till spel och dealers.', href:'/control/admin/operators', icon:Building2, secondary:{label:'Visa spelrum',href:'/control/rooms?view=registered'} },
   { title:'Ekonomi', description:'Se kontorörelser och diagram. Öppna journalen för detaljer.', href:'/control/ekonomi', icon:CircleDollarSign, secondary:null },
   { title:'Drift', description:'Följ spelstatus och den löpande driften.', href:'/control/drift', icon:Activity, secondary:null },
   { title:'System', description:'Hitta struktur, konton och tekniska inställningar.', href:'/control/structure', icon:Layers3, secondary:{label:'Konton och åtkomst',href:'/control/admin/accounts'} },

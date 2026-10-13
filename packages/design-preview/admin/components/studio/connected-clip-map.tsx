@@ -9,6 +9,7 @@ import { bindClip, clipSlots, clipsForSlot, configuredClipIds, createStudioClien
 import { readIdleVideoDuration } from '../../../../../lab/lib/idle-video-duration.mjs';
 import type { StudioProject } from '../../../../../lab/lib/studio-model.mjs';
 import { replaceContext } from '../../../runtime/navigation';
+import {isInternalAdminPathname} from '../../../runtime/admin-routing.mjs';
 import { groupSlots, affectedRooms, slotCaption } from '../../lib/studio-layout.mjs';
 import { StudioSpeechPanel } from './studio-speech-panel';
 import { StudioLifecyclePanel } from './studio-lifecycle-panel';
@@ -118,7 +119,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
       const target = (event as CustomEvent<{href:string}>).detail?.href;
       if (target) {
         const url=new URL(target,location.origin);
-        if(/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')) {
+        if(url.origin===location.origin&&isInternalAdminPathname(url.pathname)) {
           const query=url.searchParams;
           if(registry&&['operator','table','dealer','game'].some(key=>query.has(key))) {
             const requestedRoom=registry.rooms.find(row=>row.id===query.get('table'));
@@ -137,7 +138,8 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     };
     const click = (event:MouseEvent) => {
       const anchor = (event.target as Element)?.closest?.('a'); if (!anchor || event.defaultPrevented || !blocked()) return;
-      if (new URL(anchor.href,location.origin).origin === location.origin && new URL(anchor.href).pathname.startsWith('/admin/') && !new URL(anchor.href).pathname.startsWith('/admin/lobby') && !anchor.target) return;
+      const target=new URL(anchor.href,location.origin);
+      if(target.origin===location.origin&&isInternalAdminPathname(target.pathname)&&!anchor.target)return;
       if (busyRef.current || !confirm('Det finns ett osparat Studio-utkast. Lämna sidan och kasta utkastet?')) { event.preventDefault(); event.stopPropagation(); }
     };
     window.addEventListener('beforeunload',unload); window.addEventListener('scout:navigate',leave); document.addEventListener('click',click,true);

@@ -8,10 +8,17 @@ spelbolag och rum, ekonomi, drift samt system. Studio-redigeraren ligger kvar p�
 övriga arbetsytor behåller sina mål. Sidomenyn har en egen Översikt-länk och
 logotypen går hem. Den avancerade klippkartan laddas först när Studio besöks;
 redigeraren hålls därefter monterad vid sidbyte så ett påbörjat utkast inte
-försvinner. Ingen spel-, publicerings- eller databaslogik ändras.
+försvinner. Äldre `/admin?dealer=…` och `/admin?operator=…&table=…` öppnar
+fortfarande Studio med sin kontext; en uttrycklig Översikt-klickning rensar den.
+`/admin/rooms` fortsätter öppna redigeraren, medan startsidans **Visa spelrum**
+använder `/admin/rooms?view=registered` för den riktiga registrerade rumslistan.
+Ingen spel-, publicerings- eller databaslogik ändras.
 
 Verifierat i isolerad byggd adminvy: startsidan visar endast vägvalen, länken
 till ekonomin öppnar den fungerande diagramvyn och Översikt återgår hem.
+Separat navigationsprov med riktig byggd Studio-fixtur bekräftar rumslistan,
+äldre bokmärken samt Översikt under laddning och från ett osparat utkast;
+utkastet finns kvar när Studio öppnas igen. Fixturen skriver ingen produktdata.
 Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
 runtimebindningstester passerar. Efter sammanslagning med senaste `main`
 passerar full regressionshook med 3 170 godkända, 11 överhoppade och 0 fel;
