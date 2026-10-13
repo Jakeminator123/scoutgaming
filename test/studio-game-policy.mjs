@@ -1,4 +1,4 @@
-import {randomUUID} from 'node:crypto';
+import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createSeedProject } from '../lab/lib/studio-model.mjs';
@@ -96,7 +96,7 @@ test('modern documents still reject malformed legacy sections and mixed legacy r
 test('shared configuration is explicitly enabled, Neon-scoped, inert and never substitutes zones or defaults', () => {
   assert.equal(studioGamePolicyConfiguration({}), null);
   const env = { CROUPIER_STUDIO_NEON_POLICY: '1', CROUPIER_STUDIO_ENVIRONMENT_ID: 'test', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
-    CROUPIER_GAME_DATABASE_URL: 'postgresql://user:secret@test.neon.tech/game?sslmode=require', CROUPIER_ZONES_DATABASE_URL: 'postgresql://user:secret@test.neon.tech/zones?sslmode=require' };
+    CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgresql://test.neon.tech/game?sslmode=require', 'user'), CROUPIER_ZONES_DATABASE_URL: fixtureDatabaseUrl('postgresql://test.neon.tech/zones?sslmode=require', 'user') };
   const config = studioGamePolicyConfiguration(env);
   assert.deepEqual(config.scope, scope); assert.ok(Object.isFrozen(config)); assert.ok(Object.isFrozen(config.scope));
   for (const changes of [{ CROUPIER_STUDIO_ENVIRONMENT_ID: '' }, { CROUPIER_STUDIO_WORKSPACE_ID: undefined },
@@ -265,9 +265,8 @@ test('generic portrait syntax cannot authorize a dealer absent from the saved St
 
  test('Render startup rejects a missing budget migration or unknown ledger version', async () => {
   const {createRenderStudioPolicy}=await import('../web/storage/studio-runtime.mjs');
-  const connection=new URL('postgresql://fixture.neon.tech/croupier_game?sslmode=require');
-  connection.username='croupier_game';connection.password=randomUUID();
-  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection.href};
+  const connection = fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require', 'croupier_game');
+  const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection};
   const storage={pool:{},db:{assertInstalled:async()=>{}}};
   for(const versions of [['001','002','003','004','005','006','007','008'],['001','002','003','004','005','006','007','008','011','012']]){
     await assert.rejects(createRenderStudioPolicy({storage,env,schemaCheck:async()=>({toApply:[],applied:versions.map(version=>({version}))})}),error=>error.message==='studio_game_schema_unavailable');

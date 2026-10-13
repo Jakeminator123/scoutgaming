@@ -1,5 +1,125 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Kevins Dragan/Paow: filmurval och rörligt tal, 13 oktober 2026
+
+Jakob vill använda de filmer som Kevins spel faktiskt refererar till för
+Dragan (Kevins ID `dragge`) och Paow. Importera inte hela mediemappar som
+likvärdiga val. Källbasen är `kevin` på
+`f15b2af16ea7113d451f5c5da14fda031901392a`; rörlig läppsynk granskas separat på
+`kevin-staging` `315cfc554330f1d5541a7ed3bb84044877a6b992`.
+Dealerfilmerna och deras kortspår är byteidentiska mellan dessa två versioner.
+Detta bevisar källinnehåll, inte vilken release Kevins server kör eller visuell
+acceptans. Ingen av Kevins brancher ska mergas i sin helhet för denna integration.
+
+### Exakt urval och poseövergångar
+
+Det kodbundna materialpaketet `kevin-active-dragan-paow-f15b2af1.zip` innehåller
+274 källfiler: 258 videor och 16 stöd-/bildfiler. Per dealer är 108 filmer
+klassade som normal runtime, 10 som preview och 11 som förladdning. 146 filer
+utanför kodurvalet är uteslutna. Manifestet binder repositoryPath, Gitblob,
+SHA-256, dealer, språk, funktion, fack och orsaken till varje referens.
+Paketet och verifieringskvittot finns privat utanför Git i chattens materialexport;
+det är källunderlag och ingen publicerad import eller visuell acceptans.
+
+Urvalet kommer från `public/dealers.js`, `server/shared-table.mjs`
+(`readyTimeline`), `server/media-registry.mjs`, `public/shared-table.js`,
+`public/dealer-remarks.js` och `public/media/manifest.json` under
+[`kevin/croupier-scoutgg`](https://github.com/Jakeminator123/scoutgaming/tree/f15b2af16ea7113d451f5c5da14fda031901392a/kevin/croupier-scoutgg).
+Bibliotek, preview och förladdning är skilda användningar; de ska inte skapa
+extra slumpmässiga spelval. Behåll exakta referenser och deduplicera bara bytes,
+aldrig klippets funktion eller posemetadata.
+
+- `idle-v2`: breath, glance och smile, med vikter 40/12/4.
+- `v2/vila.png`: vilopos; `v2/meta.json`: tagningarnas tider, landningsrutor
+  och poseegenskaper. Porträtt och dealer-card-tracks har andra roller.
+- Givtagningarnas suffix är semantiska. `i` går från VILA till REDO före
+  given; `u` avslutar tillbaka i VILA. Serverplanen kan också välja
+  `v`/`iv` enligt metadata. De får inte läggas i samma slumpmässiga fack.
+- `readyVariant` använder serverns explicita variant. På en äldre plan utan
+  den informationen väljer Kevin `iu`, inte en godtycklig kortare tagning.
+  `variantOffset` justerar kortlandningen för den tillagda inrörelsen;
+  flip/restStart måste behandlas enligt respektive metas regel.
+- Tal väljs med exakt replik-ID och språk, även namnhälsningar och sociala
+  repliker. Ingen matchning på ungefärlig längd eller lån av annan dealers röst.
+
+Våra nuvarande importfack bevisar inte stöd för denna variantschemaläggning.
+Innan givfilmer publiceras måste adapter, kortlandning och VILA/REDO-kedja
+verifieras i den gemensamma spelaren. Bakgrunder, dealer och bord är fortfarande
+separata lager och identiteter; ett mediebyte får inte ändra spelmotorns beslut.
+
+### Så fungerar den rörliga läppsynken i Kevins stagingkod
+
+[`server/rorlig-lipsync.mjs`](https://github.com/Jakeminator123/scoutgaming/blob/315cfc554330f1d5541a7ed3bb84044877a6b992/kevin/croupier-scoutgg/server/rorlig-lipsync.mjs)
+bygger med `kartaFor` en karta över exakt tagning, första bildruta och antal
+rutor vid 24 fps. Kartan följer den serverägda givplanen, hållna slutrutor och
+vilopos. Ljudet börjar 220 ms efter kartans början. GPU-workern får antingen
+exakt inspelad replik eller svarets PCM, mono s16le 24 kHz.
+
+Workern returnerar halva sekunder med H.264 Annex B, 256×512: övre halvan är
+genererad munbild och undre halvan en gråmask. Varje ruta har
+`tagning/ruta/rect`; delarna har tal-ID, versionsnummer och bildruteintervall.
+[`public/lip-layer.js`](https://github.com/Jakeminator123/scoutgaming/blob/315cfc554330f1d5541a7ed3bb84044877a6b992/kevin/croupier-scoutgg/public/lip-layer.js)
+avkodar med WebCodecs. `dealer-layer.js` blandar resultatet på rätt kroppsbild
+innan green-screen-friläggningen. Detta är nya, ljudbundna GPU-bildrutor,
+inte återanvända munrörelser från en annan inspelning.
+
+En ny giv under pågående tal ändrar kartan. Föregående version avbryts,
+återstående ljud återanvänds och gamla delar får inte överta den nya versionen.
+Den granskade koden kör en GPU-lane åt gången, prioriterar närmaste
+bilddeadline och kräver rapporterad kapacitet på minst 30 rutor/s.
+Kevins klient tillåter sökning ±48 rutor kring talets klocka när kroppen halkar
+efter. Det är upp till två sekunder och måste bedömas hörbart/visuellt;
+det är inte en godkänd synktolerans för vår produkt.
+
+Rösterna i `server/dragge-voice.mjs` är:
+
+| Dealer | ElevenLabs voice-ID | Modell och inställningar |
+| --- | --- | --- |
+| Dragan/Dragge | `7f95xPL4S3ySZ4OS1pw8` | `eleven_multilingual_v2`; stability 0.5, similarity 0.85, style 0.15, speaker boost |
+| Paow, svenska | `WZVEBKUreb9jAKojf0QF` | `eleven_v3`; stability 0.5, similarity 0.85, speaker boost |
+| Paow, övrigt | Samma röst-ID | `eleven_multilingual_v2`; stability 0.38, similarity 0.8, style 0.3, speaker boost |
+
+Röst-ID är ingen API-nyckel. Vårt serverägda röstval ska fortfarande verifiera
+att rätt ElevenLabs-konto har tillgång till rösten.
+
+### Anslutning till Scoutgaming och återstående acceptans
+
+OpenClaw fortsätter leverera svaret. Befintlig session, publicering,
+dealeridentitet, budget, avbrott och text-/ljudbindning ska styra arbetet.
+Det behövs inte en ny OpenClaw-instans för varje dealer. Kevins rörliga worker
+använder samma image för flera avatarer men separata dealersessioner; detta
+är inte bevis för att vår nuvarande stillbildsworker kan utföra samma jobb.
+
+Den naturliga kopplingspunkten är den exakta dealerbilden före
+`web/public/presentation-composition.mjs` och dess gemensamma compositor.
+Bakgrund och bord behåller sina egna lager. Bind även delar till dealer,
+tal-/ljudhash, mediehash, session och kartrevision. Släpp fel version, fel
+tagning, fel ruta, fel språk och avbrutet tal. Klippbyte eller dolt/stängt
+fönster måste frigöra GPU-jobb och avkodade bildrutor. Använd VILA/stillbildens
+befintliga talväg som uttrycklig reserv när rörlig worker eller avkodning saknas.
+
+Den separata rörliga workern anges i källan som
+`EmaCodeHero/croupier-lipsync-worker`, med kontrakt i `worker/motor.py`.
+De senaste `kevin`/`kevin-staging`-träden kontrollerades även för incheckad
+worker, Dockerfile och Python-implementation: de innehåller klient/relay men
+inte denna worker. `emil` på `01b5aa490e1aa43938bceab9d49dfc7d931fefeb`
+innehåller den äldre `services/astrid-gpu-worker`, inte `worker/motor.py`.
+GitHub-läsning med Jakobs konto gav 404 den 13 oktober; koden/image-digesten
+och den körande deploymenten är därför inte verifierade. Vår
+`services/astrid-gpu-worker` kommer från en annan, äldre källrevision och
+generiska dealerprofiler förbereder fortfarande en stillbild. Denna leverans
+aktiverar inte rörlig lipsync, ändrar inga providerinställningar och importerar
+inga nya mediefiler till produktionen.
+
+Innan aktivering återstår åtkomlig worker/källrevision, hashbunden avatarbank,
+variantschemaläggning i vår spelare, auktoriserad relay med befintlig budget/
+avbrottshantering och faktisk GPU-verifiering. Kör sedan två på varandra
+följande talprov i den riktiga rehearsalspelaren för båda dealers, inklusive
+giv/omplanering mitt i talet, avbrott och reservväg. Kontrollera röst, läppar,
+kortkontakt, masker och lager visuellt/hörbart. Tidigare Paow-godkännande
+följer inte automatiskt med nya film-/ljudhashar. Rörligt tal är öppet tills
+dessa kontroller passerar; källpaketets checksumma ersätter dem inte.
+
 ## Aktiva ytor och kompatibilitetsgräns
 
 Roulettens [klippkarta och signaler](games/roulette/KLIPPKARTA.md) skiljer

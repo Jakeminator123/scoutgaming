@@ -1,5 +1,22 @@
 # Miljövariabler per tjänst
 
+## Databasadresser i tester
+
+Tester med injicerad minnespool eller schemafunktion använder
+`test/fixtures/database-url.mjs` för syntetiska PostgreSQL-adresser.
+Basadressen saknar användaruppgifter; ett slumpmässigt lösenord skapas bara
+vid testkörningen. Hjälparen läser inga miljöhemligheter, ansluter inte och
+skriver inte adressen till disk eller logg. Behåll injicerad databas även när
+testets värdnamn behöver sluta med `neon.tech` för att pröva valideringen.
+
+`test/test-credential-fixtures.mjs` körs i ordinarie full hook/CI och stoppar
+incheckade Neon-adresser med användare/lösenord i `test/` och `lab/test/`.
+Rapporten innehåller bara filsökväg, rad och felkod. Skyddet är avgränsat till
+återfallet från incident 38176586 och ersätter inte GitGuardian eller skyddar
+mot alla typer av falsklarm. Lägg inte till scannerundantag för att gömma en
+sådan fixture. Rättad kod stänger inte historiska incidenter automatiskt;
+bedöm deras ursprung separat och ändra status endast med rätt mandat.
+
 ## Dealerimportens begränsade rådgivare, 13 oktober 2026
 
 Klippassistenten använder en stateless modelladapter i importvyn under

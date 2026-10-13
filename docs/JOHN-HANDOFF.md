@@ -1,5 +1,30 @@
 # Aktuell handoff — Scoutgaming
 
+## Testfixturer och Kevins rörliga läppsynk, 13 oktober 2026
+
+PR #108 tog bort det fasta testvärde som utlöste GitGuardian 38176586.
+Denna uppföljning flyttar motsvarande syntetiska Neon-adresser i åtta
+testfiler till en gemensam hjälpare som skapar lösenord vid körning. Befintlig
+databasvalidering, felredaktion och migrationstest behålls. En läsande
+regressionskontroll i full hook/CI rapporterar enbart fil/rad/felkod om en
+komplett credential-URL återinförs i testkällorna. GitGuardian är kvar utan
+undantag, och den historiska incidentens status ändras inte.
+
+[Runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md)
+beskriver det versionsbundna urvalet för Dragan/Paow, VILA/REDO-varianter,
+korrekt röst och Emils rörliga läppsynkprotokoll. Materialagenten ansvarar
+fortsatt för sitt separat godkända import-/rensningsarbete. Det verifierade
+källpaketet har 274 filer; det är ingen produktions- eller synkacceptans.
+Ingen Kevin-branch, walletlogik eller media importeras av denna leverans.
+
+Den rörliga workerns källrepo gav 404 med nuvarande åtkomst. Vår stillbilds-
+worker och generiska speechProfile kan inte aktivera den andra tekniken bara
+genom byte av endpoint. Workeråtkomst, exakta avatarfiler, variantadapter,
+auktoriserad relay och två riktiga talprov per dealer återstår före aktivering.
+Testkvitto: 175 berörda tester godkända på Node 24.21.0. Efter integration
+med main `ed584be7` passerade Studio-produktionsbygget och full pre-commit:
+3497 godkända, 0 fel, 11 överhoppade. PR-kontroller redovisas i leveransen.
+
 ## Anna-demorum: slutkoppling pågår, 13 oktober
 
 Admin-editorn kan nu spara exakt startfilm, bordsdesign, tider och handregion;

@@ -1,3 +1,4 @@
+import { fixtureDatabaseUrl } from '../../test/fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
@@ -18,7 +19,7 @@ const env = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_PUBLIC_ORIGIN: 'https:
   CROUPIER_STUDIO_NEON_POLICY: '1',
   CROUPIER_LAB_UI_ORIGIN: 'https://studio.example.invalid', CROUPIER_LAB_BASE_PATH: '/studio',
   CROUPIER_STUDIO_ENVIRONMENT_ID: 'fixture', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
-  CROUPIER_GAME_DATABASE_URL: 'postgres://fixture:fixture@fixture.neon.tech/fixture?sslmode=require' };
+  CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture') };
 
 test('assistant inventory reads only table names in the actual game, auth and Studio schemas', async () => {
   const schemas = ['../../ops/neon-game/product-schema.sql','../../ops/neon-studio/001-studio-metadata.sql']
