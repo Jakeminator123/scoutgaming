@@ -149,45 +149,46 @@ Kevin-vyer får inte skapa ett andra defaultsystem vid sidan av registrerad
 sammansättning och bolagets uttryckligen tillåtna val. Rensa först efter
 referenskontroll; ändra inte historiska paket eller gemensam spelarlogik.
 
-### Verifierat nuläge: paow3 och biblioteket
+### Verifierat efter rensningen den 13 oktober: rum och bibliotek
 
-Read-only i `/control/rooms?operator=nordic-bet` den 13 oktober: Nordic Bet
-har publicerad version 7, två öppna rum och ett arkiverat rum. **paow3 är
-ett registrerat rum**, ID `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e`.
-`Nordic Bet Roulette`, ID `room-1bc1b407-9538-9ae8-f7e2-fecf951989a2`, är
-ett annat rum. Båda refererar sammansättningen **PAOW · Studio**,
-`paow-studio-14b6c188-ef58-4ad9-9028-4f6fb58a6de9`. Dess editor visar
-dealer `paow-v2`, bord **Bord · Svart och guld** och en bakgrund med namnet
-`background-ditt-spelbolag`. Dessa namn bevisar inte en separat PAOW 3-bank
-eller att roulettematerialet är accepterat. Ingen av posterna ändrades.
+`paow3`, ID `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e`, arkiverades
+på Jakobs instruktion och togs ur det aktiva Nordic Bet-paketet i version 8.
+`Nordic Bet Roulette`, ID `room-1bc1b407-9538-9ae8-f7e2-fecf951989a2`,
+bevarades. Den tidigare observationen av paow3 som öppet rum avsåg version 7
+före rensningen. Namn bevisar inte någon separat PAOW 3-bank eller visuell
+acceptans av roulette. Vid återläsningen efter bakgrundsrensningen använder
+**PAOW · Studio** bakgrunden **Studio · turkos**.
 
-Biblioteksvyn visar två bordsbilder. Båda laddades i webbläsaren med faktisk
-storlek 1440 × 2560: **Bord · Svart och guld**, lager-ID
-`4b688411-d186-4229-8f8a-046cd1b0a2c5` (används av tre sammansättningar), och
-**e14100b1-0dad-4700-9d0a-a5bc081cadc4**, lager-ID
-`b52b9077-de4e-4691-a570-a41a90312f6a` (används av Mobile Phone Lane).
-Det andra bordets UUID-liknande visningsnamn är alltså inte filens ID.
-De sju bakgrunderna visas som video, samtliga registrerade som 1920 × 1080:
+På `027ceb03` läser både `/admin/assets` och `/control/library` samma
+register: **7 bord, 10 aktiva bakgrunder och 2 återställbara bakgrunder**.
+Fem nya separata bordsoriginal kompletterar de två äldre 1440 × 2560-bilderna:
+**Bord · Svart och guld**, lager-ID `4b688411-d186-4229-8f8a-046cd1b0a2c5`,
+och **e14100b1-0dad-4700-9d0a-a5bc081cadc4**, lager-ID
+`b52b9077-de4e-4691-a570-a41a90312f6a`. Det senare visningsnamnet är inte filens ID.
+De tre nya bild-/videoparen Studio · turkos, Studio · mörk och Lounge · varm
+utgör sex av de tio aktiva bakgrunderna. Äldre bakgrunders status efter rensningen:
 
-| Namn | Lager-ID | Användning enligt biblioteket |
+| Namn | Lager-ID | Status och användning |
 | --- | --- | --- |
-| Bakgrund · Casino | `6ca45a4e-f696-4849-a3f7-a15dc872862f` | PAOW · Studio, Mobile Phone Lane, Johns sammansättning |
-| bakground | `06e3be0d-0a54-4b8e-8d38-edeefd189ce7` | PAOW · Studio, Mobile Phone Lane |
-| background-ditt-spelbolag | `c0035fc4-cb47-45dc-83de-adb44c14e9fd` | Mobile Phone Lane |
-| background-ditt-spelbolag | `6cd2bf56-4d42-4c7b-848a-087398b38563` | Mobile Phone Lane |
-| background-ditt-spelbolag | `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4` | PAOW · Studio |
-| background-ditt-spelbolag | `800eb6ee-9e55-40c1-9757-159694422dd2` | Ingen sammansättning angiven |
-| A_nearly_still__seamless_loop_ambient_background_plate_for_a_layered_web_game__A | `bff63892-6b6d-4c39-b2d3-4a8ecd7c8d28` | Mobile Phone Lane |
+| Bakgrund · Casino | `6ca45a4e-f696-4849-a3f7-a15dc872862f` | Aktiv: Standardsammansättning, Johns sammansättning |
+| bakground | `06e3be0d-0a54-4b8e-8d38-edeefd189ce7` | Aktiv: Standardsammansättning |
+| background-ditt-spelbolag | `c0035fc4-cb47-45dc-83de-adb44c14e9fd` | Papperskorg: lossad från Standardsammansättning, återställbar |
+| background-ditt-spelbolag | `6cd2bf56-4d42-4c7b-848a-087398b38563` | Papperskorg: lossad från Standardsammansättning, återställbar |
+| background-ditt-spelbolag | `e98f61ca-bb1d-4ba3-b61f-d1089da0c1a4` | Enda aktiva Your Company-varianten, ledig att välja |
+| background-ditt-spelbolag | `800eb6ee-9e55-40c1-9757-159694422dd2` | Tidigare borttagen ur biblioteket på Jakobs instruktion |
+| A_nearly_still__seamless_loop_ambient_background_plate_for_a_layered_web_game__A | `bff63892-6b6d-4c39-b2d3-4a8ecd7c8d28` | Aktiv: Standardsammansättning |
 
-De fyra likadana namnen är skilda ID; de får inte slås ihop på namn.
-ID lästes från respektive synligt videoelements källadress. Efter start via
-bibliotekets spelkontroller nådde samtliga sju `readyState=4`, 1920 × 1080,
+Likadana namn är skilda ID; de får inte slås ihop på namn. De två flyttarna
+påverkade inga publicerade rum; original och historik bevaras.
+Vid den historiska inventeringen före rensningen lästes ID från respektive
+videoelement. Efter start via bibliotekets spelkontroller nådde alla dåvarande
+sju videor `readyState=4`, 1920 × 1080,
 10,042 sekunder och `ended=true` utan mediefel. Avkodning och ett genomspel
 i den här webbläsaren är därmed verifierade. Specifik codec, loopskarv och
 scenens visuella formatacceptans är ännu inte granskade.
 Designmallens tre bakgrunder och två exempelbord är inte detta
-register. Nya `/admin` ska läsa `project.layerAssets` med samma ID och
-roller, visa video som video och även visa registrerade men ännu oanvända filer.
+register. Nya `/admin` läser `project.layerAssets` med samma ID och roller,
+visar video som video och även registrerade men ännu oanvända filer.
 
 ### Format: tillåten fil är inte samma sak som godkänd scen
 

@@ -226,7 +226,9 @@ visuell acceptans i rehearsal återstår tills bakgrunderna används där.
 
 Efter separat instruktion från Jakob togs den oanvända
 `background-ditt-spelbolag`-posten `800eb6ee-9e55-40c1-9757-159694422dd2`
-ur biblioteket. Tre andra varianter är fortsatt refererade och bevarade.
+ur biblioteket. Vid den första inventeringen bevarades tre andra varianter;
+den senare verifierade rensningen ovan flyttade `c0035fc4` och `6cd2bf56`
+till återställbar papperskorg. Endast `e98f61ca` är nu aktiv och valbar.
 Jakob valde uttryckligen borttagning av `paow3`: rummet
 `room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e` arkiverades genom ordinarie
 API, togs ur den aktiva strukturen och avpublicerades i Nordic Bet-paket
@@ -234,8 +236,8 @@ version 8. Rouletterummet är kvar. Demo North/South återfanns endast i
 diagnostiska fixtures, inte bland de registrerade bolagen.
 AGENTS anger nu `/admin` och `/lobby` som riktning, med befintliga ytor
 kvar under övergången. Den begärda gemensamma papperskorgen för samtliga
-resurstyper fortsätter i tillägget ovan; `/admin`-integrationen och faktisk
-driftsättning ska verifieras separat.
+resurstyper beskrivs i tillägget ovan. `/admin`-integrationen och driften är
+verifierade på `027ceb03`, inklusive riktig flytt och återläsning i båda ytorna.
 
 ## Tillägg 13 oktober: samlade spelmanualer
 
