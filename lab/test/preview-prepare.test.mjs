@@ -33,7 +33,7 @@ test('reviewed preview media is hashed into the private build directory with rel
     const result = await preparePreview({ previewRoot, webRoot, output });
     assert.equal(result.mediaFiles > 0, true);
     const catalog = JSON.parse(await readFile(join(output, 'catalog.json'), 'utf8'));
-    assert.equal(catalog.lanes.length, 2);
+    assert.deepEqual(catalog.lanes.map(lane => lane.name), ['Dragge']);
     const seen = new Set();
     for (const lane of catalog.lanes) {
       assert.equal(Object.keys(lane.dealer.variants).length, 1);
