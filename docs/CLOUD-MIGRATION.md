@@ -19,14 +19,22 @@ procentangivelse ersätter verifiering av varje flöde. Startpunkt: main
 - [x] Befintliga bolag/team, rum/publicering, sammansättningar, dealerinställningar,
   medier, svar, provspelning, regler, småprat, dealeragent och guide öppnar inom
   Admin. PR102 återanvänder samma sparade data, API:er och granskade skrivningar.
-- [ ] Täpp till identifierad paritetslucka: talgranskningens gamla länk
-  `administration?tab=media-review` hamnar i Drift och tappar dealer.
-- [ ] Täpp till identifierad paritetslucka: materialbibliotekets bakgrundsval
-  behöver bevaras för både `tab=backgrounds` och `role=background` vid omladdning.
-- [ ] Bevara äldre bokmärken: `lanes?tab=companies` ska öppna bolag och
-  `clips?dealerId=dragan` ska behålla dealer-valet.
+- [x] Talgranskningens gamla `administration?tab=media-review`-länk öppnar
+  rätt Admin-verktyg med dealer. Rättningen ingår i levererad PR110.
+- [x] Materialbibliotekets bakgrundsval bevaras för både `tab=backgrounds`
+  och `role=background` vid omladdning i PR110.
+- [x] Äldre bokmärken bevaras: `lanes?tab=companies` öppnar bolag och
+  `clips?dealerId=dragan` behåller dealer-valet i PR110.
 - [ ] Slutverifiera rättningarna och full rutt-/funktionsinventering, inklusive
   autentisering, behörigheter, kontext och skydd för osparat arbete, på levererad SHA.
+
+PR110 är mergad som `1595fb451cf19fbcbba1ece04e4bb8c7c74a9bc6`.
+Vercel `dpl_aZKAibo81bFLGUfKuyHPSnkckPNm` är READY och Render
+`dep-db7aknmi0phs738sv6e0` är live på samma SHA. Full regression före
+leverans: 3 552 pass, 11 skip, 0 fel; samtliga CI-kontroller passerade.
+Utloggad `/admin/deletion` går till rätt Studio-inloggning med returnTo.
+Ny visuell kontroll av inloggat beroendeträd återstår: Codex-appens
+webbläsartransport stängdes under sessionen. Det är inte en verifierad UI-acceptans.
 
 Global ändringslogg saknar ännu eget anslutet API; det fanns inte heller ett
 motsvarande fungerande Control-flöde. Bolagets journal finns i Bolag & team.
@@ -59,7 +67,7 @@ Det är separat produktarbete och ska inte döljas bakom påstådd migrationspar
 ### Kevins aktiva dealerfiler
 
 Färsk kontroll av refs: `kevin` = `f15b2af16ea7113d451f5c5da14fda031901392a`,
-`kevin-staging` = `a56e25fb2c006302cf36442e724bc9b458b2030a`. Materialet
+`kevin-staging` = `315cfc554330f1d5541a7ed3bb84044877a6b992`. Materialet
 sorteras efter faktiska kodreferenser för Dragan/Dragge och Paow, inte efter
 alla filer i mapparna. Senaste Git-build är inte bevis för senaste körande
 Kevin-deployment. Manifest, kopior och hashjämförelse hålls privat utanför Git.
@@ -95,8 +103,9 @@ Annas separata roulettekonfiguration. Rumsborttagning får inte radera filerna.
 `mobile-phone` delas av flera dealers; gammalt dealerval tas bort utan att
 hela mallen eller Astrids fungerande spel-/talväg försvinner.
 
-- [ ] Leverera den röda menyraden Radering med anslutet beroendeträd och
+- [x] Leverera den röda menyraden Radering med anslutet beroendeträd och
   tydlig skillnad mellan sparad mall, publicerade val och tillgänglig historik.
+  PR110 är driftsatt; den inloggade visuella slutkontrollen är fortfarande öppen.
 - [x] Läsande lokal registerbackup: 3 dokument, 60 mediaposter, 43 paket,
   157 dokumenthistorikposter och befintliga Forge-/bolagsberoenden exporterade
   i en read-only repeatable-read-transaktion. Filen hålls privat utanför Git.
@@ -104,6 +113,10 @@ hela mallen eller Astrids fungerande spel-/talväg försvinner.
 - [x] Fysisk lokal kopia av 232 inventerade objekt under fyra gamla
   dealerprefix och två gamla bord: 145 404 657 byte, alla SHA-256 verifierade.
   Ingen extra kopia skapades i Blob.
+- [x] Lokala gamla preview-/porträtt-/Amirafiler har kopierats privat och
+  hashkontrollerats före borttagning: 13 Paow-previewfiler (4 245 767 byte)
+  samt ytterligare 84 filer (16 917 281 byte). Dragge, tre delade previewassets
+  och Kevins originalurval bevaras. Kodändringen är ännu inte driftsatt.
 - [ ] Slutför exakt objektägande och kvarvarande konsumenter före radering.
   Den lästa databasen har 28 gamla dealer-mediaposter, varav 20 redan är
   raderingstombstones; Forge har dessutom två privata PAOW-ankarbilder.
@@ -128,6 +141,23 @@ exakta ID:n, komplett inventeringskrav och revisions-/hashkontroll.
 Den gör inga databas- eller Blob-anrop. Faktisk verkställighet måste läsa om
 aktuellt underlag och bevara skyddade resurser. Spelarkonton, saldo,
 transaktioner och roulettens aktiva arbete ingår inte i rensningen.
+
+Inför rensningen hittades ett Forge-race: en nedladdning som passerat den
+tidigare dealer-kontrollen kunde återskapa profil/media efter radering.
+Kodrättningen återläser exakt jobb/lease och aktuell dealer under samma
+Studio-lås som varje skrivning; profil-/jobbskapande och medieägande
+kontrollerar också registret. 60 isolerade Forge-/repositoryprov passerar.
+Chattminnets profilskapande återläser samma dealerregister under lås.
+Låsordningen följer befintlig native Admin: game först, därefter Studio;
+ett samtidighetsprov omfattar de separata anslutningarna.
+Produktionsgallring väntar på levererad rättning och färskt CAS-underlag.
+Ett nytt sparat projekt upptäcktes; endast current project och dess fyra
+tillkomna historikrader återlästes för att bevara det parallella Anna-arbetet.
+Den privata, granskade planen bevarar samtliga 161 historikrader och gör
+163 exakta dokumentuppdateringar samt 139 raderingar av gamla beroenden.
+En separat Blob-kontroll håller Studio-skrivlåset genom färsk referenskontroll,
+exakt objektradering och återläsning. 15 isolerade prov omfattar återstart
+efter två avbrott och förlust av låsanslutningen; ingen livekörning följer av dem.
 
 ## OpenClaw dashboard utan terminal — liveacceptans öppen
 

@@ -8,7 +8,6 @@ import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../web/
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
-const dealers = new Set(['vera','astrid','amira','mei']);
 function bodyKeys(body, allowed, required = allowed) {
   if (!body || typeof body !== 'object' || Array.isArray(body)
     || Object.keys(body).some(key => !allowed.includes(key)) || required.some(key => !Object.hasOwn(body, key))) fail();
@@ -56,6 +55,11 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
       return saved.value.dealers.map(({ id, label }) => ({ id, label }));
     } catch { return null; }
   }
+  async function savedDealerSet() {
+    const saved = await readSavedDealers();
+    if (!saved) fail(503);
+    return new Set(saved.map(dealer => dealer.id));
+  }
   register('GET', 'config', async () => {
     const [saved, savedDealers] = await Promise.all([config(), readSavedDealers()]);
     return { ...saved.value, ...gameLaneConfiguration(saved.value), revision: saved.revision, savedDealers };
@@ -67,10 +71,8 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     value.gameLane = body.lane;
   });
   change('game-lanes/create', ['definition'], async (value, body) => {
-    if (body.definition?.dealer === 'nora') {
-      const savedProject = await repository.readDocument('project');
-      if (!savedProject?.value?.dealers?.some(row => row.id === 'nora')) fail(422);
-    }
+    const dealers = await savedDealerSet();
+    if (!dealers.has(body.definition?.dealer)) fail(422);
     const lanes = gameLaneConfiguration(value);
     let next;
     try { next = validateGameLanes([...lanes.gameLanes, body.definition]); } catch { fail(); }
@@ -92,8 +94,8 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
     value.gameLane = active;
   });
   register('GET', 'voicelines', async () => {
-    const [saved, registry] = await Promise.all([config(), voiceLines()]);
-    return { ...registry, revision: saved.revision, dealers: registry.dealers.map(dealer => ({ ...dealer,
+    const [saved, registry, dealers] = await Promise.all([config(), voiceLines(), savedDealerSet()]);
+    return { ...registry, revision: saved.revision, dealers: registry.dealers.filter(dealer => dealers.has(dealer.dealer)).map(dealer => ({ ...dealer,
       lines: dealer.lines.map(line => {
         const review = saved.value.voiceReview?.[dealer.dealer]?.[line.key];
         const matches = voiceReviewMatches(review, line.identity);
@@ -103,8 +105,10 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
       }) })) };
   });
   change('voiceline-review', ['dealer', 'line', 'verdict', 'expectedIdentity'], async (value, body, context) => {
-    if (!dealers.has(body.dealer) || !text(body.line, 100) || !['approved', 'rejected', null].includes(body.verdict)) fail();
-    const registry = await voiceLines(), line = registry.dealers.find(row => row.dealer === body.dealer)?.lines.find(row => row.key === body.line);
+    if (!text(body.dealer, 40) || !text(body.line, 100) || !['approved', 'rejected', null].includes(body.verdict)) fail();
+    const [registry, dealers] = await Promise.all([voiceLines(), savedDealerSet()]);
+    if (!dealers.has(body.dealer)) fail(404);
+    const line = registry.dealers.find(row => row.dealer === body.dealer)?.lines.find(row => row.key === body.line);
     if (!line) fail(404);
     if (body.verdict !== null && (!line.reviewable || !studioVoiceIdentity(body.expectedIdentity)
       || !studioVoiceIdentity(line.identity) || canonicalStudioJson(body.expectedIdentity) !== canonicalStudioJson(line.identity))) fail(409);
@@ -148,6 +152,7 @@ export function createStudioAdminData({ db, boDb, repository, scope, gamePolicy,
       buyin: body.buyin, pool: body.pool, cap: body.cap, starts: body.starts.trim(), state: 'draft', entries: 0 });
   });
   if (typeof canAssignDealer === 'function') change('tier', ['tier','dealer'], async (value, body) => {
+    const dealers = await savedDealerSet();
     if (!['classic','high','vip'].includes(body.tier) || !dealers.has(body.dealer) || !Object.hasOwn(value.tiers || {}, body.tier)) fail();
     if (await canAssignDealer(body.dealer) !== true) fail(409);
     value.tiers[body.tier] = body.dealer;

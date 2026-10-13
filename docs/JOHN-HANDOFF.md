@@ -12,7 +12,10 @@ Sju regressioner gav rött före rättning; 33 riktade prov är gröna.
 Produktionsbygget (97 byggspår) och Admin/lobby-typkontrollen passerar.
 Full regression efter integration med roulette- och budgetleveranserna:
 3 552 pass, 11 skip, 0 fel. Studio-bygget passerar med 97 kontrollerade byggspår.
-Produktions-SHA kompletteras efter leverans; lokala prov är inte liveacceptans.
+PR110 är mergad som `1595fb451cf19fbcbba1ece04e4bb8c7c74a9bc6`:
+Vercel READY och Render live på samma SHA, alla CI-kontroller gröna.
+Ny visuell kontroll av inloggat beroendeträd återstår eftersom Codex-appens
+webbläsartransport stängdes. Utloggad route bevarar returnTo till `/admin/deletion`.
 Den befintliga migrationsloggen i CLOUD-MIGRATION.md skiljer funktionerna
 i Admin från framtida avveckling av hostnamn och källkod. lab/ behövs av
 Admin, autentisering, API:er, SQL och Render; inga tjänster eller data tas bort.
@@ -31,6 +34,17 @@ offlineplanering och lokal backup är förberedda. Alla 232 inventerade objekt
 under de fyra gamla dealernas mappar och två gamla borden har hämtats till
 lokal disk och hashverifierats (145 404 657 byte). Inga
 produktionsdata har gallrats och ingen ny PAOW är ännu registrerad.
+
+Fortsatt rensningskod avregistrerar Amira ur katalog/layout/Blob-index och
+tar bort gamla Paow-previewval och bildkopplingar. 97 exakta lokala filer
+har kopierats och hashverifierats privat före borttagning. Dragge, delade
+bakgrunder/bord och Kevins original bevaras. Ett verifierat Forge-race
+stängs med dealer-/jobb-/leasekontroll under samma Studio-lås som skrivningen;
+60 fokuserade Forge-/repositoryprov passerar. Chattminnet kontrollerar också
+registreringen i samma transaktion, med game → Studio som i native Admin.
+Samtidig projektsparning och chatt ingår i regressionen. Kodleverans och faktisk
+produktionsrensning återstår; nuvarande current project har återlästs separat
+för att bevara nytillkommet Anna-arbete.
 
 ## Anna-demorum: slutkoppling pågår, 13 oktober
 

@@ -72,7 +72,7 @@ if(lobbyReturn){
   }
 }
 for (const {id,label} of entrySelection.registeredDealers ?? []) DEALERS[id] = {key:id,name:label,registered:true};
-if (entrySelection.presentation === 'layered') for (const [id, name] of [['paow', 'Paow'], ['dragge', 'Dragge']]) DEALERS[id] = {key:id,name,registered:true};
+if (entrySelection.presentation === 'layered') for (const [id, name] of [['dragge', 'Dragge']]) DEALERS[id] = {key:id,name,registered:true};
 const DEALER = DEALERS[entrySelection.dealer];
 if (!DEALER) { presentationStartup.fail(); throw new Error('Dealer is not registered'); }
 const layeredPresentationEnabled = entrySelection.presentation === 'layered';

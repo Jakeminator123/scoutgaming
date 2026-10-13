@@ -352,6 +352,7 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
   if (!studioAdminActor(actor) || !selected) return <p role="alert">Okänd session eller administrationsgrupp.</p>;
   const voiceDealers = rows(resources.voicelines?.payload?.dealers).filter(row => !dealerId || row.dealer === dealerId);
   const config = resources.config?.payload;
+  const registeredDealers = savedDealerOptions(config?.savedDealers);
   const lanes = rows(config?.gameLanes);
   const activeLane = typeof config?.gameLane === 'string' && config.gameLane !== 'original' ? config.gameLane : null;
   const revision = config?.revision;
@@ -457,8 +458,8 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         {config && Object.entries(object(config.tiers) ?? {}).filter(([tier]) => ['classic', 'high', 'vip'].includes(tier)).map(([tier, dealer]) => <div className={styles.row} key={tier}>
           <div><strong>{tier}</strong><p>Dealer: {label(dealer)}</p></div>
           {mayWrite('tier', true) && <form method="post" onSubmit={submit('tier', form => ({ tier, dealer: value(form, 'dealer') }), true)}>
-            <label>Dealer<select name="dealer" defaultValue={label(dealer, 'vera')} disabled={busy}>{['vera', 'astrid', 'amira', 'mei'].map(id => <option key={id} value={id}>{id}</option>)}</select></label>
-            <button disabled={busy}>Spara dealer</button>
+            <label>Dealer<select name="dealer" required defaultValue={registeredDealers?.some(row => row.id === dealer) ? String(dealer) : ''} disabled={busy || !registeredDealers?.length}><option value="" disabled>Välj registrerad dealer</option>{registeredDealers?.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+            <button disabled={busy || !registeredDealers?.length}>Spara dealer</button>
           </form>}
         </div>)}
         <p className={styles.notice}>Klipp och beteenden redigeras i Dealer &amp; klipp.</p>
@@ -711,7 +712,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
     }
   }
 
-  const reviewDealers = savedDealerOptions(resources.config?.payload?.savedDealers) ?? rows(resources.voicelines?.payload?.dealers).map(row=>({id:label(row.dealer),label:label(row.name,row.dealer as string)}));
+  const reviewDealers = savedDealerOptions(resources.config?.payload?.savedDealers) ?? [];
   const reviewDealerLabel = reviewDealers.find(row=>row.id===reviewDealerId)?.label ?? reviewDealerId;
   const activeGroup = ACTIVE_GROUPS.find(item => item.id === group);
   const area = activeGroup?.area ?? BACKOFFICE_GROUPS.find(item => item.id === group)?.area ?? 'Drift';
@@ -724,7 +725,7 @@ export function StudioAdministration(props: StudioAdministrationProps) {
   return <div className={styles.administration} aria-busy={busy}>
     <PageTemplate eyebrow={area.toUpperCase()} title={pageTitle} intro={actor ? `${actor.username} · ${accountRole(actor.role)}` : fatal ? 'Administration kunde inte läsas in' : 'Hämtar session och serverdata…'} />
     <div className={styles.headerActions}><button type="button" className="sg-btn sg-btn-secondary" disabled={busy} onClick={() => void load(group)}>Ladda om från servern</button>{props.sessionAction}</div>
-    {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealerId} disabled={busy||dirty} onChange={event=>{setReviewDealerId(event.target.value);const url=new URL(window.location.href);url.searchParams.set('dealer',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}>{!reviewDealers.some(row=>row.id===reviewDealerId)?<option value={reviewDealerId}>{reviewDealerLabel}</option>:null}{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
+    {group === 'media-review' && <div className={styles.contextLinks}><StudioNavigation dealerId={reviewDealerId} dealerLabel={reviewDealerLabel} active="clips" crumbs={[{label:'Talgranskning'}]} /><label>Dealer<select value={reviewDealers.some(row=>row.id===reviewDealerId) ? reviewDealerId : ''} disabled={busy||dirty||!reviewDealers.length} onChange={event=>{setReviewDealerId(event.target.value);const url=new URL(window.location.href);url.searchParams.set('dealer',event.target.value);window.history.replaceState(null,'',url.pathname+url.search);}}><option value="" disabled>Välj registrerad dealer</option>{reviewDealers.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label><p>Granska vald dealers exakta ljud, video och synk. Bedömningen gäller bara det granskade medieparet.</p></div>}
     {group === 'tables' && <p className={styles.notice}>Bolagets spelbara rum och publicering hanteras via <a href={props.roomsHref ?? labUrl('/control/rooms')}>Spelrum & publicering</a>. Här finns spelmotorns gemensamma inställningar.</p>}
     {group === 'accounts' && <p className={styles.notice}>För bolagens medlemmar och behörigheter, öppna <a href={labUrl('/control/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>. Här hanterar du interna konton och spelare.</p>}
     {group === 'partners' && <p className={styles.notice}>Tekniska integrationer använder API-nycklar. Personers åtkomst hanteras i <a href={labUrl('/control/companies')}>{props.companyTeamLabel ?? 'Bolag & team'}</a>.</p>}

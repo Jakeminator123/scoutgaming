@@ -98,6 +98,7 @@ test('native legacy inventory reads injected Neon review safety and Blob availab
     administration:async () => {sourceReads++;return {legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{'vera:idle-1/idle/idle':{reason:'review rejected'}}}};}};
   const controls=await legacyClipControls(project,options);assert.equal(sourceReads,1);assert.equal(controls.reviewSafetyVerified,true);
   assert.equal(controls.clips.find(clip => clip.id==='vera:idle-1/idle/idle').available,false);assert.equal(controls.runtime.conflicts.length,1);
-  for (const dealer of ['astrid','amira','mei']) assert.equal(controls.clips.find(clip => clip.id===`${dealer}:idle-1/idle/idle`).available,true);
+  for (const dealer of ['astrid','mei']) assert.equal(controls.clips.find(clip => clip.id===`${dealer}:idle-1/idle/idle`).available,true);
+  assert.equal(controls.clips.some(clip => clip.id.startsWith('amira:')),false,'retired Amira files cannot reappear in the available legacy inventory');
   await assert.rejects(legacyClipControls(project,{...options,administration:{}}),error => error.code==='studio_legacy_review_safety_unavailable');
 });

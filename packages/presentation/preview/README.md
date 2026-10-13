@@ -1,6 +1,6 @@
 # Branch-preview /test
 
-Visar Paow och Dragge med koordinatbord, videobakgrund och ett stillbildsalternativ.
+Visar Dragge med koordinatbord, videobakgrund och ett stillbildsalternativ.
 Det är en fristående provspelare. Import, scenredigering och redigerbar export
 finns kvar i den lokala Laneverkstaden. Ingen koppling till spelsaldo, produktion
 eller lokala API-nycklar ingår.

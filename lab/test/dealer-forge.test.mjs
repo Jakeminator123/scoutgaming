@@ -421,7 +421,12 @@ test('store SQL keeps the scope-first parameter convention and journals jobs wit
     if (/forge:job \*\//.test(sql)) return { rows: rows.has(values[2]) ? [rows.get(values[2])] : [] };
     return { rows: [] };
   } };
-  const repository = { async transaction(work) { return work(); }, async withTransactionClient(work) { return work(client); } };
+  let registered = true, locked = false;
+  const repository = {
+    async transaction(work) { locked = true; try { return await work(); } finally { locked = false; } },
+    async withTransactionClient(work) { return work(client); },
+    async readDocument() { assert.equal(locked, true); return { value: { dealers: registered ? [{ id: 'paow' }] : [] } }; },
+  };
   const store = createDealerForgeStore({ repository, scope, now: () => 42 });
   assert.equal(await store.ready(), true);
   const saved = await store.saveProfile('paow', { a: 1 }, { actor: 'tester' });
@@ -437,6 +442,76 @@ test('store SQL keeps the scope-first parameter convention and journals jobs wit
   assert.ok(calls.some(call => /INSERT INTO croupier_studio\.forge_jobs/.test(call.sql) && call.values[2] === jobId && call.values[12] === 42));
   await assert.rejects(store.insertJob({ dealerId: 'paow', slotId: 'x/', kind: 'clip', status: 'bogus', request: {}, actor: 'tester' }), /status/);
   await assert.rejects(store.insertJob({ jobId: 'not-a-uuid', dealerId: 'paow', slotId: 'x/', kind: 'clip', status: 'prepared', request: {}, actor: 'tester' }), error => error.code === 'studio_forge_invalid_job');
+  registered = false;
+  const before = calls.length;
+  await assert.rejects(store.saveProfile('paow', {}, { actor: 'tester' }), error => error.code === 'studio_dealer_inactive');
+  await assert.rejects(store.insertJob({ jobId: randomUUID(), dealerId: 'paow', slotId: 'idle.ready/', kind: 'clip', status: 'prepared', request: {}, actor: 'tester' }), error => error.code === 'studio_dealer_inactive');
+  assert.equal(calls.length, before, 'retirement must prevent both INSERT paths before SQL mutation');
+});
+
+for (const slotId of ['idle.ready/', 'pose/redo', 'layer/table', 'layer/background']) {
+  test(`retirement during provider download cannot restore a Forge result: ${slotId}`, async () => {
+    const f = fixture();
+    await f.service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+    const job = await f.service.createJob('paow', { requestId: randomUUID(), slotId, quality: '720' }, actor);
+    const image = slotId !== 'idle.ready/';
+    f.tasks.set(job.taskId, { id: job.taskId, status: 'SUCCEEDED', output: [image ? 'https://out/png/result.png' : 'https://out/result.mp4'], credits: 8 });
+    f.runway.download = async () => {
+      f.documents.get('project').value.dealers = [];
+      f.store.profiles.delete('paow');
+      f.store.jobs.delete(job.jobId);
+      return Buffer.from(image ? PNG : MP4);
+    };
+    await assert.rejects(f.service.pollJob('paow', job.jobId, actor), error => error.code === 'studio_forge_conflict');
+    assert.equal(f.store.jobs.has(job.jobId), false);
+    assert.equal(f.store.profiles.has('paow'), false);
+    assert.equal(f.media.size, 0);
+    assert.equal((f.documents.get('project').value.layerAssets ?? []).length, 0);
+  });
+}
+
+test('a stale Forge committer cannot consume or reset a replacement commit lease', async () => {
+  const f = fixture();
+  await f.service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const job = await f.service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
+  f.tasks.set(job.taskId, { id: job.taskId, status: 'SUCCEEDED', output: ['https://out/result.mp4'], credits: 8 });
+  f.runway.download = async () => {
+    f.store.jobs.get(job.jobId).updatedAt += 1;
+    return Buffer.from(MP4);
+  };
+  await assert.rejects(f.service.pollJob('paow', job.jobId, actor), error => error.code === 'studio_forge_conflict');
+  assert.equal(f.media.size, 0);
+  assert.equal(f.store.jobs.get(job.jobId).status, 'committing');
+  assert.equal(f.store.jobs.get(job.jobId).updatedAt, f.clock.now + 1);
+});
+
+test('an expired-lease poller cannot reclaim a lease renewed after its first read', async () => {
+  const f = fixture();
+  await f.service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const job = await f.service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
+  Object.assign(f.store.jobs.get(job.jobId), { status: 'committing', result: { output: ['https://out/result.mp4'], credits: 8 } });
+  f.clock.now += 6 * 60_000;
+  const read = f.store.getJob; let first = true;
+  f.store.getJob = async id => {
+    const saved = await read(id);
+    if (first) { first = false; f.store.jobs.get(id).updatedAt = f.clock.now; }
+    return saved;
+  };
+  await assert.rejects(f.service.pollJob('paow', job.jobId, actor), error => error.code === 'studio_forge_conflict');
+  assert.equal(f.store.jobs.get(job.jobId).status, 'committing');
+  assert.equal(f.store.jobs.get(job.jobId).updatedAt, f.clock.now);
+  assert.equal(f.media.size, 0);
+});
+
+test('an existing Forge job cannot commit after only its dealer is unregistered', async () => {
+  const f = fixture();
+  await f.service.uploadAnchor('paow', { pose: 'vila', contentType: 'image/png', dataBase64: PNG.toString('base64') }, actor);
+  const job = await f.service.createJob('paow', { requestId: randomUUID(), slotId: 'idle.ready/', quality: '720' }, actor);
+  f.tasks.set(job.taskId, { id: job.taskId, status: 'SUCCEEDED', output: ['https://out/result.mp4'], credits: 8 });
+  f.runway.download = async () => { f.documents.get('project').value.dealers = []; return Buffer.from(MP4); };
+  await assert.rejects(f.service.pollJob('paow', job.jobId, actor), error => error.code === 'studio_dealer_inactive');
+  assert.equal(f.media.size, 0);
+  assert.equal(f.store.jobs.get(job.jobId).status, 'committing');
 });
 
 test('runway client: data URIs for small references, headers and no retry on ambiguous submit', async () => {

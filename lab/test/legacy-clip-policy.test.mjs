@@ -50,16 +50,16 @@ test('old BO choices stay stored but are not offered by current clip controls', 
   assert.equal(await readFile(join(options.dataDirectory, 'bo.json'), 'utf8'), before);
 });
 
-test('all four dealers have exact Lab bindings; missing files, different parts and speech substitutions fail closed', async t => {
+test('remaining legacy dealers have exact Lab bindings; missing files, different parts and speech substitutions fail closed', async t => {
   const inventory = await loadLegacyClipInventory(await fixture(t));
   const project = createSeedProject();
-  for (const dealerId of ['vera', 'astrid', 'amira', 'mei']) {
+  for (const dealerId of ['vera', 'astrid', 'mei']) {
     project.legacyClipPolicy = upsertLegacyClipBinding(project.legacyClipPolicy, { dealerId, part: 'idle', clipId: `${dealerId}:idle-2/idle/idle` });
   }
   validateProject(project);
   const active = resolveLegacyClipPolicy(project, inventory);
   assert.equal(active.conflicts.length, 0);
-  for (const dealerId of ['vera', 'astrid', 'amira', 'mei']) assert.equal(active.dealers[dealerId].engine.idle, 'idle-2/idle/idle');
+  for (const dealerId of ['vera', 'astrid', 'mei']) assert.equal(active.dealers[dealerId].engine.idle, 'idle-2/idle/idle');
   for (const clipId of ['mei:idle-1/idle/idle', 'vera:idle-1/idle/idle-base3', 'vera:idle-1/speak/win', 'vera:idle-1/actions/action-deal-watch']) {
     const invalid = { ...project, legacyClipPolicy: [{ dealerId: 'vera', part: 'deal', clipId }] };
     assert.equal(resolveLegacyClipPolicy(invalid, inventory).conflicts.length, 1);
@@ -77,7 +77,7 @@ test('native inventory fails on a missing runtime catalog but accepts the retire
   const load = () => loadLegacyClipInventory({ repository, administration, mediaAvailable: async () => true, readMetadata: createRuntimeMetadataReader(repository) });
   await assert.rejects(load(), { code: 'ENOENT' });
   const speak = { status: 'review', lines: { greeting: { text: 'Exact greeting', media: { src: 'review/astrid-seam-repair/greeting.mp4' }, audio: 'dealers/astrid/audio/en/greeting.mp3' } } };
-  const greenSpeak = { 'web/public/review/astrid-green-speak/speak.json': JSON.stringify(speak), 'web/public/review/amira-green-speak/speak.json': null };
+  const greenSpeak = { 'web/public/review/astrid-green-speak/speak.json': JSON.stringify(speak) };
   await write('media/catalog/legacy.json', { schemaVersion: 2, entries: { 'web/public/speech-media.json': '{}', ...greenSpeak } });
   const inventory = await load();
   assert.equal(inventory.reviewSafetyVerified, true);
@@ -124,4 +124,12 @@ test('historical policy remains stored but its runtime endpoint is retired and s
 test('clip editor endpoint uses the existing Lab origin and admin gateway boundary', () => {
   assert.throws(() => assertLocalRequest(new Request('http://127.0.0.1:4188/api/clip-controls', { headers: { origin: 'http://untrusted.example' } })), /labbet/);
   assert.throws(() => assertLocalRequest(new Request('https://untrusted.example/api/clip-controls')), /lokalt/);
+});
+
+test('shared inventory never reads or offers retired Amira registers',async t=>{
+ const {repository}=await fixture(t),read=[];
+ const inventory=await loadLegacyClipInventory({repository,administration:{legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{}}},mediaAvailable:async()=>true,readMetadata:async path=>{
+ read.push(path);if(path.includes('amira'))throw Error('Retired Amira source must not be read');
+ return path.endsWith('speak.json')?{lines:{greeting:{text:'Astrid exact speech',media:{src:'astrid.mp4'},audio:'astrid.mp3'}}}:null;
+ }});assert.ok(read.some(path=>path.includes('astrid')));assert.deepEqual(inventory.clips.map(row=>row.dealerId),['astrid']);
 });

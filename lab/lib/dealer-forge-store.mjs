@@ -21,6 +21,12 @@ export function createDealerForgeStore({ repository, scope, now = Date.now } = {
   const base = [scope.environment, scope.workspaceId];
   const run = work => repository.transaction(() => repository.withTransactionClient(work));
   const query = (client, sql, values = []) => client.query(sql, [...base, ...values]);
+  const requireDealer = async dealerId => {
+    const project = await repository.readDocument('project');
+    if (!project?.value.dealers?.some(row => row.id === dealerId)) {
+      fail('Dealern är inte längre registrerad.', 409, 'studio_dealer_inactive');
+    }
+  };
 
   return Object.freeze({
     /** True when migration 008 is applied in this database. */
@@ -43,6 +49,7 @@ export function createDealerForgeStore({ repository, scope, now = Date.now } = {
     async saveProfile(dealerId, profile, { expectedRevision = null, actor } = {}) {
       if (typeof actor !== 'string' || !actor) fail('Aktör saknas.', 403, 'studio_forge_actor_required');
       return run(async client => {
+        await requireDealer(dealerId);
         const json = canonicalStudioJson(profile);
         if (expectedRevision === null) {
           const inserted = await query(client, `/* forge:profile-insert */ INSERT INTO croupier_studio.forge_dealers
@@ -63,6 +70,7 @@ export function createDealerForgeStore({ repository, scope, now = Date.now } = {
       if (typeof jobId !== 'string' || !uuid.test(jobId)) fail('Ogiltigt jobb-ID.', 422, 'studio_forge_invalid_job');
       const at = now();
       return run(async client => {
+        await requireDealer(dealerId);
         const inserted = await query(client, `/* forge:job-insert */ INSERT INTO croupier_studio.forge_jobs
           (environment_id,workspace_id,job_id,dealer_id,slot_id,kind,status,provider,task_id,request,result,error,actor_id,created_at_ms,updated_at_ms)
           VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,'runway',$8,$9::jsonb,$10::jsonb,$11,$12,$13,$13) ON CONFLICT DO NOTHING RETURNING *`,

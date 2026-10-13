@@ -52,3 +52,17 @@ test('layer-packs media traversal returns 404', async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test('current preview retires Paow while preserving Dragge and shared assets',async()=>{
+ const {readFile}=await import('node:fs/promises');const {fileURLToPath}=await import('node:url');
+ const root=fileURLToPath(new URL('../packages/presentation/preview/site/',import.meta.url));
+ const catalog=JSON.parse(await readFile(join(root,'catalog.json'),'utf8'));
+ const route=createLayerPacksRoute({previewRoot:root}),request={method:'GET',headers:{cookie:'croupier_layer_preview=1'}};
+ const retired=responseRecorder();assert.equal(await route(request,retired,'/layer-packs/paow/manifest.json'),true);assert.equal(retired.statusCode,404);
+ const active=responseRecorder();assert.equal(await route(request,active,'/layer-packs/dragge/manifest.json'),true);assert.equal(active.statusCode,200);
+ const manifest=JSON.parse(active.body);assert.match(manifest.dealer.id,/^dragge-/);
+ assert.deepEqual(manifest.assets.map(row=>row.id),catalog.assets.map(row=>row.id));assert.equal(manifest.assets.length,3);assert.deepEqual(catalog.lanes.map(row=>row.name),['Dragge']);
+ const shared=catalog.assets[0].src,denied=responseRecorder();
+ await route({...request,method:'HEAD'},denied,'/layer-packs/paow/'+shared);assert.equal(denied.statusCode,404);
+ const retained=responseRecorder();await route({...request,method:'HEAD'},retained,'/layer-packs/dragge/'+shared);assert.equal(retained.statusCode,200);
+});

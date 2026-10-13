@@ -42,9 +42,9 @@ async function fixture(t) {
   return { root, env, catalogPath, entries, firstBank, firstBlob, indexPath, index, loader: createRegisteredVoiceLines({ env, repositoryRoot: root }) };
 }
 
-test('all four exact registered banks expose identity only for complete available paired speech; none is automatically approved', async t => {
+test('remaining registered banks expose only complete paired speech; retired Amira metadata is ignored and none is automatically approved', async t => {
   const f = await fixture(t), result = await f.loader();
-  assert.deepEqual(result.dealers.map(row => row.dealer), ['vera', 'astrid', 'amira', 'mei']);
+  assert.deepEqual(result.dealers.map(row => row.dealer), ['vera', 'astrid', 'mei']);
   assert.equal(result.automaticVisualApproval, false);
   for (const dealer of result.dealers) {
     const goodluck = dealer.lines.find(line => line.key === 'goodluck'), win = dealer.lines.find(line => line.key === 'win');
