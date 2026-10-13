@@ -559,20 +559,24 @@ förstoring, utan en extra dealer- eller bakgrundsspelare. Inga nya animationer,
 gester eller utfallsfilmer är byggda; resultat visas direkt från serverkvittot.
 
 Samordnat med MERGE: canonical spelmanualer ägs av dokumentationsgrenen
-`codex/game-documentation`, med `docs/games/roulette/UTFALLSFILMER.md` för 37
-utfall och `docs/games/KLIPP-OCH-FORMAT.md` för medie-/pose-/formatbegrepp.
+`codex/game-documentation`, [PR #56](https://github.com/Jakeminator123/scoutgaming/pull/56),
+med [37 utfallsfilmer](https://github.com/Jakeminator123/scoutgaming/blob/a7b5095e13daf9b2ceeb06aa4e2f2f1e12c32dec/docs/games/roulette/UTFALLSFILMER.md)
+och [gemensamma klipp och format](https://github.com/Jakeminator123/scoutgaming/blob/a7b5095e13daf9b2ceeb06aa4e2f2f1e12c32dec/docs/games/KLIPP-OCH-FORMAT.md).
+Länkarna är bundna till granskad dokumentations-SHA tills dess main-merge är bekräftad.
 UI-grenen inför inget parallellt filmkontrakt. Mediaagentens granskningsflöde
 är underlag för nästa implementation, inte färdig automatisk klassificering.
 Main `426fa114` är integrerad; central-/admin-målkontrakt och tidigare
 rouletteformat är bevarade vid konfliktlösningen.
 
+Fullständig aktuell pre-commit-kontroll passerar på `c3055fc0` (Node 24.21.0).
 29 roulettekontroller och isolerad browser på 1440/390/320 px passerar:
 Mer-dialoger, fokus, placering/ångra, synligt saldofel och historik. Tappat
 svar följt av omladdning/återförsök gav samma requestId/version/bets,
-en slumpning och en debitering. Det gamla AGENTS-kommandot
-`pipeline/audit-dealer-sync.mjs --probe` finns inte längre på aktuell main;
-den nuvarande obligatoriska hooken innehåller registrerade/frysna dealer-
-uppspelningskontroller. Inga pensionerade medier eller verktyg återställs här.
+en slumpning och en debitering. Avkodad H.264-bakgrund och video-/Mer-kontroller
+fungerar även i förstoring, med samma enda canvas/spelare. Äldre överlämning
+hänvisade till `pipeline/audit-dealer-sync.mjs --probe`, pensionerat genom B11.
+Aktuell main-AGENTS kräver den ordinarie hooken, vars registrerade/frysta dealer-
+uppspelningskontroller passerar. Inga pensionerade medier eller verktyg återställs.
 
 ## 3. Senaste leveranser
 

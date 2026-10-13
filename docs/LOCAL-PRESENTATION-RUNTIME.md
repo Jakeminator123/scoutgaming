@@ -180,6 +180,14 @@ registrerade rum eller gröna enhetstester är inte detta acceptanskvitto.
 
 ## Medieformat för roulette och blackjack
 
+Produktions- och acceptanskraven för de 37 utfallsfilmerna ägs av den
+gemensamma spelmanualen, samordnad med MERGE i [PR #56](https://github.com/Jakeminator123/scoutgaming/pull/56):
+[37 utfallsfilmer](https://github.com/Jakeminator123/scoutgaming/blob/a7b5095e13daf9b2ceeb06aa4e2f2f1e12c32dec/docs/games/roulette/UTFALLSFILMER.md)
+och [klipp och format](https://github.com/Jakeminator123/scoutgaming/blob/a7b5095e13daf9b2ceeb06aa4e2f2f1e12c32dec/docs/games/KLIPP-OCH-FORMAT.md).
+Dessa exakta versionslänkar fungerar även innan dokumentationsgrenen mergas.
+Avsnittet nedan beskriver den mottagna prototypen och nuvarande UI-registrering;
+det skapar inget parallellt filmkontrakt eller automatisk mediaagent.
+
 Aktuellt produktionsbeslut 12 oktober 2026: Jakob levererar roulettevideo
 separat. Inga nya kodgenererade hjul-/kulanimationer, parallax eller gester
 byggs. Följande format är produktionsunderlaget; nya dealerklipp är ännu
