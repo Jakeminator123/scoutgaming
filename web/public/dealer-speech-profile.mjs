@@ -1,3 +1,4 @@
+import {effectiveDealerCompositing} from './dealer-compositing.mjs';
 // Private editable intent. Only a verified server session can establish readiness.
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const exact = (value, keys) => object(value) && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value,key));
@@ -57,11 +58,31 @@ export function isSpeechReferenceVideo(video,dealerId) {
     && /^[a-f0-9]{64}$/.test(video.sha256) && Number.isSafeInteger(video.bytes) && video.bytes > 0
     );
 }
+// The current avatar worker emits opaque video. Alpha sources may be kept as
+// preparation, but cannot safely reveal the separate background/table in speech.
+export function dealerSpeechReferenceCheck(video,dealerId) {
+  const result=(canEnable,message)=>({canEnable,message});
+  if(!isSpeechReferenceVideo(video,dealerId))return result(false,'Välj en tillgänglig video som tillhör denna dealer.');
+  if(video.classification?.dealerId!==undefined&&video.classification.dealerId!==dealerId)
+    return result(false,'Referensens ägare stämmer inte med den valda dealern.');
+  if(video.bytes>256*1024*1024)return result(false,'Talreferensen är för stor. Välj ett eget klipp under 256 MB.');
+  if(video.contentType!==undefined&&!/^video\/(mp4|webm|quicktime)$/.test(video.contentType))
+    return result(false,'Talreferensen måste vara en MP4-, WebM- eller QuickTime-video.');
+  if(video.duration!==undefined&&(!Number.isFinite(video.duration)||video.duration<=0))
+    return result(false,'Referensvideons längd är ogiltig. Kontrollera eller byt filen.');
+  const candidate=video.compositing??video.classification?.compositing;
+  try {
+    if(candidate?.mode==='opaque')return result(false,'En inbakad miljö kan dölja bakgrund och bord. Välj dealerns egen gröna referens.');
+    if(effectiveDealerCompositing(candidate).mode==='alpha')return result(false,'Alfa fungerar för vanliga klipp, men bevaras ännu inte av talmotorn. Välj en grön referens för AI-tal; denna kan sparas som förberedelse.');
+  }catch{return result(false,'Referensens friläggning är ogiltig. Kontrollera klippets inställningar.');}
+  return result(true,'Egen dealerreferens vald. Servern kontrollerar fil och röst före tal. Bakgrund och bord behåller sina egna lager.');
+}
 // Uploaded registries may not carry duration. This stores a bounded candidate
 // timestamp; avatar preparation must decode it again before any activation.
 export function validateDealerSpeechReference(profile,video,dealerId) {
-  const ref = normalizeDealerSpeechProfile(profile).reference;
+  const normalized=normalizeDealerSpeechProfile(profile),ref=normalized.reference;
   if (!ref) return;
   if (!isSpeechReferenceVideo(video,dealerId) || ref.videoId !== video.id || ref.sha256 !== video.sha256
     || (Number.isFinite(video.duration) && ref.offsetMs >= video.duration * 1000)) throw Error('studio_speech_reference_invalid');
+  if(normalized.state==='enabled'&&!dealerSpeechReferenceCheck(video,dealerId).canEnable)throw Error('studio_speech_reference_incompatible');
 }

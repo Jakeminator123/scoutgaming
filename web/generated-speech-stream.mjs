@@ -41,12 +41,25 @@ function startAudioPrefetch(open, signal) {
     task,
     get error() { return error; },
     async *read() {
-      let index = 0;
+      let index = 0, offset = 0;
       for (;;) {
-        while (index < chunks.length) yield chunks[index++];
+        signal.throwIfAborted();
+        // Transport packets are often tiny. Revalidating the same already
+        // buffered audio once per packet starves the GPU on database latency.
+        // Drain only what is available, in bounded relay-sized blocks; never
+        // wait to fill a block. The consumer still revalidates every write.
+        if (index < chunks.length) {
+          const parts = []; let length = 0;
+          while (index < chunks.length && length < 65536) {
+            const chunk = chunks[index], take = Math.min(chunk.byteLength - offset, 65536 - length);
+            parts.push(chunk.subarray(offset, offset + take)); length += take; offset += take;
+            if (offset === chunk.byteLength) { index++; offset = 0; }
+          }
+          yield Buffer.concat(parts, length);
+          continue;
+        }
         if (done) return;
         if (error) throw error;
-        signal.throwIfAborted();
         await new Promise(resolve => waiters.push(resolve));
       }
     },

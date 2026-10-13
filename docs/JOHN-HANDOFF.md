@@ -1,5 +1,43 @@
 # Aktuell handoff — Scoutgaming
 
+## Paows talgrund och materialkontroll, 13 oktober 2026
+
+Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
+`paow`. Den sparade talprofilen återlästes från servern med ElevenLabs
+`WZVEBKUreb9jAKojf0QF`, `eleven_v3`, svenska och egen referensvideo
+`13d044b3-0582-4f8f-a754-75bb099a0237` vid 0 ms. Kontots röstuppslag
+bekräftade Paow. Profilen är aktiverad; detta är inte ett visuellt godkännande.
+
+Samma kompakta materialkontroll finns nu i Control och Admin. Främmande,
+trasig eller inkompatibel referens kan inte aktivera AI-tal. Alfa kan sparas
+som förberedelse, men den nuvarande GPU-vägen bevarar inte alfa. Inbakad
+bakgrund nekas för tal. Gröna referenser får gröna utfyllnadsytor, så att
+bakgrund, dealer och bord kan behålla sina separata lager. Filhash, ägare,
+verklig avkodning, profilrevision och workerbindning kontrolleras fortfarande.
+
+Två ostörda liveprov på main 6ee5d3aa startade med Paows referens men
+avbröts av spelarens 45-sekundersgräns. Det korta provets worker gav 79
+bildrutor/3,33 sekunder media, 42,81 sekunder totalt, varav 40,64 sekunder
+väntan på ljudindata och 1,40 sekunder inferens. Redan förhämtat ljud
+dräneras nu i högst 64 KiB i stället för leverantörens små transportpaket;
+varje block behåller kontrollen av aktuell session och profil. Ingen väntan
+på full buffert, förlängd timeout eller extra TTS-betalning införs.
+
+Verifiering: 45 material/UI/FFmpeg-tester samt 32 strömtjänsttester godkända;
+Lab-bygget godkänt. Full obligatorisk regression efter buffertfixen: 3 335
+godkända, 11 miljöberoende överhoppade, inga fel (exit 0).
+Liveacceptans återstår efter leverans: två hela talförlopp i följd, utan
+avbrott, med granskad röst/läppsynk och alla tre lager. Gå inte vidare till
+roulette/rörliga body-dealers innan detta passerar. Inget klipp är godkänt
+enbart från hash, workerstatistik eller en bild av munnen.
+
+Paow använder gemensam GPU-tjänst med exakt dealer-/bild-/profilbindning
+och den gemensamma OpenClaw-talagenten. Ingen separat instans behövs för
+identiteten. Historiska Astrid-funktioner som samtalsminne, kamera och vissa
+routningsregler är ännu Astrid-specifika och ska inte beskrivas som färdiga
+för alla dealers. Rörligt tal enligt Emil samt diskret inandning/tal-idle
+kommer senare, efter den verifierade stillbildsgrunden.
+
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
 PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen
