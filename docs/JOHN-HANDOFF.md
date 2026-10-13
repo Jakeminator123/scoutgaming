@@ -1,5 +1,27 @@
 # Aktuell handoff — Scoutgaming
 
+## Publik Scoutguide med D-ID, 13 oktober
+
+Besökare, N2 och N3 får en separat Scoutguide genom den gemensamma chattknappen.
+N1 behåller Adminrobotens tre lägen, filimport och granskade åtgärder.
+`/studio/api/public-assistant` använder Luna 6 med låg resonemangsnivå och
+endast fast publik sajtinformation. Den har inga databasläsare, verktyg eller
+åtgärder; den befintliga N1-endpointens behörighetskrav är oförändrade.
+
+Den befintliga D-ID-agenten `v2_agt_UuD7CYFA` används i SDK-läget
+`DirectPlayback`: sajtens server skriver svaret, D-ID läser upp det med sin
+befintliga svenska röst. SDK laddas först när chatten öppnas. Minimering,
+sidbyte, dold flik och två minuters inaktivitet stänger avataranslutningen.
+Text fungerar även när avatar eller ljud inte kan starta. Privat D-ID-nyckel
+används inte av webbchatten; dess publika embednyckel är domänbegränsad.
+Begränsningen av modelltrafik är per serverprocess, inte en global kvot.
+
+Kontroll hittills: 41 riktade API-/N1-tester gröna, Studio-bygge grönt och
+riktigt Luna-svar verifierat i lokal webbläsarfixtur. N1-växling visar enbart
+Adminroboten. D-ID accepterar produktionsdomänen och nekar testadressen;
+verifiering av riktig avatar och produktionssidornas laddning återstår vid
+publicering. Ingen ny D-ID-agent eller testnyckel skapades.
+
 ## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
 
 Integrerad med main `60defa57` inför PR92-granskningen. Endast denna handoff
