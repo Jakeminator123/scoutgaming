@@ -1,5 +1,25 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## Adminroboten på alla sidor — kod klar, liveacceptans öppen
+
+- [ ] Granska och driftsätt den separata chattknappen: publik Scoutguide utan
+  interna data, N1 Adminroboten och N1 OpenClaw. Sol 6.1/high för administration,
+  Luna 6 för publik hjälp. Klippimport och dealerspelchatt behåller egna flöden.
+- [ ] Verifiera Vercels befintliga Studio-modellkonfiguration och båda modellerna
+  i den driftsatta tjänsten. Lokala syntetiska modellanrop lyckades 13 oktober.
+- [ ] Liveacceptans med separata konton: partner/spelare/utloggad nekas interna
+  läsningar och skrivningar; aktuell N1 kan granska konsekvenser, skriva mål-ID
+  och bekräfta. Kontobyte/rättighetsändring tömmer lokal historik och spärrar
+  gamla godkännanden. Inga riktiga produktionsobjekt raderas som test.
+- [ ] Bekräfta anslutna datakällors täckning samt önskat Gatewaymodellbyte.
+  Levande Gateway 2026.9.5 hade fem roller på 5.6-terra vid statusläsning
+  13 oktober; denna kodleverans ändrar inte livekonfigurationen.
+
+Full lokal regression, produktionsbyggen och isolerat dialogprov passerar.
+Renderkontots loggar/diskar, godtyckliga OpenClawverktyg, fri SQL och kontinuerlig
+övervakning ingår inte. TalkingHead har ingen integration i denna leverans.
+Detaljer och bekräftelsemodell finns i [handoff](JOHN-HANDOFF.md).
+
 Statusförtydligad 12 oktober 2026. Detta är den enda migrationschecklistan. Daterade kvitton nedan avser respektive leverans; aktuell Studio-/paket-/portalöverlämning finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md). T2–T4 är fortfarande öppna där full acceptans saknas, även om flera delsteg nu är levererade.
 Äldre checkpoints och avslutade delstegs detaljer finns i
 [fryst historik på 4ed55a56](https://github.com/Jakeminator123/scoutgaming/blob/4ed55a5624a28cdd82d8a0c252ead7a24ef3165e/docs/CLOUD-MIGRATION.md).

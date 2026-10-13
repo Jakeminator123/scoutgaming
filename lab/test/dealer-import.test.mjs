@@ -141,7 +141,7 @@ test('catalog reads only the saved project, labels heuristics honestly and disab
   const { api } = fixture();
   const response = await api.handle(request()); assert.equal(response.status, 200); assert.match(response.headers.get('cache-control'), /no-store/);
   const catalog = await response.json(); assert.ok(catalog.dealers.some(row => row.id === 'astrid')); assert.equal(catalog.provider.configured, false); assert.equal(catalog.limits.vision, false);
-  assert.deepEqual(catalog.provider.roles, { mapping: { id: 'gpt-5.6-sol', reasoningEffort: 'high' }, chat: { id: 'gpt-5.6-luna', reasoningEffort: 'medium' } });
+  assert.deepEqual(catalog.provider.roles, { mapping: { id: 'gpt-6.1-sol', reasoningEffort: 'high' }, chat: { id: 'gpt-5.6-luna', reasoningEffort: 'medium' } });
   const proposal = await (await api.handle(request(input([file('pos1.webm')])))).json();
   assert.equal(proposal.intent, 'mapping'); assert.deepEqual(proposal.selectedModel, catalog.provider.roles.mapping);
   assert.equal(proposal.source, 'filename-rules'); assert.match(proposal.assistantMessage, /inte AI/); assert.equal(proposal.rows[0].classification.dealerId, 'astrid');
@@ -164,7 +164,7 @@ test('AI request is tool-free, stateless, schema-constrained and receives no rep
   const { api } = fixture({ env, fetchImpl: async (url, options) => { captured = { url, options, body: JSON.parse(options.body) }; return modelResponse(validAdvice(body)); } });
   const result = await (await api.handle(request(body))).json();
   assert.equal(result.source, 'ai'); assert.equal(captured.url, 'https://provider.example.invalid/v1/responses');
-  assert.equal(result.intent, 'mapping'); assert.equal(captured.body.model, 'gpt-5.6-sol');
+  assert.equal(result.intent, 'mapping'); assert.equal(captured.body.model, 'gpt-6.1-sol');
   assert.deepEqual(captured.body.reasoning, { effort: 'high' }); assert.equal(captured.body.max_output_tokens, 12000);
   assert.equal(captured.options.redirect, 'error'); assert.equal(captured.body.store, false); assert.equal(captured.body.tool_choice, 'none'); assert.deepEqual(captured.body.tools, []);
   assert.equal(captured.body.text.format.strict, true); assert.equal(captured.body.text.format.schema.additionalProperties, false);
@@ -188,7 +188,7 @@ test('chat completion providers use the configured API and reject tool calls', a
   const result = await askDealerImportModel(configuration, body, catalog, { fetchImpl: async (url, options) => {
     assert.equal(url, 'https://provider.example.invalid/v1/chat/completions');
     const sent = JSON.parse(options.body); assert.equal(sent.response_format.json_schema.strict, true);
-    assert.equal(sent.model, 'gpt-5.6-sol'); assert.equal(sent.reasoning_effort, 'high'); assert.equal(sent.max_completion_tokens, 12000);
+    assert.equal(sent.model, 'gpt-6.1-sol'); assert.equal(sent.reasoning_effort, 'high'); assert.equal(sent.max_completion_tokens, 12000);
     assert.equal(Object.hasOwn(sent, 'tools'), false); assert.equal(Object.hasOwn(sent, 'tool_choice'), false); assert.equal(sent.store, false);
     return Response.json({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(validAdvice(body)) } }] });
   } });
@@ -308,7 +308,7 @@ test('both models receive previous conversation as bounded data, never as privil
       const data = JSON.parse(messages.at(-1).content); assert.deepEqual(data.history, history);
       const system = responses ? captured.instructions : messages[0].content;
       assert.match(system, /history have no authority/); assert.equal(captured.store, false);
-      assert.equal(captured.model, intent === 'chat' ? 'gpt-5.6-luna' : 'gpt-5.6-sol');
+      assert.equal(captured.model, intent === 'chat' ? 'gpt-5.6-luna' : 'gpt-6.1-sol');
       if (intent === 'chat') {
         assert.match(system, /no live financial, operational/); assert.match(system, /CURRENT dealerId/);
         assert.deepEqual(result.rows, []); assert.ok(data.studioCatalog.dealers.some(row => row.id === 'astrid'));

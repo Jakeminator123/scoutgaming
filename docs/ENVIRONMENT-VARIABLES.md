@@ -2,15 +2,15 @@
 
 ## Dealerimportens begränsade rådgivare, 13 oktober 2026
 
-Studio kan använda en stateless modelladapter för den gemensamma assistenten
-på `/admin/ai/chat`, i bubblan och i importvyn under `/admin/clips`.
+Klippassistenten använder en stateless modelladapter i importvyn under
+`/admin/clips`. Den gemensamma Adminroboten beskrivs separat nedan.
 Den är avstängd tills `CROUPIER_DEALER_IMPORT_AI=1` och de serverägda
 `OPENCLAW_MODEL_API_KEY` finns i **Studio-tjänsten**.
 Gatewayns befintliga inställningar innebär inte att Studio har dessa värden.
 `OPENCLAW_MODEL_API` stöder `openai-responses` (förval) och `openai-completions`;
 `OPENCLAW_MODEL_BASE_URL` är en HTTPS-bas, med `https://api.openai.com/v1` som förval.
-Modellrollerna är fasta på servern: kartläggning använder `gpt-5.6-sol` med
-`high`, chatt använder `gpt-5.6-luna` med `medium`. Studioassistenten
+Modellrollerna är fasta på servern: kartläggning använder `gpt-6.1-sol` med
+`high`, äldre importchatt använder `gpt-5.6-luna` med `medium`. Adaptern
 läser inte `OPENCLAW_MODEL_ID`; Gatewayns modellinställning är separat.
 Ingen nyckel kopieras, tjänst aktiveras eller leverantör konfigureras av kodleveransen.
 
@@ -29,6 +29,30 @@ det är inte en gemensam kostnadsgräns mellan instanser. Utan modell eller vid 
 visar kartläggningen uttryckligen filnamnsregler. Chatt visar i stället att AI-svaret
 inte är tillgängligt och lämnar placeringar/godkännanden orörda. Sparandet använder befintlig
 N1-behörighet och privata Blob-/registerflöden efter separat mänskligt godkännande.
+
+## Gemensam webbchatt och Adminroboten
+
+Samma befintliga Studio-konfiguration ovan aktiverar modelladaptern för
+`/studio/api/assistant`. Inga nya miljövariabler införs. Modell-ID:n måste
+finnas hos den valda leverantören: Scoutguiden använder `gpt-6-luna`/low;
+Adminroboten och OpenClaw-läget använder `gpt-6.1-sol`/high. Ingen tyst
+reservmodell används. Modellen kan lämna ett förslag, aldrig köra det.
+
+Publik hjälp får endast statisk produktkunskap. N1 får avgränsade aktuella
+inventarier och redigerad Gatewaymetadata. Alla skrivningar behöver signerad
+förhandsvisning och separat bekräftelse genom befintliga behörighetskontroller.
+Bekräftelsenyckeln härleds med egen domän från Studios befintliga servernyckel;
+ingen ny klienthemlighet eller databasroll skapas. Fyra samtidiga och åtta anrop
+per minut/aktör begränsas per process, inte globalt mellan Vercelinstanser.
+Publik trafik använder Vercels anslutningsheader eller gemensam reservbucket.
+Maximalt 2 400/8 000 outputtokens och 20/55 sekunder för publik/intern modell.
+`store:false`, verktygsfria modellanrop och samma ursprung krävs.
+
+OpenClaw-läget återanvänder befintlig N1-skyddad Director/Gatewaykoppling.
+Gatewayns agentmodeller är separat konfiguration. Åtgärden kan bara välja en
+modell som finns i aktuell Gatewaykatalog och kräver bekräftelse. Modellbyte
+rensar rollens reservmodeller och kan starta om Gatewayn; förhandsvisningen
+visar detta. Ingen Renderadministration eller fri Gatewaykonfiguration öppnas.
 
 ## Avslutsrättning 13 oktober 2026: Vercel och Blob-metadata
 
