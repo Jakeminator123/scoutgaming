@@ -1917,3 +1917,58 @@ ur trädet. Ingen ny plats är känd.
 ## 4. Äldre avsnitt
 
 Äldre avsnitt: `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
+
+## Tillägg 13 oktober: ägarkontroll före agentmerge
+
+`AGENTS.md` kräver nu aktuell PR-författare, källrepo, branchägare och fryst
+head före varje agentmerge. Jakobs generella mergeuppdrag gäller hans egna
+PR:ar. Kevin-/John-/Emil-brancher, annan författare eller okänd ägare kräver
+en tydlig separat fråga med PR och head, även när Jakobs konto öppnade PR:en.
+Ett redan givet direkt godkännande gäller samma oförändrade PR/head.
+Detta är en agentregel; GitHubs vanliga mergeknapp får ingen egen popup.
+Vid inventeringen hade GitHub 47 brancher, varav 39 sidobranchers commits
+fanns på main. Automatisk branchradering var avstängd. Ingen fjärrbranch
+eller GitHub-behörighet har ändrats genom denna inventering.
+
+### Läsande röst- och läppsynkjämförelse
+
+Jämförelsen är fryst på main `54522581`, Kevin `f15b2af1` och
+Kevin-staging `73897d4a`. Kevins Dragge/Paow-karta i
+`kevin/croupier-scoutgg/server/dragge-voice.mjs` anger originalklonerna
+`7f95xPL4S3ySZ4OS1pw8` respektive `WZVEBKUreb9jAKojf0QF`.
+Dragge använder `eleven_multilingual_v2` med stability 0,5, similarity 0,85,
+style 0,15 och speaker boost. Paow använder `eleven_v3` för svenska
+(stability 0,5, similarity 0,85, speaker boost) och annars v2
+(stability 0,38, similarity 0,8, style 0,3, speaker boost).
+Koden normaliserar ljudet till -16 LUFS; transporten är PCM s16le mono 24 kHz.
+Astrid på main använder Cartesia/Victoria, inte dessa ElevenLabs-kloner.
+Staging-katalogen anger uttryckligen att Mårten saknar röst och inspelade
+repliker; han är dold publikt och finns inte i den dynamiska röstkartan.
+
+Kevins stagingväg spelar läppsynk över rörliga klipp: 24 fps, tagning/ruta
+och läpprektangel, 0,22 s ljudförsprång i kartan och 0,5 s H.264-fragment.
+Den separat hänvisade staging-workern kunde inte läsas med vår
+GitHub-anslutning (404); dess implementation och image är inte verifierade.
+Kevin har också en alternativ alltid varm pod utan vår 60-sekunders
+inaktivitetssläckning. Det är separata drift- och spelarkontrakt.
+
+Main använder den gemensamma kompositorn och videons ljudklocka, utan separat
+tidsstyrt munlager. Dealerprofiler har egen provider/röst/modell/språk/tuning
+och hashbunden videoreferens. Aktivering kräver en stillbildsreferens,
+serverägda profil-/bildrevisioner och worker-attestering med protokoll 3;
+en motion-video-kandidat i Studio är inte aktiverat stöd för stagingvägen.
+Paows språkberoende modellbyte följer inte automatiskt med från Kevin.
+
+24 isolerade profil-/runtime-/ElevenLabs-tester passerade. De använde mockad
+leverantörsaccess, inte betald TTS eller visuell läppsynkacceptans.
+`ENVIRONMENT-VARIABLES.md` anger, från kontrollen 12 oktober, Kevins Pro-
+workspace som driftens originalröstkälla och avstängd dealerprofilaktivering.
+Det är dokumentation, inte färsk live-verifiering: Render CLI läste tjänstens
+metadata, men SSH stängdes innan flagg-/röstläsningen kördes och Render-MCP
+svarade INVALID_ARGUMENT. Namnsökning i ElevenLabs-kopplingen gav andra
+röster och bevisar inte åtkomst till originalklonerna. Nycklar, flaggor,
+media, GPU-jobb och produktion ändrades inte.
+
+Efter Jakobs uttryckliga godkännande 13 oktober raderades 38 mergade
+featurebrancher via GitHub API efter ny head-/ancestrykontroll. Kevin,
+Kevin-staging, John, Emil, parkerade och pågående brancher bevarades.
