@@ -121,6 +121,21 @@ och handmatta ur samma bildruta. GitGuardian-läsningen visade 0 öppna/17
 ignorerade incidenter, aktiv övervakning; historisk scan `too_large`, platsdata
 delvis tillgängliga och main-check köad. Detta är ingen fullständig historisk
 friskförklaring.
+
+## Stabilt fontbygge, 13 oktober
+
+Frontendens tre Google-typsnitt är nu lokala WOFF2-filer via `next/font/local`.
+Inter, Cormorant Garamond och Geist Mono behåller CSS-variabler, normala stilar
+och använda viktintervall. Kompletta källglypher, inklusive ÅÄÖåäö, finns kvar.
+SIL-licenser och fryst Google Fonts-källa/hash dokumenteras i appens fontmapp.
+Detta tar bort det reproducerade byggfelet i Googles URL-/filändelsehantering.
+
+Både landing- och fulla Vercel-UI-produktionsbyggen passerar med ett tomt
+mockat Google Fonts-svar (varje Google-import skulle då avvisas). Studio-
+produktionsbygget passerar också. Produktionspublicering verifieras efter
+ordinarie PR-leverans; inga gameplay-, media-, wallet- eller databaskopplingar
+ändras av fontfixen.
+
 ## GPU-testbudget 20 USD, 13 oktober
 
 Jakob höjde uttryckligen dygnstaket till 20 USD. Dagssumman avser konservativa
