@@ -350,7 +350,17 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       if(settings&&dealerAssets[0]&&!still)void loadVariants(dealerAssets[0]);
     }
     void init().catch(fail);
-    return {toggle, playWheelStart, refresh:()=>{if(active&&!playingNow&&!frame)frame=requestAnimationFrame(()=>{frame=0;render();});}, setRoundActive:value=>{roundActive=Boolean(value);}, close:()=>{
+    function refresh() {
+      if (!active || playingNow || frame) return;
+      frame = requestAnimationFrame(()=>{
+        frame = 0;
+        // Playback may resume while this static refresh is queued. Preserve
+        // the animation loop that syncPlayback then leaves to this callback.
+        if (playingNow && canPlay()) tick();
+        else render();
+      });
+    }
+    return {toggle, playWheelStart, refresh, setRoundActive:value=>{roundActive=Boolean(value);}, close:()=>{
       active = false;
       abort.abort();
       pause();

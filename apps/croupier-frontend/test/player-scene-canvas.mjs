@@ -141,6 +141,25 @@ test('silent preview stops work when hidden/offscreen and respects an explicit p
   } finally {view.cleanup();}
 });
 
+test('playback resumes when a paused wheel refresh is already queued',async()=>{
+  const view=mount({props:{settings:defaultCompositionSettings(),background:source('background')}});
+  try {
+    await settle();await view.visible(true);await view.toggle();
+    view.scene.refresh();
+    assert.equal(view.frames.size,1);
+    await view.toggle();
+    assert.ok(view.elements.filter(el=>'playCalls' in el).every(video=>!video.paused));
+    const rendersBefore=view.renders.length;
+    for(let i=0;i<2;i++){
+      const callbacks=[...view.frames.values()];view.frames.clear();
+      callbacks.forEach(callback=>callback());
+      assert.equal(view.frames.size,1);
+    }
+    assert.equal(view.renders.length,rendersBefore+2);
+    await view.toggle();assert.equal(view.frames.size,0);
+  } finally {view.cleanup();}
+});
+
 test('reduced motion displays a first frame until the user explicitly starts playback',async()=>{
   const view=mount({reduced:true});
   try {

@@ -20,6 +20,10 @@ Två lokala rundor efter handfixen: 26 svart → 28 svart, saldo 490 → 485 →
 Under dold appvy kan skärmbilder vara inaktuella; synlig IAB verifierade
 slutkulan i rätt fack. Slutacceptans ska göras med spelvyn synlig.
 Nytt spelarprov bekräftar att handmasken ligger framför sifferringen.
+Slutgranskningen hittade en paus/återstart-kapplöpning: en köad statisk
+hjuluppdatering kunde hindra videornas nästa animationsruta. Refresh återtar
+nu renderloopen om uppspelning har återupptagits. Regressionen och 26 riktade
+scen-/hjulprov passerar; rättningen ändrar inga mediebytes eller kalibreringar.
 Studioåtkomst stoppas för närvarande av `ERR_BLOCKED_BY_CLIENT`; ingen
 adminsessionsnyckel har exporterats. Leverans väntar även på separat
 migrations-/budgetrelease PR108 (ersätter PR107); blanda inte dess schema
