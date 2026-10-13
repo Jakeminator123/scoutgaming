@@ -24,7 +24,7 @@ export function AssetLibrary() {
         />
         <AssetSection
           kind="table"
-          description="Bordet läggs ovanpå dealern. Lanes anger spelarplatser. Bakgrundsbyte styr vilka bakgrunder som roteras automatiskt eller av OpenClaw."
+          description="Bordet läggs ovanpå dealern. Spelarplatser anger var spelarna sitter. Bakgrundsbyte styr vilka bakgrunder som roteras automatiskt eller av OpenClaw."
         />
       </div>
     </div>
@@ -170,7 +170,7 @@ function AssetCard({ asset }: { asset: StudioAsset }) {
         {asset.kind === "table" && <BackgroundRotationPanel table={asset} />}
 
         {asset.kind === "table" && (
-          <ChipGroup label="Lanes">
+          <ChipGroup label="Spelarplatser">
             {LANES.map((lane) => (
               <Chip key={lane} active={asset.lanes.includes(lane)} onClick={() => toggleLane(asset.id, lane)}>
                 {`${LANE_META[lane].label} · ${LANE_META[lane].seats}`}

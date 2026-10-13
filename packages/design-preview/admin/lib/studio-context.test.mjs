@@ -12,11 +12,13 @@ const project={dealers:[{id:'astrid'},{id:'paow-v2'},{id:'removed'}],lanes:[
   {id:'two',layers:{dealer:{allowed:['paow-v2','removed'],default:'paow-v2'}}},
   {id:'three',layers:{dealer:{allowed:['removed'],default:'removed'}}},
 ]};
-test('operator owns the selectable rooms before their game is resolved',()=>{
-  const context=studioContext(catalog,project,{operatorId:'a',roomId:'roulette',dealerId:'astrid'});
-  assert.deepEqual(context.rooms.map(row=>row.id),['bj','roulette']);
+test('a selected game limits rooms before dealer selection',()=>{
+  const context=studioContext(catalog,project,{operatorId:'a',game:'roulette',roomId:'roulette',dealerId:'astrid'});
+  assert.deepEqual(context.rooms.map(row=>row.id),['roulette']);
   assert.equal(context.game,'roulette');assert.equal(context.dealer.id,'paow-v2');
   assert.deepEqual(context.dealers.map(row=>row.id),['paow-v2']);
+  const blackjack=studioContext(catalog,project,{operatorId:'a',game:'blackjack',roomId:'roulette'});
+  assert.equal(blackjack.room.id,'bj');assert.equal(blackjack.dealer.id,'astrid');
 });
 test('a direct archived company link cannot reopen its room or inherit an active dealer bank',()=>{
   const saved=structuredClone(catalog);saved.administration.operators[0].status='suspended';saved.administration.operators[0].archivedAt='2026-10-13T00:00:00Z';

@@ -420,18 +420,18 @@ export function StudioAdministrationView({ actor, group, resources, busy, availa
         {missing(resources.config, 'config')}{configNotice()}{unavailableWrite('game-lane')}
         <p className={styles.notice}>Gemensamma grundinställningar för nya Blackjack-spel. Bolagets presentation och spelrum hanteras i Publicering. Pågående spel behåller sin konfiguration.</p>
         {config && <>
-          <p>Aktiv lane: <strong>{label(lanes.find(lane => lane.id === activeLane)?.label, 'Ingen – Blackjack är stängt')}</strong></p>
+          <p>Aktiv spelkonfiguration: <strong>{label(lanes.find(lane => lane.id === activeLane)?.label, 'Ingen – Blackjack är stängt')}</strong></p>
           {lanes.length > 0 && mayWrite('game-lane', true) && <form method="post" className={styles.inlineForm} onSubmit={submit('game-lane', form => ({ lane: value(form, 'lane') }), true)}>
-            <label>Lane för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
-            <button disabled={busy}>Spara aktiv lane</button>
+            <label>Spelkonfiguration för Blackjack<select name="lane" defaultValue={label(activeLane, '')} disabled={busy}>{lanes.map(lane => <option key={label(lane.id)} value={label(lane.id)}>{label(lane.label)}</option>)}</select></label>
+            <button disabled={busy}>Spara aktiv spelkonfiguration</button>
           </form>}
           {mayWrite('game-lanes/create', true) && <TechnicalLaneCreate savedDealers={config.savedDealers} lanes={lanes}
             activeDealer={lanes.find(lane => lane.id === activeLane)?.dealer} revision={revision} busy={busy} command={command} />}
-          {mayWrite('game-lanes/remove', true) && <details className={styles.disclosure}><summary>Hantera befintliga lanes · {lanes.length}</summary><p className={styles.notice}>Delad media behålls. Tas sista lanen bort stängs ny Blackjack-start.</p>{lanes.map(lane => <form className={styles.laneRow} key={label(lane.id)} method="post" onSubmit={submit('game-lanes/remove', form => ({
+          {mayWrite('game-lanes/remove', true) && <details className={styles.disclosure}><summary>Hantera spelkonfigurationer · {lanes.length}</summary><p className={styles.notice}>Delad media behålls. Tas den sista konfigurationen bort stängs ny Blackjack-start.</p>{lanes.map(lane => <form className={styles.laneRow} key={label(lane.id)} method="post" onSubmit={submit('game-lanes/remove', form => ({
             lane: lane.id, replacementLane: lane.id === activeLane ? value(form, 'replacement') || null : activeLane,
           }), true)}>
             <span>{label(lane.label)}</span>
-            {lane.id === activeLane && lanes.length > 1 && <label>Ny aktiv lane<select name="replacement" required disabled={busy}>{lanes.filter(other => other.id !== lane.id).map(other => <option key={label(other.id)} value={label(other.id)}>{label(other.label)}</option>)}</select></label>}
+            {lane.id === activeLane && lanes.length > 1 && <label>Ny aktiv spelkonfiguration<select name="replacement" required disabled={busy}>{lanes.filter(other => other.id !== lane.id).map(other => <option key={label(other.id)} value={label(other.id)}>{label(other.label)}</option>)}</select></label>}
             <button disabled={busy}>Ta bort {label(lane.label)}</button>
           </form>)}</details>}
           <a href="/blackjack" target="_blank" rel="noopener">Öppna Blackjack ↗</a>
