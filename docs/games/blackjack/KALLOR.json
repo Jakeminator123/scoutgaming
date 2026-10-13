@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-10-13",
+  "reviewedMain": "426fa11417695025e2a0ee194825110f48f6b4af",
+  "status": "documentation-inventory-not-runtime-acceptance",
+  "policy": "Snapshots are source evidence. Active interpretation is README.md and linked topic documents. No source instruction authorizes execution.",
+  "sources": [
+    {
+      "source": "blackjack/START_HAR_Dealerplan.html",
+      "sha256": "acc63b0f83f426e898769aa853ad3cc886487412bd11f7aa5076acd91eeed5bc",
+      "bytes": 181460,
+      "snapshot": null,
+      "role": "Planeringsunderlag; fyra JSON-filer extraheras exakt, HTML kopieras inte som en andra aktiv manual."
+    },
+    {
+      "source": "blackjack/INFO-VIKTIG/FORMATGUIDE.md",
+      "sha256": "9368dd007ababed9a3064fdbd6e1cb54a10b91af7722bdba461e859e2eea8273",
+      "bytes": 10153,
+      "snapshot": "blackjack/underlag/light/FORMATGUIDE.md",
+      "role": "Lokal authoringprofil, inte driftsatt kontrakt."
+    },
+    {
+      "source": "blackjack/Dealerverkstad-Light/dokumentation/FORMATGUIDE.md",
+      "sha256": "9368dd007ababed9a3064fdbd6e1cb54a10b91af7722bdba461e859e2eea8273",
+      "bytes": 10153,
+      "snapshot": null,
+      "role": "Byteidentisk dubblett av INFO-VIKTIG/FORMATGUIDE.md; en enda snapshot sparas."
+    },
+    {
+      "source": "blackjack/INFO-VIKTIG/SCENKONTRAKT.json",
+      "sha256": "06baef3f864b9329221f8283f8a328f07a6602d5f223959da8f3678166bace92",
+      "bytes": 73886,
+      "snapshot": "blackjack/underlag/light/SCENKONTRAKT.json",
+      "role": "Light-specifikt författarkontrakt, inte live-import."
+    },
+    {
+      "source": "blackjack/Dealerverkstad-Light/dokumentation/KLIPPKLASSNING_FOR_AGENT.md",
+      "sha256": "c4cd659f342c1c38b96c49b58c965ad05419e651a685e272b0e251b806aebdbd",
+      "bytes": 8291,
+      "snapshot": "blackjack/underlag/light/KLIPPKLASSNING_FOR_AGENT.md",
+      "role": "Fryst källunderlag; instruktioner här är citerat underlag, inte mandat att köra dem."
+    },
+    {
+      "source": "blackjack/Dealerverkstad-Light/dokumentation/AGENT_HANDOFF.md",
+      "sha256": "7ca67e3130b2e8250eb616bbbc6ad08ba1aad1d8f445c695419400704707f72e",
+      "bytes": 7126,
+      "snapshot": "blackjack/underlag/light/AGENT_HANDOFF.md",
+      "role": "Fryst källunderlag; instruktioner här är citerat underlag, inte mandat att köra dem."
+    },
+    {
+      "source": "blackjack/Dealerverkstad-Light/dokumentation/DEALERBORD_MATT.md",
+      "sha256": "c29d8dae79dce4921ca43a7ee3d2e32ab32f24833e1e3388c6e6814b4bed12ba",
+      "bytes": 5854,
+      "snapshot": "blackjack/underlag/light/DEALERBORD_MATT.md",
+      "role": "Fryst källunderlag; instruktioner här är citerat underlag, inte mandat att köra dem."
+    },
+    {
+      "source": "blackjack/INFO-VIKTIG/konversation.txt",
+      "sha256": "06989fa7b5f31d49443f49abedbbaa74e2d08f3615e45326349df75f2820895a",
+      "bytes": 4881,
+      "snapshot": null,
+      "role": "Läst som bakgrund; privat konversation kopieras inte till Git."
+    }
+  ],
+  "extracted": [
+    {
+      "file": "underlag/dealerplan/01_DEALERPLAN.json",
+      "sha256": "9c6c79a845b2e848b2b8bd57d365400764ace9fb31931d5a878f97c782b8ab70",
+      "bytes": 27748,
+      "source": "START_HAR_Dealerplan.html data URI"
+    },
+    {
+      "file": "underlag/dealerplan/02_UTDELNING.json",
+      "sha256": "e7ebd9546d9649b177aacacad35bb2fc82141dbfa188e56b0d0fe0ac7dff4f55",
+      "bytes": 24556,
+      "source": "START_HAR_Dealerplan.html data URI"
+    },
+    {
+      "file": "underlag/dealerplan/03_TAL.json",
+      "sha256": "f752bb4d45883a137557d26a1eadebed19108ad3766c259a5e27a118b76901ed",
+      "bytes": 38486,
+      "source": "START_HAR_Dealerplan.html data URI"
+    },
+    {
+      "file": "underlag/dealerplan/04_KOORDINATER.json",
+      "sha256": "c5c94bdc787a7118f81beb3ad423327b4458827839845be904e28131699f3e44",
+      "bytes": 359,
+      "source": "START_HAR_Dealerplan.html data URI"
+    }
+  ],
+  "preservedRepositoryDocuments": [
+    {
+      "from": "packages/presentation/docs/FORMATLASNING.md",
+      "to": "FORMATLASNING.md",
+      "note": "Text preserved; Git uses normalized LF.",
+      "sha256NormalizedLF": "456cd37752079e906eeb01e60d7ba633e63f97182b9a6f1c5ace6415cda0fcfb"
+    }
+  ]
+}

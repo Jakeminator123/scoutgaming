@@ -1,0 +1,776 @@
+{
+  "schemaVersion": 1,
+  "documentType": "scoutgaming.dealer-production-plan",
+  "planId": "single-image-dealer-v1",
+  "status": "planning_only",
+  "pathRules": {
+    "fileReferences": "relative_to_manifest_directory",
+    "mediaOutputPaths": "relative_to_package_root",
+    "continuityReferencePaths": "relative_to_dealer_root",
+    "dealerRoot": "dealer/ny-dealer"
+  },
+  "entrypoint": true,
+  "descriptionSv": "Öppna bara denna JSON i ett framtida verktyg; läs sedan de tre relativa filreferenserna. Ingen generator och ingen ny importfunktion byggs i detta paket.",
+  "repository": {
+    "fullName": "Jakeminator123/scoutgaming",
+    "branch": "main",
+    "commit": "fe8b6372a8ea02534979dec4dd6ea4b2828393b4",
+    "inspectedDate": "2026-10-12",
+    "sources": {
+      "forge": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/lab/lib/dealer-forge-catalog.mjs",
+      "events": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/lab/policies/studio-contract.json",
+      "video_schema": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/lab/schemas/video.schema.json",
+      "framing": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/web/public/dealer-framing.mjs",
+      "key": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/web/public/dealer-compositing.mjs",
+      "intake": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/lab/lib/video-intake.mjs",
+      "mime": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/lab/lib/media-file-types.mjs",
+      "library": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/lab/lib/dealer-media-library.mjs",
+      "delivery_20261008": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/random/meddelande-kevin-emil-2026-10-08.md",
+      "speech_reference": "https://github.com/Jakeminator123/scoutgaming/blob/fe8b6372a8ea02534979dec4dd6ea4b2828393b4/media/dealers/astrid/runtime/presentation/repliker/README.md"
+    }
+  },
+  "dealer": {
+    "id": "ny-dealer",
+    "idStatus": "placeholder_replace_and_register_before_upload",
+    "displayName": null,
+    "inputPortrait": null,
+    "identityApproved": false
+  },
+  "files": {
+    "motionCatalog": "02_UTDELNING.json",
+    "speechCatalog": "03_TAL.json",
+    "coordinates": "04_KOORDINATER.json"
+  },
+  "selection": {
+    "coreClipIds": [
+      "idle",
+      "to-shoe",
+      "from-shoe",
+      "deal-pos1",
+      "deal-pos2",
+      "deal-pos3",
+      "deal-pos4",
+      "deal-pos5",
+      "deal-pos6",
+      "deal-pos7",
+      "deal-dealer-up",
+      "deal-dealer-hole",
+      "reveal-dealer-hole",
+      "speech-greeting",
+      "speech-placebets",
+      "speech-goodluck",
+      "speech-insurance",
+      "speech-double",
+      "speech-sidebet",
+      "speech-bust",
+      "speech-blackjack",
+      "speech-dealerblackjack",
+      "speech-dealerbust",
+      "speech-win",
+      "speech-push",
+      "speech-lose",
+      "speech-peek",
+      "speech-chatter1",
+      "speech-chatter2",
+      "speech-farewell"
+    ],
+    "optionalClipIds": [
+      "reaction-turn-player",
+      "reaction-settle-blackjack",
+      "reaction-settle-dealerBust",
+      "reaction-settle-win",
+      "reaction-settle-push",
+      "reaction-settle-other"
+    ],
+    "counts": {
+      "idle": 1,
+      "transitions": 2,
+      "deals": 9,
+      "reveals": 1,
+      "speech": 17,
+      "coreVideos": 30,
+      "optionalSilentReactions": 6,
+      "coreAndOptionalVideos": 36,
+      "poseStillImages": 2
+    },
+    "scopeSv": "En dealer, ett språk, en standardtagning per fack. Fler takes/språk multiplicerar berörda filmer, inte facken.",
+    "requirementOrigin": "30 required by this proposed complete bank; not a claim that current runtime refuses to run unless all 30 exist."
+  },
+  "format": {
+    "canonicalDealerMedia": {
+      "width": 1080,
+      "height": 1920,
+      "fpsNumerator": 24,
+      "fpsDenominator": 1,
+      "frameRateMode": "constant",
+      "sampleAspectRatio": "1:1",
+      "rotationDegrees": 0
+    },
+    "writtenRepositoryDelivery": {
+      "container": "mp4",
+      "videoCodec": "h264",
+      "alphaStoredInFile": false,
+      "sourceBackground": "green",
+      "source": "random/meddelande-kevin-emil-2026-10-08.md"
+    },
+    "requestedTransparentExport": {
+      "container": "webm",
+      "mime": "video/webm",
+      "videoCodec": "vp9",
+      "pixelFormat": "yuva420p",
+      "alphaRequired": true,
+      "alphaSemantic": "straight_alpha_at_compositing_boundary",
+      "audio": {
+        "nonSpeech": "none",
+        "speech": {
+          "codec": "opus",
+          "sampleRateHz": 48000,
+          "channels": 1,
+          "status": "proposed_export_setting_not_the_legacy_AAC_spec"
+        }
+      },
+      "status": "proposed_transparent_profile; MIME accepted, end-to-end playback not verified",
+      "notAClaimOfUnchangedMP4DeliverySpecification": true
+    },
+    "desktopOnly": true,
+    "mobileDeliverables": false,
+    "resizeDealerPerClip": false,
+    "desktopPresentation": {
+      "width": 1920,
+      "height": 1080,
+      "sourceCrop": {
+        "x": 0,
+        "y": 108,
+        "width": 1080,
+        "height": 1080
+      },
+      "sourceToViewport": {
+        "scaleX": 1,
+        "scaleY": 1,
+        "offsetX": 420,
+        "offsetY": -108
+      },
+      "coordinateFormula": "desktopX = sourceX + 420; desktopY = sourceY - 108",
+      "compatibleFraming": {
+        "scale": 1.7777777777777777,
+        "x": 0,
+        "y": 0.28888888888888886
+      },
+      "reference": "dealer-forge-catalog.stageTransform([1920,1080],108)",
+      "ruleSv": "Visa bredare sidor utan att förminska dealern. Bara höjdbeskärning till den befintliga desktopvyn; varken stretch, ny kamera eller contain av hela 1080×1920-bilden.",
+      "noteSv": "1920×1080 är kompositionen, inte en andra obligatorisk dealerfilm. Masterfilen förblir 1080×1920. Vid annan skärmstorlek skalas hela denna fastställda vy enhetligt."
+    }
+  },
+  "compatibility": {
+    "eventAndSituationVocabulary": "pinned_repository_contract",
+    "classificationObjects": "shape_and_values_checked_against_pinned_schema_rules",
+    "coordinateObject": "exact_structure_for_validatePositions; use as profile.positions",
+    "containerMime": "video/webm_accepted_by_current_media_file_types",
+    "sourceAlpha": "CPU keyGreenPixels multiplies existing alpha; this does not prove every playback path",
+    "compositingMetadata": {
+      "mode": "green-screen",
+      "threshold": 0.23,
+      "softness": 0.15,
+      "despill": 0
+    },
+    "inventedAlphaModeUsed": false,
+    "packImport": "not_an_existing_bulk_import_API; future_loader_must_resolve_files_and_register_per_clip",
+    "playbackMetadata": "once even for idle; base loop is selected separately in dealerIdlePolicies",
+    "fullyRuntimeTested": false,
+    "visuallyApproved": false,
+    "deploymentOrRepositoryChangesMade": false
+  },
+  "poses": {
+    "VILA": {
+      "outputPath": "dealer/ny-dealer/poses/VILA.png",
+      "format": "RGBA PNG 1080x1920",
+      "descriptionSv": "Lugn grundpose. Samma identitet, kamera och händer för idle och tal.",
+      "generated": false
+    },
+    "REDO": {
+      "outputPath": "dealer/ny-dealer/poses/REDO.png",
+      "format": "RGBA PNG 1080x1920",
+      "descriptionSv": "Handen vid kortet i skon. Detta är en pose, inte ett extra obligatoriskt redo-videoklipp.",
+      "generated": false
+    }
+  },
+  "baseClips": [
+    {
+      "id": "idle",
+      "labelSv": "Grundloop / idle",
+      "requiredForCore": true,
+      "status": "planned_not_generated",
+      "repoSlotId": "idle.ready/",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "idle.ready",
+        "situation": "",
+        "kind": "idle",
+        "role": "standard",
+        "label": "Grundloop / idle",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/idle.webm",
+      "fromPose": "VILA",
+      "toPose": "VILA",
+      "runtimeIntent": "repeat_via_dealer_idle_policy",
+      "poseClosed": true,
+      "automaticallyRepeat": true,
+      "targetFrames": 96,
+      "frameCountStatus": "proposed",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/VILA.png",
+        "referenceEnd": "poses/VILA.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      },
+      "referenceAvailabilityInKLARA": "missing_video; VILA.png is only a still image"
+    },
+    {
+      "id": "to-shoe",
+      "labelSv": "Vila till skon / redo",
+      "requiredForCore": true,
+      "status": "planned_not_generated",
+      "repoSlotId": "transition.shoe/to-shoe",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "transition.shoe",
+        "situation": "to-shoe",
+        "kind": "action",
+        "role": "standard",
+        "label": "Vila till skon / redo",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/in_vila_till_redo.webm",
+      "fromPose": "VILA",
+      "toPose": "REDO",
+      "runtimeIntent": "play_once_then_continue_state_machine",
+      "poseClosed": false,
+      "automaticallyRepeat": false,
+      "targetFrames": 22,
+      "frameCountStatus": "repository_forge_default_not_a_universal_requirement",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/VILA.png",
+        "referenceEnd": "poses/REDO.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      },
+      "referenceVariants": {
+        "KLARA_DRAGAN": {
+          "frames": 28
+        },
+        "KLARA_PAOW": {
+          "frames": 22
+        }
+      }
+    },
+    {
+      "id": "from-shoe",
+      "labelSv": "Skon / redo till vila",
+      "requiredForCore": true,
+      "status": "planned_not_generated",
+      "repoSlotId": "transition.shoe/from-shoe",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "transition.shoe",
+        "situation": "from-shoe",
+        "kind": "action",
+        "role": "standard",
+        "label": "Skon / redo till vila",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/ut_redo_till_vila.webm",
+      "fromPose": "REDO",
+      "toPose": "VILA",
+      "runtimeIntent": "play_once_then_continue_state_machine",
+      "poseClosed": false,
+      "automaticallyRepeat": false,
+      "targetFrames": 22,
+      "frameCountStatus": "repository_forge_default_not_a_universal_requirement",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/REDO.png",
+        "referenceEnd": "poses/VILA.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      },
+      "referenceVariants": {
+        "KLARA_DRAGAN": {
+          "frames": 28
+        },
+        "KLARA_PAOW": {
+          "frames": 22
+        }
+      }
+    }
+  ],
+  "optionalReactions": [
+    {
+      "id": "reaction-turn-player",
+      "labelSv": "Spelarens tur",
+      "requiredForCore": false,
+      "status": "planned_not_generated",
+      "repoSlotId": "turn.player/",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "turn.player",
+        "situation": "",
+        "kind": "reaction",
+        "role": "standard",
+        "label": "Spelarens tur",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/reactions/turn_player.webm",
+      "fromPose": "VILA",
+      "toPose": "VILA",
+      "runtimeIntent": "play_once_then_continue_state_machine",
+      "poseClosed": true,
+      "automaticallyRepeat": false,
+      "targetFrames": null,
+      "frameCountStatus": "not_scheduled",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/VILA.png",
+        "referenceEnd": "poses/VILA.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      }
+    },
+    {
+      "id": "reaction-settle-blackjack",
+      "labelSv": "Reaktion: blackjack",
+      "requiredForCore": false,
+      "status": "planned_not_generated",
+      "repoSlotId": "settle.blackjack/",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "settle.blackjack",
+        "situation": "",
+        "kind": "reaction",
+        "role": "standard",
+        "label": "Reaktion: blackjack",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/reactions/settle_blackjack.webm",
+      "fromPose": "VILA",
+      "toPose": "VILA",
+      "runtimeIntent": "play_once_then_continue_state_machine",
+      "poseClosed": true,
+      "automaticallyRepeat": false,
+      "targetFrames": null,
+      "frameCountStatus": "not_scheduled",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/VILA.png",
+        "referenceEnd": "poses/VILA.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      }
+    },
+    {
+      "id": "reaction-settle-dealerBust",
+      "labelSv": "Reaktion: dealern spricker",
+      "requiredForCore": false,
+      "status": "planned_not_generated",
+      "repoSlotId": "settle.dealerBust/",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "settle.dealerBust",
+        "situation": "",
+        "kind": "reaction",
+        "role": "standard",
+        "label": "Reaktion: dealern spricker",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/reactions/settle_dealerBust.webm",
+      "fromPose": "VILA",
+      "toPose": "VILA",
+      "runtimeIntent": "play_once_then_continue_state_machine",
+      "poseClosed": true,
+      "automaticallyRepeat": false,
+      "targetFrames": null,
+      "frameCountStatus": "not_scheduled",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/VILA.png",
+        "referenceEnd": "poses/VILA.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      }
+    },
+    {
+      "id": "reaction-settle-win",
+      "labelSv": "Reaktion: vinst",
+      "requiredForCore": false,
+      "status": "planned_not_generated",
+      "repoSlotId": "settle.win/",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "settle.win",
+        "situation": "",
+        "kind": "reaction",
+        "role": "standard",
+        "label": "Reaktion: vinst",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/reactions/settle_win.webm",
+      "fromPose": "VILA",
+      "toPose": "VILA",
+      "runtimeIntent": "play_once_then_continue_state_machine",
+      "poseClosed": true,
+      "automaticallyRepeat": false,
+      "targetFrames": null,
+      "frameCountStatus": "not_scheduled",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/VILA.png",
+        "referenceEnd": "poses/VILA.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      }
+    },
+    {
+      "id": "reaction-settle-push",
+      "labelSv": "Reaktion: oavgjort",
+      "requiredForCore": false,
+      "status": "planned_not_generated",
+      "repoSlotId": "settle.push/",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "settle.push",
+        "situation": "",
+        "kind": "reaction",
+        "role": "standard",
+        "label": "Reaktion: oavgjort",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/reactions/settle_push.webm",
+      "fromPose": "VILA",
+      "toPose": "VILA",
+      "runtimeIntent": "play_once_then_continue_state_machine",
+      "poseClosed": true,
+      "automaticallyRepeat": false,
+      "targetFrames": null,
+      "frameCountStatus": "not_scheduled",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/VILA.png",
+        "referenceEnd": "poses/VILA.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      }
+    },
+    {
+      "id": "reaction-settle-other",
+      "labelSv": "Reaktion: annat resultat",
+      "requiredForCore": false,
+      "status": "planned_not_generated",
+      "repoSlotId": "settle.other/",
+      "classification": {
+        "dealerId": "ny-dealer",
+        "eventId": "settle.other",
+        "situation": "",
+        "kind": "reaction",
+        "role": "standard",
+        "label": "Reaktion: annat resultat",
+        "notes": "Produktionsplan. Fil och visuell acceptans återstår. Registrera rätt dealer före import.",
+        "playback": "once",
+        "compositing": {
+          "mode": "green-screen",
+          "threshold": 0.23,
+          "softness": 0.15,
+          "despill": 0
+        },
+        "framing": {
+          "scale": 1.7777777777777777,
+          "x": 0,
+          "y": 0.28888888888888886
+        }
+      },
+      "outputPath": "dealer/ny-dealer/produktion/reactions/settle_other.webm",
+      "fromPose": "VILA",
+      "toPose": "VILA",
+      "runtimeIntent": "play_once_then_continue_state_machine",
+      "poseClosed": true,
+      "automaticallyRepeat": false,
+      "targetFrames": null,
+      "frameCountStatus": "not_scheduled",
+      "measuredFrames": null,
+      "sha256": null,
+      "visualApproval": false,
+      "continuity": {
+        "referenceStart": "poses/VILA.png",
+        "referenceEnd": "poses/VILA.png",
+        "scope": "dealer_face_body_hands_and_alpha_edges; persistent game cards are separate",
+        "decodedLossyFramesNeedNotBeByteIdentical": true,
+        "cameraAndBodyScaleLocked": true
+      }
+    }
+  ],
+  "coordinatesContract": {
+    "file": "04_KOORDINATER.json",
+    "origin": "top_left",
+    "units": "pixels_in_1080x1920_master",
+    "pointAnchor": "card_center",
+    "playerLabels": "1 through 7, left-to-right as seen by the player",
+    "runtimeBoxIndex": "playerLabel - 1",
+    "cardSize": {
+      "width": 79,
+      "height": 106
+    },
+    "dealerUpAndHoleUseSameGeometricCenter": true,
+    "source": "FORGE_CARD and DEFAULT_POSITIONS in lab/lib/dealer-forge-catalog.mjs",
+    "calibrationStatus": "repository_defaults; not proven against every KLARA clip or a newly generated person",
+    "shoePickupPoint": null,
+    "shoePickupNoteSv": "Hämtas och låses från den godkända REDO-posen. Blanda inte ihop skons hämtpunkt med dealerplatsens kortcentrum.",
+    "changePolicy": "Changing coordinates does not retarget baked video; regenerate or recalibrate affected actions and test hand/card contact.",
+    "releaseFrameIndexBase": 0
+  },
+  "stateMachine": {
+    "initialPose": "VILA",
+    "allowedTransitions": [
+      {
+        "from": "VILA",
+        "clipId": "idle",
+        "to": "VILA",
+        "repeat": true
+      },
+      {
+        "from": "VILA",
+        "clipGroup": "speech",
+        "to": "VILA",
+        "repeat": false
+      },
+      {
+        "from": "VILA",
+        "clipId": "to-shoe",
+        "to": "REDO",
+        "repeat": false
+      },
+      {
+        "from": "REDO",
+        "clipGroup": "motion",
+        "to": "REDO",
+        "repeat": false
+      },
+      {
+        "from": "REDO",
+        "clipId": "from-shoe",
+        "to": "VILA",
+        "repeat": false
+      }
+    ],
+    "speechWhileReady": "First finish action, then from-shoe, then speech, then to-shoe only if another deal is required.",
+    "idleInterruption": "Only at an approved VILA boundary or a validated return-to-anchor; not an arbitrary cut mid-breath.",
+    "readyWaiting": "Hold the approved REDO pose briefly; no mandatory separate ready video.",
+    "persistTableStateSeparately": true
+  },
+  "backgroundRemoval": {
+    "required": true,
+    "performedInThisDelivery": false,
+    "outputMustContainRealAlpha": true,
+    "whenInputHasUsableAlpha": "Preserve and validate alpha, edges and temporal consistency.",
+    "whenInputHasGreen": "Calibrate a soft green-dominance key, preserve source alpha, then despill and clean the matte.",
+    "whenInputHasOtherBackground": "Use temporally consistent person/video matting or segmentation; RGB green thresholds cannot remove arbitrary backgrounds.",
+    "repositoryKeyDefaults": {
+      "mode": "green-screen",
+      "threshold": 0.23,
+      "softness": 0.15,
+      "despill": 0
+    },
+    "keyFormulaReference": "web/public/dealer-framing.mjs#keyGreenPixels",
+    "keyDefaultsAreNotUniversalRGBCutoffs": true,
+    "removeStaticTableRimShoeAndBackground": true,
+    "retain": "Person including hair, clothing and hands; carried proxy card until an approved overlay handoff.",
+    "stationaryProps": "Separate table/prop layer, not baked into the dealer-alpha layer.",
+    "greenClothingWarning": "Protect real green clothing/props; keying solely by hue can erase them.",
+    "alphaValidation": "Decode actual alpha and composite onto black, white, contrasting colour and checkerboard; file extension or alpha_mode metadata alone is not proof.",
+    "secondZipStatus": "Only KLARA.zip was available; the referenced second green-removal ZIP was not received."
+  },
+  "productionSequence": [
+    {
+      "step": 1,
+      "task": "Select one portrait with permission to create the avatar. Lock identity and wardrobe."
+    },
+    {
+      "step": 2,
+      "task": "Create and approve VILA.png in the canonical camera; do not resize or shift independently."
+    },
+    {
+      "step": 3,
+      "task": "Generate the single pilot idle.webm, remove background, normalize 1080x1920/24 fps and inspect its loop."
+    },
+    {
+      "step": 4,
+      "task": "Verify the pilot in the actual desktop player with the fixed framing and alpha. Stop batch work until approved."
+    },
+    {
+      "step": 5,
+      "task": "Create REDO.png, calibrate shoe pickup, generate both transitions and test VILA → REDO → VILA."
+    },
+    {
+      "step": 6,
+      "task": "Generate deal_pos4 as a hand/card-contact test, then all remaining motions including hole-card reveal."
+    },
+    {
+      "step": 7,
+      "task": "Approve language, voice and 17 exact texts; generate lip-synced speech from VILA and return to VILA."
+    },
+    {
+      "step": 8,
+      "task": "Re-measure frames, contact cues and hashes; visually approve seams, alpha and targets for every clip."
+    }
+  ],
+  "firstCompatibleFileTarget": {
+    "clipId": "idle",
+    "path": "dealer/ny-dealer/produktion/idle.webm",
+    "proposedFrames": 96,
+    "proposedDurationSeconds": 4,
+    "whyFirstSv": "Provar identitet, storlek, transparens och skarv innan pengar läggs på övriga 29 klipp.",
+    "existsNow": false,
+    "mustPassBeforeBatch": [
+      "format",
+      "actual_decoded_alpha",
+      "no_green_or_table_rim",
+      "fixed_desktop_scale",
+      "VILA_loop_seam",
+      "actual_player_playback"
+    ]
+  },
+  "qualityGates": {
+    "planFilesValidated": true,
+    "identityApproved": false,
+    "anchorsApproved": false,
+    "coordinatesCalibrated": false,
+    "sourceVideoGenerated": false,
+    "backgroundRemoved": false,
+    "alphaDecodeVerified": false,
+    "cardCuesMeasured": false,
+    "loopAndTransitionsVisuallyApproved": false,
+    "desktopPlaybackApproved": false,
+    "speechApproved": false,
+    "batchGenerationAllowed": false
+  }
+}
