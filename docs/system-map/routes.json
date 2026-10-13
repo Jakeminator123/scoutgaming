@@ -2820,6 +2820,27 @@
       ]
     },
     {
+      "id": "studio-api-speech-build",
+      "path": "/api/speech-build",
+      "publicPath": "/studio/api/speech-build",
+      "methods": ["GET", "HEAD", "POST"],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/speech-build/route.ts",
+      "serving": "WIP native Studio; exact SV/EN speech preparation, explicit build and protected pending-media reads",
+      "access": "Fresh N1 admin/superadmin with matching scope; same-origin POST and current project revision",
+      "boundary": "Actor-bound signed preparation receipt; reauthorization and revision checks before each costly stage. Only an explicitly established server-side fullfile driver may build. Native production currently lacks that driver and fails closed. Generated audio/video/hash results remain pending acceptance; no publishing or game decisions.",
+      "groupId": "studio-media",
+      "sources": [
+        {"path": "lab/lib/studio-speech-build-service.mjs", "line": 1},
+        {"path": "packages/design-preview/admin/lib/studio-speech.mjs", "line": 1}
+      ],
+      "tests": [
+        "lab/lib/studio-speech-build-service.test.mjs",
+        "packages/design-preview/admin/lib/studio-speech.test.mjs"
+      ]
+    },
+    {
       "id": "studio-api-forge",
       "path": "/api/forge/:path*",
       "publicPath": "/studio/api/forge/:path*",

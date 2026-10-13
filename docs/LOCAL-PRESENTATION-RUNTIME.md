@@ -3,7 +3,11 @@
 ## Dealerimport och samtalskontroll, 13 oktober 2026
 
 `/admin/clips` har en importassistent mot Studios registrerade dealers och
-exakta fack. Den gamla klippkartan ligger separat som märkt designexempel.
+exakta fack. Den anslutna klippkartan och servicesidorna från PR #55 behålls;
+importen ersätter inte den riktiga kartan med ett designexempel.
+Intern agentchatt använder fortsatt sin anslutna `/studio/api/chat`-väg.
+Importens rådgivare är separat och begränsad till dealerimport; en gemensam
+AI-backend införs inte genom denna integration.
 Operatören väljer och bekräftar en befintlig dealer, väljer högst tio filer,
 ger kontext, granskar förslag, rättar fack och godkänner sammanställningen.
 Alla importer registreras som alternativ via befintlig privat Blob-upload;
@@ -12,13 +16,17 @@ Varje fil får eget resultat. Ett oklart registerkvitto kräver återläsning,
 inte automatisk omkörning. Hela batchen är inte en gemensam transaktion.
 
 En bubbla nere till höger i `/admin` öppnar samma importassistent som den
-stora klippvyn. En gemensam monterad instans behåller dealer, filer, samtal
-och godkännanden när man växlar vy eller minimerar. Den första öppningen
-eller ett besök på klippsidan laddar katalogen; en oöppnad bubbla gör inga
+stora importvyn på `/admin/clips?tool=import`. Den anslutna klippkartan är
+standard utan `tool=import`. Dealer, bolag, rum, sammansättning och spel
+behålls i länkkontexten. En gemensam monterad instans behåller dealer, filer,
+samtal och godkännanden när man växlar vy eller minimerar. Första öppningen
+av importen laddar dess katalog; en oöppnad bubbla gör inga
 rådgivningsanrop. Öppning, stängning och vybyte sparar inget. Spelarens
 samtalsorb är en separat yta och delar inga administrativa behörigheter.
 Lokala förhandsvisningar pausas när vyn döljs. Panelen avmonteras inte vid
-minimering; pågående anrop och resultat finns kvar. Intern SPA-navigation
+minimering; pågående anrop och resultat finns kvar. Besökta servicesidor och
+Studio-utkast behålls också monterade. Både importens och Studios veto
+kontrolleras vid intern navigation och bakåt/framåt. Intern SPA-navigation
 behåller utkastet, medan fullständiga sidbyten och externa länkar varnar
 för osparade filer även när panelen är stängd. Pågående anrop spärrar
 navigationskommandon och länkar; webbläsarens omladdning har sitt eget
@@ -67,6 +75,62 @@ på `main` `a5441feb1fd1761ca95d12b4f51beed2f689c57b`. `/control` och dess
 publicerade paket fortsätter fungera medan den nya ytan granskas.
 
 ### Begrepp och ägarskap
+
+Regeln gäller även framtida agentarbete via `AGENTS.md`. Kanoniska nya material
+finns i `web/public/material-catalog.mjs`: design-ID och exakt filhash knyter
+ihop namn i admin, partner, lobby och spel. Katalogen registrerar eller
+publicerar aldrig ett operatörsrum. Bibliotekets lager-UUID är separat från
+design-ID:t; en identisk etikett är inte bevis för identiska bytes.
+
+Jakobs första två tillförda bordsoriginal är **Blackjack · grön filt**
+(`blackjack-green-felt`) och **Blackjack · svart filt**
+(`blackjack-black-felt`). Båda är PNG, 1672 × 941, med alpha (0–255).
+Originalens SHA256 är respektive
+`1a88e822883374b6e855fa75d0da6a4dd02be0840bd4ddb7865345fe12c988b4` och
+`c43a150457216aeb8649f802c5feb8719e257631704f98db46be2530214b8b19`.
+De är byteverifierat säkrade i privat materialintag och registrerade i det
+riktiga privata produktionsbiblioteket. Grön filt har lager-ID
+`ca96f462-9dcd-4160-bb11-e898c2feb934`, svart filt har
+`a9ccb310-dfa5-4e05-860e-b6d8e3b9eabd`. Båda återlästes efter sidomladdning
+och avkodades som 1672 × 941 i webbläsaren; biblioteket gick från två till
+fyra bord. Båda är ännu oanvända och valbara i Sammansättningar. Ingen
+publicerad sammansättning eller bolagsinställning ändrades vid bordsintaget.
+Alpha/dimensioner är verifierade; bordsplacering och spelgeometri behöver
+visuell acceptans. Isolerad QA använder separata lager-UUID och beständig
+testsparning; dessa är inte produktions-ID:n.
+
+Ytterligare tre oförändrade PNG-original registrerades och avkodades efter
+omladdning. Biblioteket innehåller nu sju bord, varav fem är Jakobs nya original.
+Alla fem är separata designer: Jakob korrigerade uttryckligen att de inte
+hör ihop som grundbord och variationer. Ingen koppling har skapats mellan dem.
+
+| Kanoniskt namn / design-ID | Lager-ID i det privata biblioteket | Originalmått |
+| --- | --- | --- |
+| Blackjack · Oak / `blackjack-oak` | `f00be01d-fe7c-4a43-85b9-952e378f7331` | 1672 × 941 |
+| Blackjack · Purple Rain / `blackjack-purple-rain` | `257e6711-9152-49f2-83ae-6127ce3bc420` | 1672 × 941 |
+| Blackjack · Back to Basic / `blackjack-back-to-basic` | `073ed70c-d764-4902-860c-6a56300abfaf` | 1774 × 887 |
+
+Källhashar, storlek, MIME och alpha finns i samma kanoniska materialkatalog.
+Registreringen ändrade inga tilldelningar eller publiceringar. Originalfiler
+och privata ursprungssökvägar bevaras utanför Git.
+
+### Framtida bordsekvenser
+
+Ett framtida blinkande bord får bestå av en uttryckligen vald grunddesign och
+en ordnad följd bildrutor med angiven längd i frames samt fast bildfrekvens.
+Upprepningar och återgång till grundbilden ska vara uttryckliga. Variationerna
+måste dela godkänd geometri, dimensioner, placering och speltyp med grundbordet;
+visuell likhet eller ett närliggande namn är inte tillräckligt. Endast
+bordslagret växlar: bolag, rum/bakgrund, dealerklipp och serverns kort-, sko-
+och plånbokstillstånd behålls. Nuvarande statiska bilder har ingen automatisk
+blinksekvens. Sekvensmodell, redigerare och uppspelning är framtida arbete.
+
+`web/presentation-material-game.mjs` kontrollerar kända källhashar, lagerroll,
+metadata och spelets tillåtna bord på servern före rums-/paketpublicering
+och vid läsning av paketets rum. Även tillåtna valpooler kontrolleras.
+Namnbyte eller felaktigt deklarerade dimensioner kan inte göra de nya
+blackjackborden till roulettebord. Äldre okatalogiserade tillgångar behåller
+sitt befintliga kontrakt och behöver separat granskad klassificering.
 
 ```mermaid
 flowchart LR

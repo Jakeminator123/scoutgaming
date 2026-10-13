@@ -76,6 +76,7 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
   validateRevision(body.expectedRevision);
   const saved=await repository.readDocument('project');
   if(!saved||saved.revision!==body.expectedRevision)fail('studio_conflict');
+  if(saved.value.dealerSets?.some(row=>row.dealerId===body.dealerId))return {result:denied('studio_dealer_in_use')};
   const entry=saved.value.dealerTrash?.find(row=>row.dealer.id===body.dealerId);
   if(!entry)fail('studio_dealer_missing');
   const rows=(await repository.listMedia({limit:5000})).filter(row=>row.classification.dealerId===body.dealerId).sort((a,b)=>a.pathname.localeCompare(b.pathname));

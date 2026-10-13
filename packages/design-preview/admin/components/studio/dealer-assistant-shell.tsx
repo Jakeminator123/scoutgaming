@@ -4,7 +4,7 @@ import { DealerImportAssistant } from './dealer-import-assistant';
 
 // One mounted session moves between an inline, nonmodal dialog and the drawer.
 // Changing presentation never clones files, aborts uploads or creates a second writer.
-export function DealerAssistantShell({pageAvailable,onShowPage}:{pageAvailable:boolean;onShowPage:()=>void}) {
+export function DealerAssistantShell({pageAvailable,onShowPage}:{pageAvailable:boolean;onShowPage:()=>boolean|void}) {
   const [drawerOpen,setDrawerOpen] = useState(false);
   const [started,setStarted] = useState(pageAvailable);
   const [busy,setBusy] = useState(false);
@@ -25,7 +25,7 @@ export function DealerAssistantShell({pageAvailable,onShowPage}:{pageAvailable:b
   function pausePreviews(){dialog.current?.querySelectorAll('video,audio').forEach(media=>(media as HTMLMediaElement).pause());}
   function minimize(){pausePreviews();setDrawerOpen(false);}
   function open(){setStarted(true);setDrawerOpen(true);}
-  function showPage(){if(busy)return;pausePreviews();onShowPage();setDrawerOpen(false);}
+  function showPage(){if(busy||onShowPage()===false)return;pausePreviews();setDrawerOpen(false);}
   function scrollTo(selector:string){dialog.current?.querySelector(selector)?.scrollIntoView({block:'start',behavior:'instant'});}
   function trapTab(event:KeyboardEvent<HTMLDialogElement>) {
     if(!drawerOpen||event.key!=='Tab')return;
@@ -46,7 +46,7 @@ export function DealerAssistantShell({pageAvailable,onShowPage}:{pageAvailable:b
         <div><MessageCircle size={18}/><h2 id="studio-assistant-dialog-title">Studioassistent</h2><span>Dealer & klippbank</span></div>
         <button ref={close} type="button" onClick={minimize} aria-label="Minimera assistenten"><Minus size={19}/></button>
         <nav aria-label="I assistenten"><button type="button" onClick={()=>scrollTo('#dealer-import-chat-title')}>Samtal</button><button type="button" onClick={()=>scrollTo('#dealer-import-files')}>Filer</button>
-          <button type="button" disabled={busy} onClick={showPage}>Visa hela klippbanken <ArrowUpRight size={13}/></button></nav>
+          <button type="button" disabled={busy} onClick={showPage}>Visa hela importvyn <ArrowUpRight size={13}/></button></nav>
       </header>
       <div className="dealer-assistant-body">{started&&<DealerImportAssistant active={inline||drawerOpen} onBusyChange={setBusy}/>}</div>
     </dialog>

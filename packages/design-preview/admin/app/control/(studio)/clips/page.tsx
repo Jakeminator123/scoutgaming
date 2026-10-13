@@ -1,27 +1,22 @@
-import { StudioHeader } from "@/components/studio/studio-header"
-import { ClipCanvas } from "@/components/studio/clip-canvas"
-import { useState } from "react"
-import { DealerAssistantShell } from "@/components/studio/dealer-assistant-shell"
-import { useRouter } from "next/navigation"
-import { StudioProvider } from "@/components/studio/studio-provider"
-import { HierarchyBar } from "@/components/studio/hierarchy-bar"
+import type { ReactNode } from 'react';
+import { DealerAssistantShell } from '@/components/studio/dealer-assistant-shell';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function ClipsPage({active=true}:{active?:boolean} = {}) {
-  const [tab,setTab] = useState<'import'|'map'>('import')
-  const [mapStarted,setMapStarted] = useState(false)
-  const router=useRouter()
-  return (
-    <>
-      <nav className="dealer-import-tabs" aria-label="Klippverktyg" hidden={!active}>
-        <button aria-pressed={tab==='import'} onClick={()=>setTab('import')}>Importassistent · klippbank</button>
-        <button aria-pressed={tab==='map'} onClick={()=>{setMapStarted(true);setTab('map');}}>Klippkarta · designexempel</button>
-      </nav>
-      <DealerAssistantShell pageAvailable={active&&tab==='import'} onShowPage={()=>{setTab('import');if(!active)router.push('/control/clips');}}/>
-      {mapStarted&&<div hidden={!active||tab!=='map'} className="dealer-import-map"><StudioProvider>
-        <p className="dealer-import-design-note" role="note">Designexempel · Klippkartan är simulerad. Ändringarna här påverkar inga riktiga register. Importassistenten har en separat anslutning till klippbanken.</p>
-        <HierarchyBar /><StudioHeader />
-        <section aria-label="Klippkarta" className="min-h-0 flex-1"><ClipCanvas /></section>
-      </StudioProvider></div>}
-    </>
-  )
+// Both workspaces stay mounted: changing tools preserves their independent drafts.
+export default function ClipsPage({active=true,children}:{active?:boolean;children:ReactNode}) {
+  const router=useRouter(), query=useSearchParams();
+  const importing=query.get('tool')==='import';
+  function showTool(tool:'map'|'import') {
+    const next=new URLSearchParams(location.search);
+    if(tool==='import')next.set('tool','import');else next.delete('tool');
+    return router.push(`/control/clips${next.size?`?${next}`:''}`);
+  }
+  return <>
+    <nav className="dealer-import-tabs" aria-label="Klippverktyg" hidden={!active}>
+      <button aria-pressed={!importing} onClick={()=>showTool('map')}>Klippkarta</button>
+      <button aria-pressed={importing} onClick={()=>showTool('import')}>Importassistent · klippbank</button>
+    </nav>
+    <div className="studio-workspace-mount" hidden={!active||importing}>{children}</div>
+    <DealerAssistantShell pageAvailable={active&&importing} onShowPage={()=>showTool('import')}/>
+  </>;
 }

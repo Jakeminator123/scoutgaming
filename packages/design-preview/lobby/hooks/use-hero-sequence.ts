@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
+import { animateScrollTo } from "@/lib/scroll-motion.mjs";
+
 export type HeroPhase = "idle" | "armed" | "playing" | "done" | "cancelled";
 
 /** How long the opening keystone holds before the clip starts. */
@@ -16,8 +18,8 @@ const AUTO_SCROLL_MS = 2400;
 export const HERO_PARALLAX_VH = 1.6;
 
 /**
- * Hold the opening keystone for 7 s. If the visitor has not scrolled more than a
- * third of the hero by then, play the clip. When the chip lands, pull the page
+ * Hold the opening keystone for 7 s. If the visitor has not interacted or
+ * scrolled by then, play the clip. When the chip lands, pull the page
  * down until the door parallax is fully open. Any wheel / touch / key input
  * hands control back to the visitor immediately.
  */
@@ -34,6 +36,7 @@ export function useHeroSequence(sectionRef: RefObject<HTMLElement | null>) {
       // Drop the 6 MB download for visitors who clearly came to scroll.
       const video = videoRef.current;
       if (video) {
+        video.pause();
         video.removeAttribute("src");
         video.load();
       }
@@ -43,18 +46,31 @@ export function useHeroSequence(sectionRef: RefObject<HTMLElement | null>) {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => {
-      const section = sectionRef.current;
-      if (!section || autoScrollingRef.current) return;
-      if (-section.getBoundingClientRect().top > window.innerHeight / 3) {
-        visitorScrolledRef.current = true;
-        if (phaseRef.current === "idle" || phaseRef.current === "armed") transition("cancelled");
-      }
+    const interrupt = () => {
+      visitorScrolledRef.current = true;
+      if (phaseRef.current === "idle" || phaseRef.current === "armed") transition("cancelled");
     };
-    onScroll();
+    const onScroll = () => {
+      if (!autoScrollingRef.current && window.scrollY > 4) interrupt();
+    };
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const stopMotion = () => {
+      if (document.hidden || preference.matches) transition("cancelled");
+    };
+    const events = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+    events.forEach(name => window.addEventListener(name, interrupt, { passive: true }));
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [sectionRef, transition]);
+    document.addEventListener("visibilitychange", stopMotion);
+    preference.addEventListener("change", stopMotion);
+    onScroll();
+    stopMotion();
+    return () => {
+      events.forEach(name => window.removeEventListener(name, interrupt));
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("visibilitychange", stopMotion);
+      preference.removeEventListener("change", stopMotion);
+    };
+  }, [transition]);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -105,6 +121,7 @@ export function useHeroSequence(sectionRef: RefObject<HTMLElement | null>) {
     if (!video || !section) return;
 
     let raf = 0;
+    let stopScroll: (() => void) | undefined;
     const watch = () => {
       if (video.currentTime < SCROLL_CUE_SECONDS) {
         raf = requestAnimationFrame(watch);
@@ -113,46 +130,22 @@ export function useHeroSequence(sectionRef: RefObject<HTMLElement | null>) {
       if (visitorScrolledRef.current) return;
       const targetY = window.scrollY + section.getBoundingClientRect().top + window.innerHeight * HERO_PARALLAX_VH;
       autoScrollingRef.current = true;
-      animateScrollTo(targetY, AUTO_SCROLL_MS, () => {
+      stopScroll = animateScrollTo(targetY, AUTO_SCROLL_MS, () => {
         autoScrollingRef.current = false;
       });
     };
     raf = requestAnimationFrame(watch);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      stopScroll?.();
+    };
   }, [phase, sectionRef]);
 
   return {
     phase,
     videoRef,
-    onPlaying: () => transition("playing"),
-    onEnded: () => transition("done"),
+    onPlaying: () => { if (phaseRef.current === "armed") transition("playing"); },
+    onEnded: () => { if (phaseRef.current === "playing") transition("done"); },
+    onError: () => transition("cancelled"),
   };
-}
-
-function animateScrollTo(targetY: number, duration: number, onDone: () => void) {
-  const startY = window.scrollY;
-  const distance = targetY - startY;
-  const startedAt = performance.now();
-  const interruptEvents = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
-  let cancelled = false;
-
-  const finish = () => {
-    interruptEvents.forEach((name) => window.removeEventListener(name, interrupt));
-    onDone();
-  };
-  function interrupt() {
-    cancelled = true;
-    finish();
-  }
-  interruptEvents.forEach((name) => window.addEventListener(name, interrupt, { passive: true }));
-
-  const frame = (now: number) => {
-    if (cancelled) return;
-    const t = Math.min(1, (now - startedAt) / duration);
-    const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    window.scrollTo({ top: startY + distance * eased, behavior: "instant" });
-    if (t < 1) requestAnimationFrame(frame);
-    else finish();
-  };
-  requestAnimationFrame(frame);
 }

@@ -1,52 +1,52 @@
 import { createRoot } from 'react-dom/client';
+import { useCallback, useEffect, useState } from 'react';
 import { StudioSidebar } from './components/studio/studio-sidebar';
-import { navigate, previewHref, usePathname } from '../runtime/navigation';
+import Link, { navigate, previewHref, usePathname } from '../runtime/navigation';
 import { RegisteredStudio } from './components/studio/registered-studio';
-import { StudioProvider } from './components/studio/studio-provider';
-import { HierarchyBar } from './components/studio/hierarchy-bar';
+import { ConnectedClipMap } from './components/studio/connected-clip-map';
+import { ConnectedServices } from './components/studio/connected-services';
+import { SystemOverview } from './components/studio/system-overview';
+import { RegisteredMaterialLibrary } from './components/studio/registered-material-library';
 import Clips from './app/control/(studio)/clips/page';
-import Assets from './app/control/(studio)/assets/page';
-import Drift from './app/control/drift/page';
-import Economy from './app/control/ekonomi/page';
-import Accounts from './app/control/admin/accounts/page';
-import Players from './app/control/admin/players/page';
-import Payments from './app/control/admin/payments/page';
-import Api from './app/control/admin/api/page';
-import Log from './app/control/admin/log/page';
-import Models from './app/control/ai/models/page';
-import Chat from './app/control/ai/chat/page';
 
-// These explicitly labelled design pages stay available for the next scoped
-// integrations. They never replace a failed registered-catalogue response.
-const examples: Record<string, typeof Clips> = {
-  '/control/assets': Assets, '/control/drift': Drift, '/control/ekonomi': Economy,
-  '/control/admin/accounts': Accounts, '/control/admin/players': Players, '/control/admin/payments': Payments,
-  '/control/admin/api': Api, '/control/admin/log': Log, '/control/ai/models': Models, '/control/ai/chat': Chat,
-};
+// Native readers and mutations keep their existing session, scopes and revisions.
+const servicePaths = new Set(['/control/drift','/control/ekonomi','/control/admin/accounts','/control/admin/players','/control/admin/payments','/control/admin/api','/control/admin/log','/control/ai/models','/control/ai/chat']);
 
 const pages: Record<string, string> = {
-  '/control/structure': 'Struktur', '/control/rooms': 'Spelrum', '/control/dealers': 'Dealers',
-  '/control/clips': 'Klippkarta', '/control/assets': 'Bord & bakgrunder',
+  '/control/structure': 'Struktur',
+  '/control/clips': 'Klippkarta',
+  '/control/assets': 'Bord & bakgrunder',
   '/control/drift': 'Drift', '/control/ekonomi': 'Ekonomi', '/control/admin/accounts': 'Konton & åtkomst',
   '/control/admin/operators': 'Spelbolag', '/control/admin/players': 'Spelare', '/control/admin/payments': 'Betalningar',
   '/control/admin/api': 'API', '/control/admin/log': 'Ändringslogg', '/control/ai/models': 'Agentmodeller', '/control/ai/chat': 'Agentchatt',
 };
 function App() {
   const path = usePathname();
-  const Example = examples[path];
-  return <div className="preview-admin flex bg-sg-bg text-sg-text">
+  const [studioDirty,setStudioDirty]=useState(false),[studioRefresh,setStudioRefresh]=useState(0);
+  const [studioRevision,setStudioRevision]=useState('');
+  const materialChanged=useCallback(()=>setStudioRefresh(value=>value+1),[]);
+  const [libraryVisited,setLibraryVisited]=useState(path==='/control/assets');
+  useEffect(()=>{if(path==='/control/assets')setLibraryVisited(true);},[path]);
+  const [visited,setVisited]=useState<string[]>(()=>servicePaths.has(path)?[path]:[]);
+  useEffect(()=>{if(servicePaths.has(path))setVisited(current=>current.includes(path)?current:[...current,path]);},[path]);
+  const isolatedPreview = document.querySelector('meta[name="croupier-environment"]')?.getAttribute('content')==='isolated-qa';
+  const studio = ['/control','/control/clips','/control/rooms','/control/dealers'].includes(path);
+  return <div className="preview-admin flex bg-sg-bg text-sg-text" onClick={event=>{
+    if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+    const anchor=(event.target as Element).closest('a');if(!anchor||anchor.target)return;
+    const url=new URL(anchor.href,location.origin);
+    if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
+  }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
-      <label className="preview-mobile-nav">Sida <select value={path === '/control' ? '/control/structure' : path} onChange={event => navigate(previewHref(event.target.value))}>
+      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Studio':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/control/clips" aria-current="page"><b>1</b> Studio</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/play"><b>3</b> Spelarvy</a></nav></header>
+      {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
+      <label className="preview-mobile-nav">Sida <select value={studio ? '/control/clips' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      <div className={path==='/control/clips'?'dealer-import-route':'dealer-assistant-background'}><Clips active={path === '/control/clips'}/></div>
-      {path === '/control/clips' ? null : Example ? <StudioProvider>
-        <div className="border-b border-sg-line px-6 py-2 text-xs text-sg-muted" role="note">
-          Designexempel · {pages[path]} är ännu inte anslutet. Uppgifter och ändringar här är simulerade och påverkar inga riktiga register.
-        </div>
-        {['/control/clips', '/control/assets'].includes(path) && <HierarchyBar />}
-        <Example />
-      </StudioProvider> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} />}
+      <Clips active={studio}><ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/></Clips>
+      {libraryVisited&&<div hidden={path!=='/control/assets'}><RegisteredMaterialLibrary disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
+      {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
+      {!studio && path!=='/control/assets' && !servicePaths.has(path) && (path==='/control/structure' ? <SystemOverview /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty} onChanged={materialChanged}/>)}
     </main>
   </div>;
 }

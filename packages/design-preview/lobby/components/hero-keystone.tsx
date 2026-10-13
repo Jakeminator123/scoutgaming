@@ -13,6 +13,7 @@ type HeroKeystoneProps = {
   videoRef: RefObject<HTMLVideoElement | null>;
   onPlaying: () => void;
   onEnded: () => void;
+  onError: () => void;
 };
 
 /**
@@ -20,7 +21,7 @@ type HeroKeystoneProps = {
  * cross-fade between identical frames. The clip's first frame is the opening
  * keystone and its last frame is the closing one.
  */
-export function HeroKeystone({ phase, scale, videoRef, onPlaying, onEnded }: HeroKeystoneProps) {
+export function HeroKeystone({ phase, scale, videoRef, onPlaying, onEnded, onError }: HeroKeystoneProps) {
   const [endReady, setEndReady] = useState(false);
 
   const clipMounted = phase !== "cancelled";
@@ -61,6 +62,7 @@ export function HeroKeystone({ phase, scale, videoRef, onPlaying, onEnded }: Her
           tabIndex={-1}
           onPlaying={onPlaying}
           onEnded={onEnded}
+          onError={onError}
           className={cn(
             "absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
             clipVisible ? "opacity-100" : "opacity-0",

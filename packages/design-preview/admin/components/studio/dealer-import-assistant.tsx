@@ -70,16 +70,16 @@ export function DealerImportAssistant({active=true,onBusyChange}:{active?:boolea
     const beforeUnload = (event:BeforeUnloadEvent) => {event.preventDefault();event.returnValue='';};
     const beforeNavigate = (event:Event) => {
       if(busyRef.current){event.preventDefault();return;}
-      // Internal SPA routes preserve this exact session. Full page anchors do not.
+      // Internal SPA routes preserve this exact session, including the map draft.
       const href=(event as CustomEvent<{href?:string}>).detail?.href;
-      if(href?.startsWith('/admin/')&&!href.startsWith('/admin/lobby'))return;
+      if(href&&/^\/admin(?:\/|\?|$)/.test(href)&&!href.startsWith('/admin/lobby'))return;
       if(approvedClick){approvedClick=false;return;}if (!leave()) event.preventDefault();
     };
     const click = (event:MouseEvent) => {
       const anchor = (event.target as Element)?.closest?.('a');
       if (!anchor || anchor.target === '_blank' || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       const target = new URL(anchor.href,window.location.href);
-      if(anchor.dataset.studioNavigation==='true'&&target.origin===window.location.origin&&target.pathname.startsWith('/admin/')&&!target.pathname.startsWith('/admin/lobby')) {
+      if(!anchor.target&&(anchor.dataset.studioNavigation==='true'||anchor.closest('.preview-admin'))&&target.origin===window.location.origin&&/^\/admin(?:\/|$)/.test(target.pathname)&&!target.pathname.startsWith('/admin/lobby')) {
         if(busyRef.current){event.preventDefault();event.stopPropagation();}return;
       }
       if (!leave()) {event.preventDefault();event.stopPropagation();}

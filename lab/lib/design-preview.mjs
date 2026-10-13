@@ -37,7 +37,7 @@ export const designPreviewHeaders = Object.freeze({
 // Staff imports use the existing short-lived, path-bound private Blob grant.
 // Keep the independent lobby restricted to same-origin connections.
 const adminDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
-  'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy'].replace("connect-src 'self'", "connect-src 'self' https://vercel.com/api/blob/") });
+  'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy'].replace("connect-src 'self'", "connect-src 'self' https://vercel.com/api/blob https://vercel.com/api/blob/") });
 
 // Route Handlers do not add Next's basePath to the SSR login destination.
 // Only the known native login redirect is translated; remote handoffs stay intact.

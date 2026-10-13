@@ -10,6 +10,7 @@ import {createOperatorStore} from '../../web/storage/operator-store.mjs';
 import {buildPresentationPackage} from '../../web/presentation-layers.mjs';
 import {withPackagePresentation,publicPackageBranding,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle,OPERATOR_LIFECYCLE_KEY} from '../../web/storage/operator-lifecycle.mjs';
+import {lifecycleSnapshotKey} from '../../packages/design-preview/admin/lib/studio-resource-lifecycle.mjs';
 import {listPackageRooms} from '../../web/presentation-room-contract.mjs';
 import {assertLifecyclePackages} from '../lib/dealer-lifecycle.mjs';
 const scope={environment:'lifecycle-fixture',workspaceId:'isolated'};
@@ -47,6 +48,20 @@ test('archive detaches a room, keeps immutable media/package history and exposes
  assert.throws(()=>assertLifecyclePackages(f.pool.snapshot().packages,{dealerId:'astrid'}),{code:'studio_dealer_published'});
  const restarted=createResourceLifecycleApi({repository:f.repository,scope,now:clock});
  const again=await restarted.handlers.get('GET /studio/api/admin/resource-lifecycle')({actor,scope});assert.deepEqual(again.rooms,read.rooms);
+});
+
+test('admin observes roomless company archive and restore when administration revision stays unchanged',async()=>{
+ const f=await fixture(),before=await f.get(),operator=before.operators.find(row=>row.id==='other');
+ assert.equal(operator.roomCount,0);
+ const archived=await f.post('operator-lifecycle',{operatorId:operator.id,archived:true,expectedPackageRevision:operator.packageRevision,expectedAdministrationRevision:before.administrationRevision});
+ assert.equal(archived.status,200);assert.equal(archived.body.administrationRevision,before.administrationRevision);
+ const afterArchive=await f.get();assert.equal(afterArchive.operators.find(row=>row.id===operator.id).status,'suspended');
+ assert.notEqual(lifecycleSnapshotKey(afterArchive),lifecycleSnapshotKey(before));
+ const restored=await f.post('operator-lifecycle',{operatorId:operator.id,archived:false,expectedPackageRevision:archived.body.packageRevision,expectedAdministrationRevision:afterArchive.administrationRevision});
+ assert.equal(restored.status,200);assert.equal(restored.body.administrationRevision,before.administrationRevision);
+ const afterRestore=await f.get();assert.equal(afterRestore.operators.find(row=>row.id===operator.id).status,'active');
+ assert.notEqual(lifecycleSnapshotKey(afterRestore),lifecycleSnapshotKey(afterArchive));
+ assert.equal(lifecycleSnapshotKey({...afterRestore,operators:[...afterRestore.operators].reverse()}),lifecycleSnapshotKey(afterRestore));
 });
 test('restore preserves room identity, returns pending, and opening needs a separate tenant/revision checked action',async()=>{
  const f=await fixture();assert.equal((await f.post('room-lifecycle',await f.body())).status,200);

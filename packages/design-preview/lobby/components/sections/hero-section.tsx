@@ -99,6 +99,7 @@ export function HeroSection() {
               videoRef={sequence.videoRef}
               onPlaying={sequence.onPlaying}
               onEnded={sequence.onEnded}
+              onError={sequence.onError}
             />
             <div
               className={cn(
@@ -114,6 +115,7 @@ export function HeroSection() {
 
             <div
               className="absolute inset-0 flex flex-col justify-end px-5 pb-28 pt-24 md:px-10 md:pb-32 lg:px-16"
+              inert={cinematic || textOpacity < 0.05}
               style={{ opacity: textOpacity, pointerEvents: textOpacity < 0.05 || cinematic ? "none" : "auto" }}
             >
               <div
