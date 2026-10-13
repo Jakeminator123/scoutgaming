@@ -13,8 +13,9 @@ försvinner. Ingen spel-, publicerings- eller databaslogik ändras.
 Verifierat i isolerad byggd adminvy: startsidan visar endast vägvalen, länken
 till ekonomin öppnar den fungerande diagramvyn och Översikt återgår hem.
 Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
-runtimebindningstester passerar. Full regressionshook och PR-kontroller hör
-till leveransgrinden. Produktionsvisning återstår efter merge.
+runtimebindningstester passerar. Full regressionshook passerar med 3 119
+godkända, 11 överhoppade och 0 fel. PR-kontroller och produktionsvisning
+återstår efter push respektive merge.
 
 ## Ekonomi: enkel översikt i admin, 13 oktober
 
