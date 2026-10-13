@@ -1,31 +1,5 @@
 # Aktuell handoff — Scoutgaming
 
-## Delad Studio-autentisering, 13 oktober 2026
-
-Inloggningskontroll, roll-/åtgärdspolicy och det lilla scope-/felkontraktet
-ligger nu i `packages/studio-access`. Spelservern och Studio använder samma
-implementation; äldre `lab/lib`- och lagringsimporter återexporterar samma
-funktioner och felklasser. Auth-modulen laddar inte längre Studio, OpenClaw
-eller lagringsimplementationer. Cookies, signaturer, aktuell identitet, epoch,
-behörigheter, scope och säkra felkoder är oförändrade. Övriga media-,
-publicerings- och OpenClaw-kopplingar finns kvar. SQL-QA-kvittots källista
-omfattar även de flyttade implementationerna; Astrids jämförelsearkiv tar med
-scope-modulen utan att ändra eller skriva om den godkända baslinjen.
-
-`web/README.md` beskriver Vercel under Scout Gaming, Render-spelmotorn,
-Neon för produktdata och Blob för media. Den gamla diskkommentaren vid
-`/labb-lissabon` är rättad; redirectens beteende är oförändrat. SQLite-kod
-betyder inte en parallell produktionsdatabas eller fallback vid PostgreSQL-fel.
-
-86 riktade tester och Studios produktionsbygge inklusive typkontroll och
-95 byggspår passerade. Oberoende kodgranskning fann inga blockerande fel.
-Full lokal regression gav 3 334 passerade och 7 överhoppade tester innan den
-stannade på det oförändrade `local-session.test.mjs`: körmiljön ger ingen
-OS-födelseidentitet för processen. Samma miljöbegränsning fanns vid föregående
-PR; kontrollen har inte försvagats. Astrids baslinje och arkivkontroll passerade.
-Separat PR från `main`; inget mergat och ingen produktionskonfiguration eller
-databas ändrad. GitHubs PR-kontroller återstår vid denna lokala leverans.
-
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
 PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen
@@ -313,6 +287,36 @@ har inte lästs i denna miljö.
 Aktiva Astrid-/dealer-talvägar, klipp, kalibrering, lagrade ID:n, publiceringar
 och data är bevarade. Gemensamma imports mellan appar/paket och SL-10:s
 handmatteaudit är fortsatt öppna; mappnamnen innebär ingen slutförd avveckling.
+
+## Delad Studio-autentisering, 13 oktober 2026
+
+Inloggningskontroll, roll-/åtgärdspolicy och det lilla scope-/felkontraktet
+ligger nu i `packages/studio-access`. Spelservern och Studio använder samma
+implementation; äldre `lab/lib`- och lagringsimporter återexporterar samma
+funktioner och felklasser. Auth-modulen laddar inte längre Studio, OpenClaw
+eller lagringsimplementationer. Cookies, signaturer, aktuell identitet, epoch,
+behörigheter, scope och säkra felkoder är oförändrade. Övriga media-,
+publicerings- och OpenClaw-kopplingar finns kvar. SQL-QA-kvittots källista
+omfattar även de flyttade implementationerna; Astrids jämförelsearkiv tar med
+scope-modulen utan att ändra eller skriva om den godkända baslinjen.
+
+`web/README.md` beskriver Vercel under Scout Gaming, Render-spelmotorn,
+Neon för produktdata och Blob för media. Den gamla diskkommentaren vid
+`/labb-lissabon` är rättad; redirectens beteende är oförändrat. SQLite-kod
+betyder inte en parallell produktionsdatabas eller fallback vid PostgreSQL-fel.
+
+86 riktade tester och Studios produktionsbygge inklusive typkontroll och
+95 byggspår passerade. Oberoende kodgranskning fann inga blockerande fel.
+Full lokal regression gav 3 334 passerade och 7 överhoppade tester innan den
+stannade på det oförändrade `local-session.test.mjs`: körmiljön ger ingen
+OS-födelseidentitet för processen. Samma miljöbegränsning fanns vid föregående
+PR; kontrollen har inte försvagats. Astrids baslinje och arkivkontroll passerade.
+Separat PR från `main`; inget mergat och ingen produktionskonfiguration eller
+databas ändrad. GitHubs fulla PR-kontroller passerade för `7dcd61f`.
+Merge-agenten har flyttat detta avsnitt till mappansvaret för att lösa en
+ren dokumentkonflikt; autentiseringens kod och exports är oförändrade.
+95 isolerade auth-, scope-, partner-, kommando- och lagringstester passerade
+med Node 24.21.0 och fyra testworkers. Den nya versionens CI ska passera före merge.
 
 ## PR-städning och CI, 13 oktober 2026
 
