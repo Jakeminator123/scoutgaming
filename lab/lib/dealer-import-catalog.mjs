@@ -6,7 +6,8 @@ import { registeredDealerIds } from '../../web/dealer-identity.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../web/public/dealer-compositing.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 
-export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 10, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000, vision: false });
+export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 10, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,
+  maxHistoryMessages: 8, maxHistoryMessage: 3000, maxHistoryChars: 12000, vision: false });
 const TYPES = new Set(['video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav', 'image/png', 'image/jpeg', 'image/webp']);
 const exact = (value, required, optional = []) => value && typeof value === 'object' && !Array.isArray(value)
   && required.every(key => Object.hasOwn(value, key)) && Object.keys(value).every(key => [...required, ...optional].includes(key));
@@ -17,25 +18,45 @@ const normalizedName = value => value.normalize('NFKD').replace(/[\u0300-\u036f]
 export function dealerImportCatalog(project) {
   const active = registeredDealerIds(project);
   const dealers = project.dealers.filter(row => active.has(row.id)).map(row => ({ id: row.id, label: row.label || row.id }));
-  const slots = dealerMediaSlots(project).map(slot => {
-    const event = project.events.find(row => row.id === slot.eventId);
-    const kind = kindForEvent(event);
-    const transition = slot.eventId === 'transition.shoe';
-    const atShoe = slot.eventId.startsWith('deal.') || slot.eventId.startsWith('reveal.');
-    return { ...slot, kind, start: transition ? (slot.situation === 'to-shoe' ? 'VILA' : 'REDO') : atShoe ? 'REDO' : 'VILA',
-      end: transition ? (slot.situation === 'to-shoe' ? 'REDO' : 'VILA') : atShoe ? 'REDO' : 'VILA' };
-  });
+  const slots = supportedDealerImportSlots(project, dealerMediaSlots(project));
   slots.push(...['vila', 'redo'].map(pose => ({ id: `pose/${pose}`, label: `${pose.toUpperCase()} · referensbild`, category: 'pose', kind: 'pose', pose, start: pose.toUpperCase(), end: pose.toUpperCase() })));
   return { dealers, slots, limits: DEALER_IMPORT_LIMITS };
 }
 
+export function supportedDealerImportSlots(project, candidates) {
+  return candidates.flatMap(slot => {
+    const event = project.events.find(row => row.id === slot.eventId);
+    // Shared media catalogues may include game-specific entries not supported by
+    // this blackjack importer. Do not expose them or dereference a missing event.
+    if (!event || slot.eventId.startsWith('roulette.')) return [];
+    const kind = kindForEvent(event);
+    if (!kind) return [];
+    const transition = slot.eventId === 'transition.shoe';
+    const atShoe = slot.eventId.startsWith('deal.') || slot.eventId.startsWith('reveal.');
+    return [{ ...slot, kind, start: transition ? (slot.situation === 'to-shoe' ? 'VILA' : 'REDO') : atShoe ? 'REDO' : 'VILA',
+      end: transition ? (slot.situation === 'to-shoe' ? 'REDO' : 'VILA') : atShoe ? 'REDO' : 'VILA' }];
+  });
+}
+
 export function validateDealerImportInput(body, catalog) {
-  if (!exact(body, ['dealerId', 'files', 'context'], ['message', 'intent']) || !catalog.dealers.some(row => row.id === body.dealerId)
+  if (!exact(body, ['files', 'context'], ['dealerId', 'message', 'intent', 'history'])
     || !clean(body.context, DEALER_IMPORT_LIMITS.maxContext) || !clean(body.message ?? '', DEALER_IMPORT_LIMITS.maxMessage)
     || !Array.isArray(body.files) || body.files.length > DEALER_IMPORT_LIMITS.maxFiles) fail();
   const intent = Object.hasOwn(body, 'intent') ? body.intent : 'mapping';
   const message = (body.message ?? '').trim();
   if (!['mapping', 'chat'].includes(intent) || intent === 'chat' && !message) fail();
+  const dealerId = body.dealerId ?? null;
+  if ((intent === 'mapping' || dealerId !== null) && !catalog.dealers.some(row => row.id === dealerId)) fail();
+  const history = Object.hasOwn(body, 'history') ? body.history : [];
+  if (!Array.isArray(history) || history.length > DEALER_IMPORT_LIMITS.maxHistoryMessages || history.length % 2 !== 0) fail();
+  let historyChars = 0;
+  const conversation = history.map((entry, index) => {
+    if (!exact(entry, ['role', 'content']) || entry.role !== (index % 2 === 0 ? 'user' : 'assistant')
+      || !clean(entry.content, DEALER_IMPORT_LIMITS.maxHistoryMessage) || !entry.content.trim()) fail();
+    historyChars += entry.content.length;
+    if (historyChars > DEALER_IMPORT_LIMITS.maxHistoryChars) fail();
+    return { role: entry.role, content: entry.content.trim() };
+  });
   const ids = new Set();
   const files = body.files.map(file => {
     if (!exact(file, ['id', 'name', 'size', 'type']) || !/^[A-Za-z0-9_-]{1,80}$/.test(file.id)
@@ -44,7 +65,25 @@ export function validateDealerImportInput(body, catalog) {
     ids.add(file.id);
     return { id: file.id, name: file.name, size: file.size, type: file.type };
   });
-  return { dealerId: body.dealerId, files, context: body.context.trim(), message, intent };
+  return { dealerId, files, context: body.context.trim(), message, intent, history: conversation };
+}
+
+// A small projection of the current scoped catalogue, not the saved project.
+// Chat never receives media URLs, operator accounts, room config or secrets.
+export function dealerImportChatContext(catalog, selectedDealerId) {
+  let shortened = false;
+  const text = (value, max) => {
+    if (typeof value !== 'string') return '';
+    if (value.length > max) shortened = true;
+    return value.slice(0, max);
+  };
+  const selected = catalog.dealers.find(row => row.id === selectedDealerId);
+  const ordered = selected ? [selected, ...catalog.dealers.filter(row => row.id !== selectedDealerId)] : catalog.dealers;
+  const dealers = ordered.slice(0, 32).map(({ id, label }) => ({ id: text(id, 120), label: text(label, 120) }));
+  const slots = catalog.slots.slice(0, 64).map(({ id, label, kind, start, end }) => ({ id: text(id, 120), label: text(label, 120),
+    kind: text(kind, 16), start: text(start, 8), end: text(end, 8) }));
+  return { dealers, slots, dealerCount: catalog.dealers.length, slotCount: catalog.slots.length,
+    truncated: shortened || dealers.length < catalog.dealers.length || slots.length < catalog.slots.length };
 }
 
 function filenameHints(file) {

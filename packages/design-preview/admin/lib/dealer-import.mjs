@@ -2,6 +2,14 @@ import { validateVideoMetadata } from '../../../../lab/lib/video-intake.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../../../web/public/dealer-compositing.mjs';
 export { labUrl } from '../../../../lab/lib/lab-url.mjs';
 
+// Only successful chat exchanges enter model history. Remove complete pairs so
+// every request starts with a user and ends with the corresponding assistant.
+export function appendAssistantHistory(history, message, answer) {
+  const next=[...history,{role:'user',content:message.trim().slice(0,3000)},{role:'assistant',content:answer.trim().slice(0,3000)}];
+  while(next.length>8 || next.reduce((size,row)=>size+row.content.length,0)>12000)next.splice(0,2);
+  return next;
+}
+
 const MIME = Object.freeze({mp4:'video/mp4', webm:'video/webm', mp3:'audio/mpeg', wav:'audio/wav', png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', webp:'image/webp'});
 export function importContentType(name) { return MIME[String(name).split('.').pop().toLowerCase()] ?? ''; }
 export function importFileError(file, maximum = 134217728) {

@@ -7,7 +7,7 @@ import { dealerImportModelConfiguration, dealerImportProviderStatus, dealerImpor
 
 const fail = (code, status = 403) => { throw new StudioStorageError(code, status); };
 const json = value => Response.json(value, { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
-const warnings = ['Förslaget läser bara filnamn och din kontext. Inga filer eller bildrutor skickas till modellen.',
+const warnings = ['Assistenten läser filnamn, din kontext och en kort samtalshistorik. Chatten får även sparade dealernamn och klippfack. Inga filer eller bildrutor skickas till modellen.',
   'Inget sparas, genereras eller publiceras av rådgivaren. Godkänn dealer och varje placering innan separat uppladdning.'];
 
 // This limiter is deliberately process-local; it bounds accidental duplicate
@@ -61,6 +61,7 @@ export function createDealerImportApi({ repository, authorize, config }, { env =
       let assistantMessage = chat ? 'AI-chatten är inte tillgänglig just nu. Frågan har inte besvarats och inga placeringar har ändrats.'
         : 'Det här är förslag från filnamnsregler, inte AI. Kontrollera varje fack. Plats 1–7 motsvarar box0–box6; utdelning av dolt kort och vändning är olika klipp.';
       const notes = [...warnings];
+      if (chat) notes.push('Chatten har inga data om ekonomi, drift, spelare eller spelrum. Den kan förklara sådana ämnen allmänt.');
       if (model) {
         try {
           const advice = validateDealerImportAdvice(await askDealerImportModel(model, input, catalog, { fetchImpl, signal: request.signal }), input, catalog);

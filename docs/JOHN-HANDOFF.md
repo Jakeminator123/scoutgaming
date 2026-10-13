@@ -1,12 +1,12 @@
 # Aktuell handoff — Scoutgaming
 
-## Tillägg 13 oktober: dealerimport och mobil samtalskontroll
+## Tillägg 13 oktober: gemensam Studioassistent och mobil samtalskontroll
 
 `/admin/clips` har en importvy tillsammans med den anslutna klippkartan från
 PR #55. Integrationen utgår från main `c8f9b99b`; de anslutna servicesidorna,
-inklusive Intern agentchatt, behålls. Inga simulerade kartor återinförs.
-Internchatten behåller sitt befintliga API; importens Sol/Luna-rådgivare
-har fortsatt separat, begränsat mandat.
+behålls. Inga simulerade kartor återinförs. Internchatten på `/admin/ai/chat`
+och importassistenten använder nu samma Studioassistent och begränsade
+Sol/Luna-rådgivare. Äldre `/control` behåller sin Gateway-chatt och sitt API.
 En befintlig dealer bekräftas före filval. Högst tio filer får förslag till
 exakta fack, lokal preview och en separat sammanställning att godkänna.
 Importer sparas som alternativ med befintlig N1-/Blob-/registerkontroll;
@@ -14,13 +14,13 @@ inga standardklipp, publiceringar, rumsinställningar eller speldata ersätts.
 Osäkra kvitton försöks inte om automatiskt. Dubbla filval och förlorade
 godkännanden efter redigering är skyddade; interna sidbyten behåller listan.
 
-Importassistenten är också åtkomlig från en bubbla nere till höger i hela
-`/admin`. Bubblans panel och importhelvyn på `/admin/clips?tool=import` använder
-samma monterade importutkast och samtal. Den riktiga klippkartan är standard;
+Studioassistenten är också åtkomlig från en bubbla nere till höger i hela
+`/admin`. Chattsidan, bubblans panel och importhelvyn på `/admin/clips?tool=import`
+använder samma monterade importutkast och samtal. Den riktiga klippkartan är standard;
 importkatalogen laddas först när assistenten öppnas. Dealer- och rumskontext
 bevaras vid vybyte. Minimering sparar inget och raderar inte utkastet;
-dealer- och importgodkännandena gäller på båda ytorna. Besökta servicesidor
-behålls monterade, inklusive internchattens osända meddelande. Spelarens samtalsorb
+dealer- och importgodkännandena gäller på alla ytor. Besökta servicesidor
+behålls monterade. Assistentens samtal och osända fråga följer med mellan vyerna. Spelarens samtalsorb
 är separat och får inga administrativa befogenheter.
 
 Rådgivar-API:t har ingen skrivbehörighet. Det begränsar filnamn, kontext,
@@ -29,7 +29,15 @@ behörighet/katalog efter modellen. Separat AI är opt-in i Studio; utan
 konfiguration använder kartläggning uttryckligen filnamnsregler och chatt
 visar att AI:n är otillgänglig. Fasta serverroller väljer `gpt-5.6-sol` med
 `high` för kartläggning och `gpt-5.6-luna` med `medium` för vanliga frågor.
-Chatt får aldrig ändra filernas fack eller gransknings-/spargodkännanden.
+Vanlig chatt fungerar utan vald dealer och får aldrig ändra filernas fack
+eller gransknings-/spargodkännanden. Import kräver fortsatt bekräftad dealer.
+Chatt får högst fyra tidigare lyckade fråge-/svarspar och en begränsad läsning
+av Studios dealer-/fackkatalog; ekonomi, drift och rum läses inte av rådgivaren.
+Samma historik följer med till Sol vid uttrycklig kartläggning, som opålitlig
+kontext utan rätt att godkänna något. Gatewaymodeller och Studioassistentens
+fasta roller förklaras separat i Agentmodeller. Kommande roulettefack filtreras
+bort i importkatalogen så att de inte kan stoppa blackjack eller vanlig chatt;
+det öppnar inte roulette- eller alfaimport.
 Gatewayns separata modellförval ändras inte. Ingen provider aktiverades.
 VILA/REDO-bilder stannar lokalt. Modellens bildanalys, nytt pose-/läppsynkflöde
 och automatisk rumsproduktion återstår. Alfaklipp blockeras vid import tills
@@ -41,7 +49,7 @@ Orb och samtalspanel följer spelarvyns mörkblå/guldgula palett, med blå
 skuggning, gula aktiva val och fokusmarkeringar samt separat felindikering.
 Ingen mediefil, spelmotor eller runtime-provider ändras.
 
-Verifierat: 21 import-/säkerhetstester, Studio-typkontroll, fullständigt
+Verifierat: 27 import-/säkerhetstester, Studio-typkontroll, fullständigt
 Studio-produktionsbygge och regressionshookens grupper samt Chromium på
 mobil och desktop. Windowskontrollen lämnar det särskilda Linuxprovet
 skippat. Tiofilsfixture med verklig byggd klient och
@@ -71,6 +79,19 @@ Studio-produktionsbygge passerade. Windows första byggförsök fick EPERM i
 `.next`; omkörningen med normal lokal filåtkomst och byggspårskontrollen gick igenom.
 Produktionsmodell, verklig molnimport och dealerrehearsal två gånger är
 fortfarande ej verifierade. Se [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#dealerimport-och-samtalskontroll-13-oktober-2026).
+
+Den gemensamma assistenten har dessutom verifierats med fem klienttester,
+designbygge/typkontroll och en isolerad Chromiumfixture vid 320, 390 och 1280 px.
+Chattsida, bubbla och import har samma samtal och oskickade text; allmän fråga
+utan dealer fungerar, historik når båda modellrollerna och slutgodkännandet
+bevaras genom chattsidans vybyte. Inga gamla `/api/chat`-anrop görs från nya
+admin. Fixture-transporten är mockad; inga riktiga modell- eller produktionsanrop
+gjordes. Oöppnad bubbla laddar ingen assistentkatalog och ingen uppladdning
+startar före handgodkännandet. Kartans osparade kopplingar och navigationsveto
+bevaras. Minimap, panel och fokus fungerar utan horisontellt överflöde.
+Den förenade versionens Studio-produktionsbygge och kontroll av 94 byggspår
+passerade. Bygget kördes med vanlig begränsad filåtkomst efter att automatisk
+granskning av utökad filåtkomst först saknade kapacitet och sedan fick timeout.
 
 PR #55:s äldre lobby-UI-ändringar är avgränsade från PR #63: de tre lobbykomponenterna återgår till main och porträtt-/playbackhjälpare som Studio använder ligger under admin/lib med sina tester. Diffen mot main i lobby och test/public-lobby.mjs är tom. Tidigare lobbyversion finns i privat verifierad Git-bundle på checkpoint 6244d13b. Ingen PR63-kod har tagits in.
 

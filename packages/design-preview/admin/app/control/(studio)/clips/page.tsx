@@ -3,7 +3,7 @@ import { DealerAssistantShell } from '@/components/studio/dealer-assistant-shell
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Both workspaces stay mounted: changing tools preserves their independent drafts.
-export default function ClipsPage({active=true,children}:{active?:boolean;children:ReactNode}) {
+export default function ClipsPage({active=true,chatActive=false,children}:{active?:boolean;chatActive?:boolean;children:ReactNode}) {
   const router=useRouter(), query=useSearchParams();
   const importing=query.get('tool')==='import';
   function showTool(tool:'map'|'import') {
@@ -17,6 +17,7 @@ export default function ClipsPage({active=true,children}:{active?:boolean;childr
       <button aria-pressed={importing} onClick={()=>showTool('import')}>Importassistent · klippbank</button>
     </nav>
     <div className="studio-workspace-mount" hidden={!active||importing}>{children}</div>
-    <DealerAssistantShell pageAvailable={active&&importing} onShowPage={()=>showTool('import')}/>
+    <DealerAssistantShell pageMode={chatActive?'chat':active&&importing?'import':null}
+      onShowPage={mode=>mode==='chat'?router.push('/control/ai/chat'):showTool('import')}/>
   </>;
 }

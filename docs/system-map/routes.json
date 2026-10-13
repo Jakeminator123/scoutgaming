@@ -4386,7 +4386,7 @@
       "handlerFile": "lab/app/api/dealers/import-proposal/route.ts",
       "serving": "Vercel Studio native Node route; unavailable without native Studio.",
       "access": "Live admin/superadmin session with matching environment/workspace scope.",
-      "boundary": "Read-only dealer/slot catalogue and bounded import advice. POST requires same origin and revalidates principal and saved catalogue after model response. Optional stateless model has no tools or write access; schema-valid advice is still subject to manual review and separate native upload approval. No media, project or publication writes.",
+      "boundary": "Shared admin assistant for chat page, bubble and import workspace. Read-only dealer/slot catalogue and bounded advice: Luna/medium chat permits no selected dealer and up to four prior user/assistant pairs; Sol/high mapping requires a registered dealer. POST requires same origin and revalidates principal and saved catalogue after model response. Optional stateless model has no tools or write access; chat cannot return placements. Schema-valid mapping still needs manual review and separate native upload approval. No media, project or publication writes; no finance, operations or room data access.",
       "groupId": "studio-media",
       "sources": [
         { "path": "lab/app/api/dealers/import-proposal/route.ts", "line": 5 },

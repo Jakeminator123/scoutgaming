@@ -9,7 +9,7 @@ const main = [
   {label:'Drift',href:'/control/drift',icon:Activity},
   {label:'Ekonomi',href:'/control/ekonomi',icon:CircleDollarSign},
 ];
-const system = [['Agentmodeller','/control/ai/models'],['Agentchatt','/control/ai/chat'],['Spelbolag & team','/control/admin/operators'],['Konton','/control/admin/accounts'],['Spelare','/control/admin/players'],['Betalningar','/control/admin/payments'],['Integrationer','/control/admin/api'],['Ändringslogg','/control/admin/log']];
+const system = [['Agentmodeller','/control/ai/models'],['Studioassistent','/control/ai/chat'],['Spelbolag & team','/control/admin/operators'],['Konton','/control/admin/accounts'],['Spelare','/control/admin/players'],['Betalningar','/control/admin/payments'],['Integrationer','/control/admin/api'],['Ändringslogg','/control/admin/log']];
 export function StudioSidebar() {
   const path=usePathname();
   return <aside className="studio-sidebar"><Link href="/control/structure" className="studio-wordmark">scout<span>/</span>gaming<small>WORKSPACE</small></Link>

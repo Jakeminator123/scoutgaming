@@ -2,18 +2,24 @@
 
 ## Dealerimportens begränsade rådgivare, 13 oktober 2026
 
-Studio kan använda en separat, stateless modelladapter för förslag i `/admin/clips`.
+Studio kan använda en stateless modelladapter för den gemensamma assistenten
+på `/admin/ai/chat`, i bubblan och i importvyn under `/admin/clips`.
 Den är avstängd tills `CROUPIER_DEALER_IMPORT_AI=1` och de serverägda
 `OPENCLAW_MODEL_API_KEY` finns i **Studio-tjänsten**.
 Gatewayns befintliga inställningar innebär inte att Studio har dessa värden.
 `OPENCLAW_MODEL_API` stöder `openai-responses` (förval) och `openai-completions`;
 `OPENCLAW_MODEL_BASE_URL` är en HTTPS-bas, med `https://api.openai.com/v1` som förval.
 Modellrollerna är fasta på servern: kartläggning använder `gpt-5.6-sol` med
-`high`, chatt använder `gpt-5.6-luna` med `medium`. Studios importassistent
+`high`, chatt använder `gpt-5.6-luna` med `medium`. Studioassistenten
 läser inte `OPENCLAW_MODEL_ID`; Gatewayns modellinställning är separat.
 Ingen nyckel kopieras, tjänst aktiveras eller leverantör konfigureras av kodleveransen.
 
 Modellen får högst tio filbeskrivningar, avgränsad användarkontext och tillåtna fack.
+Vanlig chatt kräver ingen vald dealer. Den får en begränsad projektion av
+verklig dealer-/fackkatalog och högst fyra lyckade fråge-/svarspar (3 000 tecken
+per meddelande, 12 000 totalt), som opålitlig kontext. Samma historik kan följa
+med till kartläggningen. Inga ekonomi-, drift-
+eller rumsregister kopplas in genom denna inställning.
 Inga bildrutor, mediebytes, verktyg, hemligheter eller skrivbehörigheter följer med.
 Begäran anger `store:false`. Kartläggning har högst 12 000 outputtokens och
 60 sekunders timeout; chatt har 2 600 och 20 sekunder. Budgeten inkluderar

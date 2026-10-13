@@ -5,9 +5,9 @@
 `/admin/clips` har en importassistent mot Studios registrerade dealers och
 exakta fack. Den anslutna klippkartan och servicesidorna från PR #55 behålls;
 importen ersätter inte den riktiga kartan med ett designexempel.
-Intern agentchatt använder fortsatt sin anslutna `/studio/api/chat`-väg.
-Importens rådgivare är separat och begränsad till dealerimport; en gemensam
-AI-backend införs inte genom denna integration.
+Internchatten på `/admin/ai/chat`, importvyn och bubblan använder samma
+Studioassistent och rådgivar-API. Äldre `/control` behåller sin
+`/studio/api/chat`-väg och Gateway-konfiguration.
 Operatören väljer och bekräftar en befintlig dealer, väljer högst tio filer,
 ger kontext, granskar förslag, rättar fack och godkänner sammanställningen.
 Alla importer registreras som alternativ via befintlig privat Blob-upload;
@@ -15,8 +15,8 @@ ingen standard, grundloop, sammansättning eller publicering byts automatiskt.
 Varje fil får eget resultat. Ett oklart registerkvitto kräver återläsning,
 inte automatisk omkörning. Hela batchen är inte en gemensam transaktion.
 
-En bubbla nere till höger i `/admin` öppnar samma importassistent som den
-stora importvyn på `/admin/clips?tool=import`. Den anslutna klippkartan är
+En bubbla nere till höger i `/admin` öppnar samma assistent som chattsidan
+på `/admin/ai/chat` och importvyn på `/admin/clips?tool=import`. Den anslutna klippkartan är
 standard utan `tool=import`. Dealer, bolag, rum, sammansättning och spel
 behålls i länkkontexten. En gemensam monterad instans behåller dealer, filer,
 samtal och godkännanden när man växlar vy eller minimerar. Första öppningen
@@ -42,10 +42,18 @@ se [miljövariabler](ENVIRONMENT-VARIABLES.md#dealerimportens-begränsade-rådgi
 `intent: mapping` använder `gpt-5.6-sol` med `high` för placeringsförslag;
 utelämnad intent är mapping för bakåtkompatibilitet. `intent: chat` använder
 `gpt-5.6-luna` med `medium` och returnerar enbart text, aldrig nya placeringar.
-Båda kräver vald, bekräftad dealer i gränssnittet. Servern väljer modell och
+Vanlig chatt kan användas utan dealer; kartläggning och import kräver vald,
+bekräftad dealer i gränssnittet. En dealer som skickas till API:t måste finnas
+i den aktuella katalogen även vid chatt. Servern väljer modell och
 resonemangsnivå; klienten får inte ange egna modellparametrar. Chatt behåller
-manuella fack, granskning och godkännande även vid fel. Samtalet finns kvar i
-gränssnittet, men tidigare meddelanden skickas inte automatiskt till modellen.
+manuella fack, granskning och godkännande även vid fel. Samtalet och osänd text
+finns kvar när man växlar mellan ytorna. Chatt skickar högst fyra tidigare
+lyckade fråge-/svarspar, högst 3 000 tecken per meddelande och 12 000 totalt;
+aktuell fråga är separat och högst 2 000 tecken. Samma historik kan följa med
+till Sol när man begär kartläggning. Historiken är opålitlig
+indata, inte instruktioner eller bevis för sparade ändringar. Rådgivaren får
+en begränsad projektion av verklig dealer-/fackkatalog, inga ekonomi-, drift-
+eller rumsregister. Den måste skilja allmänna råd från tillgängliga Studiouppgifter.
 Utan modell används tydligt märkta filnamnsregler för mapping. Chatt rapporterar
 otillgänglig AI; den kör inte filnamnsregler eller applicerar rader som ett svar.
 Kartläggningens 60-sekunderstimeout ryms i routens 75-sekundersgräns. Ingen
@@ -59,6 +67,9 @@ kan förhandsvisas lokalt men blockeras för import i detta steg: dagens
 gemensamma friläggning nycklar även grönt i förgrunden. Ett formatval bevisar
 inte avkodad alfa eller fungerande kanter i spelaren.
 Automatisk rums-/bakgrundsproduktion och koppling till spelbolag återstår.
+Importkatalogen tar endast med fack för stödda projekthändelser. Kommande
+roulettefack utanför dessa ignoreras, så att en gemensam katalogutökning inte
+stoppar blackjack eller vanlig chatt. Det innebär inte stöd för rouletteimport.
 
 Spelarens samtalskontroll öppnas med en kompakt, textmärkt orb. Dialogen
 har explicita kontroller för ljud, mikrofon, kamera och röstlogg. Loggen

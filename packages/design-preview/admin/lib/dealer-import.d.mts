@@ -1,5 +1,7 @@
 import type { VideoMetadata } from '../../../../lab/lib/video-intake.mjs';
 export function labUrl(path:string):string;
+export type AssistantHistoryEntry = {role:'user'|'assistant';content:string};
+export function appendAssistantHistory(history:AssistantHistoryEntry[],message:string,answer:string):AssistantHistoryEntry[];
 export type ImportSlot = {id:string;label:string;eventId:string;situation:string;category:string;kind:VideoMetadata['kind'];start:string;end:string;pose?:string|boolean};
 export type ImportIntent = 'mapping'|'chat';
 export type ImportModel = {id:'gpt-5.6-sol'|'gpt-5.6-luna';reasoningEffort:'high'|'medium'};

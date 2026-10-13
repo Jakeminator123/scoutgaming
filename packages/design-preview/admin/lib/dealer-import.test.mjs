@@ -1,6 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyImportProposals, compatibleImportSlot, importClassification, importFileError, uniqueImportFiles } from './dealer-import.mjs';
+import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importClassification, importFileError, uniqueImportFiles } from './dealer-import.mjs';
+
+test('shared assistant history retains complete recent pairs within message and total bounds',()=>{
+  let history=[];
+  for(let index=0;index<6;index++)history=appendAssistantHistory(history,`user${index}`,`answer${index}`);
+  assert.equal(history.length,8);assert.equal(history[0].content,'user2');assert.equal(history.at(-1).content,'answer5');
+  const original=structuredClone(history);
+  const long=appendAssistantHistory(appendAssistantHistory(history,'u'.repeat(2000),'a'.repeat(5000)),'v'.repeat(2000),'b'.repeat(5000));
+  assert.deepEqual(history,original);assert.ok(long.length<=8);assert.ok(long.reduce((size,row)=>size+row.content.length,0)<=12000);
+  assert.ok(long.every((row,index)=>row.role===(index%2?'assistant':'user')&&row.content.length<=3000));
+  assert.equal(long.at(-1).content,'b'.repeat(3000));
+});
 
 const catalog = {dealers:[{id:'nora',label:'Nora'}],limits:{maxFileBytes:134217728},slots:[
   {id:'deal.player.left/box0',label:'Plats 1',eventId:'deal.player.left',situation:'box0',kind:'action',category:'deal'},
