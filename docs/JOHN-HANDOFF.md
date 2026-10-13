@@ -24,6 +24,11 @@ Slutgranskningen hittade en paus/återstart-kapplöpning: en köad statisk
 hjuluppdatering kunde hindra videornas nästa animationsruta. Refresh återtar
 nu renderloopen om uppspelning har återupptagits. Regressionen och 26 riktade
 scen-/hjulprov passerar; rättningen ändrar inga mediebytes eller kalibreringar.
+Canvas2D-reservvägen återläser nu även rörliga handmasker per bildrevision,
+tid och dimensioner; 25 riktade kompositorprov passerar. Två nya lokala
+spelningar med sluträttningarna gav 7 röd → 26 svart och saldo
+500 → 505 → 500. Därefter fortsatte Jakob själv i det isolerade provrummet.
+Kvitton/bilder sparades privat; detta är fortfarande inte lobbyacceptans.
 Studioåtkomst stoppas för närvarande av `ERR_BLOCKED_BY_CLIENT`; ingen
 adminsessionsnyckel har exporterats. Leverans väntar även på separat
 migrations-/budgetrelease PR108 (ersätter PR107); blanda inte dess schema

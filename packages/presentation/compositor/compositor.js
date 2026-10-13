@@ -117,14 +117,22 @@ class CanvasFallback {
     this.hands=document.createElement('canvas');this.hands.width=360;this.hands.height=640;
     this.alpha=document.createElement('canvas');this.alpha.width=360;this.alpha.height=640;
   }
-  mask(el){if(!el)return null;let data=this.maskCache.get(el);if(data)return data;
-    const c=document.createElement('canvas');c.width=360;c.height=640;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(el,0,0,360,640);data=ctx.getImageData(0,0,360,640).data;this.maskCache.set(el,data);return data;}
+  mask(el){if(!el)return null;
+    // Canvas masks publish decoded-frame revisions through src, like WebGL textures.
+    const version=(el.currentSrc||el.src||'')+'@'+(el.currentTime??''),width=el.videoWidth||el.naturalWidth||el.width||0,height=el.videoHeight||el.naturalHeight||el.height||0;
+    let record=this.maskCache.get(el);
+    if(record&&record.version===version&&record.width===width&&record.height===height)return record.data;
+    if(!record){const c=document.createElement('canvas');c.width=360;c.height=640;record={ctx:c.getContext('2d',{willReadFrequently:true})};}
+    record.ctx.clearRect(0,0,360,640);record.ctx.drawImage(el,0,0,360,640);
+    const data=record.ctx.getImageData(0,0,360,640).data;
+    Object.assign(record,{version,width,height,data});this.maskCache.set(el,record);return data;}
   prepare(actor,scene,assets){if(!actor)return false;if(actor instanceof HTMLVideoElement&&actor.readyState<2)return false;
     const key=(actor.currentSrc||actor.src||'')+'@'+(actor.currentTime||0)+'/'+JSON.stringify([scene.key,scene.matte,scene.handmatte,scene.splitY,scene.layerMode]);
-    if(this.cacheKey===key)return true;this.cacheKey=key;
+    const mask=this.mask(assets.get(scene.matte)?.el),hand=this.mask(assets.get(scene.handmatte)?.el);
+    if(this.cacheKey===key&&this.lastMask===mask&&this.lastHand===hand)return true;
     this.rawctx.clearRect(0,0,360,640);this.rawctx.drawImage(actor,0,0,360,640);const raw=this.rawctx.getImageData(0,0,360,640),src=raw.data;
     const full=new ImageData(new Uint8ClampedArray(src),360,640),body=new ImageData(new Uint8ClampedArray(src),360,640),hands=new ImageData(new Uint8ClampedArray(src),360,640),alpha=new ImageData(360,640);
-    const mask=this.mask(assets.get(scene.matte)?.el),hand=this.mask(assets.get(scene.handmatte)?.el),smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+    const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
     for(let i=0;i<src.length;i+=4){const r=src[i]/255,g=src[i+1]/255,b=src[i+2]/255;let a=src[i+3]/255,green=0;
       if(scene.key.enabled){green=smooth(scene.key.threshold,scene.key.threshold+scene.key.softness,(g-Math.max(r,b))/Math.max(g,.001))*smooth(.012,.065,g);a*=1-green;}
       if(mask)a*=mask[i]/255;
@@ -134,7 +142,8 @@ class CanvasFallback {
       full.data[i+3]=a*255;body.data[i+3]=a*(1-h)*255;hands.data[i+3]=a*h*255;
       alpha.data[i]=alpha.data[i+1]=alpha.data[i+2]=a*255;alpha.data[i+3]=255;
     }
-    this.full.getContext('2d').putImageData(full,0,0);this.body.getContext('2d').putImageData(body,0,0);this.hands.getContext('2d').putImageData(hands,0,0);this.alpha.getContext('2d').putImageData(alpha,0,0);return true;
+    this.full.getContext('2d').putImageData(full,0,0);this.body.getContext('2d').putImageData(body,0,0);this.hands.getContext('2d').putImageData(hands,0,0);this.alpha.getContext('2d').putImageData(alpha,0,0);
+    this.cacheKey=key;this.lastMask=mask;this.lastHand=hand;return true;
   }
   render(scene,actor,assets,cards){const {dims,s,x,y}=stageGeometry(scene),width=dims[0]/3,height=dims[1]/3;
     if(this.canvas.width!==width||this.canvas.height!==height){this.canvas.width=width;this.canvas.height=height;}
