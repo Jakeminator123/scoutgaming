@@ -1,5 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
+## Anna-startfilm och varierad roulette, 13 oktober — PR101 fortsättning
+
+Valfri exakt rouletteStart med egen framing/handregion/tider, engångsspelning
+och återgång till idle. Videotid styr hjulstart och kulsläpp; varierad slutvinkel
+och fart härleds från rundans ID. Fullare landskapsscen/helskärmsknapp; ingen
+ändring av serverns utfall, wallet eller MP4-bytes. 32 riktade spel-/scenprov gröna.
+Två sammanhängande UI-rundor med ny frilagd film: 8 svart → 3 röd, saldo
+500 → 495 → 500 USD i isolerad SQLite. Kvitton och bilder sparade privat.
+
+Betald tiosekundersfilm skapad efter uttryckligt uppladdnings-/kreditgodkännande.
+**Gesten är ännu inte godkänd:** ett presenterande svep, inte tydlig hjulimpuls
+och kulsläpp. Tekniska cue-tider är provisoriska. Ingen live mediaregistrering,
+Blob-uppladdning, rums-publicering eller merge. Nästa mediesteg är att rätta
+gesten och godkänna kontakt/övergångar; sedan registrera godkända bytes i Blob.
+Exakta hash, uppgifter och avgränsningar: docs/games/roulette/UTFALLSFILMER.md.
+
+Versionskrock med #102 rättad: v1–14 bevarar mains exakta kontrakt; v14 gäller
+dealerCategoryTrash. **Både rouletteIdle och rouletteStart kräver v15** med
+separata featuregrindar. Ingen SQL-migration. Äldre v14-referenser nedan är
+historiska testanteckningar, inte aktuellt publiceringskrav.
+
 ## Rouletthjul och kula, 13 oktober — fortsättning på PR101
 
 Anna-bordets sifferring ersätts vid uppspelning av 37 exakta fack från

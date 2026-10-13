@@ -18,11 +18,13 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
     let maskedTable = null;
     let foregroundMatte = null;
     let roundActive = false, idleLoops = 0, variantCursor = 0;
+    let startReady=Promise.resolve(null), actionRun=null, startBroken=false;
     const dealerAssets = [], dealerElements = new Set();
     const playableVideos = ()=>videos.filter(video=>!dealerElements.has(video)||video===assets.get('dealer')?.el);
 
     const canPlay = ()=>!still && active && loaded && !failed && requestedPlay && inView && !document.hidden;
     function pause() {
+      finishAction(false);
       playGeneration++;
       starting = false;
       playingNow = false;
@@ -51,7 +53,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
         if (renderer && actor && actorContext && scene) {
           const version = selected ? selected.el instanceof HTMLVideoElement ? `${selected.el.currentSrc}@${selected.el.currentTime}` : dealer.src : '';
           if (selected && actorVersion !== version) {
-            if (dealer?.framing) drawDealerFrame(actorContext,selected.el,actor.width,actor.height,dealer.framing);
+            if (selected.profile?.framing) drawDealerFrame(actorContext,selected.el,actor.width,actor.height,selected.profile.framing);
             else contain(actorContext,selected,actor.width,actor.height);
             actor.src = version;
             actorVersion = version;
@@ -85,6 +87,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
             }
           }
           renderer.render(scene,actor,assets,[],undefined);
+          if(actionRun && selected===actionRun.asset)actionRun.onFrame(selected.el.currentTime*1000);
         } else if (outputContext && selected) contain(outputContext,selected,720,1280);
       } catch { fail(); }
     }
@@ -111,6 +114,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
         if (!frame) frame = requestAnimationFrame(tick);
       }).catch(()=>{
         if (!active || generation !== playGeneration) return;
+        if(actionRun){startBroken=true;finishAction(false);starting=false;playingNow=false;render();syncPlayback();return;}
         // A browser may block autoplay. Keep the decoded first frame and offer Play.
         requestedPlay = false;
         pause();
@@ -135,6 +139,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
     stage.addEventListener('webglcontextlost',fail,{signal:abort.signal});
 
     function nextDealerClip(event) {
+      if(actionRun)return;
       if (!active || failed || dealerAssets.length<2 || event?.target!==assets.get('dealer')?.el) return;
       const current=assets.get('dealer');
       if (current===dealerAssets[0]) idleLoops++;
@@ -151,17 +156,20 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
     }
 
     function prepareForegroundMask(source) {
-      if (!dealer?.foregroundPolygons?.length) return;
-      if (!dealer.framing) throw Error('Foreground mask requires explicit framing');
+      const profile=source.profile;
+      foregroundMatte=null;assets.delete('dealer-foreground');
+      if(scene){delete scene.handmatte;scene.layerMode='full';scene.tableFront=settings?.tableFront??false;}
+      if (!profile?.foregroundPolygons?.length) return;
+      if (!profile.framing) throw Error('Foreground mask requires explicit framing');
       const mask=document.createElement('canvas');mask.width=480;mask.height=270;
       const context=mask.getContext('2d');
       if (!context) throw Error('Foreground mask unavailable');
       const region=document.createElement('canvas');region.width=mask.width;region.height=mask.height;
       const regionContext=region.getContext('2d');
       if(!regionContext)throw Error('Foreground region unavailable');
-      const [x,y,w,h]=dealerFrameRect(source.width,source.height,mask.width,mask.height,dealer.framing);
+      const [x,y,w,h]=dealerFrameRect(source.width,source.height,mask.width,mask.height,profile.framing);
       regionContext.fillStyle='#fff';
-      for (const polygon of dealer.foregroundPolygons) {
+      for (const polygon of profile.foregroundPolygons) {
         regionContext.beginPath();
         polygon.forEach(([u,v],index)=>regionContext[index?'lineTo':'moveTo'](x+u*w,y+v*h));
         regionContext.closePath();regionContext.fill();
@@ -169,6 +177,37 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       foregroundMatte={mask,context,region};
       assets.set('dealer-foreground',{el:mask,width:mask.width,height:mask.height,kind:'image'});
       scene.handmatte='dealer-foreground';scene.layerMode='split';scene.tableFront=false;
+    }
+
+    function finishAction(ok) {
+      const run=actionRun;if(!run)return;
+      actionRun=null;clearTimeout(run.timer);run.asset.el.pause();
+      const base=dealerAssets[0];
+      try{if(base){assets.set('dealer',base);base.el.currentTime=0;actorVersion='';prepareForegroundMask(base);}}
+      catch{ok=false;}
+      finally{run.resolve(ok);}
+    }
+    async function loadStart() {
+      if(!dealer?.wheelStart)return null;
+      try {
+        await load('dealer-action',dealer.wheelStart);
+        const asset=assets.get('dealer-action');
+        if(!asset||!Number.isFinite(asset.el.duration)||Math.abs(asset.el.duration*1000-dealer.wheelStart.durationMs)>100)return null;
+        asset.el.loop=false;
+        asset.el.addEventListener('ended',()=>{if(actionRun?.asset===asset){finishAction(true);render();playingNow=false;syncPlayback();}},{signal:abort.signal});
+        return asset;
+      }catch{return null;}
+    }
+    async function playWheelStart({onFrame=()=>{}}={}) {
+      const asset=await startReady;
+      if(!asset||startBroken||!canPlay()||actionRun)return false;
+      pause();
+      try{prepareForegroundMask(asset);}catch{startBroken=true;prepareForegroundMask(dealerAssets[0]);syncPlayback();return false;}
+      assets.set('dealer',asset);asset.el.currentTime=0;actorVersion='';
+      return new Promise(resolve=>{
+        actionRun={asset,onFrame,resolve,timer:setTimeout(()=>{finishAction(false);render();playingNow=false;syncPlayback();},dealer.wheelStart.durationMs+5000)};
+        render();syncPlayback();
+      });
     }
 
     async function loadVariants(base) {
@@ -196,7 +235,7 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       const isVideo = source.contentType.startsWith('video/');
       const element = isVideo ? document.createElement('video') : new Image();
       elements.push(element);
-      if (role==='dealer'||role.startsWith('dealer-variant-')) dealerElements.add(element);
+      if (role==='dealer'||role==='dealer-action'||role.startsWith('dealer-variant-')) dealerElements.add(element);
       if (element instanceof HTMLVideoElement) {
         element.muted = true;
         element.defaultMuted = true;
@@ -226,8 +265,9 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       const width = element instanceof HTMLVideoElement ? element.videoWidth : element.naturalWidth;
       const height = element instanceof HTMLVideoElement ? element.videoHeight : element.naturalHeight;
       if (!width || !height) throw new Error('Preview unavailable');
-      assets.set(role,{id:role,el:element,width,height,kind:isVideo?'video':'image'});
+      assets.set(role,{id:role,el:element,width,height,kind:isVideo?'video':'image',profile:role.startsWith('dealer-variant-')?dealer:source});
       element.addEventListener('error',()=>{
+        if(role==='dealer-action'){startBroken=true;finishAction(false);render();playingNow=false;syncPlayback();return;}
         if (!role.startsWith('dealer-variant-')) { fail(); return; }
         const index=dealerAssets.findIndex(asset=>asset.el===element);
         const selected=assets.get('dealer')?.el===element;
@@ -288,10 +328,11 @@ export function mountPublishedScene(stage, {dealer=null, background=null, table=
       if (failed) return;
       onReady();
       syncPlayback();
+      if(settings&&dealerAssets[0]&&!still)startReady=loadStart();
       if(settings&&dealerAssets[0]&&!still)void loadVariants(dealerAssets[0]);
     }
     void init().catch(fail);
-    return {toggle, setRoundActive:value=>{roundActive=Boolean(value);}, close:()=>{
+    return {toggle, playWheelStart, setRoundActive:value=>{roundActive=Boolean(value);}, close:()=>{
       active = false;
       abort.abort();
       pause();

@@ -4,6 +4,7 @@ import {validateBackgroundPlayback} from './public/background-playback-policy.mj
 import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from './dealer-identity.mjs';
 import {validateManagedStudioMedia} from './managed-media-contract.mjs';
 import {validateFrozenRouletteIdle} from './public/roulette-idle-contract.mjs';
+import {validateFrozenRouletteStart} from './public/roulette-start-contract.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.
 export {LAYER_ASSET_ROLES, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES, layerAssetPath, validateLayerAsset} from './layer-asset-contract.mjs';
 import {LAYER_ASSET_ROLES, validateLayerAsset} from './layer-asset-contract.mjs';
@@ -94,7 +95,7 @@ export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
   const expected = selected.filter(id => !BASE_DEALER_IDS.includes(id) || entries.some(row => row?.id === id));
   const checked = [], seen = new Set();
   for (const entry of entries) {
-    exact(entry, ['id', 'label', 'idle'], ['rouletteIdle']);
+    exact(entry, ['id', 'label', 'idle'], ['rouletteIdle','rouletteStart']);
     if (!expected.includes(entry.id) || seen.has(entry.id) || typeof entry.label !== 'string'
       || !entry.label.trim() || entry.label.length > 120 || /[\u0000-\u001f\u007f-\u009f]/u.test(entry.label)) reject();
     seen.add(entry.id);
@@ -109,7 +110,12 @@ export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
     if(Object.hasOwn(entry,'rouletteIdle')) {
       try {rouletteIdle=validateFrozenRouletteIdle(entry.rouletteIdle,entry.id,validateManagedStudioMedia);} catch {reject();}
     }
-    checked.push({id:entry.id, label:entry.label, idle,...(rouletteIdle?{rouletteIdle}:{})});
+    let rouletteStart;
+    if(Object.hasOwn(entry,'rouletteStart')) {
+      if(!rouletteIdle)reject();
+      try {rouletteStart=validateFrozenRouletteStart(entry.rouletteStart,entry.id,validateManagedStudioMedia);} catch {reject();}
+    }
+    checked.push({id:entry.id, label:entry.label, idle,...(rouletteIdle?{rouletteIdle}:{}),...(rouletteStart?{rouletteStart}:{})});
   }
   if (seen.size !== expected.length) reject();
   return checked;

@@ -7,6 +7,7 @@ import { videoFitsLine } from '../../lab/lib/video-intake.mjs';
 import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
 import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../presentation-layers.mjs';
 import {validateRouletteIdleBinding, validateFrozenRouletteIdle} from '../public/roulette-idle-contract.mjs';
+import {validateRouletteStartBinding, validateFrozenRouletteStart} from '../public/roulette-start-contract.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson,
   validateDocumentValue, validateRevision, validateStudioMedia,
@@ -105,7 +106,13 @@ export function captureFrozenRegisteredDealers({ project, selectedLaneIds, inven
         ...(binding.foregroundPolygons?{foregroundPolygons:binding.foregroundPolygons}:{})},id,validateStudioMedia);
     }
     if(requiredRoulette.includes(id)&&!rouletteIdle) fail('studio_roulette_idle_required');
-    return { id, label: dealer.label, idle,...(rouletteIdle?{rouletteIdle}:{}) };
+    let rouletteStart;
+    if(Object.hasOwn(dealer,'rouletteStart')) {
+      if(!rouletteIdle)fail('studio_roulette_idle_required');
+      const {videoId,...profile}=validateRouletteStartBinding(dealer.rouletteStart);
+      rouletteStart=validateFrozenRouletteStart({clip:capture(videos.find(row=>row.id===videoId)),...profile},id,validateStudioMedia);
+    }
+    return { id, label: dealer.label, idle,...(rouletteIdle?{rouletteIdle}:{}),...(rouletteStart?{rouletteStart}:{}) };
   });
   return freeze({ registeredDealers: validateFrozenRegisteredDealers(registeredDealers, { dealerIds: selectedDealers }), mediaPreconditions });
 }

@@ -6,7 +6,7 @@ export type PublicPreviewDealerClip={src:string;contentType:'video/mp4'|'video/w
 export type PublicOperatorPreview={
  schemaVersion:1;operatorSlug:string;roomId:string;packageRevision:number;dealer:{id:string;label:string};
  independentLayers:boolean;settings:CompositionSettings|null;
- media:{dealer:(PublicPreviewDealerClip&{variants?:PublicPreviewDealerClip[];foregroundPolygons?:import('./roulette-idle-contract.mjs').RouletteForegroundPolygons})|null;tables:PublicPreviewLayer[];backgrounds:PublicPreviewLayer[]};
+ media:{dealer:(PublicPreviewDealerClip&{variants?:PublicPreviewDealerClip[];foregroundPolygons?:import('./roulette-idle-contract.mjs').RouletteForegroundPolygons;wheelStart?:(PublicPreviewDealerClip&import('./roulette-start-contract.mjs').RouletteStartProfile)})|null;tables:PublicPreviewLayer[];backgrounds:PublicPreviewLayer[]};
 };
 export function previewMediaPath(context:PublicPreviewContext,kind:'dealer'|'table'|'background',id:string):string;
 export function validatePublicOperatorPreview(value:unknown,expected?:Partial<PublicPreviewContext>):PublicOperatorPreview;

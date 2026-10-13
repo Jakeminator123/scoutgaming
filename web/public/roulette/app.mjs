@@ -87,6 +87,15 @@ $('table-zoom').addEventListener('close',()=>{
   $('show-more').focus();
 });
 $('show-more').addEventListener('click',()=>$('more').showModal());
+if(document.fullscreenEnabled){
+  $('fullscreen').hidden=false;
+  $('fullscreen').addEventListener('click',async()=>{
+    $('more').close();
+    try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}
+    catch{message('Helskärm kunde inte öppnas i den här webbläsaren.',true);}
+  });
+  document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'Lämna helskärm':'Helskärm';});
+}
 $('more').addEventListener('close',()=>{
   if(!document.querySelector('#rules[open],#inside[open],#table-zoom[open]'))$('show-more').focus();
 });
@@ -175,7 +184,7 @@ async function submit() {
     state=result;clearPending();draft=new Map();undo=[];
     message('Hjulet snurrar. Vänta tills kulan har stannat…');
     // The receipt is already committed. A visual failure must never retry a debit.
-    try {const scene=await roomSceneReady;await scene?.playRound(result.round.event.outcome.number);} catch { /* Show the confirmed result below. */ }
+    try {const scene=await roomSceneReady;await scene?.playRound(result.round.event.outcome.number,result.round.id);} catch { /* Show the confirmed result below. */ }
     renderState();showResult(result.round);
     message(`${result.replayed?'Den sparade rundan hämtades. ':''}${result.round.event.outcome.number} · ${colourNames[result.round.event.outcome.color]}. ${result.round.returned?'Tillbaka '+money(result.round.returned,result.round.currency)+'.':'Ingen vinst.'} Lägg nya satsningar när du vill.`);
   } catch(error) {
@@ -203,7 +212,7 @@ async function init() {
     else message('Välj marker och klicka på bordet. Ditt saldo är gemensamt med blackjack.');
     if(state.room.operator) roomSceneReady=import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room,{onTable:configureTable})).then(scene=>{
       roomScene=scene;roomScene?.setRoundActive(Boolean(busy||pending));
-      if(!busy&&state.rounds[0])roomScene?.showOutcome(state.rounds[0].event.outcome.number);
+      if(!busy&&state.rounds[0])roomScene?.showOutcome(state.rounds[0].event.outcome.number,state.rounds[0].id);
       return scene;
     }).catch(()=>{
       $('scene-status').textContent='Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.';

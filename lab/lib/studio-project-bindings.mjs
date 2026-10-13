@@ -6,6 +6,7 @@ import { resolveLegacyClipPolicy } from '../../packages/presentation/runtime/leg
 import { validateDealerSetBindings } from './dealer-sets.mjs';
 import {validateVideoMetadata} from './video-intake.mjs';
 import {validateFrozenRouletteIdle} from '../../web/public/roulette-idle-contract.mjs';
+import {validateFrozenRouletteStart} from '../../web/public/roulette-start-contract.mjs';
 
 const fail = (code, statusCode = 422) => {throw new StudioStorageError(code,statusCode);};
 function checkedVideo(videos,id,dealerId,eventId) {
@@ -36,6 +37,13 @@ export function createStudioProjectBindings({videoRegistry,legacyControls} = {})
         const read=id=>checkedVideo(videos,id,dealer.id,'roulette.idle');
         validateFrozenRouletteIdle({base:read(binding.videoId),variants:(binding.variantVideoIds??[]).map(read),
           ...(binding.foregroundPolygons?{foregroundPolygons:binding.foregroundPolygons}:{})},dealer.id,
+          video=>{validateVideoMetadata(video.classification);return video;});
+      } catch {fail('studio_media_binding_invalid');}
+    }
+    for(const dealer of project.dealers) if(dealer.rouletteStart) {
+      const {videoId,...profile}=dealer.rouletteStart;
+      try {
+        validateFrozenRouletteStart({clip:checkedVideo(videos,videoId,dealer.id,'roulette.wheel-start'),...profile},dealer.id,
           video=>{validateVideoMetadata(video.classification);return video;});
       } catch {fail('studio_media_binding_invalid');}
     }

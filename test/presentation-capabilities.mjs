@@ -25,10 +25,21 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }
+});
+
+test('v15 combines roulette with retained categories while v14 advertises only the shipped category addition',async()=>{
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'15'}}));
+  assert.equal(response.status,200);const value=validatePresentationCapabilities(await response.json(),{expectedVersion:15});
+  assert.equal(value.rouletteStart,'explicit-game-start-v1');assert.equal(value.rouletteIdle,'explicit-game-idle-v1');
+  assert.equal(value.dealerCategoryTrash,'retained-categories-v1');
+  const previous=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'14'}})).json();
+  assert.equal(previous.dealerCategoryTrash,'retained-categories-v1');
+  assert.equal(Object.hasOwn(previous,'rouletteIdle'),false);
+  assert.equal(Object.hasOwn(previous,'rouletteStart'),false);
 });
 
 test('v13 advertises immutable game-specific tables without changing v12',async()=>{

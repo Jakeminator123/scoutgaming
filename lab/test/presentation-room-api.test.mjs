@@ -220,7 +220,7 @@ test('new rooms reuse an unchanged fixed scene but cannot replace an existing ro
 
 test('roulette creation publishes its game and room atomically, replays once and preserves blackjack',async()=>{
   const requested=[];
-  const f=await fixture({runtimeCapabilities:async(presentation,game)=>{requested.push(game);return presentationCapabilitiesForVersion(14);}});
+  const f=await fixture({runtimeCapabilities:async(presentation,game)=>{requested.push(game);return presentationCapabilitiesForVersion(15);}});
   const blackjack=await f.create(await f.payload());
   await saveRouletteBinding(f);
   const body=await f.payload({game:'roulette',name:'North Roulette',idempotencyKey:'0bbb0000-1111-4222-8333-444444444444'});
@@ -237,16 +237,16 @@ test('roulette creation publishes its game and room atomically, replays once and
 });
 
 test('roulette requires an explicit saved idle and never picks its blackjack baseline or inventory',async()=>{
-  const f=await fixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(14)}),body=await f.payload({game:'roulette'}),before=f.pool.snapshot();
+  const f=await fixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(15)}),body=await f.payload({game:'roulette'}),before=f.pool.snapshot();
   await assert.rejects(f.create(body),error=>error.code==='studio_roulette_idle_required'&&error.statusCode===422);
   assert.deepEqual(f.pool.snapshot(),before);
 });
 
 test('roulette-only registered dealer publishes base and variant without requiring any blackjack clip',async()=>{
-  const f=await registeredFixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(14)});
+  const f=await registeredFixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(15)});
   const records=await saveRouletteBinding(f,'johanna',{removeBlackjack:true});
   const before=f.pool.snapshot(),ready=await f.prepare('north',f.lane.id,'roulette');
-  assert.equal(ready.ready,true);assert.equal(ready.capabilities.schemaVersion,14);assert.deepEqual(f.pool.snapshot(),before);
+  assert.equal(ready.ready,true);assert.equal(ready.capabilities.schemaVersion,15);assert.deepEqual(f.pool.snapshot(),before);
   assert.equal((await f.prepare('north',f.lane.id)).ready,false,'blackjack cannot borrow roulette idle');
   const result=await f.create({operatorId:'north',presentationLaneId:f.lane.id,name:'Roulette only',game:'roulette',idempotencyKey:key,
     expectedProjectRevision:ready.projectRevision,expectedAdministrationRevision:ready.administrationRevision,expectedPackageRevision:ready.packageRevision});
@@ -264,6 +264,12 @@ test('roulette refuses old Render capabilities and invalid game values without d
   await assert.rejects(f.create(body),status(503));assert.deepEqual(f.pool.snapshot(),before);
   for(const game of [null,undefined,'poker',1]) await assert.rejects(f.create({...body,game}),status(422));
   assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('the shipped v14 category contract cannot publish roulette idle despite its higher version',async()=>{
+  const f=await fixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(14)});
+  await saveRouletteBinding(f);const body=await f.payload({game:'roulette'}),before=f.pool.snapshot();
+  await assert.rejects(f.create(body),status(503));assert.deepEqual(f.pool.snapshot(),before);
 });
 
 test('preparation is read-only and returns actual nullable package revision plus verified runtime contract', async () => {
@@ -723,8 +729,8 @@ test('the native room preparation map keeps provider and capability I/O outside 
   assert.ok(capabilityChecks >= 3);
 });
 
-test('the full Studio admin route publishes explicit roulette media only with capability 14', async () => {
-  const f = await registeredFixture(), versions = []; let engineVersion = 4;
+test('the full Studio admin route requires v15 for roulette and rejects the shipped v14 category contract', async () => {
+  const f = await registeredFixture(), versions = []; let engineVersion = 14;
   await saveRouletteBinding(f,'johanna');
   const guarded = wrapNativePresentationRepository(f.repository, {env: {CROUPIER_BACKEND_ORIGIN: 'https://engine.example.invalid'},
     fetchImpl: async (_url, options) => {
@@ -733,7 +739,7 @@ test('the full Studio admin route publishes explicit roulette media only with ca
       return Response.json(presentationCapabilitiesForVersion(engineVersion));
     }});
   const service = createPresentationRoomApi({repository: guarded, scope, videoRegistry: f.videoRegistry,
-    runtimeCapabilities: (presentation, game) => guarded.withMutationContext(async () => presentationCapabilitiesForVersion(presentation.registeredDealers.some(row=>row.rouletteIdle)?14:game === 'roulette' ? 9 : 4),
+    runtimeCapabilities: (presentation, game) => guarded.withMutationContext(async () => presentationCapabilitiesForVersion(presentation.registeredDealers.some(row=>row.rouletteIdle)?15:game === 'roulette' ? 9 : 4),
       [{kind:'administration',value:{rooms:[{schemaVersion:2,game}]}},{kind:'presentation-package',value:presentation}])});
   const api = createStudioAdminApi({authorize: async () => session, allowedOrigins:[origin], publicHosts:['studio.example.invalid'],
     handlers:service.handlers, preparations:service.preparations, mutationTransaction: async (work, options) => {
@@ -745,10 +751,10 @@ test('the full Studio admin route publishes explicit roulette media only with ca
   const request = () => new Request(origin+'/studio/api/admin/presentation-room',{method:'POST',
     headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify(body)});
   assert.equal((await api.handle(request())).status,503); assert.deepEqual(f.pool.snapshot(),before);
-  assert.deepEqual(versions,[14]); versions.length=0; engineVersion=14;
+  assert.deepEqual(versions,[15]); versions.length=0; engineVersion=15;
   const response=await api.handle(request()); assert.equal(response.status,200);
   assert.equal((await response.json()).room.game,'roulette'); assert.equal(f.pool.snapshot().packages.length,1);
-  assert.deepEqual(versions,[14,14]);
+  assert.deepEqual(versions,[15,15]);
 });
 
 test('a frozen default idle removed by another package writer makes replay conflict instead of exposing a broken game link', async () => {

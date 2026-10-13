@@ -4,7 +4,50 @@
 
 [Flödesschema i Asymptote](underlag/roulette-filmflode.asy) visar det föreslagna pending/reveal-flödet. Asymptote-kompilator saknas lokalt; källan är inte renderingsverifierad.
 
-**Status 13 oktober 2026:** Jakob har ändrat målet från 37 hela filmer till en kompakt lösning med 37 korrekta slutlägen. Ett isolerat geometriprov med separat kula finns; ingen utfallsrenderare eller fördröjd resultatvisning är inkopplad i spelmotorn. Det tidigare kravet att invänta 37 filmer före animationsprov är ersatt av detta uppdrag. Privata original bevaras. Proven är inte produktionsgodkännande.
+**Status 13 oktober 2026:** Den riktiga `/play/roulette`-spelaren ritar nu 37 korrekta fack och en kula mot serverkvittots nummer. Rundans ID ger reproducerbar variation i slutvinkel, 3–5 rotorvarv, 5–7 kulvarv och 8,5–12 sekunders visning. Anna-bordets perspektiv och MP4-bakgrund bevaras. Provet använder isolerad databas; livepublicering och serverstyrd pending/reveal återstår. Privata original bevaras.
+
+## Ny startfilm och variationsspelning
+
+Jakob godkände uppladdning av den godkända målbilden till sitt Runway-konto
+och en tiosekundersfilm. Generering `d9e1bab9-d760-4b7c-a0b2-f2744865ca68`
+gav 1960×1056, 10,041 s, utan ljud; MP4 SHA-256
+`b17c0a108e6edcc119a2b5fca7ef156709fef9e742a000809f78da8fb6ebf524`.
+Friläggning `d66e85b2-a833-4e5f-9b9c-ccff8134f2b5` gav alpha-WebM,
+10,042 s, 737393 byte, SHA-256
+`f3c706a0cef16d3f3e7bf4b5e10ac524d3974c552d0bccc8a55be4f22d9b6f8a`.
+Original, prompt, granskningsmanifest och bildrutor ligger privat i samma
+`roulette-stop`-mapp som tidigare bevis; inga signerade leverantörs-URL:er i Git.
+
+**Visuell bedömning: granskningsklipp, inte produktionsgodkänt.** Första och
+sista bildrutorna har vilohänder; friläggningen bevarar händer/fluga/glasögon
+i granskade rutor. Gesten är däremot ett presenterande svep, inte en tydlig
+tangentiell hjulimpuls följd av ett trovärdigt kulsläpp. Testprofilen använder
+framing `{scale:1,x:0,y:0}`, impuls 2500 ms och släpp 4500 ms för teknisk
+kopplingsgranskning. Dessa tider är provisoriska och ska inte publiceras som
+accepterad fysisk kalibrering. Ingen ytterligare generering beställd.
+
+Valfritt `dealers[].rouletteStart` binder exakt media-UUID, bordsdesign,
+duration, impuls/släpptid och egen handregion. Frozen capture och preview
+bevarar profilen; roulette/action/alpha/VILA→VILA och egna bildmått kontrolleras.
+Spelaren jämför avkodad duration med profilen (högst 100 ms avvikelse),
+spelar klippet en gång och låter videons tid styra rotorstart och kulsläpp.
+En saknad/trasig startfilm lämnar idle och MP4 användbara. Rätt valt bord
+måste matcha; ett annat bord får aldrig ärva handkalibreringen.
+
+Runtime v1–14 behåller mains exakta kontrakt; v14 gäller kategoripapperskorg.
+**Både rouletteIdle och rouletteStart kräver v15**, med separata featuregrindar.
+Ingen SQL-migration. Material som senare godkänns ska registreras via befintlig
+mediebank med hash och rouletteklassning och lagras i Vercel Blob. Tillfälliga
+Runway-URL:er är inte produktionslagring. Ingen Blob-/Neon-/rums-publicering utförd.
+
+Två sammanhängande faktiska UI-rundor med startfilmen: **8 svart → 3 röd**,
+saldo 500 → 495 → 500 USD, isolerad SQLite, oförändrad MP4. Privata bevis:
+`anna-start-round-1.png`, `anna-start-round-2.png`, `anna-start-motion.png`,
+`anna-start-evidence.json`. Föregående varierade stopp-prov gav 31 svart → 0 grön.
+Landskapsvyn fyller fönstret med spelkontroller under bordet och erbjuder
+helskärm under Mer. Vid 1440×900 är dokumenthöjden 900 utan scroll.
+32 fokuserade spel-/renderingstester passerade; full leveranskontroll redovisas
+i handoff. Dessa tekniska prov ersätter inte gestens visuella godkännande.
 
 ## Vad banken ska innehålla
 

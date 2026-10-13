@@ -6,7 +6,7 @@
 till den befintliga `/play/roulette`-spelaren. Admins andnings-/glasögonkort
 kan kopplas, sparas och återläsas som utkast. Publicering fryser bas, högst tre
 varianter, inramning och handpolygoner med exakta medierevisioner. Blackjack
-använder fortsatt sitt eget idle. Nya bindningar kräver runtime **v14**;
+använder fortsatt sitt eget idle. Nya bindningar kräver runtime **v15**;
 ingen SQL-migration. Äldre rouletterum utan sådan bindning förblir spelbara
 med `dealer:null`, aldrig med blackjackfilmen.
 
@@ -25,11 +25,18 @@ SQLite och lokala mediebytes: **33 svart, sedan 6 svart**, testsaldo 500 → 495
 → 500 USD. Det är inte en livepublicering eller godkännande av kompletta
 spelfilmer. Det tidigare basprovet saknade hjulstart och utfallsanimation.
 Fortsättningen ritar nu exakta 37 hjulsiffror från motorns `WHEEL` och en
-separat kula som under nio sekunder landar i serverkvittots fack. Annas
+separat kula som under 8,5–12 sekunder landar i serverkvittots fack, på olika
+ställen runt hjulet beroende på rundans ID. Annas
 placering och MP4-filen är oförändrade. [Kalibrering, tester och kvarvarande
 sekretessgräns](UTFALLSFILMER.md#exakt-rotor-och-en-kula-i-den-riktiga-spelaren).
 Bakgrund och Anna fortsätter mellan rundorna; en valfri variant startar tidigast
 efter tre basloopar och inte under en pågående serverbegäran.
+
+En ny tiosekunders startfilm är skapad och frilagd efter Jakobs godkännande.
+Valfritt `rouletteStart` kopplar filmens egen tid till hjulstart/kulsläpp och
+återgång till idle. Två tekniska UI-rundor gav 8 svart → 3 röd. Gesten behöver
+förbättras före produktionsgodkännande; se [granskningen](UTFALLSFILMER.md#ny-startfilm-och-variationsspelning).
+Godkänt material ska gå via mediebank och Vercel Blob, inte Runways tillfälliga URL.
 
 `tools/roulette-ui-fixture.mjs --scene-manifest <privat JSON>` återspelar samma
 kedja utan produktionskonto. Manifestet anger explicit lokala filer och SHA-256,

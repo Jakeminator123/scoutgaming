@@ -55,6 +55,26 @@ function rouletteFixture() {
   input.inventory.videos.push(...records.map(video));input.mediaRows.push(...records.map((row,i)=>({...row,revision:'roulette-'+i})));
   input.requiredRouletteIdleDealerIds=['johanna'];return {input,records,dealer};
 }
+
+test('optional wheel start freezes its own profile and CAS bytes without changing legacy or roulette idle',()=>{
+  const {input,records,dealer}=rouletteFixture(),clip=structuredClone(records[0]);
+  clip.id='30000000-0000-4000-8000-000000000001';clip.sha256='9'.repeat(64);
+  clip.pathname=`croupier/media/dealers/johanna/review/uploads/${clip.id}/${clip.sha256}.webm`;
+  Object.assign(clip.classification,{eventId:'roulette.wheel-start',kind:'action',action:'wheel-start',situation:'wheel-start',framing:{scale:1.2,x:.1,y:0}});
+  dealer.rouletteStart={videoId:clip.id,tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2200,ballReleaseMs:4000};
+  input.inventory.videos.push(video(clip));input.mediaRows.push({...clip,revision:'wheel-one'});
+  const result=captureFrozenRegisteredDealers(input),entry=result.registeredDealers[0];
+  assert.deepEqual(entry.rouletteStart.clip,clip);assert.equal(entry.rouletteStart.wheelImpulseMs,2200);
+  assert.equal(entry.idle.id,JOHANNA_ID);assert.equal(entry.rouletteIdle.base.id,records[0].id);
+  const capture=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:input.project.revision,value:input.project},
+    administrationDocument:{kind:'administration',revision:'admin-one',value:{rooms:[]}},mediaRows:input.mediaRows},inventory:input.inventory,selectedLaneIds:input.selectedLaneIds});
+  assert.deepEqual(decodePresentationPackage(encodePresentationPackage(capture.presentation)).registeredDealers[0].rouletteStart,entry.rouletteStart);
+  assert.ok(capture.mediaPreconditions.some(row=>row.id===clip.id));
+  const changed=structuredClone(input.mediaRows);changed.at(-1).classification.framing.x=.2;
+  assert.throws(()=>assertFrozenMediaPreconditions(capture.mediaPreconditions,changed),code('studio_conflict',409));
+  input.inventory.videos.at(-1).available=false;assert.throws(()=>captureFrozenRegisteredDealers(input));
+  input.inventory.videos.at(-1).available=true;delete dealer.rouletteIdle;assert.throws(()=>captureFrozenRegisteredDealers(input));
+});
 test('explicit roulette base and glasses variant freeze separately from blackjack with every media CAS precondition',()=>{
   const {input,records,dealer}=rouletteFixture(),before=structuredClone(input);
   const result=captureFrozenRegisteredDealers(input),entry=result.registeredDealers[0];

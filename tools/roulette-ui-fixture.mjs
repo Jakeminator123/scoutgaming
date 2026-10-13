@@ -67,7 +67,7 @@ const server=createServer(async(req,res)=>{
         res.end(`<!doctype html><html lang="sv"><title>Isolerad MP4-maskkontroll</title><h1>Isolerad MP4-maskkontroll</h1><canvas id="scene" style="width:80vw;aspect-ratio:16/9"></canvas><p id="status">Laddar</p><button id="toggle">Spela/pausa</button><script type="module">import {mountPublishedScene} from '/published-scene.mjs';import {rouletteSceneSettings} from '/roulette/media.mjs';const scene=mountPublishedScene(document.querySelector('canvas'),{dealer:null,table:{src:'${mediaPath}',contentType:'video/mp4'},tableMask:{src:'/roulette/assets/roulette-bord.png',contentType:'image/png'},settings:rouletteSceneSettings(),layout:'desktop',onReady:()=>document.querySelector('#status').textContent='Masken är laddad',onFailure:()=>document.querySelector('#status').textContent='Mediafel',onPlaying:playing=>document.querySelector('button').textContent=playing?'Pausa video':'Spela video'});document.querySelector('button').onclick=()=>scene.toggle();addEventListener('pagehide',()=>scene.close(),{once:true});</script>`);return;
       }
     }
-    if(['/roulette-idle-contract.mjs','/material-catalog.mjs','/background-materials.mjs'].includes(url.pathname)){
+    if(['/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs'].includes(url.pathname)){
       res.writeHead(200,{'Content-Type':'text/javascript'});res.end(await readFile(new URL('../web/public'+url.pathname,import.meta.url)));return;
     }
     if(['/composition-runtime/compositor.js','/composition-runtime/geometry.js'].includes(url.pathname)){

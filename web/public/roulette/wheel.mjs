@@ -1,5 +1,5 @@
 import {WHEEL,pocketColor} from '/roulette-rules.mjs';
-import {createSpin,SPIN_MS,TAU} from './wheel-motion.mjs';
+import {createSpin,presentationForRound,TAU} from './wheel-motion.mjs';
 
 // Calibrated only against catalog design roulette-anna-v1 (1708 x 920).
 // This replaces the generated number ring; it never determines a game result.
@@ -28,7 +28,7 @@ export function mountRouletteWheel(host,{designId,placement},{
     }
     for(const radius of [80,119,146]){ctx.beginPath();ctx.arc(0,0,radius,0,TAU);ctx.strokeStyle='#e0ca9c';ctx.lineWidth=1.5;ctx.stroke();}
     ctx.restore();
-    if(ball){
+    if(ball&&ball.visible!==false){
       ctx.beginPath();ctx.ellipse(ball.x+1,ball.y+2,4.5,2,0,0,TAU);ctx.fillStyle='#0008';ctx.fill();
       const shine=ctx.createRadialGradient(ball.x-1,ball.y-1,0,ball.x,ball.y,3.5);shine.addColorStop(0,'#fff');shine.addColorStop(.5,'#fff7de');shine.addColorStop(1,'#b8a77d');
       ctx.beginPath();ctx.arc(ball.x,ball.y,3.5,0,TAU);ctx.fillStyle=shine;ctx.fill();
@@ -39,26 +39,27 @@ export function mountRouletteWheel(host,{designId,placement},{
     ctx.closePath();ctx.fill();ctx.restore();
   }
   const stop=()=>{if(frame!==undefined)cancelFrame(frame);clearTimeout(timer);frame=undefined;const done=complete;complete=null;done?.();};
-  function showOutcome(number){
+  function showOutcome(number,roundId){
     const index=WHEEL.indexOf(number);if(closed||index<0)return;
-    stop();ball=createSpin(index,rotation)(1);rotation=ball.rotation%TAU;paint();
+    stop();ball=createSpin(index,rotation,presentationForRound(roundId))(1);rotation=ball.rotation%TAU;paint();
   }
-  function play(number){
+  function play(number,roundId,{clock,ballDelayMs=0}={}){
     const index=WHEEL.indexOf(number);if(closed||index<0)return Promise.resolve();
     stop();
-    if(reducedMotion()){showOutcome(number);return Promise.resolve();}
-    const motion=createSpin(index,rotation),start=now();
+    if(reducedMotion()){showOutcome(number,roundId);return Promise.resolve();}
+    const profile=presentationForRound(roundId);profile.duration=Math.max(profile.duration,ballDelayMs*2+1000);
+    const motion=createSpin(index,rotation,{...profile,ballDelay:Math.min(.5,ballDelayMs/profile.duration)}),start=now();
     return new Promise(resolve=>{
       complete=resolve;
       const finish=()=>{try{ball=motion(1);rotation=ball.rotation%TAU;paint();}catch{canvas.hidden=true;}finally{stop();}};
       const tick=()=>{
         try{
-          ball=motion((now()-start)/SPIN_MS);rotation=ball.rotation;paint();
+          ball=motion((clock?clock():now()-start)/profile.duration);rotation=ball.rotation;paint();
           if(ball.settled){rotation%=TAU;stop();}else frame=requestFrame(tick);
         }catch{stop();canvas.hidden=true;}
       };
       // RAF may stop in a background tab. A confirmed receipt must still unlock.
-      timer=setTimeout(finish,SPIN_MS+250);tick();
+      timer=setTimeout(finish,profile.duration+(clock?5500:250));tick();
     });
   }
   paint();host.append(canvas);

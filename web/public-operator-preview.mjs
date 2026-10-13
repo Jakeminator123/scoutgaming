@@ -61,13 +61,17 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
         return validateLayerAsset(asset);
       }).filter(asset=>role!=='table'||layerAssetFitsGame(asset,room.game??'blackjack'));
     }
+    const rouletteStart=room.game==='roulette'&&independentLayers&&idle&&registered.rouletteStart
+      &&assets.table.some(asset=>materialForAsset(asset)?.id===registered.rouletteStart.tableDesignId)?registered.rouletteStart:null;
+    if(rouletteStart)dealerMedia.push(rouletteStart.clip);
     const item=(record,kind)=>({src:previewMediaPath(context,kind,record.id),contentType:record.contentType});
     const dealerItem=record=>({...item(record,'dealer'),...(['green-screen','alpha'].includes(record.classification.compositing?.mode)?{compositing:record.classification.compositing}:{}),...(record.classification.framing?{framing:record.classification.framing}:{})});
+    const startItem=rouletteStart?(()=>{const {clip,...profile}=rouletteStart;return {...dealerItem(clip),...profile};})():null;
     const descriptor=validatePublicOperatorPreview({
       schemaVersion:1,operatorSlug:context.operatorSlug,roomId:context.roomId,packageRevision:context.packageRevision,
       dealer:{id:context.dealerId,label},independentLayers,
       settings:independentLayers?(selection.composition?.settings??defaultCompositionSettings()):null,
-      media:{dealer:idle?{...dealerItem(idle),...(rouletteIdle?{variants:rouletteIdle.variants.map(dealerItem),...(rouletteIdle.foregroundPolygons?{foregroundPolygons:rouletteIdle.foregroundPolygons}:{})}:{})}:null,
+      media:{dealer:idle?{...dealerItem(idle),...(rouletteIdle?{variants:rouletteIdle.variants.map(dealerItem),...(rouletteIdle.foregroundPolygons?{foregroundPolygons:rouletteIdle.foregroundPolygons}:{})}:{}),...(startItem?{wheelStart:startItem}:{})}:null,
         tables:assets.table.map(asset=>({id:asset.id,label:materialLabel(asset),...item(asset,'table'),...(materialForAsset(asset)?{designId:materialForAsset(asset).id}:{})})),
         backgrounds:assets.background.map(asset=>({id:asset.id,label:materialLabel(asset),...item(asset,'background')}))},
     },context);

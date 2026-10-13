@@ -18,7 +18,7 @@ function asset(role,n) {
     sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};
   return {...row,pathname:layerAssetPath(row)};
 }
-function fixture({schemaVersion=3,compositing=true,roulette=false}={}) {
+function fixture({schemaVersion=3,compositing=true,roulette=false,start=false}={}) {
   const project=[['johanna','Johanna'],['nora','Nora'],['astrid','Astrid']].reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
   const lane=defaultPresentationLane('johanna');lane.id='north-presentation';lane.label='Published scene';project.lanes=[lane];
   lane.dealers=['johanna','nora','astrid'];lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
@@ -43,6 +43,15 @@ function fixture({schemaVersion=3,compositing=true,roulette=false}={}) {
     });
     project.dealers.find(row=>row.id==='johanna').rouletteIdle={videoId:records[0].id,variantVideoIds:[records[1].id],foregroundPolygons:[[[0,0],[1,0],[1,1]]]};
     mediaRows.push(...records);for(const row of project.layerAssets)if(row.role==='table')row.game='roulette';
+  }
+  if(start) {
+    const clip=clone(mediaRows.at(-1)),id='30000000-0000-4000-8000-000000000001',sha256='9'.repeat(64);
+    Object.assign(clip,{id,sha256,pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.webm`,revision:'start-one'});
+    Object.assign(clip.classification,{eventId:'roulette.wheel-start',action:'wheel-start',situation:'wheel-start',kind:'action',framing:{scale:1.1,x:.1,y:.2}});
+    mediaRows.push(clip);
+    project.dealers.find(row=>row.id==='johanna').rouletteStart={videoId:id,tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2400,ballReleaseMs:4300,foregroundPolygons:[[[.1,.1],[.3,.1],[.3,.3]]]};
+    const {kind,hasAlpha,...signature}=materialSource('roulette-anna-v1');
+    Object.assign(project.layerAssets[2],signature);project.layerAssets[2].pathname=layerAssetPath(project.layerAssets[2]);
   }
   const inventory={videos:mediaRows.map(record=>({id:record.id,sha256:record.sha256,bytes:record.size,dealer:record.classification.dealerId,
     available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
@@ -71,6 +80,33 @@ function fixture({schemaVersion=3,compositing=true,roulette=false}={}) {
 }
 const request=(f,path=descriptor,init)=>f.api.handle(new Request('https://www.example.test'+path,init));
 const body=async f=>{const response=await request(f);assert.equal(response.status,200);return response.json();};
+
+test('optional start uses its own frozen profile and only the exact allowed design and dealer-byte route',async()=>{
+  const f=fixture({roulette:true,start:true}),value=await body(f),start=value.media.dealer.wheelStart;
+  assert.equal(start.tableDesignId,'roulette-anna-v1');assert.equal(start.durationMs,10042);assert.equal(start.ballReleaseMs,4300);
+  assert.notDeepEqual(start.framing,value.media.dealer.framing);assert.notDeepEqual(start.foregroundPolygons,value.media.dealer.foregroundPolygons);
+  assert.equal(start.src,previewMediaPath(context,'dealer',f.mediaRows.at(-1).id));
+  assert.equal((await request(f,start.src,{headers:{Range:'bytes=0-15'}})).status,206);
+  assert.equal((await request(f,start.src,{method:'HEAD'})).status,200);
+  assert.equal(f.served[0].record.sha256,f.mediaRows.at(-1).sha256);
+  for(const change of [v=>v.media.dealer.wheelStart.src=v.media.dealer.src,v=>v.media.dealer.wheelStart.src='https://foreign.example/start.webm',
+    v=>v.media.dealer.wheelStart.ballReleaseMs=10042,v=>v.media.dealer.wheelStart.tableDesignId='blackjack-green-felt',
+    v=>v.media.tables[0].designId='unknown',v=>delete v.media.dealer.wheelStart.framing,v=>v.media.dealer.wheelStart.pathname='private']) {
+    const copy=clone(value);change(copy);assert.throws(()=>validatePublicOperatorPreview(copy,context));
+  }
+  f.saved.administration.rooms[0].game='blackjack';
+  assert.equal((await body(f)).media.dealer.wheelStart,undefined);assert.equal((await request(f,start.src)).status,404);
+  f.saved.administration.rooms[0].game='roulette';
+  f.rewrite(pack=>{const table=pack.assets.find(row=>row.role==='table');table.sha256='b'.repeat(64);table.pathname=layerAssetPath(table);});
+  assert.equal((await body(f)).media.dealer.wheelStart,undefined);assert.equal((await request(f,start.src)).status,404);
+});
+
+test('start removal or stale package revision revokes bytes before a provider read',async()=>{
+  const f=fixture({roulette:true,start:true}),src=(await body(f)).media.dealer.wheelStart.src;
+  f.saved.package.revision=8;assert.equal((await request(f,src)).status,409);assert.equal(f.served.length,0);
+  f.saved.package.revision=7;f.rewrite(pack=>delete pack.registeredDealers.find(row=>row.id==='johanna').rouletteStart);
+  assert.equal((await request(f,src)).status,404);assert.equal(f.served.length,0);
+});
 
 test('roulette exposes only its explicitly frozen base, variants and foreground profile through revision-bound bytes',async()=>{
   const f=fixture({roulette:true}),before=clone(f.saved),value=await body(f),frozen=readPackagePresentation(f.saved.package);

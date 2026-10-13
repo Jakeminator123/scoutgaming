@@ -42,6 +42,21 @@ test('server project save verifies the exact roulette base and variants, source 
     const f=rouletteFixture();change(f);await assert.rejects(f.verify(f.project),error=>error.code==='studio_media_binding_invalid'&&error.statusCode===422);
   }
 });
+
+test('wheel-start save verifies exact media, poses and independent profile before persistence',async()=>{
+  const build=()=>{
+    const f=rouletteFixture(),row=structuredClone(f.rows[0]);row.id='30000000-0000-4000-8000-000000000001';
+    Object.assign(row.classification,{eventId:'roulette.wheel-start',kind:'action',situation:'wheel-start',action:'wheel-start',framing:{scale:1.1,x:0,y:.1}});
+    f.registry.videos.push(row);const dealer=f.project.dealers.find(value=>value.id==='astrid');
+    dealer.rouletteStart={videoId:row.id,tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2100,ballReleaseMs:4000};return {...f,row,dealer};
+  };
+  const good=build();await good.verify(good.project);
+  for(const change of [f=>f.row.available=false,f=>f.row.classification.dealerId='nora',f=>f.row.classification.startPose='unverified',
+    f=>f.row.classification.game='blackjack',f=>f.dealer.rouletteStart.videoId=f.rows[0].id,f=>f.dealer.rouletteStart.ballReleaseMs=10042,
+    f=>delete f.dealer.rouletteIdle]){
+    const f=build();change(f);await assert.rejects(f.verify(f.project));
+  }
+});
 test('wrong family/event/dealer, unavailable bytes and forged hash reject persisted media variants',async () => {
   for (const change of [video => {video.familyId='astrid/deal.player.left/box1';},video => {video.eventId='deal.player.right';},
     video => {video.dealer='vera';},video => {video.available=false;},video => {video.sha256='wrong';},video => {video.bytes=0;}]) {

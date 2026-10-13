@@ -28,6 +28,15 @@ export async function rouletteSceneFixture(manifestPath) {
     mediaRows.push(record);files.set(record.pathname,b.data);
   }
   project.dealers.find(row=>row.id===dealerId).rouletteIdle={videoId:mediaRows[0].id,variantVideoIds:mediaRows.slice(1).map(row=>row.id),foregroundPolygons:manifest.foregroundPolygons};
+  if(manifest.start){
+    const input=manifest.start,b=await bytes('start',input),id='10000000-0000-4000-8000-000000000003';
+    if(input.poseReview!=='VILA-to-VILA')throw Error('Fixture start needs explicit first/last pose review');
+    const record={id,sha256:b.sha256,size:b.size,contentType:'video/webm',revision:'fixture-'+b.sha256,
+      pathname:`croupier/media/dealers/${dealerId}/review/uploads/${id}/${b.sha256}.webm`,
+      classification:{dealerId,game:'roulette',eventId:'roulette.wheel-start',action:'wheel-start',situation:'wheel-start',startPose:'VILA',endPose:'VILA',kind:'action',role:'standard',label:'Hjulstart · granskningsklipp',notes:'Isolated timing review; not production approved',playback:'once',compositing:{mode:'alpha'},framing:input.framing}};
+    mediaRows.push(record);files.set(record.pathname,b.data);
+    project.dealers.find(row=>row.id===dealerId).rouletteStart={videoId:id,...input.profile};
+  }
   project.layerAssets=[];
   for(const [i,role] of ['background','table'].entries()) {
     const input=manifest[role],b=await bytes(role,input);
@@ -36,7 +45,7 @@ export async function rouletteSceneFixture(manifestPath) {
     record.pathname=layerAssetPath(record);project.layerAssets.push(record);files.set(record.pathname,b.data);
     lane.layers[role]={enabled:true,default:record.id,allowed:[record.id],...(role==='background'?{mode:'video'}:{colors:[]})};
   }
-  const inventory={videos:mediaRows.map(record=>({id:record.id,sha256:record.sha256,bytes:record.size,dealer:dealerId,available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
+  const inventory={videos:mediaRows.map(record=>({id:record.id,sha256:record.sha256,bytes:record.size,dealer:dealerId,available:true,classification:record.classification,kind:record.classification.kind,playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
   const {presentation}=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:project.revision,value:project},administrationDocument:{kind:'administration',revision:'fixture-admin',value:{rooms:[]}},mediaRows},inventory,selectedLaneIds:[lane.id],requiredRouletteIdleDealerIds:[dealerId]});
   const room={schemaVersion:2,id:'isolated-room',name:'Anna · rouletteprov',operatorId:'isolated-operator',presentationLaneId:lane.id,gameLaneId:'portrait-anna-jonsson',state:'live',game:'roulette'};
   const saved={operator:{id:room.operatorId,slug:'isolated',name:'Isolerat visuellt prov',status:'active'},administration:{gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Anna',renderer:'portrait-video',dealer:dealerId,mediaCollection:dealerId+'-presentation'}],rooms:[room]},package:{operatorId:room.operatorId,revision:1,lanes:[lane.id],games:['roulette'],tables:[room.id],branding:withPackagePresentation({},presentation)}};

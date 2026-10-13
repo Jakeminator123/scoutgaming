@@ -159,8 +159,9 @@ function assertReplayBinding(saved, room) {
   return frozen;
 }
 function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
-  if (!capabilities || ![2, 3, 4, 9, 14].includes(capabilities.schemaVersion) || game === 'roulette' && capabilities.schemaVersion < 9
-    ||presentation?.registeredDealers?.some(row=>row.rouletteIdle)&&capabilities.schemaVersion<14) return false;
+  if (!capabilities || ![2, 3, 4, 9, 14, 15].includes(capabilities.schemaVersion) || game === 'roulette' && capabilities.schemaVersion < 9
+    ||presentation?.registeredDealers?.some(row=>row.rouletteIdle)&&capabilities.rouletteIdle!=='explicit-game-idle-v1'
+    ||presentation?.registeredDealers?.some(row=>row.rouletteStart)&&capabilities.rouletteStart!=='explicit-game-start-v1') return false;
   return capabilities.schemaVersion >= (presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2);
 }
 export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now } = {}) {

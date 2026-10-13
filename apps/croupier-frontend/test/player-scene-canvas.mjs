@@ -14,6 +14,37 @@ const sharedCode = ts.transpileModule(readFileSync(sharedFilename,'utf8'),{fileN
 const source = (name='dealer',contentType='video/mp4')=>({src:'/api/operators/fixture/preview/'+name,contentType});
 const settle = ()=>new Promise(resolve=>setImmediate(resolve));
 
+test('roulette action plays twice with its own framing and isolates a broken take',async()=>{
+  const framing={scale:1,x:0,y:0}, actionFraming={scale:.75,x:.1,y:0};
+  const view=mount({props:{settings:defaultCompositionSettings(),background:source('background'),dealer:{...source(),framing,wheelStart:{...source('start','video/webm'),framing:actionFraming,durationMs:10042}}}});
+  try{
+    await settle();await view.visible(true);await settle();
+    const [base,background]=view.elements.filter(el=>el.src&&el.play);
+    const start=view.elements.find(el=>el.src?.endsWith('/start'));
+    assert.equal(start.playCalls,0);
+    for(let i=0;i<2;i++){
+      const times=[],play=view.scene.playWheelStart({onFrame:ms=>times.push(ms)});await settle();
+      assert.equal(base.paused,true);assert.equal(start.paused,false);assert.equal(background.paused,false);assert.equal(start.loop,false);
+      assert.equal(view.renders.at(-1).assets.get('dealer').profile.framing,actionFraming);
+      start.currentTime=2;for(const cb of [...view.frames.values()])cb();assert.ok(times.includes(2000));
+      start.dispatchEvent(new Event('ended'));assert.equal(await play,true);await settle();assert.equal(base.paused,false);
+    }
+    const play=view.scene.playWheelStart();await settle();start.dispatchEvent(new Event('error'));
+    assert.equal(await play,false);await settle();assert.equal(await view.scene.playWheelStart(),false);
+    assert.equal(base.paused,false);assert.equal(background.paused,false);assert.equal(view.failures,0);
+  }finally{view.cleanup();}
+});
+
+test('roulette action validates decoded duration and completes when hidden or closed',async()=>{
+  for(const durationMs of [9000,10042]){
+    const view=mount({props:{settings:defaultCompositionSettings(),dealer:{...source(),framing:{scale:1,x:0,y:0},wheelStart:{...source('start','video/webm'),framing:{scale:1,x:0,y:0},durationMs}}}});
+    try{await settle();await view.visible(true);await settle();const play=view.scene.playWheelStart();await settle();
+      if(durationMs===9000)assert.equal(await play,false);
+      else{await view.hidden(true);assert.equal(await play,false);await view.hidden(false);const again=view.scene.playWheelStart();await settle();view.cleanup();assert.equal(await again,false);}
+    }finally{view.cleanup();}
+  }
+});
+
 function mount({reduced=false,defer=false,deferVariants=false,props={},sharedOptions={},videoSize=[1080,1920],variantSize=videoSize}={}) {
   const refs=[],states=[],effects=[],elements=[],frames=new Map(),renders=[];
   let ready=0,failures=0,nextFrame=0,renderCalls=0,sharedScene;
@@ -23,7 +54,7 @@ function mount({reduced=false,defer=false,deferVariants=false,props={},sharedOpt
     getContext(){return this.context;}
   }
   class Video extends EventTarget {
-    src=''; currentTime=0; videoWidth=1080; videoHeight=1920; paused=true; muted=false; defaultMuted=false; loadCalls=0; playCalls=0;
+    src=''; currentTime=0; duration=10.042; videoWidth=1080; videoHeight=1920; paused=true; muted=false; defaultMuted=false; loadCalls=0; playCalls=0;
     get currentSrc(){return this.src;}
     load(){this.loadCalls++;[this.videoWidth,this.videoHeight]=this.src.includes('variant')?variantSize:videoSize;if(this.src&&!defer&&!(deferVariants&&this.src.includes('variant')))queueMicrotask(()=>this.dispatchEvent(new Event('loadeddata')));}
     play(){this.playCalls++;this.paused=false;return Promise.resolve();}

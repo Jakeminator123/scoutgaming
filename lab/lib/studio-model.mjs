@@ -12,6 +12,7 @@ import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './p
 import { validateLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { dealerSetErrors } from './dealer-sets.mjs';
 import { validateRouletteIdleBinding } from '../../web/public/roulette-idle-contract.mjs';
+import { validateRouletteStartBinding } from '../../web/public/roulette-start-contract.mjs';
 
 
 // Pure, browser-safe policy model. This file never reads environment, network,
@@ -401,7 +402,11 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const dealerIds = new Set();
   if (array(project.dealers, 'dealers', 0, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
-    if (!keys(dealer, ['id', 'label'], at, ['speechProfile','rouletteIdle'])) return;
+    if (!keys(dealer, ['id', 'label'], at, ['speechProfile','rouletteIdle','rouletteStart'])) return;
+    if (Object.hasOwn(dealer,'rouletteStart')) {
+      try { validateRouletteStartBinding(dealer.rouletteStart); if(!dealer.rouletteIdle)throw Error('kräver roulette-idle för återgång'); }
+      catch (cause) { error(at + '.rouletteStart', cause.message); }
+    }
     if (Object.hasOwn(dealer,'rouletteIdle')) {
       try { validateRouletteIdleBinding(dealer.rouletteIdle); }
       catch (cause) { error(at + '.rouletteIdle', cause.message); }
