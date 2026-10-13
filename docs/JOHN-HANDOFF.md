@@ -22,6 +22,22 @@ Två tekniskt färdiga Paow-spelningar ersätter inte visuell läppsynkacceptans
 
 ## Publik Scoutguide med D-ID, 13 oktober
 
+PR103 är mergad och live (`b2dda8ab`, Vercel READY och main-CI grön).
+Riktigt publikt textsvar fungerar i cookiefri produktionsvy. Första avatarprovet
+fångade en anslutningskapplöpning: ett snabbt modellsvar kunde anropa `speak`
+innan `connect` var klar. Uppföljningen väntar på den pågående anslutningen
+och provar både snabbt svar och panelstängning under start. Nytt avatarprov
+görs efter att rättningen publicerats.
+Sidprovet hittade även att lobbyns och roulette-sidans CSP blockerade D-ID.
+Endast deras HTML-dokument får nu ansluta till `https://api.d-id.com` och
+spela avatarens vilovideo från `https://agents-results.d-id.com` samt WebRTC
+via blob. Skript, tillgångar och interna adminytor behåller sina begränsningar.
+WebRTC-uppvärmningen startar ljudlöst för att fungera med autoplayreglerna;
+ljud vid svar använder fortfarande den synliga knappen om webbläsaren kräver
+ett klick. Webbläsarverktyget kopplades bort under sista provet efter bytet
+av GPT-inloggning. Full hörbar avataracceptans och inloggade N2/N3-sidprov
+är därför fortfarande öppna. PR #105 samlar dessa avgränsade rättningar.
+
 Besökare, N2 och N3 får en separat Scoutguide genom den gemensamma chattknappen.
 N1 behåller Adminrobotens tre lägen, filimport och granskade åtgärder.
 `/studio/api/public-assistant` använder Luna 6 med låg resonemangsnivå och

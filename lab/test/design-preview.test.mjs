@@ -83,7 +83,7 @@ test('every asset request reauthorizes, rejects writes, streams ranges and sends
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
-test('staff Studio documents permit only Blob API paths; assets and both lobbies remain same-origin', async () => {
+test('staff permits Blob; public lobby permits D-ID; assets retain same-origin policy', async () => {
   const root = await mkdtemp(join(tmpdir(), 'croupier-design-import-'));
   try {
     for (const surface of ['admin', 'lobby', 'public-lobby']) {
@@ -109,7 +109,10 @@ test('staff Studio documents permit only Blob API paths; assets and both lobbies
     for (const segments of [[], ['_assets', 'lobby', 'app.js']]) {
       const response = await servePublicLobby(new Request('https://studio.test/lobby/' + segments.join('/')), segments, { root });
       assert.equal(response.status, 200);
-      assert.match(response.headers.get('content-security-policy'), /connect-src 'self';/);
+      const csp = response.headers.get('content-security-policy');
+      assert.match(csp, segments.length ? /connect-src 'self';/ : /connect-src 'self' https:\/\/api\.d-id\.com;/);
+      assert.match(csp, segments.length ? /media-src 'self' blob:;/ : /media-src 'self' blob: https:\/\/agents-results\.d-id\.com;/);
+      assert.match(csp, /script-src 'self';/);
       assert.doesNotMatch(response.headers.get('content-security-policy'), /vercel.com/);
       await response.text();
     }

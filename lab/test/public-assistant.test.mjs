@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createPublicAssistant,askPublicAssistant,publicLimiter,PUBLIC_AVATAR,PUBLIC_MODEL} from '../lib/public-assistant.mjs';
+import {installPublicAssistant} from '../browser/public-assistant.mjs';
 const origin='https://www.example.invalid';
 const config={allowedOrigins:[origin,'https://lab.example.invalid'],publicHosts:['www.example.invalid','lab.example.invalid'],apiBase:'/studio/api/admin',authBase:'/studio/api/auth'};
 const input={message:'Var finns spelen?',history:[]};
@@ -42,4 +43,30 @@ test('public endpoint reconciles the configured Vercel same-origin rewrite',asyn
  const handle=createPublicAssistant({config,limit:publicLimiter(),ask:async()=> 'Svar'});
  const request=new Request('https://lab.example.invalid/api/public-assistant',{method:'POST',headers:{origin,'x-forwarded-host':'www.example.invalid','x-forwarded-proto':'https','sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify(input)});
  assert.equal((await handle(request)).status,200);
+});
+
+test('a fast model reply waits for avatar connection; closing during startup suppresses speech',async t=>{
+ for(const closeEarly of [false,true]){
+  const elements=new Map();
+  function element(){return {value:'',children:[],listeners:new Map(),hidden:false,append(node){this.children.push(node);},replaceChildren(){this.children=[];},remove(){},removeAttribute(){},focus(){},pause(){},play:async()=>{},addEventListener(name,fn){this.listeners.set(name,fn);},emit(name,event={}){return this.listeners.get(name)?.(event);}};}
+  const root={querySelector(selector){if(!elements.has(selector))elements.set(selector,element());return elements.get(selector);}};
+  const host=element();host.attachShadow=()=>root;
+  const oldDocument=globalThis.document;
+  globalThis.document={hidden:false,body:element(),createElement:name=>name==='div'?host:element(),addEventListener(){},removeEventListener(){}};
+  let start,ready=false,speaks=0,disconnects=0,connected=false;
+  const gate=new Promise(resolve=>{start=()=>{ready=true;resolve();};});
+  const fetchMock=t.mock.method(globalThis,'fetch',async(_url,options)=>Response.json(options?.method==='POST'?{reply:'Öppna spellobbyn.',model:PUBLIC_MODEL}:{avatar:PUBLIC_AVATAR,model:PUBLIC_MODEL}));
+  const chat=installPublicAssistant({source:origin+'/studio/assistant-widget.js',authorize:async()=>true,
+   loadSdk:async()=>({ChatMode:{DirectPlayback:'scripted'},createAgentManager:async(_id,{callbacks})=>({agent:{presenter:{}},connect:async()=>{callbacks.onSrcObjectReady({});assert.equal(elements.get('video').muted,true,'warmup must be muted for autoplay');connected=true;await gate;},disconnect:async()=>{disconnects++;},speak:async()=>{speaks++;assert.equal(ready,true,'speech must wait for the ready connection');}})})});
+  try{
+   await chat.open();for(let i=0;i<20&&!connected;i++)await new Promise(resolve=>setImmediate(resolve));assert.equal(connected,true);
+   elements.get('textarea').value='Var finns spelen?';
+   const sending=elements.get('form').emit('submit',{preventDefault(){}});
+   for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+   assert.equal(speaks,0,'model can answer while SDK is still connecting');
+   if(closeEarly)elements.get('.close').emit('click');start();await sending;
+   assert.equal(speaks,closeEarly?0:1);
+   if(closeEarly)assert.ok(disconnects>=1);
+  }finally{chat.dispose();fetchMock.mock.restore();if(oldDocument===undefined)delete globalThis.document;else globalThis.document=oldDocument;}
+ }
 });
