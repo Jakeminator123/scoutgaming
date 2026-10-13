@@ -148,7 +148,37 @@ kropp och händer. Fri fysiksimulering får aldrig välja ett annat nummer än
 servern. Utfall får inte skickas i förväg bara för att renderaren behöver det;
 pending/reveal-kontraktet ovan måste omfatta hela klientens insyn.
 
-### Verifierat material och nästa implementation
+### Godkänd visuell målbild, 13 oktober 2026
+
+Jakob godkände den bifogade bilden `codex-clipboard-974c63a8-ccb7-4bd9-bc79-6c34db1123b3.png`
+som visuell riktning: lägre bortre bordskant, sammanhållet perspektiv, Anna
+till höger och synliga händer som vilar naturligt på kanten. Den tidigare
+önskan om cirka 25 graders sänkning är en visuell beskrivning, inte uppmätt
+kamerakalibrering. Matcha den godkända bilden; lägg inte automatiskt ytterligare
+25 graders rotation på den.
+
+Exakt godkänd bilaga: **1673×901**, **2 386 679 byte**, SHA-256
+`f1039dd96a028745b68f9e975ed51c0c07d02b2e552032e30d11528373684c78`.
+En oförändrad privat kopia sparas i denna chats Codex-artefakter under
+`roulette-stop/reference/anna-roulette-visual-target-2026-10-13.png`.
+Den äldre originalbilden har andra bytes och annat utsnitt; den ersätter
+inte detta godkännandekvitto. Bilden är en sammansatt referens, inte ett
+nyregistrerat bord, dealerklipp eller publicerat rum.
+
+Den tidigare lokala spelarplaceringen är **visuellt underkänd**: bordets
+höjd/perspektiv och Annas händer motsvarade inte målbilden. De två tekniskt
+fungerande UI-spelen nedan är därför inte godkända rehearsal-spelningar.
+Bildgodkännandet omfattar inte hjulsiffrorna, en färdig handmask, filmens
+skarvar, kulbana eller någon publicering.
+
+Fortsätt genom att låsa referensens utsnitt och registrera bord, Anna och
+bakgrund i samma koordinatsystem. Bord/hjul och insatsytor måste följa samma
+geometri. Händer framför bordet ska använda samma videobildruta som kroppen
+med en granskad mask. Korrigera hjulets 37 fack/nummer och prova sedan rörliga
+lager i riktiga `/play/roulette`, inklusive två på varandra följande
+rehearsal-spelningar. Godkänd stillbild ersätter inte den kontrollen.
+
+### Tekniska prov och återstående bindning
 
 - Andningsfilmen och glasögon-v2 med verifierad alfa finns. Ingen ny betald
   film har genererats i denna fortsättning. Hjulimpuls, exakt kulsläpp och

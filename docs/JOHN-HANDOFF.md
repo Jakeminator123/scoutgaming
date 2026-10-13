@@ -2,6 +2,17 @@
 
 ## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
 
+**Visuell återkoppling:** Jakob underkände den lokala spelarplaceringens
+bordshöjd/perspektiv och dolda händer. Därefter godkände han den bifogade
+stillbildens komposition som målbild (SHA-256 `f1039dd9…84c78`, 1673×901).
+Exakt bilaga är bevarad privat och dokumenterad i
+`docs/games/roulette/UTFALLSFILMER.md`. Önskemålet om cirka 25 grader är inte
+en uppmätt kameravinkel eller en ytterligare rotation som ska läggas på
+målbilden. Hjulsiffror, mask/passning och rörliga lager behöver färdigställas;
+två tekniskt fungerande UI-spel är inte godkända rehearsal-spelningar.
+Denna uppdatering ändrar bara dokumentation; bildkopians hash/storlek har
+verifierats och dokumentationskontroller körs vid commit.
+
 Fortsättning från mergad `6ee5d3aa` i `codex/roulette-anna-runtime`.
 Publicerad preview tappade `compositing: {mode:'alpha'}`; den följer nu med
 från fryst post. V2/v3, exakt byteväg och fortsatt spärr för blackjack-idle

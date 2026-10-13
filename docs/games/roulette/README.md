@@ -11,6 +11,10 @@ bevaras enbart som historiskt geometriprov. Jakob har uttryckligen valt bort det
 som produktionsunderlag. Fortsättningen använder riktiga `/play/roulette` och
 dess befintliga videosystem; se [aktuellt genomförande](UTFALLSFILMER.md#produktionsspår-threejs-och-annas-spelarkoppling).
 
+Jakob har godkänt en [visuell målbild för Anna och bordet](UTFALLSFILMER.md#godkänd-visuell-målbild-13-oktober-2026).
+Den tidigare lokala spelarplaceringen är underkänd. Bildens perspektiv,
+bordshöjd och handkontakt styr fortsättningen; rörlig spelacceptans återstår.
+
 ## Anna Jonsson: roulettefack, alfa och Runway-prov (13 oktober 2026)
 
 **Status för den ursprungliga startuppsättningen:** implementerat på featuregrenen `codex/roulette-alpha-media`, inte ett kvitto på publicerad Anna eller färdig utfallsbank. Jakob beställde uttryckligen Runway-prov denna dag. Originalen, genererade filmer, exakta promptar, mätningar och ett fristående scenprov sparas privat utanför Git i Codex visualizations/2026/10/12/01a1319d-73c5-7801-8e65-27e47532075b. Senare samma dag tillkom [kompakt utfallsplan och isolerat kulprov](UTFALLSFILMER.md) samt [verifiering av levererade original](KLIPPKARTA.md#nya-lokala-original-13-oktober). De ändrar ingen spelmotor eller plånbok.
