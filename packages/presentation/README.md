@@ -3,7 +3,8 @@
 Paketet äger presentationskompositorn, layer-previewn och urvals-/idlereglerna.
 
 - `compositor/` — spelare, kompositor, brygga, geometri och den fristående redigeraren (`app.js`, `index.html`, `viewer.*`). Redigeraren följer med men serveras inte.
-- `docs/` — `FORMATLASNING.md` och `INTEGRATION.md`.
+- [Speldokumentation](../../docs/games/README.md) — blackjack och roulette på en gemensam ingång.
+- `docs/` — paketets `INTEGRATION.md` och en hänvisning till den flyttade formatlåsningen.
 - `preview/` — `prepare.mjs` och det granskade materialet i `preview/site/`.
 - `runtime/` — urval, idle, filmfamiljer, legacy-klipp och skobyten. Lab, Web och OpenClaw läser modulen. Importerna tillbaka till `lab/`, `web/` och `open-claw/` är kvar till A22.
 

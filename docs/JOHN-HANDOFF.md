@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: samlade spelmanualer
+
+Canonical ingångar finns nu i [docs/games](games/README.md): blackjack,
+roulette och gemensamma klipp-/formatbegrepp. Äldre FORMATLASNING och
+roulettens tekniska README har en enda aktiv plats med hänvisningar från
+de gamla ingångarna. Frysta källunderlag och hashregister skiljs från
+dagens kod och öppna produktionsmål. Privata original/konversationer
+har inte lagts i Git. Roulettekraven för 37 utfallsfilmer är dokumenterade,
+inte implementerade eller beställda. Webbplatsens AI-funktion är utanför.
+
+Dokumentkontroll omfattar relativa länkar, JSON, källhashar, båda
+blackjackprofilerna och den bevarade formatlåsningen. Ordinarie hook och
+PR:s produktgrindar krävs före merge. Format-/posekonflikter, faktisk
+mediaacceptans och kvittots framtida bindning till filmbank är fortsatt
+öppna; läs spelmanualerna innan implementation. Ingen produktkod, media,
+publicering, databas eller migration ändras i denna dokumentleverans.
+
 ## Tillägg 13 oktober: central Studio och rumsmodell
 
 Målkontraktet för nya `/admin` finns i
