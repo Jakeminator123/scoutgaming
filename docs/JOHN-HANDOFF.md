@@ -16,8 +16,8 @@ Smala tester som låste gamla `lane`-länkar och standardnamn är borttagna;
 frysta paket och gamla länkar är oförändrade.
 
 Efter synk till `main` `cc63db71` passerar 101 riktade UI-/dokumentationsprov,
-10 raderingsgrindsprov, admin/lobby typkontroll och bygge. Full commit-hook
-återstår. Ingen produktdata eller Blobfil ändrades. Fortsatt arbete är att
+10 raderingsgrindsprov, admin/lobby typkontroll och bygge. Den fulla
+commit-hooken passerade utan fel. Ingen produktdata eller Blobfil ändrades. Fortsatt arbete är att
 knyta varje aktivt rumsval entydigt till en bakgrund och prova publicerade
 dealer-/bordskombinationer i själva spelet.
 
