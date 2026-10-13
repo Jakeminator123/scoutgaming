@@ -25,7 +25,7 @@ run_node_tests lab/test/material-trash.test.mjs lab/test/material-trash-ui.test.
 run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs test/public-lobby.mjs
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
-run_node_tests test/raderingsgrind.mjs
+run_node_tests test/raderingsgrind.mjs test/partner-docs.mjs
 run_node_tests test/browser-runtime-bindings.mjs
 run_node_tests lab/test/dealer-material-navigation.test.mjs lab/components/dealer-forge-page.test.mjs
 run_node_tests test/backup-lab-state.mjs test/migrate-lab-state.mjs

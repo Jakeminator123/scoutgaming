@@ -84,8 +84,8 @@ Errors are JSON `{ &quot;error&quot;: &quot;…&quot; }` with HTTP 400/401/403/4
 <tr><th>op</th><th>body</th><th>notes</th></tr>
 <tr><td><code>state</code></td><td><code>{ playerId, op:&quot;state&quot; }</code></td><td>current view, no requestId needed</td></tr>
 <tr><td><code>start</code></td><td><code>{ playerId, requestId, op:&quot;start&quot;, bets:[{box:3, main:10, pp:0, tp:0}] }</code></td><td>places bets and deals. <code>box</code> 0–6, sparse list is fine. Optional <code>version</code> for optimistic locking</td></tr>
-<tr><td><code>act</code></td><td>`{ playerId, requestId, op:&quot;act&quot;, action:&quot;hit&quot;\</td><td>&quot;stand&quot;\</td><td>&quot;double&quot;\</td><td>&quot;split&quot; }`</td><td>for the active hand</td></tr>
-<tr><td><code>insurance</code></td><td>`{ playerId, requestId, op:&quot;insurance&quot;, take:true\</td><td>false }`</td><td>when dealer shows an ace</td></tr>
+<tr><td><code>act</code></td><td><code>{ playerId, requestId, op:&quot;act&quot;, action:&quot;hit&quot;|&quot;stand&quot;|&quot;double&quot;|&quot;split&quot; }</code></td><td>for the active hand</td></tr>
+<tr><td><code>insurance</code></td><td><code>{ playerId, requestId, op:&quot;insurance&quot;, take:true|false }</code></td><td>when dealer shows an ace</td></tr>
 <tr><td><code>collect</code></td><td><code>{ playerId, requestId, op:&quot;collect&quot; }</code></td><td>settles and returns balance</td></tr>
 </table>
 <p>Response: <code>{ version, shoe:{ id, total, remaining, dealt, cutAfter, cutReached, shufflePending, decks, burn }, round:{ boxes, hands, dealer, phase, active, holeDraw, legalActions }, balance, requestId, presentation:[…] }</code>. Shoe order, burn card and the hole card&#x27;s identity are never exposed before reveal. See <i>Presentation events</i> below.</p>

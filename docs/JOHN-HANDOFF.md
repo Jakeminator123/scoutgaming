@@ -691,14 +691,32 @@ uppspelningskontroller passerar. Inga pensionerade medier eller verktyg återst�
 
 ## 3. Senaste leveranser
 
+**Slutfix 2, 13 oktober 2026 (`codex/ordning-slutfix-2`, bas `161957f1`).**
+SL-01/02 har rename-kontroll, strikt stopp och en separat indexjämförelse;
+egna verkliga Git-regressioner passerar 10/10. SL-11:s genererade tabell och
+Copy-for-LLM kontrolleras av ett nytt synkprov, inlagt i fullkroken. SL-08:s
+aktiva mediekällor och befintliga variabelnamn finns nu i inventeringen;
+åtta namn-/inventeringsprov samt CLI-kontrollen passerar. SL-09 är läsande
+utredd: 307 på Render och 303 till spelarlogin på www, inget 503 före
+inloggning; inloggad rehearsal är fortfarande öppen. Partnerdokumentets
+åtkomst är oförändrad (404 på www, 421 direkt på Render). Inga
+produktionsskrivningar, migrationer eller medieändringar i slutfixen.
+Detaljer och kvarvarande SL-03/06/07/09/10 står i `CLOUD-MIGRATION.md`.
+
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
 ämne. Provantalen är de tidigare agenternas, inte omkörda här.
 
 **Ordning 2026-10 avslutad, 12 oktober (`jakob/ordning-avslut`).**
 Planen i `ordning/` (baslinje `00ea55c5`) är genomförd och mappen är borttagen;
 historiken har den, till exempel på `faf0e822`. Den generiska raderingsspärren
-står kvar som `tools/raderingsgrind.mjs`, med sina fyra prov i
-`test/raderingsgrind.mjs` i kroken. Leveranser: V1 #19 (plan och
+står kvar som `tools/raderingsgrind.mjs`, med sina prov i
+`test/raderingsgrind.mjs` i kroken. Före borttagning eller flytt av filer:
+staga den avsedda ändringen och kör
+`node tools/raderingsgrind.mjs HEAD --staged --strict`.
+Efter commit används jämförelsebasen med `--strict`, utan `--staged`.
+Rapporten anger exakt jämförelse och läser samma HEAD-/indexversion av
+importer och register. Trasiga importer och aktiva registerrader stoppar;
+historiska textomnämnanden rapporteras för granskning. Leveranser: V1 #19 (plan och
 regler), V2 #23 (A10–A18: döda moduler, granskningssidor, pipeline, ops och
 dokument), #30 (adminlänk på partnerinloggningen), V3a #34 (A20:
 `test-videoeditor/` till `packages/presentation/{compositor,docs,preview}`), #44
