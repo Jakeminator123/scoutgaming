@@ -1,3 +1,4 @@
+import { fixtureDatabaseUrl } from '../../test/fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStudioRenderPersistence,assertRenderStudioWritable} from '../lib/studio-render-persistence.mjs';
@@ -8,7 +9,7 @@ import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs
 import {createNeonProjectStore} from '../lib/neon-project-store.mjs';
 
 const scope = Object.freeze({environment:'test',workspaceId:'studio-test'});
-const env = {CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_GAME_DATABASE_URL:'postgresql://u:p@game.neon.tech/game?sslmode=require'};
+const env = {CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://game.neon.tech/game?sslmode=require', 'u')};
 async function fixture() {
   const pool = createStudioMemoryPool(),repository = createStudioRepository({pool,scope});
   await repository.initializeDocument('project',{value:createSeedProject(),actor:'migration'});

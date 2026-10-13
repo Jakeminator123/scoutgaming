@@ -1,3 +1,4 @@
+import { fixtureDatabaseUrl } from '../../test/fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -203,7 +204,7 @@ test('actual Next route exports deny all mutation/HEAD/OPTIONS methods and confi
   const changes = { CROUPIER_STUDIO_NATIVE_ADMIN: '1', CROUPIER_STUDIO_NEON_POLICY: '1',
     CROUPIER_PUBLIC_ORIGIN: publicOrigin, CROUPIER_LAB_UI_ORIGIN: labOrigin, CROUPIER_LAB_BASE_PATH: '/studio',
     CROUPIER_STUDIO_ENVIRONMENT_ID: 'fixture', CROUPIER_STUDIO_WORKSPACE_ID: 'croupier',
-    CROUPIER_GAME_DATABASE_URL: 'postgres://fixture:fixture@fixture.neon.tech/fixture?sslmode=require', CROUPIER_ZONES_DATABASE_URL: undefined };
+    CROUPIER_GAME_DATABASE_URL: fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture'), CROUPIER_ZONES_DATABASE_URL: undefined };
   const previous = Object.fromEntries(Object.keys(changes).map(key => [key, process.env[key]]));
   try {
     for (const [key, value] of Object.entries(changes)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }

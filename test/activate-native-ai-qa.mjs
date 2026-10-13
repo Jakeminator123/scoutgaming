@@ -1,3 +1,4 @@
+import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
@@ -154,7 +155,7 @@ test('one bounded QA boot passes fullfile policy to Web; registered transport an
   const runId=randomUUID(),env={NODE_ENV:'production',PORT:'10000',CROUPIER_CLOUD_LAYOUT:'single-origin',
     CROUPIER_CLOUD_DATA_ROOT:QA.dataRoot,RENDER_SERVICE_ID:QA.serviceId,RENDER_EXTERNAL_URL:QA.origin,RENDER_GIT_COMMIT:'a'.repeat(40),
     CROUPIER_STREAM_LANE:'lissabon-stream-lane',CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:QA.environmentId,CROUPIER_STUDIO_WORKSPACE_ID:QA.workspaceId,
-    CROUPIER_DATABASE:'postgres',CROUPIER_GAME_DATABASE_URL:`postgresql://${QA.database}:synthetic@qa.neon.tech/${QA.database}?sslmode=require`,
+    CROUPIER_DATABASE:'postgres',CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl(`postgresql://qa.neon.tech/${QA.database}?sslmode=require`, `${QA.database}`),
     PUBLIC_URL:QA.frontendOrigin,BO_URL:QA.frontendOrigin,LAB_PUBLIC_URL:QA.frontendOrigin,CROUPIER_GAME_ORIGIN:QA.frontendOrigin,BETTALOTTO_PARTNER_BASE_URL:QA.frontendOrigin,
     OPENCLAW_PRODUCT_SPEECH_URL:QA.origin,CROUPIER_PRESENTATION_DIRECTOR_URL:QA.origin,
     CROUPIER_P6_QA_ROUTER:'1',CROUPIER_P6_QA_ROUTER_SOURCE_SHA256:'b'.repeat(64),CROUPIER_P6_SDK_RUN_ID:runId,CROUPIER_P6_SDK_DEPLOYMENT_ID:'dep-synthetic',
