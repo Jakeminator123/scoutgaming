@@ -5,7 +5,9 @@ const $ = id => document.getElementById(id);
 const context = Object.fromEntries(new URL(location.href).searchParams);
 const colourNames = { red:'Röd', black:'Svart', green:'Grön' };
 let state, pending, pendingKey, busy = true, chip = 5;
+let displayedRound;
 let roomScene=null,tableDesignId=null,tablePlacement={width:.8,x:0,y:.2};
+let roomSceneReady=Promise.resolve(null);
 let draft = new Map(), undo = [];
 const betButtons = new Map();
 const money = (value, currency = state?.currency ?? 'USD') => new Intl.NumberFormat('sv-SE', { style:'currency', currency }).format(value);
@@ -47,7 +49,7 @@ function configureTable({designId=null,placement={width:.8,x:0,y:.2}}={}) {
   }
   $('board').replaceChildren();betButtons.clear();
   if(artwork)BETS.forEach(boardButton);
-  renderDraft();showResult(state?.rounds[0]);
+  renderDraft();showResult(displayedRound);
 }
 function buildBoard() {
   BETS.forEach(boardButton);
@@ -142,7 +144,7 @@ function renderState() {
     el.title=`${round.event.outcome.number}, ${colourNames[round.event.outcome.color]} · ${new Date(round.event.occurredAt).toLocaleString('sv-SE')} · insats ${money(round.wagered,round.currency)} · tillbaka ${money(round.returned,round.currency)}`;
     el.setAttribute('aria-label',el.title);return el;
   }));
-  showResult(state.rounds[0]); renderDraft();
+  displayedRound=state.rounds[0];showResult(displayedRound);renderDraft();
 }
 const errorText = {
   currency_changed:'Kontots valuta har ändrats. Saldot har uppdaterats; kontrollera dina satsningar igen.',
@@ -171,6 +173,9 @@ async function submit() {
     const result=await command(pending);
     if(result.player.id!==pending.playerId||result.requestId!==pending.requestId||!result.round) throw Error('invalid_receipt');
     state=result;clearPending();draft=new Map();undo=[];
+    message('Hjulet snurrar. Vänta tills kulan har stannat…');
+    // The receipt is already committed. A visual failure must never retry a debit.
+    try {const scene=await roomSceneReady;await scene?.playRound(result.round.event.outcome.number);} catch { /* Show the confirmed result below. */ }
     renderState();showResult(result.round);
     message(`${result.replayed?'Den sparade rundan hämtades. ':''}${result.round.event.outcome.number} · ${colourNames[result.round.event.outcome.color]}. ${result.round.returned?'Tillbaka '+money(result.round.returned,result.round.currency)+'.':'Ingen vinst.'} Lägg nya satsningar när du vill.`);
   } catch(error) {
@@ -196,8 +201,10 @@ async function init() {
     renderState();busy=false;renderDraft();
     if(pending) { $('retry').hidden=false;message('En tidigare runda inväntar bekräftelse. Kontrollera den igen.',true); }
     else message('Välj marker och klicka på bordet. Ditt saldo är gemensamt med blackjack.');
-    if(state.room.operator) void import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room,{onTable:configureTable})).then(scene=>{
+    if(state.room.operator) roomSceneReady=import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room,{onTable:configureTable})).then(scene=>{
       roomScene=scene;roomScene?.setRoundActive(Boolean(busy||pending));
+      if(!busy&&state.rounds[0])roomScene?.showOutcome(state.rounds[0].event.outcome.number);
+      return scene;
     }).catch(()=>{
       $('scene-status').textContent='Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.';
     });

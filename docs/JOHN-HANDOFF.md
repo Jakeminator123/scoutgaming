@@ -1,5 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
+## Rouletthjul och kula, 13 oktober — fortsättning på PR101
+
+Anna-bordets sifferring ersätts vid uppspelning av 37 exakta fack från
+motorns europeiska `WHEEL`. Endast katalogdesign `roulette-anna-v1` använder
+denna kalibrering. En separat kula snurrar motsols, faller in i kvittots
+nummerfack och följer rotorns inbromsning under nio sekunder. Annas film,
+inramning, handmatta och MP4-bakgrund har oförändrade bytes/inställningar.
+Inga nya filmer eller betalda jobb. Detta animerar hjulet, inte ett nytt
+handkast från Anna. Den fotografiska mässingsaxeln ligger framför rotorn.
+
+Bekräftat kvitto inväntar scenladdning och visning; mediefel, reducerad
+rörelse, bakgrundsflik och stängning får inte skapa ny debitering eller låsa
+spelknappen. Omladdning visar redan bokfört resultat i slutläge. Resultatet
+finns fortfarande i nätverk/saldo före landningen: verklig serverstyrd
+pending/reveal återstår. Inga produktionskonton eller publiceringar ändrade.
+
+Fokuserat: 14 tester gröna (alla 37 utfall, kontinuerlig bana, två rundor,
+sen scenladdning, stängning, renderingsfel och kvittots visningsordning).
+Slutlig full regression och browserbevis dokumenteras efter leveranskontrollen.
+Kalibrering och avgränsningar: docs/games/roulette/UTFALLSFILMER.md.
+
 ## Anna i roulettespelaren, 13 oktober — codex/roulette-anna-binding
 
 Separat rouletteIdle-bas/varianter/handregion i Studio → frozen capture →
@@ -16,8 +37,8 @@ Ingen ny betald film.
 Två UI-rundor körda utan omladdning genom riktig capture/preview/spelarkod
 med isolerad SQLite: 33 svart och 6 svart i slutprovet. Inga produktionsregister ändrade.
 Detaljer, hash/prompt och bevis: docs/games/roulette/README.md samt UTFALLSFILMER.md.
-Detta är inte godkända fullständiga spelfilmer: kula/hjulstart, 37 korrekta
-utfall och hjulsiffror återstår. Färgheuristiken för händer kräver ny
+Det tidigare basprovet omfattade inte kula/hjulstart eller korrekta hjulsiffror;
+den efterföljande implementationen beskrivs ovan. Färgheuristiken för händer kräver ny
 granskning vid ändrade bytes/inramning/kläder. Visuell målbild är fortsatt
 Jakobs referens; den nya rörliga passningen inväntar hans bedömning.
 

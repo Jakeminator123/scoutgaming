@@ -254,8 +254,8 @@ Godkänd målbild: `f1039dd96a028745b68f9e975ed51c0c07d02b2e552032e30d1152837368
 Transparent bord: `web/public/roulette/assets/anna-roulette-table-v1.png`,
 1708×920, 1079892 byte, SHA-256
 `dde67a019edbaf972e0a14d1cd359fb8b6de76d2bf518c954cfaf62a2eaf0966`.
-Katalog-ID `roulette-anna-v1`, alltid game `roulette`. Hjulets AI-siffror
-är fortfarande felaktiga; bilden är inget bevis på en korrekt utfallsbank.
+Katalog-ID `roulette-anna-v1`, alltid game `roulette`. Källbildens AI-siffror
+är felaktiga; den nedan beskrivna spelarrenderingen ersätter sifferringen.
 
 Logisk spelaryta 1920×1080. Både Annas andningsfilm och glasögon-v2 är
 1916×1080 och har `framing={scale:0.66,x:0.15,y:-0.16}`.
@@ -275,7 +275,7 @@ Privata bevis ligger i Codex visualizations/2026/10/13/
 anger agentens val av tekniskt fungerande bas, inte Jakobs visuella godkännande.
 De innehåller två faktiska motorutslag med
 ett isolerat testsaldo, inte produktionspublicering. Matchande hjulstart och
-utfallsanimering återstår; UI visar idag serverns resultat direkt.
+utfallsanimering saknades i detta första basprov; se fortsättningen nedan.
 
 **Ny visuell bedömning:** glasögon-v2:s alfaspår är tekniskt giltigt men
 filmen har synliga hål i händer och fluga mot MP4-bakgrunden. Den togs ur
@@ -286,3 +286,40 @@ Bildgenerator: inbyggd imagegen, transparent_background=true, godkänd målbild
 som enda referens. Exakt prompt:
 
 > Use case: background-extraction. Edit target: the supplied approved roulette scene. Deliver a transparent PNG foreground table layer for a layered game scene. Remove the entire woman, including her hands, arms, and clothing, and remove the entire casino background. Keep ONLY the roulette table and roulette wheel. Preserve the table's EXACT position, scale, shape, perspective, lighting, materials, green felt and printed layout within the original wide image canvas. Do not center, zoom, tilt, extend or reframe the table. Keep the empty transparent upper region where the room and woman were. Reconstruct only the small wooden rim that was hidden under her hands. Preserve the front edge being cropped at the image's bottom. Do not invent another table or add chips, balls or people. All space outside the table must have actual alpha transparency, not a checkerboard. This is an extraction of the approved composition; keep the original approximately 1673:901 aspect ratio and spatial registration.
+
+## Exakt rotor och en kula i den riktiga spelaren
+
+`web/public/roulette/wheel.mjs` ritar en separat canvas endast för verifierat
+design-ID `roulette-anna-v1`; samma publicerade bordstransform gäller även i
+förstoringen. `WHEEL` och `pocketColor` importeras från spelmotorns regler:
+inga bildgenererade siffror eller slumpval av utfall. Rotorn har 37 fack,
+ett grönt 0, rätt ordning och färger. Den orörda PNG:n är ett källmaterial;
+den korrigerade sifferringen finns i spelaren, inte inbakad i filen.
+
+Kalibrering i bildens 1708×920-koordinater: rotormitt `(848,480)`,
+ytterradie 146, innerradie 80, perspektivets y-skala 0,315. Kulbanan går från
+mitt `(848,461)`/radie 196 till `(848,480)`/radie 107. Mässingsaxelns kontur
+maskerar den bakomliggande rotorn/kulan. En enda kula ritas per ruta.
+Rotorn accelererar, kulan går motsols och fångas i det fastställda facket
+vid 80 procent av de nio sekunderna; därefter följer den samma fack till
+stopp. Slutnumret placeras framtill. Detta är kontrollerad presentation,
+inte en fysiksimulering eller nytt slumputfall. Inget Runway-/Three.js-jobb
+behövs och inga 37 stora filmer lagras.
+
+`app.mjs` använder endast `result.round.event.outcome.number` från bekräftat
+serverkvitto. Spelkontrollerna är låsta tills visningen är klar. Scene-ready
+inväntas med begränsad väntan; fel/stängning avslutar visningen utan nytt
+kommando. Reducerad rörelse ger direkt slutläge. Bakgrundsflik har en timer
+utöver requestAnimationFrame. En omladdning återger redan bokförd rundas
+slutläge; ett okänt kvitto återhämtas med samma request-ID.
+
+**Sekretess kvarstår som separat serverarbete:** dagens API bokför och skickar
+nummer, saldo och payout före animationen. Fördröjd text är ingen sekretess;
+refresh, nätverk och andra saldovyer kan redan visa resultatet. Inför verklig
+pending/reveal med samordnad historik/saldo innan någon sådan garanti ges.
+
+Testerna i `test/roulette-wheel.mjs` och `test/roulette-room-http.mjs` ingår
+i ordinarie fulla pre-commit. De provar alla 37 slutnummer vid flera
+startvinklar, fångat fack under inbromsning, kontinuitet, två efterföljande
+spelningar, reducerad rörelse, dold flik, mediafel och långsam scenstart.
+Mänsklig rörelsebedömning och ett separat accepterat Anna-handkast återstår.
