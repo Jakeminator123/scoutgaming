@@ -30,6 +30,32 @@ i [CLOUD-MIGRATION](CLOUD-MIGRATION.md#png-och-ljud-i-studios-mediaregister).
 001/ledger/checksummor och reserverade 009/010 ändras inte; ingen ny migration
 eller produktionsregistrering aktiveras av denna rättning.
 
+## Adminstart: välj arbetsyta före redigering, 13 oktober
+
+`/admin` öppnar en enkel översikt med fem tydliga ingångar: dealers och klipp,
+spelbolag och rum, ekonomi, drift samt system. Studio-redigeraren ligger kvar på
+`/admin/clips`; befintliga länkar till `/admin/structure`, `/admin/assets` och
+övriga arbetsytor behåller sina mål. Sidomenyn har en egen Översikt-länk och
+logotypen går hem. Den avancerade klippkartan laddas först när Studio besöks;
+redigeraren hålls därefter monterad vid sidbyte så ett påbörjat utkast inte
+försvinner. Äldre `/admin?dealer=…` och `/admin?operator=…&table=…` öppnar
+fortfarande Studio med sin kontext; en uttrycklig Översikt-klickning rensar den.
+`/admin/rooms` fortsätter öppna redigeraren, medan startsidans **Visa spelrum**
+använder `/admin/rooms?view=registered` för den riktiga registrerade rumslistan.
+Ingen spel-, publicerings- eller databaslogik ändras.
+
+Verifierat i isolerad byggd adminvy: startsidan visar endast vägvalen, länken
+till ekonomin öppnar den fungerande diagramvyn och Översikt återgår hem.
+Separat navigationsprov med riktig byggd Studio-fixtur bekräftar rumslistan,
+äldre bokmärken samt Översikt under laddning och från ett osparat utkast;
+utkastet finns kvar när Studio öppnas igen. Fixturen skriver ingen produktdata.
+Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
+runtimebindningstester passerar. Efter sammanslagning med senaste `main` och
+navigeringsrättningen passerar full regressionshook med 3 174 godkända,
+11 överhoppade och 0 fel;
+typkontroll och bygge passerar också på samma revision. PR-kontroller och
+produktionsvisning återstår efter push respektive merge.
+
 ## Tillägg 13 oktober: roulettefack och alfa för Anna-prov
 
 `codex/roulette-alpha-media` lägger till separata roulettefack för VILA-PNG,
