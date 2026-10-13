@@ -35,9 +35,14 @@ export const designPreviewHeaders = Object.freeze({
   'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; frame-src 'none'; frame-ancestors 'self'; form-action 'none'; base-uri 'none'",
 });
 // Staff imports use the existing short-lived, path-bound private Blob grant.
-// Keep the independent lobby restricted to same-origin connections.
 const adminDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
   'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy'].replace("connect-src 'self'", "connect-src 'self' https://vercel.com/api/blob https://vercel.com/api/blob/") });
+// Only the public lobby document embeds the existing D-ID avatar. Assets and
+// staff documents keep their own policies; no wildcard network access is added.
+const publicLobbyDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
+  'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy']
+    .replace("connect-src 'self'", "connect-src 'self' https://api.d-id.com")
+    .replace("media-src 'self' blob:", "media-src 'self' blob: https://agents-results.d-id.com") });
 
 // Route Handlers do not add Next's basePath to the SSR login destination.
 // Only the known native login redirect is translated; remote handoffs stay intact.
@@ -68,7 +73,7 @@ export async function servePublicLobby(request, segments = [], { root = designPr
   if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { ...designPreviewHeaders, Allow: 'GET, HEAD' } });
   const path = publicLobbyFile(segments);
   const directory = path?.startsWith('fonts/') ? 'fonts' : 'public-lobby';
-  return servePreviewFile(request, path ? path.slice(directory.length + 1) : null, resolve(root, directory));
+  return servePreviewFile(request, path ? path.slice(directory.length + 1) : null, resolve(root, directory), path === 'public-lobby/index.html' ? publicLobbyDocumentHeaders : designPreviewHeaders);
 }
 
 async function servePreviewFile(request, path, root, responseHeaders = designPreviewHeaders) {
