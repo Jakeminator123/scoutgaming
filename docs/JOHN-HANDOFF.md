@@ -3,7 +3,7 @@
 ## Tillägg 13 oktober: avgränsad förenkling av legacy och rumsval
 
 Arbetet började på `cc63db71` och är integrerat med senare `main`
-`978f3bc` (#73/#75). Leveransen ligger i ett eget worktree på
+`f00d63b` (#73/#75/#76). Leveransen ligger i ett eget worktree på
 `codex/simplify-studio-legacy`, med en PR till `main` för Jakobs granskning.
 Adminens personväljare heter **Dealer**. Rummets egna val öppnar det befintliga
 rumsbundna utseendeflödet för exakt bolag och rum i en ny flik, så Studio-utkastet
@@ -46,6 +46,87 @@ slutföras; React-/SSR-/navigationstester är inte visuell browseracceptans.
 Slutlig PR-head och ordinarie CI-resultat redovisas i PR:en. Produktionsdatabas,
 driftkonfiguration, publicering och betald generering ingår inte.
 
+
+
+## PR-städning och CI, 13 oktober 2026
+
+På Jakobs uppdrag är #75 och #73 mergade. #74 behåller rouletteunderlaget
+men följer samma ordlista som #73. De tre samtidiga arbetsgrenarna för
+adminfrikoppling, mappförenkling och Studio/legacy har separata ägare;
+deras lokala filer ändras inte av mergearbetet.
+
+- #41 är stängd som äldre plan; B19-beslut och pilotkrav finns kvar i
+  CLOUD-MIGRATION. Den borttagna planmappen återinförs inte.
+- #64 är parkerad/stängd utan merge. Kod finns på
+  `codex/verified-event-preloading`, commit `0945a25af67f3e6ddc372020aef9372e60dee40c`.
+  Återuppta med synk till main, två verkliga rehearsal-uppspelningar per
+  berörd dealer samt mobil-/latensprov. Inga uppmätta latensvinster påstås.
+- #72 är parkerad/stängd utan merge. Kod finns på
+  `codex/dealer-orb-rehearsal-acceptance`, commit `be84e5dad64a5b3552a962cb60b847de2597dc55`.
+  Två verkliga rehearsal-uppspelningar med godkända klipp och giltig
+  dealer-/rumskontext återstår. De befintliga spelarkontrollerna består.
+
+GitHub-workflowet väljer kort kontroll för rena dokumentations-PR:ar från
+hela testmergens diff mot dess första förälder. Okända filer, maskinregister,
+runtime-promptar, kod, media och konfiguration kör full kontroll. Main och
+manuell körning är alltid fulla. Dokumentationsvägen kräver miljöregister,
+leverans-/dokumentationskontrakt och systemkarta. Den rapporterar inte
+spel-/mediaacceptans. Lokal pre-commit-policy ändras i separat mappuppdrag.
+
+Studio byggs en gång, i dealer-regression, där launcher- och isolerade
+SQL-/omstarts-/HTTPS-prov använder bygget. Befintliga tester och produktions-
+migrationens readiness finns kvar; endast den dubbla table-http-körningen
+är borttagen. Npm-cache följer alla tre installerade lockfilerna. Slutjobbet
+`CI` blir rött om en tillämplig kontroll misslyckas, avbryts eller saknas.
+Inga branchskydd, media-, databas- eller providerinställningar ändras.
+
+Lokalt verifierat: verkliga Git-mergar och ytlig checkout, äldre kodändring
+följd av dokumentpush, runtimefil flyttad till docs, symboliska länkar och
+slutjobbets felvägar. Miljö-, leverans- och orphan-kontroller körs också.
+GitHub kör full produktkontroll på workflow-PR:n före merge. GitGuardian-
+PR-status läses separat; incidentlista och historisk täckning är inte verifierade.
+
+## Nästa agent: roulette i N1:s Labba-yta
+
+Utgå från `/admin` och befintlig Labba/Sammansättningar; `/control` är kvar
+under övergången. N1 är intern administration, Studio är innehållsredigering
+inom N1, N2 är partner och N3 spelare. Produktmodellen följer den gemensamma ordlistan: spelbolag → spel →
+rum/bakgrund med uttryckligt tillåtna bord och dealers. Ändra inte legacy-ID:n
+eller beskriv rum/bakgrund-övergången som färdig. Se
+[ordlistan](../lab/docs/TERMINOLOGI.md) och runtimekontraktet.
+
+Uppdrag: återanvänd laborationsytan för roulette och visa samma scen på
+mobil/desktop, utan nya hjul-/kulanimationer eller betalda genereringsjobb.
+Bakgrund är ett separat återanvändbart bild-/MP4-miljölager; blackjack och
+roulette har egna bord och geometrier. Samma dealerfilm och avkodade frame
+används för kropp bakom bordet och maskerade händer/armar framför.
+
+Senaste privata provprofilen är logisk **1920×1080**, origo uppe till vänster:
+bord `(x=134,4; y=270; bredd=1651,2)`, Anna VILA/nya landskapsklipp
+`(580; 42; 1104)`, ursprunglig porträtt-hjulstart `(551; −82; 1048)`.
+Höjd följer respektive källformats proportioner. Mobil skalar samma scen
+och kan använda närbild, utan ny dealerfilm. Detta är provvärden; gesten
+träffar ännu inte hjulet korrekt och handmasken är heuristisk.
+
+Det äldre underlagets bord på 2,4×1,35 meter, 25–30° kameravinkel,
+desktop-/mobilhörn och centrerade dealer är produktionsförslag, inte denna
+provprofil. Blanda inte heller den äldre handkontaktguidens `(960,330)` /
+skala 2/3 med profilen ovan. De uppmätta provfilmerna här har 24 fps;
+ändra inte mått, bildkvot eller position utifrån filnamn. 4K/16:9 och 30 fps
+är ett tidigare föreslaget miljömasterformat, inte ett verifierat krav för
+dessa klipp. Format/promptar finns i rouletteunderlaget; aktuell PostgreSQL-
+formatgräns finns nedan och i CLOUD-MIGRATION.
+
+Kvar: bygg/kalibrera återanvändbar roulette-Labba med bevarad
+operator/table (= rum-ID)/game/composition/dealer-kontext och växling tillbaka till
+editorn. Använd privat stillbild/MP4/WebM-prov; ingen produktionsregistrering
+av PNG/ljud, publicering eller saldoändring. N1-assistenten i PR #61 är en separat, mergad leverans. Dess import har
+fortfarande alfa och roulette avstängda; manuell native-upload har sin egen
+MP4/WebM-/v12-grind. AI-aktivering, frameanalys, lipsync och rumsgenerering
+är inte verifierade eller färdiga där. Serverkvitto/rund-ID ska styra framtida hjulgest och
+0–36-filmval; återförsök behåller requestId/version/satsningar. Saknade filmer
+ger stillbord och resultattext. 37-filmsbank, handträff, sömlösa loopar och
+produktionsacceptans för Anna är fortfarande **inte godkända**.
 
 ## En produktmodell och papperskorg i rumslistan, 13 oktober
 
