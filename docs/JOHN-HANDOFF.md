@@ -1,46 +1,5 @@
 # Aktuell handoff — Scoutgaming
 
-## Selektiva blackjackförbättringar från Kevin, 13 oktober 2026
-
-Utgår från main `6ee5d3aa` och Kevins `f15b2af1`. Återhämtningen i
-`local-film-player.mjs` anpassar Kevins `playback-recovery.js`: en synlig,
-webbläsarpausad film återupptas i samma videoklocka. Förlorat `ended` hanteras
-bara efter startad och faktiskt presenterad bild. Avbrutna ägare återupplivas
-inte; lyssnare städas vid slut/fel/avbrott. Befintlig avbrytning när sidan
-döljs består. Ingen köpost hoppas över, ljud mutas inte som reserv och
-video-/kortkalibrering ändras inte.
-
-Kevins vinstfeedback och handvärdesetiketter är anpassade till befintliga
-serverkvitton: vinstnotiser använder positiv nettovinst efter insatser,
-sidospel och försäkring. Återbetald insats är ingen vinst. Bruttoåterbetalning
-visas fortfarande i avräkningen och under `LAST RETURN`. Båda kortrenderarna
-visar mjuka värden som `7/17` men färdig `21` en gång. Saldo, spelregler och
-utbetalningar är fortsatt serverägda. Ingen gemensam bordsmodell, ny
-VILA/REDO-sekvens, dealerhårdkodning, talprovider eller medieimport ingår.
-
-Vercel-inspektion på team/projekt `scoutgaming` visade READY-produktion på
-`6ee5d3aa`, `CROUPIER_DATABASE=postgres`, Neon-policy och Blob samt backend
-`croupier-v2.onrender.com`. Kvarvarande SQLite-kod innebär inte två aktiva
-produktionsdatakällor. Vercel driver webb/Studio, Render spelauktoriteten,
-Neon datalagringen. Denna leverans läser inte live-Render-konfiguration
-eller databasinnehåll och ändrar inga miljövärden.
-
-Verifierat: Studio-/designbygge, 82 riktade prov och 18 isolerade Chromiumfall
-för 2–4 splithänder på desktop/mobil, utan överlapp efter etikettjustering.
-Två uppspelningar genom verkliga `PerformancePlayer.playLocalClip` gav
-79 presenterade bildrutor vardera, ingen seek/tappad ruta och bevarat
-ljudläge/hastighet vid pausåterhämtning; andra filmen använde förberedelsen.
-Inga konsolfel. Full ordinarie hook: 3 345 godkända, 7 skips, ett fel i
-oförändrat `local-session.test.mjs` (OS-startidentitet saknas i denna
-arbetsmiljö; reproducerat separat med oförändrad sessionsmodul). Lokala
-rouletteprov passerade när 127.0.0.2 lades till testmiljöns NO_PROXY.
-CI får verifiera fullsviten på ordinarie runner; ingen grind har försvagats.
-
-Komponentprovet använder exakt hashkontrollerad film men ersätter inte två
-repetitioner i ett registrerat publicerat rum eller läppsynkacceptans.
-PR lämnas som draft för den återstående spelarrepetitionen, utan merge
-eller produktionsrelease. Inga nya visuella mediegodkännanden registreras.
-
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
 PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen
@@ -371,6 +330,49 @@ och Vercel var gröna på samma PR-commit. Incidentlista och historisk
 säkerhetstäckning är inte verifierade. Dokument-PR #79 verifierade den korta
 vägen i körning `38393298682`: 46 sekunder från första jobbstart till grönt
 slutjobb. Full regression fortsätter köras på main.
+
+## Selektiva blackjackförbättringar från Kevin, 13 oktober 2026
+
+Utgår från main `6ee5d3aa` och Kevins `f15b2af1`. Återhämtningen i
+`local-film-player.mjs` anpassar Kevins `playback-recovery.js`: en synlig,
+webbläsarpausad film återupptas i samma videoklocka. Förlorat `ended` hanteras
+bara efter startad och faktiskt presenterad bild. Avbrutna ägare återupplivas
+inte; lyssnare städas vid slut/fel/avbrott. Befintlig avbrytning när sidan
+döljs består. Ingen köpost hoppas över, ljud mutas inte som reserv och
+video-/kortkalibrering ändras inte.
+
+Kevins vinstfeedback och handvärdesetiketter är anpassade till befintliga
+serverkvitton: vinstnotiser använder positiv nettovinst efter insatser,
+sidospel och försäkring. Återbetald insats är ingen vinst. Bruttoåterbetalning
+visas fortfarande i avräkningen och under `LAST RETURN`. Båda kortrenderarna
+visar mjuka värden som `7/17` men färdig `21` en gång. Saldo, spelregler och
+utbetalningar är fortsatt serverägda. Ingen gemensam bordsmodell, ny
+VILA/REDO-sekvens, dealerhårdkodning, talprovider eller medieimport ingår.
+
+Vercel-inspektion på team/projekt `scoutgaming` visade READY-produktion på
+`6ee5d3aa`, `CROUPIER_DATABASE=postgres`, Neon-policy och Blob samt backend
+`croupier-v2.onrender.com`. Kvarvarande SQLite-kod innebär inte två aktiva
+produktionsdatakällor. Vercel driver webb/Studio, Render spelauktoriteten,
+Neon datalagringen. Denna leverans läser inte live-Render-konfiguration
+eller databasinnehåll och ändrar inga miljövärden.
+
+Verifierat: Studio-/designbygge, 82 riktade prov och 18 isolerade Chromiumfall
+för 2–4 splithänder på desktop/mobil, utan överlapp efter etikettjustering.
+Två uppspelningar genom verkliga `PerformancePlayer.playLocalClip` gav
+79 presenterade bildrutor vardera, ingen seek/tappad ruta och bevarat
+ljudläge/hastighet vid pausåterhämtning; andra filmen använde förberedelsen.
+Inga konsolfel. Full ordinarie hook: 3 345 godkända, 7 skips, ett fel i
+oförändrat `local-session.test.mjs` (OS-startidentitet saknas i denna
+arbetsmiljö; reproducerat separat med oförändrad sessionsmodul). Lokala
+rouletteprov passerade när 127.0.0.2 lades till testmiljöns NO_PROXY.
+GitHubs fulla CI passerade för `0a55edd`. Merge-agenten har bara flyttat
+detta avsnitt för att lösa en dokumentkonflikt; spelarkoden är oförändrad.
+Ny CI och de registrerade spelarrepetitionerna återstår. Ingen grind har försvagats.
+
+Komponentprovet använder exakt hashkontrollerad film men ersätter inte två
+repetitioner i ett registrerat publicerat rum eller läppsynkacceptans.
+PR lämnas som draft för den återstående spelarrepetitionen, utan merge
+eller produktionsrelease. Inga nya visuella mediegodkännanden registreras.
 
 ## Tillägg 13 oktober: separat rouletteklippkarta
 
