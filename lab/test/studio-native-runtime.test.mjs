@@ -83,13 +83,13 @@ test('disabled active route does not instantiate DB or acknowledge a mutation', 
     if (previous === undefined) delete process.env.CROUPIER_STUDIO_NATIVE_ADMIN; else process.env.CROUPIER_STUDIO_NATIVE_ADMIN = previous;
   }
 });
-test('bundled source paths load all six migrations without asset URLs', async () => {
+test('bundled source paths load all reviewed migrations without asset URLs', async () => {
   const directory = resolve(fileURLToPath(new URL('../../ops/neon-studio/', import.meta.url)));
   const expected = await loadStudioMigrations();
   const actual = await loadStudioMigrations({ directory });
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
-  assert.equal(actual.length, 8);
-  assert.equal(actual.at(-1).file, '008-dealer-forge.sql');
+  assert.equal(actual.length, 9);
+  assert.equal(actual.at(-1).file, '011-gpu-daily-budget.sql');
   assert.equal(actual.some(row => row.deploymentOptional), false);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });

@@ -31,10 +31,10 @@ const STORE_LIMIT = 256 * 1024 * 1024;
 const MEDIA_ID = /^[a-f0-9]{32}$/;
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
 const equalPath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
-const budgetAmount = value => {
+const budgetAmount = (value, maximum = 10000000) => {
   if (typeof value !== 'string' || !/^(?:0|[1-9]\d?)(?:\.\d{1,6})?$/.test(value)) return undefined;
   const amount = Math.round(Number(value) * 1000000);
-  return Number.isSafeInteger(amount) && amount > 0 && amount <= 10000000 ? amount : undefined;
+  return Number.isSafeInteger(amount) && amount > 0 && amount <= maximum ? amount : undefined;
 };
 const privateDirectory = directory => {
   if (typeof directory !== 'string' || !isAbsolute(directory)) return false;
@@ -81,7 +81,7 @@ function configuration(env) {
     runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
     voiceId: GENERATED_SPEECH_DEFAULTS.voiceId, modelId: GENERATED_SPEECH_DEFAULTS.modelId,
     reserveMicroUsd: budgetAmount(env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD),
-    dailyBudgetMicroUsd: budgetAmount(env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD) };
+    dailyBudgetMicroUsd: budgetAmount(env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD, 20000000) };
   const token = input => typeof input === 'string' && input.length > 0 && input.length <= 2048 && !/\s/.test(input);
   const configured = enabled && (journaled || privateDirectory(value.directory))
     && token(value.cartesiaApiKey) && token(value.runpodApiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(value.runpodEndpointId ?? '');

@@ -73,7 +73,7 @@ export function createPostgresOperatorSpeechQa({ pool, scope, now } = {}) {
     if (attempts.length > 3) fail();
     const policies = await query('budget', 'SELECT * FROM croupier_studio.gpu_budget_policies WHERE environment_id=$1 LIMIT 2', [environment]);
     if (policies.length !== 1 || integer(policies[0].version) !== 1 || integer(policies[0].daily_budget_micro_usd) < 1
-      || integer(policies[0].daily_budget_micro_usd) > 10000000 || integer(policies[0].created_at_ms) > time) fail('operator_speech_qa_disabled');
+      || integer(policies[0].daily_budget_micro_usd) > 20000000 || integer(policies[0].created_at_ms) > time) fail('operator_speech_qa_disabled');
     return { gate: time >= gate.createdAt && time < gate.expiresAt ? gate : null, attempts: attempts.length, used: seen };
   }
   const getLease = async query => {
