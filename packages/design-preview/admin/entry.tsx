@@ -50,7 +50,7 @@ function App() {
       <label className="preview-mobile-nav">Sida <select value={studio ? '/admin/clips' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      <Clips active={studio} chatActive={path==='/admin/ai/chat'}>{studioVisited&&<ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
+      <Clips active={studio} chatActive={path==='/admin/ai/chat'} registrationBlocked={studioDirty} onRegistered={materialChanged}>{studioVisited&&<ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
       {libraryVisited&&<div hidden={path!=='/admin/assets'}><RegisteredMaterialLibrary disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
       {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
       {path==='/admin'&&!studio&&<AdminHome />}
