@@ -33,7 +33,36 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const FIXTURE_DIR = join(repoRoot, 'test', 'fixtures', 'astrid-select-baseline');
 export const RANDOM_SEED = 20261008;
 const MODE_ORDER = ['off', 'rules', 'random', 'shadow', 'active'];
-const ARCHIVE_PATHS = ['packages/presentation/runtime', 'lab/lib', 'lab/policies', 'lab/schemas', 'open-claw/lab', 'pipeline', 'tools/media-layout.mjs'];
+// The HEAD archive must contain every module these entries import, statically or
+// through a literal import(); bare packages still resolve against the worktree.
+export const HEAD_SELECTION_ENTRIES = Object.freeze([
+  'packages/presentation/runtime/selection.mjs',
+  'lab/lib/studio-model.mjs',
+]);
+export const ARCHIVE_PATHS = Object.freeze([
+  'packages/presentation/runtime',
+  'lab/lib',
+  'lab/policies',
+  'lab/schemas',
+  'open-claw/lab',
+  'pipeline',
+  'tools/media-layout.mjs',
+  'web/dealer-identity.mjs',
+  'web/layer-asset-contract.mjs',
+  'web/managed-media-contract.mjs',
+  'web/storage/studio-contract.mjs',
+  'web/public/background-playback-policy.mjs',
+  'web/public/background-playback.mjs',
+  'web/public/card-presentation/calibration.mjs',
+  'web/public/composition-settings.mjs',
+  'web/public/dealer-compositing.mjs',
+  'web/public/dealer-framing.mjs',
+  'web/public/dealer-identity.mjs',
+  'web/public/dealer-speech-profile.mjs',
+  'web/public/game-lanes.mjs',
+  'web/public/game-overlay-layout.mjs',
+  'web/public/presentation-composition.mjs',
+]);
 const DROP_KEYS = new Set(['elapsedMs', 'cacheId', 'cacheKey', 'generatedAt', 'timestamp', 'observedAt']);
 
 export const CONTEXTS = Object.freeze([
@@ -284,8 +313,8 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { executeJobs, loadRegistry } from ${JSON.stringify(toolUrl)};
 const root = process.env.ASTRID_HEAD_ROOT;
-const selection = await import(pathToFileURL(join(root, 'packages/presentation/runtime/selection.mjs')).href);
-const model = await import(pathToFileURL(join(root, 'lab/lib/studio-model.mjs')).href);
+const selection = await import(pathToFileURL(join(root, ${JSON.stringify(HEAD_SELECTION_ENTRIES[0])})).href);
+const model = await import(pathToFileURL(join(root, ${JSON.stringify(HEAD_SELECTION_ENTRIES[1])})).href);
 const jobs = JSON.parse(await readFile(process.env.ASTRID_JOBS, 'utf8'));
 const outcome = await executeJobs(selection.selectPresentation, model.createSeedProject(), await loadRegistry(), jobs);
 await writeFile(process.env.ASTRID_OUT, JSON.stringify(outcome));
