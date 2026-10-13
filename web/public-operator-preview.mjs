@@ -2,7 +2,7 @@ import {previewMediaPath,validatePublicOperatorPreview} from './public/operator-
 import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
 import {isActiveDealerId as isDealerId} from './public/dealer-identity.mjs';
 import {defaultCompositionSettings} from './public/composition-settings.mjs';
-import {materialLabel} from './public/material-catalog.mjs';
+import {materialLabel,materialForAsset} from './public/material-catalog.mjs';
 import {layerAssetFitsGame} from './layer-asset-contract.mjs';
 
 const route=/^\/api\/operators\/([^/]+)\/rooms\/([^/]+)\/preview(?:\/media\/([^/]+)\/([^/]+)\/(dealer|table|background)\/([^/]+))?$/;
@@ -43,14 +43,14 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
     const selection=entry.selection;
     if(entry.status!==200||selection?.roomId!==context.roomId||selection.dealer!==context.dealerId
       ||selection.packageRevision!==context.packageRevision||!selection.choices.dealers.includes(context.dealerId))fail(404);
-    const independentLayers=supportsIndependentLayers(selection,frozen,context.dealerId);
+    const independentLayers=supportsIndependentLayers(selection,frozen,context.dealerId,room.game??'blackjack');
     const registered=frozen.registeredDealers?.find(row=>row.id===context.dealerId);
     const label=registered?.label;
     if(!label)fail();
-    // Frozen idle.ready is a blackjack binding. Roulette intake cannot inherit
-    // it from the same person; a game-scoped frozen playback contract is pending.
-    const idle=room.game==='roulette'?null:resolveFrozenDealerIdle(frozen.registeredDealers,{
-      dealerId:context.dealerId,allowedDealerIds:selection.choices.dealers});
+    const idle=resolveFrozenDealerIdle(frozen.registeredDealers,{
+      dealerId:context.dealerId,allowedDealerIds:selection.choices.dealers,game:room.game??'blackjack'});
+    const rouletteIdle=room.game==='roulette'?registered.rouletteIdle:null;
+    const dealerMedia=[...(idle?[idle]:[]),...(rouletteIdle?.variants??[])];
     const assets={table:[],background:[]};
     for(const role of ['table','background']) {
       const layer=selection.composition?.[role];
@@ -61,16 +61,21 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
         return validateLayerAsset(asset);
       }).filter(asset=>role!=='table'||layerAssetFitsGame(asset,room.game??'blackjack'));
     }
+    const rouletteStart=room.game==='roulette'&&independentLayers&&idle&&registered.rouletteStart
+      &&assets.table.some(asset=>materialForAsset(asset)?.id===registered.rouletteStart.tableDesignId)?registered.rouletteStart:null;
+    if(rouletteStart)dealerMedia.push(rouletteStart.clip);
     const item=(record,kind)=>({src:previewMediaPath(context,kind,record.id),contentType:record.contentType});
+    const dealerItem=record=>({...item(record,'dealer'),...(['green-screen','alpha'].includes(record.classification.compositing?.mode)?{compositing:record.classification.compositing}:{}),...(record.classification.framing?{framing:record.classification.framing}:{})});
+    const startItem=rouletteStart?(()=>{const {clip,...profile}=rouletteStart;return {...dealerItem(clip),...profile};})():null;
     const descriptor=validatePublicOperatorPreview({
       schemaVersion:1,operatorSlug:context.operatorSlug,roomId:context.roomId,packageRevision:context.packageRevision,
       dealer:{id:context.dealerId,label},independentLayers,
       settings:independentLayers?(selection.composition?.settings??defaultCompositionSettings()):null,
-      media:{dealer:idle?{...item(idle,'dealer'),...(['green-screen','alpha'].includes(idle.classification.compositing?.mode)?{compositing:idle.classification.compositing}:{}),...(idle.classification.framing?{framing:idle.classification.framing}:{})}:null,
-        tables:assets.table.map(asset=>({id:asset.id,label:materialLabel(asset),...item(asset,'table')})),
+      media:{dealer:idle?{...dealerItem(idle),...(rouletteIdle?{variants:rouletteIdle.variants.map(dealerItem),...(rouletteIdle.foregroundPolygons?{foregroundPolygons:rouletteIdle.foregroundPolygons}:{})}:{}),...(startItem?{wheelStart:startItem}:{})}:null,
+        tables:assets.table.map(asset=>({id:asset.id,label:materialLabel(asset),...item(asset,'table'),...(materialForAsset(asset)?{designId:materialForAsset(asset).id}:{})})),
         backgrounds:assets.background.map(asset=>({id:asset.id,label:materialLabel(asset),...item(asset,'background')}))},
     },context);
-    return {descriptor,idle,assets};
+    return {descriptor,dealerMedia,assets};
   }
   async function handle(request) {
     const url=new URL(request.url),match=route.exec(url.pathname);
@@ -85,9 +90,9 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
       const packageRevision=revision(media?revisionPath:url.searchParams.get('revision'));
       const dealerId=media?dealerPath:url.searchParams.get('dealer');
       if(!packageRevision||!isDealerId(dealerId))fail(400);
-      const {descriptor,idle,assets}=await resolve({operatorSlug,roomId,packageRevision,dealerId});
+      const {descriptor,dealerMedia,assets}=await resolve({operatorSlug,roomId,packageRevision,dealerId});
       if(!media)return json(request,200,descriptor);
-      const record=kind==='dealer'?(idle?.id===mediaId?idle:null):assets[kind].find(row=>row.id===mediaId);
+      const record=kind==='dealer'?dealerMedia.find(row=>row.id===mediaId):assets[kind].find(row=>row.id===mediaId);
       if(!record)fail(404);
       const {pathname,sha256,size,contentType}=record;
       const response=await privateMedia({provider:'vercel-blob',pathname,sha256,size,contentType},request);

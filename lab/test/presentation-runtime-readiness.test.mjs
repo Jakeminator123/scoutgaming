@@ -35,6 +35,75 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+test('wheel-start needs v15 for active/archived bindings and frozen publication; idle cannot widen inside SQL',async()=>{
+  for(const descriptor of [
+    {kind:'project',value:{dealers:[{id:'astrid',rouletteStart:{videoId:'fixture'}}]}},
+    {kind:'project',value:{dealerTrash:[{dealer:{id:'astrid',rouletteStart:{videoId:'fixture'}}}]}},
+    {kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[{id:'astrid',rouletteStart:{clip:{classification:{game:'roulette',compositing:{mode:'alpha'}}}}}]}},
+  ])for(const version of [14,15]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value}),descriptor);
+    if(version===14)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'15');assert.equal(f.writes.length,version===15?1:0);
+  }
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(15))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveDocument('project',{value:{dealers:[{id:'astrid',rouletteStart:{}}]}}),blocked);
+  },{kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:{}}]}});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
+test('explicit roulette idle requires v15 before project save or frozen publication including archived dealers',async()=>{
+  const binding={videoId:'20000000-0000-4000-8000-000000000001',variantVideoIds:[]};
+  for(const descriptor of [
+    {kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:binding}]}},
+    {kind:'project',value:{dealerTrash:[{dealer:{id:'astrid',rouletteIdle:binding}}]}},
+    {kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[{id:'astrid',rouletteIdle:{base:{classification:{game:'roulette',compositing:{mode:'alpha'}}},variants:[]}}]}},
+  ])for(const version of [13,14,15]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value}),descriptor);
+    if(version!==15)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'15');assert.equal(f.writes.length,version===15?1:0);
+  }
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(13))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveDocument('project',{value:{dealers:[{id:'astrid',rouletteIdle:binding}]}}),blocked);
+  },{kind:'project',value:{layerAssets:[{game:'roulette'}]}});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
+test('archived dealer categories require the shipped v14 contract including empty categories',async()=>{
+  for(const dealerSets of [[],[{id:'dragan.one'}]]) {
+    const value={...project(),dealerTrash:[{schemaVersion:2,dealerSets}]};
+    const old=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(13))});
+    await assert.rejects(old.wrapped.saveDocument('project',{value}),blocked);assert.equal(old.writes.length,0);
+    const current=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(14))});
+    await current.wrapped.saveDocument('project',{value});assert.equal(current.writes.length,1);
+    assert.equal(current.fetches[0][1].headers['X-Presentation-Capability-Version'],'14');
+  }
+});
+
+test('v15 permits a combined roulette and retained-category mutation without implicit transaction feature grants',async()=>{
+  const category={kind:'project',value:{dealerTrash:[{schemaVersion:2,dealerSets:[]}]}};
+  const idle={kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:{}}]}};
+  const start={kind:'project',value:{dealers:[{id:'astrid',rouletteStart:{}}]}};
+  for(const version of [14,15]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(async()=>{
+      for(const descriptor of [category,idle,start])await f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value});
+    },[category,idle,start]);
+    if(version===14)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'15');assert.equal(f.writes.length,version===15?3:0);
+  }
+  for(const [declared,undeclared,version] of [[category,idle,14],[idle,category,15],[start,idle,15]]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    await f.wrapped.withMutationContext(async()=>{
+      await assert.rejects(f.wrapped.saveDocument(undeclared.kind,{value:undeclared.value}),blocked);
+    },declared);
+    assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+  }
+});
+
 const extendedMedia=[
   {dealerId:'astrid',compositing:{mode:'alpha'}},
   {dealerId:'astrid',mediaType:'image'},

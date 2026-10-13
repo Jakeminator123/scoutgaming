@@ -13,6 +13,25 @@ const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_VERCEL_UNIFIED_UI:'0', CROUPIER_S
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab-ui.vercel.app', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-unit-secret-'.repeat(3)};
 const config = platformConfiguration(env);
 
+test('published roulette browser contracts use exact backend routes without exposing source aliases', () => {
+  for (const path of ['/roulette-idle-contract.mjs', '/material-catalog.mjs', '/background-materials.mjs']) {
+    assert.equal(backendPlatformPath(path), true, path);
+    assert.deepEqual(platformRoute(new URL(path + '?v=fixture', config.publicOrigin), config),
+      {kind:'backend', destination:config.backendOrigin + path + '?v=fixture'}, path);
+    for (const alias of [path + '/', path + '/extra', path + '.map', '/web/public' + path]) {
+      assert.equal(backendPlatformPath(alias), false, alias);
+      assert.equal(platformRoute(new URL(alias, config.publicOrigin), config).kind, 'frontend', alias);
+    }
+    const encoded = '/%'+path.charCodeAt(1).toString(16)+path.slice(2);
+    assert.equal(backendPlatformPath(encoded), false, encoded);
+    assert.equal(platformRoute(new URL(encoded, config.publicOrigin), config).kind, 'reject', encoded);
+  }
+  for (const path of ['/public-operator-preview.mjs', '/storage/frozen-dealer-idle.mjs', '/server.mjs']) {
+    assert.equal(backendPlatformPath(path), false, path);
+    assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
+  }
+});
+
 test('unified Studio configuration needs no second UI origin and retains distinct game authority', () => {
   const unifiedEnv = {...env, CROUPIER_VERCEL_UNIFIED_UI:'1', CROUPIER_STUDIO_NATIVE_ADMIN:'1'};
   delete unifiedEnv.CROUPIER_LAB_UI_ORIGIN;

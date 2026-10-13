@@ -3,8 +3,9 @@ import {validatePublicOperatorRooms} from '/operator-rooms-contract.mjs';
 import {validatePublicOperatorPreview} from '/operator-preview-contract.mjs';
 import {readChoices} from '/player-choices.mjs';
 import {ROULETTE_TABLE,ROULETTE_TABLE_MASK,rouletteSceneSettings} from './media.mjs';
+import {mountRouletteWheel} from './wheel.mjs';
 
-export async function mountRoomScene(room) {
+export async function mountRoomScene(room,{onTable=()=>{},onDealerClip=()=>{}}={}) {
   const host=document.getElementById('dealer-scene');
   const status=document.getElementById('scene-status');
   const toggle=document.getElementById('scene-toggle');
@@ -16,8 +17,12 @@ export async function mountRoomScene(room) {
     more.setAttribute('aria-label',text?'Mer, rumsinformation finns':'Mer');
   };
   const controller=new AbortController();
-  let scene,closed=false;
-  const close=()=>{closed=true;controller.abort();scene?.close();};
+  let scene,wheel,lastOutcome,closed=false;
+  let readyTimer,resolveReady;
+  const ready=new Promise(resolve=>{resolveReady=resolve;});
+  const finishReady=value=>{clearTimeout(readyTimer);resolveReady(value);};
+  readyTimer=setTimeout(()=>finishReady(false),20000);
+  const close=()=>{closed=true;finishReady(false);controller.abort();wheel?.close();scene?.close();};
   window.addEventListener('pagehide',close,{once:true});
   try {
     const base='/api/operators/'+encodeURIComponent(room.operator);
@@ -44,23 +49,46 @@ export async function mountRoomScene(room) {
       ? tableIds.filter(id=>tableDefinition.allowed.some(row=>row.id===id))
         .map(id=>preview.media.tables.find(row=>row.id===id)).find(Boolean)??null : null;
     const table=publishedTable??ROULETTE_TABLE;
+    const settings=publishedTable?preview.settings:rouletteSceneSettings(preview.settings);
     // A baked legacy scene cannot be placed behind a different game table.
     // No guessed dealer, crop or media URL: wait for a published separable take.
-    const dealer=preview.independentLayers&&preview.media.dealer?.compositing?preview.media.dealer:null;
+    const rawDealer=preview.independentLayers&&preview.media.dealer?.compositing?preview.media.dealer:null;
+    const dealer=rawDealer?{...rawDealer,wheelStart:rawDealer.wheelStart?.tableDesignId===publishedTable?.designId?rawDealer.wheelStart:undefined}:null;
     const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;
     canvas.role='img';canvas.setAttribute('aria-label','Roulettebord'+(dealer?' med '+preview.dealer.label:'')+' i '+room.name);canvas.hidden=true;
     host.append(canvas);
+    wheel=mountRouletteWheel(host,{designId:publishedTable?.designId,placement:settings.desktop.table,embedded:true,onPaint:()=>scene?.refresh()});
     scene=mountPublishedScene(canvas,{dealer,background,table,tableMask:publishedTable?null:ROULETTE_TABLE_MASK,
-      settings:publishedTable?preview.settings:rouletteSceneSettings(preview.settings),layout:'desktop',compositing:dealer?.compositing,
+      settings,layout:'desktop',compositing:dealer?.compositing,onDealerClip,tableOverlay:()=>wheel?.canvas,
       onReady:()=>{
+        if(closed)return;
         fallback.hidden=true;canvas.hidden=false;
+        onTable({designId:publishedTable?(publishedTable.designId??'unknown'):null,placement:settings.desktop.table});
+        if(lastOutcome)wheel?.showOutcome(lastOutcome.number,lastOutcome.roundId);
+        finishReady(true);
         mediaMessage(dealer?'':'En frilagd dealer för det här bordet saknas. Du kan spela ändå.');
         document.getElementById('scene-caption').textContent=dealer?preview.dealer.label+' · '+room.operatorName:'Europeisk roulette · '+room.operatorName;
         toggle.hidden=![dealer,background,table].some(source=>source?.contentType.startsWith('video/'));
       },
-      onFailure:()=>{fallback.hidden=false;canvas.hidden=true;toggle.hidden=true;mediaMessage('Rummets media kunde inte visas. Bordet och spelet är fortfarande tillgängliga.');},
+      onFailure:()=>{finishReady(false);wheel?.close();wheel=null;fallback.hidden=false;canvas.hidden=true;toggle.hidden=true;onTable();mediaMessage('Rummets media kunde inte visas. Bordet och spelet är fortfarande tillgängliga.');},
       onPlaying:playing=>{toggle.textContent=playing?'Pausa video':'Spela video';toggle.setAttribute('aria-pressed',String(playing));},
     });
     toggle.addEventListener('click',()=>scene.toggle(),{signal:controller.signal});
-  }catch{scene?.close();if(!closed)mediaMessage('Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.');}
+    return {toggle:()=>scene.toggle(),setRoundActive:value=>scene.setRoundActive(value),close,
+      showOutcome(number,roundId){lastOutcome={number,roundId};wheel?.showOutcome(number,roundId);},
+      async playRound(number,roundId){
+        const loaded=await ready;lastOutcome={number,roundId};if(!loaded||closed)return;
+        const start=dealer?.wheelStart;
+        if(!start||!wheel||!scene.playWheelStart){await wheel?.play(number,roundId);return;}
+        let videoTime=0,continuedAt=null,spinning;
+        const clock=()=>Math.max(0,videoTime-start.wheelImpulseMs)+(continuedAt===null?0:performance.now()-continuedAt);
+        await scene.playWheelStart({onFrame:ms=>{
+          videoTime=ms;
+          if(!spinning&&ms>=start.wheelImpulseMs)spinning=wheel.play(number,roundId,{clock,ballDelayMs:start.ballReleaseMs-start.wheelImpulseMs});
+        }});
+        continuedAt=performance.now();
+        if(closed)return;
+        await (spinning??wheel.play(number,roundId));
+      }};
+  }catch{finishReady(false);wheel?.close();scene?.close();if(!closed)mediaMessage('Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.');}
 }

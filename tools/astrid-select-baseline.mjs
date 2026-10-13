@@ -62,6 +62,8 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/public/composition-settings.mjs',
   'web/public/dealer-compositing.mjs',
   'web/public/dealer-framing.mjs',
+  'web/public/roulette-idle-contract.mjs',
+  'web/public/roulette-start-contract.mjs',
   'web/public/dealer-identity.mjs',
   'web/public/dealer-speech-profile.mjs',
   'web/public/game-lanes.mjs',

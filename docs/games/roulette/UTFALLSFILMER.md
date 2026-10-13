@@ -2,9 +2,94 @@
 
 [Till spelmanualen](README.md) · [Gemensamma klipp och format](../KLIPP-OCH-FORMAT.md)
 
+## Startgest v2 och live-registrering
+
+Efter beställningen att färdigställa demorummet skapades v2 i Jakobs Runway-
+workspace, task `c1bbe9de-e213-43fa-ac29-4f560ea43eb2`. Käll-MP4:
+1920×1080, 24 fps, 10,042 s, SHA-256
+`961958a45ad2cff6a6dd1e618e6b8666c246e0d838d323020c4acb71b02f78c9`.
+Friläggning `ac90a0e2-8b28-4089-889c-84668184d29e` med ämnet
+`the woman` gav fungerande alfa. Den tidigare körningen med lång ämnestext
+gav helt opak alfa trots alpha-metadata och är underkänd.
+
+Slutfil `anna-wheel-start-v2-clean.webm`, 13 223 797 byte, SHA-256
+`c03eac6a3d4e4776cce6eeaa5d4d4ce4000cfd4ebfd972017e52d65a6b485b85`.
+En isolerad rest i vänster bildkant avlägsnades genom crop av 10 pixlar och
+transparent pad tillbaka till samma 1920×1080. Inga dealerpixlar flyttades.
+FFmpeg använde libvpx-vp9-avkodning och förlustfri yuva420p-kodning.
+Original, exakt prompt och granskningsbilder sparas privat i roulette-stop.
+
+Demoprofil: VILA → VILA, framing `{scale:1,x:0,y:0}`, längd 10042 ms,
+impuls 3208 ms, kulsläpp 5000 ms, design `roulette-anna-v1`, handregion
+`[[[0.47,0.34],[0.84,0.34],[0.84,0.62],[0.47,0.62]]]`.
+Agentens visuella kontroll visar handkontakt/svep över hjulet, återgång till
+vila och bibehållen placering. Kulsläppet är en animerad visualisering;
+detta är ingen fysisk mätning av en verklig roulettekula eller ett nytt
+mänskligt godkännande. Hjulets canvas komponeras nu i bordslagret före
+handmasken, så att de korrigerade siffrorna inte ritas ovanpå fingrarna.
+
+Live registrerat via Admins ordinarie Blob/Neon-flöde: vilofilm
+`8852479c-8aea-46d2-a033-16df41f10b8f` och MP4-bakgrund
+`2c7feba2-70f1-44ee-9b6f-19e478313385`. Viloposer och framing
+`{scale:0.66,x:0.15,y:-0.16}` är sparade. Egen sammansättning:
+`anna-roulette-demorum-fc7785ae-6747-4a5e-b229-04c1ce4247c4`.
+Startfil, bord och publicerat demorum är ännu inte registrerade/slutförda.
+V1-starten och den opaka v2-friläggningen får inte publiceras.
+
+Admin har uttryckliga starttider/bordval och handregion för exakt idle-fil.
+Pose/inramning sparas separat med SHA och tidigare metadata som CAS-villkor.
+Spelvalet skiljer borden i bibliotek och sammansättningar; maskens visuella
+acceptans görs i den riktiga spelaren, inte i kompositionseditorns provbild.
+
 [Flödesschema i Asymptote](underlag/roulette-filmflode.asy) visar det föreslagna pending/reveal-flödet. Asymptote-kompilator saknas lokalt; källan är inte renderingsverifierad.
 
-**Status 13 oktober 2026:** Jakob har ändrat målet från 37 hela filmer till en kompakt lösning med 37 korrekta slutlägen. Ett isolerat geometriprov med separat kula finns; ingen utfallsrenderare eller fördröjd resultatvisning är inkopplad i spelmotorn. Det tidigare kravet att invänta 37 filmer före animationsprov är ersatt av detta uppdrag. Privata original bevaras. Proven är inte produktionsgodkännande.
+**Status 13 oktober 2026:** Den riktiga `/play/roulette`-spelaren ritar nu 37 korrekta fack och en kula mot serverkvittots nummer. Rundans ID ger reproducerbar variation i slutvinkel, 3–5 rotorvarv, 5–7 kulvarv och 8,5–12 sekunders visning. Anna-bordets perspektiv och MP4-bakgrund bevaras. Provet använder isolerad databas; livepublicering och serverstyrd pending/reveal återstår. Privata original bevaras.
+
+## Ny startfilm och variationsspelning
+
+Jakob godkände uppladdning av den godkända målbilden till sitt Runway-konto
+och en tiosekundersfilm. Generering `d9e1bab9-d760-4b7c-a0b2-f2744865ca68`
+gav 1960×1056, 10,041 s, utan ljud; MP4 SHA-256
+`b17c0a108e6edcc119a2b5fca7ef156709fef9e742a000809f78da8fb6ebf524`.
+Friläggning `d66e85b2-a833-4e5f-9b9c-ccff8134f2b5` gav alpha-WebM,
+10,042 s, 737393 byte, SHA-256
+`f3c706a0cef16d3f3e7bf4b5e10ac524d3974c552d0bccc8a55be4f22d9b6f8a`.
+Original, prompt, granskningsmanifest och bildrutor ligger privat i samma
+`roulette-stop`-mapp som tidigare bevis; inga signerade leverantörs-URL:er i Git.
+
+**Visuell bedömning: granskningsklipp, inte produktionsgodkänt.** Första och
+sista bildrutorna har vilohänder; friläggningen bevarar händer/fluga/glasögon
+i granskade rutor. Gesten är däremot ett presenterande svep, inte en tydlig
+tangentiell hjulimpuls följd av ett trovärdigt kulsläpp. Testprofilen använder
+framing `{scale:1,x:0,y:0}`, impuls 2500 ms och släpp 4500 ms för teknisk
+kopplingsgranskning. Dessa tider är provisoriska och ska inte publiceras som
+accepterad fysisk kalibrering. Ingen ytterligare generering beställd.
+
+Valfritt `dealers[].rouletteStart` binder exakt media-UUID, bordsdesign,
+duration, impuls/släpptid och egen handregion. Frozen capture och preview
+bevarar profilen; roulette/action/alpha/VILA→VILA och egna bildmått kontrolleras.
+Spelaren jämför avkodad duration med profilen (högst 100 ms avvikelse),
+spelar klippet en gång och låter videons tid styra rotorstart och kulsläpp.
+En saknad/trasig startfilm lämnar idle och MP4 användbara. Rätt valt bord
+måste matcha; ett annat bord får aldrig ärva handkalibreringen.
+Admin kan fortfarande koppla idle-korten; ett användargränssnitt för att
+redigera startfilmens bordsprofil och cue-tider återstår. `rouletteStart`
+är nu ett validerat spar-/publiceringskontrakt, inte en färdig tidseditor.
+
+Runtime v1–14 behåller mains exakta kontrakt; v14 gäller kategoripapperskorg.
+**Både rouletteIdle och rouletteStart kräver v15**, med separata featuregrindar.
+Ingen SQL-migration. Material som senare godkänns ska registreras via befintlig
+mediebank med hash och rouletteklassning och lagras i Vercel Blob. Tillfälliga
+Runway-URL:er är inte produktionslagring. Ingen Blob-/Neon-/rums-publicering utförd.
+
+Två sammanhängande faktiska UI-rundor med startfilmen: **8 svart → 3 röd**,
+saldo 500 → 495 → 500 USD, isolerad SQLite, oförändrad MP4. Privata bevis:
+`anna-start-round-1.png`, `anna-start-round-2.png`, `anna-start-motion.png`,
+`anna-start-evidence.json`. Föregående varierade stopp-prov gav 31 svart → 0 grön.
+Landskapsvyn fyller fönstret med spelkontroller under bordet och erbjuder
+helskärm under Mer. Vid 1440×900 är dokumenthöjden 900 utan scroll.
+33 fokuserade spel-/renderingstester passerade; full leveranskontroll redovisas
+i handoff. Dessa tekniska prov ersätter inte gestens visuella godkännande.
 
 ## Vad banken ska innehålla
 
@@ -247,3 +332,90 @@ Spårning får inte användas för att bestämma spelutfallet. Den kan mäta syn
 ## Fråga att ge en specialistagent
 
 > Utforma en lokal, reproducerbar kalibreringskedja för ett förinspelat europeiskt roulettehjul (37 fack, låst kamera, 1916×1080, 24 fps). Vi vill återanvända en grundfilm och styra exakt en separat kula till serverns redan fastställda nummer. Jämför OpenCV-landmärken/optiskt flöde och perspektivmodell mot anpassad YOLO-tracking och SAM 2-masker. Originalets nummerkrans är ännu inte godkänd och kulsläppsrutan saknar kalibrering: ange vad som måste bytas eller märkas manuellt, och avvisa gissningar vid morfning/ocklusion. Föreslå minsta dataset, mätbara acceptansgränser, kontrollrutor, hårdvarutest och versionsbundet JSON/maskformat. Skilj faktisk observation från syntetisk bana. Håll dealerhandlingar spelspecifika och återanvänd befintlig roulette-idle. Analysen ska ske före publicering, inte styra pengar eller utfall. Serverns reveal-gräns gäller även saldo, historik och valda medie-URL:er. Leverera kod-/licensalternativ och en liten verifierbar första milstolpe, utan produktionsskrivningar eller betalda jobb.
+# Annas kopplade scen, 13 oktober 2026
+
+Aktuell geometripassning ersätter de underkända tidigare provprofilerna.
+Godkänd målbild: `f1039dd96a028745b68f9e975ed51c0c07d02b2e552032e30d11528373684c78`.
+Transparent bord: `web/public/roulette/assets/anna-roulette-table-v1.png`,
+1708×920, 1079892 byte, SHA-256
+`dde67a019edbaf972e0a14d1cd359fb8b6de76d2bf518c954cfaf62a2eaf0966`.
+Katalog-ID `roulette-anna-v1`, alltid game `roulette`. Källbildens AI-siffror
+är felaktiga; den nedan beskrivna spelarrenderingen ersätter sifferringen.
+
+Logisk spelaryta 1920×1080. Både Annas andningsfilm och glasögon-v2 är
+1916×1080 och har `framing={scale:0.66,x:0.15,y:-0.16}`.
+Dealer-/bakgrundstransform `{scale:1,x:0,y:0}`; bord
+`{width:1.044565,x:0,y:0}`. Normaliserad handregion i källvideon:
+`[[[0.585,0.65],[0.87,0.65],[0.87,0.77],[0.71,0.82],[0.64,0.845],[0.615,0.848],[0.595,0.82]]]`.
+Den gemensamma rendereraren ritar kroppen och händerna ur samma avkodade ruta.
+En 480×270 arbetsmatta inom regionen släpper fram hud/ljusa ärmar, inte västen,
+och uppdateras med videorutan. Detta är en kalibrerad färgheuristik, inte en
+generell segmenteringsmodell; annan klädsel/ljussättning behöver ny granskning.
+Bytt basfilm i Admin rensar tidigare handmask och varianter.
+
+Privata bevis ligger i Codex visualizations/2026/10/13/
+01a13532-b75d-75f0-8507-e70a6c69612e/roulette-stop:
+`anna-scene-manifest.json`, `anna-accepted-base-round-1.png`, `anna-accepted-base-round-2.png`,
+`anna-base-two-rounds-evidence.json` (33 svart, 6 svart). Filnamnets accepted
+anger agentens val av tekniskt fungerande bas, inte Jakobs visuella godkännande.
+De innehåller två faktiska motorutslag med
+ett isolerat testsaldo, inte produktionspublicering. Matchande hjulstart och
+utfallsanimering saknades i detta första basprov; se fortsättningen nedan.
+
+**Ny visuell bedömning:** glasögon-v2:s alfaspår är tekniskt giltigt men
+filmen har synliga hål i händer och fluga mot MP4-bakgrunden. Den togs ur
+det slutliga Anna-manifestet; start-/slutpose är fortfarande unverified.
+Behåll originalet som underlag men publicera inte detta klipp.
+
+Bildgenerator: inbyggd imagegen, transparent_background=true, godkänd målbild
+som enda referens. Exakt prompt:
+
+> Use case: background-extraction. Edit target: the supplied approved roulette scene. Deliver a transparent PNG foreground table layer for a layered game scene. Remove the entire woman, including her hands, arms, and clothing, and remove the entire casino background. Keep ONLY the roulette table and roulette wheel. Preserve the table's EXACT position, scale, shape, perspective, lighting, materials, green felt and printed layout within the original wide image canvas. Do not center, zoom, tilt, extend or reframe the table. Keep the empty transparent upper region where the room and woman were. Reconstruct only the small wooden rim that was hidden under her hands. Preserve the front edge being cropped at the image's bottom. Do not invent another table or add chips, balls or people. All space outside the table must have actual alpha transparency, not a checkerboard. This is an extraction of the approved composition; keep the original approximately 1673:901 aspect ratio and spatial registration.
+
+## Exakt rotor och en kula i den riktiga spelaren
+
+`web/public/roulette/wheel.mjs` ritar en separat canvas endast för verifierat
+design-ID `roulette-anna-v1`; samma publicerade bordstransform gäller även i
+förstoringen. `WHEEL` och `pocketColor` importeras från spelmotorns regler:
+inga bildgenererade siffror eller slumpval av utfall. Rotorn har 37 fack,
+ett grönt 0, rätt ordning och färger. Den orörda PNG:n är ett källmaterial;
+den korrigerade sifferringen finns i spelaren, inte inbakad i filen.
+
+Kalibrering i bildens 1708×920-koordinater: rotormitt `(848,480)`,
+ytterradie 146, innerradie 80, perspektivets y-skala 0,315. Kulbanan går från
+mitt `(848,461)`/radie 196 till `(848,480)`/radie 107. Mässingsaxelns kontur
+maskerar den bakomliggande rotorn/kulan. En enda kula ritas per ruta.
+Rotorn accelererar, kulan går motsols och fångas i det fastställda facket
+vid 80 procent av de nio sekunderna; därefter följer den samma fack till
+stopp. Slutnumret placeras framtill. Detta är kontrollerad presentation,
+inte en fysiksimulering eller nytt slumputfall. Inget Runway-/Three.js-jobb
+behövs och inga 37 stora filmer lagras.
+
+`app.mjs` använder endast `result.round.event.outcome.number` från bekräftat
+serverkvitto. Spelkontrollerna är låsta tills visningen är klar. Scene-ready
+inväntas med begränsad väntan; fel/stängning avslutar visningen utan nytt
+kommando. Reducerad rörelse ger direkt slutläge. Bakgrundsflik har en timer
+utöver requestAnimationFrame. En omladdning återger redan bokförd rundas
+slutläge; ett okänt kvitto återhämtas med samma request-ID.
+
+**Sekretess kvarstår som separat serverarbete:** dagens API bokför och skickar
+nummer, saldo och payout före animationen. Fördröjd text är ingen sekretess;
+refresh, nätverk och andra saldovyer kan redan visa resultatet. Inför verklig
+pending/reveal med samordnad historik/saldo innan någon sådan garanti ges.
+
+Testerna i `test/roulette-wheel.mjs` och `test/roulette-room-http.mjs` ingår
+i ordinarie fulla pre-commit. De provar alla 37 slutnummer vid flera
+startvinklar, fångat fack under inbromsning, kontinuitet, två efterföljande
+spelningar, reducerad rörelse, dold flik, mediafel och långsam scenstart.
+Mänsklig rörelsebedömning och ett separat accepterat Anna-handkast återstår.
+
+Slutkontroll av `07b33c4f`: full pre-commit 3392 pass, 0 fail, 11 skip.
+I faktisk spelare med oförändrat Anna-/MP4-manifest gick två rundor efter
+omladdning i följd: **30 röd, 2 svart**. Saldo 495 → 490 → 495 USD;
+varje runda hade en insats på 5 USD och ett unikt kvitto. Första kvittot gav
+ingen payout, andra 10 USD. Slutkulan låg i motsvarande fack. Inga fångade
+browserfel/varningar. Två skärmbilder och `anna-wheel-two-rounds-evidence.json`
+sparades privat i samma roulette-stop-mapp. Den tidigare rundan 19 i samma
+testserver föregick omladdningen och ingår inte i dessa två slutrundor.
+Detta verifierar lokal produktkod med isolerad databas, inte driftsatt
+produktionspublicering eller ett mänskligt slutgodkännande av rörelsen.

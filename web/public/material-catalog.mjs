@@ -6,6 +6,9 @@ import {BACKGROUND_MATERIALS} from './background-materials.mjs';
 export const MATERIAL_CATALOG_VERSION=1;
 export const MATERIALS=Object.freeze([
   ...BACKGROUND_MATERIALS,
+  Object.freeze({id:'roulette-anna-v1',role:'table',game:'roulette',label:'Roulette · Anna',sources:Object.freeze([
+    Object.freeze({kind:'image',contentType:'image/png',sha256:'dde67a019edbaf972e0a14d1cd359fb8b6de76d2bf518c954cfaf62a2eaf0966',size:1079892,width:1708,height:920,hasAlpha:true}),
+  ])}),
   Object.freeze({id:'blackjack-green-felt',role:'table',game:'blackjack',label:'Blackjack · grön filt',sources:Object.freeze([
     Object.freeze({kind:'image',contentType:'image/png',sha256:'1a88e822883374b6e855fa75d0da6a4dd02be0840bd4ddb7865345fe12c988b4',size:1858750,width:1672,height:941,hasAlpha:true}),
   ])}),
