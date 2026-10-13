@@ -67,8 +67,10 @@ GPU-sessionens livslängd, reservationer och kostnadstak behålls. Avveckling
 av gammal dealer får fortfarande högst 90 sekunder efter befintlig dränering.
 Ingen automatisk ombeställning eller extra betald worker införs. Riktade
 tester täcker lyckad start efter 135 sekunder, timeout vid 180 sekunder,
-omedelbart avbrott och oförändrad avveckling. Kallstart kan fortfarande
-överskrida förberedelsefönstret; två hela liveprov återstår efter leverans.
+omedelbart avbrott och oförändrad avveckling: 49 godkända. Lab-bygge och
+full obligatorisk regression på `52a0aa46` passerade: 3 348 godkända,
+11 miljöberoende skips, 0 fel. Kallstart kan fortfarande överskrida
+förberedelsefönstret; två hela liveprov återstår efter leverans.
 
 Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
 `paow`. Den sparade talprofilen återlästes från servern med ElevenLabs
