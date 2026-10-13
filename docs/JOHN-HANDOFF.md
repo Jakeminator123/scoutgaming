@@ -3,7 +3,7 @@
 ## Tillägg 13 oktober: avgränsad förenkling av legacy och rumsval
 
 Arbetet började på `cc63db71` och är integrerat med senare `main`
-`f00d63b` (#73/#75/#76). Leveransen ligger i ett eget worktree på
+`1d1f4c12` (#73/#75/#76/#77/#79). Leveransen ligger i ett eget worktree på
 `codex/simplify-studio-legacy`, med en PR till `main` för Jakobs granskning.
 Adminens personväljare heter **Dealer**. Rummets egna val öppnar det befintliga
 rumsbundna utseendeflödet för exakt bolag och rum i en ny flik, så Studio-utkastet
@@ -46,7 +46,36 @@ slutföras; React-/SSR-/navigationstester är inte visuell browseracceptans.
 Slutlig PR-head och ordinarie CI-resultat redovisas i PR:en. Produktionsdatabas,
 driftkonfiguration, publicering och betald generering ingår inte.
 
+Mergegranskningen bevarar #77:s korta mappguider och sammanför dessa med
+rumsvalens tekniska förtydliganden. 180 riktade regressionsprov passerar på
+den kombinerade versionen, inklusive behöriga rumsval, inloggning, explicita
+malländringar, frysta paket, legacyvalidering och CI-/hookgränser. Inga tester
+är föräldralösa. GitHub kör hela produktkontrollen före merge.
 
+## Tydligare mappansvar och legacyinstruktioner, 13 oktober
+
+Förenklingen utgår från `main` `978f3bce` i eget worktree och har därefter
+synkats med dokumenttillägget på `ba2eb2bd`. Rotguiden är
+kortad och hänvisar till ordlistan som enda produktmodell. Befintliga guider
+och fem nya mapp-README skiljer aktiv frontend/Studio/spelserver/presentation,
+talservice och medieverktyg från referensytor och genererade byggmappar.
+Gamla kvadratiska/indexerade exportrecept är märkta i fem skripthuvuden;
+deras körbara kod är oförändrad. Inaktiv nästlad worker-CI är borttagen;
+rotens worker-/gatewaykontroller kvarstår. Dokumentationsläget har en exakt
+lista för dessa guider; kod, config, CI och typändringar behåller full regression.
+
+Studio-produktionsbygge och 94 byggspår, 37 riktade repository-/hookprov,
+21 gatewayprov, 15 Python-workerprov, 29 rouletteprov samt 95 lokala
+dokumentlänkar passerar. Full lokal hook: 3 229 godkända, sju skips, ett fel
+i det befintliga processidentitetsprovet. Node-PID och `/proc` har olika
+PID-namespaces här; samma oförändrade kod/test på `main` saknar då
+födelseidentitet. Isolerad omkörning reproducerar det. PR #77 är mergad
+som `1d1f4c12` efter grön full GitHub CI, GitGuardian och Vercel på `b32c0bd`. GitGuardians main-suite var `queued`; incident-/API-täckning
+har inte lästs i denna miljö.
+
+Aktiva Astrid-/dealer-talvägar, klipp, kalibrering, lagrade ID:n, publiceringar
+och data är bevarade. Gemensamma imports mellan appar/paket och SL-10:s
+handmatteaudit är fortsatt öppna; mappnamnen innebär ingen slutförd avveckling.
 
 ## PR-städning och CI, 13 oktober 2026
 
@@ -83,8 +112,13 @@ Inga branchskydd, media-, databas- eller providerinställningar ändras.
 Lokalt verifierat: verkliga Git-mergar och ytlig checkout, äldre kodändring
 följd av dokumentpush, runtimefil flyttad till docs, symboliska länkar och
 slutjobbets felvägar. Miljö-, leverans- och orphan-kontroller körs också.
-GitHub kör full produktkontroll på workflow-PR:n före merge. GitGuardian-
-PR-status läses separat; incidentlista och historisk täckning är inte verifierade.
+Workflow-PR #76 är mergad som `f00d63ba` efter grön full GitHub-körning
+`38392397953` på `16f6fd3`: Studio, dealerregression, OpenClaw-startprov,
+isolerad SQL/omstart/HTTPS, worker och slutjobbet CI passerade. GitGuardian
+och Vercel var gröna på samma PR-commit. Incidentlista och historisk
+säkerhetstäckning är inte verifierade. Dokument-PR #79 verifierade den korta
+vägen i körning `38393298682`: 46 sekunder från första jobbstart till grönt
+slutjobb. Full regression fortsätter köras på main.
 
 ## Nästa agent: roulette i N1:s Labba-yta
 

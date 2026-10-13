@@ -5,29 +5,41 @@
 Den här katalogen är service `web` i Vercel-projektet `scoutgaming`, från
 [Jakeminator123/scoutgaming](https://github.com/Jakeminator123/scoutgaming),
 branch `main`. [Startsida](https://www.scoutgaming.tech/),
-[spel](https://www.scoutgaming.tech/game) och
-[Croupier Studio](https://www.scoutgaming.tech/studio) har samma publika origin.
-Studio byggs som service `studio` från `lab` i samma projekt/reporot; båda
-ligger i Frankfurt. Render äger auktoritativ spelmotor och live-transport.
+[administration](https://www.scoutgaming.tech/admin),
+[lobby](https://www.scoutgaming.tech/lobby) och spel har samma publika origin.
+Service `web` bygger startsidan, befintliga spelarvyer och spelklientens ingress.
+Service `studio` byggs från `lab` och serverar `/admin`, `/lobby`, `/control`
+och `/partner`. `/studio` är dess tekniska basePath. Båda tjänsterna ligger
+i Frankfurt. Render äger auktoritativ spelmotor och live-transport.
 Det äldre frontendprojektet är en domänlös reserv med Git-byggen avstängda.
 Se [driftkartan](../../docs/CLOUD-MIGRATION.md) och
 [senaste verifierade leverans](../../docs/JOHN-HANDOFF.md) för produktion och QA.
 
 Med `CROUPIER_VERCEL_UI=1` använder frontend de incheckade route-/ingress-
 kontrakten och paketerade produktgränssnitten. `/lab`, `/labb` och äldre
-Studio-adresser omdirigerar till `/studio`; video-, zon- och guidegenvägar
+Studio-adresser omdirigerar till `/control`; video-, zon- och guidegenvägar
 behåller sina undersidor. Utan flaggan används de äldre Render-genvägarna och
 `CROUPIER_GAME_URL`. Den grenen behövs ännu och är inte en isolerad QA-konfiguration.
 `/demo` länkar till det serverägda spelet. Den oanvända klientbaserade
 blackjack-demon, dubbla CSS-filen och oanvända UI-/tema-/hookkomponenter är borttagna.
 Den aktiva Button-komponenten och landningssidans kortsymboler är kvar.
 
+Fortsatt UI-utveckling sker i `/admin` och `/lobby`. Övergången är inte klar:
+`/control`, `/partner` och `/play` behåller fungerande inloggning, verktyg och
+spelstarter. `/admin` kräver intern N1-inloggning; `/lobby` läser publika bolag
+och spelbara rum. Deras UI-källa finns i `packages/design-preview`.
+
 Native Studio/Neon och gemensam policy är aktiva i produktion. `/player-login`
-är spelarentré, `/blackjack` spelet och `/game` ger 307 till `/blackjack`.
+är spelarentré. I unified/native-läget startar ett uttryckligt rum/dealerval
+spelet via `/play/blackjack`; en allmän blackjackadress leder till `/play`.
+Äldre `/game`- och `/blackjack`-länkar hanteras av det delade entrékontraktet.
 `CROUPIER_VERCEL_UNIFIED_UI=1` styr den gemensamma Services-konfigurationen.
-Partnerportalens befintliga vyer använder intern admin och separerade fixtures;
-riktig partnerinloggning och spelarlobby återstår enligt T2–T4. Separata QA-
-miljöer bevaras för syntetiska prov; full AI/GPU-acceptans redovisas separat.
+Partnerinloggning finns på `/partner/login` med separat `partner_session` och
+scoped medlemskap; intern admin kan också använda portalen. Den befintliga
+spellobbyn, profilen och historiken finns under `/play`. T2–T4 har kvarvarande
+acceptans- och integrationspunkter i driftkartan; de betyder inte att dessa
+funktioner saknas. Separata QA-miljöer bevaras för syntetiska prov;
+full AI/GPU-acceptans redovisas separat.
 
 ## Landningssidans uppspelning
 
@@ -50,6 +62,12 @@ pnpm build
 Bygget kör testerna före `next build`; separat typkontroll krävs eftersom
 Next-konfigurationen tills vidare hoppar över byggens typfel.
 Interaktiva produkt-/labbprov använder den gemensamma sessionsvakten.
+
+`node_modules/`, `.next/`, `runtime-ui/` och de spelresurser som
+`tools/prepare-platform-ui.mjs` skriver i `public/` genereras vid installation
+eller bygge och är Git-ignorerade. De är inga egna produkter eller källarkiv.
+Ändra spelkällan i `web/public` och den delade presentationen i
+`packages/presentation`; förberedelsen kopierar dem till frontendbygget.
 
 Preview är inte automatiskt isolerad från produktion. Använd bara rätt QA-
 backend, separat databas och hostname för syntetiskt spelprov; följ driftkartan.

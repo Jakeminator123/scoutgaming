@@ -10,7 +10,7 @@ https://gitlab.com/EmaCodeHero/astrid-gpu-worker
 This directory keeps the worker with Croupier's approved GitHub source repository.
 The imported GitLab CI and obsolete deployment instructions have been removed;
 the upstream URL and source SHA above remain the import receipt. Current work
-uses `main` in `Jakeminator123/github-work`, with no GitLab publication.
+uses `main` in `Jakeminator123/scoutgaming`, with no GitLab publication.
 The root GitHub workflow runs the service tests. Build the GPU image with this
 directory as Docker's build context. The manual build and private GHCR publish
 workflows are linked from [README.md](README.md). No GPU image is published

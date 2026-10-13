@@ -1,13 +1,23 @@
-INTEGRATION MED JAKEMINATOR123/SCOUTGAMING · MAIN
+# Fristående kompositorexport — integrationsreferens
 
-Detta paket ligger utanför repot. Det gör ingen push, deploy, databasändring, autentisering eller kontakt med spelmotorn. Allt arbete är lokalt. Exporten är en integrationsutgångspunkt – den är inte installerad eller verifierad i den körande produkten.
+Kompositorkällan finns nu i `packages/presentation/` och används av Studio
+och spelruntime enligt [paketguiden](../README.md). Texten nedan beskriver den
+fristående referensredigerarens exporter och adaptergränser; den är inte en
+instruktion att installera om dagens gemensamma spelare. Referens-UI:t serveras
+inte som en separat produkt. Aktuell integration, publicering och mediaformat
+styrs av [runtimekontraktet](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
+och [spelguiderna](../../../docs/games/README.md).
 
-REKOMMENDERAD INTEGRATIONSORDNING
+En export gör ingen push, deploy, databasändring eller autentisering. Varje
+nytt provpaket kräver egen granskning; tidigare användning av kompositorn är
+inte ett acceptanskvitto för nya klipp.
+
+PROVORDNING FÖR EN NY FRISTÅENDE EXPORT
 1. Importera godkända produktionsklipp, välj en kvalitetsvariant och kalibrera scenen.
 2. Exportera ett PROVPAKET. Servera det över HTTP(S) på en isolerad testyta.
 3. Testa det på riktiga iPhone/Android-enheter och desktop. Bekräfta kortkontakt, key-kanter, återgång efter skärmlås, nätverksladdning, VILA/REDO och saknade handlingar.
-4. Integrera mediespelaren bakom ett separat val/feature flag i repot. Låt nuvarande spelväg vara återställbar. Byt inte befintliga stream/index.json eller koordinater blint.
-5. Kör repots aktuella media-/synkauditer och regressionstester innan en PR bedöms. Läs repots egna instruktioner på nytt vid integrationstillfället.
+4. Använd dagens gemensamma presentationsväg om provet ska integreras. Ändra inte befintliga mediereferenser eller kalibrerade koordinater utan konsumentkontroll.
+5. Kör repots aktuella regression enligt `.githooks/pre-commit` och granska i riktig rehearsal innan en PR bedöms. Läs `AGENTS.md` vid integrationstillfället; äldre index-/synkauditnamn är ingen checklista för dagens registrerade klipp.
 
 VAD WEBBEXPORTEN INNEHÅLLER
 index.html / viewer.js / viewer.css: fristående provspelare.
