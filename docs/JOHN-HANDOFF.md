@@ -1,8 +1,31 @@
 # Aktuell handoff — Scoutgaming
 
+## OpenClaw-länk och webbläsarklocka, 13 oktober 2026
+
+Efter #83 driftsatts gav både Director-provet och sajtens N1-POST HTTP 200
+med giltiga länkfält, men klienten visade anslutningsfel. Klientens övre
+tiominutersgräns jämförde Gatewayns sluttid mot webbläsarens egen klocka;
+även en liten klockskillnad kan därför avvisa en nyutfärdad länk.
+API:t skickar nu serverberäknad återstående giltighetstid. Klienten drar
+konservativt av hela anropets monotona förloppstid och kontrollerar samma
+fasta URL, fragment och tokenformat. Gateway behåller faktisk sluttid och
+engångsanvändning; N1, CSRF och serverns utgångskontroll är oförändrade.
+Rättningen kräver endast Verceldeploy, ingen ny Gateway/Director-deploy.
+Tester täcker förskjutna klientklockor samt saknad, för lång och förbrukad
+återstående tid. Verklig knappnavigering ska återprovas efter driftsättning.
+
+Samma liveacceptans visade tom tabellinventering i Adminroboten: queryn läste
+public/studio trots att migrationerna skapar croupier_game, croupier_auth och
+croupier_studio. Den fasta allowlisten följer nu dessa tre scheman. Endast
+tabellnamn/schema skickas, aldrig tabellrader eller SQL från användaren;
+500-tabellersgränsen och markeringen för ofullständig inventering behålls.
+Samordnaren verifierade samtidigt verkliga Sol 6.1-svar för N1 och Luna 6
+för publik hjälp samt 401 för anonymt administrationsanrop.
+Verifiering av rättningen: 47 fokuserade UI/API/runtime-tester godkända.
+
 ## OpenClaw direkt från N1, 13 oktober 2026
 
-Kod i codex/openclaw-access. /admin/ai/models och /control/openclaw visar
+PR #83 är mergad som e57f28ef. /admin/ai/models och /control/openclaw visar
 registrerade agentroller och deras skilda uppgifter; det är inte trafikstatistik.
 Direktöppning använder aktuell N1-session → Vercel → Director → befintlig privat
 helper på Gatewayport 18790 → den låsta OpenClaw-CLI:ns dashboard --json.
@@ -11,37 +34,34 @@ lösenordsfält kastas bort. Varken nya credentials eller fria kommandon införs
 Native Gateway behåller lösenord, device-identitet och egen beständig
 webbläsarsession. Sajtens logout återkallar inte den native-sessionen.
 
-Driftsättning kräver Gateway (ny helperfil i befintlig image), Director
-(ny POST-operation) och Vercel (N1-knapp/API). Gateway → Director → Vercel
-är lämplig ordning. Blueprinten open-claw/lab/render.yaml har
-autoDeployTrigger: off för båda Render-tjänsterna, alltså manuell deploy
-enligt repo. Samordnaren verifierade även live att båda har autoDeploy off
-i workspace tea-d19jsa63jp1c73ch0sc0, version 19c44902. Gamla kombinationer kan inte utfärda länken och visar
-ett tydligt fel. Efteråt ska en ny webbläsarprofil med N1 testas från knappen
-utan lösenord/terminal, följt av partner/spelar/utloggad nekad åtkomst.
-Ingen liveändring, omstart eller credentialsrotation utförd i denna gren.
+Samordnaren driftsatte e57f28ef på Gateway (dep-db72uq3l550s73ajlu9g),
+Director (dep-db7300rrjlhs739ovtl0) och Vercel. Båda Render-tjänsterna har
+autoDeploy off i workspace tea-d19jsa63jp1c73ch0sc0. Director och N1-POST
+utfärdar giltig engångsbootstrap med HTTP 200; klientens klockkontroll rättas
+ovan. Knappnavigering utan lösenord/terminal återstår efter denna rättning.
 
-Levande katalog kontrollerad läsande: gpt-5.4-mini, gpt-5.6-terra,
-gpt-6-luna och gpt-6-sol. Alla fem rollernas grundval är Terra. Sol 6.1
-saknas i Gatewaykatalogen; Adminrobotens verifierade direktadapter är separat.
-Ingen faktisk användningsfrekvens exponeras av dagens begränsade admin-API.
-Denna separata OpenClaw-förbättring lägger idempotent till Sol 6.1 som
-textmodell i befintlig officiell OpenAI-providerkatalog vid Gatewaydeploy.
-Alla roller, primary/fallback-val, talmodellernas tillåtna val och befintliga
-metadata bevaras. Ny katalogpost betyder inte att ett Gatewayanrop har lyckats:
-samordnaren provar ett syntetiskt operatoranrop efter deploy före modellbyte.
+Livekatalogen innehåller nu gpt-5.4-mini, gpt-5.6-terra, gpt-6-luna,
+gpt-6-sol och gpt-6.1-sol. Alla fem rollernas återlästa grundval är Terra.
+N1-försöket att välja Sol 6.1 enbart för croupier-operator gav 503
+openclaw_admin_save_uncertain. Gatewayloggen 13:34:38 visar nekad fchmod
+(EPERM), och uttrycklig GET återläser Terra med applied=true. Ingen blind
+omsändning gjordes och UI-utkastet återställdes. Filbehörighetsfelet utreds
+separat; verkligt native-modellanrop är ännu inte verifierat. Adminrobotens
+verifierade Sol 6.1-direktadapter är separat. Faktisk rolltrafik exponeras
+inte av dagens begränsade admin-API; talrollernas modellval är oförändrade.
 
 Verifiering: full hook 3 298 tester, 3 287 godkända, 11 miljöberoende skips,
 0 fel. Admin/Studio-produktionsbygget passerade. 47 fokuserade tester godkända för N1/CSRF/revokering, fasta mål,
 bootstrapvalidering, hemlighetsprojektion, helpergränser och UI-navigering.
-Den officiella CLI:n verifierades via källan för låsta v2026.9.5; det riktiga
-container-till-webbläsarflödet återstår efter driftsättning.
+Den officiella CLI:n verifierades via källan för låsta v2026.9.5; faktisk
+browsernavigering återstår enligt liveacceptansen ovan.
 
 
 ## Adminroboten och separata chattlägen, 13 oktober 2026
 
 PR #82 mergad som b76510af; GitHub CI och Vercel-preview godkända.
-Vercels modellanslutning saknas ännu och hanteras separat av samordnaren. Knappen finns på publik sajt,
+Modellanslutningen rättades i #85 och Sol 6.1/Luna 6 har svarat live.
+Knappen finns på publik sajt,
 admin/Studio, partner och spelarsidor. Scoutguiden använder Luna 6 och statisk
 publik kunskap. Inloggad N1 kan välja Adminroboten eller OpenClaw med Sol 6.1/high.
 Klippassistenten behåller sitt separata importflöde; dealerspelchatten och den

@@ -141,12 +141,13 @@ test('oversized and invalid UTF8 input is rejected before any remote mutation', 
 const dashboardRequest=(body={version:1,action:'dashboard.open'},headers={})=>new Request(publicOrigin+'/studio/api/openclaw/admin',{method:'POST',headers:{origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json',cookie:'bo_jwt=synthetic-session',...headers},body:JSON.stringify(body)});
 test('N1 dashboard handoff retains only single-use token, fixed destination and expiry',async()=>{
  const token='synthetic-bootstrap-token-'.repeat(2),expiresAtMs=Date.now()+590000;
- const f=fixture({response:{bootstrapToken:token,expiresAtMs,password:'PRIVATE',browserUrl:'https://evil.invalid'}});
+ const f=fixture({response:{bootstrapToken:token,expiresAtMs,remainingLifetimeMs:999999,password:'PRIVATE',browserUrl:'https://evil.invalid'}});
  const response=await f.api.handle(dashboardRequest());assert.equal(response.status,200);
  const value=await response.json(),url=new URL(value.browserUrl);
  assert.equal(url.origin+url.pathname,'https://croupier-lab-director.onrender.com/openclaw/');assert.equal(url.search,'');
  const hash=new URLSearchParams(url.hash.slice(1));assert.equal(hash.get('bootstrapToken'),token);assert.equal(hash.get('bootstrapProfile'),'owner');assert.equal(hash.get('gatewayUrl'),'wss://croupier-lab-director.onrender.com/openclaw');
  assert.equal(value.expiresAtMs,expiresAtMs);assert.doesNotMatch(JSON.stringify(value),/PRIVATE|evil/);
+ assert.ok(Number.isSafeInteger(value.remainingLifetimeMs));assert.ok(value.remainingLifetimeMs>580000&&value.remainingLifetimeMs<=590000);
  assert.equal(f.calls[0].options.method,'POST');assert.deepEqual(JSON.parse(f.calls[0].options.body),{version:1,action:'dashboard.open'});
 });
 test('dashboard handoff rejects non-N1, CSRF, extra commands, revoked sessions and stale tokens',async()=>{
