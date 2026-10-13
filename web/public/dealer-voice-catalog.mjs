@@ -2,7 +2,7 @@ import catalog from './dealer-voice-catalog.json' with {type:'json'};
 import {ASTRID_VOICE_PROFILE} from './astrid-voice-profile.mjs';
 
 // This catalog contains public identities, never account credentials or runtime
-// readiness. Selecting a preset is an explicit draft edit, not activation.
+// readiness. Defaults and selections change only the draft, never activation.
 export const DEALER_VOICE_PRESETS = Object.freeze([
   ...catalog.voices.map(row=>Object.freeze({id:row.id,label:row.label,provider:row.provider,aliases:Object.freeze([...row.aliases])})),
   Object.freeze({id:'astrid-victoria',label:'Astrid · Victoria',provider:'cartesia',aliases:Object.freeze(['astrid'])}),
@@ -38,5 +38,12 @@ export function matchingDealerVoicePreset(draft) {
 }
 export function suggestedDealerVoicePreset(dealer) {
   const identities=[dealer?.id,dealer?.label].filter(value=>typeof value==='string').map(value=>value.trim().toLocaleLowerCase('sv'));
-  return DEALER_VOICE_PRESETS.find(row=>row.aliases.some(alias=>identities.includes(alias)))?.id??null;
+  const matches=DEALER_VOICE_PRESETS.filter(row=>row.aliases.some(alias=>identities.includes(alias)));
+  return matches.length===1?matches[0].id:null;
+}
+// Jakob explicitly paired these original voices with their dealers. A saved
+// voice wins; ambiguous names and unrelated dealers never inherit a voice.
+export function initialDealerVoiceDraft(dealer,voice) {
+  const preset=suggestedDealerVoicePreset(dealer);
+  return dealerVoiceDraft(voice??(['paow','dragge'].includes(preset)?dealerVoicePreset(preset):null));
 }

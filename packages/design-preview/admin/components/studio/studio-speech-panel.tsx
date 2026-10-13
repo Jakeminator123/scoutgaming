@@ -2,7 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react'
 import {DealerVoicePicker} from '../../../../../lab/components/dealer-voice-picker'
-import {dealerVoiceDraft,dealerVoiceFromDraft} from '../../../../../web/public/dealer-voice-catalog.mjs'
+import {dealerVoiceDraft,dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../../../../web/public/dealer-voice-catalog.mjs'
 import type {StudioProject} from '../../../../../lab/lib/studio-model.mjs'
 import type {VideoInventory} from '../../lib/connected-studio.mjs'
 import {isSpeechReferenceVideo,type DealerSpeechProfile} from '../../../../../web/public/dealer-speech-profile.mjs'
@@ -34,7 +34,7 @@ function SpeechResultPreview({result}:{result:SpeechBuildResult}){
 export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   const {project,inventory,dealerId,game='blackjack',blocked=false,projectDirty=false,onEdit,onBusyChange,onDirtyChange}=props
   const dealer=project.dealers.find(row=>row.id===dealerId),saved=dealer?.speechProfile
-  const [voiceDraft,setVoiceDraft]=useState(dealerVoiceDraft(saved?.voice))
+  const [voiceDraft,setVoiceDraft]=useState(initialDealerVoiceDraft(dealer,saved?.voice))
   const [language,setLanguage]=useState<SpeechLanguage>('sv'),[lineId,setLineId]=useState('goodluck'),[all,setAll]=useState(false)
   const allowedLineIds=studioSpeechLineIds(game),selectedLineId=allowedLineIds.includes(lineId)?lineId:allowedLineIds[0]
   const [videoId,setVideoId]=useState(saved?.reference?.videoId??''),[offsetMs,setOffsetMs]=useState(saved?.reference?.offsetMs??0),[enabled,setEnabled]=useState(saved?.state==='enabled')
@@ -45,7 +45,7 @@ export function StudioSpeechPanel(props:StudioSpeechPanelProps){
   const work=useRef<AbortController|null>(null),preview=useRef<HTMLVideoElement>(null),latest=useRef(props)
   latest.current=props
   const savedKey=JSON.stringify(saved??null)
-  useEffect(()=>{setVoiceDraft(dealerVoiceDraft(saved?.voice));setVideoId(saved?.reference?.videoId??'');setOffsetMs(saved?.reference?.offsetMs??0);setEnabled(saved?.state==='enabled');setFrameReviewed(false);setPlan(null);setResults([]);setBusy(false);setError('');setNotice('')},[dealerId,savedKey])
+  useEffect(()=>{setVoiceDraft(initialDealerVoiceDraft(dealer,saved?.voice));setVideoId(saved?.reference?.videoId??'');setOffsetMs(saved?.reference?.offsetMs??0);setEnabled(saved?.state==='enabled');setFrameReviewed(false);setPlan(null);setResults([]);setBusy(false);setError('');setNotice('')},[dealerId,savedKey])
   useEffect(()=>{return()=>{work.current?.abort();preview.current?.pause();latest.current.onBusyChange?.(false);latest.current.onDirtyChange?.(false)}},[])
   useEffect(()=>{return()=>{work.current?.abort();work.current=null;latest.current.onBusyChange?.(false)}},[dealerId])
   useEffect(()=>{setAwaitingProjectSave(null)},[dealerId])

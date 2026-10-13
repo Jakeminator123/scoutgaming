@@ -2,7 +2,7 @@
 import {DEALER_VOICE_PRESETS,dealerVoiceDraft,dealerVoicePreset,matchingDealerVoicePreset,suggestedDealerVoicePreset,type DealerVoiceDraft} from '../../web/public/dealer-voice-catalog.mjs';
 
 // Pure controlled UI shared by Control and Admin. No account query, effect,
-// automatic reassignment or generation happens when this panel is opened.
+// saved-voice reassignment or generation happens when this panel is opened.
 export function DealerVoicePicker({dealer,value,onChange,fieldClass='field'}:{dealer:{id:string;label?:string};value:DealerVoiceDraft;onChange:(value:DealerVoiceDraft)=>void;fieldClass?:string}) {
   const selected=matchingDealerVoicePreset(value),suggested=suggestedDealerVoicePreset(dealer);
   const custom=Boolean(value.provider||value.voiceId||value.modelId)&&!selected;
@@ -24,7 +24,7 @@ export function DealerVoicePicker({dealer,value,onChange,fieldClass='field'}:{de
         <option value="sv">Svenska</option><option value="en">English</option>{value.language&&!['sv','en'].includes(value.language)&&<option value={value.language}>{value.language.toUpperCase()}</option>}
       </select></label>
     </div>
-    {selected&&<p className="text-xs text-muted-foreground">Rösten är vald. Inställningarna följer det valda språket.</p>}
+    {selected&&<p className="text-xs text-muted-foreground">Röstens ID och modell är ifyllda. Inställningarna följer det valda språket.</p>}
     <details open={custom||undefined}><summary>Detaljer · röstinställningar</summary>
       {selected==='paow'&&<p className="text-xs text-muted-foreground">Paow använder Eleven v3 på svenska och Multilingual v2 på andra språk.</p>}
       <label className={fieldClass}>Röstleverantör<select value={value.provider} onChange={event=>onChange({...dealerVoiceDraft(null),provider:event.target.value as DealerVoiceDraft['provider']})}><option value="">Inte vald</option><option value="cartesia">Cartesia</option><option value="elevenlabs">ElevenLabs</option></select></label>

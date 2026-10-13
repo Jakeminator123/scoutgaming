@@ -96,7 +96,10 @@ export function createOpenClawAdminApi({ config, authorize, settings = settingsN
       if (request.method === 'POST') {
         if (principal(await authorize(request),config).user !== actor.user) fail(403,'studio_request_rejected');
         if (!validDashboardHandoff(value)) fail(503,'openclaw_dashboard_unavailable');
-        return json({ browserUrl:dashboardBrowserUrl(value), expiresAtMs:value.expiresAtMs });
+        // Compare expiry on the server that validated it. A browser's wall clock
+        // may differ from Gateway time even when the one-use link is fresh.
+        return json({ browserUrl:dashboardBrowserUrl(value), expiresAtMs:value.expiresAtMs,
+          remainingLifetimeMs:value.expiresAtMs - Date.now() });
       }
       return json(projection(value, request.method));
     } catch (error) {

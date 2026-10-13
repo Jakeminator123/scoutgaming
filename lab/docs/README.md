@@ -618,11 +618,13 @@ OpenClaws versionsbundna källor nås via [dess källindex](../../open-claw/lab/
 ## Välj dealerns röst
 
 I Admins befintliga **Röst & tal**, och i Controls **Röst och läppsynk**,
-finns samma kompakta röstväljare. Välj **Paow** eller **Dragge** och röstspråk.
-Original-ID, modell och prövade inställningar fylls i tillsammans. Paow
+finns samma kompakta röstväljare. Paow och Dragge förväljs automatiskt när
+dealerns ID eller namn entydigt matchar och ingen röst redan är sparad.
+Original-ID, modell och inställningar fylls i tillsammans. Du kan ändra
+röst och röstspråk i samma meny. Paow
 använder Eleven v3 för svenska och Multilingual v2 för andra språk; Dragge
 använder Multilingual v2. **Astrid · Victoria** behåller Astrids befintliga
-Cartesia-röst. Ett namn kan ge ett förslag, men ingen röst väljs automatiskt.
+Cartesia-röst. Andra eller motstridiga namn får inget automatiskt röstval.
 Egna profiler finns kvar och kan redigeras under **Detaljer**.
 
 Lägg talprofilen i projektutkastet och spara projektet. En redan sparad,

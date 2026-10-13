@@ -2,6 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SPEECH_LINES} from '../../../../web/public/speech-lines.mjs';
 import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl} from '../../../../web/public/studio-speech.mjs';
+import {initialDealerVoiceDraft,dealerVoiceDraft,dealerVoicePreset} from '../../../../web/public/dealer-voice-catalog.mjs';
+
+test('confirmed original voice defaults preserve saved choices and refuse ambiguous or approximate names',()=>{
+  for(const [dealer,id] of [[{id:'paow'},'paow'],[{id:'body-7',label:' PAOW '},'paow'],[{id:'dragan'},'dragge'],[{id:'body-8',label:'Dragge'},'dragge']]) {
+    assert.deepEqual(initialDealerVoiceDraft(dealer,null),dealerVoiceDraft(dealerVoicePreset(id)));
+    const own={provider:'elevenlabs',voiceId:'explicit-own-voice',modelId:'own-model'};
+    assert.deepEqual(initialDealerVoiceDraft(dealer,own),dealerVoiceDraft(own));
+  }
+  for(const dealer of [undefined,{id:'astrid'},{id:'paow',label:'Dragge'},{id:'body-7',label:'Paow copy'},{id:'unknown'}])assert.deepEqual(initialDealerVoiceDraft(dealer,null),dealerVoiceDraft(null));
+});
 
 test('17 explicit SV/EN generation templates preserve authoritative English captions',()=>{
   assert.equal(STUDIO_SPEECH_LINES.length,17);assert.deepEqual(Object.fromEntries(studioSpeechLines('en').map(row=>[row.id,row.exactText])),SPEECH_LINES);
@@ -58,11 +68,11 @@ test('unrelated project revision does not erase unstaged voice fields',async()=>
   h.props.project={...h.props.project,revision:'unrelated-r2',clipLabels:{'other-clip':'New label'}};tree=h.render();h.flush();tree=h.render();assert.equal(h.field(tree,'Voice-ID').props.value,'own-unsaved-voice');assert.equal(h.button(tree,'Förbered').props.disabled,true);
 });
 
-for(const game of ['blackjack','roulette'])test(`${game} body dealer chooses an original voice in one menu without activation or generation`,async()=>{
+for(const game of ['blackjack','roulette'])test(`${game} body dealer defaults to the confirmed original voice without activation or generation`,async()=>{
   const h=await panelHarness();h.props.game=game;h.props.dealerId='body-7';h.props.project={...h.props.project,dealers:[{id:'body-7',label:'Paow'}]};
   h.render();h.flush();let tree=h.render();
-  assert.equal(h.field(tree,'Röst').props.value,'','a suggested name does not assign a voice');
-  h.field(tree,'Röst').props.onChange({target:{value:'paow'}});tree=h.render();h.flush();tree=h.render();
+  assert.equal(h.field(tree,'Röst').props.value,'paow','the explicit pairing needs no extra voice menu');
+  assert.equal(h.props.project.dealers[0].speechProfile,undefined,'opening does not mutate the saved project');
   assert.equal(h.field(tree,'Voice-ID').props.value,'WZVEBKUreb9jAKojf0QF');assert.equal(h.field(tree,'Röstmodell').props.value,'eleven_v3');
   assert.equal(h.field(tree,'Stabilitet').props.value,'0.5');assert.equal(h.field(tree,'Begär AI-tal').props.checked,false);
   assert.equal(h.nodes(tree,node=>node.type==='details'&&node.props.open===true).length,0,'known voice details stay compact');
@@ -76,6 +86,16 @@ for(const game of ['blackjack','roulette'])test(`${game} body dealer chooses an 
   assert.equal(h.field(tree,'Voice-ID').props.value,'7f95xPL4S3ySZ4OS1pw8');assert.equal(h.field(tree,'Stil').props.value,'0.15');
   h.field(tree,'Voice-ID').props.onChange({target:{value:'other-owned-voice'}});tree=h.render();
   assert.equal(h.field(tree,'Egna röstinställningar').props.checked,false,'another voice never inherits the original clone tuning');
+});
+
+test('switching dealers refreshes the default and keeps an existing explicit voice',async()=>{
+  const h=await panelHarness();h.props.project.dealers=[{id:'paow',label:'Paow'},{id:'dragge',label:'Dragge'},{id:'custom',label:'Paow',speechProfile:{schemaVersion:2,state:'preparation',voice:{provider:'elevenlabs',voiceId:'custom-id',modelId:'custom-model'},reference:null}}];
+  for(const [id,expected] of [['paow','WZVEBKUreb9jAKojf0QF'],['dragge','7f95xPL4S3ySZ4OS1pw8'],['custom','custom-id']]){
+    h.props.dealerId=id;h.render();h.flush();const tree=h.render();
+    assert.equal(h.field(tree,'Voice-ID').props.value,expected);
+    assert.equal(h.field(tree,'Begär AI-tal').props.checked,false);
+  }
+  assert.equal(h.calls.length,0);
 });
 
 test('changing only a voice preserves an unchanged own reference; replaced bytes require a fresh preview',async()=>{

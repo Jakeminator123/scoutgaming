@@ -78,6 +78,14 @@ export function assertNativeStudioRequest(request, config) {
     || request.headers.has('next-action')) denied();
 }
 
+// Fixed schema inventory only. No caller SQL, credentials, row contents,
+// player IDs, card order or balances cross this capability.
+export async function readAssistantDatabaseInventory(pool) {
+  const result = await pool.query("SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema IN ('croupier_game','croupier_auth','croupier_studio') AND table_type='BASE TABLE' ORDER BY table_schema, table_name LIMIT 501");
+  return { source:'connected-neon-game-and-studio', partial:result.rows.length>500,
+    tables:result.rows.slice(0,500).map(row=>({schema:row.table_schema,name:row.table_name})) };
+}
+
 // Lazy initialization: importing/building does not connect, migrate, bootstrap
 // identities, read old disk state, or silently change the active writer.
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
@@ -176,13 +184,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,
       mutationTransaction, ...media,
-      // Fixed schema inventory only. No caller SQL, credentials, row contents,
-      // player IDs, card order or balances cross this capability.
-      async assistantDatabaseInventory() {
-        const result = await pool.query("SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema IN ('public','studio') AND table_type='BASE TABLE' ORDER BY table_schema, table_name LIMIT 501");
-        return { source:'connected-neon-game-and-studio', partial:result.rows.length>500,
-          tables:result.rows.slice(0,500).map(row=>({schema:row.table_schema,name:row.table_name})) };
-      },
+      assistantDatabaseInventory: () => readAssistantDatabaseInventory(pool),
     };
     // Server-only capability: non-enumerable and copy-on-read. No endpoint
     // serializes this key, and a caller cannot mutate another handler's copy.

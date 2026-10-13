@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {DealerVoicePicker} from './dealer-voice-picker';
-import {dealerVoiceDraft,dealerVoiceFromDraft} from '../../web/public/dealer-voice-catalog.mjs';
+import {dealerVoiceDraft,dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../web/public/dealer-voice-catalog.mjs';
 import type {StudioProject} from '../lib/studio-model.mjs';
 import {dealerSpeechPreparation,isSpeechReferenceVideo,normalizeDealerSpeechProfile,type DealerSpeechProfile} from '../../web/public/dealer-speech-profile.mjs';
 import type {VideoInventory} from './studio-types';
@@ -9,7 +9,7 @@ import type {VideoInventory} from './studio-types';
 export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,expanded=false,idleReferenceId,onDraftChange}:{expanded?:boolean;idleReferenceId?:string;onDraftChange?:(dirty:boolean)=>void;dealer:StudioProject['dealers'][number];inventory?:VideoInventory;disabled?:boolean;onEdit:(edit:(current:StudioProject)=>StudioProject)=>void}) {
   const saved=dealer.speechProfile;
   const [enabled,setEnabled]=useState(saved?.state==='enabled');
-  const [voiceDraft,setVoiceDraft]=useState(dealerVoiceDraft(saved?.voice));
+  const [voiceDraft,setVoiceDraft]=useState(initialDealerVoiceDraft(dealer,saved?.voice));
   const [videoId,setVideoId]=useState(saved?.reference?.videoId??''),[kind,setKind]=useState<NonNullable<DealerSpeechProfile['reference']>['kind']>(saved?.reference?.kind??'video-frame');
   const [offsetMs,setOffsetMs]=useState(saved?.reference?.offsetMs??0),[reviewed,setReviewed]=useState(false);
   const [error,setError]=useState(''),[notice,setNotice]=useState('');

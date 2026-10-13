@@ -178,11 +178,15 @@ export function OpenClawWorkspace({ dashboardUrl,navigation }: { dashboardUrl?: 
   async function openDashboard() {
     if (!url || controller.current) return;
     const active = new AbortController(); controller.current=active;
+    const startedAt = performance.now();
     setBusy('dashboard'); setError(''); setNotice('');
     try {
       const result = await request('POST',active.signal,{version:1,action:'dashboard.open'});
-      if (!record(result) || typeof result.browserUrl !== 'string' || typeof result.expiresAtMs !== 'number'
-        || result.expiresAtMs <= Date.now() || result.expiresAtMs > Date.now()+600000) throw failure();
+      // The server validates absolute expiry; browser wall-clock skew must not
+      // reject a fresh link. Subtract the whole request duration conservatively.
+      if (!record(result) || typeof result.browserUrl !== 'string' || !Number.isSafeInteger(result.expiresAtMs)
+        || typeof result.remainingLifetimeMs !== 'number' || !Number.isSafeInteger(result.remainingLifetimeMs)
+        || result.remainingLifetimeMs <= performance.now()-startedAt || result.remainingLifetimeMs > 600000) throw failure();
       const target = new URL(result.browserUrl), fragment=new URLSearchParams(target.hash.slice(1));
       if (target.origin+target.pathname !== url || target.username || target.password || target.search
         || fragment.size !== 3 || fragment.get('bootstrapProfile') !== 'owner'
