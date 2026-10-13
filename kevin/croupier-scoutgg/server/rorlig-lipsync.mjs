@@ -96,7 +96,7 @@ export class RorligLipsync {
     onPiece = () => {}, inactivityMs = 480_000, ttlS = 540 }) {
     Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS });
     this.token = randomBytes(24).toString('hex');   // per process: only the sessions we ordered can dial in
-    this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], busy: false, waiters: [] }]));
+    this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], busy: false, waiters: [], recent: [] }]));
     this.talks = new Map();   // talk id -> {room, pieces:[{meta, bytes}], done, error, at}
     this.durations = new Map();
     this.timer = setInterval(() => this.#tick(), 5000);
@@ -105,7 +105,8 @@ export class RorligLipsync {
 
   status() {
     return Object.fromEntries([...this.s].map(([d, s]) => [d, { ready: this.ready(d), info: s.info ? { gpu: s.info.gpu, motor: s.info.motor, forsta_bit_ms: s.info.forsta_bit_ms, rutor_per_s: s.info.rutor_per_s } : null,
-      asked: s.askedAt ? Math.round((Date.now() - s.askedAt) / 1000) : null, activeAgo: s.active ? Math.round((Date.now() - s.active) / 1000) : null }]));
+      asked: s.askedAt ? Math.round((Date.now() - s.askedAt) / 1000) : null, activeAgo: s.active ? Math.round((Date.now() - s.active) / 1000) : null,
+      recent: s.recent }]));
   }
 
   ready(dealer) {
@@ -149,17 +150,20 @@ export class RorligLipsync {
       const ws = s.ws;
       if (rec !== this.talks.get(talk.id)) return resolve();   // a newer map came while this one waited
       if (!this.ready(dealer) || (!rec.pcm && !base)) { rec.error = 'no worker'; rec.done = true; return resolve(); }
-      const finish = (err) => { clearTimeout(timer); ws.off('message', onMsg); rec.error = err; rec.done = true; resolve(); };
+      // timings of the last lines (in /api/lipsync-status): queue = waited behind other lines, first = sent until the
+      // first patch, spare = how long before its first frame is on screen the first patch came (negative = late)
+      const sent = Date.now(), tm = { what: talk.event ?? talk.kind, ver: rec.ver, fran, queue: sent - rec.at, first: null, total: null, spare: null, steg: null, error: null };
+      const finish = (err) => { clearTimeout(timer); ws.off('message', onMsg); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
       let pending = null;
       const onMsg = (data, isBinary) => {
         if (isBinary) {
-          if (pending) { const meta = { ...pending, ver: rec.ver }; pending = null; const bytes = Buffer.from(data); rec.pieces.push({ meta, bytes }); this.onPiece(room, talk.id, meta, bytes); }
+          if (pending) { const meta = { ...pending, ver: rec.ver }; pending = null; if (tm.first === null) { tm.first = Date.now() - sent; tm.spare = Math.round(talk.kartaStart + fran * 1000 / 24 - Date.now()); } const bytes = Buffer.from(data); rec.pieces.push({ meta, bytes }); this.onPiece(room, talk.id, meta, bytes); }
           return;
         }
         let m; try { m = JSON.parse(String(data)); } catch { return; }
         if (m.id !== talk.id) return;
         if (m.t === 'lapp') pending = { del: m.del, fran: m.fran, till: m.till, rutor: m.rutor };
-        else if (m.t === 'done') { this.log(`läppsynk rörlig [${dealer}]: ${talk.event ?? 'replik'} klar, första bit ${m.forsta_bit_ms} ms, ${m.ms} ms`); finish(null); }
+        else if (m.t === 'done') { tm.steg = m.steg ?? null; this.log(`läppsynk rörlig [${dealer}]: ${talk.event ?? 'replik'} klar, första bit ${m.forsta_bit_ms} ms, ${m.ms} ms`); finish(null); }
         else if (m.t === 'error') { this.log(`läppsynk rörlig [${dealer}]: fel ${m.reason}`); finish(m.reason); }
       };
       const timer = setTimeout(() => finish('timeout'), 30_000);
