@@ -2,6 +2,24 @@
 
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
+PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen
+dep-db73kps9v7es73ac7ms0 misslyckades efter uid/gid-kvittot och återställde
+föregående instans. Docker USER root lämnar HOME=/root efter setuid. Ett
+läsande jämförande CLI-prov som uid 1000 gav config validate exit 0 med
+HOME=/home/node, exit 1 med HOME=/root och åter exit 0 med HOME=/home/node.
+Bootstrappen sätter därför nu HOME=/home/node, USER=node och LOGNAME=node
+efter verifierad rättighetssänkning, innan starter/CLI laddas. Fel rapporterar
+endast en fast fas och allowlistad felkod, aldrig fria felmeddelanden, stigar,
+konfiguration eller CLI-utdata. Det skiljer import, konfigvalidering och bundle
+utan att röja hemligheter. 41 riktade tester passerade. Ett verkligt isolerat
+Linuxprov verifierade rätt miljö även i barnprocessen och att root inte kunde
+återtas. Ny Gatewaydeploy och startupacceptans återstår för denna rättning.
+
+Efter #88:s beständiga ägarbyte lyckades ett ordinarie CAS-modellbyte via
+Director: HTTP 200/saved=true och uttrycklig GET återläste connected/applied
+samt croupier-operator=lab-provider/gpt-6.1-sol. Övriga fyra rollernas Terra-
+modeller och samtliga fallbacks bevarades. Bekräfta samma värden efter deploy.
+
 Det misslyckade operator-modellbytet nådde config.patch men nekades med
 EPERM/fchmod. Läsande SSH med Renders officiella Frankfurt-hostnyckel
 bekräftade /data/openclaw som uid=0, gid=1000, mode=2775; själva
@@ -21,8 +39,8 @@ Live Render-konfiguration har inget sådant kommandoöverskrivande.
 Ubuntu/Node 22.22-prov återskapade en rootägd 2775-katalog och verifierade
 uid/gid/ägare 1000, efterföljande chmod 0700, bevarade konfigbytes och ny
 skrivning. Barnprocessen kunde inte återta uid 0; testkatalogen städades.
-Ny Gatewaydeploy krävs; loggen ska visa runtime uid=1000 gid=1000, och sedan
-ska N1-modellbytet provas med färsk revision och uttrycklig återläsning.
+Det första deployprovet verifierade ägarbytet men upptäckte HOME-felet ovan;
+uid/gid-kvittot ensamt är inte bevis för en lyckad Gatewaystart.
 
 ## OpenClaw-länk och webbläsarklocka, 13 oktober 2026
 

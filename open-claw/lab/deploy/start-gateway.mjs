@@ -56,7 +56,8 @@ export async function validateGatewayConfig(configPath, env) {
     validate.once('close', resolve);
   });
   if (validationCode !== 0) {
-    throw new Error('OpenClaw rejected the configuration. Inspect config validation in the private service shell; the saved configuration was not replaced.');
+    throw Object.assign(new Error('OpenClaw rejected the configuration. Inspect config validation in the private service shell; the saved configuration was not replaced.'),
+      { code: 'GATEWAY_CONFIG_VALIDATION_FAILED' });
   }
 }
 
@@ -96,10 +97,13 @@ async function preserveConfigBackup(backupPath, original) {
 export async function prepareGatewayConfig(env, {
   validateConfig = validateGatewayConfig,
   parseConfig = parseGatewayConfig,
+  onPhase = () => {},
 } = {}) {
+  onPhase('environment');
   const gatewayEnv = gatewayEnvironment(env);
   const stateDir = gatewayEnv.OPENCLAW_STATE_DIR;
   const configPath = gatewayEnv.OPENCLAW_CONFIG_PATH;
+  onPhase('config-read');
   await mkdir(path.dirname(configPath), { recursive: true, mode: 0o700 });
   const original = await readExistingConfig(configPath);
   let existing = null;
@@ -109,16 +113,21 @@ export async function prepareGatewayConfig(env, {
     }
     if (existing === null) throw new Error('Persisted OpenClaw configuration cannot be null. It has been left unchanged.');
   }
+  onPhase('config-plan');
   const plan = planGatewayConfig(existing, gatewayEnv);
   if (plan.action === 'reuse') {
+    onPhase('config-validate');
     await validateConfig(configPath, gatewayEnv);
     return { ...plan, gatewayEnv, configPath, backupPath: null };
   }
   const candidate = `${configPath}.${randomUUID()}.tmp`;
   let backupPath = null;
   try {
+    onPhase('config-write');
     await writeFile(candidate, `${JSON.stringify(plan.config, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+    onPhase('config-validate');
     await validateConfig(candidate, gatewayEnv);
+    onPhase('config-write');
     if (['seed', 'migrate-legacy', 'reconcile-social', 'reconcile-speech', 'reconcile-roles'].includes(plan.action)) {
       const agents = plan.action === 'reconcile-social' ? [plan.config.agents.entries['croupier-social']]
         : plan.action === 'reconcile-speech' ? [plan.config.agents.entries['croupier-speech']]
@@ -154,23 +163,26 @@ export async function prepareGatewayConfig(env, {
 
 export async function prepareGatewayRuntime(env, options = {}) {
   const prepared = await prepareGatewayConfig(env, options);
+  options.onPhase?.('runtime-bundle');
   const bundle = await syncRuntimeBundle(prepared.config, prepared.gatewayEnv.OPENCLAW_STATE_DIR, options);
   return { ...prepared, bundle };
 }
 
-export async function startGateway() {
+export async function startGateway({ onPhase = () => {} } = {}) {
   if (process.getuid?.() === 0) throw new Error('Gateway must run as an unprivileged user.');
-  const { gatewayEnv, action, bundle, config } = await prepareGatewayRuntime(process.env);
+  const { gatewayEnv, action, bundle, config } = await prepareGatewayRuntime(process.env, { onPhase });
   if (action === 'migrate-legacy') {
     console.info('Migrated the exact legacy lab configuration; a private backup was retained and agent state was preserved.');
   }
   console.info(`Croupier runtime bundle: ${JSON.stringify(bundle)}`);
   // Private helper: existing credential, no native tools or public ingress.
+  onPhase('helper-start');
   const search = createSearchServer({ directory: gatewayEnv.OPENCLAW_STATE_DIR,
     token: gatewayEnv.OPENCLAW_GATEWAY_PASSWORD, dashboardHandoff: () => issueDashboardHandoff(gatewayEnv), key: openAiSearchKey(gatewayEnv, config),
     enabled: gatewayEnv.LAB_COMPANION_WEB_ENABLED !== 'false' && gatewayEnv.LAB_COMPANION_ENABLED !== 'false' });
   search.on('error', () => console.error('Private companion search listener is unavailable.'));
   search.listen(18790, '0.0.0.0', () => console.info('Private companion search ready on 18790; budget 5 SEK/hour.'));
+  onPhase('gateway-spawn');
   const gateway = spawn(process.execPath, [OPENCLAW_ENTRY, 'gateway', '--bind', 'lan'], {
     env: gatewayEnv, stdio: 'inherit',
   });

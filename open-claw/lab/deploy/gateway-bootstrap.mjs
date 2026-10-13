@@ -33,18 +33,44 @@ export function prepareGatewayOwner({ filesystem = fs, system = process } = {}) 
   if (system.getuid() !== NODE_ID || system.geteuid() !== NODE_ID
     || system.getgid() !== NODE_ID || system.getegid() !== NODE_ID
     || system.getgroups().some(group => group !== NODE_ID)) fail();
+  // setuid does not update Docker's root-user environment. The CLI still uses
+  // HOME for paths outside OPENCLAW_STATE_DIR, even when config is explicit.
+  system.env.HOME = '/home/node';
+  system.env.USER = 'node';
+  system.env.LOGNAME = 'node';
+}
+
+const PHASES = new Set(['mount-owner', 'starter-import', 'runtime-start', 'environment', 'config-read',
+  'config-plan', 'config-write', 'config-validate', 'runtime-bundle', 'helper-start', 'gateway-spawn']);
+const ERROR_CODES = new Set(['EACCES', 'EPERM', 'ENOENT', 'ENOTDIR', 'ELOOP', 'EROFS', 'ENOSPC',
+  'EEXIST', 'EMFILE', 'ENFILE', 'EIO', 'ERR_MODULE_NOT_FOUND', 'ERR_DLOPEN_FAILED',
+  'GATEWAY_CONFIG_VALIDATION_FAILED']);
+
+export function gatewayStartupFailure(error, phase) {
+  const safePhase = PHASES.has(phase) ? phase : 'runtime-start';
+  const code = ERROR_CODES.has(error?.code) ? error.code : 'UNAVAILABLE';
+  return `Gateway startup failed; phase=${safePhase} code=${code}.`;
+}
+
+export async function runGatewayBootstrap({ owner = prepareGatewayOwner,
+  loadStarter = () => import('./start-gateway.mjs'), logger = console } = {}) {
+  let phase = 'mount-owner';
+  try {
+    owner();
+    logger.info('Gateway mount owner ready; runtime uid=1000 gid=1000.');
+    // No config, helper or Gateway code is loaded until root is irreversibly
+    // dropped. The existing starter retains its signal handling and validation.
+    phase = 'starter-import';
+    const { startGateway } = await loadStarter();
+    phase = 'runtime-start';
+    await startGateway({ onPhase: (next) => { phase = next; } });
+    return true;
+  } catch (error) {
+    logger.error(gatewayStartupFailure(error, phase));
+    return false;
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try {
-    prepareGatewayOwner();
-    console.info('Gateway mount owner ready; runtime uid=1000 gid=1000.');
-    // No config, helper or Gateway code is loaded until root is irreversibly
-    // dropped. The existing starter retains its signal handling and validation.
-    const { startGateway } = await import('./start-gateway.mjs');
-    await startGateway();
-  } catch {
-    console.error('Gateway startup failed; mount ownership or runtime initialization unavailable.');
-    process.exitCode = 1;
-  }
+  if (!await runGatewayBootstrap()) process.exitCode = 1;
 }
