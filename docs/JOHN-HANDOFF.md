@@ -2034,3 +2034,58 @@ media, GPU-jobb och produktion ändrades inte.
 Efter Jakobs uttryckliga godkännande 13 oktober raderades 38 mergade
 featurebrancher via GitHub API efter ny head-/ancestrykontroll. Kevin,
 Kevin-staging, John, Emil, parkerade och pågående brancher bevarades.
+
+## Kompakt gemensamt röstval, 13 oktober 2026
+
+Eget worktree från main b76510af, integrerat med 0e420ad4. Admins befintliga Röst & tal och Controls
+Röst och läppsynk använder samma kontrollerade väljare. Ingen ny sidomeny.
+Offentliga original-ID:n och Kevins tuning finns i
+`web/public/dealer-voice-catalog.json`: Dragge 7f95xPL4S3ySZ4OS1pw8
+(multilingual v2), Paow WZVEBKUreb9jAKojf0QF (v3 för sv, annars v2).
+Astrid/Victoria hämtas från befintlig kanonisk Cartesia-profil.
+
+Jakobs uttryckliga Paow/Dragge-parning förväljs nu när ID eller namn matchar
+entydigt och sparad röst saknas. Andra eller motstridiga namn får inget förval.
+Exakta värden fylls i utkastet; egna sparade röster
+och referenser bevaras, ingen befintlig profil migreras. Modell, ID
+och tuning ligger under Detaljer. Talbiblioteket är hopfällt. Oförändrad egen
+referens kan behållas vid enbart röstbyte; nya bytes eller ny talaktivering
+kräver referensgranskning. Serverns ägarskap, hashvalidering, CAS och
+providerverifiering är oförändrade. Inga nycklar, flaggor eller media ändras.
+
+Verifierat: 55 UI-/profil-/navigationsprov, 37 runtime-/providerprov, full
+ordinarie precommit, Admin- och
+Studio-byggen, typkontroll och isolerad Edge-fixtur med de verkliga
+komponenterna på desktop/mobil. Fixturen förväljer Paow, växlar SV/EN och sparar
+exakt profil utan provideranrop. Detta är inte betald TTS/GPU eller visuell
+läppsynkacceptans. GitHub CI krävs före merge.
+
+Runtimegränsen är viktig: generisk registrerad dealerström finns, men
+roulettevyn saknar dealerchatt. Nuvarande chattautorisering kräver blackjack
+och läser blackjackrundan. Roulettes publicerade scen är en tyst idle-spelare.
+Full rouletteparitet behöver en serverägd roulettechattkontext, samma
+bundna strömticket/avbrytning och integrering i scenens gemensamma kompositor.
+Det får inte lösas genom att skicka blackjackkontext eller lägga ljud på en
+fortsatt idle-loop. Rörlig body-läppsynk och protokoll-3-worker i drift
+behöver fortfarande verifieras med exakt dealerreferens och två spelningar.
+
+### Nästa steg enligt Jakob, 13 oktober
+
+En egen granskad referensbild är reservläget för tal. Börja med en dealer:
+verifiera röståtkomst, den driftsatta protokoll-3-workern och två fullständiga
+talprov i den gemensamma spelaren. Därefter kopplas roulette till sin egen
+serverägda rum-/paket-/rundkontext och samma avbrott/ljudklocka.
+Rörlig body-läppsynk ska portas nära Emils exakta metod i en avgränsad adapter,
+utan ändringar i spelregler eller ekonomilogik. Den hänvisade workerkällan
+`EmaCodeHero/croupier-lipsync-worker` gav fortfarande 404 med befintlig
+GitHub-åtkomst den 13 oktober; tillgång, exakt revision/image och protokoll
+behövs före portningen. En separat installation per dealer krävs inte av
+den generiska bildvägen; aktuell molnreläkonfiguration begränsar dock till
+en worker/session åt gången, så fler samtidiga samtal är en separat uppgift.
+
+Underlag att skapa per dealer: vald referensbild, diskret inandningsövergång
+på högst cirka 0,5 s, rörligt talunderlag med små neutrala kroppsrörelser och
+återgång till idle. Talunderlaget måste synkas mot den faktiska repliken;
+en fristående kroppsslinga får inte ersätta den synkade talvideon. Alla
+nya takes behöver exakta hash-/bildindex-/kalibreringskvitton och visuell
+acceptans. Dessa steg är planerade, inte genomförda av röstväljar-PR:en.

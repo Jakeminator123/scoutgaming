@@ -4,6 +4,32 @@ import {normalizeDealerSpeechProfile,validateDealerSpeechReference,dealerSpeechP
 import {addDealer,createSeedProject,createEmptyProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
 import {createStudioProjectBindings} from '../lib/studio-project-bindings.mjs';
 import {captureFrozenRegisteredDealers} from '../../web/storage/frozen-dealer-idle.mjs';
+import {dealerVoicePreset,dealerVoiceDraft,dealerVoiceFromDraft,matchingDealerVoicePreset,suggestedDealerVoicePreset} from '../../web/public/dealer-voice-catalog.mjs';
+
+test('original celebrity presets choose exact IDs, language-specific models and independent tuning',()=>{
+  const paow=dealerVoicePreset('paow','sv'),english=dealerVoicePreset('paow','en'),dragge=dealerVoicePreset('dragge','sv');
+  assert.equal(paow.voiceId,'WZVEBKUreb9jAKojf0QF');assert.equal(paow.modelId,'eleven_v3');
+  assert.deepEqual(paow.settings,{stability:.5,similarity_boost:.85,use_speaker_boost:true});
+  assert.equal(english.voiceId,paow.voiceId);assert.equal(english.modelId,'eleven_multilingual_v2');
+  assert.deepEqual(english.settings,{stability:.38,similarity_boost:.8,style:.3,use_speaker_boost:true});
+  assert.equal(dragge.voiceId,'7f95xPL4S3ySZ4OS1pw8');assert.equal(dragge.modelId,'eleven_multilingual_v2');assert.equal(dragge.settings.style,.15);
+  paow.settings.stability=0;assert.equal(dealerVoicePreset('paow','sv').settings.stability,.5);
+  for(const id of ['paow','dragge','astrid-victoria'])for(const language of ['sv','en']){
+    const voice=dealerVoicePreset(id,language),draft=dealerVoiceDraft(voice);
+    assert.deepEqual(normalizeDealerSpeechProfile({schemaVersion:2,state:'preparation',voice:dealerVoiceFromDraft(draft),reference:null}).voice,voice);
+    assert.equal(matchingDealerVoicePreset(draft),id);
+  }
+  assert.throws(()=>dealerVoicePreset('marten'));assert.throws(()=>dealerVoicePreset('paow','sv-SE'));
+});
+test('name suggestions do not invent clones or silently replace custom saved tuning',()=>{
+  assert.equal(suggestedDealerVoicePreset({id:'body-7',label:'PAOW'}),'paow');
+  assert.equal(suggestedDealerVoicePreset({id:'dragan',label:'Dragan'}),'dragge');
+  assert.equal(suggestedDealerVoicePreset({id:'marten',label:'Mårten'}),null);
+  assert.equal(suggestedDealerVoicePreset({id:'body-paow-fake',label:'Paow?'}),null);
+  const voice={...dealerVoicePreset('paow','sv'),settings:{stability:.1}},snapshot=structuredClone(voice),draft=dealerVoiceDraft(voice);
+  assert.equal(matchingDealerVoicePreset(draft),null);assert.deepEqual(dealerVoiceFromDraft(draft),snapshot);assert.deepEqual(voice,snapshot);
+  assert.equal(dealerVoiceFromDraft(dealerVoiceDraft(null)),null);
+});
 const voice={provider:'elevenlabs',voiceId:'paow-own-voice',modelId:'fixture-model'};
 const reference={kind:'video-frame',videoId:'own-idle',sha256:'a'.repeat(64),offsetMs:200};
 const profile=()=>({schemaVersion:1,state:'preparation',voice:{...voice},reference:{...reference}});
@@ -54,21 +80,24 @@ test('frozen dealer capture projects id/label/idle only and omits speech prepara
 for(const dealerId of ['astrid','vera','mei','paow'])test('speech settings uses own reviewed reference and explicit voice for registered '+dealerId,async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('next/dist/build/swc');
-  const helpers=await import('../../web/public/dealer-speech-profile.mjs');
+  const helpers=await import('../../web/public/dealer-speech-profile.mjs'),voices=await import('../../web/public/dealer-voice-catalog.mjs');
+  const pickerModule={exports:{}},pickerSource=readFileSync(new URL('../components/dealer-voice-picker.tsx',import.meta.url),'utf8');
+  runInNewContext(transformSync(pickerSource,{filename:'dealer-voice-picker.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code,{module:pickerModule,exports:pickerModule.exports,require:name=>name.includes('dealer-voice-catalog')?voices:require(name)});
+  const {DealerVoicePicker}=pickerModule.exports;
   const source=readFileSync(new URL('../components/dealer-speech-settings.tsx',import.meta.url),'utf8');
   const output=transformSync(source,{filename:'dealer-speech-settings.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   let cursor=0,refCursor=0;const states=[],refs=[],module={exports:{}};
   const fakeReact={...React,useState(initial){const i=cursor++;if(!(i in states))states[i]=initial;return [states[i],next=>{states[i]=typeof next==='function'?next(states[i]):next;}];},useRef(initial){return refs[refCursor++]??={current:initial};},useEffect(){}};
-  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-speech-profile')?helpers:require(name)});
+  runInNewContext(output.code,{module,exports:module.exports,require:name=>name==='react'?fakeReact:name.includes('dealer-voice-picker')?{DealerVoicePicker}:name.includes('dealer-voice-catalog')?voices:name.includes('dealer-speech-profile')?helpers:require(name)});
   const project=addDealer(createEmptyProject(),dealerId,dealerId),dealer=project.dealers[0];
   const saved={...profile(),voice:{...voice,voiceId:dealerId+'-own-voice'}};dealer.speechProfile=saved;
   const own={...video(),dealer:dealerId,label:'Egen neutral video',previewUrl:'/studio/api/videos/own-idle'};
   let edited=null;
   const props={dealer,inventory:{videos:[own,{...own,id:'other',dealer:'foreign-dealer',label:'ANNAN DEALER'}]},onEdit:change=>{edited=change(project);}};
   const render=()=>{cursor=refCursor=0;return module.exports.DealerSpeechSettings(props);};
-  const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
+  const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):node.type===DealerVoicePicker?nodes(DealerVoicePicker(node.props),predicate):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
   let tree=render(),button=nodes(tree,node=>node.type==='button')[0];
-  assert.equal(button.props.disabled,true);
+  assert.equal(button.props.disabled,false,'an unchanged saved reference can be kept without another preview');
   const enabled=nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox').at(-1);
   assert.equal(enabled.props.disabled,false,'a registered name never blocks an explicit own speech profile');
   assert.equal(nodes(tree,node=>node.type==='option'&&node.props.children==='ANNAN DEALER').length,0);
