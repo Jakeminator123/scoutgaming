@@ -182,9 +182,9 @@ registrerade rum eller gröna enhetstester är inte detta acceptanskvitto.
 
 Produktions- och acceptanskraven för de 37 utfallsfilmerna ägs av den
 gemensamma spelmanualen, samordnad med MERGE i [PR #56](https://github.com/Jakeminator123/scoutgaming/pull/56):
-[37 utfallsfilmer](https://github.com/Jakeminator123/scoutgaming/blob/a7b5095e13daf9b2ceeb06aa4e2f2f1e12c32dec/docs/games/roulette/UTFALLSFILMER.md)
-och [klipp och format](https://github.com/Jakeminator123/scoutgaming/blob/a7b5095e13daf9b2ceeb06aa4e2f2f1e12c32dec/docs/games/KLIPP-OCH-FORMAT.md).
-Dessa exakta versionslänkar fungerar även innan dokumentationsgrenen mergas.
+[37 utfallsfilmer](games/roulette/UTFALLSFILMER.md)
+och [klipp och format](games/KLIPP-OCH-FORMAT.md).
+Manualerna finns på main efter dokumentations-PR:ns merge till `ba7601dd`.
 Avsnittet nedan beskriver den mottagna prototypen och nuvarande UI-registrering;
 det skapar inget parallellt filmkontrakt eller automatisk mediaagent.
 

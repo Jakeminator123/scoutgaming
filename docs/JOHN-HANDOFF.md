@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: samlade spelmanualer
+
+Canonical ingångar finns nu i [docs/games](games/README.md): blackjack,
+roulette och gemensamma klipp-/formatbegrepp. Äldre FORMATLASNING och
+roulettens tekniska README har en enda aktiv plats med hänvisningar från
+de gamla ingångarna. Frysta källunderlag och hashregister skiljs från
+dagens kod och öppna produktionsmål. Privata original/konversationer
+har inte lagts i Git. Roulettekraven för 37 utfallsfilmer är dokumenterade,
+inte implementerade eller beställda. Webbplatsens AI-funktion är utanför.
+
+Dokumentkontroll omfattar relativa länkar, JSON, källhashar, båda
+blackjackprofilerna och den bevarade formatlåsningen. Ordinarie hook och
+PR:s produktgrindar krävs före merge. Format-/posekonflikter, faktisk
+mediaacceptans och kvittots framtida bindning till filmbank är fortsatt
+öppna; läs spelmanualerna innan implementation. Ingen produktkod, media,
+publicering, databas eller migration ändras i denna dokumentleverans.
+
 ## Tillägg 13 oktober: central Studio och rumsmodell
 
 Målkontraktet för nya `/admin` finns i
@@ -560,9 +577,9 @@ gester eller utfallsfilmer är byggda; resultat visas direkt från serverkvittot
 
 Samordnat med MERGE: canonical spelmanualer ägs av dokumentationsgrenen
 `codex/game-documentation`, [PR #56](https://github.com/Jakeminator123/scoutgaming/pull/56),
-med [37 utfallsfilmer](https://github.com/Jakeminator123/scoutgaming/blob/a7b5095e13daf9b2ceeb06aa4e2f2f1e12c32dec/docs/games/roulette/UTFALLSFILMER.md)
-och [gemensamma klipp och format](https://github.com/Jakeminator123/scoutgaming/blob/a7b5095e13daf9b2ceeb06aa4e2f2f1e12c32dec/docs/games/KLIPP-OCH-FORMAT.md).
-Länkarna är bundna till granskad dokumentations-SHA tills dess main-merge är bekräftad.
+med [37 utfallsfilmer](games/roulette/UTFALLSFILMER.md)
+och [gemensamma klipp och format](games/KLIPP-OCH-FORMAT.md).
+Manualerna är integrerade från bekräftad main-merge `ba7601dd`.
 UI-grenen inför inget parallellt filmkontrakt. Mediaagentens granskningsflöde
 är underlag för nästa implementation, inte färdig automatisk klassificering.
 Main `426fa114` är integrerad; central-/admin-målkontrakt och tidigare
