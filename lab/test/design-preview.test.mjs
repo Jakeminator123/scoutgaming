@@ -17,6 +17,19 @@ test('preview documents and assets have exact route boundaries', () => {
     assert.equal(designPreviewFile(path), null);
 });
 
+test('only N1 admin document permits the private Blob SDK upload endpoint',async()=>{
+  const root=await mkdtemp(join(tmpdir(),'croupier-design-csp-'));
+  try {
+    for(const surface of ['admin','lobby']){await mkdir(join(root,surface));await writeFile(join(root,surface,'index.html'),'<html></html>');}
+    const options={root,authorize:async()=>{}};
+    const admin=await serveDesignPreview(new Request('http://127.0.0.1/admin'),[],options);
+    const lobby=await serveDesignPreview(new Request('http://127.0.0.1/admin/lobby'),['lobby'],options);
+    assert.match(admin.headers.get('content-security-policy'),/connect-src 'self' https:\/\/vercel.com\/api\/blob/);
+    assert.doesNotMatch(lobby.headers.get('content-security-policy'),/vercel.com/);
+    await admin.body.cancel();await lobby.body.cancel();
+  }finally{await rm(root,{recursive:true,force:true});}
+});
+
 test('login returns only to known preview documents; never assets, queries or another origin', () => {
   for (const path of ['/admin', '/admin/structure', '/admin/lobby', '/admin/admin/accounts']) {
     assert.equal(studioLoginReturnTo(path), path);

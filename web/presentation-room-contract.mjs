@@ -1,6 +1,7 @@
 import { gameLaneConfiguration, isGameLaneId } from './public/game-lanes.mjs';
 import { readPackagePresentation } from './storage/presentation-package.mjs';
 import { StudioStorageError } from './storage/studio-contract.mjs';
+import { assertPresentationRoomMaterials } from './presentation-material-game.mjs';
 
 export const PRESENTATION_ROOM_SCHEMA_VERSION = 2;
 export const PRESENTATION_ROOM_CAPABILITY = 'operator-owned-v2';
@@ -35,7 +36,7 @@ export function listPackageRooms({ administration, package: pack, operatorId: ow
     if (!isPresentationRoom(room)) throw new StudioStorageError('studio_corrupt_game_policy');
     if (room.operatorId === owner && pack.tables.includes(room.id)
       && pack.lanes.includes(room.presentationLaneId) && gameLanes.some(lane => lane.id === room.gameLaneId)
-      && presentation.lanes.some(lane => lane.id === room.presentationLaneId)) result.push(structuredClone(room));
+      && presentation.lanes.some(lane => lane.id === room.presentationLaneId)) {assertPresentationRoomMaterials(presentation,room);result.push(structuredClone(room));}
   }
   return result;
 }

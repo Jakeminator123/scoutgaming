@@ -6,6 +6,21 @@ import {partnerLaneState} from '../lab/lib/partner-package-view.mjs';
 
 const uploaded=(material,source,id='upload-uuid')=>({id,role:material.role,label:'Old upload name',...source});
 
+test('the five supplied blackjack boards retain separate identities and original dimensions',()=>{
+  const tables=MATERIALS.filter(row=>row.role==='table');
+  assert.deepEqual(tables.map(row=>row.label),['Blackjack · grön filt','Blackjack · svart filt','Blackjack · Oak','Blackjack · Purple Rain','Blackjack · Back to Basic']);
+  assert.equal(new Set(MATERIALS.map(row=>row.id)).size,MATERIALS.length);
+  assert.equal(new Set(tables.map(row=>row.sources[0].sha256)).size,5);
+  assert.deepEqual(tables.map(row=>[row.sources[0].width,row.sources[0].height]),[[1672,941],[1672,941],[1672,941],[1672,941],[1774,887]]);
+  for(const table of tables){
+    const asset=uploaded(table,table.sources[0]);
+    assert.equal(materialForAsset(asset),table);
+    assert.equal(materialFitsGame(asset,'blackjack'),true);
+    assert.equal(materialFitsGame(asset,'roulette'),false);
+    assert.equal(Object.hasOwn(table,'variantOf'),false);
+  }
+});
+
 test('the three supplied environments have distinct image/video pairs under stable material IDs',()=>{
   assert.deepEqual(BACKGROUND_MATERIALS.map(row=>[row.id,row.label]),[
     ['studio-dark','Studio · mörk'],['lounge-warm','Lounge · varm'],['studio-teal','Studio · turkos'],

@@ -5,6 +5,7 @@ import {buildPresentationPackage} from '../presentation-layers.mjs';
 import {normalizeProject} from '../../lab/lib/studio-model.mjs';
 import {captureFrozenRegisteredDealers, captureFrozenDealerPlayback, assertFrozenMediaPreconditions, resolveFrozenDealerIdle} from './frozen-dealer-idle.mjs';
 import {validateRevision, StudioStorageError} from './studio-contract.mjs';
+import {assertPresentationRoomMaterials} from '../presentation-material-game.mjs';
 
 const fail = () => { throw new StudioStorageError('studio_media_registry_unavailable'); };
 export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory, requiredIdleDealerIds = []} = {}) {
@@ -74,5 +75,6 @@ export function assertPublishedRoomBindings({administration, operatorId, current
     const lane = presentation.lanes.find(row => row.id === room.presentationLaneId);
     const gameLane = gameLanes.find(row => row.id === room.gameLaneId);
     if (!isPresentationRoomLaneCompatible(gameLane, lane, presentation)) throw new StudioStorageError('studio_conflict', 409);
+    assertPresentationRoomMaterials(presentation,room);
   }
 }

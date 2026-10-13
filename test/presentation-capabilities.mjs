@@ -16,10 +16,34 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }
+});
+
+test('v10 authoring categories negotiate without adding fields to older capability responses', async () => {
+  const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': '10' } }));
+  assert.equal(response.status, 200);
+  const cap = validatePresentationCapabilities(await response.json(), { expectedVersion: 10 });
+  assert.equal(cap.dealerSets, 'authoring-categories-v1');
+  for (const version of [undefined, '9']) {
+    const prior = await presentationCapabilitiesResponse(new Request(endpoint, { headers: version ? { 'X-Presentation-Capability-Version': version } : {} })).json();
+    assert.equal(Object.hasOwn(prior, 'dealerSets'), false);
+  }
+});
+
+test('v11 HTTP and HEAD advertise both implemented authoring sets and material trash without changing v10',async()=>{
+  const headers={'X-Presentation-Capability-Version':'11'};
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
+  assert.equal(response.status,200);
+  const value=validatePresentationCapabilities(await response.json(),{expectedVersion:11});
+  assert.equal(value.dealerSets,'authoring-categories-v1');
+  assert.equal(value.materialTrash,'detached-assets-v1');
+  const head=presentationCapabilitiesResponse(new Request(endpoint,{method:'HEAD',headers}));
+  assert.equal(head.status,200);assert.equal(await head.text(),'');
+  const older=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'10'}})).json();
+  assert.equal(older.dealerSets,'authoring-categories-v1');assert.equal(Object.hasOwn(older,'materialTrash'),false);
 });
 
 test('negotiation never widens capability endpoint path, query or method handling', () => {

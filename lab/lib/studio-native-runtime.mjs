@@ -1,4 +1,5 @@
 import {createStudioMediaDeletion} from './studio-media-deletion.mjs';
+import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
@@ -118,6 +119,11 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const mediaDeletion=createStudioMediaDeletion({repository,mutationTransaction,env,options:{repositoryRoot}});
     const signer = await store.boDb.prepare("SELECT v FROM meta WHERE k='jwt_secret'").get();
     if (!/^[a-f0-9]{64}$/i.test(signer?.v || '')) unavailable();
+    // Stable across instances sharing the native account store. Scope and a
+    // fixed domain keep receipts separate from login JWTs and upload tickets.
+    const speechReceiptKey=createHmac('sha256',Buffer.from(signer.v,'hex'))
+      .update('croupier:studio-speech-build:receipt:v1\0')
+      .update(config.scope.environment+'\0'+config.scope.workspaceId).digest();
     const uploads = createStudioUploadService({ repository, scope: config.scope, ticketKey: Buffer.from(signer.v, 'hex'), env });
     const layerUploads = createLayerUploadService({repository,scope:config.scope,ticketKey:Buffer.from(signer.v,'hex'),env});
     const authorize = authFactory({ boDb: store.boDb, scope: config.scope });
@@ -164,11 +170,15 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     }
     const api = createStudioAdminApi({ authorize, handlers, gates, preparations, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
-    return Object.freeze({ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads, mediaDeletion,
+    const native={ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads, mediaDeletion,
       readDesignCatalog: createDesignCatalogReader({ pool, scope: config.scope, policy: gamePolicy }),
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,
-      mutationTransaction, ...media });
+      mutationTransaction, ...media };
+    // Server-only capability: non-enumerable and copy-on-read. No endpoint
+    // serializes this key, and a caller cannot mutate another handler's copy.
+    Object.defineProperty(native,'speechReceiptKey',{get:()=>Buffer.from(speechReceiptKey)});
+    return Object.freeze(native);
   } catch {
     try { await pool.end(); } catch { /* Preserve safe initialization failure. */ }
     unavailable();
@@ -239,7 +249,7 @@ export function createNativeStudioRequestHandlers({ configuration = nativeStudio
       const native = await measure('studio_runtime', runtime);
       return measure('studio_auth', async () => {
         const session = await native.authorize(current);
-        return Response.json({ username: session.user, role: session.role, availableActions: native.api.availableActions(session) },
+        return Response.json({ username: session.user, role: session.role, availableActions: native.api.availableActions(session), gameOrigin: config.allowedOrigins[0] },
           { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
       });
     }),

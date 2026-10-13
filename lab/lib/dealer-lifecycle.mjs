@@ -11,6 +11,9 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
   validateProject(project,{allowIncompatibleAnimations:true});
   const next=structuredClone(project);
   if(archived){
+    // Authoring categories never cascade into media lifecycle. Explicitly
+    // detach/remove them before archiving the whole dealer identity.
+    if(next.dealerSets?.some(row=>row.dealerId===dealerId))fail('studio_dealer_in_use');
     const dealer=next.dealers.find(row=>row.id===dealerId);
     if(!dealer)fail('studio_dealer_missing');
     const owned=records.filter(row=>row.classification.dealerId===dealerId&&row.deletion?.state!=='deleted');

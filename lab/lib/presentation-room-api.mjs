@@ -16,6 +16,7 @@ import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCaptur
 import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { validatePresentationCapabilities } from '../../web/presentation-capability-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
+import {assertPresentationRoomMaterials} from '../../web/presentation-material-game.mjs';
 
 const operatorIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const keyPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -170,6 +171,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       if (!room) fail(409);
       publicationPresentation = assertReplayBinding(saved, room);
     }
+    assertPresentationRoomMaterials(publicationPresentation,{presentationLaneId:body.presentationLaneId,game:roomGame(body)});
     if (!runtimeAccepts(await capabilities(publicationPresentation,roomGame(body)), publicationPresentation,roomGame(body))) fail(503, PRESENTATION_RUNTIME_UPDATE_REQUIRED);
     const freeze = value => { if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); } return value; };
     const value = freeze({ body: canonicalStudioJson(body), game: roomGame(body), publicationPresentation, ...captured });

@@ -99,32 +99,32 @@ export function ControlResourceLifecycle({operatorId,kind,available,disabled=fal
   }
   if(!available)return null;
   if(!operatorId)return problem?<p role="alert">{problem} <button type="button" disabled={loading||disabled} onClick={()=>setReload(value=>value+1)}>Försök igen</button></p>:null;
-  return <section className={styles.panel} aria-label={kind==='rooms'?'Bolagets spelrum':'Bolagets arkiv'}>
-    <header className={styles.heading}><div><p className={styles.eyebrow}>{kind==='rooms'?'BOLAGETS SPELUTBUD':'HANTERA BOLAG'}</p><h2>{kind==='rooms'?'Spelrum':'Arkivera & återställ'}</h2></div>
+  return <section className={styles.panel} aria-label={kind==='rooms'?'Bolagets spelrum':'Bolagets papperskorg'}>
+    <header className={styles.heading}><div><p className={styles.eyebrow}>{kind==='rooms'?'BOLAGETS SPELUTBUD':'HANTERA BOLAG'}</p><h2>{kind==='rooms'?'Spelrum':'Papperskorg & återställning'}</h2></div>
       <button className="sg-btn sg-btn-ghost" type="button" disabled={disabled||busy||loading} onClick={()=>setReload(value=>value+1)}>Uppdatera</button></header>
     {loading?<p role="status">Hämtar aktuella uppgifter…</p>:null}
     {problem?<p role="alert" className={styles.feedback}>{problem}</p>:null}
     {notice?<p role="status" className={styles.feedback}>{notice}</p>:null}
     {!loading&&snapshot&&!operator?<p role="status">Bolaget finns inte i den aktuella förteckningen.</p>:null}
     {kind==='rooms'&&operator?<>
-      <div className={styles.tabs} role="group" aria-label="Visa spelrum"><button type="button" aria-pressed={!showArchive} onClick={()=>setShowArchive(false)}>Spelrum ({rooms.filter(room=>!room.archivedAt).length})</button><button type="button" aria-pressed={showArchive} onClick={()=>setShowArchive(true)}>Arkiv ({rooms.filter(room=>room.archivedAt).length})</button></div>
-      {!visible.length?<p>{showArchive?'Inga arkiverade spelrum.':'Inga spelrum ännu. Välj en sammansättning nedan och skapa det första.'}</p>:<ul className={styles.rooms}>{visible.map(room=><li key={room.id} className={styles.room}>
-        <div><h3>{room.name}</h3><p>{room.archivedAt?'Arkiverat':room.state==='live'&&operator.status==='active'&&room.published?'Öppet för spelare':'Pausat'}</p></div>
+      <div className={styles.tabs} role="group" aria-label="Visa spelrum"><button type="button" aria-pressed={!showArchive} onClick={()=>setShowArchive(false)}>Spelrum ({rooms.filter(room=>!room.archivedAt).length})</button><button type="button" aria-pressed={showArchive} onClick={()=>setShowArchive(true)}>Papperskorg ({rooms.filter(room=>room.archivedAt).length})</button></div>
+      {!visible.length?<p>{showArchive?'Inga spelrum i papperskorgen.':'Inga spelrum ännu. Välj en sammansättning nedan och skapa det första.'}</p>:<ul className={styles.rooms}>{visible.map(room=><li key={room.id} className={styles.room}>
+        <div><h3>{room.name}</h3><p>{room.archivedAt?'I papperskorgen':room.state==='live'&&operator.status==='active'&&room.published?'Öppet för spelare':'Pausat'}</p></div>
         <div className={styles.actions}>
           {!room.archivedAt?<>
             <a className="sg-btn sg-btn-secondary" href={labUrl('/control/compositions?'+new URLSearchParams({operator:operator.id,composition:room.presentationLaneId}))}>Redigera sammansättning</a>
             {room.state==='live'&&operator.status==='active'&&room.published?<a className="sg-btn sg-btn-secondary" href={labUrl('/control/rehearsal?'+new URLSearchParams({operator:operator.slug,table:room.id,composition:room.presentationLaneId}))}>Provspela & följ</a>:null}
             <button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff||operator.status!=='active'||!room.published} onClick={()=>setIntent({kind:'state',operatorId,id:room.id,name:room.name,state:room.state==='live'?'pending':'live'})}>{room.state==='live'?'Pausa rum':'Öppna rum'}</button>
-            <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff||!room.canArchive} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:true})}>Arkivera</button>
+            <button className="sg-btn sg-btn-ghost" type="button" disabled={writesOff||!room.canArchive} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:true})}>Flytta till papperskorgen</button>
           </>:<button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff||!room.canRestore} onClick={()=>setIntent({kind:'room',operatorId,id:room.id,name:room.name,archived:false})}>Återställ rum</button>}
         </div>
         {room.archivedAt&&!room.canRestore?<p>{room.restoreBlockers.map(code=>blockers[code]??'Rummets beroenden behöver granskas.').join(' ')}</p>:null}
       </li>)}</ul>}
     </>:kind==='operator'&&operator?<div className={styles.company}>
       <p>{operator.status==='active'?`Flytta bolaget och dess ${operator.roomCount} spelrum till papperskorgen. Rummen kopplas loss från den aktiva strukturen. Team, gemensamma media och historik bevaras.`:operator.archivedAt?'Bolaget ligger i papperskorgen. Team, media och publiceringshistorik finns kvar.':'Bolaget är avstängt sedan tidigare och kan inte återställas via arkivet.'}</p>
-      {operator.status==='active'||operator.archivedAt?<button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff} onClick={()=>setIntent({kind:'operator',operatorId,id:operator.id,name:operator.name,archived:operator.status==='active'})}>{operator.status==='active'?'Arkivera bolag':'Återställ bolag'}</button>:null}
+      {operator.status==='active'||operator.archivedAt?<button className="sg-btn sg-btn-secondary" type="button" disabled={writesOff} onClick={()=>setIntent({kind:'operator',operatorId,id:operator.id,name:operator.name,archived:operator.status==='active'})}>{operator.status==='active'?'Flytta bolag till papperskorgen':'Återställ bolag'}</button>:null}
     </div>:null}
-    {intent&&intent.operatorId===operatorId?<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna':'Pausa'):intent.archived?'Arkivera':'Återställ'} {intent.name}</legend>
+    {intent&&intent.operatorId===operatorId?<fieldset className={styles.confirm} disabled={writesOff}><legend>{intent.kind==='state'?(intent.state==='live'?'Öppna':'Pausa'):intent.archived?'Flytta till papperskorgen:':'Återställ'} {intent.name}</legend>
       <p>{intent.kind==='operator'?(intent.archived?'Bolagets portal stängs och alla dess spelrum avpubliceras och flyttas till papperskorgen. Återställning sker uttryckligen, ett rum i taget.':'Bolagets åtkomst återställs. Spelrummen stannar i papperskorgen tills du återställer dem som pausade rum.'):intent.kind==='state'?(intent.state==='live'?'Rummet blir tillgängligt i bolagets spellobby.':'Rummet döljs från spellobbyn.'):intent.archived?'Rummet avpubliceras och flyttas till papperskorgen. Media och historik behålls.':'Rummet återställs som pausat, så att du kan granska det innan det öppnas.'}</p>
       <div className={styles.actions}><button className="sg-btn sg-btn-primary" type="button" onClick={()=>void apply()}>{busy?'Sparar…':'Bekräfta'}</button><button className="sg-btn sg-btn-ghost" type="button" onClick={()=>setIntent(null)}>Avbryt</button></div>
     </fieldset>:null}
