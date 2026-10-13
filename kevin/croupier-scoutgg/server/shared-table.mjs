@@ -103,8 +103,11 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const draws=planDraws(before,r.round,opening);
     // Emil 12 Oct: the next player may act once the last card has landed (turnAt below), while the dealer still brings her
     // hand back to rest and talks about the bust. A card asked for then starts when that take has ended, never cutting it.
-    const steps=[];let at=Math.max(now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:700),r.plan?.endAt??0);
     const roomId=contexts.get(r).id,ready=readyFor(roomId),talker=ready?talk(roomId):null,talks=[];
+    // Emil 13 Oct: while the dealer speaks, a card asked for gives the lip-sync worker 1 s (not 0.7) to remake the mouth
+    // over the new take; without speech the pace is as before
+    const speaking=Boolean(talker)&&(r.talk??[]).some(t=>t.startAt<=now()&&t.endAt>now()+300);
+    const steps=[];let at=Math.max(now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:speaking?1000:700),r.plan?.endAt??0);
     const addClip=(clip,meta={})=>{if(!clip)return;
       // Emil 12 Oct: a ready dealer with a warm lip-sync worker says the line WHILE he deals. It leaves the timeline and is
       // timed after readyTimeline (scheduleTalks); no line of his own in that language -> it stays a step as before.
