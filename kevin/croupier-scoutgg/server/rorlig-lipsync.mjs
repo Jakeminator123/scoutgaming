@@ -96,7 +96,9 @@ const MIN_FPS = 30;
 
 export class RorligLipsync {
   constructor({ endpointId, apiKey, publicBase, publicDir, dealers = ['paow'], log = console.log, fetchImpl = fetch,
-    onPiece = () => {}, inactivityMs = 480_000, ttlS = 540 }) {
+    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300 }) {
+    // ttlS: one session per ~55 min (the endpoint allows jobs of 1 h). Every renewal can land on a cold or slow machine,
+    // and with 9 min sessions that happened every 6.5 min of play; a session still ends 8 min after the table goes quiet
     Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS });
     this.token = randomBytes(24).toString('hex');   // per process: only the sessions we ordered can dial in
     this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], busy: false, waiters: [], recent: [] }]));
@@ -156,7 +158,7 @@ export class RorligLipsync {
       // timings of the last lines (in /api/lipsync-status): queue = waited behind other lines, first = sent until the
       // first patch, spare = how long before its first frame is on screen the first patch came (negative = late)
       const sent = Date.now(), tm = { what: talk.event ?? talk.kind, ver: rec.ver, fran, queue: sent - rec.at, first: null, total: null, spare: null, steg: null, error: null };
-      const finish = (err) => { clearTimeout(timer); ws.off('message', onMsg); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
+      const finish = (err) => { clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
       let pending = null;
       const onMsg = (data, isBinary) => {
         if (isBinary) {
@@ -169,8 +171,12 @@ export class RorligLipsync {
         else if (m.t === 'done') { tm.steg = m.steg ?? null; this.log(`läppsynk rörlig [${dealer}]: ${talk.event ?? 'replik'} klar, första bit ${m.forsta_bit_ms} ms, ${m.ms} ms`); finish(null); }
         else if (m.t === 'error') { this.log(`läppsynk rörlig [${dealer}]: fel ${m.reason}`); finish(m.reason); }
       };
-      const timer = setTimeout(() => finish('timeout'), 30_000);
+      // a worker that goes away mid-line (terminated, its machine lost) ends the line at once: the queue behind it waited
+      // 30 s before; a line takes under 4 s, so 15 s means the worker hangs
+      const onClose = () => finish('worker gone');
+      const timer = setTimeout(() => finish('timeout'), 15_000);
       ws.on('message', onMsg);
+      ws.on('close', onClose);
       // fran: the first frame the viewers still need (a new map while it speaks): the worker makes only the rest
       // a new map for an answer this worker already has the voice of: not the voice again (~0.5 s when it matters most)
       if (rec.pcm && rec.pcmWs === ws && s.info?.samma_ljud) ws.send(JSON.stringify({ t: 'start', id: talk.id, rate: 24000, karta, fran_ruta: fran, samma_ljud: true }));

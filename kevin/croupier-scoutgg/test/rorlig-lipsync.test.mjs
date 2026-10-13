@@ -146,6 +146,20 @@ test('the worker makes what is needed on screen soonest first: a new map for now
   assert.deepEqual(order,['first','remap-now','line-soon','answer-later']);
 });
 
+test('a worker that goes away mid-line ends that line at once, so the lines behind it do not wait', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
+  clearInterval(r.timer);
+  const s=r.s.get('paow'),h={};
+  s.info={rutor_per_s:60};
+  s.ws={readyState:1,send(){},off(){},on(ev,f){h[ev]=f;}};
+  const t0=Date.now(),done=r.speak('paow','rum',{id:'gone',kartaStart:t0+2000,line:'/a.mp4'},[]);
+  setTimeout(()=>h.close(),20);
+  await done;
+  assert.ok(Date.now()-t0<1000);
+  assert.equal(r.index('gone').fel,'worker gone');
+});
+
 test('a worker too slow to keep ahead of the picture is sent away and never replaces the one speaking', async () => {
   const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
   const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>null,publicDir:'.',log:()=>{}});
