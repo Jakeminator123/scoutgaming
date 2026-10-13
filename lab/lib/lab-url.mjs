@@ -1,14 +1,16 @@
-// Public routing only; never put credentials in this build-time variable.
+import {adminDocumentHref} from './admin-workspace-routes.mjs';
+// Public routing only; never put credentials in these build-time variables.
 export function labBasePath() {
   return process.env.NEXT_PUBLIC_LAB_BASE_PATH === '/studio' ? '/studio' : '';
 }
 
 function publicProductPath(value) {
   const path = value.split(/[?#]/, 1)[0];
-  return ['/control', '/partner', '/play'].some(root => path === root || path.startsWith(`${root}/`));
+  return ['/admin', '/lobby', '/control', '/partner', '/play'].some(root => path === root || path.startsWith(`${root}/`));
 }
 
 export function labUrl(value) {
+  if(process.env.NEXT_PUBLIC_ADMIN_WORKSPACE==='1')value=adminDocumentHref(value);
   const base = labBasePath();
   if (!base || typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')
     || value === base || value.startsWith(`${base}/`) || publicProductPath(value)) return value;

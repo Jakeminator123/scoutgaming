@@ -21,13 +21,14 @@ const config={scope,apiBase:'/api/admin',allowedOrigins:['https://public.example
 const id='00000000-0000-4000-8000-000000000001',oldId='00000000-0000-4000-8000-000000000002',sha='a'.repeat(64);
 const media=(key=id,archived=false)=>({id:key,sha256:sha,size:32,contentType:'video/mp4',pathname:`croupier/media/dealers/paow/review/uploads/${key}/${sha}.mp4`,classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Clip',notes:'',...(archived?{archived:true}:{})}});
 const req=(path,body,headers={})=>new Request(origin+path,{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json',...headers},body:JSON.stringify(body)});
-async function fixture({bind=false}={}){
+async function fixture({bind=false,categories=false}={}){
  const pool=createStudioMemoryPool();
  // This isolated fixture has no operators; historical packages stay in the separate purge fixture.
  const connect=pool.connect.bind(pool);pool.connect=async()=>{const client=await connect(),query=client.query.bind(client);client.query=(sql,values)=>sql.includes('/* operator-store:list-operators */')?Promise.resolve({rows:[]}):query(sql,values);return client;};
  const repository=createStudioRepository({pool,scope});
  const project=addDealer(createSeedProject(),'paow','PAOW');
  if(bind)project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
+ if(categories)project.dealerSets=[{id:'paow-clips',name:'PAOW klipp',dealerId:'paow',clipIds:[id],archived:false}];
  seedSavedVideoProject(pool,scope,project);
  await repository.initializeDocument('administration',{value:{},actor:'operator'});
  await repository.registerMedia(media(),{actor:'operator'});await repository.registerMedia(media(oldId,true),{actor:'operator'});
@@ -41,16 +42,18 @@ async function fixture({bind=false}={}){
  return {pool,repository,project,context,operation,change,archiveBody};
 }
 test('dealer archive and restore preserve own exact lines/settings and only restore previously active uploads',async()=>{
- const f=await fixture({bind:true}),before=structuredClone(f.project);
+ const f=await fixture({bind:true,categories:true}),before=structuredClone(f.project);
  const archived=await f.change();
  assert.equal(archived.dealers.some(row=>row.id==='paow'),false);
  assert.deepEqual(archived.dealerTrash[0].activeMediaIds,[id]);
+ assert.equal(archived.dealerSets,undefined);assert.deepEqual(archived.dealerTrash[0].dealerSets,before.dealerSets);
  assert.deepEqual(archived.dealerTrash[0].lines,before.lines.filter(row=>row.dealerId==='paow'));
  assert.equal((await f.repository.getMedia(id)).classification.archived,true);
  assert.deepEqual([...(await savedVideoDealerOwnership(f.repository)).trash],['paow']);
  const restored=await f.change(f.operation(false,archived.revision));
  assert.deepEqual(restored.lines,before.lines);assert.deepEqual(restored.dealers,before.dealers);
  assert.equal(restored.dealerTrash.length,0);
+ assert.deepEqual(restored.dealerSets,before.dealerSets);
  assert.equal((await f.repository.getMedia(id)).classification.archived,false);
  assert.equal((await f.repository.getMedia(oldId)).classification.archived,true);
 });
@@ -82,6 +85,27 @@ test('concurrent archive attempts have one winner and stale restoration has no p
 });
 test('a failure after the first media change rolls back all media, document, history and audit changes',async()=>{
  const f=await fixture();const before=f.pool.snapshot();f.pool.failNext('history');await assert.rejects(f.change());assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('repository outer transaction rolls back a saved trash snapshot when later media classification fails',async()=>{
+ const f=await fixture({categories:true}),before=f.pool.snapshot();
+ const records=await f.repository.listMedia();
+ const next=lifecycleProject(f.project,{dealerId:'paow',archived:true,records});
+ f.pool.failNext('classify-media');
+ const callStart=f.pool.calls.length;
+ await assert.rejects(f.repository.transaction(async()=>{
+  await f.repository.saveDealerLifecycle(next,{expectedRevision:f.project.revision,actor:'Admin'});
+  assert.equal((await f.repository.readDocument('project')).value.dealers.some(row=>row.id==='paow'),false);
+  const row=await f.repository.getMedia(id);
+  await f.repository.classifyMedia(id,{sha256:row.sha256,expectedRevision:row.revision,metadata:{...row.classification,archived:true},actor:'Admin'});
+ }));
+ assert.deepEqual(f.pool.snapshot(),before);
+ const calls=f.pool.calls.slice(callStart);
+ assert.ok(calls.some(row=>row.marker==='save-document'));
+ assert.ok(calls.some(row=>row.marker==='classify-media'));
+ assert.ok(calls.some(row=>row.sql==='ROLLBACK'));
+ assert.equal(calls.filter(row=>row.sql==='COMMIT').length,0);
+ assert.equal(new Set(calls.map(row=>row.client)).size,1);
 });
 test('replayed upload grants and individual restore cannot reactivate a trashed dealer',async()=>{
  const f=await fixture();await f.change();const api=createStudioMediaApi(f.context),row=await f.repository.getMedia(id),before=f.pool.snapshot();

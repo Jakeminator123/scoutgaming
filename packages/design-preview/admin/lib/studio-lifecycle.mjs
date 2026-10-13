@@ -131,7 +131,6 @@ export function createLifecycleClient({ fetchImpl = fetch } = {}) {
   }
   return {
     async checkDealerArchive(project, dealerId) {
-      if (project.dealerSets?.some(row => row.dealerId === dealerId)) fail('studio_dealer_in_use');
       if (!project.dealers.some(row => row.id === dealerId)) fail('studio_dealer_missing');
       const result = await json('dealers/archive-check', { dealerId, expectedRevision: project.revision });
       if (!validArchiveImpact(result.impact, dealerId)) fail('studio_lifecycle_response_invalid');

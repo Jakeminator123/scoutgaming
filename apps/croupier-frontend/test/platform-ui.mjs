@@ -56,11 +56,15 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
     }
     const navigation = {...headers, 'sec-fetch-site':'cross-site', 'sec-fetch-mode':'navigate', 'sec-fetch-dest':'document'};
-    const document = module.exports.middleware(new NextRequest(config.publicOrigin + '/control/replies?dealer=paow', {headers:navigation}));
-    assert.equal(document.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/control/replies?dealer=paow');
-    assert.equal(document.headers.get('x-middleware-request-sec-fetch-site'), null);
+    const compatibility = module.exports.middleware(new NextRequest(config.publicOrigin + '/control/replies?dealer=paow', {headers:navigation}));
+    assert.equal(compatibility.status,307);
+    assert.equal(compatibility.headers.get('location'),config.publicOrigin+'/admin/replies?dealer=paow');
+    const document = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin/replies?dealer=paow', {headers:navigation}));
+    assert.equal(document.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/admin/replies?dealer=paow');
+    // The native page adapter, after this transport, owns document navigation.
+    assert.equal(document.headers.get('x-middleware-request-sec-fetch-site'), 'cross-site');
     assert.equal(document.headers.get('x-middleware-request-cookie'), headers.cookie);
-    const foreign = module.exports.middleware(new NextRequest(config.publicOrigin + '/control/replies', {headers:{...navigation,origin:'https://foreign.example'}}));
+    const foreign = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin/replies', {headers:{...navigation,origin:'https://foreign.example'}}));
     assert.equal(foreign.headers.get('x-middleware-request-origin'), 'https://foreign.example');
     for (const [path, init] of [
       ['/studio/api/project', {headers:navigation}],
@@ -107,13 +111,17 @@ test('generated workspace chunks allow encoded bracket folders without widening 
 
 test('new document surfaces rewrite to native Studio without creating customer or API aliases', () => {
   const native = platformConfiguration({...env, CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
-  for (const [path, destination] of [['/control','/studio/control'], ['/control/speech','/studio/control/speech'],
-    ['/control/studio','/studio'], ['/control/admin','/studio/administration'], ['/control/ops','/studio/openclaw'], ['/control/lab','/studio'],
+  for (const [path, destination] of [['/admin','/studio/admin'], ['/admin/replies','/studio/admin/replies'],
     ['/partner','/studio/partner'], ['/partner/demo-north','/studio/partner/demo-north'], ['/partner/demo-south/team','/studio/partner/demo-south/team']]) {
     assert.deepEqual(platformRoute(new URL(path + '?_rsc=fixture', native.publicOrigin), native),
       {kind:'lab', destination:native.labUiOrigin + destination + '?_rsc=fixture'}, path);
-    assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', 'native preview remains opt-in');
+    if(!path.startsWith('/admin'))assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', 'native preview remains opt-in');
     assert.equal(backendPlatformPath(path), false, path);
+  }
+  for(const [path,destination]of [['/control','/admin'],['/control/speech','/admin/dealer-studio?view=speech'],['/control/studio','/admin/clips'],['/control/admin','/admin/drift'],['/control/ops','/admin/ai/models'],['/control/lab','/admin/clips'],['/studio/control','/admin']]){
+    const expected=new URL(destination,native.publicOrigin);expected.searchParams.set('_rsc','fixture');
+    assert.deepEqual(platformRoute(new URL(path+'?_rsc=fixture',native.publicOrigin),native),{kind:'redirect',destination:expected.href});
+    if(path.startsWith('/control'))assert.equal(platformRoute(new URL(path,config.publicOrigin),config).kind,'frontend');
   }
   for (const path of ['/control/api/admin', '/partner/api/admin', '/partner/demo-north/voice', '/partner/demo-north/team/users',
     '/partner/demo-north/api/users', '/control/unknown', '/partner/demo-north/unknown']) {
@@ -121,14 +129,14 @@ test('new document surfaces rewrite to native Studio without creating customer o
     assert.equal(backendPlatformPath(path), false, path);
   }
   assert.equal(platformRoute(new URL('/partner/demo-north/%74eam', native.publicOrigin), native).kind, 'reject');
-  for (const path of ['/studio/api/admin/users', '/studio/api/partner-preview', '/studio/partner', '/studio/control']) {
+  for (const path of ['/studio/api/admin/users', '/studio/api/partner-preview', '/studio/partner', '/studio/admin']) {
     assert.equal(platformRoute(new URL(path, native.publicOrigin), native).kind, 'lab', path);
   }
 });
 
 test('old workspace slugs redirect to one canonical document without granting another surface',()=>{
   const native=platformConfiguration({...env,CROUPIER_STUDIO_NATIVE_ADMIN:'1'});
-  for(const [old,path]of [['/control/voice','/control/speech'],['/control/overview','/control'],['/partner/demo-north/overview','/partner/demo-north'],['/partner/demo-south/theme','/partner/demo-south/presentation'],['/partner/demo-south/bj','/partner/demo-south/rooms']]){
+  for(const [old,path]of [['/control/voice','/admin/dealer-studio?view=speech'],['/control/overview','/admin'],['/partner/demo-north/overview','/partner/demo-north'],['/partner/demo-south/theme','/partner/demo-south/presentation'],['/partner/demo-south/bj','/partner/demo-south/rooms']]){
     assert.deepEqual(platformRoute(new URL(old,native.publicOrigin),native),{kind:'redirect',destination:native.publicOrigin+path});
     assert.equal(platformRoute(new URL(path,native.publicOrigin),native).kind,'lab');
   }
@@ -375,7 +383,9 @@ test('actual Next middleware disables rewrite caching for backend and authentica
     const ordinary = module.exports.middleware(new NextRequest(config.publicOrigin));
     assert.equal(ordinary.headers.get('x-vercel-enable-rewrite-caching'), null);
     process.env.CROUPIER_STUDIO_NATIVE_ADMIN = '1';
-    for (const path of ['/control/speech', '/partner/demo-north']) {
+    const compatibility=module.exports.middleware(new NextRequest(config.publicOrigin+'/control/speech?_rsc=fixture',{headers:{rsc:'1'}}));
+    assert.equal(compatibility.status,307);assert.equal(compatibility.headers.get('location'),config.publicOrigin+'/admin/dealer-studio?view=speech&_rsc=fixture');
+    for (const path of ['/admin/replies', '/partner/demo-north']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path + '?_rsc=fixture', {headers:{
         cookie:'bo_session=isolated-admin-fixture', rsc:'1', 'x-croupier-vercel-secret':'spoof', 'x-croupier-lab-authorized':'spoof',
       }}));

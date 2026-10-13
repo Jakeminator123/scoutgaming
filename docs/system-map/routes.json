@@ -1513,6 +1513,24 @@
       "redirectTo": "/control/administration"
     },
     {
+      "id": "studio-api-admin-workspace",
+      "path": "/api/admin/workspace/:section",
+      "publicPath": "/studio/api/admin/workspace/:section",
+      "methods": ["GET"],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/admin/workspace/[section]/route.ts",
+      "serving": "Native Studio read adapter for the editors embedded in Admin",
+      "access": "Live N1 admin or superadmin session, native Host/Origin validation, private no-store response.",
+      "boundary": "Only registered workspace sections and GET without query. Saved project and video registry; company directory only for companies/publication. No mutations or separate store.",
+      "groupId": "studio-native-admin",
+      "sources": [
+        {"path": "lab/app/api/admin/workspace/[section]/route.ts"},
+        {"path": "lab/lib/admin-workspace-data.mjs"},
+        {"path": "lab/test/admin-workspace.test.mjs"}
+      ]
+    },
+    {
       "id": "studio-api-admin-action",
       "path": "/api/admin/:action+",
       "publicPath": "/studio/api/admin/:action+",

@@ -1,5 +1,5 @@
 import { useSyncExternalStore, type AnchorHTMLAttributes, type ImgHTMLAttributes } from 'react';
-import {adminHref,adminPathname,isInternalAdminPathname,withAdminContext} from './admin-routing.mjs';
+import {adminHref,adminPathname,isInternalAdminPathname,withAdminContext,adminToolName} from './admin-routing.mjs';
 
 export function previewHref(href: string) {
   return adminHref(href);
@@ -36,6 +36,11 @@ export function useRouter() {
 export function navigate(href: string, replace = false) {
   href=withAdminContext(previewHref(href),location.search);
   if (!canNavigate(href)) return false;
+  // The established editors own beforeunload guards for project/media drafts.
+  // Cross-editor navigation must go through those guards, never unmount silently.
+  if(adminToolName(location.pathname)||adminToolName(new URL(href,location.origin).pathname)){
+    if(replace)location.replace(href);else location.assign(href);return true;
+  }
   window.history[replace ? 'replaceState' : 'pushState'](null, '', href);
   previousHref = href; notifySubscribers();
   return true;

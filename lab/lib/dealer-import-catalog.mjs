@@ -6,7 +6,7 @@ import { registeredDealerIds } from '../../web/dealer-identity.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../web/public/dealer-compositing.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 
-export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 10, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,
+export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 30, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,
   maxHistoryMessages: 8, maxHistoryMessage: 3000, maxHistoryChars: 12000, vision: false });
 export const DEALER_IMPORT_STORAGE_WARNING = 'Endast MP4 och WebM kan sparas i klippbanken just nu. Bilder och ljud kan få rådgivande fack eller vara lokala referenser, men måste tas bort ur importlistan innan videor sparas, även om raden har ett tidigare fel.';
 const TYPES = new Set(['video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav', 'image/png', 'image/jpeg', 'image/webp']);

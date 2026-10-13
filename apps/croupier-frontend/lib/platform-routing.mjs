@@ -1,4 +1,5 @@
 import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-entry-contract.mjs';
+import {adminDocumentHref} from '../../../lab/lib/admin-workspace-routes.mjs';
 import { requestedOperator } from '../../../web/game-entry-operator.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../lab/lib/workspace-surfaces.mjs';
 import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from './platform-configuration.mjs';
@@ -87,7 +88,11 @@ export function blackjackLobbyDestination(url, config) {
   return typeof operator === 'string' ? '/play?'+new URLSearchParams({operator}).toString() : '/play';
 }
 
-export function platformRoute(url, config) {
+export function platformRoute(url, config, request) {
+  if(config.nativeStudio&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
+    const destination=adminDocumentHref(url.pathname+url.search);
+    if(destination!==url.pathname+url.search)return {kind:'redirect',destination:config.publicOrigin+destination};
+  }
   // Next encodes the literal catch-all folder in these two generated chunks.
   // Allow only their hashed JS assets; encoded document/API paths stay rejected.
   if (/^\/studio\/_next\/static\/chunks\/app\/(?:control|partner)\/%5B%5B\.\.\.path%5D%5D\/page-[0-9a-f]+\.js$/i.test(url.pathname)) {

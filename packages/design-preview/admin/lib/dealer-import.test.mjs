@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importErrorMessage, importFileError, uniqueImportFiles, planImportFiles, importDealerId, registerImportDealer } from './dealer-import.mjs';
+import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importErrorMessage, importFileError, importRowError, uniqueImportFiles, planImportFiles, importDealerId, registerImportDealer } from './dealer-import.mjs';
 import { createSeedProject, addDealer } from '../../../../lab/lib/studio-model.mjs';
 
 test('runtime readiness error is explained without rewriting the retained failure',()=>{
@@ -127,42 +127,105 @@ test('proposal cannot change saved rows, files, dealer or upload classification'
   assert.ok(importFileError({name:'unknown.svg',size:100})); assert.ok(importFileError({name:'idle.mp4',size:134217729}));
 });
 
-async function importAssistantHarness(dealers=catalog.dealers,{request,props={}}={}){
+async function importAssistantHarness(dealers=catalog.dealers,props={},options={}){
+  if(props.props||props.request){options={...options,request:props.request};props=props.props??{};}
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const helpers=await import('./dealer-import.mjs'),module={exports:{}},slots=[],effects=[];let cursor=0;
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
-    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(initial){return slots[cursor++]??={current:initial}},useEffect(effect){effects.push(effect);}};
+    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useRef(initial){return slots[cursor++]??={current:initial}},useEffect(effect,deps){const i=cursor++;if(!slots[i]||deps.some((dep,j)=>dep!==slots[i][j])){slots[i]=deps;effects.push(effect);}}};
   const source=readFileSync(new URL('../components/studio/dealer-import-assistant.tsx',import.meta.url),'utf8'),output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'});
-  runInNewContext(output.code,{module,exports:module.exports,AbortController,URL,URLSearchParams,crypto:globalThis.crypto,
-    window:{addEventListener(){},removeEventListener(){},confirm:()=>true},document:{addEventListener(){},removeEventListener(){}},
-    fetch:request??(async()=>Response.json({...catalog,dealers,limits:{...catalog.limits,maxFiles:10},provider:{configured:false}})),require:name=>name==='react'?react
+  runInNewContext(output.code,{module,exports:module.exports,AbortController,URL,URLSearchParams,crypto:globalThis.crypto,window:{addEventListener(){},removeEventListener(){},confirm:()=>true},document:{addEventListener(){},removeEventListener(){}},
+    fetch:options.request??(async(path)=>Response.json(options.response?.(path)??{...catalog,dealers,limits:{...catalog.limits,maxFiles:30},provider:{configured:false}})),require:name=>name==='react'?react
       :name.includes('upload-native-video.mjs')?{uploadNativeVideo(){throw Error('no upload expected')}}
-      :name.includes('media-upload-batch.mjs')?{uploadMediaBatch(){throw Error('no upload expected')}}
+      :name.includes('media-upload-batch.mjs')?{uploadMediaBatch:options.uploadMediaBatch??(()=>{throw Error('no upload expected')})}
       :name.includes('dealer-import.mjs')?helpers:require(name)});
   const render=()=>{cursor=0;return module.exports.DealerImportAssistant(props)};
   const all=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
-  render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
-  return {nodes:predicate=>all(render(),predicate),html:()=>renderToStaticMarkup(render()),
-    flush:async()=>{effects.splice(0);render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));}};
+  const settle=async()=>{for(let i=0;i<4;i++){render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));}};
+  await settle();
+  return {props,settle,flush:settle,nodes:predicate=>all(render(),predicate),html:()=>renderToStaticMarkup(render())};
 }
 test('import recovery and dealer links keep the selected registered dealer in Admin',async()=>{
   const h=await importAssistantHarness();h.nodes(node=>node.type==='select')[0].props.onChange({target:{value:'nora'}});
-  h.nodes(node=>node.type==='input'&&node.props.type==='checkbox')[0].props.onChange({target:{checked:true}});
   h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[{name:'unsupported.mov',size:100,lastModified:1}]}});
-  const links=h.nodes(node=>node.type==='a');assert.equal(links.length,2);assert.ok(links.every(node=>node.props.href==='/admin/clips?dealer=nora'));
+  const links=h.nodes(node=>node.type==='a');assert.equal(links.filter(node=>node.props.href==='/admin/clips?dealer=nora').length,2);assert.ok(links.some(node=>node.props.href==='/admin/dealers'));
   assert.match(h.html(),/Filer med fel försöks inte om automatiskt/);assert.doesNotMatch(h.html(),/href="\/control/);
-  const empty=await importAssistantHarness([]);assert.ok(empty.nodes(node=>node.type==='a').every(node=>node.props.href==='/admin/clips'));
+  const empty=await importAssistantHarness([]);assert.ok(empty.nodes(node=>node.type==='a').some(node=>node.props.href==='/admin/dealers'));
 });
 
-test('Admin import creates the typed dealer once, refreshes the list, and requires explicit file ownership approval',async()=>{
+test('Dragan is preselected by an explicit import link without implicitly approving uploads',async()=>{
+  const h=await importAssistantHarness([{id:'dragan',label:'Dragan'}],{requestedDealerId:'dragan'});
+  assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'dragan');
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='checkbox').length,0);
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.disabled,false);
+});
+test('a later dealer link preserves pending files and requires an explicit dealer switch',async()=>{
+  const h=await importAssistantHarness([{id:'nora',label:'Nora'},{id:'dragan',label:'Dragan'}],{requestedDealerId:'nora'});
+  h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[{name:'unsupported.mov',size:100,lastModified:1}]}});
+  h.props.requestedDealerId='dragan';await h.settle();
+  assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'nora');assert.match(h.html(),/Din tidigare import är kvar/);assert.match(h.html(),/unsupported.mov/);
+});
+
+function addVideo(h,name='dragan-box1.mp4') {
+  h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[new File([new Uint8Array(100)],name,{lastModified:1,type:'video/mp4'})]}});
+}
+function placeVideo(h,name='dragan-box1.mp4') {
+  h.nodes(node=>node.props?.['aria-label']===`Fack för ${name}`)[0].props.onChange({target:{value:catalog.slots[0].id}});
+  h.nodes(node=>node.props?.['aria-label']===`Bakgrund för ${name}`)[0].props.onChange({target:{value:'green-screen'}});
+}
+const saveButton=h=>h.nodes(node=>node.type==='button'&&node.props.className==='dealer-import-primary').at(-1);
+
+test('unmapped file is named beside its row and in the summary; no hidden approval step',async()=>{
+  const h=await importAssistantHarness([{id:'dragan',label:'Dragan'}],{requestedDealerId:'dragan'});
+  addVideo(h);assert.equal(saveButton(h).props.disabled,true);
+  assert.match(h.html(),/dragan-box1.mp4:<\/strong> Välj ett fack för den här filen/);
+  assert.ok(h.nodes(node=>node.props?.['aria-label']==='Fack för dragan-box1.mp4')[0].props['aria-describedby']);
+  saveButton(h).props.onClick();await h.settle();assert.match(h.html(),/dragan-box1.mp4: Välj ett fack/);
+  placeVideo(h);assert.equal(saveButton(h).props.disabled,false);
+  assert.match(h.html(),/OK – placera 1 klipp hos Dragan/);
+  assert.doesNotMatch(h.html(),/Granska importen|Bekräfta och spara/);
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='checkbox').length,0);
+});
+
+test('one explicit OK saves exact dealer and slots after preflight; duplicate clicks do not retry',async()=>{
+  const batches=[];
+  const h=await importAssistantHarness([{id:'dragan',label:'Dragan'}],{requestedDealerId:'dragan'}, {
+    response:path=>path.endsWith('/api/videos')?{uploadMode:'private-client-blob'}:undefined,
+    uploadMediaBatch:async(prepared,{onChange})=>{batches.push(prepared);for(const {row} of prepared)onChange(row.id,{state:'saved'});return prepared.length;},
+  });
+  addVideo(h);placeVideo(h);assert.equal(batches.length,0);
+  const click=saveButton(h).props.onClick;click();click();await h.settle();
+  assert.equal(batches.length,1);assert.equal(batches[0][0].classification.dealerId,'dragan');
+  assert.equal(batches[0][0].classification.situation,'box0');assert.equal(batches[0][0].classification.role,'alternative');
+  assert.match(h.html(),/1 av 1 filer sparades hos Dragan/);assert.match(h.html(),/Sparad i valt fack/);
+});
+
+test('a changed slot meaning at preflight cannot be approved by an earlier OK',async()=>{
+  let changed=false;
+  const h=await importAssistantHarness([{id:'dragan',label:'Dragan'}],{requestedDealerId:'dragan'}, {
+    response:()=>changed?{...catalog,dealers:[{id:'dragan',label:'Dragan'}],limits:{...catalog.limits,maxFiles:30},slots:[{...catalog.slots[0],situation:'box1'}]}:undefined,
+  });
+  addVideo(h);placeVideo(h);changed=true;saveButton(h).props.onClick();await h.settle();
+  assert.match(h.html(),/Fackens betydelse har ändrats/);
+});
+
+test('failed or unsupported rows still block approval while saved rows do not',()=>{
+  assert.equal(importRowError(row(),'nora',catalog),'');
+  assert.match(importRowError(row({file:{name:'pose.png',size:100}}),'nora',catalog),/Endast MP4 och WebM/);
+  assert.equal(importRowError(row({state:'error',message:'Kontrollera biblioteket.'}),'nora',catalog),'Kontrollera biblioteket.');
+  assert.equal(importRowError(row({state:'saved',slotId:''}),'nora',catalog),'');
+  assert.match(importRowError(row({background:''}),'nora',catalog),/grön bakgrund/);
+});
+
+test('Admin import creates the typed dealer once, refreshes the list, and immediately enables file selection',async()=>{
   let project=createSeedProject(),puts=0,changed=0;
   const request=async(url,options)=>{
     if(url.endsWith('/api/project')){
       if(options.method==='PUT'){puts++;project={...JSON.parse(options.body).project,revision:'created-revision'};}
       return Response.json({project});
     }
-    return Response.json({...catalog,dealers:project.dealers,limits:{...catalog.limits,maxFiles:10},provider:{configured:false}});
+    return Response.json({...catalog,dealers:project.dealers,limits:{...catalog.limits,maxFiles:30},provider:{configured:false}});
   };
   const h=await importAssistantHarness([],{request,props:{onRegistered:()=>changed++}});
   h.nodes(node=>node.type==='input'&&node.props.maxLength===120)[0].props.onChange({target:{value:'Dragge'}});
@@ -170,8 +233,8 @@ test('Admin import creates the typed dealer once, refreshes the list, and requir
   // The onSubmit deliberately does not expose its promise to React.
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(puts,1);assert.equal(changed,1);assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'dragge');
-  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='checkbox')[0].props.checked,false);
-  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.disabled,true);
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='checkbox').length,0);
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.disabled,false);
   assert.match(h.html(),/Dragge är registrerad/);
 });
 
@@ -186,9 +249,8 @@ test('dealer navigation selects only an exact registered dealer and preserves pe
   const props={requestedDealerId:'nora'};
   const h=await importAssistantHarness([...catalog.dealers,{id:'dragge',label:'Dragge'}],{props});
   await h.flush();assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'nora');
-  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='checkbox')[0].props.checked,false);
-  h.nodes(node=>node.type==='input'&&node.props.type==='checkbox')[0].props.onChange({target:{checked:true}});
-  h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[{name:'own.mp4',size:100,lastModified:1}]}});
+  assert.equal(h.nodes(node=>node.type==='input'&&node.props.type==='checkbox').length,0);
+  h.nodes(node=>node.type==='input'&&node.props.type==='file')[0].props.onChange({target:{files:[new File([new Uint8Array(100)],'own.mp4',{lastModified:1})]}});
   props.requestedDealerId='dragge';await h.flush();
   assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'nora');assert.match(h.html(),/own.mp4/);
   props.requestedDealerId='unknown';await h.flush();assert.equal(h.nodes(node=>node.type==='select')[0].props.value,'nora');
