@@ -6,8 +6,13 @@ import { uploadNativeVideo } from '../../../../lab/lib/upload-native-video.mjs';
 import { materialForAsset } from '../../../../web/public/material-catalog.mjs';
 import { defaultCompositionSettings } from '../../../../web/public/composition-settings.mjs';
 import { workspaceSurfacePath } from '../../../../lab/lib/workspace-surfaces.mjs';
+import {rouletteClipSlots,rouletteClipMatches} from './roulette-clip-map.mjs';
+import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
+import {layerAssetFitsGame} from '../../../../web/layer-asset-contract.mjs';
 
-export function clipSlots(project, inventory, dealerId) {
+export function clipSlots(project, inventory, dealerId, game='blackjack') {
+  if(game==='roulette')return rouletteClipSlots();
+  if(game!=='blackjack')throw Error('Välj ett registrerat spel.');
   return project.events.flatMap(event => {
     const families = (inventory.families ?? []).filter(row => row.dealerId === dealerId && row.eventId === event.id);
     const situations = families.length ? families.map(row => row.situation) : situationsForEvent(event);
@@ -19,6 +24,7 @@ export function clipSlots(project, inventory, dealerId) {
   });
 }
 export function clipsForSlot(inventory, dealerId, slot) {
+  if(slot.game==='roulette')return inventory.videos.filter(video=>rouletteClipMatches(video,dealerId,slot)).sort((a,b)=>a.id.localeCompare(b.id));
   return inventory.videos.filter(video => video.available === true && video.integrity !== 'unavailable'
     && !video.classification?.archived && videoFitsLine(video, dealerId, slot.eventId)
     && (slot.family ? video.familyId === slot.family.id && [...slot.family.standardIds, ...slot.family.variantIds].includes(video.id)
@@ -67,6 +73,7 @@ function exactSlotVariants(project, inventory, dealerId, slot, line) {
     row.triggerIds.some(id=>project.triggers.some(trigger=>trigger.id===id && trigger.path===path && trigger.op==='eq' && trigger.value===value))));
 }
 export function currentClipId(project, dealerId, slot, variantId, inventory) {
+  if(slot.game==='roulette')return '';
   const line = project.lines.find(row => row.dealerId === dealerId && row.eventId === slot.eventId);
   if (slot.eventId === 'idle.ready') return project.dealerIdlePolicies?.find(row => row.dealerId === dealerId)?.policy.base[0]?.videoId
     ?? (slot.family ? project.idlePolicy?.base[0]?.videoId : null)
@@ -81,6 +88,7 @@ export function currentClipId(project, dealerId, slot, variantId, inventory) {
   return line?.variants.find(row => row.id === (variantId || line.baselineVariantId))?.videoGenerationId ?? '';
 }
 export function configuredClipIds(project, dealerId, slot, variantId, inventory) {
+  if(slot.game==='roulette')return [];
   if (!slot.family && slot.situation && slot.eventId!=='idle.ready') {
     const line=project.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
     return [...new Set(exactSlotVariants(project,inventory,dealerId,slot,line).map(row=>row.videoGenerationId))];
@@ -93,6 +101,7 @@ export function configuredClipIds(project, dealerId, slot, variantId, inventory)
 // The existing server still validates exact media bindings, role, scope, current
 // session and expected revision. A local edit neither publishes nor creates a room.
 export function bindClip(project, inventory, dealerId, slot, videoId, { variantId, durationMs } = {}) {
+  if(slot.game==='roulette')throw Error('Roulettefilen registreras i sitt eget fack. Spelkoppling och publicering är ännu inte anslutna.');
   validateProject(project);
   const registeredSlot=clipSlots(project,inventory,dealerId).find(row=>row.id===slot.id);
   if (!registeredSlot || registeredSlot.eventId!==slot.eventId || registeredSlot.situation!==slot.situation
@@ -179,9 +188,7 @@ export function selectCompositionLayer(project, room, role, assetId) {
   const lane = draft.lanes?.find(row => row.id === room.compositionId);
   if (!lane || !['background', 'table'].includes(role) || !lane.layers[role].enabled
     || !lane.layers[role].allowed.includes(assetId)) throw Error('Lagret är inte tillåtet i rummets sammansättning.');
-  // The legacy table registry has no game tag. Do not infer that a blackjack
-  // table is valid for roulette before Jakob supplies and accepts that design.
-  if (role === 'table' && room.game !== 'blackjack') throw Error('Roulettens bord behöver separat designunderlag.');
+  if (role === 'table' && !layerAssetFitsGame(draft.layerAssets?.find(row=>row.id===assetId),room.game)) throw Error('Bordet tillhör ett annat spel eller saknar rätt speltyp.');
   const material=materialForAsset(draft.layerAssets?.find(row=>row.id===assetId));
   if(role==='table'&&material&&material.game!==room.game)throw Error('Bordet tillhör ett annat spel.');
   if(role==='table'&&material){lane.composition??=defaultCompositionSettings();lane.composition.tableFront=true;}
@@ -210,6 +217,16 @@ export function compositionUses(catalog, compositionId) {
 }
 
 export function uploadMetadata(project, dealerId, slot, file, compositing) {
+  if(slot.game==='roulette'){
+    if(slot.eventId==='roulette.reference')throw Error('PNG kan provas lokalt. Dealerregistrets beständiga PNG-stöd är ännu inte aktiverat.');
+    const registered=rouletteClipSlots().find(row=>!row.planned&&row.id===slot.id&&row.eventId===slot.eventId&&row.situation===slot.situation);
+    if(!registered)throw Error('Detta roulettefack är planerat och har ännu inget uppladdningskontrakt.');
+    const image=slot.eventId==='roulette.reference';
+    if(!file||file.size<16||file.size>MAX_VIDEO_BYTES||!(image?/\.png$/i:/\.(mp4|webm)$/i).test(file.name))throw Error(image?'Välj PNG med alfa, högst 128 MB.':'Välj MP4 eller WebM, högst 128 MB.');
+    const contentType=image?'image/png':/\.mp4$/i.test(file.name)?'video/mp4':'video/webm';
+    const metadata=mediaClassification(project,{dealerId,slotId:slot.id,label:file.name.replace(/\.[^.]+$/,'').slice(0,120),contentType});
+    return validateVideoMetadata({...metadata,compositing:image?{mode:'alpha'}:compositing},{forWrite:true});
+  }
   const event = project.events.find(row => row.id === slot.eventId);
   if (!event || !project.dealers.some(row => row.id === dealerId)) throw Error('Välj en registrerad dealer och kortplats.');
   if (!file || file.size < 16 || file.size > MAX_VIDEO_BYTES || !/\.(mp4|webm)$/i.test(file.name)) throw Error('Välj MP4 eller WebM, högst 128 MB.');
@@ -252,13 +269,15 @@ export function createStudioClient({ fetchImpl = fetch, uploadImpl = uploadNativ
       return validateProject(result.project);
     },
     async upload(file, metadata, signal) {
+      if(metadata.mediaType==='image')throw Error('PNG kan provas lokalt. Dealerregistrets beständiga PNG-stöd är ännu inte aktiverat.');
       const mode = await json('/studio/api/videos', { signal });
       if (mode.uploadMode !== 'private-client-blob') throw Error('Den skyddade uppladdningen är otillgänglig i denna miljö.');
-      const contentType = /\.mp4$/i.test(file.name) ? 'video/mp4' : 'video/webm';
+      const contentType = /\.png$/i.test(file.name) ? 'image/png' : /\.mp4$/i.test(file.name) ? 'video/mp4' : 'video/webm';
       const result = await uploadImpl(file, metadata, contentType, { signal, fetchImpl });
       const inventory = await json('/studio/api/videos', { signal });
       const video = inventory.videos?.find(row => row.id === result.id && row.available === true);
-      if (!video || !videoFitsLine(video, metadata.dealerId, metadata.eventId)
+      const rouletteSlot=metadata.game==='roulette'?rouletteClipSlots().find(slot=>slot.eventId===metadata.eventId&&slot.situation===metadata.situation):null;
+      if (!video || !(rouletteSlot?rouletteClipMatches(video,metadata.dealerId,rouletteSlot):videoFitsLine(video, metadata.dealerId, metadata.eventId))
         || video.classification.situation !== metadata.situation || video.classification.familyId !== metadata.familyId) {
         throw Error('Filen har sparats, men exakt kortplats kunde inte återläsas. Koppla inte filmen innan registret har uppdaterats.');
       }

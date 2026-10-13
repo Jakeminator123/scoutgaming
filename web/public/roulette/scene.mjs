@@ -29,25 +29,34 @@ export async function mountRoomScene(room) {
     const catalog=validatePublicOperatorRooms(catalogValue,{operatorSlug:room.operator});
     const preview=validatePublicOperatorPreview(previewValue,{operatorSlug:room.operator,roomId:room.id,packageRevision:room.packageRevision,dealerId:room.dealer});
     if(catalog.packageRevision!==room.packageRevision)throw Error('preview_changed');
-    const publishedDealer=catalog.rooms.find(row=>row.id===room.id)?.dealers.find(row=>row.id===room.dealer);
-    if(!publishedDealer)throw Error('preview_unavailable');
+    const publishedRoom=catalog.rooms.find(row=>row.id===room.id);
+    const publishedDealer=publishedRoom?.dealers.find(row=>row.id===room.dealer);
+    if(publishedRoom?.game!=='roulette'||!publishedDealer)throw Error('preview_unavailable');
     let choices={};try{choices=readChoices(localStorage,room.operator);}catch{/* Published defaults remain authoritative. */}
     const definition=publishedDealer.background;
     const backgroundId=definition.allowed.some(row=>row.id===choices.background)?choices.background:definition.default;
     const background=preview.independentLayers&&definition.enabled?preview.media.backgrounds.find(row=>row.id===backgroundId)??null:null;
+    // Both the room grants and the server's game-filtered preview must contain
+    // a table. Stale/foreign browser choices never become media URLs.
+    const tableDefinition=publishedDealer.table;
+    const tableIds=[choices.tableAsset,tableDefinition.default,...tableDefinition.allowed.map(row=>row.id)];
+    const publishedTable=preview.independentLayers&&tableDefinition.enabled
+      ? tableIds.filter(id=>tableDefinition.allowed.some(row=>row.id===id))
+        .map(id=>preview.media.tables.find(row=>row.id===id)).find(Boolean)??null : null;
+    const table=publishedTable??ROULETTE_TABLE;
     // A baked legacy scene cannot be placed behind a different game table.
     // No guessed dealer, crop or media URL: wait for a published separable take.
     const dealer=preview.independentLayers&&preview.media.dealer?.compositing?preview.media.dealer:null;
     const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;
     canvas.role='img';canvas.setAttribute('aria-label','Roulettebord'+(dealer?' med '+preview.dealer.label:'')+' i '+room.name);canvas.hidden=true;
     host.append(canvas);
-    scene=mountPublishedScene(canvas,{dealer,background,table:ROULETTE_TABLE,tableMask:ROULETTE_TABLE_MASK,
-      settings:rouletteSceneSettings(preview.settings),layout:'desktop',compositing:dealer?.compositing,
+    scene=mountPublishedScene(canvas,{dealer,background,table,tableMask:publishedTable?null:ROULETTE_TABLE_MASK,
+      settings:publishedTable?preview.settings:rouletteSceneSettings(preview.settings),layout:'desktop',compositing:dealer?.compositing,
       onReady:()=>{
         fallback.hidden=true;canvas.hidden=false;
         mediaMessage(dealer?'':'En frilagd dealer för det här bordet saknas. Du kan spela ändå.');
         document.getElementById('scene-caption').textContent=dealer?preview.dealer.label+' · '+room.operatorName:'Europeisk roulette · '+room.operatorName;
-        toggle.hidden=![dealer,background,ROULETTE_TABLE].some(source=>source?.contentType.startsWith('video/'));
+        toggle.hidden=![dealer,background,table].some(source=>source?.contentType.startsWith('video/'));
       },
       onFailure:()=>{fallback.hidden=false;canvas.hidden=true;toggle.hidden=true;mediaMessage('Rummets media kunde inte visas. Bordet och spelet är fortfarande tillgängliga.');},
       onPlaying:playing=>{toggle.textContent=playing?'Pausa video':'Spela video';toggle.setAttribute('aria-pressed',String(playing));},

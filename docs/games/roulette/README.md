@@ -1,5 +1,9 @@
 # Roulette
 
+[Signaler, materialinventering och klippkarta](KLIPPKARTA.md) beskriver de
+separata blackjack-/roulettefacken, bild-/videolagren och vad som återstår
+före automatisk spelkoppling.
+
 ## Anna Jonsson: roulettefack, alfa och Runway-prov (13 oktober 2026)
 
 **Status:** implementerat på featuregrenen `codex/roulette-alpha-media`, inte ett kvitto på publicerad Anna eller färdig utfallsbank. Jakob beställde uttryckligen Runway-prov denna dag. Originalen, genererade filmer, exakta promptar, mätningar och ett fristående scenprov sparas privat utanför Git i Codex visualizations/2026/10/12/01a1319d-73c5-7801-8e65-27e47532075b. Ingen ny kodanimerad kula har byggts.
@@ -137,7 +141,7 @@ Den separata /roulette-test är en publik noindex-testyta utan spelkonton, insat
 | Gemensam publicerad scen | [published-scene.mjs](../../../web/public/published-scene.mjs) |
 | Bolag, game och rum | [presentation-room-contract.mjs](../../../web/presentation-room-contract.mjs) |
 
-Scenen läser /api/operators/<slug>/rooms/<room-id>/preview med revision och dealer. Ett rum har en speltyp; återanvända bakgrunder gör inte blackjackens rörelsebank till en roulettebank. Publicerad tyst idle används. Serverns kvitto bestämmer resultat och saldo; bildens eller en AI-films sista nummer gör det aldrig.
+Scenen läser /api/operators/<slug>/rooms/<room-id>/preview med revision och dealer. Ett rum har en speltyp; återanvända bakgrunder gör inte blackjackens rörelsebank till en roulettebank. Den frysta blackjackkopplingen `idle.ready` lämnas inte ut för roulette. En egen publicerad roulettekoppling för dealer återstår. Serverns kvitto bestämmer resultat och saldo; bildens eller en AI-films sista nummer gör det aldrig.
 
 ## Mottagen bordsspecifikation
 

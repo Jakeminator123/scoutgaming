@@ -41,6 +41,27 @@ const extendedMedia=[
   {dealerId:'astrid',eventId:'roulette.wheel-start',game:'roulette',action:'wheel-start',startPose:'VILA',endPose:'WHEEL',compositing:{mode:'green-screen'}},
   ...['game','action','startPose','endPose'].map(key=>({dealerId:'astrid',[key]:'unverified'})),
 ];
+
+test('game-tagged table projects, trash and frozen packages require exact v13',async()=>{
+  for(const descriptor of [
+    {kind:'project',value:{layerAssets:[{role:'table',game:'roulette'}]}},
+    {kind:'project',value:{layerAssetTrash:[{asset:{role:'table',game:'blackjack'}}]}},
+    {kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[],assets:[{role:'table',game:'roulette'}]}},
+  ])for(const version of [12,13]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const write=()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value});
+    if(version===13)await write();else await assert.rejects(write(),blocked);
+    assert.equal(f.writes.length,version===13?1:0);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'13');
+  }
+});
+
+test('a legacy transaction cannot introduce a table game after SQL begins',async()=>{
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(12))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveDocument('project',{value:{layerAssets:[{role:'table',game:'roulette'}]}}),blocked);
+  },{metadata:{dealerId:'astrid',game:'roulette'}});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
 test('alpha, PNG and every new roulette record field require exact v12 before register/classify',async()=>{
   for(const metadata of extendedMedia)for(const version of [2,11,12])for(const operation of ['register','classify']){
     const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});

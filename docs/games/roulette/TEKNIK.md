@@ -85,7 +85,8 @@ Samma inloggning och demosaldo som blackjack används. Detta är personliga
 rundor som i blackjack; ett gemensamt tidsstyrt multiplayerhjul ingår inte.
 Standardvinster är 35:1, 17:1, 11:1, 8:1, 5:1, 2:1 eller 1:1 netto;
 ingen La Partage/En Prison. Gränser: 1–2 000 per fält, 10 000 per runda.
-Publicerad tyst idle och komposition återanvänder lobbyns `published-scene.mjs`.
+Kompositionen återanvänder lobbyns `published-scene.mjs`. Fryst blackjack-idle
+lämnas inte ut till roulette; en egen dealer-/händelsekoppling återstår.
 Inga blackjackrepliker eller nya rouletteinspelningar spelas. Externa
 partner-launch-konton är spärrade tills deras plånbokskontrakt stöder roulette.
 Profilens blackjackstatistik är oförändrad; roulettehistoriken finns i rummet.

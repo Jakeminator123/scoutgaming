@@ -2,6 +2,21 @@
 
 ## Aktiva ytor och kompatibilitetsgräns
 
+Roulettens [klippkarta och signaler](games/roulette/KLIPPKARTA.md) skiljer
+registrerade filer, lokal VILA-preview och kommande spelkoppling. Samma
+dealeridentitet kan användas i båda spelen; rörelse-/talbankerna är separata.
+Bakgrunder delas. Bord har oföränderligt `game: blackjack|roulette` i
+LayerAsset, med runtimekapabilitet v13 (`tableGame: immutable-game-v1`).
+Äldre omärkta bord är endast blackjack; kända designhashar kan inte märkas om.
+Native upload, projekt-/paketvalidering och publika bytevägar kontrollerar
+speltypen. Ingen SQL-migration eller automatisk ommärkning ingår.
+
+Roulettefacken kan registrera MP4/WebM med exakta roulette-metadata.
+VILA-PNG provas bara lokalt, eftersom native dealerlagring inte stöder PNG.
+VILA prioriteras i editorpreview, annars första tillgängliga roulette-idle
+för samma person. Detta skapar ingen fryst dealerbindning. Publicerad
+blackjack-`idle.ready` exponeras inte för roulette.
+
 Fortsatt UI-utveckling sker i `/admin` och `/lobby`; `/partner` är bolagens
 arbetsyta. `lab/` är den aktiva applikationens källmapp och `/studio` dess
 tekniska basePath för befintliga API:er och tillgångar. Äldre `/control`,

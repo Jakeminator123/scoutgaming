@@ -5,6 +5,12 @@ import {rouletteDocument} from '../web/games/roulette/http.mjs';
 import {backendPlatformPath} from '../apps/croupier-frontend/lib/platform-routing.mjs';
 import {BETS,BET_BY_ID} from '../web/games/roulette/rules.mjs';
 import {tableBetGeometry,chipBreakdown,TABLE_ARTWORK} from '../web/public/roulette/table-layout.mjs';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
+import {validatePublicOperatorPreview,previewMediaPath} from '../web/public/operator-preview-contract.mjs';
+import {readChoices,choicesStorageKey} from '../web/public/player-choices.mjs';
+import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 
 test('room document preserves login context and serves only explicit public assets',async t=>{
   let authenticated=false,reads=0;
@@ -68,4 +74,72 @@ test('split and corner stacks stay on shared boundaries; chip stacks preserve th
   assert.deepEqual(chipBreakdown(6),[5,1]);
   assert.deepEqual(chipBreakdown(31),[25,5,1]);
   assert.equal(chipBreakdown(2000).length,9);
+});
+
+function sceneFixture(){
+  const ids=['00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000003'];
+  const context={operatorSlug:'north',roomId:'room-one',packageRevision:7,dealerId:'astrid'};
+  const table={enabled:true,default:ids[0],allowed:ids.slice(0,2).map((id,index)=>({id,label:`Table ${index}`}))};
+  const background={enabled:false,mode:'baked',default:null,allowed:[]};
+  const catalog={schemaVersion:1,operator:{slug:'north',name:'North'},packageRevision:7,rooms:[{
+    id:'room-one',name:'Roulette',game:'roulette',laneId:'roulette-lane',presentation:{id:'roulette-scene',label:'Roulette'},
+    dealerDefault:'astrid',playUrl:'/play/roulette?operator=north&table=room-one',
+    dealers:[{id:'astrid',label:'Astrid',presentation:'layered',independentLayers:true,table,background}],
+  }]};
+  const tables=ids.map((id,index)=>({id,label:`Table ${index}`,contentType:index?'video/webm':'image/png',src:previewMediaPath(context,'table',id)}));
+  const settings=defaultCompositionSettings();settings.desktop.table={width:.63,x:.13,y:.41};
+  const preview={schemaVersion:1,operatorSlug:'north',roomId:'room-one',packageRevision:7,dealer:{id:'astrid',label:'Astrid'},independentLayers:true,settings,
+    media:{dealer:null,tables,backgrounds:[]}};
+  const room={operator:'north',id:'room-one',packageRevision:7,dealer:'astrid',name:'Roulette',operatorName:'North'};
+  const prototype={src:'/roulette/assets/roulette-bord.png',contentType:'image/png'},prototypeMask={src:'/prototype-mask.png',contentType:'image/png'};
+  const elements=new Map(),calls=[],fetches=[],stored={},windowListeners={};
+  const element=()=>({hidden:false,attributes:{},listeners:{},classList:{toggle(){}},setAttribute(name,value){this.attributes[name]=value;},
+    addEventListener(name,listener){this.listeners[name]=listener;},append(){}});
+  const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element};
+  const sceneSource=readFileSync(new URL('../web/public/roulette/scene.mjs',import.meta.url),'utf8').replace(/^import .*;\r?$/gm,'').replace('export async function mountRoomScene','async function mountRoomScene');
+  let closed=0;
+  const mount=runInNewContext(sceneSource+'\nmountRoomScene;',{document,URLSearchParams,AbortController,AbortSignal,
+    window:{addEventListener(name,listener){windowListeners[name]=listener;}},localStorage:{getItem:key=>stored[key]??null},
+    fetch:async url=>{fetches.push(url);return Response.json(url.endsWith('/rooms')?catalog:preview);},
+    validatePublicOperatorRooms,validatePublicOperatorPreview,readChoices,ROULETTE_TABLE:prototype,ROULETTE_TABLE_MASK:prototypeMask,
+    rouletteSceneSettings:value=>({...value,prototypeGeometry:true}),
+    mountPublishedScene(_canvas,options){calls.push(options);options.onReady();return {close(){closed++;},toggle(){}};},
+  });
+  return {ids,catalog,table,preview,room,calls,elements,fetches,prototype,prototypeMask,windowListeners,
+    choose:id=>{stored[choicesStorageKey('north')]=JSON.stringify({tableAsset:id});},run:()=>mount(room),closed:()=>closed};
+}
+
+test('roulette scene uses the authorized default image with its published geometry, not the prototype mask',async()=>{
+  const f=sceneFixture();await f.run();assert.equal(f.calls.length,1);
+  assert.equal(f.calls[0].table.id,f.ids[0]);assert.equal(f.calls[0].table.contentType,'image/png');
+  assert.deepEqual(f.calls[0].settings,f.preview.settings);assert.equal(f.calls[0].tableMask,null);
+  assert.equal(f.elements.get('scene-toggle').hidden,true);assert.equal(f.fetches.length,2);
+  f.windowListeners.pagehide();assert.equal(f.closed(),1);
+});
+
+test('a stored authorized roulette MP4/WebM scene table enables playback controls',async()=>{
+  for(const contentType of ['video/mp4','video/webm']){
+    const f=sceneFixture();f.preview.media.tables[1].contentType=contentType;f.choose(f.ids[1]);await f.run();
+    assert.equal(f.calls[0].table.id,f.ids[1]);assert.equal(f.calls[0].table.contentType,contentType);
+    assert.equal(f.calls[0].tableMask,null);assert.equal(f.elements.get('scene-toggle').hidden,false);
+    assert.equal(typeof f.elements.get('scene-toggle').listeners.click,'function');
+  }
+});
+
+test('foreign choices and unlisted preview files cannot override published roulette table grants',async()=>{
+  const f=sceneFixture();f.choose(f.ids[2]);await f.run();assert.equal(f.calls[0].table.id,f.ids[0]);
+  const missing=sceneFixture();missing.choose(missing.ids[0]);missing.preview.media.tables=missing.preview.media.tables.slice(1);
+  await missing.run();assert.equal(missing.calls[0].table.id,missing.ids[1]);
+  const noAllowed=sceneFixture();noAllowed.preview.media.tables=[noAllowed.preview.media.tables[2]];await noAllowed.run();
+  assert.equal(noAllowed.calls[0].table,noAllowed.prototype);assert.equal(noAllowed.calls[0].tableMask,noAllowed.prototypeMask);
+  assert.equal(noAllowed.calls[0].settings.prototypeGeometry,true);
+});
+
+test('disabled table grants use the prototype and a different game or revision mounts no roulette media',async()=>{
+  const disabled=sceneFixture();disabled.table.enabled=false;disabled.table.default=null;disabled.table.allowed=[];
+  await disabled.run();assert.equal(disabled.calls[0].table,disabled.prototype);
+  for(const change of [f=>{f.catalog.rooms[0].game='blackjack';f.catalog.rooms[0].playUrl='/play/blackjack?operator=north&table=room-one';},f=>{f.catalog.packageRevision=8;}]){
+    const f=sceneFixture();change(f);await f.run();assert.equal(f.calls.length,0);
+    assert.match(f.elements.get('scene-status').textContent,/inte tillgängliga/);
+  }
 });

@@ -1,12 +1,12 @@
 import type { StudioProject, StudioEvent } from '../../../../lab/lib/studio-model.mjs';
 import type { VideoMetadata } from '../../../../lab/lib/video-intake.mjs';
-export type VideoEntry = {id:string;label:string;available:boolean;integrity:string;previewUrl:string;classification?:VideoMetadata;familyId?:string;duration?:number};
+export type VideoEntry = {id:string;label:string;available:boolean;integrity:string;previewUrl:string;contentType?:string;classification?:VideoMetadata;familyId?:string;duration?:number};
 export type MediaFamily = {id:string;dealerId:string;eventId:string;situation:string;playbackType:string;standardIds:string[];variantIds:string[]};
 export type VideoInventory = {videos:VideoEntry[];families?:MediaFamily[]};
 export type Room = { id:string; name:string; operatorId:string; game:string; compositionId:string; state:string; published:boolean; playable:boolean; dealerIds:string[]; dealers:{id:string;name:string}[];materialWarning?:'catalog_game_material_mismatch' };
 export type Catalog = { source:'registered'; readAt:string; administration:{ revisions:{project:string}; operators:{id:string;name:string;slug:string;status:string;archivedAt:string|null;packageRevision:number|null}[]; rooms:Room[]; dealers:{id:string;name:string;archived:boolean}[] } };
-export type ClipSlot = { id:string; eventId:string; situation:string; title:string; description:string; sourceType:StudioEvent['sourceType']; family:MediaFamily|null };
-export function clipSlots(project:StudioProject,inventory:VideoInventory,dealerId:string):ClipSlot[];
+export type ClipSlot = { id:string; eventId:string; situation:string; title:string; description:string; sourceType:StudioEvent['sourceType']; family:MediaFamily|null; game?:'roulette'; intakeOnly?:boolean; planned?:boolean; localOnly?:boolean };
+export function clipSlots(project:StudioProject,inventory:VideoInventory,dealerId:string,game?:'blackjack'|'roulette'):ClipSlot[];
 export function clipsForSlot(inventory:VideoInventory,dealerId:string,slot:ClipSlot):VideoEntry[];
 export function currentClipId(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string,inventory?:VideoInventory):string;
 export function configuredClipIds(project:StudioProject,dealerId:string,slot:ClipSlot,variantId?:string,inventory?:VideoInventory):string[];
