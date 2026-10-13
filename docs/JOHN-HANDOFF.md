@@ -1,5 +1,19 @@
 # Aktuell handoff — Scoutgaming
 
+## OpenClaw-länk och webbläsarklocka, 13 oktober 2026
+
+Efter #83 driftsatts gav både Director-provet och sajtens N1-POST HTTP 200
+med giltiga länkfält, men klienten visade anslutningsfel. Klientens övre
+tiominutersgräns jämförde Gatewayns sluttid mot webbläsarens egen klocka;
+även en liten klockskillnad kan därför avvisa en nyutfärdad länk.
+API:t skickar nu serverberäknad återstående giltighetstid. Klienten drar
+konservativt av hela anropets monotona förloppstid och kontrollerar samma
+fasta URL, fragment och tokenformat. Gateway behåller faktisk sluttid och
+engångsanvändning; N1, CSRF och serverns utgångskontroll är oförändrade.
+Rättningen kräver endast Verceldeploy, ingen ny Gateway/Director-deploy.
+Tester täcker förskjutna klientklockor samt saknad, för lång och förbrukad
+återstående tid. Verklig knappnavigering ska återprovas efter driftsättning.
+
 ## OpenClaw direkt från N1, 13 oktober 2026
 
 Kod i codex/openclaw-access. /admin/ai/models och /control/openclaw visar

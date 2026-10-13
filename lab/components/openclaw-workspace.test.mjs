@@ -14,7 +14,7 @@ function load(file, overrides = {}, globals = {}) {
   const source = readFileSync(new URL(file, import.meta.url), 'utf8');
   const output = transformSync(source, { filename: file, jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
   const module = { exports: {} };
-  vm.runInNewContext(output.code, { module, exports: module.exports, Request, AbortController, AbortSignal, URL, URLSearchParams,
+  vm.runInNewContext(output.code, { module, exports: module.exports, Request, AbortController, AbortSignal, URL, URLSearchParams, performance,
     fetch() { throw new Error('Unexpected real fetch'); }, ...globals,
     require: name => overrides[name] ?? (name.endsWith('.module.css') ? { __esModule: true, default: {} }
       : name === '../lib/openclaw-dashboard.mjs' ? dashboard : name === '../lib/lab-url.mjs' ? labUrls : require(name)) });
@@ -23,7 +23,7 @@ function load(file, overrides = {}, globals = {}) {
 const { OpenClawWorkspace } = load('./openclaw-workspace.tsx');
 const render = props => renderToStaticMarkup(React.createElement(OpenClawWorkspace, props));
 
-function harness(fetchImpl) {
+function harness(fetchImpl, globals = {}) {
   const hooks = []; const pending = []; const listeners = new Map(); const navigations=[]; let cursor = 0;
   const fakeReact = { ...React,
     useState(initial) { const index = cursor++; if (!(index in hooks)) hooks[index] = typeof initial === 'function' ? initial() : initial;
@@ -34,7 +34,7 @@ function harness(fetchImpl) {
   };
   const window = { location:{assign:value=>navigations.push(value)}, addEventListener: (type, fn) => listeners.set(type, fn),
     removeEventListener: (type, fn) => { if (listeners.get(type) === fn) listeners.delete(type); } };
-  const component = load('./openclaw-workspace.tsx', { react: fakeReact }, { fetch: fetchImpl, window }).OpenClawWorkspace;
+  const component = load('./openclaw-workspace.tsx', { react: fakeReact }, { fetch: fetchImpl, window, ...globals }).OpenClawWorkspace;
   return {
     listeners, navigations,
     render() { cursor = 0; return component({}); },
@@ -66,7 +66,7 @@ function select(h, id = 'croupier-director') {
 }
 function button(h, label) { return nodes(h.render(), node => node.type === 'button' && (node.props['aria-label'] === label || [node.props.children].flat().join('') === label))[0]; }
 function change(h, value = 'lab-provider/new', id) { select(h, id).props.onChange({ target: { value } }); view(h); }
-async function started(fetchImpl) { const h = harness(fetchImpl); view(h); await flush(); view(h); return h; }
+async function started(fetchImpl, globals) { const h = harness(fetchImpl, globals); view(h); await flush(); view(h); return h; }
 
 test('load uses same-origin no-store transport; read-only render never writes and unsupported choices stay visible', async () => {
   const calls = []; const initial = before(); initial.models = initial.models.filter(item => item.id !== 'lab-provider/old');
@@ -253,13 +253,33 @@ test('page authorizes request before rendering and never fetches project or vide
 
 test('dashboard button obtains a fresh N1 handoff before navigating and never renders the credential',async()=>{
  const bootstrapToken='a'.repeat(48),browserUrl=dashboard.OPENCLAW_DASHBOARD_URL+'#'+new URLSearchParams({bootstrapToken,bootstrapProfile:'owner',gatewayUrl:'wss://croupier-lab-director.onrender.com/openclaw'});
- let calls=0;const h=await started(async(url,init)=>{calls++;if(init.method==='GET')return reply(before());assert.equal(init.method,'POST');assert.deepEqual(JSON.parse(init.body),{version:1,action:'dashboard.open'});return reply({browserUrl,expiresAtMs:Date.now()+590000});});
+ let calls=0;const h=await started(async(url,init)=>{calls++;if(init.method==='GET')return reply(before());assert.equal(init.method,'POST');assert.deepEqual(JSON.parse(init.body),{version:1,action:'dashboard.open'});return reply({browserUrl,expiresAtMs:Date.now()+590000,remainingLifetimeMs:590000});});
  const open=nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0];
  open.props.onClick();await flush();view(h);assert.equal(calls,2);assert.deepEqual(h.navigations,[browserUrl]);assert.doesNotMatch(html(h),new RegExp(bootstrapToken));h.unmount();
 });
 test('dashboard never follows foreign or expired handoff URL and explains a missing deployed helper',async()=>{
- for(const value of [{browserUrl:'https://evil.invalid/#token=secret',expiresAtMs:Date.now()+50000},{browserUrl:dashboard.OPENCLAW_DASHBOARD_URL,expiresAtMs:0},{error:'openclaw_dashboard_unavailable'}]) {
+ for(const value of [{browserUrl:'https://evil.invalid/#token=secret',expiresAtMs:Date.now()+50000,remainingLifetimeMs:50000},{browserUrl:dashboard.OPENCLAW_DASHBOARD_URL,expiresAtMs:0,remainingLifetimeMs:0},{error:'openclaw_dashboard_unavailable'}]) {
   const h=await started(async(url,init)=>init.method==='GET'?reply(before()):reply(value,value.error?503:200));
   nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0].props.onClick();await flush();view(h);assert.equal(h.navigations.length,0);assert.match(html(h),/role="alert"/);assert.doesNotMatch(html(h),/evil.invalid|token=secret/);h.unmount();
+ }
+});
+
+test('dashboard uses server lifetime when the browser clock is ahead or behind Gateway', async () => {
+ const browserUrl=dashboard.OPENCLAW_DASHBOARD_URL+'#'+new URLSearchParams({bootstrapToken:'a'.repeat(43),bootstrapProfile:'owner',gatewayUrl:'wss://croupier-lab-director.onrender.com/openclaw'});
+ const serverNow=Date.now(),expiresAtMs=serverNow+590000;
+ for(const skew of [-300000,300000,900000]) {
+  const h=await started(async(_url,init)=>reply(init.method==='GET'?before():{browserUrl,expiresAtMs,remainingLifetimeMs:590000}),{Date:class extends Date {static now(){return serverNow+skew;}}});
+  nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0].props.onClick();
+  await flush();view(h);assert.deepEqual(h.navigations,[browserUrl]);h.unmount();
+ }
+});
+
+test('dashboard rejects missing, excessive and elapsed server lifetimes without navigating', async () => {
+ const browserUrl=dashboard.OPENCLAW_DASHBOARD_URL+'#'+new URLSearchParams({bootstrapToken:'a'.repeat(43),bootstrapProfile:'owner',gatewayUrl:'wss://croupier-lab-director.onrender.com/openclaw'});
+ for(const remainingLifetimeMs of [undefined,0,-1,600001,1.5,'590000',500]) {
+  let elapsed=0;
+  const h=await started(async(_url,init)=>{if(init.method==='GET')return reply(before());elapsed=1000;return reply({browserUrl,expiresAtMs:Date.now()+590000,remainingLifetimeMs});},{performance:{now:()=>elapsed}});
+  nodes(h.render(),n=>n.type==='button'&&String(n.props.children).includes('Öppna OpenClaws egen dashboard'))[0].props.onClick();
+  await flush();view(h);assert.equal(h.navigations.length,0);assert.match(html(h),/role="alert"/);h.unmount();
  }
 });
