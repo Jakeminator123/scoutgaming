@@ -22,6 +22,14 @@ Två tekniskt färdiga Paow-spelningar ersätter inte visuell läppsynkacceptans
 
 ## Publik Scoutguide med D-ID, 13 oktober
 
+PR #109 ersatte #105 och mergades som `7f02da34` efter verifierad livebudget
+20 USD i PR #108. Produktionsprovet gav ett korrekt Luna-textsvar men visade
+ett separat SDK 3-fel: `AgentManager.agent.idle_video` ligger direkt på
+agentprofilen, inte under `presenter`. Den felaktiga callbacken avbröt
+anslutningens uppvärmning. Läsningen är nu rättad enligt det installerade
+SDK:ns kontrakt; regressionen var först röd och passerar efter rättningen,
+inklusive byte till tal med ljud på. Ny avataracceptans krävs efter publicering.
+
 PR103 är mergad och live (`b2dda8ab`, Vercel READY och main-CI grön).
 Riktigt publikt textsvar fungerar i cookiefri produktionsvy. Första avatarprovet
 fångade en anslutningskapplöpning: ett snabbt modellsvar kunde anropa `speak`
