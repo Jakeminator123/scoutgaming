@@ -15,6 +15,7 @@ import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observat
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
+import { createChatResponseStream } from './chat-response-stream.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
 import { createDealerSpeechRuntime } from './dealer-speech-runtime.mjs';
 import { createDealerSpeechReferenceService } from './dealer-speech-reference.mjs';
@@ -1025,11 +1026,8 @@ const server = createServer(async (req, res) => {
     const controller = new AbortController();
     const stream = req.headers.accept === 'application/x-ndjson';
     const startedAt = performance.now();
-    const frame = value => {
-      if (res.destroyed || res.writableEnded) return;
-      if (!res.headersSent) res.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' });
-      res.write(JSON.stringify(value) + '\n');
-    };
+    const responseStream = createChatResponseStream(res, { signal: controller.signal, startedAt });
+    const frame = responseStream.frame;
     const disconnected = () => { if (!res.writableEnded) controller.abort(); };
     res.once('close', disconnected);
     let body = '', bytes = 0, tooLarge = false;
@@ -1153,6 +1151,7 @@ const server = createServer(async (req, res) => {
         res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify({ error: persistenceFailure(e) ? publicFailure(e).error : e?.code || String(e.message || e) }));
       } finally {
+        responseStream.close();
         if (activePlayerChats.get(memoryKey) === controller) activePlayerChats.delete(memoryKey);
         res.removeListener('close', disconnected);
       }
