@@ -29,14 +29,14 @@ run_node_tests test/room-environment.mjs
 run_node_tests packages/design-preview/admin/lib/economy-journal.test.mjs
 run_node_tests packages/design-preview/admin/lib/roulette-start-editor.test.mjs packages/design-preview/admin/lib/roulette-media-review.test.mjs packages/design-preview/admin/lib/roulette-idle-editor.test.mjs packages/design-preview/admin/lib/registered-material-library.test.mjs
 run_node_tests packages/design-preview/runtime/admin-routing.test.mjs
-run_node_tests lab/test/admin-workspace.test.mjs
+run_node_tests lab/test/admin-workspace.test.mjs packages/design-preview/admin/lib/workspace-tools.test.mjs packages/design-preview/admin/lib/resource-deletion.test.mjs
 run_node_tests packages/design-preview/admin/lib/dealer-directory.test.mjs packages/design-preview/admin/lib/dealer-chat-import.test.mjs
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
 run_node_tests test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs packages/design-preview/admin/lib/studio-context.test.mjs
 run_node_tests test/browser-runtime-bindings.mjs
 run_node_tests lab/test/dealer-material-navigation.test.mjs lab/components/dealer-forge-page.test.mjs
-run_node_tests test/backup-lab-state.mjs test/migrate-lab-state.mjs test/retention-archive.mjs
+run_node_tests test/backup-lab-state.mjs test/migrate-lab-state.mjs test/retention-archive.mjs test/studio-retirement-plan.mjs
 run_node_tests lab/test/backoffice-navigation.test.mjs lab/test/legacy-clip-policy.test.mjs lab/test/playback-trace.test.mjs
 run_node_tests lab/test/studio-access-policy.test.mjs lab/test/studio-admin-contract.test.mjs lab/test/http-guard.test.mjs
 run_node_tests test/partner-access-policy.mjs test/operator-store.mjs

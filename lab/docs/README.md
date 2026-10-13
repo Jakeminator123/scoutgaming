@@ -31,6 +31,12 @@ på stöd i importassistenten. Befintliga alpha-klipp bevaras.
 med dealern. Källfiler och publiceringshistorik bevaras. Användning av samma
 media hos en annan dealer visas som ett hinder som behöver lösas först.
 
+Den röda raden **Radering** öppnar ett beroendeträd. Där syns bolag → spel
+→ rum samt dealers och deras registrerade filer och materialets användningar.
+Delade objekt visas en gång med länkar från de platser där de används.
+Vyn redovisar vilka register och historiska kopplingar som har kunnat läsas;
+frånvaro av en synlig koppling är inte ett besked att en fil är oanvänd.
+
 **Kopplingar** visar bolag → spel → rum med dealers, bakgrunder och bord.
 **Ändra mallens kopplingar** öppnar den gemensamma mallen och visar vilka rum
 som delar den. Välj **Redigera gemensam mall** för att ändra tillåtna dealers,
@@ -220,7 +226,7 @@ Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
 Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
-**Personalens nya yta är `/admin`; äldre editorer finns på `/control`.** `/studio` är Next.js-basePath för Studio-servicen.
+**Personalens arbetsyta är `/admin` på huvuddomänen.** Dealers finns direkt i sidomenyn; Bolag & team, Rum & publicering, Talgranskning och de övriga etablerade editorerna finns under Verktyg. Gamla `/control`-länkar är kompatibilitetsingångar. `/studio` är tekniskt Next.js-basePath för samma tjänsts API:er och tillgångar; `lab/` är fortfarande aktiv källkod.
 Dess rot omdirigerar permanent till `/control/clips` och bevarar query-parametrar;
 tidigare återexporterade roten samma klippkomponent och visade därför samma innehåll.
 API och tillgångar under basePath behålls. I molnet öppnar du

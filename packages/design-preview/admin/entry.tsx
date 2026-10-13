@@ -11,6 +11,7 @@ import Clips from './app/control/(studio)/clips/page';
 import { AdminHome } from './components/studio/admin-home';
 import { DealerDirectory } from './components/studio/dealer-directory';
 import { ResourceConnections } from './components/studio/resource-connections';
+import { ResourceDeletion } from './components/studio/resource-deletion';
 import {WorkspaceTool,WorkspaceToolsHome} from './components/studio/workspace-tools';
 import {ADMIN_WORKSPACE_TOOLS} from '../../../lab/lib/admin-workspace-routes.mjs';
 
@@ -21,6 +22,7 @@ const pages: Record<string, string> = {
   ...Object.fromEntries(Object.entries(ADMIN_WORKSPACE_TOOLS).map(([key,label])=>['/admin/'+key,label])),
   '/admin': 'Översikt',
   '/admin/structure': 'Kopplingar',
+  '/admin/deletion': 'Radering',
   '/admin/dealers': 'Dealers',
   '/admin/tools': 'Verktyg',
   '/admin/clips': 'Klippkarta',
@@ -66,8 +68,9 @@ function App() {
       {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
       {path==='/admin'&&!studio&&<AdminHome />}
       {path==='/admin/tools'&&<WorkspaceToolsHome/>}
+      {path==='/admin/deletion'&&<ResourceDeletion/>}
       {workspaceTool&&<WorkspaceTool section={workspaceTool}/>}
-      {!workspaceTool&&!studio && path!=='/admin/tools' && path!=='/admin' && path!=='/admin/dealers' && path!=='/admin/ai/chat' && path!=='/admin/assets' && !servicePaths.has(path) && (path==='/admin/structure' ? <ResourceConnections /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty||importBusy} onChanged={materialChanged}/>)}
+      {!workspaceTool&&!studio && path!=='/admin/deletion' && path!=='/admin/tools' && path!=='/admin' && path!=='/admin/dealers' && path!=='/admin/ai/chat' && path!=='/admin/assets' && !servicePaths.has(path) && (path==='/admin/structure' ? <ResourceConnections /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty||importBusy} onChanged={materialChanged}/>)}
     </main>
   </div>;
 }
