@@ -22,9 +22,16 @@ QA-fixtur, syntetiska register och riktiga byggda UI/API-moduler. Den är
 tydligt märkt som testdata och hålls öppen medan Jakob granskar riktningen.
 Designbygge och typkontroller passerar; riktade isolerade prov omfattar
 exakta klippval med native selector, kategori-/medieskydd och talförberedelse.
-Den nya samlade browserregressionen återstår. Den fulla commit-hooken körs
-vid WIP-säkringen och nya kategori-/policy-/taltester ingår där.
-Leveransen är en draft för kontinuitet, inte godkänd produktdesign.
+Den nya samlade browserregressionen återstår. Fullhooken på källcommit
+`8dd6ed7a35cdc08f5fed675ead42524b9ff2eefc` passerar: 3 037 godkända,
+11 villkorade skips, 0 fel. Studio-produktionsbygge och byggspårskontroll
+passerar. Nya kategori-/policy-/taltester ingår i ordinarie hook.
+Källcommitten är pushad och remote-verifierad i draft-PR #55
+(`codex/studio-workspace` → `main`). PR:n har mergekonflikter mot aktuell
+main; ingen konfliktlösning eller merge har gjorts vid denna WIP-säkring.
+En privat hashverifierad återställningsbackup och Git-bundle finns utanför
+Git, med exakta vägar i chatten. Leveransen är för kontinuitet,
+inte godkänd produktdesign.
 Inget har mergats, publicerats eller skrivits i produktionsdata.
 Inga betalda genereringsjobb eller mediebytesändringar har gjorts.
 
