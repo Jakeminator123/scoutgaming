@@ -9,7 +9,7 @@ import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, 
 import { readIdleVideoDuration } from '../../../../../lab/lib/idle-video-duration.mjs';
 import type { StudioProject } from '../../../../../lab/lib/studio-model.mjs';
 import { replaceContext } from '../../../runtime/navigation';
-import {isInternalAdminPathname} from '../../../runtime/admin-routing.mjs';
+import {isInternalAdminPathname,isStudioAdminRoute} from '../../../runtime/admin-routing.mjs';
 import { groupSlots, affectedRooms, slotCaption } from '../../lib/studio-layout.mjs';
 import { StudioSpeechPanel } from './studio-speech-panel';
 import { StudioLifecyclePanel } from './studio-lifecycle-panel';
@@ -51,7 +51,8 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   const [dealerId, setDealerId] = useState(() => new URLSearchParams(location.search).get('dealer') ?? '');
   const [category, setCategory] = useState('all');
   const [game, setGame] = useState<'blackjack'|'roulette'>(()=>new URLSearchParams(location.search).get('game')==='roulette'?'roulette':'blackjack');
-  const [panel, setPanel] = useState<'room'|'dealer'|'layers'|'policy'|null>(null);
+  const [panel, setPanel] = useState<'room'|'dealer'|'layers'|'policy'|null>(()=>new URLSearchParams(location.search).get('panel')==='layers'?'layers':null);
+  const [speechDealer,setSpeechDealer]=useState('');
   const [settingsSlot, setSettingsSlot] = useState<ClipSlot|null>(null);
   const [selected, setSelected] = useState<Record<string,string>>({});
   const [variants, setVariants] = useState<Record<string,string>>({});
@@ -74,8 +75,10 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   useEffect(()=>{if(base)onRevisionChange?.(base.revision);},[base?.revision,onRevisionChange]);
   const registry = data?.catalog.administration;
   const requestedRoom=registry?.rooms.find(row=>row.id===roomId&&(!operatorId||row.operatorId===operatorId));
-  const resolved=data?studioContext(data.catalog,data.project,{operatorId,game:requestedRoom?.game??game,roomId,dealerId}):null;
+  const resolved=data?studioContext(data.catalog,data.project,{operatorId,game:requestedRoom?.game??game,roomId,dealerId,library:true}):null;
   const {operator,room,lane,dealer}=resolved??{};
+  // A suggested voice must not create a dirty form before the user opens it.
+  useEffect(()=>{if(panel==='room'&&dealer)setSpeechDealer(dealer.id);},[panel,dealer?.id]);
   const roomChoices = roomChoicesPath(operator,room);
   const rooms=resolved?.rooms??[],dealers=resolved?.dealers??[];
   useEffect(()=>{if(room&&['blackjack','roulette'].includes(room.game))setGame(room.game as 'blackjack'|'roulette');},[room?.id,room?.game]);
@@ -113,7 +116,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   useEffect(()=>{if(!localReference){setReferenceUrl('');return;}const url=URL.createObjectURL(localReference.file);setReferenceUrl(url);return()=>URL.revokeObjectURL(url);},[localReference]);
   useEffect(() => { if (pending && uploadDialog.current && !uploadDialog.current.open) uploadDialog.current.showModal(); }, [pending]);
   useEffect(() => {
-    if (!data || !dealer) return;
+    if (!data || !dealer || !isStudioAdminRoute(location.pathname,location.search) || new URLSearchParams(location.search).get('tool')==='import') return;
     const query = new URLSearchParams(location.search);
     ['operator','table','composition','dealer','game'].forEach(key => query.delete(key)); query.delete('lane');
     context.forEach((value,key) => query.set(key,value));
@@ -127,6 +130,8 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
       if (target) {
         const url=new URL(target,location.origin);
         if(url.origin===location.origin&&isInternalAdminPathname(url.pathname)) {
+          // Dealer registration/import does not select a room's permitted dealer.
+          if(!isStudioAdminRoute(url.pathname,url.search)||url.searchParams.get('tool')==='import')return;
           const query=url.searchParams;
           if(registry&&['operator','table','dealer','game'].some(key=>query.has(key))) {
             const requestedRoom=registry.rooms.find(row=>row.id===query.get('table'));
@@ -140,6 +145,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
               if(!changeContext(()=>{setOperatorId(nextOperator);setRoomId(nextRoom);setDealerId(nextDealer);setGame(nextGame);})){event.preventDefault();return;}
             }
           }
+          if(query.get('panel')==='layers')setPanel('layers');
           return;
         }
       }
@@ -250,6 +256,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
       {error&&<p role="alert" className="studio-error">{error} {!data&&<button className="studio-button" onClick={()=>{void load();}}>Försök igen</button>} {revisionConflict&&<button className="studio-button" disabled={locked||!authorized} onClick={()=>{void compareRevision();}}>Jämför senaste revision</button>} {data&&!authorized&&<><a href={'/control/login?returnTo='+encodeURIComponent(location.pathname+location.search)} target="_blank" rel="noopener">Logga in i ny flik</a><button className="studio-button" disabled={locked} onClick={()=>{void compareRevision();}}>Återanslut och behåll utkast</button></>}</p>}
       {conflictPaths.length>0&&<div className="studio-error" role="alert"><p>Samtidiga ändringar: {conflictPaths.join(', ')}. Ditt utkast är kvar; sparande är spärrat tills du väljer.</p><button className="studio-button" onClick={()=>setConflictPaths([])}>Behåll mitt utkast för dessa fält</button></div>}
       {data&&!dealer&&<p role="alert" className="studio-error">Rummet saknar en aktiv dealer i sin sparade sammansättning. Ingen annan dealer har valts automatiskt.</p>}
+      {dealer&&!lane?.layers.dealer.allowed.includes(dealer.id)&&<p role="note">Du redigerar {dealer.label}s klippbank. Dealern är ännu inte kopplad till det valda rummet. Lägg till kopplingen under <a href="/admin/structure">Kopplingar</a> när materialet är klart.</p>}
       {room?.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Materialet har en annan katalogtagg; granska rummets bord och spel före nästa publicering.</p>}
     </header>
     <div className="studio-canvas-toolbar"><h1>KLIPPVIDEOS <span>{cardGroups.length} kort · {slots.length} fack</span></h1><div><button className="studio-button" disabled={locked} onClick={()=>togglePanel('dealer')}><Users size={13}/>Dealer</button><button className="studio-button" disabled={locked||game==='roulette'} title={game==='roulette'?'Separat roulette-talset återstår':undefined} onClick={()=>togglePanel('room')}><Volume2 size={13}/>Röst & tal</button><button className="studio-button" disabled={locked} onClick={()=>togglePanel('layers')}><Layers size={13}/>Gemensam mall</button><button className="studio-icon-button" title="Återställ kortlayout" aria-label="Återställ kortlayout" onClick={()=>{setPositions({});void setViewport({x:24,y:24,zoom:canvasWidth<610?1:.9},{duration:250});}}><RotateCcw size={14}/></button></div></div>
@@ -261,7 +268,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     </div>}
     {reviewSave&&<div className="studio-review-backdrop"><section role="dialog" aria-modal="true" aria-labelledby="studio-save-review" className="studio-review"><h2 id="studio-save-review">Berörda användningar</h2><p>Ändringarna sparas som utkast. Publicerade versioner behålls.</p><ul>{changedRooms.length?changedRooms.map(row=><li key={row.id}>{registry?.operators.find(op=>op.id===row.operatorId)?.name} · {row.name} · {row.game}{row.published?' · publicerad':''}</li>):<li>Inga registrerade rum använder det ändrade materialet.</li>}</ul><div><button className="studio-button studio-save" disabled={locked||loading||!authorized||conflictPaths.length>0||configDirty} onClick={()=>{void save().then(()=>setReviewSave(false));}}>Bekräfta sparande</button><button className="studio-button" disabled={busy} onClick={()=>setReviewSave(false)}>Tillbaka</button></div></section></div>}
     {data&&dealer&&<aside hidden={!panel} className="studio-drawer" aria-label="Kontextpanel"><header><h2>{panel==='room'?'Röst & tal':panel==='dealer'?'Dealer & användning':panel==='layers'?'Gemensam sammansättningsmall':settingsSlot?slotCaption(settingsSlot):'Klippinställningar'}</h2><button className="studio-button" disabled={locked} onClick={()=>setPanel(null)}>Stäng</button></header>
-      <div hidden={panel!=='room'||game==='roulette'}>{game!=='roulette'&&<StudioSpeechPanel game={game} project={data.project} inventory={data.inventory} dealerId={dealer.id} blocked={busy || loading || !authorized} projectDirty={dirty} onEdit={edit} onBusyChange={childOperation} onDirtyChange={setConfigDirty}/>}</div>
+      <div hidden={panel!=='room'||game==='roulette'}>{game!=='roulette'&&(panel==='room'||speechDealer===dealer.id)&&<StudioSpeechPanel game={game} project={data.project} inventory={data.inventory} dealerId={dealer.id} blocked={busy || loading || !authorized} projectDirty={dirty} onEdit={edit} onBusyChange={childOperation} onDirtyChange={setConfigDirty}/>}</div>
       {panel==='dealer'&&<><div className="studio-dealer-summary"><DealerIdentityPortrait dealer={dealer} className="h-16 w-16 shrink-0"/><div><strong>{dealer.label}</strong><small>Identitet: {dealer.id}</small><p>{impacts.length} rum använder dealern / sammansättningen</p></div></div><StudioLifecyclePanel project={data.project} inventory={data.inventory} catalog={data.catalog} dealerId={dealer.id} blocked={busy || loading || !authorized || dirty} editBlocked={busy || loading || !authorized || Boolean(pending)} onEdit={edit} onReload={load} onBusyChange={childOperation}/></>}
       {panel==='policy'&&settingsSlot&&<StudioPolicyPanel project={data.project} inventory={data.inventory} dealerId={dealer.id} slot={settingsSlot} blocked={busy || loading || !authorized} onEdit={edit} onBusyChange={childOperation}/>}
       {panel==='layers'&&<StudioCompositionPanel localReferenceUrl={localVilaUrl} uses={compositionUses(data.catalog,lane?.id)} roomChoicesPath={roomChoices} project={data.project} inventory={data.inventory} dealerId={dealer.id} room={room} blocked={busy || loading || !authorized} projectDirty={dirty||configDirty||Boolean(pending)||revisionConflict} onSaved={remote=>{setBase(structuredClone(remote));setData(current=>current&&({...current,project:remote}));setMaterialReload(true);}} onEdit={edit} onBusyChange={childOperation} onRegistered={(remote,id,role)=>{try{if(!base||!lane)throw Error('Sammansättningen saknas. Filen är registrerad; utkastet är kvar.');const result=registerCompositionLayer(base,data.project,remote,{id,role,laneId:lane.id});setBase(structuredClone(remote));setData(current=>current&&({...current,project:result.project}));setConflictPaths(result.conflicts);if(result.conflicts.length)setError('Filen är registrerad. Dessa utkastfält behöver granskas: '+result.conflicts.join(', '));else setNotice('Lagret är registrerat och valt i utkastet.');}catch(cause){setError((cause as Error).message);}}}/>}

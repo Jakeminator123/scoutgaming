@@ -27,6 +27,8 @@ run_node_tests lab/test/dealer-import.test.mjs lab/test/dealer-import-integratio
 run_node_tests test/room-environment.mjs
 run_node_tests packages/design-preview/admin/lib/economy-journal.test.mjs
 run_node_tests packages/design-preview/runtime/admin-routing.test.mjs
+run_node_tests lab/test/admin-workspace.test.mjs
+run_node_tests packages/design-preview/admin/lib/dealer-directory.test.mjs packages/design-preview/admin/lib/dealer-chat-import.test.mjs
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
 run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs
 run_node_tests test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs packages/design-preview/admin/lib/studio-context.test.mjs

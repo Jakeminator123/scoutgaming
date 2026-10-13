@@ -51,9 +51,9 @@ export function createSpeechJournalLease({ journal, resource, holderId = `speech
 // idempotence, cost policy, reservations and terminal receipts move to SQL.
 // No disk inspection, budget seed, refund, provider retry or queue purge.
 export function createJournalSpeechSessionManager(configuration, {
-  journal, leaseManager, workerState, stopWorker = () => {}, fetchImpl = fetch, now = Date.now,
-  sleep = (ms, signal) => pause(ms, undefined, { signal }), readyTimeoutMs = 90000,
-  pollMs = 500, idleTimeoutMs = 60000, policy, reserveMicroUsd, dailyBudgetMicroUsd,
+  journal, leaseManager, workerState, stopWorker = () => {}, fetchImpl = fetch, now = Date.now, policy,
+  sleep = (ms, signal) => pause(ms, undefined, { signal }), readyTimeoutMs = policy.admissionWindowMs,
+  pollMs = 500, idleTimeoutMs = 60000, reserveMicroUsd, dailyBudgetMicroUsd,
 }) {
   requireSpeechJournal(journal);
   const ownership = leaseManager ?? createSpeechJournalLease({ journal, resource: 'stream-session' });
@@ -190,7 +190,7 @@ export function createJournalSpeechSessionManager(configuration, {
       if (terminal.has(status) && observed.workers === 0 && observed.busy === 0 && observed.available === 0) {
         await journal.confirmWorkerDrained({ sessionId: job.sessionId, lease: await ownership.get(), proof: observed }); return;
       }
-      if (now() - started >= readyTimeoutMs) fail('generated_speech_session_stop_timeout', 504);
+      if (now() - started >= Math.min(readyTimeoutMs, 90000)) fail('generated_speech_session_stop_timeout', 504);
       await sleep(pollMs, signal);
     }
   }

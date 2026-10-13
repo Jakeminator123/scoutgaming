@@ -61,6 +61,52 @@ async function fixture(t, { stamp = Date.parse('2026-10-03T23:59:00Z'), submit, 
     setTime:value => { time = value; }, getTime:() => time, busy:value => { busy = value; } };
 }
 
+test('journal admission accepts a 135-second owned avatar startup with one reservation', async t => {
+  const f=await fixture(t),started=f.getTime();let allowConnection=true;
+  const manager=f.manager({readyTimeoutMs:undefined,
+    workerState:()=>{const ready=allowConnection&&f.getTime()-started>=135000;return {workers:Number(ready),busy:0,available:Number(ready)};}});
+  const ready=await manager.ensure({beforeCostly:async()=>{},avatar:dealerAvatar()});
+  assert.equal(ready.ready,true);assert.equal(ready.binding.dealerId,'paow');
+  assert.equal(f.getTime()-started,135000);assert.equal(f.starts(),1);
+  assert.equal(f.calls.filter(call=>call.url.includes('/cancel/')).length,0);
+  const submitted=JSON.parse(f.calls.find(call=>call.url.endsWith('/run')).init.body);
+  assert.equal(submitted.input.ttl,540);assert.equal(submitted.policy.executionTimeout,600000);
+  allowConnection=false;
+});
+
+test('journal cold-start deadline stays bounded and reserves no replacement job', async t => {
+  const f=await fixture(t),started=f.getTime();
+  const manager=f.manager({readyTimeoutMs:undefined,workerState:()=>({workers:0,busy:0,available:0})});
+  await assert.rejects(manager.ensure({beforeCostly:async()=>{},avatar:dealerAvatar()}),{code:'generated_speech_session_start_timeout'});
+  assert.equal(f.getTime()-started,SPEECH_SESSION_POLICY.admissionWindowMs);
+  assert.equal(f.starts(),1);assert.equal(f.calls.filter(call=>call.url.includes('/cancel/')).length,1);
+});
+
+test('disconnect after 90 seconds still cancels cold preparation immediately', async t => {
+  const f=await fixture(t),started=f.getTime(),controller=new AbortController();
+  const manager=f.manager({readyTimeoutMs:undefined,workerState:()=>({workers:0,busy:0,available:0}),
+    sleep:async ms=>{f.setTime(f.getTime()+ms);if(f.getTime()-started>=100000)controller.abort();}});
+  await assert.rejects(manager.ensure({beforeCostly:async()=>{},signal:controller.signal,avatar:dealerAvatar()}),{code:'generated_speech_session_cancelled'});
+  assert.equal(f.getTime()-started,100000);assert.equal(f.starts(),1);
+  assert.equal(f.calls.filter(call=>call.url.includes('/cancel/')).length,1);
+});
+
+test('longer startup allowance does not extend retirement of a lingering old dealer', async t => {
+  const durations=[];
+  for(const readyTimeoutMs of [90000,undefined]){
+    const f=await fixture(t),started=f.getTime();let lingering=true;
+    const manager=f.manager({readyTimeoutMs,workerState:()=>{
+      const connected=lingering&&f.starts()>0;return {workers:Number(connected),busy:0,available:Number(connected)};
+    }});
+    await manager.ensure({beforeCostly:async()=>{},avatar:dealerAvatar()});
+    try {
+      await assert.rejects(manager.ensure({beforeCostly:async()=>{},avatar:dealerAvatar('dragge')}),{code:'generated_speech_session_stop_timeout'});
+      durations.push(f.getTime()-started);assert.equal(f.starts(),1);
+    } finally { lingering=false; }
+  }
+  assert.deepEqual(durations,[135000,135000]); // Existing 45 s drain + 90 s retirement.
+});
+
 test('Neon opt-in without journal fails before disk, relay or provider; no policy auto bootstrap', async t => {
   const f = await fixture(t, { initialPolicy:false }); let relay = 0;
   assert.throws(() => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journalRequired:true }), { code:'generated_speech_journal_unavailable' });

@@ -1,4 +1,15 @@
 /* Reused Studio modules inherit the Admin palette, without the legacy page shell. */
+.admin-workspace-tool{min-width:0;flex:1;--sg-accent:var(--sg-lime);--sg-radius:10px}
+.preview-admin .admin-workspace-tool .sg-page{display:block;padding:24px;max-width:1600px;margin:auto}
+.admin-workspace-tool .sg-page-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;margin-bottom:24px}
+.admin-workspace-tool h1{font-size:26px;line-height:1.25;font-weight:600}.admin-workspace-tool h2{font-size:18px;font-weight:600}
+.admin-workspace-tool .sg-eyebrow,.admin-workspace-tool .sg-intro{color:var(--sg-muted);font-size:13px;margin:8px 0}
+.admin-workspace-tool .sg-page-body{display:flex;flex-direction:column;gap:20px}.admin-workspace-tool .sg-page-actions,.admin-workspace-tool .sg-tabs,.admin-workspace-tool .sg-chip-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.admin-workspace-tool .sg-btn,.admin-workspace-tool .sg-chip{padding:9px 14px;border:1px solid var(--sg-border);border-radius:8px;background:var(--sg-surface)}
+.admin-workspace-tool .sg-btn-primary{color:#162000;background:var(--sg-lime)}.admin-workspace-tool .sg-btn:disabled{opacity:.5}
+.admin-workspace-tool .sg-error{color:#ffa99d}.admin-workspace-tool .sg-notice{color:var(--sg-lime)}
+.preview-admin .admin-workspace-tool input:is([type="checkbox"],[type="radio"]){display:inline-block;width:16px;height:16px;min-height:0;padding:0;margin:0 6px 0 0;vertical-align:middle;accent-color:var(--sg-lime)}
+@media(max-width:700px){.preview-admin .admin-workspace-tool .sg-page{padding:16px}.admin-workspace-tool .sg-page-head{gap:10px}}
 .preview-admin {
   color-scheme: dark;
   --sg-bg: #1b1c1e;
@@ -125,7 +136,6 @@
 .dealer-import-drop > strong { font-size: 14px; }
 .dealer-import-drop p { color: #aab2ae; font-size: 12px; }
 .dealer-import .dealer-import-file-button { position: relative; overflow: hidden; min-width: 130px; margin-top: 5px; background: #303a31; border-color: #65725d; cursor: pointer; }
-.dealer-import-file-button input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
 .dealer-import-file-button:focus-within { outline: 2px solid #c5f331; outline-offset: 3px; }
 .dealer-import-help { margin: 10px 0 16px; color: #a7afac; font-size: 12px !important; }
 .dealer-import-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }

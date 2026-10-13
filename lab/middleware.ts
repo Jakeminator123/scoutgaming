@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
   if (process.env.CROUPIER_VERCEL_UNIFIED_UI !== '1') return NextResponse.next();
   const config = platformConfiguration();
   if (!config?.unifiedUi) return new NextResponse(null, { status: 503 });
-  const route = platformRoute(new URL(request.url), config);
+  const route = platformRoute(new URL(request.url), config, request);
   if (route.kind === 'reject') return new NextResponse(null, { status: 400 });
   if (route.kind === 'frontend' || route.kind === 'socket') return new NextResponse(null, { status: 404 });
   if (route.kind === 'redirect') return NextResponse.redirect(route.destination, 307);

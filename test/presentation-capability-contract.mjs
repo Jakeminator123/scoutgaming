@@ -10,7 +10,7 @@ const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const invalid = error => error.code === 'presentation_capability_invalid' && error.statusCode === 503;
 const unsupported = error => error.code === 'presentation_capability_version_unsupported' && error.statusCode === 406;
 
-test('negotiation preserves default v2 and opts into v3-v11 only with one exact supported header', () => {
+test('negotiation preserves default v2 and opts into v3-v15 only with one exact supported header', () => {
   assert.equal(PRESENTATION_CAPABILITY_VERSION_HEADER, 'X-Presentation-Capability-Version');
   assert.equal(PRESENTATION_CAPABILITY_DEFAULT_VERSION, 2);
   for (const absent of [undefined, null]) assert.equal(negotiatePresentationCapabilityVersion(absent), 2);

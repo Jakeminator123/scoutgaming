@@ -42,6 +42,15 @@ test('v15 combines roulette with retained categories while v14 advertises only t
   assert.equal(Object.hasOwn(previous,'rouletteStart'),false);
 });
 
+test('v14 advertises retained dealer categories without changing v13',async()=>{
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'14'}}));
+  assert.equal(response.status,200);
+  const value=validatePresentationCapabilities(await response.json(),{expectedVersion:14});
+  assert.equal(value.dealerCategoryTrash,'retained-categories-v1');
+  const previous=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'13'}})).json();
+  assert.equal(Object.hasOwn(previous,'dealerCategoryTrash'),false);
+});
+
 test('v13 advertises immutable game-specific tables without changing v12',async()=>{
   const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'13'}}));
   const value=validatePresentationCapabilities(await response.json(),{expectedVersion:13});

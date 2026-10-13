@@ -33,6 +33,9 @@ Spelaren jämför avkodad duration med profilen (högst 100 ms avvikelse),
 spelar klippet en gång och låter videons tid styra rotorstart och kulsläpp.
 En saknad/trasig startfilm lämnar idle och MP4 användbara. Rätt valt bord
 måste matcha; ett annat bord får aldrig ärva handkalibreringen.
+Admin kan fortfarande koppla idle-korten; ett användargränssnitt för att
+redigera startfilmens bordsprofil och cue-tider återstår. `rouletteStart`
+är nu ett validerat spar-/publiceringskontrakt, inte en färdig tidseditor.
 
 Runtime v1–14 behåller mains exakta kontrakt; v14 gäller kategoripapperskorg.
 **Både rouletteIdle och rouletteStart kräver v15**, med separata featuregrindar.
@@ -46,7 +49,7 @@ saldo 500 → 495 → 500 USD, isolerad SQLite, oförändrad MP4. Privata bevis:
 `anna-start-evidence.json`. Föregående varierade stopp-prov gav 31 svart → 0 grön.
 Landskapsvyn fyller fönstret med spelkontroller under bordet och erbjuder
 helskärm under Mer. Vid 1440×900 är dokumenthöjden 900 utan scroll.
-32 fokuserade spel-/renderingstester passerade; full leveranskontroll redovisas
+33 fokuserade spel-/renderingstester passerade; full leveranskontroll redovisas
 i handoff. Dessa tekniska prov ersätter inte gestens visuella godkännande.
 
 ## Vad banken ska innehålla

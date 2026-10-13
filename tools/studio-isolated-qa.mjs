@@ -41,7 +41,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'ops/neon-studio/migrations.mjs', 'web/storage/operator-store.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
       'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'web/storage/studio-media-storage.mjs', 'lab/lib/media-file-types.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs', 'web/storage/studio-runtime.mjs',
       'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
-      'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
+      'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
       'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
       'lab/lib/studio-admin-readouts.mjs', 'lab/lib/studio-voice-lines.mjs', 'lab/lib/studio-access-policy.mjs', 'lab/lib/studio-admin-contract.mjs',
       'lab/lib/voice-preview.mjs', 'lab/lib/media-blob-index.mjs', 'web/shoe-game.mjs', 'web/email-templates.mjs', 'web/public/speech-lines.mjs',

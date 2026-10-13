@@ -2,6 +2,42 @@
 
 Produktmodell och ord har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
+**Admin är den samlade interna arbetsytan på huvuddomänen.** Menyn **Verktyg**
+samlar Bolag & team, Rum & publicering, Sammansättningar, Dealerinställningar,
+Klippbibliotek, Svarsbibliotek, Materialinställningar, Provspelning, regler,
+dealerns agent och Guide. Gamla `/control`-länkar leder till motsvarande Admin-vy
+med dealer och rum kvar. Sparade uppgifter och behörigheter är desamma.
+`lab/` är fortfarande källkoden för Studio och dessa funktioner, och `/studio`
+är den tekniska API-monteringen. Det är ingen separat produkt att flytta data från.
+
+I `/admin` finns **Dealers** som egen menyrad. Välj **Skapa dealer**, ange namn
+och **Skapa och spara**. **Ladda upp klipp** öppnar importassistenten med rätt
+dealer vald, även när personen ännu inte är kopplad till något rum. Välj eller
+dra in upp till 30 filmer, välj bakgrund för hela omgången och **Sortera klippen**.
+Granska facken och välj **OK – placera klippen**. Fel visas med filnamn.
+En tidigare lokal import behålls tills du uttryckligen väljer att byta dealer.
+
+I **Adminroboten** kan du dra in samma filmer direkt i chatten, välja dealer och
+bakgrund och **Sortera och placera**. Det är själva importuppdraget; inga extra
+godkännanderutor tillkommer. Oklara fack visas i chatten för rättning innan
+uppladdningen börjar. MP4 och WebM stöds, högst 128 MiB per fil. Zip behövs inte
+och stöds inte i denna version. Filerna sparas som alternativ i klippbanken;
+provspelning och publicering görs separat. Transparenta klipp väntar fortfarande
+på stöd i importassistenten. Befintliga alpha-klipp bevaras.
+
+**Ta bort** visar berörda klipp, sammansättningar, rum och bolag före
+**Flytta till papperskorgen**. Återställning finns under **Papperskorg** och
+återöppnar inte rum. Klippkategorier följer med till papperskorgen och återställs
+med dealern. Källfiler och publiceringshistorik bevaras. Användning av samma
+media hos en annan dealer visas som ett hinder som behöver lösas först.
+
+**Kopplingar** visar bolag → spel → rum med dealers, bakgrunder och bord.
+**Ändra mallens kopplingar** öppnar den gemensamma mallen och visar vilka rum
+som delar den. Välj **Redigera gemensam mall** för att ändra tillåtna dealers,
+förvald dealer, bord och bakgrunder, och granska **Spara utkast**. Publicering
+är ett separat steg. **Ändra bara rummets val** använder befintlig rumsbunden
+redigering för publicerade rum. Bolaget äger rummet; biblioteksfilerna kan delas.
+
 Roulette: öppna `/admin/clips`, välj spelbolag, Roulette, rum och dealer.
 De flyttbara korten visar VILA, idle, insatser, hjulstart, utfall och resultat.
 Endast befintliga videofack kan laddas upp; planerade fack är märkta och

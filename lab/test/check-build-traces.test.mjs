@@ -1,9 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm,symlink} from 'node:fs/promises';
-import {join} from 'node:path';
+import {join,relative,dirname} from 'node:path';
 import {tmpdir} from 'node:os';
 import {checkBuildTraces,privateBuildSource,dealerAuthoringBuildSource} from '../tools/check-build-traces.mjs';
+
+test('managed worktree parent does not erase application traces; private project and external files stay excluded',async()=>{
+  const temporary=await mkdtemp(join(tmpdir(),'studio-worktree-trace-'));
+  const repositoryRoot=join(temporary,'.codex','worktrees','task','repo');
+  const directory=join(repositoryRoot,'lab','.next'),file=join(directory,'server','route.js.nft.json');
+  try {
+    await mkdir(dirname(file),{recursive:true});
+    const paths=['lab/lib/studio-model.mjs','ops/neon-game/product-schema.sql','media/blob-index.json',
+      '.codex/private.json','.env.local','lab/data/qa.json','web/data/state.db','media/dealers/test/source.mp4'];
+    const files=paths.map(path=>relative(dirname(file),join(repositoryRoot,path)));
+    files.push(relative(dirname(file),join(temporary,'.codex','external-private.json')));
+    await writeFile(file,JSON.stringify({version:1,files}));
+    await assert.rejects(checkBuildTraces({directory,repositoryRoot}),/private_state/);
+    assert.deepEqual(await checkBuildTraces({directory,repositoryRoot,sanitize:true}),{checked:1,removed:6});
+    assert.deepEqual(JSON.parse(await readFile(file,'utf8')).files,files.slice(0,3));
+  }finally{await rm(temporary,{recursive:true,force:true});}
+});
 test('traced private credentials, local identities and QA state are forbidden on both path styles',()=>{
   for(const path of ['/app/.env','C:\\app\\lab\\.env.local','/app/lab/data/platform-private/production-neon.json','/app/web/data/craig.db','/app/agent-talk/state.json','/app/random/private-notes.md','C:\\app\\random\\notes.txt']) assert.equal(privateBuildSource(path),true);
   for(const path of ['/app/ops/neon-game/product-schema.sql','/app/media/blob-index.json','/app/open-claw/lab/deploy/runtime-bundle/roles/croupier-speech.md']) assert.equal(privateBuildSource(path),false);

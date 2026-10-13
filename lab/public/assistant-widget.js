@@ -19,6 +19,7 @@
     [hidden]{display:none!important}dialog{background:#14232b;color:inherit;border:1px solid #637883;border-radius:14px;width:min(590px,calc(100vw - 24px));max-height:88dvh;padding:20px}dialog::backdrop{background:#000a}dialog h3{font-size:18px;margin-top:0}.impact{white-space:pre-wrap;overflow-wrap:anywhere;max-height:30vh;overflow:auto;background:#0b171e;padding:12px;border-radius:8px}.accept{display:flex;gap:8px;margin:12px 0}.accept input{width:auto}.danger{background:#ae3333;border-color:#f19c92}
     @media(max-width:500px){:host{bottom:10px;right:10px}.launch span:last-child{font-size:12px}}@media(prefers-reduced-motion:no-preference){.robot{transition:transform .2s}.launch:hover .robot{transform:rotate(-12deg)}}
   </style>
+  <style>.file-import{border-top:1px solid #45565d;padding-top:8px}.file-import p{margin:5px 0}.file-import label{display:block}.file-import select{width:100%;max-width:100%;background:#101b22;color:#eef3f5}.file-list{max-height:150px;overflow:auto}.file-list>div{display:grid;gap:4px;padding:8px 0;border-bottom:1px solid #45565d;overflow-wrap:anywhere}.file-list button{font-size:11px;padding:3px}.file-note{font-size:11px;color:#afc0c6}.panel form{flex-shrink:1;min-height:0;overflow:auto}.status{flex-shrink:0}</style>
   <button class="launch" aria-label="Öppna Adminroboten"><span class="robot" aria-hidden="true">⌘</span><span>Adminroboten</span></button>
   <section class="panel" hidden aria-labelledby="assistant-title"><header><span class="robot" aria-hidden="true">⌘</span><div><h2 id="assistant-title">Adminroboten</h2></div><button class="close" aria-label="Minimera chatten">−</button></header>
     <nav><label>Välj hjälp<select><option value="help">Scoutguiden · hjälp på sajten</option></select></label></nav>
@@ -31,17 +32,17 @@
   document.body.append(host);
   const $ = selector => root.querySelector(selector);
   const panel=$('.panel'),launch=$('.launch'),messages=$('.messages'),input=$('textarea'),select=$('select'),dialog=$('dialog');
-  let access='none',identity=null,mode='admin',busy=false,abort=null,review=null,history=[],opened=false,accessCheck=0;
+  let access='none',identity=null,mode='admin',busy=false,abort=null,review=null,history=[],opened=false,accessCheck=0,clipImport=null;
   const title=()=>mode==='help'?'Scoutguiden':mode==='openclaw'?'Adminroboten · OpenClaw':'Adminroboten';
   function status(value){$('.status').textContent=value;}
-  function reset(){history=[];messages.replaceChildren();review=null;if(dialog.open)dialog.close();}
+  function reset(){clipImport?.reset();history=[];messages.replaceChildren();review=null;if(dialog.open)dialog.close();}
   function renderMode(){
     $('#assistant-title').textContent=title();launch.querySelector('span:last-child').textContent=access==='n1'?'Adminroboten':'Scoutguiden';
     launch.setAttribute('aria-label','Öppna '+(access==='n1'?'Adminroboten':'Scoutguiden'));
     $('.intro').textContent=mode==='help'?'Snabb hjälp med sajten.'
       :mode==='openclaw'?'Gateway och agentmodeller.'
-      :'Läs, hitta och ändra. Du granskar innan något sparas.';
-    $('.links').hidden=access!=='n1';
+      :'Dra in filmer och skicka för att sortera och placera. Borttagning visar konsekvenserna först.';
+    $('.links').hidden=access!=='n1';void clipImport?.refresh();
   }
   function working(value){busy=value;$('.send').disabled=value;$('.reset').disabled=value;select.disabled=value;input.disabled=value;}
   const actionLabels={'dealer.create':'Skapa dealer','dealer.archive':'Arkivera dealer','dealer.restore':'Återställ dealer','dealer.delete':'Radera dealer permanent','material.archive':'Arkivera material','material.restore':'Återställ material','media.rename':'Byt klippets namn','media.archive':'Arkivera klipp','media.restore':'Återställ klipp','media.delete':'Radera klipp permanent','company.archive':'Arkivera bolag','company.restore':'Återställ bolag','room.archive':'Arkivera rum','room.restore':'Återställ rum','room.pause':'Stäng rum','room.open':'Öppna rum','resource.rename':'Byt namn','openclaw.model':'Byt agentmodell'};
@@ -86,7 +87,13 @@
       opened=true;panel.hidden=false;launch.hidden=true;
       const chosen=requested??(/^\/(admin|control)(\/|$)/.test(location.pathname)&&access==='n1'?'admin':mode);
       if(chosen!==mode){mode=access==='n1'?chosen:'help';reset();select.value=mode;renderMode();await refresh();}
-      input.focus();
+      if(access==='n1'&&!clipImport){
+        try{
+          const {installChatImport}=await import('/admin/_assets/admin/chat-import.js');
+          clipImport=installChatImport({root,form:$('form'),input,send:$('.send'),source:source.href,isAdmin:()=>access==='n1'&&mode==='admin',authorize:refresh,working,status,add});
+        }catch{status('Filimporten kunde inte öppnas. Chatten fungerar fortfarande.');}
+      }
+      await clipImport?.refresh(true);input.focus();
     }catch(error){status(error.message);}
   }
   launch.addEventListener('click',()=>void open());

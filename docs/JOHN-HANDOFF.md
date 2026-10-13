@@ -5,14 +5,15 @@
 Valfri exakt rouletteStart med egen framing/handregion/tider, engångsspelning
 och återgång till idle. Videotid styr hjulstart och kulsläpp; varierad slutvinkel
 och fart härleds från rundans ID. Fullare landskapsscen/helskärmsknapp; ingen
-ändring av serverns utfall, wallet eller MP4-bytes. 32 riktade spel-/scenprov gröna.
+ändring av serverns utfall, wallet eller MP4-bytes. 33 riktade spel-/scenprov gröna.
+Full pre-commit för `ed973933`: 3409 pass, 0 fail, 11 skip.
 Två sammanhängande UI-rundor med ny frilagd film: 8 svart → 3 röd, saldo
 500 → 495 → 500 USD i isolerad SQLite. Kvitton och bilder sparade privat.
 
 Betald tiosekundersfilm skapad efter uttryckligt uppladdnings-/kreditgodkännande.
 **Gesten är ännu inte godkänd:** ett presenterande svep, inte tydlig hjulimpuls
 och kulsläpp. Tekniska cue-tider är provisoriska. Ingen live mediaregistrering,
-Blob-uppladdning, rums-publicering eller merge. Nästa mediesteg är att rätta
+Blob-uppladdning, rums-publicering eller merge till main. Nästa mediesteg är att rätta
 gesten och godkänna kontakt/övergångar; sedan registrera godkända bytes i Blob.
 Exakta hash, uppgifter och avgränsningar: docs/games/roulette/UTFALLSFILMER.md.
 
@@ -20,6 +21,9 @@ Versionskrock med #102 rättad: v1–14 bevarar mains exakta kontrakt; v14 gäll
 dealerCategoryTrash. **Både rouletteIdle och rouletteStart kräver v15** med
 separata featuregrindar. Ingen SQL-migration. Äldre v14-referenser nedan är
 historiska testanteckningar, inte aktuellt publiceringskrav.
+Integrationsbas: main `6a9be6d2`. Studio produktionsbygge och Admin/lobby
+TypeScript gröna efter konfliktlösning. Admins tidseditor för startfilmens
+cue-profil återstår, liksom liveacceptans; befintliga idle-kort fungerar.
 
 ## Rouletthjul och kula, 13 oktober — fortsättning på PR101
 
@@ -130,6 +134,65 @@ hjulimpuls/kulsläpp, en korrekt 37-facksrotor och serverns pending/reveal
 
 ## Paows talgrund och materialkontroll, 13 oktober 2026
 
+**Två hela talförlopp har nu avslutats tekniskt i följd**, utan omladdning,
+i riktiga `/play/blackjack?dealer=paow-v2&rehearsal=1` efter att PR #99:s
+main `982d541f` verifierats live på Vercel och Render. Båda sade exakt
+"Hej Jakob, välkommen tillbaka till mitt bord." och gav spelarens
+`state: ended`, `completed: true`, tom felstatus och återgång till idle.
+Bakgrund → dealer → bord var synliga i båda proven. Inga spelknappar eller
+insatser användes.
+
+| Prov | Request-ID | Svar redo | Talstart | Hela förloppet klart |
+| --- | --- | --- | --- | --- |
+| 1 | `18c930e8-6e63-457a-b1e3-c97b0f25c304` | 11,57 s | 15,65 s | 18,66 s |
+| 2 | `dd6a1bdf-df4b-474c-9a24-8d9ab334f75e` | 5,92 s | 10,09 s | 13,27 s |
+
+Ett föregående försök blev redo efter 78,48 s men avbröts vid flikbyte;
+det räknas inte som ett lyckat prov. Periodiska statuspaket kom fram under
+kallstarten. Prov 2 fångades komplett: 78 WebSocket-paket, 4 315 708 byte,
+73 bildrutor, H.264 + AAC, 3,084 s. SHA-256:
+`bf4ed6637249b3317c77c28f99ccba19110dcd5384f9d1685509c24fc9e3fc0a`.
+Worker: 2 225 ms totalt, `input_wait: 0`. Prov 1 har spelarens slutkvitto
+och skärmbild; nätverksfångsten hade stoppats, så ingen komplett MP4 hävdas.
+Privata kvitton och media finns i Paow-chattens `paow-982d541f-*`-artefakter.
+
+**Visuell/hörbar slutacceptans återstår:** båda kvittona har fortfarande
+`reviewStatus: pending`. Detta bevisar teknisk uppspelning och lagerordning,
+inte godkänd läppsynk eller perceptuell röstlikhet. Granska det fångade
+klippet före roulette/rörliga body-dealers; ändra ingen godkännandestatus
+utifrån hash, statistik eller enstaka skärmbilder.
+
+PR #93 är mergad som `60defa57` och verifierades i den faktiska Render-
+processen efter deploy. Fyra efterföljande talprov stoppades däremot före
+uppspelning med `generated_speech_session_start_timeout`. RunPods befintliga
+driftvy visade kall modellstart på 136 sekunder och förberedelse av vald
+dealerbild på 64,7 sekunder; en observerad jobbtid fram till redo var cirka
+112 sekunder. Den tidigare startgränsen på 90 sekunder räckte inte.
+
+Starten får nu använda det befintliga förberedelsefönstret på 180 sekunder
+i både fil- och SQL-journalvägen. Uppspelningens 45-sekundersgräns,
+GPU-sessionens livslängd, reservationer och kostnadstak behålls. Avveckling
+av gammal dealer får fortfarande högst 90 sekunder efter befintlig dränering.
+Ingen automatisk ombeställning eller extra betald worker införs. Riktade
+tester täcker lyckad start efter 135 sekunder, timeout vid 180 sekunder,
+omedelbart avbrott och oförändrad avveckling: 49 godkända. Lab-bygge och
+full obligatorisk regression på `52a0aa46` passerade: 3 348 godkända,
+11 miljöberoende skips, 0 fel. Kallstart kan fortfarande överskrida
+förberedelsefönstret; liveutfallet på den levererade fixen står ovan.
+
+PR #99:s transportgranskning hittade dessutom Vercels gräns på 120 sekunder
+utan data från extern backend. Den befintliga NDJSON-strömmen upprepar nu
+bara aktuell offentlig status var 15:e sekund under väntan. Ingen extra
+svarstext, media eller providerbeställning skickas. Långsam mottagare får
+inga köade heartbeat-rutor; färdigt svar, fel, avbrott och stängd anslutning
+städar timern. Befintliga ägar-/rund-/minneskontroller är oförändrade.
+66 riktade chatt- och transporttester passerar. En riktig lokal HTTP-proxy
+med tidsgräns provar lång förberedelse, nekad gammal ägare och avbruten
+klient; utan heartbeat kapas samma prov. Testtiderna är skalade och använder
+inga betalda leverantörer. Full regression på `c20de5ed`: 3 358 godkända,
+11 miljöberoende skips, 0 fel. Liveproven ovan använder den verkliga
+Vercel/Render-vägen; skalade transporttester ersätter inte visuell acceptans.
+
 Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
 `paow`. Den sparade talprofilen återlästes från servern med ElevenLabs
 `WZVEBKUreb9jAKojf0QF`, `eleven_v3`, svenska och egen referensvideo
@@ -154,10 +217,10 @@ på full buffert, förlängd timeout eller extra TTS-betalning införs.
 Verifiering: 45 material/UI/FFmpeg-tester samt 32 strömtjänsttester godkända;
 Lab-bygget godkänt. Full obligatorisk regression efter buffertfixen: 3 335
 godkända, 11 miljöberoende överhoppade, inga fel (exit 0).
-Liveacceptans återstår efter leverans: två hela talförlopp i följd, utan
-avbrott, med granskad röst/läppsynk och alla tre lager. Gå inte vidare till
-roulette/rörliga body-dealers innan detta passerar. Inget klipp är godkänt
-enbart från hash, workerstatistik eller en bild av munnen.
+Två hela talförlopp och lagerkontrollen är nu tekniskt verifierade enligt
+kvittot ovan. Röstens och läppsynkens visuella/hörbara slutacceptans återstår
+före roulette/rörliga body-dealers. Inget klipp är godkänt enbart från hash,
+workerstatistik eller en bild av munnen.
 
 Paow använder gemensam GPU-tjänst med exakt dealer-/bild-/profilbindning
 och den gemensamma OpenClaw-talagenten. Ingen separat instans behövs för
@@ -2434,24 +2497,66 @@ av Annas framtida spelklipp eller produktionspublicering. Ingen livekatalog,
 databas, spelregistrering eller modellkonfiguration ändras. PR:ns kontroller
 anger slutlig full regressionsstatus; merge/deploy görs inte i denna uppgift.
 
-## Ny dealer och fler importomgångar, 13 oktober 2026
+## Samlad Admin, dealers och import, 13 oktober 2026
 
-Läsande N1-kontroll fann nio registrerade dealers och ingen Dragge. Admins
-import krävde en sparad dealer men saknade skapandekontroll. `/admin/clips`
-har nu fliken **Ny dealer / flera filmer**: skapa namnet med ordinarie N1-
-skyddad projekt-PUT och färsk revision, välj dealern och godkänn filmimporten.
-Skapande spärras vid osparat kartutkast eller osparade importfiler. Sparandet
-försöks aldrig om blint; rum, publicering och andras klipp ändras inte.
+Admin återanvänder de befintliga editorerna för bolag/team, rum/publicering,
+sammansättningar, dealerinställningar, klipp/svar, material, provspelning,
+händelser, Probe, dealeragent och guide. Verktyg samlar dem i Admins meny.
+En explicit dokumentmappning leder gamla Control-länkar till Admin och bevarar
+kontext; API:er, inloggning och lösenordslänkar behåller sina kontrakt. Osparade
+editorer lämnas via full dokumentnavigering så deras befintliga skydd fungerar.
+Admins läsadapter finns under det befintliga skyddade `/studio/api/admin`.
+Inget nytt datalager eller schemasteg införs. `lab/` förblir aktiv källa och
+`/studio` API-monteringen; Control-filer behålls för övergång/återrullning men
+ingen av de inventerade fungerande verktygsvyerna kräver Control i native drift.
 
-Importeraren tillåter tio osparade filer per omgång, 128 MiB per fil. Sparade
-rader tog tidigare upp nästa omgångs platser; de ersätts nu när nya filer väljs.
-Osäkra/felande rader behålls och dubbletter kontrolleras innan sparade kvitton
-frigörs. Detta är en kögräns, inte belagd lagringsbrist. Registrets 32-dealersgräns
-inkluderar arkiverade dealers. `?tool=import&dealer=<id>` väljer bara ett exakt
-registrerat id och bevarar pågående import. Inget automatisk filval eller
-godkännande görs.
+Byggspårningsskyddet skiljer nu på privata filer i projektet och `.codex` i
+worktreens överordnade sökväg. Det bevarar riktiga serverberoenden samtidigt
+som miljöfiler, lokalt tillstånd och råa dealermedier fortfarande utesluts.
 
-55 riktade regressions-/integrationstester och Admins produktionsbygge med
-typkontroll passerade. Inga livepersoner eller filer skapades. Inga playback-
-eller mediebytes ändrades; verklig uppladdning och eventuell efterföljande
-spelacceptans återstår med Jakobs egna filer efter driftsättning.
+`/admin/dealers` är egen menyrad med skapa, ladda upp, ta bort och en hopfälld
+papperskorg för återställning. Dragan kan väljas direkt även utan rum. N1:s
+klippkarta kan också öppna registrerade dealers utanför vald rumsmall; den
+visar skillnaden och ändrar inte tillåtna dealers förrän mallen uttryckligen
+redigeras. Dolda röstformulär föreslår inte längre osparade värden innan de öppnas.
+
+**Kopplingar** visar bolag → spel → rum och mallens bakgrunder, dealers och bord.
+Gemensam mallredigering visar samtliga berörda rum. Rumsbundna val använder
+den befintliga scoped-writern. Skapande använder N1-projektets CAS; borttagning
+använder serverns konsekvenskontroll, revision och token. Klippkategorier följer
+med i dealerTrash-snapshot och återställs med identiteten. Både kategorilänkar
+och media ändras i samma befintliga SQL-transaktion. Ett injicerat mediafel efter
+projektskrivningen verifierar ROLLBACK av projekt, media, historik och audit.
+Ordinarie projekt-PUT får fortfarande inte kringgå livscykelkontrollerna.
+Trash med sparade kategorier kräver spelserverns capability v14
+(`dealerCategoryTrash: retained-categories-v1`). Äldre Render-runtime blockerar
+skrivningen före mutation. Båda tjänsterna måste vara uppdaterade vid acceptans.
+
+Importen bygger vidare på mergad PR #94: 30 osparade filer per omgång, 128 MiB
+per fil, nästa omgång återanvänder platser och osäkra kvitton försöks inte om.
+Filknappen är en vanlig knapp, bakgrund kan väljas för hela omgången och fel
+namnger filen. **OK – placera klippen** ersätter separat granska-knapp, checkbox
+och bekräftelseknapp. Dealer-valet behöver ingen ytterligare checkbox.
+
+Adminrobotens N1-chatt laddar en separat importmodul från Admins tillgångar.
+Filer kan dras in direkt; **Sortera och placera** ger uppdraget och sparar
+exakta förslag genom befintlig privat Blob-uppladdning. Oklara förslag stannar
+för rättning i chatten. Ny katalog och native grants kontrolleras före skrivning;
+modellen får filbeskrivningar och kan inte själv utfärda uppladdningsrättigheter.
+MP4/WebM stöds; zip, ljud och transparent assistentimport återstår. Ingen
+publicering, spelacceptans eller läppsynksacceptans sker genom importen.
+
+Lab-produktionsbygge, Admin-typkontroll och frontendens TypeScript har passerat.
+Ordinarie pre-commit på implementationen: 3 414 godkända, 11 skips, 0 fel
+över 72 testgrupper med Node 24.21.0 och fyra lokala arbetare.
+Isolerade webbprov verifierade skapa, arkivera, återställa och mallkoppling utan
+produktionsdata. Bolag & team öppnades i Admin och Dealers → Dragan → import
+behöll rätt dealer. Det senaste filväljarprovet avbröts när webbläsarverktyget
+slutade svara; det är inte ett godkänt uppladdningsprov. Testservern är avslutad.
+30-filers chattimport har verifierats med injicerad uppladdning, inklusive oklara
+fack och förlorade kvitton. Verklig Blob-uppladdning med Jakobs filer och
+spelacceptans återstår efter release av både Studio och Render-runtime.
+Systemkartan har ingen röd inventeringsavvikelse. Befintliga gula bevisluckor
+är kvar. GitGuardian på main 982d541f: aktiv övervakning, 0 öppna och 17
+ignorerade incidenter; check-suite queued, historik too_large och platsmetadata
+delvis ofullständig. Ingen incidentstatus eller produktionskonfiguration ändras.

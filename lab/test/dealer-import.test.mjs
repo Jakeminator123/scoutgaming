@@ -126,7 +126,8 @@ test('input rejects new dealers, paths, frames, duplicate IDs, extra fields and 
   for (const bad of [{ ...good, dealerId: 'not-registered' }, { ...good, publish: true }, { ...good, files: [file('../idle.mp4')] },
     { ...good, files: [file('idle\n.mp4')] }, { ...good, files: [file('idle.mp4'), file('other.mp4')] },
     { ...good, files: [{ ...file('idle.mp4'), frames: ['https://private.invalid'] }] }, { ...good, files: [file('video.exe', 'a', 'application/octet-stream')] },
-    { ...good, files: Array.from({ length: 11 }, (_, index) => file('idle.mp4', `f${index}`)) }]) assert.throws(() => validateDealerImportInput(bad, catalog));
+    { ...good, files: Array.from({ length: 31 }, (_, index) => file('idle.mp4', `f${index}`)) }]) assert.throws(() => validateDealerImportInput(bad, catalog));
+  assert.equal(validateDealerImportInput(input(Array.from({length:30},(_,index)=>file(`idle-${index}.mp4`,`f${index}`))),catalog).files.length,30);
   assert.equal(validateDealerImportInput({ ...good, files: [], message: 'Vad betyder REDO?' }, catalog).files.length, 0);
 });
 
