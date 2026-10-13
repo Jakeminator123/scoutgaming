@@ -249,7 +249,7 @@ export function createNativeStudioRequestHandlers({ configuration = nativeStudio
       const native = await measure('studio_runtime', runtime);
       return measure('studio_auth', async () => {
         const session = await native.authorize(current);
-        return Response.json({ username: session.user, role: session.role, availableActions: native.api.availableActions(session) },
+        return Response.json({ username: session.user, role: session.role, availableActions: native.api.availableActions(session), gameOrigin: config.allowedOrigins[0] },
           { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
       });
     }),

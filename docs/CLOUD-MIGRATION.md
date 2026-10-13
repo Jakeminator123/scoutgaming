@@ -19,27 +19,33 @@ Spårade arbetsanteckningar och de åtta planfilerna tas bort ur trädet i denna
 
 ## Repo-ordning, slutläge 12 oktober 2026
 
-Detta stänger inget JN2-steg och ingen medieacceptans. Det är trädläget efter planen (V1 #19, V2 #23, V3a #34, V4 #40 och avslutet med A21 och A99), inte ett nytt produktionskvitto. Före/efter-tabellen står i handoffen. Planmappen `ordning/` är borttagen; den finns i historiken på `faf0e822`.
+Detta stänger inget JN2-steg och ingen medieacceptans. Det är trädläget efter planen (V1 #19, V2 #23, V3a #34, V4 #40 och avslutet #51 `a5441feb`, 13 oktober 00:35, med A21 och A99), inte ett nytt produktionskvitto. #53 (`36d6d13f`) är dokumentmergen därefter. Därefter kom #54 (`426fa114`). Före/efter-tabellen står i handoffen. Planmappen `ordning/` är borttagen; den finns i historiken på `faf0e822`.
 
 - `github-work-vercel-entry` finns inte (A18:s env-granskning). Spelarbygget är `apps/croupier-frontend/tools/player-ui-build.mjs`. `ops/vercel-entry/` är borttagen.
 - `ops/caddy/bettalotto-game-auth.Caddyfile` är borttagen. A18: bettalotto.se svarar 301 till `https://croupier.scoutgg.dev/` och använder inte filen. Aktuell Caddy: `kevin/croupier-scoutgg/drift/`.
 - `/casino.html` är 308 till `/play`. Granskningssidorna är borta. `/v2` är kvar som 307. Originalmedia-API:t i Studio är borta. Registrerad video stannar på den gemensamma scenen.
-- `test-videoeditor/` ligger i `packages/presentation/{compositor,docs,preview}` och `presentation-runtime/` i `packages/presentation/runtime/`. URL:en `/presentation-runtime/*` är oförändrad. Shimmen `presentation-runtime/live-idle.mjs` finns kvar för `web/public/local-presentation.mjs`.
-- Indexerade banken, läppsynkverktygen och bankauditarna är borta ur Git och Render-imagen. 34 MP3 i `runtime/indexed/audio/en` står kvar för de bevarade green-speak-talparen.
+- Källkoden `test-videoeditor/` ligger i `packages/presentation/{compositor,docs,preview}` och källkoden `presentation-runtime/` i `packages/presentation/runtime/`. Publik URL `/presentation-runtime/*` är oförändrad. Shimmen `presentation-runtime/live-idle.mjs` finns kvar avsiktligt för `web/public/local-presentation.mjs`, som laddas i både Node och webbläsare.
+- Indexerade banken, läppsynkverktygen och bankauditarna är borta ur Git och Render-imagen. Av 632 filer togs 598 bort (cirka 278 MiB). 34 MP3 (17 Astrid, 17 Amira) i `runtime/indexed/audio/en` står kvar för de bevarade green-speak-talparen. `runtime/presentation`, GPU-workerns läppsynk, dess CI-jobb och röstkällor är inte avvecklade.
 
 Öppet efter planen:
 
-- [ ] Acceptans efter deploy av slut-SHA:n: Vercel READY och Render live; röktest av `/`, `/play`, `/play/blackjack?operator=…`, `/control/login`, `/partner/login` och `/casino.html`; N1 → publicering → N2 → N3 för `sg-test`, `johns-spelbolag` och `nordic-bet`; tre lager på mobil och desktop med två uppspelningar i rad; negativa prov (fel bolag, saknad media); rehearsal för paketens registrerade dealers. Delkontroll 13 oktober: Render och Vercel kör `a5441feb`, sökvägarna svarar som förut och rum paow3 spelar.
+- [ ] Acceptans efter deploy av slut-SHA:n: Vercel READY och Render live; röktest av `/`, `/play`, `/play/blackjack?operator=…`, `/control/login`, `/partner/login` och `/casino.html`; N1 → publicering → N2 → N3 för `sg-test`, `johns-spelbolag` och `nordic-bet`; tre lager på mobil och desktop med två uppspelningar i rad; negativa prov (fel bolag, saknad media); rehearsal för paketens registrerade dealers. Delkvitton 13 oktober, inte full acceptans: egen läsande kontroll 01:03 visade att Render och Vercel kör `a5441feb`, att sökvägarna svarar som förut och att runtime-hasharna är oförändrade. Rum paow3 hos `nordic-bet` provspelades av föregående agent 00:45 på `a5441feb`.
 - [ ] B18 permanent radering av klipp (beslutad 12 oktober): raden och sökvägen bort med journal (migration 009). Varje sparad paketrevision, fryst presentation eller öppet rum som refererar klippet spärrar. Bekräftelse kräver inskrivet namn. Egen PR; migrationen körs mot produktions-Neon före koden.
 - [ ] Bankens Blob-objekt saknar indexrad. De rensas först med B18:s journal.
-- [ ] B19 talklipp från vilobilden (beslutad 12 oktober): MuseTalk 1.5 på RunPod med dealerns egen röst, pilot Astrid `goodluck` på svenska och engelska, migration 010 efter B18. Betalda anrop bekräftas med Jakob först. Förtydliga regeln i `AGENTS.md`: förbudet gäller inklistrade munnar i spelaren, inte MuseTalk-genererade. Språkval i spelaren saknas.
+- [ ] B19 talklipp från vilobilden (beslutad 12 oktober): MuseTalk 1.5 på RunPod med dealerns egen röst, pilot Astrid `goodluck` på svenska och engelska, migration 010 efter B18. Betalda anrop bekräftas med Jakob först. Förtydliga regeln i `AGENTS.md`: förbudet gäller inklistrade munnar i spelaren, inte MuseTalk-genererade. Språkval i spelaren saknas. Utkastet #41 föreslår `009-talkclip.sql`, men enligt besluten är 009 B18 och 010 B19 (senaste Studio-migrationen är `008`). Numret rättas när B19-PR:en öppnas; #41 står kvar som utkast tills dess.
 - [ ] A22b och framåt, `packages/platform`: utredningen A22a är ärende #52 (`beslut`). Skivorna börjar först efter Jakobs beslut (B12). Proceduren står i `ordning/aktiviteter/A22-platform-karna.md` på `faf0e822`.
-- [ ] `?lane=layer-preview&rehearsal=1` svarar 503 (fanns före planen).
-- [ ] `astrid-select-baseline` faller eftersom `dealer-speech-profile.mjs` saknas i `ARCHIVE_PATHS` (fanns före V4).
-- [ ] `media-layout-verify` har en inaktuell rad för `astrid-zones-manual-snapshot-2026-09-29.json` (fanns sedan V1).
-- [ ] `speech-media.json` pekar på `dealers/astrid/speech/{win,goodluck}.mp4`, som inte finns (fanns före V4).
-- [ ] B9-byggarna (`build-hands.sh`, `build-previews.sh` och kontaktbyggarna) nämner den borttagna banken som källa, och `runtime/hands` saknar audit.
-- [ ] Raderna `act` och `insurance` i `web/public/docs/partner-api.html` är felrenderade (`\|` i kod delar cellen).
+Efterarbetet 13 oktober (bas `426fa114`, branch `jakob/ordning-slutfix`) har gett SL-raderna nedan:
+
+- [ ] SL-01/SL-02: `tools/raderingsgrind.mjs` räknar inte en flyttad fil (R100) som borttagen och ger exit 0 även vid trasig import. Inte rättat ännu; är högst prioriterat.
+- [ ] SL-03: ett nytt rum på samma sammansättning kan byta ett publicerat rums frysta miljöfilm. Beteendet finns på `426fa114` (`mergePresentation` i `lab/lib/presentation-room-api.mjs`) och stoppas inte av #50 på `90de86e7`. Reproduktion och acceptanskrav står som kommentar på #50; rättningen hör till #50:s ägare.
+- [x] SL-04: `astrid-select-baseline` arkiverar hela urvalets importkedja, inklusive `web/public/dealer-speech-profile.mjs`. Utan `--write`: 160 fall, 0 avvikelser mot HEAD och guldresultaten, inga nätverksanrop. Basens version ger exit 1 (`ERR_MODULE_NOT_FOUND`). Nytt test kräver att `ARCHIVE_PATHS` täcker importgrafen.
+- [x] SL-05: aktiva krav på den borttagna `pipeline/audit-dealer-sync.mjs --probe` är ersatta med `.githooks/pre-commit` och provspelning av berörda registrerade dealers. Daterade kvitton står kvar som historik.
+- [ ] SL-06: `node tools/migrate-media-layout.mjs --verify` faller på `dealers/astrid/runtime/presentation/repliker/bank.json`, som togs ur Git i `c474544c` (5 oktober, före planen) men står kvar i `media/layout.json` och `media/blob-index.json`. `astrid-zones-manual-snapshot-2026-09-29.json` är en giltig ospårad källa (hash och storlek stämmer). Raden tas bort med B18:s journal, inte separat.
+- [ ] SL-07: `speech-media.json` pekar på `dealers/astrid/speech/{win,goodluck}.mp4`, som saknas. Spelaren läser inte filen; labbinventeringen märker posterna som ej uppspelade. Filens bytes är låsta mot layout och blob-index, så den ändras inte separat. B19:s `goodluck` är ett nytt klipp, inte dessa filer.
+- [ ] SL-08: miljöregistret saknar källorna `cloud-media-store`, `video-registry` och `legacy-clip-inventory`. Inte utrett ännu.
+- [ ] SL-09: `?lane=layer-preview&rehearsal=1` svarar 503 (fanns före planen). Orsaken är inte utredd ännu.
+- [ ] SL-10: `build-hands.sh` är enda byggaren för bevarade `runtime/hands` men kräver borttagna Vera-strömmar. `build-previews.sh` gör ingenting utan `streams/index.json`, och `prepend-contact-entry.mjs` skriver till borttagna `runtime/indexed/performance`. `build-contact-review.mjs` och `encode.sh` nämner inte banken. Ingen byggare raderas; `runtime/hands` saknar audit.
+- [ ] SL-11: raderna `act` och `insurance` i `web/public/docs/partner-api.html` är felrenderade (`\|` i kod delar cellen). Inte rättat ännu. Rätta från Markdown och regenerera; öppna ingen ny publik route.
 
 ## Flödesomstrukturering, 12 oktober 2026
 
@@ -1172,8 +1178,10 @@ Rena docs/indexignorecommits kan ha snabba env/GitHubpolicy/hooktester;
 kod/config/test/media fullregression, CI alltid full.
 Fullmanuell: `sh .githooks/pre-commit --full`.
 Plan: `node tools/precommit-checks.mjs --plan`.
-Media/spelarändring kräver audit--probe, fyra dealers/två rehearsalplays och
-ny visuell approval för ändrad audio/video/hash. Här ändras inga sådana bytes.
+Media/spelarändring kräver testerna i `.githooks/pre-commit` och provspelning
+av berörda registrerade dealers, `?dealer=<name>&rehearsal=1`, två uppspelningar
+i rad i den faktiska spelaren. Ny visuell approval krävs för ändrad
+audio/video/hash. Här ändras inga sådana bytes.
 Efter push återläs SHA/CI/Vercel/Render/GG; testpass/hash är inte synk/mobil/backup.
 
 Systemkartans exporter är frysta till sitt käll-SHA och observationstid.

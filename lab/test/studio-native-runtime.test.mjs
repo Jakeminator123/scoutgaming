@@ -105,7 +105,7 @@ test('session timing measures fresh authorize on every request, including safe 4
       }, api: {availableActions: () => ['room.read']},
     }; },
   });
-  for (const [status, body] of [[200, {username: 'fixture-user', role: 'admin', availableActions: ['room.read']}],
+  for (const [status, body] of [[200, {username: 'fixture-user', role: 'admin', availableActions: ['room.read'], gameOrigin: env.CROUPIER_PUBLIC_ORIGIN}],
     [401, {error: 'studio_login_required'}], [403, {error: 'studio_request_rejected'}]]) {
     const response = await handlers.handleNativeSession(sessionRequest());
     assert.equal(response.status, status); assert.deepEqual(timing(response, 'studio_auth'), [4, 19]);

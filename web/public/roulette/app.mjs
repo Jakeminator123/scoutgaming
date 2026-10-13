@@ -1,32 +1,19 @@
-import { BETS, BET_BY_ID, WHEEL, LIMITS, pocketColor } from '/roulette-rules.mjs';
+import { BETS, BET_BY_ID, LIMITS, pocketColor } from '/roulette-rules.mjs';
+import {TABLE_ARTWORK,tableBetGeometry,polygonButtonStyle,chipBreakdown} from './table-layout.mjs';
 
 const $ = id => document.getElementById(id);
 const context = Object.fromEntries(new URL(location.href).searchParams);
 const colourNames = { red:'Röd', black:'Svart', green:'Grön' };
-let state, pending, pendingKey, busy = true, chip = 5, rotation = 0;
+let state, pending, pendingKey, busy = true, chip = 5;
 let draft = new Map(), undo = [];
 const betButtons = new Map();
 const money = (value, currency = state?.currency ?? 'USD') => new Intl.NumberFormat('sv-SE', { style:'currency', currency }).format(value);
 const sum = () => [...draft.values()].reduce((a,b)=>a+b,0);
-const message = (text, error = false) => { $('status').textContent = text; $('status').classList.toggle('error',error); };
-const node = (tag, text, className) => { const el = document.createElement(tag); if(text !== undefined) el.textContent=text; if(className) el.className=className; return el; };
-
-function drawWheel() {
-  const ns = 'http://www.w3.org/2000/svg', step = 360/37;
-  const point = (angle,r) => [200+r*Math.sin(angle*Math.PI/180),200-r*Math.cos(angle*Math.PI/180)];
-  WHEEL.forEach((number,index)=>{
-    const start = point(index*step-step/2,196), end = point(index*step+step/2,196);
-    const path = document.createElementNS(ns,'path');
-    path.setAttribute('d',`M200 200 L${start.join(' ')} A196 196 0 0 1 ${end.join(' ')} Z`);
-    path.setAttribute('fill',{green:'#28754b',red:'#87333e',black:'#18221c'}[pocketColor(number)]);
-    path.setAttribute('stroke','#c4b681'); path.setAttribute('stroke-width','.6');
-    const text = document.createElementNS(ns,'text'), p = point(index*step,171);
-    text.setAttribute('x',p[0]); text.setAttribute('y',p[1]); text.setAttribute('fill','#f3f0dd');
-    text.setAttribute('text-anchor','middle'); text.setAttribute('dominant-baseline','middle');
-    text.setAttribute('font-size','13'); text.setAttribute('transform',`rotate(${index*step} ${p.join(' ')})`);
-    text.textContent=number; $('wheel').append(path,text);
-  });
+function syncStatusVisibility() {
+  document.querySelector('.status-row').classList.toggle('quiet',!busy&&!pending&&!$('status').classList.contains('error')&&$('retry').hidden&&$('login').hidden);
 }
+const message = (text, error = false) => { $('status').textContent = text; $('status').classList.toggle('error',error); syncStatusVisibility(); };
+const node = (tag, text, className) => { const el = document.createElement(tag); if(text !== undefined) el.textContent=text; if(className) el.className=className; return el; };
 
 function addBet(id) {
   if (busy || pending || !state) return;
@@ -36,22 +23,24 @@ function addBet(id) {
   undo.push(new Map(draft)); draft.set(id,amount); renderDraft(); message('Satsningarna är redo. Snurra när du vill.');
 }
 
-function boardButton(id,row,column,label) {
-  const def = BET_BY_ID[id], button = node('button',label ?? def.label,'bet');
+function boardButton(def) {
+  const {polygon}=tableBetGeometry(def);
+  if(!polygon)return;
+  const id=def.id, button = node('button',undefined,'table-bet');
   button.type='button'; button.dataset.bet=id;
-  button.style.gridRow=row; button.style.gridColumn=column;
-  if(def.type==='straight') button.classList.add(pocketColor(def.numbers[0]));
-  if(id==='red'||id==='black') button.classList.add(id);
-  button.addEventListener('click',()=>addBet(id));
+  const rect=polygonButtonStyle(polygon);
+  Object.assign(button.style,{left:rect.left+'%',top:rect.top+'%',width:rect.width+'%',height:rect.height+'%',clipPath:`polygon(${rect.clip})`});
+  button.title=def.label;
+  button.addEventListener('click',event=>{
+    if(event.detail>0&&matchMedia('(max-width:760px)').matches&&!$('table-zoom').open) {openTable(id);return;}
+    addBet(id);
+  });
   betButtons.set(id,button); $('board').append(button);
 }
 function buildBoard() {
-  boardButton('straight-0','1 / 4','1');
-  for(let n=1;n<=36;n++) boardButton(`straight-${n}`,String(3-(n-1)%3),String(2+Math.floor((n-1)/3)));
-  for(let n=1;n<=3;n++) { boardButton(`column-${n}`,String(4-n),'14','2:1'); boardButton(`dozen-${n}`,'4',`${2+(n-1)*4} / span 4`); }
-  ['low','even','red','black','odd','high'].forEach((id,i)=>boardButton(id,'5',`${2+i*2} / span 2`));
+  BETS.forEach(boardButton);
   for(const value of [1,5,25,100]) {
-    const button=node('button',String(value),'chip'); button.type='button'; button.dataset.value=value;
+    const button=node('button',String(value),'chip c'+value); button.type='button'; button.dataset.value=value;
     button.setAttribute('aria-label',`Marker ${value}`);
     button.addEventListener('click',()=>{chip=value;renderDraft();}); $('chips').append(button);
   }
@@ -64,15 +53,45 @@ function buildBoard() {
   $('add-inside').addEventListener('click',()=>{addBet($('inside-bet').value);$('inside').close();});
 }
 
+function openTable(id='straight-2') {
+  if($('more').open)$('more').close();
+  if($('table-zoom').open){$('zoom-viewport').focus();return;}
+  $('table-zoom').showModal();
+  $('zoom-viewport').append($('dealer-scene'));
+  $('zoom-controls').append(document.querySelector('.controls'));
+  const {anchor}=tableBetGeometry(BET_BY_ID[id]);
+  const visual=$('dealer-scene'),viewport=$('zoom-viewport');
+  const width=visual.clientWidth,height=visual.clientHeight;
+  viewport.scrollLeft=width*(.1+.8*anchor[0]/TABLE_ARTWORK.width)-viewport.clientWidth/2;
+  viewport.scrollTop=height*.2+width*.8*anchor[1]/TABLE_ARTWORK.width-60;
+}
+$('show-table').addEventListener('click',()=>openTable());
+$('table-zoom').addEventListener('close',()=>{
+  $('scene-home').append($('dealer-scene'));
+  $('controls-home').append(document.querySelector('.controls'));
+  $('show-more').focus();
+});
+$('show-more').addEventListener('click',()=>$('more').showModal());
+$('more').addEventListener('close',()=>{
+  if(!document.querySelector('#rules[open],#inside[open],#table-zoom[open]'))$('show-more').focus();
+});
+for(const id of ['rules','inside']) $(id).addEventListener('close',()=>$('show-more').focus());
+
 function renderDraft() {
   const locked = busy || Boolean(pending) || !state;
   for(const [id,button] of betButtons) {
-    button.querySelector('.marker')?.remove();
     const value=draft.get(id);
-    if(value) button.append(node('span',String(value/100),'marker'));
     button.disabled=locked;
-    button.setAttribute('aria-label',`${BET_BY_ID[id].label}, vinst ${BET_BY_ID[id].payout}:1${value?', satsat '+money(value/100):''}`);
+    const def=BET_BY_ID[id];
+    button.setAttribute('aria-label',`${def.label}${def.type==='straight'?', '+colourNames[pocketColor(def.numbers[0])] : ''}, vinst ${def.payout}:1${value?', satsat '+money(value/100):''}`);
   }
+  $('table-markers').replaceChildren(...[...draft].map(([id,amount])=>{
+    const {anchor}=tableBetGeometry(BET_BY_ID[id]), marker=node('span',undefined,'table-marker');
+    marker.style.left=100*anchor[0]/TABLE_ARTWORK.width+'%';marker.style.top=100*anchor[1]/TABLE_ARTWORK.height+'%';
+    const chips=chipBreakdown(amount/100);
+    chips.forEach((value,index)=>{const disc=node('i',undefined,'c'+value);disc.style.setProperty('--n',index);marker.append(disc);});
+    marker.append(node('b',String(amount/100)));return marker;
+  }));
   for(const button of $('chips').children) { button.disabled=locked;button.setAttribute('aria-pressed',String(Number(button.dataset.value)===chip)); }
   $('stake').textContent=money(sum()/100);
   $('bet-count').textContent=String(draft.size);
@@ -86,13 +105,13 @@ function renderDraft() {
   $('spin').disabled=locked||!draft.size||sum()>Math.round(state.balance*100);
   $('show-inside').disabled=locked; $('add-inside').disabled=locked;
   $('inside-chip').textContent='Lägg en marker på '+money(chip)+'.';
-  $('phase').textContent=busy?'VÄNTA':pending?'KONTROLLERAR':'SATSNINGAR ÖPPNA';
+  $('phase').textContent=busy?(state?'RUNDAN PÅGÅR':'ANSLUTER'):pending?'INVÄNTAR KVITTO':state?'SATSNINGAR ÖPPNA':'EJ ANSLUTEN';
+  syncStatusVisibility();
+  $('board').setAttribute('aria-busy',String(busy));
 }
 function showResult(round) {
   if(!round) return;
   const {number,color}=round.event.outcome;
-  rotation=(360-WHEEL.indexOf(number)*360/37)%360;
-  $('wheel-disk').style.transform=`rotate(${rotation}deg)`;
   $('result-number').textContent=number; $('result-number').className='result-number '+color;
   $('result-color').textContent=colourNames[color]+(number ? number%2===0?' · Jämnt':' · Udda':' · Nolla');
   $('round-return').textContent=round.returned ? 'Tillbaka '+money(round.returned,round.currency)+' · netto '+money(round.net,round.currency) : 'Ingen vinst denna runda';
@@ -105,7 +124,8 @@ function renderState() {
   document.title=state.room.name+' · '+(state.room.operatorName ?? 'Scoutgaming');
   $('history').replaceChildren(...state.rounds.map(round=>{
     const el=node('li',String(round.event.outcome.number),round.event.outcome.color);
-    el.title=`${new Date(round.event.occurredAt).toLocaleString('sv-SE')} · insats ${money(round.wagered,round.currency)} · tillbaka ${money(round.returned,round.currency)}`;return el;
+    el.title=`${round.event.outcome.number}, ${colourNames[round.event.outcome.color]} · ${new Date(round.event.occurredAt).toLocaleString('sv-SE')} · insats ${money(round.wagered,round.currency)} · tillbaka ${money(round.returned,round.currency)}`;
+    el.setAttribute('aria-label',el.title);return el;
   }));
   showResult(state.rounds[0]); renderDraft();
 }
@@ -127,21 +147,14 @@ async function command(request) {
   return data;
 }
 function clearPending() { sessionStorage.removeItem(pendingKey);pending=null;$('retry').hidden=true; }
-async function animate(number) {
-  const duration=matchMedia('(prefers-reduced-motion: reduce)').matches||document.hidden?0:2400;
-  const destination=(360-WHEEL.indexOf(number)*360/37)%360;
-  const next=rotation+360*4+(destination-rotation%360+360)%360;
-  const animation=$('wheel-disk').animate([{transform:`rotate(${rotation}deg)`},{transform:`rotate(${next}deg)`}],{duration,easing:'cubic-bezier(.15,.6,.15,1)',fill:'forwards'});
-  try { await animation.finished; } catch { /* The saved result remains authoritative. */ }
-  rotation=next;$('wheel-disk').style.transform=`rotate(${rotation}deg)`;animation.cancel();
-}
 async function submit() {
   if(busy||!pending) return;
+  if($('more').open)$('more').close();
+  if($('table-zoom').open)$('table-zoom').close();
   busy=true;$('retry').hidden=true;renderDraft();message('Satsningarna är låsta. Rundan avgörs…');
   try {
     const result=await command(pending);
     if(result.player.id!==pending.playerId||result.requestId!==pending.requestId||!result.round) throw Error('invalid_receipt');
-    await animate(result.round.event.outcome.number);
     state=result;clearPending();draft=new Map();undo=[];
     renderState();showResult(result.round);
     message(`${result.replayed?'Den sparade rundan hämtades. ':''}${result.round.event.outcome.number} · ${colourNames[result.round.event.outcome.color]}. ${result.round.returned?'Tillbaka '+money(result.round.returned,result.round.currency)+'.':'Ingen vinst.'} Lägg nya satsningar när du vill.`);
@@ -168,18 +181,22 @@ async function init() {
     renderState();busy=false;renderDraft();
     if(pending) { $('retry').hidden=false;message('En tidigare runda inväntar bekräftelse. Kontrollera den igen.',true); }
     else message('Välj marker och klicka på bordet. Ditt saldo är gemensamt med blackjack.');
-    if(state.room.operator) void import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room)).catch(()=>{});
+    if(state.room.operator) void import('./scene.mjs').then(({mountRoomScene})=>mountRoomScene(state.room)).catch(()=>{
+      $('scene-status').textContent='Rummets media är inte tillgängliga just nu. Du kan spela vid bordet ändå.';
+    });
   } catch(error) {
     message(errorText[error.message] ?? 'Rummet kunde inte öppnas. Ladda om sidan och försök igen.',true);
     if(error.status===401) $('login').hidden=false;
   }
 }
 $('login').href='/player-login?returnTo='+encodeURIComponent(location.pathname+location.search);
-$('show-rules').addEventListener('click',()=>$('rules').showModal());
-$('show-inside').addEventListener('click',()=>$('inside').showModal());
+function openOption(id){$('more').close();$(id).showModal();}
+$('show-rules').addEventListener('click',()=>openOption('rules'));
+$('show-inside').addEventListener('click',()=>openOption('inside'));
 $('undo').addEventListener('click',()=>{draft=undo.pop()??new Map();renderDraft();});
-$('clear').addEventListener('click',()=>{undo.push(new Map(draft));draft=new Map();renderDraft();});
+$('clear').addEventListener('click',()=>{undo.push(new Map(draft));draft=new Map();$('more').close();message('Satsningarna är rensade.');renderDraft();});
 $('rebet').addEventListener('click',()=>{
+  $('more').close();
   const bets=state.rounds[0]?.bets;if(!bets) return;
   if(bets.reduce((n,bet)=>n+Math.round(bet.amount*100),0)>Math.round(state.balance*100)) return message('Demosaldot räcker inte för att upprepa satsningarna.',true);
   undo.push(new Map(draft));draft=new Map(bets.map(bet=>[bet.id,Math.round(bet.amount*100)]));renderDraft();message('Föregående satsningar är utlagda. Snurra när du vill.');
@@ -191,5 +208,4 @@ $('spin').addEventListener('click',()=>{
   pending=request;void submit();
 });
 $('retry').addEventListener('click',()=>void submit());
-document.querySelector('.table-tools').append($('show-rules'));
-drawWheel();buildBoard();renderDraft();void init();
+buildBoard();renderDraft();void init();

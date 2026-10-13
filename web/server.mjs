@@ -786,7 +786,7 @@ const server = createServer(async (req, res) => {
     if (await handlePlayerSurface(req, res, pathname, {operators: publicOperators})) return;
   }
   let authenticated=(await playerSession(req))?.playerId ?? null;
-  if (['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette-rules.mjs'].includes(pathname)
+  if (['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs'].includes(pathname)
       && await rouletteDocument(req,res,{authenticated,guestPreview,resolveRoom:rouletteRoomAccess})) return;
   if (pathname === '/api/profile') {
     if (await handlePlayerSurface(req, res, pathname, {

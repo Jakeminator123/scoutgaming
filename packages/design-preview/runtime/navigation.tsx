@@ -30,7 +30,7 @@ export function useRouter() {
   return { push: (href: string) => navigate(previewHref(href)), replace: (href: string) => navigate(previewHref(href), true) };
 }
 export function navigate(href: string, replace = false) {
-  if (['/admin','/admin/clips','/admin/structure','/admin/rooms','/admin/dealers','/admin/assets'].includes(href)) {
+  if (/^\/admin(?:\/[^?]*)?$/.test(href) && !href.startsWith('/admin/lobby')) {
     const context = new URLSearchParams(location.search);
     const query = new URLSearchParams();
     for (const key of ['operator','table','dealer','composition','lane','game']) if (context.has(key)) query.set(key,context.get(key)!);

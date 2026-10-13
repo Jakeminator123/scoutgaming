@@ -2,7 +2,7 @@
 
 ## SIDOR3: anslutningar och bordsintag, 13 oktober
 
-PR #55 (`codex/studio-workspace`) förenas med `main` `426fa114` i egen
+PR #55 (`codex/studio-workspace`) förenas med `main` `8c77d05a` i egen
 arbetsgren. Importer använder nu `packages/presentation/runtime`. `/admin`
 använder befintlig NativeAdministration för drift, konton, spelare, betalningar
 och API samt befintlig OpenClaw-modellvy och skyddad agentchatt. De tidigare
@@ -21,12 +21,45 @@ Kanonisk materialkatalog `web/public/material-catalog.mjs` innehåller
 `blackjack-green-felt` / **Blackjack · grön filt** och
 `blackjack-black-felt` / **Blackjack · svart filt**. Oförändrade 1672 × 941 PNG
 med alpha säkrades privat och används som riktiga filer i beständig isolerad
-QA på port 53764. Produktionsregistreringen är obekräftad efter tappad
-Chrome-filväljaranslutning. Bakgrundsagenten äger tre nya bild/videopar och
-föreslaget `BACKGROUND_MATERIALS` i separat `background-materials.mjs`; inga
-rumsval eller publicerade paket ska ersättas automatiskt. Domänregeln är
+QA på port 53764. Båda borden är nu registrerade i det riktiga privata
+biblioteket, återlästa och avkodade efter omladdning; de har ännu ingen
+sammansättningstilldelning. Lager-ID och källhashar finns i teknikreferensen.
+Bakgrundsagentens gemensamma katalog finns i PR #58, commit `92941487`;
+rumsval eller publicerade paket ersätts aldrig automatiskt. Domänregeln är
 även tillagd i `AGENTS.md`. Fullfile-taldriver och produktionsacceptans från
 föregående WIP är fortfarande öppna; inga betalda genereringar utfördes.
+
+Konfliktjämförelsen förenar separata fält i samma sammansättning via stabilt
+ID. Samma fält, radering mot redigering och samtidig omordning kräver fortsatt
+uttryckligt val. Sparning och återläsning över QA-omstart, verklig 409 och
+N1-blockering är webbläsarverifierade. Återanslutningsvägen är rättad för att
+tillåta skyddad omläsning utan skrivmandat före verifierad session; sista
+UI-provet avbröts av IAB-verktygets tidsgräns och behöver slutföras.
+
+Verifiering på checkpoint `90aab25d`: ordinarie full hook 3 048 godkända,
+11 hoppade, 0 fel; Studio-produktionsbygge passerade. Senare serverkontroll
+för kända materials speltyp har 84 riktade kontrakt-/publiceringstester gröna.
+Integrationsvyn får betrodd spelorigin från N1-sessionens serverkonfiguration;
+saknad origin aktiverar inte launch-länkar. Gemensam papperskorg i befintlig
+Control ägs av separat backendarbete; v11 reserveras för materialTrash med
+v10/dealerSets-kontraktet bevarat. Senare slutkontroller redovisas i PR #55.
+
+## Tillägg 13 oktober: samlade spelmanualer
+
+Canonical ingångar finns nu i [docs/games](games/README.md): blackjack,
+roulette och gemensamma klipp-/formatbegrepp. Äldre FORMATLASNING och
+roulettens tekniska README har en enda aktiv plats med hänvisningar från
+de gamla ingångarna. Frysta källunderlag och hashregister skiljs från
+dagens kod och öppna produktionsmål. Privata original/konversationer
+har inte lagts i Git. Roulettekraven för 37 utfallsfilmer är dokumenterade,
+inte implementerade eller beställda. Webbplatsens AI-funktion är utanför.
+
+Dokumentkontroll omfattar relativa länkar, JSON, källhashar, båda
+blackjackprofilerna och den bevarade formatlåsningen. Ordinarie hook och
+PR:s produktgrindar krävs före merge. Format-/posekonflikter, faktisk
+mediaacceptans och kvittots framtida bindning till filmbank är fortsatt
+öppna; läs spelmanualerna innan implementation. Ingen produktkod, media,
+publicering, databas eller migration ändras i denna dokumentleverans.
 
 ## Tillägg 13 oktober: central Studio och rumsmodell
 
@@ -46,8 +79,8 @@ Verifiering för denna dokumentationsleverans: källkontrakt och synligt
 produktregister jämförda; ordinarie dokumentationshook passerade (35 tester).
 Rumsövergång, riktiga lager i preview och spelacceptans återstår.
 
-Läget 12 oktober 2026, omskrivet mot koden på integrationsbranchen
-`jakob/repo-ordning` och ajour med `origin/main` `ff1d6e53`.
+Läget 12 oktober 2026 skrevs om mot koden på `jakob/repo-ordning`.
+`origin/main` 13 oktober 2026 är `426fa114` (#54). Planens merge #51 är `a5441feb`.
 Äldre avsnitt, inklusive per-rad-kvitton som inte upprepas här:
 `git show 00ea55c5:docs/JOHN-HANDOFF.md`.
 
@@ -171,9 +204,11 @@ kräver nu exakt 001–008 (`91969107`). Historikrensningen är publicerad:
 video, frame-index, kalibrering och acceptansnotering. Annan ljud- eller
 videohash upphäver tidigare visuellt godkännande. Välj inte talvideo på
 ungefärlig längd, loopa inte en inspelad mening över fortsatt ljud, och använd
-inte inklistrade munöverlägg. `node pipeline/audit-dealer-sync.mjs --probe`
-plus två rehearsal-uppspelningar per dealer är kravet vid media- eller
-spelarändring. Probe som matchar baslinjen är inte ett nytt läppsynkgodkännande.
+inte inklistrade munöverlägg. Vid media- eller spelarändring körs testerna i
+`.githooks/pre-commit` (kroken anropar `tools/precommit-checks.mjs`). Berörda
+registrerade dealers granskas med `?dealer=<name>&rehearsal=1`, två
+uppspelningar i rad. Provspelningen använder den faktiska spelaren. En hash,
+vågform eller grönt test är inte ett nytt läppsynkgodkännande.
 12 oktober: alla fyra medieset matchade befintlig baslinje; inget nytt visuellt
 godkännande. Tidigare saknade, ej godkända tagningar står kvar. Per-rad-resultat
 och de daterade goodluck-kvittona ligger i den frysta handoffen, avsnitten
@@ -483,7 +518,7 @@ ES-moduler som levereras från Render via Vercel, inte en Next-sida.
 `web/games/roulette/README.md` beskriver API, filansvar och verifiering.
 Behåll serverns regler/RNG/plånbok, inloggning, bolags- och rumskontext samt
 exakt återförsök av väntande rundor. Utveckla layout, mobil, satsningsflöde,
-återkoppling, tillgänglighet och animationer. `/roulette-test` är en separat
+återkoppling och tillgänglighet. Senare beslut: inga nya animationer; Jakob levererar MP4. `/roulette-test` är en separat
 kontofri generatordemo. Ny UI-kontroll görs med isolerat testsaldo; inga
 produktionsinsatser har lagts för verifieringen här.
 
@@ -573,6 +608,138 @@ flyttar samma centrala moduler. Kör inte flytt och lane-förenkling på samma m
   `docs/CLOUD-MIGRATION.md`. Den är inte stängd här.
 - Vercel-byggets nya logg för Node 24-låsningen (`12a12fd6`) är inte verifierad.
 
+### Roulette: responsiv spelvy och kontofritt rörelselabb, 12 oktober 2026
+
+Arbetsbranch `codex/roulette-responsive-experiments` utgår från mergad PR42
+(`bf01c8bb`). Avstämning med ROULETTE bekräftade paket 7 och PAOW i Nordic
+Bets befintliga rum. Inget dealerbyte, ingen rumspublicering och ingen
+ändring i `/admin`, blackjack eller serverns spel-/plånbokslogik ingår.
+
+Mobilvyn har stående satsningsbord utan sidscroll och samma publicerade
+dealerfil som desktop. Kontrollraden håller marker, insats, start och
+återförsök tillgängliga. Separat kula/hjul visar det bekräftade kvittot;
+reducerad rörelse och Visa resultat direkt stöds. Saknad scen har en tydlig
+reservtext. `/roulette-test#experiments` har valbar mus-/touchparallax,
+mobil-/desktoputsnitt och geststart mot det befintliga kontofria demo-API:t.
+Kamera är endast undersökt, inte aktiverad. Bord, miljö och dealerplan i
+labbet är tydligt märkta skisser.
+
+27 riktade roulettester passerade på Node 24.21.0. Isolerad webbläsar-QA
+med verklig SQLite-avräkning omfattade spel, otillräckligt saldo, kontobyte,
+dialogfokus, 1440/390/320 px, geststart, tangentbordsstart och reducerad
+rörelse. Avklippt svar efter commit plus omladdning/återförsök gav två exakt
+identiska kommandon, en dragning och en insatsbokning. En bruten socket
+provade också Chromiums transparenta återförsök utan extra dragning.
+`tools/roulette-ui-fixture.mjs` återger dessa fall med egna minneskonton,
+utan env-filer eller produktionsdata. Testbevis ligger privat utanför Git.
+
+Mediaaudit `--probe` matchar alla fyra historiska set. Detta ger inget nytt
+visuellt/läppsynkgodkännande; verklig dealerrehearsal och nytt hyperrealistiskt
+material är fortsatt öppna. Ingen isolerad PostgreSQL-körning utfördes i
+denna UI-fixtur. Full regression ingår fortfarande i leveransgrinden.
+Runway-prompter, föreslagna bild-/bordsmått, loopacceptans och kamerans
+tekniska begränsningar finns i `web/games/roulette/README.md`.
+
+### Roulette: PNG-bord och delade medialager, 12 oktober 2026
+
+Jakobs nya riktning ersätter rörelseprototypen ovan. Spelrummet visar nu den
+bifogade transparenta bordsbilden i en gemensam 16:9-scen på mobil/desktop.
+Kodritat hjul, kula, väntan på animation och länken till rörelselabbet är
+borttagna från spelrummet. Resultat och historik visas direkt från kvittot.
+Rörelseexperimentens gamla separata testyta är inte vidareutvecklad.
+
+Bakgrunden väljs endast ur rummets publicerade, tillåtna tillgångar och kan
+vara samma bild/MP4 som blackjack. Frilagd dealer hämtas från publiceringen;
+inbakat äldre bord ersätts inte genom att lägga ny geometri ovanpå. Saknad
+kompatibel dealer/media ger reservbild och status, fortsatt spelbara kontroller.
+Ingen dealeridentitet, publicering, databas eller plånboksregel har ändrats.
+
+Gemensam scenspelare har frivillig desktoplayout och en statisk PNG-alfamask
+för framtida bordsvideo. Masken måste ha samma registrering/proportioner som
+videon. Tidigare anrop behåller sina standarder. Ingen ny animation eller
+framtida resultatvideo är byggd. N1:s publiceringskontrakt/maskeditor återstår
+som separat integration när materialet finns; lokal media-definition är klar.
+
+Mottagen `roulette-bord-start-stop.mp4`: 1916×1080, H.264, 24 fps,
+15,041667 s, utan ljud/alpha. Specifikationens gamla beställningsstatus är
+bevarad som källa men kompletterad med verifierade filfakta i
+`web/games/roulette/media-specification.json`. Båda PNG-namnen är byteidentiska.
+Filmen behöver egen registrerad mask och visuell acceptans; den är inte
+aktiverad som spelresultat. Ny dealer-keystone/idle placeras bakom bordet
+till höger för betraktaren. Ingen ny rörelse har genererats.
+
+Format, koordinater, keystone-/idle-prompter och reserverad blackjackmall:
+`docs/LOCAL-PRESENTATION-RUNTIME.md`, avsnitt Medieformat för roulette och
+blackjack. Rouletteguiden länkar dit. Inga nya parallella dokumentationsmappar.
+
+Verifierat: 27 roulettekontroller och 10 gemensamma scenkontroller passerar.
+Fullständig pre-commit-kontroll passerar på `77f959db` med Node 24.21.0.
+Windows-körningen använder en egen katalog under vanlig LocalAppData/Temp;
+en testrot under `.codex` blockeras av byggspårens avsiktliga privatfilter.
+Browser: 1440/390/320 px, 44 px minsta satshöjd, PNG med bibehållen alpha,
+tangentbordsdialog, spelvarv och tappat svar följt av omladdning/återförsök
+(samma requestId/version/bets, en debitering). Riktig lokal H.264-testfilm
+avkodad som publicerad bakgrund och maskat bord; paus och reducerad rörelse
+verifierade. Testfilen är enfärgad, privat och ingen ny spelanimation.
+Dealer-audit --probe matchar fyra baseline-set. PostgreSQL var inte startad
+i denna körning; tidigare PG-bevis ersätts inte. Verkliga nya dealerklipp
+saknas; mänsklig media-/läppsynkacceptans är fortsatt öppen.
+
+### Roulette: satsningar på det verkliga bordet, 13 oktober 2026
+
+Det separata numrerrutnätet är borttaget. Genomskinliga träffytor för nummer,
+dussin och utsidessatsningar följer den bifogade PNG:ns perspektiv. Valda
+marker visas som stilla staplar direkt på filten, med samma välj/placera/ångra-
+princip som blackjack. Alla satsningar finns även i en tillgänglig dialog;
+kolumnfält som saknas i bilden ritas inte till. Senaste utfall/historik är en
+kompakt rad. Ingen ny hjul-, kula- eller markeranimation.
+
+Mobilen kan förstora och rulla över samma scen. Scen och markerkontroller
+flyttas till dialogen, utan en andra videospelare; Escape återställer fokus.
+Första trycket på den lilla översikten öppnar vyn utan satsning. Minsta
+nummerträffyta där är 26 px och markerkontrollerna är minst 44 px höga.
+Serverkvitto, låsning, saldo och exakt återförsök är kvar.
+
+Fullständig pre-commit-kontroll passerar på `d66f0184` (Node 24.21.0).
+29 roulettekontroller inklusive bildregistrering passerar. Browserkontroll
+på 1440/390/320 px bekräftar placering, ångra, fokus och frånvaro av sidspill.
+Tappat kvitto + omladdning + återförsök ger samma requestId/version/bets och
+en enda debitering för den rundan. Lokal H.264-bakgrund fungerar med samma
+canvas genom förstoring/återställning; paus och markerplacering är kontrollerade.
+Dealer-audit --probe matchar fyra baseline-
+set; nya dealerklipp/mediaacceptans och framtida MP4-registrering återstår.
+
+### Roulette: ren spelvy och Mer, 13 oktober 2026
+
+Huvudvyn visar bordet, små saldo-/senaste-resultatfält och marker, ångra,
+Spela och Mer. Regler, historik, satsningslista, upprepa/rensa, förstoring,
+video och rumsinformation ligger i Mer. Normal hjälptext är tillgänglig
+för skärmläsare; laddning, saldofel, sessionsfel och osäkra kvitton är synliga.
+Dialoger återställer fokus till Mer. Samma scen och kontroller flyttas vid
+förstoring, utan en extra dealer- eller bakgrundsspelare. Inga nya animationer,
+gester eller utfallsfilmer är byggda; resultat visas direkt från serverkvittot.
+
+Samordnat med MERGE: canonical spelmanualer ägs av dokumentationsgrenen
+`codex/game-documentation`, [PR #56](https://github.com/Jakeminator123/scoutgaming/pull/56),
+med [37 utfallsfilmer](games/roulette/UTFALLSFILMER.md)
+och [gemensamma klipp och format](games/KLIPP-OCH-FORMAT.md).
+Manualerna är integrerade från bekräftad main-merge `ba7601dd`.
+UI-grenen inför inget parallellt filmkontrakt. Mediaagentens granskningsflöde
+är underlag för nästa implementation, inte färdig automatisk klassificering.
+Main `426fa114` är integrerad; central-/admin-målkontrakt och tidigare
+rouletteformat är bevarade vid konfliktlösningen.
+
+Fullständig aktuell pre-commit-kontroll passerar på `c3055fc0` (Node 24.21.0).
+Även den slutliga manualintegrationen `40926297` passerar hela hooken.
+29 roulettekontroller och isolerad browser på 1440/390/320 px passerar:
+Mer-dialoger, fokus, placering/ångra, synligt saldofel och historik. Tappat
+svar följt av omladdning/återförsök gav samma requestId/version/bets,
+en slumpning och en debitering. Avkodad H.264-bakgrund och video-/Mer-kontroller
+fungerar även i förstoring, med samma enda canvas/spelare. Äldre överlämning
+hänvisade till `pipeline/audit-dealer-sync.mjs --probe`, pensionerat genom B11.
+Aktuell main-AGENTS kräver den ordinarie hooken, vars registrerade/frysta dealer-
+uppspelningskontroller passerar. Inga pensionerade medier eller verktyg återställs.
+
 ## 3. Senaste leveranser
 
 Fjorton dagar räknat från 12 oktober 2026. Högst en kort leveransrad per
@@ -587,13 +754,19 @@ regler), V2 #23 (A10–A18: döda moduler, granskningssidor, pipeline, ops och
 dokument), #30 (adminlänk på partnerinloggningen), V3a #34 (A20:
 `test-videoeditor/` till `packages/presentation/{compositor,docs,preview}`), #44
 (PAOW-grundloopen), V4 #40 (B11: indexerade banken, läppsynkverktygen och
-bankauditarna) och denna leverans (A21: `presentation-runtime/` till
-`packages/presentation/runtime/`, URL:en `/presentation-runtime/*` oförändrad,
-plus A99). En enradig shim `presentation-runtime/live-idle.mjs` finns kvar för
-`web/public/local-presentation.mjs`, som laddas både i webbläsaren och i Node.
-#51 är mergad som `a5441feb` och kontrollerad i produktion.
-`/presentation-runtime/idle-policy.mjs` har nya bytes bara i två relativa
-importvägar (`../` blev `../../../`), som i webbläsaren pekar på samma adresser.
+bankauditarna) och denna leverans (A21: källkoden `presentation-runtime/` till
+`packages/presentation/runtime/`, publik URL `/presentation-runtime/*` oförändrad,
+plus A99). En enradig shim `presentation-runtime/live-idle.mjs` finns kvar avsiktligt för
+`web/public/local-presentation.mjs`, som laddas i både Node och webbläsare.
+#51 är mergad som `a5441feb` (13 oktober 00:35). Det är ett historiskt leveranskvitto.
+Delkvitton 13 oktober, inte full produktacceptans. Efterarbetets egen läsande
+kontroll cirka 01:03: Render och Vercel körde `a5441feb`, publika sökvägar svarade
+som förut och runtime-hasharna var oförändrade. Rum paow3 hos nordic-bet
+provspelades av föregående agent 00:45 på `a5441feb`; det provet är inte gjort om.
+#53 (`36d6d13f`) är dokumentmergen efter planen. Därefter kom #54 (`426fa114`).
+Efterarbetet SL-01..SL-11 (bas `426fa114`, branch `jakob/ordning-slutfix`) har
+status per rad i `docs/CLOUD-MIGRATION.md`, "Repo-ordning, slutläge". Rättat där:
+SL-04 och SL-05. SL-03 hör till #50. SL-01/SL-02, SL-08, SL-09 och SL-11 är öppna.
 
 | Mått | Före `00ea55c5` | Efter `e602ea91` |
 | --- | --- | --- |
@@ -604,13 +777,21 @@ importvägar (`../` blev `../../../`), som i webbläsaren pekar på samma adress
 | `pipeline/`, skript | 109, varav 87 utan konsument | 21, varav 10 utan konsument |
 | Testfiler | 359 · 0 föräldralösa | 355 · 0 föräldralösa |
 | Importer `lab/lib → web(server)` · `pipeline → web/public` | 125 · 46 | 135 · 18 |
-| Systemkarta | gul · 0 röda · 165 varningar | gul · 0 röda · 5 varningar efter ny baslinje |
+| Systemkarta | gul · 0 röda · 165 varningar | gul · 0 röda · 5 varningar kvar efter ny baslinje |
 | GitGuardian | 0 öppna · 17 ignorerade | 0 öppna · 17 ignorerade |
 
+Efter att planmappen tagits bort har `a5441feb` 2 817 spårade filer och 388,03 MB.
+Måttet är spårade filer i trädet, inte `.git`-storlek och inte molnlagring.
+Systemkartan är gul med 0 röda. Varningarna gick från 165 till 5 när baslinjen
+byttes. Ny baslinje och färre varningar är inte borttagna fel. 5 varningar kvarstår.
+
 Importerna mellan Studio och spelmotorn ökade med ny kod på main under arbetet;
-de är A22:s område. Prov för A21 på V4-huvudet: Studio- och frontendbygget ger
-samma 74 genererade filer byte för byte, full pre-commit, 0 föräldralösa prov,
-0 röda i systemkartan och raderingsspärren 0. Kvar finns som punkter i
+de är A22:s område. Byggjämförelsen i A20/A21 gav 74 genererade filer med 0 byte
+skillnad. Separat kontroll av serverade runtime-moduler: `live-idle.mjs` är
+byteidentisk; `idle-policy.mjs` fick nya bytes bara i två relativa importvägar
+(`../` blev `../../../`) som pekar på samma serverade adresser. Övriga prov på
+V4-huvudet: full pre-commit, 0 föräldralösa prov, 0 röda i systemkartan och
+raderingsspärren 0. Kvar finns som punkter i
 `docs/CLOUD-MIGRATION.md` under "Repo-ordning, slutläge", bland annat B18, B19,
 A22b och acceptansen efter deploy.
 
@@ -627,9 +808,11 @@ raderade. `runtime/presentation` (83 filer) är orörd. Läppsynkverktygen i
 `lipsync-overrides.json`) är också borta, på Jakobs beslut, eftersom de hörde
 till bankens inspelade talklipp. En ny väg som automatiskt genererar talklipp
 från dealerns vilobild, på svenska och engelska, utreds separat. Röstprofiler,
-ElevenLabs- och Cartesia-källorna och GPU-workerns läppsynk är orörda. Partnerdokumentet visar
-tomma `streams`, `deals` och `speech`, och att `/dealer/…` och `/dealers/…`
-svarar 410. API-beteendet är oförändrat. `AGENTS.md` kräver nu kroken och
+ElevenLabs- och Cartesia-källorna, GPU-workerns läppsynk och dess CI-jobb är inte
+avvecklade. Filen `partner-api.html` beskriver tomma `streams`, `deals` och
+`speech`, och att `/dealer/…` och `/dealers/…` svarar 410. www ger 404 och Render
+direkt 421 för `partner-api.html`. Det är ett rapporterat läge, inte ett beslut
+att exponera dokumentet. API-beteendet i övrigt är oförändrat. `AGENTS.md` kräver nu kroken och
 provspelning av berörda registrerade dealers i stället för den borttagna proben.
 
 Prov, lokalt med Node 24:

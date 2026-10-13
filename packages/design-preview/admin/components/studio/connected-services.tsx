@@ -10,6 +10,7 @@ const groups: Record<string,string> = {
 
 function Administration({group}:{group:string}) {
   const [actions,setActions]=useState<string[]|null>(null);
+  const [gameOrigin,setGameOrigin]=useState<string>();
   const [error,setError]=useState('');
   const [refresh,setRefresh]=useState(0);
   useEffect(()=>{
@@ -20,12 +21,14 @@ function Administration({group}:{group:string}) {
         if(!response.ok)throw Error([401,403].includes(response.status)?'Din N1-session saknas eller har gått ut. Logga in igen.':'Administrationen kunde inte nås.');
         const value=await response.json();
         if(!Array.isArray(value.availableActions)||!value.availableActions.every((action:unknown)=>typeof action==='string'))throw Error('Serverns administrationsbehörigheter kunde inte verifieras.');
-        if(!controller.signal.aborted)setActions(value.availableActions);
+        let origin:string|undefined;
+        try{const approved=new URL(value.gameOrigin);if(approved.protocol==='https:'&&approved.origin===value.gameOrigin)origin=approved.origin;}catch{/* A missing configuration cannot enable launch-link actions. */}
+        if(!controller.signal.aborted){setGameOrigin(origin);setActions(origin?value.availableActions:value.availableActions.filter((action:string)=>action!=='POST apikeys/launch'));}
       }catch(cause){if(!controller.signal.aborted)setError((cause as Error).message);}
     })();
     return()=>controller.abort();
   },[refresh]);
-  return <section className="p-5">{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:<NativeAdministration key={group} apiBase="/studio/api/admin" availableActions={actions} initialGroup={group}/>}</section>;
+  return <section className="p-5">{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:<NativeAdministration key={group} apiBase="/studio/api/admin" availableActions={actions} gameOrigin={gameOrigin} initialGroup={group}/>}</section>;
 }
 
 function AgentChat() {
