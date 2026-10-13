@@ -29,11 +29,11 @@ tid och dimensioner; 25 riktade kompositorprov passerar. Två nya lokala
 spelningar med sluträttningarna gav 7 röd → 26 svart och saldo
 500 → 505 → 500. Därefter fortsatte Jakob själv i det isolerade provrummet.
 Kvitton/bilder sparades privat; detta är fortfarande inte lobbyacceptans.
-Studioåtkomst stoppas för närvarande av `ERR_BLOCKED_BY_CLIENT`; ingen
-adminsessionsnyckel har exporterats. Leverans väntar även på separat
-migrations-/budgetrelease PR108 (ersätter PR107); blanda inte dess schema
-med äldre runtime. Vercels senaste main-bygge `f22cb718` misslyckades i
-webbtjänstens `next/font`; senaste observerade READY är `4d6b1ebc`.
+Migrations-/budgetrelease PR108 är nu mergad som `4df384ab` och integreras
+i roulettebranchen. Vercel rapporterar READY för denna main-version.
+Admin går att öppna igen efter driftsättningen; slutuppladdning/publicering
+återstår. Ingen adminsessionsnyckel har exporterats. Render-budgetens
+livekvitto hanteras av den separata merge-chatten före nästa release.
 Säkerhetsstatus 13 oktober: ny öppen
 incident 38176586 utan tillgänglig filplats; täckning ofullständig.
 
@@ -121,6 +121,26 @@ och handmatta ur samma bildruta. GitGuardian-läsningen visade 0 öppna/17
 ignorerade incidenter, aktiv övervakning; historisk scan `too_large`, platsdata
 delvis tillgängliga och main-check köad. Detta är ingen fullständig historisk
 friskförklaring.
+## GPU-testbudget 20 USD, 13 oktober
+
+Jakob höjde uttryckligen dygnstaket till 20 USD. Dagssumman avser konservativa
+GPU-reservationer per UTC-dygn, inte RunPods faktura eller separat LLM-/TTS-trafik.
+Avläsning 19:47 UTC: 14 sessioner à 0,50 USD = 7 USD; även avbrutna försök räknas.
+
+Kodens dygnsgräns är nu 20 USD. Effektivt tak är fortfarande det lägsta av
+Render-inställningen och sparad Neon-policy. Sessionsreserven 0,50 USD och
+fullfilsreserven 1 USD behålls; per-jobbgränsen är fortsatt 10 USD. Ingen historik,
+reservation, återbetalning eller befintlig QA-kampanj ändras av höjningen.
+
+Obligatorisk Studio-migration 011 vidgar endast budgetpolicyns exakta CHECK.
+009/010 är fortsatt reserverade för B18/B19. Äldre SQL-/strukturchecksummor
+bevaras och verifieras genom exakt versionerad strukturevolution; okänd drift
+eller saknad 011-ledger nekas. Migrationen körs före merge. Först efter deploy
+av koden uppdateras produktionspolicyn och Render-variabeln till 20 USD.
+150 riktade tester och ett verkligt Neon-migrationsprov med full rollback PASS.
+Render-startens exakta ledgerkontroll inkluderar också 011; CI kör verklig isolerad SQL-/omstartsacceptans.
+Två tekniskt färdiga Paow-spelningar ersätter inte visuell läppsynkacceptans.
+
 ## Publik Scoutguide med D-ID, 13 oktober
 
 Besökare, N2 och N3 får en separat Scoutguide genom den gemensamma chattknappen.

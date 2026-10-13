@@ -4,6 +4,7 @@ import { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS } from './sp
 
 export { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS };
 const MAX_MICRO_USD = 10000000;
+const MAX_DAILY_MICRO_USD = 20000000;
 const resources = new Set(['fullfile-provider', 'stream-session', 'operator-qa']);
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
 const activeRequests = new Set(['reserved', 'submission_started', 'submission_uncertain']);
@@ -24,8 +25,8 @@ const integer = (value, max = Number.MAX_SAFE_INTEGER) => {
   if (!Number.isSafeInteger(value) || value < 0 || value > max) fail('generated_speech_journal_invalid', 409);
   return value;
 };
-const microUsd = value => {
-  if (!Number.isSafeInteger(value) || value < 1 || value > MAX_MICRO_USD) fail('invalid_generated_speech_budget', 422);
+const microUsd = (value, maximum = MAX_MICRO_USD) => {
+  if (!Number.isSafeInteger(value) || value < 1 || value > maximum) fail('invalid_generated_speech_budget', 422);
   return value;
 };
 const ttl = value => {
@@ -170,9 +171,9 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
   const getPolicy = async (client, current) => {
     const saved = await row(client, 'get_policy', 'SELECT * FROM croupier_studio.gpu_budget_policies WHERE environment_id = $1', [environment]);
     if (!saved || saved.version !== 1) fail('generated_speech_budget_policy_missing', 409);
-    const persisted = integer(saved.daily_budget_micro_usd, MAX_MICRO_USD);
+    const persisted = integer(saved.daily_budget_micro_usd, MAX_DAILY_MICRO_USD);
     if (!persisted) fail('generated_speech_journal_invalid', 409);
-    return { dailyBudgetMicroUsd: Math.min(persisted, microUsd(current)), savedBudgetMicroUsd: persisted };
+    return { dailyBudgetMicroUsd: Math.min(persisted, microUsd(current, MAX_DAILY_MICRO_USD)), savedBudgetMicroUsd: persisted };
   };
   const getFullfilePolicy = async (client, reserve, time) => {
     microUsd(reserve);
@@ -336,7 +337,7 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
       });
     },
     async initializeBudgetPolicy({ dailyBudgetMicroUsd, confirmation } = {}) {
-      microUsd(dailyBudgetMicroUsd);
+      microUsd(dailyBudgetMicroUsd, MAX_DAILY_MICRO_USD);
       // This is an explicit operator assertion, NOT evidence that old disk cost
       // journals are empty. Integration must preserve/import them before cutover.
       if (confirmation !== 'verified-new-empty-cost-journal') fail('generated_speech_budget_bootstrap_required', 409);
@@ -353,7 +354,7 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
       });
     },
     async initializeFullfileBudgetPolicy({reserveMicroUsd,currentBudgetMicroUsd,confirmation}={}){
-      microUsd(reserveMicroUsd);microUsd(currentBudgetMicroUsd);
+      microUsd(reserveMicroUsd);microUsd(currentBudgetMicroUsd, MAX_DAILY_MICRO_USD);
       if(confirmation!=='verified-new-empty-cost-journal')fail('generated_speech_budget_bootstrap_required',409);
       return transaction(async(client,time)=>{
         const budget=await getPolicy(client,currentBudgetMicroUsd);
@@ -371,11 +372,11 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
       });
     },
     async getBudgetPolicy({ currentBudgetMicroUsd } = {}) {
-      microUsd(currentBudgetMicroUsd);
+      microUsd(currentBudgetMicroUsd, MAX_DAILY_MICRO_USD);
       return transaction(client => getPolicy(client, currentBudgetMicroUsd));
     },
     async reserveSession({ sessionId, endpointId, lease, reserveMicroUsd, currentBudgetMicroUsd, workerState } = {}) {
-      check(sessionId, sessionIdPattern); check(endpointId, endpointPattern); microUsd(reserveMicroUsd); microUsd(currentBudgetMicroUsd); drained(workerState);
+      check(sessionId, sessionIdPattern); check(endpointId, endpointPattern); microUsd(reserveMicroUsd); microUsd(currentBudgetMicroUsd, MAX_DAILY_MICRO_USD); drained(workerState);
       return transaction(async (client, time) => {
         await getLease(client, lease, time, { paid: true });
         if (lease.resource !== 'stream-session') fail('invalid_generated_speech_lease', 422);

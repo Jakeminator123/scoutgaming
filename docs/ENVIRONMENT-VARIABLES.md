@@ -646,7 +646,7 @@ Render-spelets villkorliga grupper:
   10 USD, högst sex decimaler). Sessionsreserven skickas enbart till Web
   och måste beräknas från den avsedda RunPod-sessionens pris före aktivering.
   `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD` krävs samtidigt, med samma
-  decimalformat och högst 10 USD, minst sessionsreserven. Även den går
+  decimalformat och högst 20 USD, minst sessionsreserven. Även den går
   endast till Web. Redan förbrukade GPU-medel ska räknas av från dagens
   tillgängliga budget före aktivering; den beständiga sessionsliggaren
   behåller reserver genom omstart. Se [aktuell handoff](JOHN-HANDOFF.md).

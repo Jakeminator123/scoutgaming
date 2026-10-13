@@ -335,3 +335,18 @@ test('lost fullfile COMMIT and uncertain/cancelled jobs keep reserved cost after
   assert.equal(f.pool.state.fileReservations.size,1);assert.equal([...f.pool.state.requests.values()][0].state,'submission_uncertain');
   assert.equal(f.pool.trace.filter(t=>t==='insert_file_reservation').length,1);
 });
+
+ test('20 USD daily policy retains the environment minimum and 10 USD per-job ceiling', async()=>{
+   const {journal,pool}=await fixture();
+   await initPolicy(journal,20000000);
+   const lease=await streamLease(journal);
+   await assert.rejects(reserve(journal,lease,sessionId,{reserveMicroUsd:10000001,currentBudgetMicroUsd:20000000}),rejection('invalid_generated_speech_budget',422));
+   await assert.rejects(reserve(journal,lease,sessionId,{currentBudgetMicroUsd:20000001}),rejection('invalid_generated_speech_budget',422));
+   await reserve(journal,lease,sessionId,{reserveMicroUsd:500000,currentBudgetMicroUsd:20000000});
+   await journal.markSubmissionStarted({sessionId,lease});
+   await journal.attachJob({sessionId,lease,jobId:'job-'+sessionId});
+   await finish(journal,lease);
+   await assert.rejects(reserve(journal,lease,sessionId2,{reserveMicroUsd:500000,currentBudgetMicroUsd:500000}),rejection('generated_speech_daily_budget_exhausted',429));
+   await reserve(journal,lease,sessionId2,{reserveMicroUsd:500000,currentBudgetMicroUsd:20000000});
+   assert.equal(pool.state.reservations.size,2);
+ });
