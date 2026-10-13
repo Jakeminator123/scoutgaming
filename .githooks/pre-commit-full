@@ -22,7 +22,7 @@ run_node_tests() {
 node docs/system-map/verify.mjs --check
 run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/admin/lib/dealer-artwork.test.mjs packages/design-preview/admin/lib/dealer-playback.test.mjs packages/design-preview/admin/lib/connected-studio.test.mjs packages/design-preview/admin/lib/studio-composition-panel.test.mjs packages/design-preview/admin/lib/studio-layout.test.mjs packages/design-preview/admin/lib/system-overview.test.mjs packages/design-preview/admin/lib/studio-policy.test.mjs packages/design-preview/admin/lib/studio-lifecycle.test.mjs packages/design-preview/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
 run_node_tests lab/test/material-trash.test.mjs lab/test/material-trash-ui.test.mjs
-run_node_tests lab/test/assistant.test.mjs
+run_node_tests lab/test/assistant.test.mjs lab/components/control-openclaw-chat.test.mjs
 run_node_tests lab/test/dealer-import.test.mjs lab/test/dealer-import-integration.test.mjs packages/design-preview/admin/lib/dealer-import.test.mjs
 run_node_tests test/room-environment.mjs
 run_node_tests packages/design-preview/admin/lib/economy-journal.test.mjs
