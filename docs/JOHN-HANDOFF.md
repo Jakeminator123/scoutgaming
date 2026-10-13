@@ -1,5 +1,19 @@
 # Aktuell handoff — Scoutgaming
 
+## Rörligt dealertal: förberedd adapter, 14 oktober
+
+RunPod-åtkomsten och staging-imagen är identifierade. Befintlig GitHub-
+inloggning ger fortfarande 403 för container-manifestet; källkod och
+hashbunden avatarbank behöver verifieras. Se LOCAL-PRESENTATION-RUNTIME.md
+för exakta observationer och nästa kopplingssteg.
+
+En inaktiv bildruteadapter förbereder worker-kartor för Paow och
+Dragan/dragge, binder tal/version/ljud/media och släpper bara exakta
+frame-matchningar till dealerlagret före beskärning/keying. Den ändrar
+inte liveplayer, OpenClaw, röster, providerinställningar eller spelmotor.
+Riktade kontrakttester är tillagda i full pre-commit. Build/full regression
+redovisas vid leverans. Livejobb och två visuella talprov per dealer återstår.
+
 ## Admin: återstående kompatibilitetsluckor, 13 oktober
 
 Talgranskning finns i Admins verktyg och öppnar befintlig granskningskomponent
