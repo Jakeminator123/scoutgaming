@@ -1,21 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
-import type { Dealer } from "@/lib/lobby-data";
+import { useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import type { Portrait } from "@/lib/dealer-portraits.mjs";
+import { usePortraitVideo } from "@/hooks/use-portrait-video";
 import { cn } from "@/lib/utils";
 import { DEALER_KEY_FILTER_ID } from "@/components/dealer-key-filter";
 
-const FIRST_DELAY: [number, number] = [5_000, 15_000];
-const IDLE_DELAY: [number, number] = [35_000, 65_000];
-const HOVER_PLAY_DELAY = 220;
-
 type DealerPortraitProps = {
-  dealer: Dealer;
+  dealer: Portrait;
   /** Environment painted in behind the dealer when hovered, selected or forced. */
   backdrop: string;
   sizes: string;
-  /** Random idle clips keep playing even when the parent is blurred/locked. */
+  /** Idle clips repeat every 50 s after completion, even when the parent is blurred/locked. */
   idle?: boolean;
   /** Hover/focus (via a parent `group`) paints the backdrop and brings colour. */
   interactive?: boolean;
@@ -32,10 +29,6 @@ type DealerPortraitProps = {
   children?: ReactNode;
 };
 
-function randomBetween([min, max]: [number, number]) {
-  return min + Math.random() * (max - min);
-}
-
 export function DealerPortrait({
   dealer,
   backdrop,
@@ -51,54 +44,10 @@ export function DealerPortrait({
   alt = "",
   children,
 }: DealerPortraitProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const hoverTimer = useRef<number | undefined>(undefined);
-  const [visible, setVisible] = useState(false);
-  const [clip, setClip] = useState<string | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [round, setRound] = useState(0);
+  const { rootRef, videoRef, clip, playing, finish, hover, leave, onPlaying } = usePortraitVideo({
+    clips: dealer.clips, idle, interactive, playOnMount,
+  });
   const [origin, setOrigin] = useState({ x: 50, y: 50 });
-
-  const clips = dealer.clips ?? [];
-  const hasClips = clips.length > 0;
-
-  useEffect(() => {
-    const node = rootRef.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), {
-      rootMargin: "80px",
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!idle || !visible || !hasClips || clip) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const delay = playOnMount && round === 0 ? 700 : randomBetween(round === 0 ? FIRST_DELAY : IDLE_DELAY);
-    const timer = window.setTimeout(() => {
-      if (document.visibilityState !== "visible") {
-        setRound((r) => r + 1);
-        return;
-      }
-      setClip(clips[Math.floor(Math.random() * clips.length)]);
-    }, delay);
-
-    return () => window.clearTimeout(timer);
-  }, [idle, visible, hasClips, clip, round, clips, playOnMount]);
-
-  useEffect(() => () => window.clearTimeout(hoverTimer.current), []);
-
-  // The still returns instantly underneath, then the clip fades out on top, so the
-  // environment never bleeds through a half-transparent dealer.
-  const finishClip = () => {
-    setPlaying(false);
-    window.setTimeout(() => {
-      setClip(null);
-      setRound((r) => r + 1);
-    }, 350);
-  };
 
   const handlePointerEnter = (event: PointerEvent<HTMLDivElement>) => {
     if (!interactive) return;
@@ -107,16 +56,7 @@ export function DealerPortrait({
       x: ((event.clientX - rect.left) / rect.width) * 100,
       y: ((event.clientY - rect.top) / rect.height) * 100,
     });
-
-    if (!hasClips || clip || event.pointerType !== "mouse") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    hoverTimer.current = window.setTimeout(() => {
-      setClip(clips[Math.floor(Math.random() * clips.length)]);
-    }, HOVER_PLAY_DELAY);
-  };
-
-  const handlePointerLeave = () => {
-    window.clearTimeout(hoverTimer.current);
+    if (event.pointerType === "mouse") hover();
   };
 
   const style = {
@@ -129,7 +69,9 @@ export function DealerPortrait({
       ref={rootRef}
       style={style}
       onPointerEnter={handlePointerEnter}
-      onPointerLeave={handlePointerLeave}
+      onPointerLeave={leave}
+      onFocus={hover}
+      onBlur={leave}
       className={cn("relative overflow-hidden bg-ink", className)}
     >
       <Image src={backdrop} alt="" fill sizes={sizes} className="object-cover" />
@@ -170,14 +112,15 @@ export function DealerPortrait({
           {clip && (
             <video
               key={clip}
+              ref={videoRef}
+              tabIndex={-1}
               src={clip}
-              autoPlay
               muted
               playsInline
               preload="auto"
-              onPlaying={() => setPlaying(true)}
-              onEnded={finishClip}
-              onError={finishClip}
+              onPlaying={onPlaying}
+              onEnded={finish}
+              onError={finish}
               aria-hidden
               className={cn(
                 "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
