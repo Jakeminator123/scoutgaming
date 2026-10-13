@@ -22,13 +22,5 @@ export function portraitFor(dealer) {
 }
 
 export function dealerCards(availableDealers = []) {
-  return [
-    ...dealerPortraits.flatMap(portrait => {
-      const registered = availableDealers.filter(dealer => portraitFor(dealer) === portrait);
-      return registered.length
-        ? registered.map(dealer => ({ ...dealer, available: true }))
-        : [{ id: portrait.id, name: portrait.name, available: false }];
-    }),
-    ...availableDealers.filter(dealer => !portraitFor(dealer)).map(dealer => ({ ...dealer, available: true })),
-  ];
+  return availableDealers.map(dealer => ({ ...dealer, available: true }));
 }

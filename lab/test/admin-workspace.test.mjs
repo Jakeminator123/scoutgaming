@@ -24,6 +24,27 @@ test('every existing Control tool and registered N1 view has a served Admin dest
   assert.equal(adminDocumentHref('/control/operator-chat?dealer=dragan'),'/admin/dealer-agent?dealer=dragan');
   assert.equal(adminDocumentHref('/control/dealer-forge?dealerId=dragan'),'/admin/dealer-studio?view=generate&dealer=dragan');
 });
+test('speech review retains its actual group and dealer on a served Admin document',()=>{
+  const target=adminDocumentHref('/control/administration?tab=media-review&dealer=dragan&lane=portrait');
+  assert.equal(target,'/admin/media-review?tab=media-review&dealer=dragan&composition=portrait');
+  assert.equal(adminToolName('/admin/media-review'),'media-review');
+  assert.ok(designPreviewPages.has('media-review'));
+  assert.equal(studioLoginReturnTo(target),target);
+});
+test('legacy lanes bookmarks preserve the company tab instead of opening publication',()=>{
+  for(const prefix of ['/control','/studio/control']){
+    assert.equal(adminDocumentHref(prefix+'/lanes?tab=companies&operator=nord&lane=portrait'),'/admin/companies?operator=nord&composition=portrait');
+    assert.equal(adminDocumentHref(prefix+'/lanes?tab=publish&operator=nord&lane=portrait'),'/admin/publication?operator=nord&composition=portrait');
+  }
+});
+test('legacy clip dealerId bookmarks restore the dealer and retain explicit dealer precedence',()=>{
+  for(const prefix of ['/control','/studio/control']){
+    const target=adminDocumentHref(prefix+'/clips?dealerId=dragan&view=speech');
+    assert.equal(target,'/admin/dealer-studio?view=speech&dealer=dragan');
+    assert.equal(studioLoginReturnTo(target),target);
+    assert.equal(adminDocumentHref(prefix+'/clips?dealer=paow&dealerId=dragan&view=clips'),'/admin/dealer-studio?dealer=paow&view=clips');
+  }
+});
 test('compatibility redirect preserves clip context and never rewrites API or authentication traffic',()=>{
   const config={nativeStudio:true,publicOrigin:'https://site.invalid'};
   const old=new URL('https://site.invalid/control/clips?dealer=dragan&view=speech&event=speak.welcome');

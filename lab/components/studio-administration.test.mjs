@@ -139,7 +139,7 @@ test('native administration preserves its standalone shell and embeds without a 
     assert.equal(view.companyTeamLabel, undefined);
   }
   assert.equal(views[2].roomsHref, '/admin/rooms?view=registered');
-  assert.equal(views[2].companyTeamLabel, 'Bolag & team (äldre editor)');
+  assert.equal(views[2].companyTeamLabel, 'Bolag & team');
 });
 
 function buttons(tree, text) { return nodes(tree, node => node.type === 'button' && node.props.children === text); }

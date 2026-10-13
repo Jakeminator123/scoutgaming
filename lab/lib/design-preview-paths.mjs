@@ -1,5 +1,5 @@
 import {ADMIN_WORKSPACE_TOOLS} from './admin-workspace-routes.mjs';
-export const designPreviewPages = new Set([...Object.keys(ADMIN_WORKSPACE_TOOLS),'tools', '', 'structure', 'rooms', 'dealers', 'clips', 'assets', 'drift', 'ekonomi',
+export const designPreviewPages = new Set([...Object.keys(ADMIN_WORKSPACE_TOOLS),'tools', '', 'structure', 'deletion', 'rooms', 'dealers', 'clips', 'assets', 'drift', 'ekonomi',
   'admin/accounts', 'admin/operators', 'admin/players', 'admin/payments', 'admin/api', 'admin/log', 'ai/models', 'ai/chat']);
 export function designPreviewReturnTo(value) {
   if(typeof value!=='string'||value.length>2048||/[\\#\x00-\x20]/.test(value)||value.startsWith('//'))return null;

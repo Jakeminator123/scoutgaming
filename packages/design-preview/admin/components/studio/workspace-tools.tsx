@@ -18,12 +18,13 @@ import {studioNavigationContextFromQuery} from '../../../../../lab/lib/studio-na
 import {ADMIN_WORKSPACE_TOOLS} from '../../../../../lab/lib/admin-workspace-routes.mjs';
 import {labUrl} from '../../../../../lab/lib/lab-url.mjs';
 import {withAdminContext} from '../../../runtime/admin-routing.mjs';
+import {ConnectedServices} from './connected-services';
 
 type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean;
   operators:LaneOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
 const groups=[
   {title:'Bolag och rum',items:['companies','publication','compositions']},
-  {title:'Dealers och material',items:['dealer-studio','videos','replies','material-library']},
+  {title:'Dealers och material',items:['dealer-studio','videos','replies','media-review','material-library']},
   {title:'Provspelning och regler',items:['rehearsal','events','probe','dealer-agent','guide']},
 ];
 export function WorkspaceToolsHome(){return <section className="p-6"><h1 className="text-2xl font-semibold">Verktyg</h1>
@@ -60,10 +61,11 @@ export function WorkspaceTool({section}:{section:string}){
     case 'events':content=get('event')?<ControlEventsPage {...common} initialTab={get('tab')}/>:<ControlTreePage {...common}/>;break;
     case 'videos':content=<ControlVideosPage {...common}/>;break;
     case 'replies':content=<ControlRepliesPage dealers={data.project.dealers} initialDealerId={get('dealer')} initialCategory={get('category')} initialNavigationContext={studioNavigationContextFromQuery(q)}/>;break;
+    case 'media-review':content=<ConnectedServices path="/admin/media-review" dealerId={get('dealer')}/>;break;
     case 'probe':content=<ControlProbePage {...common}/>;break;
     case 'guide':content=<ControlGuidePage {...common}/>;break;
     case 'dealer-agent':content=<ControlOpenClawChat {...common} standaloneVoicePreviewAvailable={false}/>;break;
-    case 'material-library':content=<ControlLayerLibraryPage {...common} initialRole={get('role')==='background'?'background':'table'}/>;break;
+    case 'material-library':content=<ControlLayerLibraryPage {...common} initialRole={get('tab')==='backgrounds'?'background':get('tab')==='tables'?'table':get('role')==='background'?'background':'table'}/>;break;
     default:return <p role="alert">Verktyget finns inte.</p>;
   }
   return <div className="admin-workspace-tool"><div className="flex flex-wrap gap-4 border-b border-sg-line px-6 py-3 text-sm">
