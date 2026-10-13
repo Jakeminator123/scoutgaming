@@ -30,6 +30,32 @@ visar kartläggningen uttryckligen filnamnsregler. Chatt visar i stället att AI
 inte är tillgängligt och lämnar placeringar/godkännanden orörda. Sparandet använder befintlig
 N1-behörighet och privata Blob-/registerflöden efter separat mänskligt godkännande.
 
+## Avslutsrättning 13 oktober 2026: Vercel och Blob-metadata
+
+CLI och anslutna Vercel-verktyg verifierade teamet `scoutgaming`, projektet
+`scoutgaming` (`prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`) och samma team i den lokala
+projektlänken. Det personliga teamet finns också men användes inte för åtgärden.
+Enligt Jakobs uttryckliga begäran togs endast `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY`
+(`R8EEeym41phJSfgk`, Production + Preview) bort från projektinställningarna.
+Posten hade Blob-contentHint och giltigt Ed25519/PEM-format; den är en publik
+webhooknyckel, inte en API-nyckel, och läses inte av applikationskoden.
+
+Efterläsning verifierade att posten saknas och att övriga env-posters ID,
+namn, typ och scope är oförändrade. `BLOB_READ_WRITE_TOKEN` behölls.
+Det privata lagret `croupier-media-private` (`store_AqwvebTbBHarOjvG`) är
+fortsatt aktivt med 1 845 objekt. Projektkopplingens ID, projekt, prefix och
+Production/Preview-scope är oförändrade; dess env-metadata speglar borttagningen.
+Ingen fil, lagringsresurs eller token raderades. En framtida återanslutning av
+lagret kan tillföra managed metadata på nytt; den lokala filen styr inte
+Vercels projektinställningar eller redan skapade deployments.
+
+`OPENAI_API_KEY` uppdaterades separat i rotens Git-ignorerade `.env.local`.
+Övriga lokala rader bevarades. Värdet kopierades inte till molninställningar,
+dokumentation eller Git, och ingen leverantörskontroll/debiterbar körning gjordes.
+En nyckel som klistrats in i chatten ska ersättas före fortsatt användning.
+
+## Förteckning och tidigare verifieringskvitton
+
 Detta är den läsbara nyckelnamnsförteckningen. Den maskinläsbara listan finns i
 [`environment-variables.json`](environment-variables.json) och används av CI
 och systemkartan. Båda är aktiva referenser; ingen av dem laddas som processmiljö.
@@ -111,8 +137,9 @@ därför som en Production-hemlighet från den lokala filen via CLI-stdin, efter
 ett läsande 200-svar från Directors admin-API med samma Gateway-nyckel.
 Den äldre Vercel-posten togs därefter bort. Efterläsning visar 59 poster,
 51 unika namn och inga ändringar av övriga posters namn, typ eller scope.
-Rotens lokala `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` saknade PEM-markörer och
-har rättats mot Vercels publika post. Labbets kopia matchade redan den posten.
+Vid den tidigare env-granskningen rättades rotens lokala
+`CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` mot Vercels publika post; labbets kopia
+matchade då redan posten. Vercel-posten togs senare bort enligt nedan.
 `LAB_PARTNER_*` används genom en dynamisk kompatibilitetsmappning i
 `lab/lib/partner-observer.mjs`; en sökning efter fullständiga namn missar detta.
 `GEMINI_API_KEY` saknar referenser i mains källkod och ingår inte i den isolerade
@@ -167,9 +194,9 @@ saknade värden: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `LAB_REMOTE_URL`,
 `LAB_REMOTE_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_TOKEN` och `NODE_OPTIONS`.
 Kvar med avsikt: tomma `CARTESIA_API_KEY` och `RUNPOD_API_KEY` (blockerade för
 `vercel-lab-ui`; `lab/lib/voice-preview.mjs` skiljer tomt från saknat),
-`CROUPIER_MEDIA_STORE_ID` och `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` (managed,
-hör till Blob-kopplingen; publik Ed25519-nyckel med giltiga radbrytningar,
-läses inte av koden), samt `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW`
+`CROUPIER_MEDIA_STORE_ID` (managed, hör till Blob-kopplingen; läses inte av
+koden). Den då kvarvarande `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` togs bort
+13 oktober enligt nedan. Även `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW`
 och `CROUPIER_LISSABON_PROFILES` = `0` i Production (läses av talvägen;
 Render-motorn vägrar starta om någon är `1`, `ops/cloud/config.mjs`). Inga
 formatfel (radbrytningar, citattecken, blanksteg) hittades i läsbara variabler.
