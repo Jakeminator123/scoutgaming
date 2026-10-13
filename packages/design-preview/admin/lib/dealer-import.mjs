@@ -103,6 +103,16 @@ export function importClassification(row, dealerId, catalog) {
     ...(audio ? {mediaType:'audio'} : {compositing:{...DEFAULT_DEALER_COMPOSITING}}),
   }, {forWrite:true});
 }
+export function importRowError(row, dealerId, catalog) {
+  if (row.state === 'saved' || row.state === 'saving') return '';
+  if (row.state === 'error') return importErrorMessage(row.message || 'Kontrollera biblioteket innan filen läggs till igen.');
+  const unsupported = importBatchError([row]);
+  if (unsupported) return unsupported;
+  if (!row.slotId || !catalog.slots.some(slot => slot.id === row.slotId && compatibleImportSlot(row.file,slot) && !slot.pose)) return 'Välj ett fack för den här filen.';
+  try {importClassification(row,dealerId,catalog);return '';}
+  catch (cause) {return importErrorMessage(cause instanceof Error ? cause.message : 'Kontrollera filens fack och bakgrund.');}
+}
+
 export function applyImportProposals(rows, proposals, slots) {
   const byId = new Map(proposals.map(proposal => [proposal.fileId, proposal]));
   return rows.map(row => {

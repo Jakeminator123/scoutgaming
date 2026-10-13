@@ -2417,24 +2417,66 @@ av Annas framtida spelklipp eller produktionspublicering. Ingen livekatalog,
 databas, spelregistrering eller modellkonfiguration ändras. PR:ns kontroller
 anger slutlig full regressionsstatus; merge/deploy görs inte i denna uppgift.
 
-## Ny dealer och fler importomgångar, 13 oktober 2026
+## Samlad Admin, dealers och import, 13 oktober 2026
 
-Läsande N1-kontroll fann nio registrerade dealers och ingen Dragge. Admins
-import krävde en sparad dealer men saknade skapandekontroll. `/admin/clips`
-har nu fliken **Ny dealer / flera filmer**: skapa namnet med ordinarie N1-
-skyddad projekt-PUT och färsk revision, välj dealern och godkänn filmimporten.
-Skapande spärras vid osparat kartutkast eller osparade importfiler. Sparandet
-försöks aldrig om blint; rum, publicering och andras klipp ändras inte.
+Admin återanvänder de befintliga editorerna för bolag/team, rum/publicering,
+sammansättningar, dealerinställningar, klipp/svar, material, provspelning,
+händelser, Probe, dealeragent och guide. Verktyg samlar dem i Admins meny.
+En explicit dokumentmappning leder gamla Control-länkar till Admin och bevarar
+kontext; API:er, inloggning och lösenordslänkar behåller sina kontrakt. Osparade
+editorer lämnas via full dokumentnavigering så deras befintliga skydd fungerar.
+Admins läsadapter finns under det befintliga skyddade `/studio/api/admin`.
+Inget nytt datalager eller schemasteg införs. `lab/` förblir aktiv källa och
+`/studio` API-monteringen; Control-filer behålls för övergång/återrullning men
+ingen av de inventerade fungerande verktygsvyerna kräver Control i native drift.
 
-Importeraren tillåter tio osparade filer per omgång, 128 MiB per fil. Sparade
-rader tog tidigare upp nästa omgångs platser; de ersätts nu när nya filer väljs.
-Osäkra/felande rader behålls och dubbletter kontrolleras innan sparade kvitton
-frigörs. Detta är en kögräns, inte belagd lagringsbrist. Registrets 32-dealersgräns
-inkluderar arkiverade dealers. `?tool=import&dealer=<id>` väljer bara ett exakt
-registrerat id och bevarar pågående import. Inget automatisk filval eller
-godkännande görs.
+Byggspårningsskyddet skiljer nu på privata filer i projektet och `.codex` i
+worktreens överordnade sökväg. Det bevarar riktiga serverberoenden samtidigt
+som miljöfiler, lokalt tillstånd och råa dealermedier fortfarande utesluts.
 
-55 riktade regressions-/integrationstester och Admins produktionsbygge med
-typkontroll passerade. Inga livepersoner eller filer skapades. Inga playback-
-eller mediebytes ändrades; verklig uppladdning och eventuell efterföljande
-spelacceptans återstår med Jakobs egna filer efter driftsättning.
+`/admin/dealers` är egen menyrad med skapa, ladda upp, ta bort och en hopfälld
+papperskorg för återställning. Dragan kan väljas direkt även utan rum. N1:s
+klippkarta kan också öppna registrerade dealers utanför vald rumsmall; den
+visar skillnaden och ändrar inte tillåtna dealers förrän mallen uttryckligen
+redigeras. Dolda röstformulär föreslår inte längre osparade värden innan de öppnas.
+
+**Kopplingar** visar bolag → spel → rum och mallens bakgrunder, dealers och bord.
+Gemensam mallredigering visar samtliga berörda rum. Rumsbundna val använder
+den befintliga scoped-writern. Skapande använder N1-projektets CAS; borttagning
+använder serverns konsekvenskontroll, revision och token. Klippkategorier följer
+med i dealerTrash-snapshot och återställs med identiteten. Både kategorilänkar
+och media ändras i samma befintliga SQL-transaktion. Ett injicerat mediafel efter
+projektskrivningen verifierar ROLLBACK av projekt, media, historik och audit.
+Ordinarie projekt-PUT får fortfarande inte kringgå livscykelkontrollerna.
+Trash med sparade kategorier kräver spelserverns capability v14
+(`dealerCategoryTrash: retained-categories-v1`). Äldre Render-runtime blockerar
+skrivningen före mutation. Båda tjänsterna måste vara uppdaterade vid acceptans.
+
+Importen bygger vidare på mergad PR #94: 30 osparade filer per omgång, 128 MiB
+per fil, nästa omgång återanvänder platser och osäkra kvitton försöks inte om.
+Filknappen är en vanlig knapp, bakgrund kan väljas för hela omgången och fel
+namnger filen. **OK – placera klippen** ersätter separat granska-knapp, checkbox
+och bekräftelseknapp. Dealer-valet behöver ingen ytterligare checkbox.
+
+Adminrobotens N1-chatt laddar en separat importmodul från Admins tillgångar.
+Filer kan dras in direkt; **Sortera och placera** ger uppdraget och sparar
+exakta förslag genom befintlig privat Blob-uppladdning. Oklara förslag stannar
+för rättning i chatten. Ny katalog och native grants kontrolleras före skrivning;
+modellen får filbeskrivningar och kan inte själv utfärda uppladdningsrättigheter.
+MP4/WebM stöds; zip, ljud och transparent assistentimport återstår. Ingen
+publicering, spelacceptans eller läppsynksacceptans sker genom importen.
+
+Lab-produktionsbygge, Admin-typkontroll och frontendens TypeScript har passerat.
+Ordinarie pre-commit på implementationen: 3 414 godkända, 11 skips, 0 fel
+över 72 testgrupper med Node 24.21.0 och fyra lokala arbetare.
+Isolerade webbprov verifierade skapa, arkivera, återställa och mallkoppling utan
+produktionsdata. Bolag & team öppnades i Admin och Dealers → Dragan → import
+behöll rätt dealer. Det senaste filväljarprovet avbröts när webbläsarverktyget
+slutade svara; det är inte ett godkänt uppladdningsprov. Testservern är avslutad.
+30-filers chattimport har verifierats med injicerad uppladdning, inklusive oklara
+fack och förlorade kvitton. Verklig Blob-uppladdning med Jakobs filer och
+spelacceptans återstår efter release av både Studio och Render-runtime.
+Systemkartan har ingen röd inventeringsavvikelse. Befintliga gula bevisluckor
+är kvar. GitGuardian på main 982d541f: aktiv övervakning, 0 öppna och 17
+ignorerade incidenter; check-suite queued, historik too_large och platsmetadata
+delvis ofullständig. Ingen incidentstatus eller produktionskonfiguration ändras.

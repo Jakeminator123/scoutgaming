@@ -8,7 +8,7 @@ import { dealerImportModelConfiguration, dealerImportProviderStatus, dealerImpor
 const fail = (code, status = 403) => { throw new StudioStorageError(code, status); };
 const json = value => Response.json(value, { headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 const warnings = ['Assistenten läser filnamn, din kontext och en kort samtalshistorik. Chatten får även sparade dealernamn och klippfack. Inga filer eller bildrutor skickas till modellen.',
-  'Inget sparas, genereras eller publiceras av rådgivaren. Godkänn dealer och varje placering innan separat uppladdning.', DEALER_IMPORT_STORAGE_WARNING];
+  'Sorteringen ger förslag. Klippbanken sparar via den separata uppladdningen när du väljer OK eller skickar ett importuppdrag i Adminroboten.', DEALER_IMPORT_STORAGE_WARNING];
 
 // This limiter is deliberately process-local; it bounds accidental duplicate
 // requests without creating shared data or claiming a global provider budget.

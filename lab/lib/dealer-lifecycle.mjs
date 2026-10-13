@@ -11,9 +11,6 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
   validateProject(project,{allowIncompatibleAnimations:true});
   const next=structuredClone(project);
   if(archived){
-    // Authoring categories never cascade into media lifecycle. Explicitly
-    // detach/remove them before archiving the whole dealer identity.
-    if(next.dealerSets?.some(row=>row.dealerId===dealerId))fail('studio_dealer_in_use');
     const dealer=next.dealers.find(row=>row.id===dealerId);
     if(!dealer)fail('studio_dealer_missing');
     const owned=records.filter(row=>row.classification.dealerId===dealerId&&row.deletion?.state!=='deleted');
@@ -24,6 +21,8 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
       idlePolicy:next.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy??null,
       compositions:(next.lanes??[]).filter(row=>compositionIds.has(row.id)),
       activeMediaIds:owned.filter(row=>!row.retainedBank&&!row.classification.archived).map(row=>row.id),archivedAt:now};
+    const categories=next.dealerSets?.filter(row=>row.dealerId===dealerId)??[];
+    if(categories.length){entry.dealerSets=categories;next.dealerSets=next.dealerSets.filter(row=>row.dealerId!==dealerId);if(!next.dealerSets.length)delete next.dealerSets;}
     if(next.legacyClipPolicy){
       entry.legacyClipPolicy=next.legacyClipPolicy.filter(row=>row.dealerId===dealerId||owns(row));
       next.legacyClipPolicy=next.legacyClipPolicy.filter(row=>!entry.legacyClipPolicy.includes(row));
@@ -53,7 +52,9 @@ export function lifecycleProject(project,{dealerId,archived,records,now=new Date
     for(const lane of compositions)for(const role of ['background','table'])for(const id of lane.layers[role].allowed){
       if(!(next.layerAssets??[]).some(asset=>asset.id===id&&asset.role===role))fail('studio_dealer_restore_conflict');
     }
+    if(entry.dealerSets?.some(row=>next.dealerSets?.some(active=>active.id===row.id)))fail('studio_dealer_restore_conflict');
     next.dealers.push(speechOff(entry.dealer));next.lines.push(...entry.lines);
+    if(entry.dealerSets?.length)next.dealerSets=[...(next.dealerSets??[]),...entry.dealerSets];
     if(compositions.length)next.lanes=[...(next.lanes??[]),...compositions];
     if(entry.idlePolicy)next.dealerIdlePolicies=[...(next.dealerIdlePolicies??[]),{dealerId,policy:entry.idlePolicy}];
     if(entry.legacyClipPolicy?.length)next.legacyClipPolicy=[...(next.legacyClipPolicy??[]),...entry.legacyClipPolicy];
@@ -120,7 +121,11 @@ export async function changeDealerLifecycle({repository,mutationTransaction,stil
     }
     const entry=body.archived?next.dealerTrash.find(row=>row.dealer.id===body.dealerId):before.value.dealerTrash.find(row=>row.dealer.id===body.dealerId);
     const activeIds=new Set(entry.activeMediaIds);
+    // Both writes use the outer repository.transaction's one SQL client.
+    // Archive detaches category links before media classification; any failure
+    // rolls back the document, media, history and audit. Restore reverses this.
+    const saved=body.archived?await repository.saveDealerLifecycle(next,{expectedRevision:before.revision,actor}):null;
     for(const row of owned)if(activeIds.has(row.id))await repository.classifyMedia(row.id,{sha256:row.sha256,expectedRevision:row.revision,metadata:{...row.classification,archived:body.archived},actor});
-    return (await repository.saveDealerLifecycle(next,{expectedRevision:before.revision,actor})).value;
+    return (saved??await repository.saveDealerLifecycle(next,{expectedRevision:before.revision,actor})).value;
   }),{presentationMutation:descriptors});
 }

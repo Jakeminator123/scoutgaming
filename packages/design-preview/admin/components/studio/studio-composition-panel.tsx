@@ -12,6 +12,7 @@ import { effectiveDealerCompositing } from '../../../../../web/public/dealer-com
 import { layerAssetFitsGame } from '../../../../../web/layer-asset-contract.mjs';
 import { rouletteReferencePreview } from '../../lib/roulette-clip-map.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
+import { setTemplateDealers } from '../../lib/dealer-directory.mjs';
 
 export function StudioCompositionPanel({localReferenceUrl,project,inventory,room,dealerId,uses,roomChoicesPath,blocked,projectDirty,onEdit,onRegistered,onSaved,onBusyChange}:{localReferenceUrl?:string;project:StudioProject;inventory:VideoInventory;room?:Room;dealerId:string;uses:CompositionUse[];roomChoicesPath:string|null;blocked:boolean;projectDirty:boolean;onEdit:(project:StudioProject)=>void;onRegistered:(project:StudioProject,id:string,role:'background'|'table')=>void;onSaved:(project:StudioProject)=>void;onBusyChange:(busy:boolean)=>void}) {
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[error,setError]=useState('');
@@ -41,6 +42,13 @@ export function StudioCompositionPanel({localReferenceUrl,project,inventory,room
     <ul>{uses.length?uses.map(use=><li key={use.roomId}>{use.operatorName} · {use.roomName}</li>):<li>Inga registrerade rum.</li>}</ul>
     {roomChoicesPath?<a className="studio-button" href={roomChoicesPath} target="_blank" rel="noopener">Ändra bara {room?.name} · ny flik ↗</a>:<p>Rumsbundna val blir tillgängliga när rummets paket är publicerat.</p>}
     <button className="studio-button" disabled={blocked||uploadBusy} aria-pressed={editing} onClick={()=>setEditingCompositionId(editing?'':lane.id)}>{editing?'Avsluta mallredigering':'Redigera gemensam mall'}</button>
+    <fieldset disabled={locked} className="space-y-2"><legend>Dealers i den gemensamma mallen</legend>
+      {project.dealers.map(dealer=><label key={dealer.id} className="flex items-center gap-2"><input type="checkbox" checked={lane.layers.dealer.allowed.includes(dealer.id)} onChange={event=>{
+        const ids=event.target.checked?[...lane.layers.dealer.allowed,dealer.id]:lane.layers.dealer.allowed.filter(id=>id!==dealer.id);
+        try{onEdit(setTemplateDealers(project,lane.id,ids,ids.includes(lane.layers.dealer.default)?lane.layers.dealer.default:ids[0]));setError('');}catch(cause){setError((cause as Error).message);}
+      }}/>{dealer.label}</label>)}
+      <label className="studio-field">Förvald dealer<select value={lane.layers.dealer.default} onChange={event=>{try{onEdit(setTemplateDealers(project,lane.id,lane.layers.dealer.allowed,event.target.value));setError('');}catch(cause){setError((cause as Error).message);}}}>{project.dealers.filter(row=>lane.layers.dealer.allowed.includes(row.id)).map(dealer=><option key={dealer.id} value={dealer.id}>{dealer.label}</option>)}</select></label>
+    </fieldset>
     <div className="studio-game-tabs" role="tablist" aria-label="Kompositionsstorlek">{(['mobile','desktop'] as const).map(id=><button key={id} role="tab" aria-selected={layout===id} onClick={()=>setLayout(id)}>{id==='mobile'?'Mobil':'Desktop'}</button>)}</div>
     {game==='roulette'?<p>Förhandsvisningen använder dealerns roulette-VILA, annars första tillgängliga roulette-idle. Detta är ett materialprov; spelkoppling och godkännande återstår.</p>:null}
     <CompositionPreview dealer={game==='roulette'&&localReferenceUrl?{url:localReferenceUrl,label:'Lokal VILA · inte sparad',contentType:'image/png'}:video?{url:video.previewUrl,label:video.label,contentType:video.contentType!}:null} background={media(lane.layers.background.default)} table={media(lane.layers.table.default)} settings={settings} layout={layout} show={{dealer:true,background:true,table:true}} compositing={game==='roulette'&&localReferenceUrl?{mode:'alpha'}:video?effectiveDealerCompositing(video.classification?.compositing):undefined} backgroundPlayback={lane.backgroundPlayback} backgroundAssets={assets.filter(row=>row.role==='background'&&lane.layers.background.allowed.includes(row.id)).map(row=>({id:row.id,url:'/studio/api/layer-assets/'+row.id,label:row.label,contentType:row.contentType}))} previewBackgroundRuleId={backgroundPreview.id} previewBackgroundRequest={backgroundPreview.request}/>

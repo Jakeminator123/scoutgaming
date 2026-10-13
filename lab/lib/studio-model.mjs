@@ -530,7 +530,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
       for (const [i, entry] of trash.entries()) {
         const at = `dealerTrash[${i}]`;
         const cascade=entry?.schemaVersion===2;
-        if (!keys(entry, ['schemaVersion','dealer','lines','idlePolicy','activeMediaIds','archivedAt',...(cascade?['compositions']:[])], at, ['deletion',...(cascade?['legacyClipPolicy','mediaPolicy','globalIdlePolicy']:[])])) continue;
+        if (!keys(entry, ['schemaVersion','dealer','lines','idlePolicy','activeMediaIds','archivedAt',...(cascade?['compositions']:[])], at, ['deletion',...(cascade?['legacyClipPolicy','mediaPolicy','globalIdlePolicy','dealerSets']:[])])) continue;
         if(entry.deletion!==undefined){
           const deletion=entry.deletion;
           if(!keys(deletion,['state','requestedAt','mediaIds'],at+'.deletion') || deletion.state!=='pending'
@@ -549,6 +549,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
         // Shared triggers/assets cannot disappear while an archived snapshot needs them.
         try {
           if (!Array.isArray(entry.lines) || entry.lines.some(line => line.dealerId !== dealerId)) throw Error();
+          if(entry.dealerSets!==undefined && (dealerSetErrors(entry.dealerSets,new Set([dealerId])).length || entry.dealerSets.some(row=>row.dealerId!==dealerId)))throw Error();
           const restored = {...project,
             dealers:[...project.dealers,...trash.map(row=>row.dealer)],
             lines:[...project.lines,...trash.flatMap(row=>Array.isArray(row.lines)?row.lines:[])],

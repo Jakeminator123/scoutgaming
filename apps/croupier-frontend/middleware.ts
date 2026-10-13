@@ -4,7 +4,7 @@ import { platformConfiguration, platformRoute, platformBackendHeaders } from './
 export function middleware(request: NextRequest) {
   const config = platformConfiguration();
   if (!config) return NextResponse.next();
-  const route = platformRoute(new URL(request.url), config);
+  const route = platformRoute(new URL(request.url), config, request);
   if (route.kind === 'reject') return new NextResponse(null, {status: 400});
   if (route.kind === 'frontend') return NextResponse.next();
   if (route.kind === 'redirect') return NextResponse.redirect(route.destination, 307);

@@ -107,14 +107,14 @@ test('transaction rejects stale membership inventory if a clip archives before p
   assert.deepEqual(f.pool.snapshot(), before);
   assert.equal((await f.store.load()).dealerSets, undefined);
 });
-test('dealer cascade requires explicit category removal; archive/restore roundtrip still works afterwards', () => {
+test('dealer archive keeps categories in its trash snapshot and restores them with the identity', () => {
   const draft = editDealerSet(set(project()), 'paow3', { archived: true });
   const records = [{ id, classification }];
-  assert.throws(() => lifecycleProject(draft, { dealerId: 'paow-v2', archived: true, records }), denied('studio_dealer_in_use'));
-  const removed = removeDealerSet(draft, 'paow3');
-  const archived = lifecycleProject(removed, { dealerId: 'paow-v2', archived: true, records });
+  const archived = lifecycleProject(draft, { dealerId: 'paow-v2', archived: true, records });
   assert.equal(archived.dealerSets, undefined);
+  assert.deepEqual(archived.dealerTrash[0].dealerSets,draft.dealerSets);
   const restored = lifecycleProject(archived, { dealerId: 'paow-v2', archived: false, records: [{ id, classification: { ...classification, archived: true } }] });
-  assert.deepEqual(restored.dealers, removed.dealers);
-  assert.deepEqual(restored.lines, removed.lines);
+  assert.deepEqual(restored.dealers, draft.dealers);
+  assert.deepEqual(restored.lines, draft.lines);
+  assert.deepEqual(restored.dealerSets,draft.dealerSets);
 });

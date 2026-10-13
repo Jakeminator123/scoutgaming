@@ -6,15 +6,16 @@ import {
 } from '../web/presentation-capability-contract.mjs';
 
 const parsed = version => JSON.parse(JSON.stringify(presentationCapabilitiesForVersion(version)));
-const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 const invalid = error => error.code === 'presentation_capability_invalid' && error.statusCode === 503;
 const unsupported = error => error.code === 'presentation_capability_version_unsupported' && error.statusCode === 406;
 
-test('negotiation preserves default v2 and opts into v3-v11 only with one exact supported header', () => {
+test('negotiation preserves default v2 and opts into v3-v14 only with one exact supported header', () => {
   assert.equal(PRESENTATION_CAPABILITY_VERSION_HEADER, 'X-Presentation-Capability-Version');
   assert.equal(PRESENTATION_CAPABILITY_DEFAULT_VERSION, 2);
   for (const absent of [undefined, null]) assert.equal(negotiatePresentationCapabilityVersion(absent), 2);
   assert.equal(negotiatePresentationCapabilityVersion('2'), 2);
+  assert.equal(negotiatePresentationCapabilityVersion('14'),14);
   assert.equal(negotiatePresentationCapabilityVersion('3'), 3);
   assert.equal(negotiatePresentationCapabilityVersion('4'), 4);
   assert.equal(negotiatePresentationCapabilityVersion('5'), 5);
@@ -26,7 +27,7 @@ test('negotiation preserves default v2 and opts into v3-v11 only with one exact 
   assert.equal(negotiatePresentationCapabilityVersion('11'), 11);
   assert.equal(negotiatePresentationCapabilityVersion('12'), 12);
   assert.equal(negotiatePresentationCapabilityVersion('13'), 13);
-  for (const malformed of ['', '1', '14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
+  for (const malformed of ['', '1', '15', '014', '14, 14', '013', '13, 13', '012', '12, 12', '011', '11, 11', '010', '10, 10', '09', '9, 9', '08', '8, 8', '07', '7, 7', '06', '6, 6', '05', '5, 5', '4, 5', '04', '4, 4', '3, 4', '03', '3.0', ' 3', '3 ', '3, 3', '2, 3', 3, [], {}, new String('3')]) {
     assert.throws(() => negotiatePresentationCapabilityVersion(malformed), unsupported);
   }
 });
@@ -63,7 +64,7 @@ test('expected-version validation rejects downgrade even when the old response i
       assert.throws(() => validatePresentationCapabilities(parsed(version), { expectedVersion: expected }), invalid);
     }
   }
-  for (const version of [undefined, null, 0, 14, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
+  for (const version of [undefined, null, 0, 15, '4', '3', 3.1, {}, []]) assert.throws(() => presentationCapabilitiesForVersion(version), invalid);
   assert.throws(() => validatePresentationCapabilities(parsed(3), { expectedVersion: '3' }), invalid);
 });
 

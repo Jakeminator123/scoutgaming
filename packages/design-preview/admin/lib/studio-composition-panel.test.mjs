@@ -7,6 +7,7 @@ import {createSeedProject,defaultPresentationLane,validateProject} from '../../.
 import * as settings from '../../../../web/public/composition-settings.mjs';
 import {layerAssetFitsGame,layerAssetPath} from '../../../../web/layer-asset-contract.mjs';
 import {rouletteReferencePreview} from './roulette-clip-map.mjs';
+import {setTemplateDealers} from './dealer-directory.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
@@ -23,6 +24,7 @@ function panelHarness(){
     if(name.includes('dealer-compositing.mjs'))return {effectiveDealerCompositing:()=>({})};
     if(name.includes('layer-asset-contract.mjs'))return {layerAssetFitsGame};
     if(name.includes('roulette-clip-map.mjs'))return {rouletteReferencePreview};
+    if(name.includes('dealer-directory.mjs'))return {setTemplateDealers};
     if(name.endsWith('/layer-selectors'))return {LayerAssetSelect};
     if(name.includes('/components/'))return components;
     return require(name);

@@ -42,6 +42,17 @@ const extendedMedia=[
   ...['game','action','startPose','endPose'].map(key=>({dealerId:'astrid',[key]:'unverified'})),
 ];
 
+test('archived dealer categories require v14 before any write, including empty categories',async()=>{
+  for(const dealerSets of [[],[{id:'dragan.one'}]]){
+    const value={...project(),dealerTrash:[{schemaVersion:2,dealerSets}]};
+    const old=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(13))});
+    await assert.rejects(old.wrapped.saveDocument('project',{value}),blocked);assert.equal(old.writes.length,0);
+    const current=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(14))});
+    await current.wrapped.saveDocument('project',{value});assert.equal(current.writes.length,1);
+    assert.equal(current.fetches[0][1].headers['X-Presentation-Capability-Version'],'14');
+  }
+});
+
 test('game-tagged table projects, trash and frozen packages require exact v13',async()=>{
   for(const descriptor of [
     {kind:'project',value:{layerAssets:[{role:'table',game:'roulette'}]}},

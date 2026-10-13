@@ -19,4 +19,5 @@ export function importDealerId(name:string):string;
 export function registerImportDealer(input:{id:string;name:string},request:(path:string,options?:RequestInit)=>Promise<any>):Promise<StudioProject>;
 export function compatibleImportSlot(file:{name:string},slot?:ImportSlot):boolean;
 export function importClassification(row:ImportRow,dealerId:string,catalog:ImportCatalog):VideoMetadata;
+export function importRowError(row:ImportRow,dealerId:string,catalog:ImportCatalog):string;
 export function applyImportProposals(rows:ImportRow[],proposals:ImportProposal[],slots:ImportSlot[]):ImportRow[];
