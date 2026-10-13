@@ -1,0 +1,12 @@
+import type { VideoMetadata } from '../../../../lab/lib/video-intake.mjs';
+export function labUrl(path:string):string;
+export type ImportSlot = {id:string;label:string;eventId:string;situation:string;category:string;kind:VideoMetadata['kind'];start:string;end:string;pose?:string|boolean};
+export type ImportCatalog = {dealers:{id:string;label:string}[];slots:ImportSlot[];limits:{maxFiles:number;maxFileBytes:number};provider:{configured:boolean;label:string};warnings:string[]};
+export type ImportRow = {id:string;file:File;label:string;slotId:string;background:string;state:'ready'|'saving'|'saved'|'error';reason?:string;confidence?:string;warnings?:string[];message?:string;progress?:number};
+export type ImportProposal = {fileId:string;slotId:string|null;reason:string;confidence:string;warnings?:string[]};
+export function importContentType(name:string):string;
+export function importFileError(file:{name:string;size:number},maximum?:number):string;
+export function uniqueImportFiles(files:File[],rows:ImportRow[]):{files:File[];duplicates:number};
+export function compatibleImportSlot(file:{name:string},slot?:ImportSlot):boolean;
+export function importClassification(row:ImportRow,dealerId:string,catalog:ImportCatalog):VideoMetadata;
+export function applyImportProposals(rows:ImportRow[],proposals:ImportProposal[],slots:ImportSlot[]):ImportRow[];

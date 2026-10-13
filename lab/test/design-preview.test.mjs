@@ -82,3 +82,22 @@ test('every asset request reauthorizes, rejects writes, streams ranges and sends
     assert.equal((await serveDesignPreview(new Request(url), ['_assets','lobby','missing.mp4'], { root, authorize })).status, 404);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test('staff import permits only the Blob SDK endpoint while lobby remains same-origin', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'croupier-design-import-'));
+  try {
+    for (const surface of ['admin', 'lobby']) {
+      await mkdir(join(root, surface));
+      await writeFile(join(root, surface, 'index.html'), '<!doctype html>');
+    }
+    const authorize = async () => {};
+    for (const segments of [[], ['clips'], ['structure'], ['lobby']]) {
+      const response = await serveDesignPreview(new Request('https://studio.test/admin/' + segments.join('/')), segments, { root, authorize });
+      const csp = response.headers.get('content-security-policy');
+      const connect = csp.split(';').find(directive => directive.trim().startsWith('connect-src')).trim();
+      assert.equal(connect, segments[0] === 'lobby' ? "connect-src 'self'" : "connect-src 'self' https://vercel.com/api/blob/");
+      assert.match(csp, /script-src 'self';/);
+      await response.text();
+    }
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

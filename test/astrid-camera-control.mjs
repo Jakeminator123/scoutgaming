@@ -9,6 +9,7 @@ class Element {
   append(...nodes) { this.children.push(...nodes); }
   setAttribute(name, value) { this.attributes[name] = value; }
   addEventListener(name, fn) { this.listeners.set(name, fn); }
+  focus() { document.activeElement = this; }
   pause() {} play() { return Promise.resolve(); } showModal() { this.open = true; } close() { this.open = false; }
 }
 const all = root => [root, ...root.children.flatMap(all)];
@@ -75,18 +76,19 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
     getPlaybackEnabled: () => playbackEnabled,
     onLogToggle: value => logToggles.push(value),
   });
-  const buttons = all(root).filter(node => node.tag === 'button'), [play, record] = buttons;
+  const buttons = all(root).filter(node => node.className === 'astrid-voice-button'), [play, record] = buttons;
   const find = text => all(root).find(node => node.textContent === text);
-  const dialog = all(root).find(node => node.tag === 'dialog'), debug = all(root).find(node => node.tag === 'section');
+  const dialog = all(root).find(node => node.className === 'astrid-voice-dialog'), debug = all(root).find(node => node.tag === 'section');
+  const panel = all(root).find(node => node.className === 'astrid-voice-panel'), launcher = all(root).find(node => node.className === 'astrid-voice-launcher');
   const click = node => node.onclick(event());
-  if (cameraOptIn) click(all(root).find(node => node.attributes['aria-label'] === 'Include optional camera images'));
+  if (cameraOptIn) click(all(root).find(node => node.attributes['aria-label'] === 'Camera off · include images'));
   const fire = delay => { const entry = [...timers].find(([, timer]) => timer.delay === delay); assert.ok(entry, `missing ${delay} ms timer`); timers.delete(entry[0]); entry[1].fn(); };
   const start = async () => { await tick(); click(record); click(find('Enable voice')); await tick(); await tick(); };
   const startManual = async () => { await tick(); click(record); click(find('Record one message')); await tick(); await tick(); };
   const wake = async () => { const instance = wakes.at(-1); assert.equal(instance.options.canWake(), true); instance.stop(); instance.options.onWake(); await tick(); };
   const sample = (speaking, at) => recorders.at(-1).options.onSample({ speaking, at, rms: speaking ? 0.1 : 0 });
   const pause = () => { sample(true, 100); sample(true, 200); sample(false, 300); sample(false, 1450); };
-  return { root, control, play, record, dialog, debug, find, click, start, startManual, wake, sample, pause, fire, wakes, recorders, requests, streams, uploads, sent, listeners, logToggles, playbackPromises, recognitions,
+  return { root, control, play, record, dialog, debug, panel, launcher, find, click, start, startManual, wake, sample, pause, fire, wakes, recorders, requests, streams, uploads, sent, listeners, logToggles, playbackPromises, recognitions,
     status: () => all(root).find(node => node.attributes.role === 'status').textContent,
     log: () => all(root).find(node => node.tag === 'pre').textContent,
     activity: () => activity, configReads: () => configReads, playbackToggles: () => playbackToggles,
@@ -360,7 +362,7 @@ test('an early explicit manual recording continues after configuration arrives; 
         assert.equal(h.uploads.length, 1); assert.equal(h.sent.length, 1); assert.equal(h.control.active, false);
       } else {
         assert.equal(h.control.active, false); assert.equal(h.requests.length, 0); assert.equal(h.wakes.length, 0);
-        assert.match(h.status(), /Press Record again to enable local listening/);
+        assert.match(h.status(), /Press Enable microphone again to enable local listening/);
         h.click(h.record); assert.equal(h.wakes.length, 1); await tick();
       }
     } finally { h.restore(); }
@@ -512,27 +514,40 @@ test('voice sending stays busy and only a successful send can resume wake', asyn
   } finally { h.restore(); }
 });
 
-test('five-second pointer hold on either button opens log and suppresses the following click', async () => {
-  for (const which of ['play', 'record']) {
-    const h = harness();
-    try {
-      await tick(); h.press(h[which], 'pointerdown', { button: 0 }); h.fire(5000);
-      assert.equal(h.debug.hidden, false); h.press(h[which], 'pointerup'); h.click(h[which]); await tick();
-      assert.equal(h.playbackToggles(), 0); assert.equal(h.dialog.hidden, true); assert.equal(h.wakes.length, 0);
-      assert.deepEqual(h.logToggles, [true]);
-      h.listeners.get('keydown')(event({ key: 'Escape' })); assert.equal(h.debug.hidden, true); assert.deepEqual(h.logToggles, [true, false]);
-    } finally { h.restore(); }
-  }
+test('orb opens labeled controls in one click without activating media and cancel restores focus', async () => {
+  const h = harness({ cameraOptIn: false, dealerId: 'paow', dealerName: 'Paow' });
+  try {
+    await tick(); assert.equal(h.panel.hidden, true); assert.equal(h.launcher.attributes['data-state'], 'off');
+    assert.equal(h.launcher.attributes['aria-label'], 'Talk to Paow. Voice off');
+    h.click(h.launcher); assert.equal(h.panel.hidden, false); assert.equal(h.panel.open, true);
+    assert.equal(h.launcher.attributes['aria-expanded'], 'true');
+    assert.equal(document.activeElement, h.find('Back to game'));
+    assert.equal(h.requests.length, 0); assert.equal(h.wakes.length, 0); assert.equal(h.playbackToggles(), 0);
+    assert.equal(h.play.textContent, 'Hear dealer'); assert.equal(h.record.textContent, 'Enable microphone');
+    h.press(h.panel, 'cancel'); assert.equal(h.panel.hidden, true); assert.equal(h.panel.open, false);
+    assert.equal(h.launcher.attributes['aria-expanded'], 'false'); assert.equal(document.activeElement, h.launcher);
+  } finally { h.restore(); }
 });
 
-test('five-second Enter and Space holds suppress short keyboard actions', async () => {
-  for (const key of ['Enter', ' ']) {
-    const h = harness();
-    try {
-      await tick(); h.press(h.record, 'keydown', { key }); h.fire(5000); h.press(h.record, 'keyup', { key }); h.click(h.record); await tick();
-      assert.equal(h.debug.hidden, false); assert.equal(h.dialog.hidden, true); assert.equal(h.wakes.length, 0);
-    } finally { h.restore(); }
-  }
+test('visible log button opens and closes diagnostics without recording or playback', async () => {
+  const h = harness();
+  try {
+    await tick(); h.click(h.launcher); h.click(h.find('Voice log'));
+    assert.equal(h.debug.hidden, false); assert.equal(h.dialog.hidden, true);
+    assert.equal(h.requests.length, 0); assert.equal(h.playbackToggles(), 0);
+    h.click(h.find('Close log')); assert.equal(h.debug.hidden, true); assert.deepEqual(h.logToggles, [true, false]);
+  } finally { h.restore(); }
+});
+
+test('orb follows real recording states and closing controls keeps explicitly enabled voice active', async () => {
+  const h = harness({ cameraOptIn: false });
+  try {
+    h.click(h.launcher); await h.start(); assert.equal(h.launcher.attributes['data-state'], 'listening');
+    h.click(h.find('Back to game')); assert.equal(h.panel.hidden, true); assert.equal(h.control.active, true);
+    await h.wake(); assert.equal(h.launcher.attributes['data-state'], 'recording');
+    h.control.stop(); assert.equal(h.launcher.attributes['data-state'], 'off');
+    assert.ok(h.streams.every(stream => stream.getTracks().every(track => track.stopped)));
+  } finally { h.restore(); }
 });
 
 test('short keyboard and pointer interactions perform just one action', async () => {
@@ -548,9 +563,9 @@ test('English RAM log is bounded, hidden normally, and contains no raw audio or 
   const h = harness();
   try {
     await h.start(); for (let i = 0; i < 65; i++) h.wakes[0].options.onStatus({ state: 'rearming' });
-    assert.equal(h.log(), ''); h.press(h.record, 'pointerdown', { button: 0 }); h.fire(5000);
+    assert.equal(h.log(), ''); h.click(h.find('Voice log'));
     assert.ok(h.log().split('\n').length <= 40); assert.equal(h.log().includes('data:image'), false);
-    assert.ok(h.control.debugContainer); assert.equal(h.control.active, true, 'long hold does not stop voice');
+    assert.ok(h.control.debugContainer); assert.equal(h.control.active, true, 'opening the log does not stop voice');
   } finally { h.restore(); }
 });
 
@@ -583,7 +598,7 @@ test('network/settings failures are precise, redacted and recover on log reopen'
   const h = harness({ configFetch: async () => { throw new Error('private token'); } });
   try {
     await tick(); assert.match(h.status(), /Cannot reach the server/); h.control.stop(); assert.match(h.status(), /Cannot reach the server/);
-    h.setConfigFetch(null); h.press(h.record, 'pointerdown', { button: 0 }); h.fire(5000); await tick();
+    h.setConfigFetch(null); h.click(h.find('Voice log')); await tick();
     assert.equal(h.status().includes('private'), false); assert.match(h.status(), /Voice off/);
   } finally { h.restore(); }
 });

@@ -11,3 +11,79 @@
 .react-flow__edge-textbg {
   rx: 3;
 }
+
+.dealer-import-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 24px; border-bottom: 1px solid #35383a; }
+.dealer-import-route:not([hidden]) { display: flex; flex: 1; flex-direction: column; }
+.dealer-import-tabs button { padding: 9px 12px; border-radius: 6px; color: #adb1b4; font-size: 13px; }
+.dealer-import-tabs button[aria-pressed="true"] { background: #c5f331; color: #171c10; font-weight: 600; }
+.dealer-import { padding: 24px; max-width: 1660px; margin: 0 auto; }
+.dealer-import-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.dealer-import-eyebrow { color: #c5f331; text-transform: uppercase; letter-spacing: .14em; font: 10px ui-monospace, monospace; }
+.dealer-import h1 { margin: 7px 0 10px; font-size: clamp(24px, 3vw, 32px); letter-spacing: -.04em; font-weight: 600; line-height: 1.15; }
+.dealer-import h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; font-size: 16px; font-weight: 600; }
+.dealer-import h2 > span { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #586334; border-radius: 50%; color: #c5f331; font: 12px ui-monospace, monospace; }
+.dealer-import h3 { margin-bottom: 12px; font-size: 16px; font-weight: 600; }
+.dealer-import p { font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.dealer-import-heading > div > p:last-child { color: #afb4b6; max-width: 620px; }
+.dealer-import-badge { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid #344937; border-radius: 99px; color: #b3d6b5; font-size: 11px; }
+.dealer-import-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 20px; align-items: start; }
+.dealer-import-main { display: grid; gap: 20px; min-width: 0; }
+.dealer-import-panel { padding: 22px; border: 1px solid #35383a; border-radius: 10px; background: #212325; min-width: 0; }
+.dealer-import label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #c7cbcc; }
+.dealer-import input:not([type="checkbox"]):not([type="file"]), .dealer-import select, .dealer-import textarea { width: 100%; min-height: 40px; padding: 9px 11px; border: 1px solid #424648; border-radius: 6px; background: #191b1d; color: #eef0ef; font-size: 13px; }
+.dealer-import textarea { resize: vertical; }
+.dealer-import button, .dealer-import-file-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 9px 12px; border: 1px solid #484d4e; border-radius: 6px; font-size: 12px; color: #e0e4e2; }
+.dealer-import button:hover:not(:disabled) { background: #303537; }
+.dealer-import button:disabled, .dealer-import input:disabled, .dealer-import select:disabled, .dealer-import textarea:disabled { opacity: .48; cursor: not-allowed; }
+.dealer-import button.dealer-import-primary { border-color: #c5f331; background: #c5f331; color: #172005; font-weight: 600; }
+.dealer-import button.dealer-import-primary:hover:not(:disabled) { background: #d4ff51; }
+.dealer-import button:focus-visible, .dealer-import input:focus-visible, .dealer-import select:focus-visible, .dealer-import textarea:focus-visible, .dealer-import summary:focus-visible, .dealer-import-tabs button:focus-visible { outline: 2px solid #c5f331; outline-offset: 3px; }
+.dealer-import label.dealer-import-check { flex-direction: row; align-items: flex-start; gap: 10px; padding: 14px 0 0; line-height: 1.6; }
+.dealer-import-check input { width: 18px; height: 18px; margin-top: 1px; accent-color: #c5f331; flex: 0 0 auto; }
+.dealer-import-drop { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 16px; margin-bottom: 20px; border: 1px dashed #5d6462; border-radius: 7px; background: #1b1f1e; text-align: center; }
+.dealer-import-drop > svg { color: #8fa09b; }
+.dealer-import-drop > strong { font-size: 14px; }
+.dealer-import-drop p { color: #aab2ae; font-size: 12px; }
+.dealer-import .dealer-import-file-button { position: relative; overflow: hidden; min-width: 130px; margin-top: 5px; background: #303a31; border-color: #65725d; cursor: pointer; }
+.dealer-import-file-button input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+.dealer-import-file-button:focus-within { outline: 2px solid #c5f331; outline-offset: 3px; }
+.dealer-import-help { margin: 10px 0 16px; color: #a7afac; font-size: 12px !important; }
+.dealer-import-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.dealer-import a { color: #cee88b; text-decoration: underline; text-underline-offset: 3px; }
+.dealer-import-rows { display: grid; gap: 15px; margin: 15px 0 22px; }
+.dealer-import-row { padding: 16px; background: #191c1d; border: 1px solid #3c4241; border-radius: 8px; min-width: 0; }
+.dealer-import-row.is-saved { border-color: #52704b; }
+.dealer-import-row.is-error { border-color: #a86556; }
+.dealer-import-row-title { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; min-width: 0; }
+.dealer-import-row-title > strong { font-size: 13px; overflow-wrap: anywhere; min-width: 0; }
+.dealer-import-row-title > svg { flex: 0 0 auto; color: #93a79b; }
+.dealer-import-row-title > small { white-space: nowrap; color: #9aa5a0; font-size: 10px; }
+.dealer-import-row-title > button { margin-left: auto; min-width: 36px; min-height: 36px; padding: 6px; }
+.dealer-import-row-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; }
+.dealer-import details { margin: 12px 0; }
+.dealer-import summary { cursor: pointer; font-size: 12px; color: #c6ceca; padding: 7px 0; }
+.dealer-import details p { color: #aab4ae; margin-top: 8px; }
+.dealer-import-warning { color: #e0b681; font-size: 12px !important; margin: 8px 0; }
+.dealer-import-error { color: #f2a792; margin-top: 15px; }
+.dealer-import-notice { color: #c8e8a2; margin-top: 15px; }
+.dealer-import-preview { margin-top: 10px; }
+.dealer-import-preview video, .dealer-import-preview img { display: block; width: 100%; max-height: 340px; object-fit: contain; background: repeating-conic-gradient(#242a27 0 25%,#333b36 0 50%) 50% / 20px 20px; border-radius: 5px; }
+.dealer-import-preview audio { max-width: 100%; }
+.dealer-import-preview p { margin-top: 8px; color: #9ba99f; font-size: 11px; }
+.dealer-import-review { padding: 20px; border: 1px solid #7c963e; border-radius: 8px; background: #263022; }
+.dealer-import-review ul { margin-bottom: 14px; }
+.dealer-import-review li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px 12px; font-size: 12px; padding: 8px 0; border-bottom: 1px solid #3d4d36; overflow-wrap: anywhere; }
+.dealer-import-chat { position: sticky; top: 20px; }
+.dealer-import-chat > p { color: #aeb6b2; }
+.dealer-import-provider { color: #bade8c !important; margin: -7px 0 16px; font-size: 11px !important; }
+.dealer-import-conversation { display: grid; gap: 12px; margin: 20px 0; max-height: 420px; overflow-y: auto; }
+.dealer-import-conversation > div { padding: 13px; border-radius: 7px; background: #191e1c; }
+.dealer-import-conversation > div.is-user { background: #2c3529; }
+.dealer-import-conversation strong { color: #a9bd9f; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.dealer-import-conversation p { white-space: pre-wrap; margin-top: 5px; font-size: 12px; }
+.dealer-import-chat form button { margin-top: 10px; width: 100%; }
+.dealer-import-chat > a { display: flex; align-items: center; gap: 6px; margin-top: 20px; font-size: 12px; }
+.dealer-import-map:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-height: 700px; }
+.dealer-import-design-note { margin: 0; padding: 12px 24px; color: #b6babb; font-size: 12px; border-bottom: 1px solid #35383a; }
+@media (max-width: 1100px) { .dealer-import-layout { grid-template-columns: minmax(0,1fr); } .dealer-import-chat { position: static; } }
+@media (max-width: 600px) { .dealer-import { padding: 18px 12px; } .dealer-import-panel { padding: 16px; } .dealer-import-row { padding: 12px; } .dealer-import-row-fields { grid-template-columns: minmax(0,1fr); } .dealer-import-tabs { padding: 10px 12px; } .dealer-import-tabs button { font-size: 11px; } .dealer-import-badge { font-size: 10px; } }

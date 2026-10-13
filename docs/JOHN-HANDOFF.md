@@ -1,5 +1,37 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: dealerimport och mobil samtalskontroll
+
+`/admin/clips` har en verklig importvy skild från den simulerade klippkartan.
+En befintlig dealer bekräftas före filval. Högst tio filer får förslag till
+exakta fack, lokal preview och en separat sammanställning att godkänna.
+Importer sparas som alternativ med befintlig N1-/Blob-/registerkontroll;
+inga standardklipp, publiceringar, rumsinställningar eller speldata ersätts.
+Osäkra kvitton försöks inte om automatiskt. Dubbla filval och förlorade
+godkännanden efter redigering är skyddade; interna sidbyten behåller listan.
+
+Rådgivar-API:t har ingen skrivbehörighet. Det begränsar filnamn, kontext,
+fack och modellutdata, kontrollerar session/scope/origin och läser om
+behörighet/katalog efter modellen. Separat AI är opt-in i Studio; utan
+konfiguration visas uttryckligen filnamnsregler. Ingen provider aktiverades.
+VILA/REDO-bilder stannar lokalt. Modellens bildanalys, nytt pose-/läppsynkflöde
+och automatisk rumsproduktion återstår. Alfaklipp blockeras vid import tills
+uppspelningen kan undvika att även gröna detaljer nycklas bort.
+
+Spelarens textmärkta orb öppnar mikrofon-, kamera-, ljud- och loggkontroller
+med ett tryck. Femsekundersgreppet är borta. Befintligt samtycke kvarstår.
+Ingen mediefil, spelmotor eller runtime-provider ändras.
+
+Verifierat: 19 import-/säkerhetstester, Studio-typkontroll, fullständigt
+Studio-produktionsbygge och regressionshookens grupper samt Chromium på
+mobil och desktop. Windowskontrollen lämnar det särskilda Linuxprovet
+skippat. Tiofilsfixture med verklig byggd klient och
+Blob-SDK men mockad server gav åtta sparade, ett tydligt fel och en lokal
+posereferens utan automatisk omkörning. Orben klarade fyra skärmstorlekar,
+tangentbord/fokus/Escape och reduced motion utan enhetsåtkomst.
+Produktionsmodell, verklig molnimport och dealerrehearsal två gånger är
+fortfarande ej verifierade. Se [runtimekontraktet](LOCAL-PRESENTATION-RUNTIME.md#dealerimport-och-samtalskontroll-13-oktober-2026).
+
 ## Tillägg 13 oktober: samlade spelmanualer
 
 Canonical ingångar finns nu i [docs/games](games/README.md): blackjack,

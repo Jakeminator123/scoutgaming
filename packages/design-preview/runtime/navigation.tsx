@@ -14,6 +14,7 @@ export function useRouter() {
   return { push: (href: string) => navigate(previewHref(href)), replace: (href: string) => navigate(previewHref(href), true) };
 }
 export function navigate(href: string, replace = false) {
+  if (!window.dispatchEvent(new CustomEvent('studio:before-navigate', { cancelable: true, detail: { href } }))) return;
   window.history[replace ? 'replaceState' : 'pushState'](null, '', href);
   window.dispatchEvent(new PopStateEvent('popstate'));
 }

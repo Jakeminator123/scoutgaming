@@ -1,5 +1,40 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Dealerimport och samtalskontroll, 13 oktober 2026
+
+`/admin/clips` har en importassistent mot Studios registrerade dealers och
+exakta fack. Den gamla klippkartan ligger separat som märkt designexempel.
+Operatören väljer och bekräftar en befintlig dealer, väljer högst tio filer,
+ger kontext, granskar förslag, rättar fack och godkänner sammanställningen.
+Alla importer registreras som alternativ via befintlig privat Blob-upload;
+ingen standard, grundloop, sammansättning eller publicering byts automatiskt.
+Varje fil får eget resultat. Ett oklart registerkvitto kräver återläsning,
+inte automatisk omkörning. Hela batchen är inte en gemensam transaktion.
+
+`GET/POST /studio/api/dealers/import-proposal` kräver aktuell N1-session och
+rätt scope. POST kräver samma origin och läser om både användare och katalog
+efter rådgivningen. Filnamnsregler stöder bland annat pos1–7 → box0–6,
+pos6b som alternativ, till/från skon, skilda utdelnings-/vändningsklipp och
+exakta talfack. Okända eller motstridiga namn lämnas för manuellt val.
+AI-läget är separat och uttryckligen opt-in, utan verktyg eller skrivmandat;
+se [miljövariabler](ENVIRONMENT-VARIABLES.md#dealerimportens-begränsade-rådgivare-13-oktober-2026).
+Utan modell används tydligt märkta filnamnsregler, inte simulerade AI-svar.
+
+VILA/REDO-bilder visas endast lokalt som referenser. Bildrutor och media skickas
+inte till modellen. Grundposebyte och inspelning/läppsynk går fortsatt via
+befintliga Control-flöden och deras acceptanskrav; denna import genererar
+inga filmer. Grön bakgrund kräver operatörens bekräftelse. Frilagda alfaklipp
+kan förhandsvisas lokalt men blockeras för import i detta steg: dagens
+gemensamma friläggning nycklar även grönt i förgrunden. Ett formatval bevisar
+inte avkodad alfa eller fungerande kanter i spelaren.
+Automatisk rums-/bakgrundsproduktion och koppling till spelbolag återstår.
+
+Spelarens samtalskontroll öppnas med en kompakt, textmärkt orb. Dialogen
+har explicita kontroller för ljud, mikrofon, kamera och röstlogg. Loggen
+öppnas med ett tryck; det tidigare femsekundersgreppet är borttaget.
+Mikrofon/kamera använder samma befintliga samtycke. Visningen använder CSS
+och spelarens verkliga tillstånd; ingen ny ElevenLabs-/WebGL-anslutning införs.
+
 ## Central Studio: rum, spel och lager, 13 oktober 2026
 
 Detta är målkontraktet för nya `/admin`, enligt Jakobs senaste krav. Det är

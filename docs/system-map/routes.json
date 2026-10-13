@@ -4356,6 +4356,25 @@
       ]
     },
     {
+      "id": "studio-api-dealers-import-proposal",
+      "path": "/api/dealers/import-proposal",
+      "publicPath": "/studio/api/dealers/import-proposal",
+      "methods": ["GET", "POST"],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/dealers/import-proposal/route.ts",
+      "serving": "Vercel Studio native Node route; unavailable without native Studio.",
+      "access": "Live admin/superadmin session with matching environment/workspace scope.",
+      "boundary": "Read-only dealer/slot catalogue and bounded import advice. POST requires same origin and revalidates principal and saved catalogue after model response. Optional stateless model has no tools or write access; schema-valid advice is still subject to manual review and separate native upload approval. No media, project or publication writes.",
+      "groupId": "studio-media",
+      "sources": [
+        { "path": "lab/app/api/dealers/import-proposal/route.ts", "line": 5 },
+        { "path": "lab/lib/dealer-import-api.mjs" },
+        { "path": "lab/lib/dealer-import-model.mjs" },
+        { "path": "lab/lib/dealer-import-catalog.mjs" }
+      ]
+    },
+    {
       "id": "studio-api-dealers-archive-check",
       "path": "/api/dealers/archive-check",
       "publicPath": "/studio/api/dealers/archive-check",

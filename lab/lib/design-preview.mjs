@@ -34,6 +34,10 @@ export const designPreviewHeaders = Object.freeze({
   'Cross-Origin-Resource-Policy': 'same-origin',
   'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; frame-src 'none'; frame-ancestors 'self'; form-action 'none'; base-uri 'none'",
 });
+// Staff imports use the existing short-lived, path-bound private Blob grant.
+// Keep the independent lobby restricted to same-origin connections.
+const adminDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
+  'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy'].replace("connect-src 'self'", "connect-src 'self' https://vercel.com/api/blob/") });
 
 // Route Handlers do not add Next's basePath to the SSR login destination.
 // Only the known native login redirect is translated; remote handoffs stay intact.
@@ -48,7 +52,7 @@ export function designPreviewAuthRedirect(destination, { basePath = '', resource
 }
 
 // Every document and asset goes through the same server-side staff authorization.
-// No preview endpoint accepts mutations or imports the exported template's APIs.
+// Static serving accepts no mutations. Dealer import calls the native Studio APIs.
 /** @param {Request} request
  * @param {string[]} segments
  * @param {{ authorize: (request: Request) => Promise<void>, root?: string }} options */
@@ -57,7 +61,7 @@ export async function serveDesignPreview(request, segments, { authorize, root = 
   if (typeof authorize !== 'function') throw new Error('design_preview_authorization_required');
   await authorize(new Request(request.url, { method: 'GET', headers: request.headers, signal: request.signal }));
   const path = designPreviewFile(segments);
-  return servePreviewFile(request, path, root);
+  return servePreviewFile(request, path, root, path === 'admin/index.html' ? adminDocumentHeaders : designPreviewHeaders);
 }
 
 export async function servePublicLobby(request, segments = [], { root = designPreviewDirectory } = {}) {
@@ -67,7 +71,7 @@ export async function servePublicLobby(request, segments = [], { root = designPr
   return servePreviewFile(request, path ? path.slice(directory.length + 1) : null, resolve(root, directory));
 }
 
-async function servePreviewFile(request, path, root) {
+async function servePreviewFile(request, path, root, responseHeaders = designPreviewHeaders) {
   if (!path) return new Response(null, { status: 404, headers: designPreviewHeaders });
   let file, info;
   try {
@@ -78,7 +82,7 @@ async function servePreviewFile(request, path, root) {
     info = await lstat(file);
     if (!info.isFile()) throw new Error('not_file');
   } catch { return new Response(null, { status: 404, headers: designPreviewHeaders }); }
-  const headers = { ...designPreviewHeaders, 'Content-Type': types[extname(file)], 'Accept-Ranges': 'bytes' };
+  const headers = { ...responseHeaders, 'Content-Type': types[extname(file)], 'Accept-Ranges': 'bytes' };
   const range = parseByteRange(request.headers.get('range'), info.size);
   if (range && range.status !== 'ok') return new Response(null, { status: 416, headers: { ...headers, 'Content-Range': `bytes */${info.size}` } });
   const start = range?.start ?? 0, end = range?.end ?? info.size - 1;

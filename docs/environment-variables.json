@@ -369,7 +369,8 @@
         "lab/lib/voice-preview.mjs",
         "lab/lib/studio-voice-lines.mjs",
         "lab/lib/openclaw-admin.mjs",
-        "lab/lib/runway-client.mjs"
+        "lab/lib/runway-client.mjs",
+        "lab/lib/dealer-import-model.mjs"
       ],
       "project": "croupier-lab-ui",
       "gitBranch": "main",
@@ -402,7 +403,12 @@
         "CROUPIER_DATA_DIR",
         "OPENCLAWAPI_KEY",
         "RUNWAY_API_KEY",
-        "OPENCLAW_API_KEY"
+        "OPENCLAW_API_KEY",
+        "CROUPIER_DEALER_IMPORT_AI",
+        "OPENCLAW_MODEL_API_KEY",
+        "OPENCLAW_MODEL_ID",
+        "OPENCLAW_MODEL_API",
+        "OPENCLAW_MODEL_BASE_URL"
       ],
       "managed": [],
       "blocked": [

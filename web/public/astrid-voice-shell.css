@@ -8,12 +8,11 @@
 .astrid-voice-ui #chat-status { display: block; }
 .astrid-voice-ui #chat-status:empty, .astrid-voice-ui #caption:empty { display: none; }
 @media (max-width: 860px) {
-  .astrid-voice-ui #chat { position: fixed; left: auto; right: 8px; width: 56px; box-sizing: border-box; flex-direction: column; gap: 6px; top: calc(env(safe-area-inset-top, 0px) + 78px); max-width: calc(100vw - 20px); z-index: 60; align-items: flex-start; }
+  .astrid-voice-ui #chat { position: fixed; left: auto; right: 8px; width: 76px; box-sizing: border-box; flex-direction: column; gap: 6px; top: calc(env(safe-area-inset-top, 0px) + 78px); max-width: calc(100vw - 20px); z-index: 60; align-items: center; }
   .astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-input,
   .astrid-voice-ui #chat:not(:has(#chat-log.open)) #chat-send { display: none; }
   .astrid-voice-ui #chat-log-toggle { width: 44px; height: 44px; }
-  .astrid-voice-ui #astrid-camera.astrid-voice-controls { width: 56px; max-width: 56px; min-width: 0; box-sizing: border-box; flex-direction: column; align-items: center; gap: 7px; }
-  .astrid-voice-ui .astrid-voice-error { min-width: 0; max-width: 100%; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .astrid-voice-ui #astrid-camera.astrid-voice-controls { width: 76px; min-width: 0; box-sizing: border-box; }
   .astrid-voice-ui #chat:has(#chat-log.open) { width: min(340px, calc(100vw - 20px)); flex-direction: row; align-items: flex-start; }
   .astrid-voice-ui #chat:has(#chat-log.open) #chat-log { top: calc(100% + 8px); bottom: auto; }
   .astrid-voice-ui #chat-log { position: absolute; right: 0; bottom: calc(100% + 8px); }
