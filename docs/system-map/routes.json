@@ -4622,8 +4622,8 @@
       "kind": "api",
       "app": "studio",
       "handlerFile": "lab/app/api/assistant/route.ts",
-      "serving": "Vercel Studio. Public help uses static knowledge; N1 uses current scoped native readers and action APIs.",
-      "access": "Internal data and every prepare/execute require current N1 account and matching scope. Public help has no internal data. Same-origin POST, bounded input and rate limit.",
+      "serving": "Vercel Studio. Separate N1 Adminrobot including its quick guide; public visitors use /studio/api/public-assistant.",
+      "access": "Every chat mode and every prepare/execute require current N1 account and matching scope. Same-origin POST, bounded input and rate limit.",
       "boundary": "Model can only propose. Actor/session-bound expiring signed review, typed target and checkbox; fresh dependency fingerprint and original API CAS/auth before execution. No arbitrary SQL, shell, provider credentials or automatic writes.",
       "groupId": "studio-dealer-import",
       "sources": [
@@ -4635,6 +4635,33 @@
         },
         {
           "path": "lab/test/assistant.test.mjs"
+        }
+      ]
+    },
+    {
+      "id": "studio-api-public-assistant",
+      "path": "/api/public-assistant",
+      "publicPath": "/studio/api/public-assistant",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "kind": "api",
+      "app": "studio",
+      "handlerFile": "lab/app/api/public-assistant/route.ts",
+      "serving": "Vercel Studio: public Scoutguiden with Luna 6 and existing D-ID avatar.",
+      "access": "Public, including anonymous, partner and player. Same-origin POST, strict body and bounded process rate/concurrency limits.",
+      "boundary": "Curated public knowledge only. No native runtime, sessions, databases, tools or actions. D-ID DirectPlayback speaks server-generated text; API keys stay server-side.",
+      "groupId": "studio-dealer-import",
+      "sources": [
+        {
+          "path": "lab/lib/public-assistant.mjs"
+        },
+        {
+          "path": "lab/browser/public-assistant.mjs"
+        },
+        {
+          "path": "lab/test/public-assistant.test.mjs"
         }
       ]
     }
