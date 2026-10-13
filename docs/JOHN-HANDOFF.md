@@ -1,5 +1,17 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: ägarkontroll före agentmerge
+
+`AGENTS.md` kräver nu aktuell PR-författare, källrepo, branchägare och fryst
+head före varje agentmerge. Jakobs generella mergeuppdrag gäller hans egna
+PR:ar. Kevin-/John-/Emil-brancher, annan författare eller okänd ägare kräver
+en tydlig separat fråga med PR och head, även när Jakobs konto öppnade PR:en.
+Ett redan givet direkt godkännande gäller samma oförändrade PR/head.
+Detta är en agentregel; GitHubs vanliga mergeknapp får ingen egen popup.
+Vid inventeringen hade GitHub 47 brancher, varav 39 sidobranchers commits
+fanns på main. Automatisk branchradering var avstängd. Ingen fjärrbranch
+eller GitHub-behörighet har ändrats genom denna inventering.
+
 ## Tillägg 13 oktober: Admins navigering och delade funktioner
 
 `/admin` är huvudspåret för N1. Sidval, menyer, ekonomi och tjänstepaneler

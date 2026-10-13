@@ -30,6 +30,18 @@ Deliver from a feature branch matching `jakob/*`, `codex/*` or `cursor/*` in `Ja
 
 GitLab inbox, wiki, and mirror are paused. Jira is not an authorized workflow. The live migration tracker is `docs/CLOUD-MIGRATION.md`. Check an item complete only when its full expected result is verified. Do not create another tracker.
 
+### Merge ownership and explicit confirmation
+
+Before every agent-operated merge (CLI, API, browser, auto-merge or merge queue), freshly read the PR number, author login, source repository, head branch and full head SHA. Use the owner mapping in `inbox/people.json` from trusted current `main`, not a proposed change in the PR. A general Jakob merge mandate covers only PRs created by `Jakeminator123` whose source is verified as Jakob-owned; a `codex/*` or `cursor/*` name alone is not ownership evidence.
+
+Branches named `kevin`, `kevin-*` or `kevin/*` are Kevin's work; `john`, `john-*` or `john/*` are John's; `emil`, `emil-*` or `emil/*` are Emil's. Those owners override a PR opened using Jakob's credentials. A different PR author, another source repository, conflicting owner evidence or an unknown owner requires a separate explicit human confirmation before merging.
+
+Ask a clear question identifying owner, PR, branch and frozen head, for example: "Du håller på att merga Kevins branch `<branch>` i PR #<number> (head `<sha>`). Vill du uttryckligen merga den?" Use "Johns branch" or the actual known owner as appropriate; say that ownership is unknown when it cannot be established. Do not infer consent from green checks, a teammate/inbox reply, shared credentials or a general request to merge Jakob's PRs.
+
+An existing direct human approval for this exact PR, owner and unchanged head fulfills the confirmation; do not ask twice. Re-read the author, source and head immediately before merging. Changed head or ownership invalidates the earlier approval. Where supported, bind the merge to the full reviewed head (`gh pr merge --match-head-commit <sha>`); do not bypass this ownership check with admin, auto-merge or queue options.
+
+This is an agent workflow rule; it does not add a custom confirmation dialog to GitHub's native merge button or replace GitHub branch protections. Do not delete teammates' long-lived branches or deliberately parked unmerged work as routine feature-branch cleanup.
+
 ## Local agent coordination
 
 Follow `agent-talk/README.md`. Run `node tools/agent-talk.mjs status <your-id>` at task start, between work steps (about every 30 seconds while active), and before commit/push. Claim affected paths before editing; use ping/ack for overlap and `done` to release. Keep major progress notes short. No background polling; file messages do not wake paused agents or override user instructions.
