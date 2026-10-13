@@ -8,6 +8,9 @@ const files = new Map([
 const headers = { 'Cache-Control':'private, no-store', 'X-Content-Type-Options':'nosniff',
   'Referrer-Policy':'no-referrer', 'X-Robots-Tag':'noindex, nofollow',
   'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; media-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" };
+const documentHeaders = { ...headers, 'Content-Security-Policy': headers['Content-Security-Policy']
+  .replace("connect-src 'self'", "connect-src 'self' https://api.d-id.com")
+  .replace("media-src 'self'", "media-src 'self' blob: https://agents-results.d-id.com") };
 export async function rouletteDocument(req,res,{ authenticated, guestPreview, resolveRoom }) {
   const url = new URL(req.url,'http://local');
   if (['/roulette','/roulette/','/play/roulette/'].includes(url.pathname)) {
@@ -32,6 +35,6 @@ export async function rouletteDocument(req,res,{ authenticated, guestPreview, re
   const name = files.get(url.pathname);
   const content = await readFile(new URL(name === 'rules.mjs' ? './rules.mjs' : `../../public/roulette/${name}`,import.meta.url));
   const type = name.endsWith('.png') ? 'image/png' : (name.endsWith('.html') ? 'text/html' : name.endsWith('.css') ? 'text/css' : 'text/javascript')+'; charset=utf-8';
-  res.writeHead(200,{ ...headers,'Content-Type':type });
+  res.writeHead(200,{ ...(name.endsWith('.html') ? documentHeaders : headers),'Content-Type':type });
   res.end(req.method === 'HEAD' ? undefined : content); return true;
 }

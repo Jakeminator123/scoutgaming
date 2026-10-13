@@ -57,7 +57,7 @@ test('a fast model reply waits for avatar connection; closing during startup sup
   const gate=new Promise(resolve=>{start=()=>{ready=true;resolve();};});
   const fetchMock=t.mock.method(globalThis,'fetch',async(_url,options)=>Response.json(options?.method==='POST'?{reply:'Öppna spellobbyn.',model:PUBLIC_MODEL}:{avatar:PUBLIC_AVATAR,model:PUBLIC_MODEL}));
   const chat=installPublicAssistant({source:origin+'/studio/assistant-widget.js',authorize:async()=>true,
-   loadSdk:async()=>({ChatMode:{DirectPlayback:'scripted'},createAgentManager:async()=>({agent:{presenter:{}},connect:async()=>{connected=true;await gate;},disconnect:async()=>{disconnects++;},speak:async()=>{speaks++;assert.equal(ready,true,'speech must wait for the ready connection');}})})});
+   loadSdk:async()=>({ChatMode:{DirectPlayback:'scripted'},createAgentManager:async(_id,{callbacks})=>({agent:{presenter:{}},connect:async()=>{callbacks.onSrcObjectReady({});assert.equal(elements.get('video').muted,true,'warmup must be muted for autoplay');connected=true;await gate;},disconnect:async()=>{disconnects++;},speak:async()=>{speaks++;assert.equal(ready,true,'speech must wait for the ready connection');}})})});
   try{
    await chat.open();for(let i=0;i<20&&!connected;i++)await new Promise(resolve=>setImmediate(resolve));assert.equal(connected,true);
    elements.get('textarea').value='Var finns spelen?';

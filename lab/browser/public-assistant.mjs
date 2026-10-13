@@ -8,7 +8,7 @@ export function installPublicAssistant({source,authorize,loadSdk=()=>import('@d-
  .messages{padding:12px 16px;overflow:auto;flex:1;min-height:70px}.message{white-space:pre-wrap;overflow-wrap:anywhere;border-radius:10px;background:#20382e;padding:10px;margin:0 0 10px}.user{background:#344039}form{padding:12px 16px;border-top:1px solid #3c5449}textarea{display:block;background:#0e1915;color:inherit;border:1px solid #678476;border-radius:8px;padding:8px;width:100%;resize:vertical;max-height:130px}.row{display:flex;justify-content:space-between;gap:8px;margin-top:8px}.status{font-size:12px;padding:0 16px 10px;color:#bcd1c5}.send{background:#69dab2;color:#10261c}details{padding:0 16px 8px;font-size:12px;color:#bcd1c5}summary{cursor:pointer}a{color:#8ce2bd}.links{padding:0 16px 6px;font-size:12px;display:flex;gap:14px}@media(max-width:500px){:host{bottom:10px;right:10px}.avatar{height:140px}}
  </style><button class="launch" aria-label="Öppna Scoutguiden">Scoutguiden</button>
  <section hidden aria-label="Scoutguiden"><header><h2>Scoutguiden</h2><button class="close" aria-label="Minimera chatten">−</button></header>
- <div class="avatar" hidden><video autoplay playsinline aria-label="Scoutguidens avatar"></video><button class="audio" hidden>Slå på ljud</button></div>
+ <div class="avatar" hidden><video autoplay muted playsinline aria-label="Scoutguidens avatar"></video><button class="audio" hidden>Slå på ljud</button></div>
  <div class="messages" role="log" aria-live="polite"></div><div class="links"><a href="/lobby">Spellobbyn</a><a href="/partner/login">Partnerinloggning</a></div>
  <details><summary>Detaljer</summary><p>Publik hjälp · <span class="model"></span>. Avataren och rösten levereras av D-ID. Dina meddelanden skickas till modellleverantören och svaren till D-ID när avatar är på.</p><button class="toggle">Stäng av avatar</button></details>
  <form><label>Meddelande<textarea rows="2" maxlength="3000" placeholder="Vad vill du veta om sajten?"></textarea></label><div class="row"><button class="reset" type="button">Nytt samtal</button><button class="send" type="submit">Skicka</button></div></form><div class="status" role="status"></div></section>`;
@@ -30,7 +30,7 @@ export function installPublicAssistant({source,authorize,loadSdk=()=>import('@d-
     if(current!==generation)return null;
     candidate=await createAgentManager(config.avatar.agentId,{auth:{type:'key',clientKey:config.avatar.clientKey},mode:ChatMode.DirectPlayback,
      streamOptions:{compatibilityMode:'auto',streamWarmup:true},callbacks:{
-      onSrcObjectReady(stream){streamObject=stream;if(current===generation){video.srcObject=stream;$('.avatar').hidden=false;void play();}return stream;},
+      onSrcObjectReady(stream){streamObject=stream;if(current===generation){video.muted=true;video.srcObject=stream;$('.avatar').hidden=false;void play();}return stream;},
       onVideoStateChange(state){if(current!==generation)return;if(state==='START'){video.removeAttribute('src');video.srcObject=streamObject;video.muted=false;void play();}else if(candidate?.agent.presenter.idle_video){video.srcObject=null;video.src=candidate.agent.presenter.idle_video;video.loop=true;video.muted=true;void play();}idle();},
       onError(){if(current===generation)status('Avataren kunde inte ansluta. Du kan fortsätta med text.');},
      }});

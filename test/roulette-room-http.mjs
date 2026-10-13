@@ -24,12 +24,15 @@ test('room document preserves login context and serves only explicit public asse
   assert.equal(login.headers.get('location'),'/player-login?returnTo='+encodeURIComponent(path));assert.equal(reads,0);
   authenticated=true;
   const page=await get(path);assert.equal(page.status,200);assert.match(await page.text(),/id="spin"/);
-  assert.match(page.headers.get('content-security-policy'),/media-src 'self'/);
+  assert.match(page.headers.get('content-security-policy'),/media-src 'self' blob: https:\/\/agents-results\.d-id\.com;/);
+  assert.match(page.headers.get('content-security-policy'),/connect-src 'self' https:\/\/api\.d-id\.com;/);
+  assert.match(page.headers.get('content-security-policy'),/script-src 'self';/);
   assert.equal(page.headers.get('cache-control'),'private, no-store');
   for(const asset of ['/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs']) {
     assert.equal(backendPlatformPath(asset),true);assert.equal((await get(asset)).status,200);
   }
   const image=await get('/roulette/assets/roulette-bord.png');
+  assert.doesNotMatch(image.headers.get('content-security-policy'),/d-id\.com/);
   assert.equal(image.headers.get('content-type'),'image/png');
   assert.deepEqual([...new Uint8Array(await image.arrayBuffer()).slice(0,8)],[137,80,78,71,13,10,26,10]);
   const head=await get('/roulette/assets/roulette-bord.png',{method:'HEAD'});assert.equal((await head.arrayBuffer()).byteLength,0);
