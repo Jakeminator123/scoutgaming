@@ -2,7 +2,7 @@ import {sceneForComposition} from './composition-settings.mjs';
 
 // One published, silent idle scene renderer for the lobby and game rooms.
 // Call close when replacing the scene to release media, GPU resources and listeners.
-export function mountPublishedScene(stage, {dealer, background=null, table=null, settings=null, compositing, still=false, onReady=()=>{}, onFailure=()=>{}, onPlaying=()=>{}}) {
+export function mountPublishedScene(stage, {dealer=null, background=null, table=null, tableMask=null, settings=null, layout='mobile', compositing, still=false, onReady=()=>{}, onFailure=()=>{}, onPlaying=()=>{}}) {
     const abort = new AbortController();
     const assets = new Map();
     const elements = [];
@@ -14,6 +14,7 @@ export function mountPublishedScene(stage, {dealer, background=null, table=null,
     let renderer = null, actor = null, actorContext = null;
     let outputContext = null, actorVersion = '';
     let scene = null;
+    let maskedTable = null;
 
     const canPlay = ()=>!still && active && loaded && !failed && requestedPlay && inView && !document.hidden;
     function pause() {
@@ -41,17 +42,29 @@ export function mountPublishedScene(stage, {dealer, background=null, table=null,
     function render() {
       if (!active || !loaded || failed) return;
       const selected = assets.get('dealer');
-      if (!selected) return;
       try {
         if (renderer && actor && actorContext && scene) {
-          const version = selected.el instanceof HTMLVideoElement ? `${selected.el.currentSrc}@${selected.el.currentTime}` : dealer.src;
-          if (actorVersion !== version) {
+          const version = selected ? selected.el instanceof HTMLVideoElement ? `${selected.el.currentSrc}@${selected.el.currentTime}` : dealer.src : '';
+          if (selected && actorVersion !== version) {
             contain(actorContext,selected,1080,1920);
             actor.src = version;
             actorVersion = version;
           }
+          if (maskedTable) {
+            const {source,mask,canvas,context} = maskedTable;
+            const version = source.el instanceof HTMLVideoElement ? `${source.el.currentSrc}@${source.el.currentTime}` : table.src;
+            if (canvas.src !== version) {
+              context.clearRect(0,0,canvas.width,canvas.height);
+              context.globalCompositeOperation='source-over';
+              context.drawImage(source.el,0,0,canvas.width,canvas.height);
+              context.globalCompositeOperation='destination-in';
+              context.drawImage(mask.el,0,0,canvas.width,canvas.height);
+              context.globalCompositeOperation='source-over';
+              canvas.src=version;
+            }
+          }
           renderer.render(scene,actor,assets,[],undefined);
-        } else if (outputContext) contain(outputContext,selected,720,1280);
+        } else if (outputContext && selected) contain(outputContext,selected,720,1280);
       } catch { fail(); }
     }
     function tick() {
@@ -139,13 +152,14 @@ export function mountPublishedScene(stage, {dealer, background=null, table=null,
     }
     async function init() {
       if (settings) {
-        scene = sceneForComposition(settings,'mobile',{
-          dealer:true, background:Boolean(background), table:Boolean(table), cards:false,
+        scene = sceneForComposition(settings,layout,{
+          dealer:Boolean(dealer), background:Boolean(background), table:Boolean(table), cards:false,
         },compositing ? {...compositing,mode:'composite',enabled:true} : undefined);
         const moduleUrl = '/composition-runtime/compositor.js';
         const [runtime] = await Promise.all([
           import(/* webpackIgnore: true */ moduleUrl),
           load('dealer',dealer),load('background',background),load('table',table),
+          load('tableMask',tableMask),
         ]);
         if (!active || failed) return;
         actor = document.createElement('canvas');
@@ -153,10 +167,23 @@ export function mountPublishedScene(stage, {dealer, background=null, table=null,
         actor.height = 1920;
         actorContext = actor.getContext('2d');
         if (!actorContext) throw new Error('Preview unavailable');
+        if (tableMask) {
+          const source=assets.get('table'), mask=assets.get('tableMask');
+          // A registered static alpha mask, never an unsynchronised second video.
+          if (!source || !mask || mask.kind!=='image' || Math.abs(source.width/source.height-mask.width/mask.height)>.002) throw new Error('Invalid table mask');
+          const canvas=document.createElement('canvas');
+          const scale=Math.min(1,1920/source.width,1080/source.height);
+          canvas.width=Math.round(source.width*scale);canvas.height=Math.round(source.height*scale);
+          const context=canvas.getContext('2d');
+          if (!context) throw new Error('Preview unavailable');
+          maskedTable={source,mask,canvas,context};
+          assets.set('table',{...source,el:canvas});
+        }
         // The shared renderer can fall back to Canvas2D without treating its
         // informational WebGL notice as a broken public preview.
         renderer = new runtime.Compositor(stage,()=>{});
       } else {
+        if (!dealer || tableMask) throw new Error('Preview unavailable');
         await load('dealer',dealer);
         if (!active || failed) return;
         outputContext = stage.getContext('2d');
