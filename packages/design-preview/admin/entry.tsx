@@ -7,11 +7,13 @@ import { ConnectedClipMap } from './components/studio/connected-clip-map';
 import { ConnectedServices } from './components/studio/connected-services';
 import { SystemOverview } from './components/studio/system-overview';
 import { RegisteredMaterialLibrary } from './components/studio/registered-material-library';
+import { AdminHome } from './components/studio/admin-home';
 
 // Native readers and mutations keep their existing session, scopes and revisions.
 const servicePaths = new Set(['/control/drift','/control/ekonomi','/control/admin/accounts','/control/admin/players','/control/admin/payments','/control/admin/api','/control/admin/log','/control/ai/models','/control/ai/chat']);
 
 const pages: Record<string, string> = {
+  '/control': 'Översikt',
   '/control/structure': 'Struktur',
   '/control/clips': 'Klippkarta',
   '/control/assets': 'Bord & bakgrunder',
@@ -21,15 +23,17 @@ const pages: Record<string, string> = {
 };
 function App() {
   const path = usePathname();
+  const studio = ['/control/clips','/control/rooms','/control/dealers'].includes(path);
   const [studioDirty,setStudioDirty]=useState(false),[studioRefresh,setStudioRefresh]=useState(0);
   const [studioRevision,setStudioRevision]=useState('');
   const materialChanged=useCallback(()=>setStudioRefresh(value=>value+1),[]);
+  const [studioVisited,setStudioVisited]=useState(studio);
+  useEffect(()=>{if(studio)setStudioVisited(true);},[studio]);
   const [libraryVisited,setLibraryVisited]=useState(path==='/control/assets');
   useEffect(()=>{if(path==='/control/assets')setLibraryVisited(true);},[path]);
   const [visited,setVisited]=useState<string[]>(()=>servicePaths.has(path)?[path]:[]);
   useEffect(()=>{if(servicePaths.has(path))setVisited(current=>current.includes(path)?current:[...current,path]);},[path]);
   const isolatedPreview = document.querySelector('meta[name="croupier-environment"]')?.getAttribute('content')==='isolated-qa';
-  const studio = ['/control','/control/clips','/control/rooms','/control/dealers'].includes(path);
   return <div className="preview-admin flex bg-sg-bg text-sg-text" onClick={event=>{
     if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
     const anchor=(event.target as Element).closest('a');if(!anchor||anchor.target)return;
@@ -42,10 +46,11 @@ function App() {
       <label className="preview-mobile-nav">Sida <select value={studio ? '/control/clips' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      <div className="studio-workspace-mount" hidden={!studio}><ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/></div>
+      {studioVisited&&<div className="studio-workspace-mount" hidden={!studio}><ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/></div>}
       {libraryVisited&&<div hidden={path!=='/control/assets'}><RegisteredMaterialLibrary disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
       {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
-      {!studio && path!=='/control/assets' && !servicePaths.has(path) && (path==='/control/structure' ? <SystemOverview /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty} onChanged={materialChanged}/>)}
+      {path==='/control'&&<AdminHome />}
+      {!studio && path!=='/control' && path!=='/control/assets' && !servicePaths.has(path) && (path==='/control/structure' ? <SystemOverview /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty} onChanged={materialChanged}/>)}
     </main>
   </div>;
 }

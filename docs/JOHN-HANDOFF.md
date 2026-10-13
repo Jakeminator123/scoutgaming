@@ -1,5 +1,21 @@
 # Aktuell handoff — Scoutgaming
 
+## Adminstart: välj arbetsyta före redigering, 13 oktober
+
+`/admin` öppnar en enkel översikt med fem tydliga ingångar: dealers och klipp,
+spelbolag och rum, ekonomi, drift samt system. Studio-redigeraren ligger kvar på
+`/admin/clips`; befintliga länkar till `/admin/structure`, `/admin/assets` och
+övriga arbetsytor behåller sina mål. Sidomenyn har en egen Översikt-länk och
+logotypen går hem. Den avancerade klippkartan laddas först när Studio besöks;
+redigeraren hålls därefter monterad vid sidbyte så ett påbörjat utkast inte
+försvinner. Ingen spel-, publicerings- eller databaslogik ändras.
+
+Verifierat i isolerad byggd adminvy: startsidan visar endast vägvalen, länken
+till ekonomin öppnar den fungerande diagramvyn och Översikt återgår hem.
+Design-preview typkontroll och bygge passerar; 16 riktade route-, struktur- och
+runtimebindningstester passerar. Full regressionshook och PR-kontroller hör
+till leveransgrinden. Produktionsvisning återstår efter merge.
+
 ## Ekonomi: enkel översikt i admin, 13 oktober
 
 `/admin/ekonomi` återfår nyckeltal och två diagram i den nya designen;

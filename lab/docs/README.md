@@ -373,6 +373,8 @@ På **Dealers & klipp** leder **Arkivera & återställ** till dealerns hantering
 
 ## Översikt och rätt arbetsyta
 
+På nya `/admin` väljer du först område: **Dealers och klipp**, **Spelbolag och rum**, **Ekonomi**, **Drift** eller **System**. Startsidan öppnar ingen redigerare. Välj **Studio** eller **Öppna dealers och klipp** för klippkartan på `/admin/clips`; **Bord och bakgrunder** finns som eget val. **Ekonomi** visar kontorörelser, diagram och en journal som kan fällas ut. Diagrammen bygger på hämtade journalposter, inte på beräknad GGR eller revshare. Logotypen och **Översikt** i sidomenyn tar dig tillbaka till `/admin`.
+
 **Översikt** på /control visar arbetsgången **dealer → sammansättning → publicering → spelrum**. Välj ett bolag för nästa steg, öppna rum, valbara dealers och paketversion. Bolagets status kommer från samma publicerade rumslista som spellobbyn; sparade Studioändringar räknas separat och är inte automatiskt publicerade. Ett anslutningsfel visas som okänd status, aldrig som noll spelrum. **Uppdatera status** hämtar en ny bild. Bolagsvalet följer länkarna till publicering och team.
 
 **Studio** innehåller även Talgranskning: manuell bedömning av ett exakt ljud- och videopar. Ändrade filer ogiltigförklarar den tidigare bedömningen. **Spelhändelser & villkor** styr när inspelade klipp används; **AI-småprat vid inaktivitet** är ett separat flöde. Händelsekopplingar och äldre 2D-klipp är fortfarande aktiva i uppspelning/validering och har inte tagits bort.
