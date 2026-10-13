@@ -751,10 +751,11 @@
       "id": "studio-openclaw-admin",
       "paths": [
         "GET /studio/api/openclaw/admin",
-        "PATCH /studio/api/openclaw/admin"
+        "PATCH /studio/api/openclaw/admin",
+        "POST /studio/api/openclaw/admin"
       ],
-      "serving": "Native Studio -> canonical Director -> signed private Gateway protocol4 config.get/config.patch",
-      "access": "Live admin session/scope, same-origin PATCH, bounded JSON and native baseHash CAS. Only existing Croupier agent primary/fallback models; no arbitrary RPC, tools or provider secrets.",
+      "serving": "Native Studio -> canonical Director -> signed private Gateway config RPC, or private helper owner dashboard handoff",
+      "access": "Live N1 session/scope, same-origin PATCH/POST. Models use baseHash CAS; dashboard.open issues a single-use native owner handoff. No arbitrary RPC/commands or provider secrets.",
       "sources": [
         "lab/app/api/openclaw/admin/route.ts",
         "lab/lib/openclaw-admin.mjs",
@@ -3637,14 +3638,15 @@
       "publicPath": "/studio/api/openclaw/admin",
       "methods": [
         "GET",
-        "PATCH"
+        "PATCH",
+        "POST"
       ],
       "kind": "route",
       "app": "studio",
       "handlerFile": "lab/app/api/openclaw/admin/route.ts",
-      "serving": "Native Studio -> canonical Director -> signed private Gateway protocol4 config.get/config.patch",
-      "access": "Live admin session/scope, same-origin PATCH, bounded JSON and native baseHash CAS. Only existing Croupier agent primary/fallback models; no arbitrary RPC, tools or provider secrets.",
-      "boundary": "Projection exposes only model choices and safe status; Gateway password/device key never reach the browser. Uncertain save is not retried.",
+      "serving": "Native Studio -> canonical Director -> signed private Gateway config RPC, or private helper owner dashboard handoff",
+      "access": "Live N1 session/scope, same-origin PATCH/POST. Models use baseHash CAS; dashboard.open issues a single-use native owner handoff. No arbitrary RPC/commands or provider secrets.",
+      "boundary": "Model/status projection or expiring one-use browser handoff. Gateway password/device key never reach the browser. Native dashboard session is independent of N1 logout.",
       "groupId": "studio-openclaw-admin",
       "sources": [
         {

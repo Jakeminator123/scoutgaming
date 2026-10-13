@@ -52,7 +52,7 @@ test('the seeded provider keeps the approved OpenAI base URL, model and API tupl
   const provider = config.models.providers['lab-provider'];
   assert.equal(provider.baseUrl, 'https://api.openai.com/v1');
   assert.equal(provider.api, 'openai-responses');
-  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.6-terra','gpt-5.4-mini','gpt-6-luna','gpt-6-sol']);
+  assert.deepEqual(provider.models.map(model => model.id), ['gpt-5.6-terra','gpt-5.4-mini','gpt-6-luna','gpt-6-sol','gpt-6.1-sol']);
   for (const agent of Object.values(config.agents.entries)) {
     assert.equal(agent.model.primary, 'lab-provider/gpt-5.6-terra');
     assert.deepEqual(agent.model.fallbacks, []);
@@ -69,7 +69,7 @@ test('Astrid vision metadata requires an explicit gate and changes only Luna, Te
   for (const id of ['gpt-6-luna', 'gpt-5.6-terra', 'gpt-6-sol']) expected.models.providers['lab-provider'].models.find(model => model.id === id).input = ['text', 'image'];
   assert.deepEqual(planned, { action: 'reconcile-speech', config: expected });
   assert.deepEqual(config.models.providers['lab-provider'].models.map(model => model.input),
-    [['text'], ['text'], ['text'], ['text']], 'planning does not mutate saved configuration');
+    [['text'], ['text'], ['text'], ['text'], ['text']], 'planning does not mutate saved configuration');
   assert.deepEqual(planGatewayConfig(planned.config, { ...example, CROUPIER_SPEECH_VISION: '1' }),
     { action: 'reuse', config: expected }, 'reconciliation is idempotent');
 });
@@ -330,4 +330,29 @@ test('provider endpoint rejects accidental plaintext transport or embedded crede
   const custom = gatewayConfig({ ...example, OPENCLAW_MODEL_BASE_URL: 'https://models.example.test/v1', OPENCLAW_MODEL_ID: 'approved/model-1', OPENCLAW_MODEL_API: 'openai-completions' });
   assert.equal(custom.models.providers['lab-provider'].baseUrl, 'https://models.example.test/v1');
   assert.equal(custom.agents.entries['croupier-director'].model.primary, 'lab-provider/approved/model-1');
+});
+
+
+test('Sol 6.1 catalog reconciliation is additive and leaves all role choices and old metadata intact',()=>{
+ for(const api of ['openai-responses','openai-completions']){
+  const config=gatewayConfig({...example,OPENCLAW_MODEL_API:api});
+  const provider=config.models.providers['lab-provider'];provider.models=provider.models.filter(m=>m.id!=='gpt-6.1-sol');
+  provider.models[0].name='Human label';provider.models[0].contextWindow=123456;
+  config.agents.entries['croupier-operator'].model.fallbacks=['lab-provider/gpt-6-luna'];
+  const before=structuredClone(config),planned=planGatewayConfig(config,example);
+  assert.equal(planned.action,'reconcile-speech');assert.deepEqual(config,before);
+  assert.deepEqual(planned.config.agents,before.agents);assert.deepEqual(planned.config.gateway,before.gateway);
+  assert.deepEqual(planned.config.models.providers['lab-provider'].models.slice(0,-1),before.models.providers['lab-provider'].models);
+  assert.deepEqual(planned.config.models.providers['lab-provider'].models.at(-1),{id:'gpt-6.1-sol',name:'gpt-6.1-sol',input:['text']});
+  assert.deepEqual(planGatewayConfig(planned.config,example),{action:'reuse',config:planned.config});
+ }
+});
+test('Sol 6.1 preserves custom metadata and does not add candidates to unrelated providers',()=>{
+ const config=gatewayConfig(example),model=config.models.providers['lab-provider'].models.find(m=>m.id==='gpt-6.1-sol');
+ Object.assign(model,{name:'Custom Sol',input:['text','image'],contextWindow:98765});
+ assert.deepEqual(planGatewayConfig(config,example),{action:'reuse',config});
+ for(const custom of [{baseUrl:'https://models.example.test/v1'},{baseUrl:'https://api.openai.com/v1/proxy'},{api:'anthropic-messages'}]){
+  const copy=structuredClone(config),provider=copy.models.providers['lab-provider'];provider.models=provider.models.filter(m=>m.id!=='gpt-6.1-sol');Object.assign(provider,custom);
+  assert.deepEqual(planGatewayConfig(copy,example),{action:'reuse',config:copy});
+ }
 });

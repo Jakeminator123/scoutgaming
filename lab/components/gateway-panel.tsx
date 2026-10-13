@@ -19,7 +19,7 @@ export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPl
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const dashboardUrl = typeof status.dashboardUrl === 'string' && status.dashboardUrl.startsWith('https://') ? status.dashboardUrl : 'https://croupier-lab-director.onrender.com/openclaw/';
+
 
   async function send() {
     if (!message.trim() || busy) return;
@@ -44,7 +44,7 @@ export function GatewayPanel({ status, mode, onModeChange, dealerId, dirty, onPl
       <details className="gateway-diagnostics"><summary>Urvalsläge · {modeLabels[mode]}</summary><p className="helper">Börja med standardfilen. Aktivera regler, slump eller OpenClaw när familjen har granskade varianter som får väljas.</p><ModeSelector mode={mode} onChange={onModeChange} configured={Boolean(status.configured)} /></details>
       <details className="gateway-diagnostics"><summary>Ansvar, spelarminne och dashboard</summary><div className="authority-grid"><div><span className="eyebrow">KAN PÅVERKA</span><h3>Presentationen</h3><ul><li>Val av en redan tillåten variant</li><li>Ton, hälsning och ett granskat uttryck</li><li>Test av chatt- och preferenssignaler</li></ul></div><div><span className="eyebrow">KAN INTE PÅVERKA</span><h3>Spelets sanning</h3><ul><li>RNG, kort, resultat eller utbetalningar</li><li>Ändra dina policyfiler via denna chatt</li><li>Välja en otillåten eller påhittad video</li></ul></div></div>
       <div className="notice"><strong>Skilj på bordschatt och fristående chattprov.</strong><p>Bordschatten använder originalspelets serverägda underlag; eventuellt spelarminne hanteras i originalspelets inställningar. Eventstudions testsignaler och fristående chattprov är separata och är inte bevis på vad som hänt vid bordet. IDE-agenternas GitLab-inbox hör inte till detta system.</p></div>
-      <a className="external-link" href={dashboardUrl} target="_blank" rel="noreferrer">Öppna OpenClaws egen dashboard <span aria-hidden="true">↗</span></a><p className="helper">Dashboarden hanterar agenter och verktyg. Labbets editor hanterar event, regler och videokopplingar.</p>
+      <a className="external-link" href="/admin/ai/models">OpenClaw-modeller och dashboard <span aria-hidden="true">↗</span></a><p className="helper">Dashboarden hanterar agenter och verktyg. Labbets editor hanterar event, regler och videokopplingar.</p>
       </details><VoicePreviewPanel available={standaloneVoicePreviewAvailable} latestReply={messages.findLast(item => item.role === 'assistant')?.text ?? ''} />
       <OpenClawSources />
     </section></div>

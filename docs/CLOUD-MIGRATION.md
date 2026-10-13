@@ -1,5 +1,20 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## OpenClaw dashboard utan terminal — liveacceptans öppen
+
+- [ ] Driftsätt Gateway, Director och Vercel med N1-engångslänken. Befintlig
+  privat helper och Gatewaycredential används; inga nya hemligheter krävs.
+- [ ] Verifiera direktöppning från /admin/ai/models i en ny profil och att
+  utloggad, partner och spelare nekas utfärdande. Native OpenClaw-sessionen
+  är separat och finns kvar efter utloggning från sajten.
+- [ ] Verifiera Sol 6.1 genom Gateway efter den additiva katalogmigrationen,
+  välj sedan endast önskad administrationsroll via N1/CAS. Alla befintliga
+  primary/fallback-val och talroller är bevarade av migrationen.
+- [ ] Mät rollernas faktiska trafik före eventuell pensionering. Fem
+  registrerade roller och samma grundmodell bevisar inte inaktivitet;
+  produktens talanrop kan dessutom välja modell per anrop.
+
+
 ## Adminroboten på alla sidor — kod klar, liveacceptans öppen
 
 - [ ] Granska och driftsätt den separata chattknappen: publik Scoutguide utan

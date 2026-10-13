@@ -169,6 +169,7 @@ test('adding model candidates preserves older role backups and retries the same 
   assert.equal(await readFile(result.backupPath, 'utf8'), original);
   assert.deepEqual(result.config.agents, existing.agents);
   assert.ok(result.config.models.providers['lab-provider'].models.some(model => model.id === 'gpt-6-luna'));
+  assert.ok(result.config.models.providers['lab-provider'].models.some(model => model.id === 'gpt-6.1-sol'));
   await writeFile(env.OPENCLAW_CONFIG_PATH, original);
   const retry = await prepareGatewayConfig(env, { validateConfig: validateFixture });
   assert.equal(retry.backupPath, result.backupPath);
