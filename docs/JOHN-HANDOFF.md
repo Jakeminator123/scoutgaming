@@ -1,5 +1,52 @@
 # Aktuell handoff — Scoutgaming
 
+## Tillägg 13 oktober: tre valbara originalbakgrunder
+
+Jakobs PNG/MP4-par har registrerats via ordinarie uppladdning på
+`/control/library?tab=backgrounds`, utan omkodning. Alla sex återlästes
+efter omladdning och visas som lediga för sammansättningar. Importen
+ändrade inga rum, dealeranslutningar, standardval eller publicerade paket.
+
+| Material | Bildens upload-ID | Videons upload-ID |
+| --- | --- | --- |
+| `studio-dark` — Studio · mörk | `830074fa-f6c0-4042-940e-d9e7f6d89154` | `97cc4eb8-7d58-41ba-8988-85c805d7a42b` |
+| `lounge-warm` — Lounge · varm | `76586226-e636-4cf6-a08c-be9d83abed31` | `87bca397-cf29-4371-bf95-0fb0653472c7` |
+| `studio-teal` — Studio · turkos | `12a8e84d-b8d7-4a3d-8a5b-f3b04e832a9b` | `d9e52013-08e9-4e2e-bf10-e3e527a35e9c` |
+
+`web/public/background-materials.mjs` binder bild och video till samma
+material via SHA-256, storlek, MIME och dimensioner. PNG är 1672×941;
+MP4 är H.264 High, 1920×1080, 24 fps, cirka 10 sekunder utan ljud.
+Originalnamnen följs även där motivet kan antyda ett annat namn.
+Filerna ligger i mediebiblioteket; privata sökvägar och binärer läggs inte i Git.
+
+Det gemensamma `material-catalog.mjs`-kontraktet är samordnat med SIDOR3
+(PR #55) och innehåller även de nya gröna/svarta blackjackborden.
+Spelval, offentlig rums-/previewläsning och partnervy använder gemensamma
+materialnamn. Upload-ID, rumstillhörighet och frysta tillåtna alternativ
+behåller sin betydelse. Katalogen ger ingen åtkomst eller publiceringsacceptans.
+SIDOR3 förenar samma kontrakt med sin nya Studio-UI; bordens uppladdning
+och UI-arbete tillhör den leveransen.
+
+Verifiering: 35 riktade tester för innehållsidentifiering, variantkoppling,
+spelbordens speltyp, oförändrade paket/val och konsekventa läsarnamn.
+Ordinarie full regression körs som commitgrind; checkoutens låsta
+testberoenden och produktionsbygge är förberedda.
+Ingen dealerfilm har bytts. Val i verkliga rum, komposition, loopskarv och
+visuell acceptans i rehearsal återstår tills bakgrunderna används där.
+
+Efter separat instruktion från Jakob togs den oanvända
+`background-ditt-spelbolag`-posten `800eb6ee-9e55-40c1-9757-159694422dd2`
+ur biblioteket. Tre andra varianter är fortsatt refererade och bevarade.
+Jakob valde uttryckligen borttagning av `paow3`: rummet
+`room-8affe3aa-0a8f-58b7-02df-df67cbba6e6e` arkiverades genom ordinarie
+API, togs ur den aktiva strukturen och avpublicerades i Nordic Bet-paket
+version 8. Rouletterummet är kvar. Demo North/South återfanns endast i
+diagnostiska fixtures, inte bland de registrerade bolagen.
+AGENTS anger nu `/admin` och `/lobby` som riktning, med befintliga ytor
+kvar under övergången. Den begärda gemensamma papperskorgen för samtliga
+resurstyper i både `/control` och `/admin` samt granskning av äldre
+Mobile Phone Lane-kopplingar är fortsatt arbete, inte färdig funktion.
+
 ## Tillägg 13 oktober: samlade spelmanualer
 
 Canonical ingångar finns nu i [docs/games](games/README.md): blackjack,
