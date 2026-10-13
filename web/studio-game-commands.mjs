@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import { studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
+import { studioCommandSignature } from '../packages/shared/studio-game-command.mjs';
 import { validateStudioScope, canonicalStudioJson } from './storage/studio-contract.mjs';
 import { studioAdminActionPolicy, meetsStudioAdminActionRole } from '../packages/studio-access/studio-access-policy.mjs';
 

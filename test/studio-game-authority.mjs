@@ -1,9 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStudioGameAuthority,studioCommandSignature} from '../lab/lib/studio-game-authority.mjs';
+import { studioCommandSignature as sharedStudioCommandSignature } from '../packages/shared/studio-game-command.mjs';
 const scope={environment:'fixture',workspaceId:'croupier'}, env={CROUPIER_PUBLIC_ORIGIN:'https://public.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid',CROUPIER_VERCEL_INGRESS_SECRET:'s'.repeat(40)};
 const input={action:'apikeys/credit',body:{id:'key',playerId:'p',amount:10},actor:{user:'operator',role:'superadmin'},scope,
   request:new Request(`${env.CROUPIER_PUBLIC_ORIGIN}/studio/api/admin/apikeys/credit`,{headers:{cookie:'bo_jwt=existing'}})};
+test('shared command signature preserves the established wire bytes and compatibility export', () => {
+  const body = '{"action":"players/status","body":{"note":"Räknare 🂡"},"enabled":true}';
+  assert.equal(studioCommandSignature, sharedStudioCommandSignature);
+  assert.equal(sharedStudioCommandSignature('s'.repeat(40), '1800000000000', body),
+    'dcc4c99107348b61163c2fc9992f5fba10299fa6b0fdea125669e79f06ab654c');
+  assert.notEqual(sharedStudioCommandSignature('s'.repeat(40), '1800000000000', body + '\n'),
+    sharedStudioCommandSignature('s'.repeat(40), '1800000000000', body));
+});
 test('engine bridge uses bounded signed trusted transport and confirms exact Render scope',async()=>{
   let calls=0;
   const authority=createStudioGameAuthority({env,scope,now:()=>1_800_000_000_000,fetchImpl:async(url,options)=>{

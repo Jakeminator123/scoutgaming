@@ -128,6 +128,20 @@ Detta stänger inget JN2-steg och ingen medieacceptans. Det är trädläget efte
 - Källkoden `test-videoeditor/` ligger i `packages/presentation/{compositor,docs,preview}` och källkoden `presentation-runtime/` i `packages/presentation/runtime/`. Publik URL `/presentation-runtime/*` är oförändrad. Shimmen `presentation-runtime/live-idle.mjs` finns kvar avsiktligt för `web/public/local-presentation.mjs`, som laddas i både Node och webbläsare.
 - Indexerade banken, läppsynkverktygen och bankauditarna är borta ur Git och Render-imagen. Av 632 filer togs 598 bort (cirka 278 MiB). 34 MP3 (17 Astrid, 17 Amira) i `runtime/indexed/audio/en` står kvar för de bevarade green-speak-talparen. `runtime/presentation`, GPU-workerns läppsynk, dess CI-jobb och röstkällor är inte avvecklade.
 
+**Avgränsad överlämning 13 oktober: delat spelkommandokontrakt.**
+`studioCommandSignature` ligger i `packages/shared/studio-game-command.mjs`;
+spelmotorns `web/studio-game-commands.mjs` behöver därför inte längre importera
+Studios HTTP-authoritymodul. Den gamla sökvägen återexporterar samma funktion.
+HMAC-format, felbeteenden, behörighet, publicering och lagring är oförändrade;
+övriga `lab/lib`- och OpenClawberoenden finns kvar. På bas `60defa5` passerade
+Studio-bygget och 29 riktade kontrakts-/kommandotester. Full ordinarie hook:
+3 339 godkända, 7 överhoppade, 1 fel i oförändrat `local-session.test.mjs`
+(processens startidentitet saknas här); samma fel återkom på ren `435c496`.
+Inga testgrindar ändrades. Systemkartans kontroll passerar med varningar om
+historiskt/ändrat underlag; miljöregister, testregistrering och diffkontroll
+passerar. GitHub CI återstår. Ingen merge eller produktionsdeploy ingår.
+Notisen ligger här för att hålla `JOHN-HANDOFF.md` orörd under PR #91.
+
 Öppet efter planen:
 
 - [ ] Acceptans efter deploy av slut-SHA:n: Vercel READY och Render live; röktest av `/`, `/play`, `/play/blackjack?operator=…`, `/control/login`, `/partner/login` och `/casino.html`; N1 → publicering → N2 → N3 för `sg-test`, `johns-spelbolag` och `nordic-bet`; tre lager på mobil och desktop med två uppspelningar i rad; negativa prov (fel bolag, saknad media); rehearsal för paketens registrerade dealers. Delkvitton 13 oktober, inte full acceptans: egen läsande kontroll 01:03 visade att Render och Vercel kör `a5441feb`, att sökvägarna svarar som förut och att runtime-hasharna är oförändrade. Rum paow3 hos `nordic-bet` provspelades av föregående agent 00:45 på `a5441feb`.
@@ -1152,7 +1166,7 @@ med barnprocess/källa/stabil deploy/envbindning i stället.
 
 | Ansvar | Aktiv källa / gräns |
 | --- | --- |
-| Publik webb | Vercelprojekt scoutgaming på www.scoutgaming.tech (apex 308 till www). Ytor: `/control`, `/partner`, `/play`. Service web från apps/croupier-frontend; service studio är labb-appen med basePath `/studio`, inte en egen produkt. Spelmotor: Render `croupier-v2`. |
+| Publik webb | Vercelteam/projekt `scoutgaming` på www.scoutgaming.tech (apex 308 till www). Nya ytor `/admin` och `/lobby`; `/control`, `/partner` och `/play` behåller sina befintliga flöden. Service web från apps/croupier-frontend; service studio är labb-appen med basePath `/studio`, inte en egen produkt. Spelmotor: Render `croupier-v2`. |
 | Konton/wallet/rundor | Neon croupier_game/croupier_auth; Render äger spelauktoritet |
 | Zoner | separat croupier_zones/CROUPIER_ZONES_DATABASE_URL, ingen DBfallback |
 | Studio/adminpolicy/historik/mediaregister | Neon croupier_studio med scope/CAS/history/audit; Render samma policy |
@@ -1160,6 +1174,15 @@ med barnprocess/källa/stabil deploy/envbindning i stället.
 | LiveAI/GPU/stream | Render/Director/Gateway/RunPod, Neonjournal/lease/reservation |
 | Isolerad nativeQA | separat DB/scope/hostname, befintlig disk/SDK/kvitton, AI/GPU OFF |
 | Lokal utveckling | ett koordinerat par, sessionsvakt/lab/data; privata utkast/cache |
+
+SQLite-koden är kvar för lokal/isolerad kompatibilitet och bevisar inte aktiv
+SQLite-produktion. `web/server.mjs` väljer backend med `CROUPIER_DATABASE`;
+`ops/cloud/config.mjs` och `container-entry.mjs` stöder diskfri PostgreSQL/Neon-
+policy med privat Blob och avvisar pensionerade produktdiskkataloger.
+Läsande metadata 13 oktober bekräftade Vercelprojektet i teamet `scoutgaming`
+och Neonprojektet `croupier-production` i organisationen Vercel `scoutgaming`.
+Renderinställningar avlästes inte på nytt; dess driftbeskrivning stöds här av
+aktuell kod och de daterade kvittona nedan, inte av en ny deploykontroll.
 
 ### Blob är ett gemensamt filarkiv, inte två tjänster
 

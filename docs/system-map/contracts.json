@@ -83,6 +83,7 @@
         "ops/neon-studio/retained-bank.mjs",
         "ops/neon-studio/speech-ledger-import.mjs",
         "ops/neon-studio/speech-ledger-snapshot.mjs",
+        "packages/shared/studio-game-command.mjs",
         "test/speech-ledger-import.mjs",
         "test/studio-cutover-integration.mjs",
         "test/studio-postgres-integration.mjs",
