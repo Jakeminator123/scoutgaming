@@ -17,11 +17,12 @@ konfigflytt, sessionradering, credential- eller modelländring införs. Direkt
 start av Gateway som root nekas även om Dockerkommandot skulle åsidosättas.
 Live Render-konfiguration har inget sådant kommandoöverskrivande.
 
-37 fokuserade bootstrap/startup/runtime/handoff-tester passerade. Ny
-Gatewaydeploy krävs; loggen ska visa runtime uid=1000 gid=1000, och sedan
+37 fokuserade bootstrap/startup/runtime/handoff-tester passerade. Ett isolerat
+Ubuntu/Node 22.22-prov återskapade en rootägd 2775-katalog och verifierade
+uid/gid/ägare 1000, efterföljande chmod 0700, bevarade konfigbytes och ny
+skrivning. Barnprocessen kunde inte återta uid 0; testkatalogen städades.
+Ny Gatewaydeploy krävs; loggen ska visa runtime uid=1000 gid=1000, och sedan
 ska N1-modellbytet provas med färsk revision och uttrycklig återläsning.
-Linuxprivilegier och den riktiga mounten kan slutverifieras först där;
-denna Windowsmiljö saknar tillgänglig lokal Linux-containerkörning.
 
 ## OpenClaw-länk och webbläsarklocka, 13 oktober 2026
 

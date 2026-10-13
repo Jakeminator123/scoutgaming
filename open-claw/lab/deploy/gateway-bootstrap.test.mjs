@@ -60,6 +60,7 @@ test('Docker runs a root-owned bootstrap and imports the existing starter only a
   const source=readFileSync(new URL('./gateway-bootstrap.mjs',import.meta.url),'utf8');
   assert.match(docker,/COPY --chown=root:root --chmod=0444 deploy\/gateway-bootstrap\.mjs/);
   assert.match(docker,/RUN mkdir -p \/data\/openclaw \/opt\/croupier-gateway && chown node:node \/data\/openclaw\r?\n/);
+  assert.match(docker,/RUN chown root:root \/opt\/croupier-gateway && chmod 0755 \/opt\/croupier-gateway/);
   assert.doesNotMatch(docker,/chown -R|chown node:node \/opt/);
   assert.deepEqual(JSON.parse(docker.match(/^CMD (.+)$/m)[1]),['node','/opt/croupier-gateway/gateway-bootstrap.mjs']);
   assert.ok(source.indexOf('prepareGatewayOwner();')<source.indexOf("await import('./start-gateway.mjs')"));
