@@ -92,9 +92,10 @@ nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
 Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
 [befintliga migrationstrackern](CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
-Integrationsbas: `7946cd5bb3d4e9262842d4c42c257071bdc935ac`; egen gren
-`codex/admin-c1-c3`. DRAGAN överlämnade eget Admin-avsnitt igen efter PR122.
-Hans senare spelkvitto från PR123 är bevarat som hans prov.
+Integrationsbas: `5ca686c5513982f9a760ad8dd07e67ed4d4e2e40`; egen gren
+`codex/admin-c1-c3`. DRAGAN har på nytt överlämnat endast eget Admin-avsnitt.
+PR124–127 och hans spelkvitton är bevarade som hans prov. Han rapporterar
+två isolerade produktionsrundor efter PR127; detta är inte vårt eget spelprov.
 Agenter arbetade i separata worktrees med navigation, N1-CSS och kortlayout.
 Huvudcheckouten och PR91:s arbete har inte använts för editeringar.
 
@@ -113,14 +114,16 @@ hela knappytan och fokus; oskickad chatttext och lokalt kategoriutkast
 bevaras när chatten minimeras och öppnas igen. Widgetkod och lagernivåer
 är oförändrade, och inga skrivande nätverksanrop gjordes i provet.
 
-Lokal kodcommit `2dec9e20`: full pre-commit **3 630 pass, 11 skip,
-0 fel/cancel i 75 grupper**, Node 24.21.0/fyra workers. Lab-bygget med
+Integrationscommit `e9996383`: full pre-commit **3 712 pass, 11 skip,
+0 fel/cancel i 76 grupper**, Node 24.21.0/fyra workers. Lab-bygget med
 97 byggspår och Admin/lobbyns typkontroll passerar. Skippen är inte acceptans.
 Eget läsande browserprov använder lokala UI-resurser på huvuddomänen i egen
 flik, vid 1440/1024/640/390 px. Kortexpansion, bolagsrubrik och startsidans
 länkar har följts upp vid 1440/390 px. Detta är inte levererad UI-acceptans.
-Inga produktionsskrivningar, spelprov, lokala produktservrar, merge eller
-deploy har utförts. Tidigare passets `c0ff2332` (3 594 pass/11 skip) och
+Inga egna produktionsskrivningar av data, spelprov eller lokala produktservrar
+har utförts. Efter Jakobs nya leveransmandat mergades den granskade PR127
+på fryst head `2930b3b6` med gröna kontroller; main blev `5ca686c5`.
+Tidigare passets `c0ff2332` (3 594 pass/11 skip) och
 43 dokumentprov behålls som historik i trackern. Tre tidigare avbrutna
 försök och den slutliga, verifierade Temp-miljön redovisas där också;
 inga test- eller säkerhetsregler lättades.
@@ -139,12 +142,20 @@ Oberoende Lab-historik, full login-/
 kontextmatris, spara/återläsa, revisionskonflikt, publicering, rollgränser
 och två spelomgångar återstår.
 
-PR är ännu inte publicerad eftersom push kan utlösa automatisk Vercel-preview
-under Jakobs deployförbud. Samtliga sex avslutade arbetskopior är arkiverade
-efter verifierad överföring. Egna browserflikar är stängda. Integrationen
+Admin-PR förbereds nu under Jakobs uttryckliga mandat till PR/merge och
+leverans på main. Levererad UI-acceptans återstår. Samtliga åtta avslutade
+arbetskopior är arkiverade efter överföring eller avslutad läsande granskning.
+Egna browserflikar är stängda. Integrationen
 och privata provkvitton behålls; ingen egen produkt-/Lab-server är aktiv.
 Faktisk 200-procentszoom och full dialogmatris återstår. Tidigare
 agenters Anna-/import-/rensningskvitton är bevarade och inte återutförda här.
+
+Hela `/control` kan inte raderas: Partner importerar dess delade renderare
+och login-/lösenordsalias behövs. Vanliga dokumentlänkar omdirigeras redan.
+Den befintliga trackern beskriver ordningen för säker frikoppling. Faktisk
+produktion före Admin-leveransen använde Arial i rubriken; grenens lokala
+Inter ska även verifieras efter leverans. Ingen extra skuggfix motiverades
+av kodinventeringen.
 
 ## Rörligt dealertal: förberedd adapter, 14 oktober
 
