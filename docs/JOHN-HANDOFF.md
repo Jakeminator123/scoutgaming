@@ -31,9 +31,21 @@ under Bord. Delade händer, återupptagna serverplatser och byte tillbaka till
 Validering, frysta paket, materiallivscykel och sparningens versionsgrind
 följer fältet. Runtime v16 krävs före skrivning; ingen SQL-migration.
 Studio-bygget passerar med 97 byggspår. Full ordinarie pre-commit på
-`652f3f2e`: 3 610 pass, 11 skip, 0 fel i 75 grupper. Driftsättning återstår.
-Dragan-rummet är ännu inte publicerat: exakt Oak-
-kalibrering och två godkända spelprov per format återstår efter driftsättning.
+`652f3f2e`: 3 610 pass, 11 skip, 0 fel i 75 grupper. PR122 är mergad som
+`ce58ebb0`; Vercel READY och Render live verifierade på samma SHA.
+Oak-placeringar är sparade per format. Efter återinloggning avslutades två
+sammanhängande desktoprundor (1440 × 900) och två mobilrundor (390 × 844)
+med slutlig kalibrering och separat testsaldo. Kort och insatser följer Oak.
+Swedish Games har nu ett öppet rum, Dragan · Blackjack, publicerad version 1.
+Valen i /lobby och faktisk spelstart verifierades utan insats på riktigt konto.
+Annas roulette-rum finns kvar hos Scoutgaming Demo. Dragans import erbjuder
+30 filer per omgång; de elva lokala MP4-originalen finns redan i klippbanken.
+
+Filmad givning kräver fortfarande pose-/sekvenskoppling och klippkalibrering;
+tal och läppsynk är inte accepterade genom dessa prov. Dragan saknar ännu
+kopplat lobbyporträtt. /lobby saknar fortfarande den bordsväljare som finns i
+kompatibilitetslobbyn. lab/ är aktiv källkod och ska behållas. Privat HTML-
+steglogg, Kevin-ZIP med ursprungssökvägar och produktionskvitton är uppdaterade.
 
 ## Anna-tal: integrationsgräns och testplan, 14 oktober
 
