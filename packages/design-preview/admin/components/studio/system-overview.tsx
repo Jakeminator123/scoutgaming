@@ -108,7 +108,7 @@ export function SystemOverview() {
               <p className={`${detail} mt-1`}>Team · Tillåtna designval · Publicerade paket</p>
             </Portal>
             <Connector label="Publicerade spelrum" />
-            <Portal icon={Users} number="N3" title="Spelarvy" href={href('/admin/rooms')} link="Spelrum & publicering">
+            <Portal icon={Users} number="N3" title="Spelarvy" href={href('/admin/publication')} link="Spelrum & publicering">
               <p className={detail}>Lobby → spelrum → dealer & spel</p>
               <p className={`${detail} mt-1`}>{counts.rooms} registrerade · {counts.published} publicerade · {counts.playable} spelbara</p>
             </Portal>

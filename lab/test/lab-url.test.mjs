@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { labUrl, stripLabBasePath } from '../lib/lab-url.mjs';
+import { labUrl, stripLabBasePath, publicAbsoluteUrl } from '../lib/lab-url.mjs';
 import { assertLocalRequest } from '../lib/http-guard.mjs';
 
 test('Lab URLs support a build-time mount without changing local or external links', () => {
@@ -31,4 +31,13 @@ test('mounted Lab only permits loopback health, not loopback data access', () =>
     assert.doesNotThrow(() => assertLocalRequest(new Request('http://127.0.0.1:4188/studio/api/health')));
     assert.throws(() => assertLocalRequest(new Request('http://127.0.0.1:4188/studio/api/project')), error => error.statusCode === 403);
   } finally { keys.forEach((key, i) => { if (before[i] === undefined) delete process.env[key]; else process.env[key] = before[i]; }); }
+});
+
+test('public root redirect admits exact Admin without accepting external or auth destinations', () => {
+  const headers = new Headers({host:'studio.internal.invalid','x-forwarded-host':'public.example.invalid','x-forwarded-proto':'https'});
+  assert.equal(publicAbsoluteUrl(headers, '/admin'), 'https://public.example.invalid/admin');
+  assert.equal(publicAbsoluteUrl(headers, '/control/clips?dealer=vera'), 'https://public.example.invalid/control/clips?dealer=vera');
+  for (const value of ['https://outside.invalid/admin','//outside.invalid/admin','/administrator','/admin/login','/admin?returnTo=https://outside.invalid','/studio/login','/admin\\outside','/admin#secret']) {
+    assert.throws(() => publicAbsoluteUrl(headers, value), /control_redirect_rejected/);
+  }
 });

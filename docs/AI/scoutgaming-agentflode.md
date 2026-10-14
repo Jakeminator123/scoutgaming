@@ -1,9 +1,22 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
-Slutöverlämning 14 oktober: dokumentationen integreras med main `0511206d`.
-Admin C1–C3 fortsätter separat. PR #91:s spelaracceptans stoppades av Jakob;
-vinst, oavgjort, split och mobil är inte godkända. Fortsatta spelarprov ska
-ske på en internetadress. Se [aktuell handoff](../JOHN-HANDOFF.md).
+Aktuell samordning, 15 oktober: Jakob har gett mandat att slutföra en
+sammanhängande Admin/partner/lobby-struktur, granska och merga egna PR:er
+och städa ersatt legacy efter konsumentkontroll. C1–C9 i
+[migreringstrackern](../CLOUD-MIGRATION.md#admin-checkpoints-c1c9) är enda
+uppföljningen. Avgränsade underagenter lämnar ett kvitto per uppgift;
+huvudagenten äger integration, fullkontroll och ägarverifiering före merge.
+
+`node tools/check-admin-navigation.mjs` kör befintliga riktade tester med
+fyra arbetare (`--plan` visar urvalet). Det är ett snabbt utvecklingsprov;
+ordinarie fullhook och CI behåller alla kontroller inför leverans.
+
+Det tidigare spelarstoppet är hävt för isolerade internetprov. PR #91 har
+Astrid-kvitto för förlust, vinst, push, split, mobil och sammanhängande
+spelningar; detta är funktion, inte ny läppsynksacceptans. Dragan v4 väntar
+på uttryckligt tillstånd att också kopiera den privata spelarkoden till
+den tillfälliga sandlådan efter automatisk säkerhetsgransknings avslag.
+Se [aktuell handoff](../JOHN-HANDOFF.md). Äldre daterade kvitton nedan är historik.
 
 Uppföljning 13 oktober: PR #103 med publik Scoutguide och befintlig D-ID-agent
 är mergad (`b2dda8ab`), med grön main-CI och Vercel production READY.

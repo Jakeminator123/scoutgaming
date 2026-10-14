@@ -25,8 +25,8 @@ export function PartnerWorkspace({ user, operators, accessClass, apiBase = '/stu
       <a className={styles.brand} href="/partner">scout<span>/</span>gaming<small>{copy.portal}</small></a>
       <nav aria-label={copy.portal}><a className={styles.active} href="/partner" aria-current="page">{copy.partners}</a></nav>
       {admin && <nav className={styles.levels} aria-label={copy.sameLogin}>
-        <p>{copy.sameLogin}</p><a href="/control">{copy.control}<span aria-hidden="true"> ↗</span></a>
-        <a href="/play">{copy.player}<span aria-hidden="true"> ↗</span></a>
+        <p>{copy.sameLogin}</p><a href="/admin">{copy.control}<span aria-hidden="true"> ↗</span></a>
+        <a href="/lobby">{copy.player}<span aria-hidden="true"> ↗</span></a>
       </nav>}
       <div className={styles.identity}><span className={styles.avatar} aria-hidden="true">{user.slice(0, 2).toUpperCase()}</span>
         <div><strong>{user}</strong><small>{admin ? copy.admin : copy.member}</small></div></div>

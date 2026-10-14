@@ -24,7 +24,7 @@ test('login returns only to known preview documents; never assets, queries or an
     assert.equal(studioLoginDestination(path, '/api/auth'), path);
   }
   for (const value of ['/admin/_assets/admin/app.js', '/admin/unknown', '/admin?returnTo=https://elsewhere.test', '//elsewhere.test/admin', '/admin/../api'])
-    assert.equal(studioLoginReturnTo(value), '/studio');
+    assert.equal(studioLoginReturnTo(value), '/admin');
 });
 
 test('public admin documents and assets route to Studio without changing control', () => {

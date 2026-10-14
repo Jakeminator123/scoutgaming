@@ -71,7 +71,7 @@ test('login restores the exact Admin tool and context without accepting external
   const target='/admin/publication?operator=nord&table=room-1&composition=portrait&dealer=dragan&game=blackjack';
   assert.equal(studioLoginReturnTo('/studio'+target),target);
   assert.equal(studioLoginReturnTo('/admin/dealers?dealer=dragan&tool=import'),'/admin/dealers?dealer=dragan&tool=import');
-  for(const invalid of ['/admin?returnTo=https://outside.invalid','/admin/clips?dealer=a&dealer=b','//outside.invalid/admin','/admin/_data/workspace?section=companies'])assert.equal(studioLoginReturnTo(invalid),'/studio');
+  for(const invalid of ['/admin?returnTo=https://outside.invalid','/admin/clips?dealer=a&dealer=b','//outside.invalid/admin','/admin/_data/workspace?section=companies'])assert.equal(studioLoginReturnTo(invalid),'/admin');
 });
 test('workspace reads saved data and lists company memberships only for company tools',async()=>{
   let authorized=false,directories=0;

@@ -182,3 +182,25 @@ test('partner set-password posts token and password to the partner auth base', a
     h.unmount();
   }
 });
+
+test('successful default N1 login enters Admin on mounted and standalone Studio', async () => {
+  for (const authBase of ['/studio/api/auth', '/api/auth']) for (const returnTo of [undefined, 'https://outside.invalid/redirect']) {
+    const h = harness(), writes = [], props = {authBase, returnTo, fetchImpl:async (url, init) => {writes.push({url, body:JSON.parse(init.body)});return Response.json({ok:true});}};
+    let tree = h.render(props);h.effects();tree = h.render(props);
+    forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({user:'operator',pass:'fixture-pass'})});
+    await flush();
+    assert.equal(writes.length, 1);assert.equal(writes[0].url, authBase + '/login');
+    assert.equal(writes[0].body.returnTo, '/admin');assert.deepEqual(h.destinations, ['/admin']);h.unmount();
+  }
+});
+
+test('rejected default N1 login remains on the form without navigating to Admin', async () => {
+  for (const status of [401, 403]) {
+    const h = harness(), props = {authBase:'/studio/api/auth',fetchImpl:async()=>Response.json({error:'denied'},{status})};
+    let tree = h.render(props);h.effects();tree = h.render(props);
+    forms(tree)[0].props.onSubmit({preventDefault(){},currentTarget:new Form({user:'operator',pass:'fixture-pass'})});
+    await flush();tree = h.render(props);
+    assert.deepEqual(h.destinations, []);assert.equal(forms(tree).length, 1);
+    assert.match(renderToStaticMarkup(tree), status === 403 ? /administratörsbehörighet/ : /kunde inte verifieras/);h.unmount();
+  }
+});

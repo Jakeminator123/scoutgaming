@@ -8,7 +8,7 @@ test('exact partner room survives login while foreign paths and arbitrary query 
   for(const value of ['/partner/north-casino/rooms?room=vip-room&room=main-room','/partner/north-casino/rooms?room=vip-room&token=x',
     '/partner/north-casino/rooms?room=','/partner/north-casino/rooms?room=https://outside.invalid','/partner/north-casino/rooms?room=../main-room',
     '/partner/north-casino/team?room=vip-room','/partner/login/rooms?room=vip-room','//outside.invalid/partner/north-casino/rooms?room=vip-room'])
-    assert.equal(studioLoginReturnTo(value),'/studio',value);
+    assert.equal(studioLoginReturnTo(value),'/admin',value);
 });
 
 test('native login returnTo preserves current Studio views or one-use BO handoff without a cross-host cookie handoff', () => {
@@ -28,7 +28,7 @@ test('native login returnTo preserves current Studio views or one-use BO handoff
     '/studio/login','/studio/set-password','/partner/set-password','/studio/partner/set-password','/studio/operator-chat?next=https://attacker.test','/studio/openclaw#private',
     '/studio/tree/child','/studio/tree/','/studio/Tree','/studio/%74ree','/studio\\tree','/studio//tree','/tree',
     `/api/bo/game-login?state=${'a'.repeat(63)}`,`/api/bo/lab-login?state=${'A'.repeat(64)}`,
-    `/api/bo/game-login?state=${'a'.repeat(64)}&token=secret`,'/api/bo/users?state='+ 'a'.repeat(64),null,[],{}]) assert.equal(studioLoginReturnTo(value),'/studio');
+    `/api/bo/game-login?state=${'a'.repeat(64)}&token=secret`,'/api/bo/users?state='+ 'a'.repeat(64),null,[],{}]) assert.equal(studioLoginReturnTo(value),'/admin');
   assert.equal(studioLoginDestination('/studio','/api/auth'),'/');
   assert.equal(studioLoginDestination('/studio/administration','/api/auth'),'/administration');
   assert.equal(studioLoginDestination('/studio/administration','/studio/api/auth'),'/studio/administration');
@@ -47,8 +47,8 @@ test('new surface login returns preserve only admitted document paths for mounte
   }
   for (const path of ['/partner/api/admin', '/control/api/admin', '/partner/demo-north/voice', '/partner/demo-north/overview?token=x',
     '/partner/demo-north/overview#private', '/partner/demo-north/overview/child', '/control/login', '/studio/partner//team', '/studio/control/%76oice']) {
-    assert.equal(studioLoginReturnTo(path), '/studio', path);
-    assert.equal(studioLoginDestination(path, '/api/auth'), '/', path);
+    assert.equal(studioLoginReturnTo(path), '/admin', path);
+    assert.equal(studioLoginDestination(path, '/api/auth'), '/admin', path);
   }
 });
 test('client has no render request and sends native auth action only as same-origin no-store JSON', async () => {
@@ -72,7 +72,6 @@ test('client rejects unknown bases/actions and sanitizes all server/network fail
   await assert.rejects(malformed.request('logout',{}),error=>error.status===503);
 });
 
-
 test('Studio permission denial explains the admin boundary without echoing server data',()=>{
   assert.match(new StudioLoginUiError(403).message,/administratörsbehörighet/);
 });
@@ -80,5 +79,12 @@ test('Studio permission denial explains the admin boundary without echoing serve
 test('dealer workspace returns preserve only bounded view, category and shared context after login', () => {
   const value='/control/clips?dealer=paow&operator=north&table=room-one&composition=scene-one&event=speak.other&view=clips&category=speech&situation=goodluck';
   assert.equal(studioLoginReturnTo(value),value);
-  for (const query of ['view=unknown','category=secret','situation=https://evil.test','view=clips&view=idle','view=clips&token=secret']) assert.equal(studioLoginReturnTo('/control/clips?'+query),'/studio');
+  for (const query of ['view=unknown','category=secret','situation=https://evil.test','view=clips&view=idle','view=clips&token=secret']) assert.equal(studioLoginReturnTo('/control/clips?'+query),'/admin');
+});
+
+test('missing or rejected N1 return targets fall back to Admin on both supported mounts', () => {
+  for (const value of [undefined, null, '', '//outside.invalid/admin', '/studio/login']) {
+    assert.equal(studioLoginReturnTo(value), '/admin');
+    for (const authBase of ['/studio/api/auth', '/api/auth']) assert.equal(studioLoginDestination(value, authBase), '/admin');
+  }
 });
