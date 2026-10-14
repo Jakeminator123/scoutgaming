@@ -61,7 +61,7 @@ export const DEALERS = {
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
   astrid2: { id: 'astrid2', name: 'Astrid', label: 'Astrid 2.0', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/astrid2.jpg' + V,
     keyed: { still: '/media/dealers/astrid2/v2/vila.png' + V }, layerScale: 1, ready: ASTRID2_READY,
-    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en'], linesDir: '/media/dealers/astrid2/repliker/', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS },
+    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014d', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS },
 };
 
 // Kevin 12 Oct: Mårten is for Svenska Spel. The public demo never shows him; a Table Studio table built with him
