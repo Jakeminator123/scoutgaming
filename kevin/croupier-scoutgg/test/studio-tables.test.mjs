@@ -80,3 +80,15 @@ test('a roulette table: its own tiers, its own page, and blackjack tables are un
   assert.equal(bj.game, undefined);
   assert.match(tables.gameUrl(bj), /^\/\?dealer=astrid/);
 });
+
+test('the back office\'s roulette tiers move a table\'s range and chips; bad numbers keep the defaults', () => {
+  const tables = createStudioTables(path.join(mkdtempSync(path.join(tmpdir(), 'studio-rl-bo-')), 't.json'));
+  const t = tables.create({ name: 'R', dealer: 'astrid', room: 'darkhall', felt: 'prive', lang: 'en', logoPos: 'both', game: 'roulette', limit: 'rl-classic' });
+  assert.deepEqual([tables.limitsFor(t.slug).min, tables.limitsFor(t.slug).max], [1, 1000]);
+  tables.setRouletteTiers({ classic: { name: 'Classic', min: 10, max: 2000 }, high: { min: 0, max: 5 } });
+  const L = tables.limitsFor(t.slug);
+  assert.deepEqual([L.min, L.max, L.chips, L.balance], [10, 2000, [25, 100, 500, 1000], 2000]);
+  assert.deepEqual([tables.rouletteTiers()['rl-high'].min, tables.rouletteTiers()['rl-high'].max], [25, 25000]);   // min 0 is not a tier
+  tables.setRouletteTiers(null);
+  assert.equal(tables.limitsFor(t.slug).max, 1000);
+});

@@ -37,7 +37,7 @@ import {OpenClaw} from './openclaw.mjs';
 import {integrationIndex,eventEvidence} from './integration-index.mjs';
 import { classifyManifest, mediaInventory } from './media-registry.mjs';
 import { RorligLipsync, kartaFor } from './rorlig-lipsync.mjs';
-import { createRoulette, ROULETTE_LIMITS } from './roulette.mjs';
+import { createRoulette } from './roulette.mjs';
 
 loadEnv();
 const { ServerlessLipsync, sessionUrlFrom } = await import("./serverless.mjs");
@@ -111,7 +111,12 @@ const dealerGameTools=createDealerGameTools(shared);
 const table = createTableService(tableDb, {shared});
 // Roulette (Kevin 14 Oct): its own rooms and wallets in the same database file (server/roulette.mjs)
 // A Table Studio roulette table plays with its own tier; any other roulette room with the Classic one.
-const roulette = createRoulette(tableDb, { limitsFor: id => studioTables.get(id)?.game === "roulette" ? studioTables.limitsFor(id) : ROULETTE_LIMITS });
+const roulette = createRoulette(tableDb, { limitsFor: id => studioTables.get(id)?.game === "roulette" ? studioTables.limitsFor(id) : studioTables.rouletteTiers()["rl-classic"] });
+// The back office's roulette Limit tiers (GET /api/bo/table-limits, field "roulette"), every 30 s; without them the defaults hold.
+const boBase = process.env.BO_AUTH_URL ?? process.env.BO_DESIGN_URL ?? "http://127.0.0.1:4173";
+const rouletteTiersFromBo = () => fetch(boBase + "/api/bo/table-limits", { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : null)
+  .then(j => { if (j && "roulette" in j) studioTables.setRouletteTiers(j.roulette); }).catch(() => {});
+rouletteTiersFromBo(); setInterval(rouletteTiersFromBo, 30000).unref();
 const tableTick = setInterval(()=>shared.tick(),250);
 // Emil's dedicated pod: one engine per dealer, each dials /lipsync-worker?avatar=<id>. Astrid always uses it when the
 // token is set; Dragge and Paow only when listed in LIPSYNC_POD_DEALERS (e.g. "dragge,paow"), else their RunPod endpoints.
@@ -410,6 +415,7 @@ async function api(req, res, route) {
   if (req.method === "GET" && route === "health") {
     return json(res, 200, { ok: true, demo: true });
   }
+  if (req.method === "GET" && route === "roulette/tiers") return json(res, 200, { tiers: studioTables.rouletteTiers() });   // Table Studio shows the live ranges
   if (route === "studio/session") {
     try { return json(res, 200, (await bo.user(req.headers)) ?? {}); }
     catch { return json(res, 503, { error: "Sign-in is unavailable. Try again shortly." }); }

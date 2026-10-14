@@ -14,8 +14,13 @@ const KEY='scout-bj-demo';
 let st=Object.assign({screen:'login',email:'',game:'blackjack',dealer:'astrid',room:'darkhall',felt:'prive',custom:'#7a5a2a',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer',sound:true,logo:'',logoName:'',logoPos:'both'},JSON.parse(localStorage.getItem(KEY)||'{}'));
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
 const fmt=v=>v>=1000?(v/1000)+'K':String(v);
-function chipEl(v){const e=document.createElement('span');e.className='chip';const c=CHIP[v];e.style.setProperty('--c',c[0]);e.style.setProperty('--s',c[1]);if(c[2])e.style.setProperty('--r',c[2]);if(c[3])e.style.setProperty('--t',c[3]);e.textContent=fmt(v);return e}
+function chipEl(v){const e=document.createElement('span');e.className='chip';const c=CHIP[v]??CHIP[25000];e.style.setProperty('--c',c[0]);e.style.setProperty('--s',c[1]);if(c[2])e.style.setProperty('--r',c[2]);if(c[3])e.style.setProperty('--t',c[3]);e.textContent=fmt(v);return e}
 $$('[data-chips]').forEach(m=>LIMITS[m.dataset.chips].chips.forEach(v=>m.append(chipEl(v))));
+// Roulette tiers live in the back office (Limit tiers): show the ranges the tables play with now
+const usd=v=>'$'+Number(v).toLocaleString('en-US');
+fetch('/api/roulette/tiers').then(r=>r.ok?r.json():null).then(j=>{if(!j?.tiers)return;for(const [id,t] of Object.entries(j.tiers)){if(!LIMITS[id])continue;
+ Object.assign(LIMITS[id],{range:usd(t.min)+' – '+usd(t.max),bal:usd(t.balance)+'.00',chips:t.chips});const o=$('.limit-opt[data-val="'+id+'"]');if(!o)continue;
+ o.querySelector('.range').textContent=LIMITS[id].range;o.querySelector('.ld').textContent='Per bet · Balance '+usd(t.balance);const m=o.querySelector('[data-chips]');m.replaceChildren();t.chips.forEach(v=>m.append(chipEl(v)))}render()}).catch(()=>{});
 
 function swapImg(img,src){if(img.getAttribute('src')===src)return;img.classList.add('fading');const n=new Image();n.onload=()=>setTimeout(()=>{img.src=src;img.classList.remove('fading')},180);n.src=src}
 const maskCache={};

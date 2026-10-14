@@ -11,8 +11,10 @@ button { font:inherit; cursor:pointer; }
 
 /* the whole stage scales down on a short screen (not cropped), so the dealer's head stays in the room */
 .rl-stage { position:relative; overflow:hidden; border-radius:var(--radius); margin:0 auto; width:min(calc(100% - 32px), calc(62dvh * 1708 / 1180)); aspect-ratio:1708/1180; background:#000; }
-/* only the upper room of the blackjack backdrop: its own table sits lower, behind the roulette table */
-.rl-room { position:absolute; inset:0; background:url(/media/dealers/rooms-v2/darkhall.png) center top/100% auto no-repeat, #0a0b0d; filter:brightness(.7); }
+/* only the upper room of the blackjack backdrop: its own table and Emil's shoe sit lower, behind the roulette table,
+   and the room fades to black before them */
+.rl-room { position:absolute; inset:0; background:url(/media/dealers/rooms-v2/darkhall.png) center top/100% auto no-repeat, #0a0b0d; filter:brightness(.7);
+  -webkit-mask-image:linear-gradient(#000 52%,transparent 74%); mask-image:linear-gradient(#000 52%,transparent 74%); }
 .rl-table { position:absolute; left:0; right:0; bottom:0; aspect-ratio:1708/920; }
 .rl-felt { position:absolute; inset:0; width:100%; height:100%; user-select:none; -webkit-user-drag:none; }
 /* Paow behind the wheel (dealer.js): her plate crop at 0.8 table px per plate px, hands on the far rim (table y 405) */
