@@ -86,6 +86,8 @@ for (const [id, t] of Object.entries(READY_TAKES)) {
   const dir = path.join(PUBLIC, 'media', 'dealers', id, 'repliker');
   let langs = []; try { langs = readdirSync(dir).filter(l => /^[a-z]{2}$/.test(l)).sort(); } catch {}
   const has = x => langs.length > 0 && langs.every(l => existsSync(path.join(dir, l, `${x}.mp4`)));
+  // what he actually says in each line, per language (repliker/<lang>/texter.json): the table's caption, never Astrid's text
+  t.texts = {}; for (const l of langs) { try { t.texts[l] = JSON.parse(readFileSync(path.join(dir, l, 'texter.json'), 'utf8')); } catch {} }
   t.variants = {}; t.durs = {};
   for (const ev of VARIED) {
     let n = 0; while (has(`${ev}_${n + 1}`)) n++;
@@ -256,12 +258,11 @@ function cheerText(names, language) {
 }
 async function cheerWinners(room, dealer, names, language, notBefore) {
   const text = cheerText(names, language), pcm = await draggeVoice(text, language, { dealer });
-  const { talk: spoken, moved, steg, ready } = shared.addTalk(room, { text, lang: language, dur: pcm.length / 48000, notBefore });
+  const { talk: spoken, moved, steg, ready } = shared.addTalk(room, { kind: 'cheer', text, lang: language, dur: pcm.length / 48000, notBefore });
   rorlig.activity(dealer);
   const karta = t => kartaFor(steg, t.kartaStart, Math.ceil((t.endAt - t.kartaStart) * 24 / 1000) + 20, { restEnd: ready?.restEnd ?? [] });
   rorlig.speak(dealer, room, spoken, karta(spoken), { pcm });
   for (const t of moved) rorlig.speak(dealer, room, t, karta(t));
-  broadcast({ t: 'answer', id: `w${Date.now().toString(36)}`, to: null, text, dealer, talk: spoken.id }, room);
 }
 
 /** Serhiy: a visitor on two boxes who lost one and won or pushed the other heard only the table's

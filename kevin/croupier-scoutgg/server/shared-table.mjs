@@ -59,7 +59,7 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     const k=pick[Math.floor(Math.random()*pick.length)];
     r.lastVariant={...(r.lastVariant??{}),[clip.event]:k};
     const id=`${clip.event}_${k}`;
-    return{...clip,id,url:`/media/repliker/${id}.mp4`,text:ready.texts?.[id]??clip.text,dur:ready.durs?.[id]??clip.dur};
+    return{...clip,id,url:`/media/repliker/${id}.mp4`,dur:ready.durs?.[id]??clip.dur};
   }
   // players up on the round: what came back (main, side bets) over what they staked (main, doubles, side bets, insurance),
   // the same sums the settlement pays out
@@ -133,6 +133,8 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
       // Emil 14 Oct: a ready dealer says one of his variants of a line, never the same one twice in a row (always the
       // first one sounded like a robot); a line only he has (twentyone) comes from his variants too
       if(ready?.variants?.[clip.event]&&(meta.kind??'speech')==='speech')clip=variantOf(r,clip,ready);
+      // the caption is what this dealer says in that line, in the language he says it (Emil 14 Oct: it showed Astrid's English)
+      if(ready?.texts&&(meta.kind??'speech')==='speech'){const lang=ready.texts[dealerLanguage(r.language)]?dealerLanguage(r.language):'en',said=ready.texts[lang]?.[clip.id];if(said)clip={...clip,text:said};}
       // Emil 12 Oct: a ready dealer with a warm lip-sync worker says the line WHILE he deals. It leaves the timeline and is
       // timed after readyTimeline (scheduleTalks); no line of his own in that language -> it stays a step as before.
       if(talker&&(meta.kind??'speech')==='speech'){const line=talker.line(clip,dealerLanguage(r.language));if(line){talks.push({after:steps.length,event:clip.event,clip:{id:clip.id,url:clip.url,text:clip.text},line:line.url,lang:line.lang,dur:line.dur});return;}}

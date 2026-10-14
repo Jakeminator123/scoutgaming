@@ -475,7 +475,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
     speak:(t,offsetMs,remainMs)=>{
       const lang=$('#dealerLanguage').value,url=t.ljud??dealerLineUrl(t.clip?.url,lang);
       if(!url)return false;
-      if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them
+      if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them (a cheer for the winners is said and captioned, never written in the chat: Emil 14 Oct)
       // his mouth is synced to him resting or dealing, never to an idle gesture: an idle playing now gives way to his still
       if(currentItem?.kind==='idle'&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
@@ -488,7 +488,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       holdUntil=Math.max(holdUntil,Date.now()+remainMs+300);
       const words=t.clip?.text??t.text;
       if(words){talkCaption=words;talkCaptionUntil=Date.now()+remainMs;showCaption(words);setTimeout(()=>{if(Date.now()>=talkCaptionUntil&&caption.textContent===talkCaption.replace(/—/g,', '))showCaption(null);},remainMs+50);}
-      return t.kind==='answer'||(dealer.lines?.includes(lang)?lang:'en')===t.lang;
+      return t.kind==='answer'||t.kind==='cheer'||(dealer.lines?.includes(lang)?lang:'en')===t.lang;
     },
     // The alternative dealer's own remarks wait in the queue, so they never cut into a deal.
     remark:id=>remarkNow(id),
