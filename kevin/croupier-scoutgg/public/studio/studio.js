@@ -23,7 +23,7 @@ const draw=img=>{['#feltC','#feltS'].forEach(s=>{const x=$(s).getContext('2d');x
 if(maskCache[src]?.complete)draw(maskCache[src]);else{const i=maskCache[src]=new Image();i.onload=()=>draw(i);i.src=src}}
 function feltColor(){return st.felt==='custom'?st.custom:FELTS[st.felt].c}
 function render(){
-// Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: English as text until he has a voice).
+// Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: Swedish, English and Spanish).
 const langs=VOICES[st.dealer]?.length?VOICES[st.dealer]:['en'];if(!langs.includes(st.lang))st.lang=langs.includes('en')?'en':langs[0];
 $$('.lang-opt').forEach(o=>{o.hidden=!langs.includes(o.dataset.val)});
 const d=DEALERS[st.dealer],L=LIMITS[st.limit],fc=feltColor();
@@ -49,8 +49,8 @@ save()}
 function go(screen){st.screen=screen;$$('.screen').forEach(s=>s.classList.toggle('on',s.id===screen));
 const stage=$('#stage');if(screen==='ready')$('#readyHome').append(stage);else if(screen==='play'){$('#playHome').append(stage);$('#playBg').style.backgroundImage='url(assets/rooms/'+st.room+DEALERS[st.dealer].room+'-720.png)'}else $('#previewHome').prepend(stage);render()}
 // The languages each dealer has recorded. Any other language plays the English greeting, as the table does.
-// Mårten has no voice yet: his greeting is shown as text only.
-const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en'],paow:['sv','en'],astrid2:['en'],marten:[]};
+// Mårten has his voice since 14 Oct (sv, en, es).
+const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en'],paow:['sv','en'],astrid2:['en'],marten:['sv','en','es']};
 const voiceLang=(dealer,lang)=>(VOICES[dealer]??['en']).includes(lang)?lang:'en';
 function greetingClip(dealer,lang){lang=voiceLang(dealer,lang);
 if(dealer==='astrid')return lang==='en'?'/media/repliker/greeting_1.mp4':`/media/repliker-${lang}/greeting_1_${lang}.mp4`;

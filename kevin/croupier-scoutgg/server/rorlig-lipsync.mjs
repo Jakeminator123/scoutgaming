@@ -159,9 +159,20 @@ export class RorligLipsync {
     if (!s.workers.length) this.#order(dealer);
   }
 
+  // the languages a dealer has recorded lines in (his repliker/<lang>/ folders): Mårten has Spanish too (14 Oct)
+  #langs(dealer) {
+    this.langCache ??= new Map();
+    if (!this.langCache.has(dealer)) {
+      let l = [];
+      try { l = readdirSync(path.join(this.publicDir, 'media', 'dealers', dealer, 'repliker')).filter(d => /^[a-z]{2}$/.test(d)); } catch {}
+      this.langCache.set(dealer, l.length ? l : ['sv', 'en']);
+    }
+    return this.langCache.get(dealer);
+  }
+
   /** The dealer's own take of a line: {url, lang, dur} or null when he has none. */
   line(dealer, clipUrl, language) {
-    const l = dealerLine(clipUrl, language, { linesDir: `/media/dealers/${dealer}/repliker/`, langs: ['sv', 'en'] });
+    const l = dealerLine(clipUrl, language, { linesDir: `/media/dealers/${dealer}/repliker/`, langs: this.#langs(dealer) });
     if (!l) return null;
     let dur = this.durations.get(l.url);
     if (dur === undefined) {

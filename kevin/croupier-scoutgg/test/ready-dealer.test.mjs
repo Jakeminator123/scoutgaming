@@ -62,10 +62,12 @@ test('on his own studio table the server names the variant, so the cards join RE
   assert.equal(variantOffset(readyVariant(plan, b)), 0);
 });
 
-test('Mårten has no voice yet: no recorded lines, and his idles are his own Kling loops, so nothing of another dealer ever plays over his face', () => {
+test('Mårten speaks his recorded lines in Swedish, English and Spanish, and his idles are his own Kling loops, so nothing of another dealer ever plays over his face', () => {
   const m = DEALERS.marten;
   assert.equal(m.name, 'Mårten');
-  assert.equal(m.lines, null);
+  assert.deepEqual(m.lines, ['sv', 'en', 'es']);
+  for (const lang of m.lines) for (const line of ['greeting_1', 'goodluck_1', 'bust_1', 'win_1', 'greet_guest', 'remark_hit17_1', 'table_cash_1'])
+    assert.ok(existsSync(new URL(`../public${m.linesDir}${lang}/${line}.mp4`, import.meta.url)), `${lang}/${line}`);
   assert.deepEqual(m.idles.map(i => i.url.split('?')[0]), ['breath', 'glance', 'smile'].map(k => `/media/dealers/marten/idle-v2/${k}.mp4`));
   for (const idle of m.idles) assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)));
   // The breathing loop can repeat (app.js pickIdle skips the last gesture unless its weight is 10 or more).

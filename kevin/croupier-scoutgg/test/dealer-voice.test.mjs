@@ -33,3 +33,15 @@ test('Astrid 2.0 speaks with the voice of her recorded lines and has no rest-ima
   assert.ok(seen[0].url.includes('/d1PjUBrElTJTH5EkXPZp'));
   assert.equal(seen[0].body.model_id, 'eleven_multilingual_v2');
 });
+
+test('Mårten speaks with the voice Kevin made, read like Paow (sv eleven_v3; en and es v2 with their own language code)', async () => {
+  const dir = path.join(os.tmpdir(), 'dealer-voice-test');
+  for (const [language, model] of [['sv', 'eleven_v3'], ['en', 'eleven_multilingual_v2'], ['es', 'eleven_multilingual_v2']]) {
+    const seen = [];
+    await assert.rejects(draggeSay('Hagan sus apuestas.', language, dir, { fetchImpl: fakeFetch(seen), dealer: 'marten' }), /no rest-image lip sync/);
+    assert.ok(seen[0].url.includes('/ik47JUrkaNt6DSPKAk1t'));
+    assert.equal(seen[0].body.model_id, model);
+    assert.equal(seen[0].body.language_code, model === 'eleven_v3' ? undefined : language);
+    assert.deepEqual(seen[0].body.voice_settings, voiceSettings('paow', language));
+  }
+});

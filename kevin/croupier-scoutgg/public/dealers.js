@@ -53,7 +53,7 @@ export const DEALERS = {
   // he breathes instead of holding his still.
   marten: { id: 'marten', name: 'Mårten', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/marten.jpg' + V,
     keyed: { still: '/media/dealers/marten/v2/vila.png' + V }, layerScale: 1, ready: MARTEN_READY,
-    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: null, idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
+    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es'], linesDir: '/media/dealers/marten/repliker/', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.

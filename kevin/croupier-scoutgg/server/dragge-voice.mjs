@@ -25,6 +25,11 @@ const DEALER_VOICES = {
   // sync (rorlig-lipsync.mjs) only: no rest-image endpoint exists for her, so without that worker her answer is text.
   astrid2: { voice: 'd1PjUBrElTJTH5EkXPZp', endpoint: process.env.ASTRID2_LIPSYNC_ENDPOINT ?? null,
     reads: { any: { model: 'eleven_multilingual_v2', settings: { stability: 0.5, similarity_boost: 0.8, style: 0.2, use_speaker_boost: true } } } },
+  // Mårten (Kevin 14 Oct: his voice in Kevin's ElevenLabs, read like Paow). Like Astrid 2.0 only the moving lip sync draws
+  // his mouth; his recorded lines (sv, en, es) were voiced with these reads (croupier-consult/marten-repliker).
+  marten: { voice: 'ik47JUrkaNt6DSPKAk1t', endpoint: process.env.MARTEN_LIPSYNC_ENDPOINT ?? null,
+    reads: { sv: { model: 'eleven_v3', settings: { stability: 0.5, similarity_boost: 0.85, use_speaker_boost: true } },
+      any: { model: 'eleven_multilingual_v2', settings: { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true } } } },
 };
 export const voiceRead = (dealer, language) => DEALER_VOICES[dealer].reads[language] ?? DEALER_VOICES[dealer].reads.any;
 export const voiceSettings = (dealer, language) => voiceRead(dealer, language).settings;
@@ -99,7 +104,7 @@ export async function draggeVoice(text, language, { fetchImpl = fetch, dealer = 
   const VOICE = DEALER_VOICES[dealer].voice, read = voiceRead(dealer, language);
   const tts = await fetchImpl(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE}?output_format=pcm_${RATE}`, {
     method: 'POST', headers: { 'xi-api-key': XI(), 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
-    body: JSON.stringify({ text, model_id: read.model, ...(read.model === 'eleven_v3' ? {} : { language_code: ['sv', 'en'].includes(language) ? language : 'en' }),
+    body: JSON.stringify({ text, model_id: read.model, ...(read.model === 'eleven_v3' ? {} : { language_code: ['sv', 'en', 'es', 'fr', 'zh'].includes(language) ? language : 'en' }),
       voice_settings: read.settings }),
   });
   if (!tts.ok) throw new Error(`voice ${tts.status}`);

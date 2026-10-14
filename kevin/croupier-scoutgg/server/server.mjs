@@ -89,7 +89,7 @@ const makeRorlig = apiKey => new RorligLipsync({
   apiKey,
   publicBase: () => publicOrigin,
   publicDir: PUBLIC,
-  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge,astrid2").split(",").map(s => s.trim()).filter(Boolean),
+  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge,astrid2,marten").split(",").map(s => s.trim()).filter(Boolean),
   log: s => console.log(s),
   // each piece goes out with its bytes right behind it on the room socket: no request of its own, which at the start of a
   // round queued behind the clip downloads and came too late for the first frames
@@ -645,8 +645,8 @@ room.on("connection", (ws) => {
       if(text&&ws.boUser)activity.log({user:ws.boUser,sid:ws.sid,ip:ws.address,ua:ws.ua,kind:"chat",table:ws.session,guest:ws.guest,detail:{len:text.length}});   // never the text
       if(!chatLimit(ws.address)){send(ws,{t:'notice',text:'Please wait a minute before sending more messages.'});return;}
       if(ws.guest&&shared.paused(ws.guest)){send(ws,{t:'notice',text:RESPONSES.support});return;}
-      // Dragge, Paow and Mårten (a viewer's alternative dealers) answer with their own brain and memory, Dragge
-      // and Paow also with their voice (Mårten has none yet: text only); Astrid keeps her reviewed pipeline below.
+      // Dragge, Paow, Mårten and Astrid 2.0 (a viewer's alternative dealers) answer with their own brain, memory and
+      // voice (Mårten since 14 Oct); Astrid keeps her reviewed pipeline below.
       const alt=['dragge','paow','marten','astrid2'].includes(j.dealer)?j.dealer:null;
       if(text&&alt&&!['privacy','support'].includes(localResponse(text))){
         // Never leave them "thinking": any failure still answers with a reviewed line.
