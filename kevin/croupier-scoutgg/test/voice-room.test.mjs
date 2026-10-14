@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ROOM_PRESETS, roomFor, createVoiceRoom } from '../public/voice-room.js';
 
-test('Paow, Dragge and Mårten play in the casino (Kevin 14 Oct, sample 3); Astrid stays "studio"; ?voice= tries one', () => {
+test('Paow, Dragge and Mårten play in the casino (Kevin 14 Oct, sample D); Astrid stays "studio"; ?voice= tries one', () => {
   for (const d of ['paow', 'dragge', 'marten']) assert.equal(roomFor(d), 'space');
   for (const d of ['astrid', 'astrid2']) assert.equal(roomFor(d), 'studio');
   assert.equal(roomFor('astrid2', '?voice=space'), 'space');

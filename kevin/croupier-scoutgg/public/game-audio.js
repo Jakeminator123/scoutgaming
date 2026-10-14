@@ -1,7 +1,7 @@
 import {createTableAudio} from './table-audio.js';
 
 export function createGameAudio({onChange=()=>{}}={}) {
-  const defaults={enabled:true,ambience:.16,effects:.65,voice:1};
+  const defaults={enabled:true,ambience:.32,effects:.65,voice:1};
   let saved={};try{saved=JSON.parse(localStorage.getItem('astrid.audio')||'{}')}catch{}
   const settings={...defaults};
   if(typeof saved?.enabled==='boolean')settings.enabled=saved.enabled;
