@@ -582,6 +582,46 @@ test('a recovered idle frame preserves a newer action error on the shared status
   jobs[3].options.onReceipt({ state: 'presented' }); assert.equal(status.textContent, warning);
 });
 
+test('unassigned result speech and placebets skip silently without leaving a card fallback badge on idle', async t => {
+  const f=await controllerFixture(t),original=globalThis.fetch;
+  let reason;
+  globalThis.fetch=async(url,options)=>url==='/api/presentation/select'?Response.json({video:null,standard:null,
+    projectRevision:'speech-fixture',decision:{requestId:'speech-selection',sourceEvent:JSON.parse(options.body).event,
+      ...(reason?{media:{familyId:null,reason}}:{})}}):original(url,options);
+  for(reason of [undefined,'no_exact_video_2d','frozen_clip_missing']){
+    for(const line of ['win','placebets']){
+      f.controller.state({speech:true});
+      assert.equal(await f.controller.present({type:'speak',line}),false);
+      assert.equal(f.status.textContent,'');
+      const skipped=f.receipts.at(-1);assert.equal(skipped.state,'skipped');assert.equal(skipped.renderer,'none');
+      assert.equal(skipped.reason,reason??'speech_clip_missing');assert.equal(skipped.sourceEvent.line,line);
+      f.controller.state({speech:false});
+      f.jobs.at(-1).options.onReceipt({state:'presented'});
+      assert.equal(f.status.textContent,'');
+    }
+  }
+  assert.equal(f.receipts.some(row=>row.event==='speech'&&row.renderer==='2d'),false);
+});
+
+test('blocked recorded speech remains a visible review error and cannot masquerade as an optional missing line', async t => {
+  const f=await controllerFixture(t),original=globalThis.fetch;
+  globalThis.fetch=async(url,options)=>url==='/api/presentation/select'?Response.json({video:null,standard:null,
+    decision:{requestId:'blocked-speech',sourceEvent:{type:'speak',line:'win'},media:{reason:'recorded_speech_unavailable'}}}):original(url,options);
+  f.controller.state({speech:true});assert.equal(await f.controller.present({type:'speak',line:'win'}),false);
+  assert.match(f.status.textContent,/Tal:.*granskning eller identitet/);assert.doesNotMatch(f.status.textContent,/2D-reserv/);
+  const error=f.receipts.at(-1);assert.equal(error.renderer,'none');assert.notEqual(error.state,'skipped');assert.equal(error.requestId,'blocked-speech');
+  const warning=f.status.textContent;f.controller.state({speech:false});f.jobs.at(-1).options.onReceipt({state:'presented'});
+  assert.equal(f.status.textContent,warning,'idle must not silently clear an actual review failure');
+});
+
+test('a speech playback failure keeps its error and correlation without claiming a 2D card fallback', async t => {
+  const f=await controllerFixture(t);f.controller.state({speech:true});
+  const playing=f.controller.present({type:'speak',line:'win'});await new Promise(resolve=>setImmediate(resolve));
+  f.jobs[0].reject(new Error('Audio/video unavailable'));assert.equal(await playing,false);
+  assert.equal(f.status.textContent,'Tal: Audio/video unavailable');
+  const failed=f.receipts.at(-1);assert.equal(failed.renderer,'none');assert.notEqual(failed.state,'skipped');assert.equal(failed.requestId,'selection-fixture');
+});
+
 test('a shared media download cancelled by the old owner does not poison the new owner', async t => {
   const { PerformancePlayer } = await import('../web/public/performance-player.mjs');
   const previousFetch = globalThis.fetch;
