@@ -68,7 +68,7 @@ nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
 Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
 [befintliga migrationstrackern](CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
-Bas: `4f2a6eef3ca9c6cfe306db18ab91853f81dad4d4`; egen gren `codex/admin-c1-c3`.
+Slutbas: `8acd0b44bba7d8230dd37539d6fa75142e889eda`; egen gren `codex/admin-c1-c3`.
 Två agenter arbetade i separata worktrees med navigation respektive N1-CSS.
 Huvudcheckouten och PR91:s arbete har inte använts för editeringar.
 
@@ -82,7 +82,13 @@ intern rullning för lång desktopmeny. Smal System-popup är fortfarande synlig
 Eget läsande browserprov använder lokala UI-resurser på huvuddomänen i egen
 flik, vid 1440/1024/640/390 px. Detta är inte levererad UI-/funktionsacceptans.
 Inga produktionsskrivningar, spelprov, lokala produktservrar, merge eller
-deploy ingår. Full regression och slutlig leveransstatus bokförs i trackern.
+deploy ingår. Full regression på `c0ff2332`: 3 594 pass, 11 skip,
+0 fel/cancel; Admin/lobbyns typkontroll passerar. Efter rebase till PR120
+är Admin-koden identisk i `0c728703`; båda dokumentöverlämningarna bevaras.
+Berört komponentprov efter rebase gav 4 pass; bevisgränserna finns i trackern. PR är ännu inte publicerad
+eftersom push kan utlösa automatisk Vercel-preview under uppdragets deployförbud.
+Agenternas två arbetskopior är arkiverade och testfliken stängd;
+integrationsgrenen, dess beroenden och privata provkvitton behålls.
 Faktisk 200-procentszoom, full dialogmatris och C4–C7 återstår. Tidigare
 agenters Anna-/import-/rensningskvitton är bevarade och inte återutförda här.
 
