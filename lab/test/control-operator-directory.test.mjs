@@ -102,7 +102,7 @@ test('failures name the cause the admin API status allows, without guessing betw
   assert.match(operatorDirectoryFailure('member', 409), /redan medlem, någon annan ändrade medlemskapet, eller .* sista administratören/);
   assert.match(operatorDirectoryFailure('member', 422), /partnerkonto/);
   assert.match(operatorDirectoryFailure('member', 429), /För många inbjudningar/);
-  const surface = readFileSync(new URL('../app/control/surface-page.tsx', import.meta.url), 'utf8');
+  const surface = readFileSync(new URL('../components/workspace-surface-page.tsx', import.meta.url), 'utf8');
   assert.match(surface, /listLaneOperators/);
   assert.match(surface, /nativeStudioAdminEnabled/);
   assert.match(operatorDirectoryFailure('role', 409), /sista administratören/);

@@ -338,7 +338,7 @@
         "lab/lib/studio-native-auth.mjs",
         "lab/lib/studio-native-request.mjs",
         "lab/components/kevin-bo/views/team.jsx",
-        "lab/components/kevin-bo/kevin-backoffice.jsx",
+        "lab/components/kevin-bo/partner-operator-workspace.jsx",
         "lab/components/partner-team-loader.mjs",
         "lab/components/partner-journal-loader.mjs",
         "lab/components/partner-appearance-loader.mjs",
@@ -358,7 +358,8 @@
         "lab/lib/operator-journal.mjs",
         "web/storage/partner-branding.mjs",
         "web/public/operator-preview-contract.mjs",
-        "web/public/operator-preview-contract.d.mts"
+        "web/public/operator-preview-contract.d.mts",
+        "lab/components/workspace-surface-page.tsx"
       ],
       "tests": [
         "test/system-map.mjs",

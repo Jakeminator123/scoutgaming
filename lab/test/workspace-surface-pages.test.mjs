@@ -28,14 +28,14 @@ function load(file, overrides) {
 }
 
 function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' }), partnerData = initialData, nativeRuntime = { nativeStudioAdminEnabled: () => false }) {
-  function KevinBackoffice() { assert.fail('SSR returns the client element without executing its client work'); }
+  function PartnerOperatorWorkspace() { assert.fail('SSR returns the client element without executing its client work'); }
   function ControlWorkspace() { assert.fail('SSR returns the internal client element without executing it'); }
   function PartnerWorkspace() { assert.fail('SSR returns the level-two entrance without selecting a demo'); }
-  const shared = load('../app/control/surface-page.tsx', {
-    '../../lib/studio-native-runtime.mjs': nativeRuntime,
+  const shared = load('../components/workspace-surface-page.tsx', {
+    '../lib/studio-native-runtime.mjs': nativeRuntime,
     'next/headers': { headers: async () => requestHeaders },
     'next/navigation': navigation,
-    '@/components/kevin-bo/kevin-backoffice': { KevinBackoffice },
+    '@/components/kevin-bo/partner-operator-workspace': { PartnerOperatorWorkspace },
     '@/components/control-workspace': { ControlWorkspace },
     '@/components/partner-workspace': { PartnerWorkspace },
     '@/lib/control-workspace.mjs': { controlToolPath },
@@ -47,9 +47,9 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
-  const control = load('../app/control/[[...path]]/page.tsx', { '../surface-page': shared });
-  const partner = load('../app/partner/[[...path]]/page.tsx', { '../../control/surface-page': shared });
-  return { ...shared, KevinBackoffice, ControlWorkspace, PartnerWorkspace, control, partner };
+  const control = load('../app/control/[[...path]]/page.tsx', { '@/components/workspace-surface-page': shared });
+  const partner = load('../app/partner/[[...path]]/page.tsx', { '@/components/workspace-surface-page': shared });
+  return { ...shared, PartnerOperatorWorkspace, ControlWorkspace, PartnerWorkspace, control, partner };
 }
 
 async function renderPage(page, path, query) {
@@ -141,7 +141,7 @@ test('authorized SSR passes only the selected live snapshot, view, operator and 
   for (const [surface, path, view, uiSurface] of [['partner', ['johns-spelbolag', 'presentation'], 'theme', 'partner'],
     ['partner', ['johns-spelbolag', 'tables'], 'bj', 'partner'], ['partner', ['johns-spelbolag', 'integration'], 'api', 'partner']]) {
     const element = await renderPage(loaded[surface], path);
-    assert.equal(element.type, loaded.KevinBackoffice);
+    assert.equal(element.type, loaded.PartnerOperatorWorkspace);
     assert.equal(element.props.surface, uiSurface); assert.equal(element.props.initialView, view);
     assert.equal(element.props.initialSnapshot, snapshot); assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
     assert.equal(element.props.user, 'fixture-admin'); assert.equal(element.props.session, undefined);
@@ -155,7 +155,7 @@ test('room deep links pass the exact query only after authorizing the registered
   const loaded=pages(async(request,options)=>{requests.push(options);return {snapshot,apiBase:'/studio/api/partner/snapshot',session:{user:'fixture-admin',accessClass:'internal-admin'}};});
   for(const room of ['vip-room',['main-room','vip-room']]){
     const element=await renderPage(loaded.partner,['north-casino','rooms'],{room});
-    assert.equal(element.type,loaded.KevinBackoffice);assert.equal(element.props.initialSnapshot,snapshot);
+    assert.equal(element.type,loaded.PartnerOperatorWorkspace);assert.equal(element.props.initialSnapshot,snapshot);
     assert.equal(JSON.stringify(element.props.initialRoomId),JSON.stringify(room));
     assert.equal(requests.at(-1).operatorSlug,'north-casino');
   }
@@ -340,7 +340,7 @@ test('a partner cookie never authorizes control and a partner session skips the 
   assert.equal(partners, 0);
   assert.equal(previews, 2);
   const element = await renderPage(loaded.partner, ['demo-north', 'overview']);
-  assert.equal(element.type, loaded.KevinBackoffice);
+  assert.equal(element.type, loaded.PartnerOperatorWorkspace);
   assert.equal(element.props.initialSnapshot, snapshot);
   assert.equal(element.props.initialSnapshot.preview, false);
   assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');

@@ -127,7 +127,7 @@
       "access": "Internal admin.",
       "sources": [
         "lab/app/control/[[...path]]/page.tsx:6",
-        "lab/app/control/surface-page.tsx:12"
+        "lab/components/workspace-surface-page.tsx:12"
       ],
       "note": "Äldre intern arbetsyta och verktyg under övergången; /admin är nya backoffice. Bevara auth, sparade länkar och verktyg tills ersättaren verifierats. /studio är endast Lab basePath."
     },
@@ -343,11 +343,12 @@
       "access": "N2 partner_session med aktivt scoped medlemskap, eller explicit livevaliderad N1-administratör. En närvarande inaktuell N1-cookie faller inte tillbaka till N2.",
       "sources": [
         "lab/app/partner/[[...path]]/page.tsx",
-        "lab/app/control/surface-page.tsx",
+        "lab/components/workspace-surface-page.tsx",
         "lab/lib/partner-data.mjs",
-        "lab/lib/partner-session.mjs"
+        "lab/lib/partner-session.mjs",
+        "lab/components/kevin-bo/partner-operator-workspace.jsx"
       ],
-      "note": "Aktiv tenantportal, ingen tyst demo-/fixturefallback. PartnerWorkspace visar bolagsvalet; KevinBackoffice är återanvänd vykomponent för vald operatör. Namnet partner-preview är ett äldre katalog-ID; N1 fixture-API /api/partner-preview är ett separat kontrakt."
+      "note": "Aktiv tenantportal, ingen tyst demo-/fixturefallback. PartnerWorkspace visar bolagsvalet; PartnerOperatorWorkspace är den aktiva vykomponenten för vald operatör. Namnet partner-preview är ett äldre katalog-ID; N1 fixture-API /api/partner-preview är ett separat kontrakt."
     },
     {
       "id": "partner-write",
