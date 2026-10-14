@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
 import styles from './studio-administration.module.css';
 
 type AuthBase = '/api/partner' | '/studio/api/partner';
@@ -13,13 +14,13 @@ function noticeFor(status: number) {
 }
 
 // Internal administrators sign in through the N1 login, which returns them to
-// /partner with the same rights as in Kontrollpanelen. This form never mints a
+// the requested partner view with their existing N1 rights. This form never mints a
 // session for them; it stays limited to operator staff.
-export function internalLoginHref(authBase: AuthBase) {
-  return `${authBase.startsWith('/studio/') ? '/studio' : ''}/login?returnTo=${encodeURIComponent('/partner')}`;
+export function internalLoginHref(authBase: AuthBase, returnTo?: string) {
+  return `${authBase.startsWith('/studio/') ? '/studio' : ''}/login?returnTo=${encodeURIComponent(partnerLoginReturnTo(returnTo))}`;
 }
 
-export function PartnerLogin({ authBase }: { authBase: AuthBase }) {
+export function PartnerLogin({ authBase, returnTo }: { authBase: AuthBase; returnTo?: string }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
 
@@ -46,7 +47,7 @@ export function PartnerLogin({ authBase }: { authBase: AuthBase }) {
         setNotice(noticeFor(response.status));
         return;
       }
-      window.location.assign('/partner');
+      window.location.assign(partnerLoginReturnTo(returnTo));
     } catch {
       setNotice(noticeFor(503));
     } finally {
@@ -58,7 +59,7 @@ export function PartnerLogin({ authBase }: { authBase: AuthBase }) {
     <section className={styles.section} aria-busy={busy}>
       <h1>Logga in i partnerportalen</h1>
       <p>Operatörspersonal loggar in med sitt Croupier-konto. Intern personal använder Kontrollpanelen.</p>
-      <p><a href={internalLoginHref(authBase)}>Logga in som intern administratör</a></p>
+      <p><a href={internalLoginHref(authBase, returnTo)}>Logga in som intern administratör</a></p>
       <noscript><p>Aktivera JavaScript för att använda den säkra inloggningen.</p></noscript>
       {notice && <p role="status" className={styles.notice}>{notice}</p>}
       <form className={styles.form} method="post" action={`${authBase}/login`} onSubmit={event => void submit(event)}>

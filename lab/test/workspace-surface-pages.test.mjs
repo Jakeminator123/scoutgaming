@@ -8,6 +8,7 @@ import { internalSessionPresent } from '../lib/partner-session.mjs';
 import { resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
 import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
+import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
 
 const require = createRequire(import.meta.url);
 const redirects = require('next/dist/client/components/redirect.js');
@@ -42,6 +43,7 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     '@/lib/partner-preview.mjs': { partnerPreviewInitialData: initialData },
     '@/lib/partner-data.mjs': { partnerWorkspaceInitialData: partnerData },
     '@/lib/partner-session.mjs': { internalSessionPresent },
+    '@/lib/partner-login-return.mjs': { partnerLoginReturnTo },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
@@ -89,14 +91,15 @@ test('real catch-all pages use exact public login returns and one Next basePath 
       assert.equal(call.options.operatorSlug, undefined);
     }
   }
-  for (const [path, expected] of [[undefined, '/partner'], [['demo-north', 'overview'], '/partner/demo-north/overview'],
+  for (const [path, expected, returnTo = expected] of [[undefined, '/partner'], [['demo-north', 'overview'], '/partner/demo-north/overview', '/partner/demo-north'],
     [['demo-south', 'team'], '/partner/demo-south/team']]) {
     for (const basePath of ['', '/studio']) {
       await assert.rejects(renderPage(loaded.partner, path), error => {
         const login = new URL(redirectLocation(error, basePath));
         assert.equal(login.origin, 'https://game.fixture.invalid');
         assert.equal(login.pathname, '/partner/login');
-        assert.equal(login.search, '');
+        assert.equal(login.searchParams.get('returnTo'), returnTo);
+        assert.equal(login.searchParams.size, 1);
         return true;
       });
       const call = authorized.at(-1);
@@ -166,6 +169,21 @@ test('expired N1 session keeps a safe exact room link through login recovery',as
     const login=new URL(redirectLocation(error,''),'https://studio.fixture.invalid');
     assert.equal(login.pathname,'/login');assert.equal(login.searchParams.get('returnTo'),'/partner/north-casino/rooms?room=vip-room');return true;
   });
+});
+
+test('expired partner session keeps the actual room while N1 cookies retain login precedence',async()=>{
+  for(const cookie of ['partner_session=expired','bo_jwt=expired; partner_session=present']){
+    const loaded=pages(async()=>{throw Object.assign(new Error('expired'),{statusCode:401});},new Headers({host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid',cookie}));
+    for(const basePath of ['','/studio']){
+      await assert.rejects(renderPage(loaded.partner,['north-casino','rooms'],{room:'vip-room'}),error=>{
+        const login=new URL(redirectLocation(error,basePath),'https://game.fixture.invalid');
+        assert.equal(login.origin,'https://game.fixture.invalid');
+        assert.equal(login.pathname,cookie.startsWith('bo_jwt')?basePath+'/login':'/partner/login');
+        assert.equal(login.searchParams.get('returnTo'),'/partner/north-casino/rooms?room=vip-room');
+        assert.equal(login.searchParams.size,1);return true;
+      });
+    }
+  }
 });
 
 test('expired N1 session sends malformed explicit room links to admin instead of selecting another room',async()=>{
@@ -277,8 +295,13 @@ test('missing, expired or invalid partner credentials still recover through part
   for (const cookie of ['', 'partner_session=expired', 'not_bo_jwt=invalid', 'bo_jwt_extra=invalid']) {
     const loaded = pages(() => assert.fail('no fixture read'), new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie }),
       async () => { throw Object.assign(new Error('partner login required'), { statusCode: 401 }); });
-    await assert.rejects(renderPage(loaded.partner, ['johns-spelbolag', 'team']), error =>
-      redirects.getURLFromRedirectError(error) === 'https://game.fixture.invalid/partner/login');
+    await assert.rejects(renderPage(loaded.partner, ['johns-spelbolag', 'team']), error => {
+      const login = new URL(redirects.getURLFromRedirectError(error));
+      assert.equal(login.origin + login.pathname, 'https://game.fixture.invalid/partner/login');
+      assert.equal(login.searchParams.get('returnTo'), '/partner/johns-spelbolag/team');
+      assert.equal(login.searchParams.size, 1);
+      return true;
+    });
   }
 });
 
