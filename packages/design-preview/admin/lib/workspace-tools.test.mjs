@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {ADMIN_WORKSPACE_TOOLS,adminDocumentHref} from '../../../../lab/lib/admin-workspace-routes.mjs';
+import * as adminRouting from '../../runtime/admin-routing.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 const node=(tree,predicate)=>{
@@ -51,4 +52,45 @@ for(const [link,role] of [
   h.render(h.exports.WorkspaceTool,{section:'material-library'});await h.settle();
   const library=node(h.render(h.exports.WorkspaceTool,{section:'material-library'}),item=>item.type===components.ControlLayerLibraryPage);
   assert.equal(library.props.initialRole,role);
+});
+
+function shell(file,path){
+  let mounted;
+  const module={exports:{}},navigation={__esModule:true,default:'a',usePathname:()=>path,useSearchParams:()=>new URLSearchParams()};
+  const hooks={...React,useEffect(){},useState:initial=>[typeof initial==='function'?initial():initial,()=>{}],useCallback:fn=>fn};
+  const placeholders=new Proxy({},{get:(_,name)=>name==='__esModule'?false:marker(String(name))});
+  runInNewContext(transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{
+    module,exports:module.exports,URL,URLSearchParams,document:{getElementById:()=>({}),querySelector:()=>null},
+    location:{origin:'https://admin.invalid',search:''},
+    require:name=>name==='react'?hooks:name==='react/jsx-runtime'?require(name)
+      :name==='react-dom/client'?{createRoot:()=>({render:element=>{mounted=element;}})}
+      :name==='next/link'||name==='next/navigation'||name==='../runtime/navigation'?navigation
+      :name.includes('admin-workspace-routes')?{ADMIN_WORKSPACE_TOOLS}:name.includes('admin-routing')?adminRouting:placeholders,
+  });
+  return mounted?mounted.type(mounted.props):module.exports.StudioSidebar();
+}
+function descendants(tree){
+  if(Array.isArray(tree))return tree.flatMap(descendants);
+  return tree&&typeof tree==='object'?[tree,...descendants(tree.props?.children)]:[];
+}
+
+test('each workspace tool has one active main menu entry and companies remains reachable',()=>{
+  for(const key of Object.keys(ADMIN_WORKSPACE_TOOLS)){
+    const tree=shell('../components/studio/studio-sidebar.tsx','/admin/'+key);
+    const menu=node(tree,item=>item.props?.['aria-label']==='Huvudmeny');
+    const active=descendants(menu).filter(item=>item.props?.['aria-current']==='page');
+    assert.equal(active.length,1,key);
+    assert.equal(active[0].props.href,'/admin/tools',key);
+  }
+  const tools=harness('../components/studio/workspace-tools.tsx');
+  assert.ok(node(tools.exports.WorkspaceToolsHome(),item=>item.props?.href==='/admin/companies'));
+});
+
+test('Admin portal navigation opens the three current product entry points',()=>{
+  for(const path of ['/admin','/admin/clips','/admin/companies']){
+    const tree=shell('../entry.tsx',path),portal=node(tree,item=>item.props?.['aria-label']==='Portaler');
+    const links=descendants(portal).filter(item=>item.type==='a');
+    assert.deepEqual(links.map(item=>item.props.href),['/admin','/partner','/lobby']);
+    assert.equal(links[0].props['aria-current'],'page');
+  }
 });

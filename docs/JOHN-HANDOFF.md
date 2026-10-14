@@ -64,6 +64,28 @@ Dokumentationen anger också återstående liveprov och att Studio-preview
 stänger av genererat tal. Ingen runtime, dealer, publicering,
 nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
+## Admin C1–C3: navigation och läsbarhet, 14 oktober
+
+Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
+[befintliga migrationstrackern](CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
+Bas: `4f2a6eef3ca9c6cfe306db18ab91853f81dad4d4`; egen gren `codex/admin-c1-c3`.
+Två agenter arbetade i separata worktrees med navigation respektive N1-CSS.
+Huvudcheckouten och PR91:s arbete har inte använts för editeringar.
+
+Bolag & team har en huvudmenyingång via Verktyg. Klippkarta, Konton & åtkomst
+och Integrationer har samstämmiga namn. Portalraden går till `/admin`,
+`/partner` och `/lobby`; befintliga spelstarter och registeröversikter består.
+Admin använder sin lokala Inter-font med läsbarare meny-/kontexttext och
+intern rullning för lång desktopmeny. Smal System-popup är fortfarande synlig.
+
+25 riktade navigationstester och Lab-bygget med 97 byggspår passerar.
+Eget läsande browserprov använder lokala UI-resurser på huvuddomänen i egen
+flik, vid 1440/1024/640/390 px. Detta är inte levererad UI-/funktionsacceptans.
+Inga produktionsskrivningar, spelprov, lokala produktservrar, merge eller
+deploy ingår. Full regression och slutlig leveransstatus bokförs i trackern.
+Faktisk 200-procentszoom, full dialogmatris och C4–C7 återstår. Tidigare
+agenters Anna-/import-/rensningskvitton är bevarade och inte återutförda här.
+
 ## Rörligt dealertal: förberedd adapter, 14 oktober
 
 RunPod-åtkomsten och staging-imagen är identifierade. Befintlig GitHub-

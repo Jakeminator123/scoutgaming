@@ -7,6 +7,56 @@ avveckling av gamla hostnamn och från flytt av källkoden i `lab/`. Ingen
 procentangivelse ersätter verifiering av varje flöde. Startpunkt: main
 `4d6b1ebc` (PR104), Vercel READY och Render live.
 
+### Admin checkpoints C1C9
+
+Arbetsordning för fortsatt Admin-migrering, 14 oktober 2026. Detta är den
+befintliga trackerns aktuella checklista. Jakob har startat **C1–C3**;
+C4–C9 beskriver återstående acceptans och leverans, inte nya spel-/datamandat.
+Målet är en tydlig, sammanhållen N1-yta med läsbar typografi och fungerande
+befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte.
+
+| Checkpoint | Klart när | Ägare/ordning | Aktuellt kvitto och kvarvarande kontroll |
+| --- | --- | --- | --- |
+| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Kodinventering på `0511206d`; dokumentbas uppdaterad till `4f2a6eef` efter DRAGANs uttryckliga överlämning av PR118. Huvudcheckoutens osparade arbete bevarat. |
+| C2 — begriplig navigation | Varje synlig ingång har ett tydligt syfte, en aktiv huvudmenyrad och rätt destination. Befintliga länkar och spelstarter bevaras. | Navigationsagent → huvudagent. | Lokalt: dubbla Bolag & team i System borttagen; Klippkarta, Konton & åtkomst och Integrationer har samstämmiga etiketter. Portaler går till `/admin`, `/partner`, `/lobby`. 25 riktade tester passerar. Levererad UI-acceptans återstår. |
+| C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala UI-resurser provade vid 1440, 1024, 640 och 390 px. Inter används i Admin; meny, portal och kontextval har större text. Lång desktopmeny rullar internt; smal System-popup klipps inte. Faktisk 200-procentszoom, full dialogmatris och levererad UI-acceptans återstår. |
+| C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Nästa funktionspass efter C2. | Öppen. Tidigare PR110-/PR117-kvitton nedan är underlag; de ersätter inte komplett prov på levererad slutversion. |
+| C5 — säkra redigeringsflöden | Spara/återläsa, revisionskonflikt, återställning och verkligt osparade ändringar fungerar. Rena formulär ger ingen falsk varning. | En skrivande testägare med isolerade data. | Öppen. Skilj delad sammansättningsmall från rumsspecifika `roomOverrides`; ett valt rum gör inte mallskrivningen rumsspecifik. |
+| C6 — publicering och nivågränser | N1 publicerar rätt granskade revision till rätt N2 och verkligt N3-rum; fel bolag och fel roll nekas på servern. | Samordnat funktionsprov efter C4–C5. | Öppen. Isolerade testdata eller ett nytt uttryckligt, avgränsat demomandat krävs. DRAGANs mandat är inte ärvt. |
+| C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Öppen här. Annas tidigare kvitto behålls som den agentens prov. Dragan/Oak är fortfarande underkänt enligt kvittot nedan. Vercel READY, Render live och funktion bokförs var för sig. |
+| C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | C1–C3 uppdaterar befintliga dokument. Dubbla rubriker i Bolag & team är noterade för fortsatt förenkling; inga komponenter eller tjänster tas bort på antagande. |
+| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten. | Pågår. Ingen merge eller deploy är tillåten i detta uppdrag. Push som automatiskt skapar Vercel-preview kräver först klargjord omfattning. |
+
+**Kodkartan för C1:** `entry.tsx` registrerar 31 Admin-destinationer:
+åtta basytor (`/admin`, `/structure`, `/deletion`, `/dealers`, `/tools`,
+`/clips`, `/rooms`, `/assets`, samtliga under `/admin`), tio drift-/systemytor
+(`drift`, `ekonomi`, `admin/accounts`, `admin/operators`, `admin/players`,
+`admin/payments`, `admin/api`, `admin/log`, `ai/models`, `ai/chat`) och de
+13 verktygen i `lab/lib/admin-workspace-routes.mjs`. Verktygen är bolag/team,
+publicering, sammansättningar, dealerinställningar, klipp, svar, talgranskning,
+provspelning, regler, inaktivitetstal, guide, materialinställningar och dealeragent.
+`/admin/rooms?view=registered` och `/admin/admin/operators` är registeröversikter
+med egna kontroller; de är inte identiska med publicerings- respektive
+bolagseditorn. Därför behålls de. Global ändringslogg saknar fortfarande
+anslutet API. Ny `/lobby` saknar äldre `/play`-vyns bordval enligt DRAGANs
+kvitto nedan; den nya portallänken innebär inte full spelarparitet.
+
+**Bevisgräns för detta pass:** agenternas ändringar har integrerats i
+`codex/admin-c1-c3`. Egen läsande browserkontroll laddar tre lokalt byggda
+Admin-resurser i en egen flik på huvuddomänen; autentisering och befintliga
+läs-API:er används oförändrade. Det är **lokal UI-verifiering**, inte en
+deployment eller ny liveacceptans av sparning/publicering/spel. Inga
+produktionsskrivningar eller spelprov gjordes. Inga produkt-/Lab-servrar
+startades. Befintlig regression för talgranskning, bakgrundsval och äldre
+dealer-/bolagslänkar återanvänds; funktionerna byggs inte om.
+
+**Samordning:** DRAGAN släppte dokumentanspråken efter PR118, 14 oktober
+00:20 UTC. Hans import-/rensningskvitton och separata Dragan-geometriarbete
+bevaras. MERGE äger separat AI-dokumentation och dess adresslista; PR91:s
+gren/worktree bevaras. KEVI-POD-EMILs worker/avatars/lipsync, RunPod och
+Emil-påminnelse berörs inte. Varje framtida skrivande checkpoint får eget
+filanspråk, testdataägare och uttrycklig överlämning vid överlapp.
+
 ### Arbetsytan och verifiering
 
 - [x] Dealers i `/admin`: skapa, arkivera, återställ och lämna i papperskorgen
@@ -472,11 +522,11 @@ autobyggen och domäntilldelning avstängda; isolerade QA-projekt/data bevaras.
 Jakob har godkänt överföringen av Kevins backoffice och följande indelning.
 Det gäller inloggning och åtkomst på samma sajt, inte separata kodplattformar:
 
-| Nivå | Yta | Behörighet i målbilden |
+| Nivå | Aktuell yta | Behörighet och kvarvarande acceptans |
 | --- | --- | --- |
-| 1 | `/control` | Intern personal. Verktyg samlas under `/control/clips`, `/control/administration`, `/control/videos`, `/control/openclaw`, `/control/activity`, `/control/guide`, `/control/zones`, `/control/events`, `/control/preview`, `/control/probe`. `/control/tree` och `/control/operator-chat` omdirigerar. |
-| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Operatör (Unibet m.fl.). PR #12 implementerar riktiga partners även med samma N1-adminlogin; produktionsacceptans återstår. Operatör loggar in via `/partner/login` med `partner_session` och scoped snapshot (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`). Bolag, roller och medlemskap skapas under Administration → Bolag & team på `/control/lanes?tab=companies`; ny e-post får aktiveringslänk. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom lanen av `presentations.configure`. Spelare, transaktioner och rapporter är inte anslutna (N2.4). T2 är påbörjad, inte klar. |
-| 3 | `/play`, `/play/profil`, `/play/historik`, `/play/blackjack` | Spelare. Spellobby, egen profil (namn, saldo, valuta) och egen historik finns som sidor. Profilen kan redigeras (namn och språk) när `006-player-profile.sql` körts mot spel-Neon. Lobbyn visar publicerade bolag och deras verkliga rum. Allmän `/play/blackjack` går till lobbyn; enbart operator går till bolagets lobby. Explicit rumslänk begränsar dealer och miljö till paketet. Renders direkta spelväg behålls. Historiksidan anropar `POST /api/history`. T4 är öppen. |
+| 1 | `/admin` | Intern personal. De befintliga verktygen, inklusive `/admin/companies`, `/admin/publication` och `/admin/rehearsal`, återanvänder sparade data och native-API:er. `/control` är kompatibilitet, inte målyta. Se C1–C9 för destinationer och öppna funktionsprov. |
+| 2 | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Verkliga registrerade operatörer och aktiva medlemskap. `partner_session` och serverkontroller begränsar bolag, roll och revision. N1 hanterar bolag/team i `/admin/companies`; bolagets rum och utkast finns i `/partner/{slug}/rooms`. Spelare, transaktioner och rapporter är fortfarande öppna enligt N2.4/T2. |
+| 3 | `/lobby`, befintliga `/play/profil`, `/play/historik`, `/play/{game}` | Ny spelarentré. `/play`-lobbyn och `/game`-kompatibilitet behålls; `/play/blackjack` och `/play/roulette` är spelstarter med serverkontroller för konto, bolag, faktiskt rum och fryst paket. Profilens saldo förblir serverägt. Bordval och full spelacceptans är inte klara genom en ny lobbyadress. T4 är öppen. |
 
 Samma identitetsresolver ska användas; URL eller ett menyval ger aldrig en roll.
 Interna medarbetare har tilldelade rättigheter, och ett spelarkonto får inte
@@ -997,24 +1047,23 @@ Nivå 2:s lane-/designnotiser visar saknad spelkoppling;
 lokala utkast fungerar fortsatt i den befintliga bordsförhandsvisningen.
 Den här passningen ändrade ingen partner-login, DB-migration, spelregel eller mediefil. `partner_session` och migration 005 kom 7 oktober.
 
-## Öppen arbetschecklista: personalyta under /control
+## Äldre arbetschecklista: Control-etappen och kvarvarande funktionskrav
 
-Målet är att `/control` samlar tidigare Lab- och personalverktyg: samma
-inloggning, begriplig navigation och fungerande dealer-, klipp-,
-administrations- och OpenClawflöden. `/studio` är labbets basePath, inte
-ytans namn. Kevins backoffice stannar på `/partner`. Detta är den öppna arbetslistan för fortsatt
-arbete, inte en ny migrationsplan. Huvudagenten samordnar och uppdaterar den.
-En ruta kryssas först när resultatet nedan har verifierats; äldre PASS räcker
-inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
+Denna etapp började på `3e613186` med `/control` som personalyta. Sedan
+13 oktober är målytan `/admin`; de äldre adresserna och proven nedan är
+historik/kompatibilitet. Aktuell ordning finns i [C1–C9](#admin-checkpoints-c1c9).
+Öppna krav på login, utkast, prestanda, mail, säkerhet och faktisk acceptans
+består och kryssas inte genom ett destinationsbyte. `/studio` förblir teknisk
+basePath och `/partner` N2. Äldre PASS gäller bara den provade versionen.
 
-- [ ] **A. Administratör kan logga in till `/control`.** Jakob har bekräftat att han
+- [ ] **A. Avsett administratörskonto kan logga in till N1.** Historiskt Control-prov: Jakob har bekräftat att han
   skapade `john.g` i Backoffice från det inloggade kontot `Jakob`. `john.g`
   fungerar som blackjackspelare. Synlig kontometadata bekräftar aktivt
   spelarkonto, ingen synlig Studio-användare med samma namn. Spelarkonton har
   enligt nuvarande kontrakt ingen Studioåtkomst; headerns Administratör gäller
   inloggade Jakob. Kontoformulären förtydligas. Ett separat administratörskonto
   behöver invitation/aktivering via e-post; produktionsmail är punkt F.
-  Klart när det avsedda administratörskontot når `/control`, med rätt behörighet,
+  Klart när det avsedda administratörskontot når `/admin` och äldre direktlänk, med rätt behörighet,
   och spelarkonton fortfarande nekas. Kontodata ändras först utifrån belagd orsak.
 - [ ] **B. Backoffice går rimligt snabbt att navigera i.** Föreprov på
   `3e613186` gav fyra gruppbyten 7,468 / 4,944 / 4,859 / 10,018 s.
@@ -1061,7 +1110,7 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   B förblir öppen. Nästa arbete: lokalisera återstående start-/proxyväntan,
   minska sekventiella startläsningar med bibehållen färsk behörighetskontroll,
   och pröva navigation utan full sidomladdning med bevarade utkast.
-- [ ] **C. Personalverktyg samlas under `/control`.** OpenClaw samlas på
+- [ ] **C. Samlad verktygsacceptans — fortsätter i Admin C4–C5.** Historik: OpenClaw samlades på
   `/control/openclaw` och operatörschatt på `/control/operator-chat`.
   `/studio` är labbets basePath. Intern
   navigation, direktlänk, reload och loginens målroute är rättade. Båda vyerna
@@ -1236,7 +1285,7 @@ att dess UI-namn har ersatts: verifiera dess aktiva läsare och ansvar först.
 ### Gemensamma kontrakt
 
 1. **Identitet:** gemensamt username/e-post/lösenord, ingen kontotypsväljare.
-   Admin får spel och hela personalytan på `/control`; superadmin är adminalias; reader/staff är game-only.
+   Admin får spel och personalytan på `/admin`, med `/control` som kompatibilitet; superadmin är adminalias; reader/staff är game-only.
    Befintliga råroller/IDs/saldon/historik bevaras, ingen ny OAuth/kontoreset.
    Credentialresolver kräver exakt en kandidat; collision/pending/fel lösenord ger
    generiskt avslag utan fallback/klientroll. Kapabilitet `sharedCredentials`
