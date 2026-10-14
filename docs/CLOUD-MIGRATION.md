@@ -2,10 +2,29 @@
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 
+**Så används loggen:** detta är aktuell status, en ändringsbar arbetslista och
+daterade provkvitton. Den låser inte produktens menyer, layout eller arbetsflöden.
+Jakobs aktuella instruktioner styr nästa steg; uppdatera checklistan när målet
+ändras och behåll äldre kvitton som historik. En öppen ruta innebär att det
+angivna resultatet ännu inte är verifierat, inte att annat UI-arbete är förbjudet.
+Beskriv konkreta beroenden när något måste vänta, exempelvis osparat arbete,
+behörighet, data eller ett inkompatibelt runtimekontrakt.
+
+**Dokumentets ursprung:** Git registrerar filens första version på Jakob Ebergs
+konto den 28 september 2026 kl. 19.57 svensk tid, i commit `3de0173f`:
+`Move V2 work to GitHub and document cloud readiness`. Det var ett tekniskt
+driftsunderlag, inte en UI-specifikation. Git anger inte vilken människa eller
+agent som formulerade texten. Admin-checklistan tillkom den 14 oktober i
+`ab444a58`. Granskning på `87f30ce1` visar att checklistans rutor inte styr
+Admin eller dess byggvillkor: `cloud-readiness.mjs` hänvisar till driftbevis,
+och systemkartans kontroll validerar plan-ID:n i `planned.json`, inte denna
+Markdownfilens statusrutor. Befintliga data-, behörighets- och runtimekontroller
+gäller oberoende av loggens formuleringar.
+
 Denna logg skiljer flytten av N1-arbetsytan till `/admin` från en framtida
 avveckling av gamla hostnamn och från flytt av källkoden i `lab/`. Ingen
-procentangivelse ersätter verifiering av varje flöde. Startpunkt: main
-`4d6b1ebc` (PR104), Vercel READY och Render live.
+procentangivelse ersätter verifiering av varje flöde. Historisk startpunkt,
+13 oktober: main `4d6b1ebc` (PR104), Vercel READY och Render live.
 
 ### Admin checkpoints C1C9
 
@@ -21,15 +40,54 @@ befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte
 
 | Checkpoint | Klart när | Ägare/ordning | Aktuellt kvitto och kvarvarande kontroll |
 | --- | --- | --- | --- |
-| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Kodinventering från `0511206d`, uppdaterad mot main `39343967` efter PR130. PR124–127 och DRAGANs kvitton är bevarade. DRAGAN har på nytt överlämnat endast eget Admin-avsnitt i tracker/handoff. Huvudcheckoutens arbete bevaras. |
+| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Kodinventering från `0511206d`, uppdaterad mot main `87f30ce1` efter PR132. PR124–127 och DRAGANs kvitton är bevarade. DRAGAN har på nytt överlämnat endast eget Admin-avsnitt i tracker/handoff; han äger fortsatt sitt bordsprofil-/publiceringsprov. Huvudcheckoutens arbete bevaras. |
 | C2 — begriplig navigation | Varje synlig ingång har ett tydligt syfte, en aktiv huvudmenyrad och rätt destination. Befintliga länkar och spelstarter bevaras. | Navigationsagent → huvudagent. | Lokalt: en bolagsingång i huvudmenyn, samstämmiga etiketter och portaler till `/admin`, `/partner`, `/lobby`. Startsidan öppnar befintliga dealer-, bolags-, publicerings- och provspelningsflöden. 25 riktade tester passerade första passet. Eget levererat prov på `dbfe94b5` verifierar startsida → Bolag & team → publicering → provspelning och tillbaka/framåt med Swedish Games. Full kontroll av varje destination återstår. |
 | C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala resurser provade vid 1440/1024/640/390 px. Läsbarare Inter-text i meny, kontext och klippkort; en sidrubrik för Bolag & team. Reproducerad kortöverlappning rättad med uppmätt radhöjd; minikartan togs bort i PR130 efter verifierad skymning på desktop och mobil. Slutåtgärder i långa paneler kan rullas fria från Adminroboten. Eget liveprov på `dbfe94b5` verifierar Inter/Inter-SemiBold, en bolagsrubrik och inget sidöverflöde vid 390 px. Eget liveprov på `39343967` bekräftar att minikartan är borta och Zoom In, Zoom Out och Fit View fungerar med bevarad rumskontext. Faktisk 200-procentszoom och full dialogmatris återstår. |
-| C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Navigationsagent → huvudagent; separat funktionsacceptans. | Delvis lokalt och live provad. På `dbfe94b5` behålls Swedish Games / Dragan-rummets dealer, bolag, rum, speltyp och sammansättning efter startsida → Klippkarta → reload. Avbruten indexerad historik skyddas och återaktiverad Klippkarta synkar åter vald kontext till URL. Eget före/efter-prov behåller Vera efter reload; verkligt rum behålls vid meny/Bakåt/Framåt. Utgången session bevarar hela inloggningsreturen, men lyckad login och oberoende Lab-historik återstår. |
+| C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Navigationsagent → huvudagent; separat funktionsacceptans. | Delvis lokalt och live provad. På `dbfe94b5` behålls Swedish Games / Dragan-rummets dealer, bolag, rum, speltyp och sammansättning efter startsida → Klippkarta → reload. Avbruten indexerad historik skyddas och återaktiverad Klippkarta synkar åter vald kontext till URL. Eget före/efter-prov behåller Vera efter reload; verkligt rum behålls vid meny/Bakåt/Framåt. Sex lokala inloggningsprov passerar, inklusive utgången session → lyckad login → Bakåt/Framåt/reload med alla fem syntetiska kontextfält. Lyckad inloggning följd av verklig rumsvisning i produktion och oberoende Lab-historik återstår. |
 | C5 — säkra redigeringsflöden | Spara/återläsa, revisionskonflikt, återställning och verkligt osparade ändringar fungerar. Rena formulär ger ingen falsk varning. | En skrivande testägare med isolerade data. | Verkligt lokalt kategoriutkast överlevde Bakåt/Framåt; omladdningsvakt observerad, men dialogens båda val inte accepterade. Spara/återläsa och revisionskonflikt återstår med isolerade data. Ett valt rum gör inte delad mallskrivning rumsspecifik; använd befintliga `roomOverrides`. |
 | C6 — publicering och nivågränser | N1 publicerar rätt granskade revision till rätt N2 och verkligt N3-rum; fel bolag och fel roll nekas på servern. | Samordnat funktionsprov efter C4–C5. | Öppen. Isolerade testdata eller ett nytt uttryckligt, avgränsat demomandat krävs. DRAGANs mandat är inte ärvt. |
 | C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Inget eget spelkvitto. DRAGANs PR123/125-kvitton och två isolerade produktionsrundor efter PR127 på `5ca686c5` är hans prov. Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
-| C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker och menyingångar förenklade efter konsumentkontroll. Befintlig guide, tracker och eget handoffavsnitt följer ändringarna. Nio avslutade arbetskopior är arkiverade efter verifierad överföring eller avslutad läsande granskning av Control och fontkedjan. Egna browserflikar är stängda; integration och privata provkvitton behålls. |
+| C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker och menyingångar förenklade efter konsumentkontroll. Befintlig guide, tracker och eget handoffavsnitt följer ändringarna. Elva avslutade arbetskopior är arkiverade efter verifierad överföring eller avslutad granskning, senast PR132-review och C4-login. C4-filens SHA256 jämfördes vid överföringen och testets dependency-junction togs bort. Egna browserflikar är stängda; integration och privata provkvitton behålls. |
 | C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten. | PR129 mergad efter gröna kontroller till `dbfe94b5`, Vercel READY på huvuddomänen. Integrationscommit `e9996383`: fullhook 3 712 pass/11 skip, 0 fel/cancel i 76 grupper. Eget läsande liveprov redovisas nedan. PR130 mergad till `39343967`: fullhook 3 713 pass/11 skip, gröna PR/main-kontroller och eget livekvitto för båda följdfelen. Vercel-, Render- och funktionskvitton redovisas separat nedan. |
+
+**Eftergranskning av PR132, 14 oktober:** DRAGAN hade redan mergat PR132
+när detta pass började. Merge `87f30ce1` har samma filträd som granskad head
+`ee500d84`. Oberoende kodgranskning hittade inget konkret regressionsfel.
+127 kompletterande lokala tester passerade för runtime19, frysta paket,
+kortvy, dolt hålkort, splithänder, filmprojektion och responsiv geometri.
+Två testfiler saknade beroenden i den rena granskningskopian och kördes därför
+i integrationen på samma revision; inga kontroller hoppades över som godkända.
+PR- och main-CI är gröna. Vercel `dpl_8YvErXbThWxwGYdDj6NNzXSSqeqa` är
+READY med www-alias på `87f30ce1`; Render `dep-db7mlv60tbcc73c2cqpg` är
+separat bekräftad live och den publika versionsmarkören visar samma SHA.
+Detta är inte ett eget visuellt spel-/publiceringskvitto för PR132.
+
+**C4, isolerad lyckad inloggningsretur:** testets browserloader saknade
+loginmodulens relativa beroenden och använde ett gammalt CSS-filnamn.
+Det gav `designPreviewReturnTo is not a function` när det frivilliga
+browserprovet aktiverades. Fixturen rättas; ett alltid körande importprov
+fångar sådana bortfall även utan installerad testbrowser. Ingen produktkod
+behövde ändras för detta fel.
+
+Sex inloggningsprov passerar med Chromium och installerad produktions-React.
+Det nya provet använder riktiga Admin-route, sessionkontroll, loginformulär
+och auth-actions, men egna SQLite-lager i minnet och fångade syntetiska origins.
+En utgången, isolerat signerad cookie leder från både `/admin/clips` och
+`/studio/admin/clips` till login. Efter lyckad login bevaras bolag, rum,
+sammansättning, dealer och speltyp i returadressen vid Bakåt/Framåt/reload.
+Det kontrollerar också cookie-scope, `private, no-store`, `Vary: Cookie` och
+oförändrad autentiseringsepok. Ingen extern datakälla eller mailtjänst används.
+Fixture-HTML ersätter själva Klippkartan; detta är lokal auth-/URL-/historikacceptans,
+inte bevis för verklig rumsdata eller hela levererade Admin. Oberoende Lab-historik
+och de återstående C4–C7-proven står kvar. Lab-bygget och 97 byggspår passerade.
+Commit `cb7f19f7` passerade ordinarie full pre-commit med **3 733 pass,
+9 skip, 0 fel/cancel i 76 grupper**, Node 24.21.0 och fyra workers.
+Samtliga sex inloggningsprov kördes även i browser; skippen gäller andra prov
+och räknas inte som acceptans. GitGuardian lästes på main `87f30ce1`:
+verifierad källa, aktiv övervakning, 0 öppna och 18 ignorerade incidenter;
+platsmetadata är fortfarande partiell och historisk skanning `too_large`.
+Egna fixture-contexts är stängda och den verifierade temporära testkatalogen
+med kompileringscache är borttagen. Integration och privata provloggar behålls.
 
 **Kodkartan för C1:** `entry.tsx` registrerar 31 Admin-destinationer:
 åtta basytor (`/admin`, `/structure`, `/deletion`, `/dealers`, `/tools`,

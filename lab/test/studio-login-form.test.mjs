@@ -50,24 +50,48 @@ test('unhydrated browser POST fallback is rejected as non-JSON before auth, rate
 // modules and intercepted synthetic origins; no devserver or external request.
 // CI without browser dependencies still executes the actual SSR/API tests above.
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
-function browserBootstrap(props) {
-  const readCjs = (packageName, name) => readFileSync(join(dirname(require.resolve(`${packageName}/package.json`)), 'cjs', name), 'utf8');
-  const modules = {
+function browserSources() {
+  const readCjs = (packageName, name) => readFileSync(join(dirname(require.resolve(packageName + '/package.json')), 'cjs', name), 'utf8');
+  return {
     react: readCjs('react', 'react.production.js'),
     'react/jsx-runtime': readCjs('react', 'react-jsx-runtime.production.js'),
     'react-dom': readCjs('react-dom', 'react-dom.production.js'),
     'react-dom/client': readCjs('react-dom', 'react-dom-client.production.js'),
     scheduler: readCjs('scheduler', 'scheduler.production.js'),
     '../lib/studio-login-client.mjs': compile(readFileSync(new URL('../lib/studio-login-client.mjs', import.meta.url), 'utf8'), 'studio-login-client.mjs'),
-    './studio-administration.module.css': 'module.exports={__esModule:true,default:{}};',
+    ...Object.fromEntries(['workspace-surfaces', 'control-flow', 'design-preview-paths', 'admin-workspace-routes'].map(name =>
+      ['./' + name + '.mjs', compile(readFileSync(new URL('../lib/' + name + '.mjs', import.meta.url), 'utf8'), name + '.mjs')])),
+    './studio-login.module.css': 'module.exports={__esModule:true,default:{}};',
     component: compiled,
   };
-  return `(() => { const sources=${JSON.stringify(modules)},cache={},process={env:{NODE_ENV:'production'}};
-    function require(name){if(cache[name])return cache[name].exports;const m=cache[name]={exports:{}};
-      new Function('module','exports','require','process',sources[name])(m,m.exports,require,process);return m.exports;}
-    window.fixtureHydrate=()=>require('react-dom/client').hydrateRoot(document.getElementById('root'),
-      require('react').createElement(require('component').StudioLogin,${JSON.stringify(props)})); })();`;
 }
+function fixtureRequire(sources) {
+  const cache = {}, process = {env:{NODE_ENV:'production'}};
+  function require(name) {
+    if (cache[name]) return cache[name].exports;
+    if (!Object.hasOwn(sources,name)) throw Error('Unknown browser fixture module: ' + name);
+    const module = cache[name] = {exports:{}};
+    new Function('module','exports','require','process',sources[name])(module,module.exports,require,process);
+    return module.exports;
+  }
+  return require;
+}
+function browserBootstrap(props) {
+  return '(() => { const require=(' + fixtureRequire.toString() + ')(' + JSON.stringify(browserSources()) + ');' +
+    'window.fixtureHydrate=()=>require("react-dom/client").hydrateRoot(document.getElementById("root"),' +
+    'require("react").createElement(require("component").StudioLogin,' + JSON.stringify(props) + ')); })();';
+}
+
+test('browser fixture loads the real login component and every return-path dependency without a browser', () => {
+  const load = fixtureRequire(browserSources()), client = load('../lib/studio-login-client.mjs');
+  assert.equal(typeof load('component').StudioLogin, 'function');
+  for (const target of ['/admin/clips?operator=north&table=room-7&composition=scene-7&dealer=vera&game=roulette',
+    '/control/preview?operator=north&lane=scene-7', '/partner/north/rooms?room=vip-room']) {
+    assert.equal(client.studioLoginReturnTo(target), login.studioLoginReturnTo(target));
+    assert.equal(client.studioLoginDestination(target), login.studioLoginDestination(target));
+  }
+});
+
 test('actual browser cold Enter/submit stays inert and hydrated forms use JSON POST only', { skip: !browserModule }, async () => {
   const { chromium } = await import(pathToFileURL(browserModule).href);
   const browser = await chromium.launch({ headless: true, ...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL ? { channel: process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL } : {}) });
@@ -271,4 +295,138 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
       } finally {await context.close();bo.close();game.close();}
     }
   } finally {await browser.close();}
+});
+
+test('actual browser expired Admin login returns full context through history and reload', { skip: !browserModule }, async () => {
+  const { chromium } = await import(pathToFileURL(browserModule).href);
+  const { DatabaseSync } = await import('node:sqlite');
+  const { scryptSync } = await import('node:crypto');
+  const { mkdtemp, mkdir, writeFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { createStudioNativeAuth } = await import('../lib/studio-native-auth.mjs');
+  const { assertNativeStudioRequest } = await import('../lib/studio-native-runtime.mjs');
+  const nextPage = await import('../lib/next-page-navigation.mjs');
+  const preview = await import('../lib/design-preview.mjs');
+  const root = await mkdtemp(join(tmpdir(), 'croupier-admin-login-'));
+  const publicOrigin = 'https://admin.fixture.invalid', labOrigin = 'https://studio.fixture.invalid';
+  const config = { allowedOrigins:[publicOrigin,labOrigin], publicHosts:['admin.fixture.invalid','studio.fixture.invalid'],
+    apiBase:'/studio/api/admin', authBase:'/studio/api/auth' };
+  const expectedContext = {operator:'fixture-operator',table:'fixture-room-7',composition:'fixture-scene',dealer:'vera',game:'roulette'};
+  const target = '/admin/clips?' + new URLSearchParams(expectedContext);
+  const unexpected = () => assert.fail('fixture must not access another runtime or data source');
+  const load = (path, overrides) => {
+    const url = new URL(path, import.meta.url), module = {exports:{}}, localRequire = createRequire(url);
+    vm.runInNewContext(compile(readFileSync(url,'utf8'),url.pathname), {
+      module,exports:module.exports,Request,Headers,URL,process:{env:{CROUPIER_LAB_BASE_PATH:'/studio'}},
+      require:name => Object.hasOwn(overrides,name) ? overrides[name] : localRequire(name),
+    });
+    return module.exports;
+  };
+  let browser;
+  try {
+    await mkdir(join(root,'admin'));
+    await writeFile(join(root,'admin','index.html'), '<h1>Authenticated Admin fixture</h1>');
+    browser = await chromium.launch({headless:true, ...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL ? {channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL} : {})});
+    for (const prefix of ['', '/studio']) {
+      const bo = new DatabaseSync(':memory:'), game = new DatabaseSync(':memory:');
+      const context = await browser.newContext();
+      try {
+        bo.exec('CREATE TABLE users(id TEXT PRIMARY KEY,username TEXT,email TEXT,role TEXT,salt TEXT,hash TEXT); CREATE TABLE meta(k TEXT PRIMARY KEY,v TEXT); CREATE TABLE bo_auth_epochs(user_id TEXT PRIMARY KEY,epoch INTEGER);');
+        game.exec('CREATE TABLE player_accounts(email TEXT,player_id TEXT,salt TEXT,hash TEXT);');
+        const pass = 'Isolated-Admin-Login-Only', salt = 'fixture-salt', clock = {now:Date.now() - 8 * 86400_000};
+        bo.prepare('INSERT INTO users VALUES (?,?,?,?,?,?)').run('7','Operator','operator@example.invalid','superadmin',salt,scryptSync(pass,salt,64).toString('hex'));
+        bo.prepare('INSERT INTO meta VALUES (?,?)').run('jwt_secret','a'.repeat(64));
+        bo.prepare('INSERT INTO bo_auth_epochs VALUES (?,?)').run('7',2);
+        const adapter = db => ({prepare:sql => db.prepare(sql.replace(/ FOR UPDATE\b/g,'')),transaction:async work => {
+          db.exec('BEGIN IMMEDIATE'); try {const result = await work();db.exec('COMMIT');return result;} catch(error) {db.exec('ROLLBACK');throw error;}
+        }});
+        const boDb = adapter(bo), scope = {environment:'fixture',workspaceId:'croupier'};
+        const authorize = createStudioNativeAuth({boDb,scope,now:()=>clock.now});
+        const actions = createStudioNativeAuthActions({boDb,gameDb:adapter(game),scope,authorize,publicOrigin,allowedOrigins:config.allowedOrigins,
+          now:()=>clock.now,rateLimit:()=>true,clientAddress:()=> 'isolated-admin-browser',mail:{send:unexpected}});
+        // Expire only a cookie signed by this in-memory fixture. No logout or
+        // shared account/session mutation is involved in reaching the login page.
+        const expired = await actions.handle(new Request(publicOrigin + '/studio/api/auth/login', {method:'POST',
+          headers:{'content-type':'application/json',origin:publicOrigin,'sec-fetch-site':'same-origin'},
+          body:JSON.stringify({user:'operator',pass,returnTo:target})}));
+        assert.equal(expired.status,200);
+        const expiredToken = expired.headers.get('set-cookie').match(/^bo_jwt=([^;]+)/)[1];
+        clock.now += 8 * 86400_000;
+        await context.addCookies([{name:'bo_jwt',value:expiredToken,domain:'admin.fixture.invalid',path:'/',secure:true,httpOnly:true,sameSite:'Lax'}]);
+        const runtime = {nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest,
+          studioNativeRuntime:async()=>({authorize})};
+        const guard = load('../lib/ui-server.ts', {
+          './studio-native-runtime.mjs':runtime,'./next-page-navigation.mjs':nextPage,
+          './studio-server.mjs':{studioInitialData:unexpected},'./remote-ui.mjs':{remoteUiConfiguration:unexpected},
+        });
+        const admin = load('../app/admin/[[...path]]/route.ts', {
+          '../../../lib/ui-server':guard,'../../../lib/studio-native-runtime.mjs':runtime,
+          '../../../lib/design-preview-catalog.mjs':{serveDesignCatalog:unexpected},
+          '../../../lib/design-preview.mjs':{...preview,serveDesignPreview:(request,path,options)=>preview.serveDesignPreview(request,path,{...options,root})},
+        });
+        const failures = [], documentStatuses = [], posts = [];
+        await context.route('**/*', async route => {
+          try {
+            const request = route.request(), url = new URL(request.url());
+            assert.equal(url.origin,publicOrigin,'fixture intercept forbids unexpected origins');
+            const headers = new Headers(await request.allHeaders());headers.set('host',url.host);
+            if (request.method() === 'POST' && !headers.has('sec-fetch-site')) {
+              assert.equal(new URL(request.frame().url()).origin,url.origin);assert.equal(headers.get('origin'),url.origin);
+              headers.set('sec-fetch-site','same-origin');
+            }
+            if (url.pathname === '/studio/login') {
+              const page = load('../app/login/page.tsx', {
+                '@/components/studio-login':module.exports,'@/lib/studio-native-runtime.mjs':runtime,
+                '@/lib/studio-login-client.mjs':login,'@/lib/next-page-navigation.mjs':nextPage,'next/headers':{headers:async()=>headers},
+              });
+              const tree = await page.default({searchParams:Promise.resolve(Object.fromEntries(url.searchParams))});
+              assert.equal(tree.props.returnTo,target);
+              return route.fulfill({contentType:'text/html; charset=utf-8',body:'<div id="root">' + ssr(tree.props) + '</div><script>' + browserBootstrap(tree.props) + ';window.fixtureHydrate();</script>'});
+            }
+            if (url.pathname === '/studio/api/auth/login') {
+              posts.push(url.pathname);assert.equal(JSON.parse(request.postData()).returnTo,target);
+              const response = await actions.handle(new Request(url,{method:request.method(),headers,body:request.postData()}));
+              assert.equal(response.status,200,'real native fixture login succeeds');
+              return route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()});
+            }
+            assert.ok(['/admin/clips','/studio/admin/clips'].includes(url.pathname),'only expected Admin documents are served');
+            assert.equal(request.method(),'GET');assert.equal(url.search,new URL(target,publicOrigin).search);
+            const response = await admin.GET(new Request(url,{headers}),{params:Promise.resolve({path:['clips']})});
+            documentStatuses.push(response.status);
+            assert.equal(response.headers.get('cache-control'),'private, no-store');
+            assert.equal(response.headers.get('vary'),'Cookie');
+            if (response.status === 307) {
+              const destination = response.headers.get('location');
+              assert.equal(destination,'/studio/login?returnTo=' + encodeURIComponent(target));
+              // Like the handoff fixture above, replay the redirect receipt as a
+              // new navigation so Playwright intercepts every synthetic request.
+              // This shim has its own HTML policy; it does not test redirect CSP.
+              return route.fulfill({contentType:'text/html',body:'<script>location.replace(' + JSON.stringify(destination) + ')</script>'});
+            }
+            assert.equal(response.status,200);
+            return route.fulfill({status:200,headers:Object.fromEntries(response.headers),body:await response.text()});
+          } catch(error) {failures.push(error);await route.fulfill({status:500,body:'Isolated Admin fixture failed'});}
+        });
+        const page = await context.newPage();page.setDefaultTimeout(10_000);page.on('pageerror',error=>failures.push(error));
+        try {
+          await page.goto(publicOrigin + prefix + target);
+          await page.waitForURL(publicOrigin + '/studio/login?returnTo=' + encodeURIComponent(target));
+          assert.deepEqual(documentStatuses,[307]);
+          const form = page.locator('form').first();
+          await form.locator('[name="user"]').fill('operator');await form.locator('[name="pass"]').fill(pass);await form.locator('button').click();
+          await page.waitForURL(publicOrigin + target);await page.getByRole('heading',{name:'Authenticated Admin fixture'}).waitFor();
+          await page.goBack();await page.waitForURL(publicOrigin + '/studio/login?returnTo=' + encodeURIComponent(target));
+          await page.goForward();await page.waitForURL(publicOrigin + target);await page.reload();
+          assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedContext);
+          assert.deepEqual(posts,['/studio/api/auth/login']);assert.ok(documentStatuses.slice(1).every(status=>status===200));
+          const cookies = await context.cookies(), cookie = cookies.find(item=>item.name==='bo_jwt');
+          assert.ok(cookie);assert.notEqual(cookie.value,expiredToken);assert.equal(cookie.domain,'admin.fixture.invalid');
+          assert.equal(cookie.secure,true);assert.equal(cookie.httpOnly,true);assert.equal(cookies.some(item=>item.domain==='studio.fixture.invalid'),false);
+          assert.equal((await authorize(new Request(publicOrigin + target,{headers:{cookie:'bo_jwt=' + cookie.value}}))).role,'admin');
+          assert.equal(bo.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get('7').epoch,2);
+          assert.deepEqual(failures,[]);
+        } catch(error) {throw failures[0] ?? error;}
+      } finally {await context.close();bo.close();game.close();}
+    }
+  } finally {await browser?.close();assert.equal(dirname(root),tmpdir());await rm(root,{recursive:true,force:true});}
 });
