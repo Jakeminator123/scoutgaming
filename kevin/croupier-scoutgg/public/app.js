@@ -10,6 +10,7 @@ import {pickQueued,clipDuration} from './chat-priority.js';
 // helt idle-klipp. Blir tänkandet långt (kallstart) går idle igång igen.
 
 import { createGameAudio } from "./game-audio.js";
+import { createVoiceRoom } from "./voice-room.js";
 import { createTableBoxes } from "./table-boxes.js";
 import { createSharedGameTable,tableSession } from "./shared-table.js";
 import { createVideoBuffer, tableVideoSources } from "./video-buffer.js";
@@ -24,6 +25,9 @@ import { faceAtTime } from "./card-face-projection.js";
 
 const $ = (s) => document.querySelector(s);
 const A = $("#va"), B = $("#vb");
+// The dealer's voice in the casino room (voice-room.js): "studio" (the default) leaves A, B and every line as they were.
+const voiceRoom = createVoiceRoom(dealer.id);
+voiceRoom.prepare(A); voiceRoom.prepare(B);
 if(new URLSearchParams(location.search).get("diagnostics")==="1")
   import("./playback-diagnostics.js").then(m=>m.installPlaybackDiagnostics());
 initPresentation();
@@ -72,6 +76,7 @@ const audio = createGameAudio({onChange: settings => {
   $('#muteAudio').setAttribute('aria-label',settings.enabled?'Mute audio':'Unmute audio');
   $('#muteAudio').textContent=settings.enabled?'Sound on':'Sound off';
 }});
+audio.duckTo(voiceRoom.duck);   // Kevin 14 Oct: the casino stays under Paow's voice (voice-room.js); .32 for the others as before
 for(const key of ['voice','ambience','effects']) {
   const slider=$(`#${key}Volume`);slider.value=audio.settings[key]*100;
   slider.addEventListener('input',()=>{unlock();audio.set(key,Number(slider.value)/100);});
@@ -242,7 +247,7 @@ function yieldAnswer() {
   if (!p.started) { queue.unshift({ ...p.item }); return; }
   const v = cur;
   if (!v || v.paused || v.ended || v.muted) return;
-  const a = new Audio(p.item.url), from = v.currentTime, at = performance.now();
+  const a = voiceRoom.audio(p.item.url), from = v.currentTime, at = performance.now();
   a.volume = v.volume; a.preload = 'auto'; a.dataset.voiceOver = '1';
   a.addEventListener('loadedmetadata', () => { a.currentTime = Math.min(from + (performance.now() - at) / 1000, a.duration || from); }, { once: true });
   const end = () => { voiceOvers.delete(a); if (!voiceOvers.size && !currentItem?.sound) audio.speech(false); };
@@ -279,6 +284,7 @@ function showCaption(text) {
 /** iOS knyter ljudrätten till element som spelats under en riktig gest - båda videorna låses upp här. */
 function unlock() {
   audio.unlock();
+  voiceRoom.unlock([A, B]);
   if (unlocked) return;
   unlocked = true;
   for (const v of [A, B]) {
@@ -481,7 +487,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
       for(let i=queue.length-1;i>=0;i--)if(queue[i].kind==='remark')queue.splice(i,1);
       if(currentItem?.kind==='remark'&&finishCurrent)finishCurrent(true);
-      const a=new Audio(url),at=performance.now();a.preload='auto';a.dataset.voiceOver='1';a.volume=audio.settings.voice;a.muted=!(unlocked&&audio.settings.enabled);
+      const a=voiceRoom.audio(url),at=performance.now();a.preload='auto';a.dataset.voiceOver='1';a.volume=audio.settings.voice;a.muted=!(unlocked&&audio.settings.enabled);
       a.addEventListener('loadedmetadata',()=>{const o=(offsetMs+performance.now()-at)/1000;if(o>.15)a.currentTime=Math.min(o,a.duration||o);},{once:true});
       const end=()=>{voiceOvers.delete(a);if(!voiceOvers.size&&!currentItem?.sound)audio.speech(false);};
       a.onended=a.onerror=end;voiceOvers.add(a);a.play().then(()=>audio.speech(true)).catch(end);
