@@ -21,6 +21,9 @@ button { font:inherit; cursor:pointer; }
 .rl-targets button { position:absolute; padding:0; border:0; background:transparent; -webkit-tap-highlight-color:transparent; }
 .rl-targets button:hover, .rl-targets button:focus-visible { background:#d6ff3a3d; outline:none; }
 .rl-targets button.win { background:#d6ff3a73; animation:rl-pulse 1s ease-in-out infinite alternate; }
+.rl-targets .rl-spot { width:1.3%; height:1.9%; transform:translate(-50%,-50%); border-radius:50%; z-index:1; }
+.rl-targets .rl-spot:hover, .rl-targets .rl-spot:focus-visible { background:var(--primary); box-shadow:0 0 0 2px #0a0b0d88; }
+@media (max-width:600px) { .rl-targets .rl-spot { display:none; } }   /* too small to hit on a phone: numbers and outside bets only */
 .rl-locked .rl-targets button { cursor:default; }
 .rl-locked .rl-targets button:hover { background:transparent; }
 @keyframes rl-pulse { to { background:#d6ff3a26; } }
@@ -72,3 +75,22 @@ button:disabled { opacity:.35; cursor:default; }
   .rl-stack { min-width:18px; height:18px; font-size:9px; padding:0 4px; }
 }
 @media (min-width:1100px) { .rl { max-width:1040px; } }
+
+/* flat betting board: phones only (the felt's own fields are the board on larger screens) */
+.rl-board { display:none; }
+@media (max-width:600px) {
+  .rl-targets { pointer-events:none; }
+  .rl-board { display:grid; grid-template-columns:24px repeat(12,1fr); gap:2px; margin:0 0 12px; }
+  .rl-board button { position:relative; min-height:34px; border:0; border-radius:4px; color:#fff; font:700 11px 'JetBrains Mono',monospace; padding:0; }
+  .rl-board button.red { background:#9e1c1e; } .rl-board button.black { background:#202224; } .rl-board button.green { background:#087743; }
+  .rl-board .zero { grid-row:1 / span 3; }
+  .rl-board .dozen, .rl-board .out { background:#1a1c1f; border:1px solid var(--line); font:600 10px Inter,sans-serif; }
+  .rl-board .dozen { grid-column:span 4; }
+  .rl-board .dozen:nth-child(38) { grid-column:2 / span 4; }
+  .rl-board .out { grid-column:span 2; }
+  .rl-board .out:nth-child(41) { grid-column:2 / span 2; }
+  .rl-board .red-mark { color:#e0393b; } .rl-board .black-mark { color:#8b8f94; }
+  .rl-board button b { position:absolute; right:-2px; top:-4px; z-index:1; min-width:15px; height:15px; padding:0 3px; border-radius:999px; background:var(--primary); color:var(--on-primary); font:700 9px 'JetBrains Mono',monospace; display:grid; place-items:center; }
+  .rl-board button b[hidden] { display:none; }
+  .rl-board button.win { outline:2px solid var(--primary); outline-offset:-2px; }
+}
