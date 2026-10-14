@@ -11,7 +11,7 @@ export const ROOM_PRESETS = Object.freeze({
   space: Object.freeze({ hp: 100, lp: 10000, eq: -1.5, eqHz: 3000, taps: [[0.011, 0.26], [0.019, 0.18], [0.031, 0.12]], master: 0.8, duck: 1 }),
 });
 // Kevin's choice per dealer (dealer id → preset name).
-export const DEALER_ROOM = Object.freeze({ paow: 'space' });
+export const DEALER_ROOM = Object.freeze({ paow: 'space', dragge: 'space', marten: 'space' });
 
 export function roomFor(dealerId, search = '') {
   const asked = new URLSearchParams(search).get('voice');

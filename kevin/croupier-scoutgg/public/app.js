@@ -76,7 +76,7 @@ const audio = createGameAudio({onChange: settings => {
   $('#muteAudio').setAttribute('aria-label',settings.enabled?'Mute audio':'Unmute audio');
   $('#muteAudio').textContent=settings.enabled?'Sound on':'Sound off';
 }});
-audio.duckTo(voiceRoom.duck);   // Kevin 14 Oct: the casino stays under Paow's voice (voice-room.js); .32 for the others as before
+audio.duckTo(voiceRoom.duck);   // Kevin 14 Oct: the casino stays under Paow's, Dragge's and Mårten's voices (voice-room.js); .32 for Astrid as before
 for(const key of ['voice','ambience','effects']) {
   const slider=$(`#${key}Volume`);slider.value=audio.settings[key]*100;
   slider.addEventListener('input',()=>{unlock();audio.set(key,Number(slider.value)/100);});
