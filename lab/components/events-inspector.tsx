@@ -8,7 +8,7 @@ import { studioHref } from './studio-types';
 import type { MediaFamily, VideoInventory } from './studio-types';
 import { clipLabel } from '../lib/clip-label.mjs';
 import { upsertMediaVariantPolicy } from '../lib/media-family-policy.mjs';
-import { DEALER_IDS, addVariant, allowedPathDescriptors, isAssetCompatible, MAX_ALTERNATIVES, removeTrigger, removeVariant } from '../lib/studio-model.mjs';
+import { DEALER_IDS, addVariant, allowedPathDescriptors, isAssetCompatible, maxVariantsForEvent, removeTrigger, removeVariant } from '../lib/studio-model.mjs';
 import type { DealerId, MediaVariantPolicy, StudioAsset, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant, TriggerCategory } from '../lib/studio-model.mjs';
 
 export const EVENTS_EDITOR_TABS = ['event', 'triggers', 'variants'] as const;
@@ -176,8 +176,8 @@ export function EventsInspector({
           </button>;
           })}
         </div>
-        <button type="button" className="text-button add-variant" disabled={line.variants.length >= MAX_ALTERNATIVES + 1} onClick={addAlternative}>
-          ＋ Lägg till variant <span>{line.variants.length - 1}/{MAX_ALTERNATIVES}</span>
+        <button type="button" className="text-button add-variant" disabled={line.variants.length >= maxVariantsForEvent(line.eventId)} onClick={addAlternative}>
+          ＋ Lägg till variant <span>{line.variants.length - 1}/{maxVariantsForEvent(line.eventId) - 1}</span>
         </button>
         <div className="variant-form">
           <span className="eyebrow">{isBaseline ? 'REDIGERA STANDARDVARIANT' : 'REDIGERA ALTERNATIV'}</span>

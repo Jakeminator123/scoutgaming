@@ -4,9 +4,11 @@ import { total } from './renderer-support.js';
 import { faceAtTime, triangleMatrices } from './card-face-projection.js';
 import { DEAL_CONTACT, cardPose, feltMatrix, dealerFanOffset, splitHandAnchor } from './card-table-layout.js';
 import { dealerHandClip } from './dealer-hand-occlusion.js';
+import { filmedFaceAtTime } from './filmed-profile.mjs';
+import { projectFilmedFace } from './filmed-table-projection.mjs';
 
 // One stable SVG node per server-issued draw. Motion is driven by source frames.
-export function createGameCards(svg, manifest, {dealerLabel='Dealer'}={}) {
+export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfile=null}={}) {
   const positions = new Map(manifest.deal.map(d => [d.id.replace('deal_pos', ''), d.kort]));
   const sourcePositions=new Map(positions);
   const { bredd: width, hojd: height } = manifest.kort_storlek;
@@ -26,7 +28,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer'}={}) {
   const handClip = svgNode('clipPath', {id:`${prefix}-hands`,clipPathUnits:'userSpaceOnUse'});
   const handPath = svgNode('path', {'clip-rule':'evenodd',d:dealerHandClip()});
   handClip.append(handPath);defs.append(handClip);
-  const cardLayer = svgNode('g', { class: 'card-layer', 'clip-path':`url(#${prefix}-hands)` }), badges = svgNode('g', { class: 'card-totals' });
+  const cardLayer = svgNode('g', { class: 'card-layer', 'clip-path':filmedProfile?'none':`url(#${prefix}-hands)` }), badges = svgNode('g', { class: 'card-totals' });
   svg.replaceChildren(defs, cardLayer, badges);
   const nodes = new Map();
   let hands = [], pending = null;
@@ -56,7 +58,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer'}={}) {
     // Mask the complete layer in source coordinates, including already dealt
     // cards. A mask on only the incoming face leaves old cards over her fingers.
     // Keep tracking past face release until the filmed hand has withdrawn.
-    const path = dealerHandClip(pending?.track, pending?.time);
+    const path = filmedProfile ? '' : dealerHandClip(pending?.track, pending?.time);
     if (path !== handClipPath) { handPath.setAttribute('d', path); handClipPath = path; }
     for (const hand of hands) {
       const anchor = hand.anchor;
@@ -82,10 +84,14 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer'}={}) {
         // The prop is stationary once the fingers release it. Stop thresholding
         // its paper then: the dealer clip's neutral final frame has a broken
         // white mask, which otherwise punches flashing holes in the black back.
-        const tracked = deal?.draw === card.shoeDraw && deal.time + 1e-6 < deal.clear
-          ? faceAtTime(deal.track, deal.time) : null;
+        const filmed = pending?.filmed && pending.draw === card.shoeDraw ? pending : null;
+        const sourceFace = filmed && filmedFaceAtTime(filmed.filmed.profile, filmed.filmed.take,
+          Math.min(filmed.time, filmed.filmed.timing.release / filmed.filmed.timing.fps));
+        const tracked = filmed ? projectFilmedFace(filmed.filmed.profile, filmed.filmed.take, sourceFace,
+          filmed.filmed.binding, pose, filmed.time, width, height)
+          : deal?.draw === card.shoeDraw && deal.time + 1e-6 < deal.clear ? faceAtTime(deal.track, deal.time) : null;
         const turning = pending?.track === 'flip' && pending.draw === card.shoeDraw && entry.signature === 'hidden';
-        const motionKey=`${turning}:${pose.x.toFixed(3)}:${pose.y.toFixed(3)}:${tracked ? Math.floor(deal.time*24+1e-5) : 'rest'}:${entry.signature}`;
+        const motionKey=`${turning}:${pose.x.toFixed(3)}:${pose.y.toFixed(3)}:${tracked ? Math.floor(pending.time*(filmed?.filmed.timing.fps??24)+1e-5) : 'rest'}:${entry.signature}`;
         if(entry.motionKey===motionKey)return;
         entry.motionKey=motionKey;
         entry.group.setAttribute('display', turning ? 'none' : 'inline');
@@ -169,12 +175,13 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer'}={}) {
         positions.set(seat,{...point,cx:point.cx+(offsets[seat]??0)});
       }
       // A table-local plane is not the filmed 1080x1920 hand-mask plane.
-      cardLayer.setAttribute('clip-path',anchors?'none':`url(#${prefix}-hands)`);
+      cardLayer.setAttribute('clip-path',anchors||filmedProfile?'none':`url(#${prefix}-hands)`);
     },
     sourceStarted() { pending = null; move(); },
-    beginDeal(seat, draw, track = seat) {
+    beginDeal(seat, draw, track = seat, filmed = null) {
       seat = String(seat);
-      pending = { seat, draw, track: String(track), time: 0, ...DEAL_CONTACT[track] };
+      pending = { seat, draw, track: String(track), time: 0, ...DEAL_CONTACT[track], filmed,
+        ...(filmed ? {contact:filmed.take.contactFrame/filmed.timing.fps,clear:filmed.timing.end/filmed.timing.fps} : {}) };
       move();
     },
     advanceDeal(time) {

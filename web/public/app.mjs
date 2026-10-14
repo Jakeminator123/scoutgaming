@@ -19,6 +19,7 @@ import { createTableAudio } from './table-audio.mjs';
 import { gameLaneFromDocument } from './game-lanes.mjs';
 import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelection, writeChoices } from './player-choices.mjs';
 import { createPresentationStartup } from './presentation-startup.mjs';
+import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { handValue } from './blackjack.mjs';
 import { placeActions } from './action-placement.mjs';
 import { cardFaceArt } from './card-art.mjs';
@@ -226,7 +227,7 @@ if (localPresentationEnabled) {
         onError: () => presentationStartup.fail(),
         onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
       });
-      localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name});
+      localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name,filmedProfile:registeredFilmedProfile(DEALER.key)});
     }
     localPresentation.start();
     window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); layerComposition?.close(); }, { once: true });
@@ -693,6 +694,9 @@ function layoutSeats() {
       }
       if(compactSeats)Object.assign(banner.style,{top:'auto',bottom:(scene.height-Math.min(...layout.seats.map(seat=>seat.y))+60*layout.controlScale+12)+'px'});
       Object.assign($('#dealer-cards').style,{left:(scene.left+layout.dealer.x-table.left)+'px',top:(scene.top+layout.dealer.y-table.top)+'px'});
+      const filmedProfile=registeredFilmedProfile(DEALER.key);
+      if(filmedProfile&&layout.sourcePlane&&layout.tableId&&!layout.geometryWarning)
+        layout.filmedLayout={profileId:filmedProfile.id,tableId:layout.tableId,layout:layout.tableLayout,sourcePlane:layout.sourcePlane};
       localCards?.setProjection(layout,scene.width,scene.height);
       return;
     }
@@ -1193,6 +1197,7 @@ async function revealHole(container, card) {
   const back = container.querySelector('.card.back');
   if (!back) return;
   if (localPresentationEnabled) {
+    localPresentation?.state({ action: true });
     localCards?.sync(round);
     let token;
     const played = await localPresentation?.present({ type: 'reveal', to: 'dealer', shoeDraw: card.shoeDraw }, {
@@ -1279,6 +1284,9 @@ async function beginDealingTake() {
   updatePoseState({ dealerPose: 'action', actionOwner: currentOwner === 'none' ? 'dealer-action' : currentOwner,
     idlePresented: null }, 'action-started');
   await speechQueue.idle;
+  // A previous player take may have released the controller before the dealer
+  // continues. Reclaim it so late chat cleanup cannot interrupt this card run.
+  localPresentation?.state({ action: true });
   if(performancePlayer){if(performancePlayer.joins)performancePlayer.beginSequence();console.info('[deal] Presented-frame performance sequence');return;}
   } catch (error) { console.warn('[deal] Filmed action unavailable:', error.message); }
 }

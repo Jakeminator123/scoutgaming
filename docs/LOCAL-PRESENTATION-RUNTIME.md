@@ -47,6 +47,16 @@ Innan givfilmer publiceras måste adapter, kortlandning och VILA/REDO-kedja
 verifieras i den gemensamma spelaren. Bakgrunder, dealer och bord är fortfarande
 separata lager och identiteter; ett mediebyte får inte ändra spelmotorns beslut.
 
+### Gemensam uppspelning för Kevins givningsprofil
+
+Dragan-profilen kevin-dragan-f15b2af1 innehåller 35 exakta filmhashar och källspår. Ingen ungefärlig fil-/längdmatchning görs. Varje film måste finnas i sin sparade händelserad; dealerSets registrerar inte uppspelning. Givningsrader kan ha 16 alternativ, andra fem. Runtime v17 spärrar skrivning till äldre runtime innan Blob eller SQL påverkas.
+
+Planeringen använder hela den serverbekräftade händelselistan. Vid act normaliseras endast den visuella ordningen: double-tal, spelarens kort, vändning, dealerns kort och resultat. En saknad exakt posevariant stoppar hela filmkedjan och behåller auktoritativa kort i 2D. Förflyttning av bildutsnitt publiceras innan kortspåret binds; ändrat bord, format eller storlek återgår till statisk kortvisning. Kort och saldo förblir serverägda. Ett chattbesked får inte avbryta pågående givning eller vändning.
+
+Källans clearFrame är en landningsgräns, inte ett visuellt intyg om att fingrarna släppt kortet. Projektion mot ett annat bord måste granskas i verklig uppspelning, särskilt kvarvarande fysiska rekvisitakort och händer vid förflyttningen.
+
+recordedSpeech v1 binder dealer, replik-ID, tagning, språk, exakt text, video-/audio-/indexhash, fps, bildantal, ljudförskjutning, start-/slutpose och kalibreringsrevision. Inspelningsbevis och ljud-/bildgodkännande måste båda referera till samma tuple. Sparad variant-UUID väljer take och språk. Vanligt/fryst spel stoppar pending/rejected eller ändrad identitet. En serverägd inställning enbart i den autentiserade isolerade Studio-previewn tillåter verified-recording med pending review. Ingen klientflagga ger det undantaget. Originalets eget ljud spelas en gång, utan talvideo på loop eller byte till en annan replik som reserv. ASR och filhashar ersätter aldrig visuell/hörbar acceptans.
+
 ### Så fungerar den rörliga läppsynken i Kevins stagingkod
 
 [`server/rorlig-lipsync.mjs`](https://github.com/Jakeminator123/scoutgaming/blob/315cfc554330f1d5541a7ed3bb84044877a6b992/kevin/croupier-scoutgg/server/rorlig-lipsync.mjs)

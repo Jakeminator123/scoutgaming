@@ -35,6 +35,84 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+test('more than five filmed deal variants require v17 before active, archived or frozen writes and SQL',async()=>{
+  for(const eventId of ['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']){
+    const line={dealerId:'astrid',eventId,variants:Array.from({length:6},(_,i)=>({id:`fixture-${i}`}))};
+    const descriptors=[{kind:'project',value:{lines:[line]}},{kind:'project',value:{dealerTrash:[{lines:[line]}]}},
+      {kind:'dealer-archive',value:{dealerTrash:[{lines:[line]}]}},{kind:'presentation-package',value:{schemaVersion:3,playback:{lines:[line]}}}];
+    for(const descriptor of descriptors)for(const version of [16,17]){
+      const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+      f.repository.transaction=async work=>{begun++;return work(f.repository);};
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument(descriptor.kind,{value:descriptor.value}),{presentationMutation:descriptor});
+      if(version===16)await assert.rejects(work,blocked);else await work();
+      assert.equal(begun,version===17?1:0);assert.equal(f.writes.length,version===17?1:0);
+      assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'17');
+    }
+  }
+});
+
+test('five deal variants retain legacy readiness; v17 speech and larger deal rows grant only declared features',async()=>{
+  const small={dealerId:'astrid',eventId:'deal.dealer',variants:Array.from({length:5},()=>({}))};
+  const old=fixture();await old.wrapped.saveDocument('project',{value:{lines:[small]}});assert.equal(old.fetches.length,0);
+  const large={kind:'project',value:{lines:[{...small,variants:[...small.variants,{}]}]}};
+  const speech={metadata:{dealerId:'astrid',recordedSpeech:{schemaVersion:1}}};
+  for(const [declared,undeclared]of [[speech,large],[large,speech]]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(17))});
+    await f.wrapped.withMutationContext(async()=>{
+      await assert.rejects(f.wrapped.withMutationContext(()=>assert.fail('no widening'),undeclared),blocked);
+    },declared);
+    assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+  }
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(17))});
+  await f.wrapped.withMutationContext(async()=>{
+    await f.wrapped.saveDocument(large.kind,{value:large.value});await f.wrapped.registerMedia({classification:speech.metadata});
+  },[large,speech]);
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,2);
+});
+
+test('recorded speech requires exact v17 before register or classify, even for an invalid present optional field',async()=>{
+  for(const recordedSpeech of [{schemaVersion:1},null,undefined])for(const version of [16,17])for(const operation of ['register','classify']){
+    const metadata={dealerId:'astrid',recordedSpeech},f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const write=()=>operation==='register'?f.wrapped.registerMedia({classification:metadata}):f.wrapped.classifyMedia('id',{metadata});
+    if(version===16)await assert.rejects(write,blocked);else await write();
+    assert.equal(f.writes.length,version===17?1:0);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'17');
+  }
+});
+
+test('frozen media retains the recorded speech readiness requirement before SQL',async()=>{
+  for(const location of ['idle','playback'])for(const version of [16,17]){
+    const media={classification:{dealerId:'astrid',recordedSpeech:{schemaVersion:1}}};
+    const value={schemaVersion:3,registeredDealers:[{id:'astrid',...(location==='idle'?{idle:media}:{})}],playback:{media:location==='playback'?[media]:[]}};
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+    f.repository.transaction=async work=>{begun++;return work(f.repository);};
+    const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('presentation-package',{value}),{presentationMutation:{kind:'presentation-package',value}});
+    if(version===16)await assert.rejects(work,blocked);else await work();
+    assert.equal(begun,version===17?1:0);assert.equal(f.writes.length,version===17?1:0);
+    assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'17');
+  }
+});
+
+test('v17 combines declared speech and geometry but never widens a running mutation context',async()=>{
+  const speech={metadata:{dealerId:'astrid',recordedSpeech:{schemaVersion:1}}};
+  const geometry={kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}};
+  const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version'])))});
+  await f.wrapped.withMutationContext(async()=>{
+    await f.wrapped.registerMedia({classification:speech.metadata});
+    await f.wrapped.classifyMedia('id',{metadata:speech.metadata});
+    await f.wrapped.saveDocument(geometry.kind,{value:geometry.value});
+  },[speech,geometry]);
+  assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'17');assert.equal(f.writes.length,3);
+  for(const [declared,undeclared]of [[geometry,speech],[speech,geometry]]){
+    const limited=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version'])))});
+    await limited.wrapped.withMutationContext(async()=>{
+      await assert.rejects(limited.wrapped.withMutationContext(()=>assert.fail('no feature widening'),undeclared),blocked);
+      const write=undeclared.metadata?limited.wrapped.registerMedia({classification:undeclared.metadata}):limited.wrapped.saveDocument(undeclared.kind,{value:undeclared.value});
+      await assert.rejects(write,blocked);
+    },declared);
+    assert.equal(limited.fetches.length,1);assert.equal(limited.writes.length,0);
+  }
+});
+
 test('table geometry requires v16 before saving active, archived or frozen data, including an empty optional field',async()=>{
   for(const descriptor of [
     {kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}},

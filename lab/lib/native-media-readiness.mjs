@@ -10,6 +10,6 @@ export async function assertNativeMediaReadiness(repository,metadata) {
     return;
   }
   const features=extendedDealerMediaFeatures(metadata);
-  if(features.mediaAlpha||features.rouletteMedia)
+  if(features.mediaAlpha||features.rouletteMedia||features.recordedSpeech)
     throw new StudioStorageError(PRESENTATION_RUNTIME_UPDATE_REQUIRED,503);
 }

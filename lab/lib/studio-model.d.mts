@@ -35,6 +35,7 @@ export const DEALER_IDS: readonly DealerId[];
 export const SOURCE_TYPES: readonly SourceType[];
 export const TRIGGER_CATEGORIES: readonly TriggerCategory[];
 export const MAX_ALTERNATIVES: number;
+export function maxVariantsForEvent(eventId: string): number;
 export const LANE_ID: RegExp;
 export const RESERVED_LANE_IDS: ReadonlySet<string>;
 export const BACKGROUND_MODES: ReadonlySet<LaneBackgroundMode>;

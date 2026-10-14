@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { kindForEvent, situationsForEvent, MAX_VIDEO_BYTES, MANUAL_SELECTION } from '../lib/video-intake.mjs';
 import type { VideoMetadata } from '../lib/video-intake.mjs';
 import type { StudioProject, VariantSelection } from '../lib/studio-model.mjs';
+import { maxVariantsForEvent } from '../lib/studio-model.mjs';
 import type { VideoEntry, VideoInventory } from './studio-types';
 import { requestJson } from './studio-types';
 import { VideoMetadataFields } from './video-metadata-fields';
@@ -41,7 +42,7 @@ export function VideoUpload({ project, dealerId, eventId, initialSituation, onUp
   }, [selectedFile]);
   useEffect(() => () => { uploadRequest.current?.abort(); busyCallback.current?.(false); }, []);
   const target = project.lines.find(l => l.dealerId === metadata.dealerId && l.eventId === metadata.eventId)!;
-  const full = metadata.role === 'alternative' && target.variants.length >= 5;
+  const full = metadata.role === 'alternative' && target.variants.length >= maxVariantsForEvent(target.eventId);
 
   async function submit(e: FormEvent) {
     e.preventDefault(); if (disabled || busyRef.current) return;
@@ -86,7 +87,7 @@ export function VideoUpload({ project, dealerId, eventId, initialSituation, onUp
       {localUrl ? <DealerClipPreview url={localUrl} framing={metadata.framing} compositing={metadata.compositing}/> : null}
       {!previewOnly ? <label className="check-field"><input type="checkbox" checked={bind} onChange={e => setBind(e.target.checked)} /><span>Koppla till projektutkastet direkt<small>{metadata.role === 'standard' ? 'Ersätter linjens nuvarande standardkoppling i utkastet.' : 'Skapar ett nytt alternativ. Befintliga varianter behålls.'}</small></span></label> : null}
       {!previewOnly && metadata.role === 'alternative' && bind ? <><VariantSelectionFields value={selection} onChange={setSelection} /><details><summary>Villkor / triggers (valfritt)</summary><p className="helper">Inga valda = inget extra villkor. Alla valda måste matcha. Själva eventet krävs alltid.</p>{project.triggers.map(t => <label className="check-field" key={t.id}><input type="checkbox" checked={triggerIds.includes(t.id)} onChange={e => setTriggerIds(ids => e.target.checked ? [...ids, t.id] : ids.filter(id => id !== t.id))} /><span>{t.label}</span></label>)}</details></> : null}
-      {!previewOnly && bind && full ? <p role="alert">Linjen har redan fyra alternativ. Spara filmen i banken och koppla till ett befintligt alternativ i editorn.</p> : null}
+      {!previewOnly && bind && full ? <p role="alert">Alla {maxVariantsForEvent(target.eventId)} varianter är fyllda. Spara filmen i banken och koppla till ett befintligt alternativ i editorn.</p> : null}
 
       <button className="primary-button" type="submit" disabled={disabled || busy || !previewOnly && bind && full}>{busy ? 'Sparar video…' : 'Spara video i banken'}</button>
     </fieldset>{error ? <p role="alert" className={styles.error}>{error}</p> : null}{notice ? <p role="status">{notice}</p> : null}</form>

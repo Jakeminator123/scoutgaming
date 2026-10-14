@@ -10,6 +10,7 @@ import { isGameLaneId, isOperatorSlug } from '../public/game-lanes.mjs';
 import { isPresentationRoom } from '../presentation-room-contract.mjs';
 import { StudioStorageError } from './studio-contract.mjs';
 import { resolveFrozenDealerIdle, validateFrozenRegisteredDealers } from './frozen-dealer-idle.mjs';
+import {recordedSpeechProjection} from '../recorded-speech-selection.mjs';
 
 const prefix = '/api/presentation/registered-idle/';
 const videoPrefix = '/api/presentation/registered-video/';
@@ -31,7 +32,8 @@ function publicIdle(record, context) {
   if (!record) return null;
   return { id: record.id, sha256: record.sha256, fileName: record.classification.label,
     src: idlePath(context), ...(record.classification.compositing ? { compositing: structuredClone(record.classification.compositing) } : {}),
-    ...(record.classification.framing ? {framing:structuredClone(record.classification.framing)} : {}) };
+    ...(record.classification.framing ? {framing:structuredClone(record.classification.framing)} : {}),
+    ...recordedSpeechProjection(record) };
 }
 
 /**

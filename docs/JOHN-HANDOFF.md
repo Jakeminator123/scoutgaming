@@ -20,6 +20,16 @@ Admin C1–C3 ägs av chatten ADMINADMINADMIN. PR-samordningen har fått
 överlämningen om #91. Huvudcheckoutens blandade ändringar bevaras; den här
 dokumentationen levereras från en separat branch, utan merge eller deploy.
 
+## Dragan: filmad givning och exakt inspelat tal, 14 oktober
+
+Spelarens gemensamma väg har en hashbunden Kevin-profil med 35 givnings-/vändklipp och deras källspår. Sekvensen följer serverns beslut och väljer VILA/REDO-varianter; en ofullständig kedja ger 2D-reserv. Varje fil binds uttryckligen i rätt händelserad och följer med det frysta rumspaketet. Givningsrader tillåter 16 alternativ; andra rader behåller fem. Runtime v17 krävs före nya sådana projekt eller inspelad-tal-metadata; ingen SQL-migration.
+
+Talets nya metadata binder exakt text, språk, tagning, video, ljud, bildruteindex och kalibrering. Inspelningskontroll och visuell acceptans är separata. Vanligt och fryst spel kräver godkännande; endast autentiserad, ägd Studio-preview tillåter en verifierad inspelning som väntar på bild-/ljudgranskning. Originalfilens eget ljud spelas en gång. Annat språk eller annan tagning används aldrig som reserv. Äldre material behåller sin uppspelningsväg.
+
+Produktionsbiblioteket fick den 14 oktober ytterligare 25 exakt hashkontrollerade Dragan-varianter från Kevins urval: 39 627 593 byte, 25 unika medie-ID:n. Native-importen behöll projektet oförändrat; filmerna är alternativa, ogranskade och ännu inte kopplade/publicerade. Privat importjournal och full bindningsplan finns bredvid Kevin-ZIP. Fyra svenska taloriginal är analyserade lokalt, men automatisk transkribering intygar inte exakt tal eller läppsynk. Rörlig AI-läppsynk har fortfarande separata integrations-/avatarverifieringar kvar.
+
+Swedish Games version 2 är publicerad efter två sammanhängande provrundor per format med separat testsaldo. Bordets relativa bredd är 0,68 på desktop och 1,40 på mobil; Dragans y är 0,06 respektive 0,03. Glappet vid magen är borta i dessa provbilder. Bakgrund, bord-ID och övriga bolag/rum är oförändrade. Mobilprovet upptäckte också en statusruta som fångade insatsklick; den släpper nu igenom klick. Kodens Studio-build passerar. Full kontroll, leverans och faktisk acceptans av de nya filmspåren återstår; lab/ behålls som aktiv källkod.
+
 ## Dragan: kortplatser som följer valt bord, 14 oktober
 
 Swedish Games-utkastet med Dragan, Lounge varm och Blackjack Oak visade

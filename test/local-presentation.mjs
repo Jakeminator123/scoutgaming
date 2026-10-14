@@ -47,6 +47,7 @@ test('local server dispatch serves the complete idle browser import graph withou
   const publicEntry = new Map([
     ['/local-presentation.mjs', '../web/public/local-presentation.mjs'],
     ['/dealer-identity.mjs', '../web/public/dealer-identity.mjs'],
+    ['/recorded-speech.mjs', '../web/public/recorded-speech.mjs'],
   ]);
   const server = createServer(async(req,res) => {
     const pathname = new URL(req.url, 'http://local').pathname;
@@ -457,12 +458,12 @@ test('card motion receives each presented media frame and stops at cancellation'
   assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.equal(video.frames.size, 0);
 });
 
-async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off'} = {}) {
+async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null} = {}) {
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
   globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
-  const selected = inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
+  const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
   globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
     : { video: missingPosition ? null : selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
   let proofs = 0;
@@ -918,4 +919,33 @@ for(const cancel of [false,true]) test('own idle rule waits for action and base 
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(f.jobs.at(-1).take.media.src,videos[cancel?0:1].src);
     f.controller.close();globalThis.fetch=original;
+});
+
+
+test('film selection binds card tracking only after clip framing is prepared', async t => {
+  const order=[];let release;
+  const ready=new Promise(resolve=>{release=resolve;});
+  const composition={prepareClip:async()=>{order.push('preparing');await ready;order.push('prepared');},renderFrame:()=>true,hold(){}};
+  const f=await controllerFixture(t,{composition});
+  const playing=f.controller.present(source,{onSelected:()=>order.push('selected')});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(order,['preparing']);assert.equal(f.jobs.length,0);
+  release();await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(order,['preparing','prepared','selected']);assert.equal(f.jobs.length,1);
+  f.jobs[0].resolve();assert.equal(await playing,true);
+});
+
+test('cancelled clip preparation cannot select a track or start media', async t => {
+  let release,selected=0;const ready=new Promise(resolve=>{release=resolve;});
+  const composition={prepareClip:async()=>ready,renderFrame:()=>true,hold(){}};
+  const f=await controllerFixture(t,{composition}),abort=new AbortController();
+  const playing=f.controller.present(source,{signal:abort.signal,onSelected:()=>selected++});
+  await new Promise(resolve=>setImmediate(resolve));abort.abort();release();
+  assert.equal(await playing,false);assert.equal(selected,0);assert.equal(f.jobs.length,0);
+});
+
+test('new unreviewed speech metadata never reaches the live media player', async t => {
+  const f=await controllerFixture(t,{selectedVideo:{id:'unreviewed',sha256:'a'.repeat(64),recordedSpeech:{review:{status:'pending'}}}});
+  assert.equal(await f.controller.present({type:'speak',line:'goodluck'}),false);
+  assert.equal(f.jobs.length,0);assert.match(f.status.textContent,/granskning eller identitet/);
 });
