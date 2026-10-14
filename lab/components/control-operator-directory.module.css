@@ -5,8 +5,8 @@
 .card, .empty { min-width: 0; padding: 24px; border: 1px solid var(--sg-border); border-radius: 16px; background: var(--sg-surface); }
 .card { display: grid; gap: 24px; }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.heading h2, .heading h3, .heading h4, .invite h4 { margin: 0; font-family: var(--sg-font-display), system-ui, sans-serif; letter-spacing: -.025em; }
-.heading h2, .heading h3 { font-size: 23px; }.heading h4, .invite h4 { font-size: 16px; }
+.heading h2, .heading h3, .invite h3 { margin: 0; font-family: var(--sg-font-display), system-ui, sans-serif; letter-spacing: -.025em; }
+.heading h2 { font-size: 23px; }.heading h3, .invite h3 { font-size: 16px; }
 .directory p { margin: 6px 0 0; line-height: 1.6; }.muted { color: var(--sg-muted); font-size: 13px; }
 .eyebrow { color: var(--sg-muted); font-size: 10px; letter-spacing: .13em; font-weight: 650; }
 .count, .status { display: inline-flex; padding: 4px 9px; border-radius: 100px; border: 1px solid var(--sg-border); font-size: 11px; white-space: nowrap; }
@@ -20,5 +20,5 @@
 .field small { color: var(--sg-muted); overflow-wrap: anywhere; }.invite { padding: 20px; border: 1px solid var(--sg-border); border-radius: 12px; }
 .scroll { overflow-x: auto; }.members { width: 100%; border-collapse: collapse; font-size: 13px; }.members th, .members td { padding: 12px 10px 12px 0; text-align: left; border-bottom: 1px solid var(--sg-border); }.members th { font-size: 11px; color: var(--sg-muted); }.members select { min-width: 130px; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }.actions :global(.sg-btn), .form :global(.sg-btn), .stack :global(.sg-btn) { width: fit-content; }
-.feedback { padding: 14px 18px; border: 1px solid var(--sg-border); border-radius: 10px; }.roles { border-top: 1px solid var(--sg-border); padding-top: 16px; }.roles > div { margin: 14px 0; overflow-wrap: anywhere; }.empty { color: var(--sg-muted); line-height: 1.6; }.empty h3 { color: var(--sg-text); }.company:focus-visible, .create summary:focus-visible, .roles summary:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 3px; }
+.feedback { padding: 14px 18px; border: 1px solid var(--sg-border); border-radius: 10px; }.roles { border-top: 1px solid var(--sg-border); padding-top: 16px; }.roles > div { margin: 14px 0; overflow-wrap: anywhere; }.empty { color: var(--sg-muted); line-height: 1.6; }.empty h2 { color: var(--sg-text); }.company:focus-visible, .create summary:focus-visible, .roles summary:focus-visible { outline: 2px solid var(--sg-mark); outline-offset: 3px; }
 @media (max-width: 850px) { .workspace { grid-template-columns: 1fr; }.sidebar { position: static; }.companyList { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }.card, .empty { padding: 18px; } }

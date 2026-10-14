@@ -10,7 +10,7 @@ import { readIdleVideoDuration } from '../../../../../lab/lib/idle-video-duratio
 import type { StudioProject } from '../../../../../lab/lib/studio-model.mjs';
 import { replaceContext } from '../../../runtime/navigation';
 import {isInternalAdminPathname,isStudioAdminRoute} from '../../../runtime/admin-routing.mjs';
-import { groupSlots, affectedRooms, slotCaption } from '../../lib/studio-layout.mjs';
+import { groupSlots, affectedRooms, slotCaption, layoutClipCards } from '../../lib/studio-layout.mjs';
 import { StudioSpeechPanel } from './studio-speech-panel';
 import { StudioLifecyclePanel } from './studio-lifecycle-panel';
 import { StudioPolicyPanel } from './studio-policy-panel';
@@ -236,15 +236,18 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   }
   function togglePanel(next:typeof panel) {openPanel(panel===next?null:next);}
   const cardGroups = groupSlots(slots).filter(group=>category==='all'||group.slots.some(slot=>slot.sourceType===category));
-  const nodes:CardNode[] = cardGroups.map((group,index) => {
+  const measuredCards = cardGroups.map(group=>({id:group.id,height:flowNodes.find(node=>node.id===group.id)?.measured?.height}));
+  // ReactFlow measures expanded libraries too. Depend on sizes, not node/position object identity.
+  const cardHeightKey = JSON.stringify(measuredCards);
+  const cardPositions = layoutClipCards(measuredCards,canvasWidth,positions,game==='roulette'?440:355);
+  const nodes:CardNode[] = cardGroups.map(group => {
     const slot = group.slots.find(slot=>slot.id===cardSlots[group.id]) ?? group.slots[0];
     const line = data!.project.lines.find(row => row.dealerId === dealer!.id && row.eventId === slot.eventId);
     const variantId = variants[slot.id] ?? line?.baselineVariantId ?? '';
     const clips = clipsForSlot(data!.inventory,dealer!.id,slot);
     const boundId = currentClipId(data!.project,dealer!.id,slot,variantId,data!.inventory);
     const selectedId = selected[slot.id] ?? (clips.some(row => row.id === boundId) ? boundId : slot.intakeOnly?clips[0]?.id??'':'');
-    const columns=canvasWidth<610?1:canvasWidth<1100?2:4;
-    return {id:group.id,type:'registeredClip',position:positions[group.id]??{x:index%columns*306,y:Math.floor(index/columns)*(game==='roulette'?440:355)},
+    return {id:group.id,type:'registeredClip',position:cardPositions[group.id],
       data:{group,slot,clips,boundId,boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId,data!.inventory),selectedId,localPreviewUrl:slot.localOnly&&localReference?.dealerId===dealer?.id?referenceUrl:undefined,busy:locked||loading||!authorized,variantId,variants:slot.family ? [] : line?.variants.map(row=>({id:row.id,label:row.label})) ?? [],
         onSlot:id=>setCardSlots(current=>({...current,[group.id]:id})),onSettings:()=>{if(!openPanel(slot.eventId==='roulette.wheel-start'?'roulette-start':slot.game==='roulette'?'roulette-media':slot.sourceType==='speak'?'room':'policy'))return;setSettingsSlot(slot);setStartVideoId(selectedId||boundId);},
         onSelect:id=>setSelected(current=>({...current,[slot.id]:id})),onVariant:id=>{setVariants(current=>({...current,[slot.id]:id}));setSelected(current=>({...current,[slot.id]:''}));},
@@ -252,7 +255,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   });
   const impacts = registry?.rooms.filter(row => row.dealerIds.includes(dealer?.id ?? '') || row.compositionId === lane?.id) ?? [];
   const changedRooms = data&&base ? affectedRooms(base,data.project,registry?.rooms??[]) : [];
-  useEffect(()=>{setFlowNodes(current=>nodes.map(node=>({...current.find(row=>row.id===node.id),...node})));},[data,dealer?.id,category,game,cardSlots,selected,variants,locked,loading,authorized,positions,canvasWidth,referenceUrl,localReference,startDirty]);
+  useEffect(()=>{setFlowNodes(current=>nodes.map(node=>({...current.find(row=>row.id===node.id),...node})));},[data,dealer?.id,category,game,cardSlots,selected,variants,locked,loading,authorized,positions,canvasWidth,cardHeightKey,referenceUrl,localReference,startDirty]);
   return <section className="flex min-h-0 flex-1 flex-col" aria-label="Central Studio">
     <header className="studio-workspace-header">
       <div className="studio-workspace-toolbar"><p>Spelbolag → spel → rum / bakgrund → dealer och bord</p>
@@ -268,7 +271,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
       {error&&<p role="alert" className="studio-error">{error} {!data&&<button className="studio-button" onClick={()=>{void load();}}>Försök igen</button>} {revisionConflict&&<button className="studio-button" disabled={locked||!authorized} onClick={()=>{void compareRevision();}}>Jämför senaste revision</button>} {data&&!authorized&&<><a href={'/control/login?returnTo='+encodeURIComponent(location.pathname+location.search)} target="_blank" rel="noopener">Logga in i ny flik</a><button className="studio-button" disabled={locked} onClick={()=>{void compareRevision();}}>Återanslut och behåll utkast</button></>}</p>}
       {conflictPaths.length>0&&<div className="studio-error" role="alert"><p>Samtidiga ändringar: {conflictPaths.join(', ')}. Ditt utkast är kvar; sparande är spärrat tills du väljer.</p><button className="studio-button" onClick={()=>setConflictPaths([])}>Behåll mitt utkast för dessa fält</button></div>}
       {data&&!dealer&&<p role="alert" className="studio-error">Rummet saknar en aktiv dealer i sin sparade sammansättning. Ingen annan dealer har valts automatiskt.</p>}
-      {dealer&&!lane?.layers.dealer.allowed.includes(dealer.id)&&<p role="note">Du redigerar {dealer.label}s klippbank. Dealern är ännu inte kopplad till det valda rummet. Lägg till kopplingen under <a href="/admin/structure">Kopplingar</a> när materialet är klart.</p>}
+      {dealer&&!lane?.layers.dealer.allowed.includes(dealer.id)&&<p role="note">Du redigerar {dealer.label}s klippbank. {room?'Dealern är ännu inte kopplad till det valda rummet.':'Inget spelrum är valt.'} Lägg till kopplingen under <a href="/admin/structure">Kopplingar</a> när materialet är klart.</p>}
       {room?.materialWarning&&<p role="note">Fryst spelåtkomst behålls. Materialet har en annan katalogtagg; granska rummets bord och spel före nästa publicering.</p>}
     </header>
     <div className="studio-canvas-toolbar"><h1>KLIPPVIDEOS <span>{cardGroups.length} kort · {slots.length} fack</span></h1><div><button className="studio-button" disabled={locked} onClick={()=>togglePanel('dealer')}><Users size={13}/>Dealer</button><button className="studio-button" disabled={locked||game==='roulette'} title={game==='roulette'?'Separat roulette-talset återstår':undefined} onClick={()=>togglePanel('room')}><Volume2 size={13}/>Röst & tal</button><button className="studio-button" disabled={locked} onClick={()=>togglePanel('layers')}><Layers size={13}/>Gemensam mall</button><button className="studio-icon-button" title="Återställ kortlayout" aria-label="Återställ kortlayout" onClick={()=>{setPositions({});void setViewport({x:24,y:24,zoom:canvasWidth<610?1:.9},{duration:250});}}><RotateCcw size={14}/></button></div></div>

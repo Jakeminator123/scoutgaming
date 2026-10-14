@@ -10,12 +10,20 @@ med dealer och rum kvar. Sparade uppgifter och behörigheter är desamma.
 `lab/` är fortfarande källkoden för Studio och dessa funktioner, och `/studio`
 är den tekniska API-monteringen. Det är ingen separat produkt att flytta data från.
 
-**Hitta rätt i Admin:** Klippkarta öppnar klippens arbetsyta. Bolag & team och
-Rum & publicering finns under Verktyg; bolagsverktyget har inte ytterligare
-en ingång under System. System samlar bland annat Konton & åtkomst och
+**Hitta rätt i Admin:** Startsidan ger genvägar till Dealers och klipp,
+Bolag & team, Spelrum & publicering samt Provspelning. Klippkarta öppnar
+klippens arbetsyta. Bolag & team och Rum & publicering finns också under
+Verktyg; bolagsverktyget har inte ytterligare en ingång under System.
+System samlar bland annat Konton & åtkomst och
 Integrationer. Portalraden går till Admin (`/admin`), Spelbolag (`/partner`)
 och Spelarlobby (`/lobby`). Spelstarten `/play/{game}` behåller sitt kontrakt.
 Status och acceptanskrav följs i [Admin-checklistan C1–C9](../../docs/CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
+
+I klippkartan får öppna klippbibliotek plats genom att nästa kortrad flyttas
+ned. Kort som du själv har dragit behåller sina positioner. **Återställ
+kortlayout** ordnar dem igen; det ändrar inte klippkopplingar eller utkast.
+På smal skärm döljs minikartan så att den inte täcker klippkorten. Zoomknapparna
+och knappen som visar hela kartan finns kvar.
 
 I `/admin` finns **Dealers** som egen menyrad. Välj **Skapa dealer**, ange namn
 och **Skapa och spara**. **Ladda upp klipp** öppnar importassistenten med rätt

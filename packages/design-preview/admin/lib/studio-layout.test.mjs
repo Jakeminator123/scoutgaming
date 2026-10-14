@@ -2,7 +2,44 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSeedProject} from '../../../../lab/lib/studio-model.mjs';
 import {clipSlots} from './connected-studio.mjs';
-import {groupSlots,affectedRooms,slotCaption} from './studio-layout.mjs';
+import {groupSlots,affectedRooms,slotCaption,layoutClipCards} from './studio-layout.mjs';
+
+test('expanded clip libraries reserve the tallest measured height before the next row',()=>{
+  const cards=[{id:'wait',height:294},{id:'ready',height:359},{id:'players',height:310},{id:'dealer',height:320},{id:'reveal',height:294}];
+  const expanded=layoutClipCards(cards,1200);
+  assert.deepEqual(expanded.ready,{x:306,y:0});
+  assert.equal(expanded.reveal.y,359+26);
+  assert.ok(cards.slice(0,4).every(card=>expanded.reveal.y-expanded[card.id].y-card.height>=26));
+  const collapsed=layoutClipCards(cards.map(card=>card.id==='ready'?{...card,height:294}:card),1200);
+  assert.equal(collapsed.reveal.y,355);
+});
+
+test('clip rows reflow at the existing responsive column boundaries',()=>{
+  const cards=Array.from({length:5},(_,index)=>({id:String(index),height:index===0?400:294}));
+  assert.deepEqual(layoutClipCards(cards,609)['1'],{x:0,y:426});
+  assert.deepEqual(layoutClipCards(cards,610)['1'],{x:306,y:0});
+  assert.deepEqual(layoutClipCards(cards,1099)['2'],{x:0,y:426});
+  assert.deepEqual(layoutClipCards(cards,1100)['3'],{x:918,y:0});
+  assert.deepEqual(layoutClipCards(cards,1100)['4'],{x:0,y:426});
+});
+
+test('measured reflow preserves dragged coordinates until layout reset',()=>{
+  const cards=[{id:'ready',height:500},{id:'reveal',height:294}];
+  const positions={ready:{x:42,y:87},reveal:{x:740,y:19}};
+  const before=structuredClone(positions);
+  assert.deepEqual(layoutClipCards(cards,390,positions),before);
+  assert.deepEqual(layoutClipCards(cards,1200,positions),before);
+  assert.deepEqual(positions,before);
+  assert.deepEqual(layoutClipCards(cards,390,{ready:positions.ready}),{ready:positions.ready,reveal:{x:0,y:526}});
+  assert.deepEqual(layoutClipCards(cards,390,{}),{ready:{x:0,y:0},reveal:{x:0,y:526}});
+});
+
+test('unmeasured cards retain game spacing and invalid measurements cannot corrupt positions',()=>{
+  const cards=[{id:'a'},{id:'b',height:0},{id:'c',height:NaN},{id:'d',height:-10},{id:'e',height:Infinity},{id:'f',height:500}];
+  assert.equal(layoutClipCards(cards,1200).e.y,355);
+  assert.equal(layoutClipCards(cards,1200,{},440).e.y,440);
+  assert.deepEqual(layoutClipCards([],390),{});
+});
 
 test('visual cards preserve every exact server slot and discover all 17 speech variants',()=>{
   const slots=clipSlots(createSeedProject(),{videos:[]},'astrid'),groups=groupSlots(slots);
