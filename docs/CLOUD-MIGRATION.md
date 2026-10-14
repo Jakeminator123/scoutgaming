@@ -164,21 +164,40 @@ ingick inte i rensningen. Importens egna temporära Render-filer är borttagna.
 
 ### Nästa Dragan-flöde — avgränsning 14 oktober
 
+Swedish Games (`swedish-games`) är skapat i produktions-Admin på Jakobs
+uttryckliga namnval. En separat sparad sammansättning för Dragan använder
+hans val Lounge varm (video) och Blackjack Oak; endast Dragan är tillåten.
+Den har ID `swedish-games-dragan-black-81c0867c-5de8-4b48-bcc5-1fe3ce578b39`.
 Dragan är registrerad men saknar ännu kopplat rum. Elva lokala MP4-original
 matchar redan hans bevarade biblioteksfiler; de behöver inte laddas upp igen.
 Två PNG-filer är VILA-/REDO-referenser. Importgränsen 30 betyder högsta antal
 videor per omgång, inte att 30 nya original har inventerats.
 
 Kevins positionsklipp ger REDO→REDO, medan grundlooparna ger VILA→VILA.
-Hålkort/vändning och 52 alternativa poseklipp kräver explicit sekvenshantering.
+Full filmad givning med hålkort/vändning och 52 alternativa poseklipp kräver
+explicit sekvenshantering. Detta blockerar inte ett grundspel med egen
+grundloop och serverstyrda kort; inga filmade giv-/talklipp krävs för publicering.
 `transitionClipsForDealer` har ännu ingen produktionskonsument; fackval räcker
-inte för att aktivera Till/Från skon. De 140 talfilmerna saknar komplett
+inte för att aktivera Till/Från skon. Inga av de 13 Kevin-Dragan-hasharna har
+matchande befintlig kortkalibrering. De 140 talfilmerna saknar komplett
 takebunden text/ljud-/kalibreringsacceptans och är inte aktiverade.
 
-Fortsätt med uttrycklig klipp-/posebindning, operatör, Blackjack-rum,
-bevarad bakgrund och kompatibelt standardbord; granska desktop/mobil och
+Fortsätt med uttrycklig klipp-/posebindning och Blackjack-rum;
+granska den valda bakgrunden och bordet på desktop/mobil och
 två följande uppspelningar före publicering. Anna/roulette ska bevaras.
 En privat HTML-steglogg på användarens begäran beskriver detta flöde utanför Git.
+
+Grundloopen Kevin V2 · andning är sparad på Dragan. Oak-bordets överkant
+justerades visuellt till `table.y=0.35` i båda format; bredd mobil `1`,
+desktop `0.31640625`. Provspela öppnade faktisk spelkod med separat
+minnesdatabas och syntetiskt testsaldo. En desktoprunda avslutades och
+mobilvyn kontrollerades, men spelacceptansen är underkänd: spelarkort och
+insatsplatser följer äldre dealerbundna ankare och hamnar vid bordets fot.
+Det finns ingen sparad separat Oak-geometri i nuvarande Studio. Återstår
+gemensam, sparad projektion för kort och insatsplatser samt ny acceptans.
+Rummet är därför inte publicerat. Två godkända sammanhängande rundor i
+båda formaten är fortfarande ett öppet krav; ett fungerande testsaldo
+eller en snygg editorbild uppfyller inte det.
 
 Kodgranskningen visar att Blackjack tillåter bordbyte mellan rundor men
 spärrar det vid `round || busy`; Roulette saknar intern bordsväljare.
@@ -187,12 +206,13 @@ spärrar det vid `round || busy`; Roulette saknar intern bordsväljare.
 URL-fältet `table` betyder rum, inte förgrundsbord. Detta är ett konkret
 kvarvarande spelarflöde och ska inte beskrivas som full lobbyparitet.
 
-Två gamla uppladdade bord ligger endast i aktuell materialpapperskorg:
+Inför rensningen låg två gamla uppladdade bord endast i materialpapperskorgen:
 `4b688411-d186-4229-8f8a-046cd1b0a2c5` och
 `b52b9077-de4e-4691-a570-a41a90312f6a`. De har samma bildhash men olika
-Blob-sökvägar. De refereras av 112 respektive 105 historiska projektrader,
+Blob-sökvägar. De refererades av 112 respektive 105 historiska projektrader,
 inklusive delade Astrid-mallar, men inget av de 43 operatörspaketen.
-Historikrader ska därför inte raderas i sin helhet som en genväg.
+Exakta referenser och objekt togs bort i den genomförda rensningen ovan;
+historikraderna bevarades i stället för att raderas i sin helhet.
 Johannas och en Astrid-fil har också samma hash men olika objektvägar;
 hashlikhet är aldrig bevis för ägande eller tillstånd att radera båda.
 
@@ -210,7 +230,7 @@ kontrollerar också registret. 60 isolerade Forge-/repositoryprov passerar.
 Chattminnets profilskapande återläser samma dealerregister under lås.
 Låsordningen följer befintlig native Admin: game först, därefter Studio;
 ett samtidighetsprov omfattar de separata anslutningarna.
-Produktionsgallring väntar på levererad rättning och färskt CAS-underlag.
+Produktionsgallringen genomfördes först efter levererad rättning och färskt CAS-underlag.
 Ett nytt sparat projekt upptäcktes; endast current project och dess fyra
 tillkomna historikrader återlästes för att bevara det parallella Anna-arbetet.
 Senare adminändring har också återlästs separat. Backupens förlust av

@@ -81,10 +81,17 @@ behörigheter och permanenta Render-inställningar ändrades inte. Dess egna
 temporära filer är borttagna. 32 privata importprov passerade.
 
 Jakobs nästa uppdrag är ett dokumenterat WebView-flöde för ett spelbart
-Dragan-Blackjack-rum hos vald operatör. Dragan finns redan; elva lokala
-original matchar befintlig klippbank. Återstår faktiskt klippurval och
-pose-/sekvensintegration, rum/bakgrund/bord, publicering och två spelprov
-på desktop/mobil. Till/Från skon-resolvern används ännu inte av playern.
+Dragan-Blackjack-rum hos Swedish Games, nu skapat i produktions-Admin.
+Hans val Lounge varm (video) och Blackjack Oak finns i ett separat sparat
+Dragan-utkast. Dragan finns redan; elva lokala original matchar befintlig
+klippbank. Ett grundspel med egen grundloop och serverstyrda kort kräver
+ingen ny playerkod. Full filmad Kevin-givning behöver däremot kortkalibrering
+och pose-/sekvensintegration. Rum, publicering och två spelprov på
+desktop/mobil återstår. En isolerad desktoprunda avslutades och mobilvyn
+kontrollerades, men acceptansen stoppade på verkligt geometriavstånd:
+spelarkort och insatsplatser hamnar vid Oak-bordets fot. De följer äldre
+dealerankare, inte det valda bordet. Egen grundloop är sparad; ingen
+publicering gjord. Till/Från skon-resolvern används ännu inte av playern.
 Blackjack kan byta tillåtet bord mellan rundor; Roulette saknar intern väljare.
 Ny `/lobby` delar katalog med `/play` men saknar dess bordval. Dessa fakta
 och användarens privata HTML-steglogg skiljer biblioteksimport från färdigt spel.
