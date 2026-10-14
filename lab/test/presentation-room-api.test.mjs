@@ -1,4 +1,5 @@
 import {AsyncLocalStorage} from 'node:async_hooks';
+import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject as createHistoricalProject, defaultPresentationLane, addDealer } from '../lib/studio-model.mjs';
@@ -9,7 +10,7 @@ import { wrapNativePresentationRepository } from '../lib/presentation-runtime-re
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { buildPresentationPackage, layerAssetPath } from '../../web/presentation-layers.mjs';
-import { readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
 
 import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
@@ -279,6 +280,60 @@ test('preparation is read-only and returns actual nullable package revision plus
   await f.publish({ actor: session.user, operatorId: 'north', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({ name: 'Brand' }, buildPresentationPackage(f.project, ['mobile-phone'], [])) });
   assert.equal((await f.prepare()).packageRevision, 1);
   await assert.rejects(f.prepare('unknown'), status(404)); await assert.rejects(f.prepare('north', 'unknown'), status(404));
+});
+
+test('room GET retains its published room when candidate encoding exceeds the publication limit', async () => {
+  let guarded, candidate;
+  const f = await fixture({ runtimeCapabilities: presentation => {
+    candidate = presentation;
+    return guarded.withMutationContext(async () => capability4,
+      [{ kind:'administration', value:{rooms:[{schemaVersion:2}]} }, { kind:'presentation-package', value:presentation }]);
+  } });
+  guarded = wrapNativePresentationRepository(f.repository, {
+    env:{CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid'},
+    fetchImpl:async (_url, options) => Response.json(presentationCapabilitiesForVersion(Number(options.headers['X-Presentation-Capability-Version']))),
+  });
+  let authorized = session;
+  const api = createStudioAdminApi({ authorize:async () => authorized, handlers:f.roomApi.handlers,
+    allowedOrigins:[origin], publicHosts:['studio.example.invalid'] });
+  const read = (operatorId = 'north') => api.handle(new Request(`${origin}/studio/api/admin/presentation-room?operatorId=${operatorId}&presentationLaneId=vip-presentation`));
+  const original = await f.payload(), created = await f.create(original);
+  const validResponse = await read(), valid = await validResponse.json();
+  assert.equal(validResponse.status, 200); assert.equal(valid.ready, true);
+  assert.deepEqual(valid.rooms, [{id:created.room.id,name:created.room.name,playUrl:created.playUrl}]);
+  await assert.rejects(f.create({...original,idempotencyKey:'0bbb0000-1111-4222-8333-444444444444'}), status(409));
+
+  const saved = await f.repository.readDocument('project');
+  for (const line of saved.value.lines.filter(row => row.dealerId === 'astrid' && ['deal.player.left','deal.player.centre'].includes(row.eventId))) {
+    const baseline = line.variants.find(row => row.id === line.baselineVariantId);
+    for (let i = 0; i < 12; i++) {
+      const hash = value => createHash('sha256').update(`${line.eventId}:${i}:${value}`).digest('hex');
+      const identity = hash('id'), id = `${identity.slice(0,8)}-${identity.slice(8,12)}-4000-8000-${identity.slice(12,24)}`;
+      const record = idleRecord('astrid', id);
+      record.classification = {...record.classification,eventId:line.eventId,kind:'action',role:'alternative',situation:line.eventId.endsWith('left')?'box0':'box2',
+        label:'Isolated large candidate',notes:Array.from({length:20},(_,part)=>hash(part)).join('')};
+      f.pool.setMedia(record);
+      line.variants.push({...clone(baseline),id:`astrid.${line.eventId}.large.${identity.slice(0,24)}`,videoGenerationId:id,
+        selection:{rules:false,model:false,random:false}});
+    }
+  }
+  const changed = await f.repository.saveDocument('project', {value:saved.value,expectedRevision:saved.revision,actor:session.user});
+  const before = f.pool.snapshot(), response = await read(), blocked = await response.json();
+  assert.ok(Buffer.byteLength(JSON.stringify(candidate)) > 32 * 1024);
+  assert.throws(() => encodePresentationPackage(candidate), status(413));
+  assert.equal(response.status, 200); assert.equal(blocked.ready, false);
+  assert.equal(blocked.reason, 'presentation_package_too_large'); assert.equal(blocked.capabilities, null);
+  assert.deepEqual(blocked.rooms, valid.rooms); assert.equal(blocked.projectRevision, changed.revision);
+  assert.equal(blocked.administrationRevision, valid.administrationRevision); assert.equal(blocked.packageRevision, valid.packageRevision);
+  assert.doesNotMatch(JSON.stringify(blocked), /Isolated large candidate|pathname|sha256/);
+  await assert.rejects(f.create({...original,idempotencyKey:'0ccc0000-1111-4222-8333-444444444444',
+    expectedProjectRevision:blocked.projectRevision,expectedAdministrationRevision:blocked.administrationRevision,
+    expectedPackageRevision:blocked.packageRevision}), status(413));
+  const otherResponse = await read('other'); assert.equal(otherResponse.status, 200);
+  assert.deepEqual((await otherResponse.json()).rooms, []);
+  authorized = {...session,role:'partner'}; assert.equal((await read()).status, 403);
+  authorized = {...session,scope:{...scope,workspaceId:'other'}}; assert.equal((await read()).status, 403);
+  assert.deepEqual(f.pool.snapshot(), before, 'reads and rejected publication preserve every document, package and audit');
 });
 
 test('actual room creation publishes atomically, selects the different compatible lane and reaches the real entry reader', async () => {

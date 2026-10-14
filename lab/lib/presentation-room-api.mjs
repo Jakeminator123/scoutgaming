@@ -260,7 +260,12 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       else throw error;
     }
     try { runtime = await capabilities(merged ?? selected?.presentation,game); }
-    catch (error) { if (error?.code !== PRESENTATION_RUNTIME_UPDATE_REQUIRED) throw error; }
+    catch (error) {
+      // Runtime negotiation encodes the candidate too. An oversized draft must
+      // block publication without hiding the existing frozen room on this read.
+      if (error?.statusCode === 413) packageReason ??= 'presentation_package_too_large';
+      else if (error?.code !== PRESENTATION_RUNTIME_UPDATE_REQUIRED) throw error;
+    }
     const runtimeReady = runtimeAccepts(runtime, merged ?? selected?.presentation,game);
     const reason = !environment.fixed ? 'presentation_room_environment_required'
       : packageReason ?? (!runtimeReady ? PRESENTATION_RUNTIME_UPDATE_REQUIRED : null);
