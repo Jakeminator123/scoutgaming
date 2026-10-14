@@ -6,6 +6,8 @@ import { createHash } from 'node:crypto';
 import { calibration } from '../web/public/card-presentation/calibration.mjs';
 import { createCardCursor, createLocalCardOverlay } from '../web/public/local-card-overlay.mjs';
 import { firstFaceTime } from '../web/public/card-presentation/card-face-projection.js';
+import { DRAGAN_KEVIN_PROFILE } from '../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
+import { filmedFaceAtTime } from '../web/public/card-presentation/filmed-profile.mjs';
 
 test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
   assert.equal(calibration.videos.length, 10);
@@ -248,6 +250,93 @@ function splitFixture() {
     {box:3,cards:[card('8','♠',3),card('2','♦',6)]},
   ] };
 }
+
+function filmedSetup({profile=DRAGAN_KEVIN_PROFILE,boxes=[2,3,4]}={}) {
+  const host=new Node('div');host.dataset={};
+  const overlay=createLocalCardOverlay(host,{dealerLabel:'Dragan',filmedProfile:profile});
+  const positions={dealer:{cx:600,cy:100},...Object.fromEntries(boxes.map((box,i)=>[String(box+1),{cx:200+i*200,cy:360}]))};
+  const projection={x:40,y:300,scale:.4,positions,boxes,adjusted:true,
+    filmedLayout:{profileId:DRAGAN_KEVIN_PROFILE.id,tableId:'oak',layout:boxes.length===3?'mobile':'desktop',sourcePlane:{x:120,y:20,scale:.7}}};
+  overlay.setProjection(projection,390,844);
+  return {overlay,svg:host.children[0],projection};
+}
+const filmedVideo=take=>({sha256:take.sha256,filmedTake:{profileId:DRAGAN_KEVIN_PROFILE.id,takeKey:take.key}});
+
+test('explicit Kevin film follows the dealer through contact and then lands on the independently moved table',()=>{
+  const {overlay,svg,projection}=filmedSetup(),take=DRAGAN_KEVIN_PROFILE.takes.find(t=>t.key==='4:i');
+  overlay.sync(fixture());
+  const token=overlay.begin(filmedVideo(take),{type:'deal',to:'box',box:3,shoeDraw:1,handIndex:0});
+  overlay.frame(token,(take.firstFaceFrame-1)/24);assert.equal(draw(svg,1),undefined);
+  overlay.frame(token,take.firstFaceFrame/24);
+  const node=draw(svg,1),body=node.children[1].children[0];
+  assert.equal(node.children[1].attrs.visibility,'visible');
+  const q=body.attrs.points.split(' ')[0].split(',').map(Number);
+  const pose=node.attrs.transform.match(/-?\d+\.\d+/g).map(Number);
+  const face=filmedFaceAtTime(DRAGAN_KEVIN_PROFILE,take,take.firstFaceFrame/24);
+  const source=projection.filmedLayout.sourcePlane,origin=DRAGAN_KEVIN_PROFILE.positions['4'];
+  assert.ok(Math.abs(projection.x+(pose[0]+q[0])*projection.scale-(source.x+(origin.cx+face.body[0][0])*source.scale))<1e-5);
+  assert.ok(Math.abs(projection.y+(pose[1]+q[1])*projection.scale-(source.y+(origin.cy+face.body[0][1])*source.scale))<1e-5);
+  overlay.frame(token,(take.frames-1)/24);assert.equal(overlay.finish(token,1,true),true);
+  assert.equal(draw(svg,1),node);assert.equal(node.attrs.transform,'translate(400.000 360.000)');
+  assert.equal(node.children[1].attrs.visibility,'hidden');
+  assert.equal(all(svg).find(n=>n.attrs.class==='card-layer').attrs['clip-path'],'none');
+});
+
+test('unregistered hashes, malformed profiles, absent source planes and hole without tracks retain static authoritative cards',()=>{
+  const take=DRAGAN_KEVIN_PROFILE.takes.find(t=>t.key==='4:base');
+  for(const mode of ['hash','profile','plane','seat','missing-descriptor','wrong-profile','wrong-take']){
+    const {overlay,svg,projection}=filmedSetup({profile:mode==='profile'?{id:'bad'}:DRAGAN_KEVIN_PROFILE});
+    if(mode==='plane'){delete projection.filmedLayout;overlay.setProjection(projection,390,844);}
+    overlay.sync(fixture());
+    const video=filmedVideo(take);
+    if(mode==='hash')video.sha256='0'.repeat(64);
+    if(mode==='missing-descriptor')delete video.filmedTake;
+    if(mode==='wrong-profile')video.filmedTake.profileId='another-profile';
+    if(mode==='wrong-take')video.filmedTake.takeKey='4:i';
+    const token=overlay.begin(video,
+      {type:'deal',to:'box',box:mode==='seat'?4:3,shoeDraw:1,handIndex:0});
+    overlay.frame(token,3);assert.equal(draw(svg,1),undefined);
+    assert.equal(overlay.finish(token,1,true),false);assert.ok(draw(svg,1));
+  }
+  const {overlay,svg}=filmedSetup();overlay.restore(fixture());
+  const hole=DRAGAN_KEVIN_PROFILE.takes.find(t=>t.target==='hole');
+  const token=overlay.begin(filmedVideo(hole),{type:'deal',to:'dealer',faceDown:true,shoeDraw:4});
+  overlay.frame(token,3);assert.equal(draw(svg,4),undefined);
+  assert.equal(overlay.finish(token,4,true),false);assert.equal(draw(svg,4).attrs['data-card'],'hidden');
+});
+
+test('Kevin resize, framing and A to B to legacy revoke a running film without reviving it after restoration',()=>{
+  const take=DRAGAN_KEVIN_PROFILE.takes.find(t=>t.key==='4:base');
+  for(const change of [p=>p.filmedLayout.tableId='other',p=>p.filmedLayout.sourcePlane.x++,p=>p.scale*=2,p=>delete p.filmedLayout]){
+    const {overlay,svg,projection}=filmedSetup();overlay.sync(fixture());
+    const token=overlay.begin(filmedVideo(take),{type:'deal',to:'box',box:3,shoeDraw:1});
+    overlay.frame(token,take.firstFaceFrame/24);const node=draw(svg,1);
+    const changed=structuredClone(projection);change(changed);overlay.setProjection(changed,844,390);
+    assert.equal(draw(svg,1),node);assert.equal(node.children[1].attrs.visibility,'hidden');
+    overlay.setProjection(projection,390,844);overlay.frame(token,3);
+    assert.equal(overlay.finish(token,1,true),false);assert.equal(node.children[1].attrs.visibility,'hidden');
+  }
+});
+
+test('Kevin flip retains dealer upcard and hidden value until first face; split and resumed server seat IDs stay authoritative',()=>{
+  const {overlay,svg}=filmedSetup({boxes:[4,5,6]}),round=splitFixture();
+  for(const hand of round.hands)hand.box=5;
+  overlay.restore(round);const old=draw(svg,1),other=draw(svg,3);
+  const take=DRAGAN_KEVIN_PROFILE.takes.find(t=>t.key==='6:iv');overlay.sync(round,0);
+  const token=overlay.begin(filmedVideo(take),{type:'deal',to:'box',box:5,shoeDraw:5,handIndex:0});
+  overlay.frame(token,take.firstFaceFrame/24);assert.equal(draw(svg,1),old);assert.equal(draw(svg,3),other);
+  assert.equal(draw(svg,5).attrs['data-seat'],'6');assert.notEqual(draw(svg,5).attrs.transform,draw(svg,6).attrs.transform);
+  overlay.frame(token,(take.frames-1)/24);assert.equal(overlay.finish(token,5,true),true);
+  const up=draw(svg,2),upPosition=up.attrs.transform;
+  round.dealer.push(card('K','♥',4));overlay.sync(round);
+  const flip=DRAGAN_KEVIN_PROFILE.takes.find(t=>t.target==='flip');
+  const turn=overlay.begin(filmedVideo(flip),{type:'reveal',to:'dealer',shoeDraw:4});
+  overlay.frame(turn,(flip.firstFaceFrame-1)/24);assert.equal(draw(svg,4).attrs['data-card'],'hidden');
+  overlay.frame(turn,flip.firstFaceFrame/24);assert.equal(draw(svg,4).attrs['data-card'],'K♥');
+  assert.equal(draw(svg,4).children[1].attrs.visibility,'visible');
+  assert.equal(up.attrs.transform,upPosition);overlay.frame(turn,(flip.frames-1)/24);
+  assert.equal(overlay.finish(turn,4,true),true);assert.equal(up.attrs.transform,upPosition);
+});
 
 test('split retains every original and new card while focus, active hand and settlement change',()=>{
   const {svg,cards}=setup(),before=fixture(),visible=new Set([1,2,3,4]);

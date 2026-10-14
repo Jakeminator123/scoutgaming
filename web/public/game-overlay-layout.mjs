@@ -21,7 +21,7 @@ export function projectTableGamePlane(dims, rect, viewport, tableGeometry,tableL
     y:(viewport.height-dims[1]*fit)/2+rect[1]*fit,width:rect[2]*fit,height:rect[3]*fit}};
 }
 
-function layoutTableGameOverlay({rect,tableGeometry,tableLayout},boxes,bounds,compact){
+function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePlane},boxes,bounds,compact){
   const layout=tableLayout??(compact?'mobile':'desktop'),geometry=tableGeometry[layout];
   const scale=rect.width*geometry.cardWidth/calibration.width;
   const local=point=>({cx:point.x*rect.width/scale,cy:point.y*rect.height/scale});
@@ -42,6 +42,7 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout},boxes,bounds,co
   });
   const dealer=screen(geometry.dealer);
   return {x:rect.x,y:rect.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,
+    ...(sourcePlane&&tableId?{sourcePlane,tableId,tableLayout:layout}:{}),
     geometryWarning:fits&&inside(dealer.x,dealer.y,310*scale,45*scale,130*scale,55*scale)?'':'Kort eller insatsplatser ryms inte. Justera bordets placering i Sammansättning.'};
 }
 

@@ -66,6 +66,7 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/public/roulette-start-contract.mjs',
   'web/public/dealer-identity.mjs',
   'web/public/dealer-speech-profile.mjs',
+  'web/public/recorded-speech.mjs',
   'web/public/game-lanes.mjs',
   'web/public/game-overlay-layout.mjs',
   'web/public/presentation-composition.mjs',
@@ -298,7 +299,11 @@ async function writeFixtures(jobs, worktree) {
 async function materializeHead() {
   const dir = await mkdtemp(join(tmpdir(), 'astrid-select-head-'));
   const archive = join(dir, 'head.tar');
-  await execFileAsync('git', ['archive', '--format=tar', 'HEAD', '-o', archive, ...ARCHIVE_PATHS], { cwd: repoRoot });
+  // A newly added worktree module may not exist in the older HEAD being compared.
+  const {stdout}=await execFileAsync('git',['ls-tree','-r','--name-only','HEAD','--',...ARCHIVE_PATHS],{cwd:repoRoot});
+  const tracked=stdout.trim().split(/\r?\n/);
+  const paths=ARCHIVE_PATHS.filter(path=>tracked.some(file=>file===path||file.startsWith(path+'/')));
+  await execFileAsync('git', ['archive', '--format=tar', 'HEAD', '-o', archive, ...paths], { cwd: repoRoot });
   await execFileAsync('tar', ['-xf', archive, '-C', dir]);
   const packageUrl = pathToFileURL(join(repoRoot, 'lab', 'lib', 'project-store.mjs')).href;
   const entryPath = join(dir, 'register-hooks.mjs');

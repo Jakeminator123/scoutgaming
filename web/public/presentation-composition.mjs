@@ -73,8 +73,9 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     const board=current?.settings?.blackjackTables?.find(row=>row.tableId===selected.get('table'));
     const asset=assets().get('table');
     if(board&&scene.show.table&&asset&&compositor.tableGeometry){
-      return projectTableGamePlane(compositor.geometry(scene).dims,compositor.tableGeometry(scene,asset),
-        {width:host.clientWidth,height:host.clientHeight},board,scene.layout);
+      return {...projectTableGamePlane(compositor.geometry(scene).dims,compositor.tableGeometry(scene,asset),
+        {width:host.clientWidth,height:host.clientHeight},board,scene.layout),tableId:board.tableId,
+        sourcePlane:projectGamePlane(compositor.geometry(scene),{width:host.clientWidth,height:host.clientHeight},framing??undefined)};
     }
     const missing=Boolean(current?.settings?.blackjackTables?.length);
     return {...projectGamePlane(compositor.geometry(scene),{width:host.clientWidth,height:host.clientHeight},referenceFraming??undefined),
@@ -164,7 +165,12 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(!compositor){const canvas=document.createElement('canvas');canvas.className='presentation-composed-film';host.append(canvas);compositor=new Compositor(canvas);}
     // Talking/variant crops must not make bets and resting cards jump.
     if(referenceFraming===null&&(kind===undefined||kind==='idle'))referenceFraming=framing??{scale:1,x:0,y:0};
-    key=nextKey;return true;
+    key=nextKey;
+    // Publish the selected source framing before the card cursor binds to it.
+    // A later resize still invalidates that exact binding.
+    const plane=referencePlane(),signature=JSON.stringify(plane);
+    if(signature!==lastGeometry){lastGeometry=signature;for(const listener of geometryListeners)listener();}
+    return true;
   }
   function renderFrame(video) {
     if(closed)return false;

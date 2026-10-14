@@ -29,6 +29,47 @@ test('an upload grant cannot register retained bank status even with a valid ser
 const scope=Object.freeze({environment:'test',workspaceId:'studio-test'}),key=Buffer.alloc(32,8),origin='https://studio.example.invalid';
 const classification={dealerId:'astrid',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Uploaded clip',notes:''};
 
+function speechFixture(){
+  const bytes=Buffer.from('0000ftypisom00000private-speech-fixture'),sha256=createHash('sha256').update(bytes).digest('hex');
+  const recordedSpeech={schemaVersion:1,dealerId:'astrid',lineId:'goodluck',takeId:'goodluck_1',language:'sv',exactText:'En exakt testreplik.',
+    videoSha256:sha256,audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+    entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
+  return {bytes,metadata:{...classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',playback:'once',recordedSpeech}};
+}
+
+test('recorded speech requires v17 before Blob grants; commit binds exact bytes without auto-approving pending review',async t=>{
+  const input=speechFixture(),old=await fixture(t,{...input,runtimeVersion:16}),before=old.pool.calls.length;
+  await assert.rejects(old.prepare(),e=>e.code==='studio_presentation_runtime_update_required');
+  assert.equal(old.pool.calls.length,before);assert.equal(old.tokenCalls.length,0);
+  assert.equal(old.capabilityCalls[0]['X-Presentation-Capability-Version'],'17');
+  const current=await fixture(t,{...input,runtimeVersion:17}),grant=await current.prepare();current.objects.set(grant.pathname,current.bytes);
+  await current.service.commit({operation:'commit',ticket:grant.ticket},current.context);
+  const stored=await current.repository.getMedia(grant.id);
+  assert.deepEqual(stored.classification.recordedSpeech,input.metadata.recordedSpeech);
+  assert.equal(stored.classification.recordedSpeech.videoSha256,stored.sha256);
+  assert.equal(current.pool.snapshot().audits.length,1);assert.ok(current.capabilityCalls.every(headers=>headers['X-Presentation-Capability-Version']==='17'));
+});
+
+test('v17 speech grants cannot commit after downgrade, at SQL admission, or through an unwrapped repository',async t=>{
+  for(const mode of ['before-blob','at-sql','unwrapped']){
+    const f=await fixture(t,{...speechFixture(),runtimeVersion:17}),grant=await f.prepare();f.objects.set(grant.pathname,f.bytes);
+    let reads=0;const before=f.pool.calls.length;
+    const service=createStudioUploadService({...f.settings,...(mode==='unwrapped'?{repository:f.repository}:{})});
+    let context=f.context;
+    if(mode==='before-blob'){
+      f.setRuntime(16);
+      const noBlob=createStudioUploadService({...f.settings,privateMedia:async()=>{reads++;assert.fail('no Blob read after downgrade');}});
+      await assert.rejects(noBlob.commit({operation:'commit',ticket:grant.ticket},context),e=>e.code==='studio_presentation_runtime_update_required');
+      assert.equal(reads,0);assert.equal(f.pool.calls.length,before);
+    }else{
+      if(mode==='at-sql')context={...context,mutationTransaction:(work,options)=>{f.setRuntime(16);return f.context.mutationTransaction(work,options);}};
+      if(mode==='unwrapped')await assert.rejects(service.prepare({operation:'prepare',sha256:grant.pathname.split('/').at(-1).split('.')[0],size:f.bytes.length,contentType:'video/mp4',classification:speechFixture().metadata},{actor:'Operator'}),e=>e.code==='studio_presentation_runtime_update_required');
+      await assert.rejects(service.commit({operation:'commit',ticket:grant.ticket},context),e=>e.code==='studio_presentation_runtime_update_required');
+    }
+    assert.equal(f.pool.snapshot().media.size,0);assert.equal(f.pool.snapshot().audits.length,0);assert.equal(f.tokenCalls.length,1);
+  }
+});
+
 test('storage MIME or v11 readiness blocks prepare before any SQL read, Blob grant or registry write',async t=>{
   const candidates=[
     {contentType:'image/png',metadata:{...classification,eventId:'roulette.reference',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}}},
@@ -97,7 +138,7 @@ async function fixture(t,{bytes=Buffer.from('0000ftypisom00000private-upload-fix
   }};
   let at=1000;
   const capabilityCalls=[],features=extendedDealerMediaFeatures(metadata);let runtime=runtimeVersion??12;
-  const nativeRepository=runtimeVersion!==undefined||features.mediaAlpha||features.rouletteMedia
+  const nativeRepository=runtimeVersion!==undefined||features.mediaAlpha||features.rouletteMedia||features.recordedSpeech
     ?wrapNativePresentationRepository(repository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.fixture.invalid'},fetchImpl:async(_url,init)=>{capabilityCalls.push(init.headers);return Response.json(presentationCapabilitiesForVersion(runtime));}}):repository;
   const settings={repository:nativeRepository,scope,ticketKey:key,env,options,clientToken:async args => {tokenCalls.push(args);return 'fixture-only-client-capability';},now:() => at};
   const service=createStudioUploadService(settings),sha256=createHash('sha256').update(bytes).digest('hex');

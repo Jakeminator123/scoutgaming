@@ -13,7 +13,210 @@
     "situation",
     "notes"
   ],
+  "$defs": {
+    "recordedSpeechIdentity": {
+      "type": "object",
+      "required": [
+        "dealerId",
+        "lineId",
+        "takeId",
+        "language",
+        "exactText",
+        "videoSha256",
+        "audioSha256",
+        "indexSha256",
+        "fps",
+        "frameCount",
+        "audioDelayMs",
+        "entryPose",
+        "exitPose",
+        "calibrationRevision"
+      ],
+      "properties": {
+        "dealerId": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "lineId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,99}$"
+        },
+        "takeId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,99}$"
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(?:-[A-Z]{2})?$"
+        },
+        "exactText": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "videoSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "audioSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "indexSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "fps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 240
+        },
+        "frameCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 28800
+        },
+        "audioDelayMs": {
+          "type": "integer",
+          "minimum": -5000,
+          "maximum": 5000
+        },
+        "entryPose": {
+          "enum": [
+            "VILA",
+            "REDO"
+          ]
+        },
+        "exitPose": {
+          "enum": [
+            "VILA",
+            "REDO"
+          ]
+        },
+        "calibrationRevision": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$"
+        }
+      }
+    },
+    "recordedSpeechPending": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "const": "pending"
+        }
+      }
+    },
+    "recordedSpeechBoundProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "by",
+        "at",
+        "identity"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "verified-recording",
+            "approved",
+            "rejected"
+          ]
+        },
+        "by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "identity": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/recordedSpeechIdentity"
+            }
+          ],
+          "unevaluatedProperties": false
+        }
+      }
+    }
+  },
   "properties": {
+    "recordedSpeech": {
+      "type": "object",
+      "description": "Optional exact recording tuple. Runtime validation also binds both proofs to this identity, the dealer, line and media bytes; verification never implies audiovisual approval.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/recordedSpeechIdentity"
+        }
+      ],
+      "unevaluatedProperties": false,
+      "required": [
+        "schemaVersion",
+        "recording",
+        "review"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "recording": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/recordedSpeechPending"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/recordedSpeechBoundProof"
+                },
+                {
+                  "properties": {
+                    "status": {
+                      "enum": [
+                        "verified-recording"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "review": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/recordedSpeechPending"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/recordedSpeechBoundProof"
+                },
+                {
+                  "properties": {
+                    "status": {
+                      "enum": [
+                        "approved",
+                        "rejected"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
     "familyId": {
       "type": "string",
       "pattern": "^astrid/[a-z.]+/[a-z0-9_-]+$",

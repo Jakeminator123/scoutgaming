@@ -10,6 +10,10 @@ import { encodePresentationPackage, decodePresentationPackage } from '../web/sto
 import { validatePresentationPackage } from '../web/presentation-layers.mjs';
 import { frozenPlaybackProject, mergeFrozenDealerPlayback } from '../web/frozen-dealer-playback.mjs';
 import { selectPresentation } from '../packages/presentation/runtime/selection.mjs';
+import {recordedSpeechIdentity} from '../web/public/recorded-speech.mjs';
+import {createPresentationApi} from '../web/presentation-api.mjs';
+import {Readable} from 'node:stream';
+import {EventEmitter} from 'node:events';
 
 const uuid = n => '10000000-0000-4000-8000-' + String(n).padStart(12, '0');
 function record(dealerId, eventId, n, situation = '') {
@@ -46,6 +50,33 @@ function serviceFor(presentation) {
     privateMedia:async (row,request) => {served.push(row);return new Response(request.method==='HEAD'?null:'bytes',{status:request.headers.has('range')?206:200});}})};
 }
 const context = {operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'};
+
+test('frozen recorded speech preserves complete exact metadata and cannot select pending or rejected recordings',async()=>{
+  for(const status of ['approved','pending','rejected']){
+    const input=fixture(),row=input.snapshot.mediaRows[1];
+    const metadata={schemaVersion:1,dealerId:'johanna',lineId:'goodluck',takeId:'goodluck_sv_1',language:'sv',exactText:'Lycka till.',
+      videoSha256:row.sha256,audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+      entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
+    const proof={by:'fixture-reviewer',at:'2026-10-14T00:00:00.000Z',identity:recordedSpeechIdentity(metadata)};
+    metadata.recording={status:'verified-recording',...structuredClone(proof)};
+    if(status!=='pending')metadata.review={status,...structuredClone(proof)};
+    row.classification.recordedSpeech=metadata;input.inventory.videos[1].classification.recordedSpeech=structuredClone(metadata);
+    const {service}=serviceFor(captureFrozenPresentation(input).presentation),frozen=await service.resolve(context);
+    const projected=service.publicVideo(frozen,row.id);assert.deepEqual(projected.recordedSpeech,metadata);
+    projected.recordedSpeech.exactText='Changed';assert.equal(service.publicVideo(frozen,row.id).recordedSpeech.exactText,'Lycka till.');
+    const api=createPresentationApi({db:{prepare:()=>({get:()=>undefined})},env:{},frozenDealerContext:service,recordedSpeechPreview:true});
+    const req=Readable.from([JSON.stringify({dealerId:'johanna',mode:'rules',version:1,event:{type:'speak',line:'goodluck'},presentationContext:context,recordedSpeechPreview:true})]);
+    req.method='POST';req.headers={};req.url='/api/presentation/select?rehearsal=1';
+    const res=new EventEmitter();res.writableEnded=false;res.writeHead=code=>res.status=code;res.end=raw=>{res.body=JSON.parse(raw);res.writableEnded=true;};
+    await api(req,res,'/api/presentation/select','studio-preview:10000000-0000-4000-8000-000000000001');assert.equal(res.status,200,JSON.stringify(res.body));
+    if(status==='approved'){
+      assert.equal(res.body.video.id,row.id);assert.deepEqual(res.body.video.recordedSpeech,metadata);assert.equal(res.body.standard.id,row.id);
+    }else{
+      assert.equal(res.body.video,null);assert.equal(res.body.standard,null);assert.equal(res.body.videoGenerationId,null);
+      assert.equal(res.body.decision.media.reason,'recorded_speech_unavailable');
+    }
+  }
+});
 
 test('published 16-event packages remain readable after the optional shoe slot is added', async () => {
   const current = captureFrozenPresentation(fixture({secondDealer:true})).presentation;

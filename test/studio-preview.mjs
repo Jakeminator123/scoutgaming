@@ -9,6 +9,7 @@ import {layerAssetPath} from '../web/presentation-layers.mjs';
 import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
 import {defaultBackgroundRule} from '../web/public/background-playback-policy.mjs';
+import {recordedSpeechIdentity} from '../web/public/recorded-speech.mjs';
 
 const origin='https://studio.example.invalid',scope={environment:'fixture',workspaceId:'croupier'};
 const videoId='10000000-0000-4000-8000-000000000001',layerId='20000000-0000-4000-8000-000000000001';
@@ -39,6 +40,31 @@ function fixture(t,options={}){
   return{api,state,project,snapshot,inventory,row,layer,request,create};
 }
 async function start(f){const result=await f.create();assert.equal(result.response.status,201,JSON.stringify(result.body));return result.body;}
+
+test('owned isolated preview permits only verified pending recorded speech and keeps exact own audio identity',async t=>{
+  for(const status of ['pending','rejected','unverified']){
+    const f=fixture(t),id='10000000-0000-4000-8000-000000000002',sha256='d'.repeat(64);
+    const metadata={schemaVersion:1,dealerId:'johanna',lineId:'goodluck',takeId:'goodluck_sv_1',language:'sv',exactText:'Lycka till.',
+      videoSha256:sha256,audioSha256:'e'.repeat(64),indexSha256:'f'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+      entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
+    const proof={by:'fixture-reviewer',at:'2026-10-14T00:00:00.000Z',identity:recordedSpeechIdentity(metadata)};
+    if(status!=='unverified')metadata.recording={status:'verified-recording',...structuredClone(proof)};
+    if(status==='rejected')metadata.review={status,...structuredClone(proof)};
+    const row={...structuredClone(f.row),id,sha256,pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.mp4`,
+      classification:{...f.row.classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',recordedSpeech:metadata}};
+    f.project.lines.find(line=>line.dealerId==='johanna'&&line.eventId==='speak.goodluck').variants[0].videoGenerationId=id;
+    f.snapshot.mediaRows.push(row);f.inventory.videos.push({id,sha256,bytes:row.size,available:true,source:'upload',dealer:'johanna',fileName:'speech.mp4',classification:structuredClone(row.classification)});
+    const session=await start(f),path=`/api/studio-preview/${session.sessionId}/presentation/select`,payload={dealerId:'johanna',mode:'off',version:0,event:{type:'speak',line:'goodluck'}};
+    const response=await f.api.handle(f.request(path,'POST',payload));assert.equal(response.status,200);
+    const result=await response.json();
+    if(status==='pending'){
+      assert.equal(result.video.id,id);assert.deepEqual(result.video.recordedSpeech,metadata);
+      assert.equal(result.video.src,`/api/studio-preview/${session.sessionId}/videos/${id}`);
+    }else{assert.equal(result.video,null);assert.equal(result.standard,null);}
+    f.state.actor='other-admin';assert.equal((await f.api.handle(f.request(path,'POST',payload))).status,404);
+    f.state.actor='admin-one';f.state.revoked=true;assert.equal((await f.api.handle(f.request(path,'POST',payload))).status,401);
+  }
+});
 
 test('rehearsal freezes background rules and serves their captured layers through its own scoped grants',async t=>{
   const f=fixture(t),id='20000000-0000-4000-8000-000000000002';

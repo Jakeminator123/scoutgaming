@@ -21,6 +21,10 @@ export const DEALER_IDS = Object.freeze(contract.dealers);
 export const SOURCE_TYPES = Object.freeze(Object.keys(contract.sourceTypes));
 export const TRIGGER_CATEGORIES = Object.freeze(['deterministic', 'social', 'temperament']);
 export const MAX_ALTERNATIVES = contract.limits.alternatives;
+const filmedDealEvents = new Set(['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']);
+export function maxVariantsForEvent(eventId) {
+  return filmedDealEvents.has(eventId) ? contract.limits.filmedDealVariants : MAX_ALTERNATIVES + 1;
+}
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const VIDEO_GENERATION_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 const validVideoGenerationId = value => typeof value === 'string' && VIDEO_GENERATION_ID.test(value)
@@ -468,7 +472,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     duplicate(lineIds, `${line.dealerId}/${line.eventId}`, at); label(line.label, `${at}.label`);
     const expectedBaseline = `${line.dealerId}.${line.eventId}.standard`;
     if (line.baselineVariantId !== expectedBaseline) error(`${at}.baselineVariantId`, 'standardvariantens stabila ID får inte ändras');
-    if (!array(line.variants, `${at}.variants`, 1, MAX_ALTERNATIVES + 1)) return;
+    if (!array(line.variants, `${at}.variants`, 1, maxVariantsForEvent(line.eventId))) return;
     line.variants.forEach((variant, vi) => {
       const vp = `${at}.variants[${vi}]`;
       if (!keys(variant, ['id', 'label', 'priority', 'triggerIds', 'assetId', 'videoGenerationId'], vp, ['selection'])) return;
@@ -614,7 +618,8 @@ function findLine(project, dealerId, eventId) {
 export function addVariant(project, dealerId, eventId, label = 'Ny variant') {
   return editProject(project, next => {
     const line = findLine(next, dealerId, eventId);
-    if (line.variants.length >= MAX_ALTERNATIVES + 1) throw new StudioValidationError(['variants: högst fyra alternativ utöver standardvarianten']);
+    const limit = maxVariantsForEvent(eventId);
+    if (line.variants.length >= limit) throw new StudioValidationError([`variants: högst ${limit === 5 ? 'fyra' : limit - 1} alternativ utöver standardvarianten`]);
     let serial = 1;
     while (line.variants.some(variant => variant.id === `${dealerId}.${eventId}.variant${serial}`)) serial++;
     line.variants.push({ id: `${dealerId}.${eventId}.variant${serial}`, label, priority: 10, triggerIds: [], assetId: line.variants.find(variant => variant.id === line.baselineVariantId).assetId, videoGenerationId: null, selection: { rules: false, model: false, random: false } });

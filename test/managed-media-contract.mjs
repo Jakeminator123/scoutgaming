@@ -23,6 +23,17 @@ test('normal descriptor corruption is rejected equally on server and browser',()
     assert.throws(()=>validateStudioMedia(input));
   }
 });
+
+test('recorded speech metadata follows the exact registered video bytes in both storage and frozen descriptors',()=>{
+  const row=record();row.classification={...row.classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',playback:'once',
+    recordedSpeech:{schemaVersion:1,dealerId:'johanna',lineId:'goodluck',takeId:'goodluck_1',language:'sv',exactText:'Inspelad testreplik.',
+      videoSha256:row.sha256,audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+      entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}}};
+  assert.deepEqual(validateManagedStudioMedia(row),validateStudioMedia(row));
+  const mismatched=structuredClone(row);mismatched.classification.recordedSpeech.videoSha256='d'.repeat(64);
+  assert.throws(()=>validateManagedStudioMedia(mismatched),e=>e.code==='studio_invalid_media');
+  assert.throws(()=>validateStudioMedia(mismatched));
+});
 test('accessors and non-data values cannot be invoked while decoding media descriptors',()=>{
   let called=0; const input=record();
   Object.defineProperty(input.classification,'label',{enumerable:true,get(){called++;return 'unsafe';}});

@@ -114,7 +114,7 @@ test('actual seat layout handles compositor resize before the query change event
     const scene=sceneForComposition(settings,layout),g=stageGeometry(scene);
     return projectTableGamePlane(g.dims,tableRect(scene,{width:1672,height:941},g),{width,height},geometry,layout);
   };
-  const context=vm.createContext({BLACKJACK_COMPACT_QUERY,layoutGameOverlay,matchMedia:()=>query,SEATS:7,seatEls:Array.from({length:7},node),round:null,
+  const context=vm.createContext({registeredFilmedProfile:()=>null,DEALER:{key:"astrid"},BLACKJACK_COMPACT_QUERY,layoutGameOverlay,matchMedia:()=>query,SEATS:7,seatEls:Array.from({length:7},node),round:null,
     $:selector=>nodes[selector],document:{createElement:node},layerComposition:{referencePlane:plane},localCards:{setProjection(value){projection=structuredClone(value);}}});
   vm.runInContext(fragment,context);assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
   width=390;height=844;query.matches=true;context.round={active:0,live:()=>[{box:6}]};

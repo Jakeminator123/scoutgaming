@@ -1,4 +1,6 @@
 import { isActiveDealerId as isDealerId } from './dealer-identity.mjs';
+import { filmedDealSelection } from './filmed-deal-selection.mjs';
+import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from './recorded-speech-selection.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { selectRegisteredIdleRule } from '../packages/presentation/runtime/registered-idle-rules.mjs';
 import { registeredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';
@@ -24,6 +26,7 @@ const publicVideo = item => item ? {
   src: `/api/presentation/videos/${item.id}`,
   ...(item.classification?.compositing ? { compositing: structuredClone(item.classification.compositing) } : {}),
   ...(item.classification?.framing ? { framing: structuredClone(item.classification.framing) } : {}),
+  ...recordedSpeechProjection(item),
 } : null;
 
 function idleRuleFor(body, project, inventory, sourceEvent, requestId) {
@@ -52,7 +55,8 @@ export function presentationInput(event, published) {
 
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
-  select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse } = {}) {
+  select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
+  recordedSpeechPreview = false } = {}) {
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
@@ -159,6 +163,13 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         if (['deal','reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation',409);
         const sourceEvent = presentationInput(body.event,receipt?.version===body.version?JSON.parse(receipt.payload):[]);
         if (frozen.project) {
+          const filmed=filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:body.dealerId,sourceEvent,
+            published:receipt?.version===body.version?JSON.parse(receipt.payload):[]});
+          if(filmed){
+            await frozenDealerContext.resolve(body.presentationContext);
+            const video=filmed.video?{...frozenDealerContext.publicVideo(frozen,filmed.video.id),filmedTake:filmed.filmedTake}:null;
+            json(200,{...filmed.result,owner:'web',projectRevision:frozen.projectRevision,configurationSource:frozen.configurationSource,video,standard:video});return true;
+          }
           const eventId = prepareDecision(buildRuntimeCatalog(frozen.project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;
           const controller = new AbortController();
           const disconnected = () => { if (!res.writableEnded) controller.abort(); };
@@ -169,19 +180,23 @@ export function createPresentationApi({ db, env = process.env, store = createPro
           if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable',503);
           const result = await select({ requestId:randomUUID(), project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode:body.mode },
             { settings, videoRegistry:frozen.inventory, ...(fetchImpl ? {fetchImpl} : {}) });
-          const video = frozenDealerContext.publicVideo(frozen, result.videoGenerationId);
+          const chosen = frozen.inventory.videos.find(row=>row.id===result.videoGenerationId);
           // The fallback passes the same exact-event selector: never borrow a
           // different position, sentence or dealer after an alternative fails.
-          const baseline = video && body.mode !== 'off'
+          const baseline = chosen && body.mode !== 'off'
             ? await select({ requestId:result.decision.requestId, project:frozen.project, dealerId:body.dealerId, eventId, sourceEvent, mode:'off' },
               { settings, videoRegistry:frozen.inventory }) : result;
-          const standard = frozenDealerContext.publicVideo(frozen, baseline.videoGenerationId);
+          const selected=gateRecordedSpeechSelection({video:chosen,standard:frozen.inventory.videos.find(row=>row.id===baseline.videoGenerationId)},
+            {project:frozen.project,dealerId:body.dealerId,eventId,sourceEvent});
+          const video=frozenDealerContext.publicVideo(frozen,selected.video?.id);
+          const standard=frozenDealerContext.publicVideo(frozen,selected.standard?.id);
           const idleRule = idleRuleFor(body,frozen.project,frozen.inventory,sourceEvent,result.decision.requestId);
           await frozenDealerContext.resolve(body.presentationContext);
           if (controller.signal.aborted) return true;
-          json(200, { ...result, owner:'web', projectRevision:frozen.projectRevision, configurationSource:frozen.configurationSource,
-            video, standard, idleRule, decision: !video && !result.decision.media ? { ...result.decision,
-              media:{familyId:null,reason:'frozen_clip_missing'} } : result.decision });
+          const gated=recordedSpeechResult(result,selected);
+          json(200, { ...gated, owner:'web', projectRevision:frozen.projectRevision, configurationSource:frozen.configurationSource,
+            video, standard, idleRule, decision: !video && !gated.decision.media ? { ...gated.decision,
+              media:{familyId:null,reason:'frozen_clip_missing'} } : gated.decision });
           return true;
           } finally { res.removeListener('close', disconnected); }
         }
@@ -200,6 +215,12 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
       if (['deal', 'reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
+      const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,
+        published:receipt?.version===body.version?JSON.parse(receipt.payload):[]});
+      if(filmed){
+        const video=filmed.video?{...publicVideo(filmed.video),filmedTake:filmed.filmedTake}:null;
+        json(200,{...filmed.result,owner:'web',projectRevision:project.revision,configurationSource,video,standard:video});return true;
+      }
       const eventId = prepareDecision(buildRuntimeCatalog(project, body.dealerId), { event: sourceEvent, mode: 'off' }).node.id;
       const key = JSON.stringify([playerId, body.dealerId, body.version, sourceEvent, body.mode, project.revision]);
       const controller = new AbortController();
@@ -210,20 +231,29 @@ export function createPresentationApi({ db, env = process.env, store = createPro
           readProject: () => store.load(), signal: controller.signal }) : null;
         if (fetchImpl !== null && typeof fetchImpl !== 'function') fail('Director transport unavailable', 503);
         const selectOwned = () => select({ requestId: randomUUID(), project, dealerId: body.dealerId, eventId, sourceEvent, mode: body.mode },
-          { settings, videoRegistry: inventory, ...(fetchImpl ? { fetchImpl } : {}) }).then(result => {
+          { settings, videoRegistry: inventory, ...(fetchImpl ? { fetchImpl } : {}) });
+        const projectOwned = result => {
             const video = inventory.videos.find(item => item.id === result.videoGenerationId);
             const family = inventory.families.find(item => item.id === video?.familyId);
             const standard = inventory.videos.find(item => family?.standardIds.includes(item.id) && item.available);
-            return { ...result, idleRule:idleRuleFor(body,project,inventory,sourceEvent,result.decision?.requestId), video: publicVideo(video), standard: publicVideo(standard), owner: 'web', projectRevision: project.revision, configurationSource };
-          });
+            // This option is set only by the authorized isolated preview service,
+            // never from body, query, headers or a player's rehearsal preference.
+            const preview=recordedSpeechPreview===true&&configurationSource==='studio-preview'
+              &&/^studio-preview:[a-f0-9-]{36}$/.test(playerId);
+            const selected=gateRecordedSpeechSelection({video,standard},{project,dealerId:body.dealerId,eventId,sourceEvent,preview});
+            return { ...recordedSpeechResult(result,selected), idleRule:idleRuleFor(body,project,inventory,sourceEvent,result.decision?.requestId),
+              video:publicVideo(selected.video),standard:publicVideo(selected.standard),owner:'web',projectRevision:project.revision,configurationSource };
+          };
         // A QA transport closes over the actual authenticated HTTP request.
         // It must never be reused through the ordinary presentation cache.
-        if (fetchImpl) { json(200, await selectOwned()); return true; }
+        if (fetchImpl) { json(200, projectOwned(await selectOwned())); return true; }
         if (!decisions.has(key)) {
           if (decisions.size >= 256) decisions.delete(decisions.keys().next().value);
           decisions.set(key, selectOwned());
         }
-        json(200, await decisions.get(key));
+        // Approval/media revisions may change without a project revision. Apply
+        // the gate to this request's fresh registry even for a cached decision.
+        json(200, projectOwned(await decisions.get(key)));
       } finally { res.removeListener('close', disconnected); }
     } catch (error) { json(error.statusCode || 400, { error: error.message || 'Presentation unavailable', ...(error.code?.startsWith('studio_presentation_idle_') ? {code:error.code} : {}) }); }
     return true;
