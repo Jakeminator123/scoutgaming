@@ -35,15 +35,14 @@ procentangivelse ersätter verifiering av varje flöde. Historisk startpunkt,
 
 ### Admin checkpoints C1C9
 
-Arbetsordning för fortsatt Admin-migrering, 14 oktober 2026. Detta är den
-befintliga trackerns aktuella checklista. Aktuellt pass följer Jakobs mandat
-att behålla Lab och integrationskopian, rätta partnerns loginretur och prova
-C6 med isolerade data. DRAGAN och SAMORDNING har lämnat över dessa kodfiler
-och egna Admin-avsnitt. Integrationsbas är main `fa1fdaae` efter PR145; DRAGANs PR144 bevaras.
+Arbetsordning uppdaterad 15 oktober 2026 efter Jakobs fortsatta mandat:
+en sammanhängande Admin/partner/lobby-produkt, konsumentstyrd legacy-städning,
+begripliga källansvar och bättre utvecklingsprov. Bas är main `a0df4e26`
+efter PR146–148. ADMIN:s integrationskopia behålls; ändringar görs i egna
+arbetskopior. DRAGAN och ADMIN:s avslutade uppgifter är överlämnade.
 C4–C7:s fulla acceptans återstår; checklistan ger inga nya spel-/datamandat.
-Jakob gav senare den 14 oktober uttryckligt mandat att granska och merga
-aktuell PR samt leverera Admin via PR till main. Vanliga kontroller och
-ägarregler gäller; automatiska Vercel-byggen följer leveransen.
+Jakobs mergeuppdrag gäller granskade egna PR:er enligt ägarreglerna.
+Automatiska Vercel- och Render-byggen följer main-leveransen.
 Målet är en tydlig, sammanhållen N1-yta med läsbar typografi och fungerande
 befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte.
 
@@ -69,6 +68,13 @@ reproducerade de felaktiga målen. Gemensamt fokusprov: 157 pass, 9 befintligt
 villkorade browserprov skip, 0 fel. Login-agentens utökade urval: 85 pass,
 1 skip, 0 fel. Fokuskommandot ersätter inte fullhook eller CI. Levererad
 browseracceptans och hela destinationsmatrisen återstår.
+
+Kodcommit `567be8a270499750a3b13d685eba148469a2d0b3`: Lab-build med 97
+kontrollerade spår och ordinarie fullhook med 3 794 pass, 21 villkorade skip,
+0 fail/cancel i 77 grupper. Oberoende statisk granskning hittade inga
+konkreta regressioner. Publiceringslänken behåller rum/dealer i URL:en;
+detta är inte bevis för att editorn markerar just det rummet. Fullhookens
+skip redovisas som acceptansluckor, inte som genomförda browserprov.
 
 **C7, SAMORDNING:s isolerade PR91-kvitto 14 oktober:** Astrid spelades genom
 förlust, vinst, push och split i den verkliga spelaren med separat minnesdata

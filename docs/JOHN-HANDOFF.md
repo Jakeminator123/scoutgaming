@@ -12,7 +12,10 @@ med rätt verkligt rum, bolag, sammansättning och dealer.
 Före/efter-prov reproducerade felaktiga mål. Det gemensamma fokuskommandot
 gav 157 pass, 9 befintligt villkorade browserprov skip, 0 fel. Login-agentens
 separata utökade auth/SSR/N2-prov gav 85 pass, 1 browserprov skip, 0 fel.
-Fullkontroll och levererad browseracceptans bokförs separat i C1–C9.
+Kodcommit `567be8a2` passerade Lab-build (97 spår) och ordinarie fullhook:
+3 794 pass, 21 villkorade skip, 0 fel/cancel i 77 grupper. Oberoende statisk
+granskning fann inga konkreta regressioner. Levererad browseracceptans
+återstår och bokförs separat i C1–C9.
 Nästa strukturella snitt är att flytta den delade sidladdaren ur Control;
 `lab/lib` och verkliga partnerportalen är aktiva tjänster och bevaras.
 
