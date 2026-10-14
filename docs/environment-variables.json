@@ -187,7 +187,7 @@
         "GEMINI_API_KEY",
         "ELEVENLABS_API_KEY"
       ],
-      "storedProviderCredentialNote": "Explicitly stored for Production on 14 Oct 2026. Server-only shared project environment; provider sessions still run on Render. GEMINI_API_KEY and legacy RUNPOD_ENDPOINT_ID have no active main runtime consumer. No alias or automatic worker activation."
+      "storedProviderCredentialNote": "Current Production state after the 14 Oct 2026 profile cleanup: only CARTESIA_API_KEY remains from the temporary Emil provider copy, for Studio voice verification. RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY and ELEVENLABS_API_KEY test copies were removed. Provider jobs remain on Render; no alias or automatic worker activation."
     },
     "vercel-zones-qa": {
       "sources": [],
@@ -426,7 +426,7 @@
         "GEMINI_API_KEY",
         "ELEVENLABS_API_KEY"
       ],
-      "storedProviderCredentialNote": "Explicitly stored for Production on 14 Oct 2026. Server-only shared project environment; provider sessions still run on Render. GEMINI_API_KEY and legacy RUNPOD_ENDPOINT_ID have no active main runtime consumer. No alias or automatic worker activation."
+      "storedProviderCredentialNote": "Current Production state after the 14 Oct 2026 profile cleanup: only CARTESIA_API_KEY remains from the temporary Emil provider copy, for Studio voice verification. RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY and ELEVENLABS_API_KEY test copies were removed. Provider jobs remain on Render; no alias or automatic worker activation."
     },
     "github-actions-tooling": {
       "sources": [

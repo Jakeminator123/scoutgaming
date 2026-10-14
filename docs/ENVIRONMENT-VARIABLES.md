@@ -115,9 +115,13 @@ inte verifierad. De har inte blandats in i talprofilerna eller raderats.
 
 ## Historik: lokal env-konsolidering före profilrättningen, 14 oktober 2026
 
-I Jakobs huvudcheckout är två privata filer flyttade återställbart till
+I Jakobs huvudcheckout flyttades två privata filer först återställbart till
 `lab/data/platform-private/env-cleanup-20261014/`, efter samordning med
 ADMIN och DRAGAN. Ingen miljöinställning i molnet eller källa ändrades av flytten.
+SAMORDNING flyttade därefter säkerhetskopiorna till de kanoniska
+återställningsplatserna `arkiv/2026-10-14/lab/.env.generated-speech.local`
+och `arkiv/2026-10-14/lab/.env.cloud-activation.local`. Den tidigare
+`env-cleanup-20261014/`-sökvägen ovan är historik, inte aktuell återställningsplats.
 
 - `lab/.env.generated-speech.local` innehöll endast
   `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, redan identisk i `lab/.env.local`.
