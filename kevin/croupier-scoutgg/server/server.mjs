@@ -10,7 +10,7 @@ import {createPresentationReader} from './presentation.mjs';
 // Nycklarna i .env lämnar aldrig servern.
 
 import { createServer } from "node:http";
-import { createReadStream, statSync, readFileSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { createReadStream, statSync, readFileSync, readdirSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { pipeline } from "node:stream";
 import path from "node:path";
 import { WebSocketServer, WebSocket } from "ws";
@@ -36,7 +36,7 @@ import { auditAuthorized } from './audit-access.mjs';
 import {OpenClaw} from './openclaw.mjs';
 import {integrationIndex,eventEvidence} from './integration-index.mjs';
 import { classifyManifest, mediaInventory } from './media-registry.mjs';
-import { RorligLipsync, kartaFor } from './rorlig-lipsync.mjs';
+import { RorligLipsync, kartaFor, mp4Duration } from './rorlig-lipsync.mjs';
 
 loadEnv();
 const { ServerlessLipsync, sessionUrlFrom } = await import("./serverless.mjs");
@@ -77,6 +77,24 @@ const READY_TAKES=Object.fromEntries(['dragge','paow','marten','astrid2'].map(id
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
 let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";
 const dealerOf = room => studioTables.get(room)?.dealer ?? room;
+// Emil 14 Oct: a ready dealer's variants of the lines that repeat most (bust_1 … bust_7, blackjack and twentyone called as the
+// card lands, win = "congratulations to the winners"): one at random each time (shared-table.mjs variantOf). Counted over
+// all the languages he has, with their length in his first language (the step's length when no lip-sync worker is warm).
+const VARIED = ['bust', 'blackjack', 'twentyone', 'win'];
+for (const [id, t] of Object.entries(READY_TAKES)) {
+  if (!t) continue;
+  const dir = path.join(PUBLIC, 'media', 'dealers', id, 'repliker');
+  let langs = []; try { langs = readdirSync(dir).filter(l => /^[a-z]{2}$/.test(l)).sort(); } catch {}
+  const has = x => langs.length > 0 && langs.every(l => existsSync(path.join(dir, l, `${x}.mp4`)));
+  t.variants = {}; t.durs = {};
+  for (const ev of VARIED) {
+    let n = 0; while (has(`${ev}_${n + 1}`)) n++;
+    if (n < (ev === 'win' ? 1 : 4)) continue;   // only the new sets (Astrid 2.0 keeps her three settle lines)
+    t.variants[ev] = n;
+    for (let k = 1; k <= n; k++) { try { t.durs[`${ev}_${k}`] = mp4Duration(readFileSync(path.join(dir, langs.includes('en') ? 'en' : langs[0], `${ev}_${k}.mp4`))) ?? 2; } catch {} }
+  }
+  if (!t.variants.twentyone) t.variants = {};   // all or nothing: the calls and the cheer come together
+}
 // Emil 12 Oct: on staging a signed-in back office user can give the voice and lip-sync keys once (/studio/lipsync.html),
 // instead of the server's env file. They live next to the table database (0600), never in git; env always wins.
 const RORLIG_KEYS = path.join(path.dirname(tableDb), "rorlig-keys.json");
@@ -99,6 +117,9 @@ const makeRorlig = apiKey => new RorligLipsync({
 let rorlig = runpodKey() ? makeRorlig(runpodKey()) : null;
 const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,
   talk:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language)}:null;},
+  // the winners of a round by name, live in his voice over whatever he shows (Emil 14 Oct); without a warm worker the table
+  // plays his recorded "congratulations to the winners" instead
+  winners:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)&&hasVoice(d)&&draggeVoiceReady(d)?(names,language,notBefore)=>{cheerWinners(room,d,names,language,notBefore).catch(e=>console.log(`vinnarna: ${e.message}`));}:null;},
   onPlan:(room,plan,ready,{nya,omplanera,steg})=>{if(!rorlig)return;const d=dealerOf(room);rorlig.activity(d);
     const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]});
     // a line or answer still speaking when this plan's cards come: its frames changed, so it gets a map over the new takes,
@@ -225,6 +246,22 @@ async function talkReply(ws, text, dealer) {
   const voiced=clip?await Promise.race([clip,new Promise(r=>setTimeout(()=>r(null),VOICE_WAIT_MS))]):null;
   out({t:'answer',id,to:ws.name,text:reply,dealer,...(voiced?{url:voiced.url}:{})});
   send(ws,{t:'thinking',on:false,queued:0});
+}
+
+// "Grattis Anders och Emil!": the names of the players up on the round, said once the last card has landed
+const CHEER = { sv: ['Grattis', 'och'], en: ['Congratulations,', 'and'], es: ['¡Enhorabuena,', 'y'] };
+function cheerText(names, language) {
+  const [hi, and] = CHEER[language] ?? CHEER.en;
+  return `${hi} ${names.length > 1 ? `${names.slice(0, -1).join(', ')} ${and} ${names.at(-1)}` : names[0]}!`;
+}
+async function cheerWinners(room, dealer, names, language, notBefore) {
+  const text = cheerText(names, language), pcm = await draggeVoice(text, language, { dealer });
+  const { talk: spoken, moved, steg, ready } = shared.addTalk(room, { text, lang: language, dur: pcm.length / 48000, notBefore });
+  rorlig.activity(dealer);
+  const karta = t => kartaFor(steg, t.kartaStart, Math.ceil((t.endAt - t.kartaStart) * 24 / 1000) + 20, { restEnd: ready?.restEnd ?? [] });
+  rorlig.speak(dealer, room, spoken, karta(spoken), { pcm });
+  for (const t of moved) rorlig.speak(dealer, room, t, karta(t));
+  broadcast({ t: 'answer', id: `w${Date.now().toString(36)}`, to: null, text, dealer, talk: spoken.id }, room);
 }
 
 /** Serhiy: a visitor on two boxes who lost one and won or pushed the other heard only the table's

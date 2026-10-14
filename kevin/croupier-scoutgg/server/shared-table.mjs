@@ -40,7 +40,7 @@ const keyFor=token=>createHash('sha256').update(token).digest('hex');
 // null; onPlan(room, plan, ready, {nya, omplanera, steg}) then hands the new lines to the lip-sync worker, and the lines still
 // speaking when the new plan's cards come (their frames changed) for a new map; steg = the previous plan's steps + this one's.
 // The talk track lives on the room (r.talk), so an answer or a line outlives the plan it started in.
-export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{}}={}) {
+export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>{},betMs=20000,actionMs=15000,limitsFor=()=>DEFAULT_LIMITS,languageFor=()=>null,readyFor=()=>null,talk=()=>null,onPlan=()=>{},winners=()=>null}={}) {
   const db=new DatabaseSync(filename);
   db.exec(`CREATE TABLE IF NOT EXISTS shared_rooms (id TEXT PRIMARY KEY, state TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS shared_players (room TEXT NOT NULL, token TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, balance REAL NOT NULL, seen REAL NOT NULL, last_return REAL, PRIMARY KEY(room,token));
@@ -51,6 +51,24 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
   const audit=createGameAudit(db,now),transactions=createTransactions(db,now),contexts=new WeakMap();
   const languages=availableLanguages(manifest);
   const clipByEvent=(event,language)=>speechForEvent(manifest,event,language);
+  // a line of a ready dealer's own (twentyone) has no clip of Astrid's: its first variant stands in until variantOf picks
+  const ownLine=event=>({id:`${event}_1`,event,url:`/media/repliker/${event}_1.mp4`,text:'',dur:2});
+  function variantOf(r,clip,ready){
+    const n=ready.variants[clip.event],last=r.lastVariant?.[clip.event];
+    const pick=[...Array(n).keys()].map(i=>i+1).filter(i=>n<2||i!==last);
+    const k=pick[Math.floor(Math.random()*pick.length)];
+    r.lastVariant={...(r.lastVariant??{}),[clip.event]:k};
+    const id=`${clip.event}_${k}`;
+    return{...clip,id,url:`/media/repliker/${id}.mp4`,text:ready.texts?.[id]??clip.text,dur:ready.durs?.[id]??clip.dur};
+  }
+  // players up on the round: what came back (main, side bets) over what they staked (main, doubles, side bets, insurance),
+  // the same sums the settlement pays out
+  function netWinners(id,r){
+    return players(id).filter(p=>{const hands=r.round.hands.filter(h=>r.owners[h.box]===p.id);if(!hands.length)return false;
+      return hands.reduce((n,h)=>n+h.result+h.sideReturn,0)>hands.reduce((n,h)=>n+h.stake+h.pp+h.tp+(h.insured||0),0);});
+  }
+  // a name the dealer can say: a guest's "Guest 826" is not one
+  const spokenName=name=>{const s=String(name??'').replace(/[^\p{L}\p{N} .'-]/gu,'').trim().slice(0,24);return !s||/^guest\s*\d*$/i.test(s)?null:s;};
   const load=id=>{const row=db.prepare('SELECT state FROM shared_rooms WHERE id=?').get(id);const r=row?JSON.parse(row.state):{language:languages.includes(languageFor(id))?languageFor(id):undefined,game:newGame(),version:0,owners:Array(7).fill(null),bets:emptyBets(),history:{},ready:[],phase:'bets',deadline:null,actionDeadline:null,insurance:{},plan:null,round:null};contexts.set(r,{id,parent:null,engine:null});return r;};
   const save=(id,r)=>{audit.sync(id,r.game);return db.prepare('INSERT INTO shared_rooms VALUES (?,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state').run(id,JSON.stringify(r));};
   const players=id=>db.prepare('SELECT * FROM shared_players WHERE room=?').all(id);
@@ -100,31 +118,48 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     // The dealer's turn opens on the hole-card flip with nothing before it. The other players learn of a plan on
     // their next poll (700 ms), so a 700 ms lead would start the flip before they have it and they would join it
     // halfway. Give that plan time for one more poll; a player's own move keeps the short lead.
-    const draws=planDraws(before,r.round,opening);
+    // Emil 14 Oct: a ready dealer with the new lines (variants, see readyFor) calls a blackjack or a 21 as it lands
+    const calls=Boolean(readyFor(contexts.get(r).id)?.variants?.twentyone);
+    const draws=planDraws(before,r.round,opening,{calls});
     // Emil 12 Oct: the next player may act once the last card has landed (turnAt below), while the dealer still brings her
     // hand back to rest and talks about the bust. A card asked for then starts when that take has ended, never cutting it.
     const roomId=contexts.get(r).id,ready=readyFor(roomId),talker=ready?talk(roomId):null,talks=[];
+    const clipFor=event=>clipByEvent(event,r.language)??(ready?.variants?.[event]?ownLine(event):null);
     // Emil 13 Oct: while the dealer speaks, a card asked for gives the lip-sync worker 1 s (not 0.7) to remake the mouth
     // over the new take; without speech the pace is as before
     const speaking=Boolean(talker)&&(r.talk??[]).some(t=>t.startAt<=now()&&t.endAt>now()+300);
     const steps=[];let at=Math.max(now()+(!prefix.length&&draws[0]?.kind==='reveal'?1500:speaking?1000:700),r.plan?.endAt??0);
     const addClip=(clip,meta={})=>{if(!clip)return;
+      // Emil 14 Oct: a ready dealer says one of his variants of a line, never the same one twice in a row (always the
+      // first one sounded like a robot); a line only he has (twentyone) comes from his variants too
+      if(ready?.variants?.[clip.event]&&(meta.kind??'speech')==='speech')clip=variantOf(r,clip,ready);
       // Emil 12 Oct: a ready dealer with a warm lip-sync worker says the line WHILE he deals. It leaves the timeline and is
       // timed after readyTimeline (scheduleTalks); no line of his own in that language -> it stays a step as before.
       if(talker&&(meta.kind??'speech')==='speech'){const line=talker.line(clip,dealerLanguage(r.language));if(line){talks.push({after:steps.length,event:clip.event,clip:{id:clip.id,url:clip.url,text:clip.text},line:line.url,lang:line.lang,dur:line.dur});return;}}
       const duration=Math.max(.1,Number(clip.dur)||3)*1000;steps.push({...meta,kind:meta.kind??'speech',clip:{id:clip.id,event:clip.event,url:clip.url,dur:duration/1000,text:clip.text,sound:!['deal','reveal','hands'].includes(meta.kind)},startAt:at,endAt:at+duration});at+=duration+80;};
-    prefix.forEach(e=>addClip(clipByEvent(e,r.language)));
+    prefix.forEach(e=>addClip(clipFor(e)));
     // Before the first card a ready dealer shows both hands empty (Serhiy): his take goes rest to rest.
     const hands=ready?.hands;
     if(opening&&hands&&ready.dir)addClip({id:'hands',event:'hands',url:`${ready.dir}hands.mp4`,dur:hands/24},{kind:'hands'});
     for(const s of draws) {
       if(s.kind==='deal')addClip(manifest.deal.find(c=>c.id===s.clipId),{kind:'deal',seat:s.seat,track:s.track,shoeDraw:s.shoeDraw});
-      else if(s.kind==='speech')addClip(clipByEvent(s.event,r.language));
+      else if(s.kind==='speech')addClip(clipFor(s.event));
       else {const flip=manifest.deal.find(c=>c.id==='deal_flip');if(flip)addClip(flip,{kind:'reveal',seat:'dealer',track:'flip',shoeDraw:r.round.holeDraw});else steps.push({kind:'reveal',startAt:at,endAt:at});}
     }
     if(opening&&r.round.hands.some(h=>h.sideReturn>0))addClip(clipByEvent('sidebet',r.language));
     if(r.round.phase==='insurance')addClip(clipByEvent('insurance',r.language));
-    if(r.round.phase==='settled')addClip(clipByEvent(outcomeSpeech(r.round),r.language));
+    // Emil 14 Oct: with calls the table's result congratulates only players who won money this round (net, over all
+    // their boxes), by name when the dealer can say it live (winners hook), else the recorded "congratulations to the
+    // winners". A player who won one box but lost more hears no congratulations; nobody up: no line.
+    let cheer=null;
+    if(r.round.phase==='settled'){
+      const ev=outcomeSpeech(r.round);
+      if(calls&&['win','blackjack','dealerbust'].includes(ev)){
+        const up=netWinners(contexts.get(r).id,r),named=up.map(p=>spokenName(p.name)).filter(Boolean);
+        const say=up.length&&named.length===up.length&&named.length<=4?winners(contexts.get(r).id):null;
+        if(say)cheer={say,names:named};else if(up.length)addClip(clipFor('win'));
+      }else addClip(clipFor(ev));
+    }
     if(r.round.phase==='decisions')steps.push({kind:'turn',seat:r.round.hands[r.round.active].box+1,startAt:at,endAt:at});
     for(const step of steps){step.catalogEventId=catalogEventForStep(step);step.catalogCommit=CATALOG_COMMIT;}
     if(ready&&steps.length)at=readyTimeline(steps,ready);
@@ -143,6 +178,8 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     r.actionDeadline=at+actionMs;
     r.version++;
     if(spoken.length||omplanera.length)onPlan(roomId,r.plan,ready,{nya:spoken,omplanera,steg:[...r.prevSteps,...steps]});
+    // the names are said once the last card has landed (the hook voices them and adds them to the talk track itself)
+    if(cheer){const last=[...steps].reverse().find(x=>x.clip&&(x.kind==='deal'||x.kind==='reveal'));cheer.say(cheer.names,dealerLanguage(r.language),last?Math.round(last.startAt+.62*(last.endAt-last.startAt)):at);}
   }
   function start(id,r) {
     if(r.phase!=='bets'||!r.bets.some(b=>b.main))throw new Error('Place your bets please');
@@ -383,8 +420,9 @@ export function createSharedTable(filename,{manifest,now=Date.now,onWelcome=()=>
     try{
       const r=load(id),t=now(),live=(r.talk??[]).filter(x=>x.endAt>t),tid=randomUUID();
       const speaking=live.filter(x=>x.startAt<=t+ANSWER_LEAD);
-      const start=Math.round(Math.max(t+ANSWER_LEAD,...speaking.map(x=>x.endAt+250)));
-      const talk={id:tid,kind:'answer',...input,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`};
+      const start=Math.round(Math.max(t+ANSWER_LEAD,input.notBefore??0,...speaking.map(x=>x.endAt+250)));
+      const {notBefore,...said}=input;
+      const talk={id:tid,kind:'answer',...said,startAt:start,endAt:Math.round(start+input.dur*1000),kartaStart:start-LJUD_FORE*1000,flex:false,ljud:`/api/lip/${tid}/ljud`};
       let free=talk.endAt+250;const later=[],moved=[];
       for(const x of live.filter(x=>!speaking.includes(x)).sort((a,b)=>a.startAt-b.startAt)){
         if(x.startAt>=free){later.push(x);continue;}

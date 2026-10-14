@@ -23,7 +23,9 @@ export function cardsIn(round) {
   ];
 }
 
-export function planDraws(before, after, opening = false) {
+// calls (a ready dealer with the lines, Emil 14 Oct): a hand that reaches 21 is called as its card lands, like a bust:
+// "blackjack" for a natural, "twentyone" for 21 on more cards (or after a split)
+export function planDraws(before, after, opening = false, { calls = false } = {}) {
   if (!after) return [];
   const known = new Set(cardsIn(before).map(({ card }) => card.shoeDraw));
   if (before?.holeDraw) known.add(before.holeDraw);
@@ -47,6 +49,8 @@ export function planDraws(before, after, opening = false) {
     steps.push({ kind: "deal", ...entry, shoeDraw: draw, clipId: hole ? "deal_hole" : `deal_pos${entry.seat}`, track: hole ? "hole" : String(entry.seat) });
     const hand = after.hands.find(h => h.cards.at(-1)?.shoeDraw === draw && total(h.cards) > 21);
     if (hand) steps.push({ kind: "speech", event: "bust" });
+    const made = calls && after.hands.find(h => h.cards.at(-1)?.shoeDraw === draw && h.cards.length >= 2 && total(h.cards) === 21);
+    if (made) steps.push({ kind: "speech", event: made.cards.length === 2 && made.splitFrom === null ? "blackjack" : "twentyone" });
   }
   if (!revealed) steps.push({ kind: "reveal", card: after.dealer[1] });
   return steps;

@@ -41,20 +41,21 @@ export const DEALERS = {
   astrid: { id: 'astrid', name: 'Astrid', still: '/media/startbild.png', face: '/media/dealers/faces/astrid.jpg' + V },
   dragge: { id: 'dragge', name: 'Dragge', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/dragge/repliker/', idles: idlesFor('dragge'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014c', idles: idlesFor('dragge'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
     keyed: { still: '/media/dealers/paow/v2/vila.png' + V }, layerScale: 1, ready: PAOW_READY,
-    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/paow/repliker/', idles: idlesFor('paow'), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
+    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014c', idles: idlesFor('paow'), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
   // Mårten (Emil's KLARA_MARTEN, 9 Oct; built on Paow's plate, so table, shoe and seats are hers). No voice and no recorded
   // lines yet: lines null means every spoken line and chat reply is text only (never another dealer's face or voice).
   // His idles are Kling loops like Dragge's and Paow's (Emil 11 Oct liked those best): back at rest after a single card
   // he breathes instead of holding his still.
-  // linesV: Mårten's lines re-made with his mouth on them (14 Oct): browsers fetch them anew, not yesterday's cached ones
+  // linesV: a dealer's lines re-made (14 Oct: Mårten's with his mouth on them; the short bust, blackjack, 21 and winners lines
+  // of all three): browsers fetch them anew, not the cached ones
   marten: { id: 'marten', name: 'Mårten', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/marten.jpg' + V,
     keyed: { still: '/media/dealers/marten/v2/vila.png' + V }, layerScale: 1, ready: MARTEN_READY,
-    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014b', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
+    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014c', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
