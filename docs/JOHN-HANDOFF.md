@@ -92,7 +92,7 @@ nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
 Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
 [befintliga migrationstrackern](CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
-Integrationsbas: `5ca686c5513982f9a760ad8dd07e67ed4d4e2e40`; egen gren
+Ursprunglig integrationsbas: `5ca686c5513982f9a760ad8dd07e67ed4d4e2e40`; egen gren
 `codex/admin-c1-c3`. DRAGAN har på nytt överlämnat endast eget Admin-avsnitt.
 PR124–127 och hans spelkvitton är bevarade som hans prov. Han rapporterar
 två isolerade produktionsrundor efter PR127; detta är inte vårt eget spelprov.
@@ -107,7 +107,7 @@ intern rullning för lång desktopmeny. Smal System-popup är fortfarande synlig
 Startsidan visar de befintliga bolags-, publicerings- och provspelningsflödena.
 Bolag & team har en sidrubrik. Klippkorten får läsbarare text och nästa rad
 flyttas ned när ett bibliotek öppnas; användarens manuella kortplaceringar
-bevaras. Mobilens minikarta döljs eftersom den skymde klippkort.
+bevaras. Minikartan togs bort i PR130 efter verifierad skymning på mobil och desktop.
 Panelernas sista åtgärder kan rullas fria från Adminrobotens launcher efter
 ett reproducerat mobilfel. Eget före/efter-prov vid 390/1440 px verifierar
 hela knappytan och fokus; oskickad chatttext och lokalt kategoriutkast
@@ -160,13 +160,27 @@ produktion före Admin-leveransen använde Arial i rubriken; grenens lokala
 Inter är nu verifierad i levererad rendering. Ingen extra skuggfix motiverades
 av kodinventeringen.
 
-Två livefynd följs upp i `codex/admin-live-fixes`: GET för stort
-publiceringsutkast gav 413 trots att rum/revisioner kunde visas. Den snäva
-fixen returnerar blockerad readiness med befintlig storleksförklaring;
-POST och alla gränser består. 61 riktade prov passerar inklusive roll,
-bolagsisolering och revisionsskydd. Desktopens minikarta täckte 202 × 152 px
-av ett klippkort och tas bort efter nytt DRAGAN-ack; zoom/Fit View behålls.
-Full kontroll och eget nytt livekvitto för dessa två fixar återstår.
+PR130 rättar två egna livefynd efter nytt DRAGAN-ack. Ett för stort
+publiceringsutkast gav 413 vid läsning trots att rum/revisioner kunde visas.
+GET returnerar nu blockerad readiness med befintlig orsakstext; miljökravet
+har fortsatt företräde. POST, behörighet och gränser består. Desktopens
+minikarta täckte 202 × 152 px av ett kort och är borttagen; zoom/Fit View
+behålls. 61 riktade prov passerar inklusive roll, bolag och revisionsskydd.
+Commit `e67e6faa`: fullhook **3 713 pass, 11 skip, 0 fel/cancel i 76 grupper**,
+Lab-bygge med 97 spår och typkontroll gröna; oberoende granskning utan blockerare.
+
+PR130 mergades till `393439677cd78d86807099d973638c72eaa144af` efter grön CI;
+main-CI är också grön. Vercel READY på www och Render live med verifierat
+`/__cloud/version` bokförs separat i trackern. Eget läsande liveprov visar
+200/ready:false med begripligt miljökrav för den tidigare felande kandidaten,
+och 200/ready:true med rätt Dragan-rum/version 3 för den giltiga kandidaten.
+Revisionerna är oförändrade. Den överlappande minikartan är borta och samtliga
+tre zoom-/Fit View-knappar fungerar med bevarad kontext. Inga data skrevs och
+inget spel startades. Tre laddningsavbrott gäller Vercels feedback-script;
+inga HTTP-felsvar eller konsolfel fångades. Det är inte full C4–C7-acceptans.
+DRAGAN har fått nya main och fortsätter geometri-/runtime19-arbetet separat.
+Slutkvittot levereras från `codex/admin-live-receipt`; endast eget Admin-avsnitt
+ändras, inga andra agenters historik eller produktfiler.
 
 ## Rörligt dealertal: förberedd adapter, 14 oktober
 
