@@ -1,3 +1,4 @@
+import {cardViewDepth,normalizeCardView} from '../card-view.mjs';
 import {suitColor} from './renderer-support.js';
 import { svgNode } from './renderer-support.js';
 import { total } from './renderer-support.js';
@@ -31,7 +32,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
   const cardLayer = svgNode('g', { class: 'card-layer', 'clip-path':filmedProfile?'none':`url(#${prefix}-hands)` }), badges = svgNode('g', { class: 'card-totals' });
   svg.replaceChildren(defs, cardLayer, badges);
   const nodes = new Map();
-  let hands = [], pending = null;
+  let hands = [], pending = null, cardView='raised', followCards=false;
   let handClipPath = dealerHandClip();
 
   function face(card, inkOnly = false) {
@@ -69,7 +70,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
       hand.cards.forEach((card, index) => {
         const pose = cardPose({ index, count, anchor, width,
           incomingIndex: deal ? (incoming < 0 ? count - 1 : incoming) : -1,
-          time: deal?.time, contact: deal?.contact, splitCount: hand.splitCount, seat: hand.seat });
+          time: deal?.time, contact: deal?.contact, splitCount: hand.splitCount, seat: hand.seat, depth:cardViewDepth(cardView) });
         const entry = nodes.get(card.shoeDraw);
         const layoutKey = `${anchor.cx}:${anchor.cy}:${hand.splitCount}`;
         if (entry.pose && entry.layoutKey !== layoutKey) {
@@ -88,10 +89,10 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
         const sourceFace = filmed && filmedFaceAtTime(filmed.filmed.profile, filmed.filmed.take,
           Math.min(filmed.time, filmed.filmed.timing.release / filmed.filmed.timing.fps));
         const tracked = filmed ? projectFilmedFace(filmed.filmed.profile, filmed.filmed.take, sourceFace,
-          filmed.filmed.binding, pose, filmed.time, width, height)
+          filmed.filmed.binding, pose, filmed.time, width, height, cardViewDepth(cardView))
           : deal?.draw === card.shoeDraw && deal.time + 1e-6 < deal.clear ? faceAtTime(deal.track, deal.time) : null;
         const turning = pending?.track === 'flip' && pending.draw === card.shoeDraw && entry.signature === 'hidden';
-        const motionKey=`${turning}:${pose.x.toFixed(3)}:${pose.y.toFixed(3)}:${tracked ? Math.floor(pending.time*(filmed?.filmed.timing.fps??24)+1e-5) : 'rest'}:${entry.signature}`;
+        const motionKey=`${cardView}:${turning}:${pose.x.toFixed(3)}:${pose.y.toFixed(3)}:${tracked ? Math.floor(pending.time*(filmed?.filmed.timing.fps??24)+1e-5) : 'rest'}:${entry.signature}`;
         if(entry.motionKey===motionKey)return;
         entry.motionKey=motionKey;
         entry.group.setAttribute('display', turning ? 'none' : 'inline');
@@ -145,19 +146,20 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
         }
         entry.group.setAttribute('data-seat', hand.seat);
         entry.group.setAttribute('data-hand', hand.index ?? 'dealer');
-        entry.face.setAttribute('transform', `matrix(${feltMatrix(positions.get(hand.seat)).join(' ')})`);
+        entry.face.setAttribute('transform', `matrix(${feltMatrix(cardViewDepth(cardView)).join(' ')})`);
         ordered.push(entry.group);
       });
       if (!hand.cards.length) continue;
       const dealer = hand.seat === 'dealer';
       const x = dealer ? cx + dealerFanOffset(0, hand.cards.length).x - 73 : cx;
       const split = hand.splitCount > 1;
-      const y = dealer ? cy : cy + (split && hand.splitCount > 2 ? 32 : 60);
+      const y = dealer ? cy : cy + (followCards ? height/2*cardViewDepth(cardView)+18 : split && hand.splitCount > 2 ? 32 : 60);
+      const small=split||followCards;
       const value = total(hand.cards.filter(c => c.r));
       const badge = svgNode('g', { transform: `translate(${x} ${y})`, 'data-seat':hand.seat, 'data-hand':hand.index ?? 'dealer', 'data-active':Boolean(hand.active),
         'aria-label': `${dealer ? dealerLabel : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${value}${hand.active ? ', active hand' : ''}` });
-      badge.append(svgNode('rect', { x: -36, y: split ? -16 : -22, width: 72, height: split ? 32 : 44, rx: 22, fill: hand.active ? '#dec68e' : '#17231fe0' }),
-        svgNode('text', { y: split ? 6 : 9, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': split ? 20 : 29, 'font-family':'JetBrains Mono', 'font-weight': 500 }, `${split ? `${hand.number} · ` : ''}${value}${value > 21 ? ' ×' : ''}`));
+      badge.append(svgNode('rect', { x: -36, y: small ? -16 : -22, width: 72, height: small ? 32 : 44, rx: 22, fill: hand.active ? '#dec68e' : '#17231fe0' }),
+        svgNode('text', { y: small ? 6 : 9, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': small ? 20 : 29, 'font-family':'JetBrains Mono', 'font-weight': 500 }, `${split ? `${hand.number} · ` : ''}${value}${value > 21 ? ' ×' : ''}`));
       badges.append(badge);
     }
     for (const [draw, entry] of nodes) if (!keep.has(draw)) { entry.group.remove(); entry.clip.remove(); nodes.delete(draw); }
@@ -169,7 +171,8 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
     move();
   }
   return {
-    setSeatOffsets(offsets,anchors) {
+    setSeatOffsets(offsets,anchors,view='raised',underCards=false) {
+      cardView=normalizeCardView(view);followCards=underCards;
       for(const [seat,original]of sourcePositions){
         const point=anchors?.[seat]??original;
         positions.set(seat,{...point,cx:point.cx+(offsets[seat]??0)});
@@ -206,7 +209,7 @@ export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfi
           const h = round.hands[index], seatId = String(seat + 1);
           hands.push({ cards: h.cards.filter(c => visible.has(c.shoeDraw)), draws: new Set(h.cards.map(c=>c.shoeDraw)),
             seat: seatId, index, number:number+1, splitCount:indices.length,
-            anchor:splitHandAnchor(positions.get(seatId),slots.indexOf(index)),
+            anchor:splitHandAnchor(positions.get(seatId),slots.indexOf(index),cardViewDepth(cardView),followCards?height*cardViewDepth(cardView)+64:undefined),
             active:index === round.active && round.phase === 'decisions' });
         }
       }

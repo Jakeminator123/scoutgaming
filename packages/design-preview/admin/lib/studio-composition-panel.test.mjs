@@ -16,7 +16,7 @@ function panelHarness(){
   const slots=[],module={exports:{}};let cursor=0;
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};}};
   const LayerAssetSelect=()=>null;
-  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','BackgroundPlaybackEditor'].map(key=>[key,()=>null]));
+  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','BackgroundPlaybackEditor','BlackjackTableGeometryEditor'].map(key=>[key,()=>null]));
   runInNewContext(output.code,{module,exports:module.exports,structuredClone,require:name=>{
     if(name==='react')return hooks;
     if(name.includes('studio-model.mjs'))return {validateProject};
@@ -98,4 +98,25 @@ test('the real layer selector offers only matching tables and removes incompatib
   assert.deepEqual(lane,before);assert.equal(edits.length,0);
   nodes(tree,node=>node.type==='button')[0].props.onClick();
   assert.deepEqual(edits[0].layers.table.allowed,['roulette']);assert.equal(edits[0].layers.table.default,null);assert.deepEqual(lane,before);
+});
+
+test('Admin table profile edits only the selected table and format behind template edit ownership',()=>{
+  const h=panelHarness(),table={schemaVersion:1,id:'00000000-0000-4000-8000-000000000002',role:'table',game:'blackjack',label:'Oak',sha256:'a'.repeat(64),size:1024,contentType:'image/png',width:1672,height:941};
+  h.props.project.layerAssets=[{...table,pathname:layerAssetPath(table)}];
+  const lane=h.props.project.lanes[0];lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};lane.composition=settings.defaultCompositionSettings();
+  let tree=h.render(),editor=nodes(tree,node=>node.type===h.BlackjackTableGeometryEditor)[0];
+  assert.equal(editor.props.disabled,true);assert.equal(editor.props.tableId,table.id);
+  const profile=settings.defaultBlackjackTableGeometry(table.id);profile.mobile.betMode='under-cards';
+  editor.props.onChange(profile);assert.equal(h.edits.length,0);
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();tree=h.render();
+  editor=nodes(tree,node=>node.type===h.BlackjackTableGeometryEditor)[0];assert.equal(editor.props.disabled,false);
+  editor.props.onChange(profile);assert.equal(h.edits.length,1,text(h.render()));
+  assert.equal(h.edits[0].lanes[0].composition.blackjackTables[0].mobile.betMode,'under-cards');
+  assert.equal(h.edits[0].lanes[0].composition.blackjackTables[0].desktop.betMode,undefined);
+  const beforeDesktop=structuredClone(h.props.project.lanes[0].composition.desktop);
+  tree=h.render();const width=nodes(tree,node=>node.type==='label'&&text(node).startsWith('Bordsbredd'))[0];
+  nodes(width,node=>node.type==='input')[0].props.onChange({target:{valueAsNumber:165}});
+  assert.equal(h.edits.at(-1).lanes[0].composition.mobile.table.width,1.65);
+  assert.deepEqual(h.edits.at(-1).lanes[0].composition.desktop,beforeDesktop);
+  h.props.room.game='roulette';assert.equal(nodes(h.render(),node=>node.type===h.BlackjackTableGeometryEditor).length,0);
 });

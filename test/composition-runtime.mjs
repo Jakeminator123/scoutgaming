@@ -66,6 +66,23 @@ test('optional table geometry is strict, frozen with publication, and absent fro
   assert.throws(()=>validateComposition(invalid));
 });
 
+test('under-cards is optional per board layout, strictly validated and preserved in the frozen package',()=>{
+  for(const layout of ['mobile','desktop']){
+    const settings=defaultCompositionSettings(),tableId=asset('table',2).id,board=defaultBlackjackTableGeometry(tableId);
+    assert.equal(Object.hasOwn(board.mobile,'betMode'),false);assert.equal(Object.hasOwn(board.desktop,'betMode'),false);
+    board[layout].betMode='under-cards';settings.blackjackTables=[board];
+    assert.deepEqual(validateCompositionSettings(settings,{tableIds:[tableId],assets:[asset('table',2)]}),settings);
+    const {project,pack,descriptor}=fixture('nora','Nora',settings);
+    assert.equal(validateComposition(descriptor).settings.blackjackTables[0][layout].betMode,'under-cards');
+    delete project.lanes[0].composition.blackjackTables[0][layout].betMode;
+    assert.equal(readPackagePresentation(pack).lanes[0].composition.blackjackTables[0][layout].betMode,'under-cards');
+    for(const betMode of [undefined,null,'','manual','under_cards',false,{}]){
+      const invalid=structuredClone(settings);invalid.blackjackTables[0][layout].betMode=betMode;
+      assert.throws(()=>validateCompositionSettings(invalid));
+    }
+  }
+});
+
 test('room-specific table A uses its exact geometry without rewriting a shared A+B composition',async()=>{
   const f=fixture(),a=f.project.layerAssets.find(row=>row.role==='table'),b=asset('table',3),lane=f.project.lanes[0];
   f.project.layerAssets.push(b);lane.layers.table.allowed.push(b.id);

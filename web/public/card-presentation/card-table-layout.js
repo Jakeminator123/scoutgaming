@@ -48,8 +48,8 @@ export function dealerFanOffset(index, count) {
 
 // Split hands share a seat, not a single visible stack. The receiving hand
 // keeps the filmed landing; the others stay in narrow lanes inside that seat.
-export function splitHandAnchor(anchor, slot) {
-  return { cx: anchor.cx - (slot % 2 ? 71 : 0), cy: anchor.cy - Math.floor(slot / 2) * 110 };
+export function splitHandAnchor(anchor, slot, depth=1, rowSpacing=110*depth) {
+  return { cx: anchor.cx - (slot % 2 ? 71 : 0), cy: anchor.cy - Math.floor(slot / 2) * rowSpacing };
 }
 function splitFanOffset(index, count, splitCount) {
   const older = count - 1 - index, steps = Math.max(1, count - 1);
@@ -59,7 +59,7 @@ function splitFanOffset(index, count, splitCount) {
 
 // Reserve the landing position as the new card makes contact. The old nodes
 // move once; revealing the new card does not restart or double their movement.
-export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1, time = 0, contact = 0, splitCount = 1, seat }) {
+export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1, time = 0, contact = 0, splitCount = 1, seat, depth=1 }) {
   const offset = (i,n) => seat === 'dealer' ? dealerFanOffset(i,n)
     : splitCount > 1 ? splitFanOffset(i,n,splitCount) : fanOffset(i,n,width);
   const to = offset(index, count);
@@ -67,9 +67,9 @@ export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1,
   const from = incomingIndex < 0 || index === incomingIndex ? to : offset(index, oldCount);
   const p = incomingIndex < 0 ? 1 : slideEase((time - contact) / SLIDE_SECONDS);
   return { x: anchor.cx + from.x + (to.x - from.x) * p,
-    y: anchor.cy + from.y + (to.y - from.y) * p };
+    y: anchor.cy + (from.y + (to.y - from.y) * p) * depth };
 }
 
-export function feltMatrix() {
-  return [1, 0, 0, FELT_DEPTH, 0, 0];
+export function feltMatrix(depth=FELT_DEPTH) {
+  return [1, 0, 0, depth, 0, 0];
 }

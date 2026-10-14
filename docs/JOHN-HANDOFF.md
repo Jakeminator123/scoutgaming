@@ -20,6 +20,12 @@ Admin C1–C3 ägs av chatten ADMINADMINADMIN. PR-samordningen har fått
 överlämningen om #91. Huvudcheckoutens blandade ändringar bevaras; den här
 dokumentationen levereras från en separat branch, utan merge eller deploy.
 
+## Dragan: bordsprofil, kortvy och samtalspanel, 14 oktober
+
+Admin visar nu bordsbredd och egna kort-/insatsplatser per bord och format i samma sammansättningspanel. Valfria betMode=under-cards binder markerytorna under kort och poäng; äldre profiler behåller manuella punkter. Kortvisningen kan växlas mellan Upplyfta och På bordet och sparas bara i spelarens webbläsare. Filmad kontakt följer källplanet fram till släpp; ett lägesbyte upphäver den pågående kontaktbindningen utan att ändra serverkort eller avslöja hålkort. Fyra split-händer har egna rader utan överlappande poängbrickor.
+
+Chatt, röstknappar och status samlas i en panel även på mobil. Öppnad logg/inmatning/minne har ett gemensamt flöde; stängd panel behåller röstkontroller och felstatus. Detta aktiverar inte Dragans saknade röstprofil eller läppsynk. Runtime v19 krävs innan den nya profilen sparas, inklusive omskrivning av frysta paket vid livscykelåtgärder; ingen SQL-migration. Befintliga manuella profiler och kortläge behålls tills de ändras uttryckligen. Riktade kontroller: 54 spelar-/geometriprov, 102 kontrakt-/readinessprov och sex Admin-panelprov passerar. Produktionsacceptans och slutligt leveranskvitto redovisas separat.
+
 ## Dragan: filmad givning och exakt inspelat tal, 14 oktober
 
 Spelarens gemensamma väg har en hashbunden Kevin-profil med 35 givnings-/vändklipp och deras källspår. Sekvensen följer serverns beslut och väljer VILA/REDO-varianter; en ofullständig kedja ger 2D-reserv. Varje fil binds uttryckligen i rätt händelserad och följer med det frysta rumspaketet. Givningsrader tillåter 16 alternativ; andra rader behåller fem. Runtime v17 krävs före nya sådana projekt eller inspelad-tal-metadata; ingen SQL-migration.

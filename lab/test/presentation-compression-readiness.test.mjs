@@ -65,13 +65,15 @@ test('a late enlargement inside SQL is rejected locally without another fetch or
   assert.deepEqual(current.events,['http:17','sql']);
 });
 
-test('explicit lifecycle operations require both codecs before SQL, including when branding is retained',async()=>{
+test('explicit lifecycle operations require current table layouts and both codecs before SQL, including retained branding',async()=>{
   for(const kind of ['material-trash','resource-lifecycle','dealer-archive']){
     const descriptor={kind,value:{}};
-    const old=fixture(17);await assert.rejects(()=>old.wrapped.transaction(()=>old.events.push('package-write'),{presentationMutation:descriptor}),blocked);
-    assert.deepEqual(old.events,['http:18']);
-    const current=fixture();await current.wrapped.transaction(()=>current.events.push('package-write'),{presentationMutation:descriptor});
-    assert.deepEqual(current.events,['http:18','sql','package-write']);
+    for(const version of [17,18]){
+      const old=fixture(version);await assert.rejects(()=>old.wrapped.transaction(()=>old.events.push('package-write'),{presentationMutation:descriptor}),blocked);
+      assert.deepEqual(old.events,['http:19']);
+    }
+    const current=fixture(19);await current.wrapped.transaction(()=>current.events.push('package-write'),{presentationMutation:descriptor});
+    assert.deepEqual(current.events,['http:19','sql','package-write']);
     const nested=fixture();await assert.rejects(()=>nested.wrapped.withMutationContext(()=>nested.wrapped.transaction(()=>nested.events.push('package-write'),
       {presentationMutation:descriptor}),publication(compact())),blocked);
     assert.deepEqual(nested.events,['http:17']);

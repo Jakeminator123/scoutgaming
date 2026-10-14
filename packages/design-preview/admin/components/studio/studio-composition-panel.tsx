@@ -6,6 +6,7 @@ import { defaultCompositionSettings, validateCompositionSettings } from '../../.
 import { LayerLibrary } from '../../../../../lab/components/layer-library';
 import { LayerAssetSelect } from '../../../../../lab/components/layer-selectors';
 import { LayerAssetManager } from '../../../../../lab/components/layer-asset-manager';
+import { BlackjackTableGeometryEditor } from '../../../../../lab/components/blackjack-table-geometry-editor';
 import { CompositionPreview } from '../../../../../lab/components/composition-preview';
 import { BackgroundPlaybackEditor } from '../../../../../lab/components/background-playback-editor';
 import { effectiveDealerCompositing } from '../../../../../web/public/dealer-compositing.mjs';
@@ -33,8 +34,9 @@ export function StudioCompositionPanel({localReferenceUrl,project,inventory,room
   function placement(role:'dealer'|'background'|'table',field:'x'|'y'|'scale'|'width',value:number) {
     if(!lane)return;const next=structuredClone(lane),composition=structuredClone(settings);
     const plane=composition[layout][role] as unknown as Record<string,number>;plane[field]=value;
-    next.composition=validateCompositionSettings(composition);next.renderer='layered';change(next);
+    try{next.composition=validateCompositionSettings(composition);next.renderer='layered';change(next);}catch(cause){setError((cause as Error).message);}
   }
+  const tableAsset=assets.find(row=>row.id===lane?.layers.table.default&&row.role==='table'&&layerAssetFitsGame(row,game));
   if(!lane)return <section className="studio-detail-panel"><h2>Rum / bakgrund</h2><p>Välj ett registrerat rum med en sparad sammansättning.</p></section>;
   return <section className="studio-detail-panel" aria-label="Gemensam sammansättningsmall"><h2>{lane.label}</h2>
     <p>Standardlager, placering, tillåtna alternativ och automatik delas av alla rum som använder denna mall. Ändringarna sparas i det gemensamma projektutkastet; publicerade versioner behålls.</p>
@@ -58,8 +60,23 @@ export function StudioCompositionPanel({localReferenceUrl,project,inventory,room
       {projectDirty&&<p>Spara eller lös ditt utkast innan du använder papperskorgen.</p>}
       <div className="studio-material-controls"><LayerAssetManager project={project} role={role} disabled={locked||projectDirty} onSaved={onSaved} onBusyChange={value=>uploading('trash-'+role,value)}/></div>
     </div>)}</fieldset>
+    {game==='blackjack'&&tableAsset&&<section className="studio-detail-panel" aria-label="Bordsprofil">
+      <h3>Bordsprofil · {layout==='mobile'?'mobil':'desktop'}</h3>
+      <p>{tableAsset.label}. Storlek och placering sparas separat för mobil och desktop. Mobilen kan visa ett bredare bord med tre spelplatser.</p>
+      <fieldset disabled={locked} className="grid grid-cols-3 gap-2">
+        <label className="studio-field">Bordsbredd · %<input type="number" min="10" max="400" step="1" value={Math.round(settings[layout].table.width*100)} onChange={event=>{if(Number.isFinite(event.target.valueAsNumber))placement('table','width',event.target.valueAsNumber/100);}}/></label>
+        <label className="studio-field">Bord vågrätt · %<input type="number" min="-200" max="200" step="1" value={Math.round(settings[layout].table.x*100)} onChange={event=>{if(Number.isFinite(event.target.valueAsNumber))placement('table','x',event.target.valueAsNumber/100);}}/></label>
+        <label className="studio-field">Bord lodrätt · %<input type="number" min="-200" max="200" step="1" value={Math.round(settings[layout].table.y*100)} onChange={event=>{if(Number.isFinite(event.target.valueAsNumber))placement('table','y',event.target.valueAsNumber/100);}}/></label>
+      </fieldset>
+      <BlackjackTableGeometryEditor tableId={tableAsset.id} url={'/studio/api/layer-assets/'+tableAsset.id} contentType={tableAsset.contentType} layout={layout} disabled={locked}
+        value={settings.blackjackTables?.find(row=>row.tableId===tableAsset.id)} onChange={value=>{
+          const next=structuredClone(settings),rows=(next.blackjackTables??[]).filter(row=>row.tableId!==tableAsset.id);
+          if(value)rows.push(value);if(rows.length)next.blackjackTables=rows;else delete next.blackjackTables;
+          change({...lane,composition:validateCompositionSettings(next),renderer:'layered'});
+        }}/>
+    </section>}
     <BackgroundPlaybackEditor policy={lane.backgroundPlayback} assets={assets} allowed={lane.layers.background.allowed} baseSelected={lane.layers.background.enabled&&Boolean(lane.layers.background.default)} disabled={locked} onChange={policy=>{const next=structuredClone(lane);if(policy)next.backgroundPlayback=policy;else delete next.backgroundPlayback;change(next);}} onPreview={id=>setBackgroundPreview(current=>({id,request:current.request+1}))}/>
-    <details><summary>Placering · {layout==='mobile'?'mobil':'desktop'}</summary><fieldset disabled={locked}>{(['dealer','background','table'] as const).map(role=><div key={role} className="grid grid-cols-3 gap-2 py-2">{([role==='table'?'width':'scale','x','y'] as const).map(field=><label key={field} className="studio-field">{role==='dealer'?'Dealer':role==='background'?'Bakgrund':'Bord'} · {field==='width'?'Bredd':field==='scale'?'Skala':field.toUpperCase()}<input type="number" step={.01} min={field==='x'||field==='y'?-2:.1} max={field==='x'||field==='y'?2:4} value={(settings[layout][role] as unknown as Record<string,number>)[field]} onChange={event=>{try{placement(role,field,Number(event.target.value));}catch(cause){setError((cause as Error).message);}}}/></label>)}</div>)}<label><input type="checkbox" checked={settings.tableFront} onChange={event=>change({...lane,composition:{...settings,tableFront:event.target.checked}})}/> Bord framför dealer</label></fieldset></details>
+    <details><summary>Placering · {layout==='mobile'?'mobil':'desktop'}</summary><fieldset disabled={locked}>{(game==='blackjack'&&tableAsset?(['dealer','background'] as const):(['dealer','background','table'] as const)).map(role=><div key={role} className="grid grid-cols-3 gap-2 py-2">{([role==='table'?'width':'scale','x','y'] as const).map(field=><label key={field} className="studio-field">{role==='dealer'?'Dealer':role==='background'?'Bakgrund':'Bord'} · {field==='width'?'Bredd':field==='scale'?'Skala':field.toUpperCase()}<input type="number" step={.01} min={field==='x'||field==='y'?-2:.1} max={field==='x'||field==='y'?2:4} value={(settings[layout][role] as unknown as Record<string,number>)[field]} onChange={event=>{try{placement(role,field,Number(event.target.value));}catch(cause){setError((cause as Error).message);}}}/></label>)}</div>)}<label><input type="checkbox" checked={settings.tableFront} onChange={event=>change({...lane,composition:{...settings,tableFront:event.target.checked}})}/> Bord framför dealer</label></fieldset></details>
     <details><summary>Automatik / OpenClaw</summary><fieldset disabled={locked} className="grid grid-cols-2 gap-3">{(['idle','deal','reveal','speak','probe'] as const).map(phase=><label key={phase} className="studio-field">{({idle:'Vänta',deal:'Deal',reveal:'Visa',speak:'Tal',probe:'Bildgranskning'})[phase]}<select value={lane.openclaw[phase]} onChange={event=>change({...lane,openclaw:{...lane.openclaw,[phase]:event.target.value}})}>{[['off','Av'],['rules','Regler'],['random','Slump'],['shadow','Skuggläge'],['active','Aktiv']].map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>)}</fieldset></details>
     {error&&<p role="alert">{error}</p>}
   </section>;

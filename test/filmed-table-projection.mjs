@@ -58,3 +58,16 @@ test('release cue freezes the final source quad and settles at the selected tabl
   assert.equal(filmedTransferTiming(profile,{...take,clearFrame:take.frames-1}),null);
   assert.equal(projectFilmedFace(profile,take,{...face,q:[[NaN,0]]},binding,pose,1,63,85),null);
 });
+
+test('card view invalidates a filmed binding and flattens only the post-release destination',()=>{
+  const p=projection(),raised=filmedTableBinding(profile,p);p.cardView='table';const flat=filmedTableBinding(profile,p);
+  assert.notEqual(flat.key,raised.key);
+  const take=profile.takes.find(t=>t.key==='4:base'),timing=filmedTransferTiming(profile,take),pose={x:640,y:350};
+  const face=filmedFaceAtTime(profile,take,timing.release/24);
+  const before=projectFilmedFace(profile,take,face,flat,pose,(timing.release-1)/24,63,85,.62);
+  assert.deepEqual(before,projectFilmedFace(profile,take,face,flat,pose,(timing.release-1)/24,63,85,1));
+  const almost=projectFilmedFace(profile,take,face,flat,pose,(timing.end-1)/24,63,85,.62);
+  const initial=projectFilmedFace(profile,take,face,flat,pose,timing.release/24,63,85,.62);
+  const target=[[-31.5,-26.35],[31.5,-26.35],[31.5,26.35],[-31.5,26.35]];
+  for(let i=0;i<4;i++)for(let axis=0;axis<2;axis++)assert.ok(Math.abs(almost.q[i][axis]-target[i][axis])<Math.abs(initial.q[i][axis]-target[i][axis]));
+});

@@ -1,3 +1,4 @@
+import {readCardView,saveCardView} from './card-view.mjs';
 import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppearanceBets} from './operator-appearance-boundary.mjs';
 import {chatPresentationContext} from './chat-presentation-context.mjs';
 import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE } from './studio-preview-client.mjs';
@@ -654,6 +655,14 @@ for (let i = 0; i < SEATS; i++) {
 // independently replaceable; its transparent border is not a gameplay anchor.
 // Narrow viewports play the three centre boxes only: seven boxes on a phone
 // leaves ~50px each, which cannot hold a chip stack and two cards.
+// Presentation only: changing this never deals, submits a stake or reveals a card.
+let cardView=readCardView({getItem:key=>localStorage.getItem(key)});
+const cardViewChoice=document.createElement('label');cardViewChoice.className='card-view-choice';cardViewChoice.hidden=true;
+cardViewChoice.append(document.createTextNode('Kort'));
+const cardViewSelect=document.createElement('select');cardViewSelect.id='card-view';cardViewSelect.setAttribute('aria-label','Kortvisning');
+for(const [value,label]of [['raised','Upplyfta'],['table','På bordet']]){const option=document.createElement('option');option.value=value;option.textContent=label;cardViewSelect.append(option);}
+cardViewSelect.value=cardView;cardViewChoice.append(cardViewSelect);$('#scene').append(cardViewChoice);
+cardViewSelect.addEventListener('change',()=>{cardView=saveCardView({setItem:(key,value)=>localStorage.setItem(key,value)},cardViewSelect.value);layoutSeats();});
 const COMPACT_BOXES = [2, 3, 4];
 const compactQuery = matchMedia(BLACKJACK_COMPACT_QUERY);
 let compactSeats = compactQuery.matches;
@@ -675,11 +684,13 @@ function layoutSeats() {
     const banner=$('#banner');
     Object.assign(banner.style,{top:'',bottom:''});
     const scene=$('#scene').getBoundingClientRect(),plane=layerComposition?.referencePlane();
+    cardViewChoice.hidden=!localCards||!plane;
     if(plane){
       const table=$('#table2d').getBoundingClientRect(),boxes=playedBoxes();
       const hud=$('#hud-bottom').getBoundingClientRect();
       const layout=layoutGameOverlay(plane,boxes,{left:12,right:scene.width-12,top:80,
-        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats});
+        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats,cardView});
+      $('#scene').dataset.betPlacement=layout.followCards?'under-cards':'manual';
       let geometryNotice=$('#table-geometry-warning');
       if(!geometryNotice&&layout.geometryWarning){
         geometryNotice=document.createElement('p');geometryNotice.id='table-geometry-warning';geometryNotice.setAttribute('role','status');

@@ -6,7 +6,7 @@ import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import {presentationCapabilitiesForVersion} from '../../web/presentation-capability-contract.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../lib/studio-model.mjs';
-import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
 
@@ -74,7 +74,7 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
-test('more than five filmed deal variants require v17, while explicit archive operations also require v18',async()=>{
+test('more than five filmed deal variants require v17, while explicit archive operations also require v19',async()=>{
   for(const eventId of ['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']){
     const line={dealerId:'astrid',eventId,variants:Array.from({length:6},(_,i)=>({id:`fixture-${i}`}))};
     const frozen=frozenPackage(value=>{
@@ -83,7 +83,7 @@ test('more than five filmed deal variants require v17, while explicit archive op
     });
     const descriptors=[{kind:'project',value:{lines:[line]}},{kind:'project',value:{dealerTrash:[{lines:[line]}]}},
       {kind:'dealer-archive',value:{dealerTrash:[{lines:[line]}]}},{kind:'presentation-package',value:frozen}];
-    for(const descriptor of descriptors){const required=descriptor.kind==='dealer-archive'?18:17;for(const version of [required-1,required]){
+    for(const descriptor of descriptors){const required=descriptor.kind==='dealer-archive'?19:17;for(const version of [required-1,required]){
       const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
       f.repository.transaction=async work=>{begun++;return work(f.repository);};
       const work=()=>f.wrapped.transaction(repo=>repo.saveDocument(descriptor.kind,{value:descriptor.value}),{presentationMutation:descriptor});
@@ -182,6 +182,50 @@ test('table geometry requires v16 before saving active, archived or frozen data,
     await assert.rejects(f.wrapped.saveDocument('project',{value:{lanes:[{composition:{blackjackTables:[]}}]}}),blocked);
   },{kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:{}}]}});
   assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
+test('betMode presence requires v19 for both active and archived layouts before SQL, even when invalid',async()=>{
+  for(const layout of ['mobile','desktop'])for(const betMode of ['under-cards',undefined,null,'manual']){
+    const lane={composition:{blackjackTables:[{[layout]:{betMode}}]}};
+    for(const value of [{lanes:[lane]},{dealerTrash:[{compositions:[lane]}]}])for(const version of [18,19]){
+      const descriptor={kind:'project',value},f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+      f.repository.transaction=async work=>{begun++;return work(f.repository);};
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value}),{presentationMutation:descriptor});
+      if(version===18)await assert.rejects(work,blocked);else await work();
+      assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'19');
+      assert.equal(begun,version===19?1:0);assert.equal(f.writes.length,version===19?1:0);
+    }
+  }
+});
+
+test('complete frozen table bet modes require v19 and cannot survive a runtime rollback',async()=>{
+  for(const layout of ['mobile','desktop']){
+    const value=frozenPackage(value=>{
+      const id='30000000-0000-4000-8000-000000000001',sha256='d'.repeat(64),contentType='image/png';
+      const asset={schemaVersion:1,id,sha256,contentType,size:4096,width:720,height:1280,role:'table',label:'Table fixture',pathname:layerAssetPath({id,sha256,contentType,role:'table'})};
+      value.assets.push(asset);Object.assign(value.lanes[0].layers.table,{enabled:true,allowed:[id],default:id});
+      const board=defaultBlackjackTableGeometry(id);board[layout].betMode='under-cards';
+      value.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[board]};
+    });
+    let version=19,begun=0;const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    f.repository.transaction=async work=>{begun++;return work(f.repository);};
+    const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('presentation-package',{value}),{presentationMutation:{kind:'presentation-package',value}});
+    await work();version=18;await assert.rejects(work,blocked);
+    assert.equal(begun,1);assert.equal(f.writes.length,1);assert.equal(f.fetches.length,2);
+    assert.ok(f.fetches.every(row=>row[1].headers['X-Presentation-Capability-Version']==='19'));
+  }
+});
+
+test('table geometry permission cannot acquire betMode after SQL begins',async()=>{
+  const manual={kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}};
+  const automatic={kind:'project',value:{lanes:[{composition:{blackjackTables:[{mobile:{betMode:'under-cards'}}]}}]}};
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  let begun=0;f.repository.transaction=async work=>{begun++;return work(f.repository);};
+  await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:automatic.value}),{presentationMutation:manual}),blocked);
+  assert.equal(begun,1);assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
+  assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'16');
+  await f.wrapped.transaction(repo=>repo.saveDocument('project',{value:automatic.value}),{presentationMutation:automatic});
+  assert.equal(f.writes.length,1);assert.equal(f.fetches.length,2);assert.equal(f.fetches[1][1].headers['X-Presentation-Capability-Version'],'19');
 });
 
 test('wheel-start needs v15 for active/archived bindings and frozen publication; idle cannot widen inside SQL',async()=>{
@@ -363,9 +407,9 @@ test('a preflight without set support cannot introduce membership after SQL begi
   }, { kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: 'roulette' }] } });
   assert.equal(input.fetches.length, 1); assert.equal(input.writes.length, 0);
 });
-test('material-trash operations require v18 while stored project trash retains v11',async()=>{
+test('material-trash operations require v19 while stored project trash retains v11',async()=>{
  for(const descriptor of [{kind:'material-trash',value:{}},{kind:'project',value:{layerAssetTrash:[]}}]){
-  const required=descriptor.kind==='material-trash'?18:11;
+  const required=descriptor.kind==='material-trash'?19:11;
   for(const accepted of [false,true]){
    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(accepted?required:required-1))});
    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument('project',{value:{layerAssetTrash:[]}}),descriptor);
@@ -405,8 +449,8 @@ test('background policy in project, archived composition and frozen package requ
   }
 });
 
-test('an archive v18 mutation cannot add undeclared background automation after the SQL boundary',async()=>{
-  const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(18))});
+test('an archive v19 mutation cannot add undeclared background automation after the SQL boundary',async()=>{
+  const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(19))});
   await input.wrapped.withMutationContext(async()=>{
     await assert.rejects(input.wrapped.saveDocument('project',{value:{lanes:[{backgroundPlayback:{schemaVersion:1,rules:[]}}]}}),blocked);
   },{kind:'dealer-archive',value:{}});
@@ -705,17 +749,17 @@ test('v3 readiness cannot authorize schema3 events inside SQL and v4 readiness c
   assert.equal(begun,1);assert.equal(input.fetches.length,3);
 });
 
-test('resource archive writes require exact v18 before SQL and reuse verification for the complete room mutation',async()=>{
+test('resource archive writes require exact v19 before SQL and reuse verification for the complete room mutation',async()=>{
  const descriptor=[{kind:'resource-lifecycle',value:{}},{kind:'project',value:{dealers:[...dealers,'johanna'].map(id=>({id})),lanes:[]}}];
  const cap5={...cap4,schemaVersion:5,dealerLifecycle:'trash-v1'};
- const cap18=presentationCapabilitiesForVersion(18);
- for(const response of [cap4,cap5,presentationCapabilitiesForVersion(17),{...cap18,resourceLifecycle:'unsafe-delete'}]){
+  const cap19=presentationCapabilitiesForVersion(19);
+  for(const response of [cap4,cap5,presentationCapabilitiesForVersion(18),{...cap19,resourceLifecycle:'unsafe-delete'}]){
   let begun=0;const input=fixture({fetcher:async()=>Response.json(response)});
   input.repository.transaction=async work=>{begun++;return work(input.repository);};
   await assert.rejects(input.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);
-  assert.equal(begun,0);assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'18');
+   assert.equal(begun,0);assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'19');
  }
- let begun=0;const input=fixture({fetcher:async()=>Response.json(cap18)});
+  let begun=0;const input=fixture({fetcher:async()=>Response.json(cap19)});
  input.repository.transaction=async work=>{begun++;return work(input.repository);};
  await input.wrapped.transaction(repo=>repo.saveDocument('administration',{value:{rooms:[{schemaVersion:2}],gameLanes:[{dealer:'johanna',renderer:'portrait-video'}]}}),{presentationMutation:descriptor});
  assert.equal(begun,1);assert.equal(input.fetches.length,1);assert.equal(input.writes.length,1);
@@ -729,14 +773,14 @@ test('an older verified mutation may not acquire resource lifecycle authority af
  },{kind:'project',value:{dealers:[],dealerTrash:[]}});
  assert.equal(input.fetches.length,1);assert.equal(input.writes.length,0);
 });
-test('stored cascade data retains v7 while archive operations require v18 without widening resource authority',async()=>{
+test('stored cascade data retains v7 while archive operations require v19 without widening resource authority',async()=>{
  for(const descriptor of [{kind:'project',value:{dealers:[],dealerTrash:[{schemaVersion:2}]}},{kind:'dealer-archive',value:{dealers:[],dealerTrash:[]}}]){
-  const required=descriptor.kind==='dealer-archive'?18:7;
+   const required=descriptor.kind==='dealer-archive'?19:7;
   let begun=0;const rejected=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(required-1))});rejected.repository.transaction=async()=>begun++;
   await assert.rejects(rejected.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);assert.equal(begun,0);assert.equal(rejected.fetches[0][1].headers['X-Presentation-Capability-Version'],String(required));
   const accepted=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(required))});accepted.repository.transaction=async work=>{begun++;return work(accepted.repository);};
   await accepted.wrapped.transaction(repo=>repo.saveDocument('project',{value:{dealers:[],dealerTrash:[]}}),{presentationMutation:descriptor});assert.equal(begun,1);assert.equal(accepted.fetches.length,1);
  }
- const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(18))});
+  const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(19))});
  await input.wrapped.withMutationContext(async()=>{await assert.rejects(input.wrapped.withMutationContext(()=>assert.fail('no widening'),{kind:'dealer-archive',value:{}}),blocked);},{kind:'resource-lifecycle',value:{}});assert.equal(input.fetches.length,1);
 });
