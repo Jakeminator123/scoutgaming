@@ -1,5 +1,40 @@
 # Miljövariabler per tjänst
 
+## Lokal env-konsolidering, 14 oktober 2026
+
+I Jakobs huvudcheckout är två privata filer flyttade återställbart till
+`lab/data/platform-private/env-cleanup-20261014/`, efter samordning med
+ADMIN och DRAGAN. Ingen miljöinställning i molnet eller källa ändrades av flytten.
+
+- `lab/.env.generated-speech.local` innehöll endast
+  `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, redan identisk i `lab/.env.local`.
+- `lab/.env.cloud-activation.local` hade ingen aktuell kodläsare och ingen
+  pågående manuell användning enligt DRAGAN. Tre lagringsvärden matchade
+  `lab/.env.cloud-storage.local`; två unika streamhemligheter bevaras i kopian
+  och har inte lagts till i vanlig Lab-miljö.
+
+Filerna behåller exakt innehåll (141 respektive 600 byte) och Windows-ACL.
+För varje flytt jämfördes den effektiva loaderkonfigurationen före/efter i
+alla åtta kombinationer av generated speech, kamera och cloud storage: identiska.
+Privata `proof.json` och `cloud-activation-proof.json` finns bredvid kopiorna;
+inga nyckelvärden finns i kvittona eller Git. Detta är en lokal kontroll, inte
+ny verifiering av leverantörsinloggning, produktion eller medieacceptans.
+
+Rotens `.env.local` och `lab/.env.local` behålls för sina olika läsare.
+Inventeringen fann 59 respektive 51 namn: 49 gemensamma värden var identiska,
+medan `RUNPOD_API_KEY` och `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` skilde sig.
+De åtta namn som bara finns i rotfilen och de två skillnaderna är bevarade;
+rotfilen får därför inte blint ersätta Lab-filen. `lab/.env.cloud-storage.local`
+behålls separat: dess Blob- och zondatabasuppgifter laddas endast vid
+`--cloud-storage`. Rotens `.env` saknades redan vid inventeringen.
+
+`loadPrivateConnection` söker i ordningen `.env`, `lab/.env.local`,
+`lab/.env.generated-speech.local` och, endast vid cloud-storage-opt-in,
+`lab/.env.cloud-storage.local`. Senare filer vinner; uttrycklig processmiljö
+vinner sist. Endast respektive tillåtna nycklar vidarebefordras. Rotens
+`.env.local` och cloud-activation-filen ingår inte i denna läsordning.
+Saknad generated-speech-fil är tillåten; stödet finns kvar för andra checkouter.
+
 ## Emil-värden, 14 oktober 2026
 
 På Jakobs uttryckliga begäran är `CARTESIA_API_KEY`, `ELEVENLABS_API_KEY`,
@@ -10,14 +45,17 @@ liknamniga rader är kommenterade; övriga värden är bevarade. Samma fem namn
 Det ersätter det tidigare dokumenterade förbudet mot Cartesia-/RunPod-nycklar
 i detta delade Vercelprojekt. Inga hemliga värden finns i registret eller Git.
 
-Värdena tas upp vid nästa produktionsdeployment. Vercel förmedlar taltransport,
+Värdena aktiverades i produktionsdeploymenten för PR #139 (220519a1), skapad
+efter miljöuppdateringen och verifierad READY. Även PR #142 (418040fa) är
+verifierad READY med samma Production-scope. Vercel förmedlar taltransport,
 men Render äger providerjobb. Ingen Render-nyckel, pod, workerbild eller
 GitHub-hemlighet ändrades. Render har redan samma Cartesia-/ElevenLabs-värden. Befintlig RunPod-nyckel gav health 200 på aktiv endpoint; Emil-nyckeln gav 401 där och ersätter därför inte den fungerande Render-nyckeln. Workflows behöver inte dessa fem nycklar och GPU-jobbet
 får sitt ljud och tillfälliga anslutningsuppgifter från servern.
 
-Normal lokal Lab-start läser `.env`, `lab/.env.local` och
+Normal lokal Lab-start söker `.env`, `lab/.env.local` och den valfria
 `lab/.env.generated-speech.local`; rotens `.env.local` läses inte av den
-startvägen. `RUNPOD_ENDPOINT_ID` är inget alias till aktiva
+startvägen. Aktuell lokal konsolidering och prioritet beskrivs ovan.
+`RUNPOD_ENDPOINT_ID` är inget alias till aktiva
 `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Det nykopierade legacy-ID:t svarade 404
 och har inte ersatt scoped endpoint. `GEMINI_API_KEY` har ingen aktiv konsument
 i main. Kopieringen innebär inte att Dragans genererade tal är aktiverat.
@@ -275,9 +313,11 @@ bort. Nycklar som bara finns lokalt (OpenClaw-agent/modell/tal-URL/token,
 `LAB_API_TOKEN`, `LAB_PARTNER_*`, `BETTALOTTO_*`, `ELEVENLABS_*`) behålls från
 den lokala filen. Placering: rotens `.env.local` och `lab/.env.local` har samma
 delade värden; rotens `ELEVENLABS_API_KEY` är avsiktligt spelserverlokal.
-Opt-in-filerna `lab/.env.generated-speech.local`,
-`lab/.env.cloud-storage.local` och `lab/.env.cloud-activation.local` läses av
-`open-claw/lab/deploy/local-connection.mjs` under respektive flagga. Äldre
+`open-claw/lab/deploy/local-connection.mjs` söker generated-speech-filen
+i standardordningen och läser cloud-storage-filen endast under dess flagga.
+Cloud-activation-filen ingår inte i laddaren. Konsolideringen 14 oktober ovan
+beskriver vilka lokala filer som finns kvar och den faktiska värdeprioriteten.
+Äldre
 kopior sparas under `/random/env-backup-*/` (Git-ignorerat). Vid avvikelse
 mellan lokal fil och Vercel för samma namn vann Vercel (gällde API-nycklar för
 Cartesia, OpenAI, Gemini, RunPod, OpenClaw och `LAB_REMOTE_*`).
