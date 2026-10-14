@@ -89,8 +89,7 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
   const unavailable=disabled||Boolean(busy);
 
   if (!directory) {
-    return <section className={styles.card} aria-labelledby="operator-directory">
-      <h2 id="operator-directory">Bolag</h2>
+    return <section className={styles.card} aria-label="Bolag & team">
       <p role="status">Bolag och team kunde inte hämtas. Försök att ladda om sidan.</p>
     </section>;
   }
@@ -173,8 +172,8 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
 
   const selected = entries.find(operator => operator.id === selectedId);
   const visible = entries.filter(operator => (showArchive || operator.status === 'active') && (operator.name + ' ' + operator.slug).toLocaleLowerCase('sv').includes(search.trim().toLocaleLowerCase('sv')));
-  return <section className={styles.directory} aria-labelledby="operator-directory">
-    <div className={styles.heading}><div><h2 id="operator-directory">Bolag & team</h2><p className={styles.muted}>Välj bolag och hantera dess medlemmar. Intern personal och spelarkonton finns under <a href={labUrl('/control/administration?tab=accounts')}>Konton & åtkomst</a>.</p></div><span className={styles.count}>{entries.length} bolag</span></div>
+  return <section className={styles.directory} aria-label="Bolag & team">
+    <div className={styles.heading}><p className={styles.muted}>Intern personal och spelarkonton finns under <a href={labUrl('/control/administration?tab=accounts')}>Konton & åtkomst</a>.</p><span className={styles.count}>{entries.length} bolag</span></div>
     {error ? <p className={styles.feedback} role="alert">{error}</p> : null}
     {message ? <p className={styles.feedback} role="status">{message}</p> : null}
     <div className={styles.workspace}>
@@ -200,11 +199,11 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
       const add = adds[operator.id] ?? { contact: '', roleId: '' };
       const selectedRole = operator.roles.find(role => role.id === (add.roleId || defaultRole(operator)));
       return <article className={styles.card} aria-labelledby={`operator-${operator.id}`}>
-        <header className={styles.heading}><div><span className={styles.eyebrow}>BOLAGETS ARBETSYTA</span><h3 id={`operator-${operator.id}`}>{operator.name}</h3><p className={styles.muted}>/partner/{operator.slug}</p></div><a className="sg-btn sg-btn-secondary" href={labUrl('/control/rooms?' + new URLSearchParams({ operator: operator.id }))}>Spelrum & publicering →</a></header>
+        <header className={styles.heading}><div><span className={styles.eyebrow}>BOLAGETS ARBETSYTA</span><h2 id={`operator-${operator.id}`}>{operator.name}</h2><p className={styles.muted}>/partner/{operator.slug}</p></div><a className="sg-btn sg-btn-secondary" href={labUrl('/control/rooms?' + new URLSearchParams({ operator: operator.id }))}>Spelrum & publicering →</a></header>
         {operator.status!=='active'?<p className={styles.feedback} role="status">{lifecycleArchives[operator.id]?'Bolaget är arkiverat. Återställ bolaget nedan för att ändra teamet.':'Bolaget är avstängt. Teamet visas i läsläge.'}</p>:null}
         {operator.missingRoles.length ? <div className={styles.feedback}><p role="status">Standardroller saknas: {operator.missingRoles.join(', ')}.</p><button className="sg-btn sg-btn-ghost" type="button" disabled={teamUnavailable} onClick={() => { void restoreRoles(operator); }}>Skapa saknade standardroller</button></div> : null}
         <section className={styles.invite} aria-label="Lägg till i teamet">
-          <h4>Bjud in till {operator.name}</h4>
+          <h3>Bjud in till {operator.name}</h3>
           <p className={styles.muted}>En ny e-postadress får ett aktiveringsmejl. Ett befintligt partnerkonto kopplas utan mejl.</p>
           <form className={styles.form} aria-label={`Lägg till medlem i ${operator.name}`} onSubmit={event => { void addMember(event, operator); }}>
             <label className={styles.field}>E-post eller användarnamn<input value={add.contact} autoComplete="off" spellCheck={false} maxLength={254} required disabled={teamUnavailable} placeholder="namn@bolag.se" onChange={event => { const contact = event.target.value; setAdds(current => ({ ...current, [operator.id]: { ...add, contact } })); }} /></label>
@@ -213,7 +212,7 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
           </form>
           {selectedRole ? <p className={styles.muted}>{roleLabel(selectedRole)}: {selectedRole.permissions.length} behörigheter. Se rollens åtkomst nedan.{!operator.members.length ? ' Första medlemmen föreslås bli administratör.' : ''}</p> : null}
         </section>
-        <div className={styles.heading}><h4>Team</h4><span className={styles.count}>{operator.members.length} medlemmar</span></div>
+        <div className={styles.heading}><h3>Team</h3><span className={styles.count}>{operator.members.length} medlemmar</span></div>
         {operator.members.length ? <div className={styles.scroll}><table className={styles.members}>
           <thead><tr><th>Medlem</th><th>Roll</th><th>Status</th><th>Åtgärd</th></tr></thead>
           <tbody>{operator.members.map(member => {
@@ -232,7 +231,7 @@ export function ControlOperatorDirectory({ directory, onCreated, selectedOperato
           })}</tbody></table></div> : <p className={styles.empty}>Teamet är tomt. Lägg till bolagets första administratör ovan.</p>}
         <details className={styles.roles}><summary>Vad får rollerna göra?</summary>{operator.roles.map(role => <div key={role.id}><strong>{roleLabel(role)}</strong><p className={styles.muted}>{role.permissions.map(permission => PERMISSION_LABELS[permission] ?? permission).join(' · ') || 'Inga behörigheter'}</p></div>)}</details>
       </article>;
-    })() : <div className={styles.empty}><span className={styles.eyebrow}>BOLAG → TEAM → SPELRUM</span><h3>Samla arbetet kring ett bolag</h3><p>Välj ett bolag i listan eller skapa ett nytt. Här sköter du medlemskap och roller; under Spelrum & publicering väljer du vad bolagets spelare får möta.</p></div>}
+    })() : <div className={styles.empty}><span className={styles.eyebrow}>BOLAG → TEAM → SPELRUM</span><h2>Samla arbetet kring ett bolag</h2><p>Välj ett bolag i listan eller skapa ett nytt. Här sköter du medlemskap och roller; under Spelrum & publicering väljer du vad bolagets spelare får möta.</p></div>}
     </div>
   </section>;
 }

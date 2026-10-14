@@ -4,4 +4,5 @@ export type ClipGroup = {id:string;title:string;subtitle:string;color:string;slo
 export function slotCaption(slot:ClipSlot):string;
 export function slotSpeech(slot:ClipSlot):string;
 export function groupSlots(slots:ClipSlot[]):ClipGroup[];
+export function layoutClipCards(cards:{id:string;height?:number}[],canvasWidth:number,positions?:Record<string,{x:number;y:number}>,minimumRowStep?:number):Record<string,{x:number;y:number}>;
 export function affectedRooms(before:StudioProject,after:StudioProject,rooms:Room[]):Room[];

@@ -8,13 +8,13 @@ const main = [
   {label:'Kopplingar',href:'/admin/structure',icon:Network},
   {label:'Radering',href:'/admin/deletion',icon:Trash2},
   {label:'Dealers',href:'/admin/dealers',icon:Users},
-  {label:'Studio',href:'/admin/clips',icon:LayoutDashboard},
+  {label:'Klippkarta',href:'/admin/clips',icon:LayoutDashboard},
   {label:'Bord & bakgrunder',href:'/admin/assets',icon:LayoutDashboard},
   {label:'Verktyg',href:'/admin/tools',icon:Settings},
   {label:'Drift',href:'/admin/drift',icon:Activity},
   {label:'Ekonomi',href:'/admin/ekonomi',icon:CircleDollarSign},
 ];
-const system = [['Agentmodeller','/admin/ai/models'],['Adminroboten','/admin/ai/chat'],['Spelbolag & team','/admin/companies'],['Konton','/admin/admin/accounts'],['Spelare','/admin/admin/players'],['Betalningar','/admin/admin/payments'],['Integrationer','/admin/admin/api'],['Ändringslogg','/admin/admin/log']];
+const system = [['Agentmodeller','/admin/ai/models'],['Adminroboten','/admin/ai/chat'],['Konton & åtkomst','/admin/admin/accounts'],['Spelare','/admin/admin/players'],['Betalningar','/admin/admin/payments'],['Integrationer','/admin/admin/api'],['Ändringslogg','/admin/admin/log']];
 export function StudioSidebar() {
   const path=usePathname();
   return <aside className="studio-sidebar"><Link href="/admin" className="studio-wordmark">scout<span>/</span>gaming<small>WORKSPACE</small></Link>

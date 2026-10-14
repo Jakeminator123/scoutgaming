@@ -24,6 +24,21 @@ export function groupSlots(slots) {
   ];
   return definitions.map(([id,title,subtitle,color,matches])=>({id,title,subtitle,color,slots:slots.filter(matches)})).filter(group=>group.slots.length);
 }
+export function layoutClipCards(cards, canvasWidth, positions = {}, minimumRowStep = 355) {
+  const columns = canvasWidth < 610 ? 1 : canvasWidth < 1100 ? 2 : 4;
+  const layout = {};
+  let y = 0;
+  for (let start = 0; start < cards.length; start += columns) {
+    const row = cards.slice(start, start + columns);
+    let rowStep = minimumRowStep;
+    row.forEach((card, column) => {
+      layout[card.id] = positions[card.id] ?? { x: column * 306, y };
+      if (Number.isFinite(card.height) && card.height > 0) rowStep = Math.max(rowStep, card.height + 26);
+    });
+    y += rowStep;
+  }
+  return layout;
+}
 export function affectedRooms(before, after, rooms) {
   const changedDealers = new Set(after.dealers.filter(dealer =>
     JSON.stringify(before.lines.filter(line=>line.dealerId===dealer.id))!==JSON.stringify(after.lines.filter(line=>line.dealerId===dealer.id))

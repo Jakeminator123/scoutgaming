@@ -30,7 +30,7 @@ const pages: Record<string, string> = {
   '/admin/assets': 'Bord & bakgrunder',
   '/admin/drift': 'Drift', '/admin/ekonomi': 'Ekonomi', '/admin/admin/accounts': 'Konton & åtkomst',
   '/admin/admin/operators': 'Spelbolag', '/admin/admin/players': 'Spelare', '/admin/admin/payments': 'Betalningar',
-  '/admin/admin/api': 'API', '/admin/admin/log': 'Ändringslogg', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Adminroboten',
+  '/admin/admin/api': 'Integrationer', '/admin/admin/log': 'Ändringslogg', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Adminroboten',
 };
 function App() {
   const path = usePathname();
@@ -57,7 +57,7 @@ function App() {
     if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
-      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Studio':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin/clips" aria-current="page"><b>1</b> Studio</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/play"><b>3</b> Spelarvy</a></nav></header>
+      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Klippkarta':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
       <label className="preview-mobile-nav">Sida <select value={studio ? '/admin/clips' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).map(([key, label]) => <option key={key} value={key}>{label}</option>)}

@@ -1,18 +1,18 @@
-import { Activity, ArrowRight, Building2, CircleDollarSign, Clapperboard, Layers3 } from 'lucide-react';
+import { ArrowRight, Building2, Clapperboard, Layers3, Play, Send } from 'lucide-react';
 import Link from '../../../runtime/navigation';
 
 const destinations = [
-  { title:'Dealers och klipp', description:'Arbeta med dealerklipp och sammansättningar.', href:'/admin/clips', icon:Clapperboard, secondary:{label:'Bord och bakgrunder',href:'/admin/assets'} },
-  { title:'Spelbolag och rum', description:'Se bolag, spelrum och deras kopplingar till spel och dealers.', href:'/admin/admin/operators', icon:Building2, secondary:{label:'Visa spelrum',href:'/admin/rooms?view=registered'} },
-  { title:'Ekonomi', description:'Se kontorörelser och diagram. Öppna journalen för detaljer.', href:'/admin/ekonomi', icon:CircleDollarSign, secondary:null },
-  { title:'Drift', description:'Följ spelstatus och den löpande driften.', href:'/admin/drift', icon:Activity, secondary:null },
+  { title:'Dealers och klipp', description:'Välj en dealer och arbeta med dess material. Koppla klipp till utkastet i klippkartan.', href:'/admin/dealers', icon:Clapperboard, secondary:{label:'Klippkarta',href:'/admin/clips'} },
+  { title:'Bolag & team', description:'Skapa bolag, bjud in medlemmar och hantera deras åtkomst.', href:'/admin/companies', icon:Building2, secondary:null },
+  { title:'Spelrum & publicering', description:'Välj bolag och rum. Granska utkastet innan du publicerar en ny version.', href:'/admin/publication', icon:Send, secondary:null },
+  { title:'Provspelning', description:'Provspela en dealer och följ vad som visas och hörs i spelaren.', href:'/admin/rehearsal', icon:Play, secondary:null },
   { title:'System', description:'Hitta struktur, konton och tekniska inställningar.', href:'/admin/structure', icon:Layers3, secondary:{label:'Konton och åtkomst',href:'/admin/admin/accounts'} },
 ] as const;
 
 export function AdminHome() {
   return <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 py-6 lg:px-8" aria-labelledby="admin-home-title">
     <header className="max-w-2xl">
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-sg-lime">Scoutgaming · Intern arbetsyta</p>
+      <p className="text-sm font-medium text-sg-lime">Scoutgaming · Intern arbetsyta</p>
       <h1 id="admin-home-title" className="mt-2 text-2xl font-semibold tracking-tight">Vad vill du göra?</h1>
       <p className="mt-2 text-sm text-sg-muted">Välj ett område. Dina val för spelbolag och rum gör du inne i respektive arbetsyta.</p>
     </header>
