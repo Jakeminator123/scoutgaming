@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {projectGamePlane,layoutGameOverlay} from '../web/public/game-overlay-layout.mjs';
-import {stageGeometry} from '../packages/presentation/compositor/geometry.js';
-import {sceneForComposition,defaultCompositionSettings} from '../web/public/composition-settings.mjs';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import {projectGamePlane,projectTableGamePlane,layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
+import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
+import {sceneForComposition,defaultCompositionSettings,defaultBlackjackTableGeometry} from '../web/public/composition-settings.mjs';
 import {calibration} from '../web/public/card-presentation/calibration.mjs';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const settings=defaultCompositionSettings();
@@ -65,4 +67,59 @@ test('short landscape and temporarily collapsed HUD bounds never create negative
     const r=layoutGameOverlay(p,[0,1,2,3,4,5,6],{left:12,right:832,top:80,bottom});
     assert.ok(Number.isFinite(r.scale)&&r.scale>0);
   }
+});
+
+for(const [width,height,boxes]of [[390,844,[0,1,2]],[390,844,[2,3,4]],[390,844,[4,5,6]],[1920,1080,[0,1,2,3,4,5,6]]]){
+  test(`saved board anchors follow image placement, not dealer crop, at ${width}x${height}: ${boxes}`,()=>{
+    const s=defaultCompositionSettings(),layout=width<height?'mobile':'desktop';s[layout].table.y=.35;
+    const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
+    const image={width:1672,height:941},scene=sceneForComposition(s,layout),g=stageGeometry(scene),viewport={width,height};
+    const rect=tableRect(scene,image,g),plane=projectTableGamePlane(g.dims,rect,viewport,board);
+    const compact=width<=860,result=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:height-100},{compact});
+    assert.equal(result.adjusted,true);assert.equal(result.geometryWarning,'');
+    assert.deepEqual(result.seats.map(row=>row.box),boxes);
+    boxes.forEach((box,i)=>{
+      const slot=board[compact?'mobile':'desktop'].seats[compact?i:box],anchor=result.positions[String(box+1)];
+      close(result.x+anchor.cx*result.scale,plane.rect.x+slot.card.x*plane.rect.width);
+      close(result.y+anchor.cy*result.scale,plane.rect.y+slot.card.y*plane.rect.height);
+      close(result.seats[i].x,plane.rect.x+slot.bet.x*plane.rect.width);
+      close(result.seats[i].y,plane.rect.y+slot.bet.y*plane.rect.height);
+    });
+    scene.stage[layout]={scale:3,x:.7,y:-1};const moved=stageGeometry(scene);
+    assert.deepEqual(projectTableGamePlane(moved.dims,tableRect(scene,image,moved),viewport,board),plane);
+    scene.tablePlacement.y+=.1;
+    const shifted=projectTableGamePlane(g.dims,tableRect(scene,image,g),viewport,board);
+    close(shifted.rect.y-plane.rect.y,g.dims[1]*.1*Math.min(width/g.dims[0],height/g.dims[1]));
+  });
+}
+test('static geometry reports clipped or overlapping controls instead of silently moving them off the board',()=>{
+  const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
+  const plane={tableGeometry:board,rect:{x:0,y:700,width:390,height:220}};
+  const r=layoutGameOverlay(plane,[4,5,6],{left:12,right:378,top:80,bottom:650},{compact:true});
+  assert.match(r.geometryWarning,/ryms inte/);close(r.y,700);
+  plane.rect.y=300;board.mobile.seats[1].bet.x=board.mobile.seats[0].bet.x;
+  assert.match(layoutGameOverlay(plane,[2,3,4],{left:12,right:378,top:80,bottom:700},{compact:true}).geometryWarning,/ryms inte/);
+});
+
+test('actual seat layout handles compositor resize before the query change event and retains a resumed outer hand',()=>{
+  const source=readFileSync(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+  const fragment=source.slice(source.indexOf('const COMPACT_BOXES ='),source.indexOf('layerComposition?.onGeometryChange(layoutSeats)'));
+  const query={matches:false},geometry=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
+  let width=1920,height=1080,projection;
+  const node=()=>({style:{setProperty(){}},classList:{toggle(){}},setAttribute(){},getBoundingClientRect:()=>({left:0,top:0,width,height})});
+  const scene=node(),nodes={'#scene':scene,'#banner':node(),'#table2d':node(),'#dealer-cards':node(),'#hud-bottom':{getBoundingClientRect:()=>({top:height-80,height:80})}};
+  scene.append=element=>{nodes['#'+element.id]=element;};
+  const plane=()=>{
+    const settings=defaultCompositionSettings(),layout=query.matches?'mobile':'desktop';settings[layout].table.y=.35;
+    const scene=sceneForComposition(settings,layout),g=stageGeometry(scene);
+    return projectTableGamePlane(g.dims,tableRect(scene,{width:1672,height:941},g),{width,height},geometry,layout);
+  };
+  const context=vm.createContext({BLACKJACK_COMPACT_QUERY,layoutGameOverlay,matchMedia:()=>query,SEATS:7,seatEls:Array.from({length:7},node),round:null,
+    $:selector=>nodes[selector],document:{createElement:node},layerComposition:{referencePlane:plane},localCards:{setProjection(value){projection=structuredClone(value);}}});
+  vm.runInContext(fragment,context);assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
+  width=390;height=844;query.matches=true;context.round={active:0,live:()=>[{box:6}]};
+  // No change event has updated the app's earlier compactSeats value yet.
+  vm.runInContext('layoutSeats()',context);assert.deepEqual(projection.boxes,[4,5,6]);
+  width=900;height=1200;query.matches=false;
+  vm.runInContext('layoutSeats()',context);assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
 });

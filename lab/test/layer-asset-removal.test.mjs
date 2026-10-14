@@ -22,6 +22,14 @@ test('archived dealer compositions retain their layer references until explicitl
   assert.throws(()=>removeLayerAsset(project,asset.id),/Koppla loss/);
 });
 
+test('a residual geometry reference is reported and blocks deletion even in archived compositions',()=>{
+  for(const archived of [false,true]){
+    const {project,asset}=fixture(),lane=project.lanes[0];lane.composition={blackjackTables:[{tableId:asset.id}]};
+    if(archived){project.lanes=[];project.dealerTrash=[{compositions:[lane]}];}
+    assert.equal(layerAssetReferences(project,asset.id).length,1);assert.throws(()=>removeLayerAsset(project,asset.id),/Koppla loss/);
+  }
+});
+
 test('legacy lane names display as compositions while stored identities and snapshots stay intact',()=>{
   const {project,asset}=fixture();project.lanes[0].label='Mobile Phone Lane';project.lanes[0].layers.background.allowed=[asset.id];
   assert.deepEqual(layerAssetReferences(project,asset.id),[{id:'mobile-phone',label:'Standardsammansättning'}]);

@@ -64,6 +64,7 @@ export class Compositor {
     gl.uniform1f(u.hasMask,mask?1:0);gl.uniform1f(u.hasHand,hand?1:0);gl.uniform1f(u.opacity,opacity);gl.drawArrays(gl.TRIANGLES,0,6);
   }
   geometry(scene){return stageGeometry(scene);}
+  tableGeometry(scene,asset){return tableRect(scene,asset,this.geometry(scene));}
   paintCards(cards,metadata,anchors){
     const signature=JSON.stringify([cards,metadata?.positioner,anchors]);if(signature===this.lastCards)return;
     this.lastCards=signature;this.cardRevision++;const ctx=this.cardCanvas.getContext('2d');ctx.clearRect(0,0,1080,1920);

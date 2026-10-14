@@ -98,7 +98,7 @@ const manifest={deal:Object.entries(calibration.positions).map(([id,kort])=>({id
 const all=n=>[n,...n.children.flatMap(all)];
 const card=(r,s,shoeDraw)=>({r,s,shoeDraw});
 const fixture=()=>({phase:'decisions',active:0,holeDraw:4,dealer:[card('6','♣',2)],hands:[{box:3,cards:[card('4','♥',1),card('7','♠',3)]}]});
-function setup(){const svg=new Node('svg');svg.id='test';return {svg,cards:createGameCards(svg,manifest)};}
+function setup(){const svg=new Node('svg');svg.id='test';return {svg,cards:createGameCards(svg,manifest,{dealerLabel:'Astrid'})};}
 test('resize during a calibrated deal revokes contact while preserving the server draw',()=>{
   const {svg,cards}=setup();let aligned=true;
   const cursor=createCardCursor(cards,{canTrack:()=>aligned});cursor.sync(fixture());
@@ -118,6 +118,25 @@ test('mobile card reflow retains exact draws, split hands and hidden hole throug
   overlay.setProjection({x:0,y:0,scale:1,adjusted:false,offsets:{},boxes:[0,1,2,3,4,5,6]},1920,1080);
   assert.equal(draw(svg,1),original);assert.equal(draw(svg,5).attrs.transform,'translate(540.000 1115.000)');
   assert.equal(hole.attrs['data-card'],'hidden');overlay.close();assert.equal(host.children.length,0);
+});
+
+test('table-local static anchors retain server draws and split hands, revoke filmed contact, and name the actual dealer',()=>{
+  const host=new Node('div');host.dataset={};const overlay=createLocalCardOverlay(host,{dealerLabel:'Dragan'}),round=splitFixture();overlay.restore(round);
+  const svg=host.children[0],original=draw(svg,1),hole=draw(svg,4);
+  const positions={dealer:{cx:700,cy:100},'4':{cx:700,cy:350}};
+  overlay.setProjection({x:0,y:200,scale:.4,adjusted:true,positions,boxes:[2,3,4]},390,844);
+  assert.equal(draw(svg,1),original);assert.equal(hole.attrs['data-card'],'hidden');
+  assert.equal(draw(svg,5).attrs.transform,'translate(700.000 350.000)');
+  assert.notEqual(draw(svg,6).attrs.transform,draw(svg,5).attrs.transform);
+  assert.equal(all(svg).find(n=>n.attrs.class==='card-layer').attrs['clip-path'],'none');
+  assert.ok(all(svg).some(n=>n.attrs['aria-label']?.startsWith('Dragan:')));
+  assert.ok(!all(svg).some(n=>n.attrs['aria-label']?.includes('Astrid')));
+  const token=overlay.begin(calibration.videos.find(v=>v.track==='4'),{to:'box',box:3,shoeDraw:5});
+  overlay.frame(token,3);assert.equal(overlay.finish(token,5,true),false);
+  overlay.setProjection({x:0,y:0,scale:1,adjusted:false,offsets:{},boxes:[0,1,2,3,4,5,6]},1920,1080);
+  assert.equal(draw(svg,5).attrs.transform,'translate(540.000 1115.000)');
+  assert.match(all(svg).find(n=>n.attrs.class==='card-layer').attrs['clip-path'],/^url\(/);
+  assert.equal(hole.attrs['data-card'],'hidden');overlay.close();
 });
 const draw=(svg,id)=>all(svg).find(n=>n.attrs['data-draw']===String(id));
 

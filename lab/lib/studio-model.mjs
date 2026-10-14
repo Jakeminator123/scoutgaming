@@ -148,7 +148,7 @@ function laneErrors(lanes, projectDealerIds) {
       catch { fail(`${at}.backgroundPlayback`, 'ogiltiga uppspelningsregler'); }
     }
     if (Object.hasOwn(lane, 'composition')) {
-      try { validateCompositionSettings(lane.composition); }
+      try { validateCompositionSettings(lane.composition,{tableIds:lane.layers?.table?.allowed}); }
       catch { fail(`${at}.composition`, 'ogiltiga lagerplaceringar'); }
     }
     if (typeof lane.id !== 'string' || !LANE_ID.test(lane.id) || RESERVED_LANE_IDS.has(lane.id)) fail(`${at}.id`, 'ska vara ett lane-id (liten bokstav, siffror, bindestreck; inte original)');
@@ -505,6 +505,10 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     }
   }
   for (const [index, lane] of (Array.isArray(project.lanes) ? project.lanes : []).entries()) {
+    if(lane?.composition){
+      try{validateCompositionSettings(lane.composition,{tableIds:lane.layers?.table?.allowed??[],assets:project.layerAssets??[]});}
+      catch{error(`lanes[${index}].composition`,'kortplatser kräver ett tillåtet blackjackbord i biblioteket');}
+    }
     if (!Object.hasOwn(lane ?? {}, 'backgroundPlayback')) continue;
     try {
       const background = lane.layers?.background;

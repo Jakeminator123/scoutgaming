@@ -1,4 +1,5 @@
 import { calibration } from './card-presentation/calibration.mjs';
+export const BLACKJACK_COMPACT_QUERY='(max-width: 860px)';
 
 // Reference coordinates are the same 1080 x 1920 plane as the card renderer.
 // Include both the source framing and the compositor's logical canvas/contain.
@@ -12,10 +13,43 @@ export function projectGamePlane({ dims, s, x, y }, viewport, framing = { scale:
   };
 }
 
+// Use the compositor's exact image rectangle, including transparent margins.
+// Board anchors are static UI; source-video framing must never move them.
+export function projectTableGamePlane(dims, rect, viewport, tableGeometry,tableLayout) {
+  const fit=Math.min(viewport.width/dims[0],viewport.height/dims[1]);
+  return {tableGeometry,...(tableLayout?{tableLayout}:{}),rect:{x:(viewport.width-dims[0]*fit)/2+rect[0]*fit,
+    y:(viewport.height-dims[1]*fit)/2+rect[1]*fit,width:rect[2]*fit,height:rect[3]*fit}};
+}
+
+function layoutTableGameOverlay({rect,tableGeometry,tableLayout},boxes,bounds,compact){
+  const layout=tableLayout??(compact?'mobile':'desktop'),geometry=tableGeometry[layout];
+  const scale=rect.width*geometry.cardWidth/calibration.width;
+  const local=point=>({cx:point.x*rect.width/scale,cy:point.y*rect.height/scale});
+  const screen=point=>({x:rect.x+point.x*rect.width,y:rect.y+point.y*rect.height});
+  const positions={dealer:local(geometry.dealer)};
+  const seats=boxes.map((box,index)=>{
+    const seat=geometry.seats[layout==='mobile'?index:box];
+    positions[String(box+1)]=local(seat.card);
+    return {box,...screen(seat.bet)};
+  });
+  const controlScale=compact?Math.min(1,Math.max(.01,(bounds.right-bounds.left)/330)):scale;
+  const inside=(x,y,left,right,top,bottom)=>x-left>=bounds.left&&x+right<=bounds.right&&y-top>=bounds.top&&y+bottom<=bounds.bottom;
+  const fits=seats.every((seat,index)=>{
+    const card=positions[String(seat.box+1)],x=rect.x+card.cx*scale,y=rect.y+card.cy*scale;
+    return inside(seat.x,seat.y,49*controlScale,49*controlScale,45*controlScale,45*controlScale)
+      &&inside(x,y,144*scale,90*scale,230*scale,55*scale)
+      &&(!index||seat.x-seats[index-1].x>=98*controlScale);
+  });
+  const dealer=screen(geometry.dealer);
+  return {x:rect.x,y:rect.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,
+    geometryWarning:fits&&inside(dealer.x,dealer.y,310*scale,45*scale,130*scale,55*scale)?'':'Kort eller insatsplatser ryms inte. Justera bordets placering i Sammansättning.'};
+}
+
 // Keep server seat identities and card anchors together, including a resumed
 // desktop hand on a phone. A heavily cropped actor must not crop game controls.
 // An adjusted plane is static presentation, never evidence of filmed contact.
 export function layoutGameOverlay(plane, boxes, bounds, {compact=false}={}) {
+  if(plane.tableGeometry)return layoutTableGameOverlay(plane,boxes,bounds,compact);
   const anchors = boxes.map(box => ({ box, ...calibration.positions[String(box + 1)] }));
   const left = Math.min(calibration.positions.dealer.cx - 310,...anchors.map(p => p.cx - 144));
   const right = Math.max(calibration.positions.dealer.cx + 45,...anchors.map(p => p.cx + 90));
@@ -36,6 +70,7 @@ export function layoutGameOverlay(plane, boxes, bounds, {compact=false}={}) {
   const adjusted = plane.sourceAligned===false || Math.abs(scale - plane.scale) > .001 || Math.abs(x - plane.x) > .5 || Math.abs(y - plane.y) > .5
     || Object.values(offsets).some(dx=>Math.abs(dx)>.5);
   return { x, y, scale, adjusted,offsets,boxes,controlScale:compact?Math.min(1,availableWidth/330):scale,
+    ...(plane.geometryWarning?{geometryWarning:plane.geometryWarning}:{}),
     seats,
     dealer: { x: x + calibration.positions.dealer.cx * scale, y: y + calibration.positions.dealer.cy * scale },
   };

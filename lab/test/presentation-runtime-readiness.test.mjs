@@ -35,6 +35,27 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+test('table geometry requires v16 before saving active, archived or frozen data, including an empty optional field',async()=>{
+  for(const descriptor of [
+    {kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}},
+    {kind:'project',value:{dealerTrash:[{compositions:[{composition:{blackjackTables:[]}}]}]}},
+    {kind:'presentation-package',value:{schemaVersion:3,lanes:[{composition:{blackjackTables:[]}}]}},
+  ])for(const version of [15,16]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value}),descriptor);
+    if(version===15)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'16');assert.equal(f.writes.length,version===16?1:0);
+  }
+  const direct=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(15))});
+  await assert.rejects(direct.wrapped.saveDocument('project',{value:{lanes:[{composition:{blackjackTables:[]}}]}}),blocked);
+  assert.equal(direct.writes.length,0);
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(15))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveDocument('project',{value:{lanes:[{composition:{blackjackTables:[]}}]}}),blocked);
+  },{kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:{}}]}});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
 test('wheel-start needs v15 for active/archived bindings and frozen publication; idle cannot widen inside SQL',async()=>{
   for(const descriptor of [
     {kind:'project',value:{dealers:[{id:'astrid',rouletteStart:{videoId:'fixture'}}]}},
