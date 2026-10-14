@@ -163,7 +163,18 @@ nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
 ## Admin C1–C4: navigation och läsbarhet, 14 oktober
 
-Senaste C4/C5-pass fortsätter på `codex/admin-c4-room-history` efter DRAGANs
+PR140 är granskad och mergad till `c3397d1d0503927a6d0dafc240c21772634d99ee`.
+Vercels huvuddomän kör samma SHA, READY i `dpl_AZmTomDfe14ErSFnjKqp3zzA8at2`.
+Eget läsande slutprov kl. 20.30 svensk tid behöll Swedish Games version 4,
+Dragan-rummet, sammansättning, dealer och Blackjack genom Publicering →
+Provspelning → Klippkarta samt reload/Bakåt/Framåt. Spara var inaktiv; ingen
+produktionsskrivning, ny login eller spelanslutning gjordes. Ny produktionslogin,
+full RSC-/Lab-historik, andra redigerare och C6/C7 återstår enligt trackern.
+Tre senaste agentarbetskopior och egen testflik/fixture-cache är städade.
+Integrationens beroenden behålls för samordnarens tillfälliga PR91-junctions;
+inga egna produktservrar eller agentprov körs. Renderacceptans är separat.
+
+Arbetsgång före leverans: C4/C5-passet på `codex/admin-c4-room-history` startade efter DRAGANs
 PR138 (`ad0ae9ac`), med hans talfacksleverans före vår integration. Bara våra
 Admin-avsnitt är överlämnade. Tre separata agentarbetskopior har provat riktig
 Admin efter login, Lab-historik samt projektredigerarens sparning/konflikter.
