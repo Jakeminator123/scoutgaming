@@ -694,9 +694,9 @@ room.on("connection", (ws) => {
       }
       // Emil 14 Oct: where the reviewed pipeline is off (staging), the player learns why the dealer does not answer
       if(text&&localQA){const why=localResponse(text);send(ws,{t:'notice',text:why==='support'
-        ?"This message was caught by our responsible gaming filter, so the dealer won't reply to it. If you need support, please take a break and reach out to customer support or a responsible gaming helpline."
-        :why==='privacy'?"This message was held back by our privacy filter. Please don't share personal details such as e-mail addresses, links or numbers at the table."
-        :"The dealer can't reply to chat at this table right now."});return;}
+        ?"Held by our responsible gaming filter. Need support? Take a break and contact customer support."
+        :why==='privacy'?"Held by our privacy filter. Please don't share personal details at the table."
+        :"The dealer can't reply to chat here."});return;}
       if (text) chat(ws.name, text,ws.session,ws.guest).catch(() => {});
     } else if (j.t === "event") {
       safetyAudit.write({event:'manual_event_blocked',decision:'public_socket'});
