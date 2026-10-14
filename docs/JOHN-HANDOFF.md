@@ -1274,12 +1274,26 @@ saknade två låsta beroendeinstallationer i arbetskopian; gateway-/frontend-
 beroenden kopplades därefter från exakt matchande paket och lockfiler.
 Inga obligatoriska kontroller har försvagats.
 
-PR91 är fortsatt draft. Spelarproven som Jakob stoppade har inte återstartats;
-vinst, push, split, mobil och två sammanhängande spelningar på den nya koden
-återstår. Framtida spelarprov ska följa den redan angivna internetadressen och
-avgränsade testdatan. Ingen produktionsdata, betalad generering eller mediafil
-har ändrats. Kodprov/bildindex ersätter inte faktisk spel-/läppsynksacceptans.
-Privata loggar och tillfälliga beroendejunctions hör till samordnarens arbetskopia.
+Jakob godkände återupptagna isolerade spelarprov den 14 oktober. SAMORDNING
+har nu provat den verkliga spelaren från kodhead `542e98b2` på separat
+Vercel Sandbox-host med Node 24.14.1, minnesdatabas, spärrad utgående trafik
+och utan produktionsnycklar. Samma session genomförde förlust, vinst, push
+och split med serverstyrda kort och separata testsaldon 9 995 → 10 000 →
+10 000 → 10 010 EUR. Alla 15 spelkommandon gav HTTP 200. Desktop 1440×900
+och mobil 390×844 användes; push och split slutfördes i mobilvyn.
+Astrids befintliga hälsningsfilm spelades två gånger i följd med ljud aktiverat,
+normal hastighet och full längd 4,958333 s. Ett framkallat pausavbrott återhämtade
+sig från samma position utan seek, ändrad hastighet eller avstängt ljud.
+Inga mediefel registrerades. Detta är funktionell spelaracceptans för PR91,
+inte ny mänsklig läppsynksbedömning eller acceptans av andra dealers/nya takes.
+51 befintliga bankfilmer och 197 publika resurser kopierades med hashkontroll;
+originalmedier, produktionsdata och betald generering ändrades inte.
+Slutlig kodintegration hade ordinarie pre-commit 3 794 pass, 19 uttryckligt
+villkorade skips och 0 fel i 77 grupper; bygg-/kodproven ovan är återanvända
+för oförändrad kod. Egna fyra beroendejunctions är borttagna. Sandlådan är
+stoppad och provfliken stängd. Privata JSON-kvitton/skärmbilder finns i
+Codex visualiseringar för denna samordningschatt och serverkvittot i
+huvudcheckoutens `lab/data/platform-private/main-sync-20261014/`.
 Städning, 14 oktober: `ops/vercel-entry` är redan pensionerad i `b621c760`,
 saknar aktiva processreferenser och hade bara lokala preview-/byggrester kvar.
 Den katalogen och den tomma, ospårade `e.id` har flyttats återställbart till
