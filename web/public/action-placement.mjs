@@ -17,3 +17,10 @@ export function placeActions({width,height,viewport,anchor,obstacles=[],margin=1
   }
   return best;
 }
+
+// All main/side-bet targets remain usable while choosing a stake.
+export function placeDealControl({width,height,viewport,targets,obstacles=[]}) {
+  if(!targets.length||width<=0||height<=0||width+24>viewport.width||height+24>viewport.bottom-viewport.top)return null;
+  const anchor={x:(Math.min(...targets.map(r=>r.left))+Math.max(...targets.map(r=>r.right)))/2,bottom:Math.max(...targets.map(r=>r.bottom))};
+  return placeActions({width,height,viewport,anchor,obstacles:[...targets,...obstacles],belowAnchor:true});
+}

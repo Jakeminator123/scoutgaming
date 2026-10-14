@@ -22,7 +22,7 @@ import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelectio
 import { createPresentationStartup } from './presentation-startup.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { handValue } from './blackjack.mjs';
-import { placeActions } from './action-placement.mjs';
+import { placeActions, placeDealControl } from './action-placement.mjs';
 import { cardFaceArt } from './card-art.mjs';
 
 const $ = s => document.querySelector(s);
@@ -709,8 +709,11 @@ function layoutSeats() {
       if(filmedProfile&&layout.sourcePlane&&layout.tableId&&!layout.geometryWarning)
         layout.filmedLayout={profileId:filmedProfile.id,tableId:layout.tableId,layout:layout.tableLayout,sourcePlane:layout.sourcePlane};
       localCards?.setProjection(layout,scene.width,scene.height);
+      layoutDealControl();
       return;
     }
+    delete $('#scene').dataset.betPlacement;
+    layoutDealControl();
     const width = Math.min(innerWidth, innerHeight * 9 / 16), height = width * 16 / 9;
     const left = (innerWidth - width) / 2, top = (innerHeight - height) / 2;
     const table = $('#table2d').getBoundingClientRect(), boxes = playedBoxes();
@@ -931,6 +934,29 @@ function renderBets() {
   $('#undo-btn').disabled = !undoStack.length || !!round || busy;
   $('#double-btn').disabled = !betTotal() || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max) || !!round || busy;
   $('#max-btn').disabled = balance < LIMITS.min || !!round || busy;
+  layoutDealControl();
+}
+
+// Fixed viewport percentages can cover the centre betting position.
+function layoutDealControl() {
+  const control=$('#deal-now'),scene=$('#scene');
+  let notice=$('#deal-placement-warning');
+  if(scene.dataset.betPlacement!=='under-cards'){
+    Object.assign(control.style,{position:'',left:'',top:'',bottom:'',transform:'',visibility:''});
+    if(notice)notice.hidden=true;
+    return;
+  }
+  if(getComputedStyle(control).display==='none'){if(notice)notice.hidden=true;return;}
+  control.style.visibility='';
+  const visible=el=>el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden';
+  const targets=seatEls.filter(el=>!el.classList.contains('seat-off')).flatMap(el=>[...el.querySelectorAll('.spot,.sidearcs,.bet-target,.clear-box,.stake')]).filter(visible).map(el=>el.getBoundingClientRect());
+  const obstacles=[...document.querySelectorAll('#wallet,#chip-row,#bottom-right,#table-pick,#player-choices,#rehearsal,#hud-top,.card-view-choice,.local-presentation-mode')].filter(visible).map(el=>el.getBoundingClientRect());
+  const placement=placeDealControl({width:control.offsetWidth,height:control.offsetHeight,
+    viewport:{width:innerWidth,top:0,bottom:$('#dealer-picker').getBoundingClientRect().top},targets,obstacles});
+  if(placement)Object.assign(control.style,{position:'fixed',left:placement.x+'px',top:placement.y+'px',bottom:'auto',transform:'none'});
+  else control.style.visibility='hidden';
+  if(!placement&&!notice){notice=document.createElement('p');notice.id='deal-placement-warning';notice.className='local-presentation-status';notice.setAttribute('role','status');scene.append(notice);}
+  if(notice){notice.textContent='Givknappen ryms inte. Förstora spelytan eller justera bordsprofilen.';notice.hidden=!!placement;}
 }
 
 // ---------- demo cashier ----------
