@@ -184,6 +184,16 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (queueVersion === requestVersion && upcoming[0]?.type === event.type
         && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
       else upcoming = [];
+      if (!result.video && kind === 'speech') {
+        const reason = result.decision.media?.reason;
+        if ([undefined, null, 'no_exact_video_2d', 'frozen_clip_missing'].includes(reason)) {
+          receipt({ event: kind, state: 'skipped', sourceEvent: result.decision.sourceEvent, reason: reason ?? 'speech_clip_missing', renderer: 'none',
+            requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource });
+          retainRule(result, requestVersion);
+          return false;
+        }
+        if (reason === 'recorded_speech_unavailable') throw new Error('Talfilmens granskning eller identitet stämmer inte');
+      }
       if (!result.video && ((kind === 'deal' && result.decision.media?.reason === 'position_clip_missing') || result.decision.media?.reason === 'frozen_clip_missing')) {
         receipt({ event: kind, state: 'skipped', sourceEvent: result.decision.sourceEvent, reason: result.decision.media.reason, renderer: '2d',
           requestId: result.decision.requestId, familyId: result.decision.media.familyId, situation: result.decision.media.situation,
@@ -222,8 +232,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch (error) {
       if (signal?.aborted || token !== serial) return false;
       if (requireReload(error)) return false;
-      status.textContent = `${error.message} · 2D-reserv`;
-      receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
+      status.textContent = kind === 'speech' ? `Tal: ${error.message}` : `${error.message} · 2D-reserv`;
+      receipt({ event: kind, state: kind === 'speech' ? 'failed' : 'fallback', sourceEvent: event, reason: error.message, renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
         projectRevision: result?.projectRevision, configurationSource }); return false;
     }
   }

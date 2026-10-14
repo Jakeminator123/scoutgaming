@@ -25,17 +25,18 @@ const baselineContracts = {
 const categoryContract=Object.freeze({...baselineContracts[13],schemaVersion:14,dealerCategoryTrash:'retained-categories-v1'});
 const rouletteContract=Object.freeze({...categoryContract,schemaVersion:15,rouletteIdle:'explicit-game-idle-v1',rouletteStart:'explicit-game-start-v1'});
 const geometryContract=Object.freeze({...rouletteContract,schemaVersion:16,blackjackTableGeometry:'asset-static-anchors-v1'});
-const contracts=Object.freeze({...baselineContracts,14:categoryContract,15:rouletteContract,16:geometryContract,
-  17:Object.freeze({...geometryContract,schemaVersion:17,recordedSpeech:'exact-take-review-v1',filmedDealVariants:'sixteen-explicit-v1'})});
+const speechContract=Object.freeze({...geometryContract,schemaVersion:17,recordedSpeech:'exact-take-review-v1',filmedDealVariants:'sixteen-explicit-v1'});
+const contracts=Object.freeze({...baselineContracts,14:categoryContract,15:rouletteContract,16:geometryContract,17:speechContract,
+  18:Object.freeze({...speechContract,schemaVersion:18,presentationCompression:'gzip-brotli-v1'})});
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3-v17. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3-v18. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
@@ -55,6 +56,7 @@ export function negotiatePresentationCapabilityVersion(header) {
   if (header === '15') return 15;
   if (header === '16') return 16;
   if (header === '17') return 17;
+  if (header === '18') return 18;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

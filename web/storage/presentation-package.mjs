@@ -1,32 +1,42 @@
 import { createHash } from 'node:crypto';
 import { OPERATOR_LIFECYCLE_KEY } from './operator-lifecycle.mjs';
-import { gzipSync, gunzipSync } from 'node:zlib';
+import { gzipSync, gunzipSync, brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { validatePresentationPackage } from '../presentation-layers.mjs';
 import { canonicalStudioJson, StudioStorageError } from './studio-contract.mjs';
 
 // A reserved, server-authored part of the existing immutable operator package.
 // Compression keeps the existing 8 KiB branding column/schema unchanged.
 export const PRESENTATION_PACKAGE_KEY = '_scoutPresentation';
+const GZIP_LIMIT = 6500, BROTLI_LIMIT = 7400, OUTPUT_LIMIT = 256 * 1024;
 const fail = (status = 422) => { throw new StudioStorageError('studio_invalid_presentation', status); };
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 export function encodePresentationPackage(value) {
   const checked = validatePresentationPackage(value);
   const bytes = Buffer.from(canonicalStudioJson(checked));
-  if (bytes.length > 256 * 1024) fail();
-  const data = gzipSync(bytes).toString('base64url');
-  if (data.length > 6500) fail(413);
-  return Object.freeze({ format: 'croupier-lanes-v1', encoding: 'gzip-base64url', sha256: digest(bytes), data });
+  if (bytes.length > OUTPUT_LIMIT) fail();
+  // Preserve historical bytes for packages that already fit the gzip contract.
+  let data = gzipSync(bytes).toString('base64url'), encoding = 'gzip-base64url';
+  if (data.length > GZIP_LIMIT) {
+    data = brotliCompressSync(bytes, { params: { [constants.BROTLI_PARAM_QUALITY]: 11,
+      [constants.BROTLI_PARAM_MODE]: constants.BROTLI_MODE_TEXT } }).toString('base64url');
+    encoding = 'br-base64url';
+    if (data.length > BROTLI_LIMIT) fail(413);
+  }
+  return Object.freeze({ format: 'croupier-lanes-v1', encoding, sha256: digest(bytes), data });
 }
 export function decodePresentationPackage(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || Object.keys(value).sort().join(',') !== 'data,encoding,format,sha256'
-    || value.format !== 'croupier-lanes-v1' || value.encoding !== 'gzip-base64url'
-    || typeof value.data !== 'string' || !value.data.length || value.data.length > 6500
+    || value.format !== 'croupier-lanes-v1' || !['gzip-base64url','br-base64url'].includes(value.encoding)
+    || typeof value.data !== 'string' || !value.data.length || value.data.length > (value.encoding === 'br-base64url' ? BROTLI_LIMIT : GZIP_LIMIT)
     || !/^[A-Za-z0-9_-]+$/.test(value.data) || !/^[a-f0-9]{64}$/.test(value.sha256)) fail(503);
   try {
     const zipped = Buffer.from(value.data, 'base64url');
     if (zipped.toString('base64url') !== value.data) fail(503);
-    const bytes = gunzipSync(zipped, { maxOutputLength: 256 * 1024 });
+    const decompress = value.encoding === 'br-base64url' ? brotliDecompressSync : gunzipSync;
+    const result = decompress(zipped, { maxOutputLength: OUTPUT_LIMIT, info: true });
+    if (result.engine.bytesWritten !== zipped.length) fail(503);
+    const bytes = result.buffer;
     if (digest(bytes) !== value.sha256) fail(503);
     const checked = validatePresentationPackage(JSON.parse(bytes.toString('utf8')));
     if (canonicalStudioJson(checked) !== bytes.toString('utf8')) fail(503);
