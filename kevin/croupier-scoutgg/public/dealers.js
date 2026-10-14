@@ -39,9 +39,10 @@ const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30,
 
 export const DEALERS = {
   astrid: { id: 'astrid', name: 'Astrid', label: 'Astrid (classic)', still: '/media/startbild.png', face: '/media/dealers/faces/astrid.jpg' + V },
-  dragge: { id: 'dragge', name: 'Dragge', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
+  dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
+    still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014c', idles: idlesFor('dragge'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014h', idles: idlesFor('dragge'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
