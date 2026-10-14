@@ -84,8 +84,9 @@ Jakobs nästa uppdrag är ett dokumenterat WebView-flöde för ett spelbart
 Dragan-Blackjack-rum hos Swedish Games, nu skapat i produktions-Admin.
 Hans val Lounge varm (video) och Blackjack Oak finns i ett separat sparat
 Dragan-utkast. Dragan finns redan; elva lokala original matchar befintlig
-klippbank. Ett grundspel med egen grundloop och serverstyrda kort kräver
-ingen ny playerkod. Full filmad Kevin-givning behöver däremot kortkalibrering
+klippbank. Egen grundloop och serverstyrda reservkort fungerar i befintlig
+spelväg, men den valda Oak-scenen behöver rättad spelgeometri före acceptans.
+Full filmad Kevin-givning behöver dessutom kortkalibrering
 och pose-/sekvensintegration. Rum, publicering och två spelprov på
 desktop/mobil återstår. En isolerad desktoprunda avslutades och mobilvyn
 kontrollerades, men acceptansen stoppade på verkligt geometriavstånd:

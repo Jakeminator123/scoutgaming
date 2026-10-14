@@ -11,8 +11,9 @@ procentangivelse ersätter verifiering av varje flöde. Startpunkt: main
 
 - [x] Dealers i `/admin`: skapa, arkivera, återställ och lämna i papperskorgen
   verifierat med det uttryckligen godkända produktionsprovet Adminprov 2026-10-13.
-- [x] Verklig Dragan-import: sex filer med ett gemensamt OK och en direkt via
-  Adminroboten; 21 registrerade klipp efter återläsning. Den separata importen
+- [x] Första verkliga Dragan-importen 13 oktober: sex filer med ett gemensamt OK
+  och en direkt via Adminroboten; då 21 registrerade klipp, nu 27 efter Kevin-importen.
+  Den separata importen
   tar upp till 30 videor per omgång. Filer i banken är inte spelpublicering.
 - [x] PR104:s rena talformulär och avslutade importchatt kan lämnas i produktion
   utan falsk varning. Verkliga utkast och pågående uppladdningar skyddas.
@@ -387,7 +388,7 @@ Notisen ligger här för att hålla `JOHN-HANDOFF.md` orörd under PR #91.
 
 Öppet efter planen:
 
-- [ ] Acceptans efter deploy av slut-SHA:n: Vercel READY och Render live; röktest av `/`, `/play`, `/play/blackjack?operator=…`, `/control/login`, `/partner/login` och `/casino.html`; N1 → publicering → N2 → N3 för `sg-test`, `johns-spelbolag` och `nordic-bet`; tre lager på mobil och desktop med två uppspelningar i rad; negativa prov (fel bolag, saknad media); rehearsal för paketens registrerade dealers. Delkvitton 13 oktober, inte full acceptans: egen läsande kontroll 01:03 visade att Render och Vercel kör `a5441feb`, att sökvägarna svarar som förut och att runtime-hasharna är oförändrade. Rum paow3 hos `nordic-bet` provspelades av föregående agent 00:45 på `a5441feb`.
+- [ ] Acceptans efter deploy av slut-SHA:n: Vercel READY och Render live; röktest av `/`, `/play`, `/play/blackjack?operator=…`, `/control/login`, `/partner/login` och `/casino.html`; N1 → publicering → N2 → N3 för bevarade `scoutgaming-demo`/Anna Roulette och nya `swedish-games`/Dragan Blackjack när dess geometri är godkänd och rummet skapat; tre lager på mobil och desktop med två uppspelningar i rad; negativa prov (fel bolag, saknad media); rehearsal för paketens registrerade dealers. De raderade bolagen ska inte återskapas för dessa prov. Historiska delkvitton 13 oktober, inte full acceptans: läsande kontroll 01:03 visade Render och Vercel på `a5441feb` och oförändrade runtime-hashar. Föregående agents prov av det senare raderade paow3-rummet 00:45 gäller endast den dåvarande versionen.
 - [ ] B18 permanent radering av klipp (beslutad 12 oktober): raden och sökvägen bort med journal (migration 009). Varje sparad paketrevision, fryst presentation eller öppet rum som refererar klippet spärrar. Bekräftelse kräver inskrivet namn. Egen PR; migrationen körs mot produktions-Neon före koden.
 - [ ] Bankens Blob-objekt saknar indexrad. De rensas först med B18:s journal.
 - [ ] B19 talklipp från vilobilden (beslutad 12 oktober): MuseTalk 1.5 på RunPod med dealerns egen röst, pilot Astrid `goodluck` på svenska och engelska, migration 010 efter B18. Betalda anrop bekräftas med Jakob först. Förtydliga regeln i `AGENTS.md`: förbudet gäller inklistrade munnar i spelaren, inte MuseTalk-genererade. Språkval i spelaren saknas. Utkastet #41 föreslår `009-talkclip.sql`, men enligt besluten är 009 B18 och 010 B19 (senaste Studio-migrationen är `008`). Numret rättas när B19-PR:en öppnas. Den äldre plan-PR:n #41 stängdes vid PR-städningen 13 oktober; beslutskommentaren och grenen bevaras, och B19 är fortfarande öppet här.
