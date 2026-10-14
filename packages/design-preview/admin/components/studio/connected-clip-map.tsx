@@ -8,7 +8,7 @@ import { DealerIdentityPortrait } from './dealer-identity-portrait';
 import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, createStudioClient, currentClipId, navigationKeepsStudioTab, roomChoicesPath, uploadMetadata, type ClipSlot, type Workspace, type VideoInventory } from '../../lib/connected-studio.mjs';
 import { readIdleVideoDuration } from '../../../../../lab/lib/idle-video-duration.mjs';
 import type { StudioProject } from '../../../../../lab/lib/studio-model.mjs';
-import { replaceContext } from '../../../runtime/navigation';
+import { replaceContext, usePathname, useSearchParams } from '../../../runtime/navigation';
 import {isInternalAdminPathname,isStudioAdminRoute} from '../../../runtime/admin-routing.mjs';
 import { groupSlots, affectedRooms, slotCaption, layoutClipCards } from '../../lib/studio-layout.mjs';
 import { StudioSpeechPanel } from './studio-speech-panel';
@@ -32,6 +32,8 @@ const groups = ['idle', 'transition', 'deal', 'reveal', 'speak', 'turn', 'settle
 const studioAliases = new Set(['/admin', '/admin/structure', '/admin/clips', '/admin/rooms', '/admin/dealers', '/admin/assets']);
 
 function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChange?:(dirty:boolean)=>void;onRevisionChange?:(revision:string)=>void;refreshKey?:number}) {
+  // Accepted snapshots stay fixed while a rejected history move is restored.
+  const path=usePathname(), search=useSearchParams().toString();
   const { setViewport } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement|null>(null);
   const [canvasWidth,setCanvasWidth] = useState(1200);
@@ -122,12 +124,12 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
   useEffect(()=>{if(!localReference){setReferenceUrl('');return;}const url=URL.createObjectURL(localReference.file);setReferenceUrl(url);return()=>URL.revokeObjectURL(url);},[localReference]);
   useEffect(() => { if (pending && uploadDialog.current && !uploadDialog.current.open) uploadDialog.current.showModal(); }, [pending]);
   useEffect(() => {
-    if (!data || !dealer || !isStudioAdminRoute(location.pathname,location.search) || new URLSearchParams(location.search).get('tool')==='import') return;
-    const query = new URLSearchParams(location.search);
+    if (!data || !dealer || !isStudioAdminRoute(path,search) || new URLSearchParams(search).get('tool')==='import') return;
+    const query = new URLSearchParams(search);
     ['operator','table','composition','dealer','game'].forEach(key => query.delete(key)); query.delete('lane');
     context.forEach((value,key) => query.set(key,value));
-    replaceContext(`${location.pathname}?${query}`);
-  }, [operator?.id, room?.id, lane?.id, dealer?.id, game]);
+    if(query.toString()!==search)replaceContext(`${path}?${query}`);
+  }, [path, search, operator?.id, room?.id, lane?.id, dealer?.id, game]);
   useEffect(() => {
     const blocked = () => busyRef.current || dirty || configDirty || Boolean(pending);
     const unload = (event:BeforeUnloadEvent) => { if (blocked()) { event.preventDefault(); event.returnValue = ''; } };

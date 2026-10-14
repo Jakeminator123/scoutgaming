@@ -133,3 +133,87 @@ test('actual pending import files veto Back and Forward before Studio context ch
     await draft.finish();assert.equal(h.window.dispatchEvent(new Event('beforeunload',{cancelable:true})),true);h.go(1);assert.equal(h.location.pathname,'/admin/clips');assert.equal(laterGuardCalls,1);
   }finally{draft.unmount();}
 });
+
+async function mountClipMap(h){
+  const React=require('react'),componentUrl=new URL('../admin/components/studio/connected-clip-map.tsx',import.meta.url),componentRequire=createRequire(componentUrl);
+  const {createSeedProject,defaultPresentationLane}=componentRequire('../../../../../lab/lib/studio-model.mjs');
+  const project=createSeedProject();
+  project.lanes=['a','b'].map(id=>({...defaultPresentationLane('astrid'),id:'scene-'+id}));
+  const workspace={project,inventory:{videos:[]},catalog:{administration:{
+    operators:['a','b'].map(id=>({id,slug:id,name:id,status:'active',archivedAt:null})),
+    rooms:['a','b'].map(id=>({id:'room-'+id,operatorId:id,name:id,game:id==='a'?'blackjack':'roulette',compositionId:'scene-'+id,state:'draft',published:false,dealerIds:['astrid','vera']})),
+    dealers:[{id:'astrid'},{id:'vera'}],
+  }}};
+  const slots=[],effects=[],cleanups=[];let cursor=0;
+  const depsChanged=(before,next)=>!before||next.some((dep,j)=>!Object.is(dep,before[j]));
+  const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next;}];},
+    useRef(initial){return slots[cursor++]??={current:initial};},
+    useMemo(factory,deps){const i=cursor++;if(!slots[i]||depsChanged(slots[i].deps,deps))slots[i]={deps,value:factory()};return slots[i].value;},
+    useCallback(fn,deps){return react.useMemo(()=>fn,deps);},
+    useEffect(effect,deps){const i=cursor++;if(depsChanged(slots[i],deps)){slots[i]=deps;effects.push(()=>{cleanups[i]?.();cleanups[i]=effect();});}}};
+  const components=new Proxy({},{get:(_,name)=>name==='__esModule'?false:String(name)});
+  const flow={...components,ReactFlowProvider:'FlowProvider',ReactFlow:'Flow',Controls:'Controls',MiniMap:'MiniMap',Background:'Background',BackgroundVariant:{Dots:'dots'},useReactFlow:()=>({setViewport(){}}),
+    useNodesState(initial){const [value,setValue]=react.useState(initial);return [value,setValue,()=>{}];}};
+  const module={exports:{}},code=transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
+  runInNewContext(code,{module,exports:module.exports,AbortController,URL,URLSearchParams,structuredClone,location:h.location,window:h.window,document:eventTarget(),
+    confirm:()=>assert.fail('ordinary pane navigation must not discard its draft'),
+    require:name=>name==='react'?react:name==='@xyflow/react'?flow:name.endsWith('.css')?{}
+      :name==='../../../runtime/navigation'?h.api:name==='../../../runtime/admin-routing.mjs'?routing
+      :name==='../../lib/connected-studio.mjs'?{...componentRequire(name),clipSlots:()=>[],createStudioClient:()=>({load:async()=>structuredClone(workspace)})}
+      :name==='lucide-react'||name.startsWith('./')?components:componentRequire(name)});
+  const render=()=>{cursor=0;const element=module.exports.ConnectedClipMap({}).props.children;return element.type(element.props);};
+  const all=(tree,predicate)=>!tree||typeof tree!=='object'?[]:[...(predicate(tree)?[tree]:[]),...React.Children.toArray(tree.props?.children).flatMap(child=>all(child,predicate))];
+  const nodes=predicate=>all(render(),predicate),settle=async()=>{for(let i=0;i<5;i++){render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));}};
+  await settle();
+  return {settle,selection:()=>nodes(node=>node.type==='select').slice(0,4).map(node=>node.props.value),
+    async dealer(id){nodes(node=>node.type==='select'&&node.props['aria-label']==='Dealer')[0].props.onChange({target:{value:id}});await settle();},
+    async editDraft(){nodes(node=>node.type==='button'&&node.props.children==='Gemensam sammansättningsmall')[0].props.onClick();await settle();const panel=nodes(node=>node.type==='StudioCompositionPanel')[0],draft=structuredClone(panel.props.project);draft.dealers.find(row=>row.id==='vera').label='Vera draft';panel.props.onEdit(draft);await settle();},
+    hasDraft:()=>nodes(node=>node.type==='option').some(node=>node.props.children==='Vera draft'),
+    unmount(){for(const cleanup of cleanups)cleanup?.();}};
+}
+
+test('mounted clip pane reactivation writes the retained full context before Back, Forward and reload',async()=>{
+  const h=harness('/admin/clips?operator=b&table=room-b&game=roulette'),pane=await mountClipMap(h);
+  try{
+    await pane.dealer('vera');await pane.editDraft();const selection=pane.selection();
+    assert.deepEqual(selection,['b','roulette','room-b','vera']);
+    h.api.navigate('/admin');await pane.settle();assert.equal(h.location.search,'');assert.ok(pane.hasDraft());
+    h.api.navigate('/admin/clips');await pane.settle();
+    const params=new URLSearchParams(h.location.search);
+    for(const [key,value] of Object.entries({operator:'b',table:'room-b',composition:'scene-b',dealer:'vera',game:'roulette'}))assert.equal(params.get(key),value,key);
+    h.go(-1);await pane.settle();assert.equal(h.location.pathname,'/admin');assert.equal(h.location.search,'');
+    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),selection);assert.ok(pane.hasDraft());
+    const reload=await mountClipMap(harness(h.location.pathname+h.location.search));
+    try{assert.deepEqual(reload.selection(),selection);}finally{reload.unmount();}
+  }finally{pane.unmount();}
+});
+
+test('mounted clip pane keeps room-owned context through accepted query changes and history',async()=>{
+  const h=harness('/admin/clips?operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
+  try{
+    h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=vera&game=roulette&category=bank');await pane.settle();
+    assert.deepEqual(pane.selection(),['b','roulette','room-b','vera']);
+    assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-b');
+    assert.equal(new URLSearchParams(h.location.search).get('category'),'bank');
+    const target=h.location.search;
+    h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),['a','blackjack','room-a','astrid']);
+    assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-a');
+    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),['b','roulette','room-b','vera']);assert.equal(h.location.search,target);
+  }finally{pane.unmount();}
+});
+
+test('mounted clip pane ignores rejected history destinations and defers context onto the restored entry',async()=>{
+  const h=harness('/admin/clips?operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
+  try{
+    h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=vera&game=roulette');await pane.settle();
+    let blocked=true;h.window.addEventListener('studio:before-navigate',event=>{if(blocked)event.preventDefault();});
+    const before=h.snapshot();h.history.go(-1);h.step();await pane.settle();
+    assert.deepEqual(pane.selection(),['b','roulette','room-b','vera']);assert.deepEqual(h.snapshot(),before);
+    await pane.dealer('astrid');assert.deepEqual(h.snapshot(),before,'a render while compensation is pending must not rewrite its rejected destination');
+    h.flush();await pane.settle();assert.equal(h.index(),1);assert.equal(h.history.length,2);assert.deepEqual(h.snapshot()[0],before[0]);
+    const params=new URLSearchParams(h.location.search);
+    for(const [key,value] of Object.entries({operator:'b',table:'room-b',composition:'scene-b',dealer:'astrid',game:'roulette'}))assert.equal(params.get(key),value,key);
+    blocked=false;h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),['a','blackjack','room-a','astrid']);
+    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),['b','roulette','room-b','astrid']);
+  }finally{pane.unmount();}
+});
