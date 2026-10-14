@@ -74,6 +74,10 @@ Den befintliga bordseditorn har två synliga val, **Följ korten** och **Placera
 
 Kevins staging är fryst på 5134d9274fdaa9d09dd3f3cf40f02ecd95716afe. Av de fyra tidigare förberedda svenska replikerna är goodluck_1, insurance_1 och double_1 identiska; win_1 har nya bytes och är inte ersatt i produktion. En privat ZIP med dessa fyra källfiler, exakta reposökvägar och hashjämförelse finns i uppdragets steglogg. Ingen av dem har ny talacceptans. Worker-/åtkomstfynd och återstående integration beskrivs i LOCAL-PRESENTATION-RUNTIME.md. Behåll lab-källan. Två verkliga talprov återstår; layoutens tidigare prov ersätter dem inte.
 
+Källanalys efter Jakobs uttryckliga tillstånd: Gemini med hög upplösning transkriberar insurance_1 som ”Ess synligt. Vill nån ha försäkring?” och nya win_1 som ”Grattis till vinnarna.” Försäkringsklippet bedöms preliminärt följa talet; win_1 flaggas för sena munrörelser, ungefär 0,5 s efter talets slut. Detta är modellobservationer, inte uppmätt eller accepterad produktsynk. Den första analysens påstående om frusna bilder har förkastats: lokal ansiktsgranskning visar tydliga munrörelser. Båda klippen behåller granskningsstatus och publicerades inte. Råresultat och källhashar sparas endast privat i uppdragets steglogg.
+
+Verifiering av bordseditorn: Studio-produktionsbygge och 32 fokuserade preview-prov passerar. Full pre-commit gav 3 743 godkända, 12 överhoppade och inga fel. Oberoende granskning fann inga blockerare. Leverans sker i PR #138.
+
 ## Dragan: bordsprofil, kortvy och samtalspanel, 14 oktober
 
 Admin visar bordsbredd och egna kort-/insatsplatser per bord och format i samma sammansättningspanel. Valfria betMode=under-cards binder markerytorna under kort och poäng; äldre profiler behåller manuella punkter. Kortvisningen kan växlas mellan Upplyfta och På bordet och sparas i spelarens webbläsare. Filmad kontakt följer källplanet fram till släpp; ett lägesbyte upphäver pågående kontaktbindning utan att ändra serverkort eller avslöja hålkort. Fyra split-händer har egna rader utan överlappande poängbrickor.
