@@ -24,7 +24,7 @@ import {speechBank} from '../public/dealer-language.js';
 import { factId, tableFact, roundResult } from './table-facts.mjs';
 import { dealerTalk } from './dealer-chat.mjs';
 import { createDealerMemory } from './dealer-memory.mjs';
-import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, runpodKey, useLipsyncPod } from './dragge-voice.mjs';
+import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, runpodKey, useCartesia, useLipsyncPod } from './dragge-voice.mjs';
 import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
 import { createBoSession } from "./bo-session.mjs";
@@ -150,6 +150,7 @@ const lip = pod ? pod.for(process.env.LIPSYNC_POD_AVATAR ?? "astrid_spel2x") : n
   ordersFile: path.join(ANSWERS, ".sessioner.json"),
 });
 const tts = new CartesiaTTS({ key: need("CARTESIA_API_KEY"), voiceId: process.env.CARTESIA_VOICE ?? FREJA, log: (s) => console.log(s) });
+useCartesia((text, language) => tts.say(text, language));   // Astrid 2.0 answers in Astrid's own voice (Emil 14 Oct)
 const astrid = new Astrid({
   llm: process.env.DEALER_LLM_PROVIDER==='openclaw' ? new OpenClaw({url:need('OPENCLAW_PRODUCT_SPEECH_URL'),token:need('OPENCLAW_PRODUCT_SPEECH_TOKEN'),audit:r=>{safetyAudit.write(r);shared.recordSpeechDecision(r);}}) : new Gemini({ key: need("GEMINI_API_KEY"), model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite", audit:r=>safetyAudit.write(r) }),
   tts,
