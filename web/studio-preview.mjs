@@ -122,7 +122,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
       const getPlayer=()=>sessionDb.prepare('SELECT * FROM players WHERE id=?').get(playerId);
       const command=createNativeTableCommand({db,getPlayer,logTx:(...values)=>sessionDb.prepare('INSERT INTO transactions VALUES (?,?,?,?,?)').run(...values)});
       const s={id,owner,project,lane,inventory,records,assets,dealerAvailability,expires,db,getPlayer,command,active:0,closed:false};
-      s.api=createPresentationApi({db,env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s)});
+      s.api=createPresentationApi({db,env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s),recordedSpeechPreview:true});
       s.timer=setTimeout(()=>dispose(s),ttlMs);s.timer.unref?.();sessions.set(id,s);db=null;
       return json(201,{...metadata(s),entryUrl:`/studio-preview/${id}`});
     }finally{pending.set(owner,pending.get(owner)-1);if(!pending.get(owner))pending.delete(owner);if(db)db.close();}

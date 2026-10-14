@@ -8,7 +8,7 @@ import {validateRevision, StudioStorageError} from './studio-contract.mjs';
 import {assertPresentationRoomMaterials} from '../presentation-material-game.mjs';
 
 const fail = () => { throw new StudioStorageError('studio_media_registry_unavailable'); };
-export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory, requiredIdleDealerIds = []} = {}) {
+export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory, requiredIdleDealerIds = [], requiredRouletteIdleDealerIds = []} = {}) {
   const {projectDocument, administrationDocument, mediaRows} = snapshot ?? {};
   if (projectDocument?.kind !== 'project' || administrationDocument?.kind !== 'administration'
     || projectDocument.value?.revision !== projectDocument.revision) fail();
@@ -16,11 +16,11 @@ export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory,
   const administrationRevision = validateRevision(administrationDocument.revision);
   const project = normalizeProject(projectDocument.value);
   const source = project;
-  const captured = captureFrozenRegisteredDealers({project:source, selectedLaneIds, inventory, mediaRows, requiredIdleDealerIds});
+  const captured = captureFrozenRegisteredDealers({project:source, selectedLaneIds, inventory, mediaRows, requiredIdleDealerIds, requiredRouletteIdleDealerIds});
   const events = captured.registeredDealers.length ? captureFrozenDealerPlayback({project:source, inventory, mediaRows, registeredDealers:captured.registeredDealers}) : null;
   // A new publication must not reactivate an explicitly baked dealer source.
   // Reading old immutable packages stays independent of this write guard.
-  const mediaPreconditions = events?.mediaPreconditions ?? captured.mediaPreconditions;
+  const mediaPreconditions = [...new Map([...captured.mediaPreconditions,...(events?.mediaPreconditions??[])].map(row=>[row.id,row])).values()];
   if (mediaPreconditions.some(({record}) => record.classification?.mediaType !== 'audio' && record.classification?.compositing?.mode === 'opaque'))
     throw new StudioStorageError('studio_dealer_background_required',422);
   const presentation = buildPresentationPackage(source, selectedLaneIds, source.layerAssets ?? [],
@@ -46,7 +46,7 @@ export async function assertCapturedPresentationMedia(repository, mediaPrecondit
   assertFrozenMediaPreconditions(mediaPreconditions, rows);
 }
 
-export function isPresentationRoomLaneCompatible(gameLane, presentationLane, frozenPresentation = null) {
+export function isPresentationRoomLaneCompatible(gameLane, presentationLane, frozenPresentation = null, game = 'blackjack') {
   if (!gameLane || !presentationLane || gameLane.renderer !== 'portrait-video') return false;
   const dealer = presentationLane.layers.dealer.default;
   // The caller supplies the already validated frozen package, never the mutable
@@ -59,13 +59,16 @@ export function isPresentationRoomLaneCompatible(gameLane, presentationLane, fro
       || !frozenLane.layers.dealer.allowed.includes(gameLane.dealer)
       || !frozenPresentation.registeredDealers.some(row => row.id === gameLane.dealer)) return false;
     try {
-      if (!resolveFrozenDealerIdle(frozenPresentation.registeredDealers,
-        { dealerId: dealer, allowedDealerIds: frozenLane.layers.dealer.allowed })) return false;
+      // Historical roulette packages predate explicit idle. Keep their engine
+      // launch, while the preview exposes no blackjack dealer media.
+      const legacyRoulette=game==='roulette'&&!frozenPresentation.registeredDealers.find(row=>row.id===dealer)?.rouletteIdle;
+      if (!legacyRoulette&&!resolveFrozenDealerIdle(frozenPresentation.registeredDealers,
+        { dealerId: dealer, allowedDealerIds: frozenLane.layers.dealer.allowed, game })) return false;
       const portraitDealerIds = frozenPresentation.registeredDealers.map(row => row.id).filter(isActiveDealerId);
       return laneDealerSelection('', gameLane, frozenLane.layers.dealer, { portraitDealerIds }) === dealer;
     } catch { return false; }
   }
-  return isActiveDealerId(dealer) && Boolean(frozenPresentation?.registeredDealers?.some(row => row.id === dealer && row.idle))
+  return isActiveDealerId(dealer) && Boolean(frozenPresentation?.registeredDealers?.some(row => row.id === dealer && (game==='roulette'?true:game==='blackjack'?row.idle:null)))
     && gameLane.dealer === dealer && gameLane.mediaCollection === `${dealer}-presentation`;
 }
 export function assertPublishedRoomBindings({administration, operatorId, currentPackage, presentation}) {
@@ -74,7 +77,7 @@ export function assertPublishedRoomBindings({administration, operatorId, current
     if (!isPresentationRoom(room) || room.operatorId !== operatorId || !currentPackage?.tables?.includes(room.id)) continue;
     const lane = presentation.lanes.find(row => row.id === room.presentationLaneId);
     const gameLane = gameLanes.find(row => row.id === room.gameLaneId);
-    if (!isPresentationRoomLaneCompatible(gameLane, lane, presentation)) throw new StudioStorageError('studio_conflict', 409);
+    if (!isPresentationRoomLaneCompatible(gameLane, lane, presentation, room.game??'blackjack')) throw new StudioStorageError('studio_conflict', 409);
     assertPresentationRoomMaterials(presentation,room);
   }
 }

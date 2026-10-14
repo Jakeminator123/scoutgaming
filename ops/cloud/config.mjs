@@ -138,7 +138,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (fullfileBudgetRequired && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(fullfileReserveUsd)
     || Number(fullfileReserveUsd) <= 0 || Number(fullfileReserveUsd) > 10)) fail('CROUPIER_SPEECH_FULLFILE_RESERVE_USD');
   if ((streaming || fullfileBudgetRequired) && (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(dailyBudgetUsd)
-    || Number(dailyBudgetUsd) <= 0 || Number(dailyBudgetUsd) > 10
+    || Number(dailyBudgetUsd) <= 0 || Number(dailyBudgetUsd) > 20
     || (streaming && Number(sessionReserveUsd) > Number(dailyBudgetUsd))
     || (fullfileBudgetRequired && Number(fullfileReserveUsd) > Number(dailyBudgetUsd)))) fail('CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD');
   const cartesiaKey = env.CARTESIA_API_KEY || '';

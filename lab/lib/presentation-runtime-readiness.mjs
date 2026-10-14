@@ -3,6 +3,8 @@ import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { PRESENTATION_CAPABILITY_VERSION_HEADER, validatePresentationCapabilities } from '../../web/presentation-capability-contract.mjs';
 import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
 import {extendedDealerMediaFeatures} from '../../web/dealer-media-features.mjs';
+import {maxVariantsForEvent} from './studio-model.mjs';
+import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
 
 export const PRESENTATION_RUNTIME_UPDATE_REQUIRED = 'studio_presentation_runtime_update_required';
 export const PRESENTATION_RUNTIME_UPDATE_MESSAGE = 'Spelservern beh\u00f6ver uppdateras innan presentationen kan sparas. Ditt utkast \u00e4r kvar.';
@@ -13,10 +15,24 @@ const fail = () => { throw new StudioStorageError(PRESENTATION_RUNTIME_UPDATE_RE
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const extraDealer = value => typeof value === 'string' && !baseDealers.has(value);
 function documentFeatures(kind, value) {
+  // A publication descriptor is the complete candidate, never a feature hint.
+  // Use the actual encoder so malformed or oversized candidates fail closed.
+  // Lifecycle can retain or re-encode any current frozen package. Its explicit
+  // descriptor negotiates both codecs and the current table layout before SQL;
+  // stored project trash fields alone do not imply that operation.
+  const lifecycleOperation = ['material-trash','resource-lifecycle','dealer-archive'].includes(kind);
+  const presentationCompression = lifecycleOperation
+    || kind === 'presentation-package' && encodePresentationPackage(value).encoding === 'br-base64url';
   const media=kind==='presentation-package'
-    ? [...(value?.registeredDealers??[]).map(row=>row?.idle),...(value?.playback?.media??[])]
+    ? [...(value?.registeredDealers??[]).flatMap(row=>[row?.idle,row?.rouletteIdle?.base,...(row?.rouletteIdle?.variants??[]),row?.rouletteStart?.clip]),...(value?.playback?.media??[])]
       .map(row=>extendedDealerMediaFeatures(row?.classification)) : [];
-  const mediaAlpha=media.some(row=>row.mediaAlpha),rouletteMedia=media.some(row=>row.rouletteMedia);
+  const mediaAlpha=media.some(row=>row.mediaAlpha),rouletteMedia=media.some(row=>row.rouletteMedia),recordedSpeech=media.some(row=>row.recordedSpeech);
+  const rouletteIdle=['project','presentation-package'].includes(kind)
+    && [...(value?.dealers??[]),...(value?.registeredDealers??[]),...(value?.dealerTrash??[]).map(row=>row?.dealer)]
+      .some(row=>object(row)&&Object.hasOwn(row,'rouletteIdle'));
+  const rouletteStart=['project','presentation-package'].includes(kind)
+    && [...(value?.dealers??[]),...(value?.registeredDealers??[]),...(value?.dealerTrash??[]).map(row=>row?.dealer)]
+      .some(row=>object(row)&&Object.hasOwn(row,'rouletteStart'));
   const tableGame=['project','presentation-package'].includes(kind)
     && [...(value?.layerAssets??[]),...(value?.assets??[]),...(value?.layerAssetTrash??[]).map(row=>row?.asset)]
       .some(asset=>object(asset)&&Object.hasOwn(asset,'game'));
@@ -38,19 +54,35 @@ function documentFeatures(kind, value) {
   const lifecycle = cascade || kind === 'project' && Object.hasOwn(value ?? {}, 'dealerTrash');
   // Even an empty field is rejected by the older strict project validator.
   const dealerSets = kind === 'project' && Object.hasOwn(value ?? {}, 'dealerSets');
+  const dealerCategoryTrash=['project','dealer-archive'].includes(kind)&&Boolean(value?.dealerTrash?.some?.(entry=>Object.hasOwn(entry,'dealerSets')));
   const generic = dealers.some(id => id !== 'nora');
   const backgroundPlayback = ['project', 'presentation-package'].includes(kind)
     && [...(Array.isArray(value?.lanes) ? value.lanes : []), ...(Array.isArray(value?.dealerTrash) ? value.dealerTrash : [])
       .flatMap(entry => Array.isArray(entry?.compositions) ? entry.compositions : [])]
       .some(lane => object(lane) && Object.hasOwn(lane, 'backgroundPlayback'));
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame };
+  const compositionLanes=['project','presentation-package','dealer-archive'].includes(kind)
+    ?[...(value?.lanes??[]),...(value?.dealerTrash??[]).flatMap(entry=>entry.compositions??[])]:[];
+  const blackjackTableGeometry=compositionLanes.some(lane=>object(lane?.composition)&&Object.hasOwn(lane.composition,'blackjackTables'));
+  // Presence matters even if validation later rejects the value: older readers
+  // do not accept this optional field in either active or archived geometry.
+  const blackjackBetMode=lifecycleOperation||compositionLanes.some(lane=>Array.isArray(lane?.composition?.blackjackTables)
+    &&lane.composition.blackjackTables.some(table=>['mobile','desktop'].some(layout=>object(table?.[layout])&&Object.hasOwn(table[layout],'betMode'))));
+  // The previous deployed validator accepts at most five variants on every row.
+  const lines=['project','presentation-package','dealer-archive'].includes(kind)
+    ?[...(kind==='presentation-package'?value?.playback?.lines??[]:value?.lines??[]),...(value?.dealerTrash??[]).flatMap(entry=>entry.lines??[])]:[];
+  const filmedDealVariants=lines.some(line=>line?.eventId?.startsWith('deal.')&&maxVariantsForEvent(line.eventId)>5&&Array.isArray(line?.variants)&&line.variants.length>5);
+  // Detect actual saved slot data, including archived rows and frozen packages.
+  // Unrelated lifecycle operations retain their existing capability requirement.
+  const speechSlots=lines.some(line=>Array.isArray(line?.variants)
+    &&(line.eventId==='speak.other'&&line.variants.length>5||line.variants.some(variant=>typeof variant?.id==='string'&&variant.id.includes('.slot-'))));
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry || blackjackBetMode || recordedSpeech || filmedDealVariants || presentationCompression || speechSlots,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry,blackjackBetMode,recordedSpeech,filmedDealVariants,presentationCompression,speechSlots };
 }
 function mediaFeatures(metadata) {
-  const {mediaAlpha,rouletteMedia}=extendedDealerMediaFeatures(metadata);
+  const {mediaAlpha,rouletteMedia,recordedSpeech}=extendedDealerMediaFeatures(metadata);
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
   const composition = Boolean(object(metadata) && Object.hasOwn(metadata, 'compositing'));
-  return { required: dealers.length > 0 || composition || mediaAlpha || rouletteMedia, dealers, composition, generic: dealers.some(id => id !== 'nora'), frozen: false,mediaAlpha,rouletteMedia };
+  return { required: dealers.length > 0 || composition || mediaAlpha || rouletteMedia || recordedSpeech, dealers, composition, generic: dealers.some(id => id !== 'nora'), frozen: false,mediaAlpha,rouletteMedia,recordedSpeech };
 }
 function mutationFeatures(input) {
   const entries = Array.isArray(input) ? input : [input];
@@ -74,6 +106,15 @@ function mutationFeatures(input) {
     mediaAlpha: features.some(value => value.mediaAlpha),
     rouletteMedia: features.some(value => value.rouletteMedia),
     tableGame: features.some(value => value.tableGame),
+    dealerCategoryTrash: features.some(value => value.dealerCategoryTrash),
+    rouletteIdle: features.some(value => value.rouletteIdle),
+    rouletteStart: features.some(value => value.rouletteStart),
+    blackjackTableGeometry:features.some(value=>value.blackjackTableGeometry),
+    blackjackBetMode:features.some(value=>value.blackjackBetMode),
+    recordedSpeech:features.some(value=>value.recordedSpeech),
+    filmedDealVariants:features.some(value=>value.filmedDealVariants),
+    presentationCompression:features.some(value=>value.presentationCompression),
+    speechSlots:features.some(value=>value.speechSlots),
   };
 }
 function trustedOrigin(env) {
@@ -122,6 +163,15 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.mediaAlpha || active.features.mediaAlpha)
       && (!features.rouletteMedia || active.features.rouletteMedia)
       && (!features.tableGame || active.features.tableGame)
+      && (!features.dealerCategoryTrash || active.features.dealerCategoryTrash)
+      && (!features.rouletteIdle || active.features.rouletteIdle)
+      && (!features.rouletteStart || active.features.rouletteStart)
+      && (!features.blackjackTableGeometry || active.features.blackjackTableGeometry)
+      && (!features.blackjackBetMode || active.features.blackjackBetMode)
+      && (!features.recordedSpeech || active.features.recordedSpeech)
+      && (!features.filmedDealVariants || active.features.filmedDealVariants)
+      && (!features.presentationCompression || active.features.presentationCompression)
+      && (!features.speechSlots || active.features.speechSlots)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -135,7 +185,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.speechSlots ? 20 : features.blackjackBetMode ? 19 : features.presentationCompression ? 18 : features.recordedSpeech || features.filmedDealVariants ? 17 : features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

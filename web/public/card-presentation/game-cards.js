@@ -1,12 +1,15 @@
+import {cardViewDepth,normalizeCardView} from '../card-view.mjs';
 import {suitColor} from './renderer-support.js';
 import { svgNode } from './renderer-support.js';
 import { total, totalLabel } from './renderer-support.js';
 import { faceAtTime, triangleMatrices } from './card-face-projection.js';
 import { DEAL_CONTACT, cardPose, feltMatrix, dealerFanOffset, splitHandAnchor } from './card-table-layout.js';
 import { dealerHandClip } from './dealer-hand-occlusion.js';
+import { filmedFaceAtTime } from './filmed-profile.mjs';
+import { projectFilmedFace } from './filmed-table-projection.mjs';
 
 // One stable SVG node per server-issued draw. Motion is driven by source frames.
-export function createGameCards(svg, manifest) {
+export function createGameCards(svg, manifest, {dealerLabel='Dealer',filmedProfile=null}={}) {
   const positions = new Map(manifest.deal.map(d => [d.id.replace('deal_pos', ''), d.kort]));
   const sourcePositions=new Map(positions);
   const { bredd: width, hojd: height } = manifest.kort_storlek;
@@ -26,10 +29,10 @@ export function createGameCards(svg, manifest) {
   const handClip = svgNode('clipPath', {id:`${prefix}-hands`,clipPathUnits:'userSpaceOnUse'});
   const handPath = svgNode('path', {'clip-rule':'evenodd',d:dealerHandClip()});
   handClip.append(handPath);defs.append(handClip);
-  const cardLayer = svgNode('g', { class: 'card-layer', 'clip-path':`url(#${prefix}-hands)` }), badges = svgNode('g', { class: 'card-totals' });
+  const cardLayer = svgNode('g', { class: 'card-layer', 'clip-path':filmedProfile?'none':`url(#${prefix}-hands)` }), badges = svgNode('g', { class: 'card-totals' });
   svg.replaceChildren(defs, cardLayer, badges);
   const nodes = new Map();
-  let hands = [], pending = null;
+  let hands = [], pending = null, cardView='raised', followCards=false;
   let handClipPath = dealerHandClip();
 
   function face(card, inkOnly = false) {
@@ -56,7 +59,7 @@ export function createGameCards(svg, manifest) {
     // Mask the complete layer in source coordinates, including already dealt
     // cards. A mask on only the incoming face leaves old cards over her fingers.
     // Keep tracking past face release until the filmed hand has withdrawn.
-    const path = dealerHandClip(pending?.track, pending?.time);
+    const path = filmedProfile ? '' : dealerHandClip(pending?.track, pending?.time);
     if (path !== handClipPath) { handPath.setAttribute('d', path); handClipPath = path; }
     for (const hand of hands) {
       const anchor = hand.anchor;
@@ -67,7 +70,7 @@ export function createGameCards(svg, manifest) {
       hand.cards.forEach((card, index) => {
         const pose = cardPose({ index, count, anchor, width,
           incomingIndex: deal ? (incoming < 0 ? count - 1 : incoming) : -1,
-          time: deal?.time, contact: deal?.contact, splitCount: hand.splitCount, seat: hand.seat });
+          time: deal?.time, contact: deal?.contact, splitCount: hand.splitCount, seat: hand.seat, depth:cardViewDepth(cardView) });
         const entry = nodes.get(card.shoeDraw);
         const layoutKey = `${anchor.cx}:${anchor.cy}:${hand.splitCount}`;
         if (entry.pose && entry.layoutKey !== layoutKey) {
@@ -82,10 +85,14 @@ export function createGameCards(svg, manifest) {
         // The prop is stationary once the fingers release it. Stop thresholding
         // its paper then: the dealer clip's neutral final frame has a broken
         // white mask, which otherwise punches flashing holes in the black back.
-        const tracked = deal?.draw === card.shoeDraw && deal.time + 1e-6 < deal.clear
-          ? faceAtTime(deal.track, deal.time) : null;
+        const filmed = pending?.filmed && pending.draw === card.shoeDraw ? pending : null;
+        const sourceFace = filmed && filmedFaceAtTime(filmed.filmed.profile, filmed.filmed.take,
+          Math.min(filmed.time, filmed.filmed.timing.release / filmed.filmed.timing.fps));
+        const tracked = filmed ? projectFilmedFace(filmed.filmed.profile, filmed.filmed.take, sourceFace,
+          filmed.filmed.binding, pose, filmed.time, width, height, cardViewDepth(cardView))
+          : deal?.draw === card.shoeDraw && deal.time + 1e-6 < deal.clear ? faceAtTime(deal.track, deal.time) : null;
         const turning = pending?.track === 'flip' && pending.draw === card.shoeDraw && entry.signature === 'hidden';
-        const motionKey=`${turning}:${pose.x.toFixed(3)}:${pose.y.toFixed(3)}:${tracked ? Math.floor(deal.time*24+1e-5) : 'rest'}:${entry.signature}`;
+        const motionKey=`${cardView}:${turning}:${pose.x.toFixed(3)}:${pose.y.toFixed(3)}:${tracked ? Math.floor(pending.time*(filmed?.filmed.timing.fps??24)+1e-5) : 'rest'}:${entry.signature}`;
         if(entry.motionKey===motionKey)return;
         entry.motionKey=motionKey;
         entry.group.setAttribute('display', turning ? 'none' : 'inline');
@@ -139,23 +146,23 @@ export function createGameCards(svg, manifest) {
         }
         entry.group.setAttribute('data-seat', hand.seat);
         entry.group.setAttribute('data-hand', hand.index ?? 'dealer');
-        entry.face.setAttribute('transform', `matrix(${feltMatrix(positions.get(hand.seat)).join(' ')})`);
+        entry.face.setAttribute('transform', `matrix(${feltMatrix(cardViewDepth(cardView)).join(' ')})`);
         ordered.push(entry.group);
       });
       if (!hand.cards.length) continue;
       const dealer = hand.seat === 'dealer';
       const x = dealer ? cx + dealerFanOffset(0, hand.cards.length).x - 73 : cx;
       const split = hand.splitCount > 1;
-      const y = dealer ? cy : cy + (split && hand.splitCount > 2 ? 48 : 60);
+      const y = dealer ? cy : cy + (followCards ? height/2*cardViewDepth(cardView)+18 : split && hand.splitCount > 2 ? 48 : 60);
       const shown = hand.cards.filter(c => c.r), value = total(shown), label = totalLabel(shown);
       const text = `${label}${value > 21 ? ' ×' : ''}`;
-      const fontSize = split ? 20 : 29;
+      const fontSize = split || followCards ? 20 : 29;
       // Split columns are 71 px apart. A separate hand caption keeps even
       // "10/20" readable inside its own column instead of widening over a sibling.
       const badgeWidth = split ? 68 : Math.max(72, Math.ceil(text.length * fontSize * .6) + 20);
       // Wider soft totals grow away from the dealer fan, preserving its clearance.
       const badge = svgNode('g', { transform: `translate(${dealer ? x - (badgeWidth - 72) / 2 : x} ${y})`, 'data-seat':hand.seat, 'data-hand':hand.index ?? 'dealer', 'data-active':Boolean(hand.active),
-        'aria-label': `${dealer ? 'Astrid' : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${label}${hand.active ? ', active hand' : ''}` });
+        'aria-label': `${dealer ? dealerLabel : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${label}${hand.active ? ', active hand' : ''}` });
       badge.append(svgNode('rect', { x: -badgeWidth / 2, y: -22, width: badgeWidth, height: 44, rx: 22, fill: hand.active ? '#dec68e' : '#17231fe0' }));
       if (split) badge.append(svgNode('text', { y: -8, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': 10, 'font-family':'JetBrains Mono' }, `HAND ${hand.number}`));
       badge.append(svgNode('text', { y: split ? 13 : 9, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': fontSize, 'font-family':'JetBrains Mono', 'font-weight': 500 }, text));
@@ -170,13 +177,20 @@ export function createGameCards(svg, manifest) {
     move();
   }
   return {
-    setSeatOffsets(offsets) {
-      for(const [seat,point]of sourcePositions)positions.set(seat,{...point,cx:point.cx+(offsets[seat]??0)});
+    setSeatOffsets(offsets,anchors,view='raised',underCards=false) {
+      cardView=normalizeCardView(view);followCards=underCards;
+      for(const [seat,original]of sourcePositions){
+        const point=anchors?.[seat]??original;
+        positions.set(seat,{...point,cx:point.cx+(offsets[seat]??0)});
+      }
+      // A table-local plane is not the filmed 1080x1920 hand-mask plane.
+      cardLayer.setAttribute('clip-path',anchors||filmedProfile?'none':`url(#${prefix}-hands)`);
     },
     sourceStarted() { pending = null; move(); },
-    beginDeal(seat, draw, track = seat) {
+    beginDeal(seat, draw, track = seat, filmed = null) {
       seat = String(seat);
-      pending = { seat, draw, track: String(track), time: 0, ...DEAL_CONTACT[track] };
+      pending = { seat, draw, track: String(track), time: 0, ...DEAL_CONTACT[track], filmed,
+        ...(filmed ? {contact:filmed.take.contactFrame/filmed.timing.fps,clear:filmed.timing.end/filmed.timing.fps} : {}) };
       move();
     },
     advanceDeal(time) {
@@ -201,7 +215,7 @@ export function createGameCards(svg, manifest) {
           const h = round.hands[index], seatId = String(seat + 1);
           hands.push({ cards: h.cards.filter(c => visible.has(c.shoeDraw)), draws: new Set(h.cards.map(c=>c.shoeDraw)),
             seat: seatId, index, number:number+1, splitCount:indices.length,
-            anchor:splitHandAnchor(positions.get(seatId),slots.indexOf(index)),
+            anchor:splitHandAnchor(positions.get(seatId),slots.indexOf(index),cardViewDepth(cardView),followCards?height*cardViewDepth(cardView)+64:undefined),
             active:index === round.active && round.phase === 'decisions' });
         }
       }

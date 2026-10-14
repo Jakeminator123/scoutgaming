@@ -93,9 +93,10 @@ export function createGameEntrySelector({ policy, packages = null, log = console
     if (room && selection.lane !== room.gameLaneId) throw Object.assign(Error('presentation_room_unavailable'), { statusCode: 503 });
     const presentationLane = (frozen?.lanes ?? saved.project?.lanes)?.find(row => row?.id === (room?.presentationLaneId ?? selection.lane));
     if(frozen && !presentationLane) throw Object.assign(new Error('presentation_lane_unavailable'),{statusCode:503});
-    if (room && !isPresentationRoomLaneCompatible(lane, presentationLane, frozen)) throw Object.assign(Error('presentation_dealer_mismatch'),{statusCode:503});
+    if (room && !isPresentationRoomLaneCompatible(lane, presentationLane, frozen,roomGame(room))) throw Object.assign(Error('presentation_dealer_mismatch'),{statusCode:503});
     const portraitDealerIds = room && frozen?.schemaVersion === 3 && lane?.renderer === 'portrait-video'
-      ? frozen.registeredDealers.map(row => row.id).filter(isActiveDealerId) : [];
+      ? frozen.registeredDealers.filter(row=>roomGame(room)!=='roulette'
+        ||!frozen.registeredDealers.find(item=>item.id===presentationLane.layers.dealer.default)?.rouletteIdle||row.rouletteIdle?.base).map(row => row.id).filter(isActiveDealerId) : [];
     if (presentationLane) {
       const dealer = laneDealerSelection(params, lane, presentationLane.layers?.dealer, { portraitDealerIds });
       if (dealer) selection = { ...selection, dealer };

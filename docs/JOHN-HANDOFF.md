@@ -1,5 +1,803 @@
 # Aktuell handoff — Scoutgaming
 
+## Rörligt tal: PCM-kontrakt och anslutning, 14 oktober
+
+PR #128 är mergad efter gröna kontroller som `80c84709`. Fortsatt förberedelse
+i `web/moving-speech-pcm.mjs` binder exakt normaliserat uppspelningsljud till
+planens hash, 24 kHz-format och bildtidslinje. Engångsöverföringen har
+begränsade PCM-meddelanden och lokal ogiltigförklaring vid avbrott. De 13
+fokuserade plan-/PCM-proven passerar. Full pre-commit på `4102005` passerar
+med 3 737 godkända, 11 överhoppade och inga fel. Studio-bygget passerar med
+97 kontrollerade byggspår. Kontrollen av 410 testfiler hittar inga
+föräldralösa tester och behåller två befintliga undantag. Verifieringen
+använder aktuella låsta CI-beroenden.
+
+Vi har redan egen WebSocket-ingång och Render-ägd GPU-session. Den rörliga
+workern behöver en verifierad adapter till vår autentiserade callback, inte
+Emils dator eller Kevins WebSocket-server. `end` i Kevins kod avslutar
+ljudinmatningen, inte GPU-jobbet; `avbryt` är villkorat på flerlane-stöd.
+Behåll vår sessionsbudget och verifiera faktisk RunPod-stängning.
+
+Läsprov från uttrycklig `.env.emil` gav 200 för rörlig RunPod-health,
+Paows/Dragges ElevenLabs-röster och den nytillagda Cartesia-nyckelns voices-API.
+Ingen miljöfil eller produktion ändrades av proven och inga betalda jobb
+beställdes. Cartesia behövs inte för dessa två ElevenLabs-röster.
+
+Modulen är förberedelse, utan liveimport, socket, decoder eller spelstart.
+Worker-release, hashbundet avatarunderlag, säkert avbrott och två verkliga
+talprov per dealer återstår. Anna behöver dessutom eget kompatibelt avatar-
+och röstunderlag. Detaljer finns i LOCAL-PRESENTATION-RUNTIME.md; den befintliga
+påminnelsen om Emil behålls. Andra agenters Admin-/Dragan-arbete är orört.
+
+## Kevin: demokälla och återstående synkfel, 14 oktober
+
+Kevin bekräftar demon på croupier.scoutgg.dev och commit 315cfc55 utan
+opushade ändringar. GitHub visar samma head för kevin och kevin-staging;
+demons dealers.js/lip-layer.js matchar exakt. Server/worker och visuell
+synk är inte verifierade av den kontrollen. LOCAL-PRESENTATION-RUNTIME.md
+har aktivt/äldre materialurval, normalisering mot −16 LUFS med toppgräns,
+samt korrigeringen att dealer-card-tracks spårar kortytor, inte ansikten.
+
+Kevin rapporterar upp till cirka 4 s sena munbilder vid chattsvar och
+kallstarts-/samtidighetsproblem. Roulette-guiden kräver därför prov med
+försenade svar och samma normaliserade PCM på båda sidor. Worker-release,
+avatarbank/ansiktsunderlag och Annas förbehandling återstår från Emil.
+Ingen runtime eller publicering ändrad och inget GPU-/talprov utfört.
+
+## AI-dokumentation: slutöverlämning 14 oktober 2026
+
+AI-översikten och elva kanoniska OpenClaw-guider finns under [docs/AI](AI/README.md).
+Äldre guideadresser är korta hänvisningar. Guiderna har integrerats med main
+`0511206d`, utan att ersätta senare drift- eller Admin-ändringar.
+Användarguiden innehåller daterad adress-/slugglista och N1:s åtkomst till
+alla tre ytor. D-ID:s publika chatt och N1:s interna Adminrobot är separata.
+
+Teknisk D-ID-uppspelning med ljud aktiverat är verifierad; hörbar/läppsynks-
+acceptans och positiva inloggade N2/N3-prov är fortfarande öppna. N1-prov
+är inte ett substitut för dessa roller. PR #91:s spelarprov stoppades av Jakob:
+två repliker, pausåterhämtning och första mjuka 7/17-handens förlust verifierades;
+vinst, oavgjort, split och mobil återstår. PR:n är inte spelargodkänd.
+Privata kvitton finns i rotens ignorerade arkiv. Fortsatta spelarprov ska använda
+en internetadress enligt Jakob; ingen lokal produktserver startas för dem.
+
+Admin C1–C3 ägs av chatten ADMINADMINADMIN. PR-samordningen har fått
+överlämningen om #91. Huvudcheckoutens blandade ändringar bevaras; den här
+dokumentationen levereras från en separat branch, utan merge eller deploy.
+
+## Dragan: talunderlag och tydligare bordseditor, 14 oktober
+
+Samordnat med ADMINADMINADMIN och KEVI-POD-EMIL; båda har lämnat berörda filer fria. PR133 är granskad och mergad som dd574b7e. Bildruteplanen och PCM-förberedelsen är fortfarande inaktiva i spelaren; de är inte en färdig läppsynksintegration.
+
+Dragan har nu en sparad förberedelseprofil i produktion: egen ElevenLabs/Dragge-röst på svenska och exakt Kevin-grundloop 2f3955b0-b450-4cc2-a9f5-ac80f10abd2f, hash 2b8d6ea7829bde6212f6145038569747a389c5e20166b3ea08fc26efda81c9e3, som motion-video vid 0 ms. Revision studio-9a397cd8-ba05-4d5e-9e11-8e8b0ff273e7. AI-tal är inte aktiverat; sammansättningar och 56 biblioteksklipp är oförändrade. Ingen ny publicering eller GPU-generation gjordes.
+
+Den befintliga bordseditorn har två synliga val, **Följ korten** och **Placera cirklar själv**, samt tydligare instruktioner för kort, cirklar, piltangenter och procentfält. Sparformatet och den accepterade v4-geometrin ändras inte.
+
+Kevins staging är fryst på 5134d9274fdaa9d09dd3f3cf40f02ecd95716afe. Av de fyra tidigare förberedda svenska replikerna är goodluck_1, insurance_1 och double_1 identiska; win_1 har nya bytes och är inte ersatt i produktion. En privat ZIP med dessa fyra källfiler, exakta reposökvägar och hashjämförelse finns i uppdragets steglogg. Ingen av dem har ny talacceptans. Worker-/åtkomstfynd och återstående integration beskrivs i LOCAL-PRESENTATION-RUNTIME.md. Behåll lab-källan. Två verkliga talprov återstår; layoutens tidigare prov ersätter dem inte.
+
+Källanalys efter Jakobs uttryckliga tillstånd: Gemini med hög upplösning transkriberar insurance_1 som ”Ess synligt. Vill nån ha försäkring?” och nya win_1 som ”Grattis till vinnarna.” Försäkringsklippet bedöms preliminärt följa talet; win_1 flaggas för sena munrörelser, ungefär 0,5 s efter talets slut. Detta är modellobservationer, inte uppmätt eller accepterad produktsynk. Den första analysens påstående om frusna bilder har förkastats: lokal ansiktsgranskning visar tydliga munrörelser. Båda klippen behåller granskningsstatus och publicerades inte. Råresultat och källhashar sparas endast privat i uppdragets steglogg.
+
+Verifiering av bordseditorn: Studio-produktionsbygge och 32 fokuserade preview-prov passerar. Full pre-commit gav 3 743 godkända, 12 överhoppade och inga fel. Oberoende granskning fann inga blockerare. PR #138 är mergad som ad0ae9ac och Vercelproduktionen är READY. Den sista visuella kontrollen av menyförtydligandet kunde inte utföras efter att browsertransporten stängdes.
+
+Talfacksrättningen ger registrerade dealers ett explicit standardklipp per replik. De 14 situationerna i speak.other delar inte längre ett enda standardval; sparade UUID:n ligger kvar i befintliga project.lines. De tre egna talraderna behåller sina standard-ID:n. Äldre alternativ bevaras, inga filer aktiveras automatiskt, och runtime v20 krävs för projekt med nya talfacksbindningar. Ingen SQL-migration. Riktade backendprov: 173 godkända; UI-prov: 20 godkända. Studio-produktionsbygget passerar med 97 kontrollerade spår. Oberoende review fann inga blockerare; dess notering om äldre standard visas nu i väljaren. Full pre-commit inklusive de tre nya testfilerna: 3 764 godkända, 12 villkorligt överhoppade, 0 fel. De nya testerna ligger i ordinarie hook/CI. Astrids godkända urvalsbaslinje är oförändrad. Slutlig browserkontroll och faktisk ljud-/bildacceptans återstår.
+
+Kevins 81 svenska talfilmer är inventerade. 59 hör till de 17 nuvarande talfacken; övriga 22 är extra hälsningar/repliker. Ett privat ZIP innehåller 18 oförändrade original (en per fack samt greet_guest), exakta reposökvägar och SHA-256. Lokal granskning av 24 bildrutor per film visar munrörelser i samtliga 18, även greeting_1 och blackjack_4. Detta bevisar inte ljud-/bildsynk. Ingen tagning har fått ny produktionsacceptans. Den privata stegloggen skiljer källgranskning från spelprov.
+
+## Dragan: bordsprofil, kortvy och samtalspanel, 14 oktober
+
+Admin visar bordsbredd och egna kort-/insatsplatser per bord och format i samma sammansättningspanel. Valfria betMode=under-cards binder markerytorna under kort och poäng; äldre profiler behåller manuella punkter. Kortvisningen kan växlas mellan Upplyfta och På bordet och sparas i spelarens webbläsare. Filmad kontakt följer källplanet fram till släpp; ett lägesbyte upphäver pågående kontaktbindning utan att ändra serverkort eller avslöja hålkort. Fyra split-händer har egna rader utan överlappande poängbrickor.
+
+Swedish Games befintliga Dragan-rum är publicerat som version 4. Den accepterade Oak-profilen har sju spelarankare och ett dealerankare på desktop, samt tre synliga spelarplatser åt gången på mobil. Mobilbordets bredd är 1,75, desktopbordets 0,68; kortbredden är 3,8 respektive 5 procent av bordbilden. Insatsytorna följer korten i båda formaten. Läsning efter publicering bekräftar exakt accepterad profil, samma rum och samma 36 medie-ID:n och SHA-256-värden. Inga dealerfilmer importerades på nytt för layoutändringen. Lab är fortsatt aktiv källkod och behålls.
+
+PR #132, #135 och #136 är levererade; Vercel och Render är verifierade på ce6a714d. Huvuddomänens appkod matchar lokal källhash. Givknappen placeras efter uppmätta insatsytor, rensa-insats och HUD; verkligt platsbrist ger varning, men en inaktiv knapp ger ingen falsk varning. Startläget och aktivering efter första insatsen är verifierade efter sista driftsättningen. Full ordinarie kontroll: 3 735 godkända, 12 överhoppade, inga fel. 32 fokuserade geometri-/knappkontroller och oberoende granskning passerade; PR- och main-CI är gröna.
+
+Den slutliga profilen provades med två sammanhängande rundor per format i verklig Studio-preview: desktop 1280×720 med alla sju platser, mobil 390×700 med tre synliga platser. Båda kortvyerna och filmade extrakort användes. Inga konsolfel eller varningar observerades; alla insatser använde separat syntetiskt testsaldo, inte ett vanligt spelarkonto. Detta verifierar den provade layouten och sekvenserna, inte varje möjlig hand eller talets läppsynk. Privat steglogg, bilder och kvitton är uppdaterade.
+
+Chatt, röstknappar och status samlas i en panel även på mobil. Öppnad logg/inmatning/minne har ett gemensamt flöde; stängd panel behåller röstkontroller och felstatus. Detta aktiverar inte Dragans saknade röstprofil eller läppsynk; hörbar och visuell talacceptans återstår. Runtime v19 krävs för den nya profilen, inklusive omskrivning av frysta paket vid livscykelåtgärder; ingen SQL-migration. Befintliga manuella profiler och kortläge behålls tills de ändras uttryckligen.
+## Dragan: filmad givning och exakt inspelat tal, 14 oktober
+
+Spelarens gemensamma väg har en hashbunden Kevin-profil med 35 givnings-/vändklipp och deras källspår. Sekvensen följer serverns beslut och väljer VILA/REDO-varianter; en ofullständig kedja ger 2D-reserv. Varje fil binds uttryckligen i rätt händelserad och följer med det frysta rumspaketet. Givningsrader tillåter 16 alternativ; andra rader behåller fem. Runtime v17 krävs före nya sådana projekt eller inspelad-tal-metadata; ingen SQL-migration.
+
+Talets nya metadata binder exakt text, språk, tagning, video, ljud, bildruteindex och kalibrering. Inspelningskontroll och visuell acceptans är separata. Vanligt och fryst spel kräver godkännande; endast autentiserad, ägd Studio-preview tillåter en verifierad inspelning som väntar på bild-/ljudgranskning. Originalfilens eget ljud spelas en gång. Annat språk eller annan tagning används aldrig som reserv. Äldre material behåller sin uppspelningsväg.
+
+PR #124 (baabb37d) levererade den exakta Kevin-profilen. PR #125 (88b140e9) är live på Vercel och Render med runtime v18 och begränsad Brotli för större frysta paket. Studio-bygget och full pre-commit passerade: 3 684 godkända, 11 överhoppade, inga fel; oberoende granskning och GitHub CI passerade. Biblioteket innehåller 56 Dragan-filmer. De 25 nya givningsvarianterna är byteverifierade (39 627 593 byte) och 35 exakta Kevin-klipp är kopplade i fem händelserader i projektet studio-6799944c-ab75-4cf1-be97-b4622c097003. Bindningen gjordes med CAS och både produkt- och repositorylås; övriga projektfält och dealers är oförändrade.
+
+Två sammanhängande givningsrundor per format är genomförda i den verkliga spelaren med isolerat testsaldo: desktop 1440×900 (35→5 och 5→10), mobil 390×844 (15→5 och 5→0). Alla sju platser, extrakort, vändning och dealerns extrakort användes. Exakta val kom från Kevin-profilen och återgick till grundloop. Inga insatser gjordes på spelarens konto. Första nätverksbufferten kapades vid kontextbyte; separata tidigare fångade initialval och senare fullständiga segment finns i det privata kvittot. Detta är prov av de använda sekvenserna, inte visuell acceptans av varje möjlig spelkombination.
+
+Swedish Games version 3 är publicerad med 35 exakta givnings-/vändklipp samt grundloopen. Paketets kanoniska innehåll och samtliga klipp-ID/hashar matchar exakt det provspelade paketet. Mage och bord möts med bordsbredd 0,68/1,40 och dealer-y 0,06/0,03 för desktop/mobil. Det tidigare HTTP 413-felet är löst: 46 983 byte konfiguration ryms som 6 947 Brotli-tecken och 7 112 byte total branding, inom oförändrad gräns på 8 000 byte. Saknad valfri talreplik ger inte längre missvisande kortstatus ”2D-reserv”. Privat publiceringskvitto observerat 2026-10-14T03:37:30.357Z; ingen talfilm finns i paketet.
+
+Fyra svenska originalrepliker (goodluck_1, insurance_1, double_1, win_1; totalt 2 999 350 byte) är importerade som pending/pending, inte valda eller publicerade. Automatisk transkribering är bara ett textförslag; första orden i insurance_1 är osäkra. Ingen hörbar läppsynksacceptans har gjorts. Originalen finns för användarens granskning i den privata HTML-stegloggen. Rörlig AI-läppsynk har separata integrations-/avatarverifieringar kvar. lab/ behålls som aktiv källkod.
+
+Native SSH kör som root medan spelappen kör UID/GID 1000. En import skapade den tillfälliga mediacachen med fel ägare; exakt cachekatalog och journal fick appens ägare och begränsade rättigheter, utan ändrade original eller databasposter. Privata importhjälpar sänker UID/GID innan media-/filsystemarbete. Efter rättningen laddade samtliga använda provklipp utan HTTP-mediafel.
+
+## Dragan: utebliven första bildruta, 14 oktober
+
+Live-spelaren visade ”Idle: Film ended without a presented frame” för exakt Kevin-grundloop 2f3955b0-b450-4cc2-a9f5-ac80f10abd2f. Felet visar att medielivscykeln eller första presenterade bildrutans bevis saknades; den ursprungliga händelseordningen är inte bevarad, så rotorsaken är inte fastställd. Samma fil gav 121 verkliga bildrutecallbacks per uppspelning i två isolerade lokala mediaprov. Provet använde ingen spelmotor eller användarplånbok.
+
+Spelaren klassificerar nu endast started+ended utan presented som återförsökbart och lämnar avgränsade tillstånd i felkvittot. Egen grundloop får ett återförsök efter 500 ms med samma exakta klipp; en andra miss stoppar. Varning och stängd talgrind kvarstår tills aktuell ägares riktiga bildruta kommer. Givning, tal, dold flik och stängning avbryter väntande återförsök. Hash-, avkodnings-, kompositions- och paketfel återförsöks inte. Detta aktiverar inga talfilmer eller AI-röster.
+
+Fokuserad regression: 61 test passerar, inklusive diagnostik, retrygräns, verklig frame som återhämtning och samtliga ägaravbrott. Full leveranskontroll och produktionsprov redovisas i leveranskvittot; ingen läppsynksacceptans härleds från dessa tester.
+
+## Dragan: kortplatser som följer valt bord, 14 oktober
+
+Swedish Games-utkastet med Dragan, Lounge varm och Blackjack Oak visade
+kort och insatsknappar nedanför bordsskivan i isolerat provspel. Sammansättningar
+har nu valfria placeringar per exakt bord och format, med visuella reglage
+under Bord. Delade händer, återupptagna serverplatser och byte tillbaka till
+äldre placering bevaras. Filmat handkontaktspår godkänns inte av denna geometri.
+
+Validering, frysta paket, materiallivscykel och sparningens versionsgrind
+följer fältet. Runtime v16 krävs före skrivning; ingen SQL-migration.
+Studio-bygget passerar med 97 byggspår. Full ordinarie pre-commit på
+`652f3f2e`: 3 610 pass, 11 skip, 0 fel i 75 grupper. PR122 är mergad som
+`ce58ebb0`; Vercel READY och Render live verifierade på samma SHA.
+Oak-placeringar är sparade per format. Efter återinloggning avslutades två
+sammanhängande desktoprundor (1440 × 900) och två mobilrundor (390 × 844)
+med slutlig kalibrering och separat testsaldo. Kort och insatser följer Oak.
+Swedish Games har nu ett öppet rum, Dragan · Blackjack, publicerad version 1.
+Valen i /lobby och faktisk spelstart verifierades utan insats på riktigt konto.
+Annas roulette-rum finns kvar hos Scoutgaming Demo. Dragans import erbjuder
+30 filer per omgång; de elva lokala MP4-originalen finns redan i klippbanken.
+
+Filmad givning kräver fortfarande pose-/sekvenskoppling och klippkalibrering;
+tal och läppsynk är inte accepterade genom dessa prov. Dragan saknar ännu
+kopplat lobbyporträtt. /lobby saknar fortfarande den bordsväljare som finns i
+kompatibilitetslobbyn. lab/ är aktiv källkod och ska behållas. Privat HTML-
+steglogg, Kevin-ZIP med ursprungssökvägar och produktionskvitton är uppdaterade.
+
+## Anna-tal: integrationsgräns och testplan, 14 oktober
+
+[Roulettereferensen](games/roulette/TEKNIK.md#anna-tal-och-rörlig-läppsynk-14-oktober-2026)
+skiljer verifierad tyst scen från återstående dealerchatt, röstprofil,
+kompatibel referens, worker-avatar och faktisk taluppspelning. Roulette-agenten
+bekräftade underlaget och har inga aktiva filanspråk; dess testserver är
+stoppad. Annas röst/workerunderlag och talacceptans är inte verifierade.
+Källkod är önskvärd för granskning/underhåll men inget absolut krav för API-
+anrop till befintlig worker. Ingen ny Cartesia-inloggning krävs för Paow/Dragges
+ElevenLabs-väg. #116 är fortfarande en inaktiv adapter.
+
+21 isolerade befintliga referens-, röst- och bildrutekontraktstester passerade
+utan fel/skip. Dokumentationskontrollen gav 43 godkända, 0 fel, 0 skip.
+Dokumentationen anger också återstående liveprov och att Studio-preview
+stänger av genererat tal. Ingen runtime, dealer, publicering,
+nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
+
+## Admin C1–C4: navigation och läsbarhet, 14 oktober
+
+Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
+[befintliga migrationstrackern](CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
+Ursprunglig integrationsbas: `5ca686c5513982f9a760ad8dd07e67ed4d4e2e40`; egen gren
+`codex/admin-c1-c3`. DRAGAN har på nytt överlämnat endast eget Admin-avsnitt.
+PR124–127 och hans spelkvitton är bevarade som hans prov. Han rapporterar
+två isolerade produktionsrundor efter PR127; detta är inte vårt eget spelprov.
+Agenter arbetade i separata worktrees med navigation, N1-CSS och kortlayout.
+Huvudcheckouten och PR91:s arbete har inte använts för editeringar.
+
+Bolag & team har en huvudmenyingång via Verktyg. Klippkarta, Konton & åtkomst
+och Integrationer har samstämmiga namn. Portalraden går till `/admin`,
+`/partner` och `/lobby`; befintliga spelstarter och registeröversikter består.
+Admin använder sin lokala Inter-font med läsbarare meny-/kontexttext och
+intern rullning för lång desktopmeny. Smal System-popup är fortfarande synlig.
+Startsidan visar de befintliga bolags-, publicerings- och provspelningsflödena.
+Bolag & team har en sidrubrik. Klippkorten får läsbarare text och nästa rad
+flyttas ned när ett bibliotek öppnas; användarens manuella kortplaceringar
+bevaras. Minikartan togs bort i PR130 efter verifierad skymning på mobil och desktop.
+Panelernas sista åtgärder kan rullas fria från Adminrobotens launcher efter
+ett reproducerat mobilfel. Eget före/efter-prov vid 390/1440 px verifierar
+hela knappytan och fokus; oskickad chatttext och lokalt kategoriutkast
+bevaras när chatten minimeras och öppnas igen. Widgetkod och lagernivåer
+är oförändrade, och inga skrivande nätverksanrop gjordes i provet.
+
+Integrationscommit `e9996383`: full pre-commit **3 712 pass, 11 skip,
+0 fel/cancel i 76 grupper**, Node 24.21.0/fyra workers. Lab-bygget med
+97 byggspår och Admin/lobbyns typkontroll passerar. Skippen är inte acceptans.
+Eget läsande browserprov använder lokala UI-resurser på huvuddomänen i egen
+flik, vid 1440/1024/640/390 px. Kortexpansion, bolagsrubrik och startsidans
+länkar har följts upp vid 1440/390 px. Detta är inte levererad UI-acceptans.
+Inga egna produktionsskrivningar av data, spelprov eller lokala produktservrar
+har utförts. Efter Jakobs nya leveransmandat mergades den granskade PR127
+på fryst head `2930b3b6` med gröna kontroller; main blev `5ca686c5`.
+Tidigare passets `c0ff2332` (3 594 pass/11 skip) och
+43 dokumentprov behålls som historik i trackern. Tre tidigare avbrutna
+försök och den slutliga, verifierade Temp-miljön redovisas där också;
+inga test- eller säkerhetsregler lättades.
+
+Avbruten indexerad Bakåt/Framåt bevarar nu Framåt-historiken i riktade
+tester. Ett verkligt lokalt kategoriutkast överlevde intern Bakåt/Framåt
+i egen browser; omladdningsvakten observerades men dess båda dialogval
+är inte accepterade. Utkastet kastades genom att stänga den egna fliken.
+Ett separat reproducerat fel är rättat: Vera visades efter Admin-retur på
+bar `/admin/clips`, men reload valde Astrid. Synkning på accepterad path/query
+behåller nu valet även efter reload; 21 historik-/ruttprov passerar.
+Eget läsande prov behåller hela Swedish Games / Dragan-rummets kontext genom
+meny och Bakåt/Framåt. Sista reload krävde inloggning med exakt `returnTo`;
+lyckad inloggning och efterföljande rumsvisning är inte verifierade.
+Oberoende Lab-historik, full login-/
+kontextmatris, spara/återläsa, revisionskonflikt, publicering, rollgränser
+och två spelomgångar återstår.
+
+PR129 är mergad till `dbfe94b5` efter gröna kontroller och Vercel är READY
+på huvuddomänen. Eget läsande liveprov verifierar Inter/Inter-SemiBold,
+startsida och bolagsrubrik vid 1440/390 px. Bolagets reload/Bakåt/Framåt
+och Dragan-rummets fulla kontext via provspelning, startsida och Klippkarta
+behålls. Skrivande flöden och egen spelacceptans återstår. Samtliga nio avslutade
+arbetskopior är arkiverade efter överföring eller avslutad läsande granskning.
+Egna browserflikar är stängda. Integrationen
+och privata provkvitton behålls; ingen egen produkt-/Lab-server är aktiv.
+Faktisk 200-procentszoom och full dialogmatris återstår. Tidigare
+agenters Anna-/import-/rensningskvitton är bevarade och inte återutförda här.
+
+Hela `/control` kan inte raderas: Partner importerar dess delade renderare
+och login-/lösenordsalias behövs. Vanliga dokumentlänkar omdirigeras redan.
+Den befintliga trackern beskriver ordningen för säker frikoppling. Faktisk
+produktion före Admin-leveransen använde Arial i rubriken; grenens lokala
+Inter är nu verifierad i levererad rendering. Ingen extra skuggfix motiverades
+av kodinventeringen.
+
+PR130 rättar två egna livefynd efter nytt DRAGAN-ack. Ett för stort
+publiceringsutkast gav 413 vid läsning trots att rum/revisioner kunde visas.
+GET returnerar nu blockerad readiness med befintlig orsakstext; miljökravet
+har fortsatt företräde. POST, behörighet och gränser består. Desktopens
+minikarta täckte 202 × 152 px av ett kort och är borttagen; zoom/Fit View
+behålls. 61 riktade prov passerar inklusive roll, bolag och revisionsskydd.
+Commit `e67e6faa`: fullhook **3 713 pass, 11 skip, 0 fel/cancel i 76 grupper**,
+Lab-bygge med 97 spår och typkontroll gröna; oberoende granskning utan blockerare.
+
+PR130 mergades till `393439677cd78d86807099d973638c72eaa144af` efter grön CI;
+main-CI är också grön. Vercel READY på www och Render live med verifierat
+`/__cloud/version` bokförs separat i trackern. Eget läsande liveprov visar
+200/ready:false med begripligt miljökrav för den tidigare felande kandidaten,
+och 200/ready:true med rätt Dragan-rum/version 3 för den giltiga kandidaten.
+Revisionerna är oförändrade. Den överlappande minikartan är borta och samtliga
+tre zoom-/Fit View-knappar fungerar med bevarad kontext. Inga data skrevs och
+inget spel startades. Tre laddningsavbrott gäller Vercels feedback-script;
+inga HTTP-felsvar eller konsolfel fångades. Det är inte full C4–C7-acceptans.
+DRAGAN har fått nya main och fortsätter geometri-/runtime19-arbetet separat.
+Slutkvittot levereras från `codex/admin-live-receipt`; endast eget Admin-avsnitt
+ändras, inga andra agenters historik eller produktfiler.
+
+Nästa pass utgår från `87f30ce1` på `codex/admin-c4-acceptance`. DRAGAN hade
+redan mergat PR132 och lämnade uttryckligen över våra Admin-avsnitt; hans
+bordsprofil, visuella spelprov och publicering förblir hans arbete.
+Eftergranskningen hittade inget konkret regressionsfel och 127 kompletterande
+lokala tester passerade. PR/main-CI, Vercel och Render är gröna på samma SHA;
+detta är inte ett eget spelprov. Exakta revisions-/driftkvitton finns i trackern.
+Trackern förtydligar nu att arbetslista och UI-mål kan ändras enligt Jakobs
+aktuella instruktioner. Historiska formuleringar låser inte utformningen.
+Git registrerar dokumentets ursprung på Jakob Ebergs konto den 28 september
+2026 kl. 19.57; vilken människa eller agent som skrev texten framgår inte.
+Inloggningstestets browserloader rättas för verkliga modulberoenden och CSS-namn.
+Sex isolerade inloggningsprov passerar med riktig auth/route, SQLite i minnet
+och egen Chromium-context. Utgången session → lyckad login → Bakåt/Framåt/reload
+bevarar fem kontextfält från båda Admin-aliasen. Provet ersätter Klippkartan
+med fixture-HTML; verklig rumsvisning efter lyckad login i produktion och
+oberoende Lab-historik återstår. Produktkod, delade sessionscookies, pågående
+spel och publicerade data ändras inte. Lab-bygget och 97 byggspår passerade.
+Commit `cb7f19f7`: full pre-commit **3 733 pass, 9 skip, 0 fel/cancel i
+76 grupper**, inklusive samtliga sex browseraktiverade inloggningsprov.
+De två nya agentarbetskopiorna är arkiverade efter verifierad överföring/
+granskning; totalt elva. Egen testcache är städad och fixture-browsers stängda.
+Enbart integrationen och privata provkvitton behålls för fortsatt Admin-arbete.
+
+## Rörligt dealertal: förberedd adapter, 14 oktober
+
+RunPod-åtkomsten och staging-imagen är identifierade. Befintlig GitHub-
+inloggning ger fortfarande 403 för container-manifestet; källkod och
+hashbunden avatarbank behöver verifieras. Se LOCAL-PRESENTATION-RUNTIME.md
+för exakta observationer och nästa kopplingssteg.
+
+En inaktiv bildruteadapter förbereder worker-kartor för Paow och
+Dragan/dragge, binder tal/version/ljud/media och släpper bara exakta
+frame-matchningar till dealerlagret före beskärning/keying. Den ändrar
+inte liveplayer, OpenClaw, röster, providerinställningar eller spelmotor.
+Riktade kontrakttester ingår i full pre-commit.
+Full regression passerade: 3564 godkända, 11 överhoppade och 0 fel. Lab-produktionsbygget passerade med 97 kontrollerade byggspår. Livejobb och två visuella talprov per dealer återstår.
+
+## Admin: återstående kompatibilitetsluckor, 13 oktober
+
+Talgranskning finns i Admins verktyg och öppnar befintlig granskningskomponent
+med vald dealer, samma session/grants och samma native-API. Materialbiblioteket
+bevarar bakgrundsfliken efter omladdning. Äldre lanes/companies-bokmärken och
+clips-länkar med dealerId får rätt destination och kontext. Missvisande
+”äldre editor/vy”-etiketter är borttagna när komponenterna visas i Admin.
+
+Sju regressioner gav rött före rättning; 33 riktade prov är gröna.
+Produktionsbygget (97 byggspår) och Admin/lobby-typkontrollen passerar.
+Full regression efter integration med roulette- och budgetleveranserna:
+3 552 pass, 11 skip, 0 fel. Studio-bygget passerar med 97 kontrollerade byggspår.
+PR110 är mergad som `1595fb451cf19fbcbba1ece04e4bb8c7c74a9bc6`:
+Vercel READY och Render live på samma SHA, alla CI-kontroller gröna.
+Inloggat beroendeträd kontrollerat på huvuddomänen 14 oktober: röda menyn,
+komplett registerläsning och separata Anna-/Dragan-kopplingar visas.
+Dealers visar efter rensning/import Dragan med 27 klipp och ren PAOW med 11;
+importlänken behåller Dragan och erbjuder
+30 filer per omgång. Utloggad route bevarar returnTo till `/admin/deletion`.
+Den befintliga migrationsloggen i CLOUD-MIGRATION.md skiljer funktionerna
+i Admin från framtida avveckling av hostnamn och källkod. lab/ behövs av
+Admin, autentisering, API:er, SQL och Render; inga tjänster eller data tas bort.
+
+Kevins aktuella Git-ref är inventerad separat: 274 kodrefererade filer för
+Dragan och Paow i ett privat ZIP, med exakta fack, sökvägar och hashvärden.
+Sju av Dragans 21 produktionsposter matchar; ingen av Paows sex matchar.
+Ingen ny publicering eller visuell medieacceptans följer av denna inventering.
+
+Röd Radering-meny och ett anslutet beroendeträd finns i den nya koden.
+Det visar bolag/spel/rum, dealers/filer och bakgrund/dealer/bord utan att
+duplicera delade resurskort. Läsfel och ofullständig historik visas öppet.
+Permanent datarensning är ett separat uttryckligt användarmandat med
+skyddade resurser och konkret inventering i CLOUD-MIGRATION.md. Ren
+offlineplanering och lokal backup är förberedda. Alla 232 inventerade objekt
+under de fyra gamla dealernas mappar och två gamla borden har hämtats till
+lokal disk och hashverifierats (145 404 657 byte). Inga
+nya molnbackuper skapades. Produktionsrensningen är nu genomförd och ren
+PAOW är registrerad som `paow-kevin` utan gammal Forge-profil.
+
+Fortsatt rensningskod avregistrerar Amira ur katalog/layout/Blob-index och
+tar bort gamla Paow-previewval och bildkopplingar. 97 exakta lokala filer
+har kopierats och hashverifierats privat före borttagning. Dragge, delade
+bakgrunder/bord och Kevins original bevaras. Ett verifierat Forge-race
+stängs med dealer-/jobb-/leasekontroll under samma Studio-lås som skrivningen;
+60 fokuserade Forge-/repositoryprov passerar. Chattminnet kontrollerar också
+registreringen i samma transaktion, med game → Studio som i native Admin.
+Samtidig projektsparning och chatt ingår i regressionen. PR117 är mergad som
+`0511206dec4cb8468fe92d5f03202718d3bf2585`, Vercel READY och Render live på
+samma SHA. Fullhook efter main-integration: 3 592 pass, 11 skip, 0 fel;
+PR- och main-CI gröna. Kodreview fann inga blockerare.
+
+Databasrensningen jämförde 304 originalrader och genomförde 164 uppdateringar
+samt 139 borttagningar i en transaktion. Skyddade resurser, inklusive Annas
+nytillkomna arbete, hade oförändrade fingeravtryck. Därefter raderades exakt
+232 Blob-objekt efter verifiering av noll kvarvarande referenser.
+Kvitton, plan-/manifesthashar och bevisgränser finns i CLOUD-MIGRATION.md;
+råbackuper och exakta privata kvitton hålls utanför Git.
+
+Kevin-importen har fullbytes-/hash-/registreringskvitto för sex nya Dragan-
+och elva nya PAOW-filer. Sju befintliga Dragan-filer återanvändes. Samtliga
+nya klipp är ogranskade alternativ; noll val/publiceringar/betalda jobb.
+Den kortlivade importhjälpen bygger en validerad native-konfiguration lokalt
+i processen eftersom N1-flaggan bara är aktiv på Vercel. Originalmiljön,
+behörigheter och permanenta Render-inställningar ändrades inte. Dess egna
+temporära filer är borttagna. 32 privata importprov passerade.
+
+Jakobs nästa uppdrag är ett dokumenterat WebView-flöde för ett spelbart
+Dragan-Blackjack-rum hos Swedish Games, nu skapat i produktions-Admin.
+Hans val Lounge varm (video) och Blackjack Oak finns i ett separat sparat
+Dragan-utkast. Dragan finns redan; elva lokala original matchar befintlig
+klippbank. Egen grundloop och serverstyrda reservkort fungerar i befintlig
+spelväg, men den valda Oak-scenen behöver rättad spelgeometri före acceptans.
+Full filmad Kevin-givning behöver dessutom kortkalibrering
+och pose-/sekvensintegration. Rum, publicering och två spelprov på
+desktop/mobil återstår. En isolerad desktoprunda avslutades och mobilvyn
+kontrollerades, men acceptansen stoppade på verkligt geometriavstånd:
+spelarkort och insatsplatser hamnar vid Oak-bordets fot. De följer äldre
+dealerankare, inte det valda bordet. Egen grundloop är sparad; ingen
+publicering gjord. Till/Från skon-resolvern används ännu inte av playern.
+Blackjack kan byta tillåtet bord mellan rundor; Roulette saknar intern väljare.
+Ny `/lobby` delar katalog med `/play` men saknar dess bordval. Dessa fakta
+och användarens privata HTML-steglogg skiljer biblioteksimport från färdigt spel.
+
+## Anna-demorum: publicerat och två liveprov klara, 14 oktober
+
+Admin-editorn kan nu spara exakt startfilm, bordsdesign, tider och handregion;
+idle-mask och SHA/CAS-granskning av pose/framing är tillgängliga. Bibliotek och
+sammansättningar filtrerar roulettebord separat från blackjack. Hjul/kula
+komponeras i bordslagret under Annas händer. Startgest v2 och återgång till
+vila är visuellt granskade i faktisk lokal spelarkod. Exakta bytes och cues:
+docs/games/roulette/UTFALLSFILMER.md#startgest-v2-och-live-registrering.
+
+PR101 är mergad som `a6509318`; samma version är verifierad READY i Vercel
+och live i Render. Motorn svarar 200 med rouletteIdle/rouletteStart i v15.
+Anna-idle, startfilm och MP4-bakgrund finns nu i Blob/Neon, liksom bord
+`7e31ab32-8074-4b63-b1bb-4e6bee772421` och en egen sparad Anna-sammansättning.
+Startvideo `96deca4e-3716-4db8-9a51-997ffa906a3b` har sparad VILA → VILA,
+framing 1/0/0, 10042 ms, impuls 3208 ms och släpp 5000 ms. Både idle och
+start har sina granskade handregioner i sparat rouletteutkast. Sammansättningen
+har Anna, roulettespecifikt bord och MP4-salongen; inga blackjackbord tillåtna.
+Admin avrundar bordets bredd till 1,04 i båda formaten (lokalt prov 1,044565);
+övriga lager är 1/0/0, bordets x/y 0/0 och tableFront=false.
+PR114 rättar förkontrollen och är live som `1fd552d3`: rouletteval och
+skapandets sista kontroll använder samma spel; exakta v14/v15-svar accepteras.
+110 riktade tester, Lab-typkontroll, Studio-bygge och full pre-commit
+(3498 pass, 0 fail, 11 skip) passerar. Alla PR-kontroller var gröna.
+
+Det separata bolaget `scoutgaming-demo` (Scoutgaming Demo) har nu paketversion
+1 och det öppna rummet `room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea`,
+**Anna · Roulette · Demo**. Skapat via Admins ordinarie atomiska publicering,
+med serverkvitto och frysta Blob/Neon-referenser. SG-tests äldre paketversion
+16 och dess två arkiverade rum är bevarade. Dess konvertering blockerades
+av befintligt legacy-skydd; ingen sådan konvertering eller skyddsändring gjordes.
+Inga andra bolags rum ändrades och inga nya teammedlemmar bjöds in.
+
+Två sammanhängande spel öppnades via `/lobby` → Scoutgaming Demo → Anna,
+utan omladdning, på det av Jakob uttryckligen godkända demokontot:
+5 på rött gav 17 svart (−5); 5 på svart gav 15 svart (+5). Demosaldot
+återgick till startvärdet. Båda serverkvittorna var nya, inte återspelade.
+Annas startfilm, hjul/kula, resultat och återgång till idle granskades i
+synlig produktionsspelare, med MP4-bakgrund och bordbredd 1,04. Bilder och
+kvitton ligger privat som `anna-live-acceptance.json`, `anna-live-round-1.png`
+och `anna-live-round-2.png` i roulette-stop. Inga konsolfel observerades.
+[Öppna demorummet](https://www.scoutgaming.tech/play/roulette?operator=scoutgaming-demo&table=room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea&dealer=anna-jonsson).
+Detta är demoacceptans med låtsasmarker. Serverstyrd pending/reveal återstår;
+resultatet finns fortfarande i nätverkssvaret före den visuella landningen.
+
+Tidigare lokala regressioner och leveransunderlag:
+Admin typecheck, 49 editorprov och Studio-produktionsbygge passerar.
+Kodcommit `b8e5e20c` är pushad med main `f22cb718` integrerad:
+Studio-produktionsbygge och full pre-commit 3486 pass, 0 fail, 11 skip.
+Två lokala rundor efter handfixen: 26 svart → 28 svart, saldo 490 → 485 → 480.
+Under dold appvy kan skärmbilder vara inaktuella; synlig IAB verifierade
+slutkulan i rätt fack. Slutacceptans ska göras med spelvyn synlig.
+Nytt spelarprov bekräftar att handmasken ligger framför sifferringen.
+Slutgranskningen hittade en paus/återstart-kapplöpning: en köad statisk
+hjuluppdatering kunde hindra videornas nästa animationsruta. Refresh återtar
+nu renderloopen om uppspelning har återupptagits. Regressionen och 26 riktade
+scen-/hjulprov passerar; rättningen ändrar inga mediebytes eller kalibreringar.
+Canvas2D-reservvägen återläser nu även rörliga handmasker per bildrevision,
+tid och dimensioner; 25 riktade kompositorprov passerar. Två nya lokala
+spelningar med sluträttningarna gav 7 röd → 26 svart och saldo
+500 → 505 → 500. Därefter fortsatte Jakob själv i det isolerade provrummet.
+Kvitton/bilder sparades privat; detta är fortfarande inte lobbyacceptans.
+Migrations-/budgetrelease PR108 är nu mergad som `4df384ab` och integreras
+i roulettebranchen. Vercel rapporterar READY för denna main-version.
+Admin fungerar via den befintliga appflikens vanliga länkar. Ingen
+adminsessionsnyckel har exporterats. Render-budgetens tidigare releasefönster
+är avslutat; PR101 driftsattes först efter gröna kontroller.
+Säkerhetsstatus uppdaterad 14 oktober: samordnaren återläste incident 38176586
+som IGNORED/test_credential efter hantering av den syntetiska testfixturen.
+Denna chats efterföljande statusläsning visar 18 observerade, 0 öppna och
+18 ignorerade incidenter. Incidenttäckningen är fortfarande partiell och
+historisk skanning ofullständig; detta är inte ett generellt säkerhetsfrikännande.
+
+## Anna-startfilm och varierad roulette, 13 oktober — PR101 fortsättning
+
+Valfri exakt rouletteStart med egen framing/handregion/tider, engångsspelning
+och återgång till idle. Videotid styr hjulstart och kulsläpp; varierad slutvinkel
+och fart härleds från rundans ID. Fullare landskapsscen/helskärmsknapp; ingen
+ändring av serverns utfall, wallet eller MP4-bytes. 33 riktade spel-/scenprov gröna.
+Full pre-commit för `ed973933`: 3409 pass, 0 fail, 11 skip.
+Efter integration med main `6a9be6d2` passerade full pre-commit för
+`dc764fa16c62247f393a4b36986f43883b871fab`: **3456 pass, 0 fail, 11 skip**.
+Denna kodhead är pushad och PR101 förblir draft. Senare main `4d6b1ebc`
+har en enda ny mergekonflikt i denna handoff; kodkonflikter saknas i merge-tree.
+Ingen ytterligare main-integration görs under parallellt driftsarbete.
+Två sammanhängande UI-rundor med ny frilagd film: 8 svart → 3 röd, saldo
+500 → 495 → 500 USD i isolerad SQLite. Kvitton och bilder sparade privat.
+
+Betald tiosekundersfilm skapad efter uttryckligt uppladdnings-/kreditgodkännande.
+**Gesten är ännu inte godkänd:** ett presenterande svep, inte tydlig hjulimpuls
+och kulsläpp. Tekniska cue-tider är provisoriska. Ingen live mediaregistrering,
+Blob-uppladdning, rums-publicering eller merge till main. Nästa mediesteg är att rätta
+gesten och godkänna kontakt/övergångar; sedan registrera godkända bytes i Blob.
+Exakta hash, uppgifter och avgränsningar: docs/games/roulette/UTFALLSFILMER.md.
+
+Versionskrock med #102 rättad: v1–14 bevarar mains exakta kontrakt; v14 gäller
+dealerCategoryTrash. **Både rouletteIdle och rouletteStart kräver v15** med
+separata featuregrindar. Ingen SQL-migration. Äldre v14-referenser nedan är
+historiska testanteckningar, inte aktuellt publiceringskrav.
+Integrationsbas: main `6a9be6d2`. Studio produktionsbygge och Admin/lobby
+TypeScript gröna efter konfliktlösning. Admins tidseditor för startfilmens
+cue-profil återstår, liksom liveacceptans; befintliga idle-kort fungerar.
+
+## Rouletthjul och kula, 13 oktober — fortsättning på PR101
+
+Anna-bordets sifferring ersätts vid uppspelning av 37 exakta fack från
+motorns europeiska `WHEEL`. Endast katalogdesign `roulette-anna-v1` använder
+denna kalibrering. En separat kula snurrar motsols, faller in i kvittots
+nummerfack och följer rotorns inbromsning under nio sekunder. Annas film,
+inramning, handmatta och MP4-bakgrund har oförändrade bytes/inställningar.
+Inga nya filmer eller betalda jobb. Detta animerar hjulet, inte ett nytt
+handkast från Anna. Den fotografiska mässingsaxeln ligger framför rotorn.
+
+Bekräftat kvitto inväntar scenladdning och visning; mediefel, reducerad
+rörelse, bakgrundsflik och stängning får inte skapa ny debitering eller låsa
+spelknappen. Omladdning visar redan bokfört resultat i slutläge. Resultatet
+finns fortfarande i nätverk/saldo före landningen: verklig serverstyrd
+pending/reveal återstår. Inga produktionskonton eller publiceringar ändrade.
+
+Fokuserat: 14 tester gröna (alla 37 utfall, kontinuerlig bana, två rundor,
+sen scenladdning, stängning, renderingsfel och kvittots visningsordning).
+Full pre-commit för `07b33c4f`: 3392 pass, 0 fail, 11 skip.
+Efter omladdning kördes två sammanhängande faktiska UI-rundor: 30 röd,
+sedan 2 svart; saldo 495 → 490 → 495 USD i isolerad SQLite. Kula och
+resultat stämde vid landning; inga browservarningar/fel observerade.
+Privata bevis: `anna-wheel-final-round-1.png`, `anna-wheel-final-round-2.png`
+och `anna-wheel-two-rounds-evidence.json` under samma roulette-stop-mapp.
+Kalibrering och avgränsningar: docs/games/roulette/UTFALLSFILMER.md.
+
+## Anna i roulettespelaren, 13 oktober — codex/roulette-anna-binding
+
+Separat rouletteIdle-bas/varianter/handregion i Studio → frozen capture →
+rum och preview → gemensam spelarrenderer. Admin kan koppla/spara samma
+kontrakt. Kräver runtime v14 före nya bindningar; ingen SQL-migration.
+Legacyroulette fortsätter utan dealer om roulettefil saknas. Blackjackmedia
+kan inte väljas eller hämtas genom roulettepreview/legacydealer-endpoint.
+
+Nytt frilagt bord från Jakobs godkända bild, spelbunden katalogidentitet och
+egna klickytor. Annas befintliga alpha-WebM och MP4-bakgrund återanvänds med
+ny inramning och bildsynkron handmatta. Glasögon-v2 togs ur slutprovet efter
+synliga alfahål i händer/fluga; variantstödet finns för en korrigerad film.
+Ingen ny betald film.
+Två UI-rundor körda utan omladdning genom riktig capture/preview/spelarkod
+med isolerad SQLite: 33 svart och 6 svart i slutprovet. Inga produktionsregister ändrade.
+Detaljer, hash/prompt och bevis: docs/games/roulette/README.md samt UTFALLSFILMER.md.
+Det tidigare basprovet omfattade inte kula/hjulstart eller korrekta hjulsiffror;
+den efterföljande implementationen beskrivs ovan. Färgheuristiken för händer kräver ny
+granskning vid ändrade bytes/inramning/kläder. Visuell målbild är fortsatt
+Jakobs referens; den nya rörliga passningen inväntar hans bedömning.
+
+Verifierat för kodcommit `a0c7d708`: Studio-produktionsbygge och Admin-typkontroll
+gröna. Ordinarie fulla pre-commit: **3385 godkända, 0 fel, 11 skip**.
+Riktade tester täcker dessutom variantväxling, avbruten laddning, fel bildmått
+och handmatta ur samma bildruta. GitGuardian-läsningen visade 0 öppna/17
+ignorerade incidenter, aktiv övervakning; historisk scan `too_large`, platsdata
+delvis tillgängliga och main-check köad. Detta är ingen fullständig historisk
+friskförklaring.
+
+## Testfixturer och Kevins rörliga läppsynk, 13 oktober 2026
+
+PR #108 tog bort det fasta testvärde som utlöste GitGuardian 38176586.
+Denna uppföljning flyttar motsvarande syntetiska Neon-adresser i åtta
+testfiler till en gemensam hjälpare som skapar lösenord vid körning. Befintlig
+databasvalidering, felredaktion och migrationstest behålls. En läsande
+regressionskontroll i full hook/CI rapporterar enbart fil/rad/felkod om en
+komplett credential-URL återinförs i testkällorna. GitGuardian är kvar utan
+undantag, och den historiska incidentens status ändras inte.
+
+[Runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md)
+beskriver det versionsbundna urvalet för Dragan/Paow, VILA/REDO-varianter,
+korrekt röst och Emils rörliga läppsynkprotokoll. Materialagenten ansvarar
+fortsatt för sitt separat godkända import-/rensningsarbete. Det verifierade
+källpaketet har 274 filer; det är ingen produktions- eller synkacceptans.
+Ingen Kevin-branch, walletlogik eller media importeras av denna leverans.
+
+Den rörliga workerns källrepo gav 404 med nuvarande åtkomst. Vår stillbilds-
+worker och generiska speechProfile kan inte aktivera den andra tekniken bara
+genom byte av endpoint. Workeråtkomst, exakta avatarfiler, variantadapter,
+auktoriserad relay och två riktiga talprov per dealer återstår före aktivering.
+Testkvitto: 175 berörda tester godkända på Node 24.21.0. Efter integration
+med main `1595fb45` passerade Studio-produktionsbygget och full pre-commit:
+3555 godkända, 0 fel, 11 överhoppade. Leverans: PR #113.
+RunPod-spåret är identifierat: staging anger endpoint `mq7eiwanda72fg`;
+läs template/image/digest och avatarbank när rätt kontoåtkomst finns.
+En otillgänglig GitHub-länk bevisar inte att den driftsatta workern saknas.
+
+## GPU-testbudget 20 USD, 13 oktober
+
+Jakob höjde uttryckligen dygnstaket till 20 USD. Dagssumman avser konservativa
+GPU-reservationer per UTC-dygn, inte RunPods faktura eller separat LLM-/TTS-trafik.
+Avläsning 19:47 UTC: 14 sessioner à 0,50 USD = 7 USD; även avbrutna försök räknas.
+
+Kodens dygnsgräns är nu 20 USD. Effektivt tak är fortfarande det lägsta av
+Render-inställningen och sparad Neon-policy. Sessionsreserven 0,50 USD och
+fullfilsreserven 1 USD behålls; per-jobbgränsen är fortsatt 10 USD. Ingen historik,
+reservation, återbetalning eller befintlig QA-kampanj ändras av höjningen.
+
+Obligatorisk Studio-migration 011 vidgar endast budgetpolicyns exakta CHECK.
+009/010 är fortsatt reserverade för B18/B19. Äldre SQL-/strukturchecksummor
+bevaras och verifieras genom exakt versionerad strukturevolution; okänd drift
+eller saknad 011-ledger nekas. Migrationen körs före merge. Först efter deploy
+av koden uppdateras produktionspolicyn och Render-variabeln till 20 USD.
+150 riktade tester och ett verkligt Neon-migrationsprov med full rollback PASS.
+Render-startens exakta ledgerkontroll inkluderar också 011; CI kör verklig isolerad SQL-/omstartsacceptans.
+Två tekniskt färdiga Paow-spelningar ersätter inte visuell läppsynkacceptans.
+
+## Publik Scoutguide med D-ID, 13 oktober
+
+PR #109 ersatte #105 och mergades som `7f02da34` efter verifierad livebudget
+20 USD i PR #108. Produktionsprovet gav ett korrekt Luna-textsvar men visade
+ett separat SDK 3-fel: `AgentManager.agent.idle_video` ligger direkt på
+agentprofilen, inte under `presenter`. Den felaktiga callbacken avbröt
+anslutningens uppvärmning. Läsningen är nu rättad enligt det installerade
+SDK:ns kontrakt; regressionen var först röd och passerar efter rättningen,
+inklusive byte till tal med ljud på. Ny avataracceptans krävs efter publicering.
+
+PR103 är mergad och live (`b2dda8ab`, Vercel READY och main-CI grön).
+Riktigt publikt textsvar fungerar i cookiefri produktionsvy. Första avatarprovet
+fångade en anslutningskapplöpning: ett snabbt modellsvar kunde anropa `speak`
+innan `connect` var klar. Uppföljningen väntar på den pågående anslutningen
+och provar både snabbt svar och panelstängning under start. Nytt avatarprov
+görs efter att rättningen publicerats.
+Sidprovet hittade även att lobbyns och roulette-sidans CSP blockerade D-ID.
+Endast deras HTML-dokument får nu ansluta till `https://api.d-id.com` och
+spela avatarens vilovideo från `https://agents-results.d-id.com` samt WebRTC
+via blob. Skript, tillgångar och interna adminytor behåller sina begränsningar.
+WebRTC-uppvärmningen startar ljudlöst för att fungera med autoplayreglerna;
+ljud vid svar använder fortfarande den synliga knappen om webbläsaren kräver
+ett klick. Webbläsarverktyget kopplades bort under sista provet efter bytet
+av GPT-inloggning. Full hörbar avataracceptans och inloggade N2/N3-sidprov
+är därför fortfarande öppna. PR #105 samlar dessa avgränsade rättningar.
+
+Besökare, N2 och N3 får en separat Scoutguide genom den gemensamma chattknappen.
+N1 behåller Adminrobotens tre lägen, filimport och granskade åtgärder.
+`/studio/api/public-assistant` använder Luna 6 med låg resonemangsnivå och
+endast fast publik sajtinformation. Den har inga databasläsare, verktyg eller
+åtgärder; den befintliga N1-endpointens behörighetskrav är oförändrade.
+
+Den befintliga D-ID-agenten `v2_agt_UuD7CYFA` används i SDK-läget
+`DirectPlayback`: sajtens server skriver svaret, D-ID läser upp det med sin
+befintliga svenska röst. SDK laddas först när chatten öppnas. Minimering,
+sidbyte, dold flik och två minuters inaktivitet stänger avataranslutningen.
+Text fungerar även när avatar eller ljud inte kan starta. Privat D-ID-nyckel
+används inte av webbchatten; dess publika embednyckel är domänbegränsad.
+Begränsningen av modelltrafik är per serverprocess, inte en global kvot.
+
+Kontroll hittills: 41 riktade API-/N1-tester gröna, Studio-bygge grönt och
+riktigt Luna-svar verifierat i lokal webbläsarfixtur. N1-växling visar enbart
+Adminroboten. D-ID accepterar produktionsdomänen och nekar testadressen;
+verifiering av riktig avatar och produktionssidornas laddning återstår vid
+publicering. Ingen ny D-ID-agent eller testnyckel skapades.
+
+## Teaminbox: Jakobs laptop och stationdata, 13 oktober
+
+`jakob-bgvp01j` adresserar Jakobs laptop och `jakob-dator2` Jakobs stationdata
+via separata GitHub-etiketter. Båda tillhör Jakob; personregistret och
+grenägarskapet är oförändrade. `tools/inbox.mjs register --device <alias>
+--email <ChatGPT-mejl>` sparar datorns konto, värdnamn och automatiskt avlästa
+reposökväg endast i gitignorerade `inbox/local-device.json`.
+
+`list --to me` använder registrerad dator, annars den tidigare grenägaren.
+Avsändarnamnet visar datorn; konto och sökväg publiceras inte i GitHub.
+En profil från fel dator/sökväg stoppas med instruktion att registrera igen.
+Regressionsprov täcker separata etiketter, gemensam personägare, båda datorernas
+routning, profilbyte, felaktiga/kopierade profiler och meddelandets visningsnamn.
+Verifierat: 12/12 inboxtester passerar. Laptopens lokala registrering och
+gitignorering är kontrollerade; båda datorernas GitHub-etiketter finns och
+`list --to me` läser laptopens inbox. Inget testmeddelande har skickats.
+Full ordinarie kontrollkedja: 3 415 godkända, 11 skips, 0 fel i 72 grupper.
+De versionslåsta beroendena i `packages/design-preview` behövde installeras
+efter main-synkningen; inga beroende- eller låsfiler ändrades. Jakob har
+uttryckligen godkänt leverans via `codex/inbox-devices` och PR-merge efter gröna kontroller.
+Den andra datorn behöver synka ändringen och registrera sitt eget konto enligt
+`inbox/README.md`. Ingen automatisk väckning eller bakgrundspollning införs.
+
+## Roulette: Anna, alfametadata och MP4-bakgrund, 13 oktober
+
+Integrerad med main `60defa57` inför PR92-granskningen. Endast denna handoff
+behövde konfliktlösning; roulette- och Paow-sektionerna är båda bevarade.
+Alfafixen, fixturen och den dokumenterade visuella målbilden behåller samma
+omfattning. Denna integration ändrar inga mediefiler eller publiceringsval
+utöver innehållet som redan finns på main. Full regression körs vid commit.
+
+**Visuell återkoppling:** Jakob underkände den lokala spelarplaceringens
+bordshöjd/perspektiv och dolda händer. Därefter godkände han den bifogade
+stillbildens komposition som målbild (SHA-256 `f1039dd9…84c78`, 1673×901).
+Exakt bilaga är bevarad privat och dokumenterad i
+`docs/games/roulette/UTFALLSFILMER.md`. Önskemålet om cirka 25 grader är inte
+en uppmätt kameravinkel eller en ytterligare rotation som ska läggas på
+målbilden. Hjulsiffror, mask/passning och rörliga lager behöver färdigställas;
+två tekniskt fungerande UI-spel är inte godkända rehearsal-spelningar.
+Denna uppdatering ändrar bara dokumentation; bildkopians hash/storlek har
+verifierats och dokumentationskontroller körs vid commit.
+
+Fortsättning från mergad `6ee5d3aa` i `codex/roulette-anna-runtime`.
+Publicerad preview tappade `compositing: {mode:'alpha'}`; den följer nu med
+från fryst post. V2/v3, exakt byteväg och fortsatt spärr för blackjack-idle
+i roulette är regressionsprovade. Ingen registrering eller publicering ändras.
+
+Den befintliga `tools/roulette-ui-fixture.mjs` kan läsa en förhandsverifierad
+lokal alpha-WebM, MP4-bakgrund och valfri strikt kompositions-JSON. Den kör
+riktiga `/play/roulette`, scenrenderaren och roulettekommandot med SQLite i
+minnet på 127.0.0.2. Fasta fixture-descriptorer ersätter enbart publicerings-
+svaret. Det bevisar inte att Anna redan är registrerad/publicerad i produktion.
+
+Annas andningsfilm (`02700429…1a34`, 897 456 byte) och tidigare gardinfilm
+(`b08fdc4d…1854`, 3 455 652 byte) har visats tillsammans bakom produktens
+roulettebord. Två efterföljande UI-spel återgick till öppna satsningar utan
+omladdning eller loggade JS-fel. Privata hashkvitton, provplacering och
+skärmbild finns i denna chats `roulette-stop`-artefakter. Detta är inte
+acceptans av skarvar, poser, lipsync eller produktionens rumsbindningar.
+
+Full ordinarie pre-commit: **3 329 godkända, 11 skips, 0 fel**, Node 24.21.0;
+17 riktade preview-prov passerar. Underagentens läsande granskning hittade
+ingen försämrad spelavgränsning. GitGuardian: 0 öppna/17 ignorerade incidenter,
+aktiv övervakning, main-suite queued; historikskanningen är too_large och
+platsmetadata delvis ofullständig. Inga incidentstatusar ändras.
+
+Jakob har valt bort det fristående schematiska kulprovet för produktion.
+Uppdaterad plan i `docs/games/roulette/UTFALLSFILMER.md` jämför Three.js och
+den granskade CSS-baserade Gravity.js. Nästa steg kräver explicit sparat
+roulette-idle, fryst kontrakt och readinessgrind; behåll `dealer:null` tills
+hela bindningen finns. Registrering, native-frame-passning, godkänd
+hjulimpuls/kulsläpp, en korrekt 37-facksrotor och serverns pending/reveal
+återstår. PNG-nativeintag är fortfarande spärrat; README:s äldre påstående
+är korrigerat. Inga nya betalda filmer, nya bibliotek eller live-writes.
+
+## Paows talgrund och materialkontroll, 13 oktober 2026
+
+**Två hela talförlopp har nu avslutats tekniskt i följd**, utan omladdning,
+i riktiga `/play/blackjack?dealer=paow-v2&rehearsal=1` efter att PR #99:s
+main `982d541f` verifierats live på Vercel och Render. Båda sade exakt
+"Hej Jakob, välkommen tillbaka till mitt bord." och gav spelarens
+`state: ended`, `completed: true`, tom felstatus och återgång till idle.
+Bakgrund → dealer → bord var synliga i båda proven. Inga spelknappar eller
+insatser användes.
+
+| Prov | Request-ID | Svar redo | Talstart | Hela förloppet klart |
+| --- | --- | --- | --- | --- |
+| 1 | `18c930e8-6e63-457a-b1e3-c97b0f25c304` | 11,57 s | 15,65 s | 18,66 s |
+| 2 | `dd6a1bdf-df4b-474c-9a24-8d9ab334f75e` | 5,92 s | 10,09 s | 13,27 s |
+
+Ett föregående försök blev redo efter 78,48 s men avbröts vid flikbyte;
+det räknas inte som ett lyckat prov. Periodiska statuspaket kom fram under
+kallstarten. Prov 2 fångades komplett: 78 WebSocket-paket, 4 315 708 byte,
+73 bildrutor, H.264 + AAC, 3,084 s. SHA-256:
+`bf4ed6637249b3317c77c28f99ccba19110dcd5384f9d1685509c24fc9e3fc0a`.
+Worker: 2 225 ms totalt, `input_wait: 0`. Prov 1 har spelarens slutkvitto
+och skärmbild; nätverksfångsten hade stoppats, så ingen komplett MP4 hävdas.
+Privata kvitton och media finns i Paow-chattens `paow-982d541f-*`-artefakter.
+
+**Visuell/hörbar slutacceptans återstår:** båda kvittona har fortfarande
+`reviewStatus: pending`. Detta bevisar teknisk uppspelning och lagerordning,
+inte godkänd läppsynk eller perceptuell röstlikhet. Granska det fångade
+klippet före roulette/rörliga body-dealers; ändra ingen godkännandestatus
+utifrån hash, statistik eller enstaka skärmbilder.
+
+PR #93 är mergad som `60defa57` och verifierades i den faktiska Render-
+processen efter deploy. Fyra efterföljande talprov stoppades däremot före
+uppspelning med `generated_speech_session_start_timeout`. RunPods befintliga
+driftvy visade kall modellstart på 136 sekunder och förberedelse av vald
+dealerbild på 64,7 sekunder; en observerad jobbtid fram till redo var cirka
+112 sekunder. Den tidigare startgränsen på 90 sekunder räckte inte.
+
+Starten får nu använda det befintliga förberedelsefönstret på 180 sekunder
+i både fil- och SQL-journalvägen. Uppspelningens 45-sekundersgräns,
+GPU-sessionens livslängd, reservationer och kostnadstak behålls. Avveckling
+av gammal dealer får fortfarande högst 90 sekunder efter befintlig dränering.
+Ingen automatisk ombeställning eller extra betald worker införs. Riktade
+tester täcker lyckad start efter 135 sekunder, timeout vid 180 sekunder,
+omedelbart avbrott och oförändrad avveckling: 49 godkända. Lab-bygge och
+full obligatorisk regression på `52a0aa46` passerade: 3 348 godkända,
+11 miljöberoende skips, 0 fel. Kallstart kan fortfarande överskrida
+förberedelsefönstret; liveutfallet på den levererade fixen står ovan.
+
+PR #99:s transportgranskning hittade dessutom Vercels gräns på 120 sekunder
+utan data från extern backend. Den befintliga NDJSON-strömmen upprepar nu
+bara aktuell offentlig status var 15:e sekund under väntan. Ingen extra
+svarstext, media eller providerbeställning skickas. Långsam mottagare får
+inga köade heartbeat-rutor; färdigt svar, fel, avbrott och stängd anslutning
+städar timern. Befintliga ägar-/rund-/minneskontroller är oförändrade.
+66 riktade chatt- och transporttester passerar. En riktig lokal HTTP-proxy
+med tidsgräns provar lång förberedelse, nekad gammal ägare och avbruten
+klient; utan heartbeat kapas samma prov. Testtiderna är skalade och använder
+inga betalda leverantörer. Full regression på `c20de5ed`: 3 358 godkända,
+11 miljöberoende skips, 0 fel. Liveproven ovan använder den verkliga
+Vercel/Render-vägen; skalade transporttester ersätter inte visuell acceptans.
+
+Fortsätt med den befintliga aktiva `paow-v2` (PAOW), inte den arkiverade
+`paow`. Den sparade talprofilen återlästes från servern med ElevenLabs
+`WZVEBKUreb9jAKojf0QF`, `eleven_v3`, svenska och egen referensvideo
+`13d044b3-0582-4f8f-a754-75bb099a0237` vid 0 ms. Kontots röstuppslag
+bekräftade Paow. Profilen är aktiverad; detta är inte ett visuellt godkännande.
+
+Samma kompakta materialkontroll finns nu i Control och Admin. Främmande,
+trasig eller inkompatibel referens kan inte aktivera AI-tal. Alfa kan sparas
+som förberedelse, men den nuvarande GPU-vägen bevarar inte alfa. Inbakad
+bakgrund nekas för tal. Gröna referenser får gröna utfyllnadsytor, så att
+bakgrund, dealer och bord kan behålla sina separata lager. Filhash, ägare,
+verklig avkodning, profilrevision och workerbindning kontrolleras fortfarande.
+
+Två ostörda liveprov på main 6ee5d3aa startade med Paows referens men
+avbröts av spelarens 45-sekundersgräns. Det korta provets worker gav 79
+bildrutor/3,33 sekunder media, 42,81 sekunder totalt, varav 40,64 sekunder
+väntan på ljudindata och 1,40 sekunder inferens. Redan förhämtat ljud
+dräneras nu i högst 64 KiB i stället för leverantörens små transportpaket;
+varje block behåller kontrollen av aktuell session och profil. Ingen väntan
+på full buffert, förlängd timeout eller extra TTS-betalning införs.
+
+Verifiering: 45 material/UI/FFmpeg-tester samt 32 strömtjänsttester godkända;
+Lab-bygget godkänt. Full obligatorisk regression efter buffertfixen: 3 335
+godkända, 11 miljöberoende överhoppade, inga fel (exit 0).
+Två hela talförlopp och lagerkontrollen är nu tekniskt verifierade enligt
+kvittot ovan. Röstens och läppsynkens visuella/hörbara slutacceptans återstår
+före roulette/rörliga body-dealers. Inget klipp är godkänt enbart från hash,
+workerstatistik eller en bild av munnen.
+
+Paow använder gemensam GPU-tjänst med exakt dealer-/bild-/profilbindning
+och den gemensamma OpenClaw-talagenten. Ingen separat instans behövs för
+identiteten. Historiska Astrid-funktioner som samtalsminne, kamera och vissa
+routningsregler är ännu Astrid-specifika och ska inte beskrivas som färdiga
+för alla dealers. Rörligt tal enligt Emil samt diskret inandning/tal-idle
+kommer senare, efter den verifierade stillbildsgrunden.
+
 ## Gatewayns monterade diskkatalog, 13 oktober 2026
 
 PR #88 (db70999a) verkställde ägarbytet beständigt, men Render-deployen
@@ -98,6 +896,40 @@ bootstrapvalidering, hemlighetsprojektion, helpergränser och UI-navigering.
 Den officiella CLI:n verifierades via källan för låsta v2026.9.5; faktisk
 browsernavigering återstår enligt liveacceptansen ovan.
 
+
+## Adminrobotens N1-verktyg, 13 oktober 2026
+
+Alla tre chattlägen kräver nu färsk N1-behörighet. Widgeten är dold före
+kontroll och för utloggade/N2/N3; kontobyte tömmer samtal och granskning.
+Snabbhjälpen använder fortfarande Luna 6, administration/OpenClaw Sol 6.1 High.
+Modelldetaljer ligger under Detaljer. Befintlig privat/no-store, CSRF,
+revisionskontroll och separat bekräftelse med exakt resurs-ID bevaras.
+
+Robotens nya läsverktyg söker och bläddrar bland sparade dealers, material,
+sammansättningar, mediaregister, bolag och rum. Högst tre läsningar per svar;
+varje sida är begränsad och visar fortsatt offset/ofullständig täckning.
+Blobregister betyder metadata, inte analys av själva videon. Databasnycklar,
+lagringssökvägar, signerade URL:er, spelaruppgifter och fri SQL exponeras inte.
+Nya granskade skrivningar: dealer.create samt media.rename/archive/restore/delete,
+via samma native-API:er som Studio. Permanent klippradering gäller endast
+berättigade arkiverade uppladdningar; frysta/aktiva/publicerade filer skyddas.
+En ny dealer får tomma klippfack och läggs inte automatiskt till något rum.
+Befintlig bolags-/rums-/material-/dealerlivscykel och Gatewaymodellbyte kvarstår.
+
+Svar kan länka till godkända /admin-vyer, inklusive import för exakt dealer-ID.
+Filval och uppladdning görs i importassistenten; chattrutan laddar inte upp filer.
+Den separata dealer/import-grenen lägger till Skapa dealer och frigör sparade
+rader från tiogränsen. Den bör levereras tillsammans med dessa navigeringslänkar.
+
+Verifiering: 35 fokustester för N1, återkallad session under dataläsning, läsbudget,
+projektrevision, arkivberoenden och filidentitet genom permanent purge.
+Studio byggd. Ett verkligt Sol 6.1-formatprov med syntetiska uppgifter gav
+dealer.create och importnavigation, utan någon dataskrivning. Isolerat webbläsarprov med syntetiska svar: dold N3, N1:s tre lägen,
+svarets importlänk, konsekvensdialog samt N1→utloggad→N1 med tömt samtal.
+Ingen produktionsdealer skapades, ingen fil raderades. Produktion kräver
+merge/deploy och separat acceptans; mergearbetet ägs av nästa mergechatt.
+Kanoniska AI-flödet ska uppdateras i docs/AI/scoutgaming-agentflode.md när den
+pågående dokumentgrenen inför dess nu separat ägda filer.
 
 ## Adminroboten och separata chattlägen, 13 oktober 2026
 
@@ -263,6 +1095,38 @@ malländringar, frysta paket, legacyvalidering och CI-/hookgränser. Inga tester
 (`38394400537`), GitGuardian och Vercel på `5963f4c`. Slutträdet matchar
 exakt den granskade versionen.
 
+## Återställbar lokal tröskelarkivering, 13 oktober 2026
+
+Efter en lyckad lokal projektsparning arkiveras de äldsta återställningskopiorna
+när `lab/data/history` passerar 100 filer eller 64 MiB. Efter en avslutad
+observationsinspelning gäller 20 sessioner eller 128 MiB för
+`lab/data/observations`. Minst de två nyaste objekten behålls även om deras
+storlek överstiger gränsen; förhandsvisningen redovisar det. Ändra gränserna i
+`tools/retention-policy.json`. Ofärdiga inspelningar utan `session.json` lämnas
+kvar. Okända filer, länkar eller avvikande sessionsinnehåll tas inte med.
+
+`node tools/retention-archive.mjs` förhandsvisar utan skrivning. `--apply`
+flyttar till `arkiv/<datum>/retention-<id>/<ursprunglig-sökväg>`. Manifestet
+skrivs före flytten och innehåller sökvägar, byteantal och SHA256, så även en
+avbruten flytt kan återställas. `--restore arkiv/<datum>/retention-<id>`
+kontrollerar återställningen; lägg till `--apply` för att kopiera tillbaka.
+Befintliga mål skrivs aldrig över, kontrollsummor verifieras och arkivet
+behålls. Låsningen tillåter endast en arkivering/återställning åt gången. Ett
+kvarlämnat `arkiv/.retention.lock` ger ett tydligt busy-fel; kontrollera att
+föregående körning avslutats innan endast den tomma låskatalogen tas bort.
+
+Automatiken gäller bara denna checkouts kanoniska lokala `lab/data` och
+misslyckad arkivering stoppar inte en lyckad projektsparning. Den berör inte
+Vercel, Neon, Blob, Gatewayloggar, aktiva verksamhetsrader, publiceringshistorik,
+video, konton eller spelarminne. Adminrobotens nuvarande webbhistorik sparas
+bara i minnet och har ingen beständig logg att rotera. Ingen schemalagd tjänst
+eller molnmutation införs. Arkivet är privat och Git-ignorerat, frigör inte
+diskutrymme och behöver ingå i egen extern säkerhetskopiering.
+
+Verifiering: Studio-produktionsbygget och fullhook passerar (3 348 tester, 3 337 pass, 11 skip, 0 fail). Riktade isolerade tester täcker gränser, aktiva inspelningar,
+bytebevarande återställning, avbruten flytt, samtidighetslås, ändrade arkiv,
+sökvägs-/länkskydd och failsoft. Ingen verklig sparad data har flyttats i QA.
+
 ## Tydligare mappansvar och legacyinstruktioner, 13 oktober
 
 Förenklingen utgår från `main` `978f3bce` i eget worktree och har därefter
@@ -287,6 +1151,36 @@ har inte lästs i denna miljö.
 Aktiva Astrid-/dealer-talvägar, klipp, kalibrering, lagrade ID:n, publiceringar
 och data är bevarade. Gemensamma imports mellan appar/paket och SL-10:s
 handmatteaudit är fortsatt öppna; mappnamnen innebär ingen slutförd avveckling.
+
+## Delad Studio-autentisering, 13 oktober 2026
+
+Inloggningskontroll, roll-/åtgärdspolicy och det lilla scope-/felkontraktet
+ligger nu i `packages/studio-access`. Spelservern och Studio använder samma
+implementation; äldre `lab/lib`- och lagringsimporter återexporterar samma
+funktioner och felklasser. Auth-modulen laddar inte längre Studio, OpenClaw
+eller lagringsimplementationer. Cookies, signaturer, aktuell identitet, epoch,
+behörigheter, scope och säkra felkoder är oförändrade. Övriga media-,
+publicerings- och OpenClaw-kopplingar finns kvar. SQL-QA-kvittots källista
+omfattar även de flyttade implementationerna; Astrids jämförelsearkiv tar med
+scope-modulen utan att ändra eller skriva om den godkända baslinjen.
+
+`web/README.md` beskriver Vercel under Scout Gaming, Render-spelmotorn,
+Neon för produktdata och Blob för media. Den gamla diskkommentaren vid
+`/labb-lissabon` är rättad; redirectens beteende är oförändrat. SQLite-kod
+betyder inte en parallell produktionsdatabas eller fallback vid PostgreSQL-fel.
+
+86 riktade tester och Studios produktionsbygge inklusive typkontroll och
+95 byggspår passerade. Oberoende kodgranskning fann inga blockerande fel.
+Full lokal regression gav 3 334 passerade och 7 överhoppade tester innan den
+stannade på det oförändrade `local-session.test.mjs`: körmiljön ger ingen
+OS-födelseidentitet för processen. Samma miljöbegränsning fanns vid föregående
+PR; kontrollen har inte försvagats. Astrids baslinje och arkivkontroll passerade.
+Separat PR från `main`; inget mergat och ingen produktionskonfiguration eller
+databas ändrad. GitHubs fulla PR-kontroller passerade för `7dcd61f`.
+Merge-agenten har flyttat detta avsnitt till mappansvaret för att lösa en
+ren dokumentkonflikt; autentiseringens kod och exports är oförändrade.
+95 isolerade auth-, scope-, partner-, kommando- och lagringstester passerade
+med Node 24.21.0 och fyra testworkers. Den nya versionens CI ska passera före merge.
 
 ## PR-städning och CI, 13 oktober 2026
 
@@ -333,7 +1227,32 @@ slutjobb. Full regression fortsätter köras på main.
 
 ## Selektiva blackjackförbättringar från Kevin, 13 oktober 2026
 
-Utgår från main `6ee5d3aa` och Kevins `f15b2af1`. Återhämtningen i
+**Aktuell PR91-kodägare, 14 oktober: SAMORDNING.** Den befintliga branchen
+`codex/kevin-blackjack-safe` har integrerats med main `220519a1` i egen
+arbetskopia `pr91-integration`. Fem konflikter är lösta med senare givkontroll,
+kortvy, dynamisk dealeretikett och alla ordinarie tester bevarade. Ljud och
+dealerreplik använder nu samma positiva nettovinst som rundnotisen; en vinnande
+delhand ger inget rundfirande om totalen är negativ eller noll. Filmens hårda
+tidsgräns följer inspelningskontraktets 120 sekunder med åtta sekunders
+startmarginal; progressvakten och ägaravbrott behålls.
+
+Verifierat med Node 24.21.0/fyra lokala workers: 107 fokuserade prov passerar,
+inklusive verklig settlement-kods ljud/replik och simulerad 120-sekundersfilm.
+Studio-bygge och 97 byggspår passerar. Full ordinarie pre-commit: 3 781 pass,
+12 uttryckligt villkorade skips, 0 fel/cancel i 77 grupper. De första försöken
+saknade två låsta beroendeinstallationer i arbetskopian; gateway-/frontend-
+beroenden kopplades därefter från exakt matchande paket och lockfiler.
+Inga obligatoriska kontroller har försvagats.
+
+PR91 är fortsatt draft. Spelarproven som Jakob stoppade har inte återstartats;
+vinst, push, split, mobil och två sammanhängande spelningar på den nya koden
+återstår. Framtida spelarprov ska följa den redan angivna internetadressen och
+avgränsade testdatan. Ingen produktionsdata, betalad generering eller mediafil
+har ändrats. Kodprov/bildindex ersätter inte faktisk spel-/läppsynksacceptans.
+Privata loggar och tillfälliga beroendejunctions hör till samordnarens arbetskopia.
+
+**Historisk ursprungskontroll, 13 oktober:** utgick från main `6ee5d3aa` och
+Kevins `f15b2af1`. Återhämtningen i
 `local-film-player.mjs` anpassar Kevins `playback-recovery.js`: en synlig,
 webbläsarpausad film återupptas i samma videoklocka. Förlorat `ended` hanteras
 bara efter startad och faktiskt presenterad bild. Avbrutna ägare återupplivas
@@ -2214,3 +3133,123 @@ mobil utan horisontell överströmning. Detta är lobbyacceptans, inte ett prov
 av Annas framtida spelklipp eller produktionspublicering. Ingen livekatalog,
 databas, spelregistrering eller modellkonfiguration ändras. PR:ns kontroller
 anger slutlig full regressionsstatus; merge/deploy görs inte i denna uppgift.
+
+## Samlad Admin, dealers och import, 13 oktober 2026
+
+Admin återanvänder de befintliga editorerna för bolag/team, rum/publicering,
+sammansättningar, dealerinställningar, klipp/svar, material, provspelning,
+händelser, Probe, dealeragent och guide. Verktyg samlar dem i Admins meny.
+En explicit dokumentmappning leder gamla Control-länkar till Admin och bevarar
+kontext; API:er, inloggning och lösenordslänkar behåller sina kontrakt. Osparade
+editorer lämnas via full dokumentnavigering så deras befintliga skydd fungerar.
+Admins läsadapter finns under det befintliga skyddade `/studio/api/admin`.
+Inget nytt datalager eller schemasteg införs. `lab/` förblir aktiv källa och
+`/studio` API-monteringen; Control-filer behålls för övergång/återrullning men
+ingen av de inventerade fungerande verktygsvyerna kräver Control i native drift.
+
+Byggspårningsskyddet skiljer nu på privata filer i projektet och `.codex` i
+worktreens överordnade sökväg. Det bevarar riktiga serverberoenden samtidigt
+som miljöfiler, lokalt tillstånd och råa dealermedier fortfarande utesluts.
+
+`/admin/dealers` är egen menyrad med skapa, ladda upp, ta bort och en hopfälld
+papperskorg för återställning. Dragan kan väljas direkt även utan rum. N1:s
+klippkarta kan också öppna registrerade dealers utanför vald rumsmall; den
+visar skillnaden och ändrar inte tillåtna dealers förrän mallen uttryckligen
+redigeras. Dolda röstformulär föreslår inte längre osparade värden innan de öppnas.
+
+**Kopplingar** visar bolag → spel → rum och mallens bakgrunder, dealers och bord.
+Gemensam mallredigering visar samtliga berörda rum. Rumsbundna val använder
+den befintliga scoped-writern. Skapande använder N1-projektets CAS; borttagning
+använder serverns konsekvenskontroll, revision och token. Klippkategorier följer
+med i dealerTrash-snapshot och återställs med identiteten. Både kategorilänkar
+och media ändras i samma befintliga SQL-transaktion. Ett injicerat mediafel efter
+projektskrivningen verifierar ROLLBACK av projekt, media, historik och audit.
+Ordinarie projekt-PUT får fortfarande inte kringgå livscykelkontrollerna.
+Trash med sparade kategorier kräver spelserverns capability v14
+(`dealerCategoryTrash: retained-categories-v1`). Äldre Render-runtime blockerar
+skrivningen före mutation. Båda tjänsterna måste vara uppdaterade vid acceptans.
+
+Importen bygger vidare på mergad PR #94: 30 osparade filer per omgång, 128 MiB
+per fil, nästa omgång återanvänder platser och osäkra kvitton försöks inte om.
+Filknappen är en vanlig knapp, bakgrund kan väljas för hela omgången och fel
+namnger filen. **OK – placera klippen** ersätter separat granska-knapp, checkbox
+och bekräftelseknapp. Dealer-valet behöver ingen ytterligare checkbox.
+
+Adminrobotens N1-chatt laddar en separat importmodul från Admins tillgångar.
+Filer kan dras in direkt; **Sortera och placera** ger uppdraget och sparar
+exakta förslag genom befintlig privat Blob-uppladdning. Oklara förslag stannar
+för rättning i chatten. Ny katalog och native grants kontrolleras före skrivning;
+modellen får filbeskrivningar och kan inte själv utfärda uppladdningsrättigheter.
+MP4/WebM stöds; zip, ljud och transparent assistentimport återstår. Ingen
+publicering, spelacceptans eller läppsynksacceptans sker genom importen.
+
+Lab-produktionsbygge, Admin-typkontroll och frontendens TypeScript har passerat.
+Ordinarie pre-commit på implementationen: 3 414 godkända, 11 skips, 0 fel
+över 72 testgrupper med Node 24.21.0 och fyra lokala arbetare.
+Isolerade webbprov verifierade skapa, arkivera, återställa och mallkoppling utan
+produktionsdata. Bolag & team öppnades i Admin och Dealers → Dragan → import
+behöll rätt dealer. Det senaste filväljarprovet avbröts när webbläsarverktyget
+slutade svara; det är inte ett godkänt uppladdningsprov. Testservern är avslutad.
+30-filers chattimport har verifierats med injicerad uppladdning, inklusive oklara
+fack och förlorade kvitton. Produktionsproven nedan ersätter den tidigare
+luckan för verklig Blob-uppladdning; spelacceptans är fortfarande separat.
+Systemkartan har ingen röd inventeringsavvikelse. Befintliga gula bevisluckor
+är kvar. GitGuardian på main 982d541f: aktiv övervakning, 0 öppna och 17
+ignorerade incidenter; check-suite queued, historik too_large och platsmetadata
+delvis ofullständig. Ingen incidentstatus eller produktionskonfiguration ändras.
+
+**Produktionsprov efter PR #102, 13 oktober:** main `bfbfaf4a` är verifierad
+på både Vercel och Render med capability v14. De tolv återanvända verktygen
+öppnas under `/admin` och behåller Dragan-kontext. Sammansättningsvyn visar
+en befintlig varning om ett inaktivt Amira-val; ingen sådan mall ändrades.
+`lab/` är fortsatt aktiv källkod och har inte tagits bort.
+
+Jakob gav uttryckligt undantag för ett avgränsat produktionsprov med
+`Adminprov 2026-10-13`. Skapa → papperskorg → återställ → papperskorg är
+verifierat efter omladdning. Provdealern ligger kvar återställbar i
+papperskorgen med noll klipp och inga rumskopplingar.
+
+Dragan har nu **21 klipp**: de 14 befintliga samt sju nya alternativ från
+Kevins `f15b2af1`. Sex sparades tillsammans med ett OK i dealerimporten;
+`v2/pos2.mp4` sparades direkt genom Adminrobotens importuppdrag utan extra
+godkännandesteg. Samtliga sju filhashar, dealerbindningar, privata Blobobjekt
+och exakta fack verifierades i färskt register. Ett nytt klipp spelades till
+slut i bibliotekets förhandsvisning utan mediafel. Ingen spelpublicering,
+vald grundloop eller visuell loop-/läppsynksacceptans ändrades.
+
+De elva MP4-filerna i Jakobs angivna skrivbordsmapp matchar redan sparade
+produktionsfiler och dubblerades inte. Den privata ZIP-kopian från Kevin
+innehåller 206 filmer, fem bilder, tre JSON-filer samt källmanifest med
+gren, commit, exakta reposökvägar och SHA-256. Alla 214 källfiler verifierades
+mot Git och det färdiga arkivet. ZIP och produktionskvitton ligger i denna
+chats privata artefakter, utanför Git.
+
+Proven hittade två navigeringsfel: föreslagen röst räknades som osparad
+ändring även i ett orört formulär; avslutad import lämnade en spärr på grund
+av samtalshistoriken när nästa Admin-verktyg krävde ny sidladdning. Den
+avgränsade uppföljningen skiljer verkliga utkast från förslag och sparad
+historik. Pågående uppladdning, osparade filer och ändrade talprofiler ska
+fortfarande skyddas. Ny livekontroll krävs efter att uppföljningen släppts.
+
+Uppföljningen är integrerad med main `6a9be6d2`. De 52 talformulärsproven
+och 30 import-/routingproven passerar; nya felregressioner var först röda.
+Slutbygget, 96 byggspår och Admin/Lobby-typkontrollen passerar. Läsgranskning
+har inga kvarvarande fynd. Full ordinarie regression körs av commit-hooken.
+Senaste säkerhetsläsningen på denna main har queued GitGuardian-suite och
+incident-API HTTP 429; aktuell incidenttäckning är därför ofullständig.
+Den tidigare fullständiga läsningen på `bfbfaf4a` gav 0 öppna/17 ignorerade,
+aktiv övervakning, historik too_large och delvis ofullständig platsmetadata.
+
+## Stabilt fontbygge, 13 oktober
+
+Frontendens tre Google-typsnitt är nu lokala WOFF2-filer via `next/font/local`.
+Inter, Cormorant Garamond och Geist Mono behåller CSS-variabler, normala stilar
+och använda viktintervall. Kompletta källglypher, inklusive ÅÄÖåäö, finns kvar.
+SIL-licenser och fryst Google Fonts-källa/hash dokumenteras i appens fontmapp.
+Detta tar bort det reproducerade byggfelet i Googles URL-/filändelsehantering.
+
+Både landing- och fulla Vercel-UI-produktionsbyggen passerar med ett tomt
+mockat Google Fonts-svar (varje Google-import skulle då avvisas). Studio-
+produktionsbygget passerar också. Produktionspublicering verifieras efter
+ordinarie PR-leverans; inga gameplay-, media-, wallet- eller databaskopplingar
+ändras av fontfixen.

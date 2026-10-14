@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSpeechSessionManager, sessionReserveMicroUsd, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
+import { createSpeechSessionManager, sessionReserveMicroUsd, dailyBudgetMicroUsd, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
 
 const response = value => new Response(JSON.stringify(value), { headers: { 'content-type': 'application/json' } });
 async function fixture(t, options = {}) {
@@ -60,14 +60,37 @@ async function missingStatusFixture(t, { ageMs = SPEECH_SESSION_POLICY.reservati
 }
 
 test('cost amounts are exact micro-USD and missing/unconfirmed configuration fails closed', async t => {
+  assert.equal(dailyBudgetMicroUsd('20'), 20000000);
+  assert.equal(dailyBudgetMicroUsd('20.000001'), null);
+  assert.equal(sessionReserveMicroUsd('20'), null);
   assert.equal(sessionReserveMicroUsd('0.50'), 500000);
   assert.equal(sessionReserveMicroUsd('9.94'), 9940000);
   for (const value of ['', undefined, '0', '10.000001', 'NaN', '1e-3', '0.0000001', '-1']) assert.equal(sessionReserveMicroUsd(value), null);
   const f = await fixture(t);
-  for (const patch of [{ reserveUsd: '' }, { dailyBudgetUsd: '' }, { dailyBudgetUsd: '10.01' }, { reserveUsd: '10', dailyBudgetUsd: '9.94' }]) {
+  for (const patch of [{ reserveUsd: '' }, { dailyBudgetUsd: '' }, { dailyBudgetUsd: '20.000001' }, { reserveUsd: '10', dailyBudgetUsd: '9.94' }]) {
     assert.throws(() => f.create(patch), { code: 'generated_speech_session_not_configured' });
   }
-  f.create(); assert.equal(f.calls.length, 0, 'no startup worker or billing loop');
+  f.create({ dailyBudgetUsd: '20' }); assert.equal(f.calls.length, 0, 'no startup worker or billing loop');
+});
+
+test('default admission accepts a cold worker after 90 seconds without another paid job', async t => {
+  const f=await fixture(t);let elapsed=0,allowConnection=true;
+  const manager=f.create({}, {readyTimeoutMs:undefined,now:()=>Date.parse('2026-09-29T08:00:00Z')+elapsed,
+    sleep:async ms=>{elapsed+=ms;},workerState:()=>{const ready=allowConnection&&elapsed>=135000;return {workers:Number(ready),busy:0,available:Number(ready)};}});
+  await manager.ensure(f.input);
+  assert.equal(elapsed,135000);assert.equal(starts(f.calls).length,1);
+  assert.equal(f.calls.filter(call=>call.url.includes('/cancel/')).length,0);
+  assert.equal(JSON.parse(starts(f.calls)[0].body).input.ttl,540);
+  allowConnection=false;
+});
+
+test('default cold-start allowance still cancels once at the bounded admission deadline', async t => {
+  const f=await fixture(t,{connect:false});let elapsed=0;
+  const manager=f.create({}, {readyTimeoutMs:undefined,now:()=>Date.parse('2026-09-29T08:00:00Z')+elapsed,sleep:async ms=>{elapsed+=ms;}});
+  await assert.rejects(manager.ensure(f.input),{code:'generated_speech_session_start_timeout'});
+  assert.equal(elapsed,SPEECH_SESSION_POLICY.admissionWindowMs);
+  assert.equal(starts(f.calls).length,1);
+  assert.equal(f.calls.filter(call=>call.url.includes('/cancel/')).length,1);
 });
 
 test('authenticated demand bootstraps a private ledger, pays once and reuses session across requests/restarts', async t => {
@@ -117,7 +140,7 @@ test('9.94 USD budget admits nineteen 0.50 reservations, never a reply count lim
   for (let i = 0; i < 19; i++) { await manager.ensure(f.input); f.finish(); }
   await assert.rejects(f.create().ensure(f.input), { code: 'generated_speech_daily_budget_exhausted', statusCode: 429 });
   assert.equal(starts(f.calls).length, 19);
-  assert.equal(SPEECH_SESSION_POLICY.dailyMicroUsd, 10000000);
+  assert.equal(SPEECH_SESSION_POLICY.dailyMicroUsd, 20000000);
   // A restart with a larger env must not silently loosen the persisted policy.
   await assert.rejects(f.create({ dailyBudgetUsd: '10' }).ensure(f.input), { code: 'generated_speech_daily_budget_exhausted' });
 });

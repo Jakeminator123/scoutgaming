@@ -1,5 +1,341 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Kevins Dragan/Paow: filmurval och rörligt tal, 13 oktober 2026
+
+Jakob vill använda de filmer som Kevins spel faktiskt refererar till för
+Dragan (Kevins ID `dragge`) och Paow. Importera inte hela mediemappar som
+likvärdiga val. Källbasen är `kevin` på
+`f15b2af16ea7113d451f5c5da14fda031901392a`; rörlig läppsynk granskas separat på
+`kevin-staging` `315cfc554330f1d5541a7ed3bb84044877a6b992`.
+Dealerfilmerna och deras kortspår är byteidentiska mellan dessa två versioner.
+Detta bevisar källinnehåll, inte vilken release Kevins server kör eller visuell
+acceptans. Ingen av Kevins brancher ska mergas i sin helhet för denna integration.
+
+### Kevin bekräftar demokällan, 14 oktober 2026
+
+Kevin uppger att [demon](https://croupier.scoutgg.dev) kör commit
+`315cfc554330f1d5541a7ed3bb84044877a6b992`, utan opushade ändringar.
+Färsk GitHub-läsning bekräftar att både `kevin` och `kevin-staging` pekar
+dit. Offentlig HTTP-läsning gav 200 för startsidan; `/dealers.js` och
+`/lip-layer.js` är byteidentiska med denna commit. Detta verifierar dessa
+klientfiler, inte serverns körande commit, worker-release eller visuell synk.
+Den tidigare exporten från `f15b2af1` nedan är ett historiskt materialkvitto.
+
+Kevins aktiva urval, bekräftat i `public/dealers.js`, är per Paow/Dragge
+`public/media/dealers/<dealer>/v2/` med `meta.json` och `vila.png`,
+`idle-v2/` samt `repliker/`. Bakgrunden är
+`public/media/dealers/rooms-v2/darkhall.png`. Kevin anger Dragges
+`green/`, `idle/`, `startbild.png`, `room.png` och `timing.json` som
+äldre material. De ska inte erbjudas som likvärdiga nya importval; uppgiften
+är inget tillstånd att radera delade filer, historik eller pågående arbete.
+`public/dealers.js` bestämmer det aktiva urvalet; mapptillhörighet ensam
+bevisar inte att varje fil används.
+
+En korrigering till Kevins beskrivning: `public/dealer-card-tracks-*.js`
+innehåller spår för **kortens ytor**, enligt generatorns kommentar och
+konsumenterna `card-face-projection.js`/`card-table-layout.js`. De är inte
+människans ansikts-/munspår. Munplaceringen kommer i workerns
+`rutor[].rect` via `rorlig-lipsync.mjs` till `lip-layer.js` och
+`dealer-layer.js`. Avatarbankens förbehandling och ansiktsunderlag måste
+fortfarande verifieras med Emil; kortspåren ersätter inte dessa.
+
+### Exakt urval och poseövergångar
+
+Det kodbundna materialpaketet `kevin-active-dragan-paow-f15b2af1.zip` innehåller
+274 källfiler: 258 videor och 16 stöd-/bildfiler. Per dealer är 108 filmer
+klassade som normal runtime, 10 som preview och 11 som förladdning. 146 filer
+utanför kodurvalet är uteslutna. Manifestet binder repositoryPath, Gitblob,
+SHA-256, dealer, språk, funktion, fack och orsaken till varje referens.
+Paketet och verifieringskvittot finns privat utanför Git i chattens materialexport;
+det är källunderlag och ingen publicerad import eller visuell acceptans.
+
+Urvalet kommer från `public/dealers.js`, `server/shared-table.mjs`
+(`readyTimeline`), `server/media-registry.mjs`, `public/shared-table.js`,
+`public/dealer-remarks.js` och `public/media/manifest.json` under
+[`kevin/croupier-scoutgg`](https://github.com/Jakeminator123/scoutgaming/tree/f15b2af16ea7113d451f5c5da14fda031901392a/kevin/croupier-scoutgg).
+Bibliotek, preview och förladdning är skilda användningar; de ska inte skapa
+extra slumpmässiga spelval. Behåll exakta referenser och deduplicera bara bytes,
+aldrig klippets funktion eller posemetadata.
+
+- `idle-v2`: breath, glance och smile, med vikter 40/12/4.
+- `v2/vila.png`: vilopos; `v2/meta.json`: tagningarnas tider, landningsrutor
+  och poseegenskaper. Porträtt och dealer-card-tracks har andra roller.
+- Givtagningarnas suffix är semantiska. `i` går från VILA till REDO före
+  given; `u` avslutar tillbaka i VILA. Serverplanen kan också välja
+  `v`/`iv` enligt metadata. De får inte läggas i samma slumpmässiga fack.
+- `readyVariant` använder serverns explicita variant. På en äldre plan utan
+  den informationen väljer Kevin `iu`, inte en godtycklig kortare tagning.
+  `variantOffset` justerar kortlandningen för den tillagda inrörelsen;
+  flip/restStart måste behandlas enligt respektive metas regel.
+- Tal väljs med exakt replik-ID och språk, även namnhälsningar och sociala
+  repliker. Ingen matchning på ungefärlig längd eller lån av annan dealers röst.
+
+Våra nuvarande importfack bevisar inte stöd för denna variantschemaläggning.
+Innan givfilmer publiceras måste adapter, kortlandning och VILA/REDO-kedja
+verifieras i den gemensamma spelaren. Bakgrunder, dealer och bord är fortfarande
+separata lager och identiteter; ett mediebyte får inte ändra spelmotorns beslut.
+
+### Gemensam uppspelning för Kevins givningsprofil
+
+Dragan-profilen kevin-dragan-f15b2af1 innehåller 35 exakta filmhashar och källspår. Ingen ungefärlig fil-/längdmatchning görs. Varje film måste finnas i sin sparade händelserad; dealerSets registrerar inte uppspelning. Givningsrader kan ha 16 alternativ, andra fem. Runtime v17 spärrar skrivning till äldre runtime innan Blob eller SQL påverkas.
+
+Planeringen använder hela den serverbekräftade händelselistan. Vid act normaliseras endast den visuella ordningen: double-tal, spelarens kort, vändning, dealerns kort och resultat. En saknad exakt posevariant stoppar hela filmkedjan och behåller auktoritativa kort i 2D. Förflyttning av bildutsnitt publiceras innan kortspåret binds; ändrat bord, format eller storlek återgår till statisk kortvisning. Kort och saldo förblir serverägda. Ett chattbesked får inte avbryta pågående givning eller vändning.
+
+Källans clearFrame är en landningsgräns, inte ett visuellt intyg om att fingrarna släppt kortet. Projektion mot ett annat bord måste granskas i verklig uppspelning, särskilt kvarvarande fysiska rekvisitakort och händer vid förflyttningen.
+
+recordedSpeech v1 binder dealer, replik-ID, tagning, språk, exakt text, video-/audio-/indexhash, fps, bildantal, ljudförskjutning, start-/slutpose och kalibreringsrevision. Inspelningsbevis och ljud-/bildgodkännande måste båda referera till samma tuple. Sparad variant-UUID väljer take och språk. Vanligt/fryst spel stoppar pending/rejected eller ändrad identitet. En serverägd inställning enbart i den autentiserade isolerade Studio-previewn tillåter verified-recording med pending review. Ingen klientflagga ger det undantaget. Originalets eget ljud spelas en gång, utan talvideo på loop eller byte till en annan replik som reserv. ASR och filhashar ersätter aldrig visuell/hörbar acceptans.
+
+### Publicering av större filmurval
+
+Den frysta sammansättningen ska behålla samtliga valda filmer, hashvärden och händelsekopplingar. Gzip används fortsatt när paketet ryms inom den äldre 6 500-teckensgränsen. Större paket kan använda Brotli i samma serverägda fält, högst 7 400 tecken; total branding är fortfarande begränsad till 8 000 byte. Kanonisk JSON, SHA-256 och en begränsad expansion på 256 KiB kontrolleras vid läsning. Den nya packningen kräver runtime v18 före skrivning; äldre gzip-paket fortsätter vara läsbara. Material-/dealer-/rumslivscykel krävde också v18 för denna packning; den aktuella bordsprofilen höjer skrivkravet till v19 enligt avsnittet nedan. Efter en Brotli-publicering måste rollback använda en läsare som stöder formatet eller återställa ett tidigare kompatibelt paket genom ordinarie publiceringsflöde.
+
+Vid privat native-underhåll på Render: SSH-processen kan köra som root medan appen kör UID/GID 1000. Kör mediaimport som appens användare innan Blobcache eller journal skapas. Att en film finns i Blob/Neon innebär inte att appen kan skriva i en felägd lokal cache. Ändra inte original eller kringgå TLS för att reparera detta.
+
+### Så fungerar den rörliga läppsynken i Kevins stagingkod
+
+[`server/rorlig-lipsync.mjs`](https://github.com/Jakeminator123/scoutgaming/blob/315cfc554330f1d5541a7ed3bb84044877a6b992/kevin/croupier-scoutgg/server/rorlig-lipsync.mjs)
+bygger med `kartaFor` en karta över exakt tagning, första bildruta och antal
+rutor vid 24 fps. Kartan följer den serverägda givplanen, hållna slutrutor och
+vilopos. Ljudet börjar 220 ms efter kartans början. GPU-workern får antingen
+exakt inspelad replik eller svarets PCM, mono s16le 24 kHz.
+
+Workern returnerar halva sekunder med H.264 Annex B, 256×512: övre halvan är
+genererad munbild och undre halvan en gråmask. Varje ruta har
+`tagning/ruta/rect`; delarna har tal-ID, versionsnummer och bildruteintervall.
+[`public/lip-layer.js`](https://github.com/Jakeminator123/scoutgaming/blob/315cfc554330f1d5541a7ed3bb84044877a6b992/kevin/croupier-scoutgg/public/lip-layer.js)
+avkodar med WebCodecs. `dealer-layer.js` blandar resultatet på rätt kroppsbild
+innan green-screen-friläggningen. Detta är nya, ljudbundna GPU-bildrutor,
+inte återanvända munrörelser från en annan inspelning.
+
+En ny giv under pågående tal ändrar kartan. Föregående versions svar förkastas;
+hela ursprungsljudet återanvänds med `fran_ruta` för återstående bildrutor.
+På en worker med rapporterat flerlane-stöd kan koden återanvända dess ljudcache.
+Gamla delar får inte överta den nya versionen. Detta är inte bevis för att
+GPU-arbetet faktiskt avbryts; se avbrottskontraktet nedan.
+Den granskade koden kör en GPU-lane åt gången, prioriterar närmaste
+bilddeadline och kräver rapporterad kapacitet på minst 30 rutor/s.
+Kevins klient tillåter sökning ±48 rutor kring talets klocka när kroppen halkar
+efter. Det är upp till två sekunder och måste bedömas hörbart/visuellt;
+det är inte en godkänd synktolerans för vår produkt.
+
+Kevin rapporterar den 14 oktober att munbilden ibland kommer upp till cirka
+fyra sekunder sent i början av chattsvar, att kallstart tar tid och att två
+samtidiga repliker var långsammare än en lane per GPU. Detta är hans
+observation, inte en egen mätning. Fyrasekundersfelet ska inte förväxlas med
+klientens ovanstående tvåsekunders sökfönster eller 220 ms protokollförskjutning.
+`PaowPratarOchDealar.mp4` hänvisas till som exempel men har inte granskats här.
+
+Mät separat TTS-tid, worker-kö/kallstart, första färdiga bild, faktiskt ljudstart
+samt synk under hela svaret. Nästa implementation ska prova begränsad gemensam
+startbuffring och samma uppspelningsklocka: korrekt ljudbunden bild ska vara
+klar när motsvarande ljud spelas. Ett fast extra dröjsmål på fyra sekunder
+är ingen generell lösning. Vid överskriden väntetid eller sena rutor behövs
+en verifierad reservväg/avbrott, aldrig gamla munrutor. Budget och
+GPU-acceptans före TTS gäller även när förberedelser överlappar.
+
+Rösterna i `server/dragge-voice.mjs` är:
+
+| Dealer | ElevenLabs voice-ID | Modell och inställningar |
+| --- | --- | --- |
+| Dragan/Dragge | `7f95xPL4S3ySZ4OS1pw8` | `eleven_multilingual_v2`; stability 0.5, similarity 0.85, style 0.15, speaker boost |
+| Paow, svenska | `WZVEBKUreb9jAKojf0QF` | `eleven_v3`; stability 0.5, similarity 0.85, speaker boost |
+| Paow, övrigt | Samma röst-ID | `eleven_multilingual_v2`; stability 0.38, similarity 0.8, style 0.3, speaker boost |
+
+Röst-ID är ingen API-nyckel. Vårt serverägda röstval ska fortfarande verifiera
+att rätt ElevenLabs-konto har tillgång till rösten.
+
+Kevins `draggeVoice` normaliserar därefter mono s16le PCM vid 24 kHz via
+`server/loudness.mjs`: mål −16 LUFS med en fast förstärkning per replik,
+ingen kompressor, och toppgräns −0,5 dBFS. Toppgränsen kan innebära lägre
+slutnivå än målet; tystnad eller material under ett 400 ms analysblock lämnas
+oförändrat. Detta är källkodens beteende, inte ett nytt uppmätt ljudkvitto.
+Vid integration ska samma slutliga normaliserade PCM bindas till ljudhash,
+worker och uppspelning. Prova tystnad, korta repliker och starka toppar samt
+att normaliseringen inte ändrar antal sampel eller tidslinje. Kopiera inte
+normalisering till bara ena sidan av ljud-/bildkedjan.
+
+### Anslutning till Scoutgaming och återstående acceptans
+
+OpenClaw fortsätter leverera svaret. Befintlig session, publicering,
+dealeridentitet, budget, avbrott och text-/ljudbindning ska styra arbetet.
+Det behövs inte en ny OpenClaw-instans för varje dealer. Kevins rörliga worker
+använder samma image för flera avatarer men separata dealersessioner; detta
+är inte bevis för att vår nuvarande stillbildsworker kan utföra samma jobb.
+
+Den naturliga kopplingspunkten är den exakta dealerbilden före
+`web/public/presentation-composition.mjs` och dess gemensamma compositor.
+Bakgrund och bord behåller sina egna lager. Bind även delar till dealer,
+tal-/ljudhash, mediehash, session och kartrevision. Släpp fel version, fel
+tagning, fel ruta, fel språk och avbrutet tal. Klippbyte eller dolt/stängt
+fönster måste frigöra GPU-jobb och avkodade bildrutor. Använd VILA/stillbildens
+befintliga talväg som uttrycklig reserv när rörlig worker eller avkodning saknas.
+
+Kevins `server/server.mjs` väljer en separat RunPod Serverless-endpoint via
+`RORLIG_ENDPOINT_ID`, annars `mq7eiwanda72fg` (`croupier-lipsync-staging`).
+Detta är Kevins stagingkonfiguration, inte ett nytt reglage i vår runtime.
+En driftsatt container på RunPod kan finnas även när GitHub-källan inte går
+att läsa. Nästa driftkontroll är konto/endpoint → template → exakt image och
+digest → avatarbank och worker-kontrakt; inga jobb behöver startas för att
+läsa konfigurationen. Endpointen ensam bevisar inte tillgänglighet, rätt
+version eller hållbar kapacitet. Dedikerad GPU-drift är ett separat senare
+kapacitetsbeslut och ska inte läggas in som krav på en GPU per dealer.
+
+Den separata rörliga workern anges i källan som
+`EmaCodeHero/croupier-lipsync-worker`, med kontrakt i `worker/motor.py`.
+De senaste `kevin`/`kevin-staging`-träden kontrollerades även för incheckad
+worker, Dockerfile och Python-implementation: de innehåller klient/relay men
+inte denna worker. `emil` på `01b5aa490e1aa43938bceab9d49dfc7d931fefeb`
+innehåller den äldre `services/astrid-gpu-worker`, inte `worker/motor.py`.
+GitHub-läsning med Jakobs konto gav 404 den 13 oktober. Konfigurationen på
+RunPod verifierades därefter enligt nedan; källkoden och image-digesten är
+fortfarande inte åtkomliga. Vår
+`services/astrid-gpu-worker` kommer från en annan, äldre källrevision och
+generiska dealerprofiler förbereder fortfarande en stillbild. Denna leverans
+aktiverar inte rörlig lipsync, ändrar inga providerinställningar och importerar
+inga nya mediefiler till produktionen.
+
+Innan aktivering återstår verifierad worker-release och hashbunden avatarbank,
+variantschemaläggning i vår spelare, auktoriserad relay med befintlig budget/
+avbrottshantering och faktisk GPU-verifiering. Källåtkomst är inte ett tekniskt
+krav för att anropa den befintliga endpointen; den behövs för full granskning,
+reproducerbar byggning och eget underhåll. Cartesia-inloggning är ingen
+ersättning för worker-/avatarverifieringen. Annas separata integrationssteg
+och testplan finns i [roulettereferensen](games/roulette/TEKNIK.md#anna-tal-och-rörlig-läppsynk-14-oktober-2026).
+Kör sedan två på varandra
+följande talprov i den riktiga rehearsalspelaren för båda dealers, inklusive
+giv/omplanering mitt i talet, avbrott och reservväg. Kontrollera röst, läppar,
+kortkontakt, masker och lager visuellt/hörbart. Tidigare Paow-godkännande
+följer inte automatiskt med nya film-/ljudhashar. Rörligt tal är öppet tills
+dessa kontroller passerar; källpaketets checksumma ersätter dem inte.
+
+### Förberedd bildruteadapter, 14 oktober 2026
+
+RunPods läs-API bekräftar endpointen `mq7eiwanda72fg`, namnet
+`croupier-lipsync-staging` och template `61hsh8i4r0`. Imagen är
+`ghcr.io/emacodehero/croupier-lipsync-worker:6c80fe50806979d902a6457f43ec74ca8ee5d421`.
+Detta är en observerad tagg, inte en verifierad digest eller källcommit.
+Hälsokontrollen svarade 200 med fyra redo/inaktiva workers och ingen kö vid
+kontrollen; det är inte ett talprov eller bevis på rätt avatarer. ElevenLabs
+GET voice svarade 200 för båda angivna ID:n och namnen Paow respektive
+Dragge med samma lokala nyckelfil; ingen TTS-generering utfördes.
+Den lokala, Git-ignorerade `.env.emil` gav fungerande API-åtkomst; dess
+angivna endpoint-ID gav däremot 404. Ingen nyckel eller driftinställning
+ändrades. Registret gav 401 anonymt och 403 vid manifestläsning med befintlig
+GitHub-inloggning. Ingen GPU beställdes. Template har min 0/max 4 workers,
+180 s idle timeout och ingen kopplad nätverksvolym. Det bevisar inte var
+avatarbanken ligger eller att workern levererar rätt rutor.
+
+`web/moving-speech-plan.mjs` förbereder en ren, inaktiv adaptergräns:
+
+- Den tar en redan auktoriserad serverbindning (dealer, worker-avatar,
+  session, tal, revision, röstprofil och text-/ljud-/avatarhashar), exakta
+  publicerade källklipp och en explicit tidslinje av källrutor vid 24 fps.
+  Dragan kan bindas till worker-avatar `dragge` utan att dealer-ID ändras.
+- Den bygger Kevins `karta` och PCM-start/slutmeddelanden med 24 kHz,
+  `fran_ruta` för omplanering och 220 ms ljudförskjutning. Hållna slutrutor
+  blir egna runs; vilobilden är uttryckligen `vila`, inte en gissad film.
+  Planen begränsas till 600 rutor (25 s), inklusive förtid före ljudet.
+- `matchFrame` kräver samma plan, dealer, session, röst/ljud, exakta
+  källbytes, tagning, kroppsruta och talruta. Ingen sökning ±48 rutor görs.
+  Felaktiga, avbrutna eller gamla svar ger inget renderingsunderlag.
+  Resultatet pekar endast på dealerbilden före beskärning och keying;
+  bakgrund, bord och auktoritativa kort förblir separata.
+
+Modulen verifierar formen på tillförda hashar, inte mediebytes eller
+provideråtkomst. Den är ännu inte inkopplad i server/player och startar inga
+jobb. Den ersätter inte befintlig stillbildsväg. Nästa integration måste
+verifiera paket/PCM/worker-avatar mot dessa hashar, använda befintlig
+admission och GPU-acceptans före TTS, auktorisera worker-relay och para ihop
+metadata med rätt avkodad bild. Vid omplanering ska gammal plan avbrytas
+både lokalt (`cancel()`) och hos workern; lokalt cancel avslutar inte ett
+RunPod-jobb. Befintlig budget, 60 s idle-gräns och avbrott gäller fortsatt.
+Spelarens faktiskt presenterade `mediaTime` och ljudklocka måste ge de två
+bildruteindexen. En renderingsbeskrivning är inte visuell synkacceptans.
+
+`test/moving-speech-plan.mjs` körs i full pre-commit och provar Paow,
+Dragan/dragge, vilobild, hållna rutor, fel media/röst/session, omplanering,
+avbrott och maskgränser. Ingen shader, liveavkodare, ny provider eller
+ny meny har aktiverats. Två riktiga talprov per dealer återstår efter
+worker-/avatarverifiering och inkoppling.
+
+### Färsk worker- och källkontroll, 14 oktober 2026
+
+Läsande API-kontroll 16:40 UTC visar att staging-endpointen mq7eiwanda72fg fortfarande använder template 61hsh8i4r0 och image-taggen 6c80fe50806979d902a6457f43ec74ca8ee5d421. Två körande dedikerade pods, croupier-lipsync-pod1 och pod5, använder däremot ghcr.io/emacodehero/croupier-lipsync-worker:fe1b55e971b1236fadd445ff6ce94970719b5d72. Det är observerade image-namn, inte verifierade container-digests eller avatarhashar. Health svarar 200; inga jobb skapades eller resurser ändrades. Befintlig SSH-nyckel nekades på pod1. Worker-repot svarar fortsatt 404 för Jakeminator123.
+
+Färsk kontroll av den uttryckligen anvisade .env.emil gav HTTP 200 för Cartesia, Dragges exakta ElevenLabs-röst och Gemini-modellistan. RunPod-nyckeln fungerar, men filens RUNPOD_ENDPOINT_ID ktyp76r668wdjm ger 404. Filen innehåller inga GitHub- eller SSH-uppgifter. Variabelnamnen är lästa, inga hemliga värden har dokumenterats eller ersatts; staging-endpointen får inte okritiskt användas som ersättning för den gemensamma talmotorns endpoint.
+
+Talfackens sparade standarder använder befintliga variantbindningar: speak.other får högst 14 reserverade .slot-<situation>-ID:n plus äldre standard och fyra alternativ. Runtime projicerar bara standarden för den exakta källrepliken innan regler, skuggläge och reservval. Välkomsthälsning kan därmed inte bli blackjack-reserv. Uppladdning eller biblioteksordning väljer aldrig standard. Befintliga goodluck/insurance/double-ID:n behålls. Capability v20 krävs endast när aktivt/arkiverat projekt eller fryst paket innehåller de nya bindningarna; orelaterad livscykel behåller tidigare krav. Ingen SQL-migration och inget inspelat klipp godkänns av detta.
+
+Kevin-staging 5134d9274fdaa9d09dd3f3cf40f02ecd95716afe har stöd för dedikerade pods, flera workers per dealer och tillfällig undvikning av timeoutande workers. Klienternas lip-layer.js/dealer-layer.js och Draggens v2-/idle-v2-filer är oförändrade jämfört med 315cfc55, men inspelade repliker har ändrats. För de fyra svenska alternativen som finns i vårt bibliotek är win_1 ny (SHA-256 8a0d160a69e30c0dcb908421c9355a4731cc947b0a8b9f54ef71f15d7ef31529); goodluck_1, insurance_1 och double_1 är samma bytes. Nytt material är granskningsunderlag, inte accepterat tal.
+
+Källanalys efter Jakobs uttryckliga tillstånd: Gemini med hög upplösning transkriberar insurance_1 som ”Ess synligt. Vill nån ha försäkring?” och nya win_1 som ”Grattis till vinnarna.” Försäkringsklippet bedöms preliminärt följa talet; win_1 flaggas för sena munrörelser, ungefär 0,5 s efter talets slut. Detta är modellobservationer, inte uppmätt eller accepterad produktsynk. Den första analysens påstående om frusna bilder har förkastats: lokal ansiktsgranskning visar tydliga munrörelser. Båda klippen behåller granskningsstatus och publicerades inte. Råresultat och källhashar sparas endast privat i uppdragets steglogg.
+
+Nästa aktivering behöver den valda workerns exakta release och avatar-/källklippsmanifest, autentiserad adapter till vår sessionsägare, verifierat avbrott/jobbstopp, avkodning samt gemensam ljud-/bildstart. Källåtkomst eller motsvarande verifierbart workerunderlag saknas ännu. Kopiera inte Kevins permanenta podanslutningar eller kostnadsmodell som en genväg. Tillgång till en endpoint eller ljudfil ersätter inte dessa kontroller. Två sammanhängande verkliga talprov måste därefter godkänna uttal, läppsynk och återgång till grundloop.
+
+### PCM och egen WebSocket-anslutning, 14 oktober 2026
+
+Kevin uppger att Paows och Dragges avatarbanker finns inbakade i den gemensamma
+worker-imagen, inte i spelrepot. Sessionsbeställningen anger `avatar: paow`
+respektive `dragge`. Det behöver verifieras mot workerns exakta release och
+källklipp; en fungerande endpoint eller ett avatar-namn är inte det beviset.
+
+Scoutgaming har redan en WebSocket-ingång i
+`apps/croupier-speech/service.mjs`: `/speech-stream` för klienten och
+`/lipsync-worker` för workeråterkoppling. Render äger session och GPU-jobb;
+den publika speech-tjänsten förmedlar anslutningen. Befintliga
+`web/generated-speech-session.mjs` skickar `op: session`, `ws_url`,
+`ws_token`, `worker_id` och `ttl` till RunPod. Workern ansluter tillbaka
+till vår publika, autentiserade `wss://`-adress. Emils dator eller Kevins
+WebSocket-server behöver inte stå på för vår integration. RunPod-workern
+och vår egen callback måste däremot kunna nå varandra.
+
+Den nuvarande Astrid-handshake:n och det rörliga protokollet är inte visade
+utbytbara. Koppla en explicit adapter till vår sessionsägare; ersätt inte
+Astrids endpoint eller autentisering med stagingvärden. Behåll befintlig
+sessionsbudget (540 s), 60 s idle-gräns och ägarbunden stängning. Kevins
+cirka 55 minuter är inte en beslutad sessionslängd för Scoutgaming.
+
+**`end` betyder färdig ljudinmatning, inte avbrott.** Källan på `315cfc55`
+skickar `start`, alla PCM-bitar och därefter omedelbart `end`, innan resultatet
+är klart. Den installerar `avbryt` endast för en worker som rapporterar minst
+två lanes. En lokal timeout, borttagen lyssnare eller `plan.cancel()` bevisar
+inte att GPU-arbetet stoppats. Verifiera workerns stöd för avbrott, `bye` och
+ägarens RunPod-jobbcancel innan livekoppling. Den rapporterade en-lane-driften
+får inte antas ha samma avbrottskontrakt som flerlane-koden.
+
+`web/moving-speech-pcm.mjs` förbereder nu överföringen utan nätverk eller
+inkoppling i spelaren. Den kräver slutligt normaliserad mono s16le PCM vid
+24 kHz, kopierar och verifierar dess SHA-256 mot talplanen och kräver att
+kartan täcker hela ljudet plus 220 ms förtid. Samma ägda bytes kan lämnas
+till uppspelning och worker. Överföringen är engångsbruk: `start`, jämna
+binära meddelanden på högst 32 768 byte och `end`. Omplanering skickar hela
+PCM-ljudet med ny kartrevision och `fran_ruta`; ingen längdgissning eller
+omklippning av ljudet sker.
+
+Avbrott under överföringen eller tidig iteratorstängning ogiltigförklarar
+planen och rensar dess privata ljudbuffert. Efter överföringen äger anroparen
+fortfarande planens livscykel och måste anropa `cancel()` vid byte/stängning.
+Den framtida transporten måste vänta på begränsade socket-skrivningar och
+avsluta sitt faktiska RunPod-jobb vid behov. Modulen normaliserar inte ljud,
+auktoriserar inte sessioner och avkodar eller spelar inte bildrutor. Använd
+den först efter befintlig admission, GPU-acceptans och färsk profilkontroll.
+
+Plan-/PCM-testerna passerar 13 fall, inklusive fel ljudhash/format/längd,
+ägarisolering, omplanering, inputslut och avbruten överföring. Detta är
+kontraktsprov, inte hörbar eller visuell läppsynksacceptans. Återstående
+integration är worker-/avatarverifiering, autentiserad relay, avkodning,
+buffring före gemensam ljud-/bildstart och två riktiga prov per dealer.
+
+Separat obetald leverantörskontroll läste uttryckligen den Git-ignorerade
+`.env.emil`: rörliga endpointens health och båda ElevenLabs-rösternas GET
+gav 200. Avvikande ärvda RunPod/ElevenLabs-nycklar användes inte. Efter att
+Jakob lagt till Cartesia gav även GET voices 200 med filens Cartesia-nyckel.
+Varje kontroll verifierade att `.env.local` och `.env.emil` var oförändrade
+under provet. Inga TTS-/GPU-jobb startades och ingen produktionsinställning
+ändrades. Cartesia är ett separat alternativ; Paow/Dragge använder fortsatt
+de uttryckligen valda ElevenLabs-rösterna. Enhetsprov använder testdata och
+läser inte privata nyckelfiler automatiskt.
+
 ## Aktiva ytor och kompatibilitetsgräns
 
 Roulettens [klippkarta och signaler](games/roulette/KLIPPKARTA.md) skiljer
@@ -19,10 +355,18 @@ blackjack-`idle.ready` exponeras inte för roulette.
 
 Fortsatt UI-utveckling sker i `/admin` och `/lobby`; `/partner` är bolagens
 arbetsyta. `lab/` är den aktiva applikationens källmapp och `/studio` dess
-tekniska basePath för befintliga API:er och tillgångar. Äldre `/control`,
-`/play` och spelstarter är fortsatt fungerande kontrakt under övergången.
+tekniska basePath för befintliga API:er och tillgångar. Äldre `/control`-länkar
+är kompatibilitetsadresser: många omdirigeras till `/admin` med sidkontexten
+kvar. `/play` och spelstarter behåller sina autentiserings- och paketkontrakt.
 Detaljerade äldre adresser och daterade verifieringar nedan beskriver dessa
 implementationer, inte en uppmaning att bygga nya gränssnitt där.
+
+Den kanoniska adress- och slugglistan finns i
+[användarguiden](../lab/docs/README.md). Produktionskontrollen 14 oktober 2026
+skiljer dokumentomdirigeringar från efterföljande inloggning: `/control` går
+till `/admin`, `/studio` via `/control/clips` till `/admin/dealer-studio` och
+utloggad intern åtkomst till `/studio/login?returnTo=...`. N1 når även
+partner- och spelarytorna med samma konto; ett byte av yta ändrar inte rollen.
 
 `CROUPIER_STREAM_LANE=lissabon-stream-lane` används fortfarande i lokal och
 molnbaserad start, chattens `playResults`, kameragrinden och lokala profiler
@@ -652,6 +996,38 @@ Privata bild-/maskinkvitton: `lab/data/platform-private/background-playback-2026
 Ingen produktdata ändrades. A20/A21 ska bevara dessa konsumenter och publika
 moduladresser vid den kommande atomära källflytten.
 
+## Bordets kort- och insatsplatser, 14 oktober 2026
+
+`composition.blackjackTables` är ett valfritt fält med högst 32 poster,
+var och en bunden till ett exakt uppladdat bords-UUID i sammansättningens
+`layers.table.allowed`. Designnamn och design-ID ersätter inte tillgångens UUID.
+Mobil har tre synliga platser, desktop sju; båda sparar `cardWidth`,
+`dealer: {x,y}` och `seats: [{card: {x,y}, bet: {x,y}}]`. Punkterna är
+normaliserade 0–1 i bordbildens hela rektangel, inklusive transparenta kanter.
+Kortbredden är 0,02–0,15 av samma bildbredd. Scen och spelplatser använder
+samma 860px-gräns. Serverns box-ID behålls också för återupptagna händer.
+
+Admin → Sammansättningar → Bord har ett gemensamt visuellt reglage för
+placeringarna. Varje bordsdesign kalibreras separat; startpunkterna är inte
+visuellt godkända standardvärden. Befintliga sammansättningar utan fältet
+behåller tidigare placering. Val av ett annat, okalibrerat bord visas med
+varning. Byte är fortsatt spärrat under en pågående runda.
+
+Geometrin styr stilla serverkort och insatsknappar. Den godkänner inte
+filmad givning eller handkontakt. Ett kontaktspår kräver separat bindning till exakt filmhash, profil och aktuell spelplan; ändrad bindning återgår till stilla serverkort. Det frysta publicerade paketet behåller sina
+punkter när utkastet ändras. Arkivering eller avmarkering av bordet tar bort
+dess utkastgeometri, även ur dealerarkiv; återställning återkopplar den inte.
+
+Nya skrivningar kräver runtime capability 16 innan beständig lagring.
+Ingen SQL-migration krävs. Vercel och Render ska ha den nya läsaren innan
+geometri sparas i produktion. Två visuella provspelningar och formatkontroll
+behövs utöver kontrakttesterna före acceptans av en konkret sammansättning.
+### Dynamiska insatsplatser och spelarens kortvy
+
+Varje blackjackTables-format kan från runtime v19 ha betMode: 'under-cards'. Då är kortpunkten gemensam vågrät ankare; markerytans lodräta läge räknas från aktuell kortvy, poängbricka och kontrollstorlek. De sparade bet-punkterna bevaras för återgång till manuell placering. Saknat fält ger exakt tidigare manuella geometri. Mobilens kollisionskontroll räknar de verkliga, oskalade tryckytorna. Bordsbildens storlek ställs fortsatt med befintliga mobile/desktop.table; det finns inget extra storleksregister.
+
+Upplyfta/På bordet är en lokal, validerad spelarpreferens. Den ändrar varken spelbeslut, kortvärden, tillgångar eller publicering. Det filmade källspåret förblir oförändrat före släpp; övergången landar i vald kortvy. Byte mitt i ett kontaktspår revokerar spåret och behåller serverns statiska kort. Admin visar samma editor som kompatibilitetsytan och sparar fortfarande via mallens ordinarie revisionskontroll. Explicit material-/dealer-/rumslivscykel kräver nu v19 eftersom åtgärden kan skriva om ett paket med nya profilfält. Ingen SQL-migration.
+
 ## Endast registrerad dealeruppspelning, 12 oktober 2026
 
 Astrid, Vera, Amira och Mei ingår inte längre i ett lokalt dealerutbud.
@@ -900,7 +1276,7 @@ media hoppas över och serverns kortflöde fortsätter. N2 visar endast verkliga
 
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
 Starta med `node lab/start.mjs`. OpenClaw-anslutning beskrivs i
-[anslutningsguiden](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
+[anslutningsguiden](AI/openclaw/LOCAL-CONNECTION-SV.md).
 Mobile Phone Lane använder Astrids porträttvideo i det riktiga spelet:
 <http://127.0.0.1:4200/blackjack>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.

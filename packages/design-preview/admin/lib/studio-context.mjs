@@ -12,7 +12,7 @@ export function studioContext(catalog, project, selection = {}) {
     &&(!selection.game||row.game===selection.game));
   const room=rooms.find(row=>row.id===selection.roomId)??rooms[0];
   const lane=project.lanes?.find(row=>row.id===room?.compositionId);
-  const dealers=project.dealers.filter(row=>lane?.layers.dealer.allowed.includes(row.id)
+  const dealers=project.dealers.filter(row=>(selection.library===true||lane?.layers.dealer.allowed.includes(row.id))
     &&registry.dealers.some(item=>item.id===row.id&&!item.archived));
   const dealer=dealers.find(row=>row.id===selection.dealerId)
     ??dealers.find(row=>row.id===lane?.layers.dealer.default)??dealers[0];

@@ -19,6 +19,13 @@ test('registered room shortcut and legacy room editor have distinct routes',()=>
   assert.equal(isStudioAdminRoute('/admin/rooms',''),true);
 });
 
+test('dealer library and imports do not inherit a room or its allowed dealers',()=>{
+  assert.equal(isStudioAdminRoute('/admin/dealers','?dealer=dragan'),false);
+  assert.equal(isStudioAdminRoute('/admin/dealers','?dealer=dragan&tool=import'),false);
+  assert.equal(withAdminContext('/admin/dealers','?operator=north&table=room-one&dealer=astrid'),'/admin/dealers');
+  assert.equal(withAdminContext('/admin/dealers?dealer=dragan&tool=import','?dealer=astrid&composition=shared'),'/admin/dealers?dealer=dragan&tool=import');
+});
+
 test('explicit home navigation clears context while deep links retain it',()=>{
   const context='?operator=north&table=room-one&dealer=anna';
   assert.equal(withAdminContext('/admin',context),'/admin');
@@ -36,9 +43,10 @@ test('admin home is an internal navigation target even when Studio is busy',()=>
 });
 
 test('old design links translate root queries and fragments without changing external or similar paths',()=>{
-  for(const suffix of ['', '?dealer=astrid', '#clips', '/clips?dealer=astrid#speech']){
+  for(const suffix of ['', '?dealer=astrid', '#clips']){
     assert.equal(adminHref('/control'+suffix),'/admin'+suffix);
   }
+  assert.equal(adminHref('/control/clips?dealer=astrid#speech'),'/admin/dealer-studio?dealer=astrid#speech');
   for(const href of ['/admin/clips','/controller','https://outside.invalid/control','//outside.invalid/control']){
     assert.equal(adminHref(href),href);
   }

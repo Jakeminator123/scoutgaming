@@ -4,14 +4,14 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {createSeedProject} from '../../../../lab/lib/studio-model.mjs';
-import {clipSlots,clipsForSlot,bindClip,uploadMetadata,createStudioClient} from './connected-studio.mjs';
+import {clipSlots,clipsForSlot,bindClip,currentClipId,configuredClipIds,uploadMetadata,createStudioClient} from './connected-studio.mjs';
 import {groupSlots,slotCaption} from './studio-layout.mjs';
-import {rouletteReferencePreview} from './roulette-clip-map.mjs';
+import {rouletteReferencePreview,unbindRouletteClip,setRouletteIdleForeground} from './roulette-clip-map.mjs';
 import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
 const project=createSeedProject(),dealer='astrid';
 const slots=clipSlots(project,{videos:[]},dealer,'roulette');
 const file=(name)=>({name,size:128});
-const video=(slot,id)=>({id,label:id,available:true,integrity:'verified',previewUrl:'/studio/api/videos/'+id,
+const video=(slot,id)=>({id,label:id,available:true,integrity:'verified',previewUrl:'/studio/api/videos/'+id,contentType:slot.localOnly?'image/png':'video/webm',
   classification:slot.localOnly?mediaClassification(project,{dealerId:dealer,slotId:slot.id,label:'VILA',contentType:'image/png'}):uploadMetadata(project,dealer,slot,file('idle.webm'),{mode:'alpha'})});
 
 test('same dealer gets independent roulette intake and blackjack slots, never a shared goodluck line',()=>{
@@ -27,8 +27,78 @@ test('same dealer gets independent roulette intake and blackjack slots, never a 
     {...valid,id:'missing',available:false},{...valid,id:'bad-integrity',integrity:'unavailable'}]};
   assert.deepEqual(clipsForSlot(bank,dealer,idle).map(row=>row.id),['a']);
   const before=structuredClone(project);
-  assert.throws(()=>bindClip(project,bank,dealer,idle,'a'),/Spelkoppling/);
+  assert.throws(()=>bindClip(project,bank,dealer,idle,'a'),/studio_roulette_idle_invalid/);
   assert.deepEqual(project,before);
+});
+
+const baseId='11111111-1111-4111-8111-111111111111',variantId='22222222-2222-4222-8222-222222222222',otherId='33333333-3333-4333-8333-333333333333';
+function bindingFixture() {
+  const idle=slots.find(slot=>slot.situation==='breathing'),glasses=slots.find(slot=>slot.situation==='glasses-clean');
+  const base=video(idle,baseId),variant=video(glasses,variantId),other=video(idle,otherId);
+  for(const row of [base,variant,other])row.classification.framing={scale:1,x:0,y:0};
+  return {idle,glasses,base,variant,other,inventory:{videos:[base,variant,other]}};
+}
+test('explicit roulette base and variations survive ordinary project save/readback without touching blackjack',async()=>{
+  const f=bindingFixture(),before=structuredClone(project);
+  assert.equal(currentClipId(project,dealer,f.idle,undefined,f.inventory),'');
+  assert.deepEqual(configuredClipIds(project,dealer,f.glasses,undefined,f.inventory),[]);
+  assert.throws(()=>bindClip(project,f.inventory,dealer,f.glasses,variantId),/grundloopen/);
+  const base=bindClip(project,f.inventory,dealer,f.idle,baseId),draft=bindClip(base,f.inventory,dealer,f.glasses,variantId);
+  assert.deepEqual(draft.lines,before.lines);assert.deepEqual(project,before);
+  let requestBody;
+  const client=createStudioClient({fetchImpl:async(url,options)=>{
+    assert.equal(url,'/studio/api/project');assert.equal(options.method,'PUT');requestBody=JSON.parse(options.body);
+    return Response.json({project:{...requestBody.project,revision:'saved-roulette-binding'}});
+  }});
+  const saved=await client.save(draft);
+  assert.equal(requestBody.expectedRevision,project.revision);assert.equal(saved.revision,'saved-roulette-binding');
+  assert.equal(currentClipId(saved,dealer,f.idle,undefined,f.inventory),baseId);
+  assert.deepEqual(configuredClipIds(saved,dealer,f.glasses,undefined,f.inventory),[variantId]);
+  assert.equal(currentClipId(saved,'vera',f.idle,undefined,f.inventory),'');
+});
+test('new base clears old mask and variations; removing base never leaves orphan variants',()=>{
+  const f=bindingFixture(),draft=bindClip(bindClip(project,f.inventory,dealer,f.idle,baseId),f.inventory,dealer,f.glasses,variantId);
+  draft.dealers.find(row=>row.id===dealer).rouletteIdle.foregroundPolygons=[[[0,0],[1,0],[1,1]]];
+  assert.deepEqual(bindClip(draft,f.inventory,dealer,f.idle,baseId),draft,'same exact base is idempotent');
+  const changed=bindClip(draft,f.inventory,dealer,f.idle,otherId);
+  assert.deepEqual(changed.dealers.find(row=>row.id===dealer).rouletteIdle,{videoId:otherId});
+  const variantRemoved=unbindRouletteClip(draft,dealer,f.glasses,variantId);
+  assert.deepEqual(configuredClipIds(variantRemoved,dealer,f.glasses),[]);assert.equal(currentClipId(variantRemoved,dealer,f.idle),baseId);
+  assert.equal(unbindRouletteClip(draft,dealer,f.idle,baseId).dealers.find(row=>row.id===dealer).rouletteIdle,undefined);
+});
+test('roulette binding rejects wrong dealer, archived media, opaque video, foreign slots and mismatched framing',()=>{
+  for(const mutate of [
+    f=>f.variant.classification.dealerId='vera',f=>f.variant.classification.archived=true,
+    f=>f.variant.classification.compositing={mode:'opaque'},f=>f.variant.contentType='video/mp4',
+    f=>f.variant.classification.framing.x=.2,f=>f.variant.available=false,
+  ]) {
+    const f=bindingFixture(),draft=bindClip(project,f.inventory,dealer,f.idle,baseId);mutate(f);
+    assert.throws(()=>bindClip(draft,f.inventory,dealer,f.glasses,variantId));
+  }
+  const f=bindingFixture();
+  assert.throws(()=>bindClip(project,f.inventory,'vera',f.idle,baseId));
+  for(const slot of slots.filter(row=>row.intakeOnly))assert.throws(()=>bindClip(project,f.inventory,dealer,slot,baseId),/kan ännu inte kopplas/);
+  const draft=bindClip(project,f.inventory,dealer,f.idle,baseId);
+  for(let i=0;i<4;i++)f.inventory.videos.push({...structuredClone(f.variant),id:`40000000-0000-4000-8000-00000000000${i}`});
+  let next=draft;for(let i=0;i<3;i++)next=bindClip(next,f.inventory,dealer,f.glasses,`40000000-0000-4000-8000-00000000000${i}`);
+  assert.throws(()=>bindClip(next,f.inventory,dealer,f.glasses,'40000000-0000-4000-8000-000000000003'),/Högst tre/);
+});
+
+test('idle hand calibration binds only the exact saved base, validates shared framing and survives save',async()=>{
+  const f=bindingFixture(),draft=bindClip(bindClip(project,f.inventory,dealer,f.idle,baseId),f.inventory,dealer,f.glasses,variantId),before=structuredClone(draft);
+  const polygon=[[[.2,.3],[.8,.3],[.7,.5],[.3,.5]]];
+  const calibrated=setRouletteIdleForeground(draft,f.inventory,dealer,baseId,JSON.stringify(polygon));
+  assert.deepEqual(draft,before);assert.deepEqual(calibrated.lines,before.lines);
+  const client=createStudioClient({fetchImpl:async(url,options)=>Response.json({project:{...JSON.parse(options.body).project,revision:'mask-saved'}})});
+  const saved=await client.save(calibrated);assert.deepEqual(saved.dealers.find(row=>row.id===dealer).rouletteIdle,{videoId:baseId,variantVideoIds:[variantId],foregroundPolygons:polygon});
+  assert.deepEqual(setRouletteIdleForeground(saved,f.inventory,dealer,baseId,'').dealers.find(row=>row.id===dealer).rouletteIdle,{videoId:baseId,variantVideoIds:[variantId]});
+  for(const bad of ['not-json','[]','[[[0,0],[1,1],[2,2]]]','[[[0,0],[0,0],[1,1]]]'])assert.throws(()=>setRouletteIdleForeground(draft,f.inventory,dealer,baseId,bad));
+  assert.throws(()=>setRouletteIdleForeground(draft,f.inventory,dealer,otherId,JSON.stringify(polygon)));
+  assert.throws(()=>setRouletteIdleForeground(draft,f.inventory,'vera',baseId,JSON.stringify(polygon)));
+  for(const mutate of [x=>delete x.base.classification.framing,x=>x.variant.classification.framing.x=.4,x=>x.base.available=false,x=>x.variant.classification.game='blackjack']){
+    const x=bindingFixture();mutate(x);assert.throws(()=>setRouletteIdleForeground(draft,x.inventory,dealer,baseId,JSON.stringify(polygon)));
+  }
+  assert.equal(bindClip(calibrated,f.inventory,dealer,f.idle,otherId).dealers.find(row=>row.id===dealer).rouletteIdle.foregroundPolygons,undefined);
 });
 test('VILA fallback is stable, scoped, editor-only and never takes a blackjack idle',()=>{
   const idle=slots.find(slot=>slot.situation==='breathing'),reference=slots.find(slot=>slot.situation==='VILA');
@@ -55,7 +125,7 @@ test('native upload rereads exact roulette metadata and rejects changed dealer/g
   const forbidden=createStudioClient({fetchImpl:()=>assert.fail('PNG must not reach API'),uploadImpl:()=>assert.fail('PNG must not reach Blob')});
   await assert.rejects(forbidden.upload(file('vila.png'),png.classification),/PNG.*lokalt/);
 });
-test('roulette cards preview images and disclose registration without offering a false runtime binding',()=>{
+test('roulette cards allow explicit idle binding while reference and planned cards remain honest',()=>{
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
   const source=readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8');
   const module={exports:{}};
@@ -67,4 +137,9 @@ test('roulette cards preview images and disclose registration without offering a
   const image=render(slots.find(slot=>slot.situation==='VILA'));
   assert.match(image,/<img/);assert.match(image,/Registrerat · ej spelkopplat/);assert.doesNotMatch(image,/Koppla till utkast/);
   const future=render(slots.find(slot=>slot.planned));assert.match(future,/Planerat fack/);assert.doesNotMatch(future,/type="file"|Koppla till utkast/);
+  const idle=render(slots.find(slot=>slot.situation==='breathing'));
+  assert.match(idle,/Koppla till utkast/);assert.match(idle,/Saknar koppling/);assert.doesNotMatch(idle,/Registrerat · ej spelkopplat|aria-label="Inställningar/);
+  const glasses=render(slots.find(slot=>slot.situation==='glasses-clean'));assert.match(glasses,/Koppla till utkast/);
+  const start=render(slots.find(slot=>slot.eventId==='roulette.wheel-start'));
+  assert.match(start,/Kalibrera startfilm/);assert.doesNotMatch(start,/Koppla till utkast|Registrerat · ej spelkopplat/);
 });

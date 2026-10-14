@@ -137,19 +137,21 @@ export function createLayerPacksRoute({ previewRoot = previewBuildDirectory } = 
       return true;
     }
     const dealer = parts[0].toLowerCase();
+    // Both manifests and direct file requests require a current preview dealer.
+    // A removed lane cannot keep serving files through its old URL namespace.
+    if (!existsSync(catalogFile)) {
+      res.writeHead(503, privateHeaders('application/json'));
+      res.end('{"error":"unavailable","message":"Lagerpaket saknas"}');
+      return true;
+    }
+    const catalog = JSON.parse(readFileSync(catalogFile, 'utf8'));
+    const manifest = manifestForDealer(catalog, dealer);
+    if (!manifest) {
+      res.writeHead(404, privateHeaders());
+      res.end();
+      return true;
+    }
     if (parts.length === 2 && parts[1] === 'manifest.json') {
-      if (!existsSync(catalogFile)) {
-        res.writeHead(503, privateHeaders('application/json'));
-        res.end('{"error":"unavailable","message":"Lagerpaket saknas"}');
-        return true;
-      }
-      const catalog = JSON.parse(readFileSync(catalogFile, 'utf8'));
-      const manifest = manifestForDealer(catalog, dealer);
-      if (!manifest) {
-        res.writeHead(503, privateHeaders('application/json'));
-        res.end('{"error":"unavailable","message":"Lagerpaket saknas"}');
-        return true;
-      }
       const body = JSON.stringify(manifest);
       res.writeHead(200, privateHeaders('application/json', { 'Content-Length': String(Buffer.byteLength(body)) }));
       if (req.method === 'HEAD') res.end();

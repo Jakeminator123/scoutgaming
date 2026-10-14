@@ -7,10 +7,11 @@ import {isPresentationRoom} from '../../web/presentation-room-contract.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
 import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {withoutPresentationLanes} from './dealer-archive-impact.mjs';
+import {retainBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
 
 const fail=(code='studio_material_missing')=>{throw new StudioStorageError(code,409);};
 export const materialUsedBy=(lane,id)=>['background','table'].some(role=>lane.layers[role].default===id||lane.layers[role].allowed.includes(id))
-  ||lane.backgroundPlayback?.rules.some(rule=>rule.assetId===id);
+  ||lane.backgroundPlayback?.rules.some(rule=>rule.assetId===id)||lane.composition?.blackjackTables?.some(row=>row.tableId===id);
 function detach(lane,id){
  for(const role of ['background','table']){
   const layer=lane.layers[role];layer.allowed=layer.allowed.filter(value=>value!==id);
@@ -18,6 +19,7 @@ function detach(lane,id){
  }
  if(lane.backgroundPlayback)lane.backgroundPlayback.rules=lane.layers.background.enabled&&lane.layers.background.default
   ?lane.backgroundPlayback.rules.filter(rule=>rule.assetId!==id):[];
+ retainBlackjackTableGeometry(lane.composition,lane.layers.table.allowed);
 }
 export function changeMaterialTrash(project,{id,archived,now=Date.now}){
  const next=structuredClone(project),trash=next.layerAssetTrash??[];

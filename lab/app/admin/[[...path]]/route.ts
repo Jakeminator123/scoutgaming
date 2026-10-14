@@ -25,7 +25,7 @@ async function respond(request: Request, context: { params: Promise<{ path?: str
       if (response) return response;
       throw error;
     }
-    const response = new URL(request.url).pathname.endsWith('/admin/_data/catalog') ? nativeStudioErrorResponse(error) : errorResponse(error);
+    const response = path[0]==='_data' ? nativeStudioErrorResponse(error) : errorResponse(error);
     for (const [name, value] of Object.entries(designPreviewHeaders)) response.headers.set(name, value);
     return response;
   }

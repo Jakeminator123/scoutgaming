@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer, addVariant } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -115,6 +115,17 @@ test('own dealer event bindings explain save and republish and expose explicit c
   assert.match(html,/Spara och publicera paketet igen/);
   assert.doesNotMatch(html,/Varianter för Johanna sparas i projektet men används inte/);
   assert.match(html,/role="tab"[^>]*>Villkor/);
+});
+
+test('dealing editor can add past five variants and clearly stops at sixteen; speech still stops at five',()=>{
+  for(const [eventId,count,disabled] of [['deal.player.centre',5,false],['deal.player.centre',16,true],['speak.goodluck',5,true]]){
+    let draft=addDealer(createSeedProject(),'dragan','Dragan');
+    for(let index=1;index<count;index++)draft=addVariant(draft,'dragan',eventId);
+    const html=render({initialProject:draft,initialDealerId:'dragan',initialEventId:eventId});
+    const button=html.match(/<button[^>]*class="text-button add-variant"[^>]*>[\s\S]*?<\/button>/)?.[0];
+    assert.ok(button,eventId);assert.equal(button.includes('disabled=""'),disabled,eventId+' '+count);
+    assert.ok(button.includes(`${count-1}/${eventId.startsWith('deal.')?15:4}`));
+  }
 });
 
 test('clip slot menu keeps the exact seat or dealer card when selecting an action', () => {

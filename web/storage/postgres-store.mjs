@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { validateStudioScope } from '../../packages/studio-access/studio-scope.mjs';
 
 const transactionContext = new AsyncLocalStorage();
 const SCHEMAS = new Set(['croupier_game', 'croupier_auth']);
@@ -84,18 +85,31 @@ export function createPostgresStore({ pool, connectionString, zonesConnectionStr
       }
       return transaction(() => query(sql, values), {serialize:false});
     }
-    async function transaction(work, {serialize=true}={}) {
+    async function transaction(work, {serialize=true,studioScope}={}) {
+      // validateStudioScope returns exactly these keys in canonical order.
+      const studioScopeKey = studioScope === undefined ? null : JSON.stringify(validateStudioScope(studioScope));
       const existing = transactionContext.getStore();
       if (existing?.pool === pool) {
-        try{return await work();}catch(error){existing.failed=error;throw error;}
+        try{
+          // Nested work must inherit the outer locks, never silently expand them.
+          if(studioScopeKey && existing.studioScopeKey!==studioScopeKey)throw new Error('Studio transaction scope mismatch');
+          if(serialize && existing.studioScopeKey && !existing.serialize)throw new Error('Studio transaction lock escalation');
+          return await work();
+        }catch(error){existing.failed=error;throw error;}
       }
       const client = await pool.connect();
       try {
         // Serializes existing memory/quota CAS sequences until per-scope locks
         // are introduced. Transaction-scoped, works through PgBouncer pooling.
         // Send transaction setup in one round trip without session-level state.
+        // Native admin already holds the game lock before its Studio repository
+        // write. Scoped memory must follow the same game -> Studio order.
         await client.query("BEGIN; SET LOCAL statement_timeout = '15000ms'; SET LOCAL lock_timeout = '5000ms'"+(serialize?'; SELECT pg_advisory_xact_lock(1129467984)':''));
-        const context={pool,client};
+        if(studioScopeKey){
+          const digest=createHash('sha256').update(`croupier-studio\0${studioScopeKey}`).digest();
+          await client.query('SELECT pg_advisory_xact_lock($1::integer, $2::integer)',[digest.readInt32BE(0),digest.readInt32BE(4)]);
+        }
+        const context={pool,client,studioScopeKey,serialize};
         const result = await transactionContext.run(context, work);
         if(context.failed)throw context.failed;
         const committed=await client.query('COMMIT');

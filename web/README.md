@@ -19,9 +19,51 @@ Den nya backofficeytan heter `/admin` och den nya lobbyn `/lobby`.
 Övergången från `/control`, `/play` och `/game` är fortfarande pågående.
 Spelmotor, autentisering och fungerande äldre länkar ska behållas under den.
 
-`server.mjs` använder fortfarande `lab/lib/` för Studio-policy, autentisering,
-registrerad media och provspelning. Mappnamnet är därför inte ett skäl att
-ta bort den kopplingen. `lab-speech-bridge.mjs` ingår också i spelklientens talväg.
+Studio-autentisering, gemensam roll-/åtgärdspolicy och validering av miljö/workspace
+finns i [packages/studio-access](../packages/studio-access/), med kompatibla
+återexporter från de äldre sökvägarna. Inloggningskontrollen kan användas av både
+spelservern och Studio utan att importera `lab/` eller OpenClaw.
+Rollpolicyn använder fortfarande den gemensamma rollnormaliseringen i
+`web/account-role.mjs`.
+
+Spelservern använder fortfarande `lab/lib/` för registrerad media,
+projekt-/publiceringskontrakt, signerade Studio-kommandon och provspelning.
+OpenClaw används fortfarande för bland annat Astrids observationer och
+inställningar. Mappnamnen är därför inte ett skäl att ta bort de kopplingarna.
+`lab-speech-bridge.mjs` ingår också i spelklientens talväg.
+
+## Produktionsdrift
+
+| Del | Aktivt ansvar |
+| --- | --- |
+| Vercel, team och projekt `scoutgaming` (Scout Gaming) | Webb, Admin, lobby och Studio med befintligt `/studio`-basePath. |
+| Render `croupier-v2` | Spelmotorn; auktoritet för kort, saldo, rundor och live-spel. |
+| Neon/PostgreSQL | Spel- och kontodata i `croupier_game`/`croupier_auth`, Studio-policy, revisioner och mediaregister i `croupier_studio`. Zondata har en separat databas. |
+| Privat Blob | Mediefiler och färdiga talpaket; identiteter och metadata finns i Neon. |
+
+Vercelpubliceringen ersätter alltså inte spelmotorn eller databasen. Produktionen
+kör med `CROUPIER_DATABASE=postgres`, `CROUPIER_STUDIO_NEON_POLICY=1` och
+`CROUPIER_MEDIA_STORAGE=blob`. SQLite-koden stöder lokal/offline-körning och
+tester; Director/Gateway har även separat hjälptillstånd. SQLite är inte en
+reservdatabas vid fel i produktionens PostgreSQL. Produktens tidigare Render-disk
+är avvecklad. Ansvar och återställningsgränser beskrivs i
+[CLOUD-MIGRATION.md](../docs/CLOUD-MIGRATION.md#ytor-och-datalagring--produktion-och-nya-qa)
+och [ENVIRONMENT-RESTORATION.md](../docs/ENVIRONMENT-RESTORATION.md).
+
+`studio-game-commands.mjs` hämtar det rena signeringskontraktet från
+`packages/shared/studio-game-command.mjs`. Spelservern behöver därför inte
+importera Studios HTTP-adapter `lab/lib/studio-game-authority.mjs` för att
+kontrollera en kommandosignatur. Den gamla signeringsexporten finns kvar där
+för kompatibilitet. Befintlig behörighetspolicy och lagringskontraktet i
+`web/storage/studio-contract.mjs` används fortfarande.
+
+OpenClaw-kopplingarna är aktiva: `openclaw-chat.mjs` använder minnes-/
+kameraformat, inställningar och produktens taltransport; `presentation-api.mjs`
+använder Director-beslut; `probe-runtime.mjs` och `player-probe-store.mjs`
+använder provtal respektive minnesprojektion. `server.mjs` använder också
+kameranormalisering och `native-p6-qa-hook.mjs` talets envelope-kontrakt.
+`storage/studio-contract.mjs` validerar fortfarande social policy via OpenClaw.
+Dessa importer från `open-claw/lab/src/` är kvar, liksom Astrids talväg.
 
 `lissabon-profiles.mjs` är en avgränsad lokal profilfunktion: SQLite, gästdemo,
 `HOST=127.0.0.1`, inga spelarkonton och flaggan `lissabon-stream-lane`.

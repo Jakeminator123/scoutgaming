@@ -1,3 +1,4 @@
+import { fixtureDatabaseUrl } from '../../test/fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, createHmac } from 'node:crypto';
@@ -9,7 +10,7 @@ const publicOrigin = 'https://public.example.invalid', labOrigin = 'https://stud
 const config = nativeStudioAdminConfiguration({ CROUPIER_STUDIO_NATIVE_ADMIN:'1', CROUPIER_STUDIO_NEON_POLICY:'1',
   CROUPIER_PUBLIC_ORIGIN:publicOrigin, CROUPIER_LAB_UI_ORIGIN:labOrigin, CROUPIER_LAB_BASE_PATH:'/studio',
   CROUPIER_STUDIO_ENVIRONMENT_ID:'fixture', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-  CROUPIER_GAME_DATABASE_URL:'postgres://fixture:fixture@fixture.neon.tech/fixture?sslmode=require' });
+  CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture') });
 const scope = { environment:'fixture', workspaceId:'croupier' }, key = 'fixturepass';
 const model = { primary:'lab-provider/model-one', fallbacks:['lab-provider/model-two'] };
 const snapshot = { version:1, baseHash:'hmac-sha256:v1:fixture', gateway:{ connected:true, version:'2026.9.5', applied:true },

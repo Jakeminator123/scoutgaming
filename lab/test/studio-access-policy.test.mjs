@@ -1,11 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BACKOFFICE_SECTIONS } from '../lib/backoffice-navigation.mjs';
+import * as legacyPolicy from '../lib/studio-access-policy.mjs';
+import * as sharedPolicy from '../../packages/studio-access/studio-access-policy.mjs';
 import {
   STUDIO_ROLES, STUDIO_ADMIN_SECTIONS, STUDIO_ADMIN_ACTIONS, normalizeStudioRole, isStudioRole,
   studioRoleMeetsMinimum, studioAdminSectionPolicy, studioAdminActionPolicy,
   meetsStudioAdminSectionRole, meetsStudioAdminActionRole,
 } from '../lib/studio-access-policy.mjs';
+
+test('legacy policy imports retain the shared functions and immutable catalogs', () => {
+  assert.deepEqual(Object.keys(legacyPolicy), Object.keys(sharedPolicy));
+  for (const name of Object.keys(sharedPolicy)) assert.equal(legacyPolicy[name], sharedPolicy[name]);
+});
 
 test('administrator is the only Studio role and owns every existing section/action', () => {
   assert.deepEqual(STUDIO_ROLES, ['admin']);

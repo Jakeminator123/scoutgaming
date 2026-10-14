@@ -1,9 +1,42 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import {handValue} from '../web/public/blackjack.mjs';
 import { sideBetWin, roundWin } from '../web/public/blackjack-feedback.mjs';
 
 const hand = overrides => ({ stake: 10, result: 20, pp: 0, tp: 0, sideReturn: 0,
   insured: 0, splitFrom: null, cards: [{ r: '10' }, { r: '9' }], ...overrides });
+
+// Execute the application's actual settlement announcement boundary; a correct
+// profit helper alone must not leave audio and dealer speech using anyWin.
+const app = readFileSync(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
+const announcementStart = app.indexOf('  const dealerTotal = handValue(round.dealer).total;', app.indexOf("  syncBalance('settle');"));
+const announcementEnd = app.indexOf('  await Promise.all([sleep(1800), speechQueue.idle]);', announcementStart);
+assert.ok(announcementStart >= 0 && announcementEnd > announcementStart, 'settlement announcement boundary exists');
+function announce(hands, dealer = [{r:'10'}, {r:'8'}]) {
+  const speech = [], sounds = [], flashes = [];
+  const net = h => h.result + h.sideReturn - h.stake - h.pp - h.tp - (h.insured ?? 0);
+  runInNewContext(app.slice(announcementStart, announcementEnd), {
+    live: hands, round: {dealer}, handValue, win: roundWin(hands),
+    anyWin: hands.some(h => net(h) > 0), anyPush: hands.some(h => net(h) === 0), anyLose: hands.some(h => net(h) < 0),
+    anyPlayerBJ: hands.some(h => h.splitFrom === null && h.cards.length === 2 && handValue(h.cards).total === 21),
+    voice: {say: line => speech.push(line)}, sfx: {play: sound => sounds.push(sound)}, bjFlash: value => flashes.push(value),
+  });
+  return {speech, sounds, flashes};
+}
+
+test('actual settlement audio and speech never celebrate a net-losing multi-box or side-bet round', () => {
+  const before = [hand({cards:[{r:'A'},{r:'K'}],result:25}), hand({stake:100,result:0})];
+  const snapshot = structuredClone(before);
+  for (const hands of [before, [hand({pp:20})], [hand(), hand({result:0,insured:5})]]) {
+    for (const dealer of [[{r:'10'},{r:'8'}], [{r:'10'},{r:'8'},{r:'5'}]])
+      assert.deepEqual(announce(hands,dealer), {speech:['lose'], sounds:[], flashes:[]});
+  }
+  assert.deepEqual(before, snapshot, 'announcements never change the server settlement');
+  assert.deepEqual(announce([hand({cards:[{r:'A'},{r:'K'}],result:25})]),
+    {speech:['blackjack'], sounds:['bigwin'], flashes:['BLACKJACK']});
+});
 
 test('a returned stake, a loss, and mixed boxes with no net profit do not celebrate', () => {
   assert.equal(roundWin([hand({ result: 10 })]), null);

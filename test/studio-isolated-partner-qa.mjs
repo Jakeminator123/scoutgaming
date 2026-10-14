@@ -69,6 +69,8 @@ test('isolated SQL evidence binds the actual draft suite imports and immutable m
   const root = new URL('../', import.meta.url), suite = new URL('./partner-branding-postgres.mjs', import.meta.url);
   const fixture = new URL('../lab/test/fixtures/cloud-presentation.mjs', import.meta.url);
   const required = ['ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs',
+    'packages/studio-access/studio-native-auth.mjs', 'packages/studio-access/studio-access-policy.mjs',
+    'packages/studio-access/studio-scope.mjs', 'web/account-role.mjs',
     'web/storage/partner-branding.mjs', 'lab/lib/partner-branding-api.mjs', 'lab/test/fixtures/cloud-presentation.mjs'];
   for (const entry of [suite,fixture]) {
     const source = await readFile(entry,'utf8');

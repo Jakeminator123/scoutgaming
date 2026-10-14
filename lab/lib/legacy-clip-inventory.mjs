@@ -5,13 +5,14 @@ import { fileURLToPath } from 'node:url';
 import { LEGACY_DEALERS, LEGACY_ENGINE_PARTS, resolveLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { validateContactTake, validateContinuation } from '../../web/public/performance-contact.mjs';
 import { resolveMediaAbsolutePath } from '../../tools/media-layout.mjs';
+import { isActiveDealerId } from '../../web/public/dealer-identity.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 
 // Keep path arithmetic outside new URL(..., import.meta.url): Next's bundler
 // otherwise interprets the directory as an asset dependency to resolve.
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const BASES = { vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' };
-const indexedRegister = /(?:^|[\\/])(?:dealer|dealers[\\/](?:astrid|amira|mei))[\\/](?:streams[\\/]index\.json|audio[\\/]en[\\/]bank\.json|performance[\\/]manifest\.json)$/;
+const BASES = { vera: 'dealer', astrid: 'dealers/astrid', mei: 'dealers/mei' };
+const indexedRegister = /(?:^|[\\/])(?:dealer|dealers[\\/](?:astrid|mei))[\\/](?:streams[\\/]index\.json|audio[\\/]en[\\/]bank\.json|performance[\\/]manifest\.json)$/;
 const readLocalJson = async path => { try { return JSON.parse(await readFile(resolveMediaAbsolutePath(path), 'utf8')); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
 // Only the retired indexed registers may be absent from the catalog; a missing
 // catalog or any other unreadable entry still fails the whole inventory.
@@ -59,7 +60,7 @@ export async function loadLegacyClipInventory({ repository = repositoryRoot, pub
     }
   }
   const nativeSpeech = await readJson(join(publicRoot, 'speech-media.json')) ?? {};
-  for (const dealerId of LEGACY_DEALERS) {
+  for (const dealerId of LEGACY_DEALERS.filter(isActiveDealerId)) {
     const base = BASES[dealerId];
     const [index, bank, performance] = await Promise.all([readJson(join(publicRoot, base, 'streams/index.json')), readJson(join(publicRoot, base, 'audio/en/bank.json')), readJson(join(publicRoot, base, 'performance/manifest.json'))]);
     for (const [engineKey, value] of Object.entries(index?.clips ?? {})) {
@@ -83,7 +84,7 @@ export async function loadLegacyClipInventory({ repository = repositoryRoot, pub
         exactParts: [], lineId, text: take.text ?? null, available: await available(take.src), previewSrc: await available(take.src) ? `/${take.src}` : null,
         route: `/?dealer=${dealerId}`, reviewStatus: take.review?.result ?? 'registrerat exakt talpar; ingen ny granskning', actualPlayback: false });
     }
-    if (['astrid', 'amira'].includes(dealerId)) {
+    if (dealerId === 'astrid') {
       const source = `review/${dealerId}-green-speak/speak.json`;
       const green = await readJson(join(publicRoot, source));
       for (const [lineId, take] of Object.entries(green?.lines ?? {})) {

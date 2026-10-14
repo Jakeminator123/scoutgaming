@@ -41,12 +41,15 @@ export const HEAD_SELECTION_ENTRIES = Object.freeze([
 ]);
 export const ARCHIVE_PATHS = Object.freeze([
   'packages/presentation/runtime',
+  'packages/studio-access/studio-scope.mjs',
   'lab/lib',
   'lab/policies',
   'lab/schemas',
   'open-claw/lab',
   'pipeline',
   'tools/media-layout.mjs',
+  'tools/retention-archive.mjs',
+  'tools/retention-policy.json',
   'web/dealer-identity.mjs',
   'web/layer-asset-contract.mjs',
   'web/managed-media-contract.mjs',
@@ -56,11 +59,17 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/public/background-materials.mjs',
   'web/public/material-catalog.mjs',
   'web/public/card-presentation/calibration.mjs',
+  'web/public/card-view.mjs',
   'web/public/composition-settings.mjs',
   'web/public/dealer-compositing.mjs',
   'web/public/dealer-framing.mjs',
+  'web/public/roulette-idle-contract.mjs',
+  'web/public/roulette-start-contract.mjs',
   'web/public/dealer-identity.mjs',
   'web/public/dealer-speech-profile.mjs',
+  'web/public/recorded-speech.mjs',
+  'web/public/speech-slot-bindings.mjs',
+  'web/public/speech-lines.mjs',
   'web/public/game-lanes.mjs',
   'web/public/game-overlay-layout.mjs',
   'web/public/presentation-composition.mjs',
@@ -293,7 +302,11 @@ async function writeFixtures(jobs, worktree) {
 async function materializeHead() {
   const dir = await mkdtemp(join(tmpdir(), 'astrid-select-head-'));
   const archive = join(dir, 'head.tar');
-  await execFileAsync('git', ['archive', '--format=tar', 'HEAD', '-o', archive, ...ARCHIVE_PATHS], { cwd: repoRoot });
+  // A newly added worktree module may not exist in the older HEAD being compared.
+  const {stdout}=await execFileAsync('git',['ls-tree','-r','--name-only','HEAD','--',...ARCHIVE_PATHS],{cwd:repoRoot});
+  const tracked=stdout.trim().split(/\r?\n/);
+  const paths=ARCHIVE_PATHS.filter(path=>tracked.some(file=>file===path||file.startsWith(path+'/')));
+  await execFileAsync('git', ['archive', '--format=tar', 'HEAD', '-o', archive, ...paths], { cwd: repoRoot });
   await execFileAsync('tar', ['-xf', archive, '-C', dir]);
   const packageUrl = pathToFileURL(join(repoRoot, 'lab', 'lib', 'project-store.mjs')).href;
   const entryPath = join(dir, 'register-hooks.mjs');

@@ -1,6 +1,7 @@
 import {dealerMediaEvents,rouletteMediaEvent,rouletteMediaDefaults} from './roulette-media.mjs';
 import {kindForEvent,situationsForEvent,validateVideoMetadata} from './video-intake.mjs';
 import {clipSituationLabel} from './clip-label.mjs';
+import {speechSlotStandard,speechSlotVideoFits} from '../../web/public/speech-slot-bindings.mjs';
 import contract from '../policies/studio-contract.json' with {type:'json'};
 const blackjackEventIds=new Set(contract.events.map(event=>event.id));
 export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'roulette',label:'Roulette'},{id:'idle',label:'Idle / Grundloop'},{id:'transition',label:'Övergångar'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
@@ -46,6 +47,9 @@ export function mediaUsage(project,video,dealerId){
   const idle=project.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy;
   if(idle?.base?.some(row=>row.videoId===video.id))return 'Grundloop';
   if(idle?.variants?.some(row=>row.videoId===video.id))return 'Variation';
+  for(const slot of dealerMediaSlots(project,'speech')){
+    if(speechSlotStandard(project,dealerId,slot.eventId,slot.situation)?.videoGenerationId===video.id&&mediaMatchesSlot(video,slot))return 'Standard för '+slot.label+' i utkastet';
+  }
   for(const line of project.lines.filter(row=>row.dealerId===dealerId)){
     const variant=line.variants.find(row=>row.videoGenerationId===video.id);
     if(variant)return variant.id===line.baselineVariantId?'Standard i utkastet':'Variant i utkastet';
@@ -67,6 +71,16 @@ export function dealerSlotStatus(project,inventory,dealerId,slot){
     const chosen=ids.length>0&&ids.every(id=>usable.some(row=>row.id===id));
     if(chosen)return {level:'ready',label:'Grundloop vald',count};
     return {level:'required',label:count?'Krävs · välj grundloop':'Krävs · grundloop saknas',count};
+  }
+  if(slot.category==='speech'){
+    const selection={dealerId,eventId:slot.eventId,situation:slot.situation,requireRecordedSpeech:slot.eventId==='speak.other'};
+    const choices=files.filter(video=>speechSlotVideoFits(video,selection));
+    const selected=speechSlotStandard(project,dealerId,slot.eventId,slot.situation);
+    const chosen=selected&&choices.some(video=>video.id===selected.videoGenerationId);
+    const line=slot.eventId==='speak.other'&&project.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
+    const olderId=line&&line.variants.find(row=>row.id===line.baselineVariantId)?.videoGenerationId;
+    if(!selected&&olderId&&files.some(video=>video.id===olderId&&speechSlotVideoFits(video,{...selection,requireRecordedSpeech:false})))return {level:'ready',label:'Äldre standard i utkastet',count:choices.length};
+    return {level:chosen?'ready':selected?'recommended':'optional',label:chosen?'Standard vald i utkastet':selected?'Valt standardklipp saknas':choices.length?choices.length+' klipp · välj standard':'Valfritt · talfilm saknas',count:choices.length};
   }
   if(slot.category==='transition'){
     if(!count)return {level:'recommended',label:'Rekommenderas · klipp saknas',count};

@@ -2,34 +2,46 @@ import { createRoot } from 'react-dom/client';
 import { useCallback, useEffect, useState } from 'react';
 import { StudioSidebar } from './components/studio/studio-sidebar';
 import Link, { navigate, previewHref, usePathname, useSearchParams } from '../runtime/navigation';
-import {isStudioAdminRoute} from '../runtime/admin-routing.mjs';
+import {isStudioAdminRoute,adminToolName} from '../runtime/admin-routing.mjs';
 import { RegisteredStudio } from './components/studio/registered-studio';
 import { ConnectedClipMap } from './components/studio/connected-clip-map';
 import { ConnectedServices } from './components/studio/connected-services';
-import { SystemOverview } from './components/studio/system-overview';
 import { RegisteredMaterialLibrary } from './components/studio/registered-material-library';
 import Clips from './app/control/(studio)/clips/page';
 import { AdminHome } from './components/studio/admin-home';
+import { DealerDirectory } from './components/studio/dealer-directory';
+import { ResourceConnections } from './components/studio/resource-connections';
+import { ResourceDeletion } from './components/studio/resource-deletion';
+import {WorkspaceTool,WorkspaceToolsHome} from './components/studio/workspace-tools';
+import {ADMIN_WORKSPACE_TOOLS} from '../../../lab/lib/admin-workspace-routes.mjs';
 
 // Native readers and mutations keep their existing session, scopes and revisions.
 const servicePaths = new Set(['/admin/drift','/admin/ekonomi','/admin/admin/accounts','/admin/admin/players','/admin/admin/payments','/admin/admin/api','/admin/admin/log','/admin/ai/models']);
 
 const pages: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(ADMIN_WORKSPACE_TOOLS).map(([key,label])=>['/admin/'+key,label])),
   '/admin': 'Översikt',
-  '/admin/structure': 'Struktur',
+  '/admin/structure': 'Kopplingar',
+  '/admin/deletion': 'Radering',
+  '/admin/dealers': 'Dealers',
+  '/admin/tools': 'Verktyg',
   '/admin/clips': 'Klippkarta',
   '/admin/rooms': 'Spelrum',
   '/admin/assets': 'Bord & bakgrunder',
   '/admin/drift': 'Drift', '/admin/ekonomi': 'Ekonomi', '/admin/admin/accounts': 'Konton & åtkomst',
   '/admin/admin/operators': 'Spelbolag', '/admin/admin/players': 'Spelare', '/admin/admin/payments': 'Betalningar',
-  '/admin/admin/api': 'API', '/admin/admin/log': 'Ändringslogg', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Adminroboten',
+  '/admin/admin/api': 'Integrationer', '/admin/admin/log': 'Ändringslogg', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Adminroboten',
 };
 function App() {
   const path = usePathname();
   const search=useSearchParams().toString();
   const studio=isStudioAdminRoute(path,search);
+  const workspaceTool=adminToolName(path);
   const [studioDirty,setStudioDirty]=useState(false),[studioRefresh,setStudioRefresh]=useState(0);
   const [studioRevision,setStudioRevision]=useState('');
+  const [importBusy,setImportBusy]=useState(false);
+  const [dealersVisited,setDealersVisited]=useState(path==='/admin/dealers');
+  useEffect(()=>{if(path==='/admin/dealers')setDealersVisited(true);},[path]);
   const materialChanged=useCallback(()=>setStudioRefresh(value=>value+1),[]);
   const [studioVisited,setStudioVisited]=useState(studio);
   useEffect(()=>{if(studio)setStudioVisited(true);},[studio]);
@@ -45,16 +57,20 @@ function App() {
     if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
-      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Studio':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin/clips" aria-current="page"><b>1</b> Studio</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/play"><b>3</b> Spelarvy</a></nav></header>
+      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Klippkarta':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
       <label className="preview-mobile-nav">Sida <select value={studio ? '/admin/clips' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      <Clips active={studio} chatActive={path==='/admin/ai/chat'}>{studioVisited&&<ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
+      <Clips active={studio} dealersActive={path==='/admin/dealers'} onImportBusyChange={setImportBusy} chatActive={path==='/admin/ai/chat'} registrationBlocked={studioDirty} onRegistered={materialChanged}>{studioVisited&&<ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
+      {dealersVisited&&<div hidden={path!=='/admin/dealers'||new URLSearchParams(search).get('tool')==='import'}><DealerDirectory active={path==='/admin/dealers'&&new URLSearchParams(search).get('tool')!=='import'} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
       {libraryVisited&&<div hidden={path!=='/admin/assets'}><RegisteredMaterialLibrary disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
       {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
       {path==='/admin'&&!studio&&<AdminHome />}
-      {!studio && path!=='/admin' && path!=='/admin/ai/chat' && path!=='/admin/assets' && !servicePaths.has(path) && (path==='/admin/structure' ? <SystemOverview /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty} onChanged={materialChanged}/>)}
+      {path==='/admin/tools'&&<WorkspaceToolsHome/>}
+      {path==='/admin/deletion'&&<ResourceDeletion/>}
+      {workspaceTool&&<WorkspaceTool section={workspaceTool}/>}
+      {!workspaceTool&&!studio && path!=='/admin/deletion' && path!=='/admin/tools' && path!=='/admin' && path!=='/admin/dealers' && path!=='/admin/ai/chat' && path!=='/admin/assets' && !servicePaths.has(path) && (path==='/admin/structure' ? <ResourceConnections /> : <RegisteredStudio path={path} title={pages[path] ?? 'Struktur'} disabled={studioDirty||importBusy} onChanged={materialChanged}/>)}
     </main>
   </div>;
 }

@@ -233,6 +233,19 @@ test('new-upload registration is idempotent, classification is CAS, and referenc
   assert.equal(typeof repo.deleteMedia, 'undefined');
 });
 
+test('a stale upload or classification cannot restore media ownership to an unregistered dealer', async () => {
+  const repo = repository(createStudioMemoryPool());
+  const id = '00000000-0000-4000-8000-000000000099', sha256 = 'a'.repeat(64);
+  const record = { id, sha256, size: 100, contentType: 'video/mp4', pathname: `croupier/media/dealers/astrid/review/uploads/${id}/${sha256}.mp4`,
+    classification: { dealerId: 'astrid', eventId: 'speak.goodluck', kind: 'speech', role: 'alternative', situation: 'goodluck', label: 'New', notes: '', playback: 'once' } };
+  const registered = await repo.registerMedia(record, { actor: 'tester' });
+  await repo.initializeDocument('project', { value: createEmptyProject(), actor: 'tester' });
+  await assert.rejects(repo.registerMedia(record, { actor: 'tester' }), rejection('studio_dealer_inactive'));
+  await assert.rejects(repo.classifyMedia(id, { sha256, expectedRevision: registered.media.revision, metadata: record.classification, actor: 'tester' }), rejection('studio_dealer_inactive'));
+    await assert.rejects(repo.classifyMedia(id, { sha256, expectedRevision: registered.media.revision, metadata: { ...record.classification, archived: true }, actor: 'tester' }), rejection('studio_dealer_inactive'));
+  assert.deepEqual(await repo.getMedia(id), registered.media);
+});
+
 test('native media listing is scope-bound, complete, validated and never seeds or silently truncates', async () => {
   const pool = createStudioMemoryPool(), repo = repository(pool);
   const other = createStudioRepository({ pool, scope: { ...scope, workspaceId: 'other' } });

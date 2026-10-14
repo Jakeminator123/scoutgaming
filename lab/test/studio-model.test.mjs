@@ -7,7 +7,7 @@ import {
   validateProject, buildRuntimeCatalog, addVariant, removeVariant,
   removeTrigger, renameEvent, renameLine, DEALER_IDS, SOURCE_TYPES, allowedPathDescriptors,
   StudioValidationError, isAssetCompatible, createSeedProject as createStudioSeed,
-  normalizeProject, defaultPresentationLane, createEmptyProject, addDealer
+  normalizeProject, defaultPresentationLane, createEmptyProject, addDealer, maxVariantsForEvent
 } from '../lib/studio-model.mjs';
 import { PROBE_MODELS } from '../lib/probe-policy.mjs';
 import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
@@ -38,7 +38,12 @@ test('seed clones are isolated and JSON round-trips', () => {
 
 test('JSON schema agrees with model variant limits and allowed predicate fields/values', () => {
   assert.equal(schema.$defs.line.properties.variants.minItems, 1);
-  assert.equal(schema.$defs.line.properties.variants.maxItems, 5);
+  assert.equal(schema.$defs.line.properties.variants.maxItems, 19);
+  const variantLimits = schema.$defs.line.allOf[0];
+  assert.equal(variantLimits.then.properties.variants.maxItems, 16);
+  assert.equal(variantLimits.else.then.properties.variants.maxItems, 19);
+  assert.equal(variantLimits.else.else.properties.variants.maxItems, 5);
+  for (const event of seedDocument.events) assert.equal(maxVariantsForEvent(event.id), variantLimits.if.properties.eventId.enum.includes(event.id) ? 16 : event.id === variantLimits.else.if.properties.eventId.const ? 19 : 5);
   assert.equal(schema.$defs.variant.properties.triggerIds.maxItems, 16);
   assert.equal(schema.properties.triggers.maxItems, 128);
   assert.equal(schema.properties.lines.minItems, 0);
@@ -159,6 +164,27 @@ test('alternatives can be added and removed, at most four plus permanent baselin
   assert.equal(p.lines[0].variants.length, 4);
   assert.equal(p.lines[0].baselineVariantId, line.baselineVariantId);
   assert.ok(!p.lines[0].variants.some(v => v.id === removedId));
+});
+
+test('only blackjack dealing rows accept sixteen explicit variants and never drop saved bindings', () => {
+  const original = addDealer(createStudioSeed(), 'dragan', 'Dragan');
+  for (const eventId of ['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']) {
+    let project = structuredClone(original);
+    for (let count = 1; count < 16; count++) project = addVariant(project, 'dragan', eventId);
+    const line = project.lines.find(row => row.dealerId === 'dragan' && row.eventId === eventId);
+    line.variants.forEach((variant, index) => { variant.videoGenerationId = `fixture-${eventId}-${index}`; });
+    const roundtrip = normalizeProject(JSON.parse(JSON.stringify(project)));
+    assert.deepEqual(roundtrip.lines.find(row => row.dealerId === 'dragan' && row.eventId === eventId), line);
+    assert.throws(() => addVariant(project, 'dragan', eventId), /högst 15/);
+    line.variants.push({...line.variants[15], id:`dragan.${eventId}.overflow`});
+    assert.throws(() => validateProject(project), /1–16/);
+  }
+  for (const eventId of ['speak.goodluck','reveal.dealer','idle.ready','transition.shoe','roulette.deal']) assert.equal(maxVariantsForEvent(eventId), 5);
+  for (const eventId of ['speak.goodluck','reveal.dealer','idle.ready','transition.shoe']) {
+    let project = structuredClone(original);
+    for (let count = 1; count < 5; count++) project = addVariant(project, 'dragan', eventId);
+    assert.throws(() => addVariant(project, 'dragan', eventId), /högst fyra/);
+  }
 });
 
 test('referenced triggers cannot be removed until explicitly detached from every dealer', () => {

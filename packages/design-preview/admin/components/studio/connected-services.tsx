@@ -7,9 +7,10 @@ const groups: Record<string,string> = {
   '/admin/drift':'operations',
   '/admin/admin/accounts':'accounts', '/admin/admin/players':'accounts',
   '/admin/admin/payments':'finance', '/admin/admin/api':'partners',
+  '/admin/media-review':'media-review',
 };
 
-function Administration({group}:{group:string}) {
+function Administration({group,dealerId}:{group:string;dealerId?:string}) {
   const [actions,setActions]=useState<string[]|null>(null);
   const [gameOrigin,setGameOrigin]=useState<string>();
   const [error,setError]=useState('');
@@ -29,12 +30,12 @@ function Administration({group}:{group:string}) {
     })();
     return()=>controller.abort();
   },[refresh]);
-  return <section className="p-5">{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:<NativeAdministration key={group} embedded apiBase="/studio/api/admin" availableActions={actions} gameOrigin={gameOrigin} initialGroup={group}/>}</section>;
+  return <section className="p-5">{error?<div role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setRefresh(value=>value+1)}>Försök igen</button></div>:actions===null?<p role="status">Läser session och anslutna funktioner…</p>:<NativeAdministration key={group} embedded apiBase="/studio/api/admin" availableActions={actions} gameOrigin={gameOrigin} initialGroup={group} initialDealerId={dealerId}/>}</section>;
 }
 
-export function ConnectedServices({path}:{path:string}) {
+export function ConnectedServices({path,dealerId}:{path:string;dealerId?:string}) {
   if(path==='/admin/ekonomi')return <ConnectedEconomy/>;
-  if(path==='/admin/ai/models')return <div className="p-5"><p className="studio-detail-panel p-4 text-sm">Gatewayinställningarna nedan gäller OpenClaw. <a href="/admin/ai/chat" className="text-sg-lime underline">Adminroboten</a> använder Sol 6.1 High för intern administration och OpenClaw. Scoutguiden använder Luna 6. Klippassistenten har separat importgranskning med Sol 6.1 High. Modellnamnen är begärda val; tillgänglighet verifieras först vid ett lyckat anrop.</p><OpenClawWorkspace navigation={{models:'/admin/ai/models',chat:'/admin/ai/chat',studio:'/admin/clips'}}/></div>;
-  if(groups[path])return <Administration group={groups[path]}/>;
+  if(path==='/admin/ai/models')return <div className="p-5"><p className="studio-detail-panel p-4 text-sm">Inställningar för dealerns agent. <a href="/admin/ai/chat" className="text-sg-lime underline">Öppna Adminroboten</a> för hjälp med administration.</p><OpenClawWorkspace navigation={{models:'/admin/ai/models',chat:'/admin/dealer-agent',studio:'/admin/clips'}}/></div>;
+  if(groups[path])return <Administration group={groups[path]} dealerId={dealerId}/>;
   return <section className="studio-detail-panel p-5"><h1>Ändringslogg</h1><p>Den gemensamma ändringsloggen har ännu inget anslutet läs-API. Bolagets beständiga ändringsjournal finns i Bolag & team.</p></section>;
 }

@@ -8,7 +8,7 @@ const SAVED_GAME_LANES=[{schemaVersion:1,id:'mobile-phone',label:'Saved Vera roo
 const scope = { environment: 'fixture', workspaceId: 'croupier' };
 const voiceIdentity = { audioSha256: 'a'.repeat(64), videoSha256: 'b'.repeat(64), previewSha256: 'c'.repeat(64),
   textSha256: 'd'.repeat(64), indexSha256: 'e'.repeat(64), audioDelayMs: 42 };
-function fixture() {
+function fixture(options = {}) {
   const state = { document: { revision: 'studio-original', value: { gameLane:'mobile-phone',gameLanes:structuredClone(SAVED_GAME_LANES),rooms: [{ id: 'one', state: 'preview' }], tiers: { classic: 'vera' }, tournaments: [] } }, writes: [], reads: [], rows: [] };
   state.voices = { dealers: ['vera','astrid','amira','mei'].map(dealer => ({ dealer, name: dealer,
     lines: [{ key: 'goodluck', text: 'Exact registered text', identity: structuredClone(voiceIdentity), reviewable: true }] })) };
@@ -27,7 +27,7 @@ function fixture() {
     if (state.document.revision !== options.expectedRevision) throw Object.assign(Error('Conflict'), { statusCode: 409 });
     state.document = { revision: 'studio-new', value: options.value }; return state.document;
   } };
-  const data = createStudioAdminData({ db, boDb: db, repository, scope, voiceLines: async () => structuredClone(state.voices), now: () => '2026-10-03T00:00:00.000Z' });
+  const data = createStudioAdminData({ db, boDb: db, repository, scope, voiceLines: async () => structuredClone(state.voices), now: () => '2026-10-03T00:00:00.000Z', ...options });
   const context = body => ({ body, actor: { user: 'operator', role: 'superadmin' }, scope });
   const call = (method, action, body) => data.handlers.get(`${method} /studio/api/admin/${action}`)(context(body));
   return { state, data, call, context };
@@ -235,4 +235,21 @@ test('empty and custom saved registries require no built-in dealers or game lane
     assert.deepEqual(result.savedDealers,project.dealers.map(({id,label})=>({id,label})));
     assert.deepEqual(result.gameLanes,[]);assert.equal(result.gameLane,null);assert.deepEqual(f.state.writes,[]);
   }
+});
+
+test('registered dealers control voice inventory and permit exact review of a new dealer',async()=>{
+ const f=fixture();f.state.project={dealers:[{id:'dragan',label:'Dragan'}]};
+ f.state.voices.dealers.push({...structuredClone(f.state.voices.dealers[1]),dealer:'dragan',name:'Dragan'});
+ const out=await f.call('GET','voicelines');assert.deepEqual(out.dealers.map(row=>row.dealer),['dragan']);
+ await f.call('POST','voiceline-review',{dealer:'dragan',line:'goodluck',verdict:'approved',expectedIdentity:voiceIdentity,expectedRevision:'studio-original'});
+ assert.equal(f.state.document.value.voiceReview.dragan.goodluck.verdict,'approved');
+ await assert.rejects(f.call('POST','voiceline-review',{dealer:'astrid',line:'goodluck',verdict:'approved',expectedIdentity:voiceIdentity,expectedRevision:'studio-new'}));
+ f.state.project=null;await assert.rejects(f.call('GET','voicelines'),e=>e.statusCode===503);
+});
+test('tier and new lane assignments reject removed identities and accept a saved playable Dragan',async()=>{
+ const f=fixture({canAssignDealer:async id=>id==='dragan'});f.state.project={dealers:[{id:'dragan',label:'Dragan'}]};
+ await assert.rejects(f.call('POST','game-lanes/create',{definition:{...SAVED_GAME_LANES[0],id:'removed',dealer:'unregistered',mediaCollection:'unregistered-presentation'},expectedRevision:'studio-original'}));
+ await f.call('POST','tier',{tier:'classic',dealer:'dragan',expectedRevision:'studio-original'});assert.equal(f.state.document.value.tiers.classic,'dragan');
+ f.state.project={dealers:[]};await assert.rejects(f.call('POST','tier',{tier:'classic',dealer:'dragan',expectedRevision:'studio-new'}));
+ assert.equal(f.state.writes.length,1);
 });

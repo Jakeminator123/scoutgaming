@@ -9,18 +9,20 @@ export const SPEECH_SESSION_POLICY = Object.freeze({
   admissionWindowMs: 180000,
   // Includes the bounded session, drain and shutdown allowance. Reserve the
   // full configured cost on both days when this window crosses UTC midnight.
-  reservationWindowMs: 720000, dailyMicroUsd: 10000000,
+  reservationWindowMs: 720000, dailyMicroUsd: 20000000, reserveMicroUsd: 10000000,
 });
 const terminal = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT']);
 const jobIdPattern = /^[A-Za-z0-9_-]{1,128}$/;
 const token = value => typeof value === 'string' && value.length > 0 && value.length <= 2048 && !/\s/.test(value);
 const fail = (code, statusCode = 503) => { throw Object.assign(new Error(code), { code, statusCode }); };
-export function sessionReserveMicroUsd(value) {
+function parseMicroUsd(value, maximum) {
   if (typeof value !== 'string' || !/^(?:0|[1-9]\d?)(?:\.\d{1,6})?$/.test(value)) return null;
   const [whole, fraction = ''] = value.split('.');
   const amount = Number(whole) * 1000000 + Number(fraction.padEnd(6, '0'));
-  return amount > 0 && amount <= SPEECH_SESSION_POLICY.dailyMicroUsd ? amount : null;
+  return amount > 0 && amount <= maximum ? amount : null;
 }
+export const sessionReserveMicroUsd = value => parseMicroUsd(value, SPEECH_SESSION_POLICY.reserveMicroUsd);
+export const dailyBudgetMicroUsd = value => parseMicroUsd(value, SPEECH_SESSION_POLICY.dailyMicroUsd);
 const utcDay = milliseconds => new Date(milliseconds).toISOString().slice(0, 10);
 
 /** Starts nothing at construction/startup. One verified conversation request
@@ -31,13 +33,15 @@ const utcDay = milliseconds => new Date(milliseconds).toISOString().slice(0, 10)
 export function createSpeechSessionManager(configuration, {
   workerState, stopWorker = () => {}, fetchImpl = fetch, now = Date.now,
   sleep = (ms, signal) => pause(ms, undefined, { signal }),
-  readyTimeoutMs = 90000, pollMs = 500, idleTimeoutMs = 60000,
+  // A cold worker also prepares the selected avatar. Use the existing
+  // admission window; playback and provider execution limits stay separate.
+  readyTimeoutMs = SPEECH_SESSION_POLICY.admissionWindowMs, pollMs = 500, idleTimeoutMs = 60000,
   journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1', leaseManager,
 } = {}) {
   if (journalRequired || journal) requireSpeechJournal(journal);
   const { directory, apiKey, endpointId, workerSecret, origin, reserveUsd, dailyBudgetUsd } = configuration ?? {};
   const reserveMicroUsd = sessionReserveMicroUsd(reserveUsd);
-  const dailyBudgetMicroUsd = sessionReserveMicroUsd(dailyBudgetUsd);
+  const dailyBudgetMicroUsd = parseMicroUsd(dailyBudgetUsd, SPEECH_SESSION_POLICY.dailyMicroUsd);
   let url;
   try { url = new URL(origin); } catch {}
   if ((!journal && !isAbsolute(directory ?? '')) || !token(apiKey) || !jobIdPattern.test(endpointId ?? '')
@@ -166,7 +170,7 @@ export function createSpeechSessionManager(configuration, {
       const receipt = await optional(`${prefix(job.id)}.terminal.json`);
       const status = terminal.has(receipt?.status) ? receipt.status : await inspect(job, signal);
       if (terminal.has(status) && !workerState(job.workerId).workers) return;
-      if (now() - started >= readyTimeoutMs) fail('generated_speech_session_stop_timeout', 504);
+      if (now() - started >= Math.min(readyTimeoutMs, 90000)) fail('generated_speech_session_stop_timeout', 504);
       await sleep(pollMs, signal);
     }
   }
@@ -189,7 +193,7 @@ export function createSpeechSessionManager(configuration, {
       if (value.id !== match[1] || value.endpointId !== endpointId || !Number.isSafeInteger(value.reservedMicroUsd)
         || value.workerId !== `croupier-${match[1]}`
         || !Number.isSafeInteger(value.createdAt) || value.createdAt < 0
-        || value.reservedMicroUsd < 1 || value.reservedMicroUsd > SPEECH_SESSION_POLICY.dailyMicroUsd
+        || value.reservedMicroUsd < 1 || value.reservedMicroUsd > SPEECH_SESSION_POLICY.reserveMicroUsd
         || !Array.isArray(value.days) || !value.days.length || value.days.length > 2
         || value.days.some(day => !/^\d{4}-\d{2}-\d{2}$/.test(day))) fail('generated_speech_session_ledger_invalid');
       all.push({ ...value, done: await optional(`${prefix(value.id)}.terminal.json`),

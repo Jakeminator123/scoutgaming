@@ -1,4 +1,5 @@
 import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-entry-contract.mjs';
+import {adminDocumentHref} from '../../../lab/lib/admin-workspace-routes.mjs';
 import { requestedOperator } from '../../../web/game-entry-operator.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../lab/lib/workspace-surfaces.mjs';
 import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from './platform-configuration.mjs';
@@ -36,7 +37,7 @@ const PLAYER = new Set(['/api/operator/appearance','/api/player', '/api/profile'
 const BACKOFFICE = new Set(['/api/bo/config', '/api/bo/game-login', '/api/bo/lab-login', '/api/bo/speech-qa']);
 // Public, unlisted roulette diagnostics; exact files only, no game/server source.
 const ROULETTE_PREVIEW = new Set(['/roulette-test', '/roulette-test/', '/roulette-test/app.mjs', '/roulette-test/style.css', '/api/roulette-test/spin']);
-const ROULETTE_ROOM = new Set(['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-rules.mjs','/api/roulette/table']);
+const ROULETTE_ROOM = new Set(['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/wheel.mjs','/roulette/wheel-motion.mjs','/roulette/assets/roulette-bord.png','/published-scene.mjs','/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs','/roulette-rules.mjs','/api/roulette/table']);
 const PRESENTATION = new Set(['/api/presentation/config', '/api/presentation/select', '/api/presentation/idle-advice', '/api/presentation/legacy-config',
   '/api/presentation/native-p6-playback-context']);
 const LAB_API = /^\/studio\/api\/(?:project|videos|dealers|layer-assets|voice|inputs|chat|clip-controls|presentation|social|probe|simulate|zones|generated-speech)(?:\/|$)/;
@@ -87,7 +88,11 @@ export function blackjackLobbyDestination(url, config) {
   return typeof operator === 'string' ? '/play?'+new URLSearchParams({operator}).toString() : '/play';
 }
 
-export function platformRoute(url, config) {
+export function platformRoute(url, config, request) {
+  if(config.nativeStudio&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
+    const destination=adminDocumentHref(url.pathname+url.search);
+    if(destination!==url.pathname+url.search)return {kind:'redirect',destination:config.publicOrigin+destination};
+  }
   // Next encodes the literal catch-all folder in these two generated chunks.
   // Allow only their hashed JS assets; encoded document/API paths stay rejected.
   if (/^\/studio\/_next\/static\/chunks\/app\/(?:control|partner)\/%5B%5B\.\.\.path%5D%5D\/page-[0-9a-f]+\.js$/i.test(url.pathname)) {

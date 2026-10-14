@@ -1,0 +1,4 @@
+{
+  "projectHistory": { "maxEntries": 100, "maxBytes": 67108864, "keepNewest": 2 },
+  "observations": { "maxEntries": 20, "maxBytes": 134217728, "keepNewest": 2 }
+}

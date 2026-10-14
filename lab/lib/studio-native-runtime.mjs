@@ -7,7 +7,7 @@ import { createPostgresStore, validateGameConnection } from '../../web/storage/p
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
-import { createStudioNativeAuth } from './studio-native-auth.mjs';
+import { createStudioNativeAuth } from '../../packages/studio-access/studio-native-auth.mjs';
 import { createStudioAdminApi } from './studio-admin-api.mjs';
 import { createStudioAdminData } from './studio-admin-data.mjs';
 import { createStudioGamePolicy, studioGamePolicyConfiguration } from '../../web/storage/studio-game-policy.mjs';
@@ -91,8 +91,8 @@ export async function readAssistantDatabaseInventory(pool) {
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
   schemaCheck = async pool => {
     const plan = await planStudioMigrations({ pool, directory: resolve(schemaRoot(), 'neon-studio') });
-    // 008 (Dealer Forge) is deployment-optional: the runtime starts before and after it is applied.
-    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004,005,006,007,008') unavailable();
+    // Require the exact reviewed ledger including mandatory daily-budget evolution.
+    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004,005,006,007,008,011') unavailable();
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
   policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,
@@ -163,7 +163,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const rooms = createPresentationRoomApi({ repository, videoRegistry, scope: config.scope,
       // Verify the negotiated format before reporting readiness. This metadata
       // never substitutes for the saved dealer registry or frozen media record.
-      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
+      runtimeCapabilities: (presentation,game='blackjack') => repository.withMutationContext(async () => presentationCapabilitiesForVersion(presentation?.registeredDealers?.some(row=>row.rouletteStart||row.rouletteIdle)?15:game==='roulette'?9:presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2),
         [game==='roulette'?{kind:'administration',value:{rooms:[{schemaVersion:2,game:'roulette'}]}}:PRESENTATION_ROOM_MUTATION, ...(presentation ? [{ kind: 'presentation-package', value: presentation }] : [])]),
     });
     for (const service of [lanePackages, rooms]) {

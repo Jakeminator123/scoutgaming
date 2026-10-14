@@ -68,7 +68,8 @@ export function studioAuthEndpoint(method, pathname) {
 export function isPresentationRoomReadQuery(method, url) {
   if (method !== 'GET' || !['/studio/api/admin/presentation-room', '/api/admin/presentation-room'].includes(url.pathname)) return false;
   const keys = [...url.searchParams.keys()];
-  return keys.length === 2 && keys.includes('operatorId') && keys.includes('presentationLaneId')
+  return (keys.length === 2 || keys.length === 3 && keys.includes('game') && ['blackjack','roulette'].includes(url.searchParams.get('game')))
+    && keys.includes('operatorId') && keys.includes('presentationLaneId')
     && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(url.searchParams.get('operatorId'))
     && /^[a-z][a-z0-9-]{0,63}$/.test(url.searchParams.get('presentationLaneId'))
     && !['original', 'constructor', 'prototype'].includes(url.searchParams.get('presentationLaneId'));

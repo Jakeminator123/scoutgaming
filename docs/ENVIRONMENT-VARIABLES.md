@@ -1,5 +1,44 @@
 # Miljövariabler per tjänst
 
+## Emil-värden, 14 oktober 2026
+
+På Jakobs uttryckliga begäran är `CARTESIA_API_KEY`, `ELEVENLABS_API_KEY`,
+`GEMINI_API_KEY`, `RUNPOD_API_KEY` och `RUNPOD_ENDPOINT_ID` kopierade från
+den privata `.env.emil` till rotens ignorerade `.env.local`. Tre ersatta
+liknamniga rader är kommenterade; övriga värden är bevarade. Samma fem namn
+är sparade som Sensitive i projekt/team `scoutgaming`, endast Production/main.
+Det ersätter det tidigare dokumenterade förbudet mot Cartesia-/RunPod-nycklar
+i detta delade Vercelprojekt. Inga hemliga värden finns i registret eller Git.
+
+Värdena tas upp vid nästa produktionsdeployment. Vercel förmedlar taltransport,
+men Render äger providerjobb. Ingen Render-nyckel, pod, workerbild eller
+GitHub-hemlighet ändrades. Render har redan samma Cartesia-/ElevenLabs-värden. Befintlig RunPod-nyckel gav health 200 på aktiv endpoint; Emil-nyckeln gav 401 där och ersätter därför inte den fungerande Render-nyckeln. Workflows behöver inte dessa fem nycklar och GPU-jobbet
+får sitt ljud och tillfälliga anslutningsuppgifter från servern.
+
+Normal lokal Lab-start läser `.env`, `lab/.env.local` och
+`lab/.env.generated-speech.local`; rotens `.env.local` läses inte av den
+startvägen. `RUNPOD_ENDPOINT_ID` är inget alias till aktiva
+`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Det nykopierade legacy-ID:t svarade 404
+och har inte ersatt scoped endpoint. `GEMINI_API_KEY` har ingen aktiv konsument
+i main. Kopieringen innebär inte att Dragans genererade tal är aktiverat.
+
+## Databasadresser i tester
+
+Tester med injicerad minnespool eller schemafunktion använder
+`test/fixtures/database-url.mjs` för syntetiska PostgreSQL-adresser.
+Basadressen saknar användaruppgifter; ett slumpmässigt lösenord skapas bara
+vid testkörningen. Hjälparen läser inga miljöhemligheter, ansluter inte och
+skriver inte adressen till disk eller logg. Behåll injicerad databas även när
+testets värdnamn behöver sluta med `neon.tech` för att pröva valideringen.
+
+`test/test-credential-fixtures.mjs` körs i ordinarie full hook/CI och stoppar
+incheckade Neon-adresser med användare/lösenord i `test/` och `lab/test/`.
+Rapporten innehåller bara filsökväg, rad och felkod. Skyddet är avgränsat till
+återfallet från incident 38176586 och ersätter inte GitGuardian eller skyddar
+mot alla typer av falsklarm. Lägg inte till scannerundantag för att gömma en
+sådan fixture. Rättad kod stänger inte historiska incidenter automatiskt;
+bedöm deras ursprung separat och ändra status endast med rätt mandat.
+
 ## Dealerimportens begränsade rådgivare, 13 oktober 2026
 
 Klippassistenten använder en stateless modelladapter i importvyn under
@@ -128,7 +167,7 @@ aktiva. Render kör utan produktdisk och utan `CROUPIER_CLOUD_DATA_ROOT`;
 ersätter gamla diskvägar. Tre tal-/streamflaggor är ON i produktion, OFF i QA.
 QA:s disk, SDK, journaler och reservationer bevaras. Inga nya envnamn införs.
 
-Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
+Director/Gateway-konfiguration: se [OpenClaws källindex](AI/openclaw/README.md).
 
 Studio-flikens modellinställningar använder den inloggade administratörens
 vanliga Studio-session. `OPENCLAW_API_KEY` är det rättade namnet för Gateway-
@@ -391,7 +430,7 @@ LD_PRELOAD eller ändrad TLS-tillit nekas. Ursprungliga tider/poster skrivs inte
 Fullfils- och streamkostnader går genom samma beständiga budgetskydd.
 
 Aktuell usage, testtak, okänd kostnad och öppen acceptans finns i
-[handoffen](JOHN-HANDOFF.md#budget-och-framtida-prov). Äldre installationsdetaljer
+[handoffen](JOHN-HANDOFF.md#2-öppna-kontroller-och-kända-fel). Äldre installationsdetaljer
 finns i [Git före städningen](https://github.com/Jakeminator123/github-work/blob/6b9dad55ced03ee0573e24b472b4dcbba2b97776/docs/ENVIRONMENT-VARIABLES.md).
 
 ### Origins och privata medier
@@ -646,7 +685,7 @@ Render-spelets villkorliga grupper:
   10 USD, högst sex decimaler). Sessionsreserven skickas enbart till Web
   och måste beräknas från den avsedda RunPod-sessionens pris före aktivering.
   `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD` krävs samtidigt, med samma
-  decimalformat och högst 10 USD, minst sessionsreserven. Även den går
+  decimalformat och högst 20 USD, minst sessionsreserven. Även den går
   endast till Web. Redan förbrukade GPU-medel ska räknas av från dagens
   tillgängliga budget före aktivering; den beständiga sessionsliggaren
   behåller reserver genom omstart. Se [aktuell handoff](JOHN-HANDOFF.md).

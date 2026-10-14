@@ -1,4 +1,5 @@
 import type { VideoMetadata } from '../../../../lab/lib/video-intake.mjs';
+import type { StudioProject } from '../../../../lab/lib/studio-model.mjs';
 export function labUrl(path:string):string;
 export function importErrorMessage(message:string):string;
 export type AssistantHistoryEntry = {role:'user'|'assistant';content:string};
@@ -13,6 +14,10 @@ export function importContentType(name:string):string;
 export function importBatchError(rows:ImportRow[]):string;
 export function importFileError(file:{name:string;size:number},maximum?:number):string;
 export function uniqueImportFiles(files:File[],rows:ImportRow[]):{files:File[];duplicates:number};
+export function planImportFiles(files:File[],rows:ImportRow[],maximum:number):{files:File[];duplicates:number;rows:ImportRow[]};
+export function importDealerId(name:string):string;
+export function registerImportDealer(input:{id:string;name:string},request:(path:string,options?:RequestInit)=>Promise<any>):Promise<StudioProject>;
 export function compatibleImportSlot(file:{name:string},slot?:ImportSlot):boolean;
 export function importClassification(row:ImportRow,dealerId:string,catalog:ImportCatalog):VideoMetadata;
+export function importRowError(row:ImportRow,dealerId:string,catalog:ImportCatalog):string;
 export function applyImportProposals(rows:ImportRow[],proposals:ImportProposal[],slots:ImportSlot[]):ImportRow[];

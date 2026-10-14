@@ -257,7 +257,8 @@ test('streaming secrets and switch reach Web only after explicit paid speech opt
     assert.throws(() => validateCloudConfig({ ...env, CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: value }), /CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD/);
   }
   for (const value of ['0.000001', '10']) assert.equal(validateCloudConfig({ ...env, CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: value, CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '10' }).streamSecrets.sessionReserveUsd, value);
-  for (const value of ['', '0', '-1', '10.01', 'NaN', '0.20']) {
+  for(const value of ['10.01','20']) assert.equal(validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:value}).streamSecrets.dailyBudgetUsd,value);
+  for (const value of ['', '0', '-1', '20.000001', 'NaN', '0.20']) {
     assert.throws(() => validateCloudConfig({ ...env, CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: value }), /CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD/);
   }
 });
@@ -273,7 +274,8 @@ test('Neon fullfile budget must be explicit and reaches only the Web fullfile ch
   for(const name of ['CROUPIER_SPEECH_FULLFILE_RESERVE_USD','CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD'])assert.equal(specs.lab.env[name],undefined);
   for(const value of [undefined,'','0','-1','10.01','1e-2','0.0000001',' 0.5'])
     assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_FULLFILE_RESERVE_USD:value}),/CROUPIER_SPEECH_FULLFILE_RESERVE_USD/);
-  for(const value of [undefined,'','0','0.49','Infinity','1.0000001'])
+  assert.equal(validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'20'}).fullfileBudget.dailyBudgetUsd,'20');
+  for(const value of [undefined,'','0','0.49','20.000001','Infinity','1.0000001'])
     assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:value}),/CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD/);
   assert.equal(validateCloudConfig({...env,CROUPIER_STUDIO_NEON_POLICY:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:''}).fullfileBudget,null);
   const off={...env,CROUPIER_GENERATED_SPEECH:'0',CROUPIER_CLOUD_GENERATED_SPEECH:'0'};

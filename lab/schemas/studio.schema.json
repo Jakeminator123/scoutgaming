@@ -3080,12 +3080,21 @@
         "variants": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 5,
+            "maxItems": 19,
           "items": {
             "$ref": "#/$defs/variant"
           }
         }
-      }
+      },
+      "allOf": [{
+        "if": {"properties": {"eventId": {"enum": ["deal.player.left", "deal.player.centre", "deal.player.right", "deal.dealer"]}}},
+        "then": {"properties": {"variants": {"maxItems": 16}}},
+          "else": {
+            "if": {"properties": {"eventId": {"const": "speak.other"}}},
+            "then": {"properties": {"variants": {"maxItems": 19}}},
+            "else": {"properties": {"variants": {"maxItems": 5}}}
+          }
+      }]
     },
     "asset": {
       "type": "object",

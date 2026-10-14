@@ -1,5 +1,6 @@
 import { MEDIA_FILE_TYPES } from '../lab/lib/media-file-types.mjs';
 import { validateVideoMetadata, MAX_VIDEO_BYTES } from '../lab/lib/video-intake.mjs';
+import { normalizeRecordedSpeech } from './public/recorded-speech.mjs';
 
 // The normal managed StudioMediaRecord contract is shared by browser package
 // decoding and server storage. Retained bank provenance stays server-only.
@@ -31,6 +32,10 @@ export function validateManagedStudioMedia(record) {
     || !Number.isSafeInteger(copy.size) || copy.size < 16 || copy.size > MAX_VIDEO_BYTES
     || !Object.hasOwn(MEDIA_FILE_TYPES,copy.contentType)) fail();
   try { copy.classification = validateVideoMetadata(copy.classification); } catch { fail(); }
+  if (copy.classification.recordedSpeech !== undefined) {
+    if (!['video/mp4','video/webm'].includes(copy.contentType)) fail();
+    try { normalizeRecordedSpeech(copy.classification.recordedSpeech, {dealerId:copy.classification.dealerId,lineId:copy.classification.situation,videoSha256:copy.sha256}); } catch { fail(); }
+  }
   if (copy.contentType.startsWith('audio/') !== (copy.classification.mediaType === 'audio')) fail();
   if(copy.contentType.startsWith('image/') !== (copy.classification.mediaType==='image'))fail();
   if(copy.classification.compositing?.mode==='alpha'&&!['image/png','video/webm'].includes(copy.contentType))fail();

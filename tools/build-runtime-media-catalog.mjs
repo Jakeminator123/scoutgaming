@@ -7,7 +7,7 @@ import {readLabVideoManifest} from '../lab/lib/lab-video-manifest.mjs';
 
 export async function buildRuntimeMediaCatalog(root=repositoryRoot,{check=false}={}) {
   const paths=runtimeCatalogPaths(root),entries={};
-  const sources=['speech-media.json',...['astrid','amira'].map(id=>'review/'+id+'-green-speak/speak.json')];
+  const sources=['speech-media.json',...['astrid'].map(id=>'review/'+id+'-green-speak/speak.json')];
   for(const source of sources){
     const path=resolveMediaAbsolutePath(join(root,'web/public',source),{repositoryRoot:root});
     const value=await readFile(path,'utf8');

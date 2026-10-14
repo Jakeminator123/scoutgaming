@@ -1,13 +1,84 @@
 # Roulette
 
+## Aktuell spelarkoppling, 13 oktober 2026
+
+Demorummet färdigställs via det ordinarie registret. Anna Jonsson är den
+befintliga dealern `anna-jonsson`. Vilofilmen har registrerats i Blob/Neon
+som `8852479c-8aea-46d2-a033-16df41f10b8f` och MP4-bakgrunden som
+`2c7feba2-70f1-44ee-9b6f-19e478313385`. Egen sparad sammansättning:
+`anna-roulette-demorum-fc7785ae-6747-4a5e-b229-04c1ce4247c4`.
+Detta är ännu inte ett publicerat rum. Befintliga PAOW-rum ändras inte.
+
+Admin har nu uttrycklig editor för startfilm, borddesign, cue-tider och
+handregion samt granskning av pose/inramning på exakt SHA. Bordbiblioteket
+och sammansättningsvyn skiljer mellan roulette och blackjack. Hjul och kula
+komponeras in i bordslagret före Annas handmask. Den förbättrade startfilmen
+och återgången till vila har granskats i den faktiska spelarkoden; se
+[materialrevisionen](UTFALLSFILMER.md#startgest-v2-och-live-registrering).
+Livepublicering och två slutrundor från lobbyn återstår.
+
+Levererad kod `b8e5e20c` inkluderar main `f22cb718`, med godkänt
+Studio-produktionsbygge och 3486 passerade tester (0 fel, 11 överhoppade).
+Slutkopplingen väntar på åtkomst till Admin och kompatibel driftsatt runtime.
+Neon använder befintliga dealer-, medie-, sammansättnings-, rums- och
+publiceringsregister; roulette kräver ingen ny SQL-migration. Blob lagrar
+mediebytes, medan Neon lagrar identiteter, kopplingar och frysta publiceringar.
+
+`codex/roulette-anna-binding` kopplar en uttrycklig `dealers[].rouletteIdle`
+till den befintliga `/play/roulette`-spelaren. Admins andnings-/glasögonkort
+kan kopplas, sparas och återläsas som utkast. Publicering fryser bas, högst tre
+varianter, inramning och handpolygoner med exakta medierevisioner. Blackjack
+använder fortsatt sitt eget idle. Nya bindningar kräver runtime **v15**;
+ingen SQL-migration. Äldre rouletterum utan sådan bindning förblir spelbara
+med `dealer:null`, aldrig med blackjackfilmen.
+
+Anna-provet använder den befintliga andningsfilmen i alpha-WebM, MP4-bakgrunden
+och `web/public/roulette/assets/anna-roulette-table-v1.png`. Glasögon-v2 har
+nu underkänts visuellt: friläggningen ger hål i händer och fluga. Filen är
+bortvald i slutprovet; variantstödet inväntar korrigerade bytes. Bilden är ett nytt
+transparent bordslager från den godkända målbilden, genererat med den inbyggda
+bildgeneratorn; [prompt och kalibrering](UTFALLSFILMER.md#annas-kopplade-scen-13-oktober-2026)
+finns sparade. Det ersätter inte andra bord. Bordets exakta katalogidentitet
+väljer rätt klickgeometri; ett okänt bord får använda satsningsmenyn.
+
+Två på varandra följande UI-rundor kördes utan omladdning i faktisk spelarkod,
+med riktig frozen-capture och offentliga preview-/room-läsare men isolerad
+SQLite och lokala mediebytes: **33 svart, sedan 6 svart**, testsaldo 500 → 495
+→ 500 USD. Det är inte en livepublicering eller godkännande av kompletta
+spelfilmer. Det tidigare basprovet saknade hjulstart och utfallsanimation.
+Fortsättningen ritar nu exakta 37 hjulsiffror från motorns `WHEEL` och en
+separat kula som under 8,5–12 sekunder landar i serverkvittots fack, på olika
+ställen runt hjulet beroende på rundans ID. Annas
+placering och MP4-filen är oförändrade. [Kalibrering, tester och kvarvarande
+sekretessgräns](UTFALLSFILMER.md#exakt-rotor-och-en-kula-i-den-riktiga-spelaren).
+Bakgrund och Anna fortsätter mellan rundorna; en valfri variant startar tidigast
+efter tre basloopar och inte under en pågående serverbegäran.
+
+En första tiosekunders startfilm skapades och frilades efter Jakobs godkännande.
+Valfritt `rouletteStart` kopplar filmens egen tid till hjulstart/kulsläpp och
+återgång till idle. Två tekniska UI-rundor gav 8 svart → 3 röd. Den första gesten
+underkändes; se [granskningen](UTFALLSFILMER.md#ny-startfilm-och-variationsspelning).
+Godkänt material ska gå via mediebank och Vercel Blob, inte Runways tillfälliga URL.
+
+`tools/roulette-ui-fixture.mjs --scene-manifest <privat JSON>` återspelar samma
+kedja utan produktionskonto. Manifestet anger explicit lokala filer och SHA-256,
+framing, foregroundPolygons samt vanliga composition settings. Test-UUID:n är
+isolerade och får inte användas som produktionsregistrets identiteter.
+
 [Signaler, materialinventering och klippkarta](KLIPPKARTA.md) beskriver de
 separata blackjack-/roulettefacken, bild-/videolagren och vad som återstår
 före automatisk spelkoppling.
 
 [Genomförandeplan och trackingutredning](UTFALLSFILMER.md#genomförandeplan-säkert-material-först)
 anger nästa steg, jämför OpenCV/Ultralytics/SAM 2 och innehåller en färdig
-fråga till en specialistagent. [Kulprovet](underlag/roulette-stop-test.html)
-är fristående versionshanterad HTML; privata originalfilmer behövs inte för att köra det.
+fråga till en specialistagent. Det gamla [kulprovet](underlag/roulette-stop-test.html)
+bevaras enbart som historiskt geometriprov. Jakob har uttryckligen valt bort det
+som produktionsunderlag. Fortsättningen använder riktiga `/play/roulette` och
+dess befintliga videosystem; se [aktuellt genomförande](UTFALLSFILMER.md#produktionsspår-threejs-och-annas-spelarkoppling).
+
+Jakob har godkänt en [visuell målbild för Anna och bordet](UTFALLSFILMER.md#godkänd-visuell-målbild-13-oktober-2026).
+Den tidigare lokala spelarplaceringen är underkänd. Bildens perspektiv,
+bordshöjd och handkontakt styr fortsättningen; rörlig spelacceptans återstår.
 
 ## Anna Jonsson: roulettefack, alfa och Runway-prov (13 oktober 2026)
 
@@ -34,7 +105,13 @@ före providersubmission och innan ett genereringsjobb sparas. `videoFitsLine`
 och `videoFitsEvent` avvisar roulette i blackjackens runtime. En roulette-Forge
 kräver eget accepterat rörelse-/geometrikontrakt innan den kan öppnas.
 
-Native privat uppladdning stöder PNG för VILA-referensen och bevarar bytes/hash. `compositing: {mode: "alpha"}` behåller originalets alfa och stänger av grönnycklingen, även på gröna detaljer i dealern. Grön MP4 kan fortfarande väljas som green-screen. En svart bakgrund är inte alfa.
+Metadataformatet beskriver PNG för VILA-referensen, men aktuell native
+prepare-väg avvisar PNG med `studio_media_content_type_unsupported` före grant.
+VILA är därför en lokal bildreferens tills lagringskedjan stöder den; tidigare
+PNG-kvitton är inte bevis för dagens API. WebM-intaget bevarar bytes/hash.
+`compositing: {mode: "alpha"}` behåller originalets alfa och stänger av
+grönnycklingen, även på gröna detaljer i dealern. Grön MP4 kan fortfarande
+väljas som green-screen. En svart bakgrund är inte alfa.
 
 **Ordning vid driftsättning:** nya PNG-/alfa-/roulettefält kräver ett exakt
 v12-svar från Render (`mediaAlpha=png-vp9-v1`, `rouletteMedia=action-pose-slots-v1`).

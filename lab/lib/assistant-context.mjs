@@ -11,9 +11,15 @@ export async function assistantRead(response){
   if(!response.ok)fail('assistant_dependency_unavailable',response.status===409?409:503);
   return value;
 }
+// Mutation APIs can return an entire project or media library. A successful
+// write must not be reported as failed merely because that receipt is large.
+export async function assistantWrite(response){
+  if(!response.ok)return assistantRead(response);
+  await response.body?.cancel();return {completed:true};
+}
 export function assistantServices(runtime,{openclawOptions}={}){
   return {
-    admin:(request,path,method='GET',body)=>runtime.api.handle(assistantRequest(request,runtime,'/admin/'+path,method,body)).then(assistantRead),
+    admin:(request,path,method='GET',body,{ackOnly=false}={})=>runtime.api.handle(assistantRequest(request,runtime,'/admin/'+path,method,body)).then(ackOnly?assistantWrite:assistantRead),
     openclaw:(request,method='GET',body)=>createOpenClawAdminApi({config:runtime.config,authorize:runtime.authorize,...openclawOptions})
       .handle(assistantRequest(request,runtime,'/openclaw/admin',method,body)).then(assistantRead),
   };
@@ -27,7 +33,7 @@ export async function readAssistantContext(runtime,request,{services=assistantSe
     site:'Vercel kör denna chatt och behörighetskontrollerna.',
     engine:'Render croupier-v2 äger spelet. Game/auth och Studio använder Neon PostgreSQL.',
     openclaw:'Director på Render förmedlar förfrågningar till separat OpenClaw Gateway. Dealer-/socialchatt styrs av sina egna roller.',
-    permissions:'Adminroboten använder begränsade serverfunktioner. Modellen får inga databaslösenord, shell eller molnkontotoken.',
+    permissions:'Adminroboten kan läsa sparade register och utföra granskade ändringar via ordinarie serverfunktioner. Modellen får inga databaslösenord, shell eller molnkontotoken.',
     monitoring:'Status läses när du öppnar eller frågar. Ingen bakgrundsövervakning är aktiverad.',
   };
   if(mode==='openclaw')return {observedAt:new Date(now()).toISOString(),architecture,coverage,openclaw,
@@ -47,8 +53,8 @@ export async function readAssistantContext(runtime,request,{services=assistantSe
     resources:lifecycle?{historyCoverage:lifecycle.historyCoverage,
       companies:list(lifecycle.operators??[],row=>pick(row,['id','slug','name','status','roomCount','archivedRoomCount'])),
       rooms:list(lifecycle.rooms??[],row=>pick(row,['id','name','operatorId','state','presentationLaneId','archivedAt']))}:null,
-    limits:['Listor med fler än 150 poster är begränsade. Inga konton, hemligheter, privata spelaruppgifter, kortföljder eller råa databasrader skickas till modellen.',
-      'Schema visar tabellnamn i den anslutna databasen; inga fria SQL-frågor eller databasrader kan ändras.',
+    limits:['Listor med fler än 150 poster är begränsade. Använd read för sökning och fler registerposter. Konton, hemligheter, privata spelaruppgifter och kortföljder lämnas inte ut.',
+      'Schema visar tabellnamn. Sparade dealer-, material-, fil-, bolags- och rumsposter kan läsas; stödda ändringar sparas i databasen med granskning. Ingen fri SQL. Blobfiler inventeras via mediaregistret, inte genom innehållsanalys.',
       'Renderkontots loggar och diskfiler är inte anslutna. Inga kvalitets- eller läppsynkgodkännanden görs av assistenten.'],
   };
 }

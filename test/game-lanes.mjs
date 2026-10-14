@@ -67,9 +67,12 @@ test('operator metadata is bounded and login carries only approved selectors',()
  for(const change of [{gameOperator:'Bad'},{gameOperator:undefined},{gamePackageRevision:'0'},{gamePackageRevision:'1e3'},{gameBranding:'[]'},{gameBranding:'null'},{gameBranding:'{'}])assert.throws(()=>gameLaneFromDocument({...d,...change}));
 });
 test('layered presentation is accepted only in its explicit lane',()=>{
- for(const id of ['paow','dragge'])assert.deepEqual(gameLaneFromDocument({gameLane:'layer-preview',gameDealer:id,gamePresentation:'layered'}),{lane:'layer-preview',dealer:id,presentation:'layered'});
+ for(const id of ['dragge'])assert.deepEqual(gameLaneFromDocument({gameLane:'layer-preview',gameDealer:id,gamePresentation:'layered'}),{lane:'layer-preview',dealer:id,presentation:'layered'});
  assert.throws(()=>gameLaneFromDocument({...dataset,gamePresentation:'layered'}));
  assert.throws(()=>gameLaneFromDocument({gameLane:'layer-preview',gameDealer:'astrid',gamePresentation:'layered'}));
+ assert.throws(()=>gameLaneFromDocument({gameLane:'layer-preview',gameDealer:'paow',gamePresentation:'layered'}));
+ assert.throws(()=>gameLaneSelection('?lane=layer-preview&dealer=paow'),/not available/);
+ assert.deepEqual(gameLaneSelection('?lane=layer-preview'),{lane:'layer-preview',dealer:'dragge',presentation:'layered'});
 });
 
 test('retiring the active lane leaves an explicit empty choice even when other lanes remain',()=>{

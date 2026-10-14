@@ -25,10 +25,77 @@ test('default feature HTTP response remains exact v2 and negotiation returns exa
 test('HEAD negotiates the same metadata response with no body and unsupported or duplicate versions are 406', async () => {
   const head = presentationCapabilitiesResponse(new Request(endpoint, { method: 'HEAD', headers: { 'X-Presentation-Capability-Version': '3' } }));
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
-  for (const version of ['1', '14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
+  for (const version of ['1', '21', '20, 20', '19, 19', '18, 18', '17, 17', '16, 16', '15, 15', '14, 14', '13, 13', '12, 12', '11, 11', '10, 10', '9, 9', '8, 8', '7, 7', '4, 4', '3, 4', '3, 3', '2, 3', '03']) {
     const response = presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': version } }));
     assert.equal(response.status, 406); assert.equal(await response.text(), '');
   }
+});
+
+test('v20 advertises exact speech slot standards within the same bounded response', async () => {
+  const headers = { 'X-Presentation-Capability-Version': '20' };
+  const response = presentationCapabilitiesResponse(new Request(endpoint, { headers }));
+  assert.equal(response.status, 200);
+  const body = await response.text(); assert.ok(Buffer.byteLength(body) <= 1024);
+  assert.equal(validatePresentationCapabilities(JSON.parse(body), { expectedVersion: 20 }).speechSlots, 'explicit-line-standard-v1');
+  const old = await presentationCapabilitiesResponse(new Request(endpoint, { headers: { 'X-Presentation-Capability-Version': '19' } })).json();
+  assert.equal(Object.hasOwn(old, 'speechSlots'), false);
+});
+
+test('v19 advertises dynamic table bets within the bounded payload without changing v18',async()=>{
+  const headers={'X-Presentation-Capability-Version':'19'},response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
+  assert.equal(response.status,200);const body=await response.text();assert.ok(Buffer.byteLength(body)<=1024);
+  assert.equal(validatePresentationCapabilities(JSON.parse(body),{expectedVersion:19}).blackjackBetMode,'under-cards-v1');
+  const head=presentationCapabilitiesResponse(new Request(endpoint,{method:'HEAD',headers}));assert.equal(head.status,200);assert.equal(await head.text(),'');
+  const old=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'18'}})).json();
+  assert.equal(Object.hasOwn(old,'blackjackBetMode'),false);
+});
+
+test('v18 explicitly advertises bounded gzip and Brotli without changing v17',async()=>{
+  const headers={'X-Presentation-Capability-Version':'18'},response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
+  assert.equal(response.status,200);const body=await response.text();assert.ok(Buffer.byteLength(body)<=1024);
+  assert.equal(validatePresentationCapabilities(JSON.parse(body),{expectedVersion:18}).presentationCompression,'gzip-brotli-v1');
+  const head=presentationCapabilitiesResponse(new Request(endpoint,{method:'HEAD',headers}));assert.equal(head.status,200);assert.equal(await head.text(),'');
+  const old=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'17'}})).json();
+  assert.equal(Object.hasOwn(old,'presentationCompression'),false);
+});
+
+test('v17 announces exact recorded speech while older negotiation and the response bound stay unchanged',async()=>{
+  const headers={'X-Presentation-Capability-Version':'17'},response=presentationCapabilitiesResponse(new Request(endpoint,{headers}));
+  assert.equal(response.status,200);const body=await response.text();assert.ok(Buffer.byteLength(body)<=1024);
+  assert.equal(validatePresentationCapabilities(JSON.parse(body),{expectedVersion:17}).recordedSpeech,'exact-take-review-v1');
+  assert.equal(validatePresentationCapabilities(JSON.parse(body),{expectedVersion:17}).filmedDealVariants,'sixteen-explicit-v1');
+  const head=presentationCapabilitiesResponse(new Request(endpoint,{method:'HEAD',headers}));assert.equal(head.status,200);assert.equal(await head.text(),'');
+  const old=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'16'}})).json();
+  assert.equal(Object.hasOwn(old,'recordedSpeech'),false);
+  assert.equal(Object.hasOwn(old,'filmedDealVariants'),false);
+});
+
+test('v16 explicitly negotiates static per-asset blackjack geometry within the bounded readiness payload',async()=>{
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'16'}}));
+  assert.equal(response.status,200);const body=await response.text();assert.ok(Buffer.byteLength(body)<=1024);
+  assert.equal(validatePresentationCapabilities(JSON.parse(body),{expectedVersion:16}).blackjackTableGeometry,'asset-static-anchors-v1');
+  const old=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'15'}})).json();
+  assert.equal(Object.hasOwn(old,'blackjackTableGeometry'),false);
+});
+
+test('v15 combines roulette with retained categories while v14 advertises only the shipped category addition',async()=>{
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'15'}}));
+  assert.equal(response.status,200);const value=validatePresentationCapabilities(await response.json(),{expectedVersion:15});
+  assert.equal(value.rouletteStart,'explicit-game-start-v1');assert.equal(value.rouletteIdle,'explicit-game-idle-v1');
+  assert.equal(value.dealerCategoryTrash,'retained-categories-v1');
+  const previous=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'14'}})).json();
+  assert.equal(previous.dealerCategoryTrash,'retained-categories-v1');
+  assert.equal(Object.hasOwn(previous,'rouletteIdle'),false);
+  assert.equal(Object.hasOwn(previous,'rouletteStart'),false);
+});
+
+test('v14 advertises retained dealer categories without changing v13',async()=>{
+  const response=presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'14'}}));
+  assert.equal(response.status,200);
+  const value=validatePresentationCapabilities(await response.json(),{expectedVersion:14});
+  assert.equal(value.dealerCategoryTrash,'retained-categories-v1');
+  const previous=await presentationCapabilitiesResponse(new Request(endpoint,{headers:{'X-Presentation-Capability-Version':'13'}})).json();
+  assert.equal(Object.hasOwn(previous,'dealerCategoryTrash'),false);
 });
 
 test('v13 advertises immutable game-specific tables without changing v12',async()=>{

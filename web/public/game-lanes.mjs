@@ -3,12 +3,12 @@ import {validateComposition} from './presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
 // card projection and playback primitives remain shared, independently of lanes.
 export const GAME_LANES = Object.freeze([]);
-const LAYER_PREVIEW_LANE = Object.freeze({ schemaVersion: 1, id: 'layer-preview', label: 'Layer Preview Lane', renderer: 'layered', dealer: 'paow', mediaCollection: 'layer-packs-preview' });
+const LAYER_PREVIEW_LANE = Object.freeze({ schemaVersion: 1, id: 'layer-preview', label: 'Layer Preview Lane', renderer: 'layered', dealer: 'dragge', mediaCollection: 'layer-packs-preview' });
 export function gamePresentationForDealer(dealerId, renderer) {
   if (!isActiveDealerId(dealerId) || !['portrait-video', 'layered'].includes(renderer)) throw Error('Registered cloud presentation required');
   return renderer === 'layered' ? 'layered' : 'local';
 }
-const layerPreviewDealers = ['paow', 'dragge'];
+const layerPreviewDealers = ['dragge'];
 export const isGameLaneId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(value) && !['original', 'constructor', 'prototype'].includes(value);
 export const isGameLane = (value, lanes = GAME_LANES) => lanes.some(lane => lane.id === value);
 // Same rule as the partner portal slug (lab/lib/partner-session.mjs operatorSlug).
@@ -26,7 +26,7 @@ export function validateGameLanes(value) {
       || /[\u0000-\u001f\u007f-\u009f<>]/u.test(lane.label) || !isDealerId(lane.dealer)
       || !(lane.renderer === 'portrait-video' && lane.mediaCollection === `${lane.dealer}-presentation`
         || lane.renderer === 'indexed-video' && BASE_DEALER_IDS.includes(lane.dealer) && lane.mediaCollection === 'legacy-dealers'
-        || lane.renderer === 'layered' && lane.id === 'layer-preview' && lane.mediaCollection === 'layer-packs-preview' && lane.dealer === 'paow')) throw Error('Invalid lane definition');
+        || lane.renderer === 'layered' && lane.id === 'layer-preview' && lane.mediaCollection === 'layer-packs-preview' && ['paow', 'dragge'].includes(lane.dealer))) throw Error('Invalid lane definition');
     ids.add(lane.id);
     return { ...lane };
   });
@@ -65,10 +65,11 @@ export function gameLaneSelection(query, activeLane = null, lanes = GAME_LANES, 
   const explicit = params.getAll('lane').length === 1 ? params.get('lane') : null;
   const lane = lanes.find(row => row.id === (isGameLane(explicit, lanes) ? explicit : activeLane));
   if (!lane) throw Error('No configured game lane');
+  if (lane.renderer === 'layered' && params.has('dealer') && (params.getAll('dealer').length !== 1 || !layerPreviewDealers.includes(params.get('dealer')))) throw Error('Dealer is not available in this preview');
   const layeredDealer = lane.renderer === 'layered' && params.getAll('dealer').length === 1 && layerPreviewDealers.includes(params.get('dealer'))
     ? params.get('dealer') : null;
   const dealer = lane.renderer === 'indexed-video' && params.getAll('dealer').length === 1 && isActiveDealerId(params.get('dealer'))
-    ? params.get('dealer') : layeredDealer || lane.dealer;
+    ? params.get('dealer') : layeredDealer || (lane.renderer === 'layered' ? LAYER_PREVIEW_LANE.dealer : lane.dealer);
   const presentation = gamePresentationForDealer(dealer, lane.renderer);
   return { lane: lane.id, dealer, presentation };
 }
@@ -88,7 +89,7 @@ export function laneDealerSelection(query, lane, dealerLayer, { portraitDealerId
 }
 
 const packageRevisionPattern = /^[1-9][0-9]{0,15}$/;
-const CHOICE_DEALERS = Object.freeze(['paow', 'dragge']);
+const CHOICE_DEALERS = Object.freeze(['dragge']);
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
 const CHOICE_BACKGROUND_MODES = new Set(['baked', 'image', 'video']);
 // Same layers as lab/lib/studio-model.mjs defaultPresentationLane. web does not import lab.
@@ -149,8 +150,8 @@ function keptStrings(list, accept, max) {
 export function gameChoicesForLane(projectLanes, laneId, serverLane, { portraitDealerIds = [] } = {}) {
   if (laneId === 'layer-preview') {
     return {
-      dealers: ['paow', 'dragge'],
-      dealerDefault: serverLane?.dealer && ['paow', 'dragge'].includes(serverLane.dealer) ? serverLane.dealer : 'paow',
+      dealers: ['dragge'],
+      dealerDefault: 'dragge',
       tableColors: [],
       tableDefault: null,
       background: {

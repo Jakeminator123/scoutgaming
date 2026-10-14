@@ -93,8 +93,8 @@ function preservePublishedRoomEnvironment(saved, id, captured) {
     }
   }
 }
-function lanePlan(presentation, administration, frozen) {
-  const config = gameLaneConfiguration(administration), candidates = config.gameLanes.filter(lane => lane.dealer === presentation.layers.dealer.default && isPresentationRoomLaneCompatible(lane, presentation, frozen));
+function lanePlan(presentation, administration, frozen, game='blackjack') {
+  const config = gameLaneConfiguration(administration), candidates = config.gameLanes.filter(lane => lane.dealer === presentation.layers.dealer.default && isPresentationRoomLaneCompatible(lane, presentation, frozen,game));
   if (candidates.length === 1) return { lane: candidates[0], administration };
   const dealer = presentation.layers.dealer.default;
   const hash = createHash('sha256').update(canonicalStudioJson([presentation.id, dealer])).digest('hex').slice(0, 24);
@@ -132,8 +132,13 @@ function mergePresentation(current, selected) {
   const preservedIds = selectedDealerIds(old.lanes.filter(lane => lane.id !== id));
   if (old.schemaVersion === 1 && preservedIds.size) fail(409, 'studio_presentation_legacy_package_conflict');
   for (const entry of selected.registeredDealers ?? []) {
-    if (preservedIds.has(entry.id) && registry.has(entry.id)
-      && canonicalStudioJson(registry.get(entry.id)) !== canonicalStudioJson(entry)) fail(409, 'studio_presentation_shared_dealer_conflict');
+    const previous=registry.get(entry.id);
+    // Adding the first explicit roulette binding cannot alter an existing
+    // blackjack capture. Replacing shared published data still needs full review.
+    const compared=previous&&!previous.rouletteIdle&&entry.rouletteIdle?{...entry}:entry;
+    if(compared!==entry)delete compared.rouletteIdle;
+    if (preservedIds.has(entry.id) && previous
+      && canonicalStudioJson(previous) !== canonicalStudioJson(compared)) fail(409, 'studio_presentation_shared_dealer_conflict');
     registry.set(entry.id, entry);
   }
   const ids = selectedDealerIds(lanes);
@@ -147,14 +152,16 @@ function mergePresentation(current, selected) {
 function assertReplayBinding(saved, room) {
   const frozen = readPackagePresentation(saved.pack), presentation = frozen?.lanes.find(lane => lane.id === room.presentationLaneId);
   const gameLane = gameLaneConfiguration(saved.administration).gameLanes.find(lane => lane.id === room.gameLaneId);
-  if (!isPresentationRoomLaneCompatible(gameLane, presentation, frozen)) fail(409);
+  if (!isPresentationRoomLaneCompatible(gameLane, presentation, frozen,roomGame(room))) fail(409);
   const dealer = presentation.layers.dealer.default;
-  if ([2,3].includes(frozen.schemaVersion)
-    && !resolveFrozenDealerIdle(frozen.registeredDealers, { dealerId: dealer, allowedDealerIds: presentation.layers.dealer.allowed })) fail(409);
+  if ([2,3].includes(frozen.schemaVersion)&&roomGame(room)!=='roulette'
+    && !resolveFrozenDealerIdle(frozen.registeredDealers, { dealerId: dealer, allowedDealerIds: presentation.layers.dealer.allowed,game:roomGame(room) })) fail(409);
   return frozen;
 }
 function runtimeAccepts(capabilities, presentation, game = 'blackjack') {
-  if (!capabilities || ![2, 3, 4, 9].includes(capabilities.schemaVersion) || game === 'roulette' && capabilities.schemaVersion !== 9) return false;
+  if (!capabilities || ![2, 3, 4, 9, 14, 15].includes(capabilities.schemaVersion) || game === 'roulette' && capabilities.schemaVersion < 9
+    ||presentation?.registeredDealers?.some(row=>row.rouletteIdle)&&capabilities.rouletteIdle!=='explicit-game-idle-v1'
+    ||presentation?.registeredDealers?.some(row=>row.rouletteStart)&&capabilities.rouletteStart!=='explicit-game-start-v1') return false;
   return capabilities.schemaVersion >= (presentation?.schemaVersion === 3 ? 4 : presentation?.schemaVersion === 2 ? 3 : 2);
 }
 export function createPresentationRoomApi({ repository, scope, runtimeCapabilities, videoRegistry, now = Date.now } = {}) {
@@ -178,13 +185,14 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     return { ok: true, duplicate, room: structuredClone(room), administrationRevision: saved.administrationRevision,
       packageRevision: saved.pack.revision, playUrl: roomPlayPath(room,saved.operator.slug) };
   }
-  async function capture(snapshotValue, id) {
+  async function capture(snapshotValue, id, game='blackjack') {
     const project = normalizeProject(snapshotValue.projectDocument.value), source = sourceProject(project, id);
     const hasDealers = selectedDealerIds(source.lanes.filter(lane => lane.id === id)).size > 0;
     if (hasDealers && (!videoRegistry?.loadCaptured || !videoRegistry?.verifyCapturedMedia)) fail(503, 'studio_media_registry_unavailable');
     const inventory = hasDealers ? await videoRegistry.loadCaptured(snapshotValue) : null;
     const captured = captureFrozenPresentation({ snapshot: snapshotValue, selectedLaneIds: [id], inventory,
-      requiredIdleDealerIds: selectedRegisteredIdleDefaults(source, [id]) });
+      ...(game==='roulette'?{requiredRouletteIdleDealerIds:selectedRegisteredIdleDefaults(source,[id])}
+        :{requiredIdleDealerIds: selectedRegisteredIdleDefaults(source, [id])}) });
     if (captured.mediaPreconditions.length) await videoRegistry.verifyCapturedMedia(captured.mediaPreconditions);
     return captured;
   }
@@ -207,7 +215,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       }));
       if ((saved.pack?.revision ?? null) !== body.expectedPackageRevision) fail(409);
       requireRoomEnvironment(saved.project, body.presentationLaneId);
-      captured = await capture(snapshotValue, body.presentationLaneId);
+      captured = await capture(snapshotValue, body.presentationLaneId,roomGame(body));
       preservePublishedRoomEnvironment(saved, body.presentationLaneId, captured.presentation);
       publicationPresentation = mergePresentation(saved.pack, captured.presentation);
     } else {
@@ -230,14 +238,14 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
     if (!isPresentationRoomReadQuery(context.request.method, url)) fail(400);
     const snapshotValue = await repository.readPresentationSnapshot();
     const saved = await repository.transaction(() => repository.withTransactionClient(client => snapshot(client, url.searchParams.get('operatorId'), snapshotValue)));
-    const id = url.searchParams.get('presentationLaneId');
+    const id = url.searchParams.get('presentationLaneId'), game=url.searchParams.get('game')??'blackjack';
     sourceProject(saved.project, id);
     const environment = roomEnvironment(saved.project, id);
     let selected = null, merged = null, packageReason = null, conflictCode = null, runtime = null;
     try {
-      selected = await capture(snapshotValue, id);
+      selected = await capture(snapshotValue, id,game);
       merged = mergePresentation(saved.pack, selected.presentation);
-      const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration, merged);
+      const plan = lanePlan(merged.lanes.find(lane => lane.id === id), saved.administration, merged,game);
       try { assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation: merged }); }
       catch (error) { if (error?.statusCode === 409) fail(409, 'studio_presentation_room_binding_conflict'); throw error; }
       preservePublishedRoomEnvironment(saved, id, selected.presentation);
@@ -251,9 +259,14 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       else if (error?.statusCode === 422) packageReason = 'presentation_lane_incompatible';
       else throw error;
     }
-    try { runtime = await capabilities(merged ?? selected?.presentation); }
-    catch (error) { if (error?.code !== PRESENTATION_RUNTIME_UPDATE_REQUIRED) throw error; }
-    const runtimeReady = runtimeAccepts(runtime, merged ?? selected?.presentation);
+    try { runtime = await capabilities(merged ?? selected?.presentation,game); }
+    catch (error) {
+      // Runtime negotiation encodes the candidate too. An oversized draft must
+      // block publication without hiding the existing frozen room on this read.
+      if (error?.statusCode === 413) packageReason ??= 'presentation_package_too_large';
+      else if (error?.code !== PRESENTATION_RUNTIME_UPDATE_REQUIRED) throw error;
+    }
+    const runtimeReady = runtimeAccepts(runtime, merged ?? selected?.presentation,game);
     const reason = !environment.fixed ? 'presentation_room_environment_required'
       : packageReason ?? (!runtimeReady ? PRESENTATION_RUNTIME_UPDATE_REQUIRED : null);
     return { ok: true, operator: { id: saved.operator.id, slug: saved.operator.slug, name: saved.operator.name }, presentationLaneId: id,
@@ -290,7 +303,7 @@ export function createPresentationRoomApi({ repository, scope, runtimeCapabiliti
       requireRoomEnvironment(saved.project, body.presentationLaneId);
       preservePublishedRoomEnvironment(saved, body.presentationLaneId, prepared.presentation);
       await assertCapturedPresentationMedia(repository, prepared.mediaPreconditions);
-      const presentation = mergePresentation(saved.pack, prepared.presentation), plan = lanePlan(prepared.presentation.lanes[0], saved.administration, presentation);
+      const presentation = mergePresentation(saved.pack, prepared.presentation), plan = lanePlan(prepared.presentation.lanes[0], saved.administration, presentation,roomGame(body));
       assertPublishedRoomBindings({ administration: plan.administration, operatorId: saved.operator.id, currentPackage: saved.pack, presentation });
       const room = { schemaVersion: 2, id: roomId, name: body.name, operatorId: body.operatorId,
         presentationLaneId: body.presentationLaneId, gameLaneId: plan.lane.id, state: 'live', ...(roomGame(body)==='roulette'?{game:'roulette'}:{}) };

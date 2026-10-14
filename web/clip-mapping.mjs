@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveMediaAbsolutePath } from '../tools/media-layout.mjs';
 
-const DEALERS = { vera: 'dealer', astrid: 'dealers/astrid', amira: 'dealers/amira', mei: 'dealers/mei' };
+const DEALERS = { vera: 'dealer', astrid: 'dealers/astrid', mei: 'dealers/mei' };
 const PART_EVENT = { box0: 'show.deal.box0', box1: 'show.deal.box1', box2: 'show.deal.box2', box3: 'show.deal.box3', box4: 'show.deal.box4', box5: 'show.deal.box5', box6: 'show.deal.box6', 'dealer-up': 'show.deal.dealer', 'dealer-hole': 'show.deal.hole', return: 'show.return', idle: 'show.idle' };
 const ACTION_EVENT = { 'deal-left': 'show.deal.left', 'deal-centre': 'show.deal.centre', 'deal-right': 'show.deal.right', 'deal-dealer': 'show.deal.dealer' };
 const readJson = p => { try { return JSON.parse(readFileSync(resolveMediaAbsolutePath(p), 'utf8')); } catch { return null; } };
@@ -51,7 +51,7 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
     dealers[dealer] = { engine: entries, nativeSpeech };
   }
   // V2 speech is a distinct text/audio/video set, never relabel the original bank.
-  for (const dealer of ['astrid', 'amira']) {
+  for (const dealer of ['astrid']) {
     const manifest = `review/${dealer}-green-speak/speak.json`;
     const speech = readJson(join(root, manifest));
     const greenSpeech = Object.entries(speech?.lines ?? {}).map(([line, take]) => ({

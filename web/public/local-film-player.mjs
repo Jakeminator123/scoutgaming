@@ -1,5 +1,6 @@
 // Full-frame MP4 support for PerformancePlayer. Consumers may attach calibration
 // to the verified asset; motion must use presented mediaTime, never wall time.
+import {MAX_RECORDED_SPEECH_SECONDS} from './recorded-speech.mjs';
 export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onFrame, renderFrame, hold = () => {} }) {
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');
@@ -10,8 +11,11 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
       target.addEventListener(type, callback);
       listeners.push(() => target.removeEventListener(type, callback));
     };
-    const deadline = setTimeout(() => finish(new Error('Film exceeded playback limit')), 60000);
-    const emit = state => onReceipt({ state, evidence: state === 'presented' ? 'video-frame' : 'media-lifecycle' });
+    // The tuple permits 120 s; keep a bounded 8 s startup allowance alongside
+    // the existing progress watchdog rather than cutting valid speech at 60 s.
+    const deadline = setTimeout(() => finish(new Error('Film exceeded playback limit')), (MAX_RECORDED_SPEECH_SECONDS + 8) * 1000);
+    const emit = (state, error) => onReceipt({ state, evidence: state === 'presented' ? 'video-frame' : 'media-lifecycle',
+      ...(error?.playback ? { code: error.code, playback: error.playback } : {}) });
     const clean = () => {
       clearTimeout(watchdog); clearTimeout(deadline); signal?.removeEventListener('abort', abort);
       for (const remove of listeners) remove();
@@ -20,9 +24,18 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     };
     const finish = error => {
       if (terminal) return; terminal = true;
-      if (!error && (!started || !presented || !video.ended)) error = new Error('Film ended without a presented frame');
+      if (!error && (!started || !presented || !video.ended)) {
+        error = Object.assign(new Error('Film ended without a presented frame'), {
+          // Only an otherwise completed clip with no frame proof may retry idle.
+          code: started && video.ended && !presented ? 'local_film_no_presented_frame' : 'local_film_incomplete',
+          playback: { started, presented, ended: video.ended, readyState: video.readyState,
+            mediaTime: Number.isFinite(video.currentTime) ? video.currentTime : null,
+            duration: Number.isFinite(video.duration) ? video.duration : null,
+            visibility: document.visibilityState ?? (document.hidden ? 'hidden' : 'visible') },
+        });
+      }
       if (presented) hold(video);
-      emit(error ? signal?.aborted ? 'interrupted' : 'error' : 'end'); clean();
+      emit(error ? signal?.aborted ? 'interrupted' : 'error' : 'end', error); clean();
       error ? reject(error) : resolve({ completed: true });
     };
     const arm = () => { clearTimeout(watchdog); watchdog = setTimeout(() => finish(video.ended ? undefined : new Error('Film playback stalled')), 8000); };

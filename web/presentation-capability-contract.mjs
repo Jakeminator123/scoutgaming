@@ -4,7 +4,7 @@ export const PRESENTATION_CAPABILITY_VERSION_HEADER = 'X-Presentation-Capability
 export const PRESENTATION_CAPABILITY_DEFAULT_VERSION = 2;
 const legacyDealerIds = Object.freeze(['nora']);
 const common = { registeredDealerIds: legacyDealerIds, compositing: 'per-clip' };
-const contracts = Object.freeze({
+const baselineContracts = {
   1: Object.freeze({ schemaVersion: 1, ...common }),
   2: Object.freeze({ schemaVersion: 2, ...common, rooms: 'operator-owned-v2' }),
   3: Object.freeze({ schemaVersion: 3, ...common, rooms: 'operator-owned-v2',
@@ -20,16 +20,25 @@ const contracts = Object.freeze({
   11: Object.freeze({schemaVersion:11,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1',dealerSets:'authoring-categories-v1',materialTrash:'detached-assets-v1'}),
   12: Object.freeze({schemaVersion:12,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1',dealerSets:'authoring-categories-v1',materialTrash:'detached-assets-v1',mediaAlpha:'png-vp9-v1',rouletteMedia:'action-pose-slots-v1'}),
   13: Object.freeze({schemaVersion:13,...common,rooms:'operator-owned-v2',registeredDealerMode:'saved-registry-idle-v1',frozenDealerIdle:'operator-package-v2',frozenDealerEvents:'operator-package-v3',dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1',dealerArchiveCascade:'dealer-compositions-rooms-v1',backgroundPlayback:'rules-v1',rouletteRooms:'european-single-zero-v1',dealerSets:'authoring-categories-v1',materialTrash:'detached-assets-v1',mediaAlpha:'png-vp9-v1',rouletteMedia:'action-pose-slots-v1',tableGame:'immutable-game-v1'}),
-});
+};
+// v14 is the already shipped category-trash contract. Roulette opts into v15.
+const categoryContract=Object.freeze({...baselineContracts[13],schemaVersion:14,dealerCategoryTrash:'retained-categories-v1'});
+const rouletteContract=Object.freeze({...categoryContract,schemaVersion:15,rouletteIdle:'explicit-game-idle-v1',rouletteStart:'explicit-game-start-v1'});
+const geometryContract=Object.freeze({...rouletteContract,schemaVersion:16,blackjackTableGeometry:'asset-static-anchors-v1'});
+const speechContract=Object.freeze({...geometryContract,schemaVersion:17,recordedSpeech:'exact-take-review-v1',filmedDealVariants:'sixteen-explicit-v1'});
+const compressionContract=Object.freeze({...speechContract,schemaVersion:18,presentationCompression:'gzip-brotli-v1'});
+const tableBetContract=Object.freeze({...compressionContract,schemaVersion:19,blackjackBetMode:'under-cards-v1'});
+const contracts=Object.freeze({...baselineContracts,14:categoryContract,15:rouletteContract,16:geometryContract,17:speechContract,
+  18:compressionContract,19:tableBetContract,20:Object.freeze({...tableBetContract,schemaVersion:20,speechSlots:'explicit-line-standard-v1'})});
 function failure(code, statusCode) { return Object.assign(new Error(code), { code, statusCode }); }
 const invalid = () => { throw failure('presentation_capability_invalid', 503); };
 function version(value) {
-  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(value)) invalid();
+  if (!Number.isInteger(value) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(value)) invalid();
   return value;
 }
 
 // v1 is read compatibility for older deployments. The current endpoint keeps
-// its v2 representation unless a caller explicitly negotiates v3-v13. Malformed,
+// its v2 representation unless a caller explicitly negotiates v3-v20. Malformed,
 // duplicate or unsupported version headers never silently choose another version.
 export function negotiatePresentationCapabilityVersion(header) {
   if (header === null || header === undefined) return PRESENTATION_CAPABILITY_DEFAULT_VERSION;
@@ -45,6 +54,13 @@ export function negotiatePresentationCapabilityVersion(header) {
   if (header === '11') return 11;
   if (header === '12') return 12;
   if (header === '13') return 13;
+  if (header === '14') return 14;
+  if (header === '15') return 15;
+  if (header === '16') return 16;
+  if (header === '17') return 17;
+  if (header === '18') return 18;
+  if (header === '19') return 19;
+  if (header === '20') return 20;
   throw failure('presentation_capability_version_unsupported', 406);
 }
 export function presentationCapabilitiesForVersion(requestedVersion) {

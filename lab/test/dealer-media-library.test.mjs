@@ -176,3 +176,20 @@ test('shoe transitions are exact recommended slots and accept an upload classifi
   assert.equal(dealerSlotStatus(project,{videos:[{...video,available:false}]},'paow',slots[1]).level,'recommended');
   assert.throws(()=>mediaClassification(project,{dealerId:'paow',slotId:'transition.shoe/from-shoe',label:'Ljud',contentType:'audio/wav'}));
 });
+
+test('every speech slot reports its explicit standard without treating an upload as a choice',async()=>{
+  const {bindSpeechSlotStandard}=await import('../../web/public/speech-slot-bindings.mjs');
+  let draft=addDealer(createEmptyProject(),'dragan','Dragan');
+  const slots=dealerMediaSlots(draft,'speech');assert.equal(slots.length,17);
+  const videos=slots.map((slot,i)=>({id:'11111111-1111-4111-8111-'+String(i).padStart(12,'0'),dealer:'dragan',available:true,label:slot.label,sha256:'a'.repeat(64),classification:{dealerId:'dragan',eventId:slot.eventId,situation:slot.situation,kind:'speech',recordedSpeech:{schemaVersion:1,dealerId:'dragan',lineId:slot.situation,takeId:slot.situation+'_1',language:'sv',exactText:'Test.',videoSha256:'a'.repeat(64),audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:25,frameCount:50,audioDelayMs:0,entryPose:'VILA',exitPose:'VILA',calibrationRevision:'test-1',recording:{status:'pending'},review:{status:'pending'}}}}));
+  for(const slot of slots){
+    assert.match(dealerSlotStatus(draft,{videos},'dragan',slot).label,/välj standard/);
+    draft=bindSpeechSlotStandard(draft,{dealerId:'dragan',eventId:slot.eventId,situation:slot.situation,videoId:videos.find(row=>row.classification.situation===slot.situation).id});
+  }
+  for(const slot of slots){
+    const video=videos.find(row=>row.classification.situation===slot.situation);
+    assert.equal(dealerSlotStatus(draft,{videos},'dragan',slot).label,'Standard vald i utkastet');
+    assert.equal(mediaUsage(draft,video,'dragan'),'Standard för '+slot.label+' i utkastet');
+    assert.equal(dealerSlotStatus(draft,{videos:[]},'dragan',slot).label,'Valt standardklipp saknas');
+  }
+});

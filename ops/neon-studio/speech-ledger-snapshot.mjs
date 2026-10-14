@@ -13,7 +13,7 @@ const keys = (value, expected) => value && !Array.isArray(value) && typeof value
   && Object.keys(value).sort().join(',') === expected.sort().join(',');
 const integer = value => Number.isSafeInteger(value) && value >= 0 && value <= 8640000000000000 - GPU_RESERVATION_WINDOW_MS;
 const timestamp = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
-const microUsd = value => Number.isSafeInteger(value) && value > 0 && value <= 10000000;
+const microUsd = (value, maximum = 10000000) => Number.isSafeInteger(value) && value > 0 && value <= maximum;
 function freeze(value) { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); } return value; }
 function source(packet) {
   if (!keys(packet, ['name','bytes','sha256','updatedAt']) || !(packet.bytes instanceof Uint8Array)
@@ -49,7 +49,7 @@ export function prepareLegacySpeechLedgerSnapshot({ scope, endpointId, observedA
   const used = new Set(), get = name => { const packet = packets.get(name); if (packet) used.add(name); return packet?.value ?? null; };
   const budget = get('gpu-budget-policy.json');
   if (budget && (!keys(budget, ['version','dailyBudgetMicroUsd','createdAt']) || budget.version !== 1
-    || !microUsd(budget.dailyBudgetMicroUsd) || !integer(budget.createdAt) || budget.createdAt > stamp)) fail();
+    || !microUsd(budget.dailyBudgetMicroUsd, 20000000) || !integer(budget.createdAt) || budget.createdAt > stamp)) fail();
   const sessions = [], reservations = [], requests = [], retainedOperatorQa = [];
   for (const name of [...packets.keys()].sort()) {
     const match = /^gpu-session-([a-f0-9]{32})\.reservation\.json$/.exec(name);

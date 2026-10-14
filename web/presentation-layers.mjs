@@ -3,6 +3,8 @@ import {validateCompositionSettings} from './public/composition-settings.mjs';
 import {validateBackgroundPlayback} from './public/background-playback-policy.mjs';
 import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from './dealer-identity.mjs';
 import {validateManagedStudioMedia} from './managed-media-contract.mjs';
+import {validateFrozenRouletteIdle} from './public/roulette-idle-contract.mjs';
+import {validateFrozenRouletteStart} from './public/roulette-start-contract.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.
 export {LAYER_ASSET_ROLES, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES, layerAssetPath, validateLayerAsset} from './layer-asset-contract.mjs';
 import {LAYER_ASSET_ROLES, validateLayerAsset} from './layer-asset-contract.mjs';
@@ -76,7 +78,7 @@ export function validatePresentationLane(value, {dealerIds = [...dealers]} = {})
       || value.idle.frequencyPercent < 0 || value.idle.frequencyPercent > 100)) reject();
     if (value.idle.variants !== undefined) list(value.idle.variants, id => typeof id === 'string' && id.length <= 200);
   }
-  if(value.composition!==undefined)validateCompositionSettings(value.composition);
+  if(value.composition!==undefined)validateCompositionSettings(value.composition,{tableIds:layers.table.allowed});
   if (Object.hasOwn(value, 'backgroundPlayback')) {
     const policy = validateBackgroundPlayback(value.backgroundPlayback,
       { allowed: layers.background.allowed, defaultAssetId: layers.background.default });
@@ -93,7 +95,7 @@ export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
   const expected = selected.filter(id => !BASE_DEALER_IDS.includes(id) || entries.some(row => row?.id === id));
   const checked = [], seen = new Set();
   for (const entry of entries) {
-    exact(entry, ['id', 'label', 'idle']);
+    exact(entry, ['id', 'label', 'idle'], ['rouletteIdle','rouletteStart']);
     if (!expected.includes(entry.id) || seen.has(entry.id) || typeof entry.label !== 'string'
       || !entry.label.trim() || entry.label.length > 120 || /[\u0000-\u001f\u007f-\u009f]/u.test(entry.label)) reject();
     seen.add(entry.id);
@@ -104,7 +106,16 @@ export function validateFrozenRegisteredDealers(entries, {dealerIds} = {}) {
       if (metadata.dealerId !== entry.id || metadata.eventId !== 'idle.ready' || metadata.kind !== 'idle'
         || (metadata.playback ?? 'once') !== 'once') reject();
     }
-    checked.push({id:entry.id, label:entry.label, idle});
+    let rouletteIdle;
+    if(Object.hasOwn(entry,'rouletteIdle')) {
+      try {rouletteIdle=validateFrozenRouletteIdle(entry.rouletteIdle,entry.id,validateManagedStudioMedia);} catch {reject();}
+    }
+    let rouletteStart;
+    if(Object.hasOwn(entry,'rouletteStart')) {
+      if(!rouletteIdle)reject();
+      try {rouletteStart=validateFrozenRouletteStart(entry.rouletteStart,entry.id,validateManagedStudioMedia);} catch {reject();}
+    }
+    checked.push({id:entry.id, label:entry.label, idle,...(rouletteIdle?{rouletteIdle}:{}),...(rouletteStart?{rouletteStart}:{})});
   }
   if (seen.size !== expected.length) reject();
   return checked;
@@ -128,6 +139,7 @@ export function validatePresentationPackage(value) {
   if (new Set(lanes.map(row => row.id)).size !== lanes.length || new Set(assets.map(row => row.id)).size !== assets.length) reject();
   const byId = new Map(assets.map(asset => [asset.id, asset]));
   const used = new Set();
+  for(const lane of lanes)if(lane.composition)validateCompositionSettings(lane.composition,{tableIds:lane.layers.table.allowed,assets});
   for (const lane of lanes) for (const role of LAYER_ASSET_ROLES) {
     for (const id of lane.layers[role].allowed) {
       if (byId.get(id)?.role !== role) reject();

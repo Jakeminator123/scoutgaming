@@ -20,6 +20,14 @@ test('a selected game limits rooms before dealer selection',()=>{
   const blackjack=studioContext(catalog,project,{operatorId:'a',game:'blackjack',roomId:'roulette'});
   assert.equal(blackjack.room.id,'bj');assert.equal(blackjack.dealer.id,'astrid');
 });
+
+test('explicit N1 library mode opens an unassigned dealer without changing the room template or ownership',()=>{
+  const before=structuredClone(project);
+  const context=studioContext(catalog,project,{operatorId:'a',roomId:'bj',dealerId:'paow-v2',library:true});
+  assert.equal(context.dealer.id,'paow-v2');assert.equal(context.room.id,'bj');assert.equal(context.operator.id,'a');
+  assert.deepEqual(context.lane.layers.dealer.allowed,['astrid']);assert.deepEqual(project,before);
+  assert.deepEqual(context.dealers.map(row=>row.id),['astrid','paow-v2']);
+});
 test('a direct archived company link cannot reopen its room or inherit an active dealer bank',()=>{
   const saved=structuredClone(catalog);saved.administration.operators[0].status='suspended';saved.administration.operators[0].archivedAt='2026-10-13T00:00:00Z';
   const context=studioContext(saved,project,{operatorId:'a',roomId:'bj',dealerId:'astrid'});
@@ -63,26 +71,26 @@ const hrefs=html=>[...html.matchAll(/href="([^"]+)"/g)].map(match=>match[1].repl
 test('registered room and dealer links stay in Admin and retain the exact owner, room, composition and game',async()=>{
   const html=await registeredStudioHtml('/admin/rooms','?operator=a&table=roulette');
   const links=hrefs(html);
-  assert.deepEqual(links.filter(href=>href.startsWith('/control')),['/control/rooms?operator=a&table=roulette&composition=two&game=roulette']);
+  assert.deepEqual(links.filter(href=>href.startsWith('/admin/publication')),['/admin/publication?operator=a&table=roulette&composition=two&game=roulette']);
   const dealer=links.map(href=>new URL(href,'https://scout.invalid')).find(url=>url.pathname==='/admin/clips'&&url.searchParams.get('table')==='roulette');
   assert.ok(dealer);assert.deepEqual(Object.fromEntries(dealer.searchParams),{operator:'a',table:'roulette',composition:'two',game:'roulette',dealer:'paow-v2'});
   const rooms=links.filter(href=>href.startsWith('/admin/rooms?')).map(href=>new URL(href,'https://scout.invalid'));
   assert.ok(rooms.some(url=>url.searchParams.get('table')==='roulette'&&url.searchParams.get('composition')==='two'&&url.searchParams.get('game')==='roulette'));
-  assert.match(html,/Redigera rum i Studio/);assert.match(html,/Skapa\/publicera rum \(äldre editor\)/);
+  assert.match(html,/Redigera rum i Studio/);assert.match(html,/Skapa\/publicera rum/);
   assert.ok(html.indexOf('Redigera rum och sammansättning')<html.indexOf('Skapa/publicera rum'));
   assert.doesNotMatch(html,/<h3 class="text-sm font-medium">bj<\/h3>/,'room cards retain the incoming game-first filter');
   assert.match(html,/id="room-trash"/,'registered room trash remains available in Admin');
 });
-test('an active company without registered rooms can still create its first room in the compatible editor',async()=>{
+test('an active company without registered rooms can still create its first room in Admin',async()=>{
   const html=await registeredStudioHtml('/admin/rooms','?operator=b',{rooms:[]});
-  assert.deepEqual(hrefs(html).filter(href=>href.startsWith('/control')),['/control/rooms?operator=b']);
-  assert.match(html,/Skapa\/publicera rum \(äldre editor\)/);assert.doesNotMatch(html,/Redigera rum och sammansättning/);
+  assert.deepEqual(hrefs(html).filter(href=>href.startsWith('/admin/publication')),['/admin/publication?operator=b']);
+  assert.match(html,/Skapa\/publicera rum/);assert.doesNotMatch(html,/Redigera rum och sammansättning/);
 });
-test('company team editor remains an explicit compatibility action rather than an unsupported Admin route',async()=>{
+test('company team editor links to the supported Admin workspace',async()=>{
   const html=await registeredStudioHtml('/admin/admin/operators','?operator=b');
-  const legacy=hrefs(html).filter(href=>href.startsWith('/control'));
-  assert.deepEqual(legacy,['/control/companies?operator=a','/control/companies?operator=b']);
-  assert.match(html,/Bolag &amp; team \(äldre editor\)/);assert.doesNotMatch(html,/Nuvarande Control/);
+  const legacy=hrefs(html).filter(href=>href.startsWith('/admin/companies'));
+  assert.deepEqual(legacy,['/admin/companies?operator=a','/admin/companies?operator=b']);
+  assert.match(html,/Bolag &amp; team/);assert.doesNotMatch(html,/Nuvarande Control/);
   const unknown=await registeredStudioHtml('/admin/unknown');
   assert.equal(hrefs(unknown).some(href=>href.startsWith('/control')),false);assert.ok(hrefs(unknown).includes('/admin'));
 });

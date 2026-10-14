@@ -85,6 +85,20 @@ test('speech requires exact line and situation matching preserves hidden-card di
   assert.equal(videoFitsEvent({ classification: { ...metadata, situation: 'dealer-hole' } }, { type: 'deal', to: 'dealer', faceDown: false }), false);
 });
 
+test('new recorded speech metadata binds dealer and exact line while old speech remains unchanged',()=>{
+  const legacy={...metadata,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',playback:'once'};
+  const recordedSpeech={schemaVersion:1,dealerId:'astrid',lineId:'goodluck',takeId:'goodluck_1',language:'sv',exactText:'Inspelad testreplik.',
+    videoSha256:'a'.repeat(64),audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+    entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
+  assert.deepEqual(validateVideoMetadata(legacy),legacy);
+  const value={...legacy,recordedSpeech};assert.deepEqual(validateVideoMetadata(value),value);
+  for(const change of [{dealerId:'vera'},{lineId:'win'},{language:'SV'},{review:{status:'approved'}}])
+    assert.throws(()=>validateVideoMetadata({...value,recordedSpeech:{...recordedSpeech,...change}}));
+  assert.throws(()=>validateVideoMetadata({...metadata,recordedSpeech}));
+  assert.throws(()=>validateVideoMetadata({...value,mediaType:'audio'}));
+  assert.throws(()=>validateVideoMetadata({...value,playback:'loop'}));
+});
+
 const settings = readSettings({ env: {}, envFiles: [] });
 const noFetch = () => assert.fail('No model calls in local tests');
 test('manual alternatives stay out of rules/model/random; opt-in random obeys triggers and keeps standard', async () => {

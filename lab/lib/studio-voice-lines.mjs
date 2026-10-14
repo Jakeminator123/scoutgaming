@@ -5,7 +5,7 @@ import { verifiedMediaBlobStorage } from './media-blob-index.mjs';
 import { canonicalStudioJson, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { SPEECH_LINES } from '../../web/public/speech-lines.mjs';
 
-const roster = Object.freeze({ vera: 'Vera', astrid: 'Astrid', amira: 'Amira', mei: 'Mei' });
+const roster = Object.freeze({ vera: 'Vera', astrid: 'Astrid', mei: 'Mei' });
 const sha = value => createHash('sha256').update(value).digest('hex');
 const fail = () => { throw new StudioStorageError('studio_voice_registry_unavailable'); };
 const lineKey = /^[a-z][a-z0-9_-]{0,99}$/;

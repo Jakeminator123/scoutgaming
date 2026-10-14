@@ -4,12 +4,14 @@ import {validateProject} from '../../../../../lab/lib/studio-model.mjs';
 import {LayerLibrary} from '../../../../../lab/components/layer-library';
 import {LayerAssetManager} from '../../../../../lab/components/layer-asset-manager';
 import {materialLabel} from '../../../../../web/public/material-catalog.mjs';
+import {layerAssetFitsGame} from '../../../../../web/layer-asset-contract.mjs';
 import {createStudioClient} from '../../lib/connected-studio.mjs';
 
 const client=createStudioClient();
 export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey}:{disabled:boolean;onChanged:()=>void;refreshKey:string}){
   const [project,setProject]=useState<StudioProject|null>(null),[error,setError]=useState('');
   const [role,setRole]=useState<'table'|'background'>(()=>new URLSearchParams(location.search).get('tab')==='backgrounds'?'background':'table');
+  const [game,setGame]=useState<'blackjack'|'roulette'>(()=>new URLSearchParams(location.search).get('game')==='roulette'?'roulette':'blackjack');
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
   const [reload,setReload]=useState(0);
   const active=useRef(new Set<string>()),busyRef=useRef(false);
@@ -29,11 +31,12 @@ export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey}:{disab
     {disabled&&<p role="status">Spara eller lös ditt Studio-utkast innan du ändrar biblioteket.</p>}
     {error&&<p role="alert">{error} <button className="studio-button" disabled={busy||loading} onClick={()=>setReload(value=>value+1)}>Läs om biblioteket</button></p>}{loading&&<p role="status">Läser det skyddade biblioteket…</p>}
     <div role="tablist" aria-label="Bibliotekstyp">{(['table','background'] as const).map(value=><button key={value} role="tab" aria-selected={value===role} disabled={busy} className="studio-button" onClick={()=>setRole(value)}>{value==='table'?'Bord':'Bakgrunder'}</button>)}</div>
+    {role==='table'&&<label className="studio-field">Spelet som bordet tillhör<select aria-label="Bordets spel" value={game} disabled={blocked} onChange={event=>setGame(event.target.value as 'blackjack'|'roulette')}><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option></select></label>}
     {project&&<div className="space-y-5">
-      <LayerLibrary role={role} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={(remote,id)=>{
-        if(!remote.layerAssets?.some(asset=>asset.id===id&&asset.role===role)){setError('Registreringen kunde inte bekräftas. Läs om innan du fortsätter.');return;}saved(remote);
+      <LayerLibrary role={role} game={game} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={(remote,id)=>{
+        if(!remote.layerAssets?.some(asset=>asset.id===id&&asset.role===role&&layerAssetFitsGame(asset,game))){setError('Registreringen kunde inte bekräftas för valt spel. Läs om innan du fortsätter.');return;}saved(remote);
       }}/>
-      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{(project.layerAssets??[]).filter(asset=>asset.role===role).map(asset=><li key={asset.id} className="rounded border border-sg-line p-3">
+      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{(project.layerAssets??[]).filter(asset=>asset.role===role&&layerAssetFitsGame(asset,game)).map(asset=><li key={asset.id} className="rounded border border-sg-line p-3">
         {asset.contentType.startsWith('video/')?<video src={'/studio/api/layer-assets/'+asset.id} controls playsInline preload="none" aria-label={materialLabel(asset)}/>:<img src={'/studio/api/layer-assets/'+asset.id} alt={materialLabel(asset)} loading="lazy" className="h-40 w-full object-contain"/>}
         <h2>{materialLabel(asset)}</h2><p>{asset.width} × {asset.height}</p>
       </li>)}</ul>

@@ -28,6 +28,7 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
     // It is served by the game runtime and is never used by the design lobby.
     external: ['/composition-runtime/compositor.js'],
     define: { 'process.env.NODE_ENV': '"production"',
+      'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE': JSON.stringify(surface==='admin'?'1':'0'),
       'process.env.NEXT_PUBLIC_LAB_BASE_PATH': JSON.stringify(process.env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio' : '') },
     alias: { ...(publicLobby ? { '@/lib/catalog.mjs': resolve(root, 'runtime/public-lobby-catalog.mjs') } : {}),
       'react': resolve(root, 'node_modules/react'), 'react-dom': resolve(root, 'node_modules/react-dom'),
@@ -71,6 +72,8 @@ for (const surface of ['admin', 'lobby', 'public-lobby']) {
   const extra = surface === 'admin' ? '<link rel="stylesheet" href="/admin/_assets/admin/app.css">' : '';
   await writeFile(resolve(outdir, 'index.html'), `<!doctype html><html lang="sv" class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title} · Arbetsversion · Scoutgaming</title>${extra}<link rel="stylesheet" href="${assetBase}/_assets/${assetSurface}/theme.css"></head><body class="preview-${assetSurface} font-sans antialiased"><div id="root"></div><script src="${assetBase}/_assets/${assetSurface}/app.js" defer></script><script src="${process.env.CROUPIER_LAB_BASE_PATH === '/studio' ? '/studio' : ''}/assistant-widget.js" defer></script></body></html>`);
 }
+await build({entryPoints:[resolve(root,'admin/lib/dealer-chat-import.mjs')],outfile:resolve(output,'admin/chat-import.js'),bundle:true,minify:true,format:'esm',platform:'browser',target:'es2022',
+  define:{'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':JSON.stringify(process.env.CROUPIER_LAB_BASE_PATH==='/studio'?'/studio':'')}});
 await mkdir(resolve(output, 'fonts'), { recursive: true });
 for (const [name, original] of Object.entries({ inter: 'inter-latin-wght-normal', space: 'space-grotesk-latin-wght-normal', mono: 'jetbrains-mono-latin-wght-normal' })) {
   await cp(resolve(root, '../../lab/app/fonts', original + '.woff2'), resolve(output, 'fonts', name + '.woff2'));

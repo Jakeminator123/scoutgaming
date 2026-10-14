@@ -1,4 +1,5 @@
 import { isActiveDealerId } from './dealer-identity.mjs';
+import { recordedSpeechForVideo } from './recorded-speech.mjs';
 import { createLiveIdleController } from '../../presentation-runtime/live-idle.mjs';
 
 export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, muted, composition = null, entry = null, transport = null }) {
@@ -40,7 +41,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
   const hold = video => { if (composition) { composition.hold(video); return; } if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
-  const stop = () => { active?.abort(); active = null; };
+  let idleRun = 0, idleError = null, idleDuringAction = false, pendingRule = null, idleRetryTimer = null, idleRetries = 0;
+  const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; idleRetries = 0; active?.abort(); active = null; };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
   async function observeChat(text) {
@@ -68,7 +70,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch { /* Advice is optional; automatic idle and gameplay continue. */ }
     finally { if (adviceController === controller) adviceController = null; }
   }
-  async function film(video, { signal, kind, details = {}, onFrame, onMediaFrame, onEvent } = {}) {
+  async function film(video, { signal, kind, details = {}, onPrepared, onFrame, onMediaFrame, onEvent } = {}) {
     const own = new AbortController(); active = own;
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) own.abort();
@@ -81,6 +83,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       }
       if(composition)await composition.prepareClip(video.compositing ?? video.classification?.compositing,video.framing ?? video.classification?.framing,{kind});
       if(own.signal.aborted)throw new DOMException('Presentation cancelled','AbortError');
+      onPrepared?.();
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
         signal: own.signal, muted: kind !== 'speech' || muted(), hold, onFrame: onMediaFrame,
         renderFrame: composition ? source => composition.renderFrame(source) : undefined,
@@ -89,7 +92,6 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       });
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
   }
-  let idleRun = 0, idleError = null, idleDuringAction = false, pendingRule = null;
   function retainRule(result, requestVersion) {
     const rule = result.idleRule;
     if (!idle || mode !== 'rules' || rule?.mode !== mode || rule.version !== requestVersion || rule.requestId !== result.decision.requestId
@@ -120,12 +122,23 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     void film(video, { kind: 'idle', details: { idleKind: 'standard', standardBase: true,
       reason: 'saved_exact_baseline', projectRevision: config.projectRevision || config.revision, configurationSource },
       onFrame: () => { if (epoch !== serial || closed) return;
+        idleRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
         onIdle(); },
     }).then(() => { if (epoch !== serial || closed) return; idleRun = 0; resumeOwnIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
         if (requireReload(error)) return;
-        idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error); });
+        idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
+        if (error.code !== 'local_film_no_presented_frame' || idleRetries >= 1) return;
+        // Retry the same frozen idle once. Neither a timer nor 'playing' opens
+        // the speech gate or clears the warning; only this owner's frame does.
+        idleRetries++;
+        idleRetryTimer = setTimeout(() => {
+          idleRetryTimer = null;
+          if (epoch !== serial || closed) return;
+          idleRun = 0; resumeOwnIdle();
+        }, 500);
+      });
   }
   function resumeIdle() {
     if (!idle) { resumeOwnIdle(); return; }
@@ -182,6 +195,16 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       if (queueVersion === requestVersion && upcoming[0]?.type === event.type
         && (event.type === 'speak' ? upcoming[0].line === event.line : upcoming[0].shoeDraw === event.shoeDraw)) upcoming.shift();
       else upcoming = [];
+      if (!result.video && kind === 'speech') {
+        const reason = result.decision.media?.reason;
+        if ([undefined, null, 'no_exact_video_2d', 'frozen_clip_missing'].includes(reason)) {
+          receipt({ event: kind, state: 'skipped', sourceEvent: result.decision.sourceEvent, reason: reason ?? 'speech_clip_missing', renderer: 'none',
+            requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource });
+          retainRule(result, requestVersion);
+          return false;
+        }
+        if (reason === 'recorded_speech_unavailable') throw new Error('Talfilmens granskning eller identitet stämmer inte');
+      }
       if (!result.video && ((kind === 'deal' && result.decision.media?.reason === 'position_clip_missing') || result.decision.media?.reason === 'frozen_clip_missing')) {
         receipt({ event: kind, state: 'skipped', sourceEvent: result.decision.sourceEvent, reason: result.decision.media.reason, renderer: '2d',
           requestId: result.decision.requestId, familyId: result.decision.media.familyId, situation: result.decision.media.situation,
@@ -198,17 +221,20 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       let attempt = 0;
       const owns = current => current === attempt && token === serial && requestVersion === version() && !signal?.aborted;
       const play = async video => {
+        const speech = video.recordedSpeech ?? video.classification?.recordedSpeech;
+        if (speech !== undefined && (kind !== 'speech' || !recordedSpeechForVideo(video, {
+          dealerId, lineId: event.line, language: speech?.language, takeId: speech?.takeId, requireApproved: !preview,
+        }))) throw new Error('Talfilmens granskning eller identitet stämmer inte');
         const current = ++attempt;
-        onSelected?.(video, result.decision.sourceEvent);
         try {
-          await film(video, { kind, signal, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
+          await film(video, { kind, signal, onPrepared:()=>{if(owns(current))onSelected?.(video,result.decision.sourceEvent);}, details: { line: event.line, to: event.to, box: event.box, shoeDraw: event.shoeDraw, familyId: result.decision.media?.familyId, requestId: result.decision.requestId, projectRevision: result.projectRevision, configurationSource },
             onFrame: () => { if (owns(current)) onPresented?.(); },
             onMediaFrame: onFrame ? time => { if (owns(current)) onFrame(time); } : undefined,
             onEvent: event => { if (owns(current) && event.state === 'start') prepare(upcoming[0]); } });
         } finally { if (current === attempt) ++attempt; }
       };
       try { await play(result.video); }
-      catch (error) { if (signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id) throw error;
+      catch (error) { if (signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
         receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: 'performance-local', requestId: result.decision.requestId, mediaId: result.standard.id, projectRevision: result.projectRevision, configurationSource });
         await play(result.standard); }
       const current = token === serial && requestVersion === version() && !signal?.aborted;
@@ -217,8 +243,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     } catch (error) {
       if (signal?.aborted || token !== serial) return false;
       if (requireReload(error)) return false;
-      status.textContent = `${error.message} · 2D-reserv`;
-      receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
+      status.textContent = kind === 'speech' ? `Tal: ${error.message}` : `${error.message} · 2D-reserv`;
+      receipt({ event: kind, state: kind === 'speech' ? 'failed' : 'fallback', sourceEvent: event, reason: error.message, renderer: kind === 'speech' ? 'none' : '2d', requestId: result?.decision?.requestId, familyId: result?.decision?.media?.familyId,
         projectRevision: result?.projectRevision, configurationSource }); return false;
     }
   }

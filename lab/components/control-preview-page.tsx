@@ -7,6 +7,7 @@ import {clipLabel} from '../lib/clip-label.mjs';
 import {validateProject,type StudioProject,type StudioLane} from '../lib/studio-model.mjs';
 import {registerCompositionLayer} from '../lib/studio-composition.mjs';
 import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {layerAssetFitsGame} from '../../web/layer-asset-contract.mjs';
 import {StudioNavigation} from './studio-navigation';
 import {PageTemplate} from './page-template.mjs';
 import {useStudioProjectSession} from './studio-session';
@@ -14,6 +15,7 @@ import {LayerAssetSelect} from './layer-selectors';
 import {LayerLibrary} from './layer-library';
 import {LayerAssetManager} from './layer-asset-manager';
 import {BackgroundPlaybackEditor} from './background-playback-editor';
+import {BlackjackTableGeometryEditor} from './blackjack-table-geometry-editor';
 import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
 import {CompositionPreview,type CompositionMedia,type VideoCompositing} from './composition-preview';
@@ -33,10 +35,11 @@ export function initialCompositionLaneId(project:StudioProject,laneId?:string,de
     ??lanes[0]?.id??'';
 }
 
-export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId,initialOperatorId}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string;initialOperatorId?:string}) {
+export function ControlPreviewPage({initialProject,initialVideos,initialStatus,initialLaneId,initialDealerId,initialOperatorId,initialGame='blackjack'}:{initialProject:StudioProject;initialVideos:VideoInventory;initialStatus:ConnectionStatus;initialLaneId?:string;initialDealerId?:string;initialOperatorId?:string;initialGame?:'blackjack'|'roulette'}) {
   const session=useStudioProjectSession({initialProject,initialVideos,initialStatus});
   const {project,projectRef,videos,modelEdit:sessionEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
   const [laneId,setLaneId]=useState(()=>initialCompositionLaneId(project,initialLaneId,initialDealerId)),[clipId,setClipId]=useState('');
+  const [game,setGame]=useState<'blackjack'|'roulette'>(initialGame);
   const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[uploading,setUploading]=useState(false),[continueHref,setContinueHref]=useState('');
   const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState('');
   const [previewBusy,setPreviewBusy]=useState(false),[previewError,setPreviewError]=useState('');
@@ -58,11 +61,14 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const invalidDealerIds=[...new Set([lane.layers.dealer.default,...lane.dealers,...lane.layers.dealer.allowed])].filter(id=>!dealers.some(row=>row.id===id));
   const invalidDealerLabel=(id:string)=>project.dealers.find(row=>row.id===id)?.label??id;
   const invalidDealerSelection=!startDealer||invalidDealerIds.length>0;
-  const clips=videos.videos.filter(video=>Boolean(startDealer)&&video.available&&(video.dealer===lane.layers.dealer.default||video.classification?.dealerId===lane.layers.dealer.default));
+  const clips=videos.videos.filter(video=>Boolean(startDealer)&&video.available&&!video.classification?.archived
+    &&(game==='roulette'?video.classification?.game==='roulette'&&video.classification.dealerId===lane.layers.dealer.default
+      :video.classification?.game!=='roulette'&&(video.dealer===lane.layers.dealer.default||video.classification?.dealerId===lane.layers.dealer.default)));
   const idleFamily=videos.families?.find(row=>row.dealerId===lane.layers.dealer.default&&row.playbackType==='idle-pool');
   const idleIds=idleFamily&&project.idlePolicy?.familyId===idleFamily.id?project.idlePolicy.base.map(row=>row.videoId):idleFamily?.standardIds??[];
-  const idleClip=idleIds.map(id=>clips.find(row=>row.id===id)).find(Boolean)
-    ??clips.find(row=>row.classification?.eventId==='idle.ready'&&(row.classification.role==='standard'||row.role==='standard'));
+  const idleClip=game==='roulette'?clips.find(row=>row.id===startDealer?.rouletteIdle?.videoId)
+    :idleIds.map(id=>clips.find(row=>row.id===id)).find(Boolean)
+      ??clips.find(row=>row.classification?.eventId==='idle.ready'&&(row.classification.role==='standard'||row.role==='standard'));
   const clip=clips.find(video=>video.id===clipId)??idleClip??clips[0];
   const clipName=(video:typeof clips[number])=>clipLabel({id:video.id,label:video.label,familyId:video.familyId,role:video.role,relativePath:video.relativePath},project.clipLabels);
   const settings=lane.composition??defaultCompositionSettings();
@@ -70,7 +76,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const hasSavedLane=Boolean(project.lanes?.some(row=>row.id===lane.id));
   const previewContext=useRef({laneId:lane.id,revision:project.revision,dirty,saving,conflict,temporary});
   previewContext.current={laneId:lane.id,revision:project.revision,dirty,saving,conflict,temporary};
-  const previewBlocked=dirty||saving||uploading||conflict||temporary||!hasSavedLane||invalidDealerSelection||previewBusy;
+  const previewBlocked=game==='roulette'||dirty||saving||uploading||conflict||temporary||!hasSavedLane||invalidDealerSelection||previewBusy;
   useEffect(()=>()=>{Object.values(objectUrls.current).forEach(url=>URL.revokeObjectURL(url));},[]);
   useEffect(()=>{
     if(!continueHref||dirty||saving||uploading||conflict||temporary)return;
@@ -107,7 +113,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
     const placement=composition[layout][role] as unknown as Record<string,number>;placement[key]=value;next.composition=composition;edit(next);
   }
   function savedMedia(role:'background'|'table'):CompositionMedia|null{
-    const asset=project.layerAssets?.find(row=>row.id===lane.layers[role].default);
+    const asset=project.layerAssets?.find(row=>row.role===role&&row.id===lane.layers[role].default&&layerAssetFitsGame(row,game));
     return asset?{url:labUrl(`/api/layer-assets/${asset.id}`),contentType:asset.contentType,label:asset.label}:null;
   }
   const dealer=localMedia.dealer??(clip?{url:labUrl(clip.previewUrl),label:clipName(clip),contentType:clip.classification?.mediaType==='image'?'image/png':clip.fileName?.endsWith('.webm')?'video/webm':'video/mp4'}:null);
@@ -136,6 +142,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   }
   function clearLocal(){Object.values(objectUrls.current).forEach(url=>URL.revokeObjectURL(url));objectUrls.current={};setLocalMedia({});setLocalError('');}
   function registered(remote:StudioProject,id:string,role:'table'|'background',targetLane:string){
+    if(!remote.layerAssets?.some(asset=>asset.id===id&&asset.role===role&&layerAssetFitsGame(asset,game))){setError('Registreringen passar inte valt spel. Läs om biblioteket före koppling.');return;}
     const result=registerCompositionLayer(JSON.parse(savedBaseline.current),projectRef.current,remote,{id,role,laneId:targetLane});
     projectRef.current=result.project;setProject(result.project);clearRole(role);
     if(result.conflicts.length){setConflict(true);setError('Filen är registrerad och vald. Projektet har även ändrats i en annan vy; slå ihop ändringarna före sparning.');}
@@ -162,7 +169,7 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   }
   function layerPanel(role:'table'|'background'){
     return <section className={styles.layer} key={role} id={`composition-panel-${role}`} role="tabpanel" aria-labelledby={`composition-tab-${role}`} hidden={activeRole!==role} tabIndex={0}>
-      <fieldset disabled={previewBusy||saving}><LayerAssetSelect role={role} lane={lane} assets={project.layerAssets??[]} onChange={next=>{if(next.layers[role].default!==lane.layers[role].default){clearRole(role);if(next.layers[role].default)next.layers[role].enabled=true;}edit(next);}}/></fieldset>
+      <fieldset disabled={previewBusy||saving||uploading||conflict}><LayerAssetSelect role={role} game={game} lane={lane} assets={project.layerAssets??[]} onChange={next=>{if(next.layers[role].default!==lane.layers[role].default){clearRole(role);if(next.layers[role].default)next.layers[role].enabled=true;}edit(next);}}/></fieldset>
       {role==='background'?<><p className={styles.hint}>En bild ligger stilla. MP4 och WebM spelas som ljudlös grundloop. Lägg till separata bakgrundsklipp nedan för händelser och automatik.</p>
         <BackgroundPlaybackEditor policy={lane.backgroundPlayback} assets={project.layerAssets??[]} allowed={lane.layers.background.allowed}
           baseSelected={lane.layers.background.enabled&&backgroundAssets.some(asset=>asset.id===lane.layers.background.default)}
@@ -171,7 +178,15 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
           onPreview={id=>{if(previewBusy||saving||uploading||conflict||temporary)return;setPreviewBackgroundRuleId(id);setPreviewBackgroundRequest(value=>value+1);}}/>
       </>:null}
       {placementControls(role)}
-      <details className={styles.upload}><summary>Ladda upp {labels[role].toLowerCase()}</summary><LayerLibrary role={role} available={initialStatus.provider==='neon'} disabled={previewBusy||saving||uploading||conflict} onBusyChange={busy=>markUpload(role,busy)} onRegistered={(remote,id)=>registered(remote,id,role,lane.id)}/></details>
+      {role==='table'&&game==='blackjack'&&lane.layers.table.default&&table&&!localMedia.table?<BlackjackTableGeometryEditor
+        key={`${lane.id}:${lane.layers.table.default}:${layout}`} tableId={lane.layers.table.default} url={table.url} contentType={table.contentType} layout={layout}
+        value={settings.blackjackTables?.find(row=>row.tableId===lane.layers.table.default)} disabled={previewBusy||saving||uploading||conflict||temporary}
+        onChange={value=>{if(previewBusy||saving||uploading||conflict||temporary)return;const next=structuredClone(lane),composition=structuredClone(settings);
+          const rows=(composition.blackjackTables??[]).filter(row=>row.tableId!==lane.layers.table.default);
+          if(value)rows.push(value);if(rows.length)composition.blackjackTables=rows;else delete composition.blackjackTables;
+          next.composition=composition;edit(next);
+        }}/>:null}
+      <details className={styles.upload}><summary>Ladda upp {labels[role].toLowerCase()}</summary><LayerLibrary role={role} game={game} available={initialStatus.provider==='neon'} disabled={previewBusy||saving||uploading||conflict} onBusyChange={busy=>markUpload(role,busy)} onRegistered={(remote,id)=>registered(remote,id,role,lane.id)}/></details>
       <LayerAssetManager project={project} role={role} disabled={previewBusy||saving||uploading||conflict} onEdit={modelEdit}/>
     </section>;
   }
@@ -201,7 +216,9 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
         const url=new URL(window.location.href);url.searchParams.set('composition',id);url.searchParams.delete('lane');window.history.replaceState(null,'',url.pathname+url.search);
       }}/>
       <p className={styles.saveState}>{saving?'Sparar…':dirty?'Osparade ändringar':'Sparad sammansättning'}</p>
-      <p id="studio-preview-help" className={styles.hint}>{temporary?'Avsluta det tillfälliga filprovet före provspelning.':dirty||!hasSavedLane?'Spara sammansättningen först för att provspela.':'Provspela blackjack med sparade dealers, bord och bakgrunder från biblioteket. Ett separat provspel startas utan att publicera till ett bolag.'}</p>
+      <label>Spel för materialval<select aria-label="Spel för materialval" value={game} disabled={previewBusy||saving||uploading||conflict} onChange={event=>{clearLocal();setClipId('');setGame(event.target.value as 'blackjack'|'roulette');}}><option value="blackjack">Blackjack</option><option value="roulette">Roulette</option></select></label>
+      <p className={styles.hint}>Spelvalet filtrerar biblioteket och märker nya bordsfiler. Det byter inte rummets spel och ändrar inte sparade tillåtna val.</p>
+      <p id="studio-preview-help" className={styles.hint}>{game==='roulette'?'Roulette provspelas i det publicerade demorummet. Den separata Provspela-knappen stöder ännu bara blackjack.':temporary?'Avsluta det tillfälliga filprovet före provspelning.':dirty||!hasSavedLane?'Spara sammansättningen först för att provspela.':'Provspela blackjack med sparade dealers, bord och bakgrunder från biblioteket. Ett separat provspel startas utan att publicera till ett bolag.'}</p>
       <p className={styles.hint}>En sammansättning samlar dealer, bord och bakgrund samt vilka val bolaget får göra. Provspela här och koppla den sedan till ett spelrum under Spelrum & publicering.</p>
       {contentDealer&&contentDealer.id!==lane.layers.dealer.default?<aside className={styles.hint} aria-label="Dealer från klippbiblioteket">
         <p>Du valde {contentDealer.label} i dealerbiblioteket. {lane.layers.dealer.allowed.includes(contentDealer.id)

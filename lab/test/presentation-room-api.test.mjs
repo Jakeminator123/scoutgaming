@@ -1,4 +1,5 @@
 import {AsyncLocalStorage} from 'node:async_hooks';
+import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject as createHistoricalProject, defaultPresentationLane, addDealer } from '../lib/studio-model.mjs';
@@ -9,7 +10,7 @@ import { wrapNativePresentationRepository } from '../lib/presentation-runtime-re
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { buildPresentationPackage, layerAssetPath } from '../../web/presentation-layers.mjs';
-import { readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
 
 import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
@@ -103,7 +104,7 @@ async function fixture(options = {}) {
   const videoRegistry = { async loadCaptured(snapshot) { assert.equal(pool.currentActive(), 0, 'inventory loading outside this request SQL'); return { videos: snapshot.mediaRows.map(record => ({ id: record.id, dealer: record.classification.dealerId, sha256: record.sha256, bytes: record.size, classification: clone(record.classification), available: true, integrity: 'verified' })) }; }, async verifyCapturedMedia() { assert.equal(pool.currentActive(), 0, 'provider HEAD outside this request SQL'); } };
   const roomApi = createPresentationRoomApi({ repository, scope, videoRegistry, runtimeCapabilities: async presentation => presentation?.schemaVersion === 3 ? capability4 : presentation?.schemaVersion === 2 ? { ...capability, schemaVersion: 3, registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' } : capability, now: () => 1700000000000, ...options });
   const context = body => ({ body, actor: session, scope });
-  const prepare = (operatorId = 'north', presentationLaneId = vip.id) => roomApi.handlers.get('GET /studio/api/admin/presentation-room')({ ...context(null), request: new Request(`${origin}/studio/api/admin/presentation-room?operatorId=${operatorId}&presentationLaneId=${presentationLaneId}`) });
+  const prepare = (operatorId = 'north', presentationLaneId = vip.id, game) => roomApi.handlers.get('GET /studio/api/admin/presentation-room')({ ...context(null), request: new Request(`${origin}/studio/api/admin/presentation-room?operatorId=${operatorId}&presentationLaneId=${presentationLaneId}${game?'&game='+game:''}`) });
   const create = body => pool.request(()=>roomApi.handlers.get('POST /studio/api/admin/presentation-room')(context(body)));
   const payload = async (overrides = {}) => { const ready = await prepare(); return { operatorId: 'north', presentationLaneId: vip.id, name: 'VIP room', idempotencyKey: key,
     expectedProjectRevision: ready.projectRevision, expectedAdministrationRevision: ready.administrationRevision, expectedPackageRevision: ready.packageRevision, ...overrides }; };
@@ -113,6 +114,20 @@ async function fixture(options = {}) {
   return { pool, repository, project, administration, roomApi, videoRegistry, prepare, create, payload, publish };
 }
 const status = expected => error => error.statusCode === expected;
+async function saveRouletteBinding(f,dealerId='astrid',{removeBlackjack=false}={}) {
+  const saved=await f.repository.readDocument('project');
+  const records=['breathing','glasses-clean'].map((action,i)=>{
+    const id=`20000000-0000-4000-8000-00000000000${i+1}`,sha256=String(i+4).repeat(64);
+    return {id,sha256,size:8192,contentType:'video/webm',pathname:`croupier/media/dealers/${dealerId}/review/uploads/${id}/${sha256}.webm`,
+      classification:{dealerId,game:'roulette',eventId:'roulette.idle',action,situation:action,startPose:'VILA',endPose:'VILA',
+        kind:'idle',role:'standard',label:action,notes:'',playback:'once',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}}};
+  });
+  records.forEach(record=>f.pool.setMedia(record));
+  saved.value.dealers.find(row=>row.id===dealerId).rouletteIdle={videoId:records[0].id,variantVideoIds:[records[1].id],foregroundPolygons:[[[0,0],[1,0],[1,1]]]};
+  if(removeBlackjack)for(const line of saved.value.lines.filter(row=>row.dealerId===dealerId))for(const variant of line.variants)variant.videoGenerationId=null;
+  await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:session.user});
+  return records;
+}
 function fixedBackground(project, lane, suffix = '1') {
   const asset = { schemaVersion: 1, id: '00000000-0000-4000-8000-00000000000' + suffix,
     role: 'background', label: 'Casino ' + suffix, sha256: suffix.repeat(64), size: 128,
@@ -206,8 +221,9 @@ test('new rooms reuse an unchanged fixed scene but cannot replace an existing ro
 
 test('roulette creation publishes its game and room atomically, replays once and preserves blackjack',async()=>{
   const requested=[];
-  const f=await fixture({runtimeCapabilities:async(presentation,game)=>{requested.push(game);return presentationCapabilitiesForVersion(9);}});
+  const f=await fixture({runtimeCapabilities:async(presentation,game)=>{requested.push(game);return presentationCapabilitiesForVersion(15);}});
   const blackjack=await f.create(await f.payload());
+  await saveRouletteBinding(f);
   const body=await f.payload({game:'roulette',name:'North Roulette',idempotencyKey:'0bbb0000-1111-4222-8333-444444444444'});
   const created=await f.create(body);
   assert.equal(created.room.game,'roulette');assert.match(created.playUrl,/^\/play\/roulette\?/);
@@ -221,11 +237,40 @@ test('roulette creation publishes its game and room atomically, replays once and
   await assert.rejects(f.create({...body,game:'blackjack'}),status(409));
 });
 
+test('roulette requires an explicit saved idle and never picks its blackjack baseline or inventory',async()=>{
+  const f=await fixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(15)}),body=await f.payload({game:'roulette'}),before=f.pool.snapshot();
+  await assert.rejects(f.create(body),error=>error.code==='studio_roulette_idle_required'&&error.statusCode===422);
+  assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('roulette-only registered dealer publishes base and variant without requiring any blackjack clip',async()=>{
+  const f=await registeredFixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(15)});
+  const records=await saveRouletteBinding(f,'johanna',{removeBlackjack:true});
+  const before=f.pool.snapshot(),ready=await f.prepare('north',f.lane.id,'roulette');
+  assert.equal(ready.ready,true);assert.equal(ready.capabilities.schemaVersion,15);assert.deepEqual(f.pool.snapshot(),before);
+  assert.equal((await f.prepare('north',f.lane.id)).ready,false,'blackjack cannot borrow roulette idle');
+  const result=await f.create({operatorId:'north',presentationLaneId:f.lane.id,name:'Roulette only',game:'roulette',idempotencyKey:key,
+    expectedProjectRevision:ready.projectRevision,expectedAdministrationRevision:ready.administrationRevision,expectedPackageRevision:ready.packageRevision});
+  const raw=f.pool.snapshot().packages.at(-1),pack={operatorId:'north',revision:raw.package_revision,lanes:JSON.parse(raw.lanes),games:JSON.parse(raw.games),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
+  const frozen=readPackagePresentation(pack),dealer=frozen.registeredDealers[0];
+  assert.equal(dealer.idle,null);assert.equal(dealer.rouletteIdle.base.id,records[0].id);assert.equal(dealer.rouletteIdle.variants[0].id,records[1].id);
+  assert.equal(result.room.game,'roulette');
+  const selected=createGameEntrySelector({game:'roulette',policy:{readSaved:async()=>({administration:(await f.repository.readDocument('administration')).value,project:{}}),readGameConfiguration:()=>{throw Error('unexpected fallback');}},
+    packages:{resolve:async()=>({operator:{id:'north',slug:'north',status:'active'},package:pack})},log:()=>{}});
+  assert.equal((await selected(new URLSearchParams({operator:'north',table:result.room.id}))).status,200);
+});
+
 test('roulette refuses old Render capabilities and invalid game values without domain writes',async()=>{
-  const f=await fixture(),body=await f.payload({game:'roulette'}),before=f.pool.snapshot();
+  const f=await fixture();await saveRouletteBinding(f);const body=await f.payload({game:'roulette'}),before=f.pool.snapshot();
   await assert.rejects(f.create(body),status(503));assert.deepEqual(f.pool.snapshot(),before);
   for(const game of [null,undefined,'poker',1]) await assert.rejects(f.create({...body,game}),status(422));
   assert.deepEqual(f.pool.snapshot(),before);
+});
+
+test('the shipped v14 category contract cannot publish roulette idle despite its higher version',async()=>{
+  const f=await fixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(14)});
+  await saveRouletteBinding(f);const body=await f.payload({game:'roulette'}),before=f.pool.snapshot();
+  await assert.rejects(f.create(body),status(503));assert.deepEqual(f.pool.snapshot(),before);
 });
 
 test('preparation is read-only and returns actual nullable package revision plus verified runtime contract', async () => {
@@ -235,6 +280,60 @@ test('preparation is read-only and returns actual nullable package revision plus
   await f.publish({ actor: session.user, operatorId: 'north', lanes: ['mobile-phone'], games: ['blackjack'], tables: ['legacy'], branding: withPackagePresentation({ name: 'Brand' }, buildPresentationPackage(f.project, ['mobile-phone'], [])) });
   assert.equal((await f.prepare()).packageRevision, 1);
   await assert.rejects(f.prepare('unknown'), status(404)); await assert.rejects(f.prepare('north', 'unknown'), status(404));
+});
+
+test('room GET retains its published room when candidate encoding exceeds the publication limit', async () => {
+  let guarded, candidate;
+  const f = await fixture({ runtimeCapabilities: presentation => {
+    candidate = presentation;
+    return guarded.withMutationContext(async () => capability4,
+      [{ kind:'administration', value:{rooms:[{schemaVersion:2}]} }, { kind:'presentation-package', value:presentation }]);
+  } });
+  guarded = wrapNativePresentationRepository(f.repository, {
+    env:{CROUPIER_BACKEND_ORIGIN:'https://engine.example.invalid'},
+    fetchImpl:async (_url, options) => Response.json(presentationCapabilitiesForVersion(Number(options.headers['X-Presentation-Capability-Version']))),
+  });
+  let authorized = session;
+  const api = createStudioAdminApi({ authorize:async () => authorized, handlers:f.roomApi.handlers,
+    allowedOrigins:[origin], publicHosts:['studio.example.invalid'] });
+  const read = (operatorId = 'north') => api.handle(new Request(`${origin}/studio/api/admin/presentation-room?operatorId=${operatorId}&presentationLaneId=vip-presentation`));
+  const original = await f.payload(), created = await f.create(original);
+  const validResponse = await read(), valid = await validResponse.json();
+  assert.equal(validResponse.status, 200); assert.equal(valid.ready, true);
+  assert.deepEqual(valid.rooms, [{id:created.room.id,name:created.room.name,playUrl:created.playUrl}]);
+  await assert.rejects(f.create({...original,idempotencyKey:'0bbb0000-1111-4222-8333-444444444444'}), status(409));
+
+  const saved = await f.repository.readDocument('project');
+  for (const line of saved.value.lines.filter(row => row.dealerId === 'astrid' && ['deal.player.left','deal.player.centre'].includes(row.eventId))) {
+    const baseline = line.variants.find(row => row.id === line.baselineVariantId);
+    for (let i = 0; i < 12; i++) {
+      const hash = value => createHash('sha256').update(`${line.eventId}:${i}:${value}`).digest('hex');
+      const identity = hash('id'), id = `${identity.slice(0,8)}-${identity.slice(8,12)}-4000-8000-${identity.slice(12,24)}`;
+      const record = idleRecord('astrid', id);
+      record.classification = {...record.classification,eventId:line.eventId,kind:'action',role:'alternative',situation:line.eventId.endsWith('left')?'box0':'box2',
+        label:'Isolated large candidate',notes:Array.from({length:20},(_,part)=>hash(part)).join('')};
+      f.pool.setMedia(record);
+      line.variants.push({...clone(baseline),id:`astrid.${line.eventId}.large.${identity.slice(0,24)}`,videoGenerationId:id,
+        selection:{rules:false,model:false,random:false}});
+    }
+  }
+  const changed = await f.repository.saveDocument('project', {value:saved.value,expectedRevision:saved.revision,actor:session.user});
+  const before = f.pool.snapshot(), response = await read(), blocked = await response.json();
+  assert.ok(Buffer.byteLength(JSON.stringify(candidate)) > 32 * 1024);
+  assert.throws(() => encodePresentationPackage(candidate), status(413));
+  assert.equal(response.status, 200); assert.equal(blocked.ready, false);
+  assert.equal(blocked.reason, 'presentation_package_too_large'); assert.equal(blocked.capabilities, null);
+  assert.deepEqual(blocked.rooms, valid.rooms); assert.equal(blocked.projectRevision, changed.revision);
+  assert.equal(blocked.administrationRevision, valid.administrationRevision); assert.equal(blocked.packageRevision, valid.packageRevision);
+  assert.doesNotMatch(JSON.stringify(blocked), /Isolated large candidate|pathname|sha256/);
+  await assert.rejects(f.create({...original,idempotencyKey:'0ccc0000-1111-4222-8333-444444444444',
+    expectedProjectRevision:blocked.projectRevision,expectedAdministrationRevision:blocked.administrationRevision,
+    expectedPackageRevision:blocked.packageRevision}), status(413));
+  const otherResponse = await read('other'); assert.equal(otherResponse.status, 200);
+  assert.deepEqual((await otherResponse.json()).rooms, []);
+  authorized = {...session,role:'partner'}; assert.equal((await read()).status, 403);
+  authorized = {...session,scope:{...scope,workspaceId:'other'}}; assert.equal((await read()).status, 403);
+  assert.deepEqual(f.pool.snapshot(), before, 'reads and rejected publication preserve every document, package and audit');
 });
 
 test('actual room creation publishes atomically, selects the different compatible lane and reaches the real entry reader', async () => {
@@ -685,8 +784,9 @@ test('the native room preparation map keeps provider and capability I/O outside 
   assert.ok(capabilityChecks >= 3);
 });
 
-test('the full Studio admin route publishes the first roulette room only with capability 9', async () => {
-  const f = await registeredFixture(), versions = []; let engineVersion = 4;
+test('the full Studio admin route requires v15 for roulette and rejects the shipped v14 category contract', async () => {
+  const f = await registeredFixture(), versions = []; let engineVersion = 14;
+  await saveRouletteBinding(f,'johanna');
   const guarded = wrapNativePresentationRepository(f.repository, {env: {CROUPIER_BACKEND_ORIGIN: 'https://engine.example.invalid'},
     fetchImpl: async (_url, options) => {
       assert.equal(f.pool.active, 0);
@@ -694,7 +794,7 @@ test('the full Studio admin route publishes the first roulette room only with ca
       return Response.json(presentationCapabilitiesForVersion(engineVersion));
     }});
   const service = createPresentationRoomApi({repository: guarded, scope, videoRegistry: f.videoRegistry,
-    runtimeCapabilities: (presentation, game) => guarded.withMutationContext(async () => presentationCapabilitiesForVersion(game === 'roulette' ? 9 : 4),
+    runtimeCapabilities: (presentation, game) => guarded.withMutationContext(async () => presentationCapabilitiesForVersion(presentation.registeredDealers.some(row=>row.rouletteIdle)?15:game === 'roulette' ? 9 : 4),
       [{kind:'administration',value:{rooms:[{schemaVersion:2,game}]}},{kind:'presentation-package',value:presentation}])});
   const api = createStudioAdminApi({authorize: async () => session, allowedOrigins:[origin], publicHosts:['studio.example.invalid'],
     handlers:service.handlers, preparations:service.preparations, mutationTransaction: async (work, options) => {
@@ -706,10 +806,10 @@ test('the full Studio admin route publishes the first roulette room only with ca
   const request = () => new Request(origin+'/studio/api/admin/presentation-room',{method:'POST',
     headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify(body)});
   assert.equal((await api.handle(request())).status,503); assert.deepEqual(f.pool.snapshot(),before);
-  assert.deepEqual(versions,[9]); versions.length=0; engineVersion=9;
+  assert.deepEqual(versions,[15]); versions.length=0; engineVersion=15;
   const response=await api.handle(request()); assert.equal(response.status,200);
   assert.equal((await response.json()).room.game,'roulette'); assert.equal(f.pool.snapshot().packages.length,1);
-  assert.deepEqual(versions,[9,9]);
+  assert.deepEqual(versions,[15,15]);
 });
 
 test('a frozen default idle removed by another package writer makes replay conflict instead of exposing a broken game link', async () => {

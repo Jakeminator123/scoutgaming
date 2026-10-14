@@ -1,3 +1,4 @@
+import { fixtureDatabaseUrl } from '../../test/fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server.js';
@@ -11,7 +12,7 @@ const publicOrigin='https://public.example.invalid',labOrigin='https://studio.ex
 const config=nativeStudioAdminConfiguration({CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1',
   CROUPIER_PUBLIC_ORIGIN:publicOrigin,CROUPIER_LAB_UI_ORIGIN:labOrigin,CROUPIER_LAB_BASE_PATH:'/studio',
   CROUPIER_STUDIO_ENVIRONMENT_ID:'fixture',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-  CROUPIER_GAME_DATABASE_URL:'postgres://fixture:fixture@fixture.neon.tech/fixture?sslmode=require'});
+  CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgres://fixture.neon.tech/fixture?sslmode=require', 'fixture')});
 const scope={environment:'fixture',workspaceId:'croupier'};
 const forwarded={host:new URL(publicOrigin).host,'x-forwarded-host':new URL(publicOrigin).host,
   'x-forwarded-proto':'https',origin:publicOrigin,'sec-fetch-site':'same-origin',cookie:'bo_jwt=private-fixture-cookie'};

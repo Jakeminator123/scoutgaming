@@ -1,3 +1,5 @@
+import { StudioStorageError, validateStudioScope } from '../../packages/studio-access/studio-scope.mjs';
+export { StudioStorageError, validateStudioEnvironmentId, validateStudioScope } from '../../packages/studio-access/studio-scope.mjs';
 import { createHash } from 'node:crypto';
 import { validateProject } from '../../lab/lib/studio-model.mjs';
 import { validateSocialPolicy } from '../../open-claw/lab/src/social.mjs';
@@ -9,22 +11,10 @@ export const STUDIO_SNAPSHOT_FORMAT = 'croupier-studio-documents-v1';
 export const STUDIO_JSON_LIMIT = 1024 * 1024;
 export const STUDIO_SNAPSHOT_LIMIT = STUDIO_JSON_LIMIT * STUDIO_DOCUMENT_KINDS.length + 4096;
 const kinds = new Set(STUDIO_DOCUMENT_KINDS);
-const safeCode = /^(?:studio_|generated_speech_|operator_speech_|invalid_generated_|speech_|gpu_)[a-z0-9_]{1,100}$/;
 const id = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const sha = /^[a-f0-9]{64}$/;
 const adminKeys = new Set(['tiers', 'rooms', 'pitboss', 'tournaments', 'voiceReview', 'genVerdicts', 'genLandings', 'legacyClipReview', 'gameLane', 'gameLanes']);
-
-// Public failures contain a fixed code only, never a database/provider message.
-export class StudioStorageError extends Error {
-  constructor(code, statusCode = 503) {
-    const bounded = typeof code === 'string' && safeCode.test(code) ? code : 'studio_storage_unavailable';
-    super(bounded);
-    this.name = 'StudioStorageError';
-    this.code = bounded;
-    this.statusCode = Number.isInteger(statusCode) && statusCode >= 400 && statusCode <= 599 ? statusCode : 503;
-  }
-}
 
 export function studioStorageFailure(error) {
   if (error instanceof StudioStorageError) return error;
@@ -32,19 +22,6 @@ export function studioStorageFailure(error) {
   if (['23514', '22P02'].includes(error?.code)) return new StudioStorageError('studio_invalid_data', 422);
   if (error?.code === '55P03') return new StudioStorageError('studio_busy', 423);
   return new StudioStorageError('studio_storage_unavailable');
-}
-
-export function validateStudioEnvironmentId(value) {
-  if (typeof value !== 'string' || !/^[a-z][a-z0-9_-]{0,62}$/.test(value)) throw new StudioStorageError('studio_invalid_scope', 422);
-  return value;
-}
-
-export function validateStudioScope(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)
-    || Object.keys(value).sort().join(',') !== 'environment,workspaceId'
-    || !['environment', 'workspaceId'].every(key => Object.hasOwn(Object.getOwnPropertyDescriptor(value, key) ?? {}, 'value'))
-    || typeof value.workspaceId !== 'string' || !id.test(value.workspaceId)) throw new StudioStorageError('studio_invalid_scope', 422);
-  return Object.freeze({ environment: validateStudioEnvironmentId(value.environment), workspaceId: value.workspaceId });
 }
 
 export function validateDocumentKind(kind) {

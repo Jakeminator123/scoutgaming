@@ -25,8 +25,9 @@ test('preview distinguishes a stale package and does not surface private error r
  assert.deepEqual(await loadRoomPreview(catalog,room,'paow',{fetchImpl:async()=>{throw Error('private')}}),{status:'unavailable'});
 });
 test('portrait selection is exact ID only and every imported file has provenance',()=>{
- assert.equal(dealerPortrait('paow'),'/images/lobby/paow-portrait.jpg');
- for(const name of ['PAOW','Paow','new-paow','../paow','toString','constructor'])assert.equal(dealerPortrait(name),null);
+ assert.equal(dealerPortrait('astrid'),'/images/lobby/astrid-portrait.jpg');
+ for(const name of ['paow','paow-v2','amira','johanna','PAOW','Paow','new-paow','../paow','toString','constructor'])assert.equal(dealerPortrait(name),null);
  const provenance=JSON.parse(readFileSync(new URL('../public/images/lobby/source-provenance.json',import.meta.url)));
- for(const id of ['astrid','amira','vera','mei','paow','dragge','marten']){const data=readFileSync(new URL('../public'+dealerPortrait(id),import.meta.url));assert.ok(data.length>0);assert.ok(provenance.sha256[id+'-portrait.jpg']);}
+ for(const id of ['astrid','vera','mei','dragge','marten']){const data=readFileSync(new URL('../public'+dealerPortrait(id),import.meta.url));assert.ok(data.length>0);assert.ok(provenance.sha256[id+'-portrait.jpg']);}
+ for(const id of ['amira','paow'])assert.equal(provenance.sha256[id+'-portrait.jpg'],undefined);
 });

@@ -1,14 +1,13 @@
-# OpenClaw
+# OpenClaw i Scoutgaming
 
-- **Nya lokala labbet:** [../lab/](../lab/README.md) — Next.js-editor,
-  animerad scen, JSON-policyer och videobank. Starta med `npm --prefix lab run dev`.
-- **OpenClaw och Render:** [lab/](lab/README.md) — Gateway, adapter och Docker.
-  Blueprinten ligger i [lab/render.yaml](lab/render.yaml). Sökvägen behålls
-  för befintlig drift; den äldre editorn är inte den nya lokala studion.
-- **För Jakob:** [systemkartan om OpenClaw, röst och drift](../docs/LOCAL-PRESENTATION-RUNTIME.md).
-- **Teknisk dokumentation:** [läs vid behov](lab/docs/README.md).
-- **Historik, inte runtime:** [arkivet i Jakobs-v1](https://github.com/Jakeminator123/github-work/tree/Jakobs-v1/open-claw/archive).
-  Det äldre dokumentationspaketet är borttaget ur arbetskopian och bevarat i taggen.
+`open-claw/lab/` innehåller den aktiva Director-servern, den privata Gatewayens
+konfiguration och deras driftverktyg. Produktens speech-adapter använder denna
+kedja. Sökvägen `lab` är en befintlig Docker-/driftreferens.
 
-Labbet kör separat från det vanliga spelet. Produktintegration är inte genomförd
-och kräver avstämning enligt [aktuell presentationsplan](../docs/LOCAL-PRESENTATION-RUNTIME.md).
+- [Samlad AI-dokumentation](../docs/AI/README.md)
+- [Director och Gateway: kodens ansvar](lab/README.md)
+- [Studio: användarguide](../lab/docs/README.md)
+- [Runtime och media](../docs/LOCAL-PRESENTATION-RUNTIME.md)
+
+Lokal Studio och spel startas med `node lab/start.mjs --no-open`;
+respektera spärren för ett enda lokalt serverpar.

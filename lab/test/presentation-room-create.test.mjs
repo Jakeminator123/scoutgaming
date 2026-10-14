@@ -7,10 +7,12 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { labBasePath } from '../lib/lab-url.mjs';
 import { createPresentationRoomClient, createPresentationRoomController, presentationRoomContextKey, presentationRoomPlayUrl } from '../lib/presentation-room-client.mjs';
+import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
 
 const owner = { id: 'sg-test', slug: 'sg-test', name: 'SG test' };
 const context = { operator: owner, presentation: { id: 'portrait-live', label: 'Nora vid bordet' }, projectRevision: 'project-1', projectSaved: true, storeAvailable: true };
 const capability = { schemaVersion: 3, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2', registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2' };
+const rouletteCapability = presentationCapabilitiesForVersion(15);
 const id = 'room-00000000-0000-4000-8000-000000000001';
 const keyOne = '00000000-0000-4000-8000-000000000010';
 const prepared = (chosen = context, extra = {}) => ({ ok: true, operator: chosen.operator, presentationLaneId: chosen.presentation.id,
@@ -22,17 +24,68 @@ const created = (payload, chosen = context, extra = {}) => ({ ok: true, duplicat
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 test('roulette selection persists through an uncertain create and validates the matching game receipt',async()=>{
-  const f=fixture();await f.ready();f.controller.setGame('roulette');
-  const attempt=await f.start('Roulette');assert.equal(attempt.payload.game,'roulette');
+  const f=fixture();await f.ready();const selection=f.controller.setGame('roulette');
+  f.reply(1,prepared(context,{capabilities:rouletteCapability}));await selection;
+  const attempt=await f.start('Roulette',context,{capabilities:rouletteCapability});assert.equal(attempt.payload.game,'roulette');
   attempt.post.reject(Error('connection lost'));await attempt.pending;
   f.controller.setGame('blackjack');assert.equal(f.controller.getSnapshot().game,'roulette');
-  await f.ready();assert.equal(f.controller.getSnapshot().game,'roulette');
+  await f.ready(context,{capabilities:rouletteCapability});assert.equal(f.controller.getSnapshot().game,'roulette');
+  assert.equal(new URL(f.requests.at(-1).path,'https://studio.invalid').searchParams.get('game'),'roulette');
   const index=f.requests.length,pending=f.controller.create(presentationRoomContextKey(context));
   await tick();
   const result=created(attempt.payload);result.room.game='roulette';result.playUrl=result.playUrl.replace('/blackjack?','/roulette?');
   f.reply(index,result);await pending;
   assert.equal(f.controller.getSnapshot().receipt.room.game,'roulette');
   assert.match(f.controller.getSnapshot().receipt.playUrl,/^\/play\/roulette\?/);
+});
+
+test('switching to roulette replaces an incompatible blackjack preflight and rechecks the same game before create',async()=>{
+  const h=fixture();await h.ready(context,{ready:false,reason:'presentation_lane_incompatible'});
+  h.controller.setName('Annas roulette');const selection=h.controller.setGame('roulette');
+  assert.equal(h.controller.getSnapshot().game,'roulette');assert.equal(h.controller.getSnapshot().status,'loading');
+  assert.equal(h.controller.getSnapshot().preflight,null);
+  assert.equal(new URL(h.requests[1].path,'https://studio.invalid').searchParams.get('game'),'roulette');
+  assert.equal(await h.controller.create(presentationRoomContextKey(context)),null);
+  assert.equal(await h.controller.setGame('blackjack'),false,'game switches stay locked during preflight');
+  h.reply(1,prepared(context,{capabilities:rouletteCapability}));assert.equal(await selection,true);
+  assert.equal(h.controller.getSnapshot().status,'ready');assert.equal(h.controller.getSnapshot().name,'Annas roulette');
+  const pending=h.controller.create(presentationRoomContextKey(context));
+  assert.equal(new URL(h.requests[2].path,'https://studio.invalid').searchParams.get('game'),'roulette');
+  assert.equal(await h.controller.setGame('blackjack'),false,'game switches stay locked during create recheck');
+  h.reply(2,prepared(context,{capabilities:rouletteCapability,administrationRevision:'admin-current',packageRevision:7}));await tick();
+  const payload=JSON.parse(h.requests[3].options.body);
+  assert.equal(payload.game,'roulette');assert.equal(payload.expectedAdministrationRevision,'admin-current');assert.equal(payload.expectedPackageRevision,7);
+  assert.equal(await h.controller.setGame('blackjack'),false,'the POST retains the checked game');
+  const result=created(payload);result.room.game='roulette';result.playUrl=result.playUrl.replace('/blackjack?','/roulette?');
+  h.reply(3,result);await pending;assert.equal(h.controller.getSnapshot().receipt.room.game,'roulette');
+  const back=h.controller.setGame('blackjack');assert.equal(h.controller.getSnapshot().preflight,null);
+  assert.equal(new URL(h.requests[4].path,'https://studio.invalid').searchParams.has('game'),false,'blackjack keeps its legacy query');
+  h.reply(4,prepared());assert.equal(await back,true);
+});
+
+test('a late roulette preflight cannot restore the previous company or unlock a new pending read',async()=>{
+  const h=fixture();await h.ready();const roulette=h.controller.setGame('roulette');
+  const other={...context,operator:{id:'other',slug:'other',name:'Other'}},changed=h.controller.configure(other);
+  assert.equal(h.requests[1].options.signal.aborted,true);
+  h.reply(1,prepared(context,{capabilities:rouletteCapability}));assert.equal(await roulette,false);
+  assert.equal(h.controller.getSnapshot().status,'loading');assert.equal(h.controller.getSnapshot().game,'blackjack');
+  assert.equal(h.controller.getSnapshot().preflight,null);assert.equal(await h.controller.setGame('roulette'),false);
+  h.reply(2,prepared(other));await changed;
+  assert.equal(h.controller.getSnapshot().preflight.operator.id,'other');assert.equal(h.controller.getSnapshot().game,'blackjack');
+});
+
+test('roulette preflight accepts exact supported capabilities and rejects malformed or blackjack-only readiness',async()=>{
+  for(const version of [9,14,15]){
+    const h=fixture(),pending=h.client.read(context,{game:'roulette'});
+    h.reply(0,prepared(context,{capabilities:presentationCapabilitiesForVersion(version)}));
+    assert.equal((await pending).capabilities.schemaVersion,version);
+  }
+  for(const capabilities of [capability,{...rouletteCapability,rouletteStart:'unverified'},{...rouletteCapability,schemaVersion:16}]){
+    const h=fixture(),pending=h.client.read(context,{game:'roulette'});
+    h.reply(0,prepared(context,{capabilities}));await assert.rejects(pending,/Svaret kunde inte verifieras/);
+  }
+  const h=fixture();await assert.rejects(h.client.read(context,{game:'poker'}),/Svaret kunde inte verifieras/);
+  assert.equal(h.requests.length,0);
 });
 
 function fixture() {
@@ -260,6 +313,19 @@ test('component renders a changed selection immediately empty and never delivers
   tree = ui.render(other); assert.equal(find(tree, 'input').props.value, ''); assert.equal(find(tree, 'button').props.disabled, true);
   h.reply(2, created(payload)); h.reply(3, prepared(other)); await tick(); tree = ui.render(other);
   assert.equal(receipts.length, 0); assert.equal(find(tree, 'a'), null); ui.unmount();
+});
+
+test('the game selector clears the previous failure and enables creation only after roulette v15 preflight',async()=>{
+  const h=fixture(),ui=componentHarness(h.controller);ui.render(context);
+  h.reply(0,prepared(context,{ready:false,reason:'presentation_lane_incompatible'}));await tick();
+  let tree=ui.render(context);find(tree,'input').props.onChange({target:{value:'Annas roulette'}});
+  const selection=find(tree,'select').props.onChange({target:{value:'roulette'}});
+  tree=ui.render(context);assert.equal(find(tree,'select').props.value,'roulette');assert.equal(find(tree,'select').props.disabled,true);
+  assert.equal(find(tree,'button').props.disabled,true);assert.match(renderToStaticMarkup(tree),/Kontrollerar/);
+  assert.equal(new URL(h.requests[1].path,'https://studio.invalid').searchParams.get('game'),'roulette');
+  h.reply(1,prepared(context,{capabilities:rouletteCapability}));await selection;
+  tree=ui.render(context);assert.equal(find(tree,'select').props.disabled,false);assert.equal(find(tree,'button').props.disabled,false);
+  assert.equal(find(tree,'input').props.value,'Annas roulette');assert.equal(h.keys,0);ui.unmount();
 });
 
 test('a receipt arriving just before new unsaved edits cannot invoke onCreated or expose the old link', async () => {

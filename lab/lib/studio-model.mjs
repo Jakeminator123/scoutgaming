@@ -11,6 +11,9 @@ import { validateMediaPolicy } from './media-family-policy.mjs';
 import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
 import { validateLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { dealerSetErrors } from './dealer-sets.mjs';
+import { validateRouletteIdleBinding } from '../../web/public/roulette-idle-contract.mjs';
+import { validateRouletteStartBinding } from '../../web/public/roulette-start-contract.mjs';
+import { OTHER_SPEECH_SLOT_IDS, speechSlotSituation, validateSpeechSlotLine } from '../../web/public/speech-slot-bindings.mjs';
 
 
 // Pure, browser-safe policy model. This file never reads environment, network,
@@ -19,6 +22,11 @@ export const DEALER_IDS = Object.freeze(contract.dealers);
 export const SOURCE_TYPES = Object.freeze(Object.keys(contract.sourceTypes));
 export const TRIGGER_CATEGORIES = Object.freeze(['deterministic', 'social', 'temperament']);
 export const MAX_ALTERNATIVES = contract.limits.alternatives;
+const filmedDealEvents = new Set(['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']);
+export function maxVariantsForEvent(eventId) {
+  return filmedDealEvents.has(eventId) ? contract.limits.filmedDealVariants
+    : MAX_ALTERNATIVES + 1 + (eventId === 'speak.other' ? OTHER_SPEECH_SLOT_IDS.length : 0);
+}
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const VIDEO_GENERATION_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 const validVideoGenerationId = value => typeof value === 'string' && VIDEO_GENERATION_ID.test(value)
@@ -146,7 +154,7 @@ function laneErrors(lanes, projectDealerIds) {
       catch { fail(`${at}.backgroundPlayback`, 'ogiltiga uppspelningsregler'); }
     }
     if (Object.hasOwn(lane, 'composition')) {
-      try { validateCompositionSettings(lane.composition); }
+      try { validateCompositionSettings(lane.composition,{tableIds:lane.layers?.table?.allowed}); }
       catch { fail(`${at}.composition`, 'ogiltiga lagerplaceringar'); }
     }
     if (typeof lane.id !== 'string' || !LANE_ID.test(lane.id) || RESERVED_LANE_IDS.has(lane.id)) fail(`${at}.id`, 'ska vara ett lane-id (liten bokstav, siffror, bindestreck; inte original)');
@@ -400,7 +408,15 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
   const dealerIds = new Set();
   if (array(project.dealers, 'dealers', 0, MAX_DEALERS)) project.dealers.forEach((dealer, i) => {
     const at = `dealers[${i}]`;
-    if (!keys(dealer, ['id', 'label'], at, ['speechProfile'])) return;
+    if (!keys(dealer, ['id', 'label'], at, ['speechProfile','rouletteIdle','rouletteStart'])) return;
+    if (Object.hasOwn(dealer,'rouletteStart')) {
+      try { validateRouletteStartBinding(dealer.rouletteStart); if(!dealer.rouletteIdle)throw Error('kräver roulette-idle för återgång'); }
+      catch (cause) { error(at + '.rouletteStart', cause.message); }
+    }
+    if (Object.hasOwn(dealer,'rouletteIdle')) {
+      try { validateRouletteIdleBinding(dealer.rouletteIdle); }
+      catch (cause) { error(at + '.rouletteIdle', cause.message); }
+    }
     if (Object.hasOwn(dealer, 'speechProfile')) {
       try { normalizeDealerSpeechProfile(dealer.speechProfile); }
       catch (cause) { error(at + '.speechProfile', cause.message); }
@@ -458,7 +474,9 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     duplicate(lineIds, `${line.dealerId}/${line.eventId}`, at); label(line.label, `${at}.label`);
     const expectedBaseline = `${line.dealerId}.${line.eventId}.standard`;
     if (line.baselineVariantId !== expectedBaseline) error(`${at}.baselineVariantId`, 'standardvariantens stabila ID får inte ändras');
-    if (!array(line.variants, `${at}.variants`, 1, MAX_ALTERNATIVES + 1)) return;
+    if (!array(line.variants, `${at}.variants`, 1, maxVariantsForEvent(line.eventId))) return;
+    try { validateSpeechSlotLine(line); }
+    catch { error(`${at}.variants`, 'talfack kräver unika, ovillkorliga standardval för exakt replik och högst fyra vanliga alternativ'); }
     line.variants.forEach((variant, vi) => {
       const vp = `${at}.variants[${vi}]`;
       if (!keys(variant, ['id', 'label', 'priority', 'triggerIds', 'assetId', 'videoGenerationId'], vp, ['selection'])) return;
@@ -495,6 +513,10 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     }
   }
   for (const [index, lane] of (Array.isArray(project.lanes) ? project.lanes : []).entries()) {
+    if(lane?.composition){
+      try{validateCompositionSettings(lane.composition,{tableIds:lane.layers?.table?.allowed??[],assets:project.layerAssets??[]});}
+      catch{error(`lanes[${index}].composition`,'kortplatser kräver ett tillåtet blackjackbord i biblioteket');}
+    }
     if (!Object.hasOwn(lane ?? {}, 'backgroundPlayback')) continue;
     try {
       const background = lane.layers?.background;
@@ -530,7 +552,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
       for (const [i, entry] of trash.entries()) {
         const at = `dealerTrash[${i}]`;
         const cascade=entry?.schemaVersion===2;
-        if (!keys(entry, ['schemaVersion','dealer','lines','idlePolicy','activeMediaIds','archivedAt',...(cascade?['compositions']:[])], at, ['deletion',...(cascade?['legacyClipPolicy','mediaPolicy','globalIdlePolicy']:[])])) continue;
+        if (!keys(entry, ['schemaVersion','dealer','lines','idlePolicy','activeMediaIds','archivedAt',...(cascade?['compositions']:[])], at, ['deletion',...(cascade?['legacyClipPolicy','mediaPolicy','globalIdlePolicy','dealerSets']:[])])) continue;
         if(entry.deletion!==undefined){
           const deletion=entry.deletion;
           if(!keys(deletion,['state','requestedAt','mediaIds'],at+'.deletion') || deletion.state!=='pending'
@@ -549,6 +571,7 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
         // Shared triggers/assets cannot disappear while an archived snapshot needs them.
         try {
           if (!Array.isArray(entry.lines) || entry.lines.some(line => line.dealerId !== dealerId)) throw Error();
+          if(entry.dealerSets!==undefined && (dealerSetErrors(entry.dealerSets,new Set([dealerId])).length || entry.dealerSets.some(row=>row.dealerId!==dealerId)))throw Error();
           const restored = {...project,
             dealers:[...project.dealers,...trash.map(row=>row.dealer)],
             lines:[...project.lines,...trash.flatMap(row=>Array.isArray(row.lines)?row.lines:[])],
@@ -599,7 +622,9 @@ function findLine(project, dealerId, eventId) {
 export function addVariant(project, dealerId, eventId, label = 'Ny variant') {
   return editProject(project, next => {
     const line = findLine(next, dealerId, eventId);
-    if (line.variants.length >= MAX_ALTERNATIVES + 1) throw new StudioValidationError(['variants: högst fyra alternativ utöver standardvarianten']);
+    const limit = maxVariantsForEvent(eventId);
+    const ordinaryLimit = eventId === 'speak.other' ? MAX_ALTERNATIVES + 1 : limit;
+    if (line.variants.filter(variant => !speechSlotSituation(line, variant)).length >= ordinaryLimit) throw new StudioValidationError([`variants: högst ${ordinaryLimit === 5 ? 'fyra' : ordinaryLimit - 1} alternativ utöver standardvarianten`]);
     let serial = 1;
     while (line.variants.some(variant => variant.id === `${dealerId}.${eventId}.variant${serial}`)) serial++;
     line.variants.push({ id: `${dealerId}.${eventId}.variant${serial}`, label, priority: 10, triggerIds: [], assetId: line.variants.find(variant => variant.id === line.baselineVariantId).assetId, videoGenerationId: null, selection: { rules: false, model: false, random: false } });

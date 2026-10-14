@@ -102,34 +102,37 @@ test('catalog read carries session and cancellation, disables cache, and rejects
   await assert.rejects(loadLobbyCatalog({ fetchImpl: async () => Response.json({}) }));
 });
 
-// Visual teasers must never become a second source of playable dealer IDs.
+// Artwork must never become a second source of dealer cards or playable IDs.
 import { dealerCards, portraitFor } from './dealer-portraits.mjs';
 
-test('locked portraits including Anna do not grant access, including an empty or unavailable catalog', () => {
-  const cards = dealerCards();
-  assert.deepEqual(cards.map(row => row.id), ['astrid', 'marten', 'paow', 'dragge', 'anna']);
-  assert.ok(cards.every(row => !row.available));
+test('empty or unavailable catalogs do not recreate dealers from supplied portraits', () => {
+  assert.deepEqual(dealerCards(), []);
   const catalog = parseLobbyCatalog(payload([]));
+  assert.deepEqual(dealerCards(catalog.dealers), []);
   assert.equal(lobbySelection(catalog, { dealerId: 'astrid' }).dealer, null);
   assert.equal(portraitFor({ id: 'unknown', name: 'Astrid' }), undefined);
 });
 
-test('portrait alias preserves PAOW publication ID and cannot unlock her in another room', () => {
+test('retired PAOW artwork cannot return through old publication aliases', () => {
   const catalog = parseLobbyCatalog(payload([publication('alpha', 'paow-v2', 'PAOW'), publication('beta', 'nora', 'Nora')]));
   const chosen = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'paow-v2' });
-  assert.deepEqual(dealerCards(chosen.availableDealers).filter(row => row.available).map(row => row.id), ['paow-v2']);
-  assert.equal(portraitFor(chosen.dealer).id, 'paow');
+  assert.deepEqual(dealerCards(chosen.availableDealers).map(row => row.id), ['paow-v2']);
+  assert.equal(portraitFor(chosen.dealer), undefined);
+  assert.equal(portraitFor({ id: 'paow', name: 'PAOW' }), undefined);
   assert.equal(playUrlFor(chosen), '/play/blackjack?operator=alpha&table=shared-table&dealer=paow-v2');
   assert.equal(lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'paow' }).dealer, null);
   const other = lobbySelection(catalog, { operatorId: 'beta', roomKey: 'beta:shared-table', dealerId: 'paow-v2' });
   assert.equal(other.dealer, null);
-  assert.deepEqual(dealerCards(other.availableDealers).filter(row => row.available).map(row => row.id), ['nora']);
+  assert.deepEqual(dealerCards(other.availableDealers).map(row => row.id), ['nora']);
   assert.equal(portraitFor({ id: 'nora', name: 'PAOW' }), undefined);
 });
 
-test('all registered choices survive, including two explicitly mapped versions of a portrait', () => {
-  const registered = [{ id: 'paow', name: 'Paow' }, { id: 'paow-v2', name: 'PAOW' }, { id: 'new-dealer', name: 'New' }];
+test('only registered choices appear in publication order, with or without a supplied portrait', () => {
+  const registered = [{ id: 'dragan', name: 'Dragan' }, { id: 'anna', name: 'Anna' }, { id: 'paow', name: 'Paow' }, { id: 'paow-v2', name: 'PAOW' }, { id: 'new-dealer', name: 'New' }];
   const cards = dealerCards(registered);
-  assert.deepEqual(cards.filter(row => row.available).map(row => row.id), registered.map(row => row.id));
+  assert.deepEqual(cards.map(row => row.id), ['dragan', 'anna', 'paow', 'paow-v2', 'new-dealer']);
+  assert.ok(cards.every(row => row.available));
+  assert.equal(portraitFor(cards[0]), undefined);
+  assert.equal(portraitFor(cards[1]).id, 'anna');
   assert.equal(new Set(cards.map(row => row.id)).size, cards.length);
 });

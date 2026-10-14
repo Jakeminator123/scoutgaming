@@ -5,7 +5,7 @@ import { isIP } from 'node:net';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
-import { createSpeechSessionManager, sessionReserveMicroUsd } from './generated-speech-session.mjs';
+import { createSpeechSessionManager, sessionReserveMicroUsd, dailyBudgetMicroUsd } from './generated-speech-session.mjs';
 import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-runtime.mjs';
 import { acceptsWorkerBinding } from '../services/astrid-gpu-worker/gateway/worker-binding.mjs';
 
@@ -41,12 +41,25 @@ function startAudioPrefetch(open, signal) {
     task,
     get error() { return error; },
     async *read() {
-      let index = 0;
+      let index = 0, offset = 0;
       for (;;) {
-        while (index < chunks.length) yield chunks[index++];
+        signal.throwIfAborted();
+        // Transport packets are often tiny. Revalidating the same already
+        // buffered audio once per packet starves the GPU on database latency.
+        // Drain only what is available, in bounded relay-sized blocks; never
+        // wait to fill a block. The consumer still revalidates every write.
+        if (index < chunks.length) {
+          const parts = []; let length = 0;
+          while (index < chunks.length && length < 65536) {
+            const chunk = chunks[index], take = Math.min(chunk.byteLength - offset, 65536 - length);
+            parts.push(chunk.subarray(offset, offset + take)); length += take; offset += take;
+            if (offset === chunk.byteLength) { index++; offset = 0; }
+          }
+          yield Buffer.concat(parts, length);
+          continue;
+        }
         if (done) return;
         if (error) throw error;
-        signal.throwIfAborted();
         await new Promise(resolve => waiters.push(resolve));
       }
     },
@@ -94,8 +107,8 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
   const secret = v => typeof v === 'string' && v.length >= 32 && v.length <= 2048 && !/\s/.test(v);
   const sessionConfigured = !cloud || (typeof configuration.session.apiKey === 'string' && configuration.session.apiKey.length > 0
     && !/\s/.test(configuration.session.apiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(configuration.session.endpointId ?? '')
-    && sessionReserveMicroUsd(configuration.session.reserveUsd) !== null && sessionReserveMicroUsd(configuration.session.dailyBudgetUsd) !== null
-    && sessionReserveMicroUsd(configuration.session.reserveUsd) <= sessionReserveMicroUsd(configuration.session.dailyBudgetUsd));
+    && sessionReserveMicroUsd(configuration.session.reserveUsd) !== null && dailyBudgetMicroUsd(configuration.session.dailyBudgetUsd) !== null
+    && sessionReserveMicroUsd(configuration.session.reserveUsd) <= dailyBudgetMicroUsd(configuration.session.dailyBudgetUsd));
   const configured = enabled && (journaled || privateDirectory(configuration.directory)) && secret(configuration.workerSecret) && secret(configuration.ticketSecret)
     && configuration.workerSecret !== configuration.ticketSecret
     && typeof configuration.apiKey === 'string' && configuration.apiKey.length > 0 && !/\s/.test(configuration.apiKey) && sessionConfigured;

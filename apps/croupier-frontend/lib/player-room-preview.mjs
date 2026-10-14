@@ -1,7 +1,7 @@
 import {isOperatorSlug,isGameLaneId} from '../../../web/public/game-lanes.mjs';
 import {validatePublicOperatorPreview} from '../../../web/public/operator-preview-contract.mjs';
 // Exact IDs only. Portraits never add dealers to a room or authorize media.
-const portraits=Object.freeze(Object.fromEntries(['astrid','amira','vera','mei','paow','dragge','marten'].map(id=>[id,'/images/lobby/'+id+'-portrait.jpg'])));
+const portraits=Object.freeze(Object.fromEntries(['astrid','vera','mei','dragge','marten'].map(id=>[id,'/images/lobby/'+id+'-portrait.jpg'])));
 export function dealerPortrait(id){return Object.hasOwn(portraits,id)?portraits[id]:null;}
 export async function loadRoomPreview(catalog,room,dealerId,{fetchImpl=globalThis.fetch,signal}={}){
  if(!isOperatorSlug(catalog?.operator?.slug)||!isGameLaneId(room?.id)||!Number.isSafeInteger(catalog.packageRevision)||catalog.packageRevision<1||!room.dealers.some(dealer=>dealer.id===dealerId))return {status:'unavailable'};

@@ -4,24 +4,25 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createPresentationApi} from '../web/presentation-api.mjs';
 import {presentationCapabilitiesResponse} from '../web/presentation-capabilities.mjs';
-import {defaultCompositionSettings,validateCompositionSettings,sceneForComposition} from '../web/public/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry,validateCompositionSettings,sceneForComposition} from '../web/public/composition-settings.mjs';
 import {validateComposition,createLayerComposition,clipCompositing} from '../web/public/presentation-composition.mjs';
 import {compositionRuntimeResponse} from '../web/composition-runtime.mjs';
 import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
 import {Compositor} from '../packages/presentation/compositor/compositor.js';
-import {createSeedProject,addDealer,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {createSeedProject,addDealer,defaultPresentationLane,validateProject} from '../lab/lib/studio-model.mjs';
 import {buildPresentationPackage,layerAssetPath} from '../web/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
 import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
 import {gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
+import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
 function asset(role,n){const value={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:role,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};return {...value,pathname:layerAssetPath(value)};}
-function fixture(dealerId='nora',label='Nora'){
+function fixture(dealerId='nora',label='Nora',settings=defaultCompositionSettings()){
   let project=addDealer(createSeedProject(),dealerId,label); const lane=defaultPresentationLane(dealerId),background=asset('background',1),table=asset('table',2);
   lane.id=`${dealerId}-lane`;lane.dealers=[dealerId];lane.layers.dealer={enabled:true,default:dealerId,allowed:[dealerId]};
   lane.layers.background={enabled:true,mode:'image',default:background.id,allowed:[background.id]};
-  lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};lane.composition=defaultCompositionSettings();
+  lane.layers.table={enabled:true,default:table.id,allowed:[table.id]};lane.composition=settings;
   project.lanes=[lane];project.layerAssets=[background,table];
   const serverLane={schemaVersion:1,id:lane.id,label,renderer:'portrait-video',dealer:dealerId,mediaCollection:`${dealerId}-presentation`};
   const administration={gameLane:lane.id,gameLanes:[serverLane]};
@@ -40,6 +41,122 @@ test('shared placements reject nonfinite or unknown fields and table placement s
   assert.deepEqual(tableRect(scene,table,stageGeometry(scene)),initial);
   assert.equal(initial[2],607.5);assert.equal(scene.show.cards,false);
 });
+
+test('optional table geometry is strict, frozen with publication, and absent from legacy defaults',()=>{
+  assert.equal(Object.hasOwn(defaultCompositionSettings(),'blackjackTables'),false);
+  const settings=defaultCompositionSettings();settings.blackjackTables=[defaultBlackjackTableGeometry(asset('table',2).id)];
+  assert.deepEqual(validateCompositionSettings(settings),settings);
+  for(const change of [s=>s.blackjackTables.push(s.blackjackTables[0]),s=>s.blackjackTables[0].tableId='oak',
+    s=>s.blackjackTables[0].mobile.seats.pop(),s=>s.blackjackTables[0].desktop.seats.push({}),
+    s=>s.blackjackTables[0].mobile.dealer.x=NaN,s=>s.blackjackTables[0].mobile.cardWidth=0,
+    s=>s.blackjackTables[0].mobile.seats[0].bet.y=1.01,s=>s.blackjackTables[0].mobile.seats[0].dealClip='unreviewed']){
+    const invalid=structuredClone(settings);change(invalid);assert.throws(()=>validateCompositionSettings(invalid));
+  }
+  const {project,pack,descriptor}=fixture('nora','Nora',settings);
+  assert.deepEqual(validateComposition(descriptor).settings.blackjackTables,settings.blackjackTables);
+  const frozen=structuredClone(readPackagePresentation(pack));
+  project.lanes[0].composition.blackjackTables[0].mobile.dealer.x=.8;
+  assert.deepEqual(readPackagePresentation(pack),frozen);
+  assert.equal(frozen.lanes[0].composition.blackjackTables[0].mobile.dealer.x,.5);
+  for(const change of [p=>p.lanes[0].layers.table.allowed=[],p=>p.layerAssets=p.layerAssets.filter(row=>row.role!=='table'),
+    p=>p.layerAssets.find(row=>row.role==='table').game='roulette']){
+    const invalid=structuredClone(project);change(invalid);assert.throws(()=>validateProject(invalid));
+  }
+  const invalid=structuredClone(descriptor);invalid.settings.blackjackTables[0].tableId=asset('table',9).id;
+  assert.throws(()=>validateComposition(invalid));
+});
+
+test('under-cards is optional per board layout, strictly validated and preserved in the frozen package',()=>{
+  for(const layout of ['mobile','desktop']){
+    const settings=defaultCompositionSettings(),tableId=asset('table',2).id,board=defaultBlackjackTableGeometry(tableId);
+    assert.equal(Object.hasOwn(board.mobile,'betMode'),false);assert.equal(Object.hasOwn(board.desktop,'betMode'),false);
+    board[layout].betMode='under-cards';settings.blackjackTables=[board];
+    assert.deepEqual(validateCompositionSettings(settings,{tableIds:[tableId],assets:[asset('table',2)]}),settings);
+    const {project,pack,descriptor}=fixture('nora','Nora',settings);
+    assert.equal(validateComposition(descriptor).settings.blackjackTables[0][layout].betMode,'under-cards');
+    delete project.lanes[0].composition.blackjackTables[0][layout].betMode;
+    assert.equal(readPackagePresentation(pack).lanes[0].composition.blackjackTables[0][layout].betMode,'under-cards');
+    for(const betMode of [undefined,null,'','manual','under_cards',false,{}]){
+      const invalid=structuredClone(settings);invalid.blackjackTables[0][layout].betMode=betMode;
+      assert.throws(()=>validateCompositionSettings(invalid));
+    }
+  }
+});
+
+test('room-specific table A uses its exact geometry without rewriting a shared A+B composition',async()=>{
+  const f=fixture(),a=f.project.layerAssets.find(row=>row.role==='table'),b=asset('table',3),lane=f.project.lanes[0];
+  f.project.layerAssets.push(b);lane.layers.table.allowed.push(b.id);
+  lane.composition.blackjackTables=[defaultBlackjackTableGeometry(a.id),defaultBlackjackTableGeometry(b.id)];
+  lane.composition.blackjackTables[1].mobile.dealer.y=.3;
+  const cloud=cloudPresentationFixture({project:f.project,lanes:[lane],assets:f.project.layerAssets});
+  f.pack.branding=withPackagePresentation({roomOverrides:{'room-a':{table:a.id}}},cloud.presentation);f.pack.tables=['room-a'];
+  f.administration.rooms=[{schemaVersion:2,id:'room-a',name:'A',operatorId:'north',presentationLaneId:lane.id,gameLaneId:f.administration.gameLanes[0].id,state:'live'}];
+  const before=structuredClone({project:f.project,pack:f.pack});
+  const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north'},package:f.pack})}});
+  const result=await select('operator=north&table=room-a');assert.equal(result.status,200);
+  assert.equal(result.selection.branding.table,a.id);
+  assert.equal(validateComposition(result.selection.composition).settings.blackjackTables.length,2);
+  assert.deepEqual({project:f.project,pack:f.pack},before);
+});
+
+test('runtime geometry follows only the selected exact table and warns for unconfigured choices',async()=>{
+  const settings=defaultCompositionSettings(),tableId=asset('table',2).id;
+  settings.blackjackTables=[defaultBlackjackTableGeometry(tableId)];
+  const {descriptor}=fixture('nora','Nora',settings),other=asset('table',3);
+  descriptor.assets.push({id:other.id,role:'table',label:'Other',contentType:other.contentType,src:`/api/presentation/layers/north/${other.id}`});
+  descriptor.table.allowed.push(other.id);
+  const host={dataset:{},clientWidth:390,clientHeight:844,append(){}};
+  const document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>({tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,naturalWidth:1672,naturalHeight:941,
+    setAttribute(){},remove(){},addEventListener(){},removeEventListener(){},getContext:()=>({clearRect(){},drawImage(){}})})};
+  class SharedCompositor{constructor(canvas){this.canvas=canvas;}geometry(scene){return stageGeometry(scene);}tableGeometry(scene,image){return Compositor.prototype.tableGeometry.call(this,scene,image);}render(){}dispose(){}}
+  const c=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:SharedCompositor})});
+  await c.prepareClip(key,undefined,{kind:'idle'});c.renderFrame({videoWidth:1080,videoHeight:1920});
+  assert.equal(c.referencePlane().tableGeometry.tableId,tableId);
+  c.setTable(other.id);assert.equal(c.referencePlane().tableGeometry,undefined);assert.match(c.referencePlane().geometryWarning,/saknar egna/);
+  assert.equal(c.referencePlane().sourceAligned,false);
+  c.setTable(tableId);assert.equal(c.referencePlane().tableGeometry.tableId,tableId);
+  c.close();
+});
+
+for(const [width,height]of [[844,390],[900,1200]])test(`board scene, saved format and visible server seats agree at ${width}x${height}; legacy orientation stays unchanged`,async()=>{
+  for(const configured of [false,true]){
+    const settings=defaultCompositionSettings();
+    if(configured)settings.blackjackTables=[defaultBlackjackTableGeometry(asset('table',2).id)];
+    const {descriptor}=fixture('nora','Nora',settings),renders=[];
+    const host={dataset:{},clientWidth:width,clientHeight:height,append(){}};
+    const compact=width<=860;
+    const document={defaultView:{matchMedia(query){assert.equal(query,BLACKJACK_COMPACT_QUERY);return {matches:compact};}},documentElement:{dataset:{}},querySelector:()=>host,
+      createElement:tag=>({tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,naturalWidth:1672,naturalHeight:941,setAttribute(){},remove(){},addEventListener(){},removeEventListener(){},getContext:()=>({clearRect(){},drawImage(){}})})};
+    class SharedCompositor{constructor(canvas){this.canvas=canvas;}geometry(scene){return stageGeometry(scene);}tableGeometry(scene,image){return tableRect(scene,image,this.geometry(scene));}render(scene){renders.push(scene);}dispose(){}}
+    const c=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:SharedCompositor})});
+    await c.prepareClip(key,undefined,{kind:'idle'});c.renderFrame({videoWidth:1080,videoHeight:1920});
+    const expected=configured?(compact?'mobile':'desktop'):(width<height?'mobile':'desktop');
+    assert.equal(renders.at(-1).layout,expected);
+    if(configured){
+      const plane=c.referencePlane();assert.equal(plane.tableLayout,expected);
+      const boxes=compact?[4,5,6]:[0,1,2,3,4,5,6];
+      const result=layoutGameOverlay(plane,boxes,{left:12,right:width-12,top:80,bottom:height-12},{compact});
+      assert.deepEqual(result.seats.map(row=>row.box),boxes);
+      assert.equal(Object.keys(result.positions).length,boxes.length+1);
+    }
+    c.close();
+  }
+});
+
+test('alpha board geometry uses the same visible table and background as the compositor; disabled table never projects board anchors',async()=>{
+  const settings=defaultCompositionSettings();settings.blackjackTables=[defaultBlackjackTableGeometry(asset('table',2).id)];
+  for(const enabled of [true,false]){
+    const {descriptor}=fixture('nora','Nora',settings);descriptor.table.enabled=enabled;
+    const renders=[],host={dataset:{},clientWidth:390,clientHeight:844,append(){}};
+    const document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>({tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,naturalWidth:1672,naturalHeight:941,
+      setAttribute(){},remove(){},addEventListener(){},removeEventListener(){},getContext:()=>({clearRect(){},drawImage(){}})})};
+    class SharedCompositor{constructor(canvas){this.canvas=canvas;}geometry(scene){return stageGeometry(scene);}tableGeometry(scene,image){return tableRect(scene,image,this.geometry(scene));}render(scene){renders.push(scene);}dispose(){}}
+    const c=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:SharedCompositor})});
+    await c.prepareClip({mode:'alpha'},undefined,{kind:'idle'});c.renderFrame({videoWidth:1080,videoHeight:1920});
+    assert.equal(renders.at(-1).key.enabled,false);assert.equal(renders.at(-1).show.table,enabled);assert.equal(renders.at(-1).show.background,true);
+    assert.equal(Boolean(c.referencePlane().tableGeometry),enabled);c.close();
+  }
+});
 test('compositor uses the same actor frame with explicit table order and never paints game cards',()=>{
   for(const tableFront of [false,true]){const calls=[],settings=defaultCompositionSettings();settings.tableFront=tableFront;
     const scene=sceneForComposition(settings,'mobile',{background:false},{enabled:true});
@@ -48,6 +165,51 @@ test('compositor uses the same actor frame with explicit table order and never p
     Compositor.prototype.render.call(compositor,scene,actor,new Map([['table',table]]),[],null);
     assert.deepEqual(calls,tableFront?['actor','table','project-cards']:['table','project-cards','actor']);}
 });
+
+function withCpuCompositor(run) {
+  const names=['document','HTMLVideoElement','ImageData'],previous=names.map(name=>Object.getOwnPropertyDescriptor(globalThis,name));
+  let reads=0;
+  class Canvas {
+    width=360;height=640;
+    context={clearRect(){},setTransform(){},fillRect(){},scale(){},drawImage(source){this.source=source;},
+      getImageData(){reads++;return {data:Uint8ClampedArray.from(this.source.pixels)};},putImageData(image){this.output=image.data;}};
+    getContext(kind){return kind==='webgl'?null:this.context;}
+  }
+  // A one-pixel fixture exercises the real alpha split without allocating full frames.
+  class Pixels {constructor(source){this.data=source instanceof Uint8ClampedArray?source:new Uint8ClampedArray(4);}}
+  try {
+    globalThis.document={createElement:()=>new Canvas()};globalThis.HTMLVideoElement=class {};globalThis.ImageData=Pixels;
+    const compositor=new Compositor(new Canvas(),()=>{});
+    const scene=sceneForComposition(defaultCompositionSettings(),'desktop',{background:false,table:false});scene.layerMode='split';scene.handmatte='hands';
+    const actor={src:'actor-1',width:1920,height:1080,pixels:[180,130,90,255]};
+    const hand={src:'hand-1',width:480,height:270,pixels:[0,0,0,255]},assets=new Map([['hands',{el:hand}]]);
+    return run({compositor,scene,actor,hand,assets,get reads(){return reads;},render:()=>compositor.render(scene,actor,assets,[],null)});
+  } finally {names.forEach((name,index)=>{if(previous[index])Object.defineProperty(globalThis,name,previous[index]);else delete globalThis[name];});}
+}
+
+test('Canvas2D follows moving hand-mask frames and retains unchanged mask caches',()=>withCpuCompositor(f=>{
+  const {cpu}=f.compositor;f.render();
+  assert.equal(cpu.hands.context.output[3],0);assert.equal(cpu.body.context.output[3],255);
+  const cached=cpu.mask(f.hand),initialReads=f.reads;f.render();
+  assert.equal(f.reads,initialReads);assert.equal(cpu.mask(f.hand),cached);
+  f.actor.src='actor-2';f.hand.src='hand-2';f.hand.pixels=[255,255,255,255];f.render();
+  assert.equal(cpu.hands.context.output[3],255);assert.equal(cpu.body.context.output[3],0);
+  assert.notEqual(cpu.mask(f.hand),cached);
+  // A mask-only update must invalidate the prepared actor, even while it is paused.
+  f.hand.src='hand-3';f.hand.pixels=[0,0,0,255];f.render();
+  assert.equal(cpu.hands.context.output[3],0);assert.equal(cpu.body.context.output[3],255);
+}));
+
+test('Canvas2D invalidates resized, replaced, timed and removed masks without changing the actor source',()=>withCpuCompositor(f=>{
+  const {cpu}=f.compositor;f.render();
+  f.hand.width++;f.hand.pixels=[255,255,255,255];f.render();assert.equal(cpu.hands.context.output[3],255);
+  f.hand.height++;f.hand.pixels=[0,0,0,255];f.render();assert.equal(cpu.hands.context.output[3],0);
+  const next={...f.hand,pixels:[255,255,255,255]};f.assets.set('hands',{el:next});f.render();assert.equal(cpu.hands.context.output[3],255);
+  next.currentTime=1;next.pixels=[0,0,0,255];f.render();assert.equal(cpu.hands.context.output[3],0);
+  f.scene.matte='cutout';f.assets.set('cutout',{el:{src:'matte',width:1,height:1,pixels:[0,0,0,255]}});f.render();assert.equal(cpu.full.context.output[3],0);
+  f.assets.delete('cutout');f.render();assert.equal(cpu.full.context.output[3],255);
+  f.assets.delete('hands');f.render();assert.equal(cpu.mask(null),null);assert.equal(cpu.lastHand,null);
+}));
 test('published Nora uses the frozen named registry and rejects query requests for another dealer',async()=>{
   const {project,administration,pack,presentation}=fixture();
   const policy={readGameConfiguration(){},readSaved:async()=>({project,administration})};

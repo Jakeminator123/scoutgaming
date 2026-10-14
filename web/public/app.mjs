@@ -1,8 +1,9 @@
+import {readCardView,saveCardView} from './card-view.mjs';
 import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppearanceBets} from './operator-appearance-boundary.mjs';
 import {chatPresentationContext} from './chat-presentation-context.mjs';
 import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE } from './studio-preview-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
-import {layoutGameOverlay} from './game-overlay-layout.mjs';
+import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from './game-overlay-layout.mjs';
 import { dealerVersionPath } from './dealer-version-switcher.mjs';
 import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
@@ -19,10 +20,11 @@ import { createTableAudio } from './table-audio.mjs';
 import { gameLaneFromDocument } from './game-lanes.mjs';
 import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelection, writeChoices } from './player-choices.mjs';
 import { createPresentationStartup } from './presentation-startup.mjs';
+import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { handValue } from './blackjack.mjs';
 import { sideBetWin, roundWin } from './blackjack-feedback.mjs';
 import { totalLabel } from './card-presentation/renderer-support.js';
-import { placeActions } from './action-placement.mjs';
+import { placeActions, placeDealControl } from './action-placement.mjs';
 import { cardFaceArt } from './card-art.mjs';
 
 const $ = s => document.querySelector(s);
@@ -74,7 +76,7 @@ if(lobbyReturn){
   }
 }
 for (const {id,label} of entrySelection.registeredDealers ?? []) DEALERS[id] = {key:id,name:label,registered:true};
-if (entrySelection.presentation === 'layered') for (const [id, name] of [['paow', 'Paow'], ['dragge', 'Dragge']]) DEALERS[id] = {key:id,name,registered:true};
+if (entrySelection.presentation === 'layered') for (const [id, name] of [['dragge', 'Dragge']]) DEALERS[id] = {key:id,name,registered:true};
 const DEALER = DEALERS[entrySelection.dealer];
 if (!DEALER) { presentationStartup.fail(); throw new Error('Dealer is not registered'); }
 const layeredPresentationEnabled = entrySelection.presentation === 'layered';
@@ -228,7 +230,7 @@ if (localPresentationEnabled) {
         onError: () => presentationStartup.fail(),
         onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
       });
-      localCards = cardOverlay.createLocalCardOverlay($('#scene'));
+      localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name,filmedProfile:registeredFilmedProfile(DEALER.key)});
     }
     localPresentation.start();
     window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); layerComposition?.close(); }, { once: true });
@@ -656,8 +658,16 @@ for (let i = 0; i < SEATS; i++) {
 // independently replaceable; its transparent border is not a gameplay anchor.
 // Narrow viewports play the three centre boxes only: seven boxes on a phone
 // leaves ~50px each, which cannot hold a chip stack and two cards.
+// Presentation only: changing this never deals, submits a stake or reveals a card.
+let cardView=readCardView({getItem:key=>localStorage.getItem(key)});
+const cardViewChoice=document.createElement('label');cardViewChoice.className='card-view-choice';cardViewChoice.hidden=true;
+cardViewChoice.append(document.createTextNode('Kort'));
+const cardViewSelect=document.createElement('select');cardViewSelect.id='card-view';cardViewSelect.setAttribute('aria-label','Kortvisning');
+for(const [value,label]of [['raised','Upplyfta'],['table','På bordet']]){const option=document.createElement('option');option.value=value;option.textContent=label;cardViewSelect.append(option);}
+cardViewSelect.value=cardView;cardViewChoice.append(cardViewSelect);$('#scene').append(cardViewChoice);
+cardViewSelect.addEventListener('change',()=>{cardView=saveCardView({setItem:(key,value)=>localStorage.setItem(key,value)},cardViewSelect.value);layoutSeats();});
 const COMPACT_BOXES = [2, 3, 4];
-const compactQuery = matchMedia('(max-width: 860px)');
+const compactQuery = matchMedia(BLACKJACK_COMPACT_QUERY);
 let compactSeats = compactQuery.matches;
 const playedBoxes = () => {
   if(!compactSeats)return seatEls.map((_,i)=>i);
@@ -671,14 +681,26 @@ const playedBoxes = () => {
 };
 
 function layoutSeats() {
+    // Resize/compositor callbacks can arrive before MediaQueryList's change event.
+    // Read the same current format before choosing the visible server boxes.
+    compactSeats = compactQuery.matches;
     const banner=$('#banner');
     Object.assign(banner.style,{top:'',bottom:''});
     const scene=$('#scene').getBoundingClientRect(),plane=layerComposition?.referencePlane();
+    cardViewChoice.hidden=!localCards||!plane;
     if(plane){
       const table=$('#table2d').getBoundingClientRect(),boxes=playedBoxes();
       const hud=$('#hud-bottom').getBoundingClientRect();
       const layout=layoutGameOverlay(plane,boxes,{left:12,right:scene.width-12,top:80,
-        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats});
+        bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats,cardView});
+      $('#scene').dataset.betPlacement=layout.followCards?'under-cards':'manual';
+      let geometryNotice=$('#table-geometry-warning');
+      if(!geometryNotice&&layout.geometryWarning){
+        geometryNotice=document.createElement('p');geometryNotice.id='table-geometry-warning';geometryNotice.setAttribute('role','status');
+        Object.assign(geometryNotice.style,{position:'absolute',top:'70px',left:'12px',right:'12px',zIndex:'20',padding:'8px',background:'#241c10',color:'#ffe1a3',pointerEvents:'none'});
+        $('#scene').append(geometryNotice);
+      }
+      if(geometryNotice){geometryNotice.textContent=layout.geometryWarning??'';geometryNotice.hidden=!layout.geometryWarning;}
       seatEls.forEach((el,i)=>el.classList.toggle('seat-off',!boxes.includes(i)));
       for(const seat of layout.seats){
         Object.assign(seatEls[seat.box].style,{left:(scene.left+seat.x-table.left)+'px',top:(scene.top+seat.y-table.top)+'px'});
@@ -686,9 +708,15 @@ function layoutSeats() {
       }
       if(compactSeats)Object.assign(banner.style,{top:'auto',bottom:(scene.height-Math.min(...layout.seats.map(seat=>seat.y))+60*layout.controlScale+12)+'px'});
       Object.assign($('#dealer-cards').style,{left:(scene.left+layout.dealer.x-table.left)+'px',top:(scene.top+layout.dealer.y-table.top)+'px'});
+      const filmedProfile=registeredFilmedProfile(DEALER.key);
+      if(filmedProfile&&layout.sourcePlane&&layout.tableId&&!layout.geometryWarning)
+        layout.filmedLayout={profileId:filmedProfile.id,tableId:layout.tableId,layout:layout.tableLayout,sourcePlane:layout.sourcePlane};
       localCards?.setProjection(layout,scene.width,scene.height);
+      layoutDealControl();
       return;
     }
+    delete $('#scene').dataset.betPlacement;
+    layoutDealControl();
     const width = Math.min(innerWidth, innerHeight * 9 / 16), height = width * 16 / 9;
     const left = (innerWidth - width) / 2, top = (innerHeight - height) / 2;
     const table = $('#table2d').getBoundingClientRect(), boxes = playedBoxes();
@@ -909,6 +937,29 @@ function renderBets() {
   $('#undo-btn').disabled = !undoStack.length || !!round || busy;
   $('#double-btn').disabled = !betTotal() || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max) || !!round || busy;
   $('#max-btn').disabled = balance < LIMITS.min || !!round || busy;
+  layoutDealControl();
+}
+
+// Fixed viewport percentages can cover the centre betting position.
+function layoutDealControl() {
+  const control=$('#deal-now'),scene=$('#scene');
+  let notice=$('#deal-placement-warning');
+  if(scene.dataset.betPlacement!=='under-cards'){
+    Object.assign(control.style,{position:'',left:'',top:'',bottom:'',transform:'',visibility:''});
+    if(notice)notice.hidden=true;
+    return;
+  }
+  if(control.disabled||getComputedStyle(control).display==='none'){if(notice)notice.hidden=true;return;}
+  control.style.visibility='';
+  const visible=el=>el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden';
+  const targets=seatEls.filter(el=>!el.classList.contains('seat-off')).flatMap(el=>[...el.querySelectorAll('.spot,.sidearcs,.bet-target,.clear-box,.stake')]).filter(visible).map(el=>el.getBoundingClientRect());
+  const obstacles=[...document.querySelectorAll('#wallet,#chip-row,#bottom-right,#table-pick,#player-choices,#rehearsal,#hud-top,.card-view-choice,.local-presentation-mode')].filter(visible).map(el=>el.getBoundingClientRect());
+  const placement=placeDealControl({width:control.offsetWidth,height:control.offsetHeight,
+    viewport:{width:innerWidth,top:0,bottom:$('#dealer-picker').getBoundingClientRect().top},targets,obstacles});
+  if(placement)Object.assign(control.style,{position:'fixed',left:placement.x+'px',top:placement.y+'px',bottom:'auto',transform:'none'});
+  else control.style.visibility='hidden';
+  if(!placement&&!notice){notice=document.createElement('p');notice.id='deal-placement-warning';notice.className='local-presentation-status';notice.setAttribute('role','status');scene.append(notice);}
+  if(notice){notice.textContent='Givknappen ryms inte. Förstora spelytan eller justera bordsprofilen.';notice.hidden=!!placement;}
 }
 
 // ---------- demo cashier ----------
@@ -1185,6 +1236,7 @@ async function revealHole(container, card) {
   const back = container.querySelector('.card.back');
   if (!back) return;
   if (localPresentationEnabled) {
+    localPresentation?.state({ action: true });
     localCards?.sync(round);
     let token;
     const played = await localPresentation?.present({ type: 'reveal', to: 'dealer', shoeDraw: card.shoeDraw }, {
@@ -1271,6 +1323,9 @@ async function beginDealingTake() {
   updatePoseState({ dealerPose: 'action', actionOwner: currentOwner === 'none' ? 'dealer-action' : currentOwner,
     idlePresented: null }, 'action-started');
   await speechQueue.idle;
+  // A previous player take may have released the controller before the dealer
+  // continues. Reclaim it so late chat cleanup cannot interrupt this card run.
+  localPresentation?.state({ action: true });
   if(performancePlayer){if(performancePlayer.joins)performancePlayer.beginSequence();console.info('[deal] Presented-frame performance sequence');return;}
   } catch (error) { console.warn('[deal] Filmed action unavailable:', error.message); }
 }
@@ -1455,7 +1510,7 @@ async function finish() {
   $('#actions-top').hidden = true;
   seatEls.forEach(s => s.classList.remove('active'));
   const live = round.live();
-  let ret = 0, sideRet = 0, anyWin = false, anyPush = false, anyLose = false, anyPlayerBJ = false;
+  let ret = 0, sideRet = 0, anyPush = false, anyLose = false;
   let n = -1;
   const rows = [];
   seatEls.forEach((seat, i) => {
@@ -1469,7 +1524,6 @@ async function finish() {
     handsHere.forEach((hand, k) => {
       ret += hand.result;
       stakeSum += hand.stake; backSum += hand.result; insSum += hand.insured;
-      if (hand.splitFrom === null && hand.cards.length === 2 && handValue(hand.cards).total === 21) anyPlayerBJ = true;
       // on a split box every hand shows its own verdict - the combined net
       // below can read as "my 21 didn't pay" when a sibling busted
       if (handsHere.length > 1) {
@@ -1491,7 +1545,7 @@ async function finish() {
     rows.push({ box: i, stake: stakeSum, sides: b.pp + b.tp, back: backSum, net, sideNet,
                 outcome: net > 0 ? 'win' : net === 0 ? 'push' : 'lose' });
     if (net > 0) {
-      el.textContent = '+' + fmt(net); el.classList.add('win'); anyWin = true;
+      el.textContent = '+' + fmt(net); el.classList.add('win');
       el.title = `staked ${fmt(stakeSum)}, returned ${fmt(backSum)}`;
       const r = seat.getBoundingClientRect();
       burstAt(r.x, r.y, backSum >= stakeSum * 2.4);
@@ -1520,10 +1574,10 @@ async function finish() {
   const dealerBJ = round.dealer.length === 2 && dealerTotal === 21;
   const allBusted = live.length > 0 && live.every(h => h.busted || handValue(h.cards).total > 21);
   if (dealerBJ) voice.say('dealerblackjack', { force: true });
-  else if (anyPlayerBJ && anyWin) { sfx.play('bigwin'); bjFlash('BLACKJACK'); voice.say('blackjack', { force: true }); }
+  else if (win?.blackjack) { sfx.play('bigwin'); bjFlash('BLACKJACK'); voice.say('blackjack', { force: true }); }
   else if (allBusted) { /* already voiced on the hit; never celebrate a dealer bust the player didn't beat */ }
-  else if (dealerTotal > 21 && anyWin) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
-  else if (anyWin) { sfx.play('win'); voice.say('win', { force: true }); }
+  else if (dealerTotal > 21 && win) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
+  else if (win) { sfx.play('win'); voice.say('win', { force: true }); }
   else if (anyPush && !anyLose) voice.say('push', { force: true });
   else voice.say('lose', { force: true });
   await Promise.all([sleep(1800), speechQueue.idle]);

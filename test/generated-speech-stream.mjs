@@ -12,7 +12,7 @@ async function fixture(t, options = {}) {
   let relayOptions, service, owner = 'owner-one', fresh = true, sourceCalls = 0, aborted = false, written = 0, available = options.initialAvailable ?? 1;
   const config = { directory, workerSecret: secret, ticketSecret: secret, origin: 'http://127.0.0.1:4173', apiKey: 'fixture', voiceId: 'voice', modelId: 'model', ...(options.overlapAudio ? { overlapAudio: true } : {}) };
   const services = [];
-  const relay = { status: () => ({ available }), close() { options.onRelayClose?.(); }, openSource: () => ({ writePCM: async b => { written += b.length; }, end() {}, abort() { aborted = true; } }) };
+  const relay = { status: () => ({ available }), close() { options.onRelayClose?.(); }, openSource: () => ({ writePCM: async b => { written += b.length; await options.onWrite?.(b); }, end() {}, abort() { aborted = true; } }) };
   const construct = () => createGeneratedSpeechStreamService({}, config, { freshnessIntervalMs: 10,
     resolveOwner: req => req.owner,
     attachRelay: (_, value) => { relayOptions = value; return relay; },
@@ -143,7 +143,7 @@ test('opt-in preserves local/cloud guards and never enables cloud guests', () =>
   assert.equal(generatedSpeechStreamConfiguration(cloud).configuration.overlapAudio, true);
   assert.equal(generatedSpeechStreamConfiguration({ ...cloud, CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_GENERATED_SPEECH_DIR:undefined }).configured, true,
     'Neon session/request journals replace the cloud stream directory');
-  for (const patch of [{ CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '10.01' }, { RUNPOD_API_KEY: '' }]) {
+  for (const patch of [{ CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '' }, { CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD: '20.000001' }, { RUNPOD_API_KEY: '' }]) {
     assert.equal(generatedSpeechStreamConfiguration({ ...cloud, ...patch }).configured, false);
   }
 });
@@ -358,6 +358,58 @@ test('cloud overlap buffers TTS while the GPU session starts and writes it once'
   const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
   await f.relayOptions.onSessionReady({ ...identity, id: 'wire', signal: new AbortController().signal });
   assert.equal(calls, 1); assert.equal(f.written, 48);
+});
+
+test('buffered PCM drains in bounded blocks independent of provider packet sizes', async t => {
+  let finished;
+  const ready = new Promise(resolve => { finished = resolve; });
+  const expected = Buffer.from(Array.from({length:150000}, (_, i) => i % 251)), writes = [];
+  const f = await fixture(t, {
+    overlapAudio: true, onWrite: bytes => writes.push(Buffer.from(bytes)),
+    pcmSource: async function* ({ beforeCostly }) {
+      await beforeCostly();
+      // Tiny packets followed by one packet larger than a relay write.
+      for (let i=0; i<24000; i+=240) yield expected.subarray(i,i+240);
+      yield expected.subarray(24000); finished();
+    },
+    sessionManager: { async ensure({onSubmitted}) { await onSubmitted(); await ready; return {ready:true}; }, close() {} },
+  });
+  const descriptor = await f.service.prepare(f.input());
+  const identity = await f.relayOptions.authenticateClient(f.request(descriptor));
+  await f.relayOptions.onSessionReady({...identity,id:'wire',signal:new AbortController().signal});
+  assert.deepEqual(writes.map(bytes=>bytes.length),[65536,65536,18928]);
+  assert.deepEqual(Buffer.concat(writes),expected);
+});
+
+test('a partial PCM block flows before the provider finishes', async t => {
+  let release, seen;
+  const gate = new Promise(resolve=>{release=resolve;}), firstWrite = new Promise(resolve=>{seen=resolve;});
+  t.after(()=>release());
+  const writes=[];
+  const f=await fixture(t,{
+    overlapAudio:true, onWrite:bytes=>{writes.push(bytes.length);seen();},
+    pcmSource:async function*({beforeCostly}){await beforeCostly();yield new Uint8Array(24);await gate;yield new Uint8Array(24);},
+    sessionManager:{async ensure({onSubmitted}){await onSubmitted();return {ready:true};},close(){}},
+  });
+  const descriptor=await f.service.prepare(f.input());
+  const identity=await f.relayOptions.authenticateClient(f.request(descriptor));
+  const completed=f.relayOptions.onSessionReady({...identity,id:'wire',signal:new AbortController().signal});
+  await firstWrite; assert.deepEqual(writes,[24]); release(); await completed;
+  assert.deepEqual(writes,[24,24]);
+});
+
+test('freshness rejection between buffered blocks prevents remaining PCM delivery', async t => {
+  let finished;
+  const ready=new Promise(resolve=>{finished=resolve;});
+  const f=await fixture(t,{
+    overlapAudio:true, onWrite:()=>f.stale(),
+    pcmSource:async function*({beforeCostly}){await beforeCostly();yield new Uint8Array(100000);finished();},
+    sessionManager:{async ensure({onSubmitted}){await onSubmitted();await ready;return {ready:true};},close(){}},
+  });
+  const descriptor=await f.service.prepare(f.input());
+  const identity=await f.relayOptions.authenticateClient(f.request(descriptor));
+  await assert.rejects(f.relayOptions.onSessionReady({...identity,id:'wire',signal:new AbortController().signal}),/Speech source unavailable/);
+  assert.equal(f.written,65536); assert.equal(f.aborted,true);
 });
 
 test('a rejected GPU job never starts overlapped TTS', async t => {

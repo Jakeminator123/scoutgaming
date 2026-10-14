@@ -14,7 +14,8 @@ test('mapping preserves original and V2 speech as distinct exact media sets', ()
   assert.equal(mapping.version, 2);
   assert.equal(mapping.actualPlayback, false);
   assert.equal(mapping.revision, 'test');
-  for (const dealer of ['astrid', 'amira']) {
+  assert.equal(mapping.dealers.amira, undefined, 'retired material must not synthesize a dealer');
+  for (const dealer of ['astrid']) {
     const manifest = read(`review/${dealer}-green-speak/speak.json`);
     const rows = mapping.dealers[dealer].greenSpeech;
     assert.equal(rows.length, Object.keys(manifest.lines).length);

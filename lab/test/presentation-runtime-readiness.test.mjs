@@ -4,12 +4,51 @@ import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED 
 import { nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import {presentationCapabilitiesForVersion} from '../../web/presentation-capability-contract.mjs';
+import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
+import {defaultPresentationLane} from '../lib/studio-model.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
+import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
 
 const env = { CROUPIER_BACKEND_ORIGIN: 'https://render.example.invalid' };
 const capability = { schemaVersion: 1, registeredDealerIds: ['nora'], compositing: 'per-clip' };
 const dealers = ['vera', 'astrid', 'amira', 'mei'];
 const project = () => ({ dealers: [...dealers, 'nora'].map(id => ({ id })), lanes: [] });
 const blocked = error => error instanceof StudioStorageError && error.code === CODE && error.statusCode === 503 && error.message === CODE;
+const invalidPackage=error=>error.message==='studio_invalid_presentation'&&error.statusCode===422;
+function frozenPackage(edit=()=>{}, {schemaVersion=3,dealerId='astrid'}={}) {
+  const {presentation:value}=cloudPresentationFixture({lanes:[defaultPresentationLane(dealerId)]});
+  if(schemaVersion===2){value.schemaVersion=2;delete value.playback;}
+  edit(value);
+  // These older feature boundaries must stay valid and below the new Brotli/v18 boundary.
+  assert.equal(encodePresentationPackage(value).encoding,'gzip-base64url');
+  return value;
+}
+function frozenMedia(metadata={},contentType='video/mp4',n=2) {
+  const id=`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`,sha256='a'.repeat(64),extension=contentType.split('/')[1];
+  const classification={dealerId:'astrid',eventId:'deal.dealer',kind:'action',role:'alternative',situation:'dealer-up',label:'Fixture media',notes:'',playback:'once',compositing:{mode:'opaque'},...metadata};
+  return {id,sha256,size:4096,contentType,pathname:`croupier/media/dealers/astrid/review/uploads/${id}/${sha256}.${extension}`,classification};
+}
+function bindFrozenMedia(value,media,eventId=media.classification.eventId) {
+  const line=value.playback.lines.find(row=>row.dealerId==='astrid'&&row.eventId===eventId);
+  line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=media.id;
+  value.playback.media.push(media);
+}
+function recordedSpeech() {
+  return {schemaVersion:1,dealerId:'astrid',lineId:'goodluck',takeId:'goodluck_1',language:'sv',exactText:'En inspelad testreplik.',
+    videoSha256:'a'.repeat(64),audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+    entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
+}
+function rouletteMedia(action='breathing',n=3) {
+  return frozenMedia({eventId:action==='breathing'?'roulette.idle':'roulette.wheel-start',kind:action==='breathing'?'idle':'action',situation:action,
+    game:'roulette',action,startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}},'video/webm',n);
+}
+function frozenRoulette(start=false) {
+  return frozenPackage(value=>{
+    const dealer=value.registeredDealers[0];dealer.rouletteIdle={base:rouletteMedia(),variants:[]};
+    if(start)dealer.rouletteStart={clip:rouletteMedia('wheel-start',4),tableDesignId:'roulette-anna-v1',durationMs:2000,wheelImpulseMs:500,ballReleaseMs:1000};
+  });
+}
 function fixture({ config = env, fetcher = async () => Response.json(capability) } = {}) {
   const writes = [], fetches = [];
   const repository = {
@@ -35,6 +74,278 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+test('exact speech slot standards require v20 before saving, publishing or archiving and before SQL begins', async () => {
+  const media = frozenMedia({ eventId: 'speak.other', situation: 'greeting', kind: 'speech',
+    recordedSpeech: { ...recordedSpeech(), lineId: 'greeting', takeId: 'greeting_1' } }, 'video/mp4', 25);
+  const frozen = frozenPackage(value => {
+    const line = value.playback.lines.find(row => row.dealerId === 'astrid' && row.eventId === 'speak.other');
+    const baseline = line.variants.find(row => row.id === line.baselineVariantId);
+    line.variants.push({ ...structuredClone(baseline), id: 'astrid.speak.other.slot-greeting', priority: 0, triggerIds: [],
+      videoGenerationId: media.id, selection: { rules: false, model: false, random: false } });
+    value.playback.media.push(media);
+  });
+  const line = frozen.playback.lines.find(row => row.eventId === 'speak.other');
+  const descriptors = [{ kind: 'project', value: { lines: [line] } },
+    { kind: 'project', value: { dealerTrash: [{ lines: [line] }] } },
+    { kind: 'dealer-archive', value: { dealerTrash: [{ lines: [line] }] } },
+    { kind: 'presentation-package', value: frozen }];
+  for (const descriptor of descriptors) for (const version of [19, 20]) {
+    const f = fixture({ fetcher: async () => Response.json(presentationCapabilitiesForVersion(version)) }); let begun = 0;
+    f.repository.transaction = async work => { begun++; return work(f.repository); };
+    const save = () => f.wrapped.transaction(repo => repo.saveDocument(descriptor.kind, { value: descriptor.value }), { presentationMutation: descriptor });
+    if (version === 19) { await assert.rejects(save, blocked); assert.equal(begun, 0); assert.equal(f.writes.length, 0); }
+    else { await save(); assert.equal(begun, 1); assert.equal(f.writes.length, 1); }
+    assert.equal(f.fetches.length, 1);
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'], '20');
+  }
+});
+
+test('an older mutation descriptor cannot gain slot-write permission inside SQL or issue a nested preflight', async () => {
+  const f = fixture({ fetcher: async () => Response.json(presentationCapabilitiesForVersion(19)) });
+  const value = { lines: [{ eventId: 'speak.other', variants: [{ id: 'dragan.speak.other.slot-greeting' }] }] };
+  await assert.rejects(f.wrapped.withMutationContext(repo => repo.saveDocument('project', { value }), { kind: 'resource-lifecycle', value: {} }), blocked);
+  assert.equal(f.writes.length, 0); assert.equal(f.fetches.length, 1);
+  assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'], '19');
+});
+
+test('lifecycle plus the saved project discovered before SQL can preserve exact slots with one v20 preflight', async () => {
+  // createStudioNativeRuntime.mutationTransaction supplies these complete
+  // descriptors by reading presentationDocuments before entering either lock.
+  const value = { lines: [{ eventId: 'speak.other', variants: [{ id: 'dragan.speak.other.slot-greeting' }] }] };
+  for (const kind of ['material-trash', 'resource-lifecycle', 'dealer-archive']) for (const version of [19, 20]) {
+    const f = fixture({ fetcher: async () => Response.json(presentationCapabilitiesForVersion(version)) }); let begun = 0;
+    f.repository.transaction = async work => { begun++; return work(f.repository); };
+    const lifecycle = { kind, value: {} }, descriptors = [lifecycle, { kind: 'project', value }];
+    const work = () => f.wrapped.transaction(repo => repo.withMutationContext(inner => inner.saveDocument('project', { value }), lifecycle), { presentationMutation: descriptors });
+    if (version === 19) { await assert.rejects(work, blocked); assert.equal(begun, 0); assert.equal(f.writes.length, 0); }
+    else { await work(); assert.equal(begun, 1); assert.equal(f.writes.length, 1); }
+    assert.equal(f.fetches.length, 1); assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'], '20');
+  }
+});
+
+test('more than five filmed deal variants require v17, while explicit archive operations also require v19',async()=>{
+  for(const eventId of ['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']){
+    const line={dealerId:'astrid',eventId,variants:Array.from({length:6},(_,i)=>({id:`fixture-${i}`}))};
+    const frozen=frozenPackage(value=>{
+      const target=value.playback.lines.find(row=>row.eventId===eventId),baseline=target.variants.find(row=>row.id===target.baselineVariantId);
+      target.variants=Array.from({length:6},(_,i)=>({...structuredClone(baseline),id:i?baseline.id+'-'+i:baseline.id}));
+    });
+    const descriptors=[{kind:'project',value:{lines:[line]}},{kind:'project',value:{dealerTrash:[{lines:[line]}]}},
+      {kind:'dealer-archive',value:{dealerTrash:[{lines:[line]}]}},{kind:'presentation-package',value:frozen}];
+    for(const descriptor of descriptors){const required=descriptor.kind==='dealer-archive'?19:17;for(const version of [required-1,required]){
+      const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+      f.repository.transaction=async work=>{begun++;return work(f.repository);};
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument(descriptor.kind,{value:descriptor.value}),{presentationMutation:descriptor});
+      if(version<required)await assert.rejects(work,blocked);else await work();
+      assert.equal(begun,version===required?1:0);assert.equal(f.writes.length,version===required?1:0);
+      assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],String(required));
+    }}
+  }
+});
+
+test('five deal variants retain legacy readiness; v17 speech and larger deal rows grant only declared features',async()=>{
+  const small={dealerId:'astrid',eventId:'deal.dealer',variants:Array.from({length:5},()=>({}))};
+  const old=fixture();await old.wrapped.saveDocument('project',{value:{lines:[small]}});assert.equal(old.fetches.length,0);
+  const large={kind:'project',value:{lines:[{...small,variants:[...small.variants,{}]}]}};
+  const speech={metadata:{dealerId:'astrid',recordedSpeech:{schemaVersion:1}}};
+  for(const [declared,undeclared]of [[speech,large],[large,speech]]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(17))});
+    await f.wrapped.withMutationContext(async()=>{
+      await assert.rejects(f.wrapped.withMutationContext(()=>assert.fail('no widening'),undeclared),blocked);
+    },declared);
+    assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+  }
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(17))});
+  await f.wrapped.withMutationContext(async()=>{
+    await f.wrapped.saveDocument(large.kind,{value:large.value});await f.wrapped.registerMedia({classification:speech.metadata});
+  },[large,speech]);
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,2);
+});
+
+test('recorded speech requires exact v17 before register or classify, even for an invalid present optional field',async()=>{
+  for(const recordedSpeech of [{schemaVersion:1},null,undefined])for(const version of [16,17])for(const operation of ['register','classify']){
+    const metadata={dealerId:'astrid',recordedSpeech},f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const write=()=>operation==='register'?f.wrapped.registerMedia({classification:metadata}):f.wrapped.classifyMedia('id',{metadata});
+    if(version===16)await assert.rejects(write,blocked);else await write();
+    assert.equal(f.writes.length,version===17?1:0);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'17');
+  }
+});
+
+test('frozen media retains the recorded speech readiness requirement before SQL',async()=>{
+  for(const version of [16,17]){
+    const value=frozenPackage(value=>bindFrozenMedia(value,frozenMedia({eventId:'speak.goodluck',kind:'speech',situation:'goodluck',recordedSpeech:recordedSpeech()})));
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+    f.repository.transaction=async work=>{begun++;return work(f.repository);};
+    const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('presentation-package',{value}),{presentationMutation:{kind:'presentation-package',value}});
+    if(version===16)await assert.rejects(work,blocked);else await work();
+    assert.equal(begun,version===17?1:0);assert.equal(f.writes.length,version===17?1:0);
+    assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'17');
+  }
+});
+
+test('recorded speech cannot be stored in a frozen idle slot before HTTP or SQL',async()=>{
+  const value=frozenPackage();value.registeredDealers[0].idle.classification.recordedSpeech=recordedSpeech();
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(17))});let begun=0;
+  f.repository.transaction=async work=>{begun++;return work(f.repository);};
+  await assert.rejects(f.wrapped.transaction(()=>assert.fail('invalid idle must not enter SQL'),{presentationMutation:{kind:'presentation-package',value}}),invalidPackage);
+  assert.equal(begun,0);assert.equal(f.fetches.length,0);assert.equal(f.writes.length,0);
+});
+
+test('v17 combines declared speech and geometry but never widens a running mutation context',async()=>{
+  const speech={metadata:{dealerId:'astrid',recordedSpeech:{schemaVersion:1}}};
+  const geometry={kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}};
+  const f=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version'])))});
+  await f.wrapped.withMutationContext(async()=>{
+    await f.wrapped.registerMedia({classification:speech.metadata});
+    await f.wrapped.classifyMedia('id',{metadata:speech.metadata});
+    await f.wrapped.saveDocument(geometry.kind,{value:geometry.value});
+  },[speech,geometry]);
+  assert.equal(f.fetches.length,1);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'17');assert.equal(f.writes.length,3);
+  for(const [declared,undeclared]of [[geometry,speech],[speech,geometry]]){
+    const limited=fixture({fetcher:async(_url,init)=>Response.json(presentationCapabilitiesForVersion(Number(init.headers['X-Presentation-Capability-Version'])))});
+    await limited.wrapped.withMutationContext(async()=>{
+      await assert.rejects(limited.wrapped.withMutationContext(()=>assert.fail('no feature widening'),undeclared),blocked);
+      const write=undeclared.metadata?limited.wrapped.registerMedia({classification:undeclared.metadata}):limited.wrapped.saveDocument(undeclared.kind,{value:undeclared.value});
+      await assert.rejects(write,blocked);
+    },declared);
+    assert.equal(limited.fetches.length,1);assert.equal(limited.writes.length,0);
+  }
+});
+
+test('table geometry requires v16 before saving active, archived or frozen data, including an empty optional field',async()=>{
+  for(const descriptor of [
+    {kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}},
+    {kind:'project',value:{dealerTrash:[{compositions:[{composition:{blackjackTables:[]}}]}]}},
+    {kind:'presentation-package',value:frozenPackage(value=>{value.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[]};})},
+  ])for(const version of [15,16]){
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value}),descriptor);
+    if(version===15)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'16');assert.equal(f.writes.length,version===16?1:0);
+  }
+  const direct=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(15))});
+  await assert.rejects(direct.wrapped.saveDocument('project',{value:{lanes:[{composition:{blackjackTables:[]}}]}}),blocked);
+  assert.equal(direct.writes.length,0);
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(15))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveDocument('project',{value:{lanes:[{composition:{blackjackTables:[]}}]}}),blocked);
+  },{kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:{}}]}});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
+test('betMode presence requires v19 for both active and archived layouts before SQL, even when invalid',async()=>{
+  for(const layout of ['mobile','desktop'])for(const betMode of ['under-cards',undefined,null,'manual']){
+    const lane={composition:{blackjackTables:[{[layout]:{betMode}}]}};
+    for(const value of [{lanes:[lane]},{dealerTrash:[{compositions:[lane]}]}])for(const version of [18,19]){
+      const descriptor={kind:'project',value},f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});let begun=0;
+      f.repository.transaction=async work=>{begun++;return work(f.repository);};
+      const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value}),{presentationMutation:descriptor});
+      if(version===18)await assert.rejects(work,blocked);else await work();
+      assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'19');
+      assert.equal(begun,version===19?1:0);assert.equal(f.writes.length,version===19?1:0);
+    }
+  }
+});
+
+test('complete frozen table bet modes require v19 and cannot survive a runtime rollback',async()=>{
+  for(const layout of ['mobile','desktop']){
+    const value=frozenPackage(value=>{
+      const id='30000000-0000-4000-8000-000000000001',sha256='d'.repeat(64),contentType='image/png';
+      const asset={schemaVersion:1,id,sha256,contentType,size:4096,width:720,height:1280,role:'table',label:'Table fixture',pathname:layerAssetPath({id,sha256,contentType,role:'table'})};
+      value.assets.push(asset);Object.assign(value.lanes[0].layers.table,{enabled:true,allowed:[id],default:id});
+      const board=defaultBlackjackTableGeometry(id);board[layout].betMode='under-cards';
+      value.lanes[0].composition={...defaultCompositionSettings(),blackjackTables:[board]};
+    });
+    let version=19,begun=0;const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    f.repository.transaction=async work=>{begun++;return work(f.repository);};
+    const work=()=>f.wrapped.transaction(repo=>repo.saveDocument('presentation-package',{value}),{presentationMutation:{kind:'presentation-package',value}});
+    await work();version=18;await assert.rejects(work,blocked);
+    assert.equal(begun,1);assert.equal(f.writes.length,1);assert.equal(f.fetches.length,2);
+    assert.ok(f.fetches.every(row=>row[1].headers['X-Presentation-Capability-Version']==='19'));
+  }
+});
+
+test('table geometry permission cannot acquire betMode after SQL begins',async()=>{
+  const manual={kind:'project',value:{lanes:[{composition:{blackjackTables:[]}}]}};
+  const automatic={kind:'project',value:{lanes:[{composition:{blackjackTables:[{mobile:{betMode:'under-cards'}}]}}]}};
+  const f=fixture({fetcher:async(_url,{headers})=>Response.json(presentationCapabilitiesForVersion(Number(headers['X-Presentation-Capability-Version'])))});
+  let begun=0;f.repository.transaction=async work=>{begun++;return work(f.repository);};
+  await assert.rejects(()=>f.wrapped.transaction(repo=>repo.saveDocument('project',{value:automatic.value}),{presentationMutation:manual}),blocked);
+  assert.equal(begun,1);assert.equal(f.writes.length,0);assert.equal(f.fetches.length,1);
+  assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'16');
+  await f.wrapped.transaction(repo=>repo.saveDocument('project',{value:automatic.value}),{presentationMutation:automatic});
+  assert.equal(f.writes.length,1);assert.equal(f.fetches.length,2);assert.equal(f.fetches[1][1].headers['X-Presentation-Capability-Version'],'19');
+});
+
+test('wheel-start needs v15 for active/archived bindings and frozen publication; idle cannot widen inside SQL',async()=>{
+  for(const descriptor of [
+    {kind:'project',value:{dealers:[{id:'astrid',rouletteStart:{videoId:'fixture'}}]}},
+    {kind:'project',value:{dealerTrash:[{dealer:{id:'astrid',rouletteStart:{videoId:'fixture'}}}]}},
+    {kind:'presentation-package',value:frozenRoulette(true)},
+  ])for(const version of [14,15]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value}),descriptor);
+    if(version===14)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'15');assert.equal(f.writes.length,version===15?1:0);
+  }
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(15))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveDocument('project',{value:{dealers:[{id:'astrid',rouletteStart:{}}]}}),blocked);
+  },{kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:{}}]}});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
+test('explicit roulette idle requires v15 before project save or frozen publication including archived dealers',async()=>{
+  const binding={videoId:'20000000-0000-4000-8000-000000000001',variantVideoIds:[]};
+  for(const descriptor of [
+    {kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:binding}]}},
+    {kind:'project',value:{dealerTrash:[{dealer:{id:'astrid',rouletteIdle:binding}}]}},
+    {kind:'presentation-package',value:frozenRoulette()},
+  ])for(const version of [13,14,15]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value}),descriptor);
+    if(version!==15)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'15');assert.equal(f.writes.length,version===15?1:0);
+  }
+  const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(13))});
+  await f.wrapped.withMutationContext(async()=>{
+    await assert.rejects(f.wrapped.saveDocument('project',{value:{dealers:[{id:'astrid',rouletteIdle:binding}]}}),blocked);
+  },{kind:'project',value:{layerAssets:[{game:'roulette'}]}});
+  assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+});
+
+test('archived dealer categories require the shipped v14 contract including empty categories',async()=>{
+  for(const dealerSets of [[],[{id:'dragan.one'}]]) {
+    const value={...project(),dealerTrash:[{schemaVersion:2,dealerSets}]};
+    const old=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(13))});
+    await assert.rejects(old.wrapped.saveDocument('project',{value}),blocked);assert.equal(old.writes.length,0);
+    const current=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(14))});
+    await current.wrapped.saveDocument('project',{value});assert.equal(current.writes.length,1);
+    assert.equal(current.fetches[0][1].headers['X-Presentation-Capability-Version'],'14');
+  }
+});
+
+test('v15 permits a combined roulette and retained-category mutation without implicit transaction feature grants',async()=>{
+  const category={kind:'project',value:{dealerTrash:[{schemaVersion:2,dealerSets:[]}]}};
+  const idle={kind:'project',value:{dealers:[{id:'astrid',rouletteIdle:{}}]}};
+  const start={kind:'project',value:{dealers:[{id:'astrid',rouletteStart:{}}]}};
+  for(const version of [14,15]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    const work=()=>f.wrapped.withMutationContext(async()=>{
+      for(const descriptor of [category,idle,start])await f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value});
+    },[category,idle,start]);
+    if(version===14)await assert.rejects(work,blocked);else await work();
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'15');assert.equal(f.writes.length,version===15?3:0);
+  }
+  for(const [declared,undeclared,version] of [[category,idle,14],[idle,category,15],[start,idle,15]]) {
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
+    await f.wrapped.withMutationContext(async()=>{
+      await assert.rejects(f.wrapped.saveDocument(undeclared.kind,{value:undeclared.value}),blocked);
+    },declared);
+    assert.equal(f.fetches.length,1);assert.equal(f.writes.length,0);
+  }
+});
+
 const extendedMedia=[
   {dealerId:'astrid',compositing:{mode:'alpha'}},
   {dealerId:'astrid',mediaType:'image'},
@@ -42,11 +353,26 @@ const extendedMedia=[
   ...['game','action','startPose','endPose'].map(key=>({dealerId:'astrid',[key]:'unverified'})),
 ];
 
+test('archived dealer categories require v14 before any write, including empty categories',async()=>{
+  for(const dealerSets of [[],[{id:'dragan.one'}]]){
+    const value={...project(),dealerTrash:[{schemaVersion:2,dealerSets}]};
+    const old=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(13))});
+    await assert.rejects(old.wrapped.saveDocument('project',{value}),blocked);assert.equal(old.writes.length,0);
+    const current=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(14))});
+    await current.wrapped.saveDocument('project',{value});assert.equal(current.writes.length,1);
+    assert.equal(current.fetches[0][1].headers['X-Presentation-Capability-Version'],'14');
+  }
+});
+
 test('game-tagged table projects, trash and frozen packages require exact v13',async()=>{
+  const frozen=frozenPackage(value=>{
+    const table={schemaVersion:1,id:'30000000-0000-4000-8000-000000000001',role:'table',game:'roulette',label:'Fixture table',sha256:'d'.repeat(64),size:4096,contentType:'image/png',width:1920,height:1080};
+    value.assets.push({...table,pathname:layerAssetPath(table)});value.lanes[0].layers.table={enabled:true,default:table.id,allowed:[table.id]};
+  });
   for(const descriptor of [
     {kind:'project',value:{layerAssets:[{role:'table',game:'roulette'}]}},
     {kind:'project',value:{layerAssetTrash:[{asset:{role:'table',game:'blackjack'}}]}},
-    {kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[],assets:[{role:'table',game:'roulette'}]}},
+    {kind:'presentation-package',value:frozen},
   ])for(const version of [12,13]){
     const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
     const write=()=>f.wrapped.saveDocument(descriptor.kind,{value:descriptor.value});
@@ -84,12 +410,27 @@ test('legacy verified transaction cannot inherit alpha or roulette permissions a
   await f.wrapped.withMutationContext(()=>f.wrapped.registerMedia({classification:metadata}),{metadata});
   assert.equal(f.fetches.length,1);assert.equal(f.writes.length,1);
 });
-test('frozen alpha and roulette media require v12 even when the package format itself is older',async()=>{
-  for(const metadata of extendedMedia.slice(0,3))for(const location of ['idle','playback'])for(const version of [11,12]){
-    const value={schemaVersion:3,registeredDealers:[{id:'astrid',...(location==='idle'?{idle:{classification:metadata}}:{})}],playback:{media:location==='playback'?[{classification:metadata}]:[]}};
+test('frozen alpha media require v12 even when the package format itself is older',async()=>{
+  for(const location of ['idle','playback'])for(const version of [11,12]){
+    const value=frozenPackage(value=>{
+      const media=frozenMedia({compositing:{mode:'alpha'},...(location==='idle'?{eventId:'idle.ready',kind:'idle',situation:''}:{})},'video/webm');
+      if(location==='idle')value.registeredDealers[0].idle=media;else bindFrozenMedia(value,media);
+    },{schemaVersion:location==='idle'?2:3});
     const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
     if(version===12)await f.wrapped.saveDocument('presentation-package',{value});else await assert.rejects(f.wrapped.saveDocument('presentation-package',{value}),blocked);
     assert.equal(f.writes.length,version===12?1:0);assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'12');
+  }
+});
+
+test('PNG references and roulette actions cannot enter frozen blackjack idle or playback before HTTP or SQL',async()=>{
+  const png=frozenMedia({eventId:'roulette.reference',kind:'idle',situation:'VILA',mediaType:'image',game:'roulette',action:'reference',startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'}},'image/png');
+  for(const media of [png,rouletteMedia('wheel-start')])for(const location of ['idle','playback']){
+    const value=frozenPackage();
+    if(location==='idle')value.registeredDealers[0].idle=structuredClone(media);else bindFrozenMedia(value,structuredClone(media),'deal.dealer');
+    const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(17))});let begun=0;
+    f.repository.transaction=async work=>{begun++;return work(f.repository);};
+    await assert.rejects(f.wrapped.transaction(()=>assert.fail('invalid placement must not enter SQL'),{presentationMutation:{kind:'presentation-package',value}}),invalidPackage);
+    assert.equal(begun,0);assert.equal(f.fetches.length,0);assert.equal(f.writes.length,0);
   }
 });
 
@@ -115,13 +456,14 @@ test('a preflight without set support cannot introduce membership after SQL begi
   }, { kind: 'administration', value: { rooms: [{ schemaVersion: 2, game: 'roulette' }] } });
   assert.equal(input.fetches.length, 1); assert.equal(input.writes.length, 0);
 });
-test('persistent material trash requires exact runtime v11 before a mutation or later project save',async()=>{
+test('material-trash operations require v19 while stored project trash retains v11',async()=>{
  for(const descriptor of [{kind:'material-trash',value:{}},{kind:'project',value:{layerAssetTrash:[]}}]){
+  const required=descriptor.kind==='material-trash'?19:11;
   for(const accepted of [false,true]){
-   const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(accepted?11:9))});
+   const f=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(accepted?required:required-1))});
    const work=()=>f.wrapped.withMutationContext(()=>f.wrapped.saveDocument('project',{value:{layerAssetTrash:[]}}),descriptor);
    if(accepted){await work();assert.equal(f.writes.length,1);}else{await assert.rejects(work,blocked);assert.equal(f.writes.length,0);}
-   assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],'11');
+   assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'],String(required));
   }
  }
 });
@@ -143,7 +485,7 @@ test('background policy in project, archived composition and frozen package requ
   const lane={backgroundPlayback:{schemaVersion:1,rules:[]}};
   const descriptors=[{kind:'project',value:{lanes:[lane]}},
     {kind:'project',value:{dealerTrash:[{schemaVersion:2,compositions:[lane]}]}},
-    {kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[],lanes:[lane]}}];
+    {kind:'presentation-package',value:frozenPackage(value=>{value.lanes[0].backgroundPlayback=structuredClone(lane.backgroundPlayback);})}];
   for(const descriptor of descriptors) {
     for(const version of [7,8]) {
       const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(version))});
@@ -156,8 +498,8 @@ test('background policy in project, archived composition and frozen package requ
   }
 });
 
-test('a v7 mutation cannot add background automation after the SQL boundary',async()=>{
-  const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(7))});
+test('an archive v19 mutation cannot add undeclared background automation after the SQL boundary',async()=>{
+  const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(19))});
   await input.wrapped.withMutationContext(async()=>{
     await assert.rejects(input.wrapped.saveDocument('project',{value:{lanes:[{backgroundPlayback:{schemaVersion:1,rules:[]}}]}}),blocked);
   },{kind:'dealer-archive',value:{}});
@@ -400,7 +742,7 @@ test('generic saved-registry dealer writes negotiate v3; the legacy Nora list gr
 });
 
 test('schema2 package format requires v3 even when no extra dealer is included; no SQL begins on downgrade', async () => {
-  const descriptor = { kind: 'presentation-package', value: { schemaVersion: 2, registeredDealers: [] } };
+  const descriptor = { kind: 'presentation-package', value: frozenPackage(value=>{value.registeredDealers=[];},{schemaVersion:2}) };
   let begun = 0;
   const old = fixture(); old.repository.transaction = async work => { begun++; return work(old.repository); };
   await assert.rejects(old.wrapped.transaction(async () => {}, { presentationMutation: descriptor }), blocked);
@@ -415,7 +757,7 @@ test('legacy mutation context cannot introduce generic or frozen-package feature
   const input = fixture();
   await input.wrapped.withMutationContext(async () => {
     await assert.rejects(input.wrapped.registerMedia({ classification: { dealerId: 'johanna' } }), blocked);
-    await assert.rejects(input.wrapped.transaction(async () => {}, { presentationMutation: { kind: 'presentation-package', value: { schemaVersion: 2 } } }), blocked);
+    await assert.rejects(input.wrapped.transaction(async () => {}, { presentationMutation: { kind: 'presentation-package', value: frozenPackage(value=>{value.registeredDealers=[];},{schemaVersion:2}) } }), blocked);
   }, { kind: 'project', value: project() });
   assert.equal(input.fetches.length, 1); assert.equal(input.writes.length, 0);
 });
@@ -423,9 +765,9 @@ test('legacy mutation context cannot introduce generic or frozen-package feature
 const cap4 = { schemaVersion: 4, registeredDealerIds: ['nora'], compositing: 'per-clip', rooms: 'operator-owned-v2',
   registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2', frozenDealerEvents: 'operator-package-v3' };
 const cap3 = { ...cap4, schemaVersion: 3 }; delete cap3.frozenDealerEvents;
-test('frozen-event schema3 publication negotiates exact v4 before SQL even without a registered dealer', async () => {
-  for(const registeredDealers of [[],[{id:'johanna'}]]) {
-    const descriptor={kind:'presentation-package',value:{schemaVersion:3,registeredDealers}};
+test('frozen-event schema3 publication negotiates exact v4 before SQL even without an extra dealer', async () => {
+  for(const dealerId of ['astrid','johanna']) {
+    const descriptor={kind:'presentation-package',value:frozenPackage(()=>{},{dealerId})};
     for(const response of [capability,capabilityV2,cap3,{...cap4,frozenDealerEvents:'latest-draft'}]) {
       let begun=0;
       const input=fixture({fetcher:async()=>Response.json(response)});
@@ -442,13 +784,13 @@ test('frozen-event schema3 publication negotiates exact v4 before SQL even witho
   }
 });
 test('v3 readiness cannot authorize schema3 events inside SQL and v4 readiness cannot survive rollback', async () => {
-  const descriptor={kind:'presentation-package',value:{schemaVersion:3,registeredDealers:[]}};
+  const descriptor={kind:'presentation-package',value:frozenPackage()};
   let ready=true,begun=0;
   const input=fixture({fetcher:async(_url,options)=>Response.json(options.headers['X-Presentation-Capability-Version']==='3' ? cap3 : ready ? cap4 : cap3)});
   input.repository.transaction=async work=>{begun++;return work(input.repository);};
   await input.wrapped.withMutationContext(async()=>{
     await assert.rejects(input.wrapped.saveDocument('presentation-package',{value:descriptor.value}),blocked);
-  }, {kind:'presentation-package',value:{schemaVersion:2,registeredDealers:[]}});
+  }, {kind:'presentation-package',value:frozenPackage(value=>{value.registeredDealers=[];},{schemaVersion:2})});
   assert.equal(input.fetches.length,1);assert.equal(input.writes.length,0);
   await input.wrapped.transaction(async()=>{}, {presentationMutation:descriptor});
   assert.equal(begun,1);ready=false;
@@ -456,17 +798,17 @@ test('v3 readiness cannot authorize schema3 events inside SQL and v4 readiness c
   assert.equal(begun,1);assert.equal(input.fetches.length,3);
 });
 
-test('resource archive writes require exact v6 before SQL and reuse verification for the complete room mutation',async()=>{
+test('resource archive writes require exact v19 before SQL and reuse verification for the complete room mutation',async()=>{
  const descriptor=[{kind:'resource-lifecycle',value:{}},{kind:'project',value:{dealers:[...dealers,'johanna'].map(id=>({id})),lanes:[]}}];
  const cap5={...cap4,schemaVersion:5,dealerLifecycle:'trash-v1'};
- const cap6={...cap5,schemaVersion:6,resourceLifecycle:'operator-room-archive-v1'};
- for(const response of [cap4,cap5,{...cap6,resourceLifecycle:'unsafe-delete'}]){
+  const cap19=presentationCapabilitiesForVersion(19);
+  for(const response of [cap4,cap5,presentationCapabilitiesForVersion(18),{...cap19,resourceLifecycle:'unsafe-delete'}]){
   let begun=0;const input=fixture({fetcher:async()=>Response.json(response)});
   input.repository.transaction=async work=>{begun++;return work(input.repository);};
   await assert.rejects(input.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);
-  assert.equal(begun,0);assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'6');
+   assert.equal(begun,0);assert.equal(input.fetches[0][1].headers['X-Presentation-Capability-Version'],'19');
  }
- let begun=0;const input=fixture({fetcher:async()=>Response.json(cap6)});
+  let begun=0;const input=fixture({fetcher:async()=>Response.json(cap19)});
  input.repository.transaction=async work=>{begun++;return work(input.repository);};
  await input.wrapped.transaction(repo=>repo.saveDocument('administration',{value:{rooms:[{schemaVersion:2}],gameLanes:[{dealer:'johanna',renderer:'portrait-video'}]}}),{presentationMutation:descriptor});
  assert.equal(begun,1);assert.equal(input.fetches.length,1);assert.equal(input.writes.length,1);
@@ -480,14 +822,14 @@ test('an older verified mutation may not acquire resource lifecycle authority af
  },{kind:'project',value:{dealers:[],dealerTrash:[]}});
  assert.equal(input.fetches.length,1);assert.equal(input.writes.length,0);
 });
-test('cascade archives and final v2 restore negotiate exact v7 before SQL, without widening a v6 transaction',async()=>{
- const cap6={...cap4,schemaVersion:6,dealerLifecycle:'trash-v1',resourceLifecycle:'operator-room-archive-v1'},cap7={...cap6,schemaVersion:7,dealerArchiveCascade:'dealer-compositions-rooms-v1'};
+test('stored cascade data retains v7 while archive operations require v19 without widening resource authority',async()=>{
  for(const descriptor of [{kind:'project',value:{dealers:[],dealerTrash:[{schemaVersion:2}]}},{kind:'dealer-archive',value:{dealers:[],dealerTrash:[]}}]){
-  let begun=0;const rejected=fixture({fetcher:async()=>Response.json(cap6)});rejected.repository.transaction=async()=>begun++;
-  await assert.rejects(rejected.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);assert.equal(begun,0);assert.equal(rejected.fetches[0][1].headers['X-Presentation-Capability-Version'],'7');
-  const accepted=fixture({fetcher:async()=>Response.json(cap7)});accepted.repository.transaction=async work=>{begun++;return work(accepted.repository);};
+   const required=descriptor.kind==='dealer-archive'?19:7;
+  let begun=0;const rejected=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(required-1))});rejected.repository.transaction=async()=>begun++;
+  await assert.rejects(rejected.wrapped.transaction(async()=>{}, {presentationMutation:descriptor}),blocked);assert.equal(begun,0);assert.equal(rejected.fetches[0][1].headers['X-Presentation-Capability-Version'],String(required));
+  const accepted=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(required))});accepted.repository.transaction=async work=>{begun++;return work(accepted.repository);};
   await accepted.wrapped.transaction(repo=>repo.saveDocument('project',{value:{dealers:[],dealerTrash:[]}}),{presentationMutation:descriptor});assert.equal(begun,1);assert.equal(accepted.fetches.length,1);
  }
- const input=fixture({fetcher:async()=>Response.json(cap6)});
+  const input=fixture({fetcher:async()=>Response.json(presentationCapabilitiesForVersion(19))});
  await input.wrapped.withMutationContext(async()=>{await assert.rejects(input.wrapped.withMutationContext(()=>assert.fail('no widening'),{kind:'dealer-archive',value:{}}),blocked);},{kind:'resource-lifecycle',value:{}});assert.equal(input.fetches.length,1);
 });

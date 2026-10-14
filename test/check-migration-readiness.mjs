@@ -1,3 +1,4 @@
+import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -7,7 +8,7 @@ import { checkMigrationReadiness } from '../tools/check-migration-readiness.mjs'
 const script = fileURLToPath(new URL('../tools/check-migration-readiness.mjs', import.meta.url));
 const cliEnv = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, PATHEXT: process.env.PATHEXT };
 
-const secret = 'postgres://migrator:secret-token@ep-example.neon.tech/croupier';
+const secret = fixtureDatabaseUrl('postgres://ep-example.neon.tech/croupier', 'migrator');
 
 function fakePool(canned) {
   const client = {

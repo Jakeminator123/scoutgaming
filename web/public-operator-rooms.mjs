@@ -11,11 +11,13 @@ export function isUnplayableOperatorRooms(error, slug) {
 }
 const UNPLAYABLE_SELECTION_ERRORS = new Set(['presentation_dealer_unavailable', 'presentation_dealer_not_configured',
   'presentation_dealer_mismatch', 'presentation_lane_unavailable']);
-export function supportsIndependentLayers(selection, frozen, dealerId) {
+export function supportsIndependentLayers(selection, frozen, dealerId, game='blackjack') {
   if (selection.presentation === 'original' || !selection.composition) return false;
   const dealer = frozen.registeredDealers?.find(item => item.id === dealerId);
   if (!dealer) return false;
   const composited = media => Boolean(media && clipCompositing(media.classification.compositing));
+  if(game==='roulette') return !dealer.rouletteIdle||composited(dealer.rouletteIdle.base)&&dealer.rouletteIdle.variants.every(composited);
+  if(game!=='blackjack') return false;
   if (!composited(dealer.idle)) return false;
   const policy = frozen.playback?.dealerIdlePolicies?.find(item => item.dealerId === dealerId)?.policy;
   // Every weighted base uses its own keying settings or the legacy default.
@@ -103,7 +105,7 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
         if (entry.status !== 200 || selection?.dealer !== id || selection.roomId !== room.id || selection.packageRevision !== pack.revision) unavailable();
         const label = frozen.registeredDealers?.find(item => item.id === id)?.label;
         if (!label) unavailable();
-        const independentLayers = supportsIndependentLayers(selection, frozen, id);
+        const independentLayers = supportsIndependentLayers(selection, frozen, id, game);
         const defaults = resolvePlayerSelection({ choices: selection.choices, currentDealer: id,
           branding: selection.branding, composition: selection.composition });
         dealers.push({ id, label, presentation: selection.presentation, independentLayers,
