@@ -226,6 +226,8 @@ ska även fulla krav i `.githooks/pre-commit` köras.
 | Långsamt/saknat/omkastat svar | Ingen gammal munbild eller annan persons röst visas; kontrollerad reservväg och spelmotorn fortsätter. |
 | Avbrott, rum-/dealerbyte, dolt/stängt fönster | Gamla paket avvisas; TTS, relay, avkodade rutor och RunPod-jobb frigörs, inte bara lokal plan. |
 | Kall/varm start och samtidiga användare | Mät tid till ljud/första bild, kötid, avkodningsbortfall och skillnaden mellan faktiskt visad källruta och ljudklocka. |
+| Munbilder 0,5–4 s sena vid talstart | Fördröj worker-svar i ett isolerat prov. Ljud och rätt bild ska starta tillsammans inom bestämd väntetid, annars kontrollerad reservväg/avbrott. Ingen visning av gamla munrutor. |
+| Ljudnivå före GPU | Samma slutliga PCM till worker och ljuduppspelning; normalisering bevarar sampelantal/tid och provar även tystnad, kort replik och toppbegränsning. |
 | Behörighet och ändrade underlag | Fel rum/bolag/publicering, inaktiverad profil och ändrade mediehashar stoppar nya kostsamma steg och uppspelning. |
 
 Det isolerade Studio-provspel som använder `studio-preview-client.mjs`
@@ -233,6 +235,12 @@ stänger av chatt, OpenClaw och genererat tal. Det kan alltså inte ensamt vara
 acceptansmiljö för denna funktion. Använd ett uttryckligen godkänt demorum
 eller en isolerad taltestmiljö med dessa funktioner aktiva och oförändrade
 behörighetskontroller; starta inte ett andra lokalt serverpar.
+
+Kevins besked den 14 oktober bekräftar demokällan och rösterna men anger
+också upp till cirka fyra sekunders eftersläpande munbilder vid chattsvar.
+Det är ett känt fel att testa, inte en accepterad kvalitetsnivå för Anna.
+[Den gemensamma runtimereferensen](../../LOCAL-PRESENTATION-RUNTIME.md#kevin-bekräftar-demokällan-14-oktober-2026)
+har källkontrollen och skiljer kortspår från workerns ansiktsunderlag.
 
 Spelarens verkliga videoklocka och ljudklocka ska mätas över hela svaret.
 Kevins tolerans på ±48 rutor är inte vårt kvalitetskrav. Bestäm godtagbar
