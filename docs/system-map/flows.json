@@ -1,12 +1,13 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
+  "sourceSha": "9b6f4d112ad2bf56d173c1b5538dc97232719a34",
   "inspection": {
     "kind": "code-inspected",
-    "scope": "Spelauktoritet, presentation, röst/kamera, OpenClaw, genererat tal och GPU-livscykel",
+    "scope": "Spelauktoritet, presentation, röst/kamera, OpenClaw, genererat tal och GPU-livscykel; avgränsad uppdatering av tjänsteansvar och produktnivåer 15 oktober",
     "testsRun": false,
     "liveCallsMade": false,
-    "note": "Källkod och befintliga testfall är lästa. Dokumenterade tidigare driftbevis anges separat; inga nya runtimeprov utfördes för kartan."
+    "note": "Tjänsteansvar och delade lab/lib-konsumenter granskade mot a0df4e26. Äldre flödesbelägg behåller sina egna versioner/datum; testreferenser är inte nya PASS-resultat. Samordnarens deploymentkvitto redovisas separat.",
+    "inspectionDate": "2026-10-15"
   },
   "flows": [
     {
@@ -809,9 +810,31 @@
   ],
   "concepts": [
     {
+      "id": "product-surfaces-shared-services",
+      "title": "Tre produktnivåer, delade tjänster",
+      "detail": "N1 /admin, N2 /partner och N3 /lobby körs i Vercel service studio från lab/. lab/lib är aktiv gemensam serverlogik, inte övergivet Lab-material. Partner läser riktiga operatörer och medlemskap, med explicit N1-behörighet separat från N2. /control bevarar kompatibilitet. Vercel service web äger publik webb och /play/{game}; service speech äger avgränsad taltransport. Render croupier-v2 äger spel och providerjobb; Director och privat OpenClaw Gateway har separata mandat. QA är isolerad från dessa produktionsansvar.",
+      "sources": [
+        {
+          "path": "vercel.json"
+        },
+        {
+          "path": "lab/docs/TERMINOLOGI.md"
+        },
+        {
+          "path": "lab/lib/partner-data.mjs"
+        },
+        {
+          "path": "lab/lib/partner-session.mjs"
+        },
+        {
+          "path": "apps/croupier-speech/service.mjs"
+        }
+      ]
+    },
+    {
       "id": "speech-versus-director",
       "title": "Speech och Director har olika mandat",
-      "detail": "croupier-speech väljer recordedLine/generatedText/silence och exact-echo:ar request/dealer/session/round. croupier-director väljer endast variantId ur en redan kompatibilitetsfiltrerad katalog och echo:ar requestId/catalogRevision. Ingendera äger RNG, saldo, regler, kortdestination eller spelkö. Det gemensamma urvalet ligger i packages/presentation/runtime/selection.mjs; Lab beslutscache är processlokal och är inte distribuerad produktionsexklusivitet.",
+      "detail": "croupier-speech väljer recordedLine/generatedText/silence och exact-echo:ar request/dealer/session/round. croupier-director väljer endast variantId ur en redan kompatibilitetsfiltrerad katalog och echo:ar requestId/catalogRevision. Ingendera äger RNG, saldo, regler, kortdestination eller spelkö. Det gemensamma urvalet ligger i packages/presentation/runtime/selection.mjs; Lab beslutscache är processlokal och är inte distribuerad produktionsexklusivitet. Agentrollen croupier-speech ska inte förväxlas med Vercels service speech, som endast transporterar de autentiserade socketströmmarna.",
       "sources": [
         {
           "path": "open-claw/lab/deploy/runtime-bundle/roles/croupier-speech.md",
@@ -1010,6 +1033,21 @@
         {
           "path": "docs/JOHN-HANDOFF.md",
           "label": "Kvarstående P6/provider/visuell acceptansgräns"
+        }
+      ]
+    },
+    {
+      "id": "documented-deployment-20261014",
+      "kind": "documented-runtime",
+      "sourceSha": "9b6f4d112ad2bf56d173c1b5538dc97232719a34",
+      "observedAt": "2026-10-14T22:25:00Z",
+      "summary": "Samordnarens läsande deploymentkvitto: Vercel-projekt scoutgaming i team scoutgaming READY och Render croupier-v2 LIVE på samma a0df4e26. Render /__cloud/health svarade 200 och /__cloud/version gav denna SHA. Detta verifierar deploymentidentitet och hälsa, inte varje sida, inloggning, taltransport, medieacceptans eller extern tjänst. Director, Gateway, providers och QA har inget nytt runtime-/versionsprov här.",
+      "sources": [
+        {
+          "path": "docs/JOHN-HANDOFF.md"
+        },
+        {
+          "path": "docs/ENVIRONMENT-RESTORATION.md"
         }
       ]
     }

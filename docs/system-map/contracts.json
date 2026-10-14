@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "catalogSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
+  "catalogSha": "9b6f4d112ad2bf56d173c1b5538dc97232719a34",
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",

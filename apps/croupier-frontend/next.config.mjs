@@ -7,9 +7,6 @@ const nextConfig = {
   ...(process.platform === 'win32' && !process.env.CI ? { experimental: { cpus: 4 } } : {}),
   outputFileTracingRoot: fileURLToPath(new URL('../../', import.meta.url)),
   outputFileTracingIncludes: platform ? { '/game': ['./runtime-ui/game.html'], '/v2': ['./runtime-ui/game.html'], '/blackjack': ['./runtime-ui/blackjack.html'], '/play/blackjack': ['./runtime-ui/game.html'], '/player-login': ['./runtime-ui/blackjack.html'] } : {},
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     unoptimized: true,
   },

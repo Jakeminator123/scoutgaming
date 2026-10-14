@@ -7,16 +7,20 @@ Lokal origin och push-/säkerhetspolicy använder den nya adressen.
 Den äldre kopian under Scout-Gaming är inte produktens källa.
 Start och drift: [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
 
-Vercelproduktion är nu `scoutgaming`, ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`:
-reporot, framework services, två webbappar, region fra1, Git-autobyggen aktiva.
+Vercelproduktion är `scoutgaming`, ID `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`,
+i team `scoutgaming` (`team_Scxorb9qtZHjNae1YEQnFCaT`): reporot, framework
+services, två Next-appar och en taltransport, region fra1, Git-autobyggen aktiva.
 www och apex samt de gamla frontend-/Studio-aliasen tillhör samma projekt;
-apex och gammal frontend omdirigerar till www. Kod `cef3af5c` är verifierad
-på `dpl_J4uTPNKzhaBH1XnNYETX266UfKfV`. Render behåller sin befintliga URL.
+apex och gammal frontend omdirigerar till www. Vid kontroll 14 oktober
+22:25 UTC var main `a0df4e26` READY på `dpl_7FAC4NFoEdSQCA521AQcWe1XqJme`.
+Render `croupier-v2` gav hälsa 200 och samma SHA via `/__cloud/version`.
+Det är ett daterat kvitto; kontrollera senaste version före återställning.
 
-Domänlös reserv `scoutgaming-legacy-frontend` har ID
-`prj_I6KkhVlk4qMSPlAwSPZdnz4aVQ2s`; dess env/historik består, Git-byggen är
-avstängda med exit 0 och automatisk domäntilldelning är av. Vercel markerar den
-inte paused eftersom pause-anropet saknade aktiv produktionsdeployment.
+Det historiskt dokumenterade reservprojektet `scoutgaming-legacy-frontend`,
+`prj_I6KkhVlk4qMSPlAwSPZdnz4aVQ2s`, gav 404 i båda tillgängliga teamen vid
+kontroll 15 oktober. Namnsökning hittade inte projektet. Det är därför ingen
+verifierad återställningskälla; tillgänglig env/historik eller radering är
+inte bevisad. Bekräfta projektåtkomst och säker backup före eventuell återgång.
 Återställning kräver uttryckligt avgränsad omkoppling: välj tidigare verifierad
 frontenddeployment, återställ dess domäntilldelning och flytta www/apex tillbaka
 från Scoutgaming-ID:t. Studio kan återgå till sitt tidigare lab/Next-projektläge
@@ -24,6 +28,36 @@ och en kompatibel Studio-snapshot. Ta bort Unified/UI-flaggorna först när den
 tidigare separata Studio-konfigurationen återställs. Ursprungliga säkra
 projektinställningar/deployment-ID finns privat i
 `lab/data/platform-private/scoutgaming-project-before-services.json`.
+
+De två äldre native-QA-projekten finns fortfarande i
+`jakeminator123s-projects`, utan Scoutgamings produktionsdomäner. De är
+separata testmiljöer, inte alternativa produktionssajter. Deras namn och
+datagräns finns i [miljöregistret](ENVIRONMENT-VARIABLES.md). En gammal
+READY-deployment är inte ett färskt funktions- eller isoleringsprov.
+
+## Byggdelar och Node-versioner
+
+| Källmapp | Ansvar | Node |
+| --- | --- | --- |
+| `lab/` | Studio-tjänsten: Admin, Partner, Lobby, auth/API och medieåtkomst; `/studio` är teknisk basePath | 24.x, Volta 24.21.0 |
+| `packages/design-preview/` | Admin/lobby-paket som byggs och serveras av Lab | 24.x, Volta 24.21.0 |
+| `apps/croupier-frontend/` | Publik Next-app, spelstart och transport till spelmotorn | 24.x, Volta 24.21.0 |
+| `apps/croupier-speech/` | Separat Vercel-tjänst för lång talström | 22.x, Volta 22.23.1 |
+| `web/` | Spelmotor, serverkort, plånbok och gemensam spelarlogik | ≥22.16; produktions-Docker använder 24 |
+| `services/astrid-gpu-worker/gateway/` | Delad transportkod och dess tester; ingen extra publik sajt | ≥22 |
+
+Volta väljer version efter arbetskatalog. Kontrollera `node -p process.version`
+inne i paketet innan installation eller test. Ange arbetskatalog separat från
+exekverbar fil; en hårdkodad annan Node-binary går förbi Volta. Lokala pinnar
+styr inte automatiskt Vercel eller Docker: kontrollera respektive byggmiljö.
+
+Next/React-versionerna hör till olika byggpaket. Lab använder Next 16.3.8 /
+React 19.3.0, frontend Next 15.5.26 / React 19.1.0 och designpaketet React
+19.2.3. Designbyggets uttryckliga React-alias samlar importer i samma bundle.
+Versionsskillnaderna motiverar inte att aktiva `node_modules` tas bort eller
+att allt uppgraderas samtidigt. Frontendens typkontroll är nu obligatorisk
+i fullhook/CI och Next-bygget; dess tidigare undertryckta alpha-kontraktsfel
+är rättat utan dependencybyte. React 18-typerna där är separat underhållsskuld.
 Återverifiera då dokument, API-spärrar och klientfiler på kanoniska domänen.
 Återställning får inte skriva över Neon/Blob/Resend, konton eller QA-data.
 
