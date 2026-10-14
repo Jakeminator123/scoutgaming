@@ -3232,3 +3232,20 @@ bordsgeometri. Den tillfälliga servern och webbläsaren städas av provet.
 Detta verifierar kompositionen, inte tal/läppsynk eller produktionsmedier.
 Leveransen omfattar spelarvillkoret, befintligt regressionsprov och denna
 handoff; ADMINs och PR #91:s delar ligger kvar hos sina ägare.
+
+## Lab: säkerhetspatchar i beroenden, 14 oktober
+
+Lab uppdaterar Next 16.3.5 till 16.3.8 och sharp 0.35.4 till 0.35.5.
+Låsningen uppdaterar även transitiva source-map-js 1.2.1 till 1.2.2 inom
+PostCSS befintliga versionsintervall. Node 24.x och övriga paketfamiljer
+behålls. Detta täcker rapporterade Next-advisories, sharp/librsvg och
+source-map-js; ingen konsument av next/og eller ImageResponse hittades i
+spårad Lab-/frontendkod, så faktisk exploatering är inte påvisad.
+
+Verifiering sker med egna låsta installationer i en separat arbetskopia:
+npm audit för Lab rapporterar noll sårbarheter, det verkliga Studio-bygget
+passerar med 97 kontrollerade byggspår och leveransen använder den normala
+fullständiga pre-commit-grinden. Frontendens Next 15.5.26 och designpaketets
+PostCSS/Tailwind 3-beroenden ändras inte av denna patch; deras separata
+auditfynd återstår. Ingen Node-major, produktionskonfiguration eller
+migrering ändras.
