@@ -15,6 +15,7 @@ import {LayerAssetSelect} from './layer-selectors';
 import {LayerLibrary} from './layer-library';
 import {LayerAssetManager} from './layer-asset-manager';
 import {BackgroundPlaybackEditor} from './background-playback-editor';
+import {BlackjackTableGeometryEditor} from './blackjack-table-geometry-editor';
 import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
 import {CompositionPreview,type CompositionMedia,type VideoCompositing} from './composition-preview';
@@ -177,6 +178,14 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
           onPreview={id=>{if(previewBusy||saving||uploading||conflict||temporary)return;setPreviewBackgroundRuleId(id);setPreviewBackgroundRequest(value=>value+1);}}/>
       </>:null}
       {placementControls(role)}
+      {role==='table'&&game==='blackjack'&&lane.layers.table.default&&table&&!localMedia.table?<BlackjackTableGeometryEditor
+        key={`${lane.id}:${lane.layers.table.default}:${layout}`} tableId={lane.layers.table.default} url={table.url} contentType={table.contentType} layout={layout}
+        value={settings.blackjackTables?.find(row=>row.tableId===lane.layers.table.default)} disabled={previewBusy||saving||uploading||conflict||temporary}
+        onChange={value=>{if(previewBusy||saving||uploading||conflict||temporary)return;const next=structuredClone(lane),composition=structuredClone(settings);
+          const rows=(composition.blackjackTables??[]).filter(row=>row.tableId!==lane.layers.table.default);
+          if(value)rows.push(value);if(rows.length)composition.blackjackTables=rows;else delete composition.blackjackTables;
+          next.composition=composition;edit(next);
+        }}/>:null}
       <details className={styles.upload}><summary>Ladda upp {labels[role].toLowerCase()}</summary><LayerLibrary role={role} game={game} available={initialStatus.provider==='neon'} disabled={previewBusy||saving||uploading||conflict} onBusyChange={busy=>markUpload(role,busy)} onRegistered={(remote,id)=>registered(remote,id,role,lane.id)}/></details>
       <LayerAssetManager project={project} role={role} disabled={previewBusy||saving||uploading||conflict} onEdit={modelEdit}/>
     </section>;

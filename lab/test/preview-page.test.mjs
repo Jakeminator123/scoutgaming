@@ -8,7 +8,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {createSeedProject as createEmptyProject,addDealer,defaultPresentationLane} from '../lib/studio-model.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
-import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 
@@ -157,6 +157,37 @@ function previewHarness({dirty=true,conflict=false,saveResult=true,project:initi
   function find(node,predicate){if(!node||typeof node!=='object')return null;if(predicate(node))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const found=find(child,predicate);if(found)return found;}return null;}
   return {session,render,find,effects,savedProjects,saves:()=>saves};
 }
+
+test('table editor saves only its selected composition and exact asset, with independent formats and removable draft geometry',()=>{
+  const project=createSeedProject(),lane=project.lanes[0],asset={schemaVersion:1,id:'10000000-0000-4000-8000-000000000001',role:'table',label:'Board',sha256:'a'.repeat(64),size:128,contentType:'image/png',width:1672,height:941};
+  asset.pathname=layerAssetPath(asset);project.layerAssets=[asset];lane.layers.table={enabled:true,default:asset.id,allowed:[asset.id]};
+  const other={...structuredClone(lane),id:'other-board'};project.lanes.push(other);
+  const h=previewHarness({project,dirty:false});let tree=h.render();
+  let editor=h.find(tree,node=>node.type?.name==='BlackjackTableGeometryEditor');assert.equal(editor.props.tableId,asset.id);assert.equal(editor.props.value,undefined);
+  editor.props.onChange(defaultBlackjackTableGeometry(asset.id));tree=h.render();
+  editor=h.find(tree,node=>node.type?.name==='BlackjackTableGeometryEditor');assert.equal(editor.props.layout,'mobile');
+  assert.equal(editor.props.value.mobile.seats.length,3);assert.equal(editor.props.value.desktop.seats.length,7);
+  assert.deepEqual(h.session.project.lanes[1],other);assert.equal(h.session.dirty,true);
+  h.find(tree,node=>node.type==='button'&&node.props.children==='Desktop 16:9').props.onClick();tree=h.render();
+  editor=h.find(tree,node=>node.type?.name==='BlackjackTableGeometryEditor');assert.equal(editor.props.layout,'desktop');
+  editor.props.onChange(undefined);assert.equal(h.session.project.lanes[0].composition.blackjackTables,undefined);
+});
+
+test('geometry editor offers direct image placement and keyboard coordinates without JSON; removing a board detaches only its geometry',()=>{
+  const {BlackjackTableGeometryEditor}=loadTs(new URL('../components/blackjack-table-geometry-editor.tsx',import.meta.url));
+  const first='10000000-0000-4000-8000-000000000001',second='10000000-0000-4000-8000-000000000002';
+  const value=defaultBlackjackTableGeometry(first);
+  const html=renderToStaticMarkup(React.createElement(BlackjackTableGeometryEditor,{tableId:first,url:'/board',contentType:'image/png',value,layout:'mobile',disabled:false,onChange(){}}));
+  assert.match(html,/Kort och insatsplatser/);assert.match(html,/Placera Dealer · kort på bordet/);assert.match(html,/Vågrätt/);assert.match(html,/Lodrätt/);assert.doesNotMatch(html,/<textarea|JSON|Plats 4/);
+  const {LayerAssetSelect}=loadTs(new URL('../components/layer-selectors.tsx',import.meta.url));
+  const lane=defaultPresentationLane('astrid');lane.layers.table={enabled:true,default:first,allowed:[first,second]};
+  lane.composition={...defaultCompositionSettings(),blackjackTables:[value,defaultBlackjackTableGeometry(second)]};
+  let updated;const tree=LayerAssetSelect({role:'table',lane,assets:[first,second].map(id=>({id,role:'table',label:id,contentType:'image/png',width:1672,height:941})),onChange:next=>{updated=next;}});
+  const find=node=>!node||typeof node!=='object'?null:node.type==='input'&&node.props.type==='checkbox'?node:[node.props?.children].flat(Infinity).map(find).find(Boolean);
+  find(tree).props.onChange({target:{checked:false}});
+  assert.equal(updated.layers.table.default,null);assert.deepEqual(structuredClone(updated.composition.blackjackTables.map(row=>row.tableId)),[second]);
+  assert.equal(lane.composition.blackjackTables.length,2);
+});
 
 test('standalone roulette composition chooses/uploads only roulette tables and preserves other lanes and shared background',()=>{
   const project=createSeedProject(),first=structuredClone(project.lanes[0]),lane={...structuredClone(first),id:'roulette-draft',label:'New roulette composition'};

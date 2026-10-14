@@ -20,6 +20,21 @@ Admin C1–C3 ägs av chatten ADMINADMINADMIN. PR-samordningen har fått
 överlämningen om #91. Huvudcheckoutens blandade ändringar bevaras; den här
 dokumentationen levereras från en separat branch, utan merge eller deploy.
 
+## Dragan: kortplatser som följer valt bord, 14 oktober
+
+Swedish Games-utkastet med Dragan, Lounge varm och Blackjack Oak visade
+kort och insatsknappar nedanför bordsskivan i isolerat provspel. Sammansättningar
+har nu valfria placeringar per exakt bord och format, med visuella reglage
+under Bord. Delade händer, återupptagna serverplatser och byte tillbaka till
+äldre placering bevaras. Filmat handkontaktspår godkänns inte av denna geometri.
+
+Validering, frysta paket, materiallivscykel och sparningens versionsgrind
+följer fältet. Runtime v16 krävs före skrivning; ingen SQL-migration.
+Studio-bygget passerar med 97 byggspår. Full ordinarie pre-commit på
+`652f3f2e`: 3 610 pass, 11 skip, 0 fel i 75 grupper. Driftsättning återstår.
+Dragan-rummet är ännu inte publicerat: exakt Oak-
+kalibrering och två godkända spelprov per format återstår efter driftsättning.
+
 ## Anna-tal: integrationsgräns och testplan, 14 oktober
 
 [Roulettereferensen](games/roulette/TEKNIK.md#anna-tal-och-rörlig-läppsynk-14-oktober-2026)

@@ -50,8 +50,11 @@ function documentFeatures(kind, value) {
     && [...(Array.isArray(value?.lanes) ? value.lanes : []), ...(Array.isArray(value?.dealerTrash) ? value.dealerTrash : [])
       .flatMap(entry => Array.isArray(entry?.compositions) ? entry.compositions : [])]
       .some(lane => object(lane) && Object.hasOwn(lane, 'backgroundPlayback'));
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart };
+  const blackjackTableGeometry=['project','presentation-package','dealer-archive'].includes(kind)
+    &&[...(value?.lanes??[]),...(value?.dealerTrash??[]).flatMap(entry=>entry.compositions??[])]
+      .some(lane=>object(lane?.composition)&&Object.hasOwn(lane.composition,'blackjackTables'));
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry };
 }
 function mediaFeatures(metadata) {
   const {mediaAlpha,rouletteMedia}=extendedDealerMediaFeatures(metadata);
@@ -84,6 +87,7 @@ function mutationFeatures(input) {
     dealerCategoryTrash: features.some(value => value.dealerCategoryTrash),
     rouletteIdle: features.some(value => value.rouletteIdle),
     rouletteStart: features.some(value => value.rouletteStart),
+    blackjackTableGeometry:features.some(value=>value.blackjackTableGeometry),
   };
 }
 function trustedOrigin(env) {
@@ -135,6 +139,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.dealerCategoryTrash || active.features.dealerCategoryTrash)
       && (!features.rouletteIdle || active.features.rouletteIdle)
       && (!features.rouletteStart || active.features.rouletteStart)
+      && (!features.blackjackTableGeometry || active.features.blackjackTableGeometry)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -148,7 +153,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

@@ -2,7 +2,7 @@ import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppeara
 import {chatPresentationContext} from './chat-presentation-context.mjs';
 import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE } from './studio-preview-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
-import {layoutGameOverlay} from './game-overlay-layout.mjs';
+import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from './game-overlay-layout.mjs';
 import { dealerVersionPath } from './dealer-version-switcher.mjs';
 import { createNativeObservation } from './native-observation.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
@@ -226,7 +226,7 @@ if (localPresentationEnabled) {
         onError: () => presentationStartup.fail(),
         onBusy: () => updatePoseState({ dealerPose: 'action', idlePresented: null }, 'local-film-owner'),
       });
-      localCards = cardOverlay.createLocalCardOverlay($('#scene'));
+      localCards = cardOverlay.createLocalCardOverlay($('#scene'),{dealerLabel:DEALER.name});
     }
     localPresentation.start();
     window.addEventListener('pagehide', () => { localCards?.close(); localPresentation.close(); layerComposition?.close(); }, { once: true });
@@ -654,7 +654,7 @@ for (let i = 0; i < SEATS; i++) {
 // Narrow viewports play the three centre boxes only: seven boxes on a phone
 // leaves ~50px each, which cannot hold a chip stack and two cards.
 const COMPACT_BOXES = [2, 3, 4];
-const compactQuery = matchMedia('(max-width: 860px)');
+const compactQuery = matchMedia(BLACKJACK_COMPACT_QUERY);
 let compactSeats = compactQuery.matches;
 const playedBoxes = () => {
   if(!compactSeats)return seatEls.map((_,i)=>i);
@@ -668,6 +668,9 @@ const playedBoxes = () => {
 };
 
 function layoutSeats() {
+    // Resize/compositor callbacks can arrive before MediaQueryList's change event.
+    // Read the same current format before choosing the visible server boxes.
+    compactSeats = compactQuery.matches;
     const banner=$('#banner');
     Object.assign(banner.style,{top:'',bottom:''});
     const scene=$('#scene').getBoundingClientRect(),plane=layerComposition?.referencePlane();
@@ -676,6 +679,13 @@ function layoutSeats() {
       const hud=$('#hud-bottom').getBoundingClientRect();
       const layout=layoutGameOverlay(plane,boxes,{left:12,right:scene.width-12,top:80,
         bottom:Math.min(scene.height-12,hud.height>0&&hud.top>scene.top+80?hud.top-scene.top-12:scene.height-12)},{compact:compactSeats});
+      let geometryNotice=$('#table-geometry-warning');
+      if(!geometryNotice&&layout.geometryWarning){
+        geometryNotice=document.createElement('p');geometryNotice.id='table-geometry-warning';geometryNotice.setAttribute('role','status');
+        Object.assign(geometryNotice.style,{position:'absolute',top:'70px',left:'12px',right:'12px',zIndex:'20',padding:'8px',background:'#241c10',color:'#ffe1a3',pointerEvents:'none'});
+        $('#scene').append(geometryNotice);
+      }
+      if(geometryNotice){geometryNotice.textContent=layout.geometryWarning??'';geometryNotice.hidden=!layout.geometryWarning;}
       seatEls.forEach((el,i)=>el.classList.toggle('seat-off',!boxes.includes(i)));
       for(const seat of layout.seats){
         Object.assign(seatEls[seat.box].style,{left:(scene.left+seat.x-table.left)+'px',top:(scene.top+seat.y-table.top)+'px'});

@@ -11,6 +11,7 @@ import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
 import {createOperatorStore} from '../../web/storage/operator-store.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
 
 const scope={environment:'material-trash-test',workspaceId:'isolated'},origin='https://trash.example.invalid';
 const actor={user:'fixture-admin',role:'admin',scope},now=()=>1791753600000;
@@ -56,6 +57,20 @@ test('material deletion also detaches archived dealer snapshots without damaging
  assert.equal(removed.dealerTrash[0].compositions[0].layers.background.default,null);
  const restored=lifecycleProject(removed,{dealerId:'astrid',archived:false,records:[]});
  assert.equal(restored.lanes[0].layers.background.default,null);assert.equal(restored.layerAssetTrash[0].asset.id,target.id);
+});
+
+test('table trash removes its saved anchors from active and archived compositions; restore never reconnects them',()=>{
+ const project=createSeedProject(),target=asset(1,'table');project.lanes=[defaultPresentationLane('astrid')];project.layerAssets=[target];
+ const lane=project.lanes[0];lane.layers.table={enabled:true,default:target.id,allowed:[target.id]};
+ lane.composition={...defaultCompositionSettings(),blackjackTables:[defaultBlackjackTableGeometry(target.id)]};
+ validateProject(project);
+ for(const input of [project,lifecycleProject(project,{dealerId:'astrid',archived:true,records:[],now:new Date(now()).toISOString()})]){
+  const removed=changeMaterialTrash(input,{id:target.id,archived:true,now});
+  const rows=[...(removed.lanes??[]),...(removed.dealerTrash??[]).flatMap(row=>row.compositions??[])];
+  assert.ok(rows.every(row=>!row.composition?.blackjackTables));
+  const restored=changeMaterialTrash(removed,{id:target.id,archived:false});
+  assert.deepEqual(restored.lanes,removed.lanes);assert.deepEqual(restored.dealerTrash,removed.dealerTrash);
+ }
 });
 
 test('preview is read only; commit detaches media and archives only affected rooms, preserving frozen survivors and history',async()=>{

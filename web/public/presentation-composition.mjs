@@ -3,7 +3,7 @@ import {drawDealerFrame,validateDealerFraming} from './dealer-framing.mjs';
 import {effectiveDealerCompositing} from './dealer-compositing.mjs';
 import {validateBackgroundPlayback} from './background-playback-policy.mjs';
 import {createBackgroundPlayback} from './background-playback.mjs';
-import {projectGamePlane} from './game-overlay-layout.mjs';
+import {projectGamePlane,projectTableGamePlane,BLACKJACK_COMPACT_QUERY} from './game-overlay-layout.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => {throw Error('Invalid layer composition');};
 export function validateComposition(value) {
@@ -32,6 +32,7 @@ export function validateComposition(value) {
     const policy=validateBackgroundPlayback(value.backgroundPlayback,{assets:value.assets,allowed:value.background.allowed,defaultAssetId:value.background.default});
     if(policy.rules.length&&!value.background.enabled)fail();
   }
+  if(value.settings!==undefined)validateCompositionSettings(value.settings,{tableIds:value.table.allowed,assets:value.assets});
   return structuredClone(value);
 }
 export function clipCompositing(value) {
@@ -52,14 +53,33 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   const mounts=new Map(),selected=new Map(),pending=new Map();
   let backgroundPlayback=null,backgroundEvent=null,backgroundVisible=!document.hidden;
   const view=document.defaultView??globalThis;
+  const compactQuery=view.matchMedia?.(BLACKJACK_COMPACT_QUERY);
   const geometryListeners=new Set();
   let referenceFraming=null,lastGeometry='';
+  const hasBoardGeometry=()=>Boolean(current?.settings?.blackjackTables?.length);
+  function compositionScene(){
+    // Opt-in board layouts use the same breakpoint as the actual server-seat UI.
+    // Existing compositions keep their orientation-based scene untouched.
+    const layout=hasBoardGeometry()?((compactQuery?.matches??host.clientWidth<=860)?'mobile':'desktop')
+      :host.clientWidth<host.clientHeight?'mobile':'desktop';
+    const layersVisible=Boolean(key&&(key.enabled||hasBoardGeometry()));
+    return sceneForComposition(current?.settings??defaultCompositionSettings(),layout,
+      {dealer:current?.dealer.enabled??true,background:Boolean(layersVisible&&current?.background.enabled&&mounts.has('background')),
+        table:Boolean(layersVisible&&current?.table.enabled&&mounts.has('table'))},key??{});
+  }
   function referencePlane() {
     if(!compositor?.geometry)return null;
-    const layout=host.clientWidth<host.clientHeight?'mobile':'desktop';
-    const scene=sceneForComposition(current?.settings??defaultCompositionSettings(),layout);
+    const scene=compositionScene();
+    const board=current?.settings?.blackjackTables?.find(row=>row.tableId===selected.get('table'));
+    const asset=assets().get('table');
+    if(board&&scene.show.table&&asset&&compositor.tableGeometry){
+      return projectTableGamePlane(compositor.geometry(scene).dims,compositor.tableGeometry(scene,asset),
+        {width:host.clientWidth,height:host.clientHeight},board,scene.layout);
+    }
+    const missing=Boolean(current?.settings?.blackjackTables?.length);
     return {...projectGamePlane(compositor.geometry(scene),{width:host.clientWidth,height:host.clientHeight},referenceFraming??undefined),
-      sourceAligned:['scale','x','y'].every(name=>(referenceFraming?.[name]??(name==='scale'?1:0))===(framing?.[name]??(name==='scale'?1:0)))};
+      ...(missing?{geometryWarning:'Bordet saknar egna kort- och insatsplatser. Justera det i Sammansättning.'}:{}),
+      sourceAligned:!missing&&['scale','x','y'].every(name=>(referenceFraming?.[name]??(name==='scale'?1:0))===(framing?.[name]??(name==='scale'?1:0)))};
   }
   const actorFrame=document.createElement('canvas');
   function assets() {
@@ -70,9 +90,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
   }
   function paintHeld() {
     if(!compositor||!key||!actorFrame.width||closed)return;
-    const layout=host.clientWidth<host.clientHeight?'mobile':'desktop';
-    const scene=sceneForComposition(current?.settings??defaultCompositionSettings(),layout,
-      {dealer:current?.dealer.enabled??true,background:Boolean(key.enabled&&current?.background.enabled&&mounts.has('background')),table:Boolean(key.enabled&&current?.table.enabled)},key);
+    const scene=compositionScene();
     scene.dealerAspect=16/9;
     compositor.render(scene,actorFrame,assets(),[],null);
     const plane=referencePlane(),signature=JSON.stringify(plane);

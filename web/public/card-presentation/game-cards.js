@@ -6,7 +6,7 @@ import { DEAL_CONTACT, cardPose, feltMatrix, dealerFanOffset, splitHandAnchor } 
 import { dealerHandClip } from './dealer-hand-occlusion.js';
 
 // One stable SVG node per server-issued draw. Motion is driven by source frames.
-export function createGameCards(svg, manifest) {
+export function createGameCards(svg, manifest, {dealerLabel='Dealer'}={}) {
   const positions = new Map(manifest.deal.map(d => [d.id.replace('deal_pos', ''), d.kort]));
   const sourcePositions=new Map(positions);
   const { bredd: width, hojd: height } = manifest.kort_storlek;
@@ -149,7 +149,7 @@ export function createGameCards(svg, manifest) {
       const y = dealer ? cy : cy + (split && hand.splitCount > 2 ? 32 : 60);
       const value = total(hand.cards.filter(c => c.r));
       const badge = svgNode('g', { transform: `translate(${x} ${y})`, 'data-seat':hand.seat, 'data-hand':hand.index ?? 'dealer', 'data-active':Boolean(hand.active),
-        'aria-label': `${dealer ? 'Astrid' : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${value}${hand.active ? ', active hand' : ''}` });
+        'aria-label': `${dealer ? dealerLabel : `Box ${hand.seat}${split ? ` hand ${hand.number}` : ''}`}: ${value}${hand.active ? ', active hand' : ''}` });
       badge.append(svgNode('rect', { x: -36, y: split ? -16 : -22, width: 72, height: split ? 32 : 44, rx: 22, fill: hand.active ? '#dec68e' : '#17231fe0' }),
         svgNode('text', { y: split ? 6 : 9, 'text-anchor': 'middle', fill: hand.active ? '#17231f' : '#faf4e4', 'font-size': split ? 20 : 29, 'font-family':'JetBrains Mono', 'font-weight': 500 }, `${split ? `${hand.number} · ` : ''}${value}${value > 21 ? ' ×' : ''}`));
       badges.append(badge);
@@ -163,8 +163,13 @@ export function createGameCards(svg, manifest) {
     move();
   }
   return {
-    setSeatOffsets(offsets) {
-      for(const [seat,point]of sourcePositions)positions.set(seat,{...point,cx:point.cx+(offsets[seat]??0)});
+    setSeatOffsets(offsets,anchors) {
+      for(const [seat,original]of sourcePositions){
+        const point=anchors?.[seat]??original;
+        positions.set(seat,{...point,cx:point.cx+(offsets[seat]??0)});
+      }
+      // A table-local plane is not the filmed 1080x1920 hand-mask plane.
+      cardLayer.setAttribute('clip-path',anchors?'none':`url(#${prefix}-hands)`);
     },
     sourceStarted() { pending = null; move(); },
     beginDeal(seat, draw, track = seat) {

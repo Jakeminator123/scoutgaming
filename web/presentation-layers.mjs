@@ -78,7 +78,7 @@ export function validatePresentationLane(value, {dealerIds = [...dealers]} = {})
       || value.idle.frequencyPercent < 0 || value.idle.frequencyPercent > 100)) reject();
     if (value.idle.variants !== undefined) list(value.idle.variants, id => typeof id === 'string' && id.length <= 200);
   }
-  if(value.composition!==undefined)validateCompositionSettings(value.composition);
+  if(value.composition!==undefined)validateCompositionSettings(value.composition,{tableIds:layers.table.allowed});
   if (Object.hasOwn(value, 'backgroundPlayback')) {
     const policy = validateBackgroundPlayback(value.backgroundPlayback,
       { allowed: layers.background.allowed, defaultAssetId: layers.background.default });
@@ -139,6 +139,7 @@ export function validatePresentationPackage(value) {
   if (new Set(lanes.map(row => row.id)).size !== lanes.length || new Set(assets.map(row => row.id)).size !== assets.length) reject();
   const byId = new Map(assets.map(asset => [asset.id, asset]));
   const used = new Set();
+  for(const lane of lanes)if(lane.composition)validateCompositionSettings(lane.composition,{tableIds:lane.layers.table.allowed,assets});
   for (const lane of lanes) for (const role of LAYER_ASSET_ROLES) {
     for (const id of lane.layers[role].allowed) {
       if (byId.get(id)?.role !== role) reject();

@@ -846,6 +846,33 @@ Privata bild-/maskinkvitton: `lab/data/platform-private/background-playback-2026
 Ingen produktdata ändrades. A20/A21 ska bevara dessa konsumenter och publika
 moduladresser vid den kommande atomära källflytten.
 
+## Bordets kort- och insatsplatser, 14 oktober 2026
+
+`composition.blackjackTables` är ett valfritt fält med högst 32 poster,
+var och en bunden till ett exakt uppladdat bords-UUID i sammansättningens
+`layers.table.allowed`. Designnamn och design-ID ersätter inte tillgångens UUID.
+Mobil har tre synliga platser, desktop sju; båda sparar `cardWidth`,
+`dealer: {x,y}` och `seats: [{card: {x,y}, bet: {x,y}}]`. Punkterna är
+normaliserade 0–1 i bordbildens hela rektangel, inklusive transparenta kanter.
+Kortbredden är 0,02–0,15 av samma bildbredd. Scen och spelplatser använder
+samma 860px-gräns. Serverns box-ID behålls också för återupptagna händer.
+
+Admin → Sammansättningar → Bord har ett gemensamt visuellt reglage för
+placeringarna. Varje bordsdesign kalibreras separat; startpunkterna är inte
+visuellt godkända standardvärden. Befintliga sammansättningar utan fältet
+behåller tidigare placering. Val av ett annat, okalibrerat bord visas med
+varning. Byte är fortsatt spärrat under en pågående runda.
+
+Geometrin styr stilla serverkort och insatsknappar. Den godkänner inte
+filmad givning eller handkontakt; bildrutebundna kontaktspår används inte
+på den omplacerade spelplanen. Det frysta publicerade paketet behåller sina
+punkter när utkastet ändras. Arkivering eller avmarkering av bordet tar bort
+dess utkastgeometri, även ur dealerarkiv; återställning återkopplar den inte.
+
+Nya skrivningar kräver runtime capability 16 innan beständig lagring.
+Ingen SQL-migration krävs. Vercel och Render ska ha den nya läsaren innan
+geometri sparas i produktion. Två visuella provspelningar och formatkontroll
+behövs utöver kontrakttesterna före acceptans av en konkret sammansättning.
 ## Endast registrerad dealeruppspelning, 12 oktober 2026
 
 Astrid, Vera, Amira och Mei ingår inte längre i ett lokalt dealerutbud.

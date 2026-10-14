@@ -68,14 +68,14 @@ export function createCardCursor(renderer, {canTrack=()=>true}={}) {
   };
 }
 
-export function createLocalCardOverlay(host) {
+export function createLocalCardOverlay(host,{dealerLabel='Dealer'}={}) {
   const svg = svgNode('svg', { id: 'local-card-overlay', class: 'local-card-overlay', viewBox: '0 0 1080 1920',
-    preserveAspectRatio: 'xMidYMid meet', 'aria-label': 'Cards on the recorded table' });
+    preserveAspectRatio: 'xMidYMid meet', 'aria-label': `Kort på bordet · ${dealerLabel}` });
   const plane=svgNode('g',{id:'local-card-plane'}),visibility=svgNode('style');svg.append(visibility,plane);
   const renderer = createGameCards(plane, {
     deal: Object.entries(calibration.positions).map(([id, kort]) => ({ id: `deal_pos${id}`, kort })),
     kort_storlek: { bredd: calibration.width, hojd: calibration.height },
-  });
+  },{dealerLabel});
   host.append(svg); host.dataset.localCardOverlay = 'true';
   let projection=null;
   const cursor = createCardCursor(renderer,{canTrack:()=>!projection?.adjusted});
@@ -84,7 +84,7 @@ export function createLocalCardOverlay(host) {
       projection=value;
       svg.setAttribute('viewBox',`0 0 ${width} ${height}`);
       plane.setAttribute('transform',`translate(${value.x} ${value.y}) scale(${value.scale})`);
-      renderer.setSeatOffsets(value.offsets??{});
+      renderer.setSeatOffsets(value.offsets??{},value.positions);
       visibility.textContent=Array.from({length:7},(_,i)=>i).filter(i=>value.boxes&&!value.boxes.includes(i))
         .map(i=>`#local-card-plane [data-seat="${i+1}"]{display:none}`).join('');
       cursor.reproject();
