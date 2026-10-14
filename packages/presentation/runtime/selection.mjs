@@ -9,6 +9,7 @@ import { selectionFor, videoFitsLine, videoFitsEvent } from '../../../lab/lib/vi
 import { dealFrequencyPolicies, pickDealFrequency, mediaLineForEvent, mediaVideoForEvent, usesMediaFamilies } from './media-family-policy.mjs';
 import { isLegacyClipReference, LEGACY_VARIANT_DEALERS } from './legacy-standard-variants.mjs';
 import { mediaSituationForEvent } from './media-family-resolver.mjs';
+import { speechSlotSituation, speechSlotStandard, speechSlotVideoFits, OTHER_SPEECH_SLOT_IDS } from '../../../web/public/speech-slot-bindings.mjs';
 
 export async function remoteRequest(path, body, settings, fetchImpl, timeoutMs) {
   let url;
@@ -44,6 +45,14 @@ export function decisionCatalog(project, dealerId, mode = 'active') {
 
 export async function validateVideoBindings(project, { registry } = {}) {
   registry ??= await loadVideoRegistry();
+  // Reserved standards are exact even for dealers whose legacy rows normally
+  // defer to a manifest family. A conflicting classification cannot be selected.
+  const byId = new Map(registry.videos.map(video => [video.id, video]));
+  if (byId.size !== registry.videos.length) throw new StudioError('Videoregistret innehåller dubblerade ID:n.', 422);
+  for (const line of project.lines) for (const variant of line.variants) {
+    const situation = speechSlotSituation(line, variant);
+    if (situation && !speechSlotVideoFits(byId.get(variant.videoGenerationId), { dealerId: line.dealerId, eventId: line.eventId, situation, requireRecordedSpeech: true })) throw new StudioError(`${variant.id}: standarden kräver en tillgänglig video för exakt dealer och talfack.`, 422);
+  }
   const legacyLines = project.lines.filter(line => !usesMediaFamilies(registry, line.dealerId));
   const bound = legacyLines.flatMap(line => line.variants).filter(variant => variant.videoGenerationId !== null);
   if (!bound.length) return;
@@ -69,13 +78,22 @@ export async function selectPresentation(body, { settings = {}, fetchImpl = fetc
   // Both routes use the same input projection, matching and variant gate. A
   // recorded instruction must never be replaced by the editor's example.
   const input = { requestId: body.requestId ?? randomUUID(), event: observed ? body.sourceEvent : (body.exampleEvent ?? event.exampleEvent), context: body.context, mode: ['rules', 'random'].includes(body.mode) ? 'active' : body.mode };
-  const media = mediaLineForEvent(savedProject, videoRegistry, body.dealerId, event.id, input.event);
+  const slot = event.id === 'speak.other' && input.event?.type === 'speak' && OTHER_SPEECH_SLOT_IDS.includes(input.event.line)
+    ? speechSlotStandard(savedProject, body.dealerId, event.id, input.event.line) : null;
+  // Project-authored standards take precedence for this exact source line only.
+  // No family or inventory lookup may fill an absent slot standard.
+  const media = slot ? { managed: false } : mediaLineForEvent(savedProject, videoRegistry, body.dealerId, event.id, input.event);
   const frequency = dealFrequencyPolicies(savedProject, media.family);
   // Only explicit current bindings can select a clip. Historical variant names
   // never promote a clip into the standard line merely because a box matches.
-  const project = media.managed
+  let project = media.managed
     ? { ...savedProject, lines: savedProject.lines.map(line => line.dealerId === body.dealerId && line.eventId === event.id ? media.line : line) }
     : savedProject;
+  if (event.id === 'speak.other') project = { ...project, lines: project.lines.map(line => {
+    if (line.dealerId !== body.dealerId || line.eventId !== event.id) return line;
+    return { ...line, variants: line.variants.filter(variant => !speechSlotSituation(line, variant)).map(variant =>
+      slot && variant.id === line.baselineVariantId ? { ...variant, label: slot.label, assetId: slot.assetId, videoGenerationId: slot.videoGenerationId } : variant) };
+  }) };
   const catalog = decisionCatalog(project, body.dealerId, body.mode);
   let prepared = prepareDecision(catalog, input);
   if (prepared.node.id !== body.eventId) throw new StudioError('Källeventet matchar inte vald eventgrupp.');

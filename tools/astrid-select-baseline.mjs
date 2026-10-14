@@ -68,6 +68,8 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/public/dealer-identity.mjs',
   'web/public/dealer-speech-profile.mjs',
   'web/public/recorded-speech.mjs',
+  'web/public/speech-slot-bindings.mjs',
+  'web/public/speech-lines.mjs',
   'web/public/game-lanes.mjs',
   'web/public/game-overlay-layout.mjs',
   'web/public/presentation-composition.mjs',

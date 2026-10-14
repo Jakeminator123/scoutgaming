@@ -68,11 +68,15 @@ function documentFeatures(kind, value) {
   const blackjackBetMode=lifecycleOperation||compositionLanes.some(lane=>Array.isArray(lane?.composition?.blackjackTables)
     &&lane.composition.blackjackTables.some(table=>['mobile','desktop'].some(layout=>object(table?.[layout])&&Object.hasOwn(table[layout],'betMode'))));
   // The previous deployed validator accepts at most five variants on every row.
-  const filmedDealVariants=['project','presentation-package','dealer-archive'].includes(kind)
-    &&[...(kind==='presentation-package'?value?.playback?.lines??[]:value?.lines??[]),...(value?.dealerTrash??[]).flatMap(entry=>entry.lines??[])]
-      .some(line=>maxVariantsForEvent(line?.eventId)>5&&Array.isArray(line?.variants)&&line.variants.length>5);
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry || blackjackBetMode || recordedSpeech || filmedDealVariants || presentationCompression,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry,blackjackBetMode,recordedSpeech,filmedDealVariants,presentationCompression };
+  const lines=['project','presentation-package','dealer-archive'].includes(kind)
+    ?[...(kind==='presentation-package'?value?.playback?.lines??[]:value?.lines??[]),...(value?.dealerTrash??[]).flatMap(entry=>entry.lines??[])]:[];
+  const filmedDealVariants=lines.some(line=>line?.eventId?.startsWith('deal.')&&maxVariantsForEvent(line.eventId)>5&&Array.isArray(line?.variants)&&line.variants.length>5);
+  // Detect actual saved slot data, including archived rows and frozen packages.
+  // Unrelated lifecycle operations retain their existing capability requirement.
+  const speechSlots=lines.some(line=>Array.isArray(line?.variants)
+    &&(line.eventId==='speak.other'&&line.variants.length>5||line.variants.some(variant=>typeof variant?.id==='string'&&variant.id.includes('.slot-'))));
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry || blackjackBetMode || recordedSpeech || filmedDealVariants || presentationCompression || speechSlots,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry,blackjackBetMode,recordedSpeech,filmedDealVariants,presentationCompression,speechSlots };
 }
 function mediaFeatures(metadata) {
   const {mediaAlpha,rouletteMedia,recordedSpeech}=extendedDealerMediaFeatures(metadata);
@@ -110,6 +114,7 @@ function mutationFeatures(input) {
     recordedSpeech:features.some(value=>value.recordedSpeech),
     filmedDealVariants:features.some(value=>value.filmedDealVariants),
     presentationCompression:features.some(value=>value.presentationCompression),
+    speechSlots:features.some(value=>value.speechSlots),
   };
 }
 function trustedOrigin(env) {
@@ -166,6 +171,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.recordedSpeech || active.features.recordedSpeech)
       && (!features.filmedDealVariants || active.features.filmedDealVariants)
       && (!features.presentationCompression || active.features.presentationCompression)
+      && (!features.speechSlots || active.features.speechSlots)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -179,7 +185,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.blackjackBetMode ? 19 : features.presentationCompression ? 18 : features.recordedSpeech || features.filmedDealVariants ? 17 : features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.speechSlots ? 20 : features.blackjackBetMode ? 19 : features.presentationCompression ? 18 : features.recordedSpeech || features.filmedDealVariants ? 17 : features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

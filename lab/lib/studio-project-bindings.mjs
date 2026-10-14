@@ -7,6 +7,7 @@ import { validateDealerSetBindings } from './dealer-sets.mjs';
 import {validateVideoMetadata} from './video-intake.mjs';
 import {validateFrozenRouletteIdle} from '../../web/public/roulette-idle-contract.mjs';
 import {validateFrozenRouletteStart} from '../../web/public/roulette-start-contract.mjs';
+import { speechSlotSituation, speechSlotVideoFits } from '../../web/public/speech-slot-bindings.mjs';
 
 const fail = (code, statusCode = 422) => {throw new StudioStorageError(code,statusCode);};
 function checkedVideo(videos,id,dealerId,eventId) {
@@ -54,7 +55,10 @@ export function createStudioProjectBindings({videoRegistry,legacyControls} = {})
     // Even manifest-owned dealers cannot persist hidden references to another
     // dealer, event or unavailable upload in their saved legacy lines.
     for (const line of project.lines) for (const variant of line.variants) if (variant.videoGenerationId !== null) {
-      checkedVideo(videos,variant.videoGenerationId,line.dealerId,line.eventId);
+      const video = checkedVideo(videos,variant.videoGenerationId,line.dealerId,line.eventId);
+      const reserved = speechSlotSituation(line, variant);
+      const situation = reserved ?? (variant.id === line.baselineVariantId && ['speak.goodluck', 'speak.insurance', 'speak.double'].includes(line.eventId) ? line.eventId.slice(6) : null);
+      if (situation && !speechSlotVideoFits(video, { dealerId: line.dealerId, eventId: line.eventId, situation, requireRecordedSpeech: reserved !== null })) fail('studio_media_binding_invalid');
     }
     for (const row of project.mediaPolicy ?? []) {
       const family = families.get(row.familyId);

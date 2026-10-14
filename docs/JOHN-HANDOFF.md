@@ -76,7 +76,11 @@ Kevins staging är fryst på 5134d9274fdaa9d09dd3f3cf40f02ecd95716afe. Av de fyr
 
 Källanalys efter Jakobs uttryckliga tillstånd: Gemini med hög upplösning transkriberar insurance_1 som ”Ess synligt. Vill nån ha försäkring?” och nya win_1 som ”Grattis till vinnarna.” Försäkringsklippet bedöms preliminärt följa talet; win_1 flaggas för sena munrörelser, ungefär 0,5 s efter talets slut. Detta är modellobservationer, inte uppmätt eller accepterad produktsynk. Den första analysens påstående om frusna bilder har förkastats: lokal ansiktsgranskning visar tydliga munrörelser. Båda klippen behåller granskningsstatus och publicerades inte. Råresultat och källhashar sparas endast privat i uppdragets steglogg.
 
-Verifiering av bordseditorn: Studio-produktionsbygge och 32 fokuserade preview-prov passerar. Full pre-commit gav 3 743 godkända, 12 överhoppade och inga fel. Oberoende granskning fann inga blockerare. Leverans sker i PR #138.
+Verifiering av bordseditorn: Studio-produktionsbygge och 32 fokuserade preview-prov passerar. Full pre-commit gav 3 743 godkända, 12 överhoppade och inga fel. Oberoende granskning fann inga blockerare. PR #138 är mergad som ad0ae9ac och Vercelproduktionen är READY. Den sista visuella kontrollen av menyförtydligandet kunde inte utföras efter att browsertransporten stängdes.
+
+Talfacksrättningen ger registrerade dealers ett explicit standardklipp per replik. De 14 situationerna i speak.other delar inte längre ett enda standardval; sparade UUID:n ligger kvar i befintliga project.lines. De tre egna talraderna behåller sina standard-ID:n. Äldre alternativ bevaras, inga filer aktiveras automatiskt, och runtime v20 krävs för projekt med nya talfacksbindningar. Ingen SQL-migration. Riktade backendprov: 173 godkända; UI-prov: 20 godkända. Studio-produktionsbygget passerar med 97 kontrollerade spår. Oberoende review fann inga blockerare; dess notering om äldre standard visas nu i väljaren. Full leveransverifiering återstår.
+
+Kevins 81 svenska talfilmer är inventerade. 59 hör till de 17 nuvarande talfacken; övriga 22 är extra hälsningar/repliker. Ett privat ZIP innehåller 18 oförändrade original (en per fack samt greet_guest), exakta reposökvägar och SHA-256. Lokal granskning av 24 bildrutor per film visar munrörelser i samtliga 18, även greeting_1 och blackjack_4. Detta bevisar inte ljud-/bildsynk. Ingen tagning har fått ny produktionsacceptans. Den privata stegloggen skiljer källgranskning från spelprov.
 
 ## Dragan: bordsprofil, kortvy och samtalspanel, 14 oktober
 

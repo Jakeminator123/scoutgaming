@@ -41,6 +41,7 @@ function harness(file, initialStates = [], overrides = {}) {
     './dealer-media-library': {DealerMediaLibrary: marker('dealer-media')},
     './dealer-forge-page': {DealerMaterialCreator: marker('dealer-material')},
     './dealer-registration': {DealerRegistration: empty},
+    './dealer-speech-slot-editor': {DealerSpeechSlotEditor: marker('speech-slot')},
     './dealer-speech-settings': {DealerSpeechSettings: marker('speech-settings')},
     './dealer-voice-picker': {DealerVoicePicker:realVoicePicker},
     './studio-navigation': {StudioNavigation: props => React.createElement('nav', {'aria-label':'Dealerflikar'}, studioNavigationTabs(props).map(tab => React.createElement('a', {key:tab.id,href:tab.href,'aria-current':tab.id===props.active?'page':undefined,onClick:event=>props.onNavigate(event,tab.href)},tab.label)))},
@@ -459,7 +460,7 @@ test('clips route and dealer management preserve composition operator and room t
   const currentUrl=new URL(runtimeWindow.location.href);assert.equal(currentUrl.searchParams.get('operator'),'operator-42');assert.equal(currentUrl.searchParams.get('table'),'room-7');
   nodes(tree,node=>node.props?.onConfigureSlot)[0].props.onConfigureSlot('speak.goodluck','goodluck');tree=h.render(page.props);
   const outgoing=nodes(tree,node=>node.type==='a'&&/^\/control\/(?:events|administration|compositions|rehearsal)/.test(node.props.href??''));
-  assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/events')));assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/administration')));
+  assert.equal(outgoing.some(link=>link.props.href.startsWith('/control/events')),false,'registered speech uses its inline editor');assert.ok(nodes(tree,node=>node.props?.slot?.situation==='goodluck').length);assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/administration')));
   for(const link of outgoing){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('composition'),'mobile-phone');assert.equal(query.get('operator'),'operator-42');assert.equal(query.get('table'),'room-7');}
   pressDealer(tree,'Mei');tree=h.render(page.props);assertTabs('mei','mobile-phone','operator-42','room-7');
   for(const link of tabLinks()){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.has('event'),false);assert.equal(query.has('situation'),false);}
@@ -555,4 +556,19 @@ test('detaching and stale draft callbacks respect saving, busy, connection and d
     if(scenario==='dealer')h.state('dealerId','nora');
     tree=h.render(p);stale.props.onDetach();assert.equal(h.state('project'),p.initialProject,scenario);
   }
+});
+
+test('registered speech slot edits only its saved UUID in the existing project draft',()=>{
+ const p={...props(),initialDealerId:'dragan',initialView:'clips',initialEventId:'speak.other',initialSituation:'greeting',initialCategory:'speech'};
+ p.initialProject=addDealer(p.initialProject,'dragan','Dragan');
+ const before=structuredClone(p.initialProject),h=harness('./lab-studio.tsx');
+ let tree=h.render(p);const editor=nodes(tree,row=>row.props?.slot?.situation==='greeting'&&typeof row.props.onChange==='function')[0];
+ assert.ok(editor);assert.equal(editor.props.dealerId,'dragan');
+ assert.doesNotMatch(renderToStaticMarkup(tree),/Användning och villkor/);
+ const id='11111111-1111-4111-8111-111111111111';editor.props.onChange(id);tree=h.render(p);
+ const current=h.state('project'),line=current.lines.find(row=>row.dealerId==='dragan'&&row.eventId==='speak.other');
+ assert.equal(line.variants.find(row=>row.id==='dragan.speak.other.slot-greeting').videoGenerationId,id);
+ assert.deepEqual(current.lines.filter(row=>row!==line),before.lines.filter(row=>row.dealerId!=='dragan'||row.eventId!=='speak.other'));
+ assert.deepEqual(p.initialProject,before);
+ const save=nodes(tree,row=>row.type==='button'&&row.props.children==='Spara inställningar')[0];assert.equal(save.props.disabled,false);
 });

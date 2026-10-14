@@ -1,5 +1,27 @@
 # Miljövariabler per tjänst
 
+## Emil-värden, 14 oktober 2026
+
+På Jakobs uttryckliga begäran är `CARTESIA_API_KEY`, `ELEVENLABS_API_KEY`,
+`GEMINI_API_KEY`, `RUNPOD_API_KEY` och `RUNPOD_ENDPOINT_ID` kopierade från
+den privata `.env.emil` till rotens ignorerade `.env.local`. Tre ersatta
+liknamniga rader är kommenterade; övriga värden är bevarade. Samma fem namn
+är sparade som Sensitive i projekt/team `scoutgaming`, endast Production/main.
+Det ersätter det tidigare dokumenterade förbudet mot Cartesia-/RunPod-nycklar
+i detta delade Vercelprojekt. Inga hemliga värden finns i registret eller Git.
+
+Värdena tas upp vid nästa produktionsdeployment. Vercel förmedlar taltransport,
+men Render äger providerjobb. Ingen Render-nyckel, pod, workerbild eller
+GitHub-hemlighet ändrades. Render har redan samma Cartesia-/ElevenLabs-värden. Befintlig RunPod-nyckel gav health 200 på aktiv endpoint; Emil-nyckeln gav 401 där och ersätter därför inte den fungerande Render-nyckeln. Workflows behöver inte dessa fem nycklar och GPU-jobbet
+får sitt ljud och tillfälliga anslutningsuppgifter från servern.
+
+Normal lokal Lab-start läser `.env`, `lab/.env.local` och
+`lab/.env.generated-speech.local`; rotens `.env.local` läses inte av den
+startvägen. `RUNPOD_ENDPOINT_ID` är inget alias till aktiva
+`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Det nykopierade legacy-ID:t svarade 404
+och har inte ersatt scoped endpoint. `GEMINI_API_KEY` har ingen aktiv konsument
+i main. Kopieringen innebär inte att Dragans genererade tal är aktiverat.
+
 ## Databasadresser i tester
 
 Tester med injicerad minnespool eller schemafunktion använder

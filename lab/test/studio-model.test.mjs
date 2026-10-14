@@ -38,11 +38,12 @@ test('seed clones are isolated and JSON round-trips', () => {
 
 test('JSON schema agrees with model variant limits and allowed predicate fields/values', () => {
   assert.equal(schema.$defs.line.properties.variants.minItems, 1);
-  assert.equal(schema.$defs.line.properties.variants.maxItems, 16);
+  assert.equal(schema.$defs.line.properties.variants.maxItems, 19);
   const variantLimits = schema.$defs.line.allOf[0];
   assert.equal(variantLimits.then.properties.variants.maxItems, 16);
-  assert.equal(variantLimits.else.properties.variants.maxItems, 5);
-  for (const event of seedDocument.events) assert.equal(maxVariantsForEvent(event.id), variantLimits.if.properties.eventId.enum.includes(event.id) ? 16 : 5);
+  assert.equal(variantLimits.else.then.properties.variants.maxItems, 19);
+  assert.equal(variantLimits.else.else.properties.variants.maxItems, 5);
+  for (const event of seedDocument.events) assert.equal(maxVariantsForEvent(event.id), variantLimits.if.properties.eventId.enum.includes(event.id) ? 16 : event.id === variantLimits.else.if.properties.eventId.const ? 19 : 5);
   assert.equal(schema.$defs.variant.properties.triggerIds.maxItems, 16);
   assert.equal(schema.properties.triggers.maxItems, 128);
   assert.equal(schema.properties.lines.minItems, 0);
