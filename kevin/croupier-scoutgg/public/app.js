@@ -269,10 +269,13 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) reco
 
 let captionUntil = 0;   // a text-only line's caption stays this long (dealer without recorded lines)
 let talkCaption = null, talkCaptionUntil = 0;   // a line spoken over the clips keeps its caption while the clips change under it
+// Emil 14 Oct (Svenska Spel demo): the dealer's words are heard, not written on her: captions are off. Everything that
+// chooses them stays, so they come back by setting SHOW_CAPTIONS to true (or for one viewer: ?captions=1 in the address).
+const SHOW_CAPTIONS = false || new URLSearchParams(location.search).get("captions") === "1";
 function showCaption(text) {
   if (!text && Date.now() < talkCaptionUntil) text = talkCaption;
   caption.textContent = (text ?? "").replace(/—/g, ", ");
-  caption.classList.toggle("on", Boolean(text));
+  caption.classList.toggle("on", SHOW_CAPTIONS && Boolean(text));
 }
 
 // ------------------------------------------------------------------ ljud och grind ---
