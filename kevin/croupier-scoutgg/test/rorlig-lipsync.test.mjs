@@ -304,3 +304,26 @@ test('a pod dials with the pod token, stays when the table goes quiet, and no se
   assert.ok(!p.sent.includes('bye'),'a pod is never sent away for a quiet table');
   assert.equal(r.workers('paow').length,1);
 });
+
+test('the fastest idle pod takes a line, and a pod that hung rests for a minute while the other one works', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
+  clearInterval(r.timer);
+  const pod=()=>{const sent=[],h=[];return {sent,h,ws:{readyState:1,off(ev,f){const i=h.indexOf(f);if(i>=0)h.splice(i,1);},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);}}};};
+  const slow=pod(),fast=pod();
+  const ws=r.addWorker('paow',slow.ws,{rutor_per_s:58,spar:2},'pod2');
+  r.addWorker('paow',fast.ws,{rutor_per_s:90,spar:2},'pod3');
+  const starts=p=>p.sent.filter(m=>m.t==='start').map(m=>m.id);
+  const a=r.speak('paow','rum',{id:'a',kartaStart:Date.now()+1000,line:'/a.mp4'},[]);
+  assert.deepEqual(starts(fast),['a#1'],'the faster pod first');
+  [...fast.h].forEach(f=>f(JSON.stringify({t:'done',id:'a#1'}),false));await a;
+  fast.ws.readyState=3;ws.badUntil=Date.now()+60_000;   // the fast one is gone, the other one hung: it still takes lines
+  const b=r.speak('paow','rum',{id:'b',kartaStart:Date.now()+1000,line:'/a.mp4'},[]);
+  assert.deepEqual(starts(slow),['b#1'],'a resting pod still works when it is the only one');
+  [...slow.h].forEach(f=>f(JSON.stringify({t:'done',id:'b#1'}),false));await b;
+  fast.ws.readyState=1;
+  const c=r.speak('paow','rum',{id:'c',kartaStart:Date.now()+1000,line:'/a.mp4'},[]);
+  assert.deepEqual(starts(fast),['a#1','c#1']);
+  [...fast.h].forEach(f=>f(JSON.stringify({t:'done',id:'c#1'}),false));await c;
+  assert.equal(r.status().paow.workers.find(w=>w.pod==='pod2').resting>0,true);
+});

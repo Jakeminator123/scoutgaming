@@ -139,7 +139,7 @@ export class RorligLipsync {
     return Object.fromEntries([...this.s].map(([d, s]) => {
       const first = s.workers.find(w => this.#ok(w));
       return [d, { ready: this.ready(d), info: first ? { gpu: first.info.gpu, motor: first.info.motor, forsta_bit_ms: first.info.forsta_bit_ms, rutor_per_s: first.info.rutor_per_s } : null,
-        workers: s.workers.map(w => ({ pod: w.pod, gpu: w.info?.gpu ?? null, rutor_per_s: w.info?.rutor_per_s ?? null, forsta_bit_ms: w.info?.forsta_bit_ms ?? null, running: w.running, up: Math.round((Date.now() - w.at) / 1000) })),
+        workers: s.workers.map(w => ({ pod: w.pod, gpu: w.info?.gpu ?? null, rutor_per_s: w.info?.rutor_per_s ?? null, forsta_bit_ms: w.info?.forsta_bit_ms ?? null, running: w.running, up: Math.round((Date.now() - w.at) / 1000), ...(w.badUntil > Date.now() ? { resting: Math.round((w.badUntil - Date.now()) / 1000) } : {}) })),
         asked: s.askedAt ? Math.round((Date.now() - s.askedAt) / 1000) : null, activeAgo: s.active ? Math.round((Date.now() - s.active) / 1000) : null,
         recent: s.recent }];
     }));
@@ -193,7 +193,9 @@ export class RorligLipsync {
       // a two-lane worker may make two versions of one answer at once: each run has its own id, the voice its answer's
       const lanes = (w.info?.spar ?? 1) >= 2, jid = lanes ? `${talk.id}#${rec.ver}` : talk.id;
       const sent = Date.now(), tm = { what: talk.event ?? talk.kind, ver: rec.ver, fran, worker: w.pod ?? 'serverless', queue: sent - rec.at, first: null, total: null, spare: null, steg: null, error: null };
-      const finish = (err) => { rec.abort = null; clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
+      // a worker that hangs (15 s without an answer) gets no lines for a minute while another one works (14 Oct: a pod far
+      // from the server fell behind and every line it took after that timed out)
+      const finish = (err) => { if (err === 'timeout') { w.badUntil = Date.now() + 60_000; this.log(`läppsynk rörlig [${dealer}${w.pod ? ' ' + w.pod : ''}]: timeout — vilar 60 s`); } rec.abort = null; clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
       let pending = null;
       const onMsg = (data, isBinary) => {
         if (isBinary) {
@@ -238,7 +240,8 @@ export class RorligLipsync {
     s.jobs = s.jobs.filter(j => !j.stale());
     clearTimeout(s.later);
     if (!s.jobs.length) return;
-    const ok = s.workers.filter(w => this.#ok(w));
+    const all = s.workers.filter(w => this.#ok(w)), fine = all.filter(w => !(w.badUntil > Date.now()));
+    const ok = fine.length ? fine : all;
     const free = ok.length ? ok.filter(w => w.running < Math.min(this.maxLanes, w.info?.spar ?? 1)) : (s.none.running ? [] : [s.none]);
     if (!free.length) return;
     s.jobs.sort((a, b) => a.deadline - b.deadline);
@@ -246,9 +249,9 @@ export class RorligLipsync {
     const idle = free.filter(w => !w.running), wait = s.jobs[0].deadline - Date.now() - (idle.length ? this.horizonMs : this.urgentMs);
     if (wait > 0) { s.later = setTimeout(() => this.#pump(dealer), wait); return; }
     const job = s.jobs.shift();
-    // the worker that already has this answer's voice when it is free (no ~0.5 s resend), else an idle one, pods first
-    const pick = (idle.length ? idle : free);
-    const w = pick.find(x => x.ws && x.ws === job.voiceAt()) ?? pick.find(x => x.pod) ?? pick[0];
+    // the worker that already has this answer's voice when it is free (no ~0.5 s resend), else the fastest idle one
+    const pick = (idle.length ? idle : free).slice().sort((a, b) => (b.info?.rutor_per_s ?? 0) - (a.info?.rutor_per_s ?? 0));
+    const w = pick.find(x => x.ws && x.ws === job.voiceAt()) ?? pick[0];
     w.running++;
     job.run(w).finally(() => { w.running--; if (!w.running) for (const f of w.waiters.splice(0)) f(); this.#pump(dealer); });
     this.#pump(dealer);   // the next line on another free worker (or a second lane, maxLanes 2, when urgent)
