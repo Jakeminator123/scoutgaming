@@ -64,12 +64,14 @@ Dokumentationen anger också återstående liveprov och att Studio-preview
 stänger av genererat tal. Ingen runtime, dealer, publicering,
 nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
-## Admin C1–C3: navigation och läsbarhet, 14 oktober
+## Admin C1–C4: navigation och läsbarhet, 14 oktober
 
 Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
 [befintliga migrationstrackern](CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
-Slutbas: `8acd0b44bba7d8230dd37539d6fa75142e889eda`; egen gren `codex/admin-c1-c3`.
-Två agenter arbetade i separata worktrees med navigation respektive N1-CSS.
+Integrationsbas: `7946cd5bb3d4e9262842d4c42c257071bdc935ac`; egen gren
+`codex/admin-c1-c3`. DRAGAN överlämnade eget Admin-avsnitt igen efter PR122.
+Hans senare spelkvitto från PR123 är bevarat som hans prov.
+Agenter arbetade i separata worktrees med navigation, N1-CSS och kortlayout.
 Huvudcheckouten och PR91:s arbete har inte använts för editeringar.
 
 Bolag & team har en huvudmenyingång via Verktyg. Klippkarta, Konton & åtkomst
@@ -77,19 +79,42 @@ och Integrationer har samstämmiga namn. Portalraden går till `/admin`,
 `/partner` och `/lobby`; befintliga spelstarter och registeröversikter består.
 Admin använder sin lokala Inter-font med läsbarare meny-/kontexttext och
 intern rullning för lång desktopmeny. Smal System-popup är fortfarande synlig.
+Startsidan visar de befintliga bolags-, publicerings- och provspelningsflödena.
+Bolag & team har en sidrubrik. Klippkorten får läsbarare text och nästa rad
+flyttas ned när ett bibliotek öppnas; användarens manuella kortplaceringar
+bevaras. Mobilens minikarta döljs eftersom den skymde klippkort.
 
-25 riktade navigationstester och Lab-bygget med 97 byggspår passerar.
+Lokal kodcommit `b9ce10e1`: full pre-commit **3 630 pass, 11 skip,
+0 fel/cancel i 75 grupper**, Node 24.21.0/fyra workers. Lab-bygget med
+97 byggspår och Admin/lobbyns typkontroll passerar. Skippen är inte acceptans.
 Eget läsande browserprov använder lokala UI-resurser på huvuddomänen i egen
-flik, vid 1440/1024/640/390 px. Detta är inte levererad UI-/funktionsacceptans.
+flik, vid 1440/1024/640/390 px. Kortexpansion, bolagsrubrik och startsidans
+länkar har följts upp vid 1440/390 px. Detta är inte levererad UI-acceptans.
 Inga produktionsskrivningar, spelprov, lokala produktservrar, merge eller
-deploy ingår. Full regression på `c0ff2332`: 3 594 pass, 11 skip,
-0 fel/cancel; Admin/lobbyns typkontroll passerar. Efter rebase till PR120
-är Admin-koden identisk i `0c728703`; båda dokumentöverlämningarna bevaras.
-Berört komponentprov efter rebase gav 4 pass; bevisgränserna finns i trackern. PR är ännu inte publicerad
-eftersom push kan utlösa automatisk Vercel-preview under uppdragets deployförbud.
-Agenternas två arbetskopior är arkiverade och testfliken stängd;
-integrationsgrenen, dess beroenden och privata provkvitton behålls.
-Faktisk 200-procentszoom, full dialogmatris och C4–C7 återstår. Tidigare
+deploy har utförts. Tidigare passets `c0ff2332` (3 594 pass/11 skip) och
+43 dokumentprov behålls som historik i trackern. Tre tidigare avbrutna
+försök och den slutliga, verifierade Temp-miljön redovisas där också;
+inga test- eller säkerhetsregler lättades.
+
+Avbruten indexerad Bakåt/Framåt bevarar nu Framåt-historiken i riktade
+tester. Ett verkligt lokalt kategoriutkast överlevde intern Bakåt/Framåt
+i egen browser; omladdningsvakten observerades men dess båda dialogval
+är inte accepterade. Utkastet kastades genom att stänga den egna fliken.
+Ett separat reproducerat fel är rättat: Vera visades efter Admin-retur på
+bar `/admin/clips`, men reload valde Astrid. Synkning på accepterad path/query
+behåller nu valet även efter reload; 21 historik-/ruttprov passerar.
+Eget läsande prov behåller hela Swedish Games / Dragan-rummets kontext genom
+meny och Bakåt/Framåt. Sista reload krävde inloggning med exakt `returnTo`;
+lyckad inloggning och efterföljande rumsvisning är inte verifierade.
+Oberoende Lab-historik, full login-/
+kontextmatris, spara/återläsa, revisionskonflikt, publicering, rollgränser
+och två spelomgångar återstår.
+
+PR är ännu inte publicerad eftersom push kan utlösa automatisk Vercel-preview
+under Jakobs deployförbud. Samtliga sex avslutade arbetskopior är arkiverade
+efter verifierad överföring. Egna browserflikar är stängda. Integrationen
+och privata provkvitton behålls; ingen egen produkt-/Lab-server är aktiv.
+Faktisk 200-procentszoom och full dialogmatris återstår. Tidigare
 agenters Anna-/import-/rensningskvitton är bevarade och inte återutförda här.
 
 ## Rörligt dealertal: förberedd adapter, 14 oktober

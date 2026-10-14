@@ -11,21 +11,22 @@ procentangivelse ersätter verifiering av varje flöde. Startpunkt: main
 
 Arbetsordning för fortsatt Admin-migrering, 14 oktober 2026. Detta är den
 befintliga trackerns aktuella checklista. Jakob har startat **C1–C3**;
-C4–C9 beskriver återstående acceptans och leverans, inte nya spel-/datamandat.
+fortsatt granskning rättar också reproducerade navigationsfel inom C4.
+C4–C9:s fulla acceptans återstår; checklistan ger inga nya spel-/datamandat.
 Målet är en tydlig, sammanhållen N1-yta med läsbar typografi och fungerande
 befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte.
 
 | Checkpoint | Klart när | Ägare/ordning | Aktuellt kvitto och kvarvarande kontroll |
 | --- | --- | --- | --- |
-| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Kodinventering på `0511206d`; DRAGANs PR118 överlämnad uttryckligen. Slutbas `8acd0b44` inkluderar även PR120:s AI-dokumentation, bevarad vid rebase. Huvudcheckoutens arbete bevarat. |
-| C2 — begriplig navigation | Varje synlig ingång har ett tydligt syfte, en aktiv huvudmenyrad och rätt destination. Befintliga länkar och spelstarter bevaras. | Navigationsagent → huvudagent. | Lokalt: dubbla Bolag & team i System borttagen; Klippkarta, Konton & åtkomst och Integrationer har samstämmiga etiketter. Portaler går till `/admin`, `/partner`, `/lobby`. 25 riktade tester passerar. Levererad UI-acceptans återstår. |
-| C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala UI-resurser provade vid 1440, 1024, 640 och 390 px. Inter används i Admin; meny, portal och kontextval har större text. Lång desktopmeny rullar internt; smal System-popup klipps inte. Faktisk 200-procentszoom, full dialogmatris och levererad UI-acceptans återstår. |
-| C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Nästa funktionspass efter C2. | Öppen. Tidigare PR110-/PR117-kvitton nedan är underlag; de ersätter inte komplett prov på levererad slutversion. |
-| C5 — säkra redigeringsflöden | Spara/återläsa, revisionskonflikt, återställning och verkligt osparade ändringar fungerar. Rena formulär ger ingen falsk varning. | En skrivande testägare med isolerade data. | Öppen. Skilj delad sammansättningsmall från rumsspecifika `roomOverrides`; ett valt rum gör inte mallskrivningen rumsspecifik. |
+| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Kodinventering från `0511206d`; integrationsbas `7946cd5b` inkluderar PR120, PR122 och PR123. DRAGAN överlämnade eget Admin-avsnitt efter geometrileveransen i PR122. PR123:s senare spelkvitto är bevarat och redovisas som hans prov. Huvudcheckoutens arbete bevaras. |
+| C2 — begriplig navigation | Varje synlig ingång har ett tydligt syfte, en aktiv huvudmenyrad och rätt destination. Befintliga länkar och spelstarter bevaras. | Navigationsagent → huvudagent. | Lokalt: en bolagsingång i huvudmenyn, samstämmiga etiketter och portaler till `/admin`, `/partner`, `/lobby`. Startsidan öppnar befintliga dealer-, bolags-, publicerings- och provspelningsflöden. 25 riktade tester passerade första passet. Levererad UI-acceptans återstår. |
+| C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala resurser provade vid 1440/1024/640/390 px. Läsbarare Inter-text i meny, kontext och klippkort; en sidrubrik för Bolag & team. Reproducerad kortöverlappning rättad med uppmätt radhöjd; minimap döljs på smal skärm efter konstaterad skymning. Faktisk 200-procentszoom, full dialogmatris och levererad UI-acceptans återstår. |
+| C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Navigationsagent → huvudagent; separat funktionsacceptans. | Delvis lokalt provad. Avbruten indexerad historik skyddas och återaktiverad Klippkarta synkar åter vald kontext till URL. Eget före/efter-prov behåller Vera efter reload; verkligt rum behålls vid meny/Bakåt/Framåt. Utgången session bevarar hela inloggningsreturen, men lyckad login och oberoende Lab-historik återstår. |
+| C5 — säkra redigeringsflöden | Spara/återläsa, revisionskonflikt, återställning och verkligt osparade ändringar fungerar. Rena formulär ger ingen falsk varning. | En skrivande testägare med isolerade data. | Verkligt lokalt kategoriutkast överlevde Bakåt/Framåt; omladdningsvakt observerad, men dialogens båda val inte accepterade. Spara/återläsa och revisionskonflikt återstår med isolerade data. Ett valt rum gör inte delad mallskrivning rumsspecifik; använd befintliga `roomOverrides`. |
 | C6 — publicering och nivågränser | N1 publicerar rätt granskade revision till rätt N2 och verkligt N3-rum; fel bolag och fel roll nekas på servern. | Samordnat funktionsprov efter C4–C5. | Öppen. Isolerade testdata eller ett nytt uttryckligt, avgränsat demomandat krävs. DRAGANs mandat är inte ärvt. |
-| C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Öppen här. Annas tidigare kvitto behålls som den agentens prov. Dragan/Oak är fortfarande underkänt enligt kvittot nedan. Vercel READY, Render live och funktion bokförs var för sig. |
-| C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | C1–C3 uppdaterar befintliga dokument. Dubbla rubriker i Bolag & team är noterade för fortsatt förenkling; inga komponenter eller tjänster tas bort på antagande. |
-| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten. | Lokal kodcommit `0c728703`; Admin-koden är identisk med fullhook-provad `c0ff2332`, se kvittot nedan. PR ännu inte publicerad. Ingen merge eller deploy är tillåten i detta uppdrag; push som automatiskt skapar Vercel-preview kräver först klargjord omfattning. |
+| C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Inget eget spelkvitto. DRAGAN dokumenterar två desktop- och två mobilrundor i PR123; Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
+| C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker och menyingångar förenklade efter konsumentkontroll. Befintlig guide, tracker och eget handoffavsnitt följer ändringarna. Samtliga sex avslutade arbetskopior är arkiverade efter verifierad överföring. Egna browserflikar är stängda; integration och privata provkvitton behålls. |
+| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten. | Lokal kodcommit `b9ce10e1`: ordinarie fullhook 3 630 pass, 11 skip, 0 fel/cancel, inklusive kontextuppföljningen. PR ännu inte publicerad. Ingen merge eller deploy är tillåten; push som automatiskt skapar Vercel-preview kräver först klargjord omfattning. |
 
 **Kodkartan för C1:** `entry.tsx` registrerar 31 Admin-destinationer:
 åtta basytor (`/admin`, `/structure`, `/deletion`, `/dealers`, `/tools`,
@@ -50,39 +51,73 @@ produktionsskrivningar eller spelprov gjordes. Inga produkt-/Lab-servrar
 startades. Befintlig regression för talgranskning, bakgrundsval och äldre
 dealer-/bolagslänkar återanvänds; funktionerna byggs inte om.
 
-**Eget kontrollkvitto:** `c0ff233200629ab7b944f46f21acfb6803a8dbd6`
-har 3 594 pass, 11 skip, 0 fel/cancel i ordinarie full pre-commit, Node
-24.21.0 med fyra testworkers. De villkorade skippen är inte acceptans;
-bland dem finns verklig PostgreSQL/Neon och browserinloggning. Admin/lobbyns
-typkontroll och slutligt Lab-bygge med 97 kontrollerade byggspår passerar.
-Efter detta rebaserades ändringen till PR120/main `8acd0b44`: endast den
-samtida dokumentöverlämningen behövde förenas, med båda agenternas avsnitt
-bevarade. Samtliga fyra Admin-käll-/testfiler är byteekvivalenta med
-`c0ff2332`. PR120:s övriga ändringar är guider och två dokumentationssökvägar
-i `OpenClawSources`; berört komponentprov gav 4 pass. Dokumentcommitten
-omfattas av ordinarie dokumenthook. Den fulla regressionen är ovanstående
-körning, inte ett nytt liveprov.
-Två tidigare försök stoppade på saknade låsta testberoenden (`ws` respektive
-äldre frontendens TypeScript/ws) i den nya worktreen; de installerades utan
-ändrade paket-/låsfiler före godkänd fullkörning. Dokument- och kodgranskning
-fann inga kvarvarande blockerande fel i denna avgränsade diff.
-Egen browserkontroll omfattar även Klippkarta, stängning av dealerpanelen
-utan ändringar, synligt tangentbordsfokus och N1-portalens retur till ren
-`/admin`. Klippkortens små tekniska texter och kvarvarande dubbla rubriker
-är fortsatt förenklingsarbete, inte generellt visuellt godkända genom detta pass.
+**Eget kontrollkvitto:** lokal kodcommit
+`b9ce10e188d6679283965d3aab4bdafd49d28acb`, bas `7946cd5b`, har **3 630 pass,
+11 skip, 0 fel/cancel i 75 grupper** i ordinarie full pre-commit, Node
+24.21.0 med fyra testworkers. Skippen omfattar bland annat verklig
+PostgreSQL/Neon och browserinloggning och räknas inte som acceptans.
+Lab-bygget passerar med 97 kontrollerade byggspår; Admin/lobbyns typkontroll
+passerar också. Före fullkörningen passerade 17 layout-/bolagsprov och
+21 historik-/ruttprov. Historikregressionen är registrerad i ordinarie hook.
+Det tidigare passets `c0ff2332` (3 594 pass, 11 skip) och dokumentkontroll
+(43 pass) är historiska kvitton, inte bevis för senare ändringar.
 
-GitGuardian lästes separat på main `4f2a6eef` och därefter `8acd0b44`: verifierad källa och aktiv
-övervakning; 0 öppna och 18 ignorerade incidenter. Platsmetadata är delvis
-ofullständig, historisk skanning `too_large` och SHA-sviten `queued` utan
-synliga check-runs. Detta är inte ett besked om full säkerhetstäckning.
-Egna navigations-/CSS-worktrees är arkiverade efter verifierad överföring.
-Testfliken är stängd och resurs-/viewportöverstyrningarna är borttagna.
-Integrationsworktree `admin-c1-integration`, dess lokala beroenden och privata
-provloggar/skärmbilder behålls för granskning. Inga egna servrar körs.
+Två tidigare fullkörningar av kontextuppföljningen avbröts på Windows
+`EPERM` i oförändrade temporärfilsfixturer för agent-talk respektive
+product-chat. En provkatalog under `.codex` gav därefter tre korrekta
+byggsäkerhetsavslag eftersom externa `.codex`-sökvägar är privata. De
+44 berörda proven och sedan hela ordinarie kontrollen passerade med
+kommando-lokala `TEMP`/`TMP` i en egen katalog under användarens vanliga
+Temp. Testkod, säkerhetsregel, workergräns och CI-beteende ändrades inte.
+De avbrutna körningarna räknas inte som godkända kontroller.
+
+**C3, eget UI-prov:** ett öppet klippbibliotek gjorde tidigare kortet högre
+än den fasta kortraden. Med läsbarare text blev provkortet cirka 381 CSS-px;
+nästa rad flyttas nu ned med 26 CSS-px mellanrum och återgår när biblioteket
+stängs. Egen dragning av kort behålls tills användaren återställer layouten.
+Vid 390 px ryms sidan utan horisontellt sidöverflöde. Minikartan skymde ett
+kort och döljs därför på smal skärm; zoom-/översiktsknapparna finns kvar.
+Bolag & team har en synlig sidrubrik och en separat rubrik för valt bolag.
+Startsidan har verifierade länkar till de redan implementerade verktygen.
+Röstpanelen ryms vid 390 px utan sid-/panelöverflöde och stängs rent utan
+redigering. Detta ersätter inte den öppna fullständiga dialogmatrisen.
+
+**C4/C5, egna bevisgränser:** regressionen provar indexerade historikposter
+och avbruten navigation under en simulerad uppladdning i den verkliga
+importkomponenten. Kompenserande historikretur bevarar Framåt-poster och
+skyddar den accepterade kontexten. Äldre eller externa historikposter utan
+index har en dokumenterad reservväg: utkast och Framåt-historik bevaras,
+men den okända målposten ersätts. Lab-verktygens egna `popstate`-lyssnare
+och `replaceState`-skrivningar saknar ännu gemensamt browserkvitto.
+En verklig osparad kategori skapades enbart i den egna flikens lokala
+utkast: Bakåt/Framåt inom Admin behöll den. Omladdningsvakten aktiverades,
+men verktyget gav inte kontroll över dialogens båda val. Fliken stängdes
+utan sparning. Ingen kategori, publicering eller annan testdata skrevs till
+servern. Ett efterföljande prov visade Vera i Klippkarta på en kontextlös
+adress efter återgång via Admin; reload bytte till Astrid. Synkning på
+accepterad path/query rättar detta utan att fylla rena `/admin` med kontext.
+Tre nya beteendeprov monterar den verkliga kartkomponenten med isolerat
+katalogsvar, inklusive bolag, verklig rumsidentitet, spel, sammansättning,
+utkast och nekad historikretur. Samlad riktad historik-/ruttsvit: 21 pass.
+Eget browserprov efter fix behåller Vera genom meny, Bakåt/Framåt och reload.
+Swedish Games / Dragan-rummets hela URL behålls vid meny och Bakåt/Framåt;
+sista reload krävde ny inloggning och behöll exakt kontext i `returnTo`.
+Lyckad inloggning och därefter återläst rum är därför fortfarande öppet.
+
+GitGuardian lästes före commit på main `7946cd5b`: verifierad källa,
+aktiv övervakning, 0 öppna och 18 ignorerade incidenter. Platsmetadata är
+delvis ofullständig, historisk skanning `too_large` och SHA-sviten `queued`
+utan synliga check-runs. Detta är inte full säkerhetstäckning.
+Samtliga sex avslutade arbetskopior, inklusive kontextuppföljningen, är
+arkiverade efter verifierad överföring. Egna browserflikar är stängda.
+Integrationsworktree `admin-c1-integration` och privata provkvitton behålls.
+Ingen produkt-/Lab-session har startats; obligatoriska tester använder
+egna kortlivade fixturer.
 
 **Samordning:** DRAGAN släppte dokumentanspråken efter PR118, 14 oktober
-00:20 UTC. Hans import-/rensningskvitton och separata Dragan-geometriarbete
-bevaras. MERGE äger separat AI-dokumentation och dess adresslista; PR91:s
+00:20 UTC och lämnade uttryckligen tillbaka det egna Admin-avsnittet efter
+PR122. Hans import-/rensnings-/geometrikvitton och senare spelprov bevaras.
+MERGE:s AI-dokumentation och adresslista samt PR91:s
 gren/worktree bevaras. KEVI-POD-EMILs worker/avatars/lipsync, RunPod och
 Emil-påminnelse berörs inte. Varje framtida skrivande checkpoint får eget
 filanspråk, testdataägare och uttrycklig överlämning vid överlapp.
