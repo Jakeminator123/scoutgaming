@@ -49,7 +49,7 @@ befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte
 | C6 — publicering och nivågränser | N1 publicerar rätt granskade revision till rätt N2 och verkligt N3-rum; fel bolag och fel roll nekas på servern. | Samordnat funktionsprov efter C4–C5. | Öppen. Isolerade testdata eller ett nytt uttryckligt, avgränsat demomandat krävs. DRAGANs mandat är inte ärvt. |
 | C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Inget eget spelkvitto. DRAGANs PR123/125-kvitton och två isolerade produktionsrundor efter PR127 på `5ca686c5` är hans prov. Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
 | C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker/menyingångar och minikartan förenklade efter verifiering. Befintlig tracker och eget handoffavsnitt följer varje rättning. Fjorton avslutade egna arbetskopior är arkiverade efter verifierad överföring/granskning, senast C4-login, C4-historik och C5-utkast. Överförda filer/patchar är hashkontrollerade; egna dependency-junctions, fixture-processer och browserflikar är städade. Integration och privata provkvitton behålls. |
-| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten. | PR129 mergad efter gröna kontroller till `dbfe94b5`, Vercel READY på huvuddomänen. Integrationscommit `e9996383`: fullhook 3 712 pass/11 skip, 0 fel/cancel i 76 grupper. Eget läsande liveprov redovisas nedan. PR130 mergad till `39343967`: fullhook 3 713 pass/11 skip, gröna PR/main-kontroller och eget livekvitto för båda följdfelen. Vercel-, Render- och funktionskvitton redovisas separat nedan. |
+| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten; samordnad mergeordning efter DRAGAN. | Senaste kodcommit `6ef4a2de456a8ecf5baf5bd87210cdc404f6bcf4`: fullhook 3784 pass/9 skip, 0 fel/cancel i 77 grupper; 97 byggspår och Admin/lobby-typkontroll gröna. C4/C5:s funktions- och fixturegränser redovisas nedan. Tidigare PR129–134 och deras Vercel-/Render-/livekvitton är historik. Egen branch `codex/admin-c4-room-history` levereras via PR efter PR139, utan direkt main-push eller manuell deploy. |
 
 **C4 fortsätter, 14 oktober:** färsk main är `ad0ae9ac` efter DRAGANs PR138.
 DRAGAN har uttryckligen lämnat över enbart dessa Admin-avsnitt i tracker och
@@ -83,7 +83,9 @@ Chromium/HTTP, lagring/återläsning, två redaktörers 409, oförändrad histor
 nekad skrivning, konfliktlösning och avbruten omladdning. Autentisering och
 SQL-pool är syntetiska; andra Admin-formulär och produktionslagring är inte
 slutaccepterade. Fixture-server/browser och egen dependency-junction är städade.
-Samlad fullkontroll och leverans följer efter C4-historikgranskningen.
+Integrerad efter DRAGANs PR139 på main `220519a1c4d70a808b35781ac965de9c7f133887`. Kodcommit `6ef4a2de456a8ecf5baf5bd87210cdc404f6bcf4` passerar full pre-commit: **3784 pass, 9 skip, 0 fel/cancel i 77 grupper**, Node 24.21.0/fyra workers. Lab-bygget med 97 spår och Admin/lobbyns typkontroll passerar. Alla nya isolerade browserprov kördes; skippen gäller andra uttryckligt villkorade prov och räknas inte som acceptans.
+
+Första fullkontrollen avbröts av äldre testbrowserdubblar som saknade URL-/History API-delar. Tre befintliga harnessar uppdaterades utan att ta bort utkast-, behörighets- eller CAS-kontroller; 81 berörda tester och därefter fullkontrollen passerar. DRAGANs nya talfackstester bevaras. Ingen produktionsdata eller session ändrades för provningen.
 
 **C4, oberoende Lab-historik:** dealerbyten i Lab och svarsbiblioteket skrev
 egna historikposter utan Admins index. Ett avbrutet Bakåt-steg kunde skriva över
@@ -97,6 +99,16 @@ med syntetisk action queue. Talutkastet representeras av en fixturesignal, medan
 Äldre/oindexerade same-document-poster saknar riktning i History API: vid avslag
 bevaras utkast och Framåt-stack, men den okända destinationsposten ersätts.
 Den begränsningen är kvar och räknas inte som fullständig historikacceptans.
+
+**C6, minsta nästa isolerade prov:** återanvänd publiceringsfixturen i
+`lab/test/presentation-room-api.test.mjs`, partnergränserna i
+`lab/test/partner-admin-workspace.test.mjs`, spelarflödet i
+`lab/test/partner-presentation-flow.test.mjs` och den riktiga publika katalogen
+bakom `test/public-lobby.mjs`. Delarna provas redan separat. Kvar är att följa
+samma nypublicerade revision från befintligt N1-formulär via autentiserad N2
+och faktisk `/lobby` till servervaliderad spelstart, med fel roll/bolag mot samma
+isolerade data. Ingen ny produktjänst eller produktionsdemo behövs för det provet.
+Två verkliga spelomgångar är fortsatt C7 och har inget eget kvitto här.
 
 **Nästa avgränsningar efter C4/C5:** texten för bordsbredd/x/y i
 `studio-composition-panel.tsx` behöver tydligare ange att placeringen gäller

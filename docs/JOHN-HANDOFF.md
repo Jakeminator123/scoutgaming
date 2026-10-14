@@ -177,7 +177,7 @@ poster och full RSC-acceptans redovisas fortfarande som luckor i trackern.
 Revisionshämtning kunde också tappa text som skrivits under väntan. Den läser
 nu senaste utkastet; 18 riktade C5-prov passerar med syntetisk auth/lagring,
 riktig HTTP, 409, återläsning, konfliktval, historik och avbruten omladdning.
-Samlad fullkontroll och PR-kvitto tillkommer efter integration mot DRAGANs main.
+Integrerad efter DRAGANs PR139 på main `220519a1c4d70a808b35781ac965de9c7f133887`. Kodcommit `6ef4a2de456a8ecf5baf5bd87210cdc404f6bcf4` passerar full pre-commit: **3784 pass, 9 skip, 0 fel/cancel i 77 grupper**, Node 24.21.0/fyra workers. Lab-bygget med 97 spår och Admin/lobbyns typkontroll passerar. Alla nya isolerade browserprov kördes; skippen gäller andra uttryckligt villkorade prov och räknas inte som acceptans.
 Äldre daterade kvitton nedan är historik och ersätter inte dessa bevisgränser.
 
 Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
