@@ -8,7 +8,7 @@ export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layo
   const count=layout==='mobile'?3:7;
   const followCards=value?.[layout].betMode==='under-cards';
   const targets=[{id:'dealer',label:'Dealer · kort'},...Array.from({length:count},(_,i)=>[
-    {id:`card:${i}`,label:`Plats ${i+1} · kort`},...(!followCards?[{id:`bet:${i}`,label:`Plats ${i+1} · insats`}]:[]),
+    {id:`card:${i}`,label:`Plats ${i+1} · kort`},...(!followCards?[{id:`bet:${i}`,label:`Plats ${i+1} · insatscirkel`}]:[]),
   ]).flat()];
   const selected=targets.find(row=>row.id===target)??targets[0];
   const geometry=value?.[layout],part=selected.id.split(':'),seat=Number(part[1]);
@@ -22,9 +22,12 @@ export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layo
   return <fieldset className={styles.editor} disabled={disabled}><legend>Kort och insatsplatser · {layout==='mobile'?'mobil':'desktop'}</legend>
     <p>Placeringen hör bara till denna bordbild. Ett annat bord behöver egna platser.</p>
     {!value?<><p>Ingen egen placering sparad för detta bord. Spelet använder tidigare placering.</p><button type="button" className="sg-btn sg-btn-secondary" onClick={()=>onChange(defaultBlackjackTableGeometry(tableId))}>Placera på detta bord</button></>:geometry&&point?<>
-      <p>{layout==='mobile'?'Mobil · tre synliga platser':'Desktop · sju platser'}. Välj en punkt och klicka på bilden. Spara och provspela båda formaten.</p>
-      <label><input type="checkbox" checked={followCards} onChange={event=>{if(!value)return;const next=structuredClone(value);if(event.target.checked)next[layout].betMode='under-cards';else delete next[layout].betMode;onChange(next);}}/> Insatser följer korten</label>
-      <p>{followCards?'Markerytorna placeras direkt under kort och poäng. Avståndet följer spelarens kortvisning.':'Insatsplatserna använder sina egna sparade punkter.'}</p>
+      <p>{layout==='mobile'?'Mobil · tre synliga platser':'Desktop · sju platser'}. Välj kort eller insatscirkel under Flytta och klicka på bilden. Finjustera med piltangenter eller procentfälten. Spara och provspela båda formaten.</p>
+      <div className="sg-tabs" role="group" aria-label="Insatscirklarnas placering">
+        <button type="button" className="sg-btn sg-btn-secondary" aria-pressed={followCards} onClick={()=>{if(!value||followCards)return;const next=structuredClone(value);next[layout].betMode='under-cards';onChange(next);}}>Följ korten</button>{' '}
+        <button type="button" className="sg-btn sg-btn-secondary" aria-pressed={!followCards} onClick={()=>{if(!value||!followCards)return;const next=structuredClone(value);delete next[layout].betMode;onChange(next);}}>Placera cirklar själv</button>
+      </div>
+      <p>{followCards?'Insatscirklarna följer kort och poäng i spelet. Välj Placera cirklar själv om du vill flytta dem var för sig.':'Välj en insatscirkel under Flytta och klicka på bordbilden. Dina manuella punkter finns kvar när du växlar tillbaka till Följ korten.'}</p>
       <label className="field">Flytta<select value={selected.id} onChange={event=>setTarget(event.target.value)}>{targets.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
       <button type="button" className={styles.board} aria-label={`Placera ${selected.label} på bordet`} onClick={event=>{
         if(!event.detail)return;const rect=event.currentTarget.getBoundingClientRect();

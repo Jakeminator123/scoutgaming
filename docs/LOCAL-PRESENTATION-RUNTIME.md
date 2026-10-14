@@ -258,6 +258,16 @@ avbrott och maskgränser. Ingen shader, liveavkodare, ny provider eller
 ny meny har aktiverats. Två riktiga talprov per dealer återstår efter
 worker-/avatarverifiering och inkoppling.
 
+### Färsk worker- och källkontroll, 14 oktober 2026
+
+Läsande API-kontroll 16:40 UTC visar att staging-endpointen mq7eiwanda72fg fortfarande använder template 61hsh8i4r0 och image-taggen 6c80fe50806979d902a6457f43ec74ca8ee5d421. Två körande dedikerade pods, croupier-lipsync-pod1 och pod5, använder däremot ghcr.io/emacodehero/croupier-lipsync-worker:fe1b55e971b1236fadd445ff6ce94970719b5d72. Det är observerade image-namn, inte verifierade container-digests eller avatarhashar. Health svarar 200; inga jobb skapades eller resurser ändrades. Befintlig SSH-nyckel nekades på pod1. Worker-repot svarar fortsatt 404 för Jakeminator123.
+
+Färsk kontroll av den uttryckligen anvisade .env.emil gav HTTP 200 för Cartesia, Dragges exakta ElevenLabs-röst och Gemini-modellistan. RunPod-nyckeln fungerar, men filens RUNPOD_ENDPOINT_ID ktyp76r668wdjm ger 404. Filen innehåller inga GitHub- eller SSH-uppgifter. Variabelnamnen är lästa, inga hemliga värden har dokumenterats eller ersatts; staging-endpointen får inte okritiskt användas som ersättning för den gemensamma talmotorns endpoint.
+
+Kevin-staging 5134d9274fdaa9d09dd3f3cf40f02ecd95716afe har stöd för dedikerade pods, flera workers per dealer och tillfällig undvikning av timeoutande workers. Klienternas lip-layer.js/dealer-layer.js och Draggens v2-/idle-v2-filer är oförändrade jämfört med 315cfc55, men inspelade repliker har ändrats. För de fyra svenska alternativen som finns i vårt bibliotek är win_1 ny (SHA-256 8a0d160a69e30c0dcb908421c9355a4731cc947b0a8b9f54ef71f15d7ef31529); goodluck_1, insurance_1 och double_1 är samma bytes. Nytt material är granskningsunderlag, inte accepterat tal.
+
+Nästa aktivering behöver den valda workerns exakta release och avatar-/källklippsmanifest, autentiserad adapter till vår sessionsägare, verifierat avbrott/jobbstopp, avkodning samt gemensam ljud-/bildstart. Källåtkomst eller motsvarande verifierbart workerunderlag saknas ännu. Kopiera inte Kevins permanenta podanslutningar eller kostnadsmodell som en genväg. Tillgång till en endpoint eller ljudfil ersätter inte dessa kontroller. Två sammanhängande verkliga talprov måste därefter godkänna uttal, läppsynk och återgång till grundloop.
+
 ### PCM och egen WebSocket-anslutning, 14 oktober 2026
 
 Kevin uppger att Paows och Dragges avatarbanker finns inbakade i den gemensamma
