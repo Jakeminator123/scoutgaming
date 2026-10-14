@@ -92,7 +92,7 @@ test('every card he deals or turns follows its planar track from face-up until i
 test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded lines in English, under her own name', () => {
   const a = DEALERS.astrid2;
   assert.equal(a.name, 'Astrid');
-  assert.equal(a.label, 'Astrid 2.0');
+  assert.equal(a.label, 'Astrid');   // Emil 14 Oct: shown as Astrid
   assert.deepEqual(a.lines, ['en']);
   for (const idle of a.idles) assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id);
   assert.ok(a.idles[0].vikt >= 10);

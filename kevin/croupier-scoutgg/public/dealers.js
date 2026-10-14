@@ -38,7 +38,7 @@ const ASTRID2_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt
 const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
 export const DEALERS = {
-  astrid: { id: 'astrid', name: 'Astrid', still: '/media/startbild.png', face: '/media/dealers/faces/astrid.jpg' + V },
+  astrid: { id: 'astrid', name: 'Astrid', label: 'Astrid (classic)', still: '/media/startbild.png', face: '/media/dealers/faces/astrid.jpg' + V },
   dragge: { id: 'dragge', name: 'Dragge', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
     clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014c', idles: idlesFor('dragge'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
@@ -59,7 +59,7 @@ export const DEALERS = {
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
-  astrid2: { id: 'astrid2', name: 'Astrid', label: 'Astrid 2.0', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/astrid2.jpg' + V,
+  astrid2: { id: 'astrid2', name: 'Astrid', label: 'Astrid', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/astrid2.jpg' + V,
     keyed: { still: '/media/dealers/astrid2/v2/vila.png' + V }, layerScale: 1, ready: ASTRID2_READY,
     clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014d', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS },
 };
