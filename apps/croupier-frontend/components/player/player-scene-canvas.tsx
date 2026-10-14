@@ -2,11 +2,12 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {type CompositionSettings} from '../../../../web/public/composition-settings.mjs';
+import type {PublicPreviewCompositing} from '../../../../web/public/operator-preview-contract.mjs';
 
 import {mountPublishedScene} from '../../../../web/public/published-scene.mjs';
 
 export type PlayerSceneSource = {src:string; contentType:string};
-export type PlayerSceneCompositing = {mode:'green-screen'; threshold:number; softness:number; despill:number};
+export type PlayerSceneCompositing = PublicPreviewCompositing;
 type Props = {
   dealer:PlayerSceneSource|null;
   background:PlayerSceneSource|null;

@@ -1,5 +1,36 @@
 # Aktuell handoff — Scoutgaming
 
+## Byggkontrakt och systemkarta, 15 oktober 2026
+
+Lab/design/frontend använder Node 24; taltransporten använder Node 22.
+Befintliga lokala Volta-pinnar versionsstyrs nu och frontend anger 24.x.
+Frontendens tre undertryckta TypeScript-fel gällde alpha-film i ett för snävt
+green-screen-kontrakt. Komponenten återanvänder nu det publika kontraktet;
+typkontroll är obligatorisk i fullhook/CI och Next-bygget. 3 typfel blev 0,
+39 riktade prov passerade. Oberoende granskning verifierade byteidentisk
+emitterad JavaScript före/efter: ingen ändring av spelarens runtimebeteende.
+Beroenden och pnpm-lock är oförändrade. Vercels talinstallation använder
+Node 22 för frontendens beroenden; pnpm varnar med standardpolicy, men
+previewbygget måste verifiera den verkliga installationen före merge.
+
+Systemkartan beskriver tre Vercel-tjänster i samma produkt och de separata
+Render-tjänsterna. SQL-inventeringen omfattar nu elva migrationskällor,
+57 tabeller och 382 kolumner, inklusive tidigare saknade 006/008/011.
+Detta inventerar källkontrakt, inte det installerade produktionsschemat.
+Baslinjehashar och testdefinitioner är bevarade; ändrad-indata-varningar
+redovisas i kartan i stället för att nollställas.
+
+Daterat driftkvitto 14 oktober cirka 22:25 UTC: Vercel `scoutgaming` var
+READY på `a0df4e26`, deployment `dpl_7FAC4NFoEdSQCA521AQcWe1XqJme`;
+Render `croupier-v2` var live på samma SHA och gav health 200.
+Efter PR149 är Vercel `dpl_D2U2rpZ3WMne1jkv2dUwjUXmLK6b` READY på
+`9b6f4d11`. Cookiefri kontroll på www 22:35–22:36 UTC verifierar
+`/studio` → `/admin`, Admin → N1-login med rätt retur, gamla Control-länkar
+→ motsvarande Admin-vyer, Partner → partnerlogin och Lobby 200. Ett gammalt
+Studio-bokmärke behåller dealer-parametern genom kompatibilitetslänken.
+Render hade ännu `a0df4e26` vid den avläsningen. Detta är HTTP-/driftbevis,
+inte ny inloggad browser- eller spelaracceptans.
+
 ## Sammanhängande Admin-ingångar, 15 oktober 2026
 
 Utgångspunkt är main `a0df4e26` efter PR #146–148. N1-login utan giltigt

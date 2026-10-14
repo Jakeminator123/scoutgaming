@@ -76,6 +76,23 @@ konkreta regressioner. Publiceringslänken behåller rum/dealer i URL:en;
 detta är inte bevis för att editorn markerar just det rummet. Fullhookens
 skip redovisas som acceptansluckor, inte som genomförda browserprov.
 
+PR149 är mergad som `9b6f4d11` efter grön CI/GitGuardian/Vercel och färsk
+ägar-/headkontroll. Huvudcheckouten är på samma main; sex lokalt ändrade
+filer bevarades byteidentiska. Vercel production är READY på denna SHA.
+Cookiefritt HTTP-prov 14 oktober 22:35–22:36 UTC visar `/studio` → `/admin`,
+Admin → rätt N1-loginretur, Control → rätt Admin-mål, Partner → partnerlogin
+och Lobby 200. Render rapporterade då ännu `a0df4e26`; de olika driftkvittona
+ska inte blandas ihop med full browser-/spelaracceptans.
+
+**C1/C8/C9, byggkontrakt och karta:** `codex/runtime-contracts` versionsstyr
+de redan använda Node-pinnarna, rättar frontendens alpha-typkontrakt och
+återaktiverar obligatorisk typkontroll utan dependencybyte. Tre typfel blev
+noll och 39 riktade prov passerade. Emitterad canvas-JavaScript är
+byteidentisk mot tidigare main. Systemkartan inventerar riktiga tjänster,
+N1/N2/N3 och tidigare saknade SQL-källor; bevarade baslinjer visar kvarvarande
+evidensdrift. Se [kartan](system-map/README.md) och
+[runtime/återställning](ENVIRONMENT-RESTORATION.md#byggdelar-och-node-versioner).
+
 **C7, SAMORDNING:s isolerade PR91-kvitto 14 oktober:** Astrid spelades genom
 förlust, vinst, push och split i den verkliga spelaren med separat minnesdata
 på tillfällig internetadress. Mobil 390×844, sammanhängande rundor och

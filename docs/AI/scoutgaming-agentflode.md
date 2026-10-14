@@ -11,6 +11,12 @@ huvudagenten äger integration, fullkontroll och ägarverifiering före merge.
 fyra arbetare (`--plan` visar urvalet). Det är ett snabbt utvecklingsprov;
 ordinarie fullhook och CI behåller alla kontroller inför leverans.
 
+Frontendens `npm run typecheck` ingår nu i fullhook/CI och Next-bygget
+tillåter inte längre typfel. Kör Node från rätt paketmapp enligt
+[runtime-tabellen](../ENVIRONMENT-RESTORATION.md#byggdelar-och-node-versioner).
+Vid städning skiljs aktiv delad kod från onåbar klientdemo genom konsumenter;
+legacy-namn eller ett gammalt test är inte ensamt ett bevarandekrav.
+
 Det tidigare spelarstoppet är hävt för isolerade internetprov. PR #91 har
 Astrid-kvitto för förlust, vinst, push, split, mobil och sammanhängande
 spelningar; detta är funktion, inte ny läppsynksacceptans. Dragan v4 väntar
