@@ -44,7 +44,7 @@ test('malformed and foreign return targets cannot alter the SSR redirect destina
     const target = nextStudioLoginRedirect(value);
     const url = new URL(addPathPrefix(target, '/studio'), 'https://qa.example.invalid');
     assert.equal(url.pathname, '/studio/login');
-    assert.equal(url.search, '?returnTo=%2Fstudio');
+    assert.equal(url.search, '?returnTo=%2Fadmin');
   }
 });
 
@@ -377,7 +377,7 @@ test('auth-entry redirects reject spoofed origins and retain only validated retu
   const config = authEntryConfig('/studio/api/auth'), request = entryRequest('studio.fixture.invalid', 'login');
   for (const returnTo of ['https://attacker.invalid', '//attacker.invalid', '/studio?draft=private', '/api/bo/game-login?state=' + 'a'.repeat(63), ['x']]) {
     const url = new URL(nextStudioAuthEntryRedirect(request, config, { returnTo }));
-    assert.equal(url.searchParams.get('returnTo'), '/studio');
+    assert.equal(url.searchParams.get('returnTo'), '/admin');
     assert.equal(url.origin, config.allowedOrigins[0]);
   }
   for (const token of [null, ['b'.repeat(43)], 'b'.repeat(129), 'bearer/private']) {

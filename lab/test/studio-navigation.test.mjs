@@ -154,7 +154,7 @@ test('level-two entrance lists real supplied partners and preserves the administ
   const operators = [{ slug: 'johnsspelbolag', name: 'Johnsspelbolag' }, { slug: 'sg-test', name: 'SG test game provider' }];
   const html = renderToStaticMarkup(React.createElement(PartnerWorkspace, { user: 'jakob', operators, accessClass: 'internal-admin' }));
   const links = [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/g)].map(match => match[1]);
-  assert.deepEqual(links, ['/partner', '/partner', '/control', '/play', '/partner/johnsspelbolag', '/partner/sg-test']);
+  assert.deepEqual(links, ['/partner', '/partner', '/admin', '/lobby', '/partner/johnsspelbolag', '/partner/sg-test']);
   assert.match(html, /Johnsspelbolag/);
   assert.match(html, /Intern administratör/);
   assert.match(html, /samma administratörskonto/);
@@ -169,7 +169,7 @@ test('level-two member entrance is scoped and empty access never selects a fixtu
   const render = operators => renderToStaticMarkup(React.createElement(PartnerWorkspace, { user: 'john', operators, accessClass: 'partner' }));
   const member = render([{ slug: 'johnsspelbolag', name: 'Johnsspelbolag' }]);
   assert.match(member, /href="\/partner\/johnsspelbolag"/);
-  assert.doesNotMatch(member, /href="\/(?:control|play)"|sg-test|Demo North|Demo South|Intern administratör/);
+  assert.doesNotMatch(member, /href="\/(?:admin|lobby|control|play)"|sg-test|Demo North|Demo South|Intern administratör/);
   for (const operators of [[], [{ slug: 'login', name: 'Invalid destination' }], [{ slug: '../sg-test', name: 'Invalid destination' }]]) {
     const empty = render(operators);
     assert.match(empty, /Inga tillgängliga spelbolag/);

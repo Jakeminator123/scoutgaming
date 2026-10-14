@@ -34,7 +34,7 @@ function publicationReturn(value) {
   return canonicalControlHref(parts[0] + '?' + query);
 }
 export function studioLoginReturnTo(value) {
-  if (typeof value !== 'string' || value === '/partner/set-password' || value === '/studio/partner/set-password') return '/studio';
+  if (typeof value !== 'string' || value === '/partner/set-password' || value === '/studio/partner/set-password') return '/admin';
   const preview = designPreviewReturnTo(value);
   if (preview) return preview;
   if (returns.has(value) || handoff.test(value)) return value;
@@ -42,7 +42,7 @@ export function studioLoginReturnTo(value) {
   if (room) return room;
   const publication = publicationReturn(value);
   if (publication) return publication;
-  return resolveWorkspaceSurfacePath(value)?.publicPath || '/studio';
+  return resolveWorkspaceSurfacePath(value)?.publicPath || '/admin';
 }
 export function studioLoginDestination(value,authBase = '/studio/api/auth') {
   const target = studioLoginReturnTo(value);

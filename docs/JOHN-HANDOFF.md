@@ -1,5 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
+## Sammanhängande Admin-ingångar, 15 oktober 2026
+
+Utgångspunkt är main `a0df4e26` efter PR #146–148. N1-login utan giltigt
+returmål och tom `/studio` går nu till `/admin`. Uttryckliga äldre länkar
+och Studio-bokmärken med query behåller sin kompatibilitet. Partnerportalens
+staff-länkar går till Admin och Spelarlobby; vanliga partner får inga nya
+staff-länkar. Översiktens Spelrum & publicering öppnar `/admin/publication`
+med rätt verkligt rum, bolag, sammansättning och dealer.
+
+Före/efter-prov reproducerade felaktiga mål. Det gemensamma fokuskommandot
+gav 157 pass, 9 befintligt villkorade browserprov skip, 0 fel. Login-agentens
+separata utökade auth/SSR/N2-prov gav 85 pass, 1 browserprov skip, 0 fel.
+Fullkontroll och levererad browseracceptans bokförs separat i C1–C9.
+Nästa strukturella snitt är att flytta den delade sidladdaren ur Control;
+`lab/lib` och verkliga partnerportalen är aktiva tjänster och bevaras.
+
+PR #91 är fortsatt draft: Astrids isolerade spelarprov är klart; Dragan v4
+inväntar tillstånd för den privata runtimekoden. Inga sandboxuppladdningar
+gjordes efter säkerhetsgranskningens avslag och sandlådan är stoppad.
+Rörligt tal och mänsklig medieacceptans är egna kvarvarande gränser.
+
 ## Driftprofiler och providerkontroll, 14 oktober 2026 kväll
 
 Samordnat med SAMORDNING efter PR #145. Root-profilens RunPod-nyckel är
@@ -32,14 +53,17 @@ Rörlig workerintegration, två faktiska talprov och Anna-avatar återstår sepa
 Efter ADMIN:s och DRAGAN:s klartecken flyttades den dubblerade
 `lab/.env.generated-speech.local` och den oanvända
 `lab/.env.cloud-activation.local` till den Git-ignorerade
-`lab/data/platform-private/env-cleanup-20261014/` i Jakobs huvudcheckout.
+`arkiv/2026-10-14/lab/` i Jakobs huvudcheckout. Den första tillfälliga
+placeringen under `lab/data/platform-private/` är avvecklad.
 Exakta byte och Windows-ACL är bevarade. Före/efter-konfigurationen matchar
 för vardera flytten i åtta kombinationer av speech-, kamera- och lagringsflaggor.
-Privata kvitton ligger bredvid filerna utan hemliga värden.
+Privata kvitton ligger under
+`arkiv/2026-10-14/lab/data/platform-private/samordning-cleanup/`, utan hemliga värden.
 
 Rotens och Labs olika `.env.local`, separat cloud-storage-opt-in, aktiva
 beroendeinstallationer, `lab/.next`, produktdata och molninställningar bevaras.
-Två värdeskillnader mellan root/Lab återstår avsiktligt utan automatisk synk;
+Den senare providerkontrollen ovan rättade RunPod-paret; profilerna förblir
+separata efter sina faktiska läsare och ska inte slås samman slentrianmässigt;
 se [aktuell läsordning och inventering](ENVIRONMENT-VARIABLES.md).
 Denna leverans ändrar bara dokumentation och innebär ingen ny drifts- eller
 inloggningsverifiering. Spelaracceptans och övriga migreringsgrindar kvarstår.

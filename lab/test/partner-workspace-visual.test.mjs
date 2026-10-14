@@ -52,6 +52,20 @@ function realSnapshot(overrides = {}) {
     ...overrides };
 }
 
+test('real partner headers link staff to Admin and the lobby without granting member navigation', () => {
+  for (const language of ['sv', 'en']) {
+    const { KevinBackoffice } = components({ language });
+    const render = accessClass => renderToStaticMarkup(React.createElement(KevinBackoffice, {
+      surface: 'partner', user: 'jakob', initialSnapshot: realSnapshot({ accessClass }), initialView: 'overview',
+    }));
+    const staff = render('internal-admin');
+    assert.match(staff, /href="\/admin"/);
+    assert.match(staff, /href="\/lobby"/);
+    assert.doesNotMatch(staff, /href="\/(?:control|play)"/);
+    assert.doesNotMatch(render('partner'), /href="\/(?:admin|lobby|control|play)"/);
+  }
+});
+
 test('John shell strings are supplied in Swedish and English with a safe fallback', () => {
   const sv = partnerCopy('sv'), en = partnerCopy('en');
   assert.deepEqual(Object.keys(sv), Object.keys(en));
@@ -98,8 +112,8 @@ test('real administrator shell exposes same-account links, theme, language and g
   const { KevinBackoffice } = components({ language: 'en', theme: 'dark' });
   const html = renderToStaticMarkup(React.createElement(KevinBackoffice, { surface: 'partner', initialSnapshot: realSnapshot(), user: 'jakob', apiBase: '/api/partner/snapshot' }));
   assert.match(html, /data-preview="operator" data-theme="dark" lang="en"/);
-  assert.match(html, /href="\/control"/);
-  assert.match(html, /href="\/play"/);
+  assert.match(html, /href="\/admin"/);
+  assert.match(html, /href="\/lobby"/);
   assert.match(html, /Internal administrator/);
   assert.match(html, /Switch account/);
   assert.match(html, /Log out/);
