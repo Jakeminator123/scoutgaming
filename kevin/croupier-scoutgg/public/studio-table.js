@@ -1,6 +1,6 @@
 // A Table Studio table (?table=<slug>): the operator's logo in the header and/or printed on the felt.
 // Its felt colour is applied by table-style.js; its limits and name come with the table state (shared-table.js).
-import { readLogo } from './felt-logo.js';
+import { prepareLogo } from './felt-logo.js';
 import { keepHandsOverFeltBrand } from './felt-brand-hands.js';
 const slug = new URLSearchParams(location.search).get('table');
 if (slug && /^[a-z0-9_-]{1,40}$/.test(slug)) {
@@ -20,10 +20,11 @@ if (slug && /^[a-z0-9_-]{1,40}$/.test(slug)) {
       keepHandsOverFeltBrand();   // Astrid's hands stay above the printed brand (felt-brand-hands.js)
       // Only a raster data URL (the server refuses anything else); set as a source, never as markup.
       if (typeof t.logo === 'string' && /^data:image\/(png|jpeg|webp);base64,/.test(t.logo)) {
-        const ink = await readLogo(t.logo);
-        if (t.logoPos !== 'felt') { const img = document.querySelector('#tableLogo'); img.src = t.logo; img.alt = t.name; img.classList.toggle('dark-logo', Boolean(ink?.dark)); img.removeAttribute('hidden'); }
-        if (t.logoPos !== 'header' && ink) {
-          const logo = document.querySelector('#feltLogo'); logo.setAttribute('href', ink.mask); logo.removeAttribute('hidden');
+        // prepared exactly as Table Studio's preview shows it (felt-logo.js): own colours in the header, the felt's ink below
+        const look = await prepareLogo(t.logo);
+        if (t.logoPos !== 'felt') { const img = document.querySelector('#tableLogo'); img.src = look?.header ?? t.logo; img.alt = t.name; img.removeAttribute('hidden'); }
+        if (t.logoPos !== 'header' && look) {
+          const logo = document.querySelector('#feltLogo'); logo.setAttribute('href', look.felt); logo.removeAttribute('hidden');
           document.querySelector('#feltWordmark').setAttribute('hidden', '');
         }
       }

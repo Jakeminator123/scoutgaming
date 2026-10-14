@@ -41,7 +41,7 @@ $$('.opt[data-k]').forEach(o=>o.setAttribute('aria-checked',String(st[o.dataset.
 const order=['dealer','room','felt','lang','limit','brand'];
 $$('.step').forEach(s=>{s.classList.toggle('open',s.dataset.step===st.open);s.classList.toggle('done',order.indexOf(s.dataset.step)<order.indexOf(st.open))});
 $('#rsDealer').textContent=d.name;$('#rsRoom').textContent=ROOMS[st.room];$('#rsFelt').textContent=FELTS[st.felt].name;$('#rsLang').textContent=LANGS[st.lang].name;$('#rsLimit').textContent=L.name+' · '+L.range;
-const lg=st.logo,fl=$('#feltLogo'),hl=$('#hdrLogo');[fl,hl].forEach(i=>{if(lg&&i.getAttribute('src')!==lg)i.src=lg});fl.hidden=!lg||st.logoPos==='header';$('#stage').classList.toggle('has-felt-logo',!fl.hidden);hl.hidden=!lg||st.logoPos==='felt';
+const lg=st.logo,fl=$('#feltLogo'),hl=$('#hdrLogo');showLogo(lg,fl,hl);fl.hidden=!lg||st.logoPos==='header';$('#stage').classList.toggle('has-felt-logo',!fl.hidden);hl.hidden=!lg||st.logoPos==='felt';
 $('#drop').classList.toggle('has',!!lg);if(lg){$('#logoThumb').src=lg;$('#logoName').textContent=st.logoName}
 const posName={both:'Felt + header',felt:'Felt',header:'Header'}[st.logoPos];$('[data-v="brand"]').textContent=lg?posName:'No logo';$('#rsLogo').textContent=lg?st.logoName+' · '+posName:'None';
 $('#pnSpec').textContent=d.name+' · '+ROOMS[st.room]+' · '+L.name;$('#readyName').textContent=st.name||'Blackjack';
@@ -105,6 +105,11 @@ const order=['dealer','room','felt','lang','limit','brand'];
 $$('.step-h').forEach(h=>h.onclick=()=>{const s=h.parentElement.dataset.step;st.open=st.open===s?'':s;render()});
 $$('.next').forEach(b=>b.onclick=()=>{const s=b.closest('.step').dataset.step;st.open=order[order.indexOf(s)+1];render()});
 $$('.opt[data-k]').forEach(o=>{const pick=e=>{if(e.target.closest('.play'))return;st[o.dataset.k]=o.dataset.val;render()};o.addEventListener('click',pick);o.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e)}})});
+// Emil 14 Oct: the preview shows the logo exactly as the game will (the same felt-logo.js prepareLogo): own colours in the
+// header (a dark logo on a light badge), the felt's printed ink below
+let logoLook={src:null,p:null};
+function showLogo(lg,fl,hl){if(!lg)return;const set=p=>{if(logoLook.src!==lg)return;hl.src=p?.header??lg;fl.src=p?.felt??lg};
+if(logoLook.src===lg){if(logoLook.p)set(logoLook.p);return}logoLook={src:lg,p:null};import('/felt-logo.js').then(m=>m.prepareLogo(lg)).then(p=>{if(logoLook.src===lg){logoLook.p=p;set(p)}}).catch(()=>set(null))}
 function setLogo(src,name){const i=new Image();i.crossOrigin='anonymous';i.onload=()=>{let w=i.naturalWidth||600,hh=i.naturalHeight||300;const k=Math.min(1,600/Math.max(w,hh));w=Math.round(w*k);hh=Math.round(hh*k);let out=src;try{const c=document.createElement('canvas');c.width=w;c.height=hh;c.getContext('2d').drawImage(i,0,0,w,hh);out=c.toDataURL('image/png');
   // The server takes logos under 400 KB: a detailed PNG falls back to WebP, then to a smaller size.
   if(out.length>380000)out=c.toDataURL('image/webp',.9);

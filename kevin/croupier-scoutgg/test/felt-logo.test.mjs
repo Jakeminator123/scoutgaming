@@ -21,3 +21,12 @@ test('a light logo is not dark, so the header keeps its own colours', () => {
   const { dark } = inkOf(image(8, 8, [0, 0, 0, 0], [240, 220, 120, 255]), 8, 8);
   assert.equal(dark, false);
 });
+
+test('a light logo on a coloured plate loses the plate, keeps its own light colour and is trimmed to its shape', () => {
+  const { alpha, rgb, dark, box, plate, branded } = inkOf(image(16, 16, [200, 20, 40, 255], [250, 250, 250, 255]), 16, 16);
+  assert.equal(plate, true); assert.equal(dark, false); assert.equal(branded, true, 'the header keeps a coloured plate');
+  assert.equal(inkOf(image(16, 16, [255, 255, 255, 255], [10, 10, 10, 255]), 16, 16).branded, false, 'a white plate is no brand colour');
+  assert.equal(alpha[0], 0); assert.equal(alpha[8 * 16 + 8], 255);
+  assert.deepEqual([...rgb.slice((8 * 16 + 8) * 3, (8 * 16 + 8) * 3 + 3)], [250, 250, 250]);
+  assert.deepEqual(box, [5, 5, 11, 11]);
+});
