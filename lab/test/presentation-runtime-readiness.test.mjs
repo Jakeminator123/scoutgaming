@@ -74,6 +74,55 @@ const writesForNewFeatures = [
   repo => repo.classifyMedia('id', { metadata: { dealerId: 'astrid', compositing: { mode: 'green-screen' } } }),
 ];
 
+test('exact speech slot standards require v20 before saving, publishing or archiving and before SQL begins', async () => {
+  const media = frozenMedia({ eventId: 'speak.other', situation: 'greeting', kind: 'speech',
+    recordedSpeech: { ...recordedSpeech(), lineId: 'greeting', takeId: 'greeting_1' } }, 'video/mp4', 25);
+  const frozen = frozenPackage(value => {
+    const line = value.playback.lines.find(row => row.dealerId === 'astrid' && row.eventId === 'speak.other');
+    const baseline = line.variants.find(row => row.id === line.baselineVariantId);
+    line.variants.push({ ...structuredClone(baseline), id: 'astrid.speak.other.slot-greeting', priority: 0, triggerIds: [],
+      videoGenerationId: media.id, selection: { rules: false, model: false, random: false } });
+    value.playback.media.push(media);
+  });
+  const line = frozen.playback.lines.find(row => row.eventId === 'speak.other');
+  const descriptors = [{ kind: 'project', value: { lines: [line] } },
+    { kind: 'project', value: { dealerTrash: [{ lines: [line] }] } },
+    { kind: 'dealer-archive', value: { dealerTrash: [{ lines: [line] }] } },
+    { kind: 'presentation-package', value: frozen }];
+  for (const descriptor of descriptors) for (const version of [19, 20]) {
+    const f = fixture({ fetcher: async () => Response.json(presentationCapabilitiesForVersion(version)) }); let begun = 0;
+    f.repository.transaction = async work => { begun++; return work(f.repository); };
+    const save = () => f.wrapped.transaction(repo => repo.saveDocument(descriptor.kind, { value: descriptor.value }), { presentationMutation: descriptor });
+    if (version === 19) { await assert.rejects(save, blocked); assert.equal(begun, 0); assert.equal(f.writes.length, 0); }
+    else { await save(); assert.equal(begun, 1); assert.equal(f.writes.length, 1); }
+    assert.equal(f.fetches.length, 1);
+    assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'], '20');
+  }
+});
+
+test('an older mutation descriptor cannot gain slot-write permission inside SQL or issue a nested preflight', async () => {
+  const f = fixture({ fetcher: async () => Response.json(presentationCapabilitiesForVersion(19)) });
+  const value = { lines: [{ eventId: 'speak.other', variants: [{ id: 'dragan.speak.other.slot-greeting' }] }] };
+  await assert.rejects(f.wrapped.withMutationContext(repo => repo.saveDocument('project', { value }), { kind: 'resource-lifecycle', value: {} }), blocked);
+  assert.equal(f.writes.length, 0); assert.equal(f.fetches.length, 1);
+  assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'], '19');
+});
+
+test('lifecycle plus the saved project discovered before SQL can preserve exact slots with one v20 preflight', async () => {
+  // createStudioNativeRuntime.mutationTransaction supplies these complete
+  // descriptors by reading presentationDocuments before entering either lock.
+  const value = { lines: [{ eventId: 'speak.other', variants: [{ id: 'dragan.speak.other.slot-greeting' }] }] };
+  for (const kind of ['material-trash', 'resource-lifecycle', 'dealer-archive']) for (const version of [19, 20]) {
+    const f = fixture({ fetcher: async () => Response.json(presentationCapabilitiesForVersion(version)) }); let begun = 0;
+    f.repository.transaction = async work => { begun++; return work(f.repository); };
+    const lifecycle = { kind, value: {} }, descriptors = [lifecycle, { kind: 'project', value }];
+    const work = () => f.wrapped.transaction(repo => repo.withMutationContext(inner => inner.saveDocument('project', { value }), lifecycle), { presentationMutation: descriptors });
+    if (version === 19) { await assert.rejects(work, blocked); assert.equal(begun, 0); assert.equal(f.writes.length, 0); }
+    else { await work(); assert.equal(begun, 1); assert.equal(f.writes.length, 1); }
+    assert.equal(f.fetches.length, 1); assert.equal(f.fetches[0][1].headers['X-Presentation-Capability-Version'], '20');
+  }
+});
+
 test('more than five filmed deal variants require v17, while explicit archive operations also require v19',async()=>{
   for(const eventId of ['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']){
     const line={dealerId:'astrid',eventId,variants:Array.from({length:6},(_,i)=>({id:`fixture-${i}`}))};

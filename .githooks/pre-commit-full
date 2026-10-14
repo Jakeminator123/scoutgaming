@@ -20,6 +20,7 @@ run_node_tests() {
   fi
 }
 node docs/system-map/verify.mjs --check
+run_node_tests lab/test/speech-slot-bindings.test.mjs lab/test/speech-slot-selection.test.mjs lab/components/dealer-speech-slot-editor.test.mjs
 run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/admin/lib/dealer-artwork.test.mjs packages/design-preview/admin/lib/dealer-playback.test.mjs packages/design-preview/admin/lib/connected-studio.test.mjs packages/design-preview/admin/lib/studio-composition-panel.test.mjs packages/design-preview/admin/lib/studio-layout.test.mjs packages/design-preview/admin/lib/roulette-clip-map.test.mjs packages/design-preview/admin/lib/system-overview.test.mjs packages/design-preview/admin/lib/studio-policy.test.mjs packages/design-preview/admin/lib/studio-lifecycle.test.mjs packages/design-preview/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
 run_node_tests lab/test/material-trash.test.mjs lab/test/material-trash-ui.test.mjs
 run_node_tests lab/test/assistant.test.mjs lab/test/assistant-reads.test.mjs lab/components/control-openclaw-chat.test.mjs

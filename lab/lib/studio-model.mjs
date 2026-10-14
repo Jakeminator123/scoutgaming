@@ -13,6 +13,7 @@ import { validateLegacyClipPolicy } from '../../packages/presentation/runtime/le
 import { dealerSetErrors } from './dealer-sets.mjs';
 import { validateRouletteIdleBinding } from '../../web/public/roulette-idle-contract.mjs';
 import { validateRouletteStartBinding } from '../../web/public/roulette-start-contract.mjs';
+import { OTHER_SPEECH_SLOT_IDS, speechSlotSituation, validateSpeechSlotLine } from '../../web/public/speech-slot-bindings.mjs';
 
 
 // Pure, browser-safe policy model. This file never reads environment, network,
@@ -23,7 +24,8 @@ export const TRIGGER_CATEGORIES = Object.freeze(['deterministic', 'social', 'tem
 export const MAX_ALTERNATIVES = contract.limits.alternatives;
 const filmedDealEvents = new Set(['deal.player.left','deal.player.centre','deal.player.right','deal.dealer']);
 export function maxVariantsForEvent(eventId) {
-  return filmedDealEvents.has(eventId) ? contract.limits.filmedDealVariants : MAX_ALTERNATIVES + 1;
+  return filmedDealEvents.has(eventId) ? contract.limits.filmedDealVariants
+    : MAX_ALTERNATIVES + 1 + (eventId === 'speak.other' ? OTHER_SPEECH_SLOT_IDS.length : 0);
 }
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
 const VIDEO_GENERATION_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
@@ -473,6 +475,8 @@ export function validateProject(project, { allowIncompatibleAnimations = false }
     const expectedBaseline = `${line.dealerId}.${line.eventId}.standard`;
     if (line.baselineVariantId !== expectedBaseline) error(`${at}.baselineVariantId`, 'standardvariantens stabila ID får inte ändras');
     if (!array(line.variants, `${at}.variants`, 1, maxVariantsForEvent(line.eventId))) return;
+    try { validateSpeechSlotLine(line); }
+    catch { error(`${at}.variants`, 'talfack kräver unika, ovillkorliga standardval för exakt replik och högst fyra vanliga alternativ'); }
     line.variants.forEach((variant, vi) => {
       const vp = `${at}.variants[${vi}]`;
       if (!keys(variant, ['id', 'label', 'priority', 'triggerIds', 'assetId', 'videoGenerationId'], vp, ['selection'])) return;
@@ -619,7 +623,8 @@ export function addVariant(project, dealerId, eventId, label = 'Ny variant') {
   return editProject(project, next => {
     const line = findLine(next, dealerId, eventId);
     const limit = maxVariantsForEvent(eventId);
-    if (line.variants.length >= limit) throw new StudioValidationError([`variants: högst ${limit === 5 ? 'fyra' : limit - 1} alternativ utöver standardvarianten`]);
+    const ordinaryLimit = eventId === 'speak.other' ? MAX_ALTERNATIVES + 1 : limit;
+    if (line.variants.filter(variant => !speechSlotSituation(line, variant)).length >= ordinaryLimit) throw new StudioValidationError([`variants: högst ${ordinaryLimit === 5 ? 'fyra' : ordinaryLimit - 1} alternativ utöver standardvarianten`]);
     let serial = 1;
     while (line.variants.some(variant => variant.id === `${dealerId}.${eventId}.variant${serial}`)) serial++;
     line.variants.push({ id: `${dealerId}.${eventId}.variant${serial}`, label, priority: 10, triggerIds: [], assetId: line.variants.find(variant => variant.id === line.baselineVariantId).assetId, videoGenerationId: null, selection: { rules: false, model: false, random: false } });

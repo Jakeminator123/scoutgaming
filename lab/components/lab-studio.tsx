@@ -3,6 +3,8 @@ import { labBasePath } from "../lib/lab-url.mjs";
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { IdlePolicyEditor } from './idle-policy-editor';
 import {RegisteredIdleEditor} from './registered-idle-editor';
+import {DealerSpeechSlotEditor} from './dealer-speech-slot-editor';
+import {bindSpeechSlotStandard} from '../../web/public/speech-slot-bindings.mjs';
 import { LegacyClipEditor } from './legacy-clip-editor';
 import { MediaFamilyEditor } from './media-family-editor';
 import { clipSituationLabel } from '../lib/clip-label.mjs';
@@ -270,6 +272,7 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const dealers = activeStudioDealers(project);
   const dealer = dealers.find(row => row.id === dealerId);
   const idleReferenceId = customDealer ? ownDealerIdle(project, videos, dealerId)?.id : dealerId === 'astrid' ? project.idlePolicy?.base[0]?.videoId : undefined;
+  const speechSlot = customDealer && selection ? dealerMediaSlots(project,'speech').find(slot=>slot.eventId===selection.eventId&&slot.situation===selection.situation) : undefined;
   const currentSlot = selection ? selection.eventId + '/' + selection.situation : workspaceView === 'idle' ? 'idle.ready/' : '';
   const showClips = workspaceView === 'idle' || workspaceView === 'clips';
   const showEditor = view === 'idle' || Boolean(selection) || !customDealer && !familyWorkspace;
@@ -279,10 +282,11 @@ export function LabStudio({ initialProject, initialVideos, connectedLane, initia
   const saveButton = <button type="button" className="sg-btn sg-btn-secondary" disabled={!dirty || speechDraft || saving || uploading || !connectedLane} onClick={() => void save()}>{saving ? 'Sparar…' : 'Spara inställningar'}</button>;
   const clipSettings = dealer && showEditor ? <section ref={settingsRef} className={styles.clipSettings} aria-label="Klippval, varianter och villkor">
     <div className={styles.sectionHeader}><div><h2>{selection ? clipSituationLabel(selection.eventId,selection.situation) : view === 'idle' ? 'Grundloop och variationer' : 'Klippval för ' + dealer?.label}</h2><p className={styles.intro}>Välj klipp, varianter och hur de används. Spara inställningarna efter ditt val.</p></div></div>
-    {selection || view === 'idle' ? <nav className={styles.contentNav} aria-label="Fackets inställningar">{[['variants','Standard och varianter'],['triggers','Användning och villkor']].map(([tab,label])=>{const href=studioNavigationHref(studioHref('/control/events',{dealerId,eventId:selection?.eventId??'idle.ready',situation:selection?.situation,variantId:variantId||undefined,tab}),{laneId,operatorId,tableId});return <a key={tab} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav> : null}
+    {!speechSlot && (selection || view === 'idle') ? <nav className={styles.contentNav} aria-label="Fackets inställningar">{[['variants','Standard och varianter'],['triggers','Användning och villkor']].map(([tab,label])=>{const href=studioNavigationHref(studioHref('/control/events',{dealerId,eventId:selection?.eventId??'idle.ready',situation:selection?.situation,variantId:variantId||undefined,tab}),{laneId,operatorId,tableId});return <a key={tab} href={href} onClick={event=>void continueTo(event,href)}>{label}</a>;})}</nav> : null}
     {view==='idle'&&familyWorkspace?<section><div className={styles.sectionHeader}><span/><button type="button" className="text-button" disabled={refreshing} onClick={()=>void refresh()}>{refreshing?'Läser…':'Uppdatera klipplistan'}</button></div><fieldset disabled={saving||!connectedLane} className={styles.fields}><IdlePolicyEditor policy={project.idlePolicy??createDefaultIdlePolicy()} inventory={videos} blocked={saving} clipLabels={project.clipLabels} onChange={policy=>edit(draft=>{draft.idlePolicy=policy;})} onBusyChange={()=>{}} onImportBusyChange={setUploading}/></fieldset></section>:null}
     {(view==='deal'||view==='clips')&&familyWorkspace&&media&&variant?<fieldset disabled={saving||!connectedLane} className={styles.editor}><div>{video?<DealerClipPreview key={video.id} url={video.previewUrl} framing={video.classification?.framing} compositing={video.classification?.compositing}/>:<p>Ingen tillgänglig film för detta fack.</p>}</div><MediaFamilyEditor inventory={videos} family={media.family} project={project} variants={media.line.variants} selectedId={variant.id} onSelect={setVariantId} onPolicy={updatePolicy} onRefresh={()=>void refresh()} refreshing={refreshing}/></fieldset>:null}
     {!familyWorkspace&&!customDealer?<fieldset className={styles.fields} disabled={saving||!connectedLane}><LegacyClipEditor project={project} dealerId={dealerId} section={view} onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></fieldset>:null}
+    {speechSlot?<DealerSpeechSlotEditor key={dealerId+'/'+speechSlot.id} project={project} inventory={videos} dealerId={dealerId} slot={speechSlot} blocked={saving||uploading||!connectedLane} onChange={videoId=>edit(draft=>{draft.lines=bindSpeechSlotStandard(draft,{dealerId,eventId:speechSlot.eventId,situation:speechSlot.situation,videoId}).lines;})}/>:null}
     {customDealer&&view==='idle'?<RegisteredIdleEditor key={dealerId} project={project} inventory={videos} dealerId={dealerId} blocked={saving||!connectedLane} onChange={updateRegisteredIdle} onDetach={detachRegisteredIdle} onBusyChange={setUploading} onInventory={setVideos}/>:null}
     {view==='clips'&&familyWorkspace&&category==='speech'?<section className={styles.help}><h3>Inspelade tal-klipp</h3><LegacyClipEditor project={project} dealerId={dealerId} section="clips" onChange={policy=>edit(draft=>{draft.legacyClipPolicy=policy;})}/></section>:null}
     {saveButton}
