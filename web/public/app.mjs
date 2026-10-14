@@ -946,7 +946,7 @@ function layoutDealControl() {
     if(notice)notice.hidden=true;
     return;
   }
-  if(getComputedStyle(control).display==='none'){if(notice)notice.hidden=true;return;}
+  if(control.disabled||getComputedStyle(control).display==='none'){if(notice)notice.hidden=true;return;}
   control.style.visibility='';
   const visible=el=>el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden';
   const targets=seatEls.filter(el=>!el.classList.contains('seat-off')).flatMap(el=>[...el.querySelectorAll('.spot,.sidearcs,.bet-target,.clear-box,.stake')]).filter(visible).map(el=>el.getBoundingClientRect());
