@@ -1,5 +1,32 @@
 # Aktuell handoff — Scoutgaming
 
+## Driftprofiler och providerkontroll, 14 oktober 2026 kväll
+
+Samordnat med SAMORDNING efter PR #145. Root-profilens RunPod-nyckel är
+återställd till samma verifierade par som Lab/Render. Emils lokala testfil
+har fem `EMIL_*`-namn och rätt lokalt endpointval; hans fjärrresurser är orörda.
+Fyra oanvända testkopior är borttagna från endast Vercel scoutgaming Production;
+Cartesia behålls för Studio. Alla andra Vercel-poster, Render och DB/Blob-värden
+är bevarade. Original ligger kanoniskt i `arkiv/2026-10-14/`, med skyddade ACL.
+
+`tools/check-provider-profile.mjs` är ett uttryckligt filval med enbart GET:
+inga ärvda processnycklar, blandade namn, omdirigeringar, GPU-jobb eller
+hemliga loggvärden. Fyra riktade regressionstester, 12 tester inklusive
+env-registret, Studio-build (97 kontrollerade spår) och full pre-commit
+(3 781 pass, 19 skip, 0 fail) godkända. Alla åtta lokala loaderkombinationer
+har identisk effektiv konfiguration före/efter. Båda providerprofilerna gav
+200; även Emils Gemini fungerar. API-tillgänglighet är inte talacceptans.
+
+Inloggning, session, projekt och mediebibliotek lästa på Vercel; projektrevisionen
+matchade produktions-Neon och autentiserat privat MP4-HEAD gav 200/rätt längd.
+Efter miljöbytet redeployades exakt `fa1fdaaeaf923c0744a82953d77334779a6001e7`:
+`dpl_3C8Hpice4vvqnfJmzei9KR176i9Y` är READY i rätt team/projekt med
+`www.scoutgaming.tech` som alias. Samma databas-, sessions- och medieprov
+godkändes efter deploymenten; webb/Admin och båda Render-hälsoproven gav 200.
+SAMORDNING fick kvittot och merge-/deploypausen kunde släppas.
+Se [aktuella profiler, namnmatris och återställning](ENVIRONMENT-VARIABLES.md).
+Rörlig workerintegration, två faktiska talprov och Anna-avatar återstår separat.
+
 ## Lokal env-konsolidering, 14 oktober 2026
 
 Efter ADMIN:s och DRAGAN:s klartecken flyttades den dubblerade

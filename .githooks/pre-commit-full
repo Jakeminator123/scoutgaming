@@ -72,7 +72,7 @@ run_node_tests test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs 
 run_node_tests ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/operator-html-ingress.test.mjs ops/cloud/test/version.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs apps/croupier-frontend/test/player-area.mjs apps/croupier-frontend/test/player-lobby.mjs apps/croupier-frontend/test/player-room-preview.mjs apps/croupier-frontend/test/player-scene-canvas.mjs apps/croupier-frontend/test/player-preview-fallback.mjs apps/croupier-frontend/test/landing-motion.mjs apps/croupier-frontend/test/intro-device.mjs
 run_node_tests test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs test/lane-media-audit.mjs
 node tools/check-environment-variables.mjs
-run_node_tests test/check-environment-variables.mjs
+run_node_tests test/check-environment-variables.mjs test/provider-profile.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node tools/build-runtime-media-catalog.mjs --check
 run_node_tests test/runtime-media-catalog.mjs lab/test/dealer-media-library.test.mjs

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revisionNote": "Production web and Studio are two Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAW_API_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Partner staff invitations (8 Oct 2026) reuse RESEND_API_KEY, CROUPIER_STUDIO_MAIL_FROM and CROUPIER_PUBLIC_ORIGIN; no new names. 8 Oct 2026 17:25: Neon croupier-production and Blob croupier-media-private transferred to team scoutgaming and connected to project scoutgaming with prefixes CROUPIER_NEON / CROUPIER_MEDIA; hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN unchanged. Secret values never belong in this registry. 9 Oct 2026: host-managed RENDER_GIT_COMMIT is frozen by the Render gateway for the sanitized /__cloud/version receipt; only exact 40-character hex is accepted, with no client override or Git fallback. 11 Oct 2026: opt-in dealer speech profiles and ElevenLabs key are Render Web-only; no new GitHub secret and no automatic activation. 12 Oct 2026: Studio and the isolated local launcher prefer OPENCLAW_API_KEY, retaining OPENCLAWAPI_KEY compatibility for existing Render services. Explicit empty credentials remain disabled in isolated children; secret values stay outside this registry. Vercel Sensitive keys cannot be renamed: OPENCLAW_API_KEY was recreated from the locally stored Gateway credential after a read-only Director 200 verification, and the legacy Production key was removed. Post-read metadata confirms no other key/type/scope changes. 12 Oct 2026 cleanup: canonical OPENCLAW_API_KEY supported by the private Gateway startup and specified in both Render services and Compose; legacy name is compatibility-only. Local GEMINI_API_KEY, empty RUNPOD_ENDPOINT_ID and platform-owned VERCEL removed after a private backup. 13 Oct 2026: Jakob authorized a 20 USD daily GPU test ceiling in CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD and the production Neon policy. Effective cap remains their minimum; session/fullfile reserves and retained cost rows are unchanged. Studio migration 011 widens only the daily policy constraint; no new environment key. 14 Oct 2026: explicit owner request copies five .env.emil names into root .env.local and scoutgaming Production as sensitive server variables. Existing local assignments are commented; unrelated values and environments are preserved. These are stored credentials, not automatic speech activation. Render provider jobs and scoped CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID are unchanged; legacy RUNPOD_ENDPOINT_ID is not an alias and its supplied endpoint returned 404. No GitHub or GPU-worker credential copy.",
+  "revisionNote": "Production web and Studio are two Services in the single scoutgaming Vercel project (fra1), sharing its existing Neon/Blob/Resend configuration. Studio OpenClaw administration reuses the existing server-only OPENCLAW_API_KEY; Director has one signed server device identity. QA AI/GPU remains OFF. Partner staff invitations (8 Oct 2026) reuse RESEND_API_KEY, CROUPIER_STUDIO_MAIL_FROM and CROUPIER_PUBLIC_ORIGIN; no new names. 8 Oct 2026 17:25: Neon croupier-production and Blob croupier-media-private transferred to team scoutgaming and connected to project scoutgaming with prefixes CROUPIER_NEON / CROUPIER_MEDIA; hand-set CROUPIER_GAME_DATABASE_URL and BLOB_READ_WRITE_TOKEN unchanged. Secret values never belong in this registry. 9 Oct 2026: host-managed RENDER_GIT_COMMIT is frozen by the Render gateway for the sanitized /__cloud/version receipt; only exact 40-character hex is accepted, with no client override or Git fallback. 11 Oct 2026: opt-in dealer speech profiles and ElevenLabs key are Render Web-only; no new GitHub secret and no automatic activation. 12 Oct 2026: Studio and the isolated local launcher prefer OPENCLAW_API_KEY, retaining OPENCLAWAPI_KEY compatibility for existing Render services. Explicit empty credentials remain disabled in isolated children; secret values stay outside this registry. Vercel Sensitive keys cannot be renamed: OPENCLAW_API_KEY was recreated from the locally stored Gateway credential after a read-only Director 200 verification, and the legacy Production key was removed. Post-read metadata confirms no other key/type/scope changes. 12 Oct 2026 cleanup: canonical OPENCLAW_API_KEY supported by the private Gateway startup and specified in both Render services and Compose; legacy name is compatibility-only. Local GEMINI_API_KEY, empty RUNPOD_ENDPOINT_ID and platform-owned VERCEL removed after a private backup. 13 Oct 2026: Jakob authorized a 20 USD daily GPU test ceiling in CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD and the production Neon policy. Effective cap remains their minimum; session/fullfile reserves and retained cost rows are unchanged. Studio migration 011 widens only the daily policy constraint; no new environment key. 14 Oct 2026: explicit owner request copies five .env.emil names into root .env.local and scoutgaming Production as sensitive server variables. Existing local assignments are commented; unrelated values and environments are preserved. These are stored credentials, not automatic speech activation. Render provider jobs and scoped CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID are unchanged; legacy RUNPOD_ENDPOINT_ID is not an alias and its supplied endpoint returned 404. No GitHub or GPU-worker credential copy. 14 Oct 2026 evening: supersedes the temporary Emil copy with explicit local EMIL_* test profile. Root Scoutgaming RunPod pair restored from verified Render configuration; unused local legacy endpoint/Gemini/webhook removed. Vercel Production removes four unused test copies (RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY, ELEVENLABS_API_KEY); CARTESIA_API_KEY stays for Studio voice checks. All other Vercel entries and Render/Emil remote resources unchanged. Read-only explicit-file provider checker rejects mixed profiles and never starts jobs.",
   "services": {
     "render-game": {
       "sources": [
@@ -160,10 +160,6 @@
         "CROUPIER_BACKEND_ORIGIN",
         "CROUPIER_LAB_UI_ORIGIN",
         "CROUPIER_VERCEL_INGRESS_SECRET",
-        "RUNPOD_ENDPOINT_ID",
-        "GEMINI_API_KEY",
-        "ELEVENLABS_API_KEY",
-        "RUNPOD_API_KEY",
         "CARTESIA_API_KEY"
       ],
       "managed": [
@@ -185,8 +181,13 @@
         "CROUPIER_NEON_POSTGRES_USER",
         "CROUPIER_MEDIA_STORE_ID"
       ],
-      "blocked": [],
-      "storedProviderCredentialNote": "Explicitly stored for Production on 14 Oct 2026. Server-only shared project environment; provider sessions still run on Render. GEMINI_API_KEY and legacy RUNPOD_ENDPOINT_ID have no active main runtime consumer. No alias or automatic worker activation."
+      "blocked": [
+        "RUNPOD_API_KEY",
+        "RUNPOD_ENDPOINT_ID",
+        "GEMINI_API_KEY",
+        "ELEVENLABS_API_KEY"
+      ],
+      "storedProviderCredentialNote": "Current Production state after the 14 Oct 2026 profile cleanup: only CARTESIA_API_KEY remains from the temporary Emil provider copy, for Studio voice verification. RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY and ELEVENLABS_API_KEY test copies were removed. Provider jobs remain on Render; no alias or automatic worker activation."
     },
     "vercel-zones-qa": {
       "sources": [],
@@ -414,18 +415,18 @@
         "OPENCLAW_MODEL_API",
         "OPENCLAW_MODEL_BASE_URL",
         "OPENAI_API_KEY",
-        "RUNPOD_ENDPOINT_ID",
-        "GEMINI_API_KEY",
-        "ELEVENLABS_API_KEY",
-        "RUNPOD_API_KEY",
         "CARTESIA_API_KEY"
       ],
       "managed": [],
       "blocked": [
         "CROUPIER_ZONES_DATABASE_URL",
-        "OPENCLAW_PRODUCT_SPEECH_TOKEN"
+        "OPENCLAW_PRODUCT_SPEECH_TOKEN",
+        "RUNPOD_API_KEY",
+        "RUNPOD_ENDPOINT_ID",
+        "GEMINI_API_KEY",
+        "ELEVENLABS_API_KEY"
       ],
-      "storedProviderCredentialNote": "Explicitly stored for Production on 14 Oct 2026. Server-only shared project environment; provider sessions still run on Render. GEMINI_API_KEY and legacy RUNPOD_ENDPOINT_ID have no active main runtime consumer. No alias or automatic worker activation."
+      "storedProviderCredentialNote": "Current Production state after the 14 Oct 2026 profile cleanup: only CARTESIA_API_KEY remains from the temporary Emil provider copy, for Studio voice verification. RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, GEMINI_API_KEY and ELEVENLABS_API_KEY test copies were removed. Provider jobs remain on Render; no alias or automatic worker activation."
     },
     "github-actions-tooling": {
       "sources": [
@@ -439,6 +440,30 @@
       ],
       "managed": [],
       "blocked": []
+    },
+    "local-emil-provider-check": {
+      "sources": [
+        "tools/check-provider-profile.mjs"
+      ],
+      "required": [
+        "EMIL_RUNPOD_API_KEY",
+        "EMIL_RUNPOD_ENDPOINT_ID"
+      ],
+      "firstBoot": [],
+      "conditional": [
+        "EMIL_CARTESIA_API_KEY",
+        "EMIL_ELEVENLABS_API_KEY",
+        "EMIL_GEMINI_API_KEY"
+      ],
+      "managed": [],
+      "blocked": [
+        "RUNPOD_API_KEY",
+        "RUNPOD_ENDPOINT_ID",
+        "CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID",
+        "CARTESIA_API_KEY",
+        "ELEVENLABS_API_KEY",
+        "GEMINI_API_KEY"
+      ]
     }
   }
 }
