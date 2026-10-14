@@ -1,5 +1,41 @@
 # Aktuell handoff — Scoutgaming
 
+## Pågående rumskontext och fokus — slutkvitto inväntas, 15 oktober 2026
+
+PR149/150/151 är levererade; `codex/admin-room-context` är framflyttad till
+main `3bad2fd4` med pågående kodändringar bevarade. PR151:s fullhook gav
+3 792 pass, 21 villkorade skip och 0 fel; alla obligatoriska CI-kontroller
+är gröna enligt samordnaren. Dokumentationsjobbet var avsiktligt SKIPPED. Sex lokala rotändringar är bytebevarade och arkivundantagen
+finns på main. Samordnarens avläsning 14 oktober 23:29 UTC verifierar
+`3bad2fd4`: Vercel `dpl_7ikpzdCj3f5dDWbEWiJmM2pni722` READY och Render
+`dep-db80v2ek1f9s73e1cjug` live; engine-tjänstens health/version gav 200. Egen
+`admin-continuity` är nu bekräftat app-arkiverad efter trädekvivalens och
+borttagning av tre egna dependency-junctions med målen bevarade. Tidigare kvitton nedan behåller sin egen version.
+
+Lokala underagentkvitton för implementerad och granskad rumskontext
+(provurvalen överlappar och summeras inte):
+
+- Verifierat publicerat rum styr startkomposition; främmande/inaktuellt rum
+  varnas och spärrar portallänkar utan att tyst länka annat rum. Befintlig
+  redigeringskomposition kan bestå. Omvalidering bevarar utkast: tre regressioner
+  röda före P2-fixen, gröna efter. Provider/ControlLanes och verkliga WorkspaceTool
+  fick sina inaktuella länkar rättade; 51/51 riktade prov passerade.
+- Aktuellt rum följer partnerns meny, loginretur, reload/historik och staff-lobbylänk.
+  Explicit bolagsstandard är `scope=company` utan `room`, utan rolländring.
+  Oberoende auth-/servergranskning fann inga åtgärdskrävande fel. Bakåt till
+  ogiltigt rum reproducerade utkastförlust i verklig PartnerAppearance; rättningen
+  gav 48/48 panel-/rumsprov och därefter 12/12 fokuserade accept/avbryt-prov.
+  Giltiga rumsbyten behåller panel/utkast utan prompt.
+- Lobby behåller operator/room i URL/historik; runtime-exporten
+  `lobbyQuerySelection` är återställd. C6:s isolerade Chrome-prov passerade 1/1.
+- Dealerformulärets Avbryt återför fokus till Skapa dealer; enhetsprov 8/8.
+  Samordnarens tidigare liveprov tappade fokus till BODY; ny liveacceptans återstår.
+
+Samordnarens slutliga Lab-build passerade med 97 kontrollerade byggspår;
+browseraktiverad fullhook återstår. Ny produktionslogin, skrivacceptans, faktisk 200-procentszoom
+och ej godkänd Dragan-export är kvarstående gränser; ingen hel C4/C7 bockas av.
+Aktuell uppföljning finns i [CLOUD-MIGRATION](CLOUD-MIGRATION.md); ingen ny tracker.
+
 ## Aktiv partnerportal utan klientdemo, 15 oktober 2026
 
 Den gemensamma N1/N2-sidladdaren finns nu i
@@ -21,7 +57,9 @@ bolag/rum och ändamålsbunden cookie passerade också (1/1, ingen skip).
 Kodcommit `3c93a3ab` passerade ordinarie fullhook: 3 792 pass, 21 villkorade
 skip, 0 fel/cancel i 77 grupper. Första försöket stoppades av tillfällig
 Windows-EPERM i agent-talks isolerade låsprov; det exakta provet och därefter
-hela fullhooken passerade utan testundantag. CI bokförs vid leverans.
+hela fullhooken passerade utan testundantag. PR151 är mergad som `3bad2fd4`
+med alla obligatoriska CI-kontroller gröna enligt samordnarens leveranskvitto;
+dokumentationsjobbet var avsiktligt SKIPPED för ändringens scope.
 Arkivets befintliga lokala undantag i
 `.ignore` och `.cursorignore` versionsstyrs så att samma skydd finns i nya
 arbetskopior; Git ignorerade redan det privata arkivinnehållet.

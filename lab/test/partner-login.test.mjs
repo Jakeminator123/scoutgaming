@@ -10,7 +10,7 @@ import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
 import { studioLoginReturnTo } from '../lib/studio-login-client.mjs';
 import { handlePartnerAuth, internalSessionPresent } from '../lib/partner-session.mjs';
 import { partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
-import { resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath, PARTNER_PREVIEW_VIEWS, workspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
@@ -67,10 +67,20 @@ const rejectedReturns = [undefined, [' /partner'], ['/partner/north','/partner/s
   '/partner/%6eorth','/partner/north/rooms?room=%72oom-7','/partner/north/rooms?room=%252foutside',
   '/partner/north/rooms?room=room-7&room=other','/partner/north/rooms?room=room-7&token=secret',
   '/partner/north/rooms?room=room-7#other','/partner/north/rooms?room=room-7?next=outside',
-  '/partner/north/team?room=room-7','/partner/north/rooms?room=','/partner/north/rooms?room=../other',
+  '/partner/north/rooms?room=','/partner/north/rooms?room=../other',
   '/partner/north/rooms?room='+'a'.repeat(65),'/partner/north\r\nLocation: https://outside.invalid',
 ];
 
+safeReturns.push(...PARTNER_PREVIEW_VIEWS.flatMap(view=>{
+  const path=workspaceSurfacePath('partner',view,'north');
+  return [[path+'?scope=company',path+'?scope=company'],['/studio'+path+'?room=room-7',path+'?room=room-7']];
+}),['/studio/partner/north/tables?scope=company','/partner/north/rooms?scope=company']);
+rejectedReturns.push('/partner?scope=company','/partner/north/missing?scope=company',
+  '/partner/north/team?scope=','/partner/north/team?scope=Company','/partner/north/team?scope=room',
+  '/partner/north/team?scope=%63ompany','/partner/north/team?%73cope=company',
+  '/partner/north/team?scope=company&scope=company','/partner/north/team?scope=company&room=',
+  '/partner/north/team?scope=company&room=foreign-room','/partner/north/team?room=room-7&scope=company',
+  '/partner/north/team?scope=company&token=secret','/partner/north/team?scope=company#extra');
 test('partner returns allow only canonical documents and one actual room selector',()=>{
   for(const [input,expected] of safeReturns) assert.equal(partnerLoginReturnTo(input),expected,String(input));
   for(const input of rejectedReturns) assert.equal(partnerLoginReturnTo(input),'/partner',String(input));

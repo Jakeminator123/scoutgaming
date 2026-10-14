@@ -51,6 +51,19 @@ export async function loadLobbyCatalog({ fetchImpl = fetch, signal } = {}) {
   return parseLobbyCatalog(JSON.parse(text));
 }
 
+/** URL room IDs are scoped by the published operator, never inferred or defaulted. */
+export function lobbyQuerySelection(catalog, search = '') {
+  const query = new URLSearchParams(search);
+  const operatorId = query.getAll('operator').length === 1 ? query.get('operator') : null;
+  const roomId = query.getAll('room').length === 1 ? query.get('room') : null;
+  const { operator, room } = lobbySelection(catalog, {
+    operatorId, roomKey: operatorId && roomId ? operatorId + ':' + roomId : null,
+  });
+  return {
+    operatorId: operator?.id ?? null, roomKey: room?.key ?? null,
+    unavailable: query.has('operator') && !operator || query.has('room') && !room,
+  };
+}
 /** Derive each step from the selected parent; stale IDs never broaden access. */
 export function lobbySelection(catalog, { operatorId = null, roomKey = null, dealerId = null } = {}) {
   const operator = catalog.operators.find(row => row.id === operatorId) ?? null;

@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { loadLobbyCatalog, lobbySelection, type LobbyCatalog, type Dealer, type Operator, type Room } from '@/lib/catalog.mjs';
+import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, type LobbyCatalog, type Dealer, type Operator, type Room } from '@/lib/catalog.mjs';
+import { studioHistory } from '../../../../lab/lib/studio-history.mjs';
 
 export const STEP_IDS = { operator: 'bolag', room: 'spelrum', dealer: 'dealers' } as const;
 export type LobbyStep = 1 | 2 | 3 | 4;
@@ -25,8 +26,7 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<LobbyContextValue['status']>('loading');
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
-  const [operatorId, setOperatorId] = useState<string | null>(null);
-  const [roomKey, setRoomKey] = useState<string | null>(null);
+  const [search, setSearch] = useState(() => typeof window === 'undefined' ? '' : window.location.search);
   const [dealerId, setDealerId] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -42,27 +42,51 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
     });
     return () => controller.abort();
   }, [revision]);
+  useEffect(() => {
+    const history = studioHistory(window);
+    let previous = window.location.search;
+    const sync = () => {
+      const next = new URL(history.snapshotHref(), window.location.origin).search;
+      if (next !== previous) { setDealerId(null); previous = next; }
+      setSearch(next);
+    };
+    const unsubscribe = history.subscribe(sync);
+    sync();
+    return unsubscribe;
+  }, []);
+  const writeSelection = useCallback((operatorId: string | null, roomId: string | null) => {
+    const history = studioHistory(window);
+    const url = new URL(history.snapshotHref(), window.location.origin);
+    if (operatorId) url.searchParams.set('operator', operatorId); else url.searchParams.delete('operator');
+    if (operatorId && roomId) url.searchParams.set('room', roomId); else url.searchParams.delete('room');
+    const href = url.pathname + url.search + url.hash;
+    if (href !== history.snapshotHref() && (!history.canNavigate(href) || !history.push(href))) return false;
+    setDealerId(null);
+    return true;
+  }, []);
   const reload = useCallback(() => setRevision(value => value + 1), []);
-  const { operator, room, dealer, availableRooms, availableDealers } = lobbySelection(catalog, { operatorId, roomKey, dealerId });
+  const requested = lobbyQuerySelection(catalog, search);
+  const { operator, room, dealer, availableRooms, availableDealers } = lobbySelection(catalog, { ...requested, dealerId });
   const selectOperator = useCallback((id: string | null, options?: SelectOptions) => {
     const next = catalog.operators.find(row => row.id === id);
-    setOperatorId(next?.id ?? null); setRoomKey(null); setDealerId(null);
+    if (!writeSelection(next?.id ?? null, null)) return;
     if (next && options?.advance) scrollToSection(STEP_IDS.room);
-  }, [catalog]);
+  }, [catalog, writeSelection]);
   const selectRoom = useCallback((key: string | null, options?: SelectOptions) => {
     const next = availableRooms.find(row => row.key === key);
-    setRoomKey(next?.key ?? null); setDealerId(null);
+    if (!writeSelection(operator?.id ?? null, next?.id ?? null)) return;
     if (next && options?.advance) scrollToSection(STEP_IDS.dealer);
-  }, [availableRooms]);
+  }, [availableRooms, operator, writeSelection]);
   const selectDealer = useCallback((id: string | null) => {
     setDealerId(room?.dealers.some(row => row.id === id) ? id : null);
   }, [room]);
   const reset = useCallback(() => {
-    setOperatorId(null); setRoomKey(null); setDealerId(null); scrollToSection(STEP_IDS.operator);
-  }, []);
+    if (writeSelection(null, null)) scrollToSection(STEP_IDS.operator);
+  }, [writeSelection]);
   const step: LobbyStep = !operator ? 1 : !room ? 2 : !dealer ? 3 : 4;
   return <LobbyContext.Provider value={{ ...catalog, status, error, reload, operator, room, dealer,
     availableRooms, availableDealers, step, selectOperator, selectRoom, selectDealer, reset }}>
+    {status === 'ready' && requested.unavailable && <p role="alert" className="border-b border-border bg-card px-5 py-4 text-sm text-off md:px-10">Det länkade valet är inte tillgängligt. Välj bolag och rum igen.</p>}
     {children}
   </LobbyContext.Provider>;
 }
