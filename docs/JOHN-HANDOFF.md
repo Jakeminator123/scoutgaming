@@ -78,7 +78,9 @@ Källanalys efter Jakobs uttryckliga tillstånd: Gemini med hög upplösning tra
 
 Verifiering av bordseditorn: Studio-produktionsbygge och 32 fokuserade preview-prov passerar. Full pre-commit gav 3 743 godkända, 12 överhoppade och inga fel. Oberoende granskning fann inga blockerare. PR #138 är mergad som ad0ae9ac och Vercelproduktionen är READY. Den sista visuella kontrollen av menyförtydligandet kunde inte utföras efter att browsertransporten stängdes.
 
-Talfacksrättningen ger registrerade dealers ett explicit standardklipp per replik. De 14 situationerna i speak.other delar inte längre ett enda standardval; sparade UUID:n ligger kvar i befintliga project.lines. De tre egna talraderna behåller sina standard-ID:n. Äldre alternativ bevaras, inga filer aktiveras automatiskt, och runtime v20 krävs för projekt med nya talfacksbindningar. Ingen SQL-migration. Riktade backendprov: 173 godkända; UI-prov: 20 godkända. Studio-produktionsbygget passerar med 97 kontrollerade spår. Oberoende review fann inga blockerare; dess notering om äldre standard visas nu i väljaren. Full pre-commit inklusive de tre nya testfilerna: 3 764 godkända, 12 villkorligt överhoppade, 0 fel. De nya testerna ligger i ordinarie hook/CI. Astrids godkända urvalsbaslinje är oförändrad. Slutlig browserkontroll och faktisk ljud-/bildacceptans återstår.
+Talfacksrättningen ger registrerade dealers ett explicit standardklipp per replik. De 14 situationerna i speak.other delar inte längre ett enda standardval; sparade UUID:n ligger kvar i befintliga project.lines. De tre egna talraderna behåller sina standard-ID:n. Äldre alternativ bevaras, inga filer aktiveras automatiskt, och runtime v20 krävs för projekt med nya talfacksbindningar. Ingen SQL-migration. Riktade backendprov: 173 godkända; UI-prov: 20 godkända. Studio-produktionsbygget passerar med 97 kontrollerade spår. Oberoende review fann inga blockerare; dess notering om äldre standard visas nu i väljaren. Full pre-commit inklusive de tre nya testfilerna: 3 764 godkända, 12 villkorligt överhoppade, 0 fel. De nya testerna ligger i ordinarie hook/CI. Astrids godkända urvalsbaslinje är oförändrad. PR #139 är mergad som 220519a1. Vercel är READY och Render svarar med samma SHA och capability 20. Produktionskontrollen i /admin/dealer-studio visar goodluck_1 endast i Lycka till och ett separat tomt hälsningsfack. Inget val, medieinnehåll eller godkännande ändrades i detta läsprov. Faktisk ljud-/bildacceptans återstår.
+
+Uppföljningen ansluter även den grafiska klippkartans läsning och bindning till samma exakta talfacksmodell. Alla 17 standarder kan sparas utan den äldre begränsningen för delad talgrupp. Äldre baslinjer och uttryckliga alternativ bevaras inom rätt fack; saknade eller felaktiga explicita val ersätts inte automatiskt. Filmväljaren får full bredd och större träffyta. 39 fokuserade klippkarts-/bindningsprov och fem befintliga UI-prov passerar. Oberoende läsgranskning fann inga blockerare. Produktionspublicering av uppföljningen verifieras efter ordinarie PR-flöde; talacceptans och moving-avatar-identitet är fortsatt separata kvarvarande frågor.
 
 Kevins 81 svenska talfilmer är inventerade. 59 hör till de 17 nuvarande talfacken; övriga 22 är extra hälsningar/repliker. Ett privat ZIP innehåller 18 oförändrade original (en per fack samt greet_guest), exakta reposökvägar och SHA-256. Lokal granskning av 24 bildrutor per film visar munrörelser i samtliga 18, även greeting_1 och blackjack_4. Detta bevisar inte ljud-/bildsynk. Ingen tagning har fått ny produktionsacceptans. Den privata stegloggen skiljer källgranskning från spelprov.
 
@@ -162,6 +164,34 @@ stänger av genererat tal. Ingen runtime, dealer, publicering,
 nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
 ## Admin C1–C4: navigation och läsbarhet, 14 oktober
+
+PR140 är granskad och mergad till `c3397d1d0503927a6d0dafc240c21772634d99ee`.
+Vercels huvuddomän kör samma SHA, READY i `dpl_AZmTomDfe14ErSFnjKqp3zzA8at2`.
+Eget läsande slutprov kl. 20.30 svensk tid behöll Swedish Games version 4,
+Dragan-rummet, sammansättning, dealer och Blackjack genom Publicering →
+Provspelning → Klippkarta samt reload/Bakåt/Framåt. Spara var inaktiv; ingen
+produktionsskrivning, ny login eller spelanslutning gjordes. Ny produktionslogin,
+full RSC-/Lab-historik, andra redigerare och C6/C7 återstår enligt trackern.
+Tre senaste agentarbetskopior och egen testflik/fixture-cache är städade.
+Integrationens beroenden behålls för samordnarens tillfälliga PR91-junctions;
+inga egna produktservrar eller agentprov körs. Renderacceptans är separat.
+
+Arbetsgång före leverans: C4/C5-passet på `codex/admin-c4-room-history` startade efter DRAGANs
+PR138 (`ad0ae9ac`), med hans talfacksleverans före vår integration. Bara våra
+Admin-avsnitt är överlämnade. Tre separata agentarbetskopior har provat riktig
+Admin efter login, Lab-historik samt projektredigerarens sparning/konflikter.
+Sex isolerade loginprov använder riktiga rumsväljare och sammansättningspanel.
+Eget läsande liveprov behåller Swedish Games version 4 / Dragan-rummet genom
+Publicering → Provspelning → Klippkarta och reload/Bakåt/Framåt; ingen ny
+produktionslogin, publicering eller spelomgång gjordes.
+Lab-historikens reproducerade mellanpost-/Next-state-fel och tappad speltyp
+rättas med en delad historikägare: 25 slutliga prov passerar, även efter integration; 42 relaterade prov passerade före sista rättningen. Äldre oindexerade
+poster och full RSC-acceptans redovisas fortfarande som luckor i trackern.
+Revisionshämtning kunde också tappa text som skrivits under väntan. Den läser
+nu senaste utkastet; 18 riktade C5-prov passerar med syntetisk auth/lagring,
+riktig HTTP, 409, återläsning, konfliktval, historik och avbruten omladdning.
+Integrerad efter DRAGANs PR139 på main `220519a1c4d70a808b35781ac965de9c7f133887`. Kodcommit `6ef4a2de456a8ecf5baf5bd87210cdc404f6bcf4` passerar full pre-commit: **3784 pass, 9 skip, 0 fel/cancel i 77 grupper**, Node 24.21.0/fyra workers. Lab-bygget med 97 spår och Admin/lobbyns typkontroll passerar. Alla nya isolerade browserprov kördes; skippen gäller andra uttryckligt villkorade prov och räknas inte som acceptans.
+Äldre daterade kvitton nedan är historik och ersätter inte dessa bevisgränser.
 
 Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
 [befintliga migrationstrackern](CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
@@ -1228,8 +1258,8 @@ slutjobb. Full regression fortsätter köras på main.
 ## Selektiva blackjackförbättringar från Kevin, 13 oktober 2026
 
 **Aktuell PR91-kodägare, 14 oktober: SAMORDNING.** Den befintliga branchen
-`codex/kevin-blackjack-safe` har integrerats med main `220519a1` i egen
-arbetskopia `pr91-integration`. Fem konflikter är lösta med senare givkontroll,
+`codex/kevin-blackjack-safe` har integrerats med main `9836ca6f` i egen
+arbetskopia `pr91-integration`. Konflikterna är lösta med senare givkontroll,
 kortvy, dynamisk dealeretikett och alla ordinarie tester bevarade. Ljud och
 dealerreplik använder nu samma positiva nettovinst som rundnotisen; en vinnande
 delhand ger inget rundfirande om totalen är negativ eller noll. Filmens hårda
@@ -1238,7 +1268,7 @@ startmarginal; progressvakten och ägaravbrott behålls.
 
 Verifierat med Node 24.21.0/fyra lokala workers: 107 fokuserade prov passerar,
 inklusive verklig settlement-kods ljud/replik och simulerad 120-sekundersfilm.
-Studio-bygge och 97 byggspår passerar. Full ordinarie pre-commit: 3 781 pass,
+Studio-bygge och 97 byggspår passerar. Första integrationens ordinarie pre-commit: 3 781 pass,
 12 uttryckligt villkorade skips, 0 fel/cancel i 77 grupper. De första försöken
 saknade två låsta beroendeinstallationer i arbetskopian; gateway-/frontend-
 beroenden kopplades därefter från exakt matchande paket och lockfiler.
@@ -1250,6 +1280,12 @@ vinst, push, split, mobil och två sammanhängande spelningar på den nya koden
 avgränsade testdatan. Ingen produktionsdata, betalad generering eller mediafil
 har ändrats. Kodprov/bildindex ersätter inte faktisk spel-/läppsynksacceptans.
 Privata loggar och tillfälliga beroendejunctions hör till samordnarens arbetskopia.
+Städning, 14 oktober: `ops/vercel-entry` är redan pensionerad i `b621c760`,
+saknar aktiva processreferenser och hade bara lokala preview-/byggrester kvar.
+Den katalogen och den tomma, ospårade `e.id` har flyttats återställbart till
+`lab/data/platform-private/cleanup-20261014/` i huvudcheckouten; kvittot är
+privat och Git-ignorerat. Aktiva Kevin-komponenter, originalfilmer, kollegors
+grenar och #91 bevaras. Ingen produktionslagring har raderats.
 
 **Historisk ursprungskontroll, 13 oktober:** utgick från main `6ee5d3aa` och
 Kevins `f15b2af1`. Återhämtningen i
@@ -3253,3 +3289,20 @@ mockat Google Fonts-svar (varje Google-import skulle då avvisas). Studio-
 produktionsbygget passerar också. Produktionspublicering verifieras efter
 ordinarie PR-leverans; inga gameplay-, media-, wallet- eller databaskopplingar
 ändras av fontfixen.
+
+## Alfakomposition i blackjack, 14 oktober 2026
+
+Ett förberett alfaklipp visar nu aktiverad bakgrund och bord även utan egna
+kort-/insatsplatser. Synligheten kräver fortfarande ett förberett klipp och
+monterat, aktiverat material; alfa aktiverar inte greenscreen-nyckling.
+
+Regressionsprovet återskapade felet före rättningen. De 21 kompositionsproven
+passerar, inklusive mobil/desktop, med/utan bordsgeometri och avstängda lager.
+Studio-bygget passerar; full pre-commit ingår i commitgrinden. Två
+sammanhängande repetitioner per format passerar i den faktiska blackjackappen
+med syntetiskt registrerad Nora QA, hashbundet alfa-WebM och separata QA-svar
+på 127.0.0.2. Avkodade bildrutor och bildkontroll visar alla tre lagren utan
+bordsgeometri. Den tillfälliga servern och webbläsaren städas av provet.
+Detta verifierar kompositionen, inte tal/läppsynk eller produktionsmedier.
+Leveransen omfattar spelarvillkoret, befintligt regressionsprov och denna
+handoff; ADMINs och PR #91:s delar ligger kvar hos sina ägare.

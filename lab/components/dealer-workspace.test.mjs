@@ -26,6 +26,22 @@ const marker = name => props => React.createElement('div', { 'data-component': n
 function harness(file, initialStates = [], overrides = {}) {
   const values = [...initialStates], refs = [], effects = []; let cursor = 0, refCursor = 0, effectCursor = 0;
   const runtimeWindow = overrides.window ?? {location:{hash:''}};
+  // Keep the hand-written browser fixtures faithful to URL and History API
+  // semantics, including metadata-only replaceState and cancellable events.
+  if(runtimeWindow.history&&runtimeWindow.location.href){
+    const address=new URL(runtimeWindow.location.href),events=new EventTarget();
+    for(const key of ['href','pathname','origin','search','hash'])Object.defineProperty(runtimeWindow.location,key,{configurable:true,get:()=>address[key],set:value=>{address[key]=value;}});
+    const add=runtimeWindow.addEventListener?.bind(runtimeWindow),remove=runtimeWindow.removeEventListener?.bind(runtimeWindow);
+    runtimeWindow.addEventListener=(type,listener,options)=>{add?.(type,listener,options);events.addEventListener(type,listener,options);};
+    runtimeWindow.removeEventListener=(type,listener,options)=>{remove?.(type,listener,options);events.removeEventListener(type,listener,options);};
+    runtimeWindow.dispatchEvent=event=>events.dispatchEvent(event);
+    let state=runtimeWindow.history.state??null;
+    Object.defineProperty(runtimeWindow.history,'state',{configurable:true,get:()=>state});
+    for(const method of ['pushState','replaceState']){
+      const original=runtimeWindow.history[method].bind(runtimeWindow.history);
+      runtimeWindow.history[method]=(value,title,next)=>{state=structuredClone(value);if(next!==undefined){address.href=new URL(next,address).href;original(value,title,next);}};
+    }
+  }
   const fakeReact = { ...React, useEffect(run,deps) { const index=effectCursor++; const previous=effects[index]; const changed=!previous||!deps||deps.some((value,key)=>value!==previous.deps?.[key]); effects[index]={...previous,run,deps,changed}; }, useCallback: callback => callback, useRef(initial) { return refs[refCursor++] ??= {current:initial}; },
     useState(initial) {
       const index = cursor++;
@@ -305,9 +321,9 @@ test('browser back restores exact dealer slot and category without replacing a d
   const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();
   assert.equal(h.state('dealerId'),'vera');assert.equal(h.state('category'),'deal');assert.equal(h.state('selection').situation,'box4');
   const draft={...h.state('project'),revision:'draft'};h.state('project',draft);h.render(p);
-  runtimeWindow.location.search='?dealer=astrid&view=speech';listeners.get('popstate')({type:'popstate'});
+  runtimeWindow.location.search='?dealer=astrid&view=speech';listeners.get('popstate')(new Event('popstate'));
   h.render(p);assert.equal(h.state('workspaceView'),'speech');assert.equal(h.state('project'),draft);
-  runtimeWindow.location.search='?dealer=vera&view=clips&event=deal.player.centre&situation=box4';listeners.get('popstate')({type:'popstate'});
+  runtimeWindow.location.search='?dealer=vera&view=clips&event=deal.player.centre&situation=box4';listeners.get('popstate')(new Event('popstate'));
   h.render(p);assert.equal(h.state('dealerId'),'vera');assert.equal(h.state('category'),'deal');assert.equal(h.state('selection').situation,'box4');assert.equal(h.state('project'),draft);
 });
 
@@ -344,7 +360,7 @@ test('explicit top view takes precedence over an incompatible event on first ren
     const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);
     assert.equal(h.state('workspaceView'),view);assert.equal(h.state('selection'),null);assert.equal(h.state('category'),expectedCategory);
     h.flushEffects();h.render(p);assert.equal(h.state('workspaceView'),view);assert.equal(h.state('selection'),null);assert.equal(h.state('category'),expectedCategory);
-    listeners.get('popstate')({type:'popstate'});h.render(p);assert.equal(h.state('category'),expectedCategory);assert.equal(h.state('selection'),null);
+    listeners.get('popstate')(new Event('popstate'));h.render(p);assert.equal(h.state('category'),expectedCategory);assert.equal(h.state('selection'),null);
   }
 });
 
@@ -353,14 +369,14 @@ test('history cannot unmount a pending dealer operation or transfer queued uploa
     const p=props(),listeners=new Map(),replaced=[],runtimeWindow={location:{href:'https://local.test/control/clips?dealer=astrid&view=idle',search:'?dealer=astrid&view=idle',hash:''},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(){},history:{replaceState(_s,_t,url){replaced.push(String(url));},pushState(){}}};
     const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();h.state(pending,true);h.render(p);
     runtimeWindow.location.search=selection;runtimeWindow.location.href='https://local.test/control/clips'+runtimeWindow.location.search;
-    listeners.get('popstate')({type:'popstate'});h.render(p);assert.equal(h.state('dealerId'),'astrid',pending);assert.equal(h.state('workspaceView'),'idle');assert.match(replaced[0],/dealer=astrid/);assert.match(replaced[0],/view=idle/);
+    listeners.get('popstate')(new Event('popstate'));h.render(p);assert.equal(h.state('dealerId'),'astrid',pending);assert.equal(h.state('workspaceView'),'idle');assert.match(replaced[0],/dealer=astrid/);assert.match(replaced[0],/view=idle/);
   }
 });
 
 test('legacy category hashes continue to select the requested dealer category',()=>{
   const p=props(),listeners=new Map(),runtimeWindow={location:{href:'https://local.test/control/clips?dealer=vera#deal',search:'?dealer=vera',hash:'#deal'},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(){},history:{replaceState(){},pushState(){}}};
   const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();h.render(p);assert.equal(h.state('dealerId'),'vera');assert.equal(h.state('category'),'deal');assert.equal(h.state('workspaceView'),'clips');
-  runtimeWindow.location.hash='#idle';listeners.get('hashchange')({type:'hashchange'});h.render(p);assert.equal(h.state('workspaceView'),'idle');assert.equal(h.state('category'),'idle');
+  runtimeWindow.location.hash='#idle';listeners.get('hashchange')(new Event('hashchange'));h.render(p);assert.equal(h.state('workspaceView'),'idle');assert.equal(h.state('category'),'idle');
 });
 
 
@@ -465,7 +481,7 @@ test('clips route and dealer management preserve composition operator and room t
   pressDealer(tree,'Mei');tree=h.render(page.props);assertTabs('mei','mobile-phone','operator-42','room-7');
   for(const link of tabLinks()){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.has('event'),false);assert.equal(query.has('situation'),false);}
   for(const [url,composition] of [['/control/clips?dealer=paow&view=settings',null],['/control/clips?composition=mobile-phone&dealer=paow&view=settings','mobile-phone']]){
-    setLocation(url);listeners.get('popstate')({type:'popstate'});tree=h.render(page.props);assertTabs('paow',composition);
+    setLocation(url);listeners.get('popstate')(new Event('popstate'));tree=h.render(page.props);assertTabs('paow',composition);
   }
   const replies=tabLinks().find(link=>link.props.children==='Svarsbibliotek');replies.props.onClick({button:0,preventDefault(){}});tree=h.render(page.props);h.flushEffects();
   assert.equal(assigned.length,1);assert.equal(new URL(assigned[0],'https://local.test').searchParams.get('composition'),'mobile-phone');
@@ -501,7 +517,7 @@ test('no dealer is selected implicitly and choosing a dealer preserves the draft
 test('history with no dealer clears selection instead of keeping the previous dealer',()=>{
  const listeners=new Map();const runtimeWindow={location:{href:'https://local.test/control/clips?dealer=vera&operator=op-1&composition=mobile-phone',search:'?dealer=vera&operator=op-1&composition=mobile-phone',hash:''},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(){},history:{replaceState(){},pushState(){}}};
  const p={...props(),initialDealerId:'vera'},h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();
- runtimeWindow.location.search='?operator=op-1&composition=mobile-phone';listeners.get('popstate')({type:'popstate'});const tree=h.render(p);
+ runtimeWindow.location.search='?operator=op-1&composition=mobile-phone';listeners.get('popstate')(new Event('popstate'));const tree=h.render(p);
  assert.equal(h.state('dealerId'),'');assert.equal(h.state('operatorId'),'op-1');assert.equal(h.state('laneId'),'mobile-phone');assert.equal(nodes(tree,node=>node.props?.onConfigureSlot).length,0);
 });
 

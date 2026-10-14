@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect,useRef,useState,type MouseEvent} from 'react';
+import {studioHistory} from '../lib/studio-history.mjs';
 import {labUrl} from '../lib/lab-url.mjs';
 import {studioNavigationContextFromQuery,studioNavigationHref,type StudioNavigationContext} from '../lib/studio-navigation.mjs';
 import {REPLY_CATEGORIES} from '../../web/public/speech-reply-library.mjs';
@@ -80,22 +81,28 @@ export function ControlRepliesPage({dealers:registeredDealers,initialDealerId,in
     const unload=(event:BeforeUnloadEvent)=>{if(context.current.dirty||context.current.writing||writeLock.current){event.preventDefault();event.returnValue='';}};
     const restore=()=>{
       const query=new URLSearchParams(window.location.search),nextDealer=query.get('dealer')??'',nextCategory=validCategory(query.get('category'));
-      if(context.current.dirty||context.current.writing||writeLock.current){window.history.replaceState(null,'',context.current.href);setNotice('Spara eller ångra kategorivalen innan du byter dealer eller filter.');return;}
       setDealerId(dealers.some(row=>row.id===nextDealer)?nextDealer:'');setCategory(nextCategory);setNavigationContext(studioNavigationContextFromQuery(query));setDrafts({});context.current.href=window.location.href;
     };
-    window.addEventListener('beforeunload',unload);window.addEventListener('popstate',restore);
-    return()=>{window.removeEventListener('beforeunload',unload);window.removeEventListener('popstate',restore);++writeSerial.current;writeRequest.current?.abort();};
+    const history=studioHistory(window);
+    const releaseGuard=history.guardTraversal(()=>{
+      if(context.current.dirty||context.current.writing||writeLock.current){setNotice('Spara eller ångra kategorivalen innan du byter dealer eller filter.');return false;}
+      return true;
+    });
+    const unsubscribe=history.subscribe(event=>{if(event)restore();});
+    window.addEventListener('beforeunload',unload);
+    return()=>{window.removeEventListener('beforeunload',unload);unsubscribe();releaseGuard();++writeSerial.current;writeRequest.current?.abort();};
   },[]);
   function choose(nextDealer:string,nextCategory:string){
+    if(studioHistory(window).isRestoring())return;
     if(nextDealer&&!dealers.some(row=>row.id===nextDealer))return;
     if(dirty||writeLock.current){setNotice('Spara eller ångra kategorivalen innan du byter dealer eller filter.');return;}
-    const nextContext=nextDealer===dealerId?navigationContext:{laneId:navigationContext.laneId,operatorId:navigationContext.operatorId,tableId:navigationContext.tableId};
+    const nextContext=nextDealer===dealerId?navigationContext:{laneId:navigationContext.laneId,operatorId:navigationContext.operatorId,tableId:navigationContext.tableId,game:navigationContext.game};
     setDealerId(nextDealer);setCategory(nextCategory);setNavigationContext(nextContext);setDrafts({});
     const url=new URL(studioNavigationHref('/control/replies',{...nextContext,dealerId:nextDealer}),window.location.href);if(nextCategory)url.searchParams.set('category',nextCategory);
-    window.history.pushState(null,'',url);context.current.href=url.href;
+    studioHistory(window).push(url);context.current.href=url.href;
   }
   function navigate(event:MouseEvent<HTMLAnchorElement>){
-    if(dirty||writeLock.current){event.preventDefault();setNotice('Spara eller ångra kategorivalen innan du lämnar svarsbiblioteket.');}
+    if(studioHistory(window).isRestoring()||dirty||writeLock.current){event.preventDefault();setNotice('Spara eller ångra kategorivalen innan du lämnar svarsbiblioteket.');}
   }
   function toggle(item:ReplyItem,id:Category){
     if(writeLock.current)return;

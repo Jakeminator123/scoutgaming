@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import Script from 'next/script';
+import {studioHistoryBootstrap} from '@/lib/studio-history.mjs';
 import './globals.css';
 import './scout-theme.css';
 import { WorkspaceNavigation } from '@/components/workspace-navigation';
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="sv" data-scroll-behavior="smooth" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
     <body>
+      <Script id="sg-history" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: studioHistoryBootstrap }} />
       <Script id="sg-theme" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeBoot }} />
       <WorkspaceNavigation>{children}</WorkspaceNavigation>
       <Script src={(process.env.CROUPIER_LAB_BASE_PATH || '') + '/assistant-widget.js'} strategy="afterInteractive" />

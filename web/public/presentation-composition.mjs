@@ -62,7 +62,8 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     // Existing compositions keep their orientation-based scene untouched.
     const layout=hasBoardGeometry()?((compactQuery?.matches??host.clientWidth<=860)?'mobile':'desktop')
       :host.clientWidth<host.clientHeight?'mobile':'desktop';
-    const layersVisible=Boolean(key&&(key.enabled||hasBoardGeometry()));
+    // A prepared alpha clip composes layers without chroma key or board anchors.
+    const layersVisible=Boolean(key);
     return sceneForComposition(current?.settings??defaultCompositionSettings(),layout,
       {dealer:current?.dealer.enabled??true,background:Boolean(layersVisible&&current?.background.enabled&&mounts.has('background')),
         table:Boolean(layersVisible&&current?.table.enabled&&mounts.has('table'))},key??{});

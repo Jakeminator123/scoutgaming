@@ -12,7 +12,7 @@ export default async function Page(props:{searchParams:Promise<Record<string,str
   const h=await headers();
   const requestedDealer=firstQueryValue(query.dealer);
   const returnQuery=new URLSearchParams();
-  for(const key of ['dealer','event','variant','situation','lane','category']){const value=firstQueryValue(query[key]);if(value)returnQuery.set(key,value);}
+  for(const key of ['dealer','event','variant','situation','lane','composition','operator','table','game','category']){const value=firstQueryValue(query[key]);if(value)returnQuery.set(key,value);}
   const initialNavigationContext=studioNavigationContextFromQuery(returnQuery);
   const data=await studioUiInitialData(new Request(`http://${h.get('host')||'invalid'}/control/replies${returnQuery.size?'?'+returnQuery:''}`,{method:'GET',headers:h}));
   return <ControlRepliesPage dealers={data.project.dealers.map(({id,label}:{id:string;label:string})=>({id,label}))} initialDealerId={requestedDealer} initialCategory={firstQueryValue(query.category)} initialNavigationContext={initialNavigationContext}/>;
