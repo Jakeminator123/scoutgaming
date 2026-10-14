@@ -6,6 +6,7 @@ import type {StudioProject} from '../lib/studio-model.mjs';
 import type {DealerMediaSlot} from '../lib/dealer-media-library.mjs';
 import type {VideoInventory} from './studio-types';
 import {DealerClipPreview} from './dealer-video-surface';
+import styles from './dealer-speech-slot-editor.module.css';
 
 export function DealerSpeechSlotEditor({project,inventory,dealerId,slot,blocked,onChange}:{
   project:StudioProject;inventory:VideoInventory;dealerId:string;slot:DealerMediaSlot;
@@ -22,7 +23,7 @@ export function DealerSpeechSlotEditor({project,inventory,dealerId,slot,blocked,
   const video=choices.find(row=>row.id===selectedId)??(!selectedId?older:undefined);
   const recorded=video?.classification?.recordedSpeech;
   const approved=video&&recorded&&recordedSpeechForVideo(video,{dealerId,lineId:slot.situation,language:recorded.language});
-  return <fieldset disabled={blocked} aria-label={'Standardklipp för '+slot.label}>
+  return <fieldset className={styles.editor} disabled={blocked} aria-label={'Standardklipp för '+slot.label}>
     <label htmlFor={inputId}>Standardklipp för {slot.label}</label>
     <select id={inputId} value={selectedId} onChange={event=>{
       if(blocked)return;

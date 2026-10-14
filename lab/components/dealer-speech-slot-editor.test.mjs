@@ -11,6 +11,7 @@ const {renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require
 const output=transformSync(readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
 const module={exports:{}};
 runInNewContext(output.code,{module,exports:module.exports,require:name=>{
+  if(name==='./dealer-speech-slot-editor.module.css')return {editor:'speech-slot-editor'};
   if(name==='react')return {...React,useId:()=> 'speech-slot-select'};
   if(name==='./dealer-video-surface')return {DealerClipPreview:({url})=>React.createElement('video',{src:url})};
   return require(name);
