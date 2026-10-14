@@ -203,6 +203,29 @@ DRAGAN har fått nya main och fortsätter geometri-/runtime19-arbetet separat.
 Slutkvittot levereras från `codex/admin-live-receipt`; endast eget Admin-avsnitt
 ändras, inga andra agenters historik eller produktfiler.
 
+Nästa pass utgår från `87f30ce1` på `codex/admin-c4-acceptance`. DRAGAN hade
+redan mergat PR132 och lämnade uttryckligen över våra Admin-avsnitt; hans
+bordsprofil, visuella spelprov och publicering förblir hans arbete.
+Eftergranskningen hittade inget konkret regressionsfel och 127 kompletterande
+lokala tester passerade. PR/main-CI, Vercel och Render är gröna på samma SHA;
+detta är inte ett eget spelprov. Exakta revisions-/driftkvitton finns i trackern.
+Trackern förtydligar nu att arbetslista och UI-mål kan ändras enligt Jakobs
+aktuella instruktioner. Historiska formuleringar låser inte utformningen.
+Git registrerar dokumentets ursprung på Jakob Ebergs konto den 28 september
+2026 kl. 19.57; vilken människa eller agent som skrev texten framgår inte.
+Inloggningstestets browserloader rättas för verkliga modulberoenden och CSS-namn.
+Sex isolerade inloggningsprov passerar med riktig auth/route, SQLite i minnet
+och egen Chromium-context. Utgången session → lyckad login → Bakåt/Framåt/reload
+bevarar fem kontextfält från båda Admin-aliasen. Provet ersätter Klippkartan
+med fixture-HTML; verklig rumsvisning efter lyckad login i produktion och
+oberoende Lab-historik återstår. Produktkod, delade sessionscookies, pågående
+spel och publicerade data ändras inte. Lab-bygget och 97 byggspår passerade.
+Commit `cb7f19f7`: full pre-commit **3 733 pass, 9 skip, 0 fel/cancel i
+76 grupper**, inklusive samtliga sex browseraktiverade inloggningsprov.
+De två nya agentarbetskopiorna är arkiverade efter verifierad överföring/
+granskning; totalt elva. Egen testcache är städad och fixture-browsers stängda.
+Enbart integrationen och privata provkvitton behålls för fortsatt Admin-arbete.
+
 ## Rörligt dealertal: förberedd adapter, 14 oktober
 
 RunPod-åtkomsten och staging-imagen är identifierade. Befintlig GitHub-
