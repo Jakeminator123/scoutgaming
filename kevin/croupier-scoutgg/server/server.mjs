@@ -37,7 +37,7 @@ import {OpenClaw} from './openclaw.mjs';
 import {integrationIndex,eventEvidence} from './integration-index.mjs';
 import { classifyManifest, mediaInventory } from './media-registry.mjs';
 import { RorligLipsync, kartaFor } from './rorlig-lipsync.mjs';
-import { createRoulette } from './roulette.mjs';
+import { createRoulette, ROULETTE_LIMITS } from './roulette.mjs';
 
 loadEnv();
 const { ServerlessLipsync, sessionUrlFrom } = await import("./serverless.mjs");
@@ -110,7 +110,8 @@ const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGu
 const dealerGameTools=createDealerGameTools(shared);
 const table = createTableService(tableDb, {shared});
 // Roulette (Kevin 14 Oct): its own rooms and wallets in the same database file (server/roulette.mjs)
-const roulette = createRoulette(tableDb);
+// A Table Studio roulette table plays with its own tier; any other roulette room with the Classic one.
+const roulette = createRoulette(tableDb, { limitsFor: id => studioTables.get(id)?.game === "roulette" ? studioTables.limitsFor(id) : ROULETTE_LIMITS });
 const tableTick = setInterval(()=>shared.tick(),250);
 // Emil's dedicated pod: one engine per dealer, each dials /lipsync-worker?avatar=<id>. Astrid always uses it when the
 // token is set; Dragge and Paow only when listed in LIPSYNC_POD_DEALERS (e.g. "dragge,paow"), else their RunPod endpoints.

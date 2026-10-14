@@ -65,3 +65,18 @@ test('each back office account sees only the tables it built (Kevin 12 Oct: aggr
   assert.deepEqual(tables.ownedBy('agg@two.com').map(t => t.slug), [b.slug]);
   assert.deepEqual(tables.ownedBy(null), []);
 });
+
+test('a roulette table: its own tiers, its own page, and blackjack tables are unchanged (Kevin 14 Oct)', () => {
+  const tables = createStudioTables(path.join(mkdtempSync(path.join(tmpdir(), 'studio-rl-')), 't.json'));
+  const base = { name: 'Roulette', dealer: 'astrid', room: 'golden', felt: 'prive', lang: 'en', logoPos: 'both' };
+  const t = tables.create({ ...base, game: 'roulette', limit: 'rl-high' });
+  assert.equal(t.game, 'roulette');
+  assert.equal(tables.gameUrl(t), `/roulette/?session=${t.slug}&table=${t.slug}`);
+  assert.deepEqual([tables.limitsFor(t.slug).min, tables.limitsFor(t.slug).max, tables.limitsFor(t.slug).room], [25, 25000, 'golden']);
+  assert.throws(() => tables.create({ ...base, game: 'roulette', limit: 'prive' }), /Invalid limit/);
+  assert.throws(() => tables.create({ ...base, limit: 'rl-classic' }), /Invalid limit/);
+  assert.throws(() => tables.create({ ...base, game: 'poker', limit: 'prive' }), /Invalid game/);
+  const bj = tables.create({ ...base, name: 'Privé Blackjack', limit: 'prive' });
+  assert.equal(bj.game, undefined);
+  assert.match(tables.gameUrl(bj), /^\/\?dealer=astrid/);
+});

@@ -134,7 +134,9 @@ function render(s) {
   buildChips(s.limits.chips);
   const locked = s.phase !== 'bets';
   document.body.classList.toggle('rl-locked', locked);
-  $('#tableName').textContent = `Roulette · European · ${money(s.limits.min)}–${money(s.limits.max)}`;
+  $('#tableName').textContent = `${s.limits.tableName ?? 'Roulette'} · European · ${money(s.limits.min)}–${money(s.limits.max)}`;
+  // a Table Studio table's room behind the wheel (only the upper room shows; its blackjack table sits lower)
+  if (s.limits.room && /^[a-z]+$/.test(s.limits.room)) document.querySelector('.rl-room').style.backgroundImage = `url(/media/dealers/rooms-v2/${s.limits.room}.png)`;
   $('#balance').textContent = s.me ? money(s.me.balance) : '–';
   $('#staked').textContent = money(s.me?.staked ?? 0);
   $('#players').textContent = s.players;

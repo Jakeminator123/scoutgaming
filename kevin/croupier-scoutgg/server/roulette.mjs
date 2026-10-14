@@ -100,7 +100,7 @@ export function createRoulette(filename, { now = Date.now, draw = () => randomIn
       spinLeft: r.phase === 'spin' ? Math.max(0, r.spinEndsAt - t) : null, spinMs: SPIN_MS,
       // the pocket only exists once bets have closed
       number: r.phase === 'bets' ? null : r.number, color: r.phase === 'bets' ? null : pocketColor(r.number),
-      history: r.history, limits: { min: L.min, max: L.max, chips: L.chips, refill: L.balance },
+      history: r.history, limits: { name: L.name ?? 'Classic', tableName: L.tableName ?? null, room: L.room ?? null, min: L.min, max: L.max, chips: L.chips, refill: L.balance },
       players: Object.keys(r.bets).length, othersStaked: others.reduce((n, pid) => n + total(r.bets[pid]), 0),
       me: p ? { name: p.name, balance: p.balance, bets: r.bets[p.id] ?? {}, staked: total(r.bets[p.id]),
         canRepeat: Boolean(r.lastBets[p.id]), result: r.phase === 'result' ? r.results[p.id] ?? null : null } : null,

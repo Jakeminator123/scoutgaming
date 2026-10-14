@@ -10,6 +10,13 @@ export const LIMIT_PRESETS = Object.freeze({
   prive: preset("Privé", 5, 2000, 200, 1000, [5, 10, 25, 50, 100, 500]),
   high: preset("High Roller", 100, 25000, 1000, 50000, [100, 500, 1000, 5000, 10000, 25000]),
 });
+// Roulette tables (Kevin 14 Oct): the back office's roulette tiers, Classic 1–1,000 and High roller 25–25,000 (server/roulette.mjs).
+const rlPreset = (name, min, max, balance, chips) => Object.freeze({ name, min, max, balance, chips: Object.freeze(chips) });
+export const ROULETTE_PRESETS = Object.freeze({
+  "rl-classic": rlPreset("Classic", 1, 1000, 1000, [1, 5, 25, 100, 500]),
+  "rl-high": rlPreset("High Roller", 25, 25000, 25000, [25, 100, 500, 1000, 5000]),
+});
+export const GAMES = Object.freeze(["blackjack", "roulette"]);
 // Tables that were not built in the studio keep the demo's original limits.
 export const DEFAULT_LIMITS = preset("Privé", 5, 2000, 2000, 1000, [5, 10, 25, 50, 100, 500]);
 // An operator logo: a PNG/JPEG/WebP data URL (the studio rasterises SVG first), never a remote URL.
@@ -38,10 +45,15 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
   // owner: the back office account that built it (Kevin 12 Oct: an aggregator only sees its own account).
   function create(input = {}, owner = null) {
     const config = {};
+    // a table without a game is blackjack, as every table was before roulette
+    const game = input.game ?? "blackjack";
+    if (!GAMES.includes(game)) throw new Error("Invalid game");
     for (const [key, allowed] of Object.entries(STUDIO_CHOICES)) {
-      if (!allowed.includes(input[key])) throw new Error(`Invalid ${key}`);
+      const ok = key === "limit" && game === "roulette" ? Object.keys(ROULETTE_PRESETS) : allowed;
+      if (!ok.includes(input[key])) throw new Error(`Invalid ${key}`);
       config[key] = input[key];
     }
+    if (game !== "blackjack") config.game = game;
     if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 28) throw new Error("Invalid table name");
     config.name = input.name.trim();
     config.custom = /^#[0-9a-f]{6}$/i.test(input.custom ?? "") ? input.custom : null;
@@ -59,10 +71,12 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
 
   const get = slug => Object.hasOwn(tables, slug) ? tables[slug] : null;
   // The limits a room plays with: its studio preset, or the demo's original limits.
-  const limitsFor = slug => { const t = get(slug); return t ? { ...LIMIT_PRESETS[t.limit], preset: t.limit, tableName: t.name } : DEFAULT_LIMITS; };
+  const limitsFor = slug => { const t = get(slug); return !t ? DEFAULT_LIMITS : t.game === "roulette" ? { ...ROULETTE_PRESETS[t.limit], preset: t.limit, tableName: t.name, room: t.room }
+    : { ...LIMIT_PRESETS[t.limit], preset: t.limit, tableName: t.name }; };
 
   // The game URL for a saved table: its own shared-table session, so every table plays apart.
-  const gameUrl = t => `/?${new URLSearchParams({ dealer: t.dealer, room: t.room, lang: t.lang, session: t.slug, table: t.slug })}`;
+  const gameUrl = t => t.game === "roulette" ? `/roulette/?${new URLSearchParams({ session: t.slug, table: t.slug })}`
+    : `/?${new URLSearchParams({ dealer: t.dealer, room: t.room, lang: t.lang, session: t.slug, table: t.slug })}`;
 
   // A back office account's own tables, newest first.
   const ownedBy = owner => Object.values(tables).filter(t => owner && t.owner === owner).sort((a, b) => b.created.localeCompare(a.created));

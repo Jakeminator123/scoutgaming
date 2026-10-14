@@ -6,11 +6,12 @@ const DEALERS={astrid:{name:'Astrid',cut:'assets/cut-astrid-v3.png',mask:'assets
 const ROOMS={darkhall:'Dark Hall',mahogany:'Mahogany Privé',golden:'Golden Salon',azure:'Azure Venue'};
 const FELTS={prive:{name:'Privé',c:null},emerald:{name:'Emerald Club',c:'#125c43'},midnight:{name:'Midnight',c:'#213e70'},burgundy:{name:'Burgundy',c:'#70253c'},custom:{name:'Custom',c:null}};
 const LANGS={en:{name:'English',tts:'en-GB',line:'Welcome to the table. Place your bets.'},es:{name:'Español',tts:'es-ES',line:'Bienvenidos a la mesa. Hagan sus apuestas.'},fr:{name:'Français',tts:'fr-FR',line:'Bienvenue à la table. Faites vos jeux.'},sv:{name:'Svenska',tts:'sv-SE',line:'Välkommen till bordet. Placera era insatser.'},zh:{name:'中文',tts:'zh-CN',line:'欢迎来到牌桌，请下注。'}};
-const LIMITS={casual:{name:'Casual',range:'$1 – $500',bal:'$500.00',chips:[1,5,10,25,50,100]},prive:{name:'Privé',range:'$5 – $2,000',bal:'$1,000.00',chips:[5,10,25,50,100,500]},high:{name:'High Roller',range:'$100 – $25,000',bal:'$50,000.00',chips:[100,500,1000,5000,10000,25000]}};
+const LIMITS={casual:{name:'Casual',range:'$1 – $500',bal:'$500.00',chips:[1,5,10,25,50,100]},prive:{name:'Privé',range:'$5 – $2,000',bal:'$1,000.00',chips:[5,10,25,50,100,500]},high:{name:'High Roller',range:'$100 – $25,000',bal:'$50,000.00',chips:[100,500,1000,5000,10000,25000]},
+ 'rl-classic':{name:'Classic',range:'$1 – $1,000',bal:'$1,000.00',chips:[1,5,25,100,500]},'rl-high':{name:'High Roller',range:'$25 – $25,000',bal:'$25,000.00',chips:[25,100,500,1000,5000]}};
 const CHIP={1:['#e8e2d4','#a9a294','#5a554c','#1c1a16'],5:['#1b7866','#0e4138'],10:['#b88441','#5d3c1c'],25:['#c55b42','#713227'],50:['#a85c9e','#572c56'],100:['#424a51','#181c20'],500:['#7852b3','#402957'],1000:['#d6b46a','#7d6230','#fff5da','#201c13'],5000:['#2f6496','#163252'],10000:['#9a3443','#4d1621'],25000:['#26282c','#0b0c0e','#dbc18a','#dbc18a']};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY='scout-bj-demo';
-let st=Object.assign({screen:'login',email:'',dealer:'astrid',room:'darkhall',felt:'prive',custom:'#7a5a2a',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer',sound:true,logo:'',logoName:'',logoPos:'both'},JSON.parse(localStorage.getItem(KEY)||'{}'));
+let st=Object.assign({screen:'login',email:'',game:'blackjack',dealer:'astrid',room:'darkhall',felt:'prive',custom:'#7a5a2a',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer',sound:true,logo:'',logoName:'',logoPos:'both'},JSON.parse(localStorage.getItem(KEY)||'{}'));
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
 const fmt=v=>v>=1000?(v/1000)+'K':String(v);
 function chipEl(v){const e=document.createElement('span');e.className='chip';const c=CHIP[v];e.style.setProperty('--c',c[0]);e.style.setProperty('--s',c[1]);if(c[2])e.style.setProperty('--r',c[2]);if(c[3])e.style.setProperty('--t',c[3]);e.textContent=fmt(v);return e}
@@ -26,23 +27,28 @@ function render(){
 // Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: English as text until he has a voice).
 const langs=VOICES[st.dealer]?.length?VOICES[st.dealer]:['en'];if(!langs.includes(st.lang))st.lang=langs.includes('en')?'en':langs[0];
 $$('.lang-opt').forEach(o=>{o.hidden=!langs.includes(o.dataset.val)});
-const d=DEALERS[st.dealer],L=LIMITS[st.limit],fc=feltColor();
+// Roulette (Kevin 14 Oct): its own limit tiers and name; no dealer, felt, language or logo yet (the steps hide)
+const rl=st.game==='roulette';document.body.classList.toggle('game-roulette',rl);
+if(rl!==st.limit.startsWith('rl-'))st.limit=rl?'rl-classic':'prive';
+if(rl&&st.name==='Privé Blackjack'||!rl&&st.name==='Roulette'){st.name=rl?'Roulette':'Privé Blackjack';$('#tableName').value=st.name}
+$('#rlImg').hidden=!rl;
+const d=DEALERS[st.dealer],L=LIMITS[st.limit],fc=rl?null:feltColor();
 swapImg($('#roomImg'),'assets/rooms/'+st.room+DEALERS[st.dealer].room+'-720.png');swapImg($('#dealerImg'),d.cut);
 paintFelt(d.mask,fc);
 $('#customSw').style.background=st.felt==='custom'?st.custom:'';
 $('#ovName').textContent=st.name||'Blackjack';$('#ovRange').textContent=L.range;$('#ovBal').textContent=L.bal;
-$('#ovBadge').textContent=d.name+' · AI dealer · '+st.lang.toUpperCase();
+$('#ovBadge').textContent=rl?'Roulette · European':d.name+' · AI dealer · '+st.lang.toUpperCase();
 const oc=$('#ovChips');oc.innerHTML='';L.chips.forEach((v,i)=>{const c=chipEl(v);if(i===0)c.classList.add('sel');oc.append(c)});
-const vals={dealer:d.name,room:ROOMS[st.room],felt:FELTS[st.felt].name,lang:LANGS[st.lang].name,limit:L.name+' · '+L.range};
+const vals={game:rl?'Roulette':'Blackjack',dealer:d.name,room:ROOMS[st.room],felt:FELTS[st.felt].name,lang:LANGS[st.lang].name,limit:L.name+' · '+L.range};
 for(const k in vals)$('[data-v="'+k+'"]').textContent=vals[k];
 $$('.opt[data-k]').forEach(o=>o.setAttribute('aria-checked',String(st[o.dataset.k]===o.dataset.val)));
-const order=['dealer','room','felt','lang','limit','brand'];
+const order=['game','dealer','room','felt','lang','limit','brand'];
 $$('.step').forEach(s=>{s.classList.toggle('open',s.dataset.step===st.open);s.classList.toggle('done',order.indexOf(s.dataset.step)<order.indexOf(st.open))});
-$('#rsDealer').textContent=d.name;$('#rsRoom').textContent=ROOMS[st.room];$('#rsFelt').textContent=FELTS[st.felt].name;$('#rsLang').textContent=LANGS[st.lang].name;$('#rsLimit').textContent=L.name+' · '+L.range;
+$('#rsDealer').textContent=rl?'No dealer yet · European wheel':d.name;$('#rsRoom').textContent=ROOMS[st.room];$('#rsFelt').textContent=rl?'Green · European layout':FELTS[st.felt].name;$('#rsLang').textContent=rl?'–':LANGS[st.lang].name;$('#rsLimit').textContent=L.name+' · '+L.range;
 const lg=st.logo,fl=$('#feltLogo'),hl=$('#hdrLogo');[fl,hl].forEach(i=>{if(lg&&i.getAttribute('src')!==lg)i.src=lg});fl.hidden=!lg||st.logoPos==='header';$('#stage').classList.toggle('has-felt-logo',!fl.hidden);hl.hidden=!lg||st.logoPos==='felt';
 $('#drop').classList.toggle('has',!!lg);if(lg){$('#logoThumb').src=lg;$('#logoName').textContent=st.logoName}
 const posName={both:'Felt + header',felt:'Felt',header:'Header'}[st.logoPos];$('[data-v="brand"]').textContent=lg?posName:'No logo';$('#rsLogo').textContent=lg?st.logoName+' · '+posName:'None';
-$('#pnSpec').textContent=d.name+' · '+ROOMS[st.room]+' · '+L.name;$('#readyName').textContent=st.name||'Blackjack';
+$('#pnSpec').textContent=(rl?'Roulette':d.name)+' · '+ROOMS[st.room]+' · '+L.name;$('#readyName').textContent=st.name||'Blackjack';
 $('#shareUrl').textContent=st.slug?location.host+'/t/'+st.slug:location.host+'/t/'+((st.name||'blackjack').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'table');
 const em=st.email||'demo@scoutgaming.com';$('#userEmail').textContent=$('#userEmail2').textContent=em;$('#avatar').textContent=$('#avatar2').textContent=em[0];
 save()}
@@ -99,9 +105,9 @@ $('#pw').value='';$('#formErr').textContent='';st.email=me.user;access(me);go('b
 $('#signOut').onclick=async()=>{await fetch('/api/studio/logout',{method:'POST'}).catch(()=>{});st.email='';go('login')};
 
 // builder
-const order=['dealer','room','felt','lang','limit','brand'];
+const order=['game','dealer','room','felt','lang','limit','brand'];
 $$('.step-h').forEach(h=>h.onclick=()=>{const s=h.parentElement.dataset.step;st.open=st.open===s?'':s;render()});
-$$('.next').forEach(b=>b.onclick=()=>{const s=b.closest('.step').dataset.step;st.open=order[order.indexOf(s)+1];render()});
+$$('.next').forEach(b=>b.onclick=()=>{const s=b.closest('.step').dataset.step,shown=order.filter(k=>{const e=$('.step[data-step="'+k+'"]');return e&&getComputedStyle(e).display!=='none'});st.open=shown[shown.indexOf(s)+1];render()});   // roulette hides some steps
 $$('.opt[data-k]').forEach(o=>{const pick=e=>{if(e.target.closest('.play'))return;st[o.dataset.k]=o.dataset.val;render()};o.addEventListener('click',pick);o.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e)}})});
 function setLogo(src,name){const i=new Image();i.crossOrigin='anonymous';i.onload=()=>{let w=i.naturalWidth||600,hh=i.naturalHeight||300;const k=Math.min(1,600/Math.max(w,hh));w=Math.round(w*k);hh=Math.round(hh*k);let out=src;try{const c=document.createElement('canvas');c.width=w;c.height=hh;c.getContext('2d').drawImage(i,0,0,w,hh);out=c.toDataURL('image/png');
   // The server takes logos under 400 KB: a detailed PNG falls back to WebP, then to a smaller size.
@@ -127,15 +133,15 @@ $('#exitBtn').onclick=leave;$('#backBuild').onclick=()=>{if('speechSynthesis' in
 const loaded=src=>new Promise(ok=>{const i=new Image();i.onload=i.onerror=()=>ok();i.src=src});
 $('#createBtn').onclick=async()=>{const L=$('#launch');const sp=$$('.launch-steps span');sp.forEach(s=>s.classList.remove('done'));L.classList.add('on');
 const fail=m=>{L.classList.remove('on');alertCreate(m)};
-let t;try{const r=await fetch('/api/studio/table',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:st.name||'Blackjack',dealer:st.dealer,room:st.room,felt:st.felt,custom:st.custom,lang:st.lang,limit:st.limit,logoPos:st.logoPos,logo:st.logo||null,logoName:st.logo?st.logoName:null})});
+let t;try{const r=await fetch('/api/studio/table',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game:st.game,name:st.name||(st.game==='roulette'?'Roulette':'Blackjack'),dealer:st.dealer,room:st.room,felt:st.felt,custom:st.custom,lang:st.lang,limit:st.limit,logoPos:st.logoPos,logo:st.logo||null,logoName:st.logo?st.logoName:null})});
 t=await r.json();if(r.status===401){L.classList.remove('on');st.email='';go('login');$('#formErr').textContent='Sign in to create a table.';return}if(!r.ok)return fail(t.error||'Could not create the table')}catch{return fail('Could not reach the server')}
 st.slug=t.slug;save();sp[0].classList.add('done');
-await loaded(DEALERS[st.dealer].cut);sp[1].classList.add('done');
-const clip=greetingClip(st.dealer,st.lang);if(clip)await fetch(clip,{headers:{Range:'bytes=0-65535'}}).catch(()=>{});sp[2].classList.add('done');
+await loaded(st.game==='roulette'?'/roulette/assets/table.png':DEALERS[st.dealer].cut);sp[1].classList.add('done');
+const clip=st.game==='roulette'?null:greetingClip(st.dealer,st.lang);if(clip)await fetch(clip,{headers:{Range:'bytes=0-65535'}}).catch(()=>{});sp[2].classList.add('done');
 setTimeout(()=>{go('ready');L.classList.remove('on')},350)};
 function alertCreate(m){$('#createBtn').textContent=m;setTimeout(()=>$('#createBtn').textContent='Create table →',2600)}
 $('#editBtn').onclick=()=>go('builder');
-$('#newBtn').onclick=()=>{Object.assign(st,{slug:'',dealer:'astrid',room:'darkhall',felt:'prive',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer'});$('#tableName').value=st.name;go('builder')};
+$('#newBtn').onclick=()=>{Object.assign(st,{slug:'',game:'blackjack',dealer:'astrid',room:'darkhall',felt:'prive',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer'});$('#tableName').value=st.name;go('builder')};
 $('#copyBtn').onclick=()=>{navigator.clipboard?.writeText('https://'+$('#shareUrl').textContent).catch(()=>{});$('#copyBtn').textContent='Copied';setTimeout(()=>$('#copyBtn').textContent='Copy link',1600)};
 
 let sayT;$('#tableName').value=st.name;$('#customFelt').value=st.custom;syncSound();
