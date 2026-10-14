@@ -50,7 +50,9 @@ Follow `agent-talk/README.md`. Run `node tools/agent-talk.mjs status <your-id>` 
 
 Rensa aktivt: radera tydligt förbrukade rester och flytta tveksamma äldre filer till rotens kanoniska, gitignorerade `arkiv/<datum>/<ursprunglig-sökväg>` för återhämtning; skapa inga nya parallella arkivmappar. Lokal tröskelarkivering av projektsnapshots och avslutade observationsloggar styrs av `tools/retention-policy.json`; förhandsgranska/återställ med `node tools/retention-archive.mjs`.
 
-Use `lab/docs/TERMINOLOGI.md` as the sole source for product terms and ownership, `lab/docs/README.md` for user steps, and `docs/LOCAL-PRESENTATION-RUNTIME.md` for technical reality and formats. Keep at most five Markdown files under `docs/`: `JOHN-HANDOFF.md`, `CLOUD-MIGRATION.md`, `LOCAL-PRESENTATION-RUNTIME.md`, `ENVIRONMENT-RESTORATION.md`, and `ENVIRONMENT-VARIABLES.md`. Update them in place. New reports and sprint documentation are paused.
+Use `lab/docs/TERMINOLOGI.md` as the sole source for product terms and ownership, `lab/docs/README.md` for user steps, and `docs/LOCAL-PRESENTATION-RUNTIME.md` for technical reality and formats. Keep the five main Markdown files directly under `docs/`: `JOHN-HANDOFF.md`, `CLOUD-MIGRATION.md`, `LOCAL-PRESENTATION-RUNTIME.md`, `ENVIRONMENT-RESTORATION.md`, and `ENVIRONMENT-VARIABLES.md`. Jakob's requested AI documentation lives under `docs/AI/`, with its entry point in `docs/AI/README.md`; keep one canonical copy of each guide and record agent-flow documentation changes in `docs/AI/scoutgaming-agentflode.md`. `docs/system-map/README.md` explains the existing machine-checked map. Update existing documents in place. New reports and sprint documentation are paused.
+
+Product text and chat: use a discreet entry point, few fixed helper texts and concise replies by default. An open chat may be large and visually strong. Put model names and technical explanations behind Details; explain destructive actions and their consequences in the confirmation. Preserve accessible labels and actionable error messages.
 
 Do not read `random-stuff-jakob/jakob-docs/arkiv/`, including restored copies, Git history, or external backups, unless Jakob explicitly asks for a specific historical document. Ordinary file searches must honor `.ignore`. That file still hides heavy tracked media (`media/**/source`, `media/**/staging`, `media/layout.json`, `media/blob-index.json`), binaries and secrets from ripgrep. `.cursorignore` keeps secrets and private data (`.env*`, `lab/data/`, `web/data/`, the private archive). Harmless heavy project text (`media/layout.json`, `media/blob-index.json`, `media/**/source/*.json`, `media/**/staging/*.md`) is listed in `.cursorindexingignore`, so it is not indexed and can still be read explicitly. Do not use `rg --no-ignore`. Do not scan media binaries or generated artifacts for ordinary documentation questions.
 
@@ -64,7 +66,7 @@ From Codex, start Lab with `--no-open`. Reuse the existing game or lab browser t
 
 Explicit `/chef` or `$chef`: follow `.agents/skills/chef/SKILL.md`. Before shared integration/push, run `node tools/croupier-chef.mjs status`. No automatic role activation.
 
-For OpenClaw installation, configuration, Gateway, MCP, or runtime work, first read `open-claw/lab/docs/README.md`.
+For OpenClaw installation, configuration, Gateway, MCP, or runtime work, first read `docs/AI/openclaw/README.md`.
 
 ## Inbox
 

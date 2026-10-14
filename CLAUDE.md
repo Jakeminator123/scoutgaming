@@ -15,6 +15,7 @@ Vercel team and project: `scoutgaming`. Game engine: Render service `croupier-v2
 - Current guide: `lab/docs/README.md`.
 - Current runtime: `docs/LOCAL-PRESENTATION-RUNTIME.md`.
 - Drift och leverans: `docs/CLOUD-MIGRATION.md`.
-- Keep at most five Markdown files in `docs/`; update in place, no new reports.
+- Keep the five main Markdown files directly in `docs/`; Jakob's requested AI documentation is collected under `docs/AI/README.md`; record changes in `docs/AI/scoutgaming-agentflode.md`. `docs/system-map/README.md` explains the existing map. Update in place, no new reports.
+- Keep chat discreet, with few fixed helper texts and concise replies. Put technical details behind Details; show destructive-action consequences in the confirmation.
 - Preserve the server-owned game engine, wallet and media acceptance rules.
 - Preserve other agents' uncommitted changes and local saved profiles/settings.

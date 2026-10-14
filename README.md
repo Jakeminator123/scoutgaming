@@ -15,7 +15,7 @@ engine and live transport. See [cloud and storage](docs/CLOUD-MIGRATION.md).
 
 | Surface | Current entry | Transition |
 | --- | --- | --- |
-| Internal administration | `/admin` | New backoffice. Existing `/control` tools, permissions and contextual links still work where the replacement is incomplete. |
+| Internal administration | `/admin` | New backoffice. Existing `/control` links remain compatible; many redirect to the corresponding `/admin` tool while retaining page context and permission checks. |
 | Operator portal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Real registered operators and scoped memberships; ordinary routes do not use demo fallback data. |
 | Player lobby | `/lobby` | New lobby. Existing `/play`, `/play/profil`, `/play/historik` and `/play/blackjack` remain during the transition. |
 
@@ -32,7 +32,8 @@ IDs, local guest profile tables, filenames and the `lissabon-stream-lane` flag
 remain compatibility details. Do not rename saved identities or remove their
 consumers just because the old name survives. The flag still controls chat
 context, camera checks and saved local profiles. New UI work belongs in `/admin`
-and `/lobby`; the [user guide](lab/docs/README.md) describes working tools.
+and `/lobby`; the [user guide](lab/docs/README.md) is the canonical list of
+active entry points, operator slugs, compatibility redirects and working tools.
 
 ## Source and folder map
 
@@ -48,6 +49,9 @@ and `/lobby`; the [user guide](lab/docs/README.md) describes working tools.
 | `media/` | Registered runtime assets, source/review/staging files and identity manifests | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |
 | `open-claw/` | OpenClaw/Gateway integration and its deployment tools | [OpenClaw](open-claw/README.md) |
 | `ops/`, `tools/`, `test/` | Deployment tooling, repository utilities and regression tests | [Cloud](docs/CLOUD-MIGRATION.md), [container context](ops/cloud/CONTAINER-CONTEXT.md) |
+
+[AI documentation](docs/AI/README.md) collects agent flows, OpenClaw guides,
+the dated service inventory and optional avatar integration.
 
 These are source responsibilities, not independent products. For example,
 Vercel's `web` Service builds `apps/croupier-frontend/`; the root `web/` folder

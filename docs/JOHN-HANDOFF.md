@@ -1,5 +1,25 @@
 # Aktuell handoff — Scoutgaming
 
+## AI-dokumentation: slutöverlämning 14 oktober 2026
+
+AI-översikten och elva kanoniska OpenClaw-guider finns under [docs/AI](AI/README.md).
+Äldre guideadresser är korta hänvisningar. Guiderna har integrerats med main
+`0511206d`, utan att ersätta senare drift- eller Admin-ändringar.
+Användarguiden innehåller daterad adress-/slugglista och N1:s åtkomst till
+alla tre ytor. D-ID:s publika chatt och N1:s interna Adminrobot är separata.
+
+Teknisk D-ID-uppspelning med ljud aktiverat är verifierad; hörbar/läppsynks-
+acceptans och positiva inloggade N2/N3-prov är fortfarande öppna. N1-prov
+är inte ett substitut för dessa roller. PR #91:s spelarprov stoppades av Jakob:
+två repliker, pausåterhämtning och första mjuka 7/17-handens förlust verifierades;
+vinst, oavgjort, split och mobil återstår. PR:n är inte spelargodkänd.
+Privata kvitton finns i rotens ignorerade arkiv. Fortsatta spelarprov ska använda
+en internetadress enligt Jakob; ingen lokal produktserver startas för dem.
+
+Admin C1–C3 ägs av chatten ADMINADMINADMIN. PR-samordningen har fått
+överlämningen om #91. Huvudcheckoutens blandade ändringar bevaras; den här
+dokumentationen levereras från en separat branch, utan merge eller deploy.
+
 ## Rörligt dealertal: förberedd adapter, 14 oktober
 
 RunPod-åtkomsten och staging-imagen är identifierade. Befintlig GitHub-

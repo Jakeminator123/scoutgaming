@@ -1188,7 +1188,7 @@ inte för ett ändrat flöde. Senaste gemensamma startversion: `3e613186`.
   hash-/SQLitekontroller enligt återställningsreglerna. Exportåtkomst är inte
   prövad. Klart när omprov/fix eller exakt kvarstående hinder är belagt per
   driftfel, och båda tjänster har verifierad extern fullbackup.
-Detaljer och kvittoplatser: [den enda löpande handoffen](JOHN-HANDOFF.md#nästa-arbete-och-viktiga-gränser).
+Detaljer och kvittoplatser: [den enda löpande handoffen](JOHN-HANDOFF.md#2-öppna-kontroller-och-kända-fel).
 Avslutade migrationssteg och deras historiska bevis står kvar nedan.
 
 ## Källa och historiska driftkvitton
@@ -1207,9 +1207,11 @@ Nuläge, acceptans och historiska kvitton ska aldrig blandas ihop.
 - [LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md): ansvar/kontrakt/uppspelning.
 - Detta dokument: källa, målbild, checklista, driftskarta och leverans.
 
-Behåll högst fem Markdownfiler i docs; uppdatera dem i stället för nya rapporter/
-sprintarkiv. [Labbguiden](../lab/docs/README.md) och
-[OpenClaws versionsbundna källindex](../open-claw/lab/docs/README.md) ligger nära koden.
+Behåll de fem huvudfilerna direkt i docs; uppdatera dem i stället för nya
+rapporter/sprintarkiv. Enligt Jakobs önskemål 13 oktober samlas AI-/OpenClaw-
+guider under [docs/AI](AI/README.md). [Labbguiden](../lab/docs/README.md)
+behåller produktens användarsteg. [Systemkartans läsanvisning](system-map/README.md)
+beskriver det befintliga verktyget och dess varningar.
 JSON-register/systemkarta, media/baseline och privata QA-kvitton bevaras.
 Tre ersatta Lab-dokument och redundant `Start-Lissabon.ps1` är borttagna.
 Cmd-startfilerna i roten är borta. `node lab/start.mjs` och sessionsvakten

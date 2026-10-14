@@ -200,10 +200,18 @@ blackjack-`idle.ready` exponeras inte för roulette.
 
 Fortsatt UI-utveckling sker i `/admin` och `/lobby`; `/partner` är bolagens
 arbetsyta. `lab/` är den aktiva applikationens källmapp och `/studio` dess
-tekniska basePath för befintliga API:er och tillgångar. Äldre `/control`,
-`/play` och spelstarter är fortsatt fungerande kontrakt under övergången.
+tekniska basePath för befintliga API:er och tillgångar. Äldre `/control`-länkar
+är kompatibilitetsadresser: många omdirigeras till `/admin` med sidkontexten
+kvar. `/play` och spelstarter behåller sina autentiserings- och paketkontrakt.
 Detaljerade äldre adresser och daterade verifieringar nedan beskriver dessa
 implementationer, inte en uppmaning att bygga nya gränssnitt där.
+
+Den kanoniska adress- och slugglistan finns i
+[användarguiden](../lab/docs/README.md). Produktionskontrollen 14 oktober 2026
+skiljer dokumentomdirigeringar från efterföljande inloggning: `/control` går
+till `/admin`, `/studio` via `/control/clips` till `/admin/dealer-studio` och
+utloggad intern åtkomst till `/studio/login?returnTo=...`. N1 når även
+partner- och spelarytorna med samma konto; ett byte av yta ändrar inte rollen.
 
 `CROUPIER_STREAM_LANE=lissabon-stream-lane` används fortfarande i lokal och
 molnbaserad start, chattens `playResults`, kameragrinden och lokala profiler
@@ -1081,7 +1089,7 @@ media hoppas över och serverns kortflöde fortsätter. N2 visar endast verkliga
 
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
 Starta med `node lab/start.mjs`. OpenClaw-anslutning beskrivs i
-[anslutningsguiden](../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
+[anslutningsguiden](AI/openclaw/LOCAL-CONNECTION-SV.md).
 Mobile Phone Lane använder Astrids porträttvideo i det riktiga spelet:
 <http://127.0.0.1:4200/blackjack>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
