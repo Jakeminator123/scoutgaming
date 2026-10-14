@@ -127,6 +127,121 @@ Rundans utfall och saldo visas först från serverns bekräftade kvitto.
 Aktuell leverans, Nordic Bets exempelrum och den samordnade dealerfrågan finns
 i `docs/JOHN-HANDOFF.md`. Hårdkoda inte PAOW eller en annan dealer i gränssnittet.
 
+## Anna: tal och rörlig läppsynk, 14 oktober 2026
+
+Kodkontroll: main `0511206dec4cb8468fe92d5f03202718d3bf2585` och
+`kevin-staging` `315cfc554330f1d5541a7ed3bb84044877a6b992`.
+Detta avsnitt är aktuell integrationsanvisning, inte utförd liveacceptans.
+Roulette-agentens tidigare två spelprov gäller tyst idle, startgest, bord,
+bakgrund och separat hjul/kula. Agenten bekräftar ingen aktuell Anna-röstprofil,
+talreferens eller verifierad taluppspelning. Efter radering/nyregistrering ska
+aktuella dealer-ID:n, publiceringar och mediehashar läsas igen; historiska
+Anna-kvitton nedan innebär inte att materialet fortfarande är registrerat.
+
+### Vad vi redan har och vad som saknas
+
+| Del | Verifierat underlag | Återstår |
+| --- | --- | --- |
+| Röst | Befintlig ElevenLabs-nyckel kunde läsa Paow/Dragges exakta röst-ID:n. | Välj och verifiera Annas egen röst, modell och språk. Ingen röst har valts åt Anna här. |
+| Rörlig GPU | RunPod-läsning identifierade staging-endpoint, template och image-tagg. | Verifiera svarskontrakt och exakt avatarbank med verkliga talprov. API-hälsa bevisar inte detta. |
+| Planering | #116 införde `web/moving-speech-plan.mjs` med exakta rutor och versionsbindning. | Koppla in server, worker-relay, avkodning och spelare; adaptern är fortfarande inaktiv. |
+| Roulette | `web/public/roulette/scene.mjs` använder `mountPublishedScene` för frysta lager, idle och startgest. | Roulette har ingen inkopplad dealerchatt eller genererad talspelare i granskad kod. |
+| Anna i workern | Kevins standardlista för rörligt tal innehåller Paow, Dragge och Astrid2. | Anna finns inte i den listan; hennes worker-avatar och underlag måste förberedas/verifieras. Att lägga till ett namn räcker inte. |
+
+Cartesia och ElevenLabs skapar ljud; RunPod kör GPU-arbetet som skapar
+läppsynken. OpenClaw levererar vårt chattsvar. Paow/Dragge använder ElevenLabs
+på den granskade rörliga vägen, så en Cartesia-inloggning löser inte den
+saknade talkopplingen. Inloggning i en leverantörs webbgränssnitt behövs inte
+för API-anrop när rätt befintlig nyckel har åtkomst.
+
+Det går att anropa en befintlig worker utan att först läsa dess källkod.
+Workeråtkomst, känt protokoll och rätt avatarunderlag är driftkraven;
+källkod/åtkomlig image behövs för full granskning, reproduktion och eget
+underhåll. Be Emil bekräfta aktuell release, avatarpaketens version/hashar
+för Paow/Dragge samt hur en ny Anna-avatar förbereds. Läsåtkomst till
+worker-repot eller en byggbar export är önskvärd; en ny Cartesia-nyckel är
+inte huvudfrågan. Endpointen `mq7eiwanda72fg` är det observerade rörliga
+stagingmålet; `RUNPOD_ENDPOINT_ID` i Kevins exempel avser en annan väg.
+Fullt protokoll, röst-ID:n och åtkomstkvitton finns i
+[den gemensamma runtimereferensen](../../LOCAL-PRESENTATION-RUNTIME.md#kevins-draganpaow-filmurval-och-rörligt-tal-13-oktober-2026).
+
+### Bygg i tre steg
+
+1. **Fastställ Annas underlag.** Läs aktuell registrering och välj Annas
+   röstprofil och ägda referens. Godkänn en gemensam scenreferens med rätt
+   perspektiv, kroppsskala, ljus/skuggor och handkontakt innan fler filmer
+   produceras. Scenreferensen är ett visuellt mål; worker-referensen är en
+   separat, kompatibel dealerbild. Den befintliga generiska stillbildsvägen
+   avvisar alfa- och bakgrundsinbakade referenser. Använd ett verifierat grönt
+   original om det finns; Annas alfa-klipp kan inte bara matas in som de är.
+   Stöd för alfa som speech-reference kräver en egen implementation och provning.
+2. **Få tal i vila att fungera först.** Återanvänd gemensamma tjänster för
+   serverägd dealer-/rumsidentitet, OpenClaw, röstprofil, budget, GPU-acceptans
+   före TTS och avbrott. Lägg till rouletteanpassad chatt-/talstyrning och
+   renderingskoppling till dealerlagret. Befintlig roulette-scen monterar inte
+   `generated-speech-player.mjs`; en serverinställning ensam räcker inte.
+   Prova två sammanhängande svar i den riktiga spelaren innan rörligt tal
+   aktiveras. Bakgrund och bord behåller sina egna lager.
+3. **Lägg till tal under rörelse.** Bind Annas exakta 24 fps-underlag till
+   worker-avatar och en verifierad bildrutebank. Roulettens tidslinje måste
+   omfatta vila, startgest och återgång; kopiera inte blackjackens givplan.
+   Använd #116-adaptern för exakta källrutor, tal-/ljud-/profilhashar och
+   omplanering. Avkoda workerns svar och komponera den ljudbundna bilden i
+   dealerlagret före beskärning/keying. Bevara befintliga masker och
+   hjul-/bordslager. En gammal eller felaktig bildruta får aldrig visas som
+   ersättning för en saknad synkruta.
+
+En gemensam worker-tjänst kan hantera flera registrerade avatarer med
+separerade sessioner; en egen pod eller OpenClaw-instans per dealer är inget
+krav i denna design. Samtidig kapacitet måste mätas. Roulettens tal får inte
+avgöra eller blockera serverns snurr, kvitto, saldo eller återförsök.
+Om rörligt tal saknas används endast en i förväg verifierad reservväg till tal
+i vila; annars visas text och ett tydligt fel. Avbryt hela gamla taljobbet vid
+byte av dealer/rum, ändrad publicering, ny plan eller stängd spelflik.
+
+En senare förbättring är ett kort inandningsklipp (högst cirka 0,5 s) före
+rösten och en lugn tal-idle med små kroppsrörelser. Dessa behöver egna exakta
+klipp, övergångar och workerunderlag. Inandningen är en kroppsrörelse och ska
+inte förväxlas med protokollets 220 ms ljudförskjutning. Lägg till dem först
+när basflödet är godkänt.
+
+### Tester och kriterier för att kalla det fungerande
+
+De befintliga isolerade testerna kan köras utan riktiga provideranrop:
+
+```sh
+node --test --test-concurrency=4 test/moving-speech-plan.mjs test/dealer-speech-runtime.mjs test/dealer-speech-reference.mjs
+```
+
+Den 14 oktober: 21 godkända, 0 fel, 0 överhoppade på ovanstående main.
+De täcker identitets-/röst-/mediebindning, felaktiga referenser, gamla versioner,
+avbrott och exakt rutmatchning, inklusive syntetisk FFmpeg-extraktion. De
+provar inte Emils GPU eller den kompletta roulettevägen. Vid implementation
+ska även fulla krav i `.githooks/pre-commit` köras.
+
+| Kompletterande prov | Vad som måste bedömas |
+| --- | --- |
+| Två svar i följd per dealer | Rätt röst och text, hela svarets synk och korrekt återgång till vila; ingen rest från föregående svar. |
+| Startgest medan Anna talar | Exakt kroppsruta följs efter omplanering; händer, hjul, bord och masker ligger rätt. |
+| Långsamt/saknat/omkastat svar | Ingen gammal munbild eller annan persons röst visas; kontrollerad reservväg och spelmotorn fortsätter. |
+| Avbrott, rum-/dealerbyte, dolt/stängt fönster | Gamla paket avvisas; TTS, relay, avkodade rutor och RunPod-jobb frigörs, inte bara lokal plan. |
+| Kall/varm start och samtidiga användare | Mät tid till ljud/första bild, kötid, avkodningsbortfall och skillnaden mellan faktiskt visad källruta och ljudklocka. |
+| Behörighet och ändrade underlag | Fel rum/bolag/publicering, inaktiverad profil och ändrade mediehashar stoppar nya kostsamma steg och uppspelning. |
+
+Det isolerade Studio-provspel som använder `studio-preview-client.mjs`
+stänger av chatt, OpenClaw och genererat tal. Det kan alltså inte ensamt vara
+acceptansmiljö för denna funktion. Använd ett uttryckligen godkänt demorum
+eller en isolerad taltestmiljö med dessa funktioner aktiva och oförändrade
+behörighetskontroller; starta inte ett andra lokalt serverpar.
+
+Spelarens verkliga videoklocka och ljudklocka ska mätas över hela svaret.
+Kevins tolerans på ±48 rutor är inte vårt kvalitetskrav. Bestäm godtagbar
+mätt avvikelse tillsammans med visuell/hörbar granskning och spara testkvitto
+med exakta text-, ljud-, video-/avatarhashar, profil och worker-version.
+Hashar, vågformer och gröna tester ersätter aldrig granskning av själva talet.
+Inga Anna-talprov, GPU-jobb eller nya materialgodkännanden har utförts i denna
+dokumentationsleverans. Planerade tester i tabellen är inte genomförda prov.
+
 ## Driftsättning
 
 Applicera den additiva `ops/neon-game/007-roulette-tables.sql` i den verifierade

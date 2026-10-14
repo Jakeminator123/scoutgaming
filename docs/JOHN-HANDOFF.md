@@ -34,6 +34,24 @@ Studio-bygget passerar med 97 byggspår. Full ordinarie pre-commit på
 `652f3f2e`: 3 610 pass, 11 skip, 0 fel i 75 grupper. Driftsättning återstår.
 Dragan-rummet är ännu inte publicerat: exakt Oak-
 kalibrering och två godkända spelprov per format återstår efter driftsättning.
+
+## Anna-tal: integrationsgräns och testplan, 14 oktober
+
+[Roulettereferensen](games/roulette/TEKNIK.md#anna-tal-och-rörlig-läppsynk-14-oktober-2026)
+skiljer verifierad tyst scen från återstående dealerchatt, röstprofil,
+kompatibel referens, worker-avatar och faktisk taluppspelning. Roulette-agenten
+bekräftade underlaget och har inga aktiva filanspråk; dess testserver är
+stoppad. Annas röst/workerunderlag och talacceptans är inte verifierade.
+Källkod är önskvärd för granskning/underhåll men inget absolut krav för API-
+anrop till befintlig worker. Ingen ny Cartesia-inloggning krävs för Paow/Dragges
+ElevenLabs-väg. #116 är fortfarande en inaktiv adapter.
+
+21 isolerade befintliga referens-, röst- och bildrutekontraktstester passerade
+utan fel/skip. Dokumentationskontrollen gav 43 godkända, 0 fel, 0 skip.
+Dokumentationen anger också återstående liveprov och att Studio-preview
+stänger av genererat tal. Ingen runtime, dealer, publicering,
+nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
+
 ## Rörligt dealertal: förberedd adapter, 14 oktober
 
 RunPod-åtkomsten och staging-imagen är identifierade. Befintlig GitHub-
