@@ -20,13 +20,13 @@ befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte
 | --- | --- | --- | --- |
 | C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Kodinventering från `0511206d`; integrationsbas `7946cd5b` inkluderar PR120, PR122 och PR123. DRAGAN överlämnade eget Admin-avsnitt efter geometrileveransen i PR122. PR123:s senare spelkvitto är bevarat och redovisas som hans prov. Huvudcheckoutens arbete bevaras. |
 | C2 — begriplig navigation | Varje synlig ingång har ett tydligt syfte, en aktiv huvudmenyrad och rätt destination. Befintliga länkar och spelstarter bevaras. | Navigationsagent → huvudagent. | Lokalt: en bolagsingång i huvudmenyn, samstämmiga etiketter och portaler till `/admin`, `/partner`, `/lobby`. Startsidan öppnar befintliga dealer-, bolags-, publicerings- och provspelningsflöden. 25 riktade tester passerade första passet. Levererad UI-acceptans återstår. |
-| C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala resurser provade vid 1440/1024/640/390 px. Läsbarare Inter-text i meny, kontext och klippkort; en sidrubrik för Bolag & team. Reproducerad kortöverlappning rättad med uppmätt radhöjd; minimap döljs på smal skärm efter konstaterad skymning. Faktisk 200-procentszoom, full dialogmatris och levererad UI-acceptans återstår. |
+| C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala resurser provade vid 1440/1024/640/390 px. Läsbarare Inter-text i meny, kontext och klippkort; en sidrubrik för Bolag & team. Reproducerad kortöverlappning rättad med uppmätt radhöjd; minimap döljs på smal skärm efter konstaterad skymning. Slutåtgärder i långa paneler kan rullas fria från Adminroboten. Faktisk 200-procentszoom, full dialogmatris och levererad UI-acceptans återstår. |
 | C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Navigationsagent → huvudagent; separat funktionsacceptans. | Delvis lokalt provad. Avbruten indexerad historik skyddas och återaktiverad Klippkarta synkar åter vald kontext till URL. Eget före/efter-prov behåller Vera efter reload; verkligt rum behålls vid meny/Bakåt/Framåt. Utgången session bevarar hela inloggningsreturen, men lyckad login och oberoende Lab-historik återstår. |
 | C5 — säkra redigeringsflöden | Spara/återläsa, revisionskonflikt, återställning och verkligt osparade ändringar fungerar. Rena formulär ger ingen falsk varning. | En skrivande testägare med isolerade data. | Verkligt lokalt kategoriutkast överlevde Bakåt/Framåt; omladdningsvakt observerad, men dialogens båda val inte accepterade. Spara/återläsa och revisionskonflikt återstår med isolerade data. Ett valt rum gör inte delad mallskrivning rumsspecifik; använd befintliga `roomOverrides`. |
 | C6 — publicering och nivågränser | N1 publicerar rätt granskade revision till rätt N2 och verkligt N3-rum; fel bolag och fel roll nekas på servern. | Samordnat funktionsprov efter C4–C5. | Öppen. Isolerade testdata eller ett nytt uttryckligt, avgränsat demomandat krävs. DRAGANs mandat är inte ärvt. |
 | C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Inget eget spelkvitto. DRAGAN dokumenterar två desktop- och två mobilrundor i PR123; Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
 | C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker och menyingångar förenklade efter konsumentkontroll. Befintlig guide, tracker och eget handoffavsnitt följer ändringarna. Samtliga sex avslutade arbetskopior är arkiverade efter verifierad överföring. Egna browserflikar är stängda; integration och privata provkvitton behålls. |
-| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten. | Lokal kodcommit `b9ce10e1`: ordinarie fullhook 3 630 pass, 11 skip, 0 fel/cancel, inklusive kontextuppföljningen. PR ännu inte publicerad. Ingen merge eller deploy är tillåten; push som automatiskt skapar Vercel-preview kräver först klargjord omfattning. |
+| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten. | Lokal kodcommit `2dec9e20`: ordinarie fullhook 3 630 pass, 11 skip, 0 fel/cancel, inklusive kontext- och paneluppföljningen. PR ännu inte publicerad. Detta Admin-uppdrag medger ingen merge eller deploy; push som automatiskt skapar Vercel-preview kräver först klargjord omfattning. |
 
 **Kodkartan för C1:** `entry.tsx` registrerar 31 Admin-destinationer:
 åtta basytor (`/admin`, `/structure`, `/deletion`, `/dealers`, `/tools`,
@@ -52,7 +52,7 @@ startades. Befintlig regression för talgranskning, bakgrundsval och äldre
 dealer-/bolagslänkar återanvänds; funktionerna byggs inte om.
 
 **Eget kontrollkvitto:** lokal kodcommit
-`b9ce10e188d6679283965d3aab4bdafd49d28acb`, bas `7946cd5b`, har **3 630 pass,
+`2dec9e20c15fd09a7ea7c979fbd15d8113250134`, bas `7946cd5b`, har **3 630 pass,
 11 skip, 0 fel/cancel i 75 grupper** i ordinarie full pre-commit, Node
 24.21.0 med fyra testworkers. Skippen omfattar bland annat verklig
 PostgreSQL/Neon och browserinloggning och räknas inte som acceptans.
@@ -82,6 +82,20 @@ Startsidan har verifierade länkar till de redan implementerade verktygen.
 Röstpanelen ryms vid 390 px utan sid-/panelöverflöde och stängs rent utan
 redigering. Detta ersätter inte den öppna fullständiga dialogmatrisen.
 
+Ett senare mobilprov visade att Adminrobotens launcher täckte cirka
+41 × 22 CSS-px av den nedersta variationsknappen när klippinställningarna
+var rullade till slutet. Panelens eget rullområde får därför 6 rem
+slututrymme plus eventuell safe-area, med motsvarande scroll-padding.
+Efter prov med det nya bygget har hela knappytan fri träffyta och 56 px
+marginal på 390 × 844 respektive 46,5 px på 1440 × 1000. Sista väljaren
+kan få tangentbordsfokus utan att skymmas. Öppnad chatt och minimering
+förblir åtkomliga; både oskickad chatttext och ett verkligt lokalt
+kategoriutkast bevaras när chatten minimeras och öppnas igen. Inga
+skrivande nätverksanrop gjordes och den egna fliken stängdes utan sparning.
+Lagernivåer, widgetkod och chatt-/redigeringsdata ändras inte av CSS-fixen.
+Browserns zoomkommando ändrade inte bredd eller pixelförhållande; det
+räknas därför inte som verifierad 200-procentszoom.
+
 **C4/C5, egna bevisgränser:** regressionen provar indexerade historikposter
 och avbruten navigation under en simulerad uppladdning i den verkliga
 importkomponenten. Kompenserande historikretur bevarar Framåt-poster och
@@ -93,7 +107,10 @@ En verklig osparad kategori skapades enbart i den egna flikens lokala
 utkast: Bakåt/Framåt inom Admin behöll den. Omladdningsvakten aktiverades,
 men verktyget gav inte kontroll över dialogens båda val. Fliken stängdes
 utan sparning. Ingen kategori, publicering eller annan testdata skrevs till
-servern. Ett efterföljande prov visade Vera i Klippkarta på en kontextlös
+servern. Ett senare prov observerade `beforeunload` följt av stängning med
+`result=false` innan ett uttryckligt dialogval kunde göras; utkast och
+aktiverad Spara-knapp fanns kvar. Detta är fortfarande inte acceptans av
+båda användarvalen. Ett separat prov visade Vera i Klippkarta på en kontextlös
 adress efter återgång via Admin; reload bytte till Astrid. Synkning på
 accepterad path/query rättar detta utan att fylla rena `/admin` med kontext.
 Tre nya beteendeprov monterar den verkliga kartkomponenten med isolerat

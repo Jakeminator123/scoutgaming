@@ -83,8 +83,13 @@ Startsidan visar de befintliga bolags-, publicerings- och provspelningsflödena.
 Bolag & team har en sidrubrik. Klippkorten får läsbarare text och nästa rad
 flyttas ned när ett bibliotek öppnas; användarens manuella kortplaceringar
 bevaras. Mobilens minikarta döljs eftersom den skymde klippkort.
+Panelernas sista åtgärder kan rullas fria från Adminrobotens launcher efter
+ett reproducerat mobilfel. Eget före/efter-prov vid 390/1440 px verifierar
+hela knappytan och fokus; oskickad chatttext och lokalt kategoriutkast
+bevaras när chatten minimeras och öppnas igen. Widgetkod och lagernivåer
+är oförändrade, och inga skrivande nätverksanrop gjordes i provet.
 
-Lokal kodcommit `b9ce10e1`: full pre-commit **3 630 pass, 11 skip,
+Lokal kodcommit `2dec9e20`: full pre-commit **3 630 pass, 11 skip,
 0 fel/cancel i 75 grupper**, Node 24.21.0/fyra workers. Lab-bygget med
 97 byggspår och Admin/lobbyns typkontroll passerar. Skippen är inte acceptans.
 Eget läsande browserprov använder lokala UI-resurser på huvuddomänen i egen
