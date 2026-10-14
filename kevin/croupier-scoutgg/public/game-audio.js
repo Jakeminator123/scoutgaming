@@ -1,17 +1,17 @@
 import {createTableAudio} from './table-audio.js';
 
 export function createGameAudio({onChange=()=>{}}={}) {
-  const defaults={enabled:true,ambience:.36,effects:.65,voice:1};
+  const defaults={enabled:true,ambience:.16,effects:.65,voice:1};
   let saved={};try{saved=JSON.parse(localStorage.getItem('astrid.audio')||'{}')}catch{}
   const settings={...defaults};
   if(typeof saved?.enabled==='boolean')settings.enabled=saved.enabled;
   for(const k of ['ambience','effects','voice'])if(Number.isFinite(saved?.[k]))settings[k]=Math.max(0,Math.min(1,saved[k]));
-  let unlocked=false,speaking=false,duck=.32;   // duck: the casino under the dealer's voice (voice-room.js: 1 keeps it)
+  let unlocked=false,speaking=false;
   const ambience=new Audio('/sfx/ambience.mp3');ambience.id='tableAmbience';ambience.hidden=true;ambience.loop=true;ambience.preload='auto';document.body.append(ambience);
   const canPlay=()=>settings.enabled&&unlocked&&!document.hidden;
   const tableAudio=createTableAudio({createContext:()=>new (window.AudioContext||window.webkitAudioContext)(),canPlay});
   const sync=()=>{
-    ambience.volume=settings.ambience*(speaking ? duck : 1);
+    ambience.volume=settings.ambience*(speaking ? .32 : 1);
     if(canPlay()&&settings.ambience>0)ambience.play().catch(()=>{});else ambience.pause();
     onChange({...settings});
   };
@@ -72,7 +72,6 @@ export function createGameAudio({onChange=()=>{}}={}) {
     settings,ambience,
     unlock(){unlocked=true;tableAudio.unlock();sync();},
     speech(value){speaking=value;sync();},
-    duckTo(value){duck=value;sync();},
     play,
     set(key,value){
       if(!(key in defaults))return;
