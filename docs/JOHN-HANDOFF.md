@@ -142,8 +142,11 @@ Oberoende Lab-historik, full login-/
 kontextmatris, spara/återläsa, revisionskonflikt, publicering, rollgränser
 och två spelomgångar återstår.
 
-Admin-PR förbereds nu under Jakobs uttryckliga mandat till PR/merge och
-leverans på main. Levererad UI-acceptans återstår. Samtliga åtta avslutade
+PR129 är mergad till `dbfe94b5` efter gröna kontroller och Vercel är READY
+på huvuddomänen. Eget läsande liveprov verifierar Inter/Inter-SemiBold,
+startsida och bolagsrubrik vid 1440/390 px. Bolagets reload/Bakåt/Framåt
+och Dragan-rummets fulla kontext via provspelning, startsida och Klippkarta
+behålls. Skrivande flöden och egen spelacceptans återstår. Samtliga nio avslutade
 arbetskopior är arkiverade efter överföring eller avslutad läsande granskning.
 Egna browserflikar är stängda. Integrationen
 och privata provkvitton behålls; ingen egen produkt-/Lab-server är aktiv.
@@ -154,8 +157,16 @@ Hela `/control` kan inte raderas: Partner importerar dess delade renderare
 och login-/lösenordsalias behövs. Vanliga dokumentlänkar omdirigeras redan.
 Den befintliga trackern beskriver ordningen för säker frikoppling. Faktisk
 produktion före Admin-leveransen använde Arial i rubriken; grenens lokala
-Inter ska även verifieras efter leverans. Ingen extra skuggfix motiverades
+Inter är nu verifierad i levererad rendering. Ingen extra skuggfix motiverades
 av kodinventeringen.
+
+Två livefynd följs upp i `codex/admin-live-fixes`: GET för stort
+publiceringsutkast gav 413 trots att rum/revisioner kunde visas. Den snäva
+fixen returnerar blockerad readiness med befintlig storleksförklaring;
+POST och alla gränser består. 61 riktade prov passerar inklusive roll,
+bolagsisolering och revisionsskydd. Desktopens minikarta täckte 202 × 152 px
+av ett klippkort och tas bort efter nytt DRAGAN-ack; zoom/Fit View behålls.
+Full kontroll och eget nytt livekvitto för dessa två fixar återstår.
 
 ## Rörligt dealertal: förberedd adapter, 14 oktober
 
