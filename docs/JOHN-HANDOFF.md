@@ -3215,3 +3215,20 @@ mockat Google Fonts-svar (varje Google-import skulle då avvisas). Studio-
 produktionsbygget passerar också. Produktionspublicering verifieras efter
 ordinarie PR-leverans; inga gameplay-, media-, wallet- eller databaskopplingar
 ändras av fontfixen.
+
+## Alfakomposition i blackjack, 14 oktober 2026
+
+Ett förberett alfaklipp visar nu aktiverad bakgrund och bord även utan egna
+kort-/insatsplatser. Synligheten kräver fortfarande ett förberett klipp och
+monterat, aktiverat material; alfa aktiverar inte greenscreen-nyckling.
+
+Regressionsprovet återskapade felet före rättningen. De 21 kompositionsproven
+passerar, inklusive mobil/desktop, med/utan bordsgeometri och avstängda lager.
+Studio-bygget passerar; full pre-commit ingår i commitgrinden. Två
+sammanhängande repetitioner per format passerar i den faktiska blackjackappen
+med syntetiskt registrerad Nora QA, hashbundet alfa-WebM och separata QA-svar
+på 127.0.0.2. Avkodade bildrutor och bildkontroll visar alla tre lagren utan
+bordsgeometri. Den tillfälliga servern och webbläsaren städas av provet.
+Detta verifierar kompositionen, inte tal/läppsynk eller produktionsmedier.
+Leveransen omfattar spelarvillkoret, befintligt regressionsprov och denna
+handoff; ADMINs och PR #91:s delar ligger kvar hos sina ägare.
