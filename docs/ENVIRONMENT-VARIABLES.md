@@ -1,6 +1,110 @@
 # Miljövariabler per tjänst
 
-## Lokal env-konsolidering, 14 oktober 2026
+## Aktuella driftprofiler, 14 oktober 2026 kväll
+
+Denna avstämning ersätter dagens tidigare generella kopiering av Emil-värden.
+Samordnat med SAMORDNING efter PR #145. **En RunPod-nyckel och dess endpoint
+hör till samma profil.** Kopiera inte alla värden mellan tjänster eller från
+Vercel till lokala filer. En saknad hemlighet i ett Vercel-utdrag betyder inte
+att den saknas i driften; Sensitive-värden kan inte läsas tillbaka.
+
+| Plats | Innehåll och ansvar | Kontroll / rättning |
+| --- | --- | --- |
+| Rotens `.env.local` | Lokala hjälpverktyg; vanlig Lab-start läser inte denna fil | RunPod-paret återställt till samma fungerande par som Lab/Render. Legacy `RUNPOD_ENDPOINT_ID`, oanvänd `GEMINI_API_KEY` och föråldrad webhookmetadata borttagna. Övriga värden bevarade. |
+| `lab/.env.local` | Isolerade Lab-startarens vanliga profil | Fungerande RunPod-par bevarat. Endast oanvänd `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` borttagen. |
+| `lab/.env.cloud-storage.local` | Blob och zondatabas vid uttryckligt `--cloud-storage` | Oförändrad; Blob-token matchar Render. Ingen produktions-game-URL införs lokalt. |
+| `.env.emil` | Endast uttryckligt valda Emil-tester | Fem namn har prefix `EMIL_`. Samma fyra API-nyckelvärden som i originalet; bara det lokala endpointvalet rättat till den nåbara rörliga endpointen i Emils överlämning. |
+| Vercel `scoutgaming/scoutgaming`, Production | Web/Studio, databas, Blob, autentisering och Cartesias Studio-kontroll | Fyra oanvända testkopior borttagna: `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`, `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`. Cartesia har en faktisk Studio-konsument och behålls. Preview/Development och alla andra poster oförändrade vid bytet. |
+| Render `croupier-v2` | Spelmotor och providerjobb; egen verifierad RunPod-profil, Cartesia och ElevenLabs | Oförändrad. Rätt databasmål och Blob-lager verifierade med läsningar. |
+| Render `croupier-lab-director` / `croupier-lab-openclaw` | Director och OpenClaw Gateway | Oförändrade. Gateway/Director-token och produkttalets token stämmer överens mellan avsedda par. |
+| Render `croupier-vercel-preview-qa` | Befintlig separat QA-miljö | Egen QA-databas, inga RunPod-/Cartesia-/ElevenLabs-nycklar, genererat tal av. Inte synkad med produktion. |
+| GitHub Actions | Endast `CROUPIER_GAME_DATABASE_URL` behövs för migrationsberedskap | Sparad om från verifierad Render-produktionsanslutning 14 oktober 20:54 UTC. Ingen databasändring. |
+
+Emils fjärrkonto, Cartesia-inställningar, workers, poddar, image och avatarer
+har inte ändrats. Namnbytet `EMIL_*` gäller bara vår privata lokala testfil.
+Prefixet ger ingen workerintegration i produkten. Ingen ny pod ansluts till
+Emils staging. Ändring i hans miljö kräver Jakobs uttryckliga godkännande efter
+en fråga MED VERSALER.
+
+### Läsande profilkontroll
+
+Kör från den checkout som innehåller verktyget och ange privatfilens absoluta
+sökväg om den ligger i huvudcheckouten:
+
+```powershell
+node tools/check-provider-profile.mjs --profile scoutgaming --env-file C:\Users\jakem\Projects\croupier\.env.local
+node tools/check-provider-profile.mjs --profile emil --env-file C:\Users\jakem\Projects\croupier\.env.emil
+```
+
+Verktyget läser endast den angivna filen. Det importerar inte processens
+nycklar, exporterar inga hemligheter, följer inga HTTP-omdirigeringar och
+utför endast GET mot leverantörernas fasta API-adresser. Dubbla namn,
+blandade profiler och ofullständigt RunPod-par stoppas. Scoutgaming kräver
+`RUNPOD_API_KEY` + `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`; Emil kräver
+`EMIL_RUNPOD_API_KEY` + `EMIL_RUNPOD_ENDPOINT_ID`. Övriga Emil-namn är
+`EMIL_CARTESIA_API_KEY`, `EMIL_ELEVENLABS_API_KEY`, `EMIL_GEMINI_API_KEY`.
+Hälsokontroller startar inga GPU-jobb och genererar inget tal. HTTP 200 och
+rapporterade workers är **inte** ett godkänt läppsynkprov.
+
+Kontroller efter lokal rättning: Scoutgamings RunPod, Cartesia och ElevenLabs
+svarade 200; Emils RunPod, Cartesia, ElevenLabs och Gemini svarade 200.
+Det gamla lokala Emil-endpointvalet gav 404. Emils nyckel ihop med vår
+Astrid-endpoint gav 401; det felaktiga paret är borttaget ur rotprofilen.
+Varken dessa kvitton eller en READY-deploy innebär mediaacceptans.
+
+### Databasens namn och ägare
+
+`croupier-production` är **Neon-projektets namn**, inte en ny databas.
+Projektet `wandering-hill-60561912` skapades 29 september och innehåller
+bland annat `croupier_game` (spel, konton, Studio), separata QA-databaser
+samt `neondb` (zoner). Det ägs nu av `Vercel: scoutgaming`,
+`org-green-butterfly-00780270`. Produktionsgrenen är `main`.
+
+Git-commit `022fab5ed623a1af5ddb13d2f43b218cea687437`, författare
+`Jakeminator123`, 8 oktober 2026 kl. 17:16 svensk tid, dokumenterar namnbytet
+från `croupier-astrid-background-zones-db`. Det visar kontot bakom Git-kvittot,
+inte säkert vilken människa eller agent som klickade i Neon. Resursflytten till
+teamet dokumenterades separat. Det finns ingen anledning att skapa ännu en
+produktionsdatabas för att namnet ändrats.
+
+Render-anslutningen verifierades till `croupier_game`, roll `croupier_game`,
+med TLS `verify-full` och installerade Studio-versioner 001–008 samt 011.
+GitHubs befintliga migrationskontroll gav samma databas/roll och inga väntande
+migrationer. Blob-lagret `croupier-media-private` tillhör Scoutgaming-teamet;
+Render-token läste rätt privata lager. Vercels databas-/Blob-hemligheter
+behålls; deras värden kan inte läsas tillbaka via API. Inloggning, sessionsläsning
+och projektläsning på Vercel gav 200. Vercels sparade projektrevision matchade
+exakt en read-only SELECT i produktionsdatabasen. Mediebiblioteket gav 130
+poster och autentiserat HEAD på ett privat MP4-klipp gav 200 med rätt byteantal.
+Ingen film laddades ned och inga spel-/Studio-data ändrades av dessa läsprov.
+
+### Inventering och återställning
+
+Inventeringen omfattade huvudcheckouten och tolv då registrerade syskoncheckouter:
+54 env-relaterade filer, varav fyra aktiva privata profiler, tio sparade privata
+kopior och fyrtio mallar. Inga aktiva hemlighetsfiler hittades i syskoncheckouterna.
+Genererade beroenden, mediebinarier och förbjudna privata historikarkiv ingår inte.
+Arkiverade kopior är återställningsmaterial och ska aldrig väljas automatiskt.
+
+Originalen före denna rättning finns med ursprungliga fil-ACL under
+`arkiv/2026-10-14/.env.local`, `arkiv/2026-10-14/.env.emil` och
+`arkiv/2026-10-14/lab/.env.local`. Vercels privata föredata och redigerade
+metadata ligger under `arkiv/2026-10-14/provider-env-audit/`, begränsat till
+användaren och SYSTEM. Sensitive-värden ingår inte i API-exporten; de fyra
+borttagna Emil-kopiornas ursprung finns i den bevarade Emil-filen.
+
+Full nyckelfri översikt finns lokalt i
+`lab/data/platform-private/provider-env-alignment/inventory.json`:
+119 unika namn, deras lokala filer, Vercel-miljöer och Render-tjänster.
+Efter borttagningen har Vercel 66 poster: 56 gäller Production, 31 Preview och
+5 Development (en post kan gälla flera miljöer). Render har 53 namn i spelet,
+16 i Director, 10 i Gateway och 37 i QA. Förekomst är inte ett funktionskvitto.
+`GITGUARDIAN_API_TOKEN`, `DID_API_KEY` och `ELEVENLABS_VIDEO_KEY` är
+kvarvarande separata verktygs-/providerinställningar: ingen aktiv produktkonsument
+hittades i den granskade koden, och deras avsedda externa verktygsanvändning är
+inte verifierad. De har inte blandats in i talprofilerna eller raderats.
+
+## Historik: lokal env-konsolidering före profilrättningen, 14 oktober 2026
 
 I Jakobs huvudcheckout är två privata filer flyttade återställbart till
 `lab/data/platform-private/env-cleanup-20261014/`, efter samordning med
@@ -35,15 +139,15 @@ vinner sist. Endast respektive tillåtna nycklar vidarebefordras. Rotens
 `.env.local` och cloud-activation-filen ingår inte i denna läsordning.
 Saknad generated-speech-fil är tillåten; stödet finns kvar för andra checkouter.
 
-## Emil-värden, 14 oktober 2026
+## Historik: tillfällig Emil-kopiering, 14 oktober 2026 (ersatt av profilerna ovan)
 
-På Jakobs uttryckliga begäran är `CARTESIA_API_KEY`, `ELEVENLABS_API_KEY`,
-`GEMINI_API_KEY`, `RUNPOD_API_KEY` och `RUNPOD_ENDPOINT_ID` kopierade från
+Tidigare samma dag kopierades på Jakobs begäran `CARTESIA_API_KEY`, `ELEVENLABS_API_KEY`,
+`GEMINI_API_KEY`, `RUNPOD_API_KEY` och `RUNPOD_ENDPOINT_ID` från
 den privata `.env.emil` till rotens ignorerade `.env.local`. Tre ersatta
-liknamniga rader är kommenterade; övriga värden är bevarade. Samma fem namn
-är sparade som Sensitive i projekt/team `scoutgaming`, endast Production/main.
-Det ersätter det tidigare dokumenterade förbudet mot Cartesia-/RunPod-nycklar
-i detta delade Vercelprojekt. Inga hemliga värden finns i registret eller Git.
+liknamniga rader kommenterades och samma fem namn sparades som Sensitive
+i projekt/team `scoutgaming`, endast Production/main. Detta tillfälliga
+undantag ersattes senare av de separata profilerna ovan; det är inte en
+instruktion att återinföra kopiorna. Inga hemliga värden finns i registret eller Git.
 
 Värdena aktiverades i produktionsdeploymenten för PR #139 (220519a1), skapad
 efter miljöuppdateringen och verifierad READY. Även PR #142 (418040fa) är
