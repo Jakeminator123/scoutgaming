@@ -6,8 +6,11 @@ PR #128 är mergad efter gröna kontroller som `80c84709`. Fortsatt förberedels
 i `web/moving-speech-pcm.mjs` binder exakt normaliserat uppspelningsljud till
 planens hash, 24 kHz-format och bildtidslinje. Engångsöverföringen har
 begränsade PCM-meddelanden och lokal ogiltigförklaring vid avbrott. De 13
-fokuserade plan-/PCM-proven passerar; full leveranskontroll redovisas i PR:n.
-Studio-bygget passerar med 97 kontrollerade byggspår.
+fokuserade plan-/PCM-proven passerar. Full pre-commit på `4102005` passerar
+med 3 737 godkända, 11 överhoppade och inga fel. Studio-bygget passerar med
+97 kontrollerade byggspår. Kontrollen av 410 testfiler hittar inga
+föräldralösa tester och behåller två befintliga undantag. Verifieringen
+använder aktuella låsta CI-beroenden.
 
 Vi har redan egen WebSocket-ingång och Render-ägd GPU-session. Den rörliga
 workern behöver en verifierad adapter till vår autentiserade callback, inte
