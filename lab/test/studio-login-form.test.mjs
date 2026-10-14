@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
@@ -80,6 +80,27 @@ function browserBootstrap(props) {
   return '(() => { const require=(' + fixtureRequire.toString() + ')(' + JSON.stringify(browserSources()) + ');' +
     'window.fixtureHydrate=()=>require("react-dom/client").hydrateRoot(document.getElementById("root"),' +
     'require("react").createElement(require("component").StudioLogin,' + JSON.stringify(props) + ')); })();';
+}
+
+async function buildAdminBrowserFixture(root) {
+  const { build } = await import('esbuild'), { writeFile } = await import('node:fs/promises');
+  const source = fileURLToPath(new URL('../../packages/design-preview/', import.meta.url));
+  // An isolated worktree may read already-installed, identically locked modules.
+  // Compile its own real Admin source; never reuse a possibly stale app bundle.
+  const modules = process.env.CROUPIER_DESIGN_FIXTURE_MODULES || join(source,'node_modules');
+  assert.equal(readFileSync(join(dirname(modules),'package-lock.json'),'utf8') === readFileSync(join(source,'package-lock.json'),'utf8'),true,
+    'Admin fixture dependencies must match this checkout lockfile');
+  const result = await build({entryPoints:[join(source,'admin/entry.tsx')],outfile:join(root,'admin/app.js'),
+    bundle:true,write:false,minify:true,platform:'browser',target:'es2022',jsx:'automatic',logLevel:'error',
+    nodePaths:[modules],external:['/composition-runtime/compositor.js'],
+    define:{'process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':'"/studio"'},
+    alias:{react:join(modules,'react'),'react-dom':join(modules,'react-dom'),'@':join(source,'admin'),
+      'next/link':join(source,'runtime/navigation.tsx'),'next/navigation':join(source,'runtime/navigation.tsx'),'next/image':join(source,'runtime/image.ts')},
+  });
+  for (const output of result.outputFiles) await writeFile(output.path,output.contents);
+  // This is functional context acceptance, not a visual/CSS acceptance fixture.
+  await writeFile(join(root,'admin/index.html'),'<!doctype html><html lang="sv"><head><meta charset="utf-8"><link rel="stylesheet" href="/admin/_assets/admin/app.css">' +
+    '<style>.studio-canvas{height:480px}[hidden]{display:none!important}</style></head><body><div id="root"></div><script src="/admin/_assets/admin/app.js" defer></script></body></html>');
 }
 
 test('browser fixture loads the real login component and every return-path dependency without a browser', () => {
@@ -297,22 +318,52 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
   } finally {await browser.close();}
 });
 
-test('actual browser expired Admin login returns full context through history and reload', { skip: !browserModule }, async () => {
+test('actual browser expired Admin login restores the real room view through history and reload', { skip: !browserModule }, async () => {
   const { chromium } = await import(pathToFileURL(browserModule).href);
   const { DatabaseSync } = await import('node:sqlite');
   const { scryptSync } = await import('node:crypto');
-  const { mkdtemp, mkdir, writeFile, rm } = await import('node:fs/promises');
+  const { mkdtemp, mkdir, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
   const { createStudioNativeAuth } = await import('../lib/studio-native-auth.mjs');
   const { assertNativeStudioRequest } = await import('../lib/studio-native-runtime.mjs');
+  const { createSeedProject, defaultPresentationLane, validateProject } = await import('../lib/studio-model.mjs');
+  const catalog = await import('../lib/design-preview-catalog.mjs');
   const nextPage = await import('../lib/next-page-navigation.mjs');
   const preview = await import('../lib/design-preview.mjs');
-  const root = await mkdtemp(join(tmpdir(), 'croupier-admin-login-'));
   const publicOrigin = 'https://admin.fixture.invalid', labOrigin = 'https://studio.fixture.invalid';
   const config = { allowedOrigins:[publicOrigin,labOrigin], publicHosts:['admin.fixture.invalid','studio.fixture.invalid'],
     apiBase:'/studio/api/admin', authBase:'/studio/api/auth' };
   const expectedContext = {operator:'fixture-operator',table:'fixture-room-7',composition:'fixture-scene',dealer:'vera',game:'roulette'};
+  const expectedLabels = {operator:'C4 valt bolag',room:'C4 valt rum',composition:'C4 vald sammansättning',dealer:'Vera'};
   const target = '/admin/clips?' + new URLSearchParams(expectedContext);
+  const project = createSeedProject();
+  project.lanes = [{...defaultPresentationLane('astrid'),id:'fixture-default-scene',label:'C4 annan sammansättning'},
+    {...defaultPresentationLane('vera'),id:expectedContext.composition,label:expectedLabels.composition}];
+  validateProject(project);
+  const room = {schemaVersion:2,id:expectedContext.table,name:expectedLabels.room,operatorId:expectedContext.operator,
+    presentationLaneId:expectedContext.composition,gameLaneId:'fixture-game-lane',game:expectedContext.game,state:'preview'};
+  const administration = {rooms:[{...room,id:'fixture-other-company-room',operatorId:'fixture-first-operator',presentationLaneId:'fixture-default-scene',name:'C4 annat bolags rum'},
+    {...room,id:'fixture-first-room',presentationLaneId:'fixture-default-scene',name:'C4 annat rum'},room]};
+  assert.notEqual(room.id,room.presentationLaneId);
+  async function assertRoomView(page) {
+    const studio = page.getByRole('region',{name:'Central Studio'});
+    const choices = [['Spelbolag',expectedContext.operator,expectedLabels.operator],['Spel',expectedContext.game,'Roulette'],
+      ['Rum / bakgrund',expectedContext.table,expectedLabels.room],['Dealer',expectedContext.dealer,expectedLabels.dealer]];
+    for (const [name,value,label] of choices) {
+      const select = studio.getByRole('combobox',{name,exact:true});await select.waitFor();
+      assert.equal(await select.inputValue(),value,name + ' must come from the returned stored room context');
+      assert.equal(await select.locator('option:checked').textContent(),label);
+      assert.equal(await select.isEnabled(),true);
+    }
+    assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedContext);
+    await studio.getByRole('button',{name:'Gemensam sammansättningsmall',exact:true}).click();
+    const composition = page.getByRole('region',{name:'Gemensam sammansättningsmall',exact:true});
+    await composition.getByRole('heading',{name:expectedLabels.composition,exact:true}).waitFor();
+    assert.equal(await composition.getByRole('listitem').textContent(),expectedLabels.operator + ' · ' + expectedLabels.room);
+    assert.equal(await composition.getByRole('combobox',{name:'Förvald dealer',exact:true}).inputValue(),expectedContext.dealer);
+    await page.getByRole('complementary',{name:'Kontextpanel'}).getByRole('button',{name:'Stäng',exact:true}).click();
+    assert.equal(await studio.getByRole('button',{name:'Spara utkast',exact:true}).isDisabled(),true,'reading the room must not create a draft');
+  }
   const unexpected = () => assert.fail('fixture must not access another runtime or data source');
   const load = (path, overrides) => {
     const url = new URL(path, import.meta.url), module = {exports:{}}, localRequire = createRequire(url);
@@ -322,10 +373,11 @@ test('actual browser expired Admin login returns full context through history an
     });
     return module.exports;
   };
+  const root = await mkdtemp(join(tmpdir(), 'croupier-admin-login-'));
   let browser;
   try {
     await mkdir(join(root,'admin'));
-    await writeFile(join(root,'admin','index.html'), '<h1>Authenticated Admin fixture</h1>');
+    await buildAdminBrowserFixture(root);
     browser = await chromium.launch({headless:true, ...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL ? {channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL} : {})});
     for (const prefix of ['', '/studio']) {
       const bo = new DatabaseSync(':memory:'), game = new DatabaseSync(':memory:');
@@ -337,6 +389,17 @@ test('actual browser expired Admin login returns full context through history an
         bo.prepare('INSERT INTO users VALUES (?,?,?,?,?,?)').run('7','Operator','operator@example.invalid','superadmin',salt,scryptSync(pass,salt,64).toString('hex'));
         bo.prepare('INSERT INTO meta VALUES (?,?)').run('jwt_secret','a'.repeat(64));
         bo.prepare('INSERT INTO bo_auth_epochs VALUES (?,?)').run('7',2);
+        bo.exec('CREATE TABLE fixture_operators(id TEXT PRIMARY KEY,slug TEXT,name TEXT,status TEXT); CREATE TABLE fixture_studio(kind TEXT PRIMARY KEY,document TEXT);');
+        const insertOperator = bo.prepare('INSERT INTO fixture_operators VALUES (?,?,?,?)');
+        insertOperator.run('fixture-first-operator','fixture-first-operator','C4 annat bolag','active');
+        insertOperator.run(expectedContext.operator,expectedContext.operator,expectedLabels.operator,'active');
+        const insertDocument = bo.prepare('INSERT INTO fixture_studio VALUES (?,?)');
+        for (const [kind,value] of Object.entries({project,administration,inventory:{videos:[],families:[]}})) insertDocument.run(kind,JSON.stringify(value));
+        const readDocument = kind => JSON.parse(bo.prepare('SELECT document FROM fixture_studio WHERE kind=?').get(kind).document);
+        const storedBefore = bo.prepare('SELECT * FROM fixture_studio ORDER BY kind').all();
+        const store = {listOperators:async()=>bo.prepare('SELECT * FROM fixture_operators ORDER BY rowid').all(),getCurrentPackage:async()=>null};
+        const policy = {readSaved:async()=>({project:readDocument('project'),administration:readDocument('administration'),
+          projectRevision:project.revision,administrationRevision:'fixture-administration-7'})};
         const adapter = db => ({prepare:sql => db.prepare(sql.replace(/ FOR UPDATE\b/g,'')),transaction:async work => {
           db.exec('BEGIN IMMEDIATE'); try {const result = await work();db.exec('COMMIT');return result;} catch(error) {db.exec('ROLLBACK');throw error;}
         }});
@@ -354,17 +417,17 @@ test('actual browser expired Admin login returns full context through history an
         clock.now += 8 * 86400_000;
         await context.addCookies([{name:'bo_jwt',value:expiredToken,domain:'admin.fixture.invalid',path:'/',secure:true,httpOnly:true,sameSite:'Lax'}]);
         const runtime = {nativeStudioAdminEnabled:()=>true,nativeStudioAdminConfiguration:()=>config,assertNativeStudioRequest,
-          studioNativeRuntime:async()=>({authorize})};
+          studioNativeRuntime:async()=>({authorize,readDesignCatalog:()=>catalog.registeredDesignCatalog({store,policy})})};
         const guard = load('../lib/ui-server.ts', {
           './studio-native-runtime.mjs':runtime,'./next-page-navigation.mjs':nextPage,
           './studio-server.mjs':{studioInitialData:unexpected},'./remote-ui.mjs':{remoteUiConfiguration:unexpected},
         });
         const admin = load('../app/admin/[[...path]]/route.ts', {
           '../../../lib/ui-server':guard,'../../../lib/studio-native-runtime.mjs':runtime,
-          '../../../lib/design-preview-catalog.mjs':{serveDesignCatalog:unexpected},
+          '../../../lib/design-preview-catalog.mjs':catalog,
           '../../../lib/design-preview.mjs':{...preview,serveDesignPreview:(request,path,options)=>preview.serveDesignPreview(request,path,{...options,root})},
         });
-        const failures = [], documentStatuses = [], posts = [];
+        const failures = [], documentStatuses = [], posts = [], dataReads = [];
         await context.route('**/*', async route => {
           try {
             const request = route.request(), url = new URL(request.url());
@@ -389,10 +452,19 @@ test('actual browser expired Admin login returns full context through history an
               assert.equal(response.status,200,'real native fixture login succeeds');
               return route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()});
             }
-            assert.ok(['/admin/clips','/studio/admin/clips'].includes(url.pathname),'only expected Admin documents are served');
-            assert.equal(request.method(),'GET');assert.equal(url.search,new URL(target,publicOrigin).search);
-            const response = await admin.GET(new Request(url,{headers}),{params:Promise.resolve({path:['clips']})});
-            documentStatuses.push(response.status);
+            assert.equal(request.method(),'GET','only login may write in this fixture');
+            if (['/studio/api/project','/studio/api/videos'].includes(url.pathname)) {
+              assert.equal((await authorize(new Request(url,{headers}))).role,'admin');
+              assert.equal(url.search,'');dataReads.push(url.pathname);
+              return route.fulfill({contentType:'application/json',body:JSON.stringify(url.pathname.endsWith('/project')?{project:readDocument('project')}:readDocument('inventory'))});
+            }
+            const document = ['/admin/clips','/studio/admin/clips'].includes(url.pathname);
+            assert.ok(document || ['/admin/_data/catalog','/admin/_assets/admin/app.js','/admin/_assets/admin/app.css'].includes(url.pathname),'only real Admin fixture routes and assets are served: ' + url.pathname);
+            assert.equal(url.search,document ? new URL(target,publicOrigin).search : '');
+            const path = url.pathname.replace(/^\/(?:studio\/)?admin\//,'').split('/');
+            const response = await admin.GET(new Request(url,{headers}),{params:Promise.resolve({path})});
+            if (document) documentStatuses.push(response.status);
+            if (url.pathname === '/admin/_data/catalog') dataReads.push(url.pathname);
             assert.equal(response.headers.get('cache-control'),'private, no-store');
             assert.equal(response.headers.get('vary'),'Cookie');
             if (response.status === 307) {
@@ -414,11 +486,15 @@ test('actual browser expired Admin login returns full context through history an
           assert.deepEqual(documentStatuses,[307]);
           const form = page.locator('form').first();
           await form.locator('[name="user"]').fill('operator');await form.locator('[name="pass"]').fill(pass);await form.locator('button').click();
-          await page.waitForURL(publicOrigin + target);await page.getByRole('heading',{name:'Authenticated Admin fixture'}).waitFor();
+          await page.waitForURL(publicOrigin + target);
+          await assertRoomView(page);
           await page.goBack();await page.waitForURL(publicOrigin + '/studio/login?returnTo=' + encodeURIComponent(target));
-          await page.goForward();await page.waitForURL(publicOrigin + target);await page.reload();
-          assert.deepEqual(Object.fromEntries(new URL(page.url()).searchParams),expectedContext);
+          await page.goForward();await page.waitForURL(publicOrigin + target);await assertRoomView(page);
+          const readsBeforeReload = dataReads.length;
+          await page.reload();await assertRoomView(page);
+          assert.deepEqual(dataReads.slice(readsBeforeReload).sort(),['/admin/_data/catalog','/studio/api/project','/studio/api/videos']);
           assert.deepEqual(posts,['/studio/api/auth/login']);assert.ok(documentStatuses.slice(1).every(status=>status===200));
+          assert.deepEqual(bo.prepare('SELECT * FROM fixture_studio ORDER BY kind').all(),storedBefore,'room inspection does not mutate saved data');
           const cookies = await context.cookies(), cookie = cookies.find(item=>item.name==='bo_jwt');
           assert.ok(cookie);assert.notEqual(cookie.value,expiredToken);assert.equal(cookie.domain,'admin.fixture.invalid');
           assert.equal(cookie.secure,true);assert.equal(cookie.httpOnly,true);assert.equal(cookies.some(item=>item.domain==='studio.fixture.invalid'),false);

@@ -5,6 +5,7 @@ import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {transformSync} from 'esbuild';
 import * as routing from './admin-routing.mjs';
+import * as studioHistory from '../../../lab/lib/studio-history.mjs';
 
 const require=createRequire(import.meta.url);
 const runtime=transformSync(readFileSync(new URL('./navigation.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code;
@@ -21,15 +22,15 @@ function harness(href='/admin',state=null){
   const location={get pathname(){return url.pathname;},get search(){return url.search;},get hash(){return url.hash;},get href(){return url.href;},origin,
     assign(href){native.push({method:'assign',href,allowed:window.dispatchEvent(new Event('beforeunload',{cancelable:true}))});},
     replace(href){native.push({method:'replace',href,allowed:window.dispatchEvent(new Event('beforeunload',{cancelable:true}))});}};
-  const write=(state,href)=>({href:new URL(href,url).pathname+new URL(href,url).search+new URL(href,url).hash,state:structuredClone(state)});
+  const write=(state,href=url.href)=>({href:new URL(href,url).pathname+new URL(href,url).search+new URL(href,url).hash,state:structuredClone(state)});
   const history={get state(){return entries[index].state;},get length(){return entries.length;},
-    pushState(state,unused,href){entries.splice(index+1);entries.push(write(state,href));index++;url=new URL(href,url);},
-    replaceState(state,unused,href){entries[index]=write(state,href);url=new URL(href,url);},
+    pushState(state,unused,href){entries.splice(index+1);entries.push(write(state,href));index++;url=new URL(href??url.href,url);},
+    replaceState(state,unused,href){entries[index]=write(state,href);url=new URL(href??url.href,url);},
     go(delta){queue.push(delta);}};
   Object.assign(window,{history,location,confirm:()=>assert.fail('unexpected confirmation')});
   const module={exports:{}};
   runInNewContext(runtime,{window,history,location,CustomEvent,URL,URLSearchParams,crypto:globalThis.crypto,module,exports:module.exports,
-    require:name=>name==='react'?{useSyncExternalStore(subscribe,getSnapshot){const subscriber={value:getSnapshot(),notifications:0};observed.push(subscriber);subscribe(()=>{subscriber.value=getSnapshot();subscriber.notifications++;notices.push(location.href);});return subscriber.value;}}:name==='./admin-routing.mjs'?routing:require(name)});
+    require:name=>name==='react'?{useSyncExternalStore(subscribe,getSnapshot){const subscriber={value:getSnapshot(),notifications:0};observed.push(subscriber);subscribe(()=>{subscriber.value=getSnapshot();subscriber.notifications++;notices.push(location.href);});return subscriber.value;}}:name==='./admin-routing.mjs'?routing:name==='../../../lab/lib/studio-history.mjs'?studioHistory:require(name)});
   module.exports.usePathname();
   const step=()=>{const delta=queue.shift();if(delta===undefined)return false;if(index+delta>=0&&index+delta<entries.length){index+=delta;url=new URL(entries[index].href,origin);const event=new Event('popstate');event.state=history.state;window.dispatchEvent(event);}return true;};
   const flush=()=>{let steps=0;while(step())assert.ok(++steps<20,'restoration must settle');};

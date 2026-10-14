@@ -17,6 +17,7 @@ export function StudioNavigation({ tabHrefs, onNavigate, ...context }: StudioNav
     ...(query?.get('composition') || query?.get('lane') ? { laneId: query.get('composition') || query.get('lane')! } : {}),
     ...(query?.get('operator') ? { operatorId: query.get('operator')! } : {}),
     ...(query?.get('table') ? { tableId: query.get('table')! } : {}),
+    ...(query?.get('game') ? { game: query.get('game')! } : {}),
     ...Object.fromEntries(Object.entries(context).filter(([, value]) => value !== undefined)),
   } as typeof context;
   const crumbs = studioNavigationCrumbs(context);

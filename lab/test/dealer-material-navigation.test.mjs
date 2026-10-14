@@ -43,10 +43,11 @@ const button=(tree,label)=>nodes(tree,node=>node.type==='button'&&text(node)===l
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const response=(data,status=200)=>({ok:status>=200&&status<300,status,text:async()=>JSON.stringify(data)});
 function browser(href) {
-  let url=new URL(href);const listeners=new Map(),timers=new Map();let timer=0;
-  return {listeners,timers,location:{get href(){return url.href;},get search(){return url.search;},get hash(){return url.hash;},assign(){assert.fail('draft test must not navigate away');}},
-    history:{pushState(_state,_title,next){url=new URL(next,url);},replaceState(_state,_title,next){url=new URL(next,url);}},
+  let url=new URL(href),state=null;const listeners=new Map(),timers=new Map();let timer=0;
+  return {listeners,timers,location:{get href(){return url.href;},get pathname(){return url.pathname;},get origin(){return url.origin;},get search(){return url.search;},get hash(){return url.hash;},assign(){assert.fail('draft test must not navigate away');}},
+    history:{get state(){return state;},pushState(value,_title,next){state=structuredClone(value);if(next!==undefined)url=new URL(next,url);},replaceState(value,_title,next){state=structuredClone(value);if(next!==undefined)url=new URL(next,url);}},
     addEventListener(type,listener){listeners.set(type,listener);},removeEventListener(type,listener){if(listeners.get(type)===listener)listeners.delete(type);},
+    dispatchEvent(event){listeners.get(event.type)?.(event);return !event.defaultPrevented;},
     setTimeout(callback){timers.set(++timer,callback);return timer;},clearTimeout(id){timers.delete(id);},
   };
 }
@@ -67,13 +68,13 @@ test('legacy material page redirects safe dealer and room context into the exist
 });
 
 test('material draft stays mounted across tabs and blocks dealer, history and native account departure',()=>{
-  const h=hooks(),window=browser('https://qa.invalid/control/clips?dealer=paow&view=generate&composition=scene-a&operator=north&table=room-7');
+  const h=hooks(),window=browser('https://qa.invalid/control/clips?dealer=paow&view=generate&composition=scene-a&operator=north&table=room-7&game=roulette');
   const {LabStudio}=load('../components/lab-studio.tsx',{react:h.react},{window});
-  const props={initialProject:addDealer(createSeedProject(),'paow','PAOW'),initialVideos:{videos:[]},initialDealerId:'paow',initialView:'generate',initialLaneId:'scene-a',initialOperatorId:'north',initialTableId:'room-7',connectedLane:true};
+  const props={initialProject:addDealer(createSeedProject(),'paow','PAOW'),initialVideos:{videos:[]},initialDealerId:'paow',initialView:'generate',initialLaneId:'scene-a',initialOperatorId:'north',initialTableId:'room-7',initialGame:'roulette',connectedLane:true};
   let tree=h.render(LabStudio,props);h.effects();tree=h.render(LabStudio,props);h.effects();
   const creator=nodes(tree,node=>node.type==='DealerMaterialCreator')[0];
   assert.equal(creator.props.dealerId,'paow');assert.equal(creator.key,'paow');
-  assert.deepEqual(JSON.parse(JSON.stringify(creator.props.navigationContext)),{laneId:'scene-a',operatorId:'north',tableId:'room-7'});
+  assert.deepEqual(JSON.parse(JSON.stringify(creator.props.navigationContext)),{laneId:'scene-a',operatorId:'north',tableId:'room-7',game:'roulette'});
   creator.props.onPendingChange({dirty:true,busy:false});tree=h.render(LabStudio,props);h.effects();
   const nav=nodes(tree,node=>node.type==='StudioNavigation')[0];
   nav.props.onNavigate({preventDefault(){}},'/control/clips?dealer=paow&view=clips');
@@ -82,7 +83,7 @@ test('material draft stays mounted across tabs and blocks dealer, history and na
   const astrid=nodes(tree,node=>node.type==='button'&&text(node)==='A Astrid')[0];assert.ok(astrid);astrid.props.onClick();
   tree=h.render(LabStudio,props);h.effects();assert.equal(nodes(tree,node=>node.type==='DealerMaterialCreator')[0].props.dealerId,'paow');
   let prevented=false;window.listeners.get('beforeunload')({preventDefault(){prevented=true;}});assert.equal(prevented,true,'native links including account/logout preserve guard');
-  window.history.pushState(null,'','/control/clips?dealer=astrid&view=clips');window.listeners.get('popstate')({type:'popstate'});
+  window.history.pushState(null,'','/control/clips?dealer=astrid&view=clips');window.listeners.get('popstate')(new Event('popstate'));
   tree=h.render(LabStudio,props);h.effects();assert.equal(new URL(window.location.href).searchParams.get('dealer'),'paow');
   nodes(tree,node=>node.type==='DealerMaterialCreator')[0].props.onPendingChange({dirty:false,busy:false});tree=h.render(LabStudio,props);h.effects();
   nodes(tree,node=>node.type==='button'&&text(node)==='A Astrid')[0].props.onClick();tree=h.render(LabStudio,props);h.effects();tree=h.render(LabStudio,props);

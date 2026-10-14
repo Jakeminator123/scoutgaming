@@ -12,7 +12,7 @@ export const STUDIO_DEALER_TABS = Object.freeze([
 ].map(tab => Object.freeze(tab)));
 
 const CONTEXT_PARAMETERS = Object.freeze({
-  dealerId: 'dealer', eventId: 'event', variantId: 'variant', situation: 'situation', laneId: 'composition', operatorId: 'operator', tableId: 'table',
+  dealerId: 'dealer', eventId: 'event', variantId: 'variant', situation: 'situation', laneId: 'composition', operatorId: 'operator', tableId: 'table', game: 'game',
 });
 
 // Read only the shared Studio context; page-specific filters and credentials

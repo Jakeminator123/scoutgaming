@@ -163,6 +163,23 @@ nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
 ## Admin C1–C4: navigation och läsbarhet, 14 oktober
 
+Senaste C4/C5-pass fortsätter på `codex/admin-c4-room-history` efter DRAGANs
+PR138 (`ad0ae9ac`), med hans talfacksleverans före vår integration. Bara våra
+Admin-avsnitt är överlämnade. Tre separata agentarbetskopior har provat riktig
+Admin efter login, Lab-historik samt projektredigerarens sparning/konflikter.
+Sex isolerade loginprov använder riktiga rumsväljare och sammansättningspanel.
+Eget läsande liveprov behåller Swedish Games version 4 / Dragan-rummet genom
+Publicering → Provspelning → Klippkarta och reload/Bakåt/Framåt; ingen ny
+produktionslogin, publicering eller spelomgång gjordes.
+Lab-historikens reproducerade mellanpost-/Next-state-fel och tappad speltyp
+rättas med en delad historikägare: 25 slutliga prov passerar, även efter integration; 42 relaterade prov passerade före sista rättningen. Äldre oindexerade
+poster och full RSC-acceptans redovisas fortfarande som luckor i trackern.
+Revisionshämtning kunde också tappa text som skrivits under väntan. Den läser
+nu senaste utkastet; 18 riktade C5-prov passerar med syntetisk auth/lagring,
+riktig HTTP, 409, återläsning, konfliktval, historik och avbruten omladdning.
+Samlad fullkontroll och PR-kvitto tillkommer efter integration mot DRAGANs main.
+Äldre daterade kvitton nedan är historik och ersätter inte dessa bevisgränser.
+
 Efter DRAGANs uttryckliga dokumentöverlämning av PR118 finns C1–C9 i
 [befintliga migrationstrackern](CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
 Ursprunglig integrationsbas: `5ca686c5513982f9a760ad8dd07e67ed4d4e2e40`; egen gren
