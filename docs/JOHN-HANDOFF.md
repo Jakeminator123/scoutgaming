@@ -36,6 +36,14 @@ Fyra svenska originalrepliker (goodluck_1, insurance_1, double_1, win_1; totalt 
 
 Native SSH kör som root medan spelappen kör UID/GID 1000. En import skapade den tillfälliga mediacachen med fel ägare; exakt cachekatalog och journal fick appens ägare och begränsade rättigheter, utan ändrade original eller databasposter. Privata importhjälpar sänker UID/GID innan media-/filsystemarbete. Efter rättningen laddade samtliga använda provklipp utan HTTP-mediafel.
 
+## Dragan: utebliven första bildruta, 14 oktober
+
+Live-spelaren visade ”Idle: Film ended without a presented frame” för exakt Kevin-grundloop 2f3955b0-b450-4cc2-a9f5-ac80f10abd2f. Felet visar att medielivscykeln eller första presenterade bildrutans bevis saknades; den ursprungliga händelseordningen är inte bevarad, så rotorsaken är inte fastställd. Samma fil gav 121 verkliga bildrutecallbacks per uppspelning i två isolerade lokala mediaprov. Provet använde ingen spelmotor eller användarplånbok.
+
+Spelaren klassificerar nu endast started+ended utan presented som återförsökbart och lämnar avgränsade tillstånd i felkvittot. Egen grundloop får ett återförsök efter 500 ms med samma exakta klipp; en andra miss stoppar. Varning och stängd talgrind kvarstår tills aktuell ägares riktiga bildruta kommer. Givning, tal, dold flik och stängning avbryter väntande återförsök. Hash-, avkodnings-, kompositions- och paketfel återförsöks inte. Detta aktiverar inga talfilmer eller AI-röster.
+
+Fokuserad regression: 61 test passerar, inklusive diagnostik, retrygräns, verklig frame som återhämtning och samtliga ägaravbrott. Full leveranskontroll och produktionsprov redovisas i leveranskvittot; ingen läppsynksacceptans härleds från dessa tester.
+
 ## Dragan: kortplatser som följer valt bord, 14 oktober
 
 Swedish Games-utkastet med Dragan, Lounge varm och Blackjack Oak visade

@@ -41,7 +41,8 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
   const hold = video => { if (composition) { composition.hold(video); return; } if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
-  const stop = () => { active?.abort(); active = null; };
+  let idleRun = 0, idleError = null, idleDuringAction = false, pendingRule = null, idleRetryTimer = null, idleRetries = 0;
+  const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; idleRetries = 0; active?.abort(); active = null; };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
   async function observeChat(text) {
@@ -91,7 +92,6 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       });
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
   }
-  let idleRun = 0, idleError = null, idleDuringAction = false, pendingRule = null;
   function retainRule(result, requestVersion) {
     const rule = result.idleRule;
     if (!idle || mode !== 'rules' || rule?.mode !== mode || rule.version !== requestVersion || rule.requestId !== result.decision.requestId
@@ -122,12 +122,23 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     void film(video, { kind: 'idle', details: { idleKind: 'standard', standardBase: true,
       reason: 'saved_exact_baseline', projectRevision: config.projectRevision || config.revision, configurationSource },
       onFrame: () => { if (epoch !== serial || closed) return;
+        idleRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
         onIdle(); },
     }).then(() => { if (epoch !== serial || closed) return; idleRun = 0; resumeOwnIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
         if (requireReload(error)) return;
-        idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error); });
+        idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
+        if (error.code !== 'local_film_no_presented_frame' || idleRetries >= 1) return;
+        // Retry the same frozen idle once. Neither a timer nor 'playing' opens
+        // the speech gate or clears the warning; only this owner's frame does.
+        idleRetries++;
+        idleRetryTimer = setTimeout(() => {
+          idleRetryTimer = null;
+          if (epoch !== serial || closed) return;
+          idleRun = 0; resumeOwnIdle();
+        }, 500);
+      });
   }
   function resumeIdle() {
     if (!idle) { resumeOwnIdle(); return; }

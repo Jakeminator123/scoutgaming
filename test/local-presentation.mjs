@@ -442,10 +442,23 @@ test('failed dealer keying never exposes the raw video or publishes a presented 
   await assert.rejects(result,/background removal unavailable/);
   assert.equal(media[0].style.visibility,'hidden');assert.equal(receipts.includes('presented'),false);
 });
-test('an ended event with no presented picture remains a failure', async t => {
+test('an ended event with no presented picture fails with bounded-retry diagnostics, never frame proof', async t => {
+  const { media, host } = filmFixture(t), receipts = [];
+  const result = playLocalFilm({ host, src: '/broken', onReceipt: row => receipts.push(row) });
+  Object.assign(media[0], {readyState:4,currentTime:5,duration:5});
+  media[0].emit('playing'); media[0].ended = true; media[0].emit('ended');
+  await assert.rejects(result, {message:'Film ended without a presented frame',code:'local_film_no_presented_frame'});
+  assert.deepEqual(receipts.map(row=>row.state), ['start','error']);
+  assert.deepEqual(receipts.at(-1).playback, {started:true,presented:false,ended:true,readyState:4,mediaTime:5,duration:5,visibility:'visible'});
+  assert.equal(receipts.at(-1).code, 'local_film_no_presented_frame');
+});
+
+test('incomplete media lifecycle is not classified as a retryable missing first frame', async t => {
   const { media, host } = filmFixture(t);
-  const result = playLocalFilm({ host, src: '/broken' }); media[0].emit('playing'); media[0].ended = true; media[0].emit('ended');
-  await assert.rejects(result, /without a presented frame/);
+  const unstarted = playLocalFilm({host,src:'/unstarted'}); media[0].ended = true; media[0].emit('ended');
+  await assert.rejects(unstarted, {code:'local_film_incomplete'});
+  const unfinished = playLocalFilm({host,src:'/unfinished'}); media[1].emit('playing'); media[1].emit('ended');
+  await assert.rejects(unfinished, {code:'local_film_incomplete'});
 });
 
 test('card motion receives each presented media frame and stops at cancellation', async t => {
@@ -462,7 +475,10 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   const originalDocument = globalThis.document, originalFetch = globalThis.fetch;
   const inventory = customInventory ?? await loadVideoRegistry(), jobs = [], receipts = [], elements = [], requests = [];
   const element = () => { const value = { style: {}, dataset: {}, setAttribute() {}, append() {}, remove() {}, getContext: () => ({ drawImage() {} }) }; elements.push(value); return value; };
-  globalThis.document = { hidden: false, createElement: element, addEventListener() {}, removeEventListener() {} };
+  const visibilityHandlers = new Set();
+  globalThis.document = { hidden: false, createElement: element,
+    addEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.add(handler); },
+    removeEventListener(type, handler) { if(type==='visibilitychange')visibilityHandlers.delete(handler); } };
   const selected = selectedVideo ?? inventory.videos.find(video => video.fileName === 'deal_pos4.mp4');
   globalThis.fetch = async (url,options={}) => { requests.push({url,options}); const configRequest=new URL(url,'https://game.invalid').pathname==='/api/presentation/config';return new Response(JSON.stringify(configRequest ? { inventory, idlePolicy: idlePolicy ?? createSeedProject().idlePolicy, defaultMode, projectRevision: 'studio-config-fixture', configurationSource: 'lab/project.json', dealerIdle: {[dealerId]: ownIdle} }
     : { video: missingPosition ? null : selected, standard: selected, projectRevision: 'studio-selection-fixture', configurationSource: 'lab/project.json', decision: { requestId: 'selection-fixture', sourceEvent: source, media: { familyId: missingPosition ? null : selected.familyId, ...(missingPosition ? { reason: 'position_clip_missing', situation: 'box3' } : {}) } } }), { status:configRequest?configStatus:200,headers: { 'content-type': 'application/json' } }); };
@@ -474,7 +490,7 @@ async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, compos
   const controller = await createLocalPresentation({ player, host: element(), dealerId, composition, entry, version: () => 2,
     receipt: value => receipts.push(value), onIdle: () => proofs++, onBusy() {}, muted: () => false });
   t.after(() => { controller.close(); globalThis.document = originalDocument; globalThis.fetch = originalFetch; });
-  return { controller, jobs, receipts, requests, elements, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
+  return { controller, jobs, receipts, requests, elements, setHidden(value){globalThis.document.hidden=value;for(const handler of visibilityHandlers)handler();}, setConfigStatus(value){configStatus=value;}, setMissingPosition(value) { missingPosition = value; }, status: elements.find(value => value.className === 'local-presentation-status'), get proofs() { return proofs; } };
 }
 
 test('native configuration and actual film receipts preserve their saved project revision and selection id', async t => {
@@ -689,6 +705,54 @@ test('Nora never spins on an idle failure',async t=>{
   failed.controller.start();assert.equal(failed.jobs.length,1);
   failed.jobs[0].reject(new Error('own idle unavailable'));await new Promise(resolve=>setImmediate(resolve));
   assert.equal(failed.jobs.length,1);assert.equal(failed.status.textContent,'Idle: own idle unavailable');
+});
+
+
+const missingIdleFrame = () => Object.assign(new Error('Film ended without a presented frame'), {code:'local_film_no_presented_frame'});
+const idleRetryFixture = t => controllerFixture(t,{dealerId:'dragan',ownIdle:{id:'dragan-bound-idle',fileName:'breath.mp4',sha256:'b'.repeat(64),src:'/api/presentation/videos/dragan-bound-idle'}});
+const flushIdle = () => new Promise(resolve=>setImmediate(resolve));
+
+test('own idle retries the exact clip once and only a new owner frame clears the warning and opens speech',async t=>{
+  const f=await idleRetryFixture(t);t.mock.timers.enable({apis:['setTimeout']});
+  f.controller.start();await flushIdle();f.jobs[0].reject(missingIdleFrame());await flushIdle();
+  assert.match(f.status.textContent,/without a presented frame/);assert.equal(f.proofs,0);
+  t.mock.timers.tick(499);await flushIdle();assert.equal(f.jobs.length,1);
+  t.mock.timers.tick(1);await flushIdle();assert.equal(f.jobs.length,2);
+  assert.deepEqual(f.jobs[1].take,f.jobs[0].take);
+  f.jobs[0].options.onReceipt({state:'presented'});f.jobs[1].options.onReceipt({state:'start'});
+  assert.match(f.status.textContent,/without a presented frame/);assert.equal(f.proofs,0);
+  f.jobs[1].options.onReceipt({state:'presented'});assert.equal(f.status.textContent,'');assert.equal(f.proofs,1);
+  f.jobs[1].resolve();await flushIdle();assert.equal(f.jobs.length,3);
+  f.jobs[2].reject(missingIdleFrame());await flushIdle();t.mock.timers.tick(500);await flushIdle();
+  assert.equal(f.jobs.length,4,'A truly recovered loop has a fresh retry budget.');
+});
+
+test('own idle stops after a second missing frame and does not spin or open speech',async t=>{
+  const f=await idleRetryFixture(t);t.mock.timers.enable({apis:['setTimeout']});
+  f.controller.start();await flushIdle();f.jobs[0].reject(missingIdleFrame());await flushIdle();
+  t.mock.timers.tick(500);await flushIdle();f.jobs[1].reject(missingIdleFrame());await flushIdle();
+  t.mock.timers.tick(10000);await flushIdle();
+  assert.equal(f.jobs.length,2);assert.equal(f.proofs,0);assert.match(f.status.textContent,/without a presented frame/);
+});
+
+test('own idle recovery rechecks the frozen package and stops on 409 before another video',async t=>{
+  const f=await controllerFixture(t,{dealerId:'dragan',ownIdle:{id:'bound',fileName:'breath.mp4',sha256:'b'.repeat(64)},entry:{operator:'swedish-games',roomId:'dragan-room',packageRevision:3}});
+  t.mock.timers.enable({apis:['setTimeout']});
+  f.controller.start();await flushIdle();f.jobs[0].reject(missingIdleFrame());await flushIdle();
+  f.setConfigStatus(409);t.mock.timers.tick(500);await flushIdle();
+  assert.equal(f.jobs.length,1);assert.equal(f.proofs,0);assert.match(f.status.textContent,/Ladda om spelet/);
+  const requests=f.requests.length;t.mock.timers.tick(10000);await flushIdle();
+  assert.equal(f.requests.length,requests);assert.equal(f.jobs.length,1);
+});
+
+for(const boundary of ['action','speech','hidden','close'])test('pending idle recovery is cancelled by '+boundary,async t=>{
+  const f=await idleRetryFixture(t);t.mock.timers.enable({apis:['setTimeout']});
+  f.controller.start();await flushIdle();f.jobs[0].reject(missingIdleFrame());await flushIdle();
+  if(boundary==='hidden')f.setHidden(true);
+  else if(boundary==='close')f.controller.close();
+  else f.controller.state({[boundary]:true});
+  t.mock.timers.tick(10000);await flushIdle();f.jobs[0].options.onReceipt({state:'presented'});
+  assert.equal(f.jobs.length,1);assert.equal(f.proofs,0);
 });
 
 test('composed output follows every presented source frame before the receipt without changing card time',async t=>{
