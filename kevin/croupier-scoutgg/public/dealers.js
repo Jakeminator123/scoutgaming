@@ -51,9 +51,10 @@ export const DEALERS = {
   // lines yet: lines null means every spoken line and chat reply is text only (never another dealer's face or voice).
   // His idles are Kling loops like Dragge's and Paow's (Emil 11 Oct liked those best): back at rest after a single card
   // he breathes instead of holding his still.
+  // linesV: Mårten's lines re-made with his mouth on them (14 Oct): browsers fetch them anew, not yesterday's cached ones
   marten: { id: 'marten', name: 'Mårten', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/marten.jpg' + V,
     keyed: { still: '/media/dealers/marten/v2/vila.png' + V }, layerScale: 1, ready: MARTEN_READY,
-    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es'], linesDir: '/media/dealers/marten/repliker/', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
+    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014b', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
@@ -118,7 +119,7 @@ export function dealerLineUrl(url, language) {
   const m = /\/media\/repliker(?:-[a-z]+)?\/([a-z0-9]+_\d)(?:_[a-z]+)?\.mp4/.exec(url);
   if (!m) return null;
   const lang = dealer.lines.includes(language) ? language : 'en';
-  return `${dealer.linesDir}${lang}/${m[1]}.mp4${V}`;
+  return `${dealer.linesDir}${lang}/${m[1]}.mp4${dealer.linesV ?? V}`;
 }
 
 // An alternative dealer without recorded lines (Mårten) never fetches Astrid's: they would only be skipped.
@@ -127,7 +128,7 @@ export const unusedLine = url => isAlternative && !dealer.lines && /\/media\/rep
 // A line only the alternative dealer has (remarks, banter), in the table's language.
 export function dealerExtraLineUrl(id, language) {
   if (!isAlternative || !dealer.lines) return null;
-  return `${dealer.linesDir}${dealer.lines.includes(language) ? language : 'en'}/${id}.mp4${V}`;
+  return `${dealer.linesDir}${dealer.lines.includes(language) ? language : 'en'}/${id}.mp4${dealer.linesV ?? V}`;
 }
 
 // The public room has one table per dealer (CH: a player who went to Astrid stayed in the boxes at
