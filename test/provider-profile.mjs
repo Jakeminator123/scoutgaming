@@ -22,13 +22,14 @@ test('explicit file credentials win over inherited process variables without cha
   process.env.RUNPOD_API_KEY = 'fixture-inherited';
   try {
     const configuration = readProfile(emil, 'emil');
-    await checkProfile(configuration, { fetchImpl: async (url, options) => {
+    const report = await checkProfile(configuration, { fetchImpl: async (url, options) => {
       assert.equal(options.headers.Authorization, 'Bearer fixture-emil');
       assert.equal(options.method, 'GET');
       assert.equal(options.redirect, 'error');
       assert.equal(url, 'https://api.runpod.ai/v2/fixture-emil-endpoint/health');
       return Response.json({ workers: { ready: 1 } });
     } });
+    assert.equal(report.ok, true, 'the expected explicit-file request must complete successfully');
     assert.equal(process.env.RUNPOD_API_KEY, 'fixture-inherited');
   } finally {
     if (before === undefined) delete process.env.RUNPOD_API_KEY;

@@ -19,6 +19,11 @@ har identisk effektiv konfiguration före/efter. Båda providerprofilerna gav
 
 Inloggning, session, projekt och mediebibliotek lästa på Vercel; projektrevisionen
 matchade produktions-Neon och autentiserat privat MP4-HEAD gav 200/rätt längd.
+Efter miljöbytet redeployades exakt `fa1fdaaeaf923c0744a82953d77334779a6001e7`:
+`dpl_3C8Hpice4vvqnfJmzei9KR176i9Y` är READY i rätt team/projekt med
+`www.scoutgaming.tech` som alias. Samma databas-, sessions- och medieprov
+godkändes efter deploymenten; webb/Admin och båda Render-hälsoproven gav 200.
+SAMORDNING fick kvittot och merge-/deploypausen kunde släppas.
 Se [aktuella profiler, namnmatris och återställning](ENVIRONMENT-VARIABLES.md).
 Rörlig workerintegration, två faktiska talprov och Anna-avatar återstår separat.
 

@@ -78,6 +78,15 @@ exakt en read-only SELECT i produktionsdatabasen. Mediebiblioteket gav 130
 poster och autentiserat HEAD på ett privat MP4-klipp gav 200 med rätt byteantal.
 Ingen film laddades ned och inga spel-/Studio-data ändrades av dessa läsprov.
 
+De nya Vercel-inställningarna aktiverades genom redeploy av oförändrad
+`main`-commit `fa1fdaaeaf923c0744a82953d77334779a6001e7`.
+Deployment `dpl_3C8Hpice4vvqnfJmzei9KR176i9Y` är READY i team/projekt
+`scoutgaming`, med `www.scoutgaming.tech` som alias. Efterkontrollen
+upprepade sessions-/projektläsning, exakt Neon-revisionsmatchning och privat
+MP4-HEAD: samtliga godkända. Webb/Admin, spelmotorns och Directors
+hälsokontroller gav också 200. Detta är läsacceptans av konfigurationen;
+det ersätter inte prov av ändrade speldata eller två faktiska taluppspelningar.
+
 ### Inventering och återställning
 
 Inventeringen omfattade huvudcheckouten och tolv då registrerade syskoncheckouter:
