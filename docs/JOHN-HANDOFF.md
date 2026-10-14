@@ -200,6 +200,13 @@ Aktuell status och exakta acceptansgränser finns i
 aktuell status från daterade kvitton och pekar ut den kanoniska
 återställningsguiden. Äldre planer/kvitton och andra agenters områden bevaras.
 
+Kodcommit `d95ba378` passerar full ordinarie kontroll: 3794 godkända,
+9 uttryckliga överhopp, 0 fel/cancel i 77 grupper. Alla nya browserprov kördes.
+Studio-byggets 97 spår och Admin/lobby-typkontroll är gröna. Oberoende granskning
+förstärkte C6:s prov mellan två publicerade bolag. Egna junctions, browser-
+och serverfixtures är städade; två tillfälliga arbetskopior väntar på begärd
+arkivering. Integrationskopian, dess beroenden och bygge behålls enligt Jakob.
+
 ### Historiskt C4/C5-kvitto efter PR140
 
 PR140 är granskad och mergad till `c3397d1d0503927a6d0dafc240c21772634d99ee`.
