@@ -397,3 +397,29 @@ test('four split hands survive reload, hand changes and collection with separate
  round.dealer.push(card('10','♣',4));cards.render(round,visible,true,0);cards.advanceDeal(31/24);
  assert.equal(hole.attrs.display,'inline');assert.equal(hole.attrs['data-card'],'10♣');assert.equal(up.attrs.transform,start);
  });
+
+test('changing card view reprojects the same authoritative nodes and keeps the hole hidden',()=>{
+  const host=new Node('div');host.dataset={};const overlay=createLocalCardOverlay(host),round=splitFixture();overlay.restore(round);
+  const svg=host.children[0],original=draw(svg,1),hole=draw(svg,4);
+  const projection={x:0,y:100,scale:.5,adjusted:true,offsets:{},boxes:[2,3,4],followCards:true};
+  overlay.setProjection({...projection,cardView:'table'},390,844);
+  assert.equal(draw(svg,1),original);assert.equal(draw(svg,4),hole);assert.equal(hole.attrs['data-card'],'hidden');
+  assert.equal(original.children[0].attrs.transform,'matrix(1 0 0 0.62 0 0)');
+  overlay.setProjection({...projection,cardView:'raised'},390,844);
+  assert.equal(original.children[0].attrs.transform,'matrix(1 0 0 1 0 0)');
+  assert.equal(hole.attrs['data-card'],'hidden');overlay.close();
+});
+
+for(const [mode,depth]of [['raised',1],['table',.62]])test('four split hands keep their totals clear of the next row in '+mode,()=>{
+  const {overlay,svg,projection}=filmedSetup();
+  const round=fixture();round.hands=Array.from({length:4},(_,i)=>({box:3,cards:[card('8','♥',10+i*2),card('3','♣',11+i*2)]}));
+  overlay.setProjection({...projection,cardView:mode,followCards:true},390,844);overlay.restore(round);
+  const badges=all(svg).find(n=>n.attrs.class==='card-totals');
+  const xy=node=>node.attrs.transform.match(/-?\d+(?:\.\d+)?/g).map(Number);
+  for(const hand of [2,3]){
+    const badge=badges.children.find(n=>n.attrs['data-hand']===String(hand));
+    const lower=draw(svg,10+(hand-2)*2),badgeBottom=xy(badge)[1]+16;
+    assert.ok(badgeBottom+8<xy(lower)[1]-42.5*depth,'upper total clears all lower-row card ink');
+  }
+  assert.equal(draw(svg,4).attrs['data-card'],'hidden');overlay.close();
+});

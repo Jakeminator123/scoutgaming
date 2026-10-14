@@ -31,7 +31,8 @@ export function validateCompositionSettings(value,{tableIds,assets}={}) {
       if(tableIds!==undefined&&!tableIds.includes(table.tableId))fail();
       if(assets!==undefined&&!assets.some(asset=>asset.id===table.tableId&&asset.role==='table'&&asset.game!=='roulette'))fail();
       for(const layout of ['mobile','desktop']){
-        const geometry=table[layout];exact(geometry,['cardWidth','dealer','seats']);
+        const geometry=table[layout];exact(geometry,['cardWidth','dealer','seats',...(Object.hasOwn(geometry??{},'betMode')?['betMode']:[])]);
+        if(Object.hasOwn(geometry,'betMode')&&geometry.betMode!=='under-cards')fail();
         if(!Number.isFinite(geometry.cardWidth)||geometry.cardWidth<.02||geometry.cardWidth>.15)fail();
         point(geometry.dealer);
         if(!Array.isArray(geometry.seats)||geometry.seats.length!==(layout==='mobile'?3:7))fail();

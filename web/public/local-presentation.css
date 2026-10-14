@@ -52,3 +52,20 @@ html[data-stream-lane="lissabon-stream-lane"] #sign-out { display: none; }
   html[data-presentation="local"] #cal-btn { display: none; }
   html[data-presentation="local"] .local-presentation-mode { top: 104px; }
 }
+
+/* Card view is independent of media mode and stays reachable above the table. */
+.card-view-choice { position:absolute;left:12px;top:178px;z-index:40;display:flex;align-items:center;gap:8px;padding:6px 9px;border:1px solid #414e48;border-radius:8px;background:#101618eb;color:#c9d2cf;font:12px Inter,sans-serif; }
+.card-view-choice select { min-height:30px;border:0;background:transparent;color:#f2f1ed;font:inherit; }
+.card-view-choice option { background:#101618; }
+@media(max-width:860px){.card-view-choice {top:151px;}}
+/* Aligned targets retain side-bet actions without the exaggerated neon halo. */
+#scene[data-bet-placement="under-cards"] .seat.active .spot {box-shadow:0 0 0 2px #d6ff3ac7,0 0 12px #d6ff3a33;}
+#scene[data-bet-placement="under-cards"] .sidearcs .side {fill:#101b17a6;stroke:#c6c9a766;}
+#scene[data-bet-placement="under-cards"] .sidearcs .side-label {fill:#e1dfbd;}
+
+.card-view-choice[hidden] {display:none;}
+
+@media(max-width:480px){
+  html[data-presentation="local"] .local-presentation-mode {top:184px;}
+  .card-view-choice {top:228px;}
+}

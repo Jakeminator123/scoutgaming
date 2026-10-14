@@ -1,3 +1,4 @@
+import {cardViewDepth,normalizeCardView} from './card-view.mjs';
 import { calibration } from './card-presentation/calibration.mjs';
 export const BLACKJACK_COMPACT_QUERY='(max-width: 860px)';
 
@@ -21,27 +22,32 @@ export function projectTableGamePlane(dims, rect, viewport, tableGeometry,tableL
     y:(viewport.height-dims[1]*fit)/2+rect[1]*fit,width:rect[2]*fit,height:rect[3]*fit}};
 }
 
-function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePlane},boxes,bounds,compact){
+function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePlane},boxes,bounds,compact,cardView){
   const layout=tableLayout??(compact?'mobile':'desktop'),geometry=tableGeometry[layout];
   const scale=rect.width*geometry.cardWidth/calibration.width;
   const local=point=>({cx:point.x*rect.width/scale,cy:point.y*rect.height/scale});
   const screen=point=>({x:rect.x+point.x*rect.width,y:rect.y+point.y*rect.height});
   const positions={dealer:local(geometry.dealer)};
+  const controlScale=compact?Math.min(1,Math.max(.01,(bounds.right-bounds.left)/330)):scale;
+  const followCards=geometry.betMode==='under-cards';
+  // Keep one vertical column per hand. Its chip target clears the resting card
+  // and total badge in either view, including phone-sized touch controls.
+  const betGap=(calibration.height/2*cardViewDepth(cardView)+38)*scale+26*controlScale+6;
   const seats=boxes.map((box,index)=>{
     const seat=geometry.seats[layout==='mobile'?index:box];
     positions[String(box+1)]=local(seat.card);
-    return {box,...screen(seat.bet)};
+    const card=screen(seat.card);
+    return {box,...(followCards?{x:card.x,y:card.y+betGap}:screen(seat.bet))};
   });
-  const controlScale=compact?Math.min(1,Math.max(.01,(bounds.right-bounds.left)/330)):scale;
   const inside=(x,y,left,right,top,bottom)=>x-left>=bounds.left&&x+right<=bounds.right&&y-top>=bounds.top&&y+bottom<=bounds.bottom;
   const fits=seats.every((seat,index)=>{
     const card=positions[String(seat.box+1)],x=rect.x+card.cx*scale,y=rect.y+card.cy*scale;
-    return inside(seat.x,seat.y,49*controlScale,49*controlScale,45*controlScale,45*controlScale)
+    return inside(seat.x,seat.y,49*(compact?1:controlScale),49*(compact?1:controlScale),45*controlScale,45*controlScale)
       &&inside(x,y,144*scale,90*scale,230*scale,55*scale)
-      &&(!index||seat.x-seats[index-1].x>=98*controlScale);
+      &&(!index||seat.x-seats[index-1].x>=98*(compact?1:controlScale));
   });
   const dealer=screen(geometry.dealer);
-  return {x:rect.x,y:rect.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,
+  return {x:rect.x,y:rect.y,scale,positions,offsets:{},boxes,seats,dealer,controlScale,adjusted:true,cardView,followCards,
     ...(sourcePlane&&tableId?{sourcePlane,tableId,tableLayout:layout}:{}),
     geometryWarning:fits&&inside(dealer.x,dealer.y,310*scale,45*scale,130*scale,55*scale)?'':'Kort eller insatsplatser ryms inte. Justera bordets placering i Sammansättning.'};
 }
@@ -49,8 +55,9 @@ function layoutTableGameOverlay({rect,tableGeometry,tableLayout,tableId,sourcePl
 // Keep server seat identities and card anchors together, including a resumed
 // desktop hand on a phone. A heavily cropped actor must not crop game controls.
 // An adjusted plane is static presentation, never evidence of filmed contact.
-export function layoutGameOverlay(plane, boxes, bounds, {compact=false}={}) {
-  if(plane.tableGeometry)return layoutTableGameOverlay(plane,boxes,bounds,compact);
+export function layoutGameOverlay(plane, boxes, bounds, {compact=false,cardView='raised'}={}) {
+  cardView=normalizeCardView(cardView);
+  if(plane.tableGeometry)return layoutTableGameOverlay(plane,boxes,bounds,compact,cardView);
   const anchors = boxes.map(box => ({ box, ...calibration.positions[String(box + 1)] }));
   const left = Math.min(calibration.positions.dealer.cx - 310,...anchors.map(p => p.cx - 144));
   const right = Math.max(calibration.positions.dealer.cx + 45,...anchors.map(p => p.cx + 90));
@@ -70,7 +77,7 @@ export function layoutGameOverlay(plane, boxes, bounds, {compact=false}={}) {
   const offsets=Object.fromEntries(anchors.map((p,i)=>[String(p.box+1),(seats[i].x-x)/scale-p.cx]));
   const adjusted = plane.sourceAligned===false || Math.abs(scale - plane.scale) > .001 || Math.abs(x - plane.x) > .5 || Math.abs(y - plane.y) > .5
     || Object.values(offsets).some(dx=>Math.abs(dx)>.5);
-  return { x, y, scale, adjusted,offsets,boxes,controlScale:compact?Math.min(1,availableWidth/330):scale,
+  return { x, y, scale, adjusted,offsets,boxes,cardView,controlScale:compact?Math.min(1,availableWidth/330):scale,
     ...(plane.geometryWarning?{geometryWarning:plane.geometryWarning}:{}),
     seats,
     dealer: { x: x + calibration.positions.dealer.cx * scale, y: y + calibration.positions.dealer.cy * scale },

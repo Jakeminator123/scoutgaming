@@ -1,7 +1,7 @@
 export interface CompositionPlane {scale:number; x:number; y:number}
 export interface CompositionTable {width:number; x:number; y:number}
 export interface TablePoint {x:number; y:number}
-export interface BlackjackTableLayout {cardWidth:number; dealer:TablePoint; seats:Array<{card:TablePoint; bet:TablePoint}>}
+export interface BlackjackTableLayout {cardWidth:number; dealer:TablePoint; seats:Array<{card:TablePoint; bet:TablePoint}>; betMode?:'under-cards'}
 export interface BlackjackTableGeometry {tableId:string; mobile:BlackjackTableLayout; desktop:BlackjackTableLayout}
 export interface CompositionSettings {
   mobile:{dealer:CompositionPlane; background:CompositionPlane; table:CompositionTable};

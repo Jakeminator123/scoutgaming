@@ -106,7 +106,7 @@ test('actual seat layout handles compositor resize before the query change event
   const fragment=source.slice(source.indexOf('const COMPACT_BOXES ='),source.indexOf('layerComposition?.onGeometryChange(layoutSeats)'));
   const query={matches:false},geometry=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
   let width=1920,height=1080,projection;
-  const node=()=>({style:{setProperty(){}},classList:{toggle(){}},setAttribute(){},getBoundingClientRect:()=>({left:0,top:0,width,height})});
+  const node=()=>({dataset:{},style:{setProperty(){}},classList:{toggle(){}},setAttribute(){},getBoundingClientRect:()=>({left:0,top:0,width,height})});
   const scene=node(),nodes={'#scene':scene,'#banner':node(),'#table2d':node(),'#dealer-cards':node(),'#hud-bottom':{getBoundingClientRect:()=>({top:height-80,height:80})}};
   scene.append=element=>{nodes['#'+element.id]=element;};
   const plane=()=>{
@@ -114,7 +114,7 @@ test('actual seat layout handles compositor resize before the query change event
     const scene=sceneForComposition(settings,layout),g=stageGeometry(scene);
     return projectTableGamePlane(g.dims,tableRect(scene,{width:1672,height:941},g),{width,height},geometry,layout);
   };
-  const context=vm.createContext({registeredFilmedProfile:()=>null,DEALER:{key:"astrid"},BLACKJACK_COMPACT_QUERY,layoutGameOverlay,matchMedia:()=>query,SEATS:7,seatEls:Array.from({length:7},node),round:null,
+  const context=vm.createContext({cardViewChoice:{hidden:true},cardView:'raised',registeredFilmedProfile:()=>null,DEALER:{key:"astrid"},BLACKJACK_COMPACT_QUERY,layoutGameOverlay,matchMedia:()=>query,SEATS:7,seatEls:Array.from({length:7},node),round:null,
     $:selector=>nodes[selector],document:{createElement:node},layerComposition:{referencePlane:plane},localCards:{setProjection(value){projection=structuredClone(value);}}});
   vm.runInContext(fragment,context);assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
   width=390;height=844;query.matches=true;context.round={active:0,live:()=>[{box:6}]};
@@ -122,4 +122,31 @@ test('actual seat layout handles compositor resize before the query change event
   vm.runInContext('layoutSeats()',context);assert.deepEqual(projection.boxes,[4,5,6]);
   width=900;height=1200;query.matches=false;
   vm.runInContext('layoutSeats()',context);assert.deepEqual(projection.boxes,[0,1,2,3,4,5,6]);
+});
+
+for(const width of [320,390,768,1440])test('linked bets clear the resting cards and totals in either view at '+width,()=>{
+  const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
+  const compact=width<=860,layout=compact?'mobile':'desktop',boxes=compact?[4,5,6]:[0,1,2,3,4,5,6];
+  board[layout].betMode='under-cards';
+  board[layout].seats.forEach(seat=>{seat.bet={x:0,y:0};});
+  const plane={rect:{x:0,y:160,width,height:width*.56},tableGeometry:board,tableLayout:layout};
+  const bounds={left:0,right:width,top:0,bottom:1500};
+  const raised=layoutGameOverlay(plane,boxes,bounds,{compact,cardView:'raised'});
+  const flat=layoutGameOverlay(plane,boxes,bounds,{compact,cardView:'table'});
+  for(let i=0;i<boxes.length;i++){
+    for(const [result,depth]of [[raised,1],[flat,.62]]){
+      const anchor=result.positions[String(boxes[i]+1)],seat=result.seats[i];
+      close(seat.x,result.x+anchor.cx*result.scale);
+      assert.ok(seat.y-26*result.controlScale>result.y+(anchor.cy+85/2*depth+34)*result.scale,'chip clears card and total');
+    }
+    assert.ok(flat.seats[i].y<raised.seats[i].y,'flat view brings the target closer without moving its card anchor');
+  }
+  assert.deepEqual(flat.positions,raised.positions);assert.deepEqual(flat.boxes,boxes);
+});
+
+test('compact collision check counts unscaled touch buttons even when graphics shrink',()=>{
+  const board=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
+  board.mobile.seats.forEach((row,i)=>row.bet={x:(55+i*93)/320,y:.5});
+  const result=layoutGameOverlay({tableGeometry:board,rect:{x:0,y:100,width:320,height:180}},[2,3,4],{left:0,right:320,top:0,bottom:800},{compact:true});
+  assert.match(result.geometryWarning,/ryms inte/,'93px gaps overlap the actual 98px target row');
 });

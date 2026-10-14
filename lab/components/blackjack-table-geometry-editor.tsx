@@ -6,8 +6,9 @@ import styles from './blackjack-table-geometry-editor.module.css';
 export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layout,disabled,onChange}:{tableId:string;url:string;contentType:string;value?:BlackjackTableGeometry;layout:'mobile'|'desktop';disabled:boolean;onChange:(value?:BlackjackTableGeometry)=>void}){
   const [target,setTarget]=useState('dealer');
   const count=layout==='mobile'?3:7;
+  const followCards=value?.[layout].betMode==='under-cards';
   const targets=[{id:'dealer',label:'Dealer · kort'},...Array.from({length:count},(_,i)=>[
-    {id:`card:${i}`,label:`Plats ${i+1} · kort`},{id:`bet:${i}`,label:`Plats ${i+1} · insats`},
+    {id:`card:${i}`,label:`Plats ${i+1} · kort`},...(!followCards?[{id:`bet:${i}`,label:`Plats ${i+1} · insats`}]:[]),
   ]).flat()];
   const selected=targets.find(row=>row.id===target)??targets[0];
   const geometry=value?.[layout],part=selected.id.split(':'),seat=Number(part[1]);
@@ -18,10 +19,12 @@ export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layo
     if(part[0]==='dealer')next[layout].dealer=p;else next[layout].seats[seat][part[0] as 'card'|'bet']=p;
     onChange(next);
   }
-  return <fieldset className={styles.editor} disabled={disabled}><legend>Kort och insatsplatser</legend>
+  return <fieldset className={styles.editor} disabled={disabled}><legend>Kort och insatsplatser · {layout==='mobile'?'mobil':'desktop'}</legend>
     <p>Placeringen hör bara till denna bordbild. Ett annat bord behöver egna platser.</p>
     {!value?<><p>Ingen egen placering sparad för detta bord. Spelet använder tidigare placering.</p><button type="button" className="sg-btn sg-btn-secondary" onClick={()=>onChange(defaultBlackjackTableGeometry(tableId))}>Placera på detta bord</button></>:geometry&&point?<>
       <p>{layout==='mobile'?'Mobil · tre synliga platser':'Desktop · sju platser'}. Välj en punkt och klicka på bilden. Spara och provspela båda formaten.</p>
+      <label><input type="checkbox" checked={followCards} onChange={event=>{if(!value)return;const next=structuredClone(value);if(event.target.checked)next[layout].betMode='under-cards';else delete next[layout].betMode;onChange(next);}}/> Insatser följer korten</label>
+      <p>{followCards?'Markerytorna placeras direkt under kort och poäng. Avståndet följer spelarens kortvisning.':'Insatsplatserna använder sina egna sparade punkter.'}</p>
       <label className="field">Flytta<select value={selected.id} onChange={event=>setTarget(event.target.value)}>{targets.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
       <button type="button" className={styles.board} aria-label={`Placera ${selected.label} på bordet`} onClick={event=>{
         if(!event.detail)return;const rect=event.currentTarget.getBoundingClientRect();
@@ -29,7 +32,7 @@ export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layo
       }} onKeyDown={event=>{const delta:Record<string,[number,number]>={ArrowLeft:[-.005,0],ArrowRight:[.005,0],ArrowUp:[0,-.005],ArrowDown:[0,.005]};if(delta[event.key]){event.preventDefault();place({x:point.x+delta[event.key][0],y:point.y+delta[event.key][1]});}}}>
         {contentType.startsWith('video/')?<video src={url} muted playsInline preload="metadata"/>:<img src={url} alt=""/>}
         {[{id:'dealer',point:geometry.dealer,kind:'card',label:'D'},...geometry.seats.flatMap((row,i)=>[
-          {id:`card:${i}`,point:row.card,kind:'card',label:String(i+1)},{id:`bet:${i}`,point:row.bet,kind:'bet',label:String(i+1)},
+          {id:`card:${i}`,point:row.card,kind:'card',label:String(i+1)},...(!followCards?[{id:`bet:${i}`,point:row.bet,kind:'bet',label:String(i+1)}]:[]),
         ])].map(mark=><span key={mark.id} aria-hidden="true" data-selected={mark.id===selected.id} className={mark.kind==='card'?styles.card:styles.bet} style={{left:`${mark.point.x*100}%`,top:`${mark.point.y*100}%`,...(mark.kind==='card'?{width:`${geometry.cardWidth*100}%`}:{})}}>{mark.label}</span>)}
       </button>
       <div className={styles.numbers}>{(['x','y'] as const).map(axis=><label key={axis}>{axis==='x'?'Vågrätt':'Lodrätt'} %<input type="number" min="0" max="100" step="0.1" value={Math.round(point[axis]*1000)/10} onChange={event=>{if(event.target.value!==''&&Number.isFinite(event.target.valueAsNumber))place({...point,[axis]:event.target.valueAsNumber/100});}}/></label>)}</div>

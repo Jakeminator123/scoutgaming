@@ -1,3 +1,4 @@
+import {normalizeCardView} from '../card-view.mjs';
 // A measured face belongs to the dealer's source plane, never directly to a
 // movable table. Bind both planes for one take; resizing revokes that binding.
 const point = p => p && Number.isFinite(p.cx) && Number.isFinite(p.cy);
@@ -19,7 +20,7 @@ export function filmedTableBinding(profile, projection) {
     .map(seat => [seat, {cx: projection.positions[seat].cx + (offsets[seat] ?? 0), cy: projection.positions[seat].cy}]));
   const value = {profileId: profile.id, tableId: layout.tableId, layout: layout.layout,
     source: {x: source.x, y: source.y, scale: source.scale},
-    destination: {x: projection.x, y: projection.y, scale: projection.scale}, positions, boxes: [...boxes]};
+    destination: {x: projection.x, y: projection.y, scale: projection.scale}, positions, boxes: [...boxes], cardView:normalizeCardView(projection.cardView)};
   return {...value, key: JSON.stringify(value)};
 }
 
@@ -38,7 +39,7 @@ const polygon = (value, size) => Array.isArray(value) && (!size || value.length 
 // Track points are relative to the source manifest's landing centre. Translate
 // them through the actual composited dealer before expressing them relative to
 // the rendered card node. No table movement can drag ink away from the fingers.
-export function projectFilmedFace(profile, take, face, binding, pose, time, width, height) {
+export function projectFilmedFace(profile, take, face, binding, pose, time, width, height, depth=1) {
   const timing = filmedTransferTiming(profile, take);
   const origin = profile?.positions?.[['hole', 'flip'].includes(take?.target) ? 'dealer' : take?.target];
   if (!timing || !point(origin) || !binding || !Number.isFinite(time) || time < 0
@@ -56,7 +57,7 @@ export function projectFilmedFace(profile, take, face, binding, pose, time, widt
   if (frame < timing.release) return {q, p: face.p.map(project), body: face.body.map(project), paper: face.paper};
   const progress = (frame - timing.release) / (timing.end - timing.release);
   const ease = 1 - (1 - progress) ** 3;
-  const target = [[-width / 2, -height / 2], [width / 2, -height / 2], [width / 2, height / 2], [-width / 2, height / 2]];
+  const target = [[-width / 2, -height * depth / 2], [width / 2, -height * depth / 2], [width / 2, height * depth / 2], [-width / 2, height * depth / 2]];
   const released = q.map((p, i) => p.map((v, axis) => v + (target[i][axis] - v) * ease));
   return {q: released, p: released, body: released, paper: face.paper};
 }

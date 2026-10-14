@@ -87,7 +87,7 @@ recordedSpeech v1 binder dealer, replik-ID, tagning, språk, exakt text, video-/
 
 ### Publicering av större filmurval
 
-Den frysta sammansättningen ska behålla samtliga valda filmer, hashvärden och händelsekopplingar. Gzip används fortsatt när paketet ryms inom den äldre 6 500-teckensgränsen. Större paket kan använda Brotli i samma serverägda fält, högst 7 400 tecken; total branding är fortfarande begränsad till 8 000 byte. Kanonisk JSON, SHA-256 och en begränsad expansion på 256 KiB kontrolleras vid läsning. Den nya packningen kräver runtime v18 före skrivning; äldre gzip-paket fortsätter vara läsbara. Material-/dealer-/rumslivscykel från denna Studio-version kräver också v18, eftersom sådana åtgärder kan skriva om paketen. Efter en Brotli-publicering måste rollback använda en läsare som stöder formatet eller återställa ett tidigare kompatibelt paket genom ordinarie publiceringsflöde.
+Den frysta sammansättningen ska behålla samtliga valda filmer, hashvärden och händelsekopplingar. Gzip används fortsatt när paketet ryms inom den äldre 6 500-teckensgränsen. Större paket kan använda Brotli i samma serverägda fält, högst 7 400 tecken; total branding är fortfarande begränsad till 8 000 byte. Kanonisk JSON, SHA-256 och en begränsad expansion på 256 KiB kontrolleras vid läsning. Den nya packningen kräver runtime v18 före skrivning; äldre gzip-paket fortsätter vara läsbara. Material-/dealer-/rumslivscykel krävde också v18 för denna packning; den aktuella bordsprofilen höjer skrivkravet till v19 enligt avsnittet nedan. Efter en Brotli-publicering måste rollback använda en läsare som stöder formatet eller återställa ett tidigare kompatibelt paket genom ordinarie publiceringsflöde.
 
 Vid privat native-underhåll på Render: SSH-processen kan köra som root medan appen kör UID/GID 1000. Kör mediaimport som appens användare innan Blobcache eller journal skapas. Att en film finns i Blob/Neon innebär inte att appen kan skriva i en felägd lokal cache. Ändra inte original eller kringgå TLS för att reparera detta.
 
@@ -933,8 +933,7 @@ behåller tidigare placering. Val av ett annat, okalibrerat bord visas med
 varning. Byte är fortsatt spärrat under en pågående runda.
 
 Geometrin styr stilla serverkort och insatsknappar. Den godkänner inte
-filmad givning eller handkontakt; bildrutebundna kontaktspår används inte
-på den omplacerade spelplanen. Det frysta publicerade paketet behåller sina
+filmad givning eller handkontakt. Ett kontaktspår kräver separat bindning till exakt filmhash, profil och aktuell spelplan; ändrad bindning återgår till stilla serverkort. Det frysta publicerade paketet behåller sina
 punkter när utkastet ändras. Arkivering eller avmarkering av bordet tar bort
 dess utkastgeometri, även ur dealerarkiv; återställning återkopplar den inte.
 
@@ -942,6 +941,12 @@ Nya skrivningar kräver runtime capability 16 innan beständig lagring.
 Ingen SQL-migration krävs. Vercel och Render ska ha den nya läsaren innan
 geometri sparas i produktion. Två visuella provspelningar och formatkontroll
 behövs utöver kontrakttesterna före acceptans av en konkret sammansättning.
+### Dynamiska insatsplatser och spelarens kortvy
+
+Varje blackjackTables-format kan från runtime v19 ha betMode: 'under-cards'. Då är kortpunkten gemensam vågrät ankare; markerytans lodräta läge räknas från aktuell kortvy, poängbricka och kontrollstorlek. De sparade bet-punkterna bevaras för återgång till manuell placering. Saknat fält ger exakt tidigare manuella geometri. Mobilens kollisionskontroll räknar de verkliga, oskalade tryckytorna. Bordsbildens storlek ställs fortsatt med befintliga mobile/desktop.table; det finns inget extra storleksregister.
+
+Upplyfta/På bordet är en lokal, validerad spelarpreferens. Den ändrar varken spelbeslut, kortvärden, tillgångar eller publicering. Det filmade källspåret förblir oförändrat före släpp; övergången landar i vald kortvy. Byte mitt i ett kontaktspår revokerar spåret och behåller serverns statiska kort. Admin visar samma editor som kompatibilitetsytan och sparar fortfarande via mallens ordinarie revisionskontroll. Explicit material-/dealer-/rumslivscykel kräver nu v19 eftersom åtgärden kan skriva om ett paket med nya profilfält. Ingen SQL-migration.
+
 ## Endast registrerad dealeruppspelning, 12 oktober 2026
 
 Astrid, Vera, Amira och Mei ingår inte längre i ett lokalt dealerutbud.
