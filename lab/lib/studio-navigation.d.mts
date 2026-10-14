@@ -8,6 +8,7 @@ export type StudioNavigationContext = {
   operatorId?: string;
   operatorSlug?: string;
   tableId?: string;
+  game?: string;
 };
 export type StudioCrumb = { label: string; href?: string };
 export type StudioNavigationCrumbOptions = StudioNavigationContext & {
