@@ -9,6 +9,7 @@ import { workspaceSurfacePath } from '../../../../lab/lib/workspace-surfaces.mjs
 import {rouletteClipSlots,rouletteClipMatches,rouletteConfiguredClipIds,bindRouletteClip} from './roulette-clip-map.mjs';
 import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
 import {layerAssetFitsGame} from '../../../../web/layer-asset-contract.mjs';
+import {bindSpeechSlotStandard,speechSlotStandard,speechSlotVariantId,speechSlotSituation,speechSlotVideoFits} from '../../../../web/public/speech-slot-bindings.mjs';
 
 export function clipSlots(project, inventory, dealerId, game='blackjack') {
   if(game==='roulette')return rouletteClipSlots();
@@ -72,6 +73,24 @@ function exactSlotVariants(project, inventory, dealerId, slot, line) {
   return line.variants.filter(row=>row.id===slotVariantId(dealerId,slot) && row.videoGenerationId && conditions.every(([path,value])=>
     row.triggerIds.some(id=>project.triggers.some(trigger=>trigger.id===id && trigger.path===path && trigger.op==='eq' && trigger.value===value))));
 }
+function speechVariantFits(inventory, dealerId, slot, variant, requireRecordedSpeech=false) {
+  const matches=inventory?.videos.filter(video=>video.id===variant?.videoGenerationId)??[];
+  return matches.length===1&&matches[0].integrity!=='unavailable'
+    &&speechSlotVideoFits(matches[0],{dealerId,eventId:slot.eventId,situation:slot.situation,requireRecordedSpeech});
+}
+function currentSpeechVariant(project, inventory, dealerId, slot, line, variantId) {
+  const standardId=speechSlotVariantId(dealerId,slot.eventId,slot.situation);
+  if(variantId&&variantId!==line?.baselineVariantId&&variantId!==standardId){
+    const variant=line?.variants.find(row=>row.id===variantId);
+    return variant&&!speechSlotSituation(line,variant)&&speechVariantFits(inventory,dealerId,slot,variant)?variant:null;
+  }
+  const standard=speechSlotStandard(project,dealerId,slot.eventId,slot.situation);
+  if(standard)return !inventory||speechVariantFits(inventory,dealerId,slot,standard,slot.eventId==='speak.other')?standard:null;
+  // Older shared baselines retain their exact sentence only when there is no
+  // saved slot standard. A missing/bad explicit standard never adopts a fallback.
+  const baseline=line?.variants.find(row=>row.id===line.baselineVariantId);
+  return baseline&&speechVariantFits(inventory,dealerId,slot,baseline)?baseline:null;
+}
 export function currentClipId(project, dealerId, slot, variantId, inventory) {
   if(slot.game==='roulette')return rouletteConfiguredClipIds(project,dealerId,slot)[0]??'';
   const line = project.lines.find(row => row.dealerId === dealerId && row.eventId === slot.eventId);
@@ -80,6 +99,7 @@ export function currentClipId(project, dealerId, slot, variantId, inventory) {
     ?? line?.variants.find(row => row.id === line.baselineVariantId)?.videoGenerationId ?? '';
   if (slot.family) return project.mediaPolicy?.find(row => row.familyId === slot.family.id)?.variants
     .find(row => Object.values(row.selection).some(Boolean) || (row.frequencyPercent ?? 0) > 0)?.videoId ?? slot.family.standardIds[0] ?? '';
+  if(slot.sourceType==='speak')return currentSpeechVariant(project,inventory,dealerId,slot,line,variantId)?.videoGenerationId??'';
   if (slot.situation) {
     const exact = exactSlotVariants(project,inventory,dealerId,slot,line);
     if (variantId && variantId!==line?.baselineVariantId) return exact.find(row=>row.id===variantId)?.videoGenerationId ?? '';
@@ -89,6 +109,13 @@ export function currentClipId(project, dealerId, slot, variantId, inventory) {
 }
 export function configuredClipIds(project, dealerId, slot, variantId, inventory) {
   if(slot.game==='roulette')return rouletteConfiguredClipIds(project,dealerId,slot);
+  if(!slot.family&&slot.sourceType==='speak'){
+    const line=project.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
+    const standard=currentSpeechVariant(project,inventory,dealerId,slot,line);
+    const alternatives=line?.variants.filter(row=>row.id!==line.baselineVariantId&&!speechSlotSituation(line,row)
+      &&speechVariantFits(inventory,dealerId,slot,row))??[];
+    return [...new Set([standard,...alternatives].filter(Boolean).map(row=>row.videoGenerationId))];
+  }
   if (!slot.family && slot.situation && slot.eventId!=='idle.ready') {
     const line=project.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
     return [...new Set(exactSlotVariants(project,inventory,dealerId,slot,line).map(row=>row.videoGenerationId))];
@@ -127,6 +154,20 @@ export function bindClip(project, inventory, dealerId, slot, videoId, { variantI
     const policy = mediaVariantPolicy(draft, slot.family, videoId);
     if (Object.hasOwn(policy, 'frequencyPercent')) throw Error('Denna kortplats använder frekvensstyrning. Ändra frekvensen i den befintliga klippeditorn.');
     draft.mediaPolicy = upsertMediaVariantPolicy(draft.mediaPolicy, slot.family.id, { ...policy, selection: { ...policy.selection, rules: true } });
+  } else if (slot.sourceType==='speak') {
+    if(!speechSlotVideoFits(video,{dealerId,eventId:slot.eventId,situation:slot.situation,requireRecordedSpeech:slot.eventId==='speak.other'}))
+      throw Error('Talfacket kräver en tillgänglig film med exakt dealer, replik och inspelningsidentitet.');
+    const standardId=speechSlotVariantId(dealerId,slot.eventId,slot.situation);
+    if(!variantId||variantId===line.baselineVariantId||variantId===standardId)
+      return validateProject(bindSpeechSlotStandard(draft,{dealerId,eventId:slot.eventId,situation:slot.situation,videoId}));
+    const variant=line.variants.find(row=>row.id===variantId);
+    if(!variant)throw Error('Välj en registrerad variant.');
+    if(speechSlotSituation(line,variant)||variant.videoGenerationId&&!speechVariantFits(inventory,dealerId,slot,variant))
+      throw Error('Den valda varianten tillhör ett annat exakt talfack. Välj fackets egen standard eller variant.');
+    if([['event.type','speak'],['event.line',slot.situation]].some(([path,value])=>variant.triggerIds.some(id=>
+      draft.triggers.some(trigger=>trigger.id===id&&trigger.path===path&&!predicateAllows(trigger,value)))))
+      throw Error('Den valda variantens villkor hör till ett annat talfack.');
+    variant.videoGenerationId=videoId;
   } else {
     const explicit = variantId && variantId!==line.baselineVariantId ? line.variants.find(row=>row.id===variantId) : null;
     if (variantId && !line.variants.some(row=>row.id===variantId)) throw Error('Välj en registrerad variant.');
@@ -163,14 +204,12 @@ export function bindClip(project, inventory, dealerId, slot, videoId, { variantI
       variant.videoGenerationId=videoId;
       variant.selection={rules:true,model:false,random:false};
     } else {
-      // Shared speech/transition catch-alls do not have capacity for every exact
-      // situation. Do not advertise per-slot binding by replacing a neighbour.
+      // Other shared catch-alls still need an authoritative per-slot condition.
+      // Do not advertise per-slot binding by replacing a neighbour.
       const event=draft.events.find(row=>row.id===slot.eventId);
       const shared=situationsForEvent(event).length>1;
       if (shared && line.variants.some(row=>row.videoGenerationId && !clipsForSlot(inventory,dealerId,slot).some(video=>video.id===row.videoGenerationId))) {
-        throw Error(event.sourceType==='speak'
-          ? 'Den delade talgruppen stöder inte separata kopplingar för alla repliker. En annan exakt replik får inte ersättas; talsetets modell behöver stöd för dessa fack.'
-          : 'Eventgruppen saknar ett verifierat servervillkor för separata fack. Den befintliga platsens koppling behålls.');
+        throw Error('Eventgruppen saknar ett verifierat servervillkor för separata fack. Den befintliga platsens koppling behålls.');
       }
       const variant=explicit ?? line.variants.find(row=>row.id===line.baselineVariantId);
       if (!variant) throw Error('Välj en registrerad variant.');

@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject, defaultPresentationLane, addVariant } from '../../../../lab/lib/studio-model.mjs';
+import { createSeedProject, createEmptyProject, addDealer, defaultPresentationLane, addVariant } from '../../../../lab/lib/studio-model.mjs';
 import { kindForEvent } from '../../../../lab/lib/video-intake.mjs';
 import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, currentClipId, createStudioClient, navigationKeepsStudioTab, roomChoicesPath, selectCompositionLayer, uploadMetadata } from './connected-studio.mjs';
 import { selectPresentation } from '../../../../packages/presentation/runtime/selection.mjs';
 import { createStudioProjectBindings } from '../../../../lab/lib/studio-project-bindings.mjs';
 import { materialSource } from '../../../../web/public/material-catalog.mjs';
 import { layerAssetPath } from '../../../../web/layer-asset-contract.mjs';
+import { speechSlotStandard, speechSlotVariantId } from '../../../../web/public/speech-slot-bindings.mjs';
+import { recordedSpeechIdentity } from '../../../../web/public/recorded-speech.mjs';
+import { gateRecordedSpeechSelection } from '../../../../web/recorded-speech-selection.mjs';
 const id1='11111111-1111-4111-8111-111111111111', id2='22222222-2222-4222-8222-222222222222';
 test('room choices in another tab preserve drafts while same-tab navigation retains its leave guard',()=>{
   const event={button:0,metaKey:false,ctrlKey:false,shiftKey:false,altKey:false},anchor={target:'',hasAttribute:()=>false};
@@ -224,12 +227,106 @@ test('foreign media and non-authoritative event/slot data cannot create destinat
   assert.throws(()=>bindClip(f.project,foreign,'astrid',f.slots[0],id1),/passar inte/);
   assert.deepEqual(f.project,original);
 });
-test('shared speech and transition lines fail closed rather than replace a neighbouring exact slot',()=>{
-  for(const [eventId,situations]of [['speak.other',['placebets','blackjack']],['transition.shoe',['to-shoe','from-shoe']]]){
+test('transition lines still fail closed rather than replace a neighbouring exact slot',()=>{
+  for(const [eventId,situations]of [['transition.shoe',['to-shoe','from-shoe']]]){
     const f=nativeSlots(eventId,situations),first=bindClip(f.project,f.inventory,'astrid',f.slots.find(row=>row.situation===situations[0]),id1),before=structuredClone(first);
     assert.throws(()=>bindClip(first,f.inventory,'astrid',f.slots.find(row=>row.situation===situations[1]),id2),/talgruppen|servervillkor/);
     assert.deepEqual(first,before);
     assert.equal(currentClipId(first,'astrid',f.slots.find(row=>row.situation===situations[1]),undefined,f.inventory),'');
+  }
+});
+
+function speechFixture(){
+  const project=addDealer(createEmptyProject(),'dragan','Dragan'),inventory={families:[],videos:[]};
+  const slots=clipSlots(project,inventory,'dragan').filter(slot=>slot.sourceType==='speak');
+  inventory.videos=slots.map((slot,index)=>{
+    const id=`20000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,sha256='a'.repeat(64);
+    const recordedSpeech={schemaVersion:1,dealerId:'dragan',lineId:slot.situation,takeId:slot.situation+'_1',language:'sv',exactText:'En testreplik.',
+      videoSha256:sha256,audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+      entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
+    return {id,sha256,bytes:32,dealer:'dragan',available:true,integrity:'verified',contentType:'video/mp4',label:slot.situation,
+      classification:{dealerId:'dragan',eventId:slot.eventId,situation:slot.situation,kind:'speech',role:'standard',label:slot.situation,
+        notes:'',playback:'once',recordedSpeech}};
+  });
+  return {project,inventory,slots};
+}
+
+test('all 17 speech slots bind through the shared standard API and survive native save, reload and off-mode selection',async()=>{
+  const f=speechFixture(),original=structuredClone(f.project);assert.equal(f.slots.length,17);
+  let draft=f.project;
+  for(const [index,slot]of f.slots.entries()){
+    const line=draft.lines.find(row=>row.dealerId==='dragan'&&row.eventId===slot.eventId);
+    draft=bindClip(draft,f.inventory,'dragan',slot,f.inventory.videos[index].id,{variantId:line.baselineVariantId});
+  }
+  assert.deepEqual(f.project,original);
+  assert.equal(draft.lines.find(row=>row.eventId==='speak.other').variants.length,15);
+  let saved=draft;
+  const client=createStudioClient({fetchImpl:async(url,options)=>{
+    if(options.method==='PUT'){const body=JSON.parse(options.body);saved={...body.project,revision:'speech.map.saved.2'};return Response.json({project:saved});}
+    return Response.json(url.endsWith('/catalog')?{source:'registered',administration:{revisions:{project:saved.revision}}}:url.endsWith('/project')?{project:saved}:f.inventory);
+  }});
+  await client.save(draft);const loaded=await client.load();
+  await createStudioProjectBindings({videoRegistry:async()=>loaded.inventory})(loaded.project);
+  for(const [index,slot]of f.slots.entries()){
+    const id=f.inventory.videos[index].id,expected=speechSlotVariantId('dragan',slot.eventId,slot.situation);
+    assert.equal(speechSlotStandard(loaded.project,'dragan',slot.eventId,slot.situation).videoGenerationId,id);
+    assert.equal(currentClipId(loaded.project,'dragan',slot,undefined,loaded.inventory),id);
+    assert.equal(currentClipId(loaded.project,'dragan',slot,expected,loaded.inventory),id);
+    assert.equal(currentClipId(loaded.project,'dragan',slot),id);
+    assert.deepEqual(configuredClipIds(loaded.project,'dragan',slot,undefined,loaded.inventory),[id]);
+    assert.deepEqual(configuredClipIds(loaded.project,'dragan',slot),[id]);
+    const result=await selectPresentation({project:loaded.project,dealerId:'dragan',eventId:slot.eventId,sourceEvent:{type:'speak',line:slot.situation},mode:'off'},
+      {videoRegistry:loaded.inventory,fetchImpl:async()=>{throw Error('No provider calls in standard mode');}});
+    assert.equal(result.videoGenerationId,id);
+  }
+});
+
+test('speech standards preserve the older baseline and never promote or overwrite another exact slot or manual alternative',()=>{
+  const f=speechFixture(),slot=f.slots.find(row=>row.situation==='greeting'),other=f.slots.find(row=>row.situation==='blackjack');
+  const video=f.inventory.videos.find(row=>row.classification.situation==='greeting'),otherVideo=f.inventory.videos.find(row=>row.classification.situation==='blackjack');
+  const line=f.project.lines.find(row=>row.eventId==='speak.other');line.variants[0].videoGenerationId=video.id;
+  assert.equal(currentClipId(f.project,'dragan',slot,undefined,f.inventory),video.id);
+  assert.equal(currentClipId(f.project,'dragan',other,undefined,f.inventory),'');
+  let draft=bindClip(f.project,f.inventory,'dragan',other,otherVideo.id);
+  assert.equal(draft.lines.find(row=>row.eventId==='speak.other').variants[0].videoGenerationId,video.id);
+  const otherId=speechSlotVariantId('dragan',other.eventId,other.situation),before=structuredClone(draft);
+  assert.throws(()=>bindClip(draft,f.inventory,'dragan',slot,video.id,{variantId:otherId}),/annat exakt talfack/);
+  assert.equal(currentClipId(draft,'dragan',slot,otherId,f.inventory),'');
+  assert.deepEqual(configuredClipIds(draft,'dragan',slot,otherId,f.inventory),[video.id]);
+  assert.deepEqual(draft,before);
+  const replacement={...structuredClone(video),id:id2};f.inventory.videos.push(replacement);
+  draft=bindClip(draft,f.inventory,'dragan',slot,replacement.id);
+  assert.equal(currentClipId(draft,'dragan',slot,undefined,f.inventory),replacement.id);
+  assert.deepEqual(configuredClipIds(draft,'dragan',slot,undefined,f.inventory),[replacement.id]);
+  replacement.available=false;
+  assert.equal(currentClipId(draft,'dragan',slot,undefined,f.inventory),'');
+  assert.deepEqual(configuredClipIds(draft,'dragan',slot,undefined,f.inventory),[]);
+  replacement.available=true;replacement.integrity='unavailable';
+  assert.equal(currentClipId(draft,'dragan',slot,undefined,f.inventory),'');
+  assert.deepEqual(configuredClipIds(draft,'dragan',slot,undefined,f.inventory),[]);
+  let manual=addVariant(f.project,'dragan','speak.other','Manual');
+  const target=manual.lines.find(row=>row.eventId==='speak.other').variants.at(-1);
+  manual=bindClip(manual,f.inventory,'dragan',other,otherVideo.id,{variantId:target.id});
+  assert.equal(currentClipId(manual,'dragan',other,undefined,f.inventory),'');
+  assert.equal(currentClipId(manual,'dragan',other,target.id,f.inventory),otherVideo.id);
+  assert.equal(currentClipId(manual,'dragan',slot,target.id,f.inventory),'');
+  assert.throws(()=>bindClip(manual,f.inventory,'dragan',slot,video.id,{variantId:target.id}),/annat exakt talfack/);
+  assert.deepEqual(manual.lines.find(row=>row.eventId==='speak.other').variants.at(-1).selection,{rules:false,model:false,random:false});
+});
+
+test('speech binding retains pending and rejected review gates and rejects missing tuples, changed hashes and deletion',()=>{
+  const f=speechFixture(),slot=f.slots.find(row=>row.situation==='greeting'),video=f.inventory.videos.find(row=>row.classification.situation==='greeting');
+  for(const status of ['pending','rejected']){
+    const tuple=video.classification.recordedSpeech;
+    tuple.review=status==='pending'?{status}:{status,by:'fixture',at:'2026-10-14T00:00:00.000Z',identity:recordedSpeechIdentity(tuple)};
+    const before=structuredClone(f.inventory),draft=bindClip(f.project,f.inventory,'dragan',slot,video.id);
+    assert.deepEqual(f.inventory,before);
+    assert.equal(gateRecordedSpeechSelection({video,standard:video},{project:draft,dealerId:'dragan',eventId:slot.eventId,sourceEvent:{type:'speak',line:slot.situation}}).blocked,true);
+  }
+  for(const edit of [row=>{delete row.classification.recordedSpeech;},row=>{row.sha256='d'.repeat(64);},row=>{row.deletion={state:'pending'};},
+    row=>{row.classification.recordedSpeech.lineId='blackjack';}]){
+    const inventory=structuredClone(f.inventory),row=inventory.videos.find(row=>row.id===video.id);edit(row);
+    assert.throws(()=>bindClip(f.project,inventory,'dragan',slot,video.id),/inspelningsidentitet|passar inte/);
   }
 });
 test('runtime readiness 503 retains its explicit explanation and status',async()=>{
