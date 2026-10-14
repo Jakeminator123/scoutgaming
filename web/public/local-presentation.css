@@ -17,7 +17,7 @@ html[data-presentation="local"] #pitboss { display: none; }
 /* Retain the existing DOM for game controls/accessibility; draw the cards once. */
 #scene[data-local-card-overlay="true"] .card,
 #scene[data-local-card-overlay="true"] .hand-total { opacity: 0; }
-.local-presentation-status { position: absolute; left: 12px; bottom: 45%; z-index: 30; color: #ffe8ab; background: #101618dd; border-radius: 8px; font: 12px Inter, sans-serif; padding: 6px 10px; max-width: calc(100% - 24px); }
+.local-presentation-status { pointer-events: none; position: absolute; left: 12px; bottom: 45%; z-index: 30; color: #ffe8ab; background: #101618dd; border-radius: 8px; font: 12px Inter, sans-serif; padding: 6px 10px; max-width: calc(100% - 24px); }
 .local-presentation-status:empty { display: none; }
 .local-presentation-mode { position: absolute; left: 12px; top: 130px; z-index: 40; padding: 7px; background: #101618; color: #eee; border: 1px solid #52605e; border-radius: 8px; }
 #chat #chat-log-toggle { width: auto; flex-shrink: 0; padding: 0 10px; font-size: 11px; }

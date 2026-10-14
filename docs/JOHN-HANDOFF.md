@@ -20,6 +20,30 @@ Admin C1–C3 ägs av chatten ADMINADMINADMIN. PR-samordningen har fått
 överlämningen om #91. Huvudcheckoutens blandade ändringar bevaras; den här
 dokumentationen levereras från en separat branch, utan merge eller deploy.
 
+## Dragan: filmad givning och exakt inspelat tal, 14 oktober
+
+Spelarens gemensamma väg har en hashbunden Kevin-profil med 35 givnings-/vändklipp och deras källspår. Sekvensen följer serverns beslut och väljer VILA/REDO-varianter; en ofullständig kedja ger 2D-reserv. Varje fil binds uttryckligen i rätt händelserad och följer med det frysta rumspaketet. Givningsrader tillåter 16 alternativ; andra rader behåller fem. Runtime v17 krävs före nya sådana projekt eller inspelad-tal-metadata; ingen SQL-migration.
+
+Talets nya metadata binder exakt text, språk, tagning, video, ljud, bildruteindex och kalibrering. Inspelningskontroll och visuell acceptans är separata. Vanligt och fryst spel kräver godkännande; endast autentiserad, ägd Studio-preview tillåter en verifierad inspelning som väntar på bild-/ljudgranskning. Originalfilens eget ljud spelas en gång. Annat språk eller annan tagning används aldrig som reserv. Äldre material behåller sin uppspelningsväg.
+
+PR #124 (baabb37d) levererade den exakta Kevin-profilen. PR #125 (88b140e9) är live på Vercel och Render med runtime v18 och begränsad Brotli för större frysta paket. Studio-bygget och full pre-commit passerade: 3 684 godkända, 11 överhoppade, inga fel; oberoende granskning och GitHub CI passerade. Biblioteket innehåller 56 Dragan-filmer. De 25 nya givningsvarianterna är byteverifierade (39 627 593 byte) och 35 exakta Kevin-klipp är kopplade i fem händelserader i projektet studio-6799944c-ab75-4cf1-be97-b4622c097003. Bindningen gjordes med CAS och både produkt- och repositorylås; övriga projektfält och dealers är oförändrade.
+
+Två sammanhängande givningsrundor per format är genomförda i den verkliga spelaren med isolerat testsaldo: desktop 1440×900 (35→5 och 5→10), mobil 390×844 (15→5 och 5→0). Alla sju platser, extrakort, vändning och dealerns extrakort användes. Exakta val kom från Kevin-profilen och återgick till grundloop. Inga insatser gjordes på spelarens konto. Första nätverksbufferten kapades vid kontextbyte; separata tidigare fångade initialval och senare fullständiga segment finns i det privata kvittot. Detta är prov av de använda sekvenserna, inte visuell acceptans av varje möjlig spelkombination.
+
+Swedish Games version 3 är publicerad med 35 exakta givnings-/vändklipp samt grundloopen. Paketets kanoniska innehåll och samtliga klipp-ID/hashar matchar exakt det provspelade paketet. Mage och bord möts med bordsbredd 0,68/1,40 och dealer-y 0,06/0,03 för desktop/mobil. Det tidigare HTTP 413-felet är löst: 46 983 byte konfiguration ryms som 6 947 Brotli-tecken och 7 112 byte total branding, inom oförändrad gräns på 8 000 byte. Saknad valfri talreplik ger inte längre missvisande kortstatus ”2D-reserv”. Privat publiceringskvitto observerat 2026-10-14T03:37:30.357Z; ingen talfilm finns i paketet.
+
+Fyra svenska originalrepliker (goodluck_1, insurance_1, double_1, win_1; totalt 2 999 350 byte) är importerade som pending/pending, inte valda eller publicerade. Automatisk transkribering är bara ett textförslag; första orden i insurance_1 är osäkra. Ingen hörbar läppsynksacceptans har gjorts. Originalen finns för användarens granskning i den privata HTML-stegloggen. Rörlig AI-läppsynk har separata integrations-/avatarverifieringar kvar. lab/ behålls som aktiv källkod.
+
+Native SSH kör som root medan spelappen kör UID/GID 1000. En import skapade den tillfälliga mediacachen med fel ägare; exakt cachekatalog och journal fick appens ägare och begränsade rättigheter, utan ändrade original eller databasposter. Privata importhjälpar sänker UID/GID innan media-/filsystemarbete. Efter rättningen laddade samtliga använda provklipp utan HTTP-mediafel.
+
+## Dragan: utebliven första bildruta, 14 oktober
+
+Live-spelaren visade ”Idle: Film ended without a presented frame” för exakt Kevin-grundloop 2f3955b0-b450-4cc2-a9f5-ac80f10abd2f. Felet visar att medielivscykeln eller första presenterade bildrutans bevis saknades; den ursprungliga händelseordningen är inte bevarad, så rotorsaken är inte fastställd. Samma fil gav 121 verkliga bildrutecallbacks per uppspelning i två isolerade lokala mediaprov. Provet använde ingen spelmotor eller användarplånbok.
+
+Spelaren klassificerar nu endast started+ended utan presented som återförsökbart och lämnar avgränsade tillstånd i felkvittot. Egen grundloop får ett återförsök efter 500 ms med samma exakta klipp; en andra miss stoppar. Varning och stängd talgrind kvarstår tills aktuell ägares riktiga bildruta kommer. Givning, tal, dold flik och stängning avbryter väntande återförsök. Hash-, avkodnings-, kompositions- och paketfel återförsöks inte. Detta aktiverar inga talfilmer eller AI-röster.
+
+Fokuserad regression: 61 test passerar, inklusive diagnostik, retrygräns, verklig frame som återhämtning och samtliga ägaravbrott. Full leveranskontroll och produktionsprov redovisas i leveranskvittot; ingen läppsynksacceptans härleds från dessa tester.
+
 ## Dragan: kortplatser som följer valt bord, 14 oktober
 
 Swedish Games-utkastet med Dragan, Lounge varm och Blackjack Oak visade

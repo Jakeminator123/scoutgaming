@@ -144,7 +144,7 @@ filanspråk, testdataägare och uttrycklig överlämning vid överlapp.
 - [x] Dealers i `/admin`: skapa, arkivera, återställ och lämna i papperskorgen
   verifierat med det uttryckligen godkända produktionsprovet Adminprov 2026-10-13.
 - [x] Första verkliga Dragan-importen 13 oktober: sex filer med ett gemensamt OK
-  och en direkt via Adminroboten; då 21 registrerade klipp, nu 27 efter Kevin-importen.
+  och en direkt via Adminroboten; då 21 registrerade klipp, 27 efter första Kevin-importen och 56 efter kompletteringen den 14 oktober.
   Den separata importen
   tar upp till 30 videor per omgång. Filer i banken är inte spelpublicering.
 - [x] PR104:s rena talformulär och avslutade importchatt kan lämnas i produktion
@@ -209,8 +209,9 @@ sorteras efter faktiska kodreferenser för Dragan/Dragge och Paow, inte efter
 alla filer i mapparna. Senaste Git-build är inte bevis för senaste körande
 Kevin-deployment. Manifest, kopior och hashjämförelse hålls privat utanför Git.
 Första inventeringen via ordinarie UI/API visade Dragan 21, paow 5 och
-paow-v2 1. Efter den uttryckliga rensningen och importen den 14 oktober visar
-produktions-Admin Dragan 27 och ren PAOW (`paow-kevin`) 11. De gamla
+paow-v2 1. Första rensnings-/importkvittot den 14 oktober visade
+Dragan 27 och ren PAOW (`paow-kevin`) 11. Den senare Dragan-kompletteringen
+ger 56 filmer; se det aktuella Dragan-flödet nedan. De gamla
 Paow-identiteterna är borttagna; deras tidigare granskningar är inte ärvda.
 
 Per dealer refererar ordinarie spelkod 35 giv-/vändningsklipp, tre grundloopar
@@ -269,8 +270,10 @@ hela mallen eller Astrids fungerande spel-/talväg försvinner.
 - [x] Registrera ren PAOW utan gammal Forge-profil och importera 11 utvalda
   Kevin-filer, samt komplettera Dragan med sex filer. Slutkvittot och Admin
   visar 27 Dragan-/11 PAOW-klipp; sju befintliga Dragan-filer återanvändes.
-- [ ] Koppla utvalda filer till faktisk uppspelning, granska poser och
-  publicera önskat Dragan-rum efter sammanhängande spelprov.
+- [x] Koppla Dragans 35 valda givnings-/vändklipp och publicera hans rum
+  efter två sammanhängande rundor på både desktop och mobil. Swedish Games
+  version 3 matchar det provade paketet exakt. Tal/läppsynk är fortfarande
+  ogranskat och ingår inte i publiceringen; se aktuellt Dragan-flöde nedan.
 - [x] Slutverifiera denna rensning/import i produktion, inklusive att skyddade material och dealers
   är kvar och att borttagna identiteter inte skapas som syntetiska lobbykort.
   Admin visar 27 Dragan-/11 rena PAOW-klipp, Astrid och Anna med sitt rum.
@@ -295,42 +298,42 @@ verifierade noll kvarvarande referenser och 232 borttagna objekt, 145 404 657 by
 Ingen ny Blob-backup eller papperskorg skapades. Konton, plånbok, spel och QA
 ingick inte i rensningen. Importens egna temporära Render-filer är borttagna.
 
-### Nästa Dragan-flöde — avgränsning 14 oktober
+### Dragan-flödet — produktionskvitto 14 oktober
 
-Swedish Games (`swedish-games`) är skapat i produktions-Admin på Jakobs
-uttryckliga namnval. En separat sparad sammansättning för Dragan använder
-hans val Lounge varm (video) och Blackjack Oak; endast Dragan är tillåten.
-Den har ID `swedish-games-dragan-black-81c0867c-5de8-4b48-bcc5-1fe3ce578b39`.
-Dragan är registrerad men saknar ännu kopplat rum. Elva lokala MP4-original
-matchar redan hans bevarade biblioteksfiler; de behöver inte laddas upp igen.
-Två PNG-filer är VILA-/REDO-referenser. Importgränsen 30 betyder högsta antal
-videor per omgång, inte att 30 nya original har inventerats.
+Swedish Games (`swedish-games`) äger det publicerade rummet Dragan · Blackjack
+(`room-c0031e58-9985-b851-d9a9-4ee419b35ff0`). Den sparade sammansättningen
+`swedish-games-dragan-black-81c0867c-5de8-4b48-bcc5-1fe3ce578b39`
+använder Lounge varm och Blackjack Oak; endast Dragan är tillåten.
+Elva lokala MP4-original matchar redan bevarade biblioteksfiler och ska inte
+laddas upp igen. Två PNG är VILA-/REDO-referenser. Importgränsen 30 betyder
+högsta antal videor per omgång, inte att 30 nya original inventerades.
 
-Kevins positionsklipp ger REDO→REDO, medan grundlooparna ger VILA→VILA.
-Full filmad givning med hålkort/vändning och 52 alternativa poseklipp kräver
-explicit sekvenshantering. Detta blockerar inte ett grundspel med egen
-grundloop och serverstyrda kort; inga filmade giv-/talklipp krävs för publicering.
-`transitionClipsForDealer` har ännu ingen produktionskonsument; fackval räcker
-inte för att aktivera Till/Från skon. Inga av de 13 Kevin-Dragan-hasharna har
-matchande befintlig kortkalibrering. De 140 talfilmerna saknar komplett
-takebunden text/ljud-/kalibreringsacceptans och är inte aktiverade.
+PR124 införde explicit, hashbunden sekvenshantering för 35 Kevin-klipp,
+med hålkort, vändning och VILA/REDO-varianter. Spelservern äger fortsatt
+korten. PR125 (88b140e9) är live på Vercel/Render med runtime v18 och
+packningsfixen som löste HTTP 413. Swedish Games version 3 innehåller
+exakt samma paket som provspelades: 35 giv-/vändklipp och grundloopen,
+46 983 byte kanonisk konfiguration, 7 112 byte branding. Gränsen på
+8 000 byte har inte höjts. Full pre-commit: 3 684 godkända, 11 skips,
+0 fel; Studio-bygge, oberoende granskning och GitHub CI passerade.
 
-Fortsätt med uttrycklig klipp-/posebindning och Blackjack-rum;
-granska den valda bakgrunden och bordet på desktop/mobil och
-två följande uppspelningar före publicering. Anna/roulette ska bevaras.
-En privat HTML-steglogg på användarens begäran beskriver detta flöde utanför Git.
+Oak-geometri och kort-/insatsplatser är sparade för båda formaten.
+Bordsbredd är 0,68 desktop / 1,40 mobil, y=0,35; dealer-y är 0,06/0,03.
+Glappet mellan mage och bord är rättat. Två sammanhängande rundor på
+1440×900 och två på 390×844 genomfördes med separat testsaldo i den riktiga
+spelaren. Alla sju platser, extrakort, vändning och dealerns extrakort ingick;
+använda exakta klipp laddade utan HTTP-mediafel och återgick till grundloop.
+Detta verifierar de provade sekvenserna, inte varje möjlig spelkombination.
+Spelarens riktiga konto användes inte för provinsatser. Anna/roulette bevarades.
 
-Grundloopen Kevin V2 · andning är sparad på Dragan. Oak-bordets överkant
-justerades visuellt till `table.y=0.35` i båda format; bredd mobil `1`,
-desktop `0.31640625`. Provspela öppnade faktisk spelkod med separat
-minnesdatabas och syntetiskt testsaldo. En desktoprunda avslutades och
-mobilvyn kontrollerades, men spelacceptansen är underkänd: spelarkort och
-insatsplatser följer äldre dealerbundna ankare och hamnar vid bordets fot.
-Det finns ingen sparad separat Oak-geometri i nuvarande Studio. Återstår
-gemensam, sparad projektion för kort och insatsplatser samt ny acceptans.
-Rummet är därför inte publicerat. Två godkända sammanhängande rundor i
-båda formaten är fortfarande ett öppet krav; ett fungerande testsaldo
-eller en snygg editorbild uppfyller inte det.
+Biblioteket har 56 Dragan-filmer. Fyra svenska taloriginal är importerade
+som pending/pending och är inte valda eller publicerade. Exakt text,
+hörbar läppsynk och visuell acceptans återstår; automatisk transkribering
+är endast ett förslag. Övriga Kevin-pose-/taloriginal aktiveras inte
+automatiskt. Rörlig AI-läppsynk har separata avatar-/integrationsprov kvar.
+Den privata HTML-stegloggen visar flödet, originalen och provkvittona.
+`lab/` behålls som aktiv Studio-källkod; detta är ingen fullständig
+frikoppling av den äldre sajten eller acceptans av alla dealers.
 
 Kodgranskningen visar att Blackjack tillåter bordbyte mellan rundor men
 spärrar det vid `round || busy`; Roulette saknar intern bordsväljare.

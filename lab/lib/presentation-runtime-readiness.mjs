@@ -3,6 +3,8 @@ import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { PRESENTATION_CAPABILITY_VERSION_HEADER, validatePresentationCapabilities } from '../../web/presentation-capability-contract.mjs';
 import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
 import {extendedDealerMediaFeatures} from '../../web/dealer-media-features.mjs';
+import {maxVariantsForEvent} from './studio-model.mjs';
+import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
 
 export const PRESENTATION_RUNTIME_UPDATE_REQUIRED = 'studio_presentation_runtime_update_required';
 export const PRESENTATION_RUNTIME_UPDATE_MESSAGE = 'Spelservern beh\u00f6ver uppdateras innan presentationen kan sparas. Ditt utkast \u00e4r kvar.';
@@ -13,10 +15,17 @@ const fail = () => { throw new StudioStorageError(PRESENTATION_RUNTIME_UPDATE_RE
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const extraDealer = value => typeof value === 'string' && !baseDealers.has(value);
 function documentFeatures(kind, value) {
+  // A publication descriptor is the complete candidate, never a feature hint.
+  // Use the actual encoder so malformed or oversized candidates fail closed.
+  // Lifecycle can retain or re-encode any current frozen package. Its explicit
+  // descriptor negotiates both codecs before SQL, even for a currently small
+  // package; stored project trash fields alone do not imply that operation.
+  const presentationCompression = ['material-trash','resource-lifecycle','dealer-archive'].includes(kind)
+    || kind === 'presentation-package' && encodePresentationPackage(value).encoding === 'br-base64url';
   const media=kind==='presentation-package'
     ? [...(value?.registeredDealers??[]).flatMap(row=>[row?.idle,row?.rouletteIdle?.base,...(row?.rouletteIdle?.variants??[]),row?.rouletteStart?.clip]),...(value?.playback?.media??[])]
       .map(row=>extendedDealerMediaFeatures(row?.classification)) : [];
-  const mediaAlpha=media.some(row=>row.mediaAlpha),rouletteMedia=media.some(row=>row.rouletteMedia);
+  const mediaAlpha=media.some(row=>row.mediaAlpha),rouletteMedia=media.some(row=>row.rouletteMedia),recordedSpeech=media.some(row=>row.recordedSpeech);
   const rouletteIdle=['project','presentation-package'].includes(kind)
     && [...(value?.dealers??[]),...(value?.registeredDealers??[]),...(value?.dealerTrash??[]).map(row=>row?.dealer)]
       .some(row=>object(row)&&Object.hasOwn(row,'rouletteIdle'));
@@ -53,14 +62,18 @@ function documentFeatures(kind, value) {
   const blackjackTableGeometry=['project','presentation-package','dealer-archive'].includes(kind)
     &&[...(value?.lanes??[]),...(value?.dealerTrash??[]).flatMap(entry=>entry.compositions??[])]
       .some(lane=>object(lane?.composition)&&Object.hasOwn(lane.composition,'blackjackTables'));
-  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry,
-    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry };
+  // The previous deployed validator accepts at most five variants on every row.
+  const filmedDealVariants=['project','presentation-package','dealer-archive'].includes(kind)
+    &&[...(kind==='presentation-package'?value?.playback?.lines??[]:value?.lines??[]),...(value?.dealerTrash??[]).flatMap(entry=>entry.lines??[])]
+      .some(line=>maxVariantsForEvent(line?.eventId)>5&&Array.isArray(line?.variants)&&line.variants.length>5);
+  return { required: dealers.length > 0 || composition || rooms || frozen || lifecycle || resourceLifecycle || backgroundPlayback || dealerSets || materialTrash || mediaAlpha || rouletteMedia || tableGame || dealerCategoryTrash || rouletteIdle || rouletteStart || blackjackTableGeometry || recordedSpeech || filmedDealVariants || presentationCompression,
+    dealers, composition, rooms, generic, frozen, frozenEvents, lifecycle, resourceLifecycle, cascade, backgroundPlayback, roulette, dealerSets, materialTrash,mediaAlpha,rouletteMedia,tableGame,dealerCategoryTrash,rouletteIdle,rouletteStart,blackjackTableGeometry,recordedSpeech,filmedDealVariants,presentationCompression };
 }
 function mediaFeatures(metadata) {
-  const {mediaAlpha,rouletteMedia}=extendedDealerMediaFeatures(metadata);
+  const {mediaAlpha,rouletteMedia,recordedSpeech}=extendedDealerMediaFeatures(metadata);
   const dealers = extraDealer(metadata?.dealerId) ? [metadata.dealerId] : [];
   const composition = Boolean(object(metadata) && Object.hasOwn(metadata, 'compositing'));
-  return { required: dealers.length > 0 || composition || mediaAlpha || rouletteMedia, dealers, composition, generic: dealers.some(id => id !== 'nora'), frozen: false,mediaAlpha,rouletteMedia };
+  return { required: dealers.length > 0 || composition || mediaAlpha || rouletteMedia || recordedSpeech, dealers, composition, generic: dealers.some(id => id !== 'nora'), frozen: false,mediaAlpha,rouletteMedia,recordedSpeech };
 }
 function mutationFeatures(input) {
   const entries = Array.isArray(input) ? input : [input];
@@ -88,6 +101,9 @@ function mutationFeatures(input) {
     rouletteIdle: features.some(value => value.rouletteIdle),
     rouletteStart: features.some(value => value.rouletteStart),
     blackjackTableGeometry:features.some(value=>value.blackjackTableGeometry),
+    recordedSpeech:features.some(value=>value.recordedSpeech),
+    filmedDealVariants:features.some(value=>value.filmedDealVariants),
+    presentationCompression:features.some(value=>value.presentationCompression),
   };
 }
 function trustedOrigin(env) {
@@ -140,6 +156,9 @@ export function wrapNativePresentationRepository(repository, { env = process.env
       && (!features.rouletteIdle || active.features.rouletteIdle)
       && (!features.rouletteStart || active.features.rouletteStart)
       && (!features.blackjackTableGeometry || active.features.blackjackTableGeometry)
+      && (!features.recordedSpeech || active.features.recordedSpeech)
+      && (!features.filmedDealVariants || active.features.filmedDealVariants)
+      && (!features.presentationCompression || active.features.presentationCompression)
       && features.dealers.every(id => active.features.dealers.includes(id)));
   }
   async function ready(features) {
@@ -153,7 +172,7 @@ export function wrapNativePresentationRepository(repository, { env = process.env
     let response;
     try {
       const endpoint = origin + CAPABILITY_PATH;
-      const requiredVersion = features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
+      const requiredVersion = features.presentationCompression ? 18 : features.recordedSpeech || features.filmedDealVariants ? 17 : features.blackjackTableGeometry ? 16 : features.rouletteStart || features.rouletteIdle ? 15 : features.dealerCategoryTrash ? 14 : features.tableGame ? 13 : features.mediaAlpha || features.rouletteMedia ? 12 : features.materialTrash ? 11 : features.dealerSets ? 10 : features.roulette ? 9 : features.backgroundPlayback ? 8 : features.cascade ? 7 : features.resourceLifecycle ? 6 : features.lifecycle ? 5 : features.frozenEvents ? 4 : features.generic || features.frozen ? 3 : undefined;
       response = await fetchImpl(endpoint, {
         method: 'GET', credentials: 'omit', redirect: 'error', cache: 'no-store',
         headers: { Accept: 'application/json', ...(requiredVersion ? { [PRESENTATION_CAPABILITY_VERSION_HEADER]: String(requiredVersion) } : {}) }, signal: AbortSignal.timeout(3000),

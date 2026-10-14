@@ -2,7 +2,12 @@
 
 `project.seed.json` är startprojektet: blackjack, fyra croupierer, 16 semantiska
 eventnoder och en standardlinje per croupier/event. Varje linje börjar med en
-ovillkorlig standardvariant och tre labbalternativ. Högst fyra alternativ får finnas.
+ovillkorlig standardvariant och tre labbalternativ. Normalt får högst fyra alternativ finnas.
+Givningsraderna `deal.player.left`, `deal.player.centre`, `deal.player.right` och
+`deal.dealer` tillåter 16 varianter inklusive standard, så varje filmad pose och
+kortplats kan ha en egen exakt videokoppling. Tal, vändning, idle, övergångar och
+roulette behåller gränsen fem. Fler än fem kräver spelserverns capability
+`filmedDealVariants: sixteen-explicit-v1` före sparning och publicering.
 De två nya rörelseexemplen prövar beröm + varm framtoning respektive redan
 avgjorda vinster + lekfull framtoning. Detta är redigerbara demoregler, inte
 beslutade produktregler eller slutsatser om spelarens känslor.

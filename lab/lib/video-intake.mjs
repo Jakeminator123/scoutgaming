@@ -6,6 +6,7 @@ import { MEDIA_FAMILY_DEFINITIONS } from '../../packages/presentation/runtime/me
 import { isDealerId } from '../../web/dealer-identity.mjs';
 import { validateDealerFraming } from '../../web/public/dealer-framing.mjs';
 import { assertDealerCompositingWrite } from '../../web/public/dealer-compositing.mjs';
+import { normalizeRecordedSpeech } from '../../web/public/recorded-speech.mjs';
 
 export const MAX_VIDEO_BYTES = contract.limits.videoBytes;
 export const VIDEO_KINDS = Object.freeze(contract.videoKinds);
@@ -46,7 +47,13 @@ export function validateVideoMetadata(input, { allowLegacySituation = false, for
   if (event.sourceType === 'speak' && !input.situation) throw new Error('En talvideo måste ha ett exakt replik-ID.');
   if (input.compositing !== undefined) validateVideoCompositing(input.compositing);
   if (input.framing !== undefined) validateDealerFraming(input.framing);
+  let recordedSpeech;
+  if (Object.hasOwn(input, 'recordedSpeech')) {
+    if (event.sourceType !== 'speak' || input.mediaType !== undefined || input.game === 'roulette') throw new Error('Inspelat tal kräver en egen talvideo med exakt replik.');
+    recordedSpeech = normalizeRecordedSpeech(input.recordedSpeech, {dealerId:input.dealerId,lineId:input.situation});
+  }
   return { ...input, label: input.label.trim(), notes: input.notes.trim(),
+    ...(recordedSpeech ? {recordedSpeech} : {}),
     ...(forWrite && input.mediaType !== 'audio' ? {compositing:assertDealerCompositingWrite(input.compositing)} : {}) };
 }
 export function validateVideoCompositing(value) {
