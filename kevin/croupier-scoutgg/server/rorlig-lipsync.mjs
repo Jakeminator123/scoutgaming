@@ -6,13 +6,14 @@
 //
 // Worker: RunPod Serverless endpoint croupier-lipsync-staging (github.com/EmaCodeHero/croupier-lipsync-worker), one
 // image for every dealer. Like serverless.mjs we order a "session" job; the worker dials /lipsync-rorlig back and stays
-// while the dealer's tables are in use (renewed before its ttl, released after inactivity).
+// while the dealer's tables are in use (renewed before its ttl, released after inactivity). Or dedicated pods (same
+// image, its pod.py) that dial in with &pod=<name> and stay: each worker is a lane of its own (Emil 14 Oct).
 //
 // Protocol (worker/motor.py): → {t:'start', id, karta:[[take, firstFrame, count], …], ljud_url} → {t:'end', id}
 // ← {t:'lapp', id, del, fran, till, rutor:[{tagning, ruta, rect}|null…]} + raw H.264 (Annex B, 256×512) per 0.5 s
 // ← {t:'done', id, …} | {t:'error', id, reason}. Patch k belongs to the map's frame k; the line's sound starts
 // LJUD_FORE after the map's first frame.
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { WebSocket } from 'ws';
@@ -88,49 +89,74 @@ export function scheduleTalks(talks, steps, { free = 0, end = 0, gap = 250 } = {
 }
 
 /**
- * Sessions on the endpoint, one per dealer (avatar), plus the patches it sends. publicBase() gives this server's public
- * https origin (the worker dials it); dealers lists the avatars the image carries.
+ * Workers per dealer (avatar), plus the patches they send. publicBase() gives this server's public https origin (the
+ * worker dials it); dealers lists the avatars the image carries.
+ *
+ * Two kinds of worker dial in. A serverless session we ordered (token = this.token, renewed before its ttl, released
+ * when the table goes quiet), and dedicated pods (Emil 14 Oct, the Svenska Spel demo: serverless machines came cold,
+ * slow or late). A pod dials with &pod=<name> and podToken(), stays connected and dials again when the line breaks
+ * or this server restarts. Every worker is a lane of its own: with two pods a hit during an answer has its remap
+ * made on the second GPU at once while the first is still busy, instead of queueing behind it.
  */
 // A worker slower than this cannot keep ahead of the picture (a healthy 4090 makes 55–63 frames/s)
 const MIN_FPS = 30;
 
 export class RorligLipsync {
   constructor({ endpointId, apiKey, publicBase, publicDir, dealers = ['paow'], log = console.log, fetchImpl = fetch,
-    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000, urgentMs = 2500, maxLanes = 1 }) {
+    onPiece = () => {}, inactivityMs = 480_000, ttlS = 3300, horizonMs = 3000, urgentMs = 2500, maxLanes = 1,
+    podToken = null, podGraceMs = 120_000 }) {
     // ttlS: one session per ~55 min (the endpoint allows jobs of 1 h). Every renewal can land on a cold or slow machine,
     // and with 9 min sessions that happened every 6.5 min of play; a session still ends 8 min after the table goes quiet
     // horizonMs: a line is made no earlier than this before it is needed (a line takes ~1.5 s, its first patch ~0.5 s).
     // Made sooner, every new plan remade it again (insurance 3–4 times) and the worker was busy with that when a hit
     // during an answer needed its remap at once (staging 13 Oct)
-    // maxLanes/urgentMs: a worker that can (pong spar: 2) may take a second line when it is needed within urgentMs. Off:
-    // on staging 13 Oct two lines at once on one GPU took 2.5–12 s to a first patch and one hung. A remap after a hit
-    // during an answer instead stops the version it replaces (abort), which frees the one lane at once
-    Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs, urgentMs, maxLanes });
+    // maxLanes/urgentMs: lines at once on ONE worker. A worker that can (pong spar: 2) may take a second line when it is
+    // needed within urgentMs. Off: on staging 13 Oct two lines at once on one GPU took 2.5–12 s to a first patch and one
+    // hung. A remap after a hit during an answer instead stops the version it replaces (abort), which frees its lane
+    // podGraceMs: no serverless order while pods are expected (one was connected within this, or this server just started
+    // and they have not dialed back yet)
+    Object.assign(this, { endpointId, apiKey, publicBase, publicDir, dealers, log, fetchImpl, onPiece, inactivityMs, ttlS, horizonMs, urgentMs, maxLanes, podGraceMs });
+    this.fixedPodToken = podToken;
     this.token = randomBytes(24).toString('hex');   // per process: only the sessions we ordered can dial in
-    this.s = new Map(dealers.map(d => [d, { ws: null, next: null, info: null, askedAt: 0, at: 0, active: 0, orders: [], jobs: [], running: 0, waiters: [], recent: [] }]));
+    this.startedAt = Date.now();
+    const none = () => ({ ws: null, info: null, pod: null, running: 0, waiters: [] });   // the lane of "no worker": its lines fail at once
+    this.s = new Map(dealers.map(d => [d, { workers: [], none: none(), podAt: 0, askedAt: 0, active: 0, orders: [], jobs: [], recent: [] }]));
     this.talks = new Map();   // talk id -> {room, pieces:[{meta, bytes}], done, error, at}
     this.durations = new Map();
     this.timer = setInterval(() => this.#tick(), 5000);
     this.timer.unref?.();
   }
 
+  /** The token a dedicated pod dials with: RORLIG_POD_TOKEN, else derived from the RunPod key (no new secret to store). */
+  podToken() {
+    if (this.fixedPodToken) return this.fixedPodToken;
+    return this.apiKey ? createHash('sha256').update(`rorlig-pod:${this.apiKey}`).digest('hex').slice(0, 40) : null;
+  }
+
+  #ok(w) { return Boolean(w.ws?.readyState === WebSocket.OPEN && w.info && (w.info.rutor_per_s ?? 0) >= MIN_FPS); }
+
   status() {
-    return Object.fromEntries([...this.s].map(([d, s]) => [d, { ready: this.ready(d), info: s.info ? { gpu: s.info.gpu, motor: s.info.motor, forsta_bit_ms: s.info.forsta_bit_ms, rutor_per_s: s.info.rutor_per_s } : null,
-      asked: s.askedAt ? Math.round((Date.now() - s.askedAt) / 1000) : null, activeAgo: s.active ? Math.round((Date.now() - s.active) / 1000) : null,
-      recent: s.recent }]));
+    return Object.fromEntries([...this.s].map(([d, s]) => {
+      const first = s.workers.find(w => this.#ok(w));
+      return [d, { ready: this.ready(d), info: first ? { gpu: first.info.gpu, motor: first.info.motor, forsta_bit_ms: first.info.forsta_bit_ms, rutor_per_s: first.info.rutor_per_s } : null,
+        workers: s.workers.map(w => ({ pod: w.pod, gpu: w.info?.gpu ?? null, rutor_per_s: w.info?.rutor_per_s ?? null, forsta_bit_ms: w.info?.forsta_bit_ms ?? null, running: w.running, up: Math.round((Date.now() - w.at) / 1000) })),
+        asked: s.askedAt ? Math.round((Date.now() - s.askedAt) / 1000) : null, activeAgo: s.active ? Math.round((Date.now() - s.active) / 1000) : null,
+        recent: s.recent }];
+    }));
   }
 
   ready(dealer) {
-    const s = this.s.get(dealer);
-    return Boolean(s?.ws?.readyState === WebSocket.OPEN && s.info && (s.info.rutor_per_s ?? 0) >= MIN_FPS);
+    return Boolean(this.s.get(dealer)?.workers.some(w => this.#ok(w)));
   }
+
+  workers(dealer) { return this.s.get(dealer)?.workers ?? []; }
 
   /** A table with this dealer is in use: keep (or get) a warm worker. */
   activity(dealer) {
     const s = this.s.get(dealer);
     if (!s) return;
     s.active = Date.now();
-    if (!s.ws) this.#order(dealer);
+    if (!s.workers.length) this.#order(dealer);
   }
 
   /** The dealer's own take of a line: {url, lang, dur} or null when he has none. */
@@ -158,15 +184,15 @@ export class RorligLipsync {
     const rec = { room, ver: (old?.ver ?? 0) + 1, pieces: [], done: false, error: null, at: Date.now(), pcm: pcm ?? old?.pcm ?? null, pcmWs: old?.pcmWs ?? null, talk };
     this.talks.set(talk.id, rec);
     const base = this.publicBase();
-    const run = () => new Promise(resolve => {
-      const ws = s.ws;
+    const run = (w) => new Promise(resolve => {
+      const ws = w.ws;
       if (rec !== this.talks.get(talk.id)) return resolve();   // a newer map came while this one waited
-      if (!this.ready(dealer) || (!rec.pcm && !base)) { rec.error = 'no worker'; rec.done = true; return resolve(); }
+      if (!this.#ok(w) || (!rec.pcm && !base)) { rec.error = 'no worker'; rec.done = true; return resolve(); }
       // timings of the last lines (in /api/lipsync-status): queue = waited behind other lines, first = sent until the
       // first patch, spare = how long before its first frame is on screen the first patch came (negative = late)
       // a two-lane worker may make two versions of one answer at once: each run has its own id, the voice its answer's
-      const lanes = (s.info?.spar ?? 1) >= 2, jid = lanes ? `${talk.id}#${rec.ver}` : talk.id;
-      const sent = Date.now(), tm = { what: talk.event ?? talk.kind, ver: rec.ver, fran, queue: sent - rec.at, first: null, total: null, spare: null, steg: null, error: null };
+      const lanes = (w.info?.spar ?? 1) >= 2, jid = lanes ? `${talk.id}#${rec.ver}` : talk.id;
+      const sent = Date.now(), tm = { what: talk.event ?? talk.kind, ver: rec.ver, fran, worker: w.pod ?? 'serverless', queue: sent - rec.at, first: null, total: null, spare: null, steg: null, error: null };
       const finish = (err) => { rec.abort = null; clearTimeout(timer); ws.off('message', onMsg); ws.off('close', onClose); rec.error = err; rec.done = true; tm.total = Date.now() - sent; tm.error = err; s.recent.unshift(tm); s.recent.length = Math.min(s.recent.length, 20); resolve(); };
       let pending = null;
       const onMsg = (data, isBinary) => {
@@ -177,7 +203,7 @@ export class RorligLipsync {
         let m; try { m = JSON.parse(String(data)); } catch { return; }
         if (m.id !== jid) return;
         if (m.t === 'lapp') pending = { del: m.del, fran: m.fran, till: m.till, rutor: m.rutor };
-        else if (m.t === 'done') { tm.steg = m.steg ?? null; this.log(`läppsynk rörlig [${dealer}]: ${talk.event ?? 'replik'} klar, första bit ${m.forsta_bit_ms} ms, ${m.ms} ms`); finish(null); }
+        else if (m.t === 'done') { tm.steg = m.steg ?? null; this.log(`läppsynk rörlig [${dealer}${w.pod ? ' ' + w.pod : ''}]: ${talk.event ?? 'replik'} klar, första bit ${m.forsta_bit_ms} ms, ${m.ms} ms`); finish(null); }
         else if (m.t === 'error') { if (m.reason !== 'avbruten') this.log(`läppsynk rörlig [${dealer}]: fel ${m.reason}`); finish(m.reason); }
       };
       // a worker that goes away mid-line (terminated, its machine lost) ends the line at once: the queue behind it waited
@@ -198,9 +224,9 @@ export class RorligLipsync {
       ws.send(JSON.stringify({ t: 'end', id: jid }));
     });
     // The line needed on screen soonest first (earliest deadline): a line starting in a second goes before an answer made
-    // for later, and a new map for what is on screen now goes before both. One at a time (maxLanes).
+    // for later, and a new map for what is on screen now goes before both. One at a time per worker (maxLanes).
     return new Promise(resolve => {
-      s.jobs.push({ deadline: talk.kartaStart + fran * 1000 / 24, stale: () => rec !== this.talks.get(talk.id), run: () => run().then(resolve, resolve) });
+      s.jobs.push({ deadline: talk.kartaStart + fran * 1000 / 24, stale: () => rec !== this.talks.get(talk.id), voiceAt: () => rec.pcmWs, run: (w) => run(w).then(resolve, resolve) });
       this.#pump(dealer);
     });
   }
@@ -208,21 +234,28 @@ export class RorligLipsync {
   #pump(dealer) {
     const s = this.s.get(dealer);
     // a line remade since it was queued: the old version ends at once, it is never made
-    for (const j of s.jobs.filter(j => j.stale())) j.run();
+    for (const j of s.jobs.filter(j => j.stale())) j.run(s.none);
     s.jobs = s.jobs.filter(j => !j.stale());
     clearTimeout(s.later);
-    if (!s.jobs.length || s.running >= Math.min(this.maxLanes, s.info?.spar ?? 1)) return;
+    if (!s.jobs.length) return;
+    const ok = s.workers.filter(w => this.#ok(w));
+    const free = ok.length ? ok.filter(w => w.running < Math.min(this.maxLanes, w.info?.spar ?? 1)) : (s.none.running ? [] : [s.none]);
+    if (!free.length) return;
     s.jobs.sort((a, b) => a.deadline - b.deadline);
-    const wait = s.jobs[0].deadline - Date.now() - (s.running ? this.urgentMs : this.horizonMs);
+    // a free worker that is idle takes a line from its horizon on; a second line on a busy one only when urgent
+    const idle = free.filter(w => !w.running), wait = s.jobs[0].deadline - Date.now() - (idle.length ? this.horizonMs : this.urgentMs);
     if (wait > 0) { s.later = setTimeout(() => this.#pump(dealer), wait); return; }
     const job = s.jobs.shift();
-    s.running++;
-    job.run().finally(() => { s.running--; if (!s.running) for (const f of s.waiters.splice(0)) f(); this.#pump(dealer); });
-    this.#pump(dealer);   // a second lane (maxLanes 2), when the next one is urgent
+    // the worker that already has this answer's voice when it is free (no ~0.5 s resend), else an idle one, pods first
+    const pick = (idle.length ? idle : free);
+    const w = pick.find(x => x.ws && x.ws === job.voiceAt()) ?? pick.find(x => x.pod) ?? pick[0];
+    w.running++;
+    job.run(w).finally(() => { w.running--; if (!w.running) for (const f of w.waiters.splice(0)) f(); this.#pump(dealer); });
+    this.#pump(dealer);   // the next line on another free worker (or a second lane, maxLanes 2, when urgent)
   }
 
-  // the worker has no line in hand (lines still waiting go to whichever worker is current when their time comes)
-  #idle(s) { return !s.running ? Promise.resolve() : new Promise(r => s.waiters.push(r)); }
+  // the worker has no line in hand (lines still waiting go to whichever worker is free when their time comes)
+  #idle(w) { return !w.running ? Promise.resolve() : new Promise(r => w.waiters.push(r)); }
 
   piece(talkId, del, ver) { const t = this.talks.get(talkId); return t && (!ver || t.ver === ver) ? t.pieces.find(p => p.meta.del === del) ?? null : null; }
   index(talkId) {
@@ -240,32 +273,51 @@ export class RorligLipsync {
     return Buffer.concat([h, pcm]);
   }
 
-  /** The worker dialed /lipsync-rorlig?token=…&avatar=… */
+  /**
+   * A worker that measured fast enough joins the dealer's lanes. A new serverless session replaces the one before it;
+   * a pod's new connection replaces its own old one; the first pod sends the serverless sessions away. Each one leaves
+   * with a goodbye once its lines in hand are made.
+   */
+  addWorker(dealer, ws, info, pod = null) {
+    const s = this.s.get(dealer);
+    const w = { ws, info, pod, running: 0, waiters: [], at: Date.now() };
+    const old = s.workers.filter(o => o.ws !== ws && (pod ? (o.pod === pod || !o.pod) : !o.pod));
+    s.workers = [...s.workers.filter(o => !old.includes(o)), w];
+    for (const o of old) this.#idle(o).then(() => { try { o.ws.send(JSON.stringify({ t: 'bye' })); } catch {} });
+    if (pod) { s.podAt = Date.now(); s.askedAt = 0; }
+    this.#pump(dealer);
+    return w;
+  }
+
+  /** A worker dialed /lipsync-rorlig?token=…&avatar=…[&pod=<name>] */
   adoptWorker(ws, url) {
     const dealer = url.searchParams.get('avatar') ?? '';
-    const s = this.s.get(dealer);
-    if (url.searchParams.get('token') !== this.token || !s) { ws.close(4403, 'fel token'); return; }
+    const s = this.s.get(dealer), token = url.searchParams.get('token');
+    const pod = (url.searchParams.get('pod') ?? '').replace(/[^\w.-]/g, '').slice(0, 40) || null;
+    if (!s || !(token === this.token || (pod && token && token === this.podToken()))) { ws.close(4403, 'fel token'); return; }
+    const name = `${dealer}${pod ? ' ' + pod : ''}`;
     ws.once('message', data => {
       let m; try { m = JSON.parse(String(data)); } catch { ws.close(); return; }
       if (m.t !== 'pong') { ws.close(); return; }
-      // a slow machine (14.5 frames/s on 13 Oct) must not take over from a working worker: it is sent away (and
-      // replaced by RunPod) and a new session is ordered in ~15 s; the one in use keeps speaking meanwhile
+      // a slow machine (14.5 frames/s on 13 Oct) must not take over from a working worker: it is sent away (a serverless
+      // one is replaced by RunPod and a new session is ordered in ~15 s; a pod measures again and dials back)
       if ((m.rutor_per_s ?? 0) < MIN_FPS) {
-        this.log(`läppsynk rörlig [${dealer}]: arbetaren för långsam (${m.gpu}, ${m.rutor_per_s} rutor/s) — skickas bort, ny beställs`);
+        this.log(`läppsynk rörlig [${name}]: arbetaren för långsam (${m.gpu}, ${m.rutor_per_s} rutor/s) — skickas bort${pod ? '' : ', ny beställs'}`);
         try { ws.send(JSON.stringify({ t: 'bye' })); } catch {}
-        s.askedAt = Date.now() - 225_000;
+        if (!pod) s.askedAt = Date.now() - 225_000;
         return;
       }
-      const old = s.ws;
-      s.ws = ws; s.info = m; s.at = Date.now(); s.askedAt = 0;
-      this.log(`läppsynk rörlig [${dealer}]: arbetare uppkopplad (${m.gpu}, första bit ${m.forsta_bit_ms} ms, ${m.rutor_per_s} rutor/s)`);
+      this.addWorker(dealer, ws, m, pod);
+      this.log(`läppsynk rörlig [${name}]: arbetare uppkopplad (${m.gpu}, första bit ${m.forsta_bit_ms} ms, ${m.rutor_per_s} rutor/s)`);
       // the lines said at round start have the least time to spare: the worker fetches their sound now, not then
       const base = this.publicBase();
       if (base) try { ws.send(JSON.stringify({ t: 'forhamta', urls: this.#roundStartLines(dealer).map(u => base + u) })); } catch {}
-      // the session it replaces says goodbye once its line queue is empty
-      if (old && old !== ws) this.#idle(s).then(() => { try { old.send(JSON.stringify({ t: 'bye' })); } catch {} });
     });
-    ws.on('close', () => { if (s.ws === ws) { s.ws = null; s.info = null; this.log(`läppsynk rörlig [${dealer}]: arbetaren kopplade ner`); } });
+    ws.on('close', () => {
+      const before = s.workers.length;
+      s.workers = s.workers.filter(w => w.ws !== ws);
+      if (s.workers.length < before) this.log(`läppsynk rörlig [${name}]: arbetaren kopplade ner`);
+    });
     ws.on('error', () => {});
   }
 
@@ -283,11 +335,17 @@ export class RorligLipsync {
       headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(20_000) });
   }
 
+  // pods are connected, were a moment ago, or this server just started and they have not dialed back yet
+  #podsExpected(s) {
+    const now = Date.now();
+    return s.workers.some(w => w.pod) || now - s.podAt < this.podGraceMs || (this.podToken() && now - this.startedAt < 30_000);
+  }
+
   #order(dealer, force = false) {
     const s = this.s.get(dealer), base = this.publicBase();
-    if (!base) return;
+    if (!base || this.#podsExpected(s)) return;
     // a cold start (image pull) can take minutes: one order at a time, a new one only after 4 min without a worker
-    if (!force && (s.ws || Date.now() - s.askedAt < 240_000)) return;
+    if (!force && (s.workers.length || Date.now() - s.askedAt < 240_000)) return;
     if (force && Date.now() - s.askedAt < 60_000) return;
     s.askedAt = Date.now();
     const ws_url = `${base.replace(/^http/, 'ws')}/lipsync-rorlig?token=${this.token}&avatar=${encodeURIComponent(dealer)}`;
@@ -300,13 +358,15 @@ export class RorligLipsync {
     const now = Date.now();
     for (const [dealer, s] of this.s) {
       const inUse = s.active && now - s.active < this.inactivityMs;
+      const sessions = s.workers.filter(w => !w.pod);
       if (inUse) {
-        if (!s.ws) this.#order(dealer);
-        else if (now - s.at > (this.ttlS - 150) * 1000) this.#order(dealer, true);   // renew before the session's ttl
-      } else if (s.ws || s.orders.length) {
-        try { s.ws?.send(JSON.stringify({ t: 'bye' })); } catch {}
+        if (!s.workers.length) this.#order(dealer);
+        else if (sessions.some(w => now - w.at > (this.ttlS - 150) * 1000)) this.#order(dealer, true);   // renew before the session's ttl
+      } else if (sessions.length || s.orders.length) {
+        // pods stay: only the serverless sessions are released
+        for (const w of sessions) try { w.ws.send(JSON.stringify({ t: 'bye' })); } catch {}
         for (const id of s.orders.splice(0)) this.#api(`cancel/${id}`, { method: 'POST' }).catch(() => {});
-        if (s.ws) this.log(`läppsynk rörlig [${dealer}]: ingen vid bordet på ${Math.round(this.inactivityMs / 60000)} min — arbetaren släpps`);
+        if (sessions.length) this.log(`läppsynk rörlig [${dealer}]: ingen vid bordet på ${Math.round(this.inactivityMs / 60000)} min — arbetaren släpps`);
         s.active = 0; s.askedAt = 0;
       }
       if (s.orders.length > 8) s.orders.splice(0, s.orders.length - 8);

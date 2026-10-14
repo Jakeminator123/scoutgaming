@@ -134,9 +134,8 @@ test('the worker makes what is needed on screen soonest first: a new map for now
   const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{},horizonMs:60_000});
   clearInterval(r.timer);
   const order=[],s=r.s.get('paow');
-  s.info={rutor_per_s:60};
-  s.ws={readyState:1,off(){},send(m){const j=JSON.parse(m);if(j.t==='start')order.push(j.id);},
-    on(ev,f){if(ev==='message')setTimeout(()=>f(JSON.stringify({t:'done',id:order.at(-1)}),false),5);}};   // one lane: the line's own id
+  r.addWorker('paow',{readyState:1,off(){},send(m){const j=JSON.parse(m);if(j.t==='start')order.push(j.id);},
+    on(ev,f){if(ev==='message')setTimeout(()=>f(JSON.stringify({t:'done',id:order.at(-1)}),false),5);}},{rutor_per_s:60});   // one lane: the line's own id
   const now=Date.now(),done=[];
   done.push(r.speak('paow','rum',{id:'first',kartaStart:now+9000,line:'/a.mp4'},[]));   // the worker is free: it starts at once
   done.push(r.speak('paow','rum',{id:'answer-later',kartaStart:now+5000,line:'/a.mp4'},[]));
@@ -151,9 +150,8 @@ test('a line is made only shortly before it is needed, and only its last version
   const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{},horizonMs:3000});
   clearInterval(r.timer);
   const made=[],s=r.s.get('paow');
-  s.info={rutor_per_s:60};
-  s.ws={readyState:1,off(){},send(m){const j=JSON.parse(m);if(j.t==='start')made.push([j.id,Date.now()]);},
-    on(ev,f){if(ev==='message')setTimeout(()=>f(JSON.stringify({t:'done',id:made.at(-1)[0]})),5);}};
+  r.addWorker('paow',{readyState:1,off(){},send(m){const j=JSON.parse(m);if(j.t==='start')made.push([j.id,Date.now()]);},
+    on(ev,f){if(ev==='message')setTimeout(()=>f(JSON.stringify({t:'done',id:made.at(-1)[0]})),5);}},{rutor_per_s:60});
   const now=Date.now(),talk={id:'insurance',kartaStart:now+3200,line:'/a.mp4'};
   const v1=r.speak('paow','rum',talk,[]);
   const v2=r.speak('paow','rum',talk,[]);   // the plan changed before the line was made
@@ -168,8 +166,7 @@ test('a two-lane worker takes an urgent remap at once beside a long line, and st
   const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{},maxLanes:2});
   clearInterval(r.timer);
   const sent=[],h=[],s=r.s.get('paow');
-  s.info={rutor_per_s:60,spar:2};
-  s.ws={readyState:1,off(ev,f){const i=h.indexOf(f);if(i>=0)h.splice(i,1);},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);}};
+  r.addWorker('paow',{readyState:1,off(ev,f){const i=h.indexOf(f);if(i>=0)h.splice(i,1);},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);}},{rutor_per_s:60,spar:2});
   const msg=m=>[...h].forEach(f=>f(JSON.stringify(m),false));
   const now=Date.now();
   const line=r.speak('paow','rum',{id:'insurance',kartaStart:now+1500,line:'/a.mp4'},[]);
@@ -194,8 +191,7 @@ test('a worker that goes away mid-line ends that line at once, so the lines behi
   const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
   clearInterval(r.timer);
   const s=r.s.get('paow'),h={};
-  s.info={rutor_per_s:60};
-  s.ws={readyState:1,send(){},off(){},on(ev,f){h[ev]=f;}};
+  r.addWorker('paow',{readyState:1,send(){},off(){},on(ev,f){h[ev]=f;}},{rutor_per_s:60});
   const t0=Date.now(),done=r.speak('paow','rum',{id:'gone',kartaStart:t0+2000,line:'/a.mp4'},[]);
   setTimeout(()=>h.close(),20);
   await done;
@@ -210,9 +206,9 @@ test('a worker too slow to keep ahead of the picture is sent away and never repl
   const s=r.s.get('paow'),dial=pong=>{const sent=[],h={};const ws={readyState:1,sent,send(m){sent.push(JSON.parse(m).t);},once(ev,f){h[ev]=f;},on(){},close(){}};
     r.adoptWorker(ws,new URL(`https://x/lipsync-rorlig?token=${r.token}&avatar=paow`));h.message(JSON.stringify({t:'pong',gpu:'4090',...pong}));return ws;};
   const good=dial({rutor_per_s:56});
-  assert.equal(s.ws,good);
+  assert.deepEqual(r.workers('paow').map(w=>w.ws),[good]);
   const slow=dial({rutor_per_s:14.5});
-  assert.equal(s.ws,good);
+  assert.deepEqual(r.workers('paow').map(w=>w.ws),[good]);
   assert.deepEqual(slow.sent,['bye']);
   assert.ok(Date.now()-s.askedAt>200_000);   // a new order may go out at once
 });
@@ -249,8 +245,7 @@ test('with one lane a hit during an answer stops the answer in hand, so its rema
   const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
   clearInterval(r.timer);
   const sent=[],h=[],s=r.s.get('paow');
-  s.info={rutor_per_s:60,spar:2};
-  s.ws={readyState:1,off(ev,f){const i=h.indexOf(f);if(i>=0)h.splice(i,1);},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);}};
+  r.addWorker('paow',{readyState:1,off(ev,f){const i=h.indexOf(f);if(i>=0)h.splice(i,1);},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);}},{rutor_per_s:60,spar:2});
   const msg=m=>[...h].forEach(f=>f(JSON.stringify(m),false));
   const answer={id:'answer',kartaStart:Date.now()+1000};
   const v1=r.speak('paow','rum',answer,[],{pcm:Buffer.alloc(4800)});
@@ -261,4 +256,51 @@ test('with one lane a hit during an answer stops the answer in hand, so its rema
   assert.equal(sent.filter(m=>m.t==='start').at(-1).id,'answer#2');
   msg({t:'done',id:'answer#2'});
   await v2;
+});
+
+test('two pods are two lanes: a hit during an answer has its remap made on the other pod at once', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const r=new RorligLipsync({endpointId:'x',apiKey:'x',publicBase:()=>'https://x',publicDir:'.',log:()=>{}});
+  clearInterval(r.timer);
+  const pod=name=>{const sent=[],h=[];return {name,sent,h,ws:{readyState:1,off(ev,f){const i=h.indexOf(f);if(i>=0)h.splice(i,1);},send(m){if(typeof m==='string')sent.push(JSON.parse(m));},on(ev,f){if(ev==='message')h.push(f);}}};};
+  const a=pod('toucan'),b=pod('pod2');
+  r.addWorker('paow',a.ws,{rutor_per_s:60,spar:2},'toucan');
+  r.addWorker('paow',b.ws,{rutor_per_s:60,spar:2},'pod2');
+  const starts=p=>p.sent.filter(m=>m.t==='start').map(m=>m.id);
+  const answer={id:'answer',kartaStart:Date.now()+1000};
+  const v1=r.speak('paow','rum',answer,[],{pcm:Buffer.alloc(4800)});
+  assert.deepEqual(starts(a),['answer#1']);
+  const v2=r.speak('paow','rum',answer,[],{fran:30});   // a hit: new cards under the answer
+  assert.ok(a.sent.some(m=>m.t==='avbryt'&&m.id==='answer#1'),'the old version is stopped');
+  assert.deepEqual(starts(b),['answer#2'],'the remap starts on the second pod without waiting for the first');
+  assert.ok(!b.sent.find(m=>m.t==='start').samma_ljud,'the second pod gets the voice');
+  [...a.h].forEach(f=>f(JSON.stringify({t:'error',id:'answer#1',reason:'avbruten'}),false));
+  [...b.h].forEach(f=>f(JSON.stringify({t:'done',id:'answer#2'}),false));
+  await Promise.all([v1,v2]);
+  assert.equal(r.index('answer').fel,null);
+  assert.deepEqual(r.status().paow.workers.map(w=>w.pod),['toucan','pod2']);
+});
+
+test('a pod dials with the pod token, stays when the table goes quiet, and no serverless session is ordered meanwhile', async () => {
+  const {RorligLipsync}=await import('../server/rorlig-lipsync.mjs');
+  const orders=[];
+  const r=new RorligLipsync({endpointId:'x',apiKey:'k',publicBase:()=>'https://x',publicDir:'.',log:()=>{},inactivityMs:1,
+    fetchImpl:async(u)=>{orders.push(u);return {json:async()=>({id:'j'})};}});
+  clearInterval(r.timer);
+  const dial=(token,pod)=>{const sent=[],h={};const ws={readyState:1,sent,closed:null,send(m){sent.push(JSON.parse(m).t);},once(ev,f){h[ev]=f;},on(){},close(c){ws.closed=c;}};
+    r.adoptWorker(ws,new URL(`https://x/lipsync-rorlig?token=${token}&avatar=paow${pod?'&pod='+pod:''}`));h.message?.(JSON.stringify({t:'pong',gpu:'4090',rutor_per_s:60}));return ws;};
+  assert.equal(dial('fel','toucan').closed,4403);
+  assert.equal(dial(r.token+'x').closed,4403);
+  assert.ok(r.podToken().length>=32);
+  const p=dial(r.podToken(),'toucan');
+  assert.equal(p.closed,null);
+  assert.ok(r.ready('paow'));
+  r.startedAt=0;r.activity('paow');
+  await new Promise(res=>setTimeout(res,5));
+  assert.equal(orders.length,0,'no serverless order while a pod is connected');
+  await new Promise(res=>setTimeout(res,5));
+  r.s.get('paow').active=Date.now()-10;   // the table went quiet
+  await new Promise(res=>setTimeout(res,5));
+  assert.ok(!p.sent.includes('bye'),'a pod is never sent away for a quiet table');
+  assert.equal(r.workers('paow').length,1);
 });
