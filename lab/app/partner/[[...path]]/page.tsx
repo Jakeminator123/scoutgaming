@@ -1,4 +1,4 @@
-import { WorkspaceSurfacePage } from '../../control/surface-page';
+import { WorkspaceSurfacePage } from '@/components/workspace-surface-page';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Partnerportal · Croupier', robots: { index: false, follow: false } };

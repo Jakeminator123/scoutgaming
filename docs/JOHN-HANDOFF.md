@@ -1,5 +1,45 @@
 # Aktuell handoff — Scoutgaming
 
+## Aktiv partnerportal utan klientdemo, 15 oktober 2026
+
+Den gemensamma N1/N2-sidladdaren finns nu i
+`lab/components/workspace-surface-page.tsx`. Control och Partner använder
+samma behörighetskontroller och returkontrakt utan import från en annan
+sidas katalog. Den verkliga klienten heter `PartnerOperatorWorkspace`.
+Den onåbara klientdemon, dess originalvyer/CSS (383 127 byte) och dess
+generator/factory är borttagna efter konsumentkontroll. Aktiva partnervyer,
+API-fixtures, material, provenance, sparade alias och publiceringshistorik
+är bevarade. `.kevin-bo` är fortfarande en aktiv CSS-avgränsning.
+
+Testerna kontrollerar den verkligt renderade partnermenyn, rollgränser,
+utkastens livslängd och bolagsbundna publiceringskvitton. En historisk exakt
+destinationslista används inte längre som krav på dagens meny. Riktat:
+153 pass, 1 villkorat browserprov skip; sista menyjusteringen 11/11 pass.
+Lab-bygget verifierar 97 spår. Oberoende granskning fann inga konkreta
+regressioner. Det befintliga isolerade Chrome-provet för partnerlogin med
+bolag/rum och ändamålsbunden cookie passerade också (1/1, ingen skip).
+Kodcommit `3c93a3ab` passerade ordinarie fullhook: 3 792 pass, 21 villkorade
+skip, 0 fel/cancel i 77 grupper. Första försöket stoppades av tillfällig
+Windows-EPERM i agent-talks isolerade låsprov; det exakta provet och därefter
+hela fullhooken passerade utan testundantag. CI bokförs vid leverans.
+Arkivets befintliga lokala undantag i
+`.ignore` och `.cursorignore` versionsstyrs så att samma skydd finns i nya
+arbetskopior; Git ignorerade redan det privata arkivinnehållet.
+
+Samordnarens läsande browserprov på levererad `9b6f4d11` använder befintlig
+staffsession: Admin → Swedish Games partnerportal visar paketversion 4 och
+Dragan-rummets tre lager. Lobbyn erbjuder rätt rum/dealer och bygger rätt
+`/play/blackjack`-länk. Ingen publicering eller spelstart gjordes. Valt bolag
+och rum tappas mellan portalerna; detta rättas separat och är inte godkänd
+slutacceptans. Admin-översikten på 390 × 844 px gav dokumentbredd 390 px.
+Faktisk 200-procentszoom, full dialogmatris och spelaracceptans återstår.
+
+PR150 är mergad som `8e97ee83`: fullhook 3 794 pass/21 skip/0 fel eller
+cancel i 77 grupper, grön CI och Vercel-preview READY. Previewbygget
+verifierade den verkliga Node 22-installationen trots frontendens Node
+24-kontrakt. Lokal main är uppdaterad; samtliga sex tidigare ändrade lokala
+filer har verifierats byteidentiska efter synkroniseringen.
+
 ## Byggkontrakt och systemkarta, 15 oktober 2026
 
 Lab/design/frontend använder Node 24; taltransporten använder Node 22.
@@ -47,8 +87,8 @@ Kodcommit `567be8a2` passerade Lab-build (97 spår) och ordinarie fullhook:
 3 794 pass, 21 villkorade skip, 0 fel/cancel i 77 grupper. Oberoende statisk
 granskning fann inga konkreta regressioner. Levererad browseracceptans
 återstår och bokförs separat i C1–C9.
-Nästa strukturella snitt är att flytta den delade sidladdaren ur Control;
-`lab/lib` och verkliga partnerportalen är aktiva tjänster och bevaras.
+Den delade sidladdaren har därefter flyttats ur Control, se aktuellt kvitto
+ovan. `lab/lib` och verkliga partnerportalen är aktiva tjänster och bevaras.
 
 PR #91 är fortsatt draft: Astrids isolerade spelarprov är klart; Dragan v4
 inväntar tillstånd för den privata runtimekoden. Inga sandboxuppladdningar

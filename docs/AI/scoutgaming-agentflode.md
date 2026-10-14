@@ -17,6 +17,11 @@ tillåter inte längre typfel. Kör Node från rätt paketmapp enligt
 Vid städning skiljs aktiv delad kod från onåbar klientdemo genom konsumenter;
 legacy-namn eller ett gammalt test är inte ensamt ett bevarandekrav.
 
+Partner-städningen behåller beteendetester för verklig meny, rollgränser,
+utkast och publiceringskvitton. Test av en borttagen demomenys exakta antal
+och ordning ersätts med dessa kontrakt. Raderingsgrinden och ordinarie
+fullkontroll gäller även när gamla generatorer och vyer tas bort.
+
 Det tidigare spelarstoppet är hävt för isolerade internetprov. PR #91 har
 Astrid-kvitto för förlust, vinst, push, split, mobil och sammanhängande
 spelningar; detta är funktion, inte ny läppsynksacceptans. Dragan v4 väntar

@@ -1,12 +1,12 @@
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { KevinBackoffice } from '@/components/kevin-bo/kevin-backoffice';
+import { PartnerOperatorWorkspace } from '@/components/kevin-bo/partner-operator-workspace';
 import { ControlWorkspace } from '@/components/control-workspace';
 import { PartnerWorkspace } from '@/components/partner-workspace';
-import { controlStudioSummary } from '../../lib/control-overview.mjs';
+import { controlStudioSummary } from '../lib/control-overview.mjs';
 
 import { controlToolPath } from '@/lib/control-workspace.mjs';
-import { nativeStudioAdminEnabled, studioNativeRuntime } from '../../lib/studio-native-runtime.mjs';
+import { nativeStudioAdminEnabled, studioNativeRuntime } from '../lib/studio-native-runtime.mjs';
 import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';
 import { partnerPreviewInitialData } from '@/lib/partner-preview.mjs';
 import { partnerWorkspaceInitialData } from '@/lib/partner-data.mjs';
@@ -115,6 +115,6 @@ export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId }
       accessClass={data.session.accessClass === 'internal-admin' ? 'internal-admin' : 'partner'}
       operators={data.snapshot.operators.map(({ slug, name }: { slug: string; name: string }) => ({ slug, name }))} />;
   }
-  return <KevinBackoffice surface="partner"
+  return <PartnerOperatorWorkspace surface="partner"
     initialSnapshot={data.snapshot} initialView={route.view} {...(initialRoomId===undefined?{}:{initialRoomId})} apiBase={data.apiBase} user={user} />;
 }

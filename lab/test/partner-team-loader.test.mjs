@@ -180,8 +180,8 @@ test('the portal binds one stable team view per API base and renders Kevin\'s re
   }));
   assert.match(loading, /Åtgärderna är låsta tills teamåtkomsten har verifierats./);
   assert.match(tag(loading, 'team-invite-submit'), /disabled/);
-  const portal = await readFile(new URL('../components/kevin-bo/kevin-backoffice.jsx', import.meta.url), 'utf8');
-  assert.match(portal, /teamView:snapshot\.preview===false&&surface==='partner'\?partnerTeamView\(apiBase,TeamView\):TeamView/);
+  const portal = await readFile(new URL('../components/kevin-bo/partner-operator-workspace.jsx', import.meta.url), 'utf8');
+  assert.match(portal, /teamView:partnerTeamView\(apiBase,TeamView\)/);
 });
 
 

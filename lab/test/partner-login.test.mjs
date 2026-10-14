@@ -186,18 +186,18 @@ test('actual browser partner login returns to the authorized operator and room w
         const config={boDb:adapter(bo),gameDb:adapter(game),scope,store,allowedOrigins:[origin,'https://studio.fixture.invalid'],publicHosts:['partner.fixture.invalid','studio.fixture.invalid'],
           apiBase:prefix+'/api/admin',authBase:prefix+'/api/auth',rateLimit:async()=>true,clientAddress:async()=> 'fixture-partner'};
         const LoginPage=loadLoginPage(authBase);
-        const surfaceSource=new URL('../app/control/surface-page.tsx',import.meta.url);
+        const surfaceSource=new URL('../components/workspace-surface-page.tsx',import.meta.url);
         const surfaceCode=transformSync(readFileSync(surfaceSource,'utf8'),{filename:fileURLToPath(surfaceSource),
           jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code;
         const renderSurface=async(request,url)=>{
           const module={exports:{}}, unused=()=>assert.fail('unexpected fixture preview or control');
           const overrides={
             'next/headers':{headers:async()=>request.headers},'next/navigation':navigation,
-            '@/components/kevin-bo/kevin-backoffice':{KevinBackoffice:()=>null},
+            '@/components/kevin-bo/partner-operator-workspace':{PartnerOperatorWorkspace:()=>null},
             '@/components/control-workspace':{ControlWorkspace:unused},'@/components/partner-workspace':{PartnerWorkspace:()=>null},
             '@/lib/partner-data.mjs':{partnerWorkspaceInitialData:(req,options)=>partnerWorkspaceInitialData(req,{...options,config,store})},
             '@/lib/partner-preview.mjs':{partnerPreviewInitialData:unused},
-            '../../lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>false,studioNativeRuntime:unused},
+            '../lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>false,studioNativeRuntime:unused},
             '@/lib/control-workspace.mjs':{controlToolPath},'@/lib/lab-url.mjs':{publicAbsoluteUrl},
             '@/lib/partner-session.mjs':{internalSessionPresent},'@/lib/partner-login-return.mjs':{partnerLoginReturnTo},
             '@/lib/next-page-navigation.mjs':{nextStudioLoginRedirect},'@/lib/workspace-surfaces.mjs':{resolveWorkspaceSurfacePath},

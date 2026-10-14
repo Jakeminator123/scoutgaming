@@ -1,4 +1,5 @@
 # Ordinary ripgrep discovery; Git/build inputs are unchanged.
+/arkiv/
 # Not a copy of .cursorignore. Heavy tracked media stays hidden from rg.
 # .cursorindexingignore alone keeps that text out of the Cursor index.
 # Retired private archive: never read or re-index.

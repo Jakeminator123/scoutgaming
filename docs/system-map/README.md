@@ -86,3 +86,25 @@ slutkontrollen identifierar rätt version. Ingen beständig Git- eller
 säkerhetskonfiguration ändrades. De fyra inbäddade faktakatalogerna matchar
 JSON-filerna och gula markeringar är avsiktligt bevarade.
 Kör inte `--refresh-baseline` bara för att dölja dessa varningar.
+
+## Partnerreferenser efter PR150, 15 oktober 2026
+
+Arbetskopian utgår från main `8e97ee83`. Aktiva hänvisningar pekar nu på
+`lab/components/workspace-surface-page.tsx` och
+`lab/components/kevin-bo/partner-operator-workspace.jsx`; källansvar och N1/N2-
+kontroller är bevarade. Kartans bredare faktainventering behåller sin tidigare
+källversion; detta är en avgränsad sökvägsuppdatering efter klientstädningen.
+
+Den gamla klientens sökväg under `expectedHashes` är historisk baslinjedata
+och ligger kvar. Aktiva `sources` följer de nya modulerna; inga hashar har
+flyttats, ersatts eller nollställts för att göra kontrollen grön. HTML genereras
+med ordinarie `build.mjs`; slutkontrollens varningar redovisas separat nedan.
+
+Slutkontroll mot arbetskopian på `8e97ee83`: `verify --check`, ordinarie
+HTML-generering och `build --check` passerade utan fel. Resultatet är gult:
+159 `input.changed` och 10 `input.worktree-changed`, totalt 169 varningar i
+14 kontrakt. Inga andra varningskoder eller SQL-inventeringsluckor finns i
+detta kvitto. Ingen färsk test-evidens importerades. Baslinje och samtliga
+`expectedHashes` är identiska med HEAD; de fyra inbäddade faktakatalogerna
+matchar JSON-filerna. Antal och sökvägar är ett daterat arbetskopiekvitto,
+inte ett krav på att efterföljande integration ska ge samma varningsantal.
