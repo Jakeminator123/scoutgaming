@@ -33,8 +33,12 @@ Vercel `dpl_aZKAibo81bFLGUfKuyHPSnkckPNm` är READY och Render
 `dep-db7aknmi0phs738sv6e0` är live på samma SHA. Full regression före
 leverans: 3 552 pass, 11 skip, 0 fel; samtliga CI-kontroller passerade.
 Utloggad `/admin/deletion` går till rätt Studio-inloggning med returnTo.
-Ny visuell kontroll av inloggat beroendeträd återstår: Codex-appens
-webbläsartransport stängdes under sessionen. Det är inte en verifierad UI-acceptans.
+Inloggat beroendeträd kontrollerades 14 oktober efter att webbläsartransporten
+åter fungerade. På PR117:s levererade `0511206d` öppnades de 13 Adminverktygen;
+Dragan följer med mellan de dealerbundna verktygen. Talgranskning läser rätt
+administratörssession och Dragan-val. Utloggade Dealers-, Talgranskning- och
+Radering-länkar går till login med rätt returnTo. Detta stänger inte den bredare
+acceptansen av samtliga behörigheter, verkliga utkast och spelstarter ovan.
 
 Global ändringslogg saknar ännu eget anslutet API; det fanns inte heller ett
 motsvarande fungerande Control-flöde. Bolagets journal finns i Bolag & team.
@@ -71,8 +75,10 @@ Färsk kontroll av refs: `kevin` = `f15b2af16ea7113d451f5c5da14fda031901392a`,
 sorteras efter faktiska kodreferenser för Dragan/Dragge och Paow, inte efter
 alla filer i mapparna. Senaste Git-build är inte bevis för senaste körande
 Kevin-deployment. Manifest, kopior och hashjämförelse hålls privat utanför Git.
-Produktionsregistret återlästes via ordinarie UI/API: Dragan 21, paow 5,
-paow-v2 1. Dealeridentiteter och tidigare granskningar slås inte ihop.
+Första inventeringen via ordinarie UI/API visade Dragan 21, paow 5 och
+paow-v2 1. Efter den uttryckliga rensningen och importen den 14 oktober visar
+produktions-Admin Dragan 27 och ren PAOW (`paow-kevin`) 11. De gamla
+Paow-identiteterna är borttagna; deras tidigare granskningar är inte ärvda.
 
 Per dealer refererar ordinarie spelkod 35 giv-/vändningsklipp, tre grundloopar
 samt 70 repliker. Ytterligare tio är preview/fallback och elva bara förladdade.
@@ -82,8 +88,11 @@ filer med manifest och dealer/fack/sökväg/hash-CSV; SHA-256
 `a69caf28bd1aa1db0a703d63e4a17aad37fd2da2222763c1bc83c208996a8866`.
 Arkivet är 325 280 137 byte. Alla 274 källfiler kontrollerades mot Git-blob
 och disk, och samtliga 279 ZIP-poster öppnades och hashverifierades.
-Sju Dragan-poster i
-produktionen matchar Kevins material; ingen av de sex Paow-posterna matchar.
+Sju befintliga Dragan-poster matchade Kevins material och återanvändes.
+Sex nya Dragan- och elva rena PAOW-filer är importerade via de befintliga
+native-tjänsterna med konto-/schema-/grant-/CAS- och fullbyteskontroller.
+Alla 17 är alternativ och ogranskade; inga händelseval, publiceringar eller
+betalda jobb skapades. Privata slutkvitton bekräftar registrering och hash.
 Detta är filproveniens och urval, inte godkänd pose/läppsynk eller publicering.
 Staging-grenens villkorade dynamiska talväg ingår inte i Admin-migreringen.
 
@@ -117,16 +126,66 @@ hela mallen eller Astrids fungerande spel-/talväg försvinner.
 - [x] Lokala gamla preview-/porträtt-/Amirafiler har kopierats privat och
   hashkontrollerats före borttagning: 13 Paow-previewfiler (4 245 767 byte)
   samt ytterligare 84 filer (16 917 281 byte). Dragge, tre delade previewassets
-  och Kevins originalurval bevaras. Kodändringen är ännu inte driftsatt.
-- [ ] Slutför exakt objektägande och kvarvarande konsumenter före radering.
-  Den lästa databasen har 28 gamla dealer-mediaposter, varav 20 redan är
-  raderingstombstones; Forge har dessutom två privata PAOW-ankarbilder.
-- [ ] Avsluta gamla Forge-jobbets möjliga commit-väg, gallra beroenden och
-  radera överenskomna objekt permanent. Ingen gallring är ännu utförd.
-- [ ] Registrera ren PAOW och mappa Kevins utvalda klipp till riktiga
-  spelhändelser/poser. Ny registrering får inte återanvända gammal Forge-profil.
-- [ ] Slutverifiera i produktion, inklusive att skyddade material och dealers
+  och Kevins originalurval bevaras. Kodändringen är driftsatt med PR117.
+- [x] Slutför exakt objektägande och kvarvarande konsumenter före radering.
+  Förinventeringen hade 28 gamla dealer-mediaposter, varav 20 redan var
+  raderingstombstones; Forge hade dessutom två privata PAOW-ankarbilder.
+- [x] Avsluta gamla Forge-jobbets möjliga commit-väg, gallra beroenden och
+  radera överenskomna objekt permanent. Databas-COMMIT och 232 Blob-raderingar
+  är bekräftade; skyddade resurser verifierades i samma databastransaktion.
+- [x] Registrera ren PAOW utan gammal Forge-profil och importera 11 utvalda
+  Kevin-filer, samt komplettera Dragan med sex filer. Slutkvittot och Admin
+  visar 27 Dragan-/11 PAOW-klipp; sju befintliga Dragan-filer återanvändes.
+- [ ] Koppla utvalda filer till faktisk uppspelning, granska poser och
+  publicera önskat Dragan-rum efter sammanhängande spelprov.
+- [x] Slutverifiera denna rensning/import i produktion, inklusive att skyddade material och dealers
   är kvar och att borttagna identiteter inte skapas som syntetiska lobbykort.
+  Admin visar 27 Dragan-/11 rena PAOW-klipp, Astrid och Anna med sitt rum.
+  Beroendeträdets kompletta registerläsning visar inga gamla målidentiteter,
+  samtliga bevarade bakgrunder, fem Blackjack-bord och Annas roulettebord.
+  `/lobby` visar Scoutgaming Demo med Annas publicerade Roulette-rum; de
+  fyra gamla bolagen är borta. Ingen ny spelrunda kördes i detta slutprov.
+
+PR117 är mergad som `0511206dec4cb8468fe92d5f03202718d3bf2585`.
+Vercel `dpl_5aP2rJ1C9NbXWJXT4HWc1giMAsxS` READY och Render
+`dep-db7c56ss728c73d0fgs0` live verifierades på samma SHA före rensningen.
+Full lokal regression efter main-integration: 3 592 pass, 11 skip, 0 fel;
+PR- och main-CI passerade. En första skrivskyddad SSH-kontroll nådde äldre
+revision under instansbytet och stoppade utan skrivningar; ny anslutning
+verifierade rätt revision och samtliga 304 originalrader.
+
+Rensningsplan `93a8b26b37e24e9370164a4ea975d662c5c5485eef089caab9594679f0bec3b6`
+gav 164 uppdateringar och 139 borttagningar, med 162 historikrader kvar och
+979 kontroller av skyddade delträd. Skyddade tabellfingeravtryck var oförändrade.
+Blobmanifest `956871f14885339f23d044d6678166264e6cd9ca122e50a3314b286fec881f4d`
+verifierade noll kvarvarande referenser och 232 borttagna objekt, 145 404 657 byte.
+Ingen ny Blob-backup eller papperskorg skapades. Konton, plånbok, spel och QA
+ingick inte i rensningen. Importens egna temporära Render-filer är borttagna.
+
+### Nästa Dragan-flöde — avgränsning 14 oktober
+
+Dragan är registrerad men saknar ännu kopplat rum. Elva lokala MP4-original
+matchar redan hans bevarade biblioteksfiler; de behöver inte laddas upp igen.
+Två PNG-filer är VILA-/REDO-referenser. Importgränsen 30 betyder högsta antal
+videor per omgång, inte att 30 nya original har inventerats.
+
+Kevins positionsklipp ger REDO→REDO, medan grundlooparna ger VILA→VILA.
+Hålkort/vändning och 52 alternativa poseklipp kräver explicit sekvenshantering.
+`transitionClipsForDealer` har ännu ingen produktionskonsument; fackval räcker
+inte för att aktivera Till/Från skon. De 140 talfilmerna saknar komplett
+takebunden text/ljud-/kalibreringsacceptans och är inte aktiverade.
+
+Fortsätt med uttrycklig klipp-/posebindning, operatör, Blackjack-rum,
+bevarad bakgrund och kompatibelt standardbord; granska desktop/mobil och
+två följande uppspelningar före publicering. Anna/roulette ska bevaras.
+En privat HTML-steglogg på användarens begäran beskriver detta flöde utanför Git.
+
+Kodgranskningen visar att Blackjack tillåter bordbyte mellan rundor men
+spärrar det vid `round || busy`; Roulette saknar intern bordsväljare.
+`/lobby` och `/play` använder samma publicerade operatörs-/rumsläsare, men
+`/lobby` saknar ännu `/play`-vyns bordval. `/game` är Blackjack-alias och
+URL-fältet `table` betyder rum, inte förgrundsbord. Detta är ett konkret
+kvarvarande spelarflöde och ska inte beskrivas som full lobbyparitet.
 
 Två gamla uppladdade bord ligger endast i aktuell materialpapperskorg:
 `4b688411-d186-4229-8f8a-046cd1b0a2c5` och
