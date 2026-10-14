@@ -80,6 +80,14 @@ oförändrad autentiseringsepok. Ingen extern datakälla eller mailtjänst anvä
 Fixture-HTML ersätter själva Klippkartan; detta är lokal auth-/URL-/historikacceptans,
 inte bevis för verklig rumsdata eller hela levererade Admin. Oberoende Lab-historik
 och de återstående C4–C7-proven står kvar. Lab-bygget och 97 byggspår passerade.
+Commit `cb7f19f7` passerade ordinarie full pre-commit med **3 733 pass,
+9 skip, 0 fel/cancel i 76 grupper**, Node 24.21.0 och fyra workers.
+Samtliga sex inloggningsprov kördes även i browser; skippen gäller andra prov
+och räknas inte som acceptans. GitGuardian lästes på main `87f30ce1`:
+verifierad källa, aktiv övervakning, 0 öppna och 18 ignorerade incidenter;
+platsmetadata är fortfarande partiell och historisk skanning `too_large`.
+Egna fixture-contexts är stängda och den verifierade temporära testkatalogen
+med kompileringscache är borttagen. Integration och privata provloggar behålls.
 
 **Kodkartan för C1:** `entry.tsx` registrerar 31 Admin-destinationer:
 åtta basytor (`/admin`, `/structure`, `/deletion`, `/dealers`, `/tools`,

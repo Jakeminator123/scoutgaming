@@ -220,6 +220,11 @@ bevarar fem kontextfält från båda Admin-aliasen. Provet ersätter Klippkartan
 med fixture-HTML; verklig rumsvisning efter lyckad login i produktion och
 oberoende Lab-historik återstår. Produktkod, delade sessionscookies, pågående
 spel och publicerade data ändras inte. Lab-bygget och 97 byggspår passerade.
+Commit `cb7f19f7`: full pre-commit **3 733 pass, 9 skip, 0 fel/cancel i
+76 grupper**, inklusive samtliga sex browseraktiverade inloggningsprov.
+De två nya agentarbetskopiorna är arkiverade efter verifierad överföring/
+granskning; totalt elva. Egen testcache är städad och fixture-browsers stängda.
+Enbart integrationen och privata provkvitton behålls för fortsatt Admin-arbete.
 
 ## Rörligt dealertal: förberedd adapter, 14 oktober
 
