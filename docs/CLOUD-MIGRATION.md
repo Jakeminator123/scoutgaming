@@ -57,8 +57,12 @@ den tillhörande fabriksgeneratorn. Aktiv klient/laddare heter nu
 API:er, testfixturer, aktiv CSS och behörighetskontroller bevaras. Kodagentens
 rapporterade riktade prov: 153 pass, 1 skip; sista meny-/aliasprovet 11/11.
 Samordnarens Lab-bygge är klart med exit 0; byggspårkontrollen rapporterar
-`checked: 97`, `removed: 74`. Fullhook och slutlig integrationskontroll
-återstår. Dokumentationsagenten körde inget eget Lab-bygge.
+`checked: 97`, `removed: 74`. Kodcommit `3c93a3ab` passerade därefter ordinarie
+fullhook: 3 792 pass, 21 villkorade skip, 0 fel/cancel i 77 grupper. Ett första
+försök stoppades av tillfällig Windows-EPERM i agent-talks samtidighetsprov;
+det exakta provet och hela fullhooken passerade sedan utan undantag.
+Det isolerade Chrome-provet för partnerlogin/bolag/rum passerade separat
+(1/1, ingen skip). CI återstår. Dokumentationsagenten körde inget eget Lab-bygge.
 
 Samordnarens läsande liveprov på `9b6f4d11` med befintlig personalsession
 gick Admin → Swedish Games N2 paket v4/lager → Lobby och gav korrekt launch-URL.

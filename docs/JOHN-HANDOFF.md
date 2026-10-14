@@ -18,7 +18,11 @@ destinationslista används inte längre som krav på dagens meny. Riktat:
 Lab-bygget verifierar 97 spår. Oberoende granskning fann inga konkreta
 regressioner. Det befintliga isolerade Chrome-provet för partnerlogin med
 bolag/rum och ändamålsbunden cookie passerade också (1/1, ingen skip).
-Fullhook och CI bokförs vid leverans. Arkivets befintliga lokala undantag i
+Kodcommit `3c93a3ab` passerade ordinarie fullhook: 3 792 pass, 21 villkorade
+skip, 0 fel/cancel i 77 grupper. Första försöket stoppades av tillfällig
+Windows-EPERM i agent-talks isolerade låsprov; det exakta provet och därefter
+hela fullhooken passerade utan testundantag. CI bokförs vid leverans.
+Arkivets befintliga lokala undantag i
 `.ignore` och `.cursorignore` versionsstyrs så att samma skydd finns i nya
 arbetskopior; Git ignorerade redan det privata arkivinnehållet.
 
