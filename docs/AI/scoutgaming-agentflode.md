@@ -13,7 +13,7 @@ av samordnaren 14 oktober 23:29 UTC. Rum/login/historik och explicit
 Underagenterna skiljer 51/51 länkprov från 48/48 utkastprov och efterföljande
 12/12 accept/avbryt-prov; överlappande antal summeras inte. Oberoende
 auth-/servergranskning saknar åtgärdskrävande fynd. Samordnarens slutliga
-Lab-build passerade med 97 byggspår; fullhook och ny liveacceptans inväntas.
+Lab-build passerade med 97 byggspår. Kodcommit `e92b82b9` passerade ordinarie fullhook med riktig Chrome: 3 852 pass, 9 skip och 0 fel i 77 grupper. Fem databasprov saknade separat testdatabas, fyra prov kräver Linux. CI, merge och ny liveacceptans återstår.
 Kvitton finns i [handoffen](../JOHN-HANDOFF.md).
 Ny produktionslogin, skrivacceptans och faktisk 200-procentszoom är inte verifierade.
 

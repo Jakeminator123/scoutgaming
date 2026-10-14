@@ -96,7 +96,7 @@ befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte
 | C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker/menyingångar och minikartan förenklade efter verifiering. Befintlig tracker och eget handoffavsnitt följer varje rättning. Fjorton avslutade egna arbetskopior är arkiverade efter verifierad överföring/granskning, senast C4-login, C4-historik och C5-utkast. Överförda filer/patchar är hashkontrollerade; egna dependency-junctions, fixture-processer och browserflikar är städade. Partnerlogin/C6:s två nya kopior är hashkontrollerat överförda; deras junctions och fixture-processer är städade och arkivering ligger i appens kö. Integrationskopian, beroenden, Lab-bygge och privata provkvitton behålls enligt Jakob. |
 | C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten; samordnad mergeordning efter DRAGAN. | Kodcommit `d95ba3782e17411ad7f2cb7d418826acfe2150e5`: fullhook 3794 pass/9 skip, 0 fel/cancel i 77 grupper; 97 byggspår och Admin/lobby-typkontroll gröna. Samtliga nya browserprov kördes. 415 testfiler inventerade: 0 föräldralösa, 2 befintliga undantag. Oberoende kod-/test-/dokumentgranskning genomförd; C6:s korsbolagsprov förstärkt efter fynd. PR147 från `codex/admin-partner-return-c6` är granskad och mergad av SAMORDNING. Tidigare leverans-/driftkvitton nedan är historik. |
 
-**Implementerad och granskad rumskontext/fokus, 15 oktober — slutkvitto inväntas:**
+**Implementerad och lokalt verifierad rumskontext/fokus, 15 oktober:**
 `codex/admin-room-context` utgår från `3bad2fd4`. Admin väljer startkomposition
 från verifierat publicerat rum. Främmande/inaktuellt/otillgängligt rum varnas
 och spärrar portallänkar; inget annat rum länkas tyst. Redigeringskompositionen
@@ -115,8 +115,15 @@ fokuserade accept/avbryt-prov. Giltiga rumsbyten behåller panel/utkast utan pro
 Dealerformulärets Avbryt återför fokus till Skapa dealer (8/8 enhetsprov);
 samordnarens tidigare liveprov lämnade fokus på BODY. Detta är inte nytt
 livegodkännande. Samordnarens slutliga Lab-build passerade med 97 kontrollerade
-byggspår. Browseraktiverad fullhook och sammanhängande liveprov för grenen
-inväntar fortfarande samordnarens kvitton.
+byggspår. Kodcommit `e92b82b94bb16865b801b90f32af6582fc6119ae` passerade
+ordinarie fullhook med riktig Chrome: 3 852 pass, 9 skip, 0 fail/cancel i
+77 grupper. Alla aktiverade browserprov kördes. Överhoppen är fem separata
+PostgreSQL/Neon-prov utan konfigurerad testdatabas och fyra Linux-prov på Windows.
+Loginfixturen fick sitt nya returberoende och historikfixturen samma explicita
+Chrome-kanal som övriga prov. Arbetskopians saknade tsc/ws-beroenden återanvänds
+via egna junctions efter verifierade package-/låsfiler; inga kontroller ändrades
+för att dölja fel. Praktisk förkontroll finns i ENVIRONMENT-RESTORATION.
+CI, merge och sammanhängande liveprov för grenen återstår.
 Ny produktionslogin, skrivacceptans, faktisk 200-procentszoom och full C4/C7
 återstår. IAB:s tidigare zoomförsök ändrade inte zoomnivån. Dragan v4-prov
 som kräver ännu ej godkänd export av privat spelarkod förblir avgränsat.

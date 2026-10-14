@@ -1,6 +1,6 @@
 # Aktuell handoff — Scoutgaming
 
-## Pågående rumskontext och fokus — slutkvitto inväntas, 15 oktober 2026
+## Rumskontext och fokus — lokal verifiering klar, 15 oktober 2026
 
 PR149/150/151 är levererade; `codex/admin-room-context` är framflyttad till
 main `3bad2fd4` med pågående kodändringar bevarade. PR151:s fullhook gav
@@ -32,7 +32,13 @@ Lokala underagentkvitton för implementerad och granskad rumskontext
   Samordnarens tidigare liveprov tappade fokus till BODY; ny liveacceptans återstår.
 
 Samordnarens slutliga Lab-build passerade med 97 kontrollerade byggspår;
-browseraktiverad fullhook återstår. Ny produktionslogin, skrivacceptans, faktisk 200-procentszoom
+kodcommit `e92b82b94bb16865b801b90f32af6582fc6119ae` passerade fullhook med
+riktig Chrome: 3 852 pass, 9 skip, 0 fail/cancel i 77 grupper. Fem databasprov
+saknade isolerad testdatabas; fyra Linux-prov är inte tillämpliga på Windows.
+Alla aktiverade browserprov kördes. Loginens fixtureberoende och historikens
+Chrome-val är rättade; saknade arbetskopieberoenden återanvänds först efter
+låsfilsjämförelse. CI, merge och sammanhängande liveprov återstår.
+Ny produktionslogin, skrivacceptans, faktisk 200-procentszoom
 och ej godkänd Dragan-export är kvarstående gränser; ingen hel C4/C7 bockas av.
 Aktuell uppföljning finns i [CLOUD-MIGRATION](CLOUD-MIGRATION.md); ingen ny tracker.
 
