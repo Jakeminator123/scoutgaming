@@ -10,7 +10,9 @@ liknamniga rader är kommenterade; övriga värden är bevarade. Samma fem namn
 Det ersätter det tidigare dokumenterade förbudet mot Cartesia-/RunPod-nycklar
 i detta delade Vercelprojekt. Inga hemliga värden finns i registret eller Git.
 
-Värdena tas upp vid nästa produktionsdeployment. Vercel förmedlar taltransport,
+Värdena aktiverades i produktionsdeploymenten för PR #139 (220519a1), skapad
+efter miljöuppdateringen och verifierad READY. Även PR #142 (418040fa) är
+verifierad READY med samma Production-scope. Vercel förmedlar taltransport,
 men Render äger providerjobb. Ingen Render-nyckel, pod, workerbild eller
 GitHub-hemlighet ändrades. Render har redan samma Cartesia-/ElevenLabs-värden. Befintlig RunPod-nyckel gav health 200 på aktiv endpoint; Emil-nyckeln gav 401 där och ersätter därför inte den fungerande Render-nyckeln. Workflows behöver inte dessa fem nycklar och GPU-jobbet
 får sitt ljud och tillfälliga anslutningsuppgifter från servern.
