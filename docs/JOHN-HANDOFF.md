@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+## Lokal env-konsolidering, 14 oktober 2026
+
+Efter ADMIN:s och DRAGAN:s klartecken flyttades den dubblerade
+`lab/.env.generated-speech.local` och den oanvända
+`lab/.env.cloud-activation.local` till den Git-ignorerade
+`lab/data/platform-private/env-cleanup-20261014/` i Jakobs huvudcheckout.
+Exakta byte och Windows-ACL är bevarade. Före/efter-konfigurationen matchar
+för vardera flytten i åtta kombinationer av speech-, kamera- och lagringsflaggor.
+Privata kvitton ligger bredvid filerna utan hemliga värden.
+
+Rotens och Labs olika `.env.local`, separat cloud-storage-opt-in, aktiva
+beroendeinstallationer, `lab/.next`, produktdata och molninställningar bevaras.
+Två värdeskillnader mellan root/Lab återstår avsiktligt utan automatisk synk;
+se [aktuell läsordning och inventering](ENVIRONMENT-VARIABLES.md).
+Denna leverans ändrar bara dokumentation och innebär ingen ny drifts- eller
+inloggningsverifiering. Spelaracceptans och övriga migreringsgrindar kvarstår.
+
 ## Rörligt tal: PCM-kontrakt och anslutning, 14 oktober
 
 PR #128 är mergad efter gröna kontroller som `80c84709`. Fortsatt förberedelse
