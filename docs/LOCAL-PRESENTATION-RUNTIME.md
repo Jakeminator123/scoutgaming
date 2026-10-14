@@ -107,8 +107,11 @@ avkodar med WebCodecs. `dealer-layer.js` blandar resultatet på rätt kroppsbild
 innan green-screen-friläggningen. Detta är nya, ljudbundna GPU-bildrutor,
 inte återanvända munrörelser från en annan inspelning.
 
-En ny giv under pågående tal ändrar kartan. Föregående version avbryts,
-återstående ljud återanvänds och gamla delar får inte överta den nya versionen.
+En ny giv under pågående tal ändrar kartan. Föregående versions svar förkastas;
+hela ursprungsljudet återanvänds med `fran_ruta` för återstående bildrutor.
+På en worker med rapporterat flerlane-stöd kan koden återanvända dess ljudcache.
+Gamla delar får inte överta den nya versionen. Detta är inte bevis för att
+GPU-arbetet faktiskt avbryts; se avbrottskontraktet nedan.
 Den granskade koden kör en GPU-lane åt gången, prioriterar närmaste
 bilddeadline och kräver rapporterad kapacitet på minst 30 rutor/s.
 Kevins klient tillåter sökning ±48 rutor kring talets klocka när kroppen halkar
@@ -254,6 +257,70 @@ Dragan/dragge, vilobild, hållna rutor, fel media/röst/session, omplanering,
 avbrott och maskgränser. Ingen shader, liveavkodare, ny provider eller
 ny meny har aktiverats. Två riktiga talprov per dealer återstår efter
 worker-/avatarverifiering och inkoppling.
+
+### PCM och egen WebSocket-anslutning, 14 oktober 2026
+
+Kevin uppger att Paows och Dragges avatarbanker finns inbakade i den gemensamma
+worker-imagen, inte i spelrepot. Sessionsbeställningen anger `avatar: paow`
+respektive `dragge`. Det behöver verifieras mot workerns exakta release och
+källklipp; en fungerande endpoint eller ett avatar-namn är inte det beviset.
+
+Scoutgaming har redan en WebSocket-ingång i
+`apps/croupier-speech/service.mjs`: `/speech-stream` för klienten och
+`/lipsync-worker` för workeråterkoppling. Render äger session och GPU-jobb;
+den publika speech-tjänsten förmedlar anslutningen. Befintliga
+`web/generated-speech-session.mjs` skickar `op: session`, `ws_url`,
+`ws_token`, `worker_id` och `ttl` till RunPod. Workern ansluter tillbaka
+till vår publika, autentiserade `wss://`-adress. Emils dator eller Kevins
+WebSocket-server behöver inte stå på för vår integration. RunPod-workern
+och vår egen callback måste däremot kunna nå varandra.
+
+Den nuvarande Astrid-handshake:n och det rörliga protokollet är inte visade
+utbytbara. Koppla en explicit adapter till vår sessionsägare; ersätt inte
+Astrids endpoint eller autentisering med stagingvärden. Behåll befintlig
+sessionsbudget (540 s), 60 s idle-gräns och ägarbunden stängning. Kevins
+cirka 55 minuter är inte en beslutad sessionslängd för Scoutgaming.
+
+**`end` betyder färdig ljudinmatning, inte avbrott.** Källan på `315cfc55`
+skickar `start`, alla PCM-bitar och därefter omedelbart `end`, innan resultatet
+är klart. Den installerar `avbryt` endast för en worker som rapporterar minst
+två lanes. En lokal timeout, borttagen lyssnare eller `plan.cancel()` bevisar
+inte att GPU-arbetet stoppats. Verifiera workerns stöd för avbrott, `bye` och
+ägarens RunPod-jobbcancel innan livekoppling. Den rapporterade en-lane-driften
+får inte antas ha samma avbrottskontrakt som flerlane-koden.
+
+`web/moving-speech-pcm.mjs` förbereder nu överföringen utan nätverk eller
+inkoppling i spelaren. Den kräver slutligt normaliserad mono s16le PCM vid
+24 kHz, kopierar och verifierar dess SHA-256 mot talplanen och kräver att
+kartan täcker hela ljudet plus 220 ms förtid. Samma ägda bytes kan lämnas
+till uppspelning och worker. Överföringen är engångsbruk: `start`, jämna
+binära meddelanden på högst 32 768 byte och `end`. Omplanering skickar hela
+PCM-ljudet med ny kartrevision och `fran_ruta`; ingen längdgissning eller
+omklippning av ljudet sker.
+
+Avbrott under överföringen eller tidig iteratorstängning ogiltigförklarar
+planen och rensar dess privata ljudbuffert. Efter överföringen äger anroparen
+fortfarande planens livscykel och måste anropa `cancel()` vid byte/stängning.
+Den framtida transporten måste vänta på begränsade socket-skrivningar och
+avsluta sitt faktiska RunPod-jobb vid behov. Modulen normaliserar inte ljud,
+auktoriserar inte sessioner och avkodar eller spelar inte bildrutor. Använd
+den först efter befintlig admission, GPU-acceptans och färsk profilkontroll.
+
+Plan-/PCM-testerna passerar 13 fall, inklusive fel ljudhash/format/längd,
+ägarisolering, omplanering, inputslut och avbruten överföring. Detta är
+kontraktsprov, inte hörbar eller visuell läppsynksacceptans. Återstående
+integration är worker-/avatarverifiering, autentiserad relay, avkodning,
+buffring före gemensam ljud-/bildstart och två riktiga prov per dealer.
+
+Separat obetald leverantörskontroll läste uttryckligen den Git-ignorerade
+`.env.emil`: rörliga endpointens health och båda ElevenLabs-rösternas GET
+gav 200. Avvikande ärvda RunPod/ElevenLabs-nycklar användes inte. Efter att
+Jakob lagt till Cartesia gav även GET voices 200 med filens Cartesia-nyckel.
+Varje kontroll verifierade att `.env.local` och `.env.emil` var oförändrade
+under provet. Inga TTS-/GPU-jobb startades och ingen produktionsinställning
+ändrades. Cartesia är ett separat alternativ; Paow/Dragge använder fortsatt
+de uttryckligen valda ElevenLabs-rösterna. Enhetsprov använder testdata och
+läser inte privata nyckelfiler automatiskt.
 
 ## Aktiva ytor och kompatibilitetsgräns
 

@@ -1,5 +1,34 @@
 # Aktuell handoff — Scoutgaming
 
+## Rörligt tal: PCM-kontrakt och anslutning, 14 oktober
+
+PR #128 är mergad efter gröna kontroller som `80c84709`. Fortsatt förberedelse
+i `web/moving-speech-pcm.mjs` binder exakt normaliserat uppspelningsljud till
+planens hash, 24 kHz-format och bildtidslinje. Engångsöverföringen har
+begränsade PCM-meddelanden och lokal ogiltigförklaring vid avbrott. De 13
+fokuserade plan-/PCM-proven passerar. Full pre-commit på `4102005` passerar
+med 3 737 godkända, 11 överhoppade och inga fel. Studio-bygget passerar med
+97 kontrollerade byggspår. Kontrollen av 410 testfiler hittar inga
+föräldralösa tester och behåller två befintliga undantag. Verifieringen
+använder aktuella låsta CI-beroenden.
+
+Vi har redan egen WebSocket-ingång och Render-ägd GPU-session. Den rörliga
+workern behöver en verifierad adapter till vår autentiserade callback, inte
+Emils dator eller Kevins WebSocket-server. `end` i Kevins kod avslutar
+ljudinmatningen, inte GPU-jobbet; `avbryt` är villkorat på flerlane-stöd.
+Behåll vår sessionsbudget och verifiera faktisk RunPod-stängning.
+
+Läsprov från uttrycklig `.env.emil` gav 200 för rörlig RunPod-health,
+Paows/Dragges ElevenLabs-röster och den nytillagda Cartesia-nyckelns voices-API.
+Ingen miljöfil eller produktion ändrades av proven och inga betalda jobb
+beställdes. Cartesia behövs inte för dessa två ElevenLabs-röster.
+
+Modulen är förberedelse, utan liveimport, socket, decoder eller spelstart.
+Worker-release, hashbundet avatarunderlag, säkert avbrott och två verkliga
+talprov per dealer återstår. Anna behöver dessutom eget kompatibelt avatar-
+och röstunderlag. Detaljer finns i LOCAL-PRESENTATION-RUNTIME.md; den befintliga
+påminnelsen om Emil behålls. Andra agenters Admin-/Dragan-arbete är orört.
+
 ## Kevin: demokälla och återstående synkfel, 14 oktober
 
 Kevin bekräftar demon på croupier.scoutgg.dev och commit 315cfc55 utan
