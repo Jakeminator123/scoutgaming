@@ -50,7 +50,8 @@ PR110 är mergad som `1595fb451cf19fbcbba1ece04e4bb8c7c74a9bc6`:
 Vercel READY och Render live på samma SHA, alla CI-kontroller gröna.
 Inloggat beroendeträd kontrollerat på huvuddomänen 14 oktober: röda menyn,
 komplett registerläsning och separata Anna-/Dragan-kopplingar visas.
-Dealers visar Dragan med 21 klipp; importlänken behåller Dragan och erbjuder
+Dealers visar efter rensning/import Dragan med 27 klipp och ren PAOW med 11;
+importlänken behåller Dragan och erbjuder
 30 filer per omgång. Utloggad route bevarar returnTo till `/admin/deletion`.
 Den befintliga migrationsloggen i CLOUD-MIGRATION.md skiljer funktionerna
 i Admin från framtida avveckling av hostnamn och källkod. lab/ behövs av
@@ -69,7 +70,8 @@ skyddade resurser och konkret inventering i CLOUD-MIGRATION.md. Ren
 offlineplanering och lokal backup är förberedda. Alla 232 inventerade objekt
 under de fyra gamla dealernas mappar och två gamla borden har hämtats till
 lokal disk och hashverifierats (145 404 657 byte). Inga
-produktionsdata har gallrats och ingen ny PAOW är ännu registrerad.
+nya molnbackuper skapades. Produktionsrensningen är nu genomförd och ren
+PAOW är registrerad som `paow-kevin` utan gammal Forge-profil.
 
 Fortsatt rensningskod avregistrerar Amira ur katalog/layout/Blob-index och
 tar bort gamla Paow-previewval och bildkopplingar. 97 exakta lokala filer
@@ -78,10 +80,42 @@ bakgrunder/bord och Kevins original bevaras. Ett verifierat Forge-race
 stängs med dealer-/jobb-/leasekontroll under samma Studio-lås som skrivningen;
 60 fokuserade Forge-/repositoryprov passerar. Chattminnet kontrollerar också
 registreringen i samma transaktion, med game → Studio som i native Admin.
-Samtidig projektsparning och chatt ingår i regressionen. Kodleverans och faktisk
-produktionsrensning återstår; nuvarande current project har återlästs separat
-för att bevara nytillkommet Anna-arbete. Fullhook på `2f7b891a`:
-3 585 pass, 11 skip, 0 fel i 74 testgrupper. Kodreview fann inga blockerare.
+Samtidig projektsparning och chatt ingår i regressionen. PR117 är mergad som
+`0511206dec4cb8468fe92d5f03202718d3bf2585`, Vercel READY och Render live på
+samma SHA. Fullhook efter main-integration: 3 592 pass, 11 skip, 0 fel;
+PR- och main-CI gröna. Kodreview fann inga blockerare.
+
+Databasrensningen jämförde 304 originalrader och genomförde 164 uppdateringar
+samt 139 borttagningar i en transaktion. Skyddade resurser, inklusive Annas
+nytillkomna arbete, hade oförändrade fingeravtryck. Därefter raderades exakt
+232 Blob-objekt efter verifiering av noll kvarvarande referenser.
+Kvitton, plan-/manifesthashar och bevisgränser finns i CLOUD-MIGRATION.md;
+råbackuper och exakta privata kvitton hålls utanför Git.
+
+Kevin-importen har fullbytes-/hash-/registreringskvitto för sex nya Dragan-
+och elva nya PAOW-filer. Sju befintliga Dragan-filer återanvändes. Samtliga
+nya klipp är ogranskade alternativ; noll val/publiceringar/betalda jobb.
+Den kortlivade importhjälpen bygger en validerad native-konfiguration lokalt
+i processen eftersom N1-flaggan bara är aktiv på Vercel. Originalmiljön,
+behörigheter och permanenta Render-inställningar ändrades inte. Dess egna
+temporära filer är borttagna. 32 privata importprov passerade.
+
+Jakobs nästa uppdrag är ett dokumenterat WebView-flöde för ett spelbart
+Dragan-Blackjack-rum hos Swedish Games, nu skapat i produktions-Admin.
+Hans val Lounge varm (video) och Blackjack Oak finns i ett separat sparat
+Dragan-utkast. Dragan finns redan; elva lokala original matchar befintlig
+klippbank. Egen grundloop och serverstyrda reservkort fungerar i befintlig
+spelväg, men den valda Oak-scenen behöver rättad spelgeometri före acceptans.
+Full filmad Kevin-givning behöver dessutom kortkalibrering
+och pose-/sekvensintegration. Rum, publicering och två spelprov på
+desktop/mobil återstår. En isolerad desktoprunda avslutades och mobilvyn
+kontrollerades, men acceptansen stoppade på verkligt geometriavstånd:
+spelarkort och insatsplatser hamnar vid Oak-bordets fot. De följer äldre
+dealerankare, inte det valda bordet. Egen grundloop är sparad; ingen
+publicering gjord. Till/Från skon-resolvern används ännu inte av playern.
+Blackjack kan byta tillåtet bord mellan rundor; Roulette saknar intern väljare.
+Ny `/lobby` delar katalog med `/play` men saknar dess bordval. Dessa fakta
+och användarens privata HTML-steglogg skiljer biblioteksimport från färdigt spel.
 
 ## Anna-demorum: publicerat och två liveprov klara, 14 oktober
 
