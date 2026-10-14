@@ -3,6 +3,7 @@
 import { BETS, BET_BY_ID, pocketColor } from './rules.js';
 import { tableBetGeometry, polygonButtonStyle, tableArtwork } from './table-layout.js';
 import { mountRouletteWheel } from './wheel.js';
+import { mountDealer } from './dealer.js';
 
 const DESIGN = 'roulette-anna-v1';
 const $ = s => document.querySelector(s);
@@ -14,6 +15,8 @@ const CHIP_COLORS = { 1: ['#e8e2d4', '#5a554c', '#1c1a16'], 5: ['#D6FF3A', '#0A0
 const spots = {}, spotAt = bet => spots[bet.id] ?? null;
 let state = null, chip = null, busy = false, spunRound = null, fetchedAt = 0, poll;
 const wheel = mountRouletteWheel($('#wheel'), { designId: DESIGN, placement: { x: 0, y: 0, width: 1 } });
+// Paow behind the wheel (Kevin 14 Oct); ?dealer=none plays the table without her
+const dealer = new URLSearchParams(location.search).get('dealer') === 'none' ? null : mountDealer($('#table'));
 
 async function api(op, extra = {}) {
   const res = await fetch('/api/roulette', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin',
@@ -150,6 +153,7 @@ function render(s) {
   for (const b of document.querySelectorAll('#targets button, #columns button, #board button')) b.disabled = locked;
   if (s.phase === 'spin' && spunRound !== s.roundId && wheel) {
     spunRound = s.roundId;
+    if (s.spinLeft > s.spinMs - 4000) dealer?.spin();   // she spins on bets closing; a late joiner just watches the ball
     const elapsed = s.spinMs - s.spinLeft, start = performance.now();
     wheel.play(s.number, s.roundId, { clock: () => elapsed + performance.now() - start });
   } else if (s.phase === 'result' && spunRound !== s.roundId && wheel) { spunRound = s.roundId; wheel.showOutcome(s.number, s.roundId); }
