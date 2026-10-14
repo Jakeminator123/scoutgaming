@@ -53,8 +53,8 @@ Se [signaler, filmer och återstående spelkoppling](../../docs/games/roulette/K
 
 Tre ytor delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). Övergången pågår.
 
-- **Intern personal**: [/admin](https://www.scoutgaming.tech/admin) är ny ingång. `/control` fungerar under övergången. Studio bygger innehållet; Bolag hanterar operatörer, team, spel, rum och publicering.
-- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas under Spelbolag → Bolag & team på `/control/companies`; en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom sammansättningen av en medlem med `presentations.configure`.
+- **Intern personal**: [/admin](https://www.scoutgaming.tech/admin) är ny ingång. Befintliga `/control`-länkar fungerar under övergången och många leder nu till motsvarande adminverktyg; se adresslistan nedan. Studio bygger innehållet; Bolag hanterar operatörer, team, spel, rum och publicering.
+- **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas i **Bolag & team** på `/admin/companies` (äldre länk `/control/companies`); en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom sammansättningen av en medlem med `presentations.configure`.
 - **Spelare**: [/lobby](https://www.scoutgaming.tech/lobby) är ny ingång. `/play` och äldre speladresser fungerar under övergången. Ett öppet spel erbjuder tillåtna bakgrunder/rum, dealers och bord; spelarens val bildar scenen. Provspelning av dealer görs i den faktiska spelklienten; se [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 `lab/` är aktiv källkod och `/studio` dess tekniska basePath med API och
@@ -62,7 +62,46 @@ tillgångar. Runtimeflaggan `lissabon-stream-lane` används fortfarande för
 chattkontext, kameragrind och lokala profiler. Gamla Lab/Lissabon-namn är
 inte grund för att ta bort Astrids fungerande tal-/videoflöden.
 
-Partnerportalen är nivå 2. Intern adminpersonal når riktiga registrerade bolag med samma konto som i Kontrollpanelen. Inloggningen sker via Kontrollpanelen; på `/partner/login` leder knappen **Logga in som intern administratör** dit och tillbaka till `/partner`. Operatörens personal loggar in på `/partner/login` och ser bara sina aktiva medlemskap. Den vanliga portalen ersätter aldrig bolagsdata med demonstrationer. Spelare, transaktioner och rapporter från spelmotorn är ännu inte anslutna.
+Partnerportalen är nivå 2. Inloggad nivå 1 når `/admin`, `/partner` och spelarytan med samma konto och behåller sin adminroll. Öppna `/partner` direkt; om du behöver logga in leder **Logga in som intern administratör** på `/partner/login` till den interna inloggningen och tillbaka till `/partner`. Partnerformulärets användarnamn/lösenord skapar endast en N2-session och avvisar därför N1-konton. Operatörens personal loggar in där och ser bara sina aktiva medlemskap. Den vanliga portalen ersätter aldrig bolagsdata med demonstrationer. Spelare, transaktioner och rapporter från spelmotorn är ännu inte anslutna.
+
+**Ingångar och aktiva sluggar — kontrollerat 14 oktober 2026**
+
+Använd `/admin`, `/partner` och `/lobby` för nya bokmärken. Tabellen visar
+äldre dokumentlänkars mål i produktion; om inloggning saknas kommer den
+interna inloggningssidan efter omdirigeringen och bevarar målet i `returnTo`.
+
+| Befintlig adress | Nuvarande mål |
+| --- | --- |
+| `/control` | `/admin` |
+| `/control/clips` | `/admin/dealer-studio` (dealerinställningar); klippbiblioteket nås på `/admin/videos` via äldre `/control/videos` |
+| `/control/companies` | `/admin/companies` |
+| `/control/rooms`, `/control/lanes` | `/admin/publication`; `lanes?tab=companies` leder till `/admin/companies` |
+| `/control/library`, `/control/compositions` | `/admin/material-library` respektive `/admin/compositions` |
+| `/control/openclaw` | `/admin/ai/models`; med `?tab=chat` går länken till `/admin/dealer-agent?tab=chat` |
+| `/control/guide` | `/admin/guide` |
+| `/control/administration` | `/admin/drift`; `?tab=accounts` leder till `/admin/admin/accounts` |
+| `/studio` | 308 till `/control/clips`, sedan `/admin/dealer-studio`; `/studio/guide` går via `/control/guide` till `/admin/guide` |
+| `/lab`, `/labb`, `/bo` | `/lab` och `/labb` går via `/control` till `/admin`; `/bo` går via `/control/administration` till `/admin/drift` |
+| `/lissabon` | Ingen aktiv publik ingång: svarade 404 vid kontrollen |
+
+De äldre adminlänkarna bevarar sidkontext; `dealerId` blir `dealer` på
+klippsidorna och `lane` blir `composition`. Detta flyttar inte API:er eller
+inloggningsrutter. `/studio/api/...` är fortfarande tekniska API-adresser.
+
+Aktiva registrerade bolag vid N1-provet samma datum var `johns-spelbolag`
+(Johns spelbolag), `nordic-bet` (Nordic Bet), `scoutgaming-demo`
+(Scoutgaming Demo) och `sg-test` (SG test game provider). Bolagets ingång är
+`/partner/{operatorSlug}` och dess rum finns på `/partner/{operatorSlug}/rooms`.
+Detta är en daterad lista, inte en behörighetslista: N1 ser aktiva bolag,
+N2 ser sina aktiva medlemskap och spelarlobbyn visar spelbara publicerade rum.
+En bolagsslugg är inte ett dealer-ID, rum-ID, sammansättnings-ID eller agentnamn.
+
+`/play`, `/player-login` och de befintliga spelstarterna finns kvar.
+`/game` leder till `/play/blackjack`. Vid utloggat prov utan vald spelkontext
+gick `/blackjack`, `/play/blackjack` och `/play/roulette` vidare till `/play`.
+En riktig spellänk behåller godkänd
+bolags-/rums-/paketkontext och kontrolleras av spelservern; den nya `/lobby`
+ersätter inte spelmotorn eller dessa startkontrakt.
 
 **Vem gör vad?** Nivå 1 är vår administration: vi skapar dealerklipp, sekvenser och grundloopens regler, bygger biblioteket av bord och bakgrunder samt sätter ihop och tilldelar bolagens paket. Nivå 2 är spelbolagets åtkomst och API: bolaget granskar och gör de små designjusteringar som det tilldelade paketet tillåter. Det ger ingen rätt att redigera dealerns sekvenslogik. Nivå 3 är spelarens lobby och spel.
 
@@ -221,14 +260,14 @@ Marker och kort saknar ännu publicerade designval. De gamla lokala designproven
 visas bara i den märkta interna fixturen och försvinner vid omladdning.
 
 Begrepp och en kort flödeskarta finns i
-[den gemensamma systembeskrivningen](../../docs/LOCAL-PRESENTATION-RUNTIME.md#tre-nivåer-och-gemensamma-begrepp).
+[den gemensamma produktmodellen](TERMINOLOGI.md#ägarskap-och-spelarens-val).
 Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
 Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
 **Personalens arbetsyta är `/admin` på huvuddomänen.** Dealers finns direkt i sidomenyn; Bolag & team, Rum & publicering, Talgranskning och de övriga etablerade editorerna finns under Verktyg. Gamla `/control`-länkar är kompatibilitetsingångar. `/studio` är tekniskt Next.js-basePath för samma tjänsts API:er och tillgångar; `lab/` är fortfarande aktiv källkod.
-Dess rot omdirigerar permanent till `/control/clips` och bevarar query-parametrar;
-tidigare återexporterade roten samma klippkomponent och visade därför samma innehåll.
+Dess rot omdirigerar permanent till `/control/clips` och därefter till
+`/admin/dealer-studio`, med sidkontexten kvar.
 API och tillgångar under basePath behålls. I molnet öppnar du
 [`/admin`](https://www.scoutgaming.tech/admin). Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
@@ -315,16 +354,16 @@ Befintliga konton
 och saldo flyttas eller återställs inte för provet.
 
 **Konton och lösenord:** använd samma användarnamn eller e-postadress och
-lösenord i spelet och på `/control`. Du väljer ingen kontotyp i inloggningen.
-**Intern adminpersonal, nivå 1** får använda hela `/control`, nivå 2 (`/partner`)
-och nivå 3 (`/play`) med samma konto. Nivå 2 visar riktiga bolag även för admin,
+lösenord i spelet och på `/admin` (äldre ingång `/control`). Du väljer ingen kontotyp i inloggningen.
+**Intern adminpersonal, nivå 1** får använda `/admin` och dess befintliga `/control`-verktyg, nivå 2 (`/partner`)
+och nivå 3 (`/lobby`, `/play`) med samma konto. Nivå 2 visar riktiga bolag även för admin,
 utan extra partnerinloggning. En utgången adminsession går till adminlogin och
 återvänder till samma bolagssida. Operatörspersonal loggar in separat och landar
 på sin bolagskatalog. Inloggad operatör ser sitt bolags snapshot och det publicerade lane-paketet.
 Tillåtna branding- och lagerval sparas på paketet. Spelare, transaktioner och
 rapporter från spelmotorn är ännu inte anslutna till partnerportalen (N2.4).
 **Spelare, nivå 3** får använda
-spelet och nekas `/control`. Ett äldre superadmin-konto fungerar som
+spelet och nekas intern administration på `/admin` och `/control`. Ett äldre superadmin-konto fungerar som
 admin; befintliga konton och saldo bevaras.
 
 I den nya native-administrationen går du till **Administration → Konton**.
@@ -517,7 +556,7 @@ de uttryckligen läggs till och aktiveras i den sparade policyn.
 Översikten och Klippbiblioteket visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
 räknas inte som uppspelat. OpenClaw-källorna finns även i Guide & hjälp och på fliken Chatt.
-Aktuell anslutning: [lokal anslutning](../../open-claw/lab/docs/LOCAL-CONNECTION-SV.md).
+Aktuell anslutning: [lokal anslutning](../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md).
 
 Välj **Dealers & klipp → Astrid → Grundloop** för grundloopens editor. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
@@ -609,14 +648,14 @@ visar omfattning och kan glömma historiken. Det är konversationsminne, inte
 verifierat uppspelningsminne. Tillfälliga testdatabaser raderas vid teststopp.
 
 Anslutet prov med genererat tal kräver explicit `--generated-speech` i
-[starthelpern](../../open-claw/lab/docs/LOCAL-CONNECTION-SV.md); standardstart
+[starthelpern](../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md); standardstart
 förbrukar inga Cartesia-/RunPod-jobb. OpenAI-modellen är oförändrad. Genererade
 takepaket är hashbundna previews, **inte mänskligt godkänd läppsynk**.
 Modellvalet `recordedLine` visas tills vidare bara som text i den länkade labbchatten
 om en exakt labbtake saknas; native-eventets inspelade replik påverkas inte.
 
 **Fristående chattprov** i Händelser har egen provkontext och högst 25
-sekunder ljud. Det styr inte det anslutna bordet. Se [socialt prov](../SOCIAL-CHAT.md).
+sekunder ljud. Det styr inte det anslutna bordet. Se [socialt prov](../../docs/AI/openclaw/SOCIAL-CHAT.md).
 
 [Signal- och begreppskartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna,
@@ -662,7 +701,7 @@ formulering står i [AGENTS.md](../../AGENTS.md).
 Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepaket
 eller publika loggar. Aktuella runtimekontrakt finns i
 [presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md);
-OpenClaws versionsbundna källor nås via [dess källindex](../../open-claw/lab/docs/README.md).
+OpenClaws versionsbundna källor nås via [dess källindex](../../docs/AI/openclaw/README.md).
 
 ## Välj dealerns röst
 

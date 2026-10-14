@@ -1,14 +1,16 @@
 # Studio-tjänsten (`lab/`) — utvecklarreferens
 
-**Användarguide: [Guide & hjälp](https://www.scoutgaming.tech/control/guide).**
-`/studio/guide` omdirigerar dit. Denna README är utvecklarreferens.
+**Användarguide: [Guide & hjälp](https://www.scoutgaming.tech/admin/guide).**
+Äldre `/control/guide` och `/studio/guide` leder vidare dit. Denna README är utvecklarreferens.
 Källa och begreppsägarskap: [lab/docs](docs/README.md).
 
 **Produktens riktning:** [/admin](https://www.scoutgaming.tech/admin) är den nya
 personalytan och [/lobby](https://www.scoutgaming.tech/lobby) den nya
 spelarlobbyn. Övergången pågår: `/control`, `/partner` och `/play` behövs
 fortfarande för befintliga verktyg, inloggning och spelstarter. De detaljerade
-`/control`-adresserna längre ned beskriver de verktyg som finns kvar.
+`/control`-adresserna längre ned är bevarade länkar; många omdirigeras nu till
+motsvarande `/admin`-verktyg. Aktiva ingångar, bolagssluggar och mål finns i
+den kanoniska [användarguiden](docs/README.md).
 
 **Teknisk roll:** `lab/` är den aktiva Next.js-tjänsten `studio` i
 Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
@@ -48,7 +50,11 @@ Video-intake: [lägg in standardtagningar och alternativ, välj användning och 
 
 Lokalt öppnas tjänsten på `/`. Befintliga verktyg ligger på `/control`;
 `/studio` är tjänstens basePath i molnet.
-`/lissabon` omdirigerar till `/control`. Lab-roten `/` omdirigerar permanent till `/control/clips`.
+Lab-roten `/` omdirigerar permanent till `/control/clips`; i produktion är
+kedjan `/studio` → `/control/clips` → `/admin/dealer-studio`.
+Publika `/lab` och `/labb` går till `/admin` via `/control`; `/bo` går till
+`/admin/drift` via `/control/administration`. Publika `/lissabon` svarade 404
+vid kontrollen 14 oktober 2026 och ska inte användas som ny ingång.
 Startkod och lokala profilval finns här. `lissabon-stream-lane` är ett kvarvarande
 internt profil-/anslutnings-ID i startaren och spelservern, inte ett eget spelrum
 eller en produktadress. Äldre alias och sparade ID:n behålls för kompatibilitet.
@@ -294,7 +300,7 @@ driftsattes Director `7f056f7`: aktivt val, shadow och operatörschatt gav
 riktiga modellsvar via lokal Next-server. Första rådanropet fick timeout;
 fallback fungerade och omprovet gav giltigt råd. Detta är ett daterat
 anslutningsprov, inte en garanti för svarstiden i spelet.
-[Officiellt OpenClaw-index](../open-claw/lab/docs/README.md).
+[Officiellt OpenClaw-index](../docs/AI/openclaw/README.md).
 
 ## Läsande Partner-ström
 

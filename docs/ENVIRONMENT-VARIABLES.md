@@ -145,7 +145,7 @@ aktiva. Render kör utan produktdisk och utan `CROUPIER_CLOUD_DATA_ROOT`;
 ersätter gamla diskvägar. Tre tal-/streamflaggor är ON i produktion, OFF i QA.
 QA:s disk, SDK, journaler och reservationer bevaras. Inga nya envnamn införs.
 
-Director/Gateway-konfiguration: se [OpenClaws källindex](../open-claw/lab/docs/README.md).
+Director/Gateway-konfiguration: se [OpenClaws källindex](AI/openclaw/README.md).
 
 Studio-flikens modellinställningar använder den inloggade administratörens
 vanliga Studio-session. `OPENCLAW_API_KEY` är det rättade namnet för Gateway-
@@ -408,7 +408,7 @@ LD_PRELOAD eller ändrad TLS-tillit nekas. Ursprungliga tider/poster skrivs inte
 Fullfils- och streamkostnader går genom samma beständiga budgetskydd.
 
 Aktuell usage, testtak, okänd kostnad och öppen acceptans finns i
-[handoffen](JOHN-HANDOFF.md#budget-och-framtida-prov). Äldre installationsdetaljer
+[handoffen](JOHN-HANDOFF.md#2-öppna-kontroller-och-kända-fel). Äldre installationsdetaljer
 finns i [Git före städningen](https://github.com/Jakeminator123/github-work/blob/6b9dad55ced03ee0573e24b472b4dcbba2b97776/docs/ENVIRONMENT-VARIABLES.md).
 
 ### Origins och privata medier
