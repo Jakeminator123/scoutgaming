@@ -6,9 +6,9 @@
 // when no preset is chosen; ?voice=studio|space tries one on this page.
 export const ROOM_PRESETS = Object.freeze({
   studio: null,
-  // Kevin 14 Oct, sample D of /root/qa/ai-casino-voicerooms/v3: furthest from the mic (less top, the same three early
+  // Kevin 14 Oct, sample D4 of /root/qa/ai-casino-voicerooms/v3 (D, voice 5 dB lower into the casino): furthest from the mic (less top, the same three early
   // reflections louder against the direct voice, no tail), and the casino stays under the voice instead of dipping.
-  space: Object.freeze({ hp: 140, lp: 6000, eq: -3, eqHz: 3000, taps: [[0.013, 0.58], [0.023, 0.44], [0.037, 0.31]], master: 0.55, duck: 1 }),
+  space: Object.freeze({ hp: 140, lp: 6000, eq: -3, eqHz: 3000, taps: [[0.013, 0.58], [0.023, 0.44], [0.037, 0.31]], master: 0.31, duck: 1 }),
 });
 // Kevin's choice per dealer (dealer id → preset name).
 export const DEALER_ROOM = Object.freeze({ paow: 'space', dragge: 'space', marten: 'space' });

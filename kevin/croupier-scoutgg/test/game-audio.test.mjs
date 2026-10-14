@@ -15,7 +15,7 @@ test('audio needs a gesture, ducks under speech, cancels on mute and pauses in a
  globalThis.document={hidden:false,body:{append(){}},addEventListener:(n,fn)=>events[n]=fn};globalThis.Audio=FakeAudio;globalThis.window={AudioContext:Context};globalThis.localStorage={getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v)};
  const a=createGameAudio();a.play('chip');assert.equal(contexts.length,0);assert.equal(a.ambience.paused,true);
  a.unlock();assert.equal(a.ambience.paused,false);a.play('chip');assert.equal(contexts[0].sounds,3);
- a.speech(true);assert.equal(a.ambience.volume,.32*.32);a.speech(false);assert.equal(a.ambience.volume,.32);
+ a.speech(true);assert.equal(a.ambience.volume,.36*.32);a.speech(false);assert.equal(a.ambience.volume,.36);
  a.set('enabled',false);assert.equal(contexts[0].state,'closed');assert.equal(a.ambience.paused,true);a.play('win');assert.equal(contexts[0].sounds,3);
  a.set('enabled',true);assert.equal(contexts.length,2);assert.equal(contexts[1].sounds,0);
  document.hidden=true;events.visibilitychange();assert.equal(a.ambience.paused,true);assert.equal(contexts[1].state,'closed');
