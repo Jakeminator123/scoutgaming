@@ -11,10 +11,11 @@ import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';
 import { partnerPreviewInitialData } from '@/lib/partner-preview.mjs';
 import { partnerWorkspaceInitialData } from '@/lib/partner-data.mjs';
 import { internalSessionPresent } from '@/lib/partner-session.mjs';
+import { partnerLoginReturnTo } from '@/lib/partner-login-return.mjs';
 import { nextStudioLoginRedirect } from '@/lib/next-page-navigation.mjs';
 import { resolveWorkspaceSurfacePath } from '@/lib/workspace-surfaces.mjs';
 
-function partnerLoginAbsoluteUrl(headerList: { get(name: string): string | null }) {
+function partnerLoginAbsoluteUrl(headerList: { get(name: string): string | null }, returnTo: string) {
   const read = (name: string) => {
     const value = headerList.get(name);
     return typeof value === 'string' ? value.split(',')[0].trim() : '';
@@ -23,7 +24,7 @@ function partnerLoginAbsoluteUrl(headerList: { get(name: string): string | null 
   const proto = forwarded === 'http' || forwarded === 'https' ? forwarded : 'https';
   const host = read('x-forwarded-host') || read('host');
   const safeHost = /^[A-Za-z0-9.-]+(?::\d{1,5})?$/.test(host) ? host : 'invalid';
-  return `${proto}://${safeHost}/partner/login`;
+  return `${proto}://${safeHost}/partner/login?returnTo=${encodeURIComponent(partnerLoginReturnTo(returnTo))}`;
 }
 
 type ListedOperator = { id: string; slug: string; name: string; publishedPackage?: { revision: number; lanes: string[] } | null };
@@ -84,7 +85,7 @@ export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId }
       // Match the backend's fail-closed N1 priority, including stale N1 cookies.
       // A partner login cannot repair an expired administrator credential.
       if (status === 401) redirect(internalSessionPresent(request)
-        ? nextStudioLoginRedirect(returnPath) : partnerLoginAbsoluteUrl(h));
+        ? nextStudioLoginRedirect(returnPath) : partnerLoginAbsoluteUrl(h, returnPath));
       if (status === 404) notFound();
       throw error;
     }

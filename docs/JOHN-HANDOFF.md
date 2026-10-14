@@ -180,7 +180,27 @@ Dokumentationen anger också återstående liveprov och att Studio-preview
 stänger av genererat tal. Ingen runtime, dealer, publicering,
 nyckel eller GPU-körning ändrad; Admin- och Dragan-arbete lämnas orört.
 
-## Admin C1–C4: navigation och läsbarhet, 14 oktober
+## Admin C4/C6: partnerretur och isolerad publiceringskedja, 14 oktober
+
+Aktuell gren `codex/admin-partner-return-c6` utgår från main `fa1fdaae` efter PR145 och
+DRAGANs PR144. DRAGAN och SAMORDNING har överlämnat dessa kodfiler och enbart
+våra Admin-avsnitt i dokumentationen. Lab och integrationskopian behålls.
+
+Partnerlogin tappade vald arbetsyta/rum. Validerad retur följer nu med genom
+serverredirect, partnerformulär och intern adminlänk; auth och behörigheter
+är oförändrade. 47 riktade tester inklusive Chromium passerar utan överhopp.
+C6 följer samma nya publicering från verkligt N1-formulär via autentiserat
+N2-API och lobbykomponenter till ordinarie spelstartsvalidering: två gröna prov,
+inklusive Chromium. Fel bolag/roll/rum nekas utan ändring av paket/ägarskap.
+SQL, konton och runtime/mediaunderlag är isolerade fixtures. Full N2-vy,
+spelarlogin, produktionslagring och verkliga spelomgångar återstår.
+
+Aktuell status och exakta acceptansgränser finns i
+[C1–C9](CLOUD-MIGRATION.md#admin-checkpoints-c1c9). Loggens läsanvisning skiljer
+aktuell status från daterade kvitton och pekar ut den kanoniska
+återställningsguiden. Äldre planer/kvitton och andra agenters områden bevaras.
+
+### Historiskt C4/C5-kvitto efter PR140
 
 PR140 är granskad och mergad till `c3397d1d0503927a6d0dafc240c21772634d99ee`.
 Vercels huvuddomän kör samma SHA, READY i `dpl_AZmTomDfe14ErSFnjKqp3zzA8at2`.
