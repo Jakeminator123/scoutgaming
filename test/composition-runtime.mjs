@@ -143,18 +143,22 @@ for(const [width,height]of [[844,390],[900,1200]])test(`board scene, saved forma
   }
 });
 
-test('alpha board geometry uses the same visible table and background as the compositor; disabled table never projects board anchors',async()=>{
-  const settings=defaultCompositionSettings();settings.blackjackTables=[defaultBlackjackTableGeometry(asset('table',2).id)];
-  for(const enabled of [true,false]){
+test('alpha layers stay visible with or without board geometry; disabled layers stay hidden',async()=>{
+  for(const withBoard of [false,true])for(const [clientWidth,clientHeight]of [[390,844],[1920,1080]])for(const enabled of [true,false]){
+    const settings=defaultCompositionSettings();if(withBoard)settings.blackjackTables=[defaultBlackjackTableGeometry(asset('table',2).id)];
     const {descriptor}=fixture('nora','Nora',settings);descriptor.table.enabled=enabled;
-    const renders=[],host={dataset:{},clientWidth:390,clientHeight:844,append(){}};
+    const renders=[],host={dataset:{},clientWidth,clientHeight,append(){}};
     const document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>({tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,naturalWidth:1672,naturalHeight:941,
       setAttribute(){},remove(){},addEventListener(){},removeEventListener(){},getContext:()=>({clearRect(){},drawImage(){}})})};
     class SharedCompositor{constructor(canvas){this.canvas=canvas;}geometry(scene){return stageGeometry(scene);}tableGeometry(scene,image){return tableRect(scene,image,this.geometry(scene));}render(scene){renders.push(scene);}dispose(){}}
     const c=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:SharedCompositor})});
     await c.prepareClip({mode:'alpha'},undefined,{kind:'idle'});c.renderFrame({videoWidth:1080,videoHeight:1920});
     assert.equal(renders.at(-1).key.enabled,false);assert.equal(renders.at(-1).show.table,enabled);assert.equal(renders.at(-1).show.background,true);
-    assert.equal(Boolean(c.referencePlane().tableGeometry),enabled);c.close();
+    assert.equal(Boolean(c.referencePlane().tableGeometry),enabled&&withBoard);
+    descriptor.background.enabled=false;c.replace(descriptor);
+    await c.prepareClip({mode:'alpha'},undefined,{kind:'idle'});c.renderFrame({videoWidth:1080,videoHeight:1920});
+    assert.equal(renders.at(-1).show.background,false);assert.equal(renders.at(-1).show.table,enabled);
+    c.close();
   }
 });
 test('compositor uses the same actor frame with explicit table order and never paints game cards',()=>{
