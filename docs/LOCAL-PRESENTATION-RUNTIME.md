@@ -122,9 +122,14 @@ generiska dealerprofiler förbereder fortfarande en stillbild. Denna leverans
 aktiverar inte rörlig lipsync, ändrar inga providerinställningar och importerar
 inga nya mediefiler till produktionen.
 
-Innan aktivering återstår åtkomlig worker/källrevision, hashbunden avatarbank,
+Innan aktivering återstår verifierad worker-release och hashbunden avatarbank,
 variantschemaläggning i vår spelare, auktoriserad relay med befintlig budget/
-avbrottshantering och faktisk GPU-verifiering. Kör sedan två på varandra
+avbrottshantering och faktisk GPU-verifiering. Källåtkomst är inte ett tekniskt
+krav för att anropa den befintliga endpointen; den behövs för full granskning,
+reproducerbar byggning och eget underhåll. Cartesia-inloggning är ingen
+ersättning för worker-/avatarverifieringen. Annas separata integrationssteg
+och testplan finns i [roulettereferensen](games/roulette/TEKNIK.md#anna-tal-och-rörlig-läppsynk-14-oktober-2026).
+Kör sedan två på varandra
 följande talprov i den riktiga rehearsalspelaren för båda dealers, inklusive
 giv/omplanering mitt i talet, avbrott och reservväg. Kontrollera röst, läppar,
 kortkontakt, masker och lager visuellt/hörbart. Tidigare Paow-godkännande
