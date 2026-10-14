@@ -1,5 +1,20 @@
 # Aktuell handoff — Scoutgaming
 
+## Kevin: demokälla och återstående synkfel, 14 oktober
+
+Kevin bekräftar demon på croupier.scoutgg.dev och commit 315cfc55 utan
+opushade ändringar. GitHub visar samma head för kevin och kevin-staging;
+demons dealers.js/lip-layer.js matchar exakt. Server/worker och visuell
+synk är inte verifierade av den kontrollen. LOCAL-PRESENTATION-RUNTIME.md
+har aktivt/äldre materialurval, normalisering mot −16 LUFS med toppgräns,
+samt korrigeringen att dealer-card-tracks spårar kortytor, inte ansikten.
+
+Kevin rapporterar upp till cirka 4 s sena munbilder vid chattsvar och
+kallstarts-/samtidighetsproblem. Roulette-guiden kräver därför prov med
+försenade svar och samma normaliserade PCM på båda sidor. Worker-release,
+avatarbank/ansiktsunderlag och Annas förbehandling återstår från Emil.
+Ingen runtime eller publicering ändrad och inget GPU-/talprov utfört.
+
 ## AI-dokumentation: slutöverlämning 14 oktober 2026
 
 AI-översikten och elva kanoniska OpenClaw-guider finns under [docs/AI](AI/README.md).

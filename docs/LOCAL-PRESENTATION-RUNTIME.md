@@ -11,6 +11,34 @@ Dealerfilmerna och deras kortspår är byteidentiska mellan dessa två versioner
 Detta bevisar källinnehåll, inte vilken release Kevins server kör eller visuell
 acceptans. Ingen av Kevins brancher ska mergas i sin helhet för denna integration.
 
+### Kevin bekräftar demokällan, 14 oktober 2026
+
+Kevin uppger att [demon](https://croupier.scoutgg.dev) kör commit
+`315cfc554330f1d5541a7ed3bb84044877a6b992`, utan opushade ändringar.
+Färsk GitHub-läsning bekräftar att både `kevin` och `kevin-staging` pekar
+dit. Offentlig HTTP-läsning gav 200 för startsidan; `/dealers.js` och
+`/lip-layer.js` är byteidentiska med denna commit. Detta verifierar dessa
+klientfiler, inte serverns körande commit, worker-release eller visuell synk.
+Den tidigare exporten från `f15b2af1` nedan är ett historiskt materialkvitto.
+
+Kevins aktiva urval, bekräftat i `public/dealers.js`, är per Paow/Dragge
+`public/media/dealers/<dealer>/v2/` med `meta.json` och `vila.png`,
+`idle-v2/` samt `repliker/`. Bakgrunden är
+`public/media/dealers/rooms-v2/darkhall.png`. Kevin anger Dragges
+`green/`, `idle/`, `startbild.png`, `room.png` och `timing.json` som
+äldre material. De ska inte erbjudas som likvärdiga nya importval; uppgiften
+är inget tillstånd att radera delade filer, historik eller pågående arbete.
+`public/dealers.js` bestämmer det aktiva urvalet; mapptillhörighet ensam
+bevisar inte att varje fil används.
+
+En korrigering till Kevins beskrivning: `public/dealer-card-tracks-*.js`
+innehåller spår för **kortens ytor**, enligt generatorns kommentar och
+konsumenterna `card-face-projection.js`/`card-table-layout.js`. De är inte
+människans ansikts-/munspår. Munplaceringen kommer i workerns
+`rutor[].rect` via `rorlig-lipsync.mjs` till `lip-layer.js` och
+`dealer-layer.js`. Avatarbankens förbehandling och ansiktsunderlag måste
+fortfarande verifieras med Emil; kortspåren ersätter inte dessa.
+
 ### Exakt urval och poseövergångar
 
 Det kodbundna materialpaketet `kevin-active-dragan-paow-f15b2af1.zip` innehåller
@@ -87,6 +115,21 @@ Kevins klient tillåter sökning ±48 rutor kring talets klocka när kroppen hal
 efter. Det är upp till två sekunder och måste bedömas hörbart/visuellt;
 det är inte en godkänd synktolerans för vår produkt.
 
+Kevin rapporterar den 14 oktober att munbilden ibland kommer upp till cirka
+fyra sekunder sent i början av chattsvar, att kallstart tar tid och att två
+samtidiga repliker var långsammare än en lane per GPU. Detta är hans
+observation, inte en egen mätning. Fyrasekundersfelet ska inte förväxlas med
+klientens ovanstående tvåsekunders sökfönster eller 220 ms protokollförskjutning.
+`PaowPratarOchDealar.mp4` hänvisas till som exempel men har inte granskats här.
+
+Mät separat TTS-tid, worker-kö/kallstart, första färdiga bild, faktiskt ljudstart
+samt synk under hela svaret. Nästa implementation ska prova begränsad gemensam
+startbuffring och samma uppspelningsklocka: korrekt ljudbunden bild ska vara
+klar när motsvarande ljud spelas. Ett fast extra dröjsmål på fyra sekunder
+är ingen generell lösning. Vid överskriden väntetid eller sena rutor behövs
+en verifierad reservväg/avbrott, aldrig gamla munrutor. Budget och
+GPU-acceptans före TTS gäller även när förberedelser överlappar.
+
 Rösterna i `server/dragge-voice.mjs` är:
 
 | Dealer | ElevenLabs voice-ID | Modell och inställningar |
@@ -97,6 +140,16 @@ Rösterna i `server/dragge-voice.mjs` är:
 
 Röst-ID är ingen API-nyckel. Vårt serverägda röstval ska fortfarande verifiera
 att rätt ElevenLabs-konto har tillgång till rösten.
+
+Kevins `draggeVoice` normaliserar därefter mono s16le PCM vid 24 kHz via
+`server/loudness.mjs`: mål −16 LUFS med en fast förstärkning per replik,
+ingen kompressor, och toppgräns −0,5 dBFS. Toppgränsen kan innebära lägre
+slutnivå än målet; tystnad eller material under ett 400 ms analysblock lämnas
+oförändrat. Detta är källkodens beteende, inte ett nytt uppmätt ljudkvitto.
+Vid integration ska samma slutliga normaliserade PCM bindas till ljudhash,
+worker och uppspelning. Prova tystnad, korta repliker och starka toppar samt
+att normaliseringen inte ändrar antal sampel eller tidslinje. Kopiera inte
+normalisering till bara ena sidan av ljud-/bildkedjan.
 
 ### Anslutning till Scoutgaming och återstående acceptans
 
