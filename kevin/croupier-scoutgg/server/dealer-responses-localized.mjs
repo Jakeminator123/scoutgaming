@@ -32,6 +32,25 @@ export const LOCALIZED_RESPONSES=Object.freeze({
     privacy:'请勿分享个人或财务信息。牌桌聊天内容会与其他访客共享。',
     fallback:'我可以解释演示的规则和操作方式。我不能提供下注建议，也不能鼓励您赌博。',
   }),
+  pt:Object.freeze({
+    greeting:'Olá, seja bem-vindo. Posso explicar as regras e os controles da demo.',
+    social:'Obrigado pela conversa. Posso explicar as regras da demo ou os controles disponíveis aqui.',
+    rules:'O blackjack paga três para dois. A banca para em todos os dezessetes. As regras completas e os pagamentos das apostas laterais estão em Demo information.',
+    outcome:'O servidor do jogo define as cartas e os pagamentos. Não posso prever nem mudar um resultado.',
+    support:'Você pode fazer uma pausa de 24 horas na demo com Take a break. Os links de ajuda sobre jogo estão em Demo information.',
+    privacy:'Não compartilhe dados pessoais ou financeiros. O chat da mesa é compartilhado com outros visitantes.',
+    fallback:'Posso explicar as regras e os controles da demo. Não posso dar conselhos de apostas nem incentivar você a apostar.',
+  }),
+  // Swedish was missing: a Swedish table's reviewed fallback threw instead of answering (15 Oct).
+  sv:Object.freeze({
+    greeting:'Hej och välkommen. Jag kan förklara reglerna och kontrollerna i demon.',
+    social:'Tack för att du pratar med mig. Jag kan förklara demons regler eller kontrollerna här.',
+    rules:'Blackjack betalar tre till två. Dealern stannar på alla sjuttor. Fullständiga regler och utbetalningar för sidoinsatser finns under Demo information.',
+    outcome:'Spelservern bestämmer korten och utbetalningarna. Jag kan inte förutsäga eller ändra ett resultat.',
+    support:'Du kan ta en paus i 24 timmar i demon med Take a break. Länkar till stöd finns under Demo information.',
+    privacy:'Dela inga personliga eller finansiella uppgifter. Bordschatten delas med andra besökare.',
+    fallback:'Jag kan förklara demons regler och kontroller. Jag kan inte ge råd om insatser eller uppmuntra dig att spela.',
+  }),
 });
 
 export function localizeResponse(canonical,language='en') {
@@ -49,6 +68,7 @@ export function personalizedGreeting(name,language='en') {
     case 'es': return `Hola, ${clean}. ¿Cómo estás hoy?`;
     case 'fr': return `Bonjour ${clean}, comment allez-vous aujourd’hui ?`;
     case 'zh': return `你好，${clean}。今天过得怎么样？`;
+    case 'pt': return `Oi ${clean}, como você está hoje?`;
     default: return `Hi ${clean}, how are you today?`;
   }
 }

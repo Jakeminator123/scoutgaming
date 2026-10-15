@@ -20,7 +20,7 @@ export const STUDIO_CHOICES = Object.freeze({
   dealer: ["astrid", "dragge", "paow", "marten", "astrid2"],
   room: ["darkhall", "mahogany", "golden", "azure"],
   felt: ["prive", "emerald", "midnight", "burgundy", "custom"],
-  lang: ["en", "es", "fr", "sv", "zh"],
+  lang: ["en", "es", "fr", "sv", "zh", "pt"],
   limit: Object.keys(LIMIT_PRESETS),
   logoPos: ["both", "felt", "header"],
 });

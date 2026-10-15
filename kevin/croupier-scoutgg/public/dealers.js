@@ -42,12 +42,12 @@ export const DEALERS = {
   dragge: { id: 'dragge', name: 'Dragan',   // shown as Dragan (Emil 14 Oct: more official); the id stays dragge
     still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/dragge.jpg' + V,
     keyed: { still: '/media/dealers/dragge/v2/vila.png' + V }, layerScale: 1, ready: DRAGGE_READY,
-    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: idlesFor('dragge'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
+    clips: '/media/dealers/dragge/v2/', land: DRAGGE_READY.land, lines: ['sv', 'en', 'pt'], linesDir: '/media/dealers/dragge/repliker/', linesV: '?v=20261014i', idles: idlesFor('dragge'), handMatte: false, faceTracks: DRAGGE_FACE_TRACKS },
   // Paow speaks with her cloned voice (ElevenLabs WZVEBKUreb9jAKojf0QF), lip-synced on her own endpoint.
   // Her hole card (Emil, 9 Oct) is filmed face down and ends at rest; her turn of it is filmed too (rest to rest).
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
     keyed: { still: '/media/dealers/paow/v2/vila.png' + V }, layerScale: 1, ready: PAOW_READY,
-    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: idlesFor('paow'), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
+    clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en', 'pt'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: idlesFor('paow'), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
   // Mårten (Emil's KLARA_MARTEN, 9 Oct; built on Paow's plate, so table, shoe and seats are hers). No voice and no recorded
   // lines yet: lines null means every spoken line and chat reply is text only (never another dealer's face or voice).
   // His idles are Kling loops like Dragge's and Paow's (Emil 11 Oct liked those best): back at rest after a single card
@@ -56,13 +56,13 @@ export const DEALERS = {
   // of all three): browsers fetch them anew, not the cached ones
   marten: { id: 'marten', name: 'Mårten', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/marten.jpg' + V,
     keyed: { still: '/media/dealers/marten/v2/vila.png' + V }, layerScale: 1, ready: MARTEN_READY,
-    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014i', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
+    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es', 'pt'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014i', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
   astrid2: { id: 'astrid2', name: 'Astrid', label: 'Astrid', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/astrid2.jpg?v=20261014',
     keyed: { still: '/media/dealers/astrid2/v2/vila.png' + V }, layerScale: 1, ready: ASTRID2_READY,
-    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS },
+    clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en', 'pt'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS },
 };
 
 // Kevin 12 Oct: Mårten is for Svenska Spel. The public demo never shows him; a Table Studio table built with him

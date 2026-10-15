@@ -6,6 +6,7 @@ export const DEALER_LANGUAGES = Object.freeze({
   es: { code: 'es', name: 'Spanish', label: 'ES' },
   fr: { code: 'fr', name: 'French', label: 'FR' },
   zh: { code: 'zh', name: 'Chinese', label: '中文' },
+  pt: { code: 'pt', name: 'Portuguese', label: 'PT' },
 });
 
 const TEXT = Object.freeze({
@@ -45,6 +46,15 @@ const TEXT = Object.freeze({
     support: '你可以点击“休息一下”开启 24 小时休息。演示说明中有相关帮助链接。',
     privacy: '请勿分享个人或财务信息。牌桌聊天内容对其他访客可见。',
     fallback: '我可以介绍演示规则和操作，但不能提供下注建议或鼓励你赌博。',
+  },
+  pt: {
+    greeting: 'Olá, seja bem-vindo. Posso explicar as regras e os controles desta demonstração.',
+    social: 'Obrigado pela conversa. Posso explicar as regras do jogo ou os controles disponíveis aqui.',
+    rules: 'O blackjack paga três para dois. A banca para em todos os dezessetes. As regras completas e os pagamentos das apostas laterais estão em Demo information.',
+    outcome: 'O servidor do jogo define as cartas e os pagamentos. Não posso prever nem mudar o resultado.',
+    support: 'Você pode fazer uma pausa de 24 horas com o botão Take a break. Os links de ajuda estão em Demo information.',
+    privacy: 'Não compartilhe dados pessoais ou financeiros. O chat da mesa é visível para os outros visitantes.',
+    fallback: 'Posso explicar as regras e os controles da demonstração. Não posso dar conselhos de apostas nem incentivar você a jogar.',
   },
 });
 

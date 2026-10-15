@@ -5,7 +5,7 @@
 const DEALERS={astrid:{name:'Astrid',cut:'assets/cut-astrid-v3.png',mask:'assets/felt-mask-astrid-v2.png',room:'-v2'},dragge:{name:'Dragan',cut:'assets/cut-dragge.png',mask:'assets/felt-mask-dragge-v2.png',room:'-v2'},paow:{name:'Paow',cut:'assets/cut-paow.png',mask:'assets/felt-mask-paow-v2.png',room:'-v2'},astrid2:{name:'Astrid',cut:'assets/cut-astrid2.png',mask:'assets/felt-mask-astrid2-v2.png',room:'-v2'},marten:{name:'Mårten',cut:'assets/cut-marten.png',mask:'assets/felt-mask-marten-v2.png',room:'-v2'}};
 const ROOMS={darkhall:'Dark Hall',mahogany:'Mahogany Privé',golden:'Golden Salon',azure:'Azure Venue'};
 const FELTS={prive:{name:'Privé',c:null},emerald:{name:'Emerald Club',c:'#125c43'},midnight:{name:'Midnight',c:'#213e70'},burgundy:{name:'Burgundy',c:'#70253c'},custom:{name:'Custom',c:null}};
-const LANGS={en:{name:'English',tts:'en-GB',line:'Welcome to the table. Place your bets.'},es:{name:'Español',tts:'es-ES',line:'Bienvenidos a la mesa. Hagan sus apuestas.'},fr:{name:'Français',tts:'fr-FR',line:'Bienvenue à la table. Faites vos jeux.'},sv:{name:'Svenska',tts:'sv-SE',line:'Välkommen till bordet. Placera era insatser.'},zh:{name:'中文',tts:'zh-CN',line:'欢迎来到牌桌，请下注。'}};
+const LANGS={en:{name:'English',tts:'en-GB',line:'Welcome to the table. Place your bets.'},es:{name:'Español',tts:'es-ES',line:'Bienvenidos a la mesa. Hagan sus apuestas.'},fr:{name:'Français',tts:'fr-FR',line:'Bienvenue à la table. Faites vos jeux.'},sv:{name:'Svenska',tts:'sv-SE',line:'Välkommen till bordet. Placera era insatser.'},zh:{name:'中文',tts:'zh-CN',line:'欢迎来到牌桌，请下注。'},pt:{name:'Português',tts:'pt-BR',line:'Bem-vindos à mesa. Façam suas apostas.'}};
 const LIMITS={casual:{name:'Casual',range:'$1 – $500',bal:'$500.00',chips:[1,5,10,25,50,100]},prive:{name:'Privé',range:'$5 – $2,000',bal:'$1,000.00',chips:[5,10,25,50,100,500]},high:{name:'High Roller',range:'$100 – $25,000',bal:'$50,000.00',chips:[100,500,1000,5000,10000,25000]}};
 const CHIP={1:['#e8e2d4','#a9a294','#5a554c','#1c1a16'],5:['#1b7866','#0e4138'],10:['#b88441','#5d3c1c'],25:['#c55b42','#713227'],50:['#a85c9e','#572c56'],100:['#424a51','#181c20'],500:['#7852b3','#402957'],1000:['#d6b46a','#7d6230','#fff5da','#201c13'],5000:['#2f6496','#163252'],10000:['#9a3443','#4d1621'],25000:['#26282c','#0b0c0e','#dbc18a','#dbc18a']};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -25,7 +25,7 @@ const draw=img=>{['#feltC','#feltS'].forEach(s=>{const x=$(s).getContext('2d');x
 if(maskCache[src]?.complete)draw(maskCache[src]);else{const i=maskCache[src]=new Image();i.onload=()=>draw(i);i.src=src}}
 function feltColor(){return st.felt==='custom'?st.custom:FELTS[st.felt].c}
 function render(){
-// Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: Swedish, English and Spanish).
+// Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: Swedish, English, Spanish and Portuguese).
 const langs=VOICES[st.dealer]?.length?VOICES[st.dealer]:['en'];if(!langs.includes(st.lang))st.lang=langs.includes('en')?'en':langs[0];
 $$('.lang-opt').forEach(o=>{o.hidden=!langs.includes(o.dataset.val)});
 const d=DEALERS[st.dealer],L=LIMITS[st.limit],fc=feltColor();
@@ -51,8 +51,8 @@ save()}
 function go(screen){st.screen=screen;$$('.screen').forEach(s=>s.classList.toggle('on',s.id===screen));
 const stage=$('#stage');if(screen==='ready')$('#readyHome').append(stage);else if(screen==='play'){$('#playHome').append(stage);$('#playBg').style.backgroundImage='url(assets/rooms/'+st.room+DEALERS[st.dealer].room+'-720.png)'}else $('#previewHome').prepend(stage);render()}
 // The languages each dealer has recorded. Any other language plays the English greeting, as the table does.
-// Mårten has his voice since 14 Oct (sv, en, es).
-const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en'],paow:['sv','en'],astrid2:['en'],marten:['sv','en','es']};
+// Mårten has his voice since 14 Oct (sv, en, es). Emil 15 Oct: every dealer speaks Brazilian Portuguese too.
+const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en','pt'],paow:['sv','en','pt'],astrid2:['en','pt'],marten:['sv','en','es','pt']};
 const voiceLang=(dealer,lang)=>(VOICES[dealer]??['en']).includes(lang)?lang:'en';
 function greetingClip(dealer,lang){lang=voiceLang(dealer,lang);
 if(dealer==='astrid')return lang==='en'?'/media/repliker/greeting_1.mp4':`/media/repliker-${lang}/greeting_1_${lang}.mp4`;

@@ -15,9 +15,9 @@ const source=JSON.parse(readFileSync(new URL('../public/media/manifest.json',imp
 const {manifest}=classifyManifest(source);
 
 test('all four language banks select the same reviewed variants and preload their own audio',()=>{
-  assert.deepEqual(availableLanguages(manifest),['sv','en','es','fr','zh']);
-  // Swedish has no Astrid bank of its own (Dragge brings his takes; Astrid falls back to English).
-  for(const language of availableLanguages(manifest).filter(l=>l!=='sv')) {
+  assert.deepEqual(availableLanguages(manifest),['sv','en','es','fr','zh','pt']);
+  // Swedish and Portuguese have no Astrid bank of their own (the ready dealers bring their takes; Astrid falls back to English).
+  for(const language of availableLanguages(manifest).filter(l=>l!=='sv'&&l!=='pt')) {
     const bank=language==='en'?source.repliker:source.repliker_sprak[language];
     assert.equal(bank.length,51);
     const urls=tableVideoSources(manifest,[3],language);
@@ -30,7 +30,7 @@ test('all four language banks select the same reviewed variants and preload thei
     assert.ok(urls.includes('/media/deal/hole.mp4'));assert.ok(urls.includes('/media/deal/flip.mp4'));
   }
   const incomplete=structuredClone(manifest);incomplete.repliker_sprak.es.pop();
-  assert.deepEqual(availableLanguages(incomplete),['sv','en','fr','zh']);
+  assert.deepEqual(availableLanguages(incomplete),['sv','en','fr','zh','pt']);
 });
 
 for(const language of ['es','fr','zh'])test(`${language}: shared language persists, locks during bets, and uses recorded durations through hole and reveal`,()=>{

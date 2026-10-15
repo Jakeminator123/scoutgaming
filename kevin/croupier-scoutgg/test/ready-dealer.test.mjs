@@ -65,7 +65,7 @@ test('on his own studio table the server names the variant, so the cards join RE
 test('Mårten speaks his recorded lines in Swedish, English and Spanish, and his idles are his own Kling loops, so nothing of another dealer ever plays over his face', () => {
   const m = DEALERS.marten;
   assert.equal(m.name, 'Mårten');
-  assert.deepEqual(m.lines, ['sv', 'en', 'es']);
+  assert.deepEqual(m.lines, ['sv', 'en', 'es', 'pt']);
   for (const lang of m.lines) for (const line of ['greeting_1', 'goodluck_1', 'bust_1', 'win_1', 'greet_guest', 'remark_hit17_1', 'table_cash_1'])
     assert.ok(existsSync(new URL(`../public${m.linesDir}${lang}/${line}.mp4`, import.meta.url)), `${lang}/${line}`);
   assert.deepEqual(m.idles.map(i => i.url.split('?')[0]), ['breath', 'glance', 'smile'].map(k => `/media/dealers/marten/idle-v2/${k}.mp4`));
@@ -93,7 +93,7 @@ test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded
   const a = DEALERS.astrid2;
   assert.equal(a.name, 'Astrid');
   assert.equal(a.label, 'Astrid');   // Emil 14 Oct: shown as Astrid
-  assert.deepEqual(a.lines, ['en']);
+  assert.deepEqual(a.lines, ['en', 'pt']);
   for (const idle of a.idles) assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)), idle.id);
   assert.ok(a.idles[0].vikt >= 10);
   for (const line of ['greeting_1', 'goodluck_1', 'win_1', 'greet_guest', 'greet_emil', 'remark_hit17_1', 'banter_1', 'table_cash_1'])

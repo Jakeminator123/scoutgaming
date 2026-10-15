@@ -1,7 +1,7 @@
 // The dealer can SEE the table: questions about the visitor's own game are answered from the
 // shared table's state (cards, dealer's up card, last result, whose turn, shoe, balance).
 // Replies are built here from reviewed templates filled with facts only: no model text, no
-// predictions, no betting advice. es/fr/zh use the English templates.
+// predictions, no betting advice. sv, en and pt have their own; es/fr/zh use the English templates.
 import { total } from '../public/game-events.js';
 
 const RENDERED = new Set();   // only strings built here may be spoken as a fact reply
@@ -47,6 +47,26 @@ const T = {
     table: (players, left, decks) => `${players} at the table and ${left} cards left in the ${decks}-deck shoe.`,
     one: 'One player', many: n => `${n} players`,
     balance: b => `Your demo balance is ${b}.`,
+  },
+  // Emil 15 Oct: the dealers speak Brazilian Portuguese too; the round result is said in it, not in English
+  pt: {
+    noRound: 'Nenhuma rodada em andamento agora.',
+    notSeated: 'Você ainda não está na mesa. Escolha um box para entrar.',
+    hand: (box, cards, value, bust) => `Box ${box}: ${cards}, ${bust ? `${value}, estourou` : value}.`,
+    dealerShows: (cards, value) => `A banca tem ${cards}${value ? ` (${value})` : ''}.`,
+    decide: 'Essa decisão é sua, eu não dou conselhos.',
+    predict: 'Ninguém sabe qual é a próxima carta. O embaralhamento é fechado antes da rodada começar.',
+    turnMine: (box, secs) => `É a sua vez no box ${box}. Você tem ${secs} segundos.`,
+    turnOther: name => `Agora é a vez de ${name}.`,
+    turnNone: 'Não é a vez de ninguém agora.',
+    lastNone: 'Você ainda não jogou nenhuma rodada.',
+    last: (net, staked, lines) => `Na última rodada você apostou ${staked} e ${net > 0 ? `ganhou ${money(net)}` : net < 0 ? `perdeu ${money(-net)}` : 'empatou'}. ${lines}`,
+    lastBoxes: (lines, net, staked) => `Última rodada: ${lines} No total você apostou ${staked} e ${net > 0 ? `ganhou ${money(net)}` : net < 0 ? `perdeu ${money(-net)}` : 'empatou'}.`,
+    lastHand: (box, value, res) => `Box ${box}: ${value}, ${res}.`,
+    won: 'vitória', lost: 'derrota', push: 'empate', bust: 'estourou', bj: 'blackjack',
+    table: (players, left, decks) => `${players} na mesa e ${left} cartas restantes no sapato de ${decks} baralhos.`,
+    one: 'Um jogador', many: n => `${n} jogadores`,
+    balance: b => `Seu saldo de demonstração é ${b}.`,
   },
 };
 const t = lang => T[lang] ?? T.en;

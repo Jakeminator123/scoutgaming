@@ -32,6 +32,12 @@ const BLOCK = [
   /\b(ready to (play|bet|sit)|let's play|place your bets?|sit down|take a seat|join (the|my) table|sätt dig|slå dig ner|redo att (spela|satsa|sätta dig)|redo när du är|ska vi (se|spela|köra)|vad korten säger|lägg (en|din|dina) insats(er)?|dags att spela)\b/i,
   /\b(guarantee|garanti|sure win|säker vinst|next card (is|will)|nästa kort (blir|är)|you will (win|lose)|du kommer (att )?(vinna|förlora)|lucky streak|hot streak)\b/i,
   /\b(borrow|loan|låna|lån|credit card|kreditkort|bank|personnummer|password|lösenord|address|adress|phone number|telefonnummer)\b/i,
+  // Portuguese (15 Oct): the same advice, pressure, invitation, prediction and personal-data phrases
+  /\b(voc[êe] deveria|eu recomendo|recomendo que|pe[çc]a (mais uma |outra |uma )?carta|pare (no|em|a[íi])|dobre|divida a m[ãa]o|separe as cartas)/i,
+  /\b(aposte (mais|alto|tudo)|aumente a aposta|aumentar a aposta|recupere|recuperar o (que|dinheiro)|ganhe de volta)/i,
+  /\b(pronto para (jogar|apostar)|vamos jogar|sente-se|sente aqui|fa[çc]am suas apostas|fa[çc]a sua aposta|fa[çc]a suas apostas|hora de jogar|o que as cartas dizem)/i,
+  /\b(garantid|garantia|vit[óo]ria certa|ganho certo|a pr[óo]xima carta (é|e|vai|ser[áa])|voc[êe] vai (ganhar|perder)|mar[ée] de sorte)/i,
+  /\b(empr[ée]st|emprestar|cart[ãa]o de cr[ée]dito|conta banc[áa]ria|senha|cpf|endere[çc]o|telefone)/i,
 ];
 export function guardReply(text) {
   const s = String(text ?? '').replace(/\s+/g, ' ').trim();
@@ -57,7 +63,7 @@ export async function dealerTalk(o) {
 
 async function talkOnce({ text, dealer = 'astrid', language = 'en', facts = '', history = [], memory = '', playerName = '', fetchImpl = fetch, timeoutMs = 12000, retry = false }) {
   const name = { dragge: 'Dragan', paow: 'Paow', marten: 'Mårten', astrid2: 'Astrid' }[dealer] ?? 'Astrid';
-  const lang = { sv: 'Swedish', en: 'English', es: 'Spanish', fr: 'French', zh: 'Chinese' }[language] ?? 'English';
+  const lang = { sv: 'Swedish', en: 'English', es: 'Spanish', fr: 'French', zh: 'Chinese', pt: 'Brazilian Portuguese' }[language] ?? 'English';
   const convo = history.slice(-6).map(h => `${h.who === 'dealer' ? name : 'Player'}: ${h.text}`).join('\n');
   const prompt = `${PERSONAS[dealer] ?? PERSONAS.astrid}\n${RULES}\nLanguage: ${lang}.\nThe player is called "${playerName || 'unknown'}" at this table. ${memory}\nUse what you remember naturally (their name, running jokes), without listing it.\nTable facts (the player's own view): ${facts || 'no round in play'}\n\n${convo ? convo + '\n' : ''}Player: ${String(text).slice(0, 280)}\n${retry ? 'Say it differently this time: no betting or playing talk at all, just a joke.\n' : ''}${name}:\n\nAfter your reply, on a NEW line, write "MEMORY: " followed by one short thing worth remembering about this player for next time (a nickname, a joke, what they like), or "MEMORY: none". Never personal data.`;
   // Kevin 12 Oct: the dealers talk through Gemini (the key Astrid already uses); the game never calls the Claude agent.

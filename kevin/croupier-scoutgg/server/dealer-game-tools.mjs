@@ -26,7 +26,8 @@ const PHASES={
 };
 
 function sentence(intent,state,language) {
-  const lang=dealerLanguage(language),hands=state?.hands??[],dealer=state?.dealerCards??[];
+  // the reviewed fact sentences exist in en, es, fr and zh; any other table language reads the English one
+  const lang=Object.hasOwn(PHASES,dealerLanguage(language))?dealerLanguage(language):'en',hands=state?.hands??[],dealer=state?.dealerCards??[];
   if(intent==='own-hand') {
     if(!state?.playerName||!state.boxes?.length) {
       return ({en:'Join the table and choose a box first, then I can check your hand.',es:'Primero únete a la mesa y elige una caja; después puedo consultar tu mano.',fr:'Rejoignez la table et choisissez une case pour que je puisse vérifier votre main.',zh:'请先加入牌桌并选择一个位置，然后我就能查看你的手牌。'})[lang];
