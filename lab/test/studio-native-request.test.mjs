@@ -203,7 +203,7 @@ test('only the room preparation GET retains two exact query keys through the pub
 
 test('known staff document navigation remains readable when transport omits mode and destination',()=>{
   const navigation={...forwarded,'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'};
-  for(const path of ['/control','/control/clips','/control/replies','/studio/control/replies']) {
+  for(const path of ['/control','/control/clips','/control/replies','/studio/control/replies','/admin','/admin/dealers','/admin/lobby','/admin/admin/accounts','/studio/admin','/studio/admin/dealers']) {
     const headers=studioDocumentNavigationHeaders(new Request(publicOrigin+path,{headers:navigation}));
     assert.equal(headers.get('sec-fetch-site'),null);
     assert.equal(headers.get('cookie'),forwarded.cookie);
@@ -211,18 +211,22 @@ test('known staff document navigation remains readable when transport omits mode
     headers.delete('sec-fetch-mode');headers.delete('sec-fetch-dest');
     assert.doesNotThrow(()=>normalizeNativeStudioPageRequest(new Request(publicOrigin+path,{headers}),config));
   }
-  const foreign=studioDocumentNavigationHeaders(new Request(publicOrigin+'/control/replies',{headers:{...navigation,origin:'https://evil.invalid'}}));
-  assert.equal(foreign.get('origin'),'https://evil.invalid');
-  assert.throws(()=>normalizeNativeStudioPageRequest(new Request(publicOrigin+'/control/replies',{headers:foreign}),config),error=>error.statusCode===403);
-  for(const path of ['/api/replies','/studio/api/replies','/control/api/replies','/control/replies/extra','/studio/_next/static/test.js','/unknown']) {
+  for(const path of ['/control/replies','/admin/dealers','/studio/admin/dealers']) {
+    const foreign=studioDocumentNavigationHeaders(new Request(publicOrigin+path,{headers:{...navigation,origin:'https://evil.invalid'}}));
+    assert.equal(foreign.get('origin'),'https://evil.invalid');
+    assert.throws(()=>normalizeNativeStudioPageRequest(new Request(publicOrigin+path,{headers:foreign}),config),error=>error.statusCode===403);
+  }
+  for(const path of ['/api/replies','/studio/api/replies','/control/api/replies','/control/replies/extra','/studio/_next/static/test.js','/admin/_data/catalog','/admin/_assets/admin/app.js','/admin/unknown','/studio/admin/_data/catalog','/unknown']) {
     const headers=studioDocumentNavigationHeaders(new Request(publicOrigin+path,{headers:navigation}));
     assert.equal(headers.get('sec-fetch-site'),'cross-site',path);
   }
-  for(const change of [{'sec-fetch-mode':'cors'},{'sec-fetch-dest':'empty'},{'sec-fetch-mode':null},{'sec-fetch-dest':null},{'next-action':'fixture'}]) {
+  for(const change of [{'sec-fetch-mode':'cors'},{'sec-fetch-dest':'empty'},{'sec-fetch-dest':'iframe'},{'sec-fetch-mode':null},{'sec-fetch-dest':null},{'next-action':'fixture'}]) {
     const headers=new Headers(navigation);for(const [key,value] of Object.entries(change)){if(value===null)headers.delete(key);else headers.set(key,value);}
-    assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+'/control/replies',{headers})).get('sec-fetch-site'),'cross-site');
+    for(const path of ['/control/replies','/admin/dealers','/studio/admin/dealers'])
+      assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+path,{headers})).get('sec-fetch-site'),'cross-site');
   }
-  assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+'/control/replies',{method:'POST',headers:navigation,body:'mutation'})).get('sec-fetch-site'),'cross-site');
+  for(const path of ['/control/replies','/admin/dealers','/studio/admin/dealers'])
+    assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+path,{method:'POST',headers:navigation,body:'mutation'})).get('sec-fetch-site'),'cross-site');
 });
 
 test('transport diagnostics keep only fixed enums and booleans while rejected reads stay rejected',()=>{

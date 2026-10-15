@@ -1,5 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
+## C4: direktöppning av Admin, 15 oktober 2026
+
+Samordnaren reproducerade Chromes dokumentnavigation-500 på `d6d56803` för
+`/admin` och `/admin/dealers`, medan session, katalog och vanlig fetch fungerade.
+Kända Admin-dokument normaliseras nu i middleware före transporten; samma
+befintliga origin-, sessions- och rollkontroller används. API, iframe,
+Next-actions och mutationer omfattas inte av dokumentundantaget.
+Två regressioner var röda före rättningen; slutligt fokusurval gav 59/59 utan skip.
+Före main-integrationen gav fullhook med Chrome 3 883 pass, 9 skip och 0 fel.
+Efter normal integration av `c024cca7` gav den 3 899 pass, 9 villkorade skip
+och 0 fel/cancel i 77 grupper. Lab-bygget återanvänds; dess källor är oförändrade.
+Första fullhook stoppade på en inaktuell middleware-förväntning; efter rättningen
+passerade slutkörningen. Skip gäller fem databasprov och fyra Linux-specifika prov.
+Det verkliga lokala HTTP-fetch-provet visar navigate → cors och går genom
+Admin-routen med syntetisk session och temporär HTML. Det bevisar inte Vercels
+interna transport eller driftsatt rättning. Oberoende kodgranskning fann inga
+blockerande fel. Lab-bygget passerar med 97 kontrollerade byggspår. Ett separat
+IAB-prov av samordnaren verifierar ny internal-admin-login och N1 → Partner →
+Lobby på samma main; det är inte N2/N3-rollbevis eller acceptans av rättningen.
+Produktionsverifiering av rättningen återstår; C4 hålls öppen.
+
 ## Paow/Dragge: separat workertransport, 15 oktober 2026
 
 PR160:s två P2 från SAMORDNING är reproducerade och rättade: normal

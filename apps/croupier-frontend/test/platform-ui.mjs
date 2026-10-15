@@ -80,13 +80,17 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
     assert.equal(compatibility.headers.get('location'),config.publicOrigin+'/admin/replies?dealer=paow');
     const document = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin/replies?dealer=paow', {headers:navigation}));
     assert.equal(document.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/admin/replies?dealer=paow');
-    // The native page adapter, after this transport, owns document navigation.
-    assert.equal(document.headers.get('x-middleware-request-sec-fetch-site'), 'cross-site');
+    // Known document metadata is normalized before a fetch hop can replace navigate with cors.
+    assert.equal(document.headers.get('x-middleware-request-sec-fetch-site'), null);
     assert.equal(document.headers.get('x-middleware-request-cookie'), headers.cookie);
     const foreign = module.exports.middleware(new NextRequest(config.publicOrigin + '/admin/replies', {headers:{...navigation,origin:'https://foreign.example'}}));
     assert.equal(foreign.headers.get('x-middleware-request-origin'), 'https://foreign.example');
     for (const [path, init] of [
       ['/studio/api/project', {headers:navigation}],
+      ['/admin/_data/catalog', {headers:navigation}],
+      ['/admin/replies', {headers:{...navigation,'sec-fetch-dest':'iframe'}}],
+      ['/admin/replies', {headers:{...navigation,'next-action':'fixture'}}],
+      ['/admin/replies', {method:'POST',headers:navigation,body:'mutation'}],
       ['/control/replies', {method:'POST',headers:navigation,body:'mutation'}],
       ['/control/replies', {headers:{...navigation,'next-action':'fixture'}}],
     ]) {
