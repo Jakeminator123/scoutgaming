@@ -28,7 +28,7 @@ export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey}:{disab
   function operation(key:string,value:boolean){if(value)active.current.add(key);else active.current.delete(key);busyRef.current=active.current.size>0;setBusy(busyRef.current);}
   function saved(remote:StudioProject){validateProject(remote);setProject(remote);setError('');onChanged();}
   return <section className="p-6 space-y-5" aria-label="Bord och bakgrunder">
-    <h1 className="text-2xl font-semibold">Bord & bakgrunder</h1><p>Gemensamma material för dina rum. Förhandsvisa här och välj material i <a className="text-sg-lime underline" href="/admin/rooms">Spelbolag & rum</a>.</p>
+    <h1 className="text-2xl font-semibold">Bord & bakgrunder</h1><p>Gemensamma material för dina rum. Förhandsvisa här och välj material i <a className="text-sg-lime underline" href="/admin/rooms?view=registered">Spelbolag & rum</a>.</p>
     {disabled&&<p role="status">Spara eller lös ditt Studio-utkast innan du ändrar biblioteket.</p>}
     {error&&<p role="alert">{error} <button className="studio-button" disabled={busy||loading} onClick={()=>setReload(value=>value+1)}>Läs om biblioteket</button></p>}{loading&&<p role="status">Läser det skyddade biblioteket…</p>}
     <div role="tablist" aria-label="Bibliotekstyp">{(['table','background'] as const).map(value=><button key={value} role="tab" aria-selected={value===role} disabled={busy} className="studio-button" onClick={()=>setRole(value)}>{value==='table'?'Bord':'Bakgrunder'}</button>)}</div>
