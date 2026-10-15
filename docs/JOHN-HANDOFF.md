@@ -1,22 +1,25 @@
 # Aktuell handoff — Scoutgaming
 
-## Lokala providerprofiler och läsande molnkontroll, 15 oktober 2026
+## C4: direktöppning av Admin, 15 oktober 2026
 
-Lokala startarens ElevenLabs-gap är rättat: nyckel och exakt API-origin följer
-endast befintlig generatedSpeech-opt-in. Två regressioner var röda före
-rättningen; 37 fokuserade prov passerar med OFF-/EMIL-/databasisolering.
-Rot/Lab/Emil/cloud-storage har märkts tydligt; alla gamla giltiga värden
-bevaras, och Lab får root/Render-profilens saknade ElevenLabs-nyckel.
-Sju inaktiva env-exporter är återställbart arkiverade med hash-/ACL-kontroll.
-Ingen molnkonfiguration, providerinställning eller Emil-pod ändrades.
-
-Vercel-team/projekt, Render och Neon är läsverifierade. Vercels projekt-
-revision matchar Neon; session/projekt/video-GET och privat MP4-HEAD ger 200.
-Actions på c024cca7 använder croupier_game och har inga väntande migrationer.
-Preview pekar fortsatt på produktion och kräver separat samordnad isolering.
-Kevin-paketets 274 lokala filhashar är verifierade; 58 finns exakt i Blob och
-Neons bibliotek (Paow11/Dragge47). Ingen massimport eller mediaacceptans.
-Detaljer, återställningsvägar och nyckelfri inventering: ENVIRONMENT-VARIABLES.md.
+Samordnaren reproducerade Chromes dokumentnavigation-500 på `d6d56803` för
+`/admin` och `/admin/dealers`, medan session, katalog och vanlig fetch fungerade.
+Kända Admin-dokument normaliseras nu i middleware före transporten; samma
+befintliga origin-, sessions- och rollkontroller används. API, iframe,
+Next-actions och mutationer omfattas inte av dokumentundantaget.
+Två regressioner var röda före rättningen; slutligt fokusurval gav 59/59 utan skip.
+Före main-integrationen gav fullhook med Chrome 3 883 pass, 9 skip och 0 fel.
+Efter normal integration av `c024cca7` gav den 3 899 pass, 9 villkorade skip
+och 0 fel/cancel i 77 grupper. Lab-bygget återanvänds; dess källor är oförändrade.
+Första fullhook stoppade på en inaktuell middleware-förväntning; efter rättningen
+passerade slutkörningen. Skip gäller fem databasprov och fyra Linux-specifika prov.
+Det verkliga lokala HTTP-fetch-provet visar navigate → cors och går genom
+Admin-routen med syntetisk session och temporär HTML. Det bevisar inte Vercels
+interna transport eller driftsatt rättning. Oberoende kodgranskning fann inga
+blockerande fel. Lab-bygget passerar med 97 kontrollerade byggspår. Ett separat
+IAB-prov av samordnaren verifierar ny internal-admin-login och N1 → Partner →
+Lobby på samma main; det är inte N2/N3-rollbevis eller acceptans av rättningen.
+Produktionsverifiering av rättningen återstår; C4 hålls öppen.
 
 ## Paow/Dragge: separat workertransport, 15 oktober 2026
 
@@ -371,6 +374,24 @@ PR #91 är fortsatt draft: Astrids isolerade spelarprov är klart; Dragan v4
 inväntar tillstånd för den privata runtimekoden. Inga sandboxuppladdningar
 gjordes efter säkerhetsgranskningens avslag och sandlådan är stoppad.
 Rörligt tal och mänsklig medieacceptans är egna kvarvarande gränser.
+
+## Lokala providerprofiler och läsande molnkontroll, 15 oktober 2026
+
+Lokala startarens ElevenLabs-gap är rättat: nyckel och exakt API-origin följer
+endast befintlig generatedSpeech-opt-in. Två regressioner var röda före
+rättningen; 37 fokuserade prov passerar med OFF-/EMIL-/databasisolering.
+Rot/Lab/Emil/cloud-storage har märkts tydligt; alla gamla giltiga värden
+bevaras, och Lab får root/Render-profilens saknade ElevenLabs-nyckel.
+Sju inaktiva env-exporter är återställbart arkiverade med hash-/ACL-kontroll.
+Ingen molnkonfiguration, providerinställning eller Emil-pod ändrades.
+
+Vercel-team/projekt, Render och Neon är läsverifierade. Vercels projekt-
+revision matchar Neon; session/projekt/video-GET och privat MP4-HEAD ger 200.
+Actions på c024cca7 använder croupier_game och har inga väntande migrationer.
+Preview pekar fortsatt på produktion och kräver separat samordnad isolering.
+Kevin-paketets 274 lokala filhashar är verifierade; 58 finns exakt i Blob och
+Neons bibliotek (Paow11/Dragge47). Ingen massimport eller mediaacceptans.
+Detaljer, återställningsvägar och nyckelfri inventering: ENVIRONMENT-VARIABLES.md.
 
 ## Driftprofiler och providerkontroll, 14 oktober 2026 kväll
 
