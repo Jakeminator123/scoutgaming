@@ -42,17 +42,25 @@ verkligt osparat tillstånd, så dirty-skyddets browserprov räknas inte som
 accepterat; lokal verifiering använder riktig delad historik. Fullt kvitto
 och före/efter-bilder finns i CLOUD-MIGRATION.
 
-Del 3 är lokalt implementerad och inväntar leveranskontroller: tydlig
-situation/tagning/sparad körregel, sann vald-filmstatus och exakt regelval
-i befintlig policyeditor. Intervall, frekvens och villkor är verkliga sparade
-värden; OpenClaw-etikett likställs inte med verifierad anslutning.
-Publicerat paket är skilt från projektutkastet. Två mall-/rumsreturer går
-nu till Admin och Rum / bakgrund är ersatt av Rum. 54 riktade prov och
-20 navigerings-/mallprov och Lab-build 97 passerar. Kodhead 4b1adb5b har
-fullhook 3 931 pass / 9 skip / 0 fel/cancel i 77 grupper, inklusive riktig
-browser för loginretur och osparat/conflict/CAS. Sluthead/CI och
-produktion/browseracceptans återstår.
-Ingen ny writer, runtime, mediekatalog eller tracker.
+Del 3:s funktion är levererad i PR169: granskat head 842c0823,
+main 9f6589c67d42d8559c82022fb42a04283bd06b0c, Vercel
+`dpl_6ZCtotgk1iUe8pYYpQTfBxrvjXHr` READY på rätt SHA/www. PR-CI
+38765598957 och main-CI 38766586185 är gröna inklusive SQL/omstart/HTTPS.
+54 riktade klipp-/policyprov, 20 navigerings-/mallprov, Lab-build 97,
+fullhook 3 931 pass / 9 skip / 0 fel/cancel i 77 grupper och doc-hook 43/43.
+
+Browserverifierat: vald okopplad film får sann status, exakt fil och regel
+följer valet, lokala regelvärden visas, och publicerade versioner 4/1 hålls
+isär från projektutkastet. Osparad lokal regel bevaras via rumsretur/Bakåt
+och återställdes utan sparning. Båda returlänkarna går till exakt Admin-rum;
+blackjackutkast 2 är orört. Inga produktionsskrivningar eller providerjobb.
+Detaljer och före/efter-bilder finns i CLOUD-MIGRATION.
+
+Nästa smala fortsättning är fortfarande del 3: tekniska situationsbeskrivningar
+ska flyttas bakom Detaljer och ersättas av enkelt språk; återställt lokalutkast
+ska inte lämna kvar ett ändringsbesked. Roulettens serverritade hjulutfall ska
+inte visas som en saknad planerad film. Först därefter fortsätter del 4 Tal.
+17 befintliga filer, inga nya källfiler eller raderade media/arbetskopior.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad
