@@ -529,7 +529,7 @@ test('generated speech forwards only scoped provider credentials and separate di
   });
   const { configuration, report } = loadPrivateConnection({ envFiles: [file], env: {}, generatedSpeech: true });
   assert.deepEqual(report.generatedSpeech, {
-    enabled: true, configured: true, cartesiaCredentialPresent: true, runpodCredentialPresent: true,
+    enabled: true, configured: true, cartesiaCredentialPresent: true, elevenlabsCredentialPresent: false, runpodCredentialPresent: true,
     scopedEndpointPresent: true, previewOnly: true, visualApproval: 'not_verified', functionalProbe: 'not_run',
   });
   for (const value of [cartesia, runpod, endpoint]) {
@@ -561,6 +561,73 @@ test('generated speech forwards only scoped provider credentials and separate di
   }
   assert.throws(() => childSpecifications(configuration, directory, { productPort: 4192 }), /reserved/);
   assert.throws(() => childSpecifications(configuration, directory, { labPort: 4194 }), /reserved/);
+});
+
+test('ElevenLabs local speech uses the selected file only after generated speech opt-in', async t => {
+  const key = 'fixture-selected-elevenlabs';
+  const values = {
+    CARTESIA_API_KEY: 'fixture-cartesia', RUNPOD_API_KEY: 'fixture-runpod',
+    CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint', ELEVENLABS_API_KEY: key,
+    EMIL_ELEVENLABS_API_KEY: 'fixture-emil-never-import', EMIL_RUNPOD_API_KEY: 'fixture-emil-runpod',
+    EMIL_RUNPOD_ENDPOINT_ID: 'fixture-emil-endpoint',
+  };
+  const file = await privateFixture(t, values);
+  for (const generatedSpeech of [false, true]) {
+    const { configuration, report } = loadPrivateConnection({ envFiles: [file], env: {}, generatedSpeech });
+    const specs = childSpecifications(configuration, join(tmpdir(), 'croupier-fixture-elevenlabs'));
+    assert.ok(!JSON.stringify(configuration).includes(key));
+    assert.ok(!JSON.stringify(report).includes(key));
+    for (const spec of [specs.product, specs.lab]) {
+      assert.equal(spec.env.ELEVENLABS_API_KEY, generatedSpeech ? key : '');
+      assert.equal(spec.env.ELEVENLABS_OC_API, '');
+      assert.ok(!Object.keys(spec.env).some(name => name.startsWith('EMIL_')));
+      assert.equal(spec.env.CROUPIER_GAME_DATABASE_URL, undefined);
+      assert.equal(JSON.parse(spec.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS).includes('https://api.elevenlabs.io'), generatedSpeech);
+    }
+    assert.equal(Boolean(configuration.elevenlabsKey), generatedSpeech);
+    assert.equal(report.generatedSpeech.elevenlabsCredentialPresent, generatedSpeech);
+  }
+  const emilOnly = loadPrivateConnection({ envFiles: [], env: {
+    ...values, ELEVENLABS_API_KEY: '',
+  }, generatedSpeech: true });
+  assert.equal(emilOnly.configuration.elevenlabsKey, '');
+  assert.equal(emilOnly.report.generatedSpeech.elevenlabsCredentialPresent, false);
+  assert.ok(!JSON.parse(childSpecifications(emilOnly.configuration, tmpdir()).product.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS).includes('https://api.elevenlabs.io'));
+});
+
+test('ElevenLabs child guard permits only its exact API origin after explicit speech opt-in', () => {
+  const module = new URL('./local-connection.mjs', import.meta.url).href;
+  for (const generatedSpeech of [false, true]) {
+    const { configuration } = loadPrivateConnection({ envFiles: [], env: {
+      CARTESIA_API_KEY: 'fixture-cartesia', RUNPOD_API_KEY: 'fixture-runpod',
+      CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint', ELEVENLABS_API_KEY: 'fixture-elevenlabs',
+    }, generatedSpeech });
+    const specs = childSpecifications(configuration, join(tmpdir(), 'croupier-fixture-elevenlabs-guard'));
+    for (const spec of [specs.product, specs.lab]) {
+      const program = `
+        import assert from 'node:assert/strict';
+        import { readFileSync } from 'node:fs';
+        import { installConnectionProcessGuard } from ${JSON.stringify(module)};
+        let calls = 0;
+        globalThis.fetch = async () => { calls++; return new Response('{}'); };
+        installConnectionProcessGuard();
+        const request = () => fetch('https://api.elevenlabs.io/v1/text-to-speech/fixture');
+        if (${generatedSpeech}) await request();
+        else await assert.rejects(request(), error => error.code === 'OPENCLAW_CONNECTION_NETWORK_BLOCKED');
+        for (const url of ['http://api.elevenlabs.io/', 'https://api.elevenlabs.io:444/', 'https://elevenlabs.io/', 'https://api.elevenlabs.io.evil.invalid/', 'https://other.api.elevenlabs.io/']) {
+          await assert.rejects(fetch(url), error => error.code === 'OPENCLAW_CONNECTION_NETWORK_BLOCKED');
+        }
+        assert.equal(calls, ${generatedSpeech ? 1 : 0});
+        assert.throws(() => readFileSync('.env.emil'), error => error.code === 'ENOENT');
+      `;
+      const result = spawnSync(process.execPath, ['--input-type=module', '-e', program], {
+        windowsHide: true, encoding: 'utf8', timeout: 15000,
+        env: { CROUPIER_CONNECTION_ALLOWED_ORIGINS: spec.env.CROUPIER_CONNECTION_ALLOWED_ORIGINS,
+          CROUPIER_CONNECTION_LOCAL_PORTS: spec.env.CROUPIER_CONNECTION_LOCAL_PORTS },
+      });
+      assert.equal(result.status, 0, result.stderr);
+    }
+  }
 });
 
 test('generated speech never substitutes the legacy endpoint and refuses incomplete opt-in settings', async t => {

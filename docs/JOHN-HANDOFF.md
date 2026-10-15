@@ -394,6 +394,24 @@ inväntar tillstånd för den privata runtimekoden. Inga sandboxuppladdningar
 gjordes efter säkerhetsgranskningens avslag och sandlådan är stoppad.
 Rörligt tal och mänsklig medieacceptans är egna kvarvarande gränser.
 
+## Lokala providerprofiler och läsande molnkontroll, 15 oktober 2026
+
+Lokala startarens ElevenLabs-gap är rättat: nyckel och exakt API-origin följer
+endast befintlig generatedSpeech-opt-in. Två regressioner var röda före
+rättningen; 37 fokuserade prov passerar med OFF-/EMIL-/databasisolering.
+Rot/Lab/Emil/cloud-storage har märkts tydligt; alla gamla giltiga värden
+bevaras, och Lab får root/Render-profilens saknade ElevenLabs-nyckel.
+Sju inaktiva env-exporter är återställbart arkiverade med hash-/ACL-kontroll.
+Ingen molnkonfiguration, providerinställning eller Emil-pod ändrades.
+
+Vercel-team/projekt, Render och Neon är läsverifierade. Vercels projekt-
+revision matchar Neon; session/projekt/video-GET och privat MP4-HEAD ger 200.
+Actions på c024cca7 använder croupier_game och har inga väntande migrationer.
+Preview pekar fortsatt på produktion och kräver separat samordnad isolering.
+Kevin-paketets 274 lokala filhashar är verifierade; 58 finns exakt i Blob och
+Neons bibliotek (Paow11/Dragge47). Ingen massimport eller mediaacceptans.
+Detaljer, återställningsvägar och nyckelfri inventering: ENVIRONMENT-VARIABLES.md.
+
 ## Driftprofiler och providerkontroll, 14 oktober 2026 kväll
 
 Samordnat med SAMORDNING efter PR #145. Root-profilens RunPod-nyckel är

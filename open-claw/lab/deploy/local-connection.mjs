@@ -30,7 +30,7 @@ const PRIVATE_KEYS = new Set([
   'OPENCLAW_TIMEOUT_MS', 'OPENCLAW_SPEECH_TIMEOUT_MS', 'OPENCLAW_MODEL_API_KEY', 'OPENCLAW_MODEL_BASE_URL',
   'LAB_VIDEO_ARCHIVE',
 ]);
-const GENERATED_SPEECH_KEYS = ['CARTESIA_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
+const GENERATED_SPEECH_KEYS = ['CARTESIA_API_KEY', 'ELEVENLABS_API_KEY', 'RUNPOD_API_KEY', 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID'];
 const GENERATED_SPEECH_ORIGINS = ['https://api.cartesia.ai', 'https://api.runpod.ai'];
 const CLOUD_STORAGE_KEYS = ['CROUPIER_MEDIA_STORAGE', 'BLOB_READ_WRITE_TOKEN', 'CROUPIER_ZONES_DATABASE_URL'];
 const TRANSLATION_ORIGIN = 'https://api.openai.com';
@@ -180,6 +180,7 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
     throw new Error('CROUPIER_ASTRID_TRANSLATION_KEY must be a single provider credential.');
   }
   const cartesiaKey = generatedSpeech ? values.CARTESIA_API_KEY?.trim() || '' : '';
+  const elevenlabsKey = generatedSpeech ? values.ELEVENLABS_API_KEY?.trim() || '' : '';
   const runpodKey = generatedSpeech ? values.RUNPOD_API_KEY?.trim() || '' : '';
   // Do not fall back to the legacy RUNPOD_ENDPOINT_ID used by other experiments.
   const speechEndpointId = values.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID?.trim() || '';
@@ -217,6 +218,7 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
     speechToken: { value: speechToken, enumerable: false },
     remoteToken: { value: remoteToken, enumerable: false },
     cartesiaKey: { value: cartesiaKey, enumerable: false },
+    elevenlabsKey: { value: elevenlabsKey, enumerable: false },
     runpodKey: { value: runpodKey, enumerable: false },
     speechEndpointId: { value: speechEndpointId, enumerable: false },
     translationKey: { value: translationKey, enumerable: false },
@@ -235,7 +237,8 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
     },
     generatedSpeech: {
       enabled: Boolean(generatedSpeech), configured: Boolean(generatedSpeech && cartesiaKey && runpodKey && speechEndpointId),
-      cartesiaCredentialPresent: Boolean(cartesiaKey), runpodCredentialPresent: Boolean(runpodKey), scopedEndpointPresent: Boolean(speechEndpointId),
+      cartesiaCredentialPresent: Boolean(cartesiaKey), elevenlabsCredentialPresent: Boolean(elevenlabsKey),
+      runpodCredentialPresent: Boolean(runpodKey), scopedEndpointPresent: Boolean(speechEndpointId),
       previewOnly: Boolean(generatedSpeech), visualApproval: 'not_verified', functionalProbe: 'not_run',
     },
     productGateway: {
@@ -377,12 +380,14 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
     OPENCLAW_DASHBOARD_ENABLED: 'false', OPENCLAW_DASHBOARD_ORIGIN: '', OPENCLAW_HOSTPORT: '',
   };
   const videoArchiveEnvironment = configuration.videoArchive === undefined ? {} : { LAB_VIDEO_ARCHIVE: configuration.videoArchive };
-  const speechOrigins = configuration.generatedSpeech ? GENERATED_SPEECH_ORIGINS : [];
+  const speechOrigins = configuration.generatedSpeech ? [...GENERATED_SPEECH_ORIGINS,
+    ...(configuration.elevenlabsKey ? ['https://api.elevenlabs.io'] : [])] : [];
   const translationKey = astridCamera ? configuration.translationKey || '' : '';
   const storageEnvironment = configuration.cloudStorage ? { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: configuration.blobToken } : {};
   const storageOrigins = configuration.cloudStorage ? configuration.storageOrigins : [];
   const generatedSpeechEnvironment = role => configuration.generatedSpeech ? {
     CARTESIA_API_KEY: configuration.cartesiaKey,
+    ELEVENLABS_API_KEY: configuration.elevenlabsKey || '',
     RUNPOD_API_KEY: configuration.runpodKey,
     CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: configuration.speechEndpointId,
     CROUPIER_GENERATED_SPEECH: '1',
@@ -577,7 +582,7 @@ async function main() {
   const fixture = await startIsolatedConnection(cli);
   console.log(`Isolated product: ${fixture.urls.product}`);
   console.log(`Isolated Next Eventstudio: ${fixture.urls.lab}`);
-  if (fixture.report.generatedSpeech.enabled) console.log('Generated speech: isolated ElevenLabs + RunPod preview enabled; visual lip-sync approval is pending. Generation may use provider credits.');
+  if (fixture.report.generatedSpeech.enabled) console.log(`Generated speech: isolated Cartesia${fixture.report.generatedSpeech.elevenlabsCredentialPresent ? ' / ElevenLabs' : ''} + RunPod preview enabled; visual lip-sync approval is pending. Generation may use provider credits.`);
   console.log(fixture.report.productSpeechRelay.configured
     ? `Product speech relay configured; role contract: ${fixture.report.productSpeechRelay.role.status}.`
     : fixture.report.productGateway.configured
