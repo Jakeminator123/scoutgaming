@@ -50,19 +50,11 @@ export function fanOffset(index, count) {
     y: -older * Math.min(26, 110 / steps) };
 }
 
-// Keyed ready dealers (John 11 Oct: "cards move without the hand moving them"): a card never moves once it is down.
-// Every card has its own place in the hand from the start; the incoming one leaves her fingers on its filmed track and
-// leans into its place as it travels (trackLean), so it lands there and nothing beside it shifts. Player hands climb
-// right and toward her (the first card's index stays readable); her own cards spread sideways from the hole card,
-// which keeps the filmed spot exactly (her fingers slide it there and turn it on film).
+// Keyed ready dealers lay their cards out with table-layout.js (Emil 16 Oct: diagonal A + split D, the table's width
+// shared by need): game-cards.js uses it for them instead of the fans below, which stay for Astrid's filmed table.
 export const FIXED_LAYOUT = isAlternative && !!dealer.ready;
-const PLAYER_STEP_X = [28, 24, 18, 14, 10, 8], PLAYER_STEP_Y = -14, DEALER_STEP_X = [40, 30, 24, 18, 14, 10];
-const steps = (list, n) => { let x = 0; for (let k = 0; k < n; k++) x += list[Math.min(k, list.length - 1)]; return x; };
-export const playerSlot = index => ({ x: steps(PLAYER_STEP_X, index), y: PLAYER_STEP_Y * index });
-export const dealerSlot = index => ({ x: index === 0 ? -DEALER_STEP_X[0] : steps(DEALER_STEP_X, index - 1), y: 0 });
 
 export function dealerFanOffset(index, count) {
-  if (FIXED_LAYOUT) return dealerSlot(index);
   const older = count - 1 - index;
   if (count === 2) return { x: -older * 66, y: 0 };
   const steps = Math.max(1, count - 1);
@@ -104,15 +96,7 @@ export function trackLean(track, time) {
   return i < 0 ? 0 : total < 1 ? 1 : sums[Math.min(i, sums.length - 1)] / total;
 }
 
-export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1, time = 0, contact = 0, splitCount = 1, seat, lean = 1, fixed = FIXED_LAYOUT }) {
-  if (fixed && splitCount === 1) {
-    const slot = seat === 'dealer' ? dealerSlot(index) : playerSlot(index);
-    let w = index !== incomingIndex ? 1 : Math.max(0, Math.min(1, lean));   // the incoming card leans in as it travels
-    // Emil 11 Oct (#7): her upcard stays where the film laid it until her face-down card slides in, then makes room in
-    // the same movement: it moves aside as far as the hole card has travelled, and is in its slot when that one rests.
-    if (seat === 'dealer' && index === 0) w = count < 2 ? 0 : incomingIndex === 1 ? Math.max(0, Math.min(1, lean)) : 1;
-    return { x: anchor.cx + slot.x * w, y: anchor.cy + slot.y * w };
-  }
+export function cardPose({ index, count, anchor, width = 63, incomingIndex = -1, time = 0, contact = 0, splitCount = 1, seat }) {
   const offset = (i,n) => seat === 'dealer' ? dealerFanOffset(i,n)
     : splitCount > 1 ? splitFanOffset(i,n,splitCount) : fanOffset(i,n,width);
   const to = offset(index, count);
