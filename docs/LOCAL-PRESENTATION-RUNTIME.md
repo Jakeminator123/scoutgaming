@@ -109,6 +109,10 @@ frånkoppling och timeout avbryter. `end` avslutar PCM-inmatning; avbrott
 skickar `avbryt` och kasserar ljud/plan. `onChunk` måste respektera sin
 AbortSignal och göra mottagarens egen samtidiga ägar-/revisionskontroll.
 Slutförd workertransport betyder inte att varje munruta visats i spelaren.
+Efter lyckad transfer äger anroparen fortsatt uppspelningsljudet och
+bildrutorna: vid uppspelningens slut/avbrott ska den anropa `input.cancel()`
+och tallagrets `close()`. Transportens `cancel` efter slutförd transfer
+upprepar inte jobbfinalisering och ersätter inte spelarens resursstädning.
 
 Versionsgrinden kräver en full SHA i image-taggen och ett högst 60 sekunder
 gammalt internt kvitto från RunPods endpoint- och workerlistor. Alla listade

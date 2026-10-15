@@ -9,10 +9,12 @@ explicit versionsgrind. Avbrott skickar `avbryt`; bounded köer/tider och
 callback för vår budgetjournal avgränsar försöket. Ingen produktionsroute,
 dealerchatt, env, mediefil, providerinställning eller GPU-körning aktiveras.
 
-Riktade tester: 29 pass, 1 opt-in browserprov ej kört i detta fokusurval.
-De två lokala socketförsöken för Paow/Dragan använder syntetisk worker och
-avkodning; de ersätter inte riktiga talprov. Fullt projektkvitto kompletteras
-vid leverans. Integrationskontrakt och kvarvarande arbete finns i
+Kodcommit `f260b29e`: full pre-commit ger 3 893 pass, 9 villkorade skip,
+0 fel/cancel i 77 grupper. Lab-build passerar med 97 kontrollerade byggspår.
+Alla 31 riktade plan-/PCM-/bildrute-/transportprov passerar, inklusive
+Chrome-provet med två syntetiska H.264-avkodningar. De två lokala
+socketförsöken för Paow/Dragan använder syntetisk worker och avkodning;
+de ersätter inte riktiga talprov. Integrationskontrakt och kvarvarande arbete finns i
 LOCAL-PRESENTATION-RUNTIME.md, under isolerad workertransport.
 
 Färsk läsning av RunPods metadata visar fem idle-workers, endpointversion
@@ -25,6 +27,11 @@ SAMORDNING har fått avgränsningen; Vercel/Blob/Neon och Admin-migrationen
 behåller sin befintliga auktoritet. Nästa steg är verifierad release/bank,
 gemensam upgrade-dispatcher, journal-/spelarsessionskoppling och faktisk
 spelplan/ljudklocka, följt av två riktiga talprov med planbyte/avbrott.
+
+GitGuardian vid leverans: inga öppna incidenter i den lästa repokällan,
+18 ignorerade. Övervakning aktiv; historisk scan `too_large` och delar av
+locations saknar läsbar metadata. Väntande GitHub-suite är inte fullständig
+säkerhetsacceptans. Inga incidentstatusar eller rättigheter har ändrats.
 
 ## N2-utkast och publicering, 15 oktober 2026
 
