@@ -1,4 +1,6 @@
 (() => {
+  // Game documents reserve their controls for play and the dealer chat.
+  if (document.body?.getAttribute('data-scout-assistant') === 'disabled') return;
   if (window.__scoutAssistant) return;
   window.__scoutAssistant = true;
   const source = new URL(document.currentScript.src);

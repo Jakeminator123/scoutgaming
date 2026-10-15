@@ -68,6 +68,16 @@ Alla 36 lokala v4-filmer matchar frysta paketets hash/storlek. Rörlig läppsynk
 har fortfarande en konkret transport-/spelarkopplingslucka; se
 [LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md).
 
+**Mobilkontroller, 15 oktober:** Dragan-provet ovan reproducerade att den
+globala assistentknappen skymde spelarens nedersta kontroller. Blackjack och
+roulette (även Studio-preview/äldre speladresser) undantar nu den flytande
+widgeten före API/DOM-init. Admin, Partner, Lobby och ingångssidan behåller
+assistenten; roller, dealerchatt, spelregler och mediebytes är oförändrade.
+Oberoende statisk granskning och 58 riktade prov utan skip är klara.
+Lab-build: 97 byggspår. Kodcommit `82986fdd` passerade fullhook med riktiga
+isolerade Chrome-prov: 3 854 pass/9 skip, 0 fel/cancel i 77 grupper.
+Levererat mobilprov återstår vid detta kodkvitto.
+
 **Historiskt leveranskvitto för PR152:** PR152 är mergad från head
 `0bea32e23626d64fb754b39ac7a55d44966ca816` till main `3da92370`.
 Samordnaren verifierar alla obligatoriska PR-kontroller, inklusive isolerad
