@@ -19,11 +19,19 @@ länken till rätt rumsöversikt. Inga produktionsdata ändrades. Dubbel
 hanteringslista är borttagen; inga filer/beroenden/media har raderats här.
 Exakta kvitton och bildreferenser finns i CLOUD-MIGRATION.
 
-Nästa del: Spelbolag → Rum. Först rättas ett verifierat 403-fel vid
-Partner-dokumentladdning (Vercel cors/document i SSR utan Origin/action).
-Detta är dokumenttransport; befintlig session och bolagsbehörighet ska
-fortfarande kontrolleras. Rumsval ska därefter återanvända befintlig
-roomOverrides-skrivare och fryst förhandsvisning, skilda från delad mall.
+Förutsättningen för nästa del är levererad i PR167: Partner-sidans verifierade
+403-fel är borta. Granskat head cc81a8a3 har grön PR-CI inklusive SQL/omstart/
+HTTPS och fullhook 3 914 pass / 9 skip / 0 fel. Main 2396f46f körs på
+www.scoutgaming.tech (Vercel dpl_8s8ayY5PFgDBG4kqa1y8viNGHkac, READY).
+Eget browserprov laddar exakt demorum, paketversion 1 och fryst förhandsvisning
+med befintlig N1-session. Inga produktionsdata ändrades. Main-CI 38752198462
+är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
+
+Nästa del är fortfarande det samlade Spelbolag → Rum-flödet i Admin.
+Det publicerade demopaketet tillåter för närvarande inte ändringar av
+bakgrund/bord/dealer. Visa sann status och använd roomOverrides endast
+för tillåtna rumsval. Återanvänd befintlig mallredigering separat med tydlig
+påverkan på andra rum när utbudet måste ändras. Ingen ny skrivkedja.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

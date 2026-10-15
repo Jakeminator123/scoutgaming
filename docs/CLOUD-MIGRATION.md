@@ -60,18 +60,33 @@ Bortstädat i denna del: den duplicerade hanteringslistan ersattes av samma
 kort som förhandsvisningen. Inga källfiler, beroenden, originalmedia eller
 arbetskopior raderades; nödvändigt bygge återanvänds i nästa leverans.
 
-Nästa avgränsade hinder: Partner-rummets dokumentladdning gav 403 med
-`studio_request_rejected` och digest 632708019 på tidigare main 96750fa0.
-Vercels logg visar SSR, cors/document, crossSite=true utan Origin/action.
-Känd dokumenttransport rättas före det samlade rumsflödet; befintliga
-sessions-, bolags-, API- och skrivskydd ska bestå. PR165 är fortfarande
-parkerad och ingen env-/providerändring krävs för denna rättning.
-Rättningen återanvänder dokumentregeln i middleware och SSR. 74 riktade
-prov passerar utan skip, inklusive aktuella N1-/N2-sessioner, revokering,
-bolagsisolering och nekade API-/Origin-/action-/ramanrop. Lab-build: 97
-byggspår. Kodhead a4565bda4155a1282d5ffa7fd6d223060784763e passerar
-ordinarie fullhook: 3 914 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
-Slutlig PR-CI och produktionsprov av Partner återstår.
+Förutsättning för del 2 levererad i PR167: det observerade 403-felet
+(studio_request_rejected, digest 632708019) vid Partner-dokumentladdning
+är rättat genom återanvändning av samma dokumentregel i middleware och SSR.
+Sluthead `cc81a8a31a5a8dd0c5e90d87618f9170dfb23053` är granskat och
+PR-CI 38751080340 är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
+74 riktade prov utan skip, Lab-build 97 byggspår, fullhook 3 914 pass /
+9 villkorade skip / 0 fel/cancel i 77 grupper; dokumentationshook 43/43.
+Sessioner, medlemskap, API, Origin, action, ramar och skrivbehörighet behåller
+sina befintliga kontroller. Ingen env-, provider- eller datamodell ändrades.
+
+PR167 mergades normalt till main
+`2396f46f3dad4c6490c95625b79f3d3ddef0096e`. Vercel
+`dpl_8s8ayY5PFgDBG4kqa1y8viNGHkac` är READY på detta SHA och bunden till
+www.scoutgaming.tech. Eget browserprov på den tidigare felande adressen
+/partner/scoutgaming-demo/rooms?room=room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea
+laddar med befintlig N1-session: korrekt bolag, exakt rum, publicerad
+paketversion 1, inget sparat utkast och den frysta trelagersförhandsvisningen.
+Bild: samma privata evidensmapp, partner-room-after.png. Inga sparningar,
+publiceringar, nya sessioner eller providerjobb utfördes. Main-CI 38752198462
+är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
+
+Del 2:s UX återstår. Paketet låser för närvarande bakgrund, bord och dealer
+(ingen av dessa justeringar är tillåten i demopaketet). Att bara montera
+Partner-editorn i Admin ger därför inte fria materialval. Visa rummets
+faktiska val/förhandsvisning, återanvänd roomOverrides för tillåtna val och
+ge en tydligt avskild befintlig mallredigering med konsekvensbesked för att
+ändra utbudet. Utvidga inte paketets behörigheter tyst. PR165 är parkerad.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 
