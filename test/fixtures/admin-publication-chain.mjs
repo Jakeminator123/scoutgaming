@@ -3,6 +3,7 @@ import {createStudioMemoryPool} from './studio-memory-pool.mjs';
 import {operatorMemoryPool, usersDb} from '../../lab/test/fixtures/operator-memory-pool.mjs';
 import {cloudPresentationFixture} from '../../lab/test/fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../lab/lib/studio-model.mjs';
+import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
 import {createOperatorStore} from '../../web/storage/operator-store.mjs';
 import {createOperatorPackageReader} from '../../web/storage/operator-package-reader.mjs';
@@ -93,7 +94,7 @@ async function publicResponse(handler, request) {
   return new Response(body, {status, headers});
 }
 
-export async function createPublicationChain(origin = fixtureOrigin) {
+export async function createPublicationChain(origin = fixtureOrigin, {roomAppearance = false} = {}) {
   const studio = createStudioMemoryPool(), operators = operatorMemoryPool();
   const repository = createStudioRepository({pool: publicationPool(studio, operators), scope});
   const store = await createOperatorStore({sql: operators, scope, now});
@@ -105,6 +106,12 @@ export async function createPublicationChain(origin = fixtureOrigin) {
   for (const [operatorId, userId] of [[company.id, '42'], [otherCompany.id, '43']])
     await store.upsertMembership({actor: 'fixture-seed', operatorId, userId, roleId: 'partner-admin', status: 'active'});
   const lane = {...defaultPresentationLane('astrid'), id: compositionId, label: 'C6 sparad sammansättning'};
+  // Keep the existing full-frame fixture, and opt into the real independent
+  // layer contract where N2 is allowed to choose a room's table colour.
+  if (roomAppearance) {
+    lane.composition = defaultCompositionSettings();
+    lane.layers.table.colors = ['#112233', '#445566'];
+  }
   const cloud = cloudPresentationFixture({lanes: [lane]});
   const saved = await repository.initializeDocument('project', {value: cloud.project, actor: 'fixture-seed'});
   await repository.initializeDocument('administration', {actor: 'fixture-seed', value: {
@@ -138,7 +145,7 @@ export async function createPublicationChain(origin = fixtureOrigin) {
     packages: createOperatorPackageReader({sql: operators, scope, ttlMs: 0, now, log: () => {}}), log: () => {}});
   const publicRooms = createPublicOperatorRooms({store, policy});
   const directory = createPublicOperatorDirectory({store, readRooms: publicRooms.read, ttlMs: 0, now});
-  const publications = [];
+  const publications = [], brandingCommands = [];
   async function handle(request) {
     const url = new URL(request.url);
     if (url.origin !== origin) throw Error('C6 request outside fixture origin');
@@ -149,7 +156,13 @@ export async function createPublicationChain(origin = fixtureOrigin) {
         site: request.headers.get('sec-fetch-site'), result: await response.clone().json()});
       return response;
     }
-    if (['/studio/api/partner/snapshot', '/studio/api/partner/branding'].includes(url.pathname)) return handlePartnerAuth(request, config);
+    if (['/studio/api/partner/snapshot', '/studio/api/partner/branding'].includes(url.pathname)) {
+      const body = request.method === 'POST' ? await request.clone().json() : null;
+      const response = await handlePartnerAuth(request, config);
+      if (body) brandingCommands.push({body, status: response.status, origin: request.headers.get('origin'),
+        site: request.headers.get('sec-fetch-site')});
+      return response;
+    }
     if (url.pathname === '/api/operators') return publicResponse(directory.handle, request);
     if (/^\/api\/operators\/[^/]+\/rooms$/.test(url.pathname)) return publicResponse(publicRooms.handle, request);
     if (url.pathname === '/play/blackjack') {
@@ -180,7 +193,7 @@ export async function createPublicationChain(origin = fixtureOrigin) {
       ...(body ? {origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json'} : {})},
     ...(body ? {body: JSON.stringify(body)} : {})}));
   }
-  return {origin, repository, store, studio, operators, auth, config, handle, request, select, publicRooms, publications, partnerPageProps,
+  return {origin, repository, store, studio, operators, auth, config, handle, request, select, publicRooms, publications, brandingCommands, partnerPageProps,
     props: {operator: company, presentation: {id: compositionId, label: lane.label},
       projectRevision: saved.revision, projectSaved: true, storeAvailable: true}};
 }
