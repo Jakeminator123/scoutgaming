@@ -229,6 +229,41 @@ test('known staff document navigation remains readable when transport omits mode
     assert.equal(studioDocumentNavigationHeaders(new Request(publicOrigin+path,{method:'POST',headers:navigation,body:'mutation'})).get('sec-fetch-site'),'cross-site');
 });
 
+test('proxy cors document handling keeps API, Origin, action, method and frame boundaries',()=>{
+  const document={'sec-fetch-site':'cross-site','sec-fetch-mode':'cors','sec-fetch-dest':'document'};
+  const rejected=[
+    ...['/api/admin/overview','/studio/api/auth/session','/control/api/replies','/control/replies/extra',
+      '/admin/_data/catalog','/studio/admin/_data/catalog','/admin/_assets/admin/app.js',
+      '/admin/unknown','/studio/_next/static/test.js','/unknown'].map(path=>({path})),
+    ...['POST','HEAD'].map(method=>({method})),{method:'POST',body:'mutation'},
+    ...[publicOrigin,'https://evil.invalid','null'].map(origin=>({headers:{origin}})),
+    ...['iframe','empty','image',null].map(value=>({headers:{'sec-fetch-dest':value}})),
+    ...['same-origin','no-cors',null].map(value=>({headers:{'sec-fetch-mode':value}})),
+    ...['fixture',''].map(value=>({headers:{'next-action':value}})),
+  ];
+  for(const change of rejected){
+    const headers=new Headers(document);
+    for(const [key,value] of Object.entries(change.headers??{})){if(value===null)headers.delete(key);else headers.set(key,value);}
+    const request=new Request(publicOrigin+(change.path??'/admin/dealers'),{method:change.method??'GET',headers,...(change.body?{body:change.body}:{})});
+    const protectedHeaders=studioDocumentNavigationHeaders(request);
+    assert.equal(protectedHeaders.get('sec-fetch-site'),'cross-site',JSON.stringify(change));
+    assert.equal(protectedHeaders.get('origin'),headers.get('origin'));
+    assert.throws(()=>normalizeNativeStudioPageRequest(new Request(request,{headers:protectedHeaders}),config),error=>error.statusCode===403);
+  }
+});
+
+test('known staff documents accept only the observed cors document transport without Origin',()=>{
+  for(const path of ['/control/replies','/studio/control/replies','/admin','/admin/dealers','/studio/admin/dealers']){
+    const request=new Request(publicOrigin+path,{headers:{cookie:forwarded.cookie,
+      'sec-fetch-site':'cross-site','sec-fetch-mode':'cors','sec-fetch-dest':'document'}});
+    const headers=studioDocumentNavigationHeaders(request);
+    assert.equal(headers.has('sec-fetch-site'),false,path);
+    assert.equal(headers.get('cookie'),forwarded.cookie);
+    assert.equal(headers.has('origin'),false);
+    assert.doesNotThrow(()=>normalizeNativeStudioPageRequest(new Request(request,{headers}),config));
+  }
+});
+
 test('transport diagnostics keep only fixed enums and booleans while rejected reads stay rejected',()=>{
   const privateValue='never-log-fixture-private';
   const request=new Request(publicOrigin+'/control/replies?dealer='+privateValue,{headers:{...forwarded,origin:privateValue,cookie:privateValue,'sec-fetch-mode':privateValue,'sec-fetch-dest':privateValue,'sec-fetch-site':'cross-site','next-action':privateValue}});

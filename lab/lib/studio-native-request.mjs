@@ -28,10 +28,13 @@ export function studioDocumentNavigationHeaders(request) {
   const publicPath = pathname.startsWith('/studio/') ? pathname.slice('/studio'.length) : pathname;
   const adminDocument = publicPath === '/admin' || publicPath === '/admin/lobby'
     || publicPath.startsWith('/admin/') && designPreviewPages.has(publicPath.slice('/admin/'.length));
-  // Classify the document before a proxy's fetch hop can replace navigate with
-  // cors. Only existing document paths qualify; APIs and assets never do.
+  // Vercel's fetch hop can replace navigate with cors before middleware too.
+  // Accept that observed shape only without Origin and on known documents;
+  // explicit Origin, API/action/body requests and frames keep their guards.
+  const mode = headers.get('sec-fetch-mode');
+  const documentMode = mode === 'navigate' || mode === 'cors' && !headers.has('origin');
   if ((surface?.surface === 'control' || adminDocument) && request.method === 'GET' && request.body === null
-    && headers.get('sec-fetch-mode') === 'navigate' && headers.get('sec-fetch-dest') === 'document'
+    && documentMode && headers.get('sec-fetch-dest') === 'document'
     && !headers.has('next-action')) headers.delete('sec-fetch-site');
   return headers;
 }
