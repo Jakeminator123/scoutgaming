@@ -1,8 +1,40 @@
 # Miljövariabler per tjänst
 
-## Aktuella driftprofiler, 14 oktober 2026 kväll
+## Aktuell env-kontroll, 15 oktober 2026
 
-Denna avstämning ersätter dagens tidigare generella kopiering av Emil-värden.
+Samordnarens läsande kvitto: Render env-GET gav 200 för alla fyra tjänster.
+Produkten använder `croupier_game` med `sslmode=verify-full`; QA använder den
+separata databasen `croupier_studio_qa_abc92154cb15`, utan providernycklar
+eller aktiverad generering. Detta är konfigurations- och behörighetskontroll.
+
+Rotens `.env.local`, `lab/.env.local` och Render-produkten har samma Scoutgaming-RunPod-par,
+skilt från Emils. Cartesia-värdet är gemensamt. ElevenLabs finns med samma värde
+i root, Render-produkten och Emil men saknas i Lab. Root och Lab har 50 gemensamma giltiga
+värden som är lika; det betyder inte att filerna innehåller samma nycklar.
+
+| Lästa lokala profiler | RunPod GET | Cartesia GET | ElevenLabs GET | Gemini GET |
+| --- | --- | --- | --- | --- |
+| Root / Scoutgaming | 200 | 200 | 200 | Inte konfigurerad |
+| Lab | 200 | 200 | Inte konfigurerad | Inte konfigurerad |
+| Emil | 200 | 200 | 200 | 200 |
+
+Vercel är kopplat till rätt team/projekt `scoutgaming`. De borttagna
+providerkopiorna nedan är fortsatt borta; Cartesia finns kvar. Genererat tal
+är avstängt på Vercel och aktiverat på Render-produkten, som äger providerjobben;
+Vercels speech-tjänst är transport. Vercel Preview pekar på produktionsbackend
+och ska inte användas som isolerad skrivmiljö.
+
+Huvudagenten tog bort endast den ogiltiga raden 22 i `lab/.env.local`;
+parserjämförelsen bevarade alla 50 giltiga värden. Originalet finns privat med
+samma effektiva ACL i
+`arkiv/2026-10-15/samordning/env-media-verification/lab.env.local.before-malformed-line`.
+Inga ändringar i Emils miljö eller jobb-/talgenerering gjordes. GET 200 bevisar
+åtkomst, inte fungerande uppspelning eller godkänd läppsynk; dessa kräver sina
+separata spel- och medieprov. Äldre kvitton nedan gäller sina angivna datum.
+
+## Historiskt profilkvitto, 14 oktober 2026 kväll
+
+Denna avstämning ersatte dagens tidigare generella kopiering av Emil-värden.
 Samordnat med SAMORDNING efter PR #145. **En RunPod-nyckel och dess endpoint
 hör till samma profil.** Kopiera inte alla värden mellan tjänster eller från
 Vercel till lokala filer. En saknad hemlighet i ett Vercel-utdrag betyder inte
