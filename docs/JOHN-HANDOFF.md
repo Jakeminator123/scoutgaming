@@ -19,8 +19,11 @@ LOCAL-PRESENTATION-RUNTIME.md, under isolerad workertransport.
 
 Färsk läsning av RunPods metadata visar fem idle-workers, endpointversion
 13, image `6c80fe50806979d902a6457f43ec74ca8ee5d421`. Emils överlämning anger
-`fe1b55e971b1236fadd445ff6ce94970719b5d72`. Skillnaden är kvar; metadata är
-inte attestering av körande image/avatarbyte. Inga ändringar görs i hans
+`fe1b55e971b1236fadd445ff6ce94970719b5d72`. Read-only podlista bekräftar
+den nyare imagen för både `croupier-lipsync-pod1` och `croupier-lipsync-pod5`
+med `desiredStatus=RUNNING`. Skillnaden förklaras av serverless kontra
+dedikerade demopoddar; metadata är inte attestering av körande image/avatarbyte.
+Vår nya versionsgrind gäller serverless-admission. Inga ändringar görs i hans
 poddar. Äldre Kevin-bilaga används endast för protokoll-/ansvarsgränsen;
 dess nycklar, mediaråd och gamla driftuppgifter importeras inte.
 SAMORDNING har fått avgränsningen; Vercel/Blob/Neon och Admin-migrationen

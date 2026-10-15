@@ -75,7 +75,7 @@ H.264-exempel två gånger. Det kräver befintlig Playwright via
 och ffmpeg på PATH. Inga personfilmer, sparade inloggningar eller externa
 providers används. Detta är codec-/kompositionsbevis, inte läppsynksacceptans.
 
-### Isolerad workertransport och versionsgrind, 15 oktober 2026
+### Isolerad workertransport och serverless-versionsgrind, 15 oktober 2026
 
 `web/moving-speech-transport.mjs` kopplar vår hashbundna PCM-/bildruteplan
 till `services/astrid-gpu-worker/gateway/moving-transport.mjs`. En unik
@@ -125,9 +125,16 @@ Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image
 `ghcr.io/emacodehero/croupier-lipsync-worker:6c80fe50806979d902a6457f43ec74ca8ee5d421`,
 endpointversion 13 och `isStale=false`. Detta skiljer sig från Emils
-överlämnade `fe1b55e971b1236fadd445ff6ce94970719b5d72`. Byt inte imagen på
-hans endpoint för att få grinden grön. Bekräfta vilken release som ska provas
-och dess avatarproveniens, eller ordna en egen separat worker. Befintlig
+överlämnade `fe1b55e971b1236fadd445ff6ce94970719b5d72`. En separat läsning av
+RunPods podlista gav 200: både `croupier-lipsync-pod1` och
+`croupier-lipsync-pod5` har exakt denna nyare image i `imageName` och
+`desiredStatus=RUNNING`. Skillnaden gäller alltså serverless kontra de
+dedikerade demopoddarnas konfiguration; den motsäger inte Emils överlämning.
+Podmetadata är inte nytt prestanda-/runtime-/avatarbevis. Byt inte imagen på
+hans endpoint för att få grinden grön. Ordna vår egen isolerade körväg för
+avsedd release och verifiera avatarproveniensen. Den här versionsgrinden är
+byggd för serverless-kvitton; en framtida egen dedikerad pod behöver egen
+versions- och budgetadmission, inte ett fabricerat serverless-kvitto. Befintlig
 RunPod-nyckel fungerade för metadata; en ny Cartesia-nyckel löser inte denna
 versionsskillnad. Ingen pod, env, deployment eller GPU-körning ändrades.
 
