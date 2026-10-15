@@ -16,6 +16,8 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
   const cards=createGameCards($('#gameCards'),manifest);
   let state=null,offset=0,sending=false,polling=false,notice='',chip=5,entered=false,entryStep=1,autoEntered=false;
   let studioLanguage=new URLSearchParams(location.search).get('lang');
+  // Kevin 15 Oct: a language the player picked shows until the table has it, and is sent again when the page was busy
+  let pendingLanguage=null;
   let soundedSettlement=null, stateRenderKey='', clockKey='', clockProgress=-1, renderedBusy=false;
   let sideSoundPending=false;
   const trackWins=createWinTracker(win=>{showWinToast(win.title,win.profit,win.profit>=win.stake*10);sideSoundPending=true;});
@@ -67,6 +69,8 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     if(next.plan?.id!==previous?.plan?.id)warmPlan(next.plan);
     if(entered&&next.language!==previous?.language)ensureMedia();
     // A Table Studio link (/t/<slug>) sets the table's language once, the first time it is free to change.
+    if(entered&&studioLanguage&&next.language===studioLanguage)studioLanguage=null;   // the table already speaks it
+    if(pendingLanguage&&next.language===pendingLanguage)pendingLanguage=null;
     if(entered&&studioLanguage&&!sending&&next.phase==='bets'&&next.language!==studioLanguage&&(next.availableLanguages??[]).includes(studioLanguage)&&!next.bets.some(b=>Object.values(b).some(v=>v>0))){
       const language=studioLanguage;studioLanguage=null;setTimeout(()=>request('language',{language}));
     }
@@ -200,7 +204,7 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     const turn=!me?.leaving&&round?.phase==='decisions'&&ownerOfHand()===me?.id&&state.phase==='round';
     const betting=entered&&state.phase==='bets'&&!paused;
     const language=$('#dealerLanguage');
-    language.value=state.language??'en';
+    language.value=pendingLanguage??state.language??'en';
     // Emil 11 Oct: only the languages this dealer speaks are offered: his recorded lines (Dragge, Paow), Astrid's
     // recorded languages (no Swedish), English only for a dealer without a voice yet (Mårten).
     const spoken=dealer.lines===undefined?(state.availableLanguages??['en']).filter(l=>l!=='sv'):dealer.lines??['en'];
@@ -337,7 +341,16 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
   };
   $('#enter').addEventListener('click',()=>joinTable());
   $('#playerName').addEventListener('keydown',e=>{if(e.key==='Enter')$('#enter').click();});
-  $('#dealerLanguage').addEventListener('change',async e=>{unlock();if(await request('language',{language:e.target.value}))await ensureMedia();});
+  // The player's own choice wins over the Table Studio link's language, which was only a starting point: without this the
+  // link's one-time language came in right after the choice and took the table back to English (Kevin 15 Oct).
+  $('#dealerLanguage').addEventListener('change',e=>{unlock();studioLanguage=null;pendingLanguage=e.target.value;render();sendLanguage();});
+  async function sendLanguage(tries=0){
+    const language=pendingLanguage;if(!language)return;
+    if(sending){if(tries<40)setTimeout(()=>sendLanguage(tries+1),150);else{pendingLanguage=null;render();}return;}
+    const ok=await request('language',{language});
+    if(pendingLanguage===language){pendingLanguage=null;render();}   // confirmed (accept has the new state) or refused (notice says why)
+    if(ok)await ensureMedia();
+  }
   $('#entryBack').addEventListener('click',()=>{entryStep=1;render();});
   $('#changeName').addEventListener('click',()=>{entryStep=2;$('#playerName').value=savedNick();render();ensureMedia();$('#playerName').focus();});
   $('#changeSeats').addEventListener('click',()=>{entryStep=1;selected=new Set(own());$('#playerName').value=state.me?.name??'';$('#gate').classList.remove('off');render();});
