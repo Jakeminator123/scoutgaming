@@ -14,6 +14,81 @@ skip, 0 fel/cancel i 77 grupper. Levererad liveacceptans väntar. Inget spel ell
 ändras och C4:s fulla destinations-/rollmatris bockas inte av. Ignoretexterna
 är förtydligade för Cursor/Instant Grep; alla globregler och arkivförbud består.
 
+Efter normal integration av main `a0eca7a8` byggdes Lab om eftersom PR161
+ändrade dess serverkod: 97 byggspår passerar. Integrationsfullhook med Chrome:
+3 902 godkända, 9 villkorade skip, 0 fel/cancel i 77 grupper. De tidigare
+fokus-/fullhookkvittona ovan gäller före integrationen; liveacceptans väntar.
+
+## C4: direktöppning av Admin, 15 oktober 2026
+
+Samordnaren reproducerade Chromes dokumentnavigation-500 på `d6d56803` för
+`/admin` och `/admin/dealers`, medan session, katalog och vanlig fetch fungerade.
+Kända Admin-dokument normaliseras nu i middleware före transporten; samma
+befintliga origin-, sessions- och rollkontroller används. API, iframe,
+Next-actions och mutationer omfattas inte av dokumentundantaget.
+Två regressioner var röda före rättningen; slutligt fokusurval gav 59/59 utan skip.
+Före main-integrationen gav fullhook med Chrome 3 883 pass, 9 skip och 0 fel.
+Efter normal integration av `c024cca7` gav den 3 899 pass, 9 villkorade skip
+och 0 fel/cancel i 77 grupper. Lab-bygget återanvänds; dess källor är oförändrade.
+Första fullhook stoppade på en inaktuell middleware-förväntning; efter rättningen
+passerade slutkörningen. Skip gäller fem databasprov och fyra Linux-specifika prov.
+Det verkliga lokala HTTP-fetch-provet visar navigate → cors och går genom
+Admin-routen med syntetisk session och temporär HTML. Det bevisar inte Vercels
+interna transport eller driftsatt rättning. Oberoende kodgranskning fann inga
+blockerande fel. Lab-bygget passerar med 97 kontrollerade byggspår. Ett separat
+IAB-prov av samordnaren verifierar ny internal-admin-login och N1 → Partner →
+Lobby på samma main; det är inte N2/N3-rollbevis eller acceptans av rättningen.
+Produktionsverifiering av rättningen återstår; C4 hålls öppen.
+
+## Paow/Dragge: separat workertransport, 15 oktober 2026
+
+PR160:s två P2 från SAMORDNING är reproducerade och rättade: normal
+WebSocket-close 1000 dränerar redan mottagna svar i stället för att kasta
+kön; första prepare-admissionen omfattas av avbrott och tidsgränser innan
+någon callbackadress lämnas ut. Nekad/fastnad prepare rensar PCM och
+finaliserar den fångade reservationen en gång med `owner=null`; sent svar
+återstartar inget. Fyra regressioner var röda före rättningen; ett femte
+startfelprov täcker ogiltig release/origin utan reservation-/PCM-läcka.
+Kodcommit `34f5637e`: ny full pre-commit ger 3 898 pass, 9 villkorade skip,
+0 fel/cancel i 77 grupper. Alla 36 plan-/PCM-/bildrute-/transportprov passerar,
+inklusive 16 transportprov och Chrome-avkodningen. Lab-kod/beroenden är
+oförändrade; dess byggkvitto med 97 spår återanvänds. Tidigare kodkvitto
+nedan är historik. Inga env-/pod-/driftändringar ingår i rättningen.
+
+Ny opt-in adapter parar autentiserad workers `lapp`-metadata med H.264-byte
+för vår befintliga bildrutekonsument. Den använder vår PCM-/planidentitet,
+engångstoken, upprepade ägar-/profilkontroller, accepterat jobb-ID och
+explicit versionsgrind. Avbrott skickar `avbryt`; bounded köer/tider och
+callback för vår budgetjournal avgränsar försöket. Ingen produktionsroute,
+dealerchatt, env, mediefil, providerinställning eller GPU-körning aktiveras.
+
+Kodcommit `f260b29e`: full pre-commit ger 3 893 pass, 9 villkorade skip,
+0 fel/cancel i 77 grupper. Lab-build passerar med 97 kontrollerade byggspår.
+Alla 31 riktade plan-/PCM-/bildrute-/transportprov passerar, inklusive
+Chrome-provet med två syntetiska H.264-avkodningar. De två lokala
+socketförsöken för Paow/Dragan använder syntetisk worker och avkodning;
+de ersätter inte riktiga talprov. Integrationskontrakt och kvarvarande arbete finns i
+LOCAL-PRESENTATION-RUNTIME.md, under isolerad workertransport.
+
+Färsk läsning av RunPods metadata visar fem idle-workers, endpointversion
+13, image `6c80fe50806979d902a6457f43ec74ca8ee5d421`. Emils överlämning anger
+`fe1b55e971b1236fadd445ff6ce94970719b5d72`. Read-only podlista bekräftar
+den nyare imagen för både `croupier-lipsync-pod1` och `croupier-lipsync-pod5`
+med `desiredStatus=RUNNING`. Skillnaden förklaras av serverless kontra
+dedikerade demopoddar; metadata är inte attestering av körande image/avatarbyte.
+Vår nya versionsgrind gäller serverless-admission. Inga ändringar görs i hans
+poddar. Äldre Kevin-bilaga används endast för protokoll-/ansvarsgränsen;
+dess nycklar, mediaråd och gamla driftuppgifter importeras inte.
+SAMORDNING har fått avgränsningen; Vercel/Blob/Neon och Admin-migrationen
+behåller sin befintliga auktoritet. Nästa steg är verifierad release/bank,
+gemensam upgrade-dispatcher, journal-/spelarsessionskoppling och faktisk
+spelplan/ljudklocka, följt av två riktiga talprov med planbyte/avbrott.
+
+GitGuardian vid leverans: inga öppna incidenter i den lästa repokällan,
+18 ignorerade. Övervakning aktiv; historisk scan `too_large` och delar av
+locations saknar läsbar metadata. Väntande GitHub-suite är inte fullständig
+säkerhetsacceptans. Inga incidentstatusar eller rättigheter har ändrats.
+
 ## N2-utkast och publicering, 15 oktober 2026
 
 Utökat befintligt C5/C6-prov: verkliga UI-skrivningar, reload, granskat utkast,

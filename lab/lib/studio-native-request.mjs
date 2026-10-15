@@ -1,6 +1,7 @@
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
+import { designPreviewPages } from './design-preview-paths.mjs';
 
 // Only fixed enums and booleans are exposed in transport diagnostics. Never
 // return header values, URLs, queries, cookies, identities or credentials.
@@ -22,8 +23,14 @@ export function studioDocumentNavigationMetadata(request) {
 // API/action/body requests and Origin retain their original protections.
 export function studioDocumentNavigationHeaders(request) {
   const headers = new Headers(request.headers);
-  const surface = resolveWorkspaceSurfacePath(new URL(request.url).pathname);
-  if (surface?.surface === 'control' && request.method === 'GET' && request.body === null
+  const pathname = new URL(request.url).pathname;
+  const surface = resolveWorkspaceSurfacePath(pathname);
+  const publicPath = pathname.startsWith('/studio/') ? pathname.slice('/studio'.length) : pathname;
+  const adminDocument = publicPath === '/admin' || publicPath === '/admin/lobby'
+    || publicPath.startsWith('/admin/') && designPreviewPages.has(publicPath.slice('/admin/'.length));
+  // Classify the document before a proxy's fetch hop can replace navigate with
+  // cors. Only existing document paths qualify; APIs and assets never do.
+  if ((surface?.surface === 'control' || adminDocument) && request.method === 'GET' && request.body === null
     && headers.get('sec-fetch-mode') === 'navigate' && headers.get('sec-fetch-dest') === 'document'
     && !headers.has('next-action')) headers.delete('sec-fetch-site');
   return headers;
