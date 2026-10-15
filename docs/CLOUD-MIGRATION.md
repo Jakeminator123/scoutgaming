@@ -134,8 +134,12 @@ Granskning/publicering har en kontextbärande länk. Rum och bakgrund har
 separata begrepp; båda mall-/rumsreturerna går till Admin i samma flik med
 befintligt osparat-skydd. Ingen ny writer eller runtime-/providerändring.
 
-Lokalt: 54 fokuserade prov utan skip samt Lab-build, 97 byggspår, passerar.
-Obligatorisk fullhook, sluthead/CI och produktion/browseracceptans återstår.
+Kodhead `4b1adb5b`: 54 fokuserade klipp-/policyprov, 20 navigerings-/mallprov
+och Lab-build, 97 byggspår, passerar. Slutlig fullhook: 3 931 pass,
+9 villkorade skip, 0 fel/cancel i 77 grupper, inklusive riktig browser för
+loginretur och osparat/conflict/CAS. Två gamla etikett-/ny-flik-assertioner
+är uppdaterade till avsedd navigation utan försvagade behörighetsprov.
+Sluthead/CI och produktion/browseracceptans återstår.
 Före-bild och verifieringsloggar: samma privata evidensmapp, clips-before.png
 och clip-map-*. Inga nya filer, mediaimporter eller borttagna arbetskopior.
 
