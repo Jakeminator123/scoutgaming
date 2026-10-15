@@ -264,3 +264,27 @@
 @media(max-width:900px){.studio-sidebar{width:58px}.studio-wordmark{font-size:0;padding:22px 10px}.studio-wordmark:after{content:'s/g';font-size:16px;color:#d6ff3a}.studio-wordmark small,.studio-sidebar nav span,.studio-sidebar-foot span{display:none}.studio-system-menu[open]{position:absolute;z-index:20;background:#15171a;width:180px;box-shadow:0 5px 20px #0008}.studio-system-menu>a{margin-left:0}.studio-context-row{flex-wrap:wrap}.studio-field{flex:1 1 30%}.studio-canvas-toolbar h1 span{display:none}}
 @media(max-width:600px){.studio-sidebar{display:none}.studio-portal-bar{padding:0 12px}.studio-portal-bar>span{display:none}.studio-portal-bar nav{margin-left:auto}.studio-workspace-header{padding:12px}.studio-workspace-toolbar{align-items:flex-start}.studio-game-tabs button{padding:7px 10px}.studio-save-actions{gap:6px;flex-wrap:wrap;justify-content:flex-end}.studio-save-actions>span{flex-basis:100%;text-align:right}.studio-field{flex:1 1 40%}.studio-canvas-toolbar{padding:10px 12px;flex-wrap:wrap}.studio-canvas{min-height:500px}}
 @media(max-width:420px){.studio-field{flex-basis:100%}}
+
+/* One material card owns its preview and the existing guarded lifecycle action. */
+.studio-material-controls.material-library>section{padding:0;border:0;background:transparent}
+.studio-material-controls .material-card-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:18px}
+.studio-material-controls>section>.material-card-list>li{display:block;padding:0;border:0;min-width:0}
+.material-card{height:100%;display:flex;flex-direction:column;border:1px solid #363b42;border-radius:10px;overflow:hidden;background:#181a1d}
+.material-preview{position:relative;aspect-ratio:16/9;overflow:hidden;background:repeating-conic-gradient(#202327 0% 25%,#26292e 0% 50%) 50%/24px 24px}
+.material-preview>img,.material-preview>video{display:block;width:100%;height:100%;object-fit:contain}
+.material-preview .material-pending{opacity:0}
+.material-preview-status{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;color:#a3a8b0}
+.material-format{position:absolute;top:10px;left:10px;padding:3px 7px;border-radius:4px;background:#101214e6;color:#e6e8eb;font:11px var(--font-mono);pointer-events:none}
+.studio-material-controls button.material-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#101214e6;border-color:#6b737e;color:#fff;white-space:nowrap;min-height:44px}
+.material-card-body{display:flex;flex:1;flex-direction:column;padding:16px;gap:10px;min-width:0}
+.material-card h2{font-size:15px;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+.studio-material-controls .material-usage{margin:0;font-size:12px;color:#a3a8b0}
+.material-card details{margin-top:auto}
+.material-card summary{cursor:pointer;color:#a3a8b0}
+.material-card dl{margin-top:10px;font-size:11px;overflow-wrap:anywhere}
+.material-card dt{color:#a3a8b0;margin-top:8px}
+.material-card dd{color:#e6e8eb;margin:2px 0 0}
+.studio-material-controls button.material-trash{align-self:flex-start;margin-top:6px;color:#a3a8b0;border-color:transparent;padding-left:0;background:transparent}
+.studio-material-controls button.material-trash:hover:not(:disabled){color:#ff9a82}
+.material-library :is(button,summary):focus-visible{outline:2px solid #d6ff3a;outline-offset:3px}
+.material-library fieldset:focus{outline:2px solid #d6ff3a;outline-offset:4px}

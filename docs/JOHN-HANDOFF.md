@@ -1,5 +1,46 @@
 # Aktuell handoff — Scoutgaming
 
+## Aktiv leveransström — Admin-förenkling, 15 oktober 2026
+
+Den aktuella genomförandeplanen finns överst i
+[CLOUD-MIGRATION.md](CLOUD-MIGRATION.md). Jakob har gett genomförandemandat
+för små verifierade leveranser till befintlig Admin. En arbetskopia och en
+leveransström; inga nya underagenter eller testmiljöer.
+
+Första delen sammanför materialkort och befintlig säker papperskorg, rättar
+spelurvalets dubbla lista och visar förhandsvisning/format/fel på kortet.
+Lokalt: 31 riktade tester utan skip samt Lab-build med 97 byggspår passerar.
+Fullhook, slutgranskning, PR/CI och liveacceptans återstår. Ingenting i denna
+del är ännu mergat eller driftsatt.
+
+PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
+kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad
+återgång bereds separat med unika staged filer/stash/kvitton bevarade.
+Ny rörlig läppsynk förblir avstängd. Env-granskning ska mynna ut i en
+konsumentstyrd behåll/flytta/ta-bort-lista, inte fler profiler eller synkning
+av produktionshemligheter. De tidigare dokumentutkasten nedan är bevarade;
+deras formuleringar om väntande samordnarkvitton är daterad historik.
+
+## Förberedelse för slutöverlämning, 15 oktober 2026
+
+Förberedelsebas: main `96750fa0`, med PR162–164. PR164:s head
+`2a8295a4` har lokalt bygg-/fullhookkvitto nedan; samordnarens slutliga
+SSO-, main-, drift- och browserresultat väntar. Ingen ny acceptans påstås.
+
+KEVI:s env-städning bevarar effektiv konfiguration i åtta profiler efter att
+tre redundanta LAB_PARTNER-namn tagits bort per root-/Lab-fil; 16 riktade
+prov passerar enligt kodägarens kvitto. Aktuella antal är root 53, Lab 48 och
+115 samlade namn. Tidigare 118-namnskvitto är daterad historik; detaljer finns
+i ENVIRONMENT-VARIABLES.md. Emil-, cloud-storage- och molnkonfiguration består.
+
+Samordnaren bekräftar managed-arkivering av `partner-write-acceptance` och
+`public-lobby` efter hashbackup/junctionkontroll. `pr91-integration` och
+denna dokumentationskopia behålls. Ny bankkontroll identifierar inte den
+förväntade avatarbanken; den rörliga läppsynken är fortsatt avstängd och
+inte accepterad. De 18 CSS-varningarna och konkret fokusregelkonflikt kräver
+ett avgränsat visuellt tangentbordsprov. Versions-/bankreferenser och aktuella
+bevisgränser finns i CLOUD-MIGRATION.md; äldre kvitton ligger kvar nedan.
+
 ## Publik Lobby-ingång och profil, 15 oktober 2026
 
 Startsidan leder nu till `/lobby`; Lobby har en synlig Min profil-länk till
@@ -38,7 +79,8 @@ Main `1c9e1c6a` är integrerad med båda äldre handoff-avsnitten bevarade.
 Sammansatt Lab-build, inklusive uppdaterad Lobby, passerar med 97 byggspår.
 Kodcommit `6c6db03b` passerar ordinarie fullhook med Chrome: 3 906 pass,
 9 villkorade skip, 0 fel/cancel i 77 grupper.
-Ingen ny driftsättning eller produktionsacceptans är gjord. C4 är fortsatt öppen.
+PR164 är mergad som `96750fa0`. Samordnarens slutliga drift- och
+browseracceptans inväntas; C4 är fortsatt öppen.
 
 ## Historik — PR161: direktöppning av Admin, 15 oktober 2026
 
