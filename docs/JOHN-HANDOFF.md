@@ -106,8 +106,13 @@ konkret skäl för samtliga åtta kvarvarande arbetskopior; ingen massradering.
 QA-utbyggnaden är redan återställd av QA-agenten på Jakobs separata uppdrag.
 Den tidigare formuleringen om 24 staged filer/stash är ersatt av dess
 rollback-kvitto, med lokalt verifierad frånvaro. Preview är inte verifierat
-isolerad och saknar ingresshemlighet. Äldre Render-QA:s aktuella driftläge
-och färsk Render-env-kontroll återstår efter bekräftat connector-workspace.
+isolerad och saknar ingresshemlighet. Färsk läsning i bekräftat Jakob's
+workspace verifierar Render-namnen 53/37/16/10, inga miljögrupper och inga
+secret files. Äldre QA är live på `ee060804`, underhållsläge av, och
+svarar HTTP 200 på health. Separat databas men identisk Blob-skrivtoken
+med produktion betyder att medieisolering inte är godkänd.
+Förslag: underhållsläge endast för `srv-datj7l893c1s73ar3u50`, bevara
+data/disk. Inga Render-inställningar ändrades i den läsande kontrollen.
 Vercel-teamets färska projektlista innehåller endast `scoutgaming`.
 PR165 är parkerad med tre egna ändringar bevarade; ny rörlig läppsynk är av.
 
@@ -117,8 +122,14 @@ PR172 är levererad: granskat head `8b275f25`, main
 PR-CI 38785128105 och main-CI 38786479541 är gröna inklusive faktisk
 SQL/omstart/HTTPS. Lobby laddar båda spelen i eget browserprov.
 Huvudcheckouten och dess verkliga publika startgenväg är synkade/verifierade;
-egna ändringar/profiler består. Exakta kvitton och kvarvarande Render-/QA-
-kontroller finns i CLOUD-MIGRATION. Inga providerjobb eller produktionsskrivningar.
+egna ändringar/profiler består. PR173 publicerade kvittot till main
+`2f02c4cd`; PR-CI 38788413314/main-CI 38788741234 är gröna, inklusive
+main-körningens faktiska SQL/omstart/HTTPS. Vercel `dpl_8tBW2PdB9ah4sarNVt3oQjabrDwf`
+och Render `dep-db8i2irm8hqs738fins0` kör samma SHA; huvudcheckouten är synkad.
+Render-kontrollen är nu klar. Befintligt genererat tal/streaming är fortfarande
+konfigurerat på produkten; ny rörlig Kevin/Emil-läppsynk är inte därmed
+aktiverad eller accepterad. Exakta kvitton och återstående QA-beslut finns
+i CLOUD-MIGRATION/ENVIRONMENT-VARIABLES. Inga providerjobb eller produktionsskrivningar.
 
 De tidigare dokumentutkasten nedan är daterad historik; aktuella antal och
 återstående steg står ovan och i CLOUD-MIGRATION.
