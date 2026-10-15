@@ -11,6 +11,9 @@ import {createStudioAdminApi} from '../../lab/lib/studio-admin-api.mjs';
 import {createPresentationRoomApi} from '../../lab/lib/presentation-room-api.mjs';
 import {STANDARD_OPERATOR_ROLES} from '../../lab/lib/operator-admin-api.mjs';
 import {handlePartnerAuth, partnerSessionDigest} from '../../lab/lib/partner-session.mjs';
+import {partnerWorkspaceInitialData} from '../../lab/lib/partner-data.mjs';
+import {resolveWorkspaceSurfacePath} from '../../lab/lib/workspace-surfaces.mjs';
+import {partnerRoomRequest} from '../../lab/lib/partner-room-selection.mjs';
 import {createPublicOperatorRooms} from '../../web/public-operator-rooms.mjs';
 import {createPublicOperatorDirectory} from '../../web/public-operators.mjs';
 import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
@@ -113,9 +116,12 @@ export async function createPublicationChain(origin = fixtureOrigin) {
   for (const {revision, ...record} of cloud.mediaRows) await repository.registerMedia(record, {actor: 'fixture-seed'});
   const auth = identities();
   const config = {boDb: auth.boDb, scope, now, store,
-    allowedOrigins: [origin, 'https://studio-publication-chain.example.invalid'],
+    // Keep the native adapter's exact two-origin contract. The page loader
+    // normalizes loopback document URLs to HTTPS without opening a TLS listener.
+    allowedOrigins: [origin, origin.startsWith('http:') ? origin.replace(/^http:/, 'https:') : 'https://studio-publication-chain.example.invalid'],
     publicHosts: [new URL(origin).host, 'studio-publication-chain.example.invalid'], apiBase: '/studio/api/admin', authBase: '/studio/api/auth',
     readAdministration: async () => (await repository.readDocument('administration')).value,
+    readProject: async () => ({project: (await repository.readDocument('project')).value}),
     gameDb: {prepare: () => ({all: async () => [], get: async () => undefined})}};
   const rooms = createPresentationRoomApi({repository, scope, now,
     runtimeCapabilities: async () => presentationCapabilitiesForVersion(4),
@@ -143,7 +149,7 @@ export async function createPublicationChain(origin = fixtureOrigin) {
         site: request.headers.get('sec-fetch-site'), result: await response.clone().json()});
       return response;
     }
-    if (url.pathname === '/studio/api/partner/snapshot') return handlePartnerAuth(request, config);
+    if (['/studio/api/partner/snapshot', '/studio/api/partner/branding'].includes(url.pathname)) return handlePartnerAuth(request, config);
     if (url.pathname === '/api/operators') return publicResponse(directory.handle, request);
     if (/^\/api\/operators\/[^/]+\/rooms$/.test(url.pathname)) return publicResponse(publicRooms.handle, request);
     if (url.pathname === '/play/blackjack') {
@@ -154,12 +160,27 @@ export async function createPublicationChain(origin = fixtureOrigin) {
     }
     return new Response(null, {status: 404});
   }
+  // The fixture supplies only routing/HTML. Production page loading still checks
+  // the real cookie, current membership, role, operator and frozen package.
+  async function partnerPageProps(request) {
+    const url = new URL(request.url), route = resolveWorkspaceSurfacePath(url.pathname);
+    if (request.method !== 'GET' || url.origin !== origin || route?.surface !== 'partner' || !route.operatorSlug)
+      throw Object.assign(new Error('Fixture partner route not found'), {statusCode: 404});
+    // WorkspaceSurfacePage constructs the canonical document request without
+    // query selectors; those stay separate props and never become auth input.
+    const pageRequest = new Request(new URL(route.studioPath, origin), {headers: request.headers});
+    const data = await partnerWorkspaceInitialData(pageRequest, {operatorSlug: route.operatorSlug, store, config});
+    const selection = partnerRoomRequest(url.searchParams);
+    return {surface: 'partner', initialSnapshot: data.snapshot, user: data.session.user,
+      apiBase: data.apiBase, initialView: route.view,
+      initialRoomId: selection.roomId, initialRoomScope: selection.scope};
+  }
   function request(path, {cookie = auth.admin, body} = {}) {
     return handle(new Request(origin + path, {method: body ? 'POST' : 'GET', headers: {cookie,
       ...(body ? {origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json'} : {})},
     ...(body ? {body: JSON.stringify(body)} : {})}));
   }
-  return {origin, repository, store, studio, operators, auth, config, handle, request, select, publicRooms, publications,
+  return {origin, repository, store, studio, operators, auth, config, handle, request, select, publicRooms, publications, partnerPageProps,
     props: {operator: company, presentation: {id: compositionId, label: lane.label},
       projectRevision: saved.revision, projectSaved: true, storeAvailable: true}};
 }
