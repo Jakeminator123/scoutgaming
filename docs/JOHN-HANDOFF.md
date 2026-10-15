@@ -31,7 +31,7 @@ Del 2 är lokalt implementerad: Spelbolag & rum är huvudingång, med exakt
 rumsval, fryst trelagersförhandsvisning och befintliga roomOverrides-val i
 samma vy. Låsta material visar verkliga namn; separat mallänk bevarar
 bolag/rum/spel och mallens befintliga konsekvensbesked. Inga paketbehörigheter
-utvidgas. Osparade val/pågående operation skyddas vid navigering. 54 riktade
+utvidgas. Osparade val/pågående operation skyddas vid navigering. 55 riktade
 prov är gröna utan skip. Build/fullhook, sluthead, CI och produktionsacceptans
 återstår; kod är ännu inte levererad. Ingen ny skrivkedja eller datamodell.
 

@@ -95,7 +95,7 @@ bolags-/rums-/spelkontext. Där finns befintligt konsekvensbesked för andra
 rum. Paketets behörigheter har inte utvidgats. Bibliotek och papperskorg
 är sekundära; dubbel rumslista och generella statistikblock har tagits bort
 från huvudflödet. Inga media, arbetskopior eller beroenden har raderats.
-54 fokuserade tester passerar utan skip. Build/fullhook och leveransprov
+55 fokuserade tester passerar utan skip. Build/fullhook och leveransprov
 återstår; PR165, QA och ny rörlig läppsynk förblir parkerade.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026

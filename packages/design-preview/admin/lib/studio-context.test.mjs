@@ -47,10 +47,15 @@ test('missing composition has no automatic fallback dealer bank',()=>{
 });
 
 async function registeredStudioHtml(path,search='',overrides={},interactive=false){
-  let currentSearch=search,allowLeave=false,confirms=0;const listeners=new Map();
+  let currentSearch=search,allowLeave=false,confirms=0,notifications=0;const listeners=new Map();
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const lifecycle=await import('./studio-resource-lifecycle.mjs');
+  const historyModule=await import('../../../../lab/lib/studio-history.mjs');
+  const locationState={origin:'https://scout.invalid',get href(){return this.origin+path+currentSearch;},pathname:path,get search(){return currentSearch;},hash:''};
+  const historyState={state:null,replaceState(state,unused,href){this.state=state;if(href!==undefined)currentSearch=new URL(href,locationState.href).search;},pushState(state,unused,href){this.replaceState(state,unused,href);}};
+  const windowState={location:locationState,history:historyState,addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:name=>listeners.delete(name),dispatchEvent:event=>{listeners.get(event.type)?.(event);return !event.defaultPrevented;}};
+  historyModule.studioHistory(windowState).subscribe(()=>notifications++);
   const value={schemaVersion:1,source:'registered',readAt:'2026-10-13T00:00:00Z',administration:{...catalog.administration,
     operators:catalog.administration.operators.map(row=>({...row,name:row.id,slug:row.id,packageRevision:1})),
     dealers:catalog.administration.dealers.map(row=>({...row,name:row.id})),
@@ -60,12 +65,12 @@ async function registeredStudioHtml(path,search='',overrides={},interactive=fals
   const output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),module={exports:{}},slots=[],effects=[];let cursor=0;
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
     return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
-  runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:{search,origin:'https://scout.invalid'},confirm:()=>{confirms++;return allowLeave;},window:{addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:(name)=>listeners.delete(name)},document:{addEventListener:()=>{},removeEventListener:()=>{}},
+  runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:locationState,confirm:()=>{confirms++;return allowLeave;},window:windowState,document:{addEventListener:()=>{},removeEventListener:()=>{}},
     fetch:async()=>Response.json(value),require:name=>name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
-      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout})}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch),replaceContext:href=>{currentSearch=new URL(href,'https://scout.invalid').search;}}:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle:require(name)});
+      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout})}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch)}:name.endsWith('studio-history.mjs')?historyModule:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle:require(name)});
   const render=()=>{cursor=0;return module.exports.RegisteredStudio({path,title:'Register'})};
   render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
-  if(interactive)return {render:()=>{const tree=render();for(const effect of effects.splice(0))effect();return tree;},listeners,allowLeave:value=>{allowLeave=value;},get search(){return currentSearch;},get confirms(){return confirms;}};
+  if(interactive)return {render:()=>{const tree=render();for(const effect of effects.splice(0))effect();return tree;},listeners,allowLeave:value=>{allowLeave=value;},get search(){return currentSearch;},get confirms(){return confirms;},get notifications(){return notifications;}};
   return renderToStaticMarkup(render());
 }
 const hrefs=html=>[...html.matchAll(/href="([^"]+)"/g)].map(match=>match[1].replaceAll('&amp;','&'));
@@ -133,4 +138,15 @@ test('registered direct room links select the exact owner and never fall back fo
  assert.match(html,/data-room-editor="other"/);assert.match(html,/data-operator="b"/);
  const missing=await registeredStudioHtml('/admin/rooms','?view=registered&table=missing');
  assert.doesNotMatch(missing,/data-room-editor=/);assert.match(missing,/Det valda rummet finns inte/);
+});
+
+
+test('a clean room selection notifies real shared history subscribers and does not inherit the previous room',async()=>{
+ const h=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette&dealer=paow-v2',{},true);
+ const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
+ walk(h.render(),node=>node.props?.['aria-label']==='Välj rum')[0].props.onChange({target:{value:'bj'}});
+ assert.equal(h.notifications,1);assert.equal(h.confirms,0);
+ assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'a',table:'bj',composition:'one',game:'blackjack'});
+ walk(h.render(),node=>node.props?.['aria-label']==='Välj spelbolag')[0].props.onChange({target:{value:'b'}});
+ assert.equal(h.notifications,2);assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'b'});
 });

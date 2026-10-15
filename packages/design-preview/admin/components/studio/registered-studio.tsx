@@ -4,7 +4,8 @@ import { cn } from '@/lib/utils';
 import {RegisteredResourceLifecycle} from './registered-resource-lifecycle';
 import {operatorLifecycleGroups} from '../../lib/studio-resource-lifecycle.mjs';
 import {PartnerAppearanceLoader} from '../../../../../lab/components/partner-appearance-loader.mjs';
-import {replaceContext,useSearchParams} from '../../../runtime/navigation';
+import {useSearchParams} from '../../../runtime/navigation';
+import {studioHistory} from '../../../../../lab/lib/studio-history.mjs';
 import {navigationKeepsStudioTab} from '../../lib/connected-studio.mjs';
 
 type Operator = { id: string; slug: string; name: string; status: string; archivedAt:string|null;packageRevision: number | null };
@@ -44,12 +45,13 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
   const [showLifecycle,setShowLifecycle] = useState(false);
   function mayLeave() { return !roomBusy && !lifecycleBusy && (!roomDirty || confirm('Lämna rummets osparade val? Sparade utkast och publicerad version behålls.')); }
   function selectContext(next: Record<string,string>) {
-    if (!mayLeave()) return;
-    setRoomDirty(false); setShowLifecycle(false);
     const params = new URLSearchParams(search);
     for (const key of ['operator','game','table','composition','lane','dealer']) params.delete(key);
     for (const [key,value] of Object.entries(next)) if(value)params.set(key,value);
-    replaceContext(path + (params.size ? '?' + params : ''));
+    const href = path + (params.size ? '?' + params : '');
+    const history = studioHistory(window);
+    if (!history.canNavigate(href) || !history.push(href,true)) return;
+    setRoomDirty(false); setShowLifecycle(false);
   }
   useEffect(() => {
     if (typeof window === 'undefined') return;
