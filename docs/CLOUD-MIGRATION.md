@@ -95,8 +95,11 @@ bolags-/rums-/spelkontext. Där finns befintligt konsekvensbesked för andra
 rum. Paketets behörigheter har inte utvidgats. Bibliotek och papperskorg
 är sekundära; dubbel rumslista och generella statistikblock har tagits bort
 från huvudflödet. Inga media, arbetskopior eller beroenden har raderats.
-55 fokuserade tester passerar utan skip. Build/fullhook och leveransprov
-återstår; PR165, QA och ny rörlig läppsynk förblir parkerade.
+55 fokuserade tester passerar utan skip. Lab-build har 97 kontrollerade
+byggspår. Slutlig fullhook på kodhead 8a40965d: 3 924 pass, 9 villkorade skip,
+0 fel/cancel i 77 grupper. Granskningen rättade ett rent rumsbyte som tidigare
+inte meddelade vyernas historikprenumeranter; nytt prov använder den riktiga
+historikmodulen. GitHub-CI och produktionsacceptans återstår; PR165, QA och ny rörlig läppsynk förblir parkerade.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 

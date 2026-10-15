@@ -32,7 +32,9 @@ rumsval, fryst trelagersförhandsvisning och befintliga roomOverrides-val i
 samma vy. Låsta material visar verkliga namn; separat mallänk bevarar
 bolag/rum/spel och mallens befintliga konsekvensbesked. Inga paketbehörigheter
 utvidgas. Osparade val/pågående operation skyddas vid navigering. 55 riktade
-prov är gröna utan skip. Build/fullhook, sluthead, CI och produktionsacceptans
+prov är gröna utan skip. Lab-build 97 och slutlig fullhook på kodhead 8a40965d
+är gröna: 3 924 pass / 9 villkorade skip / 0 fel i 77 grupper. Rent rumsbyte
+provas mot riktig delad historik. Sluthead/CI och produktionsacceptans
 återstår; kod är ännu inte levererad. Ingen ny skrivkedja eller datamodell.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
