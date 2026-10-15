@@ -1,5 +1,14 @@
 # Aktuell handoff — Scoutgaming
 
+## N2-utkast och publicering, 15 oktober 2026
+
+Utökat befintligt C5/C6-prov: verkliga UI-skrivningar, reload, granskat utkast,
+exakt +1 publiceringsrevision och rätt rumsvärde via anonym Lobby/spelstart.
+Korsbolags-POST nekas med 403 och orörda data. Kodagentens riktiga Chrome-prov
+passerar 2/2 utan skip. Sessioner/minneslager är syntetiska; ingen ny login,
+produktionslagring, PostgreSQL-radlås, medie- eller spelacceptans tillskrivs detta.
+Fullt avgränsat kvitto och återstående C4–C7 finns i CLOUD-MIGRATION.md.
+
 ## Spelarretur till Lobby och direkta Admin-alias, 15 oktober 2026
 
 Spelarens återlänk går nu till `/lobby` med servervaliderat bolag och verkligt
@@ -13,7 +22,7 @@ Tre regressioner var röda före rättningen. Slutligt fokusurval passerar
 48 prov utan skip, inklusive Nexts verkliga redirectmatchning. Äldre
 returförväntningar är uppdaterade och saknad dealer skrivs inte ut som undefined.
 Oberoende granskning fann inga konkreta fel. Lab-build passerar med 97
-kontrollerade byggspår. Levererad browseracceptans återstår vid detta kodkvitto.
+kontrollerade byggspår. PR157 är mergad och verifierad på main `1f65b48f`: åtta direkta Admin-alias, rätt Dragan-retur och stängd provsession. PR-/main-CI, Vercel, Render och faktisk engine-version är verifierade; driftkvitto finns i CLOUD-MIGRATION.md. Egna junctions är borttagna, privat sessionsfil bevarad och apparkiveringen köad.
 
 ## PR91 integrerad mot aktuell main, 15 oktober 2026
 
@@ -41,8 +50,10 @@ eller full acceptans av publicerade rummets behörighetskontrakt tillskrivs prov
 Privata manifest och skärmbilder: `arkiv/2026-10-15/samordning/env-media-verification/`.
 PR91 är mergad från head `0ab5f7f7` till main `a76b31f2` den 15 oktober
 08:40 UTC. PR-CI `38706188331` och samtliga synliga kontroller passerade.
-Driftsättningens resultat verifieras separat; lokal main har synkats med
-225 befintliga filhashar bevarade.
+Main-CI `38707351874` passerade; Vercel READY och Render live verifierades
+separat. Faktisk health/version gav 200, ok och samma SHA 08:59 UTC. Lokal main
+synkades med 225 filhashar bevarade. Privata provfiler är hashbevarade;
+PR91-arbetskopians apparkivering är köad och har inte bekräftats.
 
 ## Fria mobilkontroller på spelborden, 15 oktober 2026
 

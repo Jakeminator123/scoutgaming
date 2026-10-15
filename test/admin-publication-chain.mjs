@@ -9,6 +9,7 @@ import {createPresentationRoomClient, createPresentationRoomController} from '..
 import {readPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../packages/design-preview/runtime/public-lobby-catalog.mjs';
 import {gameLaneFromDocument} from '../web/public/game-lanes.mjs';
+import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
 
 // One package crosses actual N1/N2/public/game selectors. Only storage, account
 // rows, provider metadata and runtime capabilities are synthetic. This does not
@@ -176,7 +177,7 @@ test('C6 existing publication controller and APIs carry one new frozen revision 
   await assertPublishedChain(f, receipt);
 });
 
-test('C6 actual N1 form, authorized N2 workspace and public lobby preserve one published revision',
+test('C5/C6 actual N1 form, N2 room draft and reviewed publication reach the public lobby and game entry',
   {skip: browserModule ? false : 'Set CROUPIER_BROWSER_FIXTURE_MODULE to run the isolated C6 browser chain', timeout: 60_000}, async t => {
     const {chromium} = await import(pathToFileURL(browserModule).href);
     const channel = process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL;
@@ -213,7 +214,7 @@ test('C6 actual N1 form, authorized N2 workspace and public lobby preserve one p
       }
     });
     await new Promise((resolve, reject) => {server.once('error', reject); server.listen(0, '127.0.0.1', resolve);});
-    origin = 'http://127.0.0.1:' + server.address().port; f = await createPublicationChain(origin);
+    origin = 'http://127.0.0.1:' + server.address().port; f = await createPublicationChain(origin, {roomAppearance: true});
     const context = await browser.newContext({viewport: {width: 1280, height: 900}, serviceWorkers: 'block'});
     context.setDefaultTimeout(10_000);
     await context.route('**/*', route => {
@@ -263,12 +264,12 @@ test('C6 actual N1 form, authorized N2 workspace and public lobby preserve one p
     assert.equal(branding.canConfigure, true); assert.deepEqual(branding.presentation, chain.partner.presentation);
     assert.ok(branding.rooms.some(room => room.id === receipt.room.id));
     await page.waitForURL(origin + rooms + roomQuery);
-    const assertRoom = async () => {
+    const assertRoom = async (packageRevision = receipt.packageRevision) => {
       const picker = workspace.getByRole('combobox', {name: 'Spelrum', exact: true});
       await picker.waitFor(); assert.equal(await picker.inputValue(), receipt.room.id);
       const publishedRoom = workspace.getByRole('region', {name: 'Publicerad sammansättning', exact: true});
       assert.equal(await publishedRoom.getByRole('heading', {level: 2}).textContent(), receipt.room.name);
-      assert.equal(await publishedRoom.locator('.kevin-package-revision').textContent(), 'Version ' + receipt.packageRevision);
+      assert.equal(await publishedRoom.locator('.kevin-package-revision').textContent(), 'Version ' + packageRevision);
       const play = publishedRoom.getByRole('link', {name: 'Provspela ' + receipt.room.name + ' ↗', exact: true});
       const url = new URL(await play.getAttribute('href'), origin);
       assert.equal(url.searchParams.get('operator'), company.slug); assert.equal(url.searchParams.get('table'), receipt.room.id);
@@ -303,6 +304,102 @@ test('C6 actual N1 form, authorized N2 workspace and public lobby preserve one p
     assert.equal(await workspace.getByRole('link', {name: 'Spelarlobby ↗', exact: true}).getAttribute('href'), '/lobby?operator=' + company.slug + '&room=' + receipt.room.id);
     assert.deepEqual(f.operators.tables.operator_packages, beforePartner, 'workspace visits never republish');
     assert.deepEqual(await f.repository.readDocument('administration'), beforeAdministration, 'workspace visits never change room ownership');
+    // Write through the real N2 workspace and HTTP handler. The selected room
+    // owns the override; the frozen composition and company defaults stay intact.
+    await useCookie(f.auth.north);
+    await page.goto(origin + rooms + roomQuery); await assertRoom();
+    const appearance = workspace.getByRole('region', {name: 'Utkast och publicering', exact: true});
+    const color = '#445566', endpoint = origin + '/studio/api/partner/branding?operator=' + company.slug;
+    const expectedBranding = {...branding.branding, roomOverrides: {[receipt.room.id]: {color}}};
+    const southBefore = await f.store.getCurrentPackage(otherCompany.id);
+    const oldEntry = decodeEntry(await (await f.request(chain.href, {cookie: ''})).text());
+    assert.notEqual(oldEntry.branding.color, color);
+    assert.equal(branding.draft, null);
+    assert.equal(branding.draftRevision, 0);
+    assert.ok(branding.presentation.lanes.find(lane => lane.id === compositionId).layers.table.colors.includes(color));
+    const publishButton = appearance.getByRole('button', {name: 'Publicera granskat utkast', exact: true});
+    assert.equal(await publishButton.isDisabled(), true);
+    await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).selectOption(color);
+    await appearance.getByText('Du har osparade ändringar.', {exact: true}).waitFor();
+    assert.equal(await publishButton.isDisabled(), true, 'unsaved changes cannot be published');
+    const command = async (name, action) => {
+      const pending = page.waitForResponse(response => response.url() === endpoint
+        && response.request().method() === 'POST' && response.request().postDataJSON().action === action);
+      await appearance.getByRole('button', {name, exact: true}).click();
+      const response = await pending; assert.equal(response.status(), 200, await response.text());
+      return response.json();
+    };
+    const draft = await command('Spara utkast', 'save-draft');
+    await appearance.getByText('Utkastet är sparat. Publicerad version är oförändrad.', {exact: true}).waitFor();
+    assert.equal(draft.packageRevision, receipt.packageRevision);
+    assert.equal(draft.draftRevision, 1);
+    assert.equal(draft.draft.basePackageRevision, receipt.packageRevision);
+    assert.deepEqual(draft.draft.branding, expectedBranding);
+    assert.deepEqual(draft.branding, branding.branding);
+    assert.deepEqual(f.operators.tables.operator_packages, beforePartner, 'saving a draft never publishes');
+    assert.deepEqual(decodeEntry(await (await f.request(chain.href, {cookie: ''})).text()), oldEntry,
+      'the public game entry keeps the published choices while a draft exists');
+    const reloaded = page.waitForResponse(response => response.url() === endpoint && response.request().method() === 'GET');
+    await page.reload(); await assertRoom();
+    assert.deepEqual((await (await reloaded).json()).draft, draft.draft);
+    assert.equal(await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).inputValue(), color);
+    assert.equal(await appearance.getByRole('button', {name: 'Spara utkast', exact: true}).isDisabled(), true,
+      'reloaded saved changes are clean');
+    assert.equal(await publishButton.isDisabled(), true, 'reload cannot manufacture a publication review');
+    const reviewed = await command('Granska publicering', 'review');
+    await appearance.getByText('Granskningen är klar. Kontrollera ändringar och berörda rum innan publicering.', {exact: true}).waitFor();
+    assert.equal(reviewed.packageRevision, receipt.packageRevision);
+    assert.equal(reviewed.draftRevision, draft.draftRevision);
+    assert.deepEqual(reviewed.branding, expectedBranding);
+    assert.deepEqual(reviewed.affectedRooms, [receipt.room.id]);
+    assert.deepEqual(reviewed.changes, [{roomId: receipt.room.id, key: 'color', before: null, after: color}]);
+    const reviewPanel = appearance.getByRole('region', {name: 'Granskning före publicering', exact: true});
+    assert.match(await reviewPanel.textContent(), new RegExp(receipt.room.name));
+    assert.match(await reviewPanel.textContent(), /#445566/);
+    assert.deepEqual(f.operators.tables.operator_packages, beforePartner, 'review never publishes');
+    const saved = await command('Publicera granskat utkast', 'publish');
+    const nextRevision = receipt.packageRevision + 1;
+    assert.equal(saved.packageRevision, nextRevision);
+    assert.equal(saved.draft, null); assert.equal(saved.draftRevision, draft.draftRevision + 1);
+    assert.deepEqual(saved.branding, expectedBranding);
+    await workspace.getByRole('region', {name: 'Publicerad sammansättning', exact: true})
+      .getByText('Version ' + nextRevision, {exact: true}).waitFor();
+    await assertRoom(nextRevision);
+    assert.equal(await publishButton.isDisabled(), true, 'successful publication cannot be repeated without a new draft');
+    const current = await f.store.getCurrentPackage(company.id);
+    assert.equal(current.revision, nextRevision);
+    assert.deepEqual(current.tables, chain.pack.tables);
+    assert.deepEqual(current.games, chain.pack.games);
+    assert.deepEqual(current.lanes, chain.pack.lanes);
+    assert.deepEqual(readPackagePresentation(current), readPackagePresentation(chain.pack), 'N2 never changes frozen N1 media or geometry');
+    assert.deepEqual(current.branding.roomOverrides, expectedBranding.roomOverrides);
+    const {roomOverrides, ...unchangedBranding} = current.branding;
+    assert.deepEqual(unchangedBranding, chain.pack.branding, 'room override does not change company defaults');
+    assert.deepEqual(await f.store.getCurrentPackage(otherCompany.id), southBefore);
+    assert.equal(f.operators.tables.operator_packages.length, beforePartner.length + 1, 'exactly one package version was added');
+    assert.deepEqual(await f.repository.readDocument('administration'), beforeAdministration, 'N2 never changes room ownership');
+    assert.deepEqual(f.brandingCommands.map(row => row.body.action), ['save-draft', 'review', 'publish']);
+    for (const row of f.brandingCommands) {
+      assert.equal(row.status, 200); assert.equal(row.origin, origin); assert.equal(row.site, 'same-origin');
+      assert.equal(row.body.expectedPackageRevision, receipt.packageRevision);
+    }
+    assert.equal(f.brandingCommands[2].body.reviewToken, reviewed.reviewToken);
+    // A valid South room draft sent with North's cookie must fail at the same
+    // real partner handler, without creating a draft or republishing South.
+    const southDraftBefore = await f.store.getBrandingDraft(otherCompany.id);
+    const foreignWrite = await f.request('/studio/api/partner/branding?operator=' + otherCompany.slug, {
+      cookie: f.auth.north, body: {action: 'save-draft', expectedPackageRevision: southBefore.revision,
+        expectedDraftRevision: southDraftBefore?.revision ?? 0,
+        branding: {roomOverrides: {[southBefore.tables[0]]: {color}}}},
+    });
+    assert.equal(foreignWrite.status, 403, 'North cannot save South room appearance');
+    assert.deepEqual(await f.store.getBrandingDraft(otherCompany.id), southDraftBefore);
+    assert.deepEqual(await f.store.getCurrentPackage(otherCompany.id), southBefore);
+
+    await page.reload(); await assertRoom(nextRevision);
+    assert.equal(await appearance.getByRole('combobox', {name: 'Bordsfärg', exact: true}).inputValue(), color);
+    assert.equal(await publishButton.isDisabled(), true);
+    assert.equal((await f.publicRooms.read(company.slug)).packageRevision, nextRevision);
     await context.clearCookies();
     await page.goto(origin + '/lobby');
     // Keyboard activation tests the real controls without claiming visual/pointer
@@ -321,8 +418,12 @@ test('C6 actual N1 form, authorized N2 workspace and public lobby preserve one p
     await play.press('Enter');
     const dataset = await page.locator('html').evaluate(element => ({...element.dataset}));
     const entry = gameLaneFromDocument(dataset);
-    assert.equal(entry.roomId, receipt.room.id); assert.equal(entry.packageRevision, receipt.packageRevision);
+    assert.equal(entry.roomId, receipt.room.id); assert.equal(entry.packageRevision, nextRevision);
     assert.equal(entry.operator, company.slug); assert.equal(entry.dealer, 'astrid');
+    assert.equal(entry.branding.color, color, 'validated game entry resolves the published room override');
+    const playerChoice = resolvePlayerSelection({choices: entry.choices, branding: entry.branding,
+      currentDealer: entry.dealer, composition: entry.composition});
+    assert.equal(playerChoice.tableColor, color, 'the actual player choice resolver consumes the published selection');
     const write = f.publications.find(row => row.status === 200);
     assert.equal(write.origin, origin); assert.equal(write.site, 'same-origin', 'real HTTP preserves Fetch Metadata/CSRF protection');
     assert.deepEqual(errors, []); assert.deepEqual(escaped, []);
