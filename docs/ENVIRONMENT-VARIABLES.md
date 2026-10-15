@@ -1,6 +1,76 @@
 # Miljövariabler per tjänst
 
-## Aktuell env-kontroll, 15 oktober 2026
+## Aktuell env- och mediekontroll, 15 oktober 2026 förmiddag UTC
+
+Ny kontroll mot Vercel team/projekt `scoutgaming`, Render `croupier-v2`
+och Neon-projekt `wandering-hill-60561912` (`croupier-production`), gren
+`main`: rätt teamägare och databasmål. En verklig läsande anslutning använder
+databas/roll `croupier_game`, TLS och verifierat servercertifikat. Vercels
+inloggade session-, projekt- och videoläsningar ger 200; projektrevisionen
+matchar exakt Neon och ett privat MP4-HEAD ger 200 med rätt byteantal.
+Vercel-production `dpl_HLMgpECGbqogXmPAzEMC5nkGqhQ5` är READY på `c024cca7`.
+Detta är läsacceptans, inte ett nytt tal-, spel- eller publiceringsprov.
+
+GitHub Actions körning `38721888413` på samma SHA redovisar
+`database=croupier_game`, `role=croupier_game`, inga väntande migrationer
+och `ready=true`. Repository-secret `CROUPIER_GAME_DATABASE_URL` används
+av migrationsberedskapen och uppdaterades senast 14 oktober 20:54:36 UTC.
+Den ska motsvara den verifierade Render-produktionsanslutningen, inte
+zondatabasen `neondb`, en QA-databas eller Emils konfiguration. GitHub kan
+inte lämna tillbaka secretvärdet; körkvittot bevisar databas/roll och schema,
+inte byteidentitet hos URL:en. Ingen secret ändrades i denna kontroll.
+
+| Aktiv lokal fil | Vad den används till | Senaste åtgärd |
+| --- | --- | --- |
+| `.env.local` | Scoutgaming-profil för uttryckligt valda hjälpverktyg; vanlig Lab-start läser den inte | Tydlig märkning; samtliga 56 befintliga värden bevarade |
+| `lab/.env.local` | Isolerad start via `node lab/start.mjs` | 50 värden bevarade; samma ElevenLabs-nyckel som root/Render tillagd, totalt 51 |
+| `.env.emil` | Explicit Emil-testprofil | Fem `EMIL_*`-värden bevarade; ingen automatisk runtimeinläsning |
+| `lab/.env.cloud-storage.local` | Blob och zoner endast vid `--cloud-storage` | Tre värden bevarade; märkt som verklig produktionslagring |
+| `lab/.env.example`, `open-claw/lab/.env.example` | Mallar | Inte aktiva privata profiler |
+
+Sju inaktiva exporter/backupfiler från
+`lab/data/platform-private/cloud-sync-audit/` har flyttats till
+`arkiv/2026-10-15/env-alignment/` med ursprunglig undersökväg, bevarade byte
+och effektiva filrättigheter. Ingen aktuell konsument hittades. De fyra
+aktiva filernas original finns i samma privata arkiv med sina ursprungliga
+sökvägar. Återställ aldrig gamla exporter över en aktiv miljö utan jämförelse.
+
+Scoutgamings RunPod-par matchar root/Lab/Render och skiljer sig från Emils.
+Cartesia- och ElevenLabs-värdena är däremot lika mellan profilerna; det är
+inte bevis för kontoägare. Prefix och kommentarer anger användningsprofil.
+Inga providerkonton, Emils poddar eller molninställningar har ändrats.
+
+Lokala startaren hade ett verifierat gap: den tömde ElevenLabs-nyckeln och
+blockerade dess API trots uttryckligt `generatedSpeech`-val. Rättningen
+släpper igenom nyckeln och exakt `https://api.elevenlabs.io` bara inom
+befintlig opt-in. OFF, databas-/processisolering och `EMIL_*`-gränsen består.
+Två regressioner var röda före rättningen; 37 fokuserade tester passerar.
+Det aktiverar inte rörlig läppsynk eller några GPU-jobb.
+
+Vercel har 66 env-poster; Sensitive-värden kan inte läsas tillbaka. Alla fyra
+Render-tjänsters env-GET ger 200, med 53/37/16/10 namn för produkt/QA/Director/
+Gateway. Avsedda Director-/Gateway-tokenpar matchar. Render-QA har egen
+databas och generering av; **Vercel Preview pekar fortfarande på produktion**
+och är ingen isolerad skrivmiljö. En separat QA-isolering samordnas med
+SAMORDNING. Marketplace-namnen `CROUPIER_NEON_*` ska inte automatiskt ersätta
+den explicita game-URL:en. Gamla Pythonverktyget `inspect_runpod.py` kan
+ärva andra processnycklar; använd det explicita profilverktyget nedan.
+
+Nyckelfri lista över 118 namn, lokala filer, Vercel-miljöer, Render-tjänster
+och kommentarer finns privat i
+`lab/data/platform-private/provider-env-alignment/README.md` och `inventory.json`.
+
+Kevin-paketet i den tidigare nedladdningsmappen har 274 hashverifierade filer
+från `f15b2af1` (258 videor, 16 stödfiler; 309 247 147 byte). Bland 1 710
+listade Blobobjekt matchar 58 filer exakt hash och storlek: Paow 11, Dragge
+47. Alla 58 finns också i Neons mediebibliotek. De övriga 216 filerna är
+inte därmed bevisat nödvändiga för publicerat spel; nyare urval och exakta
+referenser ska granskas före import. Ingen uppladdning eller mediaapproval
+gjordes. Kroppsklipp i `v2/` och `idle-v2/` är skilda från de exakt parade
+ljud-/videoreplikerna i `repliker/`; metadata, spår och `vila.png` är stöd,
+inte den privata worker-avatarbanken.
+
+## Tidigare env-kontroll, 15 oktober 2026 före kompletteringen ovan
 
 Samordnarens läsande kvitto: Render env-GET gav 200 för alla fyra tjänster.
 Produkten använder `croupier_game` med `sslmode=verify-full`; QA använder den
