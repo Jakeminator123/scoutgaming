@@ -84,6 +84,17 @@ Den befintliga publika genvägen `node lab/start.mjs --product` ändras
 från `/play` till `/lobby`. Den returnerar före lokal server- eller
 providerstart. Gamla spelstarter/API:er ändras inte.
 
+Verifiering av denna leverans: startgenvägens tre befintliga tester passerar.
+Ordinarie fullhook passerar med 3 921 pass, 23 villkorade skip och 0 fel/cancel
+i 77 grupper. De sju befintliga browserfilerna kördes därefter med installerad
+Playwright/Chrome: 44/44 pass, inklusive alla 14 tidigare överhoppade
+browserprov. Nio andra villkorade prov återstår för sina SQL/Linux-miljöer.
+Ingen ny installation eller bestående testmiljö skapades. Föregranskning:
+fem befintliga filer, bara en runtimeändring (publik start-URL), inga envvärden
+i Git. GitGuardian: 0 öppna/18 ignorerade, aktiv övervakning; historikskanning
+too_large och delvis platsmetadata kvarstår. Main-sviten var queued utan
+synliga check-runs; grön vanlig CI ersätter inte dessa bevisgränser.
+
 | Kvarvarande arbetskopia | Konkret skäl att behålla |
 | --- | --- |
 | Huvudcheckout/main | Vanlig lokal källa; två egna modifierade spårade filer, egna inställningar/skill och privata reviewmedier kvar. |
