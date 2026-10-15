@@ -70,17 +70,29 @@ inaktiverad Spara och rätt återställningsbesked. Inga produktionsskrivningar,
 spelrundor eller providerjobb. Nio befintliga filer, inga nya filer eller
 borttagna media/arbetskopior. Bilder/loggar och säkerhetstäckning: CLOUD.
 
-Nästa: del 4 Tal. Skilj inspelat, generering och realtid; verifiera verkliga
-filer, text, ljud och granskning utan providerstart. Samordna också roulettens
-äldre översiktsfras ”kulsläpp + hjulfilm” med den verifierade renderingen.
+Del 4 Tal är levererad i PR171: granskat sluthead
+`e028622deec393c5ee309b751b1e1319fe3922e6`, main
+`80b703eef25de70e9a8bf1114d6396b15b42eb58`. PR-CI 38776840880 och
+main-CI 38777872188 är gröna inklusive faktisk SQL/omstart/HTTPS.
+Vercel `dpl_A4tyw9A9vSfNTST9h2R5t1bSGw2B` är READY på samma SHA/www.
+34 fokuserade prov utan skip, Lab-build 97 och fullhook 3 935 pass /
+9 villkorade skip / 0 fel/cancel i 77 grupper.
 
-Tal-delen är nu implementerad lokalt med verkligt inspelningsregister,
-separata genereringsmallar och realtidsprofil. Filer har originaltext,
-språk, uppspelning med ljud och hashbunden granskningsstatus; tomt register
-visas som tomt. Roulettes talpanel förklarar kvarstående anslutning och
-översikten säger animerat hjul. 34 fokuserade prov utan skip och Lab-build
-97 passerar. Fullkontroll, slutgranskning och faktisk leverans återstår;
-inget providerjobb eller produktionsskrivprov har körts.
+Browserprovet visar fyra verkliga Dragan-filer med granskning kvar och
+separata 17 genereringsmallar. Originaltext och SV bevaras när mallarnas
+språk byts till EN; utkastet är rent och valet återställdes. Exakt fil-,
+ljud- och kalibreringsidentitet finns under Detaljer. Filen spelades till
+slut utan fel med ljud aktiverat; ett separat prov verifierar paus när
+panelen stängs. Ingen ljudkvalitets- eller läppsynkacceptans påstås.
+Anna/Roulette visar noll inspelningar, fyra neutrala mallar, inaktiv profil
+och ofärdig talanslutning. Översikten säger animerat hjul.
+
+Inga produktionsskrivningar, spelrundor eller providerjobb. Den missvisande
+mallpresentationen är ersatt; sju befintliga filer, inga nya/raderade
+källfiler, medier eller arbetskopior. Före/efter-bilder, fullständigt
+leveranskvitto och säkerhetstäckning finns i CLOUD-MIGRATION.
+Nästa: del 5, env-namnens konsumenter, loader/prioritet och build/runtime;
+verifiera lokal redundans innan borttagning. Inga produktionsvärdesändringar.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

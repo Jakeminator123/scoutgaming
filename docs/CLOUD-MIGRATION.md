@@ -14,7 +14,7 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 | 1 — levererad och browserverifierad | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
 | 2 — huvudflöde och mallretur levererade | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
 | 3 — klippkort och status levererade, browserverifierade | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
-| 4 | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
+| 4 — levererad och browserverifierad | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
 | 5 | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
 | 6 | QA-återgång och lokal konsolidering | QA:s unika kod/stash/kvitton är bevarade och osäker QA är stängd. Exakta molnresurskandidater kräver separat beslut; Preview återkopplas inte till produktion. Huvudcheckout/startprofil är verifierad, överförda egna kopior städas säkert och varje kvarvarande kopia har ett konkret syfte. |
 
@@ -181,21 +181,50 @@ inga nya källfiler, borttagna media, beroenden eller arbetskopior.
 GitGuardian på main: 0 öppna/18 ignorerade i läst källa, övervakning aktiv;
 historik too_large, partiell platsmetadata och queued GitHub-suite kvarstår.
 
-Nästa del är Tal: inspelade klipp, generering och realtid med verkliga filer,
-text/ljud/granskning och avstängd rörlig läppsynk. Roulettens äldre översikts-
-fras säger fortfarande ”kulsläpp + hjulfilm”; samordna den texten med Tal-
-förklaringen och den verifierade renderingen utan att ändra spelmotorn.
-Del 4 är implementerad lokalt: Inspelat tal visar verkliga registerfiler för
-vald dealer och spel, originaltext/språk, format, tillgänglighet och
-hashbundet granskningskvitto. Underkänd, väntande, saknad och ogiltig
-identitet hålls åtskilda; röstprofil/textmall räknas aldrig som färdig film.
-Ny generering visar textmallar separat från realtidens röst-/referensprofil.
-Befintliga spar-, budget- och providergrindar består; ny rörlig läppsynk
-aktiveras inte. Panelen kan läsas även för roulette och skiljer dess
-ofärdiga talanslutning från spelneutrala mallar. Roulettens översikt säger
-nu animerat hjul. Förhandsvisningens eget ljud är tillgängligt och pausas
-när panelen stängs. 34 fokuserade prov utan skip och Lab-build 97 passerar.
-Fullkontroll, sluthead, normal leverans och browseracceptans återstår.
+Del 4 Tal är levererad i PR171. Granskat sluthead
+`e028622deec393c5ee309b751b1e1319fe3922e6` mergades normalt till main
+`80b703eef25de70e9a8bf1114d6396b15b42eb58` den 15 oktober 17:30:10 UTC.
+PR-CI 38776840880 och main-CI 38777872188 är gröna, inklusive faktisk
+SQL-/omstarts-/HTTPS-acceptans. 34 fokuserade prov utan skip, Lab-build
+97 byggspår och fullhook 3 935 pass / 9 villkorade skip / 0 fel/cancel i
+77 grupper. Vercel `dpl_A4tyw9A9vSfNTST9h2R5t1bSGw2B` är READY på
+samma main-SHA och bunden till www.scoutgaming.tech.
+
+Inspelat tal visar verkliga registerfiler för vald dealer och spel, original-
+text/språk, format, tillgänglighet och hashbundet granskningskvitto.
+Underkänd, väntande, saknad och ogiltig identitet hålls åtskilda. Ny generering
+visar textmallar separat från realtidens röst-/referensprofil. Befintliga
+spar-, budget- och providergrindar består. Ny rörlig läppsynk är oansluten.
+
+Egen browseracceptans på huvudadressen:
+- Dragan/Blackjack: fyra registrerade talfiler, noll med verifierat godkännande;
+  den valda `goodluck_1` visar originaltexten ”Inga fler insatser. Här kommer
+  korten.”, SV, video/mp4 och Granskning återstår. Detaljer visar exakt fil-ID,
+  video-/ljudhash, tagning och `kevin-original-mux-unreviewed-v1`.
+- Den faktiska filmen spelades till slut, 3,041667 s, utan mediefel och med
+  muted=false. Ett separat stängningsprov pausade vid 0,295396 s efter
+  verifierat pågående spel. Det bevisar teknisk uppspelning och pausstyrning,
+  inte lyssnad ljudkvalitet eller godkänd läppsynk.
+- De 17 genereringsmallarna är tydligt skilda från inspelningarna. Byte till
+  EN ändrade malltexten men behöll inspelningens svenska text och rent utkast;
+  språkvalet återställdes till SV utan sparning. Realtidsprofilen är inaktiv.
+- Anna/Roulette: noll inspelade talfiler, fyra spelneutrala textmallar och
+  uttryckligt besked att händelsekoppling/dealerchatt återstår. Realtidsprofilen
+  är inaktiv. Översikten beskriver kulsläpp och animerat hjul.
+
+Inga produktionssparningar, publiceringar, spelrundor eller providerjobb
+utfördes. Befintliga rum/publicerade paket 4 och 1 samt blackjackutkast 2
+lämnades orörda. Bilder i den privata evidensmappen: speech-before.png,
+speech-after.png och speech-roulette-after.png. Main-säkerhetsläsningen
+visar 0 öppna / 18 ignorerade incidenter och aktiv övervakning; historik
+`too_large`, partiell platsmetadata och queued GitHub-suite är kvarstående
+separata täckningsgränser. PR-headets GitGuardian-kontroll är grön.
+
+Bortstädat: den missvisande presentationen ”Talbibliotek · inspelade repliker”
+och ”17 platser” är ersatt av verkligt filregister och separat mallbibliotek.
+Sju befintliga filer ändrades; inga nya källfiler, beroenden, medier eller
+arbetskopior skapades eller raderades. Nödvändigt bygge återanvänds.
+Nästa del är env-förenkling enligt planens konsument-/loaderkarta.
 
 PR165, QA, env-värden och rörlig läppsynk förblir parkerade/orörda i denna del.
 
