@@ -1,14 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
-## Rumskontext och fokus — lokal verifiering klar, 15 oktober 2026
+## Rumskontext och fokus — levererad navigation verifierad, 15 oktober 2026
 
-PR149/150/151 är levererade; `codex/admin-room-context` är framflyttad till
-main `3bad2fd4` med pågående kodändringar bevarade. PR151:s fullhook gav
-3 792 pass, 21 villkorade skip och 0 fel; alla obligatoriska CI-kontroller
-är gröna enligt samordnaren. Dokumentationsjobbet var avsiktligt SKIPPED. Sex lokala rotändringar är bytebevarade och arkivundantagen
-finns på main. Samordnarens avläsning 14 oktober 23:29 UTC verifierar
-`3bad2fd4`: Vercel `dpl_7ikpzdCj3f5dDWbEWiJmM2pni722` READY och Render
-`dep-db80v2ek1f9s73e1cjug` live; engine-tjänstens health/version gav 200. Egen
+PR152 är mergad från head `0bea32e23626d64fb754b39ac7a55d44966ca816`;
+huvudkopian synkades till `3da92370` med sex ursprungsfiler bytebevarade. Samordnaren
+verifierar obligatorisk PR-CI inklusive isolerad SQL/restart/HTTPS och lyckad
+main-CI `38657563321`; dokumentationsjobbet var scope-skipped. Rotens Lab-build
+gav exit 0/97 byggspår. Vercel `dpl_JDtveT5CwKFDUTLPnov2HTUZ6yUG` är
+production READY på samma main med www/apexalias. Render
+`dep-db81iilg1s2s73f4d3ng` är live på samma SHA; engine health/version
+svarade 200/ok och `3da92370` den 15 oktober 00:10 UTC. Egen
 `admin-continuity` är nu bekräftat app-arkiverad efter trädekvivalens och
 borttagning av tre egna dependency-junctions med målen bevarade. Tidigare kvitton nedan behåller sin egen version.
 
@@ -29,7 +30,8 @@ Lokala underagentkvitton för implementerad och granskad rumskontext
 - Lobby behåller operator/room i URL/historik; runtime-exporten
   `lobbyQuerySelection` är återställd. C6:s isolerade Chrome-prov passerade 1/1.
 - Dealerformulärets Avbryt återför fokus till Skapa dealer; enhetsprov 8/8.
-  Samordnarens tidigare liveprov tappade fokus till BODY; ny liveacceptans återstår.
+  Samordnaren har nu verifierat fokus på knappen Skapa dealer efter Avbryt
+  i tomt formulär på levererad `3da92370`; tidigare BODY-fel är därmed återprovat.
 
 Samordnarens slutliga Lab-build passerade med 97 kontrollerade byggspår;
 kodcommit `e92b82b94bb16865b801b90f32af6582fc6119ae` passerade fullhook med
@@ -37,9 +39,20 @@ riktig Chrome: 3 852 pass, 9 skip, 0 fail/cancel i 77 grupper. Fem databasprov
 saknade isolerad testdatabas; fyra Linux-prov är inte tillämpliga på Windows.
 Alla aktiverade browserprov kördes. Loginens fixtureberoende och historikens
 Chrome-val är rättade; saknade arbetskopieberoenden återanvänds först efter
-låsfilsjämförelse. CI, merge och sammanhängande liveprov återstår.
+låsfilsjämförelse. PR-/main-CI och merge är nu klara enligt kvittot ovan.
+
+Samordnarens läsande produktionsprov på Vercel `3da92370` med befintlig
+staffsession följer Swedish Games Dragan v4 från Admin till Partner och Lobby
+med samma faktiska rum. Admin korrigerar saknad/inaktuell sammansättning och
+Klippkartalänken får rätt kontext. Partnerns meny/reload/Bakåt/Framåt bevarar
+rum respektive explicit bolagsstandard. Lobby behåller bolag/rum i historiken,
+väljer ingen dealer automatiskt efter reload och ger rätt blackjacklänk när
+Dragan väljs; Spela klickades inte. Ogiltigt Admin-/Lobbyrum samt blandat
+partner-room/company-scope spärrar berörda portal-/spelstarter. Exakta länkar
+och negativa prov finns i CLOUD-MIGRATION. Inga produktionsskrivningar eller
+spelrundor gjordes; detta är tillskrivet provbevis, inte nya prov här.
 Ny produktionslogin, skrivacceptans, faktisk 200-procentszoom
-och ej godkänd Dragan-export är kvarstående gränser; ingen hel C4/C7 bockas av.
+och godkännande för PR91:s export av privat spelarkod är kvarstående gränser; ingen hel C4/C7 bockas av.
 Aktuell uppföljning finns i [CLOUD-MIGRATION](CLOUD-MIGRATION.md); ingen ny tracker.
 
 ## Aktiv partnerportal utan klientdemo, 15 oktober 2026
