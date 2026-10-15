@@ -63,7 +63,8 @@ när lokala ändringar återställts och renderat hjulutfall utan saknad-filmsta
 32 fokuserade prov passerar utan skip, Lab-bygget är grönt med 97 byggspår.
 Full kontroll, slutgranskning, normal leverans och browseracceptans återstår
 före del 4 Tal. Runtime och media är oförändrade; övriga planerade roulettefack
-är fortsatt tydligt planerade.
+är fortsatt tydligt planerade. Även mallpanelens motsägande filmbankskrav
+är rättat efter browserobservation.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

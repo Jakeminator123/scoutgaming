@@ -162,7 +162,8 @@ situationsförklaringar visas på korten; befintlig teknisk källa och exakt
 filidentitet finns under Detaljer. Ett återställt projekt ger nu ett korrekt
 återställningsbesked. Hjulutfall 0–36 visas som rendering på Anna-bordet,
 med serverstyrt vinnande nummer och utan uppladdning eller saknad-filmstatus.
-Övriga planerade roulettefack behåller sin uttryckliga status; spelare,
+Mallpanelens äldre krav på en separat filmbank är också rättat efter
+browserobservation. Övriga planerade roulettefack behåller sin status; spelare,
 klippbindningar, policyvärden och mediefiler ändras inte. 32 fokuserade prov
 passerar utan skip och Lab-bygget med 97 kontrollerade byggspår är grönt.
 Full kontroll, sluthead, leverans och browseracceptans återstår innan del 3
