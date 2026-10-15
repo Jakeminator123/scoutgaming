@@ -43,7 +43,9 @@ verklig middleware, Node HTTP-fetch och Admin-route: fetch ändrar
 Rättningen normaliserar kända Admin-dokument före transporten, liksom Control.
 API, iframe, mutationer, Next-actions och främmande Origin behåller sina spärrar.
 Två regressioner var röda före rättningen; slutligt fokusurval gav 59/59 utan skip.
-Fullhook med Chrome gav 3 883 pass, 9 villkorade skip och 0 fel i 77 grupper.
+Före main-integrationen gav fullhook med Chrome 3 883 pass, 9 skip och 0 fel.
+Efter normal integration av `c024cca7` gav den 3 899 pass, 9 villkorade skip
+och 0 fel/cancel i 77 grupper. Lab-bygget återanvänds; dess källor är oförändrade.
 Första fullhook stoppade på en inaktuell middleware-förväntning; efter rättningen
 passerade slutkörningen. Skip gäller fem databasprov och fyra Linux-specifika prov.
 Lab-bygget passerar med 97 kontrollerade byggspår. Samordnarens separata IAB-prov

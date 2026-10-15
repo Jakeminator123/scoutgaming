@@ -8,7 +8,9 @@ Kända Admin-dokument normaliseras nu i middleware före transporten; samma
 befintliga origin-, sessions- och rollkontroller används. API, iframe,
 Next-actions och mutationer omfattas inte av dokumentundantaget.
 Två regressioner var röda före rättningen; slutligt fokusurval gav 59/59 utan skip.
-Fullhook med Chrome gav 3 883 pass, 9 villkorade skip och 0 fel i 77 grupper.
+Före main-integrationen gav fullhook med Chrome 3 883 pass, 9 skip och 0 fel.
+Efter normal integration av `c024cca7` gav den 3 899 pass, 9 villkorade skip
+och 0 fel/cancel i 77 grupper. Lab-bygget återanvänds; dess källor är oförändrade.
 Första fullhook stoppade på en inaktuell middleware-förväntning; efter rättningen
 passerade slutkörningen. Skip gäller fem databasprov och fyra Linux-specifika prov.
 Det verkliga lokala HTTP-fetch-provet visar navigate → cors och går genom
