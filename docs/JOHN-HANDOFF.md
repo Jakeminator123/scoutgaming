@@ -3572,13 +3572,17 @@ visade fortfarande dubbel login. Se CLOUD-MIGRATION:s avgränsade SSO-kvitto.
 Main 96750fa0 (PR162–164) är förenad; tidigare granskad 2a8295a4 hade
 identiskt Git-källträd och alla 18 egna filer behöll samma bytes. Lobbyretur
 och profilens historiklänk bevaras. Slutligt Labbygge passerar med 97
-verifierade byggspår; ordinarie fullhook och PR/CI återstår.
+verifierade byggspår. Ordinarie commit-fullhook passerar på 3d3a83e2:
+3 921 pass, 0 fail, 9 miljöberoende skip, inklusive isolerade Chrome-prov.
+PR/CI och färskt N1-produktionsprov återstår.
 Första fullhooken fångade två Chrome-fixturer som slog ihop flera Set-Cookie.
 Deras HTTP-adapter bevarar nu separata cookies; båda ursprungliga browserprov
 är röda före och gröna efter rättningen. Produktkod och provkrav är oförändrade.
 Den isolerade generationsfixturens explicita källista kompletterades också
 med importerad player-handoff.mjs efter bekräftat ERR_MODULE_NOT_FOUND;
-båda berörda fixturefilerna passerar samlat 5/5. Nätverk/media är fortsatt isolerade. Fem egna
+båda berörda fixturefilerna passerar samlat 5/5. Nätverk/media är fortsatt isolerade.
+
+Fem egna
 node_modules-junctions (Lab, design-preview, frontend, web och GPU-worker
 gateway) pekar på motsvarande rotinstallationer. Normaliserade manifest
 och låsfiler samt installerade direktberoenden är verifierade. Länkarna

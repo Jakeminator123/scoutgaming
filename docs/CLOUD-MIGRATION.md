@@ -2317,7 +2317,9 @@ Deras HTTP-adapter bevarar nu separata cookies; båda ursprungliga browserprov
 Den isolerade generationsfixturens explicita källista kompletterades också
 med importerad player-handoff.mjs efter bekräftat ERR_MODULE_NOT_FOUND;
 båda berörda fixturefilerna passerar samlat 5/5. Nätverk/media är fortsatt isolerade.
-Ordinarie fullhook, PR/CI och nytt färskt N1-produktionsprov återstår.
+Ordinarie commit-fullhook passerar på 3d3a83e2: 3 921 pass, 0 fail och
+9 miljöberoende skip, med isolerade Chrome-fixturer aktiverade.
+PR/CI och nytt färskt N1-produktionsprov återstår.
 Inga produktionskonton,
 saldon, miljövärden, providerjobb eller användarens browsercookies ändrades
 i dessa lokala prov. Befintliga öppna migrationspunkter är inte avbockade.
