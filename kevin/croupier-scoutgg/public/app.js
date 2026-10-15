@@ -269,10 +269,13 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) reco
 
 let captionUntil = 0;   // a text-only line's caption stays this long (dealer without recorded lines)
 let talkCaption = null, talkCaptionUntil = 0;   // a line spoken over the clips keeps its caption while the clips change under it
+// Emil 14 Oct (Svenska Spel demo): the dealer's words are heard, not written on her: captions are off. Everything that
+// chooses them stays, so they come back by setting SHOW_CAPTIONS to true (or for one viewer: ?captions=1 in the address).
+const SHOW_CAPTIONS = false || new URLSearchParams(location.search).get("captions") === "1";
 function showCaption(text) {
   if (!text && Date.now() < talkCaptionUntil) text = talkCaption;
   caption.textContent = (text ?? "").replace(/—/g, ", ");
-  caption.classList.toggle("on", Boolean(text));
+  caption.classList.toggle("on", SHOW_CAPTIONS && Boolean(text));
 }
 
 // ------------------------------------------------------------------ ljud och grind ---
@@ -475,7 +478,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
     speak:(t,offsetMs,remainMs)=>{
       const lang=$('#dealerLanguage').value,url=t.ljud??dealerLineUrl(t.clip?.url,lang);
       if(!url)return false;
-      if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them
+      if(t.kind==='answer')render({who:'astrid',text:t.text});   // the answer's words appear as he starts saying them (a cheer for the winners is said and captioned, never written in the chat: Emil 14 Oct)
       // his mouth is synced to him resting or dealing, never to an idle gesture: an idle playing now gives way to his still
       if(currentItem?.kind==='idle'&&finishCurrent){const v=cur;finishCurrent(true);v?.classList.remove('on');v?.pause();}
       // one voice at a time: a remark of his still waiting or playing gives way to the talk track
@@ -488,7 +491,7 @@ fetch("/api/clips").then((r) => r.json()).then((m) => {
       holdUntil=Math.max(holdUntil,Date.now()+remainMs+300);
       const words=t.clip?.text??t.text;
       if(words){talkCaption=words;talkCaptionUntil=Date.now()+remainMs;showCaption(words);setTimeout(()=>{if(Date.now()>=talkCaptionUntil&&caption.textContent===talkCaption.replace(/—/g,', '))showCaption(null);},remainMs+50);}
-      return t.kind==='answer'||(dealer.lines?.includes(lang)?lang:'en')===t.lang;
+      return t.kind==='answer'||t.kind==='cheer'||(dealer.lines?.includes(lang)?lang:'en')===t.lang;
     },
     // The alternative dealer's own remarks wait in the queue, so they never cut into a deal.
     remark:id=>remarkNow(id),

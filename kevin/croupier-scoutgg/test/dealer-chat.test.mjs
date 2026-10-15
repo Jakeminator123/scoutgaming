@@ -17,8 +17,8 @@ process.env.GEMINI_API_KEY = 'test-gemini';
 test('an unreachable provider or a blocked reply gives null, so the table falls back to a reviewed reply', async () => {
   const down = async () => { throw new Error('offline'); };
   assert.equal(await dealerReply({ text: 'hej', fetchImpl: down }), null);
-  assert.equal(await dealerReply({ text: 'hej', dealer: 'dragge', fetchImpl: gemini('Dragge: Du borde dubbla nu.') }), null);
-  assert.equal(await dealerReply({ text: 'hej', dealer: 'dragge', fetchImpl: gemini('Dragge: Jag mår som en kung, tack!') }), 'Jag mår som en kung, tack!');
+  assert.equal(await dealerReply({ text: 'hej', dealer: 'dragge', fetchImpl: gemini('Dragan: Du borde dubbla nu.') }), null);
+  assert.equal(await dealerReply({ text: 'hej', dealer: 'dragge', fetchImpl: gemini('Dragan: Jag mår som en kung, tack!') }), 'Jag mår som en kung, tack!');
   assert.equal(await dealerReply({ text: 'hej', dealer: 'dragge', fetchImpl: async () => ({ ok: false, json: async () => ({}) }) }), null);
 });
 

@@ -236,7 +236,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .preview-note{max-width:100%;white-space:nowrap;overflow:hidden}.preview-note #pnSpec{overflow:hidden;text-overflow:ellipsis}
 .preview-wm{right:-140px;bottom:-140px;width:320px}
 @media (max-width:1100px){#pnSpec,.preview-note span:nth-child(2),.preview-wm{display:none}.foot-lic{white-space:normal}}
-.stage>img.felt-logo{position:absolute;z-index:2;inset:auto;left:50%;top:63%;width:36%;height:auto;max-height:9%;object-fit:contain;transform:translate(-50%,-50%) perspective(400px) rotateX(38deg);opacity:.82;filter:drop-shadow(0 1px 0 #0006);pointer-events:none}
+.stage>img.felt-logo{position:absolute;z-index:2;inset:auto;left:50%;top:63%;width:36%;height:auto;max-height:9%;object-fit:contain;transform:translate(-50%,-50%) perspective(400px) rotateX(38deg);opacity:.5;filter:drop-shadow(0 1px 0 #0006);pointer-events:none}
 .hdr-logo{display:block;max-width:clamp(70px,13vh,130px);max-height:clamp(22px,4vh,40px);object-fit:contain;object-position:left center;margin-bottom:clamp(6px,1vh,10px);filter:drop-shadow(0 2px 6px #000a)}
 .hdr-logo:not([hidden])+.brand{font-size:clamp(10px,1.4vh,13px);opacity:.85}.hdr-logo:not([hidden])+.brand img{width:clamp(12px,1.5vh,15px)}
 .drop{position:relative;display:block;border:1px dashed #dbc18a55;border-radius:12px;background:var(--panel3);cursor:pointer;transition:border-color .15s,background .15s}
@@ -369,14 +369,15 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 <div class="steps" id="steps">
 
 <section class="step open" data-step="dealer">
-<div class="step-h"><span class="sec-l">// 01 · The dealer</span><span class="step-v" data-v="dealer">Astrid</span></div><p class="sec-d">Photoreal AI host, conversational and reacting to the hand.</p>
+<div class="step-h"><span class="sec-l">// 01 · The dealer</span><span class="step-v" data-v="dealer">Astrid</span></div>
 <div class="step-b"><div><div class="step-in">
 <div class="grid2" role="radiogroup" aria-label="Dealer">
-<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="astrid" aria-checked="true"><img src="assets/astrid.jpg" alt=""><div class="meta"><strong>Astrid</strong><span>AI dealer · 4 languages</span></div></button>
-<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="dragge" aria-checked="false"><img src="assets/dragge.jpg" alt=""><div class="meta"><strong>Dragge</strong><span>AI dealer · Svenska, English</span></div></button>
+<!-- Emil 14 Oct (Svenska Spel demo): Astrid 2.0 is "Astrid"; the first Astrid is retired from the builder (studio.js RETIRED) -->
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="astrid2" aria-checked="true"><img src="assets/astrid2.jpg?v=20261014" alt=""><div class="meta"><strong>Astrid</strong><span>AI dealer · English</span></div></button>
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="dragge" aria-checked="false"><img src="assets/dragge.jpg" alt=""><div class="meta"><strong>Dragan</strong><span>AI dealer · Svenska, English</span></div></button>
 <button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="paow" aria-checked="false"><img src="assets/paow.jpg" alt=""><div class="meta"><strong>Paow</strong><span>AI dealer · Svenska, English</span></div></button>
-<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="astrid2" aria-checked="false"><img src="assets/astrid2.jpg" alt=""><div class="meta"><strong>Astrid 2.0</strong><span>AI dealer · English</span></div></button>
-<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="marten" aria-checked="false"><img src="assets/marten.jpg" alt=""><div class="meta"><strong>Mårten</strong><span>AI dealer · text chat</span></div></button>
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="marten" aria-checked="false"><img src="assets/marten.jpg" alt=""><div class="meta"><strong>Mårten</strong><span>AI dealer · Svenska, English, Español</span></div></button>
+<button class="opt dealer-opt" type="button" role="radio" data-k="dealer" data-val="astrid" aria-checked="false" hidden><img src="assets/astrid.jpg" alt=""><div class="meta"><strong>Astrid</strong><span>AI dealer · 4 languages</span></div></button>
 </div>
 </div></div></div>
 </section>

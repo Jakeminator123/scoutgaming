@@ -10,7 +10,7 @@ import {createPresentationReader} from './presentation.mjs';
 // Nycklarna i .env lämnar aldrig servern.
 
 import { createServer } from "node:http";
-import { createReadStream, statSync, readFileSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { createReadStream, statSync, readFileSync, readdirSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { pipeline } from "node:stream";
 import path from "node:path";
 import { WebSocketServer, WebSocket } from "ws";
@@ -24,7 +24,7 @@ import {speechBank} from '../public/dealer-language.js';
 import { factId, tableFact, roundResult } from './table-facts.mjs';
 import { dealerTalk } from './dealer-chat.mjs';
 import { createDealerMemory } from './dealer-memory.mjs';
-import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, runpodKey, useLipsyncPod } from './dragge-voice.mjs';
+import { draggeSay, draggeVoice, draggeVoiceReady, draggeWarm, hasVoice, runpodKey, useCartesia, useLipsyncPod } from './dragge-voice.mjs';
 import { createSharedTable, sessionName } from "./shared-table.mjs";
 import { createStudioTables, LOGO_MAX } from "./studio-tables.mjs";
 import { createBoSession } from "./bo-session.mjs";
@@ -36,7 +36,7 @@ import { auditAuthorized } from './audit-access.mjs';
 import {OpenClaw} from './openclaw.mjs';
 import {integrationIndex,eventEvidence} from './integration-index.mjs';
 import { classifyManifest, mediaInventory } from './media-registry.mjs';
-import { RorligLipsync, kartaFor } from './rorlig-lipsync.mjs';
+import { RorligLipsync, kartaFor, mp4Duration } from './rorlig-lipsync.mjs';
 
 loadEnv();
 const { ServerlessLipsync, sessionUrlFrom } = await import("./serverless.mjs");
@@ -77,6 +77,26 @@ const READY_TAKES=Object.fromEntries(['dragge','paow','marten','astrid2'].map(id
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
 let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";
 const dealerOf = room => studioTables.get(room)?.dealer ?? room;
+// Emil 14 Oct: a ready dealer's variants of the lines that repeat most (bust_1 … bust_7, blackjack and twentyone called as the
+// card lands, win = "congratulations to the winners"): one at random each time (shared-table.mjs variantOf). Counted over
+// all the languages he has, with their length in his first language (the step's length when no lip-sync worker is warm).
+const VARIED = ['bust', 'blackjack', 'twentyone', 'win'];
+for (const [id, t] of Object.entries(READY_TAKES)) {
+  if (!t) continue;
+  const dir = path.join(PUBLIC, 'media', 'dealers', id, 'repliker');
+  let langs = []; try { langs = readdirSync(dir).filter(l => /^[a-z]{2}$/.test(l)).sort(); } catch {}
+  const has = x => langs.length > 0 && langs.every(l => existsSync(path.join(dir, l, `${x}.mp4`)));
+  // what he actually says in each line, per language (repliker/<lang>/texter.json): the table's caption, never Astrid's text
+  t.texts = {}; for (const l of langs) { try { t.texts[l] = JSON.parse(readFileSync(path.join(dir, l, 'texter.json'), 'utf8')); } catch {} }
+  t.variants = {}; t.durs = {};
+  for (const ev of VARIED) {
+    let n = 0; while (has(`${ev}_${n + 1}`)) n++;
+    if (n < (ev === 'win' ? 1 : 4)) continue;   // only the new sets (Astrid 2.0 keeps her three settle lines)
+    t.variants[ev] = n;
+    for (let k = 1; k <= n; k++) { try { t.durs[`${ev}_${k}`] = mp4Duration(readFileSync(path.join(dir, langs.includes('en') ? 'en' : langs[0], `${ev}_${k}.mp4`))) ?? 2; } catch {} }
+  }
+  if (!t.variants.twentyone) t.variants = {};   // all or nothing: the calls and the cheer come together
+}
 // Emil 12 Oct: on staging a signed-in back office user can give the voice and lip-sync keys once (/studio/lipsync.html),
 // instead of the server's env file. They live next to the table database (0600), never in git; env always wins.
 const RORLIG_KEYS = path.join(path.dirname(tableDb), "rorlig-keys.json");
@@ -89,7 +109,7 @@ const makeRorlig = apiKey => new RorligLipsync({
   apiKey,
   publicBase: () => publicOrigin,
   publicDir: PUBLIC,
-  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge,astrid2").split(",").map(s => s.trim()).filter(Boolean),
+  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge,astrid2,marten").split(",").map(s => s.trim()).filter(Boolean),
   log: s => console.log(s),
   // each piece goes out with its bytes right behind it on the room socket: no request of its own, which at the start of a
   // round queued behind the clip downloads and came too late for the first frames
@@ -99,6 +119,9 @@ const makeRorlig = apiKey => new RorligLipsync({
 let rorlig = runpodKey() ? makeRorlig(runpodKey()) : null;
 const shared = createSharedTable(tableDb, {manifest:MANIFEST,onWelcome:welcomeGuest,limitsFor:room=>studioTables.limitsFor(room),languageFor:room=>studioTables.get(room)?.lang,readyFor:room=>READY_TAKES[studioTables.get(room)?.dealer??room]??null,
   talk:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)?{line:(clip,language)=>rorlig.line(d,clip.url,language)}:null;},
+  // the winners of a round by name, live in his voice over whatever he shows (Emil 14 Oct); without a warm worker the table
+  // plays his recorded "congratulations to the winners" instead
+  winners:room=>{const d=dealerOf(room);return rorlig&&rorligOn()&&rorlig.ready(d)&&hasVoice(d)&&draggeVoiceReady(d)?(names,language,notBefore)=>{cheerWinners(room,d,names,language,notBefore).catch(e=>console.log(`vinnarna: ${e.message}`));}:null;},
   onPlan:(room,plan,ready,{nya,omplanera,steg})=>{if(!rorlig)return;const d=dealerOf(room);rorlig.activity(d);
     const karta=t=>kartaFor(steg,t.kartaStart,Math.ceil((t.endAt-t.kartaStart)*24/1000)+20,{restEnd:ready?.restEnd??[]});
     // a line or answer still speaking when this plan's cards come: its frames changed, so it gets a map over the new takes,
@@ -127,6 +150,7 @@ const lip = pod ? pod.for(process.env.LIPSYNC_POD_AVATAR ?? "astrid_spel2x") : n
   ordersFile: path.join(ANSWERS, ".sessioner.json"),
 });
 const tts = new CartesiaTTS({ key: need("CARTESIA_API_KEY"), voiceId: process.env.CARTESIA_VOICE ?? FREJA, log: (s) => console.log(s) });
+useCartesia((text, language) => tts.say(text, language));   // Astrid 2.0 answers in Astrid's own voice (Emil 14 Oct)
 const astrid = new Astrid({
   llm: process.env.DEALER_LLM_PROVIDER==='openclaw' ? new OpenClaw({url:need('OPENCLAW_PRODUCT_SPEECH_URL'),token:need('OPENCLAW_PRODUCT_SPEECH_TOKEN'),audit:r=>{safetyAudit.write(r);shared.recordSpeechDecision(r);}}) : new Gemini({ key: need("GEMINI_API_KEY"), model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite", audit:r=>safetyAudit.write(r) }),
   tts,
@@ -225,6 +249,21 @@ async function talkReply(ws, text, dealer) {
   const voiced=clip?await Promise.race([clip,new Promise(r=>setTimeout(()=>r(null),VOICE_WAIT_MS))]):null;
   out({t:'answer',id,to:ws.name,text:reply,dealer,...(voiced?{url:voiced.url}:{})});
   send(ws,{t:'thinking',on:false,queued:0});
+}
+
+// "Grattis Anders och Emil!": the names of the players up on the round, said once the last card has landed
+const CHEER = { sv: ['Grattis', 'och'], en: ['Congratulations,', 'and'], es: ['¡Enhorabuena,', 'y'] };
+function cheerText(names, language) {
+  const [hi, and] = CHEER[language] ?? CHEER.en;
+  return `${hi} ${names.length > 1 ? `${names.slice(0, -1).join(', ')} ${and} ${names.at(-1)}` : names[0]}!`;
+}
+async function cheerWinners(room, dealer, names, language, notBefore) {
+  const text = cheerText(names, language), pcm = await draggeVoice(text, language, { dealer });
+  const { talk: spoken, moved, steg, ready } = shared.addTalk(room, { kind: 'cheer', text, lang: language, dur: pcm.length / 48000, notBefore });
+  rorlig.activity(dealer);
+  const karta = t => kartaFor(steg, t.kartaStart, Math.ceil((t.endAt - t.kartaStart) * 24 / 1000) + 20, { restEnd: ready?.restEnd ?? [] });
+  rorlig.speak(dealer, room, spoken, karta(spoken), { pcm });
+  for (const t of moved) rorlig.speak(dealer, room, t, karta(t));
 }
 
 /** Serhiy: a visitor on two boxes who lost one and won or pushed the other heard only the table's
@@ -645,15 +684,19 @@ room.on("connection", (ws) => {
       if(text&&ws.boUser)activity.log({user:ws.boUser,sid:ws.sid,ip:ws.address,ua:ws.ua,kind:"chat",table:ws.session,guest:ws.guest,detail:{len:text.length}});   // never the text
       if(!chatLimit(ws.address)){send(ws,{t:'notice',text:'Please wait a minute before sending more messages.'});return;}
       if(ws.guest&&shared.paused(ws.guest)){send(ws,{t:'notice',text:RESPONSES.support});return;}
-      // Dragge, Paow and Mårten (a viewer's alternative dealers) answer with their own brain and memory, Dragge
-      // and Paow also with their voice (Mårten has none yet: text only); Astrid keeps her reviewed pipeline below.
+      // Dragge, Paow, Mårten and Astrid 2.0 (a viewer's alternative dealers) answer with their own brain, memory and
+      // voice (Mårten since 14 Oct); Astrid keeps her reviewed pipeline below.
       const alt=['dragge','paow','marten','astrid2'].includes(j.dealer)?j.dealer:null;
       if(text&&alt&&!['privacy','support'].includes(localResponse(text))){
         // Never leave them "thinking": any failure still answers with a reviewed line.
         talkReply(ws,text,alt).catch(()=>{send(ws,{t:'answer',id:`r${Date.now().toString(36)}`,to:ws.name,dealer:alt,text:localizeResponse(RESPONSES.social,shared.language(ws.session))});send(ws,{t:'thinking',on:false,queued:0});});
         return;
       }
-      if(text&&localQA){send(ws,{t:'notice',text:'Voice providers are disabled in this local test.'});return;}
+      // Emil 14 Oct: where the reviewed pipeline is off (staging), the player learns why the dealer does not answer
+      if(text&&localQA){const why=localResponse(text);send(ws,{t:'notice',text:why==='support'
+        ?"Held by our responsible gaming filter. Need support? Take a break and contact customer support."
+        :why==='privacy'?"Held by our privacy filter. Please don't share personal details at the table."
+        :"The dealer can't reply to chat here."});return;}
       if (text) chat(ws.name, text,ws.session,ws.guest).catch(() => {});
     } else if (j.t === "event") {
       safetyAudit.write({event:'manual_event_blocked',decision:'public_socket'});

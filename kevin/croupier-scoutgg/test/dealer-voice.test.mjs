@@ -26,10 +26,26 @@ test('each dealer speaks with its own voice and read: Dragge calm, Paow the read
   assert.deepEqual(voiceSettings('paow', 'en'), { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true });
 });
 
-test('Astrid 2.0 speaks with the voice of her recorded lines and has no rest-image lip sync: only the moving one draws her mouth', async () => {
-  const seen = [];
+test("Astrid 2.0 speaks in Astrid's own Cartesia voice (never ElevenLabs) and has no rest-image lip sync: only the moving one draws her mouth", async () => {
+  const seen = [], said = [];
+  const { useCartesia, draggeVoice, draggeVoiceReady } = await import('../server/dragge-voice.mjs');
+  useCartesia(async (text, language) => { said.push([text, language]); return Buffer.alloc(4800); });
+  assert.equal(draggeVoiceReady('astrid2'), true);
+  const pcm = await draggeVoice('Congratulations, Kevin!', 'en', { fetchImpl: fakeFetch(seen), dealer: 'astrid2' });
+  assert.equal(pcm.length, 4800);
+  assert.deepEqual(said, [['Congratulations, Kevin!', 'en']]);
   await assert.rejects(draggeSay('Place your bets.', 'en', path.join(os.tmpdir(), 'dealer-voice-test'), { fetchImpl: fakeFetch(seen), dealer: 'astrid2' }), /no rest-image lip sync/);
-  assert.equal(seen.length, 1);
-  assert.ok(seen[0].url.includes('/d1PjUBrElTJTH5EkXPZp'));
-  assert.equal(seen[0].body.model_id, 'eleven_multilingual_v2');
+  assert.equal(seen.length, 0, 'no ElevenLabs call');
+});
+
+test('Mårten speaks with the voice Kevin made, read like Paow (sv eleven_v3; en and es v2 with their own language code)', async () => {
+  const dir = path.join(os.tmpdir(), 'dealer-voice-test');
+  for (const [language, model] of [['sv', 'eleven_v3'], ['en', 'eleven_multilingual_v2'], ['es', 'eleven_multilingual_v2']]) {
+    const seen = [];
+    await assert.rejects(draggeSay('Hagan sus apuestas.', language, dir, { fetchImpl: fakeFetch(seen), dealer: 'marten' }), /no rest-image lip sync/);
+    assert.ok(seen[0].url.includes('/ik47JUrkaNt6DSPKAk1t'));
+    assert.equal(seen[0].body.model_id, model);
+    assert.equal(seen[0].body.language_code, model === 'eleven_v3' ? undefined : language);
+    assert.deepEqual(seen[0].body.voice_settings, voiceSettings('paow', language));
+  }
 });

@@ -1,7 +1,7 @@
 // Voice and lip-sync keys for a staging server (server.mjs, studio/lipsync-keys): shows which are set and saves new ones.
 const state = document.querySelector('#state'), form = document.querySelector('#keys'), button = form.querySelector('button');
 const yes = (on, text) => `<span class="${on ? 'ok' : 'bad'}">${on ? '✓' : '✗'} ${text}</span>`;
-const NAMES = { paow: 'Paow', dragge: 'Dragan', marten: 'Mårten', astrid2: 'Astrid 2.0' };
+const NAMES = { paow: 'Paow', dragge: 'Dragan', marten: 'Mårten', astrid2: 'Astrid' };
 function show(j) {
   const workers = Object.entries(j.lipsync ?? {}).map(([id, w]) => { const name = NAMES[id] ?? id;
     return yes(w.ready, w.ready ? `${name}: lip-sync worker ready (${w.info?.gpu ?? ''})` : `${name}: lip-sync worker starts when someone plays at a ${name} table`); });

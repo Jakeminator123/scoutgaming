@@ -2,7 +2,7 @@
 // their felt masks leave that shoe and the dealer himself out (croupier-dealer-dragge/studio_rooms_v2.py). Astrid too (Emil: her old
 // room had the shoe over "PAYS 3 TO 2" and her cut-out kept a patch of her own shoe): cut-astrid-v3 drops that patch,
 // felt-mask-astrid-v2 = the keyed dealers' v2 table minus her cut-out.
-const DEALERS={astrid:{name:'Astrid',cut:'assets/cut-astrid-v3.png',mask:'assets/felt-mask-astrid-v2.png',room:'-v2'},dragge:{name:'Dragge',cut:'assets/cut-dragge.png',mask:'assets/felt-mask-dragge-v2.png',room:'-v2'},paow:{name:'Paow',cut:'assets/cut-paow.png',mask:'assets/felt-mask-paow-v2.png',room:'-v2'},astrid2:{name:'Astrid 2.0',cut:'assets/cut-astrid2.png',mask:'assets/felt-mask-astrid2-v2.png',room:'-v2'},marten:{name:'Mårten',cut:'assets/cut-marten.png',mask:'assets/felt-mask-marten-v2.png',room:'-v2'}};
+const DEALERS={astrid:{name:'Astrid',cut:'assets/cut-astrid-v3.png',mask:'assets/felt-mask-astrid-v2.png',room:'-v2'},dragge:{name:'Dragan',cut:'assets/cut-dragge.png',mask:'assets/felt-mask-dragge-v2.png',room:'-v2'},paow:{name:'Paow',cut:'assets/cut-paow.png',mask:'assets/felt-mask-paow-v2.png',room:'-v2'},astrid2:{name:'Astrid',cut:'assets/cut-astrid2.png',mask:'assets/felt-mask-astrid2-v2.png',room:'-v2'},marten:{name:'Mårten',cut:'assets/cut-marten.png',mask:'assets/felt-mask-marten-v2.png',room:'-v2'}};
 const ROOMS={darkhall:'Dark Hall',mahogany:'Mahogany Privé',golden:'Golden Salon',azure:'Azure Venue'};
 const FELTS={prive:{name:'Privé',c:null},emerald:{name:'Emerald Club',c:'#125c43'},midnight:{name:'Midnight',c:'#213e70'},burgundy:{name:'Burgundy',c:'#70253c'},custom:{name:'Custom',c:null}};
 const LANGS={en:{name:'English',tts:'en-GB',line:'Welcome to the table. Place your bets.'},es:{name:'Español',tts:'es-ES',line:'Bienvenidos a la mesa. Hagan sus apuestas.'},fr:{name:'Français',tts:'fr-FR',line:'Bienvenue à la table. Faites vos jeux.'},sv:{name:'Svenska',tts:'sv-SE',line:'Välkommen till bordet. Placera era insatser.'},zh:{name:'中文',tts:'zh-CN',line:'欢迎来到牌桌，请下注。'}};
@@ -10,7 +10,9 @@ const LIMITS={casual:{name:'Casual',range:'$1 – $500',bal:'$500.00',chips:[1,5
 const CHIP={1:['#e8e2d4','#a9a294','#5a554c','#1c1a16'],5:['#1b7866','#0e4138'],10:['#b88441','#5d3c1c'],25:['#c55b42','#713227'],50:['#a85c9e','#572c56'],100:['#424a51','#181c20'],500:['#7852b3','#402957'],1000:['#d6b46a','#7d6230','#fff5da','#201c13'],5000:['#2f6496','#163252'],10000:['#9a3443','#4d1621'],25000:['#26282c','#0b0c0e','#dbc18a','#dbc18a']};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY='scout-bj-demo';
-let st=Object.assign({screen:'login',email:'',dealer:'astrid',room:'darkhall',felt:'prive',custom:'#7a5a2a',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer',sound:true,logo:'',logoName:'',logoPos:'both'},JSON.parse(localStorage.getItem(KEY)||'{}'));
+let st=Object.assign({screen:'login',email:'',dealer:'astrid2',room:'darkhall',felt:'prive',custom:'#7a5a2a',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer',sound:true,logo:'',logoName:'',logoPos:'both'},JSON.parse(localStorage.getItem(KEY)||'{}'));
+// Emil 14 Oct: the first Astrid is retired from the builder; Astrid 2.0 is shown as "Astrid" (a saved choice of her moves over)
+const RETIRED=['astrid'];if(RETIRED.includes(st.dealer))st.dealer='astrid2';
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
 const fmt=v=>v>=1000?(v/1000)+'K':String(v);
 function chipEl(v){const e=document.createElement('span');e.className='chip';const c=CHIP[v];e.style.setProperty('--c',c[0]);e.style.setProperty('--s',c[1]);if(c[2])e.style.setProperty('--r',c[2]);if(c[3])e.style.setProperty('--t',c[3]);e.textContent=fmt(v);return e}
@@ -23,7 +25,7 @@ const draw=img=>{['#feltC','#feltS'].forEach(s=>{const x=$(s).getContext('2d');x
 if(maskCache[src]?.complete)draw(maskCache[src]);else{const i=maskCache[src]=new Image();i.onload=()=>draw(i);i.src=src}}
 function feltColor(){return st.felt==='custom'?st.custom:FELTS[st.felt].c}
 function render(){
-// Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: English as text until he has a voice).
+// Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: Swedish, English and Spanish).
 const langs=VOICES[st.dealer]?.length?VOICES[st.dealer]:['en'];if(!langs.includes(st.lang))st.lang=langs.includes('en')?'en':langs[0];
 $$('.lang-opt').forEach(o=>{o.hidden=!langs.includes(o.dataset.val)});
 const d=DEALERS[st.dealer],L=LIMITS[st.limit],fc=feltColor();
@@ -39,7 +41,7 @@ $$('.opt[data-k]').forEach(o=>o.setAttribute('aria-checked',String(st[o.dataset.
 const order=['dealer','room','felt','lang','limit','brand'];
 $$('.step').forEach(s=>{s.classList.toggle('open',s.dataset.step===st.open);s.classList.toggle('done',order.indexOf(s.dataset.step)<order.indexOf(st.open))});
 $('#rsDealer').textContent=d.name;$('#rsRoom').textContent=ROOMS[st.room];$('#rsFelt').textContent=FELTS[st.felt].name;$('#rsLang').textContent=LANGS[st.lang].name;$('#rsLimit').textContent=L.name+' · '+L.range;
-const lg=st.logo,fl=$('#feltLogo'),hl=$('#hdrLogo');[fl,hl].forEach(i=>{if(lg&&i.getAttribute('src')!==lg)i.src=lg});fl.hidden=!lg||st.logoPos==='header';$('#stage').classList.toggle('has-felt-logo',!fl.hidden);hl.hidden=!lg||st.logoPos==='felt';
+const lg=st.logo,fl=$('#feltLogo'),hl=$('#hdrLogo');showLogo(lg,fl,hl);fl.hidden=!lg||st.logoPos==='header';$('#stage').classList.toggle('has-felt-logo',!fl.hidden);hl.hidden=!lg||st.logoPos==='felt';
 $('#drop').classList.toggle('has',!!lg);if(lg){$('#logoThumb').src=lg;$('#logoName').textContent=st.logoName}
 const posName={both:'Felt + header',felt:'Felt',header:'Header'}[st.logoPos];$('[data-v="brand"]').textContent=lg?posName:'No logo';$('#rsLogo').textContent=lg?st.logoName+' · '+posName:'None';
 $('#pnSpec').textContent=d.name+' · '+ROOMS[st.room]+' · '+L.name;$('#readyName').textContent=st.name||'Blackjack';
@@ -49,8 +51,8 @@ save()}
 function go(screen){st.screen=screen;$$('.screen').forEach(s=>s.classList.toggle('on',s.id===screen));
 const stage=$('#stage');if(screen==='ready')$('#readyHome').append(stage);else if(screen==='play'){$('#playHome').append(stage);$('#playBg').style.backgroundImage='url(assets/rooms/'+st.room+DEALERS[st.dealer].room+'-720.png)'}else $('#previewHome').prepend(stage);render()}
 // The languages each dealer has recorded. Any other language plays the English greeting, as the table does.
-// Mårten has no voice yet: his greeting is shown as text only.
-const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en'],paow:['sv','en'],astrid2:['en'],marten:[]};
+// Mårten has his voice since 14 Oct (sv, en, es).
+const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en'],paow:['sv','en'],astrid2:['en'],marten:['sv','en','es']};
 const voiceLang=(dealer,lang)=>(VOICES[dealer]??['en']).includes(lang)?lang:'en';
 function greetingClip(dealer,lang){lang=voiceLang(dealer,lang);
 if(dealer==='astrid')return lang==='en'?'/media/repliker/greeting_1.mp4':`/media/repliker-${lang}/greeting_1_${lang}.mp4`;
@@ -103,6 +105,11 @@ const order=['dealer','room','felt','lang','limit','brand'];
 $$('.step-h').forEach(h=>h.onclick=()=>{const s=h.parentElement.dataset.step;st.open=st.open===s?'':s;render()});
 $$('.next').forEach(b=>b.onclick=()=>{const s=b.closest('.step').dataset.step;st.open=order[order.indexOf(s)+1];render()});
 $$('.opt[data-k]').forEach(o=>{const pick=e=>{if(e.target.closest('.play'))return;st[o.dataset.k]=o.dataset.val;render()};o.addEventListener('click',pick);o.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e)}})});
+// Emil 14 Oct: the preview shows the logo exactly as the game will (the same felt-logo.js prepareLogo): own colours in the
+// header (a dark logo on a light badge), the felt's printed ink below
+let logoLook={src:null,p:null};
+function showLogo(lg,fl,hl){if(!lg)return;const set=p=>{if(logoLook.src!==lg)return;hl.src=p?.header??lg;fl.src=p?.felt??lg};
+if(logoLook.src===lg){if(logoLook.p)set(logoLook.p);return}logoLook={src:lg,p:null};import('/felt-logo.js').then(m=>m.prepareLogo(lg)).then(p=>{if(logoLook.src===lg){logoLook.p=p;set(p)}}).catch(()=>set(null))}
 function setLogo(src,name){const i=new Image();i.crossOrigin='anonymous';i.onload=()=>{let w=i.naturalWidth||600,hh=i.naturalHeight||300;const k=Math.min(1,600/Math.max(w,hh));w=Math.round(w*k);hh=Math.round(hh*k);let out=src;try{const c=document.createElement('canvas');c.width=w;c.height=hh;c.getContext('2d').drawImage(i,0,0,w,hh);out=c.toDataURL('image/png');
   // The server takes logos under 400 KB: a detailed PNG falls back to WebP, then to a smaller size.
   if(out.length>380000)out=c.toDataURL('image/webp',.9);
@@ -135,7 +142,7 @@ const clip=greetingClip(st.dealer,st.lang);if(clip)await fetch(clip,{headers:{Ra
 setTimeout(()=>{go('ready');L.classList.remove('on')},350)};
 function alertCreate(m){$('#createBtn').textContent=m;setTimeout(()=>$('#createBtn').textContent='Create table →',2600)}
 $('#editBtn').onclick=()=>go('builder');
-$('#newBtn').onclick=()=>{Object.assign(st,{slug:'',dealer:'astrid',room:'darkhall',felt:'prive',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer'});$('#tableName').value=st.name;go('builder')};
+$('#newBtn').onclick=()=>{Object.assign(st,{slug:'',dealer:'astrid2',room:'darkhall',felt:'prive',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer'});$('#tableName').value=st.name;go('builder')};
 $('#copyBtn').onclick=()=>{navigator.clipboard?.writeText('https://'+$('#shareUrl').textContent).catch(()=>{});$('#copyBtn').textContent='Copied';setTimeout(()=>$('#copyBtn').textContent='Copy link',1600)};
 
 let sayT;$('#tableName').value=st.name;$('#customFelt').value=st.custom;syncSound();
@@ -144,8 +151,8 @@ let sayT;$('#tableName').value=st.name;$('#customFelt').value=st.custom;syncSoun
 // Dealers the back office hides for this account (Kevin 12 Oct: chosen when an aggregator is invited). Their cards go,
 // and a hidden dealer that was selected moves to the first one still shown.
 function access(me){const hide=Array.isArray(me.hiddenDealers)?me.hiddenDealers:[];
-$$('.opt[data-k="dealer"]').forEach(o=>{o.hidden=hide.includes(o.dataset.val)});
-if(hide.includes(st.dealer)){const first=$$('.opt[data-k="dealer"]').find(o=>!o.hidden);if(first)st.dealer=first.dataset.val}render()}
+$$('.opt[data-k="dealer"]').forEach(o=>{o.hidden=RETIRED.includes(o.dataset.val)||hide.includes(o.dataset.val)});
+if(hide.includes(st.dealer)||RETIRED.includes(st.dealer)){const first=$$('.opt[data-k="dealer"]').find(o=>!o.hidden);if(first)st.dealer=first.dataset.val}render()}
 const was=st.screen;st.email='';go('login');
 // After choosing a password the backoffice can send ?email=… so the sign-in is not typed twice (Kevin 12 Oct).
 {const pre=new URLSearchParams(location.search).get('email');if(pre&&/^[^@\s]+@[^@\s]+$/.test(pre)){$('#email').value=pre;$('#pw').focus()}}
