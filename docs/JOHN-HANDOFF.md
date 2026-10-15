@@ -70,25 +70,49 @@ inaktiverad Spara och rätt återställningsbesked. Inga produktionsskrivningar,
 spelrundor eller providerjobb. Nio befintliga filer, inga nya filer eller
 borttagna media/arbetskopior. Bilder/loggar och säkerhetstäckning: CLOUD.
 
-Nästa: del 4 Tal. Skilj inspelat, generering och realtid; verifiera verkliga
-filer, text, ljud och granskning utan providerstart. Samordna också roulettens
-äldre översiktsfras ”kulsläpp + hjulfilm” med den verifierade renderingen.
+Del 4 Tal är levererad i PR171: granskat sluthead
+`e028622deec393c5ee309b751b1e1319fe3922e6`, main
+`80b703eef25de70e9a8bf1114d6396b15b42eb58`. PR-CI 38776840880 och
+main-CI 38777872188 är gröna inklusive faktisk SQL/omstart/HTTPS.
+Vercel `dpl_A4tyw9A9vSfNTST9h2R5t1bSGw2B` är READY på samma SHA/www.
+34 fokuserade prov utan skip, Lab-build 97 och fullhook 3 935 pass /
+9 villkorade skip / 0 fel/cancel i 77 grupper.
 
-Tal-delen är nu implementerad lokalt med verkligt inspelningsregister,
-separata genereringsmallar och realtidsprofil. Filer har originaltext,
-språk, uppspelning med ljud och hashbunden granskningsstatus; tomt register
-visas som tomt. Roulettes talpanel förklarar kvarstående anslutning och
-översikten säger animerat hjul. 34 fokuserade prov utan skip och Lab-build
-97 passerar. Fullkontroll, slutgranskning och faktisk leverans återstår;
-inget providerjobb eller produktionsskrivprov har körts.
+Browserprovet visar fyra verkliga Dragan-filer med granskning kvar och
+separata 17 genereringsmallar. Originaltext och SV bevaras när mallarnas
+språk byts till EN; utkastet är rent och valet återställdes. Exakt fil-,
+ljud- och kalibreringsidentitet finns under Detaljer. Filen spelades till
+slut utan fel med ljud aktiverat; ett separat prov verifierar paus när
+panelen stängs. Ingen ljudkvalitets- eller läppsynkacceptans påstås.
+Anna/Roulette visar noll inspelningar, fyra neutrala mallar, inaktiv profil
+och ofärdig talanslutning. Översikten säger animerat hjul.
 
-PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
-kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad
-återgång bereds separat med unika staged filer/stash/kvitton bevarade.
-Ny rörlig läppsynk förblir avstängd. Env-granskning ska mynna ut i en
-konsumentstyrd behåll/flytta/ta-bort-lista, inte fler profiler eller synkning
-av produktionshemligheter. De tidigare dokumentutkasten nedan är bevarade;
-deras formuleringar om väntande samordnarkvitton är daterad historik.
+Inga produktionsskrivningar, spelrundor eller providerjobb. Den missvisande
+mallpresentationen är ersatt; sju befintliga filer, inga nya/raderade
+källfiler, medier eller arbetskopior. Före/efter-bilder, fullständigt
+leveranskvitto och säkerhetstäckning finns i CLOUD-MIGRATION.
+Del 5/6: lokal env-förenkling och huvudcheckoutens synk är genomförda.
+Root/Lab har 52/47 namn efter borttagning av två oanvända lokala
+metadata-poster; 44 befintliga tester och åtta konfigurationsjämförelser
+passerar. 115 namn är konsumentklassificerade i ENVIRONMENT-VARIABLES.
+Inga molnvärden eller Emil-profiler ändrades.
+
+Huvudcheckouten är fast-forward-synkad till `80b703ee`, med egna ändringar,
+privata profiler och reviewmaterial bevarade. Saknade lokala byggen är
+avsiktlig tidigare städning; ingen serverstart eller installation gjordes.
+Den publika startgenvägen rättas till `/lobby`. CLOUD-MIGRATION redovisar
+konkret skäl för samtliga åtta kvarvarande arbetskopior; ingen massradering.
+
+QA-utbyggnaden är redan återställd av QA-agenten på Jakobs separata uppdrag.
+Den tidigare formuleringen om 24 staged filer/stash är ersatt av dess
+rollback-kvitto, med lokalt verifierad frånvaro. Preview är inte verifierat
+isolerad och saknar ingresshemlighet. Äldre Render-QA:s aktuella driftläge
+och färsk Render-env-kontroll återstår efter bekräftat connector-workspace.
+Vercel-teamets färska projektlista innehåller endast `scoutgaming`.
+PR165 är parkerad med tre egna ändringar bevarade; ny rörlig läppsynk är av.
+
+De tidigare dokumentutkasten nedan är daterad historik; aktuella antal och
+återstående steg står ovan och i CLOUD-MIGRATION.
 
 ## Förberedelse för slutöverlämning, 15 oktober 2026
 

@@ -96,7 +96,7 @@ test('public product entry returns before any local connection or provider work'
   const messages = [], opened = [];
   assert.deepEqual(await main(['--product','--no-open'], { log: text => messages.push(text), open: url => opened.push(url) }), { mode: 'product', url: publishedProductUrl });
   assert.deepEqual(opened, []);
-  assert.match(messages[0], /Publicerad produkt: https:\/\/www\.scoutgaming\.tech\/play/);
+  assert.match(messages[0], /Publicerad produkt: https:\/\/www\.scoutgaming\.tech\/lobby/);
   assert.match(messages[0], /Inga lokala servrar/);
   await main(['--product'], { log: () => {}, open: url => opened.push(url) });
   assert.deepEqual(opened, [publishedProductUrl]);

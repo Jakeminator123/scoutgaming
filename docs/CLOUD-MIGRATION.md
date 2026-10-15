@@ -14,9 +14,9 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 | 1 — levererad och browserverifierad | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
 | 2 — huvudflöde och mallretur levererade | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
 | 3 — klippkort och status levererade, browserverifierade | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
-| 4 | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
-| 5 | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
-| 6 | QA-återgång och lokal konsolidering | QA:s unika kod/stash/kvitton är bevarade och osäker QA är stängd. Exakta molnresurskandidater kräver separat beslut; Preview återkopplas inte till produktion. Huvudcheckout/startprofil är verifierad, överförda egna kopior städas säkert och varje kvarvarande kopia har ett konkret syfte. |
+| 4 — levererad och browserverifierad | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
+| 5 — lokal förenkling klar, Render-läsning återstår | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
+| 6 — lokal källa synkad; QA-driftkontroll återstår | QA-status och lokal konsolidering | QA-utbyggnaden är återställd på separat användaruppdrag; kvittot bevaras. Preview är inte verifierat isolerad. Huvudcheckout/startprofil och egna ändringar är kontrollerade; kvarvarande arbetskopior har konkreta bevarandeskäl. Äldre Render-QA:s aktuella driftläge återstår att läsa. |
 
 Varje del avslutas före nästa: relevant kontroll → obligatoriska kontroller →
 slutgranskning → normal PR/merge för verifierat Jakob-ägt arbete →
@@ -30,10 +30,88 @@ om ett valt Admin-flöde kräver N1-till-spelarkonto-övergången. Vid återuppt
 krävs verklig grön SQL-/omstarts-/HTTPS-CI och granskning av slutligt head.
 Den röda PR-koden ingår inte i materialkortsleveransen.
 
-QA:s 24 staged filer, integrationsstash, fem dependency-junctions och privata
-återställningsunderlag bevaras. Ingen QA-utbyggnad, helbranch-import, ny
+QA:s tidigare 24 staged filer/stash är redan återställda och borttagna av
+QA-agenten på Jakobs separata uppdrag; bevara dess rollback-kvitto.
+Delade dependency-installationer och kvarvarande privata underlag bevaras. Ingen QA-utbyggnad, helbranch-import, ny
 mediekatalog eller aktivering av providerjobb ingår. Ofullständigt underlag
 för worker/image/avatarbank redovisas utan att stoppa oberoende Admin-arbete.
+
+## Env och lokal konsolidering, 15 oktober 2026 kväll
+
+Lokal env-förenkling är genomförd: endast oanvända
+`CROUPIER_MEDIA_STORE_ID` togs bort ur root/Lab (52/47 namn kvar).
+Åtta loader-/barnprocesskombinationer, settings och providerprofil är
+oförändrade; Emil/cloud-storage behåller sina hashvärden. 44 befintliga
+fokuserade tester passerar utan skip/fel. Originalen är byteverifierade
+och har samma effektiva åtkomstregler i det privata kanoniska arkivet.
+
+ENVIRONMENT-VARIABLES samlar 115 namn med konsument, profil/prioritet,
+bygge/runtime och behåll/ta-bort-beslut. Vercel-metadatan är färsk:
+65 poster, 56 unika namn, Production/Preview/Development 56/30/5.
+Live Render-inventering väntar på bekräftat workspace; tidigare 53/37/16/10
+är tillskrivet KEVI-underlag. Inga molnvärden eller Emil-inställningar ändrades.
+
+QA-agenten återställde sin utbyggnad på Jakobs separata direkta uppdrag.
+Kvittot 13:48 UTC anger 24 återställda filer, borttagna egen branch/worktree/
+stash och egna nya molnresurser. Egen läsning bekräftar saknad arbetskopia
+och stash; molnraderingarna är tillskrivet kvitto. Bevara
+`arkiv/2026-10-15/preview-qa-isolation/rollback-receipt.json`.
+Preview saknar fortfarande ingresshemlighet och har produktionsadresser;
+det är ingen verifierad isolerad skrivmiljö. Äldre Render-QA kvarstår
+enligt kvittot, med `maintenanceEnabled: false`; färskt driftläge återstår.
+
+En färsk listning visar endast projektet `scoutgaming` i Vercel-teamet
+`scoutgaming`. Där finns inget projekt med namnet “questions and answers”
+eller QA. Äldre projektlistor nedan är historik, inte dagens resurslista.
+
+Huvudcheckouten `C:/Users/jakem/Projects/croupier` är fast-forward-synkad
+från `1c9e1c6a` till `80b703eef25de70e9a8bf1114d6396b15b42eb58`:
+7 commits/45 spårade filer. Inga överlapp med egna ändringar.
+Åtta skyddade filer/profiler har oförändrade hashvärden; 222 privata
+reviewfiler har oförändrat byteantal/tidsmetadata, utan läsning av mediebyte.
+Dirty-status är identisk. Original av de två egna modifierade spårade
+filerna finns under `arkiv/2026-10-15/` med ursprungliga sökvägar.
+
+Normal lokal start bestäms av checkouten där `lab/start.mjs` körs:
+profil `lissabon-stream-lane`, produkt/Lab 4200/4201, explicit
+kamera/cloud-storage-opt-in. Huvudcheckoutens Lab-/frontendbyggen saknas
+efter tidigare avsiktlig städning. Inget serverpar kördes vid kontrollen
+och inga servrar eller byggen startades. Det går därför inte att tillskriva
+en tidigare server ett verifierat SHA. Nästa lokalstart behöver bara sitt
+nödvändiga bygge; ingen generell beroendeinstallation.
+
+Den befintliga publika genvägen `node lab/start.mjs --product` ändras
+från `/play` till `/lobby`. Den returnerar före lokal server- eller
+providerstart. Gamla spelstarter/API:er ändras inte.
+
+Verifiering av denna leverans: startgenvägens tre befintliga tester passerar.
+Ordinarie fullhook passerar med 3 921 pass, 23 villkorade skip och 0 fel/cancel
+i 77 grupper. De sju befintliga browserfilerna kördes därefter med installerad
+Playwright/Chrome: 44/44 pass, inklusive alla 14 tidigare överhoppade
+browserprov. Nio andra villkorade prov återstår för sina SQL/Linux-miljöer.
+Ingen ny installation eller bestående testmiljö skapades. Föregranskning:
+fem befintliga filer, bara en runtimeändring (publik start-URL), inga envvärden
+i Git. GitGuardian: 0 öppna/18 ignorerade, aktiv övervakning; historikskanning
+too_large och delvis platsmetadata kvarstår. Main-sviten var queued utan
+synliga check-runs; grön vanlig CI ersätter inte dessa bevisgränser.
+
+| Kvarvarande arbetskopia | Konkret skäl att behålla |
+| --- | --- |
+| Huvudcheckout/main | Vanlig lokal källa; två egna modifierade spårade filer, egna inställningar/skill och privata reviewmedier kvar. |
+| admin-document-navigation | Denna enda aktiva leveransström och tidigare bevarade dokumentutkast. |
+| n1-player-session | Parkerad PR165, tre okommittade rättnings-/dokumentfiler; ingen merge. |
+| pr91-integration | Parkerad Kevin-integration med commits som inte är förfäder till main; överföring är inte bevisad av branchens namn. |
+| 8e3c / test-video-jakob | Fyra commits utanför main-ancestry; separat videoarbete vars överföring/privata material inte är verifierat. |
+| ai-system-map | 37 ändrade/ospårade poster i systemkarta, AI-dokumentation och relaterade källor; inte en ren restkopia. |
+| moving-lipsync-runtime | Bevarad env-/runtime-integration. Två commits utanför main-ancestry; squashleverans är möjlig men privat material/överlämning är inte slutkontrollerad. |
+| efterarbete | Fyra egna okommittade konfigurations-/paketändringar. |
+
+Ancestry-antal är inte automatiskt antal unika ändringar efter squashmerge.
+Ingen av dessa kopior raderades och inga dependency-junctions följdes eller
+ändrades. Avgränsad inventering bekräftar delade Lab-/frontendinstallationer.
+Ny rörlig läppsynk är fortsatt avstängd; inga providerjobb kördes.
+Privata kvitton: `arkiv/2026-10-15/admin-consolidation/`,
+särskilt `env-local-cleanup-receipt.json` och `main-sync-receipt.json`.
 
 Bevarande före ändring: de tre tidigare dokumentutkasten finns som avgränsad
 patch i huvudcheckoutens privata
@@ -181,21 +259,50 @@ inga nya källfiler, borttagna media, beroenden eller arbetskopior.
 GitGuardian på main: 0 öppna/18 ignorerade i läst källa, övervakning aktiv;
 historik too_large, partiell platsmetadata och queued GitHub-suite kvarstår.
 
-Nästa del är Tal: inspelade klipp, generering och realtid med verkliga filer,
-text/ljud/granskning och avstängd rörlig läppsynk. Roulettens äldre översikts-
-fras säger fortfarande ”kulsläpp + hjulfilm”; samordna den texten med Tal-
-förklaringen och den verifierade renderingen utan att ändra spelmotorn.
-Del 4 är implementerad lokalt: Inspelat tal visar verkliga registerfiler för
-vald dealer och spel, originaltext/språk, format, tillgänglighet och
-hashbundet granskningskvitto. Underkänd, väntande, saknad och ogiltig
-identitet hålls åtskilda; röstprofil/textmall räknas aldrig som färdig film.
-Ny generering visar textmallar separat från realtidens röst-/referensprofil.
-Befintliga spar-, budget- och providergrindar består; ny rörlig läppsynk
-aktiveras inte. Panelen kan läsas även för roulette och skiljer dess
-ofärdiga talanslutning från spelneutrala mallar. Roulettens översikt säger
-nu animerat hjul. Förhandsvisningens eget ljud är tillgängligt och pausas
-när panelen stängs. 34 fokuserade prov utan skip och Lab-build 97 passerar.
-Fullkontroll, sluthead, normal leverans och browseracceptans återstår.
+Del 4 Tal är levererad i PR171. Granskat sluthead
+`e028622deec393c5ee309b751b1e1319fe3922e6` mergades normalt till main
+`80b703eef25de70e9a8bf1114d6396b15b42eb58` den 15 oktober 17:30:10 UTC.
+PR-CI 38776840880 och main-CI 38777872188 är gröna, inklusive faktisk
+SQL-/omstarts-/HTTPS-acceptans. 34 fokuserade prov utan skip, Lab-build
+97 byggspår och fullhook 3 935 pass / 9 villkorade skip / 0 fel/cancel i
+77 grupper. Vercel `dpl_A4tyw9A9vSfNTST9h2R5t1bSGw2B` är READY på
+samma main-SHA och bunden till www.scoutgaming.tech.
+
+Inspelat tal visar verkliga registerfiler för vald dealer och spel, original-
+text/språk, format, tillgänglighet och hashbundet granskningskvitto.
+Underkänd, väntande, saknad och ogiltig identitet hålls åtskilda. Ny generering
+visar textmallar separat från realtidens röst-/referensprofil. Befintliga
+spar-, budget- och providergrindar består. Ny rörlig läppsynk är oansluten.
+
+Egen browseracceptans på huvudadressen:
+- Dragan/Blackjack: fyra registrerade talfiler, noll med verifierat godkännande;
+  den valda `goodluck_1` visar originaltexten ”Inga fler insatser. Här kommer
+  korten.”, SV, video/mp4 och Granskning återstår. Detaljer visar exakt fil-ID,
+  video-/ljudhash, tagning och `kevin-original-mux-unreviewed-v1`.
+- Den faktiska filmen spelades till slut, 3,041667 s, utan mediefel och med
+  muted=false. Ett separat stängningsprov pausade vid 0,295396 s efter
+  verifierat pågående spel. Det bevisar teknisk uppspelning och pausstyrning,
+  inte lyssnad ljudkvalitet eller godkänd läppsynk.
+- De 17 genereringsmallarna är tydligt skilda från inspelningarna. Byte till
+  EN ändrade malltexten men behöll inspelningens svenska text och rent utkast;
+  språkvalet återställdes till SV utan sparning. Realtidsprofilen är inaktiv.
+- Anna/Roulette: noll inspelade talfiler, fyra spelneutrala textmallar och
+  uttryckligt besked att händelsekoppling/dealerchatt återstår. Realtidsprofilen
+  är inaktiv. Översikten beskriver kulsläpp och animerat hjul.
+
+Inga produktionssparningar, publiceringar, spelrundor eller providerjobb
+utfördes. Befintliga rum/publicerade paket 4 och 1 samt blackjackutkast 2
+lämnades orörda. Bilder i den privata evidensmappen: speech-before.png,
+speech-after.png och speech-roulette-after.png. Main-säkerhetsläsningen
+visar 0 öppna / 18 ignorerade incidenter och aktiv övervakning; historik
+`too_large`, partiell platsmetadata och queued GitHub-suite är kvarstående
+separata täckningsgränser. PR-headets GitGuardian-kontroll är grön.
+
+Bortstädat: den missvisande presentationen ”Talbibliotek · inspelade repliker”
+och ”17 platser” är ersatt av verkligt filregister och separat mallbibliotek.
+Sju befintliga filer ändrades; inga nya källfiler, beroenden, medier eller
+arbetskopior skapades eller raderades. Nödvändigt bygge återanvänds.
+Nästa del är env-förenkling enligt planens konsument-/loaderkarta.
 
 PR165, QA, env-värden och rörlig läppsynk förblir parkerade/orörda i denna del.
 
