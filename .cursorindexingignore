@@ -1,4 +1,4 @@
-# Cursor context/index exclusions; files stay available to builds.
+# Legacy/version-dependent Cursor indexing preferences; builds are unchanged.
 # Retired private archive: never read or re-index.
 /random-stuff-jakob/jakob-docs/arkiv/
 /random-stuff-jakob/jakob-docs/KEVIN-ATKOMST-PRIVAT.txt
@@ -63,7 +63,10 @@ vendor/
 *.sqlite3
 *.db
 
-# Indexing only. These paths stay readable on an explicit open.
+# Legacy index-only intent; support depends on the Cursor version/indexer.
+# Do not rely on this file for Instant Grep or as a file-access boundary.
+# Cursor discovery uses .cursorignore/.gitignore; ordinary rg uses .ignore.
+# Codex, terminal and MCP access also follow their own permissions/instructions.
 # Secrets and private data stay in .cursorignore, not only here.
 /media/.migration/
 /media/**/source/

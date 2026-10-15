@@ -1,4 +1,5 @@
-# Cursor context/index exclusions; files stay available to builds.
+# Cursor discovery/access exclusions; files stay available to builds.
+# These are not filesystem permissions for Codex, terminal or MCP tools.
 /arkiv/
 # Retired private archive: never read or re-index.
 /random-stuff-jakob/jakob-docs/arkiv/
@@ -65,8 +66,8 @@ vendor/
 *.db
 
 # Local migration journals stay hidden. Heavy tracked project text is not
-# listed here: .cursorindexingignore stops indexing, and an explicit read
-# is allowed. See AGENTS.md.
+# listed here. .cursorindexingignore is legacy/version-dependent; do not
+# assume Instant Grep honors its index-only exclusions. See AGENTS.md.
 /media/.migration/
 
 # Canonical recovery archive; inspect only when needed.

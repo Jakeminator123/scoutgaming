@@ -8,7 +8,7 @@ import { LandingLogo } from "./landing-experience"
 
 const PRIMARY: { label: string; href: string; mode: SiteMode; isNew?: boolean }[] = [
   { label: "Scout Gaming", href: "https://scoutgaminggroup.com/", mode: "fantasy" },
-  { label: "Blackjack", href: "/play", mode: "live", isNew: true },
+  { label: "Blackjack", href: "/lobby", mode: "live", isNew: true },
 ]
 
 const glow = "transition-all duration-300 hover:text-lime hover:drop-shadow-[0_0_8px_var(--scout-lime)]"
@@ -25,7 +25,7 @@ export function SiteNav() {
           <ul className="flex items-center gap-8 lg:gap-10">
             {PRIMARY.map((item) => (
               <li key={item.label} className="relative">
-                <Link
+                <a
                   href={item.href}
                   className={`cursor-pointer text-base font-bold tracking-[0.15em] text-off uppercase ${glow} ${
                     mode === item.mode ? "text-lime drop-shadow-[0_0_8px_var(--scout-lime)]" : ""
@@ -36,7 +36,7 @@ export function SiteNav() {
                   onBlur={() => setHover(null)}
                 >
                   {item.label}
-                </Link>
+                </a>
                 {item.isNew && (
                   <span className="absolute -top-4 left-1/2 -translate-x-1/2 -rotate-6 rounded-sm bg-lime px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-widest text-ink uppercase">
                     Ny
@@ -54,9 +54,9 @@ export function SiteNav() {
           size="sm"
           className="min-h-11 shrink-0 rounded-md bg-lime px-4 font-semibold text-ink transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_var(--scout-lime)]"
         >
-          <Link href="/play">
+          <a href="/lobby">
             Välj bolag <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          </a>
         </Button>
       </nav>
       <div className="mt-4 text-right lg:hidden"><Link href="/about" className="inline-flex min-h-11 items-center text-sm text-off/80 hover:text-lime">Om Scout <ArrowRight className="ml-2 h-3 w-3" aria-hidden="true" /></Link></div>

@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FantasyModeProvider } from "@/components/landing/fantasy-mode"
@@ -38,18 +37,8 @@ export default function Home() {
                   size="lg"
                   className="rounded-full bg-lime px-8 text-sm font-semibold tracking-wide text-ink uppercase transition-all duration-300 hover:bg-lime2 hover:shadow-[0_0_20px_var(--scout-lime),0_0_40px_var(--scout-lime2)]"
                 >
-                  <Link href="/play">
-                    Välj bolag <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="rounded-full border-2 border-off/70 bg-transparent px-8 text-sm font-semibold tracking-wide text-off uppercase transition-all duration-300 hover:border-lime hover:bg-off/10 hover:text-lime"
-                >
                   <a href="/lobby">
-                    Lobby <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    Välj bolag <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </a>
                 </Button>
                 <Button

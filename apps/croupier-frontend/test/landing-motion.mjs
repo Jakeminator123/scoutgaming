@@ -65,7 +65,11 @@ test('server-rendered landing is complete without loading desktop code, videos o
   const { default: Home } = load(resolve(root, 'app/page.tsx'));
   const html = renderToStaticMarkup(React.createElement(Home));
   assert.match(html, /Välj ditt bord/);
-  assert.match(html, /href="\/play"/);
+  const entries = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)]
+    .filter(([,attrs,body]) => /Välj bolag|Blackjack/.test(body) || /aria-label="Välj bolag/.test(attrs));
+  assert.equal(entries.length, 4, 'nav, primary action and dealer card remain available');
+  for (const [,attrs] of entries) assert.match(attrs, /href="\/lobby"/);
+  assert.doesNotMatch(html, /href="\/play"/);
   assert.match(html, /images\/astrid-card-poster\.jpg/);
   assert.match(html, /data-landing-motion="static"/);
   assert.doesNotMatch(html, /<video|<canvas|intro-root|retro-window|floor-stage|preserve-3d|will-change|mode-tint|animate-/);
@@ -125,4 +129,14 @@ test('history pagehide stops playback and pageshow rechecks current media before
     h.media.matches = false; h.event(h.media, 'change'); h.event(h.win, 'pagehide'); h.visible(false);
     assert.deepEqual(h.changes, [false, true, false, true], 'unmount removes listeners');
   } finally { h.restore(); }
+});
+
+
+test('animated dealer card and shared site header enter the new public lobby', () => {
+  for (const [file,name] of [['hero-card','HeroCard'],['site-header','SiteHeader']]) {
+    const Component = load(resolve(root, 'components/landing/' + file + '.tsx'))[name];
+    const html = renderToStaticMarkup(React.createElement(Component));
+    assert.match(html, /href="\/lobby"/);
+    assert.doesNotMatch(html, /href="\/play"/);
+  }
 });

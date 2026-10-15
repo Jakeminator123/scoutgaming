@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { type CSSProperties, useEffect, useRef, useState } from "react"
 import { ArrowRight, RotateCcw, Volume2, VolumeX } from "lucide-react"
 import { DealerButton, DecoCard } from "./deco"
@@ -261,8 +260,8 @@ export function HeroCard() {
           }`}
           style={jolt !== null ? joltStyle(jolt) : undefined}
         >
-          <Link
-            href={fantasy ? "https://scoutgaminggroup.com/" : "/play"}
+          <a
+            href={fantasy ? "https://scoutgaminggroup.com/" : "/lobby"}
             aria-label={fantasy ? "Besök Scout Gaming Group" : "Välj bolag, spelrum och dealer"}
             className="block [transform-style:preserve-3d]"
           >
@@ -352,7 +351,7 @@ export function HeroCard() {
                 <div aria-hidden="true" className="absolute inset-0 mix-blend-soft-light" style={SHINE} />
               </div>
             </div>
-          </Link>
+          </a>
 
           <div className="absolute top-6 left-6 flex gap-2">
             <button

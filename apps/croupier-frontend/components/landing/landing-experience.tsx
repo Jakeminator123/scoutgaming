@@ -74,7 +74,7 @@ export function LandingLogo() {
 export function LandingHero() {
   const effects = useContext(DesktopContext)
   return effects ? <effects.HeroCard /> : (
-    <Link href="/play" aria-label="Välj bolag, spelrum och dealer"
+    <a href="/lobby" aria-label="Välj bolag, spelrum och dealer"
       className="relative block w-full max-w-sm overflow-hidden rounded-2xl border border-off/20 bg-ink">
       {/* A still image needs neither an autoplay decoder nor a 3D compositing layer. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -85,6 +85,6 @@ export function LandingHero() {
         <p className="mt-2 text-3xl font-semibold text-off">Hitta ditt bord</p>
         <span className="mt-4 inline-flex min-h-11 items-center rounded-full bg-lime px-5 text-sm font-semibold text-ink">Välj bolag →</span>
       </div>
-    </Link>
+    </a>
   )
 }

@@ -148,6 +148,13 @@ export function Header() {
           />
         </nav>
 
+        <a
+          href="/play/profil"
+          className="ml-auto mr-4 inline-flex min-h-11 shrink-0 items-center text-sm text-muted-foreground transition-colors hover:text-foreground lg:ml-0"
+        >
+          Min profil
+        </a>
+
         <div className="hidden items-center gap-3 md:flex">
           {playUrl ? (
             <a

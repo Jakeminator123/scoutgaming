@@ -213,7 +213,7 @@ export function playerAreaModel(data, surface) {
   const operator = data?.operator?.slug && data.operator.name ? {slug: data.operator.slug, name: data.operator.name} : null;
   const playPath = operator ? operatorPlayPath(operator.slug) : '/play/blackjack';
   const primary = surface === 'profil'
-    ? {href: '/play', label: 'Till spellobbyn'}
+    ? {href: '/lobby', label: 'Till spellobbyn'}
     : surface === 'historik'
       ? {href: '/play/blackjack', label: 'Spela en runda'}
       : {href: signedIn || outage ? playPath : operator ? operatorLoginPath(operator.slug) : LOGIN_BLACKJACK, label: 'Spela Blackjack'};
@@ -237,7 +237,8 @@ export function playerAreaModel(data, surface) {
       : surface === 'profil' && kind ? [{label: 'Kontotyp', status: kind}]
         : surface === 'historik' && signedIn && !historyRows.length && !outage ? [{label: 'Historik', status: 'inga rundor'}] : [],
     links: surface === 'lobby' && signedIn && !outage
-      ? [{href: '/play/profil', label: 'Egen profil'}, {href: '/play/historik', label: 'Egen historik'}] : [],
+      ? [{href: '/play/profil', label: 'Egen profil'}, {href: '/play/historik', label: 'Egen historik'}]
+      : surface === 'profil' && signedIn && !outage ? [{href: '/play/historik', label: 'Spelhistorik'}] : [],
     sentence: surface === 'lobby' && state === 'out' ? LOGIN_SENTENCE : null,
     primary,
     empty: surface === 'historik' && signedIn && !outage && !historyRows.length ? HISTORY_EMPTY : null,

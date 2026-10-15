@@ -1,5 +1,24 @@
 # Aktuell handoff — Scoutgaming
 
+## Publik Lobby-ingång och profil, 15 oktober 2026
+
+Startsidan leder nu till `/lobby`; Lobby har en synlig Min profil-länk till
+befintlig serverautentiserad profil och vidare till Spelhistorik. Profilens
+retur går till Lobby utan nya returparametrar eller ändrad sessionsauth.
+Dealer-dialogens Escape/Stäng återför fokus till rätt dealerknapp.
+43 riktade prov passerar utan skip, inklusive riktig isolerad Chrome med
+syntetisk katalog, tabbning, fokusretur efter stänganimation och oförändrad
+spellänk. Frontendens och Lobbyns typkontroller samt Lab-build med 97 byggspår
+passerar. Ordinarie fullhook med Chrome passerar: 3 885 godkända, 9 villkorade
+skip, 0 fel/cancel i 77 grupper. Levererad liveacceptans väntar. Inget spel eller media
+ändras och C4:s fulla destinations-/rollmatris bockas inte av. Ignoretexterna
+är förtydligade för Cursor/Instant Grep; alla globregler och arkivförbud består.
+
+Efter normal integration av main `a0eca7a8` byggdes Lab om eftersom PR161
+ändrade dess serverkod: 97 byggspår passerar. Integrationsfullhook med Chrome:
+3 902 godkända, 9 villkorade skip, 0 fel/cancel i 77 grupper. De tidigare
+fokus-/fullhookkvittona ovan gäller före integrationen; liveacceptans väntar.
+
 ## C4: direktöppning av Admin, 15 oktober 2026
 
 Samordnaren reproducerade Chromes dokumentnavigation-500 på `d6d56803` för

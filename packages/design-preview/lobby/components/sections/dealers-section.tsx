@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowRight, Check, Lock } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CatalogueArtwork } from '@/components/catalogue-artwork';
@@ -32,6 +32,7 @@ function DealerArtwork({ dealer, selected = false, available = false, detail = f
 export function DealersSection() {
   const { operator, room, dealer, availableDealers, selectDealer, status } = useLobby();
   const [openFor, setOpenFor] = useState<string | null>(null);
+  const dialogTrigger = useRef<HTMLButtonElement | null>(null);
   const locked = status !== 'ready' || !operator || !room;
   const cards = dealerCards(locked ? [] : availableDealers);
   const selectionKey = operator && room && dealer ? `${room.key}:${dealer.id}` : null;
@@ -63,8 +64,9 @@ export function DealersSection() {
             return <li key={item.id}>
               <button type="button" disabled={!available} aria-pressed={selected}
                 aria-label={available ? `Välj ${item.name}` : `${item.name} – inte tillgänglig i valt spelrum`}
-                onClick={() => {
+                onClick={event => {
                   if (!available || !room) return;
+                  dialogTrigger.current = event.currentTarget;
                   selectDealer(item.id);
                   setOpenFor(`${room.key}:${item.id}`);
                 }}
@@ -89,7 +91,14 @@ export function DealersSection() {
       </div>
     </div>
     <Dialog open={!locked && openFor !== null && openFor === selectionKey} onOpenChange={value => { if (!value) setOpenFor(null); }}>
-      <DialogContent className="max-h-[92vh] max-w-[calc(100%-2rem)] overflow-y-auto border-border bg-card p-0 sm:max-w-3xl">
+      <DialogContent onCloseAutoFocus={event => {
+        const trigger = dialogTrigger.current;
+        dialogTrigger.current = null;
+        if (trigger?.isConnected && !trigger.disabled) {
+          event.preventDefault();
+          trigger.focus();
+        }
+      }} className="max-h-[92vh] max-w-[calc(100%-2rem)] overflow-y-auto border-border bg-card p-0 sm:max-w-3xl">
         {operator && room && dealer && <div className="grid md:grid-cols-2">
           <DealerArtwork key={selectionKey} dealer={dealer} detail />
           <div className="flex flex-col p-6 md:p-8">
