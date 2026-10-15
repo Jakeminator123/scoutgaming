@@ -12,7 +12,10 @@ Oberoende statisk granskning fann inga konkreta regressionsfel. Kodagentens
 58 riktade prov passerar utan skip: widgetbeteende, oförändrad N1-start på
 omarkerade ytor, befintliga publika assistent-/entréprov och riktig spelmall
 genom Studio-preview-handlern. Det är inte ny full roll- eller medieacceptans.
-Samordnarens bygge, fullhook och levererade mobilprov redovisas vid leverans.
+Samordnarens Lab-build passerade med 97 kontrollerade byggspår. Kodcommit
+`82986fdd9c8156e818f2bd949b1613bcc353e769` passerade ordinarie fullhook:
+3 854 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper, med riktiga isolerade
+Chrome-prov. Levererat mobilprov återstår vid detta kodkvitto.
 
 ## Env och Dragan i produktionsvärdens isolerade provspel, 15 oktober 2026
 
