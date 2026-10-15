@@ -1,4 +1,27 @@
 # Aktuell handoff — Scoutgaming
+## Verklig N2-kedja och enklare kontomeny, 15 oktober 2026
+
+Den befintliga C6-fixturen går nu via verklig PartnerOperatorWorkspace och
+branding innan anonym Lobby. Samma revision/rum, meny/reload/historik,
+bolagsstandard, partner/staff-skillnad och främmande bolag 403 verifieras.
+Lokal Chrome: 2 pass/0 skip. Testcommit `dc7923b3`: fullhook 3 852 pass,
+9 skip, 0 fel i 77 grupper. Syntetiska sessioner/minnesdata; ingen ny login,
+N2-skrivning, full RSC-, produktions- eller spel-/medieacceptans tillskrivs provet.
+
+Läsande produktionsnavigation på `37b9d6fd` fann dubbla ingångar till samma
+kontovy och en loggsida utan klickbar journalväg. Desktop/mobil har nu en
+kontomenyingång, spelaraliaset behåller routing/aktivt val/brödsmula och
+loggsidan länkar till Bolag & team. 25 befintliga fokusprov passerar.
+Oberoende granskning omfattar testfixturen och den slutliga mobilrättningen.
+Slutlig UI-kodcommit `99882451cd4e8e39ee9c64c06bd3815f4afb6cac`: Lab-build 97 kontrollerade byggspår och fullhook med riktig Chrome 3 852 pass/9 skip/0 fel i 77 grupper. Den tidigare avbrutna körningen räknas inte som godkänd.
+
+Senast slutkontrollerad produktionsbas är `37b9d6fd`: main-CI 38658966013
+success, Vercel `dpl_7rfHiUWpznv8YQfqJUgKtm6B7v53` READY och Render
+`dep-db81p9c9v7es73bepus0` live; faktisk engine health/version gav ok och samma
+SHA den 15 oktober 00:24 UTC. Egna `admin-room-context` är bekräftat
+app-arkiverad med fem egna dependency-länkar borttagna och målen bevarade.
+Tidigare versionsbundna kvitton nedan är historik. PR91:s privata kodexport
+väntar fortsatt på mänskligt godkännande; ingen sandbox körs.
 
 ## Rumskontext och fokus — levererad navigation verifierad, 15 oktober 2026
 

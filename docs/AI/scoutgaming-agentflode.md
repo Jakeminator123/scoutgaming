@@ -18,6 +18,13 @@ export av privat spelarkod återstår. Kvitton i [handoffen](../JOHN-HANDOFF.md)
 lokal fullhook (3 852 pass/9 skip/0 fel), CI och produktionsprov;
 överlappande underagentprov summeras inte.
 
+C6:s tidigare API-steg ersätts nu av faktisk N2-arbetsyta i samma isolerade
+browserkedja. Underagentens Chrome-kvitto (2/2, inga skip) och oberoende
+kodgranskning hålls isär; lokal fullhook och CI redovisas separat. En läsande
+produktionskontroll fann dubblerad kontonavigation och en journalhänvisning
+utan länk. De små UI-rättningarna behåller gamla adresser och servergränser.
+Inga nya testidentiteter eller produktionsdata behövdes.
+
 `node tools/check-admin-navigation.mjs` kör befintliga riktade tester med
 fyra arbetare (`--plan` visar urvalet). Det är ett snabbt utvecklingsprov;
 ordinarie fullhook och CI behåller alla kontroller inför leverans.
