@@ -84,6 +84,15 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
       sourceAligned:!missing&&['scale','x','y'].every(name=>(referenceFraming?.[name]??(name==='scale'?1:0))===(framing?.[name]??(name==='scale'?1:0)))};
   }
   const actorFrame=document.createElement('canvas');
+  let movingSpeech=null,unpatchedFrame=null;
+  function setMovingSpeechLayer(layer) {
+    if(layer!==null&&(!layer||typeof layer.paint!=='function'||typeof layer.close!=='function'))throw Error('Invalid moving speech layer');
+    if(layer===movingSpeech)return;
+    movingSpeech?.close();movingSpeech=null;
+    // Cancellation/replanning also removes a mouth from a held dealer frame.
+    if(unpatchedFrame){const context=actorFrame.getContext('2d');context.clearRect(0,0,actorFrame.width,actorFrame.height);context.drawImage(unpatchedFrame,0,0);actorFrame.src=`presented-frame-${++frameNumber}`;unpatchedFrame.width=unpatchedFrame.height=0;unpatchedFrame=null;paintHeld();}
+    if(closed){layer?.close();return;}movingSpeech=layer;
+  }
   function assets() {
     const map=new Map();
     for(const [role,node]of mounts){const width=node.videoWidth||node.naturalWidth,height=node.videoHeight||node.naturalHeight;if(width&&height)map.set(role,{el:node,width,height});}
@@ -152,6 +161,7 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     render(role,id);paintHeld();if(role==='background'&&backgroundVisible)backgroundPlayback?.start();
   }}
   function replace(value) {
+    setMovingSpeechLayer(null);
     backgroundPlayback?.close();backgroundPlayback=null;
     ++preparation;current=validateComposition(value);key=null;referenceFraming=null;lastGeometry='';stopAnimation();compositor?.canvas?.style.setProperty('visibility','hidden');
     for(const role of ['background','table'])render(role,current[role].default);
@@ -173,21 +183,29 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
     if(signature!==lastGeometry){lastGeometry=signature;for(const listener of geometryListeners)listener();}
     return true;
   }
-  function renderFrame(video) {
+  function renderFrame(video,presented) {
     if(closed)return false;
     if(!key||!compositor){host.dataset.presentationClipMode='unavailable';if(compositor)compositor.canvas.style.visibility='hidden';throw Error('Dealer background removal unavailable');}
     if(!video.videoWidth||!video.videoHeight)throw Error('Dealer frame unavailable');
     const targetWidth=1920,targetHeight=1080;
     if(actorFrame.width!==targetWidth||actorFrame.height!==targetHeight){actorFrame.width=targetWidth;actorFrame.height=targetHeight;}
     const context=actorFrame.getContext('2d');
-    drawDealerFrame(context,video,targetWidth,targetHeight,framing??undefined);
+    // Mouth pixels belong to the source dealer before framing, keying, table
+    // occlusion and authoritative cards. No independent foreground overlay.
+    const source=movingSpeech?.paint(video,presented)??video;
+    if(source!==video){
+      unpatchedFrame??=document.createElement('canvas');
+      unpatchedFrame.width=targetWidth;unpatchedFrame.height=targetHeight;
+      drawDealerFrame(unpatchedFrame.getContext('2d'),video,targetWidth,targetHeight,framing??undefined);
+    }else if(unpatchedFrame){unpatchedFrame.width=unpatchedFrame.height=0;unpatchedFrame=null;}
+    drawDealerFrame(context,source,targetWidth,targetHeight,framing??undefined);
     actorFrame.src=`presented-frame-${++frameNumber}`;
     paintHeld();compositor.canvas.style.visibility='';host.dataset.presentationClipMode='green-screen';
     if(raf===null&&view.requestAnimationFrame)raf=view.requestAnimationFrame(animate);
     return true;
   }
   if(current)replace(current);
-  return {setBackground:id=>set('background',id),setTable:id=>set('table',id),replace,prepareClip,renderFrame,
+  return {setBackground:id=>set('background',id),setTable:id=>set('table',id),replace,prepareClip,renderFrame,setMovingSpeechLayer,
     referencePlane,onGeometryChange(listener){geometryListeners.add(listener);return()=>geometryListeners.delete(listener);},
     backgroundEvent:(eventId,eventKey)=>backgroundPlayback?.event(eventId,eventKey)??false,
     setBackgroundVisible(visible){backgroundVisible=Boolean(visible);
@@ -195,5 +213,5 @@ export function createLayerComposition(document, initial, {loadRuntime=()=>impor
       const base=mounts.get('background');if(base?.tagName==='VIDEO'){base.autoplay=backgroundVisible;
         if(backgroundVisible)Promise.resolve(base.play?.()).catch(()=>{});else base.pause?.();}},
     hold:()=>{if(key)paintHeld();},
-    close(){geometryListeners.clear();backgroundPlayback?.close();backgroundPlayback=null;closed=true;++preparation;stopAnimation();for(const node of mounts.values()){node.pause?.();node.remove();}mounts.clear();compositor?.dispose();compositor?.canvas.remove();}};
+    close(){setMovingSpeechLayer(null);geometryListeners.clear();backgroundPlayback?.close();backgroundPlayback=null;closed=true;++preparation;stopAnimation();for(const node of mounts.values()){node.pause?.();node.remove();}mounts.clear();compositor?.dispose();compositor?.canvas.remove();}};
 }

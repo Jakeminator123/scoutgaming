@@ -18,17 +18,79 @@ Det lokala talarkivet med 18 klipp är däremot fryst på `5134d927`; fyra klipp
 skiljer sig från aktuell staging: `blackjack_4`, `win_1`, `greeting_1`, `bust_1`.
 Hashlikhet är proveniens, inte ny visuell eller läppsynksmässig acceptans.
 
-Rörligt genererat tal är fortfarande inte anslutet till vår spelare.
+Rörligt genererat tal är fortfarande inte aktiverat från dealerchatten.
 Kevins staging skickar `karta`, `ljud_id`, `fran_ruta` och PCM 24 kHz,
 och tar emot `lapp`-metadata samt rå H.264 för färg/mask. Vår gatewayrelay
 accepterar ett annat start-/svarsformat (`stream`/MP4, `done`, `error`).
 Kevins rektanglar är källpixlar; `web/moving-speech-plan.mjs` kräver
-normaliserade koordinater. Modulen är uttryckligen förberedande och saknar
-spelarkonsument; den aktiva talvägen använder verifierad referensbild.
-En fungerande integration kräver transport/avkodning och koppling till
-exakt visad dealerbild före crop/keying, med bibehållen hash-, revisions-
-och avbrytningskontroll. Att byta endpoint räcker inte. Emils pod/worker
-och dess inställningar lämnades orörda; inga GPU-jobb startades för denna kontroll.
+normaliserade koordinater i sin servermatchare. Den nya webbläsarkonsumenten
+nedan använder i stället protokollets källpixlar direkt och kontrollerar att
+rektangeln ryms i originalbilden. Den aktiva talvägen använder ännu verifierad
+referensbild. Att byta endpoint räcker inte.
+
+### Avkodning i dealerlagret, 15 oktober 2026
+
+Scoutgamings befintliga Blob-resurser, Neon-register, frysta publiceringspaket
+och Admin-arbetsflöden är fortsatt auktoritet. Anpassa workeradaptern till dem;
+importera inte Kevins filregister, BO, nyckellagring eller katalogstruktur som
+ny runtime. Protokollets `tagning` är en explicit mappning till vår verifierade
+medieidentitet, aldrig en alternativ sökväg för att hämta valfri fil.
+
+`web/public/moving-speech-frame-layer.mjs` avkodar workerns Annex-B H.264
+med WebCodecs: 256×512, färg överst och grå alfamask underst, högst tolv
+bildrutor per bit. Protokollreferens är `public/lip-layer.js` på staging-SHA:n
+ovan. Planens digest kontrolleras med samma binding, tidslinje och `fran_ruta`
+som `prepareMovingSpeechPlan`. Detta kontrollerar descriptorintegritet;
+servern måste fortfarande verifiera filernas och avatarbankens faktiska byte.
+
+`createLayerComposition.setMovingSpeechLayer(layer)` är den explicita
+kopplingspunkten. `renderFrame(video, presented)` kräver aktuell binding,
+planhash, tagning, verklig visad kroppsruta, källfilens hash samt en spelande
+ljudklocka. `audioTimeSeconds` är position i slutligt PCM utan inledande tystnad;
+workerns 220 ms läggs till en gång när kartans ruta väljs. Pausat ljud, fel
+revision, annan källa eller en sen/saknad ruta lämnar originalkroppen synlig.
+Ingen närliggande munruta väljs. Exakt matchning kan därför visa färre
+munrutor än Kevins toleranta sökning; detta behöver mätas i ett riktigt prov.
+
+Färg och mask sammanfogas på källbilden **före** dealerbeskärning och keying.
+Bakgrund, bord och serverägda kort behåller sina befintliga lager. Byte av
+komposition, borttagning av tallagret och stängning frigör bildrutorna;
+borttagning återställer också en eventuell kvarhållen kropp utan munbild.
+Inkommande byte, kö, antal lagrade rutor och avkodningstid är begränsade.
+
+Detta är en testad, opt-in konsument, inte ett färdigt produktionsflöde:
+ingen spel-/chattkod installerar den automatiskt, ingen relay eller endpoint
+byts och inget GPU-jobb startas. Kvar är en autentiserad workeradapter som
+parar `lapp` med nästa binärmeddelande och hanterar backpressure/`avbryt`,
+serverns tidsplanering/replanering, verifierat avatarpaket mot publicerade
+klipp och ljudklockan i den faktiska spelaren. Den vägen ska behålla befintliga
+åtkomst-, budget-, text-, röst- och profilkontroller. Först därefter görs två
+sammanhängande riktiga talprov, inklusive hit/planbyte och avbrott.
+
+Riktade tester verifierar identiteter, revisioner, alfamask, pixelplacering,
+avbrott, buffertgränser och oförändrad kortgeometri. Opt-in Chrome-provet i
+`test/moving-speech-frame-layer.mjs` avkodar och målar ett lokalt syntetiskt
+H.264-exempel två gånger. Det kräver befintlig Playwright via
+`CROUPIER_BROWSER_FIXTURE_MODULE`, valfri `CROUPIER_BROWSER_FIXTURE_CHANNEL`
+och ffmpeg på PATH. Inga personfilmer, sparade inloggningar eller externa
+providers används. Detta är codec-/kompositionsbevis, inte läppsynksacceptans.
+
+### Emils uppdaterade överlämning och isolering
+
+Emil anger worker/image `fe1b55e971b1236fadd445ff6ce94970719b5d72`, privat
+repo `EmaCodeHero/croupier-lipsync-worker` och releasen `avatarer` med
+`avatar-<id>.tar`. Repo-läsning med Jakobs konto gav fortfarande 404 vid
+denna kontroll. Överlämningen beskriver avatarbankerna men innehåller inte
+deras byte eller verifierbara hashar. Anna behöver ett eget förberett paket;
+Paows eller Dragges paket får inte användas för henne.
+
+Enligt Emil kör demot nu dedikerade `croupier-lipsync-pod1` och
+`croupier-lipsync-pod5`. **Ändra dem inte och anslut aldrig vår worker till
+staging med dess token.** En egen worker får endast ansluta till vår isolerade
+spelserver med egen token, efter separat uppsättning. Cartesia är TTS och ger
+inte åtkomst till worker-koden eller avatarpaketen; Paow/Dragge använder
+ElevenLabs enligt de tidigare dokumenterade röstvalen. Ingen env, pod,
+workerinställning eller extern tjänst ändrades i denna implementation.
 
 ## Kevins Dragan/Paow: filmurval och rörligt tal, 13 oktober 2026
 

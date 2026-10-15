@@ -1,4 +1,21 @@
 # Aktuell handoff — Scoutgaming
+## Förberedd konsument för rörlig läppsynk, 15 oktober 2026
+
+Egen featurebranch bygger vidare på `654ab9e2`. WebCodecs-konsumenten för
+Emils råa H.264 färg/mask är kopplad till den gemensamma kompositionens
+dealerbild före framing/keying. Exakt plan-, dealer-, ljud-, avatar-,
+källhash- och bildrutematchning krävs. Avbrott stänger dekodern, frigör rutor
+och återställer den kvarhållna kroppen. Ingen ny överlagring över bord/kort.
+
+Det är en explicit kopplingspunkt, inte aktiverad dealerchatt eller byte av
+provider. Riktade tester och två verkliga Chrome-avkodningar med syntetiskt
+material passerar; personernas tal/läppsynk har inte fått ny acceptans.
+Detaljer och återstående transport-/spelararbete finns i
+[LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md).
+Worker-repot/avatarpaketen är ännu otillgängliga för Jakobs konto. Emils
+senaste handoff anger två dedikerade demopoddar som inte får ändras eller
+få nya anslutna workers. Ingen env eller extern inställning ändrades.
+
 ## Fria mobilkontroller på spelborden, 15 oktober 2026
 
 Produktionsprovet med Dragan visade att Adminrobotens flytande knapp skymde

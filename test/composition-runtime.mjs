@@ -290,6 +290,34 @@ test('game plane follows scene resize but stays anchored to the base idle during
   c.close();
 });
 
+test('moving mouth stays inside the framed dealer; cancellation restores the held body and preserves card geometry',async()=>{
+  const {descriptor}=fixture(),host={dataset:{},clientWidth:1920,clientHeight:1080,append(){}};
+  const canvases=[],renders=[];
+  const document={documentElement:{dataset:{}},querySelector:()=>host,createElement:tag=>{
+    const context={draws:[],clearRect(){},drawImage(...args){this.draws.push(args);}};
+    const node={tagName:tag.toUpperCase(),dataset:{},style:{setProperty(){}},complete:true,
+      ...(tag==='canvas'?{}:{naturalWidth:720,naturalHeight:1280}),
+      setAttribute(){},remove(){},addEventListener(){},removeEventListener(){},getContext:()=>context};
+    if(tag==='canvas')canvases.push(node);return node;
+  }};
+  class SharedCompositor{constructor(canvas){this.canvas=canvas;}geometry(scene){return stageGeometry(scene);}render(scene,actor,assets){renders.push({scene,actor,assets});}dispose(){}}
+  const c=createLayerComposition(document,descriptor,{loadRuntime:async()=>({Compositor:SharedCompositor})});
+  const body={videoWidth:1080,videoHeight:1920},patched={width:1080,height:1920},presented={exact:'frame'};
+  await c.prepareClip(key,{scale:.75,x:.1,y:0},{kind:'idle'});c.renderFrame(body);
+  const plane=c.referencePlane(),actor=renders.at(-1).actor;let closed=0;
+  const layer={paint(source,evidence){assert.equal(source,body);assert.equal(evidence,presented);return patched;},close(){closed++;}};
+  c.setMovingSpeechLayer(layer);c.renderFrame(body,presented);
+  assert.equal(actor.getContext().draws.at(-1)[0],patched);
+  assert.deepEqual(actor.getContext().draws.at(-1).slice(1),actor.getContext().draws[0].slice(1),'same source framing');
+  assert.deepEqual(c.referencePlane(),plane);
+  assert.deepEqual([...renders.at(-1).assets.keys()],['background','table'],'no fourth scene plane');
+  c.setMovingSpeechLayer(null);assert.equal(closed,1);
+  const restored=actor.getContext().draws.at(-1)[0];
+  assert.equal(restored.getContext().draws.at(-1)[0],body,'held frame restores original body');
+  c.setMovingSpeechLayer(layer);c.replace(descriptor);assert.equal(closed,2);
+  c.setMovingSpeechLayer(layer);c.close();assert.equal(closed,3);
+});
+
 test('public capability metadata is exact and cannot read data, select media or authorize writes',async()=>{
   let reads=0;const handler=createPresentationApi({store:{load:async()=>{reads++;throw Error('must not read');}},registryLoader:async()=>{reads++;}});
   for(const [method,query,status]of [['GET','',200],['HEAD','',200],['GET','?registeredDealerIds=astrid',400],['POST','',405]]){
