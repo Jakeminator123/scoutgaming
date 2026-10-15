@@ -39,8 +39,10 @@ Bevarande före ändring: de tre tidigare dokumentutkasten finns som avgränsad
 patch i huvudcheckoutens privata
 arkiv/2026-10-15/admin-consolidation/preexisting-docs.patch.
 Materialkorten är lokalt implementerade: 31 riktade regressioner passerar
-utan skip; Lab-build passerar med 97 kontrollerade byggspår. Fullhook,
-slutgranskning, PR/CI och produktionsacceptans återstår. Ingen merge eller
+utan skip; Lab-build passerar med 97 kontrollerade byggspår. Kodcommit
+02297fba462762837e77722636de15d8c59eb387 passerar ordinarie fullhook
+med Chrome: 3 911 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
+Slutgranskning av PR-head, GitHub-CI och produktionsacceptans återstår. Ingen merge eller
 deployment har utförts i denna leverans. Förebilder och bygglogg ligger i
 samma privata evidensmapp.
 

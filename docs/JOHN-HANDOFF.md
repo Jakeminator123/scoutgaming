@@ -10,8 +10,10 @@ leveransström; inga nya underagenter eller testmiljöer.
 Första delen sammanför materialkort och befintlig säker papperskorg, rättar
 spelurvalets dubbla lista och visar förhandsvisning/format/fel på kortet.
 Lokalt: 31 riktade tester utan skip samt Lab-build med 97 byggspår passerar.
-Fullhook, slutgranskning, PR/CI och liveacceptans återstår. Ingenting i denna
-del är ännu mergat eller driftsatt.
+Kodcommit 02297fba462762837e77722636de15d8c59eb387 passerar fullhook
+med Chrome: 3 911 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
+Slutgranskning av PR-head, GitHub-CI och liveacceptans återstår. Ingenting
+i denna del är ännu mergat eller driftsatt.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad
