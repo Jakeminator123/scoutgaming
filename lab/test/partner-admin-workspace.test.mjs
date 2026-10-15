@@ -354,3 +354,25 @@ test('internal administrator journal uses the actual admin ID without impersonat
  f.users[0].role='reader';
  assert.equal((await handlePartnerAuth(request(f.admin,selected('journal')),f.config)).status,401);
 });
+
+
+test('proxied partner document still requires current sessions and the selected operator membership',async()=>{
+  const f=await fixture();
+  const headers={'sec-fetch-site':'cross-site','sec-fetch-mode':'cors','sec-fetch-dest':'document'};
+  const open=(cookie,slug=john.slug,extra={})=>partnerWorkspaceInitialData(request(cookie,`/partner/${slug}/rooms`,{headers:{...headers,...extra}}),{
+    config:f.config,store:f.store,operatorSlug:slug,
+  });
+  const before=structuredClone(f.pool.tables.operator_memberships);
+  for(const cookie of [f.admin,f.lab,f.partner]) {
+    const result=await open(cookie);
+    assert.equal(result.snapshot.operator.id,john.id);
+    assert.equal(result.session.accessClass,cookie===f.partner?'partner':'internal-admin');
+  }
+  await assert.rejects(()=>open(''),expectStatus(401));
+  await assert.rejects(()=>open('bo_jwt=invalid'),expectStatus(401));
+  await assert.rejects(()=>open(f.partner,other.slug),expectStatus(403));
+  for(const sentOrigin of ['https://evil.invalid',origin]) await assert.rejects(()=>open(f.admin,john.slug,{origin:sentOrigin}),expectStatus(403));
+  f.users[0].epoch+=1;
+  await assert.rejects(()=>open(f.admin),expectStatus(401));
+  assert.deepEqual(f.pool.tables.operator_memberships,before);
+});

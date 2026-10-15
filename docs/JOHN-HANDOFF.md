@@ -7,13 +7,23 @@ Den aktuella genomförandeplanen finns överst i
 för små verifierade leveranser till befintlig Admin. En arbetskopia och en
 leveransström; inga nya underagenter eller testmiljöer.
 
-Första delen sammanför materialkort och befintlig säker papperskorg, rättar
-spelurvalets dubbla lista och visar förhandsvisning/format/fel på kortet.
-Lokalt: 31 riktade tester utan skip samt Lab-build med 97 byggspår passerar.
-Kodcommit 02297fba462762837e77722636de15d8c59eb387 passerar fullhook
-med Chrome: 3 911 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
-Slutgranskning av PR-head, GitHub-CI och liveacceptans återstår. Ingenting
-i denna del är ännu mergat eller driftsatt.
+Första delen är levererad i PR166: sammanhållna materialkort med verkliga
+förhandsvisningar, format, felstatus och samma skyddade papperskorg.
+Main c6496965b787215dc98b20e7fbaf03d8348b5bbe körs på www.scoutgaming.tech
+(Vercel dpl_8W2dy8CRiPcUuY7LqtwGFxVpajep, READY). Sluthead e521b855 är
+granskat; PR- och main-CI är gröna inklusive SQL/omstart/HTTPS. Fullhook:
+3 911 pass, 9 villkorade skip, 0 fel; Lab-build 97 byggspår.
+Egen browserkontroll verifierar 5 blackjackbord, 1 roulettebord, 8 pausade
+MP4-förhandsvisningar, 3 PNG-bilder, explicit uppspelning till slut och
+länken till rätt rumsöversikt. Inga produktionsdata ändrades. Dubbel
+hanteringslista är borttagen; inga filer/beroenden/media har raderats här.
+Exakta kvitton och bildreferenser finns i CLOUD-MIGRATION.
+
+Nästa del: Spelbolag → Rum. Först rättas ett verifierat 403-fel vid
+Partner-dokumentladdning (Vercel cors/document i SSR utan Origin/action).
+Detta är dokumenttransport; befintlig session och bolagsbehörighet ska
+fortfarande kontrolleras. Rumsval ska därefter återanvända befintlig
+roomOverrides-skrivare och fryst förhandsvisning, skilda från delad mall.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

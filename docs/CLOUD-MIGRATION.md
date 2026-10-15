@@ -11,8 +11,8 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 
 | Ordning | Leverans | Klar när |
 | --- | --- | --- |
-| 1 — pågår | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
-| 2 | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
+| 1 — levererad och browserverifierad | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
+| 2 — pågår | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
 | 3 | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
 | 4 | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
 | 5 | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
@@ -38,13 +38,38 @@ för worker/image/avatarbank redovisas utan att stoppa oberoende Admin-arbete.
 Bevarande före ändring: de tre tidigare dokumentutkasten finns som avgränsad
 patch i huvudcheckoutens privata
 arkiv/2026-10-15/admin-consolidation/preexisting-docs.patch.
-Materialkorten är lokalt implementerade: 31 riktade regressioner passerar
-utan skip; Lab-build passerar med 97 kontrollerade byggspår. Kodcommit
-02297fba462762837e77722636de15d8c59eb387 passerar ordinarie fullhook
-med Chrome: 3 911 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
-Slutgranskning av PR-head, GitHub-CI och produktionsacceptans återstår. Ingen merge eller
-deployment har utförts i denna leverans. Förebilder och bygglogg ligger i
-samma privata evidensmapp.
+Materialkorten är levererade genom PR166. Granskat sluthead
+`e521b855d97af064eb0c8267d4643cf50839e765` mergades normalt till main
+`c6496965b787215dc98b20e7fbaf03d8348b5bbe` den 15 oktober 14:03:56 UTC.
+PR-CI 38747078650 och main-CI 38748089632 är gröna, inklusive faktisk
+SQL-/omstarts-/HTTPS-acceptans. Lokalt: 31 riktade test utan skip,
+97 byggspår och ordinarie fullhook 3 911 pass / 9 villkorade skip / 0 fel.
+Vercel `dpl_8W2dy8CRiPcUuY7LqtwGFxVpajep` är READY på samma main-SHA
+och bunden till www.scoutgaming.tech.
+
+Egen browseracceptans på huvudadressen: fem blackjackbord och ett separat
+roulettebord med en hanteringsåtgärd per kort; åtta MP4-bakgrunder visar
+riktiga pausade bildrutor och tre PNG-bilder laddar. Ett uttryckligt
+uppspelningsprov nådde filmens slut utan fel med muted=false. Det är ett
+tekniskt uppspelningsprov, inte ett godkännande av ljudinnehåll/läppsynk.
+Detaljer visar exakt fil-ID/hash; Spelbolag & rum öppnar det laddade
+registrerade rumsregistret. Destruktiva produktionsprov utfördes inte.
+Före/efter-bilder och loggar finns i samma privata evidensmapp.
+
+Bortstädat i denna del: den duplicerade hanteringslistan ersattes av samma
+kort som förhandsvisningen. Inga källfiler, beroenden, originalmedia eller
+arbetskopior raderades; nödvändigt bygge återanvänds i nästa leverans.
+
+Nästa avgränsade hinder: Partner-rummets dokumentladdning gav 403 med
+`studio_request_rejected` och digest 632708019 på tidigare main 96750fa0.
+Vercels logg visar SSR, cors/document, crossSite=true utan Origin/action.
+Känd dokumenttransport rättas före det samlade rumsflödet; befintliga
+sessions-, bolags-, API- och skrivskydd ska bestå. PR165 är fortfarande
+parkerad och ingen env-/providerändring krävs för denna rättning.
+Rättningen återanvänder dokumentregeln i middleware och SSR. 74 riktade
+prov passerar utan skip, inklusive aktuella N1-/N2-sessioner, revokering,
+bolagsisolering och nekade API-/Origin-/action-/ramanrop. Lab-build: 97
+byggspår. Slutlig PR-CI och produktionsprov av Partner återstår.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 
