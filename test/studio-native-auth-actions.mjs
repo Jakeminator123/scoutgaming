@@ -8,7 +8,7 @@ const scope = { environment:'fixture',workspaceId:'croupier' }, publicOrigin = '
 const password = 'existing-private-password', salt = 'fixture-salt';
 function fixture(overrides = {}) {
   let state = { users:[{ id:'7',username:'Operator',email:'operator@example.invalid',role:'superadmin',salt,
-    hash:scryptSync(password,salt,64).toString('hex') }], tokens:[],playerAccounts:[],meta:{ jwt_secret:'a'.repeat(64) },epochs:{ 7:2 },lab:['7'],handoffs:['7'] };
+    hash:scryptSync(password,salt,64).toString('hex') }], tokens:[],playerAccounts:[],playerSessions:[],gameHandoffs:[],meta:{ jwt_secret:'a'.repeat(64) },epochs:{ 7:2 },lab:['7'],handoffs:['7'] };
   const reads = [], mail = [], counters = [], clock = { value:2_000_000 }, failure = { sql:null };
   let tail = Promise.resolve();
   const boDb = { transaction(work) {
@@ -51,6 +51,14 @@ function fixture(overrides = {}) {
   } };
   const gameDb = { prepare(sql) {
     reads.push(sql);
+    if (sql === 'DELETE FROM player_sessions WHERE digest=?') return { run:async value => {
+      const count=state.playerSessions.length;state.playerSessions=state.playerSessions.filter(session=>session.digest!==value);
+      return {changes:count-state.playerSessions.length};
+    } };
+    if (sql === 'DELETE FROM bo_game_handoffs WHERE craig_user_id=?') return { run:async value => {
+      const count=state.gameHandoffs.length;state.gameHandoffs=state.gameHandoffs.filter(flow=>flow.craig_user_id!==value);
+      return {changes:count-state.gameHandoffs.length};
+    } };
     assert.equal(sql, 'SELECT email,player_id,salt,hash FROM player_accounts WHERE lower(email)=? OR lower(email)=?');
     return { all: async (...args) => state.playerAccounts.filter(account => args.includes(account.email.toLowerCase())) };
   } };
@@ -81,6 +89,94 @@ test('native login reuses existing identity and signer; resulting cookie validat
   assert.equal(f.state.users[0].role,'superadmin'); assert.equal(f.counters[0].user,'craig:7');
   f.state.epochs['7']++;
   await assert.rejects(f.authorize(new Request(`${publicOrigin}/studio/api/auth/session`,{headers:{cookie:jwt}})),status(401));
+});
+
+test('successful Studio login clears a foreign player cookie without changing its stored session or wallet', async () => {
+  const f=fixture(),token='b'.repeat(64),digest=createHash('sha256').update(token).digest('hex');
+  f.state.playerSessions=[{digest,player_id:'foreign-player'}];f.state.players=[{id:'foreign-player',balance:321}];
+  const wallet=structuredClone(f.state.players),before=structuredClone(f.state.playerSessions),request=f.request('login',{user:'operator',pass:password});
+  request.headers.set('cookie','player_session='+token);
+  const result=await f.actions.handle(request),cookies=result.headers.getSetCookie();
+  assert.equal(result.status,200);assert.equal(cookies.length,2);
+  assert.ok(cookies.some(value=>/^bo_jwt=[A-Za-z0-9_.-]+;/.test(value)));
+  assert.ok(cookies.includes('player_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure'));
+  assert.deepEqual(f.state.playerSessions,before);assert.deepEqual(f.state.players,wallet);
+});
+
+test('wrong password and foreign Origin never clear or revoke a current player session', async () => {
+  for(const invalid of ['password','origin']) {
+    const f=fixture(),token='b'.repeat(64);
+    f.state.playerSessions=[{digest:createHash('sha256').update(token).digest('hex'),player_id:'foreign-player'}];
+    const before=structuredClone(f.state.playerSessions),request=f.request('login',{user:'operator',pass:invalid==='password'?'wrong':password});
+    request.headers.set('cookie','player_session='+token);
+    if(invalid==='origin')request.headers.set('origin','https://foreign.invalid');
+    const result=await f.actions.handle(request);
+    assert.equal(result.status,invalid==='password'?401:403);assert.deepEqual(result.headers.getSetCookie(),[]);
+    assert.deepEqual(f.state.playerSessions,before);assert.equal(f.state.epochs['7'],2);
+  }
+});
+
+test('Studio logout revokes only the current player digest and clears auth and handoff cookies', async () => {
+  const f=fixture(),token='b'.repeat(64),other='c'.repeat(64),hash=value=>createHash('sha256').update(value).digest('hex');
+  f.state.playerSessions=[{digest:hash(token),player_id:'foreign-player'},{digest:hash(other),player_id:'foreign-player'},{digest:hash('d'.repeat(64)),player_id:'other-player'}];
+  f.state.players=[{id:'foreign-player',balance:321},{id:'other-player',balance:654}];const wallets=structuredClone(f.state.players);
+  const login=await f.call('login',{user:'operator',pass:password}),boCookie=login.headers.getSetCookie().find(value=>value.startsWith('bo_jwt=')).split(';')[0];
+  const request=f.request('logout',{});request.headers.set('cookie',boCookie+'; player_session='+token);
+  const result=await f.actions.handle(request);
+  assert.equal(result.status,200);assert.equal(result.headers.getSetCookie().length,4);
+  assert.ok(result.headers.getSetCookie().some(value=>value.startsWith('player_session=;')&&value.includes('Max-Age=0')));
+  assert.deepEqual(f.state.playerSessions,[{digest:hash(other),player_id:'foreign-player'},{digest:hash('d'.repeat(64)),player_id:'other-player'}]);
+  assert.deepEqual(f.state.playerAccounts,[]);assert.equal(f.state.users.length,1);assert.deepEqual(f.state.players,wallets);
+  const revocations=f.reads.filter(sql=>sql.includes('DELETE FROM player_sessions'));
+  assert.deepEqual(revocations,['DELETE FROM player_sessions WHERE digest=?']);
+});
+
+test('Studio logout without game storage still clears the player cookie and revoked auth cannot delete sessions', async () => {
+  const f=fixture(),login=await f.call('login',{user:'operator',pass:password});
+  const actions=createStudioNativeAuthActions({...f.options,gameDb:undefined});
+  const request=f.request('logout',{});request.headers.set('cookie',login.headers.getSetCookie()[0].split(';')[0]+'; player_session='+'b'.repeat(64));
+  const result=await actions.handle(request);
+  assert.equal(result.status,200);assert.equal(result.headers.getSetCookie().length,4);
+  assert.ok(result.headers.getSetCookie().some(value=>value.startsWith('player_session=;')));
+  assert.ok(result.headers.getSetCookie().includes('bo_game_state=; Path=/api/auth/bo/callback; HttpOnly; SameSite=Lax; Max-Age=0; Secure'));
+  assert.equal((await f.actions.handle(new Request(request.url,{method:'POST',headers:request.headers,body:'{}'}))).status,401);
+  assert.ok(f.reads.every(sql=>!sql.includes('DELETE FROM player_sessions')));
+});
+
+test('Studio logout revokes pending game codes only for the verified account and expires the callback-path cookie', async () => {
+  const f=fixture();
+  const current={state_digest:'current-state',code_digest:'issued-code',craig_user_id:'7',username:'Operator'};
+  const another={state_digest:'another-state',code_digest:'another-code',craig_user_id:'8',username:'Operator'};
+  const unissued={state_digest:'unissued-state',code_digest:null,craig_user_id:null};
+  f.state.gameHandoffs=[current,{...current,state_digest:'second-state'},another,unissued];
+  const login=await f.call('login',{user:'operator',pass:password}),request=f.request('logout',{});
+  // The callback-path state cookie is not sent to the Studio logout path.
+  request.headers.set('cookie',login.headers.getSetCookie()[0].split(';')[0]);
+  const result=await f.actions.handle(request);
+  assert.equal(result.status,200);assert.deepEqual(f.state.gameHandoffs,[another,unissued]);
+  assert.ok(result.headers.getSetCookie().includes('bo_game_state=; Path=/api/auth/bo/callback; HttpOnly; SameSite=Lax; Max-Age=0; Secure'));
+  assert.deepEqual(f.reads.filter(sql=>sql.includes('DELETE FROM bo_game_handoffs')),['DELETE FROM bo_game_handoffs WHERE craig_user_id=?']);
+  assert.equal(f.state.users[0].role,'superadmin');assert.deepEqual(f.state.playerSessions,[]);
+});
+
+test('foreign Origin and ambiguous player cookies never revoke an arbitrary player session on Studio logout', async () => {
+  for(const mode of ['origin','duplicate','invalid']) {
+    const f=fixture(),token='b'.repeat(64);
+    f.state.playerSessions=[{digest:createHash('sha256').update(token).digest('hex'),player_id:'foreign-player'}];
+    f.state.gameHandoffs=[{state_digest:'pending',code_digest:'issued-code',craig_user_id:'7'}];
+    const pending=structuredClone(f.state.gameHandoffs);
+    const before=structuredClone(f.state.playerSessions),login=await f.call('login',{user:'operator',pass:password});
+    const request=f.request('logout',{}),boCookie=login.headers.getSetCookie()[0].split(';')[0];
+    request.headers.set('cookie',boCookie+'; player_session='+token+(mode==='duplicate'?'; player_session='+'c'.repeat(64):mode==='invalid'?'x':''));
+    if(mode==='origin')request.headers.set('origin','https://foreign.invalid');
+    const result=await f.actions.handle(request);
+    assert.equal(result.status,mode==='origin'?403:200);assert.deepEqual(f.state.playerSessions,before);
+    assert.ok(f.reads.every(sql=>!sql.includes('DELETE FROM player_sessions')));
+    if(mode==='origin'){
+      assert.deepEqual(result.headers.getSetCookie(),[]);assert.equal(f.state.epochs['7'],2);
+      assert.deepEqual(f.state.gameHandoffs,pending);assert.ok(f.reads.every(sql=>!sql.includes('DELETE FROM bo_game_handoffs')));
+    }
+  }
 });
 
 test('native login accepts only exact one-use game and Lab handoff destinations', async () => {

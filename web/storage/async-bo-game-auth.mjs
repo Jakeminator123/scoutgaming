@@ -1,3 +1,5 @@
+import {backofficePlayerHandoffRequired,currentBackofficeAccount} from '../bo-player-session.mjs';
+import {playerHandoffPath} from '../public/player-handoff.mjs';
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -11,6 +13,8 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
   const validToken=value=>typeof value==='string' && /^[a-f0-9]{64}$/.test(value);
   const entry=path=>['/','/index.html','/v2','/v2/','/v2/index.html', ...(publicGamePath !== '/' ? ['/game','/game/'] : []),...(publicGamePath === '/blackjack' ? ['/blackjack','/blackjack/'] : [])].includes(path);
   const nextPath=async value=>{
+    const playerReturn=playerHandoffPath(value,{origin:game.origin});
+    if(playerReturn) return playerReturn;
     if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||value.includes('\\')||value.length>2048)return publicGamePath === '/blackjack' ? '/blackjack' : '/';
     const url=new URL(value,game);
     if(url.origin!==game.origin||!entry(url.pathname))return publicGamePath === '/blackjack' ? '/blackjack' : '/';
@@ -42,7 +46,8 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
     if(req.headers.host!==expectedHost)return reply(400,'Wrong sign-in host');
     if(path==='/api/auth/bo/start') {
       const next=await nextPath(url.searchParams.get('next'));
-      if((await auth.user(req)))return reply(303,'',{Location:next});
+      const playerId=await auth.user(req);
+      if(playerId && !await backofficePlayerHandoffRequired(req,{db,identity,boSession,publicUrl,boUrl,playerId}))return reply(303,'',{Location:next});
       (await db.prepare('DELETE FROM bo_game_handoffs WHERE expires<=?').run(Date.now()));
       const state=token();
       (await db.prepare('INSERT INTO bo_game_handoffs (state_digest,next_path,expires) VALUES (?,?,?)').run(hash(state),next,Date.now()+300000));
@@ -68,6 +73,12 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
     const flow=(await db.prepare('DELETE FROM bo_game_handoffs WHERE state_digest=? AND code_digest=? AND expires>? RETURNING *').get(hash(state),hash(code),Date.now()));
     if(!flow)return reply(400,'Sign-in request expired or already used. Open the game again.');
     try {
+      // On the shared host the BO cookie accompanies this callback. Recheck its
+      // epoch and identity so logout or an account switch cancels pending codes.
+      if(game.origin===bo.origin) {
+        const account=await currentBackofficeAccount(req,{identity,boSession,roles:['reader','staff','admin','superadmin']});
+        if(!account || account.id!==flow.craig_user_id || account.stamp!==flow.source_stamp)throw Error('Backoffice session changed');
+      }
       const age=Math.floor((flow.session_until-Date.now())/1000);
       if(age<1)throw Error('Session expired');
       const session=(await auth.fromBackoffice(req,{id:flow.craig_user_id,name:flow.username,stamp:flow.source_stamp},age));

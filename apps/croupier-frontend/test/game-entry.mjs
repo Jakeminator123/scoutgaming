@@ -284,3 +284,16 @@ test('modal stays inert before capability resolves and ignores a cancelled stale
     dialog.close('cancel');assert.equal(await secondResult,false);
   });
 });
+
+
+test('verified N1 game handoff happens before fetching another player game document',async()=>{
+  const calls=[];
+  const request=new Request('https://game.example.invalid/play/blackjack?operator=swedish-games&table=room-evening',{headers:{cookie:'bo_jwt=verified; player_session=other'}});
+  const response=await platformUiDocument(request,{env:{...env,CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1'},fetchImpl:async(url)=>{
+    calls.push(new URL(url).pathname);assert.equal(new URL(url).pathname,'/api/auth/session');
+    return Response.json({authenticated:false,backofficeHandoff:true});
+  }});
+  assert.equal(response.status,303);
+  assert.equal(response.headers.get('location'),'/api/auth/bo/start?next='+encodeURIComponent('/play/blackjack?table=room-evening&operator=swedish-games'));
+  assert.deepEqual(calls,['/api/auth/session']);
+});

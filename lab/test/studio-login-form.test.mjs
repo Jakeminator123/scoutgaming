@@ -267,7 +267,7 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
             if (url.pathname === '/studio/api/auth/login') {
               const response = await actions.handle(new Request(url,{method:request.method(),headers,body:request.postData()}));
               assert.equal(response.status,200,'native fixture login succeeds');
-              return fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()});
+              return fulfill({status:response.status,headers:{...Object.fromEntries(response.headers),'set-cookie':response.headers.getSetCookie().join('\n')},body:await response.text()});
             }
             if (url.pathname.startsWith('/api/')) {
               const req = {url:url.pathname+url.search,method:request.method(),headers:Object.fromEntries(headers),socket:{encrypted:true,remoteAddress:'127.0.0.1'}};
@@ -450,7 +450,7 @@ test('actual browser expired Admin login restores the real room view through his
               posts.push(url.pathname);assert.equal(JSON.parse(request.postData()).returnTo,target);
               const response = await actions.handle(new Request(url,{method:request.method(),headers,body:request.postData()}));
               assert.equal(response.status,200,'real native fixture login succeeds');
-              return route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()});
+              return route.fulfill({status:response.status,headers:{...Object.fromEntries(response.headers),'set-cookie':response.headers.getSetCookie().join('\n')},body:await response.text()});
             }
             assert.equal(request.method(),'GET','only login may write in this fixture');
             if (['/studio/api/project','/studio/api/videos'].includes(url.pathname)) {

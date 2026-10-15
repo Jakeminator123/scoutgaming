@@ -158,3 +158,19 @@ test('history keeps the empty state when every currency has zero rounds', () => 
   assert.equal(model.historyLines.length, 0);
   assert.match(model.empty, /Inga avslutade rundor ännu/);
 });
+
+
+test('verified N1 handoff precedes every player or wallet read, even with a foreign player session',async()=>{
+  for(const surface of ['profil','historik','lobby']) {
+    const path=surface==='lobby'?'/play?operator=swedish-games':'/play/'+surface;
+    const calls=[];
+    const page=await playerAreaPage(new Request('https://preview.example.test'+path,{headers:{cookie:'bo_jwt=verified; player_session=other'}}),env,surface,{fetchImpl:async(url)=>{
+      calls.push(new URL(url).pathname);
+      assert.equal(new URL(url).pathname,'/api/auth/session');
+      return Response.json({authenticated:false,guest:false,sharedCredentials:true,backofficeHandoff:true});
+    }});
+    assert.equal(page.redirect,'/api/auth/bo/start?next='+encodeURIComponent(path));
+    assert.equal(page.html,'');assert.equal(page.data.player,null);
+    assert.deepEqual(calls,['/api/auth/session']);
+  }
+});

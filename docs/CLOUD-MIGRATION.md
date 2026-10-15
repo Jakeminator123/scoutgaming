@@ -2282,6 +2282,55 @@ inte behörighet att lista domäner och en sådan 401 bevisar inte ogiltig sänd
 GPUshutdown/privat zonbild/OpenClawnavigation är rättade och verifierade avgränsat,
 inte kvarstående obehandlade funktionsfel; detaljer/shutdownbudget i JOHN.
 
+## N1 till eget spelkonto — kodkontroll 15 oktober 2026
+
+Samordnarens separata produktionsprov 10:56 UTC visade att färsk Studio-login
+öppnade Admin och Partner men att egen profil krävde ännu en inloggning.
+Både Render BO_URL och PUBLIC_URL har verifierats till www.scoutgaming.tech.
+Den avgränsade rättningen är förberedd på codex/n1-player-session från
+main c024cca7 och förenad med main 96750fa0 (PR162–164). Den tidigare
+granskade PR164-revisionen 2a8295a4 har identiskt Git-källträd; alla 18
+egna ändringsfiler bevarades byteidentiskt vid föreningen. Detta är ännu
+inte ett produktionskvitto för SSO.
+
+På gemensam origin väljer verifierad N1 den befintliga, browserbundna
+engångshandoffens vanliga spelarsession före profil-/saldoläsning och
+spelinträde. CRAIG-kopplingen måste matcha: en annan inloggad spelares konto
+återanvänds inte. Returer begränsas till befintliga spelardokument.
+N1-login rensar tidigare spelarcookie. Gemensam N1/N3-logout återkallar
+aktuell spelarsession, verifierad BO-epoch och kontots väntande spelhandoffs;
+callback-cookien rensas på sin egen Path. Sparad BO-cookie och state kan
+inte återuppliva sessionen eller auktorisera en ny handoff efter logout.
+Anonym stateberedning kräver fortfarande riktig login före kodutgivning.
+Andra spelares saldon/roller och separata BO-/spelvärdars kontrakt bevaras.
+
+Lokalt: 69 fokustester och 9 äldre BO-/spelkontrakt passerar med Node
+24.21.0 och högst fyra workers. Senaste logout-rättningen är omkörd i
+16 berörda tester. Faktisk kortlivad HTTP-engine med syntetiska konton,
+separat SQLite och native signering verifierar egen renderad profil,
+främmande session, kontobyte och fördröjd callback efter båda logoutvägar.
+Oberoende omgranskning inklusive sparad state + gammal BO-cookie är godkänd.
+Slutligt Labbygge på main 96750fa0 + SSO passerar: 97 byggspår verifierade.
+Första fullhooken fångade två Chrome-fixturer som slog ihop flera Set-Cookie.
+Deras HTTP-adapter bevarar nu separata cookies; båda ursprungliga browserprov
+är röda före och gröna efter rättningen. Produktkod och provkrav är oförändrade.
+Den isolerade generationsfixturens explicita källista kompletterades också
+med importerad player-handoff.mjs efter bekräftat ERR_MODULE_NOT_FOUND;
+båda berörda fixturefilerna passerar samlat 5/5. Nätverk/media är fortsatt isolerade.
+Ordinarie fullhook, PR/CI och nytt färskt N1-produktionsprov återstår.
+Inga produktionskonton,
+saldon, miljövärden, providerjobb eller användarens browsercookies ändrades
+i dessa lokala prov. Befintliga öppna migrationspunkter är inte avbockade.
+
+Tillskrivet samordnaren: produktionsprov cirka 11:34 UTC verifierade
+startsida → /lobby → Swedish Games → Dragan-rum → dealer-dialog. Faktisk
+spellänk bevarade operator/rum/dealer; inget spel startades. Escape och
+Stäng återförde fokus till Välj Dragan efter stängningsanimationen. På
+390×844 var Min profil synlig inom viewport; storleken återställdes.
+Det gäller levererad PR163/identisk lobby i PR162, inte hela 200%- eller
+fokusmatrisen. Privat bildkvitto: lobby-mobile-profile-link.png i rotens
+arkiv/2026-10-15/samordning/env-media-verification/.
+
 ## Lokal start och sökning
 
 Starta bara när begärt: `node lab/start.mjs --offline --no-open` är isolerad

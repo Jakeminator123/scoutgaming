@@ -3553,6 +3553,43 @@ exempel `git show 00ea55c5:random/checklista-2026-10-08.md` och
 `git show 00ea55c5:random/losa-tradar-2026-10-07.md`. A01 tar bort katalogen
 ur trädet. Ingen ny plats är känd.
 
+### N1 till eget spelkonto — kod klar, 15 oktober 2026
+
+codex/n1-player-session från c024cca7 rättar färsk N1 → egen N3-profil via
+befintlig engångshandoff på gemensam BO-/spelorigin. Verifierad CRAIG-identitet
+jämförs med spelarens kontokoppling före profil/saldo; främmande spelarsession
+ersätts utan att dess saldo ändras. N1-login rensar gammal spelarcookie.
+Gemensam logout återkallar aktuell spelar-session, BO-epoch och väntande
+spelhandoffs; även sparad BO-cookie + state kräver ny login efter logout.
+Separata värdar, serverägda saldon, roller och exakta returgränser bevaras.
+
+69 fokustester + 9 äldre kontrakt gröna; senaste P2 omkörd i 16 berörda
+prov. Verklig isolerad HTTP-kedja med native signering och renderad profil
+passerar. Oberoende omgranskning har godkänt även fördröjd callback efter
+logout. Ingen produktionsacceptans påstås: samordnarens färska föreprov
+visade fortfarande dubbel login. Se CLOUD-MIGRATION:s avgränsade SSO-kvitto.
+
+Main 96750fa0 (PR162–164) är förenad; tidigare granskad 2a8295a4 hade
+identiskt Git-källträd och alla 18 egna filer behöll samma bytes. Lobbyretur
+och profilens historiklänk bevaras. Slutligt Labbygge passerar med 97
+verifierade byggspår; ordinarie fullhook och PR/CI återstår.
+Första fullhooken fångade två Chrome-fixturer som slog ihop flera Set-Cookie.
+Deras HTTP-adapter bevarar nu separata cookies; båda ursprungliga browserprov
+är röda före och gröna efter rättningen. Produktkod och provkrav är oförändrade.
+Den isolerade generationsfixturens explicita källista kompletterades också
+med importerad player-handoff.mjs efter bekräftat ERR_MODULE_NOT_FOUND;
+båda berörda fixturefilerna passerar samlat 5/5. Nätverk/media är fortsatt isolerade. Fem egna
+node_modules-junctions (Lab, design-preview, frontend, web och GPU-worker
+gateway) pekar på motsvarande rotinstallationer. Normaliserade manifest
+och låsfiler samt installerade direktberoenden är verifierade. Länkarna
+behålls inför slutkontrollen; fixtureprocesser och tempdatabaser är städade.
+Inga nya testfiler eller hookundantag behövdes.
+
+Samordnarens liveprov cirka 11:34 UTC verifierade levererad lobbykedja till
+Dragan-dialog, bevarad operator/rum/dealer-länk, fokusretur med Escape/Stäng
+och synlig Min profil på 390×844; inget spel startat. Det är PR163/162:s
+avgränsade kvitto, inte SSO eller hela fokus-/200%-matrisen. Se CLOUD-kvittot.
+
 ## 4. Äldre avsnitt
 
 Äldre avsnitt: `git show 00ea55c5:docs/JOHN-HANDOFF.md`.

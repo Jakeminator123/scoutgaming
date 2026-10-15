@@ -20,7 +20,7 @@ export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' }
   return host === gameHost && parsed.host === host && (!frontendOrigin || origin === gameOrigin);
 }
 
-export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession, partnerAuthority,
+export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession, partnerAuthority, sharedBackofficeOrigin = false, backofficeLogout,
   allowLegacyPartnerSessions = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' } = {}) {
 
   const credentials = createAccountCredentialResolver({identity,playerDb:db,playerAccounts});
@@ -109,8 +109,16 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     if(localAccount && !playerAccounts){reply(403,{error:'Player accounts are not enabled.'});return true;}
     if(req.url==='/api/auth/logout') {
       const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
-      if(token)(await db.prepare('DELETE FROM player_sessions WHERE digest=?').run(digest(token)));
-      reply(200,{ok:true},{'Set-Cookie':cookie(req,'',0)});return true;
+      try {
+        if(sharedBackofficeOrigin && typeof backofficeLogout==='function')await backofficeLogout(req);
+        if(token)await db.prepare('DELETE FROM player_sessions WHERE digest=?').run(digest(token));
+      } catch {reply(503,{error:'Logout unavailable'});return true;}
+      const secure=req.socket.encrypted || process.env.NODE_ENV==='production' ? '; Secure' : '';
+      const cleared=sharedBackofficeOrigin ? [cookie(req,'',0),
+        'bo_jwt=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+secure,
+        'lab_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+secure] : cookie(req,'',0);
+      const state='bo_game_state=; Path=/api/auth/bo/callback; HttpOnly; SameSite=Lax; Max-Age=0'+secure;
+      reply(200,{ok:true},{'Set-Cookie':[...(Array.isArray(cleared)?cleared:[cleared]),state]});return true;
     }
     if(identity && req.url==='/api/auth/register'){reply(403,{error:'Use your existing Scout account. New accounts are managed in the backoffice.'});return true;}
     try {

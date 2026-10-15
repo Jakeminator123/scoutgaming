@@ -88,3 +88,40 @@ test('disabled local-account login still inspects its namespace and cannot bypas
     assert.equal((await f.resolver.authenticate('operator',f.password)).kind,'player');
   } finally {f.close();}
 });
+
+for(const [name,authFactory,identityFactory] of [['sync',syncPlayerAuth,syncIdentity],['async',asyncPlayerAuth,asyncIdentity]]) test(name+' player logout revokes only this session and clears N1 cookies only on the shared origin',async()=>{
+  for(const sharedBackofficeOrigin of [false,true]) {
+    const f=fixture(identityFactory);f.admin();
+    try {
+      const db=name==='sync'?f.players:{prepare:sql=>f.players.prepare(sql.replace(/\s+FOR UPDATE\b/g,'')),async transaction(work){f.players.exec('BEGIN IMMEDIATE');try{const result=await work();f.players.exec('COMMIT');return result;}catch(error){f.players.exec('ROLLBACK');throw error;}}};
+      const origin='https://www.fixture.invalid';
+      const req={url:'/api/auth/logout',method:'POST',headers:{host:'www.fixture.invalid',origin},socket:{encrypted:true}};
+      let revocations=0,revocationFails=false;
+      const auth=authFactory(db,()=>{f.players.prepare('INSERT INTO players VALUES(?,?)').run('own','active');return {id:'own'};},f.identity,{gameOrigin:origin,sharedBackofficeOrigin,backofficeLogout:async()=>{revocations++;if(revocationFails)throw Error('Private storage error');}});
+      const account=await f.identity.find('operator');
+      const cookie=(await auth.fromBackoffice(req,account)).split(';')[0],other=(await auth.fromBackoffice(req,account)).split(';')[0];
+      const response=()=>({writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=JSON.parse(body);}});
+      let res=response();await auth.handle({...req,headers:{...req.headers,origin:'https://attacker.invalid',cookie}},res);
+      assert.equal(res.status,403);assert.equal(res.headers['Set-Cookie'],undefined);assert.equal(await auth.user({...req,headers:{cookie}}),'own');
+      assert.equal(revocations,0,'foreign Origin cannot invalidate BO authority');
+      if(sharedBackofficeOrigin) {
+        revocationFails=true;res=response();await auth.handle({...req,headers:{...req.headers,cookie}},res);
+        assert.equal(res.status,503);assert.equal(res.headers['Set-Cookie'],undefined);assert.equal(res.body.error,'Logout unavailable');
+        assert.equal(await auth.user({...req,headers:{cookie}}),'own','failed revocation cannot claim a successful logout');
+        revocationFails=false;
+      }
+      res=response();await auth.handle({...req,headers:{...req.headers,cookie}},res);
+      assert.equal(res.status,200);assert.equal(await auth.user({...req,headers:{cookie}}),null);
+      assert.equal(revocations,sharedBackofficeOrigin?2:0);
+      assert.equal(await auth.user({...req,headers:{cookie:other}}),'own','another browser session remains valid');
+      const cleared=[res.headers['Set-Cookie']].flat();
+      assert.equal(cleared.length,sharedBackofficeOrigin?4:2);
+      assert.ok(cleared.every(value=>value.includes('Max-Age=0')&&value.includes('HttpOnly')&&value.includes('Secure')));
+      assert.equal(cleared.some(value=>value.startsWith('bo_jwt=')),sharedBackofficeOrigin);
+      assert.equal(cleared.some(value=>value.startsWith('lab_session=')),sharedBackofficeOrigin);
+      assert.ok(cleared.some(value=>value.startsWith('bo_game_state=; Path=/api/auth/bo/callback;')));
+      assert.equal(f.players.prepare('SELECT count(*) n FROM players').get().n,1);
+      assert.equal(f.players.prepare('SELECT count(*) n FROM craig_player_links').get().n,1);
+    } finally {f.close();}
+  }
+});
