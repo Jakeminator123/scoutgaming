@@ -185,6 +185,18 @@ Nästa del är Tal: inspelade klipp, generering och realtid med verkliga filer,
 text/ljud/granskning och avstängd rörlig läppsynk. Roulettens äldre översikts-
 fras säger fortfarande ”kulsläpp + hjulfilm”; samordna den texten med Tal-
 förklaringen och den verifierade renderingen utan att ändra spelmotorn.
+Del 4 är implementerad lokalt: Inspelat tal visar verkliga registerfiler för
+vald dealer och spel, originaltext/språk, format, tillgänglighet och
+hashbundet granskningskvitto. Underkänd, väntande, saknad och ogiltig
+identitet hålls åtskilda; röstprofil/textmall räknas aldrig som färdig film.
+Ny generering visar textmallar separat från realtidens röst-/referensprofil.
+Befintliga spar-, budget- och providergrindar består; ny rörlig läppsynk
+aktiveras inte. Panelen kan läsas även för roulette och skiljer dess
+ofärdiga talanslutning från spelneutrala mallar. Roulettens översikt säger
+nu animerat hjul. Förhandsvisningens eget ljud är tillgängligt och pausas
+när panelen stängs. 34 fokuserade prov utan skip och Lab-build 97 passerar.
+Fullkontroll, sluthead, normal leverans och browseracceptans återstår.
+
 PR165, QA, env-värden och rörlig läppsynk förblir parkerade/orörda i denna del.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026

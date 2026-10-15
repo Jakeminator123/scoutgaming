@@ -74,6 +74,14 @@ Nästa: del 4 Tal. Skilj inspelat, generering och realtid; verifiera verkliga
 filer, text, ljud och granskning utan providerstart. Samordna också roulettens
 äldre översiktsfras ”kulsläpp + hjulfilm” med den verifierade renderingen.
 
+Tal-delen är nu implementerad lokalt med verkligt inspelningsregister,
+separata genereringsmallar och realtidsprofil. Filer har originaltext,
+språk, uppspelning med ljud och hashbunden granskningsstatus; tomt register
+visas som tomt. Roulettes talpanel förklarar kvarstående anslutning och
+översikten säger animerat hjul. 34 fokuserade prov utan skip och Lab-build
+97 passerar. Fullkontroll, slutgranskning och faktisk leverans återstår;
+inget providerjobb eller produktionsskrivprov har körts.
+
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad
 återgång bereds separat med unika staged filer/stash/kvitton bevarade.
