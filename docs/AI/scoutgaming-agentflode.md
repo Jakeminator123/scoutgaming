@@ -1,9 +1,51 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
-Slutöverlämning 14 oktober: dokumentationen integreras med main `0511206d`.
-Admin C1–C3 fortsätter separat. PR #91:s spelaracceptans stoppades av Jakob;
-vinst, oavgjort, split och mobil är inte godkända. Fortsatta spelarprov ska
-ske på en internetadress. Se [aktuell handoff](../JOHN-HANDOFF.md).
+Aktuell samordning, 15 oktober: Jakob har gett mandat att slutföra en
+sammanhängande Admin/partner/lobby-struktur, granska och merga egna PR:er
+och städa ersatt legacy efter konsumentkontroll. C1–C9 i
+[migreringstrackern](../CLOUD-MIGRATION.md#admin-checkpoints-c1c9) är enda
+uppföljningen. Avgränsade underagenter lämnar ett kvitto per uppgift;
+huvudagenten äger integration, fullkontroll och ägarverifiering före merge.
+
+PR152 är levererad på main `3da92370`: obligatorisk PR-CI och main-CI gröna,
+Vercel production READY och Render live på samma SHA; engine health/version bekräftade `3da92370` den 15 oktober 00:10 UTC.
+Samordnarens eget läsande prov med befintlig staffsession verifierar Admin →
+Partner → Lobby, rum/bolagsstandard genom meny/reload/historik, negativa
+rumslänkar och återställt Avbryt-fokus. Roller ändras inte, inga
+produktionsskrivningar eller spelrundor gjordes. Ny produktionslogin,
+full skrivacceptans, faktisk 200-procentszoom och godkännande för PR91:s
+export av privat spelarkod återstår. Kvitton i [handoffen](../JOHN-HANDOFF.md) skiljer
+lokal fullhook (3 852 pass/9 skip/0 fel), CI och produktionsprov;
+överlappande underagentprov summeras inte.
+
+C6:s tidigare API-steg ersätts nu av faktisk N2-arbetsyta i samma isolerade
+browserkedja. Underagentens Chrome-kvitto (2/2, inga skip) och oberoende
+kodgranskning hålls isär; lokal fullhook och CI redovisas separat. En läsande
+produktionskontroll fann dubblerad kontonavigation och en journalhänvisning
+utan länk. De små UI-rättningarna behåller gamla adresser och servergränser.
+Inga nya testidentiteter eller produktionsdata behövdes.
+
+`node tools/check-admin-navigation.mjs` kör befintliga riktade tester med
+fyra arbetare (`--plan` visar urvalet). Det är ett snabbt utvecklingsprov;
+ordinarie fullhook och CI behåller alla kontroller inför leverans.
+
+Frontendens `npm run typecheck` ingår nu i fullhook/CI och Next-bygget
+tillåter inte längre typfel. Kör Node från rätt paketmapp enligt
+[runtime-tabellen](../ENVIRONMENT-RESTORATION.md#byggdelar-och-node-versioner).
+Vid städning skiljs aktiv delad kod från onåbar klientdemo genom konsumenter;
+legacy-namn eller ett gammalt test är inte ensamt ett bevarandekrav.
+
+Partner-städningen behåller beteendetester för verklig meny, rollgränser,
+utkast och publiceringskvitton. Test av en borttagen demomenys exakta antal
+och ordning ersätts med dessa kontrakt. Raderingsgrinden och ordinarie
+fullkontroll gäller även när gamla generatorer och vyer tas bort.
+
+Det tidigare spelarstoppet är hävt för isolerade internetprov. PR #91 har
+Astrid-kvitto för förlust, vinst, push, split, mobil och sammanhängande
+spelningar; detta är funktion, inte ny läppsynksacceptans. Dragan v4 väntar
+på uttryckligt tillstånd att också kopiera den privata spelarkoden till
+den tillfälliga sandlådan efter automatisk säkerhetsgransknings avslag.
+Se [aktuell handoff](../JOHN-HANDOFF.md). Äldre daterade kvitton nedan är historik.
 
 Uppföljning 13 oktober: PR #103 med publik Scoutguide och befintlig D-ID-agent
 är mergad (`b2dda8ab`), med grön main-CI och Vercel production READY.
@@ -66,6 +108,11 @@ ihop med Adminrobotens `/admin/ai/chat` eller den publika D-ID-bubblan.
 Det är den verifierade kontorollen som väljer chatt: besökare/N2/N3 får
 publik Scoutguide, N1 får Adminrobotens lägen även när samma konto öppnar
 partner- eller spelarytan. En URL-slugg eller sidbyte ger inga nya privilegier.
+De faktiska blackjack- och rouletteborden, inklusive Studio-preview, visar
+sedan mobilrättningen 15 oktober ingen flytande Adminrobot/Scoutguide:
+den skymde spelkontrollerna. Sidornas uttryckliga markör stoppar widgeten
+före DOM-injektion och API-anrop. Assistenten finns kvar i Admin, Partner,
+Lobby och spelets ingångssida. Dealerns separata spelarchatt ändras inte.
 
 Uppdaterad 13 oktober 2026 efter PR #94, #96 och #98. Alla tre är mergade:
 dealerimport, lokal arkivering och Adminrobotens utökade N1-verktyg.
@@ -358,6 +405,7 @@ denna ansvarsfördelning. API-nyckeln ska inte läggas i klientkoden.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-15 | PR149–152 levererade på main `3da92370`. Samordnarens läsande produktionsprov verifierar rumshistorik, portaler, negativa länkar och Avbryt-fokus; lokal fullhook, CI och drift hålls isär. Kvarvarande login-/skriv-/zoom-/spelargränser står öppna i befintlig tracker/handoff. |
 | 2026-10-14 | Aktiva ingångar och bolagssluggar samlade i användarguiden efter produktionsprov av 22 adresser och fem query-/guidevarianter. Äldre Control-länkar skiljs från adminverktygens mål och efterföljande inloggning; N1 behåller sin roll på partner-/spelarytan. API- och spelstartkontrakt bevarade. |
 | 2026-10-14 | Jakobs riktning om N1-åtkomst överallt verifierad med LLM i produktion: samma inloggning öppnar spelaryta, partnerlista med fyra bolag och admin. Partnerformuläret är en separat N2-ingång; dess avvisning av N1 ska inte beskrivas som saknad åtkomst till partnerportalen. |
 | 2026-10-14 | Återansluten webbläsare: två D-ID-svar och talvideo med ljud aktiverat verifierade på produktion utan kodöverlagring. Angivna testuppgifter sparade lokalt och i Vercels tre miljöer. LLM visar N1 och nekas partnerlogin; positiva N2/N3-prov behöver andra konton. |

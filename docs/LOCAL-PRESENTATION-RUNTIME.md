@@ -1,5 +1,35 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Dragan: aktuella källor och kvarvarande talintegration, 15 oktober 2026
+
+Färsk GitHub-läsning: `kevin` är
+`60e984b4380deaa28a0069d4fb3185839f75b212` (samma källträd som `315cfc5`),
+och `kevin-staging` är `ae9fedc54a2ef4f26a507eb98134f88f6011cc89`.
+Det fastställer inte Kevins körande serverversion. KEVI-POD-EMIL:s avgränsade
+källkvitto bekräftar att de 129 lokala Draganfilmerna fortfarande matchar
+`kevin`; ingen branch eller ny medieuppsättning importerades.
+
+Huvudagentens mediaagent har jämfört den uttryckligen angivna lokala mappen
+`C:/Users/jakem/.codex/visualizations/2026/10/13/01a135e1-7727-7812-973a-fd8c559f5929`:
+alla 36 filmer i det frysta Dragan v4-paketet matchar storlek och SHA-256
+(52 564 262 byte). Med två separata lagerresurser är paketet 58 575 526 byte.
+De 35 giv-/vändfilmerna matchar den aktiva `kevin-dragan-f15b2af1`-profilen.
+Det lokala talarkivet med 18 klipp är däremot fryst på `5134d927`; fyra klipp
+skiljer sig från aktuell staging: `blackjack_4`, `win_1`, `greeting_1`, `bust_1`.
+Hashlikhet är proveniens, inte ny visuell eller läppsynksmässig acceptans.
+
+Rörligt genererat tal är fortfarande inte anslutet till vår spelare.
+Kevins staging skickar `karta`, `ljud_id`, `fran_ruta` och PCM 24 kHz,
+och tar emot `lapp`-metadata samt rå H.264 för färg/mask. Vår gatewayrelay
+accepterar ett annat start-/svarsformat (`stream`/MP4, `done`, `error`).
+Kevins rektanglar är källpixlar; `web/moving-speech-plan.mjs` kräver
+normaliserade koordinater. Modulen är uttryckligen förberedande och saknar
+spelarkonsument; den aktiva talvägen använder verifierad referensbild.
+En fungerande integration kräver transport/avkodning och koppling till
+exakt visad dealerbild före crop/keying, med bibehållen hash-, revisions-
+och avbrytningskontroll. Att byta endpoint räcker inte. Emils pod/worker
+och dess inställningar lämnades orörda; inga GPU-jobb startades för denna kontroll.
+
 ## Kevins Dragan/Paow: filmurval och rörligt tal, 13 oktober 2026
 
 Jakob vill använda de filmer som Kevins spel faktiskt refererar till för

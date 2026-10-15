@@ -196,18 +196,20 @@ test('media decode errors produce one safe failure and stop playback',async()=>{
   } finally {view.cleanup();}
 });
 
-test('layered still images feed the published composition and never start a frame loop',async()=>{
-  const settings=defaultCompositionSettings();settings.mobile.dealer.x=.12;settings.tableFront=true;
-  const view=mount({props:{dealer:source('portrait','image/png'),background:source('background','image/webp'),table:source('table','image/png'),settings,
-    compositing:{mode:'green-screen',threshold:.3,softness:.1,despill:.4}}});
-  try {
-    await settle();await view.visible(true);
-    assert.equal(view.ready,1);assert.equal(view.renders.length,1);assert.equal(view.frames.size,0);
-    const {scene,assets,actor,cards}=view.renders[0];
-    assert.equal(scene.stage.mobile.x,.12);assert.equal(scene.tableFront,true);assert.equal(scene.key.enabled,true);
-    assert.equal(scene.key.threshold,.3);assert.equal(assets.size,3);assert.equal(cards.length,0);
-    assert.equal(actor.context.lastDraw[0],assets.get('dealer').el);
-  } finally {view.cleanup();}
+test('alpha and green-screen still layers preserve their compositor settings without a frame loop',async()=>{
+  for(const compositing of [{mode:'alpha'},{mode:'green-screen',threshold:.3,softness:.1,despill:.4}]){
+    const settings=defaultCompositionSettings();settings.mobile.dealer.x=.12;settings.tableFront=true;
+    const view=mount({props:{dealer:source('portrait','image/png'),background:source('background','image/webp'),table:source('table','image/png'),settings,compositing}});
+    try {
+      await settle();await view.visible(true);
+      assert.equal(view.ready,1);assert.equal(view.renders.length,1);assert.equal(view.frames.size,0);
+      const {scene,assets,actor,cards}=view.renders[0];
+      assert.equal(scene.stage.mobile.x,.12);assert.equal(scene.tableFront,true);assert.equal(scene.key.enabled,compositing.mode==='green-screen');
+      if(compositing.mode==='green-screen'){assert.equal(scene.key.threshold,.3);assert.equal(scene.key.softness,.1);assert.equal(scene.key.despill,.4);}
+      assert.equal(assets.size,3);assert.equal(cards.length,0);
+      assert.equal(actor.context.lastDraw[0],assets.get('dealer').el);
+    } finally {view.cleanup();}
+  }
 });
 
 test('fullframe preview ignores independent layer sources and never loads the compositor',async()=>{

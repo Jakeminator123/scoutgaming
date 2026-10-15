@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { publicLobbyFile, servePublicLobby, serveDesignPreview } from '../lab/lib/design-preview.mjs';
 import { platformConfiguration, platformRoute } from '../apps/croupier-frontend/lib/platform-routing.mjs';
-import { loadLobbyCatalog, lobbySelection, playUrlFor } from '../packages/design-preview/runtime/public-lobby-catalog.mjs';
+import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor } from '../packages/design-preview/runtime/public-lobby-catalog.mjs';
 
 function publication(slug, game = 'blackjack') {
   return { schemaVersion: 1, operator: { slug, name: `Bolag ${slug}` }, packageRevision: 2, rooms: [{
@@ -88,10 +88,11 @@ test('public readers retain tenant, game and dealer choices without calling admi
   } });
   assert.deepEqual(called, ['/api/operators', '/api/operators/alpha/rooms', '/api/operators/beta/rooms']);
   for (const [slug, game] of [['alpha', 'blackjack'], ['beta', 'roulette']]) {
-    const selected = lobbySelection(catalog, { operatorId: slug, roomKey: `${slug}:shared-room`, dealerId: 'nora' });
+    const selected = lobbySelection(catalog, { ...lobbyQuerySelection(catalog, '?operator=' + slug + '&room=shared-room'), dealerId: 'nora' });
     assert.equal(playUrlFor(selected), `/play/${game}?operator=${slug}&table=shared-room&dealer=nora`);
   }
   assert.equal(lobbySelection(catalog, { operatorId: 'beta', roomKey: 'alpha:shared-room', dealerId: 'nora' }).room, null);
+  assert.deepEqual(lobbyQuerySelection(catalog, '?operator=beta&room=missing'), {operatorId:'beta',roomKey:null,unavailable:true});
 });
 
 test('unavailable or malformed public data fails closed; empty and withdrawn rooms stay empty', async () => {

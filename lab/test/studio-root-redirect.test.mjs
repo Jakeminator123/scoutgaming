@@ -20,11 +20,11 @@ function load(){
   }});
   return module.exports.default;
 }
-test('technical root redirects permanently to the public clips path without doubling basePath',async()=>{
+test('bare technical root redirects permanently to public Admin without doubling basePath',async()=>{
   const page=load();
-  await assert.rejects(page({searchParams:Promise.resolve({})}),error=>error.digest==='NEXT_REDIRECT;replace;https://public.example.invalid/control/clips;308;');
+  await assert.rejects(page({searchParams:Promise.resolve({})}),error=>error.digest==='NEXT_REDIRECT;replace;https://public.example.invalid/admin;308;');
 });
-test('technical root retains query values and repeated parameters through canonical redirect',async()=>{
+test('legacy technical root bookmarks retain clip context and repeated query parameters',async()=>{
   const page=load();
   await assert.rejects(page({searchParams:Promise.resolve({dealer:'vera',event:'a&b',tag:['one','two'],empty:undefined})}),error=>{
     assert.match(error.digest,/;308;$/);

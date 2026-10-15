@@ -34,6 +34,7 @@ export function WorkspaceToolsHome(){return <section className="p-6"><h1 classNa
   </section>)}</div></section>;}
 
 export function WorkspaceTool({section}:{section:string}){
+  const [,refreshContext]=useState(0);
   const [data,setData]=useState<Workspace|null>(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
   useEffect(()=>{
     const controller=new AbortController();setData(null);setError('');
@@ -52,9 +53,11 @@ export function WorkspaceTool({section}:{section:string}){
   const common={initialProject:data.project,initialVideos:data.videos,initialStatus:data.status,initialDealerId:get('dealer'),
     initialLaneId:get('composition')??get('lane'),initialOperatorId:get('operator'),initialTableId:get('table'),
     initialEventId:get('event'),initialVariantId:get('variant'),initialSituation:get('situation'),connectedLane:data.connectedLane};
+  const roomValues=q.getAll(q.has('room')?'room':'table');
+  const initialRoomId=roomValues.length>1?roomValues:roomValues[0];
   let content;
   switch(section){
-    case 'companies':case 'publication':content=<ControlLanesPage {...common} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
+    case 'companies':case 'publication':content=<ControlLanesPage {...common} initialRoomId={initialRoomId} onContextChange={()=>refreshContext(value=>value+1)} operators={data.operators} directory={data.directory} storeAvailable={data.storeAvailable} initialTab={section==='companies'?'companies':'publish'}/>;break;
     case 'compositions':content=<ControlPreviewPage {...common} initialGame={get('game')==='roulette'?'roulette':'blackjack'}/>;break;
     case 'dealer-studio':content=<LabStudio {...common} initialView={get('view')} initialCategory={get('category')}/>;break;
     case 'rehearsal':content=<ControlActivityPage {...common} initialOperatorSlug={get('operator')}/>;break;

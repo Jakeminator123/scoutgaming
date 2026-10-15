@@ -41,31 +41,70 @@ testbelägg inte tillförts för kontraktet. Det betyder inte att testet misslyc
 Grönt gäller endast kontrollens angivna version och belägg; det bevisar inte
 produktionsdrift, videokvalitet, läppsynk eller komplett databasåtkomst.
 
-## Kontroll 13 oktober 2026
+## Avgränsad uppdatering 15 oktober 2026
 
-Senaste vid granskningen tillgängliga `main`,
-`579c47e32d977ea5e2eaef5eec565ccd1c1dfe18`, gav **gult**: inga strukturella fel,
-åtta gula och sex grå kontrakt, 64 varningar. Ingen färsk CI-test-evidens
-matades in i denna läsande kontroll.
+Källversion efter integration av PR149: `9b6f4d112ad2bf56d173c1b5538dc97232719a34`, med de synliga
+arbetskopieändringarna i `codex/runtime-contracts`. Tjänsteansvar och
+produktnivåer har kontrollerats mot Vercels routing och verkliga konsumenter:
+web/frontend, studio/Lab för Admin, Partner och Lobby, separat taltransport,
+Render-spelmotor, Director och privat OpenClaw Gateway. `lab/lib` är aktiva
+gemensamma tjänster. Partner är en riktig N2-yta; fixture-API:t är separat.
+Övriga flöden behåller sina äldre, uttryckligt daterade evidensposter.
 
-59 varningar gällde indata som ändrats sedan baslinjen. De fem övriga gällde
-två SQL-källor och tre tabeller som saknas i `storage.json`:
+SQL-katalogen innehåller nu 57 tabeller, 382 kolumner, 57 primärnycklar och
+31 främmande nycklar. Följande tidigare inventeringsluckor är fyllda:
 
-- `ops/neon-studio/006-operator-audit.sql`: `croupier_studio.operator_audit_events`.
-- `ops/neon-studio/008-dealer-forge.sql`: `croupier_studio.forge_dealers`
-  och `croupier_studio.forge_jobs`.
+- `006-operator-audit.sql`: `croupier_studio.operator_audit_events`.
+- `008-dealer-forge.sql`: `croupier_studio.forge_dealers` och `forge_jobs`.
+- `011-gpu-daily-budget.sql`: separat CHECK-ändring, ingen ny tabell.
 
-Katalogens inspectionDate är 7 oktober och dess runtimeEvidence beskriver
-5 oktober. Dessa datum är inte dagens deploykontroll. Den lokala arbetskopians
-HEAD `40fc0d83` låg efter granskad main och gav 53 varningar; den synkades inte
-över pågående arbete. Kontrollen använde verifierarens reader-gränssnitt och
-lokala Git-objekt med en processlokal safe.directory, eftersom dess vanliga
-Git-läsare isolerar global konfiguration i Windows-sandboxen. Ingen Git- eller
-säkerhetskonfiguration ändrades.
+De elva SQL-källorna är kodinventerade; installerat live-schema, fulla
+index/CHECK/UNIQUE/triggers och grants är inte verifierade av katalogen.
 
-Bedömning: maskinläsbara kontrakt, källspårning och testkopplingar är en bra
-grund. Katalogens underhåll släpar efter implementationen. Saknade SQL-objekt
-ska inventeras och berörda testbelägg förnyas innan kartan kallas uppdaterad.
-Kör inte `--refresh-baseline` bara för att få bort gula markeringar; granska
-först ändringarna. Ingen baslinje, maskinkatalog eller HTML-vy har skrivits om
-av dokumentationsstädningen.
+Samordnarens driftkvitto cirka **14 oktober 22:25 UTC** identifierar Vercel
+`scoutgaming` READY och Render `croupier-v2` LIVE på `a0df4e26`.
+Render health gav 200. Projekt-, team- och deployment-ID finns i
+`catalog.json`. Det är deployment-/hälsobevis, inte ny UI-, login-,
+tal- eller medieacceptans. Director, Gateway, providers och QA har ingen
+ny driftversionsverifiering. De två gamla native-QA-projekten saknar
+produktionsdomäner; dokumenterad reserv är otillgänglig och inte verifierad
+som användbar reserv. Se ENVIRONMENT-RESTORATION för ägarskapskvitton.
+
+Kontroll av den gemensamma arbetskopian gav **gult**, noll fel och 14 gula
+kontrakt: **156 `input.changed`** mot den bevarade baslinjen
+`e602ea91bb7e39f394ec61362b6a6db5209ae6c6`, samt **31
+`input.worktree-changed`** för ännu ocommittade indata. Samma fil kan beröra
+flera kontrakt. Inga SQL-inventeringsvarningar kvarstår. Dessa siffror är ett
+daterat arbetskopiekvitto och ändras vid efterföljande integration/commit.
+Ingen färsk CI-test-evidens matades in, och ingen baslinjehash uppdaterades.
+`contracts.catalogSha` anger bara den nya katalogens källversion.
+
+Både `verify --check` och `build --check` har körts. Efter PR149-integrationen
+regenererades HTML med ordinarie byggkommando; källversionen är `9b6f4d11`.
+En kontroll som ger `currentSha=null` kan inte styrka drift mot HEAD;
+slutkontrollen identifierar rätt version. Ingen beständig Git- eller
+säkerhetskonfiguration ändrades. De fyra inbäddade faktakatalogerna matchar
+JSON-filerna och gula markeringar är avsiktligt bevarade.
+Kör inte `--refresh-baseline` bara för att dölja dessa varningar.
+
+## Partnerreferenser efter PR150, 15 oktober 2026
+
+Arbetskopian utgår från main `8e97ee83`. Aktiva hänvisningar pekar nu på
+`lab/components/workspace-surface-page.tsx` och
+`lab/components/kevin-bo/partner-operator-workspace.jsx`; källansvar och N1/N2-
+kontroller är bevarade. Kartans bredare faktainventering behåller sin tidigare
+källversion; detta är en avgränsad sökvägsuppdatering efter klientstädningen.
+
+Den gamla klientens sökväg under `expectedHashes` är historisk baslinjedata
+och ligger kvar. Aktiva `sources` följer de nya modulerna; inga hashar har
+flyttats, ersatts eller nollställts för att göra kontrollen grön. HTML genereras
+med ordinarie `build.mjs`; slutkontrollens varningar redovisas separat nedan.
+
+Slutkontroll mot arbetskopian på `8e97ee83`: `verify --check`, ordinarie
+HTML-generering och `build --check` passerade utan fel. Resultatet är gult:
+159 `input.changed` och 10 `input.worktree-changed`, totalt 169 varningar i
+14 kontrakt. Inga andra varningskoder eller SQL-inventeringsluckor finns i
+detta kvitto. Ingen färsk test-evidens importerades. Baslinje och samtliga
+`expectedHashes` är identiska med HEAD; de fyra inbäddade faktakatalogerna
+matchar JSON-filerna. Antal och sökvägar är ett daterat arbetskopiekvitto,
+inte ett krav på att efterföljande integration ska ge samma varningsantal.

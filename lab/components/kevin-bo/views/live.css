@@ -1,5 +1,5 @@
 /* Live partner shell and primitives. Real operators load this file instead of the diagnostic factory sheet.
-   Selectors stay under .kevin-bo. The fixture keeps its own copy in original.css. */
+   Selectors stay under .kevin-bo for the live partner workspace. */
 /* Scoped source CSS; never changes global Studio styles. */
 .kevin-bo{--white:#FFFFFF;--paper:#FAFAF7;--off:#F2F1ED;--off2:#E9E7E1;--ink:#0A0B0D;--steel:#5A6470;--rule:rgba(10,11,13,.10);--rule2:rgba(10,11,13,.16);--lime:#D6FF3A;--lime2:#B5DC1F;
 --ok:oklch(0.47 0.12 150);--ok-bg:oklch(0.95 0.045 150);--warn:oklch(0.50 0.12 65);--warn-bg:oklch(0.95 0.06 85);--err:oklch(0.51 0.19 27);--err-bg:oklch(0.95 0.03 25);--pause:oklch(0.47 0.10 255);--pause-bg:oklch(0.95 0.025 255);--closed:#5A6470;--closed-bg:#F2F1ED;

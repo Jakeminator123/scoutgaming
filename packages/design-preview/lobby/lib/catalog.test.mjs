@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLobbyCatalog, loadLobbyCatalog, lobbySelection, playUrlFor } from './catalog.mjs';
+import { parseLobbyCatalog, loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor } from './catalog.mjs';
 
 function publication(slug, dealerId, label) {
   return { schemaVersion: 1, operator: { slug, name: `Bolag ${slug}` }, packageRevision: 2, rooms: [{
@@ -135,4 +135,35 @@ test('only registered choices appear in publication order, with or without a sup
   assert.equal(portraitFor(cards[0]), undefined);
   assert.equal(portraitFor(cards[1]).id, 'anna');
   assert.equal(new Set(cards.map(row => row.id)).size, cards.length);
+});
+
+test('room URL context resolves exact published ownership without accepting table design IDs as rooms', () => {
+  const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora'), publication('beta', 'amira', 'Amira')]));
+  assert.deepEqual(lobbyQuerySelection(catalog, '?operator=beta&room=shared-table'),
+    { operatorId: 'beta', roomKey: 'beta:shared-table', unavailable: false });
+  assert.deepEqual(lobbyQuerySelection(catalog, '?operator=alpha&table=shared-table'),
+    { operatorId: 'alpha', roomKey: null, unavailable: false });
+  assert.deepEqual(lobbyQuerySelection(catalog, '?operator=alpha'),
+    { operatorId: 'alpha', roomKey: null, unavailable: false });
+  assert.deepEqual(lobbyQuerySelection(catalog),
+    { operatorId: null, roomKey: null, unavailable: false });
+  for (const query of ['operator=alpha&room=', 'operator=alpha&room=11111111-1111-4111-8111-111111111111',
+    'operator=alpha&room=../shared-table', 'room=shared-table', 'operator=missing&room=shared-table',
+    'operator=alpha&operator=beta&room=shared-table', 'operator=alpha&room=shared-table&room=shared-table']) {
+    const selected = lobbyQuerySelection(catalog, query);
+    assert.equal(selected.roomKey, null, query); assert.equal(selected.unavailable, true, query);
+  }
+});
+
+test('a foreign or removed room URL never chooses an available room for its operator', () => {
+  const foreign = publication('beta', 'amira', 'Amira');
+  foreign.rooms[0].id = 'beta-only';
+  foreign.rooms[0].playUrl = '/play/blackjack?operator=beta&table=beta-only';
+  const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora'), foreign]));
+  assert.deepEqual(lobbyQuerySelection(catalog, '?operator=alpha&room=beta-only'),
+    { operatorId: 'alpha', roomKey: null, unavailable: true });
+  assert.equal(lobbyQuerySelection(catalog, '?operator=alpha&room=shared-table').roomKey, 'alpha:shared-table');
+  const updated = parseLobbyCatalog(payload([{ ...publication('alpha', 'nora', 'Nora'), rooms: [] }, foreign]));
+  assert.deepEqual(lobbyQuerySelection(updated, '?operator=alpha&room=shared-table'),
+    { operatorId: 'alpha', roomKey: null, unavailable: true });
 });

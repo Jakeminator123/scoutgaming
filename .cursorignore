@@ -1,4 +1,5 @@
 # Cursor context/index exclusions; files stay available to builds.
+/arkiv/
 # Retired private archive: never read or re-index.
 /random-stuff-jakob/jakob-docs/arkiv/
 /random-stuff-jakob/jakob-docs/KEVIN-ATKOMST-PRIVAT.txt

@@ -1,18 +1,293 @@
 # Aktuell handoff — Scoutgaming
 
+## PR91 integrerad mot aktuell main, 15 oktober 2026
+
+main `654ab9e2` har integrerats i grenen.
+De sex ändrade klientskripten är byteidentiska med tidigare granskad `e4f3b562`
+och Astrid-provets `542e98b2`. Lab-build passerar med 97 kontrollerade byggspår.
+Ordinarie fullkontroll med riktiga Chrome-fixturer gav 3 871 pass, 9 villkorade
+skip, 0 fel/cancel i 77 grupper; sena dokumentändringar fick 43/43 godkända prov.
+Oberoende granskning fann inga blockerande kodfel. Ett försök med browserlokala
+skript i separat Studio-preview stoppades av automatisk säkerhetsgranskning:
+privat källkod på produktionsadressen kräver uttryckligt godkännande. Inget
+PR91-skript lästes in och inga rundor kördes. Originalkoden återställdes och
+provsessionen stängdes/verifierades saknad. PR91 förblir draft; Dragan-prov
+på rätt kod och det publicerade rummets kontrakt är ännu inte accepterade.
+
+## Fria mobilkontroller på spelborden, 15 oktober 2026
+
+Produktionsprovet med Dragan visade att Adminrobotens flytande knapp skymde
+delar av DEAL NOW och nedersta kontrollerna vid 390×844. Blackjack- och
+roulettemallarna markerar nu att de inte ska installera den globala assistenten.
+Samma mall täcker Studio-preview och äldre speladresser. Widgeten avslutar
+före DOM/API/init; Admin, Partner, Lobby och spelets ingång behåller den.
+Inga rollkontroller, spelregler, dealerchatt eller mediebytes ändras.
+
+Oberoende statisk granskning fann inga konkreta regressionsfel. Kodagentens
+58 riktade prov passerar utan skip: widgetbeteende, oförändrad N1-start på
+omarkerade ytor, befintliga publika assistent-/entréprov och riktig spelmall
+genom Studio-preview-handlern. Det är inte ny full roll- eller medieacceptans.
+Samordnarens Lab-build passerade med 97 kontrollerade byggspår. Kodcommit
+`82986fdd9c8156e818f2bd949b1613bcc353e769` passerade ordinarie fullhook:
+3 854 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper, med riktiga isolerade
+Chrome-prov. Levererat mobilprov på main `654ab9e2` är klart: 390×844, ingen assistent-DOM,
+ingen sidöverströmning och aktiverad DEAL NOW överst i klickträffen. En syntetisk
+€5-insats användes för att aktivera knappen; ingen ny runda startades. Separata
+provsessionen stängdes via återlänk och gav sedan `studio_preview_not_found`.
+PR156:s main-CI `38700979846` success, Vercel `dpl_DsNKZRuJxftpsfpsvrCCvEmpoxhc`
+READY och Render `dep-db88cebm8hqs73btc990` live är verifierade; faktisk
+engine health/version gav ok/samma SHA. Lokal main synkades med 225 befintliga
+filhashar bevarade. Egna arbetskopian `player-controls` är app-arkiverad.
+
+## Env och Dragan i produktionsvärdens isolerade provspel, 15 oktober 2026
+
+Verifierad produktbas är `46444572` (PR154): main-CI `38662964323` success,
+Vercel `dpl_6nrpTJ2DKE1cJuEW5rn87H51wwiC` READY och Render
+`dep-db82c560tbcc73e3ipk0` live; engine health/version svarade ok/samma SHA
+01:05 UTC. Äldre leveranskvitton nedan gäller sina angivna versioner.
+
+Samordnaren körde Dragan via Admins befintliga Provspela på
+`www.scoutgaming.tech`, med separat SQLite `:memory:` och syntetiskt saldo.
+Två sammanhängande rundor slutfördes: desktop €5 → förlust €5; därefter
+390×844 mobil €5 → återbetalt €10. Testsaldo gick 10 000 → 9 995 → 10 000.
+Lounge · varm, Dragan och Blackjack · Oak visades; serverkort och avslut
+fungerade, ingen sidöverströmning vid 390 px och inga insamlade JS-varningar/fel.
+Återlänken stängde sessionen; omläsning gav `studio_preview_not_found`.
+Ingen verklig spelarbalans, publicering eller providerjobb ändrades.
+Detta gäller sparad sammansättning på main, inte PR91 eller publicerade
+rummets fulla tillåtelselista. Separat read-only N2-prov laddade paket v4:s
+tre lager och spelade två gånger på desktop och mobil. Tal/läppsynk är inte godkänt.
+
+Env-kvittot finns i [ENVIRONMENT-VARIABLES.md](ENVIRONMENT-VARIABLES.md).
+Endast en felaktig lokal env-rad togs bort med alla 50 giltiga värden bevarade;
+privat originalbackup har samma effektiva åtkomstskydd. Scoutgamings RunPod-par
+matchar lokalt/Render och skiljer sig från Emils; Vercel Preview pekar fortfarande mot
+produktionsbackend och är ingen isolerad skrivmiljö. Ingen Emil-inställning ändrades.
+Lokala filmer är verifierat tillgängliga. Senaste Kevin-protokollets konkreta
+skillnader och den ännu oanslutna rörliga talvägen finns i
+[LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md).
+Privata skärmbilder och redigerade driftkvitton ligger under
+`arkiv/2026-10-15/samordning/env-media-verification/`.
+
+## Verklig N2-kedja och enklare kontomeny, 15 oktober 2026
+
+Den befintliga C6-fixturen går nu via verklig PartnerOperatorWorkspace och
+branding innan anonym Lobby. Samma revision/rum, meny/reload/historik,
+bolagsstandard, partner/staff-skillnad och främmande bolag 403 verifieras.
+Lokal Chrome: 2 pass/0 skip. Testcommit `dc7923b3`: fullhook 3 852 pass,
+9 skip, 0 fel i 77 grupper. Syntetiska sessioner/minnesdata; ingen ny login,
+N2-skrivning, full RSC-, produktions- eller spel-/medieacceptans tillskrivs provet.
+
+Läsande produktionsnavigation på `37b9d6fd` fann dubbla ingångar till samma
+kontovy och en loggsida utan klickbar journalväg. Desktop/mobil har nu en
+kontomenyingång, spelaraliaset behåller routing/aktivt val/brödsmula och
+loggsidan länkar till Bolag & team. 25 befintliga fokusprov passerar.
+Oberoende granskning omfattar testfixturen och den slutliga mobilrättningen.
+Slutlig UI-kodcommit `99882451cd4e8e39ee9c64c06bd3815f4afb6cac`: Lab-build 97 kontrollerade byggspår och fullhook med riktig Chrome 3 852 pass/9 skip/0 fel i 77 grupper. Den tidigare avbrutna körningen räknas inte som godkänd.
+
+Senast slutkontrollerad produktionsbas är `37b9d6fd`: main-CI 38658966013
+success, Vercel `dpl_7rfHiUWpznv8YQfqJUgKtm6B7v53` READY och Render
+`dep-db81p9c9v7es73bepus0` live; faktisk engine health/version gav ok och samma
+SHA den 15 oktober 00:24 UTC. Egna `admin-room-context` är bekräftat
+app-arkiverad med fem egna dependency-länkar borttagna och målen bevarade.
+Tidigare versionsbundna kvitton nedan är historik. PR91:s privata kodexport
+väntar fortsatt på mänskligt godkännande; ingen sandbox körs.
+
+## Rumskontext och fokus — levererad navigation verifierad, 15 oktober 2026
+
+PR152 är mergad från head `0bea32e23626d64fb754b39ac7a55d44966ca816`;
+huvudkopian synkades till `3da92370` med sex ursprungsfiler bytebevarade. Samordnaren
+verifierar obligatorisk PR-CI inklusive isolerad SQL/restart/HTTPS och lyckad
+main-CI `38657563321`; dokumentationsjobbet var scope-skipped. Rotens Lab-build
+gav exit 0/97 byggspår. Vercel `dpl_JDtveT5CwKFDUTLPnov2HTUZ6yUG` är
+production READY på samma main med www/apexalias. Render
+`dep-db81iilg1s2s73f4d3ng` är live på samma SHA; engine health/version
+svarade 200/ok och `3da92370` den 15 oktober 00:10 UTC. Egen
+`admin-continuity` är nu bekräftat app-arkiverad efter trädekvivalens och
+borttagning av tre egna dependency-junctions med målen bevarade. Tidigare kvitton nedan behåller sin egen version.
+
+Lokala underagentkvitton för implementerad och granskad rumskontext
+(provurvalen överlappar och summeras inte):
+
+- Verifierat publicerat rum styr startkomposition; främmande/inaktuellt rum
+  varnas och spärrar portallänkar utan att tyst länka annat rum. Befintlig
+  redigeringskomposition kan bestå. Omvalidering bevarar utkast: tre regressioner
+  röda före P2-fixen, gröna efter. Provider/ControlLanes och verkliga WorkspaceTool
+  fick sina inaktuella länkar rättade; 51/51 riktade prov passerade.
+- Aktuellt rum följer partnerns meny, loginretur, reload/historik och staff-lobbylänk.
+  Explicit bolagsstandard är `scope=company` utan `room`, utan rolländring.
+  Oberoende auth-/servergranskning fann inga åtgärdskrävande fel. Bakåt till
+  ogiltigt rum reproducerade utkastförlust i verklig PartnerAppearance; rättningen
+  gav 48/48 panel-/rumsprov och därefter 12/12 fokuserade accept/avbryt-prov.
+  Giltiga rumsbyten behåller panel/utkast utan prompt.
+- Lobby behåller operator/room i URL/historik; runtime-exporten
+  `lobbyQuerySelection` är återställd. C6:s isolerade Chrome-prov passerade 1/1.
+- Dealerformulärets Avbryt återför fokus till Skapa dealer; enhetsprov 8/8.
+  Samordnaren har nu verifierat fokus på knappen Skapa dealer efter Avbryt
+  i tomt formulär på levererad `3da92370`; tidigare BODY-fel är därmed återprovat.
+
+Samordnarens slutliga Lab-build passerade med 97 kontrollerade byggspår;
+kodcommit `e92b82b94bb16865b801b90f32af6582fc6119ae` passerade fullhook med
+riktig Chrome: 3 852 pass, 9 skip, 0 fail/cancel i 77 grupper. Fem databasprov
+saknade isolerad testdatabas; fyra Linux-prov är inte tillämpliga på Windows.
+Alla aktiverade browserprov kördes. Loginens fixtureberoende och historikens
+Chrome-val är rättade; saknade arbetskopieberoenden återanvänds först efter
+låsfilsjämförelse. PR-/main-CI och merge är nu klara enligt kvittot ovan.
+
+Samordnarens läsande produktionsprov på Vercel `3da92370` med befintlig
+staffsession följer Swedish Games Dragan v4 från Admin till Partner och Lobby
+med samma faktiska rum. Admin korrigerar saknad/inaktuell sammansättning och
+Klippkartalänken får rätt kontext. Partnerns meny/reload/Bakåt/Framåt bevarar
+rum respektive explicit bolagsstandard. Lobby behåller bolag/rum i historiken,
+väljer ingen dealer automatiskt efter reload och ger rätt blackjacklänk när
+Dragan väljs; Spela klickades inte. Ogiltigt Admin-/Lobbyrum samt blandat
+partner-room/company-scope spärrar berörda portal-/spelstarter. Exakta länkar
+och negativa prov finns i CLOUD-MIGRATION. Inga produktionsskrivningar eller
+spelrundor gjordes; detta är tillskrivet provbevis, inte nya prov här.
+Ny produktionslogin, skrivacceptans, faktisk 200-procentszoom
+och godkännande för PR91:s export av privat spelarkod är kvarstående gränser; ingen hel C4/C7 bockas av.
+Aktuell uppföljning finns i [CLOUD-MIGRATION](CLOUD-MIGRATION.md); ingen ny tracker.
+
+## Aktiv partnerportal utan klientdemo, 15 oktober 2026
+
+Den gemensamma N1/N2-sidladdaren finns nu i
+`lab/components/workspace-surface-page.tsx`. Control och Partner använder
+samma behörighetskontroller och returkontrakt utan import från en annan
+sidas katalog. Den verkliga klienten heter `PartnerOperatorWorkspace`.
+Den onåbara klientdemon, dess originalvyer/CSS (383 127 byte) och dess
+generator/factory är borttagna efter konsumentkontroll. Aktiva partnervyer,
+API-fixtures, material, provenance, sparade alias och publiceringshistorik
+är bevarade. `.kevin-bo` är fortfarande en aktiv CSS-avgränsning.
+
+Testerna kontrollerar den verkligt renderade partnermenyn, rollgränser,
+utkastens livslängd och bolagsbundna publiceringskvitton. En historisk exakt
+destinationslista används inte längre som krav på dagens meny. Riktat:
+153 pass, 1 villkorat browserprov skip; sista menyjusteringen 11/11 pass.
+Lab-bygget verifierar 97 spår. Oberoende granskning fann inga konkreta
+regressioner. Det befintliga isolerade Chrome-provet för partnerlogin med
+bolag/rum och ändamålsbunden cookie passerade också (1/1, ingen skip).
+Kodcommit `3c93a3ab` passerade ordinarie fullhook: 3 792 pass, 21 villkorade
+skip, 0 fel/cancel i 77 grupper. Första försöket stoppades av tillfällig
+Windows-EPERM i agent-talks isolerade låsprov; det exakta provet och därefter
+hela fullhooken passerade utan testundantag. PR151 är mergad som `3bad2fd4`
+med alla obligatoriska CI-kontroller gröna enligt samordnarens leveranskvitto;
+dokumentationsjobbet var avsiktligt SKIPPED för ändringens scope.
+Arkivets befintliga lokala undantag i
+`.ignore` och `.cursorignore` versionsstyrs så att samma skydd finns i nya
+arbetskopior; Git ignorerade redan det privata arkivinnehållet.
+
+Samordnarens läsande browserprov på levererad `9b6f4d11` använder befintlig
+staffsession: Admin → Swedish Games partnerportal visar paketversion 4 och
+Dragan-rummets tre lager. Lobbyn erbjuder rätt rum/dealer och bygger rätt
+`/play/blackjack`-länk. Ingen publicering eller spelstart gjordes. Valt bolag
+och rum tappas mellan portalerna; detta rättas separat och är inte godkänd
+slutacceptans. Admin-översikten på 390 × 844 px gav dokumentbredd 390 px.
+Faktisk 200-procentszoom, full dialogmatris och spelaracceptans återstår.
+
+PR150 är mergad som `8e97ee83`: fullhook 3 794 pass/21 skip/0 fel eller
+cancel i 77 grupper, grön CI och Vercel-preview READY. Previewbygget
+verifierade den verkliga Node 22-installationen trots frontendens Node
+24-kontrakt. Lokal main är uppdaterad; samtliga sex tidigare ändrade lokala
+filer har verifierats byteidentiska efter synkroniseringen.
+
+## Byggkontrakt och systemkarta, 15 oktober 2026
+
+Lab/design/frontend använder Node 24; taltransporten använder Node 22.
+Befintliga lokala Volta-pinnar versionsstyrs nu och frontend anger 24.x.
+Frontendens tre undertryckta TypeScript-fel gällde alpha-film i ett för snävt
+green-screen-kontrakt. Komponenten återanvänder nu det publika kontraktet;
+typkontroll är obligatorisk i fullhook/CI och Next-bygget. 3 typfel blev 0,
+39 riktade prov passerade. Oberoende granskning verifierade byteidentisk
+emitterad JavaScript före/efter: ingen ändring av spelarens runtimebeteende.
+Beroenden och pnpm-lock är oförändrade. Vercels talinstallation använder
+Node 22 för frontendens beroenden; pnpm varnar med standardpolicy, men
+previewbygget måste verifiera den verkliga installationen före merge.
+
+Systemkartan beskriver tre Vercel-tjänster i samma produkt och de separata
+Render-tjänsterna. SQL-inventeringen omfattar nu elva migrationskällor,
+57 tabeller och 382 kolumner, inklusive tidigare saknade 006/008/011.
+Detta inventerar källkontrakt, inte det installerade produktionsschemat.
+Baslinjehashar och testdefinitioner är bevarade; ändrad-indata-varningar
+redovisas i kartan i stället för att nollställas.
+
+Daterat driftkvitto 14 oktober cirka 22:25 UTC: Vercel `scoutgaming` var
+READY på `a0df4e26`, deployment `dpl_7FAC4NFoEdSQCA521AQcWe1XqJme`;
+Render `croupier-v2` var live på samma SHA och gav health 200.
+Efter PR149 är Vercel `dpl_D2U2rpZ3WMne1jkv2dUwjUXmLK6b` READY på
+`9b6f4d11`. Cookiefri kontroll på www 22:35–22:36 UTC verifierar
+`/studio` → `/admin`, Admin → N1-login med rätt retur, gamla Control-länkar
+→ motsvarande Admin-vyer, Partner → partnerlogin och Lobby 200. Ett gammalt
+Studio-bokmärke behåller dealer-parametern genom kompatibilitetslänken.
+Render hade ännu `a0df4e26` vid den avläsningen. Detta är HTTP-/driftbevis,
+inte ny inloggad browser- eller spelaracceptans.
+
+## Sammanhängande Admin-ingångar, 15 oktober 2026
+
+Utgångspunkt är main `a0df4e26` efter PR #146–148. N1-login utan giltigt
+returmål och tom `/studio` går nu till `/admin`. Uttryckliga äldre länkar
+och Studio-bokmärken med query behåller sin kompatibilitet. Partnerportalens
+staff-länkar går till Admin och Spelarlobby; vanliga partner får inga nya
+staff-länkar. Översiktens Spelrum & publicering öppnar `/admin/publication`
+med rätt verkligt rum, bolag, sammansättning och dealer.
+
+Före/efter-prov reproducerade felaktiga mål. Det gemensamma fokuskommandot
+gav 157 pass, 9 befintligt villkorade browserprov skip, 0 fel. Login-agentens
+separata utökade auth/SSR/N2-prov gav 85 pass, 1 browserprov skip, 0 fel.
+Kodcommit `567be8a2` passerade Lab-build (97 spår) och ordinarie fullhook:
+3 794 pass, 21 villkorade skip, 0 fel/cancel i 77 grupper. Oberoende statisk
+granskning fann inga konkreta regressioner. Levererad browseracceptans
+återstår och bokförs separat i C1–C9.
+Den delade sidladdaren har därefter flyttats ur Control, se aktuellt kvitto
+ovan. `lab/lib` och verkliga partnerportalen är aktiva tjänster och bevaras.
+
+PR #91 är fortsatt draft: Astrids isolerade spelarprov är klart; Dragan v4
+inväntar tillstånd för den privata runtimekoden. Inga sandboxuppladdningar
+gjordes efter säkerhetsgranskningens avslag och sandlådan är stoppad.
+Rörligt tal och mänsklig medieacceptans är egna kvarvarande gränser.
+
+## Driftprofiler och providerkontroll, 14 oktober 2026 kväll
+
+Samordnat med SAMORDNING efter PR #145. Root-profilens RunPod-nyckel är
+återställd till samma verifierade par som Lab/Render. Emils lokala testfil
+har fem `EMIL_*`-namn och rätt lokalt endpointval; hans fjärrresurser är orörda.
+Fyra oanvända testkopior är borttagna från endast Vercel scoutgaming Production;
+Cartesia behålls för Studio. Alla andra Vercel-poster, Render och DB/Blob-värden
+är bevarade. Original ligger kanoniskt i `arkiv/2026-10-14/`, med skyddade ACL.
+
+`tools/check-provider-profile.mjs` är ett uttryckligt filval med enbart GET:
+inga ärvda processnycklar, blandade namn, omdirigeringar, GPU-jobb eller
+hemliga loggvärden. Fyra riktade regressionstester, 12 tester inklusive
+env-registret, Studio-build (97 kontrollerade spår) och full pre-commit
+(3 781 pass, 19 skip, 0 fail) godkända. Alla åtta lokala loaderkombinationer
+har identisk effektiv konfiguration före/efter. Båda providerprofilerna gav
+200; även Emils Gemini fungerar. API-tillgänglighet är inte talacceptans.
+
+Inloggning, session, projekt och mediebibliotek lästa på Vercel; projektrevisionen
+matchade produktions-Neon och autentiserat privat MP4-HEAD gav 200/rätt längd.
+Efter miljöbytet redeployades exakt `fa1fdaaeaf923c0744a82953d77334779a6001e7`:
+`dpl_3C8Hpice4vvqnfJmzei9KR176i9Y` är READY i rätt team/projekt med
+`www.scoutgaming.tech` som alias. Samma databas-, sessions- och medieprov
+godkändes efter deploymenten; webb/Admin och båda Render-hälsoproven gav 200.
+SAMORDNING fick kvittot och merge-/deploypausen kunde släppas.
+Se [aktuella profiler, namnmatris och återställning](ENVIRONMENT-VARIABLES.md).
+Rörlig workerintegration, två faktiska talprov och Anna-avatar återstår separat.
+
 ## Lokal env-konsolidering, 14 oktober 2026
 
 Efter ADMIN:s och DRAGAN:s klartecken flyttades den dubblerade
 `lab/.env.generated-speech.local` och den oanvända
 `lab/.env.cloud-activation.local` till den Git-ignorerade
-`lab/data/platform-private/env-cleanup-20261014/` i Jakobs huvudcheckout.
+`arkiv/2026-10-14/lab/` i Jakobs huvudcheckout. Den första tillfälliga
+placeringen under `lab/data/platform-private/` är avvecklad.
 Exakta byte och Windows-ACL är bevarade. Före/efter-konfigurationen matchar
 för vardera flytten i åtta kombinationer av speech-, kamera- och lagringsflaggor.
-Privata kvitton ligger bredvid filerna utan hemliga värden.
+Privata kvitton ligger under
+`arkiv/2026-10-14/lab/data/platform-private/samordning-cleanup/`, utan hemliga värden.
 
 Rotens och Labs olika `.env.local`, separat cloud-storage-opt-in, aktiva
 beroendeinstallationer, `lab/.next`, produktdata och molninställningar bevaras.
-Två värdeskillnader mellan root/Lab återstår avsiktligt utan automatisk synk;
+Den senare providerkontrollen ovan rättade RunPod-paret; profilerna förblir
+separata efter sina faktiska läsare och ska inte slås samman slentrianmässigt;
 se [aktuell läsordning och inventering](ENVIRONMENT-VARIABLES.md).
 Denna leverans ändrar bara dokumentation och innebär ingen ny drifts- eller
 inloggningsverifiering. Spelaracceptans och övriga migreringsgrindar kvarstår.

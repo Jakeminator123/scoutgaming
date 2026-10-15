@@ -35,31 +35,246 @@ procentangivelse ersätter verifiering av varje flöde. Historisk startpunkt,
 
 ### Admin checkpoints C1C9
 
-Arbetsordning för fortsatt Admin-migrering, 14 oktober 2026. Detta är den
-befintliga trackerns aktuella checklista. Aktuellt pass följer Jakobs mandat
-att behålla Lab och integrationskopian, rätta partnerns loginretur och prova
-C6 med isolerade data. DRAGAN och SAMORDNING har lämnat över dessa kodfiler
-och egna Admin-avsnitt. Integrationsbas är main `fa1fdaae` efter PR145; DRAGANs PR144 bevaras.
+Arbetsordning uppdaterad 15 oktober 2026 efter Jakobs fortsatta mandat:
+en sammanhängande Admin/partner/lobby-produkt, konsumentstyrd legacy-städning,
+begripliga källansvar och bättre utvecklingsprov. Verifierad produktversion är `654ab9e2`
+efter levererade PR149–156; den tidigare grundetappen var PR146–148. ADMIN:s integrationskopia behålls; ändringar görs i egna
+arbetskopior. DRAGAN och ADMIN:s avslutade uppgifter är överlämnade.
 C4–C7:s fulla acceptans återstår; checklistan ger inga nya spel-/datamandat.
-Jakob gav senare den 14 oktober uttryckligt mandat att granska och merga
-aktuell PR samt leverera Admin via PR till main. Vanliga kontroller och
-ägarregler gäller; automatiska Vercel-byggen följer leveransen.
+Jakobs mergeuppdrag gäller granskade egna PR:er enligt ägarreglerna.
+Automatiska Vercel- och Render-byggen följer main-leveransen.
+
+**Historiskt leveranskvitto, 15 oktober 2026:** PR154 gav main `46444572`.
+Main-CI `38662964323` success, Vercel `dpl_6nrpTJ2DKE1cJuEW5rn87H51wwiC`
+READY och Render `dep-db82c560tbcc73e3ipk0` live; faktisk engine health/version
+gav ok/samma SHA 01:05 UTC. Fullhook på slutlig UI-kod: 3 852 pass/9 skip,
+0 fel i 77 grupper; Lab-build 97 kontrollerade byggspår. Egna
+`partner-chain-acceptance` är därefter bekräftat app-arkiverad.
+
+**Dragan och env, 15 oktober 06:52–07:14 UTC:** Scoutgamings RunPod-par är lika
+lokalt och på Render och skiljer sig från Emils. En ensam ogiltig lokal env-rad
+rättades med 50 giltiga värden bevarade och skyddad originalbackup. Detaljer och
+GET-bevisgränser finns i [ENVIRONMENT-VARIABLES.md](ENVIRONMENT-VARIABLES.md).
+Samordnarens N2-prov läste paket v4:s tre lager och spelade två gånger på desktop
+och mobil. Admins befintliga Provspela gav därefter två sammanhängande rundor
+i verklig player på produktionsvärden, med egen minnesdatabas/testsaldot:
+desktop €5 förlust och mobil 390×844 €5 insats/€10 tillbaka. Slutligt testsaldo
+10 000, ingen sidöverströmning eller insamlat JS-fel. Provsessionen stängdes
+via återlänken och gav sedan `studio_preview_not_found`.
+Detta är ett eget main-kvitto för sparad sammansättning, inte PR91, rummets hela
+publicerings-/tillåtelsekontrakt eller genererat tal/läppsynk. Inga verkliga
+spelarbalanser eller Emil-inställningar ändrades och inga providerjobb startades.
+Alla 36 lokala v4-filmer matchar frysta paketets hash/storlek. Rörlig läppsynk
+har fortfarande en konkret transport-/spelarkopplingslucka; se
+[LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md).
+
+**Mobilkontroller, 15 oktober:** Dragan-provet ovan reproducerade att den
+globala assistentknappen skymde spelarens nedersta kontroller. Blackjack och
+roulette (även Studio-preview/äldre speladresser) undantar nu den flytande
+widgeten före API/DOM-init. Admin, Partner, Lobby och ingångssidan behåller
+assistenten; roller, dealerchatt, spelregler och mediebytes är oförändrade.
+Oberoende statisk granskning och 58 riktade prov utan skip är klara.
+Lab-build: 97 byggspår. Kodcommit `82986fdd` passerade fullhook med riktiga
+isolerade Chrome-prov: 3 854 pass/9 skip, 0 fel/cancel i 77 grupper.
+Levererat mobilprov på main `654ab9e2` är klart: 390×844, ingen assistent-DOM,
+ingen sidöverströmning och aktiverad DEAL NOW överst i klickträffen. En syntetisk
+€5-insats användes för att aktivera knappen; ingen ny runda startades. Separata
+provsessionen stängdes via återlänk och gav sedan `studio_preview_not_found`.
+PR156:s main-CI `38700979846` success, Vercel `dpl_DsNKZRuJxftpsfpsvrCCvEmpoxhc`
+READY och Render `dep-db88cebm8hqs73btc990` live är verifierade; faktisk
+engine health/version gav ok/samma SHA. Lokal main synkades med 225 befintliga
+filhashar bevarade. Egna arbetskopian `player-controls` är app-arkiverad.
+
+**PR91, integration 15 oktober:** main `654ab9e2` har integrerats i grenen.
+De sex ändrade klientskripten är byteidentiska med tidigare granskad `e4f3b562`
+och Astrid-provets `542e98b2`. Lab-build passerar med 97 kontrollerade byggspår.
+Ordinarie fullkontroll med riktiga Chrome-fixturer gav 3 871 pass, 9 villkorade
+skip, 0 fel/cancel i 77 grupper; sena dokumentändringar fick 43/43 godkända prov.
+Oberoende granskning fann inga blockerande kodfel. Ett försök med browserlokala
+skript i separat Studio-preview stoppades av automatisk säkerhetsgranskning:
+privat källkod på produktionsadressen kräver uttryckligt godkännande. Inget
+PR91-skript lästes in och inga rundor kördes. Originalkoden återställdes och
+provsessionen stängdes/verifierades saknad. PR91 förblir draft; Dragan-prov
+på rätt kod och det publicerade rummets kontrakt är ännu inte accepterade.
+
+**Historiskt leveranskvitto för PR152:** PR152 är mergad från head
+`0bea32e23626d64fb754b39ac7a55d44966ca816` till main `3da92370`.
+Samordnaren verifierar alla obligatoriska PR-kontroller, inklusive isolerad
+SQL/restart/HTTPS, och lyckad main-CI `38657563321`; dokumentationsjobbet
+var scope-skipped. Lokal main är framflyttad, sex ursprungsfiler bytebevarade
+och rotens Lab-build gav exit 0/97 byggspår. Vercel production
+`dpl_JDtveT5CwKFDUTLPnov2HTUZ6yUG` är READY på `3da92370` med www/apexalias.
+Render `dep-db81iilg1s2s73f4d3ng` är live på samma SHA. Tjänstens publika health/version svarade 200/ok och `3da92370` den 15 oktober 00:10 UTC. Säkerhetsläsningen på samma main visar verifierad källa, 0 öppna/18 ignorerade incidenter och aktiv övervakning; platsmetadata är partiell och historikskanningen `too_large`.
+Det läsande produktionsprovet och kvarvarande acceptansgränser redovisas nedan.
+
+**Historiskt leverans- och städkvitto för PR150–151:** PR150 är mergad
+som `8e97ee83`. Rapporterad fullhook: 3 794 pass, 21 skip, 0 fel i 77 grupper.
+Vercel-preview `dpl_Cbau5xs1yARFjnu2UasNuJkDLtdn` är READY; previewbygget
+lyckades med speech-tjänstens Node 22-installation och frontendens deklarerade
+Node 24-kontrakt. Varje serviceprocessversion lästes inte. Det är ett
+avgränsat byggkvitto, inte ny produktionsacceptans.
+
+På denna bas tar partnerstädningen bort 383 127 byte oanvänd klientdemo och
+den tillhörande fabriksgeneratorn. Aktiv klient/laddare heter nu
+`PartnerOperatorWorkspace` respektive `lab/components/workspace-surface-page.tsx`.
+API:er, testfixturer, aktiv CSS och behörighetskontroller bevaras. Kodagentens
+rapporterade riktade prov: 153 pass, 1 skip; sista meny-/aliasprovet 11/11.
+Samordnarens Lab-bygge är klart med exit 0; byggspårkontrollen rapporterar
+`checked: 97`, `removed: 74`. Kodcommit `3c93a3ab` passerade därefter ordinarie
+fullhook: 3 792 pass, 21 villkorade skip, 0 fel/cancel i 77 grupper. Ett första
+försök stoppades av tillfällig Windows-EPERM i agent-talks samtidighetsprov;
+det exakta provet och hela fullhooken passerade sedan utan undantag.
+Det isolerade Chrome-provet för partnerlogin/bolag/rum passerade separat
+(1/1, ingen skip). PR151 är nu mergad som `3bad2fd4`; alla obligatoriska CI-kontroller är
+gröna enligt samordnarens leveranskvitto. Dokumentationsjobbet var avsiktligt
+SKIPPED för ändringens scope. Rotens sex lokalt ändrade filer
+bevarades byteidentiska vid main-synk. Arkivundantagen i `.ignore` och
+`.cursorignore` finns nu på main. Dokumentationsagenten körde inget Lab-bygge.
+Samordnarens driftavläsning 14 oktober 23:29 UTC verifierar `3bad2fd4`:
+Vercel `dpl_7ikpzdCj3f5dDWbEWiJmM2pni722` READY och Render
+`dep-db80v2ek1f9s73e1cjug` live; engine-tjänstens health/version gav 200.
+GitGuardian-kvittot 23:23 UTC gäller samma main: verifierad källa,
+incidenttäckning `complete-for-source`, 0 öppna/18 ignorerade och aktiv
+övervakning; platsmetadata är partiell och historikskanningen `too_large`.
+Det är tillskrivna drift-/säkerhetskvitton, inte nya läsningar här.
+
+Samordnarens läsande liveprov på `9b6f4d11` med befintlig personalsession
+gick Admin → Swedish Games N2 paket v4/lager → Lobby och gav korrekt launch-URL.
+Admin saknade sidöverflöde vid 390 px. Bolags-/rumskontext tappades mellan
+portalerna och rättas separat; detta prov stänger därför inte C4, JN2 eller
+full spelar-/medieacceptans. Detta är tillskrivet bevis, inte ett nytt prov
+utfört av dokumentationsagenten.
 Målet är en tydlig, sammanhållen N1-yta med läsbar typografi och fungerande
 befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte.
 
 | Checkpoint | Klart när | Ägare/ordning | Aktuellt kvitto och kvarvarande kontroll |
 | --- | --- | --- | --- |
-| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Uppdaterad mot main `fa1fdaae` efter PR145. DRAGAN och SAMORDNING har överlämnat partnerretur/C6 och egna Admin-avsnitt; deras spel-, media- och miljöarbete bevaras. Tidigare inventeringar och provkvitton nedan är historik. Huvudcheckouten används inte för editeringar. |
+| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Uppdaterad mot main `46444572` efter PR149–154; nya env-/Dragan-kvitton ovan. Jakob gav 15 oktober fortsatt mandat för sammanhängande Admin/partner/lobby, konsumentstyrd legacy-städning och bättre tester. DRAGAN och SAMORDNING har överlämnat partnerretur/C6 och egna Admin-avsnitt; deras spel-, media- och miljöarbete bevaras. Tidigare inventeringar och provkvitton nedan är historik. Huvudcheckouten används inte för editeringar. |
 | C2 — begriplig navigation | Varje synlig ingång har ett tydligt syfte, en aktiv huvudmenyrad och rätt destination. Befintliga länkar och spelstarter bevaras. | Navigationsagent → huvudagent. | Lokalt: en bolagsingång i huvudmenyn, samstämmiga etiketter och portaler till `/admin`, `/partner`, `/lobby`. Startsidan öppnar befintliga dealer-, bolags-, publicerings- och provspelningsflöden. 25 riktade tester passerade första passet. Eget levererat prov på `dbfe94b5` verifierar startsida → Bolag & team → publicering → provspelning och tillbaka/framåt med Swedish Games. Full kontroll av varje destination återstår. |
-| C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala resurser provade vid 1440/1024/640/390 px. Läsbarare Inter-text i meny, kontext och klippkort; en sidrubrik för Bolag & team. Reproducerad kortöverlappning rättad med uppmätt radhöjd; minikartan togs bort i PR130 efter verifierad skymning på desktop och mobil. Slutåtgärder i långa paneler kan rullas fria från Adminroboten. Eget liveprov på `dbfe94b5` verifierar Inter/Inter-SemiBold, en bolagsrubrik och inget sidöverflöde vid 390 px. Eget liveprov på `39343967` bekräftar att minikartan är borta och Zoom In, Zoom Out och Fit View fungerar med bevarad rumskontext. Faktisk 200-procentszoom och full dialogmatris återstår. |
-| C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Navigationsagent → huvudagent; separat funktionsacceptans. | Eget läsande liveprov, upprepat på levererad `c3397d1d`, behåller Swedish Games / Dragan-rummets fem kontextfält genom Publicering → Provspelning → Klippkarta och reload/Bakåt/Framåt. Sex isolerade loginprov använder nu riktig Admin och lagrade rum med egna ID:n. Lab-historikens reproducerade bortfall av mellanposter/Next-state samt tappad speltyp rättas: 25 historik-/Admin-prov och 42 övriga navigation-/auth-prov passerar. Partnerreturen är rättad på aktuell gren och 47 riktade prov inklusive Chromium passerar; se kvitto nedan. Ny produktionslogin, full N2-vy/RSC-historik och hela destinationsmatrisen återstår; äldre oindexerade poster har fortsatt dokumenterad begränsning. |
+| C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala resurser provade vid 1440/1024/640/390 px. Läsbarare Inter-text i meny, kontext och klippkort; en sidrubrik för Bolag & team. Reproducerad kortöverlappning rättad med uppmätt radhöjd; minikartan togs bort i PR130 efter verifierad skymning på desktop och mobil. Slutåtgärder i långa paneler kan rullas fria från Adminroboten. Eget liveprov på `dbfe94b5` verifierar Inter/Inter-SemiBold, en bolagsrubrik och inget sidöverflöde vid 390 px. Eget liveprov på `39343967` bekräftar att minikartan är borta och Zoom In, Zoom Out och Fit View fungerar med bevarad rumskontext. Samordnarens läsande liveprov på `3da92370` verifierar att tomt dealerformulärs Avbryt återför fokus till knappen Skapa dealer. Faktisk 200-procentszoom och full dialogmatris återstår. |
+| C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Navigationsagent → huvudagent; separat funktionsacceptans. | Eget läsande liveprov, upprepat på levererad `c3397d1d`, behåller Swedish Games / Dragan-rummets fem kontextfält genom Publicering → Provspelning → Klippkarta och reload/Bakåt/Framåt. Sex isolerade loginprov använder nu riktig Admin och lagrade rum med egna ID:n. Lab-historikens reproducerade bortfall av mellanposter/Next-state samt tappad speltyp rättas: 25 historik-/Admin-prov och 42 övriga navigation-/auth-prov passerar. Partnerreturen är levererad i PR147 och 47 riktade prov inklusive Chromium passerar; se kvitto nedan. På `3da92370` verifierar samordnaren med befintlig staffsession Admin → Partner → Lobby, partnerns meny/reload/Bakåt/Framåt mellan rum och bolagsstandard samt lobbyns val/historik; negativa rum spärras. Ny produktionslogin och hela destinations-/rollmatrisen återstår; äldre oindexerade poster har fortsatt dokumenterad begränsning. |
 | C5 — säkra redigeringsflöden | Spara/återläsa, revisionskonflikt, återställning och verkligt osparade ändringar fungerar. Rena formulär ger ingen falsk varning. | En skrivande testägare med isolerade data. | 18 riktade lokala prov passerar för den verkliga projektredigeraren: HTTP-sparning/återläsning, två redaktörers 409, konfliktlösning, historik och avbruten omladdning. Ett reproducerat texttapp under revisionshämtning är rättat och oberoende granskat. Browser-/komponentregression var röda före rättningen. Syntetisk autentisering och lagring; övriga formulär och produktionslagring återstår. Ett valt rum gör inte delad mallskrivning rumsspecifik; använd befintliga `roomOverrides`. |
-| C6 — publicering och nivågränser | N1 publicerar rätt granskade revision till rätt N2 och verkligt N3-rum; fel bolag och fel roll nekas på servern. | Samordnat funktionsprov efter C4–C5. | Isolerad kedja godkänd på aktuell gren: två prov, inklusive Chromium, följer samma nya revision genom N1-form → autentiserat N2-API → lobby → validerad spelstart. Fel roll/bolag/rum nekas utan dataskrivning. Full N2-vy, spelarlogin och produktionsacceptans återstår; exakt fixturegräns nedan. |
-| C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; PR91-kod och konflikter ägs nu av SAMORDNING, Dragan-geometri av DRAGAN. | SAMORDNING verifierade PR91-kodhead `542e98b2` i isolerad internetmiljö med minnesdatabas: fyra sammanhängande rundor (förlust/vinst/push/split), desktop/mobil, 15 lyckade serverkommandon, korrekta testsaldon samt Astrids befintliga talfilm två gånger och pausåterhämtning. Sandlådan är stoppad. Detta verifierar Astrid-delen; PR91 kvarstår som draft tills Dragan har provats med det godkända paketet v4. Full läppsynksacceptans och övrig C7-matris återstår. DRAGANs PR123/125-kvitton och två isolerade produktionsrundor efter PR127 på `5ca686c5` är hans prov. Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
+| C6 — publicering och nivågränser | N1 publicerar rätt granskade revision till rätt N2 och verkligt N3-rum; fel bolag och fel roll nekas på servern. | Samordnat funktionsprov efter C4–C5. | Den isolerade kedjan renderar nu också verklig N2-arbetsyta: N1-form → behörighetskontrollerad PartnerOperatorWorkspace/branding → anonym lobby → validerad spelstart, med samma nya revision och rum. Chrome 2/2 utan skip; Översikt/Spelrum, reload/Bakåt/Framåt, bolagsstandard och partner/staff-länkar verifieras. Främmande bolagssida ger 403. Syntetiska sessioner/minnesdata; ny login, N2-skrivningar, full rollmatris, RSC och produktionsacceptans återstår. |
+| C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Eget prov på main `46444572`: två rundor i produktionsvärdens isolerade Studio-preview, desktop förlust och 390×844 mobil vinst; tre lager, serverkort, syntetiskt saldo och sessionsstängning verifierade. Publicerat rums fulla val, genererat tal/läppsynk och PR91 återstår. DRAGANs PR123/125-kvitton och två isolerade produktionsrundor efter PR127 på `5ca686c5` är hans prov. Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
 | C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker/menyingångar och minikartan förenklade efter verifiering. Befintlig tracker och eget handoffavsnitt följer varje rättning. Fjorton avslutade egna arbetskopior är arkiverade efter verifierad överföring/granskning, senast C4-login, C4-historik och C5-utkast. Överförda filer/patchar är hashkontrollerade; egna dependency-junctions, fixture-processer och browserflikar är städade. Partnerlogin/C6:s två nya kopior är hashkontrollerat överförda; deras junctions och fixture-processer är städade och arkivering ligger i appens kö. Integrationskopian, beroenden, Lab-bygge och privata provkvitton behålls enligt Jakob. |
-| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten; samordnad mergeordning efter DRAGAN. | Kodcommit `d95ba3782e17411ad7f2cb7d418826acfe2150e5`: fullhook 3794 pass/9 skip, 0 fel/cancel i 77 grupper; 97 byggspår och Admin/lobby-typkontroll gröna. Samtliga nya browserprov kördes. 415 testfiler inventerade: 0 föräldralösa, 2 befintliga undantag. Oberoende kod-/test-/dokumentgranskning genomförd; C6:s korsbolagsprov förstärkt efter fynd. Leverans via egen PR från `codex/admin-partner-return-c6`; ingen egen main-merge eller manuell deploy. Tidigare leverans-/driftkvitton nedan är historik. |
+| C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten; samordnad mergeordning efter DRAGAN. | Senast levererad PR154 på `46444572`: obligatorisk PR-CI och main-CI gröna, Vercel READY och Render live på samma produktversion. Exakta provkvitton nedan. Historik PR147, kodcommit `d95ba3782e17411ad7f2cb7d418826acfe2150e5`: fullhook 3794 pass/9 skip, 0 fel/cancel i 77 grupper; 97 byggspår och Admin/lobby-typkontroll gröna. Samtliga nya browserprov kördes. 415 testfiler inventerade: 0 föräldralösa, 2 befintliga undantag. Oberoende kod-/test-/dokumentgranskning genomförd; C6:s korsbolagsprov förstärkt efter fynd. PR147 från `codex/admin-partner-return-c6` är granskad och mergad av SAMORDNING. Tidigare leverans-/driftkvitton nedan är historik. |
 
-**C4, partnerns loginretur i aktuell gren:** en lyckad N2-inloggning tappade
+**Utökad N2-acceptans och menystädning, 15 oktober:** `codex/partner-chain-acceptance`
+återanvänder C6-fixturen, riktiga session-/medlemskapskontroller, sidladdaren och
+`PartnerOperatorWorkspace`. Branding måste ge 200, rätt fryst presentation och
+verkligt formulärinnehåll; oväntade API-fel underkänner provet. Läsbesöken får
+inte ändra paket eller administration. Bilder ersätts av importmetadata,
+externa anrop blockeras och browser/server stängs efter provet. Lokal Chrome
+2 pass/0 skip; detta är inte CI-browser-, RSC-, skriv- eller medieacceptans.
+Testcommit `dc7923b3` passerade fullhook 3 852 pass/9 skip/0 fel i 77 grupper.
+
+Samordnarens läsande liveprov på `37b9d6fd` laddade Kopplingar, Radering,
+Verktyg, Drift, Ekonomi, Konton & åtkomst och Integrationer utan synliga fel.
+Ändringslogg visade endast en hänvisning; den får nu en länk till Bolag & team.
+Den dubblerade Spelare-ingången tas bort från desktop- och mobilmenyn eftersom
+båda öppnar samma kontovy. `/admin/admin/players` fungerar fortsatt och får
+samma aktiva menyval/brödsmula som Konton & åtkomst. 25 befintliga fokusprov
+passerar; oberoende granskning fångade mobilens dubblett före slutkontrollen.
+Detta breddar navigationskvittot men stänger inte hela C2/C4 eller dialogmatrisen.
+Slutlig UI-kodcommit `99882451cd4e8e39ee9c64c06bd3815f4afb6cac`: Lab-build 97 kontrollerade byggspår och fullhook med riktig Chrome 3 852 pass/9 skip/0 fel i 77 grupper. Den tidigare avbrutna körningen räknas inte som godkänd.
+
+**Levererad rumskontext/fokus med läsande produktionsprov, 15 oktober:**
+PR152 levererar `codex/admin-room-context` på main `3da92370`. Admin väljer startkomposition
+från verifierat publicerat rum. Främmande/inaktuellt/otillgängligt rum varnas
+och spärrar portallänkar; inget annat rum länkas tyst. Redigeringskompositionen
+kan bestå, och omvalidering bevarar utkastet: tre P2-regressioner röda före,
+gröna efter. Aktuellt rum följer partnerns meny, loginretur, reload/historik
+och staff-länken till Lobby. Bolagsstandard kräver exakt `scope=company`
+utan `room`; roller och bolagsgränser ändras inte. Oberoende auth-/servergranskning
+fann inga åtgärdskrävande fel. Lobby behåller operator/room i URL/historik;
+C6:s isolerade Chrome-prov passerade 1/1 efter runtime-exportfixen.
+
+Underagenterna rapporterar separata, överlappande provurval: 51/51 för
+provider/ControlLanes och den verkliga WorkspaceTool-kedjans tidigare inaktuella
+länkar. Bakåt till ogiltigt rum reproducerade utkastförlust med verklig
+PartnerAppearance; rättningen gav 48/48 panel-/rumsprov och därefter 12/12
+fokuserade accept/avbryt-prov. Giltiga rumsbyten behåller panel/utkast utan prompt.
+Dealerformulärets Avbryt återför fokus till Skapa dealer (8/8 enhetsprov);
+samordnarens tidigare liveprov lämnade fokus på BODY. På levererad `3da92370`
+verifierade samordnaren nu fokus på knappen Skapa dealer efter Avbryt i tomt
+formulär. Samordnarens slutliga Lab-build passerade med 97 kontrollerade
+byggspår. Kodcommit `e92b82b94bb16865b801b90f32af6582fc6119ae` passerade
+ordinarie fullhook med riktig Chrome: 3 852 pass, 9 skip, 0 fail/cancel i
+77 grupper. Alla aktiverade browserprov kördes. Överhoppen är fem separata
+PostgreSQL/Neon-prov utan konfigurerad testdatabas och fyra Linux-prov på Windows.
+Loginfixturen fick sitt nya returberoende och historikfixturen samma explicita
+Chrome-kanal som övriga prov. Arbetskopians saknade tsc/ws-beroenden återanvänds
+via egna junctions efter verifierade package-/låsfiler; inga kontroller ändrades
+för att dölja fel. Praktisk förkontroll finns i ENVIRONMENT-RESTORATION.
+Samordnarens eget läsande produktionsprov på Vercel `3da92370` med befintlig
+staffsession verifierar Swedish Games Dragan v4: Admin hämtar rätt sammansättning
+både utan composition och med `obsolete-context`; Klippkartalänken får rätt
+rum/sammansättning/dealer/speltyp. Admin → Partner → Lobby bevarar
+`room-c0031e58-9985-b851-d9a9-4ee419b35ff0`. Partnerns Översikt → Spelrum,
+reload och Bakåt/Framåt mellan rum och `scope=company` behåller valt läge och
+rätt staff-lobbylänk. Lobby behåller bolag/rum vid reload/historik utan att
+välja dealer automatiskt. Vald Dragan-dialog visar korrekt
+`/play/blackjack?operator=swedish-games&table=room-c0031e58-9985-b851-d9a9-4ee419b35ff0&dealer=dragan`.
+Spela klickades inte. Negativa prov: Admin `missing-room` varnar utan portallänkar;
+Partner `room` tillsammans med `scope=company` är otillgängligt utan lobbylänk;
+Lobby `missing-room` varnar utan spelstart. Inga produktionsskrivningar eller
+spelrundor gjordes. Detta är samordnarens tillskrivna kvitto, inte nya prov här.
+Ny produktionslogin, skrivacceptans, faktisk 200-procentszoom och full C4/C7
+återstår. IAB:s tidigare zoomförsök ändrade inte zoomnivån. Dragan v4-prov
+som kräver ännu ej godkänd export av privat spelarkod förblir avgränsat.
+
+**C2/C4/C8/C9, sammanhängande ingångar 15 oktober:** på `codex/admin-continuity`
+öppnar standardlogin och tom `/studio` Admin. Verkliga partnerportalens
+staff-länkar öppnar `/admin` och `/lobby`; vanliga partners får inga nya
+staff-ingångar. Översiktens publiceringslänk öppnar rätt editor med bevarat
+bolag, faktiskt rum, sammansättning och dealer. Gamla uttryckliga returlänkar,
+auth-gränser och `/play/{game}`-kontrakt är bevarade. Före/efter-proven
+reproducerade de felaktiga målen. Gemensamt fokusprov: 157 pass, 9 befintligt
+villkorade browserprov skip, 0 fel. Login-agentens utökade urval: 85 pass,
+1 skip, 0 fel. Fokuskommandot ersätter inte fullhook eller CI. Levererad
+browseracceptans och hela destinationsmatrisen återstår.
+
+Kodcommit `567be8a270499750a3b13d685eba148469a2d0b3`: Lab-build med 97
+kontrollerade spår och ordinarie fullhook med 3 794 pass, 21 villkorade skip,
+0 fail/cancel i 77 grupper. Oberoende statisk granskning hittade inga
+konkreta regressioner. Publiceringslänken behåller rum/dealer i URL:en;
+detta är inte bevis för att editorn markerar just det rummet. Fullhookens
+skip redovisas som acceptansluckor, inte som genomförda browserprov.
+
+PR149 är mergad som `9b6f4d11` efter grön CI/GitGuardian/Vercel och färsk
+ägar-/headkontroll. Huvudcheckouten är på samma main; sex lokalt ändrade
+filer bevarades byteidentiska. Vercel production är READY på denna SHA.
+Cookiefritt HTTP-prov 14 oktober 22:35–22:36 UTC visar `/studio` → `/admin`,
+Admin → rätt N1-loginretur, Control → rätt Admin-mål, Partner → partnerlogin
+och Lobby 200. Render rapporterade då ännu `a0df4e26`; de olika driftkvittona
+ska inte blandas ihop med full browser-/spelaracceptans.
+
+**C1/C8/C9, byggkontrakt och karta:** `codex/runtime-contracts` versionsstyr
+de redan använda Node-pinnarna, rättar frontendens alpha-typkontrakt och
+återaktiverar obligatorisk typkontroll utan dependencybyte. Tre typfel blev
+noll och 39 riktade prov passerade. Emitterad canvas-JavaScript är
+byteidentisk mot tidigare main. Systemkartan inventerar riktiga tjänster,
+N1/N2/N3 och tidigare saknade SQL-källor; bevarade baslinjer visar kvarvarande
+evidensdrift. Se [kartan](system-map/README.md) och
+[runtime/återställning](ENVIRONMENT-RESTORATION.md#byggdelar-och-node-versioner).
+
+**C7, SAMORDNING:s isolerade PR91-kvitto 14 oktober:** Astrid spelades genom
+förlust, vinst, push och split i den verkliga spelaren med separat minnesdata
+på tillfällig internetadress. Mobil 390×844, sammanhängande rundor och
+återhämtning från avsiktlig paus provades; 15 spelkommandon gav 200 och
+slutsaldot blev 10 010. Detta är funktion, inte ny mänsklig läppsynksacceptans.
+Dragan v4 är förberett men inte spelprovat: automatisk säkerhetsgranskning
+kräver separat godkännande för kopiering av privat spelarkod. Ingen sådan
+uppladdning gjordes, sandlådan är stoppad och PR91 förblir draft.
+
+**C8, lokal städning:** dubbla speech-/activation-envfiler och förbrukade
+`ops/vercel-entry` ligger återställbart under kanoniska `arkiv/2026-10-14/`.
+Byte och ACL verifierades. Aktiva dependency-installationer och `lab/.next`
+behålls. Egna `env-cleanup-docs` och `lab-security-patches` är app-arkiverade;
+ADMIN:s integrationskopia behålls enligt Jakob. Äldre kö-/arkivkvitton nedan
+är respektive ägares historik, inte bevis för aktuellt verktygsfel.
+
+**C4, partnerns loginretur i PR147:** en lyckad N2-inloggning tappade
 vald arbetsyta och skickade alltid användaren till `/partner`. Ett rött
 formulärprov reproducerade felet. Serverredirect, loginformulär och länken för
 intern administratör för nu vidare samma validerade partneradress och verkliga
@@ -241,12 +456,13 @@ kvitto nedan; den nya portallänken innebär inte full spelarparitet.
 
 **Control kan ännu inte katalograderas:** vanliga GET/HEAD-dokument
 omdirigeras redan till Admin, men `/control/login` och lösenordsalias
-används fortfarande. `lab/app/partner/[[...path]]/page.tsx` importerar
-`WorkspaceSurfacePage` från `lab/app/control/surface-page.tsx`; en radering
-skulle därför också bryta Partner. Admin återanvänder `control-*`-komponenter
-och `lab/lib`. Frikoppla först den delade renderaren till en neutral modul,
-behåll autentiseringsalias och bokmärken och verifiera dem innan gamla
-sidimplementationer tas bort. Detta pass raderar inte dessa konsumenter.
+används fortfarande. Partner och Control importerar nu den neutrala
+`lab/components/workspace-surface-page.tsx`; Partner är därmed inte längre
+beroende av en sidmodul under `lab/app/control/`. Den aktiva N2-klienten är
+`PartnerOperatorWorkspace` i `lab/components/kevin-bo/partner-operator-workspace.jsx`.
+Admin återanvänder fortfarande `control-*`-komponenter och aktiva `lab/lib`.
+Autentiseringsalias, bokmärken och dessa konsumenter måste verifieras innan
+ytterligare gamla sidimplementationer tas bort.
 
 **Tidigare integration före PR129, 14 oktober:** `e9996383412d142cf6fa22ecf554854bc150b2c2`
 inkluderar main `5ca686c5513982f9a760ad8dd07e67ed4d4e2e40`. Ordinarie full
@@ -915,9 +1131,9 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   Studio-byggen passerar. Publicerad kod `5524b968` är provad med befintlig intern
   adminsession: båda ytorna, menybyten, operatörsbyte och direktlänkar fungerar.
   Oinloggade besök går till login; API ger 401. Riktig kundinloggning ligger i T2.
-- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Påbörjad, inte klar. Levererat: migration `005-operators.sql`, `partner_session`, scoped snapshot, N1:s Bolag & team och paketpublicering med verkliga spelrum. Kvar: slutverifierad mottagaraktivering/N2-sparning, åtkomstjournal för operatörsskrivningar, spelardata, transaktioner och rapporter. Behåll
-  dagens kollisionssäkra credentialresolver, inför uttrycklig `partner`-klass och
-  separat partner-session med färsk identitets-, roll-, auth-epoch- och
+- [ ] **T2. Verkliga tre inloggningsklasser och organisationsmedlemskap.** Påbörjad, inte klar. Implementerat: operatörslagring från 005, `partner_session`, verkliga bolag/medlemskap, explicit N1-kontext, paketpublicering och beständig operatörsaudit från 006. Brandutkast och granskad publicering finns enligt JN2-D. Full produktionsacceptans av mottagaraktivering/N2-sparning samt spelardata, transaktioner och rapporter återstår. Behåll
+  dagens kollisionssäkra credentialresolver, uttryckliga `partner`-klass och
+  separata partner-session med färsk identitets-, roll-, auth-epoch- och
   medlemskapskontroll. Inga automatiska reader/staff-uppgraderingar. Nivå 1
   administrerar operatörer och personal; nivå 2 delegerar endast tillåtna roller
   inom sin organisation. Isolerade tester ska bevisa aktivering, login, spärr,
@@ -925,9 +1141,11 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   Migration `005-operators.sql` (7 oktober) lägger till `operators`,
   `operator_roles`, `operator_memberships` och `operator_packages` i Studio-schemat.
   Ändra inte den checksumfrysta `product-schema.sql` eller tidigare migrationsledger.
-  Native runtime kräver nu exakt migration 001–005: en Neon-databas där 005 inte
-  är applicerad svarar `unavailable` tills migrationen körts. Kör den granskade
-  migrationen mot produktions-Neon innan koden deployas, aldrig tvärtom.
+  Historiskt, vid 005-leveransen 7 oktober, krävde native runtime kedjan 001–005;
+  saknad 005 gav `unavailable`. Aktuella versionskrav följer
+  `ops/neon-studio/migrations.mjs`; äldre exakta kedjor här är daterade kvitton.
+  Obligatoriska migrationer appliceras före deploy; det uttryckliga undantaget
+  för deploy-valfria versioner beskrivs nedan.
   Ordning vid ny Studio-migration:
   1. PR mot main.
   2. CI kör readiness mot produktionsledgern och blir röd om migrationen saknas.
@@ -955,7 +1173,9 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
     mot databasen `croupier_game` (`appliedNow: ["008"]`, ledger 001–008, `forge_dealers`/`forge_jobs`
     ägs av `croupier_game`), steg 3 i uppföljnings-PR:en: flaggan borttagen och Lab, Render och
     speech-importen kräver exakt 001–008. Mekanismen finns kvar för nästa isolerade funktion.
-  Åtkomstjournal för operatörsskrivningar saknas; `audit_events` tar bara dokument/media.
+  Beständig operatörsaudit finns i `operator_audit_events` från migration 006
+  och skrivs atomiskt av `web/storage/operator-store.mjs`. `operator-journal.mjs`
+  är endast efterföljande diagnostik; dokument/media har separat audit.
   Delsteg 6 oktober: `web/partner-access-policy.mjs` har explicita
   operatörsrättigheter, scope-/organisationsbindning och begränsad rolltilldelning.
   Både aktuell och ny målroll måste vara uttryckligt delegerbara av nivå 1;
@@ -963,11 +1183,11 @@ produktadresser. Giltiga signerade direktstarter behåller sin serverkontroll.
   passerar inklusive befintlig credentialresolver/Studio-policy. Oberoende review
   är avklarad. `lab/lib/partner-data.mjs` anropar `allowsPartnerResource` för den
   scopade snapshoten. Partner-login, medlemslagring och `partner_session` finns.
-  Isolerat bevis för spärr, återkallelse, nekade anrop mellan två organisationer
-  och skydd för sista administratören återstår. Spärren mot att ta bort sista
-  operatörsadmin finns i lagret sedan 7 oktober (`186c6bc4`), provad mot minnesfixtur;
-  isolerat bevis mot riktig Postgres saknas. T2 är påbörjad, inte klar;
-  rena policytester är inte acceptans för riktiga konton.
+  Historiskt var sista-admin-spärren från 7 oktober (`186c6bc4`) bara provad
+  mot minnesfixtur. För teamflöden ersattes den gränsen av 12 oktober-kvittot
+  ovan: 11 isolerade PostgreSQL-prov och 18 browserprov, inklusive spärr,
+  återkallelse, bolagsgränser och samtidighet. Detta stänger inte hela T2
+  eller ersätter återstående produktionsacceptans.
   Förtydligande 6 oktober: intern adminpersonal ska ha åtkomst till alla tre
   nivåer med samma konto. Befintlig intern adminauktorisering skyddar redan
   nivå 2:s förhandsvisning. Före PR #12 valde `/partner` exempelvyn utan
@@ -1067,12 +1287,14 @@ tenantisolerad skrivning och riktiga Postgres-konkurrensprov. JN2-B:s övriga
 affärsformulär och toppmeny B ingår inte i detta grundskal. Ingen produktions-DB,
 migration, provider/env eller deployment har ändrats av kodleveransen.
 
-**Underlag och nuläge.** Johns [beskrivning och skiss i inbox #9](https://github.com/Jakeminator123/scoutgaming/issues/9#issuecomment-6099185493)
+**Historiskt underlag före PR #12.** Johns [beskrivning och skiss i inbox #9](https://github.com/Jakeminator123/scoutgaming/issues/9#issuecomment-6099185493)
 pekar på Johns fristående HTML-skiss på revision `aaadfb49` (historiken behåller filen; den finns inte i det här trädet).
 Skissen är fristående HTML/JS med exempeldata och simulerade anrop, inte en
 färdig backend. Den historiska kodinventeringen före PR #12 nedan utgår från main
 `9d151fa6be364f4af5999c8163a6055dd8fc5fc8`. Webbläsarobservationerna gjordes
 11 oktober på www; deras exakta deployment-SHA är inte fastställd av denna kontroll.
+Tabellens luckor beskriver det äldre läget; aktuell audit och utkasthantering
+redovisas i JN2-C/D:s daterade genomförandekvitton, inte som fortsatt saknad kod.
 
 | Del | Finns och ska återanvändas | Lucka som faktiskt återstår |
 | --- | --- | --- |
@@ -1082,7 +1304,7 @@ färdig backend. Den historiska kodinventeringen före PR #12 nedan utgår från
 | Speldata | Render/spel-Neon har spelare, transaktioner, partnerrundor och API-nycklar | N2-snapshot markerar players/transactions/reports som ej anslutna. Entydigt bolagsägarskap, läs-API och avstämning krävs före N2.4. |
 | Revision/audit | Pakethistorik och befintlig loggning | `operator-journal.mjs` skriver serverlogg, inte en beständig operatörsjournal som går att läsa och exportera. |
 
-**Varför Johns spelbolag saknas i bilden.** Inloggad intern admin såg på
+**Historisk observation 11 oktober före PR #12.** Inloggad intern admin såg på
 `/partner` Demo North, Demo South och SG-test som demonstrationer. På
 `/partner/sg-test` stod uttryckligen intern förhandsvisning/exempeldata.
 Samtidigt visade N1 Bolag & team **Johns spelbolag**, slug
@@ -1110,9 +1332,10 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
   ska gå N1 → N2 → N3 utan separat partnerlogin; partnerpersonal når endast sina
   aktiva medlemskap. Ta bort Demo North/South och missvisande footertext; SG:s
   riktiga bolag ska komma från lagret, inte från en namngiven fixture.
-  **Backend:** återanvänd N1:s färska adminauktorisering och operatörslager i
-  `surface-page.tsx`/`partner-data.mjs`. Inför en explicit intern operatörskontext
-  och gemensam snapshotbyggare; behåll partnerpolicyn intakt. Både initial sida,
+  **Backend, implementerad grund:** N1:s färska adminauktorisering och operatörslager
+  återanvänds i `lab/components/workspace-surface-page.tsx`/`partner-data.mjs`,
+  med explicit intern operatörskontext och gemensam snapshotbyggare. Behåll
+  partnerpolicyn intakt och verifiera hela acceptansmatrisen nedan. Både initial sida,
   omladdning och varje N2-API måste kontrollera identitet, miljö/workspace, valt
   operatorId och rättighet på nytt. Adminskrivningar ska gå genom samma
   resursvalidering/CAS, med verklig admin som aktör; ingen falsk `partner_session`,
@@ -1121,7 +1344,7 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
   aldrig automatisk övergång till demo eller högre rättighet.
   **Databas:** återanvänd operators/roles/memberships/packages från 005; ingen
   kontomigrering eller bolagsseed behövs för katalogen. Slug är URL, operatorId
-  är ägarskap. Beständig audit för skrivningar färdigställs i JN2-C.
+  är ägarskap. Beständig audit för skrivningar finns enligt JN2-C:s kvitto.
   **Beroenden:** befintlig N1-auth och 005-lagring; första blockerande steg.
   **Verifiering:** admin ser Johns och SG:s riktiga bolag och rätt paket vid
   direktlänk/refresh utan ny login; bolag utan paket är synligt men opublicerat.
@@ -1136,10 +1359,10 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
   befintliga fungerande loaders/komponenter, byt inte till hela HTML-skissens
   globala state. Använd dess ljusa neutrala ytor/limeaccent, med mörkt läge och
   samlade EN/SV-texter. Alternativ toppmeny (B) skjuts upp tills A är godkänd.
-  Åtgärda `/partner` separat: `partner-workspace.tsx` använder `tools`, `tool`,
-  `help`, `notice`, `levels` som saknas i importerad `control-workspace.module.css`.
-  Ge partneringången avsiktlig egen styling eller riktiga gemensamma komponenter
-  utan att återställa N1:s nya CSS. Filter visas bara där datakontraktet stöder dem.
+  Partneringången använder egen `partner-workspace.module.css` samt språk-/
+  temapreferenser. Den gamla kopplingen till saknade N1-klasser är borttagen.
+  Återstående arbete gäller genomgående visuell acceptans enligt punkterna
+  nedan. Filter visas bara där datakontraktet stöder dem.
   **Backend:** återanvänd snapshot/capabilities från A; exponera unavailable,
   tomt och fel som skilda tillstånd. Inga nya business-API:er för enbart layout.
   **Databas:** inga nya tabeller för UI-skalet; använd befintlig profil för
@@ -1151,17 +1374,14 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
   laddning/fel/tomläge. Exempeldata får inte se ut som verkliga pengar eller drift.
 
 
-  **Bekräftad visuell skuld 12 oktober, fortfarande öppet:** På verkliga
-  `/partner/johns-spelbolag/table-design` använder appearance-formuläret
-  Studios `--sg-text` (#F2F1ED) över partnerns ljusa `--paper` (#F2F1ED),
-  medan rätt partnertext är `--ink` (#0A0B0D). Rätta temakopplingen för text,
-  ytor, kantlinjer och knappar tillsammans; kontrollera båda teman och fokus.
-  `PartnerPackageView` renderar paneler utan invändig padding, tekniska ID:n/
-  MIME/filnamn och hela paketlistan före flera vyer. Samla kompakt paketstatus,
-  aktuell redigering och faktisk förhandsvisning i en konsekvent layout; behåll
-  N1:s frysta mediaurval och N2:s granskade publiceringsflöde. Den här visuella
-  acceptansen är inte bevisad av JN2-C/D:s isolerade funktionstester. Bristerna
-  föregår 270aaa38; ingen ny merge-regression är belagd av snabbgranskningen.
+  **Historisk visuell observation 12 oktober:** appearance-formuläret på
+  `/partner/johns-spelbolag/table-design` hade ljus text mot ljus bakgrund
+  och paketpanelerna saknade tillräcklig inramning. Aktuell
+  `john-foundation.css` binder nu Studio-token till partnerns tema, inklusive
+  `--sg-text:var(--ink)`, och ger redigeringspanelen padding. Detta är kodbevis,
+  inte ny full produktionsacceptans av kontrast, fokus eller samtliga vyer.
+  Behåll N1:s frysta mediaurval och N2:s granskade publiceringsflöde; JN2-B:s
+  visuella acceptans ersätts inte av C/D:s isolerade funktionstester.
 #### Säker konfiguration och publicering
 
 - [x] **JN2-C — rättigheter, beständig audit och bolagsgräns (första leveransen).**
@@ -1194,18 +1414,19 @@ testfixturer. Riktiga bolag visas även utan publicerat paket, med korrekt toml�
   omfattar faktisk tillgänglig speltyp, spelfas och desktop/mobil; N1:s frysta
   placering/skala är inte redigerbar. Chips/knappar får inte markeras klara innan
   samma kontrakt renderas i N3 (inklusive kvarvarande L4-arbete).
-  **Backend:** skilj spara-utkast från publicera i befintligt branding-API.
-  Validera serverledes allowlist, färger/kontrast, logoformat/storlek, publicerat
-  Scout-paket, dealer/bakgrundskompatibilitet och förväntad basrevision.
+  **Backend, implementerad grund:** befintligt branding-API skiljer spara-utkast,
+  granska, publicera och återställ, med rättighets-/revisionskontroll och
+  validering mot det publicerade paketet. Separata logotyper, chips, knappstilar
+  och full spel-/dealerpreview återstår enligt den breda avgränsningen nedan.
   Återställ skapar utkast, inte tyst liveändring. 403/409 och ändrat grundpaket
   behåller användarens utkast men blockerar felaktig publicering. Frysta
   presentationer/rum och privata mediereferenser förblir N1-ägda.
-  **Databas:** separat scoped utkast med baspaketrevision och egen revision;
-  återanvänd `operator_packages` för publicerad historik, skapa inte ett parallellt
-  N1-paketsystem. Bestäm och validera explicit lagring av tillåtna brand-/rums-
-  overrides. Logo i befintlig behörighetsstyrd medielagring, inte stora data-URL:er
-  i paket eller osanerad SVG/HTML. Publicering och audit atomiskt i Studio;
-  spelmotorns tillämpning kvitteras separat, inte som en distribuerad DB-transaktion.
+  **Databas, implementerad grund:** `operator_branding_drafts` lagrar scoped
+  utkast med baspaketrevision och egen revision; `operator_packages` behåller
+  publicerad historik. Brandstandard och rumsundantag använder det befintliga
+  paketkontraktet. Publicering, utkastmarkör och audit skrivs atomiskt i Studio;
+  spelmotorns tillämpning kvitteras separat. Framtida logotyper ska använda
+  behörighetsstyrd medielagring, inte stora data-URL:er eller osanerad SVG/HTML.
   **Beroenden:** A–C, befintligt package-/roomkontrakt och N3-renderer.
   **Verifiering:** två redigerare → konflikt utan förlorat utkast; ändrade
   rättigheter/paket efter öppnad dialog → nekande. Reload behåller utkast;

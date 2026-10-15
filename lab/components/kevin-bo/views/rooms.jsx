@@ -6,11 +6,12 @@ import { availablePartnerRooms, initialPartnerRoomSelection } from '../../../lib
 
 const h = React.createElement;
 
-export function PartnerRoomWorkspace({ snapshot, copy, language, apiBase, onSaved, onDirtyChange, initialRoomId, active = true }) {
-  const [selection, setSelection] = React.useState(() => initialPartnerRoomSelection(snapshot, initialRoomId));
+export function PartnerRoomWorkspace({ snapshot, copy, language, apiBase, onSaved, onDirtyChange, initialRoomId, initialRoomScope, selection: controlledSelection, onSelectionChange, active = true }) {
+  const [localSelection, setLocalSelection] = React.useState(() => initialPartnerRoomSelection(snapshot, initialRoomId, initialRoomScope));
+  const selection = controlledSelection ?? localSelection;
   const rooms = availablePartnerRooms(snapshot), roomId = selection.roomId;
   const unavailable = selection.unavailable || roomId !== '' && !rooms.some(room => room.id === roomId);
-  const setRoomId = id => setSelection({roomId:id,unavailable:false});
+  const setRoomId = id => (onSelectionChange ?? setLocalSelection)({roomId:id,unavailable:false});
   return h('div', { className: 'page-b kevin-room-content' },
     h('label', { className: 'kevin-room-picker' }, copy.tables,
       h('select', {

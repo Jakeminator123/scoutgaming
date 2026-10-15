@@ -8,6 +8,6 @@ export function partnerLoginReturnTo(value) {
   const route = resolveWorkspaceSurfacePath(parts[0]);
   if (parts.length > 2 || route?.surface !== 'partner') return '/partner';
   if (parts.length === 1) return route.canonicalPath;
-  if (!route.operatorSlug || route.view !== 'bj' || !/^room=[a-z][a-z0-9-]{0,63}$/.test(parts[1])) return '/partner';
+  if (!route.operatorSlug || !/^(?:room=[a-z][a-z0-9-]{0,63}|scope=company)$/.test(parts[1])) return '/partner';
   return `${route.canonicalPath}?${parts[1]}`;
 }

@@ -1,5 +1,5 @@
 {
-  "sourceSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
+  "sourceSha": "9b6f4d112ad2bf56d173c1b5538dc97232719a34",
   "evidence": "code-inspected",
   "evidenceLabel": "Kodläst katalog; inga nya runtimeprov",
   "runtimeVerified": false,
@@ -22,7 +22,7 @@
       "staff",
       "player"
     ],
-    "studioAdmission": "Live account, role, password fingerprint and authentication epoch are revalidated. Partner identities are denied Studio.",
+    "studioAdmission": "N1 internal Admin/Studio APIs revalidate live account, role, password fingerprint and authentication epoch; partner identities cannot use that session. The same Lab application separately serves N2 partner authorization and public N3 lobby routes.",
     "sources": [
       "web/account-role.mjs:1",
       "lab/lib/studio-access-policy.mjs",
@@ -122,14 +122,14 @@
       "paths": [
         "/control"
       ],
-      "label": "Kontrollpanel",
+      "label": "Control · kompatibilitetsyta",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
       "access": "Internal admin.",
       "sources": [
         "lab/app/control/[[...path]]/page.tsx:6",
-        "lab/app/control/surface-page.tsx:12"
+        "lab/components/workspace-surface-page.tsx:12"
       ],
-      "note": "Staff home. Dedicated /control/<tool> pages are separate files. /studio is only the lab basePath."
+      "note": "Äldre intern arbetsyta och verktyg under övergången; /admin är nya backoffice. Bevara auth, sparade länkar och verktyg tills ersättaren verifierats. /studio är endast Lab basePath."
     },
     {
       "id": "studio",
@@ -335,21 +335,27 @@
       "id": "partner-preview",
       "paths": [
         "/partner",
-        "/partner/:operatorSlug"
+        "/partner/:operatorSlug",
+        "/partner/:operatorSlug/rooms"
       ],
-      "label": "Operatörsförhandsvisning",
+      "label": "Partnerportal · riktiga operatörer",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
-      "access": "Internal admin. Preview only; this is not operator login or tenant data.",
+      "access": "N2 partner_session med aktivt scoped medlemskap, eller explicit livevaliderad N1-administratör. En närvarande inaktuell N1-cookie faller inte tillbaka till N2.",
       "sources": [
-        "lab/app/partner/[[...path]]/page.tsx:7",
-        "lab/components/kevin-bo/kevin-backoffice.jsx"
+        "lab/app/partner/[[...path]]/page.tsx",
+        "lab/components/workspace-surface-page.tsx",
+        "lab/lib/partner-data.mjs",
+        "lab/lib/partner-session.mjs",
+        "lab/components/kevin-bo/partner-operator-workspace.jsx"
       ],
-      "note": "lab/components/kevin-bo is this preview. The Next file pattern is /partner/:path*."
+      "note": "Aktiv tenantportal, ingen tyst demo-/fixturefallback. PartnerWorkspace visar bolagsvalet; PartnerOperatorWorkspace är den aktiva vykomponenten för vald operatör. Namnet partner-preview är ett äldre katalog-ID; N1 fixture-API /api/partner-preview är ett separat kontrakt."
     },
     {
       "id": "partner-write",
       "paths": [
-        "/partner/:operatorSlug"
+        "/partner/:operatorSlug/team",
+        "/partner/:operatorSlug/presentation",
+        "/partner/:operatorSlug/rooms"
       ],
       "label": "Skrivande partner-rutter",
       "serving": "Lab service under basePath /studio; partner actions team and branding on /studio/api/partner.",
@@ -358,20 +364,24 @@
         "lab/lib/partner-session.mjs",
         "lab/lib/partner-team-api.mjs",
         "lab/lib/partner-branding-api.mjs",
-        "lab/lib/operator-admin-api.mjs"
+        "lab/lib/operator-admin-api.mjs",
+        "lab/lib/presentation-room-api.mjs",
+        "lab/docs/TERMINOLOGI.md"
       ],
       "tests": [
         "lab/test/partner-team-api.test.mjs",
         "lab/test/partner-branding-api.test.mjs",
         "lab/test/operator-admin-api.test.mjs"
       ],
-      "purpose": "Team: lista, koppla befintligt partnerkonto, rollbyte, suspend/reaktivera med CAS och sista-admin-spärr. Branding inom lanens operatorAdjustable. Intern admin skapar bolag, standardroller och medlemskap från kortet Bolag.",
-      "limitation": "Inga roller finns i produktions-Neon förrän intern admin klickar Skapa saknade standardroller för ett bolag. E-postinbjudan (N2.6) pågår."
+      "purpose": "Team, inbjudningar, rollbyte och medlemsstatus samt bolagets branding, rumsval, granskad publicering och sparade utkast. Servern återkontrollerar grants, ägarskap och revision; delad sammansättningsmall är inte rumsspecifik.",
+      "limitation": "Spelare, transaktioner och rapporter från motorn, chips och partnerns password reset återstår enligt CLOUD-MIGRATION. Detta kodkvitto verifierar inte produktionsmail."
     },
     {
       "id": "partner-players",
       "paths": [
-        "/partner/:operatorSlug/spelare"
+        "/partner/:operatorSlug/players",
+        "/partner/:operatorSlug/transactions",
+        "/partner/:operatorSlug/reports"
       ],
       "label": "Spelare och transaktioner",
       "serving": "Planerad",
@@ -464,6 +474,37 @@
       ],
       "purpose": "Dealer och bordsfärg inom lanen; ordning URL, spelare, bolagets branding.color, lanens default. Valet ligger i localStorage per operatör.",
       "limitation": "Bakgrund och bord som egna lager ritas inte förrän lagerspelaren finns (T9); mode baked visar Kommer med nya dealerpaket. Valet ligger inte på kontot."
+    },
+    {
+      "id": "admin-workspace",
+      "paths": [
+        "/admin",
+        "/admin/:path*"
+      ],
+      "label": "Admin · nytt backoffice",
+      "serving": "Vercel service studio, Lab basePath /studio; befintliga native Admin-API:er och aktiva delade lab/lib-tjänster.",
+      "access": "N1 intern admin; sidauktorisering och varje API:s egna behörighetskontroller.",
+      "sources": [
+        "lab/app/admin/[[...path]]/route.ts",
+        "lab/lib/admin-workspace-routes.mjs",
+        "lab/lib/design-preview.mjs"
+      ],
+      "note": "Ny UI-yta på befintliga sparade dealers, material, bolag och rum. /control är kompatibilitet, inte ett separat datalager."
+    },
+    {
+      "id": "public-lobby",
+      "paths": [
+        "/lobby",
+        "/lobby/:path*"
+      ],
+      "label": "Lobby · ny spelarlobby",
+      "serving": "Vercel service studio; separat publikt UI-bygge.",
+      "access": "Publik läsning; spelstart återkontrollerar spelaråtkomst, fryst paket och rum på servern.",
+      "sources": [
+        "lab/app/lobby/[[...path]]/route.ts",
+        "lab/lib/design-preview.mjs"
+      ],
+      "note": "N3 väljer tillåten dealer och bord i operatörens publicerade rum. /play/{game}, äldre /play, profil och historik består."
     }
   ],
   "apiGroups": [
@@ -1046,7 +1087,7 @@
     "Configured origins are environment-dependent; public/local origins above are documentation references.",
     "Tests listed are existing source references, not test-run results from this task.",
     "Native admin endpoint descriptors only become available when their handler and every extra gate are registered.",
-    "Current code has 15 admin sections including lanes; guide text still describes 14 existing functions.",
+    "Admin section availability must follow its current route/endpoint registry; this update does not certify every legacy guide step.",
     "Background-zone editor/cloud save does not establish game integration.",
     "Exact Render gateway internals and every API/provider gate were not exhaustively mapped."
   ],
@@ -1061,15 +1102,15 @@
     ],
     "completeForScope": true,
     "counts": {
-      "files": 78,
+      "files": 106,
       "frontend": 14,
-      "studio": 64,
-      "pages": 43,
-      "routeHandlers": 43,
-      "apiHandlers": 35,
-      "explicitMethodExports": 72
+      "studio": 92,
+      "pages": 46,
+      "routeHandlers": 60,
+      "apiHandlers": 49,
+      "explicitMethodExports": 109
     },
-    "pathConvention": "path is the Next pattern inside the app. Public product paths are /control, /partner and /play. :id is one segment, :path+ a required catch-all, :path* an optional catch-all. /studio is the lab basePath, not a product.",
+    "pathConvention": "path is the Next pattern inside the app. Product surfaces are /admin (N1), /partner (N2), /lobby (N3); /control and /play remain compatibility/launch contracts. :id is one segment, :path+ required catch-all, :path* optional catch-all. /studio is the Lab basePath, not a fourth product.",
     "methodConvention": "methods lists only HTTP verbs explicitly exported by route.ts. Next page components have methods=[]; implicit framework HEAD/OPTIONS and unsupported verbs are not inferred.",
     "servingConvention": "Services describe platform routing with native Studio enabled in existing code, with conditional legacy/local branches stated. Source file existence does not prove a handler is reached on a deployed public origin.",
     "caveats": [
@@ -1516,7 +1557,9 @@
       "id": "studio-api-admin-workspace",
       "path": "/api/admin/workspace/:section",
       "publicPath": "/studio/api/admin/workspace/:section",
-      "methods": ["GET"],
+      "methods": [
+        "GET"
+      ],
       "kind": "api",
       "app": "studio",
       "handlerFile": "lab/app/api/admin/workspace/[section]/route.ts",
@@ -1525,9 +1568,15 @@
       "boundary": "Only registered workspace sections and GET without query. Saved project and video registry; company directory only for companies/publication. No mutations or separate store.",
       "groupId": "studio-native-admin",
       "sources": [
-        {"path": "lab/app/api/admin/workspace/[section]/route.ts"},
-        {"path": "lab/lib/admin-workspace-data.mjs"},
-        {"path": "lab/test/admin-workspace.test.mjs"}
+        {
+          "path": "lab/app/api/admin/workspace/[section]/route.ts"
+        },
+        {
+          "path": "lab/lib/admin-workspace-data.mjs"
+        },
+        {
+          "path": "lab/test/admin-workspace.test.mjs"
+        }
       ]
     },
     {
@@ -2842,7 +2891,11 @@
       "id": "studio-api-speech-build",
       "path": "/api/speech-build",
       "publicPath": "/studio/api/speech-build",
-      "methods": ["GET", "HEAD", "POST"],
+      "methods": [
+        "GET",
+        "HEAD",
+        "POST"
+      ],
       "kind": "api",
       "app": "studio",
       "handlerFile": "lab/app/api/speech-build/route.ts",
@@ -2851,8 +2904,14 @@
       "boundary": "Actor-bound signed preparation receipt; reauthorization and revision checks before each costly stage. Only an explicitly established server-side fullfile driver may build. Native production currently lacks that driver and fails closed. Generated audio/video/hash results remain pending acceptance; no publishing or game decisions.",
       "groupId": "studio-media",
       "sources": [
-        {"path": "lab/lib/studio-speech-build-service.mjs", "line": 1},
-        {"path": "web/public/studio-speech.mjs", "line": 1}
+        {
+          "path": "lab/lib/studio-speech-build-service.mjs",
+          "line": 1
+        },
+        {
+          "path": "web/public/studio-speech.mjs",
+          "line": 1
+        }
       ],
       "tests": [
         "lab/lib/studio-speech-build-service.test.mjs",
@@ -3724,8 +3783,8 @@
       "app": "studio",
       "handlerFile": "lab/app/api/partner/[...action]/route.ts",
       "serving": "Lab API under basePath /studio.",
-      "access": "Operator staff. POST login and logout, GET snapshot, GET/POST branding and team with ?operator={slug}. Every other exported method is rejected.",
-      "boundary": "partner_session is a separate purpose from internal admin cookies. Snapshot rows stay inside the caller's active operator membership. Team writes need team.roles.assign, a membership revision (CAS) and keep at least one operator administrator.",
+      "access": "Registered partner API actions only; separate partner session or an explicitly supported live N1 workspace context. Authorization, operator ownership, grants and revisions are rechecked per action.",
+      "boundary": "N2 data stays inside active operator membership. Present N1 credentials are validated first and cannot silently fall back to N2. Team writes retain the last-administrator guard; invitations and set-password use single-use tokens. No arbitrary catch-all method grants access.",
       "groupId": "partner-api",
       "sources": [
         {
@@ -4168,7 +4227,10 @@
       "id": "studio-public-lobby",
       "path": "/lobby/:path*",
       "publicPath": "/lobby/:path*",
-      "methods": ["GET", "HEAD"],
+      "methods": [
+        "GET",
+        "HEAD"
+      ],
       "kind": "api",
       "app": "studio",
       "handlerFile": "lab/app/lobby/[[...path]]/route.ts",
@@ -4176,21 +4238,44 @@
       "access": "Public read-only UI; no N1 session required. Game entry revalidates player access and room publication.",
       "boundary": "Dedicated public build and public file subdirectories only. No admin assets, catalog, private media or writes. Public room reads use the canonical player validators, fail closed and preserve scoped room/dealer choices.",
       "groupId": "layer-preview",
-      "sources": [{ "path": "lab/app/lobby/[[...path]]/route.ts" }, { "path": "lab/lib/design-preview.mjs" }, { "path": "packages/design-preview/runtime/public-lobby-catalog.mjs" }]
+      "sources": [
+        {
+          "path": "lab/app/lobby/[[...path]]/route.ts"
+        },
+        {
+          "path": "lab/lib/design-preview.mjs"
+        },
+        {
+          "path": "packages/design-preview/runtime/public-lobby-catalog.mjs"
+        }
+      ]
     },
     {
       "id": "studio-design-preview",
       "path": "/admin/:path*",
       "publicPath": "/admin/:path*",
-      "methods": ["GET", "HEAD"],
+      "methods": [
+        "GET",
+        "HEAD"
+      ],
       "kind": "api",
       "app": "studio",
       "handlerFile": "lab/app/admin/[[...path]]/route.ts",
-        "serving": "Separate admin and lobby documents/assets plus GET /admin/_data/catalog, reading the existing scoped Studio and published game registers.",
+      "serving": "Separate admin and lobby documents/assets plus GET /admin/_data/catalog, reading the existing scoped Studio and published game registers.",
       "access": "Internal admin through authorizeUiPage; existing loopback-only guard in local offline mode.",
-        "boundary": "N1-authorized read-only register projection, no fixture fallback or private media/credentials. Lobby uses the canonical published room selector and existing game entry. Assets remain private, no-store with containment and Range/HEAD. No production writes.",
+      "boundary": "N1-authorized Admin UI and saved register projection; no fixture fallback or private media/credentials. Mutations use existing native Admin/Studio endpoints with their own authorization and revision checks. Dedicated public /lobby stays separate.",
       "groupId": "layer-preview",
-        "sources": [{ "path": "lab/app/admin/[[...path]]/route.ts" }, { "path": "lab/lib/design-preview.mjs" }, { "path": "lab/lib/design-preview-catalog.mjs" }]
+      "sources": [
+        {
+          "path": "lab/app/admin/[[...path]]/route.ts"
+        },
+        {
+          "path": "lab/lib/design-preview.mjs"
+        },
+        {
+          "path": "lab/lib/design-preview-catalog.mjs"
+        }
+      ]
     },
     {
       "id": "studio-preview-files",
@@ -4282,8 +4367,8 @@
       "app": "studio",
       "handlerFile": "lab/app/partner/[[...path]]/page.tsx",
       "serving": "Lab service under basePath /studio (CROUPIER_LAB_BASE_PATH). The public path is rewritten onto Vercel service studio in project scoutgaming.",
-      "access": "Partner staff with a partner session see their operators. Without that cookie, internal admins still get the fixture preview. Otherwise the browser is sent to /partner/login.",
-      "boundary": "WorkspaceSurfacePage tries the partner session first, then the internal fixture preview. /partner/login is a separate page and is not an operator slug.",
+      "access": "Partner staff with an active scoped membership, or a live N1 administrator. A present N1 credential has priority and fails closed if stale.",
+      "boundary": "WorkspaceSurfacePage loads real partnerWorkspaceInitialData with no fixture fallback. Partner login is a separate page. Explicit room context is preserved for the room view and rechecked by server writers.",
       "groupId": "partner-preview",
       "sources": [
         {
@@ -4400,7 +4485,10 @@
       "id": "studio-api-dealers-import-proposal",
       "path": "/api/dealers/import-proposal",
       "publicPath": "/studio/api/dealers/import-proposal",
-      "methods": ["GET", "POST"],
+      "methods": [
+        "GET",
+        "POST"
+      ],
       "kind": "api",
       "app": "studio",
       "handlerFile": "lab/app/api/dealers/import-proposal/route.ts",
@@ -4409,10 +4497,19 @@
       "boundary": "Shared admin assistant for chat page, bubble and import workspace. Read-only dealer/slot catalogue and bounded advice: Luna/medium chat permits no selected dealer and up to four prior user/assistant pairs; Sol/high mapping requires a registered dealer. POST requires same origin and revalidates principal and saved catalogue after model response. Optional stateless model has no tools or write access; chat cannot return placements. Schema-valid mapping still needs manual review and separate native upload approval. No media, project or publication writes; no finance, operations or room data access.",
       "groupId": "studio-media",
       "sources": [
-        { "path": "lab/app/api/dealers/import-proposal/route.ts", "line": 5 },
-        { "path": "lab/lib/dealer-import-api.mjs" },
-        { "path": "lab/lib/dealer-import-model.mjs" },
-        { "path": "lab/lib/dealer-import-catalog.mjs" }
+        {
+          "path": "lab/app/api/dealers/import-proposal/route.ts",
+          "line": 5
+        },
+        {
+          "path": "lab/lib/dealer-import-api.mjs"
+        },
+        {
+          "path": "lab/lib/dealer-import-model.mjs"
+        },
+        {
+          "path": "lab/lib/dealer-import-catalog.mjs"
+        }
       ]
     },
     {

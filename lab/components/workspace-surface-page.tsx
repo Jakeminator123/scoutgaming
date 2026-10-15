@@ -1,12 +1,12 @@
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { KevinBackoffice } from '@/components/kevin-bo/kevin-backoffice';
+import { PartnerOperatorWorkspace } from '@/components/kevin-bo/partner-operator-workspace';
 import { ControlWorkspace } from '@/components/control-workspace';
 import { PartnerWorkspace } from '@/components/partner-workspace';
-import { controlStudioSummary } from '../../lib/control-overview.mjs';
+import { controlStudioSummary } from '../lib/control-overview.mjs';
 
 import { controlToolPath } from '@/lib/control-workspace.mjs';
-import { nativeStudioAdminEnabled, studioNativeRuntime } from '../../lib/studio-native-runtime.mjs';
+import { nativeStudioAdminEnabled, studioNativeRuntime } from '../lib/studio-native-runtime.mjs';
 import { publicAbsoluteUrl } from '@/lib/lab-url.mjs';
 import { partnerPreviewInitialData } from '@/lib/partner-preview.mjs';
 import { partnerWorkspaceInitialData } from '@/lib/partner-data.mjs';
@@ -62,15 +62,17 @@ function statusOf(error: unknown) {
     ? Number((error as { statusCode?: number }).statusCode) : undefined;
 }
 
-export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId }: {
-  surface: 'partner' | 'control'; path?: string[]; initialRoomId?:string|string[];
+export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId, initialRoomScope }: {
+  surface: 'partner' | 'control'; path?: string[]; initialRoomId?:string|string[]; initialRoomScope?:string|string[];
 }) {
   const route = resolveWorkspaceSurfacePath('/' + [surface, ...path].join('/'));
   if (!route || route.surface !== surface) notFound();
   let returnPath = route.publicPath;
-  if (surface === 'partner' && route.view === 'bj' && initialRoomId !== undefined) {
-    returnPath = typeof initialRoomId === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(initialRoomId)
-      ? `${route.publicPath}?room=${initialRoomId}` : '/admin';
+  if (surface === 'partner' && route.operatorSlug && (initialRoomId !== undefined || initialRoomScope !== undefined)) {
+    const selector = initialRoomScope === undefined && typeof initialRoomId === 'string' ? 'room=' + initialRoomId
+      : initialRoomId === undefined && initialRoomScope === 'company' ? 'scope=company' : null;
+    const safe = selector === null ? '/partner' : partnerLoginReturnTo(route.publicPath + '?' + selector);
+    returnPath = safe === '/partner' ? '/admin' : safe;
   }
   const h = await headers();
   // Absolute public URL so Next does not prefix the /studio basePath.
@@ -115,6 +117,6 @@ export async function WorkspaceSurfacePage({ surface, path = [], initialRoomId }
       accessClass={data.session.accessClass === 'internal-admin' ? 'internal-admin' : 'partner'}
       operators={data.snapshot.operators.map(({ slug, name }: { slug: string; name: string }) => ({ slug, name }))} />;
   }
-  return <KevinBackoffice surface="partner"
-    initialSnapshot={data.snapshot} initialView={route.view} {...(initialRoomId===undefined?{}:{initialRoomId})} apiBase={data.apiBase} user={user} />;
+  return <PartnerOperatorWorkspace surface="partner"
+    initialSnapshot={data.snapshot} initialView={route.view} {...(initialRoomId===undefined?{}:{initialRoomId})} {...(initialRoomScope===undefined?{}:{initialRoomScope})} apiBase={data.apiBase} user={user} />;
 }

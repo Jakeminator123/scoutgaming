@@ -1,4 +1,5 @@
 {
+  "volta": { "node": "24.21.0" },
   "name": "croupier-design-preview",
   "private": true,
   "type": "module",

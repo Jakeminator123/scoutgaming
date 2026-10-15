@@ -1,4 +1,4 @@
-import { WorkspaceSurfacePage } from '../surface-page';
+import { WorkspaceSurfacePage } from '@/components/workspace-surface-page';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Översikt · Croupier Studio', robots: { index: false, follow: false } };

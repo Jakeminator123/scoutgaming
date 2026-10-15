@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "catalogSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
+  "catalogSha": "9b6f4d112ad2bf56d173c1b5538dc97232719a34",
   "scope": "Bounded source/route/SQL/env/event inventories and existing test-file artifacts; no runtime/provider certification.",
   "baseline": {
     "kind": "working-tree-inputs",
@@ -338,7 +338,7 @@
         "lab/lib/studio-native-auth.mjs",
         "lab/lib/studio-native-request.mjs",
         "lab/components/kevin-bo/views/team.jsx",
-        "lab/components/kevin-bo/kevin-backoffice.jsx",
+        "lab/components/kevin-bo/partner-operator-workspace.jsx",
         "lab/components/partner-team-loader.mjs",
         "lab/components/partner-journal-loader.mjs",
         "lab/components/partner-appearance-loader.mjs",
@@ -358,7 +358,8 @@
         "lab/lib/operator-journal.mjs",
         "web/storage/partner-branding.mjs",
         "web/public/operator-preview-contract.mjs",
-        "web/public/operator-preview-contract.d.mts"
+        "web/public/operator-preview-contract.d.mts",
+        "lab/components/workspace-surface-page.tsx"
       ],
       "tests": [
         "test/system-map.mjs",

@@ -59,7 +59,7 @@ function browserSources() {
     'react-dom/client': readCjs('react-dom', 'react-dom-client.production.js'),
     scheduler: readCjs('scheduler', 'scheduler.production.js'),
     '../lib/studio-login-client.mjs': compile(readFileSync(new URL('../lib/studio-login-client.mjs', import.meta.url), 'utf8'), 'studio-login-client.mjs'),
-    ...Object.fromEntries(['workspace-surfaces', 'control-flow', 'design-preview-paths', 'admin-workspace-routes'].map(name =>
+    ...Object.fromEntries(['workspace-surfaces', 'control-flow', 'design-preview-paths', 'admin-workspace-routes', 'partner-login-return'].map(name =>
       ['./' + name + '.mjs', compile(readFileSync(new URL('../lib/' + name + '.mjs', import.meta.url), 'utf8'), name + '.mjs')])),
     './studio-login.module.css': 'module.exports={__esModule:true,default:{}};',
     component: compiled,

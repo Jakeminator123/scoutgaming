@@ -28,14 +28,14 @@ function load(file, overrides) {
 }
 
 function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid', cookie: 'bo_session=isolated-fixture' }), partnerData = initialData, nativeRuntime = { nativeStudioAdminEnabled: () => false }) {
-  function KevinBackoffice() { assert.fail('SSR returns the client element without executing its client work'); }
+  function PartnerOperatorWorkspace() { assert.fail('SSR returns the client element without executing its client work'); }
   function ControlWorkspace() { assert.fail('SSR returns the internal client element without executing it'); }
   function PartnerWorkspace() { assert.fail('SSR returns the level-two entrance without selecting a demo'); }
-  const shared = load('../app/control/surface-page.tsx', {
-    '../../lib/studio-native-runtime.mjs': nativeRuntime,
+  const shared = load('../components/workspace-surface-page.tsx', {
+    '../lib/studio-native-runtime.mjs': nativeRuntime,
     'next/headers': { headers: async () => requestHeaders },
     'next/navigation': navigation,
-    '@/components/kevin-bo/kevin-backoffice': { KevinBackoffice },
+    '@/components/kevin-bo/partner-operator-workspace': { PartnerOperatorWorkspace },
     '@/components/control-workspace': { ControlWorkspace },
     '@/components/partner-workspace': { PartnerWorkspace },
     '@/lib/control-workspace.mjs': { controlToolPath },
@@ -47,9 +47,9 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
     '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
-  const control = load('../app/control/[[...path]]/page.tsx', { '../surface-page': shared });
-  const partner = load('../app/partner/[[...path]]/page.tsx', { '../../control/surface-page': shared });
-  return { ...shared, KevinBackoffice, ControlWorkspace, PartnerWorkspace, control, partner };
+  const control = load('../app/control/[[...path]]/page.tsx', { '@/components/workspace-surface-page': shared });
+  const partner = load('../app/partner/[[...path]]/page.tsx', { '@/components/workspace-surface-page': shared });
+  return { ...shared, PartnerOperatorWorkspace, ControlWorkspace, PartnerWorkspace, control, partner };
 }
 
 async function renderPage(page, path, query) {
@@ -141,7 +141,7 @@ test('authorized SSR passes only the selected live snapshot, view, operator and 
   for (const [surface, path, view, uiSurface] of [['partner', ['johns-spelbolag', 'presentation'], 'theme', 'partner'],
     ['partner', ['johns-spelbolag', 'tables'], 'bj', 'partner'], ['partner', ['johns-spelbolag', 'integration'], 'api', 'partner']]) {
     const element = await renderPage(loaded[surface], path);
-    assert.equal(element.type, loaded.KevinBackoffice);
+    assert.equal(element.type, loaded.PartnerOperatorWorkspace);
     assert.equal(element.props.surface, uiSurface); assert.equal(element.props.initialView, view);
     assert.equal(element.props.initialSnapshot, snapshot); assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
     assert.equal(element.props.user, 'fixture-admin'); assert.equal(element.props.session, undefined);
@@ -155,7 +155,7 @@ test('room deep links pass the exact query only after authorizing the registered
   const loaded=pages(async(request,options)=>{requests.push(options);return {snapshot,apiBase:'/studio/api/partner/snapshot',session:{user:'fixture-admin',accessClass:'internal-admin'}};});
   for(const room of ['vip-room',['main-room','vip-room']]){
     const element=await renderPage(loaded.partner,['north-casino','rooms'],{room});
-    assert.equal(element.type,loaded.KevinBackoffice);assert.equal(element.props.initialSnapshot,snapshot);
+    assert.equal(element.type,loaded.PartnerOperatorWorkspace);assert.equal(element.props.initialSnapshot,snapshot);
     assert.equal(JSON.stringify(element.props.initialRoomId),JSON.stringify(room));
     assert.equal(requests.at(-1).operatorSlug,'north-casino');
   }
@@ -340,7 +340,7 @@ test('a partner cookie never authorizes control and a partner session skips the 
   assert.equal(partners, 0);
   assert.equal(previews, 2);
   const element = await renderPage(loaded.partner, ['demo-north', 'overview']);
-  assert.equal(element.type, loaded.KevinBackoffice);
+  assert.equal(element.type, loaded.PartnerOperatorWorkspace);
   assert.equal(element.props.initialSnapshot, snapshot);
   assert.equal(element.props.initialSnapshot.preview, false);
   assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
@@ -396,5 +396,54 @@ test('retired internal task links select the relevant existing administrative wo
       assert.equal(canonicalControlPath(error, ''), `/control/administration?tab=${tab}`);
       return true;
     });
+  }
+});
+
+test('authorized partner menus pass raw room and scope together without masking explicit invalid room values',async()=>{
+  const snapshot={preview:false,operator:{id:'north',slug:'north-casino'}},requests=[];
+  const loaded=pages(async(request,options)=>{requests.push(options);return {snapshot,apiBase:'/studio/api/partner/snapshot',session:{user:'fixture-admin',accessClass:'internal-admin'}};});
+  for(const menu of ['rooms','team','integration','overview']){
+    for(const query of [{scope:'company'},{scope:['company','company']},{scope:''},{scope:'unknown'},
+      {scope:'company',room:''},{scope:'company',room:['vip-room','other-room']},{scope:'company',room:'foreign-room'}]){
+      const element=await renderPage(loaded.partner,['north-casino',menu],query);
+      assert.equal(element.props.initialRoomScope,query.scope);
+      assert.equal(element.props.initialRoomId,query.room);
+      assert.equal(element.props.initialSnapshot,snapshot);
+      assert.deepEqual({...requests.at(-1)},{operatorSlug:'north-casino'});
+    }
+  }
+  const denied=pages(async()=>{throw Object.assign(new Error('denied'),{statusCode:403});});
+  await assert.rejects(renderPage(denied.partner,['north-casino','team'],{scope:'company'}),error=>error.statusCode===403);
+});
+
+test('N1 and partner login recovery retain company or exact room context on every recognized operator menu',async()=>{
+  for(const cookie of ['partner_session=expired','bo_jwt=expired; partner_session=present']){
+    const loaded=pages(async()=>{throw Object.assign(new Error('expired'),{statusCode:401});},new Headers({host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid',cookie}));
+    for(const menu of ['rooms','team','integration','overview']){
+      const path='/partner/north-casino/'+menu,canonical=resolveWorkspaceSurfacePath(path).canonicalPath;
+      for(const query of [{scope:'company'},{room:'vip-room'}]){
+        for(const basePath of ['','/studio']){
+          await assert.rejects(renderPage(loaded.partner,['north-casino',menu],query),error=>{
+            const login=new URL(redirectLocation(error,basePath),'https://game.fixture.invalid');
+            assert.equal(login.pathname,cookie.startsWith('bo_jwt')?basePath+'/login':'/partner/login');
+            assert.equal(login.searchParams.get('returnTo'),canonical+'?'+new URLSearchParams(query));return true;
+          });
+        }
+      }
+    }
+  }
+});
+
+test('login recovery rejects duplicate, mixed or malformed scope instead of converting it to company defaults',async()=>{
+  for(const cookie of ['partner_session=expired','bo_jwt=expired']){
+    const loaded=pages(async()=>{throw Object.assign(new Error('expired'),{statusCode:401});},new Headers({host:'studio.fixture.invalid',cookie}));
+    for(const query of [{scope:['company','company']},{scope:''},{scope:'Company'},{scope:'%63ompany'},
+      {scope:'company',room:''},{scope:'company',room:['vip-room','other-room']},{scope:'company',room:'foreign-room'},
+      {scope:'company',room:'vip-room'}]){
+      await assert.rejects(renderPage(loaded.partner,['north-casino','team'],query),error=>{
+        const login=new URL(redirectLocation(error,''),'https://studio.fixture.invalid');
+        assert.equal(login.searchParams.get('returnTo'),cookie.startsWith('bo_jwt')?'/admin':'/partner');return true;
+      });
+    }
   }
 });

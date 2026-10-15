@@ -11,8 +11,8 @@ import { PartnerPackageView } from '../components/partner-package-view.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
-const sourceUrl = new URL('../components/kevin-bo/kevin-backoffice.jsx', import.meta.url);
-const source = readFileSync(sourceUrl, 'utf8').replaceAll("import('./original-views.jsx')", "require('./original-views.jsx')").replaceAll("import('./original.css')", "require('./original.css')");
+const sourceUrl = new URL('../components/kevin-bo/partner-operator-workspace.jsx', import.meta.url);
+const source = readFileSync(sourceUrl, 'utf8');
 const actionsUrl = new URL('../components/partner-session-actions.tsx', import.meta.url);
 const actionsCode = transformSync(readFileSync(actionsUrl, 'utf8'), { filename: 'partner-session-actions.tsx',
   jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } }).code;
@@ -21,7 +21,7 @@ vm.runInNewContext(actionsCode, { module: actionsModule, exports: actionsModule.
   require: name => name.endsWith('.css') ? {} : actionsRequire(name) });
 
 function components({ language = 'sv', theme = 'light' } = {}) {
-  const compiled = transformSync(source, { filename: 'kevin-backoffice.jsx',
+  const compiled = transformSync(source, { filename: 'partner-operator-workspace.jsx',
     jsc: { parser: { syntax: 'ecmascript', jsx: true }, transform: { react: { runtime: 'automatic' } } },
     module: { type: 'commonjs' } });
   const localRequire = createRequire(sourceUrl), module = { exports: {} };
@@ -30,15 +30,13 @@ function components({ language = 'sv', theme = 'light' } = {}) {
       if (name.endsWith('.css')) return {};
       if (name === '../partner-session-actions') return actionsModule.exports;
       if (name === './assets.mjs') return { assetUrl: path => path };
-      if (name === './original-views.jsx') return { createOriginalViews: () => ({ Mark: () => null,
-        views: { ops: () => React.createElement('div', null, 'Fixture operations') } }) };
       if (name === './views/team.jsx') return { TeamView: () => null };
       if (name === './partner-copy.mjs') return { partnerNavigation, usePartnerPreferences: () => ({
         language, theme, copy: partnerCopy(language), setLanguage() {}, setTheme() {},
       }) };
       return localRequire(name);
     },
-  }, { filename: 'kevin-backoffice.jsx' });
+  }, { filename: 'partner-operator-workspace.jsx' });
   return module.exports;
 }
 
@@ -51,6 +49,20 @@ function realSnapshot(overrides = {}) {
     team: [], players: [], transactions: [], reports: [], unavailableSections: ['players', 'transactions', 'reports'],
     ...overrides };
 }
+
+test('real partner headers link staff to Admin and the lobby without granting member navigation', () => {
+  for (const language of ['sv', 'en']) {
+    const { PartnerOperatorWorkspace } = components({ language });
+    const render = accessClass => renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace, {
+      surface: 'partner', user: 'jakob', initialSnapshot: realSnapshot({ accessClass }), initialView: 'overview',
+    }));
+    const staff = render('internal-admin');
+    assert.match(staff, /href="\/admin"/);
+    assert.match(staff, /href="\/lobby\?operator=johnsspelbolag&amp;room=room-john"/);
+    assert.doesNotMatch(staff, /href="\/(?:control|play)"/);
+    assert.doesNotMatch(render('partner'), /href="\/(?:admin|lobby|control|play)(?:\?|\/|")/);
+  }
+});
 
 test('John shell strings are supplied in Swedish and English with a safe fallback', () => {
   const sv = partnerCopy('sv'), en = partnerCopy('en');
@@ -95,11 +107,11 @@ test('empty unpublished operators do not imply a live package or assigned tables
 });
 
 test('real administrator shell exposes same-account links, theme, language and grouped navigation', () => {
-  const { KevinBackoffice } = components({ language: 'en', theme: 'dark' });
-  const html = renderToStaticMarkup(React.createElement(KevinBackoffice, { surface: 'partner', initialSnapshot: realSnapshot(), user: 'jakob', apiBase: '/api/partner/snapshot' }));
+  const { PartnerOperatorWorkspace } = components({ language: 'en', theme: 'dark' });
+  const html = renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace, { surface: 'partner', initialSnapshot: realSnapshot(), user: 'jakob', apiBase: '/api/partner/snapshot' }));
   assert.match(html, /data-preview="operator" data-theme="dark" lang="en"/);
-  assert.match(html, /href="\/control"/);
-  assert.match(html, /href="\/play"/);
+  assert.match(html, /href="\/admin"/);
+  assert.match(html, /href="\/lobby\?operator=johnsspelbolag&amp;room=room-john"/);
   assert.match(html, /Internal administrator/);
   assert.match(html, /Switch account/);
   assert.match(html, /Log out/);
@@ -111,26 +123,16 @@ test('real administrator shell exposes same-account links, theme, language and g
 });
 
 test('member shell keeps internal links out and unsupported real pages never show fixtures', () => {
-  const { KevinBackoffice } = components();
+  const { PartnerOperatorWorkspace } = components();
   for (const initialView of ['players', 'tx', 'reports', 'api', 'roulette']) {
     const snapshot = realSnapshot({ accessClass: 'partner', viewer: { user: 'john', accessClass: 'partner' } });
-    const html = renderToStaticMarkup(React.createElement(KevinBackoffice, { surface: 'partner', initialSnapshot: snapshot, user: 'john', apiBase: '/api/partner/snapshot', initialView }));
+    const html = renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace, { surface: 'partner', initialSnapshot: snapshot, user: 'john', apiBase: '/api/partner/snapshot', initialView }));
     assert.match(html, /Inte anslutet/);
     assert.match(html, /Operatörspersonal/);
     assert.match(html, /Byt konto/);
     assert.match(html, /Logga ut/);
     assert.doesNotMatch(html, /href="\/(?:control|play)"|Fixture operations|Intern förhandsvisning|Planerat/);
   }
-});
-
-test('the existing fixture shell keeps its original group and heading structure', () => {
-  const { KevinBackoffice } = components();
-  const snapshot = realSnapshot({ preview: true, mode: 'fixture', accessClass: 'internal', viewer: { user: 'jakob', accessClass: 'internal' } });
-  const html = renderToStaticMarkup(React.createElement(KevinBackoffice, { surface: 'internal', initialSnapshot: snapshot, user: 'jakob', apiBase: '/api/partner-preview' }));
-  assert.match(html, /data-preview="fixture"/);
-  assert.match(html, /<h2 class="kevin-shell-heading">Livebord<\/h2>/);
-  assert.match(html, /Fixture operations/);
-  assert.doesNotMatch(html, /<details|data-theme=|kevin-page-header|Byt konto|Logga ut|Switch account|Log out/);
 });
 
 function contrast(front, back) {
@@ -185,9 +187,9 @@ test('all live partner composition names share localized labels while frozen dat
   });
   const before=JSON.stringify(snapshot);
   for(const language of ['sv','en']) {
-    const {KevinBackoffice,PartnerLiveOverview}=components({language}),copy=partnerCopy(language);
+    const {PartnerOperatorWorkspace,PartnerLiveOverview}=components({language}),copy=partnerCopy(language);
     const expected=language==='en'?['Standard composition','Layer composition','Norrsken']:['Standardsammansättning','Lagersammansättning','Norrsken'];
-    const page=view=>renderToStaticMarkup(React.createElement(KevinBackoffice,{surface:'partner',initialSnapshot:snapshot,user:'jakob',apiBase:'/studio/api/partner/snapshot',initialView:view}));
+    const page=view=>renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace,{surface:'partner',initialSnapshot:snapshot,user:'jakob',apiBase:'/studio/api/partner/snapshot',initialView:view}));
     const overview=page('ops');
     for(const label of expected) {
       assert.ok(overview.includes('<li>'+label+'</li>'));

@@ -128,7 +128,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/system-map-evidence"
           node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA"
           node tools/system-map-evidence.mjs --capture --ref "$GITHUB_SHA" --output "$RUNNER_TEMP/system-map-inputs.json"
-      - name: Shared pre-commit regression suite
+      # Full hook also requires frontend typecheck once, after its frozen install.
+      - name: Shared pre-commit regression and frontend typecheck
         env:
           CROUPIER_SYSTEM_MAP_EVIDENCE_DIR: ${{ runner.temp }}/system-map-evidence
         run: sh .githooks/pre-commit --full

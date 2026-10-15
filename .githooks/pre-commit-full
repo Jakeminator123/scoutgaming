@@ -19,9 +19,11 @@ run_node_tests() {
     node --test $test_worker_limit "$@"
   fi
 }
+# Required locally and in CI; typecheck emits no files or incremental cache.
+(cd apps/croupier-frontend && npm run typecheck)
 node docs/system-map/verify.mjs --check
 run_node_tests lab/test/speech-slot-bindings.test.mjs lab/test/speech-slot-selection.test.mjs lab/components/dealer-speech-slot-editor.test.mjs
-run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/admin/lib/dealer-artwork.test.mjs packages/design-preview/admin/lib/dealer-playback.test.mjs packages/design-preview/admin/lib/connected-studio.test.mjs packages/design-preview/admin/lib/studio-composition-panel.test.mjs packages/design-preview/admin/lib/studio-layout.test.mjs packages/design-preview/admin/lib/roulette-clip-map.test.mjs packages/design-preview/admin/lib/system-overview.test.mjs packages/design-preview/admin/lib/studio-policy.test.mjs packages/design-preview/admin/lib/studio-lifecycle.test.mjs packages/design-preview/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
+run_node_tests lab/test/design-preview.test.mjs lab/test/design-preview-catalog.test.mjs packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/lobby/components/lobby-provider.test.mjs packages/design-preview/admin/lib/dealer-artwork.test.mjs packages/design-preview/admin/lib/dealer-playback.test.mjs packages/design-preview/admin/lib/connected-studio.test.mjs packages/design-preview/admin/lib/studio-composition-panel.test.mjs packages/design-preview/admin/lib/studio-layout.test.mjs packages/design-preview/admin/lib/roulette-clip-map.test.mjs packages/design-preview/admin/lib/system-overview.test.mjs packages/design-preview/admin/lib/studio-policy.test.mjs packages/design-preview/admin/lib/studio-lifecycle.test.mjs packages/design-preview/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
 run_node_tests lab/test/material-trash.test.mjs lab/test/material-trash-ui.test.mjs
 run_node_tests lab/test/assistant.test.mjs lab/test/assistant-reads.test.mjs lab/components/control-openclaw-chat.test.mjs
 run_node_tests lab/test/public-assistant.test.mjs
@@ -33,7 +35,7 @@ run_node_tests packages/design-preview/runtime/admin-routing.test.mjs packages/d
 run_node_tests lab/test/admin-workspace.test.mjs packages/design-preview/admin/lib/workspace-tools.test.mjs packages/design-preview/admin/lib/resource-deletion.test.mjs
 run_node_tests packages/design-preview/admin/lib/dealer-directory.test.mjs packages/design-preview/admin/lib/dealer-chat-import.test.mjs
 run_node_tests test/system-map.mjs test/system-map-verify.mjs
-run_node_tests test/precommit-checks.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
+run_node_tests test/precommit-checks.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
 run_node_tests test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs packages/design-preview/admin/lib/studio-context.test.mjs
 run_node_tests test/browser-runtime-bindings.mjs
 run_node_tests lab/test/dealer-material-navigation.test.mjs lab/components/dealer-forge-page.test.mjs
@@ -72,7 +74,7 @@ run_node_tests test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs 
 run_node_tests ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/operator-html-ingress.test.mjs ops/cloud/test/version.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs lab/test/remote-ui.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs apps/croupier-frontend/test/player-area.mjs apps/croupier-frontend/test/player-lobby.mjs apps/croupier-frontend/test/player-room-preview.mjs apps/croupier-frontend/test/player-scene-canvas.mjs apps/croupier-frontend/test/player-preview-fallback.mjs apps/croupier-frontend/test/landing-motion.mjs apps/croupier-frontend/test/intro-device.mjs
 run_node_tests test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs test/lane-media-audit.mjs
 node tools/check-environment-variables.mjs
-run_node_tests test/check-environment-variables.mjs
+run_node_tests test/check-environment-variables.mjs test/provider-profile.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node tools/build-runtime-media-catalog.mjs --check
 run_node_tests test/runtime-media-catalog.mjs lab/test/dealer-media-library.test.mjs

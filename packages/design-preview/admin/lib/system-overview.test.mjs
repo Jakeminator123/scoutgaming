@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { systemOverview, systemHref } from './system-overview.mjs';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { runInNewContext } from 'node:vm';
+import { isActiveOperator } from './studio-resource-lifecycle.mjs';
+import { ADMIN_WORKSPACE_TOOLS } from '../../../../lab/lib/admin-workspace-routes.mjs';
+
+const require = createRequire(import.meta.url);
 
 const workspace = () => ({ catalog: { source: 'registered', administration: {
   operators: [{ id:'a',name:'A',status:'active',archivedAt:null }, { id:'b',name:'B',status:'active',archivedAt:null }],
@@ -54,4 +61,33 @@ test('demo sources and links outside the administration are rejected', () => {
   for (const path of ['/control/clips','/partner','https://example.com/admin','//example.com/admin','/admin/../play']) {
     assert.throws(() => systemHref(path,{}),/administrationen/);
   }
+});
+
+test('the player portal card opens the publication editor with the selected real room context', () => {
+  const React = require('react'), { renderToStaticMarkup } = require('react-dom/server');
+  const { transformSync } = require('esbuild'), module = { exports: {} };
+  const source = readFileSync(new URL('../components/studio/system-overview.tsx', import.meta.url), 'utf8');
+  const hooks = { ...React, useEffect() {}, useState: value => [
+    value?.status === 'loading' ? { status: 'ready', workspace: workspace() } : value, () => {},
+  ] };
+  runInNewContext(transformSync(source, { loader: 'tsx', format: 'cjs', jsx: 'automatic' }).code, {
+    module, exports: module.exports, URLSearchParams, location: { search: '?table=b-1' },
+    require: name => name === 'react' ? hooks : name === 'react/jsx-runtime' ? require(name)
+      : name === 'lucide-react' ? new Proxy({}, { get: () => () => null })
+      : name.endsWith('/navigation') ? { __esModule: true, default: 'a' }
+      : name.endsWith('/connected-studio.mjs') ? { createStudioClient: () => ({}) }
+      : name.endsWith('/studio-resource-lifecycle.mjs') ? { isActiveOperator }
+      : name.endsWith('/system-overview.mjs') ? { systemHref, systemOverview }
+      : require(name),
+  });
+  const html = renderToStaticMarkup(React.createElement(module.exports.SystemOverview));
+  const link = [...html.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)]
+    .find(match => match[2].includes('Spelrum &amp; publicering'));
+  assert.ok(link, 'The publication editor must be reachable from the player portal card');
+  const target = new URL(link[1].replaceAll('&amp;', '&'), 'https://admin.invalid');
+  assert.equal(target.pathname, '/admin/publication');
+  assert.ok(ADMIN_WORKSPACE_TOOLS[target.pathname.split('/').at(-1)]);
+  assert.deepEqual(Object.fromEntries(target.searchParams), {
+    operator: 'b', table: 'b-1', composition: 'scene-b', dealer: 'two',
+  });
 });

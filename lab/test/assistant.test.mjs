@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {runInNewContext} from 'node:vm';
 import {createAssistantApi,createAssistantLimiter} from '../lib/assistant-api.mjs';
 import {prepareAssistantAction,executeAssistantAction} from '../lib/assistant-actions.mjs';
 import {readAssistantContext} from '../lib/assistant-context.mjs';
@@ -204,4 +206,40 @@ test('read loops are bounded and failed coverage is not reported as an empty dat
  let step=0;const unavailable=fixture({readData:async()=>{throw Error('secret DB connection');},ask:async({context})=>{if(!step++)return {reply:'Läser',proposal:null,read:{source:'media',query:'',offset:0}};
  assert.equal(context.requestedData[0].status,'unavailable');assert.equal(context.requestedData[0].complete,false);assert.ok(!JSON.stringify(context).includes('secret DB'));return {reply:'Registret kunde inte läsas.',proposal:null};}});
  assert.equal((await unavailable.post(chat())).status,200);
+});
+
+async function bootAssistantWidget(html,pathname){
+ const calls={requests:[],listeners:[],elements:0},nodes=new Map();
+ function element(){return {children:[],hidden:false,value:'',attributes:{},append(node){this.children.push(node);},replaceChildren(){this.children=[];},setAttribute(name,value){this.attributes[name]=value;},addEventListener(name){calls.listeners.push(name);},querySelector(selector){if(!nodes.has(selector))nodes.set(selector,element());return nodes.get(selector);}};}
+ const body=element();body.getAttribute=name=>name==='data-scout-assistant'?html.match(/<body\b[^>]*\bdata-scout-assistant="([^"]+)"/i)?.[1]??null:null;
+ const document={body,hidden:false,currentScript:{src:origin+'/studio/assistant-widget.js'},
+  createElement(){calls.elements++;const node=element();node.attachShadow=()=>element();return node;},addEventListener(name){calls.listeners.push(name);}};
+ const window={addEventListener(name){calls.listeners.push(name);}},location={pathname,origin};
+ const source=await readFile(new URL('../public/assistant-widget.js',import.meta.url),'utf8');
+ runInNewContext(source,{document,window,location,URL,AbortSignal,fetch:async(url,options)=>{calls.requests.push({url,method:options.method});return {ok:true,json:async()=>({access:'n1',identity:'fixture-admin',models:{}})};}});
+ await new Promise(resolve=>setImmediate(resolve));
+ return {calls,body,window};
+}
+
+test('actual blackjack and roulette documents never install a floating assistant or request access',async()=>{
+ for(const [file,paths] of [['index.html',['/play/blackjack','/game','/studio-preview/fixture']],['roulette/index.html',['/play/roulette','/roulette/']]]){
+  const html=await readFile(new URL('../../web/public/'+file,import.meta.url),'utf8');
+  assert.match(html,/<body\b[^>]*data-scout-assistant="disabled"/);
+  for(const path of paths){
+   const {calls,body,window}=await bootAssistantWidget(html,path);
+   assert.equal(body.children.length,0,path);assert.equal(calls.elements,0,path);
+   assert.equal(calls.requests.length,0,path);assert.equal(calls.listeners.length,0,path);
+   assert.equal(window.__scoutAssistant,undefined,path);
+  }
+ }
+});
+
+test('Admin Partner Lobby and the game entry keep their role-authorized assistant',async()=>{
+ const entry=await readFile(new URL('../../web/public/blackjack-entry.html',import.meta.url),'utf8');
+ for(const path of ['/admin','/partner/swedish-games','/lobby','/play','/blackjack']){
+  const {calls,body,window}=await bootAssistantWidget(entry,path);
+  assert.equal(window.__scoutAssistant,true,path);assert.equal(body.children.length,1,path);
+  assert.equal(body.children[0].id,'scout-assistant',path);assert.equal(body.children[0].hidden,false,path);
+  assert.deepEqual(calls.requests,[{url:'/studio/api/assistant',method:'GET'}],path);
+ }
 });

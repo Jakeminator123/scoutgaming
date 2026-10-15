@@ -1,6 +1,6 @@
 import { loadOperatorCatalogue, loadRoomCatalogue } from '../../../apps/croupier-frontend/lib/player-lobby.mjs';
 import { parseLobbyCatalog } from '../lobby/lib/catalog.mjs';
-export { lobbySelection, playUrlFor } from '../lobby/lib/catalog.mjs';
+export { lobbySelection, lobbyQuerySelection, playUrlFor } from '../lobby/lib/catalog.mjs';
 
 // Share the existing player readers and the lobby projection. The public build
 // never calls the staff catalog and never receives saved drafts or admin data.

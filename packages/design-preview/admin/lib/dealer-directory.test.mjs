@@ -50,6 +50,19 @@ test('dealer library includes Dragan without a room and opens his own import',as
   const link=nodes(h.render(),node=>node.type==='a'&&text(node)==='Ladda upp klipp')[0];
   assert.equal(link.props.href,'/admin/dealers?dealer=dragan&tool=import');
 });
+test('cancelling dealer creation restores focus to its initiating button without saving',async()=>{
+  const h=harness();await h.settle();
+  let focused=null;
+  const target={focus(){focused=target;}};
+  const trigger=h.button('Skapa dealer');
+  if(trigger.props.ref)trigger.props.ref.current=target;
+  trigger.props.onClick();
+  assert.ok(h.input('Dealerns namn'));
+  h.button('Avbryt').props.onClick();
+  assert.equal(h.input('Dealerns namn'),undefined);
+  assert.equal(focused,target);
+  assert.equal(h.saves.length,0);assert.equal(h.changes.length,0);assert.equal(h.navigations.length,0);
+});
 test('create saves the identity once without copying media, voice or room membership',async()=>{
   const h=harness();await h.settle();h.button('Skapa dealer').props.onClick();
   h.input('Dealerns namn').props.onChange({target:{value:'Nora'}});

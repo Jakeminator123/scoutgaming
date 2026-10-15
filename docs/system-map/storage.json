@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceSha": "de264d0d6a050c31247b8e429dde131721fbf98e",
+  "sourceSha": "9b6f4d112ad2bf56d173c1b5538dc97232719a34",
   "evidence": {
     "kind": "Kodläst katalog",
     "liveSchemaRead": false,
@@ -8,15 +8,16 @@
     "providerConfigurationRead": false,
     "envFilesRead": false,
     "testsRun": false,
-    "statement": "Kolumner, deklarerade datatyper, nullability, primärnycklar och uttryckliga foreign keys är källinventerade i åtta listade SQL-källor. Migration 006 återstår att tabellinventera. Installerat live-schema, grants, datarader och providerinställningar är inte avlästa här."
+    "statement": "Kodinventering av uttryckligt registrerade SQL-källor, inklusive 006, 008 och 011. Inga live-schema, rader, grants, env-värden eller providerresurser avlästa.",
+    "inspectionDate": "2026-10-15"
   },
   "summary": {
     "schemaCount": 4,
-    "tableCount": 54,
+    "tableCount": 57,
     "tableCountBySchema": {
       "croupier_game": 25,
       "croupier_auth": 7,
-      "croupier_studio": 20,
+      "croupier_studio": 23,
       "croupier_zones": 2
     }
   },
@@ -42,7 +43,7 @@
       ],
       "startupContract": [
         "product-v1-källchecksum måste matcha game-ledgern.",
-        "Studio 001–007 måste vara verifierat installerade utan pending versioner för utkastflödets runtime.",
+        "Registrerad Studio-migrationskedja är 001–008 och 011 (009/010 reserverade). 002–005 är markerade optional i migrations.mjs; readiness följer det uttryckliga kontraktet, inte ett antagande att alla versioner är obligatoriska. Katalogen bevisar ingen liveinstallation.",
         "Saknad sparad policy/schema ger fel; ingen flagga migrerar, seedar eller aktiverar diskfallback."
       ],
       "sources": [
@@ -152,7 +153,7 @@
     {
       "name": "croupier_studio",
       "databaseId": "game-auth-studio-neon",
-      "tableCount": 20,
+      "tableCount": 23,
       "purpose": "Gemensam sparad presentationspolicy, historik/audit, mediaidentiteter och beständiga tal/GPU/QA-journaler, plus operatör, medlemskap, rollprofil och paket.",
       "scope": "Serverägd environment; workspace för dokument/media/operatörs-QA; owner_hash/request/session för journaler; workspace även för operatörstenant.",
       "writer": "Native Studio för dokument/media; Render journaladaptrar för tal/GPU/QA.",
@@ -163,7 +164,9 @@
         "004",
         "005",
         "006",
-        "007"
+        "007",
+        "008",
+        "011"
       ],
       "installation": "Explicit immutable runner; kontrollerar käll- och strukturchecksum. Migrationer seedar inte policy eller kostnadsrätt.",
       "documentKinds": [
@@ -200,6 +203,18 @@
         {
           "path": "ops/neon-studio/007-partner-branding-drafts.sql",
           "line": 4
+        },
+        {
+          "path": "ops/neon-studio/006-operator-audit.sql",
+          "line": 1
+        },
+        {
+          "path": "ops/neon-studio/008-dealer-forge.sql",
+          "line": 1
+        },
+        {
+          "path": "ops/neon-studio/011-gpu-daily-budget.sql",
+          "line": 1
         }
       ]
     },
@@ -6208,6 +6223,524 @@
         ]
       },
       "foreignKeys": []
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "operator_audit_events",
+      "purpose": "Append-only journal för operatörskonfiguration med actor, åtgärd, resurs och revisioner.",
+      "owner": "Native Studio operatörslager",
+      "scope": "Serverägd environment, workspace och operator_id; inga hemligheter eller e-post i ändringsjournalen.",
+      "sources": [
+        {
+          "path": "ops/neon-studio/006-operator-audit.sql",
+          "line": 5
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "operator_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "name": "event_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 9
+            }
+          ]
+        },
+        {
+          "name": "actor_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 10
+            }
+          ]
+        },
+        {
+          "name": "access_class",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 11
+            }
+          ]
+        },
+        {
+          "name": "action",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 12
+            }
+          ]
+        },
+        {
+          "name": "resource_type",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "name": "resource_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 14
+            }
+          ]
+        },
+        {
+          "name": "before_revision",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 15
+            }
+          ]
+        },
+        {
+          "name": "after_revision",
+          "dataType": "bigint",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "name": "occurred_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "name": "request_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": "changes",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 19
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "operator_id",
+          "event_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/006-operator-audit.sql",
+            "line": 20
+          }
+        ]
+      },
+      "foreignKeys": [
+        {
+          "columns": [
+            "environment_id",
+            "workspace_id",
+            "operator_id"
+          ],
+          "references": {
+            "schema": "croupier_studio",
+            "table": "operators",
+            "columns": [
+              "environment_id",
+              "workspace_id",
+              "operator_id"
+            ]
+          },
+          "sources": [
+            {
+              "path": "ops/neon-studio/006-operator-audit.sql",
+              "line": 21
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "forge_dealers",
+      "purpose": "Sparade dealer-forge-profiler med revision, actor och tidsstämplar.",
+      "owner": "Native Studio dealer-forge",
+      "scope": "Serverägd environment, workspace och dealer_id.",
+      "sources": [
+        {
+          "path": "ops/neon-studio/008-dealer-forge.sql",
+          "line": 5
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 6
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 7
+            }
+          ]
+        },
+        {
+          "name": "dealer_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 8
+            }
+          ]
+        },
+        {
+          "name": "revision",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 9
+            }
+          ]
+        },
+        {
+          "name": "profile",
+          "dataType": "jsonb",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 10
+            }
+          ]
+        },
+        {
+          "name": "actor_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 11
+            }
+          ]
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 12
+            }
+          ]
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamptz",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 13
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "dealer_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/008-dealer-forge.sql",
+            "line": 14
+          }
+        ]
+      },
+      "foreignKeys": []
+    },
+    {
+      "schema": "croupier_studio",
+      "name": "forge_jobs",
+      "purpose": "Beständiga dealer-forge-jobb med provideruppgift, request, resultat, status och fel.",
+      "owner": "Native Studio dealer-forge",
+      "scope": "Serverägd environment och workspace; job_id UUID. Ingen SQL-FK till dealerprofilen är deklarerad.",
+      "sources": [
+        {
+          "path": "ops/neon-studio/008-dealer-forge.sql",
+          "line": 17
+        }
+      ],
+      "columns": [
+        {
+          "name": "environment_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 18
+            }
+          ]
+        },
+        {
+          "name": "workspace_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 19
+            }
+          ]
+        },
+        {
+          "name": "job_id",
+          "dataType": "uuid",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 20
+            }
+          ]
+        },
+        {
+          "name": "dealer_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 21
+            }
+          ]
+        },
+        {
+          "name": "slot_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 22
+            }
+          ]
+        },
+        {
+          "name": "kind",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 23
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 24
+            }
+          ]
+        },
+        {
+          "name": "provider",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "name": "task_id",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "name": "request",
+          "dataType": "jsonb",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 27
+            }
+          ]
+        },
+        {
+          "name": "result",
+          "dataType": "jsonb",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 28
+            }
+          ]
+        },
+        {
+          "name": "error",
+          "dataType": "text",
+          "nullable": true,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 29
+            }
+          ]
+        },
+        {
+          "name": "actor_id",
+          "dataType": "text",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 30
+            }
+          ]
+        },
+        {
+          "name": "created_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 31
+            }
+          ]
+        },
+        {
+          "name": "updated_at_ms",
+          "dataType": "bigint",
+          "nullable": false,
+          "sources": [
+            {
+              "path": "ops/neon-studio/008-dealer-forge.sql",
+              "line": 32
+            }
+          ]
+        }
+      ],
+      "primaryKey": {
+        "columns": [
+          "environment_id",
+          "workspace_id",
+          "job_id"
+        ],
+        "sources": [
+          {
+            "path": "ops/neon-studio/008-dealer-forge.sql",
+            "line": 33
+          }
+        ]
+      },
+      "foreignKeys": []
     }
   ],
   "storageLayers": [
@@ -6472,7 +7005,7 @@
     }
   ],
   "caveats": [
-    "Kolumnkatalogen omfattar alla 53 SQL-tabeller i sju befintliga källor. Index, alla CHECK-/UNIQUE-uttryck, triggers och live-grants är inte en full driftinventering; relevanta SQL-källrader är länkade.",
+    "Kolumnkatalogen omfattar 57 SQL-tabeller i tio CREATE TABLE-källor och den separata ALTER-källan 011. Index, alla CHECK-/UNIQUE-uttryck, triggers och live-grants är ingen full driftinventering; relevanta källor är länkade.",
     "Installerat live-schema, grants, riktiga rader, faktiska miljövärden och providerresurser är inte avlästa här.",
     "Fysisk miljöisolering behövs för game/auth; dessa tabeller har inte Studio-environment/workspace-kolumner.",
     "Namnregistret för env dupliceras inte här. Kartgeneratorn ska läsa docs/environment-variables.json direkt.",
@@ -6483,23 +7016,23 @@
     "Befintliga testfiler är inventerade, inte körda som del av denna kataloguppgift."
   ],
   "sqlContractCatalog": {
-    "complete": false,
-    "scope": "54 CREATE TABLE-kontrakt i de åtta uttryckligen listade SQL-källorna. Migration 006 återstår att tabellinventera; inga live-schema/grants/rader avlästa.",
-    "sourceCount": 8,
-    "tableCount": 54,
-    "columnCount": 345,
-    "primaryKeyCount": 54,
-    "foreignKeyCount": 30,
+    "complete": true,
+    "scope": "57 CREATE TABLE-kontrakt i tio SQL-källor samt den registrerade CHECK-ändringen 011 som elfte källa. Kolumner, nullability, PK och uttryckliga FK jämförs med koden; fulla index/CHECK/UNIQUE/triggers/grants och liveinstallation ingår inte.",
+    "sourceCount": 11,
+    "tableCount": 57,
+    "columnCount": 382,
+    "primaryKeyCount": 57,
+    "foreignKeyCount": 31,
     "columnCountBySchema": {
       "croupier_game": 143,
       "croupier_auth": 41,
-      "croupier_studio": 152,
+      "croupier_studio": 189,
       "croupier_zones": 9
     },
     "nullableCountBySchema": {
       "croupier_game": 22,
       "croupier_auth": 15,
-      "croupier_studio": 12,
+      "croupier_studio": 17,
       "croupier_zones": 0
     },
     "dataTypes": [
@@ -6547,6 +7080,35 @@
       {
         "path": "ops/neon-studio/007-partner-branding-drafts.sql",
         "line": 1
+      },
+      {
+        "path": "ops/neon-studio/006-operator-audit.sql",
+        "line": 1
+      },
+      {
+        "path": "ops/neon-studio/008-dealer-forge.sql",
+        "line": 1
+      },
+      {
+        "path": "ops/neon-studio/011-gpu-daily-budget.sql",
+        "line": 1
+      }
+    ],
+    "alterations": [
+      {
+        "schema": "croupier_studio",
+        "table": "gpu_budget_policies",
+        "purpose": "Migration 011 ändrar enbart CHECK-gränsen daily_budget_micro_usd till 1–20000000; skapar inga tabeller och ändrar inte befintliga reservations-/ledger-rader.",
+        "sources": [
+          {
+            "path": "ops/neon-studio/011-gpu-daily-budget.sql",
+            "line": 3
+          },
+          {
+            "path": "ops/neon-studio/migrations.mjs",
+            "line": 29
+          }
+        ]
       }
     ]
   }
