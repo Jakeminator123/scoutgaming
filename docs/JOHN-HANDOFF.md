@@ -1,4 +1,34 @@
 # Aktuell handoff — Scoutgaming
+## Env och Dragan i produktionsvärdens isolerade provspel, 15 oktober 2026
+
+Verifierad produktbas är `46444572` (PR154): main-CI `38662964323` success,
+Vercel `dpl_6nrpTJ2DKE1cJuEW5rn87H51wwiC` READY och Render
+`dep-db82c560tbcc73e3ipk0` live; engine health/version svarade ok/samma SHA
+01:05 UTC. Äldre leveranskvitton nedan gäller sina angivna versioner.
+
+Samordnaren körde Dragan via Admins befintliga Provspela på
+`www.scoutgaming.tech`, med separat SQLite `:memory:` och syntetiskt saldo.
+Två sammanhängande rundor slutfördes: desktop €5 → förlust €5; därefter
+390×844 mobil €5 → återbetalt €10. Testsaldo gick 10 000 → 9 995 → 10 000.
+Lounge · varm, Dragan och Blackjack · Oak visades; serverkort och avslut
+fungerade, ingen sidöverströmning vid 390 px och inga insamlade JS-varningar/fel.
+Återlänken stängde sessionen; omläsning gav `studio_preview_not_found`.
+Ingen verklig spelarbalans, publicering eller providerjobb ändrades.
+Detta gäller sparad sammansättning på main, inte PR91 eller publicerade
+rummets fulla tillåtelselista. Separat read-only N2-prov laddade paket v4:s
+tre lager och spelade två gånger på desktop och mobil. Tal/läppsynk är inte godkänt.
+
+Env-kvittot finns i [ENVIRONMENT-VARIABLES.md](ENVIRONMENT-VARIABLES.md).
+Endast en felaktig lokal env-rad togs bort med alla 50 giltiga värden bevarade;
+privat originalbackup har samma effektiva åtkomstskydd. Scoutgamings RunPod-par
+matchar lokalt/Render och skiljer sig från Emils; Vercel Preview pekar fortfarande mot
+produktionsbackend och är ingen isolerad skrivmiljö. Ingen Emil-inställning ändrades.
+Lokala filmer är verifierat tillgängliga. Senaste Kevin-protokollets konkreta
+skillnader och den ännu oanslutna rörliga talvägen finns i
+[LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md).
+Privata skärmbilder och redigerade driftkvitton ligger under
+`arkiv/2026-10-15/samordning/env-media-verification/`.
+
 ## Verklig N2-kedja och enklare kontomeny, 15 oktober 2026
 
 Den befintliga C6-fixturen går nu via verklig PartnerOperatorWorkspace och
