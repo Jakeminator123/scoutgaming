@@ -12,8 +12,8 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 | Ordning | Leverans | Klar när |
 | --- | --- | --- |
 | 1 — levererad och browserverifierad | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
-| 2 — huvudflödet levererat; mallretur återstår i del 3 | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
-| 3 — lokalt implementerad, leveranskontroller pågår | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
+| 2 — huvudflöde och mallretur levererade | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
+| 3 — funktion levererad; text/status förenklas härnäst | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
 | 4 | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
 | 5 | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
 | 6 | QA-återgång och lokal konsolidering | QA:s unika kod/stash/kvitton är bevarade och osäker QA är stängd. Exakta molnresurskandidater kräver separat beslut; Preview återkopplas inte till produktion. Huvudcheckout/startprofil är verifierad, överförda egna kopior städas säkert och varje kvarvarande kopia har ett konkret syfte. |
@@ -119,29 +119,56 @@ filer. Inga media, arbetskopior eller beroenden raderade. Klippkartans två
 förenkla i del 3 så att Admin-flödet hänger ihop. PR165, QA och ny rörlig
 läppsynk förblir parkerade.
 
-Del 3 är lokalt implementerad: varje klippkort skiljer Situation, Klipp/tagning
-och Körregel i projektutkastet. Vald okopplad film är inte längre grön för
-att en annan film är kopplad. Faktiska basandelar, längder, intervall/jitter,
-minsta paus, max/minut, frekvenser, villkor och prioritet läses från det
-aktuella utkastet. OpenClaw-urval påstås inte bevisa triggeranslutning;
-grundloopsvillkor utanför event-data markeras som ej anslutna.
+Del 3:s funktion är levererad genom PR169. Granskat sluthead
+`842c082329031bc1d4f7db98b564d839887083ed` mergades normalt till main
+`9f6589c67d42d8559c82022fb42a04283bd06b0c`. PR-CI 38765598957 och
+main-CI 38766586185 är gröna inklusive faktisk SQL-/omstarts-/HTTPS-acceptans.
+Vercel `dpl_6ZCtotgk1iUe8pYYpQTfBxrvjXHr` är READY på detta SHA och
+www.scoutgaming.tech. 54 fokuserade klipp-/policyprov, 20 navigerings-/mallprov,
+Lab-build 97, fullhook 3 931 pass / 9 villkorade skip / 0 fel/cancel i
+77 grupper samt dokumentationshook 43/43. Inga kontroller kringgås.
 
-Befintlig policyeditor öppnar vald tagning och exakt kopplingsregel, även
-när två regler delar fil. Byte av kopplingsplats visar dess faktiska film.
-Lokala regeländringar skiljs från senast sparat projektutkast; publicerat
-rumspaket visas separat och klippen påstås inte vara jämförda med det.
-Granskning/publicering har en kontextbärande länk. Rum och bakgrund har
-separata begrepp; båda mall-/rumsreturerna går till Admin i samma flik med
-befintligt osparat-skydd. Ingen ny writer eller runtime-/providerändring.
+Varje klippkort skiljer Situation, Klipp/tagning och Körregel i projektutkastet.
+Vald okopplad film är inte längre grön för att en annan film är kopplad.
+Basandelar, längder, intervall/jitter, minsta paus, max/minut, frekvenser,
+villkor och prioritet läses från utkastet. OpenClaw-val bevisar inte
+triggeranslutning. Grundloopsvillkor utanför event-data markeras ej anslutna.
+Befintlig policyeditor följer vald tagning och exakt regel, även när regler
+delar fil. Publicerat rumspaket hålls skilt från projektutkastet. Två retur-
+länkar går till rätt rum i Admin. Ingen ny writer, runtime eller provider.
 
-Kodhead `4b1adb5b`: 54 fokuserade klipp-/policyprov, 20 navigerings-/mallprov
-och Lab-build, 97 byggspår, passerar. Slutlig fullhook: 3 931 pass,
-9 villkorade skip, 0 fel/cancel i 77 grupper, inklusive riktig browser för
-loginretur och osparat/conflict/CAS. Två gamla etikett-/ny-flik-assertioner
-är uppdaterade till avsedd navigation utan försvagade behörighetsprov.
-Sluthead/CI och produktion/browseracceptans återstår.
-Före-bild och verifieringsloggar: samma privata evidensmapp, clips-before.png
-och clip-map-*. Inga nya filer, mediaimporter eller borttagna arbetskopior.
+Eget browserprov på rätt www-version verifierar:
+- Dragan/Blackjack: grundloopens 100 % och 5,042 s visas. Val av Kevin V2
+  leende blir uttryckligen prov/ej kopplat. Kevin 1 iv väljer rätt film och
+  exakt regel i den befintliga editorn. Paketversion 4 visas separat.
+- En endast lokal checkboxändring gav osparat utkast, ändrad kortstatus och
+  regeltext. Rumsretur följd av Bakåt bevarade ändringen i den gemensamma
+  Admin-ytan. Ändringen återställdes via samma checkbox: sparknappen blev
+  åter inaktiv. Ingen sparning/publicering eller providerkörning gjordes.
+  Ett tidigare klick med öppen panel räknas inte som navigeringsskyddsprov.
+- Rumsreturen laddar Swedish Games/Dragan och bevarat rumsutkast 2.
+  Roulette byter till Scoutgaming Demo/Anna, sex kort, separata grundloop/
+  startfilmsregler och paketversion 1. Mallens egen retur öppnar exakt
+  samma rouletterum i Admin. Ny rörlig läppsynk förblir avstängd.
+
+Före/efter och loggar: samma privata evidensmapp, clips-before.png,
+clips-after.png, clips-roulette-after.png, clip-map-* och pr169-*.
+Bortstädat: missvisande grön vald-filmstatus, sammanblandat Rum/bakgrund
+samt två Partner-omvägar. 17 befintliga filer ändrade; inga nya källfiler,
+originalmedia, beroenden eller arbetskopior raderade.
+
+Del 3:s avslutande text/statusrättning är implementerad lokalt. Korta
+situationsförklaringar visas på korten; befintlig teknisk källa och exakt
+filidentitet finns under Detaljer. Ett återställt projekt ger nu ett korrekt
+återställningsbesked. Hjulutfall 0–36 visas som rendering på Anna-bordet,
+med serverstyrt vinnande nummer och utan uppladdning eller saknad-filmstatus.
+Mallpanelens äldre krav på en separat filmbank är också rättat efter
+browserobservation. Övriga planerade roulettefack behåller sin status; spelare,
+klippbindningar, policyvärden och mediefiler ändras inte. 32 fokuserade prov
+passerar utan skip och Lab-bygget med 97 kontrollerade byggspår är grönt.
+Full kontroll, sluthead, leverans och browseracceptans återstår innan del 3
+räknas färdig och del 4 Tal börjar.
+PR165, QA, env-värden och rörlig läppsynk förblir parkerade/orörda i denna del.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 

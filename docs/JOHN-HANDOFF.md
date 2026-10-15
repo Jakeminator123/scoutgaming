@@ -42,17 +42,29 @@ verkligt osparat tillstånd, så dirty-skyddets browserprov räknas inte som
 accepterat; lokal verifiering använder riktig delad historik. Fullt kvitto
 och före/efter-bilder finns i CLOUD-MIGRATION.
 
-Del 3 är lokalt implementerad och inväntar leveranskontroller: tydlig
-situation/tagning/sparad körregel, sann vald-filmstatus och exakt regelval
-i befintlig policyeditor. Intervall, frekvens och villkor är verkliga sparade
-värden; OpenClaw-etikett likställs inte med verifierad anslutning.
-Publicerat paket är skilt från projektutkastet. Två mall-/rumsreturer går
-nu till Admin och Rum / bakgrund är ersatt av Rum. 54 riktade prov och
-20 navigerings-/mallprov och Lab-build 97 passerar. Kodhead 4b1adb5b har
-fullhook 3 931 pass / 9 skip / 0 fel/cancel i 77 grupper, inklusive riktig
-browser för loginretur och osparat/conflict/CAS. Sluthead/CI och
-produktion/browseracceptans återstår.
-Ingen ny writer, runtime, mediekatalog eller tracker.
+Del 3:s funktion är levererad i PR169: granskat head 842c0823,
+main 9f6589c67d42d8559c82022fb42a04283bd06b0c, Vercel
+`dpl_6ZCtotgk1iUe8pYYpQTfBxrvjXHr` READY på rätt SHA/www. PR-CI
+38765598957 och main-CI 38766586185 är gröna inklusive SQL/omstart/HTTPS.
+54 riktade klipp-/policyprov, 20 navigerings-/mallprov, Lab-build 97,
+fullhook 3 931 pass / 9 skip / 0 fel/cancel i 77 grupper och doc-hook 43/43.
+
+Browserverifierat: vald okopplad film får sann status, exakt fil och regel
+följer valet, lokala regelvärden visas, och publicerade versioner 4/1 hålls
+isär från projektutkastet. Osparad lokal regel bevaras via rumsretur/Bakåt
+och återställdes utan sparning. Båda returlänkarna går till exakt Admin-rum;
+blackjackutkast 2 är orört. Inga produktionsskrivningar eller providerjobb.
+Detaljer och före/efter-bilder finns i CLOUD-MIGRATION.
+
+PR169 ändrade 17 befintliga filer; inga nya källfiler eller raderade media/
+arbetskopior. Den avslutande text/statusrättningen är nu implementerad lokalt:
+enkla situationer, teknisk källa/filidentitet under Detaljer, korrekt besked
+när lokala ändringar återställts och renderat hjulutfall utan saknad-filmstatus.
+32 fokuserade prov passerar utan skip, Lab-bygget är grönt med 97 byggspår.
+Full kontroll, slutgranskning, normal leverans och browseracceptans återstår
+före del 4 Tal. Runtime och media är oförändrade; övriga planerade roulettefack
+är fortsatt tydligt planerade. Även mallpanelens motsägande filmbankskrav
+är rättat efter browserobservation.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

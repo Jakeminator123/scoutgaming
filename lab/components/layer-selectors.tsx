@@ -26,6 +26,6 @@ export function LayerAssetSelect({role,lane,assets,onChange,permissions=true,gam
         next.layers[role].allowed=event.target.checked?[...layer.allowed,asset.id]:layer.allowed.filter(id=>id!==asset.id);
         if(!event.target.checked&&next.layers[role].default===asset.id)next.layers[role].default=null;
       });}}/>{asset.label}{inUse(asset.id)?' · används av bakgrundsregler':''}{role==='table'&&lane.composition?.blackjackTables?.some(row=>row.tableId===asset.id)?' · avmarkering tar också bort bordets kortplatser':''}
-    </label>)}<small>{role==='background'?'En videobakgrund loopas under spelet.':'Bordsvideo är en scenloop. Rouletteutfall 0–36 kräver en separat godkänd filmbank.'} Partnern kan bara välja publicerade alternativ som bolaget får ändra.</small></fieldset>:null}
+    </label>)}<small>{role==='background'?'En videobakgrund loopas under spelet.':'Bordsvideo är en scenloop.'+(game==='roulette'?' Anna-bordets hjul och kula ritas i spelet; vinnande nummer kommer från spelservern.':'')} Partnern kan bara välja publicerade alternativ som bolaget får ändra.</small></fieldset>:null}
   </fieldset>;
 }

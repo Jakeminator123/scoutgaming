@@ -2,6 +2,32 @@ import { SPEECH_LINES } from '../../../../web/public/speech-lines.mjs';
 const captions = { greeting:'Välkommen', placebets:'Lägg insatser', goodluck:'Lycka till', insurance:'Försäkring', double:'Dubbling', peek:'Kontrollera kort', blackjack:'Blackjack', dealerblackjack:'Dealerns blackjack', bust:'Spelaren över 21', dealerbust:'Dealern över 21', win:'Vinst', push:'Lika', lose:'Förlust', sidebet:'Sidospel', chatter1:'Småprat 1', chatter2:'Småprat 2', farewell:'Tack för spelet', 'to-shoe':'Till skon', 'from-shoe':'Från skon', 'dealer-up':'Öppet kort', 'dealer-hole':'Dolt kort' };
 const results = new Set(['blackjack','dealerblackjack','bust','dealerbust','win','push','lose','sidebet']);
 export function slotCaption(slot) { return ({VILA:'VILA-bild',breathing:'Andningsvila','glasses-clean':'Glasögonvariation','wheel-start':'Hjulstart och kulsläpp'})[slot.situation] ?? captions[slot.situation] ?? (/^box[0-6]$/.test(slot.situation) ? `Plats ${Number(slot.situation.slice(3))+1}` : slot.title); }
+export function isRenderedOutcome(slot) { return slot.game==='roulette' && slot.eventId==='roulette.plan.outcome'; }
+export function slotExplanation(slot) {
+  if(slot.game==='roulette')return ({
+    'roulette.reference':'Stillbild för att jämföra dealerns vilopose.',
+    'roulette.idle':slot.situation==='breathing'?'Dealern väntar mellan rundorna.':'Kort variation medan bordet väntar.',
+    'roulette.wheel-start':'Dealern sätter hjulet i rörelse och släpper kulan.',
+    'roulette.plan.betting':'Tal före rundan: välkommen, insatser och sista chansen att satsa.',
+    'roulette.plan.outcome':'Hjulet och kulan visar det vinnande numret.',
+    'roulette.plan.result':'Tal om resultatet, följt av återgång till vila.',
+  })[slot.eventId]??slot.title;
+  if(slot.sourceType==='speak')return ({
+    goodluck:'Startfras när insatserna är klara.',insurance:'Tal när försäkring erbjuds.',double:'Bekräftelse på spelarens dubbling.',
+    greeting:'Välkomsthälsning vid bordet.',placebets:'Uppmaning att lägga nästa insats.',peek:'Tal medan dealern kontrollerar korten.',
+    blackjack:'Tal vid spelarens blackjack.',dealerblackjack:'Tal vid dealerns blackjack.',bust:'Tal när spelaren går över 21.',
+    dealerbust:'Tal när dealern går över 21.',win:'Tal vid vinst.',push:'Tal vid oavgjort.',lose:'Tal vid förlust.',
+    sidebet:'Tal om ett sidospel.',chatter1:'Småprat vid bordet.',chatter2:'Småprat vid bordet.',farewell:'Avslutande hälsning.',
+  })[slot.situation]??'Tal vid den valda spelsituationen.';
+  if(slot.eventId.startsWith('deal.player.')&&/^box[0-6]$/.test(slot.situation))return `När ett kort delas till spelarplats ${Number(slot.situation.slice(3))+1}.`;
+  if(slot.eventId==='deal.dealer')return slot.situation==='dealer-hole'?'När dealerns dolda kort delas.':'När dealerns öppna kort delas.';
+  if(slot.eventId==='transition.shoe')return slot.situation==='from-shoe'?'Dealern återgår till vila efter sista kortet.':'Dealern gör sig redo före första kortet.';
+  return ({'idle.ready':'Dealern väntar mellan spelhändelserna.','reveal.dealer':'När dealerns dolda kort vänds upp.',
+    'turn.player':'Spelarens tur att välja nästa drag.','settle.blackjack':'Rundan avslutas med blackjack.',
+    'settle.dealerBust':'Rundan avslutas när dealern har gått över 21.','settle.win':'Rundan avslutas med vinst.',
+    'settle.push':'Rundan avslutas oavgjort.','settle.other':'Rundan avslutas med övrigt resultat, till exempel förlust.',
+  })[slot.eventId]??slot.title;
+}
 export function slotSpeech(slot) { return slot.sourceType === 'speak' ? SPEECH_LINES[slot.situation] ?? '' : ''; }
 export function groupSlots(slots) {
   if(slots.some(slot=>slot.game==='roulette'))return [
