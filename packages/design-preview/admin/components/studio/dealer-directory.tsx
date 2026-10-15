@@ -17,7 +17,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
   const [name,setName] = useState(''), [id,setId] = useState(''), [idEdited,setIdEdited] = useState(false);
   const [creating,setCreating] = useState(false), [review,setReview] = useState<Review|null>(null);
   const [refresh,setRefresh] = useState(0);
-  const lock = useRef(false), current = useRef(workspace);
+  const lock = useRef(false), current = useRef(workspace), createButton = useRef<HTMLButtonElement>(null);
   current.current = workspace;
   const query = useSearchParams(), selectedId = query.get('dealer') ?? '';
   const disabled = blocked || busy || loading || !workspace;
@@ -86,7 +86,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
   const dealers=workspace?.project.dealers??[], trash=workspace?.project.dealerTrash??[];
   return <section className="dealer-import" aria-labelledby="dealer-directory-title">
     <header className="dealer-import-header"><div><p className="dealer-import-eyebrow">Nivå 1 · Bibliotek</p><h1 id="dealer-directory-title">Dealers</h1><p>Skapa en dealer, lägg in filmklipp och se var personen används.</p></div>
-      <div className="dealer-import-actions"><button className="dealer-import-primary" disabled={disabled} onClick={()=>setCreating(true)}><Plus size={16}/>Skapa dealer</button><button aria-label="Uppdatera dealers" disabled={busy||loading} onClick={()=>setRefresh(value=>value+1)}><RefreshCw size={16}/></button></div>
+      <div className="dealer-import-actions"><button ref={createButton} className="dealer-import-primary" disabled={disabled} onClick={()=>setCreating(true)}><Plus size={16}/>Skapa dealer</button><button aria-label="Uppdatera dealers" disabled={busy||loading} onClick={()=>setRefresh(value=>value+1)}><RefreshCw size={16}/></button></div>
     </header>
     {blocked&&<p role="note">Spara ditt öppna Studio-utkast eller avsluta den pågående importen innan du ändrar dealerregistret.</p>}
     {loading&&<p role="status">Läser dealers…</p>}
@@ -94,7 +94,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
     {notice&&<p role="status" className="dealer-import-notice">{notice}</p>}
     {creating&&<form className="dealer-import-panel" onSubmit={event=>void create(event)}><h2>Skapa dealer</h2><label>Dealerns namn<input autoFocus required maxLength={120} value={name} disabled={disabled} onChange={event=>{setName(event.target.value);if(!idEdited)setId(dealerSlug(event.target.value));}}/></label>
       <details><summary>Detaljer</summary><label>Dealer-id<input required maxLength={40} pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*" value={id} disabled={disabled} onChange={event=>{setIdEdited(true);setId(event.target.value);}}/></label></details>
-      <div className="dealer-import-actions"><button className="dealer-import-primary" disabled={disabled||!name.trim()||!id} type="submit">{busy?'Sparar…':'Skapa och spara'}</button><button type="button" disabled={busy} onClick={()=>setCreating(false)}>Avbryt</button></div>
+      <div className="dealer-import-actions"><button className="dealer-import-primary" disabled={disabled||!name.trim()||!id} type="submit">{busy?'Sparar…':'Skapa och spara'}</button><button type="button" disabled={busy} onClick={()=>{setCreating(false);if(active&&!disabled)createButton.current?.focus();}}>Avbryt</button></div>
     </form>}
     {!loading&&workspace&&!dealers.length&&<p>Inga dealers ännu. Välj Skapa dealer.</p>}
     <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Registrerade dealers">{dealers.map(dealer=>{

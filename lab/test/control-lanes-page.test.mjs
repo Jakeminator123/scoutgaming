@@ -8,6 +8,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createSeedProject as createEmptyProject , defaultPresentationLane} from '../lib/studio-model.mjs';
 import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
+import { createPresentationRoomController } from '../lib/presentation-room-client.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -50,11 +51,16 @@ const snapshot=(operators)=>({administrationRevision:'admin-1',rooms:[],operator
 function harness(options={}) {
   const project=createSeedProject(),other=structuredClone(project.lanes[0]);other.id='evening';other.label='Kväll';project.lanes.push(other);
   const props={initialProject:project,initialVideos:{videos:[]},initialStatus:{},operators:twoOperators(),storeAvailable:true,...options};
-  const slots=[],requests=[],effects=[],events=new Map();let cursor=0;
+  const slots=[],requests=[],effects=[],events=new Map(),replacements=[];let cursor=0;
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
     return [slots[i],value=>{slots[i]=typeof value==='function'?value(slots[i]):value;}];},
     useRef(value){return slots[cursor++]??={current:value};},useEffect(effect){effects.push(effect);}};
-  const window={location:{pathname:'/studio/control/rooms',search:''},history:{replaceState(){}},confirm:()=>false,
+  const initialUrl=new URL('/admin/publication'+(options.search??'')+(options.hash??''),'https://test.invalid');
+  const location={pathname:initialUrl.pathname,search:initialUrl.search,hash:initialUrl.hash,origin:initialUrl.origin,href:initialUrl.href};
+  const window={location,history:{state:options.historyState??{external:'preserved'},replaceState(state,_title,href){
+    this.state=state;replacements.push({state,href});if(href===undefined)return;
+    const url=new URL(href,window.location.href);Object.assign(window.location,{pathname:url.pathname,search:url.search,hash:url.hash,href:url.href});
+  }},confirm:()=>false,
     addEventListener:(name,cb)=>events.set(name,cb),removeEventListener:(name)=>events.delete(name)};
   const Room=()=>null,Lifecycle=()=>null,Directory=()=>null,Conflict=()=>null;let merged,saved;
   const {ControlLanesPage}=loadTs(sourceUrl,{react,window,
@@ -66,7 +72,7 @@ function harness(options={}) {
   const render=()=>{cursor=0;effects.length=0;return ControlLanesPage(props);};
   const all=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...React.Children.toArray(node.props?.children).flatMap(child=>all(child,predicate))];
   const nodes=predicate=>all(render(),predicate);
-  return {project,props,requests,events,window,effects,render,nodes,html:()=>renderToStaticMarkup(render()),
+  return {project,props,requests,events,window,replacements,effects,render,nodes,html:()=>renderToStaticMarkup(render()),
     operator:()=>nodes(node=>node.type==='select')[0],composition:()=>nodes(node=>node.type==='select')[1],
     checkbox:id=>nodes(node=>node.type==='input'&&node.props.value===id)[0],
     submit:()=>nodes(node=>node.type==='form')[0].props.onSubmit({preventDefault(){}}),
@@ -222,4 +228,142 @@ test('the exact successful receipt accepts server-sorted choices and clears the 
   assert.match(h.html(),/är publicerade. Version 5/);assert.equal(h.lifecycle().props.refreshKey,1);
   h.render();h.effects.forEach(effect=>effect());let dirty=false;
   h.events.get('beforeunload')({preventDefault(){dirty=true;},returnValue:undefined});assert.equal(dirty,false);
+});
+
+function roomContextSnapshot(overrides={}) {
+  const operators=twoOperators();operators[0].publishedPackage.lanes.push('evening');
+  return {...snapshot(operators),rooms:[{id:'room-evening',operatorId:'north',name:'Kvällsrummet',presentationLaneId:'evening',state:'live',published:true,archivedAt:null,...overrides}]};
+}
+
+test('publication validates the requested room and renders scoped partner and lobby links with its actual composition',()=>{
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',initialLaneId:'mobile-phone'});
+  assert.doesNotMatch(h.html(),/>Öppna partnerportalen<|>Öppna spellobbyn</);
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  assert.equal(h.composition().props.value,'evening');
+  assert.match(h.html(),/href="\/partner\/north\/rooms\?room=room-evening"/);
+  assert.match(h.html(),/href="\/lobby\?operator=north&amp;room=room-evening"/);
+  assert.match(h.html(),/Kvällsrummet/);
+  assert.match(h.html(),/gemensam sammansättning/i);
+  assert.equal(h.requests.length,0);
+});
+
+for(const [label,roomId,change] of [
+  ['foreign','room-evening',{operatorId:'south'}],['missing','missing',{}],['archived','room-evening',{archivedAt:'2026-10-14'}],
+  ['paused','room-evening',{state:'pending'}],['unpublished','room-evening',{published:false}],['malformed','../room',{}],
+  ['duplicate',['room-evening','room-evening'],{}],['deleted composition','room-evening',{presentationLaneId:'gone'}],
+])test(`publication does not silently forward a ${label} room as company defaults`,()=>{
+  const h=harness({initialOperatorId:'north',initialRoomId:roomId});
+  h.lifecycle().props.onChanged(roomContextSnapshot(change));
+  assert.doesNotMatch(h.html(),/>Öppna partnerportalen<|>Öppna spellobbyn</);
+  assert.match(h.html(),/Det valda spelrummet är inte tillgängligt/);
+});
+
+test('company and composition changes clear old room aliases after the draft guard allows navigation',()=>{
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',search:'?operator=north&room=room-evening&table=room-evening&composition=evening'});
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  h.room().props.onDraftChange(true);
+  h.operator().props.onChange({target:{value:'south'}});
+  assert.equal(h.operator().props.value,'north');assert.match(h.window.location.search,/room=room-evening/);
+  h.room().props.onDraftChange(false);
+  h.operator().props.onChange({target:{value:'south'}});
+  assert.equal(h.operator().props.value,'south');assert.doesNotMatch(h.window.location.search,/(?:room|table)=/);
+  assert.match(h.html(),/href="\/partner\/south\/rooms"/);assert.match(h.html(),/href="\/lobby\?operator=south"/);
+  h.operator().props.onChange({target:{value:'north'}});
+  assert.doesNotMatch(h.html(),/rooms\?room=/);
+  const other=harness({initialOperatorId:'north',initialRoomId:'room-evening',search:'?operator=north&room=room-evening&table=room-evening'});
+  other.lifecycle().props.onChanged(roomContextSnapshot());
+  other.composition().props.onChange({target:{value:'mobile-phone'}});
+  assert.equal(other.composition().props.value,'mobile-phone');assert.doesNotMatch(other.window.location.search,/(?:room|table)=/);
+});
+
+test('unconfirmed resource refresh withdraws scoped links until the room is reverified',()=>{
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening'});
+  h.lifecycle().props.onChanged(roomContextSnapshot());assert.match(h.html(),/rooms\?room=room-evening/);
+  h.lifecycle().props.onRefreshNeeded();assert.doesNotMatch(h.html(),/>Öppna partnerportalen<|>Öppna spellobbyn</);
+  h.lifecycle().props.onChanged(roomContextSnapshot());assert.match(h.html(),/rooms\?room=room-evening/);
+  h.lifecycle().props.onChanged({...roomContextSnapshot(),rooms:[]});assert.doesNotMatch(h.html(),/>Öppna partnerportalen<|>Öppna spellobbyn</);
+});
+
+for(const [name,invalidate] of [
+  ['unconfirmed refresh',h=>h.lifecycle().props.onRefreshNeeded()],
+  ['paused room',h=>h.lifecycle().props.onChanged(roomContextSnapshot({state:'pending'}))],
+  ['removed room',h=>h.lifecycle().props.onChanged({...roomContextSnapshot(),rooms:[]})],
+])test(`a ${name} revokes navigation without resetting the real room controller draft`,async()=>{
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening'});
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  const context=()=>{const {operator,presentation,projectRevision,projectSaved,storeAvailable,disabled}=h.room().props;return {operator,presentation,projectRevision,projectSaved,storeAvailable,disabled};};
+  const controller=createPresentationRoomController({client:{read:async current=>({ready:true,projectRevision:current.projectRevision})}});
+  assert.equal(context().presentation.id,'evening');
+  await controller.configure(context());controller.setName('Mitt osparade kvällsrum');
+  h.room().props.onDraftChange(Boolean(controller.getSnapshot().name));
+  let prompts=0;h.window.confirm=()=>{prompts++;return false;};
+  invalidate(h);
+  await controller.configure(context());
+  assert.equal(controller.getSnapshot().name,'Mitt osparade kvällsrum');
+  assert.equal(context().presentation.id,'evening');
+  assert.equal(prompts,0,'background readback must not prompt or change editing context');
+  assert.doesNotMatch(h.html(),/>Öppna partnerportalen<|>Öppna spellobbyn</);
+  h.composition().props.onChange({target:{value:'mobile-phone'}});
+  assert.equal(context().presentation.id,'evening');assert.equal(prompts,1);
+  h.window.confirm=()=>true;
+  h.composition().props.onChange({target:{value:'mobile-phone'}});
+  await controller.configure(context());
+  assert.equal(context().presentation.id,'mobile-phone');assert.equal(controller.getSnapshot().name,'');
+  controller.cancel();
+});
+
+for(const alias of ['composition','lane'])test('the first verified room corrects mismatched '+alias+' URL context and survives reload',()=>{
+  const search='?operator=north&room=room-evening&table=room-evening&'+alias+'=mobile-phone&game=blackjack&view=rooms';
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',initialLaneId:'mobile-phone',search,hash:'#published',
+    historyState:{external:{returnTo:'/admin/rooms'}}});
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  assert.equal(h.composition().props.value,'evening');
+  const query=new URLSearchParams(h.window.location.search);
+  assert.equal(query.get('composition'),'evening');assert.equal(query.has('lane'),false);
+  assert.equal(query.get('operator'),'north');assert.equal(query.get('room'),'room-evening');assert.equal(query.get('table'),'room-evening');
+  assert.equal(query.get('game'),'blackjack');assert.equal(query.get('view'),'rooms');
+  assert.equal(h.window.location.hash,'#published');assert.deepEqual(h.window.history.state.external,{returnTo:'/admin/rooms'});
+  assert.equal(h.window.history.state.__scoutAdminHistory.href,h.window.location.pathname+h.window.location.search+h.window.location.hash);
+  const reload=harness({initialOperatorId:query.get('operator'),initialRoomId:query.get('room'),initialLaneId:query.get('composition'),
+    search:h.window.location.search,hash:h.window.location.hash,historyState:h.window.history.state});
+  assert.equal(reload.composition().props.value,'evening','reload must begin with the verified composition before resource readback');
+  const writes=h.replacements.length;
+  h.lifecycle().props.onChanged(roomContextSnapshot({presentationLaneId:'mobile-phone'}));
+  assert.equal(h.composition().props.value,'evening');assert.equal(h.replacements.length,writes,'later room readbacks never reseed editing or URL context');
+});
+
+test('a room draft begun before verification keeps the real controller and mismatched URL unchanged',async()=>{
+  const search='?operator=north&room=room-evening&lane=mobile-phone';
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',initialLaneId:'mobile-phone',search,hash:'#draft'});
+  const context=()=>{const {operator,presentation,projectRevision,projectSaved,storeAvailable,disabled}=h.room().props;return {operator,presentation,projectRevision,projectSaved,storeAvailable,disabled};};
+  const controller=createPresentationRoomController({client:{read:async current=>({ready:true,projectRevision:current.projectRevision})}});
+  await controller.configure(context());controller.setName('Mitt första osparade rum');
+  h.room().props.onDraftChange(true);
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  await controller.configure(context());
+  assert.equal(context().presentation.id,'mobile-phone');assert.equal(controller.getSnapshot().name,'Mitt första osparade rum');
+  assert.equal(h.window.location.search,search);assert.equal(h.window.location.hash,'#draft');assert.equal(h.replacements.length,0);
+  h.room().props.onDraftChange(false);h.lifecycle().props.onChanged(roomContextSnapshot());
+  assert.equal(context().presentation.id,'mobile-phone');assert.equal(h.replacements.length,0,'a skipped initial seed must not apply later');
+  controller.cancel();
+});
+
+for(const draft of ['project','package'])test('a dirty '+draft+' blocks automatic room composition and URL seeding',()=>{
+  const search='?operator=north&room=room-evening&composition=mobile-phone';
+  const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',initialLaneId:'mobile-phone',search,dirty:draft==='project'});
+  if(draft==='package')h.checkbox('evening').props.onChange({target:{checked:true}});
+  h.lifecycle().props.onChanged(roomContextSnapshot());
+  assert.equal(h.composition().props.value,'mobile-phone');assert.equal(h.window.location.search,search);assert.equal(h.replacements.length,0);
+});
+
+test('unconfirmed, paused and removed requested rooms never normalize a mismatched composition URL',()=>{
+  const search='?operator=north&room=room-evening&lane=mobile-phone';
+  for(const change of [h=>h.lifecycle().props.onRefreshNeeded(),
+    h=>h.lifecycle().props.onChanged(roomContextSnapshot({state:'pending'})),
+    h=>h.lifecycle().props.onChanged({...roomContextSnapshot(),rooms:[]})]){
+    const h=harness({initialOperatorId:'north',initialRoomId:'room-evening',initialLaneId:'mobile-phone',search,hash:'#review'});
+    change(h);
+    assert.equal(h.composition().props.value,'mobile-phone');assert.equal(h.window.location.search,search);
+    assert.equal(h.window.location.hash,'#review');assert.equal(h.replacements.length,0);
+  }
 });

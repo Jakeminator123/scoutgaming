@@ -14,4 +14,7 @@ export function loadLobbyCatalog(options?: { fetchImpl?: typeof fetch; signal?: 
 export function lobbySelection(catalog: LobbyCatalog, selected?: { operatorId?: string | null; roomKey?: string | null; dealerId?: string | null }): {
   operator: Operator | null; room: Room | null; dealer: Dealer | null; availableRooms: Room[]; availableDealers: Dealer[];
 };
+export function lobbyQuerySelection(catalog: LobbyCatalog, search?: string): {
+  operatorId: string | null; roomKey: string | null; unavailable: boolean;
+};
 export function playUrlFor(selection: { operator: Operator; room: Room; dealer: Dealer }): string | undefined;

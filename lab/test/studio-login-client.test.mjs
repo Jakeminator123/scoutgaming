@@ -7,7 +7,7 @@ test('exact partner room survives login while foreign paths and arbitrary query 
   for(const authBase of ['/api/auth','/studio/api/auth'])assert.equal(studioLoginDestination(target,authBase),target);
   for(const value of ['/partner/north-casino/rooms?room=vip-room&room=main-room','/partner/north-casino/rooms?room=vip-room&token=x',
     '/partner/north-casino/rooms?room=','/partner/north-casino/rooms?room=https://outside.invalid','/partner/north-casino/rooms?room=../main-room',
-    '/partner/north-casino/team?room=vip-room','/partner/login/rooms?room=vip-room','//outside.invalid/partner/north-casino/rooms?room=vip-room'])
+    '/partner/login/rooms?room=vip-room','//outside.invalid/partner/north-casino/rooms?room=vip-room'])
     assert.equal(studioLoginReturnTo(value),'/admin',value);
 });
 
@@ -86,5 +86,22 @@ test('missing or rejected N1 return targets fall back to Admin on both supported
   for (const value of [undefined, null, '', '//outside.invalid/admin', '/studio/login']) {
     assert.equal(studioLoginReturnTo(value), '/admin');
     for (const authBase of ['/studio/api/auth', '/api/auth']) assert.equal(studioLoginDestination(value, authBase), '/admin');
+  }
+});
+
+test('operator menus retain exactly one room or company selector through either N1 auth base',()=>{
+  for(const view of ['','/team','/rooms','/integration','/table-design']){
+    for(const query of ['room=vip-room','scope=company']){
+      const target='/partner/north-casino'+view+'?'+query;
+      for(const prefix of ['','/studio'])assert.equal(studioLoginReturnTo(prefix+target),target);
+      for(const authBase of ['/api/auth','/studio/api/auth'])assert.equal(studioLoginDestination(target,authBase),target);
+    }
+  }
+  for(const query of ['scope=','scope=Company','scope=unknown','scope=%63ompany','%73cope=company',
+    'scope=company&scope=company','scope=company&room=','scope=company&room=foreign-room',
+    'room=vip-room&scope=company','room=vip-room&room=vip-room','room=%76ip-room','scope=company&extra=x']){
+    const target='/partner/north-casino/team?'+query;
+    assert.equal(studioLoginReturnTo(target),'/admin',target);
+    assert.equal(studioLoginDestination(target,'/api/auth'),'/admin',target);
   }
 });

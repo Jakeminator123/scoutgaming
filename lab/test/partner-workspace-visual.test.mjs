@@ -58,9 +58,9 @@ test('real partner headers link staff to Admin and the lobby without granting me
     }));
     const staff = render('internal-admin');
     assert.match(staff, /href="\/admin"/);
-    assert.match(staff, /href="\/lobby"/);
+    assert.match(staff, /href="\/lobby\?operator=johnsspelbolag&amp;room=room-john"/);
     assert.doesNotMatch(staff, /href="\/(?:control|play)"/);
-    assert.doesNotMatch(render('partner'), /href="\/(?:admin|lobby|control|play)"/);
+    assert.doesNotMatch(render('partner'), /href="\/(?:admin|lobby|control|play)(?:\?|\/|")/);
   }
 });
 
@@ -111,7 +111,7 @@ test('real administrator shell exposes same-account links, theme, language and g
   const html = renderToStaticMarkup(React.createElement(PartnerOperatorWorkspace, { surface: 'partner', initialSnapshot: realSnapshot(), user: 'jakob', apiBase: '/api/partner/snapshot' }));
   assert.match(html, /data-preview="operator" data-theme="dark" lang="en"/);
   assert.match(html, /href="\/admin"/);
-  assert.match(html, /href="\/lobby"/);
+  assert.match(html, /href="\/lobby\?operator=johnsspelbolag&amp;room=room-john"/);
   assert.match(html, /Internal administrator/);
   assert.match(html, /Switch account/);
   assert.match(html, /Log out/);

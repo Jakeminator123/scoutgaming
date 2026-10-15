@@ -51,6 +51,21 @@ inne i paketet innan installation eller test. Ange arbetskatalog separat från
 exekverbar fil; en hårdkodad annan Node-binary går förbi Volta. Lokala pinnar
 styr inte automatiskt Vercel eller Docker: kontrollera respektive byggmiljö.
 
+Inför bygge/fullhook i en ny isolerad arbetskopia behövs låsta beroenden i
+`apps/croupier-frontend/` (`pnpm-lock.yaml`), `lab/`,
+`packages/design-preview/`, `web/` och `services/astrid-gpu-worker/gateway/`
+(`package-lock.json` i de fyra senare). Kör `pnpm install --frozen-lockfile`
+respektive `npm ci` från rätt paket med dess deklarerade Node-version.
+Befintliga lokala installationer får återanvändas via en egen junction först
+efter verifierat identiska `package.json` och låsfiler. Installera aldrig genom
+en delad junction. Kontrollera tillgängliga `tsc`/`ws` i respektive konsument
+före tunga körningar, så saknade beroenden inte ger upprepade fel. Speech saknar
+lokal installation och har inga deklarerade npm-beroenden; dess Node 22 är separat.
+Kör Lab-bygget före fullhook. När Playwright och Chrome redan finns kan
+`CROUPIER_BROWSER_FIXTURE_MODULE` peka på modulens absoluta fil och
+`CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome` aktivera isolerade browserprov.
+Inställningen är valfri; redovisa överhoppade prov separat från godkända.
+
 Next/React-versionerna hör till olika byggpaket. Lab använder Next 16.3.8 /
 React 19.3.0, frontend Next 15.5.26 / React 19.1.0 och designpaketet React
 19.2.3. Designbyggets uttryckliga React-alias samlar importer i samma bundle.

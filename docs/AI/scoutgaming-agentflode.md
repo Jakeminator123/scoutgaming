@@ -7,6 +7,16 @@ och städa ersatt legacy efter konsumentkontroll. C1–C9 i
 uppföljningen. Avgränsade underagenter lämnar ett kvitto per uppgift;
 huvudagenten äger integration, fullkontroll och ägarverifiering före merge.
 
+PR149–151 är levererade på main `3bad2fd4`, verifierad på Vercel och Render
+av samordnaren 14 oktober 23:29 UTC. Rum/login/historik och explicit
+`scope=company` utan rolländring är implementerade och granskade i nästa gren.
+Underagenterna skiljer 51/51 länkprov från 48/48 utkastprov och efterföljande
+12/12 accept/avbryt-prov; överlappande antal summeras inte. Oberoende
+auth-/servergranskning saknar åtgärdskrävande fynd. Samordnarens slutliga
+Lab-build passerade med 97 byggspår. Kodcommit `e92b82b9` passerade ordinarie fullhook med riktig Chrome: 3 852 pass, 9 skip och 0 fel i 77 grupper. Fem databasprov saknade separat testdatabas, fyra prov kräver Linux. CI, merge och ny liveacceptans återstår.
+Kvitton finns i [handoffen](../JOHN-HANDOFF.md).
+Ny produktionslogin, skrivacceptans och faktisk 200-procentszoom är inte verifierade.
+
 `node tools/check-admin-navigation.mjs` kör befintliga riktade tester med
 fyra arbetare (`--plan` visar urvalet). Det är ett snabbt utvecklingsprov;
 ordinarie fullhook och CI behåller alla kontroller inför leverans.
@@ -382,6 +392,7 @@ denna ansvarsfördelning. API-nyckeln ska inte läggas i klientkoden.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-15 | PR149–151 levererade; pågående rumskontext och Avbryt-fokus samordnas på main `3bad2fd4`. Lokala underagentprov, tidigare livefynd och kommande slutkontroll hålls isär i befintlig tracker/handoff; inga nya acceptansbockar. |
 | 2026-10-14 | Aktiva ingångar och bolagssluggar samlade i användarguiden efter produktionsprov av 22 adresser och fem query-/guidevarianter. Äldre Control-länkar skiljs från adminverktygens mål och efterföljande inloggning; N1 behåller sin roll på partner-/spelarytan. API- och spelstartkontrakt bevarade. |
 | 2026-10-14 | Jakobs riktning om N1-åtkomst överallt verifierad med LLM i produktion: samma inloggning öppnar spelaryta, partnerlista med fyra bolag och admin. Partnerformuläret är en separat N2-ingång; dess avvisning av N1 ska inte beskrivas som saknad åtkomst till partnerportalen. |
 | 2026-10-14 | Återansluten webbläsare: två D-ID-svar och talvideo med ljud aktiverat verifierade på produktion utan kodöverlagring. Angivna testuppgifter sparade lokalt och i Vercels tre miljöer. LLM visar N1 och nekas partnerlogin; positiva N2/N3-prov behöver andra konton. |

@@ -37,8 +37,8 @@ procentangivelse ersätter verifiering av varje flöde. Historisk startpunkt,
 
 Arbetsordning uppdaterad 15 oktober 2026 efter Jakobs fortsatta mandat:
 en sammanhängande Admin/partner/lobby-produkt, konsumentstyrd legacy-städning,
-begripliga källansvar och bättre utvecklingsprov. Bas är main `8e97ee83`
-efter PR150; den tidigare grundetappen var PR146–148. ADMIN:s integrationskopia behålls; ändringar görs i egna
+begripliga källansvar och bättre utvecklingsprov. Bas är main `3bad2fd4`
+efter levererade PR149–151; den tidigare grundetappen var PR146–148. ADMIN:s integrationskopia behålls; ändringar görs i egna
 arbetskopior. DRAGAN och ADMIN:s avslutade uppgifter är överlämnade.
 C4–C7:s fulla acceptans återstår; checklistan ger inga nya spel-/datamandat.
 Jakobs mergeuppdrag gäller granskade egna PR:er enligt ägarreglerna.
@@ -62,7 +62,18 @@ fullhook: 3 792 pass, 21 villkorade skip, 0 fel/cancel i 77 grupper. Ett första
 försök stoppades av tillfällig Windows-EPERM i agent-talks samtidighetsprov;
 det exakta provet och hela fullhooken passerade sedan utan undantag.
 Det isolerade Chrome-provet för partnerlogin/bolag/rum passerade separat
-(1/1, ingen skip). CI återstår. Dokumentationsagenten körde inget eget Lab-bygge.
+(1/1, ingen skip). PR151 är nu mergad som `3bad2fd4`; alla obligatoriska CI-kontroller är
+gröna enligt samordnarens leveranskvitto. Dokumentationsjobbet var avsiktligt
+SKIPPED för ändringens scope. Rotens sex lokalt ändrade filer
+bevarades byteidentiska vid main-synk. Arkivundantagen i `.ignore` och
+`.cursorignore` finns nu på main. Dokumentationsagenten körde inget Lab-bygge.
+Samordnarens driftavläsning 14 oktober 23:29 UTC verifierar `3bad2fd4`:
+Vercel `dpl_7ikpzdCj3f5dDWbEWiJmM2pni722` READY och Render
+`dep-db80v2ek1f9s73e1cjug` live; engine-tjänstens health/version gav 200.
+GitGuardian-kvittot 23:23 UTC gäller samma main: verifierad källa,
+incidenttäckning `complete-for-source`, 0 öppna/18 ignorerade och aktiv
+övervakning; platsmetadata är partiell och historikskanningen `too_large`.
+Det är tillskrivna drift-/säkerhetskvitton, inte nya läsningar här.
 
 Samordnarens läsande liveprov på `9b6f4d11` med befintlig personalsession
 gick Admin → Swedish Games N2 paket v4/lager → Lobby och gav korrekt launch-URL.
@@ -75,7 +86,7 @@ befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte
 
 | Checkpoint | Klart när | Ägare/ordning | Aktuellt kvitto och kvarvarande kontroll |
 | --- | --- | --- | --- |
-| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Uppdaterad mot main `a0df4e26` efter PR146–148. Jakob gav 15 oktober fortsatt mandat för sammanhängande Admin/partner/lobby, konsumentstyrd legacy-städning och bättre tester. DRAGAN och SAMORDNING har överlämnat partnerretur/C6 och egna Admin-avsnitt; deras spel-, media- och miljöarbete bevaras. Tidigare inventeringar och provkvitton nedan är historik. Huvudcheckouten används inte för editeringar. |
+| C1 — nuläge och ansvar | Aktuella destinationer, sparade data, filägare och kända luckor är kartlagda här; äldre målbeskrivningar är märkta. | Huvudagenten, efter dokumentöverlämning. | Uppdaterad mot main `3bad2fd4` efter PR149–151. Jakob gav 15 oktober fortsatt mandat för sammanhängande Admin/partner/lobby, konsumentstyrd legacy-städning och bättre tester. DRAGAN och SAMORDNING har överlämnat partnerretur/C6 och egna Admin-avsnitt; deras spel-, media- och miljöarbete bevaras. Tidigare inventeringar och provkvitton nedan är historik. Huvudcheckouten används inte för editeringar. |
 | C2 — begriplig navigation | Varje synlig ingång har ett tydligt syfte, en aktiv huvudmenyrad och rätt destination. Befintliga länkar och spelstarter bevaras. | Navigationsagent → huvudagent. | Lokalt: en bolagsingång i huvudmenyn, samstämmiga etiketter och portaler till `/admin`, `/partner`, `/lobby`. Startsidan öppnar befintliga dealer-, bolags-, publicerings- och provspelningsflöden. 25 riktade tester passerade första passet. Eget levererat prov på `dbfe94b5` verifierar startsida → Bolag & team → publicering → provspelning och tillbaka/framåt med Swedish Games. Full kontroll av varje destination återstår. |
 | C3 — sammanhållen N1-design | Läsbar lokal typografi, tydlig kontrast, fungerande fokus och ingen oavsiktlig överlappning/klippning vid desktop, smal skärm och zoom. | Visuell agent → huvudagent. | Lokala resurser provade vid 1440/1024/640/390 px. Läsbarare Inter-text i meny, kontext och klippkort; en sidrubrik för Bolag & team. Reproducerad kortöverlappning rättad med uppmätt radhöjd; minikartan togs bort i PR130 efter verifierad skymning på desktop och mobil. Slutåtgärder i långa paneler kan rullas fria från Adminroboten. Eget liveprov på `dbfe94b5` verifierar Inter/Inter-SemiBold, en bolagsrubrik och inget sidöverflöde vid 390 px. Eget liveprov på `39343967` bekräftar att minikartan är borta och Zoom In, Zoom Out och Fit View fungerar med bevarad rumskontext. Faktisk 200-procentszoom och full dialogmatris återstår. |
 | C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Navigationsagent → huvudagent; separat funktionsacceptans. | Eget läsande liveprov, upprepat på levererad `c3397d1d`, behåller Swedish Games / Dragan-rummets fem kontextfält genom Publicering → Provspelning → Klippkarta och reload/Bakåt/Framåt. Sex isolerade loginprov använder nu riktig Admin och lagrade rum med egna ID:n. Lab-historikens reproducerade bortfall av mellanposter/Next-state samt tappad speltyp rättas: 25 historik-/Admin-prov och 42 övriga navigation-/auth-prov passerar. Partnerreturen är levererad i PR147 och 47 riktade prov inklusive Chromium passerar; se kvitto nedan. Ny produktionslogin, full N2-vy/RSC-historik och hela destinationsmatrisen återstår; äldre oindexerade poster har fortsatt dokumenterad begränsning. |
@@ -84,6 +95,38 @@ befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte
 | C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Inget eget spelkvitto. DRAGANs PR123/125-kvitton och två isolerade produktionsrundor efter PR127 på `5ca686c5` är hans prov. Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
 | C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker/menyingångar och minikartan förenklade efter verifiering. Befintlig tracker och eget handoffavsnitt följer varje rättning. Fjorton avslutade egna arbetskopior är arkiverade efter verifierad överföring/granskning, senast C4-login, C4-historik och C5-utkast. Överförda filer/patchar är hashkontrollerade; egna dependency-junctions, fixture-processer och browserflikar är städade. Partnerlogin/C6:s två nya kopior är hashkontrollerat överförda; deras junctions och fixture-processer är städade och arkivering ligger i appens kö. Integrationskopian, beroenden, Lab-bygge och privata provkvitton behålls enligt Jakob. |
 | C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten; samordnad mergeordning efter DRAGAN. | Kodcommit `d95ba3782e17411ad7f2cb7d418826acfe2150e5`: fullhook 3794 pass/9 skip, 0 fel/cancel i 77 grupper; 97 byggspår och Admin/lobby-typkontroll gröna. Samtliga nya browserprov kördes. 415 testfiler inventerade: 0 föräldralösa, 2 befintliga undantag. Oberoende kod-/test-/dokumentgranskning genomförd; C6:s korsbolagsprov förstärkt efter fynd. PR147 från `codex/admin-partner-return-c6` är granskad och mergad av SAMORDNING. Tidigare leverans-/driftkvitton nedan är historik. |
+
+**Implementerad och lokalt verifierad rumskontext/fokus, 15 oktober:**
+`codex/admin-room-context` utgår från `3bad2fd4`. Admin väljer startkomposition
+från verifierat publicerat rum. Främmande/inaktuellt/otillgängligt rum varnas
+och spärrar portallänkar; inget annat rum länkas tyst. Redigeringskompositionen
+kan bestå, och omvalidering bevarar utkastet: tre P2-regressioner röda före,
+gröna efter. Aktuellt rum följer partnerns meny, loginretur, reload/historik
+och staff-länken till Lobby. Bolagsstandard kräver exakt `scope=company`
+utan `room`; roller och bolagsgränser ändras inte. Oberoende auth-/servergranskning
+fann inga åtgärdskrävande fel. Lobby behåller operator/room i URL/historik;
+C6:s isolerade Chrome-prov passerade 1/1 efter runtime-exportfixen.
+
+Underagenterna rapporterar separata, överlappande provurval: 51/51 för
+provider/ControlLanes och den verkliga WorkspaceTool-kedjans tidigare inaktuella
+länkar. Bakåt till ogiltigt rum reproducerade utkastförlust med verklig
+PartnerAppearance; rättningen gav 48/48 panel-/rumsprov och därefter 12/12
+fokuserade accept/avbryt-prov. Giltiga rumsbyten behåller panel/utkast utan prompt.
+Dealerformulärets Avbryt återför fokus till Skapa dealer (8/8 enhetsprov);
+samordnarens tidigare liveprov lämnade fokus på BODY. Detta är inte nytt
+livegodkännande. Samordnarens slutliga Lab-build passerade med 97 kontrollerade
+byggspår. Kodcommit `e92b82b94bb16865b801b90f32af6582fc6119ae` passerade
+ordinarie fullhook med riktig Chrome: 3 852 pass, 9 skip, 0 fail/cancel i
+77 grupper. Alla aktiverade browserprov kördes. Överhoppen är fem separata
+PostgreSQL/Neon-prov utan konfigurerad testdatabas och fyra Linux-prov på Windows.
+Loginfixturen fick sitt nya returberoende och historikfixturen samma explicita
+Chrome-kanal som övriga prov. Arbetskopians saknade tsc/ws-beroenden återanvänds
+via egna junctions efter verifierade package-/låsfiler; inga kontroller ändrades
+för att dölja fel. Praktisk förkontroll finns i ENVIRONMENT-RESTORATION.
+CI, merge och sammanhängande liveprov för grenen återstår.
+Ny produktionslogin, skrivacceptans, faktisk 200-procentszoom och full C4/C7
+återstår. IAB:s tidigare zoomförsök ändrade inte zoomnivån. Dragan v4-prov
+som kräver ännu ej godkänd export av privat spelarkod förblir avgränsat.
 
 **C2/C4/C8/C9, sammanhängande ingångar 15 oktober:** på `codex/admin-continuity`
 öppnar standardlogin och tom `/studio` Admin. Verkliga partnerportalens

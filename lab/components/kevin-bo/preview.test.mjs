@@ -189,7 +189,8 @@ test('real room editor keeps its element identity across menu and history view c
     if(name==='../partner-session-actions')return actionsModule.exports;
     return (name.startsWith('.')?portalRequire:require)(name);
   },output,output.exports);
-  const runtime=makeRuntime('partner',realSnapshot()),base={runtime,copy:{},apiBase:'/api/partner',language:'sv'};
+  const roomSelection={roomId:'current-room',unavailable:false},onRoomSelectionChange=()=>{};
+  const runtime=makeRuntime('partner',realSnapshot()),base={runtime,copy:{},apiBase:'/api/partner',language:'sv',roomSelection,onRoomSelectionChange};
   const render=view=>{cursor=0;return output.exports.PartnerOperatorView({...base,view});};
   const room=tree=>tree.props.children[0];
   const first=room(render('bj')),away=room(render('ops')),back=room(render('bj'));
@@ -197,6 +198,7 @@ test('real room editor keeps its element identity across menu and history view c
   assert.equal(first.type,away.type);assert.equal(first.key,away.key);
   assert.equal(first.props.children.type,away.props.children.type);assert.equal(first.props.children.key,away.props.children.key);
   assert.equal(away.props.children.props.active,false);assert.equal(back.props.children.props.active,true);
+  assert.equal(back.props.children.props.selection,roomSelection);assert.equal(back.props.children.props.onSelectionChange,onRoomSelectionChange);
 });
 
 test('real operator overview and disconnected markup are stable across server time zones',()=>{

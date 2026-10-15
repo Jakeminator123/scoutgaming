@@ -108,7 +108,7 @@ async function openFixture(browser,kind){
   const discard=async()=>{if(kind==='clips')await page.getByRole('button',{name:'Fixture discard',exact:true}).click();else await page.getByRole('button',{name:'Ångra kategorival',exact:true}).click();};
   return {page,choose,snapshot,mark,dirty,discard,async close(){await context.close();assert.deepEqual(failures,[]);}};
 }
-async function withBrowser(run){const {chromium}=await import(pathToFileURL(browserModule).href);const browser=await chromium.launch({headless:true});try{await run(browser);}finally{await browser.close();}}
+async function withBrowser(run){const {chromium}=await import(pathToFileURL(browserModule).href);const browser=await chromium.launch({headless:true,...(process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL?{channel:process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL}:{})});try{await run(browser);}finally{await browser.close();}}
 const fiveFields=href=>Object.fromEntries([...new URL(href,origin).searchParams].filter(([key])=>key in shared||key==='dealer'));
 
 test('shared Studio navigation retains five selectors and excludes unrelated parameters',()=>{

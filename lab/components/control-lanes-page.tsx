@@ -7,6 +7,8 @@ import { ControlOperatorDirectory, type OperatorDirectory } from './control-oper
 import { PresentationRoomCreate } from './presentation-room-create';
 import { ControlResourceLifecycle, type LifecycleSnapshot } from './control-resource-lifecycle';
 import { compositionLabel } from '../lib/control-flow.mjs';
+import { initialPartnerRoomSelection } from '../lib/partner-room-selection.mjs';
+import { studioHistory } from '../lib/studio-history.mjs';
 import { PageTemplate } from './page-template';
 import styles from './control-lanes-page.module.css';
 import { ProjectConflict } from './project-conflict';
@@ -46,9 +48,19 @@ export function publishLaneRows(lanes: readonly Pick<StudioLane, 'id' | 'label' 
   return rows;
 }
 
-export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId, initialOperatorId, initialTab = 'publish' }: {
+function requestedPublicationRoom(snapshot: LifecycleSnapshot | null, operatorId: string, requestedRoomId: string | string[] | undefined, lanes: readonly {id:string}[]) {
+  const operator=snapshot?.operators.find(row=>row.id===operatorId);
+  if(requestedRoomId===undefined||!operator||operator.status!=='active'||operator.archivedAt)return undefined;
+  const selection=initialPartnerRoomSelection({operator,tables:(snapshot?.rooms??[])
+    .filter(room=>!room.archivedAt&&room.published&&operator.lanes.includes(room.presentationLaneId)&&lanes.some(lane=>lane.id===room.presentationLaneId))
+    .map(room=>({...room,status:room.state==='live'?'active':room.state}))},requestedRoomId);
+  return snapshot?.rooms.find(room=>room.id===selection.roomId&&room.operatorId===operatorId);
+}
+export function ControlLanesPage({ initialProject, initialVideos, initialStatus, operators, storeAvailable, directory, initialLaneId, initialOperatorId, initialRoomId, onContextChange, initialTab = 'publish' }: {
   initialLaneId?: string;
   initialOperatorId?: string;
+  initialRoomId?: string | string[];
+  onContextChange?: () => void;
   initialTab?: 'publish' | 'companies';
   initialProject: StudioProject;
   initialVideos: VideoInventory;
@@ -63,8 +75,10 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   } = session;
   const rows = publishLaneRows(project.lanes, savedJson, dirty);
   const [selectedLaneId, setSelectedLaneId] = useState(initialLaneId ?? project.lanes?.[0]?.id ?? '');
-  const selectedLane = rows.find(lane => lane.id === selectedLaneId) ?? rows[0];
-  const compositionHref = labUrl('/control/compositions' + (selectedLane ? '?composition=' + encodeURIComponent(selectedLane.id) : ''));
+  const [requestedRoomId, setRequestedRoomId] = useState(initialRoomId);
+  const initialRoomCompositionResolved = useRef(false);
+  const [resourceSnapshot, setResourceSnapshot] = useState<LifecycleSnapshot | null>(null);
+  const [resourceStale, setResourceStale] = useState(false);
   const initialOperators: LaneOperatorChoice[] = [...operators, ...(directory?.operators ?? []).filter(entry => !operators.some(operator => operator.id === entry.id))];
   const [operatorId, setOperatorId] = useState(() => initialPackageOperator(initialOperators, initialLaneId, initialOperatorId));
   const [listed, setListed] = useState(initialOperators);
@@ -76,6 +90,10 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   const selectedOperator = listed.find(operator => operator.id === operatorId);
   const suspended = (lifecycleStatuses[operatorId] ?? selectedOperator?.status) === 'suspended';
   const archived = suspended && Boolean(lifecycleArchives[operatorId]);
+  const selectedRoom = !resourceStale ? requestedPublicationRoom(resourceSnapshot,operatorId,requestedRoomId,rows) : undefined;
+  const roomUnavailable = requestedRoomId!==undefined&&!selectedRoom;
+  const selectedLane = rows.find(lane=>lane.id===selectedLaneId)??rows[0];
+  const compositionHref = labUrl('/control/compositions' + (selectedLane ? '?composition=' + encodeURIComponent(selectedLane.id) : ''));
   const selectedPackage = packages[operatorId] ?? packageEditor(selectedOperator);
   const { chosen, revision, message, error: publishError, needsRefresh } = selectedPackage;
   function updatePackage(id: string, update: (current: PackageEditor) => PackageEditor) {
@@ -84,11 +102,14 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
   function chooseOperator(id: string) {
     if (writeLock.current || interactionBusy || Object.values(childLocks.current).some(Boolean)) return;
     if (id !== operatorId && roomDraft.current && !window.confirm('Lämna det osparade rumsnamnet och byta bolag?')) return;
+    if(id!==operatorId)setRequestedRoomId(undefined);
     setOperatorId(id);
     if (typeof window !== 'undefined' && window.history?.replaceState) {
       const params = new URLSearchParams(window.location.search);
       if (id) params.set('operator', id); else params.delete('operator');
+      if(id!==operatorId){params.delete('room');params.delete('table');}
       window.history.replaceState(null, '', window.location.pathname + '?' + params);
+      onContextChange?.();
     }
     updatePackage(id, current => ({ ...current, message: '', error: '' }));
   }
@@ -119,7 +140,25 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);
   },[selectionDirty,roomDirty,interactionBusy]);
   function resourceChanged(snapshot:LifecycleSnapshot) {
-    if(pendingInitialOperator.current){const requested=pendingInitialOperator.current;pendingInitialOperator.current=null;const found=snapshot.operators.find(operator=>operator.id===requested||operator.slug===requested);if(found)setOperatorId(found.id);}
+    setResourceSnapshot(snapshot);setResourceStale(false);
+    let resolvedOperatorId=operatorId;
+    if(pendingInitialOperator.current){const requested=pendingInitialOperator.current;pendingInitialOperator.current=null;const found=snapshot.operators.find(operator=>operator.id===requested||operator.slug===requested);if(found){resolvedOperatorId=found.id;setOperatorId(found.id);}}
+    if(!initialRoomCompositionResolved.current){
+      const room=requestedPublicationRoom(snapshot,resolvedOperatorId,requestedRoomId,rows);
+      if(room){
+        initialRoomCompositionResolved.current=true;
+        // Seed editing once; later room readbacks only govern navigation, never discard a draft.
+        if(!roomDraft.current&&!dirty&&!selectionDirty&&!conflict){
+          setSelectedLaneId(room.presentationLaneId);
+          if(typeof window!=='undefined'){
+            const query=new URLSearchParams(window.location.search);
+            query.set('composition',room.presentationLaneId);query.delete('lane');query.set('table',room.id);
+            studioHistory(window).replaceContext(window.location.pathname+'?'+query+window.location.hash);
+            onContextChange?.();
+          }
+        }
+      }
+    }
     setLifecycleStatuses(Object.fromEntries(snapshot.operators.map(operator=>[operator.id,operator.status])));
     setLifecycleArchives(Object.fromEntries(snapshot.operators.map(operator=>[operator.id,operator.archivedAt])));
     setListed(snapshot.operators.map(operator=>({...operator,publishedPackage:operator.packageRevision===null?null:{revision:operator.packageRevision,lanes:operator.lanes}})));
@@ -137,21 +176,26 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
     });
   }
   function resourceUncertain() {
+    setResourceStale(true);
     setPackages(current=>Object.fromEntries(Object.entries(current).map(([id,pack])=>[id,{...pack,needsRefresh:true}])));
   }
   function companyCreated(operator:{id:string;slug:string;name:string}) {
     setListed(current=>[...current.filter(entry=>entry.id!==operator.id),{...operator,status:'active',publishedPackage:null}]);
+    setRequestedRoomId(undefined);
     setOperatorId(operator.id);
     setPackages(current=>({...current,[operator.id]:packageEditor({...operator,publishedPackage:null})}));
-    if(typeof window!=='undefined'&&window.history?.replaceState){const query=new URLSearchParams(window.location.search);query.set('operator',operator.id);window.history.replaceState(null,'',window.location.pathname+'?'+query);}
+    if(typeof window!=='undefined'&&window.history?.replaceState){const query=new URLSearchParams(window.location.search);query.set('operator',operator.id);query.delete('room');query.delete('table');window.history.replaceState(null,'',window.location.pathname+'?'+query);onContextChange?.();}
     setResourcesRevision(value=>value+1);
   }
   function chooseComposition(id:string) {
     if(interactionBusy||writeLock.current||Object.values(childLocks.current).some(Boolean))return;
     if(id!==selectedLane?.id&&roomDraft.current&&!window.confirm('Lämna det osparade rumsnamnet och byta sammansättning?'))return;
+    if(id!==selectedLane?.id)setRequestedRoomId(undefined);
     setSelectedLaneId(id);
     const query=new URLSearchParams(window.location.search);query.set('composition',id);query.delete('lane');
+    if(id!==selectedLane?.id){query.delete('room');query.delete('table');}
     window.history.replaceState(null,'',window.location.pathname+'?'+query);
+    onContextChange?.();
   }
 
   async function post(action: string, body: Record<string, unknown>) {
@@ -215,7 +259,9 @@ export function ControlLanesPage({ initialProject, initialVideos, initialStatus,
             <option value="">Välj bolag</option>{listed.map(operator=><option key={operator.id} value={operator.id}>{operator.name}{(lifecycleStatuses[operator.id]??operator.status)==='suspended'?(lifecycleArchives[operator.id]?' · Arkiverat':' · Avstängt'):''}</option>)}
           </select></label><a className="sg-btn sg-btn-secondary" href={companyHref}>Bolag & team</a></div>
           {selectedOperator?<><div className={styles.cardHeading}><div><span className={styles.eyebrow}>VALT SPELBOLAG</span><h2>{selectedOperator.name}</h2></div><span className={styles.version}>{suspended?(archived?'Arkiverat':'Avstängt'):revision===null?'Ingen publicering ännu':'Publicerad version '+revision}</span></div>
-            <div className={styles.actions}><a className="sg-btn sg-btn-secondary" href={'/partner/'+encodeURIComponent(selectedOperator.slug)+'/rooms'}>Öppna partnerportalen</a><a className="sg-btn sg-btn-secondary" href={'/play?operator='+encodeURIComponent(selectedOperator.slug)}>Öppna spellobbyn</a></div>
+            {selectedRoom?<p>Valt spelrum: <strong>{selectedRoom.name}</strong>. Rummet använder en gemensam sammansättning; ändringar i den kan påverka flera rum.</p>:null}
+            {roomUnavailable?<p role="status">{!resourceSnapshot&&!resourceStale?'Kontrollerar det valda spelrummet…':'Det valda spelrummet är inte tillgängligt för det här bolaget. Välj ett aktuellt rum från Admin.'}</p>
+              :<div className={styles.actions}><a className="sg-btn sg-btn-secondary" href={'/partner/'+encodeURIComponent(selectedOperator.slug)+'/rooms'+(selectedRoom?'?'+new URLSearchParams({room:selectedRoom.id}):'')}>Öppna partnerportalen</a><a className="sg-btn sg-btn-secondary" href={'/lobby?'+new URLSearchParams({operator:selectedOperator.slug,...(selectedRoom?{room:selectedRoom.id}:{})})}>Öppna spellobbyn</a></div>}
           </>:<p>Välj bolaget du vill arbeta med. Saknas det? <a href={labUrl('/control/companies')}>Skapa ett spelbolag</a>.</p>}
         </section>
         <ControlResourceLifecycle operatorId={operatorId} kind="rooms" available={storeAvailable} disabled={parentBusy||childBusy.room||childBusy.directory} refreshKey={resourcesRevision} onChanged={resourceChanged} onRefreshNeeded={resourceUncertain} onBusyChange={value=>setChildBusyFor('lifecycle',value)}/>
