@@ -1,5 +1,21 @@
 # Aktuell handoff — Scoutgaming
 
+## C4: direktöppning av Admin, 15 oktober 2026
+
+Samordnaren reproducerade Chromes dokumentnavigation-500 på `d6d56803` för
+`/admin` och `/admin/dealers`, medan session, katalog och vanlig fetch fungerade.
+Kända Admin-dokument normaliseras nu i middleware före transporten; samma
+befintliga origin-, sessions- och rollkontroller används. API, iframe,
+Next-actions och mutationer omfattas inte av dokumentundantaget.
+Två regressioner gick från rött till grönt; fokuskontrollen gav 60/60 utan skip.
+Det verkliga lokala HTTP-fetch-provet visar navigate → cors och går genom
+Admin-routen med syntetisk session och temporär HTML. Det bevisar inte Vercels
+interna transport eller driftsatt rättning. Oberoende kodgranskning fann inga
+blockerande fel. Lab-bygget passerar med 97 kontrollerade byggspår. Ett separat
+IAB-prov av samordnaren verifierar ny internal-admin-login och N1 → Partner →
+Lobby på samma main; det är inte N2/N3-rollbevis eller acceptans av rättningen.
+Produktionsverifiering av rättningen återstår; C4 hålls öppen.
+
 ## N2-utkast och publicering, 15 oktober 2026
 
 Utökat befintligt C5/C6-prov: verkliga UI-skrivningar, reload, granskat utkast,
