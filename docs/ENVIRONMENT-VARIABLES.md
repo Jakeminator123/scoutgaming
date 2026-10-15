@@ -4,7 +4,10 @@
 
 [environment-variables.json](environment-variables.json) är det maskinkontrollerade
 namn-/tjänstekontraktet. Denna översikt ersätter morgonens upprepade statuslistor.
-Inga hemlighetsvärden återges och inga molnvärden eller Emil-profiler ändras.
+Inga hemlighetsvärden återges och inga miljövärden i molnet eller Emil-profiler
+ändras. Äldre QA:s publika ingång stängdes genom underhållsläge, se nedan.
+Det valda arbetsflödet är grön PR → main → test på ordinarie produktionsadress;
+[CLOUD-MIGRATION.md](CLOUD-MIGRATION.md) beskriver leveransvägen.
 
 | Profil/miljö | Verifierat antal | Loader, prioritet och bygge/runtime |
 | --- | --- | --- |
@@ -36,17 +39,21 @@ verifierades före den filtrerade GET-läsningen; bara namn, offentliga flaggor
 och jämförelser utan hemlighetsvärden sparades. Ingen env-pull, SSH,
 nyckeländring, deployment eller providerstart gjordes.
 
-| Tjänst | Senast live enligt Render | Automatisk deployment |
+Läsbild 15 oktober 20:07 UTC (deploymenthistorik, inte senaste main):
+
+| Tjänst | Live vid läsningen | Automatisk deployment |
 | --- | --- | --- |
 | Produkt `croupier-v2` | `2f02c4cd85bf5b07f424ba01d6605d6c4205530a`, `dep-db8i2irm8hqs738fins0` | main efter godkända kontroller |
 | Äldre QA `croupier-vercel-preview-qa` | `ee0608044f7c78b80c4f46023cd67a7b391e17f0`, `dep-db1em4ad0e5s73fcv3f0` | Av |
 | Director `croupier-lab-director` | `e57f28ef7df64e3bd81c415c31b37e05f04af2b8`, `dep-db7300rrjlhs739ovtl0` | Av |
 | Gateway `croupier-lab-openclaw` | `538e5f1ff4a0eb5d30b4e1daab5ffa1ca2d43688`, `dep-db73t967bikc73a3eneg` | Av |
 
-Produkt och äldre QA svarade båda HTTP 200/`ok` på sina befintliga
-`/__cloud/health`. Det bevisar tillgänglig gateway, inte inloggning,
-databasparitet eller godkänd QA-isolering. De fyra tjänsterna är inte
-suspenderade; QA har `maintenanceMode.enabled=false`.
+Produkt och äldre QA svarade då båda HTTP 200/`ok` på sina befintliga
+`/__cloud/health`. Det bevisade tillgänglig gateway, inte inloggning,
+databasparitet eller godkänd QA-isolering. QA sattes senare 21:40:42 UTC
+i underhållsläge och svarar nu 503; produkten svarar fortsatt 200.
+Ingen tjänst suspenderades. Aktuell QA-status och genomförande står nedan;
+senaste produktions-SHA finns i leveransens PR-kvitto.
 
 Alla fyra är Docker-tjänster. Render erbjuder miljövariabler som byggargument
 och runtime-miljö; ett byggargument måste användas uttryckligen i Dockerfile.
@@ -142,20 +149,30 @@ Färsk Vercel-metadata/icke-hemliga flaggor visar 30 Preview-namn, kvarvarande
 produktionsadresser och saknad `CROUPIER_VERCEL_INGRESS_SECRET` i Preview.
 Ingen isolerad Preview-skrivmiljö är verifierad. Kopiera inte
 produktionshemligheten dit. Äldre Render-QA/databas är andra resurser än de
-raderade. Färsk läsning bekräftar att äldre QA är live, inte suspenderad,
-och har underhållsläget avstängt. Game-databasen är separat
+raderade. Läsningen 20:07 UTC bekräftade att äldre QA var live utan
+underhållsläge; den publika ingången är nu stängd enligt kvittot nedan.
+Game-databasen är separat
 (`croupier_studio_qa_abc92154cb15` jämfört med `croupier_game`) på samma
 databashost; detta är konfigurationsmetadata, ingen läsning av datainnehåll.
 Ingresshemlighet och Studio environment-ID skiljer sig från produktion,
 men `BLOB_READ_WRITE_TOKEN` har exakt samma konfigurerade värde.
 En separat databas är därför inte bevis för medieisolering.
 
-Rekommenderat nästa avgränsade beslut är underhållsläge på endast
-`srv-datj7l893c1s73ar3u50`. Det blockerar QA:s publika HTTP-ingång och är
-återställbart; det raderar ingen databas/disk/media och är inte en
-kostnadsavveckling. Privat nät och SSH är fortfarande tillgängliga i detta
-läge ([Render underhållsläge](https://render.com/docs/maintenance-mode)).
-Denna läsande kontroll ändrar inte inställningen.
+Jakobs beslut att förenkla till ett main-flöde genomfördes 21:40:42 UTC:
+endast `srv-datj7l893c1s73ar3u50` i `tea-d19jsa63jp1c73ch0sc0` fick
+underhållsläge via `render services update srv-datj7l893c1s73ar3u50 --maintenance-mode --confirm`.
+Färsk API-läsning bekräftar `maintenanceMode.enabled=true`, oförändrad
+1 GiB-disk `dsk-datj7lg93c1s73ar3us0` på `/var/data` och auto-deploy av.
+QA:s `/` och `/__cloud/health` svarar HTTP 503; produktens health och www:s
+Lobby svarar 200. Inga env-värden, databaser eller medier ändrades.
+Nyckelfritt genomförandekvitto:
+`arkiv/2026-10-15/admin-consolidation/qa-maintenance-receipt.json`.
+
+Underhållsläget är återställbart och raderar inga data. Tjänsten körs fortfarande;
+det är inte en kostnadsavveckling. Privat nät och SSH är fortsatt tillgängliga
+([Render underhållsläge](https://render.com/docs/maintenance-mode)).
+En framtida återöppning använder samma tjänst med `--maintenance-mode=false`,
+men kräver först ett uttryckligt återöppningsbeslut och verifierade gränser.
 Återöppna inte QA eller återkoppla Preview förrän data-/mediegränser är
 verifierade. Kopiera inte produktionsnycklar som lösning.
 
