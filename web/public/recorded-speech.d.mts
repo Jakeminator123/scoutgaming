@@ -1,3 +1,4 @@
+export const MAX_RECORDED_SPEECH_SECONDS: number;
 export interface RecordedSpeechIdentity {
   dealerId:string; lineId:string; takeId:string; language:string; exactText:string;
   videoSha256:string; audioSha256:string; indexSha256:string;

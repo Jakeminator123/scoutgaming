@@ -1,5 +1,7 @@
 import {isDealerId} from './dealer-identity.mjs';
 
+export const MAX_RECORDED_SPEECH_SECONDS = 120;
+
 const identityKeys=Object.freeze(['dealerId','lineId','takeId','language','exactText','videoSha256','audioSha256','indexSha256',
   'fps','frameCount','audioDelayMs','entryPose','exitPose','calibrationRevision']);
 const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
@@ -23,7 +25,7 @@ function identity(value){
     ||typeof value.language!=='string'||!/^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(value.language)||!text(value.exactText,1000)
     ||!hash(value.videoSha256)||!hash(value.audioSha256)||!hash(value.indexSha256)
     ||!Number.isFinite(value.fps)||value.fps<=0||value.fps>240
-    ||!Number.isSafeInteger(value.frameCount)||value.frameCount<1||value.frameCount/value.fps>120
+    ||!Number.isSafeInteger(value.frameCount)||value.frameCount<1||value.frameCount/value.fps>MAX_RECORDED_SPEECH_SECONDS
     ||!Number.isSafeInteger(value.audioDelayMs)||value.audioDelayMs < -5000||value.audioDelayMs>5000
     ||!['VILA','REDO'].includes(value.entryPose)||!['VILA','REDO'].includes(value.exitPose)
     ||typeof value.calibrationRevision!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value.calibrationRevision))fail();

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { once, EventEmitter } from 'node:events';
+import { once, EventEmitter, getEventListeners } from 'node:events';
 import { Readable } from 'node:stream';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
@@ -9,6 +9,7 @@ import { createPresentationApi as buildPresentationApi, presentationInput } from
 import { createNativeP6OwnedPlaybackContextReader } from '../web/native-p6-qa-hook.mjs';
 import { addDealer, createSeedProject as historicalProject } from '../lab/lib/studio-model.mjs';
 import { playLocalFilm } from '../web/public/local-film-player.mjs';
+import {MAX_RECORDED_SPEECH_SECONDS} from '../web/public/recorded-speech.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 import { loadVideoRegistry as readVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { videoIdFromSha256 } from '../lab/lib/lab-video-manifest.mjs';
@@ -399,11 +400,11 @@ test('native player reads saved deal frequencies, caches retries and picks up an
 });
 
 class Video extends EventTarget {
-  constructor() { super(); this.style = {}; this.ended = false; this.videoWidth = 1080; this.videoHeight = 1920; this.frames = new Map(); this.serial = 0; }
+  constructor() { super(); this.style = {}; this.ended = false; this.paused = true; this.playCalls = 0; this.currentTime = 0; this.playbackRate = 1; this.videoWidth = 1080; this.videoHeight = 1920; this.frames = new Map(); this.serial = 0; }
   requestVideoFrameCallback(fn) { this.frames.set(++this.serial, fn); return this.serial; }
   cancelVideoFrameCallback(id) { this.frames.delete(id); }
-  play() { return Promise.resolve(); }
-  pause() { this.paused = true; }
+  play() { this.playCalls++; this.paused = false; return Promise.resolve(); }
+  pause() { this.paused = true; this.emit('pause'); }
   load() {}
   removeAttribute() {}
   remove() { this.removed = true; }
@@ -411,11 +412,12 @@ class Video extends EventTarget {
   frame(time = 1) { const callbacks = [...this.frames.values()]; this.frames.clear(); for (const callback of callbacks) callback(0, { mediaTime: time }); }
 }
 function filmFixture(t) {
-  const original = globalThis.document;
+  const original = globalThis.document, originalWindow = globalThis.window;
   const media = [];
-  globalThis.document = { createElement: () => { const video = new Video(); media.push(video); return video; } };
-  t.after(() => { globalThis.document = original; });
-  return { media, host: { append() {} } };
+  const page = globalThis.document = Object.assign(new EventTarget(), { hidden: false, createElement: () => { const video = new Video(); media.push(video); return video; } });
+  const view = globalThis.window = new EventTarget();
+  t.after(() => { globalThis.document = original; globalThis.window = originalWindow; });
+  return { media, page, view, host: { append() {} } };
 }
 test('a selected or playing film is not completed until a real presented frame and ended event', async t => {
   const { media, host } = filmFixture(t); const receipts = []; let complete = false;
@@ -469,6 +471,132 @@ test('card motion receives each presented media frame and stops at cancellation'
   await assert.rejects(result, { name: 'AbortError' }); stale(0, { mediaTime: 5 });
   assert.deepEqual(times, [0, 31/24, 32/24]);
   assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.equal(video.frames.size, 0);
+});
+
+test('a browser-paused film resumes its current frame without changing speech or completing a queued card', async t => {
+  const { media, host } = filmFixture(t), owner = new AbortController(), receipts = [], times = [];
+  t.after(() => owner.abort());
+  const result = playLocalFilm({ host, src: '/exact-deal', signal: owner.signal, muted: false,
+    onReceipt: row => receipts.push(row.state), onFrame: time => times.push(time) });
+  const video = media[0]; video.emit('playing'); video.frame(.75);
+  video.currentTime = .75; video.playbackRate = 1.25; video.pause();
+  assert.equal(video.playCalls, 2); assert.equal(video.currentTime, .75);
+  assert.equal(video.playbackRate, 1.25); assert.equal(video.muted, false);
+  assert.deepEqual(receipts, ['start', 'presented']); assert.deepEqual(times, [.75]);
+  video.emit('playing'); video.frame(1.25); video.ended = true; video.emit('ended');
+  await result;
+  assert.deepEqual(times, [.75, 1.25]); assert.deepEqual(receipts, ['start', 'presented', 'end']);
+});
+
+test('valid 120-second recorded speech passes the old 60-second cutoff while playback remains bounded', async t => {
+  const {media,host} = filmFixture(t);
+  t.mock.timers.enable({apis:['setTimeout']});
+  const completed = playLocalFilm({host,src:'/maximum-recorded-speech',muted:false});
+  const video = media[0]; video.emit('playing'); video.frame();
+  for (let second = 4; second <= MAX_RECORDED_SPEECH_SECONDS; second += 4) {
+    t.mock.timers.tick(4000); video.currentTime = second; video.emit('timeupdate');
+    assert.notEqual(video.removed,true, `valid progress at ${second}s`);
+  }
+  video.ended = true; video.emit('ended'); await completed;
+  assert.equal(video.muted,false);
+
+  const oversized = playLocalFilm({host,src:'/over-limit-recorded-speech'});
+  const long = media.at(-1); long.emit('playing'); long.frame();
+  for (let second = 4; second < MAX_RECORDED_SPEECH_SECONDS + 8; second += 4) {
+    t.mock.timers.tick(4000); long.emit('timeupdate');
+  }
+  t.mock.timers.tick(4000);
+  await assert.rejects(oversized,/exceeded playback limit/);
+  assert.equal(long.removed,true);
+});
+
+test('loading, healthy and hidden films are not restarted by recovery events', async t => {
+  const { media, host, page, view } = filmFixture(t), owner = new AbortController();
+  t.after(() => owner.abort());
+  const result = playLocalFilm({ host, src: '/exact-idle', signal: owner.signal });
+  const video = media[0]; video.pause(); page.dispatchEvent(new Event('pointerdown'));
+  view.dispatchEvent(new Event('focus')); assert.equal(video.playCalls, 1);
+  video.paused = false; video.emit('playing'); video.frame();
+  page.dispatchEvent(new Event('keydown')); view.dispatchEvent(new Event('focus'));
+  assert.equal(video.playCalls, 1);
+  page.hidden = true; video.pause(); page.dispatchEvent(new Event('visibilitychange'));
+  view.dispatchEvent(new Event('focus')); assert.equal(video.playCalls, 1);
+  owner.abort(); await assert.rejects(result, { name: 'AbortError' });
+  page.hidden = false; page.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(video.playCalls, 1, 'returning to a cancelled film cannot resume its old owner');
+});
+
+test('simultaneous pause, focus and input recovery share one pending play request', async t => {
+  const { media, host, page, view } = filmFixture(t), owner = new AbortController();
+  t.after(() => owner.abort());
+  const result = playLocalFilm({ host, src: '/exact-deal', signal: owner.signal });
+  const video = media[0]; video.emit('playing'); video.frame();
+  let resumed;
+  video.play = () => { video.playCalls++; return new Promise(resolve => { resumed = resolve; }); };
+  video.pause(); view.dispatchEvent(new Event('focus'));
+  page.dispatchEvent(new Event('pointerdown')); page.dispatchEvent(new Event('keydown'));
+  assert.equal(video.playCalls, 2);
+  video.paused = false; resumed(); await Promise.resolve();
+  video.ended = true; video.emit('ended'); await result;
+});
+
+test('missed ended events use actual media completion and retain the presented-frame requirement', async t => {
+  const { media, host, view } = filmFixture(t);
+  for (const presented of [true, false]) {
+    const receipts = [], result = playLocalFilm({ host, src: '/exact-end', onReceipt: row => receipts.push(row.state) });
+    const video = media.at(-1); video.emit('playing'); if (presented) video.frame();
+    video.ended = true; video.paused = true; view.dispatchEvent(new Event('focus'));
+    if (presented) { await result; assert.deepEqual(receipts, ['start', 'presented', 'end']); }
+    else { await assert.rejects(result, /without a presented frame/); assert.deepEqual(receipts, ['start', 'error']); }
+    assert.equal(video.playCalls, 1, 'an ended film must not replay from the beginning');
+    assert.equal(video.removed, true);
+  }
+});
+
+test('the film watchdog accepts a missed end but still rejects media that has actually stalled', async t => {
+  const { media, host } = filmFixture(t);
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  for (const ended of [true, false]) {
+    const result = playLocalFilm({ host, src: '/no-end-event' });
+    const video = media.at(-1); video.emit('playing'); video.frame(); video.ended = ended;
+    t.mock.timers.tick(8000);
+    if (ended) await result;
+    else await assert.rejects(result, /playback stalled/);
+    assert.equal(video.playCalls, 1); assert.equal(video.removed, true);
+  }
+});
+
+test('denied speech recovery reports failure without muting or replaying silently', async t => {
+  const { media, host, view } = filmFixture(t), receipts = [];
+  const result = playLocalFilm({ host, src: '/exact-speech', muted: false, onReceipt: row => receipts.push(row.state) });
+  const video = media[0]; video.emit('playing'); video.frame();
+  video.play = async () => { video.playCalls++; throw new DOMException('Audio blocked', 'NotAllowedError'); };
+  video.paused = true; view.dispatchEvent(new Event('focus'));
+  await assert.rejects(result, { name: 'NotAllowedError' });
+  assert.equal(video.muted, false); assert.equal(video.playCalls, 2);
+  assert.deepEqual(receipts, ['start', 'presented', 'error']);
+});
+
+test('cancelled pending recovery cannot affect a replacement and all film listeners are released', async t => {
+  const { media, host, page, view } = filmFixture(t), owner = new AbortController(), receipts = [];
+  const first = playLocalFilm({ host, src: '/old', signal: owner.signal, muted: false, onReceipt: row => receipts.push(row.state) });
+  const old = media[0]; old.emit('playing'); old.frame(); let rejectResume;
+  old.play = () => { old.playCalls++; return new Promise((resolve, reject) => { rejectResume = reject; }); };
+  old.pause(); owner.abort(); await assert.rejects(first, { name: 'AbortError' });
+  for (const event of ['playing', 'timeupdate', 'ended', 'error', 'pause']) assert.equal(getEventListeners(old, event).length, 0);
+  for (const event of ['visibilitychange', 'pointerdown', 'keydown']) assert.equal(getEventListeners(page, event).length, 0);
+  assert.equal(getEventListeners(view, 'focus').length, 0);
+  const nextReceipts = [], second = playLocalFilm({ host, src: '/replacement', muted: false, onReceipt: row => nextReceipts.push(row.state) });
+  rejectResume(new DOMException('Old playback interrupted', 'AbortError')); await Promise.resolve();
+  old.emit('playing'); old.ended = true; old.emit('ended');
+  assert.deepEqual(receipts, ['start', 'presented', 'interrupted']); assert.deepEqual(nextReceipts, []);
+  const next = media[1]; assert.equal(next.muted, false); assert.equal(next.playCalls, 1);
+  next.emit('playing'); next.frame(); next.ended = true; next.emit('ended'); await second;
+  page.dispatchEvent(new Event('pointerdown')); view.dispatchEvent(new Event('focus'));
+  assert.equal(old.playCalls, 2); assert.equal(next.playCalls, 1);
+  for (const event of ['playing', 'timeupdate', 'ended', 'error', 'pause']) assert.equal(getEventListeners(next, event).length, 0);
+  for (const event of ['visibilitychange', 'pointerdown', 'keydown']) assert.equal(getEventListeners(page, event).length, 0);
+  assert.equal(getEventListeners(view, 'focus').length, 0);
 });
 
 async function controllerFixture(t, {dealerId = 'astrid', ownIdle = null, composition = null, missingPosition = false, entry = null, configStatus = 200, idlePolicy = null, customInventory = null, defaultMode = 'off', selectedVideo = null} = {}) {

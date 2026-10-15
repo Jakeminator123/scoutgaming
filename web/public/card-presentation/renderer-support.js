@@ -15,3 +15,10 @@ export function total(cards) {
   while (value > 21 && aces) { value -= 10; aces--; }
   return value;
 }
+
+// Keep the two playable ace values visible, but show completed 21 only once.
+export function totalLabel(cards) {
+  const value = total(cards);
+  const hard = total(cards.map(card => card.r === 'A' ? { r: '1' } : card));
+  return value < 21 && hard + 10 === value ? `${hard}/${value}` : String(value);
+}

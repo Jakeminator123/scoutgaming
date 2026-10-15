@@ -22,6 +22,8 @@ import { applyTableColor, mountPlayerChoices, readChoices, resolvePlayerSelectio
 import { createPresentationStartup } from './presentation-startup.mjs';
 import { registeredFilmedProfile } from './dealer-filmed-profiles.mjs';
 import { handValue } from './blackjack.mjs';
+import { sideBetWin, roundWin } from './blackjack-feedback.mjs';
+import { totalLabel } from './card-presentation/renderer-support.js';
 import { placeActions, placeDealControl } from './action-placement.mjs';
 import { cardFaceArt } from './card-art.mjs';
 
@@ -444,6 +446,7 @@ function showSettlement(rows, staked, back) {
 
 // win toasts: stacked notifications so wins and their amounts are unmissable
 function toast(title, amount, big = false) {
+  if (!(amount > 0)) return;
   let stack = document.querySelector('#toasts');
   if (!stack) { stack = document.createElement('div'); stack.id = 'toasts'; document.body.appendChild(stack); }
   const t = document.createElement('div');
@@ -1087,8 +1090,7 @@ function updateBadge(container, cards) {
   if (isSub) badge.style.setProperty('--badge-x', container.style.getPropertyValue('--shx') || '0px');
   host.appendChild(badge);
   badge.style.setProperty('--cn', Math.max(0, container.querySelectorAll('.card').length - 1));
-  const { total, soft } = handValue(cards);
-  badge.textContent = soft && total <= 21 ? `${total - 10}/${total}` : String(total);
+  badge.textContent = totalLabel(cards);
   layoutHandTotals();
 }
 function layoutHandTotals(){
@@ -1387,16 +1389,17 @@ async function dealSequence() {
   live.forEach((b, i) => {
     if (!(b.pp || b.tp)) return;
     const el = seatOfLive(i).querySelector('.sideresult');
-    if (b.sideReturn > 0) {
+    const win = sideBetWin(b);
+    if (win) {
       sideWin = true;
-      el.textContent = `${b.sideLabels.join(' · ')} +${fmt(b.sideReturn)}`;
+      el.textContent = `${b.sideLabels.join(' · ')} +${fmt(win.profit)}`;
       const seatEl = seatOfLive(i);
       const r = seatEl.getBoundingClientRect();
-      burstAt(r.x, r.y, b.sideReturn >= b.stake * 10);
+      burstAt(r.x, r.y, win.profit >= b.stake * 10);
       const seatNo = seatEls.indexOf(seatEl) + 1;
-      toast(`SEAT ${seatNo} · ${b.sideLabels.join(' + ')}`, b.sideReturn, b.sideReturn >= b.stake * 10);
+      toast(`SEAT ${seatNo} · ${b.sideLabels.join(' + ')}`, win.profit, win.profit >= b.stake * 10);
     }
-    else el.textContent = 'side lost';
+    else el.textContent = b.sideReturn > 0 ? `side returned ${fmt(b.sideReturn)}` : 'side lost';
   });
   if (sideWin) { sfx.play('bigwin'); voice.say('sidebet', { force: true }); }
 
@@ -1507,7 +1510,7 @@ async function finish() {
   $('#actions-top').hidden = true;
   seatEls.forEach(s => s.classList.remove('active'));
   const live = round.live();
-  let ret = 0, sideRet = 0, anyWin = false, anyPush = false, anyLose = false, anyPlayerBJ = false;
+  let ret = 0, sideRet = 0, anyPush = false, anyLose = false;
   let n = -1;
   const rows = [];
   seatEls.forEach((seat, i) => {
@@ -1521,7 +1524,6 @@ async function finish() {
     handsHere.forEach((hand, k) => {
       ret += hand.result;
       stakeSum += hand.stake; backSum += hand.result; insSum += hand.insured;
-      if (hand.splitFrom === null && hand.cards.length === 2 && handValue(hand.cards).total === 21) anyPlayerBJ = true;
       // on a split box every hand shows its own verdict - the combined net
       // below can read as "my 21 didn't pay" when a sibling busted
       if (handsHere.length > 1) {
@@ -1543,7 +1545,7 @@ async function finish() {
     rows.push({ box: i, stake: stakeSum, sides: b.pp + b.tp, back: backSum, net, sideNet,
                 outcome: net > 0 ? 'win' : net === 0 ? 'push' : 'lose' });
     if (net > 0) {
-      el.textContent = '+' + fmt(net); el.classList.add('win'); anyWin = true;
+      el.textContent = '+' + fmt(net); el.classList.add('win');
       el.title = `staked ${fmt(stakeSum)}, returned ${fmt(backSum)}`;
       const r = seat.getBoundingClientRect();
       burstAt(r.x, r.y, backSum >= stakeSum * 2.4);
@@ -1559,22 +1561,23 @@ async function finish() {
   balance += ret; ledger('settle', ret);
   if (sideRet) { balance += sideRet; ledger('sidebets', sideRet); }
   balance=collected.balance; showShoe(collected.shoe);
-  const totalWin = ret + sideRet;
+  const totalReturned = ret + sideRet;
+  const win = roundWin(live);
   const lw = $('#last-win');
-  lw.textContent = fmt(totalWin);
-  lw.classList.toggle('won', totalWin > 0);
-  showSettlement(rows, staked, totalWin);
-  if (totalWin > 0) toast('TOTAL WIN', totalWin, anyPlayerBJ || totalWin >= 500);
+  lw.textContent = fmt(totalReturned);
+  lw.classList.toggle('won', Boolean(win));
+  showSettlement(rows, staked, totalReturned);
+  if (win) toast('ROUND PROFIT', win.profit, win.blackjack || win.profit >= 500);
   syncBalance('settle');
   renderBets();
   const dealerTotal = handValue(round.dealer).total;
   const dealerBJ = round.dealer.length === 2 && dealerTotal === 21;
   const allBusted = live.length > 0 && live.every(h => h.busted || handValue(h.cards).total > 21);
   if (dealerBJ) voice.say('dealerblackjack', { force: true });
-  else if (anyPlayerBJ && anyWin) { sfx.play('bigwin'); bjFlash('BLACKJACK'); voice.say('blackjack', { force: true }); }
+  else if (win?.blackjack) { sfx.play('bigwin'); bjFlash('BLACKJACK'); voice.say('blackjack', { force: true }); }
   else if (allBusted) { /* already voiced on the hit; never celebrate a dealer bust the player didn't beat */ }
-  else if (dealerTotal > 21 && anyWin) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
-  else if (anyWin) { sfx.play('win'); voice.say('win', { force: true }); }
+  else if (dealerTotal > 21 && win) { sfx.play('win'); voice.say('dealerbust', { force: true }); }
+  else if (win) { sfx.play('win'); voice.say('win', { force: true }); }
   else if (anyPush && !anyLose) voice.say('push', { force: true });
   else voice.say('lose', { force: true });
   await Promise.all([sleep(1800), speechQueue.idle]);

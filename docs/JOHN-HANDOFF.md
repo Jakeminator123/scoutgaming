@@ -1,4 +1,31 @@
 # Aktuell handoff — Scoutgaming
+
+## PR91 integrerad mot aktuell main, 15 oktober 2026
+
+main `654ab9e2` har integrerats i grenen.
+De sex ändrade klientskripten är byteidentiska med tidigare granskad `e4f3b562`
+och Astrid-provets `542e98b2`. Lab-build passerar med 97 kontrollerade byggspår.
+Ordinarie fullkontroll med riktiga Chrome-fixturer gav 3 871 pass, 9 villkorade
+skip, 0 fel/cancel i 77 grupper; sena dokumentändringar fick 43/43 godkända prov.
+Oberoende granskning fann inga blockerande kodfel. Efter Jakobs uttryckliga
+godkännande lästes exakt sex hashverifierade PR91-skript in lokalt i en egen
+Studio-preview-flik på produktionsvärden. HTML och backend förblev `654ab9e2`;
+`LAST RETURN`-etiketten verifieras statiskt och ingår inte i browserkvittot.
+Dragan körde två sammanhängande rundor med egen minnesdatabas/testsaldot:
+desktop €5, hand 12/stand, tillbaka €0; därefter 390×844 mobil €5,
+hand 9/hit till 19/stand, tillbaka €10. Saldo 10 000 → 9 995 → 10 000.
+Bakgrund, dealer och bord samt serverkort/handvärden fungerade; ingen
+mobil sidöverströmning eller insamlat konsolfel. De 18 mutationer som fanns
+kvar i nätverksbufferten gav 200 och gick endast till den egna preview-sessionen;
+bufferten var beskuren och är inget fullständigt nätverksspår.
+Återlänken stängde sessionen; ny GET gav `studio_preview_not_found`.
+Lokala överlagringar, cacheinställning och viewport återställdes, fliken stängdes.
+Detta kompletterar Astrids oförändrade vinst/push/split-/återhämtningskvitto
+för PR91:s begränsade klientändring. Inget genererat tal, nytt läppsynksgodkännande
+eller full acceptans av publicerade rummets behörighetskontrakt tillskrivs provet.
+Privata manifest och skärmbilder: `arkiv/2026-10-15/samordning/env-media-verification/`.
+PR91:s slutliga GitHub-kontroller och merge återstår vid detta kvitto.
+
 ## Fria mobilkontroller på spelborden, 15 oktober 2026
 
 Produktionsprovet med Dragan visade att Adminrobotens flytande knapp skymde
@@ -15,7 +42,14 @@ genom Studio-preview-handlern. Det är inte ny full roll- eller medieacceptans.
 Samordnarens Lab-build passerade med 97 kontrollerade byggspår. Kodcommit
 `82986fdd9c8156e818f2bd949b1613bcc353e769` passerade ordinarie fullhook:
 3 854 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper, med riktiga isolerade
-Chrome-prov. Levererat mobilprov återstår vid detta kodkvitto.
+Chrome-prov. Levererat mobilprov på main `654ab9e2` är klart: 390×844, ingen assistent-DOM,
+ingen sidöverströmning och aktiverad DEAL NOW överst i klickträffen. En syntetisk
+€5-insats användes för att aktivera knappen; ingen ny runda startades. Separata
+provsessionen stängdes via återlänk och gav sedan `studio_preview_not_found`.
+PR156:s main-CI `38700979846` success, Vercel `dpl_DsNKZRuJxftpsfpsvrCCvEmpoxhc`
+READY och Render `dep-db88cebm8hqs73btc990` live är verifierade; faktisk
+engine health/version gav ok/samma SHA. Lokal main synkades med 225 befintliga
+filhashar bevarade. Egna arbetskopian `player-controls` är app-arkiverad.
 
 ## Env och Dragan i produktionsvärdens isolerade provspel, 15 oktober 2026
 
@@ -1551,6 +1585,99 @@ och Vercel var gröna på samma PR-commit. Incidentlista och historisk
 säkerhetstäckning är inte verifierade. Dokument-PR #79 verifierade den korta
 vägen i körning `38393298682`: 46 sekunder från första jobbstart till grönt
 slutjobb. Full regression fortsätter köras på main.
+
+## Selektiva blackjackförbättringar från Kevin, 13 oktober 2026
+
+**Aktuell PR91-kodägare, 14 oktober: SAMORDNING.** Den befintliga branchen
+`codex/kevin-blackjack-safe` har integrerats med main `9836ca6f` i egen
+arbetskopia `pr91-integration`. Konflikterna är lösta med senare givkontroll,
+kortvy, dynamisk dealeretikett och alla ordinarie tester bevarade. Ljud och
+dealerreplik använder nu samma positiva nettovinst som rundnotisen; en vinnande
+delhand ger inget rundfirande om totalen är negativ eller noll. Filmens hårda
+tidsgräns följer inspelningskontraktets 120 sekunder med åtta sekunders
+startmarginal; progressvakten och ägaravbrott behålls.
+
+Verifierat med Node 24.21.0/fyra lokala workers: 107 fokuserade prov passerar,
+inklusive verklig settlement-kods ljud/replik och simulerad 120-sekundersfilm.
+Studio-bygge och 97 byggspår passerar. Första integrationens ordinarie pre-commit: 3 781 pass,
+12 uttryckligt villkorade skips, 0 fel/cancel i 77 grupper. De första försöken
+saknade två låsta beroendeinstallationer i arbetskopian; gateway-/frontend-
+beroenden kopplades därefter från exakt matchande paket och lockfiler.
+Inga obligatoriska kontroller har försvagats.
+
+Jakob godkände återupptagna isolerade spelarprov den 14 oktober. SAMORDNING
+har nu provat den verkliga spelaren från kodhead `542e98b2` på separat
+Vercel Sandbox-host med Node 24.14.1, minnesdatabas, spärrad utgående trafik
+och utan produktionsnycklar. Samma session genomförde förlust, vinst, push
+och split med serverstyrda kort och separata testsaldon 9 995 → 10 000 →
+10 000 → 10 010 EUR. Alla 15 spelkommandon gav HTTP 200. Desktop 1440×900
+och mobil 390×844 användes; push och split slutfördes i mobilvyn.
+Astrids befintliga hälsningsfilm spelades två gånger i följd med ljud aktiverat,
+normal hastighet och full längd 4,958333 s. Ett framkallat pausavbrott återhämtade
+sig från samma position utan seek, ändrad hastighet eller avstängt ljud.
+Inga mediefel registrerades. Detta verifierar Astrids del av PR91,
+inte ny mänsklig läppsynksbedömning eller acceptans av andra dealers/nya takes.
+Dragan-provet kvarstår före merge. Jakob har godkänt Swedish Games publicerade
+blackjackpaket v4 för isolerat prov: 36 filmer och två lagerfiler har kopierats
+och hashverifierats lokalt. Automatisk säkerhetsgranskning kräver därutöver
+uttryckligt godkännande för privat spelarkod i den tidsbegränsade Vercel-miljön.
+Ingen spelarkod har överförts i detta försök; den tomma sandlådan är stoppad.
+51 befintliga bankfilmer och 197 publika resurser kopierades med hashkontroll;
+originalmedier, produktionsdata och betald generering ändrades inte.
+Slutlig kodintegration hade ordinarie pre-commit 3 794 pass, 19 uttryckligt
+villkorade skips och 0 fel i 77 grupper; bygg-/kodproven ovan är återanvända
+för oförändrad kod. Egna fyra beroendejunctions är borttagna. Sandlådan är
+stoppad och provfliken stängd. Privata JSON-kvitton/skärmbilder finns i
+Codex visualiseringar för denna samordningschatt och serverkvittot i
+huvudcheckoutens `lab/data/platform-private/main-sync-20261014/`.
+Städning, 14 oktober: `ops/vercel-entry` är redan pensionerad i `b621c760`,
+saknar aktiva processreferenser och hade bara lokala preview-/byggrester kvar.
+Den katalogen och den tomma, ospårade `e.id` har flyttats återställbart till
+`lab/data/platform-private/cleanup-20261014/` i huvudcheckouten; kvittot är
+privat och Git-ignorerat. Aktiva Kevin-komponenter, originalfilmer, kollegors
+grenar och #91 bevaras. Ingen produktionslagring har raderats.
+
+**Historisk ursprungskontroll, 13 oktober:** utgick från main `6ee5d3aa` och
+Kevins `f15b2af1`. Återhämtningen i
+`local-film-player.mjs` anpassar Kevins `playback-recovery.js`: en synlig,
+webbläsarpausad film återupptas i samma videoklocka. Förlorat `ended` hanteras
+bara efter startad och faktiskt presenterad bild. Avbrutna ägare återupplivas
+inte; lyssnare städas vid slut/fel/avbrott. Befintlig avbrytning när sidan
+döljs består. Ingen köpost hoppas över, ljud mutas inte som reserv och
+video-/kortkalibrering ändras inte.
+
+Kevins vinstfeedback och handvärdesetiketter är anpassade till befintliga
+serverkvitton: vinstnotiser använder positiv nettovinst efter insatser,
+sidospel och försäkring. Återbetald insats är ingen vinst. Bruttoåterbetalning
+visas fortfarande i avräkningen och under `LAST RETURN`. Båda kortrenderarna
+visar mjuka värden som `7/17` men färdig `21` en gång. Saldo, spelregler och
+utbetalningar är fortsatt serverägda. Ingen gemensam bordsmodell, ny
+VILA/REDO-sekvens, dealerhårdkodning, talprovider eller medieimport ingår.
+
+Vercel-inspektion på team/projekt `scoutgaming` visade READY-produktion på
+`6ee5d3aa`, `CROUPIER_DATABASE=postgres`, Neon-policy och Blob samt backend
+`croupier-v2.onrender.com`. Kvarvarande SQLite-kod innebär inte två aktiva
+produktionsdatakällor. Vercel driver webb/Studio, Render spelauktoriteten,
+Neon datalagringen. Denna leverans läser inte live-Render-konfiguration
+eller databasinnehåll och ändrar inga miljövärden.
+
+Verifierat: Studio-/designbygge, 82 riktade prov och 18 isolerade Chromiumfall
+för 2–4 splithänder på desktop/mobil, utan överlapp efter etikettjustering.
+Två uppspelningar genom verkliga `PerformancePlayer.playLocalClip` gav
+79 presenterade bildrutor vardera, ingen seek/tappad ruta och bevarat
+ljudläge/hastighet vid pausåterhämtning; andra filmen använde förberedelsen.
+Inga konsolfel. Full ordinarie hook: 3 345 godkända, 7 skips, ett fel i
+oförändrat `local-session.test.mjs` (OS-startidentitet saknas i denna
+arbetsmiljö; reproducerat separat med oförändrad sessionsmodul). Lokala
+rouletteprov passerade när 127.0.0.2 lades till testmiljöns NO_PROXY.
+GitHubs fulla CI passerade för `0a55edd`. Merge-agenten har bara flyttat
+detta avsnitt för att lösa en dokumentkonflikt; spelarkoden är oförändrad.
+Ny CI och de registrerade spelarrepetitionerna återstår. Ingen grind har försvagats.
+
+Komponentprovet använder exakt hashkontrollerad film men ersätter inte två
+repetitioner i ett registrerat publicerat rum eller läppsynkacceptans.
+PR lämnas som draft för den återstående spelarrepetitionen, utan merge
+eller produktionsrelease. Inga nya visuella mediegodkännanden registreras.
 
 ## Tillägg 13 oktober: separat rouletteklippkarta
 

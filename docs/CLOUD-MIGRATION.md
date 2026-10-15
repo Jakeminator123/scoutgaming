@@ -37,14 +37,14 @@ procentangivelse ersätter verifiering av varje flöde. Historisk startpunkt,
 
 Arbetsordning uppdaterad 15 oktober 2026 efter Jakobs fortsatta mandat:
 en sammanhängande Admin/partner/lobby-produkt, konsumentstyrd legacy-städning,
-begripliga källansvar och bättre utvecklingsprov. Verifierad produktversion är `46444572`
-efter levererade PR149–154; den tidigare grundetappen var PR146–148. ADMIN:s integrationskopia behålls; ändringar görs i egna
+begripliga källansvar och bättre utvecklingsprov. Verifierad produktversion är `654ab9e2`
+efter levererade PR149–156; den tidigare grundetappen var PR146–148. ADMIN:s integrationskopia behålls; ändringar görs i egna
 arbetskopior. DRAGAN och ADMIN:s avslutade uppgifter är överlämnade.
 C4–C7:s fulla acceptans återstår; checklistan ger inga nya spel-/datamandat.
 Jakobs mergeuppdrag gäller granskade egna PR:er enligt ägarreglerna.
 Automatiska Vercel- och Render-byggen följer main-leveransen.
 
-**Aktuellt leveranskvitto, 15 oktober 2026:** PR154 gav main `46444572`.
+**Historiskt leveranskvitto, 15 oktober 2026:** PR154 gav main `46444572`.
 Main-CI `38662964323` success, Vercel `dpl_6nrpTJ2DKE1cJuEW5rn87H51wwiC`
 READY och Render `dep-db82c560tbcc73e3ipk0` live; faktisk engine health/version
 gav ok/samma SHA 01:05 UTC. Fullhook på slutlig UI-kod: 3 852 pass/9 skip,
@@ -76,7 +76,38 @@ assistenten; roller, dealerchatt, spelregler och mediebytes är oförändrade.
 Oberoende statisk granskning och 58 riktade prov utan skip är klara.
 Lab-build: 97 byggspår. Kodcommit `82986fdd` passerade fullhook med riktiga
 isolerade Chrome-prov: 3 854 pass/9 skip, 0 fel/cancel i 77 grupper.
-Levererat mobilprov återstår vid detta kodkvitto.
+Levererat mobilprov på main `654ab9e2` är klart: 390×844, ingen assistent-DOM,
+ingen sidöverströmning och aktiverad DEAL NOW överst i klickträffen. En syntetisk
+€5-insats användes för att aktivera knappen; ingen ny runda startades. Separata
+provsessionen stängdes via återlänk och gav sedan `studio_preview_not_found`.
+PR156:s main-CI `38700979846` success, Vercel `dpl_DsNKZRuJxftpsfpsvrCCvEmpoxhc`
+READY och Render `dep-db88cebm8hqs73btc990` live är verifierade; faktisk
+engine health/version gav ok/samma SHA. Lokal main synkades med 225 befintliga
+filhashar bevarade. Egna arbetskopian `player-controls` är app-arkiverad.
+
+**PR91, integration 15 oktober:** main `654ab9e2` har integrerats i grenen.
+De sex ändrade klientskripten är byteidentiska med tidigare granskad `e4f3b562`
+och Astrid-provets `542e98b2`. Lab-build passerar med 97 kontrollerade byggspår.
+Ordinarie fullkontroll med riktiga Chrome-fixturer gav 3 871 pass, 9 villkorade
+skip, 0 fel/cancel i 77 grupper; sena dokumentändringar fick 43/43 godkända prov.
+Oberoende granskning fann inga blockerande kodfel. Efter Jakobs uttryckliga
+godkännande lästes exakt sex hashverifierade PR91-skript in lokalt i en egen
+Studio-preview-flik på produktionsvärden. HTML och backend förblev `654ab9e2`;
+`LAST RETURN`-etiketten verifieras statiskt och ingår inte i browserkvittot.
+Dragan körde två sammanhängande rundor med egen minnesdatabas/testsaldot:
+desktop €5, hand 12/stand, tillbaka €0; därefter 390×844 mobil €5,
+hand 9/hit till 19/stand, tillbaka €10. Saldo 10 000 → 9 995 → 10 000.
+Bakgrund, dealer och bord samt serverkort/handvärden fungerade; ingen
+mobil sidöverströmning eller insamlat konsolfel. De 18 mutationer som fanns
+kvar i nätverksbufferten gav 200 och gick endast till den egna preview-sessionen;
+bufferten var beskuren och är inget fullständigt nätverksspår.
+Återlänken stängde sessionen; ny GET gav `studio_preview_not_found`.
+Lokala överlagringar, cacheinställning och viewport återställdes, fliken stängdes.
+Detta kompletterar Astrids oförändrade vinst/push/split-/återhämtningskvitto
+för PR91:s begränsade klientändring. Inget genererat tal, nytt läppsynksgodkännande
+eller full acceptans av publicerade rummets behörighetskontrakt tillskrivs provet.
+Privata manifest och skärmbilder: `arkiv/2026-10-15/samordning/env-media-verification/`.
+PR91:s slutliga GitHub-kontroller och merge återstår vid detta kvitto.
 
 **Historiskt leveranskvitto för PR152:** PR152 är mergad från head
 `0bea32e23626d64fb754b39ac7a55d44966ca816` till main `3da92370`.
@@ -136,7 +167,7 @@ befintliga arbetsflöden. Ingen ny backoffice byggs och procenttal används inte
 | C4 — navigation och kontext | Meny, direktlänk, reload, bakåt/framåt och loginretur behåller rätt dealer, bolag, faktiskt rum, speltyp och sammansättning. | Navigationsagent → huvudagent; separat funktionsacceptans. | Eget läsande liveprov, upprepat på levererad `c3397d1d`, behåller Swedish Games / Dragan-rummets fem kontextfält genom Publicering → Provspelning → Klippkarta och reload/Bakåt/Framåt. Sex isolerade loginprov använder nu riktig Admin och lagrade rum med egna ID:n. Lab-historikens reproducerade bortfall av mellanposter/Next-state samt tappad speltyp rättas: 25 historik-/Admin-prov och 42 övriga navigation-/auth-prov passerar. Partnerreturen är levererad i PR147 och 47 riktade prov inklusive Chromium passerar; se kvitto nedan. På `3da92370` verifierar samordnaren med befintlig staffsession Admin → Partner → Lobby, partnerns meny/reload/Bakåt/Framåt mellan rum och bolagsstandard samt lobbyns val/historik; negativa rum spärras. Ny produktionslogin och hela destinations-/rollmatrisen återstår; äldre oindexerade poster har fortsatt dokumenterad begränsning. |
 | C5 — säkra redigeringsflöden | Spara/återläsa, revisionskonflikt, återställning och verkligt osparade ändringar fungerar. Rena formulär ger ingen falsk varning. | En skrivande testägare med isolerade data. | 18 riktade lokala prov passerar för den verkliga projektredigeraren: HTTP-sparning/återläsning, två redaktörers 409, konfliktlösning, historik och avbruten omladdning. Ett reproducerat texttapp under revisionshämtning är rättat och oberoende granskat. Browser-/komponentregression var röda före rättningen. Syntetisk autentisering och lagring; övriga formulär och produktionslagring återstår. Ett valt rum gör inte delad mallskrivning rumsspecifik; använd befintliga `roomOverrides`. |
 | C6 — publicering och nivågränser | N1 publicerar rätt granskade revision till rätt N2 och verkligt N3-rum; fel bolag och fel roll nekas på servern. | Samordnat funktionsprov efter C4–C5. | Den isolerade kedjan renderar nu också verklig N2-arbetsyta: N1-form → behörighetskontrollerad PartnerOperatorWorkspace/branding → anonym lobby → validerad spelstart, med samma nya revision och rum. Chrome 2/2 utan skip; Översikt/Spelrum, reload/Bakåt/Framåt, bolagsstandard och partner/staff-länkar verifieras. Främmande bolagssida ger 403. Syntetiska sessioner/minnesdata; ny login, N2-skrivningar, full rollmatris, RSC och produktionsacceptans återstår. |
-| C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Eget prov på main `46444572`: två rundor i produktionsvärdens isolerade Studio-preview, desktop förlust och 390×844 mobil vinst; tre lager, serverkort, syntetiskt saldo och sessionsstängning verifierade. Publicerat rums fulla val, genererat tal/läppsynk och PR91 återstår. DRAGANs PR123/125-kvitton och två isolerade produktionsrundor efter PR127 på `5ca686c5` är hans prov. Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
+| C7 — faktisk spelacceptans | Två sammanhängande rundor i verklig player på desktop/mobil bevarar lager, tillåtna val, serverkort och saldo. | Spelägaren; samordnas med PR91 och Dragan-geometri. | Eget prov på main `46444572`: två rundor i produktionsvärdens isolerade Studio-preview, desktop förlust och 390×844 mobil vinst; tre lager, serverkort, syntetiskt saldo och sessionsstängning verifierade. PR91:s senare två rundor redovisas ovan. Publicerat rums fulla val och genererat tal/läppsynk återstår. DRAGANs PR123/125-kvitton och två isolerade produktionsrundor efter PR127 på `5ca686c5` är hans prov. Annas tidigare kvitto behålls också som den agentens prov. Vercel READY, Render live och funktion bokförs var för sig. |
 | C8 — städning och dokumentation | Ersatta ingångar/texter och egna rester är städade, konsumenter inventerade och guide/handoff uppdaterade utan att radera aktiva beroenden. | Varje ändringsägare; huvudagent samlar. | Dubbla bolagsrubriker/menyingångar och minikartan förenklade efter verifiering. Befintlig tracker och eget handoffavsnitt följer varje rättning. Fjorton avslutade egna arbetskopior är arkiverade efter verifierad överföring/granskning, senast C4-login, C4-historik och C5-utkast. Överförda filer/patchar är hashkontrollerade; egna dependency-junctions, fixture-processer och browserflikar är städade. Partnerlogin/C6:s två nya kopior är hashkontrollerat överförda; deras junctions och fixture-processer är städade och arkivering ligger i appens kö. Integrationskopian, beroenden, Lab-bygge och privata provkvitton behålls enligt Jakob. |
 | C9 — granskbar leverans | Egen `codex/*`-gren, avgränsad diff/PR, obligatoriska kontroller, exakta acceptansluckor och kvarvarande arbetskopior redovisas. | Huvudagenten; samordnad mergeordning efter DRAGAN. | Senast levererad PR154 på `46444572`: obligatorisk PR-CI och main-CI gröna, Vercel READY och Render live på samma produktversion. Exakta provkvitton nedan. Historik PR147, kodcommit `d95ba3782e17411ad7f2cb7d418826acfe2150e5`: fullhook 3794 pass/9 skip, 0 fel/cancel i 77 grupper; 97 byggspår och Admin/lobby-typkontroll gröna. Samtliga nya browserprov kördes. 415 testfiler inventerade: 0 föräldralösa, 2 befintliga undantag. Oberoende kod-/test-/dokumentgranskning genomförd; C6:s korsbolagsprov förstärkt efter fynd. PR147 från `codex/admin-partner-return-c6` är granskad och mergad av SAMORDNING. Tidigare leverans-/driftkvitton nedan är historik. |
 
@@ -378,8 +409,9 @@ Separat spelargranskning pekar på alfa utan bordsgeometri i
 `presentation-composition.mjs`, ljud/replik styrd av `anyWin` och skillnaden
 mellan talformatets 120 s och filmspelarens 60 s. Dessa kodvägar har lästs på
 `ad0ae9ac`, men felen är inte egna visuella spelkvitton eller rättade i C4/C5.
-PR91 är fortfarande draft; aktuellt ägarskap och samordnad testmiljö behöver
-bekräftas före dess spelarprov. Ingen äldre chatt eller claim räknas som mandat.
+PR91:s kodintegration och Astrids funktionella spelarprov genomfördes senare av
+SAMORDNING efter Jakobs uttryckliga godkännande; se aktuellt C7-kvitto ovan.
+Ingen äldre chatt eller claim räknas som mandat.
 
 **Eftergranskning av PR132, 14 oktober:** DRAGAN hade redan mergat PR132
 när detta pass började. Merge `87f30ce1` har samma filträd som granskad head
