@@ -108,6 +108,11 @@ ihop med Adminrobotens `/admin/ai/chat` eller den publika D-ID-bubblan.
 Det är den verifierade kontorollen som väljer chatt: besökare/N2/N3 får
 publik Scoutguide, N1 får Adminrobotens lägen även när samma konto öppnar
 partner- eller spelarytan. En URL-slugg eller sidbyte ger inga nya privilegier.
+De faktiska blackjack- och rouletteborden, inklusive Studio-preview, visar
+sedan mobilrättningen 15 oktober ingen flytande Adminrobot/Scoutguide:
+den skymde spelkontrollerna. Sidornas uttryckliga markör stoppar widgeten
+före DOM-injektion och API-anrop. Assistenten finns kvar i Admin, Partner,
+Lobby och spelets ingångssida. Dealerns separata spelarchatt ändras inte.
 
 Uppdaterad 13 oktober 2026 efter PR #94, #96 och #98. Alla tre är mergade:
 dealerimport, lokal arkivering och Adminrobotens utökade N1-verktyg.

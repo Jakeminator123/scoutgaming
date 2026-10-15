@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
 import {createStudioPreview} from '../web/studio-preview.mjs';
@@ -139,10 +140,11 @@ test('captured immutable bank UUID must retain its expected SHA and never borrow
 });
 
 test('HTML and session metadata preserve own identity and expose incomplete dealers without fallback',async t=>{
-  const f=fixture(t),session=await start(f),base='/api/studio-preview/'+session.sessionId;
+  const f=fixture(t,{readHtml:()=>readFile(new URL('../web/public/index.html',import.meta.url),'utf8')}),session=await start(f),base='/api/studio-preview/'+session.sessionId;
   const info=await (await f.api.handle(f.request(base+'/session'))).json();assert.equal(info.preview,true);assert.equal(info.authenticated,true);assert.equal(info.guest,false);
   assert.equal(info.dealerAvailability.find(row=>row.id==='unfinished').reason,'studio_preview_idle_required');assert.deepEqual(info.externalServices,{ai:false,speech:false});
   const htmlResponse=await f.api.handle(f.request(session.entryUrl));assert.equal(htmlResponse.status,200);const html=await htmlResponse.text();
+  assert.match(html,/<body\b[^>]*data-scout-assistant="disabled"/);
   assert.match(html,/data-studio-preview=/);assert.match(html,/data-game-dealer="johanna"/);assert.match(html,/data-game-local-dealer="johanna"/);assert.match(html,new RegExp(base+'/layers/'+layerId));assert.doesNotMatch(html,/data-game-operator|data-game-room-id|data-game-package-revision|croupier\/media/);
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer=amira'))).status,404);
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer=unfinished'))).status,422);

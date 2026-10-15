@@ -1,4 +1,19 @@
 # Aktuell handoff — Scoutgaming
+## Fria mobilkontroller på spelborden, 15 oktober 2026
+
+Produktionsprovet med Dragan visade att Adminrobotens flytande knapp skymde
+delar av DEAL NOW och nedersta kontrollerna vid 390×844. Blackjack- och
+roulettemallarna markerar nu att de inte ska installera den globala assistenten.
+Samma mall täcker Studio-preview och äldre speladresser. Widgeten avslutar
+före DOM/API/init; Admin, Partner, Lobby och spelets ingång behåller den.
+Inga rollkontroller, spelregler, dealerchatt eller mediebytes ändras.
+
+Oberoende statisk granskning fann inga konkreta regressionsfel. Kodagentens
+58 riktade prov passerar utan skip: widgetbeteende, oförändrad N1-start på
+omarkerade ytor, befintliga publika assistent-/entréprov och riktig spelmall
+genom Studio-preview-handlern. Det är inte ny full roll- eller medieacceptans.
+Samordnarens bygge, fullhook och levererade mobilprov redovisas vid leverans.
+
 ## Env och Dragan i produktionsvärdens isolerade provspel, 15 oktober 2026
 
 Verifierad produktbas är `46444572` (PR154): main-CI `38662964323` success,
