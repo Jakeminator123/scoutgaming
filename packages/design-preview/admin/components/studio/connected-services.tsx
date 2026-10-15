@@ -37,5 +37,5 @@ export function ConnectedServices({path,dealerId}:{path:string;dealerId?:string}
   if(path==='/admin/ekonomi')return <ConnectedEconomy/>;
   if(path==='/admin/ai/models')return <div className="p-5"><p className="studio-detail-panel p-4 text-sm">Inställningar för dealerns agent. <a href="/admin/ai/chat" className="text-sg-lime underline">Öppna Adminroboten</a> för hjälp med administration.</p><OpenClawWorkspace navigation={{models:'/admin/ai/models',chat:'/admin/dealer-agent',studio:'/admin/clips'}}/></div>;
   if(groups[path])return <Administration group={groups[path]} dealerId={dealerId}/>;
-  return <section className="studio-detail-panel p-5"><h1>Ändringslogg</h1><p>Den gemensamma ändringsloggen har ännu inget anslutet läs-API. Bolagets beständiga ändringsjournal finns i Bolag & team.</p></section>;
+  return <section className="studio-detail-panel p-5"><h1>Ändringslogg</h1><p>Ändringsjournalen finns under respektive spelbolag. Välj bolag i <a href="/admin/companies" className="text-sg-lime underline">Bolag &amp; team</a> för att se dess journal.</p></section>;
 }

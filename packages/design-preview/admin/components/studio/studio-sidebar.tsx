@@ -14,9 +14,10 @@ const main = [
   {label:'Drift',href:'/admin/drift',icon:Activity},
   {label:'Ekonomi',href:'/admin/ekonomi',icon:CircleDollarSign},
 ];
-const system = [['Agentmodeller','/admin/ai/models'],['Adminroboten','/admin/ai/chat'],['Konton & åtkomst','/admin/admin/accounts'],['Spelare','/admin/admin/players'],['Betalningar','/admin/admin/payments'],['Integrationer','/admin/admin/api'],['Ändringslogg','/admin/admin/log']];
+const system = [['Agentmodeller','/admin/ai/models'],['Adminroboten','/admin/ai/chat'],['Konton & åtkomst','/admin/admin/accounts'],['Betalningar','/admin/admin/payments'],['Integrationer','/admin/admin/api'],['Ändringslogg','/admin/admin/log']];
 export function StudioSidebar() {
-  const path=usePathname();
+  const pathname=usePathname();
+  const path=pathname==='/admin/admin/players'?'/admin/admin/accounts':pathname;
   return <aside className="studio-sidebar"><Link href="/admin" className="studio-wordmark">scout<span>/</span>gaming<small>WORKSPACE</small></Link>
     <nav aria-label="Huvudmeny">{main.map(({label,href,icon:Icon})=><Link key={href} href={href} style={href==='/admin/deletion'?{color:'#f87171'}:undefined} aria-label={label} title={label} aria-current={path===href||href==='/admin/tools'&&adminToolName(path)?'page':undefined}><Icon size={17}/><span>{label}</span></Link>)}
       <details className="studio-system-menu"><summary aria-label="System" title="System"><Settings size={17}/><span>System</span></summary>{system.map(([label,href])=><Link key={href} href={href} aria-current={path===href?'page':undefined}>{label}</Link>)}</details>
