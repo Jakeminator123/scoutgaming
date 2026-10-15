@@ -44,7 +44,8 @@ Spelarens scen: vald bakgrund → vald dealer → valt bord → spelkontroller
 En gemensam sammansättningsmall kan användas av flera bolag och rum.
 Mallredigering ändrar projektets utkast; vald rumskontext begränsar inte
 mallens räckvidd. Rummets tillåtna utseendeval redigeras separat på
-`/partner/{slug}/rooms?room=<rum-id>` med `presentations.configure`,
+N1 `/admin/rooms?view=registered&operator=<bolag-id>&table=<rum-id>` och
+N2 `/partner/{slug}/rooms?room=<rum-id>` via samma `presentations.configure`,
 serverkontrollerad ägare, granskning och revisionsskydd.
 
 **Normal scen:** bakgrund bakom en frilagd dealer; bord framför kroppen;

@@ -42,10 +42,14 @@ verkligt osparat tillstånd, så dirty-skyddets browserprov räknas inte som
 accepterat; lokal verifiering använder riktig delad historik. Fullt kvitto
 och före/efter-bilder finns i CLOUD-MIGRATION.
 
-Nästa del är klippkartan: situation/klipp/körregel och sann status. Ta även
-bort dess sammanblandning Rum / bakgrund och ersätt två äldre Partner-
-returlänkar med Admin-rumsflödet, med befintliga navigeringsskydd. Ingen ny
-skrivkedja, mediekatalog eller tracker.
+Del 3 är lokalt implementerad och inväntar leveranskontroller: tydlig
+situation/tagning/sparad körregel, sann vald-filmstatus och exakt regelval
+i befintlig policyeditor. Intervall, frekvens och villkor är verkliga sparade
+värden; OpenClaw-etikett likställs inte med verifierad anslutning.
+Publicerat paket är skilt från projektutkastet. Två mall-/rumsreturer går
+nu till Admin och Rum / bakgrund är ersatt av Rum. 54 riktade prov och
+Lab-build 97 passerar; fullhook, sluthead/CI och browseracceptans återstår.
+Ingen ny writer, runtime, mediekatalog eller tracker.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

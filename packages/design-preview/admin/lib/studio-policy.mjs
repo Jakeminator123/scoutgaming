@@ -1,8 +1,9 @@
-import { validateProject } from '../../../../lab/lib/studio-model.mjs';
+import { validateProject, allowedPathDescriptors } from '../../../../lab/lib/studio-model.mjs';
 import { validateIdlePolicy } from '../../../../packages/presentation/runtime/idle-policy.mjs';
 import { createRegisteredIdlePolicy } from '../../../../packages/presentation/runtime/registered-idle-policy.mjs';
-import { isAstridDealFamily, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../packages/presentation/runtime/media-family-policy.mjs';
-import { clipSlots, clipsForSlot } from './connected-studio.mjs';
+import { isAstridDealFamily, dealFrequencyPolicies, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../packages/presentation/runtime/media-family-policy.mjs';
+import { selectionFor } from '../../../../lab/lib/video-intake.mjs';
+import { clipSlots, clipsForSlot, configuredClipIds, currentClipId } from './connected-studio.mjs';
 
 const fail = message => { throw Error(message); };
 const uses = new Set(['idle', 'transition', 'deal', 'reveal', 'speak', 'turn', 'settle']);
@@ -101,4 +102,69 @@ export function applyStudioVariantPolicy(project,inventory,dealerId,slot,variant
     Object.assign(variant,structuredClone(patch));
   }
   return validateProject(draft);
+}
+
+
+// Read-only authoring summary. It never treats the current project as a frozen room package.
+export function studioClipUsage(project, inventory, dealerId, slot, videoId, variantId) {
+  const event = project.events.find(row => row.id === slot.eventId);
+  const when = slot.game === 'roulette' ? slot.description : event?.description || slot.description || slot.title;
+  const result = (configured, rules) => ({ configured, when, rules });
+  if (!videoId) return result(false, [slot.planned ? 'Ingen tagning eller sparad klippregel i detta fack.' : 'Välj en tagning för att se dess körregel.']);
+  if (!clipsForSlot(inventory,dealerId,slot).some(row => row.id === videoId)) return result(false, ['Tagningen är inte tillgänglig i denna situation.']);
+  if (slot.game === 'roulette') {
+    const configured = configuredClipIds(project,dealerId,slot,variantId,inventory).includes(videoId);
+    if (!configured) return result(false, [slot.localOnly ? 'Lokal referens, ingen spelkoppling.' : 'Vald för prov; inte kopplad i projektutkastet.']);
+    return result(true, [slot.eventId === 'roulette.wheel-start' ? 'Startfilm efter serverns sparade kvitto; filmens kalibrering styr kulsläppet.'
+      : slot.situation === 'breathing' ? 'Grundloop medan roulette väntar.' : 'Glasögonvariant i grundloopen; inget tidsintervall är sparat i denna koppling.']);
+  }
+  let scope;
+  try { scope = studioPolicyContext(project,inventory,dealerId,slot); }
+  catch { return result(false, ['Körregeln kunde inte läsas för denna exakta situation.']); }
+  const conditions = ids => ids.map(id => {
+    const trigger = project.triggers.find(row => row.id === id);
+    if (!trigger) return `Saknat villkor: ${id}`;
+    const label = allowedPathDescriptors.find(row => row.path === trigger.path)?.label || trigger.path;
+    const op = {eq:'är',ne:'är inte',gt:'över',gte:'minst',lt:'under',lte:'högst',includes:'innehåller',all_eq:'alla är',in:'är något av',exists:'finns'}[trigger.op] || trigger.op;
+    const value = item => typeof item === 'boolean' ? item ? 'ja' : 'nej' : item === null ? 'tomt' : String(item);
+    return `${label} ${op} ${Array.isArray(trigger.value) ? trigger.value.map(value).join(', ') : value(trigger.value)}`;
+  });
+  if (scope.kind === 'idle' && scope.policy) {
+    const base = scope.policy.base.find(row => row.videoId === videoId);
+    if (base) return result(true, [`Grundloop · ${base.weight} % av basurvalet · ${(base.durationMs/1000).toLocaleString('sv-SE')} s.`]);
+    const variation = scope.policy.variants.find(row => row.videoId === videoId);
+    if (!variation) return result(false, ['Tagningen finns i biblioteket men ingår inte i grundloopens schema.']);
+    if (variation.use === 'automatic' && variation.automatic) {
+      const a = variation.automatic;
+      return result(true, [`Automatisk variation: i snitt var ${a.averageEveryMs/1000} s, variation ±${a.jitterMs/1000} s.`, `Minsta paus ${a.cooldownMs/1000} s; högst ${a.maxPerMinute} starter/minut. Spelhändelser kan skjuta upp starten.`]);
+    }
+    if (variation.use === 'manual') return result(true, ['Endast manuellt prov; startar inte automatiskt.']);
+    if (variation.use === 'openclaw') return result(true, ['OpenClaw-urval tillåtet i schemat. Faktisk triggeranslutning är inte verifierad i denna vy.']);
+    const definitions = scope.line.variants.filter(row => row.videoGenerationId === videoId && selectionFor(row).rules && row.triggerIds.length);
+    return result(true, definitions.length ? definitions.map(row => `Sparade villkor (alla): ${conditions(row.triggerIds).join('; ')}.${row.triggerIds.every(id=>project.triggers.find(trigger=>trigger.id===id)?.path.startsWith('event.'))?' Händelseregel vid utdelning eller reveal; kräver publicerat regelläge.':' Grundloopens speltrigger stöder endast händelsevillkor; denna kombination är inte ansluten.'}`)
+      : ['Regelurval valt, men inga kopplade händelsevillkor finns för tagningen.']);
+  }
+  const frequency = scope.family && dealFrequencyPolicies(project,scope.family);
+  const policies = scope.family ? project.mediaPolicy?.find(row => row.familyId === scope.family.id)?.variants ?? [] : [];
+  const familyPolicy = policies.find(row => row.videoId === videoId);
+  const configured = scope.family ? configuredClipIds(project,dealerId,slot,variantId,inventory).includes(videoId) || Boolean(familyPolicy)
+    : scope.line.variants.some(row=>row.videoGenerationId===videoId);
+  if (!configured) return result(false, ['Vald för prov; inte kopplad i projektutkastet.']);
+  const exactVariant=scope.line.variants.find(row=>row.id===variantId&&row.videoGenerationId===videoId);
+  const standard = scope.family ? scope.family.standardIds[0] === videoId
+    : (!exactVariant||exactVariant.id===scope.line.baselineVariantId) && (slot.sourceType==='speak'?currentClipId(project,dealerId,slot,scope.line.baselineVariantId,inventory):scope.line.variants.find(row=>row.id===scope.line.baselineVariantId)?.videoGenerationId) === videoId;
+  if (frequency) return result(true, [standard
+    ? `Standard/reserv · minst ${100-frequency.reduce((sum,row)=>sum+(row.frequencyPercent??0),0)} % av urvalet. Otillgängliga alternativ faller tillbaka till standard.`
+    : (familyPolicy?.frequencyPercent ?? 0) > 0 ? `${familyPolicy.frequencyPercent} % vid denna utdelningsplats; övriga regler styr inte frekvensurvalet.` : '0 % · endast manuellt prov.']);
+  if (standard) return result(true, ['Standard/reserv när situationen inträffar.']);
+  const variant = familyPolicy ?? exactVariant
+    ?? scope.line.variants.find(row => row.videoGenerationId === videoId);
+  if (!variant) return result(true, ['Ingen separat urvalsregel är sparad för tagningen.']);
+  const selection = selectionFor(variant), rules = [];
+  if (selection.rules) rules.push(variant.triggerIds.length ? `Regelurval, alla villkor: ${conditions(variant.triggerIds).join('; ')}.` : 'Regelurval utan extra villkor.');
+  if (selection.random) rules.push('Tillåten i slumpurval.');
+  if (selection.model) rules.push('OpenClaw-urval tillåtet i utkastet; faktisk triggeranslutning är inte verifierad i denna vy.');
+  if (!rules.length) rules.push('Endast manuellt prov; inget automatiskt urval är aktiverat.');
+  else rules.push(`Prioritet ${variant.priority}. Rummets publicerade automatikläge avgör vilket urval som används.`);
+  return result(true, rules);
 }

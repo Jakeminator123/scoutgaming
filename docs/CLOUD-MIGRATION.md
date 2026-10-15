@@ -13,7 +13,7 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 | --- | --- | --- |
 | 1 — levererad och browserverifierad | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
 | 2 — huvudflödet levererat; mallretur återstår i del 3 | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
-| 3 — nästa | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
+| 3 — lokalt implementerad, leveranskontroller pågår | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
 | 4 | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
 | 5 | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
 | 6 | QA-återgång och lokal konsolidering | QA:s unika kod/stash/kvitton är bevarade och osäker QA är stängd. Exakta molnresurskandidater kräver separat beslut; Preview återkopplas inte till produktion. Huvudcheckout/startprofil är verifierad, överförda egna kopior städas säkert och varje kvarvarande kopia har ett konkret syfte. |
@@ -118,6 +118,26 @@ filer. Inga media, arbetskopior eller beroenden raderade. Klippkartans två
 äldre returlänkar till Partner och etiketten Rum / bakgrund återstår att
 förenkla i del 3 så att Admin-flödet hänger ihop. PR165, QA och ny rörlig
 läppsynk förblir parkerade.
+
+Del 3 är lokalt implementerad: varje klippkort skiljer Situation, Klipp/tagning
+och Körregel i projektutkastet. Vald okopplad film är inte längre grön för
+att en annan film är kopplad. Faktiska basandelar, längder, intervall/jitter,
+minsta paus, max/minut, frekvenser, villkor och prioritet läses från det
+aktuella utkastet. OpenClaw-urval påstås inte bevisa triggeranslutning;
+grundloopsvillkor utanför event-data markeras som ej anslutna.
+
+Befintlig policyeditor öppnar vald tagning och exakt kopplingsregel, även
+när två regler delar fil. Byte av kopplingsplats visar dess faktiska film.
+Lokala regeländringar skiljs från senast sparat projektutkast; publicerat
+rumspaket visas separat och klippen påstås inte vara jämförda med det.
+Granskning/publicering har en kontextbärande länk. Rum och bakgrund har
+separata begrepp; båda mall-/rumsreturerna går till Admin i samma flik med
+befintligt osparat-skydd. Ingen ny writer eller runtime-/providerändring.
+
+Lokalt: 54 fokuserade prov utan skip samt Lab-build, 97 byggspår, passerar.
+Obligatorisk fullhook, sluthead/CI och produktion/browseracceptans återstår.
+Före-bild och verifieringsloggar: samma privata evidensmapp, clips-before.png
+och clip-map-*. Inga nya filer, mediaimporter eller borttagna arbetskopior.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 

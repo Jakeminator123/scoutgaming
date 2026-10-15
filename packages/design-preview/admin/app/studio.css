@@ -288,3 +288,7 @@
 .studio-material-controls button.material-trash:hover:not(:disabled){color:#ff9a82}
 .material-library :is(button,summary):focus-visible{outline:2px solid #d6ff3a;outline-offset:3px}
 .material-library fieldset:focus{outline:2px solid #d6ff3a;outline-offset:4px}
+.studio-card-situation{margin-bottom:12px}.studio-card-situation h2{font-size:14px;font-weight:600;line-height:1.5}.studio-card-situation p,.studio-card-rule p{margin-top:5px;font-size:12px;line-height:1.5;color:#b8bec6}
+.studio-card-rule{margin-top:12px;padding-top:10px;border-top:1px solid #33363b}.studio-card-rule h3{font-size:12px;font-weight:600}.studio-card-rule .studio-card-rule-dirty{color:#ffb547}
+.studio-card-identity{margin-top:10px;font-size:11px;color:#b8bec6}.studio-card-identity summary{cursor:pointer}.studio-card-identity dl{margin-top:6px}.studio-card-identity dd{overflow-wrap:anywhere;margin-bottom:5px}
+.studio-publication-note{margin-top:10px;font-size:12px;line-height:1.5;color:#b8bec6}.studio-publication-note a{color:#d6ff3a;text-decoration:underline}

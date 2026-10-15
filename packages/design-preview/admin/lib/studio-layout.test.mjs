@@ -67,3 +67,24 @@ test('editing a shared trigger reports each dealer bank and room using it',()=>{
   const rooms=[{id:'a',dealerIds:['astrid'],compositionId:'one'},{id:'b',dealerIds:['vera'],compositionId:'two'},{id:'c',dealerIds:['mei'],compositionId:'three'}];
   assert.deepEqual(affectedRooms(before,after,rooms).map(row=>row.id),['a','b']);
 });
+
+
+test('clip cards distinguish situation, selected unbound take, saved rule and local edits',async()=>{
+  const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
+  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+  const module={exports:{}};
+  runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
+    {module,exports:module.exports,require:name=>name==='../../lib/studio-layout.mjs'?{slotCaption}:require(name)});
+  const slot=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.eventId==='idle.ready');
+  const clips=[{id:'bound',label:'Sparad film'},{id:'selected',label:'En annan exakt tagning',contentType:'video/mp4',sha256:'a'.repeat(64)}];
+  const data={group:groupSlots([slot])[0],slot,clips,selectedId:'selected',boundId:'bound',boundIds:['bound'],variants:[],variantId:'',busy:false,
+    onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){}};
+  const render=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{...data,...patch}}));
+  const unbound=render({});assert.match(unbound,/Situation/);assert.match(unbound,/Klipp \/ tagning/);assert.match(unbound,/Körregel · projektutkast/);
+  assert.match(unbound,/En annan exakt tagning/);assert.match(unbound,/Valt för prov · ej kopplat/);assert.match(unbound,/Koppla till utkast/);assert.doesNotMatch(unbound,/Kopplat i sparat utkast/);
+  assert.match(unbound,/video\/mp4/);assert.ok(unbound.includes('a'.repeat(64)));
+  const usage={configured:true,when:'Bordet väntar',rules:['Automatiskt var 27 s.']};
+  const saved=render({usage});assert.match(saved,/Kopplat i sparat utkast/);assert.match(saved,/Automatiskt var 27 s/);assert.doesNotMatch(saved,/Koppla till utkast/);
+  assert.match(saved,/Redigera körregel/);assert.doesNotMatch(saved,/Publicerad/);
+  const dirty=render({usage,usageChanged:true});assert.match(dirty,/Ändrat lokalt · ej sparat/);assert.doesNotMatch(dirty,/Kopplat i sparat utkast/);
+});

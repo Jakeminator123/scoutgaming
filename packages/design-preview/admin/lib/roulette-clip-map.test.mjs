@@ -138,7 +138,7 @@ test('roulette cards allow explicit idle binding while reference and planned car
   assert.match(image,/<img/);assert.match(image,/Registrerat · ej spelkopplat/);assert.doesNotMatch(image,/Koppla till utkast/);
   const future=render(slots.find(slot=>slot.planned));assert.match(future,/Planerat fack/);assert.doesNotMatch(future,/type="file"|Koppla till utkast/);
   const idle=render(slots.find(slot=>slot.situation==='breathing'));
-  assert.match(idle,/Koppla till utkast/);assert.match(idle,/Saknar koppling/);assert.doesNotMatch(idle,/Registrerat · ej spelkopplat|aria-label="Inställningar/);
+  assert.match(idle,/Koppla till utkast/);assert.match(idle,/Valt för prov · ej kopplat/);assert.doesNotMatch(idle,/Registrerat · ej spelkopplat|aria-label="Inställningar/);
   const glasses=render(slots.find(slot=>slot.situation==='glasses-clean'));assert.match(glasses,/Koppla till utkast/);
   const start=render(slots.find(slot=>slot.eventId==='roulette.wheel-start'));
   assert.match(start,/Kalibrera startfilm/);assert.doesNotMatch(start,/Koppla till utkast|Registrerat · ej spelkopplat/);

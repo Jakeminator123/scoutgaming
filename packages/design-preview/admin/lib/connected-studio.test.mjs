@@ -19,14 +19,16 @@ test('room choices in another tab preserve drafts while same-tab navigation reta
   assert.equal(navigationKeepsStudioTab(event,{...anchor,hasAttribute:name=>name==='download'}),true);
   for(const target of ['','_self','_top','_parent'])assert.equal(navigationKeepsStudioTab(event,{...anchor,target}),false);
 });
-test('room-choice links keep the exact published room and registered company slug',()=>{
-  const operator={id:'north',slug:'north-casino'},room={id:'vip-room',operatorId:'north',state:'live',published:true};
-  assert.equal(roomChoicesPath(operator,room),'/partner/north-casino/rooms?room=vip-room');
-  for(const changed of [{operatorId:'south'},{state:'archived'},{state:'preview'},{published:false},{id:'../other'}])
-    assert.equal(roomChoicesPath(operator,{...room,...changed}),null);
-  for(const slug of ['../other','https://outside.invalid','login'])assert.equal(roomChoicesPath({...operator,slug},room),null);
+test('room-choice links retain exact owner and room inside Admin, including unpublished drafts',()=>{
+  const operator={id:'north',slug:'north-casino'},room={id:'vip-room',operatorId:'north',state:'live',published:true,compositionId:'shared',game:'blackjack'};
+  const path='/admin/rooms?view=registered&operator=north&table=vip-room&composition=shared&game=blackjack';
+  assert.equal(roomChoicesPath(operator,room),path);
+  assert.equal(roomChoicesPath(operator,{...room,state:'preview',published:false}),path);
+  for(const changed of [{operatorId:'south'},{state:'archived'},{id:'../other'}])assert.equal(roomChoicesPath(operator,{...room,...changed}),null);
+  assert.equal(roomChoicesPath({...operator,id:'../north'},{...room,operatorId:'../north'}),null);
   assert.equal(roomChoicesPath(undefined,room),null);assert.equal(roomChoicesPath(operator,undefined),null);
 });
+
 test('shared-template usage lists exact nonarchived room bindings across companies',()=>{
   const catalog={administration:{operators:[{id:'north',name:'North'},{id:'south',name:'South'}],rooms:[
     {id:'north-main',name:'Main',operatorId:'north',compositionId:'shared',state:'live'},
