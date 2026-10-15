@@ -91,16 +91,28 @@ Inga produktionsskrivningar, spelrundor eller providerjobb. Den missvisande
 mallpresentationen är ersatt; sju befintliga filer, inga nya/raderade
 källfiler, medier eller arbetskopior. Före/efter-bilder, fullständigt
 leveranskvitto och säkerhetstäckning finns i CLOUD-MIGRATION.
-Nästa: del 5, env-namnens konsumenter, loader/prioritet och build/runtime;
-verifiera lokal redundans innan borttagning. Inga produktionsvärdesändringar.
+Del 5/6: lokal env-förenkling och huvudcheckoutens synk är genomförda.
+Root/Lab har 52/47 namn efter borttagning av två oanvända lokala
+metadata-poster; 44 befintliga tester och åtta konfigurationsjämförelser
+passerar. 115 namn är konsumentklassificerade i ENVIRONMENT-VARIABLES.
+Inga molnvärden eller Emil-profiler ändrades.
 
-PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
-kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad
-återgång bereds separat med unika staged filer/stash/kvitton bevarade.
-Ny rörlig läppsynk förblir avstängd. Env-granskning ska mynna ut i en
-konsumentstyrd behåll/flytta/ta-bort-lista, inte fler profiler eller synkning
-av produktionshemligheter. De tidigare dokumentutkasten nedan är bevarade;
-deras formuleringar om väntande samordnarkvitton är daterad historik.
+Huvudcheckouten är fast-forward-synkad till `80b703ee`, med egna ändringar,
+privata profiler och reviewmaterial bevarade. Saknade lokala byggen är
+avsiktlig tidigare städning; ingen serverstart eller installation gjordes.
+Den publika startgenvägen rättas till `/lobby`. CLOUD-MIGRATION redovisar
+konkret skäl för samtliga åtta kvarvarande arbetskopior; ingen massradering.
+
+QA-utbyggnaden är redan återställd av QA-agenten på Jakobs separata uppdrag.
+Den tidigare formuleringen om 24 staged filer/stash är ersatt av dess
+rollback-kvitto, med lokalt verifierad frånvaro. Preview är inte verifierat
+isolerad och saknar ingresshemlighet. Äldre Render-QA:s aktuella driftläge
+och färsk Render-env-kontroll återstår efter bekräftat connector-workspace.
+Vercel-teamets färska projektlista innehåller endast `scoutgaming`.
+PR165 är parkerad med tre egna ändringar bevarade; ny rörlig läppsynk är av.
+
+De tidigare dokumentutkasten nedan är daterad historik; aktuella antal och
+återstående steg står ovan och i CLOUD-MIGRATION.
 
 ## Förberedelse för slutöverlämning, 15 oktober 2026
 
