@@ -53,7 +53,8 @@ export function createGameCards(svg, manifest, { fixed = FIXED_LAYOUT } = {}) {
         t.append(svgNode('tspan', {}, card.r), svgNode('tspan', { 'font-size': suit, dx: 1.5 }, card.s));
         return t;
       };
-      ink.append(index(-width / 2 + 4, -height / 2 + 20, 'start', 23, 17), index(width / 2 - 4, height / 2 - 5, 'end', 21, 15),
+      // Emil 16 Oct: the rank 15 % bigger (23 -> 26.5 top, 21 -> 24 bottom), the suit as it was
+      ink.append(index(-width / 2 + 4, -height / 2 + 22.5, 'start', 26.5, 17), index(width / 2 - 4, height / 2 - 5, 'end', 24, 15),
         svgNode('text', { y: 13, 'text-anchor': 'middle', fill: color, 'font-family': 'Georgia', 'font-size': 36 }, card.s));
       group.append(ink);
       return group;
