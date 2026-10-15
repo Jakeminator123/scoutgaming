@@ -6,8 +6,13 @@ Jakob har gett återstartsmandat för befintlig Admin, en leveransström och
 inga nya underagenter, arbetskopior eller testmiljöer. Arbetskopian är
 admin-document-navigation, branch codex/stabilization-checkpoint.
 Målet är synligt enklare arbete och färre aktiva delar, inte fler trackers.
-Production från main är användarens acceptansmiljö; ordinarie lokala tester,
-CI, PR-granskning och ägarkontroller gäller fortfarande.
+Valt vardagsflöde: ändring i befintlig arbetskopia → push av featurebranch →
+granskad grön PR → main → automatisk produktionsdeployment → test på
+www.scoutgaming.tech. Admin, Partner och Lobby används på samma huvudadress.
+Huvudcheckoutens main synkas varsamt efter leverans. Ordinarie lokala tester,
+CI och ägarkontroller gäller fortfarande; inget direktpush-undantag införs.
+QA används inte för detta flöde. Automatiska PR-previews är inte en separat
+acceptansmiljö eller en verifierat isolerad plats för skrivande tester.
 
 | Ordning | Leverans | Klar när |
 | --- | --- | --- |
@@ -16,7 +21,7 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 | 3 — klippkort och status levererade, browserverifierade | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
 | 4 — levererad och browserverifierad | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
 | 5 — lokal förenkling och Render-inventering klara | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
-| 6 — lokal källa synkad; QA-stängning återstår | QA-status och lokal konsolidering | QA-utbyggnaden är återställd på separat användaruppdrag; kvittot bevaras. Preview är inte verifierat isolerad. Huvudcheckout/startprofil och egna ändringar är kontrollerade; kvarvarande arbetskopior har konkreta bevarandeskäl. Äldre Render-QA är verifierat igång och delar Blob-token med produktion; underhållsläge är föreslaget men inte genomfört. |
+| 6 — lokal källa synkad; publik QA stängd | QA-status och lokal konsolidering | QA-utbyggnaden är återställd på separat användaruppdrag; kvittot bevaras. Preview är inte verifierat isolerad. Huvudcheckout/startprofil och egna ändringar är kontrollerade; kvarvarande arbetskopior har konkreta bevarandeskäl. Äldre Render-QA delar Blob-token med produktion och har därför satts i underhållsläge: publik HTTP 503, data/disk kvar. |
 
 Varje del avslutas före nästa: relevant kontroll → obligatoriska kontroller →
 slutgranskning → normal PR/merge för verifierat Jakob-ägt arbete →
@@ -59,13 +64,20 @@ stash och egna nya molnresurser. Egen läsning bekräftar saknad arbetskopia
 och stash; molnraderingarna är tillskrivet kvitto. Bevara
 `arkiv/2026-10-15/preview-qa-isolation/rollback-receipt.json`.
 Preview saknar fortfarande ingresshemlighet och har produktionsadresser;
-det är ingen verifierad isolerad skrivmiljö. Färsk API-läsning bekräftar
-äldre Render-QA `srv-datj7l893c1s73ar3u50`: live på `ee060804`, inte
-suspenderad, underhållsläge av och hälsokontroll HTTP 200. Databasen är
-separat men Blob-skrivtoken är identisk med produktion. QA är därför inte
-godkänd som medieisolerad eller stängd. Förslag: slå på underhållsläge för
-exakt denna äldre QA, med data/disk kvar; ingen sådan ändring gjordes i
-den läsande kontrollen. Nyckelfritt kvitto: `env-render-receipt.json`.
+det är ingen verifierad isolerad skrivmiljö. Den läsande kontrollen 20:07 UTC
+visade äldre Render-QA `srv-datj7l893c1s73ar3u50` på `ee060804`, med separat
+databas men identisk Blob-skrivtoken som produktion.
+
+Jakob överlät därefter valet av ett enkelt main-flöde. Underhållsläge sattes
+på exakt denna äldre QA 21:40:42 UTC i Jakob's workspace. Färsk API-läsning
+bekräftar `maintenanceMode.enabled=true`; både `/` och `/__cloud/health`
+svarar HTTP 503. Produktionens health och www:s Lobby svarar fortsatt 200.
+QA:s databas, 1 GiB-disk och medier bevaras, auto-deploy är fortsatt av.
+Tjänsten är inte suspenderad eller kostnadsavvecklad; privat nät/SSH finns kvar.
+Återöppna inte QA före verifierad data-/medieisolering och ett nytt beslut.
+Ingen env-ändring, nyckelrotation eller produktionsskrivning gjordes.
+Nyckelfria kvitton: `env-render-receipt.json` (läsning) och
+`qa-maintenance-receipt.json` (genomförande), i samma privata evidensmapp.
 
 En färsk listning visar endast projektet `scoutgaming` i Vercel-teamet
 `scoutgaming`. Där finns inget projekt med namnet “questions and answers”
@@ -120,8 +132,15 @@ PR-CI 38788413314 och main-CI 38788741234 är gröna; main körde faktiskt
 SQL-/omstarts-/HTTPS-prov. Vercel `dpl_8tBW2PdB9ah4sarNVt3oQjabrDwf` är
 READY på www. Render-produktens `dep-db8i2irm8hqs738fins0` är live på samma
 SHA. Huvudcheckouten är synkad med åtta skyddade filhashar och dirty-status
-bevarade. Den senare läsande Render-kontrollen är klar; kvar är det konkreta
-beslutet om äldre QA:s underhållsläge, beskrivet ovan.
+bevarade. PR174 publicerade därefter Render-inventeringen till main
+`9b872813d996da13382a670038b9b2014e346d13`. PR-CI 38800417097 och main-CI
+38800695475 är gröna; main körde faktiskt SQL-/omstarts-/HTTPS-prov.
+Vercel `dpl_cNEN7QnXih4Hw1w3xa3PWKJUrnEc` och Render
+`dep-db8jbue7bikc73brtakg` verifierades på samma SHA; huvudcheckouten synkades
+med åtta skyddade filhashar och dirty-status bevarade. Det efterföljande
+beslutet och verifierade genomförandet av QA-underhållsläget står ovan.
+Senaste dokumentationsleveransens slutliga CI-/main-/driftkvitto förs i dess
+PR-beskrivning, utan att skapa en ny leverans enbart för ett leveranskvitto.
 
 | Kvarvarande arbetskopia | Konkret skäl att behålla |
 | --- | --- |

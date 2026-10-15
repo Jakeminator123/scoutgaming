@@ -7,6 +7,12 @@ Den aktuella genomförandeplanen finns överst i
 för små verifierade leveranser till befintlig Admin. En arbetskopia och en
 leveransström; inga nya underagenter eller testmiljöer.
 
+Valt vardagsflöde: push av featurebranch → granskad grön PR → main →
+automatisk produktionsdeployment → test på www.scoutgaming.tech.
+Admin, Partner och Lobby finns på samma huvudadress. Huvudcheckoutens main
+synkas varsamt efter leverans. Äldre QA används inte och dess publika ingång
+är stängd; PR-previews är inte verifierat isolerade skrivmiljöer.
+
 Första delen är levererad i PR166: sammanhållna materialkort med verkliga
 förhandsvisningar, format, felstatus och samma skyddade papperskorg.
 Main c6496965b787215dc98b20e7fbaf03d8348b5bbe verifierades på www.scoutgaming.tech
@@ -108,11 +114,13 @@ Den tidigare formuleringen om 24 staged filer/stash är ersatt av dess
 rollback-kvitto, med lokalt verifierad frånvaro. Preview är inte verifierat
 isolerad och saknar ingresshemlighet. Färsk läsning i bekräftat Jakob's
 workspace verifierar Render-namnen 53/37/16/10, inga miljögrupper och inga
-secret files. Äldre QA är live på `ee060804`, underhållsläge av, och
-svarar HTTP 200 på health. Separat databas men identisk Blob-skrivtoken
-med produktion betyder att medieisolering inte är godkänd.
-Förslag: underhållsläge endast för `srv-datj7l893c1s73ar3u50`, bevara
-data/disk. Inga Render-inställningar ändrades i den läsande kontrollen.
+secret files. Äldre QA har separat databas men identisk Blob-skrivtoken
+med produktion; medieisolering är därför inte godkänd. Efter Jakobs besked
+att välja ett enkelt main-flöde sattes endast `srv-datj7l893c1s73ar3u50`
+i underhållsläge 21:40:42 UTC. Färsk API-läsning bekräftar aktiverat läge,
+och QA:s rot/health svarar 503. Produktens health och www:s Lobby svarar 200.
+Data, 1 GiB-disk och medier finns kvar; auto-deploy är av. Privat nät/SSH
+finns kvar och tjänsten är inte kostnadsavvecklad. Inga env-värden ändrades.
 Vercel-teamets färska projektlista innehåller endast `scoutgaming`.
 PR165 är parkerad med tre egna ändringar bevarade; ny rörlig läppsynk är av.
 
@@ -126,10 +134,18 @@ egna ändringar/profiler består. PR173 publicerade kvittot till main
 `2f02c4cd`; PR-CI 38788413314/main-CI 38788741234 är gröna, inklusive
 main-körningens faktiska SQL/omstart/HTTPS. Vercel `dpl_8tBW2PdB9ah4sarNVt3oQjabrDwf`
 och Render `dep-db8i2irm8hqs738fins0` kör samma SHA; huvudcheckouten är synkad.
-Render-kontrollen är nu klar. Befintligt genererat tal/streaming är fortfarande
-konfigurerat på produkten; ny rörlig Kevin/Emil-läppsynk är inte därmed
-aktiverad eller accepterad. Exakta kvitton och återstående QA-beslut finns
-i CLOUD-MIGRATION/ENVIRONMENT-VARIABLES. Inga providerjobb eller produktionsskrivningar.
+PR174 publicerade Render-inventeringen till main `9b872813`; PR-CI
+38800417097/main-CI 38800695475 är gröna, inklusive faktisk SQL/omstart/HTTPS.
+Vercel `dpl_cNEN7QnXih4Hw1w3xa3PWKJUrnEc` och Render
+`dep-db8jbue7bikc73brtakg` verifierades på samma SHA; huvudcheckouten synkades
+med egna ändringar/profiler bevarade. QA:s publika stängning är nu också
+verifierad enligt ovan. Senaste dokumentationsleveransens slutliga
+CI-/main-/driftkvitto finns i dess PR-beskrivning.
+
+Befintligt genererat tal/streaming är fortfarande konfigurerat på produkten;
+ny rörlig Kevin/Emil-läppsynk är inte därmed aktiverad eller accepterad.
+Exakta kvitton och bevarandeskäl finns i CLOUD-MIGRATION/ENVIRONMENT-VARIABLES.
+Inga providerjobb eller produktionsskrivningar.
 
 De tidigare dokumentutkasten nedan är daterad historik; aktuella antal och
 återstående steg står ovan och i CLOUD-MIGRATION.
