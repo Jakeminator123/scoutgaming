@@ -7,8 +7,13 @@ WebSocket-close 1000 dränerar redan mottagna svar i stället för att kasta
 kön; första prepare-admissionen omfattas av avbrott och tidsgränser innan
 någon callbackadress lämnas ut. Nekad/fastnad prepare rensar PCM och
 finaliserar den fångade reservationen en gång med `owner=null`; sent svar
-återstartar inget. Fyra regressioner var röda före rättningen. Nytt fullt
-testkvitto kompletteras vid leverans; tidigare kodkvitto nedan är historik.
+återstartar inget. Fyra regressioner var röda före rättningen; ett femte
+startfelprov täcker ogiltig release/origin utan reservation-/PCM-läcka.
+Kodcommit `34f5637e`: ny full pre-commit ger 3 898 pass, 9 villkorade skip,
+0 fel/cancel i 77 grupper. Alla 36 plan-/PCM-/bildrute-/transportprov passerar,
+inklusive 16 transportprov och Chrome-avkodningen. Lab-kod/beroenden är
+oförändrade; dess byggkvitto med 97 spår återanvänds. Tidigare kodkvitto
+nedan är historik. Inga env-/pod-/driftändringar ingår i rättningen.
 
 Ny opt-in adapter parar autentiserad workers `lapp`-metadata med H.264-byte
 för vår befintliga bildrutekonsument. Den använder vår PCM-/planidentitet,
