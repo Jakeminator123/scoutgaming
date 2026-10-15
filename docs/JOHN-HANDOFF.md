@@ -7,12 +7,24 @@ De sex ändrade klientskripten är byteidentiska med tidigare granskad `e4f3b562
 och Astrid-provets `542e98b2`. Lab-build passerar med 97 kontrollerade byggspår.
 Ordinarie fullkontroll med riktiga Chrome-fixturer gav 3 871 pass, 9 villkorade
 skip, 0 fel/cancel i 77 grupper; sena dokumentändringar fick 43/43 godkända prov.
-Oberoende granskning fann inga blockerande kodfel. Ett försök med browserlokala
-skript i separat Studio-preview stoppades av automatisk säkerhetsgranskning:
-privat källkod på produktionsadressen kräver uttryckligt godkännande. Inget
-PR91-skript lästes in och inga rundor kördes. Originalkoden återställdes och
-provsessionen stängdes/verifierades saknad. PR91 förblir draft; Dragan-prov
-på rätt kod och det publicerade rummets kontrakt är ännu inte accepterade.
+Oberoende granskning fann inga blockerande kodfel. Efter Jakobs uttryckliga
+godkännande lästes exakt sex hashverifierade PR91-skript in lokalt i en egen
+Studio-preview-flik på produktionsvärden. HTML och backend förblev `654ab9e2`;
+`LAST RETURN`-etiketten verifieras statiskt och ingår inte i browserkvittot.
+Dragan körde två sammanhängande rundor med egen minnesdatabas/testsaldot:
+desktop €5, hand 12/stand, tillbaka €0; därefter 390×844 mobil €5,
+hand 9/hit till 19/stand, tillbaka €10. Saldo 10 000 → 9 995 → 10 000.
+Bakgrund, dealer och bord samt serverkort/handvärden fungerade; ingen
+mobil sidöverströmning eller insamlat konsolfel. De 18 mutationer som fanns
+kvar i nätverksbufferten gav 200 och gick endast till den egna preview-sessionen;
+bufferten var beskuren och är inget fullständigt nätverksspår.
+Återlänken stängde sessionen; ny GET gav `studio_preview_not_found`.
+Lokala överlagringar, cacheinställning och viewport återställdes, fliken stängdes.
+Detta kompletterar Astrids oförändrade vinst/push/split-/återhämtningskvitto
+för PR91:s begränsade klientändring. Inget genererat tal, nytt läppsynksgodkännande
+eller full acceptans av publicerade rummets behörighetskontrakt tillskrivs provet.
+Privata manifest och skärmbilder: `arkiv/2026-10-15/samordning/env-media-verification/`.
+PR91:s slutliga GitHub-kontroller och merge återstår vid detta kvitto.
 
 ## Fria mobilkontroller på spelborden, 15 oktober 2026
 
