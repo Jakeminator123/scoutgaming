@@ -50,8 +50,9 @@ var röda och är nu gröna. Verklig lokal HTTP-fetch provas både före och eft
 middleware genom Admin-routen med syntetisk adminsession; anonym åtkomst ger
 fortsatt loginredirect. De tre berörda fokusfilerna ger 61 pass, 0 skip, 0 fel.
 Efter integration av main `1c9e1c6a` byggdes hela Lab om, inklusive Lobbyns
-ändrade byggindata: 97 byggspår passerar. Fullhook körs via ordinarie commit;
-slutkvittot tillkommer efter körningen. Denna fortsättning är ännu inte
+ändrade byggindata: 97 byggspår passerar. Kodcommit `6c6db03b` passerar ordinarie
+fullhook med Chrome: 3 906 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
+Denna fortsättning är ännu inte
 driftsatt eller produktionsaccepterad. C4 förblir öppen.
 
 #### Historiskt lokalt kvitto för PR161

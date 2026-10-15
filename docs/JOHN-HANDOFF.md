@@ -36,7 +36,8 @@ syntetisk adminsession och anonym loginredirect. Negativa prov passerade också
 före fixen. Tre fokusfiler: 61 pass, 0 skip, 0 fel med Node 24.21.0.
 Main `1c9e1c6a` är integrerad med båda äldre handoff-avsnitten bevarade.
 Sammansatt Lab-build, inklusive uppdaterad Lobby, passerar med 97 byggspår.
-Fullhook körs via ordinarie commit; slutkvittot tillkommer efter körningen.
+Kodcommit `6c6db03b` passerar ordinarie fullhook med Chrome: 3 906 pass,
+9 villkorade skip, 0 fel/cancel i 77 grupper.
 Ingen ny driftsättning eller produktionsacceptans är gjord. C4 är fortsatt öppen.
 
 ## Historik — PR161: direktöppning av Admin, 15 oktober 2026
