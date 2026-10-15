@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {createSeedProject} from '../../../../lab/lib/studio-model.mjs';
 import {clipSlots,clipsForSlot,bindClip,currentClipId,configuredClipIds,uploadMetadata,createStudioClient} from './connected-studio.mjs';
-import {groupSlots,slotCaption} from './studio-layout.mjs';
+import {groupSlots,slotCaption,slotExplanation,isRenderedOutcome} from './studio-layout.mjs';
 import {rouletteReferencePreview,unbindRouletteClip,setRouletteIdleForeground} from './roulette-clip-map.mjs';
 import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
 const project=createSeedProject(),dealer='astrid';
@@ -130,7 +130,7 @@ test('roulette cards allow explicit idle binding while reference and planned car
   const source=readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8');
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-    {module,exports:module.exports,require:name=>name==='../../lib/studio-layout.mjs'?{slotCaption}:require(name)});
+    {module,exports:module.exports,require:name=>name==='../../lib/studio-layout.mjs'?{slotCaption,slotExplanation,isRenderedOutcome}:require(name)});
   const render=slot=>{const clips=slot.planned?[]:[video(slot,'a')];return renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{
     group:groupSlots([slot])[0],slot,clips,selectedId:'a',boundId:'',boundIds:[],variants:[],variantId:'',busy:false,
     onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){}}}));};
@@ -140,6 +140,9 @@ test('roulette cards allow explicit idle binding while reference and planned car
   const idle=render(slots.find(slot=>slot.situation==='breathing'));
   assert.match(idle,/Koppla till utkast/);assert.match(idle,/Valt för prov · ej kopplat/);assert.doesNotMatch(idle,/Registrerat · ej spelkopplat|aria-label="Inställningar/);
   const glasses=render(slots.find(slot=>slot.situation==='glasses-clean'));assert.match(glasses,/Koppla till utkast/);
+  const outcome=render(slots.find(slot=>slot.eventId==='roulette.plan.outcome'));
+  assert.match(outcome,/Ritas i spelet · ingen film behövs/);assert.match(outcome,/Spelservern bestämmer/);
+  assert.doesNotMatch(outcome,/Planerat fack|Ingen tagning|Spelkoppling återstår|0 filer|type="file"|Koppla till utkast|Förhandsvisa/);
   const start=render(slots.find(slot=>slot.eventId==='roulette.wheel-start'));
   assert.match(start,/Kalibrera startfilm/);assert.doesNotMatch(start,/Koppla till utkast|Registrerat · ej spelkopplat/);
 });

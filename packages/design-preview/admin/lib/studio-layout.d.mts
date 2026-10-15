@@ -1,6 +1,8 @@
 import type { ClipSlot, Room } from './connected-studio.mjs';
 import type { StudioProject } from '../../../../lab/lib/studio-model.mjs';
 export type ClipGroup = {id:string;title:string;subtitle:string;color:string;slots:ClipSlot[]};
+export function isRenderedOutcome(slot:ClipSlot):boolean;
+export function slotExplanation(slot:ClipSlot):string;
 export function slotCaption(slot:ClipSlot):string;
 export function slotSpeech(slot:ClipSlot):string;
 export function groupSlots(slots:ClipSlot[]):ClipGroup[];

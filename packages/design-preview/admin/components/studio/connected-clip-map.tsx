@@ -179,7 +179,7 @@ function WorkspaceMap({onDirtyChange,onRevisionChange,refreshKey=0}:{onDirtyChan
     catch (cause) { if (!controller.signal.aborted) { const status=(cause as {statusCode?:number})?.statusCode??0;if ([401,403].includes(status)) setAuthorized(false);if(status===409)setRevisionConflict(true); setError(cause instanceof Error ? cause.message : 'Åtgärden misslyckades. Utkastet finns kvar.'); } }
     finally { busyRef.current = false; setBusy(false); }
   }
-  function edit(project:StudioProject) { setData(current => current && ({...current,project})); setError(''); setNotice('Ändringen finns i utkastet. Spara när du har granskat berörda rum.'); }
+  function edit(project:StudioProject) { setData(current => current && ({...current,project})); setError(''); setNotice(base&&JSON.stringify(project)===JSON.stringify(base)?'Alla lokala ändringar är återställda.':'Ändringen finns i utkastet. Spara när du har granskat berörda rum.'); }
   const updateInventory=useCallback((inventory:VideoInventory)=>setData(current=>current&&({...current,inventory})),[]);
   async function link(slot:ClipSlot, id:string) {
     if (!data || !dealer) return;

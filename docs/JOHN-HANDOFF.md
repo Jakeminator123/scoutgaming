@@ -56,11 +56,14 @@ och återställdes utan sparning. Båda returlänkarna går till exakt Admin-rum
 blackjackutkast 2 är orört. Inga produktionsskrivningar eller providerjobb.
 Detaljer och före/efter-bilder finns i CLOUD-MIGRATION.
 
-Nästa smala fortsättning är fortfarande del 3: tekniska situationsbeskrivningar
-ska flyttas bakom Detaljer och ersättas av enkelt språk; återställt lokalutkast
-ska inte lämna kvar ett ändringsbesked. Roulettens serverritade hjulutfall ska
-inte visas som en saknad planerad film. Först därefter fortsätter del 4 Tal.
-17 befintliga filer, inga nya källfiler eller raderade media/arbetskopior.
+PR169 ändrade 17 befintliga filer; inga nya källfiler eller raderade media/
+arbetskopior. Den avslutande text/statusrättningen är nu implementerad lokalt:
+enkla situationer, teknisk källa/filidentitet under Detaljer, korrekt besked
+när lokala ändringar återställts och renderat hjulutfall utan saknad-filmstatus.
+32 fokuserade prov passerar utan skip, Lab-bygget är grönt med 97 byggspår.
+Full kontroll, slutgranskning, normal leverans och browseracceptans återstår
+före del 4 Tal. Runtime och media är oförändrade; övriga planerade roulettefack
+är fortsatt tydligt planerade.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

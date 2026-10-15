@@ -4,7 +4,7 @@ import { Film, Upload, Play, Check } from 'lucide-react';
 import type { NodeProps, Node } from '@xyflow/react';
 import type { ClipSlot, VideoEntry } from '../../lib/connected-studio.mjs';
 import type { StudioClipUsage } from '../../lib/studio-policy.mjs';
-import { slotCaption, type ClipGroup } from '../../lib/studio-layout.mjs';
+import { slotCaption, slotExplanation, isRenderedOutcome, type ClipGroup } from '../../lib/studio-layout.mjs';
 export type CardData = Record<string, unknown> & { group:ClipGroup; slot:ClipSlot; clips:VideoEntry[]; boundId:string; boundIds:string[]; busy:boolean;
   localPreviewUrl?:string; usage?:StudioClipUsage; usageChanged?:boolean;
   variants:{id:string;label:string}[]; variantId:string; selectedId:string; onSelect:(id:string)=>void; onSlot:(id:string)=>void;
@@ -16,6 +16,14 @@ export function ConnectedClipCard({ data }:NodeProps<CardNode>) {
   const image=data.slot.eventId==='roulette.reference',intake=data.slot.intakeOnly,planned=data.slot.planned;
   const wheelStart=data.slot.game==='roulette'&&data.slot.eventId==='roulette.wheel-start';
   useEffect(()=>setPreview(false),[selected?.id]);
+  if(isRenderedOutcome(data.slot))return <article className="studio-clip-card" style={{'--clip-color':data.group.color} as CSSProperties} aria-label={`${data.group.title} ${data.group.subtitle}`} data-slot={data.slot.id} data-card={data.group.id}>
+    <header className="studio-card-heading"><span className="studio-card-dot"/><strong>{data.group.title}</strong><span>{data.group.subtitle}</span></header>
+    <div className="studio-card-body nodrag nowheel"><section className="studio-card-situation"><span className="studio-card-eyebrow">Situation</span><h2>{slotCaption(data.slot)}</h2><p>{slotExplanation(data.slot)}</p></section>
+      <p className="studio-card-status is-ready">Ritas i spelet · ingen film behövs</p>
+      <section className="studio-card-rule" aria-label="Hjulets funktion"><h3>Hjul och kula</h3><p>Anna-bordet ritar de 37 numren och kulan. Spelservern bestämmer det vinnande numret; ingen separat film per nummer ska laddas upp.</p></section>
+      <details className="studio-card-identity"><summary>Detaljer</summary><p>{data.slot.description}</p></details>
+    </div><footer><span>Serverstyrt utfall</span><span>0–36</span></footer>
+  </article>;
   const ready=Boolean(selected&&(data.usage?.configured??data.boundIds.includes(selected.id)));
   const ruleEditor=!intake&&data.slot.game!=='roulette'&&data.slot.sourceType!=='speak';
   return <article className={`studio-clip-card ${drag?'is-dragging':''}`} style={{'--clip-color':data.group.color} as CSSProperties}
@@ -24,7 +32,7 @@ export function ConnectedClipCard({ data }:NodeProps<CardNode>) {
     onDrop={event=>{event.preventDefault();event.stopPropagation();setDrag(false);const file=event.dataTransfer.files[0];if(file&&!data.busy)data.onFile(file);}}>
     <header className="studio-card-heading"><span className="studio-card-dot"/><strong>{data.group.title}</strong><span>{data.group.subtitle}</span></header>
     <div className="studio-card-body nodrag nowheel">
-      <section className="studio-card-situation"><span className="studio-card-eyebrow">Situation</span><h2>{slotCaption(data.slot)}</h2><p>{data.usage?.when||data.slot.description}</p></section>
+      <section className="studio-card-situation"><span className="studio-card-eyebrow">Situation</span><h2>{slotCaption(data.slot)}</h2><p>{slotExplanation(data.slot)}</p></section>
       <div className="studio-card-media-row"><div className="studio-card-video">{data.localPreviewUrl?<img src={data.localPreviewUrl} alt="Tillfällig lokal VILA-bild"/>:selected&&image?<img src={selected.previewUrl} alt={selected.label}/>:selected&&preview?<video key={selected.id} src={selected.previewUrl} controls muted playsInline autoPlay preload="metadata"/>
         :<button disabled={!selected} aria-label={`Förhandsvisa ${data.group.subtitle}`} onClick={()=>setPreview(true)}>{selected?<Play size={20}/>:<Film size={20}/>}<span>{selected?'Spela':'Video'}</span></button>}</div>
         <div className="studio-card-summary"><span className="studio-card-eyebrow">{image?'Bild':'Klipp / tagning'}</span>
@@ -44,7 +52,7 @@ export function ConnectedClipCard({ data }:NodeProps<CardNode>) {
         {data.usageChanged&&<p className="studio-card-rule-dirty">Regeln eller kopplingen har ändrats lokalt.</p>}
         {ruleEditor&&<button disabled={data.busy} className="studio-card-bind" onClick={data.onSettings}>Redigera körregel</button>}
       </section>
-      {selected&&<details className="studio-card-identity"><summary>Filidentitet</summary><dl><dt>ID</dt><dd>{selected.id}</dd><dt>Format</dt><dd>{selected.contentType||'Ej angivet'}</dd><dt>SHA-256</dt><dd>{selected.sha256||'Inte tillgänglig i registret'}</dd></dl></details>}
+      <details className="studio-card-identity"><summary>Detaljer</summary><p>{data.usage?.when||data.slot.description}</p>{selected&&<dl><dt>ID</dt><dd>{selected.id}</dd><dt>Format</dt><dd>{selected.contentType||'Ej angivet'}</dd><dt>SHA-256</dt><dd>{selected.sha256||'Inte tillgänglig i registret'}</dd></dl>}</details>
     </div><footer><span>{planned?'Spelkoppling återstår':image?'PNG · VILA':data.slot.sourceType==='speak'?'Exakt ljud + talvideo':drag?'Släpp videon här':'Släpp video på kortet'}</span><span>{data.clips.length} filer</span></footer>
   </article>;
 }

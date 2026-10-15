@@ -157,13 +157,16 @@ Bortstädat: missvisande grön vald-filmstatus, sammanblandat Rum/bakgrund
 samt två Partner-omvägar. 17 befintliga filer ändrade; inga nya källfiler,
 originalmedia, beroenden eller arbetskopior raderade.
 
-Nästa avgränsade fortsättning före del 4: ersätt äldre tekniska situations-
-beskrivningar i huvudflödet med korta mänskliga förklaringar och lägg
-källreferenser under Detaljer. Rätta ändringsbeskedet som ligger kvar efter
-att lokal ändring återställts. Hjulutfall 0–36 är serverstyrd rendering utan
-37 filmfiler, så kortets generella Planerat fack/ingen tagning ska inte antyda
-att en film saknas. Funktionerna ovan är accepterade; hela klippkartans UX
-räknas inte färdig innan dessa browserobserverade text/statusproblem lösts.
+Del 3:s avslutande text/statusrättning är implementerad lokalt. Korta
+situationsförklaringar visas på korten; befintlig teknisk källa och exakt
+filidentitet finns under Detaljer. Ett återställt projekt ger nu ett korrekt
+återställningsbesked. Hjulutfall 0–36 visas som rendering på Anna-bordet,
+med serverstyrt vinnande nummer och utan uppladdning eller saknad-filmstatus.
+Övriga planerade roulettefack behåller sin uttryckliga status; spelare,
+klippbindningar, policyvärden och mediefiler ändras inte. 32 fokuserade prov
+passerar utan skip och Lab-bygget med 97 kontrollerade byggspår är grönt.
+Full kontroll, sluthead, leverans och browseracceptans återstår innan del 3
+räknas färdig och del 4 Tal börjar.
 PR165, QA, env-värden och rörlig läppsynk förblir parkerade/orörda i denna del.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
