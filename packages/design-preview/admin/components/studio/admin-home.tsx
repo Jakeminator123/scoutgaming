@@ -1,10 +1,10 @@
-import { ArrowRight, Building2, Clapperboard, Layers3, Play, Send } from 'lucide-react';
+import { ArrowRight, Building2, Clapperboard, Layers3, Play } from 'lucide-react';
 import Link from '../../../runtime/navigation';
 
 const destinations = [
+  { title:'Spelbolag & rum', description:'Välj rum och se bakgrund, dealer och bord. Granska rumsval före publicering.', href:'/admin/rooms?view=registered', icon:Building2, secondary:{label:'Skapa rum',href:'/admin/publication'} },
   { title:'Dealers och klipp', description:'Välj en dealer och arbeta med dess material. Koppla klipp till utkastet i klippkartan.', href:'/admin/dealers', icon:Clapperboard, secondary:{label:'Klippkarta',href:'/admin/clips'} },
   { title:'Bolag & team', description:'Skapa bolag, bjud in medlemmar och hantera deras åtkomst.', href:'/admin/companies', icon:Building2, secondary:null },
-  { title:'Spelrum & publicering', description:'Välj bolag och rum. Granska utkastet innan du publicerar en ny version.', href:'/admin/publication', icon:Send, secondary:null },
   { title:'Provspelning', description:'Provspela en dealer och följ vad som visas och hörs i spelaren.', href:'/admin/rehearsal', icon:Play, secondary:null },
   { title:'System', description:'Hitta struktur, konton och tekniska inställningar.', href:'/admin/structure', icon:Layers3, secondary:{label:'Konton och åtkomst',href:'/admin/admin/accounts'} },
 ] as const;

@@ -19,11 +19,23 @@ länken till rätt rumsöversikt. Inga produktionsdata ändrades. Dubbel
 hanteringslista är borttagen; inga filer/beroenden/media har raderats här.
 Exakta kvitton och bildreferenser finns i CLOUD-MIGRATION.
 
-Nästa del: Spelbolag → Rum. Först rättas ett verifierat 403-fel vid
-Partner-dokumentladdning (Vercel cors/document i SSR utan Origin/action).
-Detta är dokumenttransport; befintlig session och bolagsbehörighet ska
-fortfarande kontrolleras. Rumsval ska därefter återanvända befintlig
-roomOverrides-skrivare och fryst förhandsvisning, skilda från delad mall.
+Förutsättningen för nästa del är levererad i PR167: Partner-sidans verifierade
+403-fel är borta. Granskat head cc81a8a3 har grön PR-CI inklusive SQL/omstart/
+HTTPS och fullhook 3 914 pass / 9 skip / 0 fel. Main 2396f46f körs på
+www.scoutgaming.tech (Vercel dpl_8s8ayY5PFgDBG4kqa1y8viNGHkac, READY).
+Eget browserprov laddar exakt demorum, paketversion 1 och fryst förhandsvisning
+med befintlig N1-session. Inga produktionsdata ändrades. Main-CI 38752198462
+är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
+
+Del 2 är lokalt implementerad: Spelbolag & rum är huvudingång, med exakt
+rumsval, fryst trelagersförhandsvisning och befintliga roomOverrides-val i
+samma vy. Låsta material visar verkliga namn; separat mallänk bevarar
+bolag/rum/spel och mallens befintliga konsekvensbesked. Inga paketbehörigheter
+utvidgas. Osparade val/pågående operation skyddas vid navigering. 55 riktade
+prov är gröna utan skip. Lab-build 97 och slutlig fullhook på kodhead 8a40965d
+är gröna: 3 924 pass / 9 villkorade skip / 0 fel i 77 grupper. Rent rumsbyte
+provas mot riktig delad historik. Sluthead/CI och produktionsacceptans
+återstår; kod är ännu inte levererad. Ingen ny skrivkedja eller datamodell.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

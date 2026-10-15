@@ -60,18 +60,46 @@ Bortstädat i denna del: den duplicerade hanteringslistan ersattes av samma
 kort som förhandsvisningen. Inga källfiler, beroenden, originalmedia eller
 arbetskopior raderades; nödvändigt bygge återanvänds i nästa leverans.
 
-Nästa avgränsade hinder: Partner-rummets dokumentladdning gav 403 med
-`studio_request_rejected` och digest 632708019 på tidigare main 96750fa0.
-Vercels logg visar SSR, cors/document, crossSite=true utan Origin/action.
-Känd dokumenttransport rättas före det samlade rumsflödet; befintliga
-sessions-, bolags-, API- och skrivskydd ska bestå. PR165 är fortfarande
-parkerad och ingen env-/providerändring krävs för denna rättning.
-Rättningen återanvänder dokumentregeln i middleware och SSR. 74 riktade
-prov passerar utan skip, inklusive aktuella N1-/N2-sessioner, revokering,
-bolagsisolering och nekade API-/Origin-/action-/ramanrop. Lab-build: 97
-byggspår. Kodhead a4565bda4155a1282d5ffa7fd6d223060784763e passerar
-ordinarie fullhook: 3 914 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
-Slutlig PR-CI och produktionsprov av Partner återstår.
+Förutsättning för del 2 levererad i PR167: det observerade 403-felet
+(studio_request_rejected, digest 632708019) vid Partner-dokumentladdning
+är rättat genom återanvändning av samma dokumentregel i middleware och SSR.
+Sluthead `cc81a8a31a5a8dd0c5e90d87618f9170dfb23053` är granskat och
+PR-CI 38751080340 är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
+74 riktade prov utan skip, Lab-build 97 byggspår, fullhook 3 914 pass /
+9 villkorade skip / 0 fel/cancel i 77 grupper; dokumentationshook 43/43.
+Sessioner, medlemskap, API, Origin, action, ramar och skrivbehörighet behåller
+sina befintliga kontroller. Ingen env-, provider- eller datamodell ändrades.
+
+PR167 mergades normalt till main
+`2396f46f3dad4c6490c95625b79f3d3ddef0096e`. Vercel
+`dpl_8s8ayY5PFgDBG4kqa1y8viNGHkac` är READY på detta SHA och bunden till
+www.scoutgaming.tech. Eget browserprov på den tidigare felande adressen
+/partner/scoutgaming-demo/rooms?room=room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea
+laddar med befintlig N1-session: korrekt bolag, exakt rum, publicerad
+paketversion 1, inget sparat utkast och den frysta trelagersförhandsvisningen.
+Bild: samma privata evidensmapp, partner-room-after.png. Inga sparningar,
+publiceringar, nya sessioner eller providerjobb utfördes. Main-CI 38752198462
+är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
+
+Del 2 är lokalt implementerad, ännu inte driftsatt eller browseraccepterad:
+Admin har en huvudingång Spelbolag & rum, bolagsval följt av rum och en
+samlad fryst förhandsvisning bredvid bakgrund/dealer/bord. Rummets spel och
+verkliga publicerings-/utkaststatus syns. Exakta rumslänkar binder registrerad
+ägare; okända eller främmande rum ger inget reservval. Osparade val och
+pågående skrivning skyddas vid navigering. Befintlig roomOverrides-writer,
+granskning och revisionskontroll återanvänds; inga nya skriv-API:er.
+
+Demopaketet låser bakgrund, bord och dealer. UI visar deras verkliga namn och
+låsning, med tydligt separat länk till befintlig delad mall i samma
+bolags-/rums-/spelkontext. Där finns befintligt konsekvensbesked för andra
+rum. Paketets behörigheter har inte utvidgats. Bibliotek och papperskorg
+är sekundära; dubbel rumslista och generella statistikblock har tagits bort
+från huvudflödet. Inga media, arbetskopior eller beroenden har raderats.
+55 fokuserade tester passerar utan skip. Lab-build har 97 kontrollerade
+byggspår. Slutlig fullhook på kodhead 8a40965d: 3 924 pass, 9 villkorade skip,
+0 fel/cancel i 77 grupper. Granskningen rättade ett rent rumsbyte som tidigare
+inte meddelade vyernas historikprenumeranter; nytt prov använder den riktiga
+historikmodulen. GitHub-CI och produktionsacceptans återstår; PR165, QA och ny rörlig läppsynk förblir parkerade.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 
