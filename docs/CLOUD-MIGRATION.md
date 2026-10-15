@@ -13,7 +13,7 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 | --- | --- | --- |
 | 1 — levererad och browserverifierad | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
 | 2 — huvudflöde och mallretur levererade | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
-| 3 — funktion levererad; text/status förenklas härnäst | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
+| 3 — klippkort och status levererade, browserverifierade | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
 | 4 | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
 | 5 | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
 | 6 | QA-återgång och lokal konsolidering | QA:s unika kod/stash/kvitton är bevarade och osäker QA är stängd. Exakta molnresurskandidater kräver separat beslut; Preview återkopplas inte till produktion. Huvudcheckout/startprofil är verifierad, överförda egna kopior städas säkert och varje kvarvarande kopia har ett konkret syfte. |
@@ -157,17 +157,46 @@ Bortstädat: missvisande grön vald-filmstatus, sammanblandat Rum/bakgrund
 samt två Partner-omvägar. 17 befintliga filer ändrade; inga nya källfiler,
 originalmedia, beroenden eller arbetskopior raderade.
 
-Del 3:s avslutande text/statusrättning är implementerad lokalt. Korta
-situationsförklaringar visas på korten; befintlig teknisk källa och exakt
-filidentitet finns under Detaljer. Ett återställt projekt ger nu ett korrekt
-återställningsbesked. Hjulutfall 0–36 visas som rendering på Anna-bordet,
-med serverstyrt vinnande nummer och utan uppladdning eller saknad-filmstatus.
-Mallpanelens äldre krav på en separat filmbank är också rättat efter
-browserobservation. Övriga planerade roulettefack behåller sin status; spelare,
-klippbindningar, policyvärden och mediefiler ändras inte. 32 fokuserade prov
-passerar utan skip och Lab-bygget med 97 kontrollerade byggspår är grönt.
-Full kontroll, sluthead, leverans och browseracceptans återstår innan del 3
-räknas färdig och del 4 Tal börjar.
+Del 3:s klippkort/status är avslutade genom PR170. Granskat sluthead
+`bec009a24b56ac6a377ce31d8ddf3c412842714b` mergades normalt till main
+`1846a7af7935b78d27a598aa94f4ac901075e234`. PR-CI 38771399407 och
+main-CI 38772447966 är gröna inklusive faktisk SQL-/omstarts-/HTTPS-acceptans.
+Vercel `dpl_2NXbuB7WWH7gGbLL1533AkuxYpz9` är READY på detta SHA och www.
+32 fokuserade prov utan skip, slutligt Lab-build 97 och fullhook 3 931 pass /
+9 villkorade skip / 0 fel/cancel i 77 grupper. Inga kontroller kringgicks.
+
+Eget browserprov på www: blackjack och roulette har korta situations-
+förklaringar; Detaljer behåller teknisk källa och exakt fil-ID/format/hash.
+Anna-bordets hjulutfall visas som rendering med serverstyrt nummer, utan
+filmuppladdning eller saknad-filmstatus. Mallpanelen ger samma besked efter
+rättning av dess observerade filmbankskrav. Övriga planerade roulettefack
+är fortsatt planerade. Kevin 1 iv:s regel kryssades lokalt i och ur: ändrat
+utkast blev rent, Spara inaktiverades och återställningsbeskedet visades.
+Ingen sparning/publicering, mediaändring, spelrunda eller providerbegäran.
+
+Före: clips-after.png och clips-roulette-after.png från PR169. Efter:
+clips-copy-after.png och clips-roulette-copy-after.png i samma privata
+bevismapp; loggar clip-copy-* och pr170-*. Nio befintliga filer ändrade,
+inga nya källfiler, borttagna media, beroenden eller arbetskopior.
+GitGuardian på main: 0 öppna/18 ignorerade i läst källa, övervakning aktiv;
+historik too_large, partiell platsmetadata och queued GitHub-suite kvarstår.
+
+Nästa del är Tal: inspelade klipp, generering och realtid med verkliga filer,
+text/ljud/granskning och avstängd rörlig läppsynk. Roulettens äldre översikts-
+fras säger fortfarande ”kulsläpp + hjulfilm”; samordna den texten med Tal-
+förklaringen och den verifierade renderingen utan att ändra spelmotorn.
+Del 4 är implementerad lokalt: Inspelat tal visar verkliga registerfiler för
+vald dealer och spel, originaltext/språk, format, tillgänglighet och
+hashbundet granskningskvitto. Underkänd, väntande, saknad och ogiltig
+identitet hålls åtskilda; röstprofil/textmall räknas aldrig som färdig film.
+Ny generering visar textmallar separat från realtidens röst-/referensprofil.
+Befintliga spar-, budget- och providergrindar består; ny rörlig läppsynk
+aktiveras inte. Panelen kan läsas även för roulette och skiljer dess
+ofärdiga talanslutning från spelneutrala mallar. Roulettens översikt säger
+nu animerat hjul. Förhandsvisningens eget ljud är tillgängligt och pausas
+när panelen stängs. 34 fokuserade prov utan skip och Lab-build 97 passerar.
+Fullkontroll, sluthead, normal leverans och browseracceptans återstår.
+
 PR165, QA, env-värden och rörlig läppsynk förblir parkerade/orörda i denna del.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026

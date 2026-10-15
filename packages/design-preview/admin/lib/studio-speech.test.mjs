@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SPEECH_LINES} from '../../../../web/public/speech-lines.mjs';
-import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl} from '../../../../web/public/studio-speech.mjs';
+import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl,studioRecordedSpeech} from '../../../../web/public/studio-speech.mjs';
 import {initialDealerVoiceDraft,dealerVoiceDraft,dealerVoicePreset} from '../../../../web/public/dealer-voice-catalog.mjs';
 
 test('confirmed original voice defaults preserve saved choices and refuse ambiguous or approximate names',()=>{
@@ -147,6 +147,47 @@ test('roulette selects only unchanged game-neutral SV/EN library captions; Black
 test('roulette UI resets unsupported selection and all-line preparation sends exactly the neutral subset',async()=>{
   const h=await panelHarness();h.props.projectDirty=false;h.render();h.flush();let tree=h.render();h.field(tree,'Replikplats').props.onChange({target:{value:'insurance'}});tree=h.render();
   h.props.game='roulette';tree=h.render();h.flush();tree=h.render();const select=h.field(tree,'Biblioteksreplik');assert.equal(select.props.value,'placebets');assert.deepEqual(h.nodes(select,node=>node.type==='option').map(node=>node.props.value),studioSpeechLineIds('roulette'));
-  const headings=h.nodes(tree,node=>node.type==='h3').map(node=>node.props.children.flat().join(''));assert.ok(headings.some(text=>text.includes('Gemensamt talbibliotek')&&text.includes('4')));
+  const headings=h.nodes(tree,node=>node.type==='h3').map(node=>[node.props.children].flat().join(''));assert.ok(headings.some(text=>text.includes('Ny generering')&&text.includes('4')));
   const all=h.field(tree,'Förbered alla');all.props.onChange({target:{checked:true}});tree=h.render();h.flush();tree=h.render();assert.equal(h.button(tree,'Förbered 4 talset').props.disabled,false);h.button(tree,'Förbered 4 talset').props.onClick();await new Promise(resolve=>setImmediate(resolve));assert.equal(h.calls.length,1);const request=JSON.parse(h.calls[0].init.body);assert.equal(request.operation,'prepare');assert.deepEqual(request.lineIds,studioSpeechLineIds('roulette'));assert.equal(request.language,'sv');
+});
+
+function recordingFixture(id='take-1',dealerId='dragan',status='approved') {
+  const identity={dealerId,lineId:'goodluck',takeId:'goodluck_1',language:'en',exactText:'Original recorded words.',videoSha256:'a'.repeat(64),audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:25,frameCount:50,audioDelayMs:0,entryPose:'VILA',exitPose:'VILA',calibrationRevision:'test-1'};
+  const proof=state=>({status:state,by:'Reviewer',at:'2026-10-15T10:00:00.000Z',identity:{...identity}});
+  return {id,label:'Original take',dealer:dealerId,available:true,integrity:'verified',previewUrl:'/studio/api/videos/'+id,contentType:'video/mp4',sha256:identity.videoSha256,
+    classification:{dealerId,kind:'speech',eventId:'speak.goodluck',situation:'goodluck',recordedSpeech:{schemaVersion:1,...identity,recording:proof('verified-recording'),review:status==='pending'?{status}:proof(status)}}};
+}
+test('recording inventory counts actual owner/game files, not 17 templates or a voice profile',()=>{
+  const own=recordingFixture(),foreign=recordingFixture('foreign','paow'),archived=recordingFixture('archived'),roulette=recordingFixture('roulette');
+  archived.classification.archived=true;roulette.classification.game='roulette';
+  const conflict=recordingFixture('owner-conflict');conflict.dealer='paow';
+  const inventory={videos:[own,foreign,archived,roulette,conflict]},project={clipLabels:{'take-1':'Readable take'}};
+  const before=structuredClone(inventory),rows=studioRecordedSpeech(project,inventory,'dragan');
+  assert.deepEqual(rows.map(row=>row.id),['take-1']);assert.equal(rows[0].label,'Readable take');assert.equal(rows[0].exactText,'Original recorded words.');assert.equal(rows[0].language,'en');assert.equal(rows[0].review,'approved');assert.equal(rows[0].available,true);
+  assert.deepEqual(studioRecordedSpeech(project,inventory,'dragan','roulette').map(row=>row.id),['roulette']);assert.deepEqual(studioRecordedSpeech({}, {videos:[]},'dragan'),[]);assert.deepEqual(inventory,before);
+});
+test('recorded approvals are invalidated by changed bytes or proof while pending/rejected/missing stay explicit',()=>{
+  const changed=recordingFixture('changed');changed.sha256='d'.repeat(64);
+  const broken=recordingFixture('broken');broken.classification.recordedSpeech.review.identity.audioSha256='e'.repeat(64);
+  const missing=recordingFixture('legacy');delete missing.classification.recordedSpeech;
+  const unavailable=recordingFixture('unavailable');unavailable.available=false;
+  const unsafe=recordingFixture('unsafe');unsafe.previewUrl='https://provider.invalid/private';
+  const rows=studioRecordedSpeech({}, {videos:[changed,broken,missing,unavailable,unsafe,recordingFixture('pending','dragan','pending'),recordingFixture('rejected','dragan','rejected')]},'dragan');
+  const byId=Object.fromEntries(rows.map(row=>[row.id,row]));
+  assert.equal(byId.changed.review,'invalid-proof');assert.equal(byId.broken.review,'invalid-proof');assert.equal(byId.legacy.review,'missing-proof');assert.equal(byId.legacy.exactText,'');assert.equal(byId.pending.review,'pending');assert.equal(byId.rejected.review,'rejected');assert.equal(byId.unavailable.available,false);assert.equal(byId.unavailable.review,'unavailable');assert.equal(byId.unsafe.available,false);assert.equal(byId.unsafe.url,null);
+});
+test('panel separates recorded original text from generation language and opens with no provider call or dirty form',async()=>{
+  const h=await panelHarness();h.props.projectDirty=false;h.props.dealerId='dragan';h.props.project={...h.props.project,dealers:[{id:'dragan',label:'Dragan'}]};h.props.inventory={videos:[recordingFixture()]};
+  const original=structuredClone(h.props.project);h.render();h.flush();let tree=h.render();h.flush();
+  const summaries=h.nodes(tree,node=>node.type==='summary').map(node=>node.props.children);assert.ok(summaries.includes('Ny generering · textmallar'));assert.ok(summaries.includes('Realtidstal · röst och referens'));assert.ok(!summaries.includes('Talbibliotek · inspelade repliker'));
+  assert.equal(h.field(tree,'Inspelad fil').props.value,'take-1');
+  assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children==='Original recorded words.').length);
+  h.field(tree,'Språk').props.onChange({target:{value:'sv'}});tree=h.render();h.flush();
+  assert.ok(h.nodes(tree,node=>node.type==='p'&&node.props.children==='Original recorded words.').length);
+  assert.equal(h.calls.length,0);assert.deepEqual(h.props.project,original);assert.equal(h.props.profileDirty,false);
+});
+
+test('audio-only and unavailable records remain files, never an inferred talvideo',()=>{
+  const audio={id:'audio-only',label:'Audio only',dealer:'dragan',available:true,integrity:'verified',previewUrl:'/studio/api/videos/audio-only',contentType:'audio/mpeg',sha256:'f'.repeat(64),classification:{dealerId:'dragan',kind:'speech',eventId:'speak.goodluck',situation:'goodluck',mediaType:'audio'}};
+  const row=studioRecordedSpeech({}, {videos:[audio]},'dragan')[0];assert.equal(row.audio,true);assert.equal(row.review,'missing-proof');assert.equal(row.exactText,'');assert.equal(row.available,true);
 });

@@ -1,3 +1,4 @@
+import { normalizeRecordedSpeech, recordedSpeechForVideo } from './recorded-speech.mjs';
 import { SPEECH_LINES } from './speech-lines.mjs';
 import { ASTRID_VOICE_PROFILE } from './astrid-voice-profile.mjs';
 import { normalizeDealerSpeechProfile, validateDealerSpeechReference } from './dealer-speech-profile.mjs';
@@ -59,4 +60,30 @@ export function studioSpeechMediaUrl(value) {
   // Protected application routes only; never provider URLs or credentials.
   if(typeof value!=='string'||!/^\/(?:studio\/)?api\/(?:speech-build\?media=[a-f0-9]{32}&kind=(?:audio|video)|videos\/[A-Za-z0-9._:-]+|replies\/[a-f0-9-]+\/(?:audio|video)(?:\?dealer=[a-z][a-z0-9-]*)?)$/.test(value))return null;
   return value;
+}
+
+// Registry rows are recordings, not generation templates or voice presets.
+// Keep broken/unreviewed files visible; never infer acceptance from a label.
+export function studioRecordedSpeech(project,inventory,dealerId,game='blackjack') {
+  if(!['blackjack','roulette'].includes(game))throw Error('studio_speech_game_invalid');
+  return inventory.videos.filter(video=>{
+    const metadata=video.classification;
+    return metadata?.dealerId===dealerId&&!metadata.archived&&!video.archived&&(!video.dealer||video.dealer===dealerId)&&metadata.mediaType!=='image'
+      &&(metadata.kind==='speech'||metadata.recordedSpeech)
+      &&(game==='roulette'?metadata.game==='roulette':metadata.game!=='roulette');
+  }).map(video=>{
+    const metadata=video.classification,declared=metadata.recordedSpeech;
+    let speech=null,review='missing-proof';
+    if(declared)try{
+      speech=normalizeRecordedSpeech(declared,{dealerId,lineId:metadata.situation,videoSha256:video.sha256});
+      review=speech.review.status==='rejected'?'rejected':speech.recording.status==='verified-recording'&&speech.review.status==='approved'
+        ?recordedSpeechForVideo(video,{dealerId,lineId:speech.lineId,language:speech.language})?'approved':video.available===false?'unavailable':'invalid-proof':'pending';
+    }catch{review='invalid-proof';}
+    const url=studioSpeechMediaUrl(video.previewUrl),audio=metadata.mediaType==='audio'||video.contentType?.startsWith('audio/');
+    return {id:video.id,label:project.clipLabels?.[video.id]??video.label,situation:metadata.situation,
+      lineLabel:STUDIO_SPEECH_LINES.find(row=>row.id===metadata.situation)?.label??metadata.situation,
+      exactText:typeof declared?.exactText==='string'?declared.exactText:'',language:typeof declared?.language==='string'?declared.language:'',
+      available:video.available===true&&video.integrity!=='unavailable'&&Boolean(url),url,audio:Boolean(audio),
+      contentType:video.contentType??'',sha256:video.sha256??'',speech,review};
+  }).sort((a,b)=>a.lineLabel.localeCompare(b.lineLabel,'sv')||a.label.localeCompare(b.label,'sv')||a.id.localeCompare(b.id));
 }
