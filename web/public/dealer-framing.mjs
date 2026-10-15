@@ -18,7 +18,7 @@ export function dealerFrameRect(sourceWidth,sourceHeight,width,height,framing=DE
 export function drawDealerFrame(context,video,width,height,framing,green=false) {
   context.clearRect(0,0,width,height);
   if(green){context.fillStyle='#00ff00';context.fillRect(0,0,width,height);}
-  context.drawImage(video,...dealerFrameRect(video.videoWidth??video.naturalWidth,video.videoHeight??video.naturalHeight,width,height,framing));
+  context.drawImage(video,...dealerFrameRect(video.videoWidth??video.naturalWidth??video.width,video.videoHeight??video.naturalHeight??video.height,width,height,framing));
 }
 const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 // Matches the shared compositor's key. Soft alpha and spill correction preserve

@@ -69,6 +69,25 @@ READY och Render `dep-db88cebm8hqs73btc990` live är verifierade; faktisk
 engine health/version gav ok/samma SHA. Lokal main synkades med 225 befintliga
 filhashar bevarade. Egna arbetskopian `player-controls` är app-arkiverad.
 
+## Förberedd konsument för rörlig läppsynk, 15 oktober 2026
+
+Egen featurebranch bygger vidare på `654ab9e2`. WebCodecs-konsumenten för
+Emils råa H.264 färg/mask är kopplad till den gemensamma kompositionens
+dealerbild före framing/keying. Exakt plan-, dealer-, ljud-, avatar-,
+källhash- och bildrutematchning krävs. Avbrott stänger dekodern, frigör rutor
+och återställer den kvarhållna kroppen. Ingen ny överlagring över bord/kort.
+
+Det är en explicit kopplingspunkt, inte aktiverad dealerchatt eller byte av
+provider. Kodcommit `82e84e0984920112f9770798796f06cd5ab11cfa` passerade
+Lab-build (97 byggspår) och ordinarie fullhook: 3 862 pass, 9 villkorade skip,
+0 fel/cancel i 77 grupper, inklusive två Chrome-avkodningar med syntetiskt
+material. Personernas tal/läppsynk har inte fått ny acceptans.
+Detaljer och återstående transport-/spelararbete finns i
+[LOCAL-PRESENTATION-RUNTIME.md](LOCAL-PRESENTATION-RUNTIME.md).
+Worker-repot/avatarpaketen är ännu otillgängliga för Jakobs konto. Emils
+senaste handoff anger två dedikerade demopoddar som inte får ändras eller
+få nya anslutna workers. Ingen env eller extern inställning ändrades.
+
 ## Env och Dragan i produktionsvärdens isolerade provspel, 15 oktober 2026
 
 Verifierad produktbas är `46444572` (PR154): main-CI `38662964323` success,
