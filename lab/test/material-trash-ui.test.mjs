@@ -60,3 +60,27 @@ test('persisted trash remains visible and restoration also requires an explicit 
  assert.match(h.html(),/Papperskorg · 1/);h.button('Återställ').props.onClick();assert.equal(JSON.parse(h.requests[0].options.body).archived,false);
  await h.reply(0,{impact:{...h.impact,archived:false}});assert.ok(h.button('Bekräfta'));assert.match(h.html(),/Filen blir valbar igen/);
 });
+
+test('Admin material cards share the game filter and authoritative trash confirmation without a second action list',async()=>{
+ const h=harness({role:'table',filterAsset:asset=>asset.game==='blackjack',
+  renderAsset:(asset,actions)=>React.createElement('article',null,asset.label,React.createElement('button',{disabled:actions.disabled,onClick:actions.onTrash},'Kortets papperskorg'))});
+ const blackjack={...h.asset,role:'table',game:'blackjack',label:'Blackjackbord'},roulette={...h.asset,id:'22222222-2222-4222-8222-222222222222',role:'table',game:'roulette',label:'Roulettebord'};
+ h.input.project={...h.project,layerAssets:[blackjack,roulette]};
+ const html=h.html();assert.match(html,/Blackjackbord/);assert.doesNotMatch(html,/Roulettebord/);assert.doesNotMatch(html,/Oanvänd i utkast/);
+ assert.equal(h.button('Flytta till papperskorgen'),undefined,'the separate action list is replaced by the card');
+ h.button('Kortets papperskorg').props.onClick();assert.equal(h.requests.length,1);
+ assert.deepEqual(JSON.parse(h.requests[0].options.body),{id:blackjack.id,archived:true,expectedRevision:h.project.revision});
+ await h.reply(0,{impact:{...h.impact,role:'table',label:blackjack.label}});
+ assert.ok(h.button('Bekräfta'),'card action still requires the server impact and explicit confirmation');
+ h.input.disabled=true;assert.equal(h.button('Kortets papperskorg').props.disabled,true);
+ h.button('Kortets papperskorg').props.onClick();assert.equal(h.requests.length,1,'disabled draft cannot start another action');
+});
+
+test('material trash restoration follows the selected game without hiding its protected stored entries',()=>{
+ const h=harness({role:'table',filterAsset:asset=>asset.game==='roulette'});
+ const blackjack={...h.asset,role:'table',game:'blackjack',label:'Arkiverat blackjackbord'},roulette={...h.asset,id:'22222222-2222-4222-8222-222222222222',role:'table',game:'roulette',label:'Arkiverat roulettebord'};
+ h.input.project={...h.project,layerAssets:[],layerAssetTrash:[{asset:blackjack,archivedAt:'2026-10-15T00:00:00.000Z'},{asset:roulette,archivedAt:'2026-10-15T00:00:00.000Z'}]};
+ assert.match(h.html(),/Arkiverat roulettebord/);assert.doesNotMatch(h.html(),/Arkiverat blackjackbord/);
+ h.button('Återställ').props.onClick();assert.equal(JSON.parse(h.requests[0].options.body).id,roulette.id);
+ assert.equal(h.input.project.layerAssetTrash.length,2,'filtering does not mutate stored material');
+});

@@ -1,5 +1,51 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## Aktiv genomförandeplan — enklare Admin, 15 oktober 2026
+
+Jakob har gett återstartsmandat för befintlig Admin, en leveransström och
+inga nya underagenter, arbetskopior eller testmiljöer. Arbetskopian är
+admin-document-navigation, branch codex/stabilization-checkpoint.
+Målet är synligt enklare arbete och färre aktiva delar, inte fler trackers.
+Production från main är användarens acceptansmiljö; ordinarie lokala tester,
+CI, PR-granskning och ägarkontroller gäller fortfarande.
+
+| Ordning | Leverans | Klar när |
+| --- | --- | --- |
+| 1 — pågår | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
+| 2 | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
+| 3 | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
+| 4 | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
+| 5 | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
+| 6 | QA-återgång och lokal konsolidering | QA:s unika kod/stash/kvitton är bevarade och osäker QA är stängd. Exakta molnresurskandidater kräver separat beslut; Preview återkopplas inte till produktion. Huvudcheckout/startprofil är verifierad, överförda egna kopior städas säkert och varje kvarvarande kopia har ett konkret syfte. |
+
+Varje del avslutas före nästa: relevant kontroll → obligatoriska kontroller →
+slutgranskning → normal PR/merge för verifierat Jakob-ägt arbete →
+kontroll av produktions-SHA och ändrat browserflöde → avgränsad egen städning.
+Produktionsskrivprov begränsas till kända test-/demoresurser med återställning.
+Inga riktiga saldon eller aktiva kundpubliceringar används som testdata.
+
+PR165 är uttryckligen parkerad och bevarad i n1-player-session:
+head 34281e4c, tre okommittade rättnings-/dokumentfiler. Den går bara före
+om ett valt Admin-flöde kräver N1-till-spelarkonto-övergången. Vid återupptagning
+krävs verklig grön SQL-/omstarts-/HTTPS-CI och granskning av slutligt head.
+Den röda PR-koden ingår inte i materialkortsleveransen.
+
+QA:s 24 staged filer, integrationsstash, fem dependency-junctions och privata
+återställningsunderlag bevaras. Ingen QA-utbyggnad, helbranch-import, ny
+mediekatalog eller aktivering av providerjobb ingår. Ofullständigt underlag
+för worker/image/avatarbank redovisas utan att stoppa oberoende Admin-arbete.
+
+Bevarande före ändring: de tre tidigare dokumentutkasten finns som avgränsad
+patch i huvudcheckoutens privata
+arkiv/2026-10-15/admin-consolidation/preexisting-docs.patch.
+Materialkorten är lokalt implementerade: 31 riktade regressioner passerar
+utan skip; Lab-build passerar med 97 kontrollerade byggspår. Kodcommit
+02297fba462762837e77722636de15d8c59eb387 passerar ordinarie fullhook
+med Chrome: 3 911 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
+Slutgranskning av PR-head, GitHub-CI och produktionsacceptans återstår. Ingen merge eller
+deployment har utförts i denna leverans. Förebilder och bygglogg ligger i
+samma privata evidensmapp.
+
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 
 **Så används loggen:** detta är aktuell status, en ändringsbar arbetslista och
@@ -33,6 +79,31 @@ avveckling av gamla hostnamn och från flytt av källkoden i `lab/`. Ingen
 procentangivelse ersätter verifiering av varje flöde. Historisk startpunkt,
 13 oktober: main `4d6b1ebc` (PR104), Vercel READY och Render live.
 
+### Versionsbunden avstämning inför överlämning, 15 oktober
+
+Förberedelsebasen är main `96750fa0`, där PR162–164 ingår. PR164:s granskade
+head var `2a8295a4`; dess lokala kvitto finns i C4-avsnittet nedan. Slutlig
+SSO-revision, sammansatt main, driftstatus och browseracceptans inväntas från
+samordnaren. Inget av dessa resultat tillskrivs ännu denna avstämning.
+
+Samordnaren bekräftar att `partner-write-acceptance` och `public-lobby` är
+managed-arkiverade efter hashbackup och kontroll av egna dependency-junctions.
+`pr91-integration` är fortfarande intakt; den aktuella dokumentationskopian
+behålls. Det äldre C9-kvittots köade arkivering är historik för sin tidpunkt.
+
+Det sammansatta Lab-byggets 18 CSS-varningar är inte visuell acceptans.
+Fokusreglerna i `studio-theme.module.css:24` och
+`studio-administration.module.css:21` anger olika outline-färger; ett
+avgränsat visuellt tangentbordsprov återstår inom C3. Ingen CSS ändras här.
+
+Samordnarens privata `avatar-bank-checkpoint.json` redovisar 287 poster i
+Desktop-ZIP:en utan förväntade banknamn, ett komplett träd för Kevins head
+`60e984b4` utan dessa banknamn och staging `ae9fedc5`. Namnkontrollen
+identifierar ingen verifierad avatarbank och bevisar inte att allt tänkbart
+underlag saknas. Den nya rörliga läppsynken förblir avstängd och oaccepterad;
+release/bank och verkliga medieprov återstår. Aktuell env-städning och dess
+avgränsade likhetskvitto finns i ENVIRONMENT-VARIABLES.md.
+
 ### C4: Admin-dokumentnavigation, 15 oktober
 
 **Ny produktionsobservation 11:17:32.829 UTC:** samordnarens Chrome-prov mot
@@ -52,8 +123,8 @@ fortsatt loginredirect. De tre berörda fokusfilerna ger 61 pass, 0 skip, 0 fel.
 Efter integration av main `1c9e1c6a` byggdes hela Lab om, inklusive Lobbyns
 ändrade byggindata: 97 byggspår passerar. Kodcommit `6c6db03b` passerar ordinarie
 fullhook med Chrome: 3 906 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
-Denna fortsättning är ännu inte
-driftsatt eller produktionsaccepterad. C4 förblir öppen.
+PR164 är nu mergad som `96750fa0`; slutlig drift- och browseracceptans
+inväntas från samordnaren. C4 förblir öppen.
 
 #### Historiskt lokalt kvitto för PR161
 

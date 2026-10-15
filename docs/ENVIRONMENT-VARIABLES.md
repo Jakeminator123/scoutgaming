@@ -1,6 +1,21 @@
 # Miljövariabler per tjänst
 
-## Aktuell env- och mediekontroll, 15 oktober 2026 förmiddag UTC
+## Aktuell lokal env-status, 15 oktober 2026 efter aliasstädning
+
+KEVI:s senare verifierade städning tog bort de tre redundanta namnen
+`LAB_PARTNER_KEY_ID`, `LAB_PARTNER_SECRET` och `LAB_PARTNER_PLAYER_ID`
+ur både root och Lab, tre poster per fil. Kanoniska `BETTALOTTO_*` ger samma
+effektiva konfiguration i åtta profiler; kodägarens 16 riktade tester passerar.
+Root har nu 53 namn och Lab 48; den samlade nyckelfria inventeringen omfattar
+115 variabelnamn. `.env.emil`, cloud-storage-profilen och molnet är oförändrade.
+Inga värden eller hemligheter återges här. Privatrapporten i
+`lab/data/platform-private/provider-env-alignment/` är uppdaterad.
+
+Förmiddagens 56/51 lokala poster och 118 samlade namn nedan är ett tidsbundet
+kvitto före denna städning. Konfigurationslikhet och tester innebär inte ett
+nytt provider-, spel- eller läppsynkprov.
+
+## Historiskt env- och mediekvitto, 15 oktober 2026 förmiddag UTC före aliasstädningen
 
 Ny kontroll mot Vercel team/projekt `scoutgaming`, Render `croupier-v2`
 och Neon-projekt `wandering-hill-60561912` (`croupier-production`), gren
@@ -56,8 +71,8 @@ SAMORDNING. Marketplace-namnen `CROUPIER_NEON_*` ska inte automatiskt ersätta
 den explicita game-URL:en. Gamla Pythonverktyget `inspect_runpod.py` kan
 ärva andra processnycklar; använd det explicita profilverktyget nedan.
 
-Nyckelfri lista över 118 namn, lokala filer, Vercel-miljöer, Render-tjänster
-och kommentarer finns privat i
+Vid förmiddagens kontroll omfattade inventeringen 118 namn. Den privata
+rapporten med lokala filer, Vercel-miljöer, Render-tjänster och kommentarer finns i
 `lab/data/platform-private/provider-env-alignment/README.md` och `inventory.json`.
 
 Kevin-paketet i den tidigare nedladdningsmappen har 274 hashverifierade filer
