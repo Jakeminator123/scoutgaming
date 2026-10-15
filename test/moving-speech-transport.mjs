@@ -220,3 +220,86 @@ test('a pre-aborted attempt exposes no callback capability and still releases it
     onChunk: async () => assert.fail('must not deliver'), finalize: async outcome => finished.push(outcome) }), /cancelled/);
   assert.equal(finished.length, 1); assert.throws(() => input.playbackPcm(), /cancelled/);
 });
+
+test('normal close drains all received frames and done across delayed output authorization', async t => {
+  const f = await setup(t, { authorize: async ({ phase }) => {
+    if (phase === 'output') await new Promise(resolve => setTimeout(resolve, 30));
+    return { userId: 'u', sessionId: 'session-1', endpointId: 'fixtureendpoint', jobId: 'accepted', release: receipt() };
+  } });
+  const ws = await f.ready(), run = f.transport.run(); await f.ended(ws);
+  for (const [from, n] of [[0, 12], [12, 12], [24, 6]]) {
+    ws.send(JSON.stringify(metadata(f.input, from, n))); ws.send(Buffer.from([n]));
+  }
+  ws.send(done(f.input)); ws.close(1000);
+  assert.deepEqual(await run, { chunks: 3, frames: 30, planSha256: f.input.plan.planSha256 });
+  assert.equal(f.chunks.length, 3); assert.equal(f.finished.length, 1);
+  assert.equal(f.finished[0].reason, 'complete');
+});
+
+test('normal close without done drains a valid pair but never reports successful completion', async t => {
+  const f = await setup(t, { onChunk: async (meta, bytes) => {
+    await new Promise(resolve => setTimeout(resolve, 30)); f.chunks.push({ meta, bytes });
+  } });
+  const ws = await f.ready(), run = f.transport.run();
+  const rejected = assert.rejects(run, /disconnected/); await f.ended(ws);
+  ws.send(JSON.stringify(metadata(f.input))); ws.send(Buffer.from([12])); ws.close(1000);
+  await rejected;
+  assert.equal(f.chunks.length, 1); assert.equal(f.finished.length, 1);
+  assert.notEqual(f.finished[0].reason, 'complete');
+});
+
+test('blocked prepare is bounded on abort and timeout, cleans its reservation and ignores a late result', async () => {
+  for (const mode of ['abort', 'timeout']) {
+    const input = inputFor(), controller = new AbortController(), finished = [];
+    let enter, resume, context;
+    const entered = new Promise(resolve => { enter = resolve; });
+    const pending = new Promise(resolve => { resume = resolve; });
+    const factory = createMovingSpeechTransport({ input, origin: 'https://own-game.example', release: receipt(),
+      signal: controller.signal, idleMs: 30, lifetimeMs: 60,
+      authorize: args => { context = args; enter(); return pending; },
+      onChunk: async () => assert.fail('prepare cannot deliver'), finalize: async outcome => finished.push(outcome) });
+    const observed = factory.then(transport => ({ transport }), error => ({ error }));
+    await entered;
+    if (mode === 'abort') controller.abort();
+    let watchdog;
+    try {
+      const result = await Promise.race([observed, new Promise(resolve => { watchdog = setTimeout(() => resolve('hung'), 200); })]);
+      assert.notEqual(result, 'hung', `prepare must settle on ${mode}`);
+      assert.match(result.error?.message || '', /cancelled|closed|authorization_timeout|lifetime_exceeded/);
+      assert.equal(finished.length, 1); assert.equal(finished[0].owner, null);
+      assert.equal(finished[0].binding, input.plan.binding);
+      assert.equal(context.signal.aborted, true); assert.throws(() => input.playbackPcm(), /cancelled/);
+      resume({ userId: 'late', sessionId: 'session-1', endpointId: 'fixtureendpoint' });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      assert.equal(finished.length, 1); assert.equal((await observed).transport, undefined);
+    } finally {
+      clearTimeout(watchdog);
+      resume({ userId: 'late', sessionId: 'session-1', endpointId: 'fixtureendpoint' });
+      const late = await observed;
+      await late.transport?.cancel();
+    }
+  }
+});
+
+test('prepare denial or exception finalizes the reserved attempt and clears PCM', async () => {
+  for (const authorize of [async () => null, async () => { throw Error('fixture authorization unavailable'); }]) {
+    const input = inputFor(), finished = [];
+    await assert.rejects(createMovingSpeechTransport({ input, origin: 'https://own-game.example', release: receipt(),
+      authorize, onChunk: async () => assert.fail('must not deliver'), finalize: async outcome => finished.push(outcome) }),
+    /not_authorized|authorization unavailable/);
+    assert.equal(finished.length, 1); assert.equal(finished[0].owner, null);
+    assert.throws(() => input.playbackPcm(), /cancelled/);
+  }
+});
+
+test('invalid startup release or origin releases the captured reservation before admission', async () => {
+  for (const invalid of [{ release: { ...receipt(), expectedImage: 'latest' } }, { origin: 'http://own-game.example' }]) {
+    const input = inputFor(), finished = [];
+    await assert.rejects(createMovingSpeechTransport({ input, origin: 'https://own-game.example', release: receipt(),
+      ...invalid, authorize: async () => assert.fail('invalid setup must not authorize'),
+      onChunk: async () => assert.fail('invalid setup must not deliver'), finalize: async outcome => finished.push(outcome) }),
+    /moving_worker_release|invalid_moving_worker_channel/);
+    assert.equal(finished.length, 1); assert.equal(finished[0].owner, null);
+    assert.equal(finished[0].reason, 'prepare_failed'); assert.throws(() => input.playbackPcm(), /cancelled/);
+  }
+});

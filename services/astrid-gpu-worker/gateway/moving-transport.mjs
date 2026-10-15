@@ -26,7 +26,7 @@ export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, life
   url.searchParams.set('token', token); url.searchParams.set('avatar', avatar);
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE, perMessageDeflate: false });
   const controller = new AbortController();
-  let ws, claimed = false, failure, waiter, queuedBytes = 0;
+  let ws, claimed = false, ended = false, failure, waiter, queuedBytes = 0;
   const queue = [];
   const timer = setTimeout(() => close('moving_worker_lifetime_exceeded'), lifetimeMs);
   timer.unref?.();
@@ -42,7 +42,14 @@ export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, life
   function accept(socket) {
     ws = socket;
     ws.on('error', () => close('moving_worker_socket_error'));
-    ws.on('close', () => close('moving_worker_disconnected'));
+    ws.on('close', code => {
+      if (code !== 1000) return close('moving_worker_disconnected');
+      // Normal EOF is not cancellation: complete frames/done can already be
+      // queued while authorization or the consumer is awaiting. Drain them,
+      // retaining the lifetime/consumer limits. Only `done` completes a job.
+      ended = true;
+      if (waiter) { waiter.reject(Error('moving_worker_disconnected')); waiter = null; }
+    });
     ws.on('message', (data, binary) => {
       if (failure) return;
       const item = { data: Buffer.from(data), binary };
@@ -87,6 +94,7 @@ export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, life
     async next() {
       if (failure) throw failure;
       if (queue.length) { const item = queue.shift(); queuedBytes -= item.data.length; return item; }
+      if (ended) throw Error('moving_worker_disconnected');
       if (waiter) throw Error('moving_worker_concurrent_read');
       return bounded(new Promise((resolve, reject) => { waiter = { resolve, reject }; }), 'moving_worker_read_timeout');
     },

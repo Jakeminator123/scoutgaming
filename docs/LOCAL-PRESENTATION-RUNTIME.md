@@ -90,8 +90,16 @@ måste först äga en budgetreservation. `authorize` kontrollerar vår aktuella
 ägare/session, profilrevision och publicerade paket; vid `send` ska den
 bekräfta accepterat jobb och lämna ett färskt `release`-kvitto. Senare
 kontroller måste behålla samma jobb-ID. Ingen PCM skickas före dessa steg.
-`finalize` frigör just denna reservation/avslutar just vårt jobb genom den
-befintliga journalen; fel från städningen finns i `run`/`cancel`/`closed`.
+`finalize` ska vara bunden till just den redan gjorda reservationen genom
+anroparens closure. Den frigör reservationen/avslutar just vårt jobb genom
+den befintliga journalen; fel från städningen finns i factory/`run`/`cancel`/`closed`.
+Första `authorize(prepare)` omfattas redan av väntetidsgräns, total livstid
+och avbrott. Samtliga authorize-anrop får en AbortSignal. Avslag, exception,
+timeout eller avbrott före färdig prepare rensar PCM och finaliserar en gång;
+ett sent behörighetssvar återupplivar inte försöket. `owner` är då null och
+`binding` identifierar försökt plan, inte en autentiserad användare.
+`release` är null om versionskvittot inte kunde valideras. Finaliseringen
+får därför inte gissa reservationsägare från dessa fält.
 Detta är injicerade serverkontrakt, inte implementerad produktionsadmission.
 
 `handleUpgrade` returnerar false för andra sökvägar. Integrationen måste
@@ -105,7 +113,11 @@ ordning, tagning och kroppsruta kontrolleras innan `onChunk` levererar till
 den autentiserade mottagarens befintliga bildruteadapter. Rektanglarna behåller
 källpixlar; webbläsaren kontrollerar dem mot bildens verkliga dimensioner.
 Dubletter, blandade repliker, för stora meddelanden, kööverskridande,
-frånkoppling och timeout avbryter. `end` avslutar PCM-inmatning; avbrott
+onormal frånkoppling och timeout avbryter. Normal WebSocket-close 1000
+dränerar mottagna svar under befintliga gränser även om en behörighetskontroll
+eller mottagare väntar. Bara ett verifierat `done` fullbordar transporten;
+EOF mitt i metadata/binärpar eller utan `done` är fortfarande ett fel.
+`end` avslutar PCM-inmatning; avbrott
 skickar `avbryt` och kasserar ljud/plan. `onChunk` måste respektera sin
 AbortSignal och göra mottagarens egen samtidiga ägar-/revisionskontroll.
 Slutförd workertransport betyder inte att varje munruta visats i spelaren.

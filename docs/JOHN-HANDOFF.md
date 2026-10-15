@@ -2,6 +2,14 @@
 
 ## Paow/Dragge: separat workertransport, 15 oktober 2026
 
+PR160:s två P2 från SAMORDNING är reproducerade och rättade: normal
+WebSocket-close 1000 dränerar redan mottagna svar i stället för att kasta
+kön; första prepare-admissionen omfattas av avbrott och tidsgränser innan
+någon callbackadress lämnas ut. Nekad/fastnad prepare rensar PCM och
+finaliserar den fångade reservationen en gång med `owner=null`; sent svar
+återstartar inget. Fyra regressioner var röda före rättningen. Nytt fullt
+testkvitto kompletteras vid leverans; tidigare kodkvitto nedan är historik.
+
 Ny opt-in adapter parar autentiserad workers `lapp`-metadata med H.264-byte
 för vår befintliga bildrutekonsument. Den använder vår PCM-/planidentitet,
 engångstoken, upprepade ägar-/profilkontroller, accepterat jobb-ID och

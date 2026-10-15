@@ -32,6 +32,9 @@ function json(item) {
  * verify that OUR paid job was accepted for this endpoint and return a fresh
  * `release` receipt. Later checks must return the same jobId. `finalize` releases
  * that reservation/job using our existing journal (including on early abort).
+ * It must be bound to the already reserved attempt by the caller: owner is
+ * null until prepare succeeds; binding/release identify the attempted plan,
+ * not an authenticated owner. Authorizers must honor the supplied signal.
  * onChunk receives paired metadata/bytes for the existing browser layer; it
  * must deliver only to the authenticated owner and honor the supplied signal.
  */
@@ -40,21 +43,26 @@ export async function createMovingSpeechTransport({ input, origin, release, auth
   if (!input?.plan || typeof input.messages !== 'function' || typeof authorize !== 'function'
     || typeof onChunk !== 'function' || typeof finalize !== 'function'
     || (signal !== undefined && !(signal instanceof AbortSignal))) fail('invalid_moving_speech_transport');
-  const pin = verifyMovingWorkerRelease(release);
   const plan = input.plan;
-  const owner = await authorize({ phase: 'prepare', binding: plan.binding, release: pin });
-  if (!owner || typeof owner.userId !== 'string' || !owner.userId || owner.userId.length > 128
-    || owner.sessionId !== plan.binding.sessionId || owner.endpointId !== pin.endpointId) fail('moving_speech_not_authorized');
-  const owned = Object.freeze({ userId: owner.userId, sessionId: owner.sessionId, endpointId: owner.endpointId });
-  const channel = createMovingWorkerChannel({ origin, avatar: plan.binding.workerAvatar, idleMs, lifetimeMs });
-  let used = false, finished = false, started = false, cancelling = false, finalization, jobId;
+  // Start lifetime/abort handling BEFORE the first asynchronous admission.
+  // The capability remains private until prepare has actually succeeded.
+  let pin = null, channel;
+  try {
+    pin = verifyMovingWorkerRelease(release);
+    channel = createMovingWorkerChannel({ origin, avatar: plan.binding.workerAvatar, idleMs, lifetimeMs });
+  } catch (error) {
+    input.cancel();
+    await finalize({ owner: null, binding: plan.binding, release: pin, jobId: undefined, reason: 'prepare_failed' });
+    throw error;
+  }
+  let owned = null, used = false, finished = false, started = false, cancelling = false, finalization, jobId;
   let resolveClosed, rejectClosed;
   const closed = new Promise((resolve, reject) => { resolveClosed = resolve; rejectClosed = reject; });
   closed.catch(() => {});
   const check = async phase => {
     const current = await channel.bounded(Promise.resolve().then(() => {
       if (channel.signal.aborted || cancelling) fail('moving_speech_cancelled');
-      return authorize({ phase, binding: plan.binding, release: pin });
+      return authorize({ phase, binding: plan.binding, release: pin, signal: channel.signal });
     }), 'moving_speech_authorization_timeout');
     if (!current || current.userId !== owned.userId || current.sessionId !== owned.sessionId
       || current.endpointId !== owned.endpointId || typeof current.jobId !== 'string' || !current.jobId || current.jobId.length > 128
@@ -75,7 +83,7 @@ export async function createMovingSpeechTransport({ input, origin, release, auth
     channel.close();
     // Cleanup errors are returned to the caller, not silently turned into a
     // successful/cancelled job. No remote credential or diagnostic is exposed.
-    finalization = Promise.resolve().then(() => finalize({ owner: owned, jobId, reason }));
+    finalization = Promise.resolve().then(() => finalize({ owner: owned, binding: plan.binding, release: pin, jobId, reason }));
     finalization.then(resolveClosed, rejectClosed);
     return finalization;
   };
@@ -93,6 +101,20 @@ export async function createMovingSpeechTransport({ input, origin, release, auth
   signal?.addEventListener('abort', abort, { once: true });
   channel.signal.addEventListener('abort', disconnected, { once: true });
   if (signal?.aborted) { await cancel(); fail('moving_speech_cancelled'); }
+
+  try {
+    const owner = await channel.bounded(Promise.resolve().then(() => {
+      if (channel.signal.aborted || cancelling) fail('moving_speech_cancelled');
+      return authorize({ phase: 'prepare', binding: plan.binding, release: pin, signal: channel.signal });
+    }), 'moving_speech_authorization_timeout');
+    if (channel.signal.aborted || cancelling || finished) fail('moving_speech_cancelled');
+    if (!owner || typeof owner.userId !== 'string' || !owner.userId || owner.userId.length > 128
+      || owner.sessionId !== plan.binding.sessionId || owner.endpointId !== pin.endpointId) fail('moving_speech_not_authorized');
+    owned = Object.freeze({ userId: owner.userId, sessionId: owner.sessionId, endpointId: owner.endpointId });
+  } catch (error) {
+    await cancel();
+    throw error;
+  }
 
   return Object.freeze({
     // Internal server-only capability, supplied to the accepted job by our
