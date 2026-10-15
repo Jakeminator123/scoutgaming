@@ -96,3 +96,13 @@ test('leaving the retained room workspace removes playing preview media without 
   h.render({...p,active:false});await h.flush();assert.equal(h.compositions(h.render({...p,active:false})).length,0);
   assert.equal(h.compositions(h.render({...p,active:true})).length,0,'preview resumes only on an explicit user action');
 });
+
+
+test('Admin preview loads the exact frozen descriptor initially, while inactive panels stay idle',async()=>{
+ for(const active of [true,false]){
+  const calls=[],p={...props(),active,initiallyEnabled:true},h=harness(async(url,request)=>{calls.push({url,request});return response(descriptor());});
+  h.render(p);await h.flush();const tree=h.render(p);
+  assert.equal(calls.length,active?1:0);assert.equal(h.compositions(tree).length,active?1:0);
+  if(active){assert.equal(calls[0].url,'/api/operators/north/rooms/north-main/preview?dealer=johanna&revision=7');assert.equal(calls[0].request.method??'GET','GET');assert.equal(calls[0].request.body,undefined);}
+ }
+});

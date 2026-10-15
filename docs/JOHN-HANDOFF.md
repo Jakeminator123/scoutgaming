@@ -27,11 +27,13 @@ Eget browserprov laddar exakt demorum, paketversion 1 och fryst förhandsvisning
 med befintlig N1-session. Inga produktionsdata ändrades. Main-CI 38752198462
 är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
 
-Nästa del är fortfarande det samlade Spelbolag → Rum-flödet i Admin.
-Det publicerade demopaketet tillåter för närvarande inte ändringar av
-bakgrund/bord/dealer. Visa sann status och använd roomOverrides endast
-för tillåtna rumsval. Återanvänd befintlig mallredigering separat med tydlig
-påverkan på andra rum när utbudet måste ändras. Ingen ny skrivkedja.
+Del 2 är lokalt implementerad: Spelbolag & rum är huvudingång, med exakt
+rumsval, fryst trelagersförhandsvisning och befintliga roomOverrides-val i
+samma vy. Låsta material visar verkliga namn; separat mallänk bevarar
+bolag/rum/spel och mallens befintliga konsekvensbesked. Inga paketbehörigheter
+utvidgas. Osparade val/pågående operation skyddas vid navigering. 54 riktade
+prov är gröna utan skip. Build/fullhook, sluthead, CI och produktionsacceptans
+återstår; kod är ännu inte levererad. Ingen ny skrivkedja eller datamodell.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

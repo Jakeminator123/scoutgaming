@@ -9,13 +9,14 @@ import {appearanceBranding, appearanceDraftBranding, appearanceDraftRevision, ap
 import type {AppearanceReview, EditableBranding, PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 export type {PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 
-const FIELDS = ['table', 'background', 'dealer', 'color'] as const;
+const FIELDS = ['background', 'dealer', 'table', 'color'] as const;
 type Action = 'save-draft'|'review'|'publish'|'restore';
 
-export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'all', language = 'sv', onSaved, roomId, onRoomChange, onDirtyChange, active: visible = true}: {
+export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'all', language = 'sv', onSaved, roomId, onRoomChange, onDirtyChange, onBusyChange, disabled = false, roomLayout = false, active: visible = true}: {
   initial: PartnerAppearanceInitial; apiBase: string; operatorSlug: string;
   section?: 'all'|'theme'|'design'|'background'|'dealers'; language?: string;
   onSaved?: (saved: PartnerAppearanceInitial) => void;
+  disabled?: boolean; roomLayout?: boolean; onBusyChange?: (busy: boolean) => void;
   active?: boolean; roomId?: string; onRoomChange?: (roomId: string) => void; onDirtyChange?: (dirty: boolean) => void;
 }) {
   const en = language === 'en';
@@ -33,7 +34,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   const active = useRef(true);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const ready = appearanceReceipt(server, initial.operatorId) && Boolean(server.presentation);
-  const editable = ready && server.canConfigure === true && !blocked;
+  const editable = ready && server.canConfigure === true && !blocked && !disabled;
   const draftRevision = appearanceDraftRevision(server);
   const dirty = !sameAppearance(branding, appearanceDraftBranding(server));
   const stale = Boolean(server.draft && server.draft.basePackageRevision !== server.packageRevision);
@@ -45,6 +46,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   const dealerChoices = (room ? server.roomDealerChoices?.[room.id] : server.dealerChoices?.[laneId]) ?? [];
   if (!dealerChoices.length) allowed.delete('dealer');
   const selected = room ? branding.roomOverrides?.[room.id] ?? {} : branding;
+  const inherited = room && laneId === (branding.lane ?? server.presentation?.lanes[0]?.id) ? branding : {};
   const fields = FIELDS.filter(key => section === 'all' || section === 'theme' || section === 'design' && ['table','color'].includes(key) || section === 'background' && key === 'background' || section === 'dealers' && key === 'dealer');
   const labels: Record<string, string> = {lane:t('Sammansättning','Composition'),table:t('Bord','Table'),background:t('Bakgrund','Background'),dealer:'Dealer',color:t('Bordsfärg','Table colour')};
   const reviewValid = Boolean(review && server.draft && !dirty && !stale && review.draftRevision === draftRevision && review.packageRevision === server.packageRevision && sameAppearance(review.branding, branding));
@@ -61,6 +63,9 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   };
   const roomLabel = (id: string|null) => id === null ? t('Bolagets standard','Company default') : server.rooms?.find(row => row.id === id)?.label ?? id;
 
+  function reportBusy(value: boolean) { busyRef.current = value; setBusy(value); onBusyChange?.(value); }
+  useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
+
   function change(key: string, selection: string) {
     if (!editable || busyRef.current) return;
     setBranding(current => changeAppearance(current, {roomId: room?.id ?? null, key, selection}));
@@ -73,7 +78,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
   async function command(action: Action, sourcePackageRevision?: number) {
     if (!editable || busyRef.current || action === 'save-draft' && !canSave || action === 'review' && !canReview
       || action === 'publish' && !canPublish || action === 'restore' && dirty) return;
-    busyRef.current = true; setBusy(true); setProblem(''); setNotice(''); setLatest(null);
+    reportBusy(true); setProblem(''); setNotice(''); setLatest(null);
     const expectedDraftRevision = draftRevision, expectedPackageRevision = server.packageRevision;
     const body = {action, expectedDraftRevision, expectedPackageRevision,
       ...(action === 'save-draft' ? {branding: appearanceBranding(branding)} : {}),
@@ -113,12 +118,12 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
     } catch {
       if (active.current) { setBlocked(true); setProblem(t('Svaret kunde inte bekräftas. Redigeringen finns kvar. Hämta senaste version innan du fortsätter.','The response could not be confirmed. Your edits remain here. Fetch the latest version before continuing.')); }
     } finally {
-      busyRef.current = false; if (active.current) setBusy(false);
+      if (active.current) reportBusy(false); else busyRef.current = false;
     }
   }
   async function refresh() {
     if (busyRef.current) return;
-    busyRef.current = true; setBusy(true); setReview(null); setNotice(''); setLatest(null);
+    reportBusy(true); setReview(null); setNotice(''); setLatest(null);
     try {
       const response = await fetch(endpoint, {credentials:'same-origin',cache:'no-store',headers:{accept:'application/json'}});
       const payload: unknown = await response.json().catch(() => null);
@@ -127,7 +132,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       setLatest(payload); setBlocked(true); setProblem('');
     } catch {
       if (active.current) { setBlocked(true); setProblem(t('Senaste version kunde inte hämtas. Din redigering finns kvar här.','Could not fetch the latest version. Your edits remain here.')); }
-    } finally { busyRef.current = false; if (active.current) setBusy(false); }
+    } finally { if (active.current) reportBusy(false); else busyRef.current = false; }
   }
   function adopt(keepLocal: boolean) {
     if (!latest || busyRef.current) return;
@@ -137,8 +142,9 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       : t('Senaste sparade version är inläst.','Latest saved version loaded.'));
   }
 
-  return <section className={styles.panel} aria-label={t('Utkast och publicering','Draft and publishing')}>
-    <header className={styles.heading}><div><h3>{t('Sammansättning','Composition')}</h3><p>{t('Spara ett utkast, granska skillnaden och publicera när det är klart.','Save a draft, review the changes and publish when ready.')}</p></div>
+  const preview = <div data-appearance-preview="frozen-composition"><PartnerAppearancePreview initiallyEnabled={roomLayout} active={visible} server={server} branding={branding} scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>;
+  return <section className={roomLayout ? styles.panel + ' ' + styles.roomPanel : styles.panel} aria-label={t('Utkast och publicering','Draft and publishing')}>
+    <header className={styles.heading}><div><h3>{roomLayout ? t('Rummets val','Room choices') : t('Sammansättning','Composition')}</h3><p>{t('Spara ett utkast, granska skillnaden och publicera när det är klart.','Save a draft, review the changes and publish when ready.')}</p></div>
       <div className={styles.revisions}><span>{t('Publicerad version','Published version')} <strong>{server.packageRevision}</strong></span><span>{server.draft ? t(`Sparat utkast ${draftRevision}`,`Saved draft ${draftRevision}`) : t('Inget sparat utkast','No saved draft')}</span></div>
     </header>
     <p role="status" aria-live="polite">{busy ? t('Arbetar…','Working…') : notice || (dirty ? t('Du har osparade ändringar.','You have unsaved changes.') : server.draft ? t('Alla ändringar är sparade i utkastet.','All changes are saved in the draft.') : t('Du ser den publicerade versionen.','You are viewing the published version.'))}</p>
@@ -152,23 +158,29 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
       <div className={styles.actions}><button type="button" className="sg-btn" data-action="keep-local" disabled={busy || latest.canConfigure !== true} onClick={() => adopt(true)}>{t('Behåll min redigering','Keep my edits')}</button><button type="button" className="sg-btn" data-action="load-latest" disabled={busy} onClick={() => adopt(false)}>{t('Ersätt min redigering med senaste sparade','Replace my edits with latest saved')}</button></div>
     </aside> : null}
       {roomId === undefined && <label className={styles.row}>{t('Gäller för','Applies to')}<select aria-label={t('Gäller för','Applies to')} value={room?.id ?? ''} disabled={busy} onChange={event => { if (!busyRef.current) { setScope(event.target.value); onRoomChange?.(event.target.value); } }}><option value="">{t('Bolagets standard','Company default')}</option>{server.rooms?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>}
+    <div className={roomLayout ? styles.roomLayout : undefined}>
+      {roomLayout && preview}
+      <div>
     <fieldset className={styles.editor} disabled={!editable || busy}>
       <legend>{t('Val i spelet','In-game choices')}</legend>
-      <label className={styles.row}>{labels.lane}<select aria-label={labels.lane} value={laneId} disabled={Boolean(room) || !editable || busy} onChange={event => change('lane',event.target.value)}>{server.presentation?.lanes.map(item => <option key={item.id} value={item.id}>{compositionLabel(item.label, language)}</option>)}</select></label>
-      {room ? <p className={styles.hint}>{t('Rummets sammansättning bestäms av intern personal. Standardval ärvs från bolaget när sammansättningen är samma, annars från rummets sammansättning.','Internal staff set the room composition. Defaults inherit company choices for the same composition, otherwise the room composition defaults.')}</p> : null}
+      {!roomLayout && <label className={styles.row}>{labels.lane}<select aria-label={labels.lane} value={laneId} disabled={Boolean(room) || !editable || busy} onChange={event => change('lane',event.target.value)}>{server.presentation?.lanes.map(item => <option key={item.id} value={item.id}>{compositionLabel(item.label, language)}</option>)}</select></label>}
+      {room && !roomLayout ? <p className={styles.hint}>{t('Rummets sammansättning bestäms av intern personal. Standardval ärvs från bolaget när sammansättningen är samma, annars från rummets sammansättning.','Internal staff set the room composition. Defaults inherit company choices for the same composition, otherwise the room composition defaults.')}</p> : null}
       {lane && !lane.composition ? <p className={styles.hint}>{t('Äldre sammansättning: be intern personal uppdatera separata bord- och bakgrundslager. Dealerklippets gröna bakgrund tas alltid bort.','Legacy composition: ask internal staff to update the separate table and background layers. The dealer clip’s green background is always removed.')}</p> : null}
       <div className={styles.fields}>{fields.map(key => {
         const token = key === 'color' ? 'table.color' : key;
-        if (!allowed.has(token)) return <label className={styles.row} key={key}>{labels[key]}<input disabled readOnly value={t('Inte tillgängligt i denna presentation','Unavailable in this presentation')} /></label>;
         const layer = key === 'color' ? lane?.layers.table : lane?.layers[key];
+        const effective = selected[key] ?? inherited[key] ?? (key !== 'color' ? layer?.default : undefined);
+        if (!allowed.has(token)) return roomLayout ? <div className={styles.lockedChoice} key={key}><span>{labels[key]}</span><strong>{effective ? labelOf(effective) : t('Inget valt','None selected')}</strong><small>{t('Låst i publicerat paket','Locked in published package')}</small></div> : <label className={styles.row} key={key}>{labels[key]}<input disabled readOnly value={t('Inte tillgängligt i denna presentation','Unavailable in this presentation')} /></label>;
         const values = key === 'dealer' ? dealerChoices : key === 'color' ? lane?.layers.table.colors ?? [] : layer?.allowed ?? [];
         if (key === 'color' && !values.length) return <div className={styles.row} key={key}><label>{labels[key]}<input type="color" aria-label={labels[key]} value={/^#[a-f0-9]{6}$/i.test(selected.color ?? '') ? selected.color : '#000000'} onChange={event => change('color',event.target.value.toLowerCase())} /></label><button type="button" className="sg-btn" disabled={!selected.color} onClick={() => change('color','')}>{t('Använd standardfärg','Use default colour')}</button><span className={styles.hint}>{selected.color || t('Standard','Default')}</span></div>;
         const selectedValue = selected[key] ?? '';
-        return <label className={styles.row} key={key}>{labels[key]}<select aria-label={labels[key]} value={selectedValue} disabled={!values.length} onChange={event => change(key,event.target.value)}><option value="">{t('Standard','Default')}{!room && layer?.default && key !== 'color' ? `: ${labelOf(layer.default)}` : ''}</option>{selectedValue && !values.includes(selectedValue) ? <option value={selectedValue}>{labelOf(selectedValue)} — {t('inte längre tillgängligt','no longer available')}</option> : null}{values.map(value => <option key={value} value={value}>{labelOf(value)}</option>)}</select></label>;
+        return <label className={styles.row} key={key}>{labels[key]}<select aria-label={labels[key]} value={selectedValue} disabled={!values.length} onChange={event => change(key,event.target.value)}><option value="">{t('Standard','Default')}{key !== 'color' && (room ? inherited[key] ?? layer?.default : layer?.default) ? `: ${labelOf((room ? inherited[key] ?? layer?.default : layer?.default)! )}` : ''}</option>{selectedValue && !values.includes(selectedValue) ? <option value={selectedValue}>{labelOf(selectedValue)} — {t('inte längre tillgängligt','no longer available')}</option> : null}{values.map(value => <option key={value} value={value}>{labelOf(value)}</option>)}</select></label>;
       })}</div>
       {room ? <button type="button" className="sg-btn" data-action="reset-room" disabled={!branding.roomOverrides?.[room.id]} onClick={resetRoom}>{t('Återställ rummet till standard','Reset room to defaults')}</button> : null}
     </fieldset>
-    <p className={styles.hint}>{t('Bordsfärgen påverkar spelets gränssnittsdetaljer, inte dealerfilmen. Logotyp, spelmarker och knappar saknar ännu koppling till spelet.','Table colour affects game interface details, not the dealer video. Logos, chips and buttons are not yet connected to the game.')}</p>
+      </div>
+    </div>
+    {!roomLayout && <p className={styles.hint}>{t('Bordsfärgen påverkar spelets gränssnittsdetaljer, inte dealerfilmen. Logotyp, spelmarker och knappar saknar ännu koppling till spelet.','Table colour affects game interface details, not the dealer video. Logos, chips and buttons are not yet connected to the game.')}</p>}
     <div className={styles.actions}><button type="button" className="sg-btn sg-btn-primary" data-action="save-draft" disabled={!canSave || busy} onClick={() => command('save-draft')}>{t('Spara utkast','Save draft')}</button><button type="button" className="sg-btn" data-action="review" disabled={!canReview || busy} onClick={() => command('review')}>{t('Granska publicering','Review publication')}</button></div>
     <section className={styles.review} aria-label={t('Granskning före publicering','Review before publishing')}>
       <h4>{t('Granskning före publicering','Review before publishing')}</h4>
@@ -176,7 +188,7 @@ export function PartnerAppearance({initial, apiBase, operatorSlug, section = 'al
         {review.changes.length ? <ul className={styles.changes}>{review.changes.map((row,index) => <li key={`${row.roomId}:${row.key}:${index}`}><strong>{roomLabel(row.roomId)} · {row.key.startsWith('roomOverrides.') ? (labels[row.key.slice(14)] ?? row.key) + ' (' + t('rumsval','room override') + ')' : labels[row.key] ?? row.key}</strong><span>{labelOf(row.before)} → {labelOf(row.after)}</span></li>)}</ul> : <p>{t('Inga ändringar att publicera.','No changes to publish.')}</p>}
         <p><strong>{t('Berörda rum','Affected rooms')}:</strong> {review.affectedRooms.length ? review.affectedRooms.map(roomLabel).join(', ') : t('Inga befintliga rum','No existing rooms')}</p>
       </> : <p>{t('Spara utkastet och granska för att se skillnaden mot den publicerade versionen.','Save the draft and review it to see changes from the published version.')}</p>}
-      <div data-appearance-preview="frozen-composition"><PartnerAppearancePreview active={visible} server={server} branding={branding} scope={room?.id ?? ''} operatorSlug={operatorSlug} language={language} onStale={() => {setReview(null);setBlocked(true);setProblem(t('Förhandsvisningens paketversion har ändrats. Din redigering finns kvar. Hämta senaste version och granska på nytt.','The preview package version has changed. Your edits remain here. Fetch the latest version and review again.'));}}/></div>
+      {!roomLayout && preview}
       <button type="button" className="sg-btn sg-btn-primary" data-action="publish" disabled={!canPublish || busy} onClick={() => command('publish')}>{t('Publicera granskat utkast','Publish reviewed draft')}</button>
     </section>
     <details className={styles.history}><summary>{t('Versionshistorik','Version history')}</summary><p>{t('De 20 senaste publicerade versionerna visas. Återställning skapar ett utkast. Spara egna ändringar först. Live ändras först efter granskning och publicering.','The 20 latest published versions are shown. Restoring creates a draft. Save your own edits first. Live changes only after review and publication.')}</p>

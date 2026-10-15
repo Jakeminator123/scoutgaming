@@ -54,3 +54,12 @@ test('an explicit room missing from the fresh package never mounts company-defau
  const valid=h.render({...props,roomId:'available-room'});assert.equal(valid.props.children.props.roomId,'available-room');
  assert.equal(valid.props.children.props.initial.operatorId,'op-a');
 });
+
+
+test('Admin room mode forwards exact room, disabled state and operation callbacks without changing the operator',async()=>{
+ const data={...receipt('op-a'),rooms:[{id:'room-a'}]},h=loaderHarness(async()=>ok(data));
+ const dirty=()=>{},busy=()=>{},props={apiBase:'/studio/api/partner',operatorId:'op-a',operatorSlug:'alpha',roomId:'room-a',roomLayout:true,disabled:true,onDirtyChange:dirty,onBusyChange:busy};
+ h.render(props);await h.flush();const panel=h.render(props).props.children.props;
+ assert.equal(panel.roomId,'room-a');assert.equal(panel.initial.operatorId,'op-a');
+ assert.equal(panel.roomLayout,true);assert.equal(panel.disabled,true);assert.equal(panel.onDirtyChange,dirty);assert.equal(panel.onBusyChange,busy);
+});

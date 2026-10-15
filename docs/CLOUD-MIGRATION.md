@@ -81,12 +81,22 @@ Bild: samma privata evidensmapp, partner-room-after.png. Inga sparningar,
 publiceringar, nya sessioner eller providerjobb utfördes. Main-CI 38752198462
 är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
 
-Del 2:s UX återstår. Paketet låser för närvarande bakgrund, bord och dealer
-(ingen av dessa justeringar är tillåten i demopaketet). Att bara montera
-Partner-editorn i Admin ger därför inte fria materialval. Visa rummets
-faktiska val/förhandsvisning, återanvänd roomOverrides för tillåtna val och
-ge en tydligt avskild befintlig mallredigering med konsekvensbesked för att
-ändra utbudet. Utvidga inte paketets behörigheter tyst. PR165 är parkerad.
+Del 2 är lokalt implementerad, ännu inte driftsatt eller browseraccepterad:
+Admin har en huvudingång Spelbolag & rum, bolagsval följt av rum och en
+samlad fryst förhandsvisning bredvid bakgrund/dealer/bord. Rummets spel och
+verkliga publicerings-/utkaststatus syns. Exakta rumslänkar binder registrerad
+ägare; okända eller främmande rum ger inget reservval. Osparade val och
+pågående skrivning skyddas vid navigering. Befintlig roomOverrides-writer,
+granskning och revisionskontroll återanvänds; inga nya skriv-API:er.
+
+Demopaketet låser bakgrund, bord och dealer. UI visar deras verkliga namn och
+låsning, med tydligt separat länk till befintlig delad mall i samma
+bolags-/rums-/spelkontext. Där finns befintligt konsekvensbesked för andra
+rum. Paketets behörigheter har inte utvidgats. Bibliotek och papperskorg
+är sekundära; dubbel rumslista och generella statistikblock har tagits bort
+från huvudflödet. Inga media, arbetskopior eller beroenden har raderats.
+54 fokuserade tester passerar utan skip. Build/fullhook och leveransprov
+återstår; PR165, QA och ny rörlig läppsynk förblir parkerade.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 

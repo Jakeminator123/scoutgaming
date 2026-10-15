@@ -46,7 +46,8 @@ test('missing composition has no automatic fallback dealer bank',()=>{
   assert.equal(context.dealer,undefined);assert.deepEqual(context.dealers,[]);
 });
 
-async function registeredStudioHtml(path,search='',overrides={}){
+async function registeredStudioHtml(path,search='',overrides={},interactive=false){
+  let currentSearch=search,allowLeave=false,confirms=0;const listeners=new Map();
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('esbuild');
   const lifecycle=await import('./studio-resource-lifecycle.mjs');
@@ -58,33 +59,47 @@ async function registeredStudioHtml(path,search='',overrides={}){
   const source=readFileSync(new URL('../components/studio/registered-studio.tsx',import.meta.url),'utf8');
   const output=transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}),module={exports:{}},slots=[],effects=[];let cursor=0;
   const react={...React,useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;
-    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useEffect(effect){effects.push(effect);}};
-  runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,AbortController,location:{search},
+    return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useEffect(effect,deps){const i=cursor++,previous=slots[i];if(!previous||!deps||deps.some((value,index)=>value!==previous.deps[index]))effects.push(()=>{previous?.cleanup?.();slots[i]={deps,cleanup:effect()};});}};
+  runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,URL,AbortController,location:{search,origin:'https://scout.invalid'},confirm:()=>{confirms++;return allowLeave;},window:{addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:(name)=>listeners.delete(name)},document:{addEventListener:()=>{},removeEventListener:()=>{}},
     fetch:async()=>Response.json(value),require:name=>name==='react'?react:name==='@/lib/utils'?{cn:(...names)=>names.filter(Boolean).join(' ')}
-      :name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle:require(name)});
+      :name.includes('partner-appearance-loader.mjs')?{PartnerAppearanceLoader:props=>React.createElement('section',{'data-room-editor':props.roomId,'data-operator':props.operatorId,'data-room-layout':props.roomLayout})}:name==='../../../runtime/navigation'?{useSearchParams:()=>new URLSearchParams(currentSearch),replaceContext:href=>{currentSearch=new URL(href,'https://scout.invalid').search;}}:name.includes('connected-studio.mjs')?{navigationKeepsStudioTab:()=>false}:name==='./registered-resource-lifecycle'?{RegisteredResourceLifecycle:()=>null}:name.includes('studio-resource-lifecycle.mjs')?lifecycle:require(name)});
   const render=()=>{cursor=0;return module.exports.RegisteredStudio({path,title:'Register'})};
   render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));
+  if(interactive)return {render:()=>{const tree=render();for(const effect of effects.splice(0))effect();return tree;},listeners,allowLeave:value=>{allowLeave=value;},get search(){return currentSearch;},get confirms(){return confirms;}};
   return renderToStaticMarkup(render());
 }
 const hrefs=html=>[...html.matchAll(/href="([^"]+)"/g)].map(match=>match[1].replaceAll('&amp;','&'));
 
-test('registered room and dealer links stay in Admin and retain the exact owner, room, composition and game',async()=>{
-  const html=await registeredStudioHtml('/admin/rooms','?operator=a&table=roulette');
+test('registered room view embeds the exact scoped editor and keeps shared-template/publication context',async()=>{
+  const html=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette');
   const links=hrefs(html);
   assert.deepEqual(links.filter(href=>href.startsWith('/admin/publication')),['/admin/publication?operator=a&table=roulette&composition=two&game=roulette']);
-  const dealer=links.map(href=>new URL(href,'https://scout.invalid')).find(url=>url.pathname==='/admin/clips'&&url.searchParams.get('table')==='roulette');
-  assert.ok(dealer);assert.deepEqual(Object.fromEntries(dealer.searchParams),{operator:'a',table:'roulette',composition:'two',game:'roulette',dealer:'paow-v2'});
-  const rooms=links.filter(href=>href.startsWith('/admin/rooms?')).map(href=>new URL(href,'https://scout.invalid'));
-  assert.ok(rooms.some(url=>url.searchParams.get('table')==='roulette'&&url.searchParams.get('composition')==='two'&&url.searchParams.get('game')==='roulette'));
-  assert.match(html,/Redigera rum i Studio/);assert.match(html,/Skapa\/publicera rum/);
-  assert.ok(html.indexOf('Redigera rum och sammansättning')<html.indexOf('Skapa/publicera rum'));
-  assert.doesNotMatch(html,/<h3 class="text-sm font-medium">bj<\/h3>/,'room cards retain the incoming game-first filter');
-  assert.match(html,/id="room-trash"/,'registered room trash remains available in Admin');
+  const template=links.map(href=>new URL(href,'https://scout.invalid')).find(url=>url.searchParams.get('panel')==='layers');
+  assert.ok(template);assert.equal(template.pathname,'/admin/clips');
+  assert.deepEqual(Object.fromEntries(template.searchParams),{operator:'a',table:'roulette',composition:'two',game:'roulette',panel:'layers'});
+  assert.match(html,/data-room-editor="roulette"/);assert.match(html,/data-operator="a"/);
+  assert.doesNotMatch(html,/aria-label="Välj spel"|Redigera rum och sammansättning|id="room-trash"/);
+  assert.match(html,/Papperskorg och återställning/);assert.match(html,/Delad mall och tillåtna alternativ/);
 });
+
+test('invalid explicit owner or cross-owner room never mounts another room editor',async()=>{
+  for(const query of ['?operator=missing&table=roulette','?operator=a&table=other']) {
+    const html=await registeredStudioHtml('/admin/rooms',query);
+    assert.doesNotMatch(html,/data-room-editor=/);assert.match(html,/Det valda rummet finns inte/);
+  }
+});
+
+test('unpublished rooms lead to the existing template and publication without a frozen editor fallback',async()=>{
+  const room={...catalog.administration.rooms[0],name:'Utkast',state:'preview',published:false,playable:false,dealerIds:[],dealers:[]};
+  const html=await registeredStudioHtml('/admin/rooms','?operator=a&table=bj',{rooms:[room]});
+  assert.doesNotMatch(html,/data-room-editor=/);assert.match(html,/saknar ett publicerat paket/);
+  assert.ok(hrefs(html).some(href=>href.includes('panel=layers')));
+});
+
 test('an active company without registered rooms can still create its first room in Admin',async()=>{
   const html=await registeredStudioHtml('/admin/rooms','?operator=b',{rooms:[]});
   assert.deepEqual(hrefs(html).filter(href=>href.startsWith('/admin/publication')),['/admin/publication?operator=b']);
-  assert.match(html,/Skapa\/publicera rum/);assert.doesNotMatch(html,/Redigera rum och sammansättning/);
+  assert.match(html,/Skapa\/publicera rum/);assert.doesNotMatch(html,/data-room-editor=/);
 });
 test('company team editor links to the supported Admin workspace',async()=>{
   const html=await registeredStudioHtml('/admin/admin/operators','?operator=b');
@@ -93,4 +108,29 @@ test('company team editor links to the supported Admin workspace',async()=>{
   assert.match(html,/Bolag &amp; team/);assert.doesNotMatch(html,/Nuvarande Control/);
   const unknown=await registeredStudioHtml('/admin/unknown');
   assert.equal(hrefs(unknown).some(href=>href.startsWith('/control')),false);assert.ok(hrefs(unknown).includes('/admin'));
+});
+
+
+test('room navigation protects local edits and in-flight operations, then carries exact accepted room context',async()=>{
+  const h=await registeredStudioHtml('/admin/rooms','?view=registered&operator=a&table=roulette',{},true);
+  const walk=(node,predicate)=>!node||typeof node!=='object'?[]:[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>walk(child,predicate))];
+  const editor=tree=>walk(tree,node=>node.props?.apiBase==='/studio/api/partner')[0];
+  const rooms=tree=>walk(tree,node=>node.props?.['aria-label']==='Välj rum')[0];
+  editor(h.render()).props.onDirtyChange(true);h.render();
+  let denied=false;h.listeners.get('scout:navigate')({preventDefault:()=>{denied=true;}});assert.equal(denied,true);
+  rooms(h.render()).props.onChange({target:{value:'bj'}});assert.equal(new URLSearchParams(h.search).get('table'),'roulette');
+  editor(h.render()).props.onBusyChange(true);h.render();const before=h.confirms;
+  assert.equal(rooms(h.render()).props.disabled,true);rooms(h.render()).props.onChange({target:{value:'bj'}});assert.equal(h.confirms,before);
+  editor(h.render()).props.onBusyChange(false);h.render();h.allowLeave(true);
+  rooms(h.render()).props.onChange({target:{value:'bj'}});
+  assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'a',table:'bj',composition:'one',game:'blackjack'});
+  assert.equal(editor(h.render()).props.roomId,'bj');
+});
+
+
+test('registered direct room links select the exact owner and never fall back for an unknown room',async()=>{
+ const html=await registeredStudioHtml('/admin/rooms','?view=registered&table=other');
+ assert.match(html,/data-room-editor="other"/);assert.match(html,/data-operator="b"/);
+ const missing=await registeredStudioHtml('/admin/rooms','?view=registered&table=missing');
+ assert.doesNotMatch(missing,/data-room-editor=/);assert.match(missing,/Det valda rummet finns inte/);
 });
