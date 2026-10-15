@@ -15,8 +15,8 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 | 2 — huvudflöde och mallretur levererade | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
 | 3 — klippkort och status levererade, browserverifierade | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
 | 4 — levererad och browserverifierad | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
-| 5 — lokal förenkling klar, Render-läsning återstår | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
-| 6 — lokal källa synkad; QA-driftkontroll återstår | QA-status och lokal konsolidering | QA-utbyggnaden är återställd på separat användaruppdrag; kvittot bevaras. Preview är inte verifierat isolerad. Huvudcheckout/startprofil och egna ändringar är kontrollerade; kvarvarande arbetskopior har konkreta bevarandeskäl. Äldre Render-QA:s aktuella driftläge återstår att läsa. |
+| 5 — lokal förenkling och Render-inventering klara | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
+| 6 — lokal källa synkad; QA-stängning återstår | QA-status och lokal konsolidering | QA-utbyggnaden är återställd på separat användaruppdrag; kvittot bevaras. Preview är inte verifierat isolerad. Huvudcheckout/startprofil och egna ändringar är kontrollerade; kvarvarande arbetskopior har konkreta bevarandeskäl. Äldre Render-QA är verifierat igång och delar Blob-token med produktion; underhållsläge är föreslaget men inte genomfört. |
 
 Varje del avslutas före nästa: relevant kontroll → obligatoriska kontroller →
 slutgranskning → normal PR/merge för verifierat Jakob-ägt arbete →
@@ -48,8 +48,10 @@ och har samma effektiva åtkomstregler i det privata kanoniska arkivet.
 ENVIRONMENT-VARIABLES samlar 115 namn med konsument, profil/prioritet,
 bygge/runtime och behåll/ta-bort-beslut. Vercel-metadatan är färsk:
 65 poster, 56 unika namn, Production/Preview/Development 56/30/5.
-Live Render-inventering väntar på bekräftat workspace; tidigare 53/37/16/10
-är tillskrivet KEVI-underlag. Inga molnvärden eller Emil-inställningar ändrades.
+Färsk Render-läsning 20:07 UTC i bekräftat Jakob's workspace verifierar
+53/37/16/10 namn för produkt/QA/Director/Gateway, inga miljögrupper och
+inga secret files. Namn, konsumenter och Docker-bygge/runtime är sammanförda
+i ENVIRONMENT-VARIABLES. Inga molnvärden eller Emil-inställningar ändrades.
 
 QA-agenten återställde sin utbyggnad på Jakobs separata direkta uppdrag.
 Kvittot 13:48 UTC anger 24 återställda filer, borttagna egen branch/worktree/
@@ -57,8 +59,13 @@ stash och egna nya molnresurser. Egen läsning bekräftar saknad arbetskopia
 och stash; molnraderingarna är tillskrivet kvitto. Bevara
 `arkiv/2026-10-15/preview-qa-isolation/rollback-receipt.json`.
 Preview saknar fortfarande ingresshemlighet och har produktionsadresser;
-det är ingen verifierad isolerad skrivmiljö. Äldre Render-QA kvarstår
-enligt kvittot, med `maintenanceEnabled: false`; färskt driftläge återstår.
+det är ingen verifierad isolerad skrivmiljö. Färsk API-läsning bekräftar
+äldre Render-QA `srv-datj7l893c1s73ar3u50`: live på `ee060804`, inte
+suspenderad, underhållsläge av och hälsokontroll HTTP 200. Databasen är
+separat men Blob-skrivtoken är identisk med produktion. QA är därför inte
+godkänd som medieisolerad eller stängd. Förslag: slå på underhållsläge för
+exakt denna äldre QA, med data/disk kvar; ingen sådan ändring gjordes i
+den läsande kontrollen. Nyckelfritt kvitto: `env-render-receipt.json`.
 
 En färsk listning visar endast projektet `scoutgaming` i Vercel-teamet
 `scoutgaming`. Där finns inget projekt med namnet “questions and answers”
@@ -106,8 +113,15 @@ bolag/rum. Huvudcheckouten är även synkad till detta slutliga SHA; verklig
 profilers hashvärden och dirty-status består; två användarfilers backupbyte
 och exakta åtkomstregler är verifierade. Bild: `lobby-entry-after.png`;
 privat slutkvitto: `main-sync-final-receipt.json` i samma evidensmapp.
-Inga spelrundor, produktionsskrivningar eller providerjobb. Render-läsningen
-och äldre QA:s aktuella drift-/underhållsläge är kvarvarande kontroller.
+Inga spelrundor, produktionsskrivningar eller providerjobb.
+
+PR173 publicerade slutkvittot till main `2f02c4cd85bf5b07f424ba01d6605d6c4205530a`.
+PR-CI 38788413314 och main-CI 38788741234 är gröna; main körde faktiskt
+SQL-/omstarts-/HTTPS-prov. Vercel `dpl_8tBW2PdB9ah4sarNVt3oQjabrDwf` är
+READY på www. Render-produktens `dep-db8i2irm8hqs738fins0` är live på samma
+SHA. Huvudcheckouten är synkad med åtta skyddade filhashar och dirty-status
+bevarade. Den senare läsande Render-kontrollen är klar; kvar är det konkreta
+beslutet om äldre QA:s underhållsläge, beskrivet ovan.
 
 | Kvarvarande arbetskopia | Konkret skäl att behålla |
 | --- | --- |

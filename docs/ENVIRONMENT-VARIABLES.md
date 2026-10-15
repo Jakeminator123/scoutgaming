@@ -13,7 +13,7 @@ Inga hemlighetsvärden återges och inga molnvärden eller Emil-profiler ändras
 | `lab/.env.cloud-storage.local` | 3 namn, oförändrad | Verklig produktionslagring för Blob/zoner; endast med `--cloud-storage`. Ingen game-databas kopieras till vanlig lokal start. |
 | `.env.emil` | 5 EMIL_-namn, oförändrad | Endast explicit profilkontroll; ingen automatisk runtimekoppling. |
 | Vercel Production/Preview/Development | 65 poster, 56 unika namn; scope 56/30/5 | Metadata utan dekryptering, inga branchspecifika poster. En post kan ha flera scopes. `vercel.json` anger web, studio och speech. Plattformen tillhandahåller valt scopes processmiljö för bygge/runtime. |
-| Render produkt/QA/Director/Gateway | Tidigare KEVI-kvitto: 53/37/16/10 namn | Ingen ny liveacceptans. `ops/cloud/start.mjs`/`config.mjs` validerar processmiljö och vidarebefordrar valda namn; Director/Gateway har egna settings/Blueprint. Ny läsning inväntar bekräftat workspace i connectorn. |
+| Render produkt/QA/Director/Gateway | Färsk API-läsning: 53/37/16/10 namn | Jakob's workspace, 15 oktober 20:07 UTC. Inga miljögrupper och inga secret files för dessa fyra tjänster. `ops/cloud/start.mjs`/`config.mjs` validerar processmiljö och vidarebefordrar valda namn; Director/Gateway har egna settings/Blueprint. Konfigurationsläsning är inte ett funktionsprov. |
 
 Next läser med **första träffen** som vinnare: processmiljö →
 `.env.$NODE_ENV.local` → `.env.local` → `.env.$NODE_ENV` → `.env`,
@@ -28,6 +28,44 @@ serverinställningar. Isolerad lokal start blockerar senare privata env-filläsn
 `readSettings` läser valda filer följt av processmiljö; Studio anger root
 `.env` och Lab local. Kanoniska `OPENCLAW_API_KEY` vinner över alias inom
 varje källa, även om den är tom; senare källa har fortfarande högre prioritet.
+
+### Render: färsk läsning och driftgränser
+
+Jakob bekräftade workspace `tea-d19jsa63jp1c73ch0sc0`. Tjänsteägare/repo
+verifierades före den filtrerade GET-läsningen; bara namn, offentliga flaggor
+och jämförelser utan hemlighetsvärden sparades. Ingen env-pull, SSH,
+nyckeländring, deployment eller providerstart gjordes.
+
+| Tjänst | Senast live enligt Render | Automatisk deployment |
+| --- | --- | --- |
+| Produkt `croupier-v2` | `2f02c4cd85bf5b07f424ba01d6605d6c4205530a`, `dep-db8i2irm8hqs738fins0` | main efter godkända kontroller |
+| Äldre QA `croupier-vercel-preview-qa` | `ee0608044f7c78b80c4f46023cd67a7b391e17f0`, `dep-db1em4ad0e5s73fcv3f0` | Av |
+| Director `croupier-lab-director` | `e57f28ef7df64e3bd81c415c31b37e05f04af2b8`, `dep-db7300rrjlhs739ovtl0` | Av |
+| Gateway `croupier-lab-openclaw` | `538e5f1ff4a0eb5d30b4e1daab5ffa1ca2d43688`, `dep-db73t967bikc73a3eneg` | Av |
+
+Produkt och äldre QA svarade båda HTTP 200/`ok` på sina befintliga
+`/__cloud/health`. Det bevisar tillgänglig gateway, inte inloggning,
+databasparitet eller godkänd QA-isolering. De fyra tjänsterna är inte
+suspenderade; QA har `maintenanceMode.enabled=false`.
+
+Alla fyra är Docker-tjänster. Render erbjuder miljövariabler som byggargument
+och runtime-miljö; ett byggargument måste användas uttryckligen i Dockerfile.
+Produktens aktuella Dockerfile deklarerar `CROUPIER_LAB_BASE_PATH` som ARG/ENV
+före Next-bygget. Providerhemligheterna deklareras inte som ARG där.
+Director/Gateway har separata runtime-konfigurationer och fasta Docker-defaults.
+Ingen miljögrupp kan överlagra tjänstvärden i det nu lästa workspacet.
+API-konfigurationen bevisar inte vilka senare sparade värden som finns i en
+äldre körande container. Källa: [Render Docker](https://render.com/docs/docker).
+
+Produktens befintliga genererade tal/streaming, dealerprofiler och Astrid-kamera
+är konfigurerade till 1 på Render. QA:s tal/streaming/kamera är konfigurerade
+till 0. `CROUPIER_STUDIO_NATIVE_ADMIN=0` på båda Render-tjänsterna är
+transportgränsen mot Vercels aktiva Admin, inte en instruktion att likrikta
+flaggorna. Befintlig taltransport ska inte beskrivas som helt avstängd:
+ny rörlig Kevin/Emil-integration är en separat, ännu ej aktiverad leverans.
+Inga jobb eller nya mediegodkännanden ingår i denna kontroll.
+
+Nyckelfritt underlag: `arkiv/2026-10-15/admin-consolidation/env-render-receipt.json`.
 
 ### Behåll, flytta eller ta bort per namn
 
@@ -58,7 +96,7 @@ bedömda separat från aktiva runtime-läsare.
 | `CROUPIER_DEALER_IMPORT_AI`, `OPENAI_API_KEY`, `RUNWAY_API_KEY` | dealer-import-model.mjs och runway-client.mjs; OpenAI även villkorad kamerareserv | Behåll. Ingen generering genom inventeringen. |
 | `CROUPIER_STUDIO_MAIL_FROM`, `RESEND_API_KEY` | studio-native-mail.mjs | Behåll; isolerad start stänger av skarpa utskick. |
 | `CROUPIER_CLOUD_LAUNCH`, `CROUPIER_CLOUD_LAYOUT`, `HOST`, `NODE_ENV`, `PORT` | ops/cloud/config.mjs, Director/plattform; NODE_ENV även bygge | Behåll. PORT är värdhanterad där plattformen sätter den. |
-| `CROUPIER_CLOUD_DATA_ROOT` | Äldre QA/diskprofil i ops/cloud/config.mjs; daterat Render-underlag | Behåll tills aktuell QA-konsument lästs. Återinför inte i produktion. |
+| `CROUPIER_CLOUD_DATA_ROOT` | Färskt verifierad endast på äldre QA med 1 GiB-disk; ops/cloud/config.mjs | Behåll QA:s återställningsunderlag. Återinför inte i produktion och radera inte den äldre disken. |
 | `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_URL` | ops/cloud/config.mjs | Behåll separat presentationsanslutning. |
 | `CROUPIER_QA_LOGIN_PASSWORD`, `CROUPIER_QA_LOGIN_USERNAME` | Privata autentiserade verifieringsverktyg; ingen aktiv produktläsare hittad | Behåll verifieringsunderlag. |
 | `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY`, `GITGUARDIAN_API_TOKEN` | Ingen aktiv produktläsare verifierad. DID-träffen är kommentar; ElevenLabs-video har ett negativt vidarebefordringstest. Extern användning oklar | Behåll tills exakt verktygsägare/konsument är klarlagd. |
@@ -104,9 +142,22 @@ Färsk Vercel-metadata/icke-hemliga flaggor visar 30 Preview-namn, kvarvarande
 produktionsadresser och saknad `CROUPIER_VERCEL_INGRESS_SECRET` i Preview.
 Ingen isolerad Preview-skrivmiljö är verifierad. Kopiera inte
 produktionshemligheten dit. Äldre Render-QA/databas är andra resurser än de
-raderade. Rollback-kvittot anger `maintenanceEnabled: false` för tjänsten;
-aktuellt drift-/underhållsläge återstår att läsa. QA får inte rapporteras
-stängd eller säker utifrån detta kvitto.
+raderade. Färsk läsning bekräftar att äldre QA är live, inte suspenderad,
+och har underhållsläget avstängt. Game-databasen är separat
+(`croupier_studio_qa_abc92154cb15` jämfört med `croupier_game`) på samma
+databashost; detta är konfigurationsmetadata, ingen läsning av datainnehåll.
+Ingresshemlighet och Studio environment-ID skiljer sig från produktion,
+men `BLOB_READ_WRITE_TOKEN` har exakt samma konfigurerade värde.
+En separat databas är därför inte bevis för medieisolering.
+
+Rekommenderat nästa avgränsade beslut är underhållsläge på endast
+`srv-datj7l893c1s73ar3u50`. Det blockerar QA:s publika HTTP-ingång och är
+återställbart; det raderar ingen databas/disk/media och är inte en
+kostnadsavveckling. Privat nät och SSH är fortfarande tillgängliga i detta
+läge ([Render underhållsläge](https://render.com/docs/maintenance-mode)).
+Denna läsande kontroll ändrar inte inställningen.
+Återöppna inte QA eller återkoppla Preview förrän data-/mediegränser är
+verifierade. Kopiera inte produktionsnycklar som lösning.
 
 ### Tidigare åtgärder och återställning
 
