@@ -7,7 +7,10 @@ Samordnaren reproducerade Chromes dokumentnavigation-500 på `d6d56803` för
 Kända Admin-dokument normaliseras nu i middleware före transporten; samma
 befintliga origin-, sessions- och rollkontroller används. API, iframe,
 Next-actions och mutationer omfattas inte av dokumentundantaget.
-Två regressioner gick från rött till grönt; fokuskontrollen gav 60/60 utan skip.
+Två regressioner var röda före rättningen; slutligt fokusurval gav 59/59 utan skip.
+Fullhook med Chrome gav 3 883 pass, 9 villkorade skip och 0 fel i 77 grupper.
+Första fullhook stoppade på en inaktuell middleware-förväntning; efter rättningen
+passerade slutkörningen. Skip gäller fem databasprov och fyra Linux-specifika prov.
 Det verkliga lokala HTTP-fetch-provet visar navigate → cors och går genom
 Admin-routen med syntetisk session och temporär HTML. Det bevisar inte Vercels
 interna transport eller driftsatt rättning. Oberoende kodgranskning fann inga

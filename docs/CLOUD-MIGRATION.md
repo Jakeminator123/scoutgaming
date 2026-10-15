@@ -42,7 +42,10 @@ verklig middleware, Node HTTP-fetch och Admin-route: fetch ändrar
 `sec-fetch-mode` från navigate till cors före sidans behörighetskontroll.
 Rättningen normaliserar kända Admin-dokument före transporten, liksom Control.
 API, iframe, mutationer, Next-actions och främmande Origin behåller sina spärrar.
-Två regressioner var röda före rättningen; fokusurvalet gav 60/60 utan skip.
+Två regressioner var röda före rättningen; slutligt fokusurval gav 59/59 utan skip.
+Fullhook med Chrome gav 3 883 pass, 9 villkorade skip och 0 fel i 77 grupper.
+Första fullhook stoppade på en inaktuell middleware-förväntning; efter rättningen
+passerade slutkörningen. Skip gäller fem databasprov och fyra Linux-specifika prov.
 Lab-bygget passerar med 97 kontrollerade byggspår. Samordnarens separata IAB-prov
 på samma main genomförde ny login med avsett QA-konto till Admin/dealers,
 Avbryt → fokus Skapa dealer samt Admin → Swedish Games Partner/paket v4 →
