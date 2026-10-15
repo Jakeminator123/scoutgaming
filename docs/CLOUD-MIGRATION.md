@@ -95,6 +95,20 @@ i Git. GitGuardian: 0 öppna/18 ignorerade, aktiv övervakning; historikskanning
 too_large och delvis platsmetadata kvarstår. Main-sviten var queued utan
 synliga check-runs; grön vanlig CI ersätter inte dessa bevisgränser.
 
+Slutkvitto PR172: granskat head `8b275f25497beb214e80c3742e4f4ae3b8fbf835`
+mergades normalt 15 oktober 18:32:29 UTC till main
+`0aadf568d043410709097e586310cfd2e864a710`. PR-CI 38785128105 och
+main-CI 38786479541 är gröna med faktiskt SQL-/omstarts-/HTTPS-kvitto.
+Vercel `dpl_5Yp4K9sCQzWpf3vRziWcceX3Qhuy` är READY på samma SHA/www.
+Egen browserkontroll efter omladdning visar båda spelen och deras publicerade
+bolag/rum. Huvudcheckouten är även synkad till detta slutliga SHA; verklig
+`--product --no-open` ger `/lobby` utan serverstart. Åtta skyddade filers/
+profilers hashvärden och dirty-status består; två användarfilers backupbyte
+och exakta åtkomstregler är verifierade. Bild: `lobby-entry-after.png`;
+privat slutkvitto: `main-sync-final-receipt.json` i samma evidensmapp.
+Inga spelrundor, produktionsskrivningar eller providerjobb. Render-läsningen
+och äldre QA:s aktuella drift-/underhållsläge är kvarvarande kontroller.
+
 | Kvarvarande arbetskopia | Konkret skäl att behålla |
 | --- | --- |
 | Huvudcheckout/main | Vanlig lokal källa; två egna modifierade spårade filer, egna inställningar/skill och privata reviewmedier kvar. |
