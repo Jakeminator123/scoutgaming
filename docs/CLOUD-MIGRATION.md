@@ -35,6 +35,19 @@ procentangivelse ersätter verifiering av varje flöde. Historisk startpunkt,
 
 ### Admin checkpoints C1C9
 
+**Spelarretur och alias, 15 oktober:** Spelarens återlänk går nu till `/lobby` med servervaliderat bolag och verkligt
+rum. Studio-preview går direkt till `/admin/compositions` med sammansättning
+och dealer; befintlig sessionsstängning och modifierade klick består. Fria
+returadresser eller rumsparametrar används inte som auktoritet.
+Åtta pensionerade alias går direkt till motsvarande Admin-sida när native
+Admin är aktiverat; äldre konfigurationer behåller Control. Query, auth/API
+samt sparade gamla adresser bevaras. Inga spelregler eller mediebytes ändras.
+Tre regressioner var röda före rättningen. Slutligt fokusurval passerar
+48 prov utan skip, inklusive Nexts verkliga redirectmatchning. Äldre
+returförväntningar är uppdaterade och saknad dealer skrivs inte ut som undefined.
+Oberoende granskning fann inga konkreta fel. Lab-build passerar med 97
+kontrollerade byggspår. Levererad browseracceptans återstår vid detta kodkvitto.
+
 Arbetsordning uppdaterad 15 oktober 2026 efter Jakobs fortsatta mandat:
 en sammanhängande Admin/partner/lobby-produkt, konsumentstyrd legacy-städning,
 begripliga källansvar och bättre utvecklingsprov. Verifierad produktversion är `654ab9e2`
@@ -107,7 +120,10 @@ Detta kompletterar Astrids oförändrade vinst/push/split-/återhämtningskvitto
 för PR91:s begränsade klientändring. Inget genererat tal, nytt läppsynksgodkännande
 eller full acceptans av publicerade rummets behörighetskontrakt tillskrivs provet.
 Privata manifest och skärmbilder: `arkiv/2026-10-15/samordning/env-media-verification/`.
-PR91:s slutliga GitHub-kontroller och merge återstår vid detta kvitto.
+PR91 är mergad från head `0ab5f7f7` till main `a76b31f2` den 15 oktober
+08:40 UTC. PR-CI `38706188331` och samtliga synliga kontroller passerade.
+Driftsättningens resultat verifieras separat; lokal main har synkats med
+225 befintliga filhashar bevarade.
 
 **Historiskt leveranskvitto för PR152:** PR152 är mergad från head
 `0bea32e23626d64fb754b39ac7a55d44966ca816` till main `3da92370`.

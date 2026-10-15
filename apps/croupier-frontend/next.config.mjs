@@ -1,5 +1,6 @@
 import { platformConfiguration } from './lib/platform-routing.mjs';
 import { fileURLToPath } from 'node:url';
+import {adminDocumentHref} from '../../lab/lib/admin-workspace-routes.mjs';
 const platform = platformConfiguration();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -16,7 +17,7 @@ const nextConfig = {
       {source: '/labb/filmer', destination: '/control/videos', permanent: false},
       {source: '/labb/zoner', destination: '/control/zones', permanent: false},
       {source: '/labb/guide', destination: '/control/guide', permanent: false},
-    ];
+    ].map(route=>platform.nativeStudio?{...route,destination:adminDocumentHref(route.destination)}:route);
     // Legacy lab names go to staff control. /studio stays the Render lab mount.
     return [
       { source: "/studio", destination: "https://croupier-v2.onrender.com/studio/", permanent: false },

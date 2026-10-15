@@ -194,9 +194,13 @@ test('dealer footer labels its real action and returns to the same operator lobb
   assert.match(html,/class="casino-return" href="\/play">Till lobbyn/);
   const app=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
   const code=app.slice(app.indexOf('const lobbyReturn ='),app.indexOf('for (const {id,label}'));
-  for(const operator of [undefined,'sg-test']){
-    const link={};vm.runInNewContext(code,{studioPreview:null,entrySelection:{operator},document:{querySelector:()=>link},URLSearchParams});
-    assert.equal(link.href,operator?'/play?operator=sg-test':'/play');
+  for(const [entrySelection,expected] of [
+    [{},'/lobby'],
+    [{operator:'sg-test'},'/lobby?operator=sg-test'],
+    [{operator:'sg-test',roomId:'room-evening'},'/lobby?operator=sg-test&room=room-evening'],
+  ]){
+    const link={};vm.runInNewContext(code,{studioPreview:null,entrySelection,document:{querySelector:()=>link},URLSearchParams});
+    assert.equal(link.href,expected);
   }
 });
 
@@ -212,8 +216,11 @@ test('preview footer returns to its saved composition without an operator link',
  const {readFile}=await import('node:fs/promises');
  const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
  const code=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
- const link={};vm.runInNewContext(code,{studioPreview:{presentationLaneId:'evening'},entrySelection:{},document:{querySelector:()=>link},URLSearchParams});
- assert.equal(link.href,'/control/preview?lane=evening');assert.equal(link.textContent,'Till Sammansättning');
+ const link={};vm.runInNewContext(code,{studioPreview:{presentationLaneId:'evening'},entrySelection:{lane:'evening',dealer:'astrid',presentation:'local'},document:{querySelector:()=>link},URLSearchParams});
+ assert.equal(link.href,'/admin/compositions?composition=evening&dealer=astrid');assert.equal(link.textContent,'Till Sammansättning');
+ // Real document validation requires a dealer; a partial caller must not serialize undefined.
+ const partialLink={};vm.runInNewContext(code,{studioPreview:{presentationLaneId:'evening'},entrySelection:{},document:{querySelector:()=>partialLink},URLSearchParams});
+ assert.equal(partialLink.href,'/admin/compositions?composition=evening');
 });
 
 test('the existing layer panel accepts a clear preview label and keeps the ordinary label',()=>{

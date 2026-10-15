@@ -63,7 +63,11 @@ const soundStorageKey=studioPreview?'croupier.studio-preview.'+studioPreview.ses
 const playableChoices=previewSession&&entrySelection.choices?{...entrySelection.choices,dealers:entrySelection.choices.dealers.filter(id=>previewSession.dealerAvailability.some(row=>row.id===id&&row.playable))}:entrySelection.choices;
 const lobbyReturn = document.querySelector('.casino-return');
 if(lobbyReturn){
-  lobbyReturn.href=studioPreview?'/control/preview?'+new URLSearchParams({lane:studioPreview.presentationLaneId}):entrySelection.operator?'/play?'+new URLSearchParams({operator:entrySelection.operator}):'/play';
+  // Use the validated document context, never a return URL or room from the query.
+  const returnQuery=new URLSearchParams(studioPreview
+    ? {composition:studioPreview.presentationLaneId,...(entrySelection.dealer?{dealer:entrySelection.dealer}:{})}
+    : entrySelection.operator?{operator:entrySelection.operator,...(entrySelection.roomId?{room:entrySelection.roomId}:{})}:{});
+  lobbyReturn.href=(studioPreview?'/admin/compositions':'/lobby')+(returnQuery.size?'?'+returnQuery:'');
   if(studioPreview){
     lobbyReturn.textContent='Till Sammansättning';
     lobbyReturn.onclick=async event=>{
