@@ -56,15 +56,23 @@ och återställdes utan sparning. Båda returlänkarna går till exakt Admin-rum
 blackjackutkast 2 är orört. Inga produktionsskrivningar eller providerjobb.
 Detaljer och före/efter-bilder finns i CLOUD-MIGRATION.
 
-PR169 ändrade 17 befintliga filer; inga nya källfiler eller raderade media/
-arbetskopior. Den avslutande text/statusrättningen är nu implementerad lokalt:
-enkla situationer, teknisk källa/filidentitet under Detaljer, korrekt besked
-när lokala ändringar återställts och renderat hjulutfall utan saknad-filmstatus.
-32 fokuserade prov passerar utan skip, Lab-bygget är grönt med 97 byggspår.
-Full kontroll, slutgranskning, normal leverans och browseracceptans återstår
-före del 4 Tal. Runtime och media är oförändrade; övriga planerade roulettefack
-är fortsatt tydligt planerade. Även mallpanelens motsägande filmbankskrav
-är rättat efter browserobservation.
+Del 3:s klippkort/status är nu levererade i PR170: granskat sluthead
+bec009a24b56ac6a377ce31d8ddf3c412842714b, main 1846a7af7935b78d27a598aa94f4ac901075e234.
+PR-CI 38771399407 och main-CI 38772447966 är gröna inklusive faktiskt
+SQL-/omstarts-/HTTPS-prov. Vercel dpl_2NXbuB7WWH7gGbLL1533AkuxYpz9 är READY
+på rätt SHA/www. 32 fokuserade prov utan skip, Lab-build 97, fullhook
+3 931 pass / 9 villkorade skip / 0 fel/cancel i 77 grupper.
+
+Browserverifierat: enkla situationer i båda spelen, källtext och filidentitet
+under Detaljer, renderat Anna-hjul utan filmkrav och samma förklaring i
+mallpanelen. Lokal ändring/återställning av Kevin 1 iv-regeln ger rent utkast,
+inaktiverad Spara och rätt återställningsbesked. Inga produktionsskrivningar,
+spelrundor eller providerjobb. Nio befintliga filer, inga nya filer eller
+borttagna media/arbetskopior. Bilder/loggar och säkerhetstäckning: CLOUD.
+
+Nästa: del 4 Tal. Skilj inspelat, generering och realtid; verifiera verkliga
+filer, text, ljud och granskning utan providerstart. Samordna också roulettens
+äldre översiktsfras ”kulsläpp + hjulfilm” med den verifierade renderingen.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad
