@@ -19,7 +19,28 @@ Efter normal integration av main `a0eca7a8` byggdes Lab om eftersom PR161
 3 902 godkända, 9 villkorade skip, 0 fel/cancel i 77 grupper. De tidigare
 fokus-/fullhookkvittona ovan gäller före integrationen; liveacceptans väntar.
 
-## C4: direktöppning av Admin, 15 oktober 2026
+## C4: transport före middleware, 15 oktober 2026
+
+Samordnarens Chrome-prov 11:17:32.829 UTC visar fortsatt dokument-500 på
+PR161/main `a0eca7a8`, deployment `dpl_5kSZWix64EYCYZDic8BmLPe354wC`.
+Den driftsatta loggen för `/control/replies` har redan vid middleware
+`mode=cors`, `destination=document`, cross-site, utan Origin/Next-action.
+PR161:s prov täckte transport efter middleware; detta bevisar luckan.
+
+Den smala fortsättningen accepterar just denna form för redan kända GET-dokument
+utan body/Origin/action. API, assets, okända vägar, POST/HEAD och iframe förblir
+spärrade; befintlig session, roll och explicit Origin kontrolleras fortfarande.
+Två positiva regressioner är reproducerade röda → gröna. HTTP-provet går genom
+verklig middleware och Admin-route med fetch före respektive efter middleware,
+syntetisk adminsession och anonym loginredirect. Negativa prov passerade också
+före fixen. Tre fokusfiler: 61 pass, 0 skip, 0 fel med Node 24.21.0.
+Main `1c9e1c6a` är integrerad med båda äldre handoff-avsnitten bevarade.
+Sammansatt Lab-build, inklusive uppdaterad Lobby, passerar med 97 byggspår.
+Kodcommit `6c6db03b` passerar ordinarie fullhook med Chrome: 3 906 pass,
+9 villkorade skip, 0 fel/cancel i 77 grupper.
+Ingen ny driftsättning eller produktionsacceptans är gjord. C4 är fortsatt öppen.
+
+## Historik — PR161: direktöppning av Admin, 15 oktober 2026
 
 Samordnaren reproducerade Chromes dokumentnavigation-500 på `d6d56803` för
 `/admin` och `/admin/dealers`, medan session, katalog och vanlig fetch fungerade.

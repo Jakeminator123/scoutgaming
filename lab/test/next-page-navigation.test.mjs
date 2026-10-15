@@ -545,7 +545,7 @@ test('legacy administration tables await the public room redirect after authoriz
 });
 
 
-test('actual Admin middleware preserves cross-site document access through Node transport before route authorization', async t => {
+test('actual Admin middleware preserves document access with Node transport before or after middleware', async t => {
   const {createServer} = await import('node:http');
   const {mkdtemp, mkdir, writeFile, rm} = await import('node:fs/promises');
   const {tmpdir} = await import('node:os');
@@ -583,26 +583,33 @@ test('actual Admin middleware preserves cross-site document access through Node 
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   t.after(()=>new Promise(resolve=>server.close(resolve)));
-  for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers']) {
-    const request = new NextRequest(publicOrigin+path,{headers:{host:new URL(publicOrigin).host,cookie:f.auth.admin,
-      'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'}});
-    const routed = middleware(request), headers = new Headers();
+  const throughTransport = async headers => {
+    const transport = await fetch('http://127.0.0.1:'+server.address().port,{headers});
+    const metadata = await transport.json(), transported = new Headers(headers);
+    assert.equal(metadata['sec-fetch-mode'],'cors');
+    assert.equal(metadata['sec-fetch-dest'],'document');
+    for (const [name,value] of Object.entries(metadata)) {
+      if(value===null)transported.delete(name);else transported.set(name,value);
+    }
+    return transported;
+  };
+  for (const position of ['before','after']) for (const path of ['/admin','/admin/dealers','/studio/admin','/studio/admin/dealers']) {
+    let incoming = new Headers({host:new URL(publicOrigin).host,cookie:f.auth.admin,
+      'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate','sec-fetch-dest':'document'});
+    if(position==='before') incoming = await throughTransport(incoming);
+    const request = new NextRequest(publicOrigin+path,{headers:incoming});
+    const routed = middleware(request);
+    let headers = new Headers();
     assert.ok(routed.headers.get('x-middleware-override-headers'));
     for (const name of routed.headers.get('x-middleware-override-headers').split(','))
       headers.set(name,routed.headers.get('x-middleware-request-'+name));
     assert.equal(headers.get('cookie'),f.auth.admin);
     assert.equal(headers.has('origin'),false);
-    const transport = await fetch('http://127.0.0.1:'+server.address().port,{headers});
-    const metadata = await transport.json();
-    assert.equal(metadata['sec-fetch-mode'],'cors');
-    assert.equal(metadata['sec-fetch-dest'],'document');
-    for (const [name,value] of Object.entries(metadata)) {
-      if(value===null)headers.delete(name);else headers.set(name,value);
-    }
+    if(position==='after') headers = await throughTransport(headers);
     const destination = routed.headers.get('x-middleware-rewrite') ?? publicOrigin+path;
     const segments = path.endsWith('/dealers') ? ['dealers'] : [];
     const response = await admin.GET(new Request(destination,{headers}),{params:Promise.resolve({path:segments})});
-    assert.equal(response.status,200,path+' must authorize the unchanged synthetic admin cookie after the proxy hop');
+    assert.equal(response.status,200,position+' middleware: '+path+' must authorize the unchanged synthetic admin cookie after the proxy hop');
     assert.match(await response.text(),/Authorized Admin fixture/);
     const anonymous = new Headers(headers);anonymous.delete('cookie');
     const login = await admin.GET(new Request(destination,{headers:anonymous}),{params:Promise.resolve({path:segments})});
