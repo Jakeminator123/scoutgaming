@@ -9,7 +9,7 @@ leveransström; inga nya underagenter eller testmiljöer.
 
 Första delen är levererad i PR166: sammanhållna materialkort med verkliga
 förhandsvisningar, format, felstatus och samma skyddade papperskorg.
-Main c6496965b787215dc98b20e7fbaf03d8348b5bbe körs på www.scoutgaming.tech
+Main c6496965b787215dc98b20e7fbaf03d8348b5bbe verifierades på www.scoutgaming.tech
 (Vercel dpl_8W2dy8CRiPcUuY7LqtwGFxVpajep, READY). Sluthead e521b855 är
 granskat; PR- och main-CI är gröna inklusive SQL/omstart/HTTPS. Fullhook:
 3 911 pass, 9 villkorade skip, 0 fel; Lab-build 97 byggspår.
@@ -21,21 +21,31 @@ Exakta kvitton och bildreferenser finns i CLOUD-MIGRATION.
 
 Förutsättningen för nästa del är levererad i PR167: Partner-sidans verifierade
 403-fel är borta. Granskat head cc81a8a3 har grön PR-CI inklusive SQL/omstart/
-HTTPS och fullhook 3 914 pass / 9 skip / 0 fel. Main 2396f46f körs på
+HTTPS och fullhook 3 914 pass / 9 skip / 0 fel. Main 2396f46f verifierades på
 www.scoutgaming.tech (Vercel dpl_8s8ayY5PFgDBG4kqa1y8viNGHkac, READY).
 Eget browserprov laddar exakt demorum, paketversion 1 och fryst förhandsvisning
 med befintlig N1-session. Inga produktionsdata ändrades. Main-CI 38752198462
 är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
 
-Del 2 är lokalt implementerad: Spelbolag & rum är huvudingång, med exakt
-rumsval, fryst trelagersförhandsvisning och befintliga roomOverrides-val i
-samma vy. Låsta material visar verkliga namn; separat mallänk bevarar
-bolag/rum/spel och mallens befintliga konsekvensbesked. Inga paketbehörigheter
-utvidgas. Osparade val/pågående operation skyddas vid navigering. 55 riktade
-prov är gröna utan skip. Lab-build 97 och slutlig fullhook på kodhead 8a40965d
-är gröna: 3 924 pass / 9 villkorade skip / 0 fel i 77 grupper. Rent rumsbyte
-provas mot riktig delad historik. Sluthead/CI och produktionsacceptans
-återstår; kod är ännu inte levererad. Ingen ny skrivkedja eller datamodell.
+Del 2:s huvudflöde är levererat i PR168, granskat head 1fa9ab6d,
+main 178df3751bd1b76ff541bf631a17282883230d6d. Vercel
+`dpl_W7toJ1z7b2EzoktaSBvs56Xwi3vU` är READY på rätt SHA och www-domän.
+PR-CI 38758468210 och main-CI 38759583300 är gröna inklusive verkligt
+SQL-/omstarts-/HTTPS-prov. Lokalt: 55 fokuserade prov, Lab-build 97,
+fullhook 3 924 pass / 9 villkorade skip / 0 fel i 77 grupper; doc-hook 43/43.
+
+Browserprovet visar båda spelens verkliga lager och låsning, fungerande
+bolagsbyte/direkt rumslänk samt rätt delad mall och konsekvensbesked.
+Roulette: version 1, inget utkast. Blackjack: version 4, befintligt utkast 2
+orört. Inga produktionsskrivningar/providerjobb. Färgverktyget gav inget
+verkligt osparat tillstånd, så dirty-skyddets browserprov räknas inte som
+accepterat; lokal verifiering använder riktig delad historik. Fullt kvitto
+och före/efter-bilder finns i CLOUD-MIGRATION.
+
+Nästa del är klippkartan: situation/klipp/körregel och sann status. Ta även
+bort dess sammanblandning Rum / bakgrund och ersätt två äldre Partner-
+returlänkar med Admin-rumsflödet, med befintliga navigeringsskydd. Ingen ny
+skrivkedja, mediekatalog eller tracker.
 
 PR165 är bevarad och uttryckligen parkerad eftersom materialflödet inte
 kräver N1-till-spelarkonto-övergången. QA ska inte byggas ut; en kontrollerad

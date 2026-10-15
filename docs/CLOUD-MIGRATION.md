@@ -12,8 +12,8 @@ CI, PR-granskning och ägarkontroller gäller fortfarande.
 | Ordning | Leverans | Klar när |
 | --- | --- | --- |
 | 1 — levererad och browserverifierad | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
-| 2 — pågår | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
-| 3 | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
+| 2 — huvudflödet levererat; mallretur återstår i del 3 | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
+| 3 — nästa | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
 | 4 | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
 | 5 | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
 | 6 | QA-återgång och lokal konsolidering | QA:s unika kod/stash/kvitton är bevarade och osäker QA är stängd. Exakta molnresurskandidater kräver separat beslut; Preview återkopplas inte till produktion. Huvudcheckout/startprofil är verifierad, överförda egna kopior städas säkert och varje kvarvarande kopia har ett konkret syfte. |
@@ -81,25 +81,43 @@ Bild: samma privata evidensmapp, partner-room-after.png. Inga sparningar,
 publiceringar, nya sessioner eller providerjobb utfördes. Main-CI 38752198462
 är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
 
-Del 2 är lokalt implementerad, ännu inte driftsatt eller browseraccepterad:
-Admin har en huvudingång Spelbolag & rum, bolagsval följt av rum och en
-samlad fryst förhandsvisning bredvid bakgrund/dealer/bord. Rummets spel och
-verkliga publicerings-/utkaststatus syns. Exakta rumslänkar binder registrerad
-ägare; okända eller främmande rum ger inget reservval. Osparade val och
-pågående skrivning skyddas vid navigering. Befintlig roomOverrides-writer,
-granskning och revisionskontroll återanvänds; inga nya skriv-API:er.
+Del 2:s huvudflöde är levererat i PR168. Sluthead
+`1fa9ab6da32e5a59dc07c9becfb11d96d726a90b` granskades och mergades normalt
+till main `178df3751bd1b76ff541bf631a17282883230d6d`. PR-CI 38758468210 och
+main-CI 38759583300 är gröna, inklusive faktisk SQL-/omstarts-/HTTPS-acceptans.
+55 fokuserade prov utan skip, Lab-build 97 byggspår och slutlig fullhook
+3 924 pass / 9 villkorade skip / 0 fel/cancel i 77 grupper. Dokumentationshook
+43/43. Granskningen rättade ett rent rumsbyte som inte meddelade vyernas
+historikprenumeranter; nytt prov använder den riktiga historikmodulen.
 
-Demopaketet låser bakgrund, bord och dealer. UI visar deras verkliga namn och
-låsning, med tydligt separat länk till befintlig delad mall i samma
-bolags-/rums-/spelkontext. Där finns befintligt konsekvensbesked för andra
-rum. Paketets behörigheter har inte utvidgats. Bibliotek och papperskorg
-är sekundära; dubbel rumslista och generella statistikblock har tagits bort
-från huvudflödet. Inga media, arbetskopior eller beroenden har raderats.
-55 fokuserade tester passerar utan skip. Lab-build har 97 kontrollerade
-byggspår. Slutlig fullhook på kodhead 8a40965d: 3 924 pass, 9 villkorade skip,
-0 fel/cancel i 77 grupper. Granskningen rättade ett rent rumsbyte som tidigare
-inte meddelade vyernas historikprenumeranter; nytt prov använder den riktiga
-historikmodulen. GitHub-CI och produktionsacceptans återstår; PR165, QA och ny rörlig läppsynk förblir parkerade.
+Vercel `dpl_W7toJ1z7b2EzoktaSBvs56Xwi3vU` är READY på samma main-SHA och
+bunden till www.scoutgaming.tech. Eget browserprov verifierar huvudingången
+Spelbolag & rum, bolagsbyte utan omladdning, direkt rumslänk som hittar sin
+registrerade ägare och trelagersförhandsvisningen för båda spelen:
+- Scoutgaming Demo: Anna/Roulette, publicerad version 1, inget sparat utkast.
+- Swedish Games: Dragan/Blackjack, publicerad version 4, befintligt utkast 2.
+
+Båda visar sina faktiska bakgrunder/dealers/bord med sann låsning. Befintlig
+roomOverrides-writer, granskning och revisionskontroll återanvänds; inga
+paketbehörigheter utvidgas. Mallänken öppnar rätt delad mall med lista över
+berörda rum, uttrycklig redigeringsgrind och besked att publicerat behålls.
+Återgång via huvudmenyn bevarar kontexten. Före/efter-bilder finns i den
+privata evidensmappen: rooms-before.png, rooms-after.png och
+rooms-blackjack-after.png. Inga sparningar, publiceringar eller providerjobb
+utfördes; det befintliga blackjackutkastet är orört.
+
+Acceptansgräns: browserverktygets färginmatning ändrade endast DOM-fältets
+visning, inte editorns osparade tillstånd. Det är inte ett godkänt browserprov
+av dirty-skyddet och ingen slutsats om kodfel. Fältet återställdes genom
+omladdning. Osparat/pågående navigeringsskydd är verifierat i de lokala proven
+med riktig historik; produktionsskrivning har inte testats här.
+
+Bortstädat: dubbla rumskort och generella statistikblock ur huvudflödet;
+bibliotek och papperskorg är sekundära. 14 befintliga filer ändrade, inga nya
+filer. Inga media, arbetskopior eller beroenden raderade. Klippkartans två
+äldre returlänkar till Partner och etiketten Rum / bakgrund återstår att
+förenkla i del 3 så att Admin-flödet hänger ihop. PR165, QA och ny rörlig
+läppsynk förblir parkerade.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 
