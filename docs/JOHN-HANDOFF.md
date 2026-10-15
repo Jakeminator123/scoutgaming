@@ -111,6 +111,15 @@ och färsk Render-env-kontroll återstår efter bekräftat connector-workspace.
 Vercel-teamets färska projektlista innehåller endast `scoutgaming`.
 PR165 är parkerad med tre egna ändringar bevarade; ny rörlig läppsynk är av.
 
+PR172 är levererad: granskat head `8b275f25`, main
+`0aadf568d043410709097e586310cfd2e864a710`, Vercel
+`dpl_5Yp4K9sCQzWpf3vRziWcceX3Qhuy` READY på samma SHA/www.
+PR-CI 38785128105 och main-CI 38786479541 är gröna inklusive faktisk
+SQL/omstart/HTTPS. Lobby laddar båda spelen i eget browserprov.
+Huvudcheckouten och dess verkliga publika startgenväg är synkade/verifierade;
+egna ändringar/profiler består. Exakta kvitton och kvarvarande Render-/QA-
+kontroller finns i CLOUD-MIGRATION. Inga providerjobb eller produktionsskrivningar.
+
 De tidigare dokumentutkasten nedan är daterad historik; aktuella antal och
 återstående steg står ovan och i CLOUD-MIGRATION.
 
