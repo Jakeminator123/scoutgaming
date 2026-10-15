@@ -69,7 +69,9 @@ parkerad och ingen env-/providerändring krävs för denna rättning.
 Rättningen återanvänder dokumentregeln i middleware och SSR. 74 riktade
 prov passerar utan skip, inklusive aktuella N1-/N2-sessioner, revokering,
 bolagsisolering och nekade API-/Origin-/action-/ramanrop. Lab-build: 97
-byggspår. Slutlig PR-CI och produktionsprov av Partner återstår.
+byggspår. Kodhead a4565bda4155a1282d5ffa7fd6d223060784763e passerar
+ordinarie fullhook: 3 914 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
+Slutlig PR-CI och produktionsprov av Partner återstår.
 
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 
