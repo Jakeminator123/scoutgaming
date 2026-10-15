@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createSeedProject,addVariant,validateProject,allowedPathDescriptors } from '../../../../lab/lib/studio-model.mjs';
 import { kindForEvent } from '../../../../lab/lib/video-intake.mjs';
 import { clipSlots } from './connected-studio.mjs';
-import { addStudioIdleClip,applyStudioIdlePolicy,applyStudioVariantPolicy,setStudioBaseWeight,studioPolicyContext } from './studio-policy.mjs';
+import { addStudioIdleClip,applyStudioIdlePolicy,applyStudioVariantPolicy,setStudioBaseWeight,studioPolicyContext,studioClipUsage } from './studio-policy.mjs';
 
 const ids=[1,2,3,4,5,6].map(number=>`${String(number).repeat(8)}-${String(number).repeat(4)}-4${String(number).repeat(3)}-8${String(number).repeat(3)}-${String(number).repeat(12)}`);
 function fixture(eventId='transition.shoe',situation='to-shoe',managed=true){
@@ -101,4 +101,88 @@ test('legacy variant policies edit only the exact bound nonstandard clip',()=>{
   assert.deepEqual(f.project,before);
   assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,line.baselineVariantId,{priority:3}),/Standard/);
   assert.throws(()=>applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,{...f.slot,situation:'from-shoe'},variant.id,{priority:3}),/Kortplats/);
+});
+
+
+test('usage describes the selected take, never borrowing another bound take or an approximate situation',()=>{
+  const f=fixture(),before=structuredClone(f.project);
+  assert.equal(studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[0]).configured,true);
+  assert.deepEqual(studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[1]).rules,['Vald för prov; inte kopplad i projektutkastet.']);
+  assert.equal(studioClipUsage(f.project,f.inventory,f.dealerId,{...f.slot,situation:'from-shoe'},ids[0]).configured,false);
+  assert.equal(studioClipUsage(f.project,f.inventory,'vera',f.slot,ids[0]).configured,false);
+  assert.deepEqual(f.project,before);
+});
+
+test('usage exposes exact automatic timing, manual status and unverified OpenClaw wiring',()=>{
+  const f=fixture('idle.ready','',false);
+  let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],4321,true);
+  project=addStudioIdleClip(project,f.inventory,f.dealerId,f.slot,ids[1],7654,false);
+  const policy=project.dealerIdlePolicies[0].policy;
+  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[0]).rules[0],/100 % av basurvalet · 4,321 s/);
+  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules[0],/Endast manuellt/);
+  policy.variants[0].use='automatic';policy.variants[0].automatic={averageEveryMs:27000,jitterMs:4000,cooldownMs:18000,maxPerMinute:2};
+  const before=structuredClone(project),usage=studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]);
+  assert.equal(usage.configured,true);assert.match(usage.rules.join(' '),/var 27 s, variation ±4 s/);assert.match(usage.rules.join(' '),/paus 18 s; högst 2/);
+  assert.deepEqual(project,before);
+  policy.variants[0].use='openclaw';policy.variants[0].automatic=null;
+  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules[0],/inte verifierad/);
+  assert.equal(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[2]).configured,false);
+});
+
+test('usage reports actual predicates and priority even when the default display selection resolves an alternative',()=>{
+  const f=fixture('transition.shoe','to-shoe',false);
+  f.project=addVariant(f.project,f.dealerId,f.slot.eventId,'Egen tagning');
+  const line=f.project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId===f.slot.eventId),variant=line.variants.at(-1);
+  const trigger=f.project.triggers.find(row=>row.id==='policy.test.trigger');
+  variant.videoGenerationId=ids[1];variant.selection={rules:true,model:true,random:false};variant.triggerIds=[trigger.id];variant.priority=38;
+  const usage=studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[1],line.baselineVariantId);
+  assert.equal(usage.configured,true);assert.match(usage.rules.join(' '),/alla villkor:/);assert.ok(usage.rules.join(' ').includes(String(trigger.value)));
+  assert.match(usage.rules.join(' '),/Prioritet 38/);assert.match(usage.rules.join(' '),/inte verifierad/);assert.doesNotMatch(usage.rules.join(' '),/Standard\/reserv/);
+  line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=ids[1];
+  const exact=studioClipUsage(f.project,f.inventory,f.dealerId,f.slot,ids[1],variant.id);
+  assert.match(exact.rules.join(' '),/Prioritet 38/);assert.doesNotMatch(exact.rules.join(' '),/Standard\/reserv/);
+});
+
+test('usage keeps exact frequency and unavailable alternatives share as standard fallback',()=>{
+  const f=fixture('deal.player.left','box0');
+  let project=applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[1],{frequencyPercent:61});
+  project=applyStudioVariantPolicy(project,f.inventory,f.dealerId,f.slot,ids[2],{frequencyPercent:20});
+  f.inventory.videos[2].available=false;
+  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]).rules[0],/^61 %/);
+  assert.match(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[0]).rules[0],/minst 19 %.*Otillgängliga alternativ/);
+  assert.equal(studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[2]).configured,false);
+});
+
+test('idle usage flags non-event predicates as disconnected instead of claiming a working trigger',()=>{
+  const f=fixture('idle.ready','',false);
+  let project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,ids[0],2000,true);
+  project=addStudioIdleClip(project,f.inventory,f.dealerId,f.slot,ids[1],3000,false);
+  project.dealerIdlePolicies[0].policy.variants[0].use='rules';
+  project=addVariant(project,f.dealerId,f.slot.eventId,'Reaktion');
+  const line=project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId===f.slot.eventId),variant=line.variants.at(-1);
+  variant.videoGenerationId=ids[1];variant.selection={rules:true,model:false,random:false};
+  project.triggers.push({id:'local.state',label:'Vilseledande namn',category:'test',path:'session.count',op:'gte',value:7});variant.triggerIds=['local.state'];
+  const usage=studioClipUsage(project,f.inventory,f.dealerId,f.slot,ids[1]);
+  assert.match(usage.rules.join(' '),/session.count minst 7/);assert.match(usage.rules.join(' '),/inte ansluten/);assert.doesNotMatch(usage.rules.join(' '),/Vilseledande namn/);
+});
+
+
+test('existing policy panel opens the selected take and never silently edits a different alternative',async()=>{
+  const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
+  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),policy=await import('./studio-policy.mjs');
+  const module={exports:{}};
+  runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/studio-policy-panel.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
+    {module,exports:module.exports,require:name=>name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){throw Error('No duration read while rendering');}}:name.includes('video-intake')?require('../../../../lab/lib/video-intake.mjs'):require(name)});
+  const f=fixture();f.project=applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[2],{priority:43});
+  const render=(id,patch={})=>renderToStaticMarkup(React.createElement(module.exports.StudioPolicyPanel,{...f,selectedVideoId:id,blocked:false,onEdit(){assert.fail('render must not write');},...patch}));
+  const selected=render(ids[2]);assert.ok(selected.includes(`value="${ids[2]}" selected=""`));assert.match(selected,/value="43"/);
+  const standard=render(ids[0]);assert.match(standard,/saknar en redigerbar alternativregel/);assert.doesNotMatch(standard,/value="43"/);
+  const missing=render('not-in-this-slot');assert.match(missing,/Välj en alternativ tagning/);assert.doesNotMatch(missing,/type="checkbox"/);
+  const own=fixture('transition.shoe','to-shoe',false);
+  own.project=addVariant(addVariant(own.project,own.dealerId,own.slot.eventId,'First rule'),own.dealerId,own.slot.eventId,'Second rule');
+  const line=own.project.lines.find(row=>row.dealerId===own.dealerId&&row.eventId===own.slot.eventId);
+  for(const row of line.variants.slice(-2))row.videoGenerationId=ids[1];
+  line.variants.at(-1).priority=62;
+  const exact=render(ids[1],{...own,selectedVariantId:line.variants.at(-1).id});
+  assert.ok(exact.includes(`value="${line.variants.at(-1).id}" selected=""`));assert.match(exact,/value="62"/);
 });

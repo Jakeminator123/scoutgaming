@@ -37,12 +37,12 @@ export function StudioCompositionPanel({localReferenceUrl,project,inventory,room
     try{next.composition=validateCompositionSettings(composition);next.renderer='layered';change(next);}catch(cause){setError((cause as Error).message);}
   }
   const tableAsset=assets.find(row=>row.id===lane?.layers.table.default&&row.role==='table'&&layerAssetFitsGame(row,game));
-  if(!lane)return <section className="studio-detail-panel"><h2>Rum / bakgrund</h2><p>Välj ett registrerat rum med en sparad sammansättning.</p></section>;
+  if(!lane)return <section className="studio-detail-panel"><h2>Delad mall</h2><p>Välj ett registrerat rum med en sparad sammansättning.</p></section>;
   return <section className="studio-detail-panel" aria-label="Gemensam sammansättningsmall"><h2>{lane.label}</h2>
     <p>Standardlager, placering, tillåtna alternativ och automatik delas av alla rum som använder denna mall. Ändringarna sparas i det gemensamma projektutkastet; publicerade versioner behålls.</p>
     <p><strong>Rum som använder mallen:</strong></p>
     <ul>{uses.length?uses.map(use=><li key={use.roomId}>{use.operatorName} · {use.roomName}</li>):<li>Inga registrerade rum.</li>}</ul>
-    {roomChoicesPath?<a className="studio-button" href={roomChoicesPath} target="_blank" rel="noopener">Ändra bara {room?.name} · ny flik ↗</a>:<p>Rumsbundna val blir tillgängliga när rummets paket är publicerat.</p>}
+    {roomChoicesPath?<a className="studio-button" href={roomChoicesPath}>Ändra bara {room?.name}</a>:<p>Välj ett aktivt rum för att öppna dess egna val.</p>}
     <button className="studio-button" disabled={blocked||uploadBusy} aria-pressed={editing} onClick={()=>setEditingCompositionId(editing?'':lane.id)}>{editing?'Avsluta mallredigering':'Redigera gemensam mall'}</button>
     <fieldset disabled={locked} className="space-y-2"><legend>Dealers i den gemensamma mallen</legend>
       {project.dealers.map(dealer=><label key={dealer.id} className="flex items-center gap-2"><input type="checkbox" checked={lane.layers.dealer.allowed.includes(dealer.id)} onChange={event=>{

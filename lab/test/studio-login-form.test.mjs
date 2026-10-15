@@ -348,7 +348,7 @@ test('actual browser expired Admin login restores the real room view through his
   async function assertRoomView(page) {
     const studio = page.getByRole('region',{name:'Central Studio'});
     const choices = [['Spelbolag',expectedContext.operator,expectedLabels.operator],['Spel',expectedContext.game,'Roulette'],
-      ['Rum / bakgrund',expectedContext.table,expectedLabels.room],['Dealer',expectedContext.dealer,expectedLabels.dealer]];
+      ['Rum',expectedContext.table,expectedLabels.room],['Dealer',expectedContext.dealer,expectedLabels.dealer]];
     for (const [name,value,label] of choices) {
       const select = studio.getByRole('combobox',{name,exact:true});await select.waitFor();
       assert.equal(await select.inputValue(),value,name + ' must come from the returned stored room context');

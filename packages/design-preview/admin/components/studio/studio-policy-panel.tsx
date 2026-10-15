@@ -9,21 +9,21 @@ import type { VideoInventory, ClipSlot } from '../../lib/connected-studio.mjs';
 import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
 
 export type StudioPolicyPanelProps = {
-  project:StudioProject; inventory:VideoInventory; dealerId:string; slot:ClipSlot; blocked:boolean;
+  project:StudioProject; inventory:VideoInventory; dealerId:string; slot:ClipSlot; selectedVideoId?:string; selectedVariantId?:string; blocked:boolean;
   onEdit:(project:StudioProject)=>void; onBusyChange?:(busy:boolean)=>void;
 };
 const useLabels:Record<IdleVariantUse,string>={manual:'Manuell',automatic:'Automatisk',rules:'Regler',openclaw:'OpenClaw'};
 const automatic={averageEveryMs:25000,jitterMs:5000,cooldownMs:15000,maxPerMinute:3};
 
 export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
-  const {project,inventory,dealerId,slot,blocked,onEdit,onBusyChange}=props;
+  const {project,inventory,dealerId,slot,selectedVideoId,selectedVariantId,blocked,onEdit,onBusyChange}=props;
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[addId,setAddId]=useState(''),[selected,setSelected]=useState('');
   const operation=useRef<AbortController|null>(null), latest=useRef(props), busyCallback=useRef(onBusyChange);
   latest.current=props;busyCallback.current=onBusyChange;
   useEffect(()=>{
     setError('');setBusy(false);setAddId('');setSelected('');
     return ()=>{operation.current?.abort();operation.current=null;busyCallback.current?.(false);};
-  },[dealerId,slot.id]);
+  },[dealerId,slot.id,selectedVideoId,selectedVariantId]);
   useEffect(()=>()=>{operation.current?.abort();busyCallback.current?.(false);},[]);
   let scope:StudioPolicyContext|null=null, scopeError='';
   try{scope=studioPolicyContext(project,inventory,dealerId,slot);}catch(cause){scopeError=cause instanceof Error?cause.message:'Kortplatsen kan inte redigeras.';}
@@ -50,7 +50,9 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
   const policy=scope?.policy;
   const choices=scope?.family?scope.clips.filter(video=>scope!.family!.variantIds.includes(video.id)).map(video=>({id:video.id,label:label(video.id)}))
     :scope?.line.variants.filter(row=>row.id!==scope!.line.baselineVariantId&&scope!.clips.some(video=>video.id===row.videoGenerationId)).map(row=>({id:row.id,label:row.label}))??[];
-  const selectedId=choices.some(row=>row.id===selected)?selected:choices[0]?.id??'';
+  const preferredId=scope?.family?selectedVideoId:scope?.line.variants.find(row=>row.id===selectedVariantId&&row.videoGenerationId===selectedVideoId)?.id
+    ??scope?.line.variants.find(row=>row.videoGenerationId===selectedVideoId)?.id;
+  const selectedId=choices.some(row=>row.id===selected)?selected:choices.some(row=>row.id===preferredId)?preferredId!:selectedVideoId?'':choices[0]?.id??'';
   const media=scope?.family?project.mediaPolicy?.find(row=>row.familyId===scope!.family!.id)?.variants.find(row=>row.videoId===selectedId)
     ??{videoId:selectedId,selection:{rules:false,model:false,random:false},priority:10,triggerIds:[]}:null;
   const lineVariant=scope?.line.variants.find(row=>row.id===selectedId);
@@ -67,7 +69,7 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
   const variationAllowed=(id:string)=>!scope?.global||Boolean(scope.family?.variantIds.includes(id));
 
   return <section aria-label={`Policy för ${slot.title}`} className="studio-policy-panel">
-    <header className="mb-3"><h2 className="text-sm font-semibold">Klippregler · {slot.title}</h2><p className="mt-1 text-[11px] text-sg-muted">Ändrar denna kortplats i utkastet. Servern avgör klippvalet vid spel.</p></header>
+    <header className="mb-3"><h2 className="text-sm font-semibold">Klippregler · {slot.title}</h2><p className="mt-1 text-[11px] text-sg-muted">Ändrar denna situation i projektutkastet. Rumspublicering sker separat. OpenClaw-val visar tillåtet urval, inte en verifierad triggeranslutning.</p></header>
     {scopeError?<p role="alert" className="text-xs text-sg-amber">{scopeError}</p>:scope&&<fieldset disabled={locked} className="min-w-0 border-0 p-0" aria-busy={busy}>
       {scope.kind==='idle'?<>
         {policy?<>
@@ -98,8 +100,8 @@ export function StudioPolicyPanel(props:StudioPolicyPanelProps) {
         </div>
       </>:<>
         {choices.length?<>
-          <label className="studio-field"><span>Klippvariant</span><select value={selectedId} onChange={event=>setSelected(event.target.value)}>{choices.map(choice=><option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label>
-          {scope.frequency?<div className="mt-3">
+          <label className="studio-field"><span>Klippvariant</span><select value={selectedId} onChange={event=>setSelected(event.target.value)}>{!selectedId&&<option value="">Välj en alternativ tagning…</option>}{choices.map(choice=><option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label>
+          {!selectedId?<p className="mt-3 text-xs text-sg-muted">Den valda tagningen saknar en redigerbar alternativregel. Standardklippets urval är fast; ett okopplat klipp måste kopplas först.</p>:scope.frequency?<div className="mt-3">
             {legacyFrequency&&<p className="mb-2 text-[11px] text-sg-amber">Första frekvensändringen ersätter det äldre urvalet för just denna plats.</p>}
             <Numeric label="Frekvens" value={percent} min={0} max={percent===0&&activeFrequency>=4?0:100-total+percent} suffix="%" onChange={frequencyPercent=>variantEdit({frequencyPercent})}/>
             <p className="mt-2 text-[11px] text-sg-muted">0 % = manuell. Högst fyra aktiva varianter.{!legacyFrequency&&` Standardens andel: ${100-total+unavailableShare} %.`}</p>
