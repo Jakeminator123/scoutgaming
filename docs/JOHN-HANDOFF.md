@@ -1,5 +1,31 @@
 # Aktuell handoff — Scoutgaming
 
+## Paow/Dragge: separat workertransport, 15 oktober 2026
+
+Ny opt-in adapter parar autentiserad workers `lapp`-metadata med H.264-byte
+för vår befintliga bildrutekonsument. Den använder vår PCM-/planidentitet,
+engångstoken, upprepade ägar-/profilkontroller, accepterat jobb-ID och
+explicit versionsgrind. Avbrott skickar `avbryt`; bounded köer/tider och
+callback för vår budgetjournal avgränsar försöket. Ingen produktionsroute,
+dealerchatt, env, mediefil, providerinställning eller GPU-körning aktiveras.
+
+Riktade tester: 29 pass, 1 opt-in browserprov ej kört i detta fokusurval.
+De två lokala socketförsöken för Paow/Dragan använder syntetisk worker och
+avkodning; de ersätter inte riktiga talprov. Fullt projektkvitto kompletteras
+vid leverans. Integrationskontrakt och kvarvarande arbete finns i
+LOCAL-PRESENTATION-RUNTIME.md, under isolerad workertransport.
+
+Färsk läsning av RunPods metadata visar fem idle-workers, endpointversion
+13, image `6c80fe50806979d902a6457f43ec74ca8ee5d421`. Emils överlämning anger
+`fe1b55e971b1236fadd445ff6ce94970719b5d72`. Skillnaden är kvar; metadata är
+inte attestering av körande image/avatarbyte. Inga ändringar görs i hans
+poddar. Äldre Kevin-bilaga används endast för protokoll-/ansvarsgränsen;
+dess nycklar, mediaråd och gamla driftuppgifter importeras inte.
+SAMORDNING har fått avgränsningen; Vercel/Blob/Neon och Admin-migrationen
+behåller sin befintliga auktoritet. Nästa steg är verifierad release/bank,
+gemensam upgrade-dispatcher, journal-/spelarsessionskoppling och faktisk
+spelplan/ljudklocka, följt av två riktiga talprov med planbyte/avbrott.
+
 ## N2-utkast och publicering, 15 oktober 2026
 
 Utökat befintligt C5/C6-prov: verkliga UI-skrivningar, reload, granskat utkast,

@@ -60,8 +60,8 @@ Inkommande byte, kö, antal lagrade rutor och avkodningstid är begränsade.
 
 Detta är en testad, opt-in konsument, inte ett färdigt produktionsflöde:
 ingen spel-/chattkod installerar den automatiskt, ingen relay eller endpoint
-byts och inget GPU-jobb startas. Kvar är en autentiserad workeradapter som
-parar `lapp` med nästa binärmeddelande och hanterar backpressure/`avbryt`,
+byts och inget GPU-jobb startas. Workertransporten beskrivs nedan. Kvar är
+inkoppling mot autentiserad spelarsession och vår budgetjournal,
 serverns tidsplanering/replanering, verifierat avatarpaket mot publicerade
 klipp och ljudklockan i den faktiska spelaren. Den vägen ska behålla befintliga
 åtkomst-, budget-, text-, röst- och profilkontroller. Först därefter görs två
@@ -74,6 +74,65 @@ H.264-exempel två gånger. Det kräver befintlig Playwright via
 `CROUPIER_BROWSER_FIXTURE_MODULE`, valfri `CROUPIER_BROWSER_FIXTURE_CHANNEL`
 och ffmpeg på PATH. Inga personfilmer, sparade inloggningar eller externa
 providers används. Detta är codec-/kompositionsbevis, inte läppsynksacceptans.
+
+### Isolerad workertransport och versionsgrind, 15 oktober 2026
+
+`web/moving-speech-transport.mjs` kopplar vår hashbundna PCM-/bildruteplan
+till `services/astrid-gpu-worker/gateway/moving-transport.mjs`. En unik
+callbackadress `/lipsync-moving/<slump-id>` med eget engångstoken tar emot
+en worker för Paow eller Dragge. Adressen är en serverhemlighet, aldrig en
+spelarlänk eller loggfält. Den innehåller ingen RunPod-nyckel och återanvänder
+inte Emils podtoken. Fel avatar, token, återanslutning och webbläsar-Origin
+nekas. En ny plan kräver en ny transport; ingen worker återanvänds här.
+
+Adaptern installerar ingen HTTP-route och startar inget GPU-jobb. Anroparen
+måste först äga en budgetreservation. `authorize` kontrollerar vår aktuella
+ägare/session, profilrevision och publicerade paket; vid `send` ska den
+bekräfta accepterat jobb och lämna ett färskt `release`-kvitto. Senare
+kontroller måste behålla samma jobb-ID. Ingen PCM skickas före dessa steg.
+`finalize` frigör just denna reservation/avslutar just vårt jobb genom den
+befintliga journalen; fel från städningen finns i `run`/`cancel`/`closed`.
+Detta är injicerade serverkontrakt, inte implementerad produktionsadmission.
+
+`handleUpgrade` returnerar false för andra sökvägar. Integrationen måste
+använda en gemensam explicit upgrade-dispatcher: den gamla Astrid-relayn
+avvisar annars okända sökvägar. Lägg inte två konkurrerande listeners på
+samma server. Astrids `/lipsync-worker` och `/speech-stream` är oförändrade.
+
+`pong` måste ange rätt avatar, minst 30 rutor/s, 0,22 s ljudförsprång och
+tolv rutor per del. `lapp` paras med exakt nästa binärmeddelande. ID, revision,
+ordning, tagning och kroppsruta kontrolleras innan `onChunk` levererar till
+den autentiserade mottagarens befintliga bildruteadapter. Rektanglarna behåller
+källpixlar; webbläsaren kontrollerar dem mot bildens verkliga dimensioner.
+Dubletter, blandade repliker, för stora meddelanden, kööverskridande,
+frånkoppling och timeout avbryter. `end` avslutar PCM-inmatning; avbrott
+skickar `avbryt` och kasserar ljud/plan. `onChunk` måste respektera sin
+AbortSignal och göra mottagarens egen samtidiga ägar-/revisionskontroll.
+Slutförd workertransport betyder inte att varje munruta visats i spelaren.
+
+Versionsgrinden kräver en full SHA i image-taggen och ett högst 60 sekunder
+gammalt internt kvitto från RunPods endpoint- och workerlistor. Alla listade
+workers måste matcha imagen, endpointversionen och vara icke-stale. Ett nytt
+kvitto krävs efter callback, före PCM; ändrad version stoppar försöket.
+Metadata verifierar inte körande image-digest eller avatarbankens filhashar.
+`pong` saknar sådan attestering; den får inte uppfinnas från ett motornamn.
+
+Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
+listade idle-workers angav image
+`ghcr.io/emacodehero/croupier-lipsync-worker:6c80fe50806979d902a6457f43ec74ca8ee5d421`,
+endpointversion 13 och `isStale=false`. Detta skiljer sig från Emils
+överlämnade `fe1b55e971b1236fadd445ff6ce94970719b5d72`. Byt inte imagen på
+hans endpoint för att få grinden grön. Bekräfta vilken release som ska provas
+och dess avatarproveniens, eller ordna en egen separat worker. Befintlig
+RunPod-nyckel fungerade för metadata; en ny Cartesia-nyckel löser inte denna
+versionsskillnad. Ingen pod, env, deployment eller GPU-körning ändrades.
+
+`test/moving-speech-transport.mjs` använder riktiga lokala WebSockets och
+syntetisk worker/PCM/avkodning. Två på varandra följande försök, Paow och
+Dragan med worker-avatar Dragge, matar den befintliga dealerlagersadaptern.
+Testerna täcker också återkallad åtkomst, releasebyte under uppstart,
+felaktig meddelandeordning, avbrott och begränsade köer/tider. Dessa prov är
+transport-/kontraktsbevis, inte verklig worker-, röst- eller synkacceptans.
 
 ### Emils uppdaterade överlämning och isolering
 
