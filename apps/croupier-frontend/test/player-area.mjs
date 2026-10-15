@@ -106,7 +106,7 @@ test('history stays honest when no public results route exists', async () => {
   assert.match(profil.html, /Egen profil/);
   assert.match(profil.html, /Kontotyp · konto/);
   assert.match(profil.html, /Till spellobbyn/);
-  assert.match(profil.html, /href="\/play"/);
+  assert.match(profil.html, /href="\/lobby"/);
 });
 
 test('history renders two currencies and the latest outcome in Swedish', async () => {

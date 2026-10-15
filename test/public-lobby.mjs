@@ -1,4 +1,7 @@
 import test from 'node:test';
+import {createRequire} from 'node:module';
+import {fileURLToPath, pathToFileURL} from 'node:url';
+import {createServer} from 'node:http';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, rm, symlink, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -140,3 +143,99 @@ test('cinematic scroll reaches its target and removes frames/listeners on finish
     assert.equal(scrolls.at(-1), exit === 'complete' ? 1000 : 505);
   }
 });
+
+
+test('public lobby exposes one profile entry through the existing authenticated account surface', async () => {
+  const require = createRequire(new URL('../packages/design-preview/package.json', import.meta.url));
+  const root = fileURLToPath(new URL('../packages/design-preview/lobby/', import.meta.url));
+  const {outputFiles} = await require('esbuild').build({stdin:{contents:
+    "export {Header} from './components/header.tsx'; export {LobbyProvider} from './components/lobby-provider.tsx';",
+    resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',jsx:'automatic',
+    alias:{'@':root,'next/link':fileURLToPath(new URL('../packages/design-preview/runtime/navigation.tsx',import.meta.url))},
+    external:['react','react-dom','/composition-runtime/compositor.js'],logLevel:'silent'});
+  const module={exports:{}};
+  new Function('require','module','exports',outputFiles[0].text)(require,module,module.exports);
+  const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+  const {Header,LobbyProvider}=module.exports;
+  const html=renderToStaticMarkup(React.createElement(LobbyProvider,null,React.createElement(Header)));
+  const links=[...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].filter(([,attrs])=>/href="\/play\/profil"/.test(attrs));
+  assert.equal(links.length,1,'one account entry is shared by all viewport sizes');
+  assert.match(links[0][2],/Min profil/);
+  assert.doesNotMatch(links[0][1],/hidden|returnTo|target=/);
+});
+
+
+const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
+test('dealer dialog returns keyboard focus to its own trigger after Escape and Swedish close button',
+  {skip: browserModule ? false : 'Set CROUPIER_BROWSER_FIXTURE_MODULE for the isolated lobby browser check', timeout: 30_000}, async t => {
+    const require = createRequire(new URL('../packages/design-preview/package.json', import.meta.url));
+    const root = fileURLToPath(new URL('../packages/design-preview/lobby/', import.meta.url));
+    const {outputFiles} = await require('esbuild').build({stdin: {contents: `
+      import React from 'react';
+      import {createRoot} from 'react-dom/client';
+      import {LobbyProvider} from './components/lobby-provider.tsx';
+      import {DealersSection} from './components/sections/dealers-section.tsx';
+      createRoot(document.getElementById('root')).render(<LobbyProvider><DealersSection/></LobbyProvider>);
+    `, resolveDir: root, loader: 'tsx'}, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic',
+    external: ['/composition-runtime/compositor.js'],
+    alias: {'@/lib/catalog.mjs': fileURLToPath(new URL('../packages/design-preview/runtime/public-lobby-catalog.mjs', import.meta.url)),
+      '@': root, 'next/image': fileURLToPath(new URL('../packages/design-preview/runtime/image.ts', import.meta.url))},
+    define: {'process.env.NODE_ENV': '"production"'}, logLevel: 'silent'});
+    const pack = publication('alpha');
+    pack.rooms[0].dealers.push({...pack.rooms[0].dealers[0], id: 'oskar', label: 'Oskar'});
+    const html = '<!doctype html><html lang="sv"><meta charset="utf-8"><style>'
+      + '[data-slot="dialog-overlay"]{position:fixed;inset:0;background:#0003}'
+      + '[data-slot="dialog-content"]{position:fixed;top:10%;left:10%;background:white;padding:1rem}'
+      + '[data-slot="dialog-content"][data-state="closed"]{animation:fixture-close 50ms}'
+      + '@keyframes fixture-close{from{opacity:1}to{opacity:0}}</style><div id="root"></div>'
+      + '<script type="module" src="/fixture.js"></script></html>';
+    const unexpected = [], errors = [];
+    const server = createServer((request, response) => {
+      const path = new URL(request.url, 'http://localhost').pathname;
+      let body, type = 'application/json';
+      if (path === '/lobby') {body = html; type = 'text/html; charset=utf-8';}
+      else if (path === '/fixture.js') {body = outputFiles[0].text; type = 'application/javascript';}
+      else if (path === '/api/operators') body = JSON.stringify({operators: [{slug: 'alpha', name: 'Bolag alpha'}]});
+      else if (path === '/api/operators/alpha/rooms') body = JSON.stringify(pack);
+      else if (path === '/favicon.ico') {response.writeHead(204); response.end(); return;}
+      else {unexpected.push(request.method + ' ' + path); response.writeHead(404); response.end(); return;}
+      response.writeHead(200, {'content-type': type}); response.end(body);
+    });
+    t.after(() => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
+    await new Promise((resolve, reject) => {server.once('error', reject); server.listen(0, '127.0.0.1', resolve);});
+    const origin = 'http://127.0.0.1:' + server.address().port;
+    const {chromium} = await import(pathToFileURL(browserModule).href);
+    const channel = process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL;
+    const browser = await chromium.launch({headless: true, ...(channel ? {channel} : {}),
+      args: ['--disable-background-networking', '--disable-component-update', '--disable-domain-reliability']});
+    t.after(() => browser.close());
+    const context = await browser.newContext({serviceWorkers: 'block'});
+    context.setDefaultTimeout(5_000);
+    await context.route('**/*', route => {
+      if (new URL(route.request().url()).origin === origin) return route.continue();
+      unexpected.push(route.request().url()); return route.abort('blockedbyclient');
+    });
+    const page = await context.newPage();
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(origin + '/lobby?operator=alpha&room=shared-room');
+    for (const [name, close] of [['Nora', 'Escape'], ['Oskar', 'button']]) {
+      const trigger = page.getByRole('button', {name: 'Välj ' + name, exact: true});
+      await trigger.focus(); await trigger.press('Enter');
+      const dialog = page.getByRole('dialog', {name, exact: true});
+      await dialog.waitFor({state: 'visible'});
+      assert.equal(await dialog.getByRole('link', {name: 'Spela med ' + name}).getAttribute('href'),
+        '/play/blackjack?operator=alpha&table=shared-room&dealer=' + name.toLowerCase());
+      const closeButton = dialog.getByRole('button', {name: 'Stäng', exact: true});
+      assert.equal(await closeButton.evaluate(element => element === document.activeElement), true);
+      await page.keyboard.press('Tab');
+      assert.equal(await dialog.getByRole('link').evaluate(element => element === document.activeElement), true);
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await closeButton.evaluate(element => element === document.activeElement), true);
+      if (close === 'Escape') await page.keyboard.press('Escape');
+      else await dialog.getByRole('button', {name: 'Stäng', exact: true}).click();
+      await dialog.waitFor({state: 'detached'});
+      await page.waitForFunction(label => document.activeElement?.getAttribute('aria-label') === label, 'Välj ' + name);
+      assert.equal(await trigger.evaluate(element => element === document.activeElement), true);
+    }
+    assert.deepEqual(unexpected, []); assert.deepEqual(errors, []);
+  });

@@ -48,6 +48,16 @@ produktbugg hittades och inga produktionsdata ändrades.
 
 ### Admin checkpoints C1C9
 
+**C4, publik Lobby-ingång, 15 oktober:** Startsidan använder nu `/lobby`,
+med Min profil → befintlig profil → Spelhistorik och profilretur till Lobby.
+Befintlig serverauth, äldre bokmärken och `/play/{game}` består; ingen fri
+returadress införs. Dealer-dialogen återför fokus efter Escape/Stäng.
+43 riktade prov utan skip, inklusive riktig isolerad Chrome med syntetiska
+data, frontend-/Lobby-typkontroller samt Lab-build med 97 byggspår passerar.
+Ordinarie fullhook med Chrome: 3 885 godkända, 9 villkorade skip, 0 fel/cancel
+i 77 grupper. Levererad liveacceptans och C4:s fulla rollmatris är fortfarande
+öppna; detta är inget nytt login-, spel- eller mediekvitto.
+
 **Spelarretur och alias, 15 oktober:** Spelarens återlänk går nu till `/lobby` med servervaliderat bolag och verkligt
 rum. Studio-preview går direkt till `/admin/compositions` med sammansättning
 och dealer; befintlig sessionsstängning och modifierade klick består. Fria

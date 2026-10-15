@@ -43,7 +43,8 @@ test('profile form shows the current name, leaves balance as text and has one li
   assert.match(saldo, /SEK/);
   assert.doesNotMatch(saldo, /<input/);
   assert.doesNotMatch(page.html, /name="balance"|name="currency"|secret-stack-trace/);
-  assert.match(page.html, /href="\/play"/);
+  assert.match(page.html, /href="\/lobby"/);
+  assert.deepEqual(page.model.links, [{href:'/play/historik', label:'Spelhistorik'}]);
 });
 
 test('profile without the columns says it is not available yet and still shows the balance as text', async () => {

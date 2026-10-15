@@ -23,7 +23,7 @@ export function SiteHeader() {
             <li><Link href="/about" className="transition-colors hover:text-foreground">Om oss</Link></li>
           </ul>
           <Button asChild size="sm" className="min-h-11 bg-lime font-mono text-xs tracking-widest text-ink uppercase hover:bg-lime2">
-            <Link href="/play">Välj bolag</Link>
+            <a href="/lobby">Välj bolag</a>
           </Button>
         </nav>
       </div>
