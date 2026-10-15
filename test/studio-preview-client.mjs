@@ -179,3 +179,44 @@ test('preview notice uses the existing HUD and hides inert chat without changing
   }else{assert.deepEqual(nodes['#top-right'].children,[]);assert.equal(nodes['#chat'].hidden,undefined);}
  }
 });
+
+async function returnLinkFixture({selection,preview=null,closeFails=false}={}){
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+ const block=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
+ const run=new Function('studioPreview','entrySelection','document','gameApi','writeChoices','choiceStorage','previewSessionId','soundStorageKey','location',block);
+ const link={},events=[],storage={removeItem:key=>events.push(['remove',key])};
+ run(preview,selection,{querySelector:()=>link},{close:async()=>{events.push(['close']);if(closeFails)throw Error('Expired');}},
+  (...args)=>events.push(['choices',...args.slice(1)]),storage,preview?.sessionId??null,'preview-sound',
+  {search:'?operator=foreign&table=foreign&returnTo=https://foreign.invalid',assign:href=>events.push(['navigate',href])});
+ return {link,events};
+}
+
+test('player return restores the server-selected lobby room without trusting query or guessing a room from composition',async()=>{
+ const {gameLaneFromDocument}=await import('../web/public/game-lanes.mjs');
+ const base={...dataset};delete base.studioPreview;
+ for(const [fields,expected] of [
+  [{gameOperator:'example',gamePackageRevision:'4',gameBranding:'{}',gameRoomId:'room-evening'},'/lobby?operator=example&room=room-evening'],
+  [{gameOperator:'example'},'/lobby?operator=example'],[{},'/lobby']]){
+  const {link,events}=await returnLinkFixture({selection:gameLaneFromDocument({...base,...fields})});
+  assert.equal(link.href,expected);assert.equal(link.onclick,undefined);assert.deepEqual(events,[]);
+ }
+ for(const fields of [{gameOperator:'//foreign.invalid'}, {gameOperator:'example',gameRoomId:'../other'}, {gameRoomId:'room-evening'}]){
+  assert.throws(()=>gameLaneFromDocument({...base,...fields}));
+ }
+});
+
+test('preview return opens Admin with exact composition and dealer after closing only its isolated session',async()=>{
+ const {gameLaneFromDocument}=await import('../web/public/game-lanes.mjs');
+ const selected={...dataset,gameComposition:JSON.stringify(composition)};
+ const selection=gameLaneFromDocument(selected),preview=studioPreviewFromDocument(selected,'/studio-preview/'+id);
+ for(const closeFails of [false,true]){
+  const {link,events}=await returnLinkFixture({selection,preview,closeFails});
+  assert.equal(link.href,'/admin/compositions?composition=evening&dealer=astrid');assert.equal(link.textContent,'Till Sammansättning');
+  for(const modifier of [{button:1},{button:0,ctrlKey:true},{button:0,metaKey:true},{button:0,shiftKey:true},{button:0,altKey:true}]){
+   await link.onclick({...modifier,preventDefault(){assert.fail('modified click must retain normal browser behavior');}});assert.deepEqual(events,[]);
+  }
+  let prevented=false;await link.onclick({button:0,preventDefault(){prevented=true;}});
+  assert.equal(prevented,true);assert.deepEqual(events,[['close'],['choices',undefined,{},id],['remove','preview-sound'],['navigate',link.href]]);
+ }
+});

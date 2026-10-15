@@ -546,3 +546,29 @@ test('shared dealer voice has only two exact transport paths and preserves untru
   assert.equal(headers.get('cookie'),'fixture-player-session');assert.equal(headers.get('origin'),config.publicOrigin);
   assert.equal(headers.get('x-croupier-lab-authorized'),null);assert.equal(headers.get('x-croupier-vercel-secret'),config.secret);
 });
+
+test('native legacy document aliases go straight to Admin with query preserved and legacy/auth contracts unchanged',async()=>{
+ const require=createRequire(new URL('../package.json',import.meta.url));
+ const {unstable_getResponseFromNextConfig,getRedirectUrl}=require('next/experimental/testing/server');
+ const keys=Object.keys(env),saved=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+ const aliases=[['/lab','/admin'],['/labb','/admin'],['/studio-astrid','/admin'],['/studio-lissabon','/admin'],['/labb-lissabon','/admin'],['/labb/filmer','/admin/videos'],['/labb/zoner','/admin/compositions'],['/labb/guide','/admin/guide']];
+ const search='?dealer=dragan&operator=example&table=room-evening&lane=evening&game=blackjack';
+ try{
+  for(const native of [true,false]){
+   Object.assign(process.env,env,{CROUPIER_STUDIO_NATIVE_ADMIN:native?'1':'0',CROUPIER_VERCEL_UNIFIED_UI:native?'1':'0'});
+   const {default:nextConfig}=await import('../next.config.mjs?return-navigation-'+native);
+   for(const [from,to] of aliases){
+    const response=await unstable_getResponseFromNextConfig({url:config.publicOrigin+from+search,nextConfig});
+    assert.equal(response.status,307,from);
+    const actual=new URL(getRedirectUrl(response));
+    const legacy=from==='/labb/filmer'?'/control/videos':from==='/labb/zoner'?'/control/zones':from==='/labb/guide'?'/control/guide':'/control';
+    assert.equal(actual.origin,config.publicOrigin);assert.equal(actual.pathname,native?to:legacy,from);
+    assert.deepEqual([...actual.searchParams],[...new URLSearchParams(search)],from);
+   }
+   for(const path of ['/control/login?returnTo=%2Fcontrol%2Fclips','/control/set-password?t=fixture','/api/auth/session','/api/table']){
+    const response=await unstable_getResponseFromNextConfig({url:config.publicOrigin+path,nextConfig});
+    assert.equal(getRedirectUrl(response),null,path);
+   }
+  }
+ }finally{for(const [key,value]of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+});
