@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { retireDemoExamples } from './lib/retire-demo-examples.mjs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadPrivateConnection, probeConnections, startIsolatedConnection } from '../open-claw/lab/deploy/local-connection.mjs';
@@ -65,7 +65,36 @@ async function buildLab(session) {
   await new Promise((yes, no) => { child.once('error', no); child.once('exit', code => code === 0 ? yes() : no(new Error(`Labbbygget misslyckades (${code}). Kör npm --prefix lab ci om beroenden saknas.`))); });
 }
 export const publishedProductUrl = 'https://www.scoutgaming.tech/lobby';
-export async function main(args = process.argv.slice(2), { open = openBrowser, log = console.log } = {}) {
+// Presence checks only: these files do not identify the source revision of a build.
+export const localBuildFiles = Object.freeze([
+  '.next/BUILD_ID', '.next/required-server-files.json', '.next/routes-manifest.json', '.next/server/app-paths-manifest.json',
+  ...['index.html', 'preview.js', 'preview.css', 'catalog.json', 'player.js', 'compositor.js', 'bridge.js', 'geometry.js', 'lanes.js'].map(file => `preview-build/${file}`),
+  ...['admin', 'lobby', 'public-lobby'].flatMap(surface => ['index.html', 'app.js', 'theme.css'].map(file => `design-preview-build/${surface}/${file}`)),
+  'design-preview-build/admin/app.css', 'design-preview-build/admin/chat-import.js',
+  ...['inter', 'space', 'mono'].map(font => `design-preview-build/fonts/${font}.woff2`),
+]);
+export async function requireLocalBuild(repoRoot = root) {
+  const missing = [];
+  for (const file of localBuildFiles) {
+    const info = await stat(join(repoRoot, 'lab', file)).catch(() => null);
+    if (!info?.isFile() || info.size === 0) missing.push(file);
+  }
+  if (missing.length) throw new Error(`Lokalt bygge saknas eller är ofullständigt: ${missing.join(', ')}. --skip-build bygger eller installerar ingenting. Bygg rätt checkout med npm --prefix lab run build först; bortstädade byggfiler är inte i sig ett källkodsfel.`);
+}
+function sourceVersion(repoRoot) {
+  try {
+    const head = execFileSync('git', ['-C', repoRoot, 'rev-parse', '--verify', 'HEAD'], { encoding: 'utf8', windowsHide: true, timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return /^[a-f0-9]{40}$/.test(head) ? head : null;
+  } catch { return null; }
+}
+function registerShutdown(fixture) {
+  const stop = async () => { await fixture.stop(); process.exit(0); };
+  process.once('SIGINT', stop); process.once('SIGTERM', stop);
+}
+export async function main(args = process.argv.slice(2), { open = openBrowser, log = console.log, repoRoot = root, dependencies = {} } = {}) {
+  const runtime = { requireLocalBuild, sourceVersion, preparePreview, prepareDesignPreview, buildLab, prepareProject,
+    startLocalComparison, startIsolatedConnection, loadPrivateConnection, probeConnections, registerShutdown,
+    fetch: globalThis.fetch, ...dependencies };
   if (args.some(arg => !['--check', '--no-open', '--skip-build', '--astrid-camera', '--cloud-storage', '--offline', '--product'].includes(arg))) throw new Error('Använd --check, --no-open, --skip-build, --astrid-camera, --cloud-storage, --offline eller --product.');
   if (args.includes('--product')) {
     if (args.some(arg => !['--product', '--no-open'].includes(arg))) throw new Error('--product kan endast kombineras med --no-open.');
@@ -73,49 +102,50 @@ export async function main(args = process.argv.slice(2), { open = openBrowser, l
     if (!args.includes('--no-open')) open(publishedProductUrl);
     return { mode: 'product', url: publishedProductUrl };
   }
+  if (args.includes('--offline') && args.some(arg => ['--check', '--astrid-camera', '--cloud-storage'].includes(arg))) throw new Error('--offline kan inte kombineras med --check, --astrid-camera eller --cloud-storage.');
+  const head = await runtime.sourceVersion(repoRoot);
+  log(`Avsedd checkout: ${repoRoot}\nKällversion (Git HEAD): ${head || 'kunde inte läsas'}. Arbetsfiler kan ha egna ändringar; detta är inte ett byggversionskvitto.`);
+  if (args.includes('--check')) {
+    const { configuration, report } = runtime.loadPrivateConnection({ repoRoot, generatedSpeech: true, astridCamera: args.includes('--astrid-camera'), cloudStorage: args.includes('--cloud-storage') });
+    log(JSON.stringify({ lane: profile.id, report, probe: await runtime.probeConnections(configuration) }, null, 2));
+    return;
+  }
+  const skipBuild = args.includes('--skip-build');
+  if (skipBuild) {
+    // Check before reading connected profiles, creating projects or acquiring a session.
+    await runtime.requireLocalBuild(repoRoot);
+    log('--skip-build använder befintliga byggfiler utan förberedelse, bygge eller installation. Deras källversion är inte verifierad.');
+  }
+  const prepareBuild = async session => {
+    if (skipBuild) return;
+    await runtime.preparePreview();
+    await runtime.prepareDesignPreview();
+    await runtime.buildLab(session);
+  };
   if (args.includes('--offline')) {
-    if (args.includes('--check') || args.includes('--astrid-camera') || args.includes('--cloud-storage')) throw new Error('--offline kan inte kombineras med --check, --astrid-camera eller --cloud-storage.');
-    const fixture = await startLocalComparison({ streamLane: profile.id,
-      prepare: async session => {
-        await preparePreview();
-        await prepareDesignPreview();
-        if (!args.includes('--skip-build')) await buildLab(session);
-      }, prepareStudio: prepareProject });
-    console.log(`Lokalt Studio: ${fixture.labUrl}\nProvspel startas från en sparad sammansättning i Studio\nPublicerad produkt: ${publishedProductUrl}\nTestdata utan publicerat bolagspaket; externa tjänster är avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
-    const stop = async () => { await fixture.stop(); process.exit(0); };
-    process.once('SIGINT', stop); process.once('SIGTERM', stop);
-    if (!args.includes('--no-open')) openBrowser(fixture.labUrl);
+    const fixture = await runtime.startLocalComparison({ repoRoot, streamLane: profile.id,
+      prepare: prepareBuild, prepareStudio: runtime.prepareProject });
+    log(`Lokalt Studio: ${fixture.labUrl}\nProvspel startas från en sparad sammansättning i Studio\nPublicerad produkt: ${publishedProductUrl}\nTestdata utan publicerat bolagspaket; externa tjänster är avstängda. Ctrl+C stoppar båda servrarna och rensar testdata.`);
+    runtime.registerShutdown(fixture);
+    if (!args.includes('--no-open')) open(fixture.labUrl);
     return fixture;
   }
   const url = `http://127.0.0.1:${profile.labPort}/`;
-  if (args.includes('--check')) {
-    const { configuration, report } = loadPrivateConnection({ generatedSpeech: true, astridCamera: args.includes('--astrid-camera'), cloudStorage: args.includes('--cloud-storage') });
-    console.log(JSON.stringify({ lane: profile.id, report, probe: await probeConnections(configuration) }, null, 2));
-    return;
-  }
-  const running = await fetch(`http://127.0.0.1:${profile.labPort}/api/health`, { signal: AbortSignal.timeout(2000) }).then(r => r.json()).catch(() => null);
-  if (running?.service === 'croupier-next-studio' && running.streamLane === profile.id) {
-    console.log(`Lokalt Studio kör redan: ${url}\nPublicerad produkt: ${publishedProductUrl} (node lab/start.mjs --product)`);
-    if (args.includes('--astrid-camera')) console.log('Kameraflaggan ändras bara vid en ny start. Den körande sessionen ändrades inte.');
-    if (args.includes('--cloud-storage')) console.log('Molnlagring väljs bara vid en ny start. Den körande sessionen ändrades inte.');
-    return;
-  }
-  if (running) throw new Error(`Port ${profile.labPort} används av ett annat labb. Stoppa dess startprocess först; ingen process stängs automatiskt.`);
-  const studioDataDir = localDataDir();
-  const fixture = await startIsolatedConnection({ ...profile, studioDataDir, streamLane: profile.id,
+  const running = await runtime.fetch(`http://127.0.0.1:${profile.labPort}/api/health`, { signal: AbortSignal.timeout(2000) }).then(r => r.json()).catch(() => null);
+  if (running) throw new Error(`En server svarar på ${url}, men dess checkout och byggversion kan inte verifieras. Stoppa dess startprocess manuellt innan du startar från rätt checkout. Ingen process stängs automatiskt.`);
+  const studioDataDir = localDataDir(repoRoot);
+  const fixture = await runtime.startIsolatedConnection({ ...profile, repoRoot, studioDataDir, streamLane: profile.id,
     astridCamera: args.includes('--astrid-camera'),
     cloudStorage: args.includes('--cloud-storage'),
     prepare: async session => {
-      await prepareProject(studioDataDir);
-      await preparePreview();
-      await prepareDesignPreview();
-      if (!args.includes('--skip-build')) await buildLab(session);
+      await runtime.prepareProject(studioDataDir);
+      await prepareBuild(session);
     },
   });
-  console.log(`Lokalt Studio redo: ${url}\nVälj en sparad sammansättning i Studio för att starta provspel.\nPublicerad produkt: ${publishedProductUrl} (node lab/start.mjs --product)\nCtrl+C stoppar båda servrarna. Sparade inställningar finns kvar i ${studioDataDir}.`);
-  const stop = async () => { await fixture.stop(); process.exit(0); };
-  process.once('SIGINT', stop); process.once('SIGTERM', stop);
-  if (!args.includes('--no-open')) openBrowser(url);
+  log(`Lokalt Studio redo: ${url}\nVälj en sparad sammansättning i Studio för att starta provspel.\nPublicerad produkt: ${publishedProductUrl} (node lab/start.mjs --product)\nCtrl+C stoppar båda servrarna. Sparade inställningar finns kvar i ${studioDataDir}.`);
+  runtime.registerShutdown(fixture);
+  if (!args.includes('--no-open')) open(url);
+  return fixture;
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(error => { console.error(error.message); process.exitCode = 1; });

@@ -436,6 +436,20 @@ Bakgrundszoner har tagits bort ur arbetsflödet; tidigare sparade zondata bevara
 
 Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
 tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslutna profilen.
+Startaren visar avsedd checkout och dess Git-HEAD som källversion. Egna
+arbetsfiler kan avvika; uppgiften intygar inte vilken källversion ett äldre bygge har.
+En redan svarande server återanvänds inte automatiskt: stoppa dess startprocess
+manuellt före en ny start från rätt checkout. Inga processer stängs av startaren.
+
+Lägg till `--skip-build` för att använda befintliga byggfiler utan att förbereda
+förhandsvisningar, bygga eller installera beroenden. Nödvändiga filer för Lab,
+förhandsvisning och Admin/Lobby kontrolleras innan profiler läses eller projekt
+och servrar startas. Saknas någon fil stannar kommandot; bygg först rätt checkout
+med `npm --prefix lab run build` när ett bygge är avsett. Bortstädade byggfiler
+är inte i sig ett källkodsfel. Kontrollen intygar filernas närvaro, inte att bygget
+motsvarar aktuell Git-HEAD. `--check` behåller sitt läsande anslutningsprov och
+startar inga servrar; `--product` öppnar den publicerade produkten utan lokal start.
+
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
 dit. `/lissabon`, `/lab`, `/labb` och `/bo` är äldre kompatibilitetsadresser.
