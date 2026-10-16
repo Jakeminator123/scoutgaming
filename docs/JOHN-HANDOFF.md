@@ -6,10 +6,11 @@ Jakob har aktiverat målet att avsluta Admin och intern migrering, samla
 konfiguration och radera verifierat ersatta delar. Arbetsströmmen fortsätter
 i huvudcheckouten; aktuell plan och bevis finns överst i CLOUD-MIGRATION.
 Workflow-/dokumentfel som hindrar avslutet ingår. Admin-flödesetappen är
-avslutad enligt kvittot nedan. PR165 är nästa avgränsade rättning; ny rörlig
-läppsynk och QA-utbyggnad förblir pausade.
+avslutad enligt kvittot nedan. PR165 är mergad efter Jakobs uttryckliga
+godkännande. Lageruppladdning och env-normalisering är nästa leverans;
+ny rörlig läppsynk och QA-utbyggnad förblir pausade.
 
-PR165 fortsätter nu i sin befintliga branch i huvudcheckouten. Main
+PR165 slutfördes i sin befintliga branch i huvudcheckouten. Main
 `32ffbbaf` är förenad utan konflikter i kodcommit `c43fef1a`; cookie-
 testfixen från snapshoten och `/play`-returen är rättade. Fyra isolerade
 negativa prov visade ett verkligt logout/callback-race. Enligt Jakobs mandat
@@ -19,12 +20,29 @@ De fyra regressionerna passerar lokalt. Äldre omärkta BO-/CRAIG-sessioner
 kräver engångs-återinloggning eftersom deras ursprung inte kan särskiljas;
 konton, saldon, historik och nya vanliga/partner-inloggningar bevaras.
 Kodcommit `c43fef1a` är oberoende slutgranskad. Labbygge: 97 byggspår;
-ordinarie fullhook: 3 971 pass, 9 villkorade skip, 0 fel. Faktisk
-SQL-/omstarts-/HTTPS-CI ska kvitteras på slutligt PR-head; merge/deploy
-är fortfarande separat. Se CLOUD-MIGRATION och PR165:s leveranskvitto.
+ordinarie fullhook: 3 971 pass, 9 villkorade skip, 0 fel. Sluthead
+`9faaeeb3` är oberoende granskat och faktisk SQL-/omstarts-/HTTPS-CI
+`38905152718` är grön, inklusive återkallning efter verklig SQL-omstart.
+Jakob godkände exakt head samt ordinarie automatisk driftsättning.
+Normal merge utan bypass gav main `a52ec2d0`; driftkontroll pågår.
+Live in-/utloggningsprovet väntar eftersom användarens öppna spelflik har
+en aktiv hand. Se CLOUD-MIGRATION och PR165:s privata leveranskvitto.
 Oberoende kodgranskning har inga blockerande fynd. Blandade runtimeversioner
 eller rollback kan kräva ytterligare inloggning eftersom äldre kod inte
 förstår de nya sessionsstämplarna; databasschemat är oförändrat.
+
+Lageruppladdningen är lokalt rättad med Jakobs godkända `mediabunny@1.61.5`:
+verkliga format och orienterade mått kontrolleras resursbegränsat från samma
+hashverifierade filbeskrivare före SQL. Tydliga fel skiljer säkert avslag från
+okänt sparutfall. Fokusserie 46/46, sista UI-proven 12/12 och Lab-cwd-worker
+1/1; oberoende granskning utan blockerare. Labbygge och faktisk worker- och
+beroendepaketering verifierade. Fullhook, CI och drift kvitteras i separat PR.
+Videometadata och paketläsning innebär inte avkodnings- eller läppsynkacceptans.
+
+Vanlig Git-pull är kontrollerad: `main` följer `origin/main`, GitHub-fetch
+fungerar och lokal `pull.ff=only` hindrar oväntade mergecommits. Inga globala
+SSH-inställningar eller credentials ändrades. Efter leverans återgår samma
+arbetskopia till uppdaterad main med användarens egna ändringar bevarade.
 
 GitHub-regeln för main kräver nu `CI` från GitHub Actions samt uppdaterad
 PR mot main. Befintliga regler och administratörsundantag är bevarade;
@@ -60,9 +78,9 @@ Jakob har accepterat Spelbolag → Rum → förhandsvisningen med svaret
 för varje spel/paket eller ny läppsynk. PR165:s tre tidigare okommittade
 filer är verifierat bevarade i Git-snapshot `7704c777`, med exakt PR-head
 `34281e4c` som parent; inget har återställts eller körts därifrån.
-Den avgränsade Admin-flödesetappen är avslutad. PR165:s N1-rättning kan nu
-tas upp enligt befintligt mandat; merge/deploybeslutet för den PR:n är
-fortfarande separat. QA-utbyggnad och ny rörlig läppsynk förblir pausade.
+Den avgränsade Admin-flödesetappen är avslutad. PR165:s N1-rättning och
+senare mergegodkännande är kvitterade ovan. QA-utbyggnad och ny rörlig
+läppsynk förblir pausade.
 
 ## Uppföljning — Classic och nästa användarprov, 16 oktober 2026
 

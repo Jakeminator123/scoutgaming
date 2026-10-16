@@ -10,12 +10,13 @@ import {createSeedProject as createEmptyProject, defaultPresentationLane} from '
 import {registerLibraryLayer,validateLibraryDraft} from '../lib/layer-library-draft.mjs';
 import {rebaseProjectDraft} from '../lib/project-rebase.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {layerUploadResponseError,layerUploadFailureMessage} from '../../web/public/layer-upload-errors.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
-function loadTs(fileUrl,overrides={}){
+function loadTs(fileUrl,overrides={},globals={}){
   const output=transformSync(readFileSync(fileUrl,'utf8'),{filename:fileURLToPath(fileUrl),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   const module={exports:{}},localRequire=createRequire(fileUrl);
-  vm.runInNewContext(output.code,{module,exports:module.exports,structuredClone,URL,URLSearchParams,Request,Headers,AbortController,Error,
+  vm.runInNewContext(output.code,{module,exports:module.exports,structuredClone,URL,URLSearchParams,Request,Headers,AbortController,Error,...globals,
     window:new Proxy({},{get:(_target,key)=>globalThis.window?.[key]}),require:name=>{
       if(Object.hasOwn(overrides,name))return overrides[name];
       if(name.endsWith('.module.css'))return {__esModule:true,default:new Proxy({},{get:(_target,key)=>String(key)})};
@@ -148,6 +149,41 @@ test('keeping local conflict choices cannot drop a layer newly used by a remote 
   assert.match(updates.error,/Välj sparade val/);
   conflict.props.onResolve(remote,remoteChoice);
   assert.equal(projectRef.current,remoteChoice);assert.equal(updates.saved,JSON.stringify(remote));assert.equal(updates.conflict,false);assert.equal(updates.error,'');
+});
+
+test('upload UI explains known metadata rejection and preserves uncertainty only for unknown commit failures',async()=>{
+  for(const [status,body,network,expected,uncertain]of [
+    [422,{code:'studio_media_dimensions_mismatch',error:'https://private.invalid/person?secret=fixture'},false,/bildmått/,false],
+    [503,{code:'studio_media_inspection_busy'},false,/kontrolleras redan/,false],
+    [503,{code:'unknown',error:'https://private.invalid/person?secret=fixture'},false,/kunde inte sparas/,true],
+    [0,null,true,/Uppladdningen misslyckades/,true],
+  ]){
+    let index=0,lastError='',finish;const completed=new Promise(resolve=>{finish=resolve;});
+    class FixtureImage {
+      naturalWidth=32;naturalHeight=24;
+      set src(_value){queueMicrotask(()=>this.onload?.());}
+      removeAttribute(){}
+    }
+    const {LayerLibrary}=loadTs(new URL('../components/layer-library.tsx',import.meta.url),{
+      react:{useState:value=>{const slot=index++;return [value,next=>{if(slot===1)lastError=next;if(slot===0&&next===false)finish();}];},useRef:value=>({current:value}),useEffect:()=>{}},
+      '../lib/studio-composition.mjs':{uploadCompositionLayer:async(_file,_metadata,options)=>{options.onCommit();return options.post({operation:'commit'},options.signal);}},
+    },{URL:{createObjectURL:()=> 'blob:fixture',revokeObjectURL:()=>{}},Image:FixtureImage,HTMLImageElement:FixtureImage,HTMLVideoElement:class {},setTimeout,clearTimeout,
+      fetch:async()=>{if(network)throw new Error('https://private.invalid/person?secret=fixture');return {ok:false,status,json:async()=>body};}});
+    const tree=LayerLibrary({role:'background',onRegistered:()=>assert.fail('rejected upload cannot register')});
+    function find(node){if(!node||typeof node!=='object')return null;if(node.type==='input'&&node.props.type==='file')return node;for(const child of [node.props?.children].flat(Infinity)){const match=find(child);if(match)return match;}return null;}
+    const input=find(tree);assert.ok(input);assert.equal(input.props.multiple,undefined,'one file per upload, no client Promise.all');
+    input.props.onChange({currentTarget:{files:[{type:'image/png',size:32,name:'fixture.png'}],value:'fixture'}});await completed;
+    assert.match(lastError,expected);assert.match(lastError,/Utkastet har behållits/);
+    assert.equal(lastError.includes('Filen kan vara registrerad'),uncertain);assert.doesNotMatch(lastError,/private\.invalid|secret|person/);
+  }
+});
+
+test('cancellation after commit keeps registration uncertainty unless the server rejected metadata',()=>{
+  const options={aborted:true,commitStarted:true};
+  assert.match(layerUploadFailureMessage(new Error('network'),options),/Filen kan vara registrerad/);
+  assert.doesNotMatch(layerUploadFailureMessage(new Error('network'),{aborted:true}),/Filen kan vara registrerad/);
+  const rejected=layerUploadResponseError(422,{code:'studio_media_dimensions_mismatch'});
+  assert.doesNotMatch(layerUploadFailureMessage(rejected,options),/Filen kan vara registrerad/);
 });
 
 // This suite exercises a saved composition, not an automatically populated new project.

@@ -2,6 +2,7 @@ import {createStudioMediaDeletion} from './studio-media-deletion.mjs';
 import {STUDIO_MEDIA_TYPE_UNSUPPORTED,STUDIO_MEDIA_TYPE_MESSAGE} from '../../web/storage/studio-media-storage.mjs';
 import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
+import { layerMediaInspectionMessage } from '../../web/public/layer-upload-errors.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
@@ -211,12 +212,14 @@ export async function studioNativeRuntime() {
   return runtimePromise;
 }
 export function nativeStudioErrorResponse(error) {
-  const status = [400,401,403,404,405,409,413,415,422,423,503].includes(error?.statusCode) ? error.statusCode : 503;
+  const status = [400,401,403,404,405,408,409,413,415,422,423,503].includes(error?.statusCode) ? error.statusCode : 503;
+  const inspectionMessage=layerMediaInspectionMessage(error?.code);
   const readiness = status === 503 && error?.code === PRESENTATION_RUNTIME_UPDATE_REQUIRED;
   const lifecycleCodes=new Set(['studio_dealer_background_required','studio_conflict','studio_dealer_not_registered','studio_dealer_base_protected','studio_dealer_missing','studio_dealer_in_use','studio_dealer_published',
     'studio_dealer_delete_pending','studio_dealer_speech_enabled','studio_dealer_restore_conflict','studio_dealer_archived','studio_dealer_lifecycle_required',
     'studio_media_delete_coverage_incomplete','studio_media_upload_grant_active','studio_media_owned_elsewhere','studio_media_delete_failed','studio_media_already_deleted','studio_media_deletion_pending','studio_media_archive_required','studio_media_published','studio_retained_media_immutable']);
-  const body = status===415&&error?.code===STUDIO_MEDIA_TYPE_UNSUPPORTED ? {error:STUDIO_MEDIA_TYPE_MESSAGE,code:STUDIO_MEDIA_TYPE_UNSUPPORTED} : lifecycleCodes.has(error?.code) ? {error:error.code,code:error.code} : readiness ? { error: PRESENTATION_RUNTIME_UPDATE_MESSAGE,
+  const body = inspectionMessage ? {error:inspectionMessage,code:error.code}
+    : status===415&&error?.code===STUDIO_MEDIA_TYPE_UNSUPPORTED ? {error:STUDIO_MEDIA_TYPE_MESSAGE,code:STUDIO_MEDIA_TYPE_UNSUPPORTED} : lifecycleCodes.has(error?.code) ? {error:error.code,code:error.code} : readiness ? { error: PRESENTATION_RUNTIME_UPDATE_MESSAGE,
     code: PRESENTATION_RUNTIME_UPDATE_REQUIRED }
     : { error: status === 409 && error?.code === 'studio_media_in_use' ? 'studio_media_in_use' : status === 401 ? 'studio_login_required' : status === 403 ? 'studio_request_rejected' : 'studio_native_unavailable' };
   return Response.json(body,

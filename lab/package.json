@@ -19,6 +19,7 @@
     "@d-id/client-sdk": "3.0.6",
     "@neondatabase/serverless": "1.1.0",
     "@vercel/blob": "2.8.0",
+    "mediabunny": "1.61.5",
     "next": "16.3.8",
     "proper-lockfile": "4.1.2",
     "react": "19.3.0",

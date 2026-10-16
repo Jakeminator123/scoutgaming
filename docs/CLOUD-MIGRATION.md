@@ -4,7 +4,8 @@
 
 Jakob har aktiverat målet i samma chatt och befintliga huvudcheckout.
 Dragan-grundloopens rättning och användarprovet av Spelbolag → Rum är
-kvitterade nedan. PR165:s avgränsade N1-rättning är nästa leverans.
+kvitterade nedan. PR165:s avgränsade N1-rättning är mergad efter Jakobs
+uttryckliga godkännande; lageruppladdning och env-normalisering är nästa leverans.
 Workflow-, dokumentations- och rutinfel som hindrar avslutet ingår; separat
 QA och ny rörlig läppsynk återstartas inte. Underagenter används för
 avgränsad granskning och åtskilda dokumentfiler, med en leveransström.
@@ -29,8 +30,9 @@ användaraccepterat, faktiskt borttaget och externa blockerare.
 | 4 | Slutför intern konsolidering och städning | Kartlägg kvarvarande konsumenter, flytta nödvändiga funktioner till avsedda befintliga moduler, uppdatera loader/importer/bygg-/driftkonfiguration tillsammans och ta bort ersatta delar. Förbrukade kopior och redundanta säkerhetskopior får en faktisk raderingsåtgärd, inte en ny arkivkopia; unika data och använda junctionmål ingår inte som restfiler. Varje kvarvarande undantag får konkret beroende eller återställningssyfte. |
 | 5 — separat efter Admin | Bedöm vald Kevin/Emil-integration | Verifierad åtkomst, källa, image-digest och avatarbyte måste stämma. Anpassa enbart nödvändigt protokoll/material till vårt system. Aktivering och eventuella nya kostnadsbärande resurser är ett separat steg; Emils befintliga poddar och staging lämnas orörda. |
 
-PR165, ny rörlig läppsynk och QA förblir pausade tills Admin-etappen är
-avslutad. QA-/Preview-utbyggnaden ska inte återstartas. Återstående egna
+PR165 återupptogs efter accepterad Admin-etapp och är nu mergad enligt
+kvittot nedan. Ny rörlig läppsynk och QA-/Preview-utbyggnad är fortsatt
+pausade. Återstående egna
 QA-rester bedöms mot rollback-kvitton och exakta resursidentiteter innan
 borttagning; gamla listor är inte bevis för att något fortfarande finns.
 Automatiska PR-previews är inte en ny accepterad skriv-/testmiljö.
@@ -46,8 +48,8 @@ varje spel/paket.
 **Admin-flödesetappen avslutad 16 oktober:** det avgränsade bolag/rumsflödet
 är användaraccepterat och Dragan-grundloopens rättning är levererad och
 verifierad enligt kvittot nedan. Äldre öppna C1–C9-delprov och tal-/medie-
-acceptans blir inte automatiskt klara. Nästa leverans är PR165:s befintliga
-N1-rättning, följd av kontrolluckorna och konsolideringen i tabellen.
+acceptans blir inte automatiskt klara. PR165:s befintliga N1-rättning är
+mergad; kontrolluckorna och konsolideringen i tabellen återstår.
 Dokumentkvittot och miljöguiderna levererades därefter i PR179 till main
 `32ffbbaf0b64da7cb5ecc424e2904c81ca930eb4`. PR-/main-CI är gröna;
 main-körningen är `38899688763`. Vercel `dpl_137Y8TuzqRSnX1ZbXBX2wXBJ3goL`
@@ -64,7 +66,53 @@ okommittade filer är verifierat bevarade i Git-snapshot
 Teständringen bevarar flera `Set-Cookie` separat och kontrollerar rensning
 av spelarcookien. Den avgränsade testfixen är nu applicerad enligt nästa
 kvitto; de äldre dokumentversionerna har inte ersatt aktuella handoffer.
-Plantexten är inget merge- eller deploybeslut för PR165.
+Den ursprungliga plantexten var inget mergebeslut. Jakob godkände därefter
+uttryckligen sluthead och ordinarie automatisk driftsättning enligt nästa kvitto.
+
+**PR165 mergad 16 oktober:** Jakob godkände exakt sluthead
+`9faaeeb3170fa27487941568f7dd47d79ed8f8be` och ordinarie automatisk
+driftsättning. Författare och källrepo verifierades som Jakobs, head var
+oförändrat och alla tillämpliga kontroller gröna. Oberoende granskning av
+sluthead fann inga blockerare. PR-CI `38905152718`, jobb `116986868431`,
+visar faktisk PostgreSQL-omstart och native HTTPS-logout som återkallar
+epoch-bundna spelarsessioner efter omstart; kontot och saldot bevaras.
+Normal merge utan bypass gav main
+`a52ec2d048b1fee3f083f0805f46fb8b35ef0ba2`. Driftkontroll pågår.
+Live in-/utloggningsacceptans skjuts upp eftersom Jakobs öppna spelflik
+visar en aktiv hand; fliken laddas inte om och sessionen loggas inte ut.
+Det privata kvittot är `arkiv/2026-10-15/admin-consolidation/pr165-delivery-receipt.json`.
+
+**Lageruppladdning, lokalt verifierad 16 oktober:** Jakob godkände det exakt
+pinnade metadata-biblioteket `mediabunny@1.61.5` och den avgränsade rättningen.
+PNG/JPEG/WebP analyseras med befintlig Sharp; MP4/WebM med Mediabunny.
+Servern använder samma fullständigt hashverifierade filbeskrivare, kontrollerar
+filidentiteten efter analysen och avvisar avvikande format eller orienterade
+bildmått före SQL-låsen. Rotation och pixelproportioner beaktas; inga generella
+krav på 9:16 eller 24 fps läggs till. Material-ID, hash och godkännandestatus
+ändras inte av analysen.
+
+En worker per instans, utan kö: högst 128 MiB fil, 64 miljoner bildpixlar,
+16 MiB videoläsning, 4 MiB per läsning, 4 096 läsningar och fem sekunder.
+Workern avslutas före descriptorstängning. Klienten visar fasta feltexter
+och behåller beskedet om osäker registrering vid okänt sparutfall, även efter
+avbrott. Fokusserie 46/46; efter sista klienträttningen 12/12 samt worker
+från Lab-katalog 1/1. Oberoende granskning utan blockerare. Labbygge med
+97 byggspår innehåller worker, Mediabunny, Sharp och dess runtimeberoenden.
+Slutlig fullhook/CI och drift kvitteras i leveransens PR.
+
+Videoprovet verifierar containerinformation och läsbara första/sista paket;
+det bevisar inte full avkodning, SPS/container-överensstämmelse, uppspelning
+eller läppsynk. Inga produktionsmedier, publicerade paket eller molnresurser
+ändras. Metadataanalysen är en kontroll före registrering, inte medieacceptans.
+
+**Vanlig Git-pull i Jakobs workspace, 16 oktober:** `main` följer
+`origin/main`, fetch-refspec är normal och läsande fetch mot GitHub fungerar.
+Lokalt `pull.ff=only` gör vanlig `git pull` till en fast-forward eller ett
+tydligt stopp vid divergens; inga egna commits eller arbetsfiler skrivs över.
+Ingen ny GitHub-inloggning behövdes. Den befintliga globala HTTPS→SSH-regeln
+lämnas oförändrad. `.githooks` är aktiv och påverkar inte fast-forward-pull;
+den gamla GitLab-texten i `.git/hooks/pre-push` är inaktiv. Featurebranchens
+upstream sätts till sin egen remotebranch vid push; main synkas efter leverans.
 
 **PR165 lokalt verifierad, 16 oktober:** main `32ffbbaf` är förenad utan
 konflikter i befintliga `codex/n1-player-session`, kodcommit `c43fef1a`.
@@ -80,7 +128,7 @@ granskats på exakt `c43fef1ae8e8451cf9e7f3945d968786a68a21d3`, utan
 blockerande fynd. Lab-bygget verifierar 97 byggspår; ordinarie fullhook
 ger 3 971 pass, 9 villkorade skip och 0 fel. De sex inloggningsproven
 inklusive isolerade Chrome-prov passerar. Faktisk SQL-/omstarts-/HTTPS-CI
-ska fortfarande kvitteras på slutligt PR-head före mergebeslut.
+på sluthead och det senare mergebeslutet är kvitterade ovan.
 
 **Valt sessionsbeteende enligt genomförandemandatet:** N1-utloggning
 återkallar även kontots BO-härledda spelarsessioner genom befintlig
@@ -93,9 +141,9 @@ har egna ursprungsmärkningar och återkallas inte av N1-utloggning.
 fingeravtryck och kan inte skiljas åt säkert. De kräver därför en
 engångs-återinloggning vid leverans. Konton, saldon och historik bevaras;
 inga sessionsrader massraderas och ingen schemamigration införs. Detta är
-ett lokalt implementationsbeslut, inte godkännande av merge/deployment.
-De fyra tidigare röda raceproven passerar med rättningen. Faktisk
-SQL-/omstarts-/HTTPS-verifiering på nytt PR-head återstår.
+ett dokumenterat implementationsbeslut; senare merge/deploygodkännande
+finns ovan. De fyra tidigare röda raceproven passerar med rättningen.
+Faktisk SQL-/omstarts-/HTTPS-verifiering på sluthead är också kvitterad ovan.
 Oberoende kodgranskning har inga blockerande fynd. SQL-provet verifierar
 sessionslagringen med riktig databas och native HTTPS-logout; hela
 HTTP-handoffkedjan provas separat mot den isolerade SQLite-motorn.
