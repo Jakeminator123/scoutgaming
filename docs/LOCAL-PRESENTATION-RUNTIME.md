@@ -1,5 +1,30 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Astrid som legacyreferens och gemensam molnkälla, 16 oktober 2026
+
+Jakob har beslutat att Astrid ska behållas som **legacyreferens**, med tydlig
+märkning att hon saknar trelagersversionen. Hennes befintliga tal-/OpenClaw-
+flöden kan användas som referens. Dragan är den ordinarie dealern. Märkningen
+är en produktavgränsning, inte ett nytt godkännande av läppsynk eller genererat
+tal. Radera inte den gemensamma taltransporten för att en sökväg heter Astrid.
+
+Produktionsinställningarna kontrollerades 16 oktober: Vercels native Admin
+och Neon-policy är aktiva i `production/croupier`, medier använder privat
+Blob och spelbackend är `croupier-v2.onrender.com`. Spelmotorn kör på Render;
+Vercel är webb-/Admin-ingången. Det aktuella molnspåret behöver inte läsa
+originalfilmer från Jakobs dator. Neon-registret ignorerar de gamla lokala
+upload-/klassificeringsfilerna. Videobytes hämtas från Blob och kontrolleras
+mot exakt identitet, hash och storlek; tillfällig cache är disponibel.
+
+**Återstående migrationsgräns:** `createNeonVideoRegistry` kombinerar fortfarande
+Neon-rader med en oföränderlig deployad bank. `media/catalog/presentation.json`,
+`legacy.json`, layout och Blob-index är fortfarande katalogauktoriteter i
+deploypaketet. De är inte ett parallellt skrivbart JSON-register på användarens
+dator, men alla register finns följaktligen inte ännu i Neon. Även Dragan
+passerar denna gemensamma katalogkontroll. Astrids särskilda genererade talväg
+och äldre asset-/lobbymanifest måste bedömas separat innan de kan fasas ut.
+En dealerradering slutför inte den migrationen.
+
 ## Dragan: aktuella källor och kvarvarande talintegration, 15 oktober 2026
 
 Färsk GitHub-läsning: `kevin` är

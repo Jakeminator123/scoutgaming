@@ -9,8 +9,9 @@ import {lifecycleMessage} from './studio-lifecycle.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
 const text=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
-function harness(restoreCompositions=[]) {
+function harness(restoreCompositions=[],additionalDealers=[]) {
   let remote={project:addDealer(createEmptyProject(),'dragan','Dragan'),inventory:{videos:[]},catalog:{source:'registered',administration:{operators:[],rooms:[],dealers:[{id:'dragan',name:'Dragan'}]}}};
+  for(const dealer of additionalDealers){remote.project=addDealer(remote.project,dealer.id,dealer.label);remote.catalog.administration.dealers.push({id:dealer.id,name:dealer.label});}
   const saves=[],changes=[],navigations=[],archives=[],checks=[],slots=[],effects=[],module={exports:{}};
   let cursor=0,saveFailure='',readFailure=false;
   const props={active:true,onChanged:()=>changes.push(true)};
@@ -49,6 +50,18 @@ test('dealer library includes Dragan without a room and opens his own import',as
   assert.match(text(h.render()),/Dragan/);assert.match(text(h.render()),/Inga rum kopplade ännu/);
   const link=nodes(h.render(),node=>node.type==='a'&&text(node)==='Ladda upp klipp')[0];
   assert.equal(link.props.href,'/admin/dealers?dealer=dragan&tool=import');
+});
+test('Astrid is a visible legacy reference while Dragan keeps his ordinary dealer card',async()=>{
+  const h=harness([],[{id:'astrid',label:'Astrid'}]);await h.settle();
+  const card=label=>nodes(h.render(),node=>node.type==='li'&&nodes(node,child=>child.type==='h2'&&text(child)===label).length)[0];
+  const astrid=card('Astrid'),dragan=card('Dragan');
+  assert.match(text(astrid),/Legacyreferens.*inkopplad via legacy och saknar trelagersversion/);
+  assert.match(text(astrid),/Befintliga OpenClaw- och talflöden kan användas som referens/);
+  assert.doesNotMatch(text(dragan),/Legacyreferens|trelagersversion|OpenClaw/);
+  for(const [dealer,node] of [['astrid',astrid],['dragan',dragan]]){
+    assert.equal(nodes(node,child=>child.type==='a'&&text(child)==='Ladda upp klipp')[0].props.href,`/admin/dealers?dealer=${dealer}&tool=import`);
+  }
+  assert.equal(h.saves.length,0);
 });
 test('cancelling dealer creation restores focus to its initiating button without saving',async()=>{
   const h=harness();await h.settle();

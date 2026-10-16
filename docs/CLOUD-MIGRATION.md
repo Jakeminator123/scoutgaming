@@ -9,9 +9,15 @@ med en immutable klippbank och deployade katalog-/indexfiler. Att alla register
 finns i Neon är därför **inte färdigmigrerat**. Render äger spelmotorn och Vercel
 är webb-/Admin-ingången. Aktuell kodgranskning, driftvärden, Astrids verifierade
 lokala ZIP och dess molnluckor står överst i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
-Den nya föreslagna Dragan-rensningen har inte körts; Astrids fortsatta status
-behöver klargöras utifrån det senare förtydligandet. Äldre leveranskvitton nedan
-ska inte läsas som att dessa ytterligare raderingar är klara.
+Jakob har därefter beslutat att Astrid ska behållas som märkt legacyreferens
+för befintliga tal-/OpenClaw-flöden, medan Dragan är ordinarie dealer.
+Den ytterligare aktiva rensningens faktiska utfall redovisas i handoffen;
+äldre leveranskvitton nedan bevisar inte att nya raderingar är klara.
+Rensningen är nu verifierad i produktion: endast Astrid och Dragan aktiva,
+noll aktiva bolag, rum, gameLanes och sammansättningar. Övriga dealer-/
+bolagsposter ligger i papperskorgen. Medier och publiceringshistorik bevaras;
+Astrids och Dragans skyddade data är oförändrade. Admins referensmärkning
+ligger i PR185, utan merge/deploy.
 
 ## Dealeravveckling 16 oktober — separat kod- och produktionsstatus
 

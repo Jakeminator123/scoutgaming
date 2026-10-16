@@ -102,6 +102,7 @@ export function DealerDirectory({active,blocked=false,refreshKey=0,onChanged}:{a
       const rooms=workspace!.catalog.administration.rooms.filter(room=>room.state!=='archived'&&room.dealerIds.includes(dealer.id));
       const count=workspace!.inventory.videos.filter(video=>(video.classification?.dealerId??(video as {dealer?:string}).dealer)===dealer.id&&!video.classification?.archived).length;
       return <li key={dealer.id} className={'dealer-import-panel '+(selectedId===dealer.id?'border-sg-lime':'')}><h2><Users size={18}/>{dealer.label}</h2><p>{count} klipp · {rooms.length?`${rooms.length} kopplade rum`:'Inga rum kopplade ännu'}</p>
+        {dealer.id==='astrid'&&<p><strong>Legacyreferens</strong> · Astrid är inkopplad via legacy och saknar trelagersversion. Befintliga OpenClaw- och talflöden kan användas som referens.</p>}
         <div className="dealer-import-actions"><a className="dealer-import-primary" href={'/admin/dealers?dealer='+encodeURIComponent(dealer.id)+'&tool=import'}><Upload size={15}/>Ladda upp klipp</a><button disabled={disabled} onClick={()=>void reviewRemoval(dealer.id,dealer.label,true)}><Trash2 size={15}/>Ta bort</button></div>
         {!!rooms.length&&<details><summary>Visa kopplingar</summary><ul>{rooms.map(room=><li key={room.id}><a href={'/admin/structure?operator='+encodeURIComponent(room.operatorId)+'&table='+encodeURIComponent(room.id)}>{workspace!.catalog.administration.operators.find(row=>row.id===room.operatorId)?.name} · {room.name}</a></li>)}</ul></details>}
       </li>;

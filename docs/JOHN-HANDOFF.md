@@ -4,8 +4,10 @@
 
 Jakob beställde först en Astrid-ZIP och rensning till enbart Dragan, och
 förtydligade sedan att huvudmålet är ett gemensamt molnsystem utan parallella
-lokala register. Frågan om Astrid ska behållas när hennes molnkoppling är rätt
-är ännu obesvarad. Ingen ny produktionsradering eller arkivering har utförts.
+lokala register. Jakob har därefter uttryckligen beslutat att **behålla Astrid
+som legacyreferens**, märkt att hon saknar trelagersversionen men har fungerande
+tal-/OpenClaw-flöden att använda som referens. Dragan är ordinarie dealer.
+Den aktiva basrensningen är nu genomförd i produktion enligt utfallet nedan.
 
 - `C:\Users\jakem\Desktop\_croupier\astrid-2026-10-16.zip` är skapad:
   265 823 000 byte, 727 poster. Samtliga poster har återlästs och verifierats
@@ -32,17 +34,34 @@ lokala register. Frågan om Astrid ska behållas när hennes molnkoppling är r�
   genererade talväg och äldre asset-/lobbymanifest behöver avgränsas före
   ytterligare strukturell avveckling; delad taltransport får inte försvinna
   bara för att dess katalog heter Astrid.
-- Separat Neon-återläsning bekräftar oförändrade projekt-/administrations-
-  revisioner `studio-c168ba84-8f1b-4ecc-bd31-94c8f251c077` respektive
-  `studio-76149edc-7905-4016-9b61-4fd5c2e399e2`: fem aktiva dealers, två bolag,
-  två rum och två sammansättningar finns fortsatt kvar.
+- Produktionsrensningen använder befintliga lifecycle-/publiceringstjänster
+  med schema-/Render-kontroll, scope-lås och revisionsvillkor i en transaktion.
+  Hela kedjan verifierades först med rollback och återläst original.
+  Astrid/Dragan är nu de enda aktiva dealerposterna. Jakob, Anna Jonsson och
+  PAOW ligger i dealerpapperskorgen; det tidigare Adminprov-arkivet bevaras.
+  Båda bolagen ligger i bolagspapperskorgen (`suspended`), och deras aktuella
+  paket innehåller inga spel, rum eller lanes. Aktiva rum, gameLanes och
+  sammansättningar är noll. Arkivering innebär inte permanent historikpurge.
+  Alla 79 medieposter finns kvar; Astrids/Dragans dealer-, klipp-, idle- och
+  mediedata har identisk kontrollsumma före/efter. Sex historiska paket är
+  oförändrade; fyra nya paket journalför avvecklingen. Social-policy och
+  övriga gemensamma inställningar är oförändrade.
+  Separat Neon-återläsning bekräftar projektrevision
+  `studio-69cf9ea2-19cb-45f7-b92c-12cf70dbac2c` och administration
+  `studio-c7a94d7e-0fe8-4e30-982c-dd36accf5b4c`.
+- Astrids kort på `/admin/dealers` är i koden märkt **Legacyreferens**,
+  saknar trelagersversion och kan användas som tal-/OpenClaw-referens.
+  Dragan behåller sitt vanliga kort. Tio riktade komponentprov passerar;
+  inga playback-, provider- eller dealerdata ändras av märkningen.
+  Märkningen levereras i PR185 och är ännu inte mergad/driftsatt.
 - PR185:s första CI körde rött eftersom en lokal testfixture ärvde CI-flaggor.
   Sidoagentens isolerade rättning är pushad i `ab709c25`; 14/14 fokustester och
   ordinarie commithook passerar. Den verifierar också att båda CI-flaggorna
   fortfarande tvingar full kontroll. Nästa CI-resultat är inte accepterat än.
 
-Privat ZIP-kvitto och frysta registerunderlag finns i
-`arkiv/2026-10-16/dragan-only/`. Ingen merge eller driftsättning gjordes.
+Privat ZIP-kvitto, frysta registerunderlag, rensningskvitto och separat
+Neon-återläsning finns i `arkiv/2026-10-16/dragan-only/`.
+Datarensningen är genomförd; ingen kodmerge eller driftsättning gjordes.
 
 ## Dealeravveckling och workflow — 16 oktober 2026
 
