@@ -24,7 +24,9 @@ ordinarie fullhook: 3 971 pass, 9 villkorade skip, 0 fel. Sluthead
 `9faaeeb3` är oberoende granskat och faktisk SQL-/omstarts-/HTTPS-CI
 `38905152718` är grön, inklusive återkallning efter verklig SQL-omstart.
 Jakob godkände exakt head samt ordinarie automatisk driftsättning.
-Normal merge utan bypass gav main `a52ec2d0`; driftkontroll pågår.
+Normal merge utan bypass gav main `a52ec2d0`; main-CI `38906846665`
+är grön. Vercel är READY på www och Render live på samma SHA;
+Renders publika version och hälsa (200/ok) är verifierade.
 Live in-/utloggningsprovet väntar eftersom användarens öppna spelflik har
 en aktiv hand. Se CLOUD-MIGRATION och PR165:s privata leveranskvitto.
 Oberoende kodgranskning har inga blockerande fynd. Blandade runtimeversioner
@@ -36,7 +38,9 @@ verkliga format och orienterade mått kontrolleras resursbegränsat från samma
 hashverifierade filbeskrivare före SQL. Tydliga fel skiljer säkert avslag från
 okänt sparutfall. Fokusserie 46/46, sista UI-proven 12/12 och Lab-cwd-worker
 1/1; oberoende granskning utan blockerare. Labbygge och faktisk worker- och
-beroendepaketering verifierade. Fullhook, CI och drift kvitteras i separat PR.
+beroendepaketering verifierade. Kodcommit `7f6ae536` matchar de 18 granskade
+filerna; fullhook 3 980 pass, 9 villkorade skip, 0 fel. Slutlig CI och
+drift kvitteras i separat PR.
 Videometadata och paketläsning innebär inte avkodnings- eller läppsynkacceptans.
 
 Vanlig Git-pull är kontrollerad: `main` följer `origin/main`, GitHub-fetch

@@ -77,7 +77,11 @@ sluthead fann inga blockerare. PR-CI `38905152718`, jobb `116986868431`,
 visar faktisk PostgreSQL-omstart och native HTTPS-logout som återkallar
 epoch-bundna spelarsessioner efter omstart; kontot och saldot bevaras.
 Normal merge utan bypass gav main
-`a52ec2d048b1fee3f083f0805f46fb8b35ef0ba2`. Driftkontroll pågår.
+`a52ec2d048b1fee3f083f0805f46fb8b35ef0ba2`. Main-CI `38906846665`
+är grön. Vercel `dpl_94xnmsLkruqteXnhdxJbqf3JuSQb` är READY på www
+och Render `dep-db92bhpsrm7s73a6r62g` är live med samma SHA. Renders
+publika versionsadress och hälsa (200/ok) är verifierade; oinloggad
+Admin leder till native inloggning med HTTP 200.
 Live in-/utloggningsacceptans skjuts upp eftersom Jakobs öppna spelflik
 visar en aktiv hand; fliken laddas inte om och sessionen loggas inte ut.
 Det privata kvittot är `arkiv/2026-10-15/admin-consolidation/pr165-delivery-receipt.json`.
@@ -98,7 +102,10 @@ och behåller beskedet om osäker registrering vid okänt sparutfall, även efte
 avbrott. Fokusserie 46/46; efter sista klienträttningen 12/12 samt worker
 från Lab-katalog 1/1. Oberoende granskning utan blockerare. Labbygge med
 97 byggspår innehåller worker, Mediabunny, Sharp och dess runtimeberoenden.
-Slutlig fullhook/CI och drift kvitteras i leveransens PR.
+Kodcommit `7f6ae536` matchar de 18 frysta, oberoende granskade filerna.
+Ordinarie fullhook: 3 980 pass, 9 villkorade skip, 0 fel. Skip gäller fem
+PostgreSQL-opt-ins och fyra Linux-prov; Chrome-fixturer kördes. Slutlig
+CI och drift kvitteras i leveransens PR.
 
 Videoprovet verifierar containerinformation och läsbara första/sista paket;
 det bevisar inte full avkodning, SPS/container-överensstämmelse, uppspelning
