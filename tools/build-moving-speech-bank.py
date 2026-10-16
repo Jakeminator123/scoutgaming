@@ -10,6 +10,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -24,7 +25,10 @@ def canonical(value):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
-def read_sources(directory):
+POOL_FILES = ("pool.mp4", "takes.json", "sources.json")
+
+
+def read_sources(directory, verify_originals=True):
     manifest = json.loads((directory / "sources.json").read_text(encoding="utf-8"))
     required = {"schemaVersion", "dealerId", "workerAvatar", "clips", "rest", "sourceSetSha256"}
     if set(manifest) != required or manifest["schemaVersion"] != 1:
@@ -48,7 +52,7 @@ def read_sources(directory):
             raise ValueError("moving_bank_invalid_source")
         seen.add(video_id)
         file = directory / "sources" / (video_id + ".mp4")
-        if file.is_symlink() or not file.is_file() or file.stat().st_size != clip["bytes"] or digest(file) != clip["sha256"]:
+        if verify_originals and (file.is_symlink() or not file.is_file() or file.stat().st_size != clip["bytes"] or digest(file) != clip["sha256"]):
             raise ValueError("moving_bank_source_changed")
     if clips != sorted(clips, key=lambda c: c["videoId"]):
         raise ValueError("moving_bank_sources_changed")
@@ -127,39 +131,110 @@ def build(directory, output, ffmpeg="ffmpeg", prepare_with=None):
     receipt = {"status": "pool-only", "dealerId": source["dealerId"],
                "workerAvatar": source["workerAvatar"], "sourceSetSha256": source["sourceSetSha256"],
                "clips": len(takes), "poolFrames": len(seen), "visualApproval": False}
+    receipt["files"] = {name: digest(bank / name) for name in POOL_FILES}
     if prepare_with:
-        # Reuse Emil's inference/preparation implementation from the explicitly
-        # selected reviewed checkout. Do not vendor models or run arbitrary TARs.
-        sys.path.insert(0, str(prepare_with.resolve()))
-        import rorlig
-        rorlig.forbered(str(bank / "pool.mp4"), sigma=1.0, cheek=90,
-                        out=str(bank / "prep"), segs=segments)
-        meta = json.loads((bank / "prep" / "meta.json").read_text())
-        if meta.get("frames") != len(seen) or meta.get("size") != [1080, 1920] or meta.get("missing") != 0:
+        prepare_bank(bank, output, receipt, segments, prepare_with)
+    (output / "bank-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+    return receipt
+
+
+def prepare_bank(bank, output, receipt, segments, prepare_with):
+    # Only the explicitly selected, reviewed implementation runs on the GPU.
+    sys.path.insert(0, str(prepare_with.resolve()))
+    import rorlig
+    rorlig.forbered(str(bank / "pool.mp4"), sigma=1.0, cheek=90,
+                    out=str(bank / "prep"), segs=segments)
+    meta = json.loads((bank / "prep" / "meta.json").read_text())
+    if meta.get("frames") != receipt["poolFrames"] or meta.get("size") != [1080, 1920] or meta.get("missing") != 0:
+        raise ValueError("moving_bank_preparation_incomplete")
+    if any(digest(bank / name) != receipt["files"][name] for name in POOL_FILES):
+        raise ValueError("moving_bank_pool_changed")
+    files = [*POOL_FILES, "prep/meta.json", "prep/latents.pt", "prep/masks.npz", "prep/bias.npz"]
+    for name in files:
+        if (bank / name).is_symlink() or not (bank / name).is_file() or not (bank / name).stat().st_size:
             raise ValueError("moving_bank_preparation_incomplete")
-        files = ["pool.mp4", "takes.json", "sources.json", "prep/meta.json",
-                 "prep/latents.pt", "prep/masks.npz", "prep/bias.npz"]
+    archive = output / (receipt["workerAvatar"] + ".tar")
+    with tarfile.open(archive, "x") as tar:
         for name in files:
-            if (bank / name).is_symlink() or not (bank / name).is_file() or not (bank / name).stat().st_size:
-                raise ValueError("moving_bank_preparation_incomplete")
-        archive = output / (source["workerAvatar"] + ".tar")
-        with tarfile.open(archive, "x") as tar:
-            for name in files:
-                tar.add(bank / name, arcname=source["workerAvatar"] + "/" + name, recursive=False)
-        receipt.update(status="prepared", avatarSha256=digest(archive),
-                       files={name: digest(bank / name) for name in files})
+            tar.add(bank / name, arcname=receipt["workerAvatar"] + "/" + name, recursive=False)
+    receipt.update(status="prepared", avatarSha256=digest(archive),
+                   files={name: digest(bank / name) for name in files})
+
+
+def prepare_pool(directory, output, prepare_with, expected_receipt_sha256):
+    """Prepare a transferred pool bound to a receipt pinned on the source machine.
+
+    No source videos or registry credentials need to be uploaded to the GPU.
+    The caller must keep the expected receipt digest separate from the transfer.
+    """
+    receipt_path = directory / "bank-receipt.json"
+    if (not re.fullmatch(r"[a-f0-9]{64}", expected_receipt_sha256 or "")
+            or receipt_path.is_symlink() or digest(receipt_path) != expected_receipt_sha256):
+        raise ValueError("moving_bank_receipt_changed")
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if (receipt.get("status") != "pool-only" or receipt.get("visualApproval") is not False
+            or not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", receipt.get("workerAvatar", ""))
+            or set(receipt.get("files", {})) != set(POOL_FILES)):
+        raise ValueError("moving_bank_invalid_receipt")
+    bank = directory / receipt["workerAvatar"]
+    if bank.is_symlink():
+        raise ValueError("moving_bank_pool_changed")
+    for name in POOL_FILES:
+        file = bank / name
+        if file.is_symlink() or not file.is_file() or digest(file) != receipt["files"][name]:
+            raise ValueError("moving_bank_pool_changed")
+    source = read_sources(bank, verify_originals=False)
+    mapping = json.loads((bank / "takes.json").read_text(encoding="utf-8"))
+    count, takes, segments = receipt.get("poolFrames"), mapping.get("takes", {}), mapping.get("segs", [])
+    if (type(count) is not int or not 1 <= count <= 128 * 600
+            or receipt.get("clips") != len(source["clips"])
+            or any(receipt.get(k) != source[k] for k in ("dealerId", "workerAvatar", "sourceSetSha256"))
+            or mapping.get("sourceSetSha256") != source["sourceSetSha256"]
+            or mapping.get("dealer") != source["workerAvatar"] or mapping.get("fps") != 24
+            or mapping.get("size") != [1080, 1920] or mapping.get("pool") != count
+            or not segments or any(type(n) is not int or n < 1 for n in segments) or sum(segments) != count
+            or set(takes) != {c["take"] for c in source["clips"]}):
+        raise ValueError("moving_bank_invalid_mapping")
+    for clip in source["clips"]:
+        indices = takes[clip["take"]]
+        if (not isinstance(indices, list) or len(indices) != clip["frameCount"]
+                or any(type(i) is not int or not 0 <= i < count for i in indices)):
+            raise ValueError("moving_bank_invalid_mapping")
+    rest_take = "clip-" + source["rest"]["videoId"]
+    if (mapping.get("vila_from") != rest_take
+            or mapping.get("vila") != takes[rest_take][source["rest"]["frame"]]):
+        raise ValueError("moving_bank_invalid_rest")
+    output.mkdir()
+    target = output / source["workerAvatar"]
+    target.mkdir()
+    for name in POOL_FILES:
+        shutil.copyfile(bank / name, target / name)
+    # Recheck the copies before importing models or starting paid GPU work.
+    if any(digest(target / name) != receipt["files"][name] for name in POOL_FILES):
+        raise ValueError("moving_bank_pool_changed")
+    prepare_bank(target, output, receipt, segments, prepare_with)
+    receipt["inputReceiptSha256"] = expected_receipt_sha256
     (output / "bank-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     return receipt
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--sources", required=True, type=Path)
+    inputs = parser.add_mutually_exclusive_group(required=True)
+    inputs.add_argument("--sources", type=Path)
+    inputs.add_argument("--pool", type=Path)
+    parser.add_argument("--expected-receipt-sha256")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--ffmpeg", default="ffmpeg")
     parser.add_argument("--prepare-with", type=Path)
     args = parser.parse_args()
-    result = build(args.sources.resolve(), args.output.resolve(), args.ffmpeg, args.prepare_with)
+    if args.pool:
+        if not args.prepare_with or not args.expected_receipt_sha256:
+            parser.error("--pool requires --prepare-with and --expected-receipt-sha256")
+        result = prepare_pool(args.pool.resolve(), args.output.resolve(), args.prepare_with,
+                              args.expected_receipt_sha256)
+    else:
+        result = build(args.sources.resolve(), args.output.resolve(), args.ffmpeg, args.prepare_with)
     print(json.dumps(result))
 
 

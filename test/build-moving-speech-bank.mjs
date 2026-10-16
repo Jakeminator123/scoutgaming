@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, cp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createMovingSpeechSourceSet, movingSpeechHash } from '../web/moving-speech-bank.mjs';
@@ -45,6 +45,36 @@ test('bank builder preserves exact frames, duplicate media IDs and explicit rest
   assert.deepEqual(mapping.takes['clip-'+first].map(index=>poolFrames[index]),originalFrames);
   assert.equal(movingSpeechHash(await readFile(file)),manifest.clips[0].sha256);
   await assert.rejects(exec(python,[script,'--sources',root,'--output',output]));
+  // Transfer only the pool and its receipt; the GPU must not need registry
+  // credentials or original source files. This stub verifies packaging, not AI.
+  const transfer=join(root,'transfer'),worker=join(root,'reviewed-worker');
+  await cp(output,transfer,{recursive:true}); await mkdir(worker);
+  await writeFile(join(worker,'rorlig.py'),`
+import json
+from pathlib import Path
+def forbered(pool, sigma, cheek, out, segs):
+    assert sigma == 1.0 and cheek == 90
+    p = Path(out); p.mkdir()
+    (p / 'meta.json').write_text(json.dumps({'frames': sum(segs), 'size': [1080, 1920], 'missing': 0}))
+    for f in ('latents.pt', 'masks.npz', 'bias.npz'):
+        (p / f).write_bytes(b'packaging-test-only')
+`);
+  const receiptBytes=await readFile(join(transfer,'bank-receipt.json'));
+  const receiptHash=movingSpeechHash(receiptBytes);
+  const prepareArgs=['--pool',transfer,'--prepare-with',worker,'--expected-receipt-sha256',receiptHash];
+  const prepared=join(root,'prepared');
+  const preparation=await exec(python,[script,...prepareArgs,'--output',prepared],{windowsHide:true});
+  const preparedReceipt=JSON.parse(preparation.stdout);
+  assert.equal(preparedReceipt.status,'prepared'); assert.equal(preparedReceipt.visualApproval,false);
+  assert.equal(preparedReceipt.inputReceiptSha256,receiptHash);
+  assert.equal(preparedReceipt.avatarSha256,movingSpeechHash(await readFile(join(prepared,'dragan.tar'))));
+  assert.equal(preparedReceipt.files['pool.mp4'],receipt.files['pool.mp4']);
+  assert.equal(movingSpeechHash(await readFile(join(transfer,'bank-receipt.json'))),receiptHash);
+  await assert.rejects(exec(python,[script,...prepareArgs,'--output',prepared]));
+  await writeFile(join(transfer,'dragan','takes.json'),'{}');
+  await assert.rejects(exec(python,[script,...prepareArgs,'--output',join(root,'bad-transfer')]),/moving_bank_pool_changed/);
+  await writeFile(join(transfer,'bank-receipt.json'),'{}');
+  await assert.rejects(exec(python,[script,...prepareArgs,'--output',join(root,'bad-receipt')]),/moving_bank_receipt_changed/);
   await writeFile(file,Buffer.alloc(bytes.length));
   await assert.rejects(exec(python,[script,'--sources',root,'--output',join(root,'changed')]),/moving_bank_source_changed/);
 });

@@ -127,6 +127,20 @@ granskade worker-katalogen med Emils `rorlig.py`. Den befintliga
 kräver alla ansiktsrutor innan TAR och hashkvitto skrivs. Modeller,
 workerinstallation, GPU-resurser och uppladdning provisioneras inte av verktyget.
 
+CPU-kvittot innehåller SHA-256 för pool, bildrutekarta och källmanifest.
+GPU-steget kan därför återanvända just dessa tre filer utan ombyggnad eller
+register-/Blob-nycklar på GPU:n. Spara kvittots SHA-256 separat på källdatorn:
+
+```sh
+python tools/build-moving-speech-bank.py --pool /private/dragan-pool --output /private/dragan-prepared --prepare-with /workspace/worker --expected-receipt-sha256 <sha256-fran-kalldatorn>
+```
+
+Överför hela poolkatalogen inklusive `bank-receipt.json`. Verktyget kontrollerar
+kvittot, samtliga filer, medie-ID:n, bildruteindex och explicit vila innan modellen
+importeras. GPU-resultat skrivs i en ny katalog. Ett äldre kvitto utan filhashar
+måste först kompletteras efter lokal kontroll; det accepteras inte automatiskt.
+Färdigt TAR-kvitto betyder fortfarande inte visuell läppsynkacceptans.
+
 `web/moving-speech-bank.mjs` binder källmanifestet till våra befintliga
 `prepareMovingSpeechPcmInput` och `createMovingSpeechTransport`.
 Den serverinterna `createRegisteredMovingSpeech.prepare` tar den

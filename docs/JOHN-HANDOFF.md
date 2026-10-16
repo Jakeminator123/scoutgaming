@@ -35,6 +35,23 @@ en testad adapter, **inte aktiverat rörligt tal i spelet**.
   aktiv övervakning, partiell platsmetadata och historisk scan `too_large`.
   Detta är inte bevis för fullständig historisk täckning.
 
+Fortsättning 17 oktober: CPU-underlaget kan nu överföras separat till GPU-steget
+med ett på källdatorn låst kvitto och filhashar. Riktat Python/ffmpeg-test
+verifierar separat beredning, bevarade poolbyte och avvisning av ändrad karta
+eller ändrat kvitto; modellberedningen ersätts av en uttrycklig teststub i detta
+test och är ingen GPU-/bildacceptans.
+
+RunPods inloggade konsol visar `croupier-astrid-gpu-test` (`zsudl8tmzcmiv1`),
+imagen `ghcr.io/jakeminator123/astrid-gpu-worker:sha-a041e48b9085a3cc4e324fa960551dde2822229b`,
+en GPU i klassen 24 GB Pro och högst en worker. Koden i repot stöder fler dealers
+via referensbild, men det är inte verifierat att denna driftsatta image innehåller
+samma senare stöd. Den separata rörliga motorn använder en bildrutebank per dealer.
+Avsikten är en gemensam talväg och delade workers, inte en permanent GPU per avatar.
+Lokal RunPod-nyckel matchar Jakobs angivna maskerade kännetecken, skiljer sig från
+Emils separata nyckel och visas som Restricted. Endpoint-hälsa fungerar medan
+resurshantering ger 401. Ingen nyckel eller endpoint har ändrats. Resursbehörighet
+och ett konkret kostnadstak för det separata GPU-provet återstår.
+
 ## Aktuellt: Neon-registerbytet mergat och driftsatt — 16 oktober 2026
 
 Jakob har beställt Neon som enda register och Blob som mediekälla. Astrid
