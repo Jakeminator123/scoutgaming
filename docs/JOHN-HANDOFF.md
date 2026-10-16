@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+## Testförenkling på arbetsbranch — 16 oktober 2026
+
+Jakobs nya beslut tar bort tvåspelskravet och generell manuell spelacceptans
+som grind för commit, PR, merge eller avslutad uppgift. Riktad verifiering
+gäller det ändrade beteendet. Äldre krav på två spel i daterade avsnitt nedan
+är därmed ersatta; genomförda historiska prov är fortsatt just historik.
+
+På `codex/simplify-test-policy` är 16 kosmetiska/strukturella testfall borttagna
+från nio testfiler (tre filer avvecklade). Dessa låste färgkoder, meny-/knappantal,
+exakt markup och äldre sidlayouter. Tester för reducerad rörelse, läsbar kontrast,
+behörighet, rumsgränser, sparande och spelregler behålls.
+
+Verifiering: 23/23 kvarvarande prov i de ändrade filerna och 34/34 närliggande
+beteendeprov för viloplan, dealergräns och videolivscykel passerar med fyra
+workers. Syntaxkontroller och staged diff-kontroll passerar. Full CI återstår
+på PR:en; inget nytt visuellt godkännande eller produktionsändring ingår.
+
 ## Aktuellt: Neon-registerbytet mergat och driftsatt — 16 oktober 2026
 
 Jakob har beställt Neon som enda register och Blob som mediekälla. Astrid

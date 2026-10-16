@@ -1,5 +1,15 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Testkrav förenklade — 16 oktober 2026
+
+Jakob har tagit bort kravet på två spel/uppspelningar och generell manuell
+spelacceptans som godkännandegrind. Välj riktade tester efter den ändrade
+funktionen och en konkret felrisk. Upprepad uppspelning testas när just
+återstart, städning eller flera uppspelningar är beteendet som ändras.
+Behörighet, bolags-/rumsisolering, revisionsskydd, sparande och spelregler
+behåller sin täckning; full CI är kvar. Äldre daterade kvitton beskriver sina
+dåvarande prov och skapar inga nya krav på ett visst antal spel.
+
 Aktuell status och återstående arbete finns överst i
 [CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och
 [JOHN-HANDOFF](../JOHN-HANDOFF.md). Följ [AGENTS.md](../../AGENTS.md) för
