@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 import { execFileSync, spawn } from 'node:child_process';
-import { retireDemoExamples } from './lib/retire-demo-examples.mjs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createEmptyProject, validateProject } from './lib/studio-model.mjs';
-import { createProjectStore } from './lib/project-store.mjs';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
 import { preparePreview } from './tools/prepare-preview.mjs';
 import { prepareDesignPreview } from './tools/prepare-design-preview.mjs';
@@ -13,32 +11,15 @@ import { prepareDesignPreview } from './tools/prepare-design-preview.mjs';
 const offlineStreamLane = 'lissabon-stream-lane';
 const directory = dirname(fileURLToPath(import.meta.url));
 const root = resolve(directory, '..');
-export function createLocalProject() {
-  const project = createEmptyProject();
-  return project;
-}
 export async function prepareProject(dataDir) {
   if(typeof dataDir!=='string'||!isAbsolute(dataDir))throw new Error('Isolerad testdata kräver en uttrycklig absolut katalog. Använd node lab/start.mjs --offline för lokal provkörning.');
-  const snapshot = JSON.stringify(createLocalProject(), null, 2) + '\n';
+  const snapshot = JSON.stringify(createEmptyProject(), null, 2) + '\n';
   validateProject(JSON.parse(snapshot));
   await mkdir(dataDir, { recursive: true });
   try { await writeFile(join(dataDir, 'project.json'), snapshot, { flag: 'wx' }); }
   catch (error) { if (error.code !== 'EEXIST') throw error; }
-  // A broken saved project is reported, never silently replaced by the snapshot.
-  const saved = validateProject(JSON.parse(await readFile(join(dataDir, 'project.json'), 'utf8')));
-  // Add deliberately registered lane clips without replacing the operator's
-  // existing modes, timings, descriptions or base weights. Save through the
-  // normal revision/history path so upgrading an older lane is reversible.
-  const draft = retireDemoExamples(saved);
-  if (saved.idlePolicy) {
-    const defaults = JSON.parse(snapshot).idlePolicy?.variants ?? [];
-    for (const variant of defaults) {
-      const existing = draft.idlePolicy.variants.find(item => item.videoId === variant.videoId);
-      if (!existing) draft.idlePolicy.variants.push(variant);
-      else if (!Object.hasOwn(existing, 'description')) existing.description = variant.description;
-    }
-  }
-  if (JSON.stringify(draft) !== JSON.stringify(saved)) await createProjectStore(dataDir).save(draft, saved.revision);
+  // Existing fixture data is validated without migration, revision or history writes.
+  validateProject(JSON.parse(await readFile(join(dataDir, 'project.json'), 'utf8')));
   return dataDir;
 }
 function openBrowser(url) {

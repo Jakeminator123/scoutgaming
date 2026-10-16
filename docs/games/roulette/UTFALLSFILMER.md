@@ -218,8 +218,8 @@ Planen uppdaterades efter Jakobs uppdrag den 13 oktober att spara, committa och 
 | 2 | Lås en korrekt nummerkrans och stabil kamera. Markera hjulcentrum, 37 fack, skala/perspektiv och ett rent underlag utan gammal kula | Numren stämmer mot rules.mjs, geometri håller hela klippet och det finns en definierad plats för en enda kula |
 | 3 | Prova lokal OpenCV-spårning på en kopia av hjulfilmen. Börja med rotorlandmärken/optiskt flöde; verifiera manuella referensrutor | Sparad vinkelbana, markerade bortfall och felmått mot handmärkta rutor. Ingen accepterad bana byggd på morfande siffror |
 | 4 | Vid behov jämför SAM 2-masker och specialtränad YOLO-detektering med den enklare baslinjen | Bättre uppmätt noggrannhet på samma provrutor; hårdvara, versioner, licens och bearbetningstid dokumenterade |
-| 5 | Skapa matchande hjulimpuls/kulsläpp, kontrollera en kula från hand till ytterbana, därefter en extra kort vilovariant | Släpp-/kontaktrutor, masker och start/slutposer godkända per hash, två sammanhängande visningar utan hopp |
-| 6 | Koppla granskad geometri och 37 mål till fryst presentation och serverns pending/reveal-kontrakt | Isolerade tester för samtliga utfall, saldo/historik, retry/reload och mediefel; mobil/desktop och två riktiga spelprov godkända |
+| 5 | Skapa matchande hjulimpuls/kulsläpp, kontrollera en kula från hand till ytterbana, därefter en extra kort vilovariant | Släpp-/kontaktrutor, masker och start/slutposer godkända per hash, berörda övergångar utan hopp |
+| 6 | Koppla granskad geometri och 37 mål till fryst presentation och serverns pending/reveal-kontrakt | Isolerade tester för samtliga utfall, saldo/historik, retry/reload och mediefel; riktad mobil-/desktopkontroll när ändringen berör visningen |
 
 Steg 1 är teknisk förberedelse. Native PNG-lagring är spärrad i den aktuella kodversionen, så VILA stannar som lokal referens. Verklig dealer, bolag, rum och kompositionsrevision måste väljas ur de sparade registren före beständig import. Vi fyller inte luckorna med påhittade UUID:er. Steg 2–6 är kvarvarande implementation/acceptans, inte redan aktiverade funktioner.
 
@@ -320,7 +320,8 @@ dagens `events?.mediaPreconditions ?? captured.mediaPreconditions` får inte
 tappa rouletteposterna. En inventariefil eller ett mänskligt namn är ingen
 publiceringsauktoritet. Spelarvyn behåller därför `dealer:null` för roulette
 tills en egen fryst bindning finns. Därefter väljs faktiskt sparad Anna,
-bolag och rum, med två sammanhängande riktiga rehearsal-spel före acceptans.
+bolag och rum. Verifieringen gäller det ändrade beteendet; rehearsal används
+vid ett konkret visuellt problem eller på Jakobs begäran, utan fast spelantal.
 
 ## Kan Ultralytics eller Python hjälpa?
 

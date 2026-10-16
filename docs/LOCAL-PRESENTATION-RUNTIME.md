@@ -687,7 +687,7 @@ Kevin-staging 5134d9274fdaa9d09dd3f3cf40f02ecd95716afe har stöd för dedikerade
 
 Källanalys efter Jakobs uttryckliga tillstånd: Gemini med hög upplösning transkriberar insurance_1 som ”Ess synligt. Vill nån ha försäkring?” och nya win_1 som ”Grattis till vinnarna.” Försäkringsklippet bedöms preliminärt följa talet; win_1 flaggas för sena munrörelser, ungefär 0,5 s efter talets slut. Detta är modellobservationer, inte uppmätt eller accepterad produktsynk. Den första analysens påstående om frusna bilder har förkastats: lokal ansiktsgranskning visar tydliga munrörelser. Båda klippen behåller granskningsstatus och publicerades inte. Råresultat och källhashar sparas endast privat i uppdragets steglogg.
 
-Nästa aktivering behöver den valda workerns exakta release och avatar-/källklippsmanifest, autentiserad adapter till vår sessionsägare, verifierat avbrott/jobbstopp, avkodning samt gemensam ljud-/bildstart. Källåtkomst eller motsvarande verifierbart workerunderlag saknas ännu. Kopiera inte Kevins permanenta podanslutningar eller kostnadsmodell som en genväg. Tillgång till en endpoint eller ljudfil ersätter inte dessa kontroller. Två sammanhängande verkliga talprov måste därefter godkänna uttal, läppsynk och återgång till grundloop.
+Nästa aktivering behöver den valda workerns exakta release och avatar-/källklippsmanifest, autentiserad adapter till vår sessionsägare, verifierat avbrott/jobbstopp, avkodning samt gemensam ljud-/bildstart. Källåtkomst eller motsvarande verifierbart workerunderlag saknas ännu. Kopiera inte Kevins permanenta podanslutningar eller kostnadsmodell som en genväg. Tillgång till en endpoint eller ljudfil ersätter inte dessa kontroller. Uttal, läppsynk och återgång till grundloop bedöms för den berörda ändringen när visuell granskning behövs; inget fast antal talprov krävs.
 
 ### PCM och egen WebSocket-anslutning, 14 oktober 2026
 
@@ -1633,8 +1633,9 @@ Verifiering av den leveransen: riktade API-/UI-/bulk-/ljudtester och dåvarande
 visuellt lipsynkgodkännande och inget prov av automatisk talaktivering för PAOW.
 Ljudet i biblioteket är en källa, ingen ny TTS-profil. Proben är borta. Vid
 media- eller spelarändring körs testerna i `.githooks/pre-commit`. Berörda
-registrerade dealers granskas med `?dealer=<name>&rehearsal=1`, två uppspelningar
-i rad. Provspelningen använder den faktiska spelaren.
+registrerade dealers kan granskas med `?dealer=<name>&rehearsal=1` vid ett
+konkret spelarproblem eller på Jakobs begäran. Inget fast antal uppspelningar
+eller generell manuell godkännandegrind gäller; se `AGENTS.md`.
 
 ## Äldre Studioflöde, 9 oktober 2026
 

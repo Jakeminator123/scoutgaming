@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve, basename } from 'node:path';
 import { prepareProject, main, publishedProductUrl, requireLocalBuild, localBuildFiles } from '../start.mjs';
@@ -11,6 +11,7 @@ import { createServer } from 'node:http';
 import {defaultPresentationLane} from '../lib/studio-model.mjs';
 import {createRegisteredIdlePolicy} from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
+import { createLegacyProject } from './fixtures/legacy-project.mjs';
 import { once } from 'node:events';
 
 test('default product start never reads or changes saved local projects, including invalid legacy data', async t => {
@@ -91,6 +92,26 @@ test('explicit fixture project preserves saved edits and refuses a corrupt proje
   await writeFile(file, 'invalid saved project');
   await assert.rejects(prepareProject(data));
   assert.equal(await readFile(file, 'utf8'), 'invalid saved project');
+});
+
+test('fixture preparation preserves historical project bytes, revision and history', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-fixture-preserve-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const old = createLegacyProject();
+  const snapshot = JSON.stringify(old, null, 4) + '\n';
+  const file = join(directory, 'project.json'), history = join(directory, 'history');
+  await writeFile(file, snapshot);
+  await prepareProject(directory);
+  assert.equal(await readFile(file, 'utf8'), snapshot);
+  assert.equal(JSON.parse(await readFile(file, 'utf8')).revision, old.revision);
+  await assert.rejects(readdir(history), { code: 'ENOENT' });
+
+  await mkdir(history);
+  await writeFile(join(history, 'saved.json'), snapshot);
+  await prepareProject(directory);
+  assert.equal(await readFile(file, 'utf8'), snapshot);
+  assert.deepEqual(await readdir(history), ['saved.json']);
+  assert.equal(await readFile(join(history, 'saved.json'), 'utf8'), snapshot);
 });
 
 

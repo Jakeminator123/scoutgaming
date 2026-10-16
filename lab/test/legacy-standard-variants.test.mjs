@@ -5,14 +5,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createEmptyProject, addDealer, normalizeProject, validateProject } from '../lib/studio-model.mjs';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
-import { retireDemoExamples } from '../lib/retire-demo-examples.mjs';
 
 import { createProjectStore } from '../lib/project-store.mjs';
 import { LEGACY_CLIP_PARTS } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { LEGACY_PART_PLACEMENTS, legacySituationLine, applyLegacyStandardVariants } from '../../packages/presentation/runtime/legacy-standard-variants.mjs';
 
 // Explicit historical document: current seeds intentionally register only active dealers.
-const historicalProject = () => normalizeProject(retireDemoExamples(createLegacyProject()));
+const historicalProject = () => normalizeProject(createLegacyProject());
 
 const clip = (dealer, part) => `${dealer}:legacy/${part}`;
 const policyFor = dealer => LEGACY_CLIP_PARTS.map(part => ({ dealerId: dealer, part, clipId: clip(dealer, part) }));
@@ -28,6 +27,10 @@ function baseline(project, dealerId, eventId) {
 test('historical adapter remains explicit while normal reads preserve stored bindings', () => {
   assert.deepEqual(Object.keys(LEGACY_PART_PLACEMENTS).sort(), [...LEGACY_CLIP_PARTS].sort());
   const before = historicalProject();
+  // Leave room for the adapter's bounded additions to these historical dealers.
+  for (const row of before.lines) if (['vera', 'amira', 'mei'].includes(row.dealerId)) {
+    row.variants = row.variants.filter(variant => variant.id === row.baselineVariantId);
+  }
   const astridBefore = structuredClone(before.lines.filter(row => row.dealerId === 'astrid'));
   const project = normalizeProject({ ...structuredClone(before), legacyClipPolicy: [
     ...policyFor('vera'), ...policyFor('amira'), ...policyFor('mei'),
