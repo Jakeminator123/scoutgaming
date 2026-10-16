@@ -7,8 +7,12 @@ mandat, ägarskap, verifiering och merge-/driftgränser. Daterade kvitton nedan
 beskriver sina dåvarande versioner och öppnar inte avslutade migrationssteg.
 
 Underagenter används bara på uttrycklig begäran enligt projektreglerna.
-De ärver vald modell och får korta, kompletta uppgifter med tydliga filgränser;
-huvudagenten äger Git, integration och leverans. Bevara beteendekontrakt och
+De ärver vald modell om Jakob inte begär ett annat modellval eller en annan
+tankenivå. Uppgifterna ska vara korta och kompletta, med en ägare per fil,
+inklusive tester. Huvudagenten äger Git, integration, gemensamma register
+och leverans; byt inte branch medan sidoagenter skriver. Samordna tunga
+byggen och testpaket så att högst ett körs lokalt åt gången, och återanvänd
+giltiga resultat för oförändrad kod och samma testmiljö. Bevara beteendekontrakt och
 data när verifierat ersatta sidor och tester avvecklas. Rapportera relevanta
 fel och osäkerheter utan en ny generell godkännandegrind.
 
@@ -40,6 +44,12 @@ utan länk. De små UI-rättningarna behåller gamla adresser och servergränser
 Inga nya testidentiteter eller produktionsdata behövdes.
 
 ## Arbetssätt och verifiering
+
+Strukturpass 16 oktober 2026: sex befintliga README samlar rätt ingångar,
+runtimeägarskap och testernas hemvist. Förbrukad lokal registeruppgradering
+är borttagen; isolerade fixtures bevarar befintliga data. CI-följden ligger
+separat i PR188. Handoff och respektive PR skiljer lokal kontroll, CI och
+leverans; detta pass omfattar ingen visuell användaracceptans.
 
 Dokumentationsrättning 16 oktober, efter den externa granskningen:
 systemkartans läsanvisning är nu en kort systemöversikt och terminologin en

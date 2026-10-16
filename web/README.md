@@ -72,8 +72,11 @@ flagga, profilcookie och lagrade ID:n är kvarvarande kompatibilitetsdetaljer.
 
 ## Start och data
 
-Starta det lokala serverparet via [lab/start.mjs](../lab/start.mjs), från
-Codex med `--no-open`. Följ [AGENTS.md](../AGENTS.md) om en enda lokal session.
+Öppna produkten via [lab/start.mjs](../lab/start.mjs), från Codex med
+`--no-open` för att bara skriva adressen. Endast `--offline --no-open`
+startar ett isolerat, tillfälligt serverpar utan externa tjänster.
+Startalternativ finns i [användarguiden](../lab/docs/README.md).
+Följ [AGENTS.md](../AGENTS.md) om en enda lokal fixtursession.
 `web/package.json` anger Node `>=22.16.0` och PostgreSQL-klienten `pg`.
 `web/node_modules/` är installerade beroenden, inte projektkod.
 

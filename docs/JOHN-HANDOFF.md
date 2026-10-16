@@ -96,14 +96,34 @@ publiceringsprov bevisar inte att dagens tomma grund har ett färdigt
 bolag–rum–publicering–spel-flöde. Isolerad SQL/HTTPS-CI och ny faktisk
 användaracceptans ska redovisas var för sig; skapa inga produktionsprovdata.
 
-Nästa dokument-/testgranskning ska arbeta i denna huvudcheckout, läsa
-aktuella toppavsnitt och slimma systemkarta, terminologi och kringregler.
-Ta bort felstyrande eller dubblerad text och tester för verifierat avvecklat
-beteende. Behåll relevant täckning för pengar, spelregler, behörigheter,
-rumsisolering, Neon/Blob, migration och medieidentitet. Kontrollera anropare
-innan kartverktyg tas bort; skriv ingen ny tracker och återställ inga gamla
-register för att få gamla tester gröna. Rapportera vad som togs bort,
-varför, hur kvarvarande beteende verifierades och vad som återstår.
+### Avgränsat strukturpass på arbetsbranch — 16 oktober 2026
+
+`codex/structure-cleanup` utgår från aktuell `origin/main` `b38c5657` i
+huvudcheckouten. Användarens lokala ändringar och granskningsmedier bevaras.
+Ingen ny worktree, merge eller produktionsändring ingår.
+
+- Lokalstartens förbrukade demo-/registeruppgradering, tomma idle-loop och
+  ensamma wrapper är borttagna. Även helpern `retire-demo-examples`, dess
+  fingeravtrycksregister och förbrukade test är borttagna efter anroparkontroll.
+  Fixturestart skapar tomma data eller validerar befintliga byte utan att
+  ändra revision eller historik. Historiska kompatibilitetstester använder
+  sina uttryckliga fixtures direkt och behåller beteendeassertionerna.
+- Sex befintliga README beskriver samma publicerade produkt, isolerade
+  offline-fixtur och fördelning mellan Vercel/Admin, Render/spelmotor,
+  Neon/register, Blob/medier och testkataloger. Felaktigt återstående
+  runtimebyte, gamla lokala startinstruktioner och dubletter är rättade.
+- Lokalt: 36/36 berörda beteendeprov, syntax/diffkontroll och 111 lokala
+  länkmål passerar. Ordinarie full CI redovisas i struktur-PR:en.
+  Ingen visuell användaracceptans har gjorts i detta pass.
+- CI-granskarens separata PR188 har också rättats på `1eb42c3e`: frivilliga
+  rapportfel får inte ersätta produktprovets status. Normal commitkontroll:
+  39 pass, ett POSIX-prov skip på Windows; Linux-CI hör till PR188.
+
+Kvarvarande strukturfrågor: Admin återanvänder aktiva `Control*`-komponenter;
+`lab/lib` innehåller delade tjänster för Admin och spel; äldre sparade
+identiteter och explicita kompatibilitetsfixtures har verkliga konsumenter.
+Fortsatt förenkling kräver avgränsning efter dessa beroenden, inte massflytt
+eller radering efter katalognamn.
 
 ## Historik: kompatibilitetssteg före omkoppling — 16 oktober 2026
 

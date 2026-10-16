@@ -9,5 +9,6 @@ kedja. Sökvägen `lab` är en befintlig Docker-/driftreferens.
 - [Studio: användarguide](../lab/docs/README.md)
 - [Runtime och media](../docs/LOCAL-PRESENTATION-RUNTIME.md)
 
-Lokal Studio och spel startas med `node lab/start.mjs --no-open`;
-respektera spärren för ett enda lokalt serverpar.
+`node lab/start.mjs --no-open` skriver den publicerade produktens adress.
+Endast `--offline --no-open` startar ett isolerat serverpar utan externa
+OpenClaw-/talanrop; se [startalternativen](../lab/docs/README.md).
