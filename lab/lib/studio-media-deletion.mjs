@@ -1,6 +1,7 @@
 import {StudioStorageError,validateMediaId,validateRevision,validateDocumentValue,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import {assertLifecyclePackages} from './dealer-lifecycle.mjs';
 import {readMediaBlobIndex} from './media-blob-index.mjs';
+import {readRuntimeCatalog} from '../../tools/runtime-media-catalog.mjs';
 import {isCloudMediaConfigured,purgeManagedMedia} from './cloud-media-store.mjs';
 const fail=(code,status=409)=>{throw new StudioStorageError(code,status);};
 const denied=reason=>({allowed:false,reason});
@@ -58,11 +59,12 @@ export async function checkPermanentMediaDeletion(repository,body,options={}){
  },{readOnly:true});
 }
 export function createStudioMediaDeletion({repository,mutationTransaction,env=process.env,options={},now=Date.now,
- readIndex=readMediaBlobIndex,purge=purgeManagedMedia}={}){
+ readIndex,purge=purgeManagedMedia}={}){
  const mediaOptions={...options,env:Object.freeze({...env})};
- function verifiedIndex(){
+ const indexReader=readIndex??(async()=>readMediaBlobIndex({...mediaOptions,runtimeCatalog:await readRuntimeCatalog(repository)}));
+ async function verifiedIndex(){
   if(!isCloudMediaConfigured(mediaOptions.env))fail('studio_media_delete_coverage_incomplete',503);
-  let index;try{index=readIndex(mediaOptions);}catch{fail('studio_media_delete_coverage_incomplete',503);}
+  let index;try{index=await indexReader(mediaOptions);}catch{fail('studio_media_delete_coverage_incomplete',503);}
   if(!(index instanceof Map))fail('studio_media_delete_coverage_incomplete',503);
   for(const row of index.values())if(/^croupier\/media\/dealers\/[^/]+\/review\/uploads\//.test(row.storage?.pathname??''))fail('studio_media_delete_coverage_incomplete',503);
   return true;
@@ -115,9 +117,9 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
   }),{presentationMutation:await deletionDescriptor()});
  }
  return Object.freeze({
-  async checkDealer(body){const verified=verifiedIndex();return repository.transaction(async()=>(await dealerPlan(body,verified)).result,{readOnly:true});},
+  async checkDealer(body){const verified=await verifiedIndex();return repository.transaction(async()=>(await dealerPlan(body,verified)).result,{readOnly:true});},
   async removeDealer(body,{stillAuthorized}={}){
-   const verified=verifiedIndex();
+   const verified=await verifiedIndex();
    if(typeof mutationTransaction!=='function'||typeof stillAuthorized!=='function')fail('studio_mutation_transaction_required',503);
    const batch=await mutationTransaction(()=>repository.transaction(async()=>{
     const actor=await stillAuthorized();
@@ -145,9 +147,9 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
     }),{presentationMutation:await deletionDescriptor()});
    }catch(error){if(error?.statusCode===403)throw error;fail('studio_dealer_delete_pending',503);}
   },
-  async check(body){const indexVerified=verifiedIndex();return checkPermanentMediaDeletion(repository,body,{indexVerified,now});},
+  async check(body){const indexVerified=await verifiedIndex();return checkPermanentMediaDeletion(repository,body,{indexVerified,now});},
   async remove(body,{stillAuthorized}={}){
-   validateInput(body);const indexVerified=verifiedIndex();
+   validateInput(body);const indexVerified=await verifiedIndex();
    if(typeof mutationTransaction!=='function'||typeof stillAuthorized!=='function'||typeof repository.withMediaObjectLock!=='function'||typeof repository.setMediaDeletion!=='function')fail('studio_mutation_transaction_required',503);
    const pending=await mutationTransaction(()=>repository.withMediaObjectLock(body.id,async row=>{
     const actor=await stillAuthorized();

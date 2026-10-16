@@ -72,13 +72,14 @@ test('a deployment-optional version is reported separately and never blocks read
   assertNoSecret(result);
 });
 
-test('012 bridge keeps readiness with the old ledger and with its verified installed ledger', async()=>{
+test('012 runtime cutover blocks readiness until the required ledger is installed', async()=>{
   for(const applied012 of [false,true]) {
     const versions=['001','002','003','004','005','006','007','008','011',...(applied012?['012']:[])];
     const result=await checkMigrationReadiness({plan:async()=>({target:{database:'croupier_game',role:'app'},
-      applied:versions.map(version=>({version})),pending:[],optionalPending:applied012?[]:[{version:'012'}]})});
-    assert.equal(result.ready,true);assert.equal(result.exitCode,0);assert.deepEqual(result.applied,versions);
-    assert.deepEqual(result.optionalPending,applied012?[]:['012']);
+      applied:versions.map(version=>({version})),pending:applied012?[]:[{version:'012'}],optionalPending:[]})});
+    assert.equal(result.ready,applied012);assert.equal(result.exitCode,applied012?0:1);assert.deepEqual(result.applied,versions);
+    assert.deepEqual(result.pending,applied012?[]:['012']);assert.deepEqual(result.optionalPending,[]);
+    if(!applied012)assert.match(result.message,/Migration 012 saknas/);
   }
 });
 

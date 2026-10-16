@@ -153,6 +153,7 @@ test('one bounded QA boot passes fullfile policy to Web; registered transport an
   const {configureGeneratedSpeechJournal,getGeneratedSpeechService,generatedSpeechStatus}=await import('../web/generated-speech.mjs');
   const {createSpeechJournal}=await import('../web/postgres-speech-journal.mjs');const {speechMemoryPool}=await import('./fixtures/speech-memory-pool.mjs');
   const runId=randomUUID(),env={NODE_ENV:'production',PORT:'10000',CROUPIER_CLOUD_LAYOUT:'single-origin',
+    CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
     CROUPIER_CLOUD_DATA_ROOT:QA.dataRoot,RENDER_SERVICE_ID:QA.serviceId,RENDER_EXTERNAL_URL:QA.origin,RENDER_GIT_COMMIT:'a'.repeat(40),
     CROUPIER_STREAM_LANE:'lissabon-stream-lane',CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:QA.environmentId,CROUPIER_STUDIO_WORKSPACE_ID:QA.workspaceId,
     CROUPIER_DATABASE:'postgres',CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl(`postgresql://qa.neon.tech/${QA.database}?sslmode=require`, `${QA.database}`),

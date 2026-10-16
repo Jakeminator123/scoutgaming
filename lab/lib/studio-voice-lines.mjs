@@ -1,4 +1,4 @@
-import { createRuntimeMetadataBytesReader } from '../../tools/runtime-media-catalog.mjs';
+import { createRuntimeMetadataBytesReader, readRuntimeCatalog } from '../../tools/runtime-media-catalog.mjs';
 import { createHash } from 'node:crypto';
 import { repositoryRoot as defaultRoot, resolvePublicMedia } from '../../tools/media-layout.mjs';
 import { verifiedMediaBlobStorage } from './media-blob-index.mjs';
@@ -26,26 +26,27 @@ export function voiceReviewMatches(record, identity) {
     && canonicalStudioJson(record.identity) === canonicalStudioJson(identity));
 }
 
-// Bundled registered metadata only. Never enumerate uploads, old review files,
+// Scoped Neon metadata only. Never enumerate uploads, old review files,
 // media bytes or BO disk config. Presence/hash proves identity, not visual sync.
-export function createRegisteredVoiceLines({ env = process.env, repositoryRoot = defaultRoot } = {}) {
-  const options = { repositoryRoot, env: Object.freeze({ ...env }) };
-  const readMetadataBytes = createRuntimeMetadataBytesReader(repositoryRoot);
-  async function registeredJson(url) {
-    const row = resolvePublicMedia(url, options);
-    if (!row || row.size < 2 || row.size > 4 * 1024 * 1024) fail();
-    const bytes = await readMetadataBytes(row.file);
-    if (!bytes || bytes.length !== row.size || sha(bytes) !== row.sha256) fail();
-    return JSON.parse(bytes.toString('utf8'));
-  }
-  function media(url, contentType) {
-    const row = resolvePublicMedia(url, options); if (!row) return null;
-    const pointer = verifiedMediaBlobStorage(row.logicalPath, { access: 'public', sha256: row.sha256, size: row.size, contentType }, options);
-    return pointer ? { url, sha256: row.sha256 } : null;
-  }
+export function createRegisteredVoiceLines({ env = process.env, repositoryRoot = defaultRoot, repository, runtimeCatalog } = {}) {
+  const baseOptions = { repositoryRoot, env: Object.freeze({ ...env }) };
   return async () => {
-    if (options.env.CROUPIER_MEDIA_STORAGE !== 'blob' || !options.env.BLOB_READ_WRITE_TOKEN || !options.env.CROUPIER_MEDIA_BLOB_INDEX) fail();
+    if (baseOptions.env.CROUPIER_MEDIA_STORAGE !== 'blob' || !baseOptions.env.BLOB_READ_WRITE_TOKEN) fail();
     try {
+      const options = { ...baseOptions, runtimeCatalog: runtimeCatalog ?? await readRuntimeCatalog(repository) };
+      const readMetadataBytes = createRuntimeMetadataBytesReader(repositoryRoot, options);
+      async function registeredJson(url) {
+        const row = resolvePublicMedia(url, options);
+        if (!row || row.size < 2 || row.size > 4 * 1024 * 1024) fail();
+        const bytes = await readMetadataBytes(row.file);
+        if (!bytes || bytes.length !== row.size || sha(bytes) !== row.sha256) fail();
+        return JSON.parse(bytes.toString('utf8'));
+      }
+      function media(url, contentType) {
+        const row = resolvePublicMedia(url, options); if (!row) return null;
+        const pointer = verifiedMediaBlobStorage(row.logicalPath, { access: 'public', sha256: row.sha256, size: row.size, contentType }, options);
+        return pointer ? { url, sha256: row.sha256 } : null;
+      }
       const dealers = [];
       for (const [dealer, name] of Object.entries(roster)) {
         const base = `dealers/${dealer}`;

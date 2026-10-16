@@ -7,6 +7,8 @@ import { createSeedProject as createHistoricalProject, addDealer, defaultPresent
 import { createOperatorPackageApi, fixtureLaneOperators, openWritableOperatorStore } from '../lib/operator-package-api.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
+import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
+import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
 
 // Test fixture selects its historical dealer explicitly; product startup has no composition.
 function createSeedProject() {
@@ -150,10 +152,11 @@ const mediaId='10000000-0000-4000-8000-000000000001',mediaHash='a'.repeat(64);
 // SQL facade fixture only: exercises the actual repository/publisher transaction
 // and rollback paths. Real PostgreSQL isolation remains a separate integration.
 function nativePool(){
-  let state={documents:new Map(),media:new Map(),packages:[],operatorAudits:[],audits:[],history:[]},tail=Promise.resolve(),sequence=0;
+  let state={documents:new Map(),media:new Map(),catalogs:new Map(),packages:[],operatorAudits:[],audits:[],history:[]},tail=Promise.resolve(),sequence=0;
   const calls=[],faults=new Set(),clone=v=>structuredClone(v),key=values=>JSON.stringify(values.slice(0,3));
   const result=(rows=[],command='SELECT')=>({rows:clone(rows),command});
   const pool={calls,snapshot:()=>clone(state),failNext:marker=>faults.add(marker),
+    seedRuntimeCatalog(scope,value){state.catalogs.set(JSON.stringify([scope.environment,scope.workspaceId]),{revision:runtimeCatalogRevision(value),value:clone(value)});},
     async connect(){
       const clientId=++sequence;let working,readOnly,unlock;
       return {release(){unlock?.();},async query(sql,values=[]){
@@ -165,6 +168,7 @@ function nativePool(){
         if(sql.includes('pg_advisory_xact_lock')){if(unlock)return result();const previous=tail;tail=new Promise(resolve=>unlock=resolve);await previous;working=clone(state);return result();}
         if(sql==='COMMIT'||sql==='ROLLBACK'){if(sql==='COMMIT'&&!readOnly)state=working;working=undefined;unlock?.();unlock=null;return result([],sql);}
         assert.ok(working,'domain reads/writes use a live scoped client');
+        if(marker==='read-runtime-catalog')return result(working.catalogs.has(JSON.stringify(values.slice(0,2)))?[working.catalogs.get(JSON.stringify(values.slice(0,2)))]:[]);
         const packages=()=>working.packages.filter(row=>row.environment_id===values[0]&&row.workspace_id===values[1]&&row.operator_id===values[2]);
         if(marker==='lock-operator'||marker==='operator-by-id')return result(values[2]==='north'?[{environment_id:values[0],workspace_id:values[1],operator_id:'north',slug:'north',name:'North',status:'active',created_at_ms:1}]:[]);
         if(marker==='current-package')return result(packages().sort((a,b)=>b.package_revision-a.package_revision).slice(0,1));
@@ -197,6 +201,7 @@ function nativePool(){
 }
 async function nativeFixture({dealer='linnea'}={}){
   const pool=nativePool(),repository=createStudioRepository({pool,scope:nativeScope});
+  pool.seedRuntimeCatalog(nativeScope,readRuntimeCatalogFixture());
   const support=cloudPresentationFixture({project:createSeedProject(),lanes:[defaultPresentationLane('astrid')]}),project=support.project.dealers.some(row=>row.id===dealer)?support.project:addDealer(support.project,dealer,dealer==='linnea'?'Linnea':'Nora'),lane=defaultPresentationLane(dealer);
   lane.id='johns-presentation';lane.dealers=[dealer];lane.layers.dealer.default=dealer;lane.layers.dealer.allowed=[dealer];project.lanes=[lane];
   project.lines.find(row=>row.dealerId===dealer&&row.eventId==='idle.ready').variants[0].videoGenerationId=mediaId;

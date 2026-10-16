@@ -1,5 +1,45 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Runtimekontrakt efter Neon-migreringen, 16 oktober 2026
+
+Den nya runtimekoden har **Neon som enda källa för registermetadata**.
+`runtime_media_catalogs` innehåller layout, Blob-index, presentationsmanifest
+och de publika JSON-originalens exakta text, under miljö och arbetsyta.
+Katalogrevisionen är SHA-256 över det validerade, kanoniska innehållet.
+`speech_reply_records` lagrar svarsbibliotekets metadata per miljö, arbetsyta,
+dealer och UUID; kategoriändringar kontrollerar sparad revision.
+Privat Blob lagrar mediebytes. Hash, storlek, åtkomst och exakta identiteter
+kontrolleras fortfarande; saknad eller felaktig Neon-katalog ger fel utan
+lokal filreserv eller tyst tomt register. Astrid använder samma lagringsväg
+som de övriga registrerade dealerna.
+
+`media/layout.json`, `media/blob-index.json`, `media/catalog/presentation.json`
+och `media/catalog/legacy.json` är endast källor för uttryckligt authoring- och
+importarbete. De läses inte som produktens runtime-register och skickas inte
+med som metadatareserv i deploypaketet. `ops/neon-studio/runtime-media-import.mjs`
+skiljer förberedelse, läsande plan och uttrycklig apply med mål-/scope-/revisions-
+kontroll. Äldre Blob-JSON för svar importeras uttryckligen; runtime läser inte
+dem som alternativ metadata. Import ändrar inte inspelade bytes eller godkännanden.
+
+**Leveransgräns:** kodkontraktet kräver migration 012. Enligt huvudagentens
+molnkvitto 16 oktober 18:38 UTC är 012 tillämpad och katalog samt 12 sparade
+svar importerade och återlästa. Katalogen innehåller 760 layoutposter,
+542 indexposter, 51 bankklipp och 18 JSON-original; 514 Blob-objekt är
+fullständigt hashverifierade. Samtliga 79 medieposter och tre dokument är
+oförändrade. Detta återger huvudagentens kontroll, inte ett nytt prov.
+Produktens runtime kör ännu bridgeversion `3165ab6`; runtimebyte och
+efterföljande driftacceptans väntar. Följ endast
+[CLOUD-MIGRATION](CLOUD-MIGRATION.md) och [JOHN-HANDOFF](JOHN-HANDOFF.md)
+för aktuell leveransstatus. Daterade äldre indexkrav nedan beskriver den
+tidigare implementationen och ersätts av detta kontrakt.
+
+Vanlig `node lab/start.mjs` öppnar den publicerade `/lobby`; `--no-open`
+skriver bara adressen och `--product` är ett uttryckligt alias. Endast
+`--offline` startar ett isolerat, temporärt serverpar utan externa tjänster.
+`--skip-build` hör till den fixturen. `--cloud-storage`, `--astrid-camera`
+och `--check` avvisas; de startar inte längre en ansluten lokal produkt.
+Sparade lokala arbetsfiler bevaras som källor eller återhämtningsdata.
+
 ## Astrid som legacyreferens och gemensam molnkälla, 16 oktober 2026
 
 Jakob har beslutat att Astrid ska behållas som **legacyreferens**, med tydlig
@@ -16,14 +56,12 @@ originalfilmer från Jakobs dator. Neon-registret ignorerar de gamla lokala
 upload-/klassificeringsfilerna. Videobytes hämtas från Blob och kontrolleras
 mot exakt identitet, hash och storlek; tillfällig cache är disponibel.
 
-**Återstående migrationsgräns:** `createNeonVideoRegistry` kombinerar fortfarande
+**Historisk migrationsgräns före runtimebytet ovan:** `createNeonVideoRegistry` kombinerade
 Neon-rader med en oföränderlig deployad bank. `media/catalog/presentation.json`,
-`legacy.json`, layout och Blob-index är fortfarande katalogauktoriteter i
-deploypaketet. De är inte ett parallellt skrivbart JSON-register på användarens
-dator, men alla register finns följaktligen inte ännu i Neon. Även Dragan
-passerar denna gemensamma katalogkontroll. Astrids särskilda genererade talväg
-och äldre asset-/lobbymanifest måste bedömas separat innan de kan fasas ut.
-En dealerradering slutför inte den migrationen.
+`legacy.json`, layout och Blob-index var katalogauktoriteter i
+deploypaketet. Den inventeringen var inget bevis för att alla register redan
+fanns i Neon. Även Dragan passerade den gemensamma katalogkontrollen.
+En dealerradering slutförde inte metadataflytten.
 
 ## Dragan: aktuella källor och kvarvarande talintegration, 15 oktober 2026
 
@@ -1448,10 +1486,13 @@ Referenscachen rymmer fyra innehållsbundna bilder. Detta ersätter inte GPU-
 kallstart, och ingen förbättrad live-latens är slutgodkänd från adaptertester.
 
 Färdiga streamade dealersvar sparas efter sista mediebildrutan som privat WAV,
-MP4 och exakt text/profilhash. Separat metadata ligger i
+MP4 och exakt text/profilhash. Vid leveransen 12 oktober låg separat metadata i
 `croupier/reply-library/<miljo-arbetsyta-hash>/<dealer>/<uuid>.json`; ljud/video
 ligger i dealerfamiljens `runtime/conversation-replies`, avskilt från bank,
 grundloopar, källor och staging. Lagring blockerar inte första ljud/bildruta.
+Runtimebytet 16 oktober flyttar metadata till scoped `speech_reply_records`
+med revisionskontroll; Blob behåller mediebytes. Den äldre JSON-sökvägen är
+importkälla, inte runtimefallback. Molnapply-status står överst.
 Infångning och väntande Blob-sparningar delar högst 64 MiB i processen; större,
 avbrutna eller ofullständiga par arkiveras inte och lagringsfel loggas utan text,
 nycklar eller privata Blob-adresser. Spelarens mikrofonljud ingår aldrig.
@@ -1488,13 +1529,15 @@ historik och Blob-bytes bevaras. Gemensamma original skrivs inte över eller
 raderas genom biblioteket.
 
 Neon äger dealerposter, klippmetadata och projektkopplingar; privat Blob äger
-mediebytes. Native Studio läser gemensam driftmetadata från
+mediebytes. I den tidigare implementationen läste Native Studio driftmetadata från
 media/catalog/presentation.json och media/catalog/legacy.json tillsammans med
-media/layout.json och media/blob-index.json. Ingen lokal dealermapp skapas när
+media/layout.json och media/blob-index.json. Den filauktoriteten ersätts av
+Neon-katalogen enligt runtimekontraktet överst. Ingen lokal dealermapp skapas när
 en dealer registreras. Uppgifterna ovan om borttagen `runtime/indexed`-bank
 avser Git och byggpaket, inte fysisk radering i Blob. Där finns fortfarande
-äldre indexerade filer för Astrid, Mei och Vera. Replikbibliotekets metadata
-ligger dessutom som egna JSON-objekt i Blob, utanför Neons mediaregister.
+äldre indexerade filer för Astrid, Mei och Vera enligt det daterade kvittot.
+Replikbibliotekets metadata låg då också som egna JSON-objekt i Blob,
+utanför Neons mediaregister; den metadataauktoriteten ersätts av Neon.
 Kvarvarande lokala `runtime/presentation` och övriga dealer-mappar behövs
 inte som reserv för Studios molnuppspelning.
 
@@ -1502,16 +1545,17 @@ Aktuell fysisk struktur, kopplingen dealer → video → variant och avstämning
 mot samtliga sex databaser på Neons aktiva main-branch finns i
 [Blob och Neon](storage/BLOB-NEON.md). Kontrollen 16 oktober 2026 omfattar
 1 710 objekt och 79 produktionsklipp: alla registerfiler finns; 12 äldre
-replikposter för `paow`/`paow-v2` pekar däremot på 24 saknade mediafiler.
+replikposter för `paow`/`paow-v2` pekade däremot på 24 saknade mediafiler vid det kvittot.
 Den fullständiga filförteckningen skiljer bibliotek, aktuella referenser,
 historik, byteidentiska kopior och filer utan hittad referens. Dessa klasser
 ger inget tillstånd att radera material.
-tools/build-runtime-media-catalog.mjs bygger katalogen explicit;
---check och isolerade tester med helt frånvarande dealer-mappar verifierar den.
+`tools/build-runtime-media-catalog.mjs` bygger explicit lokalt källunderlag;
+verktygets `--check` och isolerade tester verifierar detta underlag.
 Saknad eller felaktig katalog ersätts aldrig med tyst tomt register.
 Katalogens version 2 bevarar originalens exakta JSON-byte, så talgranskningens
 SHA-256- och storlekskontroller gäller även utan lokala dealerfiler. Native
-grundloop, talmetadata och klippinventering läser samtliga katalogen.
+grundloop, talmetadata och klippinventering läser efter runtimebytet katalogen
+från Neon, inte det lokala underlaget.
 
 Verifiering av den leveransen: riktade API-/UI-/bulk-/ljudtester och dåvarande
 `audit-dealer-sync --probe`. Inga inspelade byte byttes. Det är inget nytt
@@ -1597,9 +1641,10 @@ media hoppas över och serverns kortflöde fortsätter. N2 visar endast verkliga
 
 
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
-Starta med `node lab/start.mjs`. OpenClaw-anslutning beskrivs i
+`node lab/start.mjs` öppnar den publicerade produkten. OpenClaw-anslutning beskrivs i
 [anslutningsguiden](AI/openclaw/LOCAL-CONNECTION-SV.md).
-Mobile Phone Lane använder Astrids porträttvideo i det riktiga spelet:
+De tidigare lokala adresserna nedan beskriver den äldre anslutna startaren,
+inte dagens standardstart. Den gamla Mobile Phone Lane använde Astrids porträttvideo i spelet:
 <http://127.0.0.1:4200/blackjack>.
 Lab på <http://127.0.0.1:4201/activity> öppnar samma läge via **Anslut**.
 

@@ -64,8 +64,12 @@ async function fixture(t) {
   }
   const families = MEDIA_FAMILY_DEFINITIONS.map(family => ({id:family.id,dealerId:family.dealerId,eventId:family.eventId,situation:family.situation,playbackType:family.playbackType,
     standardIds: family.standardPaths.map(path => items.find(item => item.relativePath === path).id), variantIds:[]}));
-  await writeFile(join(archive,'lab-video-manifest.json'), JSON.stringify({schemaVersion:2,source:'emil/dealklipp-v1',families,items}));
-  await writeFile(join(root,'media/layout.json'), JSON.stringify({schemaVersion:1,roots:{},files:layout}));
+  const runtimeCatalog={schemaVersion:1,layout:{schemaVersion:1,roots:{},files:layout},
+    presentation:{schemaVersion:2,source:'emil/dealklipp-v1',families,items},
+    blobIndex:{schemaVersion:1,namespace:'croupier/media',verification:'readback-sha256',files},legacy:{schemaVersion:2,entries:{}}};
+  pool.seedRuntimeCatalog(scope,runtimeCatalog);
+  await writeFile(join(archive,'lab-video-manifest.json'), JSON.stringify(runtimeCatalog.presentation));
+  await writeFile(join(root,'media/layout.json'), JSON.stringify(runtimeCatalog.layout));
   const indexPath = join(root,'media/blob-index.json');
   await writeFile(indexPath, JSON.stringify({schemaVersion:1,namespace:'croupier/media',verification:'readback-sha256',files}));
   const uploadDir = join(root,'retired-uploads'); await mkdir(uploadDir);
@@ -84,10 +88,11 @@ async function fixture(t) {
       classification:{dealerId:'astrid',eventId:'deal.player.left',kind:'action',role:'alternative',situation:'box0',familyId:'astrid/deal.player.left/box0',label:'New exact clip',notes:''}};
     objects.set(record.pathname,bytes); await repository.registerMedia(record,{actor:'Operator'}); return {record,bytes};
   }
-  return {root,pool,repository,registry,env,options,items,objects,newMedia};
+  return {root,pool,repository,registry,env,options,items,objects,newMedia,runtimeCatalog};
 }
 test('native registry preserves the active bank and exact Neon variants without reading retired disk indexes', async t => {
   const {registry,newMedia,items,env,root} = await fixture(t), {record} = await newMedia();
+  await rm(join(root,'media'),{recursive:true});
   const result = await registry.load(); assert.equal(result.videos.length, items.length + 1);
   const video = result.videos.find(row => row.id === record.id);
   assert.equal(video.available,true); assert.equal(video.storage,'private-blob'); assert.equal(video.bindingScope,'shared-local');
@@ -101,11 +106,12 @@ test('unavailable Neon does not become an empty review library or disk fallback'
   await assert.rejects(registry.load(), error => error.statusCode === 503 && error.code === 'studio_storage_unavailable');
 });
 test('missing cloud source, wrong scope or corrupted immutable manifest is rejected', async t => {
-  const {registry,repository,env,options,root} = await fixture(t);
+  const {registry,repository,env,options,pool,runtimeCatalog} = await fixture(t);
   assert.throws(() => createNeonVideoRegistry({repository,scope:{...scope,workspaceId:'other'},env,options}), error => error.statusCode === 503);
   await assert.rejects(createNeonVideoRegistry({repository,scope,env:{...env,CROUPIER_MEDIA_STORAGE:'disk'},options}).load(), error => error.code === 'studio_media_storage_unavailable');
-  await writeFile(join(root,'media/dealers/astrid/runtime/presentation/lab-video-manifest.json'),'{corrupt');
+  pool.seedRuntimeCatalog(scope,{...runtimeCatalog,presentation:{invalid:true}});
   await assert.rejects(registry.load(),error => error.statusCode === 503);
+  await assert.rejects(createNeonVideoRegistry({repository:{...repository,readRuntimeCatalog:undefined},scope,env,options}).load(),error=>error.statusCode===503);
 });
 test('active bank and new Neon preview use verified private Blob bytes with HEAD/Range', async t => {
   const {registry,newMedia,items,objects} = await fixture(t), {record,bytes} = await newMedia();
@@ -146,6 +152,19 @@ test('captured inventory rejects foreign scope/registration and unavailable sele
   // A fresh UUID/path avoids the verified readback cache of the prior upload.
   objects.delete(record.pathname);
   await assert.rejects(registry.verifyCapturedMedia([{record,id:record.id,revision:snapshot.mediaRows[0].revision}]),e=>e.code==='studio_media_storage_unavailable');
+});
+
+test('captured bank response uses its original catalog after current Neon metadata changes',async t=>{
+  const f=await fixture(t);
+  await f.repository.initializeDocument('administration',{value:{rooms:[]},revision:'admin-capture',actor:'tester'});
+  const snapshot=await f.repository.readPresentationSnapshot(),id=f.items[0].id;
+  const request=()=>new Request(`https://studio.example.invalid/studio/api/videos/${id}`);
+  f.pool.seedRuntimeCatalog(scope,{...f.runtimeCatalog,presentation:{invalid:true}});
+  await assert.rejects(f.registry.response(id,request()),error=>error.statusCode===503);
+  const response=await f.registry.responseCaptured(id,request(),snapshot);
+  assert.equal(response.status,200);
+  assert.equal(createHash('sha256').update(Buffer.from(await response.arrayBuffer())).digest('hex'),f.items[0].sha256);
+  await assert.rejects(f.registry.loadCaptured({...snapshot,runtimeCatalog:undefined}),error=>error.statusCode===503);
 });
 
 test('trash dealer uploads remain readable in live and captured inventory without active registration',async t=>{

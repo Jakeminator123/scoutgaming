@@ -68,7 +68,7 @@ Read `docs/JOHN-HANDOFF.md` and `docs/ENVIRONMENT-RESTORATION.md` before changin
 
 ## Local servers and browser tabs
 
-Run only one local product/lab server pair at a time, including QA on different ports. Start with `node lab/start.mjs` (`--offline`, `--no-open`, `--skip-build`, `--check`; also `--astrid-camera` and `--cloud-storage`). `acquireLocalSession` in `open-claw/lab/deploy/local-session.mjs` blocks a second pair. The root cmd launchers are gone. Stop the current pair before switching environments. Short-lived test fixtures must clean up their own processes.
+Ordinary `node lab/start.mjs` opens the published `/lobby`; `--no-open` prints its URL. It never starts a parallel local product registry. Only explicit `--offline` starts an isolated temporary fixture (`--skip-build` is fixture-only). The former `--cloud-storage`, `--astrid-camera` and `--check` connected-local modes are retired. Preserve existing local authoring files as source or recovery data, not runtime state. Neon is the product registry, including the immutable media catalogue and saved speech replies; media bytes come from Blob. Keep Astrid as a labelled legacy reference on this same storage path. Run only one fixture server pair at a time; `acquireLocalSession` enforces this. Fixtures clean up their own processes.
 
 From Codex, start Lab with `--no-open`. Reuse the existing game or lab browser tab; reload a matching URL instead of opening a duplicate. Preserve drafts and ongoing play. A request to stop servers leaves them stopped.
 

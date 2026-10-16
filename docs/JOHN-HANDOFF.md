@@ -1,6 +1,51 @@
 # Aktuell handoff — Scoutgaming
 
-## Neon-katalog: kompatibilitetssteg före omkoppling — 16 oktober 2026
+## Aktuellt: Neon-import klar, runtimeleverans återstår — 16 oktober 2026
+
+Jakob har beställt Neon som enda register och Blob som mediekälla. Astrid
+behålls som märkt legacyreferens; Dragan är ordinarie dealer. Detta avsnitt
+ersätter äldre nulägesuppgifter nedan, som är daterade leveranskvitton.
+
+- PR185 är mergad till `main` som `3165ab6df94c965aa3db1f986b8532a0f9260073`.
+  Där ingår Admin-konsolideringen, zoom, filmvisaren, workflowförenklingen och
+  Astrids referensmärkning. PR- och main-CI är gröna. Vercel
+  `dpl_E34gT4df4nRng8nHVRhwmM45R5cd` är READY och Render
+  `dep-db96sk7avr4c73dq4hhg` live på samma version.
+- Kompatibilitetssteget driftsattes före schemaändringen. Migration 012 är
+  installerad i befintliga Neon `production/croupier`, databasen
+  `croupier_game`, projekt `wandering-hill-60561912`, branch
+  `br-flat-fog-b161a6r8`. SQL-kontrollsumma:
+  `5618ae06bcae43c77778f2d7bc777e86d2fabafa2f26c5f139d90d06dc72d291`.
+- Import och separat Neon-återläsning är klara 18:38 UTC: 760 layoutposter,
+  542 Blob-referenser, 51 bankklipp och 18 exakta JSON-manifest. Katalogrevision
+  `9201007d27c7b6464cbd905123c59b48608083a1af726ee9f896767e6e7bff20`.
+  Samtliga 514 unika Blob-objekt har strömlästs och kontrollerats mot full
+  SHA-256, storlek och medietyp. Inga mediebyte flyttades eller regenererades.
+- Tolv historiska PAOW-replikposter har kopierats från Blob-JSON till Neon
+  med bibehållen revision och exakt innehåll. Deras 24 mediereferenser gav
+  redan 404 i Blob; de bevaras som historik och aktiverar ingen dealer.
+  Befintliga Blob-JSON är inte en runtimefallback efter kodomkopplingen.
+- Alla 79 befintliga medieposter och de tre dokumenten project,
+  administration och social-policy är oförändrade enligt före/efter-digest
+  och oberoende Neon-connector. Astrid och Dragan är fortsatt enda aktiva.
+- Slutkoden på `codex/neon-authoritative-runtime` kräver 012 och läser
+  katalog/replikmetadata från Neon. Lokal katalogfallback och ordinarie
+  lokal produktstart avvecklas; explicit `--offline` är en isolerad fixture.
+  Kodleveransens merge/driftsättning är ännu inte klar i detta kvitto.
+- Lokal fullregression: 4 572 pass, 23 villkorade skip, noll fel. Lab-bygge
+  och TypeScript passerar. Senare SQL-/schema- och importkorrigeringar har
+  riktade gröna prov; exakt slutcommit ska dessutom få full CI med riktig
+  isolerad PostgreSQL, omstart och HTTPS. Ingen ny visuell medieacceptans
+  påstås: Work har lokal webbläsaranvändning avstängd.
+
+`arkiv/` är undantagen från Git (`.gitignore`), vanliga sökningar (`.ignore`),
+Cursor (`.cursorignore`) och Docker-kontext (`.dockerignore`). Git spårar
+endast `.gitkeep`. Innehåll tar inte modellkontext bara genom att finnas på
+disken, men ett uttryckligt filverktygsanrop kan läsa det trots dessa filter.
+Privata importkvitton och loggar finns under det befintliga arkivet och
+committas inte. Användarens konfiguration och granskningsfilmer bevaras.
+
+## Historik: kompatibilitetssteg före omkoppling — 16 oktober 2026
 
 Jakob har beställt Neon som enda register, Blob som mediekälla och Astrid kvar
 som legacyreferens, med leverans till main efter gröna kontroller. Migration

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,copyFile,rm,access} from 'node:fs/promises';
+import {mkdtemp,mkdir,rm,access} from 'node:fs/promises';
 import {join,resolve,dirname} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -9,6 +9,7 @@ import {createStudioMediaRuntime} from '../lab/lib/studio-media-runtime.mjs';
 import {createRegisteredDealerIdle} from '../web/storage/studio-runtime.mjs';
 import {createRegisteredVoiceLines} from '../lab/lib/studio-voice-lines.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
+import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
 import {createSeedProject,addDealer} from '../lab/lib/studio-model.mjs';
 const source=fileURLToPath(new URL('../',import.meta.url));
@@ -16,10 +17,9 @@ test('shared deployment catalog matches original authoring metadata',async()=>{a
 test('historical catalog remains readable while only an explicitly saved cloud idle can play without dealer directories',async t=>{
   const root=await mkdtemp(join(tmpdir(),'croupier-catalog-'));
   t.after(async()=>{assert.equal(dirname(root),resolve(tmpdir()));await rm(root,{recursive:true,force:true});});
-  await mkdir(join(root,'media/catalog'),{recursive:true});
-  for(const path of ['media/layout.json','media/blob-index.json','media/catalog/presentation.json','media/catalog/legacy.json'])await copyFile(join(source,path),join(root,path));
-  await assert.rejects(access(join(root,'media/dealers')));
-  const scope={environment:'catalog_test',workspaceId:'croupier'},repository=createStudioRepository({pool:createStudioMemoryPool(),scope});
+  await assert.rejects(access(join(root,'media')));
+  const scope={environment:'catalog_test',workspaceId:'croupier'},pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
+  pool.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
   const project=addDealer(createSeedProject(),'paow','PAOW');
   const id='11111111-1111-4111-8111-111111111111',sha256='b'.repeat(64);
   const line=project.lines.find(row=>row.dealerId==='paow'&&row.eventId==='idle.ready');
@@ -27,13 +27,13 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   await repository.initializeDocument('project',{value:project,revision:'catalog-project',actor:'fixture'});
   await repository.initializeDocument('administration',{value:{rooms:[],legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{}}},revision:'catalog-admin',actor:'fixture'});
   await repository.registerMedia({id,sha256,size:32,contentType:'video/mp4',pathname:'croupier/media/dealers/paow/review/uploads/'+id+'/'+sha256+'.mp4',classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'PAOW idle',notes:''}},{actor:'fixture'});
-  const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture',CROUPIER_MEDIA_BLOB_INDEX:join(root,'media/blob-index.json')};
+  const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture'};
   const media=createStudioMediaRuntime({repository,scope,repositoryRoot:root,env});
   const idle=createRegisteredDealerIdle({registryLoader:media.videoRegistry});
   for(const dealer of ['astrid','vera','amira','mei'])assert.equal(await idle(dealer,project),null,'catalog metadata cannot supply a missing saved baseline');
   assert.deepEqual(await idle('paow',project),{dealerId:'paow',mediaId:id,sha256,available:true});
   assert.equal(await idle('paow',{...project,lines:[]}),null,'registered identity alone cannot supply an idle');
-  const voices=await createRegisteredVoiceLines({env,repositoryRoot:root})();
+  const voices=await createRegisteredVoiceLines({env,repositoryRoot:root,repository})();
   assert.deepEqual(voices.dealers.map(row=>row.dealer),['astrid']);
   for(const dealer of voices.dealers)assert.equal(dealer.lines.length,0);
   const inventory=await media.videoRegistry();assert.equal(inventory.videos.find(row=>row.id===id).dealer,'paow');assert.ok(inventory.families.length>0);

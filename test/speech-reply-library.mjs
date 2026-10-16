@@ -1,96 +1,48 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
-import { createSpeechReplyLibrary } from '../web/speech-reply-library.mjs';
-const env = { CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-token' };
-const scope = { environment:'qa',workspaceId:'jakob' };
-function input(dealerId='astrid') { return {id:randomUUID(),dealerId,exactText:'Hej! Tack för frågan.',language:'sv',profileRevision:'a'.repeat(64),audio:{bytes:Buffer.from('WAV exact bytes'),contentType:'audio/wav'},video:{bytes:Buffer.from('MP4 exact bytes'),contentType:'video/mp4'}}; }
-async function fixture(t) {
-  const cacheDir=await mkdtemp(join(tmpdir(),'reply-library-test-')); t.after(()=>rm(cacheDir,{recursive:true,force:true}));
-  const objects=new Map(); let revision=0;
-  const blob=(pathname,r)=>({pathname,url:`https://fixture.private.blob.vercel-storage.com/${pathname}`,size:r.bytes.length,contentType:r.contentType,etag:r.etag});
-  const blobClient={
-    async put(pathname,bytes,o) {
-      assert.equal(o.access,'private'); assert.equal(o.addRandomSuffix,false);
-      const old=objects.get(pathname);
-      if((old&&!o.allowOverwrite)||(o.ifMatch&&o.ifMatch!==old?.etag)) throw Object.assign(Error('SECRET provider'),{name:'BlobPreconditionFailedError'});
-      if(o.allowOverwrite)assert.ok(o.ifMatch);
-      const r={bytes:Buffer.from(bytes),contentType:o.contentType,etag:`"${++revision}"`};objects.set(pathname,r);return blob(pathname,r);
-    },
-    async get(pathname,o){assert.equal(o.access,'private');const r=objects.get(pathname);return r?{statusCode:200,stream:new Response(r.bytes).body,blob:blob(pathname,r)}:null;},
-    async list(o){return{blobs:[...objects].filter(([p])=>p.startsWith(o.prefix)).map(([p,r])=>blob(p,r)),hasMore:false};},
-    async del(pathname){objects.delete(pathname);},
-  };
-  const options={env,...scope,blobClient,cacheDir};return {objects,options,blobClient,library:createSpeechReplyLibrary(options)};
-}
-test('private completed reply survives reconstruction; manifest never exposes storage pointers',async t=>{
-  const f=await fixture(t), request=input('paow'), saved=await f.library.save(request);
+import {randomUUID} from 'node:crypto';
+import {createSpeechReplyLibrary} from '../web/speech-reply-library.mjs';
+import {createSpeechReplyRepository} from '../web/storage/speech-reply-repository.mjs';
+import {fixture,input,env,scope} from './fixtures/speech-replies.mjs';
+test('Neon completed reply survives reconstruction; Blob contains only bytes and scope cannot leak',async t=>{
+  const f=await fixture(t),saved=await f.library.save(input('paow'));
   assert.equal(saved.dealerId,'paow');assert.equal(saved.reviewStatus,'pending');assert.equal(saved.revision,1);
   assert.doesNotMatch(JSON.stringify(saved),/provider|pathname|blob\.vercel|token/);
-  const restarted=createSpeechReplyLibrary(f.options);
-  assert.deepEqual(await restarted.list({dealerId:'paow'}),{items:[saved],nextCursor:null});
-  assert.equal((await restarted.media({dealerId:'paow',id:saved.id,kind:'audio',request:new Request('https://studio.test/api/replies/audio')})).status,200);
+  assert.equal(f.objects.size,2);assert.ok([...f.objects.keys()].every(path=>!path.endsWith('.json')));
+  const restarted=createSpeechReplyLibrary(f.options);assert.deepEqual(await restarted.list({dealerId:'paow'}),{items:[saved],nextCursor:null});
   await assert.rejects(restarted.get({dealerId:'astrid',id:saved.id}),{statusCode:404});
-  for(const changed of [{environment:'production'},{workspaceId:'emil'}]) {
-    const isolated=createSpeechReplyLibrary({...f.options,...changed});assert.deepEqual((await isolated.list({dealerId:'paow'})).items,[]);
+  for(const change of [{environment:'production'},{workspaceId:'emil'}]){
+    const changed={...scope,...change},repository=createSpeechReplyRepository({sql:f.sql,scope:changed});
+    const isolated=createSpeechReplyLibrary({...f.options,...changed,repository});assert.deepEqual((await isolated.list({dealerId:'paow'})).items,[]);
     await assert.rejects(isolated.get({dealerId:'paow',id:saved.id}),{statusCode:404});
+    assert.throws(()=>createSpeechReplyLibrary({...f.options,...changed}),{statusCode:400});
   }
 });
-test('categories use revision CAS; concurrent edits cannot overwrite; text and media stay immutable',async t=>{
-  const f=await fixture(t), saved=await f.library.save(input());
-  let authorized=0;
-  const changes=await Promise.allSettled(['player-kind','player-question'].map(category=>f.library.categorize({dealerId:saved.dealerId,id:saved.id,categories:[category],expectedRevision:1,stillAuthorized:async()=>{authorized++;}})));
-  assert.equal(changes.filter(x=>x.status==='fulfilled').length,1);
-  assert.equal(changes.find(x=>x.status==='rejected').reason.statusCode,409);assert.equal(authorized,2);
+test('categories use exact SQL CAS; concurrent edits, revocation and immutable content remain guarded',async t=>{
+  const f=await fixture(t),saved=await f.library.save(input());let authorized=0;
+  const changes=await Promise.allSettled(['player-kind','player-question'].map(category=>f.library.categorize({...saved,categories:[category],expectedRevision:1,stillAuthorized:async()=>{authorized++;}})));
+  assert.equal(changes.filter(row=>row.status==='fulfilled').length,1);assert.equal(changes.find(row=>row.status==='rejected').reason.statusCode,409);assert.equal(authorized,2);
   const current=await f.library.get(saved);assert.equal(current.revision,2);assert.equal(current.exactText,saved.exactText);assert.deepEqual(current.media,saved.media);
   await assert.rejects(f.library.categorize({...saved,categories:['player-rude'],expectedRevision:2,stillAuthorized:async()=>{throw Object.assign(Error('revoked'),{statusCode:401});}}),{statusCode:401});
   assert.equal((await f.library.get(saved)).revision,2);
 });
-test('only ten defined categories and valid scoped identities reach storage',async t=>{
-  const f=await fixture(t);
-  assert.throws(()=>createSpeechReplyLibrary({env}),{statusCode:400});
-  await assert.rejects(f.library.list({dealerId:'../astrid'}),{statusCode:400});
-  await assert.rejects(f.library.list({dealerId:'astrid',category:'speech'}),{statusCode:400});
-  await assert.rejects(f.library.categorize({dealerId:'astrid',id:randomUUID(),categories:['player-kind','player-kind'],expectedRevision:1}),{statusCode:400});
-  assert.equal(f.objects.size,0);
+test('missing Neon never falls back to Blob metadata; invalid categories and identities reach no storage',async t=>{
+  const f=await fixture(t);assert.throws(()=>createSpeechReplyLibrary({env}),{statusCode:400});
+  assert.throws(()=>createSpeechReplyLibrary({...f.options,repository:undefined}),{code:'reply_library_repository_required'});
+  await assert.rejects(f.library.list({dealerId:'../astrid'}),{statusCode:400});await assert.rejects(f.library.list({dealerId:'astrid',category:'speech'}),{statusCode:400});
+  await assert.rejects(f.library.categorize({dealerId:'astrid',id:randomUUID(),categories:['player-kind','player-kind'],expectedRevision:1}),{statusCode:400});assert.equal(f.objects.size,0);assert.equal(f.sql.calls.length,0);
 });
-test('media range and HEAD use the same private validated bytes; untrusted cross-origin fails',async t=>{
-  const f=await fixture(t), saved=await f.library.save(input('dragge'));
-  const response=await f.library.media({...saved,kind:'video',request:new Request('https://studio.test/api/replies/video',{headers:{range:'bytes=0-2'}})});
-  assert.equal(response.status,206);assert.equal(await response.text(),'MP4');assert.equal(response.headers.get('cache-control'),'private, no-store');
+test('media Range and HEAD retain exact private bytes and cross-origin denial',async t=>{
+  const f=await fixture(t),saved=await f.library.save(input('dragge'));
+  const response=await f.library.media({...saved,kind:'video',request:new Request('https://studio.test/api/replies/video',{headers:{range:'bytes=0-2'}})});assert.equal(response.status,206);assert.equal(await response.text(),'MP4');assert.equal(response.headers.get('cache-control'),'private, no-store');
   const head=await f.library.media({...saved,kind:'audio',request:new Request('https://studio.test/api/replies/audio',{method:'HEAD'})});assert.equal(head.body,null);
-  const denied=await f.library.media({...saved,kind:'audio',request:new Request('https://studio.test/api/replies/audio',{headers:{origin:'https://other.test'}})});assert.equal(denied.status,403);
+  assert.equal((await f.library.media({...saved,kind:'audio',request:new Request('https://studio.test/api/replies/audio',{headers:{origin:'https://other.test'}})})).status,403);
 });
-test('corrupt manifest cannot redirect the private media reader',async t=>{
-  const f=await fixture(t), saved=await f.library.save(input());
-  const [,r]=[...f.objects].find(([p])=>p.endsWith('.json'));const changed=JSON.parse(r.bytes);changed.media.audio.pathname=changed.media.audio.pathname.replace('/astrid/','/paow/');r.bytes=Buffer.from(JSON.stringify(changed));
+test('corrupt Neon pointer cannot redirect the private media reader',async t=>{
+  const f=await fixture(t),saved=await f.library.save(input()),row=[...f.sql.data.values()][0];row.value.media.audio.pathname=row.value.media.audio.pathname.replace('/astrid/','/paow/');
   await assert.rejects(f.library.media({...saved,kind:'audio',request:new Request('https://studio.test/api/replies/audio')}),{statusCode:409});
 });
-
-test('weak transport ETag uses only the matching authoritative strong version',async t=>{
-  const f=await fixture(t), request=input(), saved=await f.library.save(request);
-  const get=f.blobClient.get;
-  f.blobClient.get=async (...args)=>{const r=await get(...args);if(r)r.blob.etag='W/'+r.blob.etag;return r;};
-  let heads=0;f.blobClient.head=async pathname=>{heads++;const r=f.objects.get(pathname);return {pathname,url:'https://fixture.private.blob.vercel-storage.com/'+pathname,etag:r.etag};};
-  await f.library.get({dealerId:request.dealerId,id:saved.id});await f.library.list({dealerId:request.dealerId});assert.equal(heads,0);
-  const updated=await f.library.categorize({dealerId:request.dealerId,id:saved.id,categories:['player-kind'],expectedRevision:1});
-  assert.equal(updated.revision,2);
-  f.blobClient.head=async pathname=>{const r=f.objects.get(pathname),latest=JSON.parse(r.bytes);latest.revision=3;latest.categories=['player-help'];r.bytes=Buffer.from(JSON.stringify(latest));r.etag='"changed-after-get"';return {pathname,url:'https://fixture.private.blob.vercel-storage.com/'+pathname,etag:r.etag};};
-  await assert.rejects(f.library.categorize({dealerId:request.dealerId,id:saved.id,categories:['player-rude'],expectedRevision:2}),{statusCode:409});
-  const latest=JSON.parse([...f.objects].find(([p])=>p.endsWith('.json'))[1].bytes);assert.equal(latest.revision,3);assert.deepEqual(latest.categories,['player-help']);
-});
-
-test('actual SDK conflict classes map to revision conflicts even with name Error',async t=>{
-  const {speechReplyBlobClient}=await import('../lab/lib/speech-reply-blob-client.mjs');
-  const sdk=await speechReplyBlobClient();
-  for(const name of ['BlobPreconditionFailedError']){
-    const f=await fixture(t), request=input(),saved=await f.library.save(request);
-    f.blobClient[name]=sdk[name];
-    const error=new sdk[name]();assert.equal(error.name,'Error');
-    f.blobClient.put=async()=>{throw error;};
-    await assert.rejects(f.library.categorize({dealerId:request.dealerId,id:saved.id,categories:['player-kind'],expectedRevision:1}),{statusCode:409});
-  }
+test('uncertain metadata commit preserves uploaded bytes and redacts SQL diagnostics',async t=>{
+  const f=await fixture(t);f.options.repository={...f.repository,create:async()=>{throw Error('postgres://private');}};
+  await assert.rejects(createSpeechReplyLibrary(f.options).save(input()),error=>error.code==='reply_library_unavailable'&&!error.message.includes('postgres'));assert.equal(f.objects.size,2);
 });

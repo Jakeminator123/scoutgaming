@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve, basename } from 'node:path';
-import { prepareProject, localDataDir, main, publishedProductUrl, requireLocalBuild, localBuildFiles } from '../start.mjs';
+import { prepareProject, main, publishedProductUrl, requireLocalBuild, localBuildFiles } from '../start.mjs';
 import { childSpecifications, loadPrivateConnection } from '../../open-claw/lab/deploy/local-connection.mjs';
 import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
@@ -13,18 +13,23 @@ import {createRegisteredIdlePolicy} from '../../packages/presentation/runtime/re
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { once } from 'node:events';
 
-test('a guard-only legacy directory does not redirect Lab data after restart', async t => {
+test('default product start never reads or changes saved local projects, including invalid legacy data', async t => {
   const repo = await mkdtemp(join(tmpdir(), 'croupier-data-location-'));
   t.after(() => rm(repo, { recursive: true, force: true }));
-  assert.equal(localDataDir(repo), join(repo, 'lab/data'));
   await mkdir(join(repo, 'lissabon/data'), { recursive: true });
-  await writeFile(join(repo, 'lissabon/data/.local-session.sqlite'), 'fixture');
-  assert.equal(localDataDir(repo), join(repo, 'lab/data'));
-  await writeFile(join(repo, 'lissabon/data/project.json'), '{}');
-  assert.throws(() => localDataDir(repo), /migrate-lab-state/);
+  await mkdir(join(repo, 'lab/data'), { recursive: true });
+  await writeFile(join(repo, 'lissabon/data/project.json'), 'invalid legacy project');
+  await writeFile(join(repo, 'lab/data/project.json'), 'saved local project bytes');
+  const {events,options}=fakeRuntime();
+  assert.deepEqual(await main(['--no-open'],{...options,repoRoot:repo}),{mode:'product',url:publishedProductUrl});
+  assert.deepEqual(events,[]);
+  assert.equal(await readFile(join(repo,'lissabon/data/project.json'),'utf8'),'invalid legacy project');
+  assert.equal(await readFile(join(repo,'lab/data/project.json'),'utf8'),'saved local project bytes');
+  await assert.rejects(prepareProject(),/uttrycklig absolut katalog/);
+  await assert.rejects(prepareProject('lab/data'),/uttrycklig absolut katalog/);
 });
 
-test('lane shares durable project, preserves saved edits and refuses a corrupt project', async t => {
+test('explicit fixture project preserves saved edits and refuses a corrupt project', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'lissabon-test-'));
   t.after(async () => {
     assert.equal(dirname(resolve(dir)), resolve(tmpdir()));
@@ -94,13 +99,13 @@ test('public product entry returns before any local connection or provider work'
   globalThis.fetch = () => assert.fail('Product entry must not contact local servers or providers');
   t.after(() => { globalThis.fetch = previousFetch; });
   const messages = [], opened = [];
-  assert.deepEqual(await main(['--product','--no-open'], { log: text => messages.push(text), open: url => opened.push(url) }), { mode: 'product', url: publishedProductUrl });
+  for(const args of [['--no-open'],['--product','--no-open']])assert.deepEqual(await main(args, { log: text => messages.push(text), open: url => opened.push(url) }), { mode: 'product', url: publishedProductUrl });
   assert.deepEqual(opened, []);
   assert.match(messages[0], /Publicerad produkt: https:\/\/www\.scoutgaming\.tech\/lobby/);
   assert.match(messages[0], /Inga lokala servrar/);
-  await main(['--product'], { log: () => {}, open: url => opened.push(url) });
-  assert.deepEqual(opened, [publishedProductUrl]);
-  for (const option of ['--offline','--check','--skip-build','--astrid-camera','--cloud-storage']) {
+  for(const args of [[],['--product']])await main(args, { log: () => {}, open: url => opened.push(url) });
+  assert.deepEqual(opened, [publishedProductUrl,publishedProductUrl]);
+  for (const option of ['--offline','--skip-build']) {
     await assert.rejects(main(['--product',option], { log: () => {}, open: () => assert.fail('Invalid combination must not open') }), /kan endast kombineras/);
   }
 });
@@ -159,69 +164,61 @@ test('skip-build checks all three existing build groups without changing files',
   await requireLocalBuild(repo);
 });
 
-test('missing skip-build output stops offline and connected starts before profile or project work', async t => {
+test('missing skip-build output stops explicit offline start before project work', async t => {
   const repo = await mkdtemp(join(tmpdir(), 'croupier-start-missing-'));
   t.after(() => rm(repo, { recursive: true, force: true }));
-  for (const flags of [[], ['--offline']]) {
-    const { events, options } = fakeRuntime();
-    await assert.rejects(main([...flags, '--skip-build', '--no-open'], { ...options, repoRoot: repo }), /Lokalt bygge saknas/);
-    assert.deepEqual(events, ['source']);
-    await assert.rejects(readFile(join(repo, 'lab/data/project.json')), { code: 'ENOENT' });
-  }
+  const { events, options } = fakeRuntime();
+  await assert.rejects(main(['--offline', '--skip-build', '--no-open'], { ...options, repoRoot: repo }), /Lokalt bygge saknas/);
+  assert.deepEqual(events, ['source']);
+  await assert.rejects(readFile(join(repo, 'lab/data/project.json')), { code: 'ENOENT' });
 });
 
-test('offline and connected skip-build preserve built output and never invoke build preparation', async t => {
+test('explicit offline skip-build preserves built output and never invokes build preparation', async t => {
   const repo = await buildFixture(t);
-  for (const offline of [true, false]) {
     const { events, logs, fixture, dependencies, start, options } = fakeRuntime();
-    dependencies[offline ? 'startLocalComparison' : 'startIsolatedConnection'] = async spec => {
+    dependencies.startLocalComparison = async spec => {
       assert.equal(spec.repoRoot, repo);
       assert.equal(spec.streamLane, 'lissabon-stream-lane');
       return start(spec);
     };
-    const result = await main([...(offline ? ['--offline'] : []), '--skip-build', '--no-open'], { ...options, repoRoot: repo });
+    const result = await main(['--offline', '--skip-build', '--no-open'], { ...options, repoRoot: repo });
     assert.equal(result, fixture);
-    assert.deepEqual(events, ['source', ...(offline ? [] : ['health']), 'start', 'project', 'shutdown-handler']);
+    assert.deepEqual(events, ['source', 'start', 'project', 'shutdown-handler']);
     assert.match(logs[0], /Källversion \(Git HEAD\): a{40}/);
     assert.ok(logs[0].includes(repo));
     assert.match(logs[1], /källversion är inte verifierad/);
     assert.equal(await readFile(join(repo, 'lab/preview-build/preview.js'), 'utf8'), 'fixture build');
     assert.equal(await readFile(join(repo, 'lab/design-preview-build/admin/app.js'), 'utf8'), 'fixture build');
+});
+
+test('retired connected flags fail before probing profiles, running servers or touching local projects', async()=>{
+  for(const flag of ['--check','--astrid-camera','--cloud-storage'])for(const mode of [[],['--offline'],['--product']]){
+    const {events,options}=fakeRuntime();
+    await assert.rejects(main([...mode,flag,'--no-open'],options),/anslutna lokala produktstarten är avvecklad.*node lab\/start.mjs.*--offline.*Sparade lokala data bevaras/);
+    assert.deepEqual(events,[]);
+  }
+  const {events,options}=fakeRuntime();
+  await assert.rejects(main(['--skip-build','--no-open'],options),/--skip-build kräver --offline/);assert.deepEqual(events,[]);
+});
+
+test('default and product modes require no build and create no local data on a fresh checkout', async t => {
+  const repo=await mkdtemp(join(tmpdir(),'croupier-public-start-'));t.after(()=>rm(repo,{recursive:true,force:true}));
+  const { events, dependencies, options } = fakeRuntime();
+  dependencies.requireLocalBuild = () => assert.fail('Product must not inspect builds');
+  dependencies.sourceVersion = () => assert.fail('Product must not inspect local Git');
+  for(const args of [['--no-open'],['--product','--no-open']]){
+    await main(args,{...options,repoRoot:repo});assert.deepEqual(events,[]);
+    await assert.rejects(readFile(join(repo,'lab/data/project.json')),{code:'ENOENT'});
   }
 });
 
-test('a matching service and lane never silently reuse an unidentified running checkout', async t => {
+test('explicit offline start prepares both previews before the Next build', async t => {
   const repo = await buildFixture(t);
-  for (const response of [{ service: 'croupier-next-studio', streamLane: 'lissabon-stream-lane' }, { service: 'another-server' }]) {
-    const { events, dependencies, options } = fakeRuntime();
-    dependencies.fetch = async () => ({ json: async () => response });
-    await assert.rejects(main(['--skip-build', '--no-open'], { ...options, repoRoot: repo }), /checkout och byggversion kan inte verifieras.*Stoppa dess startprocess manuellt.*Ingen process stängs automatiskt/);
-    assert.deepEqual(events, ['source']);
-  }
-});
-
-test('check and product modes do not require or create builds or start servers', async () => {
-  const { events, logs, dependencies, options } = fakeRuntime();
-  dependencies.requireLocalBuild = () => assert.fail('Check/product must not inspect builds');
-  dependencies.loadPrivateConnection = () => { events.push('profile'); return { configuration: { fixture: true }, report: { safe: true } }; };
-  dependencies.probeConnections = async configuration => { assert.deepEqual(configuration, { fixture: true }); events.push('probe'); return { checked: true }; };
-  await main(['--check', '--skip-build', '--no-open'], options);
-  assert.deepEqual(events, ['source', 'profile', 'probe']);
-  assert.deepEqual(JSON.parse(logs.at(-1)), { lane: 'lissabon-stream-lane', report: { safe: true }, probe: { checked: true } });
-  events.length = 0;
-  await main(['--product', '--no-open'], options);
-  assert.deepEqual(events, []);
-});
-
-test('ordinary offline and connected starts still prepare both previews before the Next build', async t => {
-  const repo = await buildFixture(t);
-  for (const offline of [true, false]) {
     const { events, dependencies, start, options } = fakeRuntime();
     dependencies.preparePreview = async () => { events.push('preview'); };
     dependencies.prepareDesignPreview = async () => { events.push('design'); };
     dependencies.buildLab = async () => { events.push('build'); };
-    dependencies[offline ? 'startLocalComparison' : 'startIsolatedConnection'] = start;
-    await main([...(offline ? ['--offline'] : []), '--no-open'], { ...options, repoRoot: repo });
-    assert.deepEqual(events, ['source', ...(offline ? [] : ['health']), 'start', ...(!offline ? ['project'] : []), 'preview', 'design', 'build', ...(offline ? ['project'] : []), 'shutdown-handler']);
-  }
+    dependencies.startLocalComparison = start;
+    await main(['--offline', '--no-open'], { ...options, repoRoot: repo });
+    assert.deepEqual(events, ['source', 'start', 'preview', 'design', 'build', 'project', 'shutdown-handler']);
 });

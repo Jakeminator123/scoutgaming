@@ -5,8 +5,9 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
-import { planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
+import { loadStudioMigrations, planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../web/storage/studio-contract.mjs';
+import {runRuntimeRegistrySqlChecks} from './fixtures/studio-runtime-sql-checks.mjs';
 
 const suffix = () => randomBytes(8).toString('hex');
 const hasCode = code => error => error?.code === code;
@@ -21,16 +22,18 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
   async function check(name, run) { await run(); checks.push(name); }
 
   await check('atomic versioned migration and repeat plan', async () => {
+    const migrations=await loadStudioMigrations();assert.ok(migrations.some(row=>row.version==='012'));
     const initial = await planStudioMigrations({ pool });
-    assert.equal(initial.toApply.length, 9, 'fixture must start without an existing Studio schema');
-    assert.deepEqual(initial.optionalPending.map(row=>row.version), ['012']);
+    assert.equal(initial.toApply.length, migrations.filter(row=>!row.deploymentOptional).length, 'fixture must start without an existing Studio schema');
+    assert.deepEqual(initial.optionalPending.map(row=>row.version), migrations.filter(row=>row.deploymentOptional).map(row=>row.version));
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
     await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
     const applied = await planStudioMigrations({ pool });
     assert.equal(applied.toApply.length, 0); assert.equal(applied.optionalPending.length, 0);
     await applyStudioMigrations({ pool, expectedTarget: applied.target, confirm: true });
-    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 10);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, migrations.length);
   });
+  const runtimeRegistry=await runRuntimeRegistrySqlChecks({pool});checks.push(...runtimeRegistry.checks);
 
   await check('actual 001-008 media constraint and repository reject PNG and audio without records or audit',async()=>{
     const mimeScope={environment:`qa_mime_${suffix()}`,workspaceId:'integration'},repo=createStudioRepository({pool,scope:mimeScope});
@@ -149,6 +152,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     request = await journal.claimRequest({ ownerHash, requestId, fingerprint, capability: 'stream', lease });
     assert.equal(request.status, 'new');
     assert.equal((await journal.claimRequest({ ownerHash, requestId, fingerprint, capability: 'stream', lease })).status, 'inFlight');
+    await runtimeRegistry.assertPersisted(pool);
     await assert.rejects(journal.claimRequest({ ownerHash, requestId, fingerprint, capability: 'fullfile', lease }), hasCode('generated_speech_request_conflict'));
     await assert.rejects(journal.claimRequest({ ownerHash, requestId, fingerprint: 'c'.repeat(64), capability: 'stream', lease }), hasCode('generated_speech_request_conflict'));
   });

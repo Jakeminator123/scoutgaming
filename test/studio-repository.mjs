@@ -7,6 +7,7 @@ import { createOperatorStore } from '../web/storage/operator-store.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { StudioStorageError, cloneStudioJson, studioStorageFailure, validateStudioScope, STUDIO_JSON_LIMIT } from '../web/storage/studio-contract.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
+import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../web/storage/studio-contract.mjs';
 
 test('unsupported media MIME rejects before opening SQL and cannot be accepted by the memory pool',async()=>{
@@ -342,6 +343,7 @@ test('caught publisher input validation on a shared client rolls back earlier do
 
 test('presentation snapshot reads project, administration and full media on one read-only MVCC client', async()=>{
   const pool=createStudioMemoryPool(),repo=repository(pool);
+  pool.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
   const project=createSeedProject();
   await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});
   await initialize(repo);
@@ -353,6 +355,7 @@ test('presentation snapshot reads project, administration and full media on one 
   assert.deepEqual(captured.scope,scope);assert.equal(captured.projectDocument.revision,project.revision);
   assert.equal(captured.administrationDocument.revision,'initial');assert.equal(captured.mediaRows[0].id,media.id);
   assert.equal(Object.isFrozen(captured.mediaRows[0].classification),true);
+  assert.equal(Object.isFrozen(captured.runtimeCatalog.value.layout.files),true);
   assert.deepEqual(pool.snapshot(),before,'snapshot does not write or audit');
   const reads=pool.calls.slice(offset);
   assert.equal(new Set(reads.map(row=>row.client)).size,1);
@@ -362,6 +365,7 @@ test('presentation snapshot reads project, administration and full media on one 
 });
 test('presentation snapshot reuses an active write client and rejects cross-scope nesting',async()=>{
   const pool=createStudioMemoryPool(),repo=repository(pool),project=createSeedProject();
+  pool.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
   await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});await initialize(repo);
   const count=pool.connects;
   await repo.transaction(async bound=>{
@@ -374,6 +378,7 @@ test('presentation snapshot reuses an active write client and rejects cross-scop
 });
 test('presentation snapshot does not mix a later document version into an earlier read-only snapshot',async()=>{
   const original=createStudioMemoryPool(),project=createSeedProject();let changed=false;
+  original.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
   const pool={connect:async()=>{
     const client=await original.connect();return {release:()=>client.release(),query:async(sql,values)=>{
       const result=await client.query(sql,values);
@@ -394,6 +399,7 @@ test('missing or unreadable capture documents/media fail closed without partial 
   await assert.rejects(repo.readPresentationSnapshot(),rejection('studio_document_missing',503));
   const project=createSeedProject();await repo.initializeDocument('project',{value:project,revision:project.revision,actor:'tester'});await initialize(repo);
   pool.failNext('list-media');await assert.rejects(repo.readPresentationSnapshot(),rejection('studio_storage_unavailable',503));
+  await assert.rejects(repo.readPresentationSnapshot(),rejection('studio_runtime_catalog_missing',503));
   assert.equal(pool.connects,pool.releases);
 });
 

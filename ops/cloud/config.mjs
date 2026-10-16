@@ -9,6 +9,7 @@ import { readStorageExportConfig } from './storage-export.mjs';
 import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
 import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 import { gameEntryEnabled } from '../../web/public/game-entry-contract.mjs';
+import { studioGamePolicyConfiguration } from '../../web/storage/studio-game-policy.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;
@@ -182,6 +183,14 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (!['/', '/game', ...(gameEntryEnabled(env) ? ['/blackjack'] : [])].includes(publicGamePath)
     || vercelIngress && publicGamePath !== (gameEntryEnabled(env) ? '/blackjack' : '/game')) fail('CROUPIER_PUBLIC_GAME_PATH');
   const storageExport = readStorageExportConfig(env);
+  // Maintenance exports never start product children. Every ordinary cloud
+  // process uses the one scoped Neon catalog and private Blob, even with a mount.
+  let studioPolicy = null;
+  if (!storageExport) {
+    if (database !== 'postgres' || env.CROUPIER_STUDIO_NEON_POLICY !== '1') fail('CROUPIER_DATABASE/CROUPIER_STUDIO_NEON_POLICY');
+    try { studioPolicy = studioGamePolicyConfiguration(env); } catch { fail('CROUPIER_STUDIO_NEON_POLICY/scope'); }
+    if (!studioPolicy || mediaStorage !== 'blob' || !blobToken) fail('CROUPIER_MEDIA_STORAGE/BLOB_READ_WRITE_TOKEN');
+  }
   const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN
     ? httpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN, 'CROUPIER_VERCEL_FRONTEND_ORIGIN') : '';
   if (frontendOrigin && [gameOrigin, boOrigin, labOrigin].includes(frontendOrigin)) fail('CROUPIER_VERCEL_FRONTEND_ORIGIN');
@@ -201,10 +210,6 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   if (dataRoot && (dataRoot === parse(dataRoot).root || !outside(resolve(repository), dataRoot))) fail('CROUPIER_CLOUD_DATA_ROOT');
   if (!dataRoot && (mediaStorage !== 'blob' || env.CROUPIER_STUDIO_NEON_POLICY !== '1')) fail('CROUPIER_CLOUD_DATA_ROOT');
   const paths = dataRoot && (database === 'sqlite' || storageExport) ? { players: join(dataRoot, 'players') } : {};
-  const mediaBlobIndex = env.CROUPIER_MEDIA_BLOB_INDEX || '';
-  if (mediaBlobIndex && (mediaStorage !== 'blob' || !isAbsolute(mediaBlobIndex)
-    || !samePath(join(repository,'media/blob-index.json'),mediaBlobIndex))) fail('CROUPIER_MEDIA_BLOB_INDEX');
-  if (!dataRoot && !mediaBlobIndex) fail('CROUPIER_MEDIA_BLOB_INDEX');
   if (env.CROUPIER_DATA_DIR !== undefined
     && (!paths.players || resolve(env.CROUPIER_DATA_DIR) !== paths.players)) fail('CROUPIER_DATA_DIR');
   for (const name of ['LAB_STUDIO_DATA_DIR','CROUPIER_PRESENTATION_STUDIO_DIR','CROUPIER_GENERATIONS_DIR','CROUPIER_GENERATED_SPEECH_DIR']) {
@@ -232,7 +237,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
     database, gameDatabaseUrl, vercelIngress, publicGamePath, storageExport, nativeP6QaRouter,
     director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey,
-    mediaStorage, mediaBlobIndex, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
+    mediaStorage, studioPolicy, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
     fullfileBudget: fullfileBudgetRequired ? { reserveUsd:fullfileReserveUsd, dailyBudgetUsd } : null,
@@ -294,16 +299,15 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
     'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'SSL_CERT_DIR'].filter(name => env[name] !== undefined)
     .map(name => [name, env[name]]));
   const shared = { ...base, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1',
-    ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? {
+    ...(config.studioPolicy ? {
       CROUPIER_STUDIO_NEON_POLICY: '1',
-      CROUPIER_STUDIO_ENVIRONMENT_ID: env.CROUPIER_STUDIO_ENVIRONMENT_ID,
-      CROUPIER_STUDIO_WORKSPACE_ID: env.CROUPIER_STUDIO_WORKSPACE_ID,
+      CROUPIER_STUDIO_ENVIRONMENT_ID: config.studioPolicy.scope.environment,
+      CROUPIER_STUDIO_WORKSPACE_ID: config.studioPolicy.scope.workspaceId,
       CROUPIER_PUBLIC_ORIGIN: env.CROUPIER_PUBLIC_ORIGIN,
       CROUPIER_VERCEL_INGRESS_SECRET: env.CROUPIER_VERCEL_INGRESS_SECRET,
     } : {}),
     CROUPIER_STREAM_LANE: 'lissabon-stream-lane',
     CROUPIER_MEDIA_STORAGE: config.mediaStorage,
-    ...(config.mediaBlobIndex ? { CROUPIER_MEDIA_BLOB_INDEX: config.mediaBlobIndex } : {}),
     ...(config.blobToken ? { BLOB_READ_WRITE_TOKEN: config.blobToken } : {}),
     ...(config.videoArchive ? { LAB_VIDEO_ARCHIVE: config.videoArchive } : {}) };
   const nativeP6=nativeP6QaRouterConfig(env);

@@ -39,7 +39,12 @@ async function fixture(t) {
   const index = { schemaVersion: 1, namespace: 'croupier/media', verification: 'readback-sha256', files: blobs };
   await writeFile(indexPath, JSON.stringify(index));
   const env = { CROUPIER_MEDIA_STORAGE: 'blob', BLOB_READ_WRITE_TOKEN: 'fixture-never-used', CROUPIER_MEDIA_BLOB_INDEX: indexPath };
-  return { root, env, catalogPath, entries, firstBank, firstBlob, indexPath, index, loader: createRegisteredVoiceLines({ env, repositoryRoot: root }) };
+  const runtimeCatalog={schemaVersion:1,layout:{schemaVersion:1,roots:{},files},blobIndex:index,presentation:{},legacy:{schemaVersion:2,entries}};
+  const repository={readRuntimeCatalog:async()=>({revision:'a'.repeat(64),value:runtimeCatalog})};
+  // None of these old on-disk registers is needed by the native reader.
+  await rm(join(root,'media'),{recursive:true});await rm(indexPath);
+  return { root, env, catalogPath, entries, firstBank, firstBlob, indexPath, index, runtimeCatalog, repository,
+    loader: createRegisteredVoiceLines({ env, repositoryRoot: root, repository }) };
 }
 
 test('Astrid indexed bank exposes only complete paired speech; retired metadata is ignored and none is automatically approved', async t => {
@@ -56,15 +61,14 @@ test('Astrid indexed bank exposes only complete paired speech; retired metadata 
   assert.equal(voiceReviewMatches('approved', result.dealers[0].lines[0].identity), false);
 });
 
-test('changed bundled metadata, mismatched Blob metadata and absent native media configuration fail closed', async t => {
+test('changed Neon metadata, mismatched Blob metadata and absent native catalog/configuration fail closed', async t => {
   const f = await fixture(t);
   for (const env of [{}, { ...f.env, CROUPIER_MEDIA_STORAGE: 'disk' }])
     await assert.rejects(createRegisteredVoiceLines({ env, repositoryRoot: f.root })(), error => error.code === 'studio_voice_registry_unavailable');
+  await assert.rejects(createRegisteredVoiceLines({env:f.env,repositoryRoot:f.root})(),error=>error.code==='studio_voice_registry_unavailable');
   f.entries[f.firstBank] = JSON.stringify({ goodluck: { text: 'Changed words' } });
-  await writeFile(f.catalogPath, JSON.stringify({ schemaVersion: 2, entries: f.entries }));
   await assert.rejects(f.loader(), error => error.code === 'studio_voice_registry_unavailable');
   const g = await fixture(t); g.firstBlob.sha256 = 'f'.repeat(64); g.firstBlob.storage.sha256 = 'f'.repeat(64);
   g.firstBlob.storage.pathname = g.firstBlob.storage.pathname.replace(/[a-f0-9]{64}\.mp3$/, 'f'.repeat(64) + '.mp3');
-  await writeFile(g.indexPath, JSON.stringify(g.index));
   await assert.rejects(g.loader(), error => error.code === 'studio_voice_registry_unavailable');
 });

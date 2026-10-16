@@ -1,5 +1,6 @@
 import {createHash, createHmac} from 'node:crypto';
 import {createStudioMemoryPool} from './studio-memory-pool.mjs';
+import {readRuntimeCatalogFixture} from './runtime-media-catalog.mjs';
 import {operatorMemoryPool, usersDb} from '../../lab/test/fixtures/operator-memory-pool.mjs';
 import {cloudPresentationFixture} from '../../lab/test/fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../lab/lib/studio-model.mjs';
@@ -96,6 +97,7 @@ async function publicResponse(handler, request) {
 
 export async function createPublicationChain(origin = fixtureOrigin, {roomAppearance = false} = {}) {
   const studio = createStudioMemoryPool(), operators = operatorMemoryPool();
+  studio.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
   const repository = createStudioRepository({pool: publicationPool(studio, operators), scope});
   const store = await createOperatorStore({sql: operators, scope, now});
   for (const item of [company, otherCompany]) {

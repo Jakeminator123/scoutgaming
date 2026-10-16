@@ -1,6 +1,30 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
-## Förtydligad målbild 16 oktober kväll — samma molnkälla
+## Aktuell registermigrering — 16 oktober 2026, 18:38 UTC
+
+PR185 är mergad till `3165ab6df94c965aa3db1f986b8532a0f9260073` och
+driftsatt på Vercel och Render efter gröna PR-/main-kontroller. Det omfattar
+Admin-konsolidering, zoom, filmvisare, workflowförenkling och Astrids märkning.
+Kompatibilitetssteget accepterar migration 012 före bytet av runtime-läsare.
+
+012 och katalogimport är nu genomförda i produktions-Neon. Oberoende
+återläsning verifierar 760 layoutposter, 542 Blob-referenser, 51 bankklipp,
+18 exakta JSON-manifest och 12 historiska replikposter. Samtliga 514 unika
+Blob-objekt i katalogen har verifierats mot full SHA-256/storlek/medietyp.
+Projekt, administration, social-policy och alla 79 befintliga medieposter
+är oförändrade. Astrid och Dragan är enda aktiva dealers. PAOW-historikens
+24 saknade Blob-filer dokumenteras som redan saknade, utan återaktivering.
+
+Slutkoden kräver 012, tar bort produktens lokala katalog-/replikfallback och
+använder Neon för metadata samt Blob för mediebyte. Den ligger ännu på
+`codex/neon-authoritative-runtime`; slutlig merge/driftsättning återstår.
+Den ordinarie startvägen går till den publicerade produkten. Endast explicit
+`--offline` skapar tillfälliga, isolerade testdata. Lokala authoring- och
+importunderlag är inte längre deployade register. Fullt import-/testkvitto,
+resursidentiteter och begränsningar finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
+Äldre avsnitt nedan beskriver respektive dåvarande läge, inte aktuella hinder.
+
+## Historik: förtydligad målbild 16 oktober kväll — samma molnkälla
 
 Jakobs huvudmål är en gemensam molnstruktur utan parallella lokala register.
 Verifierad produktionskonfiguration använder Neon och privat Blob; den kräver

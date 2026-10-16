@@ -13,6 +13,8 @@ import {checkPermanentMediaDeletion,createStudioMediaDeletion} from '../lib/stud
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
 import {validateStudioMedia} from '../../web/storage/studio-contract.mjs';
 import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs';
+import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
+import {fileURLToPath} from 'node:url';
 import {seedSavedVideoProject} from './fixtures/video-dealer-project.mjs';
 import {savedVideoDealerOwnership} from '../lib/video-dealer-registration.mjs';
 import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
@@ -228,6 +230,20 @@ test('unknown bank index or an upload pointer inside it cannot authorize deletio
  for(const readIndex of [()=>null,()=>{throw Error('missing index');},()=>new Map([['copy',{storage:{pathname:row.pathname}}]])]){
   const service=deletionFixture(f,{readIndex,del:async()=>calls++}),before=f.pool.snapshot();await assert.rejects(service.remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'}),{code:'studio_media_delete_coverage_incomplete'});assert.deepEqual(f.pool.snapshot(),before);
  }assert.equal(calls,0);
+});
+
+test('default deletion coverage reads Neon every time and never falls back to a configured disk index',async()=>{
+ const f=await fixture(),row=await f.repository.getMedia(oldId);
+ const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fake-fixture-token',CROUPIER_MEDIA_BLOB_INDEX:fileURLToPath(new URL('../../media/blob-index.json',import.meta.url))};
+ const service=createStudioMediaDeletion({repository:f.repository,mutationTransaction:f.context.mutationTransaction,env,purge:async()=>assert.fail('check must never delete')});
+ const before=f.pool.snapshot();
+ await assert.rejects(service.check(deletionInput(row)),{code:'studio_media_delete_coverage_incomplete'});
+ assert.deepEqual(f.pool.snapshot(),before);
+ f.pool.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
+ assert.deepEqual(await service.check(deletionInput(row)),{allowed:true});
+ f.pool.failNext('read-runtime-catalog');
+ await assert.rejects(service.check(deletionInput(row)),{code:'studio_media_delete_coverage_incomplete'});
+ assert.equal((await f.repository.getMedia(oldId)).deletion,undefined);
 });
 test('a failed v5 readiness gate or revoked authorization prevents provider calls',async()=>{
  const f=await fixture(),row=await f.repository.getMedia(oldId);let calls=0;

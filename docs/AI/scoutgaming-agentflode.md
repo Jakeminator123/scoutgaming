@@ -41,6 +41,19 @@ Inga nya testidentiteter eller produktionsdata behövdes.
 
 ## Arbetssätt och verifiering
 
+Dokumentationsändring 16 oktober 2026: det nya runtimekontraktet samlar
+katalog och svarsbibliotekets metadata i scoped Neon, med mediebytes i Blob.
+Lokala katalogfiler används endast som uttryckliga authoring-/importkällor.
+Vanlig `lab/start.mjs` öppnar publicerad produkt (`--no-open` skriver URL);
+bara `--offline` startar isolerade temporära testdata. Äldre anslutna lokallägen
+avvisas. Guiderna för [runtime](../LOCAL-PRESENTATION-RUNTIME.md),
+[miljövariabler](../ENVIRONMENT-VARIABLES.md) och
+[användarsteg](../../lab/docs/README.md) är uppdaterade i sina befintliga filer.
+Huvudagentens kvitto 16 oktober 18:38 UTC bekräftar migration 012 och återläst
+katalog-/svarsimport. Produktens runtimebyte från bridgeversion `3165ab6`
+och driftacceptans återstår och följs enbart i befintlig tracker och handoff.
+Detta dokumentationskvitto räknas inte som en ny molnverifiering.
+
 Från 16 oktober 2026 kör lokal commit kontroller av ändrade filer och
 tillgängliga närliggande tester, med högst fyra testprocesser. `node
 tools/precommit-checks.mjs --plan` visar urvalet. Hela regressionen körs i CI

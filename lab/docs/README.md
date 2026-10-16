@@ -2,6 +2,20 @@
 
 Produktmodell och ord har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
+**Öppna produkten:** `node lab/start.mjs` öppnar den publicerade lobbyn.
+Från Codex används `node lab/start.mjs --no-open`, som bara skriver adressen.
+Kommandot skapar inga lokala register eller servrar. Endast uttryckligt
+`--offline` startar en tillfällig, isolerad testmiljö utan externa tjänster.
+
+Det nya runtimekontraktet samlar katalog och svarsbibliotekets metadata i
+Neon; filmer och ljud ligger i privat Blob. Lokala katalogfiler är underlag
+för uttryckligt import-/authoringarbete. Sparade arbetsfiler bevaras men
+används inte som produktens reservregister. Migration och dataimport är klara
+enligt huvudagentens kvitto 16 oktober 18:38 UTC; produktens runtimebyte och
+driftacceptans återstår. Aktuell leveransstatus finns i
+[CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md), tekniken i
+[presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+
 **Roulettescenens storlek:** öppna Spelbolag & rum, välj rummet och
 **Gemensam mall och tillåtna alternativ** → **Öppna gemensam mall** →
 **Redigera gemensam mall**. **Zooma in scenen** och
@@ -310,7 +324,8 @@ API och tillgångar under basePath behålls. I molnet öppnar du
 [`/admin`](https://www.scoutgaming.tech/admin). Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
-Lokalt finns samma arbetsyta på Lab-paret som `node lab/start.mjs` startar, på `/`.
+För isolerade tester finns arbetsytan på det temporära par som endast
+`node lab/start.mjs --offline` startar, på den adress kommandot skriver ut.
 **Öppna spelet** fungerar med vanlig spelarinloggning även om
 Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
 presentationsväg och kopplar dessutom spelflikens händelser till personalytan.
@@ -453,21 +468,25 @@ för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 Greenscreen-dealern, bordet och bakgrunden kan spelas som separata lager.
 Bakgrundszoner har tagits bort ur arbetsflödet; tidigare sparade zondata bevaras.
 
-Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
-tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslutna profilen.
-Startaren visar avsedd checkout och dess Git-HEAD som källversion. Egna
+Start: `node lab/start.mjs --no-open` skriver den publicerade produktens adress.
+`--product` är ett alias för samma läge. Använd
+`node lab/start.mjs --offline --no-open` för ett isolerat prov utan externa
+tjänster. Testdata ligger temporärt och rensas när paret avslutas; äldre
+privata profiler och sparade lokala arbetsdata lämnas kvar.
+Fixturstartaren visar avsedd checkout och dess Git-HEAD som källversion. Egna
 arbetsfiler kan avvika; uppgiften intygar inte vilken källversion ett äldre bygge har.
 En redan svarande server återanvänds inte automatiskt: stoppa dess startprocess
 manuellt före en ny start från rätt checkout. Inga processer stängs av startaren.
 
-Lägg till `--skip-build` för att använda befintliga byggfiler utan att förbereda
+Lägg endast till `--skip-build` tillsammans med `--offline` för att använda befintliga byggfiler utan att förbereda
 förhandsvisningar, bygga eller installera beroenden. Nödvändiga filer för Lab,
 förhandsvisning och Admin/Lobby kontrolleras innan profiler läses eller projekt
 och servrar startas. Saknas någon fil stannar kommandot; bygg först rätt checkout
 med `npm --prefix lab run build` när ett bygge är avsett. Bortstädade byggfiler
 är inte i sig ett källkodsfel. Kontrollen intygar filernas närvaro, inte att bygget
-motsvarar aktuell Git-HEAD. `--check` behåller sitt läsande anslutningsprov och
-startar inga servrar; `--product` öppnar den publicerade produkten utan lokal start.
+motsvarar aktuell Git-HEAD. De tidigare anslutna lokallägena `--check`,
+`--cloud-storage` och `--astrid-camera` avvisas med hänvisning till den
+publicerade produkten eller explicit offline-fixtur.
 
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
@@ -475,7 +494,7 @@ dit. `/lissabon`, `/lab`, `/labb` och `/bo` är äldre kompatibilitetsadresser.
 Personalens nya ingång är `/admin`; följande querykontrakt gäller de befintliga Studio-verktygen. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Spelhändelser & villkor (`/control/events`), `chat` på OpenClaw och `operations`, `finance`, `accounts`, `partners` eller `media-review` på Administration. `tab=tables` leder till `/control/rooms`. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till `/control/probe`, `/control/compositions` och `/control/rehearsal` (Provspelning & logg). Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
-(lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).
+(i en offline-fixtur på `/guide` under den Studio-adress startaren skriver ut).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
 [studio-contract.json](../policies/studio-contract.json). Uppdatera dessa,
 inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
@@ -514,8 +533,9 @@ Aktuella kontroller och provgränser beskrivs i
 [kamera- och talguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Driftens aktiverade funktioner och återstående liveprov följs i
 [molnstatusen](../../docs/CLOUD-MIGRATION.md).
-För lokalt kameratest används `node lab/start.mjs --astrid-camera`;
-stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
+Det tidigare lokala kamerastartläget `--astrid-camera` är avvecklat.
+Offline-fixturen aktiverar inga externa kamera-/taltjänster. Följ driftens
+befintliga kontroller och provgränser för sådana produktprov.
 
 ## Arkivera, återställa och provspela
 

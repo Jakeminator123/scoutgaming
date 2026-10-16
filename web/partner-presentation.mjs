@@ -11,19 +11,17 @@ const DEAL_ACTION = box => box == null ? 'deal-dealer' : box <= 1 ? 'deal-left' 
 
 const j = (root, p) => { try { return JSON.parse(readFileSync(join(root, p), 'utf8')); } catch { return null; } };
 
-export function buildAssetsManifest(root, dealerKey = 'astrid', publicUrl = '') {
-  const d = DEALERS[dealerKey]; if (!d) throw new Error('unknown dealer');
-  const idx = j(root, `${d.base}/streams/index.json`) ?? { clips: {} };
-  const hands = d.hands ? j(root, `${d.hands}/streams/index.json`) : null;
-  const bank = j(root, `${d.base}/audio/en/bank.json`) ?? {};
-  const lipsync = j(root, `${d.base}/lipsync-overrides.json`) ?? {};
-  const perf = j(root, `${d.base}/performance/manifest.json`);
+export function buildAssetsManifest(root, dealerKey = 'astrid', publicUrl = '', {readMetadata,hasPublicMedia} = {}) {
+  const d = DEALERS[dealerKey]; if (!d) throw Object.assign(new Error('unknown dealer'),{statusCode:400});
+  const paths=[`${d.base}/streams/index.json`,`${d.hands}/streams/index.json`,`${d.base}/audio/en/bank.json`,`${d.base}/lipsync-overrides.json`,`${d.base}/performance/manifest.json`];
+  const render=([index,hands,audio,delays,perf],previews)=>{
+  const idx=index??{clips:{}},bank=audio??{},lipsync=delays??{};
   const url = p => `${publicUrl}/${p}`;
   const streams = Object.entries(idx.clips).map(([key, c]) => ({ key, kind: key.includes('/speak/') ? 'speech' : key.includes('/idle/') ? 'idle' : 'action',
     url: url(`${d.base}/streams/${c.file}`), codec: idx.codec, width: idx.width, height: idx.height, fps: c.fps, frames: c.frameCount, frameOffsets: url(`${d.base}/streams/index.json`) + '#' + key,
     handsMatte: hands?.clips?.[key] ? { url: url(`${d.hands}/streams/${hands.clips[key].file}`), width: hands.width, height: hands.height, note: 'grayscale h264; alpha for the bottom band so forearms render above the table art' } : null,
     audio: key.includes('/speak/') ? { url: url(`${d.base}/audio/en/${key.split('/').pop()}.mp3`), delayMs: lipsync[key.split('/').pop()] ?? 0, text: bank[key.split('/').pop()]?.text ?? null } : null,
-    preview: existsSync(join(root, `${d.base}/preview/${key.split('/').pop()}.mp4`)) ? url(`${d.base}/preview/${key.split('/').pop()}.mp4`) : null }));
+    preview: previews.has(key) ? url(`${d.base}/preview/${key.split('/').pop()}.mp4`) : null }));
   const deals = (perf?.takes ?? []).filter(t => t.status !== 'rejected').map(t => ({ id: t.id, action: t.action, url: url(t.media.src), layout: t.media.layout, width: t.media.width, height: t.media.height, fps: t.media.fps, frames: t.media.frames,
     events: t.events, landAtMs: t.events?.land != null ? Math.round(t.events.land / t.media.fps * 1000) : null, camera: t.camera ? { shoeOutlet: t.camera.shoeOutlet, dealerRect: t.camera.registration?.dealerRect } : null }));
   return { version: 1, dealer: { key: dealerKey, name: d.name, room: d.room },
@@ -32,6 +30,16 @@ export function buildAssetsManifest(root, dealerKey = 'astrid', publicUrl = '') 
     cardArt: { note: 'Faces are drawn client-side: 184x264, radius 24, paper #f7f5ee, red suits #c22b2b, black #222, corner rank+suit at 48px, centre suit 80px. Or use your own art; only rank/suit are authoritative.' },
     streams, deals, speech: Object.keys(bank).map(k => ({ line: k, text: bank[k].text, audio: url(`${d.base}/audio/en/${k}.mp3`), lipsyncDelayMs: lipsync[k] ?? 0, clip: idx.clips[`idle-1/speak/${k}`] ? `idle-1/speak/${k}` : null })),
     formats: { h264: 'Raw Annex-B H.264 elementary stream (no container). Decode with WebCodecs VideoDecoder (codec in `codec`) or ffmpeg. `frameOffsets` in index.json gives [byteOffset,length] per frame for random access.', packedAtlas: 'rgb-over-masks: video frame stacked vertically as RGB tile, then mask tiles (R=actor alpha, G=fingers). Composite RGB over your table using the mask tile as alpha.' } };
+  };
+  if(readMetadata){
+    return Promise.all(paths.map(path=>readMetadata(path))).then(async values=>{
+      const previews=new Set();
+      if(hasPublicMedia)await Promise.all(Object.keys(values[0]?.clips??{}).map(async key=>{if(await hasPublicMedia(`${d.base}/preview/${key.split('/').pop()}.mp4`))previews.add(key);}));
+      return render(values,previews);
+    });
+  }
+  const values=paths.map(path=>j(root,path));
+  return render(values,new Set(Object.keys(values[0]?.clips??{}).filter(key=>existsSync(join(root,`${d.base}/preview/${key.split('/').pop()}.mp4`)))));
 }
 
 // Turn a table response into an ordered list of presentation events a client should play.

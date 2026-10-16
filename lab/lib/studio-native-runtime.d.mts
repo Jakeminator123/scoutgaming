@@ -16,6 +16,7 @@ export interface NativeStudioRuntime {
   config: NativeStudioConfiguration; authorize(request: Request): Promise<NativeStudioSession>;
   api: {handle(request: Request): Promise<Response>; availableActions(session: NativeStudioSession): string[]};
   repository: any; gamePolicy: any;
+  replyRepository: any;
   readDesignCatalog(): Promise<unknown>;
   assistantDatabaseInventory(): Promise<{source:string;partial:boolean;tables:{schema:string;name:string}[]}>;
   mutationTransaction<T>(work: () => Promise<T>): Promise<T>;

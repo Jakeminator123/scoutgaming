@@ -133,9 +133,12 @@ test('private media is pinned to captured records, ranges supported and unknown 
 });
 
 test('captured immutable bank UUID must retain its expected SHA and never borrows current uploads',async t=>{
-  const f=fixture(t);const id='30000000-0000-4000-8000-000000000001';f.inventory.videos.push({id,sha256:'c'.repeat(64),bytes:4,available:true,source:'emil',dealer:'astrid'});
+  let captured;const f=fixture(t,{bankVideoResponse:async(id,req,snapshot)=>{captured=snapshot;f.state.bank.push(id);return new Response('bank',{headers:{ETag:`"sha256-${f.state.mediaHash??'c'.repeat(64)}"`}});}});f.snapshot.runtimeCatalog={revision:'catalog.1',value:{frozen:true}};
+  const id='30000000-0000-4000-8000-000000000001';f.inventory.videos.push({id,sha256:'c'.repeat(64),bytes:4,available:true,source:'emil',dealer:'astrid'});
   const session=await start(f),path='/api/studio-preview/'+session.sessionId+'/videos/'+id;
+  f.snapshot.runtimeCatalog.revision='catalog.2';
   assert.equal((await f.api.handle(f.request(path))).status,200);assert.deepEqual(f.state.bank,[id]);assert.equal(f.state.media.length,0);
+  assert.equal(captured.runtimeCatalog.revision,'catalog.1');assert.equal(Object.isFrozen(captured.runtimeCatalog),true);
   f.state.mediaHash='d'.repeat(64);assert.equal((await f.api.handle(f.request(path))).status,409);
 });
 

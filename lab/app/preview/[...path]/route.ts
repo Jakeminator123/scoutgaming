@@ -29,6 +29,16 @@ async function previewResponse(request: Request, segments: string[] | undefined,
     response.headers.set('Cache-Control', 'private, no-store');
     return response;
   }
+  const native = process.env.CROUPIER_STUDIO_NEON_POLICY === '1'
+    || process.env.CROUPIER_STUDIO_NATIVE_ADMIN === '1' || process.env.CROUPIER_CLOUD_RUNTIME === '1';
+  // CompositionPreview still imports the shared renderer here. These two code
+  // modules have no fixture metadata or media; every other legacy preview is gone.
+  const rendererCode = segments?.length === 1 && ['compositor.js', 'geometry.js'].includes(segments[0]);
+  if (native && !rendererCode) {
+    return new Response(head ? null : '<!doctype html><html lang="sv"><meta charset="utf-8"><title>Äldre förhandsvisning avslutad</title><p>Den äldre lokala förhandsvisningen är avslutad. <a href="/admin/rehearsal">Provspela i Admin</a> med sparade sammansättningar och registrerade medier.</p></html>', {
+      status: 410, headers: privateHeaders({ 'Content-Type': 'text/html; charset=utf-8' }),
+    });
+  }
   const opened = await openPreviewFile(previewBuildDirectory, Array.isArray(segments) ? segments : []);
   if (!opened) return new Response(null, { status: 404, headers: privateHeaders() });
   const headers = privateHeaders({

@@ -1,4 +1,5 @@
 import {isActiveDealerId} from '../dealer-identity.mjs';
+import {validateRuntimeCatalogRecord} from './runtime-media-catalog.mjs';
 import {assertStudioMediaStorageType} from './studio-media-storage.mjs';
 import {validateDealerSetRecordOwners,dealerSetsForClip} from '../../lab/lib/dealer-sets.mjs';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -93,6 +94,12 @@ export function createStudioRepository({ pool, scope } = {}) {
       SELECT kind, revision, value, updated_at FROM croupier_studio.documents
       WHERE environment_id=$1 AND workspace_id=$2 AND kind=$3`, [kind])).rows[0]);
   }
+  async function loadRuntimeCatalog() {
+    const row=(await query(`/* studio:read-runtime-catalog */ SELECT revision,value FROM croupier_studio.runtime_media_catalogs
+      WHERE environment_id=$1 AND workspace_id=$2`)).rows[0];
+    if(!row)fail('studio_runtime_catalog_missing',503);
+    return validateRuntimeCatalogRecord(row);
+  }
   async function audit(action, subject, revision, actor) {
     await query(`/* studio:audit */ INSERT INTO croupier_studio.audit_events
       (environment_id,workspace_id,event_id,action,subject,revision,actor) VALUES ($1,$2,$3::uuid,$4,$5,$6,$7)`,
@@ -150,6 +157,9 @@ export function createStudioRepository({ pool, scope } = {}) {
       try { return await work(client); } catch (error) { throw poison(error); }
     },
     scope, transaction,
+    readRuntimeCatalog() {
+      return operation(()=>null,loadRuntimeCatalog,true);
+    },
     readPresentationSnapshot() {
       // A single MVCC snapshot binds dealer registration, selected UUIDs and
       // classification. Nested reads reuse the current scoped write client.
@@ -161,11 +171,12 @@ export function createStudioRepository({ pool, scope } = {}) {
           WHERE environment_id=$1 AND workspace_id=$2 ORDER BY id LIMIT $3`, [5001])).rows;
         if (rows.length > 5000) fail('studio_media_limit_exceeded', 503);
         const mediaRows = rows.map(row => media(row));
+        const runtimeCatalog = await loadRuntimeCatalog();
         const freeze = value => {
           if (value && typeof value === 'object') { for (const child of Object.values(value)) freeze(child); Object.freeze(value); }
           return value;
         };
-        return freeze({scope, projectDocument, administrationDocument, mediaRows});
+        return freeze({scope, projectDocument, administrationDocument, mediaRows, runtimeCatalog});
       }, true);
     },
     readDocument(kind) {

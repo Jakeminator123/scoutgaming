@@ -4,11 +4,11 @@ import { tmpdir } from 'node:os';
 import { cloneStudioJson, canonicalStudioJson, StudioStorageError, studioStorageFailure, validateStudioScope, validateStudioMedia, validateRevision } from '../../web/storage/studio-contract.mjs';
 import { getVideoResponse, loadVideoRegistry } from './video-registry.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, validatePrivateMedia } from './cloud-media-store.mjs';
-import { isMediaBlobIndexConfigured } from './media-blob-index.mjs';
+import { readRuntimeCatalog, capturedRuntimeCatalog } from '../../tools/runtime-media-catalog.mjs';
 import { savedVideoDealerOwnership } from './video-dealer-registration.mjs';
 import {registeredDealerIds} from '../../web/dealer-identity.mjs';
 
-// The deployed immutable bank is preserved. New review records/classification
+// The preserved immutable bank lives in the scoped Neon catalog. Review records/classification
 // come from Neon exclusively; an unavailable database never means an empty bank.
 export function createNeonVideoRegistry({ repository, scope, env = process.env, options = {} } = {}) {
   scope = validateStudioScope(scope);
@@ -49,7 +49,7 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
     readClassifications: async () => [],
   };
   function cloudRequired() {
-    if (!isCloudMediaConfigured(checkedEnv) || !isMediaBlobIndexConfigured(checkedOptions)) {
+    if (!isCloudMediaConfigured(checkedEnv)) {
       throw new StudioStorageError('studio_media_storage_unavailable');
     }
   }
@@ -57,7 +57,8 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
     async load() {
       cloudRequired();
       try {
-        const registry = await loadVideoRegistry(checkedOptions);
+        const runtimeCatalog=await readRuntimeCatalog(repository);
+        const registry = await loadVideoRegistry({...checkedOptions,runtimeCatalog});
         if (!registry.summary.snapshotReadable || !registry.summary.readable) throw new StudioStorageError('studio_media_registry_unavailable');
         return registry;
       } catch (error) { throw studioStorageFailure(error); }
@@ -66,15 +67,16 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
       cloudRequired();
       // Detach every captured row BEFORE awaiting immutable bank/provider work.
       // Neither registration nor media metadata may be read from current Neon.
-      let uploads;
+      let uploads,runtimeCatalog;
       try {
         if (canonicalStudioJson(validateStudioScope(snapshot?.scope)) !== canonicalStudioJson(scope)
           || snapshot.projectDocument?.kind !== 'project'
           || snapshot.projectDocument.value?.revision !== validateRevision(snapshot.projectDocument.revision)) {
           throw new StudioStorageError('studio_scope_mismatch', 409);
         }
+        runtimeCatalog=capturedRuntimeCatalog(snapshot.runtimeCatalog);
         uploads = uploadsFrom(snapshot.mediaRows, registeredDealerIds(snapshot.projectDocument.value), new Set((snapshot.projectDocument.value.dealerTrash ?? []).map(entry => entry.dealer.id)));
-        const registry = await loadVideoRegistry({...checkedOptions, readUploads:async () => uploads});
+        const registry = await loadVideoRegistry({...checkedOptions,runtimeCatalog, readUploads:async () => uploads});
         if (!registry.summary.snapshotReadable || !registry.summary.readable) throw new StudioStorageError('studio_media_registry_unavailable');
         return registry;
       } catch (error) { throw studioStorageFailure(error); }
@@ -91,7 +93,19 @@ export function createNeonVideoRegistry({ repository, scope, env = process.env, 
     },
     async response(id, request) {
       cloudRequired();
-      return getVideoResponse(id, request, checkedOptions);
+      try {return await getVideoResponse(id, request, {...checkedOptions,runtimeCatalog:await readRuntimeCatalog(repository)});}
+      catch(error){throw studioStorageFailure(error);}
+    },
+    async responseCaptured(id,request,snapshot) {
+      cloudRequired();
+      try {
+        if(canonicalStudioJson(validateStudioScope(snapshot?.scope))!==canonicalStudioJson(scope)
+          || snapshot.projectDocument?.kind!=='project'
+          || snapshot.projectDocument.value?.revision!==validateRevision(snapshot.projectDocument.revision))throw new StudioStorageError('studio_scope_mismatch',409);
+        const runtimeCatalog=capturedRuntimeCatalog(snapshot.runtimeCatalog);
+        const uploads=uploadsFrom(snapshot.mediaRows,registeredDealerIds(snapshot.projectDocument.value),new Set((snapshot.projectDocument.value.dealerTrash??[]).map(entry=>entry.dealer.id)));
+        return await getVideoResponse(id,request,{...checkedOptions,runtimeCatalog,readUploads:async()=>uploads});
+      }catch(error){throw studioStorageFailure(error);}
     },
   });
 }

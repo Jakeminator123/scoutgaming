@@ -72,7 +72,9 @@ async function fixture(t, { localImage = false, state, mutateIndex } = {}) {
       size: bytes.length, contentType: state === 'mime' ? 'video/mp4' : 'image/png' },
       headers: new Headers({ 'content-length': String(bytes.length) }) };
   } };
-  return { root, file, storage, calls, options: { repositoryRoot: root, env, blobClient, cacheDir: join(root, 'cache') } };
+  const runtimeCatalog={schemaVersion:1,layout:{schemaVersion:1,roots:{},files:[entry]},blobIndex:index,presentation:{},legacy:{schemaVersion:2,entries:{}}};
+  const repository={readRuntimeCatalog:async()=>({revision:'a'.repeat(64),value:runtimeCatalog})};
+  return { root, file, storage, calls, options: { repositoryRoot: root, repository, env, blobClient, cacheDir: join(root, 'cache') } };
 }
 
 async function assertImage(response) {
@@ -105,6 +107,7 @@ test('authorized Next internal URL serves private Blob reference bytes without a
   cloudBoundary(t);
   const f = await fixture(t);
   await assert.rejects(stat(f.file), { code: 'ENOENT' });
+  await rm(join(f.root,'media/layout.json'));await rm(join(f.root,'blob-index.json'));
   await assertImage(await zoneReferenceResponse(cloudRequest(), f.options));
   assert.deepEqual(f.calls, [f.storage.pathname]);
 });
@@ -136,7 +139,7 @@ test('anonymous, wrong gateway authority and foreign callers cannot read zone by
 test('active cloud source failure cannot fall back to an exact local zone image', async t => {
   cloudBoundary(t);
   const cases = {
-    'missing-index': { noIndex: true },
+    'missing-neon-catalog': { noIndex: true },
     'missing-row': { mutateIndex: index => { index.files = []; } },
     'wrong-access': { mutateIndex: index => { index.files[0].access = 'public'; } },
     'missing-object': { state: 'missing' },
@@ -146,7 +149,7 @@ test('active cloud source failure cannot fall back to an exact local zone image'
   };
   for (const [name, config] of Object.entries(cases)) await t.test(name, async nested => {
     const f = await fixture(nested, { localImage: true, ...config });
-    if (config.noIndex) delete f.options.env.CROUPIER_MEDIA_BLOB_INDEX;
+    if (config.noIndex) delete f.options.repository;
     if (config.noBlob) {
       delete f.options.env.CROUPIER_MEDIA_BLOB_INDEX;
       delete f.options.env.CROUPIER_MEDIA_STORAGE;
@@ -161,9 +164,10 @@ test('active cloud source failure cannot fall back to an exact local zone image'
   });
 });
 
-test('zone reference build includes registered metadata for Blob instead of requiring image bytes', () => {
+test('zone reference production tracing excludes local registers and source image bytes', () => {
   const files = nextConfig.outputFileTracingIncludes['/api/zones/reference'];
-  assert.ok(files.includes('../media/layout.json'));
-  assert.ok(files.includes('../media/blob-index.json'));
+  for(const file of ['../media/layout.json','../media/blob-index.json','../media/catalog/*.json'])assert.ok(!files.includes(file));
+  const excluded=nextConfig.outputFileTracingExcludes['/*'];
+  for(const file of ['../media/layout.json','../media/blob-index.json','../media/catalog/**'])assert.ok(excluded.includes(file));
   assert.ok(!files.some(file => file.includes('emil/') || file.endsWith('.png')));
 });
