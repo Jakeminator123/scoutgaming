@@ -1,6 +1,5 @@
 import { DRAGGE_FACE_TRACKS } from './dealer-card-tracks-dragge.js';
 import { PAOW_FACE_TRACKS } from './dealer-card-tracks-paow.js';
-import { MARTEN_FACE_TRACKS } from './dealer-card-tracks-marten.js';
 import { ASTRID2_FACE_TRACKS } from './dealer-card-tracks-astrid2.js';
 
 // Dealer picker. Astrid is the filmed default (Emil's clips); Dragge and Paow are the
@@ -35,7 +34,6 @@ const ASTRID2_IDLES = [['andas', 20, 'andas lugnt'], ['andasb', 20, 'andas lugnt
   ['blickhogerb', 4, 'blicken mot spelarna till höger'], ['huvud', 3, 'lutar huvudet lite'], ['huvudb', 3, 'lutar huvudet lite'],
   ['fingrar', 4, 'fingrarna rör sig lätt']]
   .map(([k, vikt, beskrivning]) => ({ id: k, url: `/media/dealers/astrid2/idle-v2/${k}.mp4${V}`, vikt, beskrivning, dur: 3.04 }));
-const MARTEN_READY = { in: 24, land: { 1: 28, 2: 28, 3: 27, 4: 25, 5: 26, 6: 30, 7: 33, dealer: 34, hole: 31, flip: 27, '1v': 26, '2v': 27, '3v': 36, '4v': 25, '5v': 34, '6v': 35, '7v': 33, dealerv: 36 }, card: [79, 106] };
 
 export const DEALERS = {
   astrid: { id: 'astrid', name: 'Astrid', label: 'Astrid (classic)', still: '/media/startbild.png', face: '/media/dealers/faces/astrid.jpg' + V },
@@ -48,15 +46,6 @@ export const DEALERS = {
   paow: { id: 'paow', name: 'Paow', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/paow.jpg' + V,
     keyed: { still: '/media/dealers/paow/v2/vila.png' + V }, layerScale: 1, ready: PAOW_READY,
     clips: '/media/dealers/paow/v2/', land: PAOW_READY.land, lines: ['sv', 'en'], linesDir: '/media/dealers/paow/repliker/', linesV: '?v=20261014i', idles: idlesFor('paow'), handMatte: false, faceTracks: PAOW_FACE_TRACKS },
-  // Mårten (Emil's KLARA_MARTEN, 9 Oct; built on Paow's plate, so table, shoe and seats are hers). No voice and no recorded
-  // lines yet: lines null means every spoken line and chat reply is text only (never another dealer's face or voice).
-  // His idles are Kling loops like Dragge's and Paow's (Emil 11 Oct liked those best): back at rest after a single card
-  // he breathes instead of holding his still.
-  // linesV: a dealer's lines re-made (14 Oct: Mårten's with his mouth on them; the short bust, blackjack, 21 and winners lines
-  // of all three): browsers fetch them anew, not the cached ones
-  marten: { id: 'marten', name: 'Mårten', still: '/media/dealers/rooms-v2/darkhall.png' + V, face: '/media/dealers/faces/marten.jpg' + V,
-    keyed: { still: '/media/dealers/marten/v2/vila.png' + V }, layerScale: 1, ready: MARTEN_READY,
-    clips: '/media/dealers/marten/v2/', land: MARTEN_READY.land, lines: ['sv', 'en', 'es'], linesDir: '/media/dealers/marten/repliker/', linesV: '?v=20261014i', idles: idlesFor('marten'), handMatte: false, faceTracks: MARTEN_FACE_TRACKS },
   // Astrid 2.0: Astrid as a keyed ready dealer, playing like Paow and Dragge. Her voice is the one her recorded lines have
   // (ElevenLabs Helena, d1PjUBrElTJTH5EkXPZp); her lines are those recordings on her rest image (the moving lip sync
   // draws her mouth). label = the name in the pickers; name stays Astrid, as she calls herself.
@@ -65,13 +54,10 @@ export const DEALERS = {
     clips: '/media/dealers/astrid2/v2/', land: ASTRID2_READY.land, lines: ['en'], linesDir: '/media/dealers/astrid2/repliker/', linesV: '?v=20261014i', idles: ASTRID2_IDLES, handMatte: false, faceTracks: ASTRID2_FACE_TRACKS },
 };
 
-// Kevin 12 Oct: Mårten is for Svenska Spel. The public demo never shows him; a Table Studio table built with him
-// (a ?table= link) still plays with him. Keep this list in step with stage-pending.js.
-export const PUBLIC_HIDDEN = ['marten'];
 function pick() {
   try {
-    const q = new URLSearchParams(globalThis.location?.search ?? ''), onTable = q.has('table');
-    const ok = id => !!DEALERS[id] && (onTable || !PUBLIC_HIDDEN.includes(id));
+    const q = new URLSearchParams(globalThis.location?.search ?? '');
+    const ok = id => !!DEALERS[id];
     const asked = q.get('dealer');
     if (asked && ok(asked)) { globalThis.localStorage?.setItem('dealer', asked); return asked; }
     const saved = globalThis.localStorage?.getItem('dealer');
@@ -124,7 +110,7 @@ export function dealerLineUrl(url, language) {
   return `${dealer.linesDir}${lang}/${m[1]}.mp4${dealer.linesV ?? V}`;
 }
 
-// An alternative dealer without recorded lines (Mårten) never fetches Astrid's: they would only be skipped.
+// An alternative dealer without recorded lines never fetches Astrid's: they would only be skipped.
 export const unusedLine = url => isAlternative && !dealer.lines && /\/media\/repliker/.test(url ?? '');
 
 // A line only the alternative dealer has (remarks, banter), in the table's language.

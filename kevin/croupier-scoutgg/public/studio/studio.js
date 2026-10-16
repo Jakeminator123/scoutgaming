@@ -2,7 +2,7 @@
 // their felt masks leave that shoe and the dealer himself out (croupier-dealer-dragge/studio_rooms_v2.py). Astrid too (Emil: her old
 // room had the shoe over "PAYS 3 TO 2" and her cut-out kept a patch of her own shoe): cut-astrid-v3 drops that patch,
 // felt-mask-astrid-v2 = the keyed dealers' v2 table minus her cut-out.
-const DEALERS={astrid:{name:'Astrid',cut:'assets/cut-astrid-v3.png',mask:'assets/felt-mask-astrid-v2.png',room:'-v2'},dragge:{name:'Dragan',cut:'assets/cut-dragge.png',mask:'assets/felt-mask-dragge-v2.png',room:'-v2'},paow:{name:'Paow',cut:'assets/cut-paow.png',mask:'assets/felt-mask-paow-v2.png',room:'-v2'},astrid2:{name:'Astrid',cut:'assets/cut-astrid2.png',mask:'assets/felt-mask-astrid2-v2.png',room:'-v2'},marten:{name:'Mårten',cut:'assets/cut-marten.png',mask:'assets/felt-mask-marten-v2.png',room:'-v2'}};
+const DEALERS={astrid:{name:'Astrid',cut:'assets/cut-astrid-v3.png',mask:'assets/felt-mask-astrid-v2.png',room:'-v2'},dragge:{name:'Dragan',cut:'assets/cut-dragge.png',mask:'assets/felt-mask-dragge-v2.png',room:'-v2'},paow:{name:'Paow',cut:'assets/cut-paow.png',mask:'assets/felt-mask-paow-v2.png',room:'-v2'},astrid2:{name:'Astrid',cut:'assets/cut-astrid2.png',mask:'assets/felt-mask-astrid2-v2.png',room:'-v2'}};
 const ROOMS={darkhall:'Dark Hall',mahogany:'Mahogany Privé',golden:'Golden Salon',azure:'Azure Venue'};
 const FELTS={prive:{name:'Privé',c:null},emerald:{name:'Emerald Club',c:'#125c43'},midnight:{name:'Midnight',c:'#213e70'},burgundy:{name:'Burgundy',c:'#70253c'},custom:{name:'Custom',c:null}};
 const LANGS={en:{name:'English',tts:'en-GB',line:'Welcome to the table. Place your bets.'},es:{name:'Español',tts:'es-ES',line:'Bienvenidos a la mesa. Hagan sus apuestas.'},fr:{name:'Français',tts:'fr-FR',line:'Bienvenue à la table. Faites vos jeux.'},sv:{name:'Svenska',tts:'sv-SE',line:'Välkommen till bordet. Placera era insatser.'},zh:{name:'中文',tts:'zh-CN',line:'欢迎来到牌桌，请下注。'}};
@@ -13,6 +13,8 @@ const KEY='scout-bj-demo';
 let st=Object.assign({screen:'login',email:'',dealer:'astrid2',room:'darkhall',felt:'prive',custom:'#7a5a2a',lang:'en',limit:'prive',name:'Privé Blackjack',open:'dealer',sound:true,logo:'',logoName:'',logoPos:'both'},JSON.parse(localStorage.getItem(KEY)||'{}'));
 // Emil 14 Oct: the first Astrid is retired from the builder; Astrid 2.0 is shown as "Astrid" (a saved choice of her moves over)
 const RETIRED=['astrid'];if(RETIRED.includes(st.dealer))st.dealer='astrid2';
+// Kevin 16 Oct: Mårten is not in prod; a studio saved with him opens with Paow, as his tables do (studio-tables.mjs).
+if(st.dealer==='marten')st.dealer='paow';
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
 const fmt=v=>v>=1000?(v/1000)+'K':String(v);
 function chipEl(v){const e=document.createElement('span');e.className='chip';const c=CHIP[v];e.style.setProperty('--c',c[0]);e.style.setProperty('--s',c[1]);if(c[2])e.style.setProperty('--r',c[2]);if(c[3])e.style.setProperty('--t',c[3]);e.textContent=fmt(v);return e}
@@ -25,7 +27,7 @@ const draw=img=>{['#feltC','#feltS'].forEach(s=>{const x=$(s).getContext('2d');x
 if(maskCache[src]?.complete)draw(maskCache[src]);else{const i=maskCache[src]=new Image();i.onload=()=>draw(i);i.src=src}}
 function feltColor(){return st.felt==='custom'?st.custom:FELTS[st.felt].c}
 function render(){
-// Emil 11 Oct: only the languages this dealer has recorded are offered (Mårten: Swedish, English and Spanish).
+// Emil 11 Oct: only the languages this dealer has recorded are offered (Dragan and Paow: Swedish and English).
 const langs=VOICES[st.dealer]?.length?VOICES[st.dealer]:['en'];if(!langs.includes(st.lang))st.lang=langs.includes('en')?'en':langs[0];
 $$('.lang-opt').forEach(o=>{o.hidden=!langs.includes(o.dataset.val)});
 const d=DEALERS[st.dealer],L=LIMITS[st.limit],fc=feltColor();
@@ -51,8 +53,7 @@ save()}
 function go(screen){st.screen=screen;$$('.screen').forEach(s=>s.classList.toggle('on',s.id===screen));
 const stage=$('#stage');if(screen==='ready')$('#readyHome').append(stage);else if(screen==='play'){$('#playHome').append(stage);$('#playBg').style.backgroundImage='url(assets/rooms/'+st.room+DEALERS[st.dealer].room+'-720.png)'}else $('#previewHome').prepend(stage);render()}
 // The languages each dealer has recorded. Any other language plays the English greeting, as the table does.
-// Mårten has his voice since 14 Oct (sv, en, es).
-const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en'],paow:['sv','en'],astrid2:['en'],marten:['sv','en','es']};
+const VOICES={astrid:['en','es','fr','zh'],dragge:['sv','en'],paow:['sv','en'],astrid2:['en']};
 const voiceLang=(dealer,lang)=>(VOICES[dealer]??['en']).includes(lang)?lang:'en';
 function greetingClip(dealer,lang){lang=voiceLang(dealer,lang);
 if(dealer==='astrid')return lang==='en'?'/media/repliker/greeting_1.mp4':`/media/repliker-${lang}/greeting_1_${lang}.mp4`;

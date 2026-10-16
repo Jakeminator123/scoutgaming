@@ -72,7 +72,7 @@ const apiLimit=createRateLimit({limit:20});
 const demoGate=createDemoGate(), demoLimit=createRateLimit({limit:10});   // Play demo password: see demo-gate.mjs
 const localQA=process.env.RUNPOD_API_KEY==='local-qa-disabled';
 // Take lengths of the ready dealers (built by croupier-dealer-dragge/build_ready_dealer.py); a studio table with one of them deals on his own timing.
-const READY_TAKES=Object.fromEntries(['dragge','paow','marten','astrid2'].map(id=>{try{return [id,{...JSON.parse(readFileSync(path.join(PUBLIC,'media','dealers',id,'v2','meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`}];}catch{return [id,null];}}));
+const READY_TAKES=Object.fromEntries(['dragge','paow','astrid2'].map(id=>{try{return [id,{...JSON.parse(readFileSync(path.join(PUBLIC,'media','dealers',id,'v2','meta.json'),'utf8')),dir:`/media/dealers/${id}/v2/`}];}catch{return [id,null];}}));
 // Lip sync on the moving clips (rorlig-lipsync.mjs, Emil 12 Oct): a ready dealer speaks his lines while he deals. On only
 // on staging (its host), or where RORLIG_ENDPOINT_ID / RORLIG=1 says so: production keeps today's speech steps.
 let publicOrigin = process.env.RORLIG_PUBLIC_URL ?? "";
@@ -109,7 +109,7 @@ const makeRorlig = apiKey => new RorligLipsync({
   apiKey,
   publicBase: () => publicOrigin,
   publicDir: PUBLIC,
-  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge,astrid2,marten").split(",").map(s => s.trim()).filter(Boolean),
+  dealers: (process.env.RORLIG_DEALERS ?? "paow,dragge,astrid2").split(",").map(s => s.trim()).filter(Boolean),
   log: s => console.log(s),
   // each piece goes out with its bytes right behind it on the room socket: no request of its own, which at the start of a
   // round queued behind the clip downloads and came too late for the first frames
@@ -278,7 +278,7 @@ async function roundResultReply(ws, roundId, dealer) {
   if (!text) return;
   ws.resultFor = roundId;
   const id = `x${Date.now().toString(36)}`;
-  const alt = ['dragge', 'paow', 'marten', 'astrid2'].includes(dealer) ? dealer : null;
+  const alt = ['dragge', 'paow', 'astrid2'].includes(dealer) ? dealer : null;
   let voiced = null;
   if (localQA) voiced = null;
   else if (alt) voiced = hasVoice(alt) && draggeVoiceReady(alt) ? await Promise.race([draggeSay(text, language, ANSWERS, { dealer: alt }).catch(() => null), new Promise(r => setTimeout(() => r(null), VOICE_WAIT_MS))]) : null;
@@ -626,7 +626,7 @@ async function handleHttp(req, res) {
   const file = p === "/" ? path.join(PUBLIC, "index.html") : inside(PUBLIC, p.slice(1));
   if (!file) { res.writeHead(404).end(); return; }
   // A Table Studio table plays its own dealer in its own session (Kevin 12 Oct, edge cases): a shared link edited to
-  // ?dealer=marten, or pointed at another session, goes back to the table's own link, so a dealer hidden for the
+  // another ?dealer=, or pointed at another session, goes back to the table's own link, so a dealer hidden for the
   // account that built the table cannot be called up through it.
   if(file===path.join(PUBLIC,"index.html")){
     const q=new URL(req.url,"http://x").searchParams, t=studioTables.get(q.get("table")??"");
@@ -684,9 +684,9 @@ room.on("connection", (ws) => {
       if(text&&ws.boUser)activity.log({user:ws.boUser,sid:ws.sid,ip:ws.address,ua:ws.ua,kind:"chat",table:ws.session,guest:ws.guest,detail:{len:text.length}});   // never the text
       if(!chatLimit(ws.address)){send(ws,{t:'notice',text:'Please wait a minute before sending more messages.'});return;}
       if(ws.guest&&shared.paused(ws.guest)){send(ws,{t:'notice',text:RESPONSES.support});return;}
-      // Dragge, Paow, Mårten and Astrid 2.0 (a viewer's alternative dealers) answer with their own brain, memory and
-      // voice (Mårten since 14 Oct); Astrid keeps her reviewed pipeline below.
-      const alt=['dragge','paow','marten','astrid2'].includes(j.dealer)?j.dealer:null;
+      // Dragge, Paow and Astrid 2.0 (a viewer's alternative dealers) answer with their own brain, memory and
+      // voice; Astrid keeps her reviewed pipeline below.
+      const alt=['dragge','paow','astrid2'].includes(j.dealer)?j.dealer:null;
       if(text&&alt&&!['privacy','support'].includes(localResponse(text))){
         // Never leave them "thinking": any failure still answers with a reviewed line.
         talkReply(ws,text,alt).catch(()=>{send(ws,{t:'answer',id:`r${Date.now().toString(36)}`,to:ws.name,dealer:alt,text:localizeResponse(RESPONSES.social,shared.language(ws.session))});send(ws,{t:'thinking',on:false,queued:0});});

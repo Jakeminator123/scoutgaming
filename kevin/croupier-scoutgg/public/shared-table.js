@@ -206,7 +206,7 @@ export function createSharedGameTable({manifest,boxes,playNow,unlock,audio,onEnt
     const language=$('#dealerLanguage');
     language.value=pendingLanguage??state.language??'en';
     // Emil 11 Oct: only the languages this dealer speaks are offered: his recorded lines (Dragge, Paow), Astrid's
-    // recorded languages (no Swedish), English only for a dealer without a voice yet (Mårten).
+    // recorded languages (no Swedish), English only for a dealer without a voice yet.
     const spoken=dealer.lines===undefined?(state.availableLanguages??['en']).filter(l=>l!=='sv'):dealer.lines??['en'];
     for(const option of language.options){const ok=(state.availableLanguages??['en']).includes(option.value)&&spoken.includes(option.value);option.disabled=!ok;option.hidden=!ok;}
     language.disabled=!entered||sending||preparing||paused||state.phase!=='bets'||state.bets.some(b=>Object.values(b).some(v=>v>0));

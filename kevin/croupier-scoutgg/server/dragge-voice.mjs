@@ -26,11 +26,6 @@ const DEALER_VOICES = {
   // rest-image endpoint exists for her, so without that worker her answer is text.
   astrid2: { tts: 'cartesia', voice: null, endpoint: process.env.ASTRID2_LIPSYNC_ENDPOINT ?? null,
     reads: { any: { model: 'eleven_multilingual_v2', settings: { stability: 0.5, similarity_boost: 0.8, style: 0.2, use_speaker_boost: true } } } },
-  // Mårten (Kevin 14 Oct: his voice in Kevin's ElevenLabs, read like Paow). Like Astrid 2.0 only the moving lip sync draws
-  // his mouth; his recorded lines (sv, en, es) were voiced with these reads (croupier-consult/marten-repliker).
-  marten: { voice: 'ik47JUrkaNt6DSPKAk1t', endpoint: process.env.MARTEN_LIPSYNC_ENDPOINT ?? null,
-    reads: { sv: { model: 'eleven_v3', settings: { stability: 0.5, similarity_boost: 0.85, use_speaker_boost: true } },
-      any: { model: 'eleven_multilingual_v2', settings: { stability: 0.38, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true } } } },
 };
 export const voiceRead = (dealer, language) => DEALER_VOICES[dealer].reads[language] ?? DEALER_VOICES[dealer].reads.any;
 export const voiceSettings = (dealer, language) => voiceRead(dealer, language).settings;

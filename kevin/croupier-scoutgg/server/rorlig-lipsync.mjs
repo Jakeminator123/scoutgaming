@@ -159,7 +159,7 @@ export class RorligLipsync {
     if (!s.workers.length) this.#order(dealer);
   }
 
-  // the languages a dealer has recorded lines in (his repliker/<lang>/ folders): Mårten has Spanish too (14 Oct)
+  // the languages a dealer has recorded lines in (his repliker/<lang>/ folders)
   #langs(dealer) {
     this.langCache ??= new Map();
     if (!this.langCache.has(dealer)) {

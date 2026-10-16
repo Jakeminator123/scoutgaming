@@ -37,15 +37,3 @@ test("Astrid 2.0 speaks in Astrid's own Cartesia voice (never ElevenLabs) and ha
   await assert.rejects(draggeSay('Place your bets.', 'en', path.join(os.tmpdir(), 'dealer-voice-test'), { fetchImpl: fakeFetch(seen), dealer: 'astrid2' }), /no rest-image lip sync/);
   assert.equal(seen.length, 0, 'no ElevenLabs call');
 });
-
-test('Mårten speaks with the voice Kevin made, read like Paow (sv eleven_v3; en and es v2 with their own language code)', async () => {
-  const dir = path.join(os.tmpdir(), 'dealer-voice-test');
-  for (const [language, model] of [['sv', 'eleven_v3'], ['en', 'eleven_multilingual_v2'], ['es', 'eleven_multilingual_v2']]) {
-    const seen = [];
-    await assert.rejects(draggeSay('Hagan sus apuestas.', language, dir, { fetchImpl: fakeFetch(seen), dealer: 'marten' }), /no rest-image lip sync/);
-    assert.ok(seen[0].url.includes('/ik47JUrkaNt6DSPKAk1t'));
-    assert.equal(seen[0].body.model_id, model);
-    assert.equal(seen[0].body.language_code, model === 'eleven_v3' ? undefined : language);
-    assert.deepEqual(seen[0].body.voice_settings, voiceSettings('paow', language));
-  }
-});

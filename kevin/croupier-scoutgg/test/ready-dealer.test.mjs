@@ -28,7 +28,7 @@ test('variant URLs, offsets and files exist for every ready dealer', () => {
   assert.equal(variantOffset('iu', 'flip'), 0);
   assert.equal(variantOffset('iu', '4'), dealer.ready.in / 24);
   assert.equal(dealerClipVariants(dealerClipUrl('/media/deal/hole.mp4')).length, 4);
-  for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.marten, DEALERS.astrid2]) {
+  for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.astrid2]) {
     for (const take of ['pos1', 'pos2', 'pos3', 'pos4', 'pos5', 'pos6', 'pos7', 'posdealer', 'hole', 'flip'])
       for (const v of ['', '-i', '-u', '-iu'])
         assert.ok(existsSync(new URL(`../public${d.clips}${take}${v}.mp4`, import.meta.url)), `${d.id} ${take}${v}`);
@@ -44,7 +44,7 @@ test('every run variant ends inside the slot the shared table gives its take', a
   const { readFileSync } = await import('node:fs');
   const manifest = JSON.parse(readFileSync(new URL('../public/media/manifest.json', import.meta.url), 'utf8'));
   const slot = Object.fromEntries(manifest.deal.map(d => [d.id.replace('deal_pos', '').replace('deal_', ''), d.dur * 24]));
-  for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.marten, DEALERS.astrid2]) {
+  for (const d of [DEALERS.dragge, DEALERS.paow, DEALERS.astrid2]) {
     const meta = JSON.parse(readFileSync(new URL(`../public${d.clips}meta.json`, import.meta.url), 'utf8'));
     for (const [take, variants] of Object.entries(meta.frames))
       for (const [v, frames] of Object.entries(variants))
@@ -60,20 +60,6 @@ test('on his own studio table the server names the variant, so the cards join RE
   const plan = { steps: [a, b, c] };
   assert.deepEqual([a, b, c].map(s => readyVariant(plan, s)), ['i', '', 'u']);
   assert.equal(variantOffset(readyVariant(plan, b)), 0);
-});
-
-test('Mårten speaks his recorded lines in Swedish, English and Spanish, and his idles are his own Kling loops, so nothing of another dealer ever plays over his face', () => {
-  const m = DEALERS.marten;
-  assert.equal(m.name, 'Mårten');
-  assert.deepEqual(m.lines, ['sv', 'en', 'es']);
-  for (const lang of m.lines) for (const line of ['greeting_1', 'goodluck_1', 'bust_1', 'win_1', 'greet_guest', 'remark_hit17_1', 'table_cash_1'])
-    assert.ok(existsSync(new URL(`../public${m.linesDir}${lang}/${line}.mp4`, import.meta.url)), `${lang}/${line}`);
-  assert.deepEqual(m.idles.map(i => i.url.split('?')[0]), ['breath', 'glance', 'smile'].map(k => `/media/dealers/marten/idle-v2/${k}.mp4`));
-  for (const idle of m.idles) assert.ok(existsSync(new URL(`../public${idle.url.split('?')[0]}`, import.meta.url)));
-  // The breathing loop can repeat (app.js pickIdle skips the last gesture unless its weight is 10 or more).
-  assert.ok(m.idles[0].vikt >= 10);
-  assert.ok(existsSync(new URL(`../public${m.keyed.still.split('?')[0]}`, import.meta.url)));
-  assert.ok(existsSync(new URL(`../public${m.face.split('?')[0]}`, import.meta.url)));
 });
 
 test('every card he deals or turns follows its planar track from face-up until it rests, then touches down before resting', async () => {
@@ -100,4 +86,9 @@ test('Astrid 2.0 plays like Paow: her own takes, rest-to-rest idles and recorded
     assert.ok(existsSync(new URL(`../public${a.linesDir}en/${line}.mp4`, import.meta.url)), line);
   for (const f of [a.keyed.still, a.face, '/studio/assets/astrid2.jpg', '/studio/assets/cut-astrid2.png', '/studio/assets/felt-mask-astrid2-v2.png'])
     assert.ok(existsSync(new URL(`../public${f.split('?')[0]}`, import.meta.url)), f);
+});
+
+test('Mårten is not in prod (Kevin 16 Oct): no picker, studio table or saved choice can play him', () => {
+  assert.equal(DEALERS.marten, undefined);
+  assert.deepEqual(Object.keys(DEALERS), ['astrid', 'dragge', 'paow', 'astrid2']);
 });
