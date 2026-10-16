@@ -24,7 +24,10 @@ fyra tomma mappar var lokal filstädning, inte en ny runtime-migrering.
 
 104 riktade navigations-/kontextprov, 65 rum-/API-prov och Lab-bygget
 passerar. A/B-proven täcker att A:s publicering inte ändrar B:s effektiva
-val. Browser/fullhook följs upp i aktuell handoff. Produktionsskrivning,
+val. Slutbygge och fullhook passerar på kodcommit `a537808d`: 3 979 pass,
+23 villkorade skip, inga fel. Browserprovet styrker rumsvy, rouletteformat
+och ändrad bordspreview men inte spara/zoom/mobil: CUA-klick blockerades av
+CDP-tidsgränser. Fullt delkvitto finns i aktuell handoff. Produktionsskrivning,
 merge/deploy och visuell medieacceptans ingår inte i dessa lokala kvitton.
 
 ## Historisk överlämningsstatus 16 oktober — före övertagandet

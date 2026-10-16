@@ -46,7 +46,26 @@ rum-/API-prov passerar. A/B-prov täcker utkast, granskning och publicering
 utan ändrade effektiva val i B. `npm --prefix lab run build` passerar.
 Systemkartans verifiering och byggkontroll ger noll fel, 14 gula kontrakt
 och 196 varningar mot arbetskopian på `a0ee43c7`; baslinjen är inte ändrad.
-Fullhook och browserkvittot kompletteras i leveranssteget nedan.
+Slutbygget efter återställningstexten passerar också. Kodcommit
+`a537808dea33602cc47f05287af8704993cafe31` passerar hela pre-commit:
+**3 979 pass, 23 villkorade skip, 0 fel/avbrutna i 78 grupper**. Villkorade
+SQL-/browser-/plattformskontroller är inte påstådda som körda lokalt.
+
+Browserdelkvitto med riktig Admin-bundle och isolerade testdata: rumsvyn,
+rouletteformatet och uppdaterad bordspreview verifierade; gemensamma mallar
+är hopfällda. Spara/omladdning, A/B-sparning, mobilnavigation och zoomsparning
+är **inte browseraccepterade**: CUA:s CDP-klick tidsavbröts och fixturen
+registrerade inga skrivningar. API-proven ovan är separat bevis. Egen
+fixtureprocess är avslutad; underlag finns privat under
+`arkiv/2026-10-16/lab/data/runtime-takeover-browser/`. Läppsynkvisaren är orörd.
+Det äldre `test/backoffice-lab-browser.mjs` stänger uttryckligen av native
+Admin i sin fixture och räknas inte som acceptans av dagens Admin.
+
+Leveranskontroll: användarens fyra lokala konfigurations-/skillfiler är
+hashjämförda och oförändrade. GitGuardian-läsningen för main `4fa35ab9`
+visar noll öppna och 18 ignorerade incidenter samt aktiv övervakning;
+historisk skanning är `too_large`, platsmetadata partiell och main-sviten
+köad. Detta är inte ett besked om full historisk säkerhetstäckning.
 
 Återstår efter denna lokala integration: användaracceptans i verklig
 spelare, inkoppling av nya läppsynkfilmer och riktad hantering av gamla
