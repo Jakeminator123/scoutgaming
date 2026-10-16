@@ -6,6 +6,7 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
     const video = preparedVideo ?? document.createElement('video');
     video.className = 'local-presentation-film'; video.playsInline = true; video.muted = muted; video.preload = 'auto';
     let frame, started = false, presented = false, terminal = false, resuming = false, watchdog;
+    let lastMediaTime = Number.isFinite(video.currentTime) ? video.currentTime : 0;
     const listeners = [];
     const listen = (target, type, callback) => {
       target.addEventListener(type, callback);
@@ -22,23 +23,24 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
       if (frame != null) video.cancelVideoFrameCallback(frame);
       video.pause(); video.removeAttribute('src'); video.load(); video.remove();
     };
+    const playbackError = (message, code) => Object.assign(new Error(message), {
+      code, playback: { started, presented, ended: video.ended, readyState: video.readyState,
+        paused: video.paused, seeking: !!video.seeking, networkState: video.networkState,
+        mediaTime: Number.isFinite(video.currentTime) ? video.currentTime : null,
+        duration: Number.isFinite(video.duration) ? video.duration : null,
+        visibility: document.visibilityState ?? (document.hidden ? 'hidden' : 'visible') },
+    });
     const finish = error => {
       if (terminal) return; terminal = true;
       if (!error && (!started || !presented || !video.ended)) {
-        error = Object.assign(new Error('Film ended without a presented frame'), {
-          // Only an otherwise completed clip with no frame proof may retry idle.
-          code: started && video.ended && !presented ? 'local_film_no_presented_frame' : 'local_film_incomplete',
-          playback: { started, presented, ended: video.ended, readyState: video.readyState,
-            mediaTime: Number.isFinite(video.currentTime) ? video.currentTime : null,
-            duration: Number.isFinite(video.duration) ? video.duration : null,
-            visibility: document.visibilityState ?? (document.hidden ? 'hidden' : 'visible') },
-        });
+        error = playbackError('Film ended without a presented frame',
+          started && video.ended && !presented ? 'local_film_no_presented_frame' : 'local_film_incomplete');
       }
       if (presented) hold(video);
       emit(error ? signal?.aborted ? 'interrupted' : 'error' : 'end', error); clean();
       error ? reject(error) : resolve({ completed: true });
     };
-    const arm = () => { clearTimeout(watchdog); watchdog = setTimeout(() => finish(video.ended ? undefined : new Error('Film playback stalled')), 8000); };
+    const arm = () => { clearTimeout(watchdog); watchdog = setTimeout(() => finish(video.ended ? undefined : playbackError('Film playback stalled', 'local_film_stalled')), 8000); };
     const abort = () => finish(new DOMException('Presentation cancelled', 'AbortError'));
     // Adapt Kevin's paused-playback recovery to this film's existing owner.
     // Resume the exact frame, never skip a queued card or silently mute speech.
@@ -52,8 +54,13 @@ export function playLocalFilm({ host, src, video: preparedVideo, signal, muted =
       catch (error) { if (!terminal && !signal?.aborted) finish(error); }
       finally { resuming = false; }
     };
-    listen(video, 'playing', () => { if (terminal) return; arm(); if (!started) { started = true; emit('start'); } });
-    listen(video, 'timeupdate', () => { if (!terminal) arm(); });
+    listen(video, 'playing', () => { if (terminal || started) return; arm(); started = true; emit('start'); });
+    listen(video, 'timeupdate', () => {
+      // Events alone are not progress: browsers may repeat them at one frame.
+      if (!terminal && Number.isFinite(video.currentTime) && video.currentTime > lastMediaTime) {
+        lastMediaTime = video.currentTime; arm();
+      }
+    });
     listen(video, 'ended', () => finish());
     listen(video, 'error', () => finish(new Error('Film could not be decoded')));
     listen(video, 'pause', recover);

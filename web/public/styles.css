@@ -838,7 +838,9 @@ html[data-table-color] #felt-brand { color: var(--table-felt); }
   font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 10px;
   letter-spacing: .14em; color: #8b8d96; transition: color .15s, background .15s;
 }
-#table-pick .tbl:hover { color: #F2F1ED; }
+#table-pick .tbl:hover:not(:disabled) { color: #F2F1ED; }
+#table-pick .tbl:disabled { color: #8b8d96; cursor: not-allowed; }
+#table-pick .tbl small { display: block; margin-top: 2px; font-size: 8px; letter-spacing: .06em; }
 #table-pick .tbl.on { background: #D6FF3A; color: #0A0B0D; }
 body.in-round #table-pick { opacity: .3; pointer-events: none; }
 

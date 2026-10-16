@@ -224,9 +224,10 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
           const token = req.headers.cookie.match(/(?:^|;\s*)bo_jwt=([^;]+)/)?.[1];
           return JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'));
         };
-        const auth = playerAuth(game,()=>({id:'fixture-player'}),identity);
+        const authEpoch = id=>bo.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(id)?.epoch ?? 0;
+        const auth = playerAuth(game,()=>({id:'fixture-player'}),identity,{authEpoch});
         const gameHandoff = backofficeGameAuth({db:game,auth,identity,boSession,validLaunch:()=>false,publicUrl:publicOrigin,boUrl:publicOrigin,publicGamePath:'/blackjack'});
-        const labHandoff = backofficeLabAuth({db:bo,identity,boSession,authEpoch:id=>bo.prepare('SELECT epoch FROM bo_auth_epochs WHERE user_id=?').get(id)?.epoch ?? 0,
+        const labHandoff = backofficeLabAuth({db:bo,identity,boSession,authEpoch,
           publicUrl:publicOrigin,boUrl:publicOrigin,labPublicUrl:publicOrigin,singleOrigin:true});
         const actions = createStudioNativeAuthActions({boDb,gameDb:adapter(game),scope,authorize,publicOrigin,allowedOrigins:config.allowedOrigins,
           rateLimit:()=>true,clientAddress:()=> 'isolated-browser',mail:{send:()=>assert.fail('no external mail')}});
@@ -348,7 +349,7 @@ test('actual browser expired Admin login restores the real room view through his
   async function assertRoomView(page) {
     const studio = page.getByRole('region',{name:'Central Studio'});
     const choices = [['Spelbolag',expectedContext.operator,expectedLabels.operator],['Spel',expectedContext.game,'Roulette'],
-      ['Rum / bakgrund',expectedContext.table,expectedLabels.room],['Dealer',expectedContext.dealer,expectedLabels.dealer]];
+      ['Rum',expectedContext.table,expectedLabels.room],['Dealer',expectedContext.dealer,expectedLabels.dealer]];
     for (const [name,value,label] of choices) {
       const select = studio.getByRole('combobox',{name,exact:true});await select.waitFor();
       assert.equal(await select.inputValue(),value,name + ' must come from the returned stored room context');

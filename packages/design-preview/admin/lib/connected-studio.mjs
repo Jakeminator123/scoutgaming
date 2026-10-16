@@ -5,7 +5,6 @@ import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES } from '../..
 import { uploadNativeVideo } from '../../../../lab/lib/upload-native-video.mjs';
 import { materialForAsset } from '../../../../web/public/material-catalog.mjs';
 import { defaultCompositionSettings } from '../../../../web/public/composition-settings.mjs';
-import { workspaceSurfacePath } from '../../../../lab/lib/workspace-surfaces.mjs';
 import {rouletteClipSlots,rouletteClipMatches,rouletteConfiguredClipIds,bindRouletteClip} from './roulette-clip-map.mjs';
 import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
 import {layerAssetFitsGame} from '../../../../web/layer-asset-contract.mjs';
@@ -236,10 +235,12 @@ export function selectCompositionLayer(project, room, role, assetId) {
 }
 
 export function roomChoicesPath(operator, room) {
-  if (!operator || !room || room.operatorId !== operator.id || room.state !== 'live' || !room.published
-    || !/^[a-z][a-z0-9-]{0,63}$/.test(room.id)) return null;
-  const path = workspaceSurfacePath('partner', 'bj', operator.slug);
-  return path ? `${path}?${new URLSearchParams({ room: room.id })}` : null;
+  if (!operator || !room || room.operatorId !== operator.id || room.state === 'archived'
+    || !/^[a-z][a-z0-9-]{0,63}$/.test(room.id) || !/^[a-z][a-z0-9-]{0,63}$/.test(operator.id)) return null;
+  const params = new URLSearchParams({view:'registered',operator:operator.id,table:room.id});
+  if (room.compositionId) params.set('composition',room.compositionId);
+  if (['blackjack','roulette'].includes(room.game)) params.set('game',room.game);
+  return `/admin/rooms?${params}`;
 }
 
 export function navigationKeepsStudioTab(event, anchor) {

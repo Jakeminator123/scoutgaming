@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {playerAccountKind, playerAreaData, playerAreaModel, playerAreaPage, PLAYER_RESULTS_PATH} from '../lib/player-area.mjs';
+import {readFile} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+import {playerAccountKind, playerAreaData, playerAreaModel, playerAreaPage, playerAreaRequest, PLAYER_RESULTS_PATH} from '../lib/player-area.mjs';
 
 const env = {
   CROUPIER_VERCEL_UI: '1',
@@ -173,4 +175,38 @@ test('verified N1 handoff precedes every player or wallet read, even with a fore
     assert.equal(page.html,'');assert.equal(page.data.player,null);
     assert.deepEqual(calls,['/api/auth/session']);
   }
+});
+
+test('actual legacy lobby page redirects verified N1 handoff before rendering an empty lobby',async()=>{
+  const require=createRequire(new URL('../package.json',import.meta.url));
+  const ts=require('typescript'),navigation=require('next/navigation');
+  const source=await readFile(new URL('../app/play/page.tsx',import.meta.url),'utf8');
+  const compiled=ts.transpileModule(source,{fileName:'page.tsx',compilerOptions:{
+    module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,
+  }}).outputText;
+  const calls=[],module={exports:{}};
+  const fetchImpl=async url=>{
+    calls.push(new URL(url).pathname);
+    assert.equal(new URL(url).pathname,'/api/auth/session','no player, wallet or operator read precedes handoff');
+    return Response.json({authenticated:false,guest:false,sharedCredentials:true,backofficeHandoff:true});
+  };
+  const imports=name=>{
+    if(name==='next/headers')return {headers:async()=>new Headers({cookie:'bo_jwt=verified; player_session=other'})};
+    if(name==='next/navigation')return navigation;
+    if(name==='@/lib/player-area.mjs')return {
+      playerAreaRequest:(path,headers)=>playerAreaRequest(path,headers,env),
+      playerAreaPage:(request,environment,surface)=>playerAreaPage(request,environment,surface,{fetchImpl}),
+    };
+    if(name==='@/components/player/player-area-document')return {PlayerAreaDocument:()=>null};
+    if(name==='react/jsx-runtime')return require(name);
+    throw Error('Unexpected page dependency: '+name);
+  };
+  new Function('require','module','exports','process',compiled)(imports,module,module.exports,{env});
+  for(const operator of ['', 'swedish-games']){
+    const destination='/api/auth/bo/start?next='+encodeURIComponent(operator?'/play?operator='+operator:'/play');
+    await assert.rejects(module.exports.default({searchParams:Promise.resolve({operator})}),error=>{
+      assert.equal(error.digest,'NEXT_REDIRECT;replace;'+destination+';307;');return true;
+    });
+  }
+  assert.deepEqual(calls,['/api/auth/session','/api/auth/session']);
 });

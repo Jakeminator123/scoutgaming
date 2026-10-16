@@ -27,3 +27,13 @@
 
 .history > summary { font-weight:600; cursor:pointer; padding:3px 0; }
 .history[open] > summary { margin-bottom:14px; }
+
+.roomPanel { max-width:none; }
+.roomLayout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:24px; align-items:start; }
+.roomLayout > * { min-width:0; }
+.roomLayout .fields { grid-template-columns:1fr; }
+.roomLayout .preview { position:sticky; top:12px; }
+.lockedChoice { display:grid; gap:5px; padding:12px; border:1px solid var(--sg-border,#657085); border-radius:8px; }
+.lockedChoice strong { overflow-wrap:anywhere; }
+.lockedChoice small { opacity:.75; }
+@media(max-width:1000px) { .roomLayout { grid-template-columns:1fr; } .roomLayout .preview { position:static; } .roomLayout .fields { grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); } }

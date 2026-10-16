@@ -225,3 +225,31 @@ test('legacy published composition labels are translated in selection and review
     assert.equal(JSON.stringify(initial),before);
   }
 });
+
+
+test('Admin room layout places one frozen preview beside exact locked choices without opening template writes',()=>{
+  const initial=initialState();initial.presentation.lanes[0].operatorAdjustable=['table.color'];
+  initial.presentation.assets=[{id:'bg-one',label:'Salong'},{id:'table-one',label:'Grön filt'}];
+  const content=html(initial,{roomId:'north-main',roomLayout:true});
+  assert.match(content,/Salong/);assert.match(content,/Grön filt/);assert.match(content,/Låst i publicerat paket/);
+  assert.doesNotMatch(content,/Inte tillgängligt i denna presentation|aria-label="Gäller för"|aria-label="Sammansättning"/);
+  assert.equal((content.match(/data-appearance-preview=/g)||[]).length,1);
+  assert.ok(content.indexOf('data-appearance-preview=')<content.indexOf('<fieldset'));
+});
+
+test('Admin room layout saves only its room override and reports busy for the entire existing writer operation',async()=>{
+  const initial=initialState({branding:{roomOverrides:{'north-vip':{background:'bg-two'}}}}),busy=[];let finish,body;
+  const h=stateful(initial,async(_url,request)=>{body=JSON.parse(request.body);return new Promise(resolve=>{finish=resolve;});},{roomId:'north-main',roomLayout:true,onBusyChange:value=>busy.push(value)});
+  select(h.render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});
+  const saving=byAction(h.render(),'save-draft').props.onClick();
+  assert.equal(busy.at(-1),true);assert.equal(byAction(h.render(),'save-draft').props.disabled,true);
+  assert.deepEqual(body.branding.roomOverrides,{'north-main':{background:'bg-two'},'north-vip':{background:'bg-two'}});
+  finish(response({...initial,draftRevision:1,draft:{revision:1,basePackageRevision:7,branding:body.branding}}));await saving;
+  assert.equal(busy.at(-1),false);assert.equal(byAction(h.render(),'review').props.disabled,false);
+});
+
+test('another Studio operation blocks room edits without changing its saved draft or issuing writes',async()=>{
+  const h=stateful(initialState(),()=>assert.fail('blocked room write'),{roomId:'north-main',roomLayout:true,disabled:true});
+  select(h.render(),'Bakgrund').props.onChange({target:{value:'bg-two'}});
+  assert.equal(byAction(h.render(),'save-draft').props.disabled,true);await byAction(h.render(),'save-draft').props.onClick();
+});

@@ -8,12 +8,12 @@ import type {PublicOperatorPreview} from '../../web/public/operator-preview-cont
 import type {EditableBranding,PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 import styles from './partner-appearance.module.css';
 
-export function PartnerAppearancePreview({server,branding,scope,operatorSlug,language='sv',onStale,active=true}: {
-  server:PartnerAppearanceInitial;branding:EditableBranding;scope:string;operatorSlug:string;language?:string;onStale:()=>void;active?:boolean;
+export function PartnerAppearancePreview({server,branding,scope,operatorSlug,language='sv',onStale,active=true,initiallyEnabled=false}: {
+  server:PartnerAppearanceInitial;branding:EditableBranding;scope:string;operatorSlug:string;language?:string;onStale:()=>void;active?:boolean;initiallyEnabled?:boolean;
 }) {
   const en=language==='en',t=(sv:string,english:string)=>en?english:sv;
   const [attempt,setAttempt]=useState(0);
-  const [enabled,setEnabled]=useState(false),[layout,setLayout]=useState<'desktop'|'mobile'>('desktop'),[chosenRoom,setChosenRoom]=useState('');
+  const [enabled,setEnabled]=useState(initiallyEnabled && active),[layout,setLayout]=useState<'desktop'|'mobile'>('desktop'),[chosenRoom,setChosenRoom]=useState('');
   useEffect(()=>{if(!active)setEnabled(false);},[active]);
   const [state,setState]=useState<{identity:string;status:'loading'|'ready'|'unavailable';payload?:PublicOperatorPreview}>({identity:'',status:'loading'});
   const stale=useRef(onStale);stale.current=onStale;
@@ -54,8 +54,8 @@ export function PartnerAppearancePreview({server,branding,scope,operatorSlug,lan
   const table=payload?.media.tables.find(row=>row.id===tableId),background=payload?.media.backgrounds.find(row=>row.id===backgroundId);
   const media=(row:typeof table)=>row?{url:row.src,label:row.label,contentType:row.contentType}:null;
   const missingLayers=payload?.independentLayers&&Boolean(tableId&&!table||backgroundId&&lane?.layers.background.mode!=='baked'&&!background);
-  return <section className={styles.preview} aria-label={t('Förhandsvisning av utkast','Draft preview')}>
-    <h4>{t('Förhandsvisning av utkast','Draft preview')}</h4>
+  return <section className={styles.preview} aria-label={t('Förhandsvisning av valda lager','Selected layers preview')}>
+    <h4>{t('Förhandsvisning av valda lager','Selected layers preview')}</h4>
     <p className={styles.hint}>{t('Visar valda lager och grundloop från paketets frysta media. Bordsfärgens gränssnittsdetaljer och spelets händelser ingår inte i denna bild.','Shows selected layers and the idle clip from the package’s frozen media. Table-colour interface details and game events are not shown in this image.')}</p>
     {!scope?<label className={styles.row}>{t('Förhandsvisa rum','Preview room')}<select aria-label={t('Förhandsvisa rum','Preview room')} value={room?.id??''} onChange={event=>setChosenRoom(event.target.value)}>{server.rooms?.map(row=><option key={row.id} value={row.id}>{row.label}</option>)}</select></label>:null}
     {!room||!lane?<p>{t('Det finns inget publicerat spelrum för denna sammansättning att förhandsvisa.','There is no published room for this presentation to preview.')}</p>:<>

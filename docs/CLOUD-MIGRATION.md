@@ -1,5 +1,625 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## Aktiv slutplan — avstämning 16 oktober 2026
+
+Jakob har aktiverat målet i samma chatt och befintliga huvudcheckout.
+Dragan-grundloopens rättning och användarprovet av Spelbolag → Rum är
+kvitterade nedan. PR165:s avgränsade N1-rättning är nästa leverans.
+Workflow-, dokumentations- och rutinfel som hindrar avslutet ingår; separat
+QA och ny rörlig läppsynk återstartas inte. Underagenter används för
+avgränsad granskning och åtskilda dokumentfiler, med en leveransström.
+`random/granskning.txt` är granskningsunderlag, inte ett genomförandemandat;
+dess main-referens `178df375` är äldre än verifierad main `10d3255e`.
+
+**Aktivt mål:** Slutför Admin-etappen och den interna
+migreringen till Scoutgamings befintliga system. Rätta blockerande
+uppspelnings-/Admin-fel, använd våra befintliga identiteter, publiceringar,
+behörigheter och miljöprofiler, och ta bort verifierat ersatt kod,
+konfiguration och lokala rester. Återanvänd utvalda medier och funktioner
+från Kevin/Emil genom våra kontrakt, aldrig som en parallell produktstack.
+Leverera genom granskad grön PR → main → befintlig produktion och synka
+huvudcheckouten. Avsluta med separat kvitto för implementerat, driftsatt,
+användaraccepterat, faktiskt borttaget och externa blockerare.
+
+| Ordning | Arbete | Avslutningsvillkor |
+| --- | --- | --- |
+| 1 | Dragan-stoppet, parallellt med Jakobs Admin-prov | Identifiera exakt dealerklipp, hash, publicerad revision och speltillstånd. Reproducera avgränsat; rätta återhämtning utan att hoppa över kort-/talfilmer, byta media eller röra användarens runda. Regression och två sammanhängande prov i faktisk spelare; inga liveinsatser används som agenttest. |
+| 2 | Stäng Admin-etappen | Hantera återkoppling på bolag → rum → bakgrund/dealer/bord. Verifiera båda spelen, rumsspecifika val kontra delad mall och utkast/publicering. Jakob godkänner användarflödet; kod- och medieacceptans redovisas var för sig. |
+| 3 | Täpp till verifierade kontrolluckor | GitHub-kontrollen `CI` är nu obligatorisk mot aktuell main, enligt kvittot nedan. Kvar: rätta lageruppladdning med resursbegränsad serveranalys av faktiska medieegenskaper och negativa tester. |
+| 4 | Slutför intern konsolidering och städning | Kartlägg kvarvarande konsumenter, flytta nödvändiga funktioner till avsedda befintliga moduler, uppdatera loader/importer/bygg-/driftkonfiguration tillsammans och ta bort ersatta delar. Förbrukade kopior och redundanta säkerhetskopior får en faktisk raderingsåtgärd, inte en ny arkivkopia; unika data och använda junctionmål ingår inte som restfiler. Varje kvarvarande undantag får konkret beroende eller återställningssyfte. |
+| 5 — separat efter Admin | Bedöm vald Kevin/Emil-integration | Verifierad åtkomst, källa, image-digest och avatarbyte måste stämma. Anpassa enbart nödvändigt protokoll/material till vårt system. Aktivering och eventuella nya kostnadsbärande resurser är ett separat steg; Emils befintliga poddar och staging lämnas orörda. |
+
+PR165, ny rörlig läppsynk och QA förblir pausade tills Admin-etappen är
+avslutad. QA-/Preview-utbyggnaden ska inte återstartas. Återstående egna
+QA-rester bedöms mot rollback-kvitton och exakta resursidentiteter innan
+borttagning; gamla listor är inte bevis för att något fortfarande finns.
+Automatiska PR-previews är inte en ny accepterad skriv-/testmiljö.
+En leveransström används. Läsande granskningar och tydligt åtskilda
+ändringar kan parallelliseras; gemensam integration och merge sker i ordning.
+
+**Användaracceptans 16 oktober:** Jakob svarade "Det fungerar bra" på provet
+Spelbolag → Rum → förhandsvisningen med bakgrund/dealer/bord. Detta kvitterar
+det efterfrågade användarflödet. Dragan-rättningens kvitto nedan gäller
+grundloopen; svaret är inte läppsynkacceptans eller ett separat prov av
+varje spel/paket.
+
+**Admin-flödesetappen avslutad 16 oktober:** det avgränsade bolag/rumsflödet
+är användaraccepterat och Dragan-grundloopens rättning är levererad och
+verifierad enligt kvittot nedan. Äldre öppna C1–C9-delprov och tal-/medie-
+acceptans blir inte automatiskt klara. Nästa leverans är PR165:s befintliga
+N1-rättning, följd av kontrolluckorna och konsolideringen i tabellen.
+Dokumentkvittot och miljöguiderna levererades därefter i PR179 till main
+`32ffbbaf0b64da7cb5ecc424e2904c81ca930eb4`. PR-/main-CI är gröna;
+main-körningen är `38899688763`. Vercel `dpl_137Y8TuzqRSnX1ZbXBX2wXBJ3goL`
+är READY på www och Render `dep-db91esfavr4c739qhmkg` är live på samma SHA.
+
+Efter accepterad Admin-etapp tas PR165 upp före slutkvittot för den interna
+migreringen: läs aktuell PR/head och lokalt bevarandeunderlag, slutför endast
+kvarvarande N1-rättning och kräv faktisk grön SQL-/omstarts-/HTTPS-CI samt
+granskning av slutligt head. Den äldre arbetskopian saknas, men dess tre
+okommittade filer är verifierat bevarade i Git-snapshot
+`7704c7775c5f079dd726de2f01e8022ccd56e0e2`, vars parent är PR-head
+`34281e4c2beed3490bdfb21f49a1787cd6032818`. Snapshoten ändrar endast
+`test/studio-cutover-integration.mjs`, denna tracker och JOHN-HANDOFF.
+Teständringen bevarar flera `Set-Cookie` separat och kontrollerar rensning
+av spelarcookien. Den avgränsade testfixen är nu applicerad enligt nästa
+kvitto; de äldre dokumentversionerna har inte ersatt aktuella handoffer.
+Plantexten är inget merge- eller deploybeslut för PR165.
+
+**PR165 under fortsatt arbete, 16 oktober:** aktuell main `32ffbbaf` har
+förenats utan konflikter i befintliga `codex/n1-player-session`; föreningen
+är ännu inte committad. Den bevarade HTTPS-testfixen är applicerad.
+En missad redirect i äldre `/play` är rättad med faktiskt TSX-routeprov
+som föll före ändringen; 24 riktade frontendprov passerar efteråt.
+Oberoende granskning fann också att en redan auktoriserad callback kan
+utfärda en giltig spelarsession efter lyckad N1-utloggning. Fyra
+deterministiska regressioner i `test/account-credentials.mjs` reproducerar
+det i SQLite/async-kontrakt, både före och efter sessionsskapandet.
+PR165 är därför inte leveransklar och inget nytt head har pushats.
+
+**Valt sessionsbeteende enligt genomförandemandatet:** N1-utloggning
+återkallar även kontots BO-härledda spelarsessioner genom befintlig
+`auth_epoch`. Den fryses vid auktorisering av handoff, prövas vid utfärdande
+och vid varje sessionsläsning. En fördröjd callback får inte anta den nya
+epoken efter logout. Nya vanliga lösenords-, lokala och partnersessioner
+har egna ursprungsmärkningar och återkallas inte av N1-utloggning.
+
+Äldre BO-härledda och äldre CRAIG-lösenordssessioner har samma omärkta
+fingeravtryck och kan inte skiljas åt säkert. De kräver därför en
+engångs-återinloggning vid leverans. Konton, saldon och historik bevaras;
+inga sessionsrader massraderas och ingen schemamigration införs. Detta är
+ett lokalt implementationsbeslut, inte godkännande av merge/deployment.
+De fyra tidigare röda raceproven passerar med rättningen. Faktisk
+SQL-/omstarts-/HTTPS-verifiering på nytt PR-head återstår.
+Oberoende kodgranskning har inga blockerande fynd. SQL-provet verifierar
+sessionslagringen med riktig databas och native HTTPS-logout; hela
+HTTP-handoffkedjan provas separat mot den isolerade SQLite-motorn.
+Vid blandade runtimeversioner eller rollback förstår äldre kod inte de
+nya stämplarna, vilket kan kräva ytterligare inloggning. Båda runtime-
+versionerna måste därför följas upp vid en senare godkänd driftsättning.
+
+**GitHub-kontrollkrav aktiverat 16 oktober kl. 14.30:** befintlig ruleset
+`24642403` kräver nu `CI` från GitHub Actions (app `15368`) för ordinarie
+merge till main. `strict_required_status_checks_policy=true` kräver att
+PR:en är uppdaterad mot main när kontrollerna godkänns. Ingen mergekö eller
+extra manuell approval har lagts till. Separat återläsning av både reglerna
+och effektiva main-regler verifierar ändringen. Befintlig PR-regel,
+raderings-/force-push-skydd, mål och administratörsundantag är oförändrade;
+undantaget används inte i agentleveranser.
+
+Oberoende granskning av workflow på `32ffbbaf` bekräftar att `CI` körs
+med `always()` och kräver lyckat scopeval samt alla tillämpliga kontrolljobb;
+fel, avbrott och oväntade skip ger rött. GitGuardian och Vercel är separata
+kontroller, och migration-readiness hoppas fortfarande över för fork-PR:er.
+Kravet är därför inte ett bevis för dessa tre kontroller. Ordinarie leverans
+från egna branches kräver fortsatt faktisk SQL-/omstarts-/HTTPS-CI och
+granskning av slutligt head. Före-/efterkvitto finns privat i
+`arkiv/2026-10-15/admin-consolidation/ruleset-24642403-ci-receipt.json`.
+
+**Avgränsad lokal städning 16 oktober kl. 14.36:** arbetskopian
+`C:/Users/jakem/.cursor/worktrees/croupier/efterarbete` är borttagen med
+vanlig `git worktree remove`, utan force. Dess head `9919b812` är verifierad
+förfader till main `32ffbbaf`; branchen `jakob/ordning-slutfix` finns kvar.
+Tre lokala Volta-pinnar finns redan i main. Den unika GitGuardian-konfigurationen
+(korrekt Node-sökväg och arbetskopiespecifik cwd), ändringspatchen och det
+lilla agentkvittot bevaras under kanoniska privata arkivet
+`arkiv/2026-10-16/.cursor/worktrees/croupier/efterarbete/` med hashkvitto.
+Patchens omvända applicering kontrollerades före återställning av de fyra
+lokala filerna. Ingen fil har kopierats till aktiv konfiguration.
+
+Arbetskopians sessionsdatabas innehöll noll rader, agentclaims var tomma
+och ingen läsbar processkommandorad hänvisade till den vid kontrollen.
+Dess egen regenererbara design-preview-installation och tomma sessionsdatabas
+är borttagna. Fyra dependency-junctions avlänkades utan att följa målen;
+huvudcheckoutens fyra mål och utvalda paketmetadata verifierades efteråt.
+Det är en avgränsad kontroll, inte en bytekontroll av alla beroenden.
+Huvudcheckoutens två skyddade användarfiler har oförändrade SHA-256.
+Övriga tre registrerade sidoarbetskopior och huvudcheckoutens pågående
+PR165-merge är bevarade. Ingen generell branchrensning eller ny installation
+gjordes. Inget nytt filantal eller sparat byteantal påstås för detta städpass.
+
+De tre återstående sidoarbetskopiorna är lästa separat. `ai-system-map`
+har unika okommittade verifierings-/dokumentändringar; `8e3c` har fyra
+unika lokala videoredigeringscommits och privata editorfiler; `moving-lipsync-runtime`
+har en unik patch för explicit ElevenLabs-åtkomst samt privat körunderlag.
+De är därför bevarade i väntan på avgränsad överföring eller avvisning av
+just deras unika arbete. Ett gammalt namn eller grön ancestry räcker inte.
+
+En separat konfigurationsrättning är lokalt klar: Gateway-utdata använder
+`OPENCLAW_API_KEY`, medan kompatibilitetsaliaset `OPENCLAWAPI_KEY` skrivs tomt.
+Äldre profiler kan fortfarande läsas. 48 riktade tester passerar och inga
+faktiska miljöfiler har ändrats. De två deploy-modulerna och tillhörande
+ENVIRONMENT-VARIABLES-dokumentation hålls utanför PR165 för egen leverans.
+
+### Första rättningen: Dragan-grundloop
+
+På `codex/dragan-idle-recovery` är återhämtningen lokalt rättad: faktisk
+tidsprogression styr watchdog, stall får typat fel och uppspelningsdiagnostik,
+och den egna grundloopen får ett återförsök av samma frysta klipp. Första bild
+och UI-/flikbyte återställer inte budgeten; en fullbordad loop gör det.
+Kort-/talstall spelar inte om en annan standardfilm. Media-ID, hash och
+paketrevision följer nu spelarens diagnostik. Inga mediefiler ändras.
+
+Fem nya regressioner föll på tidigare kod. Efter rättning passerar samtliga
+80 prov i `test/local-presentation.mjs`, och oberoende kodgranskning har inga
+blockerande fynd. Lab-build verifierar 97 byggspår. Commitkontrollen
+passerar 3 947 prov med 9 villkorade skip och noll fel; de valfria
+browserfixturerna ingick bland skip och är inte browseracceptans.
+PR178 har granskat sluthead `556050b6915a88e0453d87d9881df85bc03ed128`.
+PR-CI `38897489445` är grön, inklusive faktisk isolerad SQL/omstart/HTTPS
+med kvittot `isolated-studio-sql-restart-https: passed`. PR178 är mergad
+till main `b92de8109fee047a0afeab91bb4c9b5d8dcd3db3`. Huvudcheckoutens
+main är snabbspolad till samma commit och egna ändringar är bevarade.
+Main-CI `38898316642` är också grön, inklusive samma faktiska SQL-/omstarts-/
+HTTPS-prov. Vercel `dpl_EXW7cYGriaVD5VT1gTpfgcXavVoZ` är READY på denna SHA
+med www/apex tilldelade. Render `dep-db9191eq1p3s738qvj30` är live på samma
+SHA i Jakob's workspace. Publika `/__cloud/version` bekräftar versionen och
+`/__cloud/health` svarar 200/ok. Inga medie-/paket-/miljöändringar ingår.
+
+Passiv läsning av den öppna produktionsfliken 16 oktober identifierade
+Dragan-klippet `2f3955b0-b450-4cc2-a9f5-ac80f10abd2f`, "Kevin V2 · andning",
+i rum `room-c0031e58-9985-b851-d9a9-4ee419b35ff0`, publicerad version 4.
+Klippet spelade vid kontrollen utan varning; det tidigare produktionsstoppets
+rotorsak är därför fortfarande obestyrkt. Den första passiva kontrollen
+ändrade inte användarens flik.
+
+Efter deployment och kontroll att ingen insats/runda pågick öppnades samma
+spel med `rehearsal=1`. Den nya spelarens DOM bekräftar paketrevision 4,
+projektrevision `studio-6de53e71-e7ec-46fa-9e60-e49d2b68a3ef` och grundloopens
+SHA-256 `2b8d6ea7829bde6212f6145038569747a389c5e20166b3ea08fc26efda81c9e3`.
+16 tidsavläsningar över 15,5 sekunder visar tre loopövergångar och därmed
+två hela sammanhängande loopar mellan övergångarna. Filmlängden är
+5,041667 sekunder; faktisk tid går framåt, filmen är inte pausad och
+statusfältet är tomt på varningar. Detta provar normal uppspelning och
+återgång efter ett talförsök; stallåterhämtningen är verifierad av de
+automatiska negativa proven, inte av ett framkallat produktionsfel.
+
+Talrepetition av `greeting` och den tidigare dokumenterade `goodluck`
+slutfördes inte och är uttryckligen **inte godkänd**. Grundloopen återkom
+efter båda försöken. Det äldre kvittot i Tal-avsnittet anger fyra
+registrerade Dragan-filer utan verifierat godkännande; någon exakt ny
+orsaksdiagnos av talavvisningen görs inte i detta grundloopskvitto.
+Ingen fil godkändes, publicering ändrades, talgenerering startades eller
+insats lades. Saldot var oförändrat och den vanliga spelfliken återställdes.
+Privata bevis i `arkiv/2026-10-15/admin-consolidation/`:
+`dragan-recovery-idle-samples.json`, `dragan-recovery-live.jpg` och
+`dragan-recovery-rehearsal.jpg`.
+
+### Ursprunglig genomgång före slutleveranserna ovan
+
+- GitHub-main är `10d3255e03b704e27bfe05b30855e7e26b7f8aba`.
+  Regelsystem `24642403` kräver PR och skyddar mot radering/force-push,
+  men hade då inget obligatoriskt statuskrav och noll vanliga
+  granskarapproval. Grön CI följdes vid tidigare leveranser; reglerna
+  garanterar inte detta. Förslaget lägger inte till ett nytt manuellt
+  godkännandekrav som rutin i Jakobs arbetsflöde.
+- `layer-upload-service.mjs` verifierar hash, storlek och signatur;
+  okända filers uppgivna bildmått avkodas inte servervägen. Behörighets-
+  och revisionsgrindar finns redan. 9:16/24 fps är ett paketbundet kontrakt,
+  inte ett generellt krav för bakgrund, bord och alla dealerfilmer.
+- Dragan-varningen är observerad, men den tidigare avlästa
+  `/api/presentation/layers/...`-videon identifierar ett presentationslager,
+  inte säkert dealerfilmen. Den spelar via verifierad blob-URL. Kodgranskning
+  visar att `local-film-player.mjs` avbryter efter utebliven tidsprogression,
+  medan `resumeOwnIdle` bara återförsöker `local_film_no_presented_frame`.
+  Ett stall kan därför lämna grundloopen låst. Detta är en konkret lucka,
+  ännu inte ett bevis för orsaken till produktionsobservationen.
+- Ingen rotmapp `labb/` finns. `lab/` är aktiv Studio-källa med Admin,
+  Partner, Lobby och delade tjänster. Namnbyten kan ingå i en sammanhållen
+  flytt med samtliga konsumenter och driftvägar; mappen får inte klassas som
+  oanvänd bara utifrån namnet. Äldre produktalias och aktiva källmappar är
+  olika saker. Förtydliga format-/läppsynkregler i befintliga guider.
+- Fem arbetskopior är nu registrerade: huvudcheckout, `8e3c`,
+  `ai-system-map`, `moving-lipsync-runtime` och `efterarbete`.
+  `admin-document-navigation`, `n1-player-session` och `pr91-integration`
+  finns inte kvar på tidigare sökvägar. N1-/stabiliseringsgrenarna finns
+  fortfarande. De tre PR165-filerna är senare verifierade i snapshoten ovan;
+  andra arbetskopiors privata eller okommittade material omfattas inte av
+  det beviset. Ingen arbetskopia har återskapats.
+- Emils citerade besked innehåller platshållare/alternativ och en hopslagen
+  image-/filadress. Commit och två avatarhashar har korrekt hexlängd, men
+  byte och image-digest är inte verifierade. Både GitHub-connectorn och
+  CLI inloggad som `Jakeminator123` får 404 för
+  `EmaCodeHero/croupier-lipsync-worker`. Åtkomst är alltså inte verifierad;
+  404 skiljer inte saknat repo från saknad behörighet. Beskedet räcker
+  inte för aktivering. Kevins rapporterade lip-layer-fel är inte påvisat
+  i vår separata konsument med exakt plan-/kroppsrute-/hashmatchning.
+
+## Avgränsad uppföljning, 16 oktober 2026
+
+Jakob valde Classic med max 2 000 och tydligt avaktiverade High Roller/VIP.
+Klienten blockerar också dubblering över befintliga gränser och bevarar
+överstora återställda insatsutkast utan att skicka dem. Server, partnerkontrakt,
+publicerade bordsprofiler och saldon ändras inte. Implementerat och lokalt
+granskat; slutligt CI-/drift-/browserkvitto förs i leveransens PR. Inga nya
+arbetskopior, miljöer, beroenden eller raderingar ingår.
+
+Separat PR176 rättar arbetsbranch, importgränsen 30 filer samt daterad
+Roulette-/PR91-status i befintliga guider. Jakob bad om sidoagentgranskning;
+två avgränsade granskningar/ändringar gjordes parallellt i samma arbetskopia,
+med sekventiell integration. Nästa användarprov är Spelbolag → Rum och dess
+lagerförhandsvisning. QA, PR165 och ny rörlig läppsynk behåller sina pausade
+lägen. GitHub- och Vercel-läsning fungerar efter kontobytet; ingen
+återanslutning eller behörighetsändring behövdes.
+
+## Genomförd leveransplan — enklare Admin, 15 oktober 2026
+
+Den 15 oktober gav Jakob återstartsmandat för befintlig Admin, en
+leveransström och då inga nya underagenter, arbetskopior eller testmiljöer.
+Arbetskopian var admin-document-navigation, branch
+codex/stabilization-checkpoint. Aktuell omfattning och arbetskopiestatus
+framgår av avstämningen överst.
+Målet är synligt enklare arbete och färre aktiva delar, inte fler trackers.
+Valt vardagsflöde: ändring i befintlig arbetskopia → push av featurebranch →
+granskad grön PR → main → automatisk produktionsdeployment → test på
+www.scoutgaming.tech. Admin, Partner och Lobby används på samma huvudadress.
+Huvudcheckoutens main synkas varsamt efter leverans. Ordinarie lokala tester,
+CI och ägarkontroller gäller fortfarande; inget direktpush-undantag införs.
+QA används inte för detta flöde. Automatiska PR-previews är inte en separat
+acceptansmiljö eller en verifierat isolerad plats för skrivande tester.
+
+| Ordning | Leverans | Klar när |
+| --- | --- | --- |
+| 1 — levererad och browserverifierad | Sammanhållna materialkort | Förhandsvisning, format, användning, ljud och felstatus finns på samma kort som den befintliga säkra papperskorgen; spelurvalet gäller hela vyn. Slutligt head är granskat och grönt, rätt main-SHA körs och flödet är browserverifierat. |
+| 2 — huvudflöde och mallretur levererade | Spelbolag → Rum | Ett begripligt huvudflöde visar rummets spel och bakgrund/dealer/bord tillsammans. Biblioteket är sekundärt. Rumsval och delade malländringar hålls åtskilda och konsekvenser syns vid ändringen. |
+| 3 — klippkort och status levererade, browserverifierade | Klippkarta | Situation, klipp/tagning och körregel är skilda. Vald film, faktisk sparad policy, verklig triggeranslutning och utkast/publicering framgår. Befintlig policyeditor återanvänds. |
+| 4 — levererad och browserverifierad | Tal | Inspelat, ny generering och realtid är skilda. Faktisk fil, text, ljud och granskningsstatus visas utan att mallar eller röstprofiler räknas som färdiga filmer. Ny rörlig läppsynk förblir tydligt avstängd. |
+| 5 — lokal förenkling och Render-inventering klara | Env-förenkling | Befintlig miljödokumentation visar behåll/flytta/ta-bort per namn, konsument, loader/prioritet och build/runtime för lokal drift, Vercel, Render och Emil. Endast verifierad lokal redundans tas bort; produktionsvärden och Emil lämnas orörda. |
+| 6 — lokal källa synkad; publik QA stängd | QA-status och lokal konsolidering | QA-utbyggnaden är återställd på separat användaruppdrag; kvittot bevaras. Preview är inte verifierat isolerad. Huvudcheckout/startprofil och egna ändringar är kontrollerade; kvarvarande arbetskopior har konkreta bevarandeskäl. Äldre Render-QA delar Blob-token med produktion och har därför satts i underhållsläge: publik HTTP 503, data/disk kvar. |
+
+Varje del avslutas före nästa: relevant kontroll → obligatoriska kontroller →
+slutgranskning → normal PR/merge för verifierat Jakob-ägt arbete →
+kontroll av produktions-SHA och ändrat browserflöde → avgränsad egen städning.
+Produktionsskrivprov begränsas till kända test-/demoresurser med återställning.
+Inga riktiga saldon eller aktiva kundpubliceringar används som testdata.
+
+PR165 är uttryckligen parkerad och bevarad i n1-player-session:
+head 34281e4c, tre okommittade rättnings-/dokumentfiler. Den går bara före
+om ett valt Admin-flöde kräver N1-till-spelarkonto-övergången. Vid återupptagning
+krävs verklig grön SQL-/omstarts-/HTTPS-CI och granskning av slutligt head.
+Den röda PR-koden ingår inte i materialkortsleveransen.
+
+QA:s tidigare 24 staged filer/stash är redan återställda och borttagna av
+QA-agenten på Jakobs separata uppdrag; bevara dess rollback-kvitto.
+Delade dependency-installationer och kvarvarande privata underlag bevaras. Ingen QA-utbyggnad, helbranch-import, ny
+mediekatalog eller aktivering av providerjobb ingår. Ofullständigt underlag
+för worker/image/avatarbank redovisas utan att stoppa oberoende Admin-arbete.
+
+## Env och lokal konsolidering, 15 oktober 2026 kväll
+
+Lokal env-förenkling är genomförd: endast oanvända
+`CROUPIER_MEDIA_STORE_ID` togs bort ur root/Lab (52/47 namn kvar).
+Åtta loader-/barnprocesskombinationer, settings och providerprofil är
+oförändrade; Emil/cloud-storage behåller sina hashvärden. 44 befintliga
+fokuserade tester passerar utan skip/fel. Originalen är byteverifierade
+och har samma effektiva åtkomstregler i det privata kanoniska arkivet.
+
+ENVIRONMENT-VARIABLES samlar 115 namn med konsument, profil/prioritet,
+bygge/runtime och behåll/ta-bort-beslut. Vercel-metadatan är färsk:
+65 poster, 56 unika namn, Production/Preview/Development 56/30/5.
+Färsk Render-läsning 20:07 UTC i bekräftat Jakob's workspace verifierar
+53/37/16/10 namn för produkt/QA/Director/Gateway, inga miljögrupper och
+inga secret files. Namn, konsumenter och Docker-bygge/runtime är sammanförda
+i ENVIRONMENT-VARIABLES. Inga molnvärden eller Emil-inställningar ändrades.
+
+QA-agenten återställde sin utbyggnad på Jakobs separata direkta uppdrag.
+Kvittot 13:48 UTC anger 24 återställda filer, borttagna egen branch/worktree/
+stash och egna nya molnresurser. Egen läsning bekräftar saknad arbetskopia
+och stash; molnraderingarna är tillskrivet kvitto. Bevara
+`arkiv/2026-10-15/preview-qa-isolation/rollback-receipt.json`.
+Preview saknar fortfarande ingresshemlighet och har produktionsadresser;
+det är ingen verifierad isolerad skrivmiljö. Den läsande kontrollen 20:07 UTC
+visade äldre Render-QA `srv-datj7l893c1s73ar3u50` på `ee060804`, med separat
+databas men identisk Blob-skrivtoken som produktion.
+
+Jakob överlät därefter valet av ett enkelt main-flöde. Underhållsläge sattes
+på exakt denna äldre QA 21:40:42 UTC i Jakob's workspace. Färsk API-läsning
+bekräftar `maintenanceMode.enabled=true`; både `/` och `/__cloud/health`
+svarar HTTP 503. Produktionens health och www:s Lobby svarar fortsatt 200.
+QA:s databas, 1 GiB-disk och medier bevaras, auto-deploy är fortsatt av.
+Tjänsten är inte suspenderad eller kostnadsavvecklad; privat nät/SSH finns kvar.
+Återöppna inte QA före verifierad data-/medieisolering och ett nytt beslut.
+Ingen env-ändring, nyckelrotation eller produktionsskrivning gjordes.
+Nyckelfria kvitton: `env-render-receipt.json` (läsning) och
+`qa-maintenance-receipt.json` (genomförande), i samma privata evidensmapp.
+
+En färsk listning visar endast projektet `scoutgaming` i Vercel-teamet
+`scoutgaming`. Där finns inget projekt med namnet “questions and answers”
+eller QA. Äldre projektlistor nedan är historik, inte dagens resurslista.
+
+Huvudcheckouten `C:/Users/jakem/Projects/croupier` är fast-forward-synkad
+från `1c9e1c6a` till `80b703eef25de70e9a8bf1114d6396b15b42eb58`:
+7 commits/45 spårade filer. Inga överlapp med egna ändringar.
+Åtta skyddade filer/profiler har oförändrade hashvärden; 222 privata
+reviewfiler har oförändrat byteantal/tidsmetadata, utan läsning av mediebyte.
+Dirty-status är identisk. Original av de två egna modifierade spårade
+filerna finns under `arkiv/2026-10-15/` med ursprungliga sökvägar.
+
+Normal lokal start bestäms av checkouten där `lab/start.mjs` körs:
+profil `lissabon-stream-lane`, produkt/Lab 4200/4201, explicit
+kamera/cloud-storage-opt-in. Huvudcheckoutens Lab-/frontendbyggen saknas
+efter tidigare avsiktlig städning. Inget serverpar kördes vid kontrollen
+och inga servrar eller byggen startades. Det går därför inte att tillskriva
+en tidigare server ett verifierat SHA. Nästa lokalstart behöver bara sitt
+nödvändiga bygge; ingen generell beroendeinstallation.
+
+Den befintliga publika genvägen `node lab/start.mjs --product` ändras
+från `/play` till `/lobby`. Den returnerar före lokal server- eller
+providerstart. Gamla spelstarter/API:er ändras inte.
+
+Verifiering av denna leverans: startgenvägens tre befintliga tester passerar.
+Ordinarie fullhook passerar med 3 921 pass, 23 villkorade skip och 0 fel/cancel
+i 77 grupper. De sju befintliga browserfilerna kördes därefter med installerad
+Playwright/Chrome: 44/44 pass, inklusive alla 14 tidigare överhoppade
+browserprov. Nio andra villkorade prov återstår för sina SQL/Linux-miljöer.
+Ingen ny installation eller bestående testmiljö skapades. Föregranskning:
+fem befintliga filer, bara en runtimeändring (publik start-URL), inga envvärden
+i Git. GitGuardian: 0 öppna/18 ignorerade, aktiv övervakning; historikskanning
+too_large och delvis platsmetadata kvarstår. Main-sviten var queued utan
+synliga check-runs; grön vanlig CI ersätter inte dessa bevisgränser.
+
+Slutkvitto PR172: granskat head `8b275f25497beb214e80c3742e4f4ae3b8fbf835`
+mergades normalt 15 oktober 18:32:29 UTC till main
+`0aadf568d043410709097e586310cfd2e864a710`. PR-CI 38785128105 och
+main-CI 38786479541 är gröna med faktiskt SQL-/omstarts-/HTTPS-kvitto.
+Vercel `dpl_5Yp4K9sCQzWpf3vRziWcceX3Qhuy` är READY på samma SHA/www.
+Egen browserkontroll efter omladdning visar båda spelen och deras publicerade
+bolag/rum. Huvudcheckouten är även synkad till detta slutliga SHA; verklig
+`--product --no-open` ger `/lobby` utan serverstart. Åtta skyddade filers/
+profilers hashvärden och dirty-status består; två användarfilers backupbyte
+och exakta åtkomstregler är verifierade. Bild: `lobby-entry-after.png`;
+privat slutkvitto: `main-sync-final-receipt.json` i samma evidensmapp.
+Inga spelrundor, produktionsskrivningar eller providerjobb.
+
+PR173 publicerade slutkvittot till main `2f02c4cd85bf5b07f424ba01d6605d6c4205530a`.
+PR-CI 38788413314 och main-CI 38788741234 är gröna; main körde faktiskt
+SQL-/omstarts-/HTTPS-prov. Vercel `dpl_8tBW2PdB9ah4sarNVt3oQjabrDwf` är
+READY på www. Render-produktens `dep-db8i2irm8hqs738fins0` är live på samma
+SHA. Huvudcheckouten är synkad med åtta skyddade filhashar och dirty-status
+bevarade. PR174 publicerade därefter Render-inventeringen till main
+`9b872813d996da13382a670038b9b2014e346d13`. PR-CI 38800417097 och main-CI
+38800695475 är gröna; main körde faktiskt SQL-/omstarts-/HTTPS-prov.
+Vercel `dpl_cNEN7QnXih4Hw1w3xa3PWKJUrnEc` och Render
+`dep-db8jbue7bikc73brtakg` verifierades på samma SHA; huvudcheckouten synkades
+med åtta skyddade filhashar och dirty-status bevarade. Det efterföljande
+beslutet och verifierade genomförandet av QA-underhållsläget står ovan.
+Senaste dokumentationsleveransens slutliga CI-/main-/driftkvitto förs i dess
+PR-beskrivning, utan att skapa en ny leverans enbart för ett leveranskvitto.
+
+Den följande arbetskopielistan är inventeringen från 15 oktober. Aktuellt
+antal och de ändrade sökvägarna står i avstämningen överst.
+
+| Arbetskopia vid inventeringen | Då dokumenterat skäl att behålla |
+| --- | --- |
+| Huvudcheckout/main | Vanlig lokal källa; två egna modifierade spårade filer, egna inställningar/skill och privata reviewmedier kvar. |
+| admin-document-navigation | Denna enda aktiva leveransström och tidigare bevarade dokumentutkast. |
+| n1-player-session | Parkerad PR165, tre okommittade rättnings-/dokumentfiler; ingen merge. |
+| pr91-integration | Parkerad Kevin-integration med commits som inte är förfäder till main; överföring är inte bevisad av branchens namn. |
+| 8e3c / test-video-jakob | Fyra commits utanför main-ancestry; separat videoarbete vars överföring/privata material inte är verifierat. |
+| ai-system-map | 37 ändrade/ospårade poster i systemkarta, AI-dokumentation och relaterade källor; inte en ren restkopia. |
+| moving-lipsync-runtime | Bevarad env-/runtime-integration. Två commits utanför main-ancestry; squashleverans är möjlig men privat material/överlämning är inte slutkontrollerad. |
+| efterarbete | Fyra egna okommittade konfigurations-/paketändringar. |
+
+Ancestry-antal är inte automatiskt antal unika ändringar efter squashmerge.
+Ingen av dessa kopior raderades och inga dependency-junctions följdes eller
+ändrades. Avgränsad inventering bekräftar delade Lab-/frontendinstallationer.
+Ny rörlig läppsynk är fortsatt avstängd; inga providerjobb kördes.
+Privata kvitton: `arkiv/2026-10-15/admin-consolidation/`,
+särskilt `env-local-cleanup-receipt.json` och `main-sync-receipt.json`.
+
+Bevarande före ändring: de tre tidigare dokumentutkasten finns som avgränsad
+patch i huvudcheckoutens privata
+arkiv/2026-10-15/admin-consolidation/preexisting-docs.patch.
+Materialkorten är levererade genom PR166. Granskat sluthead
+`e521b855d97af064eb0c8267d4643cf50839e765` mergades normalt till main
+`c6496965b787215dc98b20e7fbaf03d8348b5bbe` den 15 oktober 14:03:56 UTC.
+PR-CI 38747078650 och main-CI 38748089632 är gröna, inklusive faktisk
+SQL-/omstarts-/HTTPS-acceptans. Lokalt: 31 riktade test utan skip,
+97 byggspår och ordinarie fullhook 3 911 pass / 9 villkorade skip / 0 fel.
+Vercel `dpl_8W2dy8CRiPcUuY7LqtwGFxVpajep` är READY på samma main-SHA
+och bunden till www.scoutgaming.tech.
+
+Egen browseracceptans på huvudadressen: fem blackjackbord och ett separat
+roulettebord med en hanteringsåtgärd per kort; åtta MP4-bakgrunder visar
+riktiga pausade bildrutor och tre PNG-bilder laddar. Ett uttryckligt
+uppspelningsprov nådde filmens slut utan fel med muted=false. Det är ett
+tekniskt uppspelningsprov, inte ett godkännande av ljudinnehåll/läppsynk.
+Detaljer visar exakt fil-ID/hash; Spelbolag & rum öppnar det laddade
+registrerade rumsregistret. Destruktiva produktionsprov utfördes inte.
+Före/efter-bilder och loggar finns i samma privata evidensmapp.
+
+Bortstädat i denna del: den duplicerade hanteringslistan ersattes av samma
+kort som förhandsvisningen. Inga källfiler, beroenden, originalmedia eller
+arbetskopior raderades; nödvändigt bygge återanvänds i nästa leverans.
+
+Förutsättning för del 2 levererad i PR167: det observerade 403-felet
+(studio_request_rejected, digest 632708019) vid Partner-dokumentladdning
+är rättat genom återanvändning av samma dokumentregel i middleware och SSR.
+Sluthead `cc81a8a31a5a8dd0c5e90d87618f9170dfb23053` är granskat och
+PR-CI 38751080340 är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
+74 riktade prov utan skip, Lab-build 97 byggspår, fullhook 3 914 pass /
+9 villkorade skip / 0 fel/cancel i 77 grupper; dokumentationshook 43/43.
+Sessioner, medlemskap, API, Origin, action, ramar och skrivbehörighet behåller
+sina befintliga kontroller. Ingen env-, provider- eller datamodell ändrades.
+
+PR167 mergades normalt till main
+`2396f46f3dad4c6490c95625b79f3d3ddef0096e`. Vercel
+`dpl_8s8ayY5PFgDBG4kqa1y8viNGHkac` är READY på detta SHA och bunden till
+www.scoutgaming.tech. Eget browserprov på den tidigare felande adressen
+/partner/scoutgaming-demo/rooms?room=room-d685ca7b-f52b-eb41-7cad-7b6f4e3c11ea
+laddar med befintlig N1-session: korrekt bolag, exakt rum, publicerad
+paketversion 1, inget sparat utkast och den frysta trelagersförhandsvisningen.
+Bild: samma privata evidensmapp, partner-room-after.png. Inga sparningar,
+publiceringar, nya sessioner eller providerjobb utfördes. Main-CI 38752198462
+är grön, inklusive faktiskt SQL-/omstarts-/HTTPS-prov.
+
+Del 2:s huvudflöde är levererat i PR168. Sluthead
+`1fa9ab6da32e5a59dc07c9becfb11d96d726a90b` granskades och mergades normalt
+till main `178df3751bd1b76ff541bf631a17282883230d6d`. PR-CI 38758468210 och
+main-CI 38759583300 är gröna, inklusive faktisk SQL-/omstarts-/HTTPS-acceptans.
+55 fokuserade prov utan skip, Lab-build 97 byggspår och slutlig fullhook
+3 924 pass / 9 villkorade skip / 0 fel/cancel i 77 grupper. Dokumentationshook
+43/43. Granskningen rättade ett rent rumsbyte som inte meddelade vyernas
+historikprenumeranter; nytt prov använder den riktiga historikmodulen.
+
+Vercel `dpl_W7toJ1z7b2EzoktaSBvs56Xwi3vU` är READY på samma main-SHA och
+bunden till www.scoutgaming.tech. Eget browserprov verifierar huvudingången
+Spelbolag & rum, bolagsbyte utan omladdning, direkt rumslänk som hittar sin
+registrerade ägare och trelagersförhandsvisningen för båda spelen:
+- Scoutgaming Demo: Anna/Roulette, publicerad version 1, inget sparat utkast.
+- Swedish Games: Dragan/Blackjack, publicerad version 4, befintligt utkast 2.
+
+Båda visar sina faktiska bakgrunder/dealers/bord med sann låsning. Befintlig
+roomOverrides-writer, granskning och revisionskontroll återanvänds; inga
+paketbehörigheter utvidgas. Mallänken öppnar rätt delad mall med lista över
+berörda rum, uttrycklig redigeringsgrind och besked att publicerat behålls.
+Återgång via huvudmenyn bevarar kontexten. Före/efter-bilder finns i den
+privata evidensmappen: rooms-before.png, rooms-after.png och
+rooms-blackjack-after.png. Inga sparningar, publiceringar eller providerjobb
+utfördes; det befintliga blackjackutkastet är orört.
+
+Acceptansgräns: browserverktygets färginmatning ändrade endast DOM-fältets
+visning, inte editorns osparade tillstånd. Det är inte ett godkänt browserprov
+av dirty-skyddet och ingen slutsats om kodfel. Fältet återställdes genom
+omladdning. Osparat/pågående navigeringsskydd är verifierat i de lokala proven
+med riktig historik; produktionsskrivning har inte testats här.
+
+Bortstädat: dubbla rumskort och generella statistikblock ur huvudflödet;
+bibliotek och papperskorg är sekundära. 14 befintliga filer ändrade, inga nya
+filer. Inga media, arbetskopior eller beroenden raderade. Klippkartans två
+äldre returlänkar till Partner och etiketten Rum / bakgrund återstår att
+förenkla i del 3 så att Admin-flödet hänger ihop. PR165, QA och ny rörlig
+läppsynk förblir parkerade.
+
+Del 3:s funktion är levererad genom PR169. Granskat sluthead
+`842c082329031bc1d4f7db98b564d839887083ed` mergades normalt till main
+`9f6589c67d42d8559c82022fb42a04283bd06b0c`. PR-CI 38765598957 och
+main-CI 38766586185 är gröna inklusive faktisk SQL-/omstarts-/HTTPS-acceptans.
+Vercel `dpl_6ZCtotgk1iUe8pYYpQTfBxrvjXHr` är READY på detta SHA och
+www.scoutgaming.tech. 54 fokuserade klipp-/policyprov, 20 navigerings-/mallprov,
+Lab-build 97, fullhook 3 931 pass / 9 villkorade skip / 0 fel/cancel i
+77 grupper samt dokumentationshook 43/43. Inga kontroller kringgås.
+
+Varje klippkort skiljer Situation, Klipp/tagning och Körregel i projektutkastet.
+Vald okopplad film är inte längre grön för att en annan film är kopplad.
+Basandelar, längder, intervall/jitter, minsta paus, max/minut, frekvenser,
+villkor och prioritet läses från utkastet. OpenClaw-val bevisar inte
+triggeranslutning. Grundloopsvillkor utanför event-data markeras ej anslutna.
+Befintlig policyeditor följer vald tagning och exakt regel, även när regler
+delar fil. Publicerat rumspaket hålls skilt från projektutkastet. Två retur-
+länkar går till rätt rum i Admin. Ingen ny writer, runtime eller provider.
+
+Eget browserprov på rätt www-version verifierar:
+- Dragan/Blackjack: grundloopens 100 % och 5,042 s visas. Val av Kevin V2
+  leende blir uttryckligen prov/ej kopplat. Kevin 1 iv väljer rätt film och
+  exakt regel i den befintliga editorn. Paketversion 4 visas separat.
+- En endast lokal checkboxändring gav osparat utkast, ändrad kortstatus och
+  regeltext. Rumsretur följd av Bakåt bevarade ändringen i den gemensamma
+  Admin-ytan. Ändringen återställdes via samma checkbox: sparknappen blev
+  åter inaktiv. Ingen sparning/publicering eller providerkörning gjordes.
+  Ett tidigare klick med öppen panel räknas inte som navigeringsskyddsprov.
+- Rumsreturen laddar Swedish Games/Dragan och bevarat rumsutkast 2.
+  Roulette byter till Scoutgaming Demo/Anna, sex kort, separata grundloop/
+  startfilmsregler och paketversion 1. Mallens egen retur öppnar exakt
+  samma rouletterum i Admin. Ny rörlig läppsynk förblir avstängd.
+
+Före/efter och loggar: samma privata evidensmapp, clips-before.png,
+clips-after.png, clips-roulette-after.png, clip-map-* och pr169-*.
+Bortstädat: missvisande grön vald-filmstatus, sammanblandat Rum/bakgrund
+samt två Partner-omvägar. 17 befintliga filer ändrade; inga nya källfiler,
+originalmedia, beroenden eller arbetskopior raderade.
+
+Del 3:s klippkort/status är avslutade genom PR170. Granskat sluthead
+`bec009a24b56ac6a377ce31d8ddf3c412842714b` mergades normalt till main
+`1846a7af7935b78d27a598aa94f4ac901075e234`. PR-CI 38771399407 och
+main-CI 38772447966 är gröna inklusive faktisk SQL-/omstarts-/HTTPS-acceptans.
+Vercel `dpl_2NXbuB7WWH7gGbLL1533AkuxYpz9` är READY på detta SHA och www.
+32 fokuserade prov utan skip, slutligt Lab-build 97 och fullhook 3 931 pass /
+9 villkorade skip / 0 fel/cancel i 77 grupper. Inga kontroller kringgicks.
+
+Eget browserprov på www: blackjack och roulette har korta situations-
+förklaringar; Detaljer behåller teknisk källa och exakt fil-ID/format/hash.
+Anna-bordets hjulutfall visas som rendering med serverstyrt nummer, utan
+filmuppladdning eller saknad-filmstatus. Mallpanelen ger samma besked efter
+rättning av dess observerade filmbankskrav. Övriga planerade roulettefack
+är fortsatt planerade. Kevin 1 iv:s regel kryssades lokalt i och ur: ändrat
+utkast blev rent, Spara inaktiverades och återställningsbeskedet visades.
+Ingen sparning/publicering, mediaändring, spelrunda eller providerbegäran.
+
+Före: clips-after.png och clips-roulette-after.png från PR169. Efter:
+clips-copy-after.png och clips-roulette-copy-after.png i samma privata
+bevismapp; loggar clip-copy-* och pr170-*. Nio befintliga filer ändrade,
+inga nya källfiler, borttagna media, beroenden eller arbetskopior.
+GitGuardian på main: 0 öppna/18 ignorerade i läst källa, övervakning aktiv;
+historik too_large, partiell platsmetadata och queued GitHub-suite kvarstår.
+
+Del 4 Tal är levererad i PR171. Granskat sluthead
+`e028622deec393c5ee309b751b1e1319fe3922e6` mergades normalt till main
+`80b703eef25de70e9a8bf1114d6396b15b42eb58` den 15 oktober 17:30:10 UTC.
+PR-CI 38776840880 och main-CI 38777872188 är gröna, inklusive faktisk
+SQL-/omstarts-/HTTPS-acceptans. 34 fokuserade prov utan skip, Lab-build
+97 byggspår och fullhook 3 935 pass / 9 villkorade skip / 0 fel/cancel i
+77 grupper. Vercel `dpl_A4tyw9A9vSfNTST9h2R5t1bSGw2B` är READY på
+samma main-SHA och bunden till www.scoutgaming.tech.
+
+Inspelat tal visar verkliga registerfiler för vald dealer och spel, original-
+text/språk, format, tillgänglighet och hashbundet granskningskvitto.
+Underkänd, väntande, saknad och ogiltig identitet hålls åtskilda. Ny generering
+visar textmallar separat från realtidens röst-/referensprofil. Befintliga
+spar-, budget- och providergrindar består. Ny rörlig läppsynk är oansluten.
+
+Egen browseracceptans på huvudadressen:
+- Dragan/Blackjack: fyra registrerade talfiler, noll med verifierat godkännande;
+  den valda `goodluck_1` visar originaltexten ”Inga fler insatser. Här kommer
+  korten.”, SV, video/mp4 och Granskning återstår. Detaljer visar exakt fil-ID,
+  video-/ljudhash, tagning och `kevin-original-mux-unreviewed-v1`.
+- Den faktiska filmen spelades till slut, 3,041667 s, utan mediefel och med
+  muted=false. Ett separat stängningsprov pausade vid 0,295396 s efter
+  verifierat pågående spel. Det bevisar teknisk uppspelning och pausstyrning,
+  inte lyssnad ljudkvalitet eller godkänd läppsynk.
+- De 17 genereringsmallarna är tydligt skilda från inspelningarna. Byte till
+  EN ändrade malltexten men behöll inspelningens svenska text och rent utkast;
+  språkvalet återställdes till SV utan sparning. Realtidsprofilen är inaktiv.
+- Anna/Roulette: noll inspelade talfiler, fyra spelneutrala textmallar och
+  uttryckligt besked att händelsekoppling/dealerchatt återstår. Realtidsprofilen
+  är inaktiv. Översikten beskriver kulsläpp och animerat hjul.
+
+Inga produktionssparningar, publiceringar, spelrundor eller providerjobb
+utfördes. Befintliga rum/publicerade paket 4 och 1 samt blackjackutkast 2
+lämnades orörda. Bilder i den privata evidensmappen: speech-before.png,
+speech-after.png och speech-roulette-after.png. Main-säkerhetsläsningen
+visar 0 öppna / 18 ignorerade incidenter och aktiv övervakning; historik
+`too_large`, partiell platsmetadata och queued GitHub-suite är kvarstående
+separata täckningsgränser. PR-headets GitGuardian-kontroll är grön.
+
+Bortstädat: den missvisande presentationen ”Talbibliotek · inspelade repliker”
+och ”17 platser” är ersatt av verkligt filregister och separat mallbibliotek.
+Sju befintliga filer ändrades; inga nya källfiler, beroenden, medier eller
+arbetskopior skapades eller raderades. Nödvändigt bygge återanvänds.
+Nästa del är env-förenkling enligt planens konsument-/loaderkarta.
+
+PR165, QA, env-värden och rörlig läppsynk förblir parkerade/orörda i denna del.
+
 ## Admin på huvuddomänen — migrationslogg 13 oktober 2026
 
 **Så används loggen:** detta är aktuell status, en ändringsbar arbetslista och
@@ -33,6 +653,31 @@ avveckling av gamla hostnamn och från flytt av källkoden i `lab/`. Ingen
 procentangivelse ersätter verifiering av varje flöde. Historisk startpunkt,
 13 oktober: main `4d6b1ebc` (PR104), Vercel READY och Render live.
 
+### Versionsbunden avstämning inför överlämning, 15 oktober
+
+Förberedelsebasen är main `96750fa0`, där PR162–164 ingår. PR164:s granskade
+head var `2a8295a4`; dess lokala kvitto finns i C4-avsnittet nedan. Slutlig
+SSO-revision, sammansatt main, driftstatus och browseracceptans inväntas från
+samordnaren. Inget av dessa resultat tillskrivs ännu denna avstämning.
+
+Samordnaren bekräftar att `partner-write-acceptance` och `public-lobby` är
+managed-arkiverade efter hashbackup och kontroll av egna dependency-junctions.
+`pr91-integration` är fortfarande intakt; den aktuella dokumentationskopian
+behålls. Det äldre C9-kvittots köade arkivering är historik för sin tidpunkt.
+
+Det sammansatta Lab-byggets 18 CSS-varningar är inte visuell acceptans.
+Fokusreglerna i `studio-theme.module.css:24` och
+`studio-administration.module.css:21` anger olika outline-färger; ett
+avgränsat visuellt tangentbordsprov återstår inom C3. Ingen CSS ändras här.
+
+Samordnarens privata `avatar-bank-checkpoint.json` redovisar 287 poster i
+Desktop-ZIP:en utan förväntade banknamn, ett komplett träd för Kevins head
+`60e984b4` utan dessa banknamn och staging `ae9fedc5`. Namnkontrollen
+identifierar ingen verifierad avatarbank och bevisar inte att allt tänkbart
+underlag saknas. Den nya rörliga läppsynken förblir avstängd och oaccepterad;
+release/bank och verkliga medieprov återstår. Aktuell env-städning och dess
+avgränsade likhetskvitto finns i ENVIRONMENT-VARIABLES.md.
+
 ### C4: Admin-dokumentnavigation, 15 oktober
 
 **Ny produktionsobservation 11:17:32.829 UTC:** samordnarens Chrome-prov mot
@@ -52,8 +697,8 @@ fortsatt loginredirect. De tre berörda fokusfilerna ger 61 pass, 0 skip, 0 fel.
 Efter integration av main `1c9e1c6a` byggdes hela Lab om, inklusive Lobbyns
 ändrade byggindata: 97 byggspår passerar. Kodcommit `6c6db03b` passerar ordinarie
 fullhook med Chrome: 3 906 pass, 9 villkorade skip, 0 fel/cancel i 77 grupper.
-Denna fortsättning är ännu inte
-driftsatt eller produktionsaccepterad. C4 förblir öppen.
+PR164 är nu mergad som `96750fa0`; slutlig drift- och browseracceptans
+inväntas från samordnaren. C4 förblir öppen.
 
 #### Historiskt lokalt kvitto för PR161
 

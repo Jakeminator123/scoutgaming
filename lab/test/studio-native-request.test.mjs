@@ -287,3 +287,46 @@ test('rejected SSR reads built with a synthetic root URL expose fixed metadata w
     });
   }
 });
+
+
+test('known partner documents retain credentials across cors/document middleware and SSR hops',()=>{
+  const navigation={cookie:forwarded.cookie,'sec-fetch-site':'cross-site','sec-fetch-mode':'cors','sec-fetch-dest':'document'};
+  for(const path of ['/partner','/partner/demo-north','/partner/demo-north/rooms','/studio/partner/demo-north/rooms']) {
+    const request=new Request(publicOrigin+path,{headers:navigation});
+    const headers=studioDocumentNavigationHeaders(request);
+    assert.equal(headers.get('sec-fetch-site'),null,path);
+    assert.equal(headers.get('cookie'),forwarded.cookie);
+    for(const transported of [request,new Request(request,{headers})]) {
+      const page=normalizeNativeStudioPageRequest(transported,config);
+      assert.equal(page.headers.get('cookie'),forwarded.cookie);
+      assert.equal(page.headers.has('origin'),false);
+      assert.equal(page.headers.has('sec-fetch-site'),false);
+      assert.doesNotThrow(()=>assertNativeStudioRequest(page,config));
+    }
+    // The document exception is not available to native API callers.
+    assert.throws(()=>normalizeNativeStudioRequest(request,config),error=>error.statusCode===403);
+  }
+});
+
+test('partner cors/document exception excludes API, unknown routes, actions, Origin, methods and frames',()=>{
+  const document={'sec-fetch-site':'cross-site','sec-fetch-mode':'cors','sec-fetch-dest':'document'};
+  const rejected=[
+    ...['/api/partner/branding','/studio/api/partner/branding','/partner/api/rooms',
+      '/partner/demo-north/unknown','/partner/demo-north/rooms/extra','/partner/login',
+      '/partner/demo-north/_data','/studio/partner/demo-north/unknown'].map(path=>({path})),
+    ...['POST','HEAD'].map(method=>({method})),{method:'POST',body:'mutation'},
+    ...[publicOrigin,'https://evil.invalid','null'].map(origin=>({headers:{origin}})),
+    ...['iframe','empty','image',null].map(value=>({headers:{'sec-fetch-dest':value}})),
+    ...['same-origin','no-cors',null].map(value=>({headers:{'sec-fetch-mode':value}})),
+    ...['fixture',''].map(value=>({headers:{'next-action':value}})),
+    {headers:{host:'evil.invalid'}},{headers:{'x-forwarded-host':'evil.invalid'}},
+    {headers:{'x-forwarded-proto':'http'}},
+  ];
+  for(const change of rejected) {
+    const headers=new Headers(document);
+    for(const [key,value] of Object.entries(change.headers??{})){if(value===null)headers.delete(key);else headers.set(key,value);}
+    const request=new Request(publicOrigin+(change.path??'/partner/demo-north/rooms'),{method:change.method??'GET',headers,...(change.body?{body:change.body}:{})});
+    assert.throws(()=>normalizeNativeStudioPageRequest(request,config),error=>error.statusCode===403,JSON.stringify(change));
+    assert.equal(request.headers.get('origin'),headers.get('origin'));
+  }
+});

@@ -6,6 +6,9 @@ import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createPostgresStore } from '../web/storage/postgres-store.mjs';
+import { playerAuth } from '../web/storage/async-player-auth.mjs';
+import { craigIdentity } from '../web/storage/async-craig-identity.mjs';
+import { installBoAuthEpoch } from '../web/storage/async-bo-auth-epoch.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';
 import { createRenderStudioPolicy } from '../web/storage/studio-runtime.mjs';
@@ -115,7 +118,13 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
         }
         throw Object.assign(new Error('fixture_action_unavailable'), { statusCode: 503 });
       } });
-    runtime = { store, repository, gamePolicy, authorize, admin, auth, document, command };
+    const identity = craigIdentity(store.boDb), authEpoch = installBoAuthEpoch(store.boDb);
+    const gameAuth = playerAuth(store.db, async ({ name }) => {
+      const id = randomUUID();
+      await store.db.prepare('INSERT INTO players(id,name,created_at) VALUES (?,?,?)').run(id, name, new Date().toISOString());
+      return { id };
+    }, identity, { authEpoch });
+    runtime = { store, repository, gamePolicy, authorize, admin, auth, document, command, identity, authEpoch, gameAuth };
   }
   server = createServer(tls, async (incoming, outgoing) => {
     try {
@@ -133,7 +142,9 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       else if (['/studio/api/project', '/studio/api/social'].includes(path)) result = await runtime.document.handle(request);
       else if (path === '/api/bo/config') result = Response.json(await runtime.gamePolicy.readGameConfiguration());
       else result = await runtime.admin.handle(request);
-      outgoing.writeHead(result.status, Object.fromEntries(result.headers)); outgoing.end(Buffer.from(await result.arrayBuffer()));
+      const responseHeaders = Object.fromEntries(result.headers), setCookies = result.headers.getSetCookie();
+      if (setCookies.length) responseHeaders['set-cookie'] = setCookies;
+      outgoing.writeHead(result.status, responseHeaders); outgoing.end(Buffer.from(await result.arrayBuffer()));
     } catch { outgoing.writeHead(503, { 'content-type': 'application/json' }); outgoing.end('{"error":"fixture_unavailable"}'); }
   });
   await new Promise((yes, no) => { server.once('error', no); server.listen(0, '127.0.0.1', yes); });
@@ -176,7 +187,12 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
     await check('HTTPS real native login admits administrators and rejects game-only credentials and legacy role cookies', async () => {
       for (const [key, user] of [['admin', names[0]], ['revocable', names[2]]]) {
         const result = await call('/studio/api/auth/login', { method: 'POST', body: { user, pass: password }, cookie: '' });
-        assert.equal(result.status, 200); cookies[key] = result.headers.get('set-cookie').split(';')[0];
+        assert.equal(result.status, 200);
+        const issued = result.headers.getSetCookie(), boCookies = issued.filter(value => value.startsWith('bo_jwt='));
+        assert.equal(boCookies.length, 1, 'HTTPS preserves the native BO session cookie separately');
+        assert.ok(issued.some(value => value.startsWith('player_session=;') && value.includes('Max-Age=0')),
+          'HTTPS separately clears the previous player session without replacing the BO cookie');
+        cookies[key] = boCookies[0].split(';')[0];
         assert.equal((await result.json()).role, 'admin');
       }
       for (const [key, user] of [['reader', names[1]], ['staff', names[3]], ['player', names[4]]]) {
@@ -366,8 +382,15 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       assert.equal((await runtime.store.db.prepare('SELECT balance FROM players WHERE id=?').get(player.id)).balance, 1025);
     });
     const savedBeforeRestart = await runtime.gamePolicy.readSaved();
+    const sessionRequest = cookie => ({ headers: { host: new URL(backendOrigin).host, cookie }, socket: { encrypted: true } });
+    const n1Account = await runtime.identity.find(names[0]);
+    const frozenN1 = { ...n1Account, authEpoch: await runtime.authEpoch(n1Account.id) };
+    const n1PlayerCookie = (await runtime.gameAuth.fromBackoffice(sessionRequest(''), frozenN1)).split(';')[0];
+    const n1PlayerId = await runtime.gameAuth.user(sessionRequest(n1PlayerCookie));
+    assert.ok(n1PlayerId);
     await check('actual cluster restart preserves saved policy, native auth, account balance, history and nonce', async () => {
       pool = await restart(); await setup();
+      assert.equal(await runtime.gameAuth.user(sessionRequest(n1PlayerCookie)), n1PlayerId, 'BO-derived session survives an ordinary database restart');
       assert.deepEqual(await runtime.gamePolicy.readSaved(), savedBeforeRestart);
       assert.equal((await call('/studio/api/admin/config')).status, 200);
       assert.equal((await runtime.store.db.prepare('SELECT balance,status FROM players WHERE id=?').get(player.id)).balance, 1025);
@@ -377,12 +400,16 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       assert.equal((await readout.json()).cutReached, 2);
       assert.equal((await (await call('/studio/api/admin/voicelines')).json()).dealers[0].lines[0].reviewState, 'current-human-review');
     });
-    await check('role revoke and logout invalidate real JWT across deployments after restart', async () => {
+    await check('native HTTPS logout invalidates real JWT and epoch-bound player sessions after SQL restart', async () => {
       assert.equal((await call('/studio/api/admin/config', { cookie: cookies.revocable })).status, 200);
       await pool.query('UPDATE croupier_auth.users SET role=$1 WHERE username=$2', ['staff', names[2]]);
       assert.equal((await call('/studio/api/admin/config', { cookie: cookies.revocable })).status, 401);
       assert.equal((await call('/studio/api/auth/logout', { method: 'POST', body: {} })).status, 200);
       assert.equal((await call('/studio/api/admin/config')).status, 401);
+      assert.equal(await runtime.gameAuth.user(sessionRequest(n1PlayerCookie)), null, 'a delayed cookie from before logout cannot restore authentication');
+      await assert.rejects(runtime.gameAuth.fromBackoffice(sessionRequest(''), frozenN1), /Backoffice session expired/, 'a frozen handoff cannot adopt the new epoch');
+      assert.ok(await runtime.store.db.prepare('SELECT id FROM players WHERE id=?').get(n1PlayerId), 'logout preserves the player account');
+      assert.equal((await runtime.store.db.prepare('SELECT balance FROM players WHERE id=?').get(player.id)).balance, 1025, 'logout does not change the existing wallet');
     });
     await check('schema-checksum mismatch fails closed and never creates replacement disk/default state', async () => {
       const checksum = (await pool.query("SELECT checksum FROM croupier_studio.storage_migrations WHERE version='002'")).rows[0].checksum;

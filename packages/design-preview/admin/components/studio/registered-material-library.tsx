@@ -1,8 +1,9 @@
 import {useEffect,useRef,useState} from 'react';
-import type {StudioProject} from '../../../../../lab/lib/studio-model.mjs';
+import type {StudioProject,LayerAsset} from '../../../../../lab/lib/studio-model.mjs';
 import {validateProject} from '../../../../../lab/lib/studio-model.mjs';
 import {LayerLibrary} from '../../../../../lab/components/layer-library';
 import {LayerAssetManager} from '../../../../../lab/components/layer-asset-manager';
+import {layerAssetReferences} from '../../../../../lab/lib/layer-asset-removal.mjs';
 import {materialLabel} from '../../../../../web/public/material-catalog.mjs';
 import {layerAssetFitsGame} from '../../../../../web/layer-asset-contract.mjs';
 import {createStudioClient} from '../../lib/connected-studio.mjs';
@@ -27,7 +28,7 @@ export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey}:{disab
   function operation(key:string,value:boolean){if(value)active.current.add(key);else active.current.delete(key);busyRef.current=active.current.size>0;setBusy(busyRef.current);}
   function saved(remote:StudioProject){validateProject(remote);setProject(remote);setError('');onChanged();}
   return <section className="p-6 space-y-5" aria-label="Bord och bakgrunder">
-    <h1 className="text-2xl font-semibold">Bord & bakgrunder</h1><p>Gemensamma original. Välj dem sedan i rummets sammansättning.</p>
+    <h1 className="text-2xl font-semibold">Bord & bakgrunder</h1><p>Gemensamma material för dina rum. Förhandsvisa här och välj material i <a className="text-sg-lime underline" href="/admin/rooms?view=registered">Spelbolag & rum</a>.</p>
     {disabled&&<p role="status">Spara eller lös ditt Studio-utkast innan du ändrar biblioteket.</p>}
     {error&&<p role="alert">{error} <button className="studio-button" disabled={busy||loading} onClick={()=>setReload(value=>value+1)}>Läs om biblioteket</button></p>}{loading&&<p role="status">Läser det skyddade biblioteket…</p>}
     <div role="tablist" aria-label="Bibliotekstyp">{(['table','background'] as const).map(value=><button key={value} role="tab" aria-selected={value===role} disabled={busy} className="studio-button" onClick={()=>setRole(value)}>{value==='table'?'Bord':'Bakgrunder'}</button>)}</div>
@@ -36,11 +37,49 @@ export function RegisteredMaterialLibrary({disabled,onChanged,refreshKey}:{disab
       <LayerLibrary role={role} game={game} disabled={blocked} onBusyChange={value=>operation('upload',value)} onRegistered={(remote,id)=>{
         if(!remote.layerAssets?.some(asset=>asset.id===id&&asset.role===role&&layerAssetFitsGame(asset,game))){setError('Registreringen kunde inte bekräftas för valt spel. Läs om innan du fortsätter.');return;}saved(remote);
       }}/>
-      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{(project.layerAssets??[]).filter(asset=>asset.role===role&&layerAssetFitsGame(asset,game)).map(asset=><li key={asset.id} className="rounded border border-sg-line p-3">
-        {asset.contentType.startsWith('video/')?<video src={'/studio/api/layer-assets/'+asset.id} controls playsInline preload="none" aria-label={materialLabel(asset)}/>:<img src={'/studio/api/layer-assets/'+asset.id} alt={materialLabel(asset)} loading="lazy" className="h-40 w-full object-contain"/>}
-        <h2>{materialLabel(asset)}</h2><p>{asset.width} × {asset.height}</p>
-      </li>)}</ul>
-      <div className="studio-material-controls"><LayerAssetManager key={role} project={project} role={role} disabled={blocked} expanded onBusyChange={value=>operation('trash',value)} onSaved={saved}/></div>
+      <div className="studio-material-controls material-library"><LayerAssetManager key={role+game} project={project} role={role} disabled={blocked} expanded
+        filterAsset={asset=>layerAssetFitsGame(asset,game)} onBusyChange={value=>operation('trash',value)} onSaved={saved}
+        renderAsset={(asset,actions)=><MaterialCard asset={asset} references={layerAssetReferences(project,asset.id).map(row=>row.label)} {...actions}/>}/></div>
     </div>}
   </section>;
+}
+
+function MaterialCard({asset,references,disabled,onTrash}:{asset:LayerAsset;references:string[];disabled:boolean;onTrash:()=>void}){
+  const video=useRef<HTMLVideoElement>(null);
+  const [state,setState]=useState<'loading'|'ready'|'error'>('loading');
+  const [attempt,setAttempt]=useState(0),[playing,setPlaying]=useState(false),[playError,setPlayError]=useState('');
+  const isVideo=asset.contentType.startsWith('video/'),src='/studio/api/layer-assets/'+asset.id;
+  const label=materialLabel(asset).replace(/_+/g,' ').replace(/\s+/g,' ').trim();
+  const format=asset.contentType.split('/')[1]?.toUpperCase()||'FIL';
+  async function play(){
+    const element=video.current;if(!element)return;
+    setPlayError('');setPlaying(true);element.muted=false;
+    try{await element.play();}catch{setPlaying(false);setPlayError('Uppspelningen kunde inte starta. Försök igen.');}
+  }
+  return <article className="material-card" aria-label={label}>
+    <div className="material-preview">
+      {isVideo?<video key={attempt} ref={video} src={src+'#t=0.1'} preload="metadata" playsInline controls={playing}
+        aria-label={'Förhandsvisning: '+label} onLoadedData={()=>setState('ready')} onError={()=>setState('error')}
+        onEnded={()=>setPlaying(false)} className={state==='ready'?'':'material-pending'}/>
+        :<img key={attempt} src={src} alt={label} loading="lazy" onLoad={()=>setState('ready')} onError={()=>setState('error')}
+          className={state==='ready'?'':'material-pending'}/>}
+      {state==='loading'&&<span className="material-preview-status" role="status">Läser förhandsvisning…</span>}
+      {state==='error'&&<div className="material-preview-status"><p role="alert">Förhandsvisningen kunde inte läsas.</p>
+        <button type="button" onClick={()=>{setState('loading');setPlaying(false);setAttempt(value=>value+1);}}>Försök igen</button></div>}
+      {isVideo&&state==='ready'&&!playing&&<button type="button" className="material-play" aria-label={'Spela '+label+' med ljud'} onClick={()=>void play()}>▶ Spela med ljud</button>}
+      <span className="material-format">{format}</span>
+    </div>
+    <div className="material-card-body">
+      <h2 title={label}>{label}</h2>
+      <p className="material-usage">{references.length?'Vald i utkast: '+references.join(', '):'Inte vald i något utkast'}</p>
+      {playError&&<p role="alert">{playError}</p>}
+      <details><summary>Detaljer</summary><dl>
+        <dt>Filnamn</dt><dd>{asset.label}</dd>
+        <dt>Storlek</dt><dd>{asset.width} × {asset.height} · {(asset.size/1024/1024).toLocaleString('sv-SE',{maximumFractionDigits:1})} MB</dd>
+        <dt>Material-ID</dt><dd>{asset.id}</dd>
+        <dt>SHA-256</dt><dd>{asset.sha256}</dd>
+      </dl></details>
+      <button type="button" className="material-trash" disabled={disabled} aria-label={'Flytta '+label+' till papperskorgen'} onClick={onTrash}>Flytta till papperskorgen…</button>
+    </div>
+  </article>;
 }

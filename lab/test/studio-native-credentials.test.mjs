@@ -250,7 +250,7 @@ test('admin can resend activation or reset for stored reader/staff and preserve 
 test('reader/staff self-reset invalidates prior game fingerprint while new password remains game-only',async()=>{
   for(const role of ['reader','staff']) {
     const f=legacyResetFixture(role),bearer=randomBytes(32).toString('hex');
-    f.state.gameSession={digest:createHash('sha256').update(bearer).digest('hex'),player_id:'game-player',source_stamp:await f.identity.stamp('7')};
+    f.state.gameSession={digest:createHash('sha256').update(bearer).digest('hex'),player_id:'game-player',source_stamp:`credential:${await f.identity.stamp('7')}`};
     const gameRequest={headers:{cookie:'player_session='+bearer}};
     assert.equal((await f.game.session(gameRequest))?.playerId,'game-player');
     const requested=await f.actions.handle(f.request('reset-request',{user:'game-only@example.invalid'}));

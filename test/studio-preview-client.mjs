@@ -103,18 +103,76 @@ test('own dealer starts its exact preview idle and cannot select paid OpenClaw m
  presentation.close();
 });
 
-test('preview tier presets never navigate out of their selected dealer or session',async()=>{
+async function tierFixture(studioPreview=null) {
  const {readFile}=await import('node:fs/promises'),vm=await import('node:vm');
  const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
- const code=source.slice(source.indexOf('function setTable(id) {'),source.indexOf("document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick"));
- const tables=[{id:'classic',name:'CLASSIC',dealer:'vera',chips:[5],min:5,max:2000},{id:'high',name:'HIGH',dealer:'vera',chips:[100],min:100,max:50000}];
- const link={search:''},base={TABLES:tables,table:tables[0],round:null,busy:false,DEALER:{key:'astrid'},location:link,
-  bets:[],undoStack:[],balance:10000,CHIPS:tables[0].chips,URLSearchParams,document:{querySelectorAll:()=>[]},
-  $:()=>({}),buildChips(){},renderBets(){},hint(){},fmt:String};
- const preview=vm.createContext({...base,studioPreview:context,dealerVersionPath:()=>assert.fail('preview preset must not navigate')});
- vm.runInContext(code+"\nsetTable('high');",preview);assert.equal(preview.table.id,'high');assert.equal(link.search,'');
- const regular=vm.createContext({...base,studioPreview:null,dealerVersionPath:dealer=>'/blackjack?dealer='+dealer});
- vm.runInContext(code+"\nsetTable('high');",regular);assert.equal(link.search,'');assert.equal(regular.table.id,'high');
+ const nodes=new Map(),hints=[],link={search:''};
+ const node=key=>{if(!nodes.has(key))nodes.set(key,{});return nodes.get(key);};
+ const sandbox=vm.createContext({studioPreview,round:null,busy:false,SEATS:7,selected:5,
+  bets:Array.from({length:7},()=>({main:0,pp:0,tp:0})),undoStack:[],DEALER:{key:'astrid'},location:link,
+  document:{querySelectorAll:()=>[]},$:node,buildChips(){},renderBets(){},hint:(...args)=>hints.push(args),
+  fmt:String,console:{info(){}},flyChip(){},sfx:{play(){}},
+  dealerVersionPath:()=>assert.fail('preset must not navigate'),ensureLogin:()=>assert.fail('invalid restored bets must not request login'),
+  dealSequence:()=>assert.fail('invalid restored bets must not reach the server')});
+ const run=code=>vm.runInContext(code,sandbox);
+ const slice=(start,end)=>{const a=source.indexOf(start),b=source.indexOf(end,a);assert.ok(a>=0&&b>a);return source.slice(a,b);};
+ run(slice('const TABLES = [','// ---------- player account:'));
+ run(slice('const betTotal =','const mains ='));
+ run(slice('function setTable(id) {',"document.querySelectorAll('#table-pick .tbl').forEach(b => { b.onclick"));
+ run(slice('let allSides = false;','seatEls.forEach((seat, i) => {'));
+ run(slice("$('#double-btn').onclick =","// MAX:"));
+ run(source.split('\n').find(line=>line.startsWith("$('#deal-now').onclick =")));
+ run('balance=10000000;');
+ return {run,node,hints,link,read:code=>JSON.parse(run('JSON.stringify('+code+')')),
+  render:()=>run('{'+slice('  const staked = bets.filter','  layoutDealControl();')+'}')};
+}
+
+test('only Classic can be selected in ordinary play and preview; stale unsupported presets fall back without navigation',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('../web/public/index.html',import.meta.url),'utf8');
+ for(const id of ['high','vip'])assert.match(html,new RegExp('<button[^>]*data-id="'+id+'"[^>]*disabled[^>]*>[^<]+<small>UNAVAILABLE</small>'));
+ for(const preview of [null,context]){
+  const f=await tierFixture(preview);
+  assert.deepEqual(f.read('[table.id,LIMITS.min,LIMITS.max]'),['classic',5,2000]);
+  f.run('bets[0].main=25;undoStack.push({box:0,field:"main",value:25});');
+  for(const id of ['high','vip','unknown']){
+   f.run('setTable('+JSON.stringify(id)+');');
+   assert.deepEqual(f.read('[table.id,bets[0].main,undoStack.length]'),['classic',25,1]);
+  }
+  // A stale caller cannot restore unsupported limits or their large chip ladder.
+  f.run('table=TABLES.find(x=>x.id==="vip");CHIPS=table.chips;setTable("vip");');
+  assert.deepEqual(f.read('[table.id,Math.max(...CHIPS),bets[0].main]'),['classic',1000,0]);
+  assert.equal(f.link.search,'');
+ }
+});
+
+test('actual Classic controls retain main and side caps and reject oversized restored drafts without sending them',async()=>{
+ const f=await tierFixture();
+ f.run('selected=1000;placeBet(0,"main",{});placeBet(0,"main",{});placeBet(0,"pp",{});placeBet(0,"tp",{});selected=5;placeBet(0,"main",{});placeBet(0,"pp",{});placeBet(0,"tp",{});');
+ assert.deepEqual(f.read('bets[0]'),{main:2000,pp:1000,tp:1000});
+ f.render();assert.equal(f.node('#deal-now').disabled,false);
+ for(const [main,pp,tp] of [[50000,0,0],[5,1001,0],[5,0,1001]]){
+  f.run('bets[0]='+JSON.stringify({main,pp,tp})+';');f.render();
+  assert.equal(f.node('#deal-now').disabled,true);assert.match(f.node('#deal-now').title,/Reduce or clear/);
+  await f.node('#deal-now').onclick();
+  assert.deepEqual(f.read('bets[0]'),{main,pp,tp},'unsubmitted choices stay available to edit');
+  assert.equal(f.hints.at(-1)[0],'CLASSIC LIMIT');
+ }
+ f.run('bets[0]={main:4,pp:0,tp:0};');f.render();assert.equal(f.node('#deal-now').disabled,true);
+ f.run('bets[0].main=5;');f.render();assert.equal(f.node('#deal-now').disabled,false);
+});
+
+test('doubling respects existing Classic side caps as well as main cap and balance',async()=>{
+ const f=await tierFixture();
+ for(const key of ['pp','tp']){
+  f.run('bets[0]={main:100,pp:0,tp:0};bets[0]['+JSON.stringify(key)+']=500;');f.render();
+  assert.equal(f.node('#double-btn').disabled,false);f.node('#double-btn').onclick();f.render();
+  assert.equal(f.read('bets[0].main'),200);assert.equal(f.read('bets[0]['+JSON.stringify(key)+']'),1000);
+  assert.equal(f.node('#double-btn').disabled,true);
+  const before=f.read('bets');f.node('#double-btn').onclick();assert.deepEqual(f.read('bets'),before);
+ }
+ f.run('bets[0]={main:2000,pp:0,tp:0};');f.render();assert.equal(f.node('#double-btn').disabled,true);
+ f.run('bets[0]={main:100,pp:0,tp:0};balance=199;');f.render();assert.equal(f.node('#double-btn').disabled,true);
 });
 
 test('closing one preview addresses only its owner-bound session',async()=>{

@@ -4,12 +4,13 @@ import {DatabaseSync} from 'node:sqlite';
 import {backofficeGameAuth as syncFactory} from '../web/bo-game-auth.mjs';
 import {backofficeGameAuth as asyncFactory} from '../web/storage/async-bo-game-auth.mjs';
 const game='https://game.example.invalid',bo='https://bo.example.invalid';
+const stampA='a'.repeat(64),stampB='b'.repeat(64);
 for (const [name,factory,asynchronous] of [['SQLite',syncFactory,false],['PostgreSQL contract',asyncFactory,true]]) test(`${name} BO handoff canonicalizes next/callback without passing launch or foreign redirect data`,async t => {
   const sqlite = new DatabaseSync(':memory:');t.after(() => sqlite.close());
   if(asynchronous) sqlite.exec('CREATE TABLE bo_game_handoffs(state_digest TEXT PRIMARY KEY,next_path TEXT NOT NULL,expires INTEGER NOT NULL,code_digest TEXT UNIQUE,craig_user_id TEXT,username TEXT,source_stamp TEXT,session_until INTEGER)');
   const db = asynchronous ? {prepare:sql => {const statement=sqlite.prepare(sql);return {get:async (...args)=>statement.get(...args),run:async (...args)=>statement.run(...args)};}} : sqlite;
   const auth = {user:async ()=>null,fromBackoffice:async ()=> 'player_session=preserved; Path=/'};
-  const handle = factory({db,auth,identity:{find:async ()=>({id:'account',name:'Operator',stamp:'same'})},boSession:async ()=>({sub:'Operator',role:'admin',source_stamp:'same',exp:Math.floor(Date.now()/1000)+3600}),
+  const handle = factory({db,auth,identity:{find:async ()=>({id:'account',name:'Operator',stamp:stampA})},boSession:async ()=>({sub:'Operator',role:'admin',source_stamp:stampA,auth_epoch:0,exp:Math.floor(Date.now()/1000)+3600}),
     validLaunch:async token=>token==='a.b.c',publicUrl:game,boUrl:bo,publicGamePath:'/blackjack'});
   async function request(address,cookie) {const url=new URL(address,game),req={url:url.pathname+url.search,method:'GET',headers:{host:url.host,...(cookie?{cookie}:{})},socket:{encrypted:true}};
     const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};await handle(req,res);return res;}
@@ -32,16 +33,16 @@ for(const [name,factory,authModule] of [['SQLite',syncFactory,'../web/player-aut
     CREATE TABLE craig_player_links(craig_user_id TEXT PRIMARY KEY,player_id TEXT UNIQUE);
     CREATE TABLE bo_game_handoffs(state_digest TEXT PRIMARY KEY,next_path TEXT NOT NULL,expires INTEGER NOT NULL,code_digest TEXT UNIQUE,craig_user_id TEXT,username TEXT,source_stamp TEXT,session_until INTEGER);`);
   const db=name==='SQLite'?sqlite:{prepare:sql=>sqlite.prepare(sql.replace(/\s+FOR UPDATE\b/g,'')),async transaction(work){sqlite.exec('BEGIN IMMEDIATE');try{const result=await work();sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}};
-  const accounts=[{id:'A',name:'AdminA',stamp:'stamp-A'},{id:'B',name:'AdminB',stamp:'stamp-B'}];
+  const accounts=[{id:'A',name:'AdminA',stamp:stampA,authEpoch:0},{id:'B',name:'AdminB',stamp:stampB,authEpoch:0}];
   const identity={candidates:()=>[],authenticate:()=>null,find:name=>accounts.find(a=>a.name===name),stamp:id=>accounts.find(a=>a.id===id)?.stamp};
   let created=0;
   const {playerAuth}=await import(authModule);
-  const auth=playerAuth(db,()=>{const id='player-'+(++created);sqlite.prepare('INSERT INTO players VALUES(?,?,?)').run(id,'active',100);return {id};},identity);
+  const auth=playerAuth(db,()=>{const id='player-'+(++created);sqlite.prepare('INSERT INTO players VALUES(?,?,?)').run(id,'active',100);return {id};},identity,{authEpoch:()=>0});
   const origin='https://www.fixture.invalid';
   const request=(path,cookie='')=>({url:path,method:'GET',headers:{host:'www.fixture.invalid',cookie},socket:{encrypted:true}});
   const foreign=(await auth.fromBackoffice(request('/'),accounts[1])).split(';')[0];
   sqlite.prepare('UPDATE players SET balance=17').run();
-  const handle=factory({db,auth,identity,boSession:async req=>{const id=req.headers.cookie.includes('bo_jwt=valid-A')?'A':req.headers.cookie.includes('bo_jwt=valid-B')?'B':null;return id?{sub:'Admin'+id,aud:'backoffice',role:'admin',source_stamp:'stamp-'+id,exp:Math.floor(Date.now()/1000)+3600}:null;},validLaunch:()=>false,publicUrl:origin,boUrl:origin,publicGamePath:'/blackjack'});
+  const handle=factory({db,auth,identity,boSession:async req=>{const id=req.headers.cookie.includes('bo_jwt=valid-A')?'A':req.headers.cookie.includes('bo_jwt=valid-B')?'B':null;return id?{sub:'Admin'+id,aud:'backoffice',role:'admin',source_stamp:id==='A'?stampA:stampB,auth_epoch:0,exp:Math.floor(Date.now()/1000)+3600}:null;},validLaunch:()=>false,publicUrl:origin,boUrl:origin,publicGamePath:'/blackjack'});
   async function run(path,cookie=''){const url=new URL(path,origin);const res={writeHead(status,headers){this.status=status;this.headers=headers;},end(body){this.body=body;}};await handle(request(url.pathname+url.search,cookie),res);return res;}
   const begin=await run('/api/auth/bo/start?next='+encodeURIComponent('/play/profil'),'bo_jwt=valid-A; '+foreign);
   assert.equal(begin.status,303);assert.match(begin.headers.Location,/\/api\/bo\/game-login\?state=/);
@@ -70,15 +71,15 @@ for(const [name,factory,authModule] of [['SQLite',syncFactory,'../web/player-aut
 
 test('automatic N1 handoff requires one verified current admin on the exact shared origin',async()=>{
   const {backofficePlayerHandoffRequired:required}=await import('../web/bo-player-session.mjs');
-  const origin='https://www.fixture.invalid',account={id:'A',name:'Admin',stamp:'stamp-A'};
-  const claims={sub:'Admin',role:'admin',aud:'backoffice',source_stamp:'stamp-A',exp:Date.now()/1000+3600};
+  const origin='https://www.fixture.invalid',account={id:'A',name:'Admin',stamp:stampA};
+  const claims={sub:'Admin',role:'admin',aud:'backoffice',source_stamp:stampA,auth_epoch:0,exp:Date.now()/1000+3600};
   const request={headers:{host:'www.fixture.invalid',cookie:'bo_jwt=verified'}};
   let reads=0;
   const settings={db:{prepare(){reads++;return {get:async()=>({player_id:'own'})};}},identity:{find:async()=>account},boSession:async()=>claims,publicUrl:origin,boUrl:origin,playerId:null};
   assert.equal(await required(request,settings),true);assert.equal(reads,0,'no account creation or wallet read');
   assert.equal(await required(request,{...settings,playerId:'own'}),false);
   assert.equal(await required(request,{...settings,playerId:'foreign'}),true);
-  for(const extra of [{partner:'operator'},{role:'reader'},{role:'staff'},{aud:'player'},{source_stamp:'old'},{exp:0},{exp:Infinity}])
+  for(const extra of [{partner:'operator'},{role:'reader'},{role:'staff'},{aud:'player'},{source_stamp:'old'},{auth_epoch:undefined},{auth_epoch:-1},{auth_epoch:0.5},{exp:0},{exp:Infinity}])
     assert.equal(await required(request,{...settings,boSession:async()=>({...claims,...extra})}),false);
   assert.equal(await required(request,{...settings,boSession:async()=>null}),false);
   assert.equal(await required(request,{...settings,identity:{find:async()=>null}}),false);

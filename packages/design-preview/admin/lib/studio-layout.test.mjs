@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSeedProject} from '../../../../lab/lib/studio-model.mjs';
 import {clipSlots} from './connected-studio.mjs';
-import {groupSlots,affectedRooms,slotCaption,layoutClipCards} from './studio-layout.mjs';
+import {groupSlots,affectedRooms,slotCaption,slotExplanation,isRenderedOutcome,layoutClipCards} from './studio-layout.mjs';
 
 test('expanded clip libraries reserve the tallest measured height before the next row',()=>{
   const cards=[{id:'wait',height:294},{id:'ready',height:359},{id:'players',height:310},{id:'dealer',height:320},{id:'reveal',height:294}];
@@ -66,4 +66,27 @@ test('editing a shared trigger reports each dealer bank and room using it',()=>{
   for(const project of [before,after])for(const line of project.lines.filter(row=>['astrid','vera'].includes(row.dealerId)))line.variants[0].triggerIds=['shared'];
   const rooms=[{id:'a',dealerIds:['astrid'],compositionId:'one'},{id:'b',dealerIds:['vera'],compositionId:'two'},{id:'c',dealerIds:['mei'],compositionId:'three'}];
   assert.deepEqual(affectedRooms(before,after,rooms).map(row=>row.id),['a','b']);
+});
+
+
+test('clip cards distinguish situation, selected unbound take, saved rule and local edits',async()=>{
+  const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
+  const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+  const module={exports:{}};
+  runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
+    {module,exports:module.exports,require:name=>name==='../../lib/studio-layout.mjs'?{slotCaption,slotExplanation,isRenderedOutcome}:require(name)});
+  const slot=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.eventId==='idle.ready');
+  const clips=[{id:'bound',label:'Sparad film'},{id:'selected',label:'En annan exakt tagning',contentType:'video/mp4',sha256:'a'.repeat(64)}];
+  const data={group:groupSlots([slot])[0],slot,clips,selectedId:'selected',boundId:'bound',boundIds:['bound'],variants:[],variantId:'',busy:false,
+    onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){}};
+  const render=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{...data,...patch}}));
+  const unbound=render({});assert.match(unbound,/Situation/);assert.match(unbound,/Klipp \/ tagning/);assert.match(unbound,/Körregel · projektutkast/);
+  assert.match(unbound,/En annan exakt tagning/);assert.match(unbound,/Valt för prov · ej kopplat/);assert.match(unbound,/Koppla till utkast/);assert.doesNotMatch(unbound,/Kopplat i sparat utkast/);
+  assert.match(unbound,/video\/mp4/);assert.ok(unbound.includes('a'.repeat(64)));
+  const usage={configured:true,when:'Teknisk källa: event.type=idle',rules:['Automatiskt var 27 s.']};
+  const saved=render({usage});assert.match(saved,/Kopplat i sparat utkast/);assert.match(saved,/Automatiskt var 27 s/);assert.doesNotMatch(saved,/Koppla till utkast/);
+  assert.match(saved,/Teknisk källa: event.type=idle/);assert.doesNotMatch(saved.replace(/<details[\s\S]*?<\/details>/g,''),/event.type/);
+  assert.match(saved,/Dealern väntar mellan spelhändelserna/);assert.match(saved,/<summary>Detaljer<\/summary>/);
+  assert.match(saved,/Redigera körregel/);assert.doesNotMatch(saved,/Publicerad/);
+  const dirty=render({usage,usageChanged:true});assert.match(dirty,/Ändrat lokalt · ej sparat/);assert.doesNotMatch(dirty,/Kopplat i sparat utkast/);
 });

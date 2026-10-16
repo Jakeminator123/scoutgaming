@@ -191,8 +191,8 @@ for (const profile of ['product', 'director', 'gateway']) {
         const auth = playerAuth(players, ({ name }) => {
           players.prepare('INSERT INTO players VALUES (?,?,?,?)').run('synthetic-player', name, expectedWallet, expectedGame);
           return { id: 'synthetic-player' };
-        }, identity);
-        sessionCookie = auth.fromBackoffice({ headers: {}, socket: { encrypted: false } }, identity.authenticate('synthetic', password));
+        }, identity,{authEpoch:()=>0});
+        sessionCookie = auth.fromBackoffice({ headers: {}, socket: { encrypted: false } }, {...identity.authenticate('synthetic', password),authEpoch:0});
         assert.equal(auth.user({ headers: { cookie: sessionCookie } }), 'synthetic-player');
       } finally { players.close(); craig.close(); }
     }
@@ -226,7 +226,7 @@ for (const profile of ['product', 'director', 'gateway']) {
           const identity = craigIdentity(craig);
           assert.equal(identity.authenticate('synthetic', password).id, '1');
           assert.equal(craig.prepare('SELECT role FROM users WHERE id=1').get().role, 'reader');
-          const auth = playerAuth(players, () => assert.fail('restore must reuse the original player link'), identity);
+          const auth = playerAuth(players, () => assert.fail('restore must reuse the original player link'), identity,{authEpoch:()=>0});
           assert.equal(auth.user({ headers: { cookie: sessionCookie } }), 'synthetic-player');
           const saved = players.prepare('SELECT balance,game FROM players WHERE id=?').get('synthetic-player');
           assert.equal(saved.balance, expectedWallet);

@@ -31,7 +31,7 @@ function panelHarness(){
   }});
   const project=createSeedProject(),lane=defaultPresentationLane('astrid');project.lanes=[lane];
   const edits=[],props={project,inventory:{videos:[]},room:{id:'room-a',name:'Main',compositionId:lane.id,game:'blackjack'},dealerId:'astrid',
-    uses:[{roomId:'room-a',roomName:'Main',operatorName:'North'},{roomId:'room-b',roomName:'VIP',operatorName:'South'}],roomChoicesPath:'/partner/north/rooms?room=room-a',
+    uses:[{roomId:'room-a',roomName:'Main',operatorName:'North'},{roomId:'room-b',roomName:'VIP',operatorName:'South'}],roomChoicesPath:'/admin/rooms?view=registered&operator=north&table=room-a',
     blocked:false,projectDirty:false,onEdit:next=>{edits.push(next);props.project=next;},onRegistered(){},onSaved(){},onBusyChange(){}};
   return {props,edits,LayerAssetSelect,...components,render:()=>{cursor=0;return module.exports.StudioCompositionPanel(props);}};
 }
@@ -48,7 +48,7 @@ test('local roulette VILA replaces the editor idle without leaking into blackjac
 test('shared template preview lists uses and requires its explicit edit action before changing any field',()=>{
   const h=panelHarness();let tree=h.render();
   assert.ok(text(tree).includes('North'));assert.ok(text(tree).includes('South'));
-  const roomLink=nodes(tree,node=>node.type==='a')[0];assert.equal(roomLink.props.href,h.props.roomChoicesPath);assert.equal(roomLink.props.target,'_blank');
+  const roomLink=nodes(tree,node=>node.type==='a')[0];assert.equal(roomLink.props.href,h.props.roomChoicesPath);assert.equal(roomLink.props.target,undefined);
   assert.ok(nodes(tree,node=>node.type==='fieldset').every(node=>node.props.disabled));
   const next=structuredClone(h.props.project.lanes[0]);next.openclaw.idle='rules';
   nodes(tree,node=>node.type===h.LayerAssetSelect)[0].props.onChange(next);assert.equal(h.edits.length,0);

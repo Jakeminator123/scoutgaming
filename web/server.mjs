@@ -426,12 +426,17 @@ async function administratorGameSession(req,account) {
 // The shared-origin logout has the same BO/Lab epoch boundary as native Studio
 // logout. Clearing browser cookies alone cannot cancel in-flight requests.
 async function backofficeGameLogout(req) {
-  const boCookies=(req.headers.cookie??'').split(';').filter(value=>value.trim().startsWith('bo_jwt='));
-  if(boCookies.length>1)throw Error('Ambiguous backoffice session');
-  const account=await currentBackofficeAccount(req,{identity:scoutIdentity,boSession:boSessionOk,roles:['reader','staff','admin','superadmin']});
-  if(!account)return;
-  await boDb.prepare('INSERT INTO bo_auth_epochs (user_id,epoch) VALUES (?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(account.id);
-  await db.prepare('DELETE FROM bo_game_handoffs WHERE craig_user_id=?').run(account.id);
+  const revoke=async()=>{
+    const boCookies=(req.headers.cookie??'').split(';').filter(value=>value.trim().startsWith('bo_jwt='));
+    if(boCookies.length>1)throw Error('Ambiguous backoffice session');
+    const account=await currentBackofficeAccount(req,{identity:scoutIdentity,boSession:boSessionOk,roles:['reader','staff','admin','superadmin']});
+    if(!account)return;
+    await boDb.prepare('INSERT INTO bo_auth_epochs (user_id,epoch) VALUES (?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(account.id);
+    await db.prepare('DELETE FROM bo_game_handoffs WHERE craig_user_id=?').run(account.id);
+  };
+  // PostgreSQL's existing transaction lock is shared with native Studio and
+  // BO session issuance, including across the Vercel and Render processes.
+  if(postgres)await boDb.transaction(revoke);else await revoke();
 }
 async function boSessionOk(req) {
   const c = req.headers.cookie ?? '';
@@ -605,7 +610,7 @@ const scoutIdentity=(await craigIdentity(boDb));
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
 const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
 const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
-const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,
+const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
 const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp)));};
 const boGameAuth=(await backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',publicGamePath:gamePath,boUrl:BO_URL}));

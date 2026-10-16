@@ -1,283 +1,229 @@
 # Miljövariabler per tjänst
 
-## Aktuell env- och mediekontroll, 15 oktober 2026 förmiddag UTC
+## Aktuell avgränsning, 15 oktober 2026 kväll
 
-Ny kontroll mot Vercel team/projekt `scoutgaming`, Render `croupier-v2`
-och Neon-projekt `wandering-hill-60561912` (`croupier-production`), gren
-`main`: rätt teamägare och databasmål. En verklig läsande anslutning använder
-databas/roll `croupier_game`, TLS och verifierat servercertifikat. Vercels
-inloggade session-, projekt- och videoläsningar ger 200; projektrevisionen
-matchar exakt Neon och ett privat MP4-HEAD ger 200 med rätt byteantal.
-Vercel-production `dpl_HLMgpECGbqogXmPAzEMC5nkGqhQ5` är READY på `c024cca7`.
-Detta är läsacceptans, inte ett nytt tal-, spel- eller publiceringsprov.
+[environment-variables.json](environment-variables.json) är det maskinkontrollerade
+namn-/tjänstekontraktet. Denna översikt ersätter morgonens upprepade statuslistor.
+Inga hemlighetsvärden återges och inga miljövärden i molnet eller Emil-profiler
+ändras. Äldre QA:s publika ingång stängdes genom underhållsläge, se nedan.
+Det valda arbetsflödet är grön PR → main → test på ordinarie produktionsadress;
+[CLOUD-MIGRATION.md](CLOUD-MIGRATION.md) beskriver leveransvägen.
 
-GitHub Actions körning `38721888413` på samma SHA redovisar
-`database=croupier_game`, `role=croupier_game`, inga väntande migrationer
-och `ready=true`. Repository-secret `CROUPIER_GAME_DATABASE_URL` används
-av migrationsberedskapen och uppdaterades senast 14 oktober 20:54:36 UTC.
-Den ska motsvara den verifierade Render-produktionsanslutningen, inte
-zondatabasen `neondb`, en QA-databas eller Emils konfiguration. GitHub kan
-inte lämna tillbaka secretvärdet; körkvittot bevisar databas/roll och schema,
-inte byteidentitet hos URL:en. Ingen secret ändrades i denna kontroll.
-
-| Aktiv lokal fil | Vad den används till | Senaste åtgärd |
+| Profil/miljö | Verifierat antal | Loader, prioritet och bygge/runtime |
 | --- | --- | --- |
-| `.env.local` | Scoutgaming-profil för uttryckligt valda hjälpverktyg; vanlig Lab-start läser den inte | Tydlig märkning; samtliga 56 befintliga värden bevarade |
-| `lab/.env.local` | Isolerad start via `node lab/start.mjs` | 50 värden bevarade; samma ElevenLabs-nyckel som root/Render tillagd, totalt 51 |
-| `.env.emil` | Explicit Emil-testprofil | Fem `EMIL_*`-värden bevarade; ingen automatisk runtimeinläsning |
-| `lab/.env.cloud-storage.local` | Blob och zoner endast vid `--cloud-storage` | Tre värden bevarade; märkt som verklig produktionslagring |
-| `lab/.env.example`, `open-claw/lab/.env.example` | Mallar | Inte aktiva privata profiler |
+| Root `.env.local` | 52 namn | Explicit valda hjälpverktyg, bland annat providerprofil. Vanlig `lab/start.mjs` läser **inte** filen. `readProfile` ärver inte processnycklar. |
+| `lab/.env.local` | 47 namn | Isolerad start: root `.env` → Lab local → valfri generated-speech → cloud-storage endast med opt-in → uttrycklig processmiljö. Senare källa vinner; bara tillåtna namn vidarebefordras. Root `.env` och generated-speech-filen saknas nu. |
+| `lab/.env.cloud-storage.local` | 3 namn, oförändrad | Verklig produktionslagring för Blob/zoner; endast med `--cloud-storage`. Ingen game-databas kopieras till vanlig lokal start. |
+| `.env.emil` | 5 EMIL_-namn, oförändrad | Endast explicit profilkontroll; ingen automatisk runtimekoppling. |
+| Vercel Production/Preview/Development | 65 poster, 56 unika namn; scope 56/30/5 | Metadata utan dekryptering, inga branchspecifika poster. En post kan ha flera scopes. `vercel.json` anger web, studio och speech. Plattformen tillhandahåller valt scopes processmiljö för bygge/runtime. |
+| Render produkt/QA/Director/Gateway | Färsk API-läsning: 53/37/16/10 namn | Jakob's workspace, 15 oktober 20:07 UTC. Inga miljögrupper och inga secret files för dessa fyra tjänster. `ops/cloud/start.mjs`/`config.mjs` validerar processmiljö och vidarebefordrar valda namn; Director/Gateway har egna settings/Blueprint. Konfigurationsläsning är inte ett funktionsprov. |
 
-Sju inaktiva exporter/backupfiler från
-`lab/data/platform-private/cloud-sync-audit/` har flyttats till
-`arkiv/2026-10-15/env-alignment/` med ursprunglig undersökväg, bevarade byte
-och effektiva filrättigheter. Ingen aktuell konsument hittades. De fyra
-aktiva filernas original finns i samma privata arkiv med sina ursprungliga
-sökvägar. Återställ aldrig gamla exporter över en aktiv miljö utan jämförelse.
+Next läser med **första träffen** som vinnare: processmiljö →
+`.env.$NODE_ENV.local` → `.env.local` → `.env.$NODE_ENV` → `.env`,
+från respektive appkatalog. Endast `.env.local` hoppas över i testläge.
+Lab-bygget kan läsa sin env-fil även när isolerade barnprocesser filtrerar
+bort ett namn; filtrering är därför inte ensam grund för borttagning.
 
-Scoutgamings RunPod-par matchar root/Lab/Render och skiljer sig från Emils.
-Cartesia- och ElevenLabs-värdena är däremot lika mellan profilerna; det är
-inte bevis för kontoägare. Prefix och kommentarer anger användningsprofil.
-Inga providerkonton, Emils poddar eller molninställningar har ändrats.
+`CROUPIER_LAB_BASE_PATH` och `CROUPIER_STUDIO_NATIVE_ADMIN` läses vid bygge
+i `lab/next.config.mjs`. Endast den härledda publika sökvägen
+`NEXT_PUBLIC_LAB_BASE_PATH` skickas till klienten. Hemligheter förblir
+serverinställningar. Isolerad lokal start blockerar senare privata env-filläsningar.
+`readSettings` läser valda filer följt av processmiljö; Studio anger root
+`.env` och Lab local. Kanoniska `OPENCLAW_API_KEY` vinner över alias inom
+varje källa, även om den är tom; senare källa har fortfarande högre prioritet.
 
-Lokala startaren hade ett verifierat gap: den tömde ElevenLabs-nyckeln och
-blockerade dess API trots uttryckligt `generatedSpeech`-val. Rättningen
-släpper igenom nyckeln och exakt `https://api.elevenlabs.io` bara inom
-befintlig opt-in. OFF, databas-/processisolering och `EMIL_*`-gränsen består.
-Två regressioner var röda före rättningen; 37 fokuserade tester passerar.
-Det aktiverar inte rörlig läppsynk eller några GPU-jobb.
+### Render: färsk läsning och driftgränser
 
-Vercel har 66 env-poster; Sensitive-värden kan inte läsas tillbaka. Alla fyra
-Render-tjänsters env-GET ger 200, med 53/37/16/10 namn för produkt/QA/Director/
-Gateway. Avsedda Director-/Gateway-tokenpar matchar. Render-QA har egen
-databas och generering av; **Vercel Preview pekar fortfarande på produktion**
-och är ingen isolerad skrivmiljö. En separat QA-isolering samordnas med
-SAMORDNING. Marketplace-namnen `CROUPIER_NEON_*` ska inte automatiskt ersätta
-den explicita game-URL:en. Gamla Pythonverktyget `inspect_runpod.py` kan
-ärva andra processnycklar; använd det explicita profilverktyget nedan.
+Jakob bekräftade workspace `tea-d19jsa63jp1c73ch0sc0`. Tjänsteägare/repo
+verifierades före den filtrerade GET-läsningen; bara namn, offentliga flaggor
+och jämförelser utan hemlighetsvärden sparades. Ingen env-pull, SSH,
+nyckeländring, deployment eller providerstart gjordes.
 
-Nyckelfri lista över 118 namn, lokala filer, Vercel-miljöer, Render-tjänster
-och kommentarer finns privat i
-`lab/data/platform-private/provider-env-alignment/README.md` och `inventory.json`.
+Läsbild 15 oktober 20:07 UTC (deploymenthistorik, inte senaste main):
 
-Kevin-paketet i den tidigare nedladdningsmappen har 274 hashverifierade filer
-från `f15b2af1` (258 videor, 16 stödfiler; 309 247 147 byte). Bland 1 710
-listade Blobobjekt matchar 58 filer exakt hash och storlek: Paow 11, Dragge
-47. Alla 58 finns också i Neons mediebibliotek. De övriga 216 filerna är
-inte därmed bevisat nödvändiga för publicerat spel; nyare urval och exakta
-referenser ska granskas före import. Ingen uppladdning eller mediaapproval
-gjordes. Kroppsklipp i `v2/` och `idle-v2/` är skilda från de exakt parade
-ljud-/videoreplikerna i `repliker/`; metadata, spår och `vila.png` är stöd,
-inte den privata worker-avatarbanken.
+| Tjänst | Live vid läsningen | Automatisk deployment |
+| --- | --- | --- |
+| Produkt `croupier-v2` | `2f02c4cd85bf5b07f424ba01d6605d6c4205530a`, `dep-db8i2irm8hqs738fins0` | main efter godkända kontroller |
+| Äldre QA `croupier-vercel-preview-qa` | `ee0608044f7c78b80c4f46023cd67a7b391e17f0`, `dep-db1em4ad0e5s73fcv3f0` | Av |
+| Director `croupier-lab-director` | `e57f28ef7df64e3bd81c415c31b37e05f04af2b8`, `dep-db7300rrjlhs739ovtl0` | Av |
+| Gateway `croupier-lab-openclaw` | `538e5f1ff4a0eb5d30b4e1daab5ffa1ca2d43688`, `dep-db73t967bikc73a3eneg` | Av |
 
-## Tidigare env-kontroll, 15 oktober 2026 före kompletteringen ovan
+Produkt och äldre QA svarade då båda HTTP 200/`ok` på sina befintliga
+`/__cloud/health`. Det bevisade tillgänglig gateway, inte inloggning,
+databasparitet eller godkänd QA-isolering. QA sattes senare 21:40:42 UTC
+i underhållsläge och svarar nu 503; produkten svarar fortsatt 200.
+Ingen tjänst suspenderades. Aktuell QA-status och genomförande står nedan;
+senaste produktions-SHA finns i leveransens PR-kvitto.
 
-Samordnarens läsande kvitto: Render env-GET gav 200 för alla fyra tjänster.
-Produkten använder `croupier_game` med `sslmode=verify-full`; QA använder den
-separata databasen `croupier_studio_qa_abc92154cb15`, utan providernycklar
-eller aktiverad generering. Detta är konfigurations- och behörighetskontroll.
+Alla fyra är Docker-tjänster. Render erbjuder miljövariabler som byggargument
+och runtime-miljö; ett byggargument måste användas uttryckligen i Dockerfile.
+Produktens aktuella Dockerfile deklarerar `CROUPIER_LAB_BASE_PATH` som ARG/ENV
+före Next-bygget. Providerhemligheterna deklareras inte som ARG där.
+Director/Gateway har separata runtime-konfigurationer och fasta Docker-defaults.
+Ingen miljögrupp kan överlagra tjänstvärden i det nu lästa workspacet.
+API-konfigurationen bevisar inte vilka senare sparade värden som finns i en
+äldre körande container. Källa: [Render Docker](https://render.com/docs/docker).
 
-Rotens `.env.local`, `lab/.env.local` och Render-produkten har samma Scoutgaming-RunPod-par,
-skilt från Emils. Cartesia-värdet är gemensamt. ElevenLabs finns med samma värde
-i root, Render-produkten och Emil men saknas i Lab. Root och Lab har 50 gemensamma giltiga
-värden som är lika; det betyder inte att filerna innehåller samma nycklar.
+Produktens befintliga genererade tal/streaming, dealerprofiler och Astrid-kamera
+är konfigurerade till 1 på Render. QA:s tal/streaming/kamera är konfigurerade
+till 0. `CROUPIER_STUDIO_NATIVE_ADMIN=0` på båda Render-tjänsterna är
+transportgränsen mot Vercels aktiva Admin, inte en instruktion att likrikta
+flaggorna. Befintlig taltransport ska inte beskrivas som helt avstängd:
+ny rörlig Kevin/Emil-integration är en separat, ännu ej aktiverad leverans.
+Inga jobb eller nya mediegodkännanden ingår i denna kontroll.
 
-| Lästa lokala profiler | RunPod GET | Cartesia GET | ElevenLabs GET | Gemini GET |
-| --- | --- | --- | --- | --- |
-| Root / Scoutgaming | 200 | 200 | 200 | Inte konfigurerad |
-| Lab | 200 | 200 | Inte konfigurerad | Inte konfigurerad |
-| Emil | 200 | 200 | 200 | 200 |
+Nyckelfritt underlag: `arkiv/2026-10-15/admin-consolidation/env-render-receipt.json`.
 
-Vercel är kopplat till rätt team/projekt `scoutgaming`. De borttagna
-providerkopiorna nedan är fortsatt borta; Cartesia finns kvar. Genererat tal
-är avstängt på Vercel och aktiverat på Render-produkten, som äger providerjobben;
-Vercels speech-tjänst är transport. Vercel Preview pekar på produktionsbackend
-och ska inte användas som isolerad skrivmiljö.
+### Behåll, flytta eller ta bort per namn
 
-Huvudagenten tog bort endast den ogiltiga raden 22 i `lab/.env.local`;
-parserjämförelsen bevarade alla 50 giltiga värden. Originalet finns privat med
-samma effektiva ACL i
+Varje utskrivet namn omfattas av radens beslut. Namnlistan förenar aktuell
+lokal/Vercel-inventering med KEVI:s daterade Render-inventering. Server-runtime
+är normalfas om inte bygge, verktyg eller metadata anges. Källinventeringen
+omfattade 993 riktat valda spårade käll-/konfigurationsfiler; media, beroenden
+och privata kataloger skannades inte. Kommentarer och dynamiska prefix är
+bedömda separat från aktiva runtime-läsare.
+
+| Namn | Konsument och fas | Beslut |
+| --- | --- | --- |
+| `BETTALOTTO_API`, `BETTALOTTO_PARTNER_BASE_URL`, `BETTALOTTO_PARTNER_KEY_ID`, `BETTALOTTO_PARTNER_PLAYER_ID`, `BETTALOTTO_PARTNER_SECRET` | partner-reference.mjs, partner-observer.mjs, ops/cloud/config.mjs | Behåll kanoniska namn. |
+| `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_BLOB_INDEX`, `CROUPIER_MEDIA_STORAGE`, `CROUPIER_ZONES_DATABASE_URL` | cloud-media-store.mjs, media-blob-index.mjs, zone-cloud-store.mjs | Behåll; lokal lagring endast genom opt-in. |
+| `CROUPIER_DATABASE`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_WORKSPACE_ID` | studio-native-runtime.mjs, ops/cloud/config.mjs; game-URL även CI | Behåll exakta databas-/tjänstgränser. |
+| `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | frontendens platform-configuration.mjs och lab/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
+| `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_VERCEL_UI`, `CROUPIER_VERCEL_UNIFIED_UI` | Next-konfiguration, middleware och serverrouting; base path/native-admin även bygge | Behåll; ändring kan kräva nytt bygge. |
+| `BO_URL`, `CROUPIER_GAME_ORIGIN`, `CROUPIER_PUBLIC_GAME_PATH`, `CROUPIER_VERCEL_TRANSPORT_ORIGIN`, `LAB_PUBLIC_URL`, `PUBLIC_URL` | ops/cloud/config.mjs och proxy; GAME_ORIGIN även player-ui-build.mjs | Behåll aktiva kompatibilitetsnamn. |
+| `CROUPIER_LISSABON_PROFILES`, `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | web/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. |
+| `CROUPIER_CLOUD_GENERATED_SPEECH`, `CROUPIER_DEALER_SPEECH_PROFILES`, `CROUPIER_GENERATED_SPEECH`, `CROUPIER_GENERATED_SPEECH_PREVIEW`, `CROUPIER_GENERATED_SPEECH_STREAMING` | ops/cloud/config.mjs och web/server.mjs | Behåll; förekomst är inte aktivering/acceptans av ny läppsynk. |
+| `CROUPIER_ASTRID_CAMERA`, `CROUPIER_ASTRID_TRANSLATION_KEY` | web/server.mjs, ops/cloud/config.mjs, local-connection.mjs | Behåll befintlig Astrid-väg. |
+| `CARTESIA_API_KEY`, `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, `ELEVENLABS_API_KEY`, `RUNPOD_API_KEY` | ops/cloud/config.mjs och explicit providerverktyg; Cartesia även Studio | Behåll kompletta Scoutgaming-par; återinför inte borttagna Vercel-kopior. |
+| `EMIL_CARTESIA_API_KEY`, `EMIL_ELEVENLABS_API_KEY`, `EMIL_GEMINI_API_KEY`, `EMIL_RUNPOD_API_KEY`, `EMIL_RUNPOD_ENDPOINT_ID` | Dynamiskt EMIL_-prefix i check-provider-profile.mjs; endast explicit fil/profil | Behåll separat, oförändrat; ingen normal runtimekoppling. |
+| `CROUPIER_SPEECH_FULLFILE_RESERVE_USD`, `CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD`, `CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD`, `CROUPIER_SPEECH_STREAM_TICKET_SECRET`, `CROUPIER_SPEECH_STREAM_WORKER_SECRET` | ops/cloud/config.mjs och speech-konfiguration | Behåll tak och separata hemligheter; inga jobb för inventeringen. |
+| `LAB_API_TOKEN`, `LAB_REMOTE_TOKEN`, `LAB_REMOTE_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN`, `OPENCLAW_PRODUCT_SPEECH_URL` | settings.mjs, local-connection.mjs, ops/cloud/config.mjs | Behåll separata adresser/tokenroller. |
+| `LAB_DATA_DIR`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_DASHBOARD_ENABLED`, `OPENCLAW_HOSTPORT`, `OPENCLAW_SPEECH_AGENT`, `OPENCLAW_SPEECH_DEEP_MODEL`, `OPENCLAW_SPEECH_ROUTING`, `OPENCLAW_SPEECH_TIMEOUT_MS`, `OPENCLAW_STUDIO_ADMIN_DEVICE_KEY`, `OPENCLAW_TIMEOUT_MS` | Director settings/Blueprint och miljöregistrets tjänstekontrakt | Behåll tjänstprofilen; ingen ny agentaktivering. |
+| `CROUPIER_SPEECH_VISION`, `OPENCLAW_API_KEY`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_MODEL_API`, `OPENCLAW_MODEL_API_KEY`, `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_STATE_DIR` | Gateway/settings; modellnyckel/base URL även dealer-import-model.mjs | Behåll skilda Gateway-/modell-/produktroller. |
+| `CROUPIER_DEALER_IMPORT_AI`, `OPENAI_API_KEY`, `RUNWAY_API_KEY` | dealer-import-model.mjs och runway-client.mjs; OpenAI även villkorad kamerareserv | Behåll. Ingen generering genom inventeringen. |
+| `CROUPIER_STUDIO_MAIL_FROM`, `RESEND_API_KEY` | studio-native-mail.mjs | Behåll; isolerad start stänger av skarpa utskick. |
+| `CROUPIER_CLOUD_LAUNCH`, `CROUPIER_CLOUD_LAYOUT`, `HOST`, `NODE_ENV`, `PORT` | ops/cloud/config.mjs, Director/plattform; NODE_ENV även bygge | Behåll. PORT är värdhanterad där plattformen sätter den. |
+| `CROUPIER_CLOUD_DATA_ROOT` | Färskt verifierad endast på äldre QA med 1 GiB-disk; ops/cloud/config.mjs | Behåll QA:s återställningsunderlag. Återinför inte i produktion och radera inte den äldre disken. |
+| `CROUPIER_PRESENTATION_DIRECTOR_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_URL` | ops/cloud/config.mjs | Behåll separat presentationsanslutning. |
+| `CROUPIER_QA_LOGIN_PASSWORD`, `CROUPIER_QA_LOGIN_USERNAME` | Privata autentiserade verifieringsverktyg; ingen aktiv produktläsare hittad | Behåll verifieringsunderlag. |
+| `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY`, `GITGUARDIAN_API_TOKEN` | Ingen aktiv produktläsare verifierad. DID-träffen är kommentar; ElevenLabs-video har ett negativt vidarebefordringstest. Extern användning oklar | Behåll tills exakt verktygsägare/konsument är klarlagd. |
+| `CROUPIER_MEDIA_STORE_ID` | Vercel Marketplace-metadata; ingen aktiv källkonsument hittad | Lokala kopior borttagna; Vercel behålls. |
+| `CROUPIER_NEON_DATABASE_URL`, `CROUPIER_NEON_DATABASE_URL_UNPOOLED`, `CROUPIER_NEON_NEON_PROJECT_ID`, `CROUPIER_NEON_PGDATABASE`, `CROUPIER_NEON_PGHOST`, `CROUPIER_NEON_PGHOST_UNPOOLED`, `CROUPIER_NEON_PGPASSWORD`, `CROUPIER_NEON_PGUSER`, `CROUPIER_NEON_POSTGRES_DATABASE`, `CROUPIER_NEON_POSTGRES_HOST`, `CROUPIER_NEON_POSTGRES_PASSWORD`, `CROUPIER_NEON_POSTGRES_PRISMA_URL`, `CROUPIER_NEON_POSTGRES_URL`, `CROUPIER_NEON_POSTGRES_URL_NO_SSL`, `CROUPIER_NEON_POSTGRES_URL_NON_POOLING`, `CROUPIER_NEON_POSTGRES_USER` | Vercel Marketplace-hanterade namn; ingen direkt källkonsument hittad | Behåll molnmetadata; ersätter inte GAME/ZONES-URL. |
+
+Ingen ytterligare flytt är verifierat motiverad: root, Lab, cloud-storage och
+Emil har olika läsare och gränser. Samla ansvar och dokumentation här;
+slå inte samman profiler genom generell env-pull eller kopiering.
+
+### Genomförd lokal förenkling
+
+Endast `CROUPIER_MEDIA_STORE_ID` togs bort ur root och Lab: 53→52 respektive
+48→47 namn. Alla andra parsade värden är exakt oförändrade. Byteverifierade
+original finns i huvudcheckoutens privata kanoniska arkiv:
+`arkiv/2026-10-15/.env.local` och `arkiv/2026-10-15/lab/.env.local`.
+Kopiorna har samma effektiva åtkomstregler med skyddad DACL; originalens
+ägare/ACL ändrades inte. Återställ endast efter jämförelse med aktuell fil.
+
+Alla åtta kombinationer av generated speech/kamera/cloud storage gav identisk
+loader-/barnprocesskonfiguration före/efter. Settings/providerprofil var också
+identiska; Emil-/cloud-storage-filerna behöll sina hashvärden. Jämförelsen
+gjorde noll nätanrop och startade noll processer. Därefter passerade 44
+befintliga provider-/env-/local-connection-tester utan skip/fel.
+Inget nytt bygge, providerjobb eller lokalt serverpar behövdes.
+
+Nyckelfria kvitton finns privat i `arkiv/2026-10-15/admin-consolidation/`:
+`env-name-consumers.json`, `env-vercel-names.json`,
+`env-local-cleanup-receipt.json` och `env-focused.log`.
+Tidigare underlag: `lab/data/platform-private/provider-env-alignment/inventory.json`.
+
+### QA efter användarbeställd återgång
+
+QA-agenten återställde sin utbyggnad på Jakobs separata direkta uppdrag.
+Kvittot 15 oktober 13:48 UTC anger 24 återställda kodändringar, borttagen egen
+worktree/branch/stash och radering av egen ny databas, två roller och Blobstore.
+Egen läsning bekräftar att arbetskopian saknas i registret och på gamla sökvägen,
+och att angiven stash saknas. Molnraderingarna är **agentens tillskrivna kvitto**.
+Bevara `arkiv/2026-10-15/preview-qa-isolation/rollback-receipt.json`;
+återskapa inte de 24 ändringarna som kvarvarande arbete.
+
+Färsk Vercel-metadata/icke-hemliga flaggor visar 30 Preview-namn, kvarvarande
+produktionsadresser och saknad `CROUPIER_VERCEL_INGRESS_SECRET` i Preview.
+Ingen isolerad Preview-skrivmiljö är verifierad. Kopiera inte
+produktionshemligheten dit. Äldre Render-QA/databas är andra resurser än de
+raderade. Läsningen 20:07 UTC bekräftade att äldre QA var live utan
+underhållsläge; den publika ingången är nu stängd enligt kvittot nedan.
+Game-databasen är separat
+(`croupier_studio_qa_abc92154cb15` jämfört med `croupier_game`) på samma
+databashost; detta är konfigurationsmetadata, ingen läsning av datainnehåll.
+Ingresshemlighet och Studio environment-ID skiljer sig från produktion,
+men `BLOB_READ_WRITE_TOKEN` har exakt samma konfigurerade värde.
+En separat databas är därför inte bevis för medieisolering.
+
+Jakobs beslut att förenkla till ett main-flöde genomfördes 21:40:42 UTC:
+endast `srv-datj7l893c1s73ar3u50` i `tea-d19jsa63jp1c73ch0sc0` fick
+underhållsläge via `render services update srv-datj7l893c1s73ar3u50 --maintenance-mode --confirm`.
+Färsk API-läsning bekräftar `maintenanceMode.enabled=true`, oförändrad
+1 GiB-disk `dsk-datj7lg93c1s73ar3us0` på `/var/data` och auto-deploy av.
+QA:s `/` och `/__cloud/health` svarar HTTP 503; produktens health och www:s
+Lobby svarar 200. Inga env-värden, databaser eller medier ändrades.
+Nyckelfritt genomförandekvitto:
+`arkiv/2026-10-15/admin-consolidation/qa-maintenance-receipt.json`.
+
+Underhållsläget är återställbart och raderar inga data. Tjänsten körs fortfarande;
+det är inte en kostnadsavveckling. Privat nät och SSH är fortsatt tillgängliga
+([Render underhållsläge](https://render.com/docs/maintenance-mode)).
+En framtida återöppning använder samma tjänst med `--maintenance-mode=false`,
+men kräver först ett uttryckligt återöppningsbeslut och verifierade gränser.
+Återöppna inte QA eller återkoppla Preview förrän data-/mediegränser är
+verifierade. Kopiera inte produktionsnycklar som lösning.
+
+### Tidigare åtgärder och återställning
+
+KEVI:s tidigare kvitto anger tre borttagna `LAB_PARTNER_*`-alias per root-/Lab-fil,
+likvärdig konfiguration i åtta profiler och 16 riktade tester. Tidigare lokal
+städning av 8 257 återbyggbara filer/cirka 646 MB är separat från Git-spårad kod.
+Upprepa inte städpasset. Avsiktligt saknade byggutdata är inte i sig kodregression.
+
+Tidigare `lab/.env.generated-speech.local` och `lab/.env.cloud-activation.local`
+är arkiverade under `arkiv/2026-10-14/` med ursprungliga undersökvägar.
+Två unika streamhemligheter i cloud-activation-kopian bevaras; ingen aktiv
+loader läser filen. Original från profilrättningen finns också under
+`arkiv/2026-10-14/` (root local, Emil och Lab local). Sju inaktiva exporter
+och original före tidigare justering 15 oktober finns under
+`arkiv/2026-10-15/env-alignment/`. Original före rättad ogiltig Lab-rad:
 `arkiv/2026-10-15/samordning/env-media-verification/lab.env.local.before-malformed-line`.
-Inga ändringar i Emils miljö eller jobb-/talgenerering gjordes. GET 200 bevisar
-åtkomst, inte fungerande uppspelning eller godkänd läppsynk; dessa kräver sina
-separata spel- och medieprov. Äldre kvitton nedan gäller sina angivna datum.
+Arkivkopior väljs aldrig automatiskt eller skrivs över aktiva filer utan jämförelse.
 
-## Historiskt profilkvitto, 14 oktober 2026 kväll
+### Explicit läsande providerkontroll
 
-Denna avstämning ersatte dagens tidigare generella kopiering av Emil-värden.
-Samordnat med SAMORDNING efter PR #145. **En RunPod-nyckel och dess endpoint
-hör till samma profil.** Kopiera inte alla värden mellan tjänster eller från
-Vercel till lokala filer. En saknad hemlighet i ett Vercel-utdrag betyder inte
-att den saknas i driften; Sensitive-värden kan inte läsas tillbaka.
-
-| Plats | Innehåll och ansvar | Kontroll / rättning |
-| --- | --- | --- |
-| Rotens `.env.local` | Lokala hjälpverktyg; vanlig Lab-start läser inte denna fil | RunPod-paret återställt till samma fungerande par som Lab/Render. Legacy `RUNPOD_ENDPOINT_ID`, oanvänd `GEMINI_API_KEY` och föråldrad webhookmetadata borttagna. Övriga värden bevarade. |
-| `lab/.env.local` | Isolerade Lab-startarens vanliga profil | Fungerande RunPod-par bevarat. Endast oanvänd `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` borttagen. |
-| `lab/.env.cloud-storage.local` | Blob och zondatabas vid uttryckligt `--cloud-storage` | Oförändrad; Blob-token matchar Render. Ingen produktions-game-URL införs lokalt. |
-| `.env.emil` | Endast uttryckligt valda Emil-tester | Fem namn har prefix `EMIL_`. Samma fyra API-nyckelvärden som i originalet; bara det lokala endpointvalet rättat till den nåbara rörliga endpointen i Emils överlämning. |
-| Vercel `scoutgaming/scoutgaming`, Production | Web/Studio, databas, Blob, autentisering och Cartesias Studio-kontroll | Fyra oanvända testkopior borttagna: `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`, `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`. Cartesia har en faktisk Studio-konsument och behålls. Preview/Development och alla andra poster oförändrade vid bytet. |
-| Render `croupier-v2` | Spelmotor och providerjobb; egen verifierad RunPod-profil, Cartesia och ElevenLabs | Oförändrad. Rätt databasmål och Blob-lager verifierade med läsningar. |
-| Render `croupier-lab-director` / `croupier-lab-openclaw` | Director och OpenClaw Gateway | Oförändrade. Gateway/Director-token och produkttalets token stämmer överens mellan avsedda par. |
-| Render `croupier-vercel-preview-qa` | Befintlig separat QA-miljö | Egen QA-databas, inga RunPod-/Cartesia-/ElevenLabs-nycklar, genererat tal av. Inte synkad med produktion. |
-| GitHub Actions | Endast `CROUPIER_GAME_DATABASE_URL` behövs för migrationsberedskap | Sparad om från verifierad Render-produktionsanslutning 14 oktober 20:54 UTC. Ingen databasändring. |
-
-Emils fjärrkonto, Cartesia-inställningar, workers, poddar, image och avatarer
-har inte ändrats. Namnbytet `EMIL_*` gäller bara vår privata lokala testfil.
-Prefixet ger ingen workerintegration i produkten. Ingen ny pod ansluts till
-Emils staging. Ändring i hans miljö kräver Jakobs uttryckliga godkännande efter
-en fråga MED VERSALER.
-
-### Läsande profilkontroll
-
-Kör från den checkout som innehåller verktyget och ange privatfilens absoluta
-sökväg om den ligger i huvudcheckouten:
+Kör från rätt checkout och ange den avsedda privata filen:
 
 ```powershell
 node tools/check-provider-profile.mjs --profile scoutgaming --env-file C:\Users\jakem\Projects\croupier\.env.local
 node tools/check-provider-profile.mjs --profile emil --env-file C:\Users\jakem\Projects\croupier\.env.emil
 ```
 
-Verktyget läser endast den angivna filen. Det importerar inte processens
-nycklar, exporterar inga hemligheter, följer inga HTTP-omdirigeringar och
-utför endast GET mot leverantörernas fasta API-adresser. Dubbla namn,
-blandade profiler och ofullständigt RunPod-par stoppas. Scoutgaming kräver
-`RUNPOD_API_KEY` + `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`; Emil kräver
-`EMIL_RUNPOD_API_KEY` + `EMIL_RUNPOD_ENDPOINT_ID`. Övriga Emil-namn är
-`EMIL_CARTESIA_API_KEY`, `EMIL_ELEVENLABS_API_KEY`, `EMIL_GEMINI_API_KEY`.
-Hälsokontroller startar inga GPU-jobb och genererar inget tal. HTTP 200 och
-rapporterade workers är **inte** ett godkänt läppsynkprov.
+Verktyget läser endast vald fil, stoppar dubbletter/blandade/ofullständiga
+RunPod-par och gör GET mot fasta adresser utan omdirigering. Scoutgaming kräver
+`RUNPOD_API_KEY` + `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`; Emil sitt prefixerade
+par. `RUNPOD_ENDPOINT_ID` är inget produktalias. Tidigare GET 200 bevisar
+åtkomst, inte godkänd läppsynk. Tillfällig Emil-kopiering till generella namn
+är ersatt av profilerna och ska inte återinföras. Ändring i Emils fjärrmiljö
+kräver separat uttryckligt godkännande.
 
-Kontroller efter lokal rättning: Scoutgamings RunPod, Cartesia och ElevenLabs
-svarade 200; Emils RunPod, Cartesia, ElevenLabs och Gemini svarade 200.
-Det gamla lokala Emil-endpointvalet gav 404. Emils nyckel ihop med vår
-Astrid-endpoint gav 401; det felaktiga paret är borttaget ur rotprofilen.
-Varken dessa kvitton eller en READY-deploy innebär mediaacceptans.
+`croupier-production` är namnet på befintliga Neon-projektet
+`wandering-hill-60561912`, inte en ny databas. Produktion använder
+`croupier_game`, zoner `neondb`. Namnbytet dokumenterades i commit
+`022fab5ed623a1af5ddb13d2f43b218cea687437`; det visar inte säkert vem
+som ändrade i molnet. Tidigare TLS-/read-only-kvitto och GitHub-run 38721888413
+verifierade game-databas/roll och migrationsberedskap. GitHub kan inte lämna
+tillbaka secretvärdet; kvittot bevisar inte URL-byteidentitet. Vercel-/Neon-
+revisionsmatchning och privat MP4-HEAD var läsprov, inte nya spel-/talacceptanser.
+Originalkvitton finns i det privata underlaget.
 
-### Databasens namn och ägare
-
-`croupier-production` är **Neon-projektets namn**, inte en ny databas.
-Projektet `wandering-hill-60561912` skapades 29 september och innehåller
-bland annat `croupier_game` (spel, konton, Studio), separata QA-databaser
-samt `neondb` (zoner). Det ägs nu av `Vercel: scoutgaming`,
-`org-green-butterfly-00780270`. Produktionsgrenen är `main`.
-
-Git-commit `022fab5ed623a1af5ddb13d2f43b218cea687437`, författare
-`Jakeminator123`, 8 oktober 2026 kl. 17:16 svensk tid, dokumenterar namnbytet
-från `croupier-astrid-background-zones-db`. Det visar kontot bakom Git-kvittot,
-inte säkert vilken människa eller agent som klickade i Neon. Resursflytten till
-teamet dokumenterades separat. Det finns ingen anledning att skapa ännu en
-produktionsdatabas för att namnet ändrats.
-
-Render-anslutningen verifierades till `croupier_game`, roll `croupier_game`,
-med TLS `verify-full` och installerade Studio-versioner 001–008 samt 011.
-GitHubs befintliga migrationskontroll gav samma databas/roll och inga väntande
-migrationer. Blob-lagret `croupier-media-private` tillhör Scoutgaming-teamet;
-Render-token läste rätt privata lager. Vercels databas-/Blob-hemligheter
-behålls; deras värden kan inte läsas tillbaka via API. Inloggning, sessionsläsning
-och projektläsning på Vercel gav 200. Vercels sparade projektrevision matchade
-exakt en read-only SELECT i produktionsdatabasen. Mediebiblioteket gav 130
-poster och autentiserat HEAD på ett privat MP4-klipp gav 200 med rätt byteantal.
-Ingen film laddades ned och inga spel-/Studio-data ändrades av dessa läsprov.
-
-De nya Vercel-inställningarna aktiverades genom redeploy av oförändrad
-`main`-commit `fa1fdaaeaf923c0744a82953d77334779a6001e7`.
-Deployment `dpl_3C8Hpice4vvqnfJmzei9KR176i9Y` är READY i team/projekt
-`scoutgaming`, med `www.scoutgaming.tech` som alias. Efterkontrollen
-upprepade sessions-/projektläsning, exakt Neon-revisionsmatchning och privat
-MP4-HEAD: samtliga godkända. Webb/Admin, spelmotorns och Directors
-hälsokontroller gav också 200. Detta är läsacceptans av konfigurationen;
-det ersätter inte prov av ändrade speldata eller två faktiska taluppspelningar.
-
-### Inventering och återställning
-
-Inventeringen omfattade huvudcheckouten och tolv då registrerade syskoncheckouter:
-54 env-relaterade filer, varav fyra aktiva privata profiler, tio sparade privata
-kopior och fyrtio mallar. Inga aktiva hemlighetsfiler hittades i syskoncheckouterna.
-Genererade beroenden, mediebinarier och förbjudna privata historikarkiv ingår inte.
-Arkiverade kopior är återställningsmaterial och ska aldrig väljas automatiskt.
-
-Originalen före denna rättning finns med ursprungliga fil-ACL under
-`arkiv/2026-10-14/.env.local`, `arkiv/2026-10-14/.env.emil` och
-`arkiv/2026-10-14/lab/.env.local`. Vercels privata föredata och redigerade
-metadata ligger under `arkiv/2026-10-14/provider-env-audit/`, begränsat till
-användaren och SYSTEM. Sensitive-värden ingår inte i API-exporten; de fyra
-borttagna Emil-kopiornas ursprung finns i den bevarade Emil-filen.
-
-Full nyckelfri översikt finns lokalt i
-`lab/data/platform-private/provider-env-alignment/inventory.json`:
-119 unika namn, deras lokala filer, Vercel-miljöer och Render-tjänster.
-Efter borttagningen har Vercel 66 poster: 56 gäller Production, 31 Preview och
-5 Development (en post kan gälla flera miljöer). Render har 53 namn i spelet,
-16 i Director, 10 i Gateway och 37 i QA. Förekomst är inte ett funktionskvitto.
-`GITGUARDIAN_API_TOKEN`, `DID_API_KEY` och `ELEVENLABS_VIDEO_KEY` är
-kvarvarande separata verktygs-/providerinställningar: ingen aktiv produktkonsument
-hittades i den granskade koden, och deras avsedda externa verktygsanvändning är
-inte verifierad. De har inte blandats in i talprofilerna eller raderats.
-
-## Historik: lokal env-konsolidering före profilrättningen, 14 oktober 2026
-
-I Jakobs huvudcheckout flyttades två privata filer först återställbart till
-`lab/data/platform-private/env-cleanup-20261014/`, efter samordning med
-ADMIN och DRAGAN. Ingen miljöinställning i molnet eller källa ändrades av flytten.
-SAMORDNING flyttade därefter säkerhetskopiorna till de kanoniska
-återställningsplatserna `arkiv/2026-10-14/lab/.env.generated-speech.local`
-och `arkiv/2026-10-14/lab/.env.cloud-activation.local`. Den tidigare
-`env-cleanup-20261014/`-sökvägen ovan är historik, inte aktuell återställningsplats.
-
-- `lab/.env.generated-speech.local` innehöll endast
-  `CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`, redan identisk i `lab/.env.local`.
-- `lab/.env.cloud-activation.local` hade ingen aktuell kodläsare och ingen
-  pågående manuell användning enligt DRAGAN. Tre lagringsvärden matchade
-  `lab/.env.cloud-storage.local`; två unika streamhemligheter bevaras i kopian
-  och har inte lagts till i vanlig Lab-miljö.
-
-Filerna behåller exakt innehåll (141 respektive 600 byte) och Windows-ACL.
-För varje flytt jämfördes den effektiva loaderkonfigurationen före/efter i
-alla åtta kombinationer av generated speech, kamera och cloud storage: identiska.
-Privata `proof.json` och `cloud-activation-proof.json` finns bredvid kopiorna;
-inga nyckelvärden finns i kvittona eller Git. Detta är en lokal kontroll, inte
-ny verifiering av leverantörsinloggning, produktion eller medieacceptans.
-
-Rotens `.env.local` och `lab/.env.local` behålls för sina olika läsare.
-Inventeringen fann 59 respektive 51 namn: 49 gemensamma värden var identiska,
-medan `RUNPOD_API_KEY` och `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` skilde sig.
-De åtta namn som bara finns i rotfilen och de två skillnaderna är bevarade;
-rotfilen får därför inte blint ersätta Lab-filen. `lab/.env.cloud-storage.local`
-behålls separat: dess Blob- och zondatabasuppgifter laddas endast vid
-`--cloud-storage`. Rotens `.env` saknades redan vid inventeringen.
-
-`loadPrivateConnection` söker i ordningen `.env`, `lab/.env.local`,
-`lab/.env.generated-speech.local` och, endast vid cloud-storage-opt-in,
-`lab/.env.cloud-storage.local`. Senare filer vinner; uttrycklig processmiljö
-vinner sist. Endast respektive tillåtna nycklar vidarebefordras. Rotens
-`.env.local` och cloud-activation-filen ingår inte i denna läsordning.
-Saknad generated-speech-fil är tillåten; stödet finns kvar för andra checkouter.
-
-## Historik: tillfällig Emil-kopiering, 14 oktober 2026 (ersatt av profilerna ovan)
-
-Tidigare samma dag kopierades på Jakobs begäran `CARTESIA_API_KEY`, `ELEVENLABS_API_KEY`,
-`GEMINI_API_KEY`, `RUNPOD_API_KEY` och `RUNPOD_ENDPOINT_ID` från
-den privata `.env.emil` till rotens ignorerade `.env.local`. Tre ersatta
-liknamniga rader kommenterades och samma fem namn sparades som Sensitive
-i projekt/team `scoutgaming`, endast Production/main. Detta tillfälliga
-undantag ersattes senare av de separata profilerna ovan; det är inte en
-instruktion att återinföra kopiorna. Inga hemliga värden finns i registret eller Git.
-
-Värdena aktiverades i produktionsdeploymenten för PR #139 (220519a1), skapad
-efter miljöuppdateringen och verifierad READY. Även PR #142 (418040fa) är
-verifierad READY med samma Production-scope. Vercel förmedlar taltransport,
-men Render äger providerjobb. Ingen Render-nyckel, pod, workerbild eller
-GitHub-hemlighet ändrades. Render har redan samma Cartesia-/ElevenLabs-värden. Befintlig RunPod-nyckel gav health 200 på aktiv endpoint; Emil-nyckeln gav 401 där och ersätter därför inte den fungerande Render-nyckeln. Workflows behöver inte dessa fem nycklar och GPU-jobbet
-får sitt ljud och tillfälliga anslutningsuppgifter från servern.
-
-Normal lokal Lab-start söker `.env`, `lab/.env.local` och den valfria
-`lab/.env.generated-speech.local`; rotens `.env.local` läses inte av den
-startvägen. Aktuell lokal konsolidering och prioritet beskrivs ovan.
-`RUNPOD_ENDPOINT_ID` är inget alias till aktiva
-`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`. Det nykopierade legacy-ID:t svarade 404
-och har inte ersatt scoped endpoint. `GEMINI_API_KEY` har ingen aktiv konsument
-i main. Kopieringen innebär inte att Dragans genererade tal är aktiverat.
+Kevin-paketet med 274 filer har enligt tidigare kvitto 58 exakta Blob-/Neon-
+matchningar. Övriga 216 är varken import- eller raderingslista. Kroppsklipp,
+repliker och worker-avatarbank har olika roller. Ingen helbranch-import eller
+ny mediekatalog ingår i env-förenklingen.
 
 ## Databasadresser i tester
 
@@ -525,21 +471,24 @@ Render-motorn vägrar starta om någon är `1`, `ops/cloud/config.mjs`). Inga
 formatfel (radbrytningar, citattecken, blanksteg) hittades i läsbara variabler.
 Sensitive-värdens form går inte att läsa tillbaka och är okontrollerad.
 
-Lokala env-filer (konsoliderade 8 oktober 2026). Vercel production är källan
-för delade nycklar. Förnya lokalt med `vercel env pull --environment=production
---yes <tempfil>` och slå ihop; systemnycklar `VERCEL_*`, `NX_*`, `TURBO_*` tas
-bort. Nycklar som bara finns lokalt (OpenClaw-agent/modell/tal-URL/token,
-`LAB_API_TOKEN`, `LAB_PARTNER_*`, `BETTALOTTO_*`, `ELEVENLABS_*`) behålls från
-den lokala filen. Placering: rotens `.env.local` och `lab/.env.local` har samma
-delade värden; rotens `ELEVENLABS_API_KEY` är avsiktligt spelserverlokal.
-`open-claw/lab/deploy/local-connection.mjs` söker generated-speech-filen
-i standardordningen och läser cloud-storage-filen endast under dess flagga.
-Cloud-activation-filen ingår inte i laddaren. Konsolideringen 14 oktober ovan
-beskriver vilka lokala filer som finns kvar och den faktiska värdeprioriteten.
-Äldre
-kopior sparas under `/random/env-backup-*/` (Git-ignorerat). Vid avvikelse
-mellan lokal fil och Vercel för samma namn vann Vercel (gällde API-nycklar för
-Cartesia, OpenAI, Gemini, RunPod, OpenClaw och `LAB_REMOTE_*`).
+**Historik: env-konsolideringen 8 oktober 2026.** Då hämtades Vercel
+production till en temporär fil och delade värden slogs ihop med lokala
+verktygsnycklar. Root/Lab fick gemensamma värden; Vercel gavs företräde vid
+konflikt. Äldre backupplatser benämndes `/random/env-backup-*/`.
+Detta beskriver den tidigare åtgärden, inte dagens uppdateringsrutin.
+
+**Gällande rutin, förtydligad 16 oktober:** använd
+[den aktuella loader- och profilkartan](#aktuell-avgränsning-15-oktober-2026-kväll)
+och besluten per namn ovan. Root `.env.local`, Lab, cloud-storage och Emil
+har olika konsumenter och får inte slås ihop genom generell env-pull.
+`LAB_PARTNER_*` har ersatts i de aktiva profilerna av kanoniska namn och ska
+inte återinföras från äldre kopior. Kompatibel inläsning finns ännu kvar i
+`partner-observer.mjs`. Startaren söker generated-speech-filen i sin dokumenterade
+ordning; cloud-storage kräver opt-in och cloud-activation ingår inte.
+Återställningskopior hör till rotens kanoniska `arkiv/<datum>/<ursprunglig-sökväg>`
+enligt [AGENTS.md](../AGENTS.md), och väljs aldrig automatiskt som env-källa.
+Äldre kopiors existens, innehåll eller flytt verifieras inte genom denna
+dokumenträttning; aktuell återställning kräver jämförelse mot avsedd profil.
 
 **Verifiering 11 oktober 2026:** Kopplingarna i huvudkopian och arbetskopian 74b4 pekar nu på team `scoutgaming`, `team_Scxorb9qtZHjNae1YEQnFCaT`, och projekt `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`. Root/Lab har identiska lokala env-filer med 56 namn, med privata backuper av tidigare filer och länkar. Vercel production-pull returnerade 59 namn men bara 29 icke-tomma värden; de andra 30 kan inte användas som bevis på hemlighetsparitet. Tomt molnsvar ersatte inte sju befintliga lokala värden. Andra otillgängliga värden lämnades osatta, och systemnycklar samt oanvända LLM_LOGIN_* togs inte med i de aktiva filerna. De privata snapshotsen för alla tre miljöerna och jämförelsekvittot finns under lab/data/platform-private/cloud-sync-audit; de ska inte läggas i Git. Lokal utveckling fortsätter via den isolerade startaren, vars barn saknar produktions-game-URL och postgresläge. Full produktions-env lokalt och fungerande modell-/medieanrop är inte verifierade. Vercel-pluginens gamla scope ger 403 i scoutgaming; CLI har verifierad åtkomst. Neon-ägaren är nu liveverifierat "Vercel: scoutgaming", `org-green-butterfly-00780270`; organisationen i stycket nedan är den historiska uppgiften före flytten.
 
@@ -673,7 +622,10 @@ kodändringen. Nya reviewposter/klassificeringar läses ur Neon, utan gamla
 uploads-/klassificeringsfiler. Aktiva bankklipp och deras exakta ID/hash består.
 Tillfällig hashverifierad bytescache är disponibel scratch, inte beständig metadata.
 
-### Bevarad QA
+### Äldre QA-kontrakt — inte aktuellt driftkvitto
+
+Aktuell återgång och öppna driftkontroller står överst i dokumentet.
+Följande beskriver det tidigare kontraktet, inte bevis för att miljön är stängd.
 
 Den isolerade native-QA-miljön har egen backend, databas, scope och hostname.
 AI/GPU/kamera och native-admin är OFF; Cartesia-/RunPodnycklar finns inte där.
@@ -769,8 +721,9 @@ i CI eller Vercel.
 
 Huvudprojektets Preview kan peka mot produktion. Syntetiska spel-/kontoprov
 kräver den separata native-QA-backenden och dess egen databas/hostname.
-De aktuella QA-fronterna heter `croupier-native-qa-abc92154cb15` och
-`croupier-native-studio-qa-abc92154cb15`. Det äldre `croupier-player-preview-qa`
+De tidigare QA-fronterna hette `croupier-native-qa-abc92154cb15` och
+`croupier-native-studio-qa-abc92154cb15`. Färsk projektlistning 15 oktober
+visar endast `scoutgaming` i teamet `scoutgaming`; äldre namn nedan är historik. Det äldre `croupier-player-preview-qa`
 raderades 8 oktober 18:40 på Jakobs beslut, efter att Neon- och Blob-resurserna
 flyttats till teamet `scoutgaming`; raden `vercel-zones-qa` i registret är historik.
 Se [driftskartan](CLOUD-MIGRATION.md).

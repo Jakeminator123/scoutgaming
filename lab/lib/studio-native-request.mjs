@@ -19,7 +19,7 @@ export function studioDocumentNavigationMetadata(request) {
 }
 
 // Apply the existing document-navigation exception at the middleware boundary.
-// This is only a known staff document;
+// This is only a known staff or partner document;
 // API/action/body requests and Origin retain their original protections.
 export function studioDocumentNavigationHeaders(request) {
   const headers = new Headers(request.headers);
@@ -33,7 +33,7 @@ export function studioDocumentNavigationHeaders(request) {
   // explicit Origin, API/action/body requests and frames keep their guards.
   const mode = headers.get('sec-fetch-mode');
   const documentMode = mode === 'navigate' || mode === 'cors' && !headers.has('origin');
-  if ((surface?.surface === 'control' || adminDocument) && request.method === 'GET' && request.body === null
+  if ((surface?.surface === 'control' || surface?.surface === 'partner' || adminDocument) && request.method === 'GET' && request.body === null
     && documentMode && headers.get('sec-fetch-dest') === 'document'
     && !headers.has('next-action')) headers.delete('sec-fetch-site');
   return headers;
@@ -98,7 +98,9 @@ export function normalizeNativeStudioPageRequest(request, config) {
   const origin = config.allowedOrigins.find(value => new URL(value).host === url.host);
   if (!origin || !['http:', 'https:'].includes(url.protocol)) reject();
   url.protocol = 'https:';
-  const headers = new Headers(request.headers);
+  // The configured frontend can preserve cors/document through SSR. Reuse the
+  // same known-document rule; this does not authorize a session or operator.
+  const headers = studioDocumentNavigationHeaders(request);
   if (headers.get('sec-fetch-mode') === 'navigate' && headers.get('sec-fetch-dest') === 'document') {
     headers.delete('sec-fetch-site');
   }

@@ -64,7 +64,7 @@ async function buildLab(session) {
   try { session.trackChild(child); } catch (error) { child.kill(); throw error; }
   await new Promise((yes, no) => { child.once('error', no); child.once('exit', code => code === 0 ? yes() : no(new Error(`Labbbygget misslyckades (${code}). Kör npm --prefix lab ci om beroenden saknas.`))); });
 }
-export const publishedProductUrl = 'https://www.scoutgaming.tech/play';
+export const publishedProductUrl = 'https://www.scoutgaming.tech/lobby';
 export async function main(args = process.argv.slice(2), { open = openBrowser, log = console.log } = {}) {
   if (args.some(arg => !['--check', '--no-open', '--skip-build', '--astrid-camera', '--cloud-storage', '--offline', '--product'].includes(arg))) throw new Error('Använd --check, --no-open, --skip-build, --astrid-camera, --cloud-storage, --offline eller --product.');
   if (args.includes('--product')) {

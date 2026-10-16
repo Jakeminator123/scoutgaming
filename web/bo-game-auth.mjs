@@ -1,4 +1,4 @@
-import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
+import {backofficePlayerHandoffRequired,currentBackofficeAccount,backofficePlayerSource,readBackofficePlayerSource} from './bo-player-session.mjs';
 import {playerHandoffPath} from './public/player-handoff.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -62,11 +62,12 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
       if(!flow)return reply(400,'Sign-in request expired. Open the game again.');
       const claims=await boSession(req);
       const account=claims&&!claims.partner&&['reader','staff','admin','superadmin'].includes(claims.role)&&(!claims.aud||claims.aud==='backoffice')?await identity.find(claims.sub):null;
-      if(!account || (claims.source_stamp && claims.source_stamp!==account.stamp))return reply(303,'',{Location:`/studio/login?returnTo=${encodeURIComponent('/api/bo/game-login?state='+state)}`});
+      if(!account || claims.source_stamp!==account.stamp || !Number.isSafeInteger(claims.auth_epoch) || claims.auth_epoch<0
+        || !Number.isFinite(claims.exp))return reply(303,'',{Location:`/studio/login?returnTo=${encodeURIComponent('/api/bo/game-login?state='+state)}`});
       const age=Math.min(86400,Math.floor(claims.exp-Date.now()/1000));
       if(age<1)return reply(401,'Backoffice session expired');
       const code=token();
-      db.prepare('UPDATE bo_game_handoffs SET code_digest=?,craig_user_id=?,username=?,source_stamp=?,session_until=?,expires=? WHERE state_digest=?').run(hash(code),account.id,account.name,account.stamp,Date.now()+age*1000,Math.min(flow.expires,Date.now()+Math.min(60,age)*1000),hash(state));
+      db.prepare('UPDATE bo_game_handoffs SET code_digest=?,craig_user_id=?,username=?,source_stamp=?,session_until=?,expires=? WHERE state_digest=?').run(hash(code),account.id,account.name,backofficePlayerSource(account.stamp,claims.auth_epoch),Date.now()+age*1000,Math.min(flow.expires,Date.now()+Math.min(60,age)*1000),hash(state));
       return reply(303,'',{Location:`${game.origin}/api/auth/bo/callback?state=${state}&code=${code}`});
     }
     const browserState=(req.headers.cookie??'').match(/(?:^|;\s*)bo_game_state=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -75,15 +76,17 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
     const flow=db.prepare('DELETE FROM bo_game_handoffs WHERE state_digest=? AND code_digest=? AND expires>? RETURNING *').get(hash(state),hash(code),Date.now());
     if(!flow)return reply(400,'Sign-in request expired or already used. Open the game again.');
     try {
+      const source=readBackofficePlayerSource(flow.source_stamp);
+      if(!source)throw Error('Backoffice handoff must be renewed');
       // On the shared host the BO cookie accompanies this callback. Recheck its
       // epoch and identity so logout or an account switch cancels pending codes.
       if(game.origin===bo.origin) {
         const account=await currentBackofficeAccount(req,{identity,boSession,roles:['reader','staff','admin','superadmin']});
-        if(!account || account.id!==flow.craig_user_id || account.stamp!==flow.source_stamp)throw Error('Backoffice session changed');
+        if(!account || account.id!==flow.craig_user_id || account.stamp!==source.stamp || account.authEpoch!==source.authEpoch)throw Error('Backoffice session changed');
       }
       const age=Math.floor((flow.session_until-Date.now())/1000);
       if(age<1)throw Error('Session expired');
-      const session=await auth.fromBackoffice(req,{id:flow.craig_user_id,name:flow.username,stamp:flow.source_stamp},age);
+      const session=await auth.fromBackoffice(req,{id:flow.craig_user_id,name:flow.username,...source},age);
       return reply(303,'',{Location:flow.next_path,'Set-Cookie':[session,stateCookie(req,'',0)]});
     }catch{return reply(401,'Scout account changed. Sign in again.',{'Set-Cookie':stateCookie(req,'',0)});}
   };
