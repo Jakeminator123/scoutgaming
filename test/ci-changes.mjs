@@ -90,6 +90,10 @@ test('CI runs Studio discovery once and keeps product checks separate from map r
   const isolated = steps.find(step => /^Existing isolated Studio SQL/.test(step));
   assert.match(isolated, /tools\/studio-isolated-qa\.mjs/);
   assert.doesNotMatch(isolated, /continue-on-error: true/);
+  const timings = steps.find(step => /^Save regression group timings/.test(step));
+  assert.match(timings, /if: always\(\)/);
+  assert.match(timings, /continue-on-error: true/);
+  assert.match(timings, /timeout-minutes: 2/);
   assert.match(yaml, /if: always\(\)[\s\S]*dealer-regression-timing\.jsonl/);
   assert.doesNotMatch(yaml, /system-map/);
   assert.doesNotMatch(fullHook, /system-map/);

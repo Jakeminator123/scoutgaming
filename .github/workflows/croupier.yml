@@ -140,6 +140,8 @@ jobs:
           echo "PostgreSQL source: ${postgres_source[*]}"
           node tools/regression-group.mjs database/isolated-sql-restart-https 360 node tools/studio-isolated-qa.mjs "${postgres_source[@]}"
       - name: Save regression group timings
+        continue-on-error: true
+        timeout-minutes: 2
         if: always()
         uses: actions/upload-artifact@v7
         with:

@@ -44,6 +44,35 @@ test('an unstartable command fails visibly', async t => {
   assert.equal(result.exitCode, 1);
 });
 
+test('unwritable reports cannot prevent product commands or change their exit codes', async t => {
+  for (const code of [0, 7]) {
+    const f = fixture(t), marker = join(f.dir, 'product-ran'), warnings = [];
+    const result = await runGroup({ name: `fixture/report-error-${code}`, seconds: 5, command: 'node',
+      args: ['-e', `require('node:fs').writeFileSync(process.argv[1],'ran');process.exit(${code})`, marker],
+      env: { ...f.env, RUNNER_TEMP: join(f.dir, 'missing-directory'), GITHUB_STEP_SUMMARY: f.dir },
+      log: () => {}, warn: line => warnings.push(line) });
+    assert.equal(readFileSync(marker, 'utf8'), 'ran');
+    assert.equal(result.exitCode, code);
+    assert.equal(result.status, code === 0 ? 'passed' : 'failed');
+    assert.equal(warnings.filter(line => line.includes('timing-report')).length, 1);
+    assert.equal(warnings.filter(line => line.includes('step-summary')).length, 1);
+  }
+});
+
+test('end-report failure and throwing log/warning sinks preserve the product result', async t => {
+  for (const code of [0, 7]) {
+    const f = fixture(t), report = join(f.dir, 'dealer-regression-timing.jsonl');
+    // Start receipt succeeds; the product replaces that file with a directory
+    // so only the end receipt fails. All paths belong to this temporary fixture.
+    const result = await runGroup({ name: `fixture/end-report-error-${code}`, seconds: 5, command: 'node',
+      args: ['-e', `const fs=require('node:fs');fs.unlinkSync(process.argv[1]);fs.mkdirSync(process.argv[1]);process.exit(${code})`, report],
+      env: f.env, log: () => { throw Error('unavailable log'); }, warn: () => { throw Error('unavailable warning'); } });
+    assert.equal(result.exitCode, code);
+    assert.equal(result.status, code === 0 ? 'passed' : 'failed');
+    assert.ok(readFileSync(f.env.GITHUB_STEP_SUMMARY, 'utf8').includes(`**${result.status}**`));
+  }
+});
+
 test('a hung process tree times out, reports its group and stops its descendant', async t => {
   const f = fixture(t), marker = join(f.dir, 'descendant-survived');
   const logs = [];
@@ -51,7 +80,8 @@ test('a hung process tree times out, reports its group and stops its descendant'
   const childScript = `setTimeout(()=>require('node:fs').writeFileSync(${JSON.stringify(marker)},'unexpected'),1800)`;
   const script = `require('node:child_process').spawn(process.execPath,['-e',${JSON.stringify(childScript)}],{stdio:'inherit'});setInterval(()=>{},1000)`;
   const result = await runGroup({ name: 'fixture/hung', seconds: 0.8, command: 'node',
-    args: ['-e', script], env: f.env, heartbeatMs: 100, graceMs: 50, log: line => logs.push(line) });
+    args: ['-e', script], env: f.env, heartbeatMs: 100, graceMs: 50,
+    log: line => { logs.push(line); if (/RUNNING|TIMED-OUT/.test(line)) throw Error('unavailable log'); }, warn: () => {} });
   assert.equal(result.status, 'timed-out');
   assert.equal(result.exitCode, 124);
   assert.ok(logs.some(line => /RUNNING fixture\/hung/.test(line)));
@@ -104,8 +134,10 @@ test('product authority and media ownership checks remain mandatory, legacy map 
     'test/table-http.mjs', 'test/fuzz-blackjack.mjs', 'test/shoe-game.mjs', 'test/roulette.mjs',
     'test/partner-access-policy.mjs', 'test/game-entry-auth.mjs', 'test/operator-appearance-boundary.mjs',
     'test/studio-migrations.mjs', 'test/postgres-persistence.mjs', 'test/studio-game-authority.mjs',
+    'test/check-migration-readiness.mjs', 'test/studio-postgres-integration.mjs', 'test/roulette-postgres.mjs',
     'test/studio-media-runtime.mjs', 'test/filmed-action-ownership.mjs', 'test/managed-media-contract.mjs',
-    'test/neon-runtime-catalog.mjs', 'test/player-auth.mjs', 'test/bo-game-auth.mjs',
+    'test/neon-runtime-catalog.mjs', 'test/runtime-media-catalog.mjs', 'test/runtime-media-import.mjs',
+    'test/speech-reply-repository.mjs', 'test/studio-cutover-integration.mjs', 'test/player-auth.mjs', 'test/bo-game-auth.mjs',
   ]) assert.ok(hook.includes(path), `Missing protection: ${path}`);
   assert.doesNotMatch(hook, /system-map/);
   assert.match(hook, /--test-concurrency=4/);

@@ -6,17 +6,30 @@ import { performance } from 'node:perf_hooks';
 
 // Each invocation owns only the process tree it starts. No global process scan.
 export async function runGroup({ name, seconds, command, args = [], cwd = process.cwd(),
-  env = process.env, log = console.log, heartbeatMs = 30000, graceMs = 2000 }) {
+  env = process.env, log = console.log, warn = console.error, heartbeatMs = 30000, graceMs = 2000 }) {
   if (!/^[a-z0-9][a-z0-9/-]*$/.test(name) || !Number.isFinite(seconds) || seconds <= 0 || !command) {
     throw Error('Expected a group name, positive timeout in seconds, and command.');
   }
   const start = performance.now();
   const elapsed = () => Math.round(performance.now() - start);
-  const record = row => {
-    if (env.RUNNER_TEMP) appendFileSync(join(env.RUNNER_TEMP, 'dealer-regression-timing.jsonl'), JSON.stringify(row) + '\n');
+  const unavailable = new Set();
+  // Diagnostics observe the command. A failed log or optional receipt must
+  // neither prevent it from starting nor replace its actual exit status.
+  const optional = (kind, action) => {
+    try { action(); }
+    catch {
+      if (unavailable.has(kind)) return;
+      unavailable.add(kind);
+      try { warn(`[regression] Optional ${kind} unavailable for ${name}; product status is unchanged.`); }
+      catch { /* Even the warning sink can be unavailable. */ }
+    }
   };
-  log(`::group::${name} (limit ${seconds}s)`);
-  log(`[regression] START ${name} ${new Date().toISOString()}`);
+  const emit = line => optional('log', () => log(line));
+  const record = row => optional('timing-report', () => {
+    if (env.RUNNER_TEMP) appendFileSync(join(env.RUNNER_TEMP, 'dealer-regression-timing.jsonl'), JSON.stringify(row) + '\n');
+  });
+  emit(`::group::${name} (limit ${seconds}s)`);
+  emit(`[regression] START ${name} ${new Date().toISOString()}`);
   record({ group: name, event: 'start', at: new Date().toISOString(), timeoutSeconds: seconds });
   let result;
   try {
@@ -32,12 +45,12 @@ export async function runGroup({ name, seconds, command, args = [], cwd = proces
           // that PID again after it exits (Windows may reuse it).
           if (force) return;
           const killed = spawnSync(join(process.env.SystemRoot || 'C:/Windows', 'System32/taskkill.exe'),
-            ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true });
+            ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true, timeout: 5000 });
           if (killed.error || killed.status !== 0) {
             // Restricted shells can deny taskkill even for their own children.
             // Still close the direct child handle and report the cleanup failure.
             child.kill('SIGKILL');
-            log(`[regression] Process-tree cleanup unavailable for ${name} (PID ${child.pid})`);
+            emit(`[regression] Process-tree cleanup unavailable for ${name} (PID ${child.pid})`);
           }
         } else {
           try { process.kill(-child.pid, force ? 'SIGKILL' : 'SIGTERM'); }
@@ -56,7 +69,7 @@ export async function runGroup({ name, seconds, command, args = [], cwd = proces
       const stop = status => {
         if (stopping || finished) return;
         stopping = status;
-        log(`[regression] ${status.toUpperCase()} ${name} after ${(elapsed() / 1000).toFixed(1)}s`);
+        emit(`[regression] ${status.toUpperCase()} ${name} after ${(elapsed() / 1000).toFixed(1)}s`);
         killTree(false);
         // Kill descendants even when their parent exits during graceful cleanup.
         forceTimer = setTimeout(() => { killTree(true); finish(null); }, graceMs);
@@ -64,19 +77,21 @@ export async function runGroup({ name, seconds, command, args = [], cwd = proces
       const interrupt = () => stop('cancelled');
       const terminate = () => stop('cancelled');
       const deadline = setTimeout(() => stop('timed-out'), seconds * 1000);
-      const heartbeat = setInterval(() => log(`[regression] RUNNING ${name} ${(elapsed() / 1000).toFixed(1)}s / ${seconds}s`), heartbeatMs);
+      const heartbeat = setInterval(() => emit(`[regression] RUNNING ${name} ${(elapsed() / 1000).toFixed(1)}s / ${seconds}s`), heartbeatMs);
       process.on('SIGINT', interrupt); process.on('SIGTERM', terminate);
       child.once('error', error => finish(null, null, error));
       child.once('exit', (code, signal) => { if (!stopping) finish(code, signal); });
     });
     const row = { group: name, event: 'end', ...result, durationMs: elapsed() };
     record(row);
-    log(`[regression] END ${name} ${row.status} ${(row.durationMs / 1000).toFixed(3)}s (exit ${row.exitCode})`);
-    if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,
-      `- \`${name}\`: **${row.status}**, ${(row.durationMs / 1000).toFixed(3)}s (limit ${seconds}s)\n`);
+    emit(`[regression] END ${name} ${row.status} ${(row.durationMs / 1000).toFixed(3)}s (exit ${row.exitCode})`);
+    optional('step-summary', () => {
+      if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY,
+        `- \`${name}\`: **${row.status}**, ${(row.durationMs / 1000).toFixed(3)}s (limit ${seconds}s)\n`);
+    });
     return row;
   } finally {
-    log('::endgroup::');
+    emit('::endgroup::');
   }
 }
 
