@@ -1,5 +1,111 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## Aktiv slutplan — avstämning 16 oktober 2026
+
+Jakob har aktiverat målet i samma chatt och befintliga huvudcheckout.
+Dragan-felsökning och användarprovet av Spelbolag → Rum är prioriterade nu.
+Workflow-, dokumentations- och rutinfel som hindrar avslutet ingår; separat
+QA och ny rörlig läppsynk återstartas inte. Underagenter används för
+avgränsad granskning och åtskilda dokumentfiler, med en leveransström.
+`random/granskning.txt` är granskningsunderlag, inte ett genomförandemandat;
+dess main-referens `178df375` är äldre än verifierad main `10d3255e`.
+
+**Aktivt mål:** Slutför Admin-etappen och den interna
+migreringen till Scoutgamings befintliga system. Rätta blockerande
+uppspelnings-/Admin-fel, använd våra befintliga identiteter, publiceringar,
+behörigheter och miljöprofiler, och ta bort verifierat ersatt kod,
+konfiguration och lokala rester. Återanvänd utvalda medier och funktioner
+från Kevin/Emil genom våra kontrakt, aldrig som en parallell produktstack.
+Leverera genom granskad grön PR → main → befintlig produktion och synka
+huvudcheckouten. Avsluta med separat kvitto för implementerat, driftsatt,
+användaraccepterat, faktiskt borttaget och externa blockerare.
+
+| Ordning | Arbete | Avslutningsvillkor |
+| --- | --- | --- |
+| 1 | Dragan-stoppet, parallellt med Jakobs Admin-prov | Identifiera exakt dealerklipp, hash, publicerad revision och speltillstånd. Reproducera avgränsat; rätta återhämtning utan att hoppa över kort-/talfilmer, byta media eller röra användarens runda. Regression och två sammanhängande prov i faktisk spelare; inga liveinsatser används som agenttest. |
+| 2 | Stäng Admin-etappen | Hantera återkoppling på bolag → rum → bakgrund/dealer/bord. Verifiera båda spelen, rumsspecifika val kontra delad mall och utkast/publicering. Jakob godkänner användarflödet; kod- och medieacceptans redovisas var för sig. |
+| 3 | Täpp till verifierade kontrolluckor | Föreslå sammanfattande GitHub-kontrollen `CI` som obligatoriskt mergekrav. Rätta lageruppladdning med resursbegränsad serveranalys av faktiska medieegenskaper och negativa tester. Ingen ändring av GitHub-skydd är gjord i plansteget. |
+| 4 | Slutför intern konsolidering och städning | Kartlägg kvarvarande konsumenter, flytta nödvändiga funktioner till avsedda befintliga moduler, uppdatera loader/importer/bygg-/driftkonfiguration tillsammans och ta bort ersatta delar. Förbrukade kopior och redundanta säkerhetskopior får en faktisk raderingsåtgärd, inte en ny arkivkopia; unika data och använda junctionmål ingår inte som restfiler. Varje kvarvarande undantag får konkret beroende eller återställningssyfte. |
+| 5 — separat efter Admin | Bedöm vald Kevin/Emil-integration | Verifierad åtkomst, källa, image-digest och avatarbyte måste stämma. Anpassa enbart nödvändigt protokoll/material till vårt system. Aktivering och eventuella nya kostnadsbärande resurser är ett separat steg; Emils befintliga poddar och staging lämnas orörda. |
+
+PR165, ny rörlig läppsynk och QA förblir pausade tills Admin-etappen är
+avslutad. QA-/Preview-utbyggnaden ska inte återstartas. Återstående egna
+QA-rester bedöms mot rollback-kvitton och exakta resursidentiteter innan
+borttagning; gamla listor är inte bevis för att något fortfarande finns.
+Automatiska PR-previews är inte en ny accepterad skriv-/testmiljö.
+En leveransström används. Läsande granskningar och tydligt åtskilda
+ändringar kan parallelliseras; gemensam integration och merge sker i ordning.
+
+Efter accepterad Admin-etapp tas PR165 upp före slutkvittot för den interna
+migreringen: läs aktuell PR/head och lokalt bevarandeunderlag, slutför endast
+kvarvarande N1-rättning och kräv faktisk grön SQL-/omstarts-/HTTPS-CI samt
+granskning av slutligt head. Den äldre arbetskopian saknas nu; dess tidigare
+okommittade filer måste lokaliseras eller redovisas som saknade innan arbetet
+fortsätter. Plantexten är inget merge- eller deploybeslut för PR165.
+
+### Första rättningen: Dragan-grundloop
+
+På `codex/dragan-idle-recovery` är återhämtningen lokalt rättad: faktisk
+tidsprogression styr watchdog, stall får typat fel och uppspelningsdiagnostik,
+och den egna grundloopen får ett återförsök av samma frysta klipp. Första bild
+och UI-/flikbyte återställer inte budgeten; en fullbordad loop gör det.
+Kort-/talstall spelar inte om en annan standardfilm. Media-ID, hash och
+paketrevision följer nu spelarens diagnostik. Inga mediefiler ändras.
+
+Fem nya regressioner föll på tidigare kod. Efter rättning passerar samtliga
+80 prov i `test/local-presentation.mjs`, och oberoende kodgranskning har inga
+blockerande fynd. Lab-build verifierar 97 byggspår. Första fullhook passerar
+3 933 prov med 23 villkorade skip och noll fel; browsermodulen aktiveras för
+commitkontrollen. Slutlig CI, drift och browseracceptans är ännu inte
+kvitterade här.
+
+Passiv läsning av den öppna produktionsfliken 16 oktober identifierade
+Dragan-klippet `2f3955b0-b450-4cc2-a9f5-ac80f10abd2f`, "Kevin V2 · andning",
+i rum `room-c0031e58-9985-b851-d9a9-4ee419b35ff0`, publicerad version 4.
+Klippet spelade vid kontrollen utan varning; det tidigare produktionsstoppets
+rotorsak är därför fortfarande obestyrkt. Ingen omladdning eller spelhandling
+gjordes i användarens flik. Exakt hash och två sammanhängande prov av den nya
+versionen återstår för browserkvittot.
+
+### Vad genomgången faktiskt verifierade
+
+- GitHub-main är `10d3255e03b704e27bfe05b30855e7e26b7f8aba`.
+  Regelsystem `24642403` kräver PR och skyddar mot radering/force-push,
+  men har fortfarande inget obligatoriskt statuskrav och noll vanliga
+  granskarapproval. Grön CI följdes vid tidigare leveranser; reglerna
+  garanterar inte detta. Förslaget lägger inte till ett nytt manuellt
+  godkännandekrav som rutin i Jakobs arbetsflöde.
+- `layer-upload-service.mjs` verifierar hash, storlek och signatur;
+  okända filers uppgivna bildmått avkodas inte servervägen. Behörighets-
+  och revisionsgrindar finns redan. 9:16/24 fps är ett paketbundet kontrakt,
+  inte ett generellt krav för bakgrund, bord och alla dealerfilmer.
+- Dragan-varningen är observerad, men den tidigare avlästa
+  `/api/presentation/layers/...`-videon identifierar ett presentationslager,
+  inte säkert dealerfilmen. Den spelar via verifierad blob-URL. Kodgranskning
+  visar att `local-film-player.mjs` avbryter efter utebliven tidsprogression,
+  medan `resumeOwnIdle` bara återförsöker `local_film_no_presented_frame`.
+  Ett stall kan därför lämna grundloopen låst. Detta är en konkret lucka,
+  ännu inte ett bevis för orsaken till produktionsobservationen.
+- Ingen rotmapp `labb/` finns. `lab/` är aktiv Studio-källa med Admin,
+  Partner, Lobby och delade tjänster. Namnbyten kan ingå i en sammanhållen
+  flytt med samtliga konsumenter och driftvägar; mappen får inte klassas som
+  oanvänd bara utifrån namnet. Äldre produktalias och aktiva källmappar är
+  olika saker. Förtydliga format-/läppsynkregler i befintliga guider.
+- Fem arbetskopior är nu registrerade: huvudcheckout, `8e3c`,
+  `ai-system-map`, `moving-lipsync-runtime` och `efterarbete`.
+  `admin-document-navigation`, `n1-player-session` och `pr91-integration`
+  finns inte kvar på tidigare sökvägar. N1-/stabiliseringsgrenarna finns
+  fortfarande; detta bevisar inte var äldre okommittade filer bevarats.
+  Ingen arbetskopia återskapas automatiskt i plansteget.
+- Emils citerade besked innehåller platshållare/alternativ och en hopslagen
+  image-/filadress. Commit och två avatarhashar har korrekt hexlängd, men
+  byte och image-digest är inte verifierade. Både GitHub-connectorn och
+  CLI inloggad som `Jakeminator123` får 404 för
+  `EmaCodeHero/croupier-lipsync-worker`. Åtkomst är alltså inte verifierad;
+  404 skiljer inte saknat repo från saknad behörighet. Beskedet räcker
+  inte för aktivering. Kevins rapporterade lip-layer-fel är inte påvisat
+  i vår separata konsument med exakt plan-/kroppsrute-/hashmatchning.
+
 ## Avgränsad uppföljning, 16 oktober 2026
 
 Jakob valde Classic med max 2 000 och tydligt avaktiverade High Roller/VIP.
@@ -17,11 +123,13 @@ lagerförhandsvisning. QA, PR165 och ny rörlig läppsynk behåller sina pausade
 lägen. GitHub- och Vercel-läsning fungerar efter kontobytet; ingen
 återanslutning eller behörighetsändring behövdes.
 
-## Aktiv genomförandeplan — enklare Admin, 15 oktober 2026
+## Genomförd leveransplan — enklare Admin, 15 oktober 2026
 
-Jakob har gett återstartsmandat för befintlig Admin, en leveransström och
-inga nya underagenter, arbetskopior eller testmiljöer. Arbetskopian är
-admin-document-navigation, branch codex/stabilization-checkpoint.
+Den 15 oktober gav Jakob återstartsmandat för befintlig Admin, en
+leveransström och då inga nya underagenter, arbetskopior eller testmiljöer.
+Arbetskopian var admin-document-navigation, branch
+codex/stabilization-checkpoint. Aktuell omfattning och arbetskopiestatus
+framgår av avstämningen överst.
 Målet är synligt enklare arbete och färre aktiva delar, inte fler trackers.
 Valt vardagsflöde: ändring i befintlig arbetskopia → push av featurebranch →
 granskad grön PR → main → automatisk produktionsdeployment → test på
@@ -159,7 +267,10 @@ beslutet och verifierade genomförandet av QA-underhållsläget står ovan.
 Senaste dokumentationsleveransens slutliga CI-/main-/driftkvitto förs i dess
 PR-beskrivning, utan att skapa en ny leverans enbart för ett leveranskvitto.
 
-| Kvarvarande arbetskopia | Konkret skäl att behålla |
+Den följande arbetskopielistan är inventeringen från 15 oktober. Aktuellt
+antal och de ändrade sökvägarna står i avstämningen överst.
+
+| Arbetskopia vid inventeringen | Då dokumenterat skäl att behålla |
 | --- | --- |
 | Huvudcheckout/main | Vanlig lokal källa; två egna modifierade spårade filer, egna inställningar/skill och privata reviewmedier kvar. |
 | admin-document-navigation | Denna enda aktiva leveransström och tidigare bevarade dokumentutkast. |
