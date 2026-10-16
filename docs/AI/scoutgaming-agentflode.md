@@ -288,7 +288,7 @@ Registrera exempelvis **Dragge**, spara och välj den som mottagare för klippen
 Dealern får tomma klippfack och läggs inte automatiskt till ett rum.
 En chattlänk kan välja en redan registrerad dealer med dess exakta ID.
 
-Importassistenten tillåter högst tio **osparade** filer per omgång och
+Importassistenten tillåter högst 30 **osparade** filer per omgång och
 128 MiB per fil. Sparade rader upptar inte nästa omgångs köplatser.
 Filval, uppladdning, klippmappning och slutlig granskning sker i importvyn;
 chattrutan tar ännu inte emot videobilagor. Dealerskapande blockeras om
@@ -405,6 +405,7 @@ denna ansvarsfördelning. API-nyckeln ska inte läggas i klientkoden.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-16 | Importgränsen rättad från tio till 30 osparade filer enligt `DEALER_IMPORT_LIMITS.maxFiles` och befintligt regressionstest. COMPANION-guidens gamla arbetsbranch ersatt med featurebranch → grön PR → main enligt repositorypolicyn. Ingen runtime- eller behörighetsändring. |
 | 2026-10-15 | PR149–152 levererade på main `3da92370`. Samordnarens läsande produktionsprov verifierar rumshistorik, portaler, negativa länkar och Avbryt-fokus; lokal fullhook, CI och drift hålls isär. Kvarvarande login-/skriv-/zoom-/spelargränser står öppna i befintlig tracker/handoff. |
 | 2026-10-14 | Aktiva ingångar och bolagssluggar samlade i användarguiden efter produktionsprov av 22 adresser och fem query-/guidevarianter. Äldre Control-länkar skiljs från adminverktygens mål och efterföljande inloggning; N1 behåller sin roll på partner-/spelarytan. API- och spelstartkontrakt bevarade. |
 | 2026-10-14 | Jakobs riktning om N1-åtkomst överallt verifierad med LLM i produktion: samma inloggning öppnar spelaryta, partnerlista med fyra bolag och admin. Partnerformuläret är en separat N2-ingång; dess avvisning av N1 ska inte beskrivas som saknad åtkomst till partnerportalen. |

@@ -1,6 +1,19 @@
 # Roulette
 
-## Aktuell spelarkoppling, 13 oktober 2026
+## Senast dokumenterade leverans, sammanställd 16 oktober 2026
+
+[Handoffens leveranskvitto från 14 oktober](../../JOHN-HANDOFF.md#anna-demorum-publicerat-och-två-liveprov-klara-14-oktober)
+redovisar ett publicerat **Anna · Roulette · Demo** hos `scoutgaming-demo`,
+med Anna, startfilm, MP4-bakgrund och roulettebord. Två sammanhängande rundor
+från `/lobby` granskades då i produktionsspelaren med serverkvitton och
+återgång till idle. Detta är en hänvisning till det daterade provet, inte
+ett nytt liveprov eller ett godkännande av kompletta utfallsfilmer och tal.
+
+Uppgifterna nedan om väntande publicering, Admin-åtkomst och driftsatt runtime
+beskriver läget den 13 oktober och ersätts i dessa delar av leveranskvittot.
+Övriga material- och acceptansgränser behålls.
+
+## Historisk spelarkoppling, 13 oktober 2026
 
 Demorummet färdigställs via det ordinarie registret. Anna Jonsson är den
 befintliga dealern `anna-jonsson`. Vilofilmen har registrerats i Blob/Neon
