@@ -1,5 +1,39 @@
 # Aktuell handoff — Scoutgaming
 
+## Separat CI-förbättring: dealer-regression — 16 oktober 2026
+
+Branch `codex/dealer-regression-timing`, separat PR till `main`. Ingen ändring
+eller merge av PR186 utförs i denna uppgift. Vid start är PR186 redan mergad
+som `2ea080bc`; det är denna uppgifts bas.
+
+- GitHub-körning `38950137228` avbröts efter minst 16m11s i det gemensamma
+  regressionssteget, jämfört med 3m28s i grön main-körning `38954442660`.
+  Bygge och installation var redan klara; isolerad SQL/HTTPS hade inte
+  startat i den långa körningen. Tillgänglig steghistorik visar inte vilken
+  testfil som fastnade. Ingen viss testfil eller kartkontroll är bevisad orsak.
+- Fullhookens befintliga omgångar är uppdelade i åtta synliga CI-sviter
+  och 70 unikt namngivna undergrupper. Samma register används lokalt.
+  Grupper loggar start, förfluten tid var 30:e sekund, status och sluttid;
+  Actions får sammanfattning och JSONL-artefakt även vid fel. Tidsgränser
+  och processstädning gäller endast respektive grupps egna processer.
+- Automatiska systemkarttester, capture, reporter, kontroll, generering
+  och uppladdning är pensionerade. Kartverktyget och dess två testfiler
+  finns kvar för uttryckligt underhåll; se `docs/system-map/README.md`.
+  Isolerad PostgreSQL, omstart, HTTPS och källintegritet körs direkt via
+  den befintliga runnern och är fortfarande obligatoriska.
+- Jämförelse mot basens fullhook visar att endast de två karttestfilerna
+  lämnat automatisk regression. Saldo, spelregler, behörigheter, rumsgränser,
+  migrationer, databas och medieägarskap behålls. Högst fyra testworkers.
+- Lokalt: riktade verktygs-/workflowprov passerar; Windows hoppar över
+  POSIX-signalprovet, som körs i Linux-CI. Verkliga timeout-fixtures provar
+  att både gruppens process och dess barn avslutas. Orphan-kontroll och
+  shellsyntax passerar. Komplett produktregression, frontendtypkontroll
+  och riktig SQL/HTTPS verifieras i den separata PR:ns CI.
+- Ingen produktionsändring, migration, merge, gameplay- eller medieändring.
+  Ingen ny visuell medieacceptans påstås. GitGuardian visade noll öppna
+  incidenter vid start; historisk scan är `too_large`, platsmetadata delvis
+  ofullständig och main-checken köad. Detta är separata täckningsgränser.
+
 ## Aktuellt: Neon-import klar, runtimeleverans återstår — 16 oktober 2026
 
 Jakob har beställt Neon som enda register och Blob som mediekälla. Astrid

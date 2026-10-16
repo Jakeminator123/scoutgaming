@@ -1,5 +1,13 @@
 [
   {
+    "path": "test/system-map.mjs",
+    "reason": "Retired from product regression. Optional legacy map tooling tests: node --test test/system-map.mjs test/system-map-verify.mjs; see docs/system-map/README.md."
+  },
+  {
+    "path": "test/system-map-verify.mjs",
+    "reason": "Retired from product regression with the historical map. Run explicitly when maintaining that tool; see docs/system-map/README.md."
+  },
+  {
     "path": "test/backoffice-lab-browser.mjs",
     "reason": "Opt-in Playwright acceptance. It starts the local comparison and Lab via lab/start.mjs and is not run in CI (decision matrix row 34)."
   },
