@@ -138,7 +138,7 @@ test('native administration preserves its standalone shell and embeds without a 
     assert.equal(view.roomsHref, undefined);
     assert.equal(view.companyTeamLabel, undefined);
   }
-  assert.equal(views[2].roomsHref, '/admin/rooms?view=registered');
+  assert.equal(views[2].roomsHref, '/admin/rooms');
   assert.equal(views[2].companyTeamLabel, 'Bolag & team');
 });
 
@@ -199,9 +199,9 @@ test('administration notices use the enclosing room destination and label team c
     const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === href)[0];
     assert.ok(original, group);
     assert.equal(original.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team');
-    const embedded = h.render({ ...props, roomsHref: '/admin/rooms?view=registered', companyTeamLabel: 'Bolag & team (äldre editor)' });
+    const embedded = h.render({ ...props, roomsHref: '/admin/rooms', companyTeamLabel: 'Bolag & team (äldre editor)' });
     const links = nodes(embedded, node => node.type === 'a');
-    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms?view=registered' : '/control/companies'));
+    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/control/companies'));
     assert.ok(target, group);
     assert.equal(target.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team (äldre editor)');
     if (group === 'tables') {

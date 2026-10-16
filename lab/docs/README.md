@@ -2,6 +2,19 @@
 
 Produktmodell och ord har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
+**Roulettescenens storlek:** öppna Spelbolag & rum, välj rummet och
+**Gemensam mall och tillåtna alternativ** → **Öppna gemensam mall** →
+**Redigera gemensam mall**. **Zooma in scenen** och
+**Zooma ut scenen** skalar bakgrund, dealer och bord tillsammans runt bildens
+mitt. Finjustera ett lager under **Storlek och placering**. Samma scenzoom finns
+i **Verktyg → Sammansättningar**, där du också kan skapa en ny sammansättning.
+Roulette använder Desktop 16:9 även på mobil; dessa editorer visar därför det
+format som roulette använder. Detta ändrar sparad geometri i den gemensamma
+mallens utkast, inte tillfällig visningszoom eller rummets `roomOverrides`.
+Granska vilka rum som delar mallen, spara utkastet och publicera via det
+befintliga rumsflödet för att ändringen ska nå spelaren. Ett zoomsteg stoppas
+helt om ett lager når sin placeringsgräns.
+
 **Admin är den samlade interna arbetsytan på huvuddomänen.** Menyn **Verktyg**
 samlar Bolag & team, Rum & publicering, Sammansättningar, Dealerinställningar,
 Klippbibliotek, Svarsbibliotek, Materialinställningar, Provspelning, regler,
@@ -9,6 +22,12 @@ dealerns agent och Guide. Gamla `/control`-länkar leder till motsvarande Admin-
 med dealer och rum kvar. Sparade uppgifter och behörigheter är desamma.
 `lab/` är fortfarande källkoden för Studio och dessa funktioner, och `/studio`
 är den tekniska API-monteringen. Det är ingen separat produkt att flytta data från.
+
+**Spelbolag & rum** (`/admin/rooms`) öppnar rummets egna val direkt. Välj
+bolag och rum, ändra tillåtna alternativ och granska före publicering.
+Rumsval sparas bara för valt rum. Gemensam mall finns i en separat
+detaljsektion; dess redigerare visar vilka andra rum som kan påverkas.
+Gamla länkar med `view=registered` fungerar men behövs inte längre.
 
 **Hitta rätt i Admin:** Startsidan ger genvägar till Dealers och klipp,
 Bolag & team, Spelrum & publicering samt Provspelning. Klippkarta öppnar

@@ -17,7 +17,6 @@ const navigationTests = [
   'lab/components/kevin-bo/partner-navigation-guard.test.mjs',
   'lab/test/partner-workspace-visual.test.mjs',
   'lab/test/studio-navigation.test.mjs',
-  'packages/design-preview/admin/lib/system-overview.test.mjs',
   'lab/test/partner-presentation-flow.test.mjs',
 ];
 const notice = 'Focused Admin/partner navigation checks only; this does not replace mandatory full delivery/CI checks.';

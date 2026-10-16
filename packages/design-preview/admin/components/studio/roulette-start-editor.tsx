@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 import type {StudioProject} from '../../../../../lab/lib/studio-model.mjs';
 import type {VideoInventory} from '../../lib/connected-studio.mjs';
 import {rouletteClipMatches,rouletteClipSlots} from '../../lib/roulette-clip-map.mjs';
-import {bindRouletteStart,removeRouletteStart,rouletteStartForm,rouletteStartTables,type RouletteStartForm} from '../../lib/roulette-start-editor.mjs';
+import {bindRouletteStart,removeRouletteStart,rouletteStartCompositions,rouletteStartForm,rouletteStartTables,type RouletteStartForm} from '../../lib/roulette-start-editor.mjs';
 import {RouletteMediaReview} from './roulette-media-review';
 
 const slot=rouletteClipSlots().find(row=>row.eventId==='roulette.wheel-start')!;
@@ -14,7 +14,7 @@ export function RouletteStartEditor({project,inventory,dealerId,laneId,videoId,b
 }) {
   const [form,setForm]=useState(()=>rouletteStartForm(project,dealerId,videoId));
   const [reviewDirty,setReviewDirty]=useState(false);
-  const compositions=project.lanes?.filter(lane=>lane.layers.dealer.enabled&&lane.layers.dealer.allowed.includes(dealerId))??[];
+  const compositions=rouletteStartCompositions(project,dealerId);
   const [tableLaneId,setTableLaneId]=useState(()=>compositions.some(lane=>lane.id===laneId)?laneId:'');
   const saved=project.dealers.find(row=>row.id===dealerId)?.rouletteStart;
   const dirty=JSON.stringify(form)!==JSON.stringify(rouletteStartForm(project,dealerId,form.videoId));
@@ -36,7 +36,7 @@ export function RouletteStartEditor({project,inventory,dealerId,laneId,videoId,b
       </select></label>
       {selected&&<p>Registrerad pose: {metadata?.startPose??'saknas'} → {metadata?.endPose??'saknas'}. Inramning: {metadata?.framing?`skala ${metadata.framing.scale}, x ${metadata.framing.x}, y ${metadata.framing.y}`:'saknas'}. Granska och spara filmuppgifterna nedan innan koppling.</p>}
       <label className="studio-field">Sammansättning för bordkontroll<select value={tableLaneId} onChange={event=>{setTableLaneId(event.target.value);change('tableDesignId','');}}>
-        <option value="">Välj en mall som tillåter denna dealer…</option>
+        <option value="">Välj en mall med denna dealer och roulettebord…</option>
         {compositions.map(lane=><option key={lane.id} value={lane.id}>{lane.label} · {lane.id}</option>)}
       </select></label>
       <p>Valet kontrollerar bordets tillåtelse. Det ändrar inte rum eller mall. <a className="underline" href="/admin/compositions" target="_blank" rel="noopener">Hantera sammansättningar</a></p>

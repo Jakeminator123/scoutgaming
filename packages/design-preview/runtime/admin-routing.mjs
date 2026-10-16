@@ -21,14 +21,9 @@ export function hasAdminContext(search){
   return adminContextKeys.some(key=>query.has(key));
 }
 
-export function isRegisteredRoomListRoute(path,search){
-  return path==='/admin/rooms'&&new URLSearchParams(search).get('view')==='registered';
-}
-
 export function isStudioAdminRoute(path,search){
   return path==='/admin'&&hasAdminContext(search)
-    || path==='/admin/clips'
-    || path==='/admin/rooms'&&!isRegisteredRoomListRoute(path,search);
+    || path==='/admin/clips';
 }
 
 export function withAdminContext(href,currentSearch){

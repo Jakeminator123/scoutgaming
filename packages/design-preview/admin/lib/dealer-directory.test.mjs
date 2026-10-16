@@ -8,8 +8,8 @@ import {setTemplateDealers} from './dealer-directory.mjs';
 import {lifecycleMessage} from './studio-lifecycle.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 const nodes=(node,predicate)=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(child=>nodes(child,predicate)):[...(predicate(node)?[node]:[]),...nodes(node.props?.children,predicate)];
-const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
-function harness() {
+const text=node=>typeof node==='string'||typeof node==='number'?String(node):Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):'';
+function harness(restoreCompositions=[]) {
   let remote={project:addDealer(createEmptyProject(),'dragan','Dragan'),inventory:{videos:[]},catalog:{source:'registered',administration:{operators:[],rooms:[],dealers:[{id:'dragan',name:'Dragan'}]}}};
   const saves=[],changes=[],navigations=[],archives=[],checks=[],slots=[],effects=[],module={exports:{}};
   let cursor=0,saveFailure='',readFailure=false;
@@ -24,7 +24,7 @@ function harness() {
   }};
   const lifecycle={checkDealerArchive:async(project,id)=>{checks.push({id,revision:project.revision});return impact;},dealerLifecycle:async(project,id,archived,plan,current)=>{
     assert.equal(current(),true);archives.push({id,archived,plan,revision:project.revision});
-    remote={...remote,project:{...remote.project,revision:'studio.project.3',dealers:[],dealerTrash:[{dealer:{id,label:'Dragan'},lines:[]}]}};
+    remote={...remote,project:{...remote.project,revision:'studio.project.3',dealers:[],dealerTrash:[{dealer:{id,label:'Dragan'},lines:[],compositions:restoreCompositions}]}};
   }};
   const output=transformSync(readFileSync(new URL('../components/studio/dealer-directory.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'});
   runInNewContext(output.code,{module,exports:module.exports,URLSearchParams,AbortController,structuredClone,window:{addEventListener(){},removeEventListener(){}},require:name=>{
@@ -94,6 +94,17 @@ test('removal first reviews the server impact, then sends its exact revision and
 test('a pending Studio draft blocks dealer mutations even when a stale button handler is called',async()=>{
   const h=harness();await h.settle();h.props.blocked=true;h.button('Ta bort').props.onClick();await h.settle();
   assert.equal(h.checks.length,0);assert.equal(h.archives.length,0);assert.equal(h.button('Skapa dealer').props.disabled,true);
+});
+
+test('restore confirmation names the saved compositions before any restore is submitted',async()=>{
+  const h=harness([{id:'first',label:'Första mallen'},{id:'second',label:'Andra mallen'}]);await h.settle();
+  h.button('Ta bort').props.onClick();await h.settle();h.button('Flytta till papperskorgen').props.onClick();await h.settle();
+  h.button('Återställ').props.onClick();await h.settle();
+  const review=text(h.render());
+  assert.match(review,/sparade sammansättningar återförs som utkast/);
+  assert.match(review,/Sparade sammansättningar \(2\)/);assert.match(review,/Första mallen/);assert.match(review,/Andra mallen/);
+  assert.match(review,/AI-tal förblir avstängt/);assert.match(review,/Rum återställs eller öppnas inte automatiskt/);
+  assert.equal(h.archives.length,1);assert.ok(h.button('Bekräfta återställning'));
 });
 test('template dealer choices remain explicit, preserve unrelated state and require a valid default',()=>{
   let project=addDealer(addDealer(createEmptyProject(),'dragan','Dragan'),'nora','Nora');project.lanes=[defaultPresentationLane('nora')];

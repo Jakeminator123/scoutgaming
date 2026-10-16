@@ -24,7 +24,6 @@ const panelClass = 'rounded-lg border border-sg-line bg-sg-panel';
 const labels: Record<string, string> = { active: 'Aktivt', suspended: 'Avstängt', live: 'Öppet', preview: 'Förhandsvisning', pending: 'Väntar', draft: 'Utkast', archived: 'Arkiverat', blackjack: 'Blackjack', roulette: 'Roulette' };
 function workspaceLink(path: string, operator?: Operator, room?: Room, dealer?: Dealer) {
   const params = new URLSearchParams();
-  if (path === '/admin/rooms') params.set('view','registered');
   if (operator) params.set('operator', operator.id);
   if (room) { params.set('table', room.id); params.set('composition', room.compositionId); params.set('game', room.game); }
   if (dealer) params.set('dealer', dealer.id);
@@ -157,7 +156,7 @@ export function RegisteredStudio({ path, title,disabled=false,onChanged }: { pat
               {disabled&&<p role="status">Spara det pågående Studio-arbetet innan du ändrar rummets val.</p>}
               {selectedRoom.published ? <PartnerAppearanceLoader key={operator.id+':'+selectedRoom.id+':'+refresh} apiBase="/studio/api/partner" operatorId={operator.id} operatorSlug={operator.slug} roomId={selectedRoom.id} roomLayout disabled={disabled||lifecycleBusy} onDirtyChange={setRoomDirty} onBusyChange={setRoomBusy} onSaved={()=>onChanged?.()}/>
                 : <p role="status">Rummet saknar ett publicerat paket. Förbered lagren i den delade mallen och granska sedan rummets första publicering.</p>}
-              <aside className={cn(panelClass,'p-4')} aria-label="Delad mall"><h3 className="font-semibold">Delad mall och tillåtna alternativ</h3><p className="my-2 text-sm text-sg-muted">Låsta materialval bestäms av publiceringen. Malländringar kan beröra fler rum; berörda rum visas innan du ändrar eller sparar.</p><div className="flex flex-wrap gap-4"><a href={editHref} className={linkClass}>Öppna delad mall för {selectedRoom.name} ↗</a><a href="/admin/assets" className={linkClass}>Bord & bakgrunder · bibliotek</a></div></aside>
+              <details className={cn(panelClass,'p-4')}><summary className="cursor-pointer font-semibold">Gemensam mall och tillåtna alternativ</summary><p className="my-2 text-sm text-sg-muted">Malländringar kan beröra flera rum. Berörda rum visas i mallredigeraren innan du ändrar eller sparar.</p><div className="flex flex-wrap gap-4"><a href={editHref} className={linkClass}>Öppna gemensam mall för {selectedRoom.name} ↗</a><a href="/admin/assets" className={linkClass}>Bord & bakgrunder · bibliotek</a></div></details>
             </>}
             {!operatorRooms.length&&operator&&<p className="text-sm text-sg-muted">Inga rum är registrerade för det valda spelbolaget.</p>}
           </div> : <ul className="flex flex-col gap-4">

@@ -8,7 +8,7 @@ export interface PartnerBrandingView {
   presentation?:import('../../web/presentation-layers.mjs').PresentationPackage;
   dealerChoices?:Record<string,string[]>;roomDealerChoices?:Record<string,string[]>;
   draft?:PartnerDraft|null;draftRevision?:number;
-  rooms?:{id:string;label:string;presentationLaneId:string}[];
+  rooms?:{id:string;label:string;presentationLaneId:string;game:'blackjack'|'roulette'}[];
   history?:{revision:number;publishedAt:number;branding:Record<string,unknown>}[];
 }
 export interface PartnerPackageRecord {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {adminHref,adminPathname,hasAdminContext,isInternalAdminPathname,isRegisteredRoomListRoute,isStudioAdminRoute,withAdminContext} from './admin-routing.mjs';
+import {adminHref,adminPathname,hasAdminContext,isInternalAdminPathname,isStudioAdminRoute,withAdminContext} from './admin-routing.mjs';
 
 test('plain admin root is home but old context bookmarks still open Studio',()=>{
   assert.equal(isStudioAdminRoute('/admin',''),false);
@@ -12,11 +12,11 @@ test('plain admin root is home but old context bookmarks still open Studio',()=>
   assert.equal(isStudioAdminRoute('/admin/clips',''),true);
 });
 
-test('registered room shortcut and legacy room editor have distinct routes',()=>{
-  assert.equal(isRegisteredRoomListRoute('/admin/rooms','?view=registered'),true);
-  assert.equal(isStudioAdminRoute('/admin/rooms','?view=registered&operator=north'),false);
-  assert.equal(isStudioAdminRoute('/admin/rooms','?operator=north&table=room-one'),true);
-  assert.equal(isStudioAdminRoute('/admin/rooms',''),true);
+test('rooms always opens room choices; old queries cannot turn it into a shared editor',()=>{
+  for(const search of ['', '?view=registered&operator=north', '?operator=north&table=room-one', '?composition=shared&panel=layers']){
+    assert.equal(isStudioAdminRoute('/admin/rooms',search),false);
+  }
+  assert.equal(isStudioAdminRoute('/admin/clips','?composition=shared&panel=layers'),true);
 });
 
 test('dealer library and imports do not inherit a room or its allowed dealers',()=>{
@@ -30,7 +30,7 @@ test('explicit home navigation clears context while deep links retain it',()=>{
   const context='?operator=north&table=room-one&dealer=anna';
   assert.equal(withAdminContext('/admin',context),'/admin');
   assert.equal(withAdminContext('/admin?dealer=bea',context),'/admin?dealer=bea');
-  assert.equal(withAdminContext('/admin/rooms?view=registered',context),'/admin/rooms?view=registered&operator=north&table=room-one&dealer=anna');
+  assert.equal(withAdminContext('/admin/rooms',context),'/admin/rooms?operator=north&table=room-one&dealer=anna');
   assert.equal(withAdminContext('/admin/clips?dealer=bea#cards',context),'/admin/clips?dealer=bea&operator=north&table=room-one#cards');
   assert.equal(withAdminContext('https://outside.invalid/admin/clips',context),'https://outside.invalid/admin/clips');
 });

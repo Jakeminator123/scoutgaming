@@ -123,6 +123,15 @@ test('material action retains dependency token, review consequences and original
  assert.equal(p.plan.body.impactToken,'impact-1');assert.equal(p.review.impact.token,undefined);assert.equal(p.review.impact.rooms[0].id,'room');
  await executeAssistantAction(h.native,req(),p,{services:h.services});assert.equal(h.state.calls.at(-1).path,'material-trash');
 });
+
+test('dealer restore preview lists saved compositions while retaining the original revision-bound command',async()=>{
+ const h=actionFixture();h.state.project.dealerTrash=[{dealer:h.state.project.dealers[0],compositions:[{id:'first',label:'Första mallen'},{id:'second',label:'Andra mallen'}]}];h.state.project.dealers=[];
+ const p=await prepareAssistantAction(h.native,req(),{action:'dealer.restore',targetId:'astrid',value:null},{services:h.services});
+ assert.match(p.review.impact.notice,/sparade sammansättningar återförs som utkast/);
+ assert.match(p.review.impact.notice,/Sparade sammansättningar \(2\): Första mallen, Andra mallen/);
+ assert.match(p.review.impact.notice,/AI-tal förblir avstängt/);assert.match(p.review.impact.notice,/Rum återställs eller öppnas inte automatiskt/);
+ assert.equal(p.plan.path,'/dealers/archive');assert.deepEqual(p.plan.body,{dealerId:'astrid',expectedRevision:'p1',archived:false});assert.equal(h.state.calls.length,0);
+});
 test('room state and restore reject unknown or unavailable objects',async()=>{
  const h=actionFixture();
  const p=await prepareAssistantAction(h.native,req(),{action:'room.pause',targetId:'room',value:null},{services:h.services});

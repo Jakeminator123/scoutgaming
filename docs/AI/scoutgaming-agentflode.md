@@ -1,6 +1,20 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
-Aktuell samordning, 15 oktober: Jakob har gett mandat att slutföra en
+Aktuell status och återstående arbete finns överst i
+[CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och
+[JOHN-HANDOFF](../JOHN-HANDOFF.md). Följ [AGENTS.md](../../AGENTS.md) för
+mandat, ägarskap, verifiering och merge-/driftgränser. Daterade kvitton nedan
+beskriver sina dåvarande versioner och öppnar inte avslutade migrationssteg.
+
+Underagenter används bara på uttrycklig begäran enligt projektreglerna.
+De ärver vald modell och får korta, kompletta uppgifter med tydliga filgränser;
+huvudagenten äger Git, integration och leverans. Bevara beteendekontrakt och
+data när verifierat ersatta sidor och tester avvecklas. Rapportera relevanta
+fel och osäkerheter utan en ny generell godkännandegrind.
+
+## Daterat samordningskvitto — 15 oktober 2026
+
+Vid detta kvitto hade Jakob gett mandat att slutföra en
 sammanhängande Admin/partner/lobby-struktur, granska och merga egna PR:er
 och städa ersatt legacy efter konsumentkontroll. C1–C9 i
 [migreringstrackern](../CLOUD-MIGRATION.md#admin-checkpoints-c1c9) är enda
@@ -12,18 +26,20 @@ Vercel production READY och Render live på samma SHA; engine health/version bek
 Samordnarens eget läsande prov med befintlig staffsession verifierar Admin →
 Partner → Lobby, rum/bolagsstandard genom meny/reload/historik, negativa
 rumslänkar och återställt Avbryt-fokus. Roller ändras inte, inga
-produktionsskrivningar eller spelrundor gjordes. Ny produktionslogin,
-full skrivacceptans, faktisk 200-procentszoom och godkännande för PR91:s
-export av privat spelarkod återstår. Kvitton i [handoffen](../JOHN-HANDOFF.md) skiljer
+produktionsskrivningar eller spelrundor gjordes. Vid detta kvitto återstod ny
+produktionslogin, full skrivacceptans, faktisk 200-procentszoom och godkännande
+för PR91:s export av privat spelarkod. Kvitton i [handoffen](../JOHN-HANDOFF.md) skiljer
 lokal fullhook (3 852 pass/9 skip/0 fel), CI och produktionsprov;
 överlappande underagentprov summeras inte.
 
-C6:s tidigare API-steg ersätts nu av faktisk N2-arbetsyta i samma isolerade
+C6:s tidigare API-steg ersattes då av faktisk N2-arbetsyta i samma isolerade
 browserkedja. Underagentens Chrome-kvitto (2/2, inga skip) och oberoende
 kodgranskning hålls isär; lokal fullhook och CI redovisas separat. En läsande
 produktionskontroll fann dubblerad kontonavigation och en journalhänvisning
 utan länk. De små UI-rättningarna behåller gamla adresser och servergränser.
 Inga nya testidentiteter eller produktionsdata behövdes.
+
+## Arbetssätt och verifiering
 
 `node tools/check-admin-navigation.mjs` kör befintliga riktade tester med
 fyra arbetare (`--plan` visar urvalet). Det är ett snabbt utvecklingsprov;
@@ -405,6 +421,8 @@ denna ansvarsfördelning. API-nyckeln ska inte läggas i klientkoden.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-16 | Chef-verktyg, skill och tester använder nu `agent-talk/chef.json`. Den borttagna `.croupier-inbox` läses, migreras eller återskapas inte. Status är fortsatt skrivfri; 12 riktade prov passerar. Ingen chef aktiverades. |
+| 2026-10-16 | Delegationsregeln anpassad till aktuella AGENTS: uttrycklig delegation, ärvd modell, kort komplett scope och huvudagentens Git-/integrationsansvar. Verifierat ersatta sidor/tester får avvecklas med bevarade kontrakt och regressionstäckning. PR152/C6-kvittot daterat som historik; dagens status länkas till befintlig tracker/handoff. Ingen systemkartbaslinje, produktkod eller drift ändrad. |
 | 2026-10-16 | Importgränsen rättad från tio till 30 osparade filer enligt `DEALER_IMPORT_LIMITS.maxFiles` och befintligt regressionstest. COMPANION-guidens gamla arbetsbranch ersatt med featurebranch → grön PR → main enligt repositorypolicyn. Ingen runtime- eller behörighetsändring. |
 | 2026-10-15 | PR149–152 levererade på main `3da92370`. Samordnarens läsande produktionsprov verifierar rumshistorik, portaler, negativa länkar och Avbryt-fokus; lokal fullhook, CI och drift hålls isär. Kvarvarande login-/skriv-/zoom-/spelargränser står öppna i befintlig tracker/handoff. |
 | 2026-10-14 | Aktiva ingångar och bolagssluggar samlade i användarguiden efter produktionsprov av 22 adresser och fem query-/guidevarianter. Äldre Control-länkar skiljs från adminverktygens mål och efterföljande inloggning; N1 behåller sin roll på partner-/spelarytan. API- och spelstartkontrakt bevarade. |

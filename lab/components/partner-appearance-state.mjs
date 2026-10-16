@@ -27,7 +27,8 @@ export function appearanceReceipt(value, operatorId) {
   if (value.draft !== null && (!object(value.draft) || !positive(value.draft.revision) || value.draft.revision !== value.draftRevision
     || !positive(value.draft.basePackageRevision) || !object(value.draft.branding))) return false;
   return value.history.every(row => object(row) && positive(row.revision) && object(row.branding))
-    && value.rooms.every(row => object(row) && typeof row.id === 'string' && typeof row.label === 'string' && typeof row.presentationLaneId === 'string');
+    && value.rooms.every(row => object(row) && typeof row.id === 'string' && typeof row.label === 'string' && typeof row.presentationLaneId === 'string'
+      && (row.game === undefined || ['blackjack','roulette'].includes(row.game)));
 }
 export function appearanceReview(value, { draftRevision, packageRevision, branding }) {
   return object(value) && typeof value.reviewToken === 'string' && value.reviewToken.length > 0 && value.reviewToken.length <= 4096

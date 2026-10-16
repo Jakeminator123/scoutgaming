@@ -13,7 +13,7 @@ const require=createRequire(import.meta.url),{transformSync}=require('next/dist/
 const fileUrl=new URL('../components/partner-appearance-preview.tsx',import.meta.url),localRequire=createRequire(fileUrl);
 const compiled=transformSync(readFileSync(fileUrl,'utf8'),{filename:fileURLToPath(fileUrl),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
 const table1='00000000-0000-4000-8000-000000000001',table2='00000000-0000-4000-8000-000000000002',bg='00000000-0000-4000-8000-000000000003',dealer='00000000-0000-4000-8000-000000000004';
-function props(){const lane={...defaultPresentationLane('johanna'),composition:defaultCompositionSettings()};lane.layers.table={enabled:true,default:table1,allowed:[table1,table2]};lane.layers.background={enabled:true,mode:'image',default:bg,allowed:[bg]};lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};return {server:{operatorId:'op-1',packageRevision:7,lanes:['mobile-phone'],branding:{},adjustable:[],rooms:[{id:'north-main',label:'Main',presentationLaneId:'mobile-phone'},{id:'north-vip',label:'VIP',presentationLaneId:'mobile-phone'}],presentation:{schemaVersion:2,projectRevision:'r1',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna',idle:null}]}},branding:{table:table2},scope:'north-main',operatorSlug:'north',onStale:()=>{}};}
+function props(){const lane={...defaultPresentationLane('johanna'),composition:defaultCompositionSettings()};lane.layers.table={enabled:true,default:table1,allowed:[table1,table2]};lane.layers.background={enabled:true,mode:'image',default:bg,allowed:[bg]};lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};return {server:{operatorId:'op-1',packageRevision:7,lanes:['mobile-phone'],branding:{},adjustable:[],rooms:[{id:'north-main',label:'Main',presentationLaneId:'mobile-phone',game:'blackjack'},{id:'north-vip',label:'VIP',presentationLaneId:'mobile-phone',game:'blackjack'}],presentation:{schemaVersion:2,projectRevision:'r1',lanes:[lane],assets:[],registeredDealers:[{id:'johanna',label:'Johanna',idle:null}]}},branding:{table:table2},scope:'north-main',operatorSlug:'north',onStale:()=>{}};}
 function descriptor(roomId='north-main') {const context={operatorSlug:'north',roomId,packageRevision:7,dealerId:'johanna'};return {schemaVersion:1,operatorSlug:'north',roomId,packageRevision:7,dealer:{id:'johanna',label:'Johanna'},independentLayers:true,settings:defaultCompositionSettings(),media:{dealer:{src:previewMediaPath(context,'dealer',dealer),contentType:'video/mp4'},tables:[table1,table2].map(id=>({id,label:id===table1?'Default table':'Chosen table',src:previewMediaPath(context,'table',id),contentType:'image/png'})),backgrounds:[{id:bg,label:'Backdrop',src:previewMediaPath(context,'background',bg),contentType:'image/png'}]}};}
 function walk(tree,predicate){if(!tree||typeof tree!=='object')return [];return [...(predicate(tree)?[tree]:[]),...[tree.props?.children].flat(Infinity).flatMap(row=>walk(row,predicate))];}
 function harness(fetcher){const slots=[],effects=[];let cursor=0;const hooks={...React,useState:value=>{const index=cursor++;if(!(index in slots))slots[index]=typeof value==='function'?value():value;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef:value=>{const index=cursor++;if(!(index in slots))slots[index]={current:value};return slots[index];},useEffect:(callback,deps)=>{const index=cursor++,previous=slots[index];if(!previous||deps.some((v,i)=>v!==previous.deps[i])){previous?.cleanup?.();slots[index]={deps};effects.push(()=>{slots[index].cleanup=callback();});}}};
@@ -30,6 +30,32 @@ test('preview requests only the scoped frozen descriptor on demand and renders e
  assert.equal(calls[0].url,'/api/operators/north/rooms/north-main/preview?dealer=johanna&revision=7');assert.equal(calls[0].request.cache,'no-store');
  assert.equal(composition.props.table.label,'Chosen table');assert.equal(composition.props.table.url,descriptor().media.tables[1].src);assert.equal(composition.props.layout,'desktop');
  walk(tree,node=>node.type==='button'&&node.props.children==='Mobil')[0].props.onClick();tree=h.render(p);assert.equal(h.compositions(tree)[0].props.layout,'mobile');assert.equal(calls.length,1);
+});
+
+test('switching from blackjack mobile to roulette uses desktop and keeps each room choice isolated',async()=>{
+ const p=props(),calls=[];p.server.rooms[0].game='roulette';
+ p.branding={roomOverrides:{'north-main':{table:table2},'north-vip':{table:table1}}};
+ const original=structuredClone({server:p.server,branding:p.branding});
+ const h=harness(async url=>{calls.push(url);return response(descriptor(url.includes('/north-vip/')?'north-vip':'north-main'));});
+ const blackjack={...p,scope:'north-vip'};
+ open(h.render(blackjack)).props.onClick();h.render(blackjack);await h.flush();
+ let tree=h.render(blackjack);walk(tree,node=>node.type==='button'&&node.props.children==='Mobil')[0].props.onClick();
+ tree=h.render(blackjack);assert.equal(h.compositions(tree)[0].props.layout,'mobile');assert.equal(h.compositions(tree)[0].props.table.label,'Default table');
+ h.render(p);await h.flush();tree=h.render(p);
+ assert.equal(h.compositions(tree)[0].props.layout,'desktop');assert.equal(h.compositions(tree)[0].props.table.label,'Chosen table');
+ assert.equal(walk(tree,node=>node.type==='button'&&node.props.children==='Mobil').length,0);
+ assert.match(calls.at(-1),/rooms\/north-main\/preview\?dealer=johanna&revision=7$/);
+ assert.match(renderToStaticMarkup(tree),/Roulette använder Desktop 16:9/);
+ h.render(blackjack);await h.flush();tree=h.render(blackjack);
+ assert.equal(h.compositions(tree)[0].props.layout,'mobile');assert.equal(h.compositions(tree)[0].props.table.label,'Default table');
+ assert.deepEqual({server:p.server,branding:p.branding},original);
+});
+
+test('older responses without room game use desktop without guessing from labels',async()=>{
+ const p=props();delete p.server.rooms[0].game;p.server.rooms[0].label='Blackjack';
+ const h=harness(async()=>response(descriptor()));open(h.render(p)).props.onClick();h.render(p);await h.flush();
+ const tree=h.render(p);assert.equal(h.compositions(tree)[0].props.layout,'desktop');
+ assert.equal(walk(tree,node=>node.type==='button'&&node.props.children==='Mobil').length,0);
 });
 test('stale and foreign-context descriptors invalidate parent review and never render their media',async()=>{
  for(const [data,status]of [[{},409],[{...descriptor(),operatorSlug:'foreign'},200]]){let stale=0;const p={...props(),onStale:()=>stale++},h=harness(async()=>response(data,status));open(h.render(p)).props.onClick();h.render(p);await h.flush();assert.equal(stale,1);assert.equal(h.compositions(h.render(p)).length,0);assert.equal(walk(h.render(p),node=>node.props?.role==='alert').length,1);}

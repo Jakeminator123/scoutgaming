@@ -1,10 +1,37 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
-## Överlämningsstatus 16 oktober — migrationen är inte färdig
+## Aktiv integration 16 oktober — en rumsyta och verifierad avveckling
 
-Jakob begär nu städning och överlämning till nästa agent. Ingen ny
+Övertagandet sker i huvudcheckoutens `codex/admin-consolidation-20261016`.
+DENNA:s lokala startfix och fyra handoff-dokument är säkrade. De fyra
+tidigare chattarna har lämnat över och arkiverats. Aktuella källversioner,
+testkvitton och återstående gränser finns överst i
+[JOHN-HANDOFF.md](JOHN-HANDOFF.md). Äldre uppmaningar att enbart vänta eller
+överlämna nedan beskriver det tidigare avslutet.
+
+PR181:s lokala filmvisare, PR183:s scenzoom och PR184:s lagringsinventering
+är integrerade lokalt. `/admin/rooms` har en enda rumsfunktion; mallredigering
+har egna tydliga länkar till `/admin/clips`. Roulette-preview och mallurval
+följer spelets format och kompatibilitet. 40 döda käll-/testfiler har tagits
+bort tillsammans med deras kvarvarande testregistreringar. Aktiva tjänster
+i `lab/lib`, verklig speluppspelning och publiceringskontrakt används vidare.
+
+De senaste migrationerna ska skiljas från ren städning: de flyttade
+lagring till Neon/Blob, samlade Vercel-ansvar och återanvände Studio-tjänster
+i Admin. De innebar inte att all gammal UI eller alla felaktiga register
+redan var avvecklade. DENNA:s senaste borttagning av 81 metadatafiler och
+fyra tomma mappar var lokal filstädning, inte en ny runtime-migrering.
+
+104 riktade navigations-/kontextprov, 65 rum-/API-prov och Lab-bygget
+passerar. A/B-proven täcker att A:s publicering inte ändrar B:s effektiva
+val. Browser/fullhook följs upp i aktuell handoff. Produktionsskrivning,
+merge/deploy och visuell medieacceptans ingår inte i dessa lokala kvitton.
+
+## Historisk överlämningsstatus 16 oktober — före övertagandet
+
+Jakob begärde då städning och överlämning till nästa agent. Ingen ny
 produktändring, merge eller driftsättning ingår i avslutet. Detta avsnitt är
-aktuell status; äldre daterade kvitton längre ned är historik. Läs
+status vid DENNA:s avslut; senare status finns ovan. Läs
 [JOHN-HANDOFF.md](JOHN-HANDOFF.md) för arbetskopia, lokalt arbete och nästa steg.
 
 Dokumentens ansvar: denna fil äger plan och leverans-/acceptanskvitton;
@@ -405,8 +432,21 @@ Privata bevis i `arkiv/2026-10-15/admin-consolidation/`:
   CLI inloggad som `Jakeminator123` får 404 för
   `EmaCodeHero/croupier-lipsync-worker`. Åtkomst är alltså inte verifierad;
   404 skiljer inte saknat repo från saknad behörighet. Beskedet räcker
-  inte för aktivering. Kevins rapporterade lip-layer-fel är inte påvisat
-  i vår separata konsument med exakt plan-/kroppsrute-/hashmatchning.
+  inte för aktivering. Uppdatering 16 oktober: Jakobs uttryckligen angivna
+  zip är nu inventerad och båda avatarpaketens byte matchar referenshasharna.
+  Källarkivets commitmarkering är inte oberoende Git-proveniens. Originalens
+  112 MP4 har nu kontrollerats mot uppgivna Git-träd/blob-ID och SHA-256;
+  historisk bankbyggkoppling och uppgiven image-digest är fortfarande Emils
+  uppgifter. OCI-manifest saknas. Jakob har valt egna filmer på main och en
+  liten lokal `lipsync-test`, utan skrivbordssparning. Editorn visar 139
+  incheckade filmer, med uppspelning/tidssteg och lokal resultatjämförelse.
+  Två isolerade editorprov och Chrome-prov passerar; fullhook redovisas i PR:n.
+  Paow/Dragan-tagningar i Studio/Blob måste väljas genom befintligt register.
+  Inga exportbanker används, ingen generering/QA/molndrift/aktivering utförs.
+  Lokal Cartesia delar värde med Emil-profilen; RunPod health fungerar men
+  kontoidentitet nekas. Ägande av effektiv runtime är därmed inte verifierat.
+  [Proveniens, editor och nästa steg](LOCAL-PRESENTATION-RUNTIME.md#verifierad-zip-export-och-minsta-integrationsförslag-16-oktober-2026)
+  skiljer lokal implementation från drift och visuell läppsynksacceptans.
 
 ## Avgränsad uppföljning, 16 oktober 2026
 
@@ -3188,3 +3228,28 @@ Den passiva CI-reportern och dess artifacts gör inga provider-/DB-mutationer.
 Den fullständiga tidslinjen och tidigare deployments ligger i den frysta
 historiklänken överst. Privata loggar och backupfiler är inte borttagna.
 Den aktiva checklistan ovan är statuskällan.
+
+
+## Sparad roulettezoom i befintliga Admin-editorer — 16 oktober 2026
+
+Jakob preciserade att zoom ska ändra den sparade scen som öppnas via
+lobby och spelbolag. Gemensam mall och Sammansättningar har därför fått
+Zooma in/ut scenen: befintlig skala, bredd och placering ändras tillsammans
+runt bildens mitt. Inga nya lagringsfält införs. Roulette visar Desktop 16:9
+även i editorn, i linje med spelarens befintliga format på alla skärmstorlekar.
+Lagerreglagen ligger kvar; i mallpanelen visas de direkt intill förhandsvisningen.
+
+Ändringen gäller projektutkastet i en delad mall. Rumsspecifika val,
+publiceringsgranskning, lås/revisionsskydd, mediahashar, bordsprofiler,
+godkännanden och spelregler behåller sina kontrakt. Zoom stegas som en helhet;
+enskilda lager klipps inte vid gränsen och får därmed inte olika skalfaktor.
+Spelarens befintliga bord/klickytor använder samma publicerade placering.
+
+Lokalt: 74 riktade editor-/kompositions-/rouletteprov godkända; Labbygge med
+97 kontrollerade byggspår. Separat Chrome med syntetiska PNG-fixturer provar
+zoom, tangentbord, individuell finjustering, sparat utkast, oförändrat mobilformat
+samt mediaidentiteter, mallens redigeringslås och 1440/1024/640/390 px.
+Det interaktiva browserverktyget kunde inte starta; fixturen använde separat
+browserprofil och ingen produktserver, provider eller produktionsdatabas.
+Ordinarie commitkontroll och PR-CI redovisas i PR:n. Ingen merge, driftsättning,
+publicering av rum eller användaracceptans ingår i detta lokala kvitto.

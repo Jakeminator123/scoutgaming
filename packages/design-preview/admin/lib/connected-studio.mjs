@@ -237,7 +237,7 @@ export function selectCompositionLayer(project, room, role, assetId) {
 export function roomChoicesPath(operator, room) {
   if (!operator || !room || room.operatorId !== operator.id || room.state === 'archived'
     || !/^[a-z][a-z0-9-]{0,63}$/.test(room.id) || !/^[a-z][a-z0-9-]{0,63}$/.test(operator.id)) return null;
-  const params = new URLSearchParams({view:'registered',operator:operator.id,table:room.id});
+  const params = new URLSearchParams({operator:operator.id,table:room.id});
   if (room.compositionId) params.set('composition',room.compositionId);
   if (['blackjack','roulette'].includes(room.game)) params.set('game',room.game);
   return `/admin/rooms?${params}`;

@@ -34,7 +34,8 @@ export function PartnerAppearanceLoader({ apiBase, operatorId, operatorSlug, sec
         const payload = await response.json().catch(() => null);
         if (cancelled) return;
         if (!Number.isSafeInteger(payload?.packageRevision) || payload.packageRevision < 1 || !Array.isArray(payload.adjustable) || !Array.isArray(payload.lanes)
-          || typeof payload.operatorId !== 'string' || operatorId && payload.operatorId !== operatorId) {
+          || typeof payload.operatorId !== 'string' || operatorId && payload.operatorId !== operatorId
+          || payload.rooms !== undefined && (!Array.isArray(payload.rooms) || payload.rooms.some(room => room?.game !== undefined && !['blackjack','roulette'].includes(room.game)))) {
           setState({ status: 'hidden', identity }); return;
         }
         if (!payload.presentation) { setState({ status: 'legacy', identity }); return; }

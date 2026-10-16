@@ -84,7 +84,7 @@ test('registered room view embeds the exact scoped editor and keeps shared-templ
   assert.deepEqual(Object.fromEntries(template.searchParams),{operator:'a',table:'roulette',composition:'two',game:'roulette',panel:'layers'});
   assert.match(html,/data-room-editor="roulette"/);assert.match(html,/data-operator="a"/);
   assert.doesNotMatch(html,/aria-label="Välj spel"|Redigera rum och sammansättning|id="room-trash"/);
-  assert.match(html,/Papperskorg och återställning/);assert.match(html,/Delad mall och tillåtna alternativ/);
+  assert.match(html,/Papperskorg och återställning/);assert.match(html,/Gemensam mall och tillåtna alternativ/);
 });
 
 test('invalid explicit owner or cross-owner room never mounts another room editor',async()=>{

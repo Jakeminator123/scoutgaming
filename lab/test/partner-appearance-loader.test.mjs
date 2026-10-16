@@ -57,9 +57,20 @@ test('an explicit room missing from the fresh package never mounts company-defau
 
 
 test('Admin room mode forwards exact room, disabled state and operation callbacks without changing the operator',async()=>{
- const data={...receipt('op-a'),rooms:[{id:'room-a'}]},h=loaderHarness(async()=>ok(data));
+ const data={...receipt('op-a'),rooms:[{id:'room-a',game:'roulette'},{id:'room-b',game:'blackjack'}]},h=loaderHarness(async()=>ok(data));
  const dirty=()=>{},busy=()=>{},props={apiBase:'/studio/api/partner',operatorId:'op-a',operatorSlug:'alpha',roomId:'room-a',roomLayout:true,disabled:true,onDirtyChange:dirty,onBusyChange:busy};
  h.render(props);await h.flush();const panel=h.render(props).props.children.props;
  assert.equal(panel.roomId,'room-a');assert.equal(panel.initial.operatorId,'op-a');
+ assert.deepEqual(panel.initial.rooms,data.rooms);
  assert.equal(panel.roomLayout,true);assert.equal(panel.disabled,true);assert.equal(panel.onDirtyChange,dirty);assert.equal(panel.onBusyChange,busy);
+});
+
+test('loader rejects unknown room games but accepts older responses without game',async()=>{
+ for(const game of ['poker',null,undefined]){
+  const data={...receipt('op-a'),rooms:[{id:'room-a',...(game===undefined?{}:{game})}]};
+  const h=loaderHarness(async()=>ok(data)),props={apiBase:'/api/partner',operatorId:'op-a',operatorSlug:'alpha',roomId:'room-a'};
+  h.render(props);await h.flush();const view=h.render(props);
+  if(game===undefined)assert.equal(view.props.children.props.initial.rooms[0].game,undefined);
+  else assert.equal(view.props.role,'alert');
+ }
 });

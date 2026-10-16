@@ -13,12 +13,15 @@ export function PartnerAppearancePreview({server,branding,scope,operatorSlug,lan
 }) {
   const en=language==='en',t=(sv:string,english:string)=>en?english:sv;
   const [attempt,setAttempt]=useState(0);
-  const [enabled,setEnabled]=useState(initiallyEnabled && active),[layout,setLayout]=useState<'desktop'|'mobile'>('desktop'),[chosenRoom,setChosenRoom]=useState('');
+  const [enabled,setEnabled]=useState(initiallyEnabled && active),[selectedLayout,setLayout]=useState<'desktop'|'mobile'>('desktop'),[chosenRoom,setChosenRoom]=useState('');
   useEffect(()=>{if(!active)setEnabled(false);},[active]);
   const [state,setState]=useState<{identity:string;status:'loading'|'ready'|'unavailable';payload?:PublicOperatorPreview}>({identity:'',status:'loading'});
   const stale=useRef(onStale);stale.current=onStale;
   const defaultLane=branding.lane??server.presentation?.lanes[0]?.id;
   const room=server.rooms?.find(row=>row.id===(scope||chosenRoom))??server.rooms?.find(row=>row.presentationLaneId===defaultLane);
+  // Older responses omit game. Desktop is valid for both games; only verified
+  // blackjack rooms offer the mobile composition used by that player.
+  const layout=room?.game==='blackjack'?selectedLayout:'desktop';
   const lane=server.presentation?.lanes.find(row=>row.id===room?.presentationLaneId);
   const defaults=lane?.id===defaultLane?branding:{};
   const selected={...defaults,...(room?branding.roomOverrides?.[room.id]:{})};
@@ -61,7 +64,8 @@ export function PartnerAppearancePreview({server,branding,scope,operatorSlug,lan
     {!room||!lane?<p>{t('Det finns inget publicerat spelrum för denna sammansättning att förhandsvisa.','There is no published room for this presentation to preview.')}</p>:<>
       <p>{room.label} · {t('paketversion','package version')} {server.packageRevision}</p>
       {!dealerId?<p role="status" className={styles.hint}>{chosenDealer?t('Det sparade dealervalet kan inte användas i det här rummet. Välj en tillåten dealer i inställningarna ovan, eller be intern personal uppdatera publiceringen.','The saved dealer choice cannot be used in this room. Choose an allowed dealer in the settings above, or ask internal staff to update the publication.'):t('Sammansättningen saknar ett publicerat dealerval. Välj en dealer i inställningarna ovan, eller be intern personal publicera ett val.','This composition has no published dealer choice. Choose a dealer in the settings above, or ask internal staff to publish a choice.')}</p>:null}
-      <div className={styles.actions}><button type="button" className="sg-btn" data-action="open-preview" onClick={()=>{if(!dealerId)return;setEnabled(true);setAttempt(value=>value+1);}} disabled={!dealerId||enabled&&current.status==='loading'}>{enabled?t('Ladda om förhandsvisning','Reload preview'):t('Visa förhandsvisning','Show preview')}</button><button type="button" className="sg-btn" aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop</button><button type="button" className="sg-btn" aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>{t('Mobil','Mobile')}</button></div>
+      <div className={styles.actions}><button type="button" className="sg-btn" data-action="open-preview" onClick={()=>{if(!dealerId)return;setEnabled(true);setAttempt(value=>value+1);}} disabled={!dealerId||enabled&&current.status==='loading'}>{enabled?t('Ladda om förhandsvisning','Reload preview'):t('Visa förhandsvisning','Show preview')}</button><button type="button" className="sg-btn" aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop</button>{room.game==='blackjack'&&<button type="button" className="sg-btn" aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>{t('Mobil','Mobile')}</button>}</div>
+      {room.game==='roulette'&&<p className={styles.hint}>{t('Roulette använder Desktop 16:9 även på mobil.','Roulette uses Desktop 16:9 on mobile too.')}</p>}
       {enabled&&dealerId&&current.status==='loading'?<p role="status">{t('Hämtar frysta lager…','Loading frozen layers…')}</p>:null}
       {enabled&&dealerId&&current.status==='unavailable'?<p role="alert">{t('Förhandsvisningen kunde inte hämtas för denna version och dealer. Utkastet finns kvar.','The preview could not be loaded for this version and dealer. Your draft is preserved.')}</p>:null}
       {enabled&&dealerId&&payload?<>

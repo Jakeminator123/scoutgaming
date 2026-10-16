@@ -1,23 +1,23 @@
 ---
-description: Standard model, context and guard rails for subagents in this repository.
+description: Explicit delegation, bounded scopes and integration ownership for subagents.
 alwaysApply: true
 ---
 
 # Subagents
 
-- Default model for every subagent (Task tool `model`) is `grok-4.7-xhigh-fast`:
-  extra-high reasoning, fast tier. Do not fall back to `inherit`, a `high` tier
-  or another family unless Jakob asks for it in that turn.
-- Context: Jakob wants the 500k window. The Task tool rejects the
-  `[context=500k]` suffix (verified 2026-10-07), so the window follows the
-  model's own default. A custom agent in `.cursor/agents/*.md` may declare
-  `model: grok-4.7-xhigh-fast[context=500k]` in its frontmatter; prefer that
-  when one exists. Never shrink a brief to save tokens.
-- Give each subagent the full brief; never shrink the prompt to save tokens.
-- The orchestrator (this chat) reviews, validates and merges. Subagents never
-  commit, push, create branches, run migrations or touch production.
-- Every subagent report ends with a section titled `Tveksamt` listing each
-  decision Jakob should see before merge. Nothing doubtful is merged without
-  his word.
-- Nothing may get worse: no removed link, action or page a user can reach
-  today. A red existing test is reverted, not rewritten to pass.
+- Delegate only when the user or applicable project/skill instructions ask
+  for delegation. Follow root AGENTS.md and agent-talk for ownership.
+- Inherit the selected model and capabilities unless the user explicitly
+  requests an override. Do not silently downgrade reasoning or security checks.
+- Give each subagent a short, complete scope: objective, owned paths,
+  relevant context, constraints and required verification. Preserve essential
+  evidence and approval boundaries; avoid unrelated history.
+- The root agent owns Git operations, integration and delivery. Subagents do
+  not commit, push, create branches, run migrations or touch production.
+  Merge ownership and deployment authorization remain governed by AGENTS.md.
+- Target 200 words per report plus evidence references. Include all actionable
+  failures and uncertainty; do not repeat completed reports without new facts.
+- Preserve working contracts, authorization, drafts and saved data. Retire
+  verified replacements only after checking consumers and compatibility.
+  Tests may change with intentionally replaced behavior; retain equivalent
+  regression coverage. Never remove a test merely to hide a failure.

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { canonicalStudioJson, cloneStudioJson } from '../../web/storage/studio-contract.mjs';
-import { listPackageRooms } from '../../web/presentation-room-contract.mjs';
+import { listPackageRooms, roomGame } from '../../web/presentation-room-contract.mjs';
 import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
 import { isPresentationRoomLaneCompatible } from '../../web/storage/frozen-presentation-capture.mjs';
 import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../web/storage/partner-branding.mjs';
@@ -158,7 +158,7 @@ export function createPartnerBrandingApi({ store, readProject, readAdministratio
     return {...await present(pack,document),branding:publicEditableBranding(pack.branding),draft:cleanDraft(draft),
       draftRevision:draft?.revision??0,history:history.map(row=>({revision:row.revision,publishedAt:row.publishedAtMs,branding:publicEditableBranding(row.branding)})),
       roomDealerChoices:Object.fromEntries(roomList(pack,document).map(room=>[room.id,choices({...pack,tables:[room.id]},readPackagePresentation(pack),document)[room.presentationLaneId]])),
-      rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId}))};
+      rooms:roomList(pack,document).map(room=>({id:room.id,label:room.name,presentationLaneId:room.presentationLaneId,game:roomGame(room)}))};
   }
   function assertEditable(branding) {
     if(!plainObject(branding)||Object.keys(branding).some(key=>!PARTNER_BRANDING_FIELDS.includes(key)&&key!=='roomOverrides'))fail(422);

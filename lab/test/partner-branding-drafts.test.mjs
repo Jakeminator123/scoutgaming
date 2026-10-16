@@ -12,7 +12,7 @@ import {defaultCompositionSettings} from '../../web/public/composition-settings.
 import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {publicEditableBranding,resolveRoomBranding} from '../../web/storage/partner-branding.mjs';
 const scope={environment:'isolated-drafts',workspaceId:'draft-unit'},operatorId='draft-unit';
-async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,metadataBytes=0}={}){
+async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,metadataBytes=0,roomGames={}}={}){
  const pool=operatorMemoryPool(),store=await createOperatorStore({sql:pool,scope}),actor='fixture';
  const audit={actorId:'42',accessClass:'partner',requestId:randomUUID()};
  await store.createOperator({operatorId,actor,slug:'draft-unit',name:'Draft'});
@@ -32,15 +32,27 @@ async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,
  const presentation={...captured,schemaVersion:2};
  const initial=withPackagePresentation({lane:lane.id,color:'#112233'},presentation);
  if(metadataBytes)initial.n1Note='x'.repeat(metadataBytes);
- await store.publishPackage({operatorId,actor,lanes:[lane.id],games:['blackjack'],tables,branding:initial});
+ await store.publishPackage({operatorId,actor,lanes:[lane.id],games:[...new Set(['blackjack',...Object.values(roomGames)])],tables,branding:initial});
  let allowed=true,adminRevision='a1';
  const readAdministration=async()=>({revision:adminRevision,value:{gameLane:'portrait-astrid',gameLanes:[{schemaVersion:1,id:'portrait-astrid',label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}],
- rooms:tables.map(id=>({schemaVersion:2,id,name:id,operatorId,presentationLaneId:lane.id,gameLaneId:'portrait-astrid',state:'live'}))}});
+ rooms:tables.map(id=>({schemaVersion:2,id,name:id,operatorId,presentationLaneId:lane.id,gameLaneId:'portrait-astrid',state:'live',...(roomGames[id]?{game:roomGames[id]}:{})}))}});
  const api=createPartnerBrandingApi({store,readProject:async()=>assert.fail('frozen only'),readAdministration,
  withWriteContext:work=>work({store,readAdministration,reauthorize:async()=>allowed})});
  const command=input=>api.command({operatorId,actor,audit,expectedDraftRevision:0,expectedPackageRevision:1,...input});
  return {pool,store,api,command,lane,tables,assets,initial,audit,actor,revoke:()=>{allowed=false;},changeAdmin:()=>{adminRevision='a2';}};
 }
+
+test('room metadata uses authoritative game and a room-only publish leaves the other room unchanged',async()=>{
+ const f=await fixture(['table.color','dealer'],{roomGames:{'room-b':'roulette'}});
+ const before=await f.api.readState({operatorId});
+ assert.deepEqual(before.rooms.map(room=>[room.id,room.game]),[['room-a','blackjack'],['room-b','roulette']]);
+ const saved=await f.command({action:'save-draft',branding:{lane:f.lane.id,color:'#112233',roomOverrides:{'room-a':{color:'#334455'}}}});
+ assert.deepEqual(saved.rooms,before.rooms);
+ const review=await f.command({action:'review',expectedDraftRevision:1});assert.deepEqual(review.affectedRooms,['room-a']);
+ const published=await f.command({action:'publish',expectedDraftRevision:1,reviewToken:review.reviewToken});
+ assert.deepEqual(published.rooms,before.rooms);assert.equal(published.branding.roomOverrides['room-a'].color,'#334455');
+ assert.deepEqual(resolveRoomBranding(published.branding,'room-b',f.lane.id),resolveRoomBranding(before.branding,'room-b',f.lane.id));
+});
 test('draft save is durable without publishing; review binds administration; restore is only a draft',async()=>{
  const f=await fixture();
  const saved=await f.command({action:'save-draft',branding:{lane:f.lane.id,color:'#334455',roomOverrides:{'room-b':{color:'#556677'}}}});
