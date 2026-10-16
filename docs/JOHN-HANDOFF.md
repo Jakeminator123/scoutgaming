@@ -1,5 +1,14 @@
 # Aktuell handoff — Scoutgaming
 
+## PR188: processstädning vid tidig exit — 17 oktober 2026
+
+- Även vanlig process-exit städar kvarvarande barn i den egna POSIX-gruppen.
+  SIGTERM följs vid behov av SIGKILL efter en begränsad respit; huvudprocessens
+  verkliga exitkod behålls. Windows återanvänder inte en avslutad PID för taskkill.
+- Fyra fokuserade POSIX-fall täcker exit 0/7 med både vanliga barn och barn som
+  ignorerar SIGTERM. Barnet måste signalera att det startat innan föräldern slutar.
+- Lokal Windows/Node 24.21: 15 riktade prov passerar, fem POSIX-prov hoppas över.
+  Linux/Node 24 kör dessa i ordinarie CI. Ingen merge, deploy eller produktändring.
 ## Separat CI-förbättring: dealer-regression — 16 oktober 2026
 
 Branch `codex/dealer-regression-timing`, separat PR till `main`. Ingen ändring

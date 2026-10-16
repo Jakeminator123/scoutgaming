@@ -53,8 +53,8 @@ export async function runGroup({ name, seconds, command, args = [], cwd = proces
             emit(`[regression] Process-tree cleanup unavailable for ${name} (PID ${child.pid})`);
           }
         } else {
-          try { process.kill(-child.pid, force ? 'SIGKILL' : 'SIGTERM'); }
-          catch (error) { if (error.code !== 'ESRCH') throw error; }
+          try { process.kill(-child.pid, force ? 'SIGKILL' : 'SIGTERM'); return true; }
+          catch (error) { if (error.code !== 'ESRCH') throw error; return false; }
         }
       };
       const finish = (code, signal, error) => {
@@ -70,6 +70,7 @@ export async function runGroup({ name, seconds, command, args = [], cwd = proces
         if (stopping || finished) return;
         stopping = status;
         emit(`[regression] ${status.toUpperCase()} ${name} after ${(elapsed() / 1000).toFixed(1)}s`);
+        clearTimeout(forceTimer);
         killTree(false);
         // Kill descendants even when their parent exits during graceful cleanup.
         forceTimer = setTimeout(() => { killTree(true); finish(null); }, graceMs);
@@ -80,7 +81,15 @@ export async function runGroup({ name, seconds, command, args = [], cwd = proces
       const heartbeat = setInterval(() => emit(`[regression] RUNNING ${name} ${(elapsed() / 1000).toFixed(1)}s / ${seconds}s`), heartbeatMs);
       process.on('SIGINT', interrupt); process.on('SIGTERM', terminate);
       child.once('error', error => finish(null, null, error));
-      child.once('exit', (code, signal) => { if (!stopping) finish(code, signal); });
+      child.once('exit', (code, signal) => {
+        if (stopping) return;
+        // The leader's result is final, but its POSIX group can still own children.
+        // Disable its deadline so bounded cleanup preserves the real exit code.
+        clearTimeout(deadline);
+        // Windows cannot safely taskkill an already-exited (possibly reused) PID.
+        if (process.platform === 'win32' || !killTree(false)) return finish(code, signal);
+        forceTimer = setTimeout(() => { killTree(true); finish(code, signal); }, graceMs);
+      });
     });
     const row = { group: name, event: 'end', ...result, durationMs: elapsed() };
     record(row);

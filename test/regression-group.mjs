@@ -91,6 +91,37 @@ test('a hung process tree times out, reports its group and stops its descendant'
   assert.equal(f.receipts().at(-1).status, 'timed-out');
 });
 
+for (const code of [0, 7]) {
+  for (const ignoreTerm of [false, true]) {
+    test(`early exit ${code} cleans its POSIX descendants (ignore SIGTERM: ${ignoreTerm})`,
+      { skip: process.platform === 'win32' }, async t => {
+        const f = fixture(t), ready = join(f.dir, 'ready'), marker = join(f.dir, 'survived');
+        const descendant = `
+          const fs = require('node:fs');
+          if (${ignoreTerm}) process.on('SIGTERM', () => {});
+          fs.writeFileSync(process.argv[1], 'ready');
+          setTimeout(() => { fs.writeFileSync(process.argv[2], 'unexpected'); process.exit(0); }, 700);
+        `;
+        // Wait for the descendant to be running before the leader exits. It is
+        // an ordinary member of the owned group, not a detached background job.
+        const leader = `
+          const fs = require('node:fs');
+          require('node:child_process').spawn(process.execPath,
+            ['-e', ${JSON.stringify(descendant)}, process.argv[1], process.argv[2]], { stdio: 'inherit' });
+          setInterval(() => { if (fs.existsSync(process.argv[1])) process.exit(${code}); }, 5);
+        `;
+        const result = await runGroup({ name: `fixture/early-${code}-${ignoreTerm}`, seconds: 5,
+          command: 'node', args: ['-e', leader, ready, marker], env: f.env, graceMs: 50, log: () => {} });
+        assert.equal(existsSync(ready), true, 'the descendant started before its leader exited');
+        assert.equal(result.exitCode, code);
+        assert.equal(result.status, code === 0 ? 'passed' : 'failed');
+        await new Promise(resolveWait => setTimeout(resolveWait, 800));
+        assert.equal(existsSync(marker), false, 'no descendant can write after the group completes');
+        assert.equal(f.receipts().at(-1).exitCode, code);
+      });
+  }
+}
+
 test('SIGTERM records cancellation and returns failure', { skip: process.platform === 'win32' }, t => {
   const f = fixture(t);
   const script = `import {runGroup} from ${JSON.stringify(new URL('../tools/regression-group.mjs', import.meta.url).href)};
