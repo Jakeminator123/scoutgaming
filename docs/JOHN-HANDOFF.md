@@ -1,14 +1,135 @@
 # Aktuell handoff — Scoutgaming
 
-## Aktivt avslut — Dragan och Admin, 16 oktober 2026
+## Överlämning till nästa agent — 16 oktober 2026
+
+Jakob begär överlämning efter avgränsad städning. **Den samlade migrationen
+och förenklingen är inte klar.** Starta ingen ny parallell migrering. Den
+kanoniska planen, dokumentkartan och verifierade leverans-/acceptanskvitton
+finns överst i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md). Äldre daterade
+avsnitt nedan är historik, inte nya genomförandemandat.
+
+### Arbetskopia och ej levererat arbete
+
+- Huvudcheckout: `C:\Users\jakem\Projects\croupier`, branch
+  `codex/local-start-predictability`, HEAD
+  `f4c35632bb4f45f66c640e91b3df87aaf9c5e1d0`. Ta inte bort checkouten.
+- GitHub main återläst till `4fa35ab9db90682fcad50e6de84940a28a74621f`.
+  Startcommitten ovan är lokal, inte pushad och saknar PR. Den ändrar endast
+  `lab/start.mjs`, `lab/test/local-start.test.mjs`, `lab/docs/README.md`.
+  `--skip-build` förbereder inte om appar eller beroenden; saknade byggfiler
+  upptäcks före start, källans checkout/SHA visas, och befintlig server
+  accepteras inte enbart utifrån tjänstenamn. Inga servrar dödas automatiskt.
+  9 riktade tester och fullhook 3 986 pass/9 skip/0 fel är redan körda på
+  committen. Saknat bygge efter städning är inte en kodregression.
+- Fyra **okommittade** dokument innehåller detta avslut: denna fil,
+  `CLOUD-MIGRATION.md`, `ENVIRONMENT-VARIABLES.md` och
+  `ENVIRONMENT-RESTORATION.md`. Bevara dem; ingen ny commit/push/merge/deploy
+  gjordes i överlämningssteget.
+- Användarens ändringar i `.codex/config.toml`,
+  `apps/croupier-speech/package.json`, `.cursor/settings.json` och
+  `.agents/skills/source-command-ping/` är separata. Branch
+  `codex/kordinater` är bevarad. Gör inte reset, generell clean eller
+  branchbyte med antagandet att dessa är agentrester.
+- Node via Volta: `C:\Program Files\Volta\node.exe`, verifierad v24.21.0.
+  Root saknar package.json; Lab anger 24.x. Läs AGENTS och agent-talk innan
+  nya ändringar och registrera nästa agents egna claims.
+
+### Levererat och accepterat
+
+Admin-förbättringarna, Dragan-grundloopens återhämtning (PR178), N1-in-/
+utloggning (PR165), serverkontroll av uppladdad mediametadata (PR180) och
+kanonisk lokal Gateway-env (PR182) är levererade. Senaste verifierade
+Vercel-/Render-produktion kör main `4fa35ab9`. Exakta CI-/driftkvitton finns
+i CLOUD-MIGRATION. Jakob har accepterat bolag → rum → trelagersförhandsvisning
+och ny Admin-in-/utloggning. Det kvitterar inte all Admin-UX, båda spelens
+samtliga media, uppladdningsacceptans eller läppsynk.
+
+Neon är läst i `croupier-production` (`wandering-hill-60561912`), branch
+`main` (`br-flat-fog-b161a6r8`), databas `croupier_game`, scope
+`production/croupier`. Publika Swedish Games-rummet/paketrevision 5 matchar
+databasen. Ingen hemlig anslutningssträng lästes och ingen dubbel skrivning
+till en Kevin-databas är visad. GitHub/Vercel/Neon-läsning har fungerat;
+kontobytet har inte motiverat nya åtkomstgrants.
+
+### Städning och kvarvarande utredning
+
+81 verifierade macOS-sidecars (13 535 byte) och fyra tomma mappar har tagits
+bort ur `web/public/review/`. 141 ospårade filer återstår, varav 125 MP4 och
+en WebM; originalens namn/storlek/ändringstid är oförändrade. Tre egna
+PR-textfiler togs bort efter jämförelse med mergade #165/#180/#182.
+Unika kvitton och loggar är kvar under
+`arkiv/2026-10-15/admin-consolidation/`. Den tidigare avslutade arbetskopian
+`efterarbete` är redan borttagen enligt kvittot nedan. Gör inte om dessa
+städpass; övriga arbetskopior och beroende-junctions har inte rensats här.
+
+`Mobile Phone Lane` är både ett UI- och ett dataspår: råa namn/ID:n visas i
+roulette-starteditorn, och `mobile-phone`/`johns-johanna` återinfördes i Neon
+13 oktober kl. 05:36 svensk tid. Revisionerna och auditbeviset finns i
+CLOUD-MIGRATION. Kontot `jakob` identifierar inte människa kontra agent.
+Ingen testläcka är bevisad. Nuvarande rum/listade paket pekar på andra
+sammansättningar, men full beroende-/återställningskontroll återstår.
+Inga produktionsposter har raderats eller döpts om under utredningen.
+
+Senaste externa granskningen av `d064dce2` är underlag, inte order. Dess
+kodfynd är kontrollerade mot aktuell arbetskopia: `roulette-start-editor.tsx`
+rad 40 visar rå label/ID; `roulette-start-editor.mjs` rad 50 sparar gemensam
+dealerinställning. `workspace-tools.tsx` återanvänder flera editorer med samma
+data. `partner-appearance-state.mjs` skriver `roomOverrides[roomId]`, medan
+`control-preview-page.tsx` ändrar gemensamma `lanes`.
+
+**Börja här:** förenkla befintliga redigeringsvägar och visa räckvidd före
+sparning. Rumsutseende hör till rummet; gemensamma klipp till dealern;
+delade mallar till ett tydligt avancerat läge. Prova två rum A/B med samma
+mall: ändring i A får inte ändra B eller publicerat paket före publicering.
+Efter publicering av A ska bara A:s avsedda ändring nå spelaren; B och dess
+publicerade paket ska fortfarande vara oförändrade.
+Utred återställningsmekanismen innan gamla sammansättningar avvecklas och
+klassificera de kvarvarande originalfilerna innan flytt/radering. Nya merges
+och driftsättningar avvaktar denna konkreta legacyutredning.
+
+### Separata ägare och gränser
+
+- **ZOOM**, chatt `01a144f4-a3c0-7950-bd25-6baa6761a113`, arbetskopia
+  `C:\Users\jakem\.codex\worktrees\74ba\croupier`:
+  [PR183](https://github.com/Jakeminator123/scoutgaming/pull/183), öppen,
+  head `bbbaa02937024c7caf9b64046e313e54f00bbf09`. Ingen merge eller
+  rumspublicering utförd av denna chatt; användaracceptans återstår.
+- **Anpassa Emils läppsynk**, chatt
+  `01a144f2-b094-70d2-a4ce-2d3d5cc34ed3`, arbetskopia
+  `C:\Users\jakem\.codex\worktrees\f1f7\croupier`:
+  [PR181](https://github.com/Jakeminator123/scoutgaming/pull/181), öppen draft,
+  senast återläst head `21392c4256e7f2fa2de2892ec6d6d68f1d73aaa6`.
+  Arbetet pågår separat; återläs status före integration. Ingen pod-/provider-
+  aktivering eller ändring av Emils staging ingår i denna överlämning.
+- QA/Preview-utbyggnad är fortsatt pausad. Tidigare ingresshemlighet är inte
+  återställd; se ENVIRONMENT-RESTORATION. Återstarta inte gamla QA-listor.
+- GitGuardian vid avslut: övervakning aktiv, 0 öppna/18 ignorerade i läst
+  källa; platsmetadata partiell och historisk scan `too_large`. Main-svit
+  queued utan synlig check-run är inte ett nytt grönt säkerhetskvitto.
+- Testgräns: lokal fullhook ärver processmiljön efter Git-rensning
+  (`tools/precommit-checks.mjs`). Explicita `*_QA_CONFIG`-opt-ins kan
+  aktivera skrivande QA-databasprov, begränsade till `croupier_game_qa`.
+  Dessa opt-in-prov hoppades över i tidigare redovisade fullhooks. Ingen
+  produktionsläcka är bevisad; grön CI bevisar inte en central
+  isoleringsspärr för hela lokala sviten. Kontrollera vald profil före prov.
+- Browserverktyget kunde senast inte starta sin lokala kernel (os error 3).
+  Inget nytt inloggat browserprov gjordes i överlämningen. Rätta inte detta
+  genom ominstallation eller credentialbyte utan separat diagnos.
+
+Avslutskontroll: env-registret och 43 riktade dokument-/workflow-/hook-/
+inboxprov passerar; diffens whitespace och lokala ingresslänkar är
+kontrollerade. Användarens två redan modifierade konfigurationsfiler har
+oförändrade SHA256 jämfört med inventeringen före avslutet.
+
+## Leveranskvitton — Dragan och Admin, 16 oktober 2026
 
 Jakob har aktiverat målet att avsluta Admin och intern migrering, samla
-konfiguration och radera verifierat ersatta delar. Arbetsströmmen fortsätter
-i huvudcheckouten; aktuell plan och bevis finns överst i CLOUD-MIGRATION.
+konfiguration och radera verifierat ersatta delar. Arbetsströmmen har använt
+huvudcheckouten; aktuell överlämning och plan finns överst i CLOUD-MIGRATION.
 Workflow-/dokumentfel som hindrar avslutet ingår. Admin-flödesetappen är
 avslutad enligt kvittot nedan. PR165 är mergad efter Jakobs uttryckliga
-godkännande. Lageruppladdning är levererad i PR180; lokal env-normalisering slutförs;
-ny rörlig läppsynk och QA-utbyggnad förblir pausade.
+godkännande. Lageruppladdning är levererad i PR180 och lokal env-normalisering
+i PR182. Ny rörlig läppsynk ägs nu av separat chatt; QA-utbyggnad är pausad.
 
 PR165 slutfördes i sin befintliga branch i huvudcheckouten. Main
 `32ffbbaf` är förenad utan konflikter i kodcommit `c43fef1a`; cookie-
@@ -27,8 +148,8 @@ Jakob godkände exakt head samt ordinarie automatisk driftsättning.
 Normal merge utan bypass gav main `a52ec2d0`; main-CI `38906846665`
 är grön. Vercel är READY på www och Render live på samma SHA;
 Renders publika version och hälsa (200/ok) är verifierade.
-Live in-/utloggningsprovet väntar eftersom användarens öppna spelflik har
-en aktiv hand. Se CLOUD-MIGRATION och PR165:s privata leveranskvitto.
+Jakob har därefter själv provat ny Admin-in-/utloggning och svarat
+"Prvat och funkar". Se CLOUD-MIGRATION och PR165:s privata leveranskvitto.
 Oberoende kodgranskning har inga blockerande fynd. Blandade runtimeversioner
 eller rollback kan kräva ytterligare inloggning eftersom äldre kod inte
 förstår de nya sessionsstämplarna; databasschemat är oförändrat.
@@ -48,15 +169,16 @@ Videometadata och paketläsning innebär inte avkodnings- eller läppsynkaccepta
 
 Vanlig Git-pull är kontrollerad: `main` följer `origin/main`, GitHub-fetch
 fungerar och lokal `pull.ff=only` hindrar oväntade mergecommits. Inga globala
-SSH-inställningar eller credentials ändrades. Efter leverans återgår samma
-arbetskopia till uppdaterad main med användarens egna ändringar bevarade.
+SSH-inställningar eller credentials ändrades. Huvudcheckouten är vid denna
+överlämning på den lokala startfixens branch, inte på main.
 Vanlig `git pull` har faktiskt fört main till `d064dce2`. Jakobs skapade
 `codex/kordinater` är bevarad och inte pushad; ingen annan agent arbetade där.
 
 Sista avgränsade env-rättningen ger det lokala produktbarnet endast
 `OPENCLAW_API_KEY` och tömmer äldre `OPENCLAWAPI_KEY`. Kompatibel inläsning,
 filprioritet och Lab-/relay-isolering bevaras. Fokustester 48/48 och
-oberoende granskning utan blockerare; fullhook och slutlig CI följer i PR.
+oberoende granskning utan blockerare; fullhook 3 980 pass/9 skip/0 fel samt
+faktisk SQL-/omstarts-/HTTPS-CI är gröna i mergade PR182, head `390e30f0`.
 Privata värden ändras inte. Detta aktiverar inte ny läppsynk eller QA och
 bevisar inte en fungerande ansluten lokal profil.
 

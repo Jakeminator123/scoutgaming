@@ -1,5 +1,11 @@
 # Miljövariabler per tjänst
 
+Senaste leveransstatus finns i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md),
+och kvarvarande arbete/ägare i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
+PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
+alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
+Inventeringens daterade antal nedan är inte en ny liveavläsning.
+
 ## Aktuell avgränsning, 15 oktober 2026 kväll
 
 [environment-variables.json](environment-variables.json) är det maskinkontrollerade

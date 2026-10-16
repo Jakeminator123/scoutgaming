@@ -1,6 +1,12 @@
 # Återställning och skydd av data
 
-Arbetskopian är den checkout vars origin är `Jakeminator123/scoutgaming` på `main`.
+Produktens leveranskälla är `Jakeminator123/scoutgaming` på `main`.
+Den lokala arbetskopian kan ligga på en arbetsbranch; kontrollera root,
+branch/HEAD och egna ändringar före synkning eller återställning.
+Aktuell överlämning finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md), och senaste
+verifierade driftsättning/acceptans överst i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md).
+De daterade versionsreferenserna nedan är historiska återgångsunderlag,
+inte uppgift om vilken SHA produktionen kör just nu.
 GitHub-källan heter nu `Jakeminator123/scoutgaming`, samma repo-ID `1380630440`.
 Namnbytet är godkänt av Jakob och gammal `github-work` vidarebefordras till den.
 Lokal origin och push-/säkerhetspolicy använder den nya adressen.
