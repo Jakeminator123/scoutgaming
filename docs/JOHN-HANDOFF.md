@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+## Aktivt avslut — Dragan och Admin, 16 oktober 2026
+
+Jakob har aktiverat målet att avsluta Admin och intern migrering, samla
+konfiguration och radera verifierat ersatta delar. Arbetsströmmen fortsätter
+i huvudcheckouten; aktuell plan och bevis finns överst i CLOUD-MIGRATION.
+Workflow-/dokumentfel som hindrar avslutet ingår. PR165, ny rörlig läppsynk
+och QA förblir pausade under Admin-etappen.
+
+Dragan-rättningen på `codex/dragan-idle-recovery` ger den exakta grundloopen
+ett begränsat återförsök efter stall, räknar faktisk tidsprogression och
+hindrar omspelning av standardfilm efter kort-/talstall. 80 fokuserade prov
+passerar efter fem reproducerade fel på tidigare kod. Oberoende kodgranskning
+är klar och första fullhook har noll fel; slutliga kontroll- och
+drift-/browserkvitton återstår. Den befintliga
+produktionsfliken visade fungerande grundloop vid passiv kontroll; detta är
+inte acceptans av den nya koden eller bevis för tidigare stoppets rotorsak.
+
 ## Uppföljning — Classic och nästa användarprov, 16 oktober 2026
 
 Jakob valde att avaktivera High Roller/VIP tills servern stöder dem.

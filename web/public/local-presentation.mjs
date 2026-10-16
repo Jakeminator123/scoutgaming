@@ -41,8 +41,10 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     initialScene: { active: true, visible: !document.hidden, identity: dealerId, revision: String(version()) } });
   const still = document.createElement('canvas'); still.className = 'local-presentation-film local-presentation-still'; host.append(still);
   const hold = video => { if (composition) { composition.hold(video); return; } if (!video.videoWidth) return; still.width = video.videoWidth; still.height = video.videoHeight; still.getContext('2d').drawImage(video, 0, 0); };
-  let idleRun = 0, idleError = null, idleDuringAction = false, pendingRule = null, idleRetryTimer = null, idleRetries = 0;
-  const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; idleRetries = 0; active?.abort(); active = null; };
+  let idleRun = 0, idleError = null, idleDuringAction = false, pendingRule = null, idleRetryTimer = null, idleRetries = 0, idleFailed = false;
+  // The retry budget belongs to this configuration's exact idle, not a UI epoch.
+  // Visibility/action changes must not turn a broken loop into endless retries.
+  const stop = () => { clearTimeout(idleRetryTimer); idleRetryTimer = null; active?.abort(); active = null; };
   const channel = crypto.randomUUID();
   let adviceController = null, chatSequence = 0;
   async function observeChat(text) {
@@ -75,6 +77,9 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     const abort = () => own.abort(); signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) own.abort();
     host.dataset.presentationMedia = video.id; host.dataset.presentationFile = video.fileName; host.dataset.presentationKind = kind;
+    host.dataset.presentationSha256 = video.sha256;
+    host.dataset.presentationRevision = String(config.projectRevision || config.revision || '');
+    host.dataset.presentationPackageRevision = String(context?.packageRevision ?? '');
     try {
       if (context || preview) {
         const current = await request(configUrl, { signal: own.signal, cache: 'no-store' });
@@ -87,7 +92,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
       await player.playLocalClip({ media: { src: mediaUrl(video), sha256: video.sha256 } }, {
         signal: own.signal, muted: kind !== 'speech' || muted(), hold, onFrame: onMediaFrame,
         renderFrame: composition ? source => composition.renderFrame(source) : undefined,
-        onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, fileName: video.fileName, renderer: 'performance-local' });
+        onReceipt: event => { host.dataset.presentationState = event.state; receipt({ event: kind, ...details, ...event, mediaId: video.id, mediaSha256: video.sha256, fileName: video.fileName, packageRevision: context?.packageRevision, renderer: 'performance-local' });
           if (event.state === 'presented') onFrame?.(); onEvent?.(event); },
       });
     } finally { signal?.removeEventListener('abort', abort); if (active === own) active = null; }
@@ -114,7 +119,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     return true;
   }
   function resumeOwnIdle() {
-    if (packageChanged || closed || (action && !idleDuringAction) || speech || document.hidden || idleRun) return;
+    if (packageChanged || closed || (action && !idleDuringAction) || speech || document.hidden || idleRun || idleFailed) return;
     const video = config.dealerIdle?.[dealerId];
     if (!video) { const error = new Error('Dealern saknar en publicerad grundloop'); status.textContent = error.message; onError(error); return; }
     presentationKind = 'idle'; onBusy();
@@ -122,14 +127,15 @@ export async function createLocalPresentation({ player, host, dealerId, version,
     void film(video, { kind: 'idle', details: { idleKind: 'standard', standardBase: true,
       reason: 'saved_exact_baseline', projectRevision: config.projectRevision || config.revision, configurationSource },
       onFrame: () => { if (epoch !== serial || closed) return;
-        idleRetries = 0;
         if (idleError !== null && status.textContent === idleError) { status.textContent = ''; idleError = null; }
         onIdle(); },
-    }).then(() => { if (epoch !== serial || closed) return; idleRun = 0; resumeOwnIdle(); })
+    }).then(() => { if (epoch !== serial || closed) return; idleRetries = 0; idleRun = 0; resumeOwnIdle(); })
       .catch(error => { if (epoch !== serial || closed) return;
         if (requireReload(error)) return;
+        onBusy();
         idleError = `Idle: ${error.message}`; status.textContent = idleError; onError(error);
-        if (error.code !== 'local_film_no_presented_frame' || idleRetries >= 1) return;
+        if (!['local_film_no_presented_frame', 'local_film_stalled'].includes(error.code)) return;
+        if (idleRetries >= 1) { idleFailed = true; return; }
         // Retry the same frozen idle once. Neither a timer nor 'playing' opens
         // the speech gate or clears the warning; only this owner's frame does.
         idleRetries++;
@@ -234,7 +240,7 @@ export async function createLocalPresentation({ player, host, dealerId, version,
         } finally { if (current === attempt) ++attempt; }
       };
       try { await play(result.video); }
-      catch (error) { if (signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
+      catch (error) { if (error.code === 'local_film_stalled' || signal?.aborted || token !== serial || !result.standard || result.standard.id === result.video.id || result.video.recordedSpeech || result.video.classification?.recordedSpeech) throw error;
         receipt({ event: kind, state: 'fallback', sourceEvent: event, reason: error.message, renderer: 'performance-local', requestId: result.decision.requestId, mediaId: result.standard.id, projectRevision: result.projectRevision, configurationSource });
         await play(result.standard); }
       const current = token === serial && requestVersion === version() && !signal?.aborted;
