@@ -7,7 +7,7 @@ konfiguration och radera verifierat ersatta delar. Arbetsströmmen fortsätter
 i huvudcheckouten; aktuell plan och bevis finns överst i CLOUD-MIGRATION.
 Workflow-/dokumentfel som hindrar avslutet ingår. Admin-flödesetappen är
 avslutad enligt kvittot nedan. PR165 är mergad efter Jakobs uttryckliga
-godkännande. Lageruppladdning och env-normalisering är nästa leverans;
+godkännande. Lageruppladdning är levererad i PR180; lokal env-normalisering slutförs;
 ny rörlig läppsynk och QA-utbyggnad förblir pausade.
 
 PR165 slutfördes i sin befintliga branch i huvudcheckouten. Main
@@ -39,14 +39,26 @@ hashverifierade filbeskrivare före SQL. Tydliga fel skiljer säkert avslag frå
 okänt sparutfall. Fokusserie 46/46, sista UI-proven 12/12 och Lab-cwd-worker
 1/1; oberoende granskning utan blockerare. Labbygge och faktisk worker- och
 beroendepaketering verifierade. Kodcommit `7f6ae536` matchar de 18 granskade
-filerna; fullhook 3 980 pass, 9 villkorade skip, 0 fel. Slutlig CI och
-drift kvitteras i separat PR.
+filerna; fullhook 3 980 pass, 9 villkorade skip, 0 fel. PR180:s sluthead
+`4144e882` är oberoende granskat och faktisk SQL-/omstarts-/HTTPS-CI
+`38908999776` är grön. Merge gav main `d064dce2`, med grön main-CI
+`38909756837`, Vercel READY på www och Render live på samma verifierade SHA.
+Skrivande uppladdningsacceptans i produktion är inte körd.
 Videometadata och paketläsning innebär inte avkodnings- eller läppsynkacceptans.
 
 Vanlig Git-pull är kontrollerad: `main` följer `origin/main`, GitHub-fetch
 fungerar och lokal `pull.ff=only` hindrar oväntade mergecommits. Inga globala
 SSH-inställningar eller credentials ändrades. Efter leverans återgår samma
 arbetskopia till uppdaterad main med användarens egna ändringar bevarade.
+Vanlig `git pull` har faktiskt fört main till `d064dce2`. Jakobs skapade
+`codex/kordinater` är bevarad och inte pushad; ingen annan agent arbetade där.
+
+Sista avgränsade env-rättningen ger det lokala produktbarnet endast
+`OPENCLAW_API_KEY` och tömmer äldre `OPENCLAWAPI_KEY`. Kompatibel inläsning,
+filprioritet och Lab-/relay-isolering bevaras. Fokustester 48/48 och
+oberoende granskning utan blockerare; fullhook och slutlig CI följer i PR.
+Privata värden ändras inte. Detta aktiverar inte ny läppsynk eller QA och
+bevisar inte en fungerande ansluten lokal profil.
 
 GitHub-regeln för main kräver nu `CI` från GitHub Actions samt uppdaterad
 PR mot main. Befintliga regler och administratörsundantag är bevarade;
@@ -88,6 +100,9 @@ läppsynk förblir pausade.
 
 ## Uppföljning — Classic och nästa användarprov, 16 oktober 2026
 
+Historiskt delkvitto före Admin-acceptans och PR165-merge. Aktuell status
+finns överst; formuleringarna om nästa prov och parkerad PR165 nedan gällde då.
+
 Jakob valde att avaktivera High Roller/VIP tills servern stöder dem.
 De visas som otillgängliga; Classic behåller 5–2 000 per huvudinsats och
 befintligt UI-tak 1 000 per sidoinsats. Dubblering respekterar båda taken.
@@ -108,6 +123,9 @@ begäran för denna avgränsade kod-/dokumentuppföljning; samma arbetskopia och
 sekventiella PR-flöde används.
 
 ## Aktiv leveransström — Admin-förenkling, 15 oktober 2026
+
+Historisk startavgränsning. Senare uttryckliga mandat och leveranser redovisas
+i det aktuella slutkvittot överst.
 
 Den aktuella genomförandeplanen finns överst i
 [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md). Jakob har gett genomförandemandat

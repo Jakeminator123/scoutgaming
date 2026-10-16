@@ -384,6 +384,9 @@ för befintliga tjänster. Inom samma env-källa vinner `OPENCLAW_API_KEY`;
 senare filer och processmiljön behåller sin vanliga prioritet. Ett uttryckligen
 tomt rättat värde stänger av anslutningen även när det gamla namnet är satt.
 Båda namnen töms i isolerade barn som inte ska få Gateway-hemligheten.
+Den lokala produktprocessen får nyckelvärdet endast som `OPENCLAW_API_KEY`;
+`OPENCLAWAPI_KEY` hålls tomt även vid direkt Gateway-anslutning. Det ändrar
+inte kompatibel inläsning eller env-filernas prioritet och kräver ingen ny profil.
 Gatewayens startkod har samma prioritet och normaliserar barnprocessen till
 det rättade namnet. Render-Blueprint och Compose använder `OPENCLAW_API_KEY`
 för både Director och Gateway. Det äldre namnet är endast kompatibilitet.
