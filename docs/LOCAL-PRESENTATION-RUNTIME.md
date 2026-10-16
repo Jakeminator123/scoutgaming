@@ -217,6 +217,10 @@ Exporten innehåller inget OCI-manifest. Byggflödet hämtar alla `avatar-*.tar`
 från den föränderliga releasen `avatarer`, utan dessa hashpinnar, och har
 `provenance: false`. Dockerfile har även opinnade paket. Commit-taggen
 eller ett nytt bygge får därför inte presenteras som bevis på samma imagebyte.
+Detta hindrar inte lokal adapterutveckling eller en egen byggväg från den
+granskade exporten. En egen image får en egen digest; Emils privata
+packageåtkomst och upstream-digest behövs endast om hans färdigbyggda image
+ska användas eller verifieras. Inget imagebygge har körts här.
 
 Faktisk kod i `worker/motor.py`, `avatars_on_disk()`, delar `AVATARS` på
 blanksteg och väljer endast befintliga namngivna banker. `AVATARS="paow dragge"`
@@ -233,6 +237,20 @@ Alla poolindex, segmentantal och tagningarnas rapporterade längder stämmer.
 dessutom liknande bildrutor med en tolerans (`LIKA=0.9`). Bankhash,
 tagningens namn och lika antal rutor bevisar alltså inte kopplingen till
 Scoutgamings publicerade klipp eller godkänd visuell synk.
+
+Uppföljning på Jakobs fråga om Kevins staging: fjärrbranchen heter
+`kevin-staging`, fryst på `3ab8bea854156ec2fd96d9735c3a0be6876bc1ac`.
+Under `kevin/croupier-scoutgg/public/media/dealers/{paow,dragge}/v2/` finns
+samtliga 56 namngivna MP4 per dealer och respektive `vila.png`.
+Varje tagnings namn och rapporterade rutantal i `meta.json` matchar exakt
+exportens `takes.json` för båda avatarerna. Den lästa `public/media/manifest.json`
+har inga hashfält. Detta identifierar en konkret möjlig byggkälla; filerna
+har inte hämtats/hashats och matchande metadata bevisar inte att just denna
+Git-version användes när bankerna byggdes. Emils agent behöver ange den
+faktiska källcommiten/sökvägen eller lämna ett hashbundet källmanifest.
+Om exakta original finns på en åtkomlig commit kan vi själva beräkna hashlistan.
+Kevins `server/rorlig-lipsync.mjs` är spelintegrationen; den separata
+Python-workern och dess byggfiler finns redan i Emils export.
 
 **Minsta anpassning:** återanvänd de befintliga modulerna; ingen ny adapter
 eller produktionskoppling införs innan den saknade källbindningen kan styrkas.
@@ -276,8 +294,9 @@ versionsbyte, avbrott och fördröjda svar. Ingen exporterad worker kördes;
 sju Pythonfiler syntaxparsades utan import. Detta är kontraktsbevis,
 inte codec-, GPU-, prestanda- eller läppsynksacceptans.
 
-**Kvar före inkoppling/aktivering:** verifierbart OCI-manifest/digest och
-bindning till avsedd källa/bank; originalklippens hashbundna källmanifest
+**Kvar före inkoppling/aktivering:** verifierbart OCI-manifest/digest för
+den image som faktiskt ska användas, med bindning till avsedd källa/bank;
+originalklippens hashbundna källmanifest
 eller exakta original; journal-/spelaradaptern och negativa isolerade prov;
 separat mandat för eventuell betald körning; två verkliga sammanhängande
 talprov per dealer med planbyte och avbrott; Jakobs aktiveringsgodkännande.
