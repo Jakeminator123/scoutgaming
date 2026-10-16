@@ -4,10 +4,9 @@ import { presentationEvents } from '../../web/partner-presentation.mjs';
 import { prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
 import { normalizeProject, buildRuntimeCatalog, validateProject, DEALER_IDS } from '../lib/studio-model.mjs';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
-import { retireDemoExamples } from '../lib/retire-demo-examples.mjs';
 
 // Explicit historical document: current seeds intentionally register only active dealers.
-const historicalProject = () => normalizeProject(retireDemoExamples(createLegacyProject()));
+const historicalProject = () => normalizeProject(createLegacyProject());
 
 // Exercise the real presentation producer against synthetic PUBLIC views.
 // No RNG, player database, model, network, media bytes or saved project is used.

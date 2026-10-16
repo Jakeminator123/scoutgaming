@@ -2,7 +2,7 @@
 
 ## Senast dokumenterade leverans, sammanställd 16 oktober 2026
 
-[Handoffens leveranskvitto från 14 oktober](../../JOHN-HANDOFF.md#anna-demorum-publicerat-och-två-liveprov-klara-14-oktober)
+[Handoffens leveranskvitto från 14 oktober](https://github.com/Jakeminator123/scoutgaming/blob/b38c56572158d6deaeb6823b3a66bf5fbca8af7e/docs/JOHN-HANDOFF.md#anna-demorum-publicerat-och-två-liveprov-klara-14-oktober)
 redovisar ett publicerat **Anna · Roulette · Demo** hos `scoutgaming-demo`,
 med Anna, startfilm, MP4-bakgrund och roulettebord. Två sammanhängande rundor
 från `/lobby` granskades då i produktionsspelaren med serverkvitton och

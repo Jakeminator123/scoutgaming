@@ -7,14 +7,19 @@ Från Codex används `node lab/start.mjs --no-open`, som bara skriver adressen.
 Kommandot skapar inga lokala register eller servrar. Endast uttryckligt
 `--offline` startar en tillfällig, isolerad testmiljö utan externa tjänster.
 
-Det nya runtimekontraktet samlar katalog och svarsbibliotekets metadata i
+Produktens register, inklusive katalog och svarsbibliotekets metadata, finns i
 Neon; filmer och ljud ligger i privat Blob. Lokala katalogfiler är underlag
 för uttryckligt import-/authoringarbete. Sparade arbetsfiler bevaras men
-används inte som produktens reservregister. Migration och dataimport är klara
-enligt huvudagentens kvitto 16 oktober 18:38 UTC; produktens runtimebyte och
-driftacceptans återstår. Aktuell leveransstatus finns i
+används inte som produktens reservregister. Registerbytet i PR186 är mergat
+och driftsatt enligt leveranskvittot 16 oktober; det intygar ingen ny visuell
+läppsynk- eller spelacceptans. Aktuell leveransstatus finns i
 [CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md), tekniken i
 [presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+
+**Dragan är ordinarie dealer. Astrid är märkt legacyreferens utan
+trelagersversion.** Hennes befintliga tal, filmer och historik ligger kvar på
+samma molnväg. Astrid-specifika avsnitt nedan beskriver dessa referensverktyg,
+inte standardval eller krav på en parallell lokal produkt.
 
 **Roulettescenens storlek:** öppna Spelbolag & rum, välj rummet och
 **Gemensam mall och tillåtna alternativ** → **Öppna gemensam mall** →
@@ -112,10 +117,10 @@ inte grund för att ta bort Astrids fungerande tal-/videoflöden.
 
 Partnerportalen är nivå 2. Inloggad nivå 1 når `/admin`, `/partner` och spelarytan med samma konto och behåller sin adminroll. Öppna `/partner` direkt; om du behöver logga in leder **Logga in som intern administratör** på `/partner/login` till den interna inloggningen och tillbaka till `/partner`. Partnerformulärets användarnamn/lösenord skapar endast en N2-session och avvisar därför N1-konton. Operatörens personal loggar in där och ser bara sina aktiva medlemskap. Den vanliga portalen ersätter aldrig bolagsdata med demonstrationer. Spelare, transaktioner och rapporter från spelmotorn är ännu inte anslutna.
 
-**Ingångar och aktiva sluggar — kontrollerat 14 oktober 2026**
+**Ingångar och äldre länkar**
 
 Använd `/admin`, `/partner` och `/lobby` för nya bokmärken. Tabellen visar
-äldre dokumentlänkars mål i produktion; om inloggning saknas kommer den
+äldre dokumentlänkars omdirigeringar, kontrollerade 14 oktober 2026; om inloggning saknas kommer den
 interna inloggningssidan efter omdirigeringen och bevarar målet i `returnTo`.
 
 | Befintlig adress | Nuvarande mål |
@@ -136,12 +141,12 @@ De äldre adminlänkarna bevarar sidkontext; `dealerId` blir `dealer` på
 klippsidorna och `lane` blir `composition`. Detta flyttar inte API:er eller
 inloggningsrutter. `/studio/api/...` är fortfarande tekniska API-adresser.
 
-Aktiva registrerade bolag vid N1-provet samma datum var `johns-spelbolag`
-(Johns spelbolag), `nordic-bet` (Nordic Bet), `scoutgaming-demo`
-(Scoutgaming Demo) och `sg-test` (SG test game provider). Bolagets ingång är
+Bolagets ingång är
 `/partner/{operatorSlug}` och dess rum finns på `/partner/{operatorSlug}/rooms`.
-Detta är en daterad lista, inte en behörighetslista: N1 ser aktiva bolag,
+Hämta aktuella bolag ur produktens register: N1 ser aktiva bolag,
 N2 ser sina aktiva medlemskap och spelarlobbyn visar spelbara publicerade rum.
+Vid registerleveransen 16 oktober var noll aktiva bolag, rum och
+sammansättningar avsiktligt; äldre bolagsnamn är inga startdata att återskapa.
 En bolagsslugg är inte ett dealer-ID, rum-ID, sammansättnings-ID eller agentnamn.
 
 `/play`, `/player-login` och de befintliga spelstarterna finns kvar.
@@ -317,11 +322,9 @@ Gamla genvägar leder vidare; använd de nya menyadresserna för nya bokmärken.
 Partner-session finns via `/partner/login` (partner-API:t svarade 503 i produktion 7–8 okt tills `e97f32df`; kontrollera efter varje deploy).
 Chips är inte klara (L4), och ett menyval ger ingen behörighet.
 
-**Personalens arbetsyta är `/admin` på huvuddomänen.** Dealers finns direkt i sidomenyn; Bolag & team, Rum & publicering, Talgranskning och de övriga etablerade editorerna finns under Verktyg. Gamla `/control`-länkar är kompatibilitetsingångar. `/studio` är tekniskt Next.js-basePath för samma tjänsts API:er och tillgångar; `lab/` är fortfarande aktiv källkod.
-Dess rot omdirigerar permanent till `/control/clips` och därefter till
-`/admin/dealer-studio`, med sidkontexten kvar.
-API och tillgångar under basePath behålls. I molnet öppnar du
-[`/admin`](https://www.scoutgaming.tech/admin). Render-tjänsten `croupier-v2` äger
+**Teknisk fördelning:** Vercels Studio-tjänst serverar Admin, partnerportalen
+och lobbyn. API:er och tillgångar finns under `/studio`.
+Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
 För isolerade tester finns arbetsytan på det temporära par som endast
@@ -358,10 +361,9 @@ Grundloopen visar vila/andning. Variationer kan till exempel visa att dealern kl
 
 **Stäng av** ändrar policyn och behåller filen. **Ta bort** i biblioteket arkiverar oanvända uppladdningar med möjlighet att återställa. Originalspelarens media ändras inte av att navigera mellan dessa vyer.
 
-Astrid har de aktuella familje-, idle- och Probe-editorerna. Vera, Amira
-och Mei ärver inte Astrids idle/Probe-inställningar. Den indexerade
-originalbanken som tidigare fyllde deras klipplistor är borta ur Git;
-listorna är tomma där ingen registrerad film finns. Fasta repliker är inspelat
+Astrids legacyreferens har familje-, idle- och Probe-editorer; dessa är inte
+generella inställningar för andra dealers. Klipplistor bygger på registrerade
+filer, inte en gammal lokal originalbank. Fasta repliker är inspelat
 exakt tal. **AI-småprat vid inaktivitet** ligger under Studio. Det separata textprovet
 skapar inte ljud eller video. Spelmotorns väg kan be om ett talpaket bara om taltjänsten finns.
 Ett syntetiskt textprov är inte en skapad eller spelad film.
@@ -381,7 +383,7 @@ vid vanlig läsning eller sparning av moderna rum.
 De tidigare rena informationspanelerna för klipp och AI-generering är borta;
 klipparbete finns under Dealers & klipp. E-postmallar är förhandsvisningar.
 Andra dealers visar bara de klippkategorier som stöds; Astrids talinitiativ
-och familjeuppladdning visas inte som verktyg för Vera, Amira eller Mei.
+och familjeuppladdning är referensspecifika verktyg.
 
 **Publicering:** spelmotorn bestämmer regler, kort och saldo. Den gemensamma
 presentationskoden visar kort och spelar media. En sparad spelkonfiguration
@@ -443,7 +445,7 @@ Aktuell driftversion, QA-bevis och återstående begränsningar finns i
 Den nya [systemkartan](../../docs/system-map/index.html) visar tjänster, sidor,
 databas/lagring, spel-/talflöden, nyckelnamn och befintliga tester. Den är en
 fristående HTML-fil; kodinventering och tidigare driftbevis anges separat.
-OpenClaw-sidan finns på `/control/openclaw` och visar agenternas modellval.
+OpenClaw-sidan finns på `/admin/ai/models` och visar agenternas modellval.
 Sparning går genom labbets behörighetskontroll till OpenClaw på Render.
 Gatewayens separata dashboard finns kvar för avancerad konfiguration och pairing.
 Vanliga sparade klippval kräver ingen Render-omstart;
@@ -488,12 +490,16 @@ motsvarar aktuell Git-HEAD. De tidigare anslutna lokallägena `--check`,
 `--cloud-storage` och `--astrid-camera` avvisas med hänvisning till den
 publicerade produkten eller explicit offline-fixtur.
 
-Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
+Avancerade verktyg nås genom **Händelser** (`/admin/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
-dit. `/lissabon`, `/lab`, `/labb` och `/bo` är äldre kompatibilitetsadresser.
-Personalens nya ingång är `/admin`; följande querykontrakt gäller de befintliga Studio-verktygen. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Spelhändelser & villkor (`/control/events`), `chat` på OpenClaw och `operations`, `finance`, `accounts`, `partners` eller `media-review` på Administration. `tab=tables` leder till `/control/rooms`. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till `/control/probe`, `/control/compositions` och `/control/rehearsal` (Provspelning & logg). Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
+dit via den äldre `/control/events`-länken. `/lab`, `/labb` och `/bo` är äldre
+kompatibilitetsadresser; `/lissabon` är ingen aktiv publik ingång.
+Verktygslänkar behåller dealer, sammansättning, rum, händelse och variant.
+Äldre `dealerId` och `lane` omvandlas till `dealer` och `composition` i
+Admin-adressen. Gamla flik- och hashadresser leder vidare till rätt verktyg;
+använd dess `/admin`-adress när du sparar ett nytt bokmärke.
 
-Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
+Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/admin/guide)
 (i en offline-fixtur på `/guide` under den Studio-adress startaren skriver ut).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
 [studio-contract.json](../policies/studio-contract.json). Uppdatera dessa,
@@ -511,7 +517,7 @@ tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
 beslut, kontrakt/schemaändring, tester och migrationsbeskrivning. Visningsnamn
 kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 
-Tekniska fördjupningar finns i den [aktiva systemkartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+Tekniska fördjupningar finns i [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
 **Provspelning & logg** på `/admin/rehearsal` skiljer källa, eventdata, kontext, beslut och
@@ -552,15 +558,13 @@ På **Dealers & klipp** leder **Arkivera & återställ** till dealerns hantering
 
 På nya `/admin` väljer du först område: **Dealers och klipp**, **Spelbolag och rum**, **Ekonomi**, **Drift** eller **System**. Startsidan öppnar ingen redigerare. Välj **Studio** eller **Öppna dealers och klipp** för klippkartan på `/admin/clips`; **Bord och bakgrunder** finns som eget val. **Visa spelrum** visar de registrerade rummen utan att öppna klippredigeraren. Äldre bokmärken till `/admin` med dealer eller rum i adressen öppnar fortfarande Studio. **Ekonomi** visar kontorörelser, diagram och en journal som kan fällas ut. Diagrammen bygger på hämtade journalposter, inte på beräknad GGR eller revshare. Logotypen och **Översikt** i sidomenyn tar dig tillbaka till `/admin`; ett osparat Studio-utkast finns kvar när du återvänder.
 
-**Översikt** på /control visar arbetsgången **dealer → sammansättning → publicering → spelrum**. Välj ett bolag för nästa steg, öppna rum, valbara dealers och paketversion. Bolagets status kommer från samma publicerade rumslista som spellobbyn; sparade Studioändringar räknas separat och är inte automatiskt publicerade. Ett anslutningsfel visas som okänd status, aldrig som noll spelrum. **Uppdatera status** hämtar en ny bild. Bolagsvalet följer länkarna till publicering och team.
-
 **Studio** innehåller även Talgranskning: manuell bedömning av ett exakt ljud- och videopar. Ändrade filer ogiltigförklarar den tidigare bedömningen. **Spelhändelser & villkor** styr när inspelade klipp används; **AI-småprat vid inaktivitet** är ett separat flöde. Händelsekopplingar och äldre 2D-klipp är fortfarande aktiva i uppspelning/validering och har inte tagits bort.
 
 **Drift** samlar spelmotor, kortlek/spelintegritet, uppspelning och betalningsjournal. **Administration** samlar bolag/team, interna konton/spelare och API/integrationer. Flikarna inne på respektive sida visar bara det aktuella arbetsområdet. Standarddealer för classic/high/vip hör till den äldre bordsindelningen; bolagens publicerade spelrum styrs av sina presentationer.
 
 ## Skapa material från dealerns grundbilder
 
-**Skapa material** finns som flik under **Dealers & klipp** (`/control/clips?view=generate`). Välj dealer i den gemensamma arbetsytan. Fliken genererar klipp via Runway och lägger resultatet som granskningsklipp i rätt fack; ingenting publiceras automatiskt. Den gamla Dealer Forge-adressen omdirigerar hit och behåller dealer, sammansättning, bolag och rum.
+**Skapa material** finns som flik under **Dealers & klipp** (`/admin/dealer-studio?view=generate`). Välj dealer i den gemensamma arbetsytan. Fliken genererar klipp via Runway och lägger resultatet som granskningsklipp i rätt fack; ingenting publiceras automatiskt. Den gamla Dealer Forge-adressen omdirigerar hit och behåller dealer, sammansättning, bolag och rum.
 
 1. Välj en befintlig dealer eller registrera en under **Hantera dealers** och spara innan du öppnar **Skapa material**.
 2. **VILA**: ladda upp en stående bild med båda händerna i vila. Bilden förminskas i webbläsaren, normaliseras till 1080×1920 på kromagrönt och sparas som privat ankare. **REDO** (vänster hand vid skon) genereras från VILA med Gen-4 Image (8 krediter) eller laddas upp; första kandidaten antas automatiskt, fler kan väljas med *Använd som REDO*.

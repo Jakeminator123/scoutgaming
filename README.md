@@ -28,30 +28,29 @@ checklist before calling a surface complete.
 
 `/studio` is the Lab service's Next.js basePath. It is not another product.
 `/lissabon`, `/lab`, `/labb` and `/bo` are retired product aliases. Some stored
-IDs, local guest profile tables, filenames and the `lissabon-stream-lane` flag
-remain compatibility details. Do not rename saved identities or remove their
-consumers just because the old name survives. The flag still controls chat
-context, camera checks and saved local profiles. New UI work belongs in `/admin`
-and `/lobby`; the [user guide](lab/docs/README.md) is the canonical list of
-active entry points, operator slugs, compatibility redirects and working tools.
+IDs, filenames and the `lissabon-stream-lane` flag remain compatibility details.
+Keep a compatibility path while active callers or saved data need it; the name
+alone is no reason to keep an obsolete page or parallel registry. New UI work
+belongs in `/admin` and `/lobby`; the [user guide](lab/docs/README.md) covers
+active entry points, operator access, compatibility redirects and working tools.
 
 ## Source and folder map
 
 | Folder | Responsibility | Guide |
 | --- | --- | --- |
 | `apps/croupier-frontend/` | Public Next frontend, player pages and ingress to the game/Studio services | [Frontend](apps/croupier-frontend/README.md) |
-| `lab/` | Studio server, staff/operator APIs, local launcher and UI build integration | [Lab](lab/README.md) |
+| `lab/` | Active Studio/Admin service, staff/operator APIs, published-product launcher and offline fixtures | [Lab](lab/README.md) |
 | `web/` | Authoritative game server, authentication, wallet, persistence and game client source | [Game server](web/README.md) |
 | `packages/presentation/` | Shared compositor, presentation selection, idle rules and reviewed layer preview | [Presentation](packages/presentation/README.md) |
 | `packages/design-preview/` | Active admin/lobby UI source and browser bundle builder | [Admin/lobby](packages/design-preview/README.md) |
 | `services/astrid-gpu-worker/` | GPU lip sync plus shared speech transport; the historical name does not restrict sessions to Astrid | [Speech service](services/astrid-gpu-worker/README.md) |
 | `pipeline/` | Media utilities with separate inputs, banks and export formats | [Media tools](pipeline/README.md) |
-| `media/` | Registered runtime assets, source/review/staging files and identity manifests | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |
+| `media/` | Source/review/staging material and import manifests; deployed registry data comes from Neon and media bytes from Blob | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |
 | `open-claw/` | OpenClaw/Gateway integration and its deployment tools | [OpenClaw](open-claw/README.md) |
-| `ops/`, `tools/`, `test/` | Deployment tooling, repository utilities and regression tests | [Cloud](docs/CLOUD-MIGRATION.md), [container context](ops/cloud/CONTAINER-CONTEXT.md) |
+| `ops/`, `tools/` | Deployment, migration, import and repository utilities | [Cloud](docs/CLOUD-MIGRATION.md), [container context](ops/cloud/CONTAINER-CONTEXT.md) |
+| `test/`, `lab/test/` | Game/shared-service regression and Studio/API tests; component tests also live beside their source | [Verification](AGENTS.md#verification-during-editing) |
 
-[AI documentation](docs/AI/README.md) collects agent flows, OpenClaw guides,
-the dated service inventory and optional avatar integration.
+[AI documentation](docs/AI/README.md) collects agent flows and OpenClaw guides.
 
 These are source responsibilities, not independent products. For example,
 Vercel's `web` Service builds `apps/croupier-frontend/`; the root `web/` folder
@@ -70,6 +69,11 @@ sammansättning. Do not derive another model from folder names or legacy lane
 fields. [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md)
 records the implemented storage/runtime limits and media formats. Keep
 published package, room, dealer and asset identities stable during transition.
+Neon is the product registry for saved configuration, media catalogue and reply
+metadata; private Blob stores media bytes. Local source files and authoring
+exports are not a runtime fallback. Dragan is the ordinary dealer; Astrid is a
+labelled legacy reference without a three-layer version. Her exact media and
+working speech flows remain useful reference material on the same cloud path.
 Shared composition drafts are not room-specific writes; allowed room appearance
 is saved through the existing scoped partner room editor.
 
@@ -81,24 +85,28 @@ the player's real receipts; a separate preview needs an explicit action.
 Generated speech uses the registered dealer's profile and the speech gateway,
 not an independent Lab player. The retained full-file GPU path is Astrid-specific.
 
-## Run locally
+## Open the product or an isolated fixture
 
-For an isolated preview without external providers:
-
-```powershell
-node lab/start.mjs --offline --no-open
-```
-
-For the existing connected profile:
+To print the published lobby URL from Codex:
 
 ```powershell
 node lab/start.mjs --no-open
 ```
 
-The launcher enforces one product/Lab server pair through
-`open-claw/lab/deploy/local-session.mjs`. Stop it before changing environments.
-Saved local projects, history and players live in `lab/data`; they are not cache.
-Use the [Lab guide](lab/README.md) for installation and start options.
+This starts no local servers or registry. Only an explicit offline start creates
+an isolated temporary server pair without external providers:
+
+```powershell
+node lab/start.mjs --offline --no-open
+```
+
+The offline launcher enforces one fixture pair and removes its temporary data
+when stopped. Existing `lab/data` authoring/recovery files are preserved and do
+not become product state. The old `--cloud-storage`, `--astrid-camera` and
+`--check` modes are retired; `--skip-build` requires `--offline`.
+Check the package's Node engine and Volta pin before local scripts; `lab/`
+requires Node 24.x and pins 24.21.0. See the [user guide](lab/docs/README.md)
+for fixture options and the [Lab guide](lab/README.md) for development setup.
 
 `node_modules/` contains installed dependencies; `.next/` contains Next build
 output and cache. Both are normal local generated folders and excluded from

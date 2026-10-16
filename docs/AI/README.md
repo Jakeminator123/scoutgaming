@@ -9,11 +9,22 @@ vid implementationen; de är inte fristående handböcker.
 | Publik D-ID-chatt, separat N1-Adminrobot, behörigheter, dealerimport och arkivering | [Agentflöde och ändringslogg](scoutgaming-agentflode.md) |
 | Director, Gateway, inloggning och lokala prov | [OpenClaw-guider](openclaw/README.md) |
 | Tjänster, rutter, databaser och kontrollmekanism | [Systemkartans läsanvisning](../system-map/README.md) |
-| Produktens ingångar, aktiva bolagssluggar, äldre länkar och användarsteg | [Användarguiden](../../lab/docs/README.md) |
+| Produktens ingångar, bolagsåtkomst, äldre länkar och användarsteg | [Användarguiden](../../lab/docs/README.md) |
 | Gemensamma begrepp | [Terminologi](../../lab/docs/TERMINOLOGI.md) |
 | Medier, uppspelning och kvarvarande acceptans | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
 | Miljövariabler och ansvar | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
 | Leveransstatus och återstående krav | [CLOUD-MIGRATION](../CLOUD-MIGRATION.md) |
+
+Admin, partnerportal och lobby hör till Vercels webb-/Studio-tjänster;
+Render-tjänsten `croupier-v2` kör spelmotorn. Neon är enda produktregistret
+och privat Blob innehåller mediebyte. `lab/` och `open-claw/lab/` är aktiva
+kodsökvägar, inte lokala kopior av produkten. Isolerade fixtures och äldre
+authoringfiler är inte alternativa produktregister.
+
+Dragan är ordinarie dealer. Astrids guider och exakta mediereferenser är
+legacyunderlag för bevarade tal-/OpenClaw-flöden, utan trelagersversion.
+Aktuell leverans och acceptans följs i [handoffen](../JOHN-HANDOFF.md);
+daterade prov nedan ersätter inte den.
 
 ## Daterad driftkontroll: 13 oktober 2026
 
@@ -64,21 +75,6 @@ instanser, nycklar eller modellkonfigurationer ändrades vid denna kontroll.
 Den gemensamma media-/spelarvägen omfattar registrerade dealers. Att några
 gamla provguider är Astrid-specifika gör inte hela systemet Astrid-specifikt.
 Namnet `open-claw/lab` är en driftsatt sökväg, inte bevis för att koden är död.
-
-## Vad betydde kontrollen av 84 länkar?
-
-Den tidigare kontrollen omfattade AGENTS, CLAUDE, rotguiden, AI-flödet,
-handoffen, användarguiden och OpenClaw-indexet. Den räknade **84 förekomster**
-till **41 unika lokala mål**: 79 Markdown-länkar, fyra JSON-länkar och en
-HTML-länk. Samtliga mål fanns. Detta var ingen kontroll av 84 videor.
-
-JSON-målen var `lab/docs/guide.json`, `lab/policies/studio-contract.json`,
-`lab/schemas/video.schema.json` och Astrids
-`media/dealers/astrid/runtime/presentation/lab-video-manifest.json`.
-HTML-målet var `docs/system-map/index.html`. Endast det sistnämnda JSON-målet
-var dealer-specifikt. Inga av de 84 länkarna pekade direkt på videofiler.
-Att ett mål finns bevisar inte att dess innehåll, ankare eller mediaacceptans
-är aktuella. Länkantalet förändras när dokumentationen samlas och kompletteras.
 
 ## Underhåll
 

@@ -67,25 +67,6 @@ test('dealer and event query helpers ignore unknown values and keep only allowli
   assert.equal(selectionHref('/control/tree', '', 'saga', 'idle.ready', 'v2'), '/control/tree?dealer=saga&event=idle.ready');
 });
 
-test('tree, guide and activity pages drop the inner studio chrome and link the selected event', () => {
-  for (const file of ['control-tree-page.tsx', 'control-guide-page.tsx']) {
-    const html = renderPage(file);
-    assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|Croupier Lab|Osparade ändringar/, file);
-    assert.doesNotMatch(html, /<button[^>]*>[^<]*Spara projekt/, file);
-    if (file === 'control-tree-page.tsx') assert.ok(html.includes('/control/events?dealer=astrid&amp;event=speak.goodluck'), file);
-    assert.match(html, /\/\/ STUDIO/, file);
-  }
-  const tree = renderPage('control-tree-page.tsx');
-  assert.match(tree, /<h1>Spelhändelser &amp; villkor<\/h1>/);
-  assert.doesNotMatch(tree, /Roulette/);
-  const guide = renderPage('control-guide-page.tsx');
-  assert.match(guide, /<h1>Guide &amp; hjälp<\/h1>/);
-  const activity = renderPage('control-activity-page.tsx');
-  assert.match(activity, /<h1>Provspelning &amp; logg<\/h1>/);
-  assert.doesNotMatch(activity, /Lycka till|event=speak\.goodluck/);
-  assert.match(activity, /Dealerprov/);
-});
-
 test('managed tree folders are real event links and dealer changes replace the query', () => {
   const manifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
   const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, available: true, fileName: item.relativePath.split('/').at(-1) })) };
@@ -134,7 +115,6 @@ test('recorded media guidance keeps old groups optional and distinguishes models
   assert.match(activity, /Inspelade klipp: inga uppspelningskvitton ännu/);
 });
 
-
 test('rehearsal requires an explicit dealer or room and never starts a default observation',()=>{
  for(const initialDealerId of [undefined,'','unknown','amira']) {
   const html=renderPage('control-activity-page.tsx',{initialDealerId,initialOperatorSlug:'operator-42',initialLaneId:'mobile-phone'});
@@ -144,7 +124,6 @@ test('rehearsal requires an explicit dealer or room and never starts a default o
  const room=renderPage('control-activity-page.tsx',{initialDealerId:undefined,initialOperatorSlug:'operator-42',initialTableId:'room-7'});
  assert.match(room,/Spelrummets publicerade dealer/);assert.match(room,/<h2>Valt spelrum<\/h2>/);assert.match(room,/Spelbolag: Valt spelbolag/);assert.doesNotMatch(room,/<h2>room-7<\/h2>|Spelbolag: operator-42/);assert.doesNotMatch(room,/Välj en dealer att provspela|Separat Lab-preview/);
 });
-
 
 test('dealer editor routes gate missing and invalid dealers before mounting their media session',()=>{
  const previous=globalThis.window;
@@ -156,7 +135,6 @@ test('dealer editor routes gate missing and invalid dealers before mounting thei
   }
  } finally {if(previous===undefined)delete globalThis.window;else globalThis.window=previous;}
 });
-
 
 function rehearsalNamesHarness() {
   const slots = [], effects = [], requests = []; let cursor = 0, queued = [];

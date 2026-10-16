@@ -9,7 +9,7 @@ personalytan och [/lobby](https://www.scoutgaming.tech/lobby) den nya
 spelarlobbyn. Övergången pågår: `/control`, `/partner` och `/play` behövs
 fortfarande för befintliga verktyg, inloggning och spelstarter. De detaljerade
 `/control`-adresserna längre ned är bevarade länkar; många omdirigeras nu till
-motsvarande `/admin`-verktyg. Aktiva ingångar, bolagssluggar och mål finns i
+motsvarande `/admin`-verktyg. Aktiva ingångar, bolagsåtkomst och mål finns i
 den kanoniska [användarguiden](docs/README.md).
 
 **Teknisk roll:** `lab/` är den aktiva Next.js-tjänsten `studio` i
@@ -19,9 +19,11 @@ Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
 förbereder och serverar den från `design-preview-build/`. Behörighet, scoped
 data, mediaregister och anslutningar finns kvar i denna tjänst.
 Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
-Sparade studio-projekt ligger i Neon; lokalt i `lab/data`.
-**Lokalt:** samma arbetsyta körs på det enda serverparet som `node lab/start.mjs`
-startar. [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
+Neon är produktens register och privat Blob innehåller mediebyte.
+`node lab/start.mjs --no-open` skriver den publicerade produktens adress;
+endast `--offline` startar ett isolerat, tillfälligt serverpar.
+Äldre `lab/data` bevaras som authoring-/återställningsunderlag.
+[Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
 
 Eventeditor och sekvensspelare går genom `POST /api/presentation/decision`.
@@ -39,57 +41,49 @@ Sparade klippval påverkar den angivna spelvägen; osparade utkast och manuella
 förhandsvisningar påverkar endast Studio-provet. Katalognamnet `lab` är inte
 skäl att radera tjänsten: nya `/admin` och `/lobby` använder också den.
 
-[Aktiv systemkarta: studio, JSON och lagring](../docs/LOCAL-PRESENTATION-RUNTIME.md).
-
-Fördjupning/äldre systemunderlag: [systemkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md).
+[Runtime, lagring och format](../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Praktiskt prov: [Astrids sociala svar i idle, högst sex sekunder tal](SOCIAL-CHAT.md).
 Video-intake: [lägg in standardtagningar och alternativ, välj användning och se täckning](VIDEO-LIBRARY.md).
 Öppen status finns i [docs/CLOUD-MIGRATION.md](../docs/CLOUD-MIGRATION.md).
 
 ## Starta
 
-Lokalt öppnas tjänsten på `/`. Befintliga verktyg ligger på `/control`;
+I en offline-fixtur öppnas tjänsten på `/`. Äldre verktygslänkar ligger på `/control`;
 `/studio` är tjänstens basePath i molnet.
-Lab-roten `/` omdirigerar permanent till `/control/clips`; i produktion är
-kedjan `/studio` → `/control/clips` → `/admin/dealer-studio`.
+Lab-roten `/` (publikt `/studio`) omdirigerar permanent till `/admin`.
+Äldre bokmärken med querykontext går via `/control/clips` till
+`/admin/dealer-studio` och behåller den kontexten.
 Publika `/lab` och `/labb` går till `/admin` via `/control`; `/bo` går till
 `/admin/drift` via `/control/administration`. Publika `/lissabon` svarade 404
 vid kontrollen 14 oktober 2026 och ska inte användas som ny ingång.
-Startkod och lokala profilval finns här. `lissabon-stream-lane` är ett kvarvarande
-internt profil-/anslutnings-ID i startaren och spelservern, inte ett eget spelrum
-eller en produktadress. Äldre alias och sparade ID:n behålls för kompatibilitet.
-
-`CROUPIER_STREAM_LANE=lissabon-stream-lane` är fortfarande aktiv i
-`start.mjs`, `policies/local-profile.json`, lokal anslutning och molnkonfiguration.
-Den används bland annat för chattens `playResults`, kameragrinden och
-beständiga lokala profiler. Behåll flaggan och Astrids tal-/videoväg vid
-förenkling av produktnamn; de är inte en separat Lissabon-produkt.
+`lissabon-stream-lane` är ett kvarvarande internt anslutnings-ID i fixturen
+och spelservern, inte ett eget spelrum eller en produktadress. Kontrollera
+aktiva konsumenter före ändringar; bevarade ID:n och Astrids tal-/videoreferens
+kräver ingen ansluten lokal produktstart.
 
 ```powershell
 # Reproducerbart prov: tom temporär databas, befintliga filmer, inga externa tjänster.
 node lab/start.mjs --offline --no-open
-# Befintlig privat OpenClaw-anslutning (endast när externa anrop är godkända).
+# Skriv den publicerade produktens adress; startar inga lokala servrar.
 node lab/start.mjs --no-open
 ```
 
 Offlineparet finns på `http://localhost:4194` (spel) och
 `http://127.0.0.1:4192` (Lab). Bygger Next före start; `--skip-build` får endast
-användas med ett aktuellt bygge. Ctrl+C stoppar paret och tar bort dess testdata.
+användas tillsammans med `--offline`. Det kontrollerar byggfilernas närvaro,
+inte att de motsvarar aktuell källversion. Ctrl+C stoppar paret och tar bort dess testdata.
 Sessionslåset `acquireLocalSession` i `open-claw/lab/deploy/local-session.mjs` hindrar ett andra produkt/labbpar.
 Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
 
-`node lab/start.mjs --no-open` startar den befintliga anslutna profilen på
-4200/4201.
-Sparat projekt, historik och profiler finns i `lab/data`; speldata i dess
-`players/`. Den gamla katalogen är avvecklad med verifierad privat
-backup enligt [återställningsguiden](../docs/ENVIRONMENT-RESTORATION.md).
-Äldre checkouter måste migreras med `tools/migrate-lab-state.mjs` före start.
+Ordinarie lokal produktstart och lägena `--check`, `--cloud-storage` samt
+`--astrid-camera` är avvecklade. Lokala arbetsfiler används inte som
+produktens reservregister. Följ [användarguiden](docs/README.md) för
+startalternativ och [återställningsguiden](../docs/ENVIRONMENT-RESTORATION.md)
+för bevarade data; migrera inte äldre lokala profiler för vanlig produktstart.
 En ny arbetsyta skapas av `createEmptyProject()` utan förregistrerade dealers,
 linjer eller sammansättningar. `policies/project.seed.json` innehåller även
 historiska demo-/fixturdata; de är inte produktionens startinnehåll.
-En separat projektsnapshot behövs inte. Exakt oförändrade gamla demoexempel
-tas bort vid uppgradering;
-egna ändringar/bindningar bevaras och hela föregående revision sparas i historik.
+En separat projektsnapshot behövs inte för den isolerade fixturen.
 
 Node 24.x enligt `package.json` och installerade beroenden krävs för lokal
 start. Molndrift är
