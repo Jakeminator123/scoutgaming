@@ -5,7 +5,7 @@ import { verifiedMediaBlobStorage } from './media-blob-index.mjs';
 import { canonicalStudioJson, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { SPEECH_LINES } from '../../web/public/speech-lines.mjs';
 
-const roster = Object.freeze({ vera: 'Vera', astrid: 'Astrid', mei: 'Mei' });
+const roster = Object.freeze({ astrid: 'Astrid' });
 const sha = value => createHash('sha256').update(value).digest('hex');
 const fail = () => { throw new StudioStorageError('studio_voice_registry_unavailable'); };
 const lineKey = /^[a-z][a-z0-9_-]{0,99}$/;
@@ -48,7 +48,7 @@ export function createRegisteredVoiceLines({ env = process.env, repositoryRoot =
     try {
       const dealers = [];
       for (const [dealer, name] of Object.entries(roster)) {
-        const base = dealer === 'vera' ? 'dealer' : `dealers/${dealer}`;
+        const base = `dealers/${dealer}`;
         const bankUrl = `/${base}/audio/en/bank.json`, indexUrl = `/${base}/streams/index.json`;
         // The indexed speech bank is gone. A dealer with neither register is an
         // empty list, not a storage failure. A partial or corrupt register still

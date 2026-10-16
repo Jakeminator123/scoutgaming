@@ -390,33 +390,33 @@ test('authenticated config projects only an exactly bound own Nora idle with ret
 
 test('runtime selection accepts exactly saved registered dealers and rejects syntax-only identities',async()=>{
   for(const registered of [true,false]){
-    let reads=0,selects=0;const handler=createPresentationApi({store:{load:async()=>{reads++;return registered?addDealer(createSeedProject(),'johanna','Johanna'):createSeedProject();}},
-      registryLoader:async()=>({videos:[],families:[]}),db:{prepare:()=>({get:async()=>null})},select:async({dealerId})=>{selects++;assert.equal(dealerId,'johanna');return {status:'skipped',reason:'no_exact_media'};}});
-    const req={method:'POST',url:'/api/presentation/select',async *[Symbol.asyncIterator](){yield JSON.stringify({dealerId:'johanna',version:1,mode:'off',event:{type:'speak',line:'goodluck'}});}};
+    let reads=0,selects=0;const handler=createPresentationApi({store:{load:async()=>{reads++;return registered?addDealer(createSeedProject(),'linnea','Linnea'):createSeedProject();}},
+      registryLoader:async()=>({videos:[],families:[]}),db:{prepare:()=>({get:async()=>null})},select:async({dealerId})=>{selects++;assert.equal(dealerId,'linnea');return {status:'skipped',reason:'no_exact_media'};}});
+    const req={method:'POST',url:'/api/presentation/select',async *[Symbol.asyncIterator](){yield JSON.stringify({dealerId:'linnea',version:1,mode:'off',event:{type:'speak',line:'goodluck'}});}};
     const res={once(){},removeListener(){},writeHead(status){this.status=status;},end(body){this.body=JSON.parse(body);}};
     await handler(req,res,'/api/presentation/select','own-fixture');assert.equal(res.status,registered?200:400);
     assert.equal(reads,1);assert.equal(selects,registered?1:0);
   }
 });
 
-test('published Johanna follows her own room and frozen display label through actual HTML and document choices',async()=>{
-  const f=fixture('johanna','Johanna vid publicering');
+test('published Linnea follows her own room and frozen display label through actual HTML and document choices',async()=>{
+  const f=fixture('linnea','Linnea vid publicering');
   const presentation=f.presentation;
-  const pack={...f.pack,tables:['room-johanna'],branding:withPackagePresentation({},presentation)};
-  const room={schemaVersion:2,id:'room-johanna',name:'Johannas rum',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'};
-  f.administration.rooms=[room];f.project.dealers=f.project.dealers.filter(row=>row.id!=='johanna');
+  const pack={...f.pack,tables:['room-linnea'],branding:withPackagePresentation({},presentation)};
+  const room={schemaVersion:2,id:'room-linnea',name:'Linneas rum',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'};
+  f.administration.rooms=[room];f.project.dealers=f.project.dealers.filter(row=>row.id!=='linnea');
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
-  assert.equal((await select('operator=north&table=room-johanna&dealer=astrid')).status,404);
-  const {selection}=await select('operator=north&table=room-johanna');
-  assert.equal(selection.dealer,'johanna');assert.equal(selection.roomId,room.id);assert.deepEqual(selection.registeredDealers,[{id:'johanna',label:'Johanna vid publicering'}]);
-  assert.deepEqual(selection.choices.dealers,['johanna']);assert.equal(selection.packageRevision,1);
+  assert.equal((await select('operator=north&table=room-linnea&dealer=astrid')).status,404);
+  const {selection}=await select('operator=north&table=room-linnea');
+  assert.equal(selection.dealer,'linnea');assert.equal(selection.roomId,room.id);assert.deepEqual(selection.registeredDealers,[{id:'linnea',label:'Linnea vid publicering'}]);
+  assert.deepEqual(selection.choices.dealers,['linnea']);assert.equal(selection.packageRevision,1);
   const html=decorateGameEntryHtml('<html lang="sv"></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection),dataset={};
   for(const [,attribute,value]of html.matchAll(/data-(game-[a-z-]+)="([^"]*)"/g)) dataset[attribute.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>');
-  const restored=gameLaneFromDocument(dataset);assert.equal(restored.dealer,'johanna');assert.equal(restored.roomId,room.id);
-  assert.equal(restored.registeredDealers[0].label,'Johanna vid publicering');assert.deepEqual(restored.choices.dealers,['johanna']);
+  const restored=gameLaneFromDocument(dataset);assert.equal(restored.dealer,'linnea');assert.equal(restored.roomId,room.id);
+  assert.equal(restored.registeredDealers[0].label,'Linnea vid publicering');assert.deepEqual(restored.choices.dealers,['linnea']);
   for(const change of [()=>dataset.gameRegisteredDealers='[]',()=>dataset.gameLocalDealer='nora']){const before={...dataset};change();assert.throws(()=>gameLaneFromDocument(dataset));Object.assign(dataset,before);}
   f.administration.gameLanes[0].dealer='nora';f.administration.gameLanes[0].mediaCollection='nora-presentation';
-  await assert.rejects(select('operator=north&table=room-johanna'),error=>error.statusCode===503||error.statusCode===404);
+  await assert.rejects(select('operator=north&table=room-linnea'),error=>error.statusCode===503||error.statusCode===404);
 });
 
 test('presentation API forwards the opt-in capability header and preserves default v2 without reading Studio',async()=>{
@@ -429,13 +429,13 @@ test('presentation API forwards the opt-in capability header and preserves defau
 });
 
 test('historical v2 room entry rejects a drifted portrait adapter even when both dealers remain frozen and allowed',async()=>{
-  const f=fixture('johanna','Johanna');f.project=addDealer(f.project,'nora','Nora');f.lane=f.project.lanes[0];
-  f.lane.dealers=['johanna','nora'];f.lane.layers.dealer.allowed=['johanna','nora'];
+  const f=fixture('linnea','Linnea');f.project=addDealer(f.project,'nora','Nora');f.lane=f.project.lanes[0];
+  f.lane.dealers=['linnea','nora'];f.lane.layers.dealer.allowed=['linnea','nora'];
   const presentation=cloudPresentationFixture({project:f.project,lanes:[f.lane]}).presentation;presentation.schemaVersion=2;delete presentation.playback;
   const pack={...f.pack,tables:['room-overlap'],branding:withPackagePresentation({},presentation)};
   f.administration.rooms=[{schemaVersion:2,id:'room-overlap',name:'Overlap',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'}];
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
-  assert.equal((await select('operator=north&table=room-overlap')).selection.dealer,'johanna');
+  assert.equal((await select('operator=north&table=room-overlap')).selection.dealer,'linnea');
   f.administration.gameLanes[0].dealer='nora';f.administration.gameLanes[0].mediaCollection='nora-presentation';
   await assert.rejects(select('operator=north&table=room-overlap&dealer=nora'),error=>error.statusCode===503&&error.message==='presentation_dealer_mismatch');
 });

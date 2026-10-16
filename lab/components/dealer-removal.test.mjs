@@ -8,10 +8,10 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {createSeedProject,addDealer,defaultPresentationLane} from '../lib/studio-model.mjs';
 import {dealerRemovalStatus} from '../lib/dealer-removal.mjs';
 import {lifecycleProject} from '../lib/dealer-lifecycle.mjs';
-const archiveFixture=project=>lifecycleProject(project,{dealerId:'johanna',archived:true,records:[]});
+const archiveFixture=project=>lifecycleProject(project,{dealerId:'linnea',archived:true,records:[]});
 
-const own = () => addDealer(addDealer(createSeedProject(),'johanna','Johanna'),'elin','Elin');
-const impactFixture = (dealerId='johanna', extra={}) => ({token:'confirmed-impact',dealerId,mediaCount:0,speechEnabled:false,compositions:[],rooms:[],operators:[],...extra});
+const own = () => addDealer(addDealer(createSeedProject(),'linnea','Linnea'),'elin','Elin');
+const impactFixture = (dealerId='linnea', extra={}) => ({token:'confirmed-impact',dealerId,mediaCount:0,speechEnabled:false,compositions:[],rooms:[],operators:[],...extra});
 const preflightOnly = async(path,init) => {if(path==='/api/dealers/archive-check')return{impact:impactFixture(JSON.parse(init.body).dealerId)};throw Error('Unexpected request');};
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 const compiled=transformSync(readFileSync(new URL('./dealer-removal.tsx',import.meta.url),'utf8'),{filename:'dealer-removal.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
@@ -32,12 +32,12 @@ function harness(request=preflightOnly){
 }
 function find(tree,match){if(!tree||typeof tree!=='object')return null;if(match(tree))return tree;for(const child of [tree.props?.children].flat(Infinity)){const found=find(child,match);if(found)return found;}return null;}
 const button=(tree,text)=>find(tree,node=>node.type==='button'&&String(node.props.children).includes(text));
-const props=(project=own())=>({project,inventory:{videos:[]},dealerId:'johanna',onApplied(){},onInventory(){},onProjectSaved(){},onPendingChange(){}});
+const props=(project=own())=>({project,inventory:{videos:[]},dealerId:'linnea',onApplied(){},onInventory(){},onProjectSaved(){},onPendingChange(){}});
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 async function confirmArchive(h,p){button(h.render(p),'Arkivera dealer…').props.onClick();await settle();return button(h.render(p),'Arkivera '+p.project.dealers.find(row=>row.id===p.dealerId).label);}
 test('registered names and composition references do not create local archive blockers',()=>{
- const p=props();p.project.lanes.push(defaultPresentationLane('johanna'));
- const h=harness(),tree=h.render(p),status=dealerRemovalStatus(p.project,'johanna');
+ const p=props();p.project.lanes.push(defaultPresentationLane('linnea'));
+ const h=harness(),tree=h.render(p),status=dealerRemovalStatus(p.project,'linnea');
  assert.equal(status.kind,'ready');assert.equal(status.references[0].id,p.project.lanes[0].id);
  assert.equal(button(tree,'Arkivera dealer…').props.disabled,false);
  assert.doesNotMatch(renderToStaticMarkup(tree),/Byt eller ta bort|grunddealer|Stäng av AI-tal/);
@@ -54,11 +54,11 @@ test('archive reads the exact impact before one token-bound CAS request and appl
  const h=harness((...args)=>{calls.push(args);if(args[0].endsWith('archive-check'))return Promise.resolve({impact:impactFixture()});return new Promise(done=>{resolve=done;});});
  const p={...props(),onApplied:(...args)=>applied.push(args),onPendingChange:x=>pending.push(x)};
  const confirmation=await confirmArchive(h,p);assert.equal(calls.length,1,'opening confirmation only reads consequences');
- assert.equal(calls[0][0],'/api/dealers/archive-check');assert.deepEqual(JSON.parse(calls[0][1].body),{dealerId:'johanna',expectedRevision:p.project.revision});
+ assert.equal(calls[0][0],'/api/dealers/archive-check');assert.deepEqual(JSON.parse(calls[0][1].body),{dealerId:'linnea',expectedRevision:p.project.revision});
  const click=confirmation.props.onClick;click();click();
  assert.equal(calls.length,2);assert.deepEqual(applied,[]);
  assert.equal(calls[1][0],'/api/dealers/archive');
- assert.deepEqual(JSON.parse(calls[1][1].body),{dealerId:'johanna',expectedRevision:p.project.revision,archived:true,impactToken:'confirmed-impact'});
+ assert.deepEqual(JSON.parse(calls[1][1].body),{dealerId:'linnea',expectedRevision:p.project.revision,archived:true,impactToken:'confirmed-impact'});
  const project=archiveFixture(p.project),inventory={videos:[]};resolve({project,inventory});await settle();
  assert.deepEqual(applied,[[project,inventory,'']]);assert.deepEqual(pending,[true,false,true,false]);
 });
@@ -68,8 +68,8 @@ test('a server conflict keeps the selected dealer, clears its plan and releases 
  const p={...props(),onApplied(){applied++;},onPendingChange:x=>pending.push(x)};
  (await confirmArchive(h,p)).props.onClick();await settle();
  const tree=h.render(p);assert.equal(applied,0);assert.match(renderToStaticMarkup(tree),/kopplingarna har ändrats/);assert.deepEqual(pending,[true,false,true,false]);
- assert.equal(button(tree,'Arkivera Johanna').props.disabled,true);assert.ok(button(tree,'Kontrollera igen'));
- assert.ok(p.project.dealers.some(row=>row.id==='johanna'));
+ assert.equal(button(tree,'Arkivera Linnea').props.disabled,true);assert.ok(button(tree,'Kontrollera igen'));
+ assert.ok(p.project.dealers.some(row=>row.id==='linnea'));
 });
 
 test('unsaved changes disable lifecycle writes and explain how to continue',()=>{
@@ -78,12 +78,12 @@ test('unsaved changes disable lifecycle writes and explain how to continue',()=>
 });
 test('trash is accessible with another dealer selected and restores the exact dealer without a publication token',async()=>{
  const original=own(),project=archiveFixture(original);
- project.dealerTrash=[{schemaVersion:1,dealer:original.dealers.find(row=>row.id==='johanna'),lines:original.lines.filter(row=>row.dealerId==='johanna'),idlePolicy:null,activeMediaIds:[],archivedAt:'2026-10-11T12:00:00.000Z'}];
+ project.dealerTrash=[{schemaVersion:1,dealer:original.dealers.find(row=>row.id==='linnea'),lines:original.lines.filter(row=>row.dealerId==='linnea'),idlePolicy:null,activeMediaIds:[],archivedAt:'2026-10-11T12:00:00.000Z'}];
  const calls=[],applied=[],h=harness(async(path,init)=>{calls.push(JSON.parse(init.body));return{project:original,inventory:{videos:[]}};});
  const p={...props(project),dealerId:'astrid',onApplied:(...args)=>applied.push(args)};
  const tree=h.render(p);assert.match(renderToStaticMarkup(tree),/Arkiverade dealers · 1/);
  button(tree,'Återställ dealer').props.onClick();await settle();
- assert.deepEqual(calls[0],{dealerId:'johanna',expectedRevision:project.revision,archived:false});assert.equal(applied[0][2],'johanna');
+ assert.deepEqual(calls[0],{dealerId:'linnea',expectedRevision:project.revision,archived:false});assert.equal(applied[0][2],'linnea');
  assert.match(renderToStaticMarkup(tree),/som utkast/);assert.match(renderToStaticMarkup(tree),/AI-tal förblir avstängt/);assert.match(renderToStaticMarkup(tree),/inte automatiskt igen/);
 });
 
@@ -103,7 +103,7 @@ test('whole dealer purge has a separate preflight and explicit final confirmatio
  assert.equal(calls.length,1);assert.equal(calls[0][0],'/api/dealers/delete-check');
  let tree=h.render(p);assert.match(renderToStaticMarkup(tree),/alla 2 ägda mediefiler/);
  button(tree,'Radera dealer och filer permanent').props.onClick();await settle();
- assert.equal(calls[1][0],'/api/dealers/delete');assert.deepEqual(calls[1][1],{dealerId:'johanna',expectedRevision:project.revision});
+ assert.equal(calls[1][0],'/api/dealers/delete');assert.deepEqual(calls[1][1],{dealerId:'linnea',expectedRevision:project.revision});
  assert.equal(applied.length,1);assert.equal(applied[0][0].revision,'purged');
 });
 test('a dealer upload-grant wait prevents confirmation and shows remaining time',async()=>{
@@ -126,9 +126,9 @@ test('a partially completed dealer purge refreshes pending state, blocks restore
 });
 
 test('enabled speech and all owned media are included automatically in the server impact',async()=>{
- const p=props();p.project.dealers.find(row=>row.id==='johanna').speechProfile={state:'enabled'};
- p.project.lanes.push(defaultPresentationLane('johanna'));
- const calls=[],h=harness(async(path,init)=>{calls.push(path);return{impact:impactFixture('johanna',{speechEnabled:true,mediaCount:12,compositions:[{id:p.project.lanes[0].id,label:'Sparad scen'}]})};});
+ const p=props();p.project.dealers.find(row=>row.id==='linnea').speechProfile={state:'enabled'};
+ p.project.lanes.push(defaultPresentationLane('linnea'));
+ const calls=[],h=harness(async(path,init)=>{calls.push(path);return{impact:impactFixture('linnea',{speechEnabled:true,mediaCount:12,compositions:[{id:p.project.lanes[0].id,label:'Sparad scen'}]})};});
  assert.equal(button(h.render(p),'Arkivera dealer…').props.disabled,false);
  const confirm=await confirmArchive(h,p),html=renderToStaticMarkup(h.render(p));
  assert.equal(confirm.props.disabled,false);assert.match(html,/AI-tal stängs av automatiskt/);assert.match(html,/12 klipp och mediefiler/);
@@ -149,7 +149,7 @@ test('archive confirmation can be cancelled and stays bound to the selected deal
 
 test('impact links preserve selection context and target each affected room and company correctly',async()=>{
  const p={...props(),laneId:'another-composition',operatorId:'operator-42',tableId:'room-7'};
- const impact=impactFixture('johanna',{compositions:[{id:'affected-composition',label:'Sparad scen'}],rooms:[{id:'affected-room',name:'Berört rum',operatorId:'affected-operator'}],operators:[{id:'affected-operator',name:'Berört spelbolag'}]});
+ const impact=impactFixture('linnea',{compositions:[{id:'affected-composition',label:'Sparad scen'}],rooms:[{id:'affected-room',name:'Berört rum',operatorId:'affected-operator'}],operators:[{id:'affected-operator',name:'Berört spelbolag'}]});
  const navigated=[];p.onNavigate=(event,href)=>{event.preventDefault();navigated.push(href);};
  const h=harness(async()=>({impact}));await confirmArchive(h,p);const tree=h.render(p);
  const link=find(tree,node=>node.type==='a'&&node.props.children==='Sparad scen');
@@ -160,7 +160,7 @@ test('impact links preserve selection context and target each affected room and 
  assert.equal(roomUrl.pathname,'/control/rooms');assert.equal(roomUrl.searchParams.get('table'),'affected-room');assert.equal(roomUrl.searchParams.get('operator'),'affected-operator');
  const operator=find(tree,node=>node.type==='a'&&node.props.children==='Berört spelbolag'),operatorUrl=new URL(operator.props.href,'https://test.invalid');
  assert.equal(operatorUrl.pathname,'/control/rooms');assert.equal(operatorUrl.searchParams.get('operator'),'affected-operator');assert.equal(operatorUrl.searchParams.has('table'),false);
- for(const anchor of [link,room,operator]){const query=new URL(anchor.props.href,'https://test.invalid').searchParams;assert.equal(query.get('dealer'),'johanna');assert.equal(query.has('lane'),false);anchor.props.onClick({button:0,preventDefault(){}});}
+ for(const anchor of [link,room,operator]){const query=new URL(anchor.props.href,'https://test.invalid').searchParams;assert.equal(query.get('dealer'),'linnea');assert.equal(query.has('lane'),false);anchor.props.onClick({button:0,preventDefault(){}});}
  assert.equal(navigated.length,3);
 });
 
@@ -168,8 +168,8 @@ test('changed server usage requests a fresh consequence check instead of manual 
  const p=props(),calls=[],h=harness(async(path,init)=>{calls.push(path);if(path.endsWith('archive-check'))return preflightOnly(path,init);throw Object.assign(Error('conflict'),{code:'studio_dealer_published'});});
  (await confirmArchive(h,p)).props.onClick();await settle();
  const tree=h.render(p),html=renderToStaticMarkup(tree);assert.match(html,/Kontrollera konsekvenserna igen/);assert.doesNotMatch(html,/Uppdatera paketet|studio_dealer_published/);
- assert.equal(button(tree,'Arkivera Johanna').props.disabled,true);
- assert.equal(p.project.dealers.some(row=>row.id==='johanna'),true);assert.equal(calls.filter(path=>path==='/api/dealers/archive').length,1);
+ assert.equal(button(tree,'Arkivera Linnea').props.disabled,true);
+ assert.equal(p.project.dealers.some(row=>row.id==='linnea'),true);assert.equal(calls.filter(path=>path==='/api/dealers/archive').length,1);
 });
 
 test('incomplete deletion checks explain retained files and never enable permanent deletion',async()=>{
@@ -182,7 +182,7 @@ test('incomplete deletion checks explain retained files and never enable permane
 });
 
 test('unconfirmed or mismatched impact responses never enable archive',async()=>{
- for(const impact of [null,impactFixture('elin'),impactFixture('johanna',{token:''}),impactFixture('johanna',{mediaCount:-1}),impactFixture('johanna',{rooms:[{id:'r',name:'Room'}]})]){
+ for(const impact of [null,impactFixture('elin'),impactFixture('linnea',{token:''}),impactFixture('linnea',{mediaCount:-1}),impactFixture('linnea',{rooms:[{id:'r',name:'Room'}]})]){
   const calls=[],h=harness(async path=>{calls.push(path);return{impact};}),p=props();
   const confirmation=await confirmArchive(h,p);assert.equal(confirmation.props.disabled,true);confirmation.props.onClick();await settle();
   assert.deepEqual(calls,['/api/dealers/archive-check']);assert.match(renderToStaticMarkup(h.render(p)),/Ingen arkivering har skickats/);
@@ -194,7 +194,7 @@ test('a late consequence response cannot authorize a changed dealer or revision'
   let resolve;const calls=[],p=props(),h=harness((path)=>{calls.push(path);return new Promise(done=>{resolve=done;});});
   button(h.render(p),'Arkivera dealer…').props.onClick();change(p);h.render(p);
   resolve({impact:impactFixture()});await settle();
-  const tree=h.render(p),confirmation=button(tree,'Arkivera Johanna');
+  const tree=h.render(p),confirmation=button(tree,'Arkivera Linnea');
   if(confirmation){assert.equal(confirmation.props.disabled,true);confirmation.props.onClick();}
   assert.deepEqual(calls,['/api/dealers/archive-check']);
  }
@@ -203,13 +203,13 @@ test('a late consequence response cannot authorize a changed dealer or revision'
 test('a prepared impact expires when the project revision changes',async()=>{
  const calls=[],p=props(),h=harness(async(path,init)=>{calls.push(path);return preflightOnly(path,init);});
  const oldConfirmation=await confirmArchive(h,p);p.project={...p.project,revision:'new-revision'};
- const tree=h.render(p);assert.equal(button(tree,'Arkivera Johanna').props.disabled,true);oldConfirmation.props.onClick();await settle();
+ const tree=h.render(p);assert.equal(button(tree,'Arkivera Linnea').props.disabled,true);oldConfirmation.props.onClick();await settle();
  assert.deepEqual(calls,['/api/dealers/archive-check']);
- button(h.render(p),'Kontrollera igen').props.onClick();await settle();assert.equal(button(h.render(p),'Arkivera Johanna').props.disabled,false);
+ button(h.render(p),'Kontrollera igen').props.onClick();await settle();assert.equal(button(h.render(p),'Arkivera Linnea').props.disabled,false);
 });
 
 test('an older room without a company is shown without inventing a company link',async()=>{
- const p={...props(),operatorId:'unrelated-operator'},impact=impactFixture('johanna',{rooms:[{id:'unowned-room',name:'Äldre rum',operatorId:null}]});
+ const p={...props(),operatorId:'unrelated-operator'},impact=impactFixture('linnea',{rooms:[{id:'unowned-room',name:'Äldre rum',operatorId:null}]});
  const h=harness(async()=>({impact})),confirmation=await confirmArchive(h,p),tree=h.render(p);
  assert.equal(confirmation.props.disabled,false);assert.match(renderToStaticMarkup(tree),/Äldre rum/);
  assert.equal(find(tree,node=>node.type==='a'&&node.props.children==='Äldre rum'),null);

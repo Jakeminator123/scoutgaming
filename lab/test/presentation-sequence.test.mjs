@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildPresentationSequence, SEQUENCE_STEP_LIMIT } from '../lib/presentation-sequence.mjs';
-import { createSeedProject, buildRuntimeCatalog, DEALER_IDS, isDirectorSourceType } from '../lib/studio-model.mjs';
+import { normalizeProject, buildRuntimeCatalog, DEALER_IDS, isDirectorSourceType } from '../lib/studio-model.mjs';
+import { createLegacyProject } from './fixtures/legacy-project.mjs';
+import { retireDemoExamples } from '../lib/retire-demo-examples.mjs';
+
 import { prepareDecision } from '../../open-claw/lab/src/engine.mjs';
 import { presentationEvents } from '../../web/partner-presentation.mjs';
 
-const project = createSeedProject();
+// Explicit historical document: current seeds intentionally register only active dealers.
+const historicalProject = () => normalizeProject(retireDemoExamples(createLegacyProject()));
+
+const project = historicalProject();
 const receipt = (events, extra = {}) => ({ id: 'connection:1', time: '2026-09-21T12:00:00.000Z', source: 'partner', kind: 'round',
   data: { type: 'round', requestId: 'round.start', version: 1, op: 'start', phase: 'decisions', events }, ...extra });
 const sequence = records => buildPresentationSequence(records, project);

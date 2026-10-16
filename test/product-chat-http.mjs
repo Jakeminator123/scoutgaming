@@ -275,7 +275,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.deepEqual(envelope().status.conversationMemory.facts,[{id:fact.id,topicId:'divorce',kind:'player-assertion',quote:fact.source.quote,saidAt:fact.source.at,expiresAt:fact.expiresAt}]);
     await bob.client.post('/chat',chat(bob.state,{playerId:alice.player.id,conversationMemory:envelope().status.conversationMemory}));
     assert.deepEqual(envelope().status.conversationMemory.facts,[]);
-    await alice.client.post('/chat',chat(alice.state,{dealer:'vera'}));
+    await alice.client.post('/chat',chat(alice.state,{dealer:'nora'}));
     assert.equal(envelope().status.conversationMemory,undefined);
   });
 
@@ -318,10 +318,10 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     assert.equal(alice.player.name, bob.player.name, 'identical display names are not identities');
     await alice.client.post('/chat', chat(alice.state, { message: 'Alice private Astrid context.' }));
     const aliceAstrid = await alice.client.get('/api/chat/memory?dealer=astrid');
-    await alice.client.post('/chat', chat(alice.state, { dealer: 'mei', message: 'Alice private Mei context.' }));
+    await alice.client.post('/chat', chat(alice.state, { dealer: 'marten', message: 'Alice private Marten context.' }));
     assert.deepEqual(envelope().request.history, [], 'another dealer starts with a separate conversation');
-    const aliceMei = await alice.client.get('/api/chat/memory?dealer=mei');
-    assert.equal(aliceMei.playerRef, aliceAstrid.playerRef);
+    const aliceMarten = await alice.client.get('/api/chat/memory?dealer=marten');
+    assert.equal(aliceMarten.playerRef, aliceAstrid.playerRef);
     await bob.client.post('/chat', chat(bob.state, {
       message: 'Bob owns this conversation.', playerId: alice.player.id, id: alice.player.id, playerRef: aliceAstrid.playerRef,
       history: aliceAstrid.history,
@@ -335,7 +335,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
     await bob.client.post('/api/chat/memory/forget', { dealer: 'astrid', playerId: alice.player.id, playerRef: aliceAstrid.playerRef });
     assert.deepEqual((await bob.client.get('/api/chat/memory?dealer=astrid')).history, []);
     assert.deepEqual(await alice.client.get('/api/chat/memory?dealer=astrid'), aliceAstrid);
-    assert.deepEqual(await alice.client.get('/api/chat/memory?dealer=mei'), aliceMei);
+    assert.deepEqual(await alice.client.get('/api/chat/memory?dealer=marten'), aliceMarten);
   });
 
   await t.test('completed and conflicting request-ID retries return 409 without another model request', async () => {
@@ -507,11 +507,11 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   });
   await t.test('shared voice configuration supports explicitly published dealers and rejects retired or forged context', async () => {
     const {client}=await guest(),before=captured.length;
-    for(const dealer of ['astrid','vera','mei']) {
+    for(const dealer of ['astrid','nora','marten']) {
       const value=await client.get('/api/dealer/observation?dealer='+dealer);
       assert.equal(value.enabled,lissabon);assert.equal(value.transcription.enabled,lissabon);
     }
-    for(const query of ['dealer=amira','dealer=paow','dealer=dragge','dealer=astrid&dealer=paow','dealer=astrid&unexpected=1','dealer=astrid&presentationContext=%7B']) {
+    for(const query of ['dealer=vera','dealer=mei','dealer=amira','dealer=johanna','dealer=paow','dealer=dragge','dealer=astrid&dealer=paow','dealer=astrid&unexpected=1','dealer=astrid&presentationContext=%7B']) {
       const result=await client.get('/api/dealer/observation?'+query,503);
       assert.deepEqual(result,{enabled:false});
     }

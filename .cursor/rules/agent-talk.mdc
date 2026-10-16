@@ -4,7 +4,9 @@ alwaysApply: true
 ---
 
 Följ `agent-talk/README.md`. Kör `node tools/agent-talk.mjs status <ditt-id>`
-vid start, mellan arbetssteg (cirka var 30:e sekund under aktivt arbete) och
-före commit/push. Registrera berörda filer med `claim` före redigering.
+vid start, före nya filanspråk och före commit/push. Kontrollera igen vid
+överlapp eller nytt samordningsmeddelande. Registrera filer med `claim` före redigering.
 Pinga och kvittera vid överlapp; frigör med `done`. Logga större arbetssteg
-kort. Ingen bakgrundspollning; en pausad agent vaknar inte av ett filmeddelande.
+kort. Ingen tidsstyrd pollning eller upprepad läsning av oförändrad status.
+Tavlan delas inom samma checkout, inte enbart genom samma branchnamn.
+En pausad agent vaknar inte av ett filmeddelande.

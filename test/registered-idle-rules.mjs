@@ -9,30 +9,30 @@ import { frozenPlaybackProject } from '../web/frozen-dealer-playback.mjs';
 
 const uuid = n => '20000000-0000-4000-8000-' + String(n).padStart(12, '0');
 function fixture() {
-  const project = addDealer(createEmptyProject(), 'johanna', 'Johanna');
-  const line = project.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready');
+  const project = addDealer(createEmptyProject(), 'linnea', 'Linnea');
+  const line = project.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready');
   line.variants[0].videoGenerationId = uuid(1);
-  const policy = createRegisteredIdlePolicy({ dealerId: 'johanna', baselineVideoId: uuid(1), durationMs: 1000 });
+  const policy = createRegisteredIdlePolicy({ dealerId: 'linnea', baselineVideoId: uuid(1), durationMs: 1000 });
   policy.variants = [{ videoId: uuid(2), durationMs: 1000, use: 'rules', automatic: null }];
-  project.dealerIdlePolicies = [{ dealerId: 'johanna', policy }];
+  project.dealerIdlePolicies = [{ dealerId: 'linnea', policy }];
   project.triggers.push({ id: 'idle.box3', label: 'Publicerad plats', category: 'deterministic', path: 'event.box', op: 'eq', value: 3 });
-  line.variants.push({ ...structuredClone(line.variants[0]), id: 'johanna.idle.ready.rule1', label: 'Egen reaktion',
+  line.variants.push({ ...structuredClone(line.variants[0]), id: 'linnea.idle.ready.rule1', label: 'Egen reaktion',
     priority: 50, triggerIds: ['idle.box3'], videoGenerationId: uuid(2), selection: { rules: true, random: false, model: false } });
   const records = [1, 2].map(n => ({ id: uuid(n), sha256: String(n).repeat(64), size: 1024, contentType: 'video/mp4',
-    pathname: 'croupier/media/dealers/johanna/review/uploads/' + uuid(n) + '/' + String(n).repeat(64) + '.mp4',
-    classification: { dealerId: 'johanna', eventId: 'idle.ready', kind: 'idle', role: n === 1 ? 'standard' : 'alternative',
+    pathname: 'croupier/media/dealers/linnea/review/uploads/' + uuid(n) + '/' + String(n).repeat(64) + '.mp4',
+    classification: { dealerId: 'linnea', eventId: 'idle.ready', kind: 'idle', role: n === 1 ? 'standard' : 'alternative',
       situation: '', label: 'Egen grundloop', notes: '', compositing: { mode: 'green-screen', threshold: .2, softness: .1, despill: 0 } } }));
   const inventory = { families: [], videos: records.map(row => ({ id: row.id, sha256: row.sha256, bytes: row.size,
-    dealer: 'johanna', classification: row.classification, available: true, integrity: 'verified' })) };
+    dealer: 'linnea', classification: row.classification, available: true, integrity: 'verified' })) };
   const sourceEvent = { ...structuredClone(project.events.find(row => row.id === 'deal.player.centre').exampleEvent), box: 3 };
-  const select = (patch = {}) => selectRegisteredIdleRule({ project, dealerId: 'johanna', sourceEvent, mode: 'rules', ...patch }, { inventory });
+  const select = (patch = {}) => selectRegisteredIdleRule({ project, dealerId: 'linnea', sourceEvent, mode: 'rules', ...patch }, { inventory });
   return { project, line, policy, records, inventory, sourceEvent, select };
 }
 function controllerFixture() {
   const f = fixture();
   let clock = 0;
-  const controller = createLiveIdleController({ policy: f.policy, inventory: registeredIdleInventory(f.inventory, { dealerId: 'johanna', policy: f.policy }),
-    dealerId: 'johanna', now: () => clock, initialScene: { active: true } });
+  const controller = createLiveIdleController({ policy: f.policy, inventory: registeredIdleInventory(f.inventory, { dealerId: 'linnea', policy: f.policy }),
+    dealerId: 'linnea', now: () => clock, initialScene: { active: true } });
   return { ...f, controller, at: value => { clock = value; },
     offer: (id = 'rule-1', expiresAt = clock + 10000, options = { use: 'rules' }) => controller.offerVariant({ videoId: uuid(2), requestId: id, expiresAt }, options),
     complete: () => { const clip = controller.snapshot().clip; controller.presented(clip.playId); clock += 1000; return controller.completed(clip.playId).clip; } };
@@ -40,7 +40,7 @@ function controllerFixture() {
 
 test('saved explicit idle rule matches only the received public game event and leaves project untouched', () => {
   const f = fixture(), before = JSON.stringify(f.project);
-  assert.deepEqual(f.select(), { videoId: uuid(2), variantId: 'johanna.idle.ready.rule1', reason: 'deterministic_rules' });
+  assert.deepEqual(f.select(), { videoId: uuid(2), variantId: 'linnea.idle.ready.rule1', reason: 'deterministic_rules' });
   assert.equal(f.select({ sourceEvent: { ...f.sourceEvent, box: 4 } }), null);
   assert.equal(JSON.stringify(f.project), before);
   for (const mode of ['off', 'random', 'active', 'shadow']) assert.equal(f.select({ mode }), null);
@@ -68,8 +68,8 @@ test('rule selection keeps common priority ordering including the unconditional 
   f.line.variants[1].priority = -1;
   assert.equal(f.select(), null);
   f.line.variants[1].priority = 50;
-  f.line.variants.push({ ...structuredClone(f.line.variants[1]), id: 'johanna.idle.ready.aaa', priority: 60 });
-  assert.equal(f.select().variantId, 'johanna.idle.ready.aaa');
+  f.line.variants.push({ ...structuredClone(f.line.variants[1]), id: 'linnea.idle.ready.aaa', priority: 60 });
+  assert.equal(f.select().variantId, 'linnea.idle.ready.aaa');
 });
 
 test('simulated context never becomes a production rule and hidden cards stay projected out', () => {
@@ -88,20 +88,20 @@ test('simulated context never becomes a production rule and hidden cards stay pr
 });
 
 test('published rule, trigger and idle media stay frozen after draft changes', () => {
-  const f = fixture(), lane = defaultPresentationLane('johanna');
+  const f = fixture(), lane = defaultPresentationLane('linnea');
   f.project.lanes=[lane];
-  lane.id = 'johns-johanna'; lane.dealers = ['johanna'];
-  lane.layers.dealer = { enabled: true, default: 'johanna', allowed: ['johanna'] };
+  lane.id = 'johns-linnea'; lane.dealers = ['linnea'];
+  lane.layers.dealer = { enabled: true, default: 'linnea', allowed: ['linnea'] };
   validateProject(f.project);
   const captured = captureFrozenPresentation({ snapshot: {
     projectDocument: { kind: 'project', revision: f.project.revision, value: f.project },
     administrationDocument: { kind: 'administration', revision: 'admin-1', value: { rooms: [] } },
     mediaRows: f.records.map(row => ({ ...row, revision: 'media-1' })),
-  }, inventory: f.inventory, selectedLaneIds: [lane.id], requiredIdleDealerIds: ['johanna'] });
+  }, inventory: f.inventory, selectedLaneIds: [lane.id], requiredIdleDealerIds: ['linnea'] });
   const project = frozenPlaybackProject(captured.presentation.playback, {
     registeredDealers: captured.presentation.registeredDealers, projectRevision: captured.presentation.projectRevision });
   f.policy.variants[0].use = 'manual'; f.project.triggers.find(row => row.id === 'idle.box3').value = 4;
-  assert.equal(selectRegisteredIdleRule({ project, dealerId: 'johanna', sourceEvent: f.sourceEvent, mode: 'rules' }, { inventory: f.inventory }).videoId, uuid(2));
+  assert.equal(selectRegisteredIdleRule({ project, dealerId: 'linnea', sourceEvent: f.sourceEvent, mode: 'rules' }, { inventory: f.inventory }).videoId, uuid(2));
 });
 
 test('a matching rule waits for action completion and a complete base boundary then resumes the same own base', () => {

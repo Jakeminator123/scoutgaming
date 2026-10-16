@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject as createEmptyProject, defaultPresentationLane, validateLanes, validateProject, LANE_ID } from '../lib/studio-model.mjs';
+import { createSeedProject as createEmptyProject, addDealer, defaultPresentationLane, validateLanes, validateProject, LANE_ID } from '../lib/studio-model.mjs';
 import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
 
 const require = createRequire(import.meta.url);
@@ -340,7 +340,7 @@ test('disabled composition controls reject direct callbacks as well as disabling
 function createSeedProject() { const project = createEmptyProject(); project.lanes = [defaultPresentationLane('astrid')]; return project; }
 
 test('new compositions never infer a dealer from the project list', () => {
-  const project = createSeedProject();
+  const project = addDealer(createSeedProject(), 'elin', 'Elin');
   assert.throws(() => addLane(project, 'new-room', 'New room'), /dealer/i);
-  assert.deepEqual(addLane(project, 'new-room', 'New room', 'vera').lanes.at(-1).dealers, ['vera']);
+  assert.deepEqual(addLane(project, 'new-room', 'New room', 'elin').lanes.at(-1).dealers, ['elin']);
 });

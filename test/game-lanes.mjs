@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {GAME_LANES,gameLaneSelection,gameLaneConfiguration,gameLaneFromDocument,validateGameLanes,isOperatorSlug,laneDealerSelection,packageLaneIds,gamePresentationForDealer} from '../web/public/game-lanes.mjs';
 import {decorateGameEntryHtml,playerLoginDestination} from '../web/public/game-entry-contract.mjs';
-const portrait={schemaVersion:1,id:'chosen-table',label:'Chosen table',renderer:'portrait-video',dealer:'vera',mediaCollection:'vera-presentation'};
-const registry=[{id:'vera',label:'Vera'},{id:'mei',label:'Mei'}];
-const dataset={gameLane:portrait.id,gameDealer:'vera',gamePresentation:'local',gameLocalDealer:'vera',gameRegisteredDealers:JSON.stringify(registry)};
-const selection={lane:portrait.id,dealer:'vera',presentation:'local',localDealer:'vera',registeredDealers:registry};
+const portrait={schemaVersion:1,id:'chosen-table',label:'Chosen table',renderer:'portrait-video',dealer:'elin',mediaCollection:'elin-presentation'};
+const registry=[{id:'elin',label:'Elin'},{id:'linnea',label:'Linnea'}];
+const dataset={gameLane:portrait.id,gameDealer:'elin',gamePresentation:'local',gameLocalDealer:'elin',gameRegisteredDealers:JSON.stringify(registry)};
+const selection={lane:portrait.id,dealer:'elin',presentation:'local',localDealer:'elin',registeredDealers:registry};
 const env={CROUPIER_STUDIO_NEON_POLICY:'1'};
 
 test('empty configuration has no local dealer or lane; layer preview is explicit',()=>{
@@ -15,23 +15,26 @@ test('empty configuration has no local dealer or lane; layer preview is explicit
 });
 test('saved catalogues validate identity, media ownership and explicit active lane',()=>{
  assert.deepEqual(gameLaneConfiguration({gameLanes:[portrait],gameLane:portrait.id}),{gameLanes:[portrait],gameLane:portrait.id});
- assert.deepEqual(gameLaneSelection('',portrait.id,[portrait]),{lane:portrait.id,dealer:'vera',presentation:'local'});
+ assert.deepEqual(gameLaneSelection('',portrait.id,[portrait]),{lane:portrait.id,dealer:'elin',presentation:'local'});
  for(const change of [{id:'original'},{id:'../bad'},{renderer:'remote-script'},{mediaCollection:'astrid-presentation'},{label:'<script>'}])assert.throws(()=>validateGameLanes([{...portrait,...change}]));
  assert.throws(()=>validateGameLanes([portrait,portrait]));assert.throws(()=>gameLaneConfiguration({gameLanes:[portrait],gameLane:'unknown'}));
 });
-test('former local names need the same explicit registered document as every cloud dealer',()=>{
- for(const id of ['astrid','vera','mei','paow','nora']){
+test('registered dealers need the same explicit document regardless of their name',()=>{
+ for(const id of ['astrid','elin','linnea','paow','nora']){
   const data={...dataset,gameDealer:id,gameLocalDealer:id,gameRegisteredDealers:JSON.stringify([{id,label:id}])};
   assert.equal(gameLaneFromDocument(data).dealer,id);
   assert.throws(()=>gameLaneFromDocument({...data,gameRegisteredDealers:'[]'}));
   assert.throws(()=>gameLaneFromDocument({...data,gameLocalDealer:undefined}));
   assert.equal(gamePresentationForDealer(id,'portrait-video'),'local');
  }
- assert.throws(()=>gamePresentationForDealer('amira','portrait-video'));
- assert.throws(()=>gamePresentationForDealer('vera','indexed-video'));
+ for(const id of ['vera','mei','amira','johanna']){
+  assert.throws(()=>gamePresentationForDealer(id,'portrait-video'));
+  assert.throws(()=>gameLaneFromDocument({...dataset,gameDealer:id,gameLocalDealer:id,gameRegisteredDealers:JSON.stringify([{id,label:id}])}));
+ }
+ assert.throws(()=>gamePresentationForDealer('elin','indexed-video'));
 });
 test('historical indexed catalogues can be read but cannot launch',()=>{
- const legacy={...portrait,id:'old',renderer:'indexed-video',mediaCollection:'legacy-dealers'};
+ const legacy={...portrait,id:'old',dealer:'vera',renderer:'indexed-video',mediaCollection:'legacy-dealers'};
  assert.deepEqual(validateGameLanes([legacy]),[legacy]);
  assert.throws(()=>gameLaneSelection('','old',[legacy]),/cloud/);
  assert.throws(()=>gameLaneFromDocument({...dataset,gamePresentation:'original'}));
@@ -44,19 +47,19 @@ test('package lane selection intersects the saved catalogue',()=>{
  assert.throws(()=>packageLaneIds('beta',catalogue));
 });
 test('an explicit unavailable dealer never silently changes identity',()=>{
- const layer={default:'vera',allowed:['vera','mei','amira']};
- assert.equal(laneDealerSelection('',portrait,layer),'vera');
- assert.equal(laneDealerSelection('?dealer=mei',portrait,layer),null);
- assert.equal(laneDealerSelection('?dealer=mei',portrait,layer,{portraitDealerIds:['mei']}),'mei');
- for(const query of ['?dealer=amira','?dealer=foreign','?dealer=vera&dealer=mei'])assert.equal(laneDealerSelection(query,portrait,layer,{portraitDealerIds:['mei','amira']}),null);
+ const layer={default:'elin',allowed:['elin','linnea','amira']};
+ assert.equal(laneDealerSelection('',portrait,layer),'elin');
+ assert.equal(laneDealerSelection('?dealer=linnea',portrait,layer),null);
+ assert.equal(laneDealerSelection('?dealer=linnea',portrait,layer,{portraitDealerIds:['linnea']}),'linnea');
+ for(const query of ['?dealer=vera','?dealer=mei','?dealer=amira','?dealer=johanna','?dealer=foreign','?dealer=elin&dealer=linnea'])assert.equal(laneDealerSelection(query,portrait,layer,{portraitDealerIds:['linnea','vera','mei','amira','johanna']}),null);
 });
 test('document attributes escape branding and reject injected identities',()=>{
  const branding={felt:'#0a5"><script>alert(1)</script>',note:'& <b>'};
  const html=decorateGameEntryHtml('<html lang="sv">',env,{...selection,operator:'sg-test',packageRevision:3,branding});
- assert.doesNotMatch(html,/<script/);assert.match(html,/data-game-local-dealer="vera"/);
+ assert.doesNotMatch(html,/<script/);assert.match(html,/data-game-local-dealer="elin"/);
  const decode=text=>text.replace(/&(amp|quot|#39|lt|gt);/g,(_,name)=>({amp:'&',quot:'"','#39':"'",lt:'<',gt:'>'})[name]);
  assert.deepEqual(JSON.parse(decode(/data-game-branding="([^"]*)"/.exec(html)[1])),branding);
- for(const change of [{dealer:'"><script>'},{dealer:'amira'},{registeredDealers:[]},{localDealer:'mei'},{presentation:'original'}])assert.throws(()=>decorateGameEntryHtml('<html>',env,{...selection,...change}));
+ for(const change of [{dealer:'"><script>'},{dealer:'amira'},{registeredDealers:[]},{localDealer:'linnea'},{presentation:'original'}])assert.throws(()=>decorateGameEntryHtml('<html>',env,{...selection,...change}));
 });
 test('operator metadata is bounded and login carries only approved selectors',()=>{
  for(const slug of ['sg-test','demo-north','a'])assert.equal(isOperatorSlug(slug),true);
@@ -79,7 +82,7 @@ test('retiring the active lane leaves an explicit empty choice even when other l
  const configuration={gameLanes:[portrait],gameLane:null};
  assert.deepEqual(gameLaneConfiguration(configuration),configuration);
  assert.throws(()=>gameLaneSelection('',null,[portrait]),/configured/);
- assert.deepEqual(gameLaneSelection('?lane=chosen-table',null,[portrait]),{lane:portrait.id,dealer:'vera',presentation:'local'});
+ assert.deepEqual(gameLaneSelection('?lane=chosen-table',null,[portrait]),{lane:portrait.id,dealer:'elin',presentation:'local'});
  assert.throws(()=>gameLaneConfiguration({gameLanes:[portrait]}),/active lane/);
  assert.throws(()=>gameLaneConfiguration({gameLanes:[],gameLane:portrait.id}),/active lane/);
 });

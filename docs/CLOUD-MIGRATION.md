@@ -1,5 +1,23 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## Dealeravveckling 16 oktober — separat kod- och produktionsstatus
+
+Jakob har beställt borttagning av Vera, Mei, Amira och Johanna. Lokala
+seed-, identitets- och mediereferenser är avvecklade, med anpassade fixtures
+och bibehållna negativa/historiska regressioner. Produktionen har permanent
+raderat Vera/Mei och de två arkiverade mallarna efter slutbekräftelser.
+Meis tidigare blockerande korsreferens löstes genom att radera Vera först.
+Veras gamla nivåkopplingar rensades genom ordinarie lagringskontrakt.
+De två namngivna Blob-mapparna och fyra separat identifierade målobjekt
+är permanent raderade. De fem bevarade dealerposterna och två rummen
+är verifierade med omladdad Admin och en separat Neon-återläsning.
+Rätt ordning och aktuella test-/molnkvitton finns överst i
+[JOHN-HANDOFF.md](JOHN-HANDOFF.md). Kevins publika CDN-ursprung kunde inte
+styrkas; Jakob informerades och godkände därefter återstående radering.
+Sidochattens workflowförenkling är integrerad med bevarad testtäckning;
+slutlig kodleverans redovisas i handoffen. Ingen merge eller driftsättning är gjord. Historiska statusavsnitt nedan
+beskriver läget före dessa åtgärder.
+
 ## Aktiv integration 16 oktober — en rumsyta och verifierad avveckling
 
 Övertagandet sker i huvudcheckoutens `codex/admin-consolidation-20261016`.

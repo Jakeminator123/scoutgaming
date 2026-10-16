@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject , addDealer} from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -67,9 +67,9 @@ test('clip library keeps dedicated roulette media slots without old sidebar or c
 
 test('unmanaged dealers keep the video library, binding row and exact variant', () => {
   const project = createSeedProject();
-  const line = project.lines.find(item => item.dealerId === 'vera' && item.eventId === 'speak.goodluck');
+  const line = project.lines.find(item => item.dealerId === 'elin' && item.eventId === 'speak.goodluck');
   line.variants.push({
-    id: 'vera.speak.goodluck.extra',
+    id: 'elin.speak.goodluck.extra',
     label: 'Kvällshälsning',
     priority: 10,
     triggerIds: [],
@@ -80,21 +80,21 @@ test('unmanaged dealers keep the video library, binding row and exact variant', 
   line.variants[0].videoGenerationId = 'missing-video';
   const html = render({
     initialProject: project,
-    initialDealerId: 'vera',
+    initialDealerId: 'elin',
     initialEventId: 'speak.goodluck',
-    initialVariantId: 'vera.speak.goodluck.extra',
+    initialVariantId: 'elin.speak.goodluck.extra',
   });
   assert.match(html, /aria-label="Vald videokoppling"/);
-  assert.match(html, /Koppling för: Vera · Lycka till · Kvällshälsning/);
+  assert.match(html, /Koppling för: Elin · Lycka till · Kvällshälsning/);
   assert.match(html, /Händelse[\s\S]{0,120}<select/);
   assert.match(html, /Variant[\s\S]{0,120}<select/);
-  assert.match(html, /<option value="vera\.speak\.goodluck\.extra" selected="">Kvällshälsning<\/option>/);
-  assert.match(html, /href="\/control\/events\?dealer=vera&amp;event=speak\.goodluck"/);
+  assert.match(html, /<option value="elin\.speak\.goodluck\.extra" selected="">Kvällshälsning<\/option>/);
+  assert.match(html, /href="\/control\/events\?dealer=elin&amp;event=speak\.goodluck"/);
   assert.match(html, /videokopplingar behöver kategoriseras eller kopplas loss/);
   assert.doesNotMatch(html, /Granska i Videobanken/);
   assert.doesNotMatch(html, /Dina videomappar/);
   assert.match(html, /Klipp och kopplingar/);
-  assert.match(html, /V Vera/);
+  assert.match(html, /E Elin/);
 });
 
 test('clip library shows one display-name override and keeps the single save button', () => {
@@ -116,19 +116,19 @@ test('clip library shows one display-name override and keeps the single save but
 test('an unmanaged clip keeps the override in the library detail without a second save button', () => {
   const project = createSeedProject();
   const id = '11111111-1111-4111-8111-111111111111';
-  const line = project.lines.find(item => item.dealerId === 'vera' && item.eventId === 'speak.goodluck');
+  const line = project.lines.find(item => item.dealerId === 'elin' && item.eventId === 'speak.goodluck');
   line.variants[0].videoGenerationId = id;
   project.clipLabels = { [id]: 'Kvällsnamn' };
   const video = {
     id, label: 'Originalnamn', fileName: 'kvall.mp4', verdict: 'unrated', bytes: 2048,
     sha256: 'ab'.repeat(32), available: false, previewUrl: '/api/videos/x',
-    reviewStatus: 'unreviewed', integrity: 'unchecked', bindingScope: 'lab-only', dealer: 'vera',
-    classification: { label: 'Originalnamn', dealerId: 'vera', eventId: 'speak.goodluck', kind: 'speech', role: 'standard', situation: 'goodluck', notes: '' },
+    reviewStatus: 'unreviewed', integrity: 'unchecked', bindingScope: 'lab-only', dealer: 'elin',
+    classification: { label: 'Originalnamn', dealerId: 'elin', eventId: 'speak.goodluck', kind: 'speech', role: 'standard', situation: 'goodluck', notes: '' },
   };
   const html = render({
     initialProject: project,
     initialVideos: { videos: [video] },
-    initialDealerId: 'vera',
+    initialDealerId: 'elin',
     initialEventId: 'speak.goodluck',
   });
   assert.match(html, /value="Kvällsnamn"/);
@@ -150,3 +150,6 @@ test('videos page reads optional search params and the stream lane on the server
   assert.match(source, /CROUPIER_STREAM_LANE === 'lissabon-stream-lane'/);
   assert.match(source, /initialVariantId/);
 });
+
+// Explicit active dealers used by this isolated component fixture.
+function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}

@@ -16,16 +16,16 @@ const origin='https://studio.example.invalid',scope={environment:'fixture',works
 const videoId='10000000-0000-4000-8000-000000000001',layerId='20000000-0000-4000-8000-000000000001';
 const bets=[{main:5,pp:0,tp:0},...Array.from({length:6},()=>({main:0,pp:0,tp:0}))];
 function fixture(t,options={}){
-  const project=addDealer(addDealer(createEmptyProject(),'johanna','Johanna'),'unfinished','Utan grundloop');
-  project.revision='preview-fixture.1';const lane=defaultPresentationLane('johanna');project.lanes=[lane];lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna']};lane.dealers=['johanna'];lane.composition=defaultCompositionSettings();
+  const project=addDealer(addDealer(createEmptyProject(),'linnea','Linnea'),'unfinished','Utan grundloop');
+  project.revision='preview-fixture.1';const lane=defaultPresentationLane('linnea');project.lanes=[lane];lane.layers.dealer={enabled:true,default:'linnea',allowed:['linnea']};lane.dealers=['linnea'];lane.composition=defaultCompositionSettings();
   const row={id:videoId,sha256:'a'.repeat(64),size:128,contentType:'video/mp4',revision:'media.1',
-    pathname:`croupier/media/dealers/johanna/review/uploads/${videoId}/${'a'.repeat(64)}.mp4`,
-    classification:{dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Grundloop',notes:'',playback:'once',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}}};
-  project.lines.find(line=>line.dealerId==='johanna'&&line.eventId==='idle.ready').variants[0].videoGenerationId=videoId;
+    pathname:`croupier/media/dealers/linnea/review/uploads/${videoId}/${'a'.repeat(64)}.mp4`,
+    classification:{dealerId:'linnea',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',label:'Grundloop',notes:'',playback:'once',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}}};
+  project.lines.find(line=>line.dealerId==='linnea'&&line.eventId==='idle.ready').variants[0].videoGenerationId=videoId;
   const layer={schemaVersion:1,id:layerId,role:'table',label:'Provbord',sha256:'b'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};layer.pathname=layerAssetPath(layer);project.layerAssets=[layer];
   lane.layers.table={...lane.layers.table,default:layerId,allowed:[layerId]};
   const snapshot={scope,projectDocument:{kind:'project',revision:project.revision,value:project},administrationDocument:{kind:'administration',revision:'admin.1',value:{}},mediaRows:[row]};
-  const inventory={videos:[{id:row.id,sha256:row.sha256,bytes:row.size,available:true,source:'upload',dealer:'johanna',fileName:'idle.mp4',classification:structuredClone(row.classification)}],families:[]};
+  const inventory={videos:[{id:row.id,sha256:row.sha256,bytes:row.size,available:true,source:'upload',dealer:'linnea',fileName:'idle.mp4',classification:structuredClone(row.classification)}],families:[]};
   const state={actor:'admin-one',role:'admin',revoked:false,time:2000000,reads:0,registryReads:0,legacyReads:0,dbs:[],media:[],bank:[],mediaHash:null,authCalls:0};
   const request=(path,method='GET',body,extra={})=>new Request(origin+path,{method,headers:{cookie:'lab_session=fixture',...(!['GET','HEAD'].includes(method)?{origin,'content-type':'application/json'}:{}),...extra},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const api=createStudioPreview({scope,origin,now:()=>state.time,ttlMs:2000,maxSessions:4,maxSessionsPerAdmin:2,
@@ -45,17 +45,17 @@ async function start(f){const result=await f.create();assert.equal(result.respon
 test('owned isolated preview permits only verified pending recorded speech and keeps exact own audio identity',async t=>{
   for(const status of ['pending','rejected','unverified']){
     const f=fixture(t),id='10000000-0000-4000-8000-000000000002',sha256='d'.repeat(64);
-    const metadata={schemaVersion:1,dealerId:'johanna',lineId:'goodluck',takeId:'goodluck_sv_1',language:'sv',exactText:'Lycka till.',
+    const metadata={schemaVersion:1,dealerId:'linnea',lineId:'goodluck',takeId:'goodluck_sv_1',language:'sv',exactText:'Lycka till.',
       videoSha256:sha256,audioSha256:'e'.repeat(64),indexSha256:'f'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
       entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
     const proof={by:'fixture-reviewer',at:'2026-10-14T00:00:00.000Z',identity:recordedSpeechIdentity(metadata)};
     if(status!=='unverified')metadata.recording={status:'verified-recording',...structuredClone(proof)};
     if(status==='rejected')metadata.review={status,...structuredClone(proof)};
-    const row={...structuredClone(f.row),id,sha256,pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.mp4`,
+    const row={...structuredClone(f.row),id,sha256,pathname:`croupier/media/dealers/linnea/review/uploads/${id}/${sha256}.mp4`,
       classification:{...f.row.classification,eventId:'speak.goodluck',kind:'speech',situation:'goodluck',recordedSpeech:metadata}};
-    f.project.lines.find(line=>line.dealerId==='johanna'&&line.eventId==='speak.goodluck').variants[0].videoGenerationId=id;
-    f.snapshot.mediaRows.push(row);f.inventory.videos.push({id,sha256,bytes:row.size,available:true,source:'upload',dealer:'johanna',fileName:'speech.mp4',classification:structuredClone(row.classification)});
-    const session=await start(f),path=`/api/studio-preview/${session.sessionId}/presentation/select`,payload={dealerId:'johanna',mode:'off',version:0,event:{type:'speak',line:'goodluck'}};
+    f.project.lines.find(line=>line.dealerId==='linnea'&&line.eventId==='speak.goodluck').variants[0].videoGenerationId=id;
+    f.snapshot.mediaRows.push(row);f.inventory.videos.push({id,sha256,bytes:row.size,available:true,source:'upload',dealer:'linnea',fileName:'speech.mp4',classification:structuredClone(row.classification)});
+    const session=await start(f),path=`/api/studio-preview/${session.sessionId}/presentation/select`,payload={dealerId:'linnea',mode:'off',version:0,event:{type:'speak',line:'goodluck'}};
     const response=await f.api.handle(f.request(path,'POST',payload));assert.equal(response.status,200);
     const result=await response.json();
     if(status==='pending'){
@@ -90,9 +90,9 @@ test('preview captures saved project and media once without consulting legacy po
   const f=fixture(t),session=await start(f),base='/api/studio-preview/'+session.sessionId;
   assert.match(session.entryUrl,new RegExp('^/studio-preview/'+session.sessionId+'$'));assert.equal(session.projectRevision,f.project.revision);
   f.project.revision='changed';f.inventory.videos=[];f.row.sha256='f'.repeat(64);
-  const config=await f.api.handle(f.request(base+'/presentation/config?dealerId=johanna'));
+  const config=await f.api.handle(f.request(base+'/presentation/config?dealerId=linnea'));
   assert.equal(config.status,200);const body=await config.json();assert.equal(body.projectRevision,session.projectRevision);
-  assert.equal(body.dealerIdle.johanna.src,base+'/videos/'+videoId);assert.equal(body.inventory.videos[0].previewUrl,base+'/videos/'+videoId);
+  assert.equal(body.dealerIdle.linnea.src,base+'/videos/'+videoId);assert.equal(body.inventory.videos[0].previewUrl,base+'/videos/'+videoId);
   assert.equal(body.inventory.videos[0].sha256,'a'.repeat(64));assert.deepEqual([f.state.reads,f.state.registryReads,f.state.legacyReads],[1,1,0]);
   const player=await f.api.handle(f.request(base+'/player','POST',{id:'real-player'}));assert.equal(player.status,200);
   const value=await player.json();assert.equal(value.id,'studio-preview:'+session.sessionId);assert.equal(value.balance,10000);assert.equal(player.headers.get('set-cookie'),null);
@@ -110,9 +110,9 @@ test('N1 identity, owner and exact Origin are checked for every preview route an
 
 test('each preview has a separate shoe, wallet and idempotent authoritative table',async t=>{
   const f=fixture(t),a=await start(f),b=await start(f),base='/api/studio-preview/';
-  const state=async s=>(await (await f.api.handle(f.request(base+s.sessionId+'/table','POST',{op:'state',dealer:'johanna'}))).json());
+  const state=async s=>(await (await f.api.handle(f.request(base+s.sessionId+'/table','POST',{op:'state',dealer:'linnea'}))).json());
   const before=await state(a),other=await state(b);assert.notEqual(before.shoe.id,other.shoe.id);
-  const body={op:'start',dealer:'johanna',version:before.version,requestId:randomUUID(),bets,id:'production-player'};
+  const body={op:'start',dealer:'linnea',version:before.version,requestId:randomUUID(),bets,id:'production-player'};
   const first=await f.api.handle(f.request(base+a.sessionId+'/table','POST',body));assert.equal(first.status,200);const played=await first.json();
   assert.equal(played.balance,9995);assert.ok(played.presentation.some(event=>event.type==='deal'));
   const replay=await (await f.api.handle(f.request(base+a.sessionId+'/table','POST',body))).json();assert.equal(replay.balance,played.balance);assert.equal(replay.version,played.version);
@@ -145,7 +145,7 @@ test('HTML and session metadata preserve own identity and expose incomplete deal
   assert.equal(info.dealerAvailability.find(row=>row.id==='unfinished').reason,'studio_preview_idle_required');assert.deepEqual(info.externalServices,{ai:false,speech:false});
   const htmlResponse=await f.api.handle(f.request(session.entryUrl));assert.equal(htmlResponse.status,200);const html=await htmlResponse.text();
   assert.match(html,/<body\b[^>]*data-scout-assistant="disabled"/);
-  assert.match(html,/data-studio-preview=/);assert.match(html,/data-game-dealer="johanna"/);assert.match(html,/data-game-local-dealer="johanna"/);assert.match(html,new RegExp(base+'/layers/'+layerId));assert.doesNotMatch(html,/data-game-operator|data-game-room-id|data-game-package-revision|croupier\/media/);
+  assert.match(html,/data-studio-preview=/);assert.match(html,/data-game-dealer="linnea"/);assert.match(html,/data-game-local-dealer="linnea"/);assert.match(html,new RegExp(base+'/layers/'+layerId));assert.doesNotMatch(html,/data-game-operator|data-game-room-id|data-game-package-revision|croupier\/media/);
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer=amira'))).status,404);
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer=unfinished'))).status,422);
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer=foreign'))).status,404);
@@ -169,15 +169,15 @@ test('TTL, deletion, per-admin capacity and shutdown close every isolated databa
 
 test('preview presentation uses isolated committed cards and explicitly rejects external services',async t=>{
   const f=fixture(t),s=await start(f),base='/api/studio-preview/'+s.sessionId;
-  const state=await (await f.api.handle(f.request(base+'/table','POST',{op:'state',dealer:'johanna'}))).json();
-  const played=await (await f.api.handle(f.request(base+'/table','POST',{op:'start',dealer:'johanna',version:state.version,requestId:randomUUID(),bets}))).json();
+  const state=await (await f.api.handle(f.request(base+'/table','POST',{op:'state',dealer:'linnea'}))).json();
+  const played=await (await f.api.handle(f.request(base+'/table','POST',{op:'start',dealer:'linnea',version:state.version,requestId:randomUUID(),bets}))).json();
   const deal=played.presentation.find(event=>event.type==='deal');
-  const input={dealerId:'johanna',mode:'off',version:played.version,event:{...deal,card:{r:'A',s:'♠'}}};
+  const input={dealerId:'linnea',mode:'off',version:played.version,event:{...deal,card:{r:'A',s:'♠'}}};
   const response=await f.api.handle(f.request(base+'/presentation/select','POST',input));assert.equal(response.status,200);const result=await response.json();
   assert.deepEqual(result.decision.sourceEvent.card,deal.faceDown?null:deal.card);
   assert.equal((await f.api.handle(f.request(base+'/presentation/select','POST',{...input,version:999}))).status,409);
   assert.equal((await f.api.handle(f.request(base+'/presentation/select','POST',{...input,mode:'active'}))).status,503);
-  assert.equal((await f.api.handle(f.request(base+'/presentation/idle-advice','POST',{dealerId:'johanna'}))).status,503);
+  assert.equal((await f.api.handle(f.request(base+'/presentation/idle-advice','POST',{dealerId:'linnea'}))).status,503);
   for(const route of ['chat','memory','probe','camera','speech'])assert.equal((await f.api.handle(f.request(base+'/'+route,'POST',{}))).status,404);
 });
 
@@ -227,7 +227,7 @@ test('preview exposes captured layer choices from baked defaults, with optional 
     assert.equal(choices.background.mode,contentType==='image/png'?'image':'video');assert.equal(choices.background.enabled,true);
     assert.equal(composition.background.default,null);assert.equal(composition.table.default,layerId);
     assert.deepEqual(composition.settings,savedGeometry?saved.lanes[0].composition:defaultCompositionSettings());
-    const selected=resolvePlayerSelection({choices,composition,currentDealer:'johanna',stored:{background:background.id,tableAsset:layerId}});
+    const selected=resolvePlayerSelection({choices,composition,currentDealer:'linnea',stored:{background:background.id,tableAsset:layerId}});
     assert.equal(selected.backgroundDisabled,false);assert.equal(selected.backgroundValue,background.id);assert.equal(selected.tableValue,layerId);
     for(const dealer of ['amira','astrid','vera','mei'])assert.equal((await f.api.handle(f.request(session.entryUrl+'?dealer='+dealer))).status,404,'No implicit legacy dealer: '+dealer);
     assert.deepEqual(f.project,saved);

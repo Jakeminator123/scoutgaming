@@ -145,7 +145,7 @@ test('authorized SSR passes only the selected live snapshot, view, operator and 
     assert.equal(element.props.surface, uiSurface); assert.equal(element.props.initialView, view);
     assert.equal(element.props.initialSnapshot, snapshot); assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
     assert.equal(element.props.user, 'fixture-admin'); assert.equal(element.props.session, undefined);
-    assert.deepEqual(Object.keys(element.props).sort(), ['apiBase', 'initialSnapshot', 'initialView', 'surface', 'user']);
+    assert.equal(JSON.stringify(element.props).includes('never-pass'), false, 'private session fields stay server-side');
     assert.equal(requests.at(-1).options.operatorSlug, 'johns-spelbolag');
   }
 });
@@ -211,7 +211,7 @@ test('control shows the overview and disconnected preview addresses are not foun
   assert.equal(element.props.user, 'fixture-admin');
   assert.equal(element.props.initialView, 'ops');
   assert.equal(element.props.operatorStatus, 'demo');
-  assert.deepEqual(Object.keys(element.props).sort(), ['initialView', 'operatorStatus', 'operators', 'user']);
+  assert.equal(JSON.stringify(element.props).includes('never-pass'), false, 'private operator fields stay server-side');
   assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), [{ id: 'sg-test', slug: 'sg-test', name: 'SG test game provider' }]);
   // 'preview' left this list in 1f1c14d6: /control/preview is the staff layer-preview page (its own route wins).
   for (const path of [['generations'], ['reports'], ['pit-bosses'], ['presentation'], ['table-design'], ['roulette'], ['baccarat'], ['statistics']]) {

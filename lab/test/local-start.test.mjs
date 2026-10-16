@@ -35,10 +35,10 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
   const store = createProjectStore(data);
   const original = await store.load();
   assert.deepEqual(original.dealers,[]);assert.deepEqual(original.lines,[]);assert.deepEqual(original.lanes,[]);assert.equal(original.idlePolicy,undefined);
-  const {project:edit,inventory}=cloudPresentationFixture({project:original,lanes:[defaultPresentationLane('johanna')]});
-  const policy=createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:inventory.videos[0].id,durationMs:1000});
+  const {project:edit,inventory}=cloudPresentationFixture({project:original,lanes:[defaultPresentationLane('linnea')]});
+  const policy=createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:inventory.videos[0].id,durationMs:1000});
   policy.variants=[1,2].map(index=>({videoId:'20000000-0000-4000-8000-'+String(index).padStart(12,'0'),durationMs:1000,use:'openclaw',automatic:null}));
-  edit.dealerIdlePolicies=[{dealerId:'johanna',policy}];
+  edit.dealerIdlePolicies=[{dealerId:'linnea',policy}];
   edit.dealerIdlePolicies[0].policy.variants[0].use='manual';
   const saved = await store.save(edit, original.revision);
   await prepareProject(data);
@@ -75,11 +75,11 @@ test('lane shares durable project, preserves saved edits and refuses a corrupt p
     const server = createServer((req, res) => handler(req, res, '/api/presentation/config', 'demo'));
     server.listen(0, '127.0.0.1'); await once(server, 'listening');
     try {
-      const config = await (await fetch(`http://127.0.0.1:${server.address().port}/api/presentation/config?dealerId=johanna`)).json();
+      const config = await (await fetch(`http://127.0.0.1:${server.address().port}/api/presentation/config?dealerId=linnea`)).json();
       assert.equal(config.defaultMode, expected);
       assert.equal(config.revision, restored.revision);
       assert.deepEqual(config.idlePolicy, saved.dealerIdlePolicies[0].policy);
-      assert.deepEqual(Object.keys(config.dealerIdle),['johanna']);
+      assert.deepEqual(Object.keys(config.dealerIdle),['linnea']);
     } finally { server.closeAllConnections(); await new Promise(yes => server.close(yes)); }
   }
   const file = join(data, 'project.json');

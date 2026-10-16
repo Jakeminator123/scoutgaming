@@ -7,17 +7,21 @@ import { createSeedProject, normalizeProject, validateProject } from '../lib/stu
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 import { retireDemoExamples } from '../lib/retire-demo-examples.mjs';
 import { prepareProject } from '../start.mjs';
+import { isActiveDealerId } from '../../web/public/dealer-identity.mjs';
 
-test('new defaults retain every event and dealer, with no demo triggers or unused assets', () => {
+test('new defaults retain every event and active dealer while historical migration preserves retired dealers', () => {
   const fresh = createSeedProject(), old = createLegacyProject();
   assert.deepEqual(fresh.events.slice(0, old.events.length), old.events);
   assert.equal(fresh.events.at(-1).id, 'transition.shoe');
-  assert.deepEqual(fresh.dealers, old.dealers);
-  assert.equal(fresh.triggers.length, 0); assert.equal(fresh.lines.length, old.lines.length + fresh.dealers.length);
+  assert.deepEqual(fresh.dealers, old.dealers.filter(dealer => isActiveDealerId(dealer.id)));
+  assert.equal(fresh.triggers.length, 0); assert.equal(fresh.lines.length, old.lines.filter(line => isActiveDealerId(line.dealerId)).length + fresh.dealers.length);
   assert.ok(fresh.lines.every(line => line.variants.length === 1 && line.variants[0].id === line.baselineVariantId));
   assert.ok(fresh.assets.every(asset => fresh.lines.some(line => line.variants.some(row => row.assetId === asset.id))));
   const cleaned = normalizeProject(retireDemoExamples(old)); validateProject(cleaned);
-  for (const key of ['assets', 'triggers', 'lines']) assert.deepEqual(cleaned[key], fresh[key]);
+  assert.deepEqual(cleaned.dealers, old.dealers, 'migration preserves historical dealer registration');
+  for (const key of ['assets', 'triggers']) assert.deepEqual(cleaned[key], fresh[key]);
+  assert.deepEqual(cleaned.lines.filter(line => isActiveDealerId(line.dealerId)), fresh.lines);
+  for (const dealer of old.dealers) assert.ok(cleaned.lines.some(line => line.dealerId === dealer.id));
   assert.deepEqual(retireDemoExamples(cleaned), cleaned);
 });
 

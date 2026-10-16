@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { redactSecrets, validatePush, verifyPushMaps } from '../tools/check-push-target.mjs';
+import { redactSecrets, validatePush } from '../tools/check-push-target.mjs';
 import { deliver, parseDeliveryArgs, planGithubDelivery } from '../tools/push-github-work.mjs';
 
 const policy = JSON.parse(await readFile(new URL('../tools/repository-policy.json', import.meta.url), 'utf8'));
@@ -10,14 +10,6 @@ const sha = char => char.repeat(40);
 const update = `HEAD ${sha('a')} refs/heads/${policy.branch} ${sha('b')}`;
 const feature = (name, local = sha('c'), remote = sha('d')) => `refs/heads/${name} ${local} refs/heads/${name} ${remote}`;
 
-test('push verifies the transported commit once and blocks a failed map check', () => {
-  const seen = [];
-  verifyPushMaps(`${update}\n${update}`, (command, args) => { seen.push({command,args}); return {status:0}; });
-  assert.deepEqual(seen,[{command:process.execPath,args:['docs/system-map/verify.mjs','--check','--ref',sha('a')]}]);
-  assert.throws(() => verifyPushMaps(update, () => ({status:1})), /System map/);
-  assert.throws(() => verifyPushMaps(update, () => ({error:Error('fixture')})), /System map/);
-  assert.throws(() => verifyPushMaps(update.replace(sha('a'),'HEAD'), () => {throw Error('must not run');}), /Invalid push commit/);
-});
 test('only the approved GitHub branch can be pushed', () => {
   assert.equal(policy.repository, 'Jakeminator123/scoutgaming');
   assert.equal(policy.branch, 'main');
@@ -73,11 +65,6 @@ test('push rejects deletion, tags, other branches and other repositories', () =>
     "fatal: unable to access 'https://example-token@github.com/Jakeminator123/scoutgaming.git/': denied",
     'remote: https://user@github.com/x/y and ssh://example-token@github.com/x/y',
   ]) assert.equal(redactSecrets(text).includes('example-token') || redactSecrets(text).includes('user@'), false, text);
-});
-test('feature-branch pushes keep the system-map check', () => {
-  const seen = [];
-  verifyPushMaps(feature('cursor/example'), (command, args) => { seen.push({ command, args }); return { status: 0 }; });
-  assert.deepEqual(seen, [{ command: process.execPath, args: ['docs/system-map/verify.mjs', '--check', '--ref', sha('c')] }]);
 });
 test('delivery plans a feature branch and an explicit main emergency path', () => {
   assert.deepEqual(parseDeliveryArgs(['--check']), { check: true, adminMain: false });

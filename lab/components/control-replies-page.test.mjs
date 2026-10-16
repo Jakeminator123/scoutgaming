@@ -22,7 +22,7 @@ const DealerClipPreview=({url,label})=>React.createElement('video',{src:url,'ari
 const stateNames=[...source.matchAll(/const \[([^,]*),[^\]]*\]\s*=\s*useState/g)].map(match=>match[1].trim());
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return{promise,resolve,reject};};
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
-const props={dealers:[{id:'astrid',label:'Astrid'},{id:'vera',label:'Vera'}],initialDealerId:'astrid'};
+const props={dealers:[{id:'astrid',label:'Astrid'},{id:'elin',label:'Elin'}],initialDealerId:'astrid'};
 const sample=(patch={})=>({id:'11111111-1111-4111-8111-111111111111',dealerId:'astrid',exactText:'Hej! Vad roligt att se dig.',language:'sv',createdAt:'2026-10-12T10:20:00.000Z',profileRevision:'a'.repeat(64),revision:1,categories:['player-greeting'],reviewStatus:'pending',media:{audio:{available:true,sha256:'b'.repeat(64),contentType:'audio/wav',size:100},video:{available:true,sha256:'c'.repeat(64),contentType:'video/mp4',size:200}},...patch});
 function harness(requestJson,p=props){
   const values=[],refs=[],effects=[],listeners=new Map(),calls=[];let cursor=0,refCursor=0,effectCursor=0;
@@ -58,15 +58,15 @@ test('category filters use the shared backend IDs and malformed or unauthorized 
 });
 
 test('late dealer responses are aborted and cannot replace a newly selected dealer list',async()=>{
-  const old=deferred(),fresh=deferred(),h=harness(url=>url.includes('dealer=vera')?fresh.promise:old.promise);let tree=h.render();h.effects();select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'vera'}});tree=h.render();h.effects();assert.equal(h.calls[0][1].signal.aborted,true);
-  fresh.resolve({items:[sample({dealerId:'vera',exactText:'Veras svar'})],nextCursor:null});await settle();h.render();old.resolve({items:[sample()],nextCursor:null});await settle();tree=h.render();assert.equal(h.state('items')[0].dealerId,'vera');assert.match(renderToStaticMarkup(tree),/Veras svar/);assert.doesNotMatch(renderToStaticMarkup(tree),/Vad roligt/);
+  const old=deferred(),fresh=deferred(),h=harness(url=>url.includes('dealer=elin')?fresh.promise:old.promise);let tree=h.render();h.effects();select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});tree=h.render();h.effects();assert.equal(h.calls[0][1].signal.aborted,true);
+  fresh.resolve({items:[sample({dealerId:'elin',exactText:'Elins svar'})],nextCursor:null});await settle();h.render();old.resolve({items:[sample()],nextCursor:null});await settle();tree=h.render();assert.equal(h.state('items')[0].dealerId,'elin');assert.match(renderToStaticMarkup(tree),/Elins svar/);assert.doesNotMatch(renderToStaticMarkup(tree),/Vad roligt/);
 });
 
 test('category changes require an explicit CAS save, lock double clicks and keep media keys stable',async()=>{
   const write=deferred(),h=await loaded(async(_url,init)=>init.method==='PATCH'?write.promise:{items:[sample()],nextCursor:null});let tree=h.render();const videoKey=nodes(tree,node=>node.type===DealerClipPreview)[0].key;
   category(tree,'Vänlig spelare').props.onChange();tree=h.render();assert.equal(h.calls.length,1);const save=button(tree,'Spara kategorier');save.props.onClick();save.props.onClick();tree=h.render();assert.equal(h.calls.length,2);
   const payload=JSON.parse(h.calls[1][1].body);assert.deepEqual(payload,{dealerId:'astrid',categories:['player-greeting','player-kind'],expectedRevision:1});assert.equal(h.calls[1][1].cache,'no-store');assert.equal(h.calls[1][0],'/api/replies/'+sample().id);assert.equal(new URL(h.calls[1][0],'https://test.invalid').search,'');assert.deepEqual(parseStudioRepliesRequest('PATCH',new URL(h.calls[1][0],'https://test.invalid')),{kind:'categorize',id:sample().id});assert.deepEqual(validateReplyCategories(payload.categories),['player-greeting','player-kind']);
-  select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'vera'}});assert.equal(h.state('dealerId'),'astrid');
+  select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});assert.equal(h.state('dealerId'),'astrid');
   write.resolve({item:sample({categories:['player-greeting','player-kind'],revision:2})});await settle();tree=h.render();assert.deepEqual(Object.keys(h.state('drafts')),[]);assert.equal(h.state('items')[0].revision,2);assert.equal(nodes(tree,node=>node.type===DealerClipPreview)[0].key,videoKey);
 });
 
@@ -83,11 +83,11 @@ test('uncertain save is reconciled by reading without repeating its write',async
 
 test('unsaved categories guard filters, dealer changes, leaving and browser history, with an Undo path',async()=>{
   const h=await loaded();let tree=h.render();category(tree,'Hjälp').props.onChange();tree=h.render();h.effects();
-  select(tree,'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'vera'}});assert.equal(h.state('category'),'');assert.equal(h.state('dealerId'),'astrid');
+  select(tree,'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});assert.equal(h.state('category'),'');assert.equal(h.state('dealerId'),'astrid');
   const nav=nodes(tree,node=>node.props?.active==='replies')[0],clipLink=nodes(nav.type(nav.props),node=>node.type==='a'&&node.props.children==='Klipp')[0],event={button:0,preventDefault(){this.blocked=true;}};clipLink.props.onClick(event);assert.equal(event.blocked,true);
   const unload={preventDefault(){this.blocked=true;}};h.listeners.get('beforeunload')(unload);assert.equal(unload.blocked,true);
-  h.window.location.search='?dealer=vera';h.listeners.get('popstate')(new Event('popstate'));assert.equal(h.state('dealerId'),'astrid');assert.match(h.window.location.href,/dealer=astrid/);
-  button(tree,'Ångra kategorival').props.onClick();tree=h.render();h.effects();select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'vera'}});assert.equal(h.state('dealerId'),'vera');
+  h.window.location.search='?dealer=elin';h.listeners.get('popstate')(new Event('popstate'));assert.equal(h.state('dealerId'),'astrid');assert.match(h.window.location.href,/dealer=astrid/);
+  button(tree,'Ångra kategorival').props.onClick();tree=h.render();h.effects();select(tree,'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});assert.equal(h.state('dealerId'),'elin');
 });
 
 test('paging deduplicates rows, preserves dealer identity and aborts pending reads on unmount',async()=>{
@@ -96,7 +96,7 @@ test('paging deduplicates rows, preserves dealer identity and aborts pending rea
 });
 
 test('foreign dealer rows or wrong reconciliation identities fail closed; failed media does not borrow a substitute',async()=>{
-  const foreign=await loaded(async()=>({items:[sample({dealerId:'vera'})],nextCursor:null}));assert.equal(foreign.state('items').length,0);assert.match(renderToStaticMarkup(foreign.render()),/kunde inte läsas/);
+  const foreign=await loaded(async()=>({items:[sample({dealerId:'elin'})],nextCursor:null}));assert.equal(foreign.state('items').length,0);assert.match(renderToStaticMarkup(foreign.render()),/kunde inte läsas/);
   const h=await loaded();let tree=h.render();nodes(tree,node=>node.type===DealerClipPreview)[0].props.onError();tree=h.render();assert.equal(nodes(tree,node=>node.type===DealerClipPreview).length,0);assert.match(renderToStaticMarkup(tree),/Videon är inte tillgänglig/);assert.equal(nodes(tree,node=>node.type==='audio').length,1);
 });
 
@@ -134,7 +134,7 @@ test('authorized replies route preserves exact Studio context through real navig
   assert.equal(links().some(link=>link.props.href.startsWith('/control/compositions')),false);assert.equal(clips().props.href,'/control/clips?view=clips&dealer=astrid&event=speak.goodluck&variant=astrid.goodluck.alt-2&situation=goodluck&composition=studio%2Fmain');
   const event={button:0,preventDefault(){this.blocked=true;}};clips().props.onClick(event);assert.equal(event.blocked,undefined);
   select(h.render(),'Filtrera svarskategori').props.onChange({target:{value:'game-win'}});h.render();h.effects();await settle();assert.equal(new URL(h.window.location.href).searchParams.get('variant'),query.variant);assert.equal(new URL(h.window.location.href).searchParams.get('composition'),query.lane);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=astrid&category=game-win');const previousHref=h.window.location.href;
-  select(h.render(),'Dealer i svarsbiblioteket').props.onChange({target:{value:'vera'}});h.render();h.effects();await settle();assert.equal(clips().props.href,'/control/clips?view=clips&dealer=vera&composition=studio%2Fmain');for(const key of ['event','variant','situation','token','tab'])assert.equal(new URL(h.window.location.href).searchParams.has(key),false);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=vera&category=game-win');
+  select(h.render(),'Dealer i svarsbiblioteket').props.onChange({target:{value:'elin'}});h.render();h.effects();await settle();assert.equal(clips().props.href,'/control/clips?view=clips&dealer=elin&composition=studio%2Fmain');for(const key of ['event','variant','situation','token','tab'])assert.equal(new URL(h.window.location.href).searchParams.has(key),false);assert.equal(h.calls.at(-1)[0],'/api/replies?dealer=elin&category=game-win');
   h.window.location.href=previousHref;h.window.location.search=new URL(previousHref).search;h.listeners.get('popstate')(new Event('popstate'));h.render();h.effects();await settle();assert.equal(clips().props.href,'/control/clips?view=clips&dealer=astrid&event=speak.goodluck&variant=astrid.goodluck.alt-2&situation=goodluck&composition=studio%2Fmain');assert.equal(h.state('category'),'game-win');
   for(const[url,init]of h.calls){assert.equal(parseStudioRepliesRequest(init.method??'GET',new URL(url,'https://local.test')).kind,'list');assert.deepEqual([...new URL(url,'https://local.test').searchParams.keys()],['dealer','category']);}
 });

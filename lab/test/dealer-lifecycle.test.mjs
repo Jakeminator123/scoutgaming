@@ -1,3 +1,4 @@
+import { createLegacyProject } from './fixtures/legacy-project.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
@@ -305,6 +306,41 @@ test('dealer ID reuse drains uncommitted upload grants even for an empty dealer'
  await assert.rejects(early.removeDealer(dealerDeleteInput(archived,'empty'),{stillAuthorized:async()=> 'Admin'}),{code:'studio_media_upload_grant_active'});
  const ready=deletionFixture(f,{now:()=>at+900000}),done=await ready.removeDealer(dealerDeleteInput(archived,'empty'),{stillAuthorized:async()=> 'Admin'});assert.deepEqual(done.dealerTrash,[]);assert.equal(addDealer(done,'empty','New').dealers.at(-1).id,'empty');
 });
+async function archivedDealerDependency({pending=false}={}){
+ const project=createLegacyProject(),shared=defaultPresentationLane('astrid');
+ shared.id='mobile-phone';shared.dealers=['vera','mei'];shared.layers.dealer={...shared.layers.dealer,default:'vera',allowed:['vera','mei']};
+ const own=structuredClone(shared);own.id='johns-johanna';own.dealers=['mei'];own.layers.dealer={...own.layers.dealer,default:'mei',allowed:['mei']};
+ project.lanes=[shared,own];
+ const archivedAt='2026-10-16T00:00:00.000Z';
+ const vera=lifecycleProject(project,{dealerId:'vera',archived:true,records:[],now:archivedAt});
+ const archived=lifecycleProject(vera,{dealerId:'mei',archived:true,records:[],now:archivedAt});
+ if(pending)archived.dealerTrash.find(row=>row.dealer.id==='mei').deletion={state:'pending',requestedAt:'2026-10-16T00:16:00.000Z',mediaIds:[]};
+ const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
+ seedSavedVideoProject(pool,scope,archived);
+ await repository.initializeDocument('administration',{value:{rooms:[]},actor:'fixture'});
+ const service=deletionFixture({repository,context:{mutationTransaction:work=>work()}},{now:()=>Date.parse('2026-10-16T01:00:00.000Z')});
+ return {pool,repository,archived,service};
+}
+test('another archived composition blocks empty dealer deletion before any pending marker',async()=>{
+ const f=await archivedDealerDependency(),before=f.pool.snapshot(),input=dealerDeleteInput(f.archived,'mei');
+ assert.deepEqual(await f.repository.listMedia(),[]);
+ assert.deepEqual(await f.service.checkDealer(input),{allowed:false,reason:'studio_dealer_in_use',count:0});
+ await assert.rejects(f.service.removeDealer(input,{stillAuthorized:async()=> 'Admin'}),{code:'studio_dealer_in_use'});
+ assert.deepEqual(f.pool.snapshot(),before);
+});
+test('an existing pending empty dealer can finish after the dependent archive is explicitly deleted',async()=>{
+ const f=await archivedDealerDependency({pending:true}),pending=f.archived.dealerTrash.find(row=>row.dealer.id==='mei').deletion;
+ assert.equal((await f.service.checkDealer(dealerDeleteInput(f.archived,'mei'))).reason,'studio_dealer_in_use');
+ assert.deepEqual(await f.service.checkDealer(dealerDeleteInput(f.archived,'vera')),{allowed:true,count:0});
+ const withoutVera=await f.service.removeDealer(dealerDeleteInput(f.archived,'vera'),{stillAuthorized:async()=> 'Admin'});
+ assert.deepEqual(withoutVera.dealerTrash.find(row=>row.dealer.id==='mei').deletion,pending);
+ assert.deepEqual(await f.service.checkDealer(dealerDeleteInput(withoutVera,'mei')),{allowed:true,count:0});
+ const done=await f.service.removeDealer(dealerDeleteInput(withoutVera,'mei'),{stillAuthorized:async()=> 'Admin'});
+ assert.deepEqual(done.dealerTrash,[]);
+ assert.deepEqual(done.dealers,f.archived.dealers);
+ assert.deepEqual((await f.repository.readDocument('administration')).value,{rooms:[]});
+ assert.deepEqual(await f.repository.listMedia(),[]);
+});
 test('dealer purge routes return preflight and fenced project/inventory without an archive-restore detour',async()=>{
  const f=await fixture({bind:true}),archived=await f.change(),mediaDeletion=deletionFixture(f,{now:()=>afterArchive(archived)}),api=createStudioDealerApi({...f.context,mediaDeletion});
  const check=await api.handle(req('/api/dealers/delete-check',dealerDeleteInput(archived)));assert.equal(check.status,200);assert.equal((await check.json()).allowed,true);
@@ -323,12 +359,12 @@ test('archive plan API is read-only and confirmation requires the same current t
 });
 
 test('shared archived compositions validate against history but restore waits for active dealer dependencies',()=>{
- let project=addDealer(addDealer(createSeedProject(),'johanna','Johanna'),'elin','Elin');
- const lane=defaultPresentationLane('johanna');lane.dealers.push('elin');lane.layers.dealer.allowed.push('elin');project.lanes=[lane];
- project=lifecycleProject(project,{dealerId:'johanna',archived:true,records:[]});
+ let project=addDealer(addDealer(createSeedProject(),'linnea','Linnea'),'elin','Elin');
+ const lane=defaultPresentationLane('linnea');lane.dealers.push('elin');lane.layers.dealer.allowed.push('elin');project.lanes=[lane];
+ project=lifecycleProject(project,{dealerId:'linnea',archived:true,records:[]});
  project=lifecycleProject(project,{dealerId:'elin',archived:true,records:[]});assert.equal(validateProject(project),project);
- assert.throws(()=>lifecycleProject(project,{dealerId:'johanna',archived:false,records:[]}),{code:'studio_dealer_restore_conflict'});
- project=lifecycleProject(project,{dealerId:'elin',archived:false,records:[]});project=lifecycleProject(project,{dealerId:'johanna',archived:false,records:[]});assert.deepEqual(project.lanes,[lane]);
+ assert.throws(()=>lifecycleProject(project,{dealerId:'linnea',archived:false,records:[]}),{code:'studio_dealer_restore_conflict'});
+ project=lifecycleProject(project,{dealerId:'elin',archived:false,records:[]});project=lifecycleProject(project,{dealerId:'linnea',archived:false,records:[]});assert.deepEqual(project.lanes,[lane]);
 });
 
 test('explicit baseline dealer archive preserves retained clips and inactive legacy dealers cannot reactivate',()=>{
@@ -336,7 +372,7 @@ test('explicit baseline dealer archive preserves retained clips and inactive leg
  const retained={id,classification:{dealerId:'astrid'},retainedBank:{immutable:true}};
  const archived=lifecycleProject(project,{dealerId:'astrid',archived:true,records:[retained]});assert.deepEqual(archived.dealerTrash[0].activeMediaIds,[]);
  assert.equal(lifecycleProject(archived,{dealerId:'astrid',archived:false,records:[retained]}).dealers.some(row=>row.id==='astrid'),true);
- const historical=structuredClone(project);
+ const historical=createLegacyProject();
  const retired=lifecycleProject(historical,{dealerId:'amira',archived:true,records:[]});assert.throws(()=>lifecycleProject(retired,{dealerId:'amira',archived:false,records:[]}),{code:'studio_dealer_inactive'});
 });
 

@@ -41,9 +41,22 @@ Inga nya testidentiteter eller produktionsdata behövdes.
 
 ## Arbetssätt och verifiering
 
+Från 16 oktober 2026 kör lokal commit kontroller av ändrade filer och
+tillgängliga närliggande tester, med högst fyra testprocesser. `node
+tools/precommit-checks.mjs --plan` visar urvalet. Hela regressionen körs i CI
+eller uttryckligen med `sh .githooks/pre-commit --full`; ett fokustest är inte
+full acceptans. Studio-tester upptäcks automatiskt och körs en gång i CI.
+Migrationsberedskap mot produktionsregistret krävs för server/schema/beroenden
+och alltid på main; tydliga klient- och teständringar i PR:er slipper den läsningen.
+Systemkartans CI-rapport är informativ och blockerar inte ändrad struktur.
+Agent-talk bevaras för samma checkout, men kontrolleras vid start, nya filanspråk
+och leverans i stället för var 30:e sekund. Samma branchnamn i olika arbetskopior
+delar inte tavla. Uttryckligen beslutad avveckling får ta bort sidor och deras
+förbrukade tester; kvarvarande behörigheter, data och beteenden ska verifieras.
+
 `node tools/check-admin-navigation.mjs` kör befintliga riktade tester med
 fyra arbetare (`--plan` visar urvalet). Det är ett snabbt utvecklingsprov;
-ordinarie fullhook och CI behåller alla kontroller inför leverans.
+CI behåller hela produktkontrollen inför leverans.
 
 Frontendens `npm run typecheck` ingår nu i fullhook/CI och Next-bygget
 tillåter inte längre typfel. Kör Node från rätt paketmapp enligt
@@ -53,8 +66,8 @@ legacy-namn eller ett gammalt test är inte ensamt ett bevarandekrav.
 
 Partner-städningen behåller beteendetester för verklig meny, rollgränser,
 utkast och publiceringskvitton. Test av en borttagen demomenys exakta antal
-och ordning ersätts med dessa kontrakt. Raderingsgrinden och ordinarie
-fullkontroll gäller även när gamla generatorer och vyer tas bort.
+och ordning ersätts med dessa kontrakt. Kontrollera kvarvarande referenser
+när gamla generatorer och vyer tas bort; raderingsgrinden kan hjälpa den kontrollen.
 
 Det tidigare spelarstoppet är hävt för isolerade internetprov. PR #91 har
 Astrid-kvitto för förlust, vinst, push, split, mobil och sammanhängande
@@ -421,6 +434,8 @@ denna ansvarsfördelning. API-nyckeln ska inte läggas i klientkoden.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-16 | Integrationsgranskningen rättade klientundantaget så beroende-/schema-/konfigurationsfiler fortfarande kräver migrationskontroll. Admins testplan kontrollerar nu faktisk globexpansion och har ett negativt prov för bortfallen Studio-täckning. Sidochattens förenkling ingår i den befintliga PR185-leveransen; aktuell slutstatus finns i JOHN-HANDOFF. |
+| 2026-10-16 | Lokala commits använder fokuskontroller; hela regressionen ligger i CI/explicit fullkörning. 135 dubblerade Studio-testval ersatta med automatisk upptäckt; samma 454 testfiler täcks. Systemkartans leveransspärrar borttagna, rapport/evidens kvar. Klient- och test-PR:er slipper live migrationsläsning; server/schema och main behåller den. Agent-talk styrs av arbetsmoment i samma checkout. 54 fokustester och 30 kart-/samordningstester passerade; inga nya föräldralösa tester. Detta är lokal verifiering, inte körd GitHub-CI eller driftsättning. |
 | 2026-10-16 | Chef-verktyg, skill och tester använder nu `agent-talk/chef.json`. Den borttagna `.croupier-inbox` läses, migreras eller återskapas inte. Status är fortsatt skrivfri; 12 riktade prov passerar. Ingen chef aktiverades. |
 | 2026-10-16 | Delegationsregeln anpassad till aktuella AGENTS: uttrycklig delegation, ärvd modell, kort komplett scope och huvudagentens Git-/integrationsansvar. Verifierat ersatta sidor/tester får avvecklas med bevarade kontrakt och regressionstäckning. PR152/C6-kvittot daterat som historik; dagens status länkas till befintlig tracker/handoff. Ingen systemkartbaslinje, produktkod eller drift ändrad. |
 | 2026-10-16 | Importgränsen rättad från tio till 30 osparade filer enligt `DEALER_IMPORT_LIMITS.maxFiles` och befintligt regressionstest. COMPANION-guidens gamla arbetsbranch ersatt med featurebranch → grön PR → main enligt repositorypolicyn. Ingen runtime- eller behörighetsändring. |

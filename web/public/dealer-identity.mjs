@@ -2,11 +2,13 @@
 // Runtime registration and playable media come from the saved presentation.
 export const BASE_DEALER_IDS = Object.freeze(['vera', 'astrid', 'amira', 'mei']);
 export const MAX_DEALERS = 32;
+// Retired product identities remain valid in historical documents and trash.
+const retired = new Set(['vera', 'mei', 'amira', 'johanna']);
 const reserved = new Set(['constructor', 'prototype', 'admin', 'api', 'auth', 'control', 'game', 'site', 'runtime', 'media', 'login', 'logout', 'partner', 'play', 'studio', 'set-password']);
 export function isDealerId(value) {
   return typeof value === 'string' && value.length <= 40 && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) && !reserved.has(value);
 }
-export function isActiveDealerId(value) { return isDealerId(value) && value !== 'amira'; }
+export function isActiveDealerId(value) { return isDealerId(value) && !retired.has(value); }
 export function isRegisteredDealer(project, dealerId) {
   return isDealerId(dealerId) && Array.isArray(project?.dealers) && project.dealers.some(row => row?.id === dealerId);
 }

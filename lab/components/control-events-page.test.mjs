@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject, addDealer, addVariant } from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject, addDealer, addVariant } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -75,9 +75,9 @@ test('video review link keeps the selected variant', () => {
 });
 
 test('normal event previews show missing-video status for registered and unbound dealers', () => {
-  for (const dealerId of ['astrid', 'vera', 'johanna']) {
+  for (const dealerId of ['astrid', 'elin', 'linnea']) {
     for (const videoGenerationId of [null, 'missing-video']) {
-      const draft = addDealer(createSeedProject(), 'johanna', 'Johanna');
+      const draft = addDealer(createSeedProject(), 'linnea', 'Linnea');
       const line = draft.lines.find(item => item.dealerId === dealerId && item.eventId === 'speak.goodluck');
       line.variants[0].videoGenerationId = videoGenerationId;
       const html = render({ initialProject: draft, initialDealerId: dealerId, initialEventId: 'speak.goodluck' });
@@ -103,17 +103,18 @@ test('Grundloop links to content without duplicating the policy editor', () => {
   assert.doesNotMatch(html, /Spela en minut/);
 });
 
-test('Vera variants are stored but not used by the game yet', () => {
+test('retired Vera links require an active dealer before opening the event editor', () => {
   const html = render({ initialDealerId: 'vera' });
-  assert.match(html, /Varianter för Vera sparas i projektet men används inte av spelet ännu\./);
+  assert.match(html, /<h2>Välj dealer<\/h2>/);
+  assert.doesNotMatch(html, /Varianter för Vera|dealer=vera/);
 });
 
 test('own dealer event bindings explain save and republish and expose explicit condition editing',()=>{
-  const draft=addDealer(createSeedProject(),'johanna','Johanna');
-  const html=render({initialProject:draft,initialDealerId:'johanna',initialEventId:'idle.ready'});
-  assert.match(html,/Varianter för Johanna sparas i utkastet/);
+  const draft=addDealer(createSeedProject(),'linnea','Linnea');
+  const html=render({initialProject:draft,initialDealerId:'linnea',initialEventId:'idle.ready'});
+  assert.match(html,/Varianter för Linnea sparas i utkastet/);
   assert.match(html,/Spara och publicera paketet igen/);
-  assert.doesNotMatch(html,/Varianter för Johanna sparas i projektet men används inte/);
+  assert.doesNotMatch(html,/Varianter för Linnea sparas i projektet men används inte/);
   assert.match(html,/role="tab"[^>]*>Villkor/);
 });
 
@@ -152,3 +153,6 @@ test('events page requires an explicit dealer and handles an empty dealer regist
   const empty=render({initialDealerId:undefined,initialProject:{...project,dealers:[],lines:[]}});
   assert.match(empty,/Inga dealers har registrerats ännu/);assert.doesNotMatch(empty,/dealer=astrid/);
 });
+
+// Explicit active dealers used by this isolated component fixture.
+function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}

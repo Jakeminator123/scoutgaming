@@ -1,3 +1,4 @@
+import {createLegacyProject} from './fixtures/legacy-project.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -6,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import {createSeedProject as createEmptyProject,addDealer,defaultPresentationLane} from '../lib/studio-model.mjs';
+import {createSeedProject as createEmptyProject,addDealer,defaultPresentationLane,normalizeProject} from '../lib/studio-model.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
@@ -87,7 +88,7 @@ test('shared preview data authorization rejects unauthenticated and partner acce
   assert.equal(reads,0);
   role='admin';unauthenticated=false;
   const data=await shared.studioUiInitialData(request);
-  assert.equal(reads,2);assert.equal(data.status.provider,'neon');assert.equal(data.project.dealers.length,4);
+  assert.equal(reads,2);assert.equal(data.status.provider,'neon');assert.equal(data.project.dealers.length,1);
 });
 
 test('registered Nora gets her own clip preview and intake link without borrowing Astrid media',()=>{
@@ -328,30 +329,30 @@ test('legacy clips keep selectors and separate layers visible with mandatory bac
 });
 
 test('dealer choice is saved as the presentation default and allowed dealer, while a later preview clip leaves that binding intact',async()=>{
-  const project=addDealer(createSeedProject(),'johanna','Johanna'),other=structuredClone(project.lanes[0]);other.id='vip';other.label='VIP';project.lanes.push(other);
+  const project=addDealer(createSeedProject(),'linnea','Linnea'),other=structuredClone(project.lanes[0]);other.id='vip';other.label='VIP';project.lanes.push(other);
   const inventory={videos:[
-    {id:'johanna-idle',dealer:'johanna',available:true,previewUrl:'/johanna/idle',label:'Johanna grundloop',classification:{dealerId:'johanna',eventId:'idle.ready',role:'standard',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}}},
-    {id:'johanna-card',dealer:'johanna',available:true,previewUrl:'/johanna/card',label:'Johanna kort',classification:{dealerId:'johanna',eventId:'deal.dealer',role:'standard'}},
+    {id:'linnea-idle',dealer:'linnea',available:true,previewUrl:'/linnea/idle',label:'Linnea grundloop',classification:{dealerId:'linnea',eventId:'idle.ready',role:'standard',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}}},
+    {id:'linnea-card',dealer:'linnea',available:true,previewUrl:'/linnea/card',label:'Linnea kort',classification:{dealerId:'linnea',eventId:'deal.dealer',role:'standard'}},
   ]};
   const harness=previewHarness({project,inventory,dirty:false}),original=structuredClone(project);
   let tree=harness.render();
-  harness.find(tree,node=>node.type==='select'&&node.props.value==='astrid').props.onChange({target:{value:'johanna'}});
+  harness.find(tree,node=>node.type==='select'&&node.props.value==='astrid').props.onChange({target:{value:'linnea'}});
   tree=harness.render();
   const selected=harness.session.project.lanes[0];
-  assert.equal(selected.layers.dealer.default,'johanna');assert.ok(selected.dealers.includes('johanna'));assert.ok(selected.layers.dealer.allowed.includes('johanna'));
+  assert.equal(selected.layers.dealer.default,'linnea');assert.ok(selected.dealers.includes('linnea'));assert.ok(selected.layers.dealer.allowed.includes('linnea'));
   assert.deepEqual(harness.session.project.lanes[1],original.lanes[1]);assert.deepEqual(project,original);assert.equal(harness.session.dirty,true);
-  const content=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/clips?dealer=johanna'));
+  const content=harness.find(tree,node=>node.type==='a'&&node.props.href?.includes('/control/clips?dealer=linnea'));
   assert.equal(content.props.children,'Dealerklipp, grundloop och händelser \u2192');
   const beforePreview=structuredClone(harness.session.project);
-  harness.find(tree,node=>node.type==='select'&&node.props.value==='johanna-idle').props.onChange({target:{value:'johanna-card'}});
+  harness.find(tree,node=>node.type==='select'&&node.props.value==='linnea-idle').props.onChange({target:{value:'linnea-card'}});
   tree=harness.render();
-  assert.equal(harness.find(tree,node=>node.type?.name==='CompositionPreview').props.dealer.url,'/johanna/card');
+  assert.equal(harness.find(tree,node=>node.type?.name==='CompositionPreview').props.dealer.url,'/linnea/card');
   assert.deepEqual(harness.session.project,beforePreview);
   const save=harness.find(tree,node=>node.type==='button'&&node.props.children==='Spara');
   assert.equal(save.props.disabled,false);save.props.onClick();await Promise.resolve();
   assert.equal(harness.savedProjects.length,1);
-  assert.equal(harness.savedProjects[0].lanes[0].layers.dealer.default,'johanna');
-  assert.ok(harness.savedProjects[0].lanes[0].layers.dealer.allowed.includes('johanna'));
+  assert.equal(harness.savedProjects[0].lanes[0].layers.dealer.default,'linnea');
+  assert.ok(harness.savedProjects[0].lanes[0].layers.dealer.allowed.includes('linnea'));
   assert.deepEqual(harness.savedProjects[0].lanes[1],original.lanes[1]);
 });
 
@@ -446,54 +447,53 @@ test('switching layers preserves mounted upload controls and its receipt while t
 });
 
 test('composition makes dealer permission changes explicit and never silently enables the other built-in dealers',()=>{
-  const project=addDealer(createSeedProject(),'johanna','Johanna'),harness=previewHarness({project,dirty:false});
+  const project=addDealer(createSeedProject(),'linnea','Linnea'),harness=previewHarness({project,dirty:false});
   let tree=harness.render();
   const permission=name=>harness.find(tree,node=>node.type==='input'&&node.props['aria-label']==='Tillåt '+name);
   assert.equal(permission('Astrid').props.checked,true);assert.equal(permission('Astrid').props.disabled,true);
-  assert.equal(permission('Johanna').props.checked,false);
+  assert.equal(permission('Linnea').props.checked,false);
   assert.deepEqual(harness.session.project.lanes[0].layers.dealer.allowed,['astrid']);
-  harness.find(tree,node=>node.type==='select'&&node.props.value==='astrid').props.onChange({target:{value:'johanna'}});
+  harness.find(tree,node=>node.type==='select'&&node.props.value==='astrid').props.onChange({target:{value:'linnea'}});
   tree=harness.render();
-  assert.equal(permission('Johanna').props.checked,true);assert.equal(permission('Johanna').props.disabled,true);
+  assert.equal(permission('Linnea').props.checked,true);assert.equal(permission('Linnea').props.disabled,true);
   assert.equal(permission('Astrid').props.checked,true,'previous choice remains visible until explicitly removed');
   permission('Astrid').props.onChange({target:{checked:false}});tree=harness.render();
-  assert.deepEqual(harness.session.project.lanes[0].dealers,['johanna']);
-  assert.deepEqual(harness.session.project.lanes[0].layers.dealer.allowed,['johanna']);
-  assert.equal(harness.session.project.lanes[0].layers.dealer.default,'johanna');
-  permission('Johanna').props.onChange({target:{checked:false}});
-  assert.deepEqual(harness.session.project.lanes[0].layers.dealer.allowed,['johanna']);
-  for(const name of ['Vera','Mei'])assert.equal(permission(name).props.checked,false);
-  assert.equal(permission('Amira'),null);
+  assert.deepEqual(harness.session.project.lanes[0].dealers,['linnea']);
+  assert.deepEqual(harness.session.project.lanes[0].layers.dealer.allowed,['linnea']);
+  assert.equal(harness.session.project.lanes[0].layers.dealer.default,'linnea');
+  permission('Linnea').props.onChange({target:{checked:false}});
+  assert.deepEqual(harness.session.project.lanes[0].layers.dealer.allowed,['linnea']);
+  for(const name of ['Vera','Mei','Amira','Johanna'])assert.equal(permission(name),null);
   assert.equal(harness.session.dirty,true);
 });
 
 test('dealer context opens an existing matching presentation without changing allowed dealers',()=>{
-  const project=addDealer(createSeedProject(),'johanna','Johanna');
+  const project=addDealer(createSeedProject(),'linnea','Linnea');
   const common=defaultPresentationLane('astrid'),own=structuredClone(common);
-  common.layers.dealer.allowed=['astrid','johanna'];common.dealers=['astrid','johanna'];
-  own.id='johanna-room';own.label='Johannas miljö';own.layers.dealer.default='johanna';
-  own.layers.dealer.allowed=['johanna'];own.dealers=['johanna'];project.lanes=[common,own];
+  common.layers.dealer.allowed=['astrid','linnea'];common.dealers=['astrid','linnea'];
+  own.id='linnea-room';own.label='Linneas miljö';own.layers.dealer.default='linnea';
+  own.layers.dealer.allowed=['linnea'];own.dealers=['linnea'];project.lanes=[common,own];
   const before=JSON.stringify(project);
   const {initialCompositionLaneId,ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url));
-  assert.equal(initialCompositionLaneId(project,undefined,'johanna'),'johanna-room');
-  assert.equal(initialCompositionLaneId(project,common.id,'johanna'),common.id,'explicit presentation wins');
+  assert.equal(initialCompositionLaneId(project,undefined,'linnea'),'linnea-room');
+  assert.equal(initialCompositionLaneId(project,common.id,'linnea'),common.id,'explicit presentation wins');
   assert.equal(initialCompositionLaneId(project,undefined,'unknown'),common.id);
-  const html=renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId:'johanna'}));
-  assert.match(html,/<option value="johanna-room" selected="">Johannas miljö<\/option>/);
-  assert.match(html,/<option value="johanna" selected="">Johanna<\/option>/);
+  const html=renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId:'linnea'}));
+  assert.match(html,/<option value="linnea-room" selected="">Linneas miljö<\/option>/);
+  assert.match(html,/<option value="linnea" selected="">Linnea<\/option>/);
   assert.equal(JSON.stringify(project),before);
   const page=readFileSync(new URL('../app/control/compositions/page.tsx',import.meta.url),'utf8');
   assert.match(page,/initialDealerId=\{firstQueryValue\(query.dealer\)\}/);
 });
 
 test('a library dealer outside the selected presentation has an explicit inclusion action',()=>{
-  const project=addDealer(createSeedProject(),'johanna','Johanna');
+  const project=addDealer(createSeedProject(),'linnea','Linnea');
   const before=JSON.stringify(project);
   const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url));
-  const html=renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId:'johanna'}));
-  assert.match(html,/Du valde Johanna i dealerbiblioteket/);
+  const html=renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId:'linnea'}));
+  assert.match(html,/Du valde Linnea i dealerbiblioteket/);
   assert.match(html,/Dealern ingår inte i den här sammansättningen ännu/);
-  assert.match(html,/Använd Johanna som startdealer/);
+  assert.match(html,/Använd Linnea som startdealer/);
   assert.equal(JSON.stringify(project),before);
 });
 
@@ -636,17 +636,17 @@ test('preview errors stay in the composer and an explicit new click can retry',a
 });
 
 test('scene navigation preserves an explicitly requested dealer even when the selected scene uses a different dealer',()=>{
-  const project=createSeedProject();project.lanes=[project.lanes[0]];
+  const project=addDealer(createSeedProject(),'nora','Nora');project.lanes=[project.lanes[0]];
   project.lanes[0].layers.dealer.default='astrid';project.lanes[0].layers.dealer.allowed=['astrid'];
   const before=structuredClone(project);
   const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url));
   const render=initialDealerId=>renderToStaticMarkup(React.createElement(ControlPreviewPage,{initialProject:project,initialVideos:{videos:[]},initialStatus:{configured:false},initialDealerId}));
-  const html=render('vera');
-  assert.match(html,/Du valde Vera i dealerbiblioteket/);assert.match(html,/Använd Vera som startdealer/);
+  const html=render('nora');
+  assert.match(html,/Du valde Nora i dealerbiblioteket/);assert.match(html,/Använd Nora som startdealer/);
   assert.doesNotMatch(html,/aria-label="Studio för|class="tabs"/);
   const links=[...html.matchAll(/href="([^"]*\/control\/clips\?view=idle[^"]*)"/g)].map(match=>new URL(match[1].replaceAll('&amp;','&'),'https://studio.invalid'));
   assert.equal(links.length,1);
-  for(const link of links){assert.equal(link.searchParams.get('dealer'),'vera');assert.equal(link.searchParams.get('composition'),project.lanes[0].id);}
+  for(const link of links){assert.equal(link.searchParams.get('dealer'),'nora');assert.equal(link.searchParams.get('composition'),project.lanes[0].id);}
   assert.deepEqual(project,before);
   assert.match(render(undefined),/Dealers &amp; klipp · Astrid/);
   assert.doesNotMatch(render('unknown-dealer'),/Dealers &amp; klipp · Astrid/);
@@ -658,7 +658,7 @@ function createSeedProject() { const project = createEmptyProject(); project.lan
 
 
 test('a saved retired dealer remains invalid until explicit replacement and removal, without automatic mutation',()=>{
-  const project=createSeedProject(),lane=project.lanes[0];
+  const project=normalizeProject(createLegacyProject());project.lanes=[defaultPresentationLane('astrid')];const lane=project.lanes[0];
   lane.layers.dealer.default='amira';lane.dealers=['amira'];lane.layers.dealer.allowed=['amira'];
   const original=structuredClone(project);let requests=0;
   const h=previewHarness({project,dirty:false,inventory:{videos:[{id:'retired-clip',dealer:'amira',label:'Amira history',available:true,previewUrl:'/retired-clip.mp4'}]},previewClient:()=>{requests++;throw Error('must not preview retired choice');}});

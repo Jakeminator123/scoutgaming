@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject} from '../../../../lab/lib/studio-model.mjs';
+import {createSeedProject,addDealer} from '../../../../lab/lib/studio-model.mjs';
 import {clipSlots} from './connected-studio.mjs';
 import {groupSlots,affectedRooms,slotCaption,slotExplanation,isRenderedOutcome,layoutClipCards} from './studio-layout.mjs';
 
@@ -49,8 +49,8 @@ test('visual cards preserve every exact server slot and discover all 17 speech v
   assert.equal(slotCaption(groups.find(row=>row.id==='players').slots[6]),'Plats 7');
 });
 test('save impact covers shared banks, earlier contexts and only changed compositions',()=>{
-  const before=createSeedProject(),after=structuredClone(before);
-  const rooms=[{id:'a',dealerIds:['astrid'],compositionId:'one'},{id:'b',dealerIds:['astrid'],compositionId:'two'},{id:'c',dealerIds:['vera'],compositionId:'three'}];
+  const before=addDealer(addDealer(createSeedProject(),'nora','Nora'),'elin','Elin'),after=structuredClone(before);
+  const rooms=[{id:'a',dealerIds:['astrid'],compositionId:'one'},{id:'b',dealerIds:['astrid'],compositionId:'two'},{id:'c',dealerIds:['nora'],compositionId:'three'}];
   after.lines.find(row=>row.dealerId==='astrid').variants[0].videoGenerationId='11111111-1111-4111-8111-111111111111';
   assert.deepEqual(affectedRooms(before,after,rooms).map(row=>row.id),['a','b']);
   assert.deepEqual(affectedRooms(before,before,rooms),[]);
@@ -61,10 +61,10 @@ test('removed family policies remain visible in save impact',()=>{
   assert.deepEqual(affectedRooms(before,after,rooms).map(row=>row.id),['a']);
 });
 test('editing a shared trigger reports each dealer bank and room using it',()=>{
-  const before=createSeedProject(),after=structuredClone(before);
+  const before=addDealer(addDealer(createSeedProject(),'nora','Nora'),'elin','Elin'),after=structuredClone(before);
   before.triggers=[{id:'shared',value:1}];after.triggers=[{id:'shared',value:2}];
-  for(const project of [before,after])for(const line of project.lines.filter(row=>['astrid','vera'].includes(row.dealerId)))line.variants[0].triggerIds=['shared'];
-  const rooms=[{id:'a',dealerIds:['astrid'],compositionId:'one'},{id:'b',dealerIds:['vera'],compositionId:'two'},{id:'c',dealerIds:['mei'],compositionId:'three'}];
+  for(const project of [before,after])for(const line of project.lines.filter(row=>['astrid','nora'].includes(row.dealerId)))line.variants[0].triggerIds=['shared'];
+  const rooms=[{id:'a',dealerIds:['astrid'],compositionId:'one'},{id:'b',dealerIds:['nora'],compositionId:'two'},{id:'c',dealerIds:['elin'],compositionId:'three'}];
   assert.deepEqual(affectedRooms(before,after,rooms).map(row=>row.id),['a','b']);
 });
 

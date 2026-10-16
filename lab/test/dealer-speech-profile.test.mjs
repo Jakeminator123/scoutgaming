@@ -92,7 +92,7 @@ test('frozen dealer capture projects id/label/idle only and omits speech prepara
   assert.doesNotMatch(JSON.stringify(captured),/voiceId|elevenlabs|own-idle|speechProfile/);
 });
 
-for(const dealerId of ['astrid','vera','mei','paow'])test('speech settings uses own reviewed reference and explicit voice for registered '+dealerId,async()=>{
+for(const dealerId of ['astrid','elin','saga','paow'])test('speech settings uses own reviewed reference and explicit voice for registered '+dealerId,async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('next/dist/build/swc');
   const helpers=await import('../../web/public/dealer-speech-profile.mjs'),voices=await import('../../web/public/dealer-voice-catalog.mjs');

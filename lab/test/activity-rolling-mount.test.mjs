@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -108,9 +108,9 @@ test('room context names the room and does not silently identify the default dea
 test('the inactive-speech link preserves the selected dealer', () => {
   const { ControlActivityPage } = loadTs(new URL('../components/control-activity-page.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ControlActivityPage, {
-    initialProject: createSeedProject(),
-    initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'vera',
+    initialProject: addDealer(createSeedProject(), 'elin', 'Elin'),
+    initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'elin',
   }));
-  assert.match(html, /href="\/control\/probe\?dealer=vera"/);
+  assert.match(html, /href="\/control\/probe\?dealer=elin"/);
   assert.doesNotMatch(html, /href="\/control\/probe"/);
 });

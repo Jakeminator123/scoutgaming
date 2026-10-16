@@ -15,11 +15,11 @@ function publication(slug, dealerId, label) {
 const payload = catalogs => ({ schemaVersion: 1, source: 'registered', administration: { operators: [{ name: 'Must never become lobby data' }] }, lobby: { catalogs } });
 
 test('published names and parent-scoped choices survive colliding room IDs without template data', () => {
-  const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Johanna'), publication('beta', 'amira', 'Amira')]));
+  const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora Studio'), publication('beta', 'elin', 'Elin')]));
   assert.deepEqual(catalog.operators.map(row => row.id), ['alpha', 'beta']);
   assert.deepEqual(catalog.rooms.map(row => row.key), ['alpha:shared-table', 'beta:shared-table']);
   const selection = lobbySelection(catalog, { operatorId: 'alpha', roomKey: 'alpha:shared-table', dealerId: 'nora' });
-  assert.equal(selection.dealer.name, 'Johanna');
+  assert.equal(selection.dealer.name, 'Nora Studio');
   assert.equal(playUrlFor(selection), '/play/blackjack?operator=alpha&table=shared-table&dealer=nora');
   assert.equal('image' in selection.dealer, false);
   assert.equal('limits' in selection.room, false);
@@ -44,7 +44,7 @@ test('roulette rooms preserve their game and launch endpoint alongside blackjack
 });
 
 test('room artwork comes from a single published background, never an editable default or admin image', () => {
-  const source = publication('alpha', 'nora', 'Johanna');
+  const source = publication('alpha', 'nora', 'Nora Studio');
   const background = { id: '11111111-1111-1111-1111-111111111111', label: 'Salongen' };
   Object.assign(source.rooms[0].dealers[0], { presentation: 'layered', independentLayers: true,
     background: { enabled: true, default: background.id, allowed: [background], mode: 'image' } });
@@ -60,7 +60,7 @@ test('room artwork comes from a single published background, never an editable d
 });
 
 test('a changed tenant or room revokes stale downstream selections and cross-room launch links', () => {
-  const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Johanna'), publication('beta', 'amira', 'Amira')]));
+  const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora Studio'), publication('beta', 'elin', 'Elin')]));
   const wrongTenant = lobbySelection(catalog, { operatorId: 'beta', roomKey: 'alpha:shared-table', dealerId: 'nora' });
   assert.equal(wrongTenant.room, null); assert.equal(wrongTenant.dealer, null);
   assert.deepEqual(wrongTenant.availableDealers, []);
@@ -71,7 +71,7 @@ test('a changed tenant or room revokes stale downstream selections and cross-roo
 });
 
 test('malformed, duplicate, draft and injected external launch catalogs fail closed', () => {
-  const original = publication('alpha', 'nora', 'Johanna');
+  const original = publication('alpha', 'nora', 'Nora Studio');
   for (const candidate of [
     { ...payload([original]), source: 'fixture' },
     { schemaVersion: 1, source: 'registered', administration: { rooms: [original.rooms[0]] } },
@@ -83,7 +83,7 @@ test('malformed, duplicate, draft and injected external launch catalogs fail clo
 
 test('empty registered directories and unpublished operator catalogs stay empty', () => {
   assert.deepEqual(parseLobbyCatalog(payload([])), { operators: [], rooms: [], dealers: [] });
-  const original = publication('alpha', 'nora', 'Johanna');
+  const original = publication('alpha', 'nora', 'Nora Studio');
   const catalog = parseLobbyCatalog(payload([{ ...original, packageRevision: null, rooms: [] }]));
   assert.equal(catalog.operators[0].status, 'empty');
   assert.deepEqual(catalog.rooms, []); assert.deepEqual(catalog.dealers, []);
@@ -95,9 +95,9 @@ test('catalog read carries session and cancellation, disables cache, and rejects
     assert.equal(path, '/admin/_data/catalog');
     assert.equal(options.credentials, 'same-origin'); assert.equal(options.cache, 'no-store');
     assert.equal(options.redirect, 'error'); assert.equal(options.signal, signal);
-    return Response.json(payload([publication('alpha', 'nora', 'Johanna')]));
+    return Response.json(payload([publication('alpha', 'nora', 'Nora Studio')]));
   } });
-  assert.equal(loaded.dealers[0].name, 'Johanna');
+  assert.equal(loaded.dealers[0].name, 'Nora Studio');
   for (const status of [401, 403, 503]) await assert.rejects(loadLobbyCatalog({ fetchImpl: async () => new Response('private details', { status }) }), error => !error.message.includes('private details'));
   await assert.rejects(loadLobbyCatalog({ fetchImpl: async () => Response.json({}) }));
 });
@@ -138,7 +138,7 @@ test('only registered choices appear in publication order, with or without a sup
 });
 
 test('room URL context resolves exact published ownership without accepting table design IDs as rooms', () => {
-  const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora'), publication('beta', 'amira', 'Amira')]));
+  const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora'), publication('beta', 'elin', 'Elin')]));
   assert.deepEqual(lobbyQuerySelection(catalog, '?operator=beta&room=shared-table'),
     { operatorId: 'beta', roomKey: 'beta:shared-table', unavailable: false });
   assert.deepEqual(lobbyQuerySelection(catalog, '?operator=alpha&table=shared-table'),
@@ -156,7 +156,7 @@ test('room URL context resolves exact published ownership without accepting tabl
 });
 
 test('a foreign or removed room URL never chooses an available room for its operator', () => {
-  const foreign = publication('beta', 'amira', 'Amira');
+  const foreign = publication('beta', 'elin', 'Elin');
   foreign.rooms[0].id = 'beta-only';
   foreign.rooms[0].playUrl = '/play/blackjack?operator=beta&table=beta-only';
   const catalog = parseLobbyCatalog(payload([publication('alpha', 'nora', 'Nora'), foreign]));

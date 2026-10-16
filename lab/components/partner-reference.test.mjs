@@ -17,7 +17,7 @@ function nodes(node, predicate) {
   if (Array.isArray(node)) return node.flatMap(child => nodes(child, predicate));
   return [...(predicate(node) ? [node] : []), ...nodes(node.props?.children, predicate)];
 }
-function harness(dealerQuery, dealerId = 'vera') {
+function harness(dealerQuery, dealerId = 'elin') {
   const values = [], refs = [], activities = [], calls = { focus: 0, navigate: 0, close: 0 };
   let stateCursor = 0, refCursor = 0;
   const fakeReact = { ...React, useEffect() {},
@@ -42,7 +42,7 @@ function harness(dealerQuery, dealerId = 'vera') {
 }
 
 test('cloud reattachment rejects another, missing or ambiguous dealer without changing ongoing play', () => {
-  for (const query of ['dealer=astrid', '', 'dealer=vera&dealer=astrid']) {
+  for (const query of ['dealer=astrid', '', 'dealer=elin&dealer=astrid']) {
     const h = harness(query);
     nodes(h.render(), node => node.type === 'button' && node.props.children === 'Anslut & följ spelet')[0].props.onClick();
     assert.match(h.values[4], /annan dealer/);
@@ -53,7 +53,7 @@ test('cloud reattachment rejects another, missing or ambiguous dealer without ch
 });
 
 test('cloud reattachment keeps a matching dealer game and records observation only', () => {
-  const h = harness('dealer=vera');
+  const h = harness('dealer=elin');
   nodes(h.render(), node => node.type === 'button' && node.props.children === 'Anslut & följ spelet')[0].props.onClick();
   assert.equal(h.values[4], '');
   assert.deepEqual(h.calls, { focus: 1, navigate: 0, close: 0 });

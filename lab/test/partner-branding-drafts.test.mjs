@@ -16,8 +16,8 @@ async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,
  const pool=operatorMemoryPool(),store=await createOperatorStore({sql:pool,scope}),actor='fixture';
  const audit={actorId:'42',accessClass:'partner',requestId:randomUUID()};
  await store.createOperator({operatorId,actor,slug:'draft-unit',name:'Draft'});
- const lane={...defaultPresentationLane('astrid'),composition:defaultCompositionSettings(),operatorAdjustable,dealers:['astrid','vera']};
- lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','vera']};
+ const lane={...defaultPresentationLane('astrid'),composition:defaultCompositionSettings(),operatorAdjustable,dealers:['astrid','nora']};
+ lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','nora']};
  lane.layers.table={...lane.layers.table,enabled:true,colors:['#112233','#334455','#556677']};
  const assets=large?['table','background'].map((role,index)=>{
   const asset={schemaVersion:1,id:index?'22222222-2222-4222-8222-222222222222':'11111111-1111-4111-8111-111111111111',role,label:role,
@@ -88,8 +88,8 @@ test('draft marker failure rolls back package and publication audit while retain
 });
 test('shared room resolution strips foreign lane defaults, applies own override, and never exports frozen internals',()=>{
  const branding={lane:'first',table:'table-a',dealer:'astrid',color:'#112233',_scoutPresentation:{secret:'never'},logo:'legacy',
- roomOverrides:{second:{dealer:'vera',color:'#334455'}}};
- assert.deepEqual(resolveRoomBranding(branding,'second','other'),{lane:'other',dealer:'vera',color:'#334455'});
+ roomOverrides:{second:{dealer:'nora',color:'#334455'}}};
+ assert.deepEqual(resolveRoomBranding(branding,'second','other'),{lane:'other',dealer:'nora',color:'#334455'});
  assert.deepEqual(resolveRoomBranding(branding,'missing','other'),{lane:'other'});
  assert.equal(Object.hasOwn(publicEditableBranding(branding),'_scoutPresentation'),false);
  assert.equal(Object.hasOwn(publicEditableBranding(branding),'logo'),false);

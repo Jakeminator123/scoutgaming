@@ -34,7 +34,7 @@ test('historical catalog remains readable while only an explicitly saved cloud i
   assert.deepEqual(await idle('paow',project),{dealerId:'paow',mediaId:id,sha256,available:true});
   assert.equal(await idle('paow',{...project,lines:[]}),null,'registered identity alone cannot supply an idle');
   const voices=await createRegisteredVoiceLines({env,repositoryRoot:root})();
-  assert.deepEqual(voices.dealers.map(row=>row.dealer),['vera','astrid','mei']);
+  assert.deepEqual(voices.dealers.map(row=>row.dealer),['astrid']);
   for(const dealer of voices.dealers)assert.equal(dealer.lines.length,0);
   const inventory=await media.videoRegistry();assert.equal(inventory.videos.find(row=>row.id===id).dealer,'paow');assert.ok(inventory.families.length>0);
   const legacy=await media.legacyControls(project);
@@ -56,11 +56,18 @@ test('deployment catalog builds after Amira source removal without changing Astr
  assert.equal(Object.keys(generated.entries).some(path=>path.includes('/amira/')),false);
  for(const [path,content]of Object.entries(generated.entries))assert.equal(content,legacy.entries[path]);
 });
-test('retired Amira aliases and Blob pointers disappear while Astrid remains registered',async()=>{
+test('retired dealer aliases and Blob pointers disappear while Astrid remains registered',async()=>{
  const {readFile}=await import('node:fs/promises');const {resolvePublicMedia}=await import('../tools/media-layout.mjs');
  assert.equal(resolvePublicMedia('/review/amira-green-speak/win.mp4'),null);assert.ok(resolvePublicMedia('/review/astrid-green-speak/win.mp4'));
  const index=JSON.parse(await readFile(join(source,'media/blob-index.json'),'utf8'));
- assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/amira/')),false);assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/astrid/')),true);
+ for(const dealer of ['vera','mei','amira','johanna']){
+  assert.equal(index.files.some(row=>row.logicalPath.startsWith(`dealers/${dealer}/`)),false);
+  assert.equal(index.files.some(row=>row.logicalPath===`site/runtime/backoffice/img/${dealer}-portrait.jpg`),false);
+  for(const url of [`/lab/${dealer}-pilot.mp4`,`/lab/${dealer}-pilot-debug.mp4`,`/bo/img/${dealer}-portrait.jpg`])assert.equal(resolvePublicMedia(url),null);
+ }
+ assert.equal(resolvePublicMedia('/dealer-hands/streams/index.json'),null);
+ assert.equal(index.files.some(row=>row.logicalPath==='dealers/astrid/runtime/composited/2026-09-09/mei-push.mp4'),false);
+ assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/astrid/')),true);
 });
 test('retired IDs cannot acquire the older frontend portrait fallback',async()=>{
  const {dealerPortrait}=await import('../apps/croupier-frontend/lib/player-room-preview.mjs');

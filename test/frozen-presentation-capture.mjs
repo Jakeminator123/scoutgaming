@@ -9,15 +9,15 @@ import {captureFrozenPresentation, assertCapturedPresentationMedia, selectedRegi
 const scope={environment:'frozen-fixture',workspaceId:'isolated'};
 const id='10000000-0000-4000-8000-000000000001',sha256='a'.repeat(64);
 function fixture(){
-  const project=addDealer(createSeedProject(),'johanna','Johanna');
-  const lane=defaultPresentationLane('johanna');lane.id='johns-presentation';lane.dealers=['johanna'];lane.layers.dealer.default='johanna';lane.layers.dealer.allowed=['johanna'];project.lanes=[lane];
-  project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
-  const classification={dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Egen Johanna',notes:'',
+  const project=addDealer(createSeedProject(),'linnea','Linnea');
+  const lane=defaultPresentationLane('linnea');lane.id='johns-presentation';lane.dealers=['linnea'];lane.layers.dealer.default='linnea';lane.layers.dealer.allowed=['linnea'];project.lanes=[lane];
+  project.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
+  const classification={dealerId:'linnea',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Egen Linnea',notes:'',
     compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}};
-  const record={id,sha256,size:4096,contentType:'video/mp4',pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.mp4`,classification};
+  const record={id,sha256,size:4096,contentType:'video/mp4',pathname:`croupier/media/dealers/linnea/review/uploads/${id}/${sha256}.mp4`,classification};
   const snapshot={scope,projectDocument:{kind:'project',revision:project.revision,value:project},administrationDocument:{kind:'administration',revision:'admin-initial',value:{rooms:[]}},mediaRows:[{...record,revision:'media-initial'}]};
-  const inventory={videos:[{id,sha256,bytes:4096,dealer:'johanna',available:true,classification,kind:'idle',playback:'once'}],families:[],summary:{readable:true,snapshotReadable:true}};
-  return {snapshot,inventory,selectedLaneIds:[lane.id],requiredIdleDealerIds:['johanna']};
+  const inventory={videos:[{id,sha256,bytes:4096,dealer:'linnea',available:true,classification,kind:'idle',playback:'once'}],families:[],summary:{readable:true,snapshotReadable:true}};
+  return {snapshot,inventory,selectedLaneIds:[lane.id],requiredIdleDealerIds:['linnea']};
 }
 test('new publication rejects explicitly opaque dealer sources without changing their saved records',()=>{
   const input=fixture();input.snapshot.mediaRows[0].classification.compositing={mode:'opaque'};
@@ -56,7 +56,7 @@ test('v3 idle UUID, shader metadata, own label and immutable bytes survive envel
   const input=fixture(), captured=captureFrozenPresentation(input), lane=input.snapshot.projectDocument.value.lanes[0];
   assert.equal(captured.presentation.schemaVersion,3);assert.equal(captured.presentation.registeredDealers[0].idle.id,id);
   const pack={lanes:[lane.id],branding:withPackagePresentation({name:'Johns'},captured.presentation)};
-  input.snapshot.projectDocument.value.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
+  input.snapshot.projectDocument.value.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
   input.inventory.videos=[];input.snapshot.mediaRows[0].classification.compositing.threshold=.9;
   assert.deepEqual(readPackagePresentation(pack),captured.presentation);
   assert.equal(readPackagePresentation(pack).registeredDealers[0].idle.classification.compositing.threshold,.2);
@@ -73,7 +73,7 @@ test('portable v3 decode requires all and only the selected saved extra registry
 });
 test('selected registered default must have own idle but exact card slots remain optional',()=>{
   const input=fixture();
-  assert.deepEqual(selectedRegisteredIdleDefaults(input.snapshot.projectDocument.value,input.selectedLaneIds),['johanna']);
+  assert.deepEqual(selectedRegisteredIdleDefaults(input.snapshot.projectDocument.value,input.selectedLaneIds),['linnea']);
   input.inventory.videos[0].available=false;
   assert.throws(()=>captureFrozenPresentation(input),e=>e.code==='studio_dealer_idle_required'&&e.statusCode===422);
   input.requiredIdleDealerIds=[];
@@ -88,8 +88,8 @@ test('captured media CAS checks only the frozen UUID through the current bound r
 });
 test('advanced republication must preserve every published room lane/default ownership without a same-ID lock',()=>{
   const presentation=captureFrozenPresentation(fixture()).presentation;
-  const room={schemaVersion:2,id:'room-10000000-0000-4000-8000-000000000002',name:'Johns',operatorId:'north',presentationLaneId:'johns-presentation',gameLaneId:'server-generated-johanna',state:'live'};
-  const administration={rooms:[room],gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Johanna',renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}]};
+  const room={schemaVersion:2,id:'room-10000000-0000-4000-8000-000000000002',name:'Johns',operatorId:'north',presentationLaneId:'johns-presentation',gameLaneId:'server-generated-linnea',state:'live'};
+  const administration={rooms:[room],gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Linnea',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}]};
   const input={administration,operatorId:'north',currentPackage:{tables:[room.id]},presentation};
   assert.doesNotThrow(()=>assertPublishedRoomBindings(input));
   for(const change of [p=>p.lanes=[],p=>p.lanes[0].layers.dealer.default='nora']){
@@ -103,7 +103,7 @@ test('portable v3 parser rejects getter-backed authority or decorated arrays wit
   const source=captureFrozenPresentation(fixture()).presentation;let called=0;
   for(const mutate of [
     p=>Object.defineProperty(p,'schemaVersion',{enumerable:true,get(){called++;return 2;}}),
-    p=>Object.defineProperty(p.registeredDealers[0],'id',{enumerable:true,get(){called++;return 'johanna';}}),
+    p=>Object.defineProperty(p.registeredDealers[0],'id',{enumerable:true,get(){called++;return 'linnea';}}),
     p=>Object.defineProperty(p.registeredDealers,0,{enumerable:true,get(){called++;return source.registeredDealers[0];}}),
     p=>p.registeredDealers.hidden='unknown',
     p=>p.lanes[Symbol('hidden')]='unknown'
@@ -114,8 +114,8 @@ test('portable v3 parser rejects getter-backed authority or decorated arrays wit
 });
 
 
-test('v3 binding admits only a frozen allowed Astrid adapter for the Johanna default and rejects retired or foreign adapters', () => {
-  const lane = defaultPresentationLane('johanna'); lane.dealers=['johanna','astrid']; lane.layers.dealer.allowed=[...lane.dealers];
+test('v3 binding admits only a frozen allowed Astrid adapter for the Linnea default and rejects retired or foreign adapters', () => {
+  const lane = defaultPresentationLane('linnea'); lane.dealers=['linnea','astrid']; lane.layers.dealer.allowed=[...lane.dealers];
   const presentation = cloudPresentationFixture({lanes:[lane]}).presentation;
   const room = { schemaVersion:2, id:'room-existing', name:'Existing', operatorId:'north', presentationLaneId:presentation.lanes[0].id, gameLaneId:'old-astrid', state:'live' };
   const game = {schemaVersion:1,id:room.gameLaneId,label:'Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'};
@@ -128,7 +128,7 @@ test('v3 binding admits only a frozen allowed Astrid adapter for the Johanna def
     value => { value.presentation.lanes[0].layers.dealer.default='unknown'; },
     value => { value.administration.gameLanes[0]={...game,dealer:'amira',mediaCollection:'amira-presentation'}; },
     value => { value.administration.gameLanes[0]={...game,dealer:'nora',mediaCollection:'nora-presentation'}; },
-    value => { value.presentation.lanes[0].layers.dealer.allowed=['johanna']; },
+    value => { value.presentation.lanes[0].layers.dealer.allowed=['linnea']; },
     value => { value.presentation.registeredDealers=value.presentation.registeredDealers.filter(row=>row.id!=='astrid'); },
     value => { value.presentation.registeredDealers[0].idle=null; },
   ]) {

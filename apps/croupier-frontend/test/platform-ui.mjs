@@ -502,13 +502,13 @@ test('bare public Blackjack enters the existing lobby without reading a player s
 test('published room login retains operator, room and dealer while the administrator portal keeps its own session',async()=>{
   const unifiedEnv={...env,CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',CROUPIER_STUDIO_NEON_POLICY:'1'};
   const calls=[];
-  const response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=sg-test&table=room-one&dealer=johanna'),{
+  const response=await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/play/blackjack?operator=sg-test&table=room-one&dealer=linnea'),{
     env:unifiedEnv,fetchImpl:async(url)=>{calls.push(url);return Response.json({authenticated:false});},
   });
   assert.equal(response.status,303);
   const location=new URL(response.headers.get('location'),env.CROUPIER_PUBLIC_ORIGIN);
   assert.equal(location.pathname,'/player-login');assert.equal(location.searchParams.get('operator'),'sg-test');
-  assert.equal(location.searchParams.get('table'),'room-one');assert.equal(location.searchParams.get('dealer'),'johanna');
+  assert.equal(location.searchParams.get('table'),'room-one');assert.equal(location.searchParams.get('dealer'),'linnea');
   assert.deepEqual(calls,[env.CROUPIER_BACKEND_ORIGIN+'/api/auth/session']);
 });
 

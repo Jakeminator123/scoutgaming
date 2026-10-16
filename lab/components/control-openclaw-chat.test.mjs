@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject , addDealer} from '../lib/studio-model.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 
 const require = createRequire(import.meta.url);
@@ -76,12 +76,12 @@ test('chat panel receives the studio session props and opens playback with a ful
   const { ControlOpenClawChat } = loadTs(new URL('./control-openclaw-chat.tsx', import.meta.url), {
     './gateway-panel': { GatewayPanel },
   });
-  const hidden = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, standaloneVoicePreviewAvailable: false, initialDealerId: 'vera' }));
+  const hidden = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, standaloneVoicePreviewAvailable: false, initialDealerId: 'elin' }));
   assert.match(hidden, /id="gateway-stub"/);
   assert.equal(panel.standaloneVoicePreviewAvailable, false);
   assert.equal(panel.status, props.initialStatus);
   assert.equal(panel.mode, 'off');
-  assert.equal(panel.dealerId, 'vera');
+  assert.equal(panel.dealerId, 'elin');
   assert.equal(panel.dirty, false);
   assert.equal(typeof panel.onModeChange, 'function');
   panel.onModeChange('rules');
@@ -94,7 +94,7 @@ test('chat panel receives the studio session props and opens playback with a ful
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
   }
-  assert.deepEqual(assigned, [labUrl('/control/rehearsal?dealer=vera')]);
+  assert.deepEqual(assigned, [labUrl('/control/rehearsal?dealer=elin')]);
 });
 
 test('model tab keeps its own primary button and the chat link', () => {
@@ -106,4 +106,23 @@ test('model tab keeps its own primary button and the chat link', () => {
   assert.match(html, /Hämta aktuella val/);
   assert.match(html, new RegExp(`href="${studioHref('/control/openclaw', { tab: 'chat' }).replace(/[?]/g, '\\?')}"`));
   assert.doesNotMatch(html, /Spara projekt/);
+});
+
+// Explicit active dealers used by this isolated component fixture.
+function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}
+
+test('retired or unknown dealer cannot open the chat panel and preserves context for explicit active selection', () => {
+  const before = structuredClone(project);
+  const { ControlOpenClawChat } = loadTs(new URL('./control-openclaw-chat.tsx', import.meta.url), {
+    'next/navigation': { usePathname: () => '/control/openclaw', useSearchParams: () => new URLSearchParams('composition=shared&operator=north&table=room-a') },
+    './gateway-panel': { GatewayPanel: () => assert.fail('inactive dealer must never enter chat') },
+    './studio-session': { useStudioSession: () => assert.fail('inactive dealer must never start a session') },
+  });
+  for (const initialDealerId of ['vera', 'mei', 'amira', 'johanna', 'unknown']) {
+    const html = renderToStaticMarkup(React.createElement(ControlOpenClawChat, { ...props, initialDealerId }));
+    assert.match(html, /<h2>Välj dealer<\/h2>/);
+    assert.match(html, /dealer=astrid&amp;composition=shared&amp;operator=north&amp;table=room-a/);
+    assert.ok(!html.includes('dealer=' + initialDealerId));
+  }
+  assert.deepEqual(project, before);
 });

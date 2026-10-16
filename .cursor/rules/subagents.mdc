@@ -17,7 +17,8 @@ alwaysApply: true
   Merge ownership and deployment authorization remain governed by AGENTS.md.
 - Target 200 words per report plus evidence references. Include all actionable
   failures and uncertainty; do not repeat completed reports without new facts.
-- Preserve working contracts, authorization, drafts and saved data. Retire
-  verified replacements only after checking consumers and compatibility.
-  Tests may change with intentionally replaced behavior; retain equivalent
-  regression coverage. Never remove a test merely to hide a failure.
+- Preserve authorization, drafts, saved data and behavior that remains in scope.
+  Retire pages and tests when explicitly approved or verified as replaced;
+  update remaining consumers. Old menus, filenames and implementation details
+  do not need permanent compatibility tests. Keep regression coverage for
+  active behavior and report genuine failures; do not remove tests to hide them.

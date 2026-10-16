@@ -18,8 +18,10 @@ agenternas guider och den daterade Render-inventeringen.
 
 ## Kontrollen används
 
-Verifieraren anropas från `.githooks/pre-commit-full`,
-`.github/workflows/croupier.yml` och `tools/check-push-target.mjs`.
+Verifieraren körs som en separat, informativ rapport i
+`.github/workflows/croupier.yml` och kan anropas manuellt. Den körs inte
+som leveransspärr vid lokal commit eller push. En gammal katalog får inte
+förhindra att sidor, filer eller tester avvecklas enligt produktbeslut.
 `tools/system-map-evidence.mjs` kopplar testresultat till version och
 indatahashar. Det är alltså ett aktivt verktyg, inte bara en gammal skiss.
 
@@ -35,7 +37,10 @@ verifierar underlaget utan att skriva HTML och bevisar inte att en tidigare
 incheckad `index.html` redan innehåller dagens data. Bygg separat HTML med
 `--output` och versionsbunden test-evidens när en ny karta ska levereras.
 
-Rött resultat stoppar kontrollen. **Gult stoppar inte leverans**: ändrad kod,
+Rött resultat ger felstatus från det manuella kontrollkommandot och markerar
+rapporten; kartans rapportsteg och artefaktuppladdning är inte produktgrindar.
+Verkliga regressionstester, SQL/HTTPS-acceptans och obligatorisk
+migrationsberedskap förblir blockerande. **Gult stoppar inte leverans**: ändrad kod,
 schemadrift och inaktuell evidens måste granskas. Grått betyder att giltigt
 testbelägg inte tillförts för kontraktet. Det betyder inte att testet misslyckats.
 Grönt gäller endast kontrollens angivna version och belägg; det bevisar inte

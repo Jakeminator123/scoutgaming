@@ -6,7 +6,8 @@ Public site: https://www.scoutgaming.tech. Apex `scoutgaming.tech` is a 308 to w
 Vercel team and project: `scoutgaming`. Game engine: Render service `croupier-v2`.
 
 - Read `AGENTS.md` for the shared development rules and authority boundaries.
-- Nivå 1, internal staff: `/admin`. Nivå 2, operator: `/partner`. Nivå 3, player lobby: `/lobby`. Continue new UI work on those surfaces; working `/control`, `/play` and game-launch routes remain compatible during the transition.
+- Nivå 1, internal staff: `/admin`. Nivå 2, operator: `/partner`. Nivå 3, player lobby: `/lobby`. Continue new UI work on those surfaces. Retire old pages and their obsolete tests when explicitly approved or verified as replaced; update remaining callers and protect active authorization, game launches and saved data as described in AGENTS.md.
+- Local commits run focused checks; the full regression remains in CI or explicit `sh .githooks/pre-commit --full`. System-map reports are informational. Agent-talk is event-driven within one checkout, without timed polling.
 - Product model source: `lab/docs/TERMINOLOGI.md`. Operator → games → operator-owned room/background choices, with compatible allowed tables and dealers. Current stored rooms bind one game. Dealer clip categories organize media; they do not identify people or choose runtime playback.
 - Visual layers: background → dealer → table, followed by server-owned game overlays. Shared composition edits and room-specific appearance writes have different scopes.
 - `lab/` is active source, `/studio` is its deployed technical basePath, and `lissabon-stream-lane` remains required compatibility configuration. Preserve Astrid speech/media and saved data when simplifying old names.

@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject, addDealer } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -68,7 +68,7 @@ test('probe route loads studio data for /control/probe and tolerates a missing s
 test('unsupported dealers keep their identity and cannot edit or test Astrids probe policy', () => {
   const { ControlProbePage } = loadTs(new URL('./control-probe-page.tsx', import.meta.url));
   const customProject = addDealer(project, 'paow', 'PAOW');
-  for (const dealerId of ['paow', 'vera', 'mei']) {
+  for (const dealerId of ['paow', 'elin', 'saga']) {
     const html = renderToStaticMarkup(React.createElement(ControlProbePage, { ...props, initialProject: customProject, initialDealerId: dealerId }));
     assert.match(html, /aria-label="Talinitiativ för vald dealer"/);
     assert.match(html, new RegExp(`dealer=${dealerId}`));
@@ -84,3 +84,6 @@ test('probe page requires an explicit dealer before rendering any speech policy'
   assert.match(html,/<h2>Välj dealer<\/h2>/);
   assert.doesNotMatch(html,/aria-label="AI-småprat vid inaktivitet för Astrid"|>Prova text</);
 });
+
+// Explicit active dealers used by this isolated component fixture.
+function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}

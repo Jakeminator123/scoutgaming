@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject, defaultPresentationLane } from '../lab/lib/studio-model.mjs';
+import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';
 import { createOperatorPackageReader } from '../web/storage/operator-package-reader.mjs';
@@ -22,13 +23,12 @@ const administration = (lanes = {}) => ({
   pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 },
   tournaments: [], ...lanes,
 });
-const presentationLane = (id, dealers, dealer) => ({ ...defaultPresentationLane(dealers[0]), id, label: `${id} lane`, dealers,
-  layers: { ...defaultPresentationLane(dealers[0]).layers, dealer: { enabled: true, ...dealer } } });
+const historicalPresentationLane = (id, dealers, dealer) => ({ ...defaultPresentationLane('astrid'), id, label: `${id} lane`, dealers,
+  layers: { ...defaultPresentationLane('astrid').layers, dealer: { enabled: true, ...dealer } } });
 
 
-async function fixture({ lanes = {gameLane:mobile.id,gameLanes:[mobile]}, projectLanes, operators, packages } = {}) {
+async function fixture({ lanes = {gameLane:mobile.id,gameLanes:[mobile]}, projectLanes, operators, packages, project = createSeedProject() } = {}) {
   const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope });
-  const project = createSeedProject();
   project.lanes = projectLanes ?? [defaultPresentationLane('astrid')];
   await repository.initializeDocument('project', { value: project, revision: 'project-original', actor: 'import' });
   await repository.initializeDocument('administration', { value: administration(lanes), revision: 'admin-original', actor: 'import' });
@@ -82,7 +82,7 @@ test('published lane intersection is authoritative, including an empty intersect
 });
 test('explicit dealer outside a saved presentation is rejected rather than substituted',async()=>{
  const f=await fixture();for(const query of ['?dealer=vera','?operator=sg-test&dealer=vera','?dealer=astrid&dealer=mei'])assert.equal((await f.page(query)).status,404);
- const bad=await fixture({projectLanes:[presentationLane('mobile-phone',['vera'],{default:'vera',allowed:['vera']})]});
+ const bad=await fixture({project:historicalDealerProject('vera'),projectLanes:[historicalPresentationLane('mobile-phone',['vera'],{default:'vera',allowed:['vera']})]});
  await assert.rejects(bad.page('?operator=sg-test'),error=>error.statusCode===503);
 });
 test('all choices are escaped and tampered dealer authority is rejected',async()=>{

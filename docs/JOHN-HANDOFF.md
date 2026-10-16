@@ -1,11 +1,85 @@
 # Aktuell handoff — Scoutgaming
 
+## Dealeravveckling och workflow — 16 oktober 2026
+
+Jakob har uttryckligen beställt borttagning av Vera, Mei (bekräftad stavning),
+Amira och Johanna. Arbetet fortsätter i samma huvudcheckout och PR185.
+
+- Lokalt har 50 spårade filer och 42 index-/layoutposter tagits bort.
+  Nytt seed registrerar endast Astrid; avvecklade identiteter kan inte
+  registreras eller väljas för aktiv uppspelning. Historiska dokument har
+  fortsatt läsbara ID:n. Astrids befintliga medier är inte omgenererade.
+- Två ospårade original i `web/public/review/2026-09-09/3lager/johanna/`
+  har efter sökvägs-, hash- och registerkontroll raderats (9 855 891 byte).
+  Övriga 139 original-/granskningsfiler är bevarade.
+- Produktions-Admin har permanent raderat Vera och Mei, deras sparade
+  klippval samt arkiverade `mobile-phone` och `johns-johanna`, efter
+  uttryckliga slutbekräftelser. Omladdad Admin och Neon-återläsning visar
+  de fem bevarade dealerposterna Astrid, Jakob, Anna Jonsson, Dragan och
+  PAOW. Endast Adminprov finns kvar i dealerarkivet. Amira/Johanna saknas;
+  inga av de fyra målidentiteterna finns kvar i det aktuella projektdokumentet
+  och inga matchande Neon-medieposter finns. Projektrevision:
+  `studio-c168ba84-8f1b-4ecc-bd31-94c8f251c077`.
+- Meis första radering fastnade i `pending` eftersom Veras arkiverade
+  mall fortfarande innehöll Mei. Radering av Vera först löste korsreferensen;
+  Mei är nu färdigraderad. Kodrättningen kontrollerar hela slutprojektet
+  före första raderingsmarkeringen. Veras gamla tre `administration.tiers`-
+  kopplingar togs bort genom `gamePolicy.saveAdministration`.
+  Schema, Render-kapacitet, lås, revision, historik och återläsning passerade;
+  enbart `tiers` ändrades, båda rummen och hela projektet bevarades. Ny
+  administrationsrevision: `studio-76149edc-7905-4016-9b61-4fd5c2e399e2`.
+  Den revisionen och båda rummen är oförändrade efter dealerraderingarna.
+- Hela Blob-mapparna `croupier/media/dealers/vera/` och `.../mei/` är
+  permanent raderade efter separat uttrycklig bekräftelse. Vercels lista
+  är omladdad och visar bara Anna, Astrid, Dragan och PAOW. Rätt butik är
+  Scoutgamings `store_AqwvebTbBHarOjvG`. Även de fyra separata målobjekten
+  är raderade: Vera/Mei/Amira-porträtten i `site/runtime/backoffice/img`
+  och `mei-push.mp4` under Astrids äldre composited-sökväg.
+- Kevin-kontrollen frös `kevin@31f50618` och `kevin-staging@57f3ce8b`.
+  Inga direkta referenser till målobjekten hittades. Hans publika drift
+  använder `croupier.scoutgg.dev` och `media.scoutgg.dev`. CDN:ns bakomliggande
+  lager kunde inte verifieras; Scoutgamings Blob-butik är dessutom ansluten
+  till både Preview och Production. Jakob informerades om denna osäkerhet
+  och bekräftade därefter uttryckligen ”Radera allt”. Ingen Kevin-branch,
+  driftinställning eller fil utanför det godkända urvalet ändrades.
+- Sidochattens 17 workflowfiler ingår i leveransen: fokuskontroller vid
+  lokal commit, full regression i CI/explicit körning, automatisk Studio-
+  testupptäckt, informativ systemkarta och händelsestyrd agent-talk.
+  Samma 454 testfiler täcks efter borttagen dubblering. Beroende-/schema-/
+  konfigurationsändringar behåller migrationsgrinden; UI-/teständringar
+  behöver inte läsa produktionsdatabasen. Granskningen rättade både ett
+  för brett klientundantag och en gammal kontroll som krävde utskrivna
+  testfilnamn i stället för att verifiera den faktiska globtäckningen.
+- Tester som förutsatte gamla seedpersoner använder nu explicita aktiva
+  testpersoner eller historiska fixtures, med negativa kontroller för alla
+  fyra avvecklade identiteter. Hela hookens urval är verifierat: 4 538 pass,
+  23 villkorade skip, inga kvarvarande fel. Frontend-typkontroll passerar.
+  Körningen slutfördes i delar utan att köra om redan gröna grupper:
+  prefixets 21 testgrupper gav 2 826 pass/14 skip; suffixets 49 kommandogrupper
+  (42 testgrupper, fyra fristående tester, tre kontroller) gav 1 712 pass/9 skip
+  efter riktad omkörning av åtta rättade fixturegrupper. Detta är lokal
+  verifiering, inte GitHub-CI eller visuell spelacceptans. Systemkartan ger noll fel, 14 gula
+  kontrakt och 186 baslinjevarningar; inga orphan-tester hittades (421 filer).
+- Läppsynkvisaren läser Git-objekt från fryst `origin/main` `4fa35ab9`,
+  inte Neon eller Blob. Dess 139 filmer innehåller fortfarande fem
+  Vera-/Mei-filmer tills huvudbranchen och visaren uppdateras.
+- Automatisk verktygsgranskning kommer från projektets
+  `.codex/config.toml` (`approvals_reviewer="auto_review"`), införd i
+  `8ff56ab5` av Git-kontot Jakeminator123. Kontot styrker inte vilken
+  människa/agent som skrev regeln. Inställningen är inte ändrad.
+  Den gamla generella bevaranderegeln är däremot rättad i PR185.
+
+Privata kontroller och raderingsmanifest finns under
+`arkiv/2026-10-16/dealer-removal/`. Ingen merge eller driftsättning ingår
+i detta kvitto. QA-databasens äldre seedpersoner och historik är orörda.
+
 ## Samlat övertagande — 16 oktober 2026
 
 Aktuell arbetskopia är fortfarande `C:\Users\jakem\Projects\croupier`, nu på
 `codex/admin-consolidation-20261016`. Ingen ny worktree skapades. Den lokala
 startfixen `f4c35632` är bevarad; DENNA:s fyra dokument säkrades i `a0ee43c7`.
-Användarens konfiguration och 141 ospårade original-/granskningsfiler är kvar.
+Användarens konfiguration bevarades. Då fanns 141 ospårade original-/granskningsfiler;
+senare riktad Johanna-radering beskrivs i den aktuella statusen ovan.
 
 Jakob har beställt gemensamt övertagande, färre redigeringsvägar och aktiv
 radering av ersatta delar. DENNA, ZOOM, LIPSYNC och Blob/Neon-granskaren har

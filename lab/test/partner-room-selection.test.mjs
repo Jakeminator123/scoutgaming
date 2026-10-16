@@ -150,9 +150,9 @@ test('cancelled cross-company history restores the selected room and dirty edito
 // Only the already-fetched package and media-preview boundary are fixtures.
 function actualAppearance(session) {
   const {transformSync}=require('next/dist/build/swc'),{defaultPresentationLane}=require('../lib/studio-model.mjs');
-  const lane=defaultPresentationLane('astrid');lane.operatorAdjustable=['dealer'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','vera']};
+  const lane=defaultPresentationLane('astrid');lane.operatorAdjustable=['dealer'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','elin']};
   const initial={operatorId:'north',packageRevision:7,lanes:[lane.id],branding:{},adjustable:['dealer'],canConfigure:true,
-    dealerChoices:{[lane.id]:['astrid','vera']},roomDealerChoices:{'main-room':['astrid','vera'],'vip-room':['astrid','vera']},
+    dealerChoices:{[lane.id]:['astrid','elin']},roomDealerChoices:{'main-room':['astrid','elin'],'vip-room':['astrid','elin']},
     presentation:{schemaVersion:1,projectRevision:'r1',assets:[],lanes:[lane]},draft:null,draftRevision:0,history:[],
     rooms:['main-room','vip-room'].map(id=>({id,label:id,presentationLaneId:lane.id}))};
   const mount=(relative,name)=>{
@@ -184,21 +184,21 @@ function actualAppearance(session) {
 test('Back to an invalid room cannot unmount a real unsaved appearance draft after cancellation',()=>{
   const h=sessionHarness({initialRoomId:'missing',path:'/partner/north-casino/rooms?room=missing'});h.settle();
   const panel=actualAppearance(h);assert.equal(panel.dealer(),undefined);
-  h.choose('main-room');panel.dealer().props.onChange({target:{value:'vera'}});assert.equal(panel.dealer().props.value,'vera');
+  h.choose('main-room');panel.dealer().props.onChange({target:{value:'elin'}});assert.equal(panel.dealer().props.value,'elin');
   let prompts=0;h.window.confirm=()=>{prompts++;return false;};
   const length=h.history.length;h.history.go(-1);
-  assert.equal(panel.dealer()?.props.value,'vera','cancelled history must retain the actual unsaved room override');
+  assert.equal(panel.dealer()?.props.value,'elin','cancelled history must retain the actual unsaved room override');
   assert.equal(h.window.location.search,'?room=main-room');assert.equal(h.history.length,length);assert.equal(panel.mounts,1);assert.equal(prompts,1);
-  h.history.go(-1);assert.equal(panel.dealer().props.value,'vera');assert.equal(h.history.length,length);assert.equal(prompts,2);
-  h.choose('missing');assert.equal(h.window.location.search,'?room=main-room');assert.equal(panel.dealer().props.value,'vera');assert.equal(prompts,3);
+  h.history.go(-1);assert.equal(panel.dealer().props.value,'elin');assert.equal(h.history.length,length);assert.equal(prompts,2);
+  h.choose('missing');assert.equal(h.window.location.search,'?room=main-room');assert.equal(panel.dealer().props.value,'elin');assert.equal(prompts,3);
   h.window.confirm=()=>true;h.history.go(-1);assert.equal(h.window.location.search,'?room=missing');assert.equal(panel.dealer(),undefined);
   h.choose('main-room');assert.equal(panel.dealer().props.value,'');assert.equal(panel.mounts,2,'only an approved departure may discard the mounted draft');
 });
 
 test('valid room and company switches retain the real draft across Back without discard prompts',()=>{
   const h=sessionHarness();h.settle();const panel=actualAppearance(h);
-  panel.dealer().props.onChange({target:{value:'vera'}});assert.equal(panel.dealer().props.value,'vera');
+  panel.dealer().props.onChange({target:{value:'elin'}});assert.equal(panel.dealer().props.value,'elin');
   h.window.confirm=()=>assert.fail('All room overrides stay in the same mounted draft');
-  h.choose('vip-room');assert.equal(panel.dealer().props.value,'');h.history.go(-1);assert.equal(panel.dealer().props.value,'vera');
-  h.choose('');assert.equal(panel.dealer().props.value,'');h.history.go(-1);assert.equal(panel.dealer().props.value,'vera');assert.equal(panel.mounts,1);
+  h.choose('vip-room');assert.equal(panel.dealer().props.value,'');h.history.go(-1);assert.equal(panel.dealer().props.value,'elin');
+  h.choose('');assert.equal(panel.dealer().props.value,'');h.history.go(-1);assert.equal(panel.dealer().props.value,'elin');assert.equal(panel.mounts,1);
 });

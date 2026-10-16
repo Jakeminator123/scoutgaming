@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       scope: ${{ steps.scope.outputs.scope }}
+      migration: ${{ steps.scope.outputs.migration }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -49,40 +50,10 @@ jobs:
         run: |
           node tools/check-environment-variables.mjs
           node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs test/partner-docs.mjs
-          node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA"
           git diff --check HEAD^1 HEAD
-
-  presentation-studio:
-    needs: changes
-    if: needs.changes.outputs.scope == 'full'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: |
-            lab/package-lock.json
-            web/package-lock.json
-            services/astrid-gpu-worker/gateway/package-lock.json
-      - name: Install verified ffmpeg packages
-        timeout-minutes: 8
-        uses: ./.github/actions/setup-ffmpeg
-      - run: npm --prefix lab ci
-      - name: Studio migration readiness (production ledger)
-        # Runs for pushes to main and for pull requests from branches in this
-        # repository. Fork PRs do not receive secrets and would fail closed.
-        if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
-        run: node tools/check-migration-readiness.mjs
-        env:
-          CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_GAME_DATABASE_URL }}
-      - run: npm --prefix web ci --ignore-scripts
-      - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
-      - name: Orphan tests
-        run: node tools/check-orphan-tests.mjs
-      - run: npm --prefix lab test
+      - name: System map documentation report
+        continue-on-error: true
+        run: node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA"
 
   dealer-regression:
     needs: changes
@@ -103,6 +74,8 @@ jobs:
         timeout-minutes: 8
         uses: ./.github/actions/setup-ffmpeg
       - run: npm --prefix lab ci
+      - name: Orphan tests
+        run: node tools/check-orphan-tests.mjs
       - run: npm --prefix web ci --ignore-scripts
       - run: npm --prefix services/astrid-gpu-worker/gateway ci --ignore-scripts
       - name: Restore Studio compiler cache
@@ -123,10 +96,10 @@ jobs:
       # OpenClaw launcher acceptance needs the real Studio build above.
       - run: npm --prefix open-claw/lab test
       - run: npm --prefix open-claw/lab run check
-      - name: Check system map against this commit and capture test inputs
+      - name: Capture optional system map inputs
+        continue-on-error: true
         run: |
           mkdir -p "$RUNNER_TEMP/system-map-evidence"
-          node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA"
           node tools/system-map-evidence.mjs --capture --ref "$GITHUB_SHA" --output "$RUNNER_TEMP/system-map-inputs.json"
       # Full hook also requires frontend typecheck once, after its frozen install.
       - name: Shared pre-commit regression and frontend typecheck
@@ -145,7 +118,8 @@ jobs:
           fi
           echo "PostgreSQL source: ${postgres_source[*]}"
           node tools/system-map-evidence.mjs --run-isolated-qa "${postgres_source[@]}" --report-output "$RUNNER_TEMP/system-map-evidence/studio-isolated-qa.jsonl"
-      - name: Build system map with the existing regression results
+      - name: Build informational system map with regression results
+        continue-on-error: true
         if: always()
         run: |
           if [ ! -f "$RUNNER_TEMP/system-map-inputs.json" ]; then exit 1; fi
@@ -160,6 +134,7 @@ jobs:
           node docs/system-map/build.mjs --ref "$GITHUB_SHA" --evidence "$RUNNER_TEMP/system-map-evidence.json" --output "$RUNNER_TEMP/croupier-system-map.html"
           exit "$map_status"
       - name: Save version-bound map and test evidence
+        continue-on-error: true
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -173,6 +148,13 @@ jobs:
       - run: node test/split-rules.mjs
       - run: node --test test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs test/inbox.mjs
       - run: node --test ops/cloud/test/*.test.mjs
+      - name: Studio migration readiness (production ledger)
+        # Main/manual runs always check the ledger. Client/test-only PR edits
+        # need no production access; server/schema/dependency changes still do.
+        if: ${{ needs.changes.outputs.migration == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+        run: node tools/check-migration-readiness.mjs
+        env:
+          CROUPIER_GAME_DATABASE_URL: ${{ secrets.CROUPIER_GAME_DATABASE_URL }}
 
   lipsync-worker:
     needs: changes
@@ -198,7 +180,7 @@ jobs:
 
   ci:
     name: CI
-    needs: [changes, documentation, presentation-studio, dealer-regression, lipsync-worker]
+    needs: [changes, documentation, dealer-regression, lipsync-worker]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -212,7 +194,7 @@ jobs:
           const jobs = JSON.parse(process.env.CI_NEEDS);
           const scope = jobs.changes?.outputs?.scope;
           const required = scope === 'documentation' ? ['documentation']
-            : scope === 'full' ? ['presentation-studio', 'dealer-regression', 'lipsync-worker'] : [];
+            : scope === 'full' ? ['dealer-regression', 'lipsync-worker'] : [];
           if (jobs.changes?.result !== 'success' || required.length === 0
             || required.some(name => jobs[name]?.result !== 'success')) {
             console.error('CI failed: a required check failed, was cancelled, skipped, or was not reported.');

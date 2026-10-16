@@ -11,8 +11,8 @@ import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 // Keep path arithmetic outside new URL(..., import.meta.url): Next's bundler
 // otherwise interprets the directory as an asset dependency to resolve.
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const BASES = { vera: 'dealer', astrid: 'dealers/astrid', mei: 'dealers/mei' };
-const indexedRegister = /(?:^|[\\/])(?:dealer|dealers[\\/](?:astrid|mei))[\\/](?:streams[\\/]index\.json|audio[\\/]en[\\/]bank\.json|performance[\\/]manifest\.json)$/;
+const BASES = { astrid: 'dealers/astrid' };
+const indexedRegister = /(?:^|[\\/])dealers[\\/]astrid[\\/](?:streams[\\/]index\.json|audio[\\/]en[\\/]bank\.json|performance[\\/]manifest\.json)$/;
 const readLocalJson = async path => { try { return JSON.parse(await readFile(resolveMediaAbsolutePath(path), 'utf8')); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
 // Only the retired indexed registers may be absent from the catalog; a missing
 // catalog or any other unreadable entry still fails the whole inventory.

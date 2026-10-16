@@ -4,7 +4,7 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const DEALERS = { astrid: { base: 'dealers/astrid', name: 'Astrid', room: 'Dark Hall', hands: 'dealers/astrid-hands' }, vera: { base: 'dealer', name: 'Vera', room: 'Mahogany Privé' }, amira: { base: 'dealers/amira', name: 'Amira', room: 'Golden Salon' }, mei: { base: 'dealers/mei', name: 'Mei', room: 'Azure Venue' } };
+const DEALERS = { astrid: { base: 'dealers/astrid', name: 'Astrid', room: 'Dark Hall', hands: 'dealers/astrid-hands' } };
 // Seat geometry: 7 boxes on the table plane, viewer left→right, in 1920x1080 dealer-camera pixels. The measured source was staging at seven-targets/isolated-game-targets.json, removed from the tree; the file remains in Git history at 00ea55c5. Box centres are where the first card lands.
 const BOX_CENTRES = { astrid: [[434.77, 693.12], [590.57, 742.89], [751.41, 774.96], [930.97, 783.72], [1144.64, 777.83], [1287.43, 763.51], [1431.24, 720.30]] };
 const DEAL_ACTION = box => box == null ? 'deal-dealer' : box <= 1 ? 'deal-left' : box >= 5 ? 'deal-right' : 'deal-centre';

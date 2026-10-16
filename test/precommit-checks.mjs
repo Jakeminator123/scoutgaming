@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
-  parseStagedChanges, readStagedChanges, verificationMode, parseArgs, runChecks, isolatedGitEnvironment,
+  parseStagedChanges, readStagedChanges, verificationMode, parseArgs, runChecks, isolatedGitEnvironment, checkPlan, focusedTests,
 } from '../tools/precommit-checks.mjs';
 
 const change = (path, status = 'M') => ({ path, status });
@@ -39,12 +39,12 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
     'pipeline/runtime-bundle/README.md', 'web/public/lab/README.md',
     'web/../pipeline/README.md', 'web\\README.md',
   ]) {
-    assert.equal(mode([...guides.map(path => change(path)), change(path)]), 'full', path);
+    assert.equal(mode([...guides.map(path => change(path)), change(path)]), 'focused', path);
   }
-  assert.equal(mode([change('web/README.md', 'T')]), 'full', 'guide symlink/type changes');
+  assert.equal(mode([change('web/README.md', 'T')]), 'focused', 'guide symlink/type changes');
 });
 
-test('code, deletion, runtime prompts and machine metadata retain full regression', () => {
+test('local code and deletions use focused checks; only CI or explicit full runs the complete product', () => {
   for (const path of [
     'web/public/app.mjs', 'test/player-auth.mjs', 'docs/dealer-sync-baseline.json',
     'open-claw/lab/deploy/runtime-bundle/knowledge/croupier-model.md',
@@ -53,10 +53,10 @@ test('code, deletion, runtime prompts and machine metadata retain full regressio
     '.agents/skills/ping-croupier/SKILL.md', 'package.json',
     'docs/../web/player.md', 'docs\\guide.md',
   ]) {
-    assert.equal(mode([change('docs/JOHN-HANDOFF.md'), change(path, 'D')]), 'full', path);
+    assert.equal(mode([change('docs/JOHN-HANDOFF.md'), change(path, 'D')]), 'focused', path);
   }
-  assert.equal(mode([change('docs/README.md', 'T')]), 'full', 'symlink/type changes');
-  assert.equal(mode([]), 'full', 'empty index is not a docs commit');
+  assert.equal(mode([change('docs/README.md', 'T')]), 'focused', 'symlink/type changes');
+  assert.deepEqual(checkPlan(mode([])), [['git', 'diff', '--cached', '--check']], 'empty index needs no full build');
 });
 
 test('CI and explicit --full cannot take the quick path', () => {
@@ -92,7 +92,7 @@ async function fixture(run) {
   }
 }
 
-test('real Git index chooses docs, then full when a test is staged', async () => {
+test('real Git index chooses docs, then focused when a test is staged', async () => {
   await fixture(async root => {
     await mkdir(join(root, 'docs'));
     await writeFile(join(root, 'docs', 'kort guide.md'), 'guide\n');
@@ -101,11 +101,11 @@ test('real Git index chooses docs, then full when a test is staged', async () =>
     await mkdir(join(root, 'test'));
     await writeFile(join(root, 'test', 'account.mjs'), 'export {};\n');
     git(root, ['add', '--', 'test/account.mjs']);
-    assert.equal(mode(readStagedChanges(root)), 'full');
+    assert.equal(mode(readStagedChanges(root)), 'focused');
   });
 });
 
-test('real Git rename from code to documentation still requires full regression', async () => {
+test('real Git rename from code to documentation still selects code checks', async () => {
   await fixture(async root => {
     await mkdir(join(root, 'web'));
     await mkdir(join(root, 'docs'));
@@ -115,7 +115,7 @@ test('real Git rename from code to documentation still requires full regression'
     git(root, ['mv', '--', 'web/player.mjs', 'docs/player.md']);
     const changes = readStagedChanges(root);
     assert.ok(changes.some(entry => entry.path === 'web/player.mjs' && entry.status === 'D'));
-    assert.equal(mode(changes), 'full');
+    assert.equal(mode(changes), 'focused');
   });
 });
 
@@ -174,7 +174,7 @@ test('the hook inspects its own commit index while child checks remain isolated'
     await writeFile(script, await readFile(new URL('../tools/precommit-checks.mjs', import.meta.url)));
     const plan = spawnSync(process.execPath, [script, '--plan'], { cwd: root, env, encoding: 'utf8' });
     assert.equal(plan.status, 0, plan.stderr);
-    assert.equal(JSON.parse(plan.stdout).mode, 'full');
+    assert.equal(JSON.parse(plan.stdout).mode, 'focused');
     assert.equal(mode(readStagedChanges(root)), 'documentation', 'the default index remains unchanged');
   });
 });
@@ -185,5 +185,51 @@ test('failed, unstartable or interrupted check stops subsequent checks', () => {
     const exit = runChecks([['one'], ['two']], { run: () => { calls++; return result; } });
     assert.ok(exit > 0);
     assert.equal(calls, 1);
+  }
+});
+
+test('focused selection follows changed and deleted sources without running unrelated tests', async () => {
+  await fixture(async root => {
+    await mkdir(join(root, 'lab', 'lib'), {recursive: true});
+    await mkdir(join(root, 'lab', 'test'));
+    await writeFile(join(root, 'lab', 'lib', 'room.mjs'), 'export {};\n');
+    await writeFile(join(root, 'lab', 'test', 'room.test.mjs'), 'import "node:test";\n');
+    await writeFile(join(root, 'lab', 'test', 'unrelated.test.mjs'), 'throw Error("must not run");\n');
+    const changes = [change('lab/lib/room.mjs')];
+    assert.deepEqual(focusedTests(changes, root), ['lab/test/room.test.mjs']);
+    const plan = checkPlan('focused', {changes, root});
+    assert.ok(plan.some(args => args.includes('--check') && args.includes('lab/lib/room.mjs')));
+    assert.ok(plan.some(args => args.includes('--test-concurrency=4') && args.includes('lab/test/room.test.mjs')));
+    assert.ok(plan.every(args => !args.includes('.githooks/pre-commit-full')));
+    assert.equal(runChecks(plan, {cwd: root}), 0);
+    await rm(join(root, 'lab', 'lib', 'room.mjs'));
+    const deleted = checkPlan('focused', {changes: [change('lab/lib/room.mjs', 'D')], root});
+    assert.ok(deleted.some(args => args.includes('lab/test/room.test.mjs')));
+    assert.ok(deleted.every(args => !args.includes('lab/lib/room.mjs')));
+    assert.deepEqual(focusedTests([change('lab/test/room.test.mjs', 'A')], root), ['lab/test/room.test.mjs']);
+    await rm(join(root, 'lab', 'test', 'room.test.mjs'));
+    assert.deepEqual(focusedTests([change('lab/test/room.test.mjs', 'D')], root), []);
+  });
+});
+
+test('focused selection rejects traversal and option-like paths', () => {
+  for (const path of ['../outside.mjs', 'web/../outside.mjs', '/outside.mjs', '--help', 'web\\outside.mjs']) {
+    assert.throws(() => checkPlan('focused', {changes: [change(path)]}), /Invalid changed path/);
+  }
+});
+
+test('cached checks keep the commit index while test subprocesses lose repository overrides', () => {
+  const saved = process.env.GIT_INDEX_FILE;
+  process.env.GIT_INDEX_FILE = 'temporary-commit-index';
+  const seen = [];
+  try {
+    assert.equal(runChecks([['git', 'diff', '--cached', '--check'], [process.execPath, '--test', 'fixture.mjs']], {
+      run(command, args, options) { seen.push(options.env); return {status: 0}; },
+    }), 0);
+    assert.equal(seen[0].GIT_INDEX_FILE, 'temporary-commit-index');
+    assert.equal(seen[1].GIT_INDEX_FILE, undefined);
+  } finally {
+    if (saved === undefined) delete process.env.GIT_INDEX_FILE;
+    else process.env.GIT_INDEX_FILE = saved;
   }
 });

@@ -14,10 +14,11 @@ import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-ma
 import {ROULETTE_MEDIA_EVENTS} from '../lib/roulette-media.mjs';
 import {blackjackMediaSlots,dealerMediaSlots,mediaClassification} from '../lib/dealer-media-library.mjs';
 import {validateProject} from '../lib/studio-model.mjs';
+import {isActiveDealerId} from '../../web/public/dealer-identity.mjs';
 
 const metadata = { label:'QA left', dealerId:'astrid', eventId:'deal.player.left', kind:'action', role:'standard', situation:'box0', notes:'', playback:'once' };
 test('canonical manifest, seed, schema and runtime classifications agree for every dealer/group/situation', () => {
-  assert.deepEqual(contract.dealers, seed.dealers.map(d=>d.id));
+  assert.deepEqual(contract.dealers.filter(isActiveDealerId), seed.dealers.map(d=>d.id));
   assert.deepEqual(contract.events.map(e=>({id:e.id,sourceType:e.sourceType})),seed.events.map(e=>({id:e.id,sourceType:e.sourceType})));
   assert.deepEqual(schema.properties.eventId.enum,[...contract.events.map(e=>e.id),...ROULETTE_MEDIA_EVENTS.map(e=>e.id)]);
   assert.equal(schema.properties.dealerId.pattern,'^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$');

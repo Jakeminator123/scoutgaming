@@ -34,8 +34,8 @@ function harness(file,read){
     flush(){const pending=effects.filter(row=>row.changed);for(const row of pending)row.cleanup?.();for(const row of pending){row.changed=false;row.cleanup=row.run();}},
     unmount(){for(const row of effects)row.cleanup?.();}};
 }
-function fixture(dealerId='johanna'){
-  const project=addDealer(createSeedProject(),dealerId,dealerId==='paow'?'PAOW':'Johanna');
+function fixture(dealerId='linnea'){
+  const project=addDealer(createSeedProject(),dealerId,dealerId==='paow'?'PAOW':'Linnea');
   project.lines.find(row=>row.dealerId===dealerId&&row.eventId==='idle.ready').variants[0].videoGenerationId=ids[0];
   const inventory={videos:ids.map((id,index)=>({id,dealer:dealerId,available:true,sha256:'a'.repeat(64),fileName:id+'.mp4',previewUrl:'/own/'+id+'.mp4',
     classification:{dealerId,eventId:'idle.ready',kind:'idle',role:index?'alternative':'standard',playback:'once',situation:'',label:'Idle',notes:''}}))};
@@ -51,7 +51,7 @@ test('own idle starts unconfigured and uses probed baseline only after explicit 
   assert.equal(button(tree,'Läser klipplängd…').props.disabled,true);assert.deepEqual(p.busy,[true]);assert.equal(p.changes.length,0);
   probe.resolve(4321);await tick();
   assert.equal(requests[0].url,p.inventory.videos[0].previewUrl);
-  assert.deepEqual(clone(p.changes),[{schemaVersion:1,familyId:'johanna/idle.ready/ready',base:[{videoId:ids[0],weight:100,durationMs:4321}],variants:[]}]);
+  assert.deepEqual(clone(p.changes),[{schemaVersion:1,familyId:'linnea/idle.ready/ready',base:[{videoId:ids[0],weight:100,durationMs:4321}],variants:[]}]);
   assert.deepEqual(p.busy,[true,false]);
 });
 test('missing or another dealer baseline cannot create a borrowed own policy',()=>{
@@ -62,9 +62,9 @@ test('missing or another dealer baseline cannot create a borrowed own policy',()
   }
 });
 test('baseline mismatch requires explicit replacement and retains saved variation controls',async()=>{
-  const p=fixture(),previous=registered.createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:ids[1],durationMs:2000});
+  const p=fixture(),previous=registered.createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:ids[1],durationMs:2000});
   previous.variants=[{videoId:ids[2],durationMs:3000,use:'openclaw',automatic:null,description:'nickar'}];
-  p.project.dealerIdlePolicies=[{dealerId:'johanna',policy:previous}];
+  p.project.dealerIdlePolicies=[{dealerId:'linnea',policy:previous}];
   const h=harness('./registered-idle-editor.tsx',async()=>4123);let tree=h.render(p);h.flush();
   assert.equal(nodes(tree,row=>row.type===h.SharedEditor)[0].props.blocked,true);assert.equal(p.changes.length,0);
   button(tree,'Använd valt basklipp').props.onClick();await tick();
@@ -78,8 +78,8 @@ test('unmount, changed baseline or newer policy discards pending metadata',async
     let tree=h.render(p);h.flush();button(tree,'Anpassa grundloop').props.onClick();
     if(scenario==='unmount')h.unmount();
     else {
-      if(scenario==='baseline')p.project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=ids[1];
-      else p.project.dealerIdlePolicies=[{dealerId:'johanna',policy:registered.createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:ids[0],durationMs:3333})}];
+      if(scenario==='baseline')p.project.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready').variants[0].videoGenerationId=ids[1];
+      else p.project.dealerIdlePolicies=[{dealerId:'linnea',policy:registered.createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:ids[0],durationMs:3333})}];
       h.render(p);h.flush();
     }
     probe.resolve(2345);await tick();assert.equal(p.changes.length,0,scenario);assert.equal(p.busy.at(-1),false);
@@ -87,7 +87,7 @@ test('unmount, changed baseline or newer policy discards pending metadata',async
   }
 });
 test('shared own editor imports explicit manual variants and requested base weight with measured durations',async()=>{
-  const p=fixture();let policy=registered.createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:ids[0],durationMs:1000});
+  const p=fixture();let policy=registered.createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:ids[0],durationMs:1000});
   const changes=[],busy=[],h=harness('./idle-policy-editor.tsx',async()=>3210);
   const props=()=>({policy,inventory:registered.registeredIdleInventory(p.inventory,{dealerId:p.dealerId,policy}),blocked:false,editableBase:true,onChange:value=>changes.push(value),onBusyChange(){},onImportBusyChange:value=>busy.push(value)});
   let tree=h.render(props());h.flush();
@@ -116,7 +116,7 @@ test('shared editor aborts pending import when unmounted or blocked and rejects 
   for(const scenario of ['unmount','blocked','policy']){
     const p=fixture(),probe=deferred();let signal;
     const h=harness('./idle-policy-editor.tsx',(_url,options)=>{signal=options.signal;return probe.promise;});
-    const changes=[],busy=[],policy=registered.createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:ids[0],durationMs:1000});
+    const changes=[],busy=[],policy=registered.createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:ids[0],durationMs:1000});
     let props={policy,inventory:registered.registeredIdleInventory(p.inventory,{dealerId:p.dealerId,policy}),blocked:false,editableBase:true,onChange:value=>changes.push(value),onBusyChange(){},onImportBusyChange:value=>busy.push(value)};
     const tree=h.render(props);h.flush();nodes(tree,row=>row.type==='button'&&text(row).endsWith(' · manuellt'))[0].props.onClick();
     if(scenario==='unmount')h.unmount();
@@ -127,7 +127,7 @@ test('shared editor aborts pending import when unmounted or blocked and rejects 
 });
 
 test('rules can be selected only for an own dealer and require explicit event binding plus game mode',()=>{
-  const p=fixture(),base=registered.createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:ids[0],durationMs:1000});
+  const p=fixture(),base=registered.createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:ids[0],durationMs:1000});
   const initial={...base,variants:[{videoId:ids[1],durationMs:2000,use:'manual',automatic:null}]};
   const changes=[],h=harness('./idle-policy-editor.tsx',()=>{throw Error('rules must not read media or invent timing');});
   const props={policy:initial,inventory:registered.registeredIdleInventory(p.inventory,{dealerId:p.dealerId,policy:initial}),blocked:false,editableBase:true,onChange:value=>changes.push(value),onBusyChange(){}};
@@ -183,7 +183,7 @@ test('replacement never commits after unmount, a block, newer policy, dealer cha
     if(scenario==='unmount')h.unmount();else{
       if(scenario.startsWith('blocked'))props={...props,blocked:true};
       if(scenario==='policy')props={...props,policy:{...f.policy}};
-      if(scenario==='dealer')props={...props,policy:{...f.policy,familyId:'johanna/idle.ready/ready'}};
+      if(scenario==='dealer')props={...props,policy:{...f.policy,familyId:'linnea/idle.ready/ready'}};
       if(scenario==='not-editable')props={...props,editableBase:false};
       if(['unavailable','hash','url'].includes(scenario)){const inventory=clone(props.inventory),video=inventory.videos.find(row=>row.id===ids[1]);if(scenario==='unavailable')video.available=false;if(scenario==='hash')video.sha256='b'.repeat(64);if(scenario==='url')video.previewUrl='/replacement.mp4';props={...props,inventory};}
       tree=h.render(props);if(scenario!=='blocked-before-effect')h.flush();
@@ -204,7 +204,7 @@ test('replacement excludes existing base, missing, foreign-family and unavailabl
   for(const scenario of ['existing','missing','foreign','unavailable','blocked']){
     const f=replacementFixture();let props=f.props,id=ids[1],calls=0;
     if(scenario==='existing')id=ids[0];if(scenario==='missing')id='77777777-7777-4777-8777-777777777777';
-    if(scenario==='foreign')props.inventory.videos.find(row=>row.id===ids[1]).familyId='johanna/idle.ready/ready';
+    if(scenario==='foreign')props.inventory.videos.find(row=>row.id===ids[1]).familyId='linnea/idle.ready/ready';
     if(scenario==='unavailable')props.inventory.videos.find(row=>row.id===ids[1]).available=false;if(scenario==='blocked')props={...props,blocked:true};
     const h=harness('./idle-policy-editor.tsx',()=>{calls++;return Promise.resolve(1000);}),tree=chooseReplacement(h,props,id);button(tree,'Använd som basklipp').props.onClick();assert.equal(calls,0,scenario);assert.equal(f.changes.length,0,scenario);assert.equal(button(tree,'Använd som basklipp').props.disabled,true,scenario);
   }
