@@ -30,8 +30,10 @@ en testad adapter, **inte aktiverat rörligt tal i spelet**.
 - Kvar: GPU-beredning i verifierat egen miljö, bank-/workerattestering,
   inkoppling mot befintlig autentiserad talsession och budgetjournal samt
   serverns tidsplanering/replanering och spelarens ljudklocka.
-  Inga molninställningar eller produktionsprofiler ändrades. GitGuardian-
-  incident- och platsläsning saknade åtkomst; inga slutsatser om tom incidentlista.
+  Inga molninställningar eller produktionsprofiler ändrades. Slutkontroll av
+  GitGuardian via ordinarie CLI gav 0 öppna och 18 ignorerade incidenter,
+  aktiv övervakning, partiell platsmetadata och historisk scan `too_large`.
+  Detta är inte bevis för fullständig historisk täckning.
 
 ## Aktuellt: Neon-registerbytet mergat och driftsatt — 16 oktober 2026
 
