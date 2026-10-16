@@ -12,6 +12,8 @@ import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { buildPresentationPackage, layerAssetPath } from '../../web/presentation-layers.mjs';
 import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
+import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
+import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
 
 import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
 import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
@@ -37,7 +39,7 @@ function idleRecord(dealerId = 'linnea', id = '00000000-0000-4000-8000-000000000
     classification: { dealerId, eventId: 'idle.ready', kind: 'idle', role: 'standard', situation: '', label: 'Grundloop', notes: '', playback: 'once', compositing: { mode: 'green-screen', threshold: .23, softness: .15, despill: 0 } } };
 }
 function combinedPool() {
-  let state = { documents: new Map(), media: new Map(), history: [], audits: [], operatorAudits: [], packages: [], operators: [
+  let state = { documents: new Map(), media: new Map(), catalogs: new Map(), history: [], audits: [], operatorAudits: [], packages: [], operators: [
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'north', slug: 'north', name: 'North', status: 'active', created_at_ms: 1 },
     { environment_id: scope.environment, workspace_id: scope.workspaceId, operator_id: 'other', slug: 'other', name: 'Other', status: 'active', created_at_ms: 1 },
   ] }, tail = Promise.resolve(), clientId = 0, tick = 0;
@@ -45,7 +47,9 @@ function combinedPool() {
   const sameScope = (row, values) => row.environment_id === values[0] && row.workspace_id === values[1];
   const documentKey = values => JSON.stringify(values.slice(0, 3));
   const result = (rows = [], command = 'SELECT') => ({ rows: clone(rows), command });
-  const pool = { trace, active: 0, currentActive:()=>requestTransactions.getStore()?.active ?? pool.active, request:work=>requestTransactions.run({active:0},work), setMedia(record, revision = 'media-1') { state.media.set(record.id, { environment_id: scope.environment, workspace_id: scope.workspaceId, id: record.id, revision, record: clone(record), updated_at: '2026-10-09T00:00:00.000Z' }); }, snapshot: () => clone(state), fail: marker => faults.add(marker), async connect() {
+  const pool = { trace, active: 0, currentActive:()=>requestTransactions.getStore()?.active ?? pool.active, request:work=>requestTransactions.run({active:0},work), setMedia(record, revision = 'media-1') { state.media.set(record.id, { environment_id: scope.environment, workspace_id: scope.workspaceId, id: record.id, revision, record: clone(record), updated_at: '2026-10-09T00:00:00.000Z' }); },
+    seedRuntimeCatalog(scope,value){state.catalogs.set(JSON.stringify([scope.environment,scope.workspaceId]),{revision:runtimeCatalogRevision(value),value:clone(value)});},
+    snapshot: () => clone(state), fail: marker => faults.add(marker), async connect() {
     const id = ++clientId, requestScope = requestTransactions.getStore(); let working, unlock, readOnly = false;
     return { async query(sql, values = []) {
       const marker = /\/\* (?:studio|operator-store|presentation-room):([a-z-]+) \*\//.exec(sql)?.[1] ?? sql.split(/\s/)[0];
@@ -60,6 +64,7 @@ function combinedPool() {
         pool.active--; if(requestScope)requestScope.active--; if (sql === 'COMMIT' && !readOnly) state = working; working = undefined; unlock?.(); unlock = null; return result([], sql);
       }
       assert.ok(working, 'all domain queries use the repository transaction');
+      if(marker==='read-runtime-catalog')return result(working.catalogs.has(JSON.stringify(values.slice(0,2)))?[working.catalogs.get(JSON.stringify(values.slice(0,2)))]:[]);
       const packages = () => working.packages.filter(row => sameScope(row, values) && row.operator_id === values[2]);
       if (marker === 'lock-operator' || marker === 'operator-by-id') return result(working.operators.filter(row => sameScope(row, values) && row.operator_id === values[2]));
       if (marker === 'current-package') return result(packages().sort((a, b) => b.package_revision - a.package_revision).slice(0, 1));
@@ -91,6 +96,7 @@ function combinedPool() {
 }
 async function fixture(options = {}) {
   const pool = combinedPool(), repository = createStudioRepository({ pool, scope });
+  pool.seedRuntimeCatalog(scope,readRuntimeCatalogFixture());
   let project = createSeedProject();
   const vip = defaultPresentationLane('astrid'); vip.id = 'vip-presentation'; vip.label = 'VIP';
   project.lanes.push(vip);

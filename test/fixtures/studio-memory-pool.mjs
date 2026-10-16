@@ -1,7 +1,8 @@
 // Transaction/adapter fixture only. It is not evidence of PostgreSQL syntax,
 // isolation or constraints: the separate real-Postgres integration test is.
+import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
 export function createStudioMemoryPool() {
-  let state = { documents: new Map(), history: [], media: new Map(), audits: [] }, tail = Promise.resolve(), clock = 0, clientId = 0;
+  let state = { documents: new Map(), history: [], media: new Map(), catalogs: new Map(), audits: [] }, tail = Promise.resolve(), clock = 0, clientId = 0;
   const faults = new Map(), calls = [];
   const clone = value => structuredClone(value);
   const key = (values, kind = values[2]) => JSON.stringify([values[0], values[1], kind]);
@@ -12,6 +13,9 @@ export function createStudioMemoryPool() {
   const pool = {
     calls, connects: 0, releases: 0, commitRollback: false,
     snapshot: () => clone(state),
+    seedRuntimeCatalog(scope,value) {
+      state.catalogs.set(JSON.stringify([scope.environment,scope.workspaceId]),{revision:runtimeCatalogRevision(value),value:clone(value)});
+    },
     failNext(marker, error = Object.assign(new Error('private driver diagnostic'), { code: 'XX000' }), after = 0) { faults.set(marker, { error, after }); },
     corruptDocument(scope, kind, change) {
       const id = JSON.stringify([scope.environment, scope.workspaceId, kind]);
@@ -45,6 +49,7 @@ export function createStudioMemoryPool() {
           }
           if (!working) throw new Error('fixture operation outside transaction');
           switch (marker) {
+            case 'read-runtime-catalog': return result(working.catalogs.has(JSON.stringify(values.slice(0,2))) ? [working.catalogs.get(JSON.stringify(values.slice(0,2)))] : []);
             case 'media-registered-at': return result([{registered_at:working.audits.filter(row=>scoped(row,values)&&row.subject===values[2]&&row.action==='register_media').map(row=>row.at).sort()[0]??null}]);
             case 'media-aliases': return result([...working.media.values()].filter(row=>!(scoped(row,values)&&row.id===values[2])&&(row.id===values[2]||row.record.pathname===values[3])).slice(0,2));
             case 'media-current-owners': return result([...working.documents.values()].filter(row=>references(row.value,values[2])||JSON.stringify(row.value).includes(values[3])).slice(0,101));

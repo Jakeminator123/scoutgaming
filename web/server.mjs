@@ -52,12 +52,13 @@ import { rouletteDocument } from './games/roulette/http.mjs';
 
 const root = realpathSync(join(fileURLToPath(new URL('.', import.meta.url)), 'public'));
 const mediaRepository = resolve(root, '../..');
-const mediaLayout = existsSync(join(mediaRepository, 'media/layout.json'))
+const localMediaEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' && process.env.CROUPIER_CLOUD_RUNTIME !== '1';
+const mediaLayout = localMediaEnabled && existsSync(join(mediaRepository, 'media/layout.json'))
   ? await import(pathToFileURL(join(mediaRepository, 'tools/media-layout.mjs')).href) : null;
 const publicAssetPath = (...parts) => mediaLayout
   ? mediaLayout.resolveMediaPath(`web/public/${parts.join('/').replace(/\\/g, '/').replace(/^\/+/, '')}`, { repositoryRoot: mediaRepository })
   : join(root, ...parts);
-const publicBlobMedia = process.env.CROUPIER_MEDIA_BLOB_INDEX
+const publicBlobMedia = localMediaEnabled && process.env.CROUPIER_MEDIA_BLOB_INDEX
   ? (await import(pathToFileURL(join(mediaRepository, 'lab/lib/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
 const nativeP6QaRouter = await initializeNativeP6QaRouter();
@@ -81,7 +82,8 @@ const { createStudioMediaRuntime } = neonStudioEnabled ? await import('../lab/li
 const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
 const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
-  ? (await import('./speech-reply-library.mjs')).createSpeechReplyLibrary({env:process.env,...studioPolicyRuntime.scope}) : null;
+  ? (await import('./speech-reply-library.mjs')).createSpeechReplyLibrary({env:process.env,...studioPolicyRuntime.scope,
+    repository:(await import('./storage/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
 const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
   readProject: () => studioPolicyRuntime.policy.projectStore().load(),
   referenceService: createDealerSpeechReferenceService({readVideoRegistry:studioMediaRuntime.videoRegistry,readVideoResponse:studioMediaRuntime.videoResponse}),
@@ -314,8 +316,10 @@ API['/api/roulette/table'] = async ({id,playerId,context,...request}) => {
 let partnerApi = null;
 const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
-  mapping: () => clipMapping({ root, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) });
-function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: gamePath, root }); }
+  mapping: () => localMediaEnabled ? clipMapping({ root, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
+function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: gamePath, root,
+  nativeMode:!localMediaEnabled,
+  ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
 
 // ---------- native Studio identity and retained BO handoff/session ----------
 // ---------- BO auth: JWT + craig (the auth DB) ----------
@@ -712,12 +716,11 @@ const studioLabSession = studioPolicyRuntime ? createStudioLabSessionCheck({
 const studioPreview = studioPolicyRuntime ? await (async () => {
   const { createStudioPreview } = await import('./studio-preview.mjs');
   const { getPrivateMedia } = await import('../lab/lib/cloud-media-store.mjs');
-  const { getVideoResponse } = await import('../lab/lib/video-registry.mjs');
   return createStudioPreview({ authorize:createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
     scope:studioPolicyRuntime.scope,repository:studioPolicyRuntime.repository,
     registryLoader:studioMediaRuntime.videoRegistryCaptured,
     privateMedia:(record,request)=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository}),
-    bankVideoResponse:(id,request)=>getVideoResponse(id,request,{repositoryRoot:mediaRepository,readUploads:async()=>[],readClassifications:async()=>[]}),
+    bankVideoResponse:(id,request,snapshot)=>studioMediaRuntime.videoResponseCaptured(id,request,snapshot),
     readHtml:async()=>readSync(join(root,'index.html'),'utf8'),origin:process.env.CROUPIER_PUBLIC_ORIGIN||gameOrigin,
   });
 })() : null;
@@ -988,7 +991,7 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (req.method === 'POST' && req.url === '/calibration') {
-    if (cloudRuntime) {
+    if (!localMediaEnabled) {
       res.writeHead(403, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
       res.end('{"error":"calibration_unavailable"}');
       return;
@@ -1217,10 +1220,6 @@ const server = createServer(async (req, res) => {
   catch { res.writeHead(400); res.end('bad request'); return; }
   let path = normalize(decoded).replace(/^(\.\.[/\\])+/, '');
   const generationPath = '/' + path.replace(/\\/g, '/').replace(/^\/+/, '');
-  if (/^\/(?:dealer[ .]*(?:\/|$)|dealers[ .]*\/(?:astrid|vera|amira|mei)[ .]*(?:\/|$))/i.test(generationPath)) {
-    res.writeHead(410, {'Content-Type':'application/json','Cache-Control':'no-store'});
-    res.end(JSON.stringify({error:'local_dealer_retired'})); return;
-  }
   const retiredGenerationPath = /^\/bo[ .]*\/(?:gen[ .]*(?:\/|$)|generations[ .]*\.json[ .]*$)/i.test(generationPath);
   if (retiredGenerationPath) {
     // Repeat auth after decoding/normalization so encoded slashes cannot bypass
@@ -1231,6 +1230,18 @@ const server = createServer(async (req, res) => {
     res.writeHead(410, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(req.method === 'HEAD' ? undefined : '{"error":"legacy generation catalog retired"}'); return;
   }
+  if (studioMediaRuntime) {
+    const response=await studioMediaRuntime.publicMediaResponse(url.pathname,new Request(gameOrigin+url.pathname,{method:req.method,headers:req.headers}));
+    if(response){res.writeHead(response.status,Object.fromEntries(response.headers));
+      if(!response.body){res.end();return;}const source=Readable.fromWeb(response.body);res.once('close',()=>source.destroy());source.once('error',()=>res.destroy());source.pipe(res);return;}
+  }
+  if (/^\/(?:dealer[ .]*(?:\/|$)|dealers[ .]*\/(?:astrid|vera|amira|mei)[ .]*(?:\/|$))/i.test(generationPath)) {
+    res.writeHead(410, {'Content-Type':'application/json','Cache-Control':'no-store'});
+    res.end(JSON.stringify({error:'local_dealer_retired'})); return;
+  }
+  if(!localMediaEnabled&&(/^\/(?:dealers|media|sfx|kevin-cards|assets|review)\//i.test(generationPath)
+    ||/^\/(?:scene\.jpg|dealer-fallback\.png|speech-media\.json)$/i.test(generationPath)
+    ||/\.(?:mp4|webm|h264|mp3|wav|ogg|m4a)$/i.test(generationPath))){res.writeHead(404,{'Cache-Control':'no-store'});res.end();return;}
   if (mediaLayout) {
     if (publicBlobMedia) {
       const response = await publicBlobMedia(url.pathname,

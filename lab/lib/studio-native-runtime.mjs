@@ -1,4 +1,5 @@
 import {createStudioMediaDeletion} from './studio-media-deletion.mjs';
+import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
 import {STUDIO_MEDIA_TYPE_UNSUPPORTED,STUDIO_MEDIA_TYPE_MESSAGE} from '../../web/storage/studio-media-storage.mjs';
 import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
@@ -92,9 +93,8 @@ export async function readAssistantDatabaseInventory(pool) {
 export async function createStudioNativeRuntime(config, { poolFactory, storeFactory = createPostgresStore,
   schemaCheck = async pool => {
     const plan = await planStudioMigrations({ pool, directory: resolve(schemaRoot(), 'neon-studio') });
-    // Require the exact reviewed ledger including mandatory daily-budget evolution.
-    // 012 is an isolated, unused catalogue until the data import and reader cutover.
-    if (plan.toApply.some(row => !row.deploymentOptional) || plan.applied.filter(row => row.version !== '012').map(row => row.version).join(',') !== '001,002,003,004,005,006,007,008,011') unavailable();
+    // The reader cutover requires the imported Neon catalogue schema.
+    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004,005,006,007,008,011,012') unavailable();
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
   policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,
@@ -139,7 +139,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const layerUploads = createLayerUploadService({repository,scope:config.scope,ticketKey:Buffer.from(signer.v,'hex'),env});
     const authorize = authFactory({ boDb: store.boDb, scope: config.scope });
     const { handlers, gates } = dataFactory({ db: store.db, boDb: store.boDb, repository, scope: config.scope,
-      gamePolicy, canAssignDealer: gamePolicy.canAssignDealer,voiceLines:createRegisteredVoiceLines({env,repositoryRoot}) });
+      gamePolicy, canAssignDealer: gamePolicy.canAssignDealer,voiceLines:createRegisteredVoiceLines({env,repositoryRoot,repository}) });
     for(const [key,handler] of createStudioAdminReadouts({db:store.db,scope:config.scope}).handlers) {
       if(handlers.has(key))unavailable();handlers.set(key,handler);
     }
@@ -182,6 +182,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
     const api = createStudioAdminApi({ authorize, handlers, gates, preparations, allowedOrigins: config.allowedOrigins,
       publicHosts: config.publicHosts, apiBase: config.apiBase, mutationTransaction });
     const native={ api, authorize, config, repository, gamePolicy, authActions, uploads, layerUploads, mediaDeletion,
+      replyRepository:createSpeechReplyRepository({sql:pool,scope:config.scope}),
       readDesignCatalog: createDesignCatalogReader({ pool, scope: config.scope, policy: gamePolicy }),
       listLaneOperators: lanePackages.listOperators,
       listOperatorDirectory: operatorAdmin.listOperatorDirectory,

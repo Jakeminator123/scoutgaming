@@ -12,16 +12,20 @@ const same = (a,b) => process.platform === 'win32' ? a.toLowerCase() === b.toLow
 export function presentationBankRoot(root = repositoryRoot) { return join(root, PRESENTATION_BANK); }
 export function normalizePresentationArchive(value,root=repositoryRoot){return typeof value==='string'&&isAbsolute(value)&&same(resolve(value),join(root,'emil/dealklipp-v1'))?presentationBankRoot(root):value;}
 /** Internal filesystem consumers only. Public requests must use openPublicMedia. */
-export function resolveMediaAbsolutePath(file, {repositoryRoot:root=repositoryRoot,layout}={}) {
+export function resolveMediaAbsolutePath(file, {repositoryRoot:root=repositoryRoot,layout,runtimeCatalog}={}) {
   const path=relative(root,resolve(file)).split('\\').join('/');
-  return safe(path)?resolveMediaPath(path,{repositoryRoot:root,layout}):file;
+  return safe(path)?resolveMediaPath(path,{repositoryRoot:root,layout,runtimeCatalog}):file;
 }
 export function readMediaLayout(root = repositoryRoot) {
   const file = join(root, 'media/layout.json'), info = lstatSync(file), key = `${info.size}:${info.mtimeMs}`;
   if (info.isSymbolicLink() || !info.isFile()) throw new Error('Unsafe media layout.');
   if (cache.get(file)?.key === key) return cache.get(file).layout;
-  const layout = JSON.parse(readFileSync(file, 'utf8'));
-  if (layout.schemaVersion !== 1 || !Array.isArray(layout.files) || typeof layout.roots !== 'object') throw new Error('Invalid media layout.');
+  const layout = validateMediaLayout(JSON.parse(readFileSync(file, 'utf8')));
+  index(layout);cache.set(file,{key,layout}); return layout;
+}
+/** Pure validation shared by explicit local imports and the scoped Neon catalog. */
+export function validateMediaLayout(layout) {
+  if (!layout || layout.schemaVersion !== 1 || !Array.isArray(layout.files) || !layout.roots || typeof layout.roots !== 'object' || Array.isArray(layout.roots)) throw new Error('Invalid media layout.');
   const paths = new Set(), legacy = new Set(), urls = new Set();
   for(const [old,next] of Object.entries(layout.roots)) if(!safe(old)||!safe(next)||!next.startsWith('media/')) throw new Error('Invalid media root.');
   for (const row of layout.files) {
@@ -31,7 +35,7 @@ export function readMediaLayout(root = repositoryRoot) {
     if (row.publicUrl !== undefined && (row.access !== 'public' || urls.has(row.publicUrl) || !row.publicUrl.startsWith('/') || row.publicUrl.includes('\\') || !safe(row.publicUrl.slice(1)))) throw new Error('Invalid public alias.');
     if(row.publicUrl)urls.add(row.publicUrl);
   }
-  validateMediaAliases(layout);index(layout);cache.set(file,{key,layout}); return layout;
+  validateMediaAliases(layout);return layout;
 }
 /** Aliases retain their own access policy; their target supplies only bytes. */
 export function validateMediaAliases(layout) {
@@ -46,14 +50,15 @@ export function validateMediaAliases(layout) {
 }
 function index(layout){if(!indexes.has(layout))indexes.set(layout,{files:new Map(layout.files.flatMap(row=>[[row.legacyPath,row],['media/'+row.path,row]])),public:new Map(layout.files.filter(row=>row.access==='public').flatMap(row=>[[row.publicUrl,row],['/media/'+row.path,row]])),roots:Object.keys(layout.roots).sort((a,b)=>b.length-a.length)});return indexes.get(layout);}
 /** Only explicit former roots are mapped; unknown repository paths stay put. */
-export function resolveMediaPath(legacyPath, { repositoryRoot: root = repositoryRoot, layout } = {}) {
+export function resolveMediaPath(legacyPath, { repositoryRoot: root = repositoryRoot, layout, runtimeCatalog } = {}) {
   if (!safe(legacyPath)) throw new Error('Unsafe media path.');
+  if(runtimeCatalog!==undefined)layout=validateMediaLayout(runtimeCatalog?.layout);
   if(!layout)try{layout=readMediaLayout(root);}catch(error){if(error.code!=='ENOENT')throw error;return join(root,legacyPath);}
   const direct = index(layout).files.get(legacyPath);
   if (direct) { validateMediaAliases(layout); return join(root, 'media', direct.canonicalPath ?? direct.path); }
   // A partially moved directory can still own renderer/admin code. Never
   // reinterpret an existing unregistered regular code file as a media asset.
-  try{const current=lstatSync(join(root,legacyPath));if(current.isFile()&&!current.isSymbolicLink())return join(root,legacyPath);}catch(error){if(error.code!=='ENOENT'&&error.code!=='ENOTDIR')throw error;}
+  if(runtimeCatalog===undefined)try{const current=lstatSync(join(root,legacyPath));if(current.isFile()&&!current.isSymbolicLink())return join(root,legacyPath);}catch(error){if(error.code!=='ENOENT'&&error.code!=='ENOTDIR')throw error;}
   const prefix = index(layout).roots.find(old => legacyPath === old || legacyPath.startsWith(old + '/'));
   if (!prefix) return join(root, legacyPath);
   const mapped = layout.roots[prefix];
@@ -62,11 +67,11 @@ export function resolveMediaPath(legacyPath, { repositoryRoot: root = repository
   if(row) { validateMediaAliases(layout); return join(root,'media',row.canonicalPath ?? row.path); }
   return join(root, next);
 }
-export function resolvePublicMedia(requestPath, { repositoryRoot: root = repositoryRoot, layout } = {}) {
+export function resolvePublicMedia(requestPath, { repositoryRoot: root = repositoryRoot, layout, runtimeCatalog } = {}) {
   let path;
   try { path = decodeURIComponent(requestPath); } catch { return null; }
   if (!path.startsWith('/') || !safe(path.slice(1)) || path.includes('?') || path.includes('#')) return null;
-  layout ??= readMediaLayout(root);
+  layout = runtimeCatalog===undefined ? layout??readMediaLayout(root) : validateMediaLayout(runtimeCatalog?.layout);
   const entry = index(layout).public.get(path);
   if(entry)validateMediaAliases(layout);
   return entry ? { ...entry, file: join(root, 'media', entry.canonicalPath ?? entry.path), logicalPath: entry.path } : null;

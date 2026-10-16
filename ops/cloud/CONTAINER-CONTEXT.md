@@ -14,19 +14,27 @@ källmapp; Lissabon är ingen separat produkt eller image.
 
 | Innehåll som kontexten behåller | Nuvarande roll |
 | --- | --- |
-| `web/`, `lab/`, `apps/croupier-frontend/` | Spelserver, Studio och spelargränssnittets källkod. `web/public/` behåller publik kod och resurser; media använder även sin katalog. |
+| `web/`, `lab/`, `apps/croupier-frontend/` | Spelserver, Studio och spelargränssnittets källkod. `web/public/` behåller publik kod och resurser; produktens medieauktoritet är scoped Neon och privat Blob. |
 | `packages/`, `tools/`, `ops/` | Gemensamma paket, byggverktyg och produktstart. Guide- och policydata under `lab/docs/` och `lab/policies/` följer också med. |
 | `services/astrid-gpu-worker/gateway/` | Talreläet vars beroenden denna Dockerfil installerar. GPU-imagen har en egen Dockerfil och byggs inte av kommandot ovan. |
-| `media/**/runtime`, `media/layout.json`, `media/blob-index.json`, `media/catalog/` | Filer och metadata som kontextreglerna behåller. Att en fil följer med ändrar inte dess identitet eller åtkomstgräns. |
+| `media/**/runtime` | Filträdet utesluts inte generellt. Eventuella medföljande filer blir inte metadata- eller bytesreserv: produktens runtime använder Neon och Blob. |
 | `pipeline/` | Bevarade verktyg och byggrecept, beskrivna i [mappguiden](../../pipeline/README.md). Mappen följer med men är ingen tjänst som containern startar. |
 
-`lab/lib/video-registry.mjs` läser mediemanifest och referenser; den
+`media/layout.json`, `media/blob-index.json` och hela `media/catalog/` är
+uttryckligen uteslutna ur denna byggkontext. De är lokala authoring-/importkällor,
+inte deployade runtime-register. Native Studio och spelservern hämtar layout,
+Blob-index och presentations-/JSON-metadata ur scoped `runtime_media_catalogs`;
+svarsbibliotekets metadata ligger i `speech_reply_records`. Mediebytes hämtas
+från privat Blob med oförändrade identitets- och hashkontroller. Saknad eller
+felaktig katalog får inte ersättas med filinläsning från imagen.
+
+`lab/lib/video-registry.mjs` validerar det levererade mediemanifestet och referenserna; den
 importerar inte längre `pipeline/build-lab-video-manifest.mjs`. Den gamla
 lokala omskanningen svarar 410. De tidigare rötterna `emil/dealklipp-v1/`
 och `content/dealers/` är inte bankens kanoniska lagringsplatser.
 
 `.dockerignore` utesluter bland annat Git, lokala cache-/beroendemappar,
-hemligheter, muterbara Web-/Lab-/OpenClaw-data, `docs/`, `test/`, `lab/test/`
+hela privata `arkiv/`, hemligheter, muterbara Web-/Lab-/OpenClaw-data, `docs/`, `test/`, `lab/test/`
 och mediernas `source`, `staging`, `review`. Vissa redan borttagna mappnamn
 står kvar bland undantagen för att filtrera en återställd äldre kopia.
 Reglerna filtrerar byggkontexten och raderar inga lokala filer.

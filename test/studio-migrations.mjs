@@ -5,6 +5,7 @@ import { mkdtemp, copyFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { StudioStorageError } from '../web/storage/studio-contract.mjs';
+import { checkMigrationReadiness } from '../tools/check-migration-readiness.mjs';
 
 const target = Object.freeze({ database: 'croupier_isolated_studio_test', role: 'studio_migrator', address: '127.0.0.1', port: 55432 });
 const refusal = code => error => error instanceof StudioStorageError && error.code === code;
@@ -108,8 +109,8 @@ test('Studio migration sources are fixed, ordered, bounded and independent of ru
 test('plan is strictly read-only and does not bootstrap absent schema/ledger', async () => {
   const pool = await fixture(), before = pool.snapshot(), plan = await planStudioMigrations({ pool });
   assert.deepEqual(plan.target, target); assert.equal(plan.schemaPresent, false); assert.equal(plan.applied.length, 0);
-  assert.deepEqual(plan.toApply.map(row => row.version), ['001', '002', '003', '004', '005', '006', '007', '008', '011']); assert.deepEqual(plan.pending, plan.toApply);
-  assert.deepEqual(plan.optionalPending.map(row=>row.version), ['012']);
+  assert.deepEqual(plan.toApply.map(row => row.version), ['001', '002', '003', '004', '005', '006', '007', '008', '011', '012']); assert.deepEqual(plan.pending, plan.toApply);
+  assert.deepEqual(plan.optionalPending, []);
   assert.deepEqual(pool.snapshot(), before);
   assert.equal(pool.calls[0].sql, 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   assert.equal(pool.calls.some(row => row.marker === 'lock' || row.marker.startsWith('ddl-') || row.marker === 'record'), false);
@@ -146,7 +147,7 @@ test('004 and 005 upgrade an exact 001/002/003 catalog while preserving all prio
     for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!newTables.includes(row.table_name));
   });
   const original=pool.snapshot().ledger;
-  assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['004','005','006','007','008', '011']);
+  assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['004','005','006','007','008', '011', '012']);
   assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['004','005','006','007','008', '011', '012']);
   assert.deepEqual(pool.snapshot().ledger.slice(0,3),original);
 });
@@ -160,7 +161,7 @@ test('005 upgrades an exact 001/002/003/004 catalog while preserving all prior l
     for (const key of ['columns', 'constraints', 'indexes']) state[key] = state[key].filter(row => !newTables.includes(row.table_name));
   });
   const original = pool.snapshot().ledger;
-  assert.deepEqual((await planStudioMigrations({ pool })).toApply.map(row => row.version), ['005', '006', '007', '008', '011']);
+  assert.deepEqual((await planStudioMigrations({ pool })).toApply.map(row => row.version), ['005', '006', '007', '008', '011', '012']);
   assert.deepEqual((await applyStudioMigrations({ pool, expectedTarget: target, confirm: true })).appliedNow, ['005', '006', '007', '008', '011', '012']);
   assert.deepEqual(pool.snapshot().ledger.slice(0, 4), original);
 });
@@ -237,7 +238,7 @@ test('006 adds only the scoped journal while retaining every preexisting ledger 
    for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!gone.includes(row.table_name));
  });
  const original=pool.snapshot().ledger;
- assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['006','007','008', '011']);
+ assert.deepEqual((await planStudioMigrations({pool})).toApply.map(row=>row.version),['006','007','008', '011', '012']);
  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['006','007','008', '011', '012']);
  assert.deepEqual(pool.snapshot().ledger.slice(0,5),original);
  pool.change(state=>state.ledger[5].checksum='f'.repeat(64));
@@ -253,8 +254,8 @@ test('007 adds draft revisions without changing existing ledger fingerprints and
    for(const key of ['columns','constraints','indexes'])state[key]=state[key].filter(row=>!gone.includes(row.table_name));
  });
  const original=pool.snapshot().ledger,plan=await planStudioMigrations({pool});
- assert.deepEqual(plan.toApply.map(row=>row.version),['007','008', '011']);
- assert.deepEqual(plan.pending.map(row=>row.version),['007','008', '011']);
+ assert.deepEqual(plan.toApply.map(row=>row.version),['007','008', '011', '012']);
+ assert.deepEqual(plan.pending.map(row=>row.version),['007','008', '011', '012']);
  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['007','008', '011', '012']);
  assert.deepEqual(pool.snapshot().ledger.slice(0,6),original);
  assert.deepEqual((await planStudioMigrations({pool})).pending,[]);
@@ -272,8 +273,8 @@ test('008 (Dealer Forge) is pinned: pending blocks readiness until applied, ledg
  });
  const original=pool.snapshot().ledger,plan=await planStudioMigrations({pool});
  assert.deepEqual(plan.applied.map(row=>row.version),['001','002','003','004','005','006','007']);
- assert.deepEqual(plan.toApply.map(row=>row.version),['008', '011']); assert.deepEqual(plan.pending.map(row=>row.version),['008', '011']);
- assert.deepEqual(plan.optionalPending.map(row=>row.version),['012']);
+ assert.deepEqual(plan.toApply.map(row=>row.version),['008', '011', '012']); assert.deepEqual(plan.pending.map(row=>row.version),['008', '011', '012']);
+ assert.deepEqual(plan.optionalPending,[]);
  assert.deepEqual((await applyStudioMigrations({pool,expectedTarget:target,confirm:true})).appliedNow,['008', '011', '012']);
  assert.deepEqual(pool.snapshot().ledger.slice(0,7),original);
  const after=await planStudioMigrations({pool});
@@ -287,7 +288,7 @@ test('008 (Dealer Forge) is pinned: pending blocks readiness until applied, ledg
    const complete=pool.snapshot();
    pool.change(state=>{state.ledger=state.ledger.slice(0,8); priorBudget(state); remove012(state);});
    const original=pool.snapshot().ledger;
-   assert.deepEqual((await planStudioMigrations({pool})).pending.map(row=>row.version),['011']);
+   assert.deepEqual((await planStudioMigrations({pool})).pending.map(row=>row.version),['011', '012']);
    await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
    assert.deepEqual(pool.snapshot().ledger.slice(0,8),original);
    assert.deepEqual(pool.snapshot().ledger,complete.ledger);
@@ -309,9 +310,9 @@ test('011 source admits only the exact reviewed constraint and is never deployme
  }
 });
 
-test('012 is an optional additive bridge; applying it preserves all earlier ledger fingerprints',async()=>{
+test('012 is required for runtime readiness; applying it preserves all earlier ledger fingerprints',async()=>{
   const migrations=await loadStudioMigrations(),bridge=migrations.find(row=>row.version==='012');
-  assert.equal(bridge.deploymentOptional,true);
+  assert.equal(bridge.deploymentOptional,undefined);
   assert.deepEqual(bridge.tables,['runtime_media_catalogs','speech_reply_records']);
   assert.deepEqual(bridge.indexes,[]);
   assert.match(bridge.sql,/PRIMARY KEY \(environment_id, workspace_id\)/);
@@ -324,15 +325,21 @@ test('012 is an optional additive bridge; applying it preserves all earlier ledg
   const original=pool.snapshot().ledger;
   const before=await planStudioMigrations({pool});
   assert.equal(before.applied.at(-1).version,'011');
-  assert.deepEqual(before.pending,[]);
-  assert.deepEqual(before.optionalPending.map(row=>row.version),['012']);
+  assert.deepEqual(before.pending.map(row=>row.version),['012']);
+  assert.deepEqual(before.optionalPending,[]);
+  const blocked=await checkMigrationReadiness({pool});
+  assert.equal(blocked.ready,false);assert.equal(blocked.exitCode,1);
+  assert.deepEqual(blocked.pending,['012']);assert.deepEqual(blocked.optionalPending,[]);
   const applied=await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
   assert.deepEqual(applied.appliedNow,['012']);assert.deepEqual(applied.optionalPending,[]);
   assert.deepEqual(pool.snapshot().ledger.slice(0,9),original);
   assert.deepEqual((await planStudioMigrations({pool})).applied.map(row=>row.version),migrations.map(row=>row.version));
+  const ready=await checkMigrationReadiness({pool});
+  assert.equal(ready.ready,true);assert.equal(ready.exitCode,0);
+  assert.deepEqual(ready.pending,[]);assert.deepEqual(ready.optionalPending,[]);
 });
 
-test('optional 012 does not excuse unledgered tables or changed source/structure fingerprints',async()=>{
+test('012 rejects unledgered tables or changed source/structure fingerprints',async()=>{
   for(const [edit,code] of [
     [state=>state.ledger.pop(),'studio_migration_unexpected_structure'],
     [state=>{state.ledger.at(-1).checksum='f'.repeat(64);},'studio_migration_checksum_mismatch'],

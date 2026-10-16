@@ -7,7 +7,7 @@ import { Readable } from 'node:stream';
 import { readUploads, uploadDirectory } from './video-uploads.mjs';
 import {MEDIA_FILE_TYPES} from './media-file-types.mjs';
 import { readClassifications } from './video-classifications.mjs';
-import { mediaDefinitionForPath, readLabVideoManifest } from './lab-video-manifest.mjs';
+import { mediaDefinitionForPath, readLabVideoManifest, validateLabVideoManifest } from './lab-video-manifest.mjs';
 import { StudioError } from './project-store.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, mediaBlobPath } from './cloud-media-store.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
@@ -56,7 +56,7 @@ function safeRelativeMediaPath(value, extension) {
 
 async function readEntries(options) {
   try {
-    const snapshot = await readLabVideoManifest(snapshotPath(options));
+    const snapshot = Object.hasOwn(options,'runtimeCatalog') ? validateLabVideoManifest(options.runtimeCatalog?.presentation) : await readLabVideoManifest(snapshotPath(options));
     return { entries: new Map(snapshot.items.map(item => [item.id, item])), families: snapshot.families };
   } catch { throw new RegistryError(503, 'Video inventory unavailable.'); }
 }

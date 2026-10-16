@@ -11,6 +11,7 @@
 .croupier-inbox
 agent-talk/state.json*
 agent-talk/write.lock
+arkiv
 **/.DS_Store
 **/*.log
 
@@ -44,6 +45,11 @@ media/.migration
 media/**/source
 media/**/staging
 media/**/review
+# Production reads these registers from scoped Neon. Keep authoring files in
+# the checkout, but exclude them from COPY . . in the cloud image.
+media/layout.json
+media/blob-index.json
+media/catalog
 # Retired 3D source trees, removed 2026-10-12. The names stay so a restored
 # checkout is not copied into an image.
 assets/astrid-3d

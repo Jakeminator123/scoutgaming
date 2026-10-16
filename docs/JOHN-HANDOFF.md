@@ -1,6 +1,97 @@
 # Aktuell handoff — Scoutgaming
 
-## Neon-katalog: kompatibilitetssteg före omkoppling — 16 oktober 2026
+## Aktuellt: Neon-import klar, runtimeleverans återstår — 16 oktober 2026
+
+Jakob har beställt Neon som enda register och Blob som mediekälla. Astrid
+behålls som märkt legacyreferens; Dragan är ordinarie dealer. Detta avsnitt
+ersätter äldre nulägesuppgifter nedan, som är daterade leveranskvitton.
+
+- PR185 är mergad till `main` som `3165ab6df94c965aa3db1f986b8532a0f9260073`.
+  Där ingår Admin-konsolideringen, zoom, filmvisaren, workflowförenklingen och
+  Astrids referensmärkning. PR- och main-CI är gröna. Vercel
+  `dpl_E34gT4df4nRng8nHVRhwmM45R5cd` är READY och Render
+  `dep-db96sk7avr4c73dq4hhg` live på samma version.
+- Kompatibilitetssteget driftsattes före schemaändringen. Migration 012 är
+  installerad i befintliga Neon `production/croupier`, databasen
+  `croupier_game`, projekt `wandering-hill-60561912`, branch
+  `br-flat-fog-b161a6r8`. SQL-kontrollsumma:
+  `5618ae06bcae43c77778f2d7bc777e86d2fabafa2f26c5f139d90d06dc72d291`.
+- Import och separat Neon-återläsning är klara 18:38 UTC: 760 layoutposter,
+  542 Blob-referenser, 51 bankklipp och 18 exakta JSON-manifest. Katalogrevision
+  `9201007d27c7b6464cbd905123c59b48608083a1af726ee9f896767e6e7bff20`.
+  Samtliga 514 unika Blob-objekt har strömlästs och kontrollerats mot full
+  SHA-256, storlek och medietyp. Inga mediebyte flyttades eller regenererades.
+- Tolv historiska PAOW-replikposter har kopierats från Blob-JSON till Neon
+  med bibehållen revision och exakt innehåll. Deras 24 mediereferenser gav
+  redan 404 i Blob; de bevaras som historik och aktiverar ingen dealer.
+  Befintliga Blob-JSON är inte en runtimefallback efter kodomkopplingen.
+- Alla 79 befintliga medieposter och de tre dokumenten project,
+  administration och social-policy är oförändrade enligt före/efter-digest
+  och oberoende Neon-connector. Astrid och Dragan är fortsatt enda aktiva.
+- Slutkoden på `codex/neon-authoritative-runtime` kräver 012 och läser
+  katalog/replikmetadata från Neon. Lokal katalogfallback och ordinarie
+  lokal produktstart avvecklas; explicit `--offline` är en isolerad fixture.
+  Kodleveransens merge/driftsättning är ännu inte klar i detta kvitto.
+- Lokal fullregression på `d0456355`: 4 577 pass, 23 villkorade skip, noll fel. Lab-bygge
+  och TypeScript passerar. Senare SQL-/schema- och importkorrigeringar har
+  riktade gröna prov; exakt slutcommit ska dessutom få full CI med riktig
+  isolerad PostgreSQL, omstart och HTTPS. Ingen ny visuell medieacceptans
+  påstås: Work har lokal webbläsaranvändning avstängd.
+
+`arkiv/` är undantagen från Git (`.gitignore`), vanliga sökningar (`.ignore`),
+Cursor (`.cursorignore`) och Docker-kontext (`.dockerignore`). Git spårar
+endast `.gitkeep`. Innehåll tar inte modellkontext bara genom att finnas på
+disken, men ett uttryckligt filverktygsanrop kan läsa det trots dessa filter.
+Privata importkvitton och loggar finns under det befintliga arkivet och
+committas inte. Användarens konfiguration och granskningsfilmer bevaras.
+
+### Aktuell avstämning efter extern granskning — 16 oktober, 19:13 UTC
+
+| Del | Implementerat / mergat | Drift / acceptans |
+| --- | --- | --- |
+| Admin, scenzoom, lokal filmvisare, Astrids märkning | PR185 i main `3165ab6d` | Vercel och Render verifierade ovan. Tidigare användaracceptans gäller sina daterade flöden. |
+| Schema 012 och registerimport | Installerat och återläst | Befintlig produktion, 514 Blob-objekt verifierade. |
+| Neon som enda runtimeregister | PR186, ännu omergad | Lokala läsare med obefintlig lokal registerrot hämtade och hashverifierade Astrid/Dragan från Neon/Blob. Driftsättning återstår. |
+| Ny genererad läppsynk | Separat produktarbete | `lipsync-test` är en lokal visare av 139 Git-incheckade filmer, inte en färdig Neon/Blob-/talproduktkedja. |
+
+PR181, PR183 och PR184 är nu stängda som innehållsmässigt ersatta av PR185.
+Deras frysta heads jämfördes med main; ingen unik ändring saknades. Inga
+sidobrancher raderades. Admin använder fortfarande aktiva delade `Control*`-
+komponenter och `lab/lib`; gränssnittskonsolidering är inte full kodseparation.
+
+PR186:s första CI `38950137228` avbröts efter utdragen fullregression;
+GitHub bekräftar `cancelled`. Inget testfel är belagt från den körningen;
+jobbloggen gav 404 efter avbrottet. Den är inget grönt leveranskvitto.
+Äldre PR185-körning #753 föll däremot på testets förväntan `focused` mot
+CI:s `full`, inte systemkartan. Den rättningen ingår redan i grön PR185/main.
+
+Kartans SQL-wrapper hade en separat indirekt spärr: kartcapture kunde
+stoppa själva provet. Rättningen gör kartunderlag/evidens frivilliga och
+behåller SQL-/HTTPS-fel och runnerns egna källintegritetsfel blockerande.
+14 fokustester passerar. Reportermodul-/utdatafel i fullhook kan fortfarande
+stoppa Node; detta är en avgränsad kvarvarande verktygskoppling, inte en
+belagd orsak till den avbrutna CI-körningen.
+
+Systemkartans README och terminologin är kortade; äldre inventeringsdata
+är inget krav på att bevara sidor, tester eller lokala register. Felaktiga
+lokala mapp-/manifestinstruktioner är rättade i guiden. Rotens README och
+AGENTS beskriver fokuskontroller lokalt och full regression i CI.
+
+Noll aktiva bolag, rum och sammansättningar är avsiktlig rensning. Äldre
+publiceringsprov bevisar inte att dagens tomma grund har ett färdigt
+bolag–rum–publicering–spel-flöde. Isolerad SQL/HTTPS-CI och ny faktisk
+användaracceptans ska redovisas var för sig; skapa inga produktionsprovdata.
+
+Nästa dokument-/testgranskning ska arbeta i denna huvudcheckout, läsa
+aktuella toppavsnitt och slimma systemkarta, terminologi och kringregler.
+Ta bort felstyrande eller dubblerad text och tester för verifierat avvecklat
+beteende. Behåll relevant täckning för pengar, spelregler, behörigheter,
+rumsisolering, Neon/Blob, migration och medieidentitet. Kontrollera anropare
+innan kartverktyg tas bort; skriv ingen ny tracker och återställ inga gamla
+register för att få gamla tester gröna. Rapportera vad som togs bort,
+varför, hur kvarvarande beteende verifierades och vad som återstår.
+
+## Historik: kompatibilitetssteg före omkoppling — 16 oktober 2026
 
 Jakob har beställt Neon som enda register, Blob som mediekälla och Astrid kvar
 som legacyreferens, med leverans till main efter gröna kontroller. Migration
@@ -14,7 +105,7 @@ Det första steget är inte ett kvitto på färdig registermigrering.
 endast `.gitkeep`. Det hindrar vanlig upptäckt/indexering; uttryckliga filverktyg
 kan fortfarande läsa arkivet och då tillföra innehåll till modellens kontext.
 
-## Astrid-backup och förtydligad molnkälla — 16 oktober 2026 kväll
+## Historik: Astrid-backup och förtydligad molnkälla — 16 oktober 2026 kväll
 
 Jakob beställde först en Astrid-ZIP och rensning till enbart Dragan, och
 förtydligade sedan att huvudmålet är ett gemensamt molnsystem utan parallella
@@ -77,7 +168,7 @@ Privat ZIP-kvitto, frysta registerunderlag, rensningskvitto och separat
 Neon-återläsning finns i `arkiv/2026-10-16/dragan-only/`.
 Datarensningen är genomförd; ingen kodmerge eller driftsättning gjordes.
 
-## Dealeravveckling och workflow — 16 oktober 2026
+## Historik: dealeravveckling och workflow — 16 oktober 2026
 
 Jakob har uttryckligen beställt borttagning av Vera, Mei (bekräftad stavning),
 Amira och Johanna. Arbetet fortsätter i samma huvudcheckout och PR185.
@@ -150,7 +241,7 @@ Privata kontroller och raderingsmanifest finns under
 `arkiv/2026-10-16/dealer-removal/`. Ingen merge eller driftsättning ingår
 i detta kvitto. QA-databasens äldre seedpersoner och historik är orörda.
 
-## Samlat övertagande — 16 oktober 2026
+## Historik: samlat övertagande — 16 oktober 2026
 
 Aktuell arbetskopia är fortfarande `C:\Users\jakem\Projects\croupier`, nu på
 `codex/admin-consolidation-20261016`. Ingen ny worktree skapades. Den lokala
@@ -374,7 +465,7 @@ filer finns kvar i Blob. Inga produktdata, molnresurser eller inställningar
 ingår inte. Saknade äldre replikpar och oklara referenser återstår för separat
 bedömning; ingen reparation eller städning är utförd.
 
-## Aktivt avslut — Dragan och Admin, 16 oktober 2026
+## Historik: dåvarande avslut — Dragan och Admin, 16 oktober 2026
 
 Jakob har aktiverat målet att avsluta Admin och intern migrering, samla
 konfiguration och radera verifierat ersatta delar. Arbetsströmmen har använt
@@ -497,7 +588,7 @@ läppsynk av och PR165 parkerad. Två sidoagenter användes på Jakobs uttryckli
 begäran för denna avgränsade kod-/dokumentuppföljning; samma arbetskopia och
 sekventiella PR-flöde används.
 
-## Aktiv leveransström — Admin-förenkling, 15 oktober 2026
+## Historik: leveransström — Admin-förenkling, 15 oktober 2026
 
 Historisk startavgränsning. Senare uttryckliga mandat och leveranser redovisas
 i det aktuella slutkvittot överst.

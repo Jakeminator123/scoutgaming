@@ -121,7 +121,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
       const sessionDb=db;
       const getPlayer=()=>sessionDb.prepare('SELECT * FROM players WHERE id=?').get(playerId);
       const command=createNativeTableCommand({db,getPlayer,logTx:(...values)=>sessionDb.prepare('INSERT INTO transactions VALUES (?,?,?,?,?)').run(...values)});
-      const s={id,owner,project,lane,inventory,records,assets,dealerAvailability,expires,db,getPlayer,command,active:0,closed:false};
+      const s={id,owner,project,lane,inventory,records,snapshot,assets,dealerAvailability,expires,db,getPlayer,command,active:0,closed:false};
       s.api=createPresentationApi({db,env:{},store:{configurationSource:'studio-preview',load:async()=>project},registryLoader:async()=>inventoryFor(s),recordedSpeechPreview:true});
       s.timer=setTimeout(()=>dispose(s),ttlMs);s.timer.unref?.();sessions.set(id,s);db=null;
       return json(201,{...metadata(s),entryUrl:`/studio-preview/${id}`});
@@ -137,7 +137,7 @@ export function createStudioPreview({authorize,scope,repository,registryLoader,p
     }else{
       expected=s.inventory.videos.find(row=>row.id===id&&row.available);if(!expected)fail('studio_preview_media_not_found',404);
       const record=s.records.get(id);
-      response=record?await privateMedia(privateRecord(record),request):await bankVideoResponse(id,request);
+      response=record?await privateMedia(privateRecord(record),request):await bankVideoResponse(id,request,s.snapshot);
     }
     try{live(s);}catch(error){await response.body?.cancel();throw error;}
     if([200,206,304].includes(response.status)&&response.headers.get('etag')!==`"sha256-${expected.sha256}"`){await response.body?.cancel();fail('studio_preview_media_mismatch',409);}

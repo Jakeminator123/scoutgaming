@@ -12,6 +12,7 @@ import {projectOpenClawGameStatus} from '../../../web/openclaw-chat.mjs';
 import {normalizeProductSpeechEnvelope} from '../../../open-claw/lab/src/product-speech.mjs';
 
 const fixture=()=>({NODE_ENV:'production',PORT:'10000',CROUPIER_CLOUD_LAYOUT:'single-origin',
+  CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
   CROUPIER_CLOUD_DATA_ROOT:NATIVE_P6_QA.dataRoot,RENDER_SERVICE_ID:NATIVE_P6_QA.serviceId,RENDER_EXTERNAL_URL:NATIVE_P6_QA.origin,
   RENDER_GIT_COMMIT:'1'.repeat(40),CROUPIER_STREAM_LANE:'lissabon-stream-lane',CROUPIER_STUDIO_NEON_POLICY:'1',
   CROUPIER_STUDIO_ENVIRONMENT_ID:NATIVE_P6_QA.environmentId,CROUPIER_STUDIO_WORKSPACE_ID:NATIVE_P6_QA.workspaceId,

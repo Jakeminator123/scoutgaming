@@ -99,10 +99,14 @@ function serveFile(req, res, file, type) {
   return createReadStream(file, { start: range.start, end: range.end }).pipe(res);
 }
 
-export function createLayerPacksRoute({ previewRoot = previewBuildDirectory } = {}) {
+export function createLayerPacksRoute({ previewRoot = previewBuildDirectory, env = process.env } = {}) {
   const catalogFile = join(previewRoot, 'catalog.json');
   return async function layerPacksRoute(req, res, pathname) {
     if (!pathname.startsWith('/layer-packs/')) return false;
+    if(env.CROUPIER_CLOUD_RUNTIME==='1'||env.CROUPIER_STUDIO_NEON_POLICY==='1'){
+      res.writeHead(410,privateHeaders('application/json'));
+      res.end(req.method==='HEAD'?undefined:'{"error":"legacy_layer_preview_retired"}');return true;
+    }
     if (!['GET', 'HEAD'].includes(req.method)) {
       res.writeHead(405, privateHeaders('application/json', { Allow: 'GET, HEAD' }));
       res.end('{"error":"method_not_allowed"}');

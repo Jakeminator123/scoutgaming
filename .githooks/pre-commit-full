@@ -52,7 +52,7 @@ run_node_tests test/card-view.mjs test/background-playback-policy.mjs test/backg
 run_node_tests test/studio-preview.mjs test/studio-preview-client.mjs
 run_node_tests test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-offline.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/croupier-frontend/test/game-entry.mjs apps/croupier-frontend/test/player-profile.mjs
 run_node_tests test/admin-project-drafts-browser.mjs
-run_node_tests test/speech-reply-library.mjs
+run_node_tests test/speech-reply-library.mjs test/speech-reply-repository.mjs test/speech-reply-blob-import.mjs test/partner-metadata.mjs test/layer-packs-cloud.mjs
 run_node_tests open-claw/lab/test/dashboard-proxy.test.mjs
 run_node_tests open-claw/lab/deploy/dashboard-handoff.test.mjs open-claw/lab/deploy/gateway-bootstrap.test.mjs
 run_node_tests open-claw/lab/test/studio-admin.test.mjs open-claw/lab/test/gateway-rpc.test.mjs
@@ -64,7 +64,7 @@ node tools/check-environment-variables.mjs
 run_node_tests test/check-environment-variables.mjs test/provider-profile.mjs
 node pipeline/build-lab-video-manifest.mjs --check
 node tools/build-runtime-media-catalog.mjs --check
-run_node_tests test/runtime-media-catalog.mjs
+run_node_tests test/runtime-media-catalog.mjs test/runtime-media-import.mjs test/neon-runtime-catalog.mjs
 node test/player-auth.mjs
 node test/table-http.mjs
 run_node_tests test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs apps/croupier-frontend/test/player-ui-build.mjs

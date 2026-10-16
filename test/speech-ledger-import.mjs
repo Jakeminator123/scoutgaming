@@ -13,7 +13,7 @@ import { createPostgresOperatorSpeechQa } from '../web/postgres-operator-speech-
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);
 const target={database:'postgres',role:'studio_qa',address:'127.0.0.1',port:55432};
-const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
+const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
 const packet=(name,value)=>{const bytes=Buffer.from(JSON.stringify(value));return {name,bytes,sha256:hash(bytes),updatedAt:observedAt};};
 function prepared(scope={environment:'import-qa',workspaceId:'croupier'},extras=[]) {
   return prepareLegacySpeechLedgerSnapshot({scope,endpointId:'legacy-endpoint',observedAt,
@@ -104,6 +104,14 @@ test('scope/checksum/frozen proof/schema confirmation mismatches stop before wri
     {expectedTarget:{...target,role:'wrong'}},{schemaCheck:async()=>({...installed,toApply:[{version:'002'}],applied:installed.applied.slice(0,1)})}]){
     const pool=memoryPool();await assert.rejects(applyLegacySpeechLedgerSnapshot({...args(pool),...patch}));assert.equal(pool.trace.length,0);
   }
+});
+
+test('the runtime cutover rejects a bridge ledger missing 012 before any write transaction',async()=>{
+  const pool=memoryPool(),before=structuredClone(pool.state);
+  await assert.rejects(applyLegacySpeechLedgerSnapshot({...args(pool),schemaCheck:async()=>({
+    ...installed,applied:installed.applied.filter(row=>row.version!=='012'),optionalPending:[{version:'012'}],
+  })}),{code:'studio_speech_import_schema_unverified'});
+  assert.equal(pool.trace.length,0);assert.deepEqual(pool.state,before);
 });
 
 test('preexisting budget, spent cost, any lease/QA history, another workspace/snapshot or post-import consumption cannot be merged/reset',async()=>{

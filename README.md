@@ -127,7 +127,11 @@ Deliver from `jakob/*`, `codex/*` or `cursor/*` with one pull request to `main`.
 `node tools/push-github-work.mjs` pushes the feature branch. Direct `main` push
 requires the explicit emergency option. Never force-push or push to Kevin's branch.
 
-Run `.githooks/pre-commit` before delivery. The dispatcher uses bounded checks
-for explicitly listed folder guides and documentation-only commits. Code,
-configuration, media, CI and `--full` retain full regression. Test passes and
-matching hashes do not establish visual lip sync or card contact acceptance.
+Local commits run changed-file checks and available nearby tests through
+`.githooks/pre-commit`; `node tools/precommit-checks.mjs --plan` shows the selection.
+Run additional relevant tests when shared behavior changes. Full regression
+and frontend typechecking run in CI, or explicitly with
+`sh .githooks/pre-commit --full`; they are not required for every intermediate
+local commit. Focused passes and matching hashes do not establish complete
+runtime, visual lip sync or card contact acceptance. Follow [AGENTS.md](AGENTS.md)
+for the verification and delivery requirements.

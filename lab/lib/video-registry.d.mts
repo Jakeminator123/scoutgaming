@@ -5,6 +5,7 @@ export interface VideoRegistryOptions {
   projectStore?: {load(): Promise<import('./studio-model.mjs').StudioProject>};
   strict?: boolean; repositoryRoot?: string; indexPath?: string; cacheDir?: string;
   env?: Record<string, string | undefined>;
+  runtimeCatalog?: { schemaVersion: 1; layout: any; blobIndex: any; presentation: any; legacy: any };
   readUploads?(options: VideoRegistryOptions): Promise<any[]>;
   readClassifications?(options: VideoRegistryOptions): Promise<any[]>;
 }

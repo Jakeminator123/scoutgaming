@@ -103,7 +103,7 @@ export function createStudioRepliesApi({replyLibrary,authorize,config}={}) {
 export async function handleNativeStudioReplies(request) {
   try {
     const native=await studioNativeRuntime();
-    const replyLibrary=createSpeechReplyLibrary({...native.config.scope,env:process.env});
+    const replyLibrary=createSpeechReplyLibrary({...native.config.scope,env:process.env,repository:native.replyRepository});
     return await createStudioRepliesApi({...native,replyLibrary}).handle(request);
   }catch(error){return studioRepliesErrorResponse(error);}
 }

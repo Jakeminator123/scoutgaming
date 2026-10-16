@@ -27,9 +27,9 @@ const sources = Object.freeze([
     tables: ['forge_dealers', 'forge_jobs'], indexes: ['forge_jobs_dealer_idx'] },
   // 009/010 remain reserved for B18/B19. This reviewed evolution creates no tables.
   { version: '011', file: '011-gpu-daily-budget.sql', tables: [], indexes: [], fingerprintTables: ['gpu_budget_policies'] },
-  // Deploy this additive reader-compatible bridge before applying 012. Only
-  // the following runtime cutover may make these isolated feature tables required.
-  { version: '012', file: '012-runtime-media-catalog.sql', deploymentOptional: true,
+  // The runtime cutover requires the catalogue and reply metadata imported after
+  // the additive bridge deployment. Missing 012 now blocks deployment readiness.
+  { version: '012', file: '012-runtime-media-catalog.sql',
     tables: ['runtime_media_catalogs', 'speech_reply_records'], indexes: [] },
 ]);
 const budgetConstraint = 'gpu_budget_policies_daily_budget_micro_usd_check';

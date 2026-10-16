@@ -2,6 +2,20 @@
 
 Produktmodell och ord har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
+**Öppna produkten:** `node lab/start.mjs` öppnar den publicerade lobbyn.
+Från Codex används `node lab/start.mjs --no-open`, som bara skriver adressen.
+Kommandot skapar inga lokala register eller servrar. Endast uttryckligt
+`--offline` startar en tillfällig, isolerad testmiljö utan externa tjänster.
+
+Det nya runtimekontraktet samlar katalog och svarsbibliotekets metadata i
+Neon; filmer och ljud ligger i privat Blob. Lokala katalogfiler är underlag
+för uttryckligt import-/authoringarbete. Sparade arbetsfiler bevaras men
+används inte som produktens reservregister. Migration och dataimport är klara
+enligt huvudagentens kvitto 16 oktober 18:38 UTC; produktens runtimebyte och
+driftacceptans återstår. Aktuell leveransstatus finns i
+[CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md), tekniken i
+[presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+
 **Roulettescenens storlek:** öppna Spelbolag & rum, välj rummet och
 **Gemensam mall och tillåtna alternativ** → **Öppna gemensam mall** →
 **Redigera gemensam mall**. **Zooma in scenen** och
@@ -246,7 +260,7 @@ visar mobil/desktop, position, storlek, lager av/på och två uppspelningar.
 Tre lokala filer kan provas direkt; detta prov sparar eller laddar inte upp filerna.
 Placeringarna sparas i presentationen och fryses i bolagspaketet.
 
-I **Spelrum & publicering** på `/control/rooms` väljer du bolag och **Sammansättning**. **Bolag & team** på `/control/companies` behåller samma bolagsval. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
+I **Spelrum & publicering** på `/admin/publication` väljer du bolag och **Sammansättning**. **Bolag & team** på `/admin/companies` behåller samma bolagsval. De äldre `/control/rooms`- och `/control/companies`-adresserna är kompatibilitetslänkar. Under **Spelrum** visas befintliga aktiva rum som hör till både bolaget, presentationen och det publicerade paketet. Öppna rummets egen länk, eller gå via den allmänna Blackjack-länken och välj först bolag i lobbyn.
 **Uppdatera publicerade sammansättningar** visar vilka presentationer som ska ingå. Markeringarna ersätter paketets presentationsurval; behåll alla presentationer som bolaget fortsatt ska ha. Publicera igen för att uppdatera befintliga rum utan att skapa nya.
 **Öppna bolagets spellobby** leder till `/play?operator=<bolag>`. **Visa alla bolag** återgår till bolagsvalet. Administratörens inloggningsuppgifter fungerar även i den gemensamma spelarinloggningen, som skapar en separat spelarsession. För ett isolerat test med testsaldo används **Provspela** i Sammansättning. Lobbyn visar endast befintliga öppna rum i bolagets publicerade paket. Spelaren väljer rum, dealer och tillåtna bord- och bakgrundsalternativ innan **Spela med …**. Namnen kommer från det publicerade registret. Fullbildsdealers visar att bord och bakgrund ingår i dealerfilmen; de får inga separata lagerval. Ett tomt paket visar inga öppna rum. Ett läsfel visar ett felmeddelande, inga reservdealers.
 Rummets identitet och vald dealer följer med genom spelarinloggningen. Val av bordets utseende och bakgrund sparas i den här webbläsaren per bolag och kontrolleras på nytt av spelet. Spelrum är ingången till paketet; **Bord** är bildlagret i scenen, inget separat spelrum eller extra innehållslager.
@@ -310,7 +324,8 @@ API och tillgångar under basePath behålls. I molnet öppnar du
 [`/admin`](https://www.scoutgaming.tech/admin). Render-tjänsten `croupier-v2` äger
 spelmotorn och live-transporten. Produktion och isolerad native-QA använder
 Neon för revisionsstyrd policy och administrationsmetadata, i sina egna scopes.
-Lokalt finns samma arbetsyta på Lab-paret som `node lab/start.mjs` startar, på `/`.
+För isolerade tester finns arbetsytan på det temporära par som endast
+`node lab/start.mjs --offline` startar, på den adress kommandot skriver ut.
 **Öppna spelet** fungerar med vanlig spelarinloggning även om
 Partner-observationen saknas. **Anslut & följ spelet** öppnar samma
 presentationsväg och kopplar dessutom spelflikens händelser till personalytan.
@@ -453,21 +468,25 @@ för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 Greenscreen-dealern, bordet och bakgrunden kan spelas som separata lager.
 Bakgrundszoner har tagits bort ur arbetsflödet; tidigare sparade zondata bevaras.
 
-Start: `node lab/start.mjs --offline --no-open` för tomt prov utan externa
-tjänster. `node lab/start.mjs --no-open` behåller den befintliga privata anslutna profilen.
-Startaren visar avsedd checkout och dess Git-HEAD som källversion. Egna
+Start: `node lab/start.mjs --no-open` skriver den publicerade produktens adress.
+`--product` är ett alias för samma läge. Använd
+`node lab/start.mjs --offline --no-open` för ett isolerat prov utan externa
+tjänster. Testdata ligger temporärt och rensas när paret avslutas; äldre
+privata profiler och sparade lokala arbetsdata lämnas kvar.
+Fixturstartaren visar avsedd checkout och dess Git-HEAD som källversion. Egna
 arbetsfiler kan avvika; uppgiften intygar inte vilken källversion ett äldre bygge har.
 En redan svarande server återanvänds inte automatiskt: stoppa dess startprocess
 manuellt före en ny start från rätt checkout. Inga processer stängs av startaren.
 
-Lägg till `--skip-build` för att använda befintliga byggfiler utan att förbereda
+Lägg endast till `--skip-build` tillsammans med `--offline` för att använda befintliga byggfiler utan att förbereda
 förhandsvisningar, bygga eller installera beroenden. Nödvändiga filer för Lab,
 förhandsvisning och Admin/Lobby kontrolleras innan profiler läses eller projekt
 och servrar startas. Saknas någon fil stannar kommandot; bygg först rätt checkout
 med `npm --prefix lab run build` när ett bygge är avsett. Bortstädade byggfiler
 är inte i sig ett källkodsfel. Kontrollen intygar filernas närvaro, inte att bygget
-motsvarar aktuell Git-HEAD. `--check` behåller sitt läsande anslutningsprov och
-startar inga servrar; `--product` öppnar den publicerade produkten utan lokal start.
+motsvarar aktuell Git-HEAD. De tidigare anslutna lokallägena `--check`,
+`--cloud-storage` och `--astrid-camera` avvisas med hänvisning till den
+publicerade produkten eller explicit offline-fixtur.
 
 Avancerade verktyg nås genom **Händelser** (`/control/events`; utan `?event=` visas
 översikten över alla event, med `?event=` redigeraren). `/control/tree` och `/tree` omdirigerar
@@ -475,7 +494,7 @@ dit. `/lissabon`, `/lab`, `/labb` och `/bo` är äldre kompatibilitetsadresser.
 Personalens nya ingång är `/admin`; följande querykontrakt gäller de befintliga Studio-verktygen. Adressen `?dealer=` och `?event=` följer med på Studio-sidorna. `?variant=` följer med på Händelser och Klippbibliotek. `?tab=` är `event`, `triggers` eller `variants` på Spelhändelser & villkor (`/control/events`), `chat` på OpenClaw och `operations`, `finance`, `accounts`, `partners` eller `media-review` på Administration. `tab=tables` leder till `/control/rooms`. Gamla `#probe`, `#background` och `#stream` på Dealers & klipp leder till `/control/probe`, `/control/compositions` och `/control/rehearsal` (Provspelning & logg). Varianter för Vera, Amira och Mei sparas men används inte av spelet ännu (L19).
 
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/control/guide)
-(lokalt `http://127.0.0.1:4201/guide` på paret från `node lab/start.mjs`).
+(i en offline-fixtur på `/guide` under den Studio-adress startaren skriver ut).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
 [studio-contract.json](../policies/studio-contract.json). Uppdatera dessa,
 inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
@@ -495,9 +514,10 @@ kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 Tekniska fördjupningar finns i den [aktiva systemkartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
-**Provspelning & logg** på `/control/rehearsal` skiljer källa, eventdata, kontext, beslut och
+**Provspelning & logg** på `/admin/rehearsal` skiljer källa, eventdata, kontext, beslut och
 uppspelningskvitto. **Anslut** verifierar Partner-åtkomst, öppnar rätt
 originalsession och startar läsande observation.
+`/control/rehearsal` är en äldre kompatibilitetslänk.
 Observation startar ingen separat Lab-spelare. Native-kedjan visar mottaget
 event, klippval och verkliga start-/bild-/slutkvitton med sparad revision.
 Partner-SSE visas som separat diagnostik. För övriga dealers kräver separat
@@ -514,8 +534,9 @@ Aktuella kontroller och provgränser beskrivs i
 [kamera- och talguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Driftens aktiverade funktioner och återstående liveprov följs i
 [molnstatusen](../../docs/CLOUD-MIGRATION.md).
-För lokalt kameratest används `node lab/start.mjs --astrid-camera`;
-stoppa ett befintligt par före byte och använd alltid `--no-open` från Codex.
+Det tidigare lokala kamerastartläget `--astrid-camera` är avvecklat.
+Offline-fixturen aktiverar inga externa kamera-/taltjänster. Följ driftens
+befintliga kontroller och provgränser för sådana produktprov.
 
 ## Arkivera, återställa och provspela
 
@@ -560,7 +581,9 @@ events behåller kort, box, handindex och replik. Standardfil och varianter
 kommer från manifestet, inte från projektets gamla 2D-demovarianter.
 
 Manifest v2 grupperar deal, kortvändning, exakta repliker och idle.
-Aktuellt filantal och innehåll finns i [det kanoniska manifestet](../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json).
+Aktuella familjer och klipp läses från det importerade manifestet i Neon-katalogen.
+Den [incheckade manifestkopian](../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json)
+är underlag för uttrycklig authoring/import, inte produktens runtime-register.
 Deal/replik använder
 `deal/<familj>/<standard>.mp4` respektive
 `repliker/<familj>/<standard>.mp4`; deras `variant/` kan vara tom och ger då
@@ -575,14 +598,12 @@ och egna ändringar skrivs inte över. För en manifeststyrd dealer ersätter en
 tillfällig vy den aktuella linjens kandidater med exakt familjs standard och
 högst fyra tillgängliga mappvarianter. Saknad policy innebär manuell variant.
 Regler, slump och OpenClaw kräver uttrycklig tillåtelse. Okända eller saknade
-varianter lånar aldrig en annan familjs media. Övriga dealers behåller sin
-befintliga originalväg. Lägg nya MP4-filer i rätt `variant/`-mapp och välj
-**Läs in nya filer**. Knappen skannar mapparna, uppdaterar manifestet och läser
-om katalogen utan att flytta videofiler. En ny idlevariant läggs sedan till i
-policyn som manuell; välj Automatisk eller OpenClaw uttryckligen och spara.
-Detta läser lokala filer. I molnet används **Ladda upp klipp** och
-**Läs in nya filer** läser serverbiblioteket; en lokal filändring publicerar
-inte filmens nya byteinnehåll till molnet.
+varianter lånar aldrig en annan familjs media. Varje dealer använder sina egna
+exakta registrerade klipp. Använd **Ladda upp klipp** i Admin: mediebytes lagras
+i Blob och registreringen i Neon. Nya klipp väljs och aktiveras uttryckligen
+i den sparade policyn. Lokal authoring kräver en separat, granskad import;
+att ändra en fil eller skanna en lokal mapp uppdaterar inte produktens register,
+mediebytes eller publicerade paket.
 
 ### Astrids Deal-frekvenser
 
@@ -600,10 +621,12 @@ frekvensurval utan modellanrop. Standard spelar standard, och Skuggläge
 provar urvalet men spelar standard. Språk- och sociala testvillkor visas
 inte för Astrids Deal. Repliker och övriga dealers behåller sina val.
 
-De registrerade klippen i `media/dealers/astrid/runtime/presentation` är källan för Astrids
-manifeststyrda familjer. Arbetskopior och backuper på skrivbordet är inte
-automatiskt spelbara eller molnpublicerade. Nya varianter är manuella tills
-de uttryckligen läggs till och aktiveras i den sparade policyn.
+Neon-katalogen är registerkällan för Astrids manifeststyrda familjer; filmerna
+hämtas från Blob med sina exakta identiteter. Sökvägen
+`media/dealers/astrid/runtime/presentation` beskriver äldre källmaterial och
+logiska medieidentiteter, inte en lokal runtimekälla. Arbetskopior och backuper
+blir inte spelbara genom filändringar. Nya varianter är manuella tills de
+uttryckligen läggs till och aktiveras i den sparade policyn.
 
 Översikten och Klippbiblioteket visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
@@ -618,18 +641,20 @@ består av `idle_still` och `idle_breath`. `idle_blink`, `idle_cheek`,
 Beskriv **När passar klippet?** med högst 80 tecken. Texten följer kandidaten
 till OpenClaw som konfigurationsdata, inte som en systeminstruktion.
 
-Mappstrukturen är kontraktet för släktskapet:
+Neon-registret bevarar de exakta familjeidentiteterna. De äldre sökvägarna
+beskriver klipprollerna:
 
 - `media/dealers/astrid/runtime/presentation/idle/*.mp4` är loopande grundklipp.
 - `media/dealers/astrid/runtime/presentation/idle/variant/*.mp4` är korta varianter.
-- policyn `lab/policies/idle-policy.seed.json` bestämmer grundvikter och om en
-  variant är manuell, automatisk, regelstyrd eller OpenClaw-valbar.
+- `lab/policies/idle-policy.seed.json` är kodens standardmall. Den är inte ett
+  alternativt runtime-register; sparade vikter och tillåtna användningar hör
+  till det serverägda projektets policy i Neon.
 
 Det avancerade labbets startpolicy visar `idle_still` med 90 % grundvikt och schemalägger blinkning
 ungefär var 25:e sekund med ±5 sekunders variation. Eftersom blinkklippet tar
 tid blir `idle_still` i praktiken ungefär 79 %, vilket editorn visar. Ett
 spel-, deal- eller talprov äger spelaren och blockerar idleprovet tills det är
-klart. Policyn sparas i det aktiva serverägda Lab-projektet. Web-spelaren läser
+klart. Policyn sparas i det serverägda projektet i Neon. Web-spelaren läser
 samma projekt; ladda om spelfliken efter ändringar i idlepolicyn. Labs startprofil
 erbjuder i stället de ursprungliga sex variationerna till OpenClaw; kaffeklippet
 börjar som manuellt. Ingen fjärrdrift deployas

@@ -1,108 +1,54 @@
-# Scoutgaming: produktmodell och ord
+# Scoutgaming: ord i produkten
 
-Det här är den gemensamma källan för vad **bolag, spel, rum, bakgrund,
-dealer, bord och sammansättning** betyder i nya gränssnitt och dokument.
-Tekniska fält och nuvarande begränsningar beskrivs i
-[runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md); användarsteg
-finns i [guiden](README.md). Målmodellen nedan är inte ett påstående om att
-alla äldre rum och paket redan har migrerats.
+Denna ordlista gör gränssnittets namn begripliga. Den kräver inte att gamla
+sidor, mappnamn, register eller tester bevaras. Aktuell kod och verifierad
+drift beskrivs i [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md);
+leveransläget finns i [handoffen](../../docs/JOHN-HANDOFF.md). Användarens
+aktuella produktbeslut gäller framför äldre beskrivningar.
 
 ## Ägarskap och spelarens val
 
-```text
-Scoutgaming → bolag/operatör → spel → rum/bakgrund
-                                    ├─ tillåtna dealers
-                                    └─ tillåtna bord
-Spelarens scen: vald bakgrund → vald dealer → valt bord → spelkontroller
-```
+| Ord | Betydelse |
+| --- | --- |
+| Bolag / operatör | Organisationen som äger sitt spelutbud och sina rum. Scoutgaming driver tjänsten. |
+| Spel | Exempelvis Blackjack eller Roulette, med tillåtna och kompatibla rum, dealers och bord. |
+| Rum | Ett bolagsägt val med eget ID och en bakgrund. Samma bakgrundsfil kan användas i flera rum utan att identiteter eller behörigheter slås ihop. |
+| Bakgrund | Scenens bakersta bild- eller videolager. |
+| Dealer | Registrerad person med egna klipp. En annan bakgrund eller klippkategori skapar ingen ny dealer. |
+| Bord | Scenens separata förgrundslager med spelets geometri. |
+| Sammansättning | Teknisk konfiguration för scenens lager, placering och kompatibilitet. Visa den när inställningarna behövs; den är ingen extra produktnivå. |
 
-- **Bolag** och **operatör** är samma organisation. Scoutgaming driver
-  tjänsten; bolaget äger sitt publicerade spelutbud och sina rumsbindningar.
-- Ett **spel** är exempelvis Blackjack eller Roulette hos ett bolag. Det
-  erbjuder valbara rum/bakgrunder, dealers och bord som uttryckligen är
-  kompatibla med spelet och tillåtna i bolagets publicering.
-- Ett **rum** är spelarens bakgrundsval i ett spel, inte ytterligare ett
-  bildlager. Ett sparat rum har eget ID och ägs av ett bolag. Det pekar på en
-  versionerad bakgrundsfil; samma fil får användas i andra spel eller hos andra
-  bolag utan att rummen eller behörigheterna blir samma sak. Bild och video
-  av samma miljö kan höra till samma rumsval.
-- En **dealer** är en registrerad person med egna klipp och uppsättningar.
-  Dealern kan väljas till flera kompatibla rum. En ny kombination av dealer
-  och bakgrund skapar aldrig en ny dealeridentitet.
-  `dealerSets` är författarens namngivna klippkategorier för samma person;
-  kategorinamnet registrerar ingen dealer och väljer ingen runtimeuppspelning.
-- Ett **bord** är det separata visuella förgrundslagret med spelets geometri,
-  inte ett rum. Bordet kan återanvändas där spelet och geometrin tillåter det.
-- Spelaren får välja en tillåten dealer och ett tillåtet bord till rummets
-  bakgrund. Varje öppet rum måste ha ett giltigt förval för båda så att scenen
-  också fungerar utan ett aktivt spelarval. Valet skapar inget nytt
-  biblioteksobjekt eller nytt permanent rum.
-- En **sammansättning** sparar lagerplacering, kompatibilitet och tillåtna
-  val för uppspelningen. Den är en teknisk konfiguration, inte ett andra rum,
-  en dealer eller en bakgrund. Visa den bara när dess inställningar behövs.
+Normal scen är **bakgrund → dealer → bord → spelets kort och kontroller**.
+Spelaren väljer bland rummets tillåtna dealers och bord; giltiga förval
+behövs också. En gemensam mall kan påverka flera rums utkast. Ett valt rum
+i gränssnittet gör inte en malländring rumsspecifik. Rumsval måste sparas
+med serverkontrollerat ägarskap, behörighet och revisionsskydd.
 
-En gemensam sammansättningsmall kan användas av flera bolag och rum.
-Mallredigering ändrar projektets utkast; vald rumskontext begränsar inte
-mallens räckvidd. Rummets tillåtna utseendeval redigeras separat på
-N1 `/admin/rooms?view=registered&operator=<bolag-id>&table=<rum-id>` och
-N2 `/partner/{slug}/rooms?room=<rum-id>` via samma `presentations.configure`,
-serverkontrollerad ägare, granskning och revisionsskydd.
+**Astrid är legacyreferens utan trelagersversion.** Hennes fungerande tal-
+och OpenClaw-flöden kan användas som referens. Fullbildsmaterial med inbakat
+bord eller bakgrund får inte beskrivas som frilagda lager. Dragan är den
+ordinarie dealern. Referensrollen kräver inga parallella lokala register.
 
-**Normal scen:** bakgrund bakom en frilagd dealer; bord framför kroppen;
-kort, marker och spelkontroller över scenen. Rörliga händer som ska ligga
-framför bordet behöver en särskild godkänd mask eller kontaktpose.
-**Äldre fullbildsundantag:** Astrid och eventuellt andra tidiga klipp kan ha
-bakgrund och bord inbakade. Märk dem som fullbildsmaterial och ge dem inte
-separata lagerval förrän frilagda original och placering har godkänts. En
-etikett eller grönnyckling kan inte ta bort ett inbakat bord.
-
-## Format och livscykel
-
-Biblioteket tar emot PNG, JPEG, WebP, MP4 och WebM för bakgrunds- och
-bordstillgångar (högst 128 MiB; registrerad bredd/höjd 1–16384 px). Det är
-filvalidering, inte visuell acceptans. En stillbild och en video för samma
-bakgrund ska provas med samma utsnitt; bakgrundsvideo ska loopas utan ljud.
-Ett bord som ska visa dealern bakom sig behöver frilagd PNG eller en granskad
-videomask. Dealerklipp är gröna original eller verifierad alfa (PNG eller
-VP9-WebM med alfaspår); opak MP4 kan inte ge en frilagd silhuett. Se
-[formatkrav och provning](../../docs/LOCAL-PRESENTATION-RUNTIME.md#format-tillåten-fil-är-inte-samma-sak-som-godkänd-scen).
-
-Papperskorgen ska finnas för bolag, rum, dealers, klipp, bakgrunder och bord.
-Visa påverkan och lossa aktiva kopplingar innan arkivering. Ett återställt
-bolag öppnar inte sina rum; återställda filer är otilldelade val. Bevara
-publiceringshistorik och källfiler. Permanent radering kräver en separat
-beroendekontroll. Att dölja en post i listan är inte att ta bort dess aktiva
-struktur. Befintliga tekniska ID:n och frysta paket behålls under övergången.
-
-## Ytor och tekniska ord
+## Ytor och lagring
 
 `/admin` är intern administration, `/partner` bolagets portal och `/lobby`
-spelarens lobby. `/control`, `/play` och `/game` fungerar under övergången;
-nya menyer och instruktioner använder de nya namnen. `/studio` är endast
-labbtjänstens tekniska basePath.
+spelarens ingång. Nya funktioner och instruktioner utgår från dessa ytor.
+Kvarvarande äldre adresser är kompatibilitet, inte krav på dubblerade menyer.
+`lab/` är källkod och `/studio` teknisk basePath, inte ytterligare produkter.
 
-`lab/` är aktiv källkod. Runtimeflaggan `lissabon-stream-lane` används
-fortfarande för chattkontext, kameragrind och lokala profiler; äldre
-Lab/Lissabon-namn betyder inte att Astrids tal-/videoflöden kan tas bort.
+Neon är produktens register; Blob innehåller mediefilerna. Lokal authoring
+och isolerade testfixtures uppdaterar inte produkten automatiskt. Exakt
+import- och leveransstatus ska verifieras i den aktuella handoffen.
 
-`lane`, `gameLaneId`, `presentationLaneId`, `table` i en äldre URL och
-`mobile-phone` är befintliga lagrings- eller länknamn. De betyder inte
-spelarplats, bordsgrafik eller ny produktresurs. Nya användartexter säger
-**sammansättning**, **spelkonfiguration**, **rum/bakgrund** eller
-**spelarplats**, beroende på vad kontrollen faktiskt ändrar. Ändra aldrig
-ett lagrat ID bara för att byta visningsnamn.
+Äldre fält som `lane`, `gameLaneId`, `presentationLaneId` och `dealerSets`
+är tekniska lagringsnamn. De skapar inga nya personer, rum eller produktnivåer.
+Nya texter använder ordet för vad kontrollen faktiskt ändrar. ID-byten kräver
+att referenser och sparade data hanteras; de görs inte som kosmetiska namnbyten.
 
-Klippens användarord är **grundloop**, **händelsekategori**,
-**klippuppsättning**, **villkor** och **urvalsregler**. Exakta event-ID:n,
-klippfack, talset och provspelningskrav finns i
-[guiden](README.md) och [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+Arkivering visar påverkan och lossar aktiva kopplingar. Återställning öppnar
+inte automatiskt rum eller publicerar material. Permanent radering hanterar
+beroenden och användarens beslut separat från vanlig arkivering.
 
-## Chatt och assistenter
-
-| Namn | Uppgift |
-| --- | --- |
-| Scoutguiden | Publik hjälp på alla sidor, Luna 6, utan interna data eller åtgärder. |
-| Adminroboten | N1-assistent med Sol 6.1: läser aktuell inventering och föreslår avgränsade ändringar. Servergranskning och popupbekräftelse krävs för varje skrivning. |
-| OpenClaw-läge | N1 i webbchatten: läser Gatewaystatus och föreslår bekräftat modellbyte. Vercel kör chatten; Director på Render förmedlar till Gateway. |
-| Klippassistenten | Separat importhjälp; användaren granskar och sparar placeringarna. |
-| Dealerspelchatt | Spelarens samtal med dealern. Ger inga administrativa rättigheter. |
+Filformat, medieacceptans och tekniska gränser hör hemma i
+[runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md), användarsteg i
+[guiden](README.md) och assistenternas funktion i [AI-dokumentationen](../../docs/AI/README.md).

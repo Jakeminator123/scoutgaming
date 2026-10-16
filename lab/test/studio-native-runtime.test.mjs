@@ -91,7 +91,7 @@ test('bundled source paths load all reviewed migrations without asset URLs', asy
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
   assert.equal(actual.length, 10);
   assert.equal(actual.at(-1).file, '012-runtime-media-catalog.sql');
-  assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), ['012']);
+  assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), []);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });
 

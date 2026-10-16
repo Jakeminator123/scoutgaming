@@ -14,6 +14,9 @@ import { assertCloudAccessReady } from '../start.mjs';
 
 const fixture = () => ({
   NODE_ENV: 'production', PORT: '10000',
+  CROUPIER_DATABASE:'postgres', CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
+  CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+  CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
   CROUPIER_CLOUD_DATA_ROOT: join(tmpdir(), 'croupier-cloud-test-volume'),
   PUBLIC_URL: 'https://game.example.test', BO_URL: 'https://bo.example.test',
   LAB_PUBLIC_URL: 'https://lab.example.test',
@@ -55,10 +58,7 @@ test('private media credentials reach both servers; scoped zones database reache
   }
   assert.equal(specs.web.env.CROUPIER_ZONES_DATABASE_URL, undefined);
   assert.equal(specs.lab.env.CROUPIER_ZONES_DATABASE_URL, env.CROUPIER_ZONES_DATABASE_URL);
-  const inactive = childSpecifications(validateCloudConfig({ ...fixture(), BLOB_READ_WRITE_TOKEN: 'staged-not-active' }), {}, { labInternalSecret: LAB_SECRET });
-  assert.equal(inactive.web.env.CROUPIER_MEDIA_STORAGE, 'disk');
-  assert.equal(inactive.web.env.BLOB_READ_WRITE_TOKEN, undefined);
-  assert.equal(inactive.lab.env.CROUPIER_ZONES_DATABASE_URL, undefined);
+  assert.throws(()=>validateCloudConfig({...fixture(),CROUPIER_MEDIA_STORAGE:'disk',BLOB_READ_WRITE_TOKEN:'staged-not-active'}));
   for (const change of [
     { BLOB_READ_WRITE_TOKEN: '' }, { CROUPIER_MEDIA_STORAGE: 'public' },
     { CROUPIER_MEDIA_STORAGE: 'disk' },
@@ -117,7 +117,7 @@ test('three exact public origins share one port and two loopback children', () =
     assert.equal(specs.web.env[name], undefined);
     assert.equal(specs.lab.env[name], undefined);
   }
-  assert.equal(specs.web.env.CROUPIER_DATA_DIR, join(config.dataRoot, 'players'));
+  assert.equal(specs.web.env.CROUPIER_DATA_DIR, undefined);
   assert.equal(specs.lab.env.CROUPIER_DATA_DIR, specs.web.env.CROUPIER_DATA_DIR);
   assert.equal(specs.lab.env.BO_URL, config.boOrigin);
   assert.equal(specs.web.env.CROUPIER_CLOUD_RUNTIME, '1');
@@ -162,8 +162,7 @@ test('Postgres, Neon and private Blob can start without a persistent product mou
   const env = { ...fixture(), CROUPIER_DATABASE:'postgres',
     CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-password@game.neon.tech/game?sslmode=require',
     CROUPIER_STUDIO_NEON_POLICY:'1', CROUPIER_STUDIO_ENVIRONMENT_ID:'production', CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
-    CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
-    CROUPIER_MEDIA_BLOB_INDEX:join(resolve('.'),'media','blob-index.json') };
+    CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token' };
   delete env.CROUPIER_CLOUD_DATA_ROOT;
   const config = validateCloudConfig(env);
   assert.equal(config.dataRoot, null); assert.deepEqual(config.paths, {});
@@ -174,9 +173,14 @@ test('Postgres, Neon and private Blob can start without a persistent product mou
   }
   assert.equal(specs.web.env.BO_URL, config.boOrigin);
   assert.equal(specs.lab.env.CROUPIER_GAME_ORIGIN, config.gameOrigin);
+  for(const server of [specs.web,specs.lab])assert.equal(server.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
+  const obsolete={...env,CROUPIER_MEDIA_BLOB_INDEX:join(tmpdir(),'ignored-retired-index.json')};
+  assert.equal(childSpecifications(validateCloudConfig(obsolete),obsolete,{labInternalSecret:LAB_SECRET}).web.env.CROUPIER_MEDIA_BLOB_INDEX,undefined);
   for (const patch of [{CROUPIER_MEDIA_STORAGE:'disk'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
-    {CROUPIER_MEDIA_BLOB_INDEX:join(tmpdir(),'retired-media-blob-index.json')},{CROUPIER_CLOUD_DATA_ROOT:''}]) {
+    {CROUPIER_STUDIO_ENVIRONMENT_ID:''},{CROUPIER_STUDIO_WORKSPACE_ID:''},{CROUPIER_DATABASE:'sqlite'},
+    {BLOB_READ_WRITE_TOKEN:''},{CROUPIER_CLOUD_DATA_ROOT:''}]) {
     assert.throws(() => validateCloudConfig({...env,...patch}));
+    assert.throws(() => validateCloudConfig({...fixture(),...patch}),'a volume cannot enable the retired cloud fallback');
   }
 });
 
@@ -189,6 +193,7 @@ test('cloud bootstrap, camera, and paid speech credentials are opt-in and Web-on
     CROUPIER_GENERATED_SPEECH: '1', CROUPIER_CLOUD_GENERATED_SPEECH: '1',
     CARTESIA_API_KEY: 'fixture-cartesia-key', RUNPOD_API_KEY: 'fixture-runpod-key',
     CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-endpoint', OPENCLAW_TIMEOUT_MS: '12000',
+    CROUPIER_SPEECH_FULLFILE_RESERVE_USD:'0.5', CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'1',
     AMBIENT_SECRET: 'do-not-forward',
   };
   const specs = childSpecifications(validateCloudConfig(env), env, { labInternalSecret: LAB_SECRET });
@@ -277,7 +282,7 @@ test('Neon fullfile budget must be explicit and reaches only the Web fullfile ch
   assert.equal(validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'20'}).fullfileBudget.dailyBudgetUsd,'20');
   for(const value of [undefined,'','0','0.49','20.000001','Infinity','1.0000001'])
     assert.throws(()=>validateCloudConfig({...env,CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:value}),/CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD/);
-  assert.equal(validateCloudConfig({...env,CROUPIER_STUDIO_NEON_POLICY:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:''}).fullfileBudget,null);
+  assert.throws(()=>validateCloudConfig({...env,CROUPIER_STUDIO_NEON_POLICY:'0',CROUPIER_SPEECH_FULLFILE_RESERVE_USD:''}),/CROUPIER_STUDIO_NEON_POLICY/);
   const off={...env,CROUPIER_GENERATED_SPEECH:'0',CROUPIER_CLOUD_GENERATED_SPEECH:'0'};
   assert.equal(childSpecifications(validateCloudConfig(off),off,{labInternalSecret:LAB_SECRET}).web.env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD,undefined);
 });
@@ -296,7 +301,8 @@ test('read-only bootstrap preflight requires credentials until CRAIG has an acco
   const directory = await mkdtemp(join(tmpdir(), 'croupier-cloud-bootstrap-check-'));
   try {
     const env = { ...fixture(), CROUPIER_CLOUD_DATA_ROOT: directory };
-    const config = validateCloudConfig(env);
+    // Isolated read-only SQLite migration preflight, never a cloud-start config.
+    const config = {database:'sqlite',dataRoot:directory,paths:{players:join(directory,'players')}};
     const dbPath = join(config.paths.players, 'craig.db');
     await assert.rejects(inspectCloudBootstrap(config), /CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER/);
     await assert.rejects(stat(dbPath), { code: 'ENOENT' });

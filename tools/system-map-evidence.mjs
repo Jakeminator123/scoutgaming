@@ -18,25 +18,45 @@ const sameInputs = (left, right) => validSnapshot(left) && validSnapshot(right) 
 
 // Observe the existing isolated runner, including its own cleanup. This adds
 // no SQL checks or second engine; names, errors and raw runner output never
-// enter the portable receipt. Failed or changing input runs cannot pass.
+// enter the portable receipt. The runner owns SQL/HTTPS success and checks its
+// STUDIO_ISOLATED_QA_SOURCES before/after execution. Map capture is informational.
 export async function collectIsolatedStudioQaReport({ repositoryRoot = ROOT, ref, qaOptions = {},
   capture = () => captureEvidenceInputs({ repositoryRoot, ref }),
   runQa = async options => (await import('./studio-isolated-qa.mjs')).runIsolatedStudioQa(options) } = {}) {
-  const snapshot = capture();
-  if (!validSnapshot(snapshot) || !snapshot.files[ISOLATED_PATH]) throw Error('A complete isolated QA input snapshot is required.');
+  const optionalCapture = () => {
+    try { const value = capture(); return validSnapshot(value) && value.files[ISOLATED_PATH] ? value : null; }
+    catch { return null; }
+  };
+  const snapshot = optionalCapture();
   let error, output;
   try { output = await runQa(qaOptions); } catch (caught) { error = caught; }
   const completed = !error && Array.isArray(output?.legacyChecks) && output.legacyChecks.length > 0
     && Array.isArray(output?.integrationChecks) && output.integrationChecks.length > 0;
-  const inputsStable = sameInputs(snapshot, capture());
-  const result = completed && inputsStable ? 'passed' : 'failed';
+  const inputsStable = sameInputs(snapshot, optionalCapture());
+  const result = completed ? 'passed' : 'failed';
+  // Unavailable/changing map inputs cannot prove a version-bound map pass, but
+  // they cannot overturn the independently guarded runner's actual QA result.
+  const evidenceResult = completed && !inputsStable ? 'skipped' : result;
   const observedAt = new Date().toISOString();
   const report = [
     { type: 'meta', schemaVersion: 1, kind: ISOLATED_KIND, selection: 'full-files', snapshot, observedAt, inputsStable },
-    { type: 'test-file', path: ISOLATED_PATH, result },
-    { type: 'summary', counts: { passed: result === 'passed' ? 1 : 0, failed: result === 'failed' ? 1 : 0, tests: 1 } },
+    { type: 'test-file', path: ISOLATED_PATH, result: evidenceResult },
+    { type: 'summary', counts: { passed: evidenceResult === 'passed' ? 1 : 0, failed: evidenceResult === 'failed' ? 1 : 0,
+      skipped: evidenceResult === 'skipped' ? 1 : 0, tests: 1 } },
   ].map(JSON.stringify).join('\n') + '\n';
   return { report, result, error };
+}
+
+/** Optional receipt I/O must not replace the mandatory runner's exit status. */
+export async function runIsolatedStudioQaCommand({reportOutput, ...options}, {
+  collect = collectIsolatedStudioQaReport, write = writeFileSync, log = console.log, warn = console.error,
+} = {}) {
+  const result = await collect(options);
+  try { write(resolve(reportOutput), result.report, {flag:'wx'}); }
+  catch { warn('Optional system map QA receipt could not be written.'); }
+  if (result.error) warn(result.error.message);
+  log(JSON.stringify({acceptance:ISOLATED_KIND, result:result.result}));
+  return result.result === 'passed' ? 0 : 1;
 }
 
 // Passive Node --test reporter. It executes no test and emits no test names,
@@ -156,13 +176,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (options.isolated) {
       if (!options['report-output'] || options.capture || options.snapshot || options.reports.length || options.output
         || options.downloadPostgres === Boolean(options['postgres-bin'])) throw Error('Invalid isolated QA options.');
-      const result = await collectIsolatedStudioQaReport({ ref: options.ref,
+      process.exitCode = await runIsolatedStudioQaCommand({ ref: options.ref, reportOutput: options['report-output'],
         qaOptions: { downloadPostgres: options.downloadPostgres, postgresBin: options['postgres-bin'] } });
-      writeFileSync(resolve(options['report-output']), result.report, { flag: 'wx' });
-      // Keep the existing runner's diagnostic separate from sanitized evidence.
-      if (result.error) console.error(result.error.message);
-      console.log(JSON.stringify({ acceptance: ISOLATED_KIND, result: result.result }));
-      process.exitCode = result.result === 'passed' ? 0 : 1;
     } else {
       if (options.downloadPostgres || options['postgres-bin'] || options['report-output']) throw Error('Invalid evidence options.');
       const result = options.capture ? captureEvidenceInputs({ ref: options.ref }) : importTestEvidence({

@@ -3,7 +3,63 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 import { openPreviewFile, parseByteRange, previewAuthorizationRequest, previewContentType, previewRelativePath } from '../lib/preview-files.mjs';
+
+function previewRoute(env, root, authorize=async()=>{}) {
+  const file=new URL('../app/preview/[...path]/route.ts',import.meta.url),require=createRequire(file);
+  const {transformSync}=require('next/dist/build/swc');
+  const output=transformSync(readFileSync(file,'utf8'),{filename:fileURLToPath(file),jsc:{parser:{syntax:'typescript'}},module:{type:'commonjs'}});
+  const module={exports:{}};let opens=0;
+  const overrides={
+    'next/dist/client/components/redirect-error':{isRedirectError:()=>false},
+    '../../../lib/http-guard.mjs':{errorResponse:error=>new Response(null,{status:error.statusCode??500})},
+    '../../../lib/ui-server':{authorizeUiPage:authorize},
+    '../../../lib/preview-files.mjs':{parseByteRange,previewAuthorizationRequest,previewBuildDirectory:root,
+      openPreviewFile:async(...args)=>{opens++;return openPreviewFile(...args);}},
+  };
+  vm.runInNewContext(output.code,{module,exports:module.exports,Request,Response,Headers,process:{env},
+    require:name=>Object.hasOwn(overrides,name)?overrides[name]:require(name)},{filename:fileURLToPath(file)});
+  return {...module.exports,opens:()=>opens};
+}
+
+test('native preview retires local catalog, page and media before disk access but keeps both shared renderer modules',async t=>{
+  const root=await mkdtemp(join(tmpdir(),'croupier-preview-route-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  for(const name of ['compositor.js','geometry.js'])await writeFile(join(root,name),'// shared renderer '+name);
+  for(const key of ['CROUPIER_STUDIO_NEON_POLICY','CROUPIER_CLOUD_RUNTIME','CROUPIER_STUDIO_NATIVE_ADMIN']){
+    let authorizations=0;
+    const route=previewRoute({[key]:'1'},root,async()=>{authorizations++;});
+    for(const path of [['catalog.json'],['index.html'],['media','fixture.mp4'],['preview.js'],['media','compositor.js']])for(const method of ['GET','HEAD']){
+      const response=await route[method](new Request('https://studio.example/preview/'+path.join('/'),{method}),{params:Promise.resolve({path})});
+      assert.equal(response.status,410,key+' '+path.join('/'));
+      assert.equal(response.headers.get('cache-control'),'private, no-store');
+      const body=await response.text();
+      if(method==='GET')assert.match(body,/href="\/admin\/rehearsal"/);else assert.equal(body,'');
+    }
+    assert.equal(route.opens(),0,'retired fixture never opens the deployed disk');
+    for(const name of ['compositor.js','geometry.js']){
+      const response=await route.GET(new Request('https://studio.example/preview/'+name),{params:Promise.resolve({path:[name]})});
+      assert.equal(response.status,200);assert.equal(await response.text(),'// shared renderer '+name);
+    }
+    assert.equal(route.opens(),2);assert.equal(authorizations,12);
+  }
+  const denied=previewRoute({CROUPIER_STUDIO_NEON_POLICY:'1'},root,async()=>{throw Object.assign(Error('denied'),{statusCode:403});});
+  assert.equal((await denied.GET(new Request('https://studio.example/preview/compositor.js'),{params:Promise.resolve({path:['compositor.js']})})).status,403);
+  assert.equal(denied.opens(),0,'renderer code retains authorization');
+});
+
+test('explicit offline preview retains its isolated catalog and page fixture',async t=>{
+  const root=await mkdtemp(join(tmpdir(),'croupier-preview-offline-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  const route=previewRoute({CROUPIER_STUDIO_NEON_POLICY:'0',CROUPIER_CLOUD_RUNTIME:'0',CROUPIER_STUDIO_NATIVE_ADMIN:'0'},root);
+  for(const name of ['catalog.json','index.html','fixture.mp4']){
+    await writeFile(join(root,name),'isolated fixture '+name);
+    const response=await route.GET(new Request('https://studio.example/preview/'+name),{params:Promise.resolve({path:[name]})});
+    assert.equal(response.status,200);assert.equal(await response.text(),'isolated fixture '+name);
+  }
+});
 
 test('preview paths allow only single safe segments inside the build directory', async () => {
   assert.equal(previewRelativePath(['..']), null);
