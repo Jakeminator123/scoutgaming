@@ -1,5 +1,38 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: registerbundet bankunderlag — 17 oktober 2026
+
+Jakob valde befintliga Dragan-filmer i Blob för en egen avatarbank.
+Ny kod finns på `codex/dragan-lipsync-registry`; detta är förberedelse och
+en testad adapter, **inte aktiverat rörligt tal i spelet**.
+
+- Neon `production/croupier` innehöll 56 Dragan-poster. Alla 56 Blob-filer
+  lästes och verifierades mot registrerad SHA-256 och storlek. Separat
+  återläsning visade oförändrade ID:n, revisioner och hashvärden.
+- 50 rörelseklipp exporterades med sina exakta medie-ID:n. Fyra inspelade
+  repliker ligger kvar på sitt befintliga talflöde. Två äldre `idle`-poster
+  har samma 30-fps-fil och ingår inte i 24-fps-banken. Ingen fil konverterades,
+  ersattes, raderades, laddades upp eller fick ändrad acceptans.
+- Lokalt byggt CPU-underlag: 2 479 unika fullständiga YUV-bildrutor,
+  `pool.mp4` 471 469 184 byte och explicit vila i ruta 0 av profilens
+  `2f3955b0-b450-4cc2-a9f5-ac80f10abd2f` (Kevin V2 · andning).
+  Källmanifestets SHA-256 är
+  `e49f1e9e9e141d1725c7ea1ec104fddff5d9055db33c4181f2c7a2e9a797ef0d`.
+  Privat authoring-underlag finns utanför Git; det är inget nytt runtime-register.
+- `createRegisteredMovingSpeech` kopplar ett verifierat källmanifest till
+  befintlig PCM-/bildruteplan och transport. Den kräver både aktuellt register,
+  exakt media i spelarens frysta publiceringskontext och verifierad bank.
+  Ett bildkvitto från GPU-leverantören räcker inte som bankverifikation.
+- Verifierat: riktade tester för export, bankbygge, metadataförändring,
+  nekad åtkomst, bildruteplan, PCM, sockettransport och dealerlagrets mask.
+  Python/ffmpeg-provet byggde en syntetisk bank med exakt deduplicering.
+  Det opt-in webbläsarprovet kördes inte; inga betalda eller visuella talprov gjordes.
+- Kvar: GPU-beredning i verifierat egen miljö, bank-/workerattestering,
+  inkoppling mot befintlig autentiserad talsession och budgetjournal samt
+  serverns tidsplanering/replanering och spelarens ljudklocka.
+  Inga molninställningar eller produktionsprofiler ändrades. GitGuardian-
+  incident- och platsläsning saknade åtkomst; inga slutsatser om tom incidentlista.
+
 ## Aktuellt: Neon-registerbytet mergat och driftsatt — 16 oktober 2026
 
 Jakob har beställt Neon som enda register och Blob som mediekälla. Astrid

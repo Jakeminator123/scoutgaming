@@ -91,6 +91,60 @@ nedan använder i stället protokollets källpixlar direkt och kontrollerar att
 rektangeln ryms i originalbilden. Den aktiva talvägen använder ännu verifierad
 referensbild. Att byta endpoint räcker inte.
 
+### Registerbundet bankunderlag, 17 oktober 2026
+
+`tools/prepare-moving-speech-sources.mjs` läser det befintliga Neon-registret
+och privata Blob-filer genom samma tjänster som spelet. Kör med explicit
+molnkonfiguration och en ny lokal utdatakatalog:
+
+```sh
+node tools/prepare-moving-speech-sources.mjs --dealer dragan --output /private/dragan-input
+python tools/build-moving-speech-bank.py --sources /private/dragan-input --output /private/dragan-pool
+```
+
+Exporterade filmer behåller originalens byte. ID, SHA-256, byteantal,
+faktiska bildrutetidsstämplar, 24 fps och 1080×1920 kontrolleras. Filnamn och
+etiketter används inte för matchning. Endast aktiva rörelse-/idleklipp tas
+med; inspelade repliker behåller sitt befintliga flöde. I Dragan-läsningen
+var 50 klipp kompatibla och två äldre idle-poster 30 fps. Dessa lämnas
+oförändrade och listas uttryckligen som uteslutna. Variabel bildfrekvens,
+fel geometri eller för många rutor konverteras inte automatiskt.
+
+`sources.json` är ett hashbundet authoring-manifest. Tagningen
+`clip-<media-UUID>` avser alltid exakt det registrerade originalet.
+VILA pekar på profilens explicit valda källfilm och bildruta, aldrig en
+gissning från filsortering. Ett film-ID-byte ändrar bankidentiteten även
+när filernas byte är lika. Exportkatalogen får inte redan finnas;
+`sources.json` skrivs sist efter en ny registerkontroll.
+
+Pythonbyggaren återanvänder Emils `takes.json`-/poolformat men slår bara ihop
+exakt identiska fullständiga avkodade YUV-bildrutor. Poolen kodas förlustfritt.
+Standardkörningen använder CPU och skriver `status: pool-only`. Det är
+**inte** en GPU-färdig avatar och ger ingen visuell acceptans.
+I en separat, verifierat egen modellmiljö kan `--prepare-with` peka på den
+granskade worker-katalogen med Emils `rorlig.py`. Den befintliga
+`forbered`-funktionen skapar latenter, masker och färgkorrektion. Byggaren
+kräver alla ansiktsrutor innan TAR och hashkvitto skrivs. Modeller,
+workerinstallation, GPU-resurser och uppladdning provisioneras inte av verktyget.
+
+`web/moving-speech-bank.mjs` binder källmanifestet till våra befintliga
+`prepareMovingSpeechPcmInput` och `createMovingSpeechTransport`.
+Den serverinterna `createRegisteredMovingSpeech.prepare` tar den
+autentiserade sessionens frysta kontext från
+`createFrozenDealerPresentationContext.resolve` och dess auktoritativa
+`{videoId, frame}`-tidslinje. Den kontrollerar aktuellt register och
+publicerade medie-ID:n/hashar före och efter bankverifikation. Stillbildsvila
+kräver `still: true` och exakt den deklarerade vilorutan. Okända filmer,
+30-fps-klipp, arkivering, utbytta byte eller saknad publicering stoppas;
+det finns ingen närmaste-tagnings- eller längdmatchning.
+
+`verifyBank` måste verifiera både arkivbyte och vilken bank den egna workern
+faktiskt laddat. Denna betrodda koppling, sessionsadmissionen, tidsplaneringen
+och spelarens ljudklocka är ännu inte installerade i produktionsflödet.
+Det nya bankunderlaget ersätter inte dessa kontroller och aktiverar inte
+rörligt tal från chatten. Originalfilmer, frysta publiceringar och sparade
+talprofiler ändras inte av authoringverktygen.
+
 ### Avkodning i dealerlagret, 15 oktober 2026
 
 Scoutgamings befintliga Blob-resurser, Neon-register, frysta publiceringspaket
