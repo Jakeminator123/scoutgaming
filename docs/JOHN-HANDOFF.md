@@ -1,5 +1,49 @@
 # Aktuell handoff — Scoutgaming
 
+## Astrid-backup och förtydligad molnkälla — 16 oktober 2026 kväll
+
+Jakob beställde först en Astrid-ZIP och rensning till enbart Dragan, och
+förtydligade sedan att huvudmålet är ett gemensamt molnsystem utan parallella
+lokala register. Frågan om Astrid ska behållas när hennes molnkoppling är rätt
+är ännu obesvarad. Ingen ny produktionsradering eller arkivering har utförts.
+
+- `C:\Users\jakem\Desktop\_croupier\astrid-2026-10-16.zip` är skapad:
+  265 823 000 byte, 727 poster. Samtliga poster har återlästs och verifierats
+  mot SHA-256/storlek. ZIP-hash:
+  `5751c0b38f2b0dff382f4572797757c9309047ea8771495562e74cda23e09066`.
+  Den innehåller 721 lokalfiler, fyra metadatafiler, README och manifest.
+  **Det är inte en verifierad fullständig molnbackup.** Två indexerade filer
+  saknas lokalt, och molnuppladdningar kan saknas. README anger luckorna.
+- Blob-butiken är fortsatt `store_AqwvebTbBHarOjvG`. Den lokala Vercel-OIDC-
+  identiteten gäller `development`, där butiken inte tillåter åtkomst.
+  Work rapporterar dessutom att lokal webbläsaranvändning är avstängd.
+  Inga behörigheter, butikskopplingar eller miljöfiler har ändrats för detta.
+- Färsk Vercel-konfiguration visar native Admin och Neon-policy aktiva,
+  `production/croupier`, `CROUPIER_MEDIA_STORAGE=blob`, indexet
+  `/var/task/media/blob-index.json` och backend `croupier-v2.onrender.com`.
+  Render svarar 200 och rapporterar `4fa35ab9db90682fcad50e6de84940a28a74621f`.
+  Spelmotorn kör alltså på Render; Vercel är produktens ingång/Admin.
+- Gemensam runtime läser nya medieposter/klassificeringar ur Neon och bytes
+  ur privat Blob. Lokala upload-/klassificeringsfiler ignoreras. Däremot
+  kombineras Neon fortfarande med den deployade immutabla banken,
+  `media/catalog/presentation.json`, `legacy.json`, layout och Blob-index.
+  Tillfällig hashverifierad vide-cache är inte ett parallellt register.
+  Neon är ännu inte ensam källa för all katalogmetadata. Astrids särskilda
+  genererade talväg och äldre asset-/lobbymanifest behöver avgränsas före
+  ytterligare strukturell avveckling; delad taltransport får inte försvinna
+  bara för att dess katalog heter Astrid.
+- Separat Neon-återläsning bekräftar oförändrade projekt-/administrations-
+  revisioner `studio-c168ba84-8f1b-4ecc-bd31-94c8f251c077` respektive
+  `studio-76149edc-7905-4016-9b61-4fd5c2e399e2`: fem aktiva dealers, två bolag,
+  två rum och två sammansättningar finns fortsatt kvar.
+- PR185:s första CI körde rött eftersom en lokal testfixture ärvde CI-flaggor.
+  Sidoagentens isolerade rättning är pushad i `ab709c25`; 14/14 fokustester och
+  ordinarie commithook passerar. Den verifierar också att båda CI-flaggorna
+  fortfarande tvingar full kontroll. Nästa CI-resultat är inte accepterat än.
+
+Privat ZIP-kvitto och frysta registerunderlag finns i
+`arkiv/2026-10-16/dragan-only/`. Ingen merge eller driftsättning gjordes.
+
 ## Dealeravveckling och workflow — 16 oktober 2026
 
 Jakob har uttryckligen beställt borttagning av Vera, Mei (bekräftad stavning),

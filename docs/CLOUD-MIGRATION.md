@@ -1,5 +1,18 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## Förtydligad målbild 16 oktober kväll — samma molnkälla
+
+Jakobs huvudmål är en gemensam molnstruktur utan parallella lokala register.
+Verifierad produktionskonfiguration använder Neon och privat Blob; den kräver
+inte originalfilmer på Jakobs dator. Registret förenar dock fortfarande Neon
+med en immutable klippbank och deployade katalog-/indexfiler. Att alla register
+finns i Neon är därför **inte färdigmigrerat**. Render äger spelmotorn och Vercel
+är webb-/Admin-ingången. Aktuell kodgranskning, driftvärden, Astrids verifierade
+lokala ZIP och dess molnluckor står överst i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
+Den nya föreslagna Dragan-rensningen har inte körts; Astrids fortsatta status
+behöver klargöras utifrån det senare förtydligandet. Äldre leveranskvitton nedan
+ska inte läsas som att dessa ytterligare raderingar är klara.
+
 ## Dealeravveckling 16 oktober — separat kod- och produktionsstatus
 
 Jakob har beställt borttagning av Vera, Mei, Amira och Johanna. Lokala
