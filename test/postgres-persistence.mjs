@@ -204,7 +204,7 @@ test('real Neon persists atomic commands, auth epochs, account lifecycle and pro
     assert.equal((await invoke(labAuth,origins.labPublicUrl+'/api/auth/lab/check',{cookie:cookiePair(labDone)})).status,401,'role change revokes saved Lab access');
     await store.boDb.prepare('UPDATE users SET role=? WHERE id=?').run('admin',operatorId);
     assert.equal((await invoke(labAuth,origins.labPublicUrl+'/api/auth/lab/check',{cookie:cookiePair(labDone)})).status,401,'restored admin role cannot revive an old Lab session');
-    const gamePlayerAuth=playerAuth(store.db,async()=>player,identity),gameAuth=backofficeGameAuth({db:store.db,auth:gamePlayerAuth,identity,boSession,validLaunch:async()=>false,...origins,publicGamePath:'/game'});
+    const gamePlayerAuth=playerAuth(store.db,async()=>player,identity,{authEpoch:epoch}),gameAuth=backofficeGameAuth({db:store.db,auth:gamePlayerAuth,identity,boSession,validLaunch:async()=>false,...origins,publicGamePath:'/game'});
     const gameFlow=await invoke(gameAuth,origins.publicUrl+'/api/auth/bo/start?next='+encodeURIComponent('/game?dealer=astrid&launch=discard'));
     assert.equal(gameFlow.status,303);gameStates.push(new URL(gameFlow.headers.Location).searchParams.get('state'));
     const gameAuthorized=await invoke(gameAuth,gameFlow.headers.Location);assert.equal(gameAuthorized.status,303);

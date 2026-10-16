@@ -1,4 +1,5 @@
 import {headers} from 'next/headers';
+import {redirect} from 'next/navigation';
 import {PlayerAreaDocument} from '@/components/player/player-area-document';
 import {playerAreaPage, playerAreaRequest} from '@/lib/player-area.mjs';
 
@@ -10,5 +11,6 @@ export default async function PlayerLobbyPage({searchParams}: {searchParams?: Pr
   const operator = typeof query.operator === 'string' ? query.operator : '';
   const path = operator ? `/play?operator=${encodeURIComponent(operator)}` : '/play';
   const page = await playerAreaPage(playerAreaRequest(path, await headers()), process.env, 'lobby');
+  if (page.redirect) redirect(page.redirect);
   return <PlayerAreaDocument model={page.model} />;
 }

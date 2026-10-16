@@ -78,7 +78,7 @@ export function createStudioLoginRateLimit({ boDb, now = Date.now, maxEntries = 
 
 const errors = new Map([[400,'Invalid request'],[401,'Authentication required'],[403,'Access denied'],[404,'Not found'],
   [405,'Method not allowed'],[413,'Request too large'],[415,'JSON required'],[429,'Too many attempts'],[503,'Authentication unavailable']]);
-const cookie = (name,value,seconds) => `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${seconds}; Secure`;
+const cookie = (name,value,seconds,path = '/') => `${name}=${value}; Path=${path}; HttpOnly; SameSite=Lax; Max-Age=${seconds}; Secure`;
 function response(value,status = 200,cookies = []) {
   const headers = new Headers({ 'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store',
     'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer' });
@@ -104,6 +104,13 @@ async function bodyOf(request) {
   let body; try { body = JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)); } catch { fail(); }
   if (!body || typeof body !== 'object' || Array.isArray(body)) fail();
   return body;
+}
+async function revokeCurrentPlayerSession(gameDb,request) {
+  if (!gameDb?.prepare) return;
+  const values=(request.headers.get('cookie') || '').split(';').map(part=>part.trim())
+    .filter(part=>part.startsWith('player_session='));
+  const token=values.length === 1 ? values[0].slice('player_session='.length) : '';
+  if (/^[a-f0-9]{64}$/.test(token)) await gameDb.prepare('DELETE FROM player_sessions WHERE digest=?').run(digest(token));
 }
 async function revokeIdentity(boDb,id) {
   await boDb.prepare('DELETE FROM lab_sessions WHERE craig_user_id=?').run(String(id));
@@ -164,7 +171,7 @@ export function createStudioNativeAuthActions({ boDb,gameDb,scope,authorize,mail
           const token = `${parts.join('.')}.${createHmac('sha256',Buffer.from(signer.v,'hex')).update(parts.join('.')).digest('base64url')}`;
           return { token,username:account.name,role:'admin' };
         });
-        return response({ ok:true,username:session.username,role:session.role },200,[cookie('bo_jwt',session.token,604800)]);
+        return response({ ok:true,username:session.username,role:session.role },200,[cookie('bo_jwt',session.token,604800),cookie('player_session','',0)]);
       }
       if (action === 'logout') {
         keys(body,[]);
@@ -173,10 +180,13 @@ export function createStudioNativeAuthActions({ boDb,gameDb,scope,authorize,mail
         await boDb.transaction(async () => {
           const matches = await boDb.prepare('SELECT id FROM users WHERE username=? FOR UPDATE').all(actor.user);
           if (matches.length !== 1) fail(401);
+          await revokeCurrentPlayerSession(gameDb,request);
+          if (gameDb?.prepare) await gameDb.prepare('DELETE FROM bo_game_handoffs WHERE craig_user_id=?').run(String(matches[0].id));
           await boDb.prepare('INSERT INTO bo_auth_epochs (user_id,epoch) VALUES (?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(matches[0].id);
           await revokeIdentity(boDb,matches[0].id);
         });
-        return response({ ok:true },200,[cookie('bo_jwt','',0),cookie('lab_session','',0)]);
+        return response({ ok:true },200,[cookie('bo_jwt','',0),cookie('lab_session','',0),cookie('player_session','',0),
+          cookie('bo_game_state','',0,'/api/auth/bo/callback')]);
       }
       if (action === 'reset-request') {
         keys(body,['user']); if (!text(body.user,254) || !body.user.trim()) fail();

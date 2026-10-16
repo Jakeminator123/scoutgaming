@@ -25,7 +25,7 @@ användaraccepterat, faktiskt borttaget och externa blockerare.
 | --- | --- | --- |
 | 1 | Dragan-stoppet, parallellt med Jakobs Admin-prov | Identifiera exakt dealerklipp, hash, publicerad revision och speltillstånd. Reproducera avgränsat; rätta återhämtning utan att hoppa över kort-/talfilmer, byta media eller röra användarens runda. Regression och två sammanhängande prov i faktisk spelare; inga liveinsatser används som agenttest. |
 | 2 | Stäng Admin-etappen | Hantera återkoppling på bolag → rum → bakgrund/dealer/bord. Verifiera båda spelen, rumsspecifika val kontra delad mall och utkast/publicering. Jakob godkänner användarflödet; kod- och medieacceptans redovisas var för sig. |
-| 3 | Täpp till verifierade kontrolluckor | Föreslå sammanfattande GitHub-kontrollen `CI` som obligatoriskt mergekrav. Rätta lageruppladdning med resursbegränsad serveranalys av faktiska medieegenskaper och negativa tester. Ingen ändring av GitHub-skydd är gjord i plansteget. |
+| 3 | Täpp till verifierade kontrolluckor | GitHub-kontrollen `CI` är nu obligatorisk mot aktuell main, enligt kvittot nedan. Kvar: rätta lageruppladdning med resursbegränsad serveranalys av faktiska medieegenskaper och negativa tester. |
 | 4 | Slutför intern konsolidering och städning | Kartlägg kvarvarande konsumenter, flytta nödvändiga funktioner till avsedda befintliga moduler, uppdatera loader/importer/bygg-/driftkonfiguration tillsammans och ta bort ersatta delar. Förbrukade kopior och redundanta säkerhetskopior får en faktisk raderingsåtgärd, inte en ny arkivkopia; unika data och använda junctionmål ingår inte som restfiler. Varje kvarvarande undantag får konkret beroende eller återställningssyfte. |
 | 5 — separat efter Admin | Bedöm vald Kevin/Emil-integration | Verifierad åtkomst, källa, image-digest och avatarbyte måste stämma. Anpassa enbart nödvändigt protokoll/material till vårt system. Aktivering och eventuella nya kostnadsbärande resurser är ett separat steg; Emils befintliga poddar och staging lämnas orörda. |
 
@@ -48,6 +48,10 @@ varje spel/paket.
 verifierad enligt kvittot nedan. Äldre öppna C1–C9-delprov och tal-/medie-
 acceptans blir inte automatiskt klara. Nästa leverans är PR165:s befintliga
 N1-rättning, följd av kontrolluckorna och konsolideringen i tabellen.
+Dokumentkvittot och miljöguiderna levererades därefter i PR179 till main
+`32ffbbaf0b64da7cb5ecc424e2904c81ca930eb4`. PR-/main-CI är gröna;
+main-körningen är `38899688763`. Vercel `dpl_137Y8TuzqRSnX1ZbXBX2wXBJ3goL`
+är READY på www och Render `dep-db91esfavr4c739qhmkg` är live på samma SHA.
 
 Efter accepterad Admin-etapp tas PR165 upp före slutkvittot för den interna
 migreringen: läs aktuell PR/head och lokalt bevarandeunderlag, slutför endast
@@ -58,8 +62,99 @@ okommittade filer är verifierat bevarade i Git-snapshot
 `34281e4c2beed3490bdfb21f49a1787cd6032818`. Snapshoten ändrar endast
 `test/studio-cutover-integration.mjs`, denna tracker och JOHN-HANDOFF.
 Teständringen bevarar flera `Set-Cookie` separat och kontrollerar rensning
-av spelarcookien. Inget har återställts eller körts från snapshoten.
+av spelarcookien. Den avgränsade testfixen är nu applicerad enligt nästa
+kvitto; de äldre dokumentversionerna har inte ersatt aktuella handoffer.
 Plantexten är inget merge- eller deploybeslut för PR165.
+
+**PR165 lokalt verifierad, 16 oktober:** main `32ffbbaf` är förenad utan
+konflikter i befintliga `codex/n1-player-session`, kodcommit `c43fef1a`.
+Den bevarade HTTPS-testfixen är applicerad.
+En missad redirect i äldre `/play` är rättad med faktiskt TSX-routeprov
+som föll före ändringen; 24 riktade frontendprov passerar efteråt.
+Oberoende granskning fann också att en redan auktoriserad callback kan
+utfärda en giltig spelarsession efter lyckad N1-utloggning. Fyra
+deterministiska regressioner i `test/account-credentials.mjs` reproducerar
+det i SQLite/async-kontrakt, både före och efter sessionsskapandet.
+Rättningen passerar dessa fyra regressioner. Hela kodändringen har
+granskats på exakt `c43fef1ae8e8451cf9e7f3945d968786a68a21d3`, utan
+blockerande fynd. Lab-bygget verifierar 97 byggspår; ordinarie fullhook
+ger 3 971 pass, 9 villkorade skip och 0 fel. De sex inloggningsproven
+inklusive isolerade Chrome-prov passerar. Faktisk SQL-/omstarts-/HTTPS-CI
+ska fortfarande kvitteras på slutligt PR-head före mergebeslut.
+
+**Valt sessionsbeteende enligt genomförandemandatet:** N1-utloggning
+återkallar även kontots BO-härledda spelarsessioner genom befintlig
+`auth_epoch`. Den fryses vid auktorisering av handoff, prövas vid utfärdande
+och vid varje sessionsläsning. En fördröjd callback får inte anta den nya
+epoken efter logout. Nya vanliga lösenords-, lokala och partnersessioner
+har egna ursprungsmärkningar och återkallas inte av N1-utloggning.
+
+Äldre BO-härledda och äldre CRAIG-lösenordssessioner har samma omärkta
+fingeravtryck och kan inte skiljas åt säkert. De kräver därför en
+engångs-återinloggning vid leverans. Konton, saldon och historik bevaras;
+inga sessionsrader massraderas och ingen schemamigration införs. Detta är
+ett lokalt implementationsbeslut, inte godkännande av merge/deployment.
+De fyra tidigare röda raceproven passerar med rättningen. Faktisk
+SQL-/omstarts-/HTTPS-verifiering på nytt PR-head återstår.
+Oberoende kodgranskning har inga blockerande fynd. SQL-provet verifierar
+sessionslagringen med riktig databas och native HTTPS-logout; hela
+HTTP-handoffkedjan provas separat mot den isolerade SQLite-motorn.
+Vid blandade runtimeversioner eller rollback förstår äldre kod inte de
+nya stämplarna, vilket kan kräva ytterligare inloggning. Båda runtime-
+versionerna måste därför följas upp vid en senare godkänd driftsättning.
+
+**GitHub-kontrollkrav aktiverat 16 oktober kl. 14.30:** befintlig ruleset
+`24642403` kräver nu `CI` från GitHub Actions (app `15368`) för ordinarie
+merge till main. `strict_required_status_checks_policy=true` kräver att
+PR:en är uppdaterad mot main när kontrollerna godkänns. Ingen mergekö eller
+extra manuell approval har lagts till. Separat återläsning av både reglerna
+och effektiva main-regler verifierar ändringen. Befintlig PR-regel,
+raderings-/force-push-skydd, mål och administratörsundantag är oförändrade;
+undantaget används inte i agentleveranser.
+
+Oberoende granskning av workflow på `32ffbbaf` bekräftar att `CI` körs
+med `always()` och kräver lyckat scopeval samt alla tillämpliga kontrolljobb;
+fel, avbrott och oväntade skip ger rött. GitGuardian och Vercel är separata
+kontroller, och migration-readiness hoppas fortfarande över för fork-PR:er.
+Kravet är därför inte ett bevis för dessa tre kontroller. Ordinarie leverans
+från egna branches kräver fortsatt faktisk SQL-/omstarts-/HTTPS-CI och
+granskning av slutligt head. Före-/efterkvitto finns privat i
+`arkiv/2026-10-15/admin-consolidation/ruleset-24642403-ci-receipt.json`.
+
+**Avgränsad lokal städning 16 oktober kl. 14.36:** arbetskopian
+`C:/Users/jakem/.cursor/worktrees/croupier/efterarbete` är borttagen med
+vanlig `git worktree remove`, utan force. Dess head `9919b812` är verifierad
+förfader till main `32ffbbaf`; branchen `jakob/ordning-slutfix` finns kvar.
+Tre lokala Volta-pinnar finns redan i main. Den unika GitGuardian-konfigurationen
+(korrekt Node-sökväg och arbetskopiespecifik cwd), ändringspatchen och det
+lilla agentkvittot bevaras under kanoniska privata arkivet
+`arkiv/2026-10-16/.cursor/worktrees/croupier/efterarbete/` med hashkvitto.
+Patchens omvända applicering kontrollerades före återställning av de fyra
+lokala filerna. Ingen fil har kopierats till aktiv konfiguration.
+
+Arbetskopians sessionsdatabas innehöll noll rader, agentclaims var tomma
+och ingen läsbar processkommandorad hänvisade till den vid kontrollen.
+Dess egen regenererbara design-preview-installation och tomma sessionsdatabas
+är borttagna. Fyra dependency-junctions avlänkades utan att följa målen;
+huvudcheckoutens fyra mål och utvalda paketmetadata verifierades efteråt.
+Det är en avgränsad kontroll, inte en bytekontroll av alla beroenden.
+Huvudcheckoutens två skyddade användarfiler har oförändrade SHA-256.
+Övriga tre registrerade sidoarbetskopior och huvudcheckoutens pågående
+PR165-merge är bevarade. Ingen generell branchrensning eller ny installation
+gjordes. Inget nytt filantal eller sparat byteantal påstås för detta städpass.
+
+De tre återstående sidoarbetskopiorna är lästa separat. `ai-system-map`
+har unika okommittade verifierings-/dokumentändringar; `8e3c` har fyra
+unika lokala videoredigeringscommits och privata editorfiler; `moving-lipsync-runtime`
+har en unik patch för explicit ElevenLabs-åtkomst samt privat körunderlag.
+De är därför bevarade i väntan på avgränsad överföring eller avvisning av
+just deras unika arbete. Ett gammalt namn eller grön ancestry räcker inte.
+
+En separat konfigurationsrättning är lokalt klar: Gateway-utdata använder
+`OPENCLAW_API_KEY`, medan kompatibilitetsaliaset `OPENCLAWAPI_KEY` skrivs tomt.
+Äldre profiler kan fortfarande läsas. 48 riktade tester passerar och inga
+faktiska miljöfiler har ändrats. De två deploy-modulerna och tillhörande
+ENVIRONMENT-VARIABLES-dokumentation hålls utanför PR165 för egen leverans.
 
 ### Första rättningen: Dragan-grundloop
 
@@ -72,8 +167,9 @@ paketrevision följer nu spelarens diagnostik. Inga mediefiler ändras.
 
 Fem nya regressioner föll på tidigare kod. Efter rättning passerar samtliga
 80 prov i `test/local-presentation.mjs`, och oberoende kodgranskning har inga
-blockerande fynd. Lab-build verifierar 97 byggspår. Commitkontrollen med
-befintlig browsermodul passerar 3 947 prov med 9 villkorade skip och noll fel.
+blockerande fynd. Lab-build verifierar 97 byggspår. Commitkontrollen
+passerar 3 947 prov med 9 villkorade skip och noll fel. Browser- och
+SQL-acceptans redovisas separat från detta lokala regressionskvitto.
 PR178 har granskat sluthead `556050b6915a88e0453d87d9881df85bc03ed128`.
 PR-CI `38897489445` är grön, inklusive faktisk isolerad SQL/omstart/HTTPS
 med kvittot `isolated-studio-sql-restart-https: passed`. PR178 är mergad
@@ -114,11 +210,11 @@ Privata bevis i `arkiv/2026-10-15/admin-consolidation/`:
 `dragan-recovery-idle-samples.json`, `dragan-recovery-live.jpg` och
 `dragan-recovery-rehearsal.jpg`.
 
-### Vad genomgången faktiskt verifierade
+### Ursprunglig genomgång före slutleveranserna ovan
 
 - GitHub-main är `10d3255e03b704e27bfe05b30855e7e26b7f8aba`.
   Regelsystem `24642403` kräver PR och skyddar mot radering/force-push,
-  men har fortfarande inget obligatoriskt statuskrav och noll vanliga
+  men hade då inget obligatoriskt statuskrav och noll vanliga
   granskarapproval. Grön CI följdes vid tidigare leveranser; reglerna
   garanterar inte detta. Förslaget lägger inte till ett nytt manuellt
   godkännandekrav som rutin i Jakobs arbetsflöde.
@@ -2835,6 +2931,57 @@ verifierad; full riktig invitation/reset återstår enligt F. Sending-only ger
 inte behörighet att lista domäner och en sådan 401 bevisar inte ogiltig sändnyckel.
 GPUshutdown/privat zonbild/OpenClawnavigation är rättade och verifierade avgränsat,
 inte kvarstående obehandlade funktionsfel; detaljer/shutdownbudget i JOHN.
+
+## N1 till eget spelkonto — kodkontroll 15 oktober 2026
+
+Samordnarens separata produktionsprov 10:56 UTC visade att färsk Studio-login
+öppnade Admin och Partner men att egen profil krävde ännu en inloggning.
+Både Render BO_URL och PUBLIC_URL har verifierats till www.scoutgaming.tech.
+Den avgränsade rättningen är förberedd på codex/n1-player-session från
+main c024cca7 och förenad med main 96750fa0 (PR162–164). Den tidigare
+granskade PR164-revisionen 2a8295a4 har identiskt Git-källträd; alla 18
+egna ändringsfiler bevarades byteidentiskt vid föreningen. Detta är ännu
+inte ett produktionskvitto för SSO.
+
+På gemensam origin väljer verifierad N1 den befintliga, browserbundna
+engångshandoffens vanliga spelarsession före profil-/saldoläsning och
+spelinträde. CRAIG-kopplingen måste matcha: en annan inloggad spelares konto
+återanvänds inte. Returer begränsas till befintliga spelardokument.
+N1-login rensar tidigare spelarcookie. Gemensam N1/N3-logout återkallar
+aktuell spelarsession, verifierad BO-epoch och kontots väntande spelhandoffs;
+callback-cookien rensas på sin egen Path. Sparad BO-cookie och state kan
+inte återuppliva sessionen eller auktorisera en ny handoff efter logout.
+Anonym stateberedning kräver fortfarande riktig login före kodutgivning.
+Andra spelares saldon/roller och separata BO-/spelvärdars kontrakt bevaras.
+
+Lokalt: 69 fokustester och 9 äldre BO-/spelkontrakt passerar med Node
+24.21.0 och högst fyra workers. Senaste logout-rättningen är omkörd i
+16 berörda tester. Faktisk kortlivad HTTP-engine med syntetiska konton,
+separat SQLite och native signering verifierar egen renderad profil,
+främmande session, kontobyte och fördröjd callback efter båda logoutvägar.
+Oberoende omgranskning inklusive sparad state + gammal BO-cookie är godkänd.
+Slutligt Labbygge på main 96750fa0 + SSO passerar: 97 byggspår verifierade.
+Första fullhooken fångade två Chrome-fixturer som slog ihop flera Set-Cookie.
+Deras HTTP-adapter bevarar nu separata cookies; båda ursprungliga browserprov
+är röda före och gröna efter rättningen. Produktkod och provkrav är oförändrade.
+Den isolerade generationsfixturens explicita källista kompletterades också
+med importerad player-handoff.mjs efter bekräftat ERR_MODULE_NOT_FOUND;
+båda berörda fixturefilerna passerar samlat 5/5. Nätverk/media är fortsatt isolerade.
+Ordinarie commit-fullhook passerar på 3d3a83e2: 3 921 pass, 0 fail och
+9 miljöberoende skip, med isolerade Chrome-fixturer aktiverade.
+PR/CI och nytt färskt N1-produktionsprov återstår.
+Inga produktionskonton,
+saldon, miljövärden, providerjobb eller användarens browsercookies ändrades
+i dessa lokala prov. Befintliga öppna migrationspunkter är inte avbockade.
+
+Tillskrivet samordnaren: produktionsprov cirka 11:34 UTC verifierade
+startsida → /lobby → Swedish Games → Dragan-rum → dealer-dialog. Faktisk
+spellänk bevarade operator/rum/dealer; inget spel startades. Escape och
+Stäng återförde fokus till Välj Dragan efter stängningsanimationen. På
+390×844 var Min profil synlig inom viewport; storleken återställdes.
+Det gäller levererad PR163/identisk lobby i PR162, inte hela 200%- eller
+fokusmatrisen. Privat bildkvitto: lobby-mobile-profile-link.png i rotens
+arkiv/2026-10-15/samordning/env-media-verification/.
 
 ## Lokal start och sökning
 

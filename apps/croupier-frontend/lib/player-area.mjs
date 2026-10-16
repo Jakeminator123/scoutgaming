@@ -1,3 +1,4 @@
+import {playerHandoffDestination} from '../../../web/public/player-handoff.mjs';
 import {platformBackendHeaders, platformConfiguration} from './platform-routing.mjs';
 import {operatorLoginPath, operatorPlayPath, operatorPublicView, operatorSlugFromSearch} from './player-operator.mjs';
 
@@ -152,6 +153,10 @@ export async function playerAreaData(request, env = process.env, options = {}) {
   try { config = platformConfiguration(env); } catch { return empty; }
   if (!config?.backendOrigin) return empty;
   const sessionData = await readBackend(config, request, '/api/auth/session', {fetchImpl});
+  if(sessionData?.backofficeHandoff===true) {
+    const url=new URL(request.url),redirect=playerHandoffDestination(url.pathname+url.search,{origin:url.origin});
+    if(redirect) return {...empty,redirect};
+  }
   const operatorSlug = options.surface === 'lobby' ? operatorSlugFromSearch(new URL(request.url).search) : '';
   const operator = operatorSlug ? await readOperator(config, operatorSlug, fetchImpl) : null;
   if (sessionData === null) return {session: null, player: null, results: null, profile: null, operator};
@@ -196,6 +201,7 @@ function areaModel(surface, redirect, extra = {}) {
 }
 
 export function playerAreaModel(data, surface) {
+  if(data?.redirect) return areaModel(surface,data.redirect);
   const state = sessionState(data?.session);
   const outage = state === 'unavailable' || data?.player?.unavailable === true || data?.results?.unavailable === true;
   const signedIn = state === 'in';

@@ -1,6 +1,7 @@
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { createAccountCredentialResolver } from '../account-credentials.mjs';
+import { backofficePlayerSource,readBackofficePlayerSource } from '../bo-player-session.mjs';
 
 // Vercel's preview proxy is trusted only when the cloud launcher has supplied
 // one exact origin. Web still expects its own public Host behind the proxy.
@@ -20,7 +21,7 @@ export function playerPostOriginOk(req, { gameOrigin = '', frontendOrigin = '' }
   return host === gameHost && parsed.host === host && (!frontendOrigin || origin === gameOrigin);
 }
 
-export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession, partnerAuthority,
+export function playerAuth(db, createPlayer, identity = null, { playerAccounts = false, gameOrigin = '', frontendOrigin = '', administratorSession, partnerAuthority, sharedBackofficeOrigin = false, backofficeLogout,authEpoch,
   allowLegacyPartnerSessions = process.env.CROUPIER_STUDIO_NEON_POLICY !== '1' } = {}) {
 
   const credentials = createAccountCredentialResolver({identity,playerDb:db,playerAccounts});
@@ -58,7 +59,14 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     // Partner-launched sessions belong to an operator's player, not a Craig user, so they carry a partner stamp instead of a Craig fingerprint.
     if(String(session.source_stamp??'').startsWith('local:')) {
       if(identity && !playerAccounts || accountStamp((await db.prepare('SELECT salt,hash FROM player_accounts WHERE player_id=?').get(session.player_id)))!==session.source_stamp)return null;
-    } else if(identity && !String(session.source_stamp??'').startsWith('partner:')){const link=(await db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id));if(!link || !session.source_stamp || (await identity.stamp(link.craig_user_id))!==session.source_stamp)return null;}
+    } else if(!String(session.source_stamp??'').startsWith('partner:') && (identity || session.source_stamp!=null)) {
+      const source=readBackofficePlayerSource(session.source_stamp),credential=/^credential:([a-f0-9]{64})$/.exec(session.source_stamp??'');
+      // Old bare fingerprints have ambiguous provenance and require a fresh login.
+      if(!identity || !source && !credential)return null;
+      const link=await db.prepare('SELECT craig_user_id FROM craig_player_links WHERE player_id=?').get(session.player_id);
+      if(!link || (await identity.stamp(link.craig_user_id))!==(source?.stamp??credential[1]))return null;
+      if(source && (typeof authEpoch!=='function' || (await authEpoch(link.craig_user_id))!==source.authEpoch))return null;
+    }
     const partnerSource = String(session.source_stamp ?? '');
     const partner = partnerSource.startsWith('partner:') ? /^partner:([^:]+)(?::([a-f0-9]{64}))?$/.exec(partnerSource) : null;
     if(partnerSource.startsWith('partner:')&&!partner)return null;
@@ -76,7 +84,7 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     if(!identity || !existing?.stamp || (await identity.stamp(existing.id))!==existing.stamp)throw Error('Scout session expired. Sign in again.');
     let link=(await db.prepare('SELECT player_id FROM craig_player_links WHERE craig_user_id=?').get(existing.id));
     if(!link){const p=(await createPlayer({name:existing.name}));link={player_id:p.id};(await db.prepare('INSERT INTO craig_player_links VALUES (?,?)').run(existing.id,p.id));}
-    return {...link,source_stamp:existing.stamp};
+    return {...link,source_stamp:`credential:${existing.stamp}`};
   }
   async function issue(req,account,maxAge=86400,sameSite='Strict') {
     const player = await db.prepare('SELECT status FROM players WHERE id=? FOR UPDATE').get(account.player_id);
@@ -87,7 +95,13 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     return cookie(req,token,maxAge,sameSite);
   }
   async function fromBackoffice(req,existing,maxAge=86400) {
-    return db.transaction(async () => issue(req, await linkIdentity(existing), maxAge, 'Lax'));
+    return db.transaction(async () => {
+      const source=backofficePlayerSource(existing?.stamp,existing?.authEpoch);
+      // The existing product advisory lock serializes this with native logout.
+      // Per-request epoch checks also reject a delayed, already-issued cookie.
+      if(typeof authEpoch!=='function' || (await authEpoch(existing.id))!==existing.authEpoch)throw Error('Backoffice session expired');
+      return issue(req,{...await linkIdentity(existing),source_stamp:source},maxAge,'Lax');
+    });
   }
   async function fromPartner(req,claims,maxAge=21600) {
     if(typeof claims?.sub!=='string'||!claims.sub||typeof claims?.partner!=='string'||!claims.partner)throw Error('Invalid Partner launch claims.');
@@ -109,8 +123,16 @@ export function playerAuth(db, createPlayer, identity = null, { playerAccounts =
     if(localAccount && !playerAccounts){reply(403,{error:'Player accounts are not enabled.'});return true;}
     if(req.url==='/api/auth/logout') {
       const token=(req.headers.cookie??'').match(/(?:^|;\s*)player_session=([a-f0-9]{64})(?:;|$)/)?.[1];
-      if(token)(await db.prepare('DELETE FROM player_sessions WHERE digest=?').run(digest(token)));
-      reply(200,{ok:true},{'Set-Cookie':cookie(req,'',0)});return true;
+      try {
+        if(sharedBackofficeOrigin && typeof backofficeLogout==='function')await backofficeLogout(req);
+        if(token)await db.prepare('DELETE FROM player_sessions WHERE digest=?').run(digest(token));
+      } catch {reply(503,{error:'Logout unavailable'});return true;}
+      const secure=req.socket.encrypted || process.env.NODE_ENV==='production' ? '; Secure' : '';
+      const cleared=sharedBackofficeOrigin ? [cookie(req,'',0),
+        'bo_jwt=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+secure,
+        'lab_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'+secure] : cookie(req,'',0);
+      const state='bo_game_state=; Path=/api/auth/bo/callback; HttpOnly; SameSite=Lax; Max-Age=0'+secure;
+      reply(200,{ok:true},{'Set-Cookie':[...(Array.isArray(cleared)?cleared:[cleared]),state]});return true;
     }
     if(identity && req.url==='/api/auth/register'){reply(403,{error:'Use your existing Scout account. New accounts are managed in the backoffice.'});return true;}
     try {

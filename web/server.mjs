@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
+import {playerHandoffDestination} from './public/player-handoff.mjs';
 import { isAdministratorRole } from './account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
@@ -421,6 +423,21 @@ async function administratorGameSession(req,account) {
   const secure=req.socket.encrypted || process.env.NODE_ENV==='production' ? '; Secure' : '';
   return `bo_jwt=${tok}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`;
 }
+// The shared-origin logout has the same BO/Lab epoch boundary as native Studio
+// logout. Clearing browser cookies alone cannot cancel in-flight requests.
+async function backofficeGameLogout(req) {
+  const revoke=async()=>{
+    const boCookies=(req.headers.cookie??'').split(';').filter(value=>value.trim().startsWith('bo_jwt='));
+    if(boCookies.length>1)throw Error('Ambiguous backoffice session');
+    const account=await currentBackofficeAccount(req,{identity:scoutIdentity,boSession:boSessionOk,roles:['reader','staff','admin','superadmin']});
+    if(!account)return;
+    await boDb.prepare('INSERT INTO bo_auth_epochs (user_id,epoch) VALUES (?,1) ON CONFLICT(user_id) DO UPDATE SET epoch=bo_auth_epochs.epoch+1').run(account.id);
+    await db.prepare('DELETE FROM bo_game_handoffs WHERE craig_user_id=?').run(account.id);
+  };
+  // PostgreSQL's existing transaction lock is shared with native Studio and
+  // BO session issuance, including across the Vercel and Render processes.
+  if(postgres)await boDb.transaction(revoke);else await revoke();
+}
 async function boSessionOk(req) {
   const c = req.headers.cookie ?? '';
   const m = /(?:^|;\s*)bo_jwt=([A-Za-z0-9_.-]+)/.exec(c);
@@ -593,7 +610,7 @@ const scoutIdentity=(await craigIdentity(boDb));
 const playerAccounts = process.env.CROUPIER_PLAYER_ACCOUNTS === '1';
 const gameOrigin=process.env.PUBLIC_URL??'https://bettalotto.se';
 const frontendOrigin=cloudRuntime ? process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN??'' : '';
-const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,
+const auth=(await playerAuth(db,apiPlayer,scoutIdentity,{playerAccounts,gameOrigin,frontendOrigin,administratorSession:administratorGameSession,sharedBackofficeOrigin:new URL(gameOrigin).origin===BO_ORIGIN.origin,backofficeLogout:backofficeGameLogout,authEpoch:boAuthEpoch,
   partnerAuthority: async partnerKeyId => boDb.prepare('SELECT id,secret,revoked_at,wallet_url FROM api_keys WHERE id=?').get(partnerKeyId)}));
 const validLaunch=async token=>{const claims=jwtVerify(token);const player=claims?.sub&&claims.partner?await getPlayer(claims.sub):null;return !!(player&&(!postgres||player.status==='active'&&await auth.partnerAllowed(claims.partner,claims.partner_key_stamp)));};
 const boGameAuth=(await backofficeGameAuth({db,auth,identity:scoutIdentity,boSession:boSessionOk,validLaunch,publicUrl:process.env.PUBLIC_URL??'https://bettalotto.se',publicGamePath:gamePath,boUrl:BO_URL}));
@@ -787,6 +804,14 @@ const server = createServer(async (req, res) => {
     if (await handlePlayerSurface(req, res, pathname, {operators: publicOperators})) return;
   }
   let authenticated=(await playerSession(req))?.playerId ?? null;
+  const playerEntry=['/blackjack','/blackjack/','/roulette','/roulette/','/play/roulette','/play/roulette/'].includes(pathname);
+  const backofficeHandoff=(pathname==='/api/auth/session' || playerEntry) && ['GET','HEAD'].includes(req.method)
+    && await backofficePlayerHandoffRequired(req,{db,identity:scoutIdentity,boSession:boSessionOk,publicUrl:gameOrigin,boUrl:BO_URL,playerId:authenticated});
+  if(backofficeHandoff && playerEntry) {
+    const entryUrl=new URL(req.url,gameOrigin);
+    const handoff=playerHandoffDestination(entryUrl.pathname.replace(/\/$/,'')+entryUrl.search,{origin:gameOrigin});
+    if(handoff){res.writeHead(303,{Location:handoff,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return;}
+  }
   if (['/roulette','/roulette/','/play/roulette','/play/roulette/','/roulette/app.mjs','/roulette/style.css','/roulette/scene.mjs','/roulette/media.mjs','/roulette/table-layout.mjs','/roulette/assets/roulette-bord.png','/roulette-rules.mjs'].includes(pathname)
       && await rouletteDocument(req,res,{authenticated,guestPreview,resolveRoom:rouletteRoomAccess})) return;
   if (pathname === '/api/profile') {
@@ -799,10 +824,10 @@ const server = createServer(async (req, res) => {
     res.writeHead(303,{Location:playerLoginDestination(new URL(req.url,gameOrigin)), 'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
     res.end(); return;
   }
-  const guest=guestPreview && !authenticated && !backoffice && !nativePlaybackContext && (pathname.startsWith('/api/') || pathname==='/chat');
+  const guest=guestPreview && !authenticated && !backoffice && !backofficeHandoff && !nativePlaybackContext && (pathname.startsWith('/api/') || pathname==='/chat');
   if(guest)authenticated=(await previewPlayer(req,res));
   if (await lissabonProfiles.handle(req, res, pathname, authenticated)) return;
-  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest,guest,sharedCredentials:true,...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
+  if(pathname==='/api/auth/session' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({authenticated:!!authenticated && !guest && !backofficeHandoff,guest,sharedCredentials:true,...(backofficeHandoff?{backofficeHandoff:true}:{}),...(playerAccounts ? {playerAccounts:true} : {}),...(lissabonProfiles.enabled ? {localDemoProfiles:true} : {})}));return;}
   if(!authenticated&&!backoffice && (pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method))) {
     res.setHeader('Cache-Control','no-store');
     if(pathname.startsWith('/api/')||!['GET','HEAD'].includes(req.method)){res.writeHead(401,{'Content-Type':'application/json'});res.end('{"error":"Sign in required"}');}

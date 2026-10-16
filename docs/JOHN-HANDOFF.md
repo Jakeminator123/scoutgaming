@@ -9,6 +9,36 @@ Workflow-/dokumentfel som hindrar avslutet ingår. Admin-flödesetappen är
 avslutad enligt kvittot nedan. PR165 är nästa avgränsade rättning; ny rörlig
 läppsynk och QA-utbyggnad förblir pausade.
 
+PR165 fortsätter nu i sin befintliga branch i huvudcheckouten. Main
+`32ffbbaf` är förenad utan konflikter i kodcommit `c43fef1a`; cookie-
+testfixen från snapshoten och `/play`-returen är rättade. Fyra isolerade
+negativa prov visade ett verkligt logout/callback-race. Enligt Jakobs mandat
+väljs nu befintlig N1-epoch även för BO-härledda spelarsessioner: logout
+återkallar dem och fördröjda callbacks får inte skapa en ny giltig session.
+De fyra regressionerna passerar lokalt. Äldre omärkta BO-/CRAIG-sessioner
+kräver engångs-återinloggning eftersom deras ursprung inte kan särskiljas;
+konton, saldon, historik och nya vanliga/partner-inloggningar bevaras.
+Kodcommit `c43fef1a` är oberoende slutgranskad. Labbygge: 97 byggspår;
+ordinarie fullhook: 3 971 pass, 9 villkorade skip, 0 fel. Faktisk
+SQL-/omstarts-/HTTPS-CI ska kvitteras på slutligt PR-head; merge/deploy
+är fortfarande separat. Se CLOUD-MIGRATION och PR165:s leveranskvitto.
+Oberoende kodgranskning har inga blockerande fynd. Blandade runtimeversioner
+eller rollback kan kräva ytterligare inloggning eftersom äldre kod inte
+förstår de nya sessionsstämplarna; databasschemat är oförändrat.
+
+GitHub-regeln för main kräver nu `CI` från GitHub Actions samt uppdaterad
+PR mot main. Befintliga regler och administratörsundantag är bevarade;
+inget extra manuellt godkännande eller mergekö införs. Återläsningen är
+verifierad och kvittot finns i CLOUD-MIGRATION. GitGuardian/Vercel och
+fork-PR:ers migrationskontroll täcks inte automatiskt av sammanfattningen.
+
+Den avslutade arbetskopian `efterarbete` är borttagen efter verifierad
+main-ancestry och bevarande av dess få unika småfiler i kanoniska arkivet.
+Fyra dependency-junctions avlänkades utan att röra huvudcheckoutens mål;
+den tomma sessionsdatabasen och den egna återbyggbara installationen
+behövde inte bevaras. Branchen finns kvar. De övriga arbetskopiorna och
+huvudcheckoutens egna ändringar är orörda; exakt kvitto i CLOUD-MIGRATION.
+
 Dragan-rättningen på `codex/dragan-idle-recovery` ger den exakta grundloopen
 ett begränsat återförsök efter stall, räknar faktisk tidsprogression och
 hindrar omspelning av standardfilm efter kort-/talstall. 80 fokuserade prov
@@ -3785,6 +3815,47 @@ historik finns. Rehearsal: `?dealer=<namn>&rehearsal=1` och
 exempel `git show 00ea55c5:random/checklista-2026-10-08.md` och
 `git show 00ea55c5:random/losa-tradar-2026-10-07.md`. A01 tar bort katalogen
 ur trädet. Ingen ny plats är känd.
+
+### N1 till eget spelkonto — kod klar, 15 oktober 2026
+
+codex/n1-player-session från c024cca7 rättar färsk N1 → egen N3-profil via
+befintlig engångshandoff på gemensam BO-/spelorigin. Verifierad CRAIG-identitet
+jämförs med spelarens kontokoppling före profil/saldo; främmande spelarsession
+ersätts utan att dess saldo ändras. N1-login rensar gammal spelarcookie.
+Gemensam logout återkallar aktuell spelar-session, BO-epoch och väntande
+spelhandoffs; även sparad BO-cookie + state kräver ny login efter logout.
+Separata värdar, serverägda saldon, roller och exakta returgränser bevaras.
+
+69 fokustester + 9 äldre kontrakt gröna; senaste P2 omkörd i 16 berörda
+prov. Verklig isolerad HTTP-kedja med native signering och renderad profil
+passerar. Oberoende omgranskning har godkänt även fördröjd callback efter
+logout. Ingen produktionsacceptans påstås: samordnarens färska föreprov
+visade fortfarande dubbel login. Se CLOUD-MIGRATION:s avgränsade SSO-kvitto.
+
+Main 96750fa0 (PR162–164) är förenad; tidigare granskad 2a8295a4 hade
+identiskt Git-källträd och alla 18 egna filer behöll samma bytes. Lobbyretur
+och profilens historiklänk bevaras. Slutligt Labbygge passerar med 97
+verifierade byggspår. Ordinarie commit-fullhook passerar på 3d3a83e2:
+3 921 pass, 0 fail, 9 miljöberoende skip, inklusive isolerade Chrome-prov.
+PR/CI och färskt N1-produktionsprov återstår.
+Första fullhooken fångade två Chrome-fixturer som slog ihop flera Set-Cookie.
+Deras HTTP-adapter bevarar nu separata cookies; båda ursprungliga browserprov
+är röda före och gröna efter rättningen. Produktkod och provkrav är oförändrade.
+Den isolerade generationsfixturens explicita källista kompletterades också
+med importerad player-handoff.mjs efter bekräftat ERR_MODULE_NOT_FOUND;
+båda berörda fixturefilerna passerar samlat 5/5. Nätverk/media är fortsatt isolerade.
+
+Fem egna
+node_modules-junctions (Lab, design-preview, frontend, web och GPU-worker
+gateway) pekar på motsvarande rotinstallationer. Normaliserade manifest
+och låsfiler samt installerade direktberoenden är verifierade. Länkarna
+behålls inför slutkontrollen; fixtureprocesser och tempdatabaser är städade.
+Inga nya testfiler eller hookundantag behövdes.
+
+Samordnarens liveprov cirka 11:34 UTC verifierade levererad lobbykedja till
+Dragan-dialog, bevarad operator/rum/dealer-länk, fokusretur med Escape/Stäng
+och synlig Min profil på 390×844; inget spel startat. Det är PR163/162:s
+avgränsade kvitto, inte SSO eller hela fokus-/200%-matrisen. Se CLOUD-kvittot.
 
 ## 4. Äldre avsnitt
 

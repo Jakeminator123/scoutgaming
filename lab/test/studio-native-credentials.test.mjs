@@ -43,16 +43,18 @@ function loginFixture(role='admin') {
   return {state,password,boDb,gameDb,authorize,actions,request};
 }
 
-test('same username/email password admits admin and legacy superadmin without changing raw roles or game cookies',async()=>{
+test('same username/email password admits admin and legacy superadmin without changing raw roles and clears the previous game cookie',async()=>{
   for(const role of ['admin','superadmin']) {
     const f=loginFixture(role);
     for(const login of ['operator','OPERATOR@example.invalid']) {
       const response=await f.actions.handle(f.request(login));
       assert.equal(response.status,200);
       assert.deepEqual(await response.json(),{ok:true,username:'operator',role:'admin'});
-      const cookie=response.headers.get('set-cookie');
+      const cookies=response.headers.getSetCookie(),cookie=cookies.find(value=>value.startsWith('bo_jwt='));
+      assert.equal(cookies.length,2);
       assert.match(cookie,/^bo_jwt=.*HttpOnly; SameSite=Lax; Max-Age=604800; Secure$/);
-      assert.doesNotMatch(cookie,/player_session|preview_session|lab_session/);
+      assert.ok(cookies.includes('player_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure'));
+      assert.doesNotMatch(cookies.join(','),/preview_session|lab_session/);
       const token=cookie.slice(7).split(';')[0],claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'));
       assert.equal(claims.aud,'backoffice');assert.equal(claims.role,role);
       const actor=await f.authorize(new Request(origin+'/studio/api/auth/session',{headers:{cookie:'bo_jwt='+token}}));
@@ -248,7 +250,7 @@ test('admin can resend activation or reset for stored reader/staff and preserve 
 test('reader/staff self-reset invalidates prior game fingerprint while new password remains game-only',async()=>{
   for(const role of ['reader','staff']) {
     const f=legacyResetFixture(role),bearer=randomBytes(32).toString('hex');
-    f.state.gameSession={digest:createHash('sha256').update(bearer).digest('hex'),player_id:'game-player',source_stamp:await f.identity.stamp('7')};
+    f.state.gameSession={digest:createHash('sha256').update(bearer).digest('hex'),player_id:'game-player',source_stamp:`credential:${await f.identity.stamp('7')}`};
     const gameRequest={headers:{cookie:'player_session='+bearer}};
     assert.equal((await f.game.session(gameRequest))?.playerId,'game-player');
     const requested=await f.actions.handle(f.request('reset-request',{user:'game-only@example.invalid'}));
