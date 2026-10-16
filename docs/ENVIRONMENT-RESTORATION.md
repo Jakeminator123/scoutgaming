@@ -20,14 +20,34 @@ Det historiskt dokumenterade reservprojektet `scoutgaming-legacy-frontend`,
 `prj_I6KkhVlk4qMSPlAwSPZdnz4aVQ2s`, gav 404 i båda tillgängliga teamen vid
 kontroll 15 oktober. Namnsökning hittade inte projektet. Det är därför ingen
 verifierad återställningskälla; tillgänglig env/historik eller radering är
-inte bevisad. Bekräfta projektåtkomst och säker backup före eventuell återgång.
-Återställning kräver uttryckligt avgränsad omkoppling: välj tidigare verifierad
-frontenddeployment, återställ dess domäntilldelning och flytta www/apex tillbaka
-från Scoutgaming-ID:t. Studio kan återgå till sitt tidigare lab/Next-projektläge
-och en kompatibel Studio-snapshot. Ta bort Unified/UI-flaggorna först när den
-tidigare separata Studio-konfigurationen återställs. Ursprungliga säkra
-projektinställningar/deployment-ID finns privat i
+inte bevisad.
+
+**Historisk återgång före den samlade produkten:** den äldre proceduren
+byggde på separat frontend-/Studio-projekt, flytt av www/apex och återställda
+Unified/UI-flaggor. Den är inte en aktuell körinstruktion eller en verifierad
+reservväg. Ursprungliga projektinställningar/deployment-ID finns privat i
 `lab/data/platform-private/scoutgaming-project-before-services.json`.
+Deras existens bevisar inte åtkomst till de tidigare molnresurserna.
+
+**Verifierad versionsreferens inför Dragan-rättningen, 16 oktober 2026:**
+Vercel `dpl_BvYsArnsKqDHpWymic2P89LiBmj3` är läsbar och READY i produktion
+i projektet/teamet ovan, med www/apex tilldelade. Render
+`dep-db902o1srm7s73a3noc0` är live på `croupier-v2`
+(`srv-datg3j6gekts73amgli0`) i Jakob's workspace
+(`tea-d19jsa63jp1c73ch0sc0`). Båda kör
+`10d3255e03b704e27bfe05b30855e7e26b7f8aba`; Renders publika
+`/__cloud/version` bekräftar samma SHA och `/__cloud/health` svarar 200/ok.
+PR178 ändrar klientens återhämtning, tester och dokumentation; databas,
+frysta paket, mediebyte och miljökontrakt ändras inte i den leveransen.
+Versionsparet är därför en konkret referens vid en avgränsad kodåtergång
+från PR178. Ingen rollback eller databasåterställning har utförts.
+
+Återläs resursåtkomst, SHA och kompatibilitet inför en faktisk återgång;
+andra senare ändringar kan kräva andra åtgärder. Behåll samma samlade
+projekt och domäner. Miljöprofiler och bygg-/runtimeflaggor ska följa
+[den aktuella loaderkartan](ENVIRONMENT-VARIABLES.md#aktuell-avgränsning-15-oktober-2026-kväll);
+återställ inte äldre env-filer eller flytta domäner som en rutinmässig del av
+kodrollback. Denna dokumenträttning utför ingen omkoppling eller molnändring.
 
 De två äldre native-QA-projekten finns fortfarande i
 `jakeminator123s-projects`, utan Scoutgamings produktionsdomäner. De är
