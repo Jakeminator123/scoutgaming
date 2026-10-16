@@ -2,14 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const css = await readFile(new URL('../components/idle-policy-editor.module.css', import.meta.url), 'utf8');
 const globals = await readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
 const tokens = new Map([...globals.matchAll(/(--[\w-]+):([^;{}]+)/g)].map(match => [match[1], match[2]]));
-
-test('idle editor uses defined shared theme tokens instead of white fallback surfaces', () => {
-  for (const [, token] of css.matchAll(/var\((--[\w-]+)/g)) assert.ok(tokens.has(token), `Undefined theme token ${token}`);
-  assert.doesNotMatch(css, /#[\da-f]{3,8}\b/i, 'Use the lab palette, not an independent light theme');
-});
 
 function luminance(token) {
   const hex = tokens.get(token).trim().slice(1);

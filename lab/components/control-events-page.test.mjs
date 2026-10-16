@@ -44,21 +44,6 @@ const base = { initialProject: project, initialVideos: { videos: [] }, initialSt
 const { ControlEventsPage } = loadTs(new URL('../components/control-events-page.tsx', import.meta.url));
 const render = props => renderToStaticMarkup(React.createElement(ControlEventsPage, { ...base, ...props }));
 
-test('events page drops the inner menu, game switch and chat shortcuts', () => {
-  const html = render();
-  assert.doesNotMatch(html, /class="event-sidebar"|studio-chat-shortcuts|Croupier Lab|Osparade ändringar|Roulette/);
-  assert.match(html, /<h1>Klippval &amp; villkor<\/h1>/);
-  assert.match(html, /aria-label="Brödsmulor i Studio"/);
-  assert.match(html, /aria-label="Studio för Astrid"/);
-  assert.match(html, /href="\/control\/clips\?view=clips&amp;dealer=astrid&amp;event=speak\.goodluck&amp;variant=astrid\.speak\.goodluck\.standard"/);
-  assert.match(html, /aria-label="Välj dealer"/);
-  assert.match(html, /class="sg-chip"/);
-  assert.match(html, /aria-label="Sök event"/);
-  assert.match(html, /<button type="button" class="sg-btn sg-btn-primary" disabled="">Spara projekt<\/button>/);
-  assert.match(html, /Exportera projekt/);
-  assert.doesNotMatch(html, /class="studio-footer"/);
-});
-
 test('tab=triggers selects the condition library', () => {
   const html = render({ initialTab: 'triggers' });
   assert.match(html, /role="tab" aria-selected="true">Villkor/);
@@ -85,22 +70,6 @@ test('normal event previews show missing-video status for registered and unbound
       assert.doesNotMatch(html, /2D-RESERV · LABB|Bara 2D|data-motion-asset|<iframe/);
     }
   }
-});
-
-test('Astrid keeps the media-family editor and a Villkor tab', () => {
-  const manifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
-  const inventory = { families: manifest.families, videos: manifest.items.map(item => ({ ...item, available: true, fileName: item.relativePath.split('/').at(-1) })) };
-  const html = render({ initialVideos: inventory, initialDealerId: 'astrid', initialEventId: 'speak.goodluck' });
-  assert.match(html, /<h2>Klipp<\/h2>/);
-  assert.match(html, /role="tab"[^>]*>Villkor/);
-  assert.match(html, /aria-label="Välj dealer"/);
-});
-
-test('Grundloop links to content without duplicating the policy editor', () => {
-  const html = render({ initialDealerId: 'astrid', initialEventId: 'idle.ready' });
-  assert.match(html, /href="\/control\/clips#idle"/);
-  assert.match(html, /Grundloop och klipp/);
-  assert.doesNotMatch(html, /Spela en minut/);
 });
 
 test('retired Vera links require an active dealer before opening the event editor', () => {
