@@ -1,5 +1,22 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
+## Avgränsad uppföljning, 16 oktober 2026
+
+Jakob valde Classic med max 2 000 och tydligt avaktiverade High Roller/VIP.
+Klienten blockerar också dubblering över befintliga gränser och bevarar
+överstora återställda insatsutkast utan att skicka dem. Server, partnerkontrakt,
+publicerade bordsprofiler och saldon ändras inte. Implementerat och lokalt
+granskat; slutligt CI-/drift-/browserkvitto förs i leveransens PR. Inga nya
+arbetskopior, miljöer, beroenden eller raderingar ingår.
+
+Separat PR176 rättar arbetsbranch, importgränsen 30 filer samt daterad
+Roulette-/PR91-status i befintliga guider. Jakob bad om sidoagentgranskning;
+två avgränsade granskningar/ändringar gjordes parallellt i samma arbetskopia,
+med sekventiell integration. Nästa användarprov är Spelbolag → Rum och dess
+lagerförhandsvisning. QA, PR165 och ny rörlig läppsynk behåller sina pausade
+lägen. GitHub- och Vercel-läsning fungerar efter kontobytet; ingen
+återanslutning eller behörighetsändring behövdes.
+
 ## Aktiv genomförandeplan — enklare Admin, 15 oktober 2026
 
 Jakob har gett återstartsmandat för befintlig Admin, en leveransström och

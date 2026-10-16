@@ -1,5 +1,26 @@
 # Aktuell handoff — Scoutgaming
 
+## Uppföljning — Classic och nästa användarprov, 16 oktober 2026
+
+Jakob valde att avaktivera High Roller/VIP tills servern stöder dem.
+De visas som otillgängliga; Classic behåller 5–2 000 per huvudinsats och
+befintligt UI-tak 1 000 per sidoinsats. Dubblering respekterar båda taken.
+Överstora återställda insatsutkast bevaras men kan inte skickas till servern.
+Serverns regler, partnerkontrakt, saldo och publicerade mallar ändras inte.
+
+Rättningen är lokalt implementerad och oberoende granskad. Fokuserade
+klient-/utseendeprov: 14 + 14 godkända; shoe-prov: 197 kontroller samt
+persistens/split/double/insurance/idempotent utbetalning. Slutlig CI,
+produktions-SHA och browserkontroll kvitteras i leveransens PR; detta stycke
+är inte ett nytt live-spelprov. Dokumentationsrättningarna ligger i PR176.
+
+Nästa användaracceptans är Spelbolag → Rum → förhandsvisningen med bakgrund,
+dealer och bord på ordinarie www. GitHub- och Vercel-anslutningarna lästes
+framgångsrikt efter kontobytet. QA förblir i underhållsläge, ny rörlig
+läppsynk av och PR165 parkerad. Två sidoagenter användes på Jakobs uttryckliga
+begäran för denna avgränsade kod-/dokumentuppföljning; samma arbetskopia och
+sekventiella PR-flöde används.
+
 ## Aktiv leveransström — Admin-förenkling, 15 oktober 2026
 
 Den aktuella genomförandeplanen finns överst i
