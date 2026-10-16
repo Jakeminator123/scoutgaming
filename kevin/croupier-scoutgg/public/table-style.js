@@ -112,7 +112,7 @@ function apply(preset,color,save=true){
  selected={...selected,preset,color};stop();canvas.hidden=!color&&selected.shape==='original';
  if(gl){gl.useProgram(program);gl.uniform1f(gl.getUniformLocation(program,'rounded'),selected.shape!=='original'?1:0);gl.uniform1f(gl.getUniformLocation(program,'extended'),selected.shape==='extended'?1:0);gl.uniform1f(gl.getUniformLocation(program,'coloured'),color?1:0);}
  dialog.querySelectorAll('[data-shape]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.shape===selected.shape)));
- stage.dataset.tableShape=selected.shape;stage.dataset.tableStyle=preset;
+ stage.dataset.tableShape=selected.shape;stage.dataset.tableStyle=preset;stage.dataset.feltColor=color??'';   // desk-felt.js colours the desktop room's felt too
  document.documentElement.style.setProperty('--gold',TABLE_STYLES[preset].accent);
  dialog.querySelectorAll('[data-style]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.style===preset&&color===TABLE_STYLES[preset].color)));
  if(color){const rgb=color.match(/[0-9a-f]{2}/gi).map(v=>parseInt(v,16)/255);gl.useProgram(program);gl.uniform3fv(gl.getUniformLocation(program,'tint'),rgb);dialog.querySelector('input').value=color;lastSource=null;paint();}

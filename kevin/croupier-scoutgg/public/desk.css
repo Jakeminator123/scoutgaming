@@ -1,0 +1,92 @@
+/* Emil 16 Oct: the desktop table (html.desk, set with its geometry by desk-mode.js: --sh scene height, --fx the frame's
+   left edge, --col a side column's width, --gut the margin). The 1080 x 1920 frame (video, keyed dealer, felt, boxes,
+   cards) is placed like the approved mock-up: 0.9 of the scene's height wide, its top above the window, so frame rows
+   ~120-1320 fill the scene; the cards land where the dealer puts them and nothing in the frame changes. The room widened
+   around the frame lies behind it, scaled and centred with it (rooms-wide/, 2560 x 1440 in frame pixels, the frame's
+   (0, 90) at its (740, 0)). The phone's dock, header and chat go to the sides, over the room:
+     desk-two: dealers and chat left, the game right;   desk-one: the frame left, dealers, chat and game right.
+   Loaded last. */
+html.desk {
+  --fw: calc(var(--sh) * .9);                     /* frame width */
+  /* the mock-up shows frame rows 90-1290; 2.5 % higher the players' names under the boxes show too (rows 120-1320) */
+  --lift: .025;
+  --ftop: calc(var(--sh) * (-.075 - var(--lift)));
+  --panel-bg: #0a0b0dd6;
+}
+html.desk body { overflow: hidden; background: #070708; }
+html.desk .app { display: block; height: 100dvh; }
+/* behind everything: the room blurred and dimmed, for the band a very wide or near-square window leaves */
+html.desk .app::after { content: ""; position: fixed; inset: -60px; z-index: -1; pointer-events: none;
+  background: var(--plate-bg, none) center / cover no-repeat; filter: blur(36px) brightness(.35); }
+/* the widened room, scaled with the frame (frame px = room px * scene height / 1200), centred on it, its edges fading */
+html.desk .app::before {
+  content: ""; position: fixed; z-index: 0; inset: auto; filter: none; pointer-events: none;
+  top: calc(var(--sh) * var(--lift) * -1); left: calc(var(--fx) + var(--fw) / 2 - var(--sh) * 1.066667);
+  width: calc(var(--sh) * 2.133333); height: calc(var(--sh) * 1.2);
+  background: var(--room) center / 100% 100% no-repeat;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+}
+/* a room not widened yet: its own plate in the frame over the blurred copy (the old desktop look) */
+html.desk:not(.room-wide) .app::before { display: none; }
+
+/* the frame */
+html.desk .stage {
+  position: fixed; z-index: 1; top: var(--ftop); left: var(--fx);
+  width: var(--fw); height: calc(var(--sh) * 1.6); aspect-ratio: auto; background: transparent; overflow: hidden;
+}
+html.desk .stage::before { display: none; }
+html.desk.room-wide .stage .still { visibility: hidden; }   /* the widened room behind is this same room */
+
+/* everything the phone lays over the frame is laid over the window instead */
+html.desk .game-frame { position: fixed; inset: 0; width: auto; aspect-ratio: auto; transform: none; container-type: normal; }
+html.desk .game-frame::before { display: none; }
+html.desk .table-header { position: fixed; top: var(--gut); left: var(--gut); right: var(--gut); max-width: none; }
+html.desk .table-settings { max-width: none; }
+html.desk .status { position: fixed; top: calc(var(--gut) + 64px); left: calc(var(--fx) + var(--fw) / 2); }
+html.desk .caption { position: fixed; top: auto; bottom: calc(var(--sh) * .2); left: calc(var(--fx) + var(--fw) / 2); right: auto; transform: translateX(-50%); width: min(560px, var(--fw)); }
+html.desk #winToasts { position: fixed; top: calc(var(--sh) * .36); left: calc(var(--fx) + var(--fw) / 2); }
+html.desk .sound-chip { position: fixed; left: calc(var(--fx) + var(--fw) / 2); right: auto; bottom: var(--gut); transform: translateX(-50%); }
+html.desk .gate { position: fixed; inset: 0; }
+
+/* the panels */
+html.desk .game-dock, html.desk .studio, html.desk .side { position: fixed; z-index: 4; width: var(--col); right: auto; left: auto;
+  border: 1px solid #ffffff14; border-radius: 14px; backdrop-filter: blur(10px); box-shadow: 0 18px 50px #0007; }
+/* the game (status, timer, chips, bets, decisions, result, balance): bottom right, at the height of the felt */
+html.desk .game-dock { top: auto; right: var(--gut); bottom: var(--gut); max-height: calc(100dvh - 2 * var(--gut) - 70px); overflow-y: auto;
+  container-type: inline-size; background: color-mix(in srgb, var(--design-surface) 88%, transparent); }
+/* choosing a box: the card sits where the game panel will be, the boxes on the felt stay free to click */
+html.desk .gate[data-step=boxes] { padding: 0; }
+html.desk .gate[data-step=boxes] .gate-card { position: fixed; right: var(--gut); bottom: var(--gut); width: var(--col); max-width: none; }
+/* the dealers */
+html.desk .studio { height: auto; max-height: 40dvh; padding: 12px; background: var(--panel-bg); }
+html.desk .studio-dealers { grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap: 6px; }   /* one row of faces */
+html.desk .studio-dealers button { font-size: 11px; line-height: 1.2; }
+html.desk body:has(.studio-back) .studio { padding-top: 12px; }
+html.desk body:has(.studio-back) .table-header { left: calc(var(--gut) + 168px); }
+html.desk .studio-back { top: var(--gut); left: var(--gut); }
+/* the table's people and the chat */
+html.desk .side { height: auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: #0b0c0ee0; }
+/* a short panel scrolls; the message field always stays at its foot */
+html.desk .side > * { flex: none; }
+html.desk .side .log { flex: 1 1 auto; min-height: 60px; }
+html.desk .side .compose { position: sticky; bottom: 0; z-index: 1; background: #0b0c0ef2; }
+html.desk .app.panel-closed .side { display: none; }
+html.desk #who { flex-basis: 84px; }
+
+/* two columns: dealers and chat on the left, under the header */
+html.desk-two .studio { left: var(--gut); top: calc(var(--gut) + 96px); }
+html.desk-two .side { left: var(--gut); top: calc(var(--gut) + 96px + var(--studio-h, 140px) + 12px); bottom: var(--gut); }
+html.desk-two .panel-show { top: auto; right: auto; left: var(--gut); bottom: var(--gut); }
+/* one column on the right: the dealers under the settings, the chat between them and the game */
+html.desk-one .table-header { right: calc(var(--col) + 3 * var(--gut)); }
+html.desk-one .table-settings { position: fixed; top: var(--gut); right: var(--gut); }
+html.desk-one .studio { right: var(--gut); top: calc(var(--gut) + 52px); }
+html.desk-one .side { right: var(--gut); top: calc(var(--gut) + 52px + var(--studio-h, 120px) + 10px); bottom: calc(var(--gut) + var(--dock-h, 260px) + 10px); }
+html.desk-one .panel-show { top: calc(var(--gut) + 52px + var(--studio-h, 120px) + 10px); right: var(--gut); bottom: auto; left: auto; }
+html.desk-one .audio-settings .settings-popover { right: var(--gut); top: calc(var(--gut) + 46px); width: min(396px, var(--col)); }
+
+/* the game panel is narrower than a phone on a 13" laptop: the chip rack and the buttons follow its width */
+html.desk .game-dock .chip-picker { gap: clamp(4px, 2cqw, 9px); padding-inline: 8px; }
+html.desk .game-dock .chip-picker button { min-width: 0; min-height: 0; width: min(44px, calc((100cqw - 16px - 5 * clamp(4px, 2cqw, 9px)) / 6)); height: min(44px, calc((100cqw - 16px - 5 * clamp(4px, 2cqw, 9px)) / 6)); }
+html.desk .game-dock .game-buttons { flex-wrap: wrap; }

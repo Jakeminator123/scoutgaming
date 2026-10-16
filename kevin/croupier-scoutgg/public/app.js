@@ -529,6 +529,9 @@ $("#toggleChat").addEventListener("click", e => {
   // A phone taller than 9:16 leaves a band under the plate: fill it with a blurred copy of the room, not black.
   if (still) still.addEventListener("load", () => document.documentElement.style.setProperty("--plate-bg", `url("${still.currentSrc}")`));   // on <html>: the stage band and the desktop page both use it
   if (still) { still.src = dealer.keyed ? savedRoom().still : dealer.still; still.alt = `${dealer.name} at the blackjack table`; }
+  // The desktop table (desk-mode.js, desk.css) is for a green-screen dealer only, in the room widened behind the frame.
+  window.deskMode?.setKeyed(!!dealer.keyed);
+  if (dealer.keyed) window.deskMode?.setRoom(savedRoom());
   if (dealer.keyed) fetch("/api/clips").then(r => r.json()).then(m => {
     const at = Object.fromEntries(m.deal.map(d => [d.id.replace("deal_pos", "").replace("deal_", ""), [d.kort.cx, d.kort.cy]]));
     at.dealer = at.dealer ?? [540, 895]; at.hole = [540, 895];
@@ -563,7 +566,7 @@ $("#toggleChat").addEventListener("click", e => {
       const b = e.target.closest("[data-room]");
       if (!b || b.disabled) return;
       const r = ROOMS.find(x => x.id === b.dataset.room);
-      chooseRoom(r.id); if (still) still.src = r.still;
+      chooseRoom(r.id); if (still) still.src = r.still; window.deskMode?.setRoom(r);
       for (const x of rooms.children) x.setAttribute("aria-pressed", String(x === b));
     });
   }
