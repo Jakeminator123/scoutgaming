@@ -176,134 +176,115 @@ workerinställning eller extern tjänst ändrades i denna implementation.
 
 ### Verifierad zip-export och minsta integrationsförslag, 16 oktober 2026
 
-Jakob har avgränsat uppdraget till Paow/Dragge i Scoutgamings befintliga
-system. Lokal granskning utgår från `origin/main`
-`d064dce232caa9a8c7423fb23b33ca910488f5ae`, i separat arbetskopia.
-Admin-agentens checkout, env-rättning och uppladdningskontroller berörs inte.
-Exporten ersätter den äldre luckan ovan om saknade avatarbyte; den innebär
-inte återstart av QA eller tillstånd till aktivering, poddar eller molnresurser.
+**Aktuell inriktning:** Jakob vill återanvända Emils teknik med egna filmer
+från `main`, inte koppla in Emils färdiga avatarbanker. Han har därefter bett
+om en liten lokal `lipsync-test` i den separata arbetskopian. Skrivbordskopiering
+är uttryckligen uppskjuten. QA, produktionskoppling och läppsynkaktivering
+är fortsatt utanför leveransen; Admin-agentens checkout är orörd.
 
-Underlag är Jakobs uttryckligen angivna `lappsynk-export-fe1b55e.zip`,
-145 846 625 byte, SHA-256
+Exportgranskningen började på main `d064dce232caa9a8c7423fb23b33ca910488f5ae`.
+Den lokala editorn utgår från verifierad aktuell main
+`4fa35ab9db90682fcad50e6de84940a28a74621f`, införlivad i egen featurebranch.
+
+Underlag: `lappsynk-export-fe1b55e.zip`, 145 846 625 byte, SHA-256
 `949443c1084ab3f515792fe66c5e2d381e985f9bdc743e792e5fbca36a9240a3`.
-Zipens fem poster och de tre inre arkiven inventerades före extraktion.
-Kontrollen nekade traversal, absoluta/Windows-osäkra sökvägar, namnkonflikter,
-länkar och specialfiler; inga sådana poster hittades. Endast källkod och
-avatarernas JSON-metadata extraherades till en ny privat granskningskatalog
-utanför Git, utan överskrivning. Inga medföljande scripts kördes och inga
-modell-/picklefiler laddades. Instruktionernas anslutnings-/credentialrader
-utelämnades vid textvisning. Inga separata privata konfigurationsfiler finns
-i inventeringen; det är inte en fullständig hemlighetsskanning.
+Zipens fem poster och tre inre arkiv kontrollerades före extraktion för
+traversal, absoluta/Windows-osäkra sökvägar, namnkonflikter, länkar och
+specialfiler. Inga sådana poster hittades. Endast källkod och JSON extraherades
+privat utanför Git utan överskrivning. Inga medföljande scripts kördes och
+inga modell-/picklefiler laddades. Ingen privat konfigurationsfil upptäcktes;
+det är inte en fullständig hemlighetsskanning.
 
 | Del | Klassificering och verifierade byte |
 | --- | --- |
-| `croupier-lipsync-worker-fe1b55e.tar.gz` | Källkod och byggfiler, 29 016 byte; SHA-256 `63bf9fc1723235747dd4ca392080a9ff968c5839853b53bb4e609b6462197fc9`. 16 filer samt sju katalogposter, bland annat sju Pythonfiler, Dockerfile och Actions-flödet. |
-| `avatar-paow.tar` | Avatarbank, 75 141 120 byte; SHA-256 `0f1f3d9d98b0b795d6b920507af3459d574b3b2ced989ca86e0148486eb80425`. |
-| `avatar-dragge.tar` | Avatarbank, 76 052 480 byte; SHA-256 `0280261fa6a9b4f9007fe461f9dd88e5d1e6b7c1bccbb0c593541349bfb5ce33`. |
-| `LASMIG.md`, `LAPPSYNK-RUNPOD.md` | Emils instruktioner, inte körmandat. Den dedikerade podstartaren innehåller staging-default och använder `RORLIG_POD_TOKEN`; den importeras inte. |
+| `croupier-lipsync-worker-fe1b55e.tar.gz` | Källkod/byggfiler, 29 016 byte; SHA-256 `63bf9fc1723235747dd4ca392080a9ff968c5839853b53bb4e609b6462197fc9`. |
+| `avatar-paow.tar` | Referensbank, 75 141 120 byte; SHA-256 `0f1f3d9d98b0b795d6b920507af3459d574b3b2ced989ca86e0148486eb80425`. Används inte i editorn. |
+| `avatar-dragge.tar` | Referensbank, 76 052 480 byte; SHA-256 `0280261fa6a9b4f9007fe461f9dd88e5d1e6b7c1bccbb0c593541349bfb5ce33`. Används inte i editorn. |
+| `LASMIG.md`, `LAPPSYNK-RUNPOD.md` | Underlag, inte körmandat. Podstartaren har staging-default och använder `RORLIG_POD_TOKEN`; den importeras inte. |
 
-Båda avatarhasharna matchar Jakobs angivna referenser. Källarkivets PAX-fält
-`comment` anger `fe1b55e971b1236fadd445ff6ce94970719b5d72`. Git-objekt,
-commitobjekt och signerad proveniens saknas: markeringen är exportmetadata,
-inte oberoende bevis för att dessa byte tillhör den uppgivna Git-commiten.
-GitHub-läsrätt krävs inte för lokal exportgranskning.
+Källarkivets PAX-comment anger `fe1b55e971b1236fadd445ff6ce94970719b5d72`.
+Git-objekt/signatur saknas: commitkopplingen är exporterad metadata, inte
+oberoende verifierad Git-proveniens. Sju Pythonfiler syntaxparsades utan import.
 
-Separat från den tidigare hopslagna länken anger exportens
-`.github/workflows/build.yml` registret och en full `github.sha`-tagg:
+Byggflödet anger separat korrekt referens
 `ghcr.io/emacodehero/croupier-lipsync-worker:fe1b55e971b1236fadd445ff6ce94970719b5d72`.
-Det fastställer den avsedda referensen, inte en publicerad image. Anonym
-GHCR-läsning nekades med HTTP 401; digest och imageinnehåll är **inte verifierade**.
-Exporten innehåller inget OCI-manifest. Byggflödet hämtar alla `avatar-*.tar`
-från den föränderliga releasen `avatarer`, utan dessa hashpinnar, och har
-`provenance: false`. Dockerfile har även opinnade paket. Commit-taggen
-eller ett nytt bygge får därför inte presenteras som bevis på samma imagebyte.
-Detta hindrar inte lokal adapterutveckling eller en egen byggväg från den
-granskade exporten. En egen image får en egen digest; Emils privata
-packageåtkomst och upstream-digest behövs endast om hans färdigbyggda image
-ska användas eller verifieras. Inget imagebygge har körts här.
+Emils agent uppger från Actions run `38582924436` manifest-digest
+`sha256:14899b962350b934693b9536ef9b03717b116c2be7a66c7b3b2866a8a2a93edb`
+och config-digest
+`sha256:e15461f2a39356621ee0e9833c631ae241ae9a213e8f7aef89205bb1b2b8515f`.
+Detta är tillskrivet agentens svar: GHCR gav 401 och vår Actions-läsning 404;
+OCI-manifest/imageinnehåll är inte oberoende verifierade. Bygget hämtar
+föränderliga releasefiler, MuseTalk/vikter och opinnade beroenden. Ett eget
+bygge får egen digest och kan inte lovas ha identiskt innehåll. Egen byggning
+kräver inte åtkomst till Emils privata image, men måste pinna egna ingångar.
 
-Faktisk kod i `worker/motor.py`, `avatars_on_disk()`, delar `AVATARS` på
-blanksteg och väljer endast befintliga namngivna banker. `AVATARS="paow dragge"`
-begränsar alltså inläsningen, men ett saknat namn ignoreras tyst; readiness
-måste kontrollera båda. Både serverless-handlern och podstartaren använder
-funktionen. Uppgiften om fyra avatarer i den publicerade imagen är fortfarande
-Emils uppgift. Den lokala exporten innehåller exakt två avatarpaket.
+`worker/motor.py` delar `AVATARS` på blanksteg och väljer befintliga banker;
+saknade namn ignoreras tyst. Både handler och pod använder funktionen.
+Fyra avatarer i imagen är fortfarande en uppgift från Emil. Exporten har två.
+Bankerna har vardera 56 tagningar, 24 fps och 1080×1920: Paow 796 poolrutor/
+3 095 referenser, Dragge 751/3 192. Index/längder är kontrollerade.
+`paketera.py` läser endast MP4, använder likhetstolerans `LIKA=0.9` och väljer
+sista rutan i första `-v`-tagningen som vila. Här är det `pos1-v`, källruta 38,
+poolruta 432/416; `vila.png`, `redo.png` och `meta.json` används inte.
+Det är inte en generell kalibrering för våra andra filmer.
 
-Varje bank innehåller `pool.mp4`, `takes.json`, `prep/meta.json`, `latents.pt`,
-`masks.npz` och `bias.npz`. JSON-kontroll ger 56 tagningar vardera, 24 fps,
-1080×1920, 796 poolrutor/3 095 referenser för Paow och 751/3 192 för Dragge.
-Alla poolindex, segmentantal och tagningarnas rapporterade längder stämmer.
-`takes.json` saknar originalklippens SHA-256. `worker/paketera.py` grupperar
-dessutom liknande bildrutor med en tolerans (`LIKA=0.9`). Bankhash,
-tagningens namn och lika antal rutor bevisar alltså inte kopplingen till
-Scoutgamings publicerade klipp eller godkänd visuell synk.
+Emil uppger att lokala byggkällor motsvarar Paow
+`74e91b149347c6cc8d4fb8c70920ad42a6f2ec6c` och Dragge
+`1d1a3129e35cbe7376348f7bc802c8a553954c55`, under
+`kevin/croupier-scoutgg/public/media/dealers/{paow,dragge}/v2/`.
+Vi har kontrollerat Git-träden och samtliga 112 MP4-byte mot Git-blob-ID och
+beräknat SHA-256. Alla 59 trädfiler per dealer är oförändrade fram till
+`kevin-staging` `3ab8bea854156ec2fd96d9735c3a0be6876bc1ac`.
+Paows sex tidigare skillnader stämmer med svaret. Källmanifestens SHA-256 är
+`36505866fa5ae50f94a340bb28fa607bafef5db8e44eda1c0b2ba0a5b1929b60`
+respektive `59a2991d70e54442e5122e99e500f15ccf735a21a481a13d9148d9c2fcfe4f8b`.
+Den historiska kopplingen till själva bankbygget är fortfarande Emils uppgift;
+Paow byggdes enligt honom före första commit av `paketera.py`. Inget av dessa
+klipp eller bankbundna testdata importeras till produkten eller editorn.
 
-Uppföljning på Jakobs fråga om Kevins staging: fjärrbranchen heter
-`kevin-staging`, fryst på `3ab8bea854156ec2fd96d9735c3a0be6876bc1ac`.
-Under `kevin/croupier-scoutgg/public/media/dealers/{paow,dragge}/v2/` finns
-samtliga 56 namngivna MP4 per dealer och respektive `vila.png`.
-Varje tagnings namn och rapporterade rutantal i `meta.json` matchar exakt
-exportens `takes.json` för båda avatarerna. Den lästa `public/media/manifest.json`
-har inga hashfält. Detta identifierar en konkret möjlig byggkälla; filerna
-har inte hämtats/hashats och matchande metadata bevisar inte att just denna
-Git-version användes när bankerna byggdes. Emils agent behöver ange den
-faktiska källcommiten/sökvägen eller lämna ett hashbundet källmanifest.
-Om exakta original finns på en åtkomlig commit kan vi själva beräkna hashlistan.
-Kevins `server/rorlig-lipsync.mjs` är spelintegrationen; den separata
-Python-workern och dess byggfiler finns redan i Emils export.
+**Lokal editor:** kör `node lipsync-test/server.mjs` från denna arbetskopia
+med repots Node 24.21.0. `--check` listar fryst main-SHA, antal och totalstorlek
+utan serverstart. Visaren binds enbart till `127.0.0.1` på ledig port och
+skriver sin sessionsadress; Ctrl+C stoppar den. Det är en läsande filmvisare,
+inte en extra spel-/Lab-server. Inga env-filer, providers eller databaser laddas.
 
-**Minsta anpassning:** återanvänd de befintliga modulerna; ingen ny adapter
-eller produktionskoppling införs innan den saknade källbindningen kan styrkas.
+Filmvalet läses vid start ur `origin/main` och byte levereras ur exakt Git-blob,
+inte ändrade arbetsfiler. Den kontrollerade main-versionen har 139 filmer
+(284 809 677 byte) inom produktens media-/publicmappar, högst 12 MB styck.
+Ingen parallell katalog eller mediekopia sparas. Sökning/samlingsfilter,
+uppspelning, valbara tidssteg och lokal original/resultat-jämförelse ingår.
+Resultat väljs som lokal fil och laddas inte upp; byte av original rensar den
+kopplingen. Stegen är inte verifierade bildruteindex och jämförelsen är inte
+synkroniserad runtimeacceptans. Packade färg-/maskfilmer visas som lagrade.
+Ingen ny läppsynk genereras och inget godkännandekvitto skrivs.
 
-- Bind den registrerade dealerns verkliga ID och profilrevision till
-  worker-avatar `paow` respektive `dragge`. Det dokumenterade nya PAOW-ID:t
-  är `paow-kevin`; testerna använder även syntetiskt `paow`. Testalias är
-  inte skäl att återskapa gamla dealers. Bekräfta aktuella ID:n i den
-  auktoritativa publiceringen vid inkoppling, inklusive Dragan/Dragge.
-- Låt `moving-speech-plan.mjs` behålla session, replik, revision, exakt
-  texthash, PCM-hash, bankhash och klipphash. En separat källverifiering
-  måste först binda varje använd tagning och viloruta till originalet och
-  befintligt publicerat paket. Importera inte ett parallellt medieregister.
-- Återanvänd `moving-speech-pcm.mjs` för slutligt uppspelningsljud:
-  s16le, mono, 24 kHz och exakt samma byte till worker och spelare.
-  `dealer-speech-runtime.mjs` har redan Cartesia/ElevenLabs med servervald
-  röst, färsk profil och återkontroll. Bevara röstvalet; byt inte provider
-  för att exporten har en annan startinstruktion.
-- `moving-speech-transport.mjs` och gatewayens `moving-transport.mjs`
-  stöder exportens `start`, `ljud_id`, `karta`, `fran_ruta`, PCM, `end`,
-  `pong`, `lapp`/H.264, `done` och `avbryt`. Använd deras slumpade
-  engångstoken och egen callback. Återanvänd aldrig Emils token eller
-  derivationen från en RunPod-nyckel. `end` stoppar inte ett GPU-jobb.
-- Den återstående applikationsadaptern ska koppla journalens redan
-  reserverade och accepterade jobb till `authorize`/`finalize`, en gemensam
-  upgrade-dispatcher och spelarens faktiska kroppsruta/ljudklocka. Befintlig
-  `generated-speech-stream.mjs` använder en annan protokollversion och
-  referensbild; det räcker inte att byta endpoint. Versionsgrinden är i dag
-  serverless- och upstream-taggbunden. En egen digestpinnad image eller
-  dedikerad pod behöver motsvarande uttrycklig versions-/budgetadmission,
-  aldrig ett fabricerat kvitto eller lättad grind.
-- Behåll miljöprofilerna i ENVIRONMENT-VARIABLES och befintliga
-  `RUNPOD_API_KEY`/`CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID`-roller. Ingen
-  `.env.emil`-fallback, ny env-stack eller alternativ spelserver införs.
+Main har inga Paow/Dragan-tagningar i den incheckade mediekatalogen; endast
+Dragan-klippet för lobbyn ingår. Studio/Blob-filer måste väljas via befintligt
+register/publiceringspaket, inte fyllas ut från Kevins branch eller exporten.
 
-**Verifiering och leveransgräns:** Node 24.21.0 via Volta; de fyra befintliga
-`test/moving-speech-{plan,pcm,transport,frame-layer}.mjs` gav 35 pass,
-0 fel och ett villkorat överhoppat Chrome/WebCodecs-prov. Lokala
-WebSocket-fixturer provar bland annat två överföringar, återkallad åtkomst,
-versionsbyte, avbrott och fördröjda svar. Ingen exporterad worker kördes;
-sju Pythonfiler syntaxparsades utan import. Detta är kontraktsbevis,
-inte codec-, GPU-, prestanda- eller läppsynksacceptans.
+**Nästa tekniska steg:** förbered en egen avatarbank från exakt valda original,
+med hashbundet källmanifest och rätt fps/geometri. Återanvänd befintlig
+plan/PCM/workertransport, dealer-ID/profilrevision, exakt text/ljud, journal,
+behörighetskontroller, servergenererad podtoken och miljöprofiler. Cartesia
+levererar tal; GPU-workern kan senare köras på verifierad egen RunPod. Render
+behåller spelservern och GitHub koden. Ingen stagingadress/token, ny env-stack,
+reservprovider eller alternativ spelserver införs. Workerns starta/end/avbryt
+måste fortsatt kopplas till accepterat ägarbundet jobb, budget och avbrott.
 
-**Kvar före inkoppling/aktivering:** verifierbart OCI-manifest/digest för
-den image som faktiskt ska användas, med bindning till avsedd källa/bank;
-originalklippens hashbundna källmanifest
-eller exakta original; journal-/spelaradaptern och negativa isolerade prov;
-separat mandat för eventuell betald körning; två verkliga sammanhängande
-talprov per dealer med planbyte och avbrott; Jakobs aktiveringsgodkännande.
-Implementerat här: exportgranskning och dokumenterat integrationsförslag.
-Driftsatt: inget. Visuellt accepterat: inget nytt. Inga gamla runtimevägar
-är verifierat ersatta och kan tas bort i denna leverans; Astrids transport,
-befintliga providers, medier, captions och tidigare godkännanden bevaras.
+**Verifierat lokalt:** Node 24.21.0; två isolerade editorprov testar fryst main,
+ändrade arbetsfiler, branch-/hemlighetsisolering, byte ranges, metod och origin/
+host-spärr. Headless Chrome verifierade 139 val, två uppspelningsstarter,
+tidssteg, lokal jämförelse och rensning vid filmbyte utan JS-fel. Lab-build
+passerade före ändringen. Ordinarie fullhook redovisas i PR-kvittot.
+
+**Implementerat:** lokal läsande editor och verifierad exportgranskning.
+**Driftsatt:** inget. **Visuellt accepterad ny läppsynk:** inget.
+Kvar: exakta egna Paow/Dragan-original, verifierat ägande för effektiv
+RunPod/Cartesia-konfiguration, eget pinnat bank-/imagebygge, applikationsadapter,
+mandat för betalda prov, två riktiga sammanhängande talprov per dealer samt
+Jakobs aktiveringsgodkännande. Ingen gammal runtimeväg är verifierat ersatt
+eller kan tas bort. Originalmedia, exakta repliker och tidigare godkännanden
+bevaras. Pod1/pod5 är orörda.
 
 ## Kevins Dragan/Paow: filmurval och rörligt tal, 13 oktober 2026
 

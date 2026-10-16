@@ -357,25 +357,32 @@ IAB-prov av samordnaren verifierar ny internal-admin-login och N1 → Partner �
 Lobby på samma main; det är inte N2/N3-rollbevis eller acceptans av rättningen.
 Produktionsverifiering av rättningen återstår; C4 hålls öppen.
 
-## Paow/Dragge: zip-export granskad, 16 oktober 2026
+## Paow/Dragge: egen teknik och lokal editor, 16 oktober 2026
 
-Jakobs nya mandat gäller avgränsad lokal integration från Emils export;
-ny läppsynkaktivering och QA ingår fortfarande inte. Granskningen gjordes
-i separat arbetskopia från main `d064dce232caa9a8c7423fb23b33ca910488f5ae`.
-Båda avatarpaketen matchar angivna SHA-256. Källarkivet anger `fe1b55e…`
-i Git-archive-metadata, men saknar oberoende Git-proveniens. AVATARS-urvalet
-är kodverifierat; publicerad image-digest/fyra-avatarinnehåll är inte det.
-GHCR nekade anonym läsning med 401. Originalklippens hashbindning saknas.
+Jakob vill använda egna filmer på main med Emils teknik och har beställt en
+liten `lipsync-test` i separat arbetskopia. Skrivbordssparning är uppskjuten.
+Editorn läser 139 filmfiler från verifierad main `4fa35ab9` direkt ur Git,
+med sökning, uppspelning, tidssteg och lokal original/resultat-jämförelse.
+Start: `node lipsync-test/server.mjs`; ingen env, databas eller provider laddas.
+Paow/Dragan-tagningar saknas i main-katalogen; Studio/Blob-material måste
+väljas via befintligt register. Ingen ersättning hämtas från Emils banker.
 
-Befintlig plan-/PCM-/workertransport återanvänds enligt det konkreta
-[integrationsförslaget](LOCAL-PRESENTATION-RUNTIME.md#verifierad-zip-export-och-minsta-integrationsförslag-16-oktober-2026).
-35 isolerade kontraktstester passerar, 0 fel, ett Chrome/WebCodecs-prov
-överhoppat. Ingen ny runtimeadapter kopplas in på antagna medieidentiteter.
-Implementerat: exportgranskning och förslag. Driftsatt: inget. Ny visuell
-acceptans: ingen. Inga providerjobb, env-ändringar eller molnresurser;
-pod1/pod5 och Admin-agentens checkout är orörda. Inga gamla runtimevägar
-kan belagt tas bort ännu. Exakta källhashar och aktiveringshinder står i
-runtime-referensen; ingen ny tracker har skapats.
+Exporthashar, 112 källfilmers Git-blob-ID/SHA-256 och vilorutans mekanik är
+kontrollerade. Historisk bankbyggkoppling och uppgiven image-digest är fortsatt
+tillskrivna Emil; OCI-manifest saknas. Full proveniens och nästa steg finns i
+[runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md#verifierad-zip-export-och-minsta-integrationsförslag-16-oktober-2026).
+
+Två isolerade editorprov och Chrome-prov av två uppspelningsstarter, steg,
+lokal jämförelse och byte av original passerar. Lab-build passerade.
+Fullhook-kvittot följer PR:n. Inga nya talfilmer har genererats eller accepterats.
+Implementerat: lokal filmvisare. Driftsatt: inget. Visuellt accepterat: inget nytt.
+Inga gamla runtimevägar kan tas bort; pod1/pod5 och Admins checkout är orörda.
+
+Kontokontrollen som Jakob uttryckligen godkände läste bara befintliga lokala
+profiler: RunPod health 200 men kontoidentitet 401; nyckeln skiljer sig från
+Emil-profilen. Cartesia voices 200 och **samma nyckel som Emil-profilen**;
+kontoägaren kan inte bestämmas av detta. Lokal Web/Lab stämmer överens;
+Render-runtime har inte lästs tillbaka i denna kontroll. Ingen nyckel ändrades.
 
 ## Paow/Dragge: separat workertransport, 15 oktober 2026
 

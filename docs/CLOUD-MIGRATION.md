@@ -323,16 +323,19 @@ Privata bevis i `arkiv/2026-10-15/admin-consolidation/`:
   404 skiljer inte saknat repo från saknad behörighet. Beskedet räcker
   inte för aktivering. Uppdatering 16 oktober: Jakobs uttryckligen angivna
   zip är nu inventerad och båda avatarpaketens byte matchar referenshasharna.
-  Källarkivets commitmarkering är inte oberoende Git-proveniens; anonym
-  GHCR-läsning gav 401 och image-digest samt originalklippens hashbindning
-  saknas. Befintlig adapter gav 35 godkända isolerade kontraktsprov och ett
-  villkorat överhoppat browserprov. Det avgränsade
-  [integrationsförslaget](LOCAL-PRESENTATION-RUNTIME.md#verifierad-zip-export-och-minsta-integrationsförslag-16-oktober-2026)
-  återanvänder befintlig plan/PCM/transport, journal, providerprofiler och
-  medieregister. Ingen runtimekoppling, QA, driftsättning, ny visuell
-  acceptans eller aktivering ingår; saknad proveniens får inte ersättas av
-  antagna filnamn. Kevins rapporterade lip-layer-fel är inte påvisat
-  i vår separata konsument med exakt plan-/kroppsrute-/hashmatchning.
+  Källarkivets commitmarkering är inte oberoende Git-proveniens. Originalens
+  112 MP4 har nu kontrollerats mot uppgivna Git-träd/blob-ID och SHA-256;
+  historisk bankbyggkoppling och uppgiven image-digest är fortfarande Emils
+  uppgifter. OCI-manifest saknas. Jakob har valt egna filmer på main och en
+  liten lokal `lipsync-test`, utan skrivbordssparning. Editorn visar 139
+  incheckade filmer, med uppspelning/tidssteg och lokal resultatjämförelse.
+  Två isolerade editorprov och Chrome-prov passerar; fullhook redovisas i PR:n.
+  Paow/Dragan-tagningar i Studio/Blob måste väljas genom befintligt register.
+  Inga exportbanker används, ingen generering/QA/molndrift/aktivering utförs.
+  Lokal Cartesia delar värde med Emil-profilen; RunPod health fungerar men
+  kontoidentitet nekas. Ägande av effektiv runtime är därmed inte verifierat.
+  [Proveniens, editor och nästa steg](LOCAL-PRESENTATION-RUNTIME.md#verifierad-zip-export-och-minsta-integrationsförslag-16-oktober-2026)
+  skiljer lokal implementation från drift och visuell läppsynksacceptans.
 
 ## Avgränsad uppföljning, 16 oktober 2026
 
