@@ -302,7 +302,17 @@ Privata bevis i `arkiv/2026-10-15/admin-consolidation/`:
   CLI inloggad som `Jakeminator123` får 404 för
   `EmaCodeHero/croupier-lipsync-worker`. Åtkomst är alltså inte verifierad;
   404 skiljer inte saknat repo från saknad behörighet. Beskedet räcker
-  inte för aktivering. Kevins rapporterade lip-layer-fel är inte påvisat
+  inte för aktivering. Uppdatering 16 oktober: Jakobs uttryckligen angivna
+  zip är nu inventerad och båda avatarpaketens byte matchar referenshasharna.
+  Källarkivets commitmarkering är inte oberoende Git-proveniens; anonym
+  GHCR-läsning gav 401 och image-digest samt originalklippens hashbindning
+  saknas. Befintlig adapter gav 35 godkända isolerade kontraktsprov och ett
+  villkorat överhoppat browserprov. Det avgränsade
+  [integrationsförslaget](LOCAL-PRESENTATION-RUNTIME.md#verifierad-zip-export-och-minsta-integrationsförslag-16-oktober-2026)
+  återanvänder befintlig plan/PCM/transport, journal, providerprofiler och
+  medieregister. Ingen runtimekoppling, QA, driftsättning, ny visuell
+  acceptans eller aktivering ingår; saknad proveniens får inte ersättas av
+  antagna filnamn. Kevins rapporterade lip-layer-fel är inte påvisat
   i vår separata konsument med exakt plan-/kroppsrute-/hashmatchning.
 
 ## Avgränsad uppföljning, 16 oktober 2026

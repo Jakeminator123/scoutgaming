@@ -339,6 +339,26 @@ IAB-prov av samordnaren verifierar ny internal-admin-login och N1 → Partner �
 Lobby på samma main; det är inte N2/N3-rollbevis eller acceptans av rättningen.
 Produktionsverifiering av rättningen återstår; C4 hålls öppen.
 
+## Paow/Dragge: zip-export granskad, 16 oktober 2026
+
+Jakobs nya mandat gäller avgränsad lokal integration från Emils export;
+ny läppsynkaktivering och QA ingår fortfarande inte. Granskningen gjordes
+i separat arbetskopia från main `d064dce232caa9a8c7423fb23b33ca910488f5ae`.
+Båda avatarpaketen matchar angivna SHA-256. Källarkivet anger `fe1b55e…`
+i Git-archive-metadata, men saknar oberoende Git-proveniens. AVATARS-urvalet
+är kodverifierat; publicerad image-digest/fyra-avatarinnehåll är inte det.
+GHCR nekade anonym läsning med 401. Originalklippens hashbindning saknas.
+
+Befintlig plan-/PCM-/workertransport återanvänds enligt det konkreta
+[integrationsförslaget](LOCAL-PRESENTATION-RUNTIME.md#verifierad-zip-export-och-minsta-integrationsförslag-16-oktober-2026).
+35 isolerade kontraktstester passerar, 0 fel, ett Chrome/WebCodecs-prov
+överhoppat. Ingen ny runtimeadapter kopplas in på antagna medieidentiteter.
+Implementerat: exportgranskning och förslag. Driftsatt: inget. Ny visuell
+acceptans: ingen. Inga providerjobb, env-ändringar eller molnresurser;
+pod1/pod5 och Admin-agentens checkout är orörda. Inga gamla runtimevägar
+kan belagt tas bort ännu. Exakta källhashar och aktiveringshinder står i
+runtime-referensen; ingen ny tracker har skapats.
+
 ## Paow/Dragge: separat workertransport, 15 oktober 2026
 
 PR160:s två P2 från SAMORDNING är reproducerade och rättade: normal
