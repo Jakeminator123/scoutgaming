@@ -1,6 +1,6 @@
 # Aktuell handoff — Scoutgaming
 
-Uppdaterad 16 oktober 2026. Detta dokument beskriver pågående leverans.
+Uppdaterad 17 oktober 2026. Detta dokument beskriver pågående leverans.
 Teknisk migrationsstatus, öppna produktspår och Admin C1–C9 finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarguide:
 [lab/docs/README](../lab/docs/README.md). Ingen ny tracker finns.
@@ -19,8 +19,11 @@ Teknisk migrationsstatus, öppna produktspår och Admin C1–C9 finns i
   Dokumentationsagenten har lämnat över handoff och CLOUD-MIGRATION.
   Kodagenten har avstämt återstående källberoenden. Tavlan i `agent-talk`
   gäller per checkout; byt inte branch medan någon skriver.
-- Ingen mainmerge, produktionsdeploy, ny migration, ny molnresurs,
-  produktionsskrivning eller visuellt spelprov ingår i det pågående passet.
+- Jakob godkände 17 oktober merge av PR188 följt av PR190 och ordinarie
+  automatisk leverans. PR188 är mergad som
+  `620ab98198914d83c51e51d9eb28b192e18d9cf3` och integreras här i PR190.
+  PR190:s aktuella head, merge och kontroller visas i dess GitHub-länk ovan.
+  Inga nya migrationer, molnresurser eller visuella spelprov ingår.
 
 ## Levererat före detta pass
 
@@ -76,8 +79,9 @@ I denna sammanhållna fortsättning av PR190:
   branchlistor, dubblerade regler och historiska testgrindar är borttagna.
 - Ordinarie commit-hook verifierar integrationen; PR190:s checkar och
   leveransbeskrivning redovisar resultat för dess senaste fullständiga head.
-- Färsk läsande Vercel-/Render-/Neon-avstämning är klar enligt kvittot ovan;
-  PR190 är fortfarande en separat kod-/dokumentleverans utan mainmerge/deploy.
+- Läsande Vercel-/Render-/Neon-avstämning från 16 oktober gäller kvittot ovan.
+  Den säger inte att ett senare PR-head är driftsatt. Efter integrationen
+  kontrolleras CI på PR190:s nya head och sedan leveranserna på dess main-SHA.
 
 ## Testpolicy och bevisgränser
 
@@ -143,7 +147,7 @@ bevis för central isolering av varje lokal profil. Välj profil före prov.
 
 ## Nästa beslut
 
-PR190 och separat CI-PR188 lämnas för granskning; ingen merge/deploy ingår.
+PR188 är mergad; PR190 slutför den godkända leveransen efter integrations-CI.
 Välj därefter ett konkret produktspår ur CLOUD-MIGRATION. Nya auth-/rums-/
 publiceringsfel prioriteras efter reproduktion. Återskapa inte raderade
 demorum eller produktionsprovdata för en gammal lista.
@@ -153,7 +157,22 @@ demorum eller produktionsprovdata för en gammal lista.
 - [Handoff på migrationsbaseline b38c5657](https://github.com/Jakeminator123/scoutgaming/blob/b38c56572158d6deaeb6823b3a66bf5fbca8af7e/docs/JOHN-HANDOFF.md).
 - [CLOUD på samma baseline](https://github.com/Jakeminator123/scoutgaming/blob/b38c56572158d6deaeb6823b3a66bf5fbca8af7e/docs/CLOUD-MIGRATION.md).
 - [Strukturpassets kvitto på f066ba4d](https://github.com/Jakeminator123/scoutgaming/blob/f066ba4d713f5af0191b7ba09f4b299755ad55c3/docs/JOHN-HANDOFF.md).
-- [PR188](https://github.com/Jakeminator123/scoutgaming/pull/188), head
-  `1eb42c3e`, [full CI 38961755164](https://github.com/Jakeminator123/scoutgaming/actions/runs/38961755164)
-  grön: frivillig kartrapportering får inte ersätta produktprovets status.
-  Den är separat och inte mergad genom detta pass.
+- [PR188](https://github.com/Jakeminator123/scoutgaming/pull/188), granskat head
+  `70872b858074e9dc7cf87c1e2373360550a4adcd`,
+  [full CI 38976695835](https://github.com/Jakeminator123/scoutgaming/actions/runs/38976695835)
+  grön på Linux/Node 24.21. Normal POSIX-ledarexit 0/7 städar underprocesser,
+  även när de ignorerar SIGTERM, och bevarar slutstatus. Timeout 124 och
+  avbrott 130 består; frivillig kartrapportering ersätter inte produktprov.
+  Windows: 15 passerade, 5 POSIX-fall överhoppade. Kvittot gäller detta
+  PR188-head, inte PR190:s kombination, produktion eller visuell acceptans.
+
+## Automatisk leverans efter merge
+
+Läsande provideravstämning 17 oktober: Vercels GitHub-koppling har
+`main` som produktionsbranch, deploy-skapande aktiverat och automatisk
+koppling till produktionsdomäner. Render `croupier-v2` följer samma repos
+`main` med `autoDeploy=yes` och `autoDeployTrigger=checksPass`.
+En merge kan alltså publicera webb/Studio och, efter godkända kontroller,
+spelmotor automatiskt. GitHub CI, respektive providerbygge och faktisk
+live-version är separata resultat. Dessa PR:er lägger inte till någon ny
+schemaändring eller mediegenerering. Leveransstatus läses tillbaka efter merge.

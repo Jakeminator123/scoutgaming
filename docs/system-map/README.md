@@ -27,10 +27,12 @@ testkopplingar. De är **inte produktkrav, agentinstruktioner eller en lista
 kontrollera relevanta uppgifter mot aktuell kod. Gamla baslinjehashar ska
 inte styra vilka sidor eller tester produkten behöver.
 
-Kartans generering, evidens och uppladdning ska vara informativa. Ett
-kartfel får inte hindra att verkliga SQL-/HTTPS-prov körs. Dessa prov och
-deras eget skydd mot ändrade källor måste fortfarande rapportera riktiga
-fel. Kartans grön/gul/röd-status bevisar inte produktionsdrift, visuell
+Automatisk kartcapture, reporter, verifiering, generering och uppladdning
+är pensionerade från produktens CI och fullhook. Även kartverktygens två
+egna testfiler körs endast på uttrycklig begäran. CI kör det verkliga
+SQL-/omstarts-/HTTPS-provet direkt med `tools/studio-isolated-qa.mjs`;
+dess fel och eget skydd mot ändrade källor är fortsatt blockerande.
+Kartans grön/gul/röd-status bevisar inte produktionsdrift, visuell
 medieacceptans eller läppsynk. Försvunnen evidens är okänd täckning, inte
 ett godkänt prov.
 
@@ -42,3 +44,27 @@ spelregler, behörigheter, rumsisolering, register och medieidentitet.
 Vid uttrycklig kartgranskning finns läskommandot
 `node docs/system-map/verify.mjs --check --ref HEAD`. Vanligt produktarbete
 behöver inte läsa hela katalogen eller den genererade HTML-filen.
+Vid underhåll av själva kartverktyget körs dess tester separat:
+`node --test --test-concurrency=4 test/system-map.mjs test/system-map-verify.mjs`.
+
+## Regressionens tider
+
+`sh .githooks/pre-commit --full` kör samma åtta sviter som de separata
+CI-stegen. En svit kan reproduceras med exempelvis
+`sh .githooks/pre-commit-full database`. Tillåtna namn är `studio`, `admin`,
+`contracts`, `database`, `presentation`, `access`, `speech` och `gameplay`.
+Inom varje svit visar loggen gruppnamn, starttid, förfluten tid var 30:e
+sekund och slutstatus med millisekunder. Gruppnamnet utgår från första
+testfilen; kommandoraden i fullhook visar samtliga ingående filer.
+
+Varje testomgång använder högst fyra workers och har normalt 180 sekunders
+tidsgräns; Studio-testomgången har 240 sekunder och isolerad SQL/HTTPS
+360 sekunder. Timeout ger felkod 124 och avslutar enbart gruppens egna
+underprocesser. Sviten stoppar vid fel; nästa CI-svit körs ändå om körningen
+inte har avbrutits. Varje fel gör `dealer-regression` och slutgrinden röda.
+Den övergripande jobbtidsgränsen är fortsatt 30 minuter.
+
+Actions-sammanfattningen visar gruppresultat och tider. Artefakten
+`dealer-regression-timing-<sha>` innehåller JSONL med start- och slutposter;
+en start utan slutpost visar vilken grupp som kördes vid ett hårt avbrott.
+De äldre kartartefakterna skapas inte längre automatiskt.

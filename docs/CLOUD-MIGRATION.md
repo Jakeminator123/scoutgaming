@@ -1,6 +1,6 @@
 # Scoutgaming: målbild, migrationsstatus och kvarvarande arbete
 
-Uppdaterad 16 oktober 2026. Detta är den enda migrationsöversikten.
+Uppdaterad 17 oktober 2026. Detta är den enda migrationsöversikten.
 Aktuell arbetsbranch och nästa leverans finns i [handoffen](JOHN-HANDOFF.md).
 Begrepp ägs av [TERMINOLOGI](../lab/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
@@ -12,7 +12,7 @@ och driftsatt. Huvudagentens färska läsande avstämning 16 oktober bekräftar
 produktion på `b38c56572158d6deaeb6823b3a66bf5fbca8af7e` enligt kvittot nedan.
 Kodavstämningen fann inget konkret migrationsfel; produktionsvägarna är
 oförändrade sedan denna baseline. Den tekniska flytten är därmed avslutad.
-PR190:s dokument-/testförenkling är separat och ännu inte mergad/driftsatt.
+PR190:s dokument-/testförenkling är en separat leverans; aktuell merge- och driftsstatus följs i handoffen och PR:ens kontroller.
 Kvarvarande produktfunktioner, historiska felobservationer och visuella
 bedömningar redovisas nedan; de påstås inte vara färdigverifierade.
 
