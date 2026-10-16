@@ -491,14 +491,14 @@ setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('en-
 
 // ---------- state ----------
 const SEATS = 7;
-// Table tiers. Picking a table sets both the limits and the chip ladder, so a
-// VIP box is bet in 250K chips rather than 250 clicks of a 1K chip.
+// Only Classic is supported by the authoritative server and partner contract.
+// Keep the other presets unavailable until their limits are supported end to end.
 const TABLES = [
-  { id: 'classic', name: 'CLASSIC',     min: 5,    max: 2000,      chips: [1, 5, 10, 25, 50, 100, 500, 1000] },
-  { id: 'high',    name: 'HIGH ROLLER', min: 100,  max: 50000,     chips: [25, 100, 500, 1000, 5000, 10000, 25000] },
-  { id: 'vip',     name: 'VIP SALON',   min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000] },
+  { id: 'classic', name: 'CLASSIC',     available: true,  min: 5,    max: 2000,      chips: [1, 5, 10, 25, 50, 100, 500, 1000] },
+  { id: 'high',    name: 'HIGH ROLLER', available: false, min: 100,  max: 50000,     chips: [25, 100, 500, 1000, 5000, 10000, 25000] },
+  { id: 'vip',     name: 'VIP SALON',   available: false, min: 1000, max: 1000000,   chips: [500, 1000, 5000, 25000, 100000, 250000, 500000] },
 ];
-let table = TABLES[0];
+let table = TABLES.find(x => x.available);
 let CHIPS = table.chips;
 const LIMITS = { get min() { return table.min; }, get max() { return table.max; } };
 let balance = 1000;
@@ -835,7 +835,7 @@ $('#undo-btn').onclick = () => {
 $('#double-btn').onclick = () => {
   if (round || busy) return;
   const add = betTotal();
-  if (!add || add * 2 > balance + add - add || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max)) return;
+  if (!add || add * 2 > balance + add - add || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max || b.pp * 2 > LIMITS.max / 2 || b.tp * 2 > LIMITS.max / 2)) return;
   for (const [i, b] of bets.entries()) {
     if (b.main) undoStack.push({ box: i, field: 'main', value: b.main });
     if (b.pp) undoStack.push({ box: i, field: 'pp', value: b.pp });
@@ -935,11 +935,13 @@ function renderBets() {
   $('#total-bet').textContent = fmt(round ? round.hands.reduce((sum,h)=>sum+h.stake+(h.pp??0)+(h.tp??0)+(h.insured??0),0) : betTotal());
   $('#balance').textContent = fmt(balance);
   const staked = bets.filter(b => b.main > 0);
-  const playable = staked.length > 0 && staked.every(b => b.main >= LIMITS.min);
+  const withinLimits = bets.every(b => b.main <= LIMITS.max && b.pp <= LIMITS.max / 2 && b.tp <= LIMITS.max / 2);
+  const playable = staked.length > 0 && staked.every(b => b.main >= LIMITS.min) && withinLimits;
+  $('#deal-now').title = withinLimits ? '' : 'Classic supports up to 2,000 per main bet and 1,000 per side bet. Reduce or clear your selected bets.';
   $('#deal-now').disabled = !playable || !!round || busy;
   $('#clear-btn').disabled = betTotal() === 0 || !!round || busy;
   $('#undo-btn').disabled = !undoStack.length || !!round || busy;
-  $('#double-btn').disabled = !betTotal() || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max) || !!round || busy;
+  $('#double-btn').disabled = !betTotal() || betTotal() * 2 > balance || bets.some(b => b.main * 2 > LIMITS.max || b.pp * 2 > LIMITS.max / 2 || b.tp * 2 > LIMITS.max / 2) || !!round || busy;
   $('#max-btn').disabled = balance < LIMITS.min || !!round || busy;
   layoutDealControl();
 }
@@ -1319,7 +1321,7 @@ function showActions(seat) {
   }
 }
 
-$('#deal-now').onclick = async () => { if(round||busy)return; try { if(!await ensureLogin('Sign in to start this round. Your selected bets will stay in place.'))return; if(betTotal()>balance){hint('BALANCE','Add funds or reduce your bet.');renderBets();return;} if(!round&&!busy)void dealSequence(); } catch(e){hint('SIGN IN',e.message);} };
+$('#deal-now').onclick = async () => { if(round||busy)return; if(bets.some(b=>b.main>LIMITS.max||b.pp>LIMITS.max/2||b.tp>LIMITS.max/2)){hint('CLASSIC LIMIT','Reduce or clear your selected bets: 2,000 per main bet, 1,000 per side bet.');renderBets();return;} try { if(!await ensureLogin('Sign in to start this round. Your selected bets will stay in place.'))return; if(betTotal()>balance){hint('BALANCE','Add funds or reduce your bet.');renderBets();return;} if(!round&&!busy)void dealSequence(); } catch(e){hint('SIGN IN',e.message);} };
 
 async function beginDealingTake() {
   try {
@@ -1904,13 +1906,13 @@ $('#all-sides').onclick = () => {
 };
 
 function setTable(id) {
-  const next = TABLES.find(x => x.id === id);
+  const next = TABLES.find(x => x.id === id && x.available) ?? TABLES.find(x => x.available);
   if (!next || next === table || round || busy) return;
   table = next; CHIPS = table.chips;
   bets = bets.map(() => ({ main: 0, pp: 0, tp: 0 }));   // old stakes are off-limits here
   undoStack = [];
   buildChips();
-  document.querySelectorAll('#table-pick .tbl').forEach(b => b.classList.toggle('on', b.dataset.id === id));
+  document.querySelectorAll('#table-pick .tbl').forEach(b => b.classList.toggle('on', b.dataset.id === next.id));
   $('#limits').textContent = `${fmt(table.min)} \u2013 ${fmt(table.max)}`;
   hint(table.name, balance < table.min
     ? `min is ${fmt(table.min)} — add funds to play here`
