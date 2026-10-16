@@ -1,6 +1,6 @@
 # Scoutgaming: aktuell källa, drift och leverans
 
-## Aktuell registermigrering — 16 oktober 2026, 18:38 UTC
+## Aktuell registermigrering — 16 oktober 2026
 
 PR185 är mergad till `3165ab6df94c965aa3db1f986b8532a0f9260073` och
 driftsatt på Vercel och Render efter gröna PR-/main-kontroller. Det omfattar
@@ -16,18 +16,23 @@ Projekt, administration, social-policy och alla 79 befintliga medieposter
 24 saknade Blob-filer dokumenteras som redan saknade, utan återaktivering.
 
 Slutkoden kräver 012, tar bort produktens lokala katalog-/replikfallback och
-använder Neon för metadata samt Blob för mediebyte. Den ligger ännu på
-`codex/neon-authoritative-runtime`; slutlig merge/driftsättning återstår.
+använder Neon för metadata samt Blob för mediebyte. PR186 är mergad till
+`main` som `2ea080bc3e75cf0207e3c155f9b4018f6a8d301e`, 19:22 UTC,
+efter grön PR-CI `38953385914` inklusive riktig isolerad PostgreSQL,
+omstart, HTTPS och migrationsberedskap. Main-CI `38954442660` är också
+grön. Vercel production och Render är verifierat driftsatta på `2ea080bc`
+19:32 UTC, med health 200 och återlästa publika medier mot kataloghashar.
+Driftidentiteter och verifieringsgränser redovisas i handoffen.
 Den ordinarie startvägen går till den publicerade produkten. Endast explicit
 `--offline` skapar tillfälliga, isolerade testdata. Lokala authoring- och
 importunderlag är inte längre deployade register. Fullt import-/testkvitto,
 resursidentiteter och begränsningar finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
 Äldre avsnitt nedan beskriver respektive dåvarande läge, inte aktuella hinder.
 
-Avstämning 16 oktober 19:13 UTC: PR181/183/184 är stängda efter verifierad
-innehållsjämförelse mot mergad PR185; inga unika ändringar saknas. PR186
-är ännu omergad. Dess första CI avbröts under utdragen fullregression och
-måste ersättas av gröna kontroller före merge. Lokal fullregression på
+Avstämning 16 oktober 19:32 UTC: PR181/183/184 är stängda efter verifierad
+innehållsjämförelse mot mergad PR185; inga unika ändringar saknas. PR186:s
+första CI avbröts under utdragen fullregression; den nya gröna körningen
+ersatte detta kvitto före merge. Lokal fullregression på
 `d0456355`: 4 577 pass, 23 villkorade skip, inga fel. Preview är endast
 PR-granskning; leveransmålet är main → production.
 
