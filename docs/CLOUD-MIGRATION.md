@@ -66,16 +66,21 @@ av spelarcookien. Den avgränsade testfixen är nu applicerad enligt nästa
 kvitto; de äldre dokumentversionerna har inte ersatt aktuella handoffer.
 Plantexten är inget merge- eller deploybeslut för PR165.
 
-**PR165 under fortsatt arbete, 16 oktober:** aktuell main `32ffbbaf` har
-förenats utan konflikter i befintliga `codex/n1-player-session`; föreningen
-är ännu inte committad. Den bevarade HTTPS-testfixen är applicerad.
+**PR165 lokalt verifierad, 16 oktober:** main `32ffbbaf` är förenad utan
+konflikter i befintliga `codex/n1-player-session`, kodcommit `c43fef1a`.
+Den bevarade HTTPS-testfixen är applicerad.
 En missad redirect i äldre `/play` är rättad med faktiskt TSX-routeprov
 som föll före ändringen; 24 riktade frontendprov passerar efteråt.
 Oberoende granskning fann också att en redan auktoriserad callback kan
 utfärda en giltig spelarsession efter lyckad N1-utloggning. Fyra
 deterministiska regressioner i `test/account-credentials.mjs` reproducerar
 det i SQLite/async-kontrakt, både före och efter sessionsskapandet.
-PR165 är därför inte leveransklar och inget nytt head har pushats.
+Rättningen passerar dessa fyra regressioner. Hela kodändringen har
+granskats på exakt `c43fef1ae8e8451cf9e7f3945d968786a68a21d3`, utan
+blockerande fynd. Lab-bygget verifierar 97 byggspår; ordinarie fullhook
+ger 3 971 pass, 9 villkorade skip och 0 fel. De sex inloggningsproven
+inklusive isolerade Chrome-prov passerar. Faktisk SQL-/omstarts-/HTTPS-CI
+ska fortfarande kvitteras på slutligt PR-head före mergebeslut.
 
 **Valt sessionsbeteende enligt genomförandemandatet:** N1-utloggning
 återkallar även kontots BO-härledda spelarsessioner genom befintlig
@@ -163,8 +168,8 @@ paketrevision följer nu spelarens diagnostik. Inga mediefiler ändras.
 Fem nya regressioner föll på tidigare kod. Efter rättning passerar samtliga
 80 prov i `test/local-presentation.mjs`, och oberoende kodgranskning har inga
 blockerande fynd. Lab-build verifierar 97 byggspår. Commitkontrollen
-passerar 3 947 prov med 9 villkorade skip och noll fel; de valfria
-browserfixturerna ingick bland skip och är inte browseracceptans.
+passerar 3 947 prov med 9 villkorade skip och noll fel. Browser- och
+SQL-acceptans redovisas separat från detta lokala regressionskvitto.
 PR178 har granskat sluthead `556050b6915a88e0453d87d9881df85bc03ed128`.
 PR-CI `38897489445` är grön, inklusive faktisk isolerad SQL/omstart/HTTPS
 med kvittot `isolated-studio-sql-restart-https: passed`. PR178 är mergad

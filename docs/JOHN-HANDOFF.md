@@ -10,7 +10,7 @@ avslutad enligt kvittot nedan. PR165 är nästa avgränsade rättning; ny rörli
 läppsynk och QA-utbyggnad förblir pausade.
 
 PR165 fortsätter nu i sin befintliga branch i huvudcheckouten. Main
-`32ffbbaf` är förenad utan konflikter men ännu inte committad; cookie-
+`32ffbbaf` är förenad utan konflikter i kodcommit `c43fef1a`; cookie-
 testfixen från snapshoten och `/play`-returen är rättade. Fyra isolerade
 negativa prov visade ett verkligt logout/callback-race. Enligt Jakobs mandat
 väljs nu befintlig N1-epoch även för BO-härledda spelarsessioner: logout
@@ -18,8 +18,10 @@ väljs nu befintlig N1-epoch även för BO-härledda spelarsessioner: logout
 De fyra regressionerna passerar lokalt. Äldre omärkta BO-/CRAIG-sessioner
 kräver engångs-återinloggning eftersom deras ursprung inte kan särskiljas;
 konton, saldon, historik och nya vanliga/partner-inloggningar bevaras.
-Inget nytt PR165-head är pushat. Slutgranskning och faktisk SQL-/omstarts-/
-HTTPS-CI återstår; merge/deploy är fortfarande separat. Se CLOUD-MIGRATION.
+Kodcommit `c43fef1a` är oberoende slutgranskad. Labbygge: 97 byggspår;
+ordinarie fullhook: 3 971 pass, 9 villkorade skip, 0 fel. Faktisk
+SQL-/omstarts-/HTTPS-CI ska kvitteras på slutligt PR-head; merge/deploy
+är fortfarande separat. Se CLOUD-MIGRATION och PR165:s leveranskvitto.
 Oberoende kodgranskning har inga blockerande fynd. Blandade runtimeversioner
 eller rollback kan kräva ytterligare inloggning eftersom äldre kod inte
 förstår de nya sessionsstämplarna; databasschemat är oförändrat.
