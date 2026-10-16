@@ -471,21 +471,24 @@ Render-motorn vägrar starta om någon är `1`, `ops/cloud/config.mjs`). Inga
 formatfel (radbrytningar, citattecken, blanksteg) hittades i läsbara variabler.
 Sensitive-värdens form går inte att läsa tillbaka och är okontrollerad.
 
-Lokala env-filer (konsoliderade 8 oktober 2026). Vercel production är källan
-för delade nycklar. Förnya lokalt med `vercel env pull --environment=production
---yes <tempfil>` och slå ihop; systemnycklar `VERCEL_*`, `NX_*`, `TURBO_*` tas
-bort. Nycklar som bara finns lokalt (OpenClaw-agent/modell/tal-URL/token,
-`LAB_API_TOKEN`, `LAB_PARTNER_*`, `BETTALOTTO_*`, `ELEVENLABS_*`) behålls från
-den lokala filen. Placering: rotens `.env.local` och `lab/.env.local` har samma
-delade värden; rotens `ELEVENLABS_API_KEY` är avsiktligt spelserverlokal.
-`open-claw/lab/deploy/local-connection.mjs` söker generated-speech-filen
-i standardordningen och läser cloud-storage-filen endast under dess flagga.
-Cloud-activation-filen ingår inte i laddaren. Konsolideringen 14 oktober ovan
-beskriver vilka lokala filer som finns kvar och den faktiska värdeprioriteten.
-Äldre
-kopior sparas under `/random/env-backup-*/` (Git-ignorerat). Vid avvikelse
-mellan lokal fil och Vercel för samma namn vann Vercel (gällde API-nycklar för
-Cartesia, OpenAI, Gemini, RunPod, OpenClaw och `LAB_REMOTE_*`).
+**Historik: env-konsolideringen 8 oktober 2026.** Då hämtades Vercel
+production till en temporär fil och delade värden slogs ihop med lokala
+verktygsnycklar. Root/Lab fick gemensamma värden; Vercel gavs företräde vid
+konflikt. Äldre backupplatser benämndes `/random/env-backup-*/`.
+Detta beskriver den tidigare åtgärden, inte dagens uppdateringsrutin.
+
+**Gällande rutin, förtydligad 16 oktober:** använd
+[den aktuella loader- och profilkartan](#aktuell-avgränsning-15-oktober-2026-kväll)
+och besluten per namn ovan. Root `.env.local`, Lab, cloud-storage och Emil
+har olika konsumenter och får inte slås ihop genom generell env-pull.
+`LAB_PARTNER_*` har ersatts i de aktiva profilerna av kanoniska namn och ska
+inte återinföras från äldre kopior. Kompatibel inläsning finns ännu kvar i
+`partner-observer.mjs`. Startaren söker generated-speech-filen i sin dokumenterade
+ordning; cloud-storage kräver opt-in och cloud-activation ingår inte.
+Återställningskopior hör till rotens kanoniska `arkiv/<datum>/<ursprunglig-sökväg>`
+enligt [AGENTS.md](../AGENTS.md), och väljs aldrig automatiskt som env-källa.
+Äldre kopiors existens, innehåll eller flytt verifieras inte genom denna
+dokumenträttning; aktuell återställning kräver jämförelse mot avsedd profil.
 
 **Verifiering 11 oktober 2026:** Kopplingarna i huvudkopian och arbetskopian 74b4 pekar nu på team `scoutgaming`, `team_Scxorb9qtZHjNae1YEQnFCaT`, och projekt `prj_VwxGpN2kOJ5gXStgM9wMWE0EbULD`. Root/Lab har identiska lokala env-filer med 56 namn, med privata backuper av tidigare filer och länkar. Vercel production-pull returnerade 59 namn men bara 29 icke-tomma värden; de andra 30 kan inte användas som bevis på hemlighetsparitet. Tomt molnsvar ersatte inte sju befintliga lokala värden. Andra otillgängliga värden lämnades osatta, och systemnycklar samt oanvända LLM_LOGIN_* togs inte med i de aktiva filerna. De privata snapshotsen för alla tre miljöerna och jämförelsekvittot finns under lab/data/platform-private/cloud-sync-audit; de ska inte läggas i Git. Lokal utveckling fortsätter via den isolerade startaren, vars barn saknar produktions-game-URL och postgresläge. Full produktions-env lokalt och fungerande modell-/medieanrop är inte verifierade. Vercel-pluginens gamla scope ger 403 i scoutgaming; CLI har verifierad åtkomst. Neon-ägaren är nu liveverifierat "Vercel: scoutgaming", `org-green-butterfly-00780270`; organisationen i stycket nedan är den historiska uppgiften före flytten.
 

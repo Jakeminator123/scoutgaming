@@ -5,17 +5,34 @@
 Jakob har aktiverat målet att avsluta Admin och intern migrering, samla
 konfiguration och radera verifierat ersatta delar. Arbetsströmmen fortsätter
 i huvudcheckouten; aktuell plan och bevis finns överst i CLOUD-MIGRATION.
-Workflow-/dokumentfel som hindrar avslutet ingår. PR165, ny rörlig läppsynk
-och QA förblir pausade under Admin-etappen.
+Workflow-/dokumentfel som hindrar avslutet ingår. Admin-flödesetappen är
+avslutad enligt kvittot nedan. PR165 är nästa avgränsade rättning; ny rörlig
+läppsynk och QA-utbyggnad förblir pausade.
 
 Dragan-rättningen på `codex/dragan-idle-recovery` ger den exakta grundloopen
 ett begränsat återförsök efter stall, räknar faktisk tidsprogression och
 hindrar omspelning av standardfilm efter kort-/talstall. 80 fokuserade prov
-passerar efter fem reproducerade fel på tidigare kod. Oberoende kodgranskning
-är klar och första fullhook har noll fel; slutliga kontroll- och
-drift-/browserkvitton återstår. Den befintliga
-produktionsfliken visade fungerande grundloop vid passiv kontroll; detta är
-inte acceptans av den nya koden eller bevis för tidigare stoppets rotorsak.
+passerar efter fem reproducerade fel på tidigare kod. Granskat sluthead
+`556050b6` passerar fullhook (3 947 pass, 9 villkorade skip, 0 fel) och
+PR-CI `38897489445`, inklusive faktisk SQL/omstart/HTTPS. PR178 är mergad
+till main `b92de810`; huvudcheckoutens main är synkad med egna ändringar
+bevarade. Main-CI `38898316642` är grön med faktisk SQL/omstart/HTTPS.
+Vercel `dpl_EXW7cYGriaVD5VT1gTpfgcXavVoZ` är READY på www och Render
+`dep-db9191eq1p3s738qvj30` är live med verifierad version/hälsa på samma SHA.
+Browserprovet verifierar exakt grundloop/hash, paketrevision 4 och två hela
+sammanhängande loopar utan varning. Det bevisar normal uppspelning;
+stallåterhämtningen provas av regressionerna. Tidigare produktionsstoppets
+rotorsak är fortfarande obestyrkt. Talrepetition slutfördes inte och är
+uttryckligen inte godkänd; ingen publicering eller medieacceptans ändrades.
+
+Jakob har accepterat Spelbolag → Rum → förhandsvisningen med svaret
+"Det fungerar bra". Detta är användaracceptans för flödet, inte ett kvitto
+för varje spel/paket eller ny läppsynk. PR165:s tre tidigare okommittade
+filer är verifierat bevarade i Git-snapshot `7704c777`, med exakt PR-head
+`34281e4c` som parent; inget har återställts eller körts därifrån.
+Den avgränsade Admin-flödesetappen är avslutad. PR165:s N1-rättning kan nu
+tas upp enligt befintligt mandat; merge/deploybeslutet för den PR:n är
+fortfarande separat. QA-utbyggnad och ny rörlig läppsynk förblir pausade.
 
 ## Uppföljning — Classic och nästa användarprov, 16 oktober 2026
 

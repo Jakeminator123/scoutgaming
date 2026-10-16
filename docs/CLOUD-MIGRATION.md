@@ -3,7 +3,8 @@
 ## Aktiv slutplan — avstämning 16 oktober 2026
 
 Jakob har aktiverat målet i samma chatt och befintliga huvudcheckout.
-Dragan-felsökning och användarprovet av Spelbolag → Rum är prioriterade nu.
+Dragan-grundloopens rättning och användarprovet av Spelbolag → Rum är
+kvitterade nedan. PR165:s avgränsade N1-rättning är nästa leverans.
 Workflow-, dokumentations- och rutinfel som hindrar avslutet ingår; separat
 QA och ny rörlig läppsynk återstartas inte. Underagenter används för
 avgränsad granskning och åtskilda dokumentfiler, med en leveransström.
@@ -36,12 +37,29 @@ Automatiska PR-previews är inte en ny accepterad skriv-/testmiljö.
 En leveransström används. Läsande granskningar och tydligt åtskilda
 ändringar kan parallelliseras; gemensam integration och merge sker i ordning.
 
+**Användaracceptans 16 oktober:** Jakob svarade "Det fungerar bra" på provet
+Spelbolag → Rum → förhandsvisningen med bakgrund/dealer/bord. Detta kvitterar
+det efterfrågade användarflödet. Dragan-rättningens kvitto nedan gäller
+grundloopen; svaret är inte läppsynkacceptans eller ett separat prov av
+varje spel/paket.
+
+**Admin-flödesetappen avslutad 16 oktober:** det avgränsade bolag/rumsflödet
+är användaraccepterat och Dragan-grundloopens rättning är levererad och
+verifierad enligt kvittot nedan. Äldre öppna C1–C9-delprov och tal-/medie-
+acceptans blir inte automatiskt klara. Nästa leverans är PR165:s befintliga
+N1-rättning, följd av kontrolluckorna och konsolideringen i tabellen.
+
 Efter accepterad Admin-etapp tas PR165 upp före slutkvittot för den interna
 migreringen: läs aktuell PR/head och lokalt bevarandeunderlag, slutför endast
 kvarvarande N1-rättning och kräv faktisk grön SQL-/omstarts-/HTTPS-CI samt
-granskning av slutligt head. Den äldre arbetskopian saknas nu; dess tidigare
-okommittade filer måste lokaliseras eller redovisas som saknade innan arbetet
-fortsätter. Plantexten är inget merge- eller deploybeslut för PR165.
+granskning av slutligt head. Den äldre arbetskopian saknas, men dess tre
+okommittade filer är verifierat bevarade i Git-snapshot
+`7704c7775c5f079dd726de2f01e8022ccd56e0e2`, vars parent är PR-head
+`34281e4c2beed3490bdfb21f49a1787cd6032818`. Snapshoten ändrar endast
+`test/studio-cutover-integration.mjs`, denna tracker och JOHN-HANDOFF.
+Teständringen bevarar flera `Set-Cookie` separat och kontrollerar rensning
+av spelarcookien. Inget har återställts eller körts från snapshoten.
+Plantexten är inget merge- eller deploybeslut för PR165.
 
 ### Första rättningen: Dragan-grundloop
 
@@ -54,18 +72,47 @@ paketrevision följer nu spelarens diagnostik. Inga mediefiler ändras.
 
 Fem nya regressioner föll på tidigare kod. Efter rättning passerar samtliga
 80 prov i `test/local-presentation.mjs`, och oberoende kodgranskning har inga
-blockerande fynd. Lab-build verifierar 97 byggspår. Första fullhook passerar
-3 933 prov med 23 villkorade skip och noll fel; browsermodulen aktiveras för
-commitkontrollen. Slutlig CI, drift och browseracceptans är ännu inte
-kvitterade här.
+blockerande fynd. Lab-build verifierar 97 byggspår. Commitkontrollen med
+befintlig browsermodul passerar 3 947 prov med 9 villkorade skip och noll fel.
+PR178 har granskat sluthead `556050b6915a88e0453d87d9881df85bc03ed128`.
+PR-CI `38897489445` är grön, inklusive faktisk isolerad SQL/omstart/HTTPS
+med kvittot `isolated-studio-sql-restart-https: passed`. PR178 är mergad
+till main `b92de8109fee047a0afeab91bb4c9b5d8dcd3db3`. Huvudcheckoutens
+main är snabbspolad till samma commit och egna ändringar är bevarade.
+Main-CI `38898316642` är också grön, inklusive samma faktiska SQL-/omstarts-/
+HTTPS-prov. Vercel `dpl_EXW7cYGriaVD5VT1gTpfgcXavVoZ` är READY på denna SHA
+med www/apex tilldelade. Render `dep-db9191eq1p3s738qvj30` är live på samma
+SHA i Jakob's workspace. Publika `/__cloud/version` bekräftar versionen och
+`/__cloud/health` svarar 200/ok. Inga medie-/paket-/miljöändringar ingår.
 
 Passiv läsning av den öppna produktionsfliken 16 oktober identifierade
 Dragan-klippet `2f3955b0-b450-4cc2-a9f5-ac80f10abd2f`, "Kevin V2 · andning",
 i rum `room-c0031e58-9985-b851-d9a9-4ee419b35ff0`, publicerad version 4.
 Klippet spelade vid kontrollen utan varning; det tidigare produktionsstoppets
-rotorsak är därför fortfarande obestyrkt. Ingen omladdning eller spelhandling
-gjordes i användarens flik. Exakt hash och två sammanhängande prov av den nya
-versionen återstår för browserkvittot.
+rotorsak är därför fortfarande obestyrkt. Den första passiva kontrollen
+ändrade inte användarens flik.
+
+Efter deployment och kontroll att ingen insats/runda pågick öppnades samma
+spel med `rehearsal=1`. Den nya spelarens DOM bekräftar paketrevision 4,
+projektrevision `studio-6de53e71-e7ec-46fa-9e60-e49d2b68a3ef` och grundloopens
+SHA-256 `2b8d6ea7829bde6212f6145038569747a389c5e20166b3ea08fc26efda81c9e3`.
+16 tidsavläsningar över 15,5 sekunder visar tre loopövergångar och därmed
+två hela sammanhängande loopar mellan övergångarna. Filmlängden är
+5,041667 sekunder; faktisk tid går framåt, filmen är inte pausad och
+statusfältet är tomt på varningar. Detta provar normal uppspelning och
+återgång efter ett talförsök; stallåterhämtningen är verifierad av de
+automatiska negativa proven, inte av ett framkallat produktionsfel.
+
+Talrepetition av `greeting` och den tidigare dokumenterade `goodluck`
+slutfördes inte och är uttryckligen **inte godkänd**. Grundloopen återkom
+efter båda försöken. Det äldre kvittot i Tal-avsnittet anger fyra
+registrerade Dragan-filer utan verifierat godkännande; någon exakt ny
+orsaksdiagnos av talavvisningen görs inte i detta grundloopskvitto.
+Ingen fil godkändes, publicering ändrades, talgenerering startades eller
+insats lades. Saldot var oförändrat och den vanliga spelfliken återställdes.
+Privata bevis i `arkiv/2026-10-15/admin-consolidation/`:
+`dragan-recovery-idle-samples.json`, `dragan-recovery-live.jpg` och
+`dragan-recovery-rehearsal.jpg`.
 
 ### Vad genomgången faktiskt verifierade
 
@@ -95,8 +142,9 @@ versionen återstår för browserkvittot.
   `ai-system-map`, `moving-lipsync-runtime` och `efterarbete`.
   `admin-document-navigation`, `n1-player-session` och `pr91-integration`
   finns inte kvar på tidigare sökvägar. N1-/stabiliseringsgrenarna finns
-  fortfarande; detta bevisar inte var äldre okommittade filer bevarats.
-  Ingen arbetskopia återskapas automatiskt i plansteget.
+  fortfarande. De tre PR165-filerna är senare verifierade i snapshoten ovan;
+  andra arbetskopiors privata eller okommittade material omfattas inte av
+  det beviset. Ingen arbetskopia har återskapats.
 - Emils citerade besked innehåller platshållare/alternativ och en hopslagen
   image-/filadress. Commit och två avatarhashar har korrekt hexlängd, men
   byte och image-digest är inte verifierade. Både GitHub-connectorn och
