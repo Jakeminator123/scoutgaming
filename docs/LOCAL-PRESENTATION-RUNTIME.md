@@ -1354,10 +1354,21 @@ Neon äger dealerposter, klippmetadata och projektkopplingar; privat Blob äger
 mediebytes. Native Studio läser gemensam driftmetadata från
 media/catalog/presentation.json och media/catalog/legacy.json tillsammans med
 media/layout.json och media/blob-index.json. Ingen lokal dealermapp skapas när
-en dealer registreras. `runtime/indexed` är borta utom green-speak-talparens
-34 MP3. Kvarvarande
-`runtime/presentation` och övriga dealer-mappar behövs inte som reserv för
-Studios molnuppspelning.
+en dealer registreras. Uppgifterna ovan om borttagen `runtime/indexed`-bank
+avser Git och byggpaket, inte fysisk radering i Blob. Där finns fortfarande
+äldre indexerade filer för Astrid, Mei och Vera. Replikbibliotekets metadata
+ligger dessutom som egna JSON-objekt i Blob, utanför Neons mediaregister.
+Kvarvarande lokala `runtime/presentation` och övriga dealer-mappar behövs
+inte som reserv för Studios molnuppspelning.
+
+Aktuell fysisk struktur, kopplingen dealer → video → variant och avstämningen
+mot samtliga sex databaser på Neons aktiva main-branch finns i
+[Blob och Neon](storage/BLOB-NEON.md). Kontrollen 16 oktober 2026 omfattar
+1 710 objekt och 79 produktionsklipp: alla registerfiler finns; 12 äldre
+replikposter för `paow`/`paow-v2` pekar däremot på 24 saknade mediafiler.
+Den fullständiga filförteckningen skiljer bibliotek, aktuella referenser,
+historik, byteidentiska kopior och filer utan hittad referens. Dessa klasser
+ger inget tillstånd att radera material.
 tools/build-runtime-media-catalog.mjs bygger katalogen explicit;
 --check och isolerade tester med helt frånvarande dealer-mappar verifierar den.
 Saknad eller felaktig katalog ersätts aldrig med tyst tomt register.

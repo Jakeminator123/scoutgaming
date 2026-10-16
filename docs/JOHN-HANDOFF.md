@@ -1,5 +1,24 @@
 # Aktuell handoff — Scoutgaming
 
+## Läsande Blob/Neon-avstämning, 16 oktober 2026
+
+På Jakobs uppdrag har hela privata Bloblagret jämförts med mediareferenser i
+samtliga sex databaser på Neons aktiva main-branch, inklusive 208 historikrader,
+sex operatörspaket, QA och den äldre katalogen. Blob- och databasinventeringen
+var stabil vid omläsning. Alla 79 produktionsklipp och sex QA-registerposter
+har sina filer; 12 äldre `paow`/`paow-v2`-replikposter saknar 24 ljud-/videofiler,
+bekräftat med privat GET. Fem dubblettgrupper är hashverifierade. 30 registrerade
+klipp saknar explicit aktuell prodreferens; ytterligare 602 blobobjekt saknar
+referens i de undersökta källorna, utan slutsats om raderingsbarhet.
+
+[Strukturscheman, metod och resultat](storage/BLOB-NEON.md) samt
+[full filförteckning](storage/BLOB-NEON-INVENTERING-2026-10-16.md) är sparade.
+Äldre formulering om `runtime/indexed` är förtydligad till Git/byggpaket;
+filer finns kvar i Blob. Inga produktdata, molnresurser eller inställningar
+ändrades. Arkiverad Neon-branch, externa konsumenter och faktisk uppspelning
+ingår inte. Saknade äldre replikpar och oklara referenser återstår för separat
+bedömning; ingen reparation eller städning är utförd.
+
 ## Aktivt avslut — Dragan och Admin, 16 oktober 2026
 
 Jakob har aktiverat målet att avsluta Admin och intern migrering, samla
