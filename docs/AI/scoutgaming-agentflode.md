@@ -58,8 +58,11 @@ avvisas. Guiderna för [runtime](../LOCAL-PRESENTATION-RUNTIME.md),
 [miljövariabler](../ENVIRONMENT-VARIABLES.md) och
 [användarsteg](../../lab/docs/README.md) är uppdaterade i sina befintliga filer.
 Huvudagentens kvitto 16 oktober 18:38 UTC bekräftar migration 012 och återläst
-katalog-/svarsimport. Produktens runtimebyte från bridgeversion `3165ab6`
-och driftacceptans återstår och följs enbart i befintlig tracker och handoff.
+katalog-/svarsimport. Runtimebytet från bridgeversion `3165ab6` är därefter
+mergat i PR186 (`2ea080bc`) efter grön SQL-/HTTPS-CI och driftsatt på både
+Vercel och Render. Versions-/hälsokontroll och publika mediehashar är
+verifierade 19:32 UTC. Kvarvarande användaracceptans och produktarbete
+följs enbart i befintlig tracker och handoff.
 Detta dokumentationskvitto räknas inte som en ny molnverifiering.
 
 Från 16 oktober 2026 kör lokal commit kontroller av ändrade filer och
