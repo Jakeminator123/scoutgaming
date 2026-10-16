@@ -138,7 +138,7 @@ test('native administration preserves its standalone shell and embeds without a 
     assert.equal(view.roomsHref, undefined);
     assert.equal(view.companyTeamLabel, undefined);
   }
-  assert.equal(views[2].roomsHref, '/admin/rooms?view=registered');
+  assert.equal(views[2].roomsHref, '/admin/rooms');
   assert.equal(views[2].companyTeamLabel, 'Bolag & team');
 });
 
@@ -161,7 +161,7 @@ function status(expected) { return error => error?.status === expected; }
 const actor = role => ({ username: 'owner@example.test', role });
 const allActions = contract.STUDIO_ADMIN_ENDPOINTS.map(endpoint => `${endpoint.method} ${endpoint.action}`);
 const available = (method, action) => allActions.includes(`${method} ${action}`);
-const savedDealers = ['vera','astrid','amira','mei','johanna'].map(id => ({ id, label: id[0].toUpperCase() + id.slice(1) }));
+const savedDealers = ['elin','astrid','nora','saga','linnea'].map(id => ({ id, label: id[0].toUpperCase() + id.slice(1) }));
 const savedGameLanes = [{schemaVersion:1,id:'mobile-phone',label:'Sparad Astrid',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}];
 const config = () => ({
   savedDealers, gameLane:'mobile-phone', gameLanes:structuredClone(savedGameLanes),
@@ -172,7 +172,7 @@ const config = () => ({
 });
 function resources() {
   return {
-    overview: { payload: { players: 2, rooms: config().rooms, dealers: [{ key: 'vera' }] } },
+    overview: { payload: { players: 2, rooms: config().rooms, dealers: [{ key: 'elin' }] } },
     config: { payload: config() },
     players: { payload: { administration: true, players: [
       { id: 'player-active', name: 'Active', balance: 1000, currency: 'SEK', status: 'active', passwordChangeAllowed: true },
@@ -199,9 +199,9 @@ test('administration notices use the enclosing room destination and label team c
     const original = nodes(h.render(props), node => node.type === 'a' && node.props.href === href)[0];
     assert.ok(original, group);
     assert.equal(original.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team');
-    const embedded = h.render({ ...props, roomsHref: '/admin/rooms?view=registered', companyTeamLabel: 'Bolag & team (äldre editor)' });
+    const embedded = h.render({ ...props, roomsHref: '/admin/rooms', companyTeamLabel: 'Bolag & team (äldre editor)' });
     const links = nodes(embedded, node => node.type === 'a');
-    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms?view=registered' : '/control/companies'));
+    const target = links.find(node => node.props.href === (group === 'tables' ? '/admin/rooms' : '/control/companies'));
     assert.ok(target, group);
     assert.equal(target.props.children, group === 'tables' ? 'Spelrum & publicering' : 'Bolag & team (äldre editor)');
     if (group === 'tables') {
@@ -1052,7 +1052,7 @@ test('password command is single dispatch, never stores the password and does no
 const laneCreateProps = overrides => ({ savedDealers, lanes:savedGameLanes, activeDealer:'astrid', revision:'studio-v1', busy:false, command(){ throw Error('unexpected write'); }, ...overrides });
 test('technical lane creation shows saved dealer labels and no free dealer or lane ID in the ordinary form', () => {
   const h=harness(), tree=h.renderLane(laneCreateProps()), html=renderToStaticMarkup(tree);
-  assert.match(html, /Lägg till teknisk spelkonfiguration/);assert.match(html, /<select name="dealer"/);assert.match(html, /<option value="johanna">Johanna/);
+  assert.match(html, /Lägg till teknisk spelkonfiguration/);assert.match(html, /<select name="dealer"/);assert.match(html, /<option value="linnea">Linnea/);
   assert.match(html, /<option value="astrid" selected="">Astrid/);
   assert.doesNotMatch(html, /<input[^>]*name="(?:id|dealer|restoreId)"/);
   assert.match(html, /Återställ ett tidigare tekniskt ID/);assert.equal(h.generatedKeys,0,'rendering must not mint IDs');
@@ -1064,12 +1064,12 @@ test('technical lane creation shows saved dealer labels and no free dealer or la
 
 test('automatic technical ID is generated once, ignores unsolicited restore fields and survives retry until successful reset', () => {
   const h=harness(), calls=[], props=laneCreateProps({command:(action,body)=>calls.push({action,body})});
-  let tree=h.renderLane(props); const form=new Form({name:'Johannas miljö',dealer:'johanna',restoreId:'unrequested-override'});
+  let tree=h.renderLane(props); const form=new Form({name:'Linneas miljö',dealer:'linnea',restoreId:'unrequested-override'});
   nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
   tree=h.renderLane(props);nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
   assert.equal(h.generatedKeys,1);assert.equal(calls.length,2);assert.equal(calls[0].body.definition.id,calls[1].body.definition.id);
   assert.match(calls[0].body.definition.id,/^lane-[a-f0-9-]+$/);assert.notEqual(calls[0].body.definition.id,form.fields.restoreId);
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),{action:'game-lanes/create',body:{definition:{schemaVersion:1,id:'lane-10000000-0000-4000-8000-000000000001',label:'Johannas miljö',renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'},expectedRevision:'studio-v1'}});
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),{action:'game-lanes/create',body:{definition:{schemaVersion:1,id:'lane-10000000-0000-4000-8000-000000000001',label:'Linneas miljö',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'},expectedRevision:'studio-v1'}});
   nodes(tree,node=>node.type==='form')[0].props.onReset();tree=h.renderLane(props);
   nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
   assert.equal(h.generatedKeys,2);assert.notEqual(calls[2].body.definition.id,calls[0].body.definition.id);
@@ -1079,13 +1079,13 @@ test('exact prior ID restoration is explicit, validated, scoped to saved dealers
   const h=harness(),calls=[],props=laneCreateProps({command:(action,body)=>calls.push({action,body})});
   let tree=h.renderLane(props);nodes(tree,node=>node.type==='input'&&node.props.type==='checkbox')[0].props.onChange({target:{checked:true}});
   tree=h.renderLane(props);assert.equal(nodes(tree,node=>node.type==='input'&&node.props.name==='restoreId').length,1);
-  for(const fields of [{name:'Repair',dealer:'foreign',restoreId:'old-room-lane'},{name:'Repair',dealer:'amira',restoreId:'mobile-phone'},{name:'Repair',dealer:'amira',restoreId:'../../bad'}]){
+  for(const fields of [{name:'Repair',dealer:'foreign',restoreId:'old-room-lane'},{name:'Repair',dealer:'nora',restoreId:'mobile-phone'},{name:'Repair',dealer:'nora',restoreId:'../../bad'}]){
     nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:new Form(fields)});
   }
   assert.equal(calls.length,0);assert.equal(h.generatedKeys,0);
-  const form=new Form({name:'Återställd Amira',dealer:'amira',restoreId:'room-lane-9c162457d38b353be86e2731'});
+  const form=new Form({name:'Återställd Nora',dealer:'nora',restoreId:'room-lane-9c162457d38b353be86e2731'});
   nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
-  assert.equal(calls.length,1);assert.equal(calls[0].body.definition.id,form.fields.restoreId);assert.equal(calls[0].body.definition.mediaCollection,'amira-presentation');
+  assert.equal(calls.length,1);assert.equal(calls[0].body.definition.id,form.fields.restoreId);assert.equal(calls[0].body.definition.mediaCollection,'nora-presentation');
   tree=h.renderLane({...props,busy:true});nodes(tree,node=>node.type==='form')[0].props.onSubmit({preventDefault(){},currentTarget:form});
   assert.equal(calls.length,1);
 });
@@ -1171,7 +1171,7 @@ test('technical creation keeps an empty or unselected dealer registry explicit',
   assert.equal(nodes(tree,node=>node.type==='form').length,0);assert.match(renderToStaticMarkup(tree),/Inga dealers har registrerats/);
   assert.equal(empty.generatedKeys,0);
   for(const activeDealer of [undefined,'missing']){
-    const h=harness(),calls=[],p=laneCreateProps({savedDealers:[{id:'johanna',label:'Johanna'}],activeDealer,command:(...args)=>calls.push(args)});
+    const h=harness(),calls=[],p=laneCreateProps({savedDealers:[{id:'linnea',label:'Linnea'}],activeDealer,command:(...args)=>calls.push(args)});
     const unselected=h.renderLane(p),dealer=nodes(unselected,node=>node.type==='select'&&node.props.name==='dealer')[0];
     assert.equal(dealer.props.defaultValue,'');
     assert.match(renderToStaticMarkup(unselected),/<option value=""[^>]*selected=""[^>]*>Välj dealer<\/option>/);

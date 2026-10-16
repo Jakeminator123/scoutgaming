@@ -2,7 +2,6 @@
 
 import { useId, useState, type FormEvent, type ReactNode } from "react"
 import { Check, Pencil, X } from "lucide-react"
-import { STATUS_META, type ServiceStatus } from "@/lib/ops"
 import { cn } from "@/lib/utils"
 
 export function Page({ children }: { children: ReactNode }) {
@@ -79,16 +78,6 @@ export function Kpis({ items }: { items: { label: string; value: string; hint?: 
         </div>
       ))}
     </dl>
-  )
-}
-
-export function StatusBadge({ status, label }: { status: ServiceStatus; label?: string }) {
-  const meta = STATUS_META[status]
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium", meta.text)}>
-      <span className={cn("size-1.5 rounded-full", meta.dot)} aria-hidden />
-      {label ?? meta.label}
-    </span>
   )
 }
 

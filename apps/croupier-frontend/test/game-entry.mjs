@@ -15,7 +15,7 @@ test('Blackjack validates the live session and preserves the engine document wit
   await writeFile(join(directory,'game.html'),'<html>unconfigured local shell</html>');
   await writeFile(join(directory,'blackjack.html'),'<html><script src="blackjack-entry.mjs"></script></html>');
   let authenticated=false,failed=false,status=200;const calls=[];
-  const cloudHtml='<html data-game-dealer="johanna" data-game-local-dealer="johanna" data-game-registered-dealers="cloud-context"><script src="app.mjs"></script></html>';
+  const cloudHtml='<html data-game-dealer="linnea" data-game-local-dealer="linnea" data-game-registered-dealers="cloud-context"><script src="app.mjs"></script></html>';
   const options={env:{...env,CROUPIER_STUDIO_NEON_POLICY:'1'},directory,fetchImpl:async(url,init)=>{
     calls.push({url,init});assert.equal(init.headers.get('cookie'),'fixture-session=existing');
     assert.equal(init.headers.get('x-croupier-vercel-secret'),env.CROUPIER_VERCEL_INGRESS_SECRET);
@@ -25,13 +25,13 @@ test('Blackjack validates the live session and preserves the engine document wit
     return new Response(status===200?cloudHtml:OPERATOR_NOT_FOUND_HTML,{status});
   }};
   const request=path=>new Request(env.CROUPIER_PUBLIC_ORIGIN+path,{headers:{cookie:'fixture-session=existing','x-croupier-public-origin':'https://evil.invalid'}});
-  let response=await platformUiDocument(request('/blackjack?dealer=johanna&returnTo=https://evil.invalid'),options);
-  assert.equal(response.status,303);assert.equal(response.headers.get('Location'),'/player-login?dealer=johanna');
+  let response=await platformUiDocument(request('/blackjack?dealer=linnea&returnTo=https://evil.invalid'),options);
+  assert.equal(response.status,303);assert.equal(response.headers.get('Location'),'/player-login?dealer=linnea');
   assert.equal(calls.length,1);assert.equal(calls[0].init.headers.get('x-croupier-public-origin'),env.CROUPIER_PUBLIC_ORIGIN);
   authenticated=true;response=await platformUiDocument(request('/blackjack'),options);
   assert.equal(response.status,200);assert.equal(await response.text(),cloudHtml);
-  response=await platformUiDocument(request('/blackjack?dealer=johanna&returnTo=https://evil.invalid'),options);
-  assert.equal(await response.text(),cloudHtml);assert.equal(calls.at(-1).url,env.CROUPIER_BACKEND_ORIGIN+'/blackjack?dealer=johanna');
+  response=await platformUiDocument(request('/blackjack?dealer=linnea&returnTo=https://evil.invalid'),options);
+  assert.equal(await response.text(),cloudHtml);assert.equal(calls.at(-1).url,env.CROUPIER_BACKEND_ORIGIN+'/blackjack?dealer=linnea');
   status=404;response=await platformUiDocument(request('/blackjack?dealer=amira'),options);assert.equal(response.status,404);status=200;
   authenticated=false;response=await platformUiDocument(request('/blackjack'),options);assert.equal(response.headers.get('Location'),'/player-login');
   const beforeLogin=calls.length;response=await platformUiDocument(request('/player-login'),options);
@@ -43,12 +43,12 @@ test('Blackjack validates the live session and preserves the engine document wit
 
 test('canonical platform routes redirect once before launch reaches the authoritative engine',() => {
   const config = platformConfiguration({...env,CROUPIER_STUDIO_NEON_POLICY:'1'});
-  const query = '?dealer=mei&performance=staged&motion=smooth60&launch=fixture.claim.signature&returnTo=https://evil.invalid';
+  const query = '?dealer=nora&performance=staged&motion=smooth60&launch=fixture.claim.signature&returnTo=https://evil.invalid';
   const redirect = platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/game'+query),config);
-  assert.deepEqual(redirect,{kind:'redirect',destination:env.CROUPIER_PUBLIC_ORIGIN+'/blackjack?dealer=mei&launch=fixture.claim.signature'});
+  assert.deepEqual(redirect,{kind:'redirect',destination:env.CROUPIER_PUBLIC_ORIGIN+'/blackjack?dealer=nora&launch=fixture.claim.signature'});
   assert.equal(platformRoute(new URL(redirect.destination),config).kind,'backend');
-  assert.deepEqual(platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/player-login?dealer=mei'),config),{kind:'frontend'});
-  assert.deepEqual(platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/blackjack?dealer=mei'),config),{kind:'frontend'});
+  assert.deepEqual(platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/player-login?dealer=nora'),config),{kind:'frontend'});
+  assert.deepEqual(platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/blackjack?dealer=nora'),config),{kind:'frontend'});
   const off = platformConfiguration(env);
   assert.deepEqual(platformRoute(new URL(env.CROUPIER_PUBLIC_ORIGIN+'/game'+query),off),{kind:'backend',destination:env.CROUPIER_BACKEND_ORIGIN+'/game'+query});
 });
@@ -61,10 +61,10 @@ test('Neon flag makes blackjack the actual shared player and game a bounded alia
   assert.match(await off.text(),/blackjack-entry.mjs/);
   assert.equal((await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/player-login'),options)).status,404);
   options.env = {...env,CROUPIER_STUDIO_NEON_POLICY:'1'};
-  const game = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/blackjack?dealer=vera'),options);
+  const game = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/blackjack?dealer=elin'),options);
   assert.equal(game.status,200);assert.match(await game.text(),/data-game-path="\/blackjack".*app.mjs/);
-  const alias = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?dealer=vera&launch=a.b.c&returnTo=https://evil.invalid'),options);
-  assert.equal(alias.status,307);assert.equal(alias.headers.get('Location'),'/blackjack?dealer=vera&launch=a.b.c');assert.equal(await alias.text(),'');
+  const alias = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/game?dealer=elin&launch=a.b.c&returnTo=https://evil.invalid'),options);
+  assert.equal(alias.status,307);assert.equal(alias.headers.get('Location'),'/blackjack?dealer=elin&launch=a.b.c');assert.equal(await alias.text(),'');
   const login = await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/player-login'),options);
   assert.equal(login.status,200);assert.match(await login.text(),/data-game-path="\/blackjack".*blackjack-entry.mjs/);
   assert.equal((await platformUiDocument(new Request(env.CROUPIER_PUBLIC_ORIGIN+'/blackjack',{method:'HEAD'}),options)).status,200);
@@ -90,7 +90,7 @@ test('actual login module sends fresh and existing player sessions to the game w
   t.after(() => {for (const [key,value] of original) {if (value === undefined) delete globalThis[key];else globalThis[key] = value;}});
   const sourceUrl = new URL('../../../web/public/blackjack-entry.mjs',import.meta.url);
   const source = (await readFile(sourceUrl,'utf8')).replace("'./game-entry-contract.mjs'",JSON.stringify(new URL('game-entry-contract.mjs',sourceUrl).href));
-  for (const [canonical,authenticated,query='?dealer=mei&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid'] of [[true,false],[true,true],[false,true],[true,false,''],[true,true,'']]) {
+  for (const [canonical,authenticated,query='?dealer=nora&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid'] of [[true,false],[true,true],[false,true],[true,false,''],[true,true,'']]) {
     const form = {hidden:true};
     const nodes = {form,'#status':{},'#submit':{},'#password':{value:'isolated-password'},'#username':{value:'isolated-player'},'#login-help':{},'#legacy-admin':{}};
     globalThis.document = {documentElement:{dataset:canonical ? {gamePath:'/blackjack'} : {}},querySelector:selector => nodes[selector]};
@@ -104,7 +104,7 @@ test('actual login module sends fresh and existing player sessions to the game w
     };
     await import('data:text/javascript;base64,'+Buffer.from(source+`\n// case ${canonical}-${authenticated}-${query}`).toString('base64'));
     if (!authenticated) {assert.equal(form.hidden,false);await form.onsubmit({preventDefault(){}});}
-    assert.deepEqual(navigations,[[authenticated ? 'replace' : 'assign',canonical ? '/blackjack'+(query ? '?dealer=mei' : '') : '/play']]);
+    assert.deepEqual(navigations,[[authenticated ? 'replace' : 'assign',canonical ? '/blackjack'+(query ? '?dealer=nora' : '') : '/play']]);
     if (!authenticated) {
       assert.equal(requests[1][0],'/api/auth/login');assert.equal(requests[1][1].method,'POST');
       assert.deepEqual(JSON.parse(requests[1][1].body),{email:'isolated-player',password:'isolated-password'});
@@ -159,7 +159,7 @@ const flush=()=>new Promise(resolve=>setImmediate(resolve));
 let importCase=0;
 async function capabilityFixture(kind,{canonical=true,session={authenticated:false,sharedCredentials:true,playerAccounts:true},capability,post}={},run){
   const original=new Map(['document','location','fetch'].map(key=>[key,globalThis[key]]));
-  const requests=[],navigations=[],current=new URL('/player-login?dealer=mei&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid',env.CROUPIER_PUBLIC_ORIGIN);
+  const requests=[],navigations=[],current=new URL('/player-login?dealer=nora&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid',env.CROUPIER_PUBLIC_ORIGIN);
   const nodes=kind==='entry' ? {form:{hidden:true},'#status':{},'#submit':{},'#password':{value:'fixture-login-password'},'#username':{value:' identifier@example.invalid '},'#login-help':{},'#legacy-admin':{hidden:true}}
     : {'form':{},'.auth-close':{},'#auth-email':{value:' Operator '},'#auth-password':{value:''},'#auth-error':{},'#auth-submit':{},'#auth-purpose':{},'#auth-account':{},'#auth-player-login':{hidden:true}};
   let closeListener;const dialog={open:false,returnValue:'',setAttribute(){},querySelector:key=>nodes[key],addEventListener(type,listener){closeListener=listener;},showModal(){this.open=true;},close(value){this.returnValue=value;this.open=false;closeListener?.();}};
@@ -224,7 +224,7 @@ test('modal keeps one CRAIG/shared POST and exposes only a fixed or query-allowl
       const result=module.requestLogin('Sign in');await flush();
       assert.equal(nodes['#auth-player-login'].hidden,shared||!players);
       assert.equal(nodes['#auth-password'].maxLength,shared?256:128);
-      assert.equal(nodes['#auth-player-login'].href,canonical?'/player-login?dealer=mei':'/blackjack');
+      assert.equal(nodes['#auth-player-login'].href,canonical?'/player-login?dealer=nora':'/blackjack');
       nodes['#auth-password'].value='fixture-modal-password';await nodes.form.onsubmit({preventDefault(){}});
       assert.equal(writes().length,1);assert.equal(writes()[0][0],'/api/auth/login');
       assert.deepEqual(JSON.parse(writes()[0][1].body),{email:'Operator',password:'fixture-modal-password'});

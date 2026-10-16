@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject , addDealer} from '../lib/studio-model.mjs';
 import { modeLabels, modeExplanations } from '../lib/director-modes.mjs';
 import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
 
@@ -177,7 +177,7 @@ test('normal seed does not show a repair warning or invalid animation option', (
 test('repair banner counts problems outside the currently selected dealer and event', () => {
   const project = createSeedProject();
   const wave = project.assets.find(item => item.animation === 'wave');
-  for (const dealerId of ['vera', 'mei']) {
+  for (const dealerId of ['elin', 'saga']) {
     const line = project.lines.find(item => item.dealerId === dealerId && item.eventId === 'deal.player.left');
     line.variants[0].assetId = wave.id;
   }
@@ -210,3 +210,6 @@ test('editor labels align with the selected node and distinguish event-test cont
   assert.match(contextHtml, /aria-pressed="true">Neutral/);
   assert.doesNotMatch(contextHtml, /Vad vet croupiern just nu/);
 });
+
+// Explicit active dealers used by this isolated component fixture.
+function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}

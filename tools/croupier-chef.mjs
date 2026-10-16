@@ -46,7 +46,7 @@ export async function acquireLock(file) {
         }
       }
     }
-    throw new Error('Inbox busy or lock ownership unknown. Check .croupier-inbox/agents/*.lock before manual recovery.');
+    throw new Error('Chef registry busy or lock ownership unknown. Check agent-talk/chef.json.lock before manual recovery.');
   }
 }
 
@@ -63,7 +63,7 @@ export async function registryLocation(cwd) {
     throw new Error('Chef needs a non-bare repository with its main worktree available.');
   }
   const root = await realpath(first.slice('worktree '.length));
-  return { commonDir, root, file: path.join(root, '.croupier-inbox', 'chef.json') };
+  return { commonDir, root, file: path.join(root, 'agent-talk', 'chef.json') };
 }
 
 async function readRegistry(location) {

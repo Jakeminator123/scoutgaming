@@ -27,8 +27,8 @@ async function fixture(t) {
       blobs.push({ logicalPath: path, access: 'public', sha256, size: bytes.length,
         storage: { provider: 'vercel-blob', pathname: `croupier/media/dealers/${dealer}/runtime/${id}/${sha256}.${extension}`,
           sha256, size: bytes.length, contentType: extension === 'mp3' ? 'audio/mpeg' : extension === 'mp4' ? 'video/mp4' : extension === 'json' ? 'application/json' : 'application/octet-stream' } });
-      if (dealer === 'vera' && tail === 'audio/en/bank.json') firstBank = 'media/' + path;
-      if (dealer === 'vera' && tail === 'audio/en/goodluck.mp3') firstBlob = blobs.at(-1);
+      if (dealer === 'astrid' && tail === 'audio/en/bank.json') firstBank = 'media/' + path;
+      if (dealer === 'astrid' && tail === 'audio/en/goodluck.mp3') firstBlob = blobs.at(-1);
     }
   }
   await mkdir(join(root, 'media/catalog'), { recursive: true });
@@ -42,9 +42,9 @@ async function fixture(t) {
   return { root, env, catalogPath, entries, firstBank, firstBlob, indexPath, index, loader: createRegisteredVoiceLines({ env, repositoryRoot: root }) };
 }
 
-test('remaining registered banks expose only complete paired speech; retired Amira metadata is ignored and none is automatically approved', async t => {
+test('Astrid indexed bank exposes only complete paired speech; retired metadata is ignored and none is automatically approved', async t => {
   const f = await fixture(t), result = await f.loader();
-  assert.deepEqual(result.dealers.map(row => row.dealer), ['vera', 'astrid', 'mei']);
+  assert.deepEqual(result.dealers.map(row => row.dealer), ['astrid']);
   assert.equal(result.automaticVisualApproval, false);
   for (const dealer of result.dealers) {
     const goodluck = dealer.lines.find(line => line.key === 'goodluck'), win = dealer.lines.find(line => line.key === 'win');

@@ -947,39 +947,39 @@ test('composed output follows every presented source frame before the receipt wi
   owner.abort();await assert.rejects(result,{name:'AbortError'});assert.equal(media[0].frames.size,0);
 });
 
-test('published Johanna repeats her frozen silent idle, checks the exact package before cached playback and stops on 409',async t=>{
-  const ownIdle={id:'johanna-frozen',fileName:'Johannas Grundloop',sha256:'c'.repeat(64),src:'/api/presentation/registered-idle/north/room-johanna/7/johanna',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}};
-  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle,entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+test('published Linnea repeats her frozen silent idle, checks the exact package before cached playback and stops on 409',async t=>{
+  const ownIdle={id:'linnea-frozen',fileName:'Linneas Grundloop',sha256:'c'.repeat(64),src:'/api/presentation/registered-idle/north/room-linnea/7/linnea',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle,entry:{operator:'north',roomId:'room-linnea',packageRevision:7}});
   f.controller.start();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,1);
   assert.deepEqual(f.jobs[0].take.media,{src:ownIdle.src,sha256:ownIdle.sha256});assert.equal(f.jobs[0].options.muted,true);
   f.jobs[0].options.onReceipt({state:'presented'});f.jobs[0].resolve({completed:true});await new Promise(resolve=>setImmediate(resolve));
   assert.equal(f.jobs.length,2);assert.equal(f.jobs[1].options.muted,true);assert.equal(f.proofs,1);
-  for(const request of f.requests){const url=new URL(request.url,'https://game.invalid');assert.equal(url.pathname,'/api/presentation/config');assert.deepEqual(Object.fromEntries(url.searchParams),{operatorSlug:'north',roomId:'room-johanna',packageRevision:'7',dealerId:'johanna'});assert.equal(request.options.cache,'no-store');}
+  for(const request of f.requests){const url=new URL(request.url,'https://game.invalid');assert.equal(url.pathname,'/api/presentation/config');assert.deepEqual(Object.fromEntries(url.searchParams),{operatorSlug:'north',roomId:'room-linnea',packageRevision:'7',dealerId:'linnea'});assert.equal(request.options.cache,'no-store');}
   assert.equal(f.requests.length,3,'configuration plus two distinct per-play authority reads');
   f.setConfigStatus(409);f.jobs[1].resolve({completed:true});await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,2);
   assert.match(f.status.textContent,/Ladda om spelet/);const reload=f.elements.find(element=>element.textContent==='Ladda om');assert.equal(typeof reload.onclick,'function');
   const before=f.requests.length;assert.equal(await f.controller.present(source),false);f.controller.start();f.controller.state({action:false});await new Promise(resolve=>setImmediate(resolve));assert.equal(f.requests.length,before);assert.equal(f.jobs.length,2);
 });
 
-test('Johanna with empty exact positions forwards only her package context and keeps the committed card in 2D',async t=>{
-  const f=await controllerFixture(t,{dealerId:'johanna',entry:{operator:'north',roomId:'room-johanna',packageRevision:7},missingPosition:true});
+test('Linnea with empty exact positions forwards only her package context and keeps the committed card in 2D',async t=>{
+  const f=await controllerFixture(t,{dealerId:'linnea',entry:{operator:'north',roomId:'room-linnea',packageRevision:7},missingPosition:true});
   assert.equal(await f.controller.present(source),false);assert.equal(f.jobs.length,0);
   const payload=JSON.parse(f.requests.find(request=>request.url==='/api/presentation/select').options.body);
-  assert.deepEqual(payload.presentationContext,{operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'});
+  assert.deepEqual(payload.presentationContext,{operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'});
   assert.deepEqual(payload.event,source);assert.equal(payload.context,undefined);
   assert.equal(f.receipts.find(receipt=>receipt.state==='skipped').renderer,'2d');assert.equal(f.receipts.some(receipt=>receipt.state==='end'),false);
 });
 
-test('a separately saved Johanna skips each empty exact position and preserves server-owned hidden and visible cards',async()=>{
-  const project=addDealer(createSeedProject(),'johanna','Johanna'),inventory=await loadVideoRegistry();
+test('a separately saved Linnea skips each empty exact position and preserves server-owned hidden and visible cards',async()=>{
+  const project=addDealer(createSeedProject(),'linnea','Linnea'),inventory=await loadVideoRegistry();
   const events=Array.from({length:7},(_,box)=>({...source,box,shoeDraw:box+1,clip:{action:box<2?'deal-left':box<5?'deal-centre':'deal-right'}}));
   for(const faceDown of [false,true])events.push({type:'deal',to:'dealer',box:null,handIndex:null,shoeDraw:events.length+1,faceDown,card:faceDown?null:{r:'Q',s:'♥'},clip:{action:'deal-dealer'}});
   const handler=createPresentationApi({db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify(events)})})},env:{},store:{load:async()=>project},registryLoader:async()=>inventory});
-  for(const event of events){const response=await presentationFixtureRequest(handler,'johanna-fixture',{dealerId:'johanna',version:2,mode:'off',event:{...event,card:{r:'A',s:'♣'}}});assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.video,null);assert.equal(response.body.standard,null);assert.equal(response.body.decision.media.reason,'position_clip_missing');assert.deepEqual(response.body.decision.sourceEvent,event);}
+  for(const event of events){const response=await presentationFixtureRequest(handler,'linnea-fixture',{dealerId:'linnea',version:2,mode:'off',event:{...event,card:{r:'A',s:'♣'}}});assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.video,null);assert.equal(response.body.standard,null);assert.equal(response.body.decision.media.reason,'position_clip_missing');assert.deepEqual(response.body.decision.sourceEvent,event);}
 });
 
 test('a stale committed card does not claim a package change, while an exact package conflict latches until reload',async t=>{
-  const f=await controllerFixture(t,{dealerId:'johanna',entry:{operator:'north',roomId:'room-johanna',packageRevision:7}}),fetchConfig=globalThis.fetch;
+  const f=await controllerFixture(t,{dealerId:'linnea',entry:{operator:'north',roomId:'room-linnea',packageRevision:7}}),fetchConfig=globalThis.fetch;
   let code=null,requests=0;
   globalThis.fetch=async(url,options)=>url==='/api/presentation/select'?(requests++,Response.json({error:'Stale presentation',...(code?{code}: {})},{status:409})):fetchConfig(url,options);
   assert.equal(await f.controller.present(source),false);assert.match(f.status.textContent,/2D-reserv/);assert.doesNotMatch(f.status.textContent,/paketet har ändrats/);
@@ -988,35 +988,35 @@ test('a stale committed card does not claim a package change, while an exact pac
 });
 
 test('frozen event selection uses only the published own-dealer snapshot and committed card, with exact scoped URLs', async () => {
-  const project = addDealer(createSeedProject(), 'johanna', 'Johanna');
+  const project = addDealer(createSeedProject(), 'linnea', 'Linnea');
   for (const line of project.lines) for (const variant of line.variants) variant.videoGenerationId = null;
   const id='00000000-0000-4000-8000-000000000093';
-  project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='deal.player.centre').variants[0].videoGenerationId=id;
-  const record={id,dealer:'johanna',fileName:'own-box3.mp4',sha256:'e'.repeat(64),available:true,
-    classification:{dealerId:'johanna',eventId:'deal.player.centre',kind:'action',role:'standard',situation:'box3',playback:'once',label:'Johanna box3',notes:''}};
-  const context={operatorSlug:'north',roomId:'room-johanna',packageRevision:9,dealerId:'johanna'};
+  project.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='deal.player.centre').variants[0].videoGenerationId=id;
+  const record={id,dealer:'linnea',fileName:'own-box3.mp4',sha256:'e'.repeat(64),available:true,
+    classification:{dealerId:'linnea',eventId:'deal.player.centre',kind:'action',role:'standard',situation:'box3',playback:'once',label:'Linnea box3',notes:''}};
+  const context={operatorSlug:'north',roomId:'room-linnea',packageRevision:9,dealerId:'linnea'};
   const frozen={project,inventory:{videos:[record],families:[]},projectRevision:'frozen-events',configurationSource:'operator-package-v3'};
   let reads=0;
   const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
     store:{load:async()=>{throw Error('live Studio must not be read');}},registryLoader:async()=>{throw Error('live inventory must not be read');},
     frozenDealerContext:{resolve:async supplied=>{assert.deepEqual(supplied,context);reads++;return frozen;},
-      publicVideo:(_frozen,mediaId)=>mediaId===id?{id,sha256:record.sha256,fileName:record.fileName,src:'/api/presentation/registered-video/north/room-johanna/9/johanna/'+id}:null}});
-  const response=await presentationFixtureRequest(handler,'isolated-player',{dealerId:'johanna',version:2,mode:'off',
+      publicVideo:(_frozen,mediaId)=>mediaId===id?{id,sha256:record.sha256,fileName:record.fileName,src:'/api/presentation/registered-video/north/room-linnea/9/linnea/'+id}:null}});
+  const response=await presentationFixtureRequest(handler,'isolated-player',{dealerId:'linnea',version:2,mode:'off',
     event:{...source,card:{r:'K',s:'♦'}},presentationContext:context});
   assert.equal(response.status,200,JSON.stringify(response.body));
   assert.deepEqual(response.body.decision.sourceEvent,source);
   assert.equal(response.body.video.id,id);assert.equal(response.body.standard.id,id);
-  assert.match(response.body.video.src,/registered-video\/north\/room-johanna\/9\/johanna\//);
+  assert.match(response.body.video.src,/registered-video\/north\/room-linnea\/9\/linnea\//);
   assert.equal(response.body.configurationSource,'operator-package-v3');assert.equal(reads,2);
-  const absent=await presentationFixtureRequest(handler,'isolated-player',{dealerId:'johanna',version:2,mode:'off',
+  const absent=await presentationFixtureRequest(handler,'isolated-player',{dealerId:'linnea',version:2,mode:'off',
     event:{type:'speak',line:'goodluck'},presentationContext:context});
   assert.equal(absent.status,200);assert.equal(absent.body.video,null);assert.equal(absent.body.standard,null);
   assert.equal(absent.body.decision.media.reason,'frozen_clip_missing');
 });
 
 test('an own dealer with only idle resumes that same film behind a missing card-position animation', async t=>{
-  const ownIdle={id:'own-idle',fileName:'Johanna',sha256:'f'.repeat(64),src:'/frozen-idle'};
-  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle,missingPosition:true});
+  const ownIdle={id:'own-idle',fileName:'Linnea',sha256:'f'.repeat(64),src:'/frozen-idle'};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle,missingPosition:true});
   f.controller.start();assert.equal(f.jobs.length,1);
   f.controller.state({action:true});assert.equal(f.jobs[0].options.signal.aborted,true);
   assert.equal(await f.controller.present(source),false);
@@ -1031,14 +1031,14 @@ test('an own dealer with only idle resumes that same film behind a missing card-
 
 test('published own idle policy uses the same automatic scheduler, returns to base and interrupts on a game action', async t => {
   let now=0;t.mock.method(performance,'now',()=>now);
-  const base='00000000-0000-4000-8000-000000000081', alt='00000000-0000-4000-8000-000000000082', familyId='johanna/idle.ready/ready';
+  const base='00000000-0000-4000-8000-000000000081', alt='00000000-0000-4000-8000-000000000082', familyId='linnea/idle.ready/ready';
   const idlePolicy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],
     variants:[{videoId:alt,durationMs:1000,use:'automatic',automatic:{averageEveryMs:5000,jitterMs:0,cooldownMs:5000,maxPerMinute:12}}]};
-  const videos=[base,alt].map((id,i)=>({id,dealer:'johanna',familyId,role:i?'variant':'standard',available:true,fileName:id+'.mp4',sha256:(i?'b':'a').repeat(64),src:'/frozen/'+id}));
-  const customInventory={videos,families:[{id:familyId,dealerId:'johanna',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  const videos=[base,alt].map((id,i)=>({id,dealer:'linnea',familyId,role:i?'variant':'standard',available:true,fileName:id+'.mp4',sha256:(i?'b':'a').repeat(64),src:'/frozen/'+id}));
+  const customInventory={videos,families:[{id:familyId,dealerId:'linnea',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
   const green={mode:'green-screen',threshold:.23,softness:.15,despill:0},alpha={mode:'alpha'},compositionCalls=[];
   for(const video of videos)video.classification={compositing:green};videos[0].compositing=alpha;
-  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle:videos[0],idlePolicy,customInventory,
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy,customInventory,
     composition:{prepareClip:async value=>compositionCalls.push(value),hold(){},renderFrame(){return true;}}});
   f.controller.start();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs[0].take.media.src,videos[0].src);
   f.jobs[0].options.onReceipt({state:'start'});f.jobs[0].options.onReceipt({state:'presented'});
@@ -1052,30 +1052,30 @@ test('published own idle policy uses the same automatic scheduler, returns to ba
 });
 
 test('own OpenClaw idle advice forwards the exact package context and plays only an offered frozen variant',async t=>{
-  const base='00000000-0000-4000-8000-000000000083',alt='00000000-0000-4000-8000-000000000084',familyId='johanna/idle.ready/ready';
+  const base='00000000-0000-4000-8000-000000000083',alt='00000000-0000-4000-8000-000000000084',familyId='linnea/idle.ready/ready';
   const idlePolicy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],
     variants:[{videoId:alt,durationMs:1000,use:'openclaw',automatic:null}]};
-  const videos=[base,alt].map((id,i)=>({id,dealer:'johanna',familyId,role:i?'variant':'standard',available:true,fileName:id+'.mp4',sha256:(i?'d':'c').repeat(64),src:'/frozen/'+id}));
-  const customInventory={videos,families:[{id:familyId,dealerId:'johanna',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
-  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle:videos[0],idlePolicy,customInventory,defaultMode:'active',
-    entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+  const videos=[base,alt].map((id,i)=>({id,dealer:'linnea',familyId,role:i?'variant':'standard',available:true,fileName:id+'.mp4',sha256:(i?'d':'c').repeat(64),src:'/frozen/'+id}));
+  const customInventory={videos,families:[{id:familyId,dealerId:'linnea',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy,customInventory,defaultMode:'active',
+    entry:{operator:'north',roomId:'room-linnea',packageRevision:7}});
   const original=globalThis.fetch;let adviceBody;
   globalThis.fetch=async(url,options)=>url==='/api/presentation/idle-advice'
     ? (adviceBody=JSON.parse(options.body),Response.json({videoId:alt})):original(url,options);
   f.controller.start();await new Promise(resolve=>setImmediate(resolve));
   f.jobs[0].options.onReceipt({state:'start'});f.jobs[0].options.onReceipt({state:'presented'});
-  await f.controller.observeChat('Hej Johanna');
-  assert.deepEqual(adviceBody.presentationContext,{operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'});
+  await f.controller.observeChat('Hej Linnea');
+  assert.deepEqual(adviceBody.presentationContext,{operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'});
   f.jobs[0].resolve();await new Promise(resolve=>setImmediate(resolve));
   assert.equal(f.jobs[1].take.media.src,videos[1].src);assert.equal(f.jobs[1].options.muted,true);
 });
 
 test('published own idle policy stops and offers reload after the package changes',async t=>{
-  const id='00000000-0000-4000-8000-000000000093',familyId='johanna/idle.ready/ready';
+  const id='00000000-0000-4000-8000-000000000093',familyId='linnea/idle.ready/ready';
   const idlePolicy={schemaVersion:1,familyId,base:[{videoId:id,weight:100,durationMs:1000}],variants:[]};
-  const ownIdle={id,dealer:'johanna',familyId,role:'standard',available:true,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id};
-  const customInventory={videos:[ownIdle],families:[{id:familyId,dealerId:'johanna',playbackType:'idle-pool',standardIds:[id],variantIds:[]}]};
-  const f=await controllerFixture(t,{dealerId:'johanna',ownIdle,idlePolicy,customInventory,entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+  const ownIdle={id,dealer:'linnea',familyId,role:'standard',available:true,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id};
+  const customInventory={videos:[ownIdle],families:[{id:familyId,dealerId:'linnea',playbackType:'idle-pool',standardIds:[id],variantIds:[]}]};
+  const f=await controllerFixture(t,{dealerId:'linnea',ownIdle,idlePolicy,customInventory,entry:{operator:'north',roomId:'room-linnea',packageRevision:7}});
   f.controller.start();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.jobs.length,1);
   f.jobs[0].options.onReceipt({state:'start'});f.jobs[0].options.onReceipt({state:'presented'});
   f.setConfigStatus(409);f.jobs[0].resolve();await new Promise(resolve=>setImmediate(resolve));
@@ -1085,12 +1085,12 @@ test('published own idle policy stops and offers reload after the package change
 });
 
 test('own idle advice binds cached decisions and director rereads to each current frozen room',async()=>{
-  const project=addDealer(createSeedProject(),'johanna','Johanna'),at=new Date().toISOString();
-  const base='00000000-0000-4000-8000-000000000094',alt='00000000-0000-4000-8000-000000000095',familyId='johanna/idle.ready/ready';
-  project.lines.find(line=>line.dealerId==='johanna'&&line.eventId==='idle.ready').variants[0].videoGenerationId=base;
-  project.dealerIdlePolicies=[{dealerId:'johanna',policy:{schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'openclaw',automatic:null}]}}];
-  const idleInventory={videos:[base,alt].map((id,i)=>({id,dealer:'johanna',familyId,role:i?'variant':'standard',available:true,fileName:id+'.webm',sha256:'a'.repeat(64)})),
-    families:[{id:familyId,dealerId:'johanna',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+  const project=addDealer(createSeedProject(),'linnea','Linnea'),at=new Date().toISOString();
+  const base='00000000-0000-4000-8000-000000000094',alt='00000000-0000-4000-8000-000000000095',familyId='linnea/idle.ready/ready';
+  project.lines.find(line=>line.dealerId==='linnea'&&line.eventId==='idle.ready').variants[0].videoGenerationId=base;
+  project.dealerIdlePolicies=[{dealerId:'linnea',policy:{schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'openclaw',automatic:null}]}}];
+  const idleInventory={videos:[base,alt].map((id,i)=>({id,dealer:'linnea',familyId,role:i?'variant':'standard',available:true,fileName:id+'.webm',sha256:'a'.repeat(64)})),
+    families:[{id:familyId,dealerId:'linnea',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
   let calls=0,reads=0,revoked=false;
   const handler=createPresentationApi({env:{CROUPIER_PRESENTATION_DIRECTOR_URL:'https://own-qa.invalid',CROUPIER_PRESENTATION_DIRECTOR_TOKEN:'fixture-token'},
     store:{load:async()=>{throw Error('live project must not be read');}},registryLoader:async()=>{throw Error('live registry must not be read');},
@@ -1103,10 +1103,10 @@ test('own idle advice binds cached decisions and director rereads to each curren
           provider:{status:'responded',contextContractVersion:2,observedChatMessages:projected.input.context.observedChat.messages.length}});};
       owned.cacheScope='e'.repeat(64);return owned;
     }});
-  const payload={requestId:'same-frozen-advice',dealerId:'johanna',mode:'active',
+  const payload={requestId:'same-frozen-advice',dealerId:'linnea',mode:'active',
     sourceRef:{kind:'renderer-idle',channel:'same-channel',revision:1,messageId:'same-message',at},
     observedChat:{source:'native-observation',before:at,messages:[{role:'user',text:'Hello',at}]}};
-  const request=room=>presentationFixtureRequest(handler,'one',{...payload,presentationContext:{operatorSlug:'north',roomId:room,packageRevision:7,dealerId:'johanna'}},'/api/presentation/idle-advice');
+  const request=room=>presentationFixtureRequest(handler,'one',{...payload,presentationContext:{operatorSlug:'north',roomId:room,packageRevision:7,dealerId:'linnea'}},'/api/presentation/idle-advice');
   assert.equal((await request('room-one')).body.provider,'responded');
   assert.equal((await request('room-two')).body.provider,'responded');assert.equal(calls,2);
   assert.equal((await request('room-one')).status,200);assert.equal(calls,2);assert.equal(reads,6);
@@ -1114,8 +1114,8 @@ test('own idle advice binds cached decisions and director rereads to each curren
 });
 
 test('frozen events use owned Director transport and revalidate the package after selection',async()=>{
-  const project=addDealer(directorProject(),'johanna','Johanna');
-  const context={operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'};
+  const project=addDealer(directorProject(),'linnea','Linnea');
+  const context={operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
   const owned=async()=>Response.json({});
   for(const phase of ['valid','revoked-owner','republished']){
     let valid=true,selected=0,readbacks=0;
@@ -1130,53 +1130,53 @@ test('frozen events use owned Director transport and revalidate the package afte
       select:async(body,options)=>{selected++;assert.equal(options.fetchImpl,owned);assert.deepEqual(body.sourceEvent,source);
         if(phase==='republished')valid=false;
         return {videoGenerationId:null,decision:{requestId:body.requestId,sourceEvent:body.sourceEvent}};}});
-    const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'johanna',mode:'active',version:2,event:source,presentationContext:context});
+    const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'linnea',mode:'active',version:2,event:source,presentationContext:context});
     assert.equal(response.status,phase==='valid'?200:phase==='revoked-owner'?401:409);
     assert.equal(selected,phase==='revoked-owner'?0:1);assert.equal(readbacks,phase==='revoked-owner'?0:1);
   }
 });
 
 test('a frozen event rechecks package authority even when its video could be cached',async t=>{
-  const f=await controllerFixture(t,{dealerId:'johanna',entry:{operator:'north',roomId:'room-johanna',packageRevision:7}});
+  const f=await controllerFixture(t,{dealerId:'linnea',entry:{operator:'north',roomId:'room-linnea',packageRevision:7}});
   f.setConfigStatus(409);
   assert.equal(await f.controller.present(source),false);assert.equal(f.jobs.length,0);
   assert.match(f.status.textContent,/Ladda om spelet/);
 });
 
 test('configuration requires explicit identity and each dealer uses only its saved idle policy',async()=>{
-  const project=addDealer(createSeedProject(),'johanna','Johanna'),id='00000000-0000-4000-8000-000000000096';
-  project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
-  const policy={schemaVersion:1,familyId:'johanna/idle.ready/ready',base:[{videoId:id,weight:100,durationMs:1000}],variants:[]};
-  project.dealerIdlePolicies=[{dealerId:'johanna',policy}];
-  const inventory={families:[],videos:[{id,dealer:'johanna',available:true,sha256:'c'.repeat(64),fileName:id+'.mp4',
-    classification:{dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',playback:'once',label:'Grundloop',notes:''}}]};
+  const project=addDealer(createSeedProject(),'linnea','Linnea'),id='00000000-0000-4000-8000-000000000096';
+  project.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready').variants[0].videoGenerationId=id;
+  const policy={schemaVersion:1,familyId:'linnea/idle.ready/ready',base:[{videoId:id,weight:100,durationMs:1000}],variants:[]};
+  project.dealerIdlePolicies=[{dealerId:'linnea',policy}];
+  const inventory={families:[],videos:[{id,dealer:'linnea',available:true,sha256:'c'.repeat(64),fileName:id+'.mp4',
+    classification:{dealerId:'linnea',eventId:'idle.ready',kind:'idle',role:'standard',situation:'',playback:'once',label:'Grundloop',notes:''}}]};
   const handler=createPresentationApi({env:{},store:{load:async()=>project},registryLoader:async()=>inventory});
   async function get(query){
     const req=Readable.from([]);req.method='GET';req.url='/api/presentation/config'+query;req.headers={};
     const res={writeHead(status){this.status=status;},end(raw){this.body=JSON.parse(raw);}};
     await handler(req,res,'/api/presentation/config','fixture');return res;
   }
-  const own=await get('?dealerId=johanna');assert.equal(own.status,200);assert.deepEqual(own.body.idlePolicy,policy);
-  assert.equal(own.body.idleInventory.families[0].dealerId,'johanna');assert.equal(own.body.idleInventory.videos[0].id,id);
+  const own=await get('?dealerId=linnea');assert.equal(own.status,200);assert.deepEqual(own.body.idlePolicy,policy);
+  assert.equal(own.body.idleInventory.families[0].dealerId,'linnea');assert.equal(own.body.idleInventory.videos[0].id,id);
   assert.equal((await get('')).status,400);
   assert.equal((await get('?dealerId=astrid')).body.idlePolicy,project.dealerIdlePolicies.find(row=>row.dealerId==='astrid')?.policy??null);
   assert.equal((await get('?dealerId=unknown')).status,400);
-  assert.equal((await get('?dealerId=johanna&dealerId=johanna')).status,400);
+  assert.equal((await get('?dealerId=linnea&dealerId=linnea')).status,400);
 });
 
 test('saved idle rules cross the API with committed event and exact package ownership',async()=>{
-  const project=addDealer(directorProject(),'johanna','Johanna'),base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098';
-  const line=project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready');
+  const project=addDealer(directorProject(),'linnea','Linnea'),base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098';
+  const line=project.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready');
   line.variants[0].videoGenerationId=base;
-  line.variants.push({...structuredClone(line.variants[0]),id:'johanna.idle.ready.rule',videoGenerationId:alt,priority:50,triggerIds:['fixture.box3'],selection:{rules:true,model:false,random:false}});
+  line.variants.push({...structuredClone(line.variants[0]),id:'linnea.idle.ready.rule',videoGenerationId:alt,priority:50,triggerIds:['fixture.box3'],selection:{rules:true,model:false,random:false}});
   project.triggers.push({id:'fixture.box3',label:'Plats tre',category:'deterministic',path:'event.box',op:'eq',value:3});
-  project.dealerIdlePolicies=[{dealerId:'johanna',policy:{schemaVersion:1,familyId:'johanna/idle.ready/ready',base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]}}];
-  const inventory={families:[],videos:[base,alt].map((id,i)=>({id,dealer:'johanna',available:true,sha256:'a'.repeat(64),fileName:id+'.mp4',
-    classification:{dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:i?'alternative':'standard',situation:'',label:'Egen',notes:''}}))};
-  const context={operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'};
+  project.dealerIdlePolicies=[{dealerId:'linnea',policy:{schemaVersion:1,familyId:'linnea/idle.ready/ready',base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]}}];
+  const inventory={families:[],videos:[base,alt].map((id,i)=>({id,dealer:'linnea',available:true,sha256:'a'.repeat(64),fileName:id+'.mp4',
+    classification:{dealerId:'linnea',eventId:'idle.ready',kind:'idle',role:i?'alternative':'standard',situation:'',label:'Egen',notes:''}}))};
+  const context={operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
   const handler=createPresentationApi({env:{},db:{prepare:()=>({get:async()=>({version:2,payload:JSON.stringify([source])})})},
     frozenDealerContext:{resolve:async()=>({project,inventory,context,configurationSource:'operator-package-v3'}),publicVideo:()=>null}});
-  const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'johanna',mode:'rules',version:2,event:source,presentationContext:context});
+  const response=await presentationFixtureRequest(handler,'fixture',{dealerId:'linnea',mode:'rules',version:2,event:source,presentationContext:context});
   assert.equal(response.status,200,JSON.stringify(response.body));assert.equal(response.body.idleRule.videoId,alt);
   assert.equal(response.body.idleRule.requestId,response.body.decision.requestId);assert.equal(response.body.idleRule.version,2);
   assert.deepEqual(response.body.idleRule.presentationContext,context);
@@ -1184,11 +1184,11 @@ test('saved idle rules cross the API with committed event and exact package owne
 });
 
 for(const cancel of [false,true]) test('own idle rule waits for action and base boundary; mode cancelled='+cancel,async t=>{
-    const base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098',familyId='johanna/idle.ready/ready';
+    const base='00000000-0000-4000-8000-000000000097',alt='00000000-0000-4000-8000-000000000098',familyId='linnea/idle.ready/ready';
     const policy={schemaVersion:1,familyId,base:[{videoId:base,weight:100,durationMs:1000}],variants:[{videoId:alt,durationMs:1000,use:'rules',automatic:null}]};
-    const videos=[base,alt].map((id,i)=>({id,dealer:'johanna',available:true,role:i?'variant':'standard',familyId,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id}));
-    const inventory={videos,families:[{id:familyId,dealerId:'johanna',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
-    const f=await controllerFixture(t,{dealerId:'johanna',ownIdle:videos[0],idlePolicy:policy,customInventory:inventory,missingPosition:true});
+    const videos=[base,alt].map((id,i)=>({id,dealer:'linnea',available:true,role:i?'variant':'standard',familyId,fileName:id+'.mp4',sha256:'c'.repeat(64),src:'/frozen/'+id}));
+    const inventory={videos,families:[{id:familyId,dealerId:'linnea',eventId:'idle.ready',situation:'ready',playbackType:'idle-pool',standardIds:[base],variantIds:[alt]}]};
+    const f=await controllerFixture(t,{dealerId:'linnea',ownIdle:videos[0],idlePolicy:policy,customInventory:inventory,missingPosition:true});
     const original=globalThis.fetch;
     globalThis.fetch=async(url,options)=>{
       const response=await original(url,options);if(url!=='/api/presentation/select')return response;

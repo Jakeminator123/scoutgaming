@@ -37,25 +37,54 @@ export function documentationOnly(changes) {
   );
 }
 
-export function ciScope({ env = process.env, cwd = process.cwd() } = {}) {
+function migrationSensitivePath(path) {
+  // A client directory can also contain dependencies, schemas or build/config
+  // inputs. Serialized metadata is not proof of a presentation-only change.
+  return /\.(?:json5?|ya?ml|toml|ini|sql|ddl|prisma|lockb?)$/.test(path)
+    || /(?:^|\/)(?:migrations?|schemas?|configs?|configuration)(?:\/|$)/.test(path)
+    || /(?:^|\/)(?:\.env(?:\.[^/]+)?|\.npmrc|\.yarnrc|(?:[^/]+[.-])?(?:config|configuration|schema|build|setup)\.[cm]?[jt]s)$/.test(path);
+}
+
+export function migrationReadinessRequired(changes) {
+  if (!changes.length) return true;
+  if (documentationOnly(changes)) return false;
+  // Only clearly client-side edits and test-only edits avoid a live ledger read.
+  // Server code, migrations, dependencies, workflow and unknown paths stay strict.
+  return !changes.every(({path, before, after, status}) =>
+    /^[AMD]$/.test(status) && [before, after].every(mode => ['000000', '100644'].includes(mode)) &&
+    !path.includes('\\') && !path.split('/').some(part => ['', '.', '..'].includes(part)) &&
+    (/^(?:test\/|lab\/test\/)/.test(path)
+      || documentationOnly([{path, before, after, status}])
+      || !migrationSensitivePath(path)
+        && (/^(?:lab\/components\/|apps\/croupier-frontend\/components\/|packages\/design-preview\/)/.test(path)
+          || /\.(?:css|scss|png|jpg|jpeg|svg|webp)$/.test(path)))
+  );
+}
+
+export function ciSelection({ env = process.env, cwd = process.cwd() } = {}) {
   // Main and manual runs always verify the complete product after integration.
-  if (env.GITHUB_EVENT_NAME !== 'pull_request') return 'full';
-  if (!/^refs\/pull\/\d+\/merge$/.test(env.GITHUB_REF || '') || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) return 'full';
+  const complete = {scope: 'full', migration: true};
+  if (env.GITHUB_EVENT_NAME !== 'pull_request') return complete;
+  if (!/^refs\/pull\/\d+\/merge$/.test(env.GITHUB_REF || '') || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA || '')) return complete;
   const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
   const parents = git(['rev-list', '--parents', '-n', '1', 'HEAD']).trim().split(' ');
-  if (parents.length !== 3 || parents[0] !== env.GITHUB_SHA) return 'full';
+  if (parents.length !== 3 || parents[0] !== env.GITHUB_SHA) return complete;
   // Checkout's PR merge commit includes current main. Comparing its first
   // parent avoids misclassifying an old branch or looking only at its last push.
   const changes = parseDiff(git(['diff', '--raw', '--no-abbrev', '--no-renames', '--no-ext-diff', '--no-textconv', '-z', 'HEAD^1', 'HEAD', '--']));
-  return documentationOnly(changes) ? 'documentation' : 'full';
+  return {scope: documentationOnly(changes) ? 'documentation' : 'full', migration: migrationReadinessRequired(changes)};
+}
+
+export function ciScope(options) {
+  return ciSelection(options).scope;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const scope = ciScope();
-  console.log(`CI scope: ${scope}`);
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `scope=${scope}\n`);
+  const {scope, migration} = ciSelection();
+  console.log(`CI scope: ${scope}; production migration readiness: ${migration}`);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `scope=${scope}\nmigration=${migration}\n`);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     `### Verification scope: ${scope}\n\n${scope === 'documentation'
-      ? 'Prose-only PR: environment registry, delivery policy, documentation and system-map checks. No runtime acceptance is claimed.'
-      : 'Full product checks, Studio build, migration readiness, isolated SQL/HTTPS acceptance and worker checks.'}\n`);
+      ? 'Prose-only PR: environment registry, delivery policy and documentation checks. System-map reporting is informational. No runtime acceptance is claimed.'
+      : `Full product checks, Studio build, isolated SQL/HTTPS acceptance and worker checks. Live migration readiness: ${migration ? 'required' : 'not needed for client/test-only edits'}.`}\n`);
 }

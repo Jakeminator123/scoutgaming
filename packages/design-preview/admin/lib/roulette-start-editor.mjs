@@ -15,6 +15,10 @@ export function rouletteStartTables(project,laneId) {
       ? [{assetId:asset.id,designId:design.id,label:asset.label}]:[];
   });
 }
+export function rouletteStartCompositions(project,dealerId) {
+  return (project.lanes??[]).filter(lane=>lane.layers.dealer.enabled&&lane.layers.dealer.allowed.includes(dealerId)
+    &&rouletteStartTables(project,lane.id).length>0);
+}
 export function rouletteStartForm(project,dealerId,videoId) {
   const saved=project.dealers.find(dealer=>dealer.id===dealerId)?.rouletteStart;
   const chosen=videoId??saved?.videoId??'',binding=saved?.videoId===chosen?saved:null;
@@ -24,8 +28,8 @@ export function rouletteStartForm(project,dealerId,videoId) {
 }
 export function bindRouletteStart(project,inventory,dealerId,laneId,form) {
   const dealer=project.dealers.find(row=>row.id===dealerId);
-  const layer=project.lanes?.find(row=>row.id===laneId)?.layers.dealer;
-  if(!layer?.enabled||!layer.allowed.includes(dealerId))throw Error('Välj en sammansättning som uttryckligen tillåter denna dealer.');
+  if(!rouletteStartCompositions(project,dealerId).some(lane=>lane.id===laneId))
+    throw Error('Välj en sammansättning som tillåter denna dealer och ett registrerat roulettebord.');
   if(!dealer?.rouletteIdle)throw Error('Koppla roulettens grundloop innan du kopplar startfilmen.');
   const idle=inventory.videos.find(row=>row.id===dealer.rouletteIdle.videoId);
   if(!rouletteClipMatches(idle,dealerId,idleSlot))throw Error('Den kopplade roulette-grundloopen är inte tillgänglig.');

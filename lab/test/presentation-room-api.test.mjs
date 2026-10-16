@@ -31,7 +31,7 @@ const session = { user: 'room-admin', role: 'admin', scope };
 const clone = value => structuredClone(value);
 // One combined transactional fixture: documents, their history/audit and packages
 // commit or roll back together on the same connection. No external data/services.
-function idleRecord(dealerId = 'johanna', id = '00000000-0000-4000-8000-000000000001') {
+function idleRecord(dealerId = 'linnea', id = '00000000-0000-4000-8000-000000000001') {
   return { id, sha256: 'a'.repeat(64), size: 4096, contentType: 'video/mp4',
     pathname: `croupier/media/dealers/${dealerId}/review/uploads/${id}/${'a'.repeat(64)}.mp4`,
     classification: { dealerId, eventId: 'idle.ready', kind: 'idle', role: 'standard', situation: '', label: 'Grundloop', notes: '', playback: 'once', compositing: { mode: 'green-screen', threshold: .23, softness: .15, despill: 0 } } };
@@ -94,7 +94,7 @@ async function fixture(options = {}) {
   let project = createSeedProject();
   const vip = defaultPresentationLane('astrid'); vip.id = 'vip-presentation'; vip.label = 'VIP';
   project.lanes.push(vip);
-  const lanes = project.lanes, cloud = cloudPresentationFixture({project,lanes:[...lanes,...['vera','mei'].map(dealer => ({...defaultPresentationLane(dealer),id:'fixture-'+dealer}))]});
+  const lanes = project.lanes, cloud = cloudPresentationFixture({project,lanes:[...lanes,...['elin','saga'].map(dealer => ({...defaultPresentationLane(dealer),id:'fixture-'+dealer}))]});
   project = cloud.project; project.lanes = lanes;
   for (const {revision,...record} of cloud.mediaRows) pool.setMedia(record,revision);
   const administration = { gameLane:'mobile-phone', gameLanes:[{schemaVersion:1,id:'mobile-phone',label:'Fixture portrait',renderer:'portrait-video',dealer:'astrid',mediaCollection:'astrid-presentation'}], rooms: [{ id: 'legacy', name: 'Legacy', scene: 'classic', felt: 'green', dealer: 'astrid', state: 'live' }],
@@ -187,7 +187,7 @@ test('baked environments are explicit and multiple dealers do not prove a shared
   const f = await fixture(), ready = await f.prepare();
   assert.deepEqual(ready.environment, { kind: 'baked', fixed: true, label: 'Miljö i dealerfilmen' });
   const saved = await f.repository.readDocument('project'), lane = saved.value.lanes[1];
-  lane.dealers = ['astrid', 'vera']; lane.layers.dealer.allowed = ['astrid', 'vera'];
+  lane.dealers = ['astrid', 'elin']; lane.layers.dealer.allowed = ['astrid', 'elin'];
   await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
   const blocked = await f.prepare(), before = f.pool.snapshot();
   assert.deepEqual(blocked.environment, { kind: 'baked', fixed: false, label: 'Miljön följer vald dealer' });
@@ -245,7 +245,7 @@ test('roulette requires an explicit saved idle and never picks its blackjack bas
 
 test('roulette-only registered dealer publishes base and variant without requiring any blackjack clip',async()=>{
   const f=await registeredFixture({runtimeCapabilities:async()=>presentationCapabilitiesForVersion(15)});
-  const records=await saveRouletteBinding(f,'johanna',{removeBlackjack:true});
+  const records=await saveRouletteBinding(f,'linnea',{removeBlackjack:true});
   const before=f.pool.snapshot(),ready=await f.prepare('north',f.lane.id,'roulette');
   assert.equal(ready.ready,true);assert.equal(ready.capabilities.schemaVersion,15);assert.deepEqual(f.pool.snapshot(),before);
   assert.equal((await f.prepare('north',f.lane.id)).ready,false,'blackjack cannot borrow roulette idle');
@@ -494,10 +494,10 @@ test('replacing the selected definition cannot break an existing room bound to a
   const admin = await f.repository.readDocument('administration');
   await f.repository.saveDocument('administration', { value: { ...admin.value, gameLane: 'mobile-phone', gameLanes: [
     { schemaVersion: 1, id: 'mobile-phone', label: 'Mobile', dealer: 'astrid', renderer: 'portrait-video', mediaCollection: 'astrid-presentation' },
-    { schemaVersion: 1, id: 'vip-presentation', label: 'VIP Vera', dealer: 'vera', renderer: 'portrait-video', mediaCollection: 'vera-presentation' },
+    { schemaVersion: 1, id: 'vip-presentation', label: 'VIP Elin', dealer: 'elin', renderer: 'portrait-video', mediaCollection: 'elin-presentation' },
   ] }, expectedRevision: admin.revision, actor: session.user });
   const project = await f.repository.readDocument('project'); const changed = clone(project.value);
-  changed.lanes[1].dealers = ['vera']; changed.lanes[1].layers.dealer = { enabled: true, default: 'vera', allowed: ['vera'] };
+  changed.lanes[1].dealers = ['elin']; changed.lanes[1].layers.dealer = { enabled: true, default: 'elin', allowed: ['elin'] };
   await f.repository.saveDocument('project', { value: changed, expectedRevision: project.revision, actor: session.user });
   const ready = await f.prepare();assert.equal(ready.reason, 'presentation_package_conflict');assert.equal(ready.ready,false);
   assert.equal(ready.conflictCode, 'presentation_room_binding_conflict');
@@ -512,7 +512,7 @@ test('duplicate verifies the frozen room binding after a valid catalogue dealer 
   const f = await fixture(), body = await f.payload(), created = await f.create(body);
   const admin = await f.repository.readDocument('administration');
   await f.repository.saveDocument('administration', { value: { ...admin.value, gameLane: 'mobile-phone', gameLanes: [
-    { schemaVersion: 1, id: 'mobile-phone', label: 'Mobile Vera', dealer: 'vera', renderer: 'portrait-video', mediaCollection: 'vera-presentation' },
+    { schemaVersion: 1, id: 'mobile-phone', label: 'Mobile Elin', dealer: 'elin', renderer: 'portrait-video', mediaCollection: 'elin-presentation' },
   ] }, expectedRevision: admin.revision, actor: session.user });
   const before = f.pool.snapshot();
   const saved = { project: (await f.repository.readDocument('project')).value, administration: (await f.repository.readDocument('administration')).value };
@@ -526,7 +526,7 @@ test('duplicate verifies the frozen room binding after a valid catalogue dealer 
 test('a newer unpublished dealer choice does not invalidate a compatible frozen replay', async () => {
   const f = await fixture(), body = await f.payload(), first = await f.create(body);
   const saved = await f.repository.readDocument('project'), draft = clone(saved.value);
-  draft.lanes[1].dealers = ['vera']; draft.lanes[1].layers.dealer = { enabled: true, default: 'vera', allowed: ['vera'] };
+  draft.lanes[1].dealers = ['elin']; draft.lanes[1].layers.dealer = { enabled: true, default: 'elin', allowed: ['elin'] };
   await f.repository.saveDocument('project', { value: draft, expectedRevision: saved.revision, actor: session.user });
   const before = f.pool.snapshot(), duplicate = await f.create(body);
   assert.equal(duplicate.duplicate, true); assert.deepEqual(duplicate.room, first.room); assert.deepEqual(f.pool.snapshot(), before);
@@ -534,39 +534,39 @@ test('a newer unpublished dealer choice does not invalidate a compatible frozen 
 
 async function registeredFixture(options = {}) {
   const f = await fixture(options), current = await f.repository.readDocument('project');
-  const project = addDealer(current.value, 'johanna', 'Johanna'), record = idleRecord(); f.pool.setMedia(record);
-  const baseline = project.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready');
+  const project = addDealer(current.value, 'linnea', 'Linnea'), record = idleRecord(); f.pool.setMedia(record);
+  const baseline = project.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready');
   baseline.variants.find(row => row.id === baseline.baselineVariantId).videoGenerationId = record.id;
-  const lane = defaultPresentationLane('astrid'); lane.id = 'johns-johanna'; lane.label = 'Johns Johanna'; lane.renderer = 'portrait-video';
-  lane.dealers = ['johanna']; lane.layers.dealer = { enabled: true, default: 'johanna', allowed: ['johanna'] };
+  const lane = defaultPresentationLane('astrid'); lane.id = 'johns-linnea'; lane.label = 'Johns Linnea'; lane.renderer = 'portrait-video';
+  lane.dealers = ['linnea']; lane.layers.dealer = { enabled: true, default: 'linnea', allowed: ['linnea'] };
   lane.composition = defaultCompositionSettings(); lane.composition.mobile.dealer.y = .27;
   project.lanes.push(lane);
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: current.revision, value: project });
   const payload = async (extra = {}) => { const ready = await f.prepare('north', lane.id); return { operatorId: 'north', presentationLaneId: lane.id,
-    name: 'Johns Johanna', idempotencyKey: key, expectedProjectRevision: ready.projectRevision,
+    name: 'Johns Linnea', idempotencyKey: key, expectedProjectRevision: ready.projectRevision,
     expectedAdministrationRevision: ready.administrationRevision, expectedPackageRevision: ready.packageRevision, ...extra }; };
   return { ...f, record, lane, registeredPayload: payload };
 }
 
-test('Johanna without a technical lane creates one atomically and publishes her exact frozen idle and composition', async () => {
+test('Linnea without a technical lane creates one atomically and publishes her exact frozen idle and composition', async () => {
   const f = await registeredFixture(), before = f.pool.snapshot(), ready = await f.prepare('north', f.lane.id);
   assert.equal(ready.ready, true); assert.equal(ready.capabilities.schemaVersion, 4); assert.deepEqual(f.pool.snapshot(), before);
   const body = await f.registeredPayload(), result = await f.create(body), state = f.pool.snapshot();
   assert.match(result.room.gameLaneId, /^room-lane-[a-f0-9]{24}$/); assert.notEqual(result.room.gameLaneId, f.lane.id);
   const administration = (await f.repository.readDocument('administration')).value, lane = administration.gameLanes.find(row => row.id === result.room.gameLaneId);
-  assert.deepEqual(lane, { schemaVersion: 1, id: result.room.gameLaneId, label: 'Johns Johanna', renderer: 'portrait-video', dealer: 'johanna', mediaCollection: 'johanna-presentation' });
+  assert.deepEqual(lane, { schemaVersion: 1, id: result.room.gameLaneId, label: 'Johns Linnea', renderer: 'portrait-video', dealer: 'linnea', mediaCollection: 'linnea-presentation' });
   assert.equal(administration.gameLane, 'mobile-phone'); assert.equal(administration.gameLanes.length, 2);
   const raw = state.packages.at(-1), pack = { operatorId: 'north', revision: 1, lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) };
   const frozen = readPackagePresentation(pack);
-  assert.equal(frozen.schemaVersion, 3); assert.deepEqual(frozen.registeredDealers, [{ id: 'johanna', label: 'Johanna', idle: f.record }]);
+  assert.equal(frozen.schemaVersion, 3); assert.deepEqual(frozen.registeredDealers, [{ id: 'linnea', label: 'Linnea', idle: f.record }]);
   assert.deepEqual(pack.lanes, [f.lane.id]); assert.deepEqual(frozen.lanes[0].composition, f.lane.composition);
   const saved = { project: (await f.repository.readDocument('project')).value, administration };
   const selector = createGameEntrySelector({ policy: { readSaved: async () => saved, readGameConfiguration: async () => administration },
     packages: { resolve: async slug => ({ operator: { id: slug, status: 'active' }, package: pack }) } });
   const entry = await selector(new URL(result.playUrl, origin).search, { withChoices: true });
-  assert.equal(entry.status, 200); assert.equal(entry.selection.dealer, 'johanna'); assert.equal(entry.selection.lane, result.room.gameLaneId);
+  assert.equal(entry.status, 200); assert.equal(entry.selection.dealer, 'linnea'); assert.equal(entry.selection.lane, result.room.gameLaneId);
   assert.equal(entry.selection.roomId, result.room.id); assert.deepEqual(entry.selection.composition.settings, f.lane.composition);
-  assert.equal(entry.selection.choices.dealerDefault, 'johanna');
+  assert.equal(entry.selection.choices.dealerDefault, 'linnea');
   assert.equal((await selector('?operator=other&table=' + result.room.id)).status, 404);
   const writes = f.pool.trace.filter(row => ['save-document', 'publish-package'].includes(row.marker)).slice(-2);
   assert.equal(new Set(writes.map(row => row.client)).size, 1);
@@ -586,7 +586,7 @@ test('provider refusal and missing own idle never create a room or a catalogue p
     if (missing === 'provider') f.videoRegistry.verifyCapturedMedia = async () => { assert.equal(f.pool.active, 0); throw Object.assign(Error('fixture unavailable'), { statusCode: 503 }); };
     else {
       const saved = await f.repository.readDocument('project'), next = clone(saved.value);
-      const line = next.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready'); line.variants[0].videoGenerationId = null;
+      const line = next.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready'); line.variants[0].videoGenerationId = null;
       await f.repository.saveDocument('project', { actor: session.user, expectedRevision: saved.revision, value: next });
     }
     const project = await f.repository.readDocument('project'), admin = await f.repository.readDocument('administration'), before = f.pool.snapshot();
@@ -628,7 +628,7 @@ test('prepared room intent rechecks all three CAS preconditions under the write 
 test('successful generic replay remains bound to the frozen idle without mutable provider access or writes', async () => {
   const f = await registeredFixture(), body = await f.registeredPayload(), first = await f.create(body);
   const saved = await f.repository.readDocument('project'), project = clone(saved.value);
-  const line = project.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready'); line.variants[0].videoGenerationId = null;
+  const line = project.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready'); line.variants[0].videoGenerationId = null;
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: saved.revision, value: project });
   f.videoRegistry.loadCaptured = f.videoRegistry.verifyCapturedMedia = () => { throw Error('Replay must never inspect mutable provider media'); };
   const before = f.pool.snapshot(), replay = await f.create(body);
@@ -644,8 +644,8 @@ test('an ambiguous compatible catalogue creates one deterministic lane, a later 
   const second = await f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444', name: 'Second room' }));
   assert.equal(second.room.gameLaneId, first.room.gameLaneId);
   const saved = await f.repository.readDocument('administration'), changed = clone(saved.value);
-  changed.gameLanes.find(row => row.id === first.room.gameLaneId).dealer = 'vera';
-  changed.gameLanes.find(row => row.id === first.room.gameLaneId).mediaCollection = 'vera-presentation';
+  changed.gameLanes.find(row => row.id === first.room.gameLaneId).dealer = 'elin';
+  changed.gameLanes.find(row => row.id === first.room.gameLaneId).mediaCollection = 'elin-presentation';
   await f.repository.saveDocument('administration', { actor: session.user, expectedRevision: saved.revision, value: changed });
   const ready = await f.prepare(); assert.equal(ready.reason, 'presentation_package_conflict');
   assert.equal(ready.conflictCode, 'presentation_game_lane_conflict');
@@ -657,11 +657,11 @@ test('creating an unrelated original dealer room preserves the previously frozen
   const f = await registeredFixture(), first = await f.create(await f.registeredPayload()), initial = f.pool.snapshot().packages.at(-1);
   const old = readPackagePresentation({ lanes: JSON.parse(initial.lanes), branding: JSON.parse(initial.branding) });
   const project = await f.repository.readDocument('project'), next = clone(project.value);
-  next.dealers.find(row => row.id === 'johanna').label = 'Unpublished label'; next.lanes.find(row => row.id === f.lane.id).composition.mobile.dealer.y = .8;
+  next.dealers.find(row => row.id === 'linnea').label = 'Unpublished label'; next.lanes.find(row => row.id === f.lane.id).composition.mobile.dealer.y = .8;
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: project.revision, value: next });
   await f.create(await f.payload({ idempotencyKey: '0bbb0000-1111-4222-8333-444444444444', name: 'Original room' }));
   const row = f.pool.snapshot().packages.at(-1), final = readPackagePresentation({ lanes: JSON.parse(row.lanes), branding: JSON.parse(row.branding) });
-  assert.equal(final.schemaVersion, 3); assert.deepEqual(final.registeredDealers.filter(row=>row.id==='johanna'), old.registeredDealers);
+  assert.equal(final.schemaVersion, 3); assert.deepEqual(final.registeredDealers.filter(row=>row.id==='linnea'), old.registeredDealers);
   assert.deepEqual(final.lanes.find(lane => lane.id === f.lane.id), old.lanes[0]); assert.ok(JSON.parse(row.tables).includes(first.room.id));
 });
 
@@ -686,7 +686,7 @@ test('a new room on the same baked composition preserves the entire frozen idle 
     if (change === 'compositing') changed.classification.compositing.threshold = .7;
     f.pool.setMedia(changed, 'media-replacement');
     const saved = await f.repository.readDocument('project');
-    saved.value.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready').variants[0].videoGenerationId = changed.id;
+    saved.value.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready').variants[0].videoGenerationId = changed.id;
     const project = await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
     const administration = await f.repository.readDocument('administration'), before = f.pool.snapshot();
     const ready = await f.prepare('north', f.lane.id);
@@ -699,16 +699,16 @@ test('a new room on the same baked composition preserves the entire frozen idle 
     assert.equal(retry.duplicate, true); assert.deepEqual(retry.room, first.room); assert.deepEqual(f.pool.snapshot(), before, change);
     const raw = before.packages.at(-1), frozen = readPackagePresentation({ operatorId: 'north', revision: raw.package_revision,
       lanes: JSON.parse(raw.lanes), tables: JSON.parse(raw.tables), branding: JSON.parse(raw.branding) });
-    assert.deepEqual(frozen.registeredDealers.find(row => row.id === 'johanna').idle, f.record, change);
+    assert.deepEqual(frozen.registeredDealers.find(row => row.id === 'linnea').idle, f.record, change);
   }
 });
 
 test('a selected generic idle cannot silently replace the idle of another frozen presentation', async () => {
   const f = await registeredFixture(); await f.create(await f.registeredPayload());
   const saved = await f.repository.readDocument('project'), next = clone(saved.value), second = clone(next.lanes.find(row => row.id === f.lane.id));
-  second.id = 'second-johanna'; second.label = 'Other Johanna'; next.lanes.push(second);
-  const changed = idleRecord('johanna', '00000000-0000-4000-8000-000000000002'); f.pool.setMedia(changed, 'media-new');
-  const line = next.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready'); line.variants[0].videoGenerationId = changed.id;
+  second.id = 'second-linnea'; second.label = 'Other Linnea'; next.lanes.push(second);
+  const changed = idleRecord('linnea', '00000000-0000-4000-8000-000000000002'); f.pool.setMedia(changed, 'media-new');
+  const line = next.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready'); line.variants[0].videoGenerationId = changed.id;
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: saved.revision, value: next });
   const ready = await f.prepare('north', second.id); assert.equal(ready.ready, false); assert.equal(ready.reason, 'presentation_package_conflict');
   assert.equal(ready.conflictCode, 'presentation_shared_dealer_conflict');
@@ -718,8 +718,8 @@ test('a selected generic idle cannot silently replace the idle of another frozen
   assert.deepEqual(f.pool.snapshot(), before);
 });
 
-test('explicit active historical dealer registrations are playable only with frozen own idle and v3 publication', async () => {
-  for (const dealer of ['vera','astrid','mei']) {
+test('explicit active dealer registrations are playable only with frozen own idle and v3 publication', async () => {
+  for (const dealer of ['elin','astrid','saga']) {
     const f = await fixture(), project = await f.repository.readDocument('project'), next = clone(project.value);
     const lane = next.lanes.find(row => row.id === 'vip-presentation'); lane.dealers = [dealer]; lane.layers.dealer = { enabled: true, default: dealer, allowed: [dealer] };
     await f.repository.saveDocument('project', { actor: session.user, expectedRevision: project.revision, value: next });
@@ -743,7 +743,7 @@ test('existing frozen v3 publication requires v4 before adding another room', as
   const before = f.pool.snapshot(); await assert.rejects(f.create(await f.payload()), status(503)); assert.deepEqual(f.pool.snapshot(), before);
 });
 
-test('adding Johanna cannot silently migrate an unrelated legacy Nora presentation without its frozen idle', async () => {
+test('adding Linnea cannot silently migrate an unrelated legacy Nora presentation without its frozen idle', async () => {
   const f = await registeredFixture(), current = await f.repository.readDocument('project'), project = addDealer(current.value, 'nora', 'Nora');
   const nora = defaultPresentationLane('astrid'); nora.id = 'nora-mobile'; nora.dealers = ['nora']; nora.layers.dealer = { enabled: true, default: 'nora', allowed: ['nora'] }; project.lanes.push(nora);
   await f.repository.saveDocument('project', { actor: session.user, expectedRevision: current.revision, value: project });
@@ -786,7 +786,7 @@ test('the native room preparation map keeps provider and capability I/O outside 
 
 test('the full Studio admin route requires v15 for roulette and rejects the shipped v14 category contract', async () => {
   const f = await registeredFixture(), versions = []; let engineVersion = 14;
-  await saveRouletteBinding(f,'johanna');
+  await saveRouletteBinding(f,'linnea');
   const guarded = wrapNativePresentationRepository(f.repository, {env: {CROUPIER_BACKEND_ORIGIN: 'https://engine.example.invalid'},
     fetchImpl: async (_url, options) => {
       assert.equal(f.pool.active, 0);
@@ -816,7 +816,7 @@ test('a frozen default idle removed by another package writer makes replay confl
   const f = await registeredFixture(), body = await f.registeredPayload(); await f.create(body);
   const current = f.pool.snapshot().packages.at(-1), pack = { lanes: JSON.parse(current.lanes), branding: JSON.parse(current.branding) }, frozen = readPackagePresentation(pack);
   frozen.registeredDealers[0].idle = null;
-  const idleLine = frozen.playback.lines.find(line => line.dealerId === 'johanna' && line.eventId === 'idle.ready');
+  const idleLine = frozen.playback.lines.find(line => line.dealerId === 'linnea' && line.eventId === 'idle.ready');
   idleLine.variants.find(variant => variant.id === idleLine.baselineVariantId).videoGenerationId = null;
   frozen.playback.media = [];
   await f.publish({ actor: session.user, operatorId: 'north', expectedRevision: 1, lanes: pack.lanes, games: ['blackjack'], tables: JSON.parse(current.tables),
@@ -846,11 +846,11 @@ test('room listing exposes only live published rooms of this operator and presen
 });
 
 
-test('a saved Vera-Johanna-Astrid presentation can add a room while preserving the current Johanna package and room', async () => {
+test('a saved Elin-Linnea-Astrid presentation can add a room while preserving the current Linnea package and room', async () => {
   const f=await registeredFixture(), first=await f.create(await f.registeredPayload());
   const initial=f.pool.snapshot().packages.at(-1), previous=readPackagePresentation({lanes:JSON.parse(initial.lanes),branding:JSON.parse(initial.branding)});
   const saved=await f.repository.readDocument('project'), project=clone(saved.value), mobile=project.lanes.find(lane=>lane.id==='mobile-phone');
-  mobile.dealers=['vera','johanna','astrid'];mobile.layers.dealer={enabled:true,default:'vera',allowed:[...mobile.dealers]};
+  mobile.dealers=['elin','linnea','astrid'];mobile.layers.dealer={enabled:true,default:'elin',allowed:[...mobile.dealers]};
   mobile.composition=defaultCompositionSettings();
   fixedBackground(project, mobile);
   await f.repository.saveDocument('project',{actor:session.user,expectedRevision:saved.revision,value:project});
@@ -860,28 +860,28 @@ test('a saved Vera-Johanna-Astrid presentation can add a room while preserving t
     expectedAdministrationRevision:prepared.administrationRevision,expectedPackageRevision:prepared.packageRevision});
   const raw=f.pool.snapshot().packages.at(-1),pack={operatorId:'north',revision:raw.package_revision,lanes:JSON.parse(raw.lanes),tables:JSON.parse(raw.tables),branding:JSON.parse(raw.branding)};
   const frozen=readPackagePresentation(pack);
-  assert.deepEqual(frozen.lanes.find(lane=>lane.id==='johns-johanna'),previous.lanes[0]);
-  assert.deepEqual(frozen.registeredDealers.filter(row=>row.id==='johanna'),previous.registeredDealers);
-  assert.deepEqual(frozen.playback.lines.filter(row=>row.dealerId==='johanna'),previous.playback.lines);
+  assert.deepEqual(frozen.lanes.find(lane=>lane.id==='johns-linnea'),previous.lanes[0]);
+  assert.deepEqual(frozen.registeredDealers.filter(row=>row.id==='linnea'),previous.registeredDealers);
+  assert.deepEqual(frozen.playback.lines.filter(row=>row.dealerId==='linnea'),previous.playback.lines);
   for(const key of ['media','assets','triggers']) for(const old of previous.playback[key]) assert.deepEqual(frozen.playback[key].find(row=>row.id===old.id),old);
   assert.deepEqual(new Set(pack.tables),new Set([first.room.id,created.room.id]));
   const administration=(await f.repository.readDocument('administration')).value;
   const select=createGameEntrySelector({policy:{readSaved:async()=>({project,administration}),readGameConfiguration:async()=>administration},
     packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
-  const entry=await select(new URL(created.playUrl,origin).search);assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'vera');
-  assert.deepEqual(entry.selection.choices.dealers,['vera','johanna','astrid']);
-  assert.equal((await select(new URL(first.playUrl,origin).search)).selection.dealer,'johanna');
+  const entry=await select(new URL(created.playUrl,origin).search);assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'elin');
+  assert.deepEqual(entry.selection.choices.dealers,['elin','linnea','astrid']);
+  assert.equal((await select(new URL(first.playUrl,origin).search)).selection.dealer,'linnea');
 });
 
 
 test('shared frozen event changes return a safe dealer conflict on either presentation and preserve published rooms', async () => {
   const f = await registeredFixture(), first = await f.create(await f.registeredPayload());
-  const saved = await f.repository.readDocument('project'), second = clone(f.lane); second.id = 'second-johanna';
+  const saved = await f.repository.readDocument('project'), second = clone(f.lane); second.id = 'second-linnea';
   saved.value.lanes.push(second);
   await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: session.user });
   await f.create(await f.registeredPayload({ presentationLaneId: second.id, idempotencyKey: '0bbb0000-1111-4222-8333-444444444444' }));
   const edited = await f.repository.readDocument('project');
-  edited.value.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].label = 'Updated saved event';
+  edited.value.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'speak.goodluck').variants[0].label = 'Updated saved event';
   await f.repository.saveDocument('project', { value: edited.value, expectedRevision: edited.revision, actor: session.user });
   const before = f.pool.snapshot();
   for (const id of [f.lane.id, second.id]) {
@@ -920,11 +920,11 @@ test('unknown internal conflicts remain generic and never reflect raw errors or 
 
 test('room preflight accepts a saved v3 allowed default change on the existing Astrid room without writes', async () => {
   const f=await registeredFixture(), saved=await f.repository.readDocument('project'), lane=saved.value.lanes.find(row=>row.id===f.lane.id);
-  lane.dealers=['astrid','johanna'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','johanna']};
+  lane.dealers=['astrid','linnea'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','linnea']};
   fixedBackground(saved.value, lane);
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:session.user});
   const created=await f.create(await f.registeredPayload()), changed=await f.repository.readDocument('project');
-  changed.value.lanes.find(row=>row.id===f.lane.id).layers.dealer.default='johanna';
+  changed.value.lanes.find(row=>row.id===f.lane.id).layers.dealer.default='linnea';
   await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:session.user});
   const before=f.pool.snapshot(), ready=await f.prepare('north',f.lane.id);
   assert.equal(ready.ready,true);assert.equal(ready.conflictCode,null);assert.equal(ready.rooms[0].id,created.room.id);

@@ -32,9 +32,9 @@ export function presentationFixture() {
     return { ...asset, pathname: layerAssetPath(asset) };
   });
   const lanes = ['first-presentation', 'vip-presentation'].map((id, index) => {
-    const lane = { ...defaultPresentationLane('astrid'), id, dealers: ['astrid', 'vera'],
+    const lane = { ...defaultPresentationLane('astrid'), id, dealers: ['astrid', 'elin'],
       operatorAdjustable: ['table', 'table.color', 'background', 'dealer'], composition: defaultCompositionSettings() };
-    lane.layers.dealer = { enabled: true, default: 'astrid', allowed: ['astrid', 'vera'] };
+    lane.layers.dealer = { enabled: true, default: 'astrid', allowed: ['astrid', 'elin'] };
     lane.layers.table = { enabled: true, default: assets[index].id, allowed: assets.slice(0, 2).map(row => row.id), colors: ['#112233', '#445566'] };
     lane.layers.background = { enabled: true, mode: 'image', default: assets[index + 2].id, allowed: assets.slice(2).map(row => row.id) };
     return lane;
@@ -107,7 +107,7 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     const response = await call(path, { cookie, body }, configuration); const value = await response.json();
     assert.equal(response.status, status, JSON.stringify({ action: body.action, value })); return value;
   };
-  const editable = { lane: fixture.lanes[0].id, dealer: 'vera', color: '#445566' };
+  const editable = { lane: fixture.lanes[0].id, dealer: 'elin', color: '#445566' };
   const versions = state => ({ expectedDraftRevision: state.draft?.revision ?? state.draftRevision ?? 0, expectedPackageRevision: state.packageRevision });
   const snapshot = async () => ({ package: await store.getCurrentPackage('draft-north'), draft: await store.getBrandingDraft('draft-north'),
     journal: await store.listAuditEvents('draft-north', { limit: 100 }) });
@@ -133,13 +133,13 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     const before = await store.getCurrentPackage('draft-north');
     const saved = await post({ action: 'save-draft', ...versions(await get()), branding: editable }, { cookie: editor });
     assert.equal(saved.draft.revision, 1); assert.equal(saved.draft.basePackageRevision, 1);
-    assert.equal(saved.draft.branding.dealer, 'vera'); assert.deepEqual(await store.getCurrentPackage('draft-north'), before);
+    assert.equal(saved.draft.branding.dealer, 'elin'); assert.deepEqual(await store.getCurrentPackage('draft-north'), before);
     const expected = await snapshot(); await refreshPools();
     assert.deepEqual(await snapshot(), expected); assert.deepEqual((await get()).draft, saved.draft);
   });
   await check('two real editors with one draft revision preserve the winner and reject stale CAS', async () => {
     const state = await get(), before = await snapshot();
-    const bodies = ['astrid', 'vera'].map(dealer => ({ action: 'save-draft', ...versions(state), branding: { ...editable, dealer } }));
+    const bodies = ['astrid', 'elin'].map(dealer => ({ action: 'save-draft', ...versions(state), branding: { ...editable, dealer } }));
     const responses = await Promise.all(bodies.map((body, index) => call(path, { cookie: index ? editor : admin, body })));
     assert.deepEqual(responses.map(response => response.status).sort(), [200, 409]);
     const winner = await responses.find(response => response.status === 200).json();
@@ -223,7 +223,7 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     const current = await store.getCurrentPackage('draft-north');
     assert.deepEqual(readPackagePresentation(current), readPackagePresentation(before));
     assert.deepEqual(current.tables, before.tables); assert.deepEqual(current.lanes, before.lanes);
-    assert.equal(current.branding.dealer, 'vera'); assert.equal(current.branding.color, '#445566');
+    assert.equal(current.branding.dealer, 'elin'); assert.equal(current.branding.color, '#445566');
     assert.ok(published.history.some(row => row.revision === before.revision));
     const expected = await snapshot(); await post(body, { status: 409 }); assert.deepEqual(await snapshot(), expected);
   });
@@ -246,7 +246,7 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     const rendered = selected => resolvePlayerSelection({ choices: selected.choices, branding: selected.branding, currentDealer: selected.dealer, composition: selected.composition });
     const roomBranding = { ...editable, roomOverrides: {
       'draft-room-first': { color: '#112233', dealer: 'astrid' },
-      'draft-room-vip': { color: '#445566', dealer: 'vera' },
+      'draft-room-vip': { color: '#445566', dealer: 'elin' },
     } };
     const saved = await post({ action: 'save-draft', ...versions(await get()), branding: roomBranding });
     const review = await post({ action: 'review', ...versions(saved) });
@@ -254,7 +254,7 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     const published = await post({ action: 'publish', ...versions(saved), reviewToken: review.reviewToken });
     const first = await entry('draft-room-first'), vip = await entry('draft-room-vip');
     assert.equal(first.packageRevision, published.packageRevision); assert.equal(rendered(first).tableColor, '#112233');
-    assert.equal(rendered(first).dealer, 'astrid'); assert.equal(rendered(vip).tableColor, '#445566'); assert.equal(rendered(vip).dealer, 'vera');
+    assert.equal(rendered(first).dealer, 'astrid'); assert.equal(rendered(vip).tableColor, '#445566'); assert.equal(rendered(vip).dealer, 'elin');
     assert.equal((await select(new URLSearchParams({ operator: 'draft-north', table: 'draft-room-foreign' }))).status, 404);
     assert.equal((await select(new URLSearchParams({ operator: 'draft-north', table: 'draft-room-hidden' }))).status, 404);
 
@@ -272,7 +272,7 @@ export async function runPartnerBrandingPostgresChecks({ operatorPool, authPool,
     idle = true;
     assert.equal(await boundary.beforeRound(), false); assert.equal(reads, 1); assert.deepEqual(refreshes, [resetPublished.packageRevision]);
     assert.equal(await boundary.beforeRound(), false); assert.equal(reads, 1, 'refresh blocks repeated round starts');
-    const next = await entry('draft-room-first'); assert.equal(rendered(next).tableColor, '#445566'); assert.equal(rendered(next).dealer, 'vera');
+    const next = await entry('draft-room-first'); assert.equal(rendered(next).tableColor, '#445566'); assert.equal(rendered(next).dealer, 'elin');
     const nextVip = await entry('draft-room-vip'); assert.equal(nextVip.branding.color, undefined, 'another lane inherits its frozen defaults');
     assert.equal(nextVip.branding.roomOverrides, undefined, 'runtime receives only selected-room effective values');
   });

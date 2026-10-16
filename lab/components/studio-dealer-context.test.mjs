@@ -1,3 +1,4 @@
+import {createLegacyProject} from '../test/fixtures/legacy-project.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -6,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
+import { addDealer, createSeedProject, normalizeProject } from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -97,7 +98,7 @@ test('authenticated administration route forwards the first selected dealer to t
 
 
 test('retired dealer links and active pickers are rejected without deleting saved dealer history',()=>{
-  const project=createSeedProject(),before=structuredClone(project);
+  const project=normalizeProject(createLegacyProject()),before=structuredClone(project);
   assert.ok(project.dealers.some(row=>row.id==='amira'));
   const {activeStudioDealers,resolveStudioDealerId}=loadTs(new URL('./studio-types.ts',import.meta.url));
   assert.equal(resolveStudioDealerId(project,'amira'),'');

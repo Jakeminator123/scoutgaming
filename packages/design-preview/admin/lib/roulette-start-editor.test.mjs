@@ -56,6 +56,25 @@ test('start binding refuses cross-game/dealer media, unreviewed poses, missing f
     f=>delete f.project.dealers.find(row=>row.id===dealerId).rouletteIdle,
   ]){const f=fixture();mutate(f);assert.throws(()=>editor.bindRouletteStart(f.project,f.inventory,dealerId,f.laneId,f.form));}
 });
+
+test('start composition choices require the dealer and an allowed registered roulette table',()=>{
+  const f=fixture(),before=structuredClone(f.project);
+  assert.deepEqual(editor.rouletteStartCompositions(f.project,dealerId).map(lane=>lane.id),[f.laneId]);
+  assert.deepEqual(f.project,before);
+  for(const mutate of [
+    value=>value.project.lanes[0].layers.dealer.enabled=false,
+    value=>value.project.lanes[0].layers.dealer.allowed=['vera'],
+    value=>value.project.lanes[0].layers.table.enabled=false,
+    value=>value.project.lanes[0].layers.table.allowed=[],
+    value=>value.project.layerAssets=[],
+    value=>value.table.game='blackjack',
+    value=>value.table.sha256='b'.repeat(64),
+  ]){
+    const invalid=fixture();mutate(invalid);
+    assert.deepEqual(editor.rouletteStartCompositions(invalid.project,dealerId),[]);
+    assert.throws(()=>editor.bindRouletteStart(invalid.project,invalid.inventory,dealerId,invalid.laneId,invalid.form),/dealer och ett registrerat roulettebord/);
+  }
+});
 test('start editor exposes saved values, missing-data errors and separate metadata review',()=>{
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
   const module={exports:{}},source=readFileSync(new URL('../components/studio/roulette-start-editor.tsx',import.meta.url),'utf8');
@@ -68,5 +87,7 @@ test('start editor exposes saved values, missing-data errors and separate metada
   const other={...structuredClone(f.project.lanes[0]),id:'unassigned-anna',label:'Anna without room'};f.project.lanes.push(other);
   assert.match(render(f.project),/Anna without room/,'unassigned compatible templates remain explicitly selectable');
   other.layers.dealer.allowed=['vera'];assert.doesNotMatch(render(f.project),/Anna without room/);
+  other.layers.dealer.allowed=[dealerId];other.layers.table.allowed=[];
+  assert.doesNotMatch(render(f.project),/Anna without room/,'dealer-compatible templates without a roulette table are excluded');
   assert.match(render(fixture().project),/Ange filmens längd|Välj en registrerad rouletteborddesign/);
 });

@@ -11,11 +11,11 @@ import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
 import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
 import {createPartnerBrandingApi} from '../lab/lib/partner-branding-api.mjs';
 
-function fixture({schemaVersion=3,includeHistoricalNames=false}={}) {
-  let project=addDealer(addDealer(addDealer(createEmptyProject(),'johanna','Johanna'),'nora','Nora'),'foreign','Foreign draft');
-  if(includeHistoricalNames)for(const id of ['vera','mei','astrid'])project=addDealer(project,id,id);
-  const lane=defaultPresentationLane('johanna');project.lanes=[lane];lane.id='johns-presentation';lane.dealers=['johanna','nora',...(includeHistoricalNames?['vera','mei','astrid']:[])];
-  lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
+function fixture({schemaVersion=3,includeBaselineDealer=false}={}) {
+  let project=addDealer(addDealer(addDealer(createEmptyProject(),'linnea','Linnea'),'nora','Nora'),'foreign','Foreign draft');
+  if(includeBaselineDealer)for(const id of ['astrid'])project=addDealer(project,id,id);
+  const lane=defaultPresentationLane('linnea');project.lanes=[lane];lane.id='johns-presentation';lane.dealers=['linnea','nora',...(includeBaselineDealer?['astrid']:[])];
+  lane.layers.dealer={enabled:true,default:'linnea',allowed:[...lane.dealers]};
   lane.operatorAdjustable=['dealer','branding'];lane.composition=defaultCompositionSettings();
   const mediaRows=lane.dealers.map((dealerId,index)=>{
     const id='10000000-0000-4000-8000-'+String(index+1).padStart(12,'0'),sha256=String(index+1).repeat(64);
@@ -31,9 +31,9 @@ function fixture({schemaVersion=3,includeHistoricalNames=false}={}) {
   let presentation=captureFrozenPresentation({snapshot,inventory,selectedLaneIds:[lane.id],requiredIdleDealerIds:lane.dealers}).presentation;
   if(schemaVersion===2){presentation=structuredClone(presentation);presentation.schemaVersion=2;delete presentation.playback;}
   const room={schemaVersion:2,id:'room-johns',name:'Johns room',operatorId:'north',presentationLaneId:lane.id,
-    gameLaneId:'portrait-johanna',state:'live'};
-  const administration={gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Johanna room',
-    renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}],rooms:[room]};
+    gameLaneId:'portrait-linnea',state:'live'};
+  const administration={gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Linnea room',
+    renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]};
   let pack={operatorId:'north',revision:1,lanes:[lane.id],games:['blackjack'],tables:[room.id],
     branding:withPackagePresentation({name:'Johns'},presentation)};
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project,administration})},
@@ -57,17 +57,17 @@ function clientDocument(selection) {
 
 test('v3 room switches between its two frozen own dealers and excludes a dealer from the latest draft',async()=>{
   const f=fixture(),before=f.pack();
-  for(const [requested,expected]of [['johanna','johanna'],['nora','nora']]) {
+  for(const [requested,expected]of [['linnea','linnea'],['nora','nora']]) {
     const result=await f.select('operator=north&table=room-johns&dealer='+requested);
     assert.equal(result.status,200);
     const {selection}=clientDocument(result.selection);
     assert.equal(selection.dealer,expected);assert.equal(selection.localDealer,expected);
-    assert.equal(selection.lane,'portrait-johanna');assert.equal(selection.roomId,'room-johns');
+    assert.equal(selection.lane,'portrait-linnea');assert.equal(selection.roomId,'room-johns');
     assert.equal(selection.presentation,'local');assert.equal(selection.packageRevision,1);
-    assert.deepEqual(selection.choices.dealers,['johanna','nora']);
-    assert.deepEqual(selection.registeredDealers.map(row=>row.id),['johanna','nora']);
+    assert.deepEqual(selection.choices.dealers,['linnea','nora']);
+    assert.deepEqual(selection.registeredDealers.map(row=>row.id),['linnea','nora']);
   }
-  for(const dealer of ['foreign','amira'])assert.equal((await f.select('operator=north&table=room-johns&dealer='+dealer)).status,404);
+  for(const dealer of ['foreign','vera','mei','amira','johanna'])assert.equal((await f.select('operator=north&table=room-johns&dealer='+dealer)).status,404);
   assert.deepEqual(f.pack(),before);
   assert.equal((await f.select('operator=north&table=foreign-room&dealer=nora')).status,404);
   assert.equal((await f.select('operator=foreign&table=room-johns&dealer=nora')).status,404);
@@ -79,7 +79,7 @@ test('dealer navigation round trip retains the v3 room and exact requested ident
   t.after(()=>{if(previous)Object.defineProperty(globalThis,'document',previous);else delete globalThis.document;});
   const url=new URL(dealerVersionPath('nora','original','?operator=north&table=room-johns&launch=private'),'https://game.invalid');
   assert.equal(url.pathname,'/blackjack');assert.equal(url.searchParams.has('launch'),false);
-  assert.equal(url.searchParams.get('lane'),'portrait-johanna');assert.equal(url.searchParams.get('table'),'room-johns');
+  assert.equal(url.searchParams.get('lane'),'portrait-linnea');assert.equal(url.searchParams.get('table'),'room-johns');
   const next=(await f.select(url.searchParams)).selection;
   assert.equal(next.dealer,'nora');assert.equal(next.roomId,'room-johns');
   assert.throws(()=>dealerVersionPath('foreign','original'),/Dealer is not registered/);
@@ -88,15 +88,15 @@ test('v2 own-dealer room keeps its single-dealer contract even if its frozen lan
   const f=fixture({schemaVersion:2});
   assert.equal((await f.select('operator=north&table=room-johns&dealer=nora')).status,404);
   const result=await f.select('operator=north&table=room-johns');
-  assert.equal(result.selection.dealer,'johanna');
-  assert.deepEqual(result.selection.choices.dealers,['johanna']);
-  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[f.lane.id],['johanna']);
+  assert.equal(result.selection.dealer,'linnea');
+  assert.deepEqual(result.selection.choices.dealers,['linnea']);
+  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[f.lane.id],['linnea']);
   await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'nora'}}),error=>error.statusCode===409);
   assert.equal(f.pack().revision,1);
 });
 test('partner can save either frozen v3 dealer and the chosen identity reaches that room without rewriting its frozen package',async()=>{
   const f=fixture(),original=readPackagePresentation(f.pack());
-  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[f.lane.id],['johanna','nora']);
+  assert.deepEqual((await f.api.read({operatorId:'north'})).dealerChoices[f.lane.id],['linnea','nora']);
   await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'foreign'}}),error=>error.statusCode===422);
   const saved=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{lane:f.lane.id,dealer:'nora'}});
   assert.equal(saved.branding.dealer,'nora');assert.equal(saved.packageRevision,2);
@@ -105,23 +105,23 @@ test('partner can save either frozen v3 dealer and the chosen identity reaches t
   const choice=resolvePlayerSelection({choices:selection.choices,branding:selection.branding,currentDealer:selection.dealer,composition:selection.composition});
   assert.equal(choice.dealer,'nora');assert.equal(choice.navigateDealer,'nora');
   assert.equal((await f.select('operator=north&table=room-johns&dealer='+choice.navigateDealer)).selection.dealer,'nora');
-  await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'johanna'}}),error=>error.statusCode===409);
-  const reverted=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:2,branding:{dealer:'johanna'}});
-  assert.equal(reverted.branding.dealer,'johanna');assert.equal(reverted.packageRevision,3);
+  await assert.rejects(f.api.write({operatorId:'north',actor:'partner',expectedRevision:1,branding:{dealer:'linnea'}}),error=>error.statusCode===409);
+  const reverted=await f.api.write({operatorId:'north',actor:'partner',expectedRevision:2,branding:{dealer:'linnea'}});
+  assert.equal(reverted.branding.dealer,'linnea');assert.equal(reverted.packageRevision,3);
 });
 
-test('historical dealer names use their own frozen cloud media and never indexed adapters',async()=>{
-  const f=fixture({includeHistoricalNames:true}),before=f.pack();
-  for(const dealer of ['nora','vera','johanna','mei','astrid']){
+test('the active baseline dealer uses its own frozen cloud media and never indexed adapters',async()=>{
+  const f=fixture({includeBaselineDealer:true}),before=f.pack();
+  for(const dealer of ['nora','linnea','astrid']){
     const result=await f.select('operator=north&table=room-johns&dealer='+dealer);
     assert.equal(result.status,200);
     const {selection}=clientDocument(result.selection);
     assert.equal(selection.dealer,dealer);assert.equal(selection.presentation,'local');assert.equal(selection.localDealer,dealer);
-    assert.equal(selection.operator,'north');assert.equal(selection.roomId,'room-johns');assert.equal(selection.lane,'portrait-johanna');assert.equal(selection.packageRevision,1);
-    assert.deepEqual(selection.choices.dealers,['johanna','nora','vera','mei','astrid']);
+    assert.equal(selection.operator,'north');assert.equal(selection.roomId,'room-johns');assert.equal(selection.lane,'portrait-linnea');assert.equal(selection.packageRevision,1);
+    assert.deepEqual(selection.choices.dealers,['linnea','nora','astrid']);
     assert.equal(selection.composition.dealer.compatibility,'per-clip');
     assert.ok(f.presentation.playback.media.some(row=>row.classification.dealerId===dealer));
   }
-  for(const dealer of ['foreign','amira'])assert.equal((await f.select('operator=north&table=room-johns&dealer='+dealer)).status,404);
+  for(const dealer of ['foreign','vera','mei','amira','johanna'])assert.equal((await f.select('operator=north&table=room-johns&dealer='+dealer)).status,404);
   assert.deepEqual(f.pack(),before);
 });

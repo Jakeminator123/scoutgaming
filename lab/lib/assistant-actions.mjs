@@ -86,7 +86,8 @@ export async function prepareAssistantAction(runtime,request,proposal,{services=
         if(!restore)check=await assistantRead(await api.handle(assistantRequest(request,runtime,'/dealers/archive-check','POST',body)));
         body={...body,archived:!restore,...(!restore?{impactToken:check.impact.token}:{})};
         path='/dealers/archive';
-        impact=restore?{notice:'Återställs som utkast med tal avstängt. Rum öppnas inte automatiskt.'}:{...check.impact,notice:'Dealern och berörda kopplingar flyttas till papperskorgen. Se alla berörda rum och bolag nedan. Historik och källfiler bevaras.'};
+        const compositions=restore?p.dealerTrash?.find(entry=>entry.dealer.id===targetId)?.compositions??[]:[];
+        impact=restore?{notice:`Dealern, materialet och sparade sammansättningar återförs som utkast. Sparade sammansättningar (${compositions.length}): ${compositions.map(name).join(', ')||'inga'}. AI-tal förblir avstängt. Rum återställs eller öppnas inte automatiskt.`}:{...check.impact,notice:'Dealern och berörda kopplingar flyttas till papperskorgen. Se alla berörda rum och bolag nedan. Historik och källfiler bevaras.'};
       }
     }else{
       const archived=action==='material.archive';

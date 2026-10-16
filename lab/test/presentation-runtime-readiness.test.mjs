@@ -766,7 +766,7 @@ const cap4 = { schemaVersion: 4, registeredDealerIds: ['nora'], compositing: 'pe
   registeredDealerMode: 'saved-registry-idle-v1', frozenDealerIdle: 'operator-package-v2', frozenDealerEvents: 'operator-package-v3' };
 const cap3 = { ...cap4, schemaVersion: 3 }; delete cap3.frozenDealerEvents;
 test('frozen-event schema3 publication negotiates exact v4 before SQL even without an extra dealer', async () => {
-  for(const dealerId of ['astrid','johanna']) {
+  for(const dealerId of ['astrid','linnea']) {
     const descriptor={kind:'presentation-package',value:frozenPackage(()=>{},{dealerId})};
     for(const response of [capability,capabilityV2,cap3,{...cap4,frozenDealerEvents:'latest-draft'}]) {
       let begun=0;

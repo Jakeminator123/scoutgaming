@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveMediaAbsolutePath } from '../tools/media-layout.mjs';
 
-const DEALERS = { vera: 'dealer', astrid: 'dealers/astrid', mei: 'dealers/mei' };
+const DEALERS = { astrid: 'dealers/astrid' };
 const PART_EVENT = { box0: 'show.deal.box0', box1: 'show.deal.box1', box2: 'show.deal.box2', box3: 'show.deal.box3', box4: 'show.deal.box4', box5: 'show.deal.box5', box6: 'show.deal.box6', 'dealer-up': 'show.deal.dealer', 'dealer-hole': 'show.deal.hole', return: 'show.return', idle: 'show.idle' };
 const ACTION_EVENT = { 'deal-left': 'show.deal.left', 'deal-centre': 'show.deal.centre', 'deal-right': 'show.deal.right', 'deal-dealer': 'show.deal.dealer' };
 const readJson = p => { try { return JSON.parse(readFileSync(resolveMediaAbsolutePath(p), 'utf8')); } catch { return null; } };

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate as nextTurn } from 'node:timers/promises';
 import { createSeedProject, createEmptyProject } from '../lab/lib/studio-model.mjs';
+import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
 import { createOperatorStore } from '../web/storage/operator-store.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { StudioStorageError, cloneStudioJson, studioStorageFailure, validateStudioScope, STUDIO_JSON_LIMIT } from '../web/storage/studio-contract.mjs';
@@ -396,10 +397,13 @@ test('missing or unreadable capture documents/media fail closed without partial 
   assert.equal(pool.connects,pool.releases);
 });
 
-test('project PUT cannot add a retired dealer and leaves already saved historical profiles intact',async()=>{
-  const pool=createStudioMemoryPool(),repo=repository(pool),empty=createEmptyProject(),historical=createSeedProject();
+for (const dealerId of ['vera','mei','amira','johanna']) test(`project PUT cannot add retired ${dealerId} and leaves its saved historical profile intact`,async()=>{
+  const pool=createStudioMemoryPool(),repo=repository(pool),empty=createEmptyProject();
+  const historical=historicalDealerProject(dealerId);
   const initial=await repo.initializeDocument('project',{value:empty,actor:'tester',revision:'empty'});
-  const next=structuredClone(empty);next.dealers=historical.dealers.filter(row=>row.id==='amira');next.lines=historical.lines.filter(row=>row.dealerId==='amira');
+  const next=structuredClone(historical);
+  assert.equal(next.dealers.length,1);assert.equal(next.dealers[0].id,dealerId);
+  assert.equal(next.lines.length,next.events.length);
   const before=pool.snapshot();
   await assert.rejects(repo.saveDocument('project',{value:next,actor:'tester',expectedRevision:initial.revision}),rejection('studio_dealer_inactive',409));
   assert.deepEqual(pool.snapshot(),before);

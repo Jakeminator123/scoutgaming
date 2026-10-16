@@ -137,13 +137,13 @@ test('actual pending import files veto Back and Forward before Studio context ch
 
 async function mountClipMap(h){
   const React=require('react'),componentUrl=new URL('../admin/components/studio/connected-clip-map.tsx',import.meta.url),componentRequire=createRequire(componentUrl);
-  const {createSeedProject,defaultPresentationLane}=componentRequire('../../../../../lab/lib/studio-model.mjs');
-  const project=createSeedProject();
+  const {createSeedProject,defaultPresentationLane,addDealer}=componentRequire('../../../../../lab/lib/studio-model.mjs');
+  const project=addDealer(createSeedProject(),'nora','Nora');
   project.lanes=['a','b'].map(id=>({...defaultPresentationLane('astrid'),id:'scene-'+id}));
   const workspace={project,inventory:{videos:[]},catalog:{administration:{
     operators:['a','b'].map(id=>({id,slug:id,name:id,status:'active',archivedAt:null})),
-    rooms:['a','b'].map(id=>({id:'room-'+id,operatorId:id,name:id,game:id==='a'?'blackjack':'roulette',compositionId:'scene-'+id,state:'draft',published:false,dealerIds:['astrid','vera']})),
-    dealers:[{id:'astrid'},{id:'vera'}],
+    rooms:['a','b'].map(id=>({id:'room-'+id,operatorId:id,name:id,game:id==='a'?'blackjack':'roulette',compositionId:'scene-'+id,state:'draft',published:false,dealerIds:['astrid','nora']})),
+    dealers:[{id:'astrid'},{id:'nora'}],
   }}};
   const slots=[],effects=[],cleanups=[];let cursor=0;
   const depsChanged=(before,next)=>!before||next.some((dep,j)=>!Object.is(dep,before[j]));
@@ -168,20 +168,20 @@ async function mountClipMap(h){
   await settle();
   return {settle,selection:()=>nodes(node=>node.type==='select').slice(0,4).map(node=>node.props.value),
     async dealer(id){nodes(node=>node.type==='select'&&node.props['aria-label']==='Dealer')[0].props.onChange({target:{value:id}});await settle();},
-    async editDraft(){nodes(node=>node.type==='button'&&node.props.children==='Gemensam sammansättningsmall')[0].props.onClick();await settle();const panel=nodes(node=>node.type==='StudioCompositionPanel')[0],draft=structuredClone(panel.props.project);draft.dealers.find(row=>row.id==='vera').label='Vera draft';panel.props.onEdit(draft);await settle();},
-    hasDraft:()=>nodes(node=>node.type==='option').some(node=>node.props.children==='Vera draft'),
+    async editDraft(){nodes(node=>node.type==='button'&&node.props.children==='Gemensam sammansättningsmall')[0].props.onClick();await settle();const panel=nodes(node=>node.type==='StudioCompositionPanel')[0],draft=structuredClone(panel.props.project);draft.dealers.find(row=>row.id==='nora').label='Nora draft';panel.props.onEdit(draft);await settle();},
+    hasDraft:()=>nodes(node=>node.type==='option').some(node=>node.props.children==='Nora draft'),
     unmount(){for(const cleanup of cleanups)cleanup?.();}};
 }
 
 test('mounted clip pane reactivation writes the retained full context before Back, Forward and reload',async()=>{
   const h=harness('/admin/clips?operator=b&table=room-b&game=roulette'),pane=await mountClipMap(h);
   try{
-    await pane.dealer('vera');await pane.editDraft();const selection=pane.selection();
-    assert.deepEqual(selection,['b','roulette','room-b','vera']);
+    await pane.dealer('nora');await pane.editDraft();const selection=pane.selection();
+    assert.deepEqual(selection,['b','roulette','room-b','nora']);
     h.api.navigate('/admin');await pane.settle();assert.equal(h.location.search,'');assert.ok(pane.hasDraft());
     h.api.navigate('/admin/clips');await pane.settle();
     const params=new URLSearchParams(h.location.search);
-    for(const [key,value] of Object.entries({operator:'b',table:'room-b',composition:'scene-b',dealer:'vera',game:'roulette'}))assert.equal(params.get(key),value,key);
+    for(const [key,value] of Object.entries({operator:'b',table:'room-b',composition:'scene-b',dealer:'nora',game:'roulette'}))assert.equal(params.get(key),value,key);
     h.go(-1);await pane.settle();assert.equal(h.location.pathname,'/admin');assert.equal(h.location.search,'');
     h.go(1);await pane.settle();assert.deepEqual(pane.selection(),selection);assert.ok(pane.hasDraft());
     const reload=await mountClipMap(harness(h.location.pathname+h.location.search));
@@ -192,24 +192,24 @@ test('mounted clip pane reactivation writes the retained full context before Bac
 test('mounted clip pane keeps room-owned context through accepted query changes and history',async()=>{
   const h=harness('/admin/clips?operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
   try{
-    h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=vera&game=roulette&category=bank');await pane.settle();
-    assert.deepEqual(pane.selection(),['b','roulette','room-b','vera']);
+    h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=nora&game=roulette&category=bank');await pane.settle();
+    assert.deepEqual(pane.selection(),['b','roulette','room-b','nora']);
     assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-b');
     assert.equal(new URLSearchParams(h.location.search).get('category'),'bank');
     const target=h.location.search;
     h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),['a','blackjack','room-a','astrid']);
     assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-a');
-    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),['b','roulette','room-b','vera']);assert.equal(h.location.search,target);
+    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),['b','roulette','room-b','nora']);assert.equal(h.location.search,target);
   }finally{pane.unmount();}
 });
 
 test('mounted clip pane ignores rejected history destinations and defers context onto the restored entry',async()=>{
   const h=harness('/admin/clips?operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
   try{
-    h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=vera&game=roulette');await pane.settle();
+    h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=nora&game=roulette');await pane.settle();
     let blocked=true;h.window.addEventListener('studio:before-navigate',event=>{if(blocked)event.preventDefault();});
     const before=h.snapshot();h.history.go(-1);h.step();await pane.settle();
-    assert.deepEqual(pane.selection(),['b','roulette','room-b','vera']);assert.deepEqual(h.snapshot(),before);
+    assert.deepEqual(pane.selection(),['b','roulette','room-b','nora']);assert.deepEqual(h.snapshot(),before);
     await pane.dealer('astrid');assert.deepEqual(h.snapshot(),before,'a render while compensation is pending must not rewrite its rejected destination');
     h.flush();await pane.settle();assert.equal(h.index(),1);assert.equal(h.history.length,2);assert.deepEqual(h.snapshot()[0],before[0]);
     const params=new URLSearchParams(h.location.search);

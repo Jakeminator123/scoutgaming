@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, mkdir, writeFile, readFile, access, rm, unlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, access, rm, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { acquireLock, chef, identity, registryLocation } from '../tools/croupier-chef.mjs';
@@ -20,8 +20,9 @@ async function fixture(t) {
   await runGit(root, 'init', '--initial-branch=work');
   await runGit(root, 'config', 'user.name', 'Chef Test');
   await runGit(root, 'config', 'user.email', 'test@example.invalid');
-  await writeFile(path.join(root, '.gitignore'), '.croupier-inbox/\n');
-  await runGit(root, 'add', '.gitignore');
+  await mkdir(path.join(root, 'agent-talk'));
+  await writeFile(path.join(root, 'agent-talk', '.gitignore'), await readFile(new URL('../agent-talk/.gitignore', import.meta.url)));
+  await runGit(root, 'add', 'agent-talk/.gitignore');
   await runGit(root, '-c', 'core.hooksPath=empty-test-hooks', 'commit', '-m', 'Fixture');
   await runGit(root, 'update-ref', 'refs/remotes/origin/work', 'HEAD');
   await runGit(root, 'worktree', 'add', '--detach', worktree, 'HEAD');
@@ -32,8 +33,26 @@ test('read-only status writes nothing and main/linked worktree share one registr
   const f = await fixture(t);
   const a = await registryLocation(f.root), b = await registryLocation(f.worktree);
   assert.deepEqual(a, b);
+  assert.equal(a.file, path.join(a.root, 'agent-talk', 'chef.json'));
+  const before = await readdir(path.dirname(a.file));
   assert.equal((await chef('status', {}, f.at(f.worktree))).status, 'inactive');
-  await assert.rejects(access(path.dirname(a.file)));
+  assert.deepEqual(await readdir(path.dirname(a.file)), before);
+  await assert.rejects(access(a.file), { code: 'ENOENT' });
+  await assert.rejects(access(path.join(f.root, '.croupier-inbox')), { code: 'ENOENT' });
+});
+
+test('activation and release use agent-talk without creating the retired inbox in either worktree', async t => {
+  const f = await fixture(t), location = await registryLocation(f.root);
+  for (const command of ['activate', 'status', 'release']) {
+    await chef(command, owner, f.at(f.worktree));
+    for (const checkout of [f.root, f.worktree]) {
+      await assert.rejects(access(path.join(checkout, '.croupier-inbox')), { code: 'ENOENT' });
+    }
+  }
+  assert.equal(JSON.parse(await readFile(location.file, 'utf8')).active, false);
+  assert.equal((await runGit(f.root, 'status', '--porcelain')).stdout.trim(), '');
+  const ignored = ['chef.json', 'chef.json.lock', 'chef.json.fixture.tmp'].map(name => 'agent-talk/' + name);
+  assert.deepEqual((await runGit(f.root, 'check-ignore', '--', ...ignored)).stdout.trim().split(/\r?\n/), ignored);
 });
 
 test('activation is idempotent for same chat; a second chat cannot silently take over', async t => {

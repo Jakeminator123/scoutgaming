@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
 import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlots, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, validateDealerImportAdvice, DEALER_IMPORT_STORAGE_WARNING } from '../lib/dealer-import-catalog.mjs';
 import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
 import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../lib/dealer-import-model.mjs';
@@ -42,7 +42,7 @@ test('ambiguous, out-of-range and unfamiliar filenames remain unmapped', () => {
 });
 
 test('another registered dealer in a filename requires a fresh manual destination choice', () => {
-  const catalog = dealerImportCatalog(createSeedProject()), other = catalog.dealers.find(row => row.id !== 'astrid');
+  const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'elin', 'Elin')), other = catalog.dealers.find(row => row.id !== 'astrid');
   const body = input([file(`${other.id}-pos1.webm`)]);
   const row = finishDealerImportRows(filenameDealerImportRows(body, catalog), body, catalog)[0];
   assert.equal(row.slotId, null); assert.equal(row.classification, null); assert.match(row.warnings[0], /annan dealer/);
@@ -69,7 +69,7 @@ test('speech uses exact IDs and duplicate alternatives never overwrite a standar
 });
 
 test('non-video storage warnings survive unmapped, incompatible and cross-dealer advice without changing valid audio classifications', () => {
-  const catalog = dealerImportCatalog(createSeedProject()), other = catalog.dealers.find(row => row.id !== 'astrid');
+  const catalog = dealerImportCatalog(addDealer(createSeedProject(), 'elin', 'Elin')), other = catalog.dealers.find(row => row.id !== 'astrid');
   const body = input([file('greeting.wav', 'speech', 'audio/wav'), file('idle.mp3', 'wrong-slot', 'audio/mpeg'),
     file('VILA.png', 'pose', 'image/png'), file('unknown.jpg', 'unknown', 'image/jpeg'),
     file(`${other.id}-VILA.webp`, 'other-dealer', 'image/webp'), file('pos1.webm', 'video')]);

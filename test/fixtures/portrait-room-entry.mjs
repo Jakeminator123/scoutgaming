@@ -1,5 +1,6 @@
+import {createLegacyProject} from '../../lab/test/fixtures/legacy-project.mjs';
 import {cloudPresentationFixture} from '../../lab/test/fixtures/cloud-presentation.mjs';
-import {createSeedProject,defaultPresentationLane} from '../../lab/lib/studio-model.mjs';
+import {createSeedProject,defaultPresentationLane,normalizeProject} from '../../lab/lib/studio-model.mjs';
 import {buildPresentationPackage} from '../../web/presentation-layers.mjs';
 import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
@@ -7,9 +8,9 @@ import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
 
 // Isolated in-memory published room. No database, credentials or media writes.
 // Browser QA can decorate the ordinary served HTML and then run real app/media.
-export function createPortraitRoomEntryFixture({dealer='johanna',allowedDealers=[dealer],operator='sg-test',
+export function createPortraitRoomEntryFixture({dealer='linnea',allowedDealers=[dealer],operator='sg-test',
   roomId='room-e46c60e2-8857-7b37-9363-5a37cff9e49a'}={}) {
-  let project=createSeedProject();
+  let project=dealer==='amira'?normalizeProject(createLegacyProject()):createSeedProject();
   const lane={...defaultPresentationLane(dealer==='amira'?'astrid':dealer),id:'fixture-presentation',label:'QA presentation',dealers:[...allowedDealers]};
   lane.layers.dealer={enabled:true,default:dealer,allowed:[...allowedDealers]};
   project.lanes=[lane];

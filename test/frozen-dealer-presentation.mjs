@@ -9,21 +9,22 @@ import { operatorRow, packageRow } from './fixtures/operator-package-sql.mjs';
 
 const id = '00000000-0000-4000-8000-000000000001', sha256 = 'a'.repeat(64);
 const clone = value => structuredClone(value);
-const input = { operatorSlug: 'north', roomId: 'room-johanna', packageRevision: 7, dealerId: 'johanna' };
-function fixture() {
+const input = { operatorSlug: 'north', roomId: 'room-julia', packageRevision: 7, dealerId: 'julia' };
+function fixture(dealerId = 'julia') {
+  const label = dealerId[0].toUpperCase() + dealerId.slice(1);
   const idle = { id, sha256, size: 1024, contentType: 'video/mp4',
-    pathname: `croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.mp4`,
-    classification: { dealerId: 'johanna', eventId: 'idle.ready', kind: 'idle', role: 'alternative',
-      situation: '', label: 'Johanna Grundloop', notes: 'Frozen baseline',
+    pathname: `croupier/media/dealers/${dealerId}/review/uploads/${id}/${sha256}.mp4`,
+    classification: { dealerId, eventId: 'idle.ready', kind: 'idle', role: 'alternative',
+      situation: '', label: `${label} Grundloop`, notes: 'Frozen baseline',
       compositing: { mode: 'green-screen', threshold: .23, softness: .15, despill: 0 } } };
   const presentation = { schemaVersion: 2, projectRevision: 'published-project', assets: [],
-    lanes: [{ id: 'vip-presentation', dealers: ['johanna'], layers: { dealer: { allowed: ['johanna'], default: 'johanna' } } }],
-    registeredDealers: [{ id: 'johanna', label: 'Johanna', idle }] };
+    lanes: [{ id: 'vip-presentation', dealers: [dealerId], layers: { dealer: { allowed: [dealerId], default: dealerId } } }],
+    registeredDealers: [{ id: dealerId, label, idle }] };
   const saved = { operator: { id: 'north-id', slug: 'north', status: 'active' },
-    package: { operatorId: 'north-id', revision: 7, lanes: ['vip-presentation'], tables: ['room-johanna'], frozen: presentation },
-    administration: { rooms: [{ schemaVersion: 2, id: 'room-johanna', name: 'Johannas rum', operatorId: 'north-id',
-      presentationLaneId: 'vip-presentation', gameLaneId: 'portrait-johanna', state: 'live' }],
-      gameLanes: [{ schemaVersion: 1, id: 'portrait-johanna', label: 'Johanna', dealer: 'johanna', renderer: 'portrait-video', mediaCollection: 'johanna-presentation' }] } };
+    package: { operatorId: 'north-id', revision: 7, lanes: ['vip-presentation'], tables: [`room-${dealerId}`], frozen: presentation },
+    administration: { rooms: [{ schemaVersion: 2, id: `room-${dealerId}`, name: `${label} room`, operatorId: 'north-id',
+      presentationLaneId: 'vip-presentation', gameLaneId: `portrait-${dealerId}`, state: 'live' }],
+      gameLanes: [{ schemaVersion: 1, id: `portrait-${dealerId}`, label, dealer: dealerId, renderer: 'portrait-video', mediaCollection: `${dealerId}-presentation` }] } };
   const reads = [], served = [];
   const service = createFrozenDealerPresentationContext({
     readCurrentContext: async slug => { reads.push(slug); return clone(saved); },
@@ -37,6 +38,14 @@ function fixture() {
 const status = value => error => error.statusCode === value;
 const mediaUrl = value => `https://game.example.invalid/api/presentation/registered-idle/${value.operatorSlug}/${value.roomId}/${value.packageRevision}/${value.dealerId}`;
 
+for (const dealerId of ['vera', 'mei', 'amira', 'johanna']) test(`${dealerId} cannot activate an otherwise valid historical frozen package`, async () => {
+  const f = fixture(dealerId), before = clone(f.saved), context = { ...input, dealerId, roomId: `room-${dealerId}` };
+  await assert.rejects(f.service.configuration(context), error => error.statusCode === 400 && error.code === 'studio_presentation_idle_context_invalid');
+  assert.equal((await f.service.response(new Request(mediaUrl(context)))).status, 400);
+  assert.equal(f.reads.length, 0); assert.equal(f.served.length, 0);
+  assert.deepEqual(f.saved, before, 'historical package remains intact');
+});
+
 test('roulette room identity cannot authorize the blackjack playback configuration or bytes',async()=>{
   const f=fixture(); f.saved.administration.rooms[0].game='roulette';
   await assert.rejects(f.service.configuration(input),status(404));
@@ -44,14 +53,14 @@ test('roulette room identity cannot authorize the blackjack playback configurati
   assert.equal(f.served.length,0);
 });
 
-test('Johanna receives only her frozen public descriptor, display label and exact revision URL', async () => {
+test('Julia receives only her frozen public descriptor, display label and exact revision URL', async () => {
   const f = fixture(), configuration = await f.service.configuration(input);
   assert.equal(configuration.configurationSource, 'operator-package-v2');
   assert.equal(configuration.projectRevision, 'published-project');
-  assert.deepEqual(configuration.dealer, { id: 'johanna', label: 'Johanna' });
-  assert.equal(configuration.dealerIdle.johanna.id, id); assert.equal(configuration.dealerIdle.johanna.sha256, sha256);
-  assert.equal(configuration.dealerIdle.johanna.src, new URL(mediaUrl(input)).pathname);
-  assert.deepEqual(configuration.dealerIdle.johanna.compositing, f.idle.classification.compositing);
+  assert.deepEqual(configuration.dealer, { id: 'julia', label: 'Julia' });
+  assert.equal(configuration.dealerIdle.julia.id, id); assert.equal(configuration.dealerIdle.julia.sha256, sha256);
+  assert.equal(configuration.dealerIdle.julia.src, new URL(mediaUrl(input)).pathname);
+  assert.deepEqual(configuration.dealerIdle.julia.compositing, f.idle.classification.compositing);
   assert.equal(JSON.stringify(configuration).includes('pathname'), false);
   assert.equal(JSON.stringify(configuration).includes('Frozen baseline'), false);
   assert.deepEqual(f.reads, ['north']); assert.equal(f.served.length, 0);
@@ -145,7 +154,7 @@ test('context is snapshotted before await and failures expose fixed errors witho
   const service = createFrozenDealerPresentationContext({ readCurrentContext: () => reader,
     readPresentation: pack => pack.frozen, privateMedia: () => { throw Error('PRIVATE storage credential'); } });
   const pending = service.configuration(mutable); mutable.dealerId = 'nora'; resume(clone(f.saved));
-  assert.equal((await pending).dealer.id, 'johanna');
+  assert.equal((await pending).dealer.id, 'julia');
   const response = await service.response(new Request(mediaUrl(input)));
   assert.equal(response.status, 503); assert.equal((await response.text()).includes('PRIVATE'), false);
   await assert.rejects(service.configuration({ ...input, pathname: f.idle.pathname }), status(400));
@@ -168,7 +177,7 @@ function apiFixture(f){let liveReads=0;const project=()=>{liveReads++;throw Erro
 test('authenticated API config and actual streamed frozen media use exact context and never load latest Studio media',async()=>{
   const f=fixture(),api=apiFixture(f),query=new URLSearchParams({...input,packageRevision:String(input.packageRevision)});
   assert.equal((await api.invoke('/api/presentation/config?'+query,{playerId:null})).status,401);assert.equal(f.reads.length,0);
-  const config=await api.invoke('/api/presentation/config?'+query);assert.equal(config.status,200);assert.equal(JSON.parse(config.body).dealer.label,'Johanna');
+  const config=await api.invoke('/api/presentation/config?'+query);assert.equal(config.status,200);assert.equal(JSON.parse(config.body).dealer.label,'Julia');
   const path=new URL(mediaUrl(input)).pathname;
   const streamed=await api.invoke(path,{headers:{range:'bytes=0-15'}});assert.equal(streamed.status,206);assert.equal(streamed.body,'frozen-fixture');
   assert.equal((await api.invoke(path,{method:'HEAD'})).body,'');
@@ -177,23 +186,23 @@ test('authenticated API config and actual streamed frozen media use exact contex
   assert.equal(api.liveReads,0);assert.equal(f.served.length,2);
 });
 
-test('published Johanna skips nonfrozen speech/deal despite newly edited live media and projects only committed server cards',async()=>{
+test('published Julia skips nonfrozen speech/deal despite newly edited live media and projects only committed server cards',async()=>{
   const f=fixture(),api=apiFixture(f);
   for(const event of [{...api.source,card:{r:'A',s:'♣'}},{type:'speak',line:'goodluck'}]){
-    const response=await api.invoke('/api/presentation/select',{method:'POST',body:{dealerId:'johanna',mode:'active',version:2,event,presentationContext:input}});
+    const response=await api.invoke('/api/presentation/select',{method:'POST',body:{dealerId:'julia',mode:'active',version:2,event,presentationContext:input}});
     assert.equal(response.status,200);const selected=JSON.parse(response.body);assert.equal(selected.video,null);assert.equal(selected.standard,null);
     assert.equal(selected.projectRevision,'published-project');assert.equal(selected.configurationSource,'operator-package-v2');
     assert.equal(selected.decision.media.reason,event.type==='deal'?'position_clip_missing':'frozen_clip_missing');
     if(event.type==='deal')assert.deepEqual(selected.decision.sourceEvent,api.source);
   }
   assert.equal(api.liveReads,0);assert.equal(f.served.length,0);
-  const forged=await api.invoke('/api/presentation/select',{method:'POST',body:{dealerId:'johanna',mode:'off',version:2,event:{...api.source,shoeDraw:99},presentationContext:input}});assert.equal(forged.status,409);
-  f.saved.package.revision=8;const stale=await api.invoke('/api/presentation/select',{method:'POST',body:{dealerId:'johanna',mode:'off',version:2,event:api.source,presentationContext:input}});assert.equal(stale.status,409);assert.equal(JSON.parse(stale.body).code,'studio_presentation_idle_package_changed');assert.equal(api.liveReads,0);
+  const forged=await api.invoke('/api/presentation/select',{method:'POST',body:{dealerId:'julia',mode:'off',version:2,event:{...api.source,shoeDraw:99},presentationContext:input}});assert.equal(forged.status,409);
+  f.saved.package.revision=8;const stale=await api.invoke('/api/presentation/select',{method:'POST',body:{dealerId:'julia',mode:'off',version:2,event:api.source,presentationContext:input}});assert.equal(stale.status,409);assert.equal(JSON.parse(stale.body).code,'studio_presentation_idle_package_changed');assert.equal(api.liveReads,0);
 });
 
 function readerFixture({badAdmin=false,modernAdmin=false,commitRollback=false,withHistory=false,changedFrozen=false}={}){
   const scope={environment:'test',workspaceId:'croupier'},f=fixture(),trace=[];
-  const admin={...f.saved.administration,gameLane:'portrait-johanna',tiers:{classic:'vera',high:'astrid',vip:'amira'},pitboss:{payout10x:true,streak5:true,randomWalkMin:45},tournaments:[]};
+  const admin={...f.saved.administration,gameLane:'portrait-julia',tiers:{classic:'vera',high:'astrid',vip:'amira'},pitboss:{payout10x:true,streak5:true,randomWalkMin:45},tournaments:[]};
   if(modernAdmin)for(const key of ['tiers','pitboss','tournaments'])delete admin[key];
   const live={operator:operatorRow(scope,'north-id','north'),package:packageRow(scope,'north-id',7,['vip-presentation']),admin};
   if(withHistory)live.package.branding=canonicalStudioJson({_scoutPresentation:{sha256:'same',data:'frozen'},color:'#445566'});

@@ -1,5 +1,11 @@
 # Miljövariabler per tjänst
 
+Senaste leveransstatus finns i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md),
+och kvarvarande arbete/ägare i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
+PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
+alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
+Inventeringens daterade antal nedan är inte en ny liveavläsning.
+
 ## Aktuell avgränsning, 15 oktober 2026 kväll
 
 [environment-variables.json](environment-variables.json) är det maskinkontrollerade
@@ -779,6 +785,27 @@ GPU-workern och GitHub behöver inga kopior för svarsbiblioteket.
 
 Synk av nycklar bevisar inte TTS eller läppsynk. Dealerprofilflaggan förblir
 av tills den nya GPU-imagen och hela PAOW-förloppet accepterats.
+
+### Avgränsad kontokontroll, 16 oktober 2026
+
+Efter Jakobs uttryckliga godkännande användes endast lokala `.env.local`-
+värden mot RunPods/Cartesias egna läs-API:er. Inga värden skrevs ut och
+filerna var oförändrade efter kontrollen. Web/Labs tre relevanta värden
+överensstämmer; inga ärvda processvärden fanns för dessa namn.
+
+- RunPod: konfigurerad endpoint `zsudl8tmzcmiv1` gav health 200. Konto-
+  identitetsfrågan gav 401, även med dokumenterad GraphQL-autentisering.
+  Nyckeln skiljer sig från `EMIL_RUNPOD_API_KEY`. Detta bevisar åtkomst,
+  inte färskt kontoägande; tidigare kontokvitto ovan är historiskt.
+- Cartesia: voices gav 200. `CARTESIA_API_KEY` är byteidentisk med
+  `EMIL_CARTESIA_API_KEY` i den separata privata profilen. Det bevisar
+  gemensamt värde, inte att kontoägaren är Emil eller Jakob. Standardnyckeln
+  är inte ett ägarbevis; konto/organisation behöver verifieras separat.
+- Renders effektiva runtimevärden lästes inte tillbaka i detta steg.
+  Den lokala jämförelsen får inte beskrivas som full molnverifiering.
+
+Ingen provider, röst, flagga, credential eller resurs ändrades och inga
+TTS-/GPU-jobb kördes. Editorn `lipsync-test` läser över huvud taget inga env-filer.
 
 ### Talnycklar och sparade modeller
 

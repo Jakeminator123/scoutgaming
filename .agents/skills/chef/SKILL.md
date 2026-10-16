@@ -28,7 +28,8 @@ node tools/croupier-chef.mjs activate --owner Jakob --title "AKTUELL CHATTTITEL"
 Använd verklig lokal ägare och titel; behåll samma Agent-ID som inboxen.
 Codex använder CODEX_THREAD_ID. Andra IDE:er/underagenter anger ett eget stabilt
 `--session` på varje kommando, aldrig en delad föräldrachatt-id.
-Registret ligger ignorerat i huvudarbetskopians `.croupier-inbox/chef.json`.
+Registret ligger ignorerat i huvudarbetskopians `agent-talk/chef.json`.
+Den pensionerade `.croupier-inbox/` läses, migreras eller återskapas inte.
 Samma Git-repos worktrees delar rollen; separata kloner/datorer gör det inte.
 
 `occupied`: en annan chatt är chef. Visa namn/id och avstå från att ta rollen.

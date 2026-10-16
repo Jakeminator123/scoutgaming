@@ -62,7 +62,7 @@ test('library API keeps native role, scope and Origin gates; IDs cannot escape t
 
 async function nativeLayerFixture({capabilityVersion=3,onPreflight,onLock}={}) {
   const pool=createStudioMemoryPool(),rawRepository=createStudioRepository({pool,scope});
-  await rawRepository.initializeDocument('project',{actor,value:addDealer(createSeedProject(),'johanna','Johanna')});
+  await rawRepository.initializeDocument('project',{actor,value:addDealer(createSeedProject(),'linnea','Linnea')});
   const sqlContext=new AsyncLocalStorage(),events=[],descriptors=[],capabilities=[];
   let tokens=0,blobReads=0,principal={user:actor,role:'admin',scope};
   const media=await layerBlobFixture(after,await layerImage('png',1440,2560));
@@ -147,7 +147,7 @@ test('an uploaded layer cannot change game or bytes through project PUT, while l
   await f.rawRepository.saveDocument('project',{value:renamed,expectedRevision:saved.revision,actor});
 });
 
-test('native Johanna layer commit preflights the real project and verified grant before SQL; same-ticket retry is idempotent',async()=>{
+test('native Linnea layer commit preflights the real project and verified grant before SQL; same-ticket retry is idempotent',async()=>{
   const f=await nativeLayerFixture(),before=f.pool.snapshot();
   const committed=await f.commit();assert.equal(committed.status,200);const first=await committed.json();
   assert.equal(first.duplicate,false);assert.equal(first.id,f.grant.id);
@@ -155,7 +155,7 @@ test('native Johanna layer commit preflights the real project and verified grant
   assert.deepEqual(f.capabilities,[{url:'https://render.example.invalid/api/presentation/capabilities',version:'3'}]);
   assert.deepEqual(f.events,['blob','capability','product-begin']);
   const descriptor=f.descriptors[0];assert.equal(descriptor.kind,'project');
-  assert.ok(descriptor.value.dealers.some(row=>row.id==='johanna'));
+  assert.ok(descriptor.value.dealers.some(row=>row.id==='linnea'));
   assert.deepEqual(descriptor.value.layerAssets,first.project.layerAssets);
   assert.equal(descriptor.value.layerAssets[0].sha256,f.prepare.sha256);
   const after=f.pool.snapshot();assert.equal(after.history.length,before.history.length+1);assert.equal(after.audits.length,before.audits.length+1);
@@ -181,15 +181,15 @@ test('native layer revision CAS preserves a project edited during preflight; the
   const f=await nativeLayerFixture({onPreflight:async({rawRepository,capabilities})=>{
     if(capabilities.length!==1)return;
     const saved=await rawRepository.readDocument('project'),value=structuredClone(saved.value);
-    value.dealers.find(row=>row.id==='johanna').label='Johanna edited during preflight';
+    value.dealers.find(row=>row.id==='linnea').label='Linnea edited during preflight';
     await rawRepository.saveDocument('project',{expectedRevision:saved.revision,value,actor});
   }});
   const first=await f.commit();assert.equal(first.status,409);
   const raced=await f.rawRepository.readDocument('project');assert.equal(raced.value.layerAssets,undefined);
-  assert.equal(raced.value.dealers.find(row=>row.id==='johanna').label,'Johanna edited during preflight');
+  assert.equal(raced.value.dealers.find(row=>row.id==='linnea').label,'Linnea edited during preflight');
   const retried=await f.commit();assert.equal(retried.status,200);const receipt=await retried.json();
   assert.equal(receipt.id,f.grant.id);assert.equal(receipt.duplicate,false);assert.equal(receipt.project.layerAssets.length,1);
-  assert.equal(receipt.project.dealers.find(row=>row.id==='johanna').label,'Johanna edited during preflight');
+  assert.equal(receipt.project.dealers.find(row=>row.id==='linnea').label,'Linnea edited during preflight');
   assert.deepEqual(f.counts(),{tokens:1,blobReads:2});
 });
 

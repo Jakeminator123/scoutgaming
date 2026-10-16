@@ -7,7 +7,8 @@ import {presentationCapabilitiesResponse} from '../web/presentation-capabilities
 import {defaultCompositionSettings,defaultBlackjackTableGeometry,validateCompositionSettings,sceneForComposition} from '../web/public/composition-settings.mjs';
 import {validateComposition,createLayerComposition,clipCompositing} from '../web/public/presentation-composition.mjs';
 import {compositionRuntimeResponse} from '../web/composition-runtime.mjs';
-import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
+import {stageGeometry,tableRect,backgroundRect} from '../packages/presentation/compositor/geometry.js';
+import {zoomComposition} from '../lab/lib/composition-zoom.mjs';
 import {Compositor} from '../packages/presentation/compositor/compositor.js';
 import {createSeedProject,addDealer,defaultPresentationLane,validateProject} from '../lab/lib/studio-model.mjs';
 import {buildPresentationPackage,layerAssetPath} from '../web/presentation-layers.mjs';
@@ -17,6 +18,48 @@ import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
 import {gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
+
+test('saved scene zoom keeps all layer coordinates around the same centre at every viewport size',()=>{
+  const settings=defaultCompositionSettings();settings.tableFront=true;
+  for(const layout of ['mobile','desktop']) {
+    Object.assign(settings[layout].dealer,{scale:1.2,x:.08,y:-.03});
+    Object.assign(settings[layout].background,{scale:1.1,x:-.05,y:.06});
+    Object.assign(settings[layout].table,{width:.8,x:.02,y:.2});
+    const original=structuredClone(settings),factor=1.1;
+    const zoomed=zoomComposition(settings,layout,factor);
+    const before=sceneForComposition(settings,layout),after=sceneForComposition(zoomed,layout);
+    const a=stageGeometry(before),b=stageGeometry(after);
+    for(const asset of [{width:1672,height:941},{width:720,height:1280}]) {
+      const rects=[[[a.x,a.y,1080*a.s,1920*a.s],[b.x,b.y,1080*b.s,1920*b.s]],
+        [backgroundRect(before,asset,a.dims),backgroundRect(after,asset,b.dims)],
+        [tableRect(before,asset,a),tableRect(after,asset,b)]];
+      for(const viewportWidth of [390,768,1440]) for(const [oldRect,newRect] of rects) {
+        const viewportScale=viewportWidth/a.dims[0];
+        for(let i=0;i<4;i++) {
+          const pivot=i<2?a.dims[i]/2:0;
+          assert.ok(Math.abs(newRect[i]*viewportScale-(pivot+(oldRect[i]-pivot)*factor)*viewportScale)<1e-8);
+        }
+      }
+    }
+    const restored=zoomComposition(zoomed,layout,1/factor);
+    for(const role of ['dealer','background','table']) for(const field of Object.keys(settings[layout][role]))
+      assert.ok(Math.abs(restored[layout][role][field]-settings[layout][role][field])<1e-12);
+    assert.deepEqual(zoomed[layout==='mobile'?'desktop':'mobile'],settings[layout==='mobile'?'desktop':'mobile']);
+    assert.deepEqual(settings,original);assert.equal(zoomed.tableFront,true);
+  }
+});
+
+test('zoom rejects a whole step at scale or position limits without mutating saved profiles',()=>{
+  const settings=defaultCompositionSettings();
+  settings.blackjackTables=[defaultBlackjackTableGeometry('10000000-0000-4000-8000-000000000001')];
+  assert.deepEqual(zoomComposition(settings,'desktop',1.1).blackjackTables,settings.blackjackTables);
+  for(const [role,field,value,factor] of [['dealer','scale',4,1.1],['background','scale',.1,1/1.1],['table','width',4,1.1],['table','y',-2,1.1],['dealer','x',2,1.1]]) {
+    const source=structuredClone(settings);source.desktop[role][field]=value;const original=structuredClone(source);
+    assert.throws(()=>zoomComposition(source,'desktop',factor));assert.deepEqual(source,original);
+  }
+  for(const factor of [NaN,Infinity,0,-1])assert.throws(()=>zoomComposition(settings,'desktop',factor));
+  assert.throws(()=>zoomComposition(settings,'unknown',1.1));
+});
 function asset(role,n){const value={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:role,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};return {...value,pathname:layerAssetPath(value)};}
 function fixture(dealerId='nora',label='Nora',settings=defaultCompositionSettings()){
   let project=addDealer(createSeedProject(),dealerId,label); const lane=defaultPresentationLane(dealerId),background=asset('background',1),table=asset('table',2);
@@ -347,33 +390,33 @@ test('authenticated config projects only an exactly bound own Nora idle with ret
 
 test('runtime selection accepts exactly saved registered dealers and rejects syntax-only identities',async()=>{
   for(const registered of [true,false]){
-    let reads=0,selects=0;const handler=createPresentationApi({store:{load:async()=>{reads++;return registered?addDealer(createSeedProject(),'johanna','Johanna'):createSeedProject();}},
-      registryLoader:async()=>({videos:[],families:[]}),db:{prepare:()=>({get:async()=>null})},select:async({dealerId})=>{selects++;assert.equal(dealerId,'johanna');return {status:'skipped',reason:'no_exact_media'};}});
-    const req={method:'POST',url:'/api/presentation/select',async *[Symbol.asyncIterator](){yield JSON.stringify({dealerId:'johanna',version:1,mode:'off',event:{type:'speak',line:'goodluck'}});}};
+    let reads=0,selects=0;const handler=createPresentationApi({store:{load:async()=>{reads++;return registered?addDealer(createSeedProject(),'linnea','Linnea'):createSeedProject();}},
+      registryLoader:async()=>({videos:[],families:[]}),db:{prepare:()=>({get:async()=>null})},select:async({dealerId})=>{selects++;assert.equal(dealerId,'linnea');return {status:'skipped',reason:'no_exact_media'};}});
+    const req={method:'POST',url:'/api/presentation/select',async *[Symbol.asyncIterator](){yield JSON.stringify({dealerId:'linnea',version:1,mode:'off',event:{type:'speak',line:'goodluck'}});}};
     const res={once(){},removeListener(){},writeHead(status){this.status=status;},end(body){this.body=JSON.parse(body);}};
     await handler(req,res,'/api/presentation/select','own-fixture');assert.equal(res.status,registered?200:400);
     assert.equal(reads,1);assert.equal(selects,registered?1:0);
   }
 });
 
-test('published Johanna follows her own room and frozen display label through actual HTML and document choices',async()=>{
-  const f=fixture('johanna','Johanna vid publicering');
+test('published Linnea follows her own room and frozen display label through actual HTML and document choices',async()=>{
+  const f=fixture('linnea','Linnea vid publicering');
   const presentation=f.presentation;
-  const pack={...f.pack,tables:['room-johanna'],branding:withPackagePresentation({},presentation)};
-  const room={schemaVersion:2,id:'room-johanna',name:'Johannas rum',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'};
-  f.administration.rooms=[room];f.project.dealers=f.project.dealers.filter(row=>row.id!=='johanna');
+  const pack={...f.pack,tables:['room-linnea'],branding:withPackagePresentation({},presentation)};
+  const room={schemaVersion:2,id:'room-linnea',name:'Linneas rum',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'};
+  f.administration.rooms=[room];f.project.dealers=f.project.dealers.filter(row=>row.id!=='linnea');
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
-  assert.equal((await select('operator=north&table=room-johanna&dealer=astrid')).status,404);
-  const {selection}=await select('operator=north&table=room-johanna');
-  assert.equal(selection.dealer,'johanna');assert.equal(selection.roomId,room.id);assert.deepEqual(selection.registeredDealers,[{id:'johanna',label:'Johanna vid publicering'}]);
-  assert.deepEqual(selection.choices.dealers,['johanna']);assert.equal(selection.packageRevision,1);
+  assert.equal((await select('operator=north&table=room-linnea&dealer=astrid')).status,404);
+  const {selection}=await select('operator=north&table=room-linnea');
+  assert.equal(selection.dealer,'linnea');assert.equal(selection.roomId,room.id);assert.deepEqual(selection.registeredDealers,[{id:'linnea',label:'Linnea vid publicering'}]);
+  assert.deepEqual(selection.choices.dealers,['linnea']);assert.equal(selection.packageRevision,1);
   const html=decorateGameEntryHtml('<html lang="sv"></html>',{CROUPIER_STUDIO_NEON_POLICY:'1'},selection),dataset={};
   for(const [,attribute,value]of html.matchAll(/data-(game-[a-z-]+)="([^"]*)"/g)) dataset[attribute.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=value.replaceAll('&quot;','"').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>');
-  const restored=gameLaneFromDocument(dataset);assert.equal(restored.dealer,'johanna');assert.equal(restored.roomId,room.id);
-  assert.equal(restored.registeredDealers[0].label,'Johanna vid publicering');assert.deepEqual(restored.choices.dealers,['johanna']);
+  const restored=gameLaneFromDocument(dataset);assert.equal(restored.dealer,'linnea');assert.equal(restored.roomId,room.id);
+  assert.equal(restored.registeredDealers[0].label,'Linnea vid publicering');assert.deepEqual(restored.choices.dealers,['linnea']);
   for(const change of [()=>dataset.gameRegisteredDealers='[]',()=>dataset.gameLocalDealer='nora']){const before={...dataset};change();assert.throws(()=>gameLaneFromDocument(dataset));Object.assign(dataset,before);}
   f.administration.gameLanes[0].dealer='nora';f.administration.gameLanes[0].mediaCollection='nora-presentation';
-  await assert.rejects(select('operator=north&table=room-johanna'),error=>error.statusCode===503||error.statusCode===404);
+  await assert.rejects(select('operator=north&table=room-linnea'),error=>error.statusCode===503||error.statusCode===404);
 });
 
 test('presentation API forwards the opt-in capability header and preserves default v2 without reading Studio',async()=>{
@@ -386,13 +429,13 @@ test('presentation API forwards the opt-in capability header and preserves defau
 });
 
 test('historical v2 room entry rejects a drifted portrait adapter even when both dealers remain frozen and allowed',async()=>{
-  const f=fixture('johanna','Johanna');f.project=addDealer(f.project,'nora','Nora');f.lane=f.project.lanes[0];
-  f.lane.dealers=['johanna','nora'];f.lane.layers.dealer.allowed=['johanna','nora'];
+  const f=fixture('linnea','Linnea');f.project=addDealer(f.project,'nora','Nora');f.lane=f.project.lanes[0];
+  f.lane.dealers=['linnea','nora'];f.lane.layers.dealer.allowed=['linnea','nora'];
   const presentation=cloudPresentationFixture({project:f.project,lanes:[f.lane]}).presentation;presentation.schemaVersion=2;delete presentation.playback;
   const pack={...f.pack,tables:['room-overlap'],branding:withPackagePresentation({},presentation)};
   f.administration.rooms=[{schemaVersion:2,id:'room-overlap',name:'Overlap',operatorId:'north',presentationLaneId:f.lane.id,gameLaneId:f.lane.id,state:'live'}];
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})},packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:pack})}});
-  assert.equal((await select('operator=north&table=room-overlap')).selection.dealer,'johanna');
+  assert.equal((await select('operator=north&table=room-overlap')).selection.dealer,'linnea');
   f.administration.gameLanes[0].dealer='nora';f.administration.gameLanes[0].mediaCollection='nora-presentation';
   await assert.rejects(select('operator=north&table=room-overlap&dealer=nora'),error=>error.statusCode===503&&error.message==='presentation_dealer_mismatch');
 });

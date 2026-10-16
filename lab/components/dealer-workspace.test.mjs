@@ -6,7 +6,7 @@ import { webcrypto } from 'node:crypto';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject, addDealer, validateProject } from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject, addDealer, validateProject } from '../lib/studio-model.mjs';
 import { studioNavigationTabs } from '../lib/studio-navigation.mjs';
 
 const require = createRequire(import.meta.url);
@@ -141,42 +141,43 @@ test('draft survives dealer chip and category changes', () => {
   const h = harness('./lab-studio.tsx'); const p = props();
   let tree = h.render(p);
   const draft = structuredClone(h.values[0]); draft.revision = 'unsaved-draft'; h.values[0] = draft;
-  pressDealer(tree, 'Vera');
+  pressDealer(tree, 'Elin');
   tree = h.render(p);
   const library=nodes(tree,node=>node.props?.onCategoryChange)[0];
   library.props.onCategoryChange('deal'); tree=h.render(p);
   assert.equal(h.values[0], draft);
   assert.equal(h.values[4], 'deal');
-  const legacy = nodes(tree, node => node.props?.section === 'deal')[0];
-  assert.equal(legacy.props.dealerId, 'vera');
-  assert.equal(nodes(tree, node => node.props?.inventory && (node.props?.family || node.props?.policy)).length, 0, 'Astrid family tools not rendered for Vera');
+  assert.equal(library.props.dealerId, 'elin');
+  assert.equal(nodes(tree, node => node.props?.section === 'deal').length, 0, 'own dealer does not use the historical clip editor');
+  assert.equal(nodes(tree, node => node.props?.inventory && (node.props?.family || node.props?.policy)).length, 0, 'Astrid family tools not rendered for Elin');
   const html = renderToStaticMarkup(tree);
   assert.doesNotMatch(html, /Bakgrundsredigering stöds/);
   assert.doesNotMatch(html, /href="\/control\/compositions/);
-  assert.match(html, /href="\/control\/rehearsal\?dealer=vera"/);
+  assert.match(html, /href="\/control\/rehearsal\?dealer=elin"/);
   assert.equal(nodes(tree, node => node.props?.streamView).length, 0);
-  assert.equal(nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip' && node.props['aria-pressed'] === true)[0].props.children.join(''), 'V Vera');
+  assert.equal(nodes(tree, node => node.type === 'button' && node.props.className === 'sg-chip' && node.props['aria-pressed'] === true)[0].props.children.join(''), 'E Elin');
 });
 
 test('controlled legacy editor lists only selected dealer exact speech and no second dealer selector', () => {
-  const controls = { clips: ['astrid', 'vera'].map(dealerId => ({ id: `${dealerId}:line`, dealerId, kind: 'recorded-speech', exactParts: [], lineId: 'goodluck', text: `${dealerId} exact text`, available: true, source: 'speech-media.json', route: '/', reviewStatus: 'registered' })) };
+  const controls = { clips: ['astrid', 'elin'].map(dealerId => ({ id: `${dealerId}:line`, dealerId, kind: 'recorded-speech', exactParts: [], lineId: 'goodluck', text: `${dealerId} exact text`, available: true, source: 'speech-media.json', route: '/', reviewStatus: 'registered' })) };
   const h = harness('./legacy-clip-editor.tsx', [controls, 'astrid', '']);
-  const html = renderToStaticMarkup(h.render({ project: createSeedProject(), dealerId: 'vera', section: 'clips', onChange() { throw new Error('Unexpected edit'); } }));
-  assert.match(html, /vera exact text/); assert.doesNotMatch(html, /astrid exact text|<select|Äldre BO-val|Importera exakt koppling|Avancerat · spelvägar och klippkontroll/);
+  const html = renderToStaticMarkup(h.render({ project: createSeedProject(), dealerId: 'elin', section: 'clips', onChange() { throw new Error('Unexpected edit'); } }));
+  assert.match(html, /elin exact text/); assert.doesNotMatch(html, /astrid exact text|<select|Äldre BO-val|Importera exakt koppling|Avancerat · spelvägar och klippkontroll/);
 });
 
 test('another dealer keeps idle tools and the draft without a probe tab', () => {
   const h = harness('./lab-studio.tsx'); const p = props();
   let tree = h.render(p);
   const draft = structuredClone(h.values[0]); draft.revision = 'unsaved-draft'; h.values[0] = draft;
-  pressDealer(tree, 'Vera');
+  pressDealer(tree, 'Elin');
   tree = h.render(p);
   const library=nodes(tree,node=>node.props?.onConfigureSlot)[0];
-  assert.equal(library.props.dealerId,'vera');
+  assert.equal(library.props.dealerId,'elin');
   assert.equal(nodes(tree,node=>node.type==='button'&&node.props.children==='Probe').length,0);
-  assert.equal(nodes(tree, node => node.props?.section === 'idle')[0].props.dealerId, 'vera');
+  assert.equal(nodes(tree, node => typeof node.props?.onDetach === 'function')[0].props.dealerId, 'elin');
+  assert.equal(nodes(tree, node => node.props?.section === 'idle').length, 0, 'own idle editor replaces historical clip controls');
   assert.equal(nodes(tree, node => node.type === 'button' && node.props.children === 'Ladda upp klipp').length, 0);
-  assert.doesNotMatch(renderToStaticMarkup(tree), /href="\/control\/probe\?dealer=vera"/);
+  assert.doesNotMatch(renderToStaticMarkup(tree), /href="\/control\/probe\?dealer=elin"/);
   assert.match(renderToStaticMarkup(tree), /stöds för närvarande endast av Astrid/);
   assert.equal(h.values[0], draft);
 });
@@ -248,39 +249,39 @@ test('content links refuse navigation during a save and after a failed CAS reque
 });
 
 test('own idle changes update only selected dealer policy and baseline atomically; metadata locks saving and removal',()=>{
-  const p=props();p.initialProject=addDealer(addDealer(p.initialProject,'johanna','Johanna'),'nora','Nora');p.initialDealerId='johanna';
+  const p=props();p.initialProject=addDealer(addDealer(p.initialProject,'linnea','Linnea'),'nora','Nora');p.initialDealerId='linnea';
   const videoId='11111111-1111-4111-8111-111111111111';
-  const policy={schemaVersion:1,familyId:'johanna/idle.ready/ready',base:[{videoId,weight:100,durationMs:4321}],variants:[]};
+  const policy={schemaVersion:1,familyId:'linnea/idle.ready/ready',base:[{videoId,weight:100,durationMs:4321}],variants:[]};
   const noraPolicy={...policy,familyId:'nora/idle.ready/ready'};
   p.initialProject.dealerIdlePolicies=[{dealerId:'nora',policy:noraPolicy}];
   const astridPolicy=structuredClone(p.initialProject.idlePolicy);
   const h=harness('./lab-studio.tsx');let tree=h.render(p);
-  const own=nodes(tree,row=>row.props?.dealerId==='johanna'&&typeof row.props?.onBusyChange==='function')[0];
+  const own=nodes(tree,row=>row.props?.dealerId==='linnea'&&typeof row.props?.onBusyChange==='function')[0];
   assert.ok(own);assert.equal(own.props.project,p.initialProject);
   own.props.onChange(policy);tree=h.render(p);
   const updated=h.values[0];
   assert.deepEqual(updated.idlePolicy,astridPolicy);assert.deepEqual(updated.dealerIdlePolicies.find(row=>row.dealerId==='nora').policy,noraPolicy);
-  assert.deepEqual(JSON.parse(JSON.stringify(updated.dealerIdlePolicies.find(row=>row.dealerId==='johanna').policy)),policy);
-  assert.equal(updated.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId,videoId);
+  assert.deepEqual(JSON.parse(JSON.stringify(updated.dealerIdlePolicies.find(row=>row.dealerId==='linnea').policy)),policy);
+  assert.equal(updated.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready').variants[0].videoGenerationId,videoId);
   assert.equal(p.initialProject.dealerIdlePolicies.length,1,'input draft is preserved');
   own.props.onBusyChange(true);tree=h.render(p);
   assert.ok(nodes(tree,row=>row.type==='button'&&row.props.children==='Spara inställningar').every(row=>row.props.disabled));
   assert.equal(nodes(tree,row=>typeof row.props?.onApplied==='function')[0].props.disabled,true);
   own.props.onBusyChange(false);tree=h.render(p);
   assert.equal(nodes(tree,row=>typeof row.props?.onApplied==='function')[0].props.disabled,true,'unsaved edits must still block server lifecycle writes');
-  assert.equal(nodes(tree,row=>row.props?.dealerId==='johanna'&&typeof row.props?.onBusyChange==='function')[0].props.blocked,false,'metadata lock does not block its own editor');
+  assert.equal(nodes(tree,row=>row.props?.dealerId==='linnea'&&typeof row.props?.onBusyChange==='function')[0].props.blocked,false,'metadata lock does not block its own editor');
 });
 
 test('server-confirmed dealer removal applies project, inventory and next selection as a saved revision',()=>{
-  const p=props();p.initialProject=addDealer(p.initialProject,'johanna','Johanna');p.initialDealerId='johanna';
+  const p=props();p.initialProject=addDealer(p.initialProject,'linnea','Linnea');p.initialDealerId='linnea';
   const h=harness('./lab-studio.tsx');let tree=h.render(p);
   const removal=nodes(tree,row=>typeof row.props?.onApplied==='function')[0];
-  const next={...p.initialProject,revision:'server-archived',dealers:p.initialProject.dealers.filter(row=>row.id!=='johanna'),lines:p.initialProject.lines.filter(row=>row.dealerId!=='johanna')};
+  const next={...p.initialProject,revision:'server-archived',dealers:p.initialProject.dealers.filter(row=>row.id!=='linnea'),lines:p.initialProject.lines.filter(row=>row.dealerId!=='linnea')};
   const inventory={videos:[]};
   removal.props.onApplied(next,inventory,'');tree=h.render(p);
   assert.equal(h.state('dealerId'),'');assert.equal(h.state('project'),next);assert.equal(h.state('saved'),JSON.stringify(next));assert.equal(h.state('videos'),inventory);
-  assert.equal(p.initialProject.dealers.some(row=>row.id==='johanna'),true);
-  assert.equal(nodes(tree,row=>row.props?.dealerId==='johanna').length,0);
+  assert.equal(p.initialProject.dealers.some(row=>row.id==='linnea'),true);
+  assert.equal(nodes(tree,row=>row.props?.dealerId==='linnea').length,0);
 });
 
 test('opening an exact slot reveals settings and preserves destination and unsaved draft',()=>{
@@ -317,20 +318,20 @@ test('local dealer tabs keep unsaved project and mounted upload and speech edito
 });
 
 test('browser back restores exact dealer slot and category without replacing a dirty draft',()=>{
-  const listeners=new Map(), p=props(), runtimeWindow={location:{href:'https://local.test/control/clips?dealer=vera&view=clips&event=deal.player.centre&situation=box4',hash:'',search:'?dealer=vera&view=clips&event=deal.player.centre&situation=box4'},addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener(){},history:{replaceState(){},pushState(){}}};
+  const listeners=new Map(), p=props(), runtimeWindow={location:{href:'https://local.test/control/clips?dealer=elin&view=clips&event=deal.player.centre&situation=box4',hash:'',search:'?dealer=elin&view=clips&event=deal.player.centre&situation=box4'},addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener(){},history:{replaceState(){},pushState(){}}};
   const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();
-  assert.equal(h.state('dealerId'),'vera');assert.equal(h.state('category'),'deal');assert.equal(h.state('selection').situation,'box4');
+  assert.equal(h.state('dealerId'),'elin');assert.equal(h.state('category'),'deal');assert.equal(h.state('selection').situation,'box4');
   const draft={...h.state('project'),revision:'draft'};h.state('project',draft);h.render(p);
   runtimeWindow.location.search='?dealer=astrid&view=speech';listeners.get('popstate')(new Event('popstate'));
   h.render(p);assert.equal(h.state('workspaceView'),'speech');assert.equal(h.state('project'),draft);
-  runtimeWindow.location.search='?dealer=vera&view=clips&event=deal.player.centre&situation=box4';listeners.get('popstate')(new Event('popstate'));
-  h.render(p);assert.equal(h.state('dealerId'),'vera');assert.equal(h.state('category'),'deal');assert.equal(h.state('selection').situation,'box4');assert.equal(h.state('project'),draft);
+  runtimeWindow.location.search='?dealer=elin&view=clips&event=deal.player.centre&situation=box4';listeners.get('popstate')(new Event('popstate'));
+  h.render(p);assert.equal(h.state('dealerId'),'elin');assert.equal(h.state('category'),'deal');assert.equal(h.state('selection').situation,'box4');assert.equal(h.state('project'),draft);
 });
 
 test('speech clips link to the selected dealer review and invalid view safely falls back',()=>{
-  const p=props();p.initialDealerId='vera';p.initialView='clips';p.initialCategory='speech';
+  const p=props();p.initialDealerId='elin';p.initialView='clips';p.initialCategory='speech';
   const h=harness('./lab-studio.tsx');let tree=h.render(p);
-  const link=nodes(tree,node=>node.type==='a'&&node.props.href?.includes('tab=media-review'))[0];assert.ok(link);assert.equal(link.props.href,'/control/administration?tab=media-review&dealer=vera');
+  const link=nodes(tree,node=>node.type==='a'&&node.props.href?.includes('tab=media-review'))[0];assert.ok(link);assert.equal(link.props.href,'/control/administration?tab=media-review&dealer=elin');
   assert.equal(nodes(tree,node=>node.props?.onConfigureSlot)[0].props.category,'speech');
   const invalid=harness('./lab-studio.tsx');invalid.render({...p,initialView:'javascript:bad',initialCategory:'bad'});assert.equal(invalid.state('workspaceView'),'idle');
 });
@@ -365,7 +366,7 @@ test('explicit top view takes precedence over an incompatible event on first ren
 });
 
 test('history cannot unmount a pending dealer operation or transfer queued uploads to another dealer',()=>{
-  for(const pending of ['uploading','dealerBusy','intakePending','speechDraft'])for(const selection of ['?dealer=vera&view=clips','?view=clips','?dealer=unknown&view=clips']){
+  for(const pending of ['uploading','dealerBusy','intakePending','speechDraft'])for(const selection of ['?dealer=elin&view=clips','?view=clips','?dealer=unknown&view=clips']){
     const p=props(),listeners=new Map(),replaced=[],runtimeWindow={location:{href:'https://local.test/control/clips?dealer=astrid&view=idle',search:'?dealer=astrid&view=idle',hash:''},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(){},history:{replaceState(_s,_t,url){replaced.push(String(url));},pushState(){}}};
     const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();h.state(pending,true);h.render(p);
     runtimeWindow.location.search=selection;runtimeWindow.location.href='https://local.test/control/clips'+runtimeWindow.location.search;
@@ -374,8 +375,8 @@ test('history cannot unmount a pending dealer operation or transfer queued uploa
 });
 
 test('legacy category hashes continue to select the requested dealer category',()=>{
-  const p=props(),listeners=new Map(),runtimeWindow={location:{href:'https://local.test/control/clips?dealer=vera#deal',search:'?dealer=vera',hash:'#deal'},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(){},history:{replaceState(){},pushState(){}}};
-  const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();h.render(p);assert.equal(h.state('dealerId'),'vera');assert.equal(h.state('category'),'deal');assert.equal(h.state('workspaceView'),'clips');
+  const p=props(),listeners=new Map(),runtimeWindow={location:{href:'https://local.test/control/clips?dealer=elin#deal',search:'?dealer=elin',hash:'#deal'},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(){},history:{replaceState(){},pushState(){}}};
+  const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();h.render(p);assert.equal(h.state('dealerId'),'elin');assert.equal(h.state('category'),'deal');assert.equal(h.state('workspaceView'),'clips');
   runtimeWindow.location.hash='#idle';listeners.get('hashchange')(new Event('hashchange'));h.render(p);assert.equal(h.state('workspaceView'),'idle');assert.equal(h.state('category'),'idle');
 });
 
@@ -384,7 +385,7 @@ test('real navigation click changes local tabs while the actual unapplied voice 
   const navSource=readFileSync(new URL('./studio-navigation.tsx',import.meta.url),'utf8');
   const navOutput=transformSync(navSource,{filename:'studio-navigation.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   const navModule={exports:{}};vm.runInNewContext(navOutput.code,{module:navModule,exports:navModule.exports,require:name=>name==='next/navigation'?{useSearchParams:()=>new URLSearchParams()}:name.endsWith('.module.css')?{__esModule:true,default:{}}:require(name)});
-  const assigned=[],p={...props(),initialDealerId:'vera',initialView:'speech'},runtimeWindow={location:{href:'https://local.test/control/clips?dealer=vera&view=speech',search:'?dealer=vera&view=speech',hash:'',assign:href=>assigned.push(href)},history:{pushState(_s,_t,url){runtimeWindow.location.href=String(url);},replaceState(){}},addEventListener(){},removeEventListener(){}};
+  const assigned=[],p={...props(),initialDealerId:'elin',initialView:'speech'},runtimeWindow={location:{href:'https://local.test/control/clips?dealer=elin&view=speech',search:'?dealer=elin&view=speech',hash:'',assign:href=>assigned.push(href)},history:{pushState(_s,_t,url){runtimeWindow.location.href=String(url);},replaceState(){}},addEventListener(){},removeEventListener(){}};
   const h=harness('./lab-studio.tsx',[],{window:runtimeWindow,'./studio-navigation':navModule.exports});let tree=h.render(p);
   const findSpeech=tree=>nodes(tree,node=>node.props?.expanded&&node.props?.dealer)[0];
   const mounted=findSpeech(tree),speech=harness('./dealer-speech-settings.tsx');let form=speech.render(mounted.props);
@@ -416,8 +417,8 @@ for(const dealer of [{id:'dragan',label:'Dragan'},{id:'paow-v2',label:'Paow'}])t
 });
 
 test('unapplied actual speech edits protect dealer and route exits, remain across tabs, and can be undone or applied',()=>{
-  const p={...props(),initialDealerId:'vera',initialView:'speech'},listeners=new Map(),assigned=[];
-  const runtimeWindow={location:{href:'https://local.test/control/clips?dealer=vera&view=speech',search:'?dealer=vera&view=speech',hash:'',assign:href=>assigned.push(href)},history:{pushState(_s,_t,url){runtimeWindow.location.href=String(url);runtimeWindow.location.search=new URL(url).search;},replaceState(){}},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(key,value){if(listeners.get(key)===value)listeners.delete(key);}};
+  const p={...props(),initialDealerId:'elin',initialView:'speech'},listeners=new Map(),assigned=[];
+  const runtimeWindow={location:{href:'https://local.test/control/clips?dealer=elin&view=speech',search:'?dealer=elin&view=speech',hash:'',assign:href=>assigned.push(href)},history:{pushState(_s,_t,url){runtimeWindow.location.href=String(url);runtimeWindow.location.search=new URL(url).search;},replaceState(){}},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(key,value){if(listeners.get(key)===value)listeners.delete(key);}};
   const h=harness('./lab-studio.tsx',[],{window:runtimeWindow});let tree=h.render(p);h.flushEffects();tree=h.render(p);
   const findSpeech=()=>nodes(tree,node=>node.props?.expanded&&node.props?.dealer)[0];
   const speech=harness('./dealer-speech-settings.tsx');let form;
@@ -425,15 +426,15 @@ test('unapplied actual speech edits protect dealer and route exits, remain acros
   const input=placeholder=>nodes(form,node=>node.type==='input'&&node.props.placeholder===placeholder)[0];
   input('Röstens ID, ingen API-nyckel').props.onChange({target:{value:'studio-qa-unsaved'}});render();assert.equal(h.state('speechDraft'),true);
   const guard={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(guard);assert.equal(guard.blocked,true);
-  nodes(tree,node=>typeof node.props?.onNavigate==='function')[0].props.onNavigate({preventDefault(){}},'/control/clips?dealer=vera&view=clips');render();assert.equal(h.state('workspaceView'),'clips');assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'studio-qa-unsaved');
+  nodes(tree,node=>typeof node.props?.onNavigate==='function')[0].props.onNavigate({preventDefault(){}},'/control/clips?dealer=elin&view=clips');render();assert.equal(h.state('workspaceView'),'clips');assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'studio-qa-unsaved');
   const route=nodes(tree,node=>node.type==='a'&&node.props.href?.startsWith('/control/rehearsal'))[0];route.props.onClick({preventDefault(){}});render();assert.equal(h.state('workspaceView'),'speech');assert.deepEqual(assigned,[]);assert.match(h.state('notice'),/ångra/);
-  pressDealer(tree,'Mei');render();assert.equal(h.state('dealerId'),'vera');assert.match(h.state('notice'),/talformuläret/);
+  pressDealer(tree,'Saga');render();assert.equal(h.state('dealerId'),'elin');assert.match(h.state('notice'),/talformuläret/);
   nodes(form,node=>node.type==='button'&&node.props.children==='Ångra ändringar i talformuläret')[0].props.onClick();render();assert.equal(h.state('speechDraft'),false);assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'');
   const clean={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(clean);assert.equal(clean.blocked,undefined);
   nodes(form,node=>node.type==='select'&&node.props.children.some?.(option=>option.props?.value==='cartesia'))[0].props.onChange({target:{value:'cartesia'}});render();
   input('Röstens ID, ingen API-nyckel').props.onChange({target:{value:'  chosen-voice  '}});render();input('Modellens ID').props.onChange({target:{value:'chosen-model'}});render();assert.equal(h.state('speechDraft'),true);
   nodes(form,node=>node.type==='button'&&node.props.children==='Använd talunderlag i utkastet')[0].props.onClick();render();assert.equal(h.state('speechDraft'),false);
-  const savedProfile=h.state('project').dealers.find(row=>row.id==='vera').speechProfile;assert.equal(savedProfile.voice.voiceId,'chosen-voice');assert.equal(savedProfile.state,'preparation');assert.equal(savedProfile.reference,null);assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'chosen-voice');assert.deepEqual(assigned,[]);
+  const savedProfile=h.state('project').dealers.find(row=>row.id==='elin').speechProfile;assert.equal(savedProfile.voice.voiceId,'chosen-voice');assert.equal(savedProfile.state,'preparation');assert.equal(savedProfile.reference,null);assert.equal(input('Röstens ID, ingen API-nyckel').props.value,'chosen-voice');assert.deepEqual(assigned,[]);
   const projectDirty={preventDefault(){this.blocked=true;}};listeners.get('beforeunload')(projectDirty);assert.equal(projectDirty.blocked,true,'applied project changes still need explicit save');
 });
 
@@ -478,7 +479,7 @@ test('clips route and dealer management preserve composition operator and room t
   const outgoing=nodes(tree,node=>node.type==='a'&&/^\/control\/(?:events|administration|compositions|rehearsal)/.test(node.props.href??''));
   assert.equal(outgoing.some(link=>link.props.href.startsWith('/control/events')),false,'registered speech uses its inline editor');assert.ok(nodes(tree,node=>node.props?.slot?.situation==='goodluck').length);assert.ok(outgoing.some(link=>link.props.href.startsWith('/control/administration')));
   for(const link of outgoing){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.get('composition'),'mobile-phone');assert.equal(query.get('operator'),'operator-42');assert.equal(query.get('table'),'room-7');}
-  pressDealer(tree,'Mei');tree=h.render(page.props);assertTabs('mei','mobile-phone','operator-42','room-7');
+  pressDealer(tree,'Saga');tree=h.render(page.props);assertTabs('saga','mobile-phone','operator-42','room-7');
   for(const link of tabLinks()){const query=new URL(link.props.href,'https://local.test').searchParams;assert.equal(query.has('event'),false);assert.equal(query.has('situation'),false);}
   for(const [url,composition] of [['/control/clips?dealer=paow&view=settings',null],['/control/clips?composition=mobile-phone&dealer=paow&view=settings','mobile-phone']]){
     setLocation(url);listeners.get('popstate')(new Event('popstate'));tree=h.render(page.props);assertTabs('paow',composition);
@@ -509,14 +510,14 @@ test('no dealer is selected implicitly and choosing a dealer preserves the draft
   assert.equal(nodes(tree,node=>node.props?.onConfigureSlot).length,0);assert.equal(nodes(tree,node=>node.props?.expanded&&node.props?.dealer).length,0);
   assert.equal(nodes(tree,node=>node.type==='button'&&node.props['aria-pressed']===true).length,0);
   assert.ok(nodes(tree,node=>typeof node.props?.onApplied==='function').length,'archive restoration remains available without a selected dealer');
-  const draft={...h.state('project'),revision:'unsaved'};h.state('project',draft);tree=h.render(p);pressDealer(tree,'Vera');tree=h.render(p);
-  assert.equal(h.state('dealerId'),'vera');assert.equal(h.state('project'),draft);assert.equal(nodes(tree,node=>node.props?.onConfigureSlot)[0].props.dealerId,'vera');
+  const draft={...h.state('project'),revision:'unsaved'};h.state('project',draft);tree=h.render(p);pressDealer(tree,'Elin');tree=h.render(p);
+  assert.equal(h.state('dealerId'),'elin');assert.equal(h.state('project'),draft);assert.equal(nodes(tree,node=>node.props?.onConfigureSlot)[0].props.dealerId,'elin');
  }
 });
 
 test('history with no dealer clears selection instead of keeping the previous dealer',()=>{
- const listeners=new Map();const runtimeWindow={location:{href:'https://local.test/control/clips?dealer=vera&operator=op-1&composition=mobile-phone',search:'?dealer=vera&operator=op-1&composition=mobile-phone',hash:''},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(){},history:{replaceState(){},pushState(){}}};
- const p={...props(),initialDealerId:'vera'},h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();
+ const listeners=new Map();const runtimeWindow={location:{href:'https://local.test/control/clips?dealer=elin&operator=op-1&composition=mobile-phone',search:'?dealer=elin&operator=op-1&composition=mobile-phone',hash:''},addEventListener:(key,value)=>listeners.set(key,value),removeEventListener(){},history:{replaceState(){},pushState(){}}};
+ const p={...props(),initialDealerId:'elin'},h=harness('./lab-studio.tsx',[],{window:runtimeWindow});h.render(p);h.flushEffects();
  runtimeWindow.location.search='?operator=op-1&composition=mobile-phone';listeners.get('popstate')(new Event('popstate'));const tree=h.render(p);
  assert.equal(h.state('dealerId'),'');assert.equal(h.state('operatorId'),'op-1');assert.equal(h.state('laneId'),'mobile-phone');assert.equal(nodes(tree,node=>node.props?.onConfigureSlot).length,0);
 });
@@ -535,7 +536,7 @@ test('room observation loads saved evidence without a dealer session and retains
  activity.props.onActivity({source:'player',stage:'playback',status:'observed',title:'New frame',owner:'fixture',reason:'receipt',data:{evidence:'presented-frame',token:'private'}});
  assert.equal(writes.length,0);h.flushEffects();tree=h.render(p);h.flushEffects();
  const entries=h.state('activities');assert.equal(entries.length,2);assert.equal(entries[0],saved);assert.equal(entries[1].title,'New frame');assert.equal(entries[1].data.token,'[dolt]');assert.equal(writes.at(-1),entries);
- h.render({...p,initialDealerId:'vera'});h.flushEffects();assert.equal(h.state('activities'),entries,'choosing an explicit dealer keeps earlier evidence');
+ h.render({...p,initialDealerId:'elin'});h.flushEffects();assert.equal(h.state('activities'),entries,'choosing an explicit dealer keeps earlier evidence');
 });
 
 
@@ -588,3 +589,6 @@ test('registered speech slot edits only its saved UUID in the existing project d
  assert.deepEqual(p.initialProject,before);
  const save=nodes(tree,row=>row.type==='button'&&row.props.children==='Spara inställningar')[0];assert.equal(save.props.disabled,false);
 });
+
+// Explicit active dealers used by this isolated component fixture.
+function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}

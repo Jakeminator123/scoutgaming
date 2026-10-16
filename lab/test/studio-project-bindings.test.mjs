@@ -74,9 +74,9 @@ test('idle base/variants cannot swap roles, use an action clip or borrow another
   }
 });
 test('legacy bindings require explicit review receipt and exact same-dealer/part registered source',async () => {
-  const {project,registry} = fixture(); project.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'vera:idle-1/idle/idle'}];
+  const {project,registry} = fixture(); project.legacyClipPolicy=[{dealerId:'astrid',part:'idle',clipId:'astrid:idle-1/idle/idle'}];
   await assert.rejects(createStudioProjectBindings({videoRegistry:async () => registry})(project),error => error.statusCode === 503);
-  const clip = {id:project.legacyClipPolicy[0].clipId,dealerId:'vera',exactParts:['idle'],available:true,kind:'engine',engineKey:'idle-1/idle/idle'};
+  const clip = {id:project.legacyClipPolicy[0].clipId,dealerId:'astrid',exactParts:['idle'],available:true,kind:'engine',engineKey:'idle-1/idle/idle'};
   await assert.rejects(createStudioProjectBindings({videoRegistry:async () => registry,legacyControls:async () => ({clips:[clip]})})(project),error => error.code === 'studio_legacy_review_safety_unavailable');
   await createStudioProjectBindings({videoRegistry:async () => registry,legacyControls:async () => ({clips:[clip],reviewSafetyVerified:true})})(project);
   for (const changed of [{...clip,dealerId:'mei'},{...clip,exactParts:['deal']},{...clip,available:false}]) {
@@ -88,17 +88,17 @@ test('native legacy inventory reads injected Neon review safety and Blob availab
   t.after(() => {assert.equal(dirname(resolve(root)),resolve(tmpdir()));assert.match(basename(root),/^croupier-native-legacy-/);return rm(root,{recursive:true,force:true});});
   const write = async (file,value) => {const path=join(root,file);await mkdir(dirname(path),{recursive:true});await writeFile(path,typeof value==='string'?value:JSON.stringify(value));};
   for (const base of ['dealer','dealers/astrid','dealers/amira','dealers/mei']) {
-    await write(`web/public/${base}/streams/index.json`,{clips:{'idle-1/idle/idle':{file:'idle.h264'}}});
+    await write(`web/public/${base}/streams/index.json`,{clips:{'idle-1/idle/idle':{file:'idle.h264'},'idle-1/idle/idle-breathe-head-tilt':{file:'idle.h264'}}});
     await write(`web/public/${base}/audio/en/bank.json`,{});
   }
   await write('private/bo.json','invalid old bo disk must not be read');
-  const project=createSeedProject();project.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'vera:idle-1/idle/idle'}];
+  const project=createSeedProject();project.legacyClipPolicy=[{dealerId:'astrid',part:'idle',clipId:'astrid:idle-1/idle/idle'}];
   let sourceReads=0;
   const options={repository:root,dataDirectory:join(root,'private'),mediaAvailable:async file => file?.endsWith('/streams/idle.h264') === true,
-    administration:async () => {sourceReads++;return {legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{'vera:idle-1/idle/idle':{reason:'review rejected'}}}};}};
+    administration:async () => {sourceReads++;return {legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{'astrid:idle-1/idle/idle':{reason:'review rejected'}}}};}};
   const controls=await legacyClipControls(project,options);assert.equal(sourceReads,1);assert.equal(controls.reviewSafetyVerified,true);
-  assert.equal(controls.clips.find(clip => clip.id==='vera:idle-1/idle/idle').available,false);assert.equal(controls.runtime.conflicts.length,1);
-  for (const dealer of ['astrid','mei']) assert.equal(controls.clips.find(clip => clip.id===`${dealer}:idle-1/idle/idle`).available,true);
-  assert.equal(controls.clips.some(clip => clip.id.startsWith('amira:')),false,'retired Amira files cannot reappear in the available legacy inventory');
+  assert.equal(controls.clips.find(clip => clip.id==='astrid:idle-1/idle/idle').available,false);assert.equal(controls.runtime.conflicts.length,1);
+  assert.equal(controls.clips.find(clip => clip.id==='astrid:idle-1/idle/idle-breathe-head-tilt').available,true);
+  for (const dealer of ['vera','mei','amira','johanna']) assert.equal(controls.clips.some(clip => clip.dealerId===dealer),false,'retired dealer files cannot reappear in the available legacy inventory');
   await assert.rejects(legacyClipControls(project,{...options,administration:{}}),error => error.code==='studio_legacy_review_safety_unavailable');
 });

@@ -327,19 +327,19 @@ test('actual browser expired Admin login restores the real room view through his
   const { tmpdir } = await import('node:os');
   const { createStudioNativeAuth } = await import('../lib/studio-native-auth.mjs');
   const { assertNativeStudioRequest } = await import('../lib/studio-native-runtime.mjs');
-  const { createSeedProject, defaultPresentationLane, validateProject } = await import('../lib/studio-model.mjs');
+  const { createSeedProject, defaultPresentationLane, validateProject, addDealer } = await import('../lib/studio-model.mjs');
   const catalog = await import('../lib/design-preview-catalog.mjs');
   const nextPage = await import('../lib/next-page-navigation.mjs');
   const preview = await import('../lib/design-preview.mjs');
   const publicOrigin = 'https://admin.fixture.invalid', labOrigin = 'https://studio.fixture.invalid';
   const config = { allowedOrigins:[publicOrigin,labOrigin], publicHosts:['admin.fixture.invalid','studio.fixture.invalid'],
     apiBase:'/studio/api/admin', authBase:'/studio/api/auth' };
-  const expectedContext = {operator:'fixture-operator',table:'fixture-room-7',composition:'fixture-scene',dealer:'vera',game:'roulette'};
-  const expectedLabels = {operator:'C4 valt bolag',room:'C4 valt rum',composition:'C4 vald sammansättning',dealer:'Vera'};
+  const expectedContext = {operator:'fixture-operator',table:'fixture-room-7',composition:'fixture-scene',dealer:'linnea',game:'roulette'};
+  const expectedLabels = {operator:'C4 valt bolag',room:'C4 valt rum',composition:'C4 vald sammansättning',dealer:'Linnea'};
   const target = '/admin/clips?' + new URLSearchParams(expectedContext);
-  const project = createSeedProject();
+  const project = addDealer(createSeedProject(),'linnea','Linnea');
   project.lanes = [{...defaultPresentationLane('astrid'),id:'fixture-default-scene',label:'C4 annan sammansättning'},
-    {...defaultPresentationLane('vera'),id:expectedContext.composition,label:expectedLabels.composition}];
+    {...defaultPresentationLane('linnea'),id:expectedContext.composition,label:expectedLabels.composition}];
   validateProject(project);
   const room = {schemaVersion:2,id:expectedContext.table,name:expectedLabels.room,operatorId:expectedContext.operator,
     presentationLaneId:expectedContext.composition,gameLaneId:'fixture-game-lane',game:expectedContext.game,state:'preview'};

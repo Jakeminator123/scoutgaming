@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {appearanceBranding, appearanceDraftRevision, appearanceReview, changeAppearance, resetAppearanceRoom, sameAppearance} from '../components/partner-appearance-state.mjs';
+import {appearanceBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, changeAppearance, resetAppearanceRoom, sameAppearance} from '../components/partner-appearance-state.mjs';
 test('editable projection excludes N1 metadata and unused branding, preserves independent rooms',()=>{
   assert.deepEqual(appearanceBranding({lane:'main',logo:'never-live',composition:{secret:true},roomOverrides:{vip:{dealer:'vera',lane:'foreign',logo:'no'},main:{table:'table-a'}}}),{lane:'main',roomOverrides:{main:{table:'table-a'},vip:{dealer:'vera'}}});
   assert.equal(sameAppearance({color:'#112233',dealer:'vera'},{dealer:'vera',color:'#112233'}),true);
@@ -21,4 +21,12 @@ test('review rejects malformed or mismatched records before publication can be o
   const expected={draftRevision:4,packageRevision:8,branding:{color:'#112233'}},base={...expected,reviewToken:'token',changes:[{roomId:null,key:'color',before:null,after:'#112233'}],affectedRooms:['main']};
   assert.equal(appearanceReview(base,expected),true);
   for(const changed of [{draftRevision:3},{branding:{color:'#445566'}},{changes:[{roomId:null,key:'unsafe',before:null,after:'x'}]},{affectedRooms:[3]}])assert.equal(appearanceReview({...base,...changed},expected),false);
+});
+
+test('receipts accept explicit supported games and legacy rooms but reject unknown game metadata',()=>{
+ const base={operatorId:'north',packageRevision:1,lanes:[],adjustable:[],branding:{},canConfigure:true,draft:null,draftRevision:0,history:[]};
+ for(const game of ['blackjack','roulette',undefined,'poker',null]){
+  const rooms=[{id:'main',label:'Main',presentationLaneId:'shared',...(game===undefined?{}:{game})}];
+  assert.equal(appearanceReceipt({...base,rooms},'north'),game===undefined||game==='blackjack'||game==='roulette');
+ }
 });

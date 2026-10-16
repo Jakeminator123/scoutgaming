@@ -195,9 +195,9 @@ function nativePool(){
     async query(sql,values){const client=await pool.connect();try{await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');const value=await client.query(sql,values);await client.query('COMMIT');return value;}finally{client.release();}}
   };return pool;
 }
-async function nativeFixture({dealer='johanna'}={}){
+async function nativeFixture({dealer='linnea'}={}){
   const pool=nativePool(),repository=createStudioRepository({pool,scope:nativeScope});
-  const support=cloudPresentationFixture({project:createSeedProject(),lanes:[defaultPresentationLane('astrid')]}),project=support.project.dealers.some(row=>row.id===dealer)?support.project:addDealer(support.project,dealer,dealer==='johanna'?'Johanna':'Nora'),lane=defaultPresentationLane(dealer);
+  const support=cloudPresentationFixture({project:createSeedProject(),lanes:[defaultPresentationLane('astrid')]}),project=support.project.dealers.some(row=>row.id===dealer)?support.project:addDealer(support.project,dealer,dealer==='linnea'?'Linnea':'Nora'),lane=defaultPresentationLane(dealer);
   lane.id='johns-presentation';lane.dealers=[dealer];lane.layers.dealer.default=dealer;lane.layers.dealer.allowed=[dealer];project.lanes=[lane];
   project.lines.find(row=>row.dealerId===dealer&&row.eventId==='idle.ready').variants[0].videoGenerationId=mediaId;
   const classification={dealerId:dealer,eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Egen dealerfilm',notes:'',compositing:{mode:'green-screen',threshold:.2,softness:.1,despill:0}};
@@ -224,17 +224,17 @@ async function nativeFixture({dealer='johanna'}={}){
   const direct=await createOperatorStore({sql:pool,scope:nativeScope,now:clock});
   return {pool,repository,project,lane,administration,record,api,context,prepare,publish,direct,io:()=>io,setDuring:fn=>changeDuringVerification=fn};
 }
-test('native package publishing freezes Johanna own UUID and exact metadata with provider work before the bound writer',async()=>{
+test('native package publishing freezes Linnea own UUID and exact metadata with provider work before the bound writer',async()=>{
   const f=await nativeFixture(),prepared=await f.prepare(),offset=f.pool.calls.length;
   const result=await f.publish(prepared);assert.equal(result.presentation.schemaVersion,3);assert.equal(result.packageRevision,1);assert.equal(f.io(),2);
   assert.equal(result.presentation.playback.media[0].id,mediaId);
-  assert.equal(result.presentation.playback.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId,mediaId);
-  assert.equal(result.presentation.registeredDealers[0].id,'johanna');assert.equal(result.presentation.registeredDealers[0].idle.id,mediaId);
+  assert.equal(result.presentation.playback.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready').variants[0].videoGenerationId,mediaId);
+  assert.equal(result.presentation.registeredDealers[0].id,'linnea');assert.equal(result.presentation.registeredDealers[0].idle.id,mediaId);
   const writes=f.pool.calls.slice(offset);assert.equal(new Set(writes.map(row=>row.clientId)).size,1);
   assert.deepEqual(writes.find(row=>row.marker==='read-media').values.slice(0,2),[nativeScope.environment,nativeScope.workspaceId]);
   assert.equal(writes.some(row=>row.marker==='publish-package'),true);
   const current=await f.direct.getCurrentPackage('north');assert.deepEqual(readPackagePresentation(current),result.presentation);
-  const saved=await f.repository.readDocument('project');saved.value.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
+  const saved=await f.repository.readDocument('project');saved.value.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
   assert.equal(readPackagePresentation(await f.direct.getCurrentPackage('north')).registeredDealers[0].idle.id,mediaId);
 });
@@ -258,13 +258,13 @@ test('native publication uses server-read current package revision and preserves
 });
 test('native preparation requires own idle and cannot write if provider verification fails',async()=>{
   const f=await nativeFixture(),saved=await f.repository.readDocument('project');
-  saved.value.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
+  saved.value.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='idle.ready').variants[0].videoGenerationId=null;
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
   await assert.rejects(f.prepare(),e=>e.code==='studio_dealer_idle_required');assert.equal(f.pool.snapshot().packages.length,0);
   const other=await nativeFixture();other.setDuring(async()=>{throw Object.assign(new Error('studio_media_storage_unavailable'),{statusCode:503});});
   await assert.rejects(other.prepare(),e=>e.statusCode===503);assert.equal(other.pool.snapshot().packages.length,0);
 });
-test('native Nora also freezes an exact own idle and does not inherit Johanna or a same-ID lane constraint',async()=>{
+test('native Nora also freezes an exact own idle and does not inherit Linnea or a same-ID lane constraint',async()=>{
   const f=await nativeFixture({dealer:'nora'}),result=await f.publish();
   assert.equal(result.presentation.registeredDealers[0].id,'nora');assert.equal(result.presentation.registeredDealers[0].idle.classification.dealerId,'nora');
   assert.notEqual(f.lane.id,f.administration.gameLane);
@@ -283,10 +283,10 @@ test('advanced republication refuses removing an in-use presentation or changing
   const changed=await f.repository.readDocument('project');
   changed.value.lanes[0].dealers=['astrid'];changed.value.lanes[0].layers.dealer.default='astrid';changed.value.lanes[0].layers.dealer.allowed=['astrid'];
   await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:'tester'});
-  await assert.rejects(f.publish(),e=>e.statusCode===409,'a valid new default cannot retarget an existing Johanna room');
+  await assert.rejects(f.publish(),e=>e.statusCode===409,'a valid new default cannot retarget an existing Linnea room');
   assert.equal((await f.direct.getCurrentPackage('north')).revision,2);
   const restore=await f.repository.readDocument('project');
-  restore.value.lanes[0].dealers=['johanna'];restore.value.lanes[0].layers.dealer.default='johanna';restore.value.lanes[0].layers.dealer.allowed=['johanna'];
+  restore.value.lanes[0].dealers=['linnea'];restore.value.lanes[0].layers.dealer.default='linnea';restore.value.lanes[0].layers.dealer.allowed=['linnea'];
   await f.repository.saveDocument('project',{value:restore.value,expectedRevision:restore.revision,actor:'tester'});
   const valid=await f.publish();assert.equal(valid.packageRevision,3);assert.deepEqual(valid.tables,[room.id]);
 });
@@ -305,11 +305,11 @@ test('lane operator choices carry each current published assignment and never bo
   await store.createOperator({actor:session.user,operatorId:'johns',slug:'johns',name:'Johns'});
   assert.deepEqual((await lane.listOperators()).map(row=>[row.id,row.publishedPackage]),[['johns',null],['sg-test',null]]);
   await store.publishPackage({actor:session.user,operatorId:'sg-test',lanes:['mobile-phone'],games:['blackjack'],tables:['room-sg'],branding:{name:'Private package detail'}});
-  await store.publishPackage({actor:session.user,operatorId:'johns',lanes:['johns-johanna'],games:['blackjack'],tables:['room-johns'],branding:{name:'Other private detail'}});
+  await store.publishPackage({actor:session.user,operatorId:'johns',lanes:['johns-linnea'],games:['blackjack'],tables:['room-johns'],branding:{name:'Other private detail'}});
   await store.publishPackage({actor:session.user,operatorId:'sg-test',expectedRevision:1,lanes:['mobile-phone','evening'],games:['blackjack'],tables:['room-sg'],branding:{name:'Private package detail'}});
   const listed=await lane.listOperators();
   assert.deepEqual(listed.find(row=>row.id==='sg-test').publishedPackage,{revision:2,lanes:['evening','mobile-phone']});
-  assert.deepEqual(listed.find(row=>row.id==='johns').publishedPackage,{revision:1,lanes:['johns-johanna']});
+  assert.deepEqual(listed.find(row=>row.id==='johns').publishedPackage,{revision:1,lanes:['johns-linnea']});
   assert.doesNotMatch(JSON.stringify(listed),/room-sg|room-johns|Private|branding|tables|games/);
   listed.find(row=>row.id==='sg-test').publishedPackage.lanes.length=0;
   assert.equal((await lane.listOperators()).find(row=>row.id==='sg-test').publishedPackage.lanes.length,2);
@@ -318,7 +318,7 @@ test('lane operator choices carry each current published assignment and never bo
 
 test('publishing the whole existing selection refreezes one shared dealer snapshot without changing room bindings', async () => {
   const f = await nativeFixture(), saved = await f.repository.readDocument('project'), second = structuredClone(f.lane);
-  second.id = 'second-johanna'; saved.value.lanes.push(second);
+  second.id = 'second-linnea'; saved.value.lanes.push(second);
   await f.repository.saveDocument('project', { value: saved.value, expectedRevision: saved.revision, actor: 'tester' });
   f.context.body.lanes = [f.lane.id, second.id];
   const first = await f.publish();
@@ -329,7 +329,7 @@ test('publishing the whole existing selection refreezes one shared dealer snapsh
   await f.direct.publishPackage({ actor: 'tester', operatorId: 'north', expectedRevision: 1, lanes: f.context.body.lanes, games: ['blackjack'], tables: rooms.map(r => r.id),
     branding: withPackagePresentation({ name: 'Johns' }, first.presentation) });
   const changed = await f.repository.readDocument('project');
-  changed.value.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].label = 'Updated shared event';
+  changed.value.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'speak.goodluck').variants[0].label = 'Updated shared event';
   await f.repository.saveDocument('project', { value: changed.value, expectedRevision: changed.revision, actor: 'tester' });
   const beforeAdmin = await f.repository.readDocument('administration'), offset = f.pool.calls.length, prepared = await f.prepare();
   assert.equal(f.pool.calls.slice(offset).filter(call => call.marker === 'list-media').length, 1, 'one captured library snapshot for all selections');
@@ -337,16 +337,16 @@ test('publishing the whole existing selection refreezes one shared dealer snapsh
   assert.equal(result.packageRevision, 3); assert.deepEqual(result.tables, rooms.map(r => r.id));
   assert.deepEqual(result.presentation.lanes.map(l => l.id), f.context.body.lanes);
   assert.equal(result.presentation.registeredDealers.length, 1);
-  assert.equal(result.presentation.playback.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].label, 'Updated shared event');
-  assert.notEqual(first.presentation.playback.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'speak.goodluck').variants[0].label, 'Updated shared event');
+  assert.equal(result.presentation.playback.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'speak.goodluck').variants[0].label, 'Updated shared event');
+  assert.notEqual(first.presentation.playback.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'speak.goodluck').variants[0].label, 'Updated shared event');
   assert.deepEqual(await f.repository.readDocument('administration'), beforeAdmin);
   assert.equal((await f.direct.getCurrentPackage('north')).branding.name, 'Johns');
 });
 
 
-test('v3 republication changes the allowed default from Astrid to Johanna without replacing its room or adapter', async () => {
+test('v3 republication changes the allowed default from Astrid to Linnea without replacing its room or adapter', async () => {
   const f=await nativeFixture(), saved=await f.repository.readDocument('project');
-  saved.value.lanes[0].dealers=['astrid','johanna'];saved.value.lanes[0].layers.dealer={enabled:true,default:'astrid',allowed:['astrid','johanna']};
+  saved.value.lanes[0].dealers=['astrid','linnea'];saved.value.lanes[0].layers.dealer={enabled:true,default:'astrid',allowed:['astrid','linnea']};
   await f.repository.saveDocument('project',{value:saved.value,expectedRevision:saved.revision,actor:'tester'});
   const admin=await f.repository.readDocument('administration');
   admin.value.gameLanes[0].dealer='astrid';admin.value.gameLanes[0].mediaCollection='astrid-presentation';
@@ -355,7 +355,7 @@ test('v3 republication changes the allowed default from Astrid to Johanna withou
   await f.repository.saveDocument('administration',{value:admin.value,expectedRevision:admin.revision,actor:'tester'});
   const first=await f.publish();
   await f.direct.publishPackage({actor:'tester',operatorId:'north',expectedRevision:1,lanes:[f.lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({name:'North'},first.presentation)});
-  const changed=await f.repository.readDocument('project');changed.value.lanes[0].layers.dealer.default='johanna';
+  const changed=await f.repository.readDocument('project');changed.value.lanes[0].layers.dealer.default='linnea';
   await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:'tester'});
   const beforeAdmin=await f.repository.readDocument('administration'), result=await f.publish();
   assert.equal(result.packageRevision,3);assert.deepEqual(result.tables,[room.id]);assert.deepEqual(await f.repository.readDocument('administration'),beforeAdmin);
@@ -363,13 +363,13 @@ test('v3 republication changes the allowed default from Astrid to Johanna withou
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:(await f.repository.readDocument('project')).value,administration:beforeAdmin.value})},
     packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:await f.direct.getCurrentPackage('north')})}});
   const entry=await select('?operator=north&table='+room.id);
-  assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'johanna');assert.equal(entry.selection.presentation,'local');
+  assert.equal(entry.status,200);assert.equal(entry.selection.dealer,'linnea');assert.equal(entry.selection.presentation,'local');
   assert.equal(entry.selection.roomId,room.id);assert.equal(entry.selection.lane,room.gameLaneId);
   const astrid=await select('?operator=north&table='+room.id+'&dealer=astrid');
   assert.equal(astrid.selection.dealer,'astrid');assert.equal(astrid.selection.presentation,'local');
   const denied=await select('?operator=north&table='+room.id+'&dealer=mei');
-  assert.equal(denied.status,404);assert.deepEqual(entry.selection.choices.dealers,['johanna','astrid']);
-  assert.equal(readPackagePresentation(await f.direct.getCurrentPackage('north')).registeredDealers.find(row=>row.id==='johanna').idle.id,mediaId);
+  assert.equal(denied.status,404);assert.deepEqual(entry.selection.choices.dealers,['linnea','astrid']);
+  assert.equal(readPackagePresentation(await f.direct.getCurrentPackage('north')).registeredDealers.find(row=>row.id==='linnea').idle.id,mediaId);
 });
 
 test('native publication rejects a stale editor revision before provider verification',async()=>{

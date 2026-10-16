@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
 import {gameLaneConfiguration,gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
 import {isDealerId,isActiveDealerId,validatePublicRegisteredDealers} from '../web/public/dealer-identity.mjs';
+import {historicalDealerProject} from './fixtures/historical-dealer-project.mjs';
 const lane=id=>({schemaVersion:1,id:'configured',label:'Configured cloud table',renderer:'portrait-video',dealer:id,mediaCollection:id+'-presentation'});
 function selector(id,{configured=true,pack=true}={}){
  const lanes=configured?[lane(id)]:[];
@@ -10,7 +11,7 @@ function selector(id,{configured=true,pack=true}={}){
  return createGameEntrySelector({policy:{readSaved:async()=>saved,readGameConfiguration:async()=>{}},packages:{resolve:async()=>({operator:{id:'operator',status:'active'},package:pack?{revision:3,lanes:['configured'],branding:{}}:null})}});
 }
 test('empty configuration invents no lane or local dealer',async()=>{assert.deepEqual(gameLaneConfiguration(),{gameLanes:[],gameLane:null});assert.throws(()=>gameLaneFromDocument({}));await assert.rejects(selector('paow',{configured:false})(''),/configured/);});
-for(const id of ['paow','dragge','nora','astrid','vera','mei'])test(`${id} is available only through explicit saved cloud registration`,async()=>{
+for(const id of ['paow','dragge','nora','astrid'])test(`${id} is available only through explicit saved cloud registration`,async()=>{
  const select=selector(id);
  for(const query of ['',`?dealer=${id}`,`?operator=testco&dealer=${id}`]){
   const result=await select(query);assert.equal(result.status,200);assert.equal(result.selection.dealer,id);assert.equal(result.selection.presentation,'local');assert.equal(result.selection.localDealer,id);assert.deepEqual(result.selection.registeredDealers,[{id,label:id}]);assert.deepEqual(result.selection.choices.dealers,[id]);
@@ -19,14 +20,20 @@ for(const id of ['paow','dragge','nora','astrid','vera','mei'])test(`${id} is av
  assert.equal(gameLaneFromDocument(data).dealer,id);
  assert.throws(()=>gameLaneFromDocument({...data,gameRegisteredDealers:'[]'}));
 });
-test('Amira cannot launch while old document identifiers remain readable',async()=>{assert.equal(isDealerId('amira'),true);assert.equal(isActiveDealerId('amira'),false);assert.equal((await selector('paow')('?dealer=amira')).status,404);assert.throws(()=>validatePublicRegisteredDealers([{id:'amira',label:'Amira'}]));});
+test('retired dealers cannot launch while old document identifiers remain readable',async()=>{
+ for(const id of ['vera','mei','amira','johanna']){
+  assert.equal(isDealerId(id),true);assert.equal(isActiveDealerId(id),false);
+  assert.equal((await selector('paow')('?dealer='+id)).status,404);
+  assert.throws(()=>validatePublicRegisteredDealers([{id,label:id}]));
+ }
+});
 test('local indexed catalog can be read for history but cannot start',async()=>{const old={schemaVersion:1,id:'old',label:'Old',renderer:'indexed-video',dealer:'vera',mediaCollection:'legacy-dealers'};assert.deepEqual(validateGameLanes([old]),[old]);const select=createGameEntrySelector({policy:{readGameConfiguration:async()=>{},readSaved:async()=>({administration:{gameLanes:[old],gameLane:'old'},project:{}})}});await assert.rejects(select(''),/cloud/);});
 test('missing operator package cannot silently start a default dealer',async()=>{assert.equal((await selector('paow',{pack:false})('?operator=testco')).status,404);});
 
-test('registered former local names do not duplicate the historical package authority',async()=>{
+test('registered Astrid does not duplicate the historical package authority',async()=>{
  const {validatePresentationPackage}=await import('../web/presentation-layers.mjs');
  const {defaultPresentationLane}=await import('../lab/lib/studio-model.mjs');
- for(const id of ['astrid','vera','mei']){
+ for(const id of ['astrid']){
   const pack={schemaVersion:2,projectRevision:'fixture',assets:[],lanes:[defaultPresentationLane(id)],registeredDealers:[{id,label:id,idle:null}]};
   assert.equal(validatePresentationPackage(pack).registeredDealers[0].id,id);
  }
@@ -40,12 +47,12 @@ test('a published cloud lane is independent of a historical active indexed lane'
 });
 
 test('historical box variants remain stored without automatically becoming the standard',async()=>{
- const {createSeedProject}=await import('../lab/lib/studio-model.mjs');
  const {applyLegacyStandardVariants}=await import('../packages/presentation/runtime/legacy-standard-variants.mjs');
  const {selectPresentation}=await import('../packages/presentation/runtime/selection.mjs');
- const project=createSeedProject();
+ const project=historicalDealerProject('vera');
  project.legacyClipPolicy=[{dealerId:'vera',part:'box3',clipId:'vera:legacy/box3'}];
  applyLegacyStandardVariants(project); // Explicit historical fixture, never a runtime import.
+ assert.ok(project.lines.find(line=>line.dealerId==='vera'&&line.eventId==='deal.player.centre').variants.some(variant=>variant.videoGenerationId==='vera:legacy/box3'));
  const original=structuredClone(project);
  const result=await selectPresentation({project,dealerId:'vera',eventId:'deal.player.centre',mode:'off',sourceEvent:project.events.find(e=>e.id==='deal.player.centre').exampleEvent},{videoRegistry:{videos:[],families:[]}});
  assert.equal(result.variant.videoGenerationId,null);
@@ -64,10 +71,10 @@ test('reading historical clip metadata never creates new active bindings',async(
  assert.deepEqual(result.legacyClipPolicy,before.legacyClipPolicy);
  assert.deepEqual(project,before);
 });
-test('Amira cannot be registered again while other named cloud dealers can',async()=>{
+test('retired dealers cannot be registered again while other named cloud dealers can',async()=>{
  const {createEmptyProject,addDealer}=await import('../lab/lib/studio-model.mjs');
- assert.throws(()=>addDealer(createEmptyProject(),'amira','Amira'));
- for(const id of ['astrid','vera','mei','nora']){
+ for(const id of ['vera','mei','amira','johanna'])assert.throws(()=>addDealer(createEmptyProject(),id,id));
+ for(const id of ['astrid','paow','dragge','dragan','marten','nora','unrelated-dealer']){
   const project=addDealer(createEmptyProject(),id,id);
   assert.deepEqual(project.dealers,[{id,label:id}]);
   assert.ok(project.lines.every(line=>line.variants.every(variant=>variant.videoGenerationId===null)));

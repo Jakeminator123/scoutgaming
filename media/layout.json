@@ -8,8 +8,6 @@
     "assets/scene-footage": "media/game/source/scene-footage",
     "content/persona": "media/game/source/persona",
     "content/dealers/astrid": "media/dealers/astrid/source/generation",
-    "content/dealers/vera": "media/dealers/vera/source/generation",
-    "content/dealers/mei": "media/dealers/mei/source/generation",
     "content/raw": "media/game/source/pipeline/raw",
     "content/raw-all": "media/game/source/pipeline/raw-all",
     "content/raw2": "media/game/source/pipeline/raw2",
@@ -60,7 +58,6 @@
     "content/staging/2026-09-20/astrid-seam-repair": "media/dealers/astrid/staging/2026-09-20/astrid-seam-repair",
     "content/staging/2026-09-20/dealer-table-review": "media/game/staging/2026-09-20/dealer-table-review",
     "web/public/assets": "media/game/runtime/assets",
-    "web/public/dealer-hands": "media/dealers/vera/runtime/hands",
     "web/public/dealers/astrid-hands": "media/dealers/astrid/runtime/hands",
     "web/public/kevin-cards": "media/game/runtime/cards",
     "web/public/review/2026-09-09": "media/dealers/astrid/runtime/composited/2026-09-09",
@@ -153,15 +150,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/review/2026-09-09/astrid-deal.mp4"
-    },
-    {
-      "legacyPath": "web/public/review/2026-09-09/mei-push.mp4",
-      "path": "dealers/astrid/runtime/composited/2026-09-09/mei-push.mp4",
-      "size": 2106111,
-      "sha256": "583300438debf9ec20709db4e1eae9c115257879efe1fcc730c0a1b15fb8f12e",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/review/2026-09-09/mei-push.mp4"
     },
     {
       "legacyPath": "web/public/review/astrid-blue-box4/actor-packed.mp4",
@@ -6188,348 +6176,6 @@
       "canonicalPath": "dealers/astrid/runtime/composited/astrid-green-speak/speak.json"
     },
     {
-      "legacyPath": "web/public/lab/mei-atlas-sheet.png",
-      "path": "dealers/mei/runtime/assets/lab/mei-atlas-sheet.png",
-      "size": 488026,
-      "sha256": "a4d20a0856d3bd677aade61efc91232207ec98b717bae45e133ab07cada439ca",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/lab/mei-atlas-sheet.png"
-    },
-    {
-      "legacyPath": "web/public/lab/mei-kf-full.png",
-      "path": "dealers/mei/runtime/assets/lab/mei-kf-full.png",
-      "size": 952186,
-      "sha256": "f0f13114a9c7439d82aef3867adc20b17dc14fad8644140f5ef5545aa56b4aa7",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/lab/mei-kf-full.png"
-    },
-    {
-      "legacyPath": "web/public/lab/mei-pilot-debug.mp4",
-      "path": "dealers/mei/runtime/assets/lab/mei-pilot-debug.mp4",
-      "size": 738007,
-      "sha256": "fab7927c0d4c14718889d6e33c1dc91b30ad6e8eee8e0fa587fa6c9ec59fa8e0",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/lab/mei-pilot-debug.mp4"
-    },
-    {
-      "legacyPath": "web/public/lab/mei-pilot.mp4",
-      "path": "dealers/mei/runtime/assets/lab/mei-pilot.mp4",
-      "size": 662716,
-      "sha256": "e42ebabbfe81841fe637f3109f28d45d770535697652c68534d483ee3a366de0",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/lab/mei-pilot.mp4"
-    },
-    {
-      "legacyPath": "web/public/lab/vera-atlas-sheet.png",
-      "path": "dealers/vera/runtime/assets/lab/vera-atlas-sheet.png",
-      "size": 644820,
-      "sha256": "bccce427ec15d5376bfa36ea8b6261e87a2891bd949af1eb0a1f55e460036c73",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/lab/vera-atlas-sheet.png"
-    },
-    {
-      "legacyPath": "web/public/lab/vera-kf-full.png",
-      "path": "dealers/vera/runtime/assets/lab/vera-kf-full.png",
-      "size": 1383562,
-      "sha256": "565aeeee056d31b8820a2256b055d53818f15c930b0e49c33e6bff6ffaf00c8e",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/lab/vera-kf-full.png"
-    },
-    {
-      "legacyPath": "web/public/lab/vera-pilot-debug.mp4",
-      "path": "dealers/vera/runtime/assets/lab/vera-pilot-debug.mp4",
-      "size": 721675,
-      "sha256": "a40b88fd1e73e1422aa8d166a8ad12822fb9b08c682d246c49bd528429d024dd",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/lab/vera-pilot-debug.mp4"
-    },
-    {
-      "legacyPath": "web/public/lab/vera-pilot.mp4",
-      "path": "dealers/vera/runtime/assets/lab/vera-pilot.mp4",
-      "size": 671271,
-      "sha256": "28bb03f11708e963699380fd89aaac160f63925a9bd105e16024d5edd62c96cf",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/lab/vera-pilot.mp4"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_actions_action-deal-watch.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_actions_action-deal-watch.h264",
-      "size": 76436,
-      "sha256": "ad702ae14f70a30663bf47d4723a29074cd225bf556185e938bf4ce95bea77dc",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_actions_action-deal-watch.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_actions_action-deal.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_actions_action-deal.h264",
-      "size": 88599,
-      "sha256": "019e191c2b95fd15712f1180cb6361a47bde826a7bcc35219d0d585e71d57bcb",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_actions_action-deal.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_actions_action-think.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_actions_action-think.h264",
-      "size": 74624,
-      "sha256": "082ab092fa756e4227c53313d9ba7b71c3b23b75a485cd43c43dd5b576ff367b",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_actions_action-think.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_actions_gesticulate1.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_actions_gesticulate1.h264",
-      "size": 101904,
-      "sha256": "adc18faccd66ab359bc4268409158ef108116b6caaa22d3d5d6b14915c0b30d3",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_actions_gesticulate1.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_idle_idle-breathe-head-tilt.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_idle_idle-breathe-head-tilt.h264",
-      "size": 92262,
-      "sha256": "c83b5be632ae63e65e526c8aeab18540c006b1950551f63cbafbb965674d433c",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_idle_idle-breathe-head-tilt.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_idle_idle.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_idle_idle.h264",
-      "size": 90606,
-      "sha256": "989693e28e307697ffd113acdccc95441361b5be98a72c29a5c8841ecf17a22a",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_idle_idle.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_blackjack.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_blackjack.h264",
-      "size": 74945,
-      "sha256": "cb38924aec0800e745066f8d7315b3bac71d249c2803841aa5c776e0ed7a185a",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_blackjack.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_dealerbust.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_dealerbust.h264",
-      "size": 90332,
-      "sha256": "ec018576f99d7cc2de19e8304546bad5b99a72d6dfbd66fe14c67f35d90586f8",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_dealerbust.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_fair_rng.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_fair_rng.h264",
-      "size": 138181,
-      "sha256": "bbb3c622ba5f4fbda25a76d154036e66acf86f3117aa4a7a867c474f1489b75c",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_fair_rng.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_fair_streak.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_fair_streak.h264",
-      "size": 134185,
-      "sha256": "8ed083fcd124f506128098fd910dc3c70f5f01235fb6bd75616cc894bba5a168",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_fair_streak.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_goodluck.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_goodluck.h264",
-      "size": 62536,
-      "sha256": "27180a30ab897d9c3ec699e9b7ad4bb5ac1dc1f8d6539bff99a29b66da25d2f0",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_goodluck.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_greeting.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_greeting.h264",
-      "size": 104548,
-      "sha256": "376be4b9d6d8a24fcdc7995cfb5256b6aeafbb65f3a1ffabdab3d9ad128ce574",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_greeting.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_insurance.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_insurance.h264",
-      "size": 93967,
-      "sha256": "21055130252c2ed663c450d3e80770e7671ddff64ce037888857d26c563dc71a",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_insurance.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_limits_table.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_limits_table.h264",
-      "size": 193239,
-      "sha256": "2fb6125eb9933a0dea00a36665d2c48d1cb23b2d1876d76512b6b8d2822c35f6",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_limits_table.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_lose.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_lose.h264",
-      "size": 81642,
-      "sha256": "54dfd6f0c7314bc7ad5d0ecce19ea30b2b94987e31f7025a54cbdb7cbbffd0bc",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_lose.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_no_advice.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_no_advice.h264",
-      "size": 112553,
-      "sha256": "928a43a4cb86333c22086eb96622db15e6d1b38d637c31e4141417be1150de18",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_no_advice.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_no_peek.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_no_peek.h264",
-      "size": 105375,
-      "sha256": "7a4e58577de05965b2600627dd1ac733f86ea57272209d072b1d34cc4083a985",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_no_peek.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_no_predict.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_no_predict.h264",
-      "size": 109995,
-      "sha256": "c9a46610396eb852c933c8a1fdef46f91c1174c23f97e27a3a56d2d08aa406b4",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_no_predict.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_push.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_push.h264",
-      "size": 66408,
-      "sha256": "4fd8a72a3252d5ee8a359f17dd23756eb9ef6c72800513da1c8e6d96593302e8",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_push.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_rg_support.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_rg_support.h264",
-      "size": 125770,
-      "sha256": "23758499504514d66eb781c33da2b4027b88d6c93d20762884f8f642d3c661b9",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_rg_support.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_rules_bj_pays.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_rules_bj_pays.h264",
-      "size": 107010,
-      "sha256": "74f2974c7ce77ac0c613c8e415e8d0f0fc726290baed04125b70963061ac09b8",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_rules_bj_pays.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_rules_decks.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_rules_decks.h264",
-      "size": 103288,
-      "sha256": "13469ade96e45efaeac8fe9c7811d3a793cbe4c22543b336bb7eb4de87a106cc",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_rules_decks.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_rules_double.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_rules_double.h264",
-      "size": 115709,
-      "sha256": "f0639191460e829bc22a662a1f0a3e0855496b1f549fc4c96f4ba5b5262178b0",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_rules_double.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_rules_insurance.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_rules_insurance.h264",
-      "size": 138990,
-      "sha256": "4bf0ef238ed9ac582e0e6b9a43103fcbdc16a89ca166cfcdb7cb917fc11dd81c",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_rules_insurance.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_rules_s17.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_rules_s17.h264",
-      "size": 147801,
-      "sha256": "aa4c385f8a54fe245b9888778e1ce54ff5c14825e4e6eddf14c3ffef19950976",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_rules_s17.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_side_213.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_side_213.h264",
-      "size": 164952,
-      "sha256": "085e14bdcfe8caabd7f3e05bb3b6f70f72d5041c3986d3797eb9444cc30fc11d",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_side_213.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_side_pp.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_side_pp.h264",
-      "size": 108886,
-      "sha256": "b6a67b9ab167c05bf993602b6d30fb424ed03a4a16721f2041b157275f330607",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_side_pp.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_who_are_you.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_who_are_you.h264",
-      "size": 124099,
-      "sha256": "3e54f99a50f36e81b6a661b185ae418927960b7ac1c0e1a25241ba3ffb76968f",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_who_are_you.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/idle-1_speak_win.h264",
-      "path": "dealers/vera/runtime/hands/streams/idle-1_speak_win.h264",
-      "size": 70866,
-      "sha256": "c4924cf4652b3ff84d1bb71c80b32b7086b63429550a5d1973d1044981660dc1",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/idle-1_speak_win.h264"
-    },
-    {
-      "legacyPath": "web/public/dealer-hands/streams/index.json",
-      "path": "dealers/vera/runtime/hands/streams/index.json",
-      "size": 7439,
-      "sha256": "b11953933df7ca9e2f4ed7d23ad76f9434f51219c696422b93b35674ef7d1bb2",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/dealer-hands/streams/index.json"
-    },
-    {
       "legacyPath": "web/public/assets/cardback.png",
       "path": "game/runtime/assets/cardback.png",
       "size": 97393,
@@ -6636,15 +6282,6 @@
       "access": "source"
     },
     {
-      "legacyPath": "web/public/bo/img/amira-portrait.jpg",
-      "path": "site/runtime/backoffice/img/amira-portrait.jpg",
-      "size": 31102,
-      "sha256": "51d72ac8fa6c00a4117bc5eb324d99606f08735d601a322c48d618768969874b",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/bo/img/amira-portrait.jpg"
-    },
-    {
       "legacyPath": "web/public/bo/img/astrid-portrait.jpg",
       "path": "site/runtime/backoffice/img/astrid-portrait.jpg",
       "size": 24642,
@@ -6681,15 +6318,6 @@
       "publicUrl": "/bo/img/goldensalon-room.jpg"
     },
     {
-      "legacyPath": "web/public/bo/img/mei-portrait.jpg",
-      "path": "site/runtime/backoffice/img/mei-portrait.jpg",
-      "size": 28106,
-      "sha256": "f7e2de8fb42a8d867ac8566d6dbaf40c87d24355d22cf8c9ca9b2a1c0965aeb2",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/bo/img/mei-portrait.jpg"
-    },
-    {
       "legacyPath": "web/public/bo/img/prive-room.jpg",
       "path": "site/runtime/backoffice/img/prive-room.jpg",
       "size": 42881,
@@ -6706,15 +6334,6 @@
       "tracked": true,
       "access": "public",
       "publicUrl": "/bo/img/scout-mark.png"
-    },
-    {
-      "legacyPath": "web/public/bo/img/vera-portrait.jpg",
-      "path": "site/runtime/backoffice/img/vera-portrait.jpg",
-      "size": 30832,
-      "sha256": "5fd4a0768a642759c3e3b64d133a10713dbfa6c5ebda1110d6fb299ae762de86",
-      "tracked": true,
-      "access": "public",
-      "publicUrl": "/bo/img/vera-portrait.jpg"
     },
     {
       "legacyPath": "design-kit/BettingRail.dc.html",

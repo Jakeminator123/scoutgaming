@@ -19,7 +19,7 @@ function media(dealerId, id, sha256 = sameSourceHash) {
   return { id, sha256, size: 4096, contentType: 'video/mp4',
     pathname: `croupier/media/dealers/${dealerId}/review/uploads/${id}/${sha256}.mp4`,
     classification: { dealerId, eventId: 'idle.ready', kind: 'idle', role: 'standard',
-      situation: '', label: dealerId === 'johanna' ? 'Johannas grundloop' : 'Noras grundloop', notes: '', playback: 'once',
+      situation: '', label: dealerId === 'linnea' ? 'Linneas grundloop' : 'Noras grundloop', notes: '', playback: 'once',
       compositing: { mode: 'green-screen', threshold: .23, softness: .15, despill: 0 } } };
 }
 function video(record) {
@@ -27,39 +27,39 @@ function video(record) {
     classification: structuredClone(record.classification), available: true, integrity: 'verified', fileName: 'dealer-nora.mp4' };
 }
 function fixture() {
-  const project = addDealer(addDealer(createSeedProject(), 'nora', 'Nora'), 'johanna', 'Johanna');
-  const johanna = media('johanna', JOHANNA_ID), nora = media('nora', NORA_ID);
-  for (const [dealerId, id] of [['johanna', JOHANNA_ID], ['nora', NORA_ID]]) {
+  const project = addDealer(addDealer(createSeedProject(), 'nora', 'Nora'), 'linnea', 'Linnea');
+  const linnea = media('linnea', JOHANNA_ID), nora = media('nora', NORA_ID);
+  for (const [dealerId, id] of [['linnea', JOHANNA_ID], ['nora', NORA_ID]]) {
     const line = project.lines.find(row => row.dealerId === dealerId && row.eventId === 'idle.ready');
     line.variants.find(row => row.id === line.baselineVariantId).videoGenerationId = id;
   }
-  project.lanes = [defaultPresentationLane('johanna')];
-  const lane = project.lanes[0]; lane.id = 'johns-johanna'; lane.label = 'Johns Johanna';
-  lane.dealers = ['johanna']; lane.layers.dealer = { enabled: true, default: 'johanna', allowed: ['johanna'] };
-  return { project, selectedLaneIds: [lane.id], inventory: { videos: [video(johanna), video(nora)], families: [] },
-    mediaRows: [{ ...johanna, revision: 'media-johanna-1', updatedAt: '2026-10-09T00:00:00.000Z' },
-      { ...nora, revision: 'media-nora-1', updatedAt: '2026-10-09T00:00:00.000Z' }], requiredIdleDealerIds: ['johanna'] };
+  project.lanes = [defaultPresentationLane('linnea')];
+  const lane = project.lanes[0]; lane.id = 'johns-linnea'; lane.label = 'Johns Linnea';
+  lane.dealers = ['linnea']; lane.layers.dealer = { enabled: true, default: 'linnea', allowed: ['linnea'] };
+  return { project, selectedLaneIds: [lane.id], inventory: { videos: [video(linnea), video(nora)], families: [] },
+    mediaRows: [{ ...linnea, revision: 'media-linnea-1', updatedAt: '2026-10-09T00:00:00.000Z' },
+      { ...nora, revision: 'media-nora-1', updatedAt: '2026-10-09T00:00:00.000Z' }], requiredIdleDealerIds: ['linnea'] };
 }
-const resolve = entries => resolveFrozenDealerIdle(entries, { dealerId: 'johanna', allowedDealerIds: ['johanna'] });
+const resolve = entries => resolveFrozenDealerIdle(entries, { dealerId: 'linnea', allowedDealerIds: ['linnea'] });
 const code = (expected, status = 422) => error => error.code === expected && error.statusCode === status;
 
 function rouletteFixture() {
-  const input=fixture(),dealer=input.project.dealers.find(row=>row.id==='johanna');
+  const input=fixture(),dealer=input.project.dealers.find(row=>row.id==='linnea');
   const records=['breathing','glasses-clean'].map((action,i)=>{
     const id=`20000000-0000-4000-8000-00000000000${i+1}`,sha256=String(i+3).repeat(64);
-    return {id,sha256,size:4096,contentType:'video/webm',pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.webm`,
-      classification:{dealerId:'johanna',eventId:'roulette.idle',kind:'idle',role:'standard',situation:action,label:action,notes:'',playback:'once',
+    return {id,sha256,size:4096,contentType:'video/webm',pathname:`croupier/media/dealers/linnea/review/uploads/${id}/${sha256}.webm`,
+      classification:{dealerId:'linnea',eventId:'roulette.idle',kind:'idle',role:'standard',situation:action,label:action,notes:'',playback:'once',
         game:'roulette',action,startPose:'VILA',endPose:'VILA',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}}};
   });
   dealer.rouletteIdle={videoId:records[0].id,variantVideoIds:[records[1].id],foregroundPolygons:[[[.2,.2],[.4,.2],[.4,.4]]]};
   input.inventory.videos.push(...records.map(video));input.mediaRows.push(...records.map((row,i)=>({...row,revision:'roulette-'+i})));
-  input.requiredRouletteIdleDealerIds=['johanna'];return {input,records,dealer};
+  input.requiredRouletteIdleDealerIds=['linnea'];return {input,records,dealer};
 }
 
 test('optional wheel start freezes its own profile and CAS bytes without changing legacy or roulette idle',()=>{
   const {input,records,dealer}=rouletteFixture(),clip=structuredClone(records[0]);
   clip.id='30000000-0000-4000-8000-000000000001';clip.sha256='9'.repeat(64);
-  clip.pathname=`croupier/media/dealers/johanna/review/uploads/${clip.id}/${clip.sha256}.webm`;
+  clip.pathname=`croupier/media/dealers/linnea/review/uploads/${clip.id}/${clip.sha256}.webm`;
   Object.assign(clip.classification,{eventId:'roulette.wheel-start',kind:'action',action:'wheel-start',situation:'wheel-start',framing:{scale:1.2,x:.1,y:0}});
   dealer.rouletteStart={videoId:clip.id,tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2200,ballReleaseMs:4000};
   input.inventory.videos.push(video(clip));input.mediaRows.push({...clip,revision:'wheel-one'});
@@ -79,12 +79,12 @@ test('explicit roulette base and glasses variant freeze separately from blackjac
   const {input,records,dealer}=rouletteFixture(),before=structuredClone(input);
   const result=captureFrozenRegisteredDealers(input),entry=result.registeredDealers[0];
   assert.equal(entry.idle.id,JOHANNA_ID);assert.deepEqual(entry.rouletteIdle.base,records[0]);assert.deepEqual(entry.rouletteIdle.variants,[records[1]]);
-  assert.equal(resolveFrozenDealerIdle(result.registeredDealers,{dealerId:'johanna',allowedDealerIds:['johanna'],game:'roulette'}).id,records[0].id);
+  assert.equal(resolveFrozenDealerIdle(result.registeredDealers,{dealerId:'linnea',allowedDealerIds:['linnea'],game:'roulette'}).id,records[0].id);
   assert.equal(resolve(result.registeredDealers).id,JOHANNA_ID);
-  assert.equal(resolveFrozenDealerIdle(result.registeredDealers,{dealerId:'johanna',allowedDealerIds:['nora'],game:'roulette'}),null);
+  assert.equal(resolveFrozenDealerIdle(result.registeredDealers,{dealerId:'linnea',allowedDealerIds:['nora'],game:'roulette'}),null);
   const capture=captureFrozenPresentation({snapshot:{projectDocument:{kind:'project',revision:input.project.revision,value:input.project},
     administrationDocument:{kind:'administration',revision:'admin-one',value:{rooms:[]}},mediaRows:input.mediaRows},
-    inventory:input.inventory,selectedLaneIds:input.selectedLaneIds,requiredRouletteIdleDealerIds:['johanna']});
+    inventory:input.inventory,selectedLaneIds:input.selectedLaneIds,requiredRouletteIdleDealerIds:['linnea']});
   assert.deepEqual(capture.mediaPreconditions.map(row=>row.id).sort(),[JOHANNA_ID,...records.map(row=>row.id)].sort());
   assert.deepEqual(decodePresentationPackage(encodePresentationPackage(capture.presentation)).registeredDealers[0].rouletteIdle,entry.rouletteIdle);
   const changed=structuredClone(input.mediaRows);changed.find(row=>row.id===records[1].id).revision='changed';
@@ -102,7 +102,7 @@ test('roulette capture never substitutes inventory, blackjack, a different deale
   ]) {const f=rouletteFixture();mutate(f);assert.throws(()=>captureFrozenRegisteredDealers(f.input));}
   const f=rouletteFixture();delete f.dealer.rouletteIdle;f.input.requiredRouletteIdleDealerIds=[];
   const captured=captureFrozenRegisteredDealers(f.input);
-  assert.equal(resolveFrozenDealerIdle(captured.registeredDealers,{dealerId:'johanna',allowedDealerIds:['johanna'],game:'roulette'}),null);
+  assert.equal(resolveFrozenDealerIdle(captured.registeredDealers,{dealerId:'linnea',allowedDealerIds:['linnea'],game:'roulette'}),null);
 });
 test('roulette binding and foreground parser reject decorated, oversized, duplicate and unsafe data',()=>{
   const {dealer}=rouletteFixture();assert.deepEqual(validateRouletteIdleBinding(dealer.rouletteIdle),dealer.rouletteIdle);
@@ -113,30 +113,30 @@ test('roulette binding and foreground parser reject decorated, oversized, duplic
   for(const value of [[],Array(5).fill([[0,0],[1,0],[1,1]]),[[[0,0],[0,0],[1,1]]],[[[0,0],[.5,.5],[1,1]]]])assert.throws(()=>validateRouletteForegroundPolygons(value));
 });
 
-test('Johanna captures her own UUID/path with unchanged Nora source bytes and no borrowed metadata', () => {
+test('Linnea captures her own UUID/path with unchanged Nora source bytes and no borrowed metadata', () => {
   const input = fixture(), before = structuredClone(input), result = captureFrozenRegisteredDealers(input);
   assert.equal(result.registeredDealers.length, 1);
-  const johanna = result.registeredDealers[0];
-  assert.deepEqual(Object.keys(johanna).sort(), ['id', 'idle', 'label']);
-  assert.equal(johanna.id, 'johanna'); assert.equal(johanna.label, 'Johanna');
-  assert.equal(johanna.idle.id, JOHANNA_ID); assert.equal(johanna.idle.sha256, sameSourceHash);
-  assert.equal(input.mediaRows[1].sha256, johanna.idle.sha256); assert.notEqual(input.mediaRows[1].id, johanna.idle.id);
-  assert.match(johanna.idle.pathname, /dealers\/johanna\/review\/uploads/);
-  assert.equal(johanna.idle.classification.dealerId, 'johanna');
-  assert.deepEqual(result.mediaPreconditions, [{ id: JOHANNA_ID, revision: 'media-johanna-1', record: johanna.idle }]);
-  assert.equal(Object.hasOwn(johanna.idle, 'revision'), false); assert.equal(Object.hasOwn(johanna.idle, 'updatedAt'), false);
+  const linnea = result.registeredDealers[0];
+  assert.deepEqual(Object.keys(linnea).sort(), ['id', 'idle', 'label']);
+  assert.equal(linnea.id, 'linnea'); assert.equal(linnea.label, 'Linnea');
+  assert.equal(linnea.idle.id, JOHANNA_ID); assert.equal(linnea.idle.sha256, sameSourceHash);
+  assert.equal(input.mediaRows[1].sha256, linnea.idle.sha256); assert.notEqual(input.mediaRows[1].id, linnea.idle.id);
+  assert.match(linnea.idle.pathname, /dealers\/linnea\/review\/uploads/);
+  assert.equal(linnea.idle.classification.dealerId, 'linnea');
+  assert.deepEqual(result.mediaPreconditions, [{ id: JOHANNA_ID, revision: 'media-linnea-1', record: linnea.idle }]);
+  assert.equal(Object.hasOwn(linnea.idle, 'revision'), false); assert.equal(Object.hasOwn(linnea.idle, 'updatedAt'), false);
   assert.deepEqual(input, before);
 });
 test('a published capture survives later Studio idle replacement, metadata edits and inventory changes', () => {
   const input = fixture(), published = captureFrozenRegisteredDealers(input);
-  const replacement = media('johanna', NEW_ID, 'b'.repeat(64));
-  input.project.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready').variants[0].videoGenerationId = NEW_ID;
-  input.inventory.videos[0] = video(replacement); input.mediaRows[0] = { ...replacement, revision: 'media-johanna-2' };
-  input.project.dealers.find(row => row.id === 'johanna').label = 'Ny etikett';
+  const replacement = media('linnea', NEW_ID, 'b'.repeat(64));
+  input.project.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready').variants[0].videoGenerationId = NEW_ID;
+  input.inventory.videos[0] = video(replacement); input.mediaRows[0] = { ...replacement, revision: 'media-linnea-2' };
+  input.project.dealers.find(row => row.id === 'linnea').label = 'Ny etikett';
   const decoded = JSON.parse(JSON.stringify(published.registeredDealers));
   const idle = resolve(decoded);
   assert.equal(idle.id, JOHANNA_ID); assert.equal(idle.sha256, sameSourceHash); assert.equal(idle.classification.compositing.threshold, .23);
-  assert.equal(decoded[0].label, 'Johanna');
+  assert.equal(decoded[0].label, 'Linnea');
   const newCapture = captureFrozenRegisteredDealers(input);
   assert.equal(newCapture.registeredDealers[0].idle.id, NEW_ID);
 });
@@ -160,29 +160,29 @@ test('the existing selected Grundloop accepts alternative intake role and defaul
 });
 test('missing optional idle remains null; a new room requires its selected own idle before any write', () => {
   for (const mutate of [
-    input => input.project.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready').variants[0].videoGenerationId = null,
+    input => input.project.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready').variants[0].videoGenerationId = null,
     input => input.inventory.videos[0].available = false,
     input => input.inventory.videos = input.inventory.videos.filter(row => row.id !== JOHANNA_ID),
   ]) {
     const input = fixture(); mutate(input); input.requiredIdleDealerIds = [];
     const result = captureFrozenRegisteredDealers(input);
-    assert.deepEqual(result.registeredDealers, [{ id: 'johanna', label: 'Johanna', idle: null }]); assert.deepEqual(result.mediaPreconditions, []);
+    assert.deepEqual(result.registeredDealers, [{ id: 'linnea', label: 'Linnea', idle: null }]); assert.deepEqual(result.mediaPreconditions, []);
     assert.equal(resolve(result.registeredDealers), null);
-    input.requiredIdleDealerIds = ['johanna']; assert.throws(() => captureFrozenRegisteredDealers(input), code('studio_dealer_idle_required'));
+    input.requiredIdleDealerIds = ['linnea']; assert.throws(() => captureFrozenRegisteredDealers(input), code('studio_dealer_idle_required'));
   }
 });
 test('every exact card slot may remain empty while the selected dealer idle is frozen', () => {
   const input = fixture();
-  assert.equal(input.project.lines.filter(row => row.dealerId === 'johanna' && row.eventId.startsWith('deal.')).every(row => row.variants.every(v => v.videoGenerationId === null)), true);
+  assert.equal(input.project.lines.filter(row => row.dealerId === 'linnea' && row.eventId.startsWith('deal.')).every(row => row.variants.every(v => v.videoGenerationId === null)), true);
   const result = captureFrozenRegisteredDealers(input);
   assert.equal(resolve(result.registeredDealers).id, JOHANNA_ID);
 });
-test('no timing, higher-priority variant, other family or Nora baseline can substitute for missing Johanna idle', () => {
-  const input = fixture(), line = input.project.lines.find(row => row.dealerId === 'johanna' && row.eventId === 'idle.ready');
+test('no timing, higher-priority variant, other family or Nora baseline can substitute for missing Linnea idle', () => {
+  const input = fixture(), line = input.project.lines.find(row => row.dealerId === 'linnea' && row.eventId === 'idle.ready');
   line.variants[0].videoGenerationId = null;
-  line.variants.push({ ...structuredClone(line.variants[0]), id: 'johanna.idle.ready.variant1', priority: 100, videoGenerationId: JOHANNA_ID });
+  line.variants.push({ ...structuredClone(line.variants[0]), id: 'linnea.idle.ready.variant1', priority: 100, videoGenerationId: JOHANNA_ID });
   input.inventory.videos[0].duration = .01; input.inventory.videos[1].duration = .01;
-  input.inventory.families.push({ id: 'borrowed', dealerId: 'johanna', eventId: 'idle.ready', standardIds: [NORA_ID] });
+  input.inventory.families.push({ id: 'borrowed', dealerId: 'linnea', eventId: 'idle.ready', standardIds: [NORA_ID] });
   assert.throws(() => captureFrozenRegisteredDealers(input), code('studio_dealer_idle_required'));
   line.variants[0].videoGenerationId = NORA_ID;
   assert.throws(() => captureFrozenRegisteredDealers(input), code('studio_dealer_idle_required'));
@@ -215,7 +215,7 @@ test('an unavailable registry, duplicate identity or malformed SQL record cannot
 });
 test('selection and registration authority reject unsaved dealer IDs, unknown lanes and duplicate selection', () => {
   for (const mutate of [
-    input => input.project.dealers = input.project.dealers.filter(row => row.id !== 'johanna'),
+    input => input.project.dealers = input.project.dealers.filter(row => row.id !== 'linnea'),
     input => input.selectedLaneIds = ['other'],
     input => input.selectedLaneIds = [input.selectedLaneIds[0], input.selectedLaneIds[0]],
     input => input.requiredIdleDealerIds = ['unknown'],
@@ -227,19 +227,19 @@ test('selection and registration authority reject unsaved dealer IDs, unknown la
 });
 test('historical registries remain readable without granting local playback authority', () => {
   const input = fixture(), entries = captureFrozenRegisteredDealers(input).registeredDealers;
-  assert.deepEqual(validateFrozenRegisteredDealers(entries, { dealerIds: [...BASE_DEALER_IDS, 'johanna'] }), entries);
+  assert.deepEqual(validateFrozenRegisteredDealers(entries, { dealerIds: [...BASE_DEALER_IDS, 'linnea'] }), entries);
   assert.deepEqual(validateFrozenRegisteredDealers([], { dealerIds: BASE_DEALER_IDS }), []);
   for (const malformed of [[], [...entries, entries[0]], [...entries, { id: 'nora', label: 'Nora', idle: null }],
     [{ ...entries[0], id: 'astrid' }], [{ ...entries[0], extra: true }], [{ ...entries[0], label: '' }]]) {
-    assert.throws(() => validateFrozenRegisteredDealers(malformed, { dealerIds: ['johanna'] }));
+    assert.throws(() => validateFrozenRegisteredDealers(malformed, { dealerIds: ['linnea'] }));
   }
 });
 test('only the frozen lane allowed list permits a dealer lookup; unknown and original IDs never get borrowed idle', () => {
   const entries = captureFrozenRegisteredDealers(fixture()).registeredDealers;
-  for (const [dealerId, allowedDealerIds] of [['nora', ['johanna']], ['johanna', ['nora']], ['astrid', ['astrid']], ['unknown', ['unknown']], ['../johanna', ['johanna']]]) {
+  for (const [dealerId, allowedDealerIds] of [['nora', ['linnea']], ['linnea', ['nora']], ['astrid', ['astrid']], ['unknown', ['unknown']], ['../linnea', ['linnea']]]) {
     assert.equal(resolveFrozenDealerIdle(entries, { dealerId, allowedDealerIds }), null);
   }
-  assert.equal(resolveFrozenDealerIdle([{ id: 'johanna', label: 'Johanna', idle: null }], { dealerId: 'johanna', allowedDealerIds: ['johanna'] }), null);
+  assert.equal(resolveFrozenDealerIdle([{ id: 'linnea', label: 'Linnea', idle: null }], { dealerId: 'linnea', allowedDealerIds: ['linnea'] }), null);
 });
 test('foreign owner, wrong event, mutable URL, invalid bytes and metadata corruption are rejected during decode', () => {
   const valid = captureFrozenRegisteredDealers(fixture()).registeredDealers;
@@ -262,7 +262,7 @@ test('write CAS detects record/revision replacement, reclassification and deleti
   assert.doesNotThrow(() => assertFrozenMediaPreconditions(result.mediaPreconditions, input.mediaRows));
   for (const mutate of [
     rows => rows.shift(),
-    rows => rows[0].revision = 'media-johanna-2',
+    rows => rows[0].revision = 'media-linnea-2',
     rows => rows[0].classification.compositing.threshold = .8,
     rows => rows[0].classification.label = 'Changed',
     rows => rows[0].size++,
@@ -296,8 +296,8 @@ test('historical v1 package remains readable but a new capture requires saved cl
   assert.doesNotThrow(() => assertFrozenMediaPreconditions([], null));
 });
 test('valid existing dealer labels retain their full model length and own display name', () => {
-  const input = fixture(); input.project.dealers.find(row => row.id === 'johanna').label = 'J'.repeat(120);
+  const input = fixture(); input.project.dealers.find(row => row.id === 'linnea').label = 'J'.repeat(120);
   const captured = captureFrozenRegisteredDealers(input);
   assert.equal(captured.registeredDealers[0].label.length, 120);
-  assert.equal(validateFrozenRegisteredDealers(captured.registeredDealers, { dealerIds: ['johanna'] })[0].label, 'J'.repeat(120));
+  assert.equal(validateFrozenRegisteredDealers(captured.registeredDealers, { dealerIds: ['linnea'] })[0].label, 'J'.repeat(120));
 });

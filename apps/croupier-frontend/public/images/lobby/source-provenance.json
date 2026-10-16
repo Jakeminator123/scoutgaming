@@ -10,15 +10,6 @@
         "dragge.jpg",
         "marten.jpg"
       ]
-    },
-    {
-      "repository": "Jakeminator123/scoutgaming",
-      "commit": "69e2407e71504adae33bf80ac331e80db5b18e62",
-      "directory": "lab/components/kevin-bo/assets",
-      "files": [
-        "vera-portrait.jpg",
-        "mei-portrait.jpg"
-      ]
     }
   ],
   "excluded": [
@@ -31,8 +22,6 @@
   "sha256": {
     "astrid-portrait.jpg": "84bd2cd8a53b74868e1a0c280686df6df1a4b8e3b25927c11b30e80d9ee11a03",
     "dragge-portrait.jpg": "d2b2572ceca9fd7919b65300c2815950775cb23bed351515082de2793cc1713c",
-    "marten-portrait.jpg": "cf3eaffe82352f3efc0322cd145aa2721d98e5f3bb23b5feaa548192562dc1a6",
-    "mei-portrait.jpg": "fbaf8aa400a16058e057f8656bd4df31c335b36e673ed7052caa5c2e8f40be6d",
-    "vera-portrait.jpg": "b763ece66ba9a9801d755cc6c0f7f28cb1be13740504488b3e73172883146a56"
+    "marten-portrait.jpg": "cf3eaffe82352f3efc0322cd145aa2721d98e5f3bb23b5feaa548192562dc1a6"
   }
 }

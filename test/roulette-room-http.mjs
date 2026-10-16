@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {zoomComposition} from '../lab/lib/composition-zoom.mjs';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {rouletteDocument} from '../web/games/roulette/http.mjs';
@@ -110,7 +111,7 @@ function sceneFixture({deferReady=false,playWheelStart}={}){
     mountPublishedScene(_canvas,options){calls.push(options);if(!deferReady)options.onReady();return {close(){closed++;},toggle(){},playWheelStart};},
   });
   return {ids,catalog,table,preview,room,calls,elements,fetches,prototype,prototypeMask,windowListeners,wheelCalls,wheelOptions,
-    choose:id=>{stored[choicesStorageKey('north')]=JSON.stringify({tableAsset:id});},run:()=>mount(room),closed:()=>closed};
+    choose:id=>{stored[choicesStorageKey('north')]=JSON.stringify({tableAsset:id});},run:options=>mount(room,options),closed:()=>closed};
 }
 
 test('only the selected table gets its start film and video cues start one authoritative spin',async()=>{
@@ -174,4 +175,17 @@ test('disabled table grants use the prototype and a different game or revision m
     const f=sceneFixture();change(f);await f.run();assert.equal(f.calls.length,0);
     assert.match(f.elements.get('scene-status').textContent,/inte tillgängliga/);
   }
+});
+
+
+test('published scene zoom reaches roulette drawing and hit layers with the same saved table placement',async()=>{
+  const f=sceneFixture();const original=structuredClone(f.preview.settings);
+  f.preview.settings=zoomComposition(f.preview.settings,'desktop',1.1);
+  const placements=[];const scene=await f.run({onTable:value=>placements.push(value)});
+  assert.deepEqual(f.calls[0].settings,f.preview.settings);
+  assert.equal(f.calls[0].layout,'desktop');
+  assert.deepEqual(placements[0].placement,f.preview.settings.desktop.table);
+  assert.deepEqual(f.preview.settings.mobile,original.mobile);
+  assert.equal(f.calls[0].table.src,f.preview.media.tables[0].src);
+  scene.close();
 });

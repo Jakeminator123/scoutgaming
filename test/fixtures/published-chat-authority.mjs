@@ -6,7 +6,7 @@ export {createPublishedChatResolver,cancelPlayerChats} from '../../web/registere
 
 // Explicit data for child-process HTTP tests. The real frozen resolver still
 // checks operator, room, publication revision, dealer and playback ownership.
-const dealers=['astrid','mei','vera'],operatorId='http-chat-fixture',slug='http-chat-fixture',revision=7;
+const dealers=['astrid','marten','nora'],operatorId='http-chat-fixture',slug='http-chat-fixture',revision=7;
 const cloud=cloudPresentationFixture({lanes:dealers.map(id=>({...defaultPresentationLane(id),id:'chat-'+id,label:id+' HTTP fixture'}))});
 const snapshot={operator:{id:operatorId,slug,status:'active'},package:{operatorId,revision,games:['blackjack'],
   lanes:cloud.presentation.lanes.map(lane=>lane.id),tables:dealers.map(id=>'room-'+id),branding:withPackagePresentation({},cloud.presentation)},

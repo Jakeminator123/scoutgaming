@@ -1,5 +1,30 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+## Astrid som legacyreferens och gemensam molnkälla, 16 oktober 2026
+
+Jakob har beslutat att Astrid ska behållas som **legacyreferens**, med tydlig
+märkning att hon saknar trelagersversionen. Hennes befintliga tal-/OpenClaw-
+flöden kan användas som referens. Dragan är den ordinarie dealern. Märkningen
+är en produktavgränsning, inte ett nytt godkännande av läppsynk eller genererat
+tal. Radera inte den gemensamma taltransporten för att en sökväg heter Astrid.
+
+Produktionsinställningarna kontrollerades 16 oktober: Vercels native Admin
+och Neon-policy är aktiva i `production/croupier`, medier använder privat
+Blob och spelbackend är `croupier-v2.onrender.com`. Spelmotorn kör på Render;
+Vercel är webb-/Admin-ingången. Det aktuella molnspåret behöver inte läsa
+originalfilmer från Jakobs dator. Neon-registret ignorerar de gamla lokala
+upload-/klassificeringsfilerna. Videobytes hämtas från Blob och kontrolleras
+mot exakt identitet, hash och storlek; tillfällig cache är disponibel.
+
+**Återstående migrationsgräns:** `createNeonVideoRegistry` kombinerar fortfarande
+Neon-rader med en oföränderlig deployad bank. `media/catalog/presentation.json`,
+`legacy.json`, layout och Blob-index är fortfarande katalogauktoriteter i
+deploypaketet. De är inte ett parallellt skrivbart JSON-register på användarens
+dator, men alla register finns följaktligen inte ännu i Neon. Även Dragan
+passerar denna gemensamma katalogkontroll. Astrids särskilda genererade talväg
+och äldre asset-/lobbymanifest måste bedömas separat innan de kan fasas ut.
+En dealerradering slutför inte den migrationen.
+
 ## Dragan: aktuella källor och kvarvarande talintegration, 15 oktober 2026
 
 Färsk GitHub-läsning: `kevin` är
@@ -157,7 +182,7 @@ Testerna täcker också återkallad åtkomst, releasebyte under uppstart,
 felaktig meddelandeordning, avbrott och begränsade köer/tider. Dessa prov är
 transport-/kontraktsbevis, inte verklig worker-, röst- eller synkacceptans.
 
-### Emils uppdaterade överlämning och isolering
+### Emils uppdaterade överlämning och isolering — historik 15 oktober
 
 Emil anger worker/image `fe1b55e971b1236fadd445ff6ce94970719b5d72`, privat
 repo `EmaCodeHero/croupier-lipsync-worker` och releasen `avatarer` med
@@ -173,6 +198,118 @@ spelserver med egen token, efter separat uppsättning. Cartesia är TTS och ger
 inte åtkomst till worker-koden eller avatarpaketen; Paow/Dragge använder
 ElevenLabs enligt de tidigare dokumenterade röstvalen. Ingen env, pod,
 workerinställning eller extern tjänst ändrades i denna implementation.
+
+### Verifierad zip-export och minsta integrationsförslag, 16 oktober 2026
+
+**Aktuell inriktning:** Jakob vill återanvända Emils teknik med egna filmer
+från `main`, inte koppla in Emils färdiga avatarbanker. Han har därefter bett
+om en liten lokal `lipsync-test` i den separata arbetskopian. Skrivbordskopiering
+är uttryckligen uppskjuten. QA, produktionskoppling och läppsynkaktivering
+är fortsatt utanför leveransen; Admin-agentens checkout är orörd.
+
+Exportgranskningen började på main `d064dce232caa9a8c7423fb23b33ca910488f5ae`.
+Den lokala editorn utgår från verifierad aktuell main
+`4fa35ab9db90682fcad50e6de84940a28a74621f`, införlivad i egen featurebranch.
+
+Underlag: `lappsynk-export-fe1b55e.zip`, 145 846 625 byte, SHA-256
+`949443c1084ab3f515792fe66c5e2d381e985f9bdc743e792e5fbca36a9240a3`.
+Zipens fem poster och tre inre arkiv kontrollerades före extraktion för
+traversal, absoluta/Windows-osäkra sökvägar, namnkonflikter, länkar och
+specialfiler. Inga sådana poster hittades. Endast källkod och JSON extraherades
+privat utanför Git utan överskrivning. Inga medföljande scripts kördes och
+inga modell-/picklefiler laddades. Ingen privat konfigurationsfil upptäcktes;
+det är inte en fullständig hemlighetsskanning.
+
+| Del | Klassificering och verifierade byte |
+| --- | --- |
+| `croupier-lipsync-worker-fe1b55e.tar.gz` | Källkod/byggfiler, 29 016 byte; SHA-256 `63bf9fc1723235747dd4ca392080a9ff968c5839853b53bb4e609b6462197fc9`. |
+| `avatar-paow.tar` | Referensbank, 75 141 120 byte; SHA-256 `0f1f3d9d98b0b795d6b920507af3459d574b3b2ced989ca86e0148486eb80425`. Används inte i editorn. |
+| `avatar-dragge.tar` | Referensbank, 76 052 480 byte; SHA-256 `0280261fa6a9b4f9007fe461f9dd88e5d1e6b7c1bccbb0c593541349bfb5ce33`. Används inte i editorn. |
+| `LASMIG.md`, `LAPPSYNK-RUNPOD.md` | Underlag, inte körmandat. Podstartaren har staging-default och använder `RORLIG_POD_TOKEN`; den importeras inte. |
+
+Källarkivets PAX-comment anger `fe1b55e971b1236fadd445ff6ce94970719b5d72`.
+Git-objekt/signatur saknas: commitkopplingen är exporterad metadata, inte
+oberoende verifierad Git-proveniens. Sju Pythonfiler syntaxparsades utan import.
+
+Byggflödet anger separat korrekt referens
+`ghcr.io/emacodehero/croupier-lipsync-worker:fe1b55e971b1236fadd445ff6ce94970719b5d72`.
+Emils agent uppger från Actions run `38582924436` manifest-digest
+`sha256:14899b962350b934693b9536ef9b03717b116c2be7a66c7b3b2866a8a2a93edb`
+och config-digest
+`sha256:e15461f2a39356621ee0e9833c631ae241ae9a213e8f7aef89205bb1b2b8515f`.
+Detta är tillskrivet agentens svar: GHCR gav 401 och vår Actions-läsning 404;
+OCI-manifest/imageinnehåll är inte oberoende verifierade. Bygget hämtar
+föränderliga releasefiler, MuseTalk/vikter och opinnade beroenden. Ett eget
+bygge får egen digest och kan inte lovas ha identiskt innehåll. Egen byggning
+kräver inte åtkomst till Emils privata image, men måste pinna egna ingångar.
+
+`worker/motor.py` delar `AVATARS` på blanksteg och väljer befintliga banker;
+saknade namn ignoreras tyst. Både handler och pod använder funktionen.
+Fyra avatarer i imagen är fortfarande en uppgift från Emil. Exporten har två.
+Bankerna har vardera 56 tagningar, 24 fps och 1080×1920: Paow 796 poolrutor/
+3 095 referenser, Dragge 751/3 192. Index/längder är kontrollerade.
+`paketera.py` läser endast MP4, använder likhetstolerans `LIKA=0.9` och väljer
+sista rutan i första `-v`-tagningen som vila. Här är det `pos1-v`, källruta 38,
+poolruta 432/416; `vila.png`, `redo.png` och `meta.json` används inte.
+Det är inte en generell kalibrering för våra andra filmer.
+
+Emil uppger att lokala byggkällor motsvarar Paow
+`74e91b149347c6cc8d4fb8c70920ad42a6f2ec6c` och Dragge
+`1d1a3129e35cbe7376348f7bc802c8a553954c55`, under
+`kevin/croupier-scoutgg/public/media/dealers/{paow,dragge}/v2/`.
+Vi har kontrollerat Git-träden och samtliga 112 MP4-byte mot Git-blob-ID och
+beräknat SHA-256. Alla 59 trädfiler per dealer är oförändrade fram till
+`kevin-staging` `3ab8bea854156ec2fd96d9735c3a0be6876bc1ac`.
+Paows sex tidigare skillnader stämmer med svaret. Källmanifestens SHA-256 är
+`36505866fa5ae50f94a340bb28fa607bafef5db8e44eda1c0b2ba0a5b1929b60`
+respektive `59a2991d70e54442e5122e99e500f15ccf735a21a481a13d9148d9c2fcfe4f8b`.
+Den historiska kopplingen till själva bankbygget är fortfarande Emils uppgift;
+Paow byggdes enligt honom före första commit av `paketera.py`. Inget av dessa
+klipp eller bankbundna testdata importeras till produkten eller editorn.
+
+**Lokal editor:** kör `node lipsync-test/server.mjs` från denna arbetskopia
+med repots Node 24.21.0. `--check` listar fryst main-SHA, antal och totalstorlek
+utan serverstart. Visaren binds enbart till `127.0.0.1` på ledig port och
+skriver sin sessionsadress; Ctrl+C stoppar den. Det är en läsande filmvisare,
+inte en extra spel-/Lab-server. Inga env-filer, providers eller databaser laddas.
+
+Filmvalet läses vid start ur `origin/main` och byte levereras ur exakt Git-blob,
+inte ändrade arbetsfiler. Den kontrollerade main-versionen har 139 filmer
+(284 809 677 byte) inom produktens media-/publicmappar, högst 12 MB styck.
+Ingen parallell katalog eller mediekopia sparas. Sökning/samlingsfilter,
+uppspelning, valbara tidssteg och lokal original/resultat-jämförelse ingår.
+Resultat väljs som lokal fil och laddas inte upp; byte av original rensar den
+kopplingen. Stegen är inte verifierade bildruteindex och jämförelsen är inte
+synkroniserad runtimeacceptans. Packade färg-/maskfilmer visas som lagrade.
+Ingen ny läppsynk genereras och inget godkännandekvitto skrivs.
+
+Main har inga Paow/Dragan-tagningar i den incheckade mediekatalogen; endast
+Dragan-klippet för lobbyn ingår. Studio/Blob-filer måste väljas via befintligt
+register/publiceringspaket, inte fyllas ut från Kevins branch eller exporten.
+
+**Nästa tekniska steg:** förbered en egen avatarbank från exakt valda original,
+med hashbundet källmanifest och rätt fps/geometri. Återanvänd befintlig
+plan/PCM/workertransport, dealer-ID/profilrevision, exakt text/ljud, journal,
+behörighetskontroller, servergenererad podtoken och miljöprofiler. Cartesia
+levererar tal; GPU-workern kan senare köras på verifierad egen RunPod. Render
+behåller spelservern och GitHub koden. Ingen stagingadress/token, ny env-stack,
+reservprovider eller alternativ spelserver införs. Workerns starta/end/avbryt
+måste fortsatt kopplas till accepterat ägarbundet jobb, budget och avbrott.
+
+**Verifierat lokalt:** Node 24.21.0; två isolerade editorprov testar fryst main,
+ändrade arbetsfiler, branch-/hemlighetsisolering, byte ranges, metod och origin/
+host-spärr. Headless Chrome verifierade 139 val, två uppspelningsstarter,
+tidssteg, lokal jämförelse och rensning vid filmbyte utan JS-fel. Lab-build
+passerade före ändringen. Ordinarie fullhook redovisas i PR-kvittot.
+
+**Implementerat:** lokal läsande editor och verifierad exportgranskning.
+**Driftsatt:** inget. **Visuellt accepterad ny läppsynk:** inget.
+Kvar: exakta egna Paow/Dragan-original, verifierat ägande för effektiv
+RunPod/Cartesia-konfiguration, eget pinnat bank-/imagebygge, applikationsadapter,
+mandat för betalda prov, två riktiga sammanhängande talprov per dealer samt
+Jakobs aktiveringsgodkännande. Ingen gammal runtimeväg är verifierat ersatt
+eller kan tas bort. Originalmedia, exakta repliker och tidigare godkännanden
+bevaras. Pod1/pod5 är orörda.
 
 ## Kevins Dragan/Paow: filmurval och rörligt tal, 13 oktober 2026
 
@@ -1354,10 +1491,21 @@ Neon äger dealerposter, klippmetadata och projektkopplingar; privat Blob äger
 mediebytes. Native Studio läser gemensam driftmetadata från
 media/catalog/presentation.json och media/catalog/legacy.json tillsammans med
 media/layout.json och media/blob-index.json. Ingen lokal dealermapp skapas när
-en dealer registreras. `runtime/indexed` är borta utom green-speak-talparens
-34 MP3. Kvarvarande
-`runtime/presentation` och övriga dealer-mappar behövs inte som reserv för
-Studios molnuppspelning.
+en dealer registreras. Uppgifterna ovan om borttagen `runtime/indexed`-bank
+avser Git och byggpaket, inte fysisk radering i Blob. Där finns fortfarande
+äldre indexerade filer för Astrid, Mei och Vera. Replikbibliotekets metadata
+ligger dessutom som egna JSON-objekt i Blob, utanför Neons mediaregister.
+Kvarvarande lokala `runtime/presentation` och övriga dealer-mappar behövs
+inte som reserv för Studios molnuppspelning.
+
+Aktuell fysisk struktur, kopplingen dealer → video → variant och avstämningen
+mot samtliga sex databaser på Neons aktiva main-branch finns i
+[Blob och Neon](storage/BLOB-NEON.md). Kontrollen 16 oktober 2026 omfattar
+1 710 objekt och 79 produktionsklipp: alla registerfiler finns; 12 äldre
+replikposter för `paow`/`paow-v2` pekar däremot på 24 saknade mediafiler.
+Den fullständiga filförteckningen skiljer bibliotek, aktuella referenser,
+historik, byteidentiska kopior och filer utan hittad referens. Dessa klasser
+ger inget tillstånd att radera material.
 tools/build-runtime-media-catalog.mjs bygger katalogen explicit;
 --check och isolerade tester med helt frånvarande dealer-mappar verifierar den.
 Saknad eller felaktig katalog ersätts aldrig med tyst tomt register.

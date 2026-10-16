@@ -59,7 +59,7 @@ function App() {
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
       <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Klippkarta':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
-      <label className="preview-mobile-nav">Sida <select value={studio ? '/admin/clips' : path === '/admin/admin/players' ? '/admin/admin/accounts' : path} onChange={event => navigate(previewHref(event.target.value==='/admin/rooms'?'/admin/rooms?view=registered':event.target.value))}>
+      <label className="preview-mobile-nav">Sida <select value={studio ? '/admin/clips' : path === '/admin/admin/players' ? '/admin/admin/accounts' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).filter(([key]) => key !== '/admin/admin/players').map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
       <Clips active={studio} dealersActive={path==='/admin/dealers'} onImportBusyChange={setImportBusy} chatActive={path==='/admin/ai/chat'} registrationBlocked={studioDirty} onRegistered={materialChanged}>{studioVisited&&<ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>

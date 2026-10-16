@@ -27,7 +27,7 @@ export function ResourceConnections() {
           const lane=workspace!.project.lanes?.find(row=>row.id===room.compositionId);
           const uses=workspace!.catalog.administration.rooms.filter(row=>row.state!=='archived'&&row.compositionId===room.compositionId);
           const roomPath=roomChoicesPath(operator,room);
-          const edit='/admin/rooms?'+new URLSearchParams({operator:operator.id,table:room.id,composition:room.compositionId,game:room.game,panel:'layers'});
+          const edit='/admin/clips?'+new URLSearchParams({operator:operator.id,table:room.id,composition:room.compositionId,game:room.game,panel:'layers'});
           return <li className="rounded border border-sg-line p-4" key={room.id}><h4 className="font-semibold">{room.name}</h4><p className="text-xs text-sg-muted">{room.published?'Publicerat':'Utkast'} · {room.playable?'Spelbart':'Inte spelbart'}</p>
             {lane?<><dl className="my-3 space-y-2 text-sm"><div><dt className="text-sg-muted">Bakgrund i sparad mall</dt><dd>{names(lane.layers.background.allowed,'asset')}</dd></div><div><dt className="text-sg-muted">Tillåtna dealers i sparad mall</dt><dd>{names(lane.layers.dealer.allowed,'dealer')}</dd></div><div><dt className="text-sg-muted">Tillåtna bord i sparad mall</dt><dd>{names(lane.layers.table.allowed,'asset')}</dd></div></dl>
               <details><summary>Delad mall · {uses.length} rum</summary><ul>{uses.map(use=><li key={use.id}>{workspace!.catalog.administration.operators.find(row=>row.id===use.operatorId)?.name} · {use.name}</li>)}</ul></details>

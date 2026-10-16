@@ -1,6 +1,20 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
-Aktuell samordning, 15 oktober: Jakob har gett mandat att slutföra en
+Aktuell status och återstående arbete finns överst i
+[CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och
+[JOHN-HANDOFF](../JOHN-HANDOFF.md). Följ [AGENTS.md](../../AGENTS.md) för
+mandat, ägarskap, verifiering och merge-/driftgränser. Daterade kvitton nedan
+beskriver sina dåvarande versioner och öppnar inte avslutade migrationssteg.
+
+Underagenter används bara på uttrycklig begäran enligt projektreglerna.
+De ärver vald modell och får korta, kompletta uppgifter med tydliga filgränser;
+huvudagenten äger Git, integration och leverans. Bevara beteendekontrakt och
+data när verifierat ersatta sidor och tester avvecklas. Rapportera relevanta
+fel och osäkerheter utan en ny generell godkännandegrind.
+
+## Daterat samordningskvitto — 15 oktober 2026
+
+Vid detta kvitto hade Jakob gett mandat att slutföra en
 sammanhängande Admin/partner/lobby-struktur, granska och merga egna PR:er
 och städa ersatt legacy efter konsumentkontroll. C1–C9 i
 [migreringstrackern](../CLOUD-MIGRATION.md#admin-checkpoints-c1c9) är enda
@@ -12,22 +26,37 @@ Vercel production READY och Render live på samma SHA; engine health/version bek
 Samordnarens eget läsande prov med befintlig staffsession verifierar Admin →
 Partner → Lobby, rum/bolagsstandard genom meny/reload/historik, negativa
 rumslänkar och återställt Avbryt-fokus. Roller ändras inte, inga
-produktionsskrivningar eller spelrundor gjordes. Ny produktionslogin,
-full skrivacceptans, faktisk 200-procentszoom och godkännande för PR91:s
-export av privat spelarkod återstår. Kvitton i [handoffen](../JOHN-HANDOFF.md) skiljer
+produktionsskrivningar eller spelrundor gjordes. Vid detta kvitto återstod ny
+produktionslogin, full skrivacceptans, faktisk 200-procentszoom och godkännande
+för PR91:s export av privat spelarkod. Kvitton i [handoffen](../JOHN-HANDOFF.md) skiljer
 lokal fullhook (3 852 pass/9 skip/0 fel), CI och produktionsprov;
 överlappande underagentprov summeras inte.
 
-C6:s tidigare API-steg ersätts nu av faktisk N2-arbetsyta i samma isolerade
+C6:s tidigare API-steg ersattes då av faktisk N2-arbetsyta i samma isolerade
 browserkedja. Underagentens Chrome-kvitto (2/2, inga skip) och oberoende
 kodgranskning hålls isär; lokal fullhook och CI redovisas separat. En läsande
 produktionskontroll fann dubblerad kontonavigation och en journalhänvisning
 utan länk. De små UI-rättningarna behåller gamla adresser och servergränser.
 Inga nya testidentiteter eller produktionsdata behövdes.
 
+## Arbetssätt och verifiering
+
+Från 16 oktober 2026 kör lokal commit kontroller av ändrade filer och
+tillgängliga närliggande tester, med högst fyra testprocesser. `node
+tools/precommit-checks.mjs --plan` visar urvalet. Hela regressionen körs i CI
+eller uttryckligen med `sh .githooks/pre-commit --full`; ett fokustest är inte
+full acceptans. Studio-tester upptäcks automatiskt och körs en gång i CI.
+Migrationsberedskap mot produktionsregistret krävs för server/schema/beroenden
+och alltid på main; tydliga klient- och teständringar i PR:er slipper den läsningen.
+Systemkartans CI-rapport är informativ och blockerar inte ändrad struktur.
+Agent-talk bevaras för samma checkout, men kontrolleras vid start, nya filanspråk
+och leverans i stället för var 30:e sekund. Samma branchnamn i olika arbetskopior
+delar inte tavla. Uttryckligen beslutad avveckling får ta bort sidor och deras
+förbrukade tester; kvarvarande behörigheter, data och beteenden ska verifieras.
+
 `node tools/check-admin-navigation.mjs` kör befintliga riktade tester med
 fyra arbetare (`--plan` visar urvalet). Det är ett snabbt utvecklingsprov;
-ordinarie fullhook och CI behåller alla kontroller inför leverans.
+CI behåller hela produktkontrollen inför leverans.
 
 Frontendens `npm run typecheck` ingår nu i fullhook/CI och Next-bygget
 tillåter inte längre typfel. Kör Node från rätt paketmapp enligt
@@ -37,8 +66,8 @@ legacy-namn eller ett gammalt test är inte ensamt ett bevarandekrav.
 
 Partner-städningen behåller beteendetester för verklig meny, rollgränser,
 utkast och publiceringskvitton. Test av en borttagen demomenys exakta antal
-och ordning ersätts med dessa kontrakt. Raderingsgrinden och ordinarie
-fullkontroll gäller även när gamla generatorer och vyer tas bort.
+och ordning ersätts med dessa kontrakt. Kontrollera kvarvarande referenser
+när gamla generatorer och vyer tas bort; raderingsgrinden kan hjälpa den kontrollen.
 
 Det tidigare spelarstoppet är hävt för isolerade internetprov. PR #91 har
 Astrid-kvitto för förlust, vinst, push, split, mobil och sammanhängande
@@ -405,6 +434,10 @@ denna ansvarsfördelning. API-nyckeln ska inte läggas i klientkoden.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-16 | Integrationsgranskningen rättade klientundantaget så beroende-/schema-/konfigurationsfiler fortfarande kräver migrationskontroll. Admins testplan kontrollerar nu faktisk globexpansion och har ett negativt prov för bortfallen Studio-täckning. Sidochattens förenkling ingår i den befintliga PR185-leveransen; aktuell slutstatus finns i JOHN-HANDOFF. |
+| 2026-10-16 | Lokala commits använder fokuskontroller; hela regressionen ligger i CI/explicit fullkörning. 135 dubblerade Studio-testval ersatta med automatisk upptäckt; samma 454 testfiler täcks. Systemkartans leveransspärrar borttagna, rapport/evidens kvar. Klient- och test-PR:er slipper live migrationsläsning; server/schema och main behåller den. Agent-talk styrs av arbetsmoment i samma checkout. 54 fokustester och 30 kart-/samordningstester passerade; inga nya föräldralösa tester. Detta är lokal verifiering, inte körd GitHub-CI eller driftsättning. |
+| 2026-10-16 | Chef-verktyg, skill och tester använder nu `agent-talk/chef.json`. Den borttagna `.croupier-inbox` läses, migreras eller återskapas inte. Status är fortsatt skrivfri; 12 riktade prov passerar. Ingen chef aktiverades. |
+| 2026-10-16 | Delegationsregeln anpassad till aktuella AGENTS: uttrycklig delegation, ärvd modell, kort komplett scope och huvudagentens Git-/integrationsansvar. Verifierat ersatta sidor/tester får avvecklas med bevarade kontrakt och regressionstäckning. PR152/C6-kvittot daterat som historik; dagens status länkas till befintlig tracker/handoff. Ingen systemkartbaslinje, produktkod eller drift ändrad. |
 | 2026-10-16 | Importgränsen rättad från tio till 30 osparade filer enligt `DEALER_IMPORT_LIMITS.maxFiles` och befintligt regressionstest. COMPANION-guidens gamla arbetsbranch ersatt med featurebranch → grön PR → main enligt repositorypolicyn. Ingen runtime- eller behörighetsändring. |
 | 2026-10-15 | PR149–152 levererade på main `3da92370`. Samordnarens läsande produktionsprov verifierar rumshistorik, portaler, negativa länkar och Avbryt-fokus; lokal fullhook, CI och drift hålls isär. Kvarvarande login-/skriv-/zoom-/spelargränser står öppna i befintlig tracker/handoff. |
 | 2026-10-14 | Aktiva ingångar och bolagssluggar samlade i användarguiden efter produktionsprov av 22 adresser och fem query-/guidevarianter. Äldre Control-länkar skiljs från adminverktygens mål och efterföljande inloggning; N1 behåller sin roll på partner-/spelarytan. API- och spelstartkontrakt bevarade. |

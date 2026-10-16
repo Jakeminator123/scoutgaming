@@ -1,14 +1,388 @@
 # Aktuell handoff — Scoutgaming
 
+## Neon-katalog: kompatibilitetssteg före omkoppling — 16 oktober 2026
+
+Jakob har beställt Neon som enda register, Blob som mediekälla och Astrid kvar
+som legacyreferens, med leverans till main efter gröna kontroller. Migration
+012 introduceras först som `deploymentOptional`: befintlig kod kan fortsätta
+med både gamla och utökade schemat. Tabellerna är ännu oanvända av denna
+kompatibilitetsleverans. Efter verifierad driftsättning följer schemaapply,
+registerimport och en separat leverans som kräver 012 och kopplar om läsarna.
+Det första steget är inte ett kvitto på färdig registermigrering.
+
+`arkiv/` undantas i `.gitignore`, `.ignore` och `.cursorignore`. Git spårar
+endast `.gitkeep`. Det hindrar vanlig upptäckt/indexering; uttryckliga filverktyg
+kan fortfarande läsa arkivet och då tillföra innehåll till modellens kontext.
+
+## Astrid-backup och förtydligad molnkälla — 16 oktober 2026 kväll
+
+Jakob beställde först en Astrid-ZIP och rensning till enbart Dragan, och
+förtydligade sedan att huvudmålet är ett gemensamt molnsystem utan parallella
+lokala register. Jakob har därefter uttryckligen beslutat att **behålla Astrid
+som legacyreferens**, märkt att hon saknar trelagersversionen men har fungerande
+tal-/OpenClaw-flöden att använda som referens. Dragan är ordinarie dealer.
+Den aktiva basrensningen är nu genomförd i produktion enligt utfallet nedan.
+
+- `C:\Users\jakem\Desktop\_croupier\astrid-2026-10-16.zip` är skapad:
+  265 823 000 byte, 727 poster. Samtliga poster har återlästs och verifierats
+  mot SHA-256/storlek. ZIP-hash:
+  `5751c0b38f2b0dff382f4572797757c9309047ea8771495562e74cda23e09066`.
+  Den innehåller 721 lokalfiler, fyra metadatafiler, README och manifest.
+  **Det är inte en verifierad fullständig molnbackup.** Två indexerade filer
+  saknas lokalt, och molnuppladdningar kan saknas. README anger luckorna.
+- Blob-butiken är fortsatt `store_AqwvebTbBHarOjvG`. Den lokala Vercel-OIDC-
+  identiteten gäller `development`, där butiken inte tillåter åtkomst.
+  Work rapporterar dessutom att lokal webbläsaranvändning är avstängd.
+  Inga behörigheter, butikskopplingar eller miljöfiler har ändrats för detta.
+- Färsk Vercel-konfiguration visar native Admin och Neon-policy aktiva,
+  `production/croupier`, `CROUPIER_MEDIA_STORAGE=blob`, indexet
+  `/var/task/media/blob-index.json` och backend `croupier-v2.onrender.com`.
+  Render svarar 200 och rapporterar `4fa35ab9db90682fcad50e6de84940a28a74621f`.
+  Spelmotorn kör alltså på Render; Vercel är produktens ingång/Admin.
+- Gemensam runtime läser nya medieposter/klassificeringar ur Neon och bytes
+  ur privat Blob. Lokala upload-/klassificeringsfiler ignoreras. Däremot
+  kombineras Neon fortfarande med den deployade immutabla banken,
+  `media/catalog/presentation.json`, `legacy.json`, layout och Blob-index.
+  Tillfällig hashverifierad vide-cache är inte ett parallellt register.
+  Neon är ännu inte ensam källa för all katalogmetadata. Astrids särskilda
+  genererade talväg och äldre asset-/lobbymanifest behöver avgränsas före
+  ytterligare strukturell avveckling; delad taltransport får inte försvinna
+  bara för att dess katalog heter Astrid.
+- Produktionsrensningen använder befintliga lifecycle-/publiceringstjänster
+  med schema-/Render-kontroll, scope-lås och revisionsvillkor i en transaktion.
+  Hela kedjan verifierades först med rollback och återläst original.
+  Astrid/Dragan är nu de enda aktiva dealerposterna. Jakob, Anna Jonsson och
+  PAOW ligger i dealerpapperskorgen; det tidigare Adminprov-arkivet bevaras.
+  Båda bolagen ligger i bolagspapperskorgen (`suspended`), och deras aktuella
+  paket innehåller inga spel, rum eller lanes. Aktiva rum, gameLanes och
+  sammansättningar är noll. Arkivering innebär inte permanent historikpurge.
+  Alla 79 medieposter finns kvar; Astrids/Dragans dealer-, klipp-, idle- och
+  mediedata har identisk kontrollsumma före/efter. Sex historiska paket är
+  oförändrade; fyra nya paket journalför avvecklingen. Social-policy och
+  övriga gemensamma inställningar är oförändrade.
+  Separat Neon-återläsning bekräftar projektrevision
+  `studio-69cf9ea2-19cb-45f7-b92c-12cf70dbac2c` och administration
+  `studio-c7a94d7e-0fe8-4e30-982c-dd36accf5b4c`.
+- Astrids kort på `/admin/dealers` är i koden märkt **Legacyreferens**,
+  saknar trelagersversion och kan användas som tal-/OpenClaw-referens.
+  Dragan behåller sitt vanliga kort. Tio riktade komponentprov passerar;
+  inga playback-, provider- eller dealerdata ändras av märkningen.
+  Märkningen levereras i PR185 och är ännu inte mergad/driftsatt.
+- PR185:s första CI körde rött eftersom en lokal testfixture ärvde CI-flaggor.
+  Sidoagentens isolerade rättning är pushad i `ab709c25`; 14/14 fokustester och
+  ordinarie commithook passerar. Den verifierar också att båda CI-flaggorna
+  fortfarande tvingar full kontroll. Nästa CI-resultat är inte accepterat än.
+
+Privat ZIP-kvitto, frysta registerunderlag, rensningskvitto och separat
+Neon-återläsning finns i `arkiv/2026-10-16/dragan-only/`.
+Datarensningen är genomförd; ingen kodmerge eller driftsättning gjordes.
+
+## Dealeravveckling och workflow — 16 oktober 2026
+
+Jakob har uttryckligen beställt borttagning av Vera, Mei (bekräftad stavning),
+Amira och Johanna. Arbetet fortsätter i samma huvudcheckout och PR185.
+
+- Lokalt har 50 spårade filer och 42 index-/layoutposter tagits bort.
+  Nytt seed registrerar endast Astrid; avvecklade identiteter kan inte
+  registreras eller väljas för aktiv uppspelning. Historiska dokument har
+  fortsatt läsbara ID:n. Astrids befintliga medier är inte omgenererade.
+- Två ospårade original i `web/public/review/2026-09-09/3lager/johanna/`
+  har efter sökvägs-, hash- och registerkontroll raderats (9 855 891 byte).
+  Övriga 139 original-/granskningsfiler är bevarade.
+- Produktions-Admin har permanent raderat Vera och Mei, deras sparade
+  klippval samt arkiverade `mobile-phone` och `johns-johanna`, efter
+  uttryckliga slutbekräftelser. Omladdad Admin och Neon-återläsning visar
+  de fem bevarade dealerposterna Astrid, Jakob, Anna Jonsson, Dragan och
+  PAOW. Endast Adminprov finns kvar i dealerarkivet. Amira/Johanna saknas;
+  inga av de fyra målidentiteterna finns kvar i det aktuella projektdokumentet
+  och inga matchande Neon-medieposter finns. Projektrevision:
+  `studio-c168ba84-8f1b-4ecc-bd31-94c8f251c077`.
+- Meis första radering fastnade i `pending` eftersom Veras arkiverade
+  mall fortfarande innehöll Mei. Radering av Vera först löste korsreferensen;
+  Mei är nu färdigraderad. Kodrättningen kontrollerar hela slutprojektet
+  före första raderingsmarkeringen. Veras gamla tre `administration.tiers`-
+  kopplingar togs bort genom `gamePolicy.saveAdministration`.
+  Schema, Render-kapacitet, lås, revision, historik och återläsning passerade;
+  enbart `tiers` ändrades, båda rummen och hela projektet bevarades. Ny
+  administrationsrevision: `studio-76149edc-7905-4016-9b61-4fd5c2e399e2`.
+  Den revisionen och båda rummen är oförändrade efter dealerraderingarna.
+- Hela Blob-mapparna `croupier/media/dealers/vera/` och `.../mei/` är
+  permanent raderade efter separat uttrycklig bekräftelse. Vercels lista
+  är omladdad och visar bara Anna, Astrid, Dragan och PAOW. Rätt butik är
+  Scoutgamings `store_AqwvebTbBHarOjvG`. Även de fyra separata målobjekten
+  är raderade: Vera/Mei/Amira-porträtten i `site/runtime/backoffice/img`
+  och `mei-push.mp4` under Astrids äldre composited-sökväg.
+- Kevin-kontrollen frös `kevin@31f50618` och `kevin-staging@57f3ce8b`.
+  Inga direkta referenser till målobjekten hittades. Hans publika drift
+  använder `croupier.scoutgg.dev` och `media.scoutgg.dev`. CDN:ns bakomliggande
+  lager kunde inte verifieras; Scoutgamings Blob-butik är dessutom ansluten
+  till både Preview och Production. Jakob informerades om denna osäkerhet
+  och bekräftade därefter uttryckligen ”Radera allt”. Ingen Kevin-branch,
+  driftinställning eller fil utanför det godkända urvalet ändrades.
+- Sidochattens 17 workflowfiler ingår i leveransen: fokuskontroller vid
+  lokal commit, full regression i CI/explicit körning, automatisk Studio-
+  testupptäckt, informativ systemkarta och händelsestyrd agent-talk.
+  Samma 454 testfiler täcks efter borttagen dubblering. Beroende-/schema-/
+  konfigurationsändringar behåller migrationsgrinden; UI-/teständringar
+  behöver inte läsa produktionsdatabasen. Granskningen rättade både ett
+  för brett klientundantag och en gammal kontroll som krävde utskrivna
+  testfilnamn i stället för att verifiera den faktiska globtäckningen.
+- Tester som förutsatte gamla seedpersoner använder nu explicita aktiva
+  testpersoner eller historiska fixtures, med negativa kontroller för alla
+  fyra avvecklade identiteter. Hela hookens urval är verifierat: 4 538 pass,
+  23 villkorade skip, inga kvarvarande fel. Frontend-typkontroll passerar.
+  Körningen slutfördes i delar utan att köra om redan gröna grupper:
+  prefixets 21 testgrupper gav 2 826 pass/14 skip; suffixets 49 kommandogrupper
+  (42 testgrupper, fyra fristående tester, tre kontroller) gav 1 712 pass/9 skip
+  efter riktad omkörning av åtta rättade fixturegrupper. Detta är lokal
+  verifiering, inte GitHub-CI eller visuell spelacceptans. Systemkartan ger noll fel, 14 gula
+  kontrakt och 186 baslinjevarningar; inga orphan-tester hittades (421 filer).
+- Läppsynkvisaren läser Git-objekt från fryst `origin/main` `4fa35ab9`,
+  inte Neon eller Blob. Dess 139 filmer innehåller fortfarande fem
+  Vera-/Mei-filmer tills huvudbranchen och visaren uppdateras.
+- Automatisk verktygsgranskning kommer från projektets
+  `.codex/config.toml` (`approvals_reviewer="auto_review"`), införd i
+  `8ff56ab5` av Git-kontot Jakeminator123. Kontot styrker inte vilken
+  människa/agent som skrev regeln. Inställningen är inte ändrad.
+  Den gamla generella bevaranderegeln är däremot rättad i PR185.
+
+Privata kontroller och raderingsmanifest finns under
+`arkiv/2026-10-16/dealer-removal/`. Ingen merge eller driftsättning ingår
+i detta kvitto. QA-databasens äldre seedpersoner och historik är orörda.
+
+## Samlat övertagande — 16 oktober 2026
+
+Aktuell arbetskopia är fortfarande `C:\Users\jakem\Projects\croupier`, nu på
+`codex/admin-consolidation-20261016`. Ingen ny worktree skapades. Den lokala
+startfixen `f4c35632` är bevarad; DENNA:s fyra dokument säkrades i `a0ee43c7`.
+Användarens konfiguration bevarades. Då fanns 141 ospårade original-/granskningsfiler;
+senare riktad Johanna-radering beskrivs i den aktuella statusen ovan.
+
+Jakob har beställt gemensamt övertagande, färre redigeringsvägar och aktiv
+radering av ersatta delar. DENNA, ZOOM, LIPSYNC och Blob/Neon-granskaren har
+lämnat slutkvitton och deras chattar är arkiverade. Deras privata underlag
+och befintliga arbetskopior är bevarade; läppsynkens lokala visare är igång.
+
+Lokalt integrerat under granskning, ännu inte mergat eller driftsatt:
+
+- PR183, `bbbaa02937024c7caf9b64046e313e54f00bbf09`: sparad scenzoom i
+  gemensamma mallar, med uttryckligt redigeringsläge och visade berörda rum.
+- PR181, `f68c64ce6dd96ed24d326f923284b79091cbe217`: lokal filmjämförelse
+  och verifierad exportproveniens. Visaren läser 139 Git-incheckade filmer;
+  läppsynkgenerering, nya original, Blob-register och produktionsjobb är inte anslutna.
+- PR184, `a6667274852fdf0278b1aedab3cbd1d678121abe`: dokumenterat
+  Blob-/Neon-underlag. Saknade historiska referenser och dubbletter är
+  identifierade, inte raderade eller automatiskt reparerade.
+- `/admin/rooms` öppnar alltid rummets egna val. `view=registered` behövs
+  inte längre. Mallänkar går till `/admin/clips`; gemensam mall ligger under
+  en stängd detaljsektion. Gamla rumslänkar behåller sin bolags-/rumskontext.
+- Roulette-preview får speltyp från servern och använder desktopformat.
+  Starteditorn visar endast mallar med kompatibel dealer och roulettebord.
+- 40 konsumentfria käll-/testfiler raderade, inklusive gamla demosidor,
+  deras databibliotek och den övergivna systemöversikten. Den aktiva,
+  maskinkontrollerade systemkartan behålls. Inga originalmedier raderades.
+- Den gamla regeln om evigt bevarande av sidor/testimplementation ersattes
+  med kontraktsbevarande och verifierad avveckling. Äldre samordningstext
+  är tydligt historik, inte aktuellt mandat.
+- Chef-verktyget och dess skill använder `agent-talk/chef.json`, så en
+  framtida uttrycklig aktivering inte återupprättar den förbjudna inboxen.
+  12 riktade prov passerar; faktisk status är `inactive` och skrivfri.
+- Återställningsdialogen i Dealers och Adminroboten visar nu antal och
+  namn på sparade sammansättningar som återkommer. De blir utkast, tal
+  förblir avstängt och rum återställs inte automatiskt. 37 riktade prov
+  passerar; samma backend och revisionsskydd används.
+
+Verifiering hittills: 104 route-/kontext-/navigationsprov samt 65 relevanta
+rum-/API-prov passerar. A/B-prov täcker utkast, granskning och publicering
+utan ändrade effektiva val i B. `npm --prefix lab run build` passerar.
+Systemkartans verifiering och byggkontroll ger noll fel, 14 gula kontrakt
+och 196 varningar mot arbetskopian på `a0ee43c7`; baslinjen är inte ändrad.
+Slutbygget efter återställningstexten passerar också. Kodcommit
+`a537808dea33602cc47f05287af8704993cafe31` passerar hela pre-commit:
+**3 979 pass, 23 villkorade skip, 0 fel/avbrutna i 78 grupper**. Villkorade
+SQL-/browser-/plattformskontroller är inte påstådda som körda lokalt.
+
+Browserdelkvitto med riktig Admin-bundle och isolerade testdata: rumsvyn,
+rouletteformatet och uppdaterad bordspreview verifierade; gemensamma mallar
+är hopfällda. Spara/omladdning, A/B-sparning, mobilnavigation och zoomsparning
+är **inte browseraccepterade**: CUA:s CDP-klick tidsavbröts och fixturen
+registrerade inga skrivningar. API-proven ovan är separat bevis. Egen
+fixtureprocess är avslutad; underlag finns privat under
+`arkiv/2026-10-16/lab/data/runtime-takeover-browser/`. Läppsynkvisaren är orörd.
+Det äldre `test/backoffice-lab-browser.mjs` stänger uttryckligen av native
+Admin i sin fixture och räknas inte som acceptans av dagens Admin.
+
+Leveranskontroll: användarens fyra lokala konfigurations-/skillfiler är
+hashjämförda och oförändrade. GitGuardian-läsningen för main `4fa35ab9`
+visar noll öppna och 18 ignorerade incidenter samt aktiv övervakning;
+historisk skanning är `too_large`, platsmetadata partiell och main-sviten
+köad. Detta är inte ett besked om full historisk säkerhetstäckning.
+
+Återstår efter denna lokala integration: användaracceptans i verklig
+spelare, inkoppling av nya läppsynkfilmer och riktad hantering av gamla
+produktionsregister. En historisk auditrad bevisar inte vilken agent som
+återförde sammansättningar. Molnändringar kräver en konkret granskningsbar
+åtgärd; dokumenterade fynd är inte raderingstillstånd.
+
+Återkomstmekanismen är nu kodgranskad: dealeråterställning återför
+`dealerTrash.compositions` till aktiva mallutkast och klassificerar medier
+i samma transaktion. Projekt- och medierevisioner kontrolleras. Det är
+förenligt med det historiska mönstret men styrker inte att den vägen kördes
+den 13 oktober. Ingen automatisk startupåterfyllning av dessa mallar eller
+överskrivande snapshotimport hittades. En avsiktlig helprojektskrivning med
+gammalt innehåll och aktuell revision är fortfarande möjlig; CAS bevisar
+versionskontroll, inte att varje sparat innehåll är önskat.
+
+## Historisk överlämning från DENNA — 16 oktober 2026
+
+Vid denna överlämning begärde Jakob avslut efter avgränsad städning. **Den samlade migrationen
+och förenklingen är inte klar.** Starta ingen ny parallell migrering. Den
+kanoniska planen, dokumentkartan och verifierade leverans-/acceptanskvitton
+finns överst i [CLOUD-MIGRATION.md](CLOUD-MIGRATION.md). Äldre daterade
+avsnitt nedan är historik, inte nya genomförandemandat.
+
+### Arbetskopia och ej levererat arbete
+
+- Huvudcheckout: `C:\Users\jakem\Projects\croupier`, branch
+  `codex/local-start-predictability`, HEAD
+  `f4c35632bb4f45f66c640e91b3df87aaf9c5e1d0`. Ta inte bort checkouten.
+- GitHub main återläst till `4fa35ab9db90682fcad50e6de84940a28a74621f`.
+  Startcommitten ovan är lokal, inte pushad och saknar PR. Den ändrar endast
+  `lab/start.mjs`, `lab/test/local-start.test.mjs`, `lab/docs/README.md`.
+  `--skip-build` förbereder inte om appar eller beroenden; saknade byggfiler
+  upptäcks före start, källans checkout/SHA visas, och befintlig server
+  accepteras inte enbart utifrån tjänstenamn. Inga servrar dödas automatiskt.
+  9 riktade tester och fullhook 3 986 pass/9 skip/0 fel är redan körda på
+  committen. Saknat bygge efter städning är inte en kodregression.
+- Fyra **okommittade** dokument innehåller detta avslut: denna fil,
+  `CLOUD-MIGRATION.md`, `ENVIRONMENT-VARIABLES.md` och
+  `ENVIRONMENT-RESTORATION.md`. Bevara dem; ingen ny commit/push/merge/deploy
+  gjordes i överlämningssteget.
+- Användarens ändringar i `.codex/config.toml`,
+  `apps/croupier-speech/package.json`, `.cursor/settings.json` och
+  `.agents/skills/source-command-ping/` är separata. Branch
+  `codex/kordinater` är bevarad. Gör inte reset, generell clean eller
+  branchbyte med antagandet att dessa är agentrester.
+- Node via Volta: `C:\Program Files\Volta\node.exe`, verifierad v24.21.0.
+  Root saknar package.json; Lab anger 24.x. Läs AGENTS och agent-talk innan
+  nya ändringar och registrera nästa agents egna claims.
+
+### Levererat och accepterat
+
+Admin-förbättringarna, Dragan-grundloopens återhämtning (PR178), N1-in-/
+utloggning (PR165), serverkontroll av uppladdad mediametadata (PR180) och
+kanonisk lokal Gateway-env (PR182) är levererade. Senaste verifierade
+Vercel-/Render-produktion kör main `4fa35ab9`. Exakta CI-/driftkvitton finns
+i CLOUD-MIGRATION. Jakob har accepterat bolag → rum → trelagersförhandsvisning
+och ny Admin-in-/utloggning. Det kvitterar inte all Admin-UX, båda spelens
+samtliga media, uppladdningsacceptans eller läppsynk.
+
+Neon är läst i `croupier-production` (`wandering-hill-60561912`), branch
+`main` (`br-flat-fog-b161a6r8`), databas `croupier_game`, scope
+`production/croupier`. Publika Swedish Games-rummet/paketrevision 5 matchar
+databasen. Ingen hemlig anslutningssträng lästes och ingen dubbel skrivning
+till en Kevin-databas är visad. GitHub/Vercel/Neon-läsning har fungerat;
+kontobytet har inte motiverat nya åtkomstgrants.
+
+### Städning och kvarvarande utredning
+
+81 verifierade macOS-sidecars (13 535 byte) och fyra tomma mappar har tagits
+bort ur `web/public/review/`. 141 ospårade filer återstår, varav 125 MP4 och
+en WebM; originalens namn/storlek/ändringstid är oförändrade. Tre egna
+PR-textfiler togs bort efter jämförelse med mergade #165/#180/#182.
+Unika kvitton och loggar är kvar under
+`arkiv/2026-10-15/admin-consolidation/`. Den tidigare avslutade arbetskopian
+`efterarbete` är redan borttagen enligt kvittot nedan. Gör inte om dessa
+städpass; övriga arbetskopior och beroende-junctions har inte rensats här.
+
+`Mobile Phone Lane` är både ett UI- och ett dataspår: råa namn/ID:n visas i
+roulette-starteditorn, och `mobile-phone`/`johns-johanna` återinfördes i Neon
+13 oktober kl. 05:36 svensk tid. Revisionerna och auditbeviset finns i
+CLOUD-MIGRATION. Kontot `jakob` identifierar inte människa kontra agent.
+Ingen testläcka är bevisad. Nuvarande rum/listade paket pekar på andra
+sammansättningar, men full beroende-/återställningskontroll återstår.
+Inga produktionsposter har raderats eller döpts om under utredningen.
+
+Senaste externa granskningen av `d064dce2` är underlag, inte order. Dess
+kodfynd är kontrollerade mot aktuell arbetskopia: `roulette-start-editor.tsx`
+rad 40 visar rå label/ID; `roulette-start-editor.mjs` rad 50 sparar gemensam
+dealerinställning. `workspace-tools.tsx` återanvänder flera editorer med samma
+data. `partner-appearance-state.mjs` skriver `roomOverrides[roomId]`, medan
+`control-preview-page.tsx` ändrar gemensamma `lanes`.
+
+**Börja här:** förenkla befintliga redigeringsvägar och visa räckvidd före
+sparning. Rumsutseende hör till rummet; gemensamma klipp till dealern;
+delade mallar till ett tydligt avancerat läge. Prova två rum A/B med samma
+mall: ändring i A får inte ändra B eller publicerat paket före publicering.
+Efter publicering av A ska bara A:s avsedda ändring nå spelaren; B och dess
+publicerade paket ska fortfarande vara oförändrade.
+Utred återställningsmekanismen innan gamla sammansättningar avvecklas och
+klassificera de kvarvarande originalfilerna innan flytt/radering. Nya merges
+och driftsättningar avvaktar denna konkreta legacyutredning.
+
+### Separata ägare och gränser
+
+- **ZOOM**, chatt `01a144f4-a3c0-7950-bd25-6baa6761a113`, arbetskopia
+  `C:\Users\jakem\.codex\worktrees\74ba\croupier`:
+  [PR183](https://github.com/Jakeminator123/scoutgaming/pull/183), öppen,
+  head `bbbaa02937024c7caf9b64046e313e54f00bbf09`. Ingen merge eller
+  rumspublicering utförd av denna chatt; användaracceptans återstår.
+- **Anpassa Emils läppsynk**, chatt
+  `01a144f2-b094-70d2-a4ce-2d3d5cc34ed3`, arbetskopia
+  `C:\Users\jakem\.codex\worktrees\f1f7\croupier`:
+  [PR181](https://github.com/Jakeminator123/scoutgaming/pull/181), öppen draft,
+  senast återläst head `21392c4256e7f2fa2de2892ec6d6d68f1d73aaa6`.
+  Arbetet pågår separat; återläs status före integration. Ingen pod-/provider-
+  aktivering eller ändring av Emils staging ingår i denna överlämning.
+- QA/Preview-utbyggnad är fortsatt pausad. Tidigare ingresshemlighet är inte
+  återställd; se ENVIRONMENT-RESTORATION. Återstarta inte gamla QA-listor.
+- GitGuardian vid avslut: övervakning aktiv, 0 öppna/18 ignorerade i läst
+  källa; platsmetadata partiell och historisk scan `too_large`. Main-svit
+  queued utan synlig check-run är inte ett nytt grönt säkerhetskvitto.
+- Testgräns: lokal fullhook ärver processmiljön efter Git-rensning
+  (`tools/precommit-checks.mjs`). Explicita `*_QA_CONFIG`-opt-ins kan
+  aktivera skrivande QA-databasprov, begränsade till `croupier_game_qa`.
+  Dessa opt-in-prov hoppades över i tidigare redovisade fullhooks. Ingen
+  produktionsläcka är bevisad; grön CI bevisar inte en central
+  isoleringsspärr för hela lokala sviten. Kontrollera vald profil före prov.
+- Browserverktyget kunde senast inte starta sin lokala kernel (os error 3).
+  Inget nytt inloggat browserprov gjordes i överlämningen. Rätta inte detta
+  genom ominstallation eller credentialbyte utan separat diagnos.
+
+Avslutskontroll: env-registret och 43 riktade dokument-/workflow-/hook-/
+inboxprov passerar; diffens whitespace och lokala ingresslänkar är
+kontrollerade. Användarens två redan modifierade konfigurationsfiler har
+oförändrade SHA256 jämfört med inventeringen före avslutet.
+
+## Leveranskvitton — Dragan och Admin, 16 oktober 2026
+## Läsande Blob/Neon-avstämning, 16 oktober 2026
+
+På Jakobs uppdrag har hela privata Bloblagret jämförts med mediareferenser i
+samtliga sex databaser på Neons aktiva main-branch, inklusive 208 historikrader,
+sex operatörspaket, QA och den äldre katalogen. Blob- och databasinventeringen
+var stabil vid omläsning. Alla 79 produktionsklipp och sex QA-registerposter
+har sina filer; 12 äldre `paow`/`paow-v2`-replikposter saknar 24 ljud-/videofiler,
+bekräftat med privat GET. Fem dubblettgrupper är hashverifierade. 30 registrerade
+klipp saknar explicit aktuell prodreferens; ytterligare 602 blobobjekt saknar
+referens i de undersökta källorna, utan slutsats om raderingsbarhet.
+
+[Strukturscheman, metod och resultat](storage/BLOB-NEON.md) samt
+[full filförteckning](storage/BLOB-NEON-INVENTERING-2026-10-16.md) är sparade.
+Äldre formulering om `runtime/indexed` är förtydligad till Git/byggpaket;
+filer finns kvar i Blob. Inga produktdata, molnresurser eller inställningar
+ändrades. Arkiverad Neon-branch, externa konsumenter och faktisk uppspelning
+ingår inte. Saknade äldre replikpar och oklara referenser återstår för separat
+bedömning; ingen reparation eller städning är utförd.
+
 ## Aktivt avslut — Dragan och Admin, 16 oktober 2026
 
 Jakob har aktiverat målet att avsluta Admin och intern migrering, samla
-konfiguration och radera verifierat ersatta delar. Arbetsströmmen fortsätter
-i huvudcheckouten; aktuell plan och bevis finns överst i CLOUD-MIGRATION.
+konfiguration och radera verifierat ersatta delar. Arbetsströmmen har använt
+huvudcheckouten; aktuell överlämning och plan finns överst i CLOUD-MIGRATION.
 Workflow-/dokumentfel som hindrar avslutet ingår. Admin-flödesetappen är
 avslutad enligt kvittot nedan. PR165 är mergad efter Jakobs uttryckliga
-godkännande. Lageruppladdning är levererad i PR180; lokal env-normalisering slutförs;
-ny rörlig läppsynk och QA-utbyggnad förblir pausade.
+godkännande. Lageruppladdning är levererad i PR180 och lokal env-normalisering
+i PR182. Ny rörlig läppsynk ägs nu av separat chatt; QA-utbyggnad är pausad.
 
 PR165 slutfördes i sin befintliga branch i huvudcheckouten. Main
 `32ffbbaf` är förenad utan konflikter i kodcommit `c43fef1a`; cookie-
@@ -27,8 +401,8 @@ Jakob godkände exakt head samt ordinarie automatisk driftsättning.
 Normal merge utan bypass gav main `a52ec2d0`; main-CI `38906846665`
 är grön. Vercel är READY på www och Render live på samma SHA;
 Renders publika version och hälsa (200/ok) är verifierade.
-Live in-/utloggningsprovet väntar eftersom användarens öppna spelflik har
-en aktiv hand. Se CLOUD-MIGRATION och PR165:s privata leveranskvitto.
+Jakob har därefter själv provat ny Admin-in-/utloggning och svarat
+"Prvat och funkar". Se CLOUD-MIGRATION och PR165:s privata leveranskvitto.
 Oberoende kodgranskning har inga blockerande fynd. Blandade runtimeversioner
 eller rollback kan kräva ytterligare inloggning eftersom äldre kod inte
 förstår de nya sessionsstämplarna; databasschemat är oförändrat.
@@ -48,15 +422,16 @@ Videometadata och paketläsning innebär inte avkodnings- eller läppsynkaccepta
 
 Vanlig Git-pull är kontrollerad: `main` följer `origin/main`, GitHub-fetch
 fungerar och lokal `pull.ff=only` hindrar oväntade mergecommits. Inga globala
-SSH-inställningar eller credentials ändrades. Efter leverans återgår samma
-arbetskopia till uppdaterad main med användarens egna ändringar bevarade.
+SSH-inställningar eller credentials ändrades. Huvudcheckouten är vid denna
+överlämning på den lokala startfixens branch, inte på main.
 Vanlig `git pull` har faktiskt fört main till `d064dce2`. Jakobs skapade
 `codex/kordinater` är bevarad och inte pushad; ingen annan agent arbetade där.
 
 Sista avgränsade env-rättningen ger det lokala produktbarnet endast
 `OPENCLAW_API_KEY` och tömmer äldre `OPENCLAWAPI_KEY`. Kompatibel inläsning,
 filprioritet och Lab-/relay-isolering bevaras. Fokustester 48/48 och
-oberoende granskning utan blockerare; fullhook och slutlig CI följer i PR.
+oberoende granskning utan blockerare; fullhook 3 980 pass/9 skip/0 fel samt
+faktisk SQL-/omstarts-/HTTPS-CI är gröna i mergade PR182, head `390e30f0`.
 Privata värden ändras inte. Detta aktiverar inte ny läppsynk eller QA och
 bevisar inte en fungerande ansluten lokal profil.
 
@@ -356,6 +731,33 @@ blockerande fel. Lab-bygget passerar med 97 kontrollerade byggspår. Ett separat
 IAB-prov av samordnaren verifierar ny internal-admin-login och N1 → Partner →
 Lobby på samma main; det är inte N2/N3-rollbevis eller acceptans av rättningen.
 Produktionsverifiering av rättningen återstår; C4 hålls öppen.
+
+## Paow/Dragge: egen teknik och lokal editor, 16 oktober 2026
+
+Jakob vill använda egna filmer på main med Emils teknik och har beställt en
+liten `lipsync-test` i separat arbetskopia. Skrivbordssparning är uppskjuten.
+Editorn läser 139 filmfiler från verifierad main `4fa35ab9` direkt ur Git,
+med sökning, uppspelning, tidssteg och lokal original/resultat-jämförelse.
+Start: `node lipsync-test/server.mjs`; ingen env, databas eller provider laddas.
+Paow/Dragan-tagningar saknas i main-katalogen; Studio/Blob-material måste
+väljas via befintligt register. Ingen ersättning hämtas från Emils banker.
+
+Exporthashar, 112 källfilmers Git-blob-ID/SHA-256 och vilorutans mekanik är
+kontrollerade. Historisk bankbyggkoppling och uppgiven image-digest är fortsatt
+tillskrivna Emil; OCI-manifest saknas. Full proveniens och nästa steg finns i
+[runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md#verifierad-zip-export-och-minsta-integrationsförslag-16-oktober-2026).
+
+Två isolerade editorprov och Chrome-prov av två uppspelningsstarter, steg,
+lokal jämförelse och byte av original passerar. Lab-build passerade.
+Fullhook-kvittot följer PR:n. Inga nya talfilmer har genererats eller accepterats.
+Implementerat: lokal filmvisare. Driftsatt: inget. Visuellt accepterat: inget nytt.
+Inga gamla runtimevägar kan tas bort; pod1/pod5 och Admins checkout är orörda.
+
+Kontokontrollen som Jakob uttryckligen godkände läste bara befintliga lokala
+profiler: RunPod health 200 men kontoidentitet 401; nyckeln skiljer sig från
+Emil-profilen. Cartesia voices 200 och **samma nyckel som Emil-profilen**;
+kontoägaren kan inte bestämmas av detta. Lokal Web/Lab stämmer överens;
+Render-runtime har inte lästs tillbaka i denna kontroll. Ingen nyckel ändrades.
 
 ## Paow/Dragge: separat workertransport, 15 oktober 2026
 
@@ -4193,3 +4595,14 @@ fullständiga pre-commit-grinden. Frontendens Next 15.5.26 och designpaketets
 PostCSS/Tailwind 3-beroenden ändras inte av denna patch; deras separata
 auditfynd återstår. Ingen Node-major, produktionskonfiguration eller
 migrering ändras.
+
+
+## Sparad roulettezoom i befintliga Admin-editorer — 16 oktober 2026
+
+Gemensam mall och Sammansättningar har fått samlad in-/utzoomning med
+befintliga sparade placeringsfält. Roulette visar spelarens Desktop 16:9-format.
+Lagerreglage, delad mall, rumsspecifika val och publicering behåller sina kontrakt.
+74 riktade tester, Labbygge och syntetiskt Chrome-prov i fyra bredder är gröna.
+Fullständigt lokalt kvitto och acceptansgräns finns i motsvarande avsnitt i
+[CLOUD-MIGRATION](CLOUD-MIGRATION.md#sparad-roulettezoom-i-befintliga-admin-editorer--16-oktober-2026).
+Ordinarie hook och PR-CI redovisas i PR:n; användaracceptans och driftsättning återstår.

@@ -8,37 +8,43 @@ const rehearsalSource=appSource.slice(appSource.indexOf('// Optional rehearsal')
 let oldDocument,oldLocation;
 beforeEach(()=>{
  oldDocument=globalThis.document;oldLocation=globalThis.location;
- const registry=['astrid','vera','mei','nora'].map(id=>({id,label:id}));
+ const registry=['astrid','elin','linnea','nora'].map(id=>({id,label:id}));
  globalThis.document={documentElement:{dataset:{gamePath:'/blackjack',gameLane:'chosen',gameDealer:'astrid',gamePresentation:'local',gameLocalDealer:'astrid',gameRegisteredDealers:JSON.stringify(registry),gameOperator:'north',gameRoomId:'room-north',gameChoices:JSON.stringify({dealers:registry.map(row=>row.id),dealerDefault:'astrid',tableColors:[],tableDefault:null,background:{enabled:false,mode:'baked',allowed:[],default:null}})}}};
  globalThis.location={pathname:'/blackjack',origin:'https://game.invalid'};
 });
 afterEach(()=>{globalThis.document=oldDocument;globalThis.location=oldLocation;});
 test('every registered dealer stays on one player and the saved room',()=>{
- for(const dealer of ['astrid','vera','mei','nora'])for(const version of ['original','v2']){
+ for(const dealer of ['astrid','elin','linnea','nora'])for(const version of ['original','v2']){
   const url=new URL(dealerVersionPath(dealer,version,'?launch=private&operator=foreign&table=foreign&performance=staged&rehearsal=1'),'https://game.invalid');
   assert.equal(url.pathname,'/blackjack');assert.equal(url.searchParams.get('dealer'),dealer);
   assert.equal(url.searchParams.get('lane'),'chosen');assert.equal(url.searchParams.get('table'),'room-north');assert.equal(url.searchParams.get('operator'),'north');
   assert.equal(url.searchParams.get('presentation'),'local');assert.equal(url.searchParams.get('rehearsal'),'1');
   assert.equal(url.searchParams.has('launch'),false);assert.equal(url.searchParams.has('performance'),false);
  }
- for(const id of ['amira','unknown'])assert.throws(()=>dealerVersionPath(id,'original'));
+ for(const id of ['vera','mei','amira','johanna','unknown'])assert.throws(()=>dealerVersionPath(id,'original'));
+});
+test('retired identities cannot become switcher choices through forged registration',()=>{
+ for(const id of ['vera','mei','amira','johanna']){
+  globalThis.document.documentElement.dataset.gameRegisteredDealers=JSON.stringify([{id,label:id}]);
+  assert.throws(()=>dealerVersionPath(id,'original'),/Invalid dealer registry/);
+ }
 });
 test('missing registration and a registered dealer outside this room cannot become fallback choices',()=>{
  globalThis.document.documentElement.dataset.gameChoices=JSON.stringify({dealers:['astrid'],dealerDefault:'astrid',tableColors:[],tableDefault:null,background:{enabled:false,mode:'baked',allowed:[],default:null}});
- assert.throws(()=>dealerVersionPath('mei','original'),/available/);
+ assert.throws(()=>dealerVersionPath('linnea','original'),/available/);
  globalThis.document.documentElement.dataset.gameRegisteredDealers='[]';assert.throws(()=>dealerVersionPath('astrid','original'),/registered/);
 });
 test('only valid observer channels survive; no version controls or local engine are installed',()=>{
  const channel='00000000-0000-4000-8000-000000000001';
- const url=new URL(dealerVersionPath('mei','v2','?labObserverOrigin=http://localhost:4188&labObserverChannel='+channel+'&launch=a.b.c'),'https://game.invalid');
+ const url=new URL(dealerVersionPath('linnea','v2','?labObserverOrigin=http://localhost:4188&labObserverChannel='+channel+'&launch=a.b.c'),'https://game.invalid');
  assert.equal(url.searchParams.get('labObserverChannel'),channel);assert.equal(url.searchParams.has('launch'),false);
  assert.doesNotMatch(appSource,/installDealerVersionSwitcher|V2_DEALERS|new DealerEngine|audio\/en\/bank\.json/);
 });
 test('rehearsal dealer changes keep the same published context',()=>{
  const handler=rehearsalSource.match(/dealerSelect\.onchange = \(\) => \{[^\n]+\};/)?.[0];assert.ok(handler);
- const location={search:'?rehearsal=1&launch=private'},dealerSelect={value:'mei'};
+ const location={search:'?rehearsal=1&launch=private'},dealerSelect={value:'linnea'};
  vm.runInNewContext(handler+';dealerSelect.onchange();',{location,dealerSelect,dealerVersionPath});
- const url=new URL(location.href,'https://game.invalid');assert.equal(url.searchParams.get('dealer'),'mei');assert.equal(url.searchParams.get('table'),'room-north');
+ const url=new URL(location.href,'https://game.invalid');assert.equal(url.searchParams.get('dealer'),'linnea');assert.equal(url.searchParams.get('table'),'room-north');
 });
 test('rehearsal never reads a local speech bank',async()=>{
  const statement=rehearsalSource.match(/const bank = [^\n]+;/)?.[0];assert.ok(statement);

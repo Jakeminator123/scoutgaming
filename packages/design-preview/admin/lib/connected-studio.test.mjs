@@ -21,7 +21,7 @@ test('room choices in another tab preserve drafts while same-tab navigation reta
 });
 test('room-choice links retain exact owner and room inside Admin, including unpublished drafts',()=>{
   const operator={id:'north',slug:'north-casino'},room={id:'vip-room',operatorId:'north',state:'live',published:true,compositionId:'shared',game:'blackjack'};
-  const path='/admin/rooms?view=registered&operator=north&table=vip-room&composition=shared&game=blackjack';
+  const path='/admin/rooms?operator=north&table=vip-room&composition=shared&game=blackjack';
   assert.equal(roomChoicesPath(operator,room),path);
   assert.equal(roomChoicesPath(operator,{...room,state:'preview',published:false}),path);
   for(const changed of [{operatorId:'south'},{state:'archived'},{id:'../other'}])assert.equal(roomChoicesPath(operator,{...room,...changed}),null);

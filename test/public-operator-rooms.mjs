@@ -17,10 +17,10 @@ function asset(role,n) {
   return {...row,pathname:layerAssetPath(row)};
 }
 function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eventMode=null,legacy=false,fullFrame=false,baked=false}={}) {
-  const dealers=[['johanna','Johanna published'],['nora','Nora published'],['selma','Selma published'],['astrid','Astrid published'],['foreign','Draft only']];
+  const dealers=[['linnea','Linnea published'],['nora','Nora published'],['selma','Selma published'],['astrid','Astrid published'],['foreign','Draft only']];
   const project=dealers.reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
-  const lane=defaultPresentationLane('johanna');lane.id='johns-presentation';lane.label='Published presentation';project.lanes=[lane];
-  lane.dealers=['johanna','nora','selma','astrid'];lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
+  const lane=defaultPresentationLane('linnea');lane.id='johns-presentation';lane.label='Published presentation';project.lanes=[lane];
+  lane.dealers=['linnea','nora','selma','astrid'];lane.layers.dealer={enabled:true,default:'linnea',allowed:[...lane.dealers]};
   lane.composition=defaultCompositionSettings();lane.operatorAdjustable=['dealer','table','background','branding'];
   if(fullFrame)delete lane.composition;
   project.layerAssets=[asset('background',1),asset('background',2),asset('table',3),asset('table',4),asset('table',5)];
@@ -36,27 +36,27 @@ function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eve
   });
   const compositing = mode => mode === 'green-screen' ? {mode,threshold:.3,softness:.15,despill:.1} : mode === null ? undefined : {mode};
   for (const row of mediaRows) {
-    if(!['johanna','nora'].includes(row.classification.dealerId))continue;
+    if(!['linnea','nora'].includes(row.classification.dealerId))continue;
     if (idleMode === null) delete row.classification.compositing;
     else row.classification.compositing=compositing(idleMode);
   }
   function extraRecord(n,eventId,mode) {
     const record=structuredClone(mediaRows[0]);record.id='10000000-0000-4000-8000-'+String(n).padStart(12,'0');record.sha256=String(n).repeat(64);
-    record.pathname='croupier/media/dealers/johanna/review/uploads/'+record.id+'/'+record.sha256+'.mp4';
+    record.pathname='croupier/media/dealers/linnea/review/uploads/'+record.id+'/'+record.sha256+'.mp4';
     record.classification={...record.classification,eventId,kind:eventId.startsWith('speak.')?'speech':'idle',
       situation:eventId==='speak.goodluck'?'goodluck':'',compositing:compositing(mode)};
     mediaRows.push(record);return record;
   }
   if (extraBaseMode) {
     const extra=extraRecord(5,'idle.ready',extraBaseMode);
-    project.dealerIdlePolicies=[{dealerId:'johanna',policy:{schemaVersion:1,familyId:'johanna/idle.ready/ready',
+    project.dealerIdlePolicies=[{dealerId:'linnea',policy:{schemaVersion:1,familyId:'linnea/idle.ready/ready',
       base:[{videoId:mediaRows[0].id,weight:50,durationMs:10000},{videoId:extra.id,weight:50,durationMs:9000}],variants:[]}}];
     // Different per-clip parameters are fully supported by the compositor.
     if(extraBaseMode==='green-screen')extra.classification.compositing={mode:'green-screen',threshold:.6,softness:.2,despill:.3};
   }
   if (eventMode) {
     const extra=extraRecord(6,'speak.goodluck',eventMode);
-    project.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='speak.goodluck').variants[0].videoGenerationId=extra.id;
+    project.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='speak.goodluck').variants[0].videoGenerationId=extra.id;
   }
   const inventory={videos:mediaRows.map(record=>({id:record.id,sha256:record.sha256,bytes:record.size,dealer:record.classification.dealerId,
     available:true,classification:record.classification,kind:'idle',playback:'once'})),families:[],summary:{readable:true,snapshotReadable:true}};
@@ -71,9 +71,9 @@ function fixture({schemaVersion=3,idleMode='green-screen',extraBaseMode=null,eve
     administrationDocument:{kind:'administration',revision:'admin-snapshot',value:{rooms:[]}},mediaRows},inventory,
     selectedLaneIds:[lane.id],requiredIdleDealerIds:lane.dealers}).presentation;
   if(schemaVersion===2){presentation=structuredClone(presentation);presentation.schemaVersion=2;delete presentation.playback;}
-  const room={schemaVersion:2,id:'room-north',name:'North room',operatorId:'north-id',presentationLaneId:lane.id,gameLaneId:'portrait-johanna',state:'live'};
-  const administration={gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Johanna room',
-    renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}],rooms:[room]};
+  const room={schemaVersion:2,id:'room-north',name:'North room',operatorId:'north-id',presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'};
+  const administration={gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Linnea room',
+    renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]};
   const operator={id:'north-id',slug:'north',name:'North',status:'active',internalSecret:'never-expose'};
   const state={operator,project,administration,pack:{operatorId:operator.id,revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],
     branding:withPackagePresentation({name:'North',dealer:'nora',table:project.layerAssets[3].id,background:project.layerAssets[1].id},presentation)}};
@@ -91,13 +91,13 @@ async function request(api,path='/api/operators/north/rooms',method='GET') {
 
 test('public catalog freezes dealer and asset labels and honors company defaults and allowed layers',async()=>{
   const f=fixture(),before=structuredClone(f.state);
-  f.state.project.dealers.find(row=>row.id==='johanna').label='Unpublished new label';
+  f.state.project.dealers.find(row=>row.id==='linnea').label='Unpublished new label';
   f.state.project.layerAssets[0].label='Unpublished asset';f.state.project.lanes[0].label='Unpublished presentation';
   const value=await f.api.read('north'),room=value.rooms[0];
   assert.equal(value.schemaVersion,1);assert.deepEqual(value.operator,{slug:'north',name:'North'});assert.equal(value.packageRevision,7);
-  assert.equal(room.id,'room-north');assert.equal(room.laneId,'portrait-johanna');assert.equal(room.presentation.label,'Published presentation');
-  assert.equal(room.dealerDefault,'nora');assert.deepEqual(room.dealers.map(row=>row.id),['johanna','nora','selma','astrid']);
-  assert.equal(room.dealers[0].label,'Johanna published');assert.equal(room.dealers[0].independentLayers,true);
+  assert.equal(room.id,'room-north');assert.equal(room.laneId,'portrait-linnea');assert.equal(room.presentation.label,'Published presentation');
+  assert.equal(room.dealerDefault,'nora');assert.deepEqual(room.dealers.map(row=>row.id),['linnea','nora','selma','astrid']);
+  assert.equal(room.dealers[0].label,'Linnea published');assert.equal(room.dealers[0].independentLayers,true);
   assert.equal(room.dealers[0].table.default,before.project.layerAssets[3].id);
   assert.equal(room.dealers[0].background.default,before.project.layerAssets[1].id);
   assert.deepEqual(room.dealers[0].background.allowed.map(row=>row.label),['background 1','background 2']);
@@ -125,7 +125,7 @@ test('public room choices use canonical material names without granting unpublis
 test('historical opaque or unspecified own idle keeps explicitly allowed independent layers',async()=>{
   for (const idleMode of ['opaque',null]) {
     const f=fixture({legacy:true,idleMode,eventMode:'green-screen'}),before=structuredClone(f.state.pack),room=(await f.api.read('north')).rooms[0];
-    for(const id of ['johanna','nora']){
+    for(const id of ['linnea','nora']){
       const dealer=room.dealers.find(row=>row.id===id);assert.equal(dealer.independentLayers,true);
       assert.equal(dealer.table.allowed.length,2);assert.equal(dealer.background.allowed.length,2);
     }
@@ -140,15 +140,15 @@ test('historical opaque or unspecified own idle keeps explicitly allowed indepen
 test('weighted idle bases use their own keying parameters or the historical default',async()=>{
   for(const extraBaseMode of ['opaque','green-screen']){
     const room=(await fixture({legacy:extraBaseMode==='opaque',extraBaseMode}).api.read('north')).rooms[0];
-    const johanna=room.dealers.find(row=>row.id==='johanna');assert.equal(johanna.independentLayers,true);
-    assert.equal(johanna.table.enabled,true);assert.equal(johanna.background.enabled,true);
+    const linnea=room.dealers.find(row=>row.id==='linnea');assert.equal(linnea.independentLayers,true);
+    assert.equal(linnea.table.enabled,true);assert.equal(linnea.background.enabled,true);
     assert.equal(room.dealers.find(row=>row.id==='nora').independentLayers,true);
   }
 });
 
 test('historical opaque event metadata stays readable without disabling allowed environment layers',async()=>{
-  const f=fixture({legacy:true,eventMode:'opaque'}),johanna=(await f.api.read('north')).rooms[0].dealers[0];
-  assert.equal(johanna.independentLayers,true);assert.equal(johanna.table.allowed.length,2);assert.equal(johanna.background.allowed.length,2);
+  const f=fixture({legacy:true,eventMode:'opaque'}),linnea=(await f.api.read('north')).rooms[0].dealers[0];
+  assert.equal(linnea.independentLayers,true);assert.equal(linnea.table.allowed.length,2);assert.equal(linnea.background.allowed.length,2);
   assert.equal(f.presentation.playback.media.find(row=>row.classification.eventId==='speak.goodluck').classification.compositing.mode,'opaque');
 });
 
@@ -181,15 +181,15 @@ test('existing plain-text operator and room names remain valid without HTML inte
 
 test('old v2 custom packages expose only the runtime compatible own dealer',async()=>{
   const f=fixture({schemaVersion:2}),value=await f.api.read('north');
-  assert.deepEqual(value.rooms[0].dealers.map(row=>row.id),['johanna']);assert.equal(value.rooms[0].dealerDefault,'johanna');
+  assert.deepEqual(value.rooms[0].dealers.map(row=>row.id),['linnea']);assert.equal(value.rooms[0].dealerDefault,'linnea');
 });
 
 test('portrait room fixture exposes only its explicitly published cloud dealer',async()=>{
   const f=createPortraitRoomEntryFixture();
   const api=createPublicOperatorRooms({store:{getOperatorBySlug:async()=>({id:f.room.operatorId,slug:'sg-test',name:'SG test',status:'active'}),
     getCurrentPackage:async()=>f.pack},policy:{readGameConfiguration(){},readSaved:async()=>({project:f.project,administration:f.administration})}});
-  const room=(await api.read('sg-test')).rooms[0];assert.equal(room.dealerDefault,'johanna');assert.equal(room.dealers[0].presentation,'local');
-  assert.deepEqual(room.dealers.map(row=>row.id),['johanna']);
+  const room=(await api.read('sg-test')).rooms[0];assert.equal(room.dealerDefault,'linnea');assert.equal(room.dealers[0].presentation,'local');
+  assert.deepEqual(room.dealers.map(row=>row.id),['linnea']);
   const retired=createPortraitRoomEntryFixture({dealer:'amira'});
   const denied=createPublicOperatorRooms({store:{getOperatorBySlug:async()=>({id:retired.room.operatorId,slug:'sg-test',name:'SG test',status:'active'}),getCurrentPackage:async()=>retired.pack},
     policy:{readGameConfiguration(){},readSaved:async()=>({project:retired.project,administration:retired.administration})}});
@@ -264,6 +264,6 @@ test('v3 catalogue retains the same room and grants when its frozen default diff
   Object.assign(f.state.administration.gameLanes[0],{dealer:'astrid',mediaCollection:'astrid-presentation'});
   const value=await f.api.read('north');assert.equal(value.rooms.length,1);
   assert.equal(value.rooms[0].id,f.room.id);assert.equal(value.rooms[0].dealerDefault,'nora','existing company choice keeps precedence');
-  assert.deepEqual(value.rooms[0].dealers.map(row=>row.id),['johanna','nora','selma','astrid']);
+  assert.deepEqual(value.rooms[0].dealers.map(row=>row.id),['linnea','nora','selma','astrid']);
   assert.deepEqual(f.state.pack,before);
 });

@@ -25,36 +25,36 @@ function record(dealerId, eventId, n, situation = '') {
       compositing: { mode: 'green-screen', threshold: .2, softness: .1, despill: 0 } } };
 }
 function fixture({ secondDealer = false } = {}) {
-  let project = addDealer(createSeedProject(), 'johanna', 'Johanna');
+  let project = addDealer(createSeedProject(), 'linnea', 'Linnea');
   if (secondDealer) project = addDealer(project, 'nora', 'Nora');
-  project.lanes = [defaultPresentationLane('johanna')];
-  const lane = project.lanes[0]; lane.id = 'johns-johanna'; lane.dealers = secondDealer ? ['johanna', 'nora'] : ['johanna'];
-  lane.layers.dealer = {enabled:true, default:'johanna', allowed:[...lane.dealers]};
-  const media = [record('johanna','idle.ready',1), record('johanna','speak.goodluck',2,'goodluck')];
+  project.lanes = [defaultPresentationLane('linnea')];
+  const lane = project.lanes[0]; lane.id = 'johns-linnea'; lane.dealers = secondDealer ? ['linnea', 'nora'] : ['linnea'];
+  lane.layers.dealer = {enabled:true, default:'linnea', allowed:[...lane.dealers]};
+  const media = [record('linnea','idle.ready',1), record('linnea','speak.goodluck',2,'goodluck')];
   if (secondDealer) media.push(record('nora','idle.ready',3), record('nora','speak.goodluck',4,'goodluck'));
   for (const row of media) project.lines.find(line => line.dealerId === row.classification.dealerId && line.eventId === row.classification.eventId).variants[0].videoGenerationId = row.id;
   const inventory = {families:[],videos:media.map(row => ({id:row.id,sha256:row.sha256,bytes:row.size,dealer:row.classification.dealerId,
     available:true, integrity:'verified', classification:structuredClone(row.classification)}))};
   return {snapshot:{projectDocument:{kind:'project',revision:project.revision,value:project},
     administrationDocument:{kind:'administration',revision:'admin-1',value:{rooms:[]}},
-    mediaRows:media.map(row => ({...row,revision:'media-1'}))}, inventory, selectedLaneIds:[lane.id], requiredIdleDealerIds:['johanna']};
+    mediaRows:media.map(row => ({...row,revision:'media-1'}))}, inventory, selectedLaneIds:[lane.id], requiredIdleDealerIds:['linnea']};
 }
 function serviceFor(presentation) {
   const saved = {operator:{id:'north-id',slug:'north',status:'active'},
-    package:{operatorId:'north-id',revision:7,lanes:['johns-johanna'],tables:['room-johanna'],frozen:presentation},
-    administration:{rooms:[{schemaVersion:2,id:'room-johanna',name:'Johanna',operatorId:'north-id',presentationLaneId:'johns-johanna',gameLaneId:'portrait-johanna',state:'live'}],
-      gameLanes:[{schemaVersion:1,id:'portrait-johanna',label:'Johanna',dealer:'johanna',renderer:'portrait-video',mediaCollection:'johanna-presentation'}]}};
+    package:{operatorId:'north-id',revision:7,lanes:['johns-linnea'],tables:['room-linnea'],frozen:presentation},
+    administration:{rooms:[{schemaVersion:2,id:'room-linnea',name:'Linnea',operatorId:'north-id',presentationLaneId:'johns-linnea',gameLaneId:'portrait-linnea',state:'live'}],
+      gameLanes:[{schemaVersion:1,id:'portrait-linnea',label:'Linnea',dealer:'linnea',renderer:'portrait-video',mediaCollection:'linnea-presentation'}]}};
   const served = [];
   return {saved,served,service:createFrozenDealerPresentationContext({readCurrentContext:async () => structuredClone(saved),
     readPresentation:pack => validatePresentationPackage(pack.frozen),
     privateMedia:async (row,request) => {served.push(row);return new Response(request.method==='HEAD'?null:'bytes',{status:request.headers.has('range')?206:200});}})};
 }
-const context = {operatorSlug:'north',roomId:'room-johanna',packageRevision:7,dealerId:'johanna'};
+const context = {operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
 
 test('frozen recorded speech preserves complete exact metadata and cannot select pending or rejected recordings',async()=>{
   for(const status of ['approved','pending','rejected']){
     const input=fixture(),row=input.snapshot.mediaRows[1];
-    const metadata={schemaVersion:1,dealerId:'johanna',lineId:'goodluck',takeId:'goodluck_sv_1',language:'sv',exactText:'Lycka till.',
+    const metadata={schemaVersion:1,dealerId:'linnea',lineId:'goodluck',takeId:'goodluck_sv_1',language:'sv',exactText:'Lycka till.',
       videoSha256:row.sha256,audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
       entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
     const proof={by:'fixture-reviewer',at:'2026-10-14T00:00:00.000Z',identity:recordedSpeechIdentity(metadata)};
@@ -65,7 +65,7 @@ test('frozen recorded speech preserves complete exact metadata and cannot select
     const projected=service.publicVideo(frozen,row.id);assert.deepEqual(projected.recordedSpeech,metadata);
     projected.recordedSpeech.exactText='Changed';assert.equal(service.publicVideo(frozen,row.id).recordedSpeech.exactText,'Lycka till.');
     const api=createPresentationApi({db:{prepare:()=>({get:()=>undefined})},env:{},frozenDealerContext:service,recordedSpeechPreview:true});
-    const req=Readable.from([JSON.stringify({dealerId:'johanna',mode:'rules',version:1,event:{type:'speak',line:'goodluck'},presentationContext:context,recordedSpeechPreview:true})]);
+    const req=Readable.from([JSON.stringify({dealerId:'linnea',mode:'rules',version:1,event:{type:'speak',line:'goodluck'},presentationContext:context,recordedSpeechPreview:true})]);
     req.method='POST';req.headers={};req.url='/api/presentation/select?rehearsal=1';
     const res=new EventEmitter();res.writableEnded=false;res.writeHead=code=>res.status=code;res.end=raw=>{res.body=JSON.parse(raw);res.writableEnded=true;};
     await api(req,res,'/api/presentation/select','studio-preview:10000000-0000-4000-8000-000000000001');assert.equal(res.status,200,JSON.stringify(res.body));
@@ -91,42 +91,42 @@ test('published 16-event packages remain readable after the optional shoe slot i
   const frozen = frozenPlaybackProject(legacy.playback, {registeredDealers:legacy.registeredDealers,projectRevision:legacy.projectRevision});
   assert.equal(frozen.events.length, 16);
   assert.equal(frozen.lines.length, 32);
-  assert.equal(frozen.lines.find(line => line.dealerId === 'johanna' && line.eventId === 'speak.goodluck').variants[0].videoGenerationId, uuid(2));
+  assert.equal(frozen.lines.find(line => line.dealerId === 'linnea' && line.eventId === 'speak.goodluck').variants[0].videoGenerationId, uuid(2));
   const service = serviceFor(legacy).service;
-  assert.equal((await service.resolve(context)).dealer.id, 'johanna');
+  assert.equal((await service.resolve(context)).dealer.id, 'linnea');
   const newFrozen = frozenPlaybackProject(current.playback, {registeredDealers:current.registeredDealers,projectRevision:current.projectRevision});
   assert.equal(newFrozen.events.length, 17);
   const damaged = structuredClone(legacy);
-  damaged.playback.lines = damaged.playback.lines.filter(line => !(line.dealerId === 'johanna' && line.eventId === 'speak.goodluck'));
+  damaged.playback.lines = damaged.playback.lines.filter(line => !(line.dealerId === 'linnea' && line.eventId === 'speak.goodluck'));
   assert.throws(() => validatePresentationPackage(damaged), /studio_invalid_presentation/);
 });
 
 test('v3 freezes own exact event binding and policy; later live edits cannot change shared selection', async () => {
   const input = fixture(), project = input.snapshot.projectDocument.value;
-  project.triggers.push({id:'johanna.goodluck',label:'Good luck',category:'deterministic',path:'event.line',op:'eq',value:'goodluck'});
-  const line = project.lines.find(row => row.dealerId==='johanna' && row.eventId==='speak.goodluck');
-  line.variants.push({...structuredClone(line.variants[0]),id:'johanna.speak.goodluck.variant1',priority:50,triggerIds:['johanna.goodluck'],selection:{rules:true,model:false,random:false}});
+  project.triggers.push({id:'linnea.goodluck',label:'Good luck',category:'deterministic',path:'event.line',op:'eq',value:'goodluck'});
+  const line = project.lines.find(row => row.dealerId==='linnea' && row.eventId==='speak.goodluck');
+  line.variants.push({...structuredClone(line.variants[0]),id:'linnea.speak.goodluck.variant1',priority:50,triggerIds:['linnea.goodluck'],selection:{rules:true,model:false,random:false}});
   const captured = captureFrozenPresentation(input), envelope = encodePresentationPackage(captured.presentation);
   assert.equal(captured.presentation.schemaVersion,3); assert.ok(envelope.data.length<6500);
   assert.equal(captured.mediaPreconditions.length,2);
   line.variants[1].selection.rules=false; input.inventory.videos=[]; input.snapshot.mediaRows[1].classification.label='Changed';
   const decoded = decodePresentationPackage(envelope), {service} = serviceFor(decoded), frozen = await service.resolve(context);
   assert.equal(frozen.project.lines.filter(row => ['astrid','vera','amira','mei'].includes(row.dealerId)).every(row => row.variants.every(v => v.videoGenerationId===null)),true);
-  const result = await selectPresentation({project:frozen.project,dealerId:'johanna',eventId:'speak.goodluck',sourceEvent:{type:'speak',line:'goodluck'},mode:'rules'}, {videoRegistry:frozen.inventory});
-  assert.equal(result.videoGenerationId,uuid(2)); assert.equal(result.variant.id,'johanna.speak.goodluck.variant1');
+  const result = await selectPresentation({project:frozen.project,dealerId:'linnea',eventId:'speak.goodluck',sourceEvent:{type:'speak',line:'goodluck'},mode:'rules'}, {videoRegistry:frozen.inventory});
+  assert.equal(result.videoGenerationId,uuid(2)); assert.equal(result.variant.id,'linnea.speak.goodluck.variant1');
   const video=service.publicVideo(frozen,result.videoGenerationId);
   assert.equal(video.sha256,decoded.playback.media.find(row=>row.id===uuid(2)).sha256);
-  assert.match(video.src,/registered-video\/north\/room-johanna\/7\/johanna\//);
+  assert.match(video.src,/registered-video\/north\/room-linnea\/7\/linnea\//);
   assert.equal(JSON.stringify(video).includes('pathname'),false);
 });
 
 test('exact position mismatch skips video while matching server event uses own frozen film', async () => {
-  const input=fixture(), project=input.snapshot.projectDocument.value, row=record('johanna','deal.player.centre',5,'box3');
-  input.snapshot.mediaRows.push({...row,revision:'media-1'}); input.inventory.videos.push({id:row.id,sha256:row.sha256,bytes:row.size,dealer:'johanna',available:true,classification:row.classification});
-  project.lines.find(line=>line.dealerId==='johanna'&&line.eventId==='deal.player.centre').variants[0].videoGenerationId=row.id;
+  const input=fixture(), project=input.snapshot.projectDocument.value, row=record('linnea','deal.player.centre',5,'box3');
+  input.snapshot.mediaRows.push({...row,revision:'media-1'}); input.inventory.videos.push({id:row.id,sha256:row.sha256,bytes:row.size,dealer:'linnea',available:true,classification:row.classification});
+  project.lines.find(line=>line.dealerId==='linnea'&&line.eventId==='deal.player.centre').variants[0].videoGenerationId=row.id;
   const {service}=serviceFor(captureFrozenPresentation(input).presentation), frozen=await service.resolve(context);
   for (const box of [3,4]) {
-    const result=await selectPresentation({project:frozen.project,dealerId:'johanna',eventId:'deal.player.centre',sourceEvent:{...structuredClone(project.events.find(row=>row.id==='deal.player.centre').exampleEvent),box},mode:'off'},{videoRegistry:frozen.inventory});
+    const result=await selectPresentation({project:frozen.project,dealerId:'linnea',eventId:'deal.player.centre',sourceEvent:{...structuredClone(project.events.find(row=>row.id==='deal.player.centre').exampleEvent),box},mode:'off'},{videoRegistry:frozen.inventory});
     assert.equal(result.videoGenerationId,box===3?row.id:null);
     if(box===4)assert.equal(result.decision.media.reason,'position_clip_missing');
   }
@@ -138,7 +138,7 @@ test('all bound event media is required, byte/metadata-consistent and rechecked 
     f=>f.inventory.videos[1].sha256='f'.repeat(64),
     f=>f.inventory.videos[1].classification.situation='win',
     f=>f.snapshot.mediaRows.pop(),
-    f=>f.snapshot.projectDocument.value.lines.find(row=>row.dealerId==='johanna'&&row.eventId==='speak.goodluck').variants[0].videoGenerationId='legacy:astrid/goodluck'
+    f=>f.snapshot.projectDocument.value.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='speak.goodluck').variants[0].videoGenerationId='legacy:astrid/goodluck'
   ]) {
     const input=fixture();mutate(input);assert.throws(()=>captureFrozenPresentation(input),error=>error.code==='studio_media_binding_invalid');
   }
@@ -179,7 +179,7 @@ test('portable v3 decode rejects unknown or cross-event media, changed policy, a
     p=>p.playback.media[1].classification.dealerId='nora',
     p=>p.playback.media.find(row=>row.id===uuid(2)).classification.eventId='idle.ready',
     p=>p.playback.lines.find(row=>row.eventId==='idle.ready').variants[0].videoGenerationId=null,
-    p=>Object.defineProperty(p.playback.lines[0],'dealerId',{enumerable:true,get(){reads++;return 'johanna';}})
+    p=>Object.defineProperty(p.playback.lines[0],'dealerId',{enumerable:true,get(){reads++;return 'linnea';}})
   ]) {const changed=structuredClone(source);mutate(changed);assert.throws(()=>validatePresentationPackage(changed));}
   assert.equal(reads,0);
 });
@@ -187,14 +187,14 @@ test('portable v3 decode rejects unknown or cross-event media, changed policy, a
 test('room merge preserves old frozen policy, conflicts for a shared retained dealer, permits replacement otherwise', () => {
   const old=captureFrozenPresentation(fixture()).presentation,newer=structuredClone(old);
   newer.playback.lines.find(row=>row.eventId==='speak.goodluck').variants[0].label='Updated baseline';
-  assert.throws(()=>mergeFrozenDealerPlayback(old,newer,{registeredDealers:newer.registeredDealers,preservedDealerIds:['johanna']}));
+  assert.throws(()=>mergeFrozenDealerPlayback(old,newer,{registeredDealers:newer.registeredDealers,preservedDealerIds:['linnea']}));
   const merged=mergeFrozenDealerPlayback(old,newer,{registeredDealers:newer.registeredDealers,preservedDealerIds:[]});
   assert.equal(merged.lines.find(row=>row.eventId==='speak.goodluck').variants[0].label,'Updated baseline');
   assert.deepEqual(mergeFrozenDealerPlayback(old,old,{registeredDealers:old.registeredDealers}),old.playback);
 });
 
 test('event media CAS supports more than the dealer-count limit without weakening exact revision checks', () => {
-  const rows=Array.from({length:40},(_,i)=>({...record('johanna','idle.ready',100+i),revision:'r1'}));
+  const rows=Array.from({length:40},(_,i)=>({...record('linnea','idle.ready',100+i),revision:'r1'}));
   const conditions=rows.map(({revision,...row})=>({id:row.id,revision,record:row}));
   assert.doesNotThrow(()=>assertFrozenMediaPreconditions(conditions,rows));
   rows.at(-1).revision='r2';assert.throws(()=>assertFrozenMediaPreconditions(conditions,rows),error=>error.statusCode===409);
@@ -225,27 +225,27 @@ test('adding a v3 room retains a different dealer from a historical v2 idle pack
 
 test('own saved idle schedule drives the shared controller through automatic and OpenClaw starts, returning to baseline', async () => {
   const input=fixture(),project=input.snapshot.projectDocument.value;
-  const clips=[record('johanna','idle.ready',11),record('johanna','idle.ready',12),record('johanna','idle.ready',13)];
-  for(const row of clips){input.snapshot.mediaRows.push({...row,revision:'media-1'});input.inventory.videos.push({id:row.id,sha256:row.sha256,bytes:row.size,dealer:'johanna',available:true,classification:row.classification});}
-  const policy=createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:uuid(1),durationMs:10000});
+  const clips=[record('linnea','idle.ready',11),record('linnea','idle.ready',12),record('linnea','idle.ready',13)];
+  for(const row of clips){input.snapshot.mediaRows.push({...row,revision:'media-1'});input.inventory.videos.push({id:row.id,sha256:row.sha256,bytes:row.size,dealer:'linnea',available:true,classification:row.classification});}
+  const policy=createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:uuid(1),durationMs:10000});
   policy.variants=[
     {videoId:uuid(11),durationMs:1000,use:'automatic',automatic:{averageEveryMs:5000,jitterMs:0,cooldownMs:10000,maxPerMinute:2}},
     {videoId:uuid(12),durationMs:1000,use:'openclaw',automatic:null,description:'Friendly response'},
     {videoId:uuid(13),durationMs:1000,use:'manual',automatic:null}
   ];
-  project.dealerIdlePolicies=[{dealerId:'johanna',policy}];
+  project.dealerIdlePolicies=[{dealerId:'linnea',policy}];
   const captured=captureFrozenPresentation(input);
   assert.equal(captured.mediaPreconditions.length,5);
   const {service}=serviceFor(captured.presentation),frozen=await service.resolve(context),config=await service.configuration(context);
-  assert.deepEqual(config.idlePolicy,policy);assert.equal(config.inventory.families[0].dealerId,'johanna');
+  assert.deepEqual(config.idlePolicy,policy);assert.equal(config.inventory.families[0].dealerId,'linnea');
   assert.equal(config.inventory.videos.find(row=>row.id===uuid(11)).role,'variant');
   assert.match(config.inventory.videos.find(row=>row.id===uuid(11)).src,/registered-video/);
   assert.equal(JSON.stringify(config).includes('pathname'),false);
   assert.equal(frozen.inventory.families.length,0,'event selection keeps explicit own line bindings');
-  const event=await selectPresentation({project:frozen.project,dealerId:'johanna',eventId:'speak.goodluck',sourceEvent:{type:'speak',line:'goodluck'},mode:'off'},{videoRegistry:frozen.inventory});
+  const event=await selectPresentation({project:frozen.project,dealerId:'linnea',eventId:'speak.goodluck',sourceEvent:{type:'speak',line:'goodluck'},mode:'off'},{videoRegistry:frozen.inventory});
   assert.equal(event.videoGenerationId,uuid(2));
   let at=0;
-  const controller=createLiveIdleController({policy:config.idlePolicy,inventory:config.inventory,dealerId:'johanna',now:()=>at,initialScene:{active:true}});
+  const controller=createLiveIdleController({policy:config.idlePolicy,inventory:config.inventory,dealerId:'linnea',now:()=>at,initialScene:{active:true}});
   let clip=controller.snapshot().clip;assert.equal(clip.videoId,uuid(1));controller.presented(clip.playId);
   at=6000;clip=controller.completed(clip.playId).clip;assert.equal(clip.videoId,uuid(11));assert.equal(clip.reason,'scheduled');
   controller.started(clip.playId);at=7000;clip=controller.completed(clip.playId).clip;assert.equal(clip.videoId,uuid(1));
@@ -264,10 +264,10 @@ test('own saved idle schedule drives the shared controller through automatic and
 
 test('own idle policy never inherits Astrid, foreign media, missing durations or a changed baseline', () => {
   const input=fixture(),project=input.snapshot.projectDocument.value;
-  assert.equal(registeredIdlePolicy(project,'johanna'),null);
-  for(const durationMs of [undefined,0,Infinity,61000])assert.throws(()=>createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:uuid(1),durationMs}));
-  const policy=createRegisteredIdlePolicy({dealerId:'johanna',baselineVideoId:uuid(1),durationMs:10000});
-  project.dealerIdlePolicies=[{dealerId:'johanna',policy}];
+  assert.equal(registeredIdlePolicy(project,'linnea'),null);
+  for(const durationMs of [undefined,0,Infinity,61000])assert.throws(()=>createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:uuid(1),durationMs}));
+  const policy=createRegisteredIdlePolicy({dealerId:'linnea',baselineVideoId:uuid(1),durationMs:10000});
+  project.dealerIdlePolicies=[{dealerId:'linnea',policy}];
   const frozen=captureFrozenPresentation(input).presentation;
   policy.base[0].videoId=uuid(99);
   assert.doesNotThrow(()=>validateProject(project),'a draft baseline edit must not delete its saved schedule');
@@ -286,7 +286,7 @@ test('v3 frozen own media require a registered adapter and reject retired Amira'
 
   const before=structuredClone(f.saved), frozen=await f.service.resolve(context);
   assert.equal(frozen.record.id,uuid(1));
-  const result=await selectPresentation({project:frozen.project,dealerId:'johanna',eventId:'speak.goodluck',sourceEvent:{type:'speak',line:'goodluck'},mode:'off'},{videoRegistry:frozen.inventory});
+  const result=await selectPresentation({project:frozen.project,dealerId:'linnea',eventId:'speak.goodluck',sourceEvent:{type:'speak',line:'goodluck'},mode:'off'},{videoRegistry:frozen.inventory});
   assert.equal(result.videoGenerationId,uuid(2));
   const own=f.service.publicVideo(frozen,result.videoGenerationId);
   assert.equal((await f.service.response(new Request('https://game.invalid'+own.src))).status,200);

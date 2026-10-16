@@ -3,14 +3,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminData } from '../lib/studio-admin-data.mjs';
 // Explicit persisted test catalogue; production has no built-in dealer lanes.
-const SAVED_GAME_LANES=[{schemaVersion:1,id:'mobile-phone',label:'Saved Vera room',renderer:'portrait-video',dealer:'vera',mediaCollection:'vera-presentation'}];
+const SAVED_GAME_LANES=[{schemaVersion:1,id:'mobile-phone',label:'Saved Linnea room',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}];
 
 const scope = { environment: 'fixture', workspaceId: 'croupier' };
 const voiceIdentity = { audioSha256: 'a'.repeat(64), videoSha256: 'b'.repeat(64), previewSha256: 'c'.repeat(64),
   textSha256: 'd'.repeat(64), indexSha256: 'e'.repeat(64), audioDelayMs: 42 };
 function fixture(options = {}) {
   const state = { document: { revision: 'studio-original', value: { gameLane:'mobile-phone',gameLanes:structuredClone(SAVED_GAME_LANES),rooms: [{ id: 'one', state: 'preview' }], tiers: { classic: 'vera' }, tournaments: [] } }, writes: [], reads: [], rows: [] };
-  state.voices = { dealers: ['vera','astrid','amira','mei'].map(dealer => ({ dealer, name: dealer,
+  state.voices = { dealers: ['linnea','astrid','nora','elin'].map(dealer => ({ dealer, name: dealer,
     lines: [{ key: 'goodluck', text: 'Exact registered text', identity: structuredClone(voiceIdentity), reviewable: true }] })) };
   const db = { prepare(sql) {
     state.reads.push(sql);
@@ -21,7 +21,7 @@ function fixture(options = {}) {
     if (kind !== 'project') return structuredClone(state.document);
     state.projectReads = (state.projectReads ?? 0) + 1;
     if (state.projectReadError) throw Error('private database details');
-    return state.project === null ? null : {value:state.project??createSeedProject()};
+    return state.project === null ? null : {value:state.project??addDealer(addDealer(addDealer(createSeedProject(),'linnea','Linnea'),'nora','Nora'),'elin','Elin')};
   }, async saveDocument(kind, options) {
     state.writes.push({ kind, options });
     if (state.document.revision !== options.expectedRevision) throw Object.assign(Error('Conflict'), { statusCode: 409 });
@@ -181,7 +181,7 @@ test('players expose an exact boolean password capability without changing accou
 
 test('Nora catalogue registration requires her saved dealer identity and staff role',async()=>{
  const f=fixture(),body={definition:{...SAVED_GAME_LANES[0],id:'nora-room',label:'Nora',dealer:'nora',mediaCollection:'nora-presentation'},expectedRevision:'studio-original'};
- await assert.rejects(f.call('POST','game-lanes/create',body));assert.equal(f.state.writes.length,0);
+ f.state.project=createSeedProject();await assert.rejects(f.call('POST','game-lanes/create',body));assert.equal(f.state.writes.length,0);
  f.state.project=addDealer(createSeedProject(),'nora','Nora');
  await assert.rejects(f.data.handlers.get('POST /studio/api/admin/game-lanes/create')({...f.context(body),actor:{user:'viewer',role:'reader'}}),e=>e.statusCode===403);
  await f.call('POST','game-lanes/create',body);assert.equal(f.state.document.value.gameLanes.at(-1).dealer,'nora');
@@ -202,8 +202,8 @@ test('removing a game lane referenced by any existing room is rejected before wr
 
 
 test('config exposes only validated saved dealer IDs and labels after authorization without writing', async () => {
-  const f=fixture();f.state.project=addDealer(createSeedProject(),'johanna','Johanna');
-  f.state.project.dealers.find(row=>row.id==='johanna').privateNotes='private metadata';
+  const f=fixture();f.state.project=addDealer(createSeedProject(),'linnea','Linnea');
+  f.state.project.dealers.find(row=>row.id==='linnea').privateNotes='private metadata';
   const result=await f.call('GET','config');
   assert.deepEqual(result.savedDealers,f.state.project.dealers.map(({id,label})=>({id,label})));
   assert.doesNotMatch(JSON.stringify(result.savedDealers),/private metadata|privateNotes|lines|voice/);
@@ -228,7 +228,7 @@ test('missing, unreadable or invalid saved dealer registry is explicit null with
 });
 
 test('empty and custom saved registries require no built-in dealers or game lanes',async()=>{
-  for(const project of [createEmptyProject(),addDealer(createEmptyProject(),'johanna','Johanna')]){
+  for(const project of [createEmptyProject(),addDealer(createEmptyProject(),'linnea','Linnea')]){
     const f=fixture();f.state.project=project;
     delete f.state.document.value.gameLane;delete f.state.document.value.gameLanes;
     const result=await f.call('GET','config');

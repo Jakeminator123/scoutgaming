@@ -181,8 +181,8 @@ function makePresentation(layered=true) {
     const asset={schemaVersion:1,id,role,label,contentType,sha256:'a'.repeat(64),size:32,width:1920,height:1080};
     return {...asset,pathname:layerAssetPath(asset)};
   });
-  const lane={...defaultPresentationLane('astrid'),label:'Tilldelad presentation',dealers:['astrid','vera'],operatorAdjustable:['table','table.color','background','dealer','branding'],
-    layers:{table:{enabled:true,default:tableId,allowed:[tableId],colors:['#112233']},background:{enabled:true,mode:'video',default:backgroundId,allowed:[backgroundId]},dealer:{enabled:true,default:'astrid',allowed:['astrid','vera']}},
+  const lane={...defaultPresentationLane('astrid'),label:'Tilldelad presentation',dealers:['astrid','nora'],operatorAdjustable:['table','table.color','background','dealer','branding'],
+    layers:{table:{enabled:true,default:tableId,allowed:[tableId],colors:['#112233']},background:{enabled:true,mode:'video',default:backgroundId,allowed:[backgroundId]},dealer:{enabled:true,default:'astrid',allowed:['astrid','nora']}},
     ...(layered?{composition:defaultCompositionSettings()}: {})};
   return cloudPresentationFixture({lanes:[lane],assets}).presentation;
 }
@@ -195,7 +195,7 @@ test('canonical package rejects incompatible baked layer choices while retaining
   assert.deepEqual((await api.read({operatorId})).adjustable,['dealer','branding']);
   for(const branding of [{table:tableId},{background:backgroundId},{color:'#112233'}])await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding}),error=>error.statusCode===422);
   assert.equal(writes,0);
-  const saved=await api.write({operatorId,actor,expectedRevision:1,branding:{lane:'mobile-phone',dealer:'vera'}});
+  const saved=await api.write({operatorId,actor,expectedRevision:1,branding:{lane:'mobile-phone',dealer:'nora'}});
   assert.equal(saved.presentation.lanes[0].layers.dealer.default,'astrid');
   assert.equal(writes,1);
 });
@@ -204,7 +204,7 @@ test('canonical separate layers accept exact assigned assets and preserve games 
   let current={operatorId,revision:1,lanes:['mobile-phone'],games:['blackjack'],tables:['room-1'],branding:withPackagePresentation({},presentation)};
   const api=createPartnerBrandingApi({store:{getCurrentPackage:async()=>current,publishPackage:async input=>{current={...input,revision:current.revision+1};return current;}},readProject:async()=>assert.fail('no live catalogue fallback')});
   await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding:{background:'foreign-asset'}}),error=>error.statusCode===422);
-  const saved=await api.write({operatorId,actor,expectedRevision:1,branding:{lane:'mobile-phone',background:backgroundId,table:tableId,color:'#112233',dealer:'vera'}});
+  const saved=await api.write({operatorId,actor,expectedRevision:1,branding:{lane:'mobile-phone',background:backgroundId,table:tableId,color:'#112233',dealer:'nora'}});
   assert.equal(saved.packageRevision,2);
   assert.equal(saved.branding.table,tableId);
   assert.equal(saved.presentation.assets.find(asset=>asset.id===tableId).contentType,'image/png');
@@ -222,7 +222,7 @@ test('a package changed after the read is rejected by the atomic publisher',asyn
     assert.equal(input.expectedRevision,1);
     throw Object.assign(Error('changed while awaiting publication'),{statusCode:409});
   }},readProject:async()=>assert.fail('no live fallback')});
-  await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding:{dealer:'vera'}}),error=>error.statusCode===409);
+  await assert.rejects(api.write({operatorId,actor,expectedRevision:1,branding:{dealer:'nora'}}),error=>error.statusCode===409);
   assert.equal(attempts,1);
   assert.equal(current.revision,1);
 });

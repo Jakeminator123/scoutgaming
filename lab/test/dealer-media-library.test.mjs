@@ -116,8 +116,8 @@ test('AI speech references count as active usage; labels and trash bookkeeping d
 });
 
 
-test('former dealer names and new dealers share exact own idle-policy status without global defaults',()=>{
-  for(const dealerId of ['astrid','vera','mei','paow']){
+test('baseline and explicitly registered dealers share exact own idle-policy status without global defaults',()=>{
+  for(const dealerId of ['astrid','elin','saga','paow']){
     const draft=addDealer(createEmptyProject(),dealerId,dealerId),slot=dealerMediaSlots(draft,'idle')[0];
     const own={id:dealerId+'-idle',dealer:dealerId,available:true,eventId:slot.eventId,situation:''};
     draft.idlePolicy={base:[{videoId:own.id}],variants:[]};
@@ -137,7 +137,7 @@ test('library renders registered clips consistently without requesting local cli
   const file=new URL('../components/dealer-media-library.tsx',import.meta.url),require=createRequire(file),React=require('react');
   const {renderToStaticMarkup}=require('react-dom/server'),{transformSync}=require('next/dist/build/swc');
   const output=transformSync(readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
-  for(const dealerId of ['astrid','vera','mei','paow']){
+  for(const dealerId of ['astrid','elin','saga','paow']){
     const calls=[],effects=[],module={exports:{}};
     const fakeReact={...React,useState:initial=>[initial,()=>{}],useRef:initial=>({current:initial}),useEffect:run=>effects.push(run)};
     runInNewContext(output.code,{module,exports:module.exports,require:name=>{

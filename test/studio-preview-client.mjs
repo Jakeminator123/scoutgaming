@@ -8,9 +8,9 @@ import { dealerVersionPath } from '../web/public/dealer-version-switcher.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 const id='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-8222-222222222222', asset='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const context={sessionId:id,presentationLaneId:'evening',projectRevision:'revision:7',expiresAt:'2030-01-01T00:00:00.000Z'};
-const metadata=value=>({authenticated:true,guest:false,preview:true,studioPreview:value,externalServices:{ai:false,speech:false},dealerAvailability:[{id:'astrid',label:'Astrid',playable:true,reason:null},{id:'johanna',label:'Johanna',playable:false,reason:'studio_preview_idle_required'}]});
-const choices={dealers:['astrid','vera'],dealerDefault:'astrid',tableColors:[],tableDefault:null,background:{enabled:true,mode:'baked',allowed:[],default:null}};
-const registry=[{id:'astrid',label:'Astrid'},{id:'vera',label:'Vera'}];
+const metadata=value=>({authenticated:true,guest:false,preview:true,studioPreview:value,externalServices:{ai:false,speech:false},dealerAvailability:[{id:'astrid',label:'Astrid',playable:true,reason:null},{id:'linnea',label:'Linnea',playable:false,reason:'studio_preview_idle_required'}]});
+const choices={dealers:['astrid','elin'],dealerDefault:'astrid',tableColors:[],tableDefault:null,background:{enabled:true,mode:'baked',allowed:[],default:null}};
+const registry=[{id:'astrid',label:'Astrid'},{id:'elin',label:'Elin'}];
 const dataset={gameLocalDealer:'astrid',gameRegisteredDealers:JSON.stringify(registry),gameLane:'evening',gameDealer:'astrid',gamePresentation:'local',gameChoices:JSON.stringify(choices),studioPreview:JSON.stringify(context)};
 const composition={schemaVersion:1,dealer:{enabled:true,compatibility:'per-clip'},
  table:{enabled:true,default:asset,allowed:[asset]},background:{enabled:true,mode:'image',default:null,allowed:[]},
@@ -38,7 +38,7 @@ test('two preview clients and the ordinary game keep separate explicit transport
  await Promise.all([a.request('/api/table',{method:'POST',body}),b.request('/api/table',{method:'POST',body}),live.request('/api/table',{method:'POST',body})]);
  assert.deepEqual(calls.map(row=>row.path),['/api/studio-preview/'+id+'/table','/api/studio-preview/'+other+'/table','/api/table']);
  assert.ok(calls.every(row=>row.init.body===body));assert.equal(calls[0].init.credentials,'same-origin');assert.equal(calls[0].init.redirect,'error');assert.equal(calls[2].init.credentials,undefined);
- await a.request('/api/presentation/config?dealerId=johanna');assert.equal(calls.at(-1).path,'/api/studio-preview/'+id+'/presentation/config?dealerId=johanna');
+ await a.request('/api/presentation/config?dealerId=linnea');assert.equal(calls.at(-1).path,'/api/studio-preview/'+id+'/presentation/config?dealerId=linnea');
  const before=calls.length;
  for(const path of ['/api/deposit','/api/currency','/api/auth/logout','/api/bo/config','/api/chat/memory','/chat','//other.example/api/table','/api/table?operator=live'])
   await assert.rejects(a.request(path,{method:'POST'}));
@@ -60,24 +60,25 @@ test('expired, mismatched and revoked sessions fail closed without a live fallba
 });
 test('preview preference keys never read or overwrite ordinary or other preview choices',()=>{
  const map=new Map(),storage={getItem:key=>map.get(key),setItem:(key,value)=>map.set(key,value),removeItem:key=>map.delete(key)};
- writeChoices(storage,'example',{dealer:'vera'});
+ writeChoices(storage,'example',{dealer:'elin'});
  writeChoices(storage,undefined,{dealer:'astrid'},id);
- writeChoices(storage,undefined,{dealer:'amira'},other);
- assert.deepEqual(readChoices(storage,'example'),{dealer:'vera'});
+ writeChoices(storage,undefined,{dealer:'saga'},other);
+ assert.deepEqual(readChoices(storage,'example'),{dealer:'elin'});
  assert.deepEqual(readChoices(storage,undefined,id),{dealer:'astrid'});
- assert.deepEqual(readChoices(storage,undefined,other),{dealer:'amira'});
+ assert.deepEqual(readChoices(storage,undefined,other),{dealer:'saga'});
  writeChoices(storage,undefined,{},id);
  assert.equal(map.has(choicesStorageKey(undefined,id)),false);
- assert.deepEqual(readChoices(storage,'example'),{dealer:'vera'});assert.deepEqual(readChoices(storage,undefined,other),{dealer:'amira'});
+ assert.deepEqual(readChoices(storage,'example'),{dealer:'elin'});assert.deepEqual(readChoices(storage,undefined,other),{dealer:'saga'});
 });
 test('dealer switching retains preview session and rejects foreign context',t=>{
  const oldDocument=globalThis.document,oldLocation=globalThis.location;
  t.after(()=>{globalThis.document=oldDocument;globalThis.location=oldLocation;});
  globalThis.document={documentElement:{dataset}};
  globalThis.location={pathname:'/studio-preview/'+id,origin:'https://test.example'};
- assert.equal(dealerVersionPath('vera','original','?operator=live&table=foreign&lane=wrong'),'/studio-preview/'+id+'?dealer=vera');
- assert.throws(()=>dealerVersionPath('mei','original'));
- globalThis.location.pathname='/studio-preview/'+other;assert.throws(()=>dealerVersionPath('vera','original'));
+ assert.equal(dealerVersionPath('elin','original','?operator=live&table=foreign&lane=wrong'),'/studio-preview/'+id+'?dealer=elin');
+ assert.throws(()=>dealerVersionPath('nora','original')); // Active but absent from this preview registry.
+ assert.throws(()=>dealerVersionPath('mei','original')); // Retired dealers remain blocked.
+ globalThis.location.pathname='/studio-preview/'+other;assert.throws(()=>dealerVersionPath('elin','original'));
 });
 test('own dealer starts its exact preview idle and cannot select paid OpenClaw modes',async t=>{
  const oldDocument=globalThis.document;
@@ -86,17 +87,17 @@ test('own dealer starts its exact preview idle and cannot select paid OpenClaw m
  globalThis.document={hidden:false,createElement:tag=>{const result=node(tag);nodes.push(result);return result;},addEventListener(){},removeEventListener(){}};
  let presentation;
  t.after(()=>{presentation?.close();globalThis.document=oldDocument;});
- const video={id:asset,dealer:'johanna',fileName:'idle.webm',sha256:'a'.repeat(64),src:'/api/studio-preview/'+id+'/videos/'+asset};
- const config={defaultMode:'active',projectRevision:context.projectRevision,inventory:{videos:[video],families:[]},dealerIdle:{johanna:video}};
+ const video={id:asset,dealer:'linnea',fileName:'idle.webm',sha256:'a'.repeat(64),src:'/api/studio-preview/'+id+'/videos/'+asset};
+ const config={defaultMode:'active',projectRevision:context.projectRevision,inventory:{videos:[video],families:[]},dealerIdle:{linnea:video}};
  const calls=[],frames=[];
  const transport=createStudioPreviewClient({context,fetchImpl:async(path)=>{calls.push(path);return Response.json(config);}});
  const host=node('host');
- presentation=await createLocalPresentation({host,dealerId:'johanna',transport,version:()=>0,receipt(){},onIdle(){},onBusy(){},muted:()=>false,
+ presentation=await createLocalPresentation({host,dealerId:'linnea',transport,version:()=>0,receipt(){},onIdle(){},onBusy(){},muted:()=>false,
   player:{playLocalClip(media,options){frames.push(media);return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new DOMException('Stopped','AbortError')),{once:true}));}}});
 
  presentation.start();await new Promise(resolve=>setImmediate(resolve));
  assert.equal(frames.length,1);assert.equal(frames[0].media.src,video.src);
- assert.deepEqual(calls,['/api/studio-preview/'+id+'/presentation/config?dealerId=johanna','/api/studio-preview/'+id+'/presentation/config?dealerId=johanna']);
+ assert.deepEqual(calls,['/api/studio-preview/'+id+'/presentation/config?dealerId=linnea','/api/studio-preview/'+id+'/presentation/config?dealerId=linnea']);
  const select=nodes.find(row=>row.tag==='select');
  assert.equal(select.value,'off');assert.deepEqual(select.children.map(row=>row.value),['off','rules','random']);
  await presentation.observeChat('Never send to paid AI');assert.equal(calls.length,2);

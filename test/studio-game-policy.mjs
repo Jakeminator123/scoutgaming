@@ -1,7 +1,8 @@
+import { createLegacyProject } from '../lab/test/fixtures/legacy-project.mjs';
 import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createSeedProject } from '../lab/lib/studio-model.mjs';
+import { addDealer, createSeedProject, normalizeProject } from '../lab/lib/studio-model.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { StudioStorageError } from '../web/storage/studio-contract.mjs';
@@ -21,7 +22,7 @@ const administration = () => ({
 const rejected = (code, status = 503) => error => error instanceof StudioStorageError && error.code === code && error.statusCode === status;
 async function fixture({ dealerIdle = idle, fixtureScope = scope, indexed = false } = {}) {
   const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope: fixtureScope });
-  await repository.initializeDocument('project', { value: createSeedProject(), revision: 'project-original', actor: 'import' });
+  await repository.initializeDocument('project', { value: normalizeProject(createLegacyProject()), revision: 'project-original', actor: 'import' });
   const admin = administration();
   if (indexed) Object.assign(admin,{gameLane:'fixture-indexed',gameLanes:[{schemaVersion:1,id:'fixture-indexed',label:'Fixture',renderer:'indexed-video',dealer:'vera',mediaCollection:'legacy-dealers'}]});
   await repository.initializeDocument('administration', { value: admin, revision: 'admin-original', actor: 'import' });
@@ -43,7 +44,7 @@ test('saved lane is shared across policy instances with CAS and preserves every 
 });
 
 test('operator rooms save and launch without legacy administration or invented defaults', async () => {
-  const roomFixture = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'johanna' });
+  const roomFixture = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'linnea' });
   const pool = createStudioMemoryPool(), repository = createStudioRepository({ pool, scope });
   await repository.initializeDocument('project', { value: roomFixture.project, revision: 'modern-project', actor: 'import' });
   await repository.initializeDocument('administration', { value: roomFixture.administration, revision: 'modern-admin', actor: 'import' });
@@ -63,7 +64,7 @@ test('operator rooms save and launch without legacy administration or invented d
   const entry = await select(roomFixture.query);
   assert.equal(entry.status, 200);
   assert.equal(entry.selection.roomId, roomFixture.room.id);
-  assert.equal(entry.selection.dealer, 'johanna');
+  assert.equal(entry.selection.dealer, 'linnea');
   assert.equal(entry.selection.packageRevision, roomFixture.pack.revision);
   const history = await repository.listDocumentHistory('administration');
   assert.equal(history.length, 1);
@@ -187,12 +188,13 @@ test('simultaneous Studio saves preserve CAS, exactly one history row and no dou
 });
 
 test('tier assignments require the exact registered dealer idle and do not accept neighbouring keys or approximate duration', async () => {
-  for (const record of [null, true, { ...idle('vera'), dealerId: 'amira' }, { ...idle('vera'), mediaId:'not-media',durationMs:3000 },
-    { ...idle('vera'), sha256:'invalid' }, { ...idle('vera'), available: false }]) assert.equal(exactRegisteredDealerIdle(record, 'vera'), false);
-  assert.equal(exactRegisteredDealerIdle(idle('vera'), 'vera'), true);
+  for (const record of [null, true, { ...idle('astrid'), dealerId: 'amira' }, { ...idle('astrid'), mediaId:'not-media',durationMs:3000 },
+    { ...idle('astrid'), sha256:'invalid' }, { ...idle('astrid'), available: false }]) assert.equal(exactRegisteredDealerIdle(record, 'astrid'), false);
+  assert.equal(exactRegisteredDealerIdle(idle('astrid'), 'astrid'), true);
   const { repository, pool } = await fixture({indexed:true});
-  const policy = createStudioGamePolicy({ repository, scope, dealerIdle: dealerId => dealerId === 'mei' ? null : idle(dealerId) });
-  assert.equal(await policy.canAssignDealer('mei'), false); assert.equal(await policy.canAssignDealer('vera'), true); assert.equal(await policy.canAssignDealer('__proto__'), false);
+  const policy = createStudioGamePolicy({ repository, scope, dealerIdle: idle });
+  const unavailable = createStudioGamePolicy({ repository, scope, dealerIdle: () => null });
+  assert.equal(await unavailable.canAssignDealer('astrid'), false); assert.equal(await policy.canAssignDealer('mei'), false); assert.equal(await policy.canAssignDealer('astrid'), true); assert.equal(await policy.canAssignDealer('vera'), false); assert.equal(await policy.canAssignDealer('__proto__'), false);
   assert.equal(await policy.canAssignDealer('amira'),false);
   assert.equal(await policy.canAssignDealer('unregistered'),false);
   assert.equal(pool.snapshot().history.length, 0); assert.equal((await policy.readSaved()).administration.tiers.vip, 'amira');
@@ -227,7 +229,7 @@ test('persisted missing domains and SQL/schema/media failures produce fixed erro
   await assert.rejects(policy.readSaved(), error => rejected('studio_storage_unavailable')(error) && !error.message.includes('secret'));
   const broken = await fixture({ dealerIdle: () => { throw new Error('provider URL secret'); } });
   await broken.policy.readSaved();
-  await assert.rejects(broken.policy.canAssignDealer('vera'),rejected('studio_game_media_unavailable'));
+  await assert.rejects(broken.policy.canAssignDealer('astrid'),rejected('studio_game_media_unavailable'));
 });
 
 test('read-only project adapter forbids unauthenticated writes and snapshots the actor and draft before awaiting', async () => {
@@ -253,12 +255,12 @@ test('saved projection revisions are scoped even if document contents and source
 test('generic portrait syntax cannot authorize a dealer absent from the saved Studio registry',async()=>{
   for(const registered of [true,false]){
     const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
-    const project=registered?addDealer(createSeedProject(),'johanna','Johanna'):createSeedProject();
+    const project=registered?addDealer(createSeedProject(),'linnea','Linnea'):createSeedProject();
     await repository.initializeDocument('project',{value:project,revision:'project-original',actor:'import'});
-    const admin={...administration(),gameLane:'portrait-johanna',gameLanes:[{schemaVersion:1,id:'portrait-johanna',label:'Johanna',renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}]};
+    const admin={...administration(),gameLane:'portrait-linnea',gameLanes:[{schemaVersion:1,id:'portrait-linnea',label:'Linnea',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}]};
     await repository.initializeDocument('administration',{value:admin,revision:'admin-original',actor:'import'});
     const policy=createStudioGamePolicy({repository,scope,dealerIdle:idle});
-    if(registered){const saved=await policy.readGameConfiguration();assert.equal(saved.gameLanes[0].dealer,'johanna');}
+    if(registered){const saved=await policy.readGameConfiguration();assert.equal(saved.gameLanes[0].dealer,'linnea');}
     else await assert.rejects(policy.readGameConfiguration(),rejected('studio_corrupt_game_policy'));
   }
 });
@@ -268,7 +270,7 @@ test('generic portrait syntax cannot authorize a dealer absent from the saved St
   const connection = fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require', 'croupier_game');
   const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection};
   const storage={pool:{},db:{assertInstalled:async()=>{}}};
-  for(const versions of [['001','002','003','004','005','006','007','008'],['001','002','003','004','005','006','007','008','011','012']]){
+  for(const versions of [['001','002','003','004','005','006','007','008'],['001','002','003','004','005','006','007','008','011','013']]){
     await assert.rejects(createRenderStudioPolicy({storage,env,schemaCheck:async()=>({toApply:[],applied:versions.map(version=>({version}))})}),error=>error.message==='studio_game_schema_unavailable');
   }
 });

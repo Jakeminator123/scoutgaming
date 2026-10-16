@@ -259,7 +259,7 @@ test('cloud connection refuses non-HTTPS origins and preserves an existing unbou
 
 
 test('room observation forwards the exact operator/table and leaves dealer selection to the server when absent', async () => {
-  for (const dealerId of ['vera', undefined]) {
+  for (const dealerId of ['elin', undefined]) {
     const ui = setup({ cloud: true, configured: false, origin: 'https://qa.example.test' });
     ui.update({ dealerId, operatorSlug: 'operator-one', tableId: 'room-1' });
     await tick(); ui.flush(); ui.button('Anslut & följ spelet').onClick(); await tick(); ui.flush();
@@ -333,7 +333,7 @@ test('direct game link carries the explicitly selected dealer and room without a
 });
 
 test('opening an observation never infers its presentation mode from the dealer name',async()=>{
- for(const dealerId of ['astrid','johanna']){
+ for(const dealerId of ['astrid','linnea']){
   const ui=setup({cloud:true,configured:false,origin:'https://qa.example.test'});ui.update({dealerId});
   await tick();ui.flush();ui.button('Anslut & följ spelet').onClick();await tick();ui.flush();
   const entry=ui.activity.find(row=>row.title==='Spelflik och studiokoppling öppnas');

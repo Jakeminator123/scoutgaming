@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -7,7 +8,7 @@ const documentationFiles = new Set([
   'README.md', 'AGENTS.md', 'CLAUDE.md',
   'lab/README.md', 'lab/docs/README.md',
   // Folder guides describe source ownership; runtime prompts, package metadata
-  // and arbitrary Markdown outside docs/ still require the full regression.
+  // and arbitrary Markdown outside docs/ are not documentation-only changes.
   'apps/croupier-frontend/README.md',
   'packages/presentation/README.md', 'packages/design-preview/README.md',
   'packages/presentation/docs/INTEGRATION.md',
@@ -59,13 +60,13 @@ export function readStagedChanges(root, { env = isolatedGitEnvironment() } = {})
 }
 
 export function verificationMode(changes, { forceFull = false, env = process.env } = {}) {
-  if (forceFull || env.CI || env.GITHUB_ACTIONS || changes.length === 0) return 'full';
+  if (forceFull || env.CI || env.GITHUB_ACTIONS) return 'full';
   return changes.every(change =>
     /^[AMD]$/.test(change.status) &&
     !change.path.split('/').some(part => part === '.' || part === '..') &&
     !change.path.includes('\\') &&
     (documentationFiles.has(change.path) || /^docs\/.+\.md$/.test(change.path))
-  ) ? 'documentation' : 'full';
+  ) ? 'documentation' : 'focused';
 }
 
 export function parseArgs(args) {
@@ -75,19 +76,58 @@ export function parseArgs(args) {
   return { forceFull: args.includes('--full'), planOnly: args.includes('--plan') };
 }
 
-export function checkPlan(mode) {
+export function focusedTests(changes, root = repositoryRoot) {
+  const selected = new Set();
+  const add = path => { if (existsSync(resolve(root, path))) selected.add(path); };
+  for (const { path } of changes) {
+    // Only repository-relative paths, never options or traversal from a diff.
+    if (path.startsWith('-') || path.startsWith('/') || path.includes('\\') || path.split('/').some(part => ['', '.', '..'].includes(part))) {
+      throw Error('Invalid changed path');
+    }
+    if (/(?:\.test\.[cm]?js$|^(?:test|apps\/[^/]+\/test)\/[^/]+\.mjs$)/.test(path)) add(path);
+    const stem = basename(path).replace(/\.[^.]+$/, '');
+    const directory = dirname(path).replaceAll('\\', '/');
+    for (const candidate of [
+      `${directory}/${stem}.test.mjs`, `${directory}/${stem}.test.js`,
+      `${directory}/test/${stem}.test.mjs`, `${directory}/test/${stem}.mjs`,
+      `test/${stem}.mjs`,
+      ...(path.startsWith('lab/') ? [`lab/test/${stem}.test.mjs`] : []),
+      ...(path.startsWith('apps/') ? [`${path.split('/').slice(0, 2).join('/')}/test/${stem}.mjs`] : []),
+    ]) add(candidate);
+    if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|check-push-target|push-github-work)\.mjs$)/.test(path)) {
+      for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
+    }
+  }
+  return [...selected].sort();
+}
+
+export function checkPlan(mode, { changes = [], root = repositoryRoot } = {}) {
   if (mode === 'full') return [['sh', '.githooks/pre-commit-full']];
-  if (mode !== 'documentation') throw Error('Unknown verification mode');
-  return [
-    [process.execPath, 'tools/check-environment-variables.mjs'],
-    [process.execPath, '--test', 'test/check-environment-variables.mjs', 'test/github-workflow.mjs', 'test/precommit-checks.mjs', 'test/inbox.mjs'],
-    ['git', 'diff', '--cached', '--check'],
-  ];
+  if (!['documentation', 'focused'].includes(mode)) throw Error('Unknown verification mode');
+  const tests = focusedTests(changes, root);
+  const commands = [['git', 'diff', '--cached', '--check']];
+  for (const { status, path } of changes) {
+    if (status === 'D' || !existsSync(resolve(root, path))) continue;
+    if (/\.[cm]?js$/.test(path)) commands.push([process.execPath, '--check', path]);
+    if (/\.json$/.test(path)) commands.push([process.execPath, '-e',
+      "JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8'))", path]);
+  }
+  if (changes.some(({path}) => /^(?:docs\/environment-variables\.json|tools\/check-environment-variables\.mjs)$/.test(path))) {
+    commands.push([process.execPath, 'tools/check-environment-variables.mjs']);
+  }
+  if (changes.some(({path}) => /^apps\/croupier-frontend\/.+\.[cm]?[jt]sx?$/.test(path))) {
+    commands.push([process.execPath, 'apps/croupier-frontend/node_modules/typescript/bin/tsc',
+      '--project', 'apps/croupier-frontend/tsconfig.json', '--noEmit', '--incremental', 'false']);
+  }
+  if (tests.length) commands.push([process.execPath, '--test', '--test-concurrency=4', ...tests]);
+  return commands;
 }
 
 export function runChecks(commands, { cwd = repositoryRoot, run = spawnSync } = {}) {
   for (const [command, ...args] of commands) {
-    const result = run(command, args, { cwd, stdio: 'inherit', env: isolatedGitEnvironment() });
+    const env = isolatedGitEnvironment();
+    if (command === 'git' && args.includes('--cached') && process.env.GIT_INDEX_FILE) env.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
+    const result = run(command, args, { cwd, stdio: 'inherit', env });
     if (result.error) {
       console.error('Verification could not start: ' + result.error.message);
       return 1;
@@ -106,15 +146,16 @@ export function main(args = process.argv.slice(2)) {
   // The invoking Git commit can own a temporary index (for example --only).
   // Keep that exact index only for this hook's own inspection, never its checks.
   if (process.env.GIT_INDEX_FILE) indexEnv.GIT_INDEX_FILE = process.env.GIT_INDEX_FILE;
-  const mode = verificationMode(readStagedChanges(repositoryRoot, { env: indexEnv }), { forceFull });
-  const commands = checkPlan(mode);
+  const changes = readStagedChanges(repositoryRoot, { env: indexEnv });
+  const mode = verificationMode(changes, { forceFull });
+  const commands = checkPlan(mode, { changes });
   if (planOnly) {
     console.log(JSON.stringify({ mode, commands }));
     return 0;
   }
-  console.log(mode === 'documentation'
-    ? 'Documentation-only commit: environment, delivery-policy and hook checks.'
-    : 'Full regression: code/configuration/media, empty index, CI or --full.');
+  console.log(mode === 'full'
+    ? 'Full regression: CI or explicit --full.'
+    : `Local ${mode} checks: changed files and available related tests. Full regression runs in CI; use --full locally when needed.`);
   return runChecks(commands);
 }
 

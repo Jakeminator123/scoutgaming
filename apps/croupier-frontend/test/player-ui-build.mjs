@@ -12,7 +12,7 @@ function legacyPlayerEntryDestination(source, canonical = false) {
   const playerEntry = {}, nodes = new Map(), dialog = { setAttribute() {}, querySelector: key => { if (key === '#auth-player-login') return playerEntry; if (!nodes.has(key)) nodes.set(key, {}); return nodes.get(key); } };
   const document = { documentElement: { dataset: canonical ? { gamePath: '/blackjack' } : {} }, body: { appendChild() {} }, createElement: () => dialog };
   const runnable = source.replace(/^import .*;\r?$/gm, '').replace('export function requestLogin', 'function requestLogin');
-  return runInNewContext(runnable + '\nplayerEntry.href;', { document, URL, canonicalGameDestination, location: { href: 'https://preview.example/game?dealer=mei&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid' } });
+  return runInNewContext(runnable + '\nplayerEntry.href;', { document, URL, canonicalGameDestination, location: { href: 'https://preview.example/game?dealer=nora&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid' } });
 }
 
 const origin = 'https://game.example.test';
@@ -83,7 +83,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
     assert.doesNotMatch(modal, /\/api\/auth\/player\/(?:login|register)/);
     assert.match(modal, /const playerLoginPath = '\/frontend-preview\/blackjack\/'/);
     assert.equal(legacyPlayerEntryDestination(modal), '/frontend-preview/blackjack/');
-    assert.equal(legacyPlayerEntryDestination(modal, true), '/player-login?dealer=mei');
+    assert.equal(legacyPlayerEntryDestination(modal, true), '/player-login?dealer=nora');
     assert.equal(modal, (await readFile(new URL('../../../web/public/auth-modal.mjs', import.meta.url), 'utf8')).replace("const playerLoginPath = '/blackjack';", "const playerLoginPath = '/frontend-preview/blackjack/';"));
     assert.doesNotMatch(login, /const destination = '\/\?dealer=/);
     assert.equal(await readFile(join(directory, 'frontend-preview/blackjack/index.html'), 'utf8'),

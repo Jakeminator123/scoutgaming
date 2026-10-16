@@ -90,6 +90,10 @@ export function createStudioMediaDeletion({repository,mutationTransaction,env=pr
   const administration=await repository.readDocument('administration');if(!administration)fail('studio_document_missing',503);
   const hasDealer=value=>value===body.dealerId||value&&typeof value==='object'&&Object.values(value).some(hasDealer);
   if(hasDealer(administration.value))return result(denied('studio_dealer_in_use'));
+  // Another archived composition can still require this dealer. Validate the
+  // exact final project with lifecycle semantics before committing any pending marker.
+  try{validateDocumentValue('project',{...saved.value,dealerTrash:saved.value.dealerTrash.filter(row=>row.dealer.id!==body.dealerId)},saved.revision,{allowLegacyRead:true});}
+  catch(error){if(error?.code!=='studio_invalid_document')throw error;return result(denied('studio_dealer_in_use'));}
   try{assertLifecyclePackages(await repository.listLifecyclePackages(),{dealerId:body.dealerId});}catch(error){if(error.code==='studio_dealer_published')return result(denied(error.code));throw error;}
   for(const row of rows){
     if(row.retainedBank)return result(denied('studio_retained_media_immutable'));

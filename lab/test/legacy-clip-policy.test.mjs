@@ -9,7 +9,7 @@ import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { loadLegacyClipInventory, legacyClipControls } from '../lib/legacy-clip-inventory.mjs';
 import { createRuntimeMetadataReader } from '../../tools/runtime-media-catalog.mjs';
-import { resolveLegacyClipPolicy, upsertLegacyClipBinding } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
+import { resolveLegacyClipPolicy, upsertLegacyClipBinding, validateLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { assertLocalRequest } from '../lib/http-guard.mjs';
 
@@ -38,37 +38,37 @@ test('old BO choices stay stored but are not offered by current clip controls', 
   const before = await readFile(join(options.dataDirectory, 'bo.json'), 'utf8');
   const project = createSeedProject(), controls = await legacyClipControls(project, options);
   assert.equal(controls.runtime.source, 'lab/project.json');
-  assert.deepEqual(controls.runtime.dealers.vera.engine, {}, 'BO selection is never a fallback');
+  assert.deepEqual(controls.runtime.dealers.astrid.engine, {}, 'BO selection is never a fallback');
   assert.equal(Object.hasOwn(controls, 'legacy'), false);
   assert.equal(Object.hasOwn(controls, 'routes'), false);
   assert.equal(controls.clips.find(row => row.id === 'direction-with-no-box').exactParts.length, 0);
   assert.equal(await readFile(join(options.dataDirectory, 'bo.json'), 'utf8'), before);
-  project.legacyClipPolicy = upsertLegacyClipBinding(project.legacyClipPolicy, { dealerId: 'vera', part: 'idle', clipId: 'vera:idle-2/idle/idle' });
+  project.legacyClipPolicy = upsertLegacyClipBinding(project.legacyClipPolicy, { dealerId: 'astrid', part: 'idle', clipId: 'astrid:idle-2/idle/idle' });
   const resolved = resolveLegacyClipPolicy(project, controls);
-  assert.equal(resolved.dealers.vera.engine.idle, 'idle-2/idle/idle');
-  assert.deepEqual(resolved.dealers.mei.engine, {});
+  assert.equal(resolved.dealers.astrid.engine.idle, 'idle-2/idle/idle');
+  assert.equal(resolved.dealers.mei, undefined);
   assert.equal(await readFile(join(options.dataDirectory, 'bo.json'), 'utf8'), before);
 });
 
-test('remaining legacy dealers have exact Lab bindings; missing files, different parts and speech substitutions fail closed', async t => {
+test('Astrid retains exact legacy bindings; missing files, different parts and speech substitutions fail closed', async t => {
   const inventory = await loadLegacyClipInventory(await fixture(t));
   const project = createSeedProject();
-  for (const dealerId of ['vera', 'astrid', 'mei']) {
+  for (const dealerId of ['astrid']) {
     project.legacyClipPolicy = upsertLegacyClipBinding(project.legacyClipPolicy, { dealerId, part: 'idle', clipId: `${dealerId}:idle-2/idle/idle` });
   }
   validateProject(project);
   const active = resolveLegacyClipPolicy(project, inventory);
   assert.equal(active.conflicts.length, 0);
-  for (const dealerId of ['vera', 'astrid', 'mei']) assert.equal(active.dealers[dealerId].engine.idle, 'idle-2/idle/idle');
-  for (const clipId of ['mei:idle-1/idle/idle', 'vera:idle-1/idle/idle-base3', 'vera:idle-1/speak/win', 'vera:idle-1/actions/action-deal-watch']) {
-    const invalid = { ...project, legacyClipPolicy: [{ dealerId: 'vera', part: 'deal', clipId }] };
+  assert.equal(active.dealers.astrid.engine.idle, 'idle-2/idle/idle');
+  for (const clipId of ['mei:idle-1/idle/idle', 'astrid:idle-1/idle/idle-base3', 'astrid:idle-1/speak/win', 'astrid:idle-1/actions/action-deal-watch']) {
+    const invalid = { ...project, legacyClipPolicy: [{ dealerId: 'astrid', part: 'deal', clipId }] };
     assert.equal(resolveLegacyClipPolicy(invalid, inventory).conflicts.length, 1);
-    assert.deepEqual(resolveLegacyClipPolicy(invalid, inventory).dealers.vera.engine, {});
+    assert.deepEqual(resolveLegacyClipPolicy(invalid, inventory).dealers.astrid.engine, {});
   }
-  assert.throws(() => validateProject({ ...project, legacyClipPolicy: [{ dealerId: 'vera', part: 'speak.lose', clipId: 'vera:idle-1/speak/win' }] }), /klippkoppling/);
+  assert.throws(() => validateProject({ ...project, legacyClipPolicy: [{ dealerId: 'astrid', part: 'speak.lose', clipId: 'astrid:idle-1/speak/win' }] }), /klippkoppling/);
   assert.throws(() => validateProject({ ...project, legacyClipPolicy: [project.legacyClipPolicy[0], project.legacyClipPolicy[0]] }), /klippkoppling/);
-  const speech = inventory.clips.find(row => row.id === 'vera:idle-1/speak/win');
-  assert.equal(speech.lineId, 'win'); assert.equal(speech.text, 'Exact vera win'); assert.deepEqual(speech.exactParts, []);
+  const speech = inventory.clips.find(row => row.id === 'astrid:idle-1/speak/win');
+  assert.equal(speech.lineId, 'win'); assert.equal(speech.text, 'Exact astrid win'); assert.deepEqual(speech.exactParts, []);
 });
 
 test('native inventory fails on a missing runtime catalog but accepts the retired indexed registers', async t => {
@@ -88,13 +88,13 @@ test('native inventory fails on a missing runtime catalog but accepts the retire
 
 test('review rejection blocks explicit Lab import/binding without changing project or recorded media', async t => {
   const options = await fixture(t);
-  await options.write('players/bo.json', { neverAgain: { 'vera:idle-2/idle/idle': { reason: 'review failed' } } });
+  await options.write('players/bo.json', { neverAgain: { 'astrid:idle-2/idle/idle': { reason: 'review failed' } } });
   const project = createSeedProject();
-  project.legacyClipPolicy = [{ dealerId: 'vera', part: 'idle', clipId: 'vera:idle-2/idle/idle' }];
+  project.legacyClipPolicy = [{ dealerId: 'astrid', part: 'idle', clipId: 'astrid:idle-2/idle/idle' }];
   const before = structuredClone(project), controls = await legacyClipControls(project, options);
   assert.equal(controls.clips.find(row => row.id === project.legacyClipPolicy[0].clipId).reviewStatus, 'Never again');
   assert.equal(controls.runtime.conflicts.length, 1);
-  assert.deepEqual(controls.runtime.dealers.vera.engine, {});
+  assert.deepEqual(controls.runtime.dealers.astrid.engine, {});
   assert.deepEqual(project, before);
 });
 
@@ -126,10 +126,22 @@ test('clip editor endpoint uses the existing Lab origin and admin gateway bounda
   assert.throws(() => assertLocalRequest(new Request('https://untrusted.example/api/clip-controls')), /lokalt/);
 });
 
-test('shared inventory never reads or offers retired Amira registers',async t=>{
+test('shared inventory never reads or offers retired dealer registers',async t=>{
  const {repository}=await fixture(t),read=[];
  const inventory=await loadLegacyClipInventory({repository,administration:{legacyClipReview:{sourceSha256:'a'.repeat(64),neverAgain:{}}},mediaAvailable:async()=>true,readMetadata:async path=>{
- read.push(path);if(path.includes('amira'))throw Error('Retired Amira source must not be read');
+ read.push(path);if(/(?:^|[\\/])(?:dealer[\\/]|(?:vera|mei|amira|johanna)(?:[\\/]|$))/.test(path))throw Error('Retired dealer source must not be read');
  return path.endsWith('speak.json')?{lines:{greeting:{text:'Astrid exact speech',media:{src:'astrid.mp4'},audio:'astrid.mp3'}}}:null;
  }});assert.ok(read.some(path=>path.includes('astrid')));assert.deepEqual(inventory.clips.map(row=>row.dealerId),['astrid']);
+});
+
+test('retired legacy bindings remain readable history but cannot resolve or be newly assigned', () => {
+  for (const dealerId of ['vera', 'mei', 'amira']) {
+    const binding = { dealerId, part: 'idle', clipId: `${dealerId}:idle-1/idle/idle` };
+    assert.deepEqual(validateLegacyClipPolicy([binding]), [binding]);
+    const resolved = resolveLegacyClipPolicy({ legacyClipPolicy: [binding] }, { clips: [{ id: binding.clipId, dealerId, available: true, exactParts: ['idle'], kind: 'engine', engineKey: 'idle-1/idle/idle' }] });
+    assert.equal(resolved.dealers[dealerId], undefined);
+    assert.equal(resolved.conflicts[0].reason, 'avvecklad_dealer');
+    assert.throws(() => upsertLegacyClipBinding([], binding), /avvecklad/);
+    assert.deepEqual(upsertLegacyClipBinding([binding], { ...binding, clipId: null }), []);
+  }
 });

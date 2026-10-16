@@ -5,6 +5,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath,pathToFileURL } from 'node:url';
 import { clipMapping } from '../web/clip-mapping.mjs';
+import { buildAssetsManifest } from '../web/partner-presentation.mjs';
 
 const root = fileURLToPath(mediaUrl('../web/public/', import.meta.url));
 const read = file => JSON.parse(readFileSync(mediaUrl(`../web/public/${file}`, import.meta.url)));
@@ -14,7 +15,10 @@ test('mapping preserves original and V2 speech as distinct exact media sets', ()
   assert.equal(mapping.version, 2);
   assert.equal(mapping.actualPlayback, false);
   assert.equal(mapping.revision, 'test');
-  assert.equal(mapping.dealers.amira, undefined, 'retired material must not synthesize a dealer');
+  for (const dealer of ['vera', 'mei', 'amira', 'johanna']) {
+    assert.equal(mapping.dealers[dealer], undefined, 'retired material must not synthesize a dealer');
+    assert.throws(() => buildAssetsManifest(root, dealer), /unknown dealer/);
+  }
   for (const dealer of ['astrid']) {
     const manifest = read(`review/${dealer}-green-speak/speak.json`);
     const rows = mapping.dealers[dealer].greenSpeech;

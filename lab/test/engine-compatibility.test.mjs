@@ -2,13 +2,18 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { presentationEvents } from '../../web/partner-presentation.mjs';
 import { prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
-import { createSeedProject, buildRuntimeCatalog, validateProject, DEALER_IDS } from '../lib/studio-model.mjs';
+import { normalizeProject, buildRuntimeCatalog, validateProject, DEALER_IDS } from '../lib/studio-model.mjs';
+import { createLegacyProject } from './fixtures/legacy-project.mjs';
+import { retireDemoExamples } from '../lib/retire-demo-examples.mjs';
+
+// Explicit historical document: current seeds intentionally register only active dealers.
+const historicalProject = () => normalizeProject(retireDemoExamples(createLegacyProject()));
 
 // Exercise the real presentation producer against synthetic PUBLIC views.
 // No RNG, player database, model, network, media bytes or saved project is used.
 const card = (r, s, shoeDraw) => ({ r, s, shoeDraw });
 const clone = value => structuredClone(value);
-const catalogs = DEALER_IDS.map(id => buildRuntimeCatalog(createSeedProject(), id));
+const catalogs = DEALER_IDS.map(id => buildRuntimeCatalog(historicalProject(), id));
 
 function opening() {
   return { round: {
@@ -164,7 +169,7 @@ test('illustration binding cannot reverse a deal direction or replace a reveal',
     ['deal.dealer', 'deal.player.centre.standard'],
     ['reveal.dealer', 'idle.ready.standard']
   ]) {
-    const project = createSeedProject();
+    const project = historicalProject();
     const line = project.lines.find(item => item.dealerId === 'astrid' && item.eventId === eventId);
     line.variants.find(item => item.id === line.baselineVariantId).assetId = wrongAssetId;
     assert.throws(() => validateProject(project), /delningsriktning|kortvändning/);

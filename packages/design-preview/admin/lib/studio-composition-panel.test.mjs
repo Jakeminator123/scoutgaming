@@ -16,7 +16,7 @@ function panelHarness(){
   const slots=[],module={exports:{}};let cursor=0;
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],next=>slots[index]=typeof next==='function'?next(slots[index]):next];},useRef(initial){const index=cursor++;return slots[index]??={current:initial};}};
   const LayerAssetSelect=()=>null;
-  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','BackgroundPlaybackEditor','BlackjackTableGeometryEditor'].map(key=>[key,()=>null]));
+  const components=Object.fromEntries(['LayerLibrary','LayerAssetManager','CompositionPreview','CompositionZoomControls','BackgroundPlaybackEditor','BlackjackTableGeometryEditor'].map(key=>[key,()=>null]));
   runInNewContext(output.code,{module,exports:module.exports,structuredClone,require:name=>{
     if(name==='react')return hooks;
     if(name.includes('studio-model.mjs'))return {validateProject};
@@ -119,4 +119,21 @@ test('Admin table profile edits only the selected table and format behind templa
   assert.equal(h.edits.at(-1).lanes[0].composition.mobile.table.width,1.65);
   assert.deepEqual(h.edits.at(-1).lanes[0].composition.desktop,beforeDesktop);
   h.props.room.game='roulette';assert.equal(nodes(h.render(),node=>node.type===h.BlackjackTableGeometryEditor).length,0);
+});
+
+
+test('roulette uses the player desktop format and zoom requires explicit shared-template editing',()=>{
+  const h=panelHarness();h.props.room.game='roulette';const original=structuredClone(h.props.project);
+  let tree=h.render();let zoom=nodes(tree,node=>node.type===h.CompositionZoomControls)[0];
+  assert.equal(zoom.props.disabled,true);
+  assert.equal(nodes(tree,node=>node.type===h.CompositionPreview)[0].props.layout,'desktop');
+  assert.equal(nodes(tree,node=>node.props?.role==='tab'&&text(node)==='Mobil').length,0);
+  nodes(tree,node=>node.type==='button'&&text(node)==='Redigera gemensam mall')[0].props.onClick();
+  tree=h.render();zoom=nodes(tree,node=>node.type===h.CompositionZoomControls)[0];assert.equal(zoom.props.disabled,false);
+  const next=settings.defaultCompositionSettings();next.desktop.dealer.scale=1.1;
+  zoom.props.onChange(next);
+  assert.equal(h.props.project.lanes[0].composition.desktop.dealer.scale,1.1);
+  assert.deepEqual(h.props.project.layerAssets,original.layerAssets);
+  assert.equal(h.edits.length,1);assert.equal(h.props.room.id,'room-a');
+  h.props.blocked=true;tree=h.render();assert.equal(nodes(tree,node=>node.type===h.CompositionZoomControls)[0].props.disabled,true);
 });

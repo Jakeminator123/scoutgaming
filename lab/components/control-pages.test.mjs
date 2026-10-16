@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject , addDealer} from '../lib/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
@@ -51,7 +51,7 @@ function renderPage(file, override = {}) {
 
 test('dealer and event query helpers ignore unknown values and keep only allowlisted tabs', () => {
   const { studioHref, resolveStudioDealerId, resolveStudioEventId, selectionHref } = loadTs(new URL('../components/studio-types.ts', import.meta.url));
-  assert.equal(resolveStudioDealerId(project, 'vera'), 'vera');
+  assert.equal(resolveStudioDealerId(project, 'elin'), 'elin');
   assert.equal(resolveStudioDealerId(project, 'nope'), '');
   assert.equal(resolveStudioDealerId(project), '');
   assert.equal(resolveStudioEventId(project, 'idle.ready'), 'idle.ready');
@@ -59,12 +59,12 @@ test('dealer and event query helpers ignore unknown values and keep only allowli
   assert.equal(studioHref('/control/events', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'triggers' }), '/control/events?dealer=astrid&event=idle.ready&tab=triggers');
   assert.equal(studioHref('/control/openclaw', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'chat' }), '/control/openclaw?dealer=astrid&event=idle.ready&tab=chat');
   assert.equal(studioHref('/control/tree', { dealerId: 'astrid', eventId: 'idle.ready', tab: 'nope' }), '/control/tree?dealer=astrid&event=idle.ready');
-  assert.equal(selectionHref('/control/events', '?tab=variants&filter=x', 'mei', 'idle.ready'), '/control/events?dealer=mei&event=idle.ready&tab=variants');
-  assert.equal(selectionHref('/control/tree', '?tab=variants', 'mei', 'idle.ready'), '/control/tree?dealer=mei&event=idle.ready');
-  assert.equal(studioHref('/control/videos', { dealerId: 'mei', eventId: 'idle.ready', variantId: 'v2' }), '/control/videos?dealer=mei&event=idle.ready&variant=v2');
-  assert.equal(selectionHref('/control/events', '?tab=variants', 'mei', 'idle.ready', 'v2'), '/control/events?dealer=mei&event=idle.ready&variant=v2&tab=variants');
-  assert.equal(selectionHref('/control/videos', '', 'mei', 'idle.ready', 'v2'), '/control/videos?dealer=mei&event=idle.ready&variant=v2');
-  assert.equal(selectionHref('/control/tree', '', 'mei', 'idle.ready', 'v2'), '/control/tree?dealer=mei&event=idle.ready');
+  assert.equal(selectionHref('/control/events', '?tab=variants&filter=x', 'saga', 'idle.ready'), '/control/events?dealer=saga&event=idle.ready&tab=variants');
+  assert.equal(selectionHref('/control/tree', '?tab=variants', 'saga', 'idle.ready'), '/control/tree?dealer=saga&event=idle.ready');
+  assert.equal(studioHref('/control/videos', { dealerId: 'saga', eventId: 'idle.ready', variantId: 'v2' }), '/control/videos?dealer=saga&event=idle.ready&variant=v2');
+  assert.equal(selectionHref('/control/events', '?tab=variants', 'saga', 'idle.ready', 'v2'), '/control/events?dealer=saga&event=idle.ready&variant=v2&tab=variants');
+  assert.equal(selectionHref('/control/videos', '', 'saga', 'idle.ready', 'v2'), '/control/videos?dealer=saga&event=idle.ready&variant=v2');
+  assert.equal(selectionHref('/control/tree', '', 'saga', 'idle.ready', 'v2'), '/control/tree?dealer=saga&event=idle.ready');
 });
 
 test('tree, guide and activity pages drop the inner studio chrome and link the selected event', () => {
@@ -105,15 +105,15 @@ test('managed tree folders are real event links and dealer changes replace the q
     let api;
     function Harness() { api = session.useStudioSession({ ...props, initialDealerId: 'astrid', initialEventId: 'speak.goodluck' }); return null; }
     renderToStaticMarkup(React.createElement(Harness));
-    api.selectDealer('vera');
+    api.selectDealer('elin');
     api.selectDealer('unknown');
-    assert.deepEqual(paths, ['/control/tree?dealer=vera&event=speak.goodluck']);
+    assert.deepEqual(paths, ['/control/tree?dealer=elin&event=speak.goodluck']);
     globalThis.window.location.pathname = '/control/events';
     let overview;
     function Overview() { overview = session.useStudioSession({ ...props, overview: true, initialDealerId: 'astrid', initialEventId: 'speak.goodluck' }); return null; }
     renderToStaticMarkup(React.createElement(Overview));
-    overview.selectDealer('mei');
-    assert.equal(paths.at(-1), '/control/events?dealer=mei');
+    overview.selectDealer('saga');
+    assert.equal(paths.at(-1), '/control/events?dealer=saga');
   } finally {
     if (previous === undefined) delete globalThis.window;
     else globalThis.window = previous;
@@ -183,7 +183,7 @@ function rehearsalNamesHarness() {
 }
 const namesSnapshot = {
   operators: [{ id: 'company-john', slug: 'johns-spelbolag', name: 'Johns spelbolag' }, { id: 'company-other', slug: 'other', name: 'Annat bolag' }],
-  rooms: [{ id: 'room-a', name: 'Johannas blackjack', operatorId: 'company-john' }, { id: 'room-b', name: 'Andra rummet', operatorId: 'company-other' }],
+  rooms: [{ id: 'room-a', name: 'Linneas blackjack', operatorId: 'company-john' }, { id: 'room-b', name: 'Andra rummet', operatorId: 'company-other' }],
 };
 const settleNames = () => new Promise(resolve => setImmediate(resolve));
 
@@ -198,10 +198,10 @@ test('rehearsal uses saved scoped names without replacing the observation identi
   const after = harness.render(), context = after.props.observationContext;
   assert.equal(after.key, before.key, 'loading labels cannot remount the log or disconnect the player');
   assert.equal(context.tableId, 'room-a'); assert.equal(context.operatorSlug, 'johns-spelbolag');
-  assert.equal(context.tableLabel, 'Johannas blackjack'); assert.equal(context.operatorLabel, 'Johns spelbolag');
+  assert.equal(context.tableLabel, 'Linneas blackjack'); assert.equal(context.operatorLabel, 'Johns spelbolag');
   const { ActivityLog } = loadTs(new URL('../components/activity-log.tsx', import.meta.url));
   const html = renderToStaticMarkup(React.createElement(ActivityLog, { ...after.props, observationContext: context }));
-  assert.match(html, /<h2>Johannas blackjack<\/h2>/); assert.match(html, /Spelbolag: Johns spelbolag/);
+  assert.match(html, /<h2>Linneas blackjack<\/h2>/); assert.match(html, /Spelbolag: Johns spelbolag/);
   assert.doesNotMatch(html, /<h2>room-a<\/h2>|Spelbolag: johns-spelbolag/);
 });
 
@@ -229,3 +229,6 @@ test('rehearsal keeps its selected IDs when names are unavailable or not usable'
     assert.equal(after.props.observationContext.tableLabel, undefined);
   }
 });
+
+// Explicit active dealers used by this isolated component fixture.
+function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}

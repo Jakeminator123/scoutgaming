@@ -60,6 +60,11 @@ async function readWithin(repository,{dealerId,expectedRevision,now=Date.now}){
   const owned=records.filter(row=>row.classification.dealerId===dealerId);
   const mediaIds=owned.map(row=>row.id),compositionIds=new Set(dealerArchiveCompositionIds(projectDocument.value,dealerId,records));
   const administration=structuredClone(administrationDocument.value),config=gameLaneConfiguration(administration);
+  // Operator rooms do not use legacy tiers. Drop only an entire obsolete
+  // assignment; mixed tiers and documents with legacy rooms stay untouched.
+  if(administration.tiers&&Object.keys(administration.tiers).length===3
+    &&['classic','high','vip'].every(tier=>administration.tiers[tier]===dealerId)
+    &&Array.isArray(administration.rooms)&&administration.rooms.every(isPresentationRoom))delete administration.tiers;
   const adapterById=new Map(config.gameLanes.map(row=>[row.id,row]));
   const entries=await repository.withTransactionClient(async client=>{
     const store=await createOperatorStore({sql:client,scope:repository.scope,now,transaction:work=>repository.withTransactionClient(work)});

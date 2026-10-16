@@ -10,8 +10,8 @@ import {previewMediaPath,validatePublicOperatorPreview} from '../web/public/oper
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
 import {materialSource} from '../web/public/material-catalog.mjs';
 
-const context={operatorSlug:'north',roomId:'room-north',packageRevision:7,dealerId:'johanna'};
-const descriptor='/api/operators/north/rooms/room-north/preview?dealer=johanna&revision=7';
+const context={operatorSlug:'north',roomId:'room-north',packageRevision:7,dealerId:'linnea'};
+const descriptor='/api/operators/north/rooms/room-north/preview?dealer=linnea&revision=7';
 const clone=structuredClone;
 function asset(role,n) {
   const row={schemaVersion:1,id:'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),role,label:role+' '+n,
@@ -19,9 +19,9 @@ function asset(role,n) {
   return {...row,pathname:layerAssetPath(row)};
 }
 function fixture({schemaVersion=3,compositing=true,roulette=false,start=false}={}) {
-  const project=[['johanna','Johanna'],['nora','Nora'],['astrid','Astrid']].reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
-  const lane=defaultPresentationLane('johanna');lane.id='north-presentation';lane.label='Published scene';project.lanes=[lane];
-  lane.dealers=['johanna','nora','astrid'];lane.layers.dealer={enabled:true,default:'johanna',allowed:[...lane.dealers]};
+  const project=[['linnea','Linnea'],['nora','Nora'],['astrid','Astrid']].reduce((value,[id,label])=>addDealer(value,id,label),createEmptyProject());
+  const lane=defaultPresentationLane('linnea');lane.id='north-presentation';lane.label='Published scene';project.lanes=[lane];
+  lane.dealers=['linnea','nora','astrid'];lane.layers.dealer={enabled:true,default:'linnea',allowed:[...lane.dealers]};
   lane.composition=defaultCompositionSettings();
   project.layerAssets=[asset('background',1),asset('background',2),asset('table',3),asset('table',4)];
   lane.layers.background={enabled:true,mode:'image',default:project.layerAssets[0].id,allowed:project.layerAssets.slice(0,2).map(row=>row.id)};
@@ -37,19 +37,19 @@ function fixture({schemaVersion=3,compositing=true,roulette=false,start=false}={
   if(roulette) {
     const records=['breathing','glasses-clean'].map((action,i)=>{
       const id=`20000000-0000-4000-8000-00000000000${i+1}`,sha256=String(i+4).repeat(64);
-      return {id,sha256,size:8192,contentType:'video/webm',pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.webm`,revision:'roulette-'+i,
-        classification:{dealerId:'johanna',game:'roulette',eventId:'roulette.idle',action,situation:action,startPose:'VILA',endPose:'VILA',
+      return {id,sha256,size:8192,contentType:'video/webm',pathname:`croupier/media/dealers/linnea/review/uploads/${id}/${sha256}.webm`,revision:'roulette-'+i,
+        classification:{dealerId:'linnea',game:'roulette',eventId:'roulette.idle',action,situation:action,startPose:'VILA',endPose:'VILA',
           kind:'idle',role:'standard',label:action,notes:'SECRET_ROULETTE',playback:'once',compositing:{mode:'alpha'},framing:{scale:1,x:0,y:0}}};
     });
-    project.dealers.find(row=>row.id==='johanna').rouletteIdle={videoId:records[0].id,variantVideoIds:[records[1].id],foregroundPolygons:[[[0,0],[1,0],[1,1]]]};
+    project.dealers.find(row=>row.id==='linnea').rouletteIdle={videoId:records[0].id,variantVideoIds:[records[1].id],foregroundPolygons:[[[0,0],[1,0],[1,1]]]};
     mediaRows.push(...records);for(const row of project.layerAssets)if(row.role==='table')row.game='roulette';
   }
   if(start) {
     const clip=clone(mediaRows.at(-1)),id='30000000-0000-4000-8000-000000000001',sha256='9'.repeat(64);
-    Object.assign(clip,{id,sha256,pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.webm`,revision:'start-one'});
+    Object.assign(clip,{id,sha256,pathname:`croupier/media/dealers/linnea/review/uploads/${id}/${sha256}.webm`,revision:'start-one'});
     Object.assign(clip.classification,{eventId:'roulette.wheel-start',action:'wheel-start',situation:'wheel-start',kind:'action',framing:{scale:1.1,x:.1,y:.2}});
     mediaRows.push(clip);
-    project.dealers.find(row=>row.id==='johanna').rouletteStart={videoId:id,tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2400,ballReleaseMs:4300,foregroundPolygons:[[[.1,.1],[.3,.1],[.3,.3]]]};
+    project.dealers.find(row=>row.id==='linnea').rouletteStart={videoId:id,tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2400,ballReleaseMs:4300,foregroundPolygons:[[[.1,.1],[.3,.1],[.3,.3]]]};
     const {kind,hasAlpha,...signature}=materialSource('roulette-anna-v1');
     Object.assign(project.layerAssets[2],signature);project.layerAssets[2].pathname=layerAssetPath(project.layerAssets[2]);
   }
@@ -59,10 +59,10 @@ function fixture({schemaVersion=3,compositing=true,roulette=false,start=false}={
     administrationDocument:{kind:'administration',revision:'admin-snapshot',value:{rooms:[]}},mediaRows},inventory,
     selectedLaneIds:[lane.id],requiredIdleDealerIds:lane.dealers}).presentation;
   if(schemaVersion===2){presentation=clone(presentation);presentation.schemaVersion=2;delete presentation.playback;}
-  const room={schemaVersion:2,id:context.roomId,name:'North room',operatorId:'north-id',presentationLaneId:lane.id,gameLaneId:'portrait-johanna',state:'live'};
+  const room={schemaVersion:2,id:context.roomId,name:'North room',operatorId:'north-id',presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'};
   const saved={operator:{id:'north-id',slug:'north',name:'North',status:'active',secret:'NEVER_PUBLIC'},
     administration:{gameLane:room.gameLaneId,gameLanes:[{schemaVersion:1,id:room.gameLaneId,label:'Room',
-      renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}],rooms:[room]},
+      renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],rooms:[room]},
     package:{operatorId:'north-id',revision:7,lanes:[lane.id],games:['blackjack'],tables:[room.id],branding:withPackagePresentation({},presentation)}};
   if(roulette){room.game='roulette';saved.package.games=['blackjack','roulette'];}
   const reads=[],served=[];
@@ -104,13 +104,13 @@ test('optional start uses its own frozen profile and only the exact allowed desi
 test('start removal or stale package revision revokes bytes before a provider read',async()=>{
   const f=fixture({roulette:true,start:true}),src=(await body(f)).media.dealer.wheelStart.src;
   f.saved.package.revision=8;assert.equal((await request(f,src)).status,409);assert.equal(f.served.length,0);
-  f.saved.package.revision=7;f.rewrite(pack=>delete pack.registeredDealers.find(row=>row.id==='johanna').rouletteStart);
+  f.saved.package.revision=7;f.rewrite(pack=>delete pack.registeredDealers.find(row=>row.id==='linnea').rouletteStart);
   assert.equal((await request(f,src)).status,404);assert.equal(f.served.length,0);
 });
 
 test('roulette exposes only its explicitly frozen base, variants and foreground profile through revision-bound bytes',async()=>{
   const f=fixture({roulette:true}),before=clone(f.saved),value=await body(f),frozen=readPackagePresentation(f.saved.package);
-  const binding=frozen.registeredDealers.find(row=>row.id==='johanna').rouletteIdle;
+  const binding=frozen.registeredDealers.find(row=>row.id==='linnea').rouletteIdle;
   assert.equal(value.media.dealer.src,previewMediaPath(context,'dealer',binding.base.id));
   assert.deepEqual(value.media.dealer.foregroundPolygons,binding.foregroundPolygons);
   assert.equal(value.media.dealer.variants.length,1);assert.equal(value.media.dealer.variants[0].src,previewMediaPath(context,'dealer',binding.variants[0].id));
@@ -134,7 +134,7 @@ test('roulette variant removal, changed revision and cross-room descriptor mutat
     v=>v.media.dealer.foregroundPolygons=[[[0,0],[1,1],[2,0]]]]) {
     const copy=clone(value);change(copy);assert.throws(()=>validatePublicOperatorPreview(copy,context));
   }
-  f.rewrite(pack=>pack.registeredDealers.find(row=>row.id==='johanna').rouletteIdle.variants=[]);
+  f.rewrite(pack=>pack.registeredDealers.find(row=>row.id==='linnea').rouletteIdle.variants=[]);
   assert.equal((await request(f,src)).status,404);assert.equal(f.served.length,0);
   f.saved.package.revision=8;assert.equal((await request(f,value.media.dealer.src)).status,409);assert.equal(f.served.length,0);
 });
@@ -161,7 +161,7 @@ test('v2/v3 published descriptor selects one frozen dealer and only allowed laye
   for(const schemaVersion of [2,3]) {
     const f=fixture({schemaVersion}),before=clone(f.saved),value=await body(f);
     assert.deepEqual(validatePublicOperatorPreview(value,context),value);
-    assert.equal(value.dealer.label,'Johanna');assert.equal(value.independentLayers,true);
+    assert.equal(value.dealer.label,'Linnea');assert.equal(value.independentLayers,true);
     assert.deepEqual(value.settings,defaultCompositionSettings());
     assert.equal(value.media.dealer.src,previewMediaPath(context,'dealer',f.mediaRows[0].id));
     assert.deepEqual(value.media.dealer.compositing,f.mediaRows[0].classification.compositing);
@@ -227,7 +227,7 @@ test('stale revision and withdrawn room/operator/package are rejected before Blo
 test('room, dealer, role, foreign media and unpublished layer cannot be substituted',async()=>{
   const f=fixture(),value=await body(f);
   for(const path of [
-    descriptor.replace('room-north','room-foreign'),descriptor.replace('dealer=johanna','dealer=foreign'),
+    descriptor.replace('room-north','room-foreign'),descriptor.replace('dealer=linnea','dealer=foreign'),
     value.media.dealer.src.replace(f.mediaRows[0].id,f.mediaRows[1].id),
     previewMediaPath(context,'table',f.project.layerAssets[3].id),
     previewMediaPath(context,'table',f.project.layerAssets[0].id),
@@ -268,12 +268,12 @@ test('historical full-frame and baked flags preserve layer grants without admitt
   assert.deepEqual(f.saved,before);
 });
 test('former dealer names require own published media and retired Amira remains rejected',async()=>{
-  const f=fixture(),response=await request(f,descriptor.replace('dealer=johanna','dealer=astrid'));
+  const f=fixture(),response=await request(f,descriptor.replace('dealer=linnea','dealer=astrid'));
   assert.equal(response.status,200);const value=await response.json();
   assert.equal(value.dealer.id,'astrid');assert.equal(value.media.dealer.src,previewMediaPath({...context,dealerId:'astrid'},'dealer',f.mediaRows[2].id));assert.equal(f.served.length,0);
-  const original=await request(f,descriptor.replace('dealer=johanna','dealer=amira'));
+  const original=await request(f,descriptor.replace('dealer=linnea','dealer=amira'));
   assert.equal(original.status,400);assert.deepEqual(await original.json(),{error:'invalid_preview_request'});
-  const unpublished=await request(f,descriptor.replace('dealer=johanna','dealer=vera'));assert.equal(unpublished.status,404);assert.equal(f.served.length,0);
+  const unpublished=await request(f,descriptor.replace('dealer=linnea','dealer=unpublished'));assert.equal(unpublished.status,404);assert.equal(f.served.length,0);
   const legacy=createPortraitRoomEntryFixture({dealer:'amira'});
   const api=createPublicOperatorPreview({readCurrentContext:async()=>({operator:{id:legacy.room.operatorId,slug:'sg-test',status:'active'},package:legacy.pack,administration:legacy.administration}),privateMedia:()=>assert.fail('retired dealer never reaches private media')});
   const old=await api.handle(new Request('https://example.test/api/operators/sg-test/rooms/'+legacy.room.id+'/preview?dealer=amira&revision=7'));
@@ -281,8 +281,8 @@ test('former dealer names require own published media and retired Amira remains 
 });
 test('strict request grammar rejects duplicate/extra queries, malformed ids and methods before snapshots',async()=>{
   const f=fixture();
-  for(const path of [descriptor+'&dealer=johanna',descriptor+'&extra=1',descriptor.replace('&revision=7',''),descriptor.replace('revision=7','revision=01'),
-    descriptor.replace('revision=7','revision=9007199254740992'),descriptor.replace('dealer=johanna','dealer=../private'),descriptor.replace('/north/','/%6eorth/'),
+  for(const path of [descriptor+'&dealer=linnea',descriptor+'&extra=1',descriptor.replace('&revision=7',''),descriptor.replace('revision=7','revision=01'),
+    descriptor.replace('revision=7','revision=9007199254740992'),descriptor.replace('dealer=linnea','dealer=../private'),descriptor.replace('/north/','/%6eorth/'),
     descriptor.replace('/room-north/','/room_1/'),previewMediaPath(context,'dealer',f.mediaRows[0].id)+'?x=1']) {
     assert.equal((await request(f,path)).status,400,path);
   }
@@ -329,7 +329,7 @@ test('client contract rejects foreign URLs, contexts, extra fields and hidden st
 
 test('v2 portrait anchor and v3 published dealer change never authorize a foreign registered baseline',async()=>{
   const old=fixture({schemaVersion:2});
-  assert.equal((await request(old,descriptor.replace('dealer=johanna','dealer=nora'))).status,404);
+  assert.equal((await request(old,descriptor.replace('dealer=linnea','dealer=nora'))).status,404);
   const f=fixture(),value=await body(f);
   // Keep the immutable package valid while changing the actual game room to an
   // incompatible renderer. A browser retaining media URLs must fail closed.

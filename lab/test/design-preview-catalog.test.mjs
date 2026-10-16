@@ -11,7 +11,7 @@ import {materialSource} from '../../web/public/material-catalog.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 
 function fixture() {
-  const f = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'johanna' });
+  const f = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'linnea' });
   f.project = addDealer(f.project, 'unpublished', 'Unpublished dealer');
   const operators = [{ id: f.room.operatorId, slug: 'north', name: 'North', status: 'active', secret: 'private-operator-field' },
     { id: 'another', slug: 'another', name: 'Another', status: 'suspended' }];
@@ -34,18 +34,18 @@ test('registered admin and published lobby share exact identities without privat
   assert.ok(result.administration.dealers.some(row => row.id === 'unpublished'));
   assert.deepEqual(result.lobby.catalogs.map(row => row.operator.slug), ['north']);
   assert.deepEqual(result.lobby.catalogs[0].rooms.map(row => row.id), [f.room.id]);
-  assert.deepEqual(result.lobby.catalogs[0].rooms[0].dealers.map(row => row.id), ['johanna']);
+  assert.deepEqual(result.lobby.catalogs[0].rooms[0].dealers.map(row => row.id), ['linnea']);
   assert.equal(result.administration.rooms.find(row => row.id === 'not-published').playable, false);
   assert.equal(result.administration.rooms.find(row => row.id === 'not-published').environment, null);
   assert.doesNotMatch(JSON.stringify(result), /private-operator-field|sha256|pathname|croupier\/media|_scoutPresentation|salt|password/);
   assert.deepEqual(f.saved, before);
   const lobby = parseLobbyCatalog(result);
-  const choice = lobbySelection(lobby, { operatorId: 'north', roomKey: 'north:' + f.room.id, dealerId: 'johanna' });
+  const choice = lobbySelection(lobby, { operatorId: 'north', roomKey: 'north:' + f.room.id, dealerId: 'linnea' });
   const adminRoom = result.administration.rooms.find(row => row.id === f.room.id);
   assert.equal(adminRoom.environment.label, choice.room.environmentLabel);
   assert.equal(adminRoom.environment.fixed, choice.room.environmentFixed);
-  assert.equal(playUrlFor(choice), '/play/blackjack?operator=north&table=' + f.room.id + '&dealer=johanna');
-  assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'johanna' }).dealer, null);
+  assert.equal(playUrlFor(choice), '/play/blackjack?operator=north&table=' + f.room.id + '&dealer=linnea');
+  assert.equal(lobbySelection(lobby, { operatorId: 'another', roomKey: 'north:' + f.room.id, dealerId: 'linnea' }).dealer, null);
 });
 test('admin and public readers preserve historical sibling grants and expose the new catalogue warning',async()=>{
   const f=fixture(),frozen=structuredClone(readPackagePresentation(f.pack));
@@ -99,9 +99,9 @@ test('a published non-live room retains frozen dealers after saved composition e
   const result = await registeredDesignCatalog(f);
   const room = result.administration.rooms.find(row => row.id === f.room.id);
   assert.equal(room.published, true); assert.equal(room.playable, false);
-  assert.deepEqual(room.dealerIds, ['johanna']);
+  assert.deepEqual(room.dealerIds, ['linnea']);
   assert.equal(room.dealerSource, 'published');
-  assert.equal(room.dealers[0].name, 'Johanna');
+  assert.equal(room.dealers[0].name, 'Linnea');
   const draft = result.administration.rooms.find(row => row.id === 'not-published');
   assert.equal(draft.dealerSource, 'saved'); assert.deepEqual(draft.dealerIds, ['unpublished']);
 });

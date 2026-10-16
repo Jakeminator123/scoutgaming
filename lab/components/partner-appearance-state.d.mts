@@ -5,7 +5,7 @@ export type PartnerAppearanceInitial = {
  operatorId:string; packageRevision:number; lanes:readonly string[]; branding:Readonly<Record<string,unknown>>;adjustable:readonly string[];
  presentation?:PresentationPackage;canConfigure?:boolean;dealerChoices?:Readonly<Record<string,readonly string[]>>;roomDealerChoices?:Readonly<Record<string,readonly string[]>>;
  draft?:AppearanceDraft|null;draftRevision?:number;history?:readonly {revision:number;publishedAt?:number|string;branding:Readonly<Record<string,unknown>>}[];
- rooms?:readonly {id:string;label:string;presentationLaneId:string}[];
+ rooms?:readonly {id:string;label:string;presentationLaneId:string;game?:'blackjack'|'roulette'}[];
 };
 export type AppearanceReview = {reviewToken:string;draftRevision:number;packageRevision:number;branding:EditableBranding;changes:{roomId:string|null;key:string;before:string|null;after:string|null}[];affectedRooms:string[]};
 export function appearanceBranding(value:unknown):EditableBranding;

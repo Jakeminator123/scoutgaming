@@ -365,8 +365,8 @@ test('lab assets cannot reverse a published deal or replace a reveal', () => {
 
 test('composition construction requires an explicit dealer and normalization preserves saved choices',()=>{
   for(const dealer of [undefined,null,'','Not a dealer',42]) assert.throws(()=>defaultPresentationLane(dealer),StudioValidationError);
-  const project=createStudioSeed(),lane=defaultPresentationLane('vera');
-  assert.deepEqual(lane.dealers,['vera']);assert.equal(lane.layers.dealer.default,'vera');assert.deepEqual(lane.layers.dealer.allowed,['vera']);
+  const project=createStudioSeed(),lane=defaultPresentationLane('astrid');
+  assert.deepEqual(lane.dealers,['astrid']);assert.equal(lane.layers.dealer.default,'astrid');assert.deepEqual(lane.layers.dealer.allowed,['astrid']);
   project.lanes=[lane];const before=structuredClone(project);
   assert.equal(normalizeProject(project),project);assert.deepEqual(project,before);
 });
@@ -375,14 +375,14 @@ test('a fresh installation has no dealer, composition or borrowed idle and can r
   assert.deepEqual(project.dealers,[]);assert.deepEqual(project.lines,[]);assert.deepEqual(project.lanes,[]);assert.equal(Object.hasOwn(project,'idlePolicy'),false);
   assert.equal(schema.properties.dealers.minItems,0);assert.equal(schema.properties.lines.minItems,0);
   assert.equal(validateProject(project),project);
-  const registered=addDealer(project,'johanna','Johanna');
-  assert.deepEqual(registered.dealers,[{id:'johanna',label:'Johanna'}]);assert.equal(registered.lines.length,project.events.length);
-  assert.ok(registered.lines.every(line=>line.dealerId==='johanna'&&line.variants.every(variant=>variant.videoGenerationId===null)));
-  registered.lanes=[defaultPresentationLane('johanna')];assert.equal(validateProject(registered),registered);
+  const registered=addDealer(project,'linnea','Linnea');
+  assert.deepEqual(registered.dealers,[{id:'linnea',label:'Linnea'}]);assert.equal(registered.lines.length,project.events.length);
+  assert.ok(registered.lines.every(line=>line.dealerId==='linnea'&&line.variants.every(variant=>variant.videoGenerationId===null)));
+  registered.lanes=[defaultPresentationLane('linnea')];assert.equal(validateProject(registered),registered);
   assert.deepEqual(project.dealers,[]);assert.deepEqual(createEmptyProject().lanes,[]);
 });
 test('normalization preserves historical policy and explicit bindings without expanding legacy situations',()=>{
-  const project=createStudioSeed();
+  const project=normalizeProject(createSeedProject());
   project.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'vera:legacy/idle'},
     {dealerId:'vera',part:'box3',clipId:'vera:legacy/box3'},
     {dealerId:'amira',part:'think',clipId:'amira:legacy/think'}];
@@ -398,7 +398,7 @@ test('new retired dealers and compositions are refused while historical Amira re
   assert.throws(()=>addDealer(empty,'amira','Amira'),StudioValidationError);
   assert.throws(()=>defaultPresentationLane('amira'),StudioValidationError);
   assert.deepEqual(empty.dealers,[]);assert.deepEqual(empty.lines,[]);
-  const saved=createStudioSeed(), historical=defaultPresentationLane('astrid');
+  const saved=normalizeProject(createSeedProject()), historical=defaultPresentationLane('astrid');
   historical.dealers=['amira'];historical.layers.dealer={enabled:true,default:'amira',allowed:['amira']};
   saved.lanes=[historical];const before=structuredClone(saved);
   assert.equal(normalizeProject(saved),saved);assert.deepEqual(saved,before);

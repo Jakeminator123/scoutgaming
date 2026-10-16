@@ -478,8 +478,8 @@ import {resolvePlayerSelection} from '../../web/public/player-choices.mjs';
 async function nativeBrandingFixture() {
   const base=createStudioMemoryPool(),trace=[];
   const scoped=row=>({environment_id:scope.environment,workspace_id:scope.workspaceId,...row});
-  const lane={...defaultPresentationLane('johanna'),id:'johanna-published',dealers:['johanna','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
-  lane.layers.dealer={enabled:true,default:'johanna',allowed:['johanna','nora']};
+  const lane={...defaultPresentationLane('linnea'),id:'linnea-published',dealers:['linnea','nora'],operatorAdjustable:['dealer'],composition:defaultCompositionSettings()};
+  lane.layers.dealer={enabled:true,default:'linnea',allowed:['linnea','nora']};
   // v2 intentionally keeps this room on its one published portrait adapter.
   const {playback:_playback,...captured}=cloudPresentationFixture({lanes:[lane]}).presentation;
   const presentation={...captured,schemaVersion:2};
@@ -532,8 +532,8 @@ async function nativeBrandingFixture() {
     },
   };
   const repository=createStudioRepository({pool,scope});
-  const administration={rooms:[{schemaVersion:2,id:'room-native',name:'Johannas rum',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-johanna',state:'live'}],
-    gameLane:'portrait-johanna',gameLanes:[{schemaVersion:1,id:'portrait-johanna',label:'Johanna',renderer:'portrait-video',dealer:'johanna',mediaCollection:'johanna-presentation'}],
+  const administration={rooms:[{schemaVersion:2,id:'room-native',name:'Linneas rum',operatorId:northId,presentationLaneId:lane.id,gameLaneId:'portrait-linnea',state:'live'}],
+    gameLane:'portrait-linnea',gameLanes:[{schemaVersion:1,id:'portrait-linnea',label:'Linnea',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}],
     tiers:{classic:'vera',high:'astrid',vip:'amira'},tournaments:[],pitboss:{payout10x:true,streak5:true,randomWalkMin:45}};
   await repository.initializeDocument('administration',{value:administration,revision:'admin-native-1',actor:'fixture'});
   const nativeConfig={...config,pool,readProject:()=>assert.fail('frozen N2 never reads latest project')};
@@ -542,10 +542,10 @@ async function nativeBrandingFixture() {
   const command=body=>handlePartnerAuth(new Request(publicOrigin+'/studio/api/partner/branding?operator=demo-north',{
     method:'POST',headers:{host:'public.example.invalid',cookie,origin:publicOrigin,'sec-fetch-site':'same-origin','content-type':'application/json'},
     body:JSON.stringify(body)}),nativeConfig);
-  const save=(dealer='johanna')=>command({action:'save-draft',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,branding:{lane:lane.id,dealer}});
+  const save=(dealer='linnea')=>command({action:'save-draft',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,branding:{lane:lane.id,dealer}});
   const review=()=>command({action:'review',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1});
   const publish=reviewToken=>command({action:'publish',expectedDraftRevision:state.drafts.at(-1)?.draft_revision??0,expectedPackageRevision:1,reviewToken});
-  const post=async(dealer='johanna')=>{
+  const post=async(dealer='linnea')=>{
     const saved=await save(dealer);if(saved.status!==200)return saved;
     const reviewed=await review();if(reviewed.status!==200)return reviewed;
     return publish((await reviewed.json()).reviewToken);
@@ -558,10 +558,10 @@ async function nativeBrandingFixture() {
 
 test('native N2 saves on one scoped client and frozen dealer choice reaches the actual room',async()=>{
   const f=await nativeBrandingFixture(),read=await f.get();assert.equal(read.status,200,JSON.stringify(f.pool.trace.map(row=>row.tag)));
-  assert.deepEqual((await read.json()).dealerChoices,{'johanna-published':['johanna']});
+  assert.deepEqual((await read.json()).dealerChoices,{'linnea-published':['linnea']});
   f.pool.trace.length=0;
   const response=await f.post();assert.equal(response.status,200);const saved=await response.json();
-  assert.equal(saved.packageRevision,2);assert.equal(saved.branding.dealer,'johanna');
+  assert.equal(saved.packageRevision,2);assert.equal(saved.branding.dealer,'linnea');
   const write=f.pool.trace.find(row=>row.tag==='publish-package'),locked=f.pool.trace.filter(row=>row.client===write.client);
   assert.equal(locked.filter(row=>row.sql?.startsWith('BEGIN')).length,1,'no nested BEGIN');
   for(const tag of ['lock-operator','get-membership','get-role','read-document','current-package','publish-package'])assert.ok(locked.some(row=>row.tag===tag),tag+' on same client');
@@ -571,10 +571,10 @@ test('native N2 saves on one scoped client and frozen dealer choice reaches the 
     packages:{resolve:async()=>({operator:{id:northId,status:'active'},package:pack})}});
   const {selection}=await select('operator=demo-north&table=room-native');
   const actual=resolvePlayerSelection({choices:selection.choices,branding:selection.branding,currentDealer:selection.dealer,composition:selection.composition});
-  assert.equal(actual.dealer,'johanna');assert.equal(selection.roomId,'room-native');assert.equal(selection.packageRevision,2);
+  assert.equal(actual.dealer,'linnea');assert.equal(selection.roomId,'room-native');assert.equal(selection.packageRevision,2);
   assert.deepEqual(selection.composition.settings,f.presentation.lanes[0].composition);
 });
-test('native N2 never saves Nora while the published portrait room renders Johanna',async()=>{
+test('native N2 never saves Nora while the published portrait room renders Linnea',async()=>{
   const f=await nativeBrandingFixture(),before=f.pool.snapshot();
   assert.equal((await f.post('nora')).status,409);assert.deepEqual(f.pool.snapshot(),before);
   assert.equal(f.pool.trace.some(row=>row.tag==='publish-package'),false);

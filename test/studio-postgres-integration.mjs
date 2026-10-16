@@ -23,13 +23,13 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
   await check('atomic versioned migration and repeat plan', async () => {
     const initial = await planStudioMigrations({ pool });
     assert.equal(initial.toApply.length, 9, 'fixture must start without an existing Studio schema');
-    assert.deepEqual(initial.optionalPending, []);
+    assert.deepEqual(initial.optionalPending.map(row=>row.version), ['012']);
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
     await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
     const applied = await planStudioMigrations({ pool });
     assert.equal(applied.toApply.length, 0); assert.equal(applied.optionalPending.length, 0);
     await applyStudioMigrations({ pool, expectedTarget: applied.target, confirm: true });
-    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 9);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, 10);
   });
 
   await check('actual 001-008 media constraint and repository reject PNG and audio without records or audit',async()=>{

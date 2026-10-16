@@ -19,6 +19,7 @@ import {BlackjackTableGeometryEditor} from './blackjack-table-geometry-editor';
 import {CompositionMetadata,CompositionSettings} from './lane-editor';
 import {ProjectConflict} from './project-conflict';
 import {CompositionPreview,type CompositionMedia,type VideoCompositing} from './composition-preview';
+import {CompositionZoomControls} from './composition-zoom-controls';
 import {activeStudioDealers,studioHref,type VideoInventory,type ConnectionStatus} from './studio-types';
 import styles from './control-preview-page.module.css';
 
@@ -40,7 +41,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
   const {project,projectRef,videos,modelEdit:sessionEdit,dirty,saving,save,error,notice,savedJson,setSavedJson,setProject,setConflict,setError,setNotice,conflict}=session;
   const [laneId,setLaneId]=useState(()=>initialCompositionLaneId(project,initialLaneId,initialDealerId)),[clipId,setClipId]=useState('');
   const [game,setGame]=useState<'blackjack'|'roulette'>(initialGame);
-  const [layout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[uploading,setUploading]=useState(false),[continueHref,setContinueHref]=useState('');
+  const [selectedLayout,setLayout]=useState<'mobile'|'desktop'>('mobile'),[uploading,setUploading]=useState(false),[continueHref,setContinueHref]=useState('');
+  const layout=game==='roulette'?'desktop':selectedLayout;
   const [localMedia,setLocalMedia]=useState<Partial<Record<Role,CompositionMedia>>>({}),[localError,setLocalError]=useState('');
   const [previewBusy,setPreviewBusy]=useState(false),[previewError,setPreviewError]=useState('');
   const [previewBackgroundRuleId,setPreviewBackgroundRuleId]=useState<string>(),[previewBackgroundRequest,setPreviewBackgroundRequest]=useState(0);
@@ -228,7 +230,8 @@ export function ControlPreviewPage({initialProject,initialVideos,initialStatus,i
       </aside>:null}
       <div className={styles.workspace}>
         <section className={styles.preview} aria-label="Komposition">
-          <div className={styles.sceneHeader} style={{flexWrap:'wrap'}}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format"><button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button><button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div><button type="button" className="sg-btn sg-btn-secondary" aria-expanded={labMode} aria-controls="composition-lab" onClick={()=>setLabMode(value=>!value)}>{labMode?'Till sammansättningen':'Labba'}</button></div>
+          <div className={styles.sceneHeader} style={{flexWrap:'wrap'}}><h2>Scen</h2><div className={styles.formats} role="group" aria-label="Format">{game!=='roulette'&&<button aria-pressed={layout==='mobile'} onClick={()=>setLayout('mobile')}>Mobil 9:16</button>}<button aria-pressed={layout==='desktop'} onClick={()=>setLayout('desktop')}>Desktop 16:9</button></div><button type="button" className="sg-btn sg-btn-secondary" aria-expanded={labMode} aria-controls="composition-lab" onClick={()=>setLabMode(value=>!value)}>{labMode?'Till sammansättningen':'Labba'}</button></div>
+          {game==='roulette'&&<><p className={styles.hint}>Roulette använder Desktop 16:9 även på mobil. Här ändrar du den sparade scenen, inte bara förhandsvisningens zoom.</p><CompositionZoomControls settings={settings} disabled={previewBusy||saving||uploading||conflict||temporary} onChange={composition=>edit({...lane,composition})}/></>}
           {legacyBackground?<p role="alert" className={styles.hint}>Äldre bakgrundsinställning behöver åtgärdas före publicering. Om en miljö är inbakad i dealerfilmen behöver den ersättas med en grön originalfilm.</p>:null}
           {temporary?<p className={styles.hint} role="status">Tillfälligt filprov · följer inte med vid sparning.</p>:null}
           <CompositionPreview dealer={dealer} background={background} table={table} settings={settings} layout={layout} show={{dealer:lane.layers.dealer.enabled,background:lane.layers.background.enabled,table:lane.layers.table.enabled}} compositing={compositing} framing={localMedia.dealer?undefined:clip?.classification?.framing} backgroundPlayback={temporary?undefined:lane.backgroundPlayback} backgroundAssets={backgroundAssets} previewBackgroundRuleId={previewBackgroundRuleId} previewBackgroundRequest={previewBackgroundRequest}/>
