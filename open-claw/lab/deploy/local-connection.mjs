@@ -409,7 +409,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
         CROUPIER_PRESENTATION_DIRECTOR_URL: configuration.remoteUrl, CROUPIER_PRESENTATION_DIRECTOR_TOKEN: configuration.remoteToken,
         // The relay is the narrower transport and wins whenever it is present.
         // Never place the full Gateway bearer in that product child.
-        OPENCLAW_BASE_URL: useSpeechRelay ? '' : configuration.baseUrl, OPENCLAW_API_KEY: useSpeechRelay ? '' : configuration.gatewayKey, OPENCLAWAPI_KEY: useSpeechRelay ? '' : configuration.gatewayKey,
+        OPENCLAW_BASE_URL: useSpeechRelay ? '' : configuration.baseUrl, OPENCLAW_API_KEY: useSpeechRelay ? '' : configuration.gatewayKey, OPENCLAWAPI_KEY: '',
         OPENCLAW_AGENT: configuration.directorAgent, OPENCLAW_CHAT_AGENT: 'openclaw/croupier-chat', OPENCLAW_SPEECH_AGENT: configuration.productAgent,
         OPENCLAW_PRODUCT_SPEECH_URL: configuration.speechUrl, OPENCLAW_PRODUCT_SPEECH_TOKEN: configuration.speechToken,
         ...(configuration.speechTimeoutMs === undefined ? {} : { OPENCLAW_SPEECH_TIMEOUT_MS: String(configuration.speechTimeoutMs) }),
@@ -589,7 +589,7 @@ async function main() {
       ? `Product Gateway configured; role contract: ${fixture.report.productGateway.role.status}.`
       : `Product speech transport is not configured; direct Gateway missing ${[
       !fixture.report.productGateway.baseUrlPresent && 'OPENCLAW_BASE_URL',
-      !fixture.report.productGateway.gatewayCredentialPresent && 'OPENCLAWAPI_KEY',
+      !fixture.report.productGateway.gatewayCredentialPresent && 'OPENCLAW_API_KEY',
     ].filter(Boolean).join(' and ')}; relay is also absent.`);
   console.log('Disposable databases are removed on Ctrl+C. Shared ports 4192/4194 are untouched.');
   const shutdown = async () => { await fixture.stop(); process.exit(0); };

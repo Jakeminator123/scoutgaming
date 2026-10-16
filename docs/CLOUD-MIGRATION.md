@@ -5,7 +5,8 @@
 Jakob har aktiverat målet i samma chatt och befintliga huvudcheckout.
 Dragan-grundloopens rättning och användarprovet av Spelbolag → Rum är
 kvitterade nedan. PR165:s avgränsade N1-rättning är mergad efter Jakobs
-uttryckliga godkännande; lageruppladdning och env-normalisering är nästa leverans.
+uttryckliga godkännande. Lageruppladdningen är levererad i PR180;
+den sista avgränsade normaliseringen av lokal Gateway-env slutförs nedan.
 Workflow-, dokumentations- och rutinfel som hindrar avslutet ingår; separat
 QA och ny rörlig läppsynk återstartas inte. Underagenter används för
 avgränsad granskning och åtskilda dokumentfiler, med en leveransström.
@@ -26,7 +27,7 @@ användaraccepterat, faktiskt borttaget och externa blockerare.
 | --- | --- | --- |
 | 1 | Dragan-stoppet, parallellt med Jakobs Admin-prov | Identifiera exakt dealerklipp, hash, publicerad revision och speltillstånd. Reproducera avgränsat; rätta återhämtning utan att hoppa över kort-/talfilmer, byta media eller röra användarens runda. Regression och två sammanhängande prov i faktisk spelare; inga liveinsatser används som agenttest. |
 | 2 | Stäng Admin-etappen | Hantera återkoppling på bolag → rum → bakgrund/dealer/bord. Verifiera båda spelen, rumsspecifika val kontra delad mall och utkast/publicering. Jakob godkänner användarflödet; kod- och medieacceptans redovisas var för sig. |
-| 3 | Täpp till verifierade kontrolluckor | GitHub-kontrollen `CI` är nu obligatorisk mot aktuell main, enligt kvittot nedan. Kvar: rätta lageruppladdning med resursbegränsad serveranalys av faktiska medieegenskaper och negativa tester. |
+| 3 | Täpp till verifierade kontrolluckor | GitHub-kontrollen `CI` är obligatorisk mot aktuell main. Lageruppladdningens resursbegränsade serveranalys och negativa tester är levererade i PR180 enligt kvittot nedan. Medieacceptans är separat. |
 | 4 | Slutför intern konsolidering och städning | Kartlägg kvarvarande konsumenter, flytta nödvändiga funktioner till avsedda befintliga moduler, uppdatera loader/importer/bygg-/driftkonfiguration tillsammans och ta bort ersatta delar. Förbrukade kopior och redundanta säkerhetskopior får en faktisk raderingsåtgärd, inte en ny arkivkopia; unika data och använda junctionmål ingår inte som restfiler. Varje kvarvarande undantag får konkret beroende eller återställningssyfte. |
 | 5 — separat efter Admin | Bedöm vald Kevin/Emil-integration | Verifierad åtkomst, källa, image-digest och avatarbyte måste stämma. Anpassa enbart nödvändigt protokoll/material till vårt system. Aktivering och eventuella nya kostnadsbärande resurser är ett separat steg; Emils befintliga poddar och staging lämnas orörda. |
 
@@ -49,7 +50,7 @@ varje spel/paket.
 är användaraccepterat och Dragan-grundloopens rättning är levererad och
 verifierad enligt kvittot nedan. Äldre öppna C1–C9-delprov och tal-/medie-
 acceptans blir inte automatiskt klara. PR165:s befintliga N1-rättning är
-mergad; kontrolluckorna och konsolideringen i tabellen återstår.
+mergad; lagerkontrollen är levererad och konsolideringen i tabellen följs upp separat.
 Dokumentkvittot och miljöguiderna levererades därefter i PR179 till main
 `32ffbbaf0b64da7cb5ecc424e2904c81ca930eb4`. PR-/main-CI är gröna;
 main-körningen är `38899688763`. Vercel `dpl_137Y8TuzqRSnX1ZbXBX2wXBJ3goL`
@@ -86,7 +87,7 @@ Live in-/utloggningsacceptans skjuts upp eftersom Jakobs öppna spelflik
 visar en aktiv hand; fliken laddas inte om och sessionen loggas inte ut.
 Det privata kvittot är `arkiv/2026-10-15/admin-consolidation/pr165-delivery-receipt.json`.
 
-**Lageruppladdning, lokalt verifierad 16 oktober:** Jakob godkände det exakt
+**Lageruppladdning, PR180 levererad 16 oktober:** Jakob godkände det exakt
 pinnade metadata-biblioteket `mediabunny@1.61.5` och den avgränsade rättningen.
 PNG/JPEG/WebP analyseras med befintlig Sharp; MP4/WebM med Mediabunny.
 Servern använder samma fullständigt hashverifierade filbeskrivare, kontrollerar
@@ -104,8 +105,14 @@ från Lab-katalog 1/1. Oberoende granskning utan blockerare. Labbygge med
 97 byggspår innehåller worker, Mediabunny, Sharp och dess runtimeberoenden.
 Kodcommit `7f6ae536` matchar de 18 frysta, oberoende granskade filerna.
 Ordinarie fullhook: 3 980 pass, 9 villkorade skip, 0 fel. Skip gäller fem
-PostgreSQL-opt-ins och fyra Linux-prov; Chrome-fixturer kördes. Slutlig
-CI och drift kvitteras i leveransens PR.
+PostgreSQL-opt-ins och fyra Linux-prov; Chrome-fixturer kördes.
+Oberoende granskat sluthead `4144e882879d090d2abfb6933663732aa6b44e25`
+passerade PR-CI `38908999776`; jobb `116999896859` verifierar faktisk
+PostgreSQL-omstart och native HTTPS-in-/utloggning. Normal merge gav main
+`d064dce232caa9a8c7423fb23b33ca910488f5ae`, vars CI `38909756837` är grön.
+Vercel `dpl_69F6xeQjox6hjzxXhwas4mXbhqJS` är READY på www och Render
+`dep-db92l8c9v7es739fsii0` är live på samma SHA; Renders publika version
+är verifierad. Ingen skrivande uppladdningsacceptans i produktion har körts.
 
 Videoprovet verifierar containerinformation och läsbara första/sista paket;
 det bevisar inte full avkodning, SPS/container-överensstämmelse, uppspelning
@@ -119,7 +126,18 @@ tydligt stopp vid divergens; inga egna commits eller arbetsfiler skrivs över.
 Ingen ny GitHub-inloggning behövdes. Den befintliga globala HTTPS→SSH-regeln
 lämnas oförändrad. `.githooks` är aktiv och påverkar inte fast-forward-pull;
 den gamla GitLab-texten i `.git/hooks/pre-push` är inaktiv. Featurebranchens
-upstream sätts till sin egen remotebranch vid push; main synkas efter leverans.
+upstream sätts till sin egen remotebranch vid push. Vanlig `git pull` på main
+är faktiskt provad: checkouten gick fram till `d064dce2` och egna ändringar
+bevarades. Jakobs oanvända `codex/kordinater` är bevarad och inte pushad.
+
+**Lokal Gateway-env, avgränsad sluträttning 16 oktober:** produktbarnet får
+endast `OPENCLAW_API_KEY`; äldre `OPENCLAWAPI_KEY` töms även vid direkt
+Gateway. Inläsningen stöder fortfarande äldre profilfiler och behåller deras
+prioritet. Lab-/relay-isolering och uttryckligen tomma värden bevaras.
+Fokustesterna passerar 48/48 och oberoende kodgranskning fann inga blockerare.
+Inga privata env-värden, leverantörer, QA-profiler eller poddar ändras.
+Leveransens fullhook och slutliga CI kvitteras i PR; rättningen bevisar inte
+att en ansluten lokal profil eller ny rörlig läppsynk fungerar.
 
 **PR165 lokalt verifierad, 16 oktober:** main `32ffbbaf` är förenad utan
 konflikter i befintliga `codex/n1-player-session`, kodcommit `c43fef1a`.
@@ -209,7 +227,8 @@ En separat konfigurationsrättning är lokalt klar: Gateway-utdata använder
 `OPENCLAW_API_KEY`, medan kompatibilitetsaliaset `OPENCLAWAPI_KEY` skrivs tomt.
 Äldre profiler kan fortfarande läsas. 48 riktade tester passerar och inga
 faktiska miljöfiler har ändrats. De två deploy-modulerna och tillhörande
-ENVIRONMENT-VARIABLES-dokumentation hålls utanför PR165 för egen leverans.
+ENVIRONMENT-VARIABLES-dokumentation hölls utanför PR165 för egen leverans;
+aktuellt kvitto för denna rättning finns ovan under Lokal Gateway-env.
 
 ### Första rättningen: Dragan-grundloop
 
