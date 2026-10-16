@@ -1,5 +1,19 @@
 # Aktuell handoff — Scoutgaming
 
+## Neon-katalog: kompatibilitetssteg före omkoppling — 16 oktober 2026
+
+Jakob har beställt Neon som enda register, Blob som mediekälla och Astrid kvar
+som legacyreferens, med leverans till main efter gröna kontroller. Migration
+012 introduceras först som `deploymentOptional`: befintlig kod kan fortsätta
+med både gamla och utökade schemat. Tabellerna är ännu oanvända av denna
+kompatibilitetsleverans. Efter verifierad driftsättning följer schemaapply,
+registerimport och en separat leverans som kräver 012 och kopplar om läsarna.
+Det första steget är inte ett kvitto på färdig registermigrering.
+
+`arkiv/` undantas i `.gitignore`, `.ignore` och `.cursorignore`. Git spårar
+endast `.gitkeep`. Det hindrar vanlig upptäckt/indexering; uttryckliga filverktyg
+kan fortfarande läsa arkivet och då tillföra innehåll till modellens kontext.
+
 ## Astrid-backup och förtydligad molnkälla — 16 oktober 2026 kväll
 
 Jakob beställde först en Astrid-ZIP och rensning till enbart Dragan, och

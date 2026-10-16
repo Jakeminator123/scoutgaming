@@ -270,7 +270,7 @@ test('generic portrait syntax cannot authorize a dealer absent from the saved St
   const connection = fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require', 'croupier_game');
   const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection};
   const storage={pool:{},db:{assertInstalled:async()=>{}}};
-  for(const versions of [['001','002','003','004','005','006','007','008'],['001','002','003','004','005','006','007','008','011','012']]){
+  for(const versions of [['001','002','003','004','005','006','007','008'],['001','002','003','004','005','006','007','008','011','013']]){
     await assert.rejects(createRenderStudioPolicy({storage,env,schemaCheck:async()=>({toApply:[],applied:versions.map(version=>({version}))})}),error=>error.message==='studio_game_schema_unavailable');
   }
 });

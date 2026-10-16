@@ -3293,3 +3293,14 @@ Det interaktiva browserverktyget kunde inte starta; fixturen använde separat
 browserprofil och ingen produktserver, provider eller produktionsdatabas.
 Ordinarie commitkontroll och PR-CI redovisas i PR:n. Ingen merge, driftsättning,
 publicering av rum eller användaracceptans ingår i detta lokala kvitto.
+<!-- Current delivery note; keep the existing tracker as the single source. -->
+
+## 16 oktober: förberedelse för Neon som enda register
+
+Jakob har beställt färdig registermigrering och merge när testerna är gröna.
+012 levereras först som `deploymentOptional` för två ännu oanvända tabeller:
+`runtime_media_catalogs` och `speech_reply_records`. Gamla läsare fortsätter
+fungera före och efter schemaapply. Därefter importeras oförändrade identiteter,
+hashar och kalibreringar och läsarna kopplas om i en separat leverans som gör
+012 obligatorisk. Behåll Astrid som legacyreferens. Denna förberedelse räknas
+inte som genomförd omkoppling eller verifierad molnimport.
