@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, readdir, readFile, rm, writeFile, open, stat, rename, utimes } from 'node:fs/promises';
-import { writeFileSync,utimesSync } from 'node:fs';
+import { writeFileSync,utimesSync,readSync } from 'node:fs';
 import { join,dirname,resolve,basename } from 'node:path';
 import { tmpdir } from 'node:os';
-import { putPrivateMedia, getPrivateMedia, deletePrivateMedia, isCloudMediaConfigured, validatePrivateMedia, privateContentTypeMatches,mediaBlobPath } from '../lib/cloud-media-store.mjs';
+import { putPrivateMedia, getPrivateMedia, deletePrivateMedia, isCloudMediaConfigured, validatePrivateMedia, privateContentTypeMatches,mediaBlobPath,withVerifiedPrivateMediaFile } from '../lib/cloud-media-store.mjs';
 
 const bytes = Buffer.from('0000ftypisom00000private-video-fixture-exact-bytes');
 const sha256 = createHash('sha256').update(bytes).digest('hex');
@@ -58,6 +58,30 @@ async function hashReads(t,path){
     return stream;
   });return {reads,prototype};
 }
+
+test('private inspection uses the hashed descriptor and closes it after the callback',async t=>{
+  const {options}=await fixture(t),record=await putPrivateMedia(pathname(),bytes,options);let fd;
+  const inspected=await withVerifiedPrivateMediaFile(record,async handle=>{
+    fd=handle.fd;const actual=Buffer.alloc(bytes.length);await handle.read(actual,0,actual.length,0);assert.deepEqual(actual,bytes);return {width:32};
+  },options);
+  assert.deepEqual(inspected,{width:32});assert.throws(()=>readSync(fd,Buffer.alloc(1),0,1,0),{code:'EBADF'});
+});
+
+test('private inspection rejects a same-size edit or pathname swap during its callback',async t=>{
+  for(const swap of [false,true]){
+    const {options}=await fixture(t),record=await putPrivateMedia(pathname(),bytes,options);
+    const path=join(options.cacheDir,(await readdir(options.cacheDir)).find(name=>name.endsWith('.mp4')));let fd;
+    await assert.rejects(withVerifiedPrivateMediaFile(record,async handle=>{
+      fd=handle.fd;
+      if(swap){const replacement=path+'.replacement';await writeFile(replacement,bytes);await rename(replacement,path);}
+      else await writeFile(path,Buffer.alloc(bytes.length,0x7a));
+      return {width:32};
+    },options),error=>error.statusCode===409 || (swap&&process.platform==='win32'&&error.code==='EPERM'));
+    // Windows may prevent replacement of an open descriptor itself. Linux must
+    // reach the post-inspection inode check; neither platform may return a result.
+    assert.throws(()=>readSync(fd,Buffer.alloc(1),0,1,0),{code:'EBADF'});
+  }
+});
 
 test('unchanged Range/HEAD/304 reuse verified file identity without rereading the full file',async t=>{
   const {options}=await fixture(t),record=await putPrivateMedia(pathname(),bytes,options);

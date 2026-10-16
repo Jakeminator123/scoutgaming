@@ -26,7 +26,13 @@ export default {
   outputFileTracingIncludes: {
     ...Object.fromEntries(['/control/rooms', '/control/companies', '/control/compositions', '/control/rehearsal', '/control/replies', '/api/replies/**', '/control/library', '/control/preview', '/api/layer-assets/**', '/', '/administration', '/control/clips', '/control/administration', '/control/tree', '/control/videos', '/control/openclaw', '/control/activity', '/control/guide', '/control/zones', '/control/events', '/control/lanes', '/control/probe', '/control/operator-chat', '/control/login', '/control/set-password', '/control/[[...path]]', '/partner/[[...path]]', '/partner/login', '/partner/set-password', '/api/partner-preview', '/api/partner/[...action]', '/login', '/set-password', '/api/assistant', '/api/openclaw/admin', '/api/admin/**', '/api/auth/**', '/api/project', '/api/social', '/api/videos/**', '/api/dealers/**', '/api/zones/reference']
       .map(route => [route, ['../ops/neon-game/product-schema.sql', '../ops/neon-studio/*.sql',
-        '../media/layout.json', '../media/blob-index.json', '../media/catalog/*.json']])),
+        '../media/layout.json', '../media/blob-index.json', '../media/catalog/*.json',
+        // This worker runs as an unbundled Node module. Trace its runtime imports
+        // explicitly, including Sharp's native binaries and transitive helpers.
+        ...(route==='/api/layer-assets/**'?['./lib/layer-media-inspection-worker.mjs',
+          './node_modules/mediabunny/package.json','./node_modules/mediabunny/dist/modules/**/*.js',
+          './node_modules/sharp/package.json','./node_modules/sharp/dist/**/*',
+          './node_modules/@img/**/*','./node_modules/detect-libc/**/*','./node_modules/semver/**/*']:[])]])),
     '/preview/[...path]': ['./preview-build/**/*'],
     '/admin/[[...path]]': ['./design-preview-build/**/*'],
     '/lobby/[[...path]]': ['./design-preview-build/public-lobby/**/*', './design-preview-build/fonts/**/*'],

@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test,{after} from 'node:test';
 import assert from 'node:assert/strict';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
@@ -10,18 +10,20 @@ import {createLayerUploadService} from '../lab/lib/layer-upload-service.mjs';
 import {createLayerAssetApi} from '../lab/lib/layer-asset-api.mjs';
 import {validateLayerAsset,layerAssetPath,layerAssetFitsGame} from '../web/layer-asset-contract.mjs';
 import {materialSource} from '../web/public/material-catalog.mjs';
+import {inspectLayerMedia} from '../lab/lib/layer-media-inspection.mjs';
+import {layerImage,layerBlobFixture} from './fixtures/layer-media.mjs';
 const scope={environment:'test',workspaceId:'layers'},actor='layer-admin';
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:['https://public.example','https://studio.example'],publicHosts:['public.example','studio.example']};
 const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-not-a-secret'};
-const prefix=Uint8Array.from([137,80,78,71,13,10,26,10,...new Array(24).fill(0)]);
 async function fixture() {
   const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
   await repository.initializeDocument('project',{actor,value:createSeedProject()});
   let clock=1000000,tokens=0,reads=0;
+  const media=await layerBlobFixture(after,await layerImage('png',720,1280));
   const uploads=createLayerUploadService({repository,scope,ticketKey:new Uint8Array(32).fill(7),env,
-    now:()=>clock,clientToken:async args=>{tokens++;assert.equal(args.allowOverwrite,false);assert.equal(args.maximumSizeInBytes,128);return 'fixture-capability';},
-    privateMedia:async record=>{reads++;assert.match(record.pathname,/^croupier\/media\/backgrounds\//);return new Response(prefix);}});
-  const prepare={operation:'prepare',sha256:'a'.repeat(64),size:128,contentType:'image/png',role:'background',label:'Night',width:720,height:1280};
+    now:()=>clock,clientToken:async args=>{tokens++;assert.equal(args.allowOverwrite,false);assert.equal(args.maximumSizeInBytes,media.size);return 'fixture-capability';},
+    inspectMedia:async record=>{reads++;assert.match(record.pathname,/^croupier\/media\/backgrounds\//);return inspectLayerMedia(record,media.options);}});
+  const prepare={operation:'prepare',sha256:media.sha256,size:media.size,contentType:'image/png',role:'background',label:'Night',width:720,height:1280};
   return {repository,uploads,prepare,counts:()=>({tokens,reads}),expire:()=>clock+=900001};
 }
 test('direct upload registers exact immutable bytes in the scoped project; replay is idempotent',async()=>{
@@ -63,6 +65,7 @@ async function nativeLayerFixture({capabilityVersion=3,onPreflight,onLock}={}) {
   await rawRepository.initializeDocument('project',{actor,value:addDealer(createSeedProject(),'johanna','Johanna')});
   const sqlContext=new AsyncLocalStorage(),events=[],descriptors=[],capabilities=[];
   let tokens=0,blobReads=0,principal={user:actor,role:'admin',scope};
+  const media=await layerBlobFixture(after,await layerImage('png',1440,2560));
   const repository=wrapNativePresentationRepository(rawRepository,{env:{CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid'},
     fetchImpl:async(url,options)=>{
       assert.notEqual(sqlContext.getStore(),true,'capability HTTP must finish before product/studio SQL');
@@ -71,9 +74,9 @@ async function nativeLayerFixture({capabilityVersion=3,onPreflight,onLock}={}) {
       return Response.json(presentationCapabilitiesForVersion(capabilityVersion));
     }});
   const uploads=createLayerUploadService({repository,scope,ticketKey:new Uint8Array(32).fill(7),env,
-    clientToken:async()=>{tokens++;return 'fixture-capability';},privateMedia:async record=>{
+    clientToken:async()=>{tokens++;return 'fixture-capability';},inspectMedia:async record=>{
       assert.notEqual(sqlContext.getStore(),true,'Blob verification must finish before product/studio SQL');
-      assert.match(record.pathname,/^croupier\/media\/tables\//);blobReads++;events.push('blob');return new Response(prefix);
+      assert.match(record.pathname,/^croupier\/media\/tables\//);blobReads++;events.push('blob');return inspectLayerMedia(record,media.options);
     }});
   const mutationTransaction=(work,options={})=>{
     const snapshot=structuredClone(options.presentationMutation);descriptors.push(snapshot);
@@ -84,7 +87,7 @@ async function nativeLayerFixture({capabilityVersion=3,onPreflight,onLock}={}) {
   const api=createLayerAssetApi({config,repository,layerUploads:uploads,mutationTransaction,authorize:async()=>principal});
   const post=body=>api.handle(new Request('https://public.example/studio/api/layer-assets/upload',{method:'POST',
     headers:{origin:'https://public.example','sec-fetch-site':'same-origin','content-type':'application/json'},body:JSON.stringify(body)}));
-  const prepare={operation:'prepare',sha256:'a'.repeat(64),size:128,contentType:'image/png',role:'table',label:'Bord · Svart och guld',width:1440,height:2560};
+  const prepare={operation:'prepare',sha256:media.sha256,size:media.size,contentType:'image/png',role:'table',label:'Bord · Svart och guld',width:1440,height:2560};
   const prepared=await post(prepare);assert.equal(prepared.status,200);const grant=await prepared.json();
   return {api,pool,rawRepository,repository,post,prepare,grant,events,descriptors,capabilities,
     setCapabilityVersion:value=>{capabilityVersion=value;},

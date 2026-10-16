@@ -229,6 +229,30 @@ async function verifyCachedFile(handle,path,record,opened){
   return stamp;
 }
 
+/** Server-only inspection of the same open descriptor that passed the full hash.
+ * The callback must finish all descriptor users before returning (including workers).
+ * Never hand the cache pathname to a parser that could reopen different bytes.
+ */
+export async function withVerifiedPrivateMediaFile(record, inspect, options = {}) {
+  let handle,path;
+  try {
+    validatePrivateMedia(record); tokenFor(options);
+    path=await cachedFile(record,options);
+    const info=await lstat(path,{bigint:true});
+    if(!info.isFile() || info.isSymbolicLink() || info.size!==BigInt(record.size))fail('Den privata mediacachen är ogiltig.',409);
+    handle=await open(path,constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+    const opened=await handle.stat({bigint:true});
+    if(!opened.isFile() || fingerprint(opened)!==fingerprint(info))fail('Den privata mediafilen ändrades.',409);
+    const stamp=await verifyCachedFile(handle,path,record,opened);
+    const result=await inspect(handle);
+    await assertCurrentFile(handle,path,stamp);
+    return result;
+  } catch(error) {
+    if(path)verifiedFiles.delete(path);
+    throw error;
+  } finally {if(handle)await handle.close();}
+}
+
 /** Caller must authenticate and resolve the record by an allowed logical ID first. */
 export async function getPrivateMedia(record, request, options = {}) {
   if (!['GET', 'HEAD'].includes(request.method)) return errorResponse(request, 405, 'GET or HEAD only.', { Allow: 'GET, HEAD' });

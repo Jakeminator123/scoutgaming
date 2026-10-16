@@ -4,6 +4,7 @@ import type {StudioProject} from '../lib/studio-model.mjs';
 import {uploadCompositionLayer} from '../lib/studio-composition.mjs';
 import {labUrl} from '../lib/lab-url.mjs';
 import {LAYER_ASSET_TYPES,MAX_LAYER_ASSET_BYTES} from '../../web/presentation-layers.mjs';
+import {layerUploadResponseError,layerUploadFailureMessage} from '../../web/public/layer-upload-errors.mjs';
 
 type Role='background'|'table';
 function dimensions(file:File,signal:AbortSignal) {
@@ -41,14 +42,14 @@ export function LayerLibrary({role,game='blackjack',onRegistered,available=true,
         signal:controller.signal,
         post:async(body,signal)=>{
           const response=await fetch(labUrl('/api/layer-assets/upload'),{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});
-          const value=await response.json();if(!response.ok)throw new Error(response.status===409?'Projektet har ändrats. Utkastet har behållits.':'Lagerfilen kunde inte sparas. Utkastet har behållits.');return value;
+          const value=await response.json();if(!response.ok)throw layerUploadResponseError(response.status,value);return value;
         },
         put:async(pathname,file,options)=>{const {put}=await import('@vercel/blob/client');controller.signal.throwIfAborted();return put(pathname,file,options);},
         onUploadProgress:event=>{if(mounted.current)setProgress(Math.round(event.percentage));},
         onCommit:()=>{commitStarted.current=true;if(mounted.current)setCommitting(true);},
       });
       if(!mounted.current)return;onRegistered(result.project,result.id);input.value='';setLabel('');
-    }catch(cause){if(mounted.current)setError(controller.signal.aborted?'Uppladdningen avbröts. Utkastet har behållits.':`${commitStarted.current?'Filen kan vara registrerad. Kontrollera biblioteket innan du laddar upp igen. ':''}${cause instanceof Error?cause.message:'Uppladdningen misslyckades.'}`);}
+    }catch(cause){if(mounted.current)setError(layerUploadFailureMessage(cause,{aborted:controller.signal.aborted,commitStarted:commitStarted.current}));}
     finally{input.value='';request.current=null;commitStarted.current=false;if(mounted.current){setBusy(false);setCommitting(false);}busyCallback.current?.(false);}
   }
   return <div>

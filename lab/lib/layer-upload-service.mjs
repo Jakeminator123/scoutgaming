@@ -2,7 +2,8 @@ import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../web/storage/studio-contract.mjs';
-import { getPrivateMedia, isCloudMediaConfigured, validatePrivateMedia } from './cloud-media-store.mjs';
+import { isCloudMediaConfigured, validatePrivateMedia } from './cloud-media-store.mjs';
+import { inspectLayerMedia } from './layer-media-inspection.mjs';
 import { validateLayerAsset, layerAssetPath, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES } from '../../web/presentation-layers.mjs';
 
 const fail = (code, statusCode = 503) => {throw new StudioStorageError(code,statusCode);};
@@ -15,7 +16,7 @@ const TTL = 15 * 60 * 1000;
  */
 export function createLayerUploadService({repository,scope,ticketKey,env = process.env,options = {},
   clientToken = async args => (await import('@vercel/blob/client')).generateClientTokenFromReadWriteToken(args),
-  privateMedia = getPrivateMedia, now = Date.now,
+  inspectMedia = inspectLayerMedia, now = Date.now,
 } = {}) {
   scope = validateStudioScope(scope);
   if (!repository?.saveDocument || !repository?.readDocument
@@ -72,17 +73,11 @@ export function createLayerUploadService({repository,scope,ticketKey,env = proce
       const record = grant(body.ticket,actor), storage = validatePrivateMedia({provider:'vercel-blob',
         pathname:record.pathname,sha256:record.sha256,size:record.size,contentType:record.contentType});
       await ready(record);
-      // getPrivateMedia hashes every newly fetched complete object, validates
-      // exact private URL/type/size and serves this prefix from the same bytes.
-      const response = await privateMedia(storage,new Request(request.url,{headers:{Range:'bytes=0-31'}}),mediaOptions);
-      if (!response.ok) {await response.body?.cancel();fail('studio_upload_bytes_unavailable',503);}
-      const header = Buffer.from(await response.arrayBuffer());
-      const validHeader = record.contentType === 'video/mp4' ? header.length >= 16 && header.toString('ascii',4,8) === 'ftyp'
-        : record.contentType === 'video/webm' ? header.subarray(0,4).equals(Buffer.from([0x1a,0x45,0xdf,0xa3]))
-        : record.contentType === 'image/png' ? header.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))
-        : record.contentType === 'image/jpeg' ? header[0] === 255 && header[1] === 216 && header[2] === 255
-        : record.contentType === 'image/webp' && header.toString('ascii',0,4) === 'RIFF' && header.toString('ascii',8,12) === 'WEBP';
-      if (!validHeader) fail('studio_invalid_media_format',415);
+      // Parse actual format/dimensions from the fully hashed open descriptor.
+      // Inspection, including worker shutdown, finishes before either SQL lock.
+      const inspected=await inspectMedia(storage,{...mediaOptions,signal:request.signal});
+      if(inspected.contentType!==record.contentType)fail('studio_invalid_media_format',415);
+      if(inspected.width!==record.width||inspected.height!==record.height)fail('studio_media_dimensions_mismatch',422);
       // Capture the real project and exact verified grant before either SQL lock.
       // The native gate must cover this write without fetching under a lock.
       const captured = await repository.readDocument('project');
