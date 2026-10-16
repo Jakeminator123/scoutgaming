@@ -3104,3 +3104,28 @@ Den passiva CI-reportern och dess artifacts gör inga provider-/DB-mutationer.
 Den fullständiga tidslinjen och tidigare deployments ligger i den frysta
 historiklänken överst. Privata loggar och backupfiler är inte borttagna.
 Den aktiva checklistan ovan är statuskällan.
+
+
+## Sparad roulettezoom i befintliga Admin-editorer — 16 oktober 2026
+
+Jakob preciserade att zoom ska ändra den sparade scen som öppnas via
+lobby och spelbolag. Gemensam mall och Sammansättningar har därför fått
+Zooma in/ut scenen: befintlig skala, bredd och placering ändras tillsammans
+runt bildens mitt. Inga nya lagringsfält införs. Roulette visar Desktop 16:9
+även i editorn, i linje med spelarens befintliga format på alla skärmstorlekar.
+Lagerreglagen ligger kvar; i mallpanelen visas de direkt intill förhandsvisningen.
+
+Ändringen gäller projektutkastet i en delad mall. Rumsspecifika val,
+publiceringsgranskning, lås/revisionsskydd, mediahashar, bordsprofiler,
+godkännanden och spelregler behåller sina kontrakt. Zoom stegas som en helhet;
+enskilda lager klipps inte vid gränsen och får därmed inte olika skalfaktor.
+Spelarens befintliga bord/klickytor använder samma publicerade placering.
+
+Lokalt: 74 riktade editor-/kompositions-/rouletteprov godkända; Labbygge med
+97 kontrollerade byggspår. Separat Chrome med syntetiska PNG-fixturer provar
+zoom, tangentbord, individuell finjustering, sparat utkast, oförändrat mobilformat
+samt mediaidentiteter, mallens redigeringslås och 1440/1024/640/390 px.
+Det interaktiva browserverktyget kunde inte starta; fixturen använde separat
+browserprofil och ingen produktserver, provider eller produktionsdatabas.
+Ordinarie commitkontroll och PR-CI redovisas i PR:n. Ingen merge, driftsättning,
+publicering av rum eller användaracceptans ingår i detta lokala kvitto.

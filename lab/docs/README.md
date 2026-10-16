@@ -2,6 +2,18 @@
 
 Produktmodell och ord har en enda källa: [`TERMINOLOGI.md`](TERMINOLOGI.md).
 
+**Roulettescenens storlek:** öppna Spelbolag & rum, välj rummet och
+**Öppna delad mall** → **Redigera gemensam mall**. **Zooma in scenen** och
+**Zooma ut scenen** skalar bakgrund, dealer och bord tillsammans runt bildens
+mitt. Finjustera ett lager under **Storlek och placering**. Samma scenzoom finns
+i **Verktyg → Sammansättningar**, där du också kan skapa en ny sammansättning.
+Roulette använder Desktop 16:9 även på mobil; dessa editorer visar därför det
+format som roulette använder. Detta ändrar sparad geometri i den gemensamma
+mallens utkast, inte tillfällig visningszoom eller rummets `roomOverrides`.
+Granska vilka rum som delar mallen, spara utkastet och publicera via det
+befintliga rumsflödet för att ändringen ska nå spelaren. Ett zoomsteg stoppas
+helt om ett lager når sin placeringsgräns.
+
 **Admin är den samlade interna arbetsytan på huvuddomänen.** Menyn **Verktyg**
 samlar Bolag & team, Rum & publicering, Sammansättningar, Dealerinställningar,
 Klippbibliotek, Svarsbibliotek, Materialinställningar, Provspelning, regler,

@@ -4193,3 +4193,14 @@ fullständiga pre-commit-grinden. Frontendens Next 15.5.26 och designpaketets
 PostCSS/Tailwind 3-beroenden ändras inte av denna patch; deras separata
 auditfynd återstår. Ingen Node-major, produktionskonfiguration eller
 migrering ändras.
+
+
+## Sparad roulettezoom i befintliga Admin-editorer — 16 oktober 2026
+
+Gemensam mall och Sammansättningar har fått samlad in-/utzoomning med
+befintliga sparade placeringsfält. Roulette visar spelarens Desktop 16:9-format.
+Lagerreglage, delad mall, rumsspecifika val och publicering behåller sina kontrakt.
+74 riktade tester, Labbygge och syntetiskt Chrome-prov i fyra bredder är gröna.
+Fullständigt lokalt kvitto och acceptansgräns finns i motsvarande avsnitt i
+[CLOUD-MIGRATION](CLOUD-MIGRATION.md#sparad-roulettezoom-i-befintliga-admin-editorer--16-oktober-2026).
+Ordinarie hook och PR-CI redovisas i PR:n; användaracceptans och driftsättning återstår.

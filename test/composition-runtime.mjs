@@ -7,7 +7,8 @@ import {presentationCapabilitiesResponse} from '../web/presentation-capabilities
 import {defaultCompositionSettings,defaultBlackjackTableGeometry,validateCompositionSettings,sceneForComposition} from '../web/public/composition-settings.mjs';
 import {validateComposition,createLayerComposition,clipCompositing} from '../web/public/presentation-composition.mjs';
 import {compositionRuntimeResponse} from '../web/composition-runtime.mjs';
-import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
+import {stageGeometry,tableRect,backgroundRect} from '../packages/presentation/compositor/geometry.js';
+import {zoomComposition} from '../lab/lib/composition-zoom.mjs';
 import {Compositor} from '../packages/presentation/compositor/compositor.js';
 import {createSeedProject,addDealer,defaultPresentationLane,validateProject} from '../lab/lib/studio-model.mjs';
 import {buildPresentationPackage,layerAssetPath} from '../web/presentation-layers.mjs';
@@ -17,6 +18,48 @@ import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
 import {gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
+
+test('saved scene zoom keeps all layer coordinates around the same centre at every viewport size',()=>{
+  const settings=defaultCompositionSettings();settings.tableFront=true;
+  for(const layout of ['mobile','desktop']) {
+    Object.assign(settings[layout].dealer,{scale:1.2,x:.08,y:-.03});
+    Object.assign(settings[layout].background,{scale:1.1,x:-.05,y:.06});
+    Object.assign(settings[layout].table,{width:.8,x:.02,y:.2});
+    const original=structuredClone(settings),factor=1.1;
+    const zoomed=zoomComposition(settings,layout,factor);
+    const before=sceneForComposition(settings,layout),after=sceneForComposition(zoomed,layout);
+    const a=stageGeometry(before),b=stageGeometry(after);
+    for(const asset of [{width:1672,height:941},{width:720,height:1280}]) {
+      const rects=[[[a.x,a.y,1080*a.s,1920*a.s],[b.x,b.y,1080*b.s,1920*b.s]],
+        [backgroundRect(before,asset,a.dims),backgroundRect(after,asset,b.dims)],
+        [tableRect(before,asset,a),tableRect(after,asset,b)]];
+      for(const viewportWidth of [390,768,1440]) for(const [oldRect,newRect] of rects) {
+        const viewportScale=viewportWidth/a.dims[0];
+        for(let i=0;i<4;i++) {
+          const pivot=i<2?a.dims[i]/2:0;
+          assert.ok(Math.abs(newRect[i]*viewportScale-(pivot+(oldRect[i]-pivot)*factor)*viewportScale)<1e-8);
+        }
+      }
+    }
+    const restored=zoomComposition(zoomed,layout,1/factor);
+    for(const role of ['dealer','background','table']) for(const field of Object.keys(settings[layout][role]))
+      assert.ok(Math.abs(restored[layout][role][field]-settings[layout][role][field])<1e-12);
+    assert.deepEqual(zoomed[layout==='mobile'?'desktop':'mobile'],settings[layout==='mobile'?'desktop':'mobile']);
+    assert.deepEqual(settings,original);assert.equal(zoomed.tableFront,true);
+  }
+});
+
+test('zoom rejects a whole step at scale or position limits without mutating saved profiles',()=>{
+  const settings=defaultCompositionSettings();
+  settings.blackjackTables=[defaultBlackjackTableGeometry('10000000-0000-4000-8000-000000000001')];
+  assert.deepEqual(zoomComposition(settings,'desktop',1.1).blackjackTables,settings.blackjackTables);
+  for(const [role,field,value,factor] of [['dealer','scale',4,1.1],['background','scale',.1,1/1.1],['table','width',4,1.1],['table','y',-2,1.1],['dealer','x',2,1.1]]) {
+    const source=structuredClone(settings);source.desktop[role][field]=value;const original=structuredClone(source);
+    assert.throws(()=>zoomComposition(source,'desktop',factor));assert.deepEqual(source,original);
+  }
+  for(const factor of [NaN,Infinity,0,-1])assert.throws(()=>zoomComposition(settings,'desktop',factor));
+  assert.throws(()=>zoomComposition(settings,'unknown',1.1));
+});
 function asset(role,n){const value={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:role,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};return {...value,pathname:layerAssetPath(value)};}
 function fixture(dealerId='nora',label='Nora',settings=defaultCompositionSettings()){
   let project=addDealer(createSeedProject(),dealerId,label); const lane=defaultPresentationLane(dealerId),background=asset('background',1),table=asset('table',2);

@@ -683,3 +683,28 @@ test('a saved retired dealer remains invalid until explicit replacement and remo
   assert.deepEqual(h.session.project.lines,original.lines);
   assert.equal(h.session.dirty,true);
 });
+
+
+test('roulette scene zoom edits only the selected saved desktop composition and retains other drafts',()=>{
+  const project=createSeedProject();project.lanes[0].composition=defaultCompositionSettings();
+  project.lanes.push({...structuredClone(project.lanes[0]),id:'other-composition'});
+  project.lanes[0].composition.desktop.dealer.x=.12;
+  const original=structuredClone(project),h=previewHarness({project,initialGame:'roulette',dirty:false});
+  let tree=h.render();
+  const controls=()=>h.find(tree,node=>node.type?.name==='CompositionZoomControls');
+  assert.equal(h.find(tree,node=>node.type?.name==='CompositionPreview').props.layout,'desktop');
+  assert.equal(h.find(tree,node=>node.type==='button'&&node.props.children==='Mobil 9:16'),null);
+  const rendered=controls().type(controls().props);
+  h.find(rendered,node=>node.type==='button'&&String(node.props.children).includes('Zooma in')).props.onClick();
+  tree=h.render();
+  assert.equal(h.session.project.lanes[0].composition.desktop.dealer.scale,1.1);
+  assert.ok(Math.abs(h.session.project.lanes[0].composition.desktop.dealer.x-.132)<1e-12);
+  assert.deepEqual(h.session.project.lanes[0].composition.mobile,original.lanes[0].composition.mobile);
+  assert.deepEqual(h.session.project.lanes[1],original.lanes[1]);
+  assert.deepEqual(h.session.project.layerAssets,original.layerAssets);
+  assert.equal(h.session.dirty,true);assert.equal(h.saves(),0);
+  h.session.conflict=true;tree=h.render();const blocked=controls();assert.equal(blocked.props.disabled,true);
+  const saved=structuredClone(h.session.project);
+  h.find(blocked.type(blocked.props),node=>node.type==='button'&&String(node.props.children).includes('Zooma in')).props.onClick();
+  assert.deepEqual(h.session.project,saved);
+});
