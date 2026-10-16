@@ -34,7 +34,7 @@ som `2ea080bc`; det är denna uppgifts bas.
   incidenter vid start; historisk scan är `too_large`, platsmetadata delvis
   ofullständig och main-checken köad. Detta är separata täckningsgränser.
 
-## Aktuellt: Neon-import klar, runtimeleverans återstår — 16 oktober 2026
+## Aktuellt: Neon-registerbytet mergat och driftsatt — 16 oktober 2026
 
 Jakob har beställt Neon som enda register och Blob som mediekälla. Astrid
 behålls som märkt legacyreferens; Dragan är ordinarie dealer. Detta avsnitt
@@ -62,14 +62,27 @@ ersätter äldre nulägesuppgifter nedan, som är daterade leveranskvitton.
 - Alla 79 befintliga medieposter och de tre dokumenten project,
   administration och social-policy är oförändrade enligt före/efter-digest
   och oberoende Neon-connector. Astrid och Dragan är fortsatt enda aktiva.
-- Slutkoden på `codex/neon-authoritative-runtime` kräver 012 och läser
+- Slutkoden i PR186 kräver 012 och läser
   katalog/replikmetadata från Neon. Lokal katalogfallback och ordinarie
   lokal produktstart avvecklas; explicit `--offline` är en isolerad fixture.
-  Kodleveransens merge/driftsättning är ännu inte klar i detta kvitto.
+  PR186 är mergad till `main` som `2ea080bc3e75cf0207e3c155f9b4018f6a8d301e`
+  den 16 oktober 19:22 UTC efter grön PR-CI `38953385914`, inklusive riktig
+  isolerad PostgreSQL, omstart, HTTPS och migrationsberedskap. Main-CI
+  `38954442660` är också grön och startade Render-leveransen automatiskt.
+- Driftkontroll 19:32 UTC: Vercel production
+  `dpl_9k1cogPcn5zh6wxZJxoN97iXtoYV` är READY och Render
+  `dep-db97ls49v7es73f419v0` är live på `2ea080bc`.
+  Render `/__cloud/version` bekräftar full SHA och health ger 200.
+  Via `www.scoutgaming.tech` har manifestet `astrid-blue-box4/mask-manifest.json`
+  (626 byte) och `astrid-pilot.mp4` (667 364 byte) återlästs med status 200
+  och exakt katalog-SHA-256. Direkt Render-medieåtkomst ger förväntad 421
+  från ingresskontrollen. Detta är läsande driftverifiering, inte visuell
+  läppsynk-/spelacceptans. Inga nya produktionsprovdata skapades.
 - Lokal fullregression på `d0456355`: 4 577 pass, 23 villkorade skip, noll fel. Lab-bygge
   och TypeScript passerar. Senare SQL-/schema- och importkorrigeringar har
-  riktade gröna prov; exakt slutcommit ska dessutom få full CI med riktig
-  isolerad PostgreSQL, omstart och HTTPS. Ingen ny visuell medieacceptans
+  riktade gröna prov; uppföljningen för kartevidens har 29/29 gröna prov.
+  CI-miljöflagga och dubbla reporters provades dessutom med 2 096 pass,
+  9 skip och noll fel på Windows. Ingen ny visuell medieacceptans
   påstås: Work har lokal webbläsaranvändning avstängd.
 
 `arkiv/` är undantagen från Git (`.gitignore`), vanliga sökningar (`.ignore`),
@@ -79,13 +92,13 @@ disken, men ett uttryckligt filverktygsanrop kan läsa det trots dessa filter.
 Privata importkvitton och loggar finns under det befintliga arkivet och
 committas inte. Användarens konfiguration och granskningsfilmer bevaras.
 
-### Aktuell avstämning efter extern granskning — 16 oktober, 19:13 UTC
+### Aktuell avstämning efter extern granskning — 16 oktober, 19:32 UTC
 
 | Del | Implementerat / mergat | Drift / acceptans |
 | --- | --- | --- |
 | Admin, scenzoom, lokal filmvisare, Astrids märkning | PR185 i main `3165ab6d` | Vercel och Render verifierade ovan. Tidigare användaracceptans gäller sina daterade flöden. |
 | Schema 012 och registerimport | Installerat och återläst | Befintlig produktion, 514 Blob-objekt verifierade. |
-| Neon som enda runtimeregister | PR186, ännu omergad | Lokala läsare med obefintlig lokal registerrot hämtade och hashverifierade Astrid/Dragan från Neon/Blob. Driftsättning återstår. |
+| Neon som enda runtimeregister | PR186 i main `2ea080bc` | Vercel READY, Render live, health/version och publika mediehashar verifierade ovan. Isolerad SQL-/HTTPS-CI grön. |
 | Ny genererad läppsynk | Separat produktarbete | `lipsync-test` är en lokal visare av 139 Git-incheckade filmer, inte en färdig Neon/Blob-/talproduktkedja. |
 
 PR181, PR183 och PR184 är nu stängda som innehållsmässigt ersatta av PR185.
@@ -95,7 +108,8 @@ komponenter och `lab/lib`; gränssnittskonsolidering är inte full kodseparation
 
 PR186:s första CI `38950137228` avbröts efter utdragen fullregression;
 GitHub bekräftar `cancelled`. Inget testfel är belagt från den körningen;
-jobbloggen gav 404 efter avbrottet. Den är inget grönt leveranskvitto.
+jobbloggen gav 404 efter avbrottet. Den ersattes av grön CI `38953385914`
+på granskat head `08409bee9f2b547b59d0908447c1c430e20a185f`.
 Äldre PR185-körning #753 föll däremot på testets förväntan `focused` mot
 CI:s `full`, inte systemkartan. Den rättningen ingår redan i grön PR185/main.
 
