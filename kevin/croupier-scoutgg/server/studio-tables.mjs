@@ -10,6 +10,24 @@ export const LIMIT_PRESETS = Object.freeze({
   prive: preset("Privé", 5, 2000, 200, 1000, [5, 10, 25, 50, 100, 500]),
   high: preset("High Roller", 100, 25000, 1000, 50000, [100, 500, 1000, 5000, 10000, 25000]),
 });
+// Roulette tables (Kevin 14 Oct): the back office's roulette tiers, Classic 1–1,000 and High roller 25–25,000 (server/roulette.mjs).
+const rlPreset = (name, min, max, balance, chips) => Object.freeze({ name, min, max, balance, chips: Object.freeze(chips) });
+export const ROULETTE_PRESETS = Object.freeze({
+  "rl-classic": rlPreset("Classic", 1, 1000, 1000, [1, 5, 25, 100, 500]),
+  "rl-high": rlPreset("High Roller", 25, 25000, 25000, [25, 100, 500, 1000, 5000]),
+});
+export const GAMES = Object.freeze(["blackjack", "roulette"]);
+// The back office's Limit tiers (workspace "tiers", Roulette: classic, high) move a roulette tier's range; the chips follow
+// the range: five steps of this ladder from the smallest at or above its minimum.
+const RL_LADDER = [1, 5, 25, 100, 500, 1000, 5000, 25000, 100000, 500000, 1000000];
+const rlFromBo = { "rl-classic": "classic", "rl-high": "high" };
+export function rouletteTier(id, bo) {
+  const base = ROULETTE_PRESETS[id], t = bo?.[rlFromBo[id]];
+  const min = Number(t?.min), max = Number(t?.max);
+  if (!base || !Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min < 1 || min > max || max > 10_000_000) return base;
+  const from = RL_LADDER.findIndex(v => v >= min), chips = RL_LADDER.slice(from < 0 ? RL_LADDER.length - 1 : from).filter(v => v <= max).slice(0, 5);
+  return Object.freeze({ ...base, min, max, chips: Object.freeze(chips.length ? chips : [min]), balance: Math.max(base.balance, max) });
+}
 // Tables that were not built in the studio keep the demo's original limits.
 export const DEFAULT_LIMITS = preset("Privé", 5, 2000, 2000, 1000, [5, 10, 25, 50, 100, 500]);
 // An operator logo: a PNG/JPEG/WebP data URL (the studio rasterises SVG first), never a remote URL.
@@ -32,16 +50,22 @@ const slugOf = name => name.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g,
 // so a studio table never takes over its wallets and bets.
 export function createStudioTables(file, { reserved = () => false } = {}) {
   let tables = {};
+  let rouletteBo = null;   // the back office's roulette tiers, refreshed by the server (setRouletteTiers)
   try { tables = JSON.parse(readFileSync(file, "utf8")); } catch {}
   const persist = () => { writeFileSync(file + ".tmp", JSON.stringify(tables)); renameSync(file + ".tmp", file); };
 
   // owner: the back office account that built it (Kevin 12 Oct: an aggregator only sees its own account).
   function create(input = {}, owner = null) {
     const config = {};
+    // a table without a game is blackjack, as every table was before roulette
+    const game = input.game ?? "blackjack";
+    if (!GAMES.includes(game)) throw new Error("Invalid game");
     for (const [key, allowed] of Object.entries(STUDIO_CHOICES)) {
-      if (!allowed.includes(input[key])) throw new Error(`Invalid ${key}`);
+      const ok = key === "limit" && game === "roulette" ? Object.keys(ROULETTE_PRESETS) : allowed;
+      if (!ok.includes(input[key])) throw new Error(`Invalid ${key}`);
       config[key] = input[key];
     }
+    if (game !== "blackjack") config.game = game;
     if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 28) throw new Error("Invalid table name");
     config.name = input.name.trim();
     config.custom = /^#[0-9a-f]{6}$/i.test(input.custom ?? "") ? input.custom : null;
@@ -59,13 +83,17 @@ export function createStudioTables(file, { reserved = () => false } = {}) {
 
   const get = slug => Object.hasOwn(tables, slug) ? tables[slug] : null;
   // The limits a room plays with: its studio preset, or the demo's original limits.
-  const limitsFor = slug => { const t = get(slug); return t ? { ...LIMIT_PRESETS[t.limit], preset: t.limit, tableName: t.name } : DEFAULT_LIMITS; };
+  const limitsFor = slug => { const t = get(slug); return !t ? DEFAULT_LIMITS : t.game === "roulette" ? { ...rouletteTier(t.limit, rouletteBo), preset: t.limit, tableName: t.name, room: t.room }
+    : { ...LIMIT_PRESETS[t.limit], preset: t.limit, tableName: t.name }; };
 
   // The game URL for a saved table: its own shared-table session, so every table plays apart.
-  const gameUrl = t => `/?${new URLSearchParams({ dealer: t.dealer, room: t.room, lang: t.lang, session: t.slug, table: t.slug })}`;
+  const gameUrl = t => t.game === "roulette" ? `/roulette/?${new URLSearchParams({ session: t.slug, table: t.slug })}`
+    : `/?${new URLSearchParams({ dealer: t.dealer, room: t.room, lang: t.lang, session: t.slug, table: t.slug })}`;
 
   // A back office account's own tables, newest first.
   const ownedBy = owner => Object.values(tables).filter(t => owner && t.owner === owner).sort((a, b) => b.created.localeCompare(a.created));
 
-  return { create, get, gameUrl, limitsFor, ownedBy };
+  const setRouletteTiers = bo => { rouletteBo = bo && typeof bo === "object" ? bo : null; };
+  const rouletteTiers = () => Object.fromEntries(Object.keys(ROULETTE_PRESETS).map(id => [id, rouletteTier(id, rouletteBo)]));
+  return { create, get, gameUrl, limitsFor, ownedBy, setRouletteTiers, rouletteTiers };
 }

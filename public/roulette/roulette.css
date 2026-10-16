@@ -1,0 +1,102 @@
+:root { --primary:#D6FF3A; --on-primary:#0A0B0D; --surface:#0A0B0D; --text:#F2F1ED; --muted:#a9a69d; --accent:#DBC18A; --line:#f2f1ed24; --radius:20px; }
+* { box-sizing:border-box; }
+html, body { margin:0; background:var(--surface); color:var(--text); font-family:Inter,sans-serif; -webkit-font-smoothing:antialiased; }
+button { font:inherit; cursor:pointer; }
+.rl { max-width:960px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; }
+.rl-top { display:flex; align-items:center; gap:12px; padding:12px 16px; }
+.rl-back { color:var(--text); text-decoration:none; font-size:13px; border:1px solid var(--line); border-radius:999px; padding:7px 12px; white-space:nowrap; }
+.rl-brand { display:flex; align-items:center; gap:7px; font-weight:700; letter-spacing:.01em; }
+.rl-brand img { width:20px; height:20px; }
+.rl-table-name { margin-left:auto; font-size:12px; color:var(--muted); text-align:right; }
+
+/* the whole stage scales down on a short screen (not cropped), so the dealer's head stays in the room */
+.rl-stage { position:relative; overflow:hidden; border-radius:var(--radius); margin:0 auto; width:min(calc(100% - 32px), calc(62dvh * 1708 / 1180)); aspect-ratio:1708/1180; background:#000; }
+/* only the upper room of the blackjack backdrop: its own table and Emil's shoe sit lower, behind the roulette table,
+   and the room fades to black before them */
+.rl-room { position:absolute; inset:0; background:url(/media/dealers/rooms-v2/darkhall.png) center top/100% auto no-repeat, #0a0b0d; filter:brightness(.7);
+  -webkit-mask-image:linear-gradient(#000 52%,transparent 74%); mask-image:linear-gradient(#000 52%,transparent 74%); }
+.rl-table { position:absolute; left:0; right:0; bottom:0; aspect-ratio:1708/920; }
+.rl-felt { position:absolute; inset:0; width:100%; height:100%; user-select:none; -webkit-user-drag:none; }
+/* Paow behind the wheel (dealer.js): her plate crop at 0.8 table px per plate px, hands on the far rim (table y 405) */
+.rl-dealer { position:absolute; left:37.47%; top:-16.85%; width:23.65%; height:67.83%; pointer-events:none; }
+.rl-dealer-src { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.rl-wheel { position:absolute; inset:0; pointer-events:none; }
+.rl-wheel canvas { position:absolute; }
+.rl-targets, .rl-stacks { position:absolute; inset:0; }
+.rl-stacks { pointer-events:none; }
+.rl-targets button { position:absolute; padding:0; border:0; background:transparent; -webkit-tap-highlight-color:transparent; }
+.rl-targets button:hover, .rl-targets button:focus-visible { background:#d6ff3a3d; outline:none; }
+.rl-targets button.win { background:#d6ff3a73; animation:rl-pulse 1s ease-in-out infinite alternate; }
+.rl-targets .rl-spot { width:1%; height:1.1%; transform:translate(-50%,-50%); border-radius:50%; z-index:1; }
+.rl-targets .rl-spot:hover, .rl-targets .rl-spot:focus-visible { background:var(--primary); box-shadow:0 0 0 2px #0a0b0d88; }
+@media (max-width:600px) { .rl-targets .rl-spot { display:none; } }   /* too small to hit on a phone: numbers and outside bets only */
+.rl-locked .rl-targets button { cursor:default; }
+.rl-locked .rl-targets button:hover { background:transparent; }
+@keyframes rl-pulse { to { background:#d6ff3a26; } }
+.rl-stack { position:absolute; transform:translate(-50%,-60%); min-width:22px; height:22px; padding:0 5px; border-radius:999px; display:grid; place-items:center;
+  font:700 10px 'JetBrains Mono',monospace; background:var(--primary); color:var(--on-primary); box-shadow:0 2px 6px #000a, inset 0 0 0 2px #0a0b0d55; pointer-events:none; }
+.rl-stack.other { background:var(--text); }
+
+.rl-history { position:absolute; top:12px; left:12px; right:12px; display:flex; gap:5px; margin:0; padding:0; list-style:none; overflow:hidden; }
+.rl-history li { flex:none; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font:700 12px 'JetBrains Mono',monospace; color:#fff; border:1px solid #fff3; }
+.rl-history li:first-child { width:34px; height:34px; font-size:14px; border:2px solid var(--primary); }
+.red { background:#b51f21; } .black { background:#171919; } .green { background:#087743; }
+.rl-result { position:absolute; left:50%; top:28%; transform:translate(-50%,-50%); text-align:center; padding:14px 22px; border-radius:var(--radius);
+  background:#0a0b0de6; border:1px solid var(--line); box-shadow:0 10px 30px #000a; min-width:180px; }
+.rl-result .num { width:64px; height:64px; margin:0 auto 8px; border-radius:50%; display:grid; place-items:center; font:700 28px 'JetBrains Mono',monospace; color:#fff; border:2px solid #fff5; }
+.rl-result .net { font-weight:700; font-size:18px; }
+.rl-result .net.won { color:var(--primary); }
+.rl-result small { display:block; color:var(--muted); margin-top:3px; }
+
+.rl-dock { margin:12px 16px 20px; padding:14px; border:1px solid var(--line); border-radius:var(--radius); background:#121316; }
+.rl-status { display:flex; justify-content:space-between; font-weight:600; }
+.rl-timer { font-family:'JetBrains Mono',monospace; color:var(--muted); }
+.rl-bar { height:3px; background:#ffffff14; border-radius:3px; overflow:hidden; margin:9px 0 12px; }
+.rl-bar i { display:block; height:100%; width:0; background:var(--primary); transition:width .25s linear; }
+.rl-chips { display:flex; justify-content:center; gap:12px; }
+.rl-chips button { width:46px; height:46px; padding:0; border:0; border-radius:50%; background:none; position:relative; }
+.rl-chips button svg { width:100%; height:100%; display:block; }
+.rl-chips button[aria-checked=true] { transform:translateY(-4px); }
+.rl-chips button[aria-checked=true]::after { content:''; position:absolute; inset:-4px; border:2px solid var(--text); border-radius:50%; }
+.rl-columns { display:flex; gap:8px; justify-content:center; margin-top:12px; }
+.rl-columns button, .rl-actions button { min-height:36px; padding:0 14px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--text); font-size:12px; font-weight:600; }
+.rl-columns button { position:relative; }
+.rl-columns button b { margin-left:6px; color:var(--primary); font-family:'JetBrains Mono',monospace; }
+.rl-actions { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+.rl-actions #repeat { background:var(--primary); color:var(--on-primary); border-color:var(--primary); }
+button:disabled { opacity:.35; cursor:default; }
+.rl-wallet { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+.rl-wallet small { display:block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.rl-wallet b { font:700 16px 'JetBrains Mono',monospace; }
+.rl-error { margin:10px 0 0; color:#ff8c7a; font-size:13px; text-align:center; }
+
+@media (max-width:600px) {
+  .rl-top { padding:10px 16px; }
+  .rl-table-name { display:none; }
+  .rl-stage { aspect-ratio:1708/1300; }
+  .rl-history li { width:24px; height:24px; font-size:10px; }
+  .rl-history li:first-child { width:30px; height:30px; font-size:12px; }
+  .rl-chips { gap:8px; }
+  .rl-chips button { width:42px; height:42px; }
+  .rl-stack { min-width:18px; height:18px; font-size:9px; padding:0 4px; }
+}
+@media (min-width:1100px) { .rl { max-width:1040px; } }
+
+/* flat betting board: phones only (the felt's own fields are the board on larger screens) */
+.rl-board { display:none; }
+@media (max-width:600px) {
+  .rl-targets { pointer-events:none; }
+  .rl-board { display:grid; grid-template-columns:24px repeat(12,1fr); gap:2px; margin:0 0 12px; }
+  .rl-board button { position:relative; min-height:34px; border:0; border-radius:4px; color:#fff; font:700 11px 'JetBrains Mono',monospace; padding:0; }
+  .rl-board button.red { background:#9e1c1e; } .rl-board button.black { background:#202224; } .rl-board button.green { background:#087743; }
+  .rl-board .zero { grid-row:1 / span 3; }
+  .rl-board .dozen, .rl-board .out { background:#1a1c1f; border:1px solid var(--line); font:600 10px Inter,sans-serif; }
+  .rl-board .dozen { grid-column:span 4; }
+  .rl-board .dozen:nth-child(38) { grid-column:2 / span 4; }
+  .rl-board .out { grid-column:span 2; }
+  .rl-board .out:nth-child(41) { grid-column:2 / span 2; }
+  .rl-board .red-mark { color:#e0393b; } .rl-board .black-mark { color:#8b8f94; }
+  .rl-board button b { position:absolute; right:-2px; top:-4px; z-index:1; min-width:15px; height:15px; padding:0 3px; border-radius:999px; background:var(--primary); color:var(--on-primary); font:700 9px 'JetBrains Mono',monospace; display:grid; place-items:center; }
+  .rl-board button b[hidden] { display:none; }
+  .rl-board button.win { outline:2px solid var(--primary); outline-offset:-2px; }
+}

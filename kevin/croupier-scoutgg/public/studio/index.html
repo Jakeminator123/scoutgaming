@@ -306,6 +306,16 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 .topbar{padding:0 18px}.topbar .crumb span:last-child,.topbar .crumb i,.user span{display:none}
 .ready-main{grid-template-columns:minmax(0,1fr);padding:24px}.ready-stage{justify-content:center}.ready-info h1{font-size:40px}
 .step-in{padding-left:18px}.felts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Roulette (Kevin 14 Oct): the game step picks it; a roulette table has no dealer, felt colour, language or logo yet */
+.game-seg{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stage>img.rl-table{inset:auto;left:-45%;width:190%;height:auto;bottom:19%;object-fit:contain;z-index:2;pointer-events:none}
+body.game-roulette .ov-wm{display:none}
+/* only the upper room: the blackjack table and shoe in the lower half fade out behind the roulette table */
+body.game-roulette .stage>img.room{height:47%;object-position:top;-webkit-mask-image:linear-gradient(#000 60%,transparent);mask-image:linear-gradient(#000 60%,transparent)}
+body.game-roulette .step[data-step=dealer],body.game-roulette .step[data-step=felt],body.game-roulette .step[data-step=lang],body.game-roulette .step[data-step=brand]{display:none}
+body.game-roulette #dealerImg,body.game-roulette .felt,body.game-roulette .talk,body.game-roulette #speaking{display:none}
+body:not(.game-roulette) .rl-only,body.game-roulette .limit-opt:not(.rl-only){display:none}
 </style>
 </head>
 <body>
@@ -347,6 +357,7 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 <div class="stage" id="stage">
 <img class="room" id="roomImg" src="assets/rooms/darkhall-720.png" alt="">
 <img class="dealer" id="dealerImg" src="assets/cut-astrid-v2.png" alt="">
+<img class="rl-table" id="rlImg" src="/roulette/assets/table.png" alt="" hidden>
 <canvas class="talk" id="talk" width="720" height="1280" aria-hidden="true"></canvas>
 <canvas class="felt c off" id="feltC" width="720" height="1280"></canvas>
 <canvas class="felt s off" id="feltS" width="720" height="1280"></canvas>
@@ -367,6 +378,13 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 <aside class="config">
 <div class="config-head"><div class="kicker">Table Studio · AI live casino</div><h1 class="h-split">Build your<br>own <em>table.</em></h1><p class="head-sub">Choose the host, the room, the felt, the language and the limits. The preview updates as you go.</p></div>
 <div class="steps" id="steps">
+
+<section class="step" data-step="game">
+<div class="step-h"><span class="sec-l">// 00 · The game</span><span class="step-v" data-v="game">Blackjack</span></div><p class="sec-d">Blackjack with an AI dealer, or European roulette.</p>
+<div class="step-b"><div><div class="step-in">
+<div class="seg game-seg" role="radiogroup" aria-label="Game"><button type="button" class="opt seg-o" role="radio" data-k="game" data-val="blackjack" aria-checked="true">Blackjack</button><button type="button" class="opt seg-o" role="radio" data-k="game" data-val="roulette" aria-checked="false">Roulette</button></div>
+</div></div></div>
+</section>
 
 <section class="step open" data-step="dealer">
 <div class="step-h"><span class="sec-l">// 01 · The dealer</span><span class="step-v" data-v="dealer">Astrid</span></div>
@@ -429,6 +447,8 @@ a{color:#d6ff3a}a:hover{color:#e3ff70}
 <button class="opt limit-opt" type="button" role="radio" data-k="limit" data-val="casual" aria-checked="false"><span class="lt">Casual<span class="tag">Low stakes</span></span><span class="range">$1 – $500</span><span class="ld">Side bets up to $50 · Balance $500</span><span class="mini" data-chips="casual"></span></button>
 <button class="opt limit-opt" type="button" role="radio" data-k="limit" data-val="prive" aria-checked="true"><span class="lt">Privé<span class="tag">Standard</span></span><span class="range">$5 – $2,000</span><span class="ld">Side bets up to $200 · Balance $1,000</span><span class="mini" data-chips="prive"></span></button>
 <button class="opt limit-opt" type="button" role="radio" data-k="limit" data-val="high" aria-checked="false"><span class="lt">High Roller<span class="tag">VIP</span></span><span class="range">$100 – $25,000</span><span class="ld">Side bets up to $1,000 · Balance $50,000</span><span class="mini" data-chips="high"></span></button>
+<button class="opt limit-opt rl-only" type="button" role="radio" data-k="limit" data-val="rl-classic" aria-checked="false"><span class="lt">Classic<span class="tag">Roulette</span></span><span class="range">$1 – $1,000</span><span class="ld">Per bet · Balance $1,000</span><span class="mini" data-chips="rl-classic"></span></button>
+<button class="opt limit-opt rl-only" type="button" role="radio" data-k="limit" data-val="rl-high" aria-checked="false"><span class="lt">High Roller<span class="tag">Roulette</span></span><span class="range">$25 – $25,000</span><span class="ld">Per bet · Balance $25,000</span><span class="mini" data-chips="rl-high"></span></button>
 </div>
 <div class="name-field"><label for="tableName">Table name</label><input id="tableName" type="text" maxlength="28" value="Privé Blackjack"></div>
 </div></div></div>
