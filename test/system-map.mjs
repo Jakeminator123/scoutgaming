@@ -6,7 +6,7 @@ import { dirname, resolve, relative, basename } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createSourceReader, verifySystemMap, refreshContracts, captureSystemMapInputs, isolatedGitEnvironment, hashText, summarizeAssurance, parseSqlTables } from '../docs/system-map/verify.mjs';
-import { importTestEvidence, reportTestFiles, captureEvidenceInputs, collectIsolatedStudioQaReport } from '../tools/system-map-evidence.mjs';
+import { importTestEvidence, reportTestFiles, captureEvidenceInputs, collectIsolatedStudioQaReport, runIsolatedStudioQaCommand } from '../tools/system-map-evidence.mjs';
 import { buildSystemMap } from '../docs/system-map/build.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -234,14 +234,65 @@ test('isolated acceptance observes the existing runner, masks diagnostics, and b
   const before = capture();
   const changed = await collectIsolatedStudioQaReport({ capture, runQa: async () => {
     f.put(sql, 'CREATE TABLE croupier_studio.documents (id text PRIMARY KEY, revision bigint);\n');
-    return { legacyChecks: ['complete'], integrationChecks: ['complete'] };
+    // The real runner hashes STUDIO_ISOLATED_QA_SOURCES independently of the
+    // system map and rejects changed SQL/runtime inputs before returning.
+    throw Error('isolated_qa_sources_changed_rerun_required');
   } });
   assert.equal(changed.result, 'failed');
+  assert.equal(changed.error.message, 'isolated_qa_sources_changed_rerun_required');
   assert.equal(importTestEvidence({ snapshot: before, reports: [changed.report] }).tests[0].result, 'failed');
   assert.deepEqual(importTestEvidence({ snapshot: capture(), reports: [changed.report] }).tests, []);
   const stale = JSON.parse(passed.report.trim().split('\n')[0]); stale.snapshot.sourceSha = B;
   assert.deepEqual(importTestEvidence({ snapshot: before, reports: [passed.report.replace(passed.report.split('\n')[0], JSON.stringify(stale))] }).tests, []);
 });
+test('missing, malformed or changing map data never prevents or fails completed SQL acceptance', async t => {
+  const path = 'tools/studio-isolated-qa.mjs';
+  for (const problem of ['missing', 'malformed', 'changed-during-run', 'malformed-after-run']) {
+    const f = fixture(t); f.put(path, '// Existing SQL runner source.\n');
+    const contracts = f.get('docs/system-map/contracts.json');
+    contracts.contracts.push({id:'sql-isolated',label:'SQL acceptance',serviceIds:['frontend'],sources:[sql],tests:[path],expectedHashes:{}});
+    f.put('docs/system-map/contracts.json',contracts);refreshContracts({reader:f.reader()});
+    const capture = () => captureSystemMapInputs({reader:f.frozen()}), before = capture();
+    if(problem==='missing')rmSync(resolve(f.root,'docs/system-map/catalog.json'));
+    if(problem==='malformed')f.put('docs/system-map/catalog.json','{');
+    let calls=0;
+    const result=await collectIsolatedStudioQaReport({capture,runQa:async()=>{
+      calls++;
+      if(problem==='changed-during-run')f.put('docs/system-map/flows.json',{sourceSha:A,flows:[{id:'game',label:'New map label'}]});
+      if(problem==='malformed-after-run')f.put('docs/system-map/catalog.json','{');
+      return {legacyChecks:['SQL complete'],integrationChecks:['HTTPS complete']};
+    }});
+    assert.equal(calls,1,problem);assert.equal(result.result,'passed',problem);assert.equal(result.error,undefined);
+    const rows=result.report.trim().split('\n').map(JSON.parse);
+    assert.equal(rows[0].inputsStable,false);assert.equal(rows[1].result,'skipped');
+    assert.equal(importTestEvidence({snapshot:before,reports:[result.report]}).tests.some(row=>row.result==='passed'),false);
+  }
+});
+
+test('unavailable map evidence cannot mask SQL/HTTPS or source-integrity failure', async()=>{
+  for(const message of ['isolated_qa_process_failed','isolated_qa_sources_changed_rerun_required']) {
+    let calls=0;
+    const result=await collectIsolatedStudioQaReport({capture:()=>{throw Error('PRIVATE map diagnostic');},runQa:async()=>{
+      calls++;throw Error(message);
+    }});
+    assert.equal(calls,1);assert.equal(result.result,'failed');assert.equal(result.error.message,message);
+    assert.equal(result.report.includes('PRIVATE'),false);
+  }
+});
+
+test('optional receipt write errors preserve the SQL runner exit status and hide storage diagnostics',async()=>{
+  for(const result of ['passed','failed']) {
+    const logs=[],warnings=[];let calls=0;
+    const exit=await runIsolatedStudioQaCommand({reportOutput:'unused-fixture.jsonl',qaOptions:{postgresBin:'/fixture/postgres'}},{
+      collect:async options=>{calls++;assert.equal(options.qaOptions.postgresBin,'/fixture/postgres');return{result,report:'receipt',...(result==='failed'?{error:Error('qa_failed')}:{})};},
+      write:()=>{throw Error('PRIVATE receipt path');},log:value=>logs.push(value),warn:value=>warnings.push(value),
+    });
+    assert.equal(calls,1);assert.equal(exit,result==='passed'?0:1);
+    assert.equal(JSON.parse(logs[0]).result,result);assert.match(warnings[0],/Optional system map/);
+    assert.equal(warnings.join('\n').includes('PRIVATE'),false);
+  }
+});
+
 test('passive reporter masks names/errors and refuses files outside its source root', async () => {
   const events = [
     { type: 'test:pass', data: { file: resolve(ROOT, 'test/system-map.mjs'), name: 'DO_NOT_PUBLISH_VALUE' } },

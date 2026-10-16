@@ -41,6 +41,14 @@ Inga nya testidentiteter eller produktionsdata behövdes.
 
 ## Arbetssätt och verifiering
 
+Dokumentationsrättning 16 oktober, efter den externa granskningen:
+systemkartans läsanvisning är nu en kort systemöversikt och terminologin en
+ordlista. Äldre kartdata ger inga bevarandekrav på sidor eller tester.
+Astrids referensroll skyddar hennes verifierade funktioner och data, inte
+parallella lokala register. Rotens README beskriver samma fokuskontroller
+lokalt/full regression i CI som AGENTS. Äldre statusrubriker i handoff och
+tracker är märkta som historik. Aktuell merge/driftstatus följs där överst.
+
 Dokumentationsändring 16 oktober 2026: det nya runtimekontraktet samlar
 katalog och svarsbibliotekets metadata i scoped Neon, med mediebytes i Blob.
 Lokala katalogfiler används endast som uttryckliga authoring-/importkällor.

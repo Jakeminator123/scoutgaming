@@ -717,11 +717,14 @@ till `/admin`, `/studio` via `/control/clips` till `/admin/dealer-studio` och
 utloggad intern åtkomst till `/studio/login?returnTo=...`. N1 når även
 partner- och spelarytorna med samma konto; ett byte av yta ändrar inte rollen.
 
-`CROUPIER_STREAM_LANE=lissabon-stream-lane` används fortfarande i lokal och
-molnbaserad start, chattens `playResults`, kameragrinden och lokala profiler
-(`lab/start.mjs`, `open-claw/lab/deploy/local-connection.mjs`,
-`ops/cloud/config.mjs`, `web/server.mjs`). Bevara dessa flöden och Astrids
-tal-/videokopplingar när gamla produktnamn förenklas.
+`CROUPIER_STREAM_LANE=lissabon-stream-lane` är ett befintligt
+kompatibilitetsvärde i `ops/cloud/config.mjs` och `web/server.mjs`;
+kvarvarande konsumenter behöver verifieras före ändring. Astrid behålls som
+markerad legacyreferens utan trelagersversion. Hennes verifierade media,
+talhistorik och fungerande OpenClaw-/talflöden kan användas som referens,
+med registermetadata i Neon och mediebytes i Blob. Detta kräver inte att
+parallella lokala register, lokala startprofiler eller äldre implementationer
+bevaras. Exakta mediaidentiteter och godkännanden gäller fortfarande.
 
 `web/storage/studio-game-policy.mjs` skiljer modern rumsadministration från
 historiska rum och sektioner som `tiers`, `pitboss` och `tournaments`.

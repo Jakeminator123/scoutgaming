@@ -24,6 +24,21 @@ importunderlag är inte längre deployade register. Fullt import-/testkvitto,
 resursidentiteter och begränsningar finns i [JOHN-HANDOFF.md](JOHN-HANDOFF.md).
 Äldre avsnitt nedan beskriver respektive dåvarande läge, inte aktuella hinder.
 
+Avstämning 16 oktober 19:13 UTC: PR181/183/184 är stängda efter verifierad
+innehållsjämförelse mot mergad PR185; inga unika ändringar saknas. PR186
+är ännu omergad. Dess första CI avbröts under utdragen fullregression och
+måste ersättas av gröna kontroller före merge. Lokal fullregression på
+`d0456355`: 4 577 pass, 23 villkorade skip, inga fel. Preview är endast
+PR-granskning; leveransmålet är main → production.
+
+Systemkartans indirekta koppling till obligatoriska SQL-prov är rättad:
+fel i kartunderlag/evidens ska inte stoppa proverna eller ändra deras
+resultat. Verkliga SQL-/HTTPS-fel och källintegritet kvarstår. Kartans
+läsanvisning och terminologin har slimats och felaktiga lokala
+registerinstruktioner rättats. Handoffens aktuella tabell skiljer Admin,
+registermigrering och ny läppsynk. Noll aktiva bolag/rum/sammansättningar
+är avsiktligt; ny spelkedjeacceptans kräver isolerade data och separat kvitto.
+
 ## Historik: förtydligad målbild 16 oktober kväll — samma molnkälla
 
 Jakobs huvudmål är en gemensam molnstruktur utan parallella lokala register.
@@ -43,7 +58,7 @@ bolagsposter ligger i papperskorgen. Medier och publiceringshistorik bevaras;
 Astrids och Dragans skyddade data är oförändrade. Admins referensmärkning
 ligger i PR185, utan merge/deploy.
 
-## Dealeravveckling 16 oktober — separat kod- och produktionsstatus
+## Historik: dealeravveckling 16 oktober — dåvarande kod- och produktionsstatus
 
 Jakob har beställt borttagning av Vera, Mei, Amira och Johanna. Lokala
 seed-, identitets- och mediereferenser är avvecklade, med anpassade fixtures
@@ -61,7 +76,7 @@ Sidochattens workflowförenkling är integrerad med bevarad testtäckning;
 slutlig kodleverans redovisas i handoffen. Ingen merge eller driftsättning är gjord. Historiska statusavsnitt nedan
 beskriver läget före dessa åtgärder.
 
-## Aktiv integration 16 oktober — en rumsyta och verifierad avveckling
+## Historik: integration 16 oktober — en rumsyta och verifierad avveckling
 
 Övertagandet sker i huvudcheckoutens `codex/admin-consolidation-20261016`.
 DENNA:s lokala startfix och fyra handoff-dokument är säkrade. De fyra
@@ -175,7 +190,7 @@ ingångarna, 43 riktade dokument-/workflow-/hook-/inboxprov passerar och
 `git diff --check` samt lokala länkar i de uppdaterade ingressavsnitten är
 kontrollerade. Ingen fullhook eller medieacceptans kördes om för dessa texter.
 
-## Aktiv slutplan — avstämning 16 oktober 2026
+## Historik: dåvarande slutplan — avstämning 16 oktober 2026
 
 Jakob har aktiverat målet i samma chatt och befintliga huvudcheckout.
 Dragan-grundloopens rättning och användarprovet av Spelbolag → Rum är
