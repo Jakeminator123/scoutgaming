@@ -72,17 +72,31 @@ test('client-directory dependencies, schemas and configuration cannot bypass mig
 test('CI runs Studio discovery once and keeps product checks separate from map reporting', () => {
   const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8');
   const fullHook = readFileSync(new URL('../.githooks/pre-commit-full',import.meta.url),'utf8');
-  assert.equal((fullHook.match(/^run_node_tests lab\/test\/\*\.test\.mjs lab\/components\/\*\.test\.mjs$/gm) || []).length, 1);
+  assert.equal((fullHook.match(/^run_node_tests studio studio-tests lab\/test\/\*\.test\.mjs lab\/components\/\*\.test\.mjs$/gm) || []).length, 1);
   const explicitStudio = fullHook.split('\n').filter(line => line.startsWith('run_node_tests '))
-    .flatMap(line => line.split(/\s+/).slice(1)).filter(path => /^lab\/(?:test|components)\/[^\s/*]+\.test\.mjs$/.test(path));
+    .flatMap(line => line.split(/\s+/).slice(3)).filter(path => /^lab\/(?:test|components)\/[^\s/*]+\.test\.mjs$/.test(path));
   assert.deepEqual(explicitStudio, []);
   assert.doesNotMatch(yaml, /npm --prefix lab test/);
-  assert.match(yaml, /sh \.githooks\/pre-commit --full/);
+  const suites = ['studio', 'admin', 'contracts', 'database', 'presentation', 'access', 'speech', 'gameplay'];
+  const selected = [...yaml.matchAll(/run: sh \.githooks\/pre-commit-full ([a-z]+)/g)].map(match => match[1]);
+  assert.deepEqual(selected, suites, 'CI must execute every full-regression suite exactly once');
   assert.match(yaml, /needs\.changes\.outputs\.migration == 'true'/);
-  const optional = yaml.split('      - name: ').filter(step => /continue-on-error: true/.test(step));
-  assert.ok(optional.length > 0, 'map reporting must remain informational');
-  assert.ok(optional.every(step => /system map|map and test evidence/i.test(step.split('\n')[0])));
-  assert.doesNotMatch(fullHook, /node docs\/system-map\/verify\.mjs/);
+  const steps = yaml.split('      - name: ');
+  for (const step of steps.filter(step => /^Regression - /.test(step))) {
+    assert.match(step, /if: \$\{\{ !cancelled\(\) \}\}/);
+    assert.match(step, /timeout-minutes: 8/);
+    assert.doesNotMatch(step, /continue-on-error: true/);
+  }
+  const isolated = steps.find(step => /^Existing isolated Studio SQL/.test(step));
+  assert.match(isolated, /tools\/studio-isolated-qa\.mjs/);
+  assert.doesNotMatch(isolated, /continue-on-error: true/);
+  const timings = steps.find(step => /^Save regression group timings/.test(step));
+  assert.match(timings, /if: always\(\)/);
+  assert.match(timings, /continue-on-error: true/);
+  assert.match(timings, /timeout-minutes: 2/);
+  assert.match(yaml, /if: always\(\)[\s\S]*dealer-regression-timing\.jsonl/);
+  assert.doesNotMatch(yaml, /system-map/);
+  assert.doesNotMatch(fullHook, /system-map/);
   const push = readFileSync(new URL('../tools/check-push-target.mjs',import.meta.url),'utf8');
   assert.doesNotMatch(push, /system-map/);
 });
@@ -124,7 +138,7 @@ test('real PR merge diff detects an earlier code commit even when the final comm
 });
 
 test('final CI gate fails for missing, failed, cancelled or unexpectedly skipped work', () => {
-  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8');
+  const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8').replaceAll('\r\n', '\n');
   const script = yaml.split('// Final gate script\n')[1]?.split('          NODE')[0]
     .split('\n').filter(line=>line.trim()).map(line=>line.slice(10)).join('\n');
   assert.ok(script,'workflow must expose its actual gate script');

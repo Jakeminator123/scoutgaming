@@ -51,9 +51,6 @@ jobs:
           node tools/check-environment-variables.mjs
           node --test test/check-environment-variables.mjs test/github-workflow.mjs test/precommit-checks.mjs test/inbox.mjs test/partner-docs.mjs
           git diff --check HEAD^1 HEAD
-      - name: System map documentation report
-        continue-on-error: true
-        run: node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA"
 
   dealer-regression:
     needs: changes
@@ -96,20 +93,44 @@ jobs:
       # OpenClaw launcher acceptance needs the real Studio build above.
       - run: npm --prefix open-claw/lab test
       - run: npm --prefix open-claw/lab run check
-      - name: Capture optional system map inputs
-        continue-on-error: true
-        run: |
-          mkdir -p "$RUNNER_TEMP/system-map-evidence"
-          node tools/system-map-evidence.mjs --capture --ref "$GITHUB_SHA" --output "$RUNNER_TEMP/system-map-inputs.json"
-      # Full hook also requires frontend typecheck once, after its frozen install.
-      - name: Shared pre-commit regression and frontend typecheck
-        env:
-          CROUPIER_SYSTEM_MAP_EVIDENCE_DIR: ${{ runner.temp }}/system-map-evidence
-        run: sh .githooks/pre-commit --full
+      # Same registry as local --full. Each suite has its own visible step;
+      # later suites still diagnose failures, and any failed suite fails this job.
+      - name: Regression - Studio tests and frontend typecheck
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
+        run: sh .githooks/pre-commit-full studio
+      - name: Regression - Admin and economy journal
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
+        run: sh .githooks/pre-commit-full admin
+      - name: Regression - Contracts, security and ownership
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
+        run: sh .githooks/pre-commit-full contracts
+      - name: Regression - Database, migrations and authority
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
+        run: sh .githooks/pre-commit-full database
+      - name: Regression - Presentation and media identity
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
+        run: sh .githooks/pre-commit-full presentation
+      - name: Regression - Access, wallet, registry and cloud
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
+        run: sh .githooks/pre-commit-full access
+      - name: Regression - Speech and player transport
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
+        run: sh .githooks/pre-commit-full speech
+      - name: Regression - Game rules and media ownership
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
+        run: sh .githooks/pre-commit-full gameplay
       - name: Existing isolated Studio SQL, restart and HTTPS acceptance
-        if: always()
+        if: ${{ !cancelled() }}
+        timeout-minutes: 8
         run: |
-          mkdir -p "$RUNNER_TEMP/system-map-evidence"
           # The runner image ships PostgreSQL 16 binaries; the download stays as fallback.
           if [ -x /usr/lib/postgresql/16/bin/initdb ] && [ -x /usr/lib/postgresql/16/bin/pg_ctl ]; then
             postgres_source=(--postgres-bin /usr/lib/postgresql/16/bin)
@@ -117,34 +138,17 @@ jobs:
             postgres_source=(--download-postgres)
           fi
           echo "PostgreSQL source: ${postgres_source[*]}"
-          node tools/system-map-evidence.mjs --run-isolated-qa "${postgres_source[@]}" --report-output "$RUNNER_TEMP/system-map-evidence/studio-isolated-qa.jsonl"
-      - name: Build informational system map with regression results
+          node tools/regression-group.mjs database/isolated-sql-restart-https 360 node tools/studio-isolated-qa.mjs "${postgres_source[@]}"
+      - name: Save regression group timings
         continue-on-error: true
-        if: always()
-        run: |
-          if [ ! -f "$RUNNER_TEMP/system-map-inputs.json" ]; then exit 1; fi
-          set --
-          for report in "$RUNNER_TEMP/system-map-evidence"/*.jsonl; do
-            if [ -f "$report" ]; then set -- "$@" --report "$report"; fi
-          done
-          node tools/system-map-evidence.mjs --snapshot "$RUNNER_TEMP/system-map-inputs.json" "$@" --ci-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --output "$RUNNER_TEMP/system-map-evidence.json"
-          map_status=0
-          node docs/system-map/verify.mjs --check --ref "$GITHUB_SHA" --evidence "$RUNNER_TEMP/system-map-evidence.json" --json "$RUNNER_TEMP/system-map-status.json" || map_status=$?
-          cp docs/system-map/index.html "$RUNNER_TEMP/croupier-system-map.html"
-          node docs/system-map/build.mjs --ref "$GITHUB_SHA" --evidence "$RUNNER_TEMP/system-map-evidence.json" --output "$RUNNER_TEMP/croupier-system-map.html"
-          exit "$map_status"
-      - name: Save version-bound map and test evidence
-        continue-on-error: true
+        timeout-minutes: 2
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: croupier-system-map-${{ github.sha }}
+          name: dealer-regression-timing-${{ github.sha }}
           retention-days: 30
-          if-no-files-found: error
-          path: |
-            ${{ runner.temp }}/croupier-system-map.html
-            ${{ runner.temp }}/system-map-evidence.json
-            ${{ runner.temp }}/system-map-status.json
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/dealer-regression-timing.jsonl
       - run: node test/split-rules.mjs
       - run: node --test test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs test/inbox.mjs
       - run: node --test ops/cloud/test/*.test.mjs
