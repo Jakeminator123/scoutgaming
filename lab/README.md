@@ -50,8 +50,9 @@ Video-intake: [lägg in standardtagningar och alternativ, välj användning och 
 
 I en offline-fixtur öppnas tjänsten på `/`. Äldre verktygslänkar ligger på `/control`;
 `/studio` är tjänstens basePath i molnet.
-Lab-roten `/` omdirigerar permanent till `/control/clips`; i produktion är
-kedjan `/studio` → `/control/clips` → `/admin/dealer-studio`.
+Lab-roten `/` (publikt `/studio`) omdirigerar permanent till `/admin`.
+Äldre bokmärken med querykontext går via `/control/clips` till
+`/admin/dealer-studio` och behåller den kontexten.
 Publika `/lab` och `/labb` går till `/admin` via `/control`; `/bo` går till
 `/admin/drift` via `/control/administration`. Publika `/lissabon` svarade 404
 vid kontrollen 14 oktober 2026 och ska inte användas som ny ingång.
