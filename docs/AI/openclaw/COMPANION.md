@@ -139,8 +139,10 @@ spelets inloggning, saldo eller en färdig Neon-migrering. Äldre
 funktionscommittar och driftprov finns i Git-historiken; deras manuella
 revert- och pushinstruktioner hör inte till dagens arbetsflöde.
 
-Leverera granskade ändringar till `Jakeminator123/scoutgaming`, branch
-`jakemanator123-github-work`, med `node tools/push-github-work.mjs`.
+Leverera granskade ändringar till `Jakeminator123/scoutgaming` från en
+featurebranch under `jakob/*`, `codex/*` eller `cursor/*`. Pusha med
+`node tools/push-github-work.mjs` och öppna en PR till `main`; merge kräver
+gröna kontroller och gällande godkännande enligt [AGENTS.md](../../../AGENTS.md).
 Förvalta befintliga Render-tjänster enligt [driftguiden](RENDER-START-SV.md).
 Aktuella kontroller och kvarvarande verifiering finns i
 [driften](DEPLOYMENT.md) och [molnkartan](../../CLOUD-MIGRATION.md).

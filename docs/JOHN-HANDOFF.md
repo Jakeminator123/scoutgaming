@@ -581,10 +581,17 @@ granskning fann inga konkreta regressioner. Levererad browseracceptans
 Den delade sidladdaren har därefter flyttats ur Control, se aktuellt kvitto
 ovan. `lab/lib` och verkliga partnerportalen är aktiva tjänster och bevaras.
 
-PR #91 är fortsatt draft: Astrids isolerade spelarprov är klart; Dragan v4
-inväntar tillstånd för den privata runtimekoden. Inga sandboxuppladdningar
-gjordes efter säkerhetsgranskningens avslag och sandlådan är stoppad.
-Rörligt tal och mänsklig medieacceptans är egna kvarvarande gränser.
+**Historisk PR91-status vid kvittot ovan:**
+
+> PR #91 är fortsatt draft: Astrids isolerade spelarprov är klart; Dragan v4
+> inväntar tillstånd för den privata runtimekoden. Inga sandboxuppladdningar
+> gjordes efter säkerhetsgranskningens avslag och sandlådan är stoppad.
+> Rörligt tal och mänsklig medieacceptans är egna kvarvarande gränser.
+
+**Senare status:** PR #91 mergades 15 oktober 2026 kl. 08:40:29 UTC som
+`a76b31f2`; se [senare leveranskvitto i migreringstrackern](CLOUD-MIGRATION.md).
+GitHub-statusen kontrollerades på nytt 16 oktober. Det historiska stycket
+ovan är inte aktuell PR-status eller ett nytt mediegodkännande.
 
 ## Lokala providerprofiler och läsande molnkontroll, 15 oktober 2026
 
