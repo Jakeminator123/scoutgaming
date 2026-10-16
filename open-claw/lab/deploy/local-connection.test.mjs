@@ -179,11 +179,15 @@ test('child environments separate credentials, empty provider settings and use d
   assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, undefined);
   assert.equal(specs.lab.cwd, join(configuration.repoRoot, 'lab'));
   assert.match(specs.lab.args.join(' '), /next.* start .*--port 4197/);
-  assert.equal(specs.product.env.OPENCLAWAPI_KEY, 'fixture-gateway-only');
+  assert.equal(specs.product.env.OPENCLAW_API_KEY, 'fixture-gateway-only');
+  assert.equal(specs.product.env.OPENCLAWAPI_KEY, '');
+  assert.equal(readSettings({ env: specs.product.env, envFiles: [file] }).gatewayKey, 'fixture-gateway-only');
   assert.equal(specs.product.env.OPENCLAW_SPEECH_AGENT, 'openclaw/croupier-speech');
   assert.equal(specs.product.env.OPENCLAW_CHAT_AGENT, 'openclaw/croupier-chat');
   assert.equal(specs.product.env.LAB_REMOTE_TOKEN, '');
   assert.equal(specs.lab.env.OPENCLAWAPI_KEY, '');
+  assert.equal(specs.lab.env.OPENCLAW_API_KEY, '');
+  assert.equal(readSettings({ env: specs.lab.env, envFiles: [file] }).gatewayKey, '');
   assert.equal(specs.lab.env.LAB_REMOTE_TOKEN, 'fixture-director-only');
   for (const spec of [specs.product, specs.lab]) {
     assert.equal(spec.env.OPENCLAW_MODEL_API_KEY, '');
