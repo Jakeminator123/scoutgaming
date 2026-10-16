@@ -167,6 +167,9 @@ test('the hook inspects its own commit index while child checks remain isolated'
     assert.equal(mode(readStagedChanges(root)), 'documentation');
     await writeFile(join(root, 'code.mjs'), 'export {};\n');
     const env = { ...isolatedGitEnvironment(), GIT_INDEX_FILE: join(root, '.git', 'commit-index') };
+    // Exercise a local commit even when the parent test runner is GitHub CI.
+    delete env.CI;
+    delete env.GITHUB_ACTIONS;
     const staged = spawnSync('git', ['add', '--', 'code.mjs'], { cwd: root, env, encoding: 'utf8' });
     assert.equal(staged.status, 0, staged.stderr);
     await mkdir(join(root, 'tools'));
@@ -175,6 +178,11 @@ test('the hook inspects its own commit index while child checks remain isolated'
     const plan = spawnSync(process.execPath, [script, '--plan'], { cwd: root, env, encoding: 'utf8' });
     assert.equal(plan.status, 0, plan.stderr);
     assert.equal(JSON.parse(plan.stdout).mode, 'focused');
+    for (const flags of [{ CI: 'true' }, { GITHUB_ACTIONS: 'true' }]) {
+      const ciPlan = spawnSync(process.execPath, [script, '--plan'], { cwd: root, env: { ...env, ...flags }, encoding: 'utf8' });
+      assert.equal(ciPlan.status, 0, ciPlan.stderr);
+      assert.equal(JSON.parse(ciPlan.stdout).mode, 'full');
+    }
     assert.equal(mode(readStagedChanges(root)), 'documentation', 'the default index remains unchanged');
   });
 });
