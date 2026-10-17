@@ -24,6 +24,7 @@ const publicModules = new Map(['live-idle', 'idle-policy'].flatMap(name => [
 ]));
 publicModules.set('/lab/policies/idle-policy.seed.json', 'lab/policies/idle-policy.seed.json');
 publicModules.set('/web/public/dealer-identity.mjs', 'web/public/dealer-identity.mjs');
+publicModules.set('/packages/presentation/contracts/game-lane-id.mjs', 'packages/presentation/contracts/game-lane-id.mjs');
 const publicVideo = item => item ? {
   id: item.id, sha256: item.sha256, fileName: item.fileName,
   src: `/api/presentation/videos/${item.id}`,

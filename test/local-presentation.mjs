@@ -62,7 +62,7 @@ test('local server dispatch serves the complete idle browser import graph withou
   server.listen(0,'127.0.0.1');await once(server,'listening');
   t.after(()=>{server.closeAllConnections();server.close();});
   const origin = 'http://127.0.0.1:' + server.address().port;
-  const pending = ['/local-presentation.mjs'], visited = new Set();
+  const pending = ['/local-presentation.mjs', '/packages/presentation/contracts/game-lane-id.mjs'], visited = new Set();
   while(pending.length) {
     const path = pending.shift();if(visited.has(path))continue;visited.add(path);
     const response = await fetch(origin+path);
@@ -76,7 +76,8 @@ test('local server dispatch serves the complete idle browser import graph withou
     }
   }
   for(const path of ['/packages/presentation/runtime/live-idle.mjs','/packages/presentation/runtime/idle-policy.mjs',
-    '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json'])assert.ok(visited.has(path),path);
+    '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json',
+    '/packages/presentation/contracts/game-lane-id.mjs'])assert.ok(visited.has(path),path);
   for(const name of ['live-idle','idle-policy']) {
     const legacy = await fetch(origin+'/presentation-runtime/'+name+'.mjs');
     assert.equal(legacy.status,200);
@@ -84,6 +85,9 @@ test('local server dispatch serves the complete idle browser import graph withou
   }
   for(const path of ['/web/server.mjs','/web/public/app.mjs','/web/public/dealer-identity.mjs/extra',
     '/web/public/dealer-identity.mjs.bak','/packages/presentation/runtime/selection.mjs',
+    '/packages/presentation/contracts/presentation-room.mjs', '/packages/presentation/contracts/operator-lifecycle-key.mjs',
+    '/packages/presentation/server/registered-dealer-idle.mjs',
+    '/packages/presentation/contracts/game-lane-id.mjs/extra', '/packages/presentation/contracts/game-lane-id.mjs.bak',
     '/packages/presentation/runtime/live-idle.mjs/extra','/packages/presentation/runtime/idle-policy.mjs.bak']) {
     assert.equal(dispatches(path),false,path);
     assert.equal((await fetch(origin+path)).status,404,path);

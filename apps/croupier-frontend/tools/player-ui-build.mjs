@@ -31,7 +31,7 @@ function outputName(source) {
   const path = relative(repo, source).split(sep).join('/');
   if (path.startsWith('web/public/')) return path.slice('web/public/'.length);
   if (path.startsWith('packages/presentation/runtime/')) return 'presentation-runtime/' + path.slice('packages/presentation/runtime/'.length);
-  if (path === 'lab/policies/idle-policy.seed.json') return path;
+  if (path === 'lab/policies/idle-policy.seed.json' || path === 'packages/presentation/contracts/game-lane-id.mjs') return path;
   throw Error(`Frontend import utanför tillåten textyta: ${path}`);
 }
 

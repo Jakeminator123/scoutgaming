@@ -7,6 +7,56 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
+
+`packages/presentation/server/registered-dealer-idle.mjs` äger den befintliga
+registeradaptern. Studio importerar den direkt utan att dra in spelserverns
+SQL-/startmodul. Spelstartens defaultkomposition, schemakontroll och läsning
+av sparad policy före lyssning är oförändrade; bred lagringsflytt återstår.
+
+`packages/studio-registry/server/repository.mjs` äger nu hela den befintliga
+SQL-/AsyncLocalStorage-kärnan för läsning, skrivning, CAS, historik och
+`readPresentationSnapshot`. De 451 implementationsraderna och modulens
+ALS/state/helpers är mekaniskt identiska med baslinjen. Kärnan importerar
+endast Node och den gemensamma StudioStorageError-klassen; inga appar,
+drivers, Blob- eller låsbibliotek importeras. Fyra namngivna adaptrar
+(contract, policy, runtimeCatalog och dealerSets) krävs före databas-I/O.
+`web/storage/studio-repository.mjs` kopplar de befintliga appreglerna till
+kärnan och behåller alla aktiva konsumenters API. Den innehåller ingen andra
+SQL-implementation. QA-källistan tar uttryckligen med den nya kärnan;
+selektionsarkivet använder inte repositoryt och behöver ingen extra fil.
+
+Rumsform, rums-ID-regel och lifecycle-nyckel ligger i tre rena blad under
+`packages/presentation/contracts/`. Paketcodec och lifecycle använder bladen
+utan den tidigare rum–paket–lifecycle-cykeln. Befintliga blandade moduler
+behåller sina levande exports med samma funktionsidentitet. Sparade ID:n,
+felkoder, komprimering, historiska grants och runtimekonfiguration ändras inte.
+Endast ID-bladet får en uttrycklig publik moduladress; rum-/nyckel-/serverkod
+och extra sökvägssegment förblir blockerade. Statisk frontend och isolerade
+QA-/baslinjekällistor följer den nya importgrafen.
+
+På baslinje `ff03a46a`: 171 fokuserade befintliga prov plus 10 prov från
+samtliga sex serverfixturekonsumenter passerar, utan skips, med Node 24.21.0
+och fyra workers. Orphan-audit: 512 JS/TS-kandidater, noll orphans. Egen låst
+Lab-installation gjordes direkt i arbetskopian; package-/lockfiler ändrades
+inte. Importkontroll bekräftar att idleadaptern saknar SQL-/startberoende och
+att rumbladen endast importerar den egna kontraktskatalogen.
+
+Efter repositoryflytten passerar ytterligare 169 riktade befintliga prov
+för repository/scope/CAS/snapshot, lifecycle, policy, register, native runtime,
+Render-persistens och QA-källista utan skips, med fyra workers. Ingen verklig
+SQL-server startades. Separat kontroll bekräftar obligatoriska adaptrar före
+I/O, samma felklassidentitet och oförändrat fel för ogiltig pool. Inga nya
+testfiler eller produktassertions har lagts till.
+
+C2c:s kommande modell-/identitetskontrakt behöver integreras före leverans;
+idleadaptern har tills vidare kvar sina befintliga modell-/medieregler via
+runtime. Appkompositionens dealer- och dealer-set-importer behöver också
+peka på C2c:s kontrakt efter integration. Blob-/registry-reader-kapseln är
+inte flyttad. Full build, CI och drift är inte körda här. Lokal säkerhetsläsning
+saknar GitHub- och skyddad GitGuardian-åtkomst; incident-/platstäckning är
+ofullständig. Ingen commit, push, moln-, schema- eller medieändring ingår.
+
 ## Etapp 3 C2d: urval och Director — lokal ändring 17 oktober 2026
 
 Urvalet ligger i `packages/presentation/server/selection.mjs` som en fabrik

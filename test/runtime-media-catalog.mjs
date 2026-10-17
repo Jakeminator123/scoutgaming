@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {buildRuntimeMediaCatalog} from '../tools/build-runtime-media-catalog.mjs';
 import {createStudioMediaRuntime} from '../lab/lib/studio-media-runtime.mjs';
-import {createRegisteredDealerIdle} from '../web/storage/studio-runtime.mjs';
+import {createRegisteredDealerIdle} from '../packages/presentation/server/registered-dealer-idle.mjs';
 import {createRegisteredVoiceLines} from '../lab/lib/studio-voice-lines.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
