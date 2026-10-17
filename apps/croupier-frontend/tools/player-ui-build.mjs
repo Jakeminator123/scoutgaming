@@ -54,7 +54,10 @@ function moduleImports(source) {
 
 async function writePreview(output) {
   const queue = [join(publicRoot, 'app.mjs'), join(publicRoot, 'blackjack-entry.mjs'),
-    join(publicRoot, 'astrid-camera-audio-worklet.mjs')];
+    join(publicRoot, 'astrid-camera-audio-worklet.mjs'),
+    // Middleware serves every exact public registry URL, including modules not
+    // currently imported by the player entry. Reuse the same alias/import walk.
+    ...presentationPublicModules.map(({source}) => join(repo, source))];
   const seen = new Set();
   for (const style of styles) queue.push(join(publicRoot, style));
   queue.push(resolveMediaPath('web/public/speech-media.json', {repositoryRoot: repo}));
