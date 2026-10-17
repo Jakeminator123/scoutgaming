@@ -1,5 +1,21 @@
 # Aktuell handoff — Scoutgaming
 
+## Portabel GitGuardian-konfiguration — 17 oktober 2026
+
+MCP-starten använder `git -c` med ett tillfälligt shell-alias för att köra
+Node från aktuell checkoutrot. Den gamla personliga `cwd` är borttagen.
+Den effektiva konfigurationens kommando klarade initialize/tools-list från
+worktreens rot och undermapp samt från en flyttad testcheckout med mellanslag
+och dess undermapp. Alla tre verktyg annonseras som läsande; inget permanent
+Git-alias skapas. Befintliga GitGuardian-/säkerhetsprov: 34/34 passerar.
+Användarens avaktiverade MCP-val och skyddade koppling har inte ändrats;
+startprovet anropade inte incident-API:t och är ingen säkerhetsklarering.
+Integrationsgranskning: main b356152 är intagen normalt och båda sidors separata
+leveransnoteringar bevarade. 34/34 säkerhetsprov samt faktisk MCP-start från
+rot och undermapp passerar; tre läsverktyg annonseras. Ingen incident eller
+behörighet ändrad. Färsk PR-CI och mainleverans återstår.
+
+
 ## PR227: Studio använder sin egen policymedialäsare
 
 Ett Studio-bygge med enbart appens låsta beroenden hittade en andra korskoppling:
