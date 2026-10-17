@@ -77,6 +77,9 @@ export async function copyOpenClawRuntime(root) {
     'packages/shared/studio-error.mjs',
     'packages/studio-access/server/partner-access-policy.mjs',
     'packages/studio-access/studio-scope.mjs',
+    'packages/navigation/admin-workspace-routes.mjs',
+    'packages/navigation/workspace-surfaces.mjs', 'packages/navigation/server/platform-routing.mjs',
+    'packages/server-transport/paths.mjs', 'packages/server-transport/configuration.mjs',
     ...presentationPublicModules.map(row => row.source)]) {
     await mkdir(join(root, dirname(file)), {recursive: true});
     await copyFile(new URL('../../' + file, import.meta.url), join(root, file));

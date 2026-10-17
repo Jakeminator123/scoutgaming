@@ -9,7 +9,7 @@ import { readStorageExportConfig } from './storage-export.mjs';
 import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
 import { validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
 import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
-import { gameEntryEnabled } from '../../web/public/game-entry-contract.mjs';
+import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
 import { studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { validatePrivateMedia } from '../../lab/lib/cloud-media-store.mjs';
 

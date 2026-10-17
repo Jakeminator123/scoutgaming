@@ -38,10 +38,13 @@ och spelbara rum. Deras UI-källa finns i `lab/client`.
 
 `packages/player-catalog` äger de rena publika katalogladdarna och
 `packages/navigation` äger gemensamma dokumentadresser, bolagssluggar och
-det rena operatörsentrékontraktet. Frontend importerar dessa direkt utan
+det rena operatörsentrékontraktet. Navigationens `server/platform-routing.mjs`
+ägs gemensamt av frontend, Studio och Render-ingress; `game-entry.mjs` äger rena
+speladresser/queryregler. HTML/presentation ligger kvar i `web/public/game-entry-contract.mjs`.
+Frontend importerar dessa direkt utan
 Studios privata routekod eller spelserverns policy-/SQL-moduler. HTTP,
-sessioner och behörighetskontroller förblir appägda. Bara den exakta publika
-slugmodulen exponeras via den befintliga modulallowlisten; paketets övriga
+sessioner och behörighetskontroller förblir appägda. Bara slugmodulens och
+speladressmodulens exakta URL:er exponeras via den befintliga modulallowlisten; övriga
 moduler är inte publika käll-URL:er.
 
 Native Studio/Neon och gemensam policy är aktiva i produktion. `/player-login`

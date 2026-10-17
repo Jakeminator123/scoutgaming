@@ -9,7 +9,7 @@ import { buildPlaybackTrace } from '../lib/playback-trace.mjs';
 import { appendPartnerTrace, createPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
 import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import { canonicalGameDestination } from '../../web/public/game-entry-contract.mjs';
+import {canonicalGameDestination} from '../../packages/navigation/game-entry.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');

@@ -8,6 +8,8 @@ const browserContracts = [
   'speech-package', 'astrid-voice-profile',
 ];
 export const presentationPublicModules = Object.freeze([
+  {source: 'packages/navigation/game-entry.mjs',
+    paths: ['/packages/navigation/game-entry.mjs']},
   {source: 'packages/navigation/operator-slug.mjs',
     paths: ['/packages/navigation/operator-slug.mjs']},
   ...browserContracts.map(name => ({source: 'packages/presentation/contracts/' + name + '.mjs',

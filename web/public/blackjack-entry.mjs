@@ -1,4 +1,4 @@
-import {canonicalGameDestination} from './game-entry-contract.mjs';
+import {canonicalGameDestination} from '../../packages/navigation/game-entry.mjs';
 const form = document.querySelector('form');
 const status = document.querySelector('#status');
 const submit = document.querySelector('#submit');

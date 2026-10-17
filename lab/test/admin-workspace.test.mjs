@@ -5,7 +5,7 @@ import {designPreviewPages} from '../lib/design-preview-paths.mjs';
 import {studioLoginReturnTo} from '../lib/studio-login-client.mjs';
 import {CONTROL_PREVIEW_VIEWS,workspaceSurfacePath} from '../../packages/navigation/workspace-surfaces.mjs';
 import {serveAdminWorkspaceData} from '../lib/admin-workspace-data.mjs';
-import {platformRoute} from '../../apps/croupier-frontend/lib/platform-routing.mjs';
+import {platformRoute} from '../../packages/navigation/server/platform-routing.mjs';
 import {normalizeNativeStudioPageRequest} from '../lib/studio-native-request.mjs';
 
 const tools=['companies','rooms','compositions','rehearsal','library','replies','clips','dealer-forge','administration','tree','videos','openclaw','activity','guide','zones','events','probe','operator-chat','preview','lanes'];

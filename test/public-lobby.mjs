@@ -7,7 +7,7 @@ import { mkdtemp, mkdir, writeFile, rm, symlink, readFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { publicLobbyFile, servePublicLobby, serveDesignPreview } from '../lab/lib/design-preview.mjs';
-import { platformConfiguration, platformRoute } from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import { platformConfiguration, platformRoute } from '../packages/navigation/server/platform-routing.mjs';
 import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor } from '../lab/client/runtime/public-lobby-catalog.mjs';
 
 function publication(slug, game = 'blackjack') {
