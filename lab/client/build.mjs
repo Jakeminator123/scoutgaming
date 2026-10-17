@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = dirname(fileURLToPath(import.meta.url));
-const output = resolve(root, '../../lab/design-preview-build');
+const output = resolve(root, '../design-preview-build');
 for (const surface of ['admin', 'lobby']) {
   const check = spawnSync(process.execPath, [resolve(root, 'node_modules/typescript/bin/tsc'), '--noEmit', '-p', surface],
     { cwd: root, stdio: 'inherit', windowsHide: true });
@@ -76,6 +76,6 @@ await build({entryPoints:[resolve(root,'admin/lib/dealer-chat-import.mjs')],outf
   define:{'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE':'"1"','process.env.NEXT_PUBLIC_LAB_BASE_PATH':JSON.stringify(process.env.CROUPIER_LAB_BASE_PATH==='/studio'?'/studio':'')}});
 await mkdir(resolve(output, 'fonts'), { recursive: true });
 for (const [name, original] of Object.entries({ inter: 'inter-latin-wght-normal', space: 'space-grotesk-latin-wght-normal', mono: 'jetbrains-mono-latin-wght-normal' })) {
-  await cp(resolve(root, '../../lab/app/fonts', original + '.woff2'), resolve(output, 'fonts', name + '.woff2'));
+  await cp(resolve(root, '../app/fonts', original + '.woff2'), resolve(output, 'fonts', name + '.woff2'));
 }
 console.log('Workspaces built: /admin (Studio drafts and explicit dealer import), /admin/lobby and /lobby (registered catalogues).');
