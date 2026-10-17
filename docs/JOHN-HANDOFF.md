@@ -53,7 +53,14 @@ Det intermittenta låstestet återgavs därefter på PostgreSQL16.15 och rättad
 att läsa exakt väntande lås i stället för transaktionens frysta aktivitetssnapshot.
 Full SQL/HTTPS passerar även med avsiktligt föråldrad aktivitetssnapshot;
 låsordning och avvisning efter väntande medieborttagning kontrolleras fortsatt.
-Ny full CI återstår. PR196:s imagebygge och GitGuardian är gröna på `a0bc397b`.
+PR196:s fulla CI, imagekontroll och GitGuardian passerade på `df532b51`;
+PR196 mergades till `9a644e73`. Vercels produktionsbygge stoppade därefter:
+ett frontendtest importerade backendworkerns `ws`-beroende, som frontendens
+separata installation saknar. Callback-testet har flyttats oförändrat till
+rotens registrerade integrationssvit. Fyra frontendtester och hela callback-
+testet passerar. En isolerad kopia med enbart frontendens beroenden återger
+felet före flytten och passerar efter den; runtime och dependencies ändras inte.
+Molnaktivering och migration013 väntar på verifierad Vercel- och Renderdrift.
 Workern väntar nu högst 60 sekunder på start efter verifierad bind, så att
 TTS (30 sekunder) och spelarens anslutning (15 sekunder) ryms. Övriga
 idle-/kvittensgränser på 15 sekunder och jobbets totalgräns på 180 sekunder
