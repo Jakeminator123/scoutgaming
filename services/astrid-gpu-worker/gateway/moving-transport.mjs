@@ -1,3 +1,4 @@
+import { MOVING_SPEECH_LIMITS } from '../../../web/moving-speech-limits.mjs';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocket, WebSocketServer } from 'ws';
 
@@ -12,15 +13,17 @@ const equal = (a, b) => {
  * upgrades explicitly: this does not install a competing HTTP upgrade listener.
  * callbackUrl is a secret capability; never log it or send it to the browser.
  */
-export function createMovingWorkerChannel({ origin, avatar, verifiedAvatar, idleMs = 15000, lifetimeMs = 180000, startupMs } = {}) {
+export function createMovingWorkerChannel({ origin, avatar, verifiedAvatar, idleMs = 15000, lifetimeMs = 180000, startupMs, coldStartGraceMs = 0 } = {}) {
   const url = new URL(origin);
   if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/'
     || (verifiedAvatar === undefined ? !['paow', 'dragge'].includes(avatar)
       : verifiedAvatar !== avatar || typeof verifiedAvatar !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(verifiedAvatar))
+    || !Number.isInteger(coldStartGraceMs) || coldStartGraceMs < 0
+    || coldStartGraceMs > MOVING_SPEECH_LIMITS.coldStartGraceMs || (coldStartGraceMs > 0 && !verifiedAvatar)
     || !Number.isInteger(idleMs) || idleMs < 20 || idleMs > 15000
     || (startupMs !== undefined && (!verifiedAvatar || !Number.isInteger(startupMs)
-      || startupMs < idleMs || startupMs > 150000 || startupMs > lifetimeMs))
-    || !Number.isInteger(lifetimeMs) || lifetimeMs < idleMs || lifetimeMs > 180000) {
+      || startupMs < idleMs || startupMs > 150000 + coldStartGraceMs || startupMs > lifetimeMs))
+    || !Number.isInteger(lifetimeMs) || lifetimeMs < idleMs || lifetimeMs > 180000 + coldStartGraceMs) {
     throw Error('invalid_moving_worker_channel');
   }
   const path = `/lipsync-moving/${randomBytes(24).toString('hex')}`;

@@ -10,9 +10,21 @@ Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
 Kontrollen omfattade riktiga lokala profiler, Vercel-projektet/teamet
 `scoutgaming`, aktuella Render-tjänsteidentiteter och kodens konsumenter.
-Inga miljövärden ändrades. Render-MCP saknar env-GET: Renders samtliga
-hemlighetsvärden är därför inte jämförda. Dragan-testets separata runtime-
+Inga miljövärden ändrades. Render-MCP saknar env-GET, men befintlig
+RenderCLI-inloggning gav en läsande kontroll via det dokumenterade API:t
+17 oktober 16:09 UTC: produkt 61, Director 16 och Gateway 10 direkt satta
+variabelnamn. Inga värden sparades eller skrevs ut. Länkade miljögrupper och
+samtliga hemlighetsvärden är inte jämförda i denna senare kontroll.
+Dragan-testets separata runtime-
 endpoint verifierades genom det faktiska jobbets journal och providerstatus.
+
+De tre produktrollerna är aktiva och har olika startkommandon; ingen är
+verifierat överflödig. Ingen Astrid-namngiven Render-tjänst finns bland de
+åtta tjänsterna i workspacet. Astrids RunPod-endpoint, GHCR-image och
+GitHub-workflows är separata resurser. Gamla QA:s underhållsläge och äldre
+revision räcker inte som raderingsgrund: dess 1 GiB-disk kräver separat
+ägarskaps-/återställningskontroll. `game-engine` hör till Impactwin och är
+inte en verifierad dublett av `croupier-v2`.
 
 | Tjänst | Ansvar |
 | --- | --- |
@@ -36,10 +48,13 @@ och röstpreview, och den gemensamma molnkonfigurationens genererade talväg
 validerar även Cartesia och det generiska RunPod-paret. Dessa får därför
 inte klassas som oanvända bara utifrån Dragan-profilen.
 
-Städningsförslaget är ännu inte applicerat:
+Lokal kommentarstädning är utförd 17 oktober: nio rubrikrader i rootens
+`.env.local`, `lab/.env.local` och `lab/.env.cloud-storage.local` rättades.
+Alla 52, 47 respektive 3 tilldelningar, deras ordning och innehållet från
+första tilldelningen är oförändrade. Exakta original ligger i det privata
+`arkiv/2026-10-17/` med ursprungliga sökvägar. `.env.emil` var redan korrekt.
+Inga nycklar eller tjänsteinställningar ändrades. Återstående kandidater:
 
-- Rätta lokala kommentarer om att vanlig `lab/start.mjs` läser Lab-env och
-  om att de aktiva generiska RunPod-värdena är Emils; aktuell loader beskrivs nedan.
 - `CROUPIER_MEDIA_BLOB_INDEX` behövs inte i produktens Neon-runtime. Kontrollera
   uttryckliga importverktyg innan en lokal förekomst tas bort.
 - För Vercels `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY` och `GITGUARDIAN_API_TOKEN`
@@ -68,7 +83,9 @@ lagringsklient och Astrids inställningar ändras inte.
 
 Testets stabila budget-ID är `dragan-test-20261017`: taljournalens tak är
 4,80 USD och dess reservation är 1,20 USD per försök inklusive marginal.
-Det ger ingen extra budget: Jakobs sammanlagda RunPod-tak på 5 USD omfattar
+Jakob höjde den 17 oktober det sammanlagda RunPod-taket från 5 till **10 USD**.
+Det ändrar inte automatiskt taljournalens befintliga 4,80 USD-konfiguration.
+Det sammanlagda taket omfattar
 även tidigare beredning, endpointförsök och reserver för fördröjd fakturering.
 Den separata infrastrukturns kostnadsvakt måste därför använda aktuell
 sammanräkning före aktivering. Reservationer återbetalas inte automatiskt;
@@ -193,7 +210,7 @@ bedömda separat från aktiva runtime-läsare.
 | `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE`, `CROUPIER_ZONES_DATABASE_URL` | cloud-media-store.mjs, zone-cloud-store.mjs | Driftens Blob-/zoninställningar; vanliga lokala starter kopplar inte in dessa tjänster. |
 | `CROUPIER_MEDIA_BLOB_INDEX` | media-blob-index.mjs, uttryckliga verktyg/tester | Äldre filindexinställning; ersatt av scoped Neon-katalog i produktens runtime. |
 | `CROUPIER_DATABASE`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_WORKSPACE_ID` | studio-native-runtime.mjs, ops/cloud/config.mjs; game-URL även CI | Behåll exakta databas-/tjänstgränser. |
-| `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | frontendens platform-configuration.mjs och lab/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
+| `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och lab/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
 | `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_VERCEL_UI`, `CROUPIER_VERCEL_UNIFIED_UI` | Next-konfiguration, middleware och serverrouting; base path/native-admin även bygge | Behåll; ändring kan kräva nytt bygge. |
 | `BO_URL`, `CROUPIER_GAME_ORIGIN`, `CROUPIER_PUBLIC_GAME_PATH`, `CROUPIER_VERCEL_TRANSPORT_ORIGIN`, `LAB_PUBLIC_URL`, `PUBLIC_URL` | ops/cloud/config.mjs och proxy; GAME_ORIGIN även player-ui-build.mjs | Behåll aktiva kompatibilitetsnamn. |
 | `CROUPIER_LISSABON_PROFILES`, `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | web/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. |
@@ -652,7 +669,7 @@ policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
 webb, Studio och taltransport som Services. Talservicen i
 `apps/croupier-speech` delar befintlig origin-/ingresskonfiguration genom
-`apps/croupier-frontend/lib/platform-configuration.mjs`; inga nya nycklar behövs.
+`packages/server-transport/configuration.mjs`; inga nya nycklar behövs.
 `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 `CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
 publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.
@@ -1058,3 +1075,7 @@ befintliga preview-URL-regeln för tom basväg respektive `/studio`.
 proxyursprunget. Källinventariet följer de nya kompositionerna; flytten inför
 inga nya miljövariabler, ändrar inga värden och skapar ingen lokal fallback
 vid ett Neonfel.
+
+Källinventariet för sparad spelpolicy pekar på `packages/presentation/server/saved-game-policy.mjs`.
+Cloud-konfigurationen använder samma miljöläsare; den explicita legacy-importen binder
+valideraren till spelserverns befintliga dokumentkontrakt. Inga miljönycklar eller fallbackregler ändras.

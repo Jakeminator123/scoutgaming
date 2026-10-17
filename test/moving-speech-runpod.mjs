@@ -14,9 +14,11 @@ test('fresh endpoint gates pin owned digest, zero minimum, maximum one and actua
   }
 });
 test('lost paid submission is not retried; job policy remains bounded',async()=>{
-  let calls=0;
-  const client=create(async(url,opts)=>{calls++;const body=JSON.parse(opts.body);assert.equal(body.policy.executionTimeout,180000);assert.equal(body.policy.ttl,180000);assert.equal(url,'https://api.runpod.ai/v2/owned123/run');throw Error('lost response');});
+  let calls=0,sent;
+  const client=create(async(url,opts)=>{calls++;sent={url,body:JSON.parse(opts.body)};throw Error('lost response');});
   await assert.rejects(client.submit({input:{binding:{}}}));assert.equal(calls,1);
+  assert.deepEqual(sent.body.policy,{executionTimeout:180000,ttl:540000});
+  assert.equal(sent.url,'https://api.runpod.ai/v2/owned123/run');
 });
 test('another job cannot release the admitted job, and health failures are not zero workers',async()=>{
   let data={id:'other',status:'COMPLETED'};const client=create(async()=>Response.json(data));

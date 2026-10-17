@@ -1,3 +1,5 @@
+import { MOVING_SPEECH_LIMITS } from './moving-speech-limits.mjs';
+import { GPU_RESERVATION_WINDOW_MS } from './speech-journal-constants.mjs';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import { createSpeechJournalLease } from './speech-journal-runtime.mjs';
@@ -23,21 +25,23 @@ function bounded(work, signal, ms, code) {
 
 /** Server-only, one utterance per admitted job. Provider adapter returns
  * submit -> {id}, status -> {status}; it must honor the supplied AbortSignal,
- * never retry a POST, and enforce provider executionTimeout/TTL <=180 seconds.
+ * never retry a POST; execution stays <=180 seconds, total job TTL <=540 seconds.
  * reserveMicroUsd covers cold start, bank transfer, inference, voice and drain.
  * budgetId is a stable operator mandate ID, never a per-request/browser value.
  * No policy bootstrap, provider call, timer or acquisition at construction.
  */
 export function createMovingSpeechSession({ journal, scope, origin, endpointId, release, provider,
   budgetId, totalBudgetMicroUsd, reserveMicroUsd, currentDailyBudgetMicroUsd, holderId,
-  workerState, lifetimeMs = 180000, startupMs = 150000, idleMs = 15000,
+  workerState, lifetimeMs = MOVING_SPEECH_LIMITS.lifetimeMs,
+  startupMs = Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs), idleMs = 15000,
   cleanupMs = 15000, pollMs = 500, connectionFactory = createMovingSpeechConnection } = {}) {
   if (!journal || ['reserveMovingSession', 'assertMovingSession', 'listMovingSessions'].some(name => typeof journal[name] !== 'function')
     || !provider || ['submit', 'cancel', 'status'].some(name => typeof provider[name] !== 'function')
     || typeof release !== 'function' || typeof workerState !== 'function'
     || !positive(totalBudgetMicroUsd, 5000000) || !positive(reserveMicroUsd, totalBudgetMicroUsd)
-    || !positive(currentDailyBudgetMicroUsd, 20000000) || !positive(lifetimeMs, 180000)
-    || !positive(cleanupMs, 30000) || !positive(pollMs, 1000)) fail('invalid_generated_speech_moving_configuration', 422);
+    || !positive(currentDailyBudgetMicroUsd, 20000000) || !positive(lifetimeMs, MOVING_SPEECH_LIMITS.lifetimeMs)
+    || !positive(startupMs, Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs))
+    || !positive(idleMs, 15000) || !positive(cleanupMs, 30000) || !positive(pollMs, 1000)) fail('invalid_generated_speech_moving_configuration', 422);
   const ownership = createSpeechJournalLease({ journal, resource: 'stream-session', holderId });
   let active = null;
 
@@ -84,6 +88,13 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
       let session, connection, submission, acceptedJob, observedJob, finalized, readiness;
       const life = new AbortController();
       const requestSignal = AbortSignal.any([life.signal, ...(signal ? [signal] : [])]);
+      const admittedAtMs = Date.now(), expiresAtMs = admittedAtMs + lifetimeMs;
+      // Even a lost submit reply plus the provider TTL must fit the original
+      // reservation's UTC coverage. A delayed caller cannot buy a later window.
+      const assertSubmissionWindow = () => {
+        if (Date.now() + idleMs + MOVING_SPEECH_LIMITS.jobTtlMs > admittedAtMs + GPU_RESERVATION_WINDOW_MS)
+          fail('generated_speech_moving_submission_expired');
+      };
       const timer = setTimeout(() => life.abort(), lifetimeMs); timer.unref?.();
       const currentLease = () => ownership.get();
       async function guard(phase, guardSignal) {
@@ -165,18 +176,21 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
           if (submission) return submission;
           submission = (async () => {
             try {
+              assertSubmissionWindow();
               await bounded(s => guard('submit', s), requestSignal, idleMs, 'generated_speech_moving_admission_timeout');
               const download = typeof bankDownload === 'function'
-                ? await bounded(s => bankDownload({ binding, callbackUrl: connection.callbackUrl, signal: s }), requestSignal, idleMs, 'generated_speech_moving_bank_timeout') : bankDownload;
+                ? await bounded(s => bankDownload({ binding, callbackUrl: connection.callbackUrl, signal: s,
+                  sessionSignal: requestSignal, ttlMs: Math.max(1, expiresAtMs - Date.now()) }), requestSignal, idleMs, 'generated_speech_moving_bank_timeout') : bankDownload;
+              assertSubmissionWindow();
               const lease = await currentLease();
               await journal.markRequestSubmissionStarted({ key: session.key, lease });
               await journal.markSubmissionStarted({ sessionId: binding.sessionId, lease });
               // Exactly one POST. A lost reply/COMMIT remains spent and pinned.
               let result;
               try {
-                result = await bounded(s => provider.submit({ input: { schemaVersion: 1,
-                  callbackUrl: connection.callbackUrl, ttlSeconds: Math.floor(lifetimeMs / 1000), binding,
-                  ...(download ? { bankDownload: download } : {}) }, signal: s }), requestSignal, idleMs,
+                result = await bounded(s => { assertSubmissionWindow(); return provider.submit({ input: { schemaVersion: 1,
+                  callbackUrl: connection.callbackUrl, ttlSeconds: MOVING_SPEECH_LIMITS.executionMs / 1000, binding,
+                  ...(download ? { bankDownload: download } : {}) }, signal: s }); }, requestSignal, idleMs,
                 'generated_speech_moving_submission_unknown');
                 if (!jobPattern.test(result?.id ?? '')) fail('generated_speech_moving_submission_unknown', 503);
               } catch (error) {

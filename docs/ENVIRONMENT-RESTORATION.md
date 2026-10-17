@@ -78,15 +78,19 @@ exekverbar fil; en hårdkodad annan Node-binary går förbi Volta. Lokala pinnar
 styr inte automatiskt Vercel eller Docker: kontrollera respektive byggmiljö.
 
 Inför bygge/fullhook i en ny isolerad arbetskopia behövs låsta beroenden i
-`apps/croupier-frontend/` (`pnpm-lock.yaml`), `lab/`,
+`apps/croupier-frontend/` (`pnpm-lock.yaml`), `apps/croupier-speech/`, `lab/`,
 `lab/client/`, `web/` och `services/astrid-gpu-worker/gateway/`
-(`package-lock.json` i de fyra senare). Kör `pnpm install --frozen-lockfile`
+(`package-lock.json` i de fem senare). Kör `pnpm install --frozen-lockfile`
 respektive `npm ci` från rätt paket med dess deklarerade Node-version.
 Befintliga lokala installationer får återanvändas via en egen junction först
 efter verifierat identiska `package.json` och låsfiler. Installera aldrig genom
 en delad junction. Kontrollera tillgängliga `tsc`/`ws` i respektive konsument
-före tunga körningar, så saknade beroenden inte ger upprepade fel. Speech saknar
-lokal installation och har inga deklarerade npm-beroenden; dess Node 22 är separat.
+före tunga körningar, så saknade beroenden inte ger upprepade fel. Speech använder
+Node 22.23.1 och egen `npm ci --ignore-scripts`; frontend använder Node 24.21.0.
+Båda installerar `packages/server-transport` som låst lokal paketdependency.
+Speechs `.npmrc` har `install-links=true`, så paketet och dess `ws` installeras
+i tjänstens egen `node_modules` utan att frontend behöver vara installerad.
+Paketets konfiguration och sökvägskontrakt kan importeras utan `ws`.
 Kör Lab-bygget före fullhook. När Playwright och Chrome redan finns kan
 `CROUPIER_BROWSER_FIXTURE_MODULE` peka på modulens absoluta fil och
 `CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome` aktivera isolerade browserprov.
