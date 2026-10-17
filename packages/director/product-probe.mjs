@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { complete, boundedJson, GatewayError } from './openclaw.mjs';
 import { PRODUCT_SPEECH_AGENT } from './product-speech.mjs';
-import { isLoopback } from './settings.mjs';
+import { isLoopback } from './configuration.mjs';
 
 export const PRODUCT_PROBE_PATH = '/api/product/probe';
 export const PROBE_MODEL_IDS = Object.freeze(['gateway-default', 'gpt-5.4-mini', 'gpt-6-luna', 'gpt-5.6-terra']);

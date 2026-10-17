@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { basename, resolve } from 'node:path';
-import { normalizeInput, prepareDecision, finalizeDecision, SOURCE_TYPES } from '../../open-claw/lab/src/engine.mjs';
-import { askDirector } from '../../open-claw/lab/src/openclaw.mjs';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
+import { normalizeInput, prepareDecision, finalizeDecision, SOURCE_TYPES } from '../../packages/director/engine.mjs';
+import { askDirector } from '../../packages/director/openclaw.mjs';
+import { readSettings } from './director-settings.mjs';
 import { buildRuntimeCatalog, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { registeredIdlePolicy } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';

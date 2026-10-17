@@ -4,6 +4,17 @@
 > `config/` i exemplen utgår från `open-claw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
+Det gemensamma biblioteket [packages/director](../../../packages/director/) äger
+beslutsmotor, tal-/provkontrakt, social policy, Companion och rena inställningar.
+Studio och spelservern importerar biblioteket direkt. Tjänstens `src/` äger
+fortfarande HTTP, Gateway-RPC, signering, katalog-I/O och sin miljöfilläsare.
+`lab/lib/director-settings.mjs` och `web/director-settings.mjs` äger respektive
+apps filval och datarot, med en gemensam Node-läsare i
+`packages/director/node/settings-reader.mjs`. Filordning, alias och den
+befintliga Director-dataroten är oförändrade. Companion-SQLite ligger också
+i bibliotekets `node/`-adapter;
+anroparen väljer datakatalogen. Flytten skapar ingen ny lagringsyta.
+
 `llms.txt` är en länklista, inte en tjänst som kör eller indexerar något.
 I det här projektet läser en IDE-agent den **bara när en aktuell OpenClaw-fråga
 behöver en källa som inte redan finns här**. Sedan läser agenten relevanta sidor.

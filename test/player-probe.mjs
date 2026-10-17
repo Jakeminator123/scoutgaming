@@ -5,12 +5,12 @@ import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
 import { createPlayerProbeStore } from '../web/player-probe-store.mjs';
 import { createProbeRuntime } from '../web/probe-runtime.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
-import { normalizeProbeRequest, validateProbeChoice, decideProductProbe, createProductProbeService } from '../open-claw/lab/src/product-probe.mjs';
+import { normalizeProbeRequest, validateProbeChoice, decideProductProbe, createProductProbeService } from '../packages/director/product-probe.mjs';
 import { probeFixtures } from '../lab/lib/probe-fixtures.mjs';
 import { createSeedProject, validateProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { rebaseProjectDraft } from '../lab/lib/project-rebase.mjs';
 import { probePresentationQuiet } from '../web/public/probe-client.mjs';
-import { projectConversationMemory, normalizeConversationMemory, CONVERSATION_MEMORY_LIMITS } from '../open-claw/lab/src/conversation-memory.mjs';
+import { projectConversationMemory, normalizeConversationMemory, CONVERSATION_MEMORY_LIMITS } from '../packages/director/conversation-memory.mjs';
 
 test('new Astrid policies explicitly select Terra without enabling proactive speech',()=>{
   const policy=createDefaultProbePolicy();

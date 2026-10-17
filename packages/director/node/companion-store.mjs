@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { GatewayError } from './openclaw.mjs';
+import { GatewayError } from '../openclaw.mjs';
 
 const DAY = 86400000;
 export const COMPANION_RETENTION_DAYS = 30;

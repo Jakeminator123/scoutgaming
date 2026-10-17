@@ -14,8 +14,8 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
-import { boundedJson } from '../src/openclaw.mjs';
-import { gatewayEndpoint, isLoopback } from '../src/settings.mjs';
+import { boundedJson } from '../../../packages/director/openclaw.mjs';
+import { gatewayEndpoint, isLoopback } from '../../../packages/director/configuration.mjs';
 import { installPartnerApi } from '../../../web/partner-api.mjs';
 import { acquireLocalSession } from './local-session.mjs';
 

@@ -1,4 +1,4 @@
-import { isDealerId } from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import { isDealerId } from '../presentation/contracts/dealer-identity.mjs';
 // The same small, closed image contract is checked at Web and Director.
 // It contains no audio and must never be copied into player memory or logs.
 const MAX_IMAGE_BYTES = 64 * 1024;

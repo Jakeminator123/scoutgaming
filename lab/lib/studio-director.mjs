@@ -1,5 +1,5 @@
-import { askDirector, boundedJson } from '../../open-claw/lab/src/openclaw.mjs';
-import { prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
+import { askDirector, boundedJson } from '../../packages/director/openclaw.mjs';
+import { prepareDecision, finalizeDecision } from '../../packages/director/engine.mjs';
 import { StudioError } from '../../packages/shared/studio-error.mjs';
 
 // Shared Director adapter for presentation selection and Studio's other relay calls.

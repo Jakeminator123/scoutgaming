@@ -44,6 +44,14 @@ C2l-b (presentation/idle) och C2l-c (genererat tal) är inte genomförda.
 C2j/C2k och PR213 behöver integreras före samlad slutgranskning; deras
 SQL-/Director-/speechändringar ingår inte i detta lokala kvitto.
 
+C2l-a committades därefter som `c1d800c5da10441cab581c8ca8a6a7a843db33ba`;
+ordinarie hook passerade 106/106 utan skips. C2k
+`c6d474bcff7b085b6881a7024e6735d203c0d392` integreras med vanlig merge utan
+commit. Fem innehållskonflikter är lösta: båda källistorna/kvittona bevaras,
+spelservern kombinerar lokal projektreader med appägd Director-settings, och
+C2h:s dokumentfactory använder den gemensamma sociala policyn. Mergecommit,
+kontroller av den förenade versionen och C2j/PR213-integration återstår.
+
 ## Etapp 3 C2h: register- och medieläsare — lokal integration 17 oktober 2026
 
 `packages/studio-registry/server/` äger nu den sammanhängande registerkärnan,
@@ -95,6 +103,39 @@ platsmetadata och historisk scan too_large; aktuell GitGuardian-suite queued.
 Säkerhetsläsningen före commit saknade skyddad anslutning och gav ingen
 ny incidenttäckning; ovanstående är det senast faktiskt lästa kvittot.
 Detta är inte ett nytt säkerhetsklartecken eller en driftverifiering.
+
+## Etapp 3 C2k: gemensamt Director-bibliotek — lokalt 17 oktober 2026
+
+På baseline `e60289673933d49a73d0e34c81cc0071739df9ef` har 13 hela moduler
+flyttats från `open-claw/lab/src/` till `packages/director/`, inklusive
+Companions Node-SQLite-adapter. Importvägar har ändrats; implementationskropparna
+är identiska. Rena inställningsregler och Adminvalidering/felklass har delats ut.
+Gateway-RPC, signering, Adminmutation/snapshot, HTTP, katalog-I/O och tjänstens
+`LAB_ROOT` behåller sina ägare och beteenden. Paketet saknar appimporter;
+den enda källimporten utanför paketet är presentationens dealeridentitet.
+
+En kanonisk Node-adapter, `packages/director/node/settings-reader.mjs`,
+äger miljöfilparsning och prioritet. Tjänsten, Studio och spelservern komponerar
+den med sina oförändrade roots och filval. Ingen env-/dataflytt sker; alias,
+tomma värden, nullish-regler, defaults, timeout och Companion-kataloger bevaras.
+Exakta Docker COPY/ignore, Directors buildFilter, runtime-fixtures, QA-källista,
+konsumenter och befintliga guider är uppdaterade; PR211:s Dockerfix bevaras.
+
+Node 24.21.0, högst fyra workers: 30 inledande enhetsprov passerar. Den bredare
+riktade sviten gav 236 pass och två miljöfel: saknat Gateway-ws åtgärdades med
+egen låst installation, varefter RPC-proven gav 11/11; det verkliga Next-
+startprovet kräver ett verifierat Studio-bygge och lämnas till integrationen.
+Efter den slutliga settings-sammanslagningen passerar 51 befintliga prov för
+settings, service/Studio, isolerade Docker-källor och samtliga sex runtime-
+fixturekonsumenter utan skips. Dessa omprov överlappar tidigare resultat.
+Importkontroll: 69 ändrade kodfiler utan olösta relativa imports; 17 biblioteksfiler
+med 26 slutna paketlänkar. Testinventering: 512 kandidater, noll orphans.
+
+Lab använder en dependencyjunction först efter identiska manifest/lock; inga
+installationer gjordes genom den. Gateway har egen låst installation. Inga nya
+testfiler, fullbyggen, live-provideranrop, miljöändringar, commits eller push här.
+C2h:s kommande registryflytt behöver förena importändringar i Lab-adaptrar,
+`web/storage/studio-contract.mjs` och de gemensamma fixture-/QA-listorna.
 
 ## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
 

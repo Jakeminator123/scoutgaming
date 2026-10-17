@@ -1,14 +1,12 @@
+import { OpenClawAdminError } from '../../../packages/director/admin-error.mjs';
 import { createHash, createPrivateKey, createPublicKey, randomUUID, sign } from 'node:crypto';
-import { isLoopback } from './settings.mjs';
+import { isLoopback } from '../../../packages/director/configuration.mjs';
 
 // Wire contract: official openclaw/openclaw v2026.9.5
 // packages/gateway-protocol/src/version.ts (4), frames.ts,
 // packages/gateway-client/src/device-auth.ts (challenge-bound v3 signature).
 const SCOPES = Object.freeze(['operator.read', 'operator.admin']);
 const METHODS = new Set(['config.get', 'config.patch']);
-export class OpenClawAdminError extends Error {
-  constructor(code = 'openclaw_admin_unavailable', statusCode = 503) { super(code); this.code = code; this.statusCode = statusCode; }
-}
 const fail = (code, status) => { throw new OpenClawAdminError(code, status); };
 export function adminDeviceIdentity(encoded) {
   try {

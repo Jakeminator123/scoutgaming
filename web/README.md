@@ -64,7 +64,10 @@ använder Director-beslut; `probe-runtime.mjs` och `player-probe-store.mjs`
 använder provtal respektive minnesprojektion. `server.mjs` använder också
 kameranormalisering och `native-p6-qa-hook.mjs` talets envelope-kontrakt.
 `storage/studio-contract.mjs` validerar fortfarande social policy via OpenClaw.
-Dessa importer från `open-claw/lab/src/` är kvar, liksom Astrids talväg.
+De gemensamma kontrakten kommer från `packages/director/`;
+`director-settings.mjs` äger spelserverns miljöfilläsning med samma filordning,
+alias och datarot. Director-tjänsten behåller HTTP, Gateway och signering.
+Astrids talväg och den befintliga sociala policyn är oförändrade.
 
 `lissabon-profiles.mjs` är en avgränsad lokal profilfunktion: SQLite, gästdemo,
 `HOST=127.0.0.1`, inga spelarkonton och flaggan `lissabon-stream-lane`.

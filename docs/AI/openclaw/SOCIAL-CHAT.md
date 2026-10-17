@@ -23,7 +23,7 @@ modellkontakten. Inga nya motor-events, mediefiler eller produktregler skapas.
 `POST /api/studio/social-chat` på Director använder samma `LAB_API_TOKEN` som
 övriga labb-API:er. Inga nya nycklar eller extra miljövariabler behövs.
 Lokalt finns samma implementation som `socialChat(body, settings, fetchImpl)`
-i `src/social.mjs`, för explicit direkt-Gateway-anslutning.
+i `packages/director/social.mjs` (från reporoten), för explicit direkt-Gateway-anslutning.
 
 ```json
 {

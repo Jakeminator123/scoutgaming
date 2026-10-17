@@ -6,7 +6,7 @@ import {lstat,open,realpath} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {projectOpenClawGameStatus} from './openclaw-chat.mjs';
-import {normalizeProductSpeechEnvelope} from '../open-claw/lab/src/product-speech.mjs';
+import {normalizeProductSpeechEnvelope} from '../packages/director/product-speech.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const need=(ok,code)=>{if(!ok)throw Object.assign(Error(code),{code,statusCode:503});};
