@@ -6,6 +6,48 @@ PR182:s kanoniska lokala Gateway-env är levererad; det innebär inte att
 alla äldre profilfiler är borttagna eller att ny läppsynk är aktiverad.
 Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
+## Läsande jämförelse, 17 oktober 2026
+
+Kontrollen omfattade riktiga lokala profiler, Vercel-projektet/teamet
+`scoutgaming`, aktuella Render-tjänsteidentiteter och kodens konsumenter.
+Inga miljövärden ändrades. Render-MCP saknar env-GET: Renders samtliga
+hemlighetsvärden är därför inte jämförda. Dragan-testets separata runtime-
+endpoint verifierades genom det faktiska jobbets journal och providerstatus.
+
+| Tjänst | Ansvar |
+| --- | --- |
+| Vercel `scoutgaming` | Webb, Admin och proxy till spelmotorn. Äldre generated-speech-/streaming-/cloud-speech-flaggor är 0. Moving-nycklar ligger inte här. |
+| Render `croupier-v2` | Spelmotor samt samordning av chattsvar, röst, RunPod-session, budget och uppspelning. |
+| Render `croupier-lab-director` | Produktens taladapter via `OPENCLAW_PRODUCT_SPEECH_URL/TOKEN`, vidare till privat Gateway. |
+| Render `croupier-lab-openclaw` | OpenClaw-roller som skapar text och beslut. Producerar inte GPU-video. |
+| RunPod | Kör Pythonmotorn för läppsynk med vald avatarbank. |
+| GitHub Actions / GHCR | GPU-workflows bygger/publicerar worker-image. De startar inte RunPod-jobb. Databaskontrollen ligger separat i produktens `croupier.yml`. |
+
+Root och Lab har samma generiska `RUNPOD_API_KEY` och Astrid-endpoint
+`zsudl8tmzcmiv1`; båda skiljer sig från de explicit namngivna Emil-värdena.
+Dragan-runtime har en separat nyckel och separat endpoint. Den senaste
+testendpointen är avvecklad enligt handoffen; dess kvarvarande env-referens
+är inte en fungerande tjänst. Lokala Cartesia-/ElevenLabs-värden matchar
+Emil-profilens värden, vilket inte bevisar kontoägare. Inga dubbla aktiva
+tilldelningar hittades i de fyra jämförda profilerna.
+
+Dragan väljer ElevenLabs. Cartesia används fortfarande i Admins talbygge
+och röstpreview, och den gemensamma molnkonfigurationens genererade talväg
+validerar även Cartesia och det generiska RunPod-paret. Dessa får därför
+inte klassas som oanvända bara utifrån Dragan-profilen.
+
+Städningsförslaget är ännu inte applicerat:
+
+- Rätta lokala kommentarer om att vanlig `lab/start.mjs` läser Lab-env och
+  om att de aktiva generiska RunPod-värdena är Emils; aktuell loader beskrivs nedan.
+- `CROUPIER_MEDIA_BLOB_INDEX` behövs inte i produktens Neon-runtime. Kontrollera
+  uttryckliga importverktyg innan en lokal förekomst tas bort.
+- För Vercels `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY` och `GITGUARDIAN_API_TOKEN`
+  hittades inga aktiva produktläsare. Klarlägg externa verktygsägare och scope
+  före borttagning; detta är kandidater, inte ett raderingsbeslut.
+- Behåll providerpar, övriga driftflaggor och plattformens Marketplace-metadata
+  tills deras konsumenter har verifierats. Likrikta inte alla tjänsters env.
+
 <a id="aktuell-avgränsning-15-oktober-2026-kväll"></a>
 
 ## Runtimekontrakt, 16 oktober 2026
@@ -146,7 +188,7 @@ bedömda separat från aktiva runtime-läsare.
 | `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE`, `CROUPIER_ZONES_DATABASE_URL` | cloud-media-store.mjs, zone-cloud-store.mjs | Driftens Blob-/zoninställningar; vanliga lokala starter kopplar inte in dessa tjänster. |
 | `CROUPIER_MEDIA_BLOB_INDEX` | media-blob-index.mjs, uttryckliga verktyg/tester | Äldre filindexinställning; ersatt av scoped Neon-katalog i produktens runtime. |
 | `CROUPIER_DATABASE`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_WORKSPACE_ID` | studio-native-runtime.mjs, ops/cloud/config.mjs; game-URL även CI | Behåll exakta databas-/tjänstgränser. |
-| `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | frontendens platform-configuration.mjs och lab/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
+| `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och lab/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
 | `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_VERCEL_UI`, `CROUPIER_VERCEL_UNIFIED_UI` | Next-konfiguration, middleware och serverrouting; base path/native-admin även bygge | Behåll; ändring kan kräva nytt bygge. |
 | `BO_URL`, `CROUPIER_GAME_ORIGIN`, `CROUPIER_PUBLIC_GAME_PATH`, `CROUPIER_VERCEL_TRANSPORT_ORIGIN`, `LAB_PUBLIC_URL`, `PUBLIC_URL` | ops/cloud/config.mjs och proxy; GAME_ORIGIN även player-ui-build.mjs | Behåll aktiva kompatibilitetsnamn. |
 | `CROUPIER_LISSABON_PROFILES`, `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | web/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. |
@@ -605,7 +647,7 @@ policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
 webb, Studio och taltransport som Services. Talservicen i
 `apps/croupier-speech` delar befintlig origin-/ingresskonfiguration genom
-`apps/croupier-frontend/lib/platform-configuration.mjs`; inga nya nycklar behövs.
+`packages/server-transport/configuration.mjs`; inga nya nycklar behövs.
 `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 `CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
 publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.

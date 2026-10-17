@@ -55,6 +55,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
       'vendor/three/three.core.min.js',
       'presentation-runtime/live-idle.mjs', 'lab/policies/idle-policy.seed.json',
       'astrid-camera-audio-worklet.mjs', 'dealer-identity.mjs',
+      'packages/presentation/contracts/game-lane-id.mjs',
     ]) assert.ok(names.includes(required), `missing ${required}`);
     assert.ok(!names.includes('dealer-version-switcher.css'));
     assert.ok(!names.includes('vendor/three/GLTFLoader.js'));

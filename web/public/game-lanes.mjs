@@ -1,4 +1,5 @@
 import {isOperatorSlug} from '../../packages/navigation/operator-slug.mjs';
+import { isGameLaneId } from '../../packages/presentation/contracts/game-lane-id.mjs';
 import { BASE_DEALER_IDS, isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateComposition} from './presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
@@ -10,7 +11,7 @@ export function gamePresentationForDealer(dealerId, renderer) {
   return renderer === 'layered' ? 'layered' : 'local';
 }
 const layerPreviewDealers = ['dragge'];
-export const isGameLaneId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(value) && !['original', 'constructor', 'prototype'].includes(value);
+export { isGameLaneId } from '../../packages/presentation/contracts/game-lane-id.mjs';
 export const isGameLane = (value, lanes = GAME_LANES) => lanes.some(lane => lane.id === value);
 
 export function validateGameLanes(value) {

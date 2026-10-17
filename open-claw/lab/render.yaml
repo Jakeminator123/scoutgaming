@@ -57,7 +57,7 @@ services:
     buildFilter:
       paths:
         - open-claw/lab/**
-        - web/public/dealer-identity.mjs
+        - packages/presentation/contracts/dealer-identity.mjs
   - type: pserv
     name: croupier-lab-openclaw
     runtime: docker

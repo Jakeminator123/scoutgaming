@@ -1,3 +1,4 @@
+import { createRegisteredDealerIdle } from '../../packages/presentation/server/registered-dealer-idle.mjs';
 import { createStudioRepository } from './studio-repository.mjs';
 import { createStudioGamePolicy, studioGamePolicyConfiguration } from './studio-game-policy.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
@@ -22,15 +23,4 @@ export async function createRenderStudioPolicy({ storage, env = process.env, dea
   const policy = createStudioGamePolicy({ repository, scope: config.scope, dealerIdle });
   await policy.readSaved(); // Missing import fails before listening; no seed.
   return Object.freeze({ policy, repository, scope: config.scope });
-}
-
-import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {ownDealerIdle} from '../../packages/presentation/runtime/registered-idle.mjs';
-export function createRegisteredDealerIdle({registryLoader} = {}) {
-  if (typeof registryLoader !== 'function') throw new TypeError('Explicit cloud media registry required');
-  return async (dealerId, project) => {
-    if (!isActiveDealerId(dealerId)) return null;
-    const video = ownDealerIdle(project, await registryLoader(), dealerId);
-    return video ? {dealerId, mediaId:video.id, sha256:video.sha256, available:true} : null;
-  };
 }

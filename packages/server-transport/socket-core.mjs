@@ -1,11 +1,9 @@
 import WebSocket from 'ws';
-import {experimental_upgradeWebSocket, waitUntil} from '@vercel/functions';
-import {platformConfiguration, canonicalPlatformPath, movingWorkerSocketPath} from './platform-configuration.mjs';
+import {canonicalPlatformPath, movingWorkerSocketPath} from './paths.mjs';
 
 const CLIENT_PATH = '/speech-stream', WORKER_PATH = '/lipsync-worker';
 const MAX_BUFFERED = 8 * 1024 * 1024;
 const MAX_MESSAGES = 256;
-const response = status => new Response(null, {status, headers: {'Cache-Control': 'private, no-store', 'CDN-Cache-Control': 'no-store'}});
 const closeCode = code => code === 1000 || (code >= 1001 && code <= 1014 && ![1004, 1005, 1006].includes(code)) || (code >= 3000 && code <= 4999) ? code : 1011;
 const byteLength = data => Buffer.byteLength(data);
 const DIAGNOSTIC_PHASES = new Set(['created', 'upstream_open', 'upstream_receive', 'frontend_send', 'frontend_receive', 'upstream_send',
@@ -64,7 +62,7 @@ export function platformSocketRequest(request, configuration) {
     const cookie = request.headers.get('cookie');
     if (!cookie || cookie.length > 16384) return {status: 401};
     protocols = (request.headers.get('sec-websocket-protocol') ?? '').split(',').map(value => value.trim());
-    // The SDK selects the first protocol. Never reflect a signed ticket in
+    // Never reflect a signed ticket in
     // the response; the public protocol (astrid-v2 or moving-v1) comes first.
     if (protocols.length !== 2 || protocols[0] !== (movingClient ? 'moving-v1' : 'astrid-v2') || !/^ticket\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(protocols[1]) || protocols[1].length > 4103) return {status: 401};
     headers.cookie = cookie; headers.origin = origin;
@@ -206,52 +204,4 @@ export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED,
       return done;
     },
   };
-}
-
-export async function handlePlatformWebSocket(request, {env = process.env, WebSocketImpl = WebSocket, upgrade = experimental_upgradeWebSocket, retain = waitUntil, handshakeMs = 10000, bridgeOptions, diagnosticEmit} = {}) {
-  let configuration;
-  try {configuration = platformConfiguration(env);} catch {return response(503);}
-  if (!configuration) return response(404);
-  const input = platformSocketRequest(request, configuration);
-  if (input.status) return response(input.status);
-  const trace = platformSocketDiagnostics(configuration, env, new URL(input.url).pathname, {emit: diagnosticEmit});
-  trace('created');
-  let upstream, bridge, removeAbort;
-  try {
-    upstream = new WebSocketImpl(input.url, input.protocols, {headers: input.headers, followRedirects: false,
-      perMessageDeflate: false, handshakeTimeout: handshakeMs, maxPayload: input.moving ? input.maxPayload : 4 * 1024 * 1024});
-    bridge = bridgePlatformSocket(upstream, {lifetimeMs: input.lifetimeMs ?? (input.url.endsWith(WORKER_PATH) ? 590000 : 290000), ...(input.moving ? {maxBufferedBytes: input.maxBufferedBytes} : {}), ...bridgeOptions, trace});
-    const status = await new Promise(resolve => {
-      upstream.once('open', () => resolve(101));
-      upstream.once('error', () => resolve(502));
-      upstream.once('close', () => resolve(502));
-      upstream.once('unexpected-response', (_request, reply) => {
-        reply.resume();
-        resolve([400, 401, 403, 409, 429, 503].includes(reply.statusCode) ? reply.statusCode : 502);
-      });
-    });
-    if (status !== 101) {bridge.cancel(); return response(status);}
-    trace('upstream_open');
-    if (input.protocols.length && upstream.protocol !== input.protocols[0]) {bridge.cancel(); return response(502);}
-    if (request.signal.aborted) {bridge.cancel(); return response(499);}
-    const abort = () => {trace('request_abort'); bridge.cancel();};
-    request.signal.addEventListener('abort', abort, {once: true});
-    removeAbort = () => request.signal.removeEventListener('abort', abort);
-    bridge.done.then(removeAbort);
-    // Render has already checked current role/session, ticket ownership or
-    // worker bearer. No reconnect/retry here: tickets are single use.
-    const reply = await upgrade(socket => {
-      bridge.attach(socket);
-      // SDK awaits its handler before returning the upgrade Response. Register
-      // the bounded socket lifetime separately; return from setup immediately.
-      retain(bridge.done);
-    }, {maxPayload: input.maxPayload});
-    trace('returned', {status: reply.status});
-    return reply;
-  } catch {
-    trace('failed');
-    removeAbort?.();
-    bridge?.cancel();
-    return response(502);
-  }
 }
