@@ -34,6 +34,20 @@ mot indexet: 16 borttagna filer, 0 importer och 0 registerberoenden. Dess enda
 textträff var kartans gamla hashundantag; det är därefter borttaget medan
 GitGuardian v2-konfigurationen behålls med tom undantagslista.
 
+En sista konsumentkontroll fann en oanvänd lokal testprofil med en enda läsare
+i manifesttestet. Profilen och dess profilassertioner är borttagna; manifestets
+exakta identiteter, determinism och aktiva idlepolicy behålls. Manifestproven
+passerade 8/8. Etappen tar därmed bort 17 filer; sammanlagt 71 riktade prov
+passerade med 5 POSIX-skip. Inga runtimeprofiler eller medie-ID:n ändras.
+
+Ordinarie commit-hook passerade 37/37 tester. Slutlig raderingsgrind på
+f11177e0 gav även 0 kvarvarande textreferenser. GPT-auto läste main 9f8a3aff
+via GitHub och tillstyrkte avgränsningen; det var en riktningskontroll, inte
+en granskning av lokal diff. Dess följdfynd är hanterade: CI-sammanfattningens
+gamla karttext är borta och svit-/timeoutguiden finns i lab/README.
+Det pensionerade browserprovets hela bildrute-/återanslutningsmatris påstås
+inte ersatt; endast det aktiva Admin-utkastprovets egen omfattning anges.
+
 Ingen full lokal byggning eller ny spel-/läppsynksacceptans har körts här;
 full produkt-CI följer PR:n. Säkerhetsläsningen på main 9f8a3aff visar aktiv
 övervakning men incident 38318914 och 38318915 fortfarande öppna, partiell

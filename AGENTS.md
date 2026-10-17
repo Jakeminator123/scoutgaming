@@ -2,7 +2,7 @@
 
 ## Three product surfaces
 
-Product terminology and system-map inventories describe the product; they do not require preserving old implementations, files or tests. Jakob's current decisions take precedence. Use the current handoff for delivery status. Do not read the whole generated map during ordinary development or restore obsolete dependencies to satisfy a historical map entry.
+Product terminology and inventories describe the product; they do not require preserving old implementations, files or tests. Jakob's current decisions take precedence. Use the current handoff for delivery status. Do not restore obsolete dependencies to satisfy a historical inventory entry.
 
 The product model has one source: `lab/docs/TERMINOLOGI.md`. Scoutgaming → operator/company → games → operator-owned room/background choices; each game permits compatible dealers and foreground tables. The player chooses the allowed dealer and table for a room's background. A shared background file may be used by different operator-owned rooms without merging their identities or permissions. A composition is technical playback configuration, not another room or dealer. Keep design IDs, uploaded layer UUIDs, dealer IDs, room IDs and frozen package IDs distinct. `docs/LOCAL-PRESENTATION-RUNTIME.md` records storage/runtime limits; `web/public/material-catalog.mjs` records immutable design names and hashes. Do not infer an implemented migration from the target model.
 Jakob confirmed that the five supplied blackjack boards are separate designs. Do not infer parent/variant relationships. Future blinking frame sequences need explicit grouping and accepted shared geometry; follow the technical reference before implementing them.
@@ -54,7 +54,7 @@ Follow `agent-talk/README.md` for agents sharing the same checkout and its index
 
 Local commits run changed-file checks and available nearby tests through `.githooks/pre-commit`; `--plan` shows the selection. This is focused verification, not complete runtime acceptance. Run additional relevant tests when shared behavior changes. Full regression and frontend typechecking remain in CI and can be run explicitly with `sh .githooks/pre-commit --full`; do not repeat the full suite for every intermediate commit. Studio test discovery is automatic. Replace or delete assertions for deliberately retired behavior, and retain coverage for active authorization, room isolation, persistence and game rules. Tests should protect observable behavior and concrete regressions. Remove redundant source-string, exact CSS/markup and obsolete layout assertions instead of preserving them as approval gates. Menu counts, component prop lists and historical filenames are not product contracts.
 
-The system map documents the system; it does not require retaining obsolete implementations. Map drift is informational and does not block commit, push or product CI. Update useful references alongside changes; do not refresh baseline hashes just to obtain green. Delivery policy, genuine test failures and required schema readiness remain enforced.
+Documentation describes the system; it does not require retaining obsolete implementations. Update useful references alongside changes rather than restoring retired code to satisfy old inventories. Delivery policy, genuine test failures and required schema readiness remain enforced.
 
 ## Active documentation and private archive
 

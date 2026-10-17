@@ -455,6 +455,21 @@ som ingår i CI. Det äldre browserprovet av uppladdningssidan och BO-iframevyer
 taltransport har egna regressioner i `.githooks/pre-commit-full`; Admin-provet
 är inget spel- eller läppsynkskvitto.
 
+## Regressionssviter och tidskvitton
+
+`sh .githooks/pre-commit --full` kör produktens åtta sviter. En enskild svit
+körs med exempelvis `sh .githooks/pre-commit-full database`. Namnen är
+`studio`, `admin`, `contracts`, `database`, `presentation`, `access`,
+`speech` och `gameplay`. Testomgångarna har högst fyra workers; gruppens
+kommandorad i fullhooken anger dess filer. Normal gruppgräns är 180 sekunder,
+Studio 240 och isolerad SQL/omstart/HTTPS 360. Timeout ger felkod 124 och
+avslutar gruppens egna processer. Fel i produktproven förblir blockerande.
+
+CI:s sammanfattning och `dealer-regression-timing-<sha>` visar grupptider.
+JSONL-filen har start- och slutposter; en start utan slut visar var ett hårt
+avbrott inträffade. Den historiska systemkartans reporter behövs inte för
+produktproven eller deras tidskvitton.
+
 ## Video och kvarvarande integration
 
 De 224 snapshot-generationerna finns redan i
