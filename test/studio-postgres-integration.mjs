@@ -58,13 +58,25 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
       await writer.query('BEGIN');
       const digest=createHash('sha256').update(`croupier-studio\0${canonicalStudioJson(scope)}`).digest();
       await writer.query('SELECT pg_advisory_xact_lock($1::integer,$2::integer)',[digest.readInt32BE(0),digest.readInt32BE(4)]);
+      // Prime the transaction's activity snapshot before admission starts. A
+      // pg_stat_activity poll would keep this stale view until COMMIT; observe
+      // the lock manager directly, matching this exact writer fence instead.
+      await writer.query('SELECT count(*) FROM pg_stat_activity');
       admission=journal.reserveMovingSession(input);admission.catch(()=>{});
-      let waiting=false;
+      let waiting;
       for(let attempt=0;attempt<40&&!waiting;attempt++){
-        waiting=(await writer.query("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event='advisory' AND query LIKE '/* speech:studio_lock */%') AS waiting")).rows[0].waiting;
+        waiting=(await writer.query(`SELECT candidate.pid,
+          EXISTS(SELECT 1 FROM pg_locks held WHERE held.pid=candidate.pid
+            AND held.locktype='advisory' AND held.granted) AS holds_advisory
+          FROM pg_locks candidate WHERE candidate.locktype='advisory'
+            AND candidate.database=(SELECT oid FROM pg_database WHERE datname=current_database())
+            AND candidate.classid=$1::oid AND candidate.objid=$2::oid AND candidate.objsubid=2
+            AND NOT candidate.granted AND pg_backend_pid()=ANY(pg_blocking_pids(candidate.pid))`,
+          [digest.readUInt32BE(0),digest.readUInt32BE(4)])).rows[0];
         if(!waiting)await new Promise(resolve=>setTimeout(resolve,25));
       }
-      assert.equal(waiting,true,'admission must acquire the existing Studio advisory lock before its speech lock');
+      assert.equal(Number.isInteger(waiting?.pid),true,'admission must acquire the existing Studio advisory lock before its speech lock');
+      assert.equal(waiting.holds_advisory,false,'admission must not hold the speech fence while waiting for the Studio fence');
       await writer.query("UPDATE croupier_studio.media_records SET record=jsonb_set(record,'{deletion}','{\"state\":\"pending\"}'::jsonb) WHERE environment_id=$1 AND workspace_id=$2 AND id=$3",[scope.environment,scope.workspaceId,id]);
       await writer.query('COMMIT');
     } finally {await writer.query('ROLLBACK');writer.release();}

@@ -49,6 +49,10 @@ versionslistor som inte accepterade uttryckligen valfria migrationer.
 Render och native-runtime använder nu samma verifierade migrationsplan;
 krav på obligatoriska versioner och kontrollsummor kvarstår. 53 fokustester
 och hela isolerade SQL/HTTPS-körningen passerade på Node24.21.0 den 17 oktober.
+Det intermittenta låstestet återgavs därefter på PostgreSQL16.15 och rättades
+att läsa exakt väntande lås i stället för transaktionens frysta aktivitetssnapshot.
+Full SQL/HTTPS passerar även med avsiktligt föråldrad aktivitetssnapshot;
+låsordning och avvisning efter väntande medieborttagning kontrolleras fortsatt.
 Ny full CI återstår. PR196:s imagebygge och GitGuardian är gröna på `a0bc397b`.
 Workern väntar nu högst 60 sekunder på start efter verifierad bind, så att
 TTS (30 sekunder) och spelarens anslutning (15 sekunder) ryms. Övriga
