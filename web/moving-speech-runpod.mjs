@@ -24,12 +24,31 @@ export function createMovingSpeechRunPod({endpointId, apiKey, expectedImage, fet
       if (value.id !== endpointId || value.workersMin !== 0 || value.workersMax !== 1
         || !Number.isInteger(value.idleTimeout) || value.idleTimeout < 0 || value.idleTimeout > 5
         || !Number.isInteger(value.executionTimeoutMs) || value.executionTimeoutMs < 1000 || value.executionTimeoutMs > 180000
-        || value.gpuCount !== 1 || !Array.isArray(value.workers)) fail('moving_runpod_limits_changed');
-      let template=value.template;
-      if (!template && /^[A-Za-z0-9_-]{1,128}$/.test(value.templateId ?? '')) template=await call(`https://rest.runpod.io/v1/templates/${value.templateId}`,{signal});
-      const receipt = {expectedImage,observedAtMs:now(),endpoint:{id:value.id,image:template?.imageName},
-        workers:{endpointVersion:value.version,workers:value.workers.map(worker=>({
-          image:worker.image ?? worker.imageName,version:worker.slsVersion,isStale:worker.slsVersion !== value.version}))}};
+        || value.gpuCount !== 1 || Object.hasOwn(value,'workers') && !Array.isArray(value.workers)) fail('moving_runpod_limits_changed');
+      let workers=value.workers,workersCorroboration;
+      if (!Object.hasOwn(value,'workers')) {
+        // The provider omits an empty list. Prove absence on this exact endpoint;
+        // null, malformed lists and any live pod remain verification failures.
+        const pods=await call(`https://rest.runpod.io/v1/pods?endpointId=${endpointId}&includeWorkers=true`,{signal});
+        if (!Array.isArray(pods) || pods.length !== 0) fail('moving_runpod_workers_unknown');
+        workers=[];
+        workersCorroboration={source:'owned-endpoint-pods',endpointId,observedAtMs:now(),count:0};
+      }
+      if (!ID.test(value.templateId ?? '')) fail('moving_runpod_template_unverified');
+      const template=await call(`https://rest.runpod.io/v1/templates/${value.templateId}`,{signal});
+      if (template?.id !== value.templateId || template.imageName !== expectedImage) fail('moving_runpod_template_unverified');
+      // Embedded templates are partial. Full GET binds the image to the exact
+      // templateId; any presented embedded identity/image must still agree.
+      if (Object.hasOwn(value,'template')) {
+        const embedded=value.template;
+        if (!embedded || typeof embedded !== 'object' || Array.isArray(embedded)
+          || ['id','imageName'].some(key=>Object.hasOwn(embedded,key) && embedded[key] !== template[key])) fail('moving_runpod_template_unverified');
+      }
+      const receipt = {expectedImage,observedAtMs:now(),endpoint:{id:value.id,image:template.imageName},
+        templateCorroboration:{source:'full-template',templateId:template.id,observedAtMs:now()},
+        workers:{endpointVersion:value.version,workers:workers.map(worker=>({
+          image:worker.image ?? worker.imageName,version:worker.slsVersion,isStale:worker.slsVersion !== value.version}))},
+        ...(workersCorroboration ? {workersCorroboration} : {})};
       verifyMovingWorkerRelease(receipt,now());
       return receipt;
     },

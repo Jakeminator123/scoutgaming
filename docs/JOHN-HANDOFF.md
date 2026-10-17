@@ -33,6 +33,46 @@ ingår. Etapp 2 och 3 (katalogflyttar och kodägarskap) är inte startade.
 
 ## Dragan: OpenClaw till gemensam spelare — 17 oktober 2026
 
+PR199 är mergad på `8b60984844075b344e6cc33147956b0f31b0d691`.
+Mergeagentens kvitto anger grön main-CI, Vercel READY och Render LIVE på
+samma SHA; Render-versionen kontrollerades även av talagenten. Migration013
+tillämpades och återlästes 12:46 UTC i `croupier_game`, branch
+`br-flat-fog-b161a6r8`, scope `production/croupier`. Tidigare versionskrav
+och originaldata ändrades inte.
+
+Det separata bolaget `dragan-test` har nu publicerat paketversion 1 och rummet
+`room-8bd056a2-d5c5-a622-2766-faf75dbbcfa2` (Dragan · dynamiskt taltest).
+Spelvyn visar Dragan, Lounge-varm och Oak. Ett riktigt textmeddelande i
+bordschatten gav ett nytt OpenClaw-svar på svenska. Spelet visade samtidigt
+att Dragans röstvideo saknas: dynamisk text är verifierad, röst/läppsynk i
+molnspelet är ännu inte verifierad. Inga gamla bolag återöppnades, inga
+insatser lades av agenten och ingen användarplånbok ändrades för provet.
+
+Den publicerade workern är låst till image-digest
+`56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
+Fem separata RunPod-skapandeförsök stängdes och verifierades borttagna utan
+taljobb. REST-skapande med max0 gav max3; GraphQL-skapande gav däremot rätt
+max0. API:ets utelämnade tomma workerlista och förkortade templatesvar
+behöver styrkas med separata färska läsningar. Försöken är inte en fungerande
+driftkonfiguration. Kostnadsunderlaget behåller reserver för fördröjd
+fakturering. Den 17 oktober 13:18 UTC var känd kostnad 0,169812463 USD,
+reserver 3,11 USD och återstående bevakat försök högst 480 sekunder plus
+120 sekunders stoppmarginal vid konservativa 10 USD/timme. Totalen är
+4,94647913 USD; ett nytt försök kräver en ny avstämning av samma journaler.
+Ett sjätte försök verifierade 13:20 UTC endpoint `h56jnnyo5aq4om` med max0,
+noll workers och exakt image. Jakob godkände den nya begränsade runtime-
+nyckeln; den skapades och sparades i en ny gitignorerad lokal fil. Läsprov
+13:25 UTC gav200 för endpoint, full template och health med noll workers.
+Nyckeln får endast skicka jobb till denna endpoint. Därefter återstår
+Render-konfiguration och bevakat end-to-end-prov inom samma 5 USD.
+
+Den första fortsättnings-PR:n gör013 obligatorisk och verifierar RunPods
+fullständiga template separat från dess förkortade embedded-svar. Saknad
+workerlista godtas endast efter ett färskt tomt pods-svar för exakt endpoint.
+Explicit konflikt eller okänt svar stoppar före jobb. 74 schema-/importprov
+och45 RunPod-/transportprov är gröna enligt underagentens körningar; den
+privata provisionerns45 prov är separata från produktens molnacceptans.
+
 PR191 är mergad på `f5f8414628e39fee4cbf703054c0ee57d2b48157`.
 Mergeagentens separata kvitto bekräftar grön main-CI och samma commit på
 Vercel och Render. Fortsättningen på `codex/dragan-openclaw-cloud` ersätter
@@ -50,23 +90,31 @@ tillfälliga cache. Originalfilmer och Astrids endpoint ändras inte.
 
 Spelaradaptern använder vilans uttryckliga källruta mellan kortsekvenser;
 ljudklockan och verifierade ansiktsrutor följer samma plan. Kredit och
-chunk-kvittens begränsar buffertar hela vägen till workern. Samtidigt tal
-över en pågående utdelning är inte aktiverat i denna första integration.
+chunk-kvittens begränsar buffertar hela vägen till workern. Pågående separat arbete
+lägger till **Svara under nästa utdelning**: en färsk serverbestämd öppning
+reserveras en gång, och exakt kroppsruta, ansiktsruta och kortkontakt följer
+ljudklockan. Vanlig chatt behåller vilovägen. Kodprov och verklig molnacceptans
+redovisas separat; funktionen är ännu inte verifierad med Dragan i spelet.
+
+Migration013 görs obligatorisk i samma fortsättning, eftersom dess
+produktionsinstallation nu är verifierad. Saknad013 ska blockera readiness,
+serverstart och import; framtida uttryckligen valfria versioner stöds fortsatt.
 
 Fokuserade kontroller omfattar riktiga HTTP/WebSocket-förlopp och Chrome/
 WebCodecs med syntetiska medier, återkallad ägare/profil/publicering,
 engångsbiljetter, kostnadsgräns, avbrott och workerprotokoll. Dessa är inte
 visuell acceptans av Dragan. Isolerad PostgreSQL/HTTPS är verifierad lokalt
 med riktig temporär databas, omstart, autentisering, CAS och taljournaler.
-Publicerad image, migration, runtime-konfiguration och ett verkligt OpenClaw/GPU/spelarprov återstår före
-aktivering. Första tidigare GPU-provet är fakturerat till 0,169812463 USD;
-nyvägen reserverar högst 4,80 USD totalt inom Jakobs mandat på 5 USD.
+Runtime-konfiguration och ett verkligt OpenClaw/GPU/spelarprov återstår före
+talaktivering. Första tidigare GPU-provet är fakturerat till 0,169812463 USD;
+taljournalens egna tak är 4,80 USD, men ger inte ytterligare budget utöver
+Jakobs sammanlagda 5 USD inklusive tidigare prov och infrastrukturreserver.
 Jakob har valt ett separat Dragan-testrum. Bolaget `dragan-test` har skapats
-genom N1 den 17 oktober, utan medlemmar eller rum. Dess egna kompositionsutkast
+genom N1 den 17 oktober, utan medlemskonton. Dess egna sammansättning
 `dragan-separat-taltest-413cea16-014d-4625-a613-4c6eeb5f693c` är sparat genom
 Admin och återläst i Neon: endast Dragan, Lounge-varm-video och Oak-bord,
 med referenspaketets mobil-/desktopgeometri och 22 kort-/cirkelpunkter.
-Rumsutgivning återstår; pausade operatörer ska inte öppnas. Den separata avatarbanken är
+Rummet är publicerat enligt kvittot ovan; pausade operatörer ska inte öppnas. Den separata avatarbanken är
 uppladdad i privat Blob och dess tre filer fullständigt hashverifierade.
 Detta är beredningsunderlag, inte ett godkänt moln- eller läppsynksprov.
 
@@ -86,7 +134,7 @@ separata installation saknar. Callback-testet har flyttats oförändrat till
 rotens registrerade integrationssvit. Fyra frontendtester och hela callback-
 testet passerar. En isolerad kopia med enbart frontendens beroenden återger
 felet före flytten och passerar efter den; runtime och dependencies ändras inte.
-Molnaktivering och migration013 väntar på verifierad Vercel- och Renderdrift.
+PR199 löste frontendens beroendegräns; drifts- och migrationskvittot står ovan.
 Workern väntar nu högst 60 sekunder på start efter verifierad bind, så att
 TTS (30 sekunder) och spelarens anslutning (15 sekunder) ryms. Övriga
 idle-/kvittensgränser på 15 sekunder och jobbets totalgräns på 180 sekunder

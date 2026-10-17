@@ -265,33 +265,30 @@ test('generic portrait syntax cannot authorize a dealer absent from the saved St
   }
 });
 
- test('Render startup rejects a missing budget migration or unknown ledger version', async () => {
+ test('Render startup rejects missing required migrations 011, 012, 013 or an unknown version', async () => {
   const {createRenderStudioPolicy}=await import('../web/storage/studio-runtime.mjs');
   const connection = fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require', 'croupier_game');
   const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:'test',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',CROUPIER_GAME_DATABASE_URL:connection};
   const storage={pool:{},db:{assertInstalled:async()=>{}}};
   const {loadStudioMigrations}=await import('../ops/neon-studio/migrations.mjs');
   const required=(await loadStudioMigrations()).filter(row=>!row.deploymentOptional).map(row=>row.version);
-  for(const versions of [required.filter(version=>version!=='011'),required.filter(version=>version!=='012').concat('013'),required.concat('014')]){
+  for(const versions of [required.filter(version=>version!=='011'),required.filter(version=>version!=='012'),required.filter(version=>version!=='013'),required.concat('014')]){
     await assert.rejects(createRenderStudioPolicy({storage,env,schemaCheck:async()=>({schemaPresent:true,toApply:[],applied:versions.map(version=>({version,checksum:'a'.repeat(64),structureChecksum:'b'.repeat(64)}))})}),error=>error.message==='studio_game_schema_unavailable');
   }
 });
 
 
-test('Render startup accepts verified optional migration without changing saved policy', async()=>{
+test('Render startup accepts complete required schema without changing saved policy', async()=>{
   const {createRenderStudioPolicy}=await import('../web/storage/studio-runtime.mjs');
   const {loadStudioMigrations}=await import('../ops/neon-studio/migrations.mjs');
   const migrations=await loadStudioMigrations();
   const env={CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_DATABASE:'postgres',CROUPIER_STUDIO_ENVIRONMENT_ID:scope.environment,
-    CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require','croupier_game')};
-  for(const installedOptional of [false,true]){
-    const {pool,policy,repository}=await fixture(),before=await policy.readSaved();let asserted=0;
-    const applied=migrations.filter(row=>!row.deploymentOptional||installedOptional)
-      .map(row=>({version:row.version,checksum:row.checksum,structureChecksum:'a'.repeat(64)}));
-    const saved=await createRenderStudioPolicy({storage:{pool,db:{assertInstalled:async()=>{asserted++;}}},env,dealerIdle:idle,
-      schemaCheck:async()=>({schemaPresent:true,toApply:[],applied})});
-    assert.equal(asserted,1);assert.deepEqual(saved.scope,scope);assert.deepEqual(await saved.policy.readSaved(),before);
-    assert.equal((await repository.readDocument('project')).revision,'project-original');
-    assert.equal((await repository.readDocument('administration')).revision,'admin-original');
-  }
+  CROUPIER_STUDIO_WORKSPACE_ID:scope.workspaceId,CROUPIER_GAME_DATABASE_URL:fixtureDatabaseUrl('postgresql://fixture.neon.tech/croupier_game?sslmode=require','croupier_game')};
+  const {pool,policy,repository}=await fixture(),before=await policy.readSaved();let asserted=0;
+  const applied=migrations.map(row=>({version:row.version,checksum:row.checksum,structureChecksum:'a'.repeat(64)}));
+  const saved=await createRenderStudioPolicy({storage:{pool,db:{assertInstalled:async()=>{asserted++;}}},env,dealerIdle:idle,
+    schemaCheck:async()=>({schemaPresent:true,toApply:[],applied})});
+  assert.equal(asserted,1);assert.deepEqual(saved.scope,scope);assert.deepEqual(await saved.policy.readSaved(),before);
+  assert.equal((await repository.readDocument('project')).revision,'project-original');
+  assert.equal((await repository.readDocument('administration')).revision,'admin-original');
 });
