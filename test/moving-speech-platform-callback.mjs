@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {once} from 'node:events';
 import {createRequire} from 'node:module';
-import {createSpeechIngress} from '../apps/croupier-speech/service.mjs';
+import {createSpeechIngress} from '../apps/speech/service.mjs';
 import {platformConfiguration} from '../packages/navigation/server/platform-routing.mjs';
 import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';
 import {createMovingWorkerChannel} from '../services/astrid-gpu-worker/gateway/moving-transport.mjs';
