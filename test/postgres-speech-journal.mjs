@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { summarizeMovingWorkerHealth } from '../web/moving-speech-runpod.mjs';
 import { speechMemoryPool as memoryPool } from './fixtures/speech-memory-pool.mjs';
 import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS, speechRequestKey } from '../web/postgres-speech-journal.mjs';
 
@@ -139,6 +140,29 @@ test('midnight reserves whole cost on both UTC days, no refund after terminal/ca
   assert.equal(f.pool.state.reservations.size, 4);
   await assert.rejects(reserve(f.journal, lease, '3'.repeat(32), { currentBudgetMicroUsd: 9000000 }), rejection('generated_speech_daily_budget_exhausted', 429));
   assert.equal(f.pool.state.reservations.size, 4);
+});
+
+test('provider cache permits reservations while pending jobs block reservation and drain without refund', async () => {
+  const { journal, pool } = await fixture(), lease = await streamLease(journal); await initPolicy(journal);
+  const health = (jobs = {}) => summarizeMovingWorkerHealth({
+    workers: { idle: 1, ready: 1, running: 0, initializing: 0, throttled: 0, unhealthy: 0 },
+    jobs: { completed: 1, failed: 0, inProgress: 0, inQueue: 0, retried: 0, ...jobs },
+  });
+  for (const jobs of [{ inQueue: 1 }, { inProgress: 1 }]) {
+    await assert.rejects(reserve(journal, lease, sessionId, { workerState: health(jobs) }), rejection('generated_speech_worker_not_drained', 409));
+    assert.equal(pool.state.sessions.size, 0); assert.equal(pool.state.reservations.size, 0);
+  }
+  await reserve(journal, lease, sessionId, { workerState: health() });
+  await journal.markSubmissionStarted({ sessionId, lease });
+  await journal.attachJob({ sessionId, lease, jobId: 'cache-fixture-job' });
+  await journal.recordProviderStatus({ sessionId, lease, jobId: 'cache-fixture-job', status: 'COMPLETED' });
+  for (const jobs of [{ inQueue: 1 }, { inProgress: 1 }]) {
+    await assert.rejects(journal.confirmWorkerDrained({ sessionId, lease, proof: { ...proof(sessionId), ...health(jobs) } }), rejection('generated_speech_worker_not_drained', 409));
+    assert.equal(pool.state.reservations.size, 1);
+  }
+  await journal.confirmWorkerDrained({ sessionId, lease, proof: { ...proof(sessionId), ...health() } });
+  await reserve(journal, lease, sessionId2, { workerState: health() });
+  assert.equal(pool.state.reservations.size, 2);
 });
 
 test('two writers cannot reserve two open GPU sessions; untracked worker and reservation rollback fail closed', async () => {

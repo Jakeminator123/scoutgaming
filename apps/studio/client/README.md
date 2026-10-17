@@ -23,9 +23,10 @@ Vercel skickar båda adresserna till Studio-servicen.
 
 Båda lobbybyggena använder samma `lobby/`-källa. Den publika varianten får
 egen katalogadapter och publika resursadresser; den exponerar inte Admins
-paket eller katalog. Adaptern `runtime/public-lobby-catalog.mjs` använder
-fortfarande `apps/croupier-frontend/lib/player-lobby.mjs` och därigenom
-`player-operator.mjs`. Detta aktiva beroende återstår att ge gemensamt ägarskap.
+paket eller katalog. Adaptern `runtime/public-lobby-catalog.mjs` använder den gemensamma läsaren
+`packages/player-catalog`, navigationens operatörsvalidering och
+presentationens publika rumskontrakt. Den läser bara publicerad katalogdata;
+Admin-data och osparade utkast ingår inte.
 
 ## Bygga och behålla
 

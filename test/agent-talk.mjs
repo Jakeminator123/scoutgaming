@@ -29,7 +29,7 @@ function fullQueue() {
 }
 
 test('agent-talk serializes writers, protects claims and preserves overflowing pings for the recipient', async t => {
-  const { run, read } = fixture(t);
+  const { run, read, save } = fixture(t);
     const claims = await Promise.all(Array.from({ length: 10 }, (_, index) => run('claim', `agent-${index}`, `web/file-${index}.mjs`, 'Test')));
     assert.ok(claims.every(result => result.code === 0), JSON.stringify(claims));
     assert.equal(Object.keys(read().agents).length, 10);
@@ -42,9 +42,24 @@ test('agent-talk serializes writers, protects claims and preserves overflowing p
     assert.equal(read().pings.length, 0);
     assert.ok(read().history.at(-1).text.includes('Answer'));
     assert.equal(JSON.parse((await run('status','agent-0')).output).replies[0].to,'agent-0');
-    for (let index = 0; index < 45; index++) assert.equal((await run('claim', 'agent-0', 'web/file-0.mjs', `Step ${index}`)).code, 0);
+    // Seed boundary inputs; exercise the actual CLI on both sides of the limit.
+    const history = Array.from({ length: 39 }, (_, index) => ({
+      at: '2026-10-02T12:00:00.000Z', kind: 'start', agent: 'agent-0', text: `Seed ${index}` }));
+    save({ ...read(), history });
+    assert.equal((await run('claim', 'agent-0', 'web/file-0.mjs', 'Step 39')).code, 0);
     assert.equal(read().history.length, 40);
-    for (let index = 0; index < 40; index++) assert.equal((await run('ping', 'agent-0', 'agent-1', `Ping ${index}`)).code, 0);
+    assert.deepEqual(read().history.slice(0, -1), history);
+    assert.equal((await run('claim', 'agent-0', 'web/file-0.mjs', 'Step 40')).code, 0);
+    assert.equal(read().history.length, 40);
+    assert.deepEqual(read().history.slice(0, -2), history.slice(1));
+    assert.deepEqual(read().history.slice(-2).map(entry => entry.text), ['Step 39', 'Step 40']);
+    const pending = fullQueue().pings.slice(0, 39).map(ping => ({ ...ping, from: 'agent-0', to: 'agent-1' }));
+    save({ ...read(), pings: pending });
+    const boundary = await run('ping', 'agent-0', 'agent-1', 'At capacity');
+    assert.equal(boundary.code, 0);
+    assert.equal(read().pings.length, 40);
+    assert.deepEqual(read().pings.slice(0, -1), pending);
+    assert.equal(read().pings.at(-1).id, boundary.output.trim());
     const oldest = read().pings[0];
     assert.equal((await run('ping', 'agent-0', 'agent-1', 'Overflow')).code, 0);
     assert.equal(read().pings.length, 40);

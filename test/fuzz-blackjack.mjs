@@ -13,6 +13,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { SHOE_RULES } from '../packages/shared/blackjack-shoe-rules.mjs';
 
 const underRunner = process.env.NODE_TEST_CONTEXT != null;
 
@@ -77,7 +78,7 @@ const seededCrypto = new Proxy({
 });
 Object.defineProperty(globalThis, 'crypto', { configurable: true, writable: true, value: seededCrypto });
 
-const { command, newGame, gameView, shoeView, SHOE_RULES } = await import('../web/shoe-game.mjs');
+const { command, newGame, gameView, shoeView } = await import('../web/shoe-game.mjs');
 
 const BANK = 1_000_000_000_000;
 const TEN = new Set(['10', 'J', 'Q', 'K']);

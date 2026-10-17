@@ -80,32 +80,249 @@ inga gamla frontend-, privata data- eller källmedievägar. Frontendtyper, 40
 rot-/CI-/hook-/entryprov, ett verkligt GET/HEAD-importgrafprov, miljöregistret
 och 18 transportprov på Node22.23.1 är gröna. Inga nya testfiler.
 
-Detta är lokal verifiering, inte ett nytt spel-/mediegodkännande. Ingen extern
-konfiguration, push eller deploy har gjorts; PR/CI/drift och provhåll samordnas
-av huvudagenten. Nästa apprötter följer separata leveranser.
+Faktisk main228 1ee284725cf2e6583349c368d96bd608ef78f808 är normalt integrerad.
+N/O- och PR226-integrationen gav 141 pass, inga fel och en befintlig SQL-opt-in
+med ordinarie hook; slutlig ancestry-integration ändrade inga filer. Frontendens
+produkt- och byggträd är identiska med det lokala byggkvittot. Aktiva guider pekar
+på apps/web och neutral katalogägare. Läsande Vercel-förkontroll bekräftar rätt
+Scoutgaming-projekt, reporot och Node24 utan gammal frontend-override.
+
+Detta är lokal verifiering, inte ett nytt spel-/mediegodkännande. Extern
+konfiguration är oförändrad. PR/CI/drift samordnas med mergeagenten, och nästa
+apprötter följer separata leveranser.
 
 
-## Publika moduler oberoende av deployordning — 17 oktober 2026
+## PR228: slutlig integration och byggkvitto
 
-Frontendens middleware låter GET/HEAD till exakta kanoniskt validerade adresser i
-`presentationPublicSource` nå Nexts `public`-katalog. Byggaren använder hela samma
-`presentationPublicModules` som startpunkter i sin befintliga import-/aliasclosure,
-så samtliga 37 deklarerade publika adresser byggs även utan en aktuell spelarimport.
-Backendallowlisten, Studio-routningen, autentiserade API:er och ingressen ändras
-inte. Ingen generell paketprefixroute eller andra hårdkodad allowlist införs.
-Andra metoder och `next-action` svarar 405 med `Allow: GET, HEAD`.
+Main f4224613a21082645841c2b3827d4ec94916a7c5, inklusive PR219–221 och
+lipsync2:s PR226, är normalt integrerad. RunPod-kö/recovery-rättningen
+behåller sina produktkroppar och tester. N/O:s gemensamma modulägare,
+appägda SDK/pooler och publika adresser är bevarade.
 
-PR223:s första regression filtrerade felaktigt på redan byggda filer och dolde
-13 saknade adresser. Ofiltrerad regression reproducerade exakt dessa 13 före
-byggfixen. Efter rättningen: `platform-ui.mjs` och `player-ui-build.mjs` 29/29,
-inklusive samtliga registryURL:er, transitiva from-/sidoinporter och litterala dynamiska importer, verklig middleware,
-Nexts statiska server och en isolerad äldre backend som svarar 421. GET/HEAD,
-källbytes, JavaScript-/JSON-MIME, privata/extra/encoded adresser och metod/action-
-nekanden passerar; API-anrop behåller backendvägen. Befintlig fem-MiB-budget,
-tvåfilslanding och nekad media/BO-kopiering passerar oförändrade.
-Ingen fullbuild, installation, deployment, miljöändring eller produkt-/medie-
-acceptans ingår. Byggfixen är parentgranskad; ordinarie hook verifierar slutversionen vid commit. PR/CI och
-driftkvitto återstår.
+N/O:s produktträd ab125d0e46f0282278fa5fbd7ce08372f73d2f30 byggdes i en
+isolerad spegel: Studio med bara egna låsta beroenden gav80rena traces,
+SQL i77,11migrationer och komplett Admin/Lobby/preview/worker-innehåll.
+Frontendens117 befintliga prov och ett Next-produktionsbygge passerade;
+100URL från52källor,218importkanter och21rena traces verifierades.
+Inga privata envfiler följde med. Senare testfixar ändrar inga produktfiler;
+main-integrationens separata RunPod-ändring har sitt PR226-kvitto ovan.
+Ordinarie fokuserad integrationshook och slutlig CI gäller denna förening.
+Faktisk drift följs av mergeagenten; inga GPU- eller medieprov ingår här.
+
+## PR228: kvarvarande fuzzimport rättad
+
+Blackjack-fuzzprovet läser SHOE_RULES från dess kanoniska neutrala modul
+packages/shared/blackjack-shoe-rules.mjs efter browser-/serveruppdelningen.
+Spelmotorns dynamiska import och samtliga invariants är bevarade. Befintligt
+isolerat fuzzprov passerar med seed20260822 och3000 rundor; ingen databas,
+provider eller produktionsåtkomst. Produktträdet är oförändrat mot PR228:s
+ab125d0e46f0282278fa5fbd7ce08372f73d2f30. Den befintliga kontrollen av
+odefinierade browsernamn följer också med till packages/presentation/contracts
+och packages/navigation (player-handoff),
+så de flyttade modulernas tidigare täckning behålls; fem katalogprov passerar.
+Inga nya testfiler införs. Ordinarie hook och PR-CI följer.
+## Dragan: worker-klassning och återanvändningsanalys — 17 oktober 2026, 22:30 CEST
+
+Avgränsad kodrättning med offline-tester på `cursor/lipsync-cloud-diagnosis-36e8`.
+Inga GPU-prov, miljöändringar, providerresurser eller budgetändringar ingår.
+Tal och läppsynk i spelet fungerar fortfarande inte; detta ändrar varför nästa
+prov får stoppas, inte om det lyckas.
+
+### Verifierat ur det stoppade provet (inte hypotes)
+
+Runpods REST-poster för workers är pods med `desiredStatus` ∈ RUNNING/EXITED/
+TERMINATED (sparad OpenAPI 17 oktober). Endpointens `version` stegas bara vid
+ändrad template/env, inte vid ändrat `workersMin`. Receipt 19:05:44 visade
+`s8le9mn0gs3n8g` som EXITED medan systemloggen 19:06:47 fortfarande hämtade
+imagen; 19:07:40 var samma worker RUNNING och en ny `t5nobwvi58kdch` EXITED.
+`/health` 19:04:32 visade noll i alla worker-räknare med ett köat jobb.
+Runpods dokumentation: nedskalad worker (Initializing/Idle/Throttled) är inte
+debiterad; Running täcker kallstart, bearbetning och idle-vänt och debiteras.
+Antal poster var alltså aldrig antal aktiva GPU:er. Guardens
+`workers.length <= workersMax` stoppade ett prov som fortfarande var inom max1.
+
+Läsande Runpod-kontroll 20:20 UTC med den dedikerade lokala nyckeln: endast
+Astrids endpoint `zsudl8tmzcmiv1` (min0/max1) finns kvar, noll pods.
+Fakturerat 16–17 oktober: endpoints 0,2836 USD, varav `8pfjenuipsz355`
+0,1640 och `e9isjywhagh41l` 0,1195 (de två min1-proven som faktiskt startade
+en worker); pods 0,2155 USD (beredningspodden). De fyra min0-endpoints som
+bara köade jobb har inga fakturarader, och `dgpazl8h3a64uj` saknar ännu rad
+för sina cirka 30 sekunder RUNNING. Summa cirka 0,50 USD mot taket 15 USD;
+handoffens tidigare 0,36 USD var en delavläsning. Detta bekräftar att ett
+köat jobb på min0 aldrig fick en körande worker och därför inte kostade.
+
+### Rättning i produktadaptern
+
+`web/moving-speech-runpod.mjs` klassar varje post: RUNNING = `active`
+(upptar GPU), EXITED = `scaled-down` (cachad/hämtande slot, gratis),
+TERMINATED = `terminated`, saknat eller okänt värde = `unknown` och räknas
+som aktiv så att osäkerhet bara kan neka. Endast aktiva/okända poster räknas
+mot `workersMax` (`moving_runpod_active_workers_exceeded`); fler än max+2
+nedskalade poster ger `moving_runpod_workers_unknown`. Ägarskap (endpoint/
+template) krävs för alla poster. Fel image/version på en aktiv post är
+fortfarande `moving_worker_release_mismatch`; på en nedskalad post
+rapporteras den som `isStale` eftersom providern själv byter ut föråldrade
+slots utan kostnad. `workerState()` (`/health`) följer Runpods egen modell:
+en worker är antingen startad (`running`: cold start, jobb eller idle-väntan,
+debiterad) eller nedskalad och odebiterad. `workers = running + unhealthy`,
+`busy = max(running, jobs.inProgress) + jobs.inQueue`,
+`available = max(0, running − jobs.inProgress)`. `busy` är ett försiktigt
+arbetsmått, inte antal debiterade GPU:er. Köade eller pågående jobb blockerar
+alltid drain, även när `/health` ännu visar `running=0`; annars kunde en
+ny reservation släppas igenom och återhämtningen frigöra ägarskapet för tidigt.
+`ready` är providerns "kan ta jobb"-mått och räknar även cachade,
+ej startade slots; efter första lyckade jobbet ligger `idle:1, ready:1` kvar
+tills slotten byts ut, så den får inte ingå i `workers`/`available`. Tidigare
+(main och första versionen av #226) summerades `ready` dit, vilket blockerade
+`reserveMovingSession` och återhämtningens `worker_not_drained` för alltid
+efter en lyckad session. Råa `workers`/`jobs`-räknare följer med oförändrade
+i `raw` som journalbevis; saknad eller ogiltig räknare (även `jobs`) är
+fortfarande `moving_runpod_worker_state_unknown`, och `running` eller
+`unhealthy` > 0 blockerar fortfarande. Jobbspärren motsvarar redan
+`tools/activate-native-ai-qa.mjs` (`running=0`, `inProgress=0`, `inQueue=0`).
+`verifyMovingWorkerRelease` kräver vid `send` minst en aktiv post, inte bara
+någon post. Rader utan `state` behåller den strikta äldre tolkningen.
+
+Jakob har lämnat över PR #226 till lipsync-agenten på samma branch; den tidigare
+historien bevaras. Nya regressioner gav först tre fel på föregående head
+(adaptern, faktisk återhämtning och journalreservation/drain). Efter köfixen:
+97/97 i RunPod-, transport-, session-, platform-callback- och journaltester
+(`test/postgres-speech-journal.mjs` för den sistnämnda). SQL-provet i
+`test/studio-postgres-integration.mjs` provar även riktig
+`reserveMovingSession` med köat/pågående jobb och cache utan jobb; körningen
+kräver den isolerade PostgreSQL-fixturen och lämnas till CI.
+`test/platform-moving-speech.mjs` kräver frontendens låsta installation och
+lämnas också till CI. Ingen ändring av budgethistorik, journalens produktkod
+eller provider-POST. Render moving-flaggan förblir 0; tal/läppsynk är ännu
+inte verifierat. Nästa GPU-prov förutsätter levererad rättning, verifierad
+endpoint och beslut om journalens förbrukade budgettak. Efter main-integrationen
+fungerade den befintliga GitGuardian-kopplingen: två öppna incidenter
+(38318914 och 38318915), repoövervakning aktiv, platsmetadata delvis saknad
+och historisk scan `too_large`. Main-checken är queued. Detta är en läsning,
+inte en säkerhetsklarering; inga incidenter eller behörigheter ändrades.
+
+### Samma regel i den privata guarden
+
+Den privata `moving-runpod-provision.mjs` i Jakobs visualiseringskatalog för
+chatten `01a14afa-…` har fått samma klassning i `verifyEndpoint` och
+`verifyFallbackWorkers`: endast RUNNING eller okänd status räknas mot
+`workersMax` och utlöser `unexpected_active_workers`; EXITED/TERMINATED
+tolereras upp till max+2 utan att räknas som kapacitet, med bibehållen
+ägarskaps- och versionskontroll och oförändrad spärr mot alla poster när
+workers inte är tillåtna. `verify()` returnerar nu `workers` (upptagande),
+`workerRecords` och `scaledDownWorkers`, så uppvärmningskontrollen
+`workers===1` inte fälls av en cachad slot. Original sparades som
+`.before-worker-classification-20261017`. Ett nytt test återskapar provets
+exakta två poster; sviten ger 89/89 offline. Guardens stoppfil, deadline,
+budgeträkning och providerändringar är orörda. Adapterns
+`classifyMovingWorkerRecord`/`summarizeMovingWorkerRecords` är samma regel.
+
+### Korrigerad cacheanalys för workern
+
+`bank_download.py` har redan hashadresserad cache under
+`/tmp/croupier-moving-banks` med återverifiering per träff. Det som faktiskt
+upprepas per jobb i `entrypoint.run()` är: (1) `verify_bank` hashar arkivet
+(594 MB) igen, packar upp hela banken i en ny temporärkatalog och hashar varje
+utpackad fil; (2) `verify_models` SHA-256-hashar 3,89 GB modellfiler som är
+oföränderliga i imagen; (3) `ProcessEngine` startar en ny subprocess, laddar
+MuseTalk och banken till GPU och värmer upp (uppmätt cirka 57 s). Allt sker
+före callbackanslutningen och inom jobbets 180 s. Med idle 5 s och ett jobb
+per session överlever inget av detta till nästa replik.
+
+Förslag utan att tappa kontroll: modellverifiering en gång per workerprocess
+vid start, nyckelad på `models.lock.json`-hash, med storlekskontroll per jobb
+och fail-closed; utpackad bank per process nyckelad på
+`avatarSha256+bankReceiptSha256+sourceSetSha256+workerAvatar`, återverifierad
+mot kvittots filhashar vid återanvändning; motorprocess per
+`(releaseSha256, avatarSha256, workerAvatar)` som hålls varm efter normalt
+slutfört jobb och dödas vid avbrott/timeout som i dag. Alla tre ger effekt
+först när workern lever mellan jobb, det vill säga tillsammans med upplägget
+nedan. Ingen av dem är implementerad.
+
+### Föreslaget upplägg: återanvänd endpoint och session, ingen permanent GPU
+
+1. En permanent Dragan-endpoint/template som inte raderas mellan prov, så att
+   providern får behålla cachade slots (EXITED-poster) och imagehämtningen
+   på 4–5 minuter inte upprepas. Verifiering av image-digest, version, max1,
+   idle och execution ändras inte.
+2. Provfönster: guarden sätter `workersMin=1` först efter verifierad
+   reservation och köat jobb (som nu), väntar på `/health running=1` och
+   workerns pong, och återgår till `workersMin=0` innan chatt. Versionen
+   stegas inte av detta. Fönstret har fast deadline och ägarbunden stoppfil.
+3. Ett jobb per session i stället för per replik, med serverns befintliga
+   callback 450 s/livstid 480 s; idle höjs bara inom fönstret (högst 120 s)
+   och sätts tillbaka till 5 vid stängning. Så länge adaptern kräver
+   idle ≤ 5 är detta ett medvetet, dokumenterat undantag som kräver kodändring.
+4. Kostnadsgräns per fönster: A40 0,00034 USD/s ⇒ 10 minuter ≈ 0,20 USD plus
+   reserv; guarden räknar aktuell summa före aktivering mot taket 15 USD med
+   kvar 2,90 USD efter försiktiga reserver. Taljournalens 4,80 USD är fullt
+   reserverat; nytt prov kräver att Jakob höjer det budget-ID:ts tak, inte
+   nytt ID eller nollställd historik.
+5. Stopp: `workersMin=0`, cancel av öppet jobb, läs `/health` tills
+   running=0, verifiera tom aktiv lista; EXITED-poster får finnas kvar.
+
+Nästa steg är Jakobs beslut om punkt 2–4 (fönster, idle-undantag, höjt tak
+för budget-ID `dragan-test-20261017`) innan någon providerändring; därefter
+en liten testad adapterändring för idle-undantaget och först sedan ett enda
+samordnat prov. Cloud-agentens egna secrets (fel Vercel-team/projekt och
+Blob-store, se chattens frågebatteri) hanteras separat och ingår inte här.
+## Portabel GitGuardian-konfiguration — 17 oktober 2026
+
+MCP-starten använder `git -c` med ett tillfälligt shell-alias för att köra
+Node från aktuell checkoutrot. Den gamla personliga `cwd` är borttagen.
+Den effektiva konfigurationens kommando klarade initialize/tools-list från
+worktreens rot och undermapp samt från en flyttad testcheckout med mellanslag
+och dess undermapp. Alla tre verktyg annonseras som läsande; inget permanent
+Git-alias skapas. Befintliga GitGuardian-/säkerhetsprov: 34/34 passerar.
+Användarens avaktiverade MCP-val och skyddade koppling har inte ändrats;
+startprovet anropade inte incident-API:t och är ingen säkerhetsklarering.
+Integrationsgranskning: main b356152 är intagen normalt och båda sidors separata
+leveransnoteringar bevarade. 34/34 säkerhetsprov samt faktisk MCP-start från
+rot och undermapp passerar; tre läsverktyg annonseras. Ingen incident eller
+behörighet ändrad. Färsk PR-CI och mainleverans återstår.
+
+
+## PR227: Studio använder sin egen policymedialäsare
+
+Ett Studio-bygge med enbart appens låsta beroenden hittade en andra korskoppling:
+Studio importerade web/storage/studio-runtime, vars lazy mediaimport drog in
+spelserverns Blob-SDK. Policybootstrapen har nu neutral ägare i
+packages/presentation/server/studio-policy-runtime.mjs. Studio och game binder
+varsin befintlig medialäsare och samma migrationskontroll. Schema, scope, readSaved,
+readonly-stores och felstängning behåller ordning och beteende. Isolerade fixturelistor
+och miljöregistret inkluderar den nya kanoniska modulen. Inga nya SDK-beroenden,
+provideranrop eller datamigreringar införs. Befintliga policy-/lagringsprov passerar
+20/20 utan skips. Fullt Studio-bygge med /studio/native-admin, egna låsta Lab/client-
+beroenden, inga privata envfiler och varken root- eller web/node_modules passerar:
+kompilering, typer, 28 statiska sidor och 80 deploymenttraces. Ordinarie commit-hook
+och exakt-head-CI är leveransgrindar; bygget är ingen ny drift- eller medieacceptans.
+
+
+## PR227: rättade verifieringskällor
+
+Slutlig CI hittade två kvarvarande gamla källreferenser efter Directorflytten.
+Det befintliga isolerade P6-routerprovet importerar nu product-speech från
+packages/director. Astrids HEAD-baselinearkiv inkluderar samma paket, så
+arkivet täcker den verkliga selektionsgrafen. Inga assertions, snapshots,
+produktmoduler eller providerinställningar ändras. De två befintliga provfilerna
+passerar 11/11 utan skips; ordinarie commit-hook och ny PR-CI följer.
+## Studio väljer sin egen Blob-adapter — 17 oktober 2026
+
+PR224:s Vercel-bygge på main30ae1f35 misslyckades: Studios svarsbibliotek
+importerade spelappens Blob-adapter, vars SDK bara fanns i web/node_modules.
+Reply-factoryn tar nu en obligatorisk mediaStore och importerar enbart det
+rena mediaavtalet. Studio binder cloud-media-store, spelservern blob-media.
+Saknad/ofullständig port stängs med befintligt reply_library_unavailable;
+metadata, CAS, scoped rättigheter och privata mediebytes ändras inte.
+
+Reproducerat i ny arbetskopia med endast låsta Lab-beroenden: bundlern hittade
+inte @vercel/blob i web/blob-media.mjs. Samma reply-bundle passerar efter fixen
+utan speladaptern. Befintliga biblioteks-/API-prov passerar17/17, utan skips
+eller provideranrop; egna mockklienter behålls. Helt Studio-produktionsbygge passerar
+med aktiverad /studio/native-admin: kompilering, TypeScript, 28 statiska sidor
+och 80 rena deploymenttraces. web/node_modules och root/node_modules saknades
+under hela bygget; inga privata miljöfiler fanns. Ordinarie commit-hook används. Ingen ny testfil,
+paketversion, miljöändring eller databas-/medieåtgärd.
 
 ## C2o — gemensamma serverläsare, lokalt arbete 17 oktober 2026
 
@@ -121,7 +338,12 @@ Tio mekaniska konflikter förenade kanoniska imports och båda handoffavsnitten.
 Källjämförelse: 48/48, inklusive oförändrade funktionskroppar och verifierad likvärdig
 Lab/game-idlebindning. 107 riktade befintliga prov och Studio-typer gröna, inga skips;
 rum/urval, svarsbank/Blob/CAS, schema/offline, spelaradministration och isolerade
-fixturekopior ingår. Slutlig parentreview och ordinarie commit-hook återstår.
+fixturekopior ingår. Parentreview är klar. Ordinarie N/O-integrationshook passerade
+1269 prov utan fel, med sex befintliga opt-in; frontendtyper gröna. Senare
+importintegration passerade54/54 och frontendtyper. PR227:s tre policyproduktfiler
+är byteidentiska med denna branch; faktisk mainb356152a integreras normalt.
+Befintliga fixturelistor innehåller redan den nya modulen exakt en gång.
+CI och driftkvittens följer N/O-leveransens sluthead.
 Inga nya servermoduler publiceras över HTTP; ingen fullbuild, push, provider-, data-,
 schema-, medie- eller lipsyncändring ingår.
 
@@ -154,6 +376,17 @@ partiella platser, aktiv övervakning och ofullständig historik (too_large).
 
 ## Gemensam lokal integrationsbas — 17 oktober 2026
 
+Senaste normala integration tillför också PR225:s explicita Blob-port från
+c69189529c7d0e29c4fa0077f0bab2b392e1529c och main224 på30ae1f35.
+Endast den avgränsade appbindningen och dess fixture-/typkontrakt ändras.
+Den enda konflikten var två handoffinledningar; båda bevaras.
+
+Föregående normala integration förenade DATA-PR224 på
+2554e1af7831ade9eaa6062302331d9e2161e200 med main223/222 på908beb4d.
+Koddelens ändring här är den redan levererade modulbyggfixen och inboxfixen;
+kompositions-, publicerings- och datakropparna är oförändrade. Den enda
+konflikten var två oberoende handoffinledningar; båda har bevarats.
+
 Detta kvitto ersätter äldre väntestatus i delavsnitten nedan. M:s separata
 commit `46a1d2bd0b20eeff8ba184e38be820412b08d185` bevaras. L-head
 `2ba8aaedf8077f985c39505e702d3ef1b81ce370` integrerades normalt som
@@ -171,7 +404,8 @@ både navigationens exakta adress och alla fyra talkontraktsalias. Inga
 assertions eller publicerings-/talkärnor ändrades utöver granskade import-
 och källisteunioner. N/O ska förgrenas från den rena gemensamma basen.
 Ingen extra fullbuild, push, deploy, provider-/GPU-/schemaändring eller
-ny medieacceptans ingår. Lipsync2:s provhåll gäller fortfarande.
+ny medieacceptans ingår. Lipsync2:s prov är avslutat med STOP enligt PR222;
+Dragan-tal/läppsynk är fortsatt separat ofärdigt produktarbete.
 
 ## C2l-c — gemensam ägare för genererat tal, 17 oktober 2026
 
@@ -189,6 +423,27 @@ ops-/miljökällreferenser med samma policy- och dokumentvaliderare. SessionSign
 lease/reservation/cancellation och journalens failclosed-beteende är bevarade.
 C2l-c: 396/396 riktade befintliga prov, Studio-typer och tio mekaniska kroppsjämförelser gröna. Parentreview och ordinarie commit-hook återstår. Ingen push, fullbuild,
 miljö-/schema-/provider-/GPU-ändring eller nytt läppsynksgodkännande.
+## Publika moduler oberoende av deployordning — 17 oktober 2026
+
+Frontendens middleware låter GET/HEAD till exakta kanoniskt validerade adresser i
+`presentationPublicSource` nå Nexts `public`-katalog. Byggaren använder hela samma
+`presentationPublicModules` som startpunkter i sin befintliga import-/aliasclosure,
+så samtliga 37 deklarerade publika adresser byggs även utan en aktuell spelarimport.
+Backendallowlisten, Studio-routningen, autentiserade API:er och ingressen ändras
+inte. Ingen generell paketprefixroute eller andra hårdkodad allowlist införs.
+Andra metoder och `next-action` svarar 405 med `Allow: GET, HEAD`.
+
+PR223:s första regression filtrerade felaktigt på redan byggda filer och dolde
+13 saknade adresser. Ofiltrerad regression reproducerade exakt dessa 13 före
+byggfixen. Efter rättningen: `platform-ui.mjs` och `player-ui-build.mjs` 29/29,
+inklusive samtliga registryURL:er, transitiva from-/sidoinporter och litterala dynamiska importer, verklig middleware,
+Nexts statiska server och en isolerad äldre backend som svarar 421. GET/HEAD,
+källbytes, JavaScript-/JSON-MIME, privata/extra/encoded adresser och metod/action-
+nekanden passerar; API-anrop behåller backendvägen. Befintlig fem-MiB-budget,
+tvåfilslanding och nekad media/BO-kopiering passerar oförändrade.
+Ingen fullbuild, installation, deployment, miljöändring eller produkt-/medie-
+acceptans ingår. Byggfixen är parentgranskad; ordinarie hook verifierar slutversionen vid commit. PR/CI och
+driftkvitto för denna fix: PR223 mergad på 2e45a661ef844d14a9d2321f30d05f53c5e64927, mainCI39062224771 SUCCESS. Mergagent verifierade automatisk Vercel dpl_6HtrhePVENR7vynXnWQX6v8rKQKS på www och Render dep-db9sp3jm8hqs73ari380 LIVE med exakt version/health200. Alla 37 publika adresser passerade GET/HEAD även under verkligt versionsglapp.
 
 ## Lokal agent-talk-kö — separat fix 17 oktober 2026
 
@@ -201,6 +456,15 @@ Riktad verifiering täcker samtidighet, kapacitet, mottagarkvittens,
 arkivfel och avbrutna filbyten. Originalrepots befintliga kö töms inte av
 kodleveransen; rotation sker först när det uppdaterade verktyget tar emot
 en ny ping i just den checkouten.
+
+Testuppföljning: gränsdata för historik och kö skapas direkt i den isolerade
+fixturen; riktiga CLI-anrop provar 39 → 40 och överskriden kapacitet.
+Uppmätt antal CLI-processstarter i sviten minskar från 175 till 93.
+Alla fem prov passerar med samma samtidighets-, arkivfel- och avbrottsprov.
+Ett isolerat mutationsprov bekräftar att borttagen historikgräns upptäcks.
+En hookkörning gav Windows-EPERM vid öppning av `write.lock` i det oförändrade
+samtidighetsprovet. Felet återkom inte i tre riktade prov vardera på main och
+ändringen; det är dokumenterat, inte åtgärdat genom denna testförenkling.
 
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
@@ -509,16 +773,25 @@ ny deployment. Förnyad säkerhetsläsning på main `6279960f` verifierar två
 öppna incidenter, 38318914/38318915; platstäckningen är partiell, övervakningen
 aktiv och historikskanningen `too_large`. Ingen incident markeras löst.
 
-## Avgränsad inboxrättning — 17 oktober 2026
+## Inbox och agentregler — 17 oktober 2026
 
 `tools/inbox.mjs` skapar bara saknade GitHub-etiketter; befintliga namn,
 färger och beskrivningar bevaras. `done` kontrollerar etiketten `inbox` och
 att inloggat GitHub-konto är ärendets skapare innan det får stängas.
 Delade GitHub-konton kan inte särskiljas av kontrollen.
+Inboxfixarna är mergade i [PR215](https://github.com/Jakeminator123/scoutgaming/pull/215).
+Uppföljningen inkluderar Jakobs borttagning av `.cursor/rules/reference-repos.mdc`. Chef- och
+leveransreglerna hänvisar till den kanoniska GitHub-policyn i AGENTS i stället
+för att kopiera den. Chef-textens beslutsordning följer också AGENTS.
+Inboxinstruktionen använder explicit känd ägare på en featurebranch utan
+datorregistrering; branchprefix räknas inte som ägarbevis.
 Lokal verifiering: 19 inboxprov passerar. GitHub-anropens läsformat har
 verifierats mot API/CLI; inga riktiga etiketter eller ärenden ändrades i provet.
-Detta är inte ett CI- eller driftskvitto. Huvudkopians 40 obesvarade lokala
-pingar och gamla filanspråk har inte rensats. GitGuardian på fjärr-main visar
+Detta är inte ett CI- eller driftskvitto. Köåterhämtningen levererades separat
+i mergade PR216; detta arbete rensar inga pingar eller gamla filanspråk.
+Rapportens återstående förslag om färre testprocesser och portabel GitGuardian-
+konfiguration kräver egna avgränsade ändringar. Den befintliga lokala
+konfigurationsändringen är bevarad. GitGuardian på fjärr-main visar
 två öppna incidenter med ofullständiga filpositioner; de är inte åtgärdade här.
 
 ## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
@@ -798,6 +1071,109 @@ Riktade lokala UI-/runner-/inventeringsprov och 45 medie-/workflowkontraktsprov
 merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
 Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
 läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
+
+## Dragan: stopp och samlad överlämning — 17 oktober 2026, 19:17 UTC
+
+**Arbetet är stoppat enligt Jakobs instruktion att lämna handoff om workern
+fortsatt inte kommer upp. Tal och läppsynk i spelet fungerar ännu inte.**
+Senaste provet fick ett riktigt RunPod-jobb och började hämta imagen, men
+stoppades av den privata kostnadsvakten innan ljud eller video levererades.
+Inga nya GPU-prov, nyckeländringar eller budgetåterställningar är planerade.
+
+### Senaste provet och den konkreta stopporsaken
+
+Vercel och Render körde main `875dacd7ed9743b92c4449ca0a4719df7e662e38`.
+Render-versionen lästes även från `/__cloud/version` före start.
+Testendpoint `dgpazl8h3a64uj`, template `s6om9k7sje`, använde imagen
+`ghcr.io/jakeminator123/moving-gpu-worker@sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
+Jakob godkände runtime-nyckelns endpointbehörighet; health svarade 200.
+Astrids behörighet och media ändrades inte.
+
+Vakten startade 19:00:28.889 UTC med min0/max1 och deadline 19:15:28.889.
+Jakobs eget chattmeddelande 19:03:51 gav OpenClaw-text och jobb
+`84cb267e-7e48-48d0-8224-04a49ba2b63f-e2`, session
+`c508303e135893a9aa27cc319f71078b`. Ingen extra agentfråga skickades.
+En läsande Neon-kontroll verifierade session, lease, budget och reservation
+1,20 USD innan min1 tilläts 19:04:04.029. Detta bevisar att den nya ordningen
+kom förbi den tidigare reservationsspärren. 81 guardtester och tre läsartester
+hade passerat offline; övergången tillbaka till min0 vid aktivt jobb blev
+inte verifierad i molnet eftersom jobbet aldrig observerades IN_PROGRESS.
+
+Worker `s8le9mn0gs3n8g`, A40 i CA-MTL-1, skapades 19:04:26.556.
+Systemloggen 19:06:47 visar hämtade lager och pågående uppackning av imagen.
+19:07:40.850 returnerade RunPod två workerposter: denna med desiredStatus
+RUNNING och `t5nobwvi58kdch` med EXITED. Båda saknade runtime-telemetri och
+matchade rätt image/version; endpointens max var fortfarande 1.
+Vaktens kontroll `workers.length <= workersMax` stoppade därför med
+`unexpected_active_workers`. Detta är **inte bevis för två aktiva GPU:er**.
+[RunPods officiella CLI-dokumentation](https://github.com/runpod/runpodctl#waiting-until-a-resource-is-usable)
+beskriver att FlashBoot-cachade workers kan ha EXITED och att RUNNING kan
+rapporteras innan containern finns. Det sparade underlaget räcker inte för
+att klassificera just den andra posten som cache eller ersättningsworker.
+Guardens räkning behöver därför utredas innan ett nytt prov; gränsen får
+inte bara tas bort eller okända workerposter ignoreras.
+
+Spelaren väntade cirka 342 sekunder och visade talfel. Inspelad respons
+innehåller text och video-köstatus men inget ljud/video. Det generiska
+`chat_failed` är inte en verifierad specifik providerfelkod. Full visuell
+läppsynk och faktisk hörbar röst återstår.
+
+### Avvecklat och kvarvarande gränser
+
+Vakten stängde 19:08:12.872. Oberoende kontroll 19:08:51.924 gav
+endpoint/template 404 och tom workerlista. Astrid
+`zsudl8tmzcmiv1`/`cadh7uwzv6` var oförändrad min0/max1. Dragan sparades OFF
+(Neon state `preparation`); sessionen är terminal och släppt. Webbläsarens
+mätinstrumentering är återställd och spelchatten lämnas ifred.
+
+Render-cleanup är sparad och återläst: `CROUPIER_MOVING_SPEECH_ENABLED=0`,
+`CROUPIER_MOVING_SPEECH_ENDPOINT_ID` borttagen, med **Save only**. Nästa
+ordinarie deploy måste applicera detta i den körande processen; det påstås
+inte redan vara gjort. Profil OFF och borttagen endpoint stoppar fortsatt
+provtrafik under tiden. Lokal Dragan-runtimeprofil är också OFF utan gammal
+endpoint. Inga nycklar, banker eller andra profiler kopierades mellan miljöer.
+Mergeagenten har fått clean STOP och HOLD RELEASE för #223; #222 får följa
+efter detta uppdaterade dokumentkvitto. Nytt prov kräver ett nytt samordnat
+fönster efter verifierad versionsparitet, inte återanvändning av stängd journal.
+
+Jakob höjde det sammanlagda taket till **15 USD** med sitt direkta +5-besked.
+Kostnadsavläsning 19:17:26.924: rapporterat totalt **0,36202446 USD**;
+senaste endpointens debitering saknas ännu och kan släpa. Fulla försiktiga
+reserver **11,73666667 USD** behålls; kvar inom taket **2,90130887 USD**.
+Detta är tillgängligt efter reserver, inte saldot i RunPods betalningskonto.
+Neons taljournal har separat tak 4,80 USD: fyra reservationer om 1,20 USD
+är bokförda och noll sessioner är öppna. Den gränsen är alltså nådd;
+historik får inte nollställas eller byta budget-ID för att släppa igenom ett
+nytt jobb. Eventuellt framtida prov måste först lösa båda budgetgränserna.
+
+### Tidigare prov och återupptagning
+
+Föregående endpoint `8pfjenuipsz355`/template `1a9glcfe5u` är också borttagna.
+Där startade SDK efter cirka 85 sekunder, men förvärmning före reservation
+stred mot `reserveGpu`-kravet workers/busy/available = 0. Ingen ny session
+eller jobb kom igenom. Det exakta förlorade responsfelet är inte återhämtat.
+Den ordningen ska inte upprepas. Miljökontrollen har inte visat felriktad
+Neon-anslutning; verkliga gamla endpoint-/nyckelfel är redan korrigerade.
+
+Nästa agent ska först skilja cachade/avslutade workerposter från faktisk
+kapacitet med providertelemetri och testa guarden offline. Därefter behövs
+samordnad deploy, verifierad budget och ett enda avgränsat talprov med
+hörbart ljud och full läppsynk innan arbetet kan kallas klart. Inget sådant
+nytt prov ingår i denna stoppade leverans.
+
+Privata kvitton och körskript finns under
+`C:/Users/jakem/.codex/visualizations/2026/10/17/01a14afa-f423-7011-bbdf-30a7f44609d1/`:
+`queued-final-receipt.json`, `queued-independent-stop.json`,
+`queued-journal.json`, `queued-chat-final.json`, `queued-worker-system-log.txt`,
+`queue-guard-tests.log`, `run-queued-guard.mjs` och `env-audit-local.json`.
+Originalkonversationer, media och privata provdata ligger utanför Git.
+Dokumentbranch: `codex/dragan-env-admission-handoff`, PR222, i
+`C:/Users/jakem/.codex/worktrees/dragan-admission-diagnosis/croupier`.
+Föregående lipsync-worktree finns inte längre på sin gamla sökväg.
+Miljöläsordning och verifieringsgränser finns i
+[ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
+GitGuardian på läst main: queued suite, ingen incident-API-täckning;
+ingen ny heltäckande säkerhetsacceptans påstås.
 
 ## Dragan: överlämning efter molnprov — 17 oktober 2026, 17:35 UTC
 
@@ -1491,5 +1867,5 @@ normal merge och enbart dokumentdiff. Den inkluderar main
 beroendeinstallationer, junctionmål eller produktbeteenden ändrades här.
 Inget nytt fullbygge, push, PR eller driftkvitto ingår i denna förberedelse.
 
-Samlad data-integration: ordinarie hook 486 pass, 0 fail, 1 befintlig browser-opt-in samt gröna frontendtyper. Den isolerade QA-källistan är unik och dess befintliga prov passerar 6/6. PR218:s slutfix är integrerad; flyttad branding pekar på packages/operators/contracts/branding.mjs. Kod-PR, CI och drift för datadelen återstår.
+Samlad data-integration: ordinarie hook 486 pass, 0 fail, 1 befintlig browser-opt-in samt gröna frontendtyper. Den isolerade QA-källistan är unik och dess befintliga prov passerar 6/6. PR218:s slutfix är integrerad; flyttad branding pekar på packages/operators/contracts/branding.mjs. Kod-PR, CI och drift för datadelen återstår. Main223/222 på 908beb4d542b62ccc1d40243bf546783b6f563a0 är nu konfliktfritt integrerad: tre byteidentiska PR223-filer och två dokument från PR222. Data-kropparna är oförändrade mot förgranskade 0668d668. Den befintliga ofiltrerade middleware-/byggkontrollen omfattar även datadelens nya publika game-lanes-modul och dess redan registrerade beroenden.
 PR218:s katalog/navigation har integrerat main217 9b79902c20b55d0e8ff21d6ee60def04f978342c normalt efter lipsync2:s CLEAN STOP/HOLD RELEASE. Main215:s inboxfix och samtliga handoffavsnitt bevaras. Produktkoden och QA-dubblettfixen är oförändrade från head4542f5f779c5febacb12128b529411be8e080cb6, som GPT läst i GitHub utan styrkt blockerare och CI39056360556 godkänt. Senaste integrationshead inväntar eget CI-/driftkvitto hos mergagenten.
