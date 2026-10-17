@@ -103,6 +103,47 @@ test('native Admin tools still use document navigation and their beforeunload gu
   for(const href of ['/control/login?returnTo=%2Fadmin','/control/set-password?token=fixture'])assert.equal(harness().api.previewHref(href),href);
 });
 
+for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/ai/models']){
+  test(`native service ${route} uses document entries in both directions, including replacement`,()=>{
+    for(const [source,target] of [['/admin/assets',route],[route,'/admin/assets']]){
+      const h=harness(source);h.window.addEventListener('beforeunload',event=>event.preventDefault());const before=h.snapshot();
+      assert.equal(h.api.navigate(target),true);assert.equal(h.api.navigate(target,true),true);
+      assert.deepEqual(h.native,[{method:'assign',href:target,allowed:false},{method:'replace',href:target,allowed:false}]);
+      assert.deepEqual(h.snapshot(),before,'document navigation must not create same-document entries for Back/Forward');
+      assert.equal(h.notices.length,0,'the SPA must not hide the current form before its native guard runs');
+    }
+  });
+}
+
+test('native service navigation canonicalizes account bookmarks and preserves context and destination fragments',()=>{
+  const h=harness('/admin/assets?operator=company&table=room&dealer=astrid&composition=scene&game=blackjack');
+  h.api.navigate('/admin/admin/players?tab=users#invite',true);
+  assert.deepEqual(h.native,[{method:'replace',href:'/admin/admin/accounts?tab=users&operator=company&table=room&dealer=astrid&composition=scene&game=blackjack#invite',allowed:true}]);
+  for(const source of ['/admin/admin/players','/studio/admin/admin/players','/studio/admin/admin/accounts','/studio/admin/admin/api','/studio/admin/ai/models']){
+    const h=harness(source+'?dealer=astrid');h.api.navigate('/admin/assets?game=roulette#library');
+    assert.deepEqual(h.native,[{method:'assign',href:'/admin/assets?game=roulette&dealer=astrid#library',allowed:true}]);
+  }
+});
+
+test('existing navigation vetoes cancel native service pushes and replacements before beforeunload',()=>{
+  for(const guard of ['studio:before-navigate','scout:navigate'])for(const route of ['/admin/admin/accounts','/admin/admin/api','/admin/ai/models']){
+    for(const [source,target] of [['/admin/assets',route],[route,'/admin/assets']]){
+      const h=harness(source),before=h.snapshot();let prompts=0,unloads=0;
+      h.window.addEventListener(guard,event=>{prompts++;event.preventDefault();});
+      h.window.addEventListener('beforeunload',()=>unloads++);
+      assert.equal(h.api.navigate(target),false);assert.equal(h.api.navigate(target,true),false);
+      assert.equal(prompts,2);assert.equal(unloads,0);assert.deepEqual(h.native,[]);assert.deepEqual(h.snapshot(),before);assert.equal(h.notices.length,0);
+    }
+  }
+});
+
+test('read-only native service views retain normal SPA Back and Forward',()=>{
+  const h=harness('/admin/assets');
+  for(const route of ['/admin/drift','/admin/admin/payments','/admin/ekonomi'])assert.equal(h.api.navigate(route),true);
+  const before=h.snapshot();h.go(-2);assert.equal(h.location.pathname,'/admin/drift');h.go(1);assert.equal(h.location.pathname,'/admin/admin/payments');
+  assert.deepEqual(h.snapshot(),before);assert.deepEqual(h.native,[]);
+});
+
 async function mountImport(h){
   const React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),componentUrl=new URL('../admin/components/studio/dealer-import-assistant.tsx',import.meta.url),componentRequire=createRequire(componentUrl);
   const catalog={dealers:[{id:'dragan',label:'Dragan'}],limits:{maxFileBytes:134217728,maxFiles:30},provider:{configured:false},slots:[{id:'deal.player.left/box0',label:'Plats 1',eventId:'deal.player.left',situation:'box0',kind:'action',category:'deal'}]};

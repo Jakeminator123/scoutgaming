@@ -1,10 +1,10 @@
-.administration { composes: workspace from './studio-theme.module.css'; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; min-width: 0; color: var(--text); }
+.administration { composes: workspace from './studio-theme.module.css'; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; min-width: 0; color: var(--text); font-size: 14px; line-height: 1.6; }
 .administration > :not(.headerActions) { grid-column: 1 / -1; }
 .administration :global(.sg-page-head) { grid-column: 1; grid-row: 1; padding: 4px 16px 0 0; }
 .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .header h1 { font-size: 23px; margin: 0 0 5px; letter-spacing: -.6px; }
 .section h3, .section h4 { margin: 0 0 10px; }
-.section h3 { font-size: 16px; }
+.section h3 { font-size: 18px; line-height: 1.4; }
 .header p, .section p { margin: 6px 0; }
 .header p { color: var(--muted); font-size: 12px; }
 .headerActions { grid-column: 2; grid-row: 1; align-self: end; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
@@ -14,14 +14,16 @@
 .contextLinks nav { display:flex; gap:20px; flex-wrap:wrap; }
 .contextLinks a { color:var(--teal); }
 .groups { display: flex; flex-wrap: wrap; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
-.administration button:not(:global(.sg-btn)) { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-soft); color: var(--text); padding: 8px 12px; cursor: pointer; font: inherit; }
+.administration button:not(:global(.sg-btn)) { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-soft); color: var(--text); min-height: 40px; padding: 9px 14px; cursor: pointer; font: inherit; }
+.administration button:not(:disabled):hover { border-color: var(--teal); }
 .groups button { border-color: transparent; background: transparent; color: var(--muted); font-size: 13px; }
 .groups button[aria-pressed="true"] { background: var(--panel-hover); border-color: var(--line); color: var(--text); }
 .administration button:disabled { opacity: .55; cursor: not-allowed; }
-.administration :is(button, input, select, summary):focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.administration :is(button, input, select, summary, a, [tabindex]):focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
 .sections { display: grid; gap: 14px; min-width: 0; }
-.section { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--panel); overflow-wrap: anywhere; }
-.notice { color: var(--muted); font-size: 12px; }
+.section { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 20px; background: var(--panel); overflow-wrap: anywhere; }
+.section > p { max-width: 90ch; }
+.notice { color: var(--muted); font-size: 14px; line-height: 1.6; }
 .error { border: 1px solid var(--sg-danger-line, var(--line)); border-radius: 7px; padding: 10px 14px; background: var(--sg-danger-bg, var(--panel)); color: var(--sg-danger-text, var(--text)); }
 .metrics { display: flex; flex-wrap: wrap; gap: 24px; margin: 14px 0; }
 .metrics dt { font-size: 12px; color: var(--muted); }
@@ -37,19 +39,39 @@
 .laneRow > span { flex: 1 1 180px; }
 .laneRow label { flex: 1 1 180px; }
 .disclosure { min-width: 0; margin-top: 12px; }
-.disclosure > summary { cursor: pointer; color: var(--teal); font-size: 13px; padding: 8px 0; }
+.administration summary { cursor: pointer; min-height: 40px; padding: 8px 0; line-height: 1.6; }
+.disclosure > summary { color: var(--teal); font-size: 14px; }
 .disclosure[open] > summary { margin-bottom: 8px; }
 .disclosure form { margin-top: 10px; }
-.administration label { display: grid; gap: 5px; font-size: 12px; }
-.administration input, .administration select { color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 8px; font: inherit; min-width: 0; max-width: 100%; }
+.administration label { display: grid; gap: 7px; font-size: 14px; }
+.administration input, .administration select { color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 9px 10px; font: inherit; min-width: 0; max-width: 100%; }
+.administration input:not([type="checkbox"]), .administration select { min-height: 42px; }
+.administration fieldset { border: 1px solid var(--line); border-radius: 7px; padding: 12px; min-width: 0; }
+.administration legend { padding: 0 6px; }
+.administration code { font-size: 13px; overflow-wrap: anywhere; user-select: text; }
 .checkbox { display: flex !important; align-items: center; gap: 8px !important; margin: 8px 0; }
 .tableWrap { min-width: 0; max-width: 100%; overflow-x: auto; }
-.tableWrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.tableWrap th, .tableWrap td { padding: 10px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
-.tableWrap th { color: var(--muted); font-size: 12px; font-weight: 500; }
+.tableWrap table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6; }
+.tableWrap th, .tableWrap td { padding: 14px 12px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+.tableWrap th { color: var(--muted); font-size: 13px; font-weight: 600; background: var(--panel-soft); }
+.tableWrap tbody tr:hover { background: var(--panel-soft); }
 .tableWrap td small { display: block; color: var(--muted); margin-top: 5px; }
 .tableWrap form { display: grid; gap: 8px; min-width: min(11rem, 100%); }
 .tableWrap .disclosure { margin: 0; }
+.tableWrap .amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.journal { min-width: 680px; }
+.journal th:first-child { width: 29%; }
+.journal th:last-child { width: 28%; }
+.journal time { font-variant-numeric: tabular-nums; }
+.technicalDetails { display: grid; gap: 12px; min-width: 180px; max-width: 30rem; margin: 0 0 8px; }
+.technicalDetails dt, .integrationFacts dt { color: var(--muted); font-size: 13px; }
+.technicalDetails dd, .integrationFacts dd { margin: 3px 0 0; }
+.status { display: inline-block; border: 1px solid var(--line); border-radius: 5px; padding: 2px 8px; font-size: 13px; white-space: nowrap; }
+.integrationIdentity { flex: 1 1 100%; }
+.integrationIdentity > strong { font-size: 16px; }
+.integrationFacts { display: flex; flex-wrap: wrap; gap: 16px 36px; margin: 12px 0 4px; }
+.integrationFacts small { display: block; color: var(--muted); margin-top: 5px; }
+.row > .form { flex: 1 1 100%; border: 1px solid var(--line-soft); border-radius: 7px; background: var(--panel-soft); padding: 16px; }
 .review { border-top: 1px solid var(--line-soft); padding: 10px 0; }
 .review > summary { cursor: pointer; padding: 5px 0; }
 .review > summary span { margin-left: 12px; color: var(--muted); font-size: 12px; }

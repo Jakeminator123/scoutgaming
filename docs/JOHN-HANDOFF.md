@@ -32,6 +32,49 @@ aktivering. Första tidigare GPU-provet är fakturerat till 0,169812463 USD;
 nyvägen reserverar högst 4,80 USD totalt inom Jakobs mandat på 5 USD.
 Jakob har valt ett separat Dragan-testrum. Pausade operatörer ska inte öppnas.
 
+## Systemytor och bolagsjournal — 17 oktober 2026
+
+Leverans på `codex/admin-system`, baserad på `f5f8414628e39fee4cbf703054c0ee57d2b48157`.
+Systemmenyn grupperar arbetsverktyg, assistenter samt åtkomst och historik.
+Verktyg, Kopplingar, Användning & beroenden och Adminroboten har gemensam typografi,
+knappar och detaljreglage. Arkiverade beroenden finns kvar och register-ID:n kan öppnas.
+Betalningsjournalen visar händelsenamn, postens valuta och UTC-tid; fullständiga
+serverreferenser finns under detaljer. Inga saldo-, roll- eller skrivkontrakt ändras.
+
+Den tidigare tomma Ändringslogg-ingången heter **Bolagsjournal** och listar aktiva
+registrerade bolag med deras befintliga `/partner/<slug>/team?scope=company`.
+Den läser endast den skyddade bolagskatalogen, utan projekt-/videoberoende.
+Global Admin-historik är fortsatt en separat produktlucka i CLOUD-MIGRATION.
+Native formulärsidor använder dokumentnavigation och befintliga lämningsskydd;
+dubbla gruppflikar i Admin är borttagna. Engångsresultat rensas synkront vid
+`pagehide`; sena svar kan inte återvisa dem efter Back. Agentmodeller sparas
+radvis; den missvisande Spara alla-knappen är borta. Döda registrervyer och
+RoomCard är borttagna; gamla players-adresser normaliseras till accounts.
+
+Verifiering: full Lab/Next-byggning inklusive 97 byggspår, slutlig Admin/Lobby-bundle
+med `/studio` och typecheck, 12 Admin-regressionsgrupper (291 pass, ett valfritt
+codecprov överhoppat), samt riktade komponent-, navigation- och journaltester.
+Slutlig journalrättning: 18/18 tester. Isolerad WebView-fixtur verifierade System,
+modellval/Ångra alla, stoppat sidbyte med utkast, Back, journalreferenser,
+bolagslänk och 390/960/1440 CSS-pixelbredder. Tabellrullning håller sig inom mobilvyn.
+Nio fixturkontroller skyddar bland annat autentisering, origin och skrivspärrar.
+BFCache-rensningen är automatiskt testad, inte bevisad med verklig browsercache.
+
+Föregående produktion: mergeagentens kvitto för `f5f84146` visar main-CI
+[39022829970](https://github.com/Jakeminator123/scoutgaming/actions/runs/39022829970) grön,
+Vercel `dpl_6QGaab5f8MV6GrJ57MXK2VbiZZHC` READY och Render
+`dep-db9ke7vlk1mc73c19270` LIVE med exakt full SHA i health/version.
+Egen läsande WebView-kontroll bekräftade nya klippkartan, Dragan-importens
+förval och den befintliga N1-vägen till Nordic bets bolagsjournal.
+Detta är inget nytt läppsynksgodkännande. Systemändringarna ovan är en separat PR.
+
+Lipsync äger `codex/dragan-openclaw-live` och fortsatt media-/server-/workerarbete.
+Ingen importblockering finns i Admin. Jakob har därefter godkänt ett separat
+Dragan-testrum, som lipsync förbereder. Inga rum återöppnades, filer importerades,
+modeller sparades eller produktionsdata ändrades i System-uppdraget.
+GPT-auto granskade GitHub-main och gav riktningsråd; lokal System-diff ingick inte.
+GitGuardian lästes: 0 öppna/18 ignorerade incidenter, aktiv övervakning;
+platsmetadata är partiell och historikskanningen `too_large`. Det är ingen total säkerhetsklarering.
 ## Dealerklipp: levererad förberedelse i PR191
 
 På `codex/dragan-lipsync-registry` / PR191 finns nu en körbar skrivfri importplan

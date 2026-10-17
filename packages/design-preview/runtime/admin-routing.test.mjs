@@ -61,3 +61,13 @@ test('direct Studio mount resolves to Admin without inventing a Control pathname
     assert.equal(adminPathname(path),path);
   }
 });
+
+test('saved player-account aliases use accounts while retaining exact query, fragment and explicit context',()=>{
+  const suffix='?operator=north&table=room-one&composition=scene&dealer=anna&game=roulette&tag=a&tag=b#history';
+  for(const path of ['/admin/admin/players','/studio/admin/admin/players','/control/players','/studio/control/players']){
+    assert.equal(adminHref(path+suffix),'/admin/admin/accounts'+suffix);
+  }
+  for(const path of ['/admin/admin/players','/studio/admin/admin/players'])assert.equal(adminPathname(path),'/admin/admin/accounts');
+  assert.equal(withAdminContext(adminHref('/admin/admin/players?operator=north#history'),'?operator=other&dealer=anna'),'/admin/admin/accounts?operator=north&dealer=anna#history');
+  for(const href of ['/admin/admin/players-extra','/admin/admin/players/details','https://outside.invalid/admin/admin/players','//outside.invalid/admin/admin/players','/control/login?returnTo=%2Fadmin%2Fadmin%2Fplayers'])assert.equal(adminHref(href),href);
+});

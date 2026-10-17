@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { openClawDashboardUrl } from '../lib/openclaw-dashboard.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import type { OpenClawAdminModel, OpenClawAdminSnapshot, OpenClawAdminReceipt } from '../lib/openclaw-admin.mjs';
-import { PageTemplate, UnsavedBar, publishShellStatus } from './page-template.mjs';
+import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import styles from './openclaw-workspace.module.css';
 
 type Model = OpenClawAdminModel;
@@ -66,11 +66,11 @@ async function request(method: 'GET' | 'PATCH' | 'POST', signal: AbortSignal, bo
 function OpenClawModelTabs({navigation}:{navigation?:{models:string;chat:string;studio:string}}) {
   return <>
     <a href={navigation?.models??labUrl('/control/openclaw')} aria-current="page" aria-pressed={true}>Agentmodeller</a>
-    <a href={navigation?.chat??labUrl('/control/openclaw?tab=chat')}>Chatt</a>
+    <a href={navigation?.chat??labUrl('/control/openclaw?tab=chat')}>{navigation ? 'Dealerns agent' : 'Chatt'}</a>
   </>;
 }
 
-export function OpenClawWorkspace({ dashboardUrl,navigation }: { dashboardUrl?: unknown;navigation?:{models:string;chat:string;studio:string} }) {
+export function OpenClawWorkspace({ dashboardUrl,navigation,embedded=false }: { dashboardUrl?: unknown;navigation?:{models:string;chat:string;studio:string};embedded?:boolean }) {
   const url = openClawDashboardUrl(dashboardUrl);
   const [data, setData] = useState<Snapshot | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -201,11 +201,12 @@ export function OpenClawWorkspace({ dashboardUrl,navigation }: { dashboardUrl?: 
     setDrafts({});
     setNotice('');
   }
-  return <main id="main-content" className={styles.shell}>
+  const Shell = embedded ? 'section' : 'main';
+  return <Shell id="main-content" className={styles.shell}>
     <PageTemplate
-      eyebrow="// OPENCLAW"
-      title="OpenClaw"
-      intro="Välj modell för en agent och spara. Du använder din Studio-inloggning."
+      eyebrow="System"
+      title="Agentmodeller"
+      intro="Välj modell och spara en agent i taget. Du använder din Studio-inloggning."
       tabs={<OpenClawModelTabs navigation={navigation}/>}
     />
     <div className={styles.headerActions}><button className="sg-btn sg-btn-primary" type="button" disabled={!!busy} onClick={() => void load()}>Hämta aktuella val</button></div>
@@ -267,6 +268,9 @@ export function OpenClawWorkspace({ dashboardUrl,navigation }: { dashboardUrl?: 
         : <p role="alert">Dashboardadressen är ogiltig.</p>}
       <p className={styles.advancedNote}>Din nivå 1-inloggning öppnar dashboarden utan lösenord eller terminalkommando. OpenClaw skapar en egen webbläsarsession som finns kvar när du loggar ut från sajten. Ändra dealerns klipp och regler i <a href={navigation?.studio??labUrl('/')}>Studio</a>.</p>
     </section>
-    {changedAgents.length > 0 ? <UnsavedBar count={changedAgents.length} onSave={() => { const agent = changedAgents[0]; if (agent) void save(agent); }} onUndo={undoAll} /> : null}
-  </main>;
+    {changedAgents.length > 0 && <div className="sg-unsaved" role="status">
+      <p>Osparade modellval: {changedAgents.length}. Spara varje agent på dess rad.</p>
+      <div className="sg-unsaved-actions"><button className="sg-btn sg-btn-ghost" type="button" disabled={!!busy} onClick={undoAll}>Ångra alla</button></div>
+    </div>}
+  </Shell>;
 }
