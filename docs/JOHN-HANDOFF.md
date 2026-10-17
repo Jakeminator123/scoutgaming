@@ -74,8 +74,11 @@ kräver den isolerade PostgreSQL-fixturen och lämnas till CI.
 lämnas också till CI. Ingen ändring av budgethistorik, journalens produktkod
 eller provider-POST. Render moving-flaggan förblir 0; tal/läppsynk är ännu
 inte verifierat. Nästa GPU-prov förutsätter levererad rättning, verifierad
-endpoint och beslut om journalens förbrukade budgettak. GitGuardian på aktuell
-main är queued; full incident-API-täckning är inte verifierad.
+endpoint och beslut om journalens förbrukade budgettak. Efter main-integrationen
+fungerade den befintliga GitGuardian-kopplingen: två öppna incidenter
+(38318914 och 38318915), repoövervakning aktiv, platsmetadata delvis saknad
+och historisk scan `too_large`. Main-checken är queued. Detta är en läsning,
+inte en säkerhetsklarering; inga incidenter eller behörigheter ändrades.
 
 ### Samma regel i den privata guarden
 
