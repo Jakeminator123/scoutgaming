@@ -71,7 +71,11 @@ async function writePreview(output) {
     }
     const target = join(fileURLToPath(output), name);
     await mkdir(dirname(target), { recursive: true });
-    await writeFile(target, content);
+    // Resolve the source graph from canonical package paths while retaining
+    // the existing public runtime URLs in the generated browser copy.
+    await writeFile(target, name === 'local-presentation.mjs'
+      ? content.replace('../../packages/presentation/runtime/live-idle.mjs', '../../presentation-runtime/live-idle.mjs')
+      : content);
     // The shared idle runtime imports the same browser-safe identity module
     // from its repository path; retain that exact alias in static builds.
     if (name === 'dealer-identity.mjs') {

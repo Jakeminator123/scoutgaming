@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { platformConfiguration, platformRoute, platformBackendHeaders } from '../apps/croupier-frontend/lib/platform-routing.mjs';
 import { studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } from './lib/studio-native-request.mjs';
+import { legacyStudioDocumentHref } from './lib/admin-workspace-routes.mjs';
+import { publicAbsoluteUrl } from './lib/lab-url.mjs';
+
+function legacyDocumentRedirect(request: NextRequest, publicOrigin?: string) {
+  const target = legacyStudioDocumentHref(request, {basePath: process.env.CROUPIER_LAB_BASE_PATH || ''});
+  return target ? NextResponse.redirect(new URL(target, publicOrigin ?? publicAbsoluteUrl(request.headers, '/control')), 307) : null;
+}
 
 // Services route Studio documents directly to this app. Retain the same exact
 // transport boundary that the separate frontend previously enforced.
@@ -9,13 +16,15 @@ export function middleware(request: NextRequest) {
   if (metadata.controlDocument && metadata.crossSite) console.info('studio_document_transport', {
     stage: 'middleware', ...metadata,
   });
-  if (process.env.CROUPIER_VERCEL_UNIFIED_UI !== '1') return NextResponse.next();
+  if (process.env.CROUPIER_VERCEL_UNIFIED_UI !== '1') return legacyDocumentRedirect(request) ?? NextResponse.next();
   const config = platformConfiguration();
   if (!config?.unifiedUi) return new NextResponse(null, { status: 503 });
   const route = platformRoute(new URL(request.url), config, request);
   if (route.kind === 'reject') return new NextResponse(null, { status: 400 });
   if (route.kind === 'frontend' || route.kind === 'socket') return new NextResponse(null, { status: 404 });
   if (route.kind === 'redirect') return NextResponse.redirect(route.destination, 307);
+  const legacyRedirect = legacyDocumentRedirect(request, config.publicOrigin);
+  if (legacyRedirect) return legacyRedirect;
 
   const headers = route.kind === 'backend' ? platformBackendHeaders(request.headers, config)
     : route.kind === 'lab' ? studioDocumentNavigationHeaders(request) : new Headers(request.headers);

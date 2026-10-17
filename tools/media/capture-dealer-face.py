@@ -27,7 +27,7 @@ if args.expected_frame_count is not None and index!=args.expected_frame_count:ra
 if not frames:raise RuntimeError('No face detected; no performance file written')
 status='measured-not-visually-approved' if len(missing)/(len(frames)+len(missing))<.05 else 'incomplete-detection'
 def web_url(path):
- try:return path.resolve().relative_to(Path(__file__).resolve().parents[1]/'web/public').as_posix()
+ try:return path.resolve().relative_to(Path(__file__).resolve().parents[2]/'web/public').as_posix()
  except ValueError:return None
 sourceHash=hashlib.sha256(args.video.read_bytes()).hexdigest()
 output={'schemaVersion':1,'source':str(args.video),'sha256':sourceHash,'fps':fps,'duration':index/fps,'sourceFrameCount':index,'sampleFps':args.sample_fps,'frames':frames,'missingTimes':missing,'status':status,

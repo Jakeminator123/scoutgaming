@@ -15,32 +15,32 @@
     "reason": "Manually launched browser fixture server backed by the synthetic Python worker; not a node:test suite."
   },
   {
-    "path": "pipeline/test-actor-edge-blend.mjs",
+    "path": "tools/media/test-actor-edge-blend.mjs",
     "kind": "opt-in",
     "reason": "Existing opt-in rendering check for edge parameters, shader and compositor source bindings; needs no media. This inventory does not add it to default regression."
   },
   {
-    "path": "pipeline/test-astrid-folded-rest-lifecycle.mjs",
+    "path": "tools/media/test-astrid-folded-rest-lifecycle.mjs",
     "kind": "opt-in",
     "reason": "Existing opt-in check of the Astrid folded-rest orchestration with synthetic video frames; needs no media. This inventory does not add it to default regression."
   },
   {
-    "path": "pipeline/test-astrid-green-box-right.mjs",
+    "path": "tools/media/test-astrid-green-box-right.mjs",
     "kind": "opt-in",
     "reason": "Requires authoring take.json files in media/dealers/astrid/runtime/composited/astrid-table-v2 and astrid-blue-box4; these local media fixtures are not a default CI prerequisite."
   },
   {
-    "path": "pipeline/test-astrid-green-first-card.mjs",
+    "path": "tools/media/test-astrid-green-first-card.mjs",
     "kind": "opt-in",
     "reason": "Existing standalone check of the opted-in Astrid green dealer-card path; needs no media. This inventory does not change its existing opt-in execution status."
   },
   {
-    "path": "pipeline/test-astrid-idle-scheduler.mjs",
+    "path": "tools/media/test-astrid-idle-scheduler.mjs",
     "kind": "opt-in",
     "reason": "Combines scheduler behavior with historical web/public/review manifests and media hashes; some cases skip without the idle manifest. Keep opt-in until the mixed fixture requirements are reviewed separately."
   },
   {
-    "path": "pipeline/test-blender-card-layout.mjs",
+    "path": "tools/media/test-blender-card-layout.mjs",
     "kind": "opt-in",
     "reason": "Existing standalone felt-corner landing check imports the live performance-player module and needs no media. Retained as an opt-in check; its old filename does not establish CI coverage."
   }

@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { studioLoginDestination } from '../lib/studio-login-client.mjs';
 import { normalizeNativeStudioPageRequest } from '../lib/studio-native-request.mjs';
+import { legacyStudioDocumentHref } from '../lib/admin-workspace-routes.mjs';
 
 const require = createRequire(import.meta.url);
 const navigation = require('next/dist/client/components/redirect.js');
@@ -332,15 +333,6 @@ test('administration without native configuration fails before runtime initializ
   await assert.rejects(page.default(), error => error.statusCode === 503);
 });
 
-test('actual retired Lissabon page redirects to public /control', async () => {
-  let target;
-  const page = load('../app/lissabon/page.tsx', {
-    '../control/public-redirect': { redirectToPublicControl: async pathname => { target = pathname; throw new Error('redirected'); } },
-  });
-  await assert.rejects(page.default(), /redirected/);
-  assert.equal(target, '/control');
-});
-
 const authEntryConfig = authBase => ({
   allowedOrigins: ['https://game.fixture.invalid', 'https://studio.fixture.invalid'],
   publicHosts: ['game.fixture.invalid', 'studio.fixture.invalid'],
@@ -445,34 +437,10 @@ test('legacy auth aliases retain queries with exactly one configured Next basePa
   }
 });
 
-test('retired zone entries redirect to public composition without a doubled basePath', async () => {
-  const { publicAbsoluteUrl } = require('../lib/lab-url.mjs');
-  const publicRedirect = load('../app/control/public-redirect.ts', {
-    'next/headers': { headers: async () => new Headers({ host: 'studio.fixture.invalid', 'x-forwarded-host': 'game.fixture.invalid' }) },
-    'next/navigation': navigation,
-    '@/lib/lab-url.mjs': { publicAbsoluteUrl },
-  });
-  for (const file of ['../app/zones/page.tsx']) {
-    const page = load(file, {
-      '../public-redirect': publicRedirect,
-      '../control/public-redirect': publicRedirect,
-    });
-    await assert.rejects(page.default(), error => {
-      assert.equal(navigation.getURLFromRedirectError(error), 'https://game.fixture.invalid/control/preview');
-      assert.equal(navigation.getRedirectStatusCodeFromError(error), 307);
-      return true;
-    });
-  }
-});
-
-
-test('old activity URLs retain only observation context and canonicalize the composition alias', async () => {
-  const destinations = [];
-  const page = load('../app/control/activity/page.tsx', { '../public-redirect': { redirectToPublicControl: async value => destinations.push(value) } });
-  await page.default({ searchParams: Promise.resolve({ dealer: 'vera', event: 'speak.goodluck', operator: 'operator-one', table: 'room-1', lane: 'mobile-phone', token: 'private' }) });
-  assert.equal(destinations[0], '/control/rehearsal?dealer=vera&operator=operator-one&table=room-1&composition=mobile-phone');
-  await page.default({ searchParams: Promise.resolve({ dealer: ['vera', 'mei'], composition: 'chosen', lane: 'stale' }) });
-  assert.equal(destinations[1], '/control/rehearsal?composition=chosen');
+test('old activity URLs retain only observation context and canonicalize the composition alias', () => {
+  const destination=query=>legacyStudioDocumentHref(new Request('https://qa.invalid/control/activity?'+query));
+  assert.equal(destination('dealer=vera&event=speak.goodluck&operator=operator-one&table=room-1&lane=mobile-phone&token=private'), '/control/rehearsal?dealer=vera&operator=operator-one&table=room-1&composition=mobile-phone');
+  assert.equal(destination('dealer=vera&dealer=mei&composition=chosen&lane=stale'), '/control/rehearsal?composition=chosen');
 });
 
 
@@ -618,23 +586,56 @@ test('actual Admin middleware preserves document access with Node transport befo
   }
 });
 
-test('retired Control pages use the central Admin destination with room and material context intact',async()=>{
-  const {publicAbsoluteUrl}=require('../lib/lab-url.mjs');
-  const redirects=load('../app/control/public-redirect.ts',{
-    'next/headers':{headers:async()=>new Headers({host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'})},
-    'next/navigation':navigation,'@/lib/lab-url.mjs':{publicAbsoluteUrl},
-  });
+test('retired Control URLs use the central Admin destination with room and material context intact',()=>{
   for(const [section,destination] of [['library','assets'],['lanes','companies'],['preview','compositions'],['zones','compositions']]){
-    const page=load('../app/control/'+section+'/page.tsx',{'../public-redirect':redirects});
-    const query={dealer:'dragan',operator:'north',room:['one','two'],game:'roulette',lane:'portrait',role:'background',tab:section==='lanes'?'companies':'backgrounds',token:'private'};
-    await assert.rejects(page.default({searchParams:Promise.resolve(query)}),error=>{
-      assert.equal(navigation.getRedirectStatusCodeFromError(error),307);
-      const url=new URL(navigation.getURLFromRedirectError(error));
-      assert.equal(url.origin,'https://game.fixture.invalid');assert.equal(url.pathname,'/admin/'+destination);
+    const query='dealer=dragan&operator=north&room=one&room=two&game=roulette&lane=portrait&role=background&token=private&tab='+(section==='lanes'?'companies':'backgrounds');
+    for(const basePath of ['','/studio']) {
+      const target=legacyStudioDocumentHref(new Request('https://game.fixture.invalid'+basePath+'/control/'+section+'?'+query),{basePath});
+      const url=new URL(target,'https://game.fixture.invalid');
+      assert.equal(url.pathname,'/admin/'+destination);
       for(const [key,value] of [['dealer','dragan'],['operator','north'],['game','roulette'],['composition','portrait']])assert.equal(url.searchParams.get(key),value);
       assert.deepEqual(url.searchParams.getAll('room'),['one','two']);assert.equal(url.searchParams.has('lane'),false);assert.equal(url.searchParams.has('token'),false);
       if(section==='library')assert.equal(url.searchParams.get('tab'),'backgrounds');
-      return true;
-    });
+    }
+  }
+});
+
+test('actual middleware centralizes exact legacy documents without changing native routing or write requests',()=>{
+  const platform=require('../../apps/croupier-frontend/lib/platform-routing.mjs');
+  const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
+  for(const basePath of ['','/studio']) for(const unified of [false,true]) {
+    const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio:unified};
+    const {middleware}=load('../middleware.ts',{
+      '../apps/croupier-frontend/lib/platform-routing.mjs':{...platform,platformConfiguration:()=>config},
+    },{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
+    const request=(path,options={})=>new Request('https://game.fixture.invalid'+basePath+path,{headers,...options});
+    if(unified && basePath==='/studio') {
+      const response=middleware(request('/videos',{headers:{host:'studio.fixture.invalid','x-forwarded-host':'other.fixture.invalid','x-forwarded-proto':'http'}}));
+      assert.equal(response.headers.get('location'),'https://game.fixture.invalid/control/videos');
+    }
+    // Unified routing historically only admits these old Studio documents under /studio.
+    if(!unified || basePath==='/studio') for(const [path,target] of [
+      ['activity','activity'],['administration','administration'],['events','events'],['guide','guide'],
+      ['lissabon',''],['openclaw','openclaw'],['operator-chat','operator-chat'],['probe','probe'],
+      ['tree','tree'],['videos','videos'],['zones','preview'],
+    ]) for(const method of ['GET','HEAD']) {
+      const response=middleware(request('/'+path+'?dealer=dragan&token=private',{method,headers}));
+      assert.equal(response.status,307,path);
+      assert.equal(response.headers.get('location'),'https://game.fixture.invalid/control'+(target?'/'+target:''));
+    }
+    const control=middleware(request('/control/library?room=one&room=two&lane=portrait&token=private'));
+    assert.equal(control.status,307);
+    const target=new URL(control.headers.get('location'));
+    assert.equal(target.pathname,'/admin/assets');assert.deepEqual(target.searchParams.getAll('room'),['one','two']);
+    assert.equal(target.searchParams.get('composition'),'portrait');
+    assert.equal(target.searchParams.has('token'),unified,'native mapping retains its existing query policy');
+    for(const path of ['/api/videos','/preview/compositor.js','/events/extra','/control/login','/control/set-password']) {
+      assert.equal(legacyStudioDocumentHref(request(path),{basePath}),null,path);
+      assert.equal(middleware(request(path)).headers.has('location'),false,path);
+    }
+    for(const options of [{method:'POST',body:'fixture',headers},{headers:{...headers,'next-action':'fixture'}}]) {
+      assert.equal(legacyStudioDocumentHref(request('/control/library',options),{basePath}),null);
+      assert.equal(middleware(request('/control/library',options)).headers.has('location'),false);
+    }
   }
 });

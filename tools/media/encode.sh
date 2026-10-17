@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Legacy indexed-stream export; not the upload format for current portrait clips.
 # Crops to a square and removes audio. Check the destination's camera/format
-# contract before use; see pipeline/README.md and docs/LOCAL-PRESENTATION-RUNTIME.md.
+# contract before use; see tools/media/README.md and docs/LOCAL-PRESENTATION-RUNTIME.md.
 # Output:
 # square 1440x1440, 24 fps, raw Annex-B H.264 (profile main, level 4.0),
 # a single IDR at frame 0, AUD markers so the indexer can split access units.
