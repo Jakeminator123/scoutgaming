@@ -405,7 +405,8 @@ test('new frontend serves its built public module graph when the older backend r
     });
     frontend.listen(0,'127.0.0.1'); await once(frontend,'listening');
     const origin = 'http://127.0.0.1:'+frontend.address().port;
-    const pending = presentationPublicModules.flatMap(row => row.paths).filter(path => prepared.files.includes(path));
+    const pending = presentationPublicModules.flatMap(row => row.paths);
+    assert.deepEqual(pending.filter(path => !prepared.files.includes(path)), [], 'every declared public URL must be built');
     for (const path of ['/packages/navigation/game-entry.mjs','/packages/navigation/operator-slug.mjs']) assert.ok(pending.includes(path),path);
     const visited = new Set();
     while (pending.length) {
@@ -419,7 +420,12 @@ test('new frontend serves its built public module graph when the older backend r
       assert.equal(head.status,200,path); assert.equal(await head.text(),'',path);
       for (const header of ['content-type','content-length']) assert.equal(head.headers.get(header),response.headers.get(header),path+' '+header);
       if (path.endsWith('.json')) { JSON.parse(body); continue; }
-      for (const match of body.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)) pending.push(new URL(match[1],origin+path).pathname);
+      const imports = [
+        ...body.matchAll(/^\s*(?:import|export)\s+(?:[\w\s{},*$]+?\s+from\s*)?['"]([^'"]+)['"]/gm),
+        ...body.matchAll(/^\s*(?:import|export)[^'"\n]*?\bfrom\s*['"]([^'"]+)['"]/gm),
+        ...body.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g),
+      ];
+      for (const match of imports) pending.push(new URL(match[1],origin+path).pathname);
     }
     assert.ok([...visited].some(path => path.endsWith('.json')),'the public JSON contract is exercised');
     for (const path of ['/packages/navigation/server/platform-routing.mjs','/packages/navigation/operator-entry.mjs',
