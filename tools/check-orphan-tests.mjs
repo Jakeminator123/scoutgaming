@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const testExtensions = new Set(['.mjs', '.js', '.cjs', '.ts', '.mts', '.cts']);
-const discoveryRoots = ['test', 'lab/test', 'lab/components', 'lab/lib', 'packages', 'tools/media', 'open-claw', 'ops', 'apps', 'services', 'lipsync-test'];
+const discoveryRoots = ['test', 'lab/test', 'lab/components', 'lab/lib', 'lab/client', 'packages', 'tools/media', 'open-claw', 'ops', 'apps', 'services', 'lipsync-test'];
 const coverageRoots = /^(?:test|lab|open-claw|ops|apps|services|packages|tools\/media|lipsync-test)\//;
 const skippedDirectories = new Set(['node_modules', '.git', '.next', '.nuxt', '.cache', '.turbo', 'coverage',
   'playwright-report', 'test-results', '__pycache__', '.venv', '.lipsync-venv', 'vendor', 'arkiv',

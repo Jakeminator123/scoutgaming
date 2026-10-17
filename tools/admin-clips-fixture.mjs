@@ -24,7 +24,7 @@ const {installComparisonProcessGuard}=await import('./start-local-comparison.mjs
 installComparisonProcessGuard();
 const {acquireLocalSession}=await import('../open-claw/lab/deploy/local-session.mjs');
 const {createEmptyProject,addDealer,addVariant,validateProject}=await import('../lab/lib/studio-model.mjs');
-const {bindClip,clipSlots,createStudioClient}=await import('../packages/design-preview/admin/lib/connected-studio.mjs');
+const {bindClip,clipSlots,createStudioClient}=await import('../lab/client/admin/lib/connected-studio.mjs');
 const {kindForEvent}=await import('../lab/lib/video-intake.mjs');
 const {layerAssetPath}=await import('../web/presentation-layers.mjs');
 const {createStudioNativeAuth}=await import('../packages/studio-access/studio-native-auth.mjs');

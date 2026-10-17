@@ -84,7 +84,7 @@ function browserBootstrap(props) {
 
 async function buildAdminBrowserFixture(root) {
   const { build } = await import('esbuild'), { writeFile } = await import('node:fs/promises');
-  const source = fileURLToPath(new URL('../../packages/design-preview/', import.meta.url));
+  const source = fileURLToPath(new URL('../../lab/client/', import.meta.url));
   // An isolated worktree may read already-installed, identically locked modules.
   // Compile its own real Admin source; never reuse a possibly stale app bundle.
   const modules = process.env.CROUPIER_DESIGN_FIXTURE_MODULES || join(source,'node_modules');

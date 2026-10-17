@@ -6,6 +6,30 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C3a: Studio äger Admin/Lobby-klienten — 17 oktober 2026
+
+De 184 källfilerna från `packages/design-preview` ligger nu i `lab/client`.
+Klientens manifest, låsfil och historiska proveniens är oförändrade. Den har
+fortsatt separata React-/TypeScript-beroenden och typkontroller, och undantas
+från Studios övergripande tsconfig. En lobbykälla ger både intern och publik
+lobby; outputen `lab/design-preview-build`, resursadresser, autentisering och
+Vercels befintliga Studio-routes behålls. Inga gamla källvägswrappers skapas.
+Byggverktyg, importörer, fullhook, CI-klassning och testinventering följer flytten.
+
+Lokalt på Node 24.21.0: 360 befintliga klient-/Admin-/Lobby-/policy-/runnerprov
+passerar, noll fel och sju uttryckliga browser-opt-in-prov ej körda. Inventeringen
+visar 510 JS/TS-kandidater, nio helper/opt-in och noll oklassificerade tester;
+Python redovisas separat. Klientens två typkontroller och tre bundlebyggen är
+gröna. Studios produktionbyggsteg kördes därefter med `/studio`, befintlig
+klientoutput och oförändrade låsta beroenden: Next/TypeScript och routebygge
+gröna, 80 byggspår kontrollerade och noll privata poster borttagna. Befintliga
+CSS-composes-varningar och Nexts middleware-deprecation kvarstår.
+
+Den publika katalogadaptern använder fortfarande frontendens `player-lobby`
+och `player-operator`; detta är en namngiven ägarskapsrest för nästa kontraktdel.
+CI, integration och driftkvitto redovisas vid leverans. Ingen ny visuell
+medie- eller läppsynksacceptans ingår.
+
 ## Etapp 3: första gemensamma kontrakten — 17 oktober 2026
 
 `media-file-types.mjs` ligger nu i `packages/shared/` och
