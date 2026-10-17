@@ -1,5 +1,10 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+Kanoniskt målkontrakt för klippens fack, pose, namn, kontrollerad Kevin-import,
+Neon/Blob och gemensam talworker: [storage-guiden](storage/BLOB-NEON.md).
+Den uppdaterades 17 oktober som en plan; den aktiverar inte funktioner.
+Befintliga implementationer och daterade prov nedan behåller sina avgränsningar.
+
 ## Runtimekontrakt efter Neon-migreringen, 16 oktober 2026
 
 Den nya runtimekoden har **Neon som enda källa för registermetadata**.

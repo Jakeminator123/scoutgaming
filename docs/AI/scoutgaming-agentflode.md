@@ -500,6 +500,15 @@ denna ansvarsfördelning. API-nyckeln ska inte läggas i klientkoden.
 
 ## Ändringslogg
 
+### 17 oktober 2026 — samordnad dealer-media-plan
+
+Jakob beställde tre parallella underlag: Kevin-klippens faktiska användning,
+Neon/Blob och raderingsreferenser samt reproducerbar talworker. Läsande
+underagenter levererade underlagen; inga produktionsändringar utfördes.
+[Befintlig storage-guide](../storage/BLOB-NEON.md) ersätter äldre generella råd
+med ett gemensamt målkontrakt. Admin-huvudagenten behåller UI/integrationsansvar;
+workerbyte och möjlig Astrid-avveckling är separata steg.
+
 | Datum | Ändring och skäl |
 | --- | --- |
 | 2026-10-16 | Integrationsgranskningen rättade klientundantaget så beroende-/schema-/konfigurationsfiler fortfarande kräver migrationskontroll. Admins testplan kontrollerar nu faktisk globexpansion och har ett negativt prov för bortfallen Studio-täckning. Sidochattens förenkling ingår i den befintliga PR185-leveransen; aktuell slutstatus finns i JOHN-HANDOFF. |

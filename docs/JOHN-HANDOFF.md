@@ -5,6 +5,25 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Dealerklipp, register och talworker: samlad plan — 17 oktober 2026
+
+Jakob beställde en samlad plan för Kevins verkliga blackjack-underlag,
+rättad klassificering/deduplicering i Neon och Blob samt en gemensam talworker.
+Den befintliga [storage-guiden](storage/BLOB-NEON.md) är omskriven som kanoniskt
+målkontrakt och genomförandeplan. Äldre inventering behålls som daterat belägg.
+
+Tre läsande underagenter granskade Kevin-underlag, register/radering och
+worker/moln. Admin-huvudagenten äger sin UI-etapp och informerades om filgränserna.
+Planen separerar nödvändiga poseversioner från slump-/talvarianter, återanvänder
+exakta byte/identiteter och gör fysisk radering till sista steg. En identifierad
+lucka är att raderingsinspektionen inte ensam täcker alla jobb- och talsvarsreferenser.
+Reproducerbart workerbygge och autentiserad livekoppling återstår.
+
+Endast dokumentation ändrad i denna etapp; ingen produktkod, databas, Blob,
+publicering, endpoint eller nyckel ändrad. Ingen ny kostnad eller visuell
+acceptans registrerad. De konkreta migrations- och ersättningsproven är planerade,
+inte genomförda. Den frysta lokala lipsync-taggen och dess privata original består.
+
 ## Dragan: registerbundet bankunderlag — 17 oktober 2026
 
 Jakob valde befintliga Dragan-filmer i Blob för en egen avatarbank.

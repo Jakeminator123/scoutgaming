@@ -12,6 +12,7 @@ vid implementationen; de är inte fristående handböcker.
 | Produktens ingångar, bolagsåtkomst, äldre länkar och användarsteg | [Användarguiden](../../lab/docs/README.md) |
 | Gemensamma begrepp | [Terminologi](../../lab/docs/TERMINOLOGI.md) |
 | Medier, uppspelning och kvarvarande acceptans | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
+| Klippstruktur, Neon/Blob-migration och gemensam talworker | [Kanonisk struktur och genomförandeplan](../storage/BLOB-NEON.md) |
 | Miljövariabler och ansvar | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |
 | Leveransstatus och återstående krav | [CLOUD-MIGRATION](../CLOUD-MIGRATION.md) |
 
