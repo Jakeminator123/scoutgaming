@@ -1,7 +1,7 @@
 import {
   StudioStorageError, canonicalStudioJson, studioStorageFailure,
   validateActor, validateDocumentValue, validateRevision, validateStudioScope,
-} from '../../web/storage/studio-contract.mjs';
+} from '../../packages/studio-registry/server/document-contract.mjs';
 import { normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
 
 function documentStore(kind, { repository, scope, actor } = {}) {

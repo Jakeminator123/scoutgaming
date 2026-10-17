@@ -11,11 +11,12 @@ import {stageGeometry,tableRect,backgroundRect} from '../packages/presentation/c
 import {zoomComposition} from '../lab/lib/composition-zoom.mjs';
 import {Compositor} from '../packages/presentation/compositor/compositor.js';
 import {createSeedProject,addDealer,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
-import {buildPresentationPackage,layerAssetPath} from '../web/presentation-layers.mjs';
-import {withPackagePresentation,readPackagePresentation} from '../web/storage/presentation-package.mjs';
+import {buildPresentationPackage,layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
+import {withPackagePresentation,readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
 import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
-import {gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
+import { validateGameLanes } from '../packages/presentation/contracts/game-lanes.mjs';
+import { gameLaneFromDocument } from '../web/public/game-lanes.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
 

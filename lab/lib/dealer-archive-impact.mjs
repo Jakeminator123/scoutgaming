@@ -1,11 +1,11 @@
 import {createHash} from 'node:crypto';
-import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../web/storage/studio-contract.mjs';
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
-import {readOperatorLifecycle,withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
-import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
-import {validatePresentationPackage} from '../../web/presentation-layers.mjs';
-import {gameLaneConfiguration} from '../../web/public/game-lanes.mjs';
-import {isPresentationRoom} from '../../web/presentation-room-contract.mjs';
+import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../packages/studio-registry/server/document-contract.mjs';
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
+import {readOperatorLifecycle,withOperatorLifecycle} from '../../packages/operators/server/operator-lifecycle.mjs';
+import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
+import {validatePresentationPackage} from '../../packages/presentation/contracts/presentation-layers.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
+import {isPresentationRoom} from '../../packages/presentation/contracts/presentation-room.mjs';
 import {operatorAuditContext} from './operator-audit-context.mjs';
 
 const fail=(code='studio_dealer_archive_coverage_incomplete',status=409)=>{throw new StudioStorageError(code,status);};

@@ -1,4 +1,4 @@
-import { validateActor, validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { validateActor, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { DEMO_OPERATORS } from '../../web/demo-operators.mjs';
 
 // The list lives in web/ so the game server can serve /api/operators/<slug> without lab/.

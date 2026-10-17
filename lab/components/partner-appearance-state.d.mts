@@ -1,4 +1,4 @@
-import type {PresentationPackage} from '../../web/presentation-layers.mjs';
+import type {PresentationPackage} from '../../packages/presentation/contracts/presentation-layers.mjs';
 export type EditableBranding = {lane?:string;table?:string;background?:string;dealer?:string;color?:string;roomOverrides?:Record<string,Record<string,string>>};
 export type AppearanceDraft = {revision:number;basePackageRevision:number;branding:Readonly<Record<string,unknown>>;sourcePackageRevision?:number|null;updatedAt?:number|string};
 export type PartnerAppearanceInitial = {

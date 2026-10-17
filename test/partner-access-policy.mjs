@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   PARTNER_PERMISSIONS, OPERATOR_ADMIN_PERMISSION, isOperatorAdmin, isPartnerPermission,
   allowsPartnerResource, allowsPartnerRoleAssignment, allowsPartnerInvite, allowsPartnerInviteRole, allowsPartnerSuspension,
-} from '../web/partner-access-policy.mjs';
+} from '../packages/studio-access/server/partner-access-policy.mjs';
 import { effectiveAccountRole } from '../packages/studio-access/account-role.mjs';
 import { meetsStudioAdminActionRole } from '../lab/lib/studio-access-policy.mjs';
 

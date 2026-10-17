@@ -1,13 +1,21 @@
 import {comparisonStudio} from './comparison-studio.mjs';
 import { basename, resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
-import { createRenderStudioPolicy } from '../../web/storage/studio-runtime.mjs';
-import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
+import { createPostgresStore, validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
+import { createStudioPolicyRuntime } from '../../packages/presentation/server/studio-policy-runtime.mjs';
+import { createRegisteredDealerIdle } from '../../packages/presentation/server/registered-dealer-idle.mjs';
+import { planStudioMigrations, isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
 import { createNeonSocialStore } from './neon-project-store.mjs';
 import { createStudioMediaRuntime, createStudioPublicMediaAvailability } from './studio-media-runtime.mjs';
 import { resolveMediaPath } from '../../tools/media-layout.mjs';
 import { StudioError } from './project-store.mjs';
+
+const createRenderStudioPolicy = createStudioPolicyRuntime({
+  schemaCheck: planStudioMigrations, isSchemaReady: isStudioMigrationPlanReady,
+  async createDealerIdle({repository,scope,env}) {
+    return createRegisteredDealerIdle({registryLoader:createStudioMediaRuntime({repository,scope,env}).videoRegistry});
+  },
+});
 
 export const renderStudioPolicyEnabled = (env = process.env) => env.CROUPIER_STUDIO_NEON_POLICY === '1';
 export function assertRenderStudioWritable() {

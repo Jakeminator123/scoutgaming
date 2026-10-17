@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { setImmediate as nextTurn } from 'node:timers/promises';
 import { createSeedProject, createEmptyProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
-import { createOperatorStore } from '../web/storage/operator-store.mjs';
-import { createStudioRepository } from '../web/storage/studio-repository.mjs';
-import { StudioStorageError, cloneStudioJson, studioStorageFailure, validateStudioScope, STUDIO_JSON_LIMIT } from '../web/storage/studio-contract.mjs';
+import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
+import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
+import { StudioStorageError, cloneStudioJson, studioStorageFailure, validateStudioScope, STUDIO_JSON_LIMIT } from '../packages/studio-registry/server/document-contract.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
-import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../web/storage/studio-contract.mjs';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../packages/studio-registry/server/document-contract.mjs';
 
 test('unsupported media MIME rejects before opening SQL and cannot be accepted by the memory pool',async()=>{
   for(const contentType of ['image/png','audio/wav','audio/mpeg']){

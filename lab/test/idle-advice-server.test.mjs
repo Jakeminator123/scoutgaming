@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
-import { validateCatalog } from '../../open-claw/lab/src/engine.mjs';
+import { readSettings } from '../lib/director-settings.mjs';
+import { validateCatalog } from '../../packages/director/engine.mjs';
 import { addDealer, createEmptyProject, defaultPresentationLane, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { registeredIdleInventory, registeredIdlePolicy } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { cloudPresentationFixture } from './fixtures/cloud-presentation.mjs';

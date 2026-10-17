@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { studioCommandSignature } from '../../packages/shared/studio-game-command.mjs';
-import { validateStudioScope, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope, canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
 import { normalizeStudioRole } from './studio-access-policy.mjs';
 
 // Retain the established import path for existing Studio callers.

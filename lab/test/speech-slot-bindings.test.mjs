@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import contract from '../../packages/presentation/contracts/policies/studio-contract.json' with { type: 'json' };
 import { createEmptyProject, addDealer, addVariant, validateProject, normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import { createStudioProjectBindings } from '../lib/studio-project-bindings.mjs';
+import { createStudioProjectBindings } from '../../packages/presentation/server/studio-project-bindings.mjs';
 import { SPEECH_SLOT_IDS, OTHER_SPEECH_SLOT_IDS, speechSlotEventId, speechSlotVariantId, speechSlotStandard,
   bindSpeechSlotStandard, speechSlotVideoFits } from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
 

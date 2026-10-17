@@ -4,7 +4,7 @@ import { loadStudioMigrations, planStudioMigrations, applyStudioMigrations, isSt
 import { mkdtemp, copyFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { StudioStorageError } from '../web/storage/studio-contract.mjs';
+import { StudioStorageError } from '../packages/studio-registry/server/document-contract.mjs';
 import { checkMigrationReadiness } from '../tools/check-migration-readiness.mjs';
 
 const target = Object.freeze({ database: 'croupier_isolated_studio_test', role: 'studio_migrator', address: '127.0.0.1', port: 55432 });

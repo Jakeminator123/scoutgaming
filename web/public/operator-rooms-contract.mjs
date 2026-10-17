@@ -1,4 +1,5 @@
-import { isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
+import { isGameLaneId } from './game-lanes.mjs';
+import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;

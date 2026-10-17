@@ -10,7 +10,7 @@ import {
   normalizeProject, defaultPresentationLane, createEmptyProject, addDealer, maxVariantsForEvent
 } from '../../packages/presentation/contracts/studio-model.mjs';
 import { PROBE_MODELS } from '../../packages/presentation/contracts/probe-policy.mjs';
-import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
+import { validateCatalog, prepareDecision, finalizeDecision } from '../../packages/director/engine.mjs';
 
 test('legacy projects retain blackjack, four dealers, sixteen locked nodes and 64 editable lines', () => {
   const p = createSeedProject();

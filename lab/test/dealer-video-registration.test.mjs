@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {BASE_DEALER_IDS,MAX_DEALERS,isDealerId,registeredDealerIds} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateVideoMetadata,validateVideoCompositing,videoCompositing,videoFitsLine} from '../../packages/presentation/contracts/video-intake.mjs';
 import {mediaBlobPath,validatePrivateMedia} from '../lib/cloud-media-store.mjs';
-import {requireSavedVideoDealer} from '../lib/video-dealer-registration.mjs';
+import {requireSavedVideoDealer} from '../../packages/studio-registry/server/video-dealer-registration.mjs';
 import {createStudioUploadService} from '../lib/studio-upload-service.mjs';
 import {DEFAULT_DEALER_COMPOSITING,effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
 const classification={dealerId:'nora',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Nora',notes:'',compositing:{mode:'green-screen',threshold:.23,softness:.15,despill:0}};
@@ -59,7 +59,8 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,dirname,resolve,basename} from 'node:path';
 import {createSeedProject,addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
-import {uploadVideo,readUploads} from '../lib/video-uploads.mjs';
+import {uploadVideo} from '../lib/video-uploads.mjs';
+import {readUploads} from '../lib/video-local-readers.mjs';
 import {loadVideoRegistry} from '../lib/video-registry.mjs';
 
 test('registered Nora intake survives reload with greenscreen metadata and never binds Astrid footage',async t=>{

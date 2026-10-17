@@ -85,6 +85,20 @@ export function focusedTests(changes, root = repositoryRoot) {
       throw Error('Invalid changed path');
     }
     if (/(?:\.test\.[cm]?js$|^(?:test|apps\/[^/]+\/test)\/[^/]+\.mjs$)/.test(path)) add(path);
+    // Moved shared contracts keep their existing behavioral regression suites.
+    const registryTests = {
+      'runtime-catalog': ['test/runtime-media-catalog.mjs'],
+      'registry-core': ['lab/test/video-registry.test.mjs', 'lab/test/blob-source-routing.test.mjs'],
+      'registry-reader': ['lab/test/neon-video-registry.test.mjs'],
+      'blob-reader': ['lab/test/cloud-media-store.test.mjs'],
+      'private-media-contract': ['lab/test/cloud-media-store.test.mjs'],
+      'video-manifest': ['lab/test/lab-video-manifest.test.mjs'],
+      'storage-contract': ['test/studio-repository.mjs'],
+      'video-dealer-registration': ['lab/test/dealer-video-registration.test.mjs'],
+    };
+    if (path.startsWith('packages/studio-registry/server/')) {
+      for (const candidate of registryTests[basename(path, '.mjs')] ?? []) add(candidate);
+    }
     const stem = basename(path).replace(/\.[^.]+$/, '');
     const directory = dirname(path).replaceAll('\\', '/');
     for (const candidate of [

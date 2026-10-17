@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import {ADMIN_WORKSPACE_TOOLS} from '../../../../lab/lib/admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS} from '../../../../packages/navigation/admin-workspace-routes.mjs';
 import * as adminRouting from '../../runtime/admin-routing.mjs';
 import {isActiveOperator} from './studio-resource-lifecycle.mjs';
 

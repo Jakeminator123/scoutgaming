@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assertPresentationRoomMaterials} from '../web/presentation-material-game.mjs';
+import {assertPresentationRoomMaterials} from '../packages/presentation/contracts/presentation-material-game.mjs';
 import {materialSource} from '../packages/presentation/contracts/material-catalog.mjs';
 const source=materialSource('blackjack-green-felt');
 const asset={id:'uploaded-layer',role:'table',...source};

@@ -1,11 +1,11 @@
 import {createHash} from 'node:crypto';
 import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
-import {compositionLabel} from './control-flow.mjs';
-import {canonicalStudioJson,StudioStorageError} from '../../web/storage/studio-contract.mjs';
-import {gameLaneConfiguration} from '../../web/public/game-lanes.mjs';
-import {isPresentationRoom} from '../../web/presentation-room-contract.mjs';
-import {readOperatorLifecycle,withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
-import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {compositionLabel} from '../../packages/navigation/control-flow.mjs';
+import {canonicalStudioJson,StudioStorageError} from '../../packages/studio-registry/server/document-contract.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
+import {isPresentationRoom} from '../../packages/presentation/contracts/presentation-room.mjs';
+import {readOperatorLifecycle,withOperatorLifecycle} from '../../packages/operators/server/operator-lifecycle.mjs';
+import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
 import {withoutPresentationLanes} from './dealer-archive-impact.mjs';
 import {retainBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 

@@ -3,9 +3,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {gunzipSync} from 'node:zlib';
 import {createSeedProject, addDealer, defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
-import {buildPresentationPackage, validatePresentationPackage} from '../web/presentation-layers.mjs';
-import {encodePresentationPackage, decodePresentationPackage, readPackagePresentation, withPackagePresentation} from '../web/storage/presentation-package.mjs';
-import {captureFrozenPresentation, assertCapturedPresentationMedia, selectedRegisteredIdleDefaults, assertPublishedRoomBindings} from '../web/storage/frozen-presentation-capture.mjs';
+import {buildPresentationPackage, validatePresentationPackage} from '../packages/presentation/contracts/presentation-layers.mjs';
+import {encodePresentationPackage, decodePresentationPackage, readPackagePresentation, withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
+import {captureFrozenPresentation, assertCapturedPresentationMedia, selectedRegisteredIdleDefaults, assertPublishedRoomBindings} from '../packages/presentation/server/frozen-presentation-capture.mjs';
 const scope={environment:'frozen-fixture',workspaceId:'isolated'};
 const id='10000000-0000-4000-8000-000000000001',sha256='a'.repeat(64);
 function fixture(){

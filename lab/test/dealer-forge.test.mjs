@@ -9,7 +9,7 @@ import { ForgeError } from '../lib/dealer-forge-service.mjs';
 import { fixture, sha, scope, PNG, MP4 } from './fixtures/dealer-forge-fixture.mjs';
 import { createDealerForgeStore } from '../lib/dealer-forge-store.mjs';
 import { createRunwayClient, RunwayError } from '../lib/runway-client.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import { checkPermanentMediaDeletion } from '../lib/studio-media-deletion.mjs';

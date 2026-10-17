@@ -1,5 +1,6 @@
 import {isActiveDealerId as isDealerId} from '../packages/presentation/contracts/dealer-identity.mjs';
-import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
+import { isGameLaneId } from './public/game-lanes.mjs';
+import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 
 const keys=['operatorSlug','roomId','packageRevision','dealerId'];
 const fail=(code,statusCode)=>{throw Object.assign(Error(code),{code,statusCode});};
@@ -45,7 +46,7 @@ export function createPublishedChatResolver({readCurrentContext,readPresentation
   if(typeof readCurrentContext!=='function'||typeof readPresentation!=='function')throw TypeError('Explicit published chat readers required');
   let service;
   return async input=>{
-    service??=import('./storage/frozen-dealer-presentation.mjs').then(({createFrozenDealerPresentationContext})=>
+    service??=import('../packages/presentation/server/frozen-dealer-presentation.mjs').then(({createFrozenDealerPresentationContext})=>
       createFrozenDealerPresentationContext({
         readCurrentContext:async (slug,revision)=>{
           const saved=await readCurrentContext(slug,revision);

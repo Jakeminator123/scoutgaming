@@ -1,7 +1,7 @@
 import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../web/storage/studio-contract.mjs';
-import {readPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../packages/studio-registry/server/document-contract.mjs';
+import {readPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
 import {dealerArchiveCompositionIds,readDealerArchiveImpact,applyDealerArchiveImpact} from './dealer-archive-impact.mjs';
 
 const fail=(code,status=409)=>{throw new StudioStorageError(code,status);};

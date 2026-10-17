@@ -1,11 +1,11 @@
 import {assertMediaAlpha} from './media-alpha.mjs';
 import {assertNativeMediaReadiness} from './native-media-readiness.mjs';
 import {DEFAULT_DEALER_COMPOSITING} from '../../packages/presentation/contracts/dealer-compositing.mjs';
-import { canonicalStudioJson, StudioStorageError, validateActor, validateMediaId, validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { canonicalStudioJson, StudioStorageError, validateActor, validateMediaId, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
-import { requireSavedVideoDealer } from './video-dealer-registration.mjs';
+import { requireSavedVideoDealer } from '../../packages/studio-registry/server/video-dealer-registration.mjs';
 import {checkPermanentMediaDeletion} from './studio-media-deletion.mjs';
 import {validateVideoMetadata} from '../../packages/presentation/contracts/video-intake.mjs';
 

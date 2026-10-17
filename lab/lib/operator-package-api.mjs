@@ -1,12 +1,12 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
 import { normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import { buildPresentationPackage } from '../../web/presentation-layers.mjs';
+import { buildPresentationPackage } from '../../packages/presentation/contracts/presentation-layers.mjs';
 import { BASE_DEALER_IDS } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
-import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
-import {captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia, assertPublishedRoomBindings} from '../../web/storage/frozen-presentation-capture.mjs';
-import { withPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
+import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
+import {captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia, assertPublishedRoomBindings} from '../../packages/presentation/server/frozen-presentation-capture.mjs';
+import { withPackagePresentation } from '../../packages/presentation/server/presentation-package.mjs';
 
 export const SG_TEST_OPERATOR = Object.freeze({
   id: 'sg-test',
@@ -24,7 +24,7 @@ export function fixtureLaneOperators() {
 // before createOperatorStore, including for the read used by this page.
 export async function openWritableOperatorStore({ pool, scope, now, storeFactory } = {}) {
   if (typeof pool?.connect !== 'function' || typeof pool?.query !== 'function') fail(503);
-  const create = storeFactory ?? (await import('../../web/storage/operator-store.mjs')).createOperatorStore;
+  const create = storeFactory ?? (await import('../../packages/operators/server/operator-store.mjs')).createOperatorStore;
   if (typeof create !== 'function') fail(503);
   return create({ sql: pool, scope, now });
 }

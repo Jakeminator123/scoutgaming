@@ -4,7 +4,7 @@ import { buildPresentationSequence, SEQUENCE_STEP_LIMIT } from '../lib/presentat
 import { normalizeProject, buildRuntimeCatalog, DEALER_IDS, isDirectorSourceType } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 
-import { prepareDecision } from '../../open-claw/lab/src/engine.mjs';
+import { prepareDecision } from '../../packages/director/engine.mjs';
 import { presentationEvents } from '../../web/partner-presentation.mjs';
 
 // Explicit historical document: current seeds intentionally register only active dealers.

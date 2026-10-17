@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createLabServer } from '../src/server.mjs';
-import { createProductSpeechService } from '../src/product-speech.mjs';
-import { GatewayError } from '../src/openclaw.mjs';
+import { createProductSpeechService } from '../../../packages/director/product-speech.mjs';
+import { GatewayError } from '../../../packages/director/openclaw.mjs';
 
 const speechToken = 'fixture-product-speech-token';
 const labToken = 'fixture-lab-operator-token';

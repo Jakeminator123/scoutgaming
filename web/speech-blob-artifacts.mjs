@@ -3,9 +3,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, mediaBlobPath,
-  isCloudMediaConfigured } from '../lab/lib/cloud-media-store.mjs';
-import { normalizeSpeechPackage } from './public/speech-package.mjs';
-import { GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
+  isCloudMediaConfigured } from './blob-media.mjs';
+import { normalizeSpeechPackage } from '../packages/presentation/contracts/speech-package.mjs';
+import { GENERATED_SPEECH_LIMITS } from '../packages/presentation/server/generated-speech-provider.mjs';
 
 const idPattern = /^[a-f0-9]{32}$/, hashPattern = /^[a-f0-9]{64}$/;
 const kinds = { audio: { extension: 'wav', contentType: 'audio/wav', limit: 44 + 24000 * 2 * 25 },

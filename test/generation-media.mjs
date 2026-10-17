@@ -89,8 +89,6 @@ test('retired generation aliases cannot fall through to static files through Win
     const source = new URL('../web/', import.meta.url);
     for (const file of await readdir(source)) if (file.endsWith('.mjs')) await copyFile(new URL(file, source), join(web, file));
     await copyFile(new URL('public/blackjack.mjs', source), join(web, 'public/blackjack.mjs'));
-    await copyFile(new URL('public/speech-package.mjs', source), join(web, 'public/speech-package.mjs'));
-    await copyFile(new URL('public/astrid-voice-profile.mjs', source), join(web, 'public/astrid-voice-profile.mjs'));
     await copyFile(new URL('public/astrid-camera-audio.mjs', source), join(web, 'public/astrid-camera-audio.mjs'));
     await copyFile(new URL('public/chat-response.mjs', source), join(web, 'public/chat-response.mjs'));
     // Offline game documents use the same validated entry/composition contracts.

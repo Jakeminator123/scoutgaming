@@ -11,7 +11,7 @@ import {createRequire} from 'node:module';
 const frontendRequire = createRequire(new URL('../apps/croupier-frontend/package.json', import.meta.url));
 const WebSocket = frontendRequire('ws');
 const {createPlatformNativeWebSocketServer} = await import(pathToFileURL(frontendRequire.resolve('@croupier/server-transport/node-server')).href);
-import {platformConfiguration} from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import {platformConfiguration} from '../packages/navigation/server/platform-routing.mjs';
 import {issueTicket, ticketAuthenticator} from '../services/astrid-gpu-worker/gateway/auth.mjs';
 import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';
 import {createSpeechIngress} from '../apps/croupier-speech/service.mjs';

@@ -16,11 +16,19 @@
         "web/native-p6-qa-hook.mjs",
         "web/native-ai-qa-runtime.mjs",
         "web/native-ai-qa-private.mjs",
-        "web/generated-speech.mjs",
+        "packages/presentation/server/generated-speech-runtime.mjs",
         "web/storage/studio-runtime.mjs",
-        "web/storage/studio-game-policy.mjs",
+        "packages/presentation/server/studio-policy-runtime.mjs",
+        "packages/presentation/server/saved-game-policy.mjs",
         "web/studio-game-commands.mjs",
-        "web/dealer-speech-runtime.mjs"
+        "web/dealer-speech-runtime.mjs",
+        "packages/studio-registry/server/media-runtime.mjs",
+        "packages/presentation/server/legacy-clip-inventory.mjs",
+        "web/storage/video-registry.mjs",
+        "web/storage/legacy-clip-inventory.mjs",
+        "web/storage/studio-media-runtime.mjs",
+        "web/blob-media.mjs",
+        "web/media-blob-index.mjs"
       ],
       "required": [
         "NODE_ENV",
@@ -106,7 +114,8 @@
         "CROUPIER_MOVING_SPEECH_RELEASE_SHA256",
         "CROUPIER_MOVING_SPEECH_TICKET_SECRET",
         "CROUPIER_MOVING_SPEECH_WORKER_ORIGIN",
-        "ELEVENLABS_API_KEY"
+        "ELEVENLABS_API_KEY",
+        "NEXT_PUBLIC_LAB_BASE_PATH"
       ],
       "managed": [
         "HOST",
@@ -144,7 +153,7 @@
     "vercel-frontend-production": {
       "sources": [
         "apps/croupier-frontend/lib/game-url.ts",
-        "apps/croupier-frontend/lib/platform-routing.mjs",
+        "packages/navigation/server/platform-routing.mjs",
         "packages/server-transport/configuration.mjs"
       ],
       "project": "scoutgaming",
@@ -374,7 +383,7 @@
         "lab/lib/remote-ui.mjs",
         "lab/lib/studio-native-runtime.mjs",
         "lab/lib/studio-native-mail.mjs",
-        "web/storage/studio-game-policy.mjs",
+        "packages/presentation/server/saved-game-policy.mjs",
         "lab/lib/studio-game-authority.mjs",
         "lab/lib/neon-video-registry.mjs",
         "lab/lib/cloud-media-store.mjs",
@@ -384,7 +393,10 @@
         "lab/lib/studio-voice-lines.mjs",
         "lab/lib/openclaw-admin.mjs",
         "lab/lib/runway-client.mjs",
-        "lab/lib/dealer-import-model.mjs"
+        "lab/lib/dealer-import-model.mjs",
+        "packages/studio-registry/server/media-runtime.mjs",
+        "packages/presentation/server/legacy-clip-inventory.mjs",
+        "lab/lib/studio-media-runtime.mjs"
       ],
       "project": "croupier-lab-ui",
       "gitBranch": "main",
@@ -423,7 +435,8 @@
         "OPENCLAW_MODEL_API",
         "OPENCLAW_MODEL_BASE_URL",
         "OPENAI_API_KEY",
-        "CARTESIA_API_KEY"
+        "CARTESIA_API_KEY",
+        "CROUPIER_VERCEL_FRONTEND_ORIGIN"
       ],
       "managed": [],
       "blocked": [

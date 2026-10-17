@@ -1,14 +1,21 @@
+import { fileURLToPath as speechRootPath } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { createGeneratedSpeechService, generatedSpeechStatus } from '../web/generated-speech.mjs';
-import { GENERATED_SPEECH_DEFAULTS } from '../web/generated-speech-provider.mjs';
-import { validateSpeechPackage } from '../web/public/speech-package.mjs';
+import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
+import * as gameSpeech from '../web/generated-speech-runtime.mjs';
+import * as studioSpeech from '../lab/lib/generated-speech-server.mjs';
+import { acquireGeneratedSpeechRuntime } from '../packages/presentation/server/generated-speech-runtime.mjs';
+import { GENERATED_SPEECH_DEFAULTS } from '../packages/presentation/server/generated-speech-provider.mjs';
+import { validateSpeechPackage } from '../packages/presentation/contracts/speech-package.mjs';
 import { createSpeechJournal, FULLFILE_ADMISSION_REMAINING_MS } from '../web/postgres-speech-journal.mjs';
 import { speechMemoryPool } from './fixtures/speech-memory-pool.mjs';
+
+const { generatedSpeechStatus } = gameSpeech;
+const speechRepositoryRoot = speechRootPath(new URL('../', import.meta.url));
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const input = extra => ({ requestId: 'fixture-generated-1', text: 'Hej, dina kort är ess och nio.', dealerId: 'astrid', owner: 'fixture-private-session', ...extra });
@@ -23,7 +30,7 @@ async function fixture(t, generate = async ({ text }) => result(text)) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const config = { directory };
   const provider = { generate };
-  return { directory, config, provider, service: createGeneratedSpeechService(config, { provider }) };
+  return { directory, config, provider, service: createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider }) };
 }
 
 async function sharedFixture(t,{policy=true,configPatch={},providerGenerate}={}){
@@ -45,7 +52,7 @@ async function sharedFixture(t,{policy=true,configPatch={},providerGenerate}={})
     async get({artifactId,kind}){return blobs.get(artifactId)[kind];}
   };
   const config={directory,reserveMicroUsd:250000,dailyBudgetMicroUsd:1000000,...configPatch};
-  return{pool,journal,config,provider,artifacts,directory,service:createGeneratedSpeechService(config,{provider,journal,artifacts,journalRequired:true}),
+  return{pool,journal,config,provider,artifacts,directory,service:createGeneratedSpeechService(config,{ repositoryRoot: speechRepositoryRoot,provider,journal,artifacts,journalRequired:true}),
     counts:()=>({calls,tts,gpu,saves}),getTime:()=>time,setTime:v=>{time=v;}};
 }
 
@@ -60,8 +67,8 @@ test('env gate requires both opt-ins, loopback, private directory and dedicated 
   }
   assert.equal(generatedSpeechStatus({ ...env, CARTESIA_API_KEY: undefined, ELEVENLABS_API_KEY: 'fixture-primary' }).configured, false);
   assert.doesNotMatch(JSON.stringify(generatedSpeechStatus(env)), /secret|endpoint|directory|API/);
-  assert.throws(() => createGeneratedSpeechService({ directory: process.cwd() }), { code: 'generated_speech_invalid_directory' });
-  assert.throws(() => createGeneratedSpeechService({ directory: join(tmpdir(), 'fixture'), voiceId: 'other-dealer' }), { code: 'generated_speech_unknown_profile' });
+  assert.throws(() => createGeneratedSpeechService({ directory: process.cwd() }, { repositoryRoot: speechRepositoryRoot }), { code: 'generated_speech_invalid_directory' });
+  assert.throws(() => createGeneratedSpeechService({ directory: join(tmpdir(), 'fixture'), voiceId: 'other-dealer' }, { repositoryRoot: speechRepositoryRoot }), { code: 'generated_speech_unknown_profile' });
 });
 
 test('production speech needs an explicit cloud opt-in, HTTPS origin and authenticated mode', () => {
@@ -123,7 +130,7 @@ test('deduplication is concurrent, durable, conflict-safe and returns independen
   const [first, duplicate] = await Promise.all([service.generate(input()), service.generate(input())]);
   assert.equal(calls, 1); assert.deepEqual(first, duplicate); assert.notEqual(first, duplicate);
   duplicate.exactText = 'mutated';
-  const restarted = createGeneratedSpeechService(config, { provider });
+  const restarted = createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider });
   assert.deepEqual(await restarted.generate(input()), first);
   assert.equal(calls, 1);
   await assert.rejects(restarted.generate(input({ text: 'Other words.' })), { code: 'generated_speech_request_conflict' });
@@ -137,7 +144,7 @@ test('failed or uncertain paid requests are never automatically retried after a 
   const { service, config, provider, directory } = await fixture(t, async () => { calls++; throw new Error('https://secret-provider/?token=PRIVATE'); });
   await assert.rejects(service.generate(input()), error => error.code === 'generated_speech_failed' && !error.message.includes('PRIVATE'));
   await assert.rejects(service.generate(input()), { code: 'generated_speech_request_already_attempted' });
-  await assert.rejects(createGeneratedSpeechService(config, { provider }).generate(input()), { code: 'generated_speech_request_already_attempted' });
+  await assert.rejects(createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider }).generate(input()), { code: 'generated_speech_request_already_attempted' });
   assert.equal(calls, 1);
   assert.equal((await readdir(directory)).includes('provider.lock'), false);
   for (const name of await readdir(directory)) assert.doesNotMatch(await readFile(join(directory, name), 'utf8'), /PRIVATE|secret-provider/);
@@ -151,7 +158,7 @@ test('single-flight lock works across services and a duplicate changed while pen
   const first = service.generate(input());
   await beginning;
   await assert.rejects(service.generate(input({ text: 'Different text.' })), { code: 'generated_speech_request_conflict' });
-  const other = createGeneratedSpeechService(config, { provider });
+  const other = createGeneratedSpeechService(config, { repositoryRoot: speechRepositoryRoot, provider });
   await assert.rejects(other.generate(input({ requestId: 'second-request' })), { code: 'generated_speech_busy' });
   release(); await first;
   assert.equal((await other.generate(input({ requestId: 'second-request' }))).reviewStatus, 'pending');
@@ -195,7 +202,7 @@ test('shared fullfile reserves before both paid POSTs and completed replay needs
   const trace=f.pool.trace;
   assert.ok(trace.indexOf('insert_file_reservation')<trace.indexOf('update_request'));
   assert.equal(trace.filter(v=>v==='file_reservations').length,3);
-  const replay=createGeneratedSpeechService({...f.config,reserveMicroUsd:undefined,dailyBudgetMicroUsd:undefined},{provider:f.provider,journal:f.journal,artifacts:f.artifacts,journalRequired:true});
+  const replay=createGeneratedSpeechService({...f.config,reserveMicroUsd:undefined,dailyBudgetMicroUsd:undefined},{ repositoryRoot: speechRepositoryRoot,provider:f.provider,journal:f.journal,artifacts:f.artifacts,journalRequired:true});
   assert.deepEqual(await replay.generate(input()),first);assert.equal(f.counts().calls,1);
   const id=first.packageId.slice('generated-'.length),media=await replay.media({id,kind:'audio',owner:input().owner});
   assert.equal(digest(media.bytes),first.audio.sha256);assert.equal(f.pool.state.fileReservations.size,1);
@@ -210,7 +217,7 @@ test('shared fullfile rechecks the paid window after awaited authorization and s
   await assert.rejects(f.service.generate(input()),{code:'generated_speech_fullfile_reservation_expired'});
   assert.deepEqual(f.counts(),{calls:1,tts:1,gpu:0,saves:0});
   assert.equal([...f.pool.state.requests.values()][0].state,'submission_uncertain');assert.equal(f.pool.state.fileReservations.size,1);
-  const restarted=createGeneratedSpeechService(f.config,{provider:f.provider,journal:f.journal,artifacts:f.artifacts,journalRequired:true});
+  const restarted=createGeneratedSpeechService(f.config,{ repositoryRoot: speechRepositoryRoot,provider:f.provider,journal:f.journal,artifacts:f.artifacts,journalRequired:true});
   await assert.rejects(restarted.generate(input()),{code:'generated_speech_request_already_attempted'});assert.equal(f.counts().calls,1);
   const blocked=await sharedFixture(t);let authCalls=0;
   await assert.rejects(blocked.service.generate(input({beforeCostly:async()=>{if(++authCalls===2)blocked.setTime(blocked.getTime()+240001);}})),{code:'generated_speech_fullfile_reservation_expired'});
@@ -227,4 +234,43 @@ test('shared cancelled/lost acknowledgements keep the monetary tombstone and do 
   const lost=await sharedFixture(t);lost.pool.failNext('insert_file_reservation');
   await assert.rejects(lost.service.generate(input()),{code:'generated_speech_journal_unavailable'});
   assert.equal(lost.counts().calls,0);assert.equal(lost.pool.state.requests.size,0);assert.equal(lost.pool.state.fileReservations.size,0);
+});
+
+test('app consumers share the configured speech service and exact provider authority within one module graph', async t => {
+  const f = await fixture(t);
+  const runtime = acquireGeneratedSpeechRuntime({ repositoryRoot: speechRepositoryRoot });
+  assert.equal(studioSpeech.getGeneratedSpeechService, gameSpeech.getGeneratedSpeechService);
+  assert.equal(studioSpeech.generatedSpeechStatus, gameSpeech.generatedSpeechStatus);
+  assert.equal(runtime.getGeneratedSpeechService, gameSpeech.getGeneratedSpeechService);
+  assert.equal(acquireGeneratedSpeechRuntime({ repositoryRoot: speechRepositoryRoot }), runtime);
+  assert.throws(() => acquireGeneratedSpeechRuntime({ repositoryRoot: f.directory }), /repositoryRoot mismatch/);
+  assert.throws(() => createGeneratedSpeechService({ directory: join(speechRepositoryRoot, 'private-fixture') },
+    { repositoryRoot: speechRepositoryRoot }), { code:'generated_speech_invalid_directory' });
+  const env = { CROUPIER_GENERATED_SPEECH:'1', CROUPIER_GENERATED_SPEECH_PREVIEW:'1', HOST:'127.0.0.1',
+    CROUPIER_STUDIO_NEON_POLICY:'0', CROUPIER_GENERATED_SPEECH_DIR:f.directory,
+    CARTESIA_API_KEY:'isolated-fixture', RUNPOD_API_KEY:'isolated-fixture', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'fixture' };
+  const saved = new Map(Object.keys(env).map(key => [key, process.env[key]]));
+  const providerFetch = () => assert.fail('acquisition must never call a provider');
+  try {
+    Object.assign(process.env, env);
+    const first = gameSpeech.getGeneratedSpeechService();
+    assert.ok(first);
+    assert.equal(studioSpeech.getGeneratedSpeechService(), first);
+    runtime.configureGeneratedSpeechJournal(null);
+    assert.equal(runtime.getGeneratedSpeechService(), first);
+    runtime.registerBoundedAiQaFullfileAuthority(providerFetch, value => value === env);
+    assert.equal(runtime.boundedAiQaAllowsFullfile(providerFetch, env), true);
+    assert.equal(runtime.boundedAiQaAllowsFullfile(() => providerFetch(), env), false);
+    assert.throws(() => runtime.registerBoundedAiQaFullfileAuthority(providerFetch, () => true), /authority_invalid/);
+    runtime.configureGeneratedSpeechJournal(null, { providerFetch });
+    const second = studioSpeech.getGeneratedSpeechService();
+    assert.notEqual(second, first);
+    runtime.configureGeneratedSpeechJournal(null, { providerFetch });
+    assert.equal(gameSpeech.getGeneratedSpeechService(), second);
+    process.env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID = 'fixture-changed';
+    assert.notEqual(gameSpeech.getGeneratedSpeechService(), second);
+  } finally {
+    runtime.configureGeneratedSpeechJournal(null);
+    for (const [key, value] of saved) { if(value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
 });

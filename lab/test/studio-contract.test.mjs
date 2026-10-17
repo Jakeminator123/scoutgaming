@@ -9,9 +9,10 @@ import contract from '../../packages/presentation/contracts/policies/studio-cont
 import schema from '../../packages/presentation/contracts/schemas/video.schema.json' with { type: 'json' };
 import seed from '../../packages/presentation/contracts/policies/project.seed.json' with { type: 'json' };
 import { validateVideoMetadata, videoFitsLine, videoFitsEvent } from '../../packages/presentation/contracts/video-intake.mjs';
-import { classifyVideo, readClassifications } from '../lib/video-classifications.mjs';
+import {classifyVideo} from '../lib/video-classifications.mjs';
+import {readClassifications} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
-import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
+import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../../packages/studio-registry/server/video-manifest.mjs';
 import {ROULETTE_MEDIA_EVENTS} from '../../packages/presentation/contracts/roulette-media.mjs';
 import {blackjackMediaSlots,dealerMediaSlots,mediaClassification} from '../lib/dealer-media-library.mjs';
 import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';

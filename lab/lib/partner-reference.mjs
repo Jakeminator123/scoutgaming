@@ -6,7 +6,7 @@ import { createPartnerObserver, partnerEnvironment } from './partner-observer.mj
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
 import { StudioError } from './project-store.mjs';
 import { sanitizeObservation } from './partner-trace.mjs';
-import { publicGamePath } from '../../web/public/game-entry-contract.mjs';
+import {publicGamePath} from '../../packages/navigation/game-entry.mjs';
 
 function generationToken(env) {
   if (Object.hasOwn(env, 'BETTALOTTO_API')) return env.BETTALOTTO_API;

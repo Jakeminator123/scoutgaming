@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {wrapNativePresentationRepository,PRESENTATION_RUNTIME_UPDATE_REQUIRED} from '../lib/presentation-runtime-readiness.mjs';
 import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
-import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
+import {encodePresentationPackage} from '../../packages/presentation/server/presentation-package.mjs';
 import {filmedPresentationFixture} from '../../test/fixtures/filmed-presentation.mjs';
 
 const blocked=error=>error.code===PRESENTATION_RUNTIME_UPDATE_REQUIRED&&error.statusCode===503;

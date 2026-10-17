@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { operatorAuditContext } from '../lib/operator-audit-context.mjs';
 import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 const scope={environment:'audit-fixture',workspaceId:'isolated'}, actor='private@example.invalid';

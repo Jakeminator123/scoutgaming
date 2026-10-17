@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { StudioStorageError, validateActor, validateStudioScope } from './storage/studio-contract.mjs';
+import { StudioStorageError, validateActor, validateStudioScope } from '../packages/studio-registry/server/document-contract.mjs';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const SHA = /^[a-f0-9]{64}$/;

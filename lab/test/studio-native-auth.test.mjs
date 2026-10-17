@@ -6,7 +6,7 @@ import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
 import * as legacyAuth from '../lib/studio-native-auth.mjs';
 import * as sharedAuth from '../../packages/studio-access/studio-native-auth.mjs';
 import * as sharedScope from '../../packages/studio-access/studio-scope.mjs';
-import { StudioStorageError, studioStorageFailure, validateStudioEnvironmentId, validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError, studioStorageFailure, validateStudioEnvironmentId, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
 
 test('legacy imports retain the shared auth, scope and error identities', async () => {

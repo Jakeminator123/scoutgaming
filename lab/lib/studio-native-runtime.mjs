@@ -1,18 +1,20 @@
+import * as savedGameDocumentContract from '../../packages/studio-registry/server/document-contract.mjs';
+
 import {createStudioMediaDeletion} from './studio-media-deletion.mjs';
 import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
-import {STUDIO_MEDIA_TYPE_UNSUPPORTED,STUDIO_MEDIA_TYPE_MESSAGE} from '../../web/storage/studio-media-storage.mjs';
+import {STUDIO_MEDIA_TYPE_UNSUPPORTED,STUDIO_MEDIA_TYPE_MESSAGE} from '../../packages/studio-registry/server/stored-media-types.mjs';
 import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
 import { layerMediaInspectionMessage } from '../../web/public/layer-upload-errors.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
-import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createPostgresStore, validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
-import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { createStudioNativeAuth } from '../../packages/studio-access/studio-native-auth.mjs';
 import { createStudioAdminApi } from './studio-admin-api.mjs';
 import { createStudioAdminData } from './studio-admin-data.mjs';
-import { createStudioGamePolicy, studioGamePolicyConfiguration } from '../../web/storage/studio-game-policy.mjs';
+import { createSavedGamePolicy, studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { createRegisteredDealerIdle } from '../../packages/presentation/server/registered-dealer-idle.mjs';
 import { resolveMediaPath } from '../../tools/media-layout.mjs';
 import { createRuntimeMetadataReader } from '../../tools/runtime-media-catalog.mjs';
@@ -36,6 +38,8 @@ import { createResourceLifecycleApi } from './resource-lifecycle-api.mjs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
+
+const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 const unavailable = () => { throw Object.assign(new Error('studio_native_unavailable'), { statusCode: 503 }); };
 const denied = () => { throw Object.assign(new Error('studio_request_rejected'), { statusCode: 403 }); };

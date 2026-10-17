@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {RETAINED_BANK_PROVENANCE,RETAINED_BANK_VARIANTS,createRetainedStudioMedia,StudioStorageError,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
+import {RETAINED_BANK_PROVENANCE,RETAINED_BANK_VARIANTS,createRetainedStudioMedia,StudioStorageError,canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 
 const fail = () => {throw new StudioStorageError('studio_retained_source_invalid',422);};
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');

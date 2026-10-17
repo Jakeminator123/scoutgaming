@@ -1,6 +1,7 @@
-import { isPresentationRoomLaneCompatible } from './storage/frozen-presentation-capture.mjs';
+import {requestedOperator} from '../packages/navigation/operator-entry.mjs';
+import { isPresentationRoomLaneCompatible } from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import { isActiveDealerId, isRegisteredDealer } from '../packages/presentation/contracts/dealer-identity.mjs';
-import { validateFrozenRegisteredDealers } from './storage/frozen-dealer-idle.mjs';
+import { validateFrozenRegisteredDealers } from '../packages/presentation/server/frozen-dealer-idle.mjs';
 import {materialLabel} from '../packages/presentation/contracts/material-catalog.mjs';
 // Server-owned /blackjack selection with optional operator context. Without
 // ?operator= the lane, dealer and presentation stay on the saved catalogue
@@ -9,21 +10,14 @@ import {materialLabel} from '../packages/presentation/contracts/material-catalog
 // lane only narrow lanes and dealers the catalogue already renders; they
 // never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
 // not read or written here.
-import { gamePresentationForDealer, gameChoicesForLane, gameLaneConfiguration, gameLaneSelection, isOperatorSlug, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
-import {readPackagePresentation, publicPackageBranding} from './storage/presentation-package.mjs';
-import { resolvePackageRoom, roomGame } from './presentation-room-contract.mjs';
-import {resolveRoomBranding} from './storage/partner-branding.mjs';
-
-export const OPERATOR_NOT_FOUND_HTML = '<!doctype html><html lang="sv"><head><meta charset="utf-8">'
-  + '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Bolaget finns inte</title></head>'
-  + '<body><main><h1>Bolaget finns inte</h1><p>Adressen pekar på ett spelbolag som inte finns.</p></main></body></html>';
-
-// undefined: no operator context. null: present, but not exactly one valid slug.
-export function requestedOperator(params) {
-  if (!params.has('operator')) return undefined;
-  const values = params.getAll('operator');
-  return values.length === 1 && isOperatorSlug(values[0]) ? values[0] : null;
-}
+import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
+import {gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, packageLaneIds} from './public/game-lanes.mjs';
+import {laneDealerSelection} from '../packages/presentation/contracts/game-lanes.mjs';
+import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
+import {readPackagePresentation, publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';
+import {resolvePackageRoom} from '../packages/presentation/server/package-rooms.mjs';
+import {roomGame} from '../packages/presentation/contracts/presentation-room.mjs';
+import {resolveRoomBranding} from '../packages/operators/contracts/branding.mjs';
 
 export function createGameEntrySelector({ policy, packages = null, log = console.warn, game = 'blackjack' } = {}) {
   if (!['blackjack','roulette','any'].includes(game)) throw TypeError('Invalid game');

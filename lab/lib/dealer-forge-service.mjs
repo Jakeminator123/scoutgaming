@@ -7,7 +7,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { StudioStorageError, validateActor, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError, validateActor, canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
 import { validateLayerAsset, layerAssetPath } from '../../packages/presentation/contracts/layer-asset-contract.mjs';
 import { SPEECH_LINES } from '../../packages/presentation/contracts/speech-lines.mjs';
 import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';

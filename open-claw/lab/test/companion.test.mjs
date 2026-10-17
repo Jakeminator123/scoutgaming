@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createCompanionStore } from '../src/companion-store.mjs';
-import { createCompanionService, roastFor, companionName } from '../src/companion.mjs';
-import { searchPublicWeb } from '../src/companion-search.mjs';
-import { socialChat } from '../src/social.mjs';
-import { chatWithDirector } from '../src/openclaw.mjs';
+import { createCompanionStore } from '../../../packages/director/node/companion-store.mjs';
+import { createCompanionService, roastFor, companionName } from '../../../packages/director/companion.mjs';
+import { searchPublicWeb } from '../../../packages/director/companion-search.mjs';
+import { socialChat } from '../../../packages/director/social.mjs';
+import { chatWithDirector } from '../../../packages/director/openclaw.mjs';
 import { createLabServer } from '../src/server.mjs';
 
 const identity = 'a'.repeat(64), other = 'b'.repeat(64);
