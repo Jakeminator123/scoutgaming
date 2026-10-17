@@ -527,9 +527,12 @@ fram generellt. PR216:s tre agent-talk-filer installerades där selektivt;
 40 gamla pingar och andras claims bevarades, fem fokuserade tester passerade.
 Mergagenten äger merge/drift; HUVUDAGENT2 äger övrig reporensning.
 
-Bevara Astrid, nycklar och originalens ID/hash/bytes. Emils kalibrerade
-dynamiska ansiktskomposition är uttryckligen godkänd av Jakob för denna
-integration; det är inte tillstånd att använda godtyckliga munbilder.
+Bevara Astrid, nycklar och originalens ID/hash/bytes. Jakob tillät Emils
+motsvarande metod under villkor att den faktiskt är vad ZIP-exporten bygger
+på. Tillåtelsen omfattar därför endast källverifierad, bildrutebunden dynamisk
+ansiktskomposition från denna export i den här integrationen. Bevara
+proveniensen; detta är varken en generell ändring av regeln om påklistrade
+munöverlägg eller en visuell kvalitetsacceptans.
 Dragan använder egen bank från sina exakta källor, inte Paows greenscreenbank.
 Talet kommer från OpenClaws nya text; förinspelade repliker behåller eget ljud.
 Tal under utdelning till box3 är uttryckligen uppskjutet. Full import/namnstädning,
