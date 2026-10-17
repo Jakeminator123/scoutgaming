@@ -1,15 +1,17 @@
 export const adminContextKeys=Object.freeze(['operator','table','dealer','composition','lane','game']);
 
+const canonicalAccountHref=href=>href.replace(/^\/(?:studio\/)?admin\/admin\/players(?=[?#]|$)/,'/admin/admin/accounts');
+
 // Compatibility for imported design links only. Admin components and route
 // selection use their real /admin pathnames, never a virtual Control pathname.
 export function adminHref(href){
   if(/^\/control\/(?:login|set-password)(?:[?#]|$)/.test(href))return href;
   const mapped=adminDocumentHref(href);
-  return mapped===href?href.replace(/^\/control(?=[/?#]|$)/,'/admin'):mapped;
+  return canonicalAccountHref(mapped===href?href.replace(/^\/control(?=[/?#]|$)/,'/admin'):mapped);
 }
 
 export function adminPathname(pathname){
-  return pathname.replace(/^\/studio(?=\/admin(?:\/|$))/,'');
+  return canonicalAccountHref(pathname.replace(/^\/studio(?=\/admin(?:\/|$))/,''));
 }
 
 export function isInternalAdminPathname(pathname){

@@ -5,6 +5,7 @@ import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {ADMIN_WORKSPACE_TOOLS} from '../../../../lab/lib/admin-workspace-routes.mjs';
 import * as adminRouting from '../../runtime/admin-routing.mjs';
+import {isActiveOperator} from './studio-resource-lifecycle.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
 const node=(tree,predicate)=>{
@@ -15,14 +16,14 @@ const node=(tree,predicate)=>{
 const marker=name=>Object.defineProperty(()=>null,'name',{value:name});
 const components=Object.fromEntries(['ControlLanesPage','ControlActivityPage','ControlPreviewPage','ControlEventsPage','ControlTreePage','ControlProbePage','ControlRepliesPage','ControlVideosPage','ControlGuidePage','ControlOpenClawChat','LabStudio','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
 
-function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'dragan',label:'Dragan'}]},videos:{videos:[]},status:{configured:true,provider:'neon'}}){
+function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'dragan',label:'Dragan'}]},videos:{videos:[]},status:{configured:true,provider:'neon'}},responseStatus=200){
   const slots=[],effects=[],requests=[];let cursor=0,queue=[];
   const hooks={...React,useState(initial){const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return [slots[index],next=>{slots[index]=typeof next==='function'?next(slots[index]):next}];},
     useEffect(effect,deps){const index=cursor++;if(!effects[index]||deps.some((value,i)=>!Object.is(value,effects[index][i])))queue.push({index,effect,deps});}};
   const source=readFileSync(new URL(file,import.meta.url),'utf8'),module={exports:{}};
-  runInNewContext(transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,URL,URLSearchParams,AbortController,
-    location:{search},fetch:async(path,init)=>{requests.push({path,init});return {ok:true,json:async()=>data};},
-    require:name=>name==='react'?hooks:name.includes('admin-workspace-routes')?{ADMIN_WORKSPACE_TOOLS}:name.includes('admin-routing')?{withAdminContext:href=>href}:name.includes('studio-navigation')?{studioNavigationContextFromQuery:()=>({})}:name.includes('lab-url')?{labUrl:path=>path}:name==='react/jsx-runtime'?require(name):components});
+  runInNewContext(transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,URL,URLSearchParams,AbortController,Error,
+    location:{search},fetch:async(path,init)=>{requests.push({path,init});const value=typeof data==='function'?await data(path,init):data;return {ok:responseStatus>=200&&responseStatus<300,status:responseStatus,json:async()=>value};},
+    require:name=>name==='react'?hooks:name.includes('studio-resource-lifecycle')?{isActiveOperator}:name.includes('admin-workspace-routes')?{ADMIN_WORKSPACE_TOOLS}:name.includes('admin-routing')?{withAdminContext:href=>href}:name.includes('studio-navigation')?{studioNavigationContextFromQuery:()=>({})}:name.includes('lab-url')?{labUrl:path=>path}:name==='react/jsx-runtime'?require(name):components});
   return {exports:module.exports,requests,render(fn,props){cursor=0;return fn(props);},async settle(){const pending=queue;queue=[];for(const item of pending){effects[item.index]=item.deps;item.effect();}await new Promise(setImmediate);}};
 }
 
@@ -174,4 +175,63 @@ for(const query of ['room=missing','room=room-evening&room=room-evening'])test('
   const h=publicationWorkspaceHarness(search);await h.settle();h.lifecycle().props.onChanged(h.snapshot);await h.settle();
   assert.equal(h.window.location.search,search);assert.equal(new URLSearchParams(h.window.location.search).has('table'),false);
   assert.equal(h.history.state.__scoutAdminHistory,undefined);
+});
+
+const journalTree=h=>{const entry=h.exports.ConnectedServices({path:'/admin/admin/log'});return h.render(entry.type,entry.props);};
+const journalMarkup=h=>require('react-dom/server').renderToStaticMarkup(journalTree(h));
+
+test('company journal reads only its catalogue, uses exact slugs and excludes archived or suspended companies',async()=>{
+  const operator={id:'internal-id',name:'Visningsnamn med mellanslag',slug:'actual-company',status:'active',archivedAt:null};
+  const data={source:'registered',administration:{operators:[operator,
+    {...operator,id:'archived',name:'Arkiverat bolag',slug:'archived-company',archivedAt:'2026-10-17'},
+    {...operator,id:'suspended',name:'Avstängt bolag',slug:'suspended-company',status:'suspended'},
+    {...operator,id:'missing-slug',name:'Bolag utan adress',slug:''},
+    {...operator,id:'invalid-slug',name:'Felaktig adress',slug:'../other'},
+  ]}};
+  const h=harness('../components/studio/connected-services.tsx','',path=>{assert.equal(path,'/admin/_data/catalog','journal must not read project or videos');return data;});
+  assert.match(journalMarkup(h),/Läser registrerade bolag/);await h.settle();
+  const view=journalTree(h),links=descendants(view).filter(row=>row.type==='a');
+  assert.deepEqual(links.map(row=>row.props.href),['/partner/actual-company/team?scope=company']);
+  const markup=journalMarkup(h);
+  assert.match(markup,/Bolagsjournal/);assert.match(markup,/Visningsnamn med mellanslag/);assert.match(markup,/Visa journal/);
+  assert.match(markup,/Gemensam historik för hela Admin finns ännu inte/);
+  assert.match(markup,/Bolag utan adress/);assert.match(markup,/adress saknas eller är ogiltig/);
+  assert.doesNotMatch(markup,/Arkiverat bolag|Avstängt bolag/);assert.equal(h.requests.length,1);assert.equal(h.requests[0].path,'/admin/_data/catalog');
+  assert.equal(h.requests[0].init.method,'GET');assert.equal(h.requests[0].init.credentials,'same-origin');assert.equal(h.requests[0].init.cache,'no-store');assert.equal(h.requests[0].init.redirect,'error');assert.ok(h.requests[0].init.signal);
+});
+
+test('company journal has an honest empty state without fabricated company links',async()=>{
+  const h=harness('../components/studio/connected-services.tsx','',{source:'registered',administration:{operators:[]}});
+  journalTree(h);await h.settle();assert.match(journalMarkup(h),/Inga aktiva registrerade bolag/);
+  assert.equal(descendants(journalTree(h)).filter(row=>row.type==='a').length,0);
+});
+
+test('company journal rejects unavailable or unregistered catalogues and can retry',async()=>{
+  for(const failure of ['unavailable','unregistered']){
+    let retry=false;
+    const h=harness('../components/studio/connected-services.tsx','',()=>{
+      if(!retry&&failure==='unavailable')throw Error('Katalogen kunde inte läsas');
+      return {source:retry?'registered':'fixture',administration:{operators:[]}};
+    });
+    journalTree(h);await h.settle();
+    const alert=node(journalTree(h),row=>row.props?.role==='alert');assert.ok(alert,failure);
+    assert.doesNotMatch(journalMarkup(h),/Inga aktiva registrerade bolag/);assert.equal(descendants(journalTree(h)).filter(row=>row.type==='a').length,0);
+    retry=true;node(alert,row=>row.type==='button').props.onClick();journalTree(h);await h.settle();
+    assert.match(journalMarkup(h),/Inga aktiva registrerade bolag/);assert.equal(node(journalTree(h),row=>row.props?.role==='alert'),null);
+  }
+});
+
+for(const status of [401,403,503])test('company journal presents catalogue HTTP '+status+' without an empty or stale directory',async()=>{
+  const h=harness('../components/studio/connected-services.tsx','',{source:'registered',administration:{operators:[]}},status);
+  journalTree(h);await h.settle();assert.ok(node(journalTree(h),row=>row.props?.role==='alert'));
+  assert.match(journalMarkup(h),status===503?/Bolagsregistret kunde inte läsas/:/N1-behörigheten saknas eller har gått ut/);
+  assert.doesNotMatch(journalMarkup(h),/Inga aktiva registrerade bolag/);assert.deepEqual(h.requests.map(row=>row.path),['/admin/_data/catalog']);
+});
+
+test('company journal rejects incomplete operator projections instead of fabricating an empty list',async()=>{
+  for(const operators of [null,[null],[{id:'company',name:'Bolag',slug:'company',status:'active'}]]){
+    const h=harness('../components/studio/connected-services.tsx','',{source:'registered',administration:{operators}});
+    journalTree(h);await h.settle();assert.match(journalMarkup(h),/Bolagsregistret kunde inte verifieras/);
+    assert.equal(descendants(journalTree(h)).filter(row=>row.type==='a').length,0);
+  }
 });

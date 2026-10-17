@@ -1,5 +1,6 @@
 // Isolated visual harness for the already-built /admin UI. No Next/game server,
 // provider credentials, remote media or production state. Run from the checkout:
+// Build with CROUPIER_LAB_BASE_PATH=/studio, then run:
 // node tools/admin-clips-fixture.mjs --ffmpeg <installed-ffmpeg.exe>
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -96,7 +97,8 @@ try {
   const csp="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
   const headers={'cache-control':'private, no-store','content-security-policy':csp,'x-content-type-options':'nosniff'};
   const json=(value,status=200)=>Response.json(value,{status,headers});
-  const catalog=()=>({source:'registered',operators:[],dealers:project.dealers.map(row=>({id:row.id,name:row.label})),administration:{operators:[],rooms:[],compositions:[],dealers:project.dealers.map(row=>({id:row.id,name:row.label,archived:false})),revisions:{project:project.revision}}});
+  const fixtureOperators=[{id:'fixture-company',slug:'provbolaget',name:'Provbolaget',status:'active',archivedAt:null,packageRevision:null},{id:'fixture-archive',slug:'arkivbolaget',name:'Arkiverat provbolag',status:'archived',archivedAt:'2026-10-01T00:00:00Z',packageRevision:null}];
+  const catalog=()=>({source:'registered',operators:[],dealers:project.dealers.map(row=>({id:row.id,name:row.label})),administration:{operators:fixtureOperators,rooms:[],compositions:[],dealers:project.dealers.map(row=>({id:row.id,name:row.label,archived:false})),revisions:{project:project.revision,administration:'fixture-admin-1'}}});
   function bump(value){project=validateProject({...structuredClone(value),revision:'fixture.ui.'+(++revision)});return project;}
   async function handle(request){
     const url=new URL(request.url);
@@ -111,6 +113,25 @@ try {
     if(url.pathname==='/__fixture/reset'&&request.method==='POST'){bump(seed);saves=0;conflicts=0;return json({revision:project.revision});}
     if(url.pathname==='/__fixture/stop'&&request.method==='POST'){setTimeout(()=>void stop().then(()=>process.exit(0)),100);return json({stopping:true});}
     if(url.pathname==='/__fixture')return new Response(`<!doctype html><meta charset="utf-8"><title>Isolerad Admin-fixtur</title><style>body{font:18px system-ui;padding:36px;background:#13222c;color:white}button,a{padding:12px;margin:8px;color:inherit}button{background:#334855}</style><h1>Isolerad Admin-fixtur</h1><p>Minne, syntetisk N1-identitet och tre lokala tekniska provklipp. Inga rum, molntjänster eller produktdata.</p><p><a href="/admin/clips?dealer=${dealerId}">Öppna klippkartan</a><a href="/admin/assets">Materialbibliotek</a><a href="/__fixture/state">Sparat projekt / revisionskvitto</a></p><form method="post" action="/__fixture/conflict"><button>Skapa konkurrerande sparning</button></form><form method="post" action="/__fixture/reset"><button>Återställ endast fixturen</button></form><form method="post" action="/__fixture/stop"><button>Stoppa fixturen</button></form>`,{headers:{...headers,'content-type':'text/html; charset=utf-8'}});
+    // Read-only synthetic System data. Mutation capabilities and external services stay absent.
+    const systemData={
+      'resource-lifecycle':{administrationRevision:'fixture-admin-1',operators:fixtureOperators,rooms:[],presentations:[],historyCoverage:'complete'},
+      transactions:{tx:[{at:'2026-10-17T09:30:00.000Z',player_id:'fixture-player-one',type:'start',amount:-5,currency:'USD'},
+        {at:'2026-10-17T09:31:00.000Z',player_id:'fixture-player-one',type:'collect',amount:10,currency:'USD'},
+        {at:'2026-10-17T09:32:00.000Z',player_id:'fixture-player-two',type:'future-event',amount:0,currency:'SEK'}]},
+      players:{players:[{id:'fixture-player-one',name:'Provspelare',status:'active',balance:100,currency:'USD'}]},
+      users:{users:[]},apikeys:{keys:[]},emails:{},overview:{players:1,rooms:0},shoes:{shoes:[]},
+    };
+    if(url.pathname==='/studio/api/auth/session'&&request.method==='GET')return json({username:account.username,role:'admin',availableActions:Object.keys(systemData).map(key=>'GET '+key)});
+    if(url.pathname.startsWith('/studio/api/admin/')&&request.method==='GET'){
+      const key=url.pathname.slice('/studio/api/admin/'.length);
+      if(Object.hasOwn(systemData,key))return Response.json(systemData[key],{headers:{...headers,'X-Croupier-Studio-Actor':encodeURIComponent(account.username),'X-Croupier-Studio-Role':'admin'}});
+    }
+    if(url.pathname==='/studio/api/openclaw/admin'){
+      if(request.method!=='GET')return json({error:'fixture_read_only'},405);
+      return json({version:1,baseHash:'fixture-models-1',gateway:{connected:true,version:'fixture',applied:null},
+        agents:['croupier-director','croupier-speech'].map(id=>({id,model:{primary:'fixture/local',fallbacks:[]}})),models:[{id:'fixture/local',provider:'fixture'},{id:'fixture/alternative',provider:'fixture'}]});
+    }
     if(url.pathname==='/admin/_data/catalog')return json(catalog());
     if(url.pathname==='/studio/api/project'){
       if(request.method==='GET')return json({project,status:{configured:true,provider:'fixture'}});
@@ -146,6 +167,10 @@ try {
   assert.equal((await client.load()).project.revision,saved.revision);
   await fixtureRequest('/__fixture/conflict',{method:'POST'});
   await assert.rejects(client.save(saved),error=>error.statusCode===409);
+  const ledger=await fixtureRequest('/studio/api/admin/transactions');
+  assert.equal(ledger.headers.get('X-Croupier-Studio-Role'),'admin');
+  assert.equal((await ledger.json()).tx.length,3);
+  assert.equal((await fixtureRequest('/studio/api/openclaw/admin',{method:'PATCH',body:'{}'})).status,405);
   await assert.rejects(fetch('https://outside.invalid'),error=>error.code==='QA_NETWORK_BLOCKED');
   assert.throws(()=>fs.readFileSync(join(root,'.env')),error=>error.code==='ENOENT');
   const currentClock=authNow;
@@ -165,5 +190,5 @@ try {
     }catch(error){const status=error.statusCode??400;res.writeHead(status,{...headers,'content-type':'application/json'});res.end(JSON.stringify({error:status===401?'studio_login_required':'fixture_request_rejected'}));}
   });
   await new Promise((resolveReady,reject)=>{server.once('error',reject);server.listen(port,host,resolveReady);});
-  console.log(JSON.stringify({ready:true,pid:process.pid,url:origin+'/__fixture/start',controls:origin+'/__fixture',selfChecks:['native-auth-denied','session-renewed-after-expiry','foreign-origin-denied','save-reload','revision-conflict','outbound-network-blocked','env-files-blocked'],dealerId,rooms:0,clips:inventory.videos.map(row=>({id:row.id,label:row.label,sha256:row.sha256})),bindingVariants:project.lines.find(row=>row.eventId==='deal.player.left').variants.filter(row=>row.videoGenerationId).map(row=>({id:row.id,videoId:row.videoGenerationId}))}));
+  console.log(JSON.stringify({ready:true,pid:process.pid,url:origin+'/__fixture/start',controls:origin+'/__fixture',selfChecks:['native-auth-denied','session-renewed-after-expiry','foreign-origin-denied','save-reload','revision-conflict','system-read-identity','model-writes-denied','outbound-network-blocked','env-files-blocked'],dealerId,rooms:0,clips:inventory.videos.map(row=>({id:row.id,label:row.label,sha256:row.sha256})),bindingVariants:project.lines.find(row=>row.eventId==='deal.player.left').variants.filter(row=>row.videoGenerationId).map(row=>({id:row.id,videoId:row.videoGenerationId}))}));
 }catch(error){await stop();throw error;}
