@@ -126,6 +126,15 @@ arkivfel och avbrutna filbyten. Originalrepots befintliga kö töms inte av
 kodleveransen; rotation sker först när det uppdaterade verktyget tar emot
 en ny ping i just den checkouten.
 
+Testuppföljning: gränsdata för historik och kö skapas direkt i den isolerade
+fixturen; riktiga CLI-anrop provar 39 → 40 och överskriden kapacitet.
+Uppmätt antal CLI-processstarter i sviten minskar från 175 till 93.
+Alla fem prov passerar med samma samtidighets-, arkivfel- och avbrottsprov.
+Ett isolerat mutationsprov bekräftar att borttagen historikgräns upptäcks.
+En hookkörning gav Windows-EPERM vid öppning av `write.lock` i det oförändrade
+samtidighetsprovet. Felet återkom inte i tre riktade prov vardera på main och
+ändringen; det är dokumenterat, inte åtgärdat genom denna testförenkling.
+
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
 `05cbc22de9c6637cb9ea642c6f697a093dae42af` (PR214), med fulla CI- och driftkvitton från mergeagenten. Senare delar inväntar sina separata kvitton.
