@@ -85,7 +85,7 @@ const { createStudioMediaRuntime } = neonStudioEnabled ? await import('../lab/li
 const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
 const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
-  ? (await import('./speech-reply-library.mjs')).createSpeechReplyLibrary({env:process.env,...studioPolicyRuntime.scope,
+  ? (await import('./speech-reply-library.mjs')).createSpeechReplyLibrary({mediaStore:await import('./blob-media.mjs'),env:process.env,...studioPolicyRuntime.scope,
     repository:(await import('./storage/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
 const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
   readProject: () => studioPolicyRuntime.policy.projectStore().load(),

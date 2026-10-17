@@ -29,6 +29,10 @@ test('categories use exact SQL CAS; concurrent edits, revocation and immutable c
 test('missing Neon never falls back to Blob metadata; invalid categories and identities reach no storage',async t=>{
   const f=await fixture(t);assert.throws(()=>createSpeechReplyLibrary({env}),{statusCode:400});
   assert.throws(()=>createSpeechReplyLibrary({...f.options,repository:undefined}),{code:'reply_library_repository_required'});
+  assert.throws(()=>createSpeechReplyLibrary({...f.options,mediaStore:undefined}),{code:'reply_library_unavailable'});
+  for(const name of ['putPrivateMedia','getPrivateMedia','deletePrivateMedia']) {
+    assert.throws(()=>createSpeechReplyLibrary({...f.options,mediaStore:{...f.options.mediaStore,[name]:null}}),{code:'reply_library_unavailable'});
+  }
   await assert.rejects(f.library.list({dealerId:'../astrid'}),{statusCode:400});await assert.rejects(f.library.list({dealerId:'astrid',category:'speech'}),{statusCode:400});
   await assert.rejects(f.library.categorize({dealerId:'astrid',id:randomUUID(),categories:['player-kind','player-kind'],expectedRevision:1}),{statusCode:400});assert.equal(f.objects.size,0);assert.equal(f.sql.calls.length,0);
 });

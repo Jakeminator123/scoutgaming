@@ -6,6 +6,7 @@ import {randomUUID} from 'node:crypto';
 import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
 import {createSpeechReplyLibrary} from '../../web/speech-reply-library.mjs';
+import * as mediaStore from '../../web/blob-media.mjs';
 export const scope={environment:'qa',workspaceId:'jakob'};
 export const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-token'};
 export const input=(dealerId='astrid')=>({id:randomUUID(),dealerId,exactText:'Hej! Tack för frågan.',language:'sv',profileRevision:'a'.repeat(64),audio:{bytes:Buffer.from('WAV exact bytes'),contentType:'audio/wav'},video:{bytes:Buffer.from('MP4 exact bytes'),contentType:'video/mp4'}});
@@ -43,6 +44,6 @@ export async function fixture(t){
     async del(pathname){objects.delete(pathname);},
   };
   const sql=memorySql(),repository=createSpeechReplyRepository({sql,scope});
-  const options={repository,env,...scope,blobClient,cacheDir};
+  const options={repository,mediaStore,env,...scope,blobClient,cacheDir};
   return {objects,options,blobClient,sql,repository,library:createSpeechReplyLibrary(options),scope,cacheDir};
 }

@@ -1,5 +1,23 @@
 # Aktuell handoff — Scoutgaming
 
+## Studio väljer sin egen Blob-adapter — 17 oktober 2026
+
+PR224:s Vercel-bygge på main30ae1f35 misslyckades: Studios svarsbibliotek
+importerade spelappens Blob-adapter, vars SDK bara fanns i web/node_modules.
+Reply-factoryn tar nu en obligatorisk mediaStore och importerar enbart det
+rena mediaavtalet. Studio binder cloud-media-store, spelservern blob-media.
+Saknad/ofullständig port stängs med befintligt reply_library_unavailable;
+metadata, CAS, scoped rättigheter och privata mediebytes ändras inte.
+
+Reproducerat i ny arbetskopia med endast låsta Lab-beroenden: bundlern hittade
+inte @vercel/blob i web/blob-media.mjs. Samma reply-bundle passerar efter fixen
+utan speladaptern. Befintliga biblioteks-/API-prov passerar17/17, utan skips
+eller provideranrop; egna mockklienter behålls. Helt Studio-produktionsbygge passerar
+med aktiverad /studio/native-admin: kompilering, TypeScript, 28 statiska sidor
+och 80 rena deploymenttraces. web/node_modules och root/node_modules saknades
+under hela bygget; inga privata miljöfiler fanns. Ordinarie commit-hook används. Ingen ny testfil,
+paketversion, miljöändring eller databas-/medieåtgärd.
+
 ## Publika moduler oberoende av deployordning — 17 oktober 2026
 
 Frontendens middleware låter GET/HEAD till exakta kanoniskt validerade adresser i
