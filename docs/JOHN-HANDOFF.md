@@ -36,6 +36,11 @@ Första PR-CI stoppades vid orphan-grinden eftersom det nya budgettestet saknade
 i fullkörlistan; senare beroendefel var följdfel och SQL kördes inte. Testet är
 nu registrerat i befintlig fullsvit; orphan-kontroll 513 kandidater/0 orphan och
 sex budget-/katalogprov passerar. Ny full CI krävs fortfarande.
+Andra CI-körningen hittade fyra äldre migrationsfixtures: tre använde nu
+registrerade 014 som okänd version och en förväntade en tom optional-lista.
+De använder nu okända 999 respektive optional 014; samtliga negativa kontroller
+om saknade versioner, ogiltiga bevis och noll databasanrop består. Riktad
+omkörning ger 56/56. Ingen budget- eller schemaimplementation ändras av fixen.
 Det utökade SQL-provet kontrollerar oförändrad historik, parallella ändringar,
 färskhets-/scopefel och att exakt ett nytt försök ryms. Dessa SQL-resultat är
 ännu inte verifierade här. Inget nytt betalt jobb eller visuellt/hörbart prov.

@@ -276,7 +276,7 @@ test('generic portrait syntax cannot authorize a dealer absent from the saved St
   const storage={pool:{},db:{assertInstalled:async()=>{}}};
   const {loadStudioMigrations}=await import('../ops/neon-studio/migrations.mjs');
   const required=(await loadStudioMigrations()).filter(row=>!row.deploymentOptional).map(row=>row.version);
-  for(const versions of [required.filter(version=>version!=='011'),required.filter(version=>version!=='012'),required.filter(version=>version!=='013'),required.concat('014')]){
+  for(const versions of [required.filter(version=>version!=='011'),required.filter(version=>version!=='012'),required.filter(version=>version!=='013'),required.concat('999')]){
     await assert.rejects(createRenderStudioPolicy({storage,env,schemaCheck:async()=>({schemaPresent:true,toApply:[],applied:versions.map(version=>({version,checksum:'a'.repeat(64),structureChecksum:'b'.repeat(64)}))})}),error=>error.message==='studio_game_schema_unavailable');
   }
 });
