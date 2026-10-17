@@ -33,6 +33,7 @@ tts-request.json, tts-receipt.json och preview-receipt.json.
 Resultat: dragan-box3-jakob-ar-kung.mp4
 Video-SHA-256: 56ab4888c9677ba17fcd1495c04a5a170483f2e92f7a126ffbc4163641cc2c89
 Originalets Neon-ID: d207c889-cede-41be-98a9-4355ffc1f1c2 (Kevin pos4-iv).
+Observera numreringen: intern box3 = Plats 4 i Admin, inte tredje spelplatsen.
 Original-SHA-256: 4767e1363b12550b72662c59989eb6c415088208c2bd40e73374eb8c97d18683
 Bankens 66 bildrutor matchar originalets avkodade YUV-byte före läppsynk.
 Talplan: originalets ruta 8–57; ljudstart 553 ms efter filmstart.
