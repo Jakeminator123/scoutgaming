@@ -100,6 +100,9 @@ Privat video: `dragan-jakob-ar-bast/dragan-box3-jakob-ar-kung.mp4` i samma
 visualizations-katalog, med kvitto `preview-receipt.json`; video-SHA-256
 `56ab4888c9677ba17fcd1495c04a5a170483f2e92f7a126ffbc4163641cc2c89`.
 Original, röstprofil, produktionsregister och Astrids tjänst ändrades inte.
+Jakobs lokala checkpoint beskrivs i `docs/AI/lipsync-lokalt-2026-10-17.txt`
+och märks på GitHub med `lipsync-local-dragan-2026-10-17`. Taggen avser
+det verifierade offlineprovet, inte aktiverat direkttal i spelet.
 
 Jakob påpekade att äldre Blob-filmer och Neon-/UX-registreringar kan vara fel
 eller inaktuella. Den verifierade banken är därför en **teknisk testbaseline**:
