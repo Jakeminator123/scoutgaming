@@ -1,5 +1,13 @@
 # Aktuell handoff — Scoutgaming
 
+## PR227: rättade verifieringskällor
+
+Slutlig CI hittade två kvarvarande gamla källreferenser efter Directorflytten.
+Det befintliga isolerade P6-routerprovet importerar nu product-speech från
+packages/director. Astrids HEAD-baselinearkiv inkluderar samma paket, så
+arkivet täcker den verkliga selektionsgrafen. Inga assertions, snapshots,
+produktmoduler eller providerinställningar ändras. De två befintliga provfilerna
+passerar 11/11 utan skips; ordinarie commit-hook och ny PR-CI följer.
 ## Studio väljer sin egen Blob-adapter — 17 oktober 2026
 
 PR224:s Vercel-bygge på main30ae1f35 misslyckades: Studios svarsbibliotek
