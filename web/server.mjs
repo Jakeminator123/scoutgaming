@@ -1351,15 +1351,16 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
 }
 if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   if (!studioPolicyRuntime || !speechJournal || !dealerSpeechRuntime) throw Error('moving_speech_registry_required');
-  const [{loadMovingBankArtifacts},{createMovingSpeechRunPod},{createMovingSpeechSession},{createMovingSpeechRuntime},{getPrivateMedia,withVerifiedPrivateMediaFile}] = await Promise.all([
+  const [{loadMovingBankArtifacts,movingBankStorageOptions},{createMovingSpeechRunPod},{createMovingSpeechSession},{createMovingSpeechRuntime},{getPrivateMedia,withVerifiedPrivateMediaFile},{createRequire}] = await Promise.all([
     import('./moving-speech-bank-artifacts.mjs'),import('./moving-speech-runpod.mjs'),import('./moving-speech-session.mjs'),
-    import('./moving-speech-runtime.mjs'),import('../lab/lib/cloud-media-store.mjs')]);
-  const bank=await loadMovingBankArtifacts(JSON.parse(process.env.CROUPIER_MOVING_SPEECH_BANK_RECORD ?? 'null'));
+    import('./moving-speech-runtime.mjs'),import('../lab/lib/cloud-media-store.mjs'),import('node:module')]);
+  const bankOptions=movingBankStorageOptions(createRequire(new URL('../lab/package.json',import.meta.url))('@vercel/blob'));
+  const bank=await loadMovingBankArtifacts(JSON.parse(process.env.CROUPIER_MOVING_SPEECH_BANK_RECORD ?? 'null'),bankOptions);
   if (bank.sourceSet.dealerId !== 'dragan') throw Error('moving_speech_test_dealer_required');
   // Fetch and hash the immutable derived bank before accepting a paid job.
   // Worker transfer then reads the existing verified cache, bypassing Vercel.
-  await withVerifiedPrivateMediaFile(bank.archive,async()=>true);
-  await withVerifiedPrivateMediaFile(bank.receipt,async()=>true);
+  await withVerifiedPrivateMediaFile(bank.archive,async()=>true,bankOptions);
+  await withVerifiedPrivateMediaFile(bank.receipt,async()=>true,bankOptions);
   const provider=createMovingSpeechRunPod({endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,
     apiKey:process.env.CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY,expectedImage:process.env.CROUPIER_MOVING_SPEECH_IMAGE});
   const sessions=createMovingSpeechSession({journal:speechJournal,scope:studioPolicyRuntime.scope,
@@ -1372,7 +1373,7 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   const repository=studioPolicyRuntime.repository;
   const {assertMovingSpeechSource}=await import('./moving-speech-bank.mjs');
   movingSpeechService=createMovingSpeechRuntime({server,origin:process.env.PUBLIC_URL,workerOrigin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,
-    ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bank,
+    ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bank,bankOptions,
     releaseSha256:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,sessions,dealerRuntime:dealerSpeechRuntime,
     resolveOwner:chatSessionOwner,readRegistry:studioMediaRuntime.videoRegistry,
     readEvidence:async (context,mediaId)=>{

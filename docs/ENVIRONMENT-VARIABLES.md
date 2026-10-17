@@ -20,6 +20,9 @@ måste exakt motsvara `RENDER_EXTERNAL_URL`. Bara Web får dessa värden.
 Lab får inga nya GPU-nycklar. Flagga av lämnar tidigare miljö oförändrad.
 Banköverföring/callback går direkt till Render; webbläsarens auth och tal går
 via den ordinarie sajten. Ändra inte Astrids befintliga variabler vid aktivering.
+Bankens avgränsade Blob-klient begär `Accept-Encoding: identity`; detta bevarar
+exakt byteantal och undviker långsam komprimerad kallhämtning. Originalens
+lagringsklient och Astrids inställningar ändras inte.
 
 Testets stabila budget-ID är `dragan-test-20261017`: högst 4,80 USD i nya
 reservationer, 1,20 USD per försök inklusive start/röst/avvecklingsmarginal.

@@ -22,7 +22,7 @@
       "endpointWorkersMin": 0,
       "endpointWorkersMax": 1,
       "executionTimeoutSeconds": 180,
-      "idleTimeoutSeconds": 60,
+      "idleTimeoutSeconds": 5,
       "deploymentApplied": false
     },
     "bankDownload": {

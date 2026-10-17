@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { setImmediate as turn } from 'node:timers/promises';
+import { setImmediate as turn, setTimeout as delay } from 'node:timers/promises';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -36,7 +36,15 @@ function messages(speech = descriptor(), samples = 30000) {
   return { ready, pcm, plan, chunk: (from = 0, n = 12) => ({ t: 'lapp', id: plan.start.id, del: from / 12, fran: from,
     rutor: Array.from({ length: n }, () => ({ tagning: 'vila', ruta: 0, rect: [10, 20, 40, 60] })) }) };
 }
-async function until(check) { for (let i = 0; i < 100; i++) { if (check()) return; await turn(); } assert.fail('fixture did not settle'); }
+// WebCrypto completes on another thread: a fixed number of immediate turns can
+// expire before its result reaches the event loop, especially on Linux CI.
+async function until(check, state) {
+  const deadline = performance.now() + 1000;
+  while (!check()) {
+    assert.ok(performance.now() < deadline, `fixture did not reach ${state} within 1000 ms`);
+    await delay(5);
+  }
+}
 function fixture({ samples = 30000, overrides = {}, dependencies = {} } = {}) {
   const speech = descriptor(), m = messages(speech, samples), sent = [], receipts = [], observations = [], decoded = [], rafs = new Map();
   let socket, activeLayer, n = 0, current = true, ended = false, result;
@@ -64,8 +72,8 @@ function fixture({ samples = 30000, overrides = {}, dependencies = {} } = {}) {
   const send = data => socket.onmessage({ data: data instanceof Uint8Array ? data.slice().buffer : JSON.stringify(data) });
   return { speech, m, audio, sent, receipts, observations, decoded, promise, get socket() { return socket; }, get layer() { return activeLayer; },
     get ended() { return ended; }, get result() { return result; }, send, stale() { current = false; },
-    async ready() { await until(() => socket); send(m.ready); await until(() => activeLayer); },
-    async pcm() { send({ t: 'pcm', id, byteLength: m.pcm.byteLength }); send(m.pcm); await until(() => sent.length); },
+    async ready() { await until(() => socket, 'socket connection'); send(m.ready); await until(() => activeLayer, 'verified rest layer'); },
+    async pcm() { send({ t: 'pcm', id, byteLength: m.pcm.byteLength }); send(m.pcm); await until(() => sent.length, 'PCM credit'); },
     async chunk(from = 0, n = 12, mutate) { const meta = m.chunk(from, n); mutate?.(meta); send(meta); send(Uint8Array.of(n)); await turn(); await turn(); },
     async tick(time) { audio.currentTime = time; const [key, callback] = rafs.entries().next().value ?? []; rafs.delete(key); callback?.(); await turn(); },
   };
@@ -91,7 +99,7 @@ test('verified rest, PCM and first24 decoded frames gate audio; credits follow a
   const f = fixture(); await f.ready(); assert.equal(f.audio.plays, 0);
   await f.pcm(); assert.deepEqual(f.sent, [{ t: 'credit', id: f.m.plan.start.id, frames: 24 }]);
   await f.chunk(0); assert.equal(f.audio.plays, 0);
-  await f.chunk(12); await until(() => f.audio.plays === 1);
+  await f.chunk(12); await until(() => f.audio.plays === 1, 'audio playback');
   assert.equal(f.receipts[0].state, 'start'); assert.equal(f.observations.at(-1).frame, 0);
   assert.equal(f.observations.at(-1).sourceSha256, h); assert.equal(f.layer.bufferedFrames, 19);
   await f.tick(.5); await f.chunk(24); await f.tick(.8); await f.chunk(36);
@@ -123,7 +131,7 @@ test('wrong nonce, plan binding, original rest, PCM hash and unmatched chunk nev
   for (const change of [r => r.nonce = 'stale', r => r.plan.binding.dealerId = 'astrid', r => r.plan.binding.audioSha256 = h,
     r => r.rest.sha256 = 'c'.repeat(64), r => r.rest.url = '//elsewhere/rest', r => r.rest.sourceFrame = 99,
     r => r.plan.timeline[0].frame = 1, r => r.audio.byteLength -= 24000]) {
-    const f = fixture(); await until(() => f.socket); change(f.m.ready); f.send(f.m.ready);
+    const f = fixture(); await until(() => f.socket, 'socket connection'); change(f.m.ready); f.send(f.m.ready);
     await assert.rejects(f.promise, /moving_speech/); assert.equal(f.audio.plays, 0);
   }
   const f = fixture(); await f.ready(); f.send({ t: 'pcm', id, byteLength: f.m.pcm.byteLength }); const bad = f.m.pcm.slice(); bad[0] = 1; f.send(bad);
@@ -146,13 +154,13 @@ test('out-of-order, over-credit, missing-patch and metadata-without-binary messa
 test('abort interrupts pending pre-start ownership checks, including before any socket exists', async () => {
   const controller = new AbortController(); let entered = false;
   const f = fixture({ overrides: { signal: controller.signal, beforeStart: () => { entered = true; return new Promise(() => {}); } } });
-  await until(() => entered); controller.abort(); await assert.rejects(f.promise, { name: 'AbortError' }); assert.equal(f.socket, undefined);
+  await until(() => entered, 'pre-start ownership check'); controller.abort(); await assert.rejects(f.promise, { name: 'AbortError' }); assert.equal(f.socket, undefined);
 });
 
 test('bounded encoded queue rejects a producer flood while the rest original is still loading', async () => {
   let release;
   const f = fixture({ dependencies: { loadRest: () => new Promise(resolve => { release = resolve; }) } });
-  await until(() => f.socket); f.send(f.m.ready); await until(() => release);
+  await until(() => f.socket, 'socket connection'); f.send(f.m.ready); await until(() => release, 'pending rest load');
   for (let n = 0; n < 9 && f.socket.onmessage; n++) f.send({ t: 'pcm', id, byteLength: f.m.pcm.byteLength });
   await assert.rejects(f.promise, /queue_full/); assert.equal(f.audio.plays, 0); release({ width: 320, height: 240 });
 });

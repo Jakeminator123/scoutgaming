@@ -18,6 +18,16 @@ export function validateMovingBankArtifacts(value) {
   return Object.freeze({schemaVersion:1, sourceSet, archive:Object.freeze({...archive}), receipt:Object.freeze({...receipt})});
 }
 
+/** Keep large derived-bank downloads uncompressed without changing other media clients. */
+export function movingBankStorageOptions(blobClient) {
+  if (typeof blobClient?.get !== 'function') fail();
+  return {blobClient:{...blobClient, get(pathname, options = {}) {
+    const headers = new Headers(options.headers);
+    headers.set('Accept-Encoding', 'identity');
+    return blobClient.get(pathname, {...options, headers:Object.fromEntries(headers)});
+  }}};
+}
+
 export async function loadMovingBankArtifacts(record, options = {}) {
   validatePrivateMedia(record);
   if (record.contentType !== 'application/json' || record.size > 128 * 1024) fail();

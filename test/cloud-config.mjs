@@ -1,13 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { validateCloudConfig, childSpecifications } from '../ops/cloud/config.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
+// Never use real connections: generate an inert credential once per fixture.
+const fixtureConnection=new URL('postgresql://game.neon.tech/game?sslmode=require');
+fixtureConnection.username='fixture';fixtureConnection.password=randomUUID();
 const privateManifest = { provider:'vercel-blob',sha256:hash('fixture manifest'),size:4096,contentType:'application/json',
   pathname:`croupier/media/dealers/dragan/runtime/moving-bank/11111111-1111-4111-8111-111111111111/${hash('fixture manifest')}.json` };
 const base = () => ({NODE_ENV:'production',PORT:'10000',CROUPIER_DATABASE:'postgres',
-  CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-only@game.neon.tech/game?sslmode=require',
+  CROUPIER_GAME_DATABASE_URL:fixtureConnection.href,
   CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'production',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
   CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob',
   PUBLIC_URL:'https://game.example.test',BO_URL:'https://bo.example.test',LAB_PUBLIC_URL:'https://lab.example.test',RENDER_EXTERNAL_URL:'https://fixture-game.onrender.com',
@@ -49,7 +52,7 @@ test('moving activation requires registered profiles, Neon and private Blob with
   for(const change of [{CROUPIER_DEALER_SPEECH_PROFILES:'0'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
     {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},{CROUPIER_DATABASE:'sqlite'},
     {CROUPIER_GENERATED_SPEECH_STREAMING:'0'},
-    {CROUPIER_GAME_DATABASE_URL:'postgresql://game:fixture-only@other.example.test/game?sslmode=require'}])
+    {CROUPIER_GAME_DATABASE_URL:fixtureConnection.href.replace('game.neon.tech','other.example.test')}])
     assert.throws(()=>validateCloudConfig({...env,...change}));
 });
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMovingSpeechSourceSet} from '../web/moving-speech-bank.mjs';
-import {createMovingBankDownloads,validateMovingBankArtifacts} from '../web/moving-speech-bank-artifacts.mjs';
+import {createMovingBankDownloads,validateMovingBankArtifacts,movingBankStorageOptions} from '../web/moving-speech-bank-artifacts.mjs';
 const id='11111111-1111-1111-1111-111111111111',hash='a'.repeat(64);
 const sourceSet=createMovingSpeechSourceSet({dealerId:'dragan',clips:[{videoId:id,sha256:hash,bytes:20,fps:24,frameCount:24,width:1080,height:1920}],rest:{videoId:id,frame:0}});
 const record=(extension,contentType)=>({provider:'vercel-blob',pathname:`croupier/media/dealers/dragan/runtime/moving-bank/${id}/${hash}.${extension}`,sha256:hash,size:20,contentType});
@@ -81,4 +81,26 @@ test('streamed byte count must equal the announced immutable artifact size',asyn
     const response=await service.response(new Request(capability.descriptor.archive.url));
     await assert.rejects(response.arrayBuffer(),/moving_bank_artifacts_invalid/);service.close();
   }
+});
+
+test('moving-bank storage requests identity without changing the shared client or caller options',async()=>{
+  const abort=new AbortController(),result={stream:'unchanged'},head=()=>{};
+  let captured;
+  const get=function(pathname,options){assert.equal(this,client);captured={pathname,options};return Promise.resolve(result);};
+  const client=Object.freeze({get,head}),storage=movingBankStorageOptions(client);
+  assert.notEqual(storage.blobClient,client);assert.equal(client.get,get);assert.equal(storage.blobClient.head,head);
+  for(const headers of [Object.freeze({'Accept-Encoding':'br','X-Bank-Probe':'kept'}),
+    new Headers({'accept-encoding':'br','x-bank-probe':'kept'}),
+    Object.freeze([['Accept-Encoding','br'],['X-Bank-Probe','kept']])]){
+    const options=Object.freeze({access:'private',token:'test-only-token',abortSignal:abort.signal,useCache:false,ifNoneMatch:'etag',headers});
+    assert.equal(await storage.blobClient.get(bank.archive.pathname,options),result);
+    assert.equal(captured.pathname,bank.archive.pathname);
+    assert.deepEqual({...captured.options,headers},options);
+    assert.equal(captured.options.abortSignal,abort.signal);
+    assert.equal(captured.options.headers['accept-encoding'],'identity');
+    assert.equal(captured.options.headers['x-bank-probe'],'kept');
+    assert.equal(new Headers(headers).get('accept-encoding'),'br');
+    assert.equal(client.get,get);
+  }
+  abort.abort();assert.equal(captured.options.abortSignal.aborted,true);
 });
