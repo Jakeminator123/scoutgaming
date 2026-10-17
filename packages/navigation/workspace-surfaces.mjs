@@ -1,3 +1,4 @@
+import {isOperatorSlug} from './operator-slug.mjs';
 // Document navigation only. These routes never grant a role or an operator
 // membership, and deliberately contain no API, auth or asset aliases.
 export const PARTNER_PREVIEW_VIEWS = Object.freeze([
@@ -19,11 +20,9 @@ const legacyControl = Object.freeze({
   lab: Object.freeze({ studioPath: '/studio', legacyPath: '/control' }),
 });
 const staffTools = new Set(['companies', 'rooms', 'compositions', 'rehearsal', 'library', 'replies', 'clips', 'dealer-forge', 'administration', 'tree', 'videos', 'openclaw', 'activity', 'guide', 'zones', 'events', 'probe', 'operator-chat', 'preview', 'lanes']);
-const operatorSlug = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 // `login` is the public partner page, not an operator. The App Router page
 // wins by specificity; rejecting the slug here keeps the catch-all from
 // treating /partner/login as a workspace.
-const reservedOperators = new Set(['api', 'auth', 'login', 'logout', 'studio', 'control', 'partner', 'play', 'set-password']);
 
 // Source component IDs stay internal. Links use one readable document address.
 export const WORKSPACE_VIEW_SLUGS = Object.freeze({
@@ -39,7 +38,7 @@ export const WORKSPACE_VIEW_SLUGS = Object.freeze({
 export function workspaceSurfacePath(surface, view, operator = null) {
   const views = surface === 'partner' ? PARTNER_PREVIEW_VIEWS : surface === 'control' ? CONTROL_PREVIEW_VIEWS : [];
   if (!views.includes(view)) return null;
-  if (surface === 'partner' && (typeof operator !== 'string' || operator.length > 63 || !operatorSlug.test(operator) || reservedOperators.has(operator))) return null;
+  if (surface === 'partner' && !isOperatorSlug(operator)) return null;
   const root = surface === 'partner' ? `/partner/${operator}` : '/control';
   const slug = surface === 'partner' && view === 'bj' ? 'rooms' : WORKSPACE_VIEW_SLUGS[view];
   return view === 'ops' ? root : `${root}/${slug}`;
@@ -63,7 +62,7 @@ export function resolveWorkspaceSurfacePath(value) {
       });
     }
   } else if (parts.length !== 1) {
-    if (![2, 3].includes(parts.length) || parts[1].length > 63 || !operatorSlug.test(parts[1]) || reservedOperators.has(parts[1])) return null;
+    if (![2, 3].includes(parts.length) || !isOperatorSlug(parts[1])) return null;
     operator = parts[1]; section = parts[2] ?? section;
   }
   const view = surface === 'partner' && ['rooms', 'tables'].includes(section) ? 'bj'

@@ -1,4 +1,4 @@
-import {adminDocumentHref} from './admin-workspace-routes.mjs';
+import {adminDocumentHref} from '../../packages/navigation/admin-workspace-routes.mjs';
 // Public routing only; never put credentials in these build-time variables.
 export function labBasePath() {
   return process.env.NEXT_PUBLIC_LAB_BASE_PATH === '/studio' ? '/studio' : '';

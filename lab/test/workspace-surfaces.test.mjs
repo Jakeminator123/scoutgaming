@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CONTROL_PREVIEW_VIEWS, PARTNER_PREVIEW_VIEWS, resolveWorkspaceSurfacePath, workspaceSurfacePath, isPartnerSurfacePath } from '../lib/workspace-surfaces.mjs';
+import { CONTROL_PREVIEW_VIEWS, PARTNER_PREVIEW_VIEWS, resolveWorkspaceSurfacePath, workspaceSurfacePath, isPartnerSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 
 test('public and native documents resolve to the same surface and exact Studio destination', () => {
   for (const surface of ['control', 'partner']) {

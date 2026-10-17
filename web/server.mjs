@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {OPERATOR_NOT_FOUND_HTML} from '../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from './public/player-handoff.mjs';
 import { isAdministratorRole } from '../packages/studio-access/server/account-credentials.mjs';
@@ -91,7 +92,7 @@ const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
   referenceService: createDealerSpeechReferenceService({readVideoRegistry:studioMediaRuntime.videoRegistry,readVideoResponse:studioMediaRuntime.videoResponse}),
 }) : null;
 // Operator packages share the Studio pool and scope; a read failure keeps today's entry.
-const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
+const { createGameEntrySelector } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope, ttlMs:0 }) }) : null;
 const operatorAppearanceApi = selectGameEntry ? (await import('./operator-appearance-api.mjs')).createOperatorAppearanceApi({selectGameEntry}) : null;

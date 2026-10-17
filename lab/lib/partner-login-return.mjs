@@ -1,4 +1,4 @@
-import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 
 // Navigation only: the destination still authorizes the current session,
 // operator and room. Accept one decoded local document path, never another URL.

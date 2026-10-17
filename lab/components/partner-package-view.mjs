@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { compositionLabel } from '../lib/control-flow.mjs';
+import { compositionLabel } from '../../packages/navigation/control-flow.mjs';
 import { partnerLaneState } from '../lib/partner-package-view.mjs';
 import { isGameLaneId } from '../../web/public/game-lanes.mjs';
 import { resolveRoomBranding } from '../../web/storage/partner-branding.mjs';

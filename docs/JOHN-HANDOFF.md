@@ -159,6 +159,59 @@ uppger färskt kvitto på main `a0876f71`: incidenterna 38318914/38318915 är
 fortfarande öppna, platstäckningen partiell och historisk skanning too_large.
 Detta är ett tillskrivet kvitto; säkerhetstäckningen markeras inte som klar.
 
+## Etapp 3 C2g: gemensam publik katalog och navigation — lokal ändring 17 oktober 2026
+
+`packages/player-catalog` äger nu `operatorPublicView`,
+`loadOperatorCatalogue` och `loadRoomCatalogue` samt deras resultattyper.
+Frontend och Studios publika lobby kopplar in de befintliga slug- och
+rumvalidatorerna via små lokala kompositioner. Paketet importerar ingen appkod;
+Studios katalogadapter importerar inte längre privata frontendmoduler.
+Login-/speladresser, sessioner, rumsväljning och sparade preferenser stannar
+i apparna. API-adresser, tenantkontroller, ID:n, felutfall och returformat
+är oförändrade. Inga gamla katalogfunktioner återexporteras från player-lobby
+eller player-operator. Rumkontrakten ligger fortsatt i web/public och
+dealeridentiteten i det gemensamma presentationskontraktet. Bolagssluggen
+har därefter fått en gemensam ägare enligt navigationssteget nedan.
+
+Lokalt på Node 24.21.0: 63 befintliga katalog-/bolagsgräns-/lobby-/profilprov
+passerar, noll fel och ett uttryckligt browser-opt-in-prov ej kört.
+Frontendens och lobbyklientens typkontroller är gröna. En publik lobbybundle
+byggd i minnet innehåller det gemensamma paketet och ingen privat frontendkod.
+Mekanisk jämförelse mot basversionen bekräftar oförändrade kroppar för alla
+tre flyttade funktioner. Inget produktbygge, ny testfil, moln-/SQL-/medieändring
+eller nytt driftkvitto ingår. Egen C2g-commit 808cce07 har grön ordinarie hook
+(25 prov). Efter lokal integration av C2c/UI-head 5a1f4332 passerar samma
+63 prov och båda typkontrollerna igen; funktionskropparna är fortfarande
+oförändrade och lobbybundlen saknar privat frontendkod. Endast handoffen
+hade Git-konflikt, och båda etappkvittona bevaras. Integrationen lämnas utan
+mergecommit för huvudagentens granskning; CI och drift återstår.
+
+C2g:s navigationssteg ovanpå `c94a216d` flyttar rena Admin-/Control-/Partner-
+adresser till `packages/navigation`. `requestedOperator` och den oförändrade
+404-sidan bryts ur spelserverns tunga urvalsmodul. En kanonisk slugpredicate
+ersätter fyra identiska implementationer; session- och behörighetsregler
+ändras inte. SQL-lagrets separata lagringsvalidator har annan semantik och
+bevaras. Studios HTTP-redirectadapter ligger kvar som
+`lab/lib/legacy-studio-document.mjs`. Gamla routefiler och reexportwrappers
+behålls inte. Alla aktuella konsumenter, testladdare, isolerade serverkopior
+och QA-källistan följer flytten. Bara `/packages/navigation/operator-slug.mjs`
+läggs till i den befintliga exakta browserallowlisten; HTTP-handlern ändras inte.
+
+Node 24.21.0: första riktade körningen gav 181 pass, tre integrationsfel och
+fyra browser-opt-in-skips. Två testimporter och routingens paketfilter rättades.
+Berörda prov tillsammans med server-/lobbyintegration passerar sedan 141/141,
+med ett browser-opt-in-skip; dessa körningar överlappar delvis. Det separata
+HTTP-provet för hela den publika importgrafen passerar också. Frontend, Studio,
+Admin och Lobby klarar typkontroll. Testinventeringen visar 512 kandidater,
+noll oklassificerade och nio helper/opt-in. Mekaniska jämförelser bekräftar
+oförändrade katalogfunktioner, rena Adminregler, legacy-redirectkropp,
+Controlregler, entréblock och slugpredicate; navigationspaketet importerar
+bara egna rena moduler. Befintliga installationer används läsande med samma
+manifest/lås (frontendlåset skiljer enbart radslut). Inga nya tester,
+installationer, fullbyggen, commits, molnändringar eller driftkvitton ingår.
+Integrationen ska behålla C2f:s transportimporter och C2h:s nya lagringsimporter;
+deras konsumentfiler överlappar. PR211:s separata HEAD-handlerfix ska bevaras.
+
 ## Etapp 3 C2c: gemensamma presentationskontrakt — lokal ändring 17 oktober 2026
 
 `packages/presentation/contracts/` äger projektmodell, video-/rouletteregler,
@@ -230,8 +283,8 @@ klientoutput och oförändrade låsta beroenden: Next/TypeScript och routebygge
 gröna, 80 byggspår kontrollerade och noll privata poster borttagna. Befintliga
 CSS-composes-varningar och Nexts middleware-deprecation kvarstår.
 
-Den publika katalogadaptern använder fortfarande frontendens `player-lobby`
-och `player-operator`; detta är en namngiven ägarskapsrest för nästa kontraktdel.
+Den kvarvarande privata frontendkopplingen i den publika katalogadaptern
+är nu avgränsad och åtgärdad i C2g ovan.
 CI, integration och driftkvitto redovisas vid leverans. Ingen ny visuell
 medie- eller läppsynksacceptans ingår.
 

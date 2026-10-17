@@ -1,4 +1,4 @@
-import { isOperatorSlug } from './public/game-lanes.mjs';
+import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 import { clipCompositing } from './public/presentation-composition.mjs';
 
 const PATH = /^\/api\/operators\/([^/]+)\/rooms$/;

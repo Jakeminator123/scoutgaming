@@ -12,8 +12,10 @@ fortfarande för befintliga verktyg, inloggning och spelstarter. De detaljerade
 motsvarande `/admin`-verktyg. Aktiva ingångar, bolagsåtkomst och mål finns i
 den kanoniska [användarguiden](docs/README.md).
 
-Rena äldre dokumentalias hanteras gemensamt av `middleware.ts` och
-`lib/admin-workspace-routes.mjs`. Deras tidigare queryregler och publika
+Rena dokumentadresser och bolagssluggar ägs av `packages/navigation` i
+reporoten, som delas med frontend och spelet utan appimporter. Äldre
+dokumentalias hanteras av `middleware.ts` och den appägda HTTP-adaptern
+`lib/legacy-studio-document.mjs`. Deras tidigare queryregler och publika
 måladresser bevaras. Sidor som laddar data eller först kontrollerar
 behörighet ligger kvar; Admin återanvänder fortfarande flera av deras
 komponenter. Manuella medieverktyg finns i [tools/media](../tools/media/README.md).
@@ -24,6 +26,8 @@ Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
 `lab/client` innehåller Admin/Lobby-klienten med eget React-/TypeScript-bygge.
 Labbets bygge förbereder och serverar den från `design-preview-build/`. Behörighet, scoped
 data, mediaregister och anslutningar finns kvar i denna tjänst.
+Lobbykatalogens rena laddare finns i `packages/player-catalog`; appen äger
+fortfarande inloggning, rumsväljning och spelstarter.
 Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
 Neon är produktens register och privat Blob innehåller mediebyte.
 `node lab/start.mjs --no-open` skriver den publicerade produktens adress;
