@@ -169,7 +169,7 @@ test('forget removes text only for the authenticated player/dealer scope', t => 
   assert.equal(memory.profile({ ...subject, playerId: 'other-player' }).history.length, 2);
 });
 
-test('six-minute pending expiry rejects late writes and allows a new request, not an old retry', t => {
+test('ten-minute pending expiry rejects late writes and allows a new request, not an old retry', t => {
   const { memory, advance } = fixture(t);
   const old = memory.begin(request());
   advance(PLAYER_CHAT_MEMORY_LIMITS.pendingMs - 1);

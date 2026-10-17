@@ -1,3 +1,4 @@
+import { CHAT_PENDING_LIFETIME_MS } from '../moving-speech-limits.mjs';
 import {isDealerId, registeredDealerIds} from '../../packages/presentation/contracts/dealer-identity.mjs';
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
@@ -10,7 +11,7 @@ const DAY = 86400000;
 const HISTORY_STATUS = 'generated-not-playback-confirmed';
 export const PLAYER_CHAT_MEMORY_LIMITS = Object.freeze({
   history: 30, historyChars: 8000, message: 1000, retentionDays: 30,
-  requestRetentionMs: DAY, pendingMs: 360000, requestsPerMinute: 10,
+  requestRetentionMs: DAY, pendingMs: CHAT_PENDING_LIFETIME_MS, requestsPerMinute: 10,
 });
 
 export class PlayerChatMemoryError extends Error {

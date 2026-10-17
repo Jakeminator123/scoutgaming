@@ -6,17 +6,17 @@ import {createPlayerChatMemory as createAsyncMemory} from '../web/storage/async-
 
 const scope={playerId:'server-owned-player',dealerId:'paow'};
 const reply={kind:'generatedText',exactText:'Hej från PAOW.'};
-async function fixture(t,asynchronous) {
+async function fixture(t,asynchronous,options={}) {
   const db=new DatabaseSync(':memory:');t.after(()=>db.close());
-  const sync=createSyncMemory(db);
-  if(!asynchronous)return {memory:sync,restart:()=>createSyncMemory(db)};
+  const sync=createSyncMemory(db,options);
+  if(!asynchronous)return {memory:sync,restart:()=>createSyncMemory(db,options)};
   // Exercise the real asynchronous store without an external database. The
   // production SQL dialect adapter is independently covered by storage tests.
   const adapter={prepare:sql=>db.prepare(sql),transaction:async work=>{
     db.exec('BEGIN IMMEDIATE');try{const value=await work();db.exec('COMMIT');return value;}
     catch(error){db.exec('ROLLBACK');throw error;}
   }};
-  return {memory:await createAsyncMemory(adapter),restart:()=>createAsyncMemory(adapter)};
+  return {memory:await createAsyncMemory(adapter,options),restart:()=>createAsyncMemory(adapter,options)};
 }
 for(const asynchronous of [false,true]){
   const label=asynchronous?'asynchronous':'synchronous';
@@ -143,4 +143,28 @@ test('a reply reserved before retirement cannot recreate memory or overwrite a r
   assert.deepEqual((await memory.profile(scope)).history,[
     {role:'user',text:'New registration.'},{role:'assistant',text:'New reply.'},
   ]);
+});
+
+
+for(const asynchronous of [false,true])test((asynchronous?'async':'sync')+' chat result may commit after cold start but still expires at ten minutes',async t=>{
+  let at=1800000000000;const f=await fixture(t,asynchronous,{now:()=>at});
+  const owner={...scope,dealerId:'dragan'};
+  const first=await f.memory.begin({...owner,requestId:'cold-first',message:'Hej.'});
+  at+=420000;await first.commit(reply);
+  assert.equal((await f.memory.profile(owner)).history.length,2);
+  const second=await f.memory.begin({...owner,requestId:'cold-expiry',message:'Hej igen.',pendingMs:3600000,ttlMs:3600000});
+  at+=599999;const restored=await f.restart();
+  await assert.rejects(async()=>restored.begin({...owner,requestId:'overlap',message:'Hej.'}),/busy|pending/);
+  at+=1;await assert.rejects(async()=>second.commit(reply),e=>e.code==='player_memory_request_expired');
+});
+
+
+for(const asynchronous of [false,true])test((asynchronous?'async':'sync')+' cancelling a late pending chat releases its lock immediately',async t=>{
+  let at=1800000000000;const {memory}=await fixture(t,asynchronous,{now:()=>at});
+  const owner={...scope,dealerId:'dragan'};
+  const cancelled=await memory.begin({...owner,requestId:'cancelled-cold',message:'Hej.'});
+  at+=420000;assert.equal(await cancelled.cancel(),true);
+  await assert.rejects(async()=>cancelled.commit(reply),e=>e.code==='player_memory_request_cancelled');
+  const next=await memory.begin({...owner,requestId:'next-cold',message:'Hej igen.'});await next.commit(reply);
+  assert.equal((await memory.profile(owner)).history.length,2);
 });

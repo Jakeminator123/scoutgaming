@@ -104,3 +104,19 @@ test('moving-bank storage requests identity without changing the shared client o
   }
   abort.abort();assert.equal(captured.options.abortSignal.aborted,true);
 });
+
+
+test('bank transfer survives the measured cold start, then expires or revokes without extending its deadline',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  const abort=new AbortController();let reads=0;
+  const service=createMovingBankDownloads({origin:'https://game.example',bank,read:async r=>{
+    reads++;return new Response(new Uint8Array(r.size),{headers:{'content-length':String(r.size)}});}});
+  t.after(()=>service.close());
+  const issued=service.issue({signal:abort.signal,authorize:async()=>{}});
+  t.mock.timers.tick(296000);
+  const late=await service.response(new Request(issued.descriptor.archive.url));assert.equal(late.status,200);await late.arrayBuffer();
+  t.mock.timers.tick(184000);
+  assert.equal((await service.response(new Request(issued.descriptor.receipt.url))).status,403);assert.equal(reads,1);
+  const next=service.issue({signal:abort.signal,authorize:async()=>{}});abort.abort();
+  assert.equal((await service.response(new Request(next.descriptor.archive.url))).status,403);
+});
