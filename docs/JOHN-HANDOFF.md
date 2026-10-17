@@ -27,6 +27,11 @@ modul-URL:er och kanoniska paket-URL:er fungerar från samma källa, inklusive
 relativa importer. Projektseed, privata schemafiler och server/Director-filer
 exponeras inte. Vercels exakta routing, statiska frontendkopior, isolerade
 serverfixturer, QA-källista och HEAD-jämförelse följer flytten.
+PR-granskningen hittade och rättade en HEAD-regression: exakt samma publika
+allowlist hanterar nu GET och HEAD med identisk innehållsmetadata och tom
+HEAD-kropp. Det befintliga HTTP/importgrafprovet reproducerade felet före
+rättningen; därefter100 riktade prov gröna utan skips. Privat kod är fortsatt
+otillgänglig även med HEAD.
 
 Riktad kontrakt-/media-/byggsvit: 248 passerade i första körningen. En missad
 konsumentimport och saknad frontenddependencykoppling stoppade återstående
