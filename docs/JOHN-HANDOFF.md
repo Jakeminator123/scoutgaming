@@ -12,7 +12,7 @@ uppdaterade befintliga mål. Inga privata env-, data- eller mediefiler flyttas.
 OpenClaws interna lab-nivå och befintliga privata data-/envrötter består.
 Den lokala isolerade startadaptern återanvänder fortfarande game-API:t för
 multi-service-bootstrap; ingen ny generell bibliotekskonstruktion tillkommer.
-Ordinarie integrationshook och slutlig CI/drift återstår före slutkvitto.
+Normal integrationscommit 218887f2 passerade ordinarie hook: 417 tester, 416 godkända, 0 fel och 1 isolerad PostgreSQL-skip utan konfigurerad testdatabas. Föregående flytthook gav 345 godkända, 0 fel och 1 plattformsskip. CI och faktisk drift återstår hos mergagent; Director/Gateway har autoDeploy av och deras nya Docker-/blueprintvägar måste verifieras på befintliga tjänster.
 
 
 ## C3 — OpenClaws källrot services/openclaw, lokalt 17 oktober 2026
