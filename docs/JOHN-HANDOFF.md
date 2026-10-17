@@ -62,16 +62,26 @@ reserver 3,11 USD och återstående bevakat försök högst 480 sekunder plus
 Ett sjätte försök verifierade 13:20 UTC endpoint `h56jnnyo5aq4om` med max0,
 noll workers och exakt image. Jakob godkände den nya begränsade runtime-
 nyckeln; den skapades och sparades i en ny gitignorerad lokal fil. Läsprov
-13:25 UTC gav200 för endpoint, full template och health med noll workers.
-Nyckeln får endast skicka jobb till denna endpoint. Därefter återstår
-Render-konfiguration och bevakat end-to-end-prov inom samma 5 USD.
+13:25 UTC gav 200 för endpoint, full template och health med noll workers.
+Nyckeln får endast skicka jobb till denna endpoint. De åtta nya Render-
+variablerna är sparade med **Save only** och återlästa med exakt värde;
+inga befintliga nycklar redigerades. PR201 har head
+`84050e6317004750c20b76cff1deb599f89da1ce`, mergad enligt mergeagentens
+kvitto på `67ddb82a40db3c4347dd51734227afc8af531527`; driftsättning följs separat.
+CI:s kvarvarande bundled-schema-assertion är rättad i en separat commit;
+dess 13 fokuserade prov passerade. Efter kontobytet verifierades 13:50 UTC
+samma endpoint, template och image, max0 och noll workers. Render visar
+`CROUPIER_DEALER_SPEECH_PROFILES=1`; inga befintliga värden ändrades.
+Draganprofilen och GPU:n är fortfarande avstängda. Verkligt end-to-end-prov
+återstår inom samma 5 USD.
 
-Den första fortsättnings-PR:n gör013 obligatorisk och verifierar RunPods
+Den första fortsättnings-PR:n gör 013 obligatorisk och verifierar RunPods
 fullständiga template separat från dess förkortade embedded-svar. Saknad
 workerlista godtas endast efter ett färskt tomt pods-svar för exakt endpoint.
 Explicit konflikt eller okänt svar stoppar före jobb. 74 schema-/importprov
-och45 RunPod-/transportprov är gröna enligt underagentens körningar; den
-privata provisionerns45 prov är separata från produktens molnacceptans.
+och 45 RunPod-/transportprov är gröna enligt underagentens körningar; den
+privata provisionerns 45 prov är separata från produktens molnacceptans.
+Ordinarie commitkontroll passerade 84 fokuserade prov.
 
 PR191 är mergad på `f5f8414628e39fee4cbf703054c0ee57d2b48157`.
 Mergeagentens separata kvitto bekräftar grön main-CI och samma commit på
@@ -90,14 +100,30 @@ tillfälliga cache. Originalfilmer och Astrids endpoint ändras inte.
 
 Spelaradaptern använder vilans uttryckliga källruta mellan kortsekvenser;
 ljudklockan och verifierade ansiktsrutor följer samma plan. Kredit och
-chunk-kvittens begränsar buffertar hela vägen till workern. Pågående separat arbete
-lägger till **Svara under nästa utdelning**: en färsk serverbestämd öppning
+chunk-kvittens begränsar buffertar hela vägen till workern. Den separata
+fortsättningen på `codex/dragan-deal-speech` lägger till **Svara under nästa utdelning**:
+en färsk serverbestämd öppning
 reserveras en gång, och exakt kroppsruta, ansiktsruta och kortkontakt följer
 ljudklockan. Vanlig chatt behåller vilovägen. Kodprov och verklig molnacceptans
 redovisas separat; funktionen är ännu inte verifierad med Dragan i spelet.
 
+Underagentens fokuserade verifiering passerade 123 prov utan skips, inklusive
+riktig Chrome med fyra syntetiska källfilmer över 183 rutor, kort ljud/tyst
+avslut, avbrott, HTTP/WebSocket, filmsekvenser och Astrids befintliga spelare.
+Oberoende review hittade och verifierade rättningar för glesa spelarplatser
+(bara box 3) och avstängt ljud vid reservation. Provet med originalens
+1080p-filmer stannade först vid bildruta 13 före ljudstart: avkodarens
+ytor hölls kvar i VideoFrame-bufferten. Rättningen läser exakta AVC/MP4-
+samples med WebCodecs och kopierar avkodade ytor till en buffert på högst
+24 rutor. Underagentens 27 fokuserade prov inklusive två Chrome-fixturer
+passerar. Originalkedjans 183 samplepositioner, storlekar, tidsstämplar och
+keyframe-flaggor matchar oberoende ffprobe. Prefetch tog 386 ms; inga
+buffertunderskott uppstod. RAF visade 180 distinkta rutor, slutruta 182 och
+högst två rutors hopp. Detta verifierar avkodning och källa, inte att varje
+ruta visats eller att läppsynken är visuellt/hörbart accepterad.
+
 Migration013 görs obligatorisk i samma fortsättning, eftersom dess
-produktionsinstallation nu är verifierad. Saknad013 ska blockera readiness,
+produktionsinstallation nu är verifierad. Saknad 013 ska blockera readiness,
 serverstart och import; framtida uttryckligen valfria versioner stöds fortsatt.
 
 Fokuserade kontroller omfattar riktiga HTTP/WebSocket-förlopp och Chrome/

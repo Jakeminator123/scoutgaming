@@ -3,6 +3,7 @@ import { Readable } from 'node:stream';
 import { createRequire } from 'node:module';
 import { createRegisteredMovingSpeech, assertMovingSpeechSource } from './moving-speech-bank.mjs';
 import { createMovingBankDownloads } from './moving-speech-bank-artifacts.mjs';
+import {createMovingDealReservations,prepareMovingDealPlan,presentationFingerprint} from './moving-speech-deal-plan.mjs';
 const {WebSocketServer,WebSocket}=createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json',import.meta.url))('ws');
 
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -17,13 +18,14 @@ const publicPlan = plan => JSON.parse(JSON.stringify(plan));
  * Initial playback is the bank's explicit rest frame between card sequences. */
 export function createMovingSpeechRuntime({server, origin, workerOrigin = origin, ticketSecret, bank, releaseSha256,
   sessions, dealerRuntime, resolveOwner, readEvidence, readRegistry, readRest, bankRead,
-  bankOptions, now = Date.now, connectionMs = 15000,
+  bankOptions, readPresentation, publicVideo, now = Date.now, connectionMs = 15000,
   onCleanupError = () => console.warn(JSON.stringify({event:'moving_speech_cleanup_requires_recovery'}))} = {}) {
   if (!server || typeof ticketSecret !== 'string' || ticketSecret.length < 32
     || !/^[a-f0-9]{64}$/.test(releaseSha256 ?? '') || typeof sessions?.admit !== 'function'
     || typeof dealerRuntime?.prepareMoving !== 'function' || [resolveOwner,readEvidence,readRegistry,readRest].some(fn=>typeof fn !== 'function')) fail('moving_speech_configuration');
   const downloads = createMovingBankDownloads({origin:workerOrigin,bank,read:bankRead,options:bankOptions,now});
   const records = new Map(), pending = new Set();
+  const deals=createMovingDealReservations({now});
   const wss = new WebSocketServer({noServer:true,maxPayload:2048,perMessageDeflate:false,
     handleProtocols: protocols=>protocols.has('moving-v1') ? 'moving-v1' : false});
   let closing = false;
@@ -38,6 +40,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       record.controller.abort(); clearTimeout(record.timer); record.download?.revoke();
       if (!record.delivered) record.ws?.terminate();
       record.pcm?.fill(0); record.input?.cancel();
+      record.reservation?.finish();
       return await record.session?.cancel();
     }).catch(()=>{
       try {onCleanupError();} catch {}
@@ -48,6 +51,11 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   async function current(record) {
     record.signal.throwIfAborted(); await record.beforeCostly();
     await record.voice.assertFresh();
+    if(record.deal){
+      record.reservation.assertCurrent();
+      const receipt=await readPresentation(record.playerId);
+      if(!receipt||presentationFingerprint(receipt)!==record.deal.fingerprint)fail('moving_deal_changed');
+    }
     const evidence = await readEvidence(record.context,bank.sourceSet.rest.videoId);
     if (evidence.projectRevision !== record.evidence.projectRevision
       || JSON.stringify(evidence.mediaReferences) !== JSON.stringify(record.evidence.mediaReferences)) fail('moving_speech_context_changed');
@@ -66,13 +74,15 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   }
   async function stream(record,ws) {
     record.ws = ws; clearTimeout(record.timer);
-    let credit = 0, sent = 0, wake = null, done = false;
+    let credit = 0, sent = 0, wake = null, done = false, played=false, sentDone=false;
     const stop = () => {wake?.(); if (!done) void cancel(record);};
     ws.on('close',stop); ws.on('error',stop);
     ws.on('message',(data,binary)=>{
       try {
         if (binary) fail('moving_speech_invalid_credit');
         const value = JSON.parse(data.toString('utf8'));
+        if(record.sequence&&value.t==='played'&&value.id===record.input.plan.start.id&&sentDone
+          &&Object.keys(value).sort().join(',')==='id,t'){played=true;done=true;wake?.();return;}
         if (value.t === 'abort' && value.id === record.id && Object.keys(value).sort().join(',') === 'id,t') {void cancel(record); return;}
         if (Object.keys(value).sort().join(',') !== 'frames,id,t' || value.t !== 'credit'
           || value.id !== record.input.plan.start.id || !Number.isSafeInteger(value.frames)
@@ -100,6 +110,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
       const {videoId,sha256,fps,frameCount,width,height,bytes} = source;
       await send(ws,JSON.stringify({t:'ready',protocol:1,id:record.id,attemptId:record.binding.attemptId,nonce:record.binding.nonce,
         plan:publicPlan(record.input.plan),rest:{videoId,sha256,fps,frameCount,width,height,bytes,sourceFrame:bank.sourceSet.rest.frame,url:`/api/moving-speech/${record.id}/rest`},
+        ...(record.sequence?{sequence:record.sequence}:{}),
         audio:{format:'s16le',sampleRate:24000,channels:1,byteLength:record.pcm.length}}));
       await send(ws,JSON.stringify({t:'pcm',id:record.id,byteLength:record.pcm.length}));
       await send(ws,record.pcm,true);
@@ -108,6 +119,15 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         await send(ws,JSON.stringify(meta)); await send(ws,bytes,true);
       }});
       await send(ws,JSON.stringify({t:'done',id:record.input.plan.start.id,frames:record.input.plan.timeline.length}));
+      sentDone=true;
+      if(record.sequence){
+        const deadline=now()+45000;
+        while(!played){
+          if(now()>deadline)fail('moving_speech_playback_timeout');
+          await new Promise(resolve=>{const timer=setTimeout(resolve,500);wake=()=>{clearTimeout(timer);resolve();};});
+          wake=null;await current(record);
+        }
+      }
       done = true; record.delivered=true; ws.close(1000,'Complete');
       const drain=setTimeout(()=>ws.terminate(),2000);drain.unref?.();ws.once('close',()=>clearTimeout(drain));
     } catch {if (ws.readyState === WebSocket.OPEN) await send(ws,JSON.stringify({t:'error',code:'moving_speech_unavailable'})).catch(()=>{});}
@@ -142,7 +162,9 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   server.on('upgrade',upgrade);
   const api = {
     supports: dealerId => dealerId === bank.sourceSet.dealerId,
-    forContext: context => ({prepare:input=>api.prepare({...input,context})}),
+    observeCommitted: observation=>deals.committed(observation),
+    normalPresentation: (playerId,version)=>deals.normal(playerId,version),
+    forContext: (context,presentationVersion,sessionRevision) => ({prepare:input=>api.prepare({...input,context,presentationVersion,sessionRevision})}),
     async prepare(input) {
       if (closing || !api.supports(input?.dealerId) || !ID.test(input.requestId ?? '') || !input.owner
         || typeof input.beforeCostly !== 'function' || typeof input.text !== 'string' || !input.text
@@ -153,6 +175,17 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         await input.beforeCostly(); signal.throwIfAborted();
         record.voice=await dealerRuntime.prepareMoving({...input,signal,sourceSet:bank.sourceSet});
         record.evidence=await readEvidence(input.context,bank.sourceSet.rest.videoId);
+        if(input.presentationVersion!==undefined){
+          if(typeof readPresentation!=='function'||typeof publicVideo!=='function')fail('moving_deal_unavailable');
+          record.reservation=deals.claim(input.playerId,input.dealerId,input.presentationVersion,
+            {ownerHash:digest(input.owner),context:input.context,sessionRevision:input.sessionRevision});
+          record.deal=prepareMovingDealPlan({receipt:await readPresentation(input.playerId),version:input.presentationVersion,
+            frozenContext:record.evidence.frozenContext,sourceSet:bank.sourceSet,
+            publicVideo:id=>publicVideo(record.evidence.frozenContext,id)});
+          record.sequence={version:record.deal.version,steps:record.deal.steps,sources:record.deal.sources,
+            frames:record.deal.frames.map(row=>({take:'clip-'+row.videoId,frame:row.frame,
+              sourceSha256:bank.sourceSet.clips.find(c=>c.videoId===row.videoId).sha256}))};
+        }
         const expected=bank.sourceSet.clips.find(c=>c.videoId===bank.sourceSet.rest.videoId);
         assertMovingSpeechSource((await readRegistry()).videos.find(v=>v.id===expected.videoId),input.dealerId,expected);
         const registered=createRegisteredMovingSpeech({readRegistry,verifyBank:async()=>{
@@ -163,7 +196,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256};
         }});
         record.session=await sessions.admit({ownerHash:digest(input.owner),userId:digest(input.owner),requestId:input.requestId,
-          fingerprint:digest(JSON.stringify([input.text,input.dealerId,input.context,record.voice.profileRevision,bank.archive.sha256])),
+          fingerprint:digest(JSON.stringify([input.text,input.dealerId,input.context,record.voice.profileRevision,bank.archive.sha256,record.deal?.fingerprint??null])),
           binding:{releaseSha256,dealerId:input.dealerId,workerAvatar:bank.sourceSet.workerAvatar,profileRevision:record.voice.profileRevision,
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256,bankReceiptSha256:bank.receipt.sha256},
           mediaReferences:record.evidence.mediaReferences,projectRevision:record.evidence.projectRevision,
@@ -176,7 +209,7 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
           size+=chunk.byteLength;if(size>1200000)fail('moving_speech_audio_limit');chunks.push(Buffer.from(chunk));
         }
         record.pcm=Buffer.concat(chunks);chunks.forEach(chunk=>chunk.fill(0));
-        const frames=Array.from({length:Math.floor((size/2+18000)/1000)},()=>({...bank.sourceSet.rest,still:true}));
+        const frames=Array.from({length:Math.floor((size/2+18000)/1000)},(_,k)=>record.deal?.frames[k]??({...bank.sourceSet.rest,still:true}));
         record.input=await registered.prepare({sourceSet:bank.sourceSet,avatarSha256:bank.archive.sha256,frozenContext:record.evidence.frozenContext,
           binding:{sessionId:record.id,talkId:input.requestId,revision:1,profileRevision:record.voice.profileRevision,textSha256:digest(input.text),audioSha256:digest(record.pcm)},
           frames,audio:{pcm:record.pcm,format:'s16le',sampleRate:24000,channels:1},signal});
@@ -185,7 +218,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
         const body=Buffer.from(JSON.stringify({sessionId:record.id,exp:record.expiresAt,attemptId:record.binding.attemptId,nonce:record.binding.nonce})).toString('base64url');
         record.descriptor=Object.freeze({schemaVersion:1,kind:'moving-speech-stream',id:record.id,requestId:input.requestId,dealerId:input.dealerId,
           exactText:input.text,textSha256:digest(input.text),reviewStatus:'pending',url:'/moving-speech-stream',ticket:body+'.'+sign(body),expiresAt:record.expiresAt,
-          profileRevision:record.voice.profileRevision,avatarSha256:bank.archive.sha256,attemptId:record.binding.attemptId,nonce:record.binding.nonce,compositing:record.voice.compositing??null});
+          profileRevision:record.voice.profileRevision,avatarSha256:bank.archive.sha256,attemptId:record.binding.attemptId,nonce:record.binding.nonce,compositing:record.voice.compositing??null,
+          ...(record.sequence?{presentationVersion:record.deal.version,sequenceSha256:digest(JSON.stringify(record.sequence))}:{})});
         record.state='prepared';record.timer=setTimeout(()=>void cancel(record),connectionMs);record.timer.unref?.();
         return record.descriptor;
       } catch(error) {await cancel(record);throw error;}

@@ -7,6 +7,7 @@ import { setTimeout as pause } from 'node:timers/promises';
 import { createMovingSpeechRuntime } from '../web/moving-speech-runtime.mjs';
 import { createMovingSpeechSourceSet } from '../web/moving-speech-bank.mjs';
 import { validateMovingSpeechStream } from '../web/public/moving-speech-player.mjs';
+import {DRAGAN_KEVIN_PROFILE} from '../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
 
 const { WebSocket } = createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');
 const digest = bytes => createHash('sha256').update(bytes).digest('hex'), h = 'a'.repeat(64), sessionId = '1'.repeat(32);
@@ -18,15 +19,22 @@ async function until(check) { for (let i = 0; i < 100; i++) { if (check()) retur
 
 async function setup(t, options = {}) {
   const original = Buffer.from('synthetic-original'), pcm = Buffer.alloc(36000, 1), trace = [], sockets = [];
-  const sourceSet = createMovingSpeechSourceSet({ dealerId: 'dragan', clips: [{ videoId, sha256: digest(original), bytes: original.length,
+  const dealClips=options.deal?DRAGAN_KEVIN_PROFILE.takes.map((take,i)=>({videoId:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,
+    sha256:take.sha256,bytes:100+i,fps:24,frameCount:take.frames,width:1080,height:1920})):[];
+  const sourceSet = createMovingSpeechSourceSet({ dealerId: 'dragan', clips: [...dealClips,{ videoId, sha256: digest(original), bytes: original.length,
     fps: 24, frameCount: 24, width: 1080, height: 1920 }], rest: { videoId, frame: 7 } });
   const bank = { schemaVersion: 1, sourceSet, archive: record('bin', 'application/octet-stream', Buffer.from('bank')),
     receipt: record('json', 'application/json', Buffer.from('{}')) };
-  const registry = { videos: [{ id: videoId, dealer: 'dragan', sha256: digest(original), bytes: original.length,
+  const registry = { videos: [...dealClips.map(c=>({id:c.videoId,dealer:'dragan',sha256:c.sha256,bytes:c.bytes,size:c.bytes,available:true,
+    storage:'private-blob',contentType:'video/mp4',classification:{dealerId:'dragan',kind:'action'}})),{ id: videoId, dealer: 'dragan', sha256: digest(original), bytes: original.length,
     available: true, storage: 'private-blob', contentType: 'video/mp4', classification: { dealerId: 'dragan', kind: 'idle' } }] };
   const state = { projectRevision: 1, profileChanged: false, now: Date.now(), cancelled: 0, dispatched: 0, reads: 0, chunks: 0 };
+  state.receipt={version:7,payload:JSON.stringify([{type:'deal',to:'box',box:3,shoeDraw:1},{type:'deal',to:'dealer',faceDown:false,shoeDraw:2},
+    {type:'deal',to:'box',box:3,shoeDraw:3},{type:'deal',to:'dealer',faceDown:true,shoeDraw:4}])};
   const evidence = () => ({ projectRevision: state.projectRevision, mediaReferences: [{ id: videoId, sha256: digest(original) }],
-    frozenContext: { schemaVersion: 3, context: { dealerId: 'dragan' }, dealer: { id: 'dragan' }, records: [{ id: videoId,
+    frozenContext: { schemaVersion: 3, context: { dealerId: 'dragan' }, dealer: { id: 'dragan' },
+      project:{lines:[{dealerId:'dragan',variants:dealClips.map(c=>({videoGenerationId:c.videoId}))}]},inventory:registry,
+      records: [...registry.videos.filter(v=>v.id!==videoId),{ id: videoId,
       sha256: digest(original), size: original.length, contentType: 'video/mp4', classification: { dealerId: 'dragan', kind: 'idle' } }] } });
   let runtime, admitted;
   const server = createServer(async (req, res) => { if (!await runtime.handleHttp(req, res)) { res.writeHead(404); res.end(); } });
@@ -36,6 +44,7 @@ async function setup(t, options = {}) {
     connectionMs: options.connectionMs ?? 15000, onCleanupError:()=>trace.push('cleanup-recovery'),
     resolveOwner: async req => req.headers.cookie === 'owner=one' ? 'owner-one' : 'other-owner',
     readEvidence: async () => { state.reads++; return evidence(); }, readRegistry: async () => registry,
+    readPresentation:async()=>state.receipt,publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
     readRest: async () => new Response(original, { headers: { 'content-type': 'video/mp4', 'content-length': String(original.length), 'cache-control': 'private, no-store' } }),
     bankRead: async () => assert.fail('runtime fixture must never download bank bytes'),
     dealerRuntime: { async prepareMoving(input) {
@@ -57,7 +66,7 @@ async function setup(t, options = {}) {
           for (let from = 0; from < input.plan.timeline.length; from += 12) {
             const n = Math.min(12, input.plan.timeline.length - from);
             await onChunk({ t: 'lapp', id: input.plan.start.id, del: from / 12, fran: from,
-              rutor: Array.from({ length: n }, () => ({ tagning: 'vila', ruta: 0, rect: [1, 2, 30, 40] })) }, Buffer.from([n, 0, 1, 9]));
+              rutor: input.plan.timeline.slice(from,from+n).map(row => ({ tagning: row.take, ruta: row.frame, rect: [1, 2, 30, 40] })) }, Buffer.from([n, 0, 1, 9]));
             state.chunks++;
           }
         },
@@ -67,6 +76,9 @@ async function setup(t, options = {}) {
   t.after(async () => { for (const socket of sockets) socket.terminate(); await runtime.close(); await new Promise(resolve => server.close(resolve)); });
   const input = { owner: 'owner-one', playerId: 'player-one', requestId: 'request-1', dealerId: 'dragan', text: 'Hej Jakob.',
     context: { dealerId: 'dragan' }, beforeCostly: async () => { trace.push('guard'); await options.beforeCostly?.(state); } };
+  if(options.deal){input.presentationVersion=7;input.sessionRevision='browser-1';input.context={operatorSlug:'test',roomId:'one',packageRevision:1,dealerId:'dragan'};
+    runtime.observeCommitted({playerId:input.playerId,command:{op:'start',dealer:'dragan'},view:{version:7},
+      session:{movingSpeech:{ownerHash:digest(input.owner),context:input.context,sessionRevision:input.sessionRevision}}});}
   const connect = (descriptor, overrides = {}) => {
     const socket = new WebSocket(overrides.url ?? address, overrides.protocols ?? ['moving-v1', `ticket.${descriptor.ticket}`],
       { headers: { origin, cookie: 'owner=one', ...overrides.headers } });
@@ -103,6 +115,35 @@ test('bank-ready admission precedes TTS; exact descriptor and plan survive real 
   assert.equal((await client.close).code, 1000);
   assert.deepEqual(client.messages.at(-1), { t: 'done', id: ready.plan.start.id, frames: 36 });
   assert.equal(f.state.chunks, 3); assert.equal(f.state.cancelled, 1);
+});
+test('fresh opening binds exact box3 sequence once; short speech retains reservation until played ACK',async t=>{
+  const f=await setup(t,{deal:true}),d=await f.prepare();
+  assert.equal(d.presentationVersion,7);assert.throws(()=>f.runtime.normalPresentation(f.input.playerId,7),/reserved/);
+  await assert.rejects(f.prepare({requestId:'replay'}),/not_available/);
+  const client=f.connect(d);await client.opened;await until(()=>client.messages.length===3);
+  const ready=client.messages[0];assert.equal(ready.sequence.frames.length,183);
+  assert.equal(d.sequenceSha256,digest(JSON.stringify(ready.sequence)));
+  assert.deepEqual(ready.sequence.steps.map(s=>s.video.filmedTake.takeKey),['4:i','dealer:base','4:base','hole:base']);
+  assert.ok(ready.plan.timeline.every((r,k)=>r.take===ready.sequence.frames[k].take&&r.frame===k));
+  client.send({t:'credit',id:ready.plan.start.id,frames:36});await until(()=>client.messages.some(m=>m.t==='done'));
+  assert.equal(f.state.cancelled,0);assert.throws(()=>f.runtime.normalPresentation(f.input.playerId,7),/reserved/);
+  client.send({t:'played',id:ready.plan.start.id});assert.equal((await client.close).code,1000);
+  assert.equal(f.state.cancelled,1);await assert.rejects(f.prepare({requestId:'after-play'}),/not_available/);
+});
+test('normal playback, other player, changed round and publication revoke a moving reservation before further output',async t=>{
+  for(const mode of ['normal','other','other-room','other-session','other-owner','changed-before','changed-tail','publication-tail']){
+    const f=await setup(t,{deal:true});
+    if(mode==='normal'){f.runtime.normalPresentation(f.input.playerId,7);await assert.rejects(f.prepare(),/not_available/);continue;}
+    if(mode==='other'){await assert.rejects(f.prepare({playerId:'other'}),/not_available/);assert.equal(f.trace.includes('tts'),false);continue;}
+    if(mode.startsWith('other-')){await assert.rejects(f.prepare(mode==='other-room'?{context:{...f.input.context,roomId:'two'}}:
+      mode==='other-session'?{sessionRevision:'browser-2'}:{owner:'owner-two'}),/not_available/);assert.equal(f.trace.includes('tts'),false);continue;}
+    const d=await f.prepare();
+    if(mode==='changed-before'){f.state.receipt.version++;assert.equal((await f.connect(d).opened).status,403);continue;}
+    const client=f.connect(d);await client.opened;await until(()=>client.messages.length===3);
+    client.send({t:'credit',id:client.messages[0].plan.start.id,frames:36});await until(()=>client.messages.some(m=>m.t==='done'));
+    if(mode==='changed-tail')f.state.receipt.version++;else f.state.projectRevision++;
+    await client.close;assert.equal(f.state.cancelled,1);
+  }
 });
 
 test('current owner is required for both rest HTTP and single-use WebSocket ticket, without dispatch', async t => {

@@ -289,6 +289,7 @@ const API = { '/api/player': apiPlayer, '/api/deposit': apiDeposit, '/api/balanc
 // Server-owned demo table; SQLite transaction commits wallet and shoe together.
 const nativeOptions = { db, getPlayer, logTx,
   publish: async observation => {
+    movingSpeechService?.observeCommitted(observation);
     try {
     const scope = {playerId:observation.playerId,dealerId:'astrid'};
     (await probeRuntime.cancel(scope));
@@ -927,6 +928,7 @@ const server = createServer(async (req, res) => {
   if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json' || pathname === '/web/public/dealer-identity.mjs') {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext,
+        beforeActionPresentation:({playerId,version})=>movingSpeechService?.normalPresentation(playerId,version),
         ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{
           if((await auth.session(request))?.playerId!==playerId)throw Object.assign(Error('native_p6_playback_cookie_required'),{statusCode:401});
           const owner=await chatSessionOwner(request,playerId);
@@ -1127,7 +1129,10 @@ const server = createServer(async (req, res) => {
         const speechTrace = randomBytes(8).toString('hex');
         const registeredSpeech = await dealerSpeechRuntime?.requested(dealerId);
         const selectedSpeechStream = movingSpeechService?.supports(dealerId)
-          ? movingSpeechService.forContext(chatAuthorization.presentationContext) : speechStreamService;
+          ? movingSpeechService.forContext(chatAuthorization.presentationContext,incoming.presentationVersion,incoming.sessionRevision) : speechStreamService;
+        if(incoming.presentationVersion!==undefined&&(!movingSpeechService?.supports(dealerId)
+          ||!Number.isSafeInteger(incoming.presentationVersion)||String(incoming.presentationVersion)!==incoming.roundRevision))
+          throw Object.assign(Error('invalid_moving_deal_context'),{statusCode:409});
         if (registeredSpeech && (typeof selectedSpeechStream?.prepare !== 'function' || incoming.acceptsSpeechStream !== true)) throw Object.assign(Error('generated_speech_stream_required'), {statusCode:503});
         const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
           onTiming: (stage, ms) => {
@@ -1200,7 +1205,21 @@ const server = createServer(async (req, res) => {
         const activeSession=(await playerSession(req));
         if (req.url === '/api/roulette/table' && !guestPreview && activeSession?.playerId !== authenticated) throw Object.assign(Error('session_changed'),{statusCode:401});
         if (req.url === '/api/roulette/table' && activeSession?.partnerKeyId) throw Object.assign(Error('roulette_native_account_required'),{statusCode:403});
-        out = (await API[req.url]({ ...JSON.parse(body || '{}'), id: authenticated }, req.url === '/api/table' ? activeSession : null));
+        const incoming=JSON.parse(body||'{}');let commandSession=activeSession;
+        if(req.url==='/api/table'&&incoming.movingSpeech!==undefined){
+          if(incoming.op!=='start'||!movingSpeechService?.supports(incoming.dealer)||typeof incoming.movingSpeech?.sessionRevision!=='string'
+            ||!CHAT_REVISION.test(incoming.movingSpeech.sessionRevision))
+            throw Object.assign(Error('invalid_moving_deal_context'),{statusCode:409});
+          const access=await authorizeChatDealer({dealerId:incoming.dealer,presentationContext:incoming.movingSpeech.context});
+          if(!access.presentationContext)throw Object.assign(Error('moving_deal_room_required'),{statusCode:409});
+          commandSession={...activeSession,movingSpeech:{context:access.presentationContext,sessionRevision:incoming.movingSpeech.sessionRevision,
+            ownerHash:createHash('sha256').update(await chatSessionOwner(req,authenticated)).digest('hex')}};
+        }
+        // The grant stays in this authenticated publish observation, never in
+        // the persisted command, wallet, public receipt, or browser response.
+        delete incoming.movingSpeech;
+        out = (await API[req.url]({ ...incoming, id: authenticated }, req.url === '/api/table' ? commandSession : null));
+        if(req.url==='/api/table')out={...out,movingSpeechAvailable:movingSpeechService?.supports(incoming.dealer)===true};
         if(req.url==='/api/player'&&activeSession?.displayName&&!out?.error)out={...out,name:activeSession.displayName};
       }
       catch (e) { out = publicFailure(e, Number.isInteger(e?.statusCode) ? e.statusCode : 400); }
@@ -1373,6 +1392,8 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   const repository=studioPolicyRuntime.repository;
   const {assertMovingSpeechSource}=await import('./moving-speech-bank.mjs');
   movingSpeechService=createMovingSpeechRuntime({server,origin:process.env.PUBLIC_URL,workerOrigin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,
+    readPresentation:playerId=>db.prepare('SELECT version,payload FROM native_presentations WHERE player_id=?').get(playerId),
+    publicVideo:(frozen,id)=>frozenDealerContext.publicVideo(frozen,id),
     ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bank,bankOptions,
     releaseSha256:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,sessions,dealerRuntime:dealerSpeechRuntime,
     resolveOwner:chatSessionOwner,readRegistry:studioMediaRuntime.videoRegistry,
