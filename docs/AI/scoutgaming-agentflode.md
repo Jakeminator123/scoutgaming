@@ -123,7 +123,7 @@ tracker är märkta som historik. Aktuell merge/driftstatus följs där överst.
 Dokumentationsändring 16 oktober 2026: det nya runtimekontraktet samlar
 katalog och svarsbibliotekets metadata i scoped Neon, med mediebytes i Blob.
 Lokala katalogfiler används endast som uttryckliga authoring-/importkällor.
-Vanlig `lab/start.mjs` öppnar publicerad produkt (`--no-open` skriver URL);
+Vanlig `apps/studio/start.mjs` öppnar publicerad produkt (`--no-open` skriver URL);
 bara `--offline` startar isolerade temporära testdata. Äldre anslutna lokallägen
 avvisas. Guiderna för [runtime](../LOCAL-PRESENTATION-RUNTIME.md),
 [miljövariabler](../ENVIRONMENT-VARIABLES.md) och
@@ -538,6 +538,7 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-17 | Studios spårade källrot är apps/studio. Källimports, cwd-/SQL-rötter, Next-traces, CI, Docker och Vercels Studio-root följer samma flytt; /studio och publika kompatibilitetsadresser består. Gamla privata original och dependencyjunctions ligger kvar med bevarade ignoreskydd. Lokala verifieringskvitton och återstående leverans redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Speechens fem spårade källfiler finns i apps/speech. CI, Vercels speech-root och befintliga transportfixtures följer flytten; Node22, npm-lås, tjänstnamn och publika socketadresser består. Separat lokal verifiering redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Frontendens spårade källrot är apps/web. CI, lokala hooks och miljöregistret följer samma rot; testtäckning och separat Node22-speechsteg består. Gamla ignorerade data och dependencyjunctions har inte flyttats. Lokal verifiering och återstående leverans framgår av JOHN-HANDOFF. |
 | 2026-10-17 | Uppföljningen till mergade PR215 inkluderar Jakobs borttagning av `reference-repos.mdc`. Dubblerad leveranspolicy i Chef-/leveransregler ersätts med hänvisning till AGENTS; Chef-textens beslutsordning följer samma källa. Inboxinstruktionen förklarar explicit mottagare på featurebranch utan datorregistrering, med täckning i befintligt inboxprov. Köåterhämtningen är redan levererad separat i PR216. |

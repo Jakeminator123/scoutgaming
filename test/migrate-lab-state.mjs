@@ -8,7 +8,7 @@ import { acquireLocalSession } from '../open-claw/lab/deploy/local-session.mjs';
 async function fixture(t) {
   const base = await mkdtemp(join(tmpdir(), 'croupier-lab-migration-'));
   t.after(() => rm(base, { recursive: true, force: true }));
-  const repoRoot = join(base, 'checkout'), data = join(repoRoot, 'lissabon/data'), target = join(repoRoot, 'lab/data');
+  const repoRoot = join(base, 'checkout'), data = join(repoRoot, 'lissabon/data'), target = join(repoRoot, 'apps/studio/data');
   await mkdir(join(data, 'players'), { recursive: true }); await mkdir(join(data, 'history')); await mkdir(target, { recursive: true });
   await writeFile(join(data, 'project.json'), '{"revision":"preserve"}\n');
   await writeFile(join(data, 'players/croupier.db'), 'synthetic player bytes');

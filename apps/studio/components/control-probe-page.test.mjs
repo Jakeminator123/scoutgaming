@@ -1,0 +1,74 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import vm from 'node:vm';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createSeedProject as createBaseProject, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
+
+const require = createRequire(import.meta.url);
+const { transformSync } = require('next/dist/build/swc');
+
+function loadTs(fileUrl) {
+  const source = readFileSync(fileUrl, 'utf8');
+  const output = transformSync(source, { filename: fileURLToPath(fileUrl), jsc: { parser: { syntax: 'typescript', tsx: true }, transform: { react: { runtime: 'automatic' } } }, module: { type: 'commonjs' } });
+  const module = { exports: {} };
+  const localRequire = createRequire(fileUrl);
+  vm.runInNewContext(output.code, {
+    module, exports: module.exports, structuredClone, URL, URLSearchParams,
+    window: new Proxy({}, { get: (_target, key) => globalThis.window?.[key] }),
+    require: name => {
+      if (name === 'next/navigation') return { usePathname: () => '/control/probe', useSearchParams: () => new URLSearchParams() };
+      if (name.endsWith('.module.css') || name.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) };
+      if (name.startsWith('./') || name.startsWith('../')) {
+        for (const suffix of ['', '.tsx', '.ts', '.mjs', '.js']) {
+          const candidate = new URL(name + suffix, fileUrl);
+          const path = fileURLToPath(candidate);
+          if (!existsSync(path)) continue;
+          if (path.endsWith('.mjs') || path.endsWith('.js') || path.endsWith('.json')) return localRequire(path);
+          return loadTs(pathToFileURL(path));
+        }
+      }
+      return localRequire(name);
+    },
+  }, { filename: fileURLToPath(fileUrl) });
+  return module.exports;
+}
+
+const project = createSeedProject();
+const props = { initialProject: project, initialVideos: { videos: [] }, initialStatus: { configured: false }, initialDealerId: 'astrid' };
+
+test('probe route loads studio data for /control/probe and tolerates a missing searchParams argument', () => {
+  const source = readFileSync(new URL('../app/control/probe/page.tsx', import.meta.url), 'utf8');
+  assert.match(source, /loadControlStudio\('\/control\/probe'\)/);
+  assert.match(source, /props\?\.searchParams/);
+  assert.match(source, /firstQueryValue\(query\.dealer\)/);
+  assert.match(source, /firstQueryValue\(query\.event\)/);
+  assert.match(source, /title: 'AI-småprat vid inaktivitet · Croupier Studio'/);
+  assert.match(source, /dynamic = 'force-dynamic'/);
+});
+
+test('unsupported dealers keep their identity and cannot edit or test Astrids probe policy', () => {
+  const { ControlProbePage } = loadTs(new URL('./control-probe-page.tsx', import.meta.url));
+  const customProject = addDealer(project, 'paow', 'PAOW');
+  for (const dealerId of ['paow', 'elin', 'saga']) {
+    const html = renderToStaticMarkup(React.createElement(ControlProbePage, { ...props, initialProject: customProject, initialDealerId: dealerId }));
+    assert.match(html, /aria-label="Talinitiativ för vald dealer"/);
+    assert.match(html, new RegExp(`dealer=${dealerId}`));
+    assert.match(html, /<button[^>]*disabled[^>]*>Spara projekt<\/button>/);
+    assert.match(html, /ännu bara anslutet för Astrid/);
+    assert.doesNotMatch(html, /aria-label="AI-småprat vid inaktivitet för Astrid"|>Prova text<|>Automatiskt · OpenClaw<|<input|<select/);
+  }
+});
+
+test('probe page requires an explicit dealer before rendering any speech policy',()=>{
+  const {ControlProbePage}=loadTs(new URL('./control-probe-page.tsx',import.meta.url));
+  const html=renderToStaticMarkup(React.createElement(ControlProbePage,{...props,initialDealerId:undefined}));
+  assert.match(html,/<h2>Välj dealer<\/h2>/);
+  assert.doesNotMatch(html,/aria-label="AI-småprat vid inaktivitet för Astrid"|>Prova text</);
+});
+
+// Explicit active dealers used by this isolated component fixture.
+function createSeedProject(){return addDealer(addDealer(createBaseProject(),'elin','Elin'),'saga','Saga');}

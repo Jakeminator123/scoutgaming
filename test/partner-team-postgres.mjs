@@ -5,9 +5,9 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createPostgresStore } from '../web/storage/postgres-store.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
-import { handlePartnerAuth } from '../lab/lib/partner-session.mjs';
-import { STANDARD_OPERATOR_ROLES } from '../lab/lib/operator-admin-api.mjs';
-import { createOperatorJournal } from '../lab/lib/operator-journal.mjs';
+import { handlePartnerAuth } from '../apps/studio/lib/partner-session.mjs';
+import { STANDARD_OPERATOR_ROLES } from '../apps/studio/lib/operator-admin-api.mjs';
+import { createOperatorJournal } from '../apps/studio/lib/operator-journal.mjs';
 import { planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 
 const origin = 'https://n2-qa.example.invalid';

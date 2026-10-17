@@ -5,7 +5,7 @@ import {
   allowsPartnerResource, allowsPartnerRoleAssignment, allowsPartnerInvite, allowsPartnerInviteRole, allowsPartnerSuspension,
 } from '../packages/studio-access/server/partner-access-policy.mjs';
 import { effectiveAccountRole } from '../packages/studio-access/account-role.mjs';
-import { meetsStudioAdminActionRole } from '../lab/lib/studio-access-policy.mjs';
+import { meetsStudioAdminActionRole } from '../apps/studio/lib/studio-access-policy.mjs';
 
 const scope = () => ({ environment: 'qa', workspaceId: 'scoutgaming' });
 const resource = (operatorId = 'operator-north') => ({ scope: scope(), operatorId });

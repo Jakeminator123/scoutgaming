@@ -11,7 +11,7 @@ import { validateGameConnection } from '../../packages/storage/server/postgres-s
 import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
 import { studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
-import { validatePrivateMedia } from '../../lab/lib/cloud-media-store.mjs';
+import { validatePrivateMedia } from '../../apps/studio/lib/cloud-media-store.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;
@@ -409,8 +409,8 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
         OPENCLAW_SPEECH_TIMEOUT_MS: String(config.speechTimeoutMs),
         OPENCLAW_TIMEOUT_MS: String(config.timeoutMs) } },
     lab: { command: process.execPath,
-      args: [join(REPOSITORY, 'lab/node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(LAB_PORT)],
-      cwd: join(REPOSITORY, 'lab'),
+      args: [join(REPOSITORY, 'apps/studio/node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(LAB_PORT)],
+      cwd: join(REPOSITORY, 'apps', 'studio'),
       env: { ...shared, HOST: '127.0.0.1', PORT: String(LAB_PORT), CROUPIER_LAB_DIST_DIR: '.next',
         ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? { CROUPIER_DATABASE: config.database,
           CROUPIER_GAME_DATABASE_URL: config.gameDatabaseUrl } : {}),

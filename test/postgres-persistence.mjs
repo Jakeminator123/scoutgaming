@@ -6,7 +6,7 @@ import { createHash, createHmac } from 'node:crypto';
 import { createPostgresStore } from '../web/storage/postgres-store.mjs';
 import { postgresStatement,validateGameConnection } from '../packages/storage/server/postgres-store.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
-import { createStudioDocumentApi } from '../lab/lib/studio-document-api.mjs';
+import { createStudioDocumentApi } from '../apps/studio/lib/studio-document-api.mjs';
 import { createPostgresNativeTableCommand } from '../web/postgres-native-table.mjs';
 import { createPlayerAdministration } from '../packages/storage/server/player-administration.mjs';
 import { playerAuth } from '../web/storage/async-player-auth.mjs';

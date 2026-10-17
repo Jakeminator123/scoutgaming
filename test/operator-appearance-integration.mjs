@@ -7,7 +7,7 @@ import {createOperatorPackageReader} from '../web/storage/operator-package-reade
 import {createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets} from '../web/public/operator-appearance-boundary.mjs';
 import {backendPlatformPath} from '../packages/navigation/server/platform-routing.mjs';
 
-const {parse}=createRequire(new URL('../lab/package.json',import.meta.url))('next/dist/compiled/acorn');
+const {parse}=createRequire(new URL('../apps/studio/package.json',import.meta.url))('next/dist/compiled/acorn');
 const [serverSource,appSource]=await Promise.all(['../web/server.mjs','../web/public/app.mjs'].map(path=>readFile(new URL(path,import.meta.url),'utf8')));
 const serverTree=parse(serverSource,{ecmaVersion:'latest',sourceType:'module'}),appTree=parse(appSource,{ecmaVersion:'latest',sourceType:'module'});
 function walk(node,visit){if(!node||typeof node!=='object')return;visit(node);for(const value of Object.values(node))if(Array.isArray(value))value.forEach(child=>walk(child,visit));else if(value&&typeof value==='object')walk(value,visit);}

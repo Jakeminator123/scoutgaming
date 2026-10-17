@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {dealerClipGuide} from '../packages/presentation/contracts/dealer-clip-guide.mjs';
-import {forgeSlots} from '../lab/lib/dealer-forge-catalog.mjs';
+import {forgeSlots} from '../apps/studio/lib/dealer-forge-catalog.mjs';
 import {createSeedProject} from '../packages/presentation/contracts/studio-model.mjs';
-import {dealerMediaSlots} from '../lab/lib/dealer-media-library.mjs';
+import {dealerMediaSlots} from '../apps/studio/lib/dealer-media-library.mjs';
 
 test('every current Forge slot has a visual explanation without granting media acceptance',()=>{
   const slots=forgeSlots(createSeedProject()),original=structuredClone(slots);

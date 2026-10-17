@@ -3,12 +3,12 @@
 import { mkdir, writeFile, appendFile, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { sanitizeObservation } from '../lab/lib/partner-trace.mjs';
+import { sanitizeObservation } from '../apps/studio/lib/partner-trace.mjs';
 import { autoArchiveLocalArtifacts } from './retention-archive.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const startedAt = new Date().toISOString();
-const directory = resolve(root, 'lab/data/observations', startedAt.replace(/[:.]/g, '-'));
+const directory = resolve(root, 'apps/studio/data/observations', startedAt.replace(/[:.]/g, '-'));
 await mkdir(directory, { recursive: true });
 const base = 'http://127.0.0.1:4188';
 const abort = new AbortController();

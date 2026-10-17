@@ -1,0 +1,98 @@
+import {dealerMediaEvents,rouletteMediaEvent,rouletteMediaDefaults} from '../../../packages/presentation/contracts/roulette-media.mjs';
+import {kindForEvent,situationsForEvent,validateVideoMetadata} from '../../../packages/presentation/contracts/video-intake.mjs';
+import {clipSituationLabel} from './clip-label.mjs';
+import {speechSlotStandard,speechSlotVideoFits} from '../../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import contract from '../../../packages/presentation/contracts/policies/studio-contract.json' with {type:'json'};
+const blackjackEventIds=new Set(contract.events.map(event=>event.id));
+export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'roulette',label:'Roulette'},{id:'idle',label:'Idle / Grundloop'},{id:'transition',label:'Övergångar'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
+export function eventMediaCategory(event){if(rouletteMediaEvent(event.id))return 'roulette';if(event.sourceType==='transition'||event.id==='transition.shoe')return 'transition';if(event.id.startsWith('deal.')||event.id.startsWith('reveal.'))return 'deal';return kindForEvent(event);}
+export function dealerMediaSlots(project,category='all'){
+  return slotsForEvents(dealerMediaEvents(project),category);
+}
+// The existing Forge and runtime use blackjack's canonical event contract.
+// Intake-only roulette slots never acquire prompts, shoe geometry or billing.
+export function blackjackMediaSlots(project,category='all'){
+  return slotsForEvents(project.events.filter(event=>blackjackEventIds.has(event.id)),category);
+}
+function slotsForEvents(events,category){
+  return events.filter(event=>category==='all'||eventMediaCategory(event)===category).flatMap(event=>{
+    const situations=situationsForEvent(event);
+    return (situations.length?situations:['']).map(situation=>({id:event.id+'/'+situation,eventId:event.id,situation,category:eventMediaCategory(event),label:event.id==='idle.ready'?'Grundloop':rouletteMediaEvent(event.id)?event.label+' · '+situation:situation?clipSituationLabel(event.id,situation):event.label}));
+  }).sort((a,b)=>(a.category==='idle'?0:1)-(b.category==='idle'?0:1));
+}
+export function mediaClassification(project,{dealerId,slotId,label,contentType}){
+  const slot=dealerMediaSlots(project).find(row=>row.id===slotId);
+  if(!slot||!project.dealers.some(row=>row.id===dealerId))throw Error('Välj dealer och ett exakt fack.');
+  const audio=contentType.startsWith('audio/'),image=contentType.startsWith('image/');
+  if(image!==(slot.eventId==='roulette.reference'))throw Error('Välj VILA-bildens eget fack för PNG och ett handlingsfack för video.');
+  if(audio&&slot.category!=='speech')throw Error('Välj ett talfack för ljudfilen.');
+  return validateVideoMetadata({dealerId,eventId:slot.eventId,situation:slot.situation,label,kind:kindForEvent(dealerMediaEvents(project).find(row=>row.id===slot.eventId)),role:'standard',playback:'once',notes:'',...(audio?{mediaType:'audio'}:{}),...(image?{mediaType:'image',compositing:{mode:'alpha'}}:{}),...(rouletteMediaEvent(slot.eventId)?rouletteMediaDefaults(slot.eventId,slot.situation):{})});
+}
+export function dealerLibraryVideos(project,inventory,dealerId,category='all',archived=false){
+  return inventory.videos.filter(video=>(video.dealer??video.classification?.dealerId??video.familyId?.split('/')[0])===dealerId&&Boolean(video.classification?.archived)===archived
+    &&(category==='all'||eventMediaCategory(dealerMediaEvents(project).find(event=>event.id===(video.classification?.eventId??video.eventId??video.suggestedEventId))??{id:'',sourceType:''})===category));
+}
+export function draftUsesMedia(project,id){const {clipLabels,dealerTrash,...active}=project;return JSON.stringify(active).includes(JSON.stringify(id));}
+
+// A destination is exact. A neighbouring box, sound file or archived upload
+// cannot satisfy the video requirement, even when its duration happens to fit.
+export function mediaMatchesSlot(video,slot){
+  const metadata=video.classification;
+  return (metadata?.eventId??video.eventId??video.suggestedEventId)===slot.eventId
+    && (slot.eventId==='idle.ready'||(metadata?.situation??video.situation??'')===slot.situation);
+}
+export function mediaUsage(project,video,dealerId){
+  if(project.dealers.find(row=>row.id===dealerId)?.speechProfile?.reference?.videoId===video.id)return 'Referensklipp för AI-tal';
+  if(project.dealerTrash?.some(row=>row.dealer.id===dealerId))return 'Tillhör dealer i papperskorgen';
+  const idle=project.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy;
+  if(idle?.base?.some(row=>row.videoId===video.id))return 'Grundloop';
+  if(idle?.variants?.some(row=>row.videoId===video.id))return 'Variation';
+  for(const slot of dealerMediaSlots(project,'speech')){
+    if(speechSlotStandard(project,dealerId,slot.eventId,slot.situation)?.videoGenerationId===video.id&&mediaMatchesSlot(video,slot))return 'Standard för '+slot.label+' i utkastet';
+  }
+  for(const line of project.lines.filter(row=>row.dealerId===dealerId)){
+    const variant=line.variants.find(row=>row.videoGenerationId===video.id);
+    if(variant)return variant.id===line.baselineVariantId?'Standard i utkastet':'Variant i utkastet';
+  }
+  const policy=project.mediaPolicy?.find(row=>row.familyId===video.familyId)?.variants.find(row=>row.videoId===video.id);
+  if(policy)return 'Variant med inställningar';
+  if(video.role==='standard'&&video.familyId)return 'Familjens standard';
+  return 'Inte vald i utkastet';
+}
+export function dealerSlotStatus(project,inventory,dealerId,slot){
+  const files=dealerLibraryVideos(project,inventory,dealerId).filter(row=>mediaMatchesSlot(row,slot));
+  const usable=files.filter(row=>row.available&&row.classification?.mediaType!=='audio');
+  const count=usable.length;
+  if(slot.eventId==='idle.ready'){
+    const policy=project.dealerIdlePolicies?.find(row=>row.dealerId===dealerId)?.policy;
+    const line=project.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
+    const baseline=line?.variants.find(row=>row.id===line.baselineVariantId)?.videoGenerationId;
+    const ids=policy?.base?.length?policy.base.map(row=>row.videoId):baseline?[baseline]:[];
+    const chosen=ids.length>0&&ids.every(id=>usable.some(row=>row.id===id));
+    if(chosen)return {level:'ready',label:'Grundloop vald',count};
+    return {level:'required',label:count?'Krävs · välj grundloop':'Krävs · grundloop saknas',count};
+  }
+  if(slot.category==='speech'){
+    const selection={dealerId,eventId:slot.eventId,situation:slot.situation,requireRecordedSpeech:slot.eventId==='speak.other'};
+    const choices=files.filter(video=>speechSlotVideoFits(video,selection));
+    const selected=speechSlotStandard(project,dealerId,slot.eventId,slot.situation);
+    const chosen=selected&&choices.some(video=>video.id===selected.videoGenerationId);
+    const line=slot.eventId==='speak.other'&&project.lines.find(row=>row.dealerId===dealerId&&row.eventId===slot.eventId);
+    const olderId=line&&line.variants.find(row=>row.id===line.baselineVariantId)?.videoGenerationId;
+    if(!selected&&olderId&&files.some(video=>video.id===olderId&&speechSlotVideoFits(video,{...selection,requireRecordedSpeech:false})))return {level:'ready',label:'Äldre standard i utkastet',count:choices.length};
+    return {level:chosen?'ready':selected?'recommended':'optional',label:chosen?'Standard vald i utkastet':selected?'Valt standardklipp saknas':choices.length?choices.length+' klipp · välj standard':'Valfritt · talfilm saknas',count:choices.length};
+  }
+  if(slot.category==='transition'){
+    if(!count)return {level:'recommended',label:'Rekommenderas · klipp saknas',count};
+    return {level:'ready',label:count+' klipp finns',count};
+  }
+  if(slot.category==='deal'&&!count){
+    return {level:'recommended',label:'Rekommenderas · klipp saknas',count};
+  }
+  return {level:count?'ready':'optional',label:count?count+' klipp finns':'Valfritt · tomt fack',count};
+}
+export function mediaPage(items,requested=1,size=6){
+  const pageSize=Math.max(1,Math.floor(size)||6),pages=Math.max(1,Math.ceil(items.length/pageSize));
+  const page=Math.max(1,Math.min(pages,Math.floor(requested)||1));
+  return {items:items.slice((page-1)*pageSize,page*pageSize),page,pages,total:items.length};
+}

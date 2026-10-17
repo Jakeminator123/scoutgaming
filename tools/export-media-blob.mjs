@@ -5,7 +5,7 @@ import {pathToFileURL} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import {readMediaLayout,repositoryRoot,presentationBankRoot,resolveMediaPath,validateMediaAliases} from './media-layout.mjs';
 import {hashFile} from './migrate-media-layout.mjs';
-import {MEDIA_MIME,mediaBlobPath,putPrivateMedia,getPrivateMedia} from '../lab/lib/cloud-media-store.mjs';
+import {MEDIA_MIME,mediaBlobPath,putPrivateMedia,getPrivateMedia} from '../apps/studio/lib/cloud-media-store.mjs';
 const identity=hash=>`${hash.slice(0,8)}-${hash.slice(8,12)}-${hash.slice(12,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`;
 /** Metadata-only dry run. UUIDs from the saved presentation registry stay exact. */
 export async function planBlobExport({root=repositoryRoot,includeSource=false,layout=readMediaLayout(root)}={}){
@@ -55,8 +55,8 @@ export async function writeBlobIndex(file,index){await mkdir(dirname(file),{recu
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
   const args=process.argv.slice(2),value=name=>args[args.indexOf(name)+1],root=args.includes('--root')?resolve(value('--root')):repositoryRoot;
   const plan=await planBlobExport({root,includeSource:args.includes('--include-source')});
-  const output=args.includes('--output')?resolve(value('--output')):join(root,'lab/data/media-blob-index.json');
-  const result=args.includes('--apply')?await syncBlobExport(plan,{root,checkpoint:output,cacheDir:join(root,'lab/data/.media-export-cache')}):plan;
+  const output=args.includes('--output')?resolve(value('--output')):join(root,'apps/studio/data/media-blob-index.json');
+  const result=args.includes('--apply')?await syncBlobExport(plan,{root,checkpoint:output,cacheDir:join(root,'apps/studio/data/.media-export-cache')}):plan;
   if(args.includes('--output')||args.includes('--apply'))await writeBlobIndex(output,result);
   console.log(JSON.stringify({mode:args.includes('--apply')?'verified-private-sync':'dry-run',files:result.files.length,bytes:result.files.reduce((n,row)=>n+row.size,0),runtimePublic:result.files.filter(row=>row.access==='public').length,namespace:result.namespace}));
 }

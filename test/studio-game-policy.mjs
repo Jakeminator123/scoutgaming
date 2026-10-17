@@ -1,6 +1,6 @@
 import * as savedGameDocumentContract from '../packages/studio-registry/server/document-contract.mjs';
 
-import { createLegacyProject } from '../lab/test/fixtures/legacy-project.mjs';
+import { createLegacyProject } from '../apps/studio/test/fixtures/legacy-project.mjs';
 import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';

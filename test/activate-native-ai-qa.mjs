@@ -131,6 +131,9 @@ test('persistent private closure rehydrates a fresh image, preserves existing by
   const pins={};for(const name of AI_QA_PRIVATE_NAMES){const bytes=Buffer.from('Synthetic source '+name);pins[name]=sha256(bytes);await writeFile(join(original,name),bytes);}
   const raw=await buildAiQaPrivateSnapshot({directory:original,pins}),manifest={privateSources:pins,privateSnapshotSha256:sha256(raw)};
   const first=await restoreAiQaPrivateSnapshot({repository,manifest,raw});assert.equal(first.written,4);assert.equal(first.providerCalls,0);assert.equal(first.budgetWrites,0);
+  // The retained runtime and manifest readers consume this legacy private root.
+  for(const name of AI_QA_PRIVATE_NAMES)assert.equal(sha256(await readFile(join(repository,'lab/data/platform-private',name))),pins[name]);
+  await assert.rejects(readFile(join(repository,'apps/studio/data/platform-private',AI_QA_PRIVATE_NAMES[0])),{code:'ENOENT'});
   const second=await restoreAiQaPrivateSnapshot({repository,manifest,raw});assert.equal(second.written,0);assert.equal(second.retained,4);
   const path=join(repository,'lab/data/platform-private',AI_QA_PRIVATE_NAMES[0]);await writeFile(path,'Different existing bytes');
   await assert.rejects(()=>restoreAiQaPrivateSnapshot({repository,manifest,raw}),/ai_qa_private_snapshot_target_changed/);

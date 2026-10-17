@@ -16,7 +16,7 @@ export async function startLabSession({ repoRoot = root, port = 4188 } = {}) {
   async function run(command, args, options = {}) {
     if (interrupted) throw new Error('Labbstarten avbröts.');
     return await new Promise((yes, no) => {
-      child = spawn(command, args, { cwd: join(repoRoot, 'lab'), windowsHide: true, stdio: 'inherit',
+      child = spawn(command, args, { cwd: join(repoRoot, 'apps', 'studio'), windowsHide: true, stdio: 'inherit',
         env: session.environment(process.env), ...options });
       child.once('error', no);
       child.once('exit', code => { child = null; code === 0 ? yes() : no(new Error(`Labbprocessen avslutades (${code}).`)); });
@@ -24,7 +24,7 @@ export async function startLabSession({ repoRoot = root, port = 4188 } = {}) {
     });
   }
   try {
-    const next = join(repoRoot, 'lab', 'node_modules', 'next', 'dist', 'bin', 'next');
+    const next = join(repoRoot, 'apps', 'studio', 'node_modules', 'next', 'dist', 'bin', 'next');
     if (!existsSync(next)) {
       // The fixed npm command runs inside the lease too: it changes shared deps.
       await run('npm', ['ci'], { shell: process.platform === 'win32' });

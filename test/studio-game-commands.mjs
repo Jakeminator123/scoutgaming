@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { createPlayerPasswordCommand } from '../packages/storage/server/player-administration.mjs';
 import { createStudioGameCommandApi } from '../web/studio-game-commands.mjs';
-import { studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
+import { studioCommandSignature } from '../apps/studio/lib/studio-game-authority.mjs';
 
 const scope = { environment: 'fixture', workspaceId: 'croupier' }, secret = 's'.repeat(40);
 const publicOrigin = 'https://public.example.invalid', at = 1_800_000_000_000;

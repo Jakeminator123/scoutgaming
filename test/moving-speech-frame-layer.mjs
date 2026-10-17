@@ -137,7 +137,7 @@ test('real browser decodes and composites two consecutive synthetic worker chunk
       'color=c=red:s=256x512:r=24,drawbox=x=0:y=256:w=128:h=256:color=white:t=fill,drawbox=x=128:y=256:w=128:h=256:color=black:t=fill',
       '-frames:v', '12', '-c:v', 'libx264', '-profile:v', 'baseline', '-pix_fmt', 'yuv420p',
       '-x264-params', 'aud=1:keyint=12:bframes=0', '-f', 'h264', h264], { stdio: 'pipe' });
-    const require = createRequire(new URL('../lab/package.json', import.meta.url));
+    const require = createRequire(new URL('../apps/studio/package.json', import.meta.url));
     const { outputFiles } = await require('esbuild').build({ entryPoints: [new URL('./fixtures/moving-speech-frame-layer.mjs', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')], bundle: true, write: false, format: 'esm' });
     server = createServer((req, res) => { res.setHeader('Content-Type', req.url === '/fixture.js' ? 'text/javascript' : 'text/html');
       res.end(req.url === '/fixture.js' ? outputFiles[0].contents : '<script type="module">import {run} from "/fixture.js"; window.run=run;</script>'); });

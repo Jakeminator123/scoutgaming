@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createStudioGameAuthority,studioCommandSignature} from '../lab/lib/studio-game-authority.mjs';
+import {createStudioGameAuthority,studioCommandSignature} from '../apps/studio/lib/studio-game-authority.mjs';
 import { studioCommandSignature as sharedStudioCommandSignature } from '../packages/shared/studio-game-command.mjs';
 const scope={environment:'fixture',workspaceId:'croupier'}, env={CROUPIER_PUBLIC_ORIGIN:'https://public.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://render.example.invalid',CROUPIER_VERCEL_INGRESS_SECRET:'s'.repeat(40)};
 const input={action:'apikeys/credit',body:{id:'key',playerId:'p',amount:10},actor:{user:'operator',role:'superadmin'},scope,

@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import { createPresentationApi } from '../web/presentation-api.mjs';
 import { createSeedProject, addDealer, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { selectPresentation } from '../web/presentation-selection.mjs';
-import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
+import { loadVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
 
 const source = { type: 'deal', to: 'box', box: 3, handIndex: 1, shoeDraw: 7, faceDown: false, card: { r: 'A', s: '♠' }, clip: { action: 'deal-centre' } };
 const golden = JSON.parse(await readFile(new URL('./fixtures/astrid-select-off.json', import.meta.url), 'utf8'));

@@ -167,7 +167,7 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
     if (labChild && labChild.exitCode === null && labChild.signalCode === null) return labUrl;
     labChild = null;
     labStarting = (async () => {
-      const labDir = join(repoRoot, 'lab');
+      const labDir = join(repoRoot, 'apps', 'studio');
       if (!fs.existsSync(join(labDir, '.next', 'BUILD_ID'))) throw new Error('Build lab first, or start with {startLab:false} and call fixture.startLab() afterward.');
       await unusedPort(labPort, '127.0.0.1');
       labChild = await startChild([join(labDir, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)], {

@@ -1,5 +1,109 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — kompletterande Studio-callergranskning, 18 oktober 2026
+
+GitHubs inline-review och mergeagentens egen läsning bekräftade ytterligare
+fyra path-regressioner efter e6102a16. Game-ruttens defaultpreview pekar nu
+på apps/studio/preview-build. Studio-roten skiljer en checkout som heter
+studio från dess apps/studio-katalog. Backupverktyget läser fortsatt de
+oflyttade privata originalen i lab/data, även om den nya datakatalogen finns.
+Anslutningsläsaren tar äldre lab-env före nya app-env och processmiljön sist;
+explicit envFiles samt opt-in för tal/cloud kvarstår. Probe-model-evals
+explicita lista bevarar också lab/.env.local. Privata original läses eller
+flyttas inte under denna verifiering.
+
+Befintliga isolerade prov för preview/root/backup/anslutning:54/54 gröna.
+37 brutna relativa länkar i Studios tre huvudguider pekar nu på befintliga
+filer; två OpenClaw-guidelänkar och aktiva launcher-/buildkommandon är också
+uppdaterade. Vanlig hook på069a69f0:53/53 gröna,0fel/skip. Nytt Studio-bygge
+på exakt069a69f0 är grönt med Node24.21.0,/studio,native-admin och4workers.
+Faktisk audit:80traces;77 innehåller alla12 Studio-SQL-filer inklusive014
+samt gameschemat (13 SQL-filer totalt). Admin81/Lobby30/preview26 och
+layer-assets worker/native/mediabunny-closure är kompletta. Inga saknade,
+privata eller externa referenser. Byggets ordinarie sanitizer tog bort72
+referenser enligt befintlig privat-/authoringpolicy. Slutlig CI och drift
+återstår hos mergeagenten.
+
+
+## C3 — Studio efter riktad granskning, 18 oktober 2026
+
+PR233:s main 3e87f56c910a7d1695237db286f46c48506d1f16 integreras normalt:
+014 är obligatorisk, med importkontroller och negativa fixtures bevarade.
+GPT-granskningen av c4a780af hittade två bekräftade sökvägsregressioner.
+QA-aktivering, privatbootstrap, transportklient och Docker använder åter den befintliga
+lab/data/platform-private som runtime läser. Hash-, ägar- och länkskydd
+består; inga privata original, journaler eller providerresurser ändras.
+Retention accepterar vid återställning även de två exakta äldre schema-v1-
+prefixen lab/data/history och lab/data/observations. Den registrerade
+ursprungsplatsen bevaras; nya arkiv följer apps/studio. Hashkontroll,
+länkskydd och förbud mot att skriva över befintliga mål består.
+
+Nytt lokalt Studio-bygge på c4a780af är grönt med /studio, native-admin och
+Node24.21.0. Faktisk traceaudit:80 traces,77 SQL-traces med alla12 SQL-filer
+inklusive014,Admin81/Lobby30/preview26 och layer-assets-worker/native-closure.
+Inga saknade, privata eller externa referenser. Detta byggkvitto föregår
+required014-integrationen och rättningarna; slutlig PR-CI och drift verifieras
+separat. Riktade regressioner:104/104 gröna, inklusive äldre arkiv av båda
+kategorierna och bootstrap till runtime-läsarens privata sökväg. Ordinarie
+hook på mergecommit6ee38f0f:198/198 gröna,0 fel/skip. Slutlig CI och drift
+återstår hos mergagent.
+
+
+## C3 — Studiointegration efter överlämning, 18 oktober 2026
+
+Budget-PR230:s levererade main fc7085e731e53012e058372f9afe0b28edb5ddad
+är normalt integrerad som 57f44508. Budget-, journal-, server- och SQL014/
+migrationsimplementationen är identisk med main. Konflikter löstes genom att
+bevara budgettestets fullhook-registrering och använda Studios nya källrot.
+Ordinarie integrationshook: 152 tester gröna, 0 fel, 1 befintligt SQL-opt-in.
+
+Den tidigare övertagna integrationen slutfördes som 32a49f99: 132 tester
+gröna, 0 fel, 1 SQL-opt-in efter egen låst Next-installation. Inga assertions
+togs bort. Aktiva återställningsvägar är uppdaterade; historiska lab/data och
+privata återställningsreferenser är bevarade.
+
+Det tidigare Studio-bygget på eaca2e35 verifierade 80 kompletta traces.
+Nya SQL014 ingår inte i det byggkvittot: slutlig PR-CI, byggtraces och faktisk
+Vercel/Render-paritet återstår. Ingen ny produktionsmigration eller GPU-körning
+görs här. Mergagent äger driftkvittot; lipsync2 äger senare budgetaktivering
+och talprov efter hela rotkedjan.
+
+## C3 — Studios källrot apps/studio, lokalt 17 oktober 2026
+
+939 spårade filer har flyttats individuellt från lab till apps/studio på
+separat branch från speechsluthead7fa5e561. Vid flyttsteget bevarades
+ursprungliga body-/mediebytes; därefter följer exakta import-, rot-, guide-
+och ignoreanpassningar. Inga privata original, envfiler, node_modules eller
+äldre byggmappar har flyttats. /studio är samma tekniska basePath;
+/admin, /partner, /lobby och publika /lab-kompatibilitetsadresser består.
+
+Den appinterna okachade root-helpern bevarar både repo-cwd och app-cwd.
+SQL/bootstrap, Director/envordning och explicita envFiles/dataDir/
+repositoryRoot-ports består. Next-includes/excludes, Docker, CI och Vercels
+Studio-root följer tvånivåläget. Både gamla lab/data/env/probeskydd och nya
+apps/studio/data skyddas. Sessionsvakten behåller read-only kontroll även
+av gamla lab- och lissabon-guards. Produktregister/media kommer fortsatt
+från Neon/Blob; ingen migration, provider- eller molnändring ingår.
+
+Verifieringskvitto: Studio samt Admin/Lobby-typer är gröna,379 ändrade
+JavaScriptmoduler syntaxkontrollerade och befintlig inventering512/0orphans.
+Isolerat Studio-only-produktionsbygge med /studio och native-admin är grönt
+efter en verifierad intern Next-tracekeyrättning (samma filglobs, inga HTTPändringar).
+80 slutliga traces har inga saknade, privata eller gamla lab-filer: Admin81,
+Lobby27+3fonts, preview26, SQL samt worker/native/migrationer finns med.
+29 sanerade referenser gällde enbart spårad open-claw/lab/.env.example.
+Hookens återstående testloaders/mocknycklar följer nu verkliga imports utan
+borttagna assertions; den bevarade lab/project.json-proveniensen är oförändrad.
+Privatbootstrap behåller den validerade dataplatsen lab/data/platform-private, med
+oförändrade byte/hash/symlink-kontroller och orörda äldre privata filer.
+Director-verktygens resolver och baselinearkiv omfattar kanoniska packages/director.
+Befintligt verkligt launcherprov i samma spegel:1/1 grönt. Det särskilt godkända
+originalbygget med samma profil är också grönt:28 statiska sidor,80 slutliga
+traces med komplett closure och inga privata/saknade/gamla/externa källrötter.
+Ordinarie Git-hook kontrollerar staged diff och relevanta befintliga prov på
+dessa källor; full regression och drift samordnas separat. Ingen push. Game-serverns
+nuvarande web-källrot och dess framtida flytt är fortfarande separata.
+
 ## Dragan: budgetmigration 014 installerad — 18 oktober 2026
 
 Efter verifierad #230-driftsättning på `fc7085e731e53012e058372f9afe0b28edb5ddad`

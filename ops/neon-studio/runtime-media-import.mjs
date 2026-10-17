@@ -7,7 +7,7 @@ import {StudioStorageError,canonicalStudioJson,studioStorageFailure,validateActo
 import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogJson,runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import {planStudioMigrations,loadStudioMigrations} from './migrations.mjs';
 import {validateMediaLayout} from '../../tools/media-layout.mjs';
-import {validatePrivateMedia} from '../../lab/lib/cloud-media-store.mjs';
+import {validatePrivateMedia} from '../../apps/studio/lib/cloud-media-store.mjs';
 
 const sources=Object.freeze({layout:'media/layout.json',blobIndex:'media/blob-index.json',presentation:'media/catalog/presentation.json',legacy:'media/catalog/legacy.json'});
 const versions='001,002,003,004,005,006,007,008,011,012,013,014';

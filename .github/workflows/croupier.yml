@@ -64,14 +64,14 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: |
-            lab/package-lock.json
+            apps/studio/package-lock.json
             apps/speech/package-lock.json
             web/package-lock.json
             services/astrid-gpu-worker/gateway/package-lock.json
       - name: Install verified ffmpeg packages
         timeout-minutes: 8
         uses: ./.github/actions/setup-ffmpeg
-      - run: npm --prefix lab ci
+      - run: npm --prefix apps/studio ci
       - name: Orphan tests
         run: node tools/check-orphan-tests.mjs
       - run: npm --prefix web ci --ignore-scripts
@@ -79,12 +79,12 @@ jobs:
       - name: Restore Studio compiler cache
         uses: actions/cache@v6
         with:
-          path: lab/.next/cache
-          key: ${{ runner.os }}-studio-next-v1-${{ hashFiles('lab/package-lock.json') }}-${{ github.sha }}
+          path: apps/studio/.next/cache
+          key: ${{ runner.os }}-studio-next-v1-${{ hashFiles('apps/studio/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-studio-next-v1-${{ hashFiles('lab/package-lock.json') }}-
+            ${{ runner.os }}-studio-next-v1-${{ hashFiles('apps/studio/package-lock.json') }}-
       - name: Build the real studio used by launcher regression tests
-        run: npm --prefix lab run build
+        run: npm --prefix apps/studio run build
       - name: Install the real Next middleware used by frontend regression tests
         uses: pnpm/action-setup@v6
         with:

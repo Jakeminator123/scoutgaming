@@ -4,11 +4,11 @@ import { writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { probeFixtures } from '../packages/presentation/contracts/probe-fixtures.mjs';
 import { requestProductProbe, PROBE_MODEL_IDS } from '../packages/director/product-probe.mjs';
-import { readSettings } from '../lab/lib/director-settings.mjs';
+import { readSettings } from '../apps/studio/lib/director-settings.mjs';
 
 const output=process.argv[process.argv.indexOf('--output')+1];
 if(!process.argv.includes('--output')||!output)throw new Error('Use --output <synthetic-results.json>.');
-const settings=readSettings({envFiles:[resolve('.env'),resolve('lab/.env.local')]});
+const settings=readSettings({envFiles:[resolve('.env'),resolve('lab/.env.local'),resolve('apps/studio/.env.local')]});
 const fixtures=probeFixtures(),results=[];
 let blocked=null;
 if(settings.remoteUrl && settings.remoteToken){

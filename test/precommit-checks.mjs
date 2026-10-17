@@ -22,7 +22,7 @@ test('documentation and indexing-only changes use quick checks', () => {
 test('reviewed folder guides use quick checks without exempting sibling code or arbitrary README files', () => {
   const guides = [
     'apps/web/README.md',
-    'packages/presentation/README.md', 'lab/client/README.md',
+    'packages/presentation/README.md', 'apps/studio/client/README.md',
     'packages/presentation/docs/INTEGRATION.md',
     'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
     'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
@@ -33,7 +33,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
     assert.equal(mode(guides.map(path => change(path, status))), 'documentation', status);
   }
   for (const path of [
-    'tools/media/encode.sh', 'lab/client/build.mjs',
+    'tools/media/encode.sh', 'apps/studio/client/build.mjs',
     'services/astrid-gpu-worker/.github/workflows/checks.yml',
     'services/astrid-gpu-worker/gateway/auth.mjs', 'web/storage/package.json',
     'tools/media/runtime-bundle/README.md', 'web/public/lab/README.md',
@@ -49,7 +49,7 @@ test('local code and deletions use focused checks; only CI or explicit full runs
     'web/public/app.mjs', 'test/player-auth.mjs', 'docs/dealer-sync-baseline.json',
     'open-claw/lab/deploy/runtime-bundle/knowledge/croupier-model.md',
     'content/staging/REVIEW.md', '.dockerignore', '.gitignore',
-    'lab/.env.example', '.githooks/pre-commit', 'tools/precommit-checks.mjs',
+    'apps/studio/.env.example', '.githooks/pre-commit', 'tools/precommit-checks.mjs',
     '.agents/skills/ping-croupier/SKILL.md', 'package.json',
     'docs/../web/player.md', 'docs\\guide.md',
   ]) {
@@ -198,25 +198,25 @@ test('failed, unstartable or interrupted check stops subsequent checks', () => {
 
 test('focused selection follows changed and deleted sources without running unrelated tests', async () => {
   await fixture(async root => {
-    await mkdir(join(root, 'lab', 'lib'), {recursive: true});
-    await mkdir(join(root, 'lab', 'test'));
-    await writeFile(join(root, 'lab', 'lib', 'room.mjs'), 'export {};\n');
-    await writeFile(join(root, 'lab', 'test', 'room.test.mjs'), 'import "node:test";\n');
-    await writeFile(join(root, 'lab', 'test', 'unrelated.test.mjs'), 'throw Error("must not run");\n');
-    const changes = [change('lab/lib/room.mjs')];
-    assert.deepEqual(focusedTests(changes, root), ['lab/test/room.test.mjs']);
+    await mkdir(join(root, 'apps', 'studio', 'lib'), {recursive: true});
+    await mkdir(join(root, 'apps', 'studio', 'test'));
+    await writeFile(join(root, 'apps', 'studio', 'lib', 'room.mjs'), 'export {};\n');
+    await writeFile(join(root, 'apps', 'studio', 'test', 'room.test.mjs'), 'import "node:test";\n');
+    await writeFile(join(root, 'apps', 'studio', 'test', 'unrelated.test.mjs'), 'throw Error("must not run");\n');
+    const changes = [change('apps/studio/lib/room.mjs')];
+    assert.deepEqual(focusedTests(changes, root), ['apps/studio/test/room.test.mjs']);
     const plan = checkPlan('focused', {changes, root});
-    assert.ok(plan.some(args => args.includes('--check') && args.includes('lab/lib/room.mjs')));
-    assert.ok(plan.some(args => args.includes('--test-concurrency=4') && args.includes('lab/test/room.test.mjs')));
+    assert.ok(plan.some(args => args.includes('--check') && args.includes('apps/studio/lib/room.mjs')));
+    assert.ok(plan.some(args => args.includes('--test-concurrency=4') && args.includes('apps/studio/test/room.test.mjs')));
     assert.ok(plan.every(args => !args.includes('.githooks/pre-commit-full')));
     assert.equal(runChecks(plan, {cwd: root}), 0);
-    await rm(join(root, 'lab', 'lib', 'room.mjs'));
-    const deleted = checkPlan('focused', {changes: [change('lab/lib/room.mjs', 'D')], root});
-    assert.ok(deleted.some(args => args.includes('lab/test/room.test.mjs')));
-    assert.ok(deleted.every(args => !args.includes('lab/lib/room.mjs')));
-    assert.deepEqual(focusedTests([change('lab/test/room.test.mjs', 'A')], root), ['lab/test/room.test.mjs']);
-    await rm(join(root, 'lab', 'test', 'room.test.mjs'));
-    assert.deepEqual(focusedTests([change('lab/test/room.test.mjs', 'D')], root), []);
+    await rm(join(root, 'apps', 'studio', 'lib', 'room.mjs'));
+    const deleted = checkPlan('focused', {changes: [change('apps/studio/lib/room.mjs', 'D')], root});
+    assert.ok(deleted.some(args => args.includes('apps/studio/test/room.test.mjs')));
+    assert.ok(deleted.every(args => !args.includes('apps/studio/lib/room.mjs')));
+    assert.deepEqual(focusedTests([change('apps/studio/test/room.test.mjs', 'A')], root), ['apps/studio/test/room.test.mjs']);
+    await rm(join(root, 'apps', 'studio', 'test', 'room.test.mjs'));
+    assert.deepEqual(focusedTests([change('apps/studio/test/room.test.mjs', 'D')], root), []);
   });
 });
 

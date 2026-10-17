@@ -2,7 +2,7 @@
 
 Uppdaterad 17 oktober 2026. Detta är den enda migrationsöversikten.
 Aktuell arbetsbranch och nästa leverans finns i [handoffen](JOHN-HANDOFF.md).
-Begrepp ägs av [TERMINOLOGI](../lab/docs/TERMINOLOGI.md), tekniska format av
+Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
 
 ## Teknisk register-/runtimeflytt: avslutad i produktion
@@ -23,17 +23,17 @@ bedömningar redovisas nedan; de påstås inte vara färdigverifierade.
 | Ansvar | Aktiv källa och tjänst |
 | --- | --- |
 | Intern personal, bolag, spelare | `/admin`, `/partner`, `/lobby` på www.scoutgaming.tech. Ett Vercel-projekt/team: `scoutgaming`. |
-| Webb och Studio | `apps/web/` och `lab/`; Vercels webb-/Studio-tjänster. `/studio` är teknisk basePath. |
+| Webb och Studio | `apps/web/` och `apps/studio/`; Vercels webb-/Studio-tjänster. `/studio` är teknisk basePath. |
 | Spelmotor och live-transport | Render `croupier-v2`, källkod i `web/`; kort, shoe, saldo och avräkning är serverägda. |
 | Produktregister | Neon: konton/spel, Studio-projekt, administration, scoped rum/publicering, mediekatalog och svarsbibliotekets metadata. |
 | Mediebyte | Privat Blob; exakta identiteter, hashbindningar och behörigheter följer registret. |
 | Director/Gateway | Aktiva OpenClaw-tjänster med egen konfiguration/sessioner på `/data/catalog` respektive `/data/openclaw`; inga alternativa produktregister. |
 | Isolerade tester | Egna tillfälliga data/scope. QA/Preview-utbyggnad är pausad; ingen automatisk återstart eller produktionsfallback. |
 
-Normal start `node lab/start.mjs --no-open` skriver den publicerade lobbyns
+Normal start `node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns
 adress. Endast explicit `--offline` skapar en isolerad, tillfällig fixture.
 Lokala arbetsfiler, katalogexporter och SQLite-backuper är authoring/historik,
-inte produktens runtimefallback. `lab/lib` innehåller aktiva delade tjänster.
+inte produktens runtimefallback. `apps/studio/lib` innehåller aktiva delade tjänster.
 Äldre Control-komponenter och sparade ID:n behålls där konsumenter finns.
 Dragan är ordinarie dealer; Astrid är märkt legacyreferens utan trelagersversion.
 
@@ -141,7 +141,7 @@ Detta är en kort kontinuitetslista, inte nio nya manuella godkännandegrindar.
 | C5 | Spara/återläsa, 409-konflikt, historik och verkliga osparade ändringar har riktad täckning. Ett valt rum gör inte en gemensam mallskrivning rumsspecifik. |
 | C6 | Behörighet, scoped `roomOverrides`, granskad revision och N1→N2→N3-publicering har isolerade prov. Baselinekvittots noll aktiva bolag/rum/sammansättningar var avsiktligt; antalet är inte omverifierat här och gamla raderade demorumsprov är historik. |
 | C7 | Riktad verifiering av ändrade spel-/mediebeteenden; generellt krav på två spel eller manuell spelacceptans är ersatt. Ingen ny visuell synkbedömning påstås. |
-| C8–C9 | Konsumentstyrd städning, kanoniska guider, liten PR, ägarskapskontroll och obligatorisk CI. Aktiva Control-komponenter/`lab/lib` är inte förbrukade bara genom sina namn. |
+| C8–C9 | Konsumentstyrd städning, kanoniska guider, liten PR, ägarskapskontroll och obligatorisk CI. Aktiva Control-komponenter/`apps/studio/lib` är inte förbrukade bara genom sina namn. |
 
 ## Verifiering, leverans och återställning
 

@@ -116,14 +116,14 @@ När Gateway- och Director-revisionen är frisk och den separata speech-tokenen
 finns i de privata miljöerna:
 
 ```powershell
-Test-Path lab/.next/BUILD_ID
+Test-Path apps/studio/.next/BUILD_ID
 node open-claw/lab/deploy/local-connection.mjs --check
 node open-claw/lab/deploy/local-connection.mjs --start --product-port 4196 --lab-port 4197
 ```
 
 Första kommandot ska ge `True`. Helpern bygger inte om Next och rör därför inte
 den delade jämförelsens bygg-/runtimefiler. Om bygget saknas ska arbetet stoppas
-och samordnas innan `npm --prefix lab run build`; bygg inte samtidigt som den
+och samordnas innan `npm --prefix apps/studio run build`; bygg inte samtidigt som den
 delade 4192/4194-körningen granskas. `--check` skriver endast booleska statusfält,
 ursprung och rollstatus, aldrig hemlighetsvärden, och gör inget modellanrop. När
 speech-relayn är komplett väljs den före direkttransporten; kontrollen använder

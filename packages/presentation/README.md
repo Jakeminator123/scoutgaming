@@ -13,7 +13,7 @@ produktnivå. Gemensamma begrepp och rumsmodellen definieras i
 - `preview/site/` — granskat byggmaterial för isolerad offlinefixtur; förberedaren hämtar också delade renderarmoduler.
 - `contracts/` — ren projektmodell, video-/rouletteregler, browserpolicy, schema och seeddata. Studio, Admin och spelserver importerar samma källa. Inventarie- och legacy-datatyper ägs också här; UI och lagring behåller sina egna funktioner.
 - `runtime/` — gemensam scen, spelarval, bakgrund, taluppspelning, idle, filmfamiljer, legacy-klipp och skobyten. Rena modell-/medieregler, kortkalibrering och filmprofiler använder `contracts/`, utan import tillbaka till spelappen.
-- `server/` — urvalsfabrik, ren bindningsvalidering och fabrik för registrerade idle-regler. Den sistnämnda får samma `prepareDecision` från appens Director-komposition, utan att paketet importerar OpenClaw. Kärnan får projektmodell, Director och medieregler från separata appkompositioner i `lab/lib/presentation-selection.mjs` och `web/presentation-selection.mjs`; varje anrop skickar sitt eget register. Bindningskompositionen i `packages/presentation/server/default-video-bindings.mjs` behöver ingen Director.
+- `server/` — urvalsfabrik, ren bindningsvalidering och fabrik för registrerade idle-regler. Den sistnämnda får samma `prepareDecision` från appens Director-komposition, utan att paketet importerar OpenClaw. Kärnan får projektmodell, Director och medieregler från separata appkompositioner i `apps/studio/lib/presentation-selection.mjs` och `web/presentation-selection.mjs`; varje anrop skickar sitt eget register. Bindningskompositionen i `packages/presentation/server/default-video-bindings.mjs` behöver ingen Director.
 - `public-modules.mjs` — explicit lista över browserfiler och deras kanoniska/äldre URL:er. HTTP-server, Vercelroutning, statiska byggkopior och isolerade källfixturer delar listan. Serverfabriker, projektseed och privata appar ingår aldrig.
 - `capability-contract.mjs` — importfritt kontrakt för versionsförhandling mellan spelserver och Studio. Serverendpoint, readiness och bundlad klient använder samma representation; kontraktet ger ingen registrering eller behörighet.
 
@@ -22,8 +22,8 @@ Dessa läser paketet:
 - `apps/web/tools/prepare-platform-ui.mjs` kopierar `compositor.js` och `geometry.js` till `apps/web/public/composition-runtime/`.
 - `web/composition-runtime.mjs` serverar `/composition-runtime/*`.
 - `web/layer-packs.mjs` serverar `/layer-packs/*` från `compositor/`.
-- `lab/tools/prepare-preview.mjs` bygger `lab/preview-build`. Native molndrift serverar endast `compositor.js` och `geometry.js` under `/preview/*`; äldre sida, katalog och medier svarar 410. Explicit offlinefixtur behåller sitt isolerade previewmaterial.
-- `lab/lib`, `lab/components`, `web/presentation-api.mjs`, `web/storage` och `web/studio-preview.mjs` importerar `runtime/`.
+- `apps/studio/tools/prepare-preview.mjs` bygger `lab/preview-build`. Native molndrift serverar endast `compositor.js` och `geometry.js` under `/preview/*`; äldre sida, katalog och medier svarar 410. Explicit offlinefixtur behåller sitt isolerade previewmaterial.
+- `apps/studio/lib`, `apps/studio/components`, `web/presentation-api.mjs`, `web/storage` och `web/studio-preview.mjs` importerar `runtime/`.
 - `web/public/local-presentation.mjs` importerar `runtime/live-idle.mjs` direkt. Servern tillåter bara de exakta kontrakts-/runtimeadresserna i `public-modules.mjs`; de äldre `/presentation-runtime/*`-adresserna fungerar fortsatt. Den statiska frontendbyggaren genererar både kanoniska och äldre outputadresser och anpassar relativa importer för varje kopia.
 
 Flyttade browsermoduler använder relativa importer som når samma `/packages/...`-källa både från den gamla URL:en och från paketets kanoniska URL. Röstkatalogens JSON och filmprofilernas inbäddade proveniens behåller sina bytes. Rena spelval ligger i `contracts/game-selection.mjs`; definitioner och ID-predicate importeras direkt från `game-lanes.mjs` respektive `game-lane-id.mjs`.
@@ -34,7 +34,7 @@ Publika adresser är stabila: `/composition-runtime/*`, `/layer-packs/*`, `/pres
 
 `preview/site/` och `media-hashes.json` är granskade byggkällor. Behåll dem;
 `lab/preview-build/` är den genererade kopian och kan byggas om med
-`node lab/tools/prepare-preview.mjs`. Studio använder denna förberedare
+`node apps/studio/tools/prepare-preview.mjs`. Studio använder denna förberedare
 oberoende av branchnamn; den äldre branchspecifika frontendbyggaren är pensionerad.
 
 `compositor/` innehåller både aktiv motor och fristående referens-UI. Bedöm
@@ -52,7 +52,7 @@ med explicita register- och legacyläsare. `server/legacy-clip-inventory.mjs`
 äger en enda inventeringsimplementation; apparna tillför roots, filpolicy,
 mediesökvägsresolver och kontaktvalidatorer. `reviewSafetyVerified`,
 `neverAgain` och den snäva möjligheten att sakna pensionerade index bevaras.
-De appägda kompositionerna finns i `lab/lib/legacy-clip-inventory.mjs` och
+De appägda kompositionerna finns i `apps/studio/lib/legacy-clip-inventory.mjs` och
 `web/storage/legacy-clip-inventory.mjs`; inga nya browseradresser exponeras.
 
 Publiceringens codec, snapshotfångst, paket-/ruminspektion och frysta dealer-/

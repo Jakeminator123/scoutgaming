@@ -3,7 +3,7 @@ import * as savedGameDocumentContract from '../packages/studio-registry/server/d
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
-import { cloudPresentationFixture } from '../lab/test/fixtures/cloud-presentation.mjs';
+import { cloudPresentationFixture } from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
 import {isPresentationRoom} from '../packages/presentation/contracts/presentation-room.mjs';
 import {listPackageRooms, resolvePackageRoom, inspectPackageRooms} from '../packages/presentation/server/package-rooms.mjs';

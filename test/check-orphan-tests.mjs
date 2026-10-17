@@ -18,13 +18,13 @@ function fixture(t, files) {
 
 test('discovers uncovered domains without mistaking a direct glob or printed command for recursive coverage', t => {
   const audit = fixture(t, {
-    '.githooks/pre-commit-full': 'run_node_tests studio components lab/components/*.test.mjs\n',
+    '.githooks/pre-commit-full': 'run_node_tests studio components apps/studio/components/*.test.mjs\n',
     '.github/workflows/check.yml': 'steps:\n  - run: echo node --test tools/media/test-filter.mjs\n  - run: node --check open-claw/lab/deploy/config.test.mjs\n',
     'tools/precommit-checks.mjs': "const unrelated = 'ops/cloud/test/entry.test.mjs';\n",
-    'lab/components/view.test.mjs': '',
-    'lab/components/nested/access.test.mjs': '',
-    'lab/lib/scheduler.test.mjs': '',
-    'lab/client/admin/view.test.mjs': '',
+    'apps/studio/components/view.test.mjs': '',
+    'apps/studio/components/nested/access.test.mjs': '',
+    'apps/studio/lib/scheduler.test.mjs': '',
+    'apps/studio/client/admin/view.test.mjs': '',
     'tools/media/test-filter.mjs': '',
     'apps/frontend/test/login.mjs': '',
     'services/worker/gateway/test/relay.test.mjs': '',
@@ -39,10 +39,10 @@ test('discovers uncovered domains without mistaking a direct glob or printed com
   });
   const result = audit();
   assert.equal(result.files.length, 10);
-  assert.deepEqual(result.covered.map(item => item.file), ['lab/components/view.test.mjs']);
+  assert.deepEqual(result.covered.map(item => item.file), ['apps/studio/components/view.test.mjs']);
   assert.equal(result.covered[0].kind, 'full-regression');
   assert.deepEqual(result.orphans, [
-    'apps/frontend/test/login.mjs', 'lab/client/admin/view.test.mjs', 'lab/components/nested/access.test.mjs', 'lab/lib/scheduler.test.mjs',
+    'apps/frontend/test/login.mjs', 'apps/studio/client/admin/view.test.mjs', 'apps/studio/components/nested/access.test.mjs', 'apps/studio/lib/scheduler.test.mjs',
     'open-claw/lab/deploy/config.test.mjs', 'ops/cloud/test/entry.test.mjs', 'packages/ui/view.test.mjs',
     'services/worker/gateway/test/relay.test.mjs', 'tools/media/test-filter.mjs',
   ]);
@@ -72,17 +72,17 @@ test('follows the invoked package test in its own directory and keeps manual hel
 test('unknown recursive globs and invalid or stale classifications cannot produce a clean audit', t => {
   const audit = fixture(t, {
     '.githooks/pre-commit-full': 'run_node_tests studio components lab/components/**/*.test.mjs\n',
-    'lab/components/view.test.mjs': '',
-    'lab/components/nested/access.test.mjs': '',
+    'apps/studio/components/view.test.mjs': '',
+    'apps/studio/components/nested/access.test.mjs': '',
     'tools/orphan-tests-exceptions.json': JSON.stringify([
-      { path: 'lab/components/*.test.mjs', kind: 'opt-in', reason: 'Broad exclusions must fail.' },
+      { path: 'apps/studio/components/*.test.mjs', kind: 'opt-in', reason: 'Broad exclusions must fail.' },
       { path: 'test/deleted.mjs', kind: 'opt-in', reason: 'Stale entry must fail.' },
-      { path: 'lab/components/view.test.mjs', kind: 'covered', reason: 'Cannot assert runner coverage in an exception.' },
+      { path: 'apps/studio/components/view.test.mjs', kind: 'covered', reason: 'Cannot assert runner coverage in an exception.' },
     ]),
   });
   const result = audit();
   assert.equal(result.covered.length, 0);
-  assert.deepEqual(result.orphans, ['lab/components/nested/access.test.mjs', 'lab/components/view.test.mjs']);
+  assert.deepEqual(result.orphans, ['apps/studio/components/nested/access.test.mjs', 'apps/studio/components/view.test.mjs']);
   assert.ok(result.errors.some(error => error.includes('unsupported recursive glob')));
   assert.ok(result.errors.some(error => error.includes('invalid path')));
   assert.ok(result.errors.some(error => error.includes('is not a discovered test file')));

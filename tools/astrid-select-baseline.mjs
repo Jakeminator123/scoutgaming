@@ -25,8 +25,8 @@ import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createSeedProject, isDirectorSourceType, OPENCLAW_MODES } from '../packages/presentation/contracts/studio-model.mjs';
-import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
-import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
+import { selectPresentation } from '../apps/studio/lib/presentation-selection.mjs';
+import { loadVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
 
 const execFileAsync = promisify(execFile);
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -37,7 +37,7 @@ const MODE_ORDER = ['off', 'rules', 'random', 'shadow', 'active'];
 // The HEAD archive must contain every module these entries import, statically or
 // through a literal import(); bare packages still resolve against the worktree.
 export const HEAD_SELECTION_ENTRIES = Object.freeze([
-  'lab/lib/presentation-selection.mjs',
+  'apps/studio/lib/presentation-selection.mjs',
   'packages/presentation/contracts/studio-model.mjs',
 ]);
 export const ARCHIVE_PATHS = Object.freeze([
@@ -47,15 +47,16 @@ export const ARCHIVE_PATHS = Object.freeze([
   'packages/presentation/runtime',
   'packages/presentation/server',
   'packages/studio-registry/server',
+  'packages/director',
   'packages/storage/server',
   'packages/operators',
   'packages/studio-access',
   'packages/shared/studio-error.mjs',
   'packages/shared/media-file-types.mjs',
-  'lab/lib',
+  'apps/studio/lib',
   // Historical HEADs retain these sources; ls-tree filters absent paths.
-  'lab/policies',
-  'lab/schemas',
+  'apps/studio/policies',
+  'apps/studio/schemas',
   'open-claw/lab',
   'tools/media',
   'tools/media-layout.mjs',
@@ -321,7 +322,7 @@ async function materializeHead() {
   const paths=ARCHIVE_PATHS.filter(path=>tracked.some(file=>file===path||file.startsWith(path+'/')));
   await execFileAsync('git', ['archive', '--format=tar', 'HEAD', '-o', archive, ...paths], { cwd: repoRoot });
   await execFileAsync('tar', ['-xf', archive, '-C', dir]);
-  const packageUrl = pathToFileURL(join(repoRoot, 'lab', 'lib', 'project-store.mjs')).href;
+  const packageUrl = pathToFileURL(join(repoRoot, 'apps', 'studio', 'lib', 'project-store.mjs')).href;
   const entryPath = join(dir, 'register-hooks.mjs');
   const hooksPath = join(dir, 'bare-specifier-hooks.mjs');
   const runnerPath = join(dir, 'run-head.mjs');
@@ -347,7 +348,7 @@ const selectionEntry = join(root, ${JSON.stringify(HEAD_SELECTION_ENTRIES[0])});
 // Resolve within the frozen archive, never through the current app composition.
 const selection = await import(pathToFileURL(existsSync(selectionEntry) ? selectionEntry : join(root, 'packages/presentation/runtime/selection.mjs')).href);
 const modelEntry = join(root, ${JSON.stringify(HEAD_SELECTION_ENTRIES[1])});
-const model = await import(pathToFileURL(existsSync(modelEntry) ? modelEntry : join(root, 'lab/lib/studio-model.mjs')).href);
+const model = await import(pathToFileURL(existsSync(modelEntry) ? modelEntry : join(root, 'apps/studio/lib/studio-model.mjs')).href);
 const jobs = JSON.parse(await readFile(process.env.ASTRID_JOBS, 'utf8'));
 const outcome = await executeJobs(selection.selectPresentation, model.createSeedProject(), await loadRegistry(), jobs);
 await writeFile(process.env.ASTRID_OUT, JSON.stringify(outcome));

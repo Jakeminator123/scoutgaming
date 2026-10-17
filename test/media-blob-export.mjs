@@ -5,11 +5,11 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {applyMediaMigration} from '../tools/migrate-media-layout.mjs';
 import {planBlobExport,syncBlobExport,writeBlobIndex} from '../tools/export-media-blob.mjs';
-import {validatePrivateMedia,mediaBlobPath} from '../lab/lib/cloud-media-store.mjs';
-import {getPublicMediaBlobResponse} from '../lab/lib/media-blob-index.mjs';
+import {validatePrivateMedia,mediaBlobPath} from '../apps/studio/lib/cloud-media-store.mjs';
+import {getPublicMediaBlobResponse} from '../apps/studio/lib/media-blob-index.mjs';
 import {createRequire} from 'node:module';
 import {createReadStream,openAsBlob} from 'node:fs';
-const requireLab=createRequire(new URL('../lab/package.json',import.meta.url));
+const requireLab=createRequire(new URL('../apps/studio/package.json',import.meta.url));
 const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'isolated-fixture'};
 async function fixture(t){const root=await mkdtemp(join(tmpdir(),'croupier-blob-layout-'));t.after(()=>rm(root,{recursive:true,force:true}));await mkdir(join(root,'web/public/sfx'),{recursive:true});for(let i=0;i<8;i++)await writeFile(join(root,`web/public/sfx/a${i}.wav`),`original audio ${i}`);await applyMediaMigration({root,scope:'all'});return root;}
 function client(){const objects=new Map(),types=new Map(),calls=[],blob=(path)=>({pathname:path,url:`https://fixture.private.blob.vercel-storage.com/${path}`,contentType:types.get(path),size:objects.get(path)?.length});return{objects,calls,async get(path){calls.push(['get',path]);return objects.has(path)?{statusCode:200,stream:new Response(objects.get(path)).body,blob:blob(path)}:null;},async put(path,body,options){calls.push(['put',path]);assert.equal(options.access,'private');assert.equal(options.allowOverwrite,false);assert.ok(!objects.has(path));assert.ok(body instanceof Blob);const chunks=[];for await(const part of body.stream())chunks.push(part);objects.set(path,Buffer.concat(chunks));types.set(path,options.contentType);return blob(path);},async del(){throw new Error('Existing media must never be deleted.');}};}

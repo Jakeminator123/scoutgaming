@@ -4,7 +4,7 @@ import { SPEECH_LEDGER_SNAPSHOT_FORMAT } from './speech-ledger-snapshot.mjs';
 import { GPU_RESERVATION_WINDOW_MS } from '../../packages/presentation/contracts/speech-journal-constants.mjs';
 import { speechRequestKey } from '../../web/postgres-speech-journal.mjs';
 import { normalizeSpeechPackage } from '../../packages/presentation/contracts/speech-package.mjs';
-import { validatePrivateMedia, mediaBlobPath } from '../../lab/lib/cloud-media-store.mjs';
+import { validatePrivateMedia, mediaBlobPath } from '../../apps/studio/lib/cloud-media-store.mjs';
 import { planStudioMigrations, loadStudioMigrations } from './migrations.mjs';
 
 const fail = (code = 'studio_speech_import_invalid', status = 422) => { throw new StudioStorageError(code, status); };

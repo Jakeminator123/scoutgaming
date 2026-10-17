@@ -65,8 +65,8 @@ READY-deployment är inte ett färskt funktions- eller isoleringsprov.
 
 | Källmapp | Ansvar | Node |
 | --- | --- | --- |
-| `lab/` | Studio-tjänsten: Admin, Partner, Lobby, auth/API och medieåtkomst; `/studio` är teknisk basePath | 24.x, Volta 24.21.0 |
-| `lab/client/` | Admin/lobby-paket som byggs och serveras av Lab | 24.x, Volta 24.21.0 |
+| `apps/studio/` | Studio-tjänsten: Admin, Partner, Lobby, auth/API och medieåtkomst; `/studio` är teknisk basePath | 24.x, Volta 24.21.0 |
+| `apps/studio/client/` | Admin/lobby-paket som byggs och serveras av Lab | 24.x, Volta 24.21.0 |
 | `apps/web/` | Publik Next-app, spelstart och transport till spelmotorn | 24.x, Volta 24.21.0 |
 | `apps/speech/` | Separat Vercel-tjänst för lång talström | 22.x, Volta 22.23.1 |
 | `web/` | Spelmotor, serverkort, plånbok och gemensam spelarlogik | ≥22.16; produktions-Docker använder 24 |
@@ -78,8 +78,8 @@ exekverbar fil; en hårdkodad annan Node-binary går förbi Volta. Lokala pinnar
 styr inte automatiskt Vercel eller Docker: kontrollera respektive byggmiljö.
 
 Inför bygge/fullhook i en ny isolerad arbetskopia behövs låsta beroenden i
-`apps/web/` (`pnpm-lock.yaml`), `apps/speech/`, `lab/`,
-`lab/client/`, `web/` och `services/astrid-gpu-worker/gateway/`
+`apps/web/` (`pnpm-lock.yaml`), `apps/speech/`, `apps/studio/`,
+`apps/studio/client/`, `web/` och `services/astrid-gpu-worker/gateway/`
 (`package-lock.json` i de fem senare). Kör `pnpm install --frozen-lockfile`
 respektive `npm ci` från rätt paket med dess deklarerade Node-version.
 Befintliga lokala installationer får återanvändas via en egen junction först
@@ -91,7 +91,7 @@ Båda installerar `packages/server-transport` som låst lokal paketdependency.
 Speechs `.npmrc` har `install-links=true`, så paketet och dess `ws` installeras
 i tjänstens egen `node_modules` utan att frontend behöver vara installerad.
 Paketets konfiguration och sökvägskontrakt kan importeras utan `ws`.
-Kör Lab-bygget före fullhook. När Playwright och Chrome redan finns kan
+Kör Studio-bygget före fullhook. När Playwright och Chrome redan finns kan
 `CROUPIER_BROWSER_FIXTURE_MODULE` peka på modulens absoluta fil och
 `CROUPIER_BROWSER_FIXTURE_CHANNEL=chrome` aktivera isolerade browserprov.
 Inställningen är valfri; redovisa överhoppade prov separat från godkända.
@@ -126,13 +126,17 @@ Ignorerade `.env`-filer och leverantörernas hemlighetslager har en annan roll;
 
 ## Lokal miljö
 
-Starta med `node lab/start.mjs` enligt [labbguiden](../lab/docs/README.md). Sessionsvakten i `open-claw/lab/deploy/local-session.mjs` finns kvar. Cmd-filerna i roten är borttagna.
+Starta med `node apps/studio/start.mjs` enligt [Studioguiden](../apps/studio/docs/README.md). Sessionsvakten i `open-claw/lab/deploy/local-session.mjs` finns kvar. Cmd-filerna i roten är borttagna.
 Kör endast ett produkt-/labbpar; stoppa det före miljöbyte. Från Codex används
 `--no-open`. Återanvänd spel- och labbflik, bevara utkast och spel.
 Stoppade servrar förblir stoppade tills Jakob ber om start.
 Sparade lokala projekt, historik och profiler finns i `lab/data`;
 spel-/CRAIG-databaserna ligger i `lab/data/players`. Isolerade testprofiler
-får inte ersätta dem. Lokal backup: `tools/backup-lab-state.mjs`.
+får inte ersätta dem. Lokal backup: `tools/backup-lab-state.mjs` läser fortsatt
+`lab/data`, även när `apps/studio/data` finns. Inga privata filer flyttas av verktyget.
+Anslutningsverktygens standardordning är rotens `.env`, äldre `lab/.env.*`,
+nya `apps/studio/.env.*` och sist processmiljön. Cloud storage kräver samma
+uttryckliga opt-in; ett explicit `envFiles` ersätter standardlistan.
 
 Den 2 oktober flyttades 39 privata filer (4 568 960 byte) utan överskrivning
 från den tidigare katalogen till labbet. Hela gamla katalogen, 42 filer, finns i en separat
@@ -231,14 +235,14 @@ ingen automatisk återgång.
 
 ## Disponibel lokal byggcache
 
-`lab/.next/cache`, `apps/web/.next` och deras
+`apps/studio/.next/cache`, `apps/web/.next` och deras
 `tsconfig.tsbuildinfo` är återbyggbara. Rensa endast när sessionsvakten saknar
-aktiv session och inga berörda Next-/byggprocesser kör. `lab/tsconfig.json`
+aktiv session och inga berörda Next-/byggprocesser kör. `apps/studio/tsconfig.json`
 utesluter privat `data/` från appens typkontroll. Labbets övriga `.next`
 innehåller en runtime som det befintliga integrationstestet faktiskt använder;
-behåll den eller kör `npm --prefix lab run build` före full regression.
+behåll den eller kör `npm --prefix apps/studio run build` före full regression.
 Använd exakta sökvägar; rensa inte `lab/data`, privata QA-kvitton, medier
-eller journaler. Interaktiv start är `node lab/start.mjs`.
+eller journaler. Interaktiv start är `node apps/studio/start.mjs`.
 
 ## Media och regression
 

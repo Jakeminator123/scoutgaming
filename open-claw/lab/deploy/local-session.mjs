@@ -158,14 +158,15 @@ export async function acquireLocalSession({ repoRoot, productPort = null, labPor
   const root = await realpath(resolve(repoRoot));
   // An older launcher can still own the retired guard. Inspect it without
   // creating the old directory or writing to its database during migration.
-  const legacyFile = join(root, 'lissabon', 'data', '.local-session.sqlite');
-  if (existsSync(legacyFile)) {
+  for (const legacyRoot of ['lissabon', 'lab']) {
+    const legacyFile = join(root, legacyRoot, 'data', '.local-session.sqlite');
+    if (!existsSync(legacyFile)) continue;
     const legacy = new DatabaseSync(legacyFile, { readOnly: true });
     let state;
     try { state = read(legacy); } finally { legacy.close(); }
     if (state && await occupied(state)) throw conflict(state);
   }
-  const directory = join(root, 'lab', 'data');
+  const directory = join(root, 'apps', 'studio', 'data');
   await mkdir(directory, { recursive: true });
   const file = join(directory, '.local-session.sqlite');
   const token = randomUUID();

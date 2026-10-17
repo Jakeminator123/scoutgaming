@@ -1,0 +1,10 @@
+import type { DealerId } from '../../../packages/presentation/contracts/studio-model.mjs';
+import type { LegacyClipEntry } from '../../../packages/presentation/contracts/legacy-clip-types.mjs';
+export type DealerWorkspaceSection = 'idle' | 'deal' | 'clips';
+export type LegacyWorkspaceSection = DealerWorkspaceSection | 'all';
+export const DEALER_WORKSPACE_SECTIONS: readonly { id: DealerWorkspaceSection; label: string }[];
+export function workspaceLocation(hash: string): { section: DealerWorkspaceSection; upload: boolean; redirect: string | null };
+export function legacyPartInSection(part: string, section?: LegacyWorkspaceSection): boolean;
+export function legacyClipInSection(clip: LegacyClipEntry, section?: LegacyWorkspaceSection): boolean;
+export function selectedDealerClips(clips: LegacyClipEntry[], dealerId: DealerId, section?: LegacyWorkspaceSection): LegacyClipEntry[];
+export function supportsFamilyWorkspace(dealerId: DealerId): boolean;

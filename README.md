@@ -20,7 +20,7 @@ engine and live transport. See [cloud and storage](docs/CLOUD-MIGRATION.md).
 | Player lobby | `/lobby` | New lobby. Existing `/play`, `/play/profil`, `/play/historik` and `/play/blackjack` remain during the transition. |
 
 `/admin` and `/lobby` are served by the Lab service from
-`lab/client/`. Their names do not imply that every old workflow
+`apps/studio/client/`. Their names do not imply that every old workflow
 has moved. The lobby launches the existing game engine; it does not replace it.
 Partner team access and branding drafts exist. Operator game data/reports,
 chips and partner password reset still have open work; consult the cloud
@@ -31,7 +31,7 @@ checklist before calling a surface complete.
 IDs, filenames and the `lissabon-stream-lane` flag remain compatibility details.
 Keep a compatibility path while active callers or saved data need it; the name
 alone is no reason to keep an obsolete page or parallel registry. New UI work
-belongs in `/admin` and `/lobby`; the [user guide](lab/docs/README.md) covers
+belongs in `/admin` and `/lobby`; the [user guide](apps/studio/docs/README.md) covers
 active entry points, operator access, compatibility redirects and working tools.
 
 ## Source and folder map
@@ -39,17 +39,17 @@ active entry points, operator access, compatibility redirects and working tools.
 | Folder | Responsibility | Guide |
 | --- | --- | --- |
 | `apps/web/` | Public Next frontend, player pages and ingress to the game/Studio services | [Frontend](apps/web/README.md) |
-| `lab/` | Active Studio/Admin service, staff/operator APIs, published-product launcher and offline fixtures | [Lab](lab/README.md) |
+| `apps/studio/` | Active Studio/Admin service, staff/operator APIs, published-product launcher and offline fixtures | [Lab](apps/studio/README.md) |
 | `web/` | Authoritative game server, authentication, wallet, persistence and game client source | [Game server](web/README.md) |
 | `packages/presentation/` | Shared compositor, presentation selection, idle rules and reviewed layer preview | [Presentation](packages/presentation/README.md) |
 | `packages/shared/` | Portable media type/header rules and the shared Studio game-command contract; no app imports in these modules | [Media formats](docs/games/KLIPP-OCH-FORMAT.md) |
-| `lab/client/` | Active admin/lobby UI source and browser bundle builder | [Admin/lobby](lab/client/README.md) |
+| `apps/studio/client/` | Active admin/lobby UI source and browser bundle builder | [Admin/lobby](apps/studio/client/README.md) |
 | `services/astrid-gpu-worker/` | GPU lip sync plus shared speech transport; the historical name does not restrict sessions to Astrid | [Speech service](services/astrid-gpu-worker/README.md) |
 | `tools/media/` | Media utilities with separate inputs, banks and export formats | [Media tools](tools/media/README.md) |
 | `media/` | Source/review/staging material and import manifests; deployed registry data comes from Neon and media bytes from Blob | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |
 | `open-claw/` | OpenClaw/Gateway integration and its deployment tools | [OpenClaw](open-claw/README.md) |
 | `ops/`, `tools/` | Deployment, migration, import and repository utilities | [Cloud](docs/CLOUD-MIGRATION.md), [container context](ops/cloud/CONTAINER-CONTEXT.md) |
-| `test/`, `lab/test/` | Game/shared-service regression and Studio/API tests; component tests also live beside their source | [Verification](AGENTS.md#verification-during-editing) |
+| `test/`, `apps/studio/test/` | Game/shared-service regression and Studio/API tests; component tests also live beside their source | [Verification](AGENTS.md#verification-during-editing) |
 
 [AI documentation](docs/AI/README.md) collects agent flows and OpenClaw guides.
 
@@ -64,7 +64,7 @@ archives and conversation exports stay outside active agent reading paths.
 
 ## Runtime and shared terms
 
-[TERMINOLOGI](lab/docs/TERMINOLOGI.md) is the single source for the product
+[TERMINOLOGI](apps/studio/docs/TERMINOLOGI.md) is the single source for the product
 model, ownership and the terms bolag, spel, rum, bakgrund, dealer, bord and
 sammansättning. Do not derive another model from folder names or legacy lane
 fields. [LOCAL-PRESENTATION-RUNTIME](docs/LOCAL-PRESENTATION-RUNTIME.md)
@@ -91,23 +91,23 @@ not an independent Lab player. The retained full-file GPU path is Astrid-specifi
 To print the published lobby URL from Codex:
 
 ```powershell
-node lab/start.mjs --no-open
+node apps/studio/start.mjs --no-open
 ```
 
 This starts no local servers or registry. Only an explicit offline start creates
 an isolated temporary server pair without external providers:
 
 ```powershell
-node lab/start.mjs --offline --no-open
+node apps/studio/start.mjs --offline --no-open
 ```
 
 The offline launcher enforces one fixture pair and removes its temporary data
 when stopped. Existing `lab/data` authoring/recovery files are preserved and do
 not become product state. The old `--cloud-storage`, `--astrid-camera` and
 `--check` modes are retired; `--skip-build` requires `--offline`.
-Check the package's Node engine and Volta pin before local scripts; `lab/`
-requires Node 24.x and pins 24.21.0. See the [user guide](lab/docs/README.md)
-for fixture options and the [Lab guide](lab/README.md) for development setup.
+Check the package's Node engine and Volta pin before local scripts; `apps/studio/`
+requires Node 24.x and pins 24.21.0. See the [user guide](apps/studio/docs/README.md)
+for fixture options and the [Lab guide](apps/studio/README.md) for development setup.
 
 `node_modules/` contains installed dependencies; `.next/` contains Next build
 output and cache. Both are normal local generated folders and excluded from
@@ -129,7 +129,7 @@ Use these documents in place instead of adding competing status reports:
 - [Data restoration and media rules](docs/ENVIRONMENT-RESTORATION.md).
 - [Environment variable registry](docs/ENVIRONMENT-VARIABLES.md).
 - [Presentation runtime](docs/LOCAL-PRESENTATION-RUNTIME.md).
-- [Game manuals](docs/games/README.md) and the [user guide](lab/docs/README.md).
+- [Game manuals](docs/games/README.md) and the [user guide](apps/studio/docs/README.md).
 
 Deliver from `jakob/*`, `codex/*` or `cursor/*` with one pull request to `main`.
 `tools/repository-policy.json` and the pre-push hook enforce the allowed targets;

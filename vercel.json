@@ -20,7 +20,7 @@
       }
     },
     "studio": {
-      "root": "lab",
+      "root": "apps/studio",
       "framework": "nextjs",
       "buildCommand": "npm run build",
       "routes": [

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readSettings, LAB_ROOT } from '../src/settings.mjs';
 import { speechRoutingConfiguration } from '../../../packages/director/speech-routing.mjs';
-import { readSettings as readStudioSettings } from '../../../lab/lib/director-settings.mjs';
+import { readSettings as readStudioSettings } from '../../../apps/studio/lib/director-settings.mjs';
 import { readSettings as readGameSettings } from '../../../web/director-settings.mjs';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

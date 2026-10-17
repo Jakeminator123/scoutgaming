@@ -1,4 +1,4 @@
-import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
+import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
@@ -8,9 +8,9 @@ import { createPostgresStore } from '../web/storage/postgres-store.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
 import { canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 import { publicEditableBranding } from '../packages/operators/contracts/branding.mjs';
-import { handlePartnerAuth } from '../lab/lib/partner-session.mjs';
-import { STANDARD_OPERATOR_ROLES } from '../lab/lib/operator-admin-api.mjs';
-import { createOperatorJournal } from '../lab/lib/operator-journal.mjs';
+import { handlePartnerAuth } from '../apps/studio/lib/partner-session.mjs';
+import { STANDARD_OPERATOR_ROLES } from '../apps/studio/lib/operator-admin-api.mjs';
+import { createOperatorJournal } from '../apps/studio/lib/operator-journal.mjs';
 import { createFrozenDealerContextReader } from '../packages/presentation/server/frozen-dealer-presentation.mjs';
 import { createGameEntrySelector } from '../packages/presentation/server/game-entry-selector.mjs';
 import { createOperatorAppearanceApi } from '../web/operator-appearance-api.mjs';

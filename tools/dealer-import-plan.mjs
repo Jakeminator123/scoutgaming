@@ -4,7 +4,7 @@
 import { readFile, realpath } from 'node:fs/promises';
 import { resolve, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createFrozenKevinImportPlan, frozenKevinImportSource, verifyImportSourceBytes } from '../lab/lib/dealer-import-plan.mjs';
+import { createFrozenKevinImportPlan, frozenKevinImportSource, verifyImportSourceBytes } from '../apps/studio/lib/dealer-import-plan.mjs';
 
 const usage = 'node tools/dealer-import-plan.mjs --plan --project <project.json> --dealer <registered-id> --source-alias dragge [--inventory <inventory.json>] [--source-root <existing-kevin-checkout> | --source-map <local-path-map.json>]';
 const fail = code => { throw Object.assign(Error(code), { code }); };

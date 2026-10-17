@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, scryptSync } from 'node:crypto';
-import { createStudioNativeAuthActions, createStudioLoginRateLimit, createStudioPasswordDelivery } from '../lab/lib/studio-native-auth-actions.mjs';
-import { createStudioNativeAuth } from '../lab/lib/studio-native-auth.mjs';
+import { createStudioNativeAuthActions, createStudioLoginRateLimit, createStudioPasswordDelivery } from '../apps/studio/lib/studio-native-auth-actions.mjs';
+import { createStudioNativeAuth } from '../apps/studio/lib/studio-native-auth.mjs';
 
 const scope = { environment:'fixture',workspaceId:'croupier' }, publicOrigin = 'https://studio.example.invalid';
 const password = 'existing-private-password', salt = 'fixture-salt';

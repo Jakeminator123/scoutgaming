@@ -75,3 +75,6 @@ vendor/
 /media/blob-index.json
 /media/**/source/*.json
 /media/**/staging/*.md
+
+# Relocated Studio: retain old private/build guards for files left in place.
+apps/studio/data/

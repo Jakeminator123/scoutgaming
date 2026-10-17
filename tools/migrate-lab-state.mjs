@@ -75,7 +75,7 @@ export async function verifyLabMigrationBackup(destination) {
   return manifest;
 }
 export async function migrateLabState({ repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url))), destination, apply = false } = {}) {
-  const root = await realpath(resolve(repoRoot)), source = join(root, 'lissabon'), target = join(root, 'lab', 'data');
+  const root = await realpath(resolve(repoRoot)), source = join(root, 'lissabon'), target = join(root, 'apps', 'studio', 'data');
   if (!(await plain(source))) return { status: 'already_migrated', files: 0, bytes: 0 };
   // Both paths are fixed children of the verified repository, never CLI paths.
   if (!inside(root, source) || !inside(root, target)) fail('invalid_source');
