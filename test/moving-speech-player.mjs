@@ -11,6 +11,7 @@ import { createServer } from 'node:http';
 import { execFileSync } from 'node:child_process';
 import { prepareMovingSpeechPlan } from '../web/moving-speech-plan.mjs';
 import { createMovingSpeechFrameLayer } from '../web/public/moving-speech-frame-layer.mjs';
+import { createChatPlaybackDiagnostic } from '../web/public/chat-playback-diagnostic.mjs';
 import { validateMovingSpeechStream, playMovingSpeech, loadMovingSpeechRest, movingSpeechSocketURL } from '../web/public/moving-speech-player.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex'), h = 'a'.repeat(64);
@@ -109,18 +110,29 @@ test('tickets use only secure same-origin sockets, with explicit localhost suppo
   assert.throws(() => movingSpeechSocketURL('https://elsewhere.example/moving-speech-stream', 'https://www.scoutgaming.tech'));
 });
 
-test('verified rest, PCM and first24 decoded frames gate audio; credits follow audio clock and completion removes mouth', async () => {
-  const f = fixture(); await f.ready(); assert.equal(f.audio.plays, 0);
+test('verified rest, PCM and first24 decoded frames gate audio; credits follow audio clock and completion removes mouth', async t => {
+  const status = { dataset: {} }, diagnostic = createChatPlaybackDiagnostic(() => status), receipts = [];
+  diagnostic.begin(requestId);
+  const readReceipt = () => JSON.parse(status.dataset.playbackReceipt);
+  const f = fixture({ overrides: { onReceipt: receipt => { receipts.push(receipt); diagnostic.stream(requestId, receipt); } } });
+  t.after(() => f.socket?.onclose?.());
+  await f.ready(); assert.equal(f.audio.plays, 0); assert.equal(readReceipt().state, 'pending');
   await f.pcm(); assert.deepEqual(f.sent, [{ t: 'credit', id: f.m.plan.start.id, frames: 24 }]);
   await f.chunk(0); assert.equal(f.audio.plays, 0);
-  await f.chunk(12); await until(() => f.audio.plays === 1, 'audio playback');
-  assert.equal(f.receipts[0].state, 'start'); assert.equal(f.observations.at(-1).frame, 0);
+  await f.chunk(12); await until(() => receipts.length > 0, 'audio playback receipt');
+  assert.equal(f.audio.plays, 1);
+  assert.equal(receipts[0].state, 'start'); assert.equal(readReceipt().state, 'playing');
+  assert.equal(readReceipt().completed, false); assert.equal(f.observations.at(-1).frame, 0);
   assert.equal(f.observations.at(-1).sourceSha256, h); assert.equal(f.layer.bufferedFrames, 19);
   await f.tick(.5); await f.chunk(24); await f.tick(.8); await f.chunk(36);
   f.send({ t: 'done', id: f.m.plan.start.id, frames: 48 }); await turn();
   assert.equal(f.ended, false); f.audio.onended(); await f.promise;
   assert.equal(f.audio.paused, true); assert.equal(f.layer, null); assert.equal(f.observations.at(-1), undefined);
-  assert.equal(f.receipts.at(-1).state, 'end'); assert.ok(f.decoded.every(frame => frame.closed === 1));
+  assert.equal(receipts.at(-1).state, 'end'); assert.ok(f.decoded.every(frame => frame.closed === 1));
+  assert.equal(readReceipt().state, 'ended'); assert.equal(readReceipt().completed, true);
+  diagnostic.finish(requestId, 'unverified');
+  assert.equal(readReceipt().completed, true); assert.equal(readReceipt().reviewStatus, 'pending');
+  assert.doesNotMatch(status.dataset.playbackReceipt, /ticket|exactText|planSha256/);
   assert.ok(f.sent.filter(x => x.t === 'credit').every(x => x.frames <= 24));
 });
 

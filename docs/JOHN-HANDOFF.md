@@ -8,6 +8,15 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 
 ## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
 
+PR202 är mergad på `f16b5eac5838d424c5e9fafe804f5024a809af62` med grön
+main-CI. Vercels bygge hittade därefter en gammal authtransportfixture:
+`/studio/activity` är nu en avsiktlig redirect och lämnar inte passthrough-
+headers. Felet reproduceras med produktionens `CROUPIER_LAB_BASE_PATH=/studio`.
+Fixturen sätter nu denna basväg explicit, provar transport på en aktiv Admin-
+sida och följer den gamla länken genom båda omdirigeringarna till den aktiva
+sidan med bibehållen cookie och filtrerad förtroendeheader. Produktkod och
+behörighetsskydd ändras inte. Ny CI/deploy måste verifieras före driftkvittot.
+
 De 22 spårade filerna i `pipeline/` har flyttats till `tools/media/`, med
 uppdaterade importer, standardrötter, kommandon och testupptäckt. Manuella
 macOS-/Pythonrecept, binär, ljudreferens och mätvärden bevaras; inga mediefiler
@@ -159,6 +168,31 @@ keyframe-flaggor matchar oberoende ffprobe. Prefetch tog 386 ms; inga
 buffertunderskott uppstod. RAF visade 180 distinkta rutor, slutruta 182 och
 högst två rutors hopp. Detta verifierar avkodning och källa, inte att varje
 ruta visats eller att läppsynken är visuellt/hörbart accepterad.
+
+PR203:s slutreview reproducerade två fel: en ogiltigförklarad reservation
+kunde passera under en väntande kontextläsning, och nästa MP4 kunde hämtas
+för sent. Sista synkrona kontrollen efter alla läsningar samt aktivt avbrott
+vid ny spelversion stoppar även en worker som hänger mellan chunks. Alla
+använda komprimerade filmer hämtas och hashverifieras före ljudstart inom
+96 MiB; avkodningen behåller högst 24 rutor. Underagentens fördröjda
+originalprov (700 ms) gav 849 ms startbuffring, noll underskott och alla
+183 källindex avkodade; RAF visade 182 distinkta index. Det är inte ett
+tal-/läppsynksgodkännande. Spelarens verkliga startkvitto använder nu det
+befintliga diagnoskontraktet efter lyckad `audio.play`; `reviewStatus` är
+fortsatt `pending`. PR204:s testfix är integrerad från `502bea81`.
+
+OpenClaws intermittenta CI-fixtur är reproducerad: katalog-I/O kan lagligt
+förbruka hela dess 10 ms-budget före första provideranrop. Provets egen
+klocka är nu kontrollerad så att det faktiskt testar en långsam provider;
+produktionskod och tidsgräns ändras inte. Färdiga lokala prov ersätter inte
+PR203:s CI-, merge-, drift- och GPU-kvitton.
+
+Klippbibliotekets namnnormalisering är inte applicerad. Den skrivfria
+importplanen och namnförslaget bevarar tidigare UUID/hashar, original och
+visningsnamn. `docs/storage/BLOB-NEON.md` beskriver granskning och återstående
+applicering. Kevins källnamn är proveniens; runtime väljer verifierad funktion,
+pose, språk och exakta referenser. Gamla namn i Admin är därför inte bevis
+på att gamla filer ersatts eller att hela Kevin-banken importerats.
 
 Migration013 görs obligatorisk i samma fortsättning, eftersom dess
 produktionsinstallation nu är verifierad. Saknad 013 ska blockera readiness,

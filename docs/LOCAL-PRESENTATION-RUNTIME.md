@@ -130,6 +130,11 @@ icke-kvadratiska pixlar, klippning och andra format stoppas. WebCodecs-ytor
 kopieras och frigörs direkt för att undvika att Chrome får slut på decoder-
 ytor i 1080p. Högst 24 kroppsrutor buffras. Ingen fristående videoklocka,
 närmaste-bild-sökning eller omskrivning av originalfiler används.
+Alla använda komprimerade källfiler hämtas och verifieras före ljudstart,
+med en gemensam gräns på 96 MiB. Senare avkodning behöver därmed inte vänta
+på nästa nätverkshämtning. En ny serverversion återkallar reservationen
+och avbryter aktivt även en worker som inte skickar fler chunks. Efter
+varje asynkron kontextkontroll återkontrolleras reservationen synkront.
 
 Bankarkiv och kvitto lagras privat i Blob under
 `croupier/media/dealers/dragan/runtime/moving-bank/`. Den låsta manifestreferensen
@@ -278,14 +283,12 @@ komposition, borttagning av tallagret och stängning frigör bildrutorna;
 borttagning återställer också en eventuell kvarhållen kropp utan munbild.
 Inkommande byte, kö, antal lagrade rutor och avkodningstid är begränsade.
 
-Detta är en testad, opt-in konsument, inte ett färdigt produktionsflöde:
-ingen spel-/chattkod installerar den automatiskt, ingen relay eller endpoint
-byts och inget GPU-jobb startas. Workertransporten beskrivs nedan. Kvar är
-inkoppling mot autentiserad spelarsession och vår budgetjournal,
-serverns tidsplanering/replanering, verifierat avatarpaket mot publicerade
-klipp och ljudklockan i den faktiska spelaren. Den vägen ska behålla befintliga
-åtkomst-, budget-, text-, röst- och profilkontroller. Först därefter görs två
-sammanhängande riktiga talprov, inklusive hit/planbyte och avbrott.
+Konsumenten är nu kopplad till den uttryckligen aktiverade Dragan-talvägen
+ovan, med autentiserad spelarsession, budgetjournal, publicerade källor och
+ljudklocka. Modulen startar inget GPU-jobb själv. Generell omplanering mitt
+i en pågående utdelning ingår inte; ny version avbryter det bundna talet.
+Verklig molnuppspelning och läppsynkskvalitet återstår att verifiera enligt
+handoffen; lokala codec- och kontraktsprov innebär ingen visuell acceptans.
 
 Riktade tester verifierar identiteter, revisioner, alfamask, pixelplacering,
 avbrott, buffertgränser och oförändrad kortgeometri. Opt-in Chrome-provet i

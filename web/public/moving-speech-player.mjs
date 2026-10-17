@@ -235,7 +235,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     await abortable(audio.play(), controller.signal); check();
     if (audio.paused) fail('moving_speech_audio_paused');
     started = true; onStart(exactText); onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId,
-      evidence: 'verified-pcm-and-decoded-frames', planSha256: ready.plan.planSha256, reviewStatus: 'pending' });
+      evidence: 'media-playing', planSha256: ready.plan.planSha256, reviewStatus: 'pending' });
     tick();
   };
   const processMessage = async data => {

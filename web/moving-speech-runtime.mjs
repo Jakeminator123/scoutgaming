@@ -60,6 +60,9 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
     if (evidence.projectRevision !== record.evidence.projectRevision
       || JSON.stringify(evidence.mediaReferences) !== JSON.stringify(record.evidence.mediaReferences)) fail('moving_speech_context_changed');
     record.signal.throwIfAborted();
+    // A newer committed deal may replace the reservation during either read.
+    // Keep this final check synchronous after every awaited freshness check.
+    if(record.deal)record.reservation.assertCurrent();
     return evidence;
   }
   async function owner(record,req) {
@@ -162,7 +165,14 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
   server.on('upgrade',upgrade);
   const api = {
     supports: dealerId => dealerId === bank.sourceSet.dealerId,
-    observeCommitted: observation=>deals.committed(observation),
+    observeCommitted(observation) {
+      deals.committed(observation);
+      // Invalidate active output even when the worker is stalled between chunks.
+      for(const record of new Set([...pending,...records.values()])){
+        if(record.playerId!==observation.playerId||!record.reservation)continue;
+        try {record.reservation.assertCurrent();} catch {void cancel(record);}
+      }
+    },
     normalPresentation: (playerId,version)=>deals.normal(playerId,version),
     forContext: (context,presentationVersion,sessionRevision) => ({prepare:input=>api.prepare({...input,context,presentationVersion,sessionRevision})}),
     async prepare(input) {

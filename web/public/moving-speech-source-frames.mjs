@@ -129,7 +129,7 @@ export function createMovingSourceFrames(sequence, { signal, document = globalTh
   if (!Number.isInteger(limit) || limit < 1 || limit > 24) fail('moving_source_buffer_limit');
   const lifetime = new AbortController(); signal = signal ? AbortSignal.any([signal, lifetime.signal]) : lifetime.signal;
   const frames = new Map(), sources = new Map(), canvas = document.createElement('canvas'), copy = document.createElement('canvas');
-  let floor = 0, closed = false, job = null, error = null, totalBytes = 0;
+  let floor = 0, closed = false, job = null, error = null, totalBytes = 0, prepared = false;
   const check = () => { signal.throwIfAborted(); if (closed) fail('moving_source_closed'); if (error) throw error; };
   // Copy pixels off the decoder surface immediately. Holding VideoFrame(video)
   // or clone() can exhaust Chrome's 1080p surface pool before 24 frames exist.
@@ -190,6 +190,22 @@ export function createMovingSourceFrames(sequence, { signal, document = globalTh
     }
   }
   async function fill() {
+    if (!prepared) {
+      // Audio cannot wait for a future clip once the deal is committed. Fetch
+      // and verify every used compressed source before the first ready frame;
+      // decoding still belongs only to the bounded window below.
+      const takes = [...new Set(sequence.frames.map(row => row.take))];
+      let plannedBytes = 0;
+      for (const take of takes) {
+        const descriptor = sequence.sources.find(s => 'clip-' + s.videoId === take);
+        if (!descriptor) fail('moving_source_missing');
+        if (!Number.isSafeInteger(descriptor.bytes) || descriptor.bytes < 1) fail('moving_source_budget');
+        plannedBytes += descriptor.bytes;
+        if (plannedBytes > 96 * 1024 * 1024) fail('moving_source_budget');
+      }
+      for (const take of takes) { check(); await source(take); }
+      check(); prepared = true;
+    }
     const end = Math.min(sequence.frames.length, floor + limit), groups = new Map();
     for (let k = floor; k < end; k++) if (!frames.has(k)) {
       const row = sequence.frames[k];

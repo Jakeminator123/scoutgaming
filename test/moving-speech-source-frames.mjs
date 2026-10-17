@@ -105,3 +105,69 @@ test('requested invalid source index fails before decode and cache size cannot e
   await assert.rejects(cache.prefetch(0), /frame_index/); assert.equal(f.decoders.length, 0); cache.close();
   assert.throws(() => createMovingSourceFrames(f.sequence, {...f.deps, limit: 25}), /buffer_limit/);
 });
+
+function twoClips() {
+  const f = fixture();
+  f.sequence.sources.push({...f.descriptor, videoId: 'two', url: '/fixture-two'});
+  f.sequence.frames = ['one', 'two'].flatMap(id => Array.from({length: 48}, (_, frame) => ({take: 'clip-' + id, frame, sourceSha256: f.descriptor.sha256})));
+  return f;
+}
+
+test('initial prefetch waits for the delayed later clip before exposing any playback-ready frames', async () => {
+  const f = twoClips(), fetched = []; let release, notify;
+  const started = new Promise(resolve => { notify = resolve; });
+  const delayed = new Promise(resolve => { release = resolve; });
+  f.deps.fetchImpl = async url => { fetched.push(url); if (url === '/fixture-two') { notify(); await delayed; }
+    return new Response(f.bytes, {headers: {'content-type': 'video/mp4'}}); };
+  const cache = createMovingSourceFrames(f.sequence, f.deps); let ready = false;
+  const pending = cache.prefetch(0).then(() => { ready = true; });
+  try {
+    await Promise.race([started, pending.then(() => { throw Error('later compressed source must load before audio can start'); })]);
+    assert.equal(ready, false); assert.equal(f.decoders.length, 0); assert.equal(cache.buffered, 0);
+    release(); await pending;
+    assert.equal(cache.buffered, 24); assert.equal(f.copies.length, 24, 'preloading must not decode the whole sequence');
+    for (let k = 0; k < 96; k++) { cache.get(k); await cache.prefetch(k); assert.ok(cache.buffered <= 24); }
+    assert.deepEqual(fetched, ['/fixture', '/fixture-two'], 'playback refills must use verified in-memory bytes');
+    assert.deepEqual(f.drawn, [...Array(48).keys(), ...Array(48).keys()]);
+  } finally { release(); cache.close(); await pending.catch(() => {}); }
+});
+
+test('a later source hash mismatch fails startup before any body decoder is created', async () => {
+  const f = twoClips(); f.sequence.sources[1].sha256 = 'a'.repeat(64);
+  const cache = createMovingSourceFrames(f.sequence, f.deps);
+  await assert.rejects(cache.prefetch(0), /hash/); assert.equal(f.decoders.length, 0); assert.equal(cache.buffered, 0); cache.close();
+});
+
+test('preload abort cancels the later fetch and never exposes frames or a decoder', {timeout: 1000}, async t => {
+  const f = twoClips(); let notify, aborted = false;
+  const started = new Promise(resolve => { notify = resolve; });
+  f.deps.fetchImpl = async (url, {signal}) => {
+    if (url === '/fixture-two') await new Promise((resolve, reject) => {
+      signal.addEventListener('abort', () => { aborted = true; reject(signal.reason); }, {once: true}); notify();
+    });
+    return new Response(f.bytes, {headers: {'content-type': 'video/mp4'}});
+  };
+  const cache = createMovingSourceFrames(f.sequence, f.deps), pending = cache.prefetch(0);
+  t.after(() => cache.close());
+  await started; cache.close(); await assert.rejects(pending, /abort/i);
+  assert.equal(aborted, true); assert.equal(f.decoders.length, 0); assert.equal(cache.buffered, 0);
+});
+
+test('preload checks the complete 96 MiB budget before fetch and ignores unused source descriptors', async () => {
+  const f = twoClips(); let fetches = 0;
+  f.sequence.sources.forEach(s => { s.bytes = 49 * 1024 * 1024; });
+  f.deps.fetchImpl = async () => { fetches++; throw Error('must_not_fetch'); };
+  const cache = createMovingSourceFrames(f.sequence, f.deps);
+  await assert.rejects(cache.prefetch(0), /budget/); assert.equal(fetches, 0); cache.close();
+  const used = fixture(); used.sequence.sources.push({...used.descriptor, videoId: 'unused', url: '/unused', bytes: 97 * 1024 * 1024});
+  const ready = createMovingSourceFrames(used.sequence, used.deps);
+  await ready.prefetch(0); assert.equal(ready.buffered, 24); ready.close();
+});
+
+for (const kind of ['unavailable', 'size']) test(`later source ${kind} fails before playback decoding`, async () => {
+  const f = twoClips();
+  f.deps.fetchImpl = async url => new Response(url === '/fixture-two' && kind === 'size' ? Buffer.concat([f.bytes, Buffer.from([0])]) : f.bytes,
+    {status: url === '/fixture-two' && kind === 'unavailable' ? 503 : 200, headers: {'content-type': 'video/mp4'}});
+  const cache = createMovingSourceFrames(f.sequence, f.deps);
+  await assert.rejects(cache.prefetch(0), new RegExp(kind)); assert.equal(f.decoders.length, 0); cache.close();
+});

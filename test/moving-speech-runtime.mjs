@@ -43,8 +43,8 @@ async function setup(t, options = {}) {
   runtime = createMovingSpeechRuntime({ server, origin, bank, releaseSha256: h, ticketSecret: 'fixture-only'.repeat(4), now: () => state.now,
     connectionMs: options.connectionMs ?? 15000, onCleanupError:()=>trace.push('cleanup-recovery'),
     resolveOwner: async req => req.headers.cookie === 'owner=one' ? 'owner-one' : 'other-owner',
-    readEvidence: async () => { state.reads++; return evidence(); }, readRegistry: async () => registry,
-    readPresentation:async()=>state.receipt,publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
+    readEvidence: async () => { state.reads++; const snapshot=evidence(); await options.onEvidence?.(state); return snapshot; }, readRegistry: async () => registry,
+    readPresentation:async()=>{const snapshot=state.receipt;await options.onPresentation?.(state);return snapshot;},publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
     readRest: async () => new Response(original, { headers: { 'content-type': 'video/mp4', 'content-length': String(original.length), 'cache-control': 'private, no-store' } }),
     bankRead: async () => assert.fail('runtime fixture must never download bank bytes'),
     dealerRuntime: { async prepareMoving(input) {
@@ -68,6 +68,7 @@ async function setup(t, options = {}) {
             await onChunk({ t: 'lapp', id: input.plan.start.id, del: from / 12, fran: from,
               rutor: input.plan.timeline.slice(from,from+n).map(row => ({ tagning: row.take, ruta: row.frame, rect: [1, 2, 30, 40] })) }, Buffer.from([n, 0, 1, 9]));
             state.chunks++;
+            await options.afterChunk?.(state,args.signal);
           }
         },
       };
@@ -144,6 +145,71 @@ test('normal playback, other player, changed round and publication revoke a movi
     if(mode==='changed-tail')f.state.receipt.version++;else f.state.projectRevision++;
     await client.close;assert.equal(f.state.cancelled,1);
   }
+});
+
+test('committed deal changes during freshness reads stop admission, audio and subsequent frames',async t=>{
+  for(const boundary of ['onPresentation','onEvidence'])for(const phase of ['admission','audio','frames']){
+    await t.test(boundary+' before '+phase,async t=>{
+      let armed=false,entered=false,remaining=phase==='audio'?2:1;
+      const barrier=Promise.withResolvers();
+      t.after(()=>barrier.resolve());
+      const f=await setup(t,{deal:true,[boundary]:async()=>{
+        if(armed&&--remaining===0){entered=true;await barrier.promise;}
+      }}),d=await f.prepare();
+      if(phase!=='frames')armed=true;
+      const client=f.connect(d);
+      if(phase==='frames'){
+        assert.equal((await client.opened).status,101);
+        await until(()=>client.messages.length===3);
+        armed=true;client.send({t:'credit',id:client.messages[0].plan.start.id,frames:12});
+      }
+      await until(()=>entered);
+      f.state.receipt={...f.state.receipt,version:8};
+      f.runtime.observeCommitted({playerId:f.input.playerId,command:{op:'hit',dealer:'dragan'},view:{version:8},
+        session:{movingSpeech:{ownerHash:digest(f.input.owner),context:f.input.context,sessionRevision:f.input.sessionRevision}}});
+      barrier.resolve();
+      if(phase==='admission')assert.equal((await client.opened).status,403);
+      else{
+        await until(()=>f.state.cancelled>0||client.messages.some(m=>m.t==='lapp')||(phase==='audio'&&client.messages.some(m=>m.t==='pcm')));
+        assert.equal(client.messages.filter(Buffer.isBuffer).length,phase==='frames'?1:0);
+        assert.equal(client.messages.some(m=>m.t==='lapp'||m.t==='done'),false);
+        if(phase==='audio')assert.equal(client.messages.some(m=>m.t==='ready'||m.t==='pcm'),false);
+      }
+      await until(()=>f.state.cancelled===1);
+      assert.equal(f.state.chunks,0);
+      assert.equal(f.admitted.signal.aborted,true);
+    });
+  }
+});
+
+test('new committed deal aborts a waiting worker immediately without another chunk',async t=>{
+  let waiting=false;
+  const f=await setup(t,{deal:true,afterChunk:async(_state,signal)=>{
+    waiting=true;
+    await new Promise(resolve=>{
+      signal.addEventListener('abort',resolve,{once:true});
+      if(signal.aborted)resolve();
+    });
+  }}),d=await f.prepare(),client=f.connect(d);
+  assert.equal((await client.opened).status,101);
+  await until(()=>client.messages.length===3);
+  client.send({t:'credit',id:client.messages[0].plan.start.id,frames:12});
+  await until(()=>waiting&&client.messages.some(m=>m.t==='lapp'));
+  const commit=(playerId,version)=>f.runtime.observeCommitted({playerId,command:{op:'hit',dealer:'dragan'},view:{version},
+    session:{movingSpeech:{ownerHash:digest(f.input.owner),context:f.input.context,sessionRevision:f.input.sessionRevision}}});
+  commit('other-player',8);commit(f.input.playerId,7);
+  await Promise.resolve();
+  assert.equal(f.admitted.signal.aborted,false);
+  assert.equal(f.state.cancelled,0);
+  f.state.receipt={...f.state.receipt,version:8};
+  commit(f.input.playerId,8);
+  await Promise.resolve();
+  assert.equal(f.admitted.signal.aborted,true);
+  assert.equal(f.state.cancelled,1);
+  await client.close;
+  assert.equal(f.state.chunks,1);
+  assert.equal(client.messages.filter(m=>m.t==='lapp').length,1);
+  assert.equal(client.messages.some(m=>m.t==='done'),false);
 });
 
 test('current owner is required for both rest HTTP and single-use WebSocket ticket, without dispatch', async t => {
