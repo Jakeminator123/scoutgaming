@@ -1,5 +1,27 @@
 # Aktuell handoff — Scoutgaming
 
+## Publika moduler oberoende av deployordning — 17 oktober 2026
+
+Frontendens middleware låter GET/HEAD till exakta kanoniskt validerade adresser i
+`presentationPublicSource` nå Nexts `public`-katalog. Byggaren använder hela samma
+`presentationPublicModules` som startpunkter i sin befintliga import-/aliasclosure,
+så samtliga 37 deklarerade publika adresser byggs även utan en aktuell spelarimport.
+Backendallowlisten, Studio-routningen, autentiserade API:er och ingressen ändras
+inte. Ingen generell paketprefixroute eller andra hårdkodad allowlist införs.
+Andra metoder och `next-action` svarar 405 med `Allow: GET, HEAD`.
+
+PR223:s första regression filtrerade felaktigt på redan byggda filer och dolde
+13 saknade adresser. Ofiltrerad regression reproducerade exakt dessa 13 före
+byggfixen. Efter rättningen: `platform-ui.mjs` och `player-ui-build.mjs` 29/29,
+inklusive samtliga registryURL:er, transitiva from-/sidoinporter och litterala dynamiska importer, verklig middleware,
+Nexts statiska server och en isolerad äldre backend som svarar 421. GET/HEAD,
+källbytes, JavaScript-/JSON-MIME, privata/extra/encoded adresser och metod/action-
+nekanden passerar; API-anrop behåller backendvägen. Befintlig fem-MiB-budget,
+tvåfilslanding och nekad media/BO-kopiering passerar oförändrade.
+Ingen fullbuild, installation, deployment, miljöändring eller produkt-/medie-
+acceptans ingår. Byggfixen är parentgranskad; ordinarie hook verifierar slutversionen vid commit. PR/CI och
+driftkvitto återstår.
+
 ## Lokal agent-talk-kö — separat fix 17 oktober 2026
 
 Full kö blockerar inte nästa ping: äldsta meddelandet sparas före det
