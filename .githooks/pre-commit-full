@@ -32,6 +32,7 @@ run_node_tests studio studio-tests lab/test/*.test.mjs lab/components/*.test.mjs
 run_node_tests admin editor lipsync-test/editor.test.mjs
 run_node_tests admin catalog packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/lobby/components/lobby-provider.test.mjs packages/design-preview/admin/lib/dealer-artwork.test.mjs packages/design-preview/admin/lib/dealer-playback.test.mjs packages/design-preview/admin/lib/connected-studio.test.mjs packages/design-preview/admin/lib/studio-composition-panel.test.mjs packages/design-preview/admin/lib/studio-layout.test.mjs packages/design-preview/admin/lib/roulette-clip-map.test.mjs packages/design-preview/admin/lib/studio-policy.test.mjs packages/design-preview/admin/lib/studio-lifecycle.test.mjs packages/design-preview/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
 run_node_tests admin dealer-import packages/design-preview/admin/lib/dealer-import.test.mjs
+run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
 run_node_tests admin room-environment test/room-environment.mjs
 run_node_tests admin economy-journal packages/design-preview/admin/lib/economy-journal.test.mjs
 run_node_tests admin roulette-start-editor packages/design-preview/admin/lib/roulette-start-editor.test.mjs packages/design-preview/admin/lib/roulette-media-review.test.mjs packages/design-preview/admin/lib/roulette-idle-editor.test.mjs packages/design-preview/admin/lib/registered-material-library.test.mjs

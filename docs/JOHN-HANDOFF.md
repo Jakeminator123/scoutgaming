@@ -24,6 +24,15 @@ Separat workerpaket återanvänder den lokalt verifierade motorn. Transporten
 kräver låst image-digest och exakt bank-/profil-/session-/jobbintyg innan PCM.
 OpenClaw förblir standardkälla till dynamisk text; färdiga repliker behåller sitt ljud.
 Admin-huvudagenten äger klippkartan och befintliga UI-/import-API-kontrakt består.
+Den gemensamma visuella guiden skiljer slotmall, obligatorisk poseversion,
+frivillig rörelsevariation och talutlösare. Admin-agenten har verifierat
+utfällningen i sin isolerade browserfixture; det är ett separat UI-kvitto.
+
+Importplanen kördes mot färsk produktions-export: 38 återanvändningar,
+8 kopplingar att granska, 129 granskningsrader och ingen direkt import.
+52 av 247 frysta källvägar är byteverifierade. Tolv talstickprov på sv/en/pt
+transkriberades lokalt och bildgranskades. Osäker ASR räknas inte som felaktig
+inspelning eller acceptans; portugisiska stagingfiler hålls utanför basimporten.
 
 Verifierat lokalt: 21 transportprov med riktiga sockets; 95 ytterligare import-,
 bildrute-, PCM-, OpenClaw-chatt- och talregisterprov passerade, ett valfritt
@@ -40,25 +49,6 @@ saknas lokalt. Läsande RunPod-kontroll 01:42 UTC visade inga pods och bara
 Astrids befintliga endpoint. Inga filmer, nycklar eller Astrid-tjänster ändrades;
 ingen ny GPU-kostnad uppstod. Den frysta lokala taggen och originalen består.
 Detaljer/kommandon: [kanonisk storage-guide](storage/BLOB-NEON.md).
-
-## Dealerklipp, register och talworker: föregående plansteg — 17 oktober 2026
-
-Jakob beställde en samlad plan för Kevins verkliga blackjack-underlag,
-rättad klassificering/deduplicering i Neon och Blob samt en gemensam talworker.
-Den befintliga [storage-guiden](storage/BLOB-NEON.md) är omskriven som kanoniskt
-målkontrakt och genomförandeplan. Äldre inventering behålls som daterat belägg.
-
-Tre läsande underagenter granskade Kevin-underlag, register/radering och
-worker/moln. Admin-huvudagenten äger sin UI-etapp och informerades om filgränserna.
-Planen separerar nödvändiga poseversioner från slump-/talvarianter, återanvänder
-exakta byte/identiteter och gör fysisk radering till sista steg. En identifierad
-lucka är att raderingsinspektionen inte ensam täcker alla jobb- och talsvarsreferenser.
-Reproducerbart workerbygge och autentiserad livekoppling återstår.
-
-Endast dokumentation ändrad i denna etapp; ingen produktkod, databas, Blob,
-publicering, endpoint eller nyckel ändrad. Ingen ny kostnad eller visuell
-acceptans registrerad. De konkreta migrations- och ersättningsproven är planerade,
-inte genomförda. Den frysta lokala lipsync-taggen och dess privata original består.
 
 ## Dragan: registerbundet bankunderlag — 17 oktober 2026
 

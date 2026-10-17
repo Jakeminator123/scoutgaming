@@ -295,9 +295,28 @@ Admin-agentens befintliga importcallback och API behöver ingen ändring för de
 
 Praktiskt prov mot projekt-/mediaexport 17 oktober 01:49 UTC: 38 återanvändningar,
 8 kopplingar att granska/rätta, 129 granskningsrader, 67 exkluderade och
-5 rena referenser; ingen direkt import. 46 av 247 källvägar byteverifierades
-med redan lokala original (41 unika filer). Detta är ingen innehållsacceptans
-av de återstående filmerna eller kontroll av allt Kevin-material.
+5 rena referenser; ingen direkt import. Första körningen verifierade 46 av 247
+källvägar med redan lokala original (41 unika filer). Efter ett avgränsat
+innehållsstickprov är 52 av 247 källvägar byteverifierade; planens klassningar
+är oförändrade. Detta är ingen innehållsacceptans av de återstående filmerna.
+
+Stickprovet omfattade tolv klipp med lokal Whisper-tiny-transkribering och fyra
+bildrutor per klipp. Nio original (5,93 MB) hämtades och verifierades mot frysta
+Git-blobbar och SHA-256. Svenska/engelska kommer från Kevin-revisionen ovan;
+portugisiska från den separat frysta stagingrevisionen och ingår inte i basimporten.
+`chatter`, `placebets` och `greet_jakob` verkar motsvara småprat, spelinstruktioner
+och personlig hälsning. Det är preliminära klassningar: modellen gör tydliga
+ord-/namnfel, särskilt i korta svenska och portugisiska repliker. En avvikande
+transkribering bevisar därför inte fel i inspelningen. Ingen semantisk eller
+audiovisuell acceptans utfärdades. Registrerade `sv/win_1` har andra byte än
+Kevin-filen; ursprung och talinnehåll måste klarläggas före omkoppling.
+
+Tekniska testnamn som `dragan-speech-probe.mp4` är inte produktkategorier.
+OpenClaw kan välja en replik vid inaktivitet; den utlösaren är separat från
+klippets funktion, språk, pose och eventuell alternativ tagning. Den gemensamma
+guiden i `web/public/dealer-clip-guide.mjs` beskriver dessa skillnader för Admin.
+Guiden visar slotmallar och granskningskrav; den intygar inte ett enskilt klipps
+faktiska start-/slutpose eller visuella kvalitet.
 
 ### Färska dublettkandidater, 17 oktober
 
@@ -339,8 +358,8 @@ Första workerleveransen:
 
 1. Versionera granskad motorkälla eller en verifierad oföränderlig källartefakt.
    Lås basimage, Python-/CUDA-/paketversioner, MuseTalk-commit och modellhashar
-   mot det fungerande provet. Nuvarande Dockerrecept har andra Torch-versioner
-   och delvis olåsta beroenden; ett nytt podnamn löser inte detta.
+   mot det fungerande provet. Det äldre Astrid-receptet har andra Torch-versioner
+   och delvis olåsta beroenden; därför förbereds ett separat versionslåst recept.
 2. Bygg separat image och verifiera samma sparade ljud/film, full frameordning,
    originalytor, timing och audiovisuellt resultat. GPU-byte får inte byta modell.
 3. Anslut till befintlig autentiserad talsession, journal, budgetreservation,

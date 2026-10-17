@@ -21,6 +21,12 @@ MuseTalk-commit `0a89dec45a0192b824e3cf4daf96c239440c5ed8`. Modellfiler
 hämtas från fasta revisioner och avvisas om storlek eller SHA-256 avviker.
 Inga bankfilmer eller nycklar byggs in. Byggkommandot gör aldrig push/deploy.
 
+Den minimala Ubuntu-basen saknar CA-certifikat. BuildKit hämtar först ett
+exakt hashbundet Ubuntu-CA-paket från samma snapshot och bygger dess
+certifikatbunt före HTTPS-apt. Paketets hash är verifierad via Ubuntus
+signerade paketindex; ingen TLS- eller arkivsignaturkontroll stängs av.
+`apt-get update` avbryter vid varje hämtningsfel, även partiella fel.
+
 `release.json` binder runtimekällor, recept och låsfiler. Efter granskade
 ändringar: kör tester, `python seal_release.py` och kontrollera igen.
 Det är en kodreleaseidentitet; kontrollplanet måste dessutom verifiera den

@@ -38,5 +38,12 @@
     "Use a full verified prepared bank, not the shortened offline preview bank.",
     "Measured throughput below 30fps fails admission; no MIN_RUTOR=0 override."
   ],
-  "serverlessCommand": "python build.py --target serverless --tag croupier-moving-worker:serverless"
+  "serverlessCommand": "python build.py --target serverless --tag croupier-moving-worker:serverless",
+  "aptBootstrap": {
+    "url": "https://snapshot.ubuntu.com/ubuntu/20261016T000000Z/pool/main/c/ca-certificates/ca-certificates_20240203_all.deb",
+    "sha256": "641de77d8f142cfd62a1a6f964ba67b20754d3337c480efb529d086075a06c9a",
+    "version": "20240203",
+    "verification": "Ubuntu archive keyring verified InRelease -> SHA256 Packages.xz -> SHA256 deb; BuildKit ADD verifies the locked package before extraction",
+    "updateErrorMode": "any"
+  }
 }
