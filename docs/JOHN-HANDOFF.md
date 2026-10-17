@@ -169,10 +169,10 @@ merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
 Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
 läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
-## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 15:05 UTC
+## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 15:46 UTC
 
 **Läget:** kod, image, bank och separat testrum är levererade. Dynamisk
-OpenClaw-text fungerar. Första molnprovet med tal nådde RunPods kö men ingen
+OpenClaw-text fungerar. Två molnprov med tal nådde RunPods kö men ingen
 worker startade före tidsgränsen; tal och läppsynk i spelet är därför inte
 verifierade. Draganprofilen är avstängd och sparad efter provet. Inga egna
 GPU-resurser eller jobb är kvar. Astrid och originalfilmerna är orörda.
@@ -212,7 +212,26 @@ läsning 15:05:14 UTC gav endpoint `h56jnnyo5aq4om` 404, template `uv042mlkik`
 404 och tom workerlista. Astrids endpoint `zsudl8tmzcmiv1` gav 200,
 min0/max1 och samma template `cadh7uwzv6`. Senaste testendpointens redovisade
 avgift var då 0 USD; fördröjd fakturering är möjlig och reserver behålls.
-De sparade runtime-inställningarna pekar nu på den borttagna testendpointen.
+Andra provet kördes på PR208, main `a0876f7152434ec281228a69fe1ce6f1fcfb3a84`.
+Mergeagenten verifierade main-CI `39045298173` SUCCESS, Vercel
+`dpl_3kwzqkUQFfuJP39wX8sSHk1KiMss` READY och Render
+`dep-db9pb9u1egvs73d10ctg` LIVE med exakt version och hälsa 200 före start.
+PR208:s fallback-rättning hade 49 oberoende passerade prov. Den separata
+endpointen tillät både A40 och A6000 med samma image, modell och bank.
+Request `3aef6682-1a52-4d01-bd04-61d632c82783` fick timeout efter 158 771 ms,
+utan ljud-/videorutor. Jobb `ce27a960-4826-43f6-8655-41687e5b8117-e1`
+bekräftades `CANCELLED` och frisläppt 15:42:45 UTC i Neon. Provider och UI
+visade noll workers; ingen containerlogg fanns. Katalogen visade samtidigt
+A40 HIGH och A6000 LOW, vilket inte räcker för att förklara utebliven start.
+
+Guarden stängde vid sin fasta deadline: 15:39:07–15:45:12 UTC. Färsk
+oberoende läsning 15:46:25 gav endpoint `d7hv6j0ztof5ao` och template
+`zzn6zc9d0p` 404 samt exakt tom workerlista. Astrids samma endpoint/template
+var kvar med min0/max1. Draganprofilen sparades avstängd. Ctrl+C i Windows-
+TTY gav ingen observerad förtida stängning; den bestående deadlinen fungerade.
+Mergagenten fick STOP-kvittot innan nästa deploy släpptes.
+
+De sparade Dragan-inställningarna pekar nu på den senast borttagna testendpointen.
 Återaktivera inte bara profilen: nästa försök behöver en ny verifierad
 endpoint/template och motsvarande begränsade runtime-bindning.
 
@@ -239,26 +258,34 @@ hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga ru
 
 ### Återstående arbete och skydd vid fortsättning
 
-1. Följdfixen låter produktadaptern verifiera en aktiv fallback-pod när REST
-   utelämnar `workers`: exakt endpoint, template, image och versionsnummer
-   krävs från den färska pods-läsningen. Okända/felaktiga uppgifter stoppar
-   fortfarande före jobb. Samma privata guardfel rättas separat. Det är en
-   förebyggande rättning; den förklarar inte provets observerade noll workers.
-   Följdfixen måste granskas och driftsättas före nästa GPU-fönster.
-2. Katalogen `include=AVAILABILITY&product=SERVERLESS` visade 15:12 UTC
-   A6000 `NONE`, A40 `HIGH` i bland annat `EU-SE-1`, med CUDA12.8 tillgänglig.
-   Det stöder kapacitetsförklaringen men bevisar inte tidigare schedulerförlopp
-   eller lyckad GHCR-pull. Förbered båda korten i samma 48GB-pool med oförändrad
-   modell, image och bank. Läs faktisk worker-/pullstatus vid nästa försök.
-3. Stäm av samtliga sex endpointförsök och det tidigare dedikerade GPU-provet
-   mot samma totalt godkända **5 USD**. Tidigare känt spendgolv är
-   0,169812463 USD; de fem äldre försöken har kvar 3,11 USD reserv. Senaste
-   aktiveringens verifierade max1-period reserverar ytterligare 0,27 USD,
-   inklusive disk och stoppmarginal. Läsning 15:11 UTC gav sammanlagt
-   3,549812463 USD debiterat plus reserverat. Ett nytt bevakat sexminutersprov
-   med två minuters stoppmarginal ryms då inom 4,883145796 USD. Detta är ett
-   daterat planeringskvitto; uppdatera hela underlaget inom fem minuter före
-   användning. Neon-reservationer är inte fakturor och ger ingen extra budget.
+1. Utred imagehämtning, containerstart och scheduler innan fler betalda prov.
+   PR208 och privata schema4-guarden är levererade; de förklarar inte noll
+   workers. RunPods sparade registry-credential heter `ghcr-astrid-read`, men
+   namnet bevisar inte vilka privata images den får läsa. Befintlig lokal
+   GitHub-inloggning saknar `read:packages`; dess GHCR-404 är därför inget
+   bevis på saknad image eller felaktig RunPod-inloggning. Nycklarna är orörda.
+   Inloggad GitHub-vy bekräftar däremot att den privata versionen finns med
+   exakt digest `sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
+   Manifestets lager är cirka 8,1 GB komprimerade. Storleken gör lång första
+   imagehämtning möjlig, men bevisar inte att RunPod kunde hämta den eller att
+   hämtningen orsakade timeouten. Paketets nedladdningsräknare saknar källa och
+   tid och används därför inte som RunPod-kvitto. Se
+   [verifierad paketversion](https://github.com/Jakeminator123/scoutgaming/pkgs/container/moving-gpu-worker/1401501221?tag=sha-9a644e730966c248518c76a115c9bd922b0c5ef3).
+2. Skilj plattformens imagehämtning från Python-/modelluppstart. Våra prov
+   nådde inte workerintyget och kan inte bedöma TTS, filmval eller läppsynk.
+   Kallstart är en möjlig förklaring, inte fastställd rotorsak. Läs faktisk
+   system-/pullstatus och verifiera åtkomst till exakt image före nytt fönster.
+3. Läsning 15:50 UTC av samtliga sju stängda endpoints och tidigare GPU-pod
+   gav 0,169812463 USD bokfört och 3,59 USD behållna reserver: totalt
+   3,759812463 USD av samma godkända **5 USD**. Återstående utrymme var
+   1,240187537 USD. Sjunde reserven 0,21 USD omfattar hela guardtiden,
+   stoppmarginal och disk. Budget-/guardverktygens 72 prov passerade.
+   Jakob höjde därefter uttryckligen det sammanlagda testtaket till **10 USD**.
+   Alla tidigare kostnader och reserver följer med; höjningen är inte ett nytt
+   fristående 10 USD-utrymme. Nästa plan är ett avgränsat uppstartsprov med
+   talprofilen avstängd, utan speljobb och med automatisk resursstängning.
+   Detta är ett daterat kvitto; uppdatera hela underlaget inom fem minuter
+   före användning. Neon-reservationer är inte fakturor eller extra budget.
 4. Verifiera ny OpenClaw-replik i vila, sedan tal under serverbestämd utdelning.
    Agenten får inte placera insatser på användarkontot; Jakob startar själv
    eventuell riktig runda. Jakob valde efter det första molnprovet att köra
@@ -269,6 +296,17 @@ hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga ru
    proveniens; funktion, start-/slutpose, språk, variant och exakta UUID/hashar
    styr kopplingen. Namnbyte kräver inte nya filmbytes eller nya identiteter.
    Följ [Blob/Neon-guiden](storage/BLOB-NEON.md); radera inga skyddade original.
+
+Läsande jämförelse av lokala profiler, Vercel och Render-tjänsteidentiteter
+är klar; [miljöguiden](ENVIRONMENT-VARIABLES.md#läsande-jämförelse-17-oktober-2026)
+beskriver ansvar, styrkta skillnader och städningsförslag. Ingen env-rensning
+är genomförd och full jämförelse av Renders hemlighetsvärden är inte gjord.
+
+Jakobs röda `presentation/config`-rader följdes upp i befintligt testrum
+15:56 UTC utan GPU-start eller insats. Ett anrop fick HTTP200 och därefter
+`net::ERR_ABORTED` med `canceled:true`; efterföljande config-anrop fick 200.
+Det reproducerar ett klientavbrott, inte ett styrkt serverfel eller saknad
+grundbild. Det fastställer inte orsaken till varje rad i hans tidigare bild.
 
 Privata körkvitton och återstartscheckpoint ligger i den befintliga
 visualiseringsmappen för denna chatt, utanför Git. De innehåller resurs-ID,
