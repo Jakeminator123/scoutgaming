@@ -2,9 +2,13 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const testExtensions = new Set(['.mjs', '.js', '.cjs', '.ts', '.mts', '.cts']);
-const coverageRoots = /^(?:test|lab|open-claw|ops|apps|services|packages)\//;
+const discoveryRoots = ['test', 'lab/test', 'lab/components', 'lab/lib', 'packages', 'pipeline', 'open-claw', 'ops', 'apps', 'services', 'lipsync-test'];
+const coverageRoots = /^(?:test|lab|open-claw|ops|apps|services|packages|pipeline|lipsync-test)\//;
+const skippedDirectories = new Set(['node_modules', '.git', '.next', '.nuxt', '.cache', '.turbo', 'coverage',
+  'playwright-report', 'test-results', '__pycache__', '.venv', '.lipsync-venv', 'vendor', 'arkiv',
+  'data', 'media', 'staging', 'fixtures', '__fixtures__']);
 
 // Files under a fixtures directory are helpers imported by tests, not test files.
 function isTestFile(rel) {
@@ -13,35 +17,35 @@ function isTestFile(rel) {
   const name = parts[parts.length - 1];
   const dot = name.lastIndexOf('.');
   const extensionOk = dot > 0 && testExtensions.has(name.slice(dot));
-  // packages/**/*.test.* has no test/ directory segment.
-  if (parts[0] === 'packages' && extensionOk && /\.test\.[^.]+$/.test(name)) return true;
-  if (!parts.slice(0, -1).includes('test')) return false;
+  if (extensionOk && /\.(?:test|spec)\.[^.]+$/.test(name)) return true;
+  if (parts[0] === 'pipeline' && extensionOk && name.startsWith('test-')) return true;
+  if (!parts.slice(0, -1).some(part => part === 'test' || part === 'tests')) return false;
   return extensionOk;
 }
 
-function toRel(abs) {
+function toRel(abs, root) {
   return relative(root, abs).split('\\').join('/');
 }
 
-function walk(absDir, out) {
+function walk(absDir, out, root) {
   if (!existsSync(absDir)) return;
   for (const entry of readdirSync(absDir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    if (skippedDirectories.has(entry.name) || entry.name.startsWith('.')) continue;
     const abs = join(absDir, entry.name);
-    if (entry.isDirectory()) walk(abs, out);
-    else if (entry.isFile()) out.push(toRel(abs));
+    // Dirent symlinks/junctions are not followed into another checkout or private data.
+    if (entry.isDirectory()) walk(abs, out, root);
+    else if (entry.isFile()) out.push(toRel(abs, root));
   }
 }
 
-function collectTree(relDir) {
+function collectTree(relDir, root) {
   const found = [];
-  walk(join(root, relDir), found);
-  return found.filter(isTestFile);
+  walk(join(root, relDir), found, root);
+  return found;
 }
 
 function globRegExp(pattern) {
   const body = pattern.split('/').map(segment => {
-    if (segment === '**') return '.*';
     let out = '';
     for (const ch of segment) {
       if (ch === '*') out += '[^/]*';
@@ -168,7 +172,7 @@ function npmRunsTest(argv) {
   return filtered[0] === 'test' || (filtered[0] === 'run' && filtered[1] === 'test');
 }
 
-function readTestScript(prefix) {
+function readTestScript(prefix, root) {
   const pkgPath = prefix && prefix !== '.'
     ? join(root, prefix, 'package.json')
     : join(root, 'package.json');
@@ -178,23 +182,26 @@ function readTestScript(prefix) {
   return typeof script === 'string' ? script : null;
 }
 
-function commandPatterns(argv, cwd, followNpm) {
+function commandPatterns(argv, cwd, followNpm, root) {
   if (argv.length === 0) return [];
   if (followNpm && argv[0] === 'npm' && npmRunsTest(argv)) {
     const prefix = npmPrefix(argv) || cwd || '.';
-    const script = readTestScript(prefix);
+    const script = readTestScript(prefix, root);
     if (!script) return [];
     const patterns = [];
     for (const part of splitShell(script)) {
-      patterns.push(...commandPatterns(tokenize(part), prefix, false));
+      patterns.push(...commandPatterns(tokenize(part), prefix, false, root));
     }
     return patterns;
   }
-  const nodeAt = argv.findIndex(token => token === 'node' || token === 'run_node_tests');
+  // Only executable commands, never an echoed command or an arbitrary source string.
+  const nodeAt = argv[0] === 'node' || argv[0] === 'run_node_tests' ? 0
+    : argv[0] === 'run_check' && argv[4] === 'node' ? 4 : -1;
   if (nodeAt < 0) return [];
   const rest = argv.slice(nodeAt + 1);
+  if (rest.some(token => ['--check', '-c', '--eval', '-e', '--print', '-p'].includes(token))) return [];
   const selected = [];
-  if (argv[nodeAt] === 'run_node_tests' || rest.some(token => token === '--test' || token.startsWith('--test'))) {
+  if (argv[nodeAt] === 'run_node_tests' || rest.includes('--test')) {
     for (const token of rest) if (isPathArg(token)) selected.push(token);
   } else {
     const file = rest.find(token => !token.startsWith('-') && isPathArg(token));
@@ -203,28 +210,17 @@ function commandPatterns(argv, cwd, followNpm) {
   return selected.map(token => withCwd(token, cwd)).filter(pattern => coverageRoots.test(pattern));
 }
 
-function patternsFromShell(text, cwd, followNpm) {
+function patternsFromShell(text, cwd, followNpm, root) {
   const patterns = [];
   for (const line of shellLines(text)) {
     for (const part of splitShell(line)) {
-      patterns.push(...commandPatterns(tokenize(part), cwd, followNpm));
+      patterns.push(...commandPatterns(tokenize(part), cwd, followNpm, root));
     }
   }
   return patterns;
 }
 
-function patternsFromJavascript(text) {
-  const patterns = [];
-  for (const match of text.matchAll(/'([^'\n]+)'|"([^"\n]+)"/g)) {
-    const value = match[1] ?? match[2];
-    if (!isPathArg(value)) continue;
-    const pattern = withCwd(value, '');
-    if (coverageRoots.test(pattern)) patterns.push(pattern);
-  }
-  return patterns;
-}
-
-function loadRunnerPatterns() {
+function loadRunnerPatterns(root) {
   const found = [];
   const add = (runner, patterns) => {
     for (const pattern of patterns) found.push({ runner, pattern });
@@ -234,20 +230,19 @@ function loadRunnerPatterns() {
     for (const name of readdirSync(workflowDir)) {
       if (!/\.ya?ml$/.test(name)) continue;
       const runner = `.github/workflows/${name}`;
-      add(runner, patternsFromShell(readFileSync(join(workflowDir, name), 'utf8'), '', true));
+      add(runner, patternsFromShell(readFileSync(join(workflowDir, name), 'utf8'), '', true, root));
     }
   }
-  add('tools/precommit-checks.mjs', patternsFromJavascript(readFileSync(join(root, 'tools/precommit-checks.mjs'), 'utf8')));
   for (const name of ['pre-commit', 'pre-commit-full']) {
     const rel = `.githooks/${name}`;
     const abs = join(root, rel);
-    if (existsSync(abs)) add(rel, patternsFromShell(readFileSync(abs, 'utf8'), '', true));
+    if (existsSync(abs)) add(rel, patternsFromShell(readFileSync(abs, 'utf8'), '', true, root));
   }
   for (const prefix of ['.', 'lab']) {
-    const script = readTestScript(prefix);
+    const script = readTestScript(prefix, root);
     if (!script) continue;
     const runner = prefix === '.' ? 'package.json' : 'lab/package.json';
-    add(runner, patternsFromShell(script, prefix === '.' ? '' : prefix, false));
+    add(runner, patternsFromShell(script, prefix === '.' ? '' : prefix, false, root));
   }
   return found;
 }
@@ -264,14 +259,7 @@ function patternHits(pattern, file) {
   return pattern.regex ? pattern.regex.test(file) : pattern.pattern === file;
 }
 
-function targetsTree(patterns, tree) {
-  return patterns.some(item => {
-    const parts = item.pattern.split('/');
-    return parts[0] === tree && parts.includes('test');
-  });
-}
-
-function loadExceptions() {
+function loadExceptions(root) {
   const rel = 'tools/orphan-tests-exceptions.json';
   const abs = join(root, rel);
   if (!existsSync(abs)) return { entries: [], errors: [] };
@@ -282,7 +270,7 @@ function loadExceptions() {
     return { entries: [], errors: [`${rel}: ${error.message}`] };
   }
   if (!Array.isArray(parsed)) {
-    return { entries: [], errors: [`${rel} must be a list of { "path", "reason" }`] };
+    return { entries: [], errors: [`${rel} must be a list of { "path", "kind", "reason" }`] };
   }
   const entries = [];
   const errors = [];
@@ -293,24 +281,33 @@ function loadExceptions() {
       return;
     }
     const path = entry.path.trim();
-    if (path.startsWith('/') || path.includes('\\') || path.split('/').includes('..')) {
+    if (path.startsWith('/') || path.includes('\\') || path.split('/').includes('..') || /[*?\[\]]/.test(path)) {
       errors.push(`${rel}: invalid path ${path}`);
       return;
     }
-    entries.push({ path, reason: entry.reason.trim() });
+    if (!['helper', 'opt-in'].includes(entry.kind)) {
+      errors.push(`${rel}: ${path} needs kind helper or opt-in`);
+      return;
+    }
+    if (entries.some(item => item.path === path)) {
+      errors.push(`${rel}: duplicate classification for ${path}`);
+      return;
+    }
+    entries.push({ path, kind: entry.kind, reason: entry.reason.trim() });
   });
   return { entries, errors };
 }
 
-export function auditOrphanTests() {
-  const items = loadRunnerPatterns();
-  const patterns = compilePatterns(items);
-  const files = [...collectTree('test'), ...collectTree('lab/test'), ...collectTree('packages')];
-  if (targetsTree(patterns, 'open-claw')) files.push(...collectTree('open-claw'));
-  if (targetsTree(patterns, 'ops')) files.push(...collectTree('ops'));
-  files.sort();
-  const unique = [...new Set(files)];
-  const { entries, errors } = loadExceptions();
+export function auditOrphanTests({ root = repositoryRoot } = {}) {
+  const items = loadRunnerPatterns(root);
+  // Recursive glob semantics differ between sh, bash and Node. Do not infer coverage.
+  const unsupported = items.filter(item => item.pattern.includes('**'));
+  const patterns = compilePatterns(items.filter(item => !item.pattern.includes('**')));
+  const files = [...new Set(discoveryRoots.flatMap(directory => collectTree(directory, root)))].sort();
+  const unique = files.filter(isTestFile);
+  const pythonFiles = files.filter(file => file.startsWith('services/') && /\/tests?\/test_[^/]+\.py$/.test(file));
+  const { entries, errors } = loadExceptions(root);
+  for (const item of unsupported) errors.push(`${item.runner}: unsupported recursive glob ${item.pattern}; coverage needs an explicit runner pattern`);
   const known = new Set(unique);
   for (const entry of entries) {
     if (!known.has(entry.path)) errors.push(`tools/orphan-tests-exceptions.json: ${entry.path} is not a discovered test file`);
@@ -319,22 +316,27 @@ export function auditOrphanTests() {
   const orphans = [];
   const covered = [];
   for (const file of unique) {
-    const hit = patterns.find(item => patternHits(item, file));
-    if (hit) covered.push({ file, runner: hit.runner, pattern: hit.pattern });
+    const matches = patterns.filter(item => patternHits(item, file));
+    const hit = matches.find(item => item.runner === '.githooks/pre-commit-full') || matches[0];
+    if (hit) covered.push({ file, runner: hit.runner, pattern: hit.pattern,
+      kind: hit.runner === '.githooks/pre-commit-full' ? 'full-regression'
+        : hit.runner.startsWith('.github/workflows/') ? 'ci' : 'package-or-local' });
     else if (!excepted.has(file)) orphans.push(file);
   }
-  return { files: unique, orphans, covered, exceptions: entries, errors };
+  return { files: unique, orphans, covered, exceptions: entries, errors,
+    python: { files: pythonFiles, coverage: 'not-evaluated', note: 'Python runner coverage is outside this JavaScript audit.' } };
 }
 
 function main() {
   const result = auditOrphanTests();
   for (const error of result.errors) console.error(error);
   if (result.orphans.length > 0) {
-    console.error('Orphan tests:');
+    console.error('Orphan JavaScript/TypeScript tests:');
     for (const file of result.orphans) console.error(file);
   } else if (result.errors.length === 0) {
-    console.log(`Checked ${result.files.length} test files. Orphans: 0. Exceptions: ${result.exceptions.length}.`);
+    console.log(`Checked ${result.files.length} JavaScript/TypeScript test candidates. Orphans: 0. Explicit helper/opt-in classifications: ${result.exceptions.length}.`);
   }
+  console.log(`Separate Python inventory: ${result.python.files.length} test files. ${result.python.note}`);
   return result.orphans.length > 0 || result.errors.length > 0 ? 1 : 0;
 }
 

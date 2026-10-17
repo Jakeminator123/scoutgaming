@@ -381,8 +381,8 @@ En nyckel som klistrats in i chatten ska ersättas före fortsatt användning.
 ## Förteckning och tidigare verifieringskvitton
 
 Detta är den läsbara nyckelnamnsförteckningen. Den maskinläsbara listan finns i
-[`environment-variables.json`](environment-variables.json) och används av CI
-och systemkartan. Båda är aktiva referenser; ingen av dem laddas som processmiljö.
+[`environment-variables.json`](environment-variables.json) och används av CI.
+Guiden och JSON-registret är aktiva referenser; ingen av dem laddas som processmiljö.
 De innehåller inga hemliga värden. Ignorerade `.env`/`.env.local` och tjänsternas
 miljöinställningar är separata och ska inte raderas vid dokumentstädning.
 Ändra båda när en variabel läggs till, tas bort eller byter betydelse.

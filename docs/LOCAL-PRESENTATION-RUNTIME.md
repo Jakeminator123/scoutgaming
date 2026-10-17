@@ -1592,13 +1592,13 @@ Den indexerade dealerbanken (`media/dealers/{astrid,amira,vera,mei}/runtime/inde
 `media/dealers/*/runtime/presentation` står kvar. Blob-objekten är inte raderade;
 raderna i `media/blob-index.json` för de borttagna filerna är det.
 
-Manuella byggare som B9 behöll (kontrollerat 13 oktober på `426fa114`):
+Kvarvarande manuella byggare efter verktygsrensningen 17 oktober 2026:
 
-- `pipeline/build-hands.sh` — enda byggaren för bevarade `runtime/hands`, men indata är borttagna Vera-strömmar; kan inte köras om utan banken
-- `pipeline/build-previews.sh` — förhandsvisningar av de gamla röstreplikerna; gör ingenting utan `streams/index.json`
-- `pipeline/prepend-contact-entry.mjs` — skriver till borttagna `runtime/indexed/performance`
 - `pipeline/build-contact-review.mjs` — mål är `dealers/astrid/performance`; nämner inte banken
 - `pipeline/encode.sh` — Annex-B, generell; nämner inte banken
+
+Tre recept vars fasta indata eller mål tillhörde den borttagna banken är
+avvecklade. Befintliga handmattor, originalmedia och kalibrering bevaras.
 
 Läppsynkskripten som bara läste banken är borta tillsammans med
 `audit-dealer-sync.mjs`, `audit-performance.mjs` och `audit-astrid-actor.mjs`.

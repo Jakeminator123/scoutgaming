@@ -16,7 +16,7 @@
   --dealer-top: calc(53.52vh - var(--rail-anchor, 0.855) * var(--dealer-h));
   --dealer-crop: 0.90;
   --dealer-x: 0vw;
-  /* hands overlay band, fractions of the video square (build-hands.sh) */
+  /* hands overlay band, fractions of the video square */
   --hands-band-y: 0.78056;  /* 1124/1440 */
   --hands-band-h: 0.21944;  /*  316/1440 */
   /* where the overlay starts showing her (video-v units): from just below

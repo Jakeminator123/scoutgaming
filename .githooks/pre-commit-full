@@ -28,7 +28,7 @@ run_node_tests() {
 # Exact equivalent of the frontend package's non-incremental typecheck.
 run_check studio frontend-typecheck 180 node apps/croupier-frontend/node_modules/typescript/bin/tsc --project apps/croupier-frontend/tsconfig.json --noEmit --incremental false
 # Discover Studio tests once, without a second hand-maintained registry.
-run_node_tests studio studio-tests lab/test/*.test.mjs lab/components/*.test.mjs
+run_node_tests studio studio-tests lab/test/*.test.mjs lab/components/*.test.mjs lab/lib/background-zone-schedule.test.mjs
 run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
 run_node_tests admin clip-guide packages/design-preview/admin/lib/clip-guide.test.mjs
 run_node_tests admin saved-scene-preview packages/design-preview/admin/lib/saved-scene-preview.test.mjs
@@ -41,7 +41,7 @@ run_node_tests admin roulette-start-editor packages/design-preview/admin/lib/rou
 run_node_tests admin admin-routing packages/design-preview/runtime/admin-routing.test.mjs packages/design-preview/runtime/navigation.test.mjs
 run_node_tests admin workspace-tools packages/design-preview/admin/lib/workspace-tools.test.mjs packages/design-preview/admin/lib/resource-deletion.test.mjs
 run_node_tests admin dealer-directory packages/design-preview/admin/lib/dealer-directory.test.mjs packages/design-preview/admin/lib/dealer-chat-import.test.mjs
-run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
+run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-orphan-tests.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
 run_node_tests contracts raderingsgrind test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs packages/design-preview/admin/lib/studio-context.test.mjs
 run_node_tests contracts browser-runtime-bindings test/browser-runtime-bindings.mjs
 run_node_tests contracts backup-lab-state test/backup-lab-state.mjs test/migrate-lab-state.mjs test/retention-archive.mjs test/studio-retirement-plan.mjs
@@ -63,12 +63,12 @@ run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mj
 run_node_tests access moving-speech-cloud-config test/cloud-config.mjs
 run_node_tests access admin-project-drafts-browser test/admin-project-drafts-browser.mjs
 run_node_tests access speech-reply-library test/speech-reply-library.mjs test/speech-reply-repository.mjs test/speech-reply-blob-import.mjs test/partner-metadata.mjs test/layer-packs-cloud.mjs
-run_node_tests access dashboard-proxy open-claw/lab/test/dashboard-proxy.test.mjs
-run_node_tests access dashboard-handoff open-claw/lab/deploy/dashboard-handoff.test.mjs open-claw/lab/deploy/gateway-bootstrap.test.mjs
-run_node_tests access studio-admin open-claw/lab/test/studio-admin.test.mjs open-claw/lab/test/gateway-rpc.test.mjs
+# Complete package sets, once per full run (including CI).
+run_node_tests access openclaw open-claw/lab/test/*.test.mjs open-claw/lab/deploy/*.test.mjs
+run_node_tests access ops-cloud ops/cloud/test/*.test.mjs
 run_node_tests access bo-lab-auth test/bo-lab-auth.mjs
 run_node_tests access postgres-persistence test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
-run_node_tests access storage-export ops/cloud/test/storage-export.test.mjs ops/cloud/test/vercel-ingress.test.mjs ops/cloud/test/operator-html-ingress.test.mjs ops/cloud/test/version.test.mjs ops/cloud/test/qa-stream-transport.test.mjs ops/cloud/test/qa-stream-transport-client.test.mjs apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-native-websocket.mjs apps/croupier-frontend/test/player-area.mjs apps/croupier-frontend/test/player-lobby.mjs apps/croupier-frontend/test/player-room-preview.mjs apps/croupier-frontend/test/player-scene-canvas.mjs apps/croupier-frontend/test/player-preview-fallback.mjs apps/croupier-frontend/test/landing-motion.mjs apps/croupier-frontend/test/intro-device.mjs
+run_node_tests access platform-ui apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs apps/croupier-frontend/test/platform-moving-speech.mjs apps/croupier-frontend/test/platform-native-websocket.mjs apps/croupier-frontend/test/player-area.mjs apps/croupier-frontend/test/player-lobby.mjs apps/croupier-frontend/test/player-room-preview.mjs apps/croupier-frontend/test/player-scene-canvas.mjs apps/croupier-frontend/test/player-preview-fallback.mjs apps/croupier-frontend/test/landing-motion.mjs apps/croupier-frontend/test/intro-device.mjs
 run_node_tests access media-layout test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs test/lane-media-audit.mjs
 run_check access environment-registry 180 node tools/check-environment-variables.mjs
 run_node_tests access check-environment-variables test/check-environment-variables.mjs test/provider-profile.mjs
@@ -78,7 +78,7 @@ run_node_tests access runtime-media-catalog test/runtime-media-catalog.mjs test/
 run_check access player-auth 180 node test/player-auth.mjs
 run_check access table-http 180 node test/table-http.mjs
 run_node_tests access agent-talk test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs apps/croupier-frontend/test/player-ui-build.mjs
-run_node_tests access runtime ops/cloud/test/runtime.test.mjs ops/cloud/test/shutdown.test.mjs ops/cloud/test/native-p6-router-hook.test.mjs test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs
+run_node_tests access runtime test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs
 run_check access craig-login 180 node test/craig-login.mjs
 run_check access bo-game-auth 180 node test/bo-game-auth.mjs
 run_node_tests speech build-index test/build-index.mjs test/speech-playback.mjs
@@ -101,4 +101,3 @@ run_node_tests gameplay registered-idle-rules test/registered-idle-rules.mjs
 run_node_tests gameplay filmed-action-ownership test/filmed-action-ownership.mjs test/filmed-profile.mjs test/filmed-deal-sequence.mjs test/filmed-deal-selection.mjs test/filmed-table-projection.mjs test/recorded-speech.mjs test/recorded-speech-selection.mjs
 run_node_tests gameplay local-presentation test/local-presentation.mjs test/layered-presentation.mjs test/layer-packs-route.mjs test/local-card-overlay.mjs test/blackjack-feedback.mjs test/verified-video-buffer.mjs test/presentation-select-dealers.mjs test/presentation-select-astrid-baseline.mjs
 run_node_tests gameplay lissabon-profiles test/lissabon-profiles.mjs test/player-results.mjs
-run_node_tests gameplay local-session open-claw/lab/deploy/local-session.test.mjs open-claw/lab/deploy/local-connection.test.mjs

@@ -90,8 +90,7 @@ jobs:
           version: 10.33.2
           run_install: false
       - run: pnpm --dir apps/croupier-frontend install --frozen-lockfile
-      # OpenClaw launcher acceptance needs the real Studio build above.
-      - run: npm --prefix open-claw/lab test
+      # OpenClaw launcher acceptance runs in the access suite and needs the build above.
       - run: npm --prefix open-claw/lab run check
       # Same registry as local --full. Each suite has its own visible step;
       # later suites still diagnose failures, and any failed suite fails this job.
@@ -150,8 +149,7 @@ jobs:
           if-no-files-found: warn
           path: ${{ runner.temp }}/dealer-regression-timing.jsonl
       - run: node test/split-rules.mjs
-      - run: node --test test/croupier-chef.mjs test/github-workflow.mjs test/cloud-readiness.mjs test/inbox.mjs
-      - run: node --test ops/cloud/test/*.test.mjs
+      - run: node --test --test-concurrency=4 test/croupier-chef.mjs test/github-workflow.mjs test/inbox.mjs
       - name: Studio migration readiness (production ledger)
         # Main/manual runs always check the ledger. Client/test-only PR edits
         # need no production access; server/schema/dependency changes still do.
