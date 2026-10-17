@@ -59,13 +59,13 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
   const compiled = transpileModule(source, {compilerOptions:{module:ModuleKind.CommonJS, target:ScriptTarget.ES2022}}).outputText;
   const module = {exports:{}};
   new Function('require', 'module', 'exports', compiled)(requireMiddleware, module, module.exports);
-  const unifiedEnv = {...env, CROUPIER_VERCEL_UNIFIED_UI:'1', CROUPIER_STUDIO_NATIVE_ADMIN:'1'};
+  const unifiedEnv = {...env, CROUPIER_VERCEL_UNIFIED_UI:'1', CROUPIER_STUDIO_NATIVE_ADMIN:'1', CROUPIER_LAB_BASE_PATH:'/studio'};
   const previous = Object.fromEntries(Object.keys(unifiedEnv).map(key => [key, process.env[key]]));
   Object.assign(process.env, unifiedEnv);
   try {
     const headers = {cookie:'bo_session=isolated-fixture', 'x-croupier-vercel-secret':'spoof',
       'x-croupier-lab-authorized':'spoof', forwarded:'host=foreign.example'};
-    for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/activity', '/studio/login']) {
+    for (const path of ['/studio/api/project', '/studio/api/partner-preview', '/studio/admin/replies', '/studio/login']) {
       const response = module.exports.middleware(new NextRequest(config.publicOrigin + path, {headers,nextConfig:{basePath:'/studio'}}));
       assert.equal(response.headers.get('x-middleware-rewrite'), null, path);
       assert.equal(response.headers.get('x-middleware-request-cookie'), headers.cookie);
@@ -74,6 +74,19 @@ test('actual unified Studio middleware preserves auth transport and rejects enco
       assert.equal(response.headers.get('x-middleware-request-forwarded'), null);
       assert.equal(response.headers.get('cdn-cache-control'), 'no-store');
     }
+    // Retired documents redirect before transport headers are applied. Follow
+    // their public destinations with the cookie a browser retains on this origin.
+    let legacyUrl = config.publicOrigin + '/studio/activity';
+    for (const target of ['/control/activity', '/admin/rehearsal']) {
+      const response = module.exports.middleware(new NextRequest(legacyUrl, {headers}));
+      assert.equal(response.status, 307, legacyUrl);
+      assert.equal(response.headers.get('location'), config.publicOrigin + target);
+      legacyUrl = response.headers.get('location');
+    }
+    const rehearsal = module.exports.middleware(new NextRequest(legacyUrl, {headers}));
+    assert.equal(rehearsal.headers.get('x-middleware-rewrite'), config.publicOrigin + '/studio/admin/rehearsal');
+    assert.equal(rehearsal.headers.get('x-middleware-request-cookie'), headers.cookie);
+    assert.equal(rehearsal.headers.get('x-middleware-request-x-croupier-lab-authorized'), null);
     const navigation = {...headers, 'sec-fetch-site':'cross-site', 'sec-fetch-mode':'navigate', 'sec-fetch-dest':'document'};
     const compatibility = module.exports.middleware(new NextRequest(config.publicOrigin + '/control/replies?dealer=paow', {headers:navigation}));
     assert.equal(compatibility.status,307);
