@@ -473,6 +473,21 @@ JSONL-filen har start- och slutposter; en start utan slut visar var ett hårt
 avbrott inträffade. Den historiska systemkartans reporter behövs inte för
 produktproven eller deras tidskvitton.
 
+`node tools/check-orphan-tests.mjs` inventerar JS/TS-prov i `test`, `lab`,
+`packages`, `pipeline`, `apps`, `services`, `open-claw/lab` och `ops/cloud`.
+Rapporten skiljer full regression, andra CI-kommandon och paket-/lokala
+körlistor. `tools/orphan-tests-exceptions.json` namnger manuella prov och
+hjälpfiler med skäl. Pythonprov redovisas separat; noll JS-orfaner bevisar
+varken Python-täckning eller att alla registrerade prov faktiskt kördes.
+Browserprov kan kräva miljöinställningar och rapportera skip enligt ovan.
+
+Fullhooken kör hela OpenClaw- och ops/cloud-grupperna en gång; CI använder
+samma grupper. OpenClaws separata syntaxkontroll finns kvar. Lägg nya
+assertions i ett relevant befintligt beteendeprov när det räcker. En ny
+testfil behöver ett eget felutfall och en tydlig körväg. Historiska filnamn,
+CSS-klasser, menyantal och fullständiga proplistor är inga produktkontrakt;
+behåll däremot negativa prov för hemliga fält, åtkomst och ägarskap.
+
 ## Video och kvarvarande integration
 
 De 224 snapshot-generationerna finns redan i

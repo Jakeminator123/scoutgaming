@@ -1,9 +1,35 @@
 # Aktuell handoff — Scoutgaming
 
-Uppdaterad 17 oktober 2026. Struktur- och testförenklingsfasen är avslutad.
+Uppdaterad 17 oktober 2026. Tidigare städpass är levererade; etapp 1 av den
+nya strukturplanen samlar testförenkling och verifierade rester i en PR.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
+
+## Etapp 1: testkörning och förbrukade verktyg — 17 oktober 2026
+
+Utgår från main `8b60984844075b344e6cc33147956b0f31b0d691` (PR199).
+Den gamla molnberedskapsrapporten, dess test, tre recept för borttagna
+mediebanker och fyra bankbundna prov är raderade efter konsumentkontroll.
+Lipsync bekräftade att dessa verktyg inte används i det pågående Dragan-arbetet.
+Originalmedia, handmattor, publicerings-/talavtal och aktiva byggare bevaras.
+
+Fullhooken kör OpenClaws 20 och ops/clouds 16 prov en gång; 16 dubbla
+CI-körningar är borta. PR199:s callback-prov finns kvar. Två tidigare
+missade aktiva prov är registrerade: bakgrundszonernas schema och frontendens
+moving-speech-ingång. Detaljassertions för CSS, propinventering och gamla
+filnamnslistor är förenklade; åtkomst, privata fält och reducerad rörelse skyddas.
+
+JS/TS-inventeringen omfattar 510 kandidater, med nio namngivna helper/opt-in-
+klassningar och inga oklassificerade kandidater. Tio Pythonprov redovisas
+separat, utan påstående om verifierad Python-täckning. Fyra små fixturprov
+skyddar inventeringens riktiga körvägar och negativa fall. Körgränser och
+testprinciper beskrivs i [lab/README](../lab/README.md#regressionssviter-och-tidskvitton).
+
+Riktade lokala UI-/runner-/inventeringsprov och 45 medie-/workflowkontraktsprov
+är kontrollerade; Windows-specifika skips redovisas i PR-kvittot. Full CI och
+merge följs separat. Ingen ny visuell läppsynksacceptans eller driftändring
+ingår. Etapp 2 och 3 (katalogflyttar och kodägarskap) är inte startade.
 
 ## Dragan: OpenClaw till gemensam spelare — 17 oktober 2026
 

@@ -277,9 +277,11 @@ ljud. Källor: `web/public/local-presentation.mjs`,
 `pipeline/build-index.mjs`.
 Äldre automatiska warp-/offsetrecept är ingen generell instruktion för nya takes.
 
-För spelar-/mediaändring: kör hooken. `audit-dealer-sync.mjs` följde med
-den indexerade banken ut ur trädet. Granska registrerade dealers i den
-riktiga spelaren med `?dealer=<name>&rehearsal=1`, två uppspelningar i följd.
+För spelar-/mediaändring: kör hooken och relevanta beteendeprov.
+`audit-dealer-sync.mjs` följde med den indexerade banken ut ur trädet.
+Använd `?dealer=<name>&rehearsal=1` vid konkret uppspelningsfel eller begärd
+visuell granskning. Upprepade spelningar krävs bara för beteenden som beror
+på upprepning; det finns inget generellt krav på två spelningar.
 Hash, waveform, första munrörelse och tester godkänner inte synk/kortkontakt.
 Uppdatera endast avsiktligt granskade baselineposter med per-line-resultat.
 Kända kvarvarande fel: [JOHN-HANDOFF.md](JOHN-HANDOFF.md).

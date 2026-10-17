@@ -231,9 +231,14 @@ test('level-two entrance exposes the real directory without private records or a
   const element = await renderPage(loaded.partner);
   assert.equal(reads, 1);
   assert.equal(element.type, loaded.PartnerWorkspace);
-  assert.deepEqual(JSON.parse(JSON.stringify(element.props)), { user: 'fixture-admin', apiBase: '/studio/api/partner/snapshot', accessClass: 'internal-admin', operators: [
+  assert.equal(element.props.user, 'fixture-admin');
+  assert.equal(element.props.apiBase, '/studio/api/partner/snapshot');
+  assert.equal(element.props.accessClass, 'internal-admin');
+  assert.deepEqual(JSON.parse(JSON.stringify(element.props.operators)), [
     { slug: 'johns-spelbolag', name: 'Johns spelbolag' }, { slug: 'sg-test', name: 'SG test game provider' },
-  ] });
+  ]);
+  assert.equal(element.props.session, undefined);
+  assert.doesNotMatch(JSON.stringify(element.props), /never-pass|privatePlayer|privateTeam/);
 });
 
 test('an admin cookie alone loads real partners and never invokes the fixture adapter, including failures', async () => {
@@ -347,7 +352,7 @@ test('a partner cookie never authorizes control and a partner session skips the 
   assert.equal(element.props.user, 'north-partner');
   assert.equal(element.props.initialView, 'ops');
   assert.equal(element.props.surface, 'partner');
-  assert.deepEqual(Object.keys(element.props).sort(), ['apiBase', 'initialSnapshot', 'initialView', 'surface', 'user']);
+  assert.equal(element.props.session, undefined, 'the session stays server-side');
   assert.equal(previews, 2);
   assert.equal(partners, 1);
   const entrance = await renderPage(loaded.partner);

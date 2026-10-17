@@ -69,12 +69,15 @@ test('client-directory dependencies, schemas and configuration cannot bypass mig
   }
 });
 
-test('CI runs Studio discovery once and keeps product checks separate from map reporting', () => {
+test('CI uses one Studio discovery registry and retains blocking product checks', () => {
   const yaml = readFileSync(new URL('../.github/workflows/croupier.yml',import.meta.url),'utf8');
   const fullHook = readFileSync(new URL('../.githooks/pre-commit-full',import.meta.url),'utf8');
-  assert.equal((fullHook.match(/^run_node_tests studio studio-tests lab\/test\/\*\.test\.mjs lab\/components\/\*\.test\.mjs$/gm) || []).length, 1);
-  const explicitStudio = fullHook.split('\n').filter(line => line.startsWith('run_node_tests '))
-    .flatMap(line => line.split(/\s+/).slice(3)).filter(path => /^lab\/(?:test|components)\/[^\s/*]+\.test\.mjs$/.test(path));
+  const registered = fullHook.split('\n').filter(line => line.startsWith('run_node_tests '))
+    .flatMap(line => line.trim().split(/\s+/).slice(3));
+  for (const pattern of ['lab/test/*.test.mjs', 'lab/components/*.test.mjs']) {
+    assert.equal(registered.filter(path => path === pattern).length, 1, `${pattern} runs once`);
+  }
+  const explicitStudio = registered.filter(path => /^lab\/(?:test|components)\/[^\s/*]+\.test\.mjs$/.test(path));
   assert.deepEqual(explicitStudio, []);
   assert.doesNotMatch(yaml, /npm --prefix lab test/);
   const suites = ['studio', 'admin', 'contracts', 'database', 'presentation', 'access', 'speech', 'gameplay'];
