@@ -161,11 +161,12 @@ export async function loadGeneratedSpeech(value, { exactText, dealerId, signal, 
 /** The caller owns the pose gate and single speech queue. This owns one exact,
  * hash-checked audio/video pair, never a substitute recorded sentence. */
 export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, assertCurrent,
-  onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver, prepareRendering, renderFrame, setMovingSpeechLayer } = {}) {
+  onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver, prepareRendering, renderFrame, setMovingSpeechLayer,
+  onSequenceReady,onSequenceFrame,onSequenceEnd } = {}) {
   if (value?.kind === 'moving-speech-stream') {
     if (media) throw new Error('Stream playback cannot substitute transferred media');
     return playMovingSpeech(value, { exactText, dealerId, requestId, signal, beforeStart, assertCurrent,
-      onStart, onFirstFrame, onReceipt, prepareRendering, renderFrame, setMovingSpeechLayer });
+      onStart, onFirstFrame, onReceipt, prepareRendering, renderFrame, setMovingSpeechLayer,onSequenceReady,onSequenceFrame,onSequenceEnd });
   }
   if (value?.kind === 'generated-speech-stream') {
     if (media) throw new Error('Stream playback cannot substitute transferred media');

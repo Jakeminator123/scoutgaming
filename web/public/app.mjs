@@ -26,6 +26,7 @@ import { sideBetWin, roundWin } from './blackjack-feedback.mjs';
 import { totalLabel } from './card-presentation/renderer-support.js';
 import { placeActions, placeDealControl } from './action-placement.mjs';
 import { cardFaceArt } from './card-art.mjs';
+import { movingDealCard } from './moving-speech-sequence.mjs';
 
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -101,6 +102,7 @@ if (localPresentationEnabled) {
 if(!studioPreview) document.cookie = `croupier_layer_preview=${entrySelection.lane === 'layer-preview' ? '1' : '0'}; Path=/; Max-Age=3600; SameSite=Lax`;
 const clientSessionRevision = crypto.randomUUID();
 let tableVersion = 0;
+let movingSpeechAvailable=false, nextDealChat=null, nextDealControls=null, activeDealSpeech=null;
 let speechPoseGate = null;
 let probeClient = null;
 let idlePresentationSequence = 0;
@@ -532,12 +534,14 @@ function roundView(data) {
   return data && { ...data, live() { return this.hands; }, legal() { return this.legalActions; } };
 }
 async function tableCommand(op, extra = {}) {
+  if(op!=='state'&&op!=='start')cancelNextDealChat();
   if (op !== 'state') probeClient?.activity();
   if (!player) await loadPlayer();
   if (!player) throw new Error('Cannot connect to the game server');
   if (op !== 'state') localPresentation?.state({ action: true });
   if (op !== 'state') updatePoseState({ dealerPose: 'action', actionOwner: `table-${op}`, idlePresented: null }, 'table-command-started');
-  const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), dealer: DEALER.key, ...extra };
+  const payload = { id: player.id, op, version: tableVersion, requestId: crypto.randomUUID(), dealer: DEALER.key, ...extra,
+    ...(op==='start'&&nextDealChat&&movingSpeechAvailable?{movingSpeech:{context:chatPresentationContext(entrySelection,DEALER.key),sessionRevision:clientSessionRevision}}:{}) };
   let out;
   for (let attempt=0; attempt<2; attempt++) {
     try { out = await api('/api/table', payload); break; }
@@ -559,6 +563,8 @@ async function tableCommand(op, extra = {}) {
     }
   }
   tableVersion = out.version;
+  movingSpeechAvailable=out.movingSpeechAvailable===true;
+  if(nextDealControls)nextDealControls.hidden=!movingSpeechAvailable;
   updatePoseState({ roundRevision: String(tableVersion),
     ...(op === 'state' ? { actionOwner: 'none' } : {}) }, 'table-version-committed');
   if (op === 'state') localPresentation?.state({ action: false });
@@ -1358,6 +1364,16 @@ async function dealSequence() {
   }
   round = roundView(out.round);
   renderBets(); setBanner(null); clearTable();
+  const queuedChat=nextDealChat;nextDealChat=null;refreshNextDealChat();
+  let combined=false;
+  if(queuedChat&&movingSpeechAvailable&&queuedChat.dealerId===DEALER.key&&queuedChat.sessionRevision===clientSessionRevision){
+    const owned={version:tableVersion,lastFrame:-1,stepIndex:-1,completed:false,token:null,sequence:null};
+    activeDealSpeech=owned;
+    try{combined=await sendChat({message:queuedChat.message,dealSpeech:owned})&&owned.completed;}
+    finally{activeDealSpeech=null;refreshNextDealChat();}
+    if(!combined&&owned.lastFrame>=0){tableError(Error('Utdelningens tal avbröts. Ladda om för att visa serverns kort'));return;}
+  }
+  if(!combined){
   const dealOrder = [...round.live()].reverse();
   localPresentation?.prepareSequence([
     { type: 'speak', line: 'goodluck' },
@@ -1388,7 +1404,8 @@ async function dealSequence() {
   }
   await deliverCard($('#dealer-cards'), null, { faceDown: true, shoeDraw:round.holeDraw });
   await sleep(PACE);
-
+  }
+  const live=round.live();
   await endDealingTake();
   // side bets resolve on the deal, like the real game
   let sideWin = false;
@@ -1654,11 +1671,47 @@ async function playRecorded(id, signal) {
   return localPresentation?.present({ type: 'speak', line: id }, { signal });
 }
 
+function refreshNextDealChat(){
+  if(!nextDealControls)return;
+  nextDealControls.querySelector('button').hidden=!nextDealChat&&!activeDealSpeech;
+}
+function cancelNextDealChat(){
+  nextDealChat=null;
+  if(activeDealSpeech?.jobId)speechPoseGate?.cancel(activeDealSpeech.jobId,'explicit-interrupt');
+  refreshNextDealChat();
+}
+function finishMovingDealStep(owned){
+  const step=owned.sequence?.steps[owned.stepIndex];if(!step)return;
+  if(owned.lastFrame<step.end-2)throw Error('moving_deal_card_frame_missing');
+  localCards?.finish(owned.token,step.event.shoeDraw,true);
+  const event=step.event,{card,liveIndex,visibleCards}=movingDealCard(round,event);
+  const container=event.to==='dealer'?$('#dealer-cards'):boxContainer(liveIndex);
+  dealCardTo(container,card,{faceDown:event.faceDown,shoeDraw:event.shoeDraw,motion:{localCompleted:true}});
+  if(visibleCards?.length)updateBadge(container,visibleCards);
+}
+function movingDealFrame(owned,sequence,k){
+  if(owned!==activeDealSpeech||owned.version!==tableVersion||sequence.version!==tableVersion||k<owned.lastFrame||k-owned.lastFrame>2)throw Error('stale_moving_deal_frame');
+  const index=sequence.steps.findIndex(step=>k>=step.first&&k<step.end);
+  if(index!==owned.stepIndex){
+    if(index!==owned.stepIndex+1)throw Error('moving_deal_step_skipped');
+    finishMovingDealStep(owned);owned.stepIndex=index;
+    owned.token=localCards?.begin(sequence.steps[index].video,sequence.steps[index].event);
+  }
+  owned.lastFrame=k;
+  localCards?.frame(owned.token,sequence.frames[k].frame/24);
+}
+function movingDealEnd(owned){
+  if(owned.completed)return;
+  if(owned.stepIndex!==owned.sequence.steps.length-1)throw Error('moving_deal_incomplete');
+  finishMovingDealStep(owned);owned.completed=true;
+}
+
 async function playChatDecision(decision, signal, jobId) {
   if(studioPreview)throw Error('Genererat tal är avstängt i provspel.');
   if (decision.kind === 'silence') return;
+  const dealSpeech=pendingChatReplies.get(jobId)?.dealSpeech;
   localPresentation?.state({ speech: true, ready: false });
-  updatePoseState({ dealerPose: decision.kind === 'generatedText' && !decision.speechPackage && !decision.speechStream ? 'standard-idle' : 'speech',
+  updatePoseState({ dealerPose: dealSpeech?'deal-speech':decision.kind === 'generatedText' && !decision.speechPackage && !decision.speechStream ? 'standard-idle' : 'speech',
     speechOwner: `chat-${jobId}`, idlePresented: null }, 'chat-speech-started');
   try {
     if (decision.kind === 'generatedText') {
@@ -1671,7 +1724,8 @@ async function playChatDecision(decision, signal, jobId) {
             const state = speechPoseGate.state, job = speechPoseGate.get(jobId), identity = poseIdentity();
             if (signal?.aborted || !job || job.status !== 'speaking' || job.dealerId !== identity.dealerId
               || job.sessionRevision !== identity.sessionRevision || job.roundRevision !== identity.roundRevision
-              || state.speechOwner !== `chat-${jobId}` || state.actionOwner !== 'none' || state.dealerPose !== 'speech'
+              || state.speechOwner !== `chat-${jobId}` || state.actionOwner !== (dealSpeech?`deal-chat-${jobId}`:'none') || state.dealerPose !== (dealSpeech?'deal-speech':'speech')
+              || (dealSpeech&&(activeDealSpeech!==dealSpeech||decision.speechStream.presentationVersion!==tableVersion))
               || !state.visible || state.muted) throw new Error('stale_speech_stream_pose');
           };
           const beforeStreamStart = async () => {
@@ -1680,9 +1734,14 @@ async function playChatDecision(decision, signal, jobId) {
           setChatStatus('Förbereder röst och läppsynk…');
           await playGeneratedSpeech(decision.speechStream, { exactText: decision.exactText, dealerId: DEALER.key,
             requestId: jobId, mount: $('#scene'), signal, beforeStart: beforeStreamStart, assertCurrent: checkStreamPose,
-            prepareRendering: compositing => layerComposition?.prepareClip(compositing ?? undefined),
+            prepareRendering: (compositing,framing) => layerComposition?.prepareClip(compositing ?? undefined,framing),
             renderFrame: (video, presented) => layerComposition?.renderFrame(video, presented) ?? false,
             setMovingSpeechLayer: layer => layerComposition?.setMovingSpeechLayer(layer),
+            ...(dealSpeech?{
+              onSequenceReady:sequence=>{checkStreamPose();if(sequence.version!==dealSpeech.version)throw Error('moving_deal_version');dealSpeech.sequence=sequence;localCards?.sync(round);},
+              onSequenceFrame:(sequence,k)=>movingDealFrame(dealSpeech,sequence,k),
+              onSequenceEnd:()=>movingDealEnd(dealSpeech),
+            }:{}),
             streamObserver: pendingChatReplies.get(jobId)?.nativeP6Observer,
             onStart: text => {
               const pending = pendingChatReplies.get(jobId);
@@ -1746,6 +1805,15 @@ async function playChatDecision(decision, signal, jobId) {
 
 $('#chat-send').onclick = () => void sendChat();
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') void sendChat(); });
+if(localPresentationEnabled&&!studioPreview){
+  nextDealControls=document.createElement('div');nextDealControls.hidden=!movingSpeechAvailable;
+  const label=document.createElement('label'),toggle=document.createElement('input'),cancel=document.createElement('button');
+  toggle.type='checkbox';toggle.id='chat-next-deal';label.append(toggle,document.createTextNode(' Svara under nästa utdelning'));
+  cancel.type='button';cancel.textContent='Avbryt';cancel.hidden=true;cancel.onclick=()=>{cancelNextDealChat();setChatStatus('Planerat svar avbrutet. Texten finns kvar.');};
+  toggle.onchange=()=>{if(!toggle.checked)cancelNextDealChat();};nextDealControls.append(label,cancel);$('#chat').append(nextDealControls);
+  $('#chat-input').addEventListener('input',()=>{if(nextDealChat&&$('#chat-input').value.trim()!==nextDealChat.message)cancelNextDealChat();});
+  window.addEventListener('pagehide',cancelNextDealChat,{once:true});
+}
 const astridCamera = !studioPreview
   ? createAstridCameraControl({ container: $('#chat'), identity: () => ({ ...poseIdentity(), playerId: player?.id }),
     dealerName: DEALER.name, wakeNames: [...new Set([DEALER.name, DEALER.key])],
@@ -1800,11 +1868,16 @@ memoryForget.onclick = async () => {
   finally { memoryForget.disabled = false; }
 };
 
-async function sendChat({ message: reviewedMessage, images = [], profileRevision = null } = {}) {
+async function sendChat({ message: reviewedMessage, images = [], profileRevision = null, dealSpeech=null } = {}) {
   if(studioPreview){setChatStatus(STUDIO_PREVIEW_NOTICE);return false;}
   const input = $('#chat-input');
   const message = (reviewedMessage ?? input.value).trim();
   if (!message || chatBusy) return false;
+  if(!dealSpeech&&reviewedMessage===undefined&&$('#chat-next-deal')?.checked&&movingSpeechAvailable){
+    if(busy){setChatStatus('Vänta tills den pågående utdelningen är klar.');return false;}
+    nextDealChat={message,dealerId:DEALER.key,sessionRevision:clientSessionRevision};refreshNextDealChat();
+    setChatStatus('Frågan sparad för nästa utdelning. Du kan avbryta.');return true;
+  }
   probeClient?.activity();
   if (reviewedMessage === undefined) input.value = '';
   chatBusy = true;
@@ -1826,16 +1899,18 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
   chatHistory.push({ role: 'user', text: message });
   const received = speechPoseGate.receive({ jobId: requestId, ...identity, requestFingerprint: requestId });
   const controller = new AbortController();
-  pendingChatReplies.set(requestId, { correlation: chatCorrelation, message, controller, requestedAt });
+  pendingChatReplies.set(requestId, { correlation: chatCorrelation, message, controller, requestedAt,dealSpeech });
   const stages = [];
   let previewRow = null;
   try {
     if (received.record.status === 'cancelled') throw new Error(received.record.reason);
+    if(dealSpeech){dealSpeech.jobId=requestId;speechPoseGate.reserveDeal(requestId,dealSpeech.version);refreshNextDealChat();}
     const r = await apiFetch('/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: localPresentationEnabled ? 'application/x-ndjson' : 'application/json' }, signal: controller.signal,
       body: JSON.stringify({ requestId, message, history, dealer: DEALER.key, acceptsSpeechStream: true,
         ...(chatPresentationContext(entrySelection,DEALER.key)?{presentationContext:chatPresentationContext(entrySelection,DEALER.key)}:{}),
         sessionRevision: identity.sessionRevision, roundRevision: identity.roundRevision,
+        ...(dealSpeech?{presentationVersion:dealSpeech.version}:{}),
         ...(images.length ? { observation: { version: 1, turnId: requestId, consentTurnId: requestId, profileRevision, images } } : {}) }),
     });
     const decision = await readChatResponse(r, progress => {
@@ -1861,7 +1936,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     });
     clearInterval(waitTimer);
     setChatStatus(decision.kind === 'silence' ? '' : 'Svar klart · väntar på ledigt bord');
-    if (decision.kind !== 'silence') localPresentation?.state({ ready: true });
+    if (decision.kind !== 'silence'&&!dealSpeech) localPresentation?.state({ ready: true });
     speechPoseGate.responseReady(requestId, decision);
     const receipt = await received.completion;
     if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
@@ -1871,11 +1946,12 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
       setChatStatus(chatFailureMessage(receipt.reason));
     }
     else {
+      if(dealSpeech&&input.value.trim()===message)input.value='';
       chatPlaybackDiagnostic.finish(requestId, decision.kind === 'silence' ? 'silent' : 'unverified');
       setChatStatus(decision.kind === 'silence' ? 'Astrid valde att inte svara på det meddelandet.'
         : pendingChatReplies.get(requestId)?.voiceUnavailable ? `${DEALER.name}s röstvideo saknas. Svaret visas som text.` : '');
     }
-    return true;
+    return receipt.status==='completed';
   } catch (error) {
     if (previewRow?.classList.contains('pending')) previewRow.remove();
     const reason = speechPoseGate.get(requestId)?.reason || error.message || 'chat-failed';

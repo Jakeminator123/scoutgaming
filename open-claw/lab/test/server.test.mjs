@@ -212,16 +212,21 @@ test('ordered presentation import validates the whole batch before requesting ad
 
 test('a slow imported batch finishes within its shared budget using baseline for remaining events', async t => {
   let calls = 0;
+  let elapsedMs = 0;
   const { base } = await running(t, { baseUrl: 'http://localhost:18789', gatewayKey: 'test-gateway' }, async () => {
     calls++;
-    await new Promise(resolve => setTimeout(resolve, 40));
+    elapsedMs += 40;
     throw new DOMException('late', 'TimeoutError');
   }, { batchBudgetMs: 10 });
+  // Catalog I/O must not consume the first-call budget in this provider-timeout fixture.
+  t.mock.method(performance, 'now', () => elapsedMs);
   const response = await post(base, '/api/presentation', { requestId: 'bounded-batch', mode: 'active', presentation: [{ type: 'idle' }, { type: 'idle' }, { type: 'idle' }] });
   assert.equal(response.status, 200);
   const result = await response.json();
   assert.equal(calls, 1);
   assert.equal(result.decisions.length, 3);
-  assert.equal(result.decisions[1].provider.status, 'batch_deadline_baseline');
+  assert.equal(result.decisions[0].provider.status, 'openclaw_timeout');
+  assert.equal(result.decisions[0].provider.elapsedMs, 40);
+  assert.deepEqual(result.decisions.slice(1).map(d => d.provider.status), ['batch_deadline_baseline', 'batch_deadline_baseline']);
   assert.ok(result.decisions.every(d => d.selected.id === d.baseline.id));
 });
