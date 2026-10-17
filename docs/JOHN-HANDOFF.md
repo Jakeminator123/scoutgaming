@@ -8,8 +8,9 @@ Spelmotorns dynamiska import och samtliga invariants är bevarade. Befintligt
 isolerat fuzzprov passerar med seed20260822 och3000 rundor; ingen databas,
 provider eller produktionsåtkomst. Produktträdet är oförändrat mot PR228:s
 ab125d0e46f0282278fa5fbd7ce08372f73d2f30. Den befintliga kontrollen av
-odefinierade browsernamn följer också med till packages/presentation/contracts,
-så de flyttade modulernas tidigare täckning behålls; fyra katalogprov passerar.
+odefinierade browsernamn följer också med till packages/presentation/contracts
+och packages/navigation (player-handoff),
+så de flyttade modulernas tidigare täckning behålls; fem katalogprov passerar.
 Inga nya testfiler införs. Ordinarie hook och PR-CI följer.
 
 ## PR227: Studio använder sin egen policymedialäsare
