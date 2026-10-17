@@ -87,7 +87,8 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
   }
   for(const path of ['/packages/presentation/runtime/live-idle.mjs','/packages/presentation/runtime/idle-policy.mjs',
     '/packages/presentation/contracts/dealer-identity.mjs','/packages/presentation/contracts/policies/idle-policy.seed.json',
-    '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json'])assert.ok(visited.has(path),path);
+    '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json',
+    '/packages/presentation/contracts/game-lane-id.mjs'])assert.ok(visited.has(path),path);
   for (const name of ['dealer-framing','composition-settings']) {
     const alias = await fetch(origin+'/'+name+'.mjs');
     const canonical = await fetch(origin+'/packages/presentation/contracts/'+name+'.mjs');
@@ -101,6 +102,9 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
   }
   for(const path of ['/web/server.mjs','/web/public/app.mjs','/web/public/dealer-identity.mjs/extra',
     '/web/public/dealer-identity.mjs.bak','/packages/presentation/runtime/selection.mjs',
+    '/packages/presentation/contracts/presentation-room.mjs', '/packages/presentation/contracts/operator-lifecycle-key.mjs',
+    '/packages/presentation/server/registered-dealer-idle.mjs', '/packages/studio-registry/server/repository.mjs',
+    '/packages/presentation/contracts/game-lane-id.mjs/extra', '/packages/presentation/contracts/game-lane-id.mjs.bak',
     '/packages/presentation/runtime/live-idle.mjs/extra','/packages/presentation/runtime/idle-policy.mjs.bak',
     '/packages/presentation/contracts/studio-model.mjs','/packages/presentation/contracts/video-intake.mjs',
     '/packages/presentation/contracts/policies/project.seed.json','/packages/presentation/contracts/schemas/video.schema.json',

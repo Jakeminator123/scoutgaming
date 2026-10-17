@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRegisteredDealerIdle} from '../web/storage/studio-runtime.mjs';
+import {createRegisteredDealerIdle} from '../packages/presentation/server/registered-dealer-idle.mjs';
 const fixture=dealerId=>{
  const id='11111111-1111-4111-8111-111111111111';
  const baseline=dealerId+'.idle.ready.standard';
