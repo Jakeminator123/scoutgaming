@@ -6,6 +6,42 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## C2f: servertransportens ägarskap — lokal verifiering 17 oktober 2026
+
+`packages/server-transport` äger nu exakta socketvägar, origin-/ingress-
+konfiguration, reläkärna och native Node-server. Speech och frontendens tre
+API-skal importerar paketet; inga gamla sökvägswrappers finns kvar.
+Konfigurationen importerar inte `ws`. Speech behåller Node 22.23.1 och har
+egen npm-lock samt `.npmrc` med `install-links=true`; Vercels speechinstall
+är `npm ci --ignore-scripts`. Frontend behåller Node 24.21.0 och pnpm-lås.
+`ws` ägs av transportpaketet; frontend har det endast för tester.
+
+Flytten är mekanisk för aktiv transport: origins, tickets, workerbindning,
+moving-speech, timeouts, bytegränser, kö och backpressure är oförändrade.
+Den konsumentlösa SDK-adaptern `handlePlatformWebSocket` och dess
+`@vercel/functions`-beroende är borttagna. SDK-specifika livstidsassertions
+har pensionerats; relevanta skriv-/felprov använder den aktiva native-vägen,
+och befintliga integrationer bevarar owner-/replay-/mediabyte-kontroller.
+
+De två befintliga cross-service-proven är flyttade från frontend till
+`test/platform-native-websocket.mjs` och `test/platform-moving-speech.mjs`.
+Fullhook och CI behåller dem; CI installerar båda tjänsterna och kör även
+transporten på Node 22. Frontendens core-/routingprov ligger kvar appnära.
+
+Lokalt: egen speechinstallation och start utan frontendinstallation,
+beroendefri configimport och speechsyntaxbygge godkända. Frontendens
+typkontroll, 127 prov och Next-produktionsbygge var gröna före testflytten.
+Efter flytten klarade frontendens 116 appprov sig med speechs `node_modules`
+tillfälligt otillgänglig; den återställdes direkt. Node 22 körde 18 transport-
+och integrationsprov, samtliga gröna. Miljöregistret samt 22 metadata-/
+workflow-/inventeringsprov är gröna; 512 JS/TS-kandidater, nio helper/opt-in,
+noll oklassificerade. Bygget använde inga privata miljökopior.
+
+Detta är lokal C2f-verifiering från baseline `9e533e7b`; ingen commit, push,
+CI eller deployment har utförts här. C2c:s explicita publika kontraktsallowlist
+måste bevaras vid integration; denna ändring rör bara routingmodulens
+import-/exportrader. Publik lobbykatalog och media/GPU ingår inte.
+
 ## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
 
 PR202 är mergad på `f16b5eac5838d424c5e9fafe804f5024a809af62` med grön

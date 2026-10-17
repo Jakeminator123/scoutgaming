@@ -12,6 +12,13 @@ Service `studio` byggs från `lab` och serverar `/admin`, `/lobby`, `/control`
 och `/partner`. `/studio` är dess tekniska basePath. Båda tjänsterna ligger
 i Frankfurt. Render äger auktoritativ spelmotor och live-transport.
 Det äldre frontendprojektet är en domänlös reserv med Git-byggen avstängda.
+Talservicen `apps/croupier-speech` och frontendens API-skal delar
+`packages/server-transport`. Paketet äger exakta socketvägar, konfiguration,
+reläkärna och native Node-server med `ws`; konfigurationen har inga
+WebSocket-beroenden. Frontend installerar paketet genom sitt pnpm-lås.
+Talservicen använder Node 22.23.1 och egen npm-lock/`.npmrc` med
+`install-links=true`; kör `npm ci --ignore-scripts` från dess katalog.
+Den kan installeras och startas utan frontendens `node_modules`.
 Se [driftkartan](../../docs/CLOUD-MIGRATION.md) och
 [senaste verifierade leverans](../../docs/JOHN-HANDOFF.md) för produktion och QA.
 
@@ -61,6 +68,11 @@ pnpm build
 `npm test` kör SSR-, routing-, autentiserings- och uppspelningsregressioner.
 Bygget kör testerna före `next build`; separat typkontroll krävs eftersom
 Next-konfigurationen tills vidare hoppar över byggens typfel.
+Integrationsproven mellan frontend, speech och spelmotorn finns i
+`test/platform-native-websocket.mjs` och `test/platform-moving-speech.mjs`
+från reporoten. CI/fullhook kör dem med båda tjänsternas egna låsta
+installationer; CI provar även transporten på speechs deklarerade Node 22.
+Frontendens vanliga bygge behöver ingen speech-installation.
 Interaktiva produkt-/labbprov använder den gemensamma sessionsvakten.
 
 `node_modules/`, `.next/`, `runtime-ui/` och de spelresurser som
