@@ -19,12 +19,12 @@ function fixture(t, files) {
 test('discovers uncovered domains without mistaking a direct glob or printed command for recursive coverage', t => {
   const audit = fixture(t, {
     '.githooks/pre-commit-full': 'run_node_tests studio components lab/components/*.test.mjs\n',
-    '.github/workflows/check.yml': 'steps:\n  - run: echo node --test pipeline/test-filter.mjs\n  - run: node --check open-claw/lab/deploy/config.test.mjs\n',
+    '.github/workflows/check.yml': 'steps:\n  - run: echo node --test tools/media/test-filter.mjs\n  - run: node --check open-claw/lab/deploy/config.test.mjs\n',
     'tools/precommit-checks.mjs': "const unrelated = 'ops/cloud/test/entry.test.mjs';\n",
     'lab/components/view.test.mjs': '',
     'lab/components/nested/access.test.mjs': '',
     'lab/lib/scheduler.test.mjs': '',
-    'pipeline/test-filter.mjs': '',
+    'tools/media/test-filter.mjs': '',
     'apps/frontend/test/login.mjs': '',
     'services/worker/gateway/test/relay.test.mjs': '',
     'open-claw/lab/deploy/config.test.mjs': '',
@@ -43,7 +43,7 @@ test('discovers uncovered domains without mistaking a direct glob or printed com
   assert.deepEqual(result.orphans, [
     'apps/frontend/test/login.mjs', 'lab/components/nested/access.test.mjs', 'lab/lib/scheduler.test.mjs',
     'open-claw/lab/deploy/config.test.mjs', 'ops/cloud/test/entry.test.mjs', 'packages/ui/view.test.mjs',
-    'pipeline/test-filter.mjs', 'services/worker/gateway/test/relay.test.mjs',
+    'services/worker/gateway/test/relay.test.mjs', 'tools/media/test-filter.mjs',
   ]);
 });
 

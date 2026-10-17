@@ -20,7 +20,7 @@ Dessa läser paketet:
 - `web/layer-packs.mjs` serverar `/layer-packs/*` från `compositor/`.
 - `lab/tools/prepare-preview.mjs` bygger `lab/preview-build`. Native molndrift serverar endast `compositor.js` och `geometry.js` under `/preview/*`; äldre sida, katalog och medier svarar 410. Explicit offlinefixtur behåller sitt isolerade previewmaterial.
 - `lab/lib`, `lab/components`, `web/presentation-api.mjs`, `web/storage` och `web/studio-preview.mjs` importerar `runtime/`.
-- `web/server.mjs` släpper in `/presentation-runtime/*`. `web/presentation-api.mjs` läser filen från `runtime/`.
+- `web/public/local-presentation.mjs` importerar `runtime/live-idle.mjs` direkt. Servern tillåter exakt `live-idle.mjs` och `idle-policy.mjs` under `/packages/presentation/runtime/`; de äldre `/presentation-runtime/*`-adresserna fungerar fortsatt. Den statiska frontendbyggaren behåller samma äldre outputadresser.
 
 Publika adresser är stabila: `/composition-runtime/*`, `/layer-packs/*`, `/presentation-runtime/*` och Studio `/preview/*` (publikt `/studio/preview/*`). Filhashar för källfilerna ändras inte när bara sökvägen flyttas.
 

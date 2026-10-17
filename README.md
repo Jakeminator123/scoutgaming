@@ -44,7 +44,7 @@ active entry points, operator access, compatibility redirects and working tools.
 | `packages/presentation/` | Shared compositor, presentation selection, idle rules and reviewed layer preview | [Presentation](packages/presentation/README.md) |
 | `packages/design-preview/` | Active admin/lobby UI source and browser bundle builder | [Admin/lobby](packages/design-preview/README.md) |
 | `services/astrid-gpu-worker/` | GPU lip sync plus shared speech transport; the historical name does not restrict sessions to Astrid | [Speech service](services/astrid-gpu-worker/README.md) |
-| `pipeline/` | Media utilities with separate inputs, banks and export formats | [Media tools](pipeline/README.md) |
+| `tools/media/` | Media utilities with separate inputs, banks and export formats | [Media tools](tools/media/README.md) |
 | `media/` | Source/review/staging material and import manifests; deployed registry data comes from Neon and media bytes from Blob | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |
 | `open-claw/` | OpenClaw/Gateway integration and its deployment tools | [OpenClaw](open-claw/README.md) |
 | `ops/`, `tools/` | Deployment, migration, import and repository utilities | [Cloud](docs/CLOUD-MIGRATION.md), [container context](ops/cloud/CONTAINER-CONTEXT.md) |

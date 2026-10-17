@@ -1,6 +1,6 @@
 # Medieverktyg och bevarade byggrecept
 
-`pipeline/` innehåller manuella medieverktyg och prov för den gemensamma
+`tools/media/` innehåller manuella medieverktyg och prov för den gemensamma
 spelaren. Mappen är ingen produkt, spelmotor eller OpenClaw-tjänst. Den äldre
 indexerade dealerbanken är avvecklad; att ett byggrecept finns kvar betyder
 inte att dess indata finns kvar eller att det är rätt väg för nya klipp.
@@ -24,10 +24,10 @@ Studio. Den lokala bankens omskanning i
 
 ## Före användning
 
-- Läs [den tekniska referensen](../docs/LOCAL-PRESENTATION-RUNTIME.md),
-  [handoffen](../docs/JOHN-HANDOFF.md) och
-  [återställningsreglerna](../docs/ENVIRONMENT-RESTORATION.md) för mediearbete.
-  Spelformat och låsta lager beskrivs i [spelguiden](../docs/games/README.md).
+- Läs [den tekniska referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md),
+  [handoffen](../../docs/JOHN-HANDOFF.md) och
+  [återställningsreglerna](../../docs/ENVIRONMENT-RESTORATION.md) för mediearbete.
+  Spelformat och låsta lager beskrivs i [spelguiden](../../docs/games/README.md).
 - Shellrecepten kräver FFmpeg/FFprobe; `encode.sh`
   använder dessutom macOS/BSD `stat`. Swift-recepten kräver Apples ramverk.
   Detta är inte Windows-installationsskript.
@@ -40,5 +40,5 @@ Studio. Den lokala bankens omskanning i
   beror på upprepning. Filhash och provresultat godkänner inte läppsynk eller kortkontakt.
 
 Kvarvarande audit av `runtime/hands` och äldre byggare följs i den befintliga
-[molnplanen](../docs/CLOUD-MIGRATION.md), punkt SL-10. Verktygens existens
+[molnplanen](../../docs/CLOUD-MIGRATION.md), punkt SL-10. Verktygens existens
 betyder inte att den punkten är klar.

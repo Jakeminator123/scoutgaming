@@ -9,8 +9,8 @@ const guides = new Set([
   'README.md', 'AGENTS.md', 'CLAUDE.md', 'lab/README.md',
   'web/README.md', 'web/public/README.md', 'web/storage/README.md',
   'apps/croupier-frontend/README.md', 'packages/design-preview/README.md',
-  'packages/presentation/README.md', 'pipeline/README.md',
-  'open-claw/README.md', 'open-claw/lab/README.md', 'open-claw/lab/docs/README.md',
+  'packages/presentation/README.md', 'tools/media/README.md',
+  'open-claw/README.md', 'open-claw/lab/README.md',
   'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
   'services/astrid-gpu-worker/gateway/README.md',
 ]);

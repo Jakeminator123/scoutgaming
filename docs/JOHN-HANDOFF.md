@@ -1,10 +1,37 @@
 # Aktuell handoff — Scoutgaming
 
-Uppdaterad 17 oktober 2026. Tidigare städpass är levererade; etapp 1 av den
-nya strukturplanen samlar testförenkling och verifierade rester i en PR.
+Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200, main
+`51d4fcd6343a66f3cbc3794a977b22b221eb68a8`. Etapp 2 utgår från denna main.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
+
+## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
+
+De 22 spårade filerna i `pipeline/` har flyttats till `tools/media/`, med
+uppdaterade importer, standardrötter, kommandon och testupptäckt. Manuella
+macOS-/Pythonrecept, binär, ljudreferens och mätvärden bevaras; inga mediefiler
+genereras och inga registrydata ändras. Gamla shellkommandon behöver den nya
+verktygssökvägen. Mediernas egna lagringsvägar ändras inte.
+
+Elva OpenClaw-dokumentstubbar är borttagna efter flytt av alla aktiva
+hänvisningar till `docs/AI/openclaw/`. Presentationens enfilsmellanlager är
+borta; Node läser paketmodulen direkt. Två exakta publika paket-URL:er tillåts,
+och gamla `/presentation-runtime/*` samt frontendbyggarens output bevaras.
+Lipsync har godkänt de tre små import-/serveröverlapparna i separat branch.
+
+Sjutton rena redirectskal är samlade i befintlig routning. Sparade URL:er,
+307, basePath och varje ingångs tidigare querypolicy bevaras. Aktiva
+Control-sidor och Admins delade komponenter står kvar; även de redirect-sidor
+som först kontrollerar behörighet bevaras. API, auth, root, preview och
+server actions omfattas inte av nya generella regler.
+
+Riktade kontroller täcker flyttade byggare/kalibreringsspärrar, manifest och
+uppladdning, testupptäckt, befintlig navigation och faktisk middleware i båda
+basvägar/lägen samt publik importgraf och frontendbygge. JS/TS-inventeringen
+är fortsatt 510 kandidater, nio helper/opt-in och noll oklassificerade.
+CI/merge/drift redovisas separat i PR-kvittot. Detta är ingen ny visuell
+medieacceptans. Etapp 3 om kodägarskap är inte startad.
 
 ## Etapp 1: testkörning och förbrukade verktyg — 17 oktober 2026
 
@@ -28,8 +55,9 @@ testprinciper beskrivs i [lab/README](../lab/README.md#regressionssviter-och-tid
 
 Riktade lokala UI-/runner-/inventeringsprov och 45 medie-/workflowkontraktsprov
 är kontrollerade; Windows-specifika skips redovisas i PR-kvittot. Full CI och
-merge följs separat. Ingen ny visuell läppsynksacceptans eller driftändring
-ingår. Etapp 2 och 3 (katalogflyttar och kodägarskap) är inte startade.
+merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
+Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
+läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
 ## Dragan: OpenClaw till gemensam spelare — 17 oktober 2026
 

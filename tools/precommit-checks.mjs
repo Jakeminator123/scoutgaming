@@ -12,11 +12,11 @@ const documentationFiles = new Set([
   'apps/croupier-frontend/README.md',
   'packages/presentation/README.md', 'packages/design-preview/README.md',
   'packages/presentation/docs/INTEGRATION.md',
-  'pipeline/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
+  'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
   'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
   'services/astrid-gpu-worker/gateway/README.md',
   'web/README.md', 'web/public/README.md', 'web/storage/README.md',
-  'open-claw/README.md', 'open-claw/lab/README.md', 'open-claw/lab/docs/README.md',
+  'open-claw/README.md', 'open-claw/lab/README.md',
   '.ignore', '.cursorignore', '.cursorindexingignore',
 ]);
 

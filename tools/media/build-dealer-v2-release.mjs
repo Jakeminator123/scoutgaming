@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Build static-only /v2 assets; preserve the deployed original player's code.
-// Usage: node pipeline/build-dealer-v2-release.mjs <captured-live-public> <output-public>
+// Usage: node tools/media/build-dealer-v2-release.mjs <captured-live-public> <output-public>
 import {readFile,writeFile,mkdir,copyFile,readdir,stat} from 'node:fs/promises';
 import {resolve,dirname,join,relative,extname} from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {resolveMediaPath} from '../tools/media-layout.mjs';
-const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'), source=join(root,'web/public');
+import {resolveMediaPath} from '../media-layout.mjs';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..'), source=join(root,'web/public');
 const mediaFile=path=>resolveMediaPath('web/public/'+path.replaceAll('\\','/'),{repositoryRoot:root});
 const [originalArg,outArg]=process.argv.slice(2);
 if(!originalArg||!outArg)throw new Error('Supply captured live public and output public paths');

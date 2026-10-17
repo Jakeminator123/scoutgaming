@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const testExtensions = new Set(['.mjs', '.js', '.cjs', '.ts', '.mts', '.cts']);
-const discoveryRoots = ['test', 'lab/test', 'lab/components', 'lab/lib', 'packages', 'pipeline', 'open-claw', 'ops', 'apps', 'services', 'lipsync-test'];
-const coverageRoots = /^(?:test|lab|open-claw|ops|apps|services|packages|pipeline|lipsync-test)\//;
+const discoveryRoots = ['test', 'lab/test', 'lab/components', 'lab/lib', 'packages', 'tools/media', 'open-claw', 'ops', 'apps', 'services', 'lipsync-test'];
+const coverageRoots = /^(?:test|lab|open-claw|ops|apps|services|packages|tools\/media|lipsync-test)\//;
 const skippedDirectories = new Set(['node_modules', '.git', '.next', '.nuxt', '.cache', '.turbo', 'coverage',
   'playwright-report', 'test-results', '__pycache__', '.venv', '.lipsync-venv', 'vendor', 'arkiv',
   'data', 'media', 'staging', 'fixtures', '__fixtures__']);
@@ -18,7 +18,7 @@ function isTestFile(rel) {
   const dot = name.lastIndexOf('.');
   const extensionOk = dot > 0 && testExtensions.has(name.slice(dot));
   if (extensionOk && /\.(?:test|spec)\.[^.]+$/.test(name)) return true;
-  if (parts[0] === 'pipeline' && extensionOk && name.startsWith('test-')) return true;
+  if (rel.startsWith('tools/media/') && extensionOk && name.startsWith('test-')) return true;
   if (!parts.slice(0, -1).some(part => part === 'test' || part === 'tests')) return false;
   return extensionOk;
 }

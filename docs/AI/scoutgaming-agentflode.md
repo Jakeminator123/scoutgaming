@@ -534,8 +534,9 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 | 2026-10-13 | Länkar till den kanoniska översikten tillagda i rotguiden och OpenClaws dokumentindex. AGENTS och CLAUDE medger denna AI-översikt som undantag från regeln om fem huvudfiler. |
 | 2026-10-13 | Trasig länk till socialt prov i användarguiden ersatt med docs/AI/openclaw/SOCIAL-CHAT.md. Inaktuell uppgift om ingen runtime-injektion i Cursor-regeln ersatt med den befintliga kunskapspaketsvägen. |
 | 2026-10-13 | Jakobs riktlinje om diskret chatt och korta texter dokumenterad, samt nästa steg för en valbar D-ID-avatar. Inga produktbehörigheter eller agentroller ändrade. |
+| 2026-10-17 | Etapp 2: elva tomma dokumenthänvisningar under open-claw/lab/docs borttagna. Studio-guiden och runtimepaketets källindex använder nu docs/AI/openclaw direkt. Inga agentroller eller runtimebehörigheter ändrade. |
 
 Guiderna är nu samlade under docs/AI/openclaw; deras gamla innehållskopior
-är borttagna. Fyra korta kompatibilitetshänvisningar återstår. Ingen
+och kompatibilitetshänvisningar är borttagna. Ingen
 Gatewayroll har avvecklats: låg användning är ännu inte verifierad och
 rollen croupier-operator används separat i dashboarden.

@@ -75,10 +75,16 @@ test('local server dispatch serves the complete idle browser import graph withou
       pending.push(new URL(imported[1],origin+path).pathname);
     }
   }
-  for(const path of ['/presentation-runtime/live-idle.mjs','/presentation-runtime/idle-policy.mjs',
+  for(const path of ['/packages/presentation/runtime/live-idle.mjs','/packages/presentation/runtime/idle-policy.mjs',
     '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json'])assert.ok(visited.has(path),path);
+  for(const name of ['live-idle','idle-policy']) {
+    const legacy = await fetch(origin+'/presentation-runtime/'+name+'.mjs');
+    assert.equal(legacy.status,200);
+    assert.equal(await legacy.text(),await (await fetch(origin+'/packages/presentation/runtime/'+name+'.mjs')).text());
+  }
   for(const path of ['/web/server.mjs','/web/public/app.mjs','/web/public/dealer-identity.mjs/extra',
-    '/web/public/dealer-identity.mjs.bak']) {
+    '/web/public/dealer-identity.mjs.bak','/packages/presentation/runtime/selection.mjs',
+    '/packages/presentation/runtime/live-idle.mjs/extra','/packages/presentation/runtime/idle-policy.mjs.bak']) {
     assert.equal(dispatches(path),false,path);
     assert.equal((await fetch(origin+path)).status,404,path);
   }

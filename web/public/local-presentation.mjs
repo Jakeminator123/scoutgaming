@@ -1,6 +1,6 @@
 import { isActiveDealerId } from './dealer-identity.mjs';
 import { recordedSpeechForVideo } from './recorded-speech.mjs';
-import { createLiveIdleController } from '../../presentation-runtime/live-idle.mjs';
+import { createLiveIdleController } from '../../packages/presentation/runtime/live-idle.mjs';
 
 export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, muted, composition = null, entry = null, transport = null }) {
   if (!isActiveDealerId(dealerId)) throw new Error('Invalid presentation dealer');

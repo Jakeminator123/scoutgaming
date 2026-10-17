@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-const script = fileURLToPath(new URL('../pipeline/build-index.mjs',import.meta.url));
+const script = fileURLToPath(new URL('../tools/media/build-index.mjs',import.meta.url));
 const bytes = Buffer.from([0,0,0,1,9,16,0,0,0,1,5,1]);
 function fixture(t) {
  const root=mkdtempSync(join(tmpdir(),'dealer-index-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
