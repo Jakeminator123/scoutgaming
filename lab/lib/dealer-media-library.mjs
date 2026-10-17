@@ -1,8 +1,8 @@
-import {dealerMediaEvents,rouletteMediaEvent,rouletteMediaDefaults} from './roulette-media.mjs';
-import {kindForEvent,situationsForEvent,validateVideoMetadata} from './video-intake.mjs';
+import {dealerMediaEvents,rouletteMediaEvent,rouletteMediaDefaults} from '../../packages/presentation/contracts/roulette-media.mjs';
+import {kindForEvent,situationsForEvent,validateVideoMetadata} from '../../packages/presentation/contracts/video-intake.mjs';
 import {clipSituationLabel} from './clip-label.mjs';
-import {speechSlotStandard,speechSlotVideoFits} from '../../web/public/speech-slot-bindings.mjs';
-import contract from '../policies/studio-contract.json' with {type:'json'};
+import {speechSlotStandard,speechSlotVideoFits} from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import contract from '../../packages/presentation/contracts/policies/studio-contract.json' with {type:'json'};
 const blackjackEventIds=new Set(contract.events.map(event=>event.id));
 export const DEALER_MEDIA_CATEGORIES=Object.freeze([{id:'all',label:'Alla klipp'},{id:'roulette',label:'Roulette'},{id:'idle',label:'Idle / Grundloop'},{id:'transition',label:'Övergångar'},{id:'deal',label:'Deal'},{id:'speech',label:'Tal-klipp & ljud'},{id:'reaction',label:'Reaktioner'},{id:'action',label:'Övriga handlingar'}]);
 export function eventMediaCategory(event){if(rouletteMediaEvent(event.id))return 'roulette';if(event.sourceType==='transition'||event.id==='transition.shoe')return 'transition';if(event.id.startsWith('deal.')||event.id.startsWith('reveal.'))return 'deal';return kindForEvent(event);}

@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject as createBaseProject , addDealer} from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject , addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 
 const require = createRequire(import.meta.url);

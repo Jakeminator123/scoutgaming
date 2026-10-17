@@ -1,9 +1,9 @@
 import { createStudioRepository as createRepository } from '../../packages/studio-registry/server/repository.mjs';
 import * as contract from './studio-contract.mjs';
-import { isActiveDealerId } from '../dealer-identity.mjs';
+import { isActiveDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { assertStudioMediaStorageType } from './studio-media-storage.mjs';
 import { validateRuntimeCatalogRecord } from './runtime-media-catalog.mjs';
-import { validateDealerSetRecordOwners, dealerSetsForClip } from '../../lab/lib/dealer-sets.mjs';
+import { validateDealerSetRecordOwners, dealerSetsForClip } from '../../packages/presentation/contracts/dealer-sets.mjs';
 
 const policy = Object.freeze({ isActiveDealerId, assertStudioMediaStorageType });
 const runtimeCatalog = Object.freeze({ validateRuntimeCatalogRecord });

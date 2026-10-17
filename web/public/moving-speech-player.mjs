@@ -1,5 +1,5 @@
 import { createMovingSpeechFrameLayer } from './moving-speech-frame-layer.mjs';
-import { effectiveDealerCompositing } from './dealer-compositing.mjs';
+import { effectiveDealerCompositing } from '../../packages/presentation/contracts/dealer-compositing.mjs';
 import {createMovingSourceFrames} from './moving-speech-source-frames.mjs';
 
 const HASH = /^[a-f0-9]{64}$/, ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;

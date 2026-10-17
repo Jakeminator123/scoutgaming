@@ -9,7 +9,7 @@ import { layerImage,layerAnimation,layerVideo,layerBlobFixture } from './fixture
 import { createLayerUploadService } from '../lab/lib/layer-upload-service.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
-import { createSeedProject } from '../lab/lib/studio-model.mjs';
+import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { nativeStudioErrorResponse } from '../lab/lib/studio-native-runtime.mjs';
 
 async function media(t,bytes,contentType='image/png') {

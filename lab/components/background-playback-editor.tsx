@@ -1,6 +1,6 @@
 'use client';
-import {BACKGROUND_EVENT_IDS,defaultBackgroundRule,type BackgroundPlaybackPolicy,type BackgroundPlaybackRule} from '../../web/public/background-playback-policy.mjs';
-import type {LayerAsset} from '../lib/studio-model.mjs';
+import {BACKGROUND_EVENT_IDS,defaultBackgroundRule,type BackgroundPlaybackPolicy,type BackgroundPlaybackRule} from '../../packages/presentation/contracts/background-playback-policy.mjs';
+import type {LayerAsset} from '../../packages/presentation/contracts/studio-model.mjs';
 
 const eventLabels=new Map([
   ['speak.blackjack','Spelaren får blackjack'],['speak.win','Spelaren vinner'],['speak.dealerblackjack','Dealern får blackjack'],

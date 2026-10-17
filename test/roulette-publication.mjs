@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import {withPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';

@@ -1,8 +1,9 @@
 import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
-import { existsSync, realpathSync } from 'node:fs';
+import { realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, relative, dirname, join, sep } from 'node:path';
 import { resolveMediaPath } from '../../../tools/media-layout.mjs';
+import { presentationPublicModules, presentationPublicSource } from '../../../packages/presentation/public-modules.mjs';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const publicRoot = join(repo, 'web', 'public');
@@ -17,22 +18,28 @@ const styles = [
 function canonicalSource(candidate) {
   const normalized = resolve(candidate);
   const rel = relative(repo, normalized).split(sep).join('/');
-  // The public module graph still spells /presentation-runtime/. Read the
-  // package file and keep that spelling as the static output path.
-  if (rel.startsWith('presentation-runtime/')) {
-    const moved = resolve(repo, 'packages/presentation/runtime', rel.slice('presentation-runtime/'.length));
-    if (existsSync(moved)) return realpathSync(moved);
-  }
-  return normalized;
+  const source = presentationPublicSource('/' + rel);
+  return source ? realpathSync(resolve(repo, source)) : normalized;
 }
 
 function outputName(source) {
   if (source === resolveMediaPath('web/public/speech-media.json', {repositoryRoot: repo})) return 'speech-media.json';
   const path = relative(repo, source).split(sep).join('/');
   if (path.startsWith('web/public/')) return path.slice('web/public/'.length);
-  if (path.startsWith('packages/presentation/runtime/')) return 'presentation-runtime/' + path.slice('packages/presentation/runtime/'.length);
-  if (path === 'lab/policies/idle-policy.seed.json' || path === 'packages/presentation/contracts/game-lane-id.mjs') return path;
+  if (presentationPublicModules.some(row => row.source === path)) return path;
   throw Error(`Frontend import utanför tillåten textyta: ${path}`);
+}
+
+function browserCopy(source, content, name) {
+  for (const specifier of new Set(moduleImports(content))) {
+    if (!specifier.startsWith('.')) throw Error(`Oväntad extern modulimport i ${name}: ${specifier}`);
+    const target = outputName(canonicalSource(fileURLToPath(new URL(specifier, pathToFileURL(source)))));
+    let next = relative(dirname(name), target).split(sep).join('/');
+    if (!next.startsWith('.')) next = './' + next;
+    content = content.replaceAll("'" + specifier + "'", "'" + next + "'")
+      .replaceAll('"' + specifier + '"', '"' + next + '"');
+  }
+  return content;
 }
 
 function moduleImports(source) {
@@ -69,19 +76,13 @@ async function writePreview(output) {
       if (!content.includes(previous)) throw Error('Spelarens interna inloggningslänk har ändrats.');
       content = content.replace(previous, "const playerLoginPath = '/frontend-preview/blackjack/';");
     }
-    const target = join(fileURLToPath(output), name);
-    await mkdir(dirname(target), { recursive: true });
-    // Resolve the source graph from canonical package paths while retaining
-    // the existing public runtime URLs in the generated browser copy.
-    await writeFile(target, name === 'local-presentation.mjs'
-      ? content.replace('../../packages/presentation/runtime/live-idle.mjs', '../../presentation-runtime/live-idle.mjs')
-      : content);
-    // The shared idle runtime imports the same browser-safe identity module
-    // from its repository path; retain that exact alias in static builds.
-    if (name === 'dealer-identity.mjs') {
-      const alias = join(fileURLToPath(output), 'web/public/dealer-identity.mjs');
-      await mkdir(dirname(alias), { recursive: true });
-      await writeFile(alias, content);
+    const sourceName = relative(repo, sourcePath).split(sep).join('/');
+    const publicSource = presentationPublicModules.find(row => row.source === sourceName);
+    const names = publicSource ? publicSource.paths.map(url => url.slice(1)) : [name];
+    for (const copy of names) {
+      const target = join(fileURLToPath(output), copy);
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, ext === '.mjs' || ext === '.js' ? browserCopy(sourcePath, content, copy) : content);
     }
     if (ext === '.mjs' || ext === '.js') {
       for (const specifier of moduleImports(content)) {

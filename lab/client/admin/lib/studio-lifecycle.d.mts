@@ -1,0 +1,21 @@
+import type { StudioProject } from '../../../../packages/presentation/contracts/studio-model.mjs';
+import type { DealerArchiveImpact } from '../../../../lab/lib/dealer-archive-impact.mjs';
+import type { Catalog, VideoEntry, VideoInventory } from './connected-studio.mjs';
+export type LifecycleVideo = VideoEntry & { sha256?: string; revision?: string; dealer?: string; retainedBank?: boolean; bindingScope?: string; deletion?: { state: 'pending'|'deleted'; requestedAt: string } };
+export type LifecycleBank = { dealer: StudioProject['dealers'][number]; archived: boolean; deletionPending: boolean; videos: LifecycleVideo[]; compositions: NonNullable<StudioProject['lanes']>; rooms: Catalog['administration']['rooms'] };
+export type DeletionPlan = { allowed: boolean; reason?: string; count?: number; retryAfterMs?: number };
+export function lifecycleBank(project: StudioProject, inventory: VideoInventory, catalog: Catalog, dealerId: string): LifecycleBank|null;
+export function lifecycleClipReferences(project: StudioProject, videoId: string, options?: { includeArchive?: boolean }): { kind: string; label: string }[];
+export function lifecycleFingerprint(project: StudioProject, inventory: VideoInventory, dealerId: string, ids: string[]): string;
+export function clipLifecycleBlocker(project: StudioProject, video: LifecycleVideo|undefined, dealerId: string, operation: 'archive'|'restore'|'delete'): string;
+export function validArchiveImpact(value: unknown, dealerId: string): value is DealerArchiveImpact;
+export function lifecycleMessage(cause: unknown): string;
+export function createLifecycleClient(options?: { fetchImpl?: typeof fetch }): {
+  checkDealerArchive(project: StudioProject, dealerId: string): Promise<DealerArchiveImpact>;
+  dealerLifecycle(project: StudioProject, dealerId: string, archived: boolean, impact?: DealerArchiveImpact, stillCurrent?: () => boolean): Promise<{ project: StudioProject; inventory: VideoInventory }>;
+  archiveClips(input: { project: StudioProject; inventory: VideoInventory; dealerId: string; ids: string[]; archived: boolean; stillCurrent?: () => boolean }): Promise<string[]>;
+  checkClipDeletion(project: StudioProject, inventory: VideoInventory, dealerId: string, id: string): Promise<DeletionPlan>;
+  deleteClip(project: StudioProject, inventory: VideoInventory, dealerId: string, id: string, stillCurrent?: () => boolean): Promise<{ project: StudioProject; inventory: VideoInventory }>;
+  checkDealerDeletion(project: StudioProject, dealerId: string): Promise<DeletionPlan>;
+  deleteDealer(project: StudioProject, dealerId: string, stillCurrent?: () => boolean): Promise<{ project: StudioProject; inventory: VideoInventory }>;
+};

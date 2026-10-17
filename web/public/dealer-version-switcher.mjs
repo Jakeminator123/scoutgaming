@@ -1,5 +1,5 @@
 import {studioPreviewFromDocument} from './studio-preview-client.mjs';
-import {isActiveDealerId,validatePublicRegisteredDealers} from './dealer-identity.mjs';
+import {isActiveDealerId,validatePublicRegisteredDealers} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {gameChoicesFromDocument,isGameLaneId} from './game-lanes.mjs';
 import {approvedGameQuery} from './game-entry-contract.mjs';
 

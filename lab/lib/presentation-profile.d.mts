@@ -1,4 +1,4 @@
-import type { SourceType } from './studio-model.mjs';
+import type { SourceType } from '../../packages/presentation/contracts/studio-model.mjs';
 export type OutputKind = 'idle' | 'action' | 'speech' | 'reaction';
 export interface PresentationProfile { id: OutputKind; label: string; symbol: string; summary: string; playback: string }
 export interface EventField { path: string; label: string; note: string; optional: boolean; present: boolean; value: unknown }

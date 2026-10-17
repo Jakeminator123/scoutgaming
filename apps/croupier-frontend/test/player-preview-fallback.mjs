@@ -4,7 +4,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
-import {defaultCompositionSettings} from '../../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 import {dealerPortrait} from '../lib/player-room-preview.mjs';
 
 const require=createRequire(import.meta.url),ts=require('typescript');

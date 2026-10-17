@@ -13,7 +13,7 @@ import { craigIdentity } from '../web/storage/async-craig-identity.mjs';
 import { installBoAuthEpoch } from '../web/storage/async-bo-auth-epoch.mjs';
 import { createPlayerChatMemory } from '../web/storage/async-player-chat-memory.mjs';
 import { createPlayerProbeStore } from '../web/storage/async-player-probe-store.mjs';
-import { createDefaultProbePolicy } from '../lab/lib/probe-policy.mjs';
+import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
 import { backofficeGameAuth } from '../web/storage/async-bo-game-auth.mjs';
 import { backofficeLabAuth } from '../web/storage/async-bo-lab-auth.mjs';
 import { installPartnerApi } from '../web/storage/async-partner-api.mjs';

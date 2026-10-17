@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {dirname} from 'node:path';
 import {build, transformSync} from 'esbuild';
-import {createSeedProject} from '../lib/studio-model.mjs';
+import {createSeedProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {studioHistory, studioHistoryBootstrap} from '../lib/studio-history.mjs';
 import {studioNavigationContextFromQuery, studioNavigationHref} from '../lib/studio-navigation.mjs';
 

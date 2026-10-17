@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registeredDesignCatalog, serveDesignCatalog } from '../lib/design-preview-catalog.mjs';
 import { createPortraitRoomEntryFixture } from '../../test/fixtures/portrait-room-entry.mjs';
-import { addDealer } from '../lib/studio-model.mjs';
-import { parseLobbyCatalog, lobbySelection, playUrlFor } from '../../packages/design-preview/lobby/lib/catalog.mjs';
+import { addDealer } from '../../packages/presentation/contracts/studio-model.mjs';
+import { parseLobbyCatalog, lobbySelection, playUrlFor } from '../client/lobby/lib/catalog.mjs';
 import {withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
-import {operatorLifecycleGroups} from '../../packages/design-preview/admin/lib/studio-resource-lifecycle.mjs';
+import {operatorLifecycleGroups} from '../../lab/client/admin/lib/studio-resource-lifecycle.mjs';
 import {readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
-import {materialSource} from '../../web/public/material-catalog.mjs';
+import {materialSource} from '../../packages/presentation/contracts/material-catalog.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 
 function fixture() {

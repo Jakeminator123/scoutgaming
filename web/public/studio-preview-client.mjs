@@ -1,6 +1,6 @@
 import { validateStudioPreview } from './game-entry-contract.mjs';
 export { validateStudioPreview };
-import { isDealerId } from './dealer-identity.mjs';
+import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 export const STUDIO_PREVIEW_NOTICE = 'Provspel med separat testsaldo. Chatt, minne, kamera, OpenClaw och genererat tal är avstängda. Inspelade repliker, regler och automatiska klipp använder den sparade sammansättningen.';
 const fail = (code = 'studio_preview_invalid') => { throw Object.assign(new Error(code === 'studio_preview_expired' ? 'Provspelet har gått ut. Starta ett nytt från Sammansättning.' : 'Provspelets session kunde inte verifieras.'), {code}); };

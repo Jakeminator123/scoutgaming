@@ -1,4 +1,4 @@
-import { createEmptyProject, addDealer } from '../../lab/lib/studio-model.mjs';
+import { createEmptyProject, addDealer } from '../../packages/presentation/contracts/studio-model.mjs';
 
 // Test-only reconstruction of an already saved profile, independent of active seeds.
 export function historicalDealerProject(dealerId) {

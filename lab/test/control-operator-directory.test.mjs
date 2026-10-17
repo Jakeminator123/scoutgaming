@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
 

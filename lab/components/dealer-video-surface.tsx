@@ -1,8 +1,8 @@
 'use client';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {drawDealerFrame,keyGreenPixels,type DealerFraming} from '../../web/public/dealer-framing.mjs';
-import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
-import type {VideoCompositing} from '../lib/video-intake.mjs';
+import {drawDealerFrame,keyGreenPixels,type DealerFraming} from '../../packages/presentation/contracts/dealer-framing.mjs';
+import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
+import type {VideoCompositing} from '../../packages/presentation/contracts/video-intake.mjs';
 import {PresentationFrame} from './presentation-frame';
 import styles from './dealer-video-surface.module.css';
 function isDealerImage(source:HTMLVideoElement|HTMLImageElement|null):source is HTMLImageElement{

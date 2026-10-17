@@ -1,6 +1,6 @@
 // Full-frame MP4 support for PerformancePlayer. Consumers may attach calibration
 // to the verified asset; motion must use presented mediaTime, never wall time.
-import {MAX_RECORDED_SPEECH_SECONDS} from './recorded-speech.mjs';
+import {MAX_RECORDED_SPEECH_SECONDS} from '../../packages/presentation/contracts/recorded-speech.mjs';
 export function playLocalFilm({ host, src, video: preparedVideo, signal, muted = true, onReceipt = () => {}, onFrame, renderFrame, hold = () => {} }) {
   return new Promise((resolve, reject) => {
     const video = preparedVideo ?? document.createElement('video');

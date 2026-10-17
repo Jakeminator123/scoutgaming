@@ -1,4 +1,4 @@
-import type {StudioProject} from '../../lab/lib/studio-model.mjs';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import type {VideoRegistry} from '../../lab/lib/video-registry.mjs';
 import type {PresentationPackage} from '../presentation-layers.mjs';
 import type {FrozenMediaRow, FrozenMediaPrecondition} from './frozen-dealer-idle.mjs';

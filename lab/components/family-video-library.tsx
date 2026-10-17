@@ -1,10 +1,10 @@
 'use client';
 import { useState } from 'react';
-import type { VideoInventory } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
-import { mediaFamilyFolder, mediaSituationLabel } from '../lib/media-family-policy.mjs';
+import { mediaFamilyFolder, mediaSituationLabel } from '../../packages/presentation/runtime/media-family-policy.mjs';
 import styles from './media-family-editor.module.css';
-import type { StudioProject } from '../lib/studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import {DealerClipPreview} from './dealer-video-surface';
 
 const familiesFor = (inventory: VideoInventory, dealerId: string) => (inventory.families ?? []).filter(family => family.dealerId === dealerId);

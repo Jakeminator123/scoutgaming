@@ -1,23 +1,32 @@
+import { PROBE_MODELS, validateProbePolicy } from '../../packages/presentation/contracts/probe-policy.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
-import contract from '../policies/studio-contract.json' with { type: 'json' };
-import schema from '../schemas/video.schema.json' with { type: 'json' };
-import seed from '../policies/project.seed.json' with { type: 'json' };
-import { validateVideoMetadata, videoFitsLine, videoFitsEvent } from '../lib/video-intake.mjs';
+import contract from '../../packages/presentation/contracts/policies/studio-contract.json' with { type: 'json' };
+import schema from '../../packages/presentation/contracts/schemas/video.schema.json' with { type: 'json' };
+import seed from '../../packages/presentation/contracts/policies/project.seed.json' with { type: 'json' };
+import { validateVideoMetadata, videoFitsLine, videoFitsEvent } from '../../packages/presentation/contracts/video-intake.mjs';
 import { classifyVideo, readClassifications } from '../lib/video-classifications.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
-import {ROULETTE_MEDIA_EVENTS} from '../lib/roulette-media.mjs';
+import {ROULETTE_MEDIA_EVENTS} from '../../packages/presentation/contracts/roulette-media.mjs';
 import {blackjackMediaSlots,dealerMediaSlots,mediaClassification} from '../lib/dealer-media-library.mjs';
-import {validateProject} from '../lib/studio-model.mjs';
-import {isActiveDealerId} from '../../web/public/dealer-identity.mjs';
+import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
+import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 
 const metadata = { label:'QA left', dealerId:'astrid', eventId:'deal.player.left', kind:'action', role:'standard', situation:'box0', notes:'', playback:'once' };
-test('canonical manifest, seed, schema and runtime classifications agree for every dealer/group/situation', () => {
+test('canonical manifest, seed, schema and runtime classifications agree for every dealer/group/situation', async () => {
+  const contractUrl = new URL('../../packages/presentation/contracts/policies/studio-contract.json', import.meta.url);
+  const projectSchemaUrl = new URL('../schemas/studio.schema.json', contractUrl);
+  const projectSchema = JSON.parse(await readFile(projectSchemaUrl, 'utf8'));
+  const probeSchema = JSON.parse(await readFile(new URL(contract.probe.schema, contractUrl), 'utf8'));
+  assert.deepEqual(probeSchema, JSON.parse(await readFile(new URL(projectSchema.properties.probePolicy.$ref, projectSchemaUrl), 'utf8')));
+  assert.deepEqual(probeSchema.properties.model.enum, PROBE_MODELS.map(model => model.id));
+  const probeSeed = JSON.parse(await readFile(new URL(contract.probe.policy, contractUrl), 'utf8'));
+  assert.deepEqual(validateProbePolicy(probeSeed), probeSeed);
   assert.deepEqual(contract.dealers.filter(isActiveDealerId), seed.dealers.map(d=>d.id));
   assert.deepEqual(contract.events.map(e=>({id:e.id,sourceType:e.sourceType})),seed.events.map(e=>({id:e.id,sourceType:e.sourceType})));
   assert.deepEqual(schema.properties.eventId.enum,[...contract.events.map(e=>e.id),...ROULETTE_MEDIA_EVENTS.map(e=>e.id)]);

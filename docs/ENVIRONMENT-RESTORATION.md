@@ -66,7 +66,7 @@ READY-deployment är inte ett färskt funktions- eller isoleringsprov.
 | Källmapp | Ansvar | Node |
 | --- | --- | --- |
 | `lab/` | Studio-tjänsten: Admin, Partner, Lobby, auth/API och medieåtkomst; `/studio` är teknisk basePath | 24.x, Volta 24.21.0 |
-| `packages/design-preview/` | Admin/lobby-paket som byggs och serveras av Lab | 24.x, Volta 24.21.0 |
+| `lab/client/` | Admin/lobby-paket som byggs och serveras av Lab | 24.x, Volta 24.21.0 |
 | `apps/croupier-frontend/` | Publik Next-app, spelstart och transport till spelmotorn | 24.x, Volta 24.21.0 |
 | `apps/croupier-speech/` | Separat Vercel-tjänst för lång talström | 22.x, Volta 22.23.1 |
 | `web/` | Spelmotor, serverkort, plånbok och gemensam spelarlogik | ≥22.16; produktions-Docker använder 24 |
@@ -79,7 +79,7 @@ styr inte automatiskt Vercel eller Docker: kontrollera respektive byggmiljö.
 
 Inför bygge/fullhook i en ny isolerad arbetskopia behövs låsta beroenden i
 `apps/croupier-frontend/` (`pnpm-lock.yaml`), `lab/`,
-`packages/design-preview/`, `web/` och `services/astrid-gpu-worker/gateway/`
+`lab/client/`, `web/` och `services/astrid-gpu-worker/gateway/`
 (`package-lock.json` i de fyra senare). Kör `pnpm install --frozen-lockfile`
 respektive `npm ci` från rätt paket med dess deklarerade Node-version.
 Befintliga lokala installationer får återanvändas via en egen junction först

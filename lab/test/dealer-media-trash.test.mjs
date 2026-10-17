@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
+import {createSeedProject,addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
 const file=new URL('../components/dealer-media-library.tsx',import.meta.url),require=createRequire(file),{transformSync}=require('next/dist/build/swc');
 const compiled=transformSync(readFileSync(file,'utf8'),{filename:file.pathname,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
 const project=addDealer(createSeedProject(),'paow','PAOW');

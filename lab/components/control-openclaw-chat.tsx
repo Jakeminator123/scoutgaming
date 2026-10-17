@@ -3,11 +3,12 @@ import { StudioDealerRequired } from './studio-dealer-required';
 
 import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
-import type { StudioProject } from '../lib/studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { GatewayPanel } from './gateway-panel';
 import { PageTemplate } from './page-template.mjs';
 import { useStudioSession } from './studio-session';
-import { resolveStudioDealerId, studioHref, type ConnectionStatus, type VideoInventory } from './studio-types';
+import { resolveStudioDealerId, studioHref, type ConnectionStatus } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 
 export function OpenClawTabLinks({ active }: { active: 'models' | 'chat' }) {
   const models = active === 'models';

@@ -1,4 +1,4 @@
-import {isActiveDealerId} from '../../../web/dealer-identity.mjs';
+import {isActiveDealerId} from '../contracts/dealer-identity.mjs';
 import {ownDealerIdle} from '../runtime/registered-idle.mjs';
 export function createRegisteredDealerIdle({registryLoader} = {}) {
   if (typeof registryLoader !== 'function') throw new TypeError('Explicit cloud media registry required');

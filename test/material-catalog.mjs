@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BACKGROUND_MATERIALS} from '../web/public/background-materials.mjs';
-import {MATERIALS,materialById,materialForAsset,materialLabel,materialSource,materialFitsGame} from '../web/public/material-catalog.mjs';
+import {BACKGROUND_MATERIALS} from '../packages/presentation/contracts/background-materials.mjs';
+import {MATERIALS,materialById,materialForAsset,materialLabel,materialSource,materialFitsGame} from '../packages/presentation/contracts/material-catalog.mjs';
 import {partnerLaneState} from '../lab/lib/partner-package-view.mjs';
 
 const uploaded=(material,source,id='upload-uuid')=>({id,role:material.role,label:'Old upload name',...source});

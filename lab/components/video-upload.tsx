@@ -1,17 +1,17 @@
 'use client';
 import { labUrl } from "../lib/lab-url.mjs";
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { kindForEvent, situationsForEvent, MAX_VIDEO_BYTES, MANUAL_SELECTION } from '../lib/video-intake.mjs';
-import type { VideoMetadata } from '../lib/video-intake.mjs';
-import type { StudioProject, VariantSelection } from '../lib/studio-model.mjs';
-import { maxVariantsForEvent } from '../lib/studio-model.mjs';
-import type { VideoEntry, VideoInventory } from './studio-types';
+import { kindForEvent, situationsForEvent, MAX_VIDEO_BYTES, MANUAL_SELECTION } from '../../packages/presentation/contracts/video-intake.mjs';
+import type { VideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
+import type { StudioProject, VariantSelection } from '../../packages/presentation/contracts/studio-model.mjs';
+import { maxVariantsForEvent } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { VideoEntry, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { requestJson } from './studio-types';
 import { VideoMetadataFields } from './video-metadata-fields';
 import { VariantSelectionFields } from './variant-selection';
 import styles from './video-intake.module.css';
 import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
-import {DEFAULT_DEALER_FRAMING,DEFAULT_GREEN_SCREEN} from '../../web/public/dealer-framing.mjs';
+import {DEFAULT_DEALER_FRAMING,DEFAULT_GREEN_SCREEN} from '../../packages/presentation/contracts/dealer-framing.mjs';
 import {DealerClipPreview} from './dealer-video-surface';
 
 export interface UploadBinding { role: 'standard' | 'alternative'; selection: VariantSelection; triggerIds: string[] }

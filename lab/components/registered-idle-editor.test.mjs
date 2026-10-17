@@ -4,10 +4,10 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
-import {createSeedProject,addDealer} from '../lib/studio-model.mjs';
+import {createSeedProject,addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
 import * as registered from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import * as ownIdle from '../../packages/presentation/runtime/registered-idle.mjs';
-import * as idlePolicy from '../lib/idle-policy.mjs';
+import * as idlePolicy from '../../packages/presentation/runtime/idle-policy.mjs';
 import * as clipLabels from '../lib/clip-label.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
@@ -25,7 +25,7 @@ function harness(file,read){
     useEffect(run,deps){const index=effectIndex++,old=effects[index];effects[index]={...old,run,deps,changed:!old||!deps||deps.some((value,key)=>old.deps?.[key]!==value)};}};
   const SharedEditor=()=>null;
   const mocks={'./dealer-video-surface':{DealerVideoSurface:({children})=>children},'./dealer-file-settings':{DealerFileSettings:()=>null},'../../packages/presentation/runtime/registered-idle-policy.mjs':registered,'../../packages/presentation/runtime/registered-idle.mjs':ownIdle,
-    '../lib/idle-video-duration.mjs':{readIdleVideoDuration:read},'../lib/idle-policy.mjs':idlePolicy,'../lib/clip-label.mjs':clipLabels,'./idle-policy-editor':{IdlePolicyEditor:SharedEditor},'./presentation-frame':{PresentationFrame:({children})=>children}};
+    '../lib/idle-video-duration.mjs':{readIdleVideoDuration:read},'../../packages/presentation/runtime/idle-policy.mjs':idlePolicy,'../lib/clip-label.mjs':clipLabels,'./idle-policy-editor':{IdlePolicyEditor:SharedEditor},'./presentation-frame':{PresentationFrame:({children})=>children}};
   const output=transformSync(readFileSync(new URL(file,import.meta.url),'utf8'),{filename:file,jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
   const module={exports:{}};
   vm.runInNewContext(output.code,{module,exports:module.exports,AbortController,structuredClone,setTimeout,clearTimeout,

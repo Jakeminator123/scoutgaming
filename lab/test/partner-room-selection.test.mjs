@@ -149,7 +149,7 @@ test('cancelled cross-company history restores the selected room and dirty edito
 // Render the real room wrapper and actual draft panel with persistent hook state.
 // Only the already-fetched package and media-preview boundary are fixtures.
 function actualAppearance(session) {
-  const {transformSync}=require('next/dist/build/swc'),{defaultPresentationLane}=require('../lib/studio-model.mjs');
+  const {transformSync}=require('next/dist/build/swc'),{defaultPresentationLane}=require('../../packages/presentation/contracts/studio-model.mjs');
   const lane=defaultPresentationLane('astrid');lane.operatorAdjustable=['dealer'];lane.layers.dealer={enabled:true,default:'astrid',allowed:['astrid','elin']};
   const initial={operatorId:'north',packageRevision:7,lanes:[lane.id],branding:{},adjustable:['dealer'],canConfigure:true,
     dealerChoices:{[lane.id]:['astrid','elin']},roomDealerChoices:{'main-room':['astrid','elin'],'vip-room':['astrid','elin']},

@@ -2,9 +2,9 @@
 import { createHash } from 'node:crypto';
 import source from './dealer-import-kevin-source.json' with { type: 'json' };
 import { dealerImportCatalog, filenameDealerImportRows, finishDealerImportRows, validateDealerImportInput } from './dealer-import-catalog.mjs';
-import { validateVideoMetadata } from './video-intake.mjs';
-import { DEFAULT_DEALER_COMPOSITING } from '../../web/public/dealer-compositing.mjs';
-import { recordedSpeechForVideo } from '../../web/public/recorded-speech.mjs';
+import { validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
+import { DEFAULT_DEALER_COMPOSITING } from '../../packages/presentation/contracts/dealer-compositing.mjs';
+import { recordedSpeechForVideo } from '../../packages/presentation/contracts/recorded-speech.mjs';
 import { DRAGAN_KEVIN_PROFILE } from '../../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
 import { canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
 

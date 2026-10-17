@@ -1,5 +1,5 @@
-import {MATERIALS} from './public/material-catalog.mjs';
-import {layerAssetFitsGame} from './layer-asset-contract.mjs';
+import {MATERIALS} from '../packages/presentation/contracts/material-catalog.mjs';
+import {layerAssetFitsGame} from '../packages/presentation/contracts/layer-asset-contract.mjs';
 import {StudioStorageError} from './storage/studio-contract.mjs';
 const sources=new Map(MATERIALS.flatMap(material=>material.sources.map(source=>[source.sha256,{material,source}])));
 const fail=()=>{throw new StudioStorageError('studio_presentation_game_material_mismatch',422);};

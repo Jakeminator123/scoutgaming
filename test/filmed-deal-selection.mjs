@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {once} from 'node:events';
 import {DatabaseSync} from 'node:sqlite';
-import {createSeedProject,addDealer,defaultPresentationLane,normalizeProject} from '../lab/lib/studio-model.mjs';
+import {createSeedProject,addDealer,defaultPresentationLane,normalizeProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {createNeonProjectStore} from '../lab/lib/neon-project-store.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';

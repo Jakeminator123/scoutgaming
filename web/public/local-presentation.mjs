@@ -1,5 +1,5 @@
-import { isActiveDealerId } from './dealer-identity.mjs';
-import { recordedSpeechForVideo } from './recorded-speech.mjs';
+import { isActiveDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
+import { recordedSpeechForVideo } from '../../packages/presentation/contracts/recorded-speech.mjs';
 import { createLiveIdleController } from '../../packages/presentation/runtime/live-idle.mjs';
 
 export async function createLocalPresentation({ player, host, dealerId, version, receipt, onIdle, onBusy, onError = () => {}, muted, composition = null, entry = null, transport = null }) {

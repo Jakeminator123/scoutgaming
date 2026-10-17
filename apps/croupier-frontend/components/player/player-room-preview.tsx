@@ -1,7 +1,7 @@
 'use client';
 import {useState} from 'react';
 import {PlayerSceneCanvas,type PlayerSceneCompositing} from './player-scene-canvas';
-import {defaultCompositionSettings} from '../../../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../../../../packages/presentation/contracts/composition-settings.mjs';
 import {dealerPortrait,type RoomPreviewResult} from '@/lib/player-room-preview.mjs';
 import type {PublicPreviewLayer} from '../../../../web/public/operator-preview-contract.mjs';
 

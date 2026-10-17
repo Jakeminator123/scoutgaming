@@ -9,7 +9,7 @@ import {installNativeP6GamePlayback,createNativeP6GameQueueDelivery,nativeP6Game
 import {createSpeechQueue} from '../web/public/speech-queue.mjs';
 import {createSpeechPoseGate} from '../web/public/speech-pose-gate.mjs';
 import {playGeneratedSpeech} from '../web/public/generated-speech-player.mjs';
-import {DEFAULT_DEALER_COMPOSITING} from '../web/public/dealer-compositing.mjs';
+import {DEFAULT_DEALER_COMPOSITING} from '../packages/presentation/contracts/dealer-compositing.mjs';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const paths=NATIVE_P6_GAME_SOURCE_PATHS;
 const sources=await Promise.all(paths.map(p=>readFile(new URL('../'+p,import.meta.url))));

@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../packages/design-preview');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '../client');
 export async function prepareDesignPreview() {
   const hash = createHash('sha256').update(await readFile(resolve(root, 'package-lock.json'))).digest('hex');
   const marker = resolve(root, 'node_modules/.preview-lock');

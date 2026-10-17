@@ -5,7 +5,7 @@ import { createOperatorStore } from './operator-store.mjs';
 import { validateStudioScope, studioStorageFailure, canonicalStudioJson } from './studio-contract.mjs';
 import {PRESENTATION_PACKAGE_KEY} from './presentation-package.mjs';
 import { validateStudioGameAdministration } from './studio-game-policy.mjs';
-import { isActiveDealerId as isDealerId } from '../dealer-identity.mjs';
+import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { isGameLaneId, isOperatorSlug } from '../public/game-lanes.mjs';
 import { isPresentationRoom } from '../presentation-room-contract.mjs';
 import { StudioStorageError } from './studio-contract.mjs';

@@ -1,5 +1,5 @@
-import {validateProject} from './studio-model.mjs';
-import {isActiveDealerId} from '../../web/dealer-identity.mjs';
+import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
+import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {canonicalStudioJson,StudioStorageError,validateRevision} from '../../web/storage/studio-contract.mjs';
 import {readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {dealerArchiveCompositionIds,readDealerArchiveImpact,applyDealerArchiveImpact} from './dealer-archive-impact.mjs';

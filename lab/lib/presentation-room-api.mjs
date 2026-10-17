@@ -1,7 +1,7 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
-import { normalizeProject } from './studio-model.mjs';
+import { normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { validatePresentationPackage } from '../../web/presentation-layers.mjs';
 import { mergeFrozenDealerPlayback } from '../../web/frozen-dealer-playback.mjs';
 

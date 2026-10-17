@@ -38,10 +38,11 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'web/storage/partner-branding.mjs', 'web/game-entry-operator.mjs', 'web/operator-appearance-api.mjs',
       'web/public/operator-appearance-boundary.mjs', 'web/storage/frozen-dealer-presentation.mjs', 'web/public/player-choices.mjs',
       'web/storage/presentation-package.mjs', 'web/storage/frozen-presentation-capture.mjs', 'web/storage/frozen-dealer-idle.mjs',
-      'web/presentation-room-contract.mjs', 'web/public/game-lanes.mjs', 'web/public/composition-settings.mjs',
-      'web/presentation-layers.mjs', 'lab/lib/studio-model.mjs',
+      'web/presentation-room-contract.mjs', 'web/public/game-lanes.mjs', 'packages/presentation/contracts/composition-settings.mjs',
+      'web/presentation-layers.mjs', 'packages/presentation/contracts/studio-model.mjs',
       'packages/presentation/contracts/game-lane-id.mjs', 'packages/presentation/contracts/presentation-room.mjs',
       'packages/presentation/contracts/operator-lifecycle-key.mjs', 'packages/presentation/server/registered-dealer-idle.mjs',
+      'packages/presentation/public-modules.mjs', 'packages/presentation/server/registered-idle-rules.mjs', 'lab/lib/registered-idle-rules.mjs',
       'packages/shared/studio-error.mjs', 'packages/presentation/server/selection.mjs', 'packages/presentation/server/video-bindings.mjs',
       'lab/lib/presentation-selection.mjs', 'lab/lib/presentation-video-bindings.mjs', 'lab/lib/studio-director.mjs',
       'ops/neon-game/007-roulette-tables.sql', 'test/roulette-postgres.mjs', 'web/games/roulette/room.mjs', 'web/games/roulette/storage.mjs', 'web/games/roulette/access.mjs', 'web/games/roulette/index.mjs', 'web/games/roulette/rules.mjs',
@@ -54,7 +55,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
       'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
       'lab/lib/studio-admin-readouts.mjs', 'lab/lib/studio-voice-lines.mjs', 'lab/lib/studio-access-policy.mjs', 'lab/lib/studio-admin-contract.mjs',
-      'lab/lib/voice-preview.mjs', 'lab/lib/media-blob-index.mjs', 'web/shoe-game.mjs', 'web/email-templates.mjs', 'web/public/speech-lines.mjs',
+      'lab/lib/voice-preview.mjs', 'lab/lib/media-blob-index.mjs', 'web/shoe-game.mjs', 'web/email-templates.mjs', 'packages/presentation/contracts/speech-lines.mjs',
       'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'web/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech.mjs',
       'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
 

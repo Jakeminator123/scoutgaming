@@ -1,8 +1,8 @@
 import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../lab/lib/studio-model.mjs';
-import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../web/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation,publicPackageBranding} from '../web/storage/presentation-package.mjs';
 import {createPartnerBrandingApi as createApi} from '../lab/lib/partner-branding-api.mjs';

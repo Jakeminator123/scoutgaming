@@ -3,7 +3,7 @@ import {publicPackageBranding,readPackagePresentation,withPackagePresentation} f
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
-import { createSeedProject as createHistoricalProject, addDealer, defaultPresentationLane } from '../lib/studio-model.mjs';
+import { createSeedProject as createHistoricalProject, addDealer, defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createOperatorPackageApi, fixtureLaneOperators, openWritableOperatorStore } from '../lib/operator-package-api.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';

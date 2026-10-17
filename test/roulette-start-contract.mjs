@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateRouletteStartBinding,validateFrozenRouletteStart} from '../web/public/roulette-start-contract.mjs';
+import {validateRouletteStartBinding,validateFrozenRouletteStart} from '../packages/presentation/contracts/roulette-start-contract.mjs';
 
 const binding=()=>({videoId:'30000000-0000-4000-8000-000000000001',tableDesignId:'roulette-anna-v1',durationMs:10042,wheelImpulseMs:2500,ballReleaseMs:4200,foregroundPolygons:[[[0,0],[1,0],[1,1]]]});
 const record=()=>({id:binding().videoId,contentType:'video/webm',classification:{dealerId:'anna-jonsson',game:'roulette',eventId:'roulette.wheel-start',action:'wheel-start',situation:'wheel-start',kind:'action',playback:'once',compositing:{mode:'alpha'},startPose:'VILA',endPose:'VILA',framing:{scale:1,x:0,y:0}}});

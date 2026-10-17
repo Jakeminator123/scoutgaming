@@ -1,6 +1,6 @@
 'use client';
 import {useState} from 'react';
-import {defaultBlackjackTableGeometry,type BlackjackTableGeometry,type TablePoint} from '../../web/public/composition-settings.mjs';
+import {defaultBlackjackTableGeometry,type BlackjackTableGeometry,type TablePoint} from '../../packages/presentation/contracts/composition-settings.mjs';
 import styles from './blackjack-table-geometry-editor.module.css';
 
 export function BlackjackTableGeometryEditor({tableId,url,contentType,value,layout,disabled,onChange}:{tableId:string;url:string;contentType:string;value?:BlackjackTableGeometry;layout:'mobile'|'desktop';disabled:boolean;onChange:(value?:BlackjackTableGeometry)=>void}){

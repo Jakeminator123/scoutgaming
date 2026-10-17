@@ -20,7 +20,7 @@ engine and live transport. See [cloud and storage](docs/CLOUD-MIGRATION.md).
 | Player lobby | `/lobby` | New lobby. Existing `/play`, `/play/profil`, `/play/historik` and `/play/blackjack` remain during the transition. |
 
 `/admin` and `/lobby` are served by the Lab service from
-`packages/design-preview/`. Their names do not imply that every old workflow
+`lab/client/`. Their names do not imply that every old workflow
 has moved. The lobby launches the existing game engine; it does not replace it.
 Partner team access and branding drafts exist. Operator game data/reports,
 chips and partner password reset still have open work; consult the cloud
@@ -43,7 +43,7 @@ active entry points, operator access, compatibility redirects and working tools.
 | `web/` | Authoritative game server, authentication, wallet, persistence and game client source | [Game server](web/README.md) |
 | `packages/presentation/` | Shared compositor, presentation selection, idle rules and reviewed layer preview | [Presentation](packages/presentation/README.md) |
 | `packages/shared/` | Portable media type/header rules and the shared Studio game-command contract; no app imports in these modules | [Media formats](docs/games/KLIPP-OCH-FORMAT.md) |
-| `packages/design-preview/` | Active admin/lobby UI source and browser bundle builder | [Admin/lobby](packages/design-preview/README.md) |
+| `lab/client/` | Active admin/lobby UI source and browser bundle builder | [Admin/lobby](lab/client/README.md) |
 | `services/astrid-gpu-worker/` | GPU lip sync plus shared speech transport; the historical name does not restrict sessions to Astrid | [Speech service](services/astrid-gpu-worker/README.md) |
 | `tools/media/` | Media utilities with separate inputs, banks and export formats | [Media tools](tools/media/README.md) |
 | `media/` | Source/review/staging material and import manifests; deployed registry data comes from Neon and media bytes from Blob | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |

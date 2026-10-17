@@ -2,7 +2,7 @@ import {comparisonStudio} from './comparison-studio.mjs';
 import { resolve, basename } from 'node:path';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { chatWithDirector } from '../../open-claw/lab/src/openclaw.mjs';
-import { validateProject } from './studio-model.mjs';
+import { validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { StudioError } from './project-store.mjs';
 import { selectPresentation } from './presentation-selection.mjs';
 import { remoteRequest } from './studio-director.mjs';

@@ -1,8 +1,8 @@
 'use client';
 import { useMemo } from 'react';
 import { auditStudio } from '../lib/studio-audit.mjs';
-import type { StudioProject } from '../lib/studio-model.mjs';
-import type { VideoInventory } from './studio-types';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import styles from './video-intake.module.css';
 
 export function VideoCoverage({ project, inventory, dealerId, onOpen }: {project: StudioProject; inventory: VideoInventory; dealerId: string; onOpen: (id: string) => void}) {

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPresentationDirector } from '../lib/presentation-director.mjs';
 import { presentationDecisionResponse } from '../lib/presentation-decision-http.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { simulateStudio } from '../lib/studio-server.mjs';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 

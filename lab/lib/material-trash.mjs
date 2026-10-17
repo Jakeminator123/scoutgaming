@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {validateProject} from './studio-model.mjs';
+import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {compositionLabel} from './control-flow.mjs';
 import {canonicalStudioJson,StudioStorageError} from '../../web/storage/studio-contract.mjs';
 import {gameLaneConfiguration} from '../../web/public/game-lanes.mjs';
@@ -7,7 +7,7 @@ import {isPresentationRoom} from '../../web/presentation-room-contract.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
 import {PRESENTATION_PACKAGE_KEY,readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {withoutPresentationLanes} from './dealer-archive-impact.mjs';
-import {retainBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
+import {retainBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 
 const fail=(code='studio_material_missing')=>{throw new StudioStorageError(code,409);};
 export const materialUsedBy=(lane,id)=>['background','table'].some(role=>lane.layers[role].default===id||lane.layers[role].allowed.includes(id))

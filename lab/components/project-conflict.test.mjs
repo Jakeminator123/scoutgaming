@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
-import {createEmptyProject} from '../lib/studio-model.mjs';
+import {createEmptyProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import * as rebase from '../lib/project-rebase.mjs';
 
 const require = createRequire(import.meta.url);

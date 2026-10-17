@@ -7,7 +7,7 @@ import {resolve} from 'node:path';
 import {createPublicationChain, company, otherCompany, compositionId} from './fixtures/admin-publication-chain.mjs';
 import {createPresentationRoomClient, createPresentationRoomController} from '../lab/lib/presentation-room-client.mjs';
 import {readPackagePresentation} from '../web/storage/presentation-package.mjs';
-import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../packages/design-preview/runtime/public-lobby-catalog.mjs';
+import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../lab/client/runtime/public-lobby-catalog.mjs';
 import {gameLaneFromDocument} from '../web/public/game-lanes.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
 
@@ -28,11 +28,11 @@ function browserBundle() {
     import {createRoot} from 'react-dom/client';
     import {PresentationRoomCreate} from './lab/components/presentation-room-create.tsx';
     import {PartnerOperatorWorkspace} from './lab/components/kevin-bo/partner-operator-workspace.jsx';
-    import {LobbyProvider} from './packages/design-preview/lobby/components/lobby-provider.tsx';
-    import {OperatorsSection} from './packages/design-preview/lobby/components/sections/operators-section.tsx';
-    import {RoomsSection} from './packages/design-preview/lobby/components/sections/rooms-section.tsx';
-    import {DealersSection} from './packages/design-preview/lobby/components/sections/dealers-section.tsx';
-    import {SelectionTicket} from './packages/design-preview/lobby/components/selection-ticket.tsx';
+    import {LobbyProvider} from './lab/client/lobby/components/lobby-provider.tsx';
+    import {OperatorsSection} from './lab/client/lobby/components/sections/operators-section.tsx';
+    import {RoomsSection} from './lab/client/lobby/components/sections/rooms-section.tsx';
+    import {DealersSection} from './lab/client/lobby/components/sections/dealers-section.tsx';
+    import {SelectionTicket} from './lab/client/lobby/components/selection-ticket.tsx';
     const props = JSON.parse(document.getElementById('fixture-data').textContent);
     createRoot(document.getElementById('root')).render(props.surface === 'partner'
       ? <PartnerOperatorWorkspace {...props}/> : location.pathname === '/lobby'
@@ -44,13 +44,13 @@ function browserBundle() {
   plugins: [{name: 'fixture-image-metadata', setup(plugin) {
     plugin.onLoad({filter: /\.(?:png|jpg)$/}, () => ({contents: 'export default {src:"/fixture-image"}', loader: 'js'}));
   }}],
-  nodePaths: [resolve(root, 'lab/node_modules'), resolve(root, 'packages/design-preview/node_modules')],
-  alias: {'@/lib/catalog.mjs': resolve(root, 'packages/design-preview/runtime/public-lobby-catalog.mjs'),
-    '@': resolve(root, 'packages/design-preview/lobby'),
+  nodePaths: [resolve(root, 'lab/node_modules'), resolve(root, 'lab/client/node_modules')],
+  alias: {'@/lib/catalog.mjs': resolve(root, 'lab/client/runtime/public-lobby-catalog.mjs'),
+    '@': resolve(root, 'lab/client/lobby'),
     'react': resolve(root, 'lab/node_modules/react'), 'react-dom': resolve(root, 'lab/node_modules/react-dom'),
-    'next/link': resolve(root, 'packages/design-preview/runtime/navigation.tsx'),
-    'next/navigation': resolve(root, 'packages/design-preview/runtime/navigation.tsx'),
-    'next/image': resolve(root, 'packages/design-preview/runtime/image.ts')},
+    'next/link': resolve(root, 'lab/client/runtime/navigation.tsx'),
+    'next/navigation': resolve(root, 'lab/client/runtime/navigation.tsx'),
+    'next/image': resolve(root, 'lab/client/runtime/image.ts')},
   define: {'process.env.NODE_ENV': '"production"', 'process.env.NEXT_PUBLIC_LAB_BASE_PATH': '"/studio"',
     'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE': '"1"'}, logLevel: 'silent'});
 }

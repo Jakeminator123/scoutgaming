@@ -1,11 +1,12 @@
 import { copyFile, mkdir, readdir, symlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 
 // Disposable server copies keep the repository's sibling-module layout. Copy
 // source modules only, never credentials, persisted settings or runtime data.
 export async function copyOpenClawRuntime(root) {
-  for (const file of ['packages/presentation/capability-contract.mjs', 'packages/studio-access/account-role.mjs',
-    'packages/presentation/contracts/game-lane-id.mjs']) {
+  for (const file of ['packages/presentation/capability-contract.mjs', 'packages/studio-access/account-role.mjs', 'packages/presentation/public-modules.mjs',
+    ...presentationPublicModules.map(row => row.source)]) {
     await mkdir(join(root, dirname(file)), {recursive: true});
     await copyFile(new URL('../../' + file, import.meta.url), join(root, file));
   }

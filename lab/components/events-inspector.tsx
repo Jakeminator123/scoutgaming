@@ -5,11 +5,11 @@ import { TriggerEditor, categoryLabels, defaultValue } from './trigger-editor';
 import { VariantSelectionEditor } from './variant-selection';
 import { VariantVideoBinding } from './video-library';
 import { studioHref } from './studio-types';
-import type { MediaFamily, VideoInventory } from './studio-types';
+import type { MediaFamily, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { clipLabel } from '../lib/clip-label.mjs';
-import { upsertMediaVariantPolicy } from '../lib/media-family-policy.mjs';
-import { DEALER_IDS, addVariant, allowedPathDescriptors, isAssetCompatible, maxVariantsForEvent, removeTrigger, removeVariant } from '../lib/studio-model.mjs';
-import type { DealerId, MediaVariantPolicy, StudioAsset, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant, TriggerCategory } from '../lib/studio-model.mjs';
+import { upsertMediaVariantPolicy } from '../../packages/presentation/runtime/media-family-policy.mjs';
+import { DEALER_IDS, addVariant, allowedPathDescriptors, isAssetCompatible, maxVariantsForEvent, removeTrigger, removeVariant } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { DealerId, MediaVariantPolicy, StudioAsset, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant, TriggerCategory } from '../../packages/presentation/contracts/studio-model.mjs';
 
 export const EVENTS_EDITOR_TABS = ['event', 'triggers', 'variants'] as const;
 export type EventsEditorTab = typeof EVENTS_EDITOR_TABS[number];

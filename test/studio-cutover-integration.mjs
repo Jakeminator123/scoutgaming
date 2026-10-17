@@ -12,7 +12,7 @@ import { installBoAuthEpoch } from '../web/storage/async-bo-auth-epoch.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';
 import { createRenderStudioPolicy } from '../web/storage/studio-runtime.mjs';
-import { createSeedProject } from '../lab/lib/studio-model.mjs';
+import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { createStudioNativeAuth } from '../lab/lib/studio-native-auth.mjs';
 import { createStudioNativeAuthActions, createStudioLoginRateLimit } from '../lab/lib/studio-native-auth-actions.mjs';
 import { createStudioAdminData } from '../lab/lib/studio-admin-data.mjs';

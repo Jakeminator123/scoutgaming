@@ -1,5 +1,5 @@
 import { isGameLaneId } from '../../packages/presentation/contracts/game-lane-id.mjs';
-import { BASE_DEALER_IDS, isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from './dealer-identity.mjs';
+import { BASE_DEALER_IDS, isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateComposition} from './presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
 // card projection and playback primitives remain shared, independently of lanes.

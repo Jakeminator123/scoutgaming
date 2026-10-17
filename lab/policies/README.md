@@ -1,6 +1,6 @@
 # Redigerbara labbregler
 
-`project.seed.json` är startprojektet: blackjack, fyra croupierer, 16 semantiska
+`../../packages/presentation/contracts/policies/project.seed.json` är startprojektet: blackjack, fyra croupierer, 16 semantiska
 eventnoder och en standardlinje per croupier/event. Varje linje börjar med en
 ovillkorlig standardvariant och tre labbalternativ. Normalt får högst fyra alternativ finnas.
 Givningsraderna `deal.player.left`, `deal.player.centre`, `deal.player.right` och
@@ -34,6 +34,6 @@ ingen RNG, ingen plånbok, inga dolda/framtida kort och ingen spelstyrning.
 variant till videoregistret men intygar inte kalibrering, textmatchning eller
 godkännande. Labbets animationsasset finns kvar som separat platshållare.
 
-Struktur: `../schemas/studio.schema.json`. Full referens- och kontraktskontroll:
-`validateProject` i `../lib/studio-model.mjs`. Redigering i webbgränssnittet ska
+Struktur: `../../packages/presentation/contracts/schemas/studio.schema.json`. Full referens- och kontraktskontroll:
+`validateProject` i `../../packages/presentation/contracts/studio-model.mjs`. Redigering i webbgränssnittet ska
 sparas uttryckligen; startprojektet är inte en realtidskoppling till produktion.
