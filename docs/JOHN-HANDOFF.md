@@ -72,6 +72,13 @@ Render-ingress-fix och PR213 tas därefter in med normal merge före leverans.
 Första hooken gav 574 godkända, ett fel och fem befintliga opt-in: publicerings-
 provet saknade klientens egna UI-beroenden. Egen låst `lab/client`-installation
 är nu klar; inga kod-/teständringar eller junctionmutationer behövdes.
+Omförsöket gav 575 godkända och fem befintliga opt-in, noll fel; typkontroll
+grön. Integrationen committades som `4fca897c`. Därefter förbereds normal
+merge av `1de845a1` (Renderfix och PR213): navigationsimporterna bevaras,
+transportens rena blad får relativa paths, båda QA-källgrupperna behålls.
+Bankartefaktfilens enda skillnad mot PR213 är C2h:s `./blob-media.mjs`-import.
+Gatewayns egna låsta `ws`-beroende är installerat för integrationsproven;
+ingen tjänststart, junctionändring eller ändrat manifest/lås ingår.
 
 ## Etapp 3 C2g: gemensam publik katalog och navigation — lokal ändring 17 oktober 2026
 
@@ -139,6 +146,17 @@ repositoryprov. Inget nytt fullbygge, CI eller driftkvitto ingår. Den senaste
 GitGuardian-incidentläsningen gav HTTP429, så dess täckning är ofullständig.
 Första hooken fann en kvarvarande slug-import i `ops/cloud/vercel-ingress.mjs`;
 den pekar nu direkt på navigationskontraktet, med oförändrad funktionskropp.
+
+## C2f Render-paketering — rättning före PR214-merge
+
+Render installerar gateway, web och Lab, medan frontend/speech har egna beroenden.
+Routingens rena paths/configuration importeras därför direkt från paketkällan.
+En isolerad kopia av verkliga cloud-config-grafen reproducerade tidigare
+ERR_MODULE_NOT_FOUND och laddas nu med enbart Renders befintliga Lab-beroenden.
+Befintliga konfigurations-/ingressprov18/18 och fixhook7/7 samt frontendtyper
+passerar; ingen extra frontendinstallation eller ändrad auktorisering krävs.
+Lipsyncs PR213-merge e02629f1ffa69f85e1e0667dbb6ebd7b730de7bb integreras
+normalt utan konflikter. Dess kallstarts-/callback-/chattändringar bevaras.
 
 ## C2f: servertransportens ägarskap — lokal verifiering 17 oktober 2026
 
@@ -463,13 +481,15 @@ merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
 Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
 läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
-## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 15:46 UTC
+## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 16:31 UTC
 
 **Läget:** kod, image, bank och separat testrum är levererade. Dynamisk
 OpenClaw-text fungerar. Två molnprov med tal nådde RunPods kö men ingen
-worker startade före tidsgränsen; tal och läppsynk i spelet är därför inte
-verifierade. Draganprofilen är avstängd och sparad efter provet. Inga egna
-GPU-resurser eller jobb är kvar. Astrid och originalfilmerna är orörda.
+worker startade före tidsgränsen. Ett separat uppstartsprov har nu verifierat
+imagehämtning och Python/RunPod SDK-start efter cirka 296 sekunder.
+Tal och läppsynk i spelet är fortfarande inte verifierade. Draganprofilen
+är avstängd och sparad. Testresurserna är avvecklade enligt kvittot nedan.
+Astrid och originalfilmerna är orörda.
 
 PR203 är mergad på `9e533e7b525b6fa894f638d3d8ba6a382e230c47`.
 Mergeagentens separata kvitto före provet: main-CI `39042108316` SUCCESS,
@@ -529,6 +549,42 @@ De sparade Dragan-inställningarna pekar nu på den senast borttagna testendpoin
 Återaktivera inte bara profilen: nästa försök behöver en ny verifierad
 endpoint/template och motsvarande begränsade runtime-bindning.
 
+### Verifierad kallstart och avveckling
+
+Ett separat uppstartsprov kördes 16:13:23–16:28:27 UTC, med talprofilen av,
+min1/max1, inga inskickade jobb och oförändrade Render-inställningar.
+Worker `n8jhmcbdsbycye`, A40 i EU-SE-1, skapades 16:13:26.
+Systemloggen visar hämtning/extrahering av exakt
+`ghcr.io/jakeminator123/moving-gpu-worker@sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`
+färdig 16:17:59. Containerloggen visar RunPod SDK 1.12.0:s startbanner
+16:18:19. Registry-behörigheten och containerstarten fungerar alltså för
+denna image. Modell-/bankladdning, workerintyg, TTS och uppspelning ingick
+inte. Detta är ett separat startupkvitto, inte ett lyckat talprov.
+
+Guarden stängde automatiskt. Oberoende GET 16:30:58 UTC gav endpoint
+`e9isjywhagh41l` och template `kkrc6vr46g` 404 samt tom workerlista.
+Windows Ctrl+C används inte som enda stoppmekanism; guarden har beständig
+deadline och en ägarbunden stoppfil med endpoint-ID och planhash.
+
+### Avgränsad rättning efter uppstartsprovet
+
+Moving-vägen har nu serverstyrd callbackfrist 450 s, absolut sessionstid
+480 s och RunPod-jobb-TTL 540 s. Själva workerexekveringen och dess input-TTL
+är fortsatt 180 s. Bankens tillfälliga läsbehörighet följer återstående
+sessionstid och återkallas direkt vid avbrott. En sen submit nekas före POST
+så att även osäkert utfall ryms i journalens befintliga 720 s-budgetfönster.
+Tom workerpool, exakt image/release, reservationer och inga automatiska
+omförsök gäller fortsatt. Ingen ny image eller schemaändring behövs.
+
+Chattens väntande lås gäller 600 s i båda lagringsimplementationerna, så att
+ett lyckat sent svar kan sparas. Avbrott frigör låset direkt; efter en
+processkrasch kan ett gammalt lås däremot ligga kvar fyra minuter längre.
+Astrids GPU-/callbackstandarder ändras inte. Underagentens 222 fokuserade
+prov passerade, inklusive simulerad 296 s kallstart, callback, sen bankhämtning,
+avbrott, bibehållen kostnad vid osäkerhet och chattcommit efter 420 s.
+Detta är lokal kodverifiering; merge, driftversion och nytt riktigt talprov
+måste kvitteras separat före funktionsacceptans.
+
 ### Gemensam talväg och verifieringens gräns
 
 OpenClaws exakta svar → registrerad röst → verifierad worker → bildrutebunden
@@ -552,34 +608,25 @@ hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga ru
 
 ### Återstående arbete och skydd vid fortsättning
 
-1. Utred imagehämtning, containerstart och scheduler innan fler betalda prov.
-   PR208 och privata schema4-guarden är levererade; de förklarar inte noll
-   workers. RunPods sparade registry-credential heter `ghcr-astrid-read`, men
-   namnet bevisar inte vilka privata images den får läsa. Befintlig lokal
-   GitHub-inloggning saknar `read:packages`; dess GHCR-404 är därför inget
-   bevis på saknad image eller felaktig RunPod-inloggning. Nycklarna är orörda.
-   Inloggad GitHub-vy bekräftar däremot att den privata versionen finns med
-   exakt digest `sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
-   Manifestets lager är cirka 8,1 GB komprimerade. Storleken gör lång första
-   imagehämtning möjlig, men bevisar inte att RunPod kunde hämta den eller att
-   hämtningen orsakade timeouten. Paketets nedladdningsräknare saknar källa och
-   tid och används därför inte som RunPod-kvitto. Se
-   [verifierad paketversion](https://github.com/Jakeminator123/scoutgaming/pkgs/container/moving-gpu-worker/1401501221?tag=sha-9a644e730966c248518c76a115c9bd922b0c5ef3).
-2. Skilj plattformens imagehämtning från Python-/modelluppstart. Våra prov
-   nådde inte workerintyget och kan inte bedöma TTS, filmval eller läppsynk.
-   Kallstart är en möjlig förklaring, inte fastställd rotorsak. Läs faktisk
-   system-/pullstatus och verifiera åtkomst till exakt image före nytt fönster.
-3. Läsning 15:50 UTC av samtliga sju stängda endpoints och tidigare GPU-pod
-   gav 0,169812463 USD bokfört och 3,59 USD behållna reserver: totalt
-   3,759812463 USD av samma godkända **5 USD**. Återstående utrymme var
-   1,240187537 USD. Sjunde reserven 0,21 USD omfattar hela guardtiden,
-   stoppmarginal och disk. Budget-/guardverktygens 72 prov passerade.
-   Jakob höjde därefter uttryckligen det sammanlagda testtaket till **10 USD**.
-   Alla tidigare kostnader och reserver följer med; höjningen är inte ett nytt
-   fristående 10 USD-utrymme. Nästa plan är ett avgränsat uppstartsprov med
-   talprofilen avstängd, utan speljobb och med automatisk resursstängning.
-   Detta är ett daterat kvitto; uppdatera hela underlaget inom fem minuter
-   före användning. Neon-reservationer är inte fakturor eller extra budget.
+1. Leverera och driftverifiera den begränsade kallstartsrättningen ovan. Tidigare
+   callbackfrist 150 s, session/job-TTL 180 s och banktoken 180 s räcker inte
+   för den observerade starten på 296 s. En längre kö-/startfrist får inte
+   automatiskt förlänga själva workerexekveringen eller kringgå tom workerpool,
+   releasekontroll, kostnadsreservation och avbrott.
+2. Behåll samma verifierade image och modell vid nästa prov. Det äldre
+   credentialnamnet `ghcr-astrid-read` är inte ett fel i sig: RunPod hämtade
+   imagen med den befintliga kopplingen. Bildstorleken är cirka 8,1 GB
+   komprimerad; [paketversionen](https://github.com/Jakeminator123/scoutgaming/pkgs/container/moving-gpu-worker/1401501221?tag=sha-9a644e730966c248518c76a115c9bd922b0c5ef3)
+   är verifierad. Uppstartsprovet förklarar varför den tidigare tidsgränsen
+   inte räcker vid denna kallstart, men fastställer inte all historisk kötid.
+3. Läsning 16:30–16:31 UTC av alla åtta stängda endpoints och tidigare GPU-pod
+   gav 0,169812463 USD bokfört och 4,03 USD behållna reserver: totalt
+   4,199812463 USD av Jakobs godkända **10 USD**, med 5,800187537 USD kvar.
+   Åttonde reserven 0,44 USD täcker hela guardperioden, 120 s stoppmarginal
+   och disk. Fördröjd fakturering kan tillkomma; inga gamla reserver har
+   tagits bort. Budget-/guardverktygens 82 prov passerade enligt underagentens
+   kvitto. Uppdatera hela underlaget inom fem minuter före nästa aktivering.
+   Neon-reservationer är inte fakturor eller extra budget.
 4. Verifiera ny OpenClaw-replik i vila, sedan tal under serverbestämd utdelning.
    Agenten får inte placera insatser på användarkontot; Jakob startar själv
    eventuell riktig runda. Jakob valde efter det första molnprovet att köra

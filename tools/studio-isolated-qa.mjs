@@ -28,6 +28,7 @@ async function port() {
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/studio-registry/server/blob-reader.mjs', 'packages/studio-registry/server/managed-media-contract.mjs', 'packages/studio-registry/server/media-blob-index.mjs', 'packages/studio-registry/server/media-layout.mjs', 'packages/studio-registry/server/private-media-contract.mjs', 'packages/studio-registry/server/registry-core.mjs', 'packages/studio-registry/server/registry-reader.mjs', 'packages/studio-registry/server/storage-contract.mjs', 'packages/studio-registry/server/video-dealer-registration.mjs', 'packages/studio-registry/server/video-manifest.mjs', 'tools/media-blob-index-reader.mjs', 'lab/lib/video-local-readers.mjs', 'lab/lib/video-alpha-reader.mjs', 'web/blob-media.mjs', 'web/media-blob-index.mjs', 'web/package.json', 'web/package-lock.json',
+      'web/moving-speech-limits.mjs',
       'ops/neon-studio/013-moving-speech-admission.sql','web/moving-speech-binding.mjs','web/moving-speech-session.mjs','web/moving-speech-transport.mjs',
       'ops/neon-studio/012-runtime-media-catalog.sql', 'test/fixtures/studio-runtime-sql-checks.mjs', 'test/fixtures/runtime-media-catalog.mjs',
       'ops/neon-studio/runtime-media-import.mjs', 'tools/media-layout.mjs',
