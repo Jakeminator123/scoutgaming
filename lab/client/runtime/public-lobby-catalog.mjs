@@ -1,6 +1,12 @@
-import { loadOperatorCatalogue, loadRoomCatalogue } from '../../../apps/croupier-frontend/lib/player-lobby.mjs';
+import { createPlayerCatalog } from '../../../packages/player-catalog/index.mjs';
+import { isOperatorSlug } from '../../../web/public/game-lanes.mjs';
+import { validatePublicOperatorRooms } from '../../../web/public/operator-rooms-contract.mjs';
 import { parseLobbyCatalog } from '../lobby/lib/catalog.mjs';
 export { lobbySelection, lobbyQuerySelection, playUrlFor } from '../lobby/lib/catalog.mjs';
+
+const { loadOperatorCatalogue, loadRoomCatalogue } = createPlayerCatalog({
+  isOperatorSlug, validatePublicOperatorRooms,
+});
 
 // Share the existing player readers and the lobby projection. The public build
 // never calls the staff catalog and never receives saved drafts or admin data.

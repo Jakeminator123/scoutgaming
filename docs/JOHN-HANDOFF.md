@@ -7,6 +7,27 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2g: gemensam publik katalog — lokal ändring 17 oktober 2026
+
+`packages/player-catalog` äger nu `operatorPublicView`,
+`loadOperatorCatalogue` och `loadRoomCatalogue` samt deras resultattyper.
+Frontend och Studios publika lobby kopplar in de befintliga slug- och
+rumvalidatorerna via små lokala kompositioner. Paketet importerar ingen appkod;
+Studios katalogadapter importerar inte längre privata frontendmoduler.
+Login-/speladresser, sessioner, rumsväljning och sparade preferenser stannar
+i apparna. API-adresser, tenantkontroller, ID:n, felutfall och returformat
+är oförändrade. Inga gamla katalogfunktioner återexporteras från player-lobby
+eller player-operator. Validatorernas nuvarande webbadresser kvarstår tills
+deras separata kontraktsflytt integreras.
+
+Lokalt på Node 24.21.0: 63 befintliga katalog-/bolagsgräns-/lobby-/profilprov
+passerar, noll fel och ett uttryckligt browser-opt-in-prov ej kört.
+Frontendens och lobbyklientens typkontroller är gröna. En publik lobbybundle
+byggd i minnet innehåller det gemensamma paketet och ingen privat frontendkod.
+Mekanisk jämförelse mot basversionen bekräftar oförändrade kroppar för alla
+tre flyttade funktioner. Inget produktbygge, ny testfil, moln-/SQL-/medieändring
+eller nytt driftkvitto ingår; integration och CI återstår hos huvudagenten.
+
 ## Etapp 3 C3a: Studio äger Admin/Lobby-klienten — 17 oktober 2026
 
 De 184 källfilerna från `packages/design-preview` ligger nu i `lab/client`.
@@ -26,8 +47,8 @@ klientoutput och oförändrade låsta beroenden: Next/TypeScript och routebygge
 gröna, 80 byggspår kontrollerade och noll privata poster borttagna. Befintliga
 CSS-composes-varningar och Nexts middleware-deprecation kvarstår.
 
-Den publika katalogadaptern använder fortfarande frontendens `player-lobby`
-och `player-operator`; detta är en namngiven ägarskapsrest för nästa kontraktdel.
+Den kvarvarande privata frontendkopplingen i den publika katalogadaptern
+är nu avgränsad och åtgärdad i C2g ovan.
 CI, integration och driftkvitto redovisas vid leverans. Ingen ny visuell
 medie- eller läppsynksacceptans ingår.
 

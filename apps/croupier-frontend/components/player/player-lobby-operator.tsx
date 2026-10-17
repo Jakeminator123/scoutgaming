@@ -3,7 +3,8 @@
 import {useEffect,useState,type CSSProperties,type MouseEvent} from 'react';
 import {OPERATOR_STORAGE_KEY,operatorChoice} from '@/lib/player-operator.mjs';
 import {readChoices} from '@/lib/player-choices.mjs';
-import {loadOperatorCatalogue,loadRoomCatalogue,rememberRoomSelection,roomLaunch,roomSelection,type RoomSelection,type OperatorCatalogueResult} from '@/lib/player-lobby.mjs';
+import {loadOperatorCatalogue,loadRoomCatalogue,type OperatorCatalogueResult} from '@/lib/player-catalog.mjs';
+import {rememberRoomSelection,roomLaunch,roomSelection,type RoomSelection} from '@/lib/player-lobby.mjs';
 import {dealerPortrait,loadRoomPreview,type RoomPreviewResult} from '@/lib/player-room-preview.mjs';
 import {PlayerRoomPreview,PreviewImage,EnvironmentChoices,SelectedMark,StepHeading,choiceLabel} from './player-room-preview';
 import type {PublicOperatorRooms,PublicOperatorRoom} from '../../../../web/public/operator-rooms-contract.mjs';

@@ -1,3 +1,4 @@
+import { operatorPublicView } from './player-catalog.mjs';
 import { isOperatorSlug } from '../../../web/public/game-lanes.mjs';
 
 export const OPERATOR_STORAGE_KEY = 'croupier.operator';
@@ -32,15 +33,6 @@ export function clearedOperatorLocation(href) {
   url.searchParams.delete('operator');
   const search = url.searchParams.toString();
   return `${url.pathname}${search ? `?${search}` : ''}`;
-}
-
-export function operatorPublicView(payload, slug) {
-  if (!isOperatorSlug(slug) || !payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
-  const keys = Object.keys(payload);
-  if (keys.length !== 2 || !Object.hasOwn(payload, 'slug') || !Object.hasOwn(payload, 'name')) return null;
-  if (payload.slug !== slug || typeof payload.name !== 'string' || payload.name.length < 1 || payload.name.length > 120) return null;
-  if (/[\u0000-\u001f\u007f-\u009f]/u.test(payload.name)) return null;
-  return {slug: payload.slug, name: payload.name};
 }
 
 export function lobbyOperatorName({search = '', stored = null, payload = null} = {}) {
