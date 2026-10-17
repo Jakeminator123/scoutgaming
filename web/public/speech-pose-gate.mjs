@@ -108,6 +108,10 @@ export function createSpeechPoseGate({
   }
 
   function poseReady(record) {
+    if(record.dealVersion!==undefined)return record.response?.speechStream?.kind==='moving-speech-stream'
+      &&record.response.speechStream.presentationVersion===record.dealVersion&&sameIdentity(record,state)
+      &&state.actionOwner===`deal-chat-${record.jobId}`&&state.dealerPose==='deal-preparing'
+      &&state.speechOwner==='none'&&state.visible&&!state.muted;
     return record.response !== undefined && sameIdentity(record, state)
       && state.dealerPose === 'standard-idle' && state.actionOwner === 'none' && state.speechOwner === 'none'
       && validIdleProof() && state.visible && !state.muted;
@@ -195,6 +199,10 @@ export function createSpeechPoseGate({
     }
     if (['cancelled', 'failed', 'completed'].includes(record.status)) return { duplicate: true, record: publicRecord(record) };
     record.response = structuredClone(response); record.responseFingerprint = fingerprint; record.status = 'held';
+    if(record.dealVersion!==undefined&&(response?.speechStream?.kind!=='moving-speech-stream'
+      ||response.speechStream.presentationVersion!==record.dealVersion)){
+      cancelRecord(record,'moving-deal-response-unavailable');return {duplicate:false,record:publicRecord(record)};
+    }
     stage(record, 'response-ready'); stage(record, 'held-for-pose'); noteCheckpoints(record); evaluate();
     return { duplicate: false, record: publicRecord(record) };
   }
@@ -239,6 +247,13 @@ export function createSpeechPoseGate({
 
   return Object.freeze({
     receive, responseReady, updateRendererState, presentStandardIdle, cancel, cancelAll,
+    reserveDeal(jobId,version){
+      const record=records.get(jobId);
+      if(!record||record.status!=='waiting-response'||!Number.isSafeInteger(version)||String(version)!==record.roundRevision
+        ||!sameIdentity(record,state)||state.speechOwner!=='none')fail('invalid_deal_speech_reservation');
+      record.dealVersion=version;
+      return updateRendererState({dealerPose:'deal-preparing',actionOwner:`deal-chat-${jobId}`,idlePresented:null},'deal-chat-reserved');
+    },
     interrupt: () => cancelAll('explicit-interrupt'),
     navigate: () => cancelAll('navigation'),
     get pendingCount() { return [...records.values()].filter(record => !['completed', 'cancelled', 'failed'].includes(record.status)).length; },
