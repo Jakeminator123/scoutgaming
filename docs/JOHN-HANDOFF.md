@@ -1,10 +1,25 @@
 # Aktuell handoff — Scoutgaming
 
-Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200, main
-`51d4fcd6343a66f3cbc3794a977b22b221eb68a8`. Etapp 2 utgår från denna main.
+Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
+PR202+204. Senaste strukturkvittot gäller main
+`502bea812d4e8597f4951c85ae712bd338b02a1d`; etapp 3 levereras i avgränsade delar.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
+
+## Etapp 3 C2b: gemensamma kontoroller — 17 oktober 2026
+
+`web/account-role.mjs` har flyttats byteidentiskt till
+`packages/studio-access/account-role.mjs`. Studio, spelserverns inloggning,
+operatörslagring och isolerade QA-källistor använder den nya sökvägen.
+Inga roller, behörigheter, scopekrav eller testassertions har ändrats.
+Tillfälliga serverkopior får nu också med kontorollsmodulen explicit.
+
+Lokalt på Node 24.21.0: 61 befintliga roll-/policy-, kontoinloggnings-,
+mejl-, operatörslagrings- och QA-listtester samt 11 kontoadministrationsprov
+passerade. Ordinarie commit-kontroll: 86/86 utan skips. Efter integration
+av PR205:s fixture-rättning passerar samtliga sex serverfixturekonsumenter,
+10/10 utan skips. Inga testassertions ändrades. CI, merge och drift återstår.
 
 ## Etapp 3: första gemensamma kontrakten — 17 oktober 2026
 
@@ -38,7 +53,10 @@ headers. Felet reproduceras med produktionens `CROUPIER_LAB_BASE_PATH=/studio`.
 Fixturen sätter nu denna basväg explicit, provar transport på en aktiv Admin-
 sida och följer den gamla länken genom båda omdirigeringarna till den aktiva
 sidan med bibehållen cookie och filtrerad förtroendeheader. Produktkod och
-behörighetsskydd ändras inte. Ny CI/deploy måste verifieras före driftkvittot.
+behörighetsskydd ändras inte. Rättningen levererades i PR204. Mergeagentens
+slutkvitto på main502bea81: main-CI39040340480 SUCCESS, Vercel READY och
+Render LIVE, publik version200 med samma fullständiga SHA och health200/ok.
+Detta är tillskrivet driftkvitto, ingen ny produktionskörning i C2b.
 
 De 22 spårade filerna i `pipeline/` har flyttats till `tools/media/`, med
 uppdaterade importer, standardrötter, kommandon och testupptäckt. Manuella
