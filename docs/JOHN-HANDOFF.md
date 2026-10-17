@@ -20,7 +20,8 @@ Inga saknade, privata eller externa referenser. Detta byggkvitto föregår
 required014-integrationen och rättningarna; slutlig PR-CI och drift verifieras
 separat. Riktade regressioner:104/104 gröna, inklusive äldre arkiv av båda
 kategorierna och bootstrap till runtime-läsarens privata sökväg. Ordinarie
-hook och slutlig CI följer före leverans.
+hook på mergecommit6ee38f0f:198/198 gröna,0 fel/skip. Slutlig CI och drift
+återstår hos mergagent.
 
 
 ## C3 — Studiointegration efter överlämning, 18 oktober 2026
