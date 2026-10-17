@@ -1,3 +1,5 @@
+import * as savedGameDocumentContract from '../web/storage/studio-contract.mjs';
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, request as httpsRequest } from 'node:https';
@@ -10,7 +12,7 @@ import { playerAuth } from '../web/storage/async-player-auth.mjs';
 import { craigIdentity } from '../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epoch.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
-import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';
+import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
 import { createRenderStudioPolicy } from '../web/storage/studio-runtime.mjs';
 import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { createStudioNativeAuth } from '../lab/lib/studio-native-auth.mjs';
@@ -30,6 +32,8 @@ import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from '../web/generated-speech-provider.mjs';
 import { createSpeechBlobArtifacts } from '../web/speech-blob-artifacts.mjs';
 import { SHOE_RULES, newGame } from '../web/shoe-game.mjs';
+
+const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 // This fixture accepts only a fresh user-owned localhost cluster. It never reads
 // production environment/config files and is not a product/lab devserver.

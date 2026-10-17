@@ -13,6 +13,8 @@ export async function copyOpenClawRuntime(root) {
     await copyFile(new URL('../../' + file, import.meta.url), join(root, file));
   }
   await cp(new URL('../../packages/studio-registry/', import.meta.url), join(root, 'packages/studio-registry'), {recursive:true});
+  await cp(new URL('../../packages/storage/', import.meta.url), join(root, 'packages/storage'), {recursive:true});
+  await cp(new URL('../../packages/operators/', import.meta.url), join(root, 'packages/operators'), {recursive:true});
   await mkdir(join(root,'tools'),{recursive:true});
   await copyFile(new URL('../../tools/media-blob-index-reader.mjs', import.meta.url),join(root,'tools/media-blob-index-reader.mjs'));
   const rouletteTarget = join(root, 'web/games/roulette');

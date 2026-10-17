@@ -5,7 +5,7 @@ import { handlePartnerAuth } from '../lib/partner-session.mjs';
 import { createOperatorJournal } from '../lib/operator-journal.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
 import { PARTNER_PERMISSIONS } from '../../packages/studio-access/server/partner-access-policy.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
 
 const origin = 'https://public.example.invalid';

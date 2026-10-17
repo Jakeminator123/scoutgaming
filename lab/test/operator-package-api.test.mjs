@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { createSeedProject as createHistoricalProject, addDealer, defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createOperatorPackageApi, fixtureLaneOperators, openWritableOperatorStore } from '../lib/operator-package-api.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
 import {runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';

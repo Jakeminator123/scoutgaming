@@ -1,9 +1,11 @@
+import * as savedGameDocumentContract from '../web/storage/studio-contract.mjs';
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject, defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
-import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';
+import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
 import { createOperatorPackageReader } from '../web/storage/operator-package-reader.mjs';
 import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
 import { OPERATOR_NOT_FOUND_HTML, requestedOperator } from '../packages/navigation/operator-entry.mjs';
@@ -11,6 +13,8 @@ import { decorateGameEntryHtml } from '../web/public/game-entry-contract.mjs';
 import { gameLaneFromDocument } from '../web/public/game-lanes.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { operatorPackageSql, operatorRow, packageRow } from './fixtures/operator-package-sql.mjs';
+
+const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 const scope = Object.freeze({ environment: 'test', workspaceId: 'croupier' });
 const env = { CROUPIER_STUDIO_NEON_POLICY: '1' };

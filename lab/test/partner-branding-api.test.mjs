@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { createPartnerBrandingApi as createApi, TABLE_COLOR_BRANDING_KEY } from '../lib/partner-branding-api.mjs';
 
 const scope = { environment: 'isolated-fixture', workspaceId: 'qa' };

@@ -1,3 +1,5 @@
+import * as savedGameDocumentContract from '../web/storage/studio-contract.mjs';
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -6,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
-import {createStudioGamePolicy,STUDIO_GAME_CONFIGURATION_SOURCE} from '../web/storage/studio-game-policy.mjs';
+import { createSavedGamePolicy, STUDIO_GAME_CONFIGURATION_SOURCE } from '../packages/presentation/server/saved-game-policy.mjs';
 import {createStudioMediaRuntime} from '../lab/lib/studio-media-runtime.mjs';
 import {createSeedProject,isAssetCompatible} from '../packages/presentation/contracts/studio-model.mjs';
 import {legacyClipControls} from '../lab/lib/legacy-clip-inventory.mjs';
@@ -17,6 +19,8 @@ import {mkdtemp,mkdir,writeFile,rm,readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
+
+const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 const repositoryRoot=fileURLToPath(new URL('../',import.meta.url));
 const scope={environment:'media_source_qa',workspaceId:'croupier'};

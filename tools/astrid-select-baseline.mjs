@@ -46,9 +46,11 @@ export const ARCHIVE_PATHS = Object.freeze([
   'packages/presentation/runtime',
   'packages/presentation/server',
   'packages/studio-registry/server',
+  'packages/storage/server',
+  'packages/operators',
+  'packages/studio-access',
   'packages/shared/studio-error.mjs',
   'packages/shared/media-file-types.mjs',
-  'packages/studio-access/studio-scope.mjs',
   'lab/lib',
   // Historical HEADs retain these sources; ls-tree filters absent paths.
   'lab/policies',

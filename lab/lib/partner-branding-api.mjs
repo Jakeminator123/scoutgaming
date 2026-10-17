@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { canonicalStudioJson, cloneStudioJson } from '../../web/storage/studio-contract.mjs';
 import { listPackageRooms, roomGame } from '../../web/presentation-room-contract.mjs';
-import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
 import { isPresentationRoomLaneCompatible } from '../../web/storage/frozen-presentation-capture.mjs';
-import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../web/storage/partner-branding.mjs';
+import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../packages/operators/contracts/branding.mjs';
 import {StudioStorageError} from '../../web/storage/studio-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
 import { effectivePartnerAdjustments } from './partner-package-view.mjs';

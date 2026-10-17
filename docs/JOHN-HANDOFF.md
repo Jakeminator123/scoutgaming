@@ -7,6 +7,41 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2j: lagringsägare — lokala ändringar 17 oktober 2026
+
+C2i är normalt integrerad som `cc033b0d` (160 pass, 0 fail, 1 SQL-opt-in).
+C2g är normalt integrerad som `97a7381e93f9e79dee630c477acdf687cb4ca00b`
+(frontendtypecheck, 515 pass, 0 fail, 5 opt-in). Handoffsektioner, aktiva
+fixturekällor, C2g:s kanoniska slug och C2e:s lane-ID är bevarade.
+
+`packages/storage/server/postgres-store.mjs` äger EN poolfri SQL-/ALS-kärna
+för game/auth. Web:s befintliga modul äger faktisk pg-factory och schemaläsning;
+Studio använder sina befintliga Neon-pooler direkt mot samma kärna. SQL-schema,
+ledger, checksumma, TLS-inställningar, låsordning och startup-readiness bevaras.
+`packages/operators` äger operator-store, lifecycle-codec och rena brandingregler.
+Studio-repository stannar i `packages/studio-registry`.
+
+`packages/presentation/server/saved-game-policy.mjs` får det befintliga bundna
+dokumentkontraktet explicit från appkompositionerna. Samma policy-/CAS-/
+valideringskroppar används utan dubbla socialregler eller package→app-importer.
+Det rena lane-katalog-/validerings-/konfigurationsbladet ligger under
+`presentation/contracts`; den aktiva renderer-/datasetmodulen ligger kvar i web.
+Den enda nya publika adressen är det exakta rena kontraktsbladet i den befintliga
+centrala allowlisten. Gamla ersatta källor och policydeklarationen tas bort;
+inga nya wrappers läggs till. Konsumenter, QA-/fixture-/HEAD-källistor är uppdaterade.
+
+Mekanisk kontroll mot `97a7381e`: 41 jämförelser passerar, inklusive bevarade
+assertions i 30 testfiler. Kärnornas transitiva graf har 40 moduler utan app-/SDK-
+importer, saknade mål eller cykler; 708 relativa mål i ändrade källor finns.
+Alla sex nya runtimefiler passerar syntaxkontroll. I det samordnade fönstret
+passerar 341 befintliga riktade prov; ett verkligt Neon-prov är fortsatt opt-in.
+Ytterligare tio prov från alla sex serverfixturekonsumenterna och Lab-typecheck
+passerar, utan skips i fixtureproven. Node 24.21.0 och fyra testworkers användes.
+Egen låst Lab-/frontend-/klientinstallation gjordes direkt i arbetskopian utan
+externa junctions eller package-/lockändringar. C2j är inte committad; inga nya
+testfiler/assertions eller fullbuild/fullhook, schema-/moln-/wallet-/kort-/
+HTTP-beteendeändringar görs av C2j.
+
 ## Etapp 3 C2h: register- och medieläsare — lokal integration 17 oktober 2026
 
 `packages/studio-registry/server/` äger nu den sammanhängande registerkärnan,

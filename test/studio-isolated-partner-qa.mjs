@@ -77,7 +77,7 @@ test('isolated SQL evidence binds the actual draft suite imports and immutable m
     'packages/studio-access/studio-scope.mjs', 'packages/studio-access/account-role.mjs',
     'packages/studio-access/server/account-credentials.mjs', 'packages/studio-access/server/craig-identity.mjs', 'packages/studio-access/server/bo-auth-epoch.mjs', 'packages/studio-access/server/partner-access-policy.mjs',
     'packages/studio-access/display-name.mjs',
-    'web/storage/partner-branding.mjs', 'lab/lib/partner-branding-api.mjs', 'lab/test/fixtures/cloud-presentation.mjs'];
+    'packages/operators/contracts/branding.mjs', 'lab/lib/partner-branding-api.mjs', 'lab/test/fixtures/cloud-presentation.mjs'];
   for (const entry of [suite,fixture,runtimeFixture,runtimeImporter]) {
     const source = await readFile(entry,'utf8');
     for (const [,path] of source.matchAll(/from\s+['"]([^'"]+)['"]/g)) {

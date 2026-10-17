@@ -6,7 +6,7 @@ import {cloudPresentationFixture} from '../../lab/test/fixtures/cloud-presentati
 import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {createOperatorPackageReader} from '../../web/storage/operator-package-reader.mjs';
 import {createStudioNativeAuth} from '../../packages/studio-access/studio-native-auth.mjs';
 import {createStudioAdminApi} from '../../lab/lib/studio-admin-api.mjs';
