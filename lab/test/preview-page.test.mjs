@@ -8,7 +8,7 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {createSeedProject as createEmptyProject,addDealer,defaultPresentationLane,normalizeProject} from '../../packages/presentation/contracts/studio-model.mjs';
-import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';

@@ -1,4 +1,4 @@
-import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope, STUDIO_JSON_LIMIT } from '../../web/storage/studio-contract.mjs';
+import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope, STUDIO_JSON_LIMIT } from '../../packages/studio-registry/server/document-contract.mjs';
 import { createNeonProjectStore, createNeonSocialStore } from './neon-project-store.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir,mkdtemp,rm,writeFile } from 'node:fs/promises';
 import { basename,dirname,join,resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createStudioProjectBindings } from '../lib/studio-project-bindings.mjs';
+import { createStudioProjectBindings } from '../../packages/presentation/server/studio-project-bindings.mjs';
 import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { legacyClipControls } from '../lib/legacy-clip-inventory.mjs';
 

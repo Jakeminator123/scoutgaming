@@ -31,7 +31,7 @@ Repository index (paths are references, not automatic access):
 - open-claw/lab/deploy/gateway-config.mjs: seed, preserved native config, policy.
 - open-claw/lab/deploy/start-gateway.mjs: validate/reconcile/start and bundle sync.
 - open-claw/lab/deploy/runtime-bundle.mjs: managed AGENTS content, snapshots/backups.
-- open-claw/lab/src/social.mjs: isolated Astrid social lab JSON action and validation.
+- packages/director/social.mjs: isolated Astrid social lab JSON action and validation.
 - docs/AI/openclaw/README.md and docs/AI/openclaw/OPENCLAW-DOCS.md: IDE on-demand source routing.
 - docs/AI/openclaw/DASHBOARD-SV.md and docs/AI/openclaw/DEPLOYMENT.md: login/network/key roles.
 - lab/: local studio; open-claw/lab/: Render Director and Gateway deployment.

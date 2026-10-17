@@ -1,4 +1,4 @@
-import * as savedGameDocumentContract from '../web/storage/studio-contract.mjs';
+import * as savedGameDocumentContract from '../packages/studio-registry/server/document-contract.mjs';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,11 +7,11 @@ import {once} from 'node:events';
 import {fileURLToPath} from 'node:url';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
-import {createStudioRepository} from '../web/storage/studio-repository.mjs';
+import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 import { createSavedGamePolicy, STUDIO_GAME_CONFIGURATION_SOURCE } from '../packages/presentation/server/saved-game-policy.mjs';
-import {createStudioMediaRuntime} from '../lab/lib/studio-media-runtime.mjs';
+import {createStudioMediaRuntime} from '../web/storage/studio-media-runtime.mjs';
 import {createSeedProject,isAssetCompatible} from '../packages/presentation/contracts/studio-model.mjs';
-import {legacyClipControls} from '../lab/lib/legacy-clip-inventory.mjs';
+import {legacyClipControls} from '../web/storage/legacy-clip-inventory.mjs';
 import {createPresentationApi} from '../web/presentation-api.mjs';
 import {createNativeObservation} from '../web/public/native-observation.mjs';
 import {createHash} from 'node:crypto';

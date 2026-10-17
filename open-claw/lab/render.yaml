@@ -58,6 +58,7 @@ services:
       paths:
         - open-claw/lab/**
         - packages/presentation/contracts/dealer-identity.mjs
+        - packages/director/**
   - type: pserv
     name: croupier-lab-openclaw
     runtime: docker

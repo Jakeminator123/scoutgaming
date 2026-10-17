@@ -4,9 +4,9 @@ import { homedir } from 'node:os';
 import { isIP } from 'node:net';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
+import { ASTRID_VOICE_PROFILE } from '../packages/presentation/contracts/astrid-voice-profile.mjs';
 import { createSpeechSessionManager, sessionReserveMicroUsd, dailyBudgetMicroUsd } from './generated-speech-session.mjs';
-import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-runtime.mjs';
+import { createSpeechJournalLease, requireSpeechJournal } from '../packages/presentation/server/speech-journal-lease.mjs';
 import { acceptsWorkerBinding } from '../services/astrid-gpu-worker/gateway/worker-binding.mjs';
 
 const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '..');

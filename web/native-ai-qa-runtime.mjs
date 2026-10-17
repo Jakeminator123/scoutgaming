@@ -2,14 +2,15 @@ import {readFile,lstat,realpath} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaWindowClosed,sha256,aiQaNeed as need,createAiQaBudget} from './native-ai-qa-budget.mjs';
-import {registerBoundedAiQaFullfileAuthority} from './generated-speech.mjs';
-export {boundedAiQaAllowsFullfile} from './generated-speech.mjs';
+import {registerBoundedAiQaFullfileAuthority} from './generated-speech-runtime.mjs';
+export {boundedAiQaAllowsFullfile} from './generated-speech-runtime.mjs';
 const repo=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const safeError=e=>/^ai_qa_[a-z0-9_]+$/.test(e?.code??'')?e.code:'ai_qa_operation_failed';
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-const fields=['web/native-ai-qa-runtime.mjs','web/native-ai-qa-budget.mjs','web/native-p6-qa-hook.mjs',
-  'web/server.mjs','ops/cloud/config.mjs','ops/cloud/container-entry.mjs','ops/cloud/Dockerfile','web/native-ai-qa-private.mjs','web/generated-speech.mjs','web/generated-speech-stream.mjs',
-  'web/generated-speech-session.mjs','web/speech-journal-runtime.mjs','web/generated-speech-provider.mjs',
+const fields=[
+  'packages/presentation/contracts/speech-journal-constants.mjs','packages/presentation/contracts/speech-package.mjs','packages/presentation/contracts/astrid-voice-profile.mjs','packages/presentation/server/generated-speech-service.mjs','packages/presentation/server/generated-speech-runtime.mjs','packages/presentation/server/speech-journal-lease.mjs','web/native-ai-qa-runtime.mjs','web/native-ai-qa-budget.mjs','web/native-p6-qa-hook.mjs',
+  'web/server.mjs','ops/cloud/config.mjs','ops/cloud/container-entry.mjs','ops/cloud/Dockerfile','web/native-ai-qa-private.mjs','web/generated-speech-runtime.mjs','web/generated-speech-stream.mjs',
+  'web/generated-speech-session.mjs','web/speech-journal-runtime.mjs','packages/presentation/server/generated-speech-provider.mjs',
   'web/generated-speech-chat.mjs','web/operator-speech-qa.mjs','tools/activate-native-ai-qa.mjs',
   'web/public/app.mjs','web/public/native-p6-game-playback.mjs','web/public/speech-queue.mjs',
   'web/public/speech-pose-gate.mjs','web/public/generated-speech-player.mjs','web/public/speech-stream-client.mjs'];

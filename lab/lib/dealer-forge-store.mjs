@@ -3,7 +3,7 @@
 // sanitization match the rest of Studio. Media references are read under that
 // same scope lock; this journal never writes media_records.
 import { randomUUID } from 'node:crypto';
-import { canonicalStudioJson, StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { canonicalStudioJson, StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 
 // Thrown inside repository transactions: only StudioStorageError survives the repository's failure sanitizer, so codes carry the meaning.
 const fail = (message, statusCode = 503, code = 'studio_forge_store_failed') => { const error = new StudioStorageError(code, statusCode); error.detail = message; throw error; };

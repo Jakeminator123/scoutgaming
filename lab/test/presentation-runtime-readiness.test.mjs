@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED as CODE } from '../lib/presentation-runtime-readiness.mjs';
 import { nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
-import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
-import {layerAssetPath} from '../../web/presentation-layers.mjs';
-import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
+import {layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
+import {encodePresentationPackage} from '../../packages/presentation/server/presentation-package.mjs';
 
 const env = { CROUPIER_BACKEND_ORIGIN: 'https://render.example.invalid' };
 const capability = { schemaVersion: 1, registeredDealerIds: ['nora'], compositing: 'per-clip' };

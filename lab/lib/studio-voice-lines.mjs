@@ -3,7 +3,7 @@ import {readRuntimeCatalog} from '../../packages/studio-registry/server/runtime-
 import { createHash } from 'node:crypto';
 import { repositoryRoot as defaultRoot, resolvePublicMedia } from '../../tools/media-layout.mjs';
 import { verifiedMediaBlobStorage } from './media-blob-index.mjs';
-import { canonicalStudioJson, StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { canonicalStudioJson, StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 import { SPEECH_LINES } from '../../packages/presentation/contracts/speech-lines.mjs';
 
 const roster = Object.freeze({ astrid: 'Astrid' });

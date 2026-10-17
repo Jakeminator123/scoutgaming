@@ -8,10 +8,10 @@ import {isActiveDealerId, registeredDealerIds} from '../packages/presentation/co
 import {gamePresentationForDealer, isGameLaneId, gameChoicesForLane} from './public/game-lanes.mjs';
 import {decorateGameEntryHtml} from './public/game-entry-contract.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
-import {validateLayerAsset} from './presentation-layers.mjs';
+import {validateLayerAsset} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {normalizeProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {ownDealerIdle} from '../packages/presentation/runtime/registered-idle.mjs';
-import {canonicalStudioJson, validateRevision, validateStudioScope, validateStudioMedia} from './storage/studio-contract.mjs';
+import {canonicalStudioJson, validateRevision, validateStudioScope, validateStudioMedia} from '../packages/studio-registry/server/document-contract.mjs';
 
 const uuid='[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}';
 const apiPattern=new RegExp(`^/api/studio-preview/(${uuid})(?:/(.*))?$`);

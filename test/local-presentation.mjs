@@ -14,7 +14,7 @@ import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/re
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 import { loadVideoRegistry as readVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
-import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
+import { selectPresentation } from '../web/presentation-selection.mjs';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -89,7 +89,7 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
     '/packages/presentation/contracts/dealer-identity.mjs','/packages/presentation/contracts/policies/idle-policy.seed.json',
     '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json',
     '/packages/presentation/contracts/game-lane-id.mjs','/packages/navigation/game-entry.mjs'])assert.ok(visited.has(path),path);
-  for (const name of ['dealer-framing','composition-settings']) {
+  for (const name of ['dealer-framing','composition-settings','speech-package','astrid-voice-profile']) {
     const alias = await fetch(origin+'/'+name+'.mjs');
     const canonical = await fetch(origin+'/packages/presentation/contracts/'+name+'.mjs');
     assert.equal(alias.status,200);assert.equal(canonical.status,200);
@@ -105,6 +105,9 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
     '/packages/navigation/server/platform-routing.mjs','/apps/croupier-frontend/lib/platform-routing.mjs',
     '/packages/navigation/game-entry.mjs/extra','/packages/navigation/game-entry.mjs.bak','/game-entry.mjs',
     '/packages/presentation/contracts/presentation-room.mjs', '/packages/presentation/contracts/operator-lifecycle-key.mjs',
+    '/packages/presentation/server/generated-speech-runtime.mjs', '/packages/presentation/server/generated-speech-service.mjs',
+    '/packages/presentation/server/generated-speech-provider.mjs', '/packages/presentation/server/speech-journal-lease.mjs',
+    '/packages/presentation/contracts/speech-journal-constants.mjs',
     '/packages/presentation/server/registered-dealer-idle.mjs', '/packages/studio-registry/server/repository.mjs',
     '/packages/presentation/contracts/game-lane-id.mjs/extra', '/packages/presentation/contracts/game-lane-id.mjs.bak',
     '/packages/presentation/runtime/live-idle.mjs/extra','/packages/presentation/runtime/idle-policy.mjs.bak',

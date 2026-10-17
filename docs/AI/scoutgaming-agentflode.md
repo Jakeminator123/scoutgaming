@@ -1,5 +1,13 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Gemensamt Director-bibliotek — 17 oktober 2026
+
+`packages/director/` samlar den befintliga besluts-, tal-, social- och
+Companion-logiken. Appar äger miljöfilläsning och väljer datakataloger;
+Director-tjänsten behåller HTTP, Gateway och signering. Inga providerroller,
+verktygsbehörigheter eller miljöprioriteter ändras. Lokalt verifieringskvitto
+och återstående integrationskontroller finns i [handoffen](../JOHN-HANDOFF.md).
+
 ## Lokal pingkö — 17 oktober 2026
 
 `agent-talk` behåller de 40 senaste obesvarade pingarna i den aktiva kön.

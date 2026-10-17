@@ -3,7 +3,7 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
+import {canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
 import {createSpeechReplyLibrary} from '../../web/speech-reply-library.mjs';
 import * as mediaStore from '../../web/blob-media.mjs';

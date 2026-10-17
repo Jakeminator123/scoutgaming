@@ -8,7 +8,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {createSeedProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {changeMaterialTrash} from '../lib/material-trash.mjs';
-import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 const url=new URL('../components/layer-asset-manager.tsx',import.meta.url),localRequire=createRequire(url);
 const output=transformSync(readFileSync(url,'utf8'),{filename:fileURLToPath(url),jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});

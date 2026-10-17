@@ -5,7 +5,7 @@ import { randomUUID, randomBytes, scryptSync } from 'node:crypto';
 import { createHash, createHmac } from 'node:crypto';
 import { createPostgresStore } from '../web/storage/postgres-store.mjs';
 import { postgresStatement,validateGameConnection } from '../packages/storage/server/postgres-store.mjs';
-import { createStudioRepository } from '../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createStudioDocumentApi } from '../lab/lib/studio-document-api.mjs';
 import { createPostgresNativeTableCommand } from '../web/postgres-native-table.mjs';
 import { createPlayerAdministration } from '../web/storage/player-administration.mjs';

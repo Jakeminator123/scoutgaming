@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {RETAINED_BANK_PROVENANCE,RETAINED_BANK_VARIANTS,createRetainedStudioMedia,validateStudioMedia} from '../web/storage/studio-contract.mjs';
+import {RETAINED_BANK_PROVENANCE,RETAINED_BANK_VARIANTS,createRetainedStudioMedia,validateStudioMedia} from '../packages/studio-registry/server/document-contract.mjs';
 import {prepareRetainedBankImport,verifyRetainedBankSourceManifest} from '../ops/neon-studio/retained-bank.mjs';
 
 test('retention is exactly six frozen original identities and fresh records with fixed provenance',()=>{

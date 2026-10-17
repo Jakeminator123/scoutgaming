@@ -1,7 +1,7 @@
 import { Worker } from 'node:worker_threads';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 import { MAX_LAYER_ASSET_BYTES } from '../../packages/presentation/contracts/layer-asset-contract.mjs';
 import { withVerifiedPrivateMediaFile } from './cloud-media-store.mjs';
 

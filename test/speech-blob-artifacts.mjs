@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSpeechBlobArtifacts } from '../web/speech-blob-artifacts.mjs';
 import { validatePrivateMedia } from '../lab/lib/cloud-media-store.mjs';
-import { ASTRID_VOICE_PROFILE } from '../web/public/astrid-voice-profile.mjs';
+import { ASTRID_VOICE_PROFILE } from '../packages/presentation/contracts/astrid-voice-profile.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
 const env = { CROUPIER_MEDIA_STORAGE:'blob', BLOB_READ_WRITE_TOKEN:'fixture-private-storage-token' };

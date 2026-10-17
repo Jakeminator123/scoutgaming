@@ -41,6 +41,7 @@ export const HEAD_SELECTION_ENTRIES = Object.freeze([
   'packages/presentation/contracts/studio-model.mjs',
 ]);
 export const ARCHIVE_PATHS = Object.freeze([
+  'packages/director',
   'packages/presentation/contracts',
   'packages/presentation/public-modules.mjs',
   'packages/presentation/runtime',
@@ -64,7 +65,7 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/dealer-identity.mjs',
   'web/layer-asset-contract.mjs',
   'web/managed-media-contract.mjs',
-  'web/storage/studio-contract.mjs',
+  'packages/studio-registry/server/document-contract.mjs',
   'web/public/background-playback-policy.mjs',
   'web/public/background-playback.mjs',
   'web/public/background-materials.mjs',

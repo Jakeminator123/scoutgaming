@@ -25,7 +25,7 @@ beskriver även RPC-integration. Den befintliga produktvägen via Director
 behålls för denna funktion. [MCP](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/cli/mcp.md)
 är inte en förutsättning för att skicka en bild med ett chattmeddelande.
 
-I Croupier stöder `src/product-speech.mjs` nu en valfri, validerad observation
+I Croupier stöder `packages/director/product-speech.mjs` nu en valfri, validerad observation
 med högst två JPEG-bilder. Lokal kamera kräver `astridCamera: true` i den
 samordnade starten (eller `--astrid-camera` med Lissabon). Gateway behöver
 separat `CROUPIER_SPEECH_VISION=1` för Lunas bildmetadata. Flaggorna är Av

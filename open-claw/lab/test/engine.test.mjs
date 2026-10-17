@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { SOURCE_TYPES, CONDITION_OPERATORS, CONDITION_PATHS, normalizeInput, validateCatalog, prepareDecision, finalizeDecision } from '../src/engine.mjs';
+import { SOURCE_TYPES, CONDITION_OPERATORS, CONDITION_PATHS, normalizeInput, validateCatalog, prepareDecision, finalizeDecision } from '../../../packages/director/engine.mjs';
 
 const catalog = JSON.parse(readFileSync(new URL('../config/catalog.json', import.meta.url), 'utf8'));
 const scenarios = JSON.parse(readFileSync(new URL('../fixtures/scenarios.json', import.meta.url), 'utf8'));

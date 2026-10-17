@@ -8,7 +8,7 @@ import { inspectLayerMedia,inspectVerifiedLayerFile,LAYER_INSPECTION_LIMITS } fr
 import { layerImage,layerAnimation,layerVideo,layerBlobFixture } from './fixtures/layer-media.mjs';
 import { createLayerUploadService } from '../lab/lib/layer-upload-service.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
-import { createStudioRepository } from '../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { nativeStudioErrorResponse } from '../lab/lib/studio-native-runtime.mjs';
 

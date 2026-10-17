@@ -36,6 +36,12 @@ endast `--offline` startar ett isolerat, tillfälligt serverpar.
 [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
 
+Gemensam Director-, tal-, social- och Companion-logik finns i
+`packages/director/`. `lib/director-settings.mjs` äger Studios miljöfilläsning
+och återanvänder paketets rena projektion. Samma filer, prioritet, alias och
+Director-datarot gäller; Studio väljer fortfarande sin Companion-underkatalog.
+Director-tjänstens HTTP, Gateway och signering ligger kvar i `open-claw/lab/`.
+
 Eventeditor och sekvensspelare går genom `POST /api/presentation/decision`.
 Den gamla `/api/simulate` är ett alias. Servern delar samma pågående/sparade
 beslut för ett oförändrat `requestId`; förändrat innehåll ger 409. Cache och
@@ -246,7 +252,7 @@ Tre alternativ per linje och 256 variantposter finns inte i demo-/fixturseedet.
 Högst fyra alternativ plus standard kan redigeras.
 Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
 Den äldre händelseeditorns seed beskriver blackjack. Publicerade spelrum kan
-däremot vara blackjack eller roulette, enligt `web/presentation-room-contract.mjs`.
+däremot vara blackjack eller roulette, enligt `packages/presentation/server/package-rooms.mjs`.
 Ett rum har ett spel; spelet kan erbjuda flera rum/bakgrunder med tillåtna
 dealers och bord. Produktmodellens källa är [TERMINOLOGI.md](docs/TERMINOLOGI.md).
 
@@ -577,3 +583,10 @@ npm --prefix open-claw/lab test
 
 Tester använder isolerade filer och simulerade modelltransporter, inte riktiga
 spelare eller modellnycklar. Byggnaden verifierar inte en Render-driftsättning.
+
+Gemensam medieorkestrering och lokala läsare finns i
+`packages/studio-registry/server/`; bindnings- och legacykontroller i
+`packages/presentation/server/`. Studio komponerar dem med sina egna
+Blob-adaptrar och tidigare roots. Projektets skrivning, lås, historik och
+video-/klassificeringsskrivare ligger kvar här. Spelservern har egna
+läsarkompositioner och behöver inte importera dessa Studio-skrivare.

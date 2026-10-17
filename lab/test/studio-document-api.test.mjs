@@ -6,7 +6,7 @@ import { createSeedProject, addDealer, defaultPresentationLane } from '../../pac
 import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from '../lib/presentation-runtime-readiness.mjs';
 import { createSocialPolicy } from '../lib/social-store.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 
 const origin = 'https://studio.example.invalid', scope = Object.freeze({ environment: 'test', workspaceId: 'studio-test' });

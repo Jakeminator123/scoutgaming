@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createFrozenDealerContextReader, createFrozenDealerPresentationContext } from '../web/storage/frozen-dealer-presentation.mjs';
+import { createFrozenDealerContextReader, createFrozenDealerPresentationContext } from '../packages/presentation/server/frozen-dealer-presentation.mjs';
 
 import { createPresentationApi } from '../web/presentation-api.mjs';
 import { Writable } from 'node:stream';
-import {canonicalStudioJson} from '../web/storage/studio-contract.mjs';
+import {canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 import { operatorRow, packageRow } from './fixtures/operator-package-sql.mjs';
 
 const id = '00000000-0000-4000-8000-000000000001', sha256 = 'a'.repeat(64);
@@ -248,7 +248,7 @@ test('administrative portrait drift cannot serve an allowed neighbour instead of
 
 
 test('branding history preserves a round only while exact frozen media and current ownership remain published',async()=>{
-  const {sameFrozenPackage}=await import('../web/storage/frozen-dealer-presentation.mjs');
+  const {sameFrozenPackage}=await import('../packages/presentation/server/frozen-dealer-presentation.mjs');
   const previous={operatorId:'north',revision:7,lanes:['lane'],games:['blackjack'],tables:['room'],branding:{color:'#112233',_scoutPresentation:{sha256:'same',data:'immutable'}}};
   const current={...structuredClone(previous),revision:8,branding:{color:'#445566',_scoutPresentation:{sha256:'same',data:'immutable'}}};
   assert.equal(sameFrozenPackage(current,previous),true);

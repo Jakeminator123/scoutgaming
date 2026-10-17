@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from '../web/generated-speech-provider.mjs';
+import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from '../packages/presentation/server/generated-speech-provider.mjs';
 
 const config = () => ({ cartesiaApiKey: 'test-cartesia-key', runpodApiKey: 'test-runpod-key', runpodEndpointId: 'test-endpoint' });
 const input = (requestId = 'speech-1') => ({ requestId, text: 'Good evening.' });

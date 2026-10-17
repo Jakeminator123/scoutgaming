@@ -1,10 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 import { PRESENTATION_CAPABILITY_VERSION_HEADER, validatePresentationCapabilities } from '../../packages/presentation/capability-contract.mjs';
 import { BASE_DEALER_IDS } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {extendedDealerMediaFeatures} from '../../web/dealer-media-features.mjs';
+import {extendedDealerMediaFeatures} from '../../packages/presentation/contracts/dealer-media-features.mjs';
 import {maxVariantsForEvent} from '../../packages/presentation/contracts/studio-model.mjs';
-import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
+import {encodePresentationPackage} from '../../packages/presentation/server/presentation-package.mjs';
 
 export const PRESENTATION_RUNTIME_UPDATE_REQUIRED = 'studio_presentation_runtime_update_required';
 export const PRESENTATION_RUNTIME_UPDATE_MESSAGE = 'Spelservern beh\u00f6ver uppdateras innan presentationen kan sparas. Ditt utkast \u00e4r kvar.';

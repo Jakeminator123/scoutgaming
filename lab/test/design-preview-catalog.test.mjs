@@ -6,9 +6,9 @@ import { addDealer } from '../../packages/presentation/contracts/studio-model.mj
 import { parseLobbyCatalog, lobbySelection, playUrlFor } from '../client/lobby/lib/catalog.mjs';
 import {withOperatorLifecycle} from '../../packages/operators/server/operator-lifecycle.mjs';
 import {operatorLifecycleGroups} from '../../lab/client/admin/lib/studio-resource-lifecycle.mjs';
-import {readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {readPackagePresentation,withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
 import {materialSource} from '../../packages/presentation/contracts/material-catalog.mjs';
-import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
 
 function fixture() {
   const f = createPortraitRoomEntryFixture({ operator: 'north', dealer: 'linnea' });

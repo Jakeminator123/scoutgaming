@@ -2,9 +2,9 @@
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
-import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
-import {withPackagePresentation} from '../web/storage/presentation-package.mjs';
-import {layerAssetPath} from '../web/presentation-layers.mjs';
+import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';
+import {withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
+import {layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {createPublicOperatorPreview} from '../web/public-operator-preview.mjs';
 import {createPublicOperatorRooms} from '../web/public-operator-rooms.mjs';
 

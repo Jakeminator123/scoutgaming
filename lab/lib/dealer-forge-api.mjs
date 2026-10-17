@@ -1,7 +1,7 @@
 // HTTP surface for Dealer Forge. Same N1 admin session, scope, origin and
 // CSRF rules as the other native Studio routes; forge-specific errors keep a
 // readable message because operators act on them (credits, missing anchor…).
-import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { assertNativeStudioRequest, nativeStudioAdminEnabled, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';

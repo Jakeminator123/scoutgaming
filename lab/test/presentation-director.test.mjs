@@ -4,7 +4,7 @@ import { createPresentationDirector } from '../lib/presentation-director.mjs';
 import { presentationDecisionResponse } from '../lib/presentation-decision-http.mjs';
 import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { simulateStudio } from '../lib/studio-server.mjs';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
+import { readSettings } from '../lib/director-settings.mjs';
 
 const output = () => ({ decision: { reason: 'accepted' }, eligible: [{ id: 'standard' }], trace: [] });
 const base = { requestId: 'decision-1', mode: 'active', sourceEvent: { type: 'speak', line: 'win' }, sourceRef: { kind: 'import', channel: 'partner/player 1', requestId: 'upstream-1', version: 4, presentationIndex: 2 } };

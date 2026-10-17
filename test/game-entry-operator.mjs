@@ -1,10 +1,10 @@
-import * as savedGameDocumentContract from '../web/storage/studio-contract.mjs';
+import * as savedGameDocumentContract from '../packages/studio-registry/server/document-contract.mjs';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedProject, defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
-import { createStudioRepository } from '../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
 import { createOperatorPackageReader } from '../web/storage/operator-package-reader.mjs';
 import { createGameEntrySelector } from '../web/game-entry-operator.mjs';

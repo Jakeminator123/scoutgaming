@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LAB_ROOT, readSettings } from './settings.mjs';
-import { validateCatalog, normalizeInput, prepareDecision } from './engine.mjs';
-import { providerStatus } from './openclaw.mjs';
+import { validateCatalog, normalizeInput, prepareDecision } from '../../../packages/director/engine.mjs';
+import { providerStatus } from '../../../packages/director/openclaw.mjs';
 
 const catalog = JSON.parse(await readFile(join(LAB_ROOT, 'config/catalog.json'), 'utf8'));
 const result = validateCatalog(catalog);

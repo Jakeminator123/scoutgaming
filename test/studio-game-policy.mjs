@@ -1,13 +1,13 @@
-import * as savedGameDocumentContract from '../web/storage/studio-contract.mjs';
+import * as savedGameDocumentContract from '../packages/studio-registry/server/document-contract.mjs';
 
 import { createLegacyProject } from '../lab/test/fixtures/legacy-project.mjs';
 import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createSeedProject, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
-import { createStudioRepository } from '../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
-import { StudioStorageError } from '../web/storage/studio-contract.mjs';
+import { StudioStorageError } from '../packages/studio-registry/server/document-contract.mjs';
 import { createSavedGamePolicy, studioGamePolicyConfiguration, exactRegisteredDealerIdle } from '../packages/presentation/server/saved-game-policy.mjs';
 import { createPortraitRoomEntryFixture } from './fixtures/portrait-room-entry.mjs';
 import { createGameEntrySelector } from '../web/game-entry-operator.mjs';

@@ -6,8 +6,8 @@ export const NATIVE_P6_GAME_ORIGIN='https://croupier-native-qa-abc92154cb15.verc
 export const NATIVE_P6_GAME_CONTEXT_PATH='/api/presentation/native-p6-playback-context';
 export const NATIVE_P6_GAME_SOURCE_PATHS=Object.freeze(['web/public/app.mjs','web/public/native-p6-game-playback.mjs',
   'web/public/speech-queue.mjs','web/public/speech-pose-gate.mjs','web/public/local-presentation.mjs',
-  'web/public/generated-speech-player.mjs','web/public/speech-stream-client.mjs','web/public/speech-package.mjs',
-  'web/public/astrid-voice-profile.mjs']);
+  'web/public/generated-speech-player.mjs','web/public/speech-stream-client.mjs','packages/presentation/contracts/speech-package.mjs',
+  'packages/presentation/contracts/astrid-voice-profile.mjs']);
 const ownerKeys=['actorSha256','ownerSessionSha256','sessionRevision','roundRevision','policySha256'];
 const clockToleranceMs=5000;
 const stages=['chat-received','response-ready','held-for-pose','action-completed','standard-idle-presented',

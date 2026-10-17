@@ -1,13 +1,14 @@
 import { createHash } from 'node:crypto';
-import { canonicalStudioJson, cloneStudioJson } from '../../web/storage/studio-contract.mjs';
-import { listPackageRooms, roomGame } from '../../web/presentation-room-contract.mjs';
+import { canonicalStudioJson, cloneStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
+import {listPackageRooms} from '../../packages/presentation/server/package-rooms.mjs';
+import {roomGame} from '../../packages/presentation/contracts/presentation-room.mjs';
 import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
-import { isPresentationRoomLaneCompatible } from '../../web/storage/frozen-presentation-capture.mjs';
+import { isPresentationRoomLaneCompatible } from '../../packages/presentation/server/frozen-presentation-capture.mjs';
 import { publicEditableBranding, resolveRoomBranding, PARTNER_BRANDING_FIELDS, PARTNER_ROOM_BRANDING_FIELDS } from '../../packages/operators/contracts/branding.mjs';
-import {StudioStorageError} from '../../web/storage/studio-contract.mjs';
+import {StudioStorageError} from '../../packages/studio-registry/server/document-contract.mjs';
 import { partnerPresentationDealerChoices } from './partner-presentation-choices.mjs';
 import { effectivePartnerAdjustments } from './partner-package-view.mjs';
-import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../web/storage/presentation-package.mjs';
+import { PRESENTATION_PACKAGE_KEY, publicPackageBranding, readPackagePresentation, normalizePresentationBranding } from '../../packages/presentation/server/presentation-package.mjs';
 
 // canonicalBranding in operator-store accepts any plain object within
 // 8000 bytes, 200 nodes and depth 6. It has no key whitelist.

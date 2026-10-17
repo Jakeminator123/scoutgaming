@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createSeedProject, defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { BASE_DEALER_IDS } from '../packages/presentation/contracts/dealer-identity.mjs';
-import { buildPresentationPackage } from '../web/presentation-layers.mjs';
-import { encodePresentationPackage, decodePresentationPackage } from '../web/storage/presentation-package.mjs';
-import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
+import { buildPresentationPackage } from '../packages/presentation/contracts/presentation-layers.mjs';
+import { encodePresentationPackage, decodePresentationPackage } from '../packages/presentation/server/presentation-package.mjs';
+import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import {validateRouletteIdleBinding,validateRouletteForegroundPolygons} from '../packages/presentation/contracts/roulette-idle-contract.mjs';
 import {
   captureFrozenRegisteredDealers, validateFrozenRegisteredDealers,
   resolveFrozenDealerIdle, assertFrozenMediaPreconditions,
-} from '../web/storage/frozen-dealer-idle.mjs';
+} from '../packages/presentation/server/frozen-dealer-idle.mjs';
 
 const JOHANNA_ID = '00000000-0000-4000-8000-000000000001';
 const NORA_ID = '00000000-0000-4000-8000-000000000002';

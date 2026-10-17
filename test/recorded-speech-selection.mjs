@@ -4,7 +4,7 @@ import {Readable} from 'node:stream';
 import {EventEmitter} from 'node:events';
 import {addDealer,createEmptyProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
-import {gateRecordedSpeechSelection,recordedSpeechProjection} from '../web/recorded-speech-selection.mjs';
+import {gateRecordedSpeechSelection,recordedSpeechProjection} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
 import {createPresentationApi} from '../web/presentation-api.mjs';
 
 const id='10000000-0000-4000-8000-000000000001',otherId='10000000-0000-4000-8000-000000000002';

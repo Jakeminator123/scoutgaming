@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { nativeStudioAdminConfiguration, assertNativeStudioRequest, createStudioNativeRuntime, createNativeStudioRequestHandlers, handleNativeAdmin, handleNativeSession,nativeStudioErrorResponse,readAssistantDatabaseInventory } from '../lib/studio-native-runtime.mjs';
-import {StudioStorageError} from '../../web/storage/studio-contract.mjs';
+import {StudioStorageError} from '../../packages/studio-registry/server/document-contract.mjs';
 
 test('unsupported media format returns its fixed typed 415 without database details',async()=>{
   const error=new StudioStorageError('studio_media_content_type_unsupported',415);error.detail='private-db-detail';

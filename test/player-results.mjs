@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readPlayerResults } from '../web/player-results.mjs';
-import { normalizeProductSpeechEnvelope } from '../open-claw/lab/src/product-speech.mjs';
+import { normalizeProductSpeechEnvelope } from '../packages/director/product-speech.mjs';
 import { projectOpenClawGameStatus } from '../web/openclaw-chat.mjs';
 
 test('profile results separate profits, losses, returned stakes, currencies and uncollected play', t => {

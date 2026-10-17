@@ -14,9 +14,9 @@ import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { createPlayerHistoryHandler } from './player-history.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
 import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch, nativeP6OwnedPlaybackContext } from './native-p6-qa-hook.mjs';
-import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
+import { normalizeAstridObservation } from '../packages/director/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
-import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
+import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech-runtime.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createChatResponseStream } from './chat-response-stream.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';
@@ -81,7 +81,7 @@ const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
 const { createStudioNativeAuth } = neonStudioEnabled ? await import('../packages/studio-access/studio-native-auth.mjs') : {};
 const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./studio-lab-session.mjs') : {};
-const { createStudioMediaRuntime } = neonStudioEnabled ? await import('../lab/lib/studio-media-runtime.mjs') : {};
+const { createStudioMediaRuntime } = neonStudioEnabled ? await import('./storage/studio-media-runtime.mjs') : {};
 const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
 const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
@@ -98,10 +98,10 @@ const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: 
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope, ttlMs:0 }) }) : null;
 const operatorAppearanceApi = selectGameEntry ? (await import('./operator-appearance-api.mjs')).createOperatorAppearanceApi({selectGameEntry}) : null;
 const frozenDealerContext = studioPolicyRuntime ? await (async () => {
-  const { createFrozenDealerPresentationContext, createFrozenDealerContextReader } = await import('./storage/frozen-dealer-presentation.mjs');
+  const { createFrozenDealerPresentationContext, createFrozenDealerContextReader } = await import('../packages/presentation/server/frozen-dealer-presentation.mjs');
   return createFrozenDealerPresentationContext({
     readCurrentContext: createFrozenDealerContextReader({ pool: storage.pool, scope: studioPolicyRuntime.scope }),
-    readPresentation: (await import('./storage/presentation-package.mjs')).readPackagePresentation,
+    readPresentation: (await import('../packages/presentation/server/presentation-package.mjs')).readPackagePresentation,
     privateMedia: (record, request) => (import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
       trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
         new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
@@ -115,8 +115,8 @@ const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/publ
 
 const authorizeChatDealer = createRegisteredChatContext({
   resolvePublishedContext:studioPolicyRuntime ? createPublishedChatResolver({
-    readCurrentContext:(await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
-    readPresentation:(await import('./storage/presentation-package.mjs')).readPackagePresentation,
+    readCurrentContext:(await import('../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+    readPresentation:(await import('../packages/presentation/server/presentation-package.mjs')).readPackagePresentation,
   }) : null,
 });
 const speechJournal = studioPolicyRuntime ? await (await import('./postgres-speech-journal.mjs')).createSpeechJournal({
@@ -135,14 +135,14 @@ const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).create
 });
 const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore, readRooms: publicOperatorRooms.read });
 const publicOperatorPreview = studioPolicyRuntime ? (await import('./public-operator-preview.mjs')).createPublicOperatorPreview({
-  readCurrentContext: (await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+  readCurrentContext: (await import('../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
   privateMedia: (record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
     trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
       new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
       ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
 }) : null;
 const rouletteRoomAccess = studioPolicyRuntime ? (await import('./games/roulette/access.mjs')).createRouletteRoomAccess({
-  readCurrentContext:(await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+  readCurrentContext:(await import('../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
 }) : null;
 
 const domain = name => {
@@ -169,10 +169,10 @@ const probeStore = (await createPlayerProbeStore(db, playerChatMemory));
 let activeProbeRuntime;
 async function loadProbeRuntime() {
   if(!activeProbeRuntime){
-    const [{createProbeRuntime},{createProjectStore},{readSettings}]=await Promise.all([
-      domain('probe-runtime'),import('../lab/lib/project-store.mjs'),import('../open-claw/lab/src/settings.mjs')]);
+    const [{createProbeRuntime},{createLocalProjectReader},{readSettings}]=await Promise.all([
+      domain('probe-runtime'),import('../packages/studio-registry/server/local-project-reader.mjs'),import('./director-settings.mjs')]);
     const projectStore = studioPolicyRuntime?.policy.projectStore()
-      ?? (!postgres && dataDir ? createProjectStore(join(dataDir, 'studio')) : null);
+      ?? (!postgres && dataDir ? createLocalProjectReader(join(dataDir, 'studio')) : null);
     if (!projectStore) throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 });
     activeProbeRuntime ??= await createProbeRuntime({store:probeStore,memory:playerChatMemory,
       projectStore,

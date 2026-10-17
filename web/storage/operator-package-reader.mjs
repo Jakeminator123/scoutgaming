@@ -4,7 +4,7 @@
 // today's entry and the player never sees a storage error. Only successful
 // reads are cached, at most 30 s per slug.
 import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
-import { StudioStorageError } from './studio-contract.mjs';
+import { StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 
 export const OPERATOR_PACKAGE_CACHE_MAX_MS = 30_000;

@@ -4,7 +4,7 @@ import { dealerMediaSlots } from './dealer-media-library.mjs';
 import { kindForEvent, MAX_VIDEO_BYTES, validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../packages/presentation/contracts/dealer-compositing.mjs';
-import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 
 export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 30, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,
   maxHistoryMessages: 8, maxHistoryMessage: 3000, maxHistoryChars: 12000, vision: false });

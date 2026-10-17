@@ -5,7 +5,7 @@ import { MEDIA_FILE_TYPES, mediaHeaderMatches } from '../../packages/shared/medi
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope, validateStudioMedia } from '../../web/storage/studio-contract.mjs';
+import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope, validateStudioMedia } from '../../packages/studio-registry/server/document-contract.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, mediaBlobPath, validatePrivateMedia } from './cloud-media-store.mjs';
 import { MAX_VIDEO_BYTES, validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { requireSavedVideoDealer } from '../../packages/studio-registry/server/video-dealer-registration.mjs';

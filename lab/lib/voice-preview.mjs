@@ -6,7 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import lockfile from 'proper-lockfile';
 import { StudioError } from './project-store.mjs';
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
-import { ASTRID_VOICE_PROFILE } from '../../web/public/astrid-voice-profile.mjs';
+import { ASTRID_VOICE_PROFILE } from '../../packages/presentation/contracts/astrid-voice-profile.mjs';
 
 const LAB_DIR = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
