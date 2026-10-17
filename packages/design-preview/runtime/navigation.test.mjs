@@ -165,11 +165,27 @@ async function mountClipMap(h){
   const render=()=>{cursor=0;const element=module.exports.ConnectedClipMap({}).props.children;return element.type(element.props);};
   const all=(tree,predicate)=>!tree||typeof tree!=='object'?[]:[...(predicate(tree)?[tree]:[]),...React.Children.toArray(tree.props?.children).flatMap(child=>all(child,predicate))];
   const nodes=predicate=>all(render(),predicate),settle=async()=>{for(let i=0;i<5;i++){render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));}};
+  const textWithoutControls=tree=>typeof tree==='string'||typeof tree==='number'?String(tree)
+    :!tree||tree.type==='select'?'':React.Children.toArray(tree.props?.children).map(textWithoutControls).join('');
+  const one=(matches,description)=>{assert.equal(matches.length,1,description);return matches[0];};
+  const select=label=>{
+    const named=nodes(node=>node.type==='select'&&node.props['aria-label']===label);
+    if(named.length)return one(named,'select labelled '+label);
+    const field=one(nodes(node=>node.type==='label'&&textWithoutControls(node)===label),'field labelled '+label);
+    return one(all(field,node=>node.type==='select'),'select within '+label);
+  };
+  const button=label=>one(nodes(node=>node.type==='button'&&(node.props['aria-label']??textWithoutControls(node))===label),'button labelled '+label);
   await settle();
-  return {settle,selection:()=>nodes(node=>node.type==='select').slice(0,4).map(node=>node.props.value),
-    async dealer(id){nodes(node=>node.type==='select'&&node.props['aria-label']==='Dealer')[0].props.onChange({target:{value:id}});await settle();},
-    async editDraft(){nodes(node=>node.type==='button'&&node.props.children==='Gemensam sammansättningsmall')[0].props.onClick();await settle();const panel=nodes(node=>node.type==='StudioCompositionPanel')[0],draft=structuredClone(panel.props.project);draft.dealers.find(row=>row.id==='nora').label='Nora draft';panel.props.onEdit(draft);await settle();},
-    hasDraft:()=>nodes(node=>node.type==='option').some(node=>node.props.children==='Nora draft'),
+  return {settle,selection:()=>({operator:select('Spelbolag').props.value,game:select('Spel').props.value,room:select('Rum').props.value,dealer:select('Dealer').props.value}),
+    async dealer(id){select('Dealer').props.onChange({target:{value:id}});await settle();},
+    async editDraft(){
+      button('Gemensam sammansättningsmall').props.onClick();await settle();
+      const inspector=one(nodes(node=>node.type==='aside'&&node.props['aria-label']==='Klipp och inställningar'),'clip inspector');
+      assert.equal(inspector.props.hidden,false,'composition editor must open in the detail panel');
+      const panel=one(all(inspector,node=>node.type==='StudioCompositionPanel'),'composition editor'),draft=structuredClone(panel.props.project);
+      draft.dealers.find(row=>row.id==='nora').label='Nora draft';panel.props.onEdit(draft);await settle();
+    },
+    hasDraft:()=>all(select('Dealer'),node=>node.type==='option').some(node=>node.props.children==='Nora draft'),
     unmount(){for(const cleanup of cleanups)cleanup?.();}};
 }
 
@@ -177,7 +193,7 @@ test('mounted clip pane reactivation writes the retained full context before Bac
   const h=harness('/admin/clips?operator=b&table=room-b&game=roulette'),pane=await mountClipMap(h);
   try{
     await pane.dealer('nora');await pane.editDraft();const selection=pane.selection();
-    assert.deepEqual(selection,['b','roulette','room-b','nora']);
+    assert.deepEqual(selection,{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});
     h.api.navigate('/admin');await pane.settle();assert.equal(h.location.search,'');assert.ok(pane.hasDraft());
     h.api.navigate('/admin/clips');await pane.settle();
     const params=new URLSearchParams(h.location.search);
@@ -193,13 +209,13 @@ test('mounted clip pane keeps room-owned context through accepted query changes 
   const h=harness('/admin/clips?operator=a&table=room-a&game=blackjack'),pane=await mountClipMap(h);
   try{
     h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=nora&game=roulette&category=bank');await pane.settle();
-    assert.deepEqual(pane.selection(),['b','roulette','room-b','nora']);
+    assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});
     assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-b');
     assert.equal(new URLSearchParams(h.location.search).get('category'),'bank');
     const target=h.location.search;
-    h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),['a','blackjack','room-a','astrid']);
+    h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),{operator:'a',game:'blackjack',room:'room-a',dealer:'astrid'});
     assert.equal(new URLSearchParams(h.location.search).get('composition'),'scene-a');
-    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),['b','roulette','room-b','nora']);assert.equal(h.location.search,target);
+    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});assert.equal(h.location.search,target);
   }finally{pane.unmount();}
 });
 
@@ -209,12 +225,12 @@ test('mounted clip pane ignores rejected history destinations and defers context
     h.api.navigate('/admin/clips?operator=b&table=room-b&dealer=nora&game=roulette');await pane.settle();
     let blocked=true;h.window.addEventListener('studio:before-navigate',event=>{if(blocked)event.preventDefault();});
     const before=h.snapshot();h.history.go(-1);h.step();await pane.settle();
-    assert.deepEqual(pane.selection(),['b','roulette','room-b','nora']);assert.deepEqual(h.snapshot(),before);
+    assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'nora'});assert.deepEqual(h.snapshot(),before);
     await pane.dealer('astrid');assert.deepEqual(h.snapshot(),before,'a render while compensation is pending must not rewrite its rejected destination');
     h.flush();await pane.settle();assert.equal(h.index(),1);assert.equal(h.history.length,2);assert.deepEqual(h.snapshot()[0],before[0]);
     const params=new URLSearchParams(h.location.search);
     for(const [key,value] of Object.entries({operator:'b',table:'room-b',composition:'scene-b',dealer:'astrid',game:'roulette'}))assert.equal(params.get(key),value,key);
-    blocked=false;h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),['a','blackjack','room-a','astrid']);
-    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),['b','roulette','room-b','astrid']);
+    blocked=false;h.go(-1);await pane.settle();assert.deepEqual(pane.selection(),{operator:'a',game:'blackjack',room:'room-a',dealer:'astrid'});
+    h.go(1);await pane.settle();assert.deepEqual(pane.selection(),{operator:'b',game:'roulette',room:'room-b',dealer:'astrid'});
   }finally{pane.unmount();}
 });

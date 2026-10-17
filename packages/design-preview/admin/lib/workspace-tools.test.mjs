@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import {ADMIN_WORKSPACE_TOOLS,adminDocumentHref} from '../../../../lab/lib/admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS} from '../../../../lab/lib/admin-workspace-routes.mjs';
 import * as adminRouting from '../../runtime/admin-routing.mjs';
 
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');
@@ -13,7 +13,7 @@ const node=(tree,predicate)=>{
   return predicate(tree)?tree:node(tree.props?.children,predicate);
 };
 const marker=name=>Object.defineProperty(()=>null,'name',{value:name});
-const components=Object.fromEntries(['ControlLanesPage','ControlActivityPage','ControlPreviewPage','ControlEventsPage','ControlTreePage','ControlProbePage','ControlRepliesPage','ControlVideosPage','ControlGuidePage','ControlLayerLibraryPage','ControlOpenClawChat','LabStudio','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
+const components=Object.fromEntries(['ControlLanesPage','ControlActivityPage','ControlPreviewPage','ControlEventsPage','ControlTreePage','ControlProbePage','ControlRepliesPage','ControlVideosPage','ControlGuidePage','ControlOpenClawChat','LabStudio','NativeAdministration','OpenClawWorkspace','ConnectedEconomy','ConnectedServices'].map(name=>[name,marker(name)]));
 
 function harness(file,search='',data={project:{revision:'stored',dealers:[{id:'dragan',label:'Dragan'}]},videos:{videos:[]},status:{configured:true,provider:'neon'}}){
   const slots=[],effects=[],requests=[];let cursor=0,queue=[];
@@ -40,18 +40,6 @@ test('Admin speech review opens the real NativeAdministration review with the se
   assert.deepEqual(native.props.availableActions,['GET config','GET voicelines','POST voiceline-review']);
   assert.equal(native.props.apiBase,'/studio/api/admin');
   assert.equal(service.requests[0].path,'/studio/api/auth/session');assert.equal(service.requests[0].init.credentials,'same-origin');
-});
-
-for(const [link,role] of [
-  ['/control/library?tab=backgrounds','background'],['/control/library?tab=tables','table'],
-  ['/admin/material-library?role=background','background'],['/admin/material-library?role=table','table'],
-  ['/admin/material-library?role=table&tab=backgrounds','background'],['/admin/material-library?role=background&tab=tables','table'],
-])test(`material selection survives entry or reload: ${link}`,async()=>{
-  const target=new URL(adminDocumentHref(link),'https://admin.invalid');
-  const h=harness('../components/studio/workspace-tools.tsx',target.search);
-  h.render(h.exports.WorkspaceTool,{section:'material-library'});await h.settle();
-  const library=node(h.render(h.exports.WorkspaceTool,{section:'material-library'}),item=>item.type===components.ControlLayerLibraryPage);
-  assert.equal(library.props.initialRole,role);
 });
 
 function shell(file,path){

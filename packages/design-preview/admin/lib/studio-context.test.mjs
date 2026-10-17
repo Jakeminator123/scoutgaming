@@ -150,3 +150,23 @@ test('a clean room selection notifies real shared history subscribers and does n
  walk(h.render(),node=>node.props?.['aria-label']==='Välj spelbolag')[0].props.onChange({target:{value:'b'}});
  assert.equal(h.notifications,2);assert.deepEqual(Object.fromEntries(new URLSearchParams(h.search)),{view:'registered',operator:'b'});
 });
+
+test('dealer library opens without silently selecting a company, room or shared composition',()=>{
+  const context=studioContext(catalog,project,{dealerId:'paow-v2',game:'blackjack',library:true});
+  assert.equal(context.dealer.id,'paow-v2');
+  assert.equal(context.operator,undefined);assert.equal(context.room,undefined);assert.equal(context.lane,undefined);
+  assert.deepEqual(context.rooms,[]);
+  const companyOnly=studioContext(catalog,project,{operatorId:'a',dealerId:'paow-v2',library:true});
+  assert.equal(companyOnly.operator.id,'a');assert.equal(companyOnly.room,undefined);
+  assert.deepEqual(companyOnly.rooms.map(row=>row.id),['bj','roulette']);
+});
+
+test('library context accepts only the explicitly selected room and its registered owner',()=>{
+  const direct=studioContext(catalog,project,{roomId:'roulette',library:true});
+  assert.equal(direct.operator.id,'a');assert.equal(direct.room.id,'roulette');assert.equal(direct.game,'roulette');
+  for(const selection of [{operatorId:'a',roomId:'other'},{operatorId:'missing',roomId:'bj'},{operatorId:'a',roomId:'missing'},{operatorId:'a',roomId:'archived'}]){
+    const context=studioContext(catalog,project,{...selection,dealerId:'paow-v2',library:true});
+    assert.equal(context.room,undefined);assert.equal(context.lane,undefined);
+    assert.equal(context.dealer.id,'paow-v2');
+  }
+});

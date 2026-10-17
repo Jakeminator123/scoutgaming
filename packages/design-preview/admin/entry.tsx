@@ -22,10 +22,10 @@ const pages: Record<string, string> = {
   ...Object.fromEntries(Object.entries(ADMIN_WORKSPACE_TOOLS).map(([key,label])=>['/admin/'+key,label])),
   '/admin': 'Översikt',
   '/admin/structure': 'Kopplingar',
-  '/admin/deletion': 'Radering',
-  '/admin/dealers': 'Dealers',
+  '/admin/deletion': 'Användning & beroenden',
+  '/admin/dealers': 'Dealerregister',
   '/admin/tools': 'Verktyg',
-  '/admin/clips': 'Klippkarta',
+  '/admin/clips': 'Dealers & klipp',
   '/admin/rooms': 'Spelbolag & rum',
   '/admin/assets': 'Bord & bakgrunder',
   '/admin/drift': 'Drift', '/admin/ekonomi': 'Ekonomi', '/admin/admin/accounts': 'Konton & åtkomst',
@@ -57,14 +57,14 @@ function App() {
     if(url.origin===location.origin&&/^\/admin(?:\/|$)/.test(url.pathname)&&!url.pathname.startsWith('/admin/lobby')){event.preventDefault();navigate(url.pathname+url.search+url.hash);}
   }}>
     <StudioSidebar /><main className="flex min-w-0 flex-1 flex-col overflow-auto">
-      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Klippkarta':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
+      <header className="studio-portal-bar"><span>Scoutgaming <span className="studio-portal-divider">/</span> {studio?'Dealers & klipp':pages[path]??'System'}</span><nav aria-label="Portaler"><Link href="/admin" aria-current="page"><b>1</b> Admin</Link><a href="/partner"><b>2</b> Spelbolag</a><a href="/lobby"><b>3</b> Spelarlobby</a></nav></header>
       {isolatedPreview&&<div className="border-b border-sg-line bg-sg-panel px-5 py-2 text-xs text-sg-muted" role="note">Isolerad förhandsvisning · testdata · inga produktionsskrivningar</div>}
       <label className="preview-mobile-nav">Sida <select value={studio ? '/admin/clips' : path === '/admin/admin/players' ? '/admin/admin/accounts' : path} onChange={event => navigate(previewHref(event.target.value))}>
         {Object.entries(pages).filter(([key]) => key !== '/admin/admin/players').map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select></label>
-      <Clips active={studio} dealersActive={path==='/admin/dealers'} onImportBusyChange={setImportBusy} chatActive={path==='/admin/ai/chat'} registrationBlocked={studioDirty} onRegistered={materialChanged}>{studioVisited&&<ConnectedClipMap onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
+      <Clips active={studio} dealersActive={path==='/admin/dealers'} onImportBusyChange={setImportBusy} chatActive={path==='/admin/ai/chat'} registrationBlocked={studioDirty} onRegistered={materialChanged}>{studioVisited&&<ConnectedClipMap active={studio&&new URLSearchParams(search).get('tool')!=='import'} onDirtyChange={setStudioDirty} onRevisionChange={setStudioRevision} refreshKey={studioRefresh}/>}</Clips>
       {dealersVisited&&<div hidden={path!=='/admin/dealers'||new URLSearchParams(search).get('tool')==='import'}><DealerDirectory active={path==='/admin/dealers'&&new URLSearchParams(search).get('tool')!=='import'} blocked={studioDirty||importBusy} refreshKey={studioRefresh} onChanged={materialChanged}/></div>}
-      {libraryVisited&&<div hidden={path!=='/admin/assets'}><RegisteredMaterialLibrary disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
+      {libraryVisited&&<div hidden={path!=='/admin/assets'}><RegisteredMaterialLibrary visible={path==='/admin/assets'} disabled={studioDirty} onChanged={materialChanged} refreshKey={studioRevision}/></div>}
       {visited.map(service=><div key={service} hidden={path!==service}><ConnectedServices path={service}/></div>)}
       {path==='/admin'&&!studio&&<AdminHome />}
       {path==='/admin/tools'&&<WorkspaceToolsHome/>}

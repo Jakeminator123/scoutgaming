@@ -216,10 +216,11 @@ test('preview footer returns to its saved composition without an operator link',
  const {readFile}=await import('node:fs/promises');
  const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
  const code=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
- const link={};vm.runInNewContext(code,{studioPreview:{presentationLaneId:'evening'},entrySelection:{lane:'evening',dealer:'astrid',presentation:'local'},document:{querySelector:()=>link},URLSearchParams});
+ const window={};window.parent=window;
+ const link={};vm.runInNewContext(code,{window,studioPreview:{presentationLaneId:'evening'},entrySelection:{lane:'evening',dealer:'astrid',presentation:'local'},document:{querySelector:()=>link},URLSearchParams});
  assert.equal(link.href,'/admin/compositions?composition=evening&dealer=astrid');assert.equal(link.textContent,'Till Sammansättning');
  // Real document validation requires a dealer; a partial caller must not serialize undefined.
- const partialLink={};vm.runInNewContext(code,{studioPreview:{presentationLaneId:'evening'},entrySelection:{},document:{querySelector:()=>partialLink},URLSearchParams});
+ const partialLink={};vm.runInNewContext(code,{window,studioPreview:{presentationLaneId:'evening'},entrySelection:{},document:{querySelector:()=>partialLink},URLSearchParams});
  assert.equal(partialLink.href,'/admin/compositions?composition=evening');
 });
 
