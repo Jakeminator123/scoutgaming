@@ -14,7 +14,7 @@ en ny ping i just den checkouten.
 
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
-`502bea812d4e8597f4951c85ae712bd338b02a1d`; etapp 3 levereras i avgränsade delar.
+`1d2fe0521ee033b8a9349eb47ef6765695e59bb9` (PR212); senare delar inväntar sina separata driftkvitton.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
@@ -123,7 +123,7 @@ runtimekroppar är mekaniskt oförändrade mot `48a75523`. Neutral closure har
 En förbrukad råbyte-kopieringsassertion ersattes av befintlig importgraf-/login-
 täckning och explicit publik/privat paketering; endast dess provfil kördes om
 (2/2). Frontendens och Studios typer passerar. Utökningen är parentgranskad och
-lokal commit kör ordinarie hook; ingen fullsuite eller fullbuild gjord.
+ordinarie hook gav312 pass/0 fail/1 befintlig browser-opt-in samt gröna frontendtyper. Ingen fullsuite eller fullbuild upprepades.
 
 Katalog-/navigationsprov, publik importgraf, klientbundling och frontendens,
 Studios och lobbyklientens typkontroller har passerat. Katalogkroppar och
@@ -132,7 +132,7 @@ oklassificerade kandidater. C2f-integrationen a2380b32 passerade41 riktade
 prov och ordinarie hook215/215 plus frontendtyper med egna låsta frontend-
 och speechinstallationer. Renderfixen och PR213 är integrerade med samma navigation och direkta
 transportimporter; senaste integrationshook passerade138/138 och frontendtyper.
-Main inklusive PR216 är integrerad normalt. CI och driftkvitto återstår.
+Main inklusive PR214/216 är integrerad normalt, utan ändrad kod i slutintegrationen. CI och driftkvitto för C2g återstår.
 Inga nya tester eller provider-/SQL-/medieändringar ingår i katalogsteget.
 ## C2f Render-paketering — rättning före PR214-merge
 
@@ -1042,9 +1042,15 @@ av exakta PR-huvuden och main-innehåll. PR189:s avslutade worktree
 `simplify-test-policy` togs bort med återställningsbar Codex-snapshot.
 STÄD-CL:s och lipsyncs arbetsytor bevarades.
 
-C2h leveransförberedelse: senaste C2g `c53b27b7` integreras normalt i
-`a515539f`. Två konflikter förenar C2h-kvittot med aktuell C2g-status och
-flyttar routingens importdjup till dess kanoniska paket. Routingkroppen,
-C2h:s register-/Blob-adaptrar och PR213:s talbeteende bevaras. Färsk main
-är `05cbc22de9c6637cb9ea642c6f697a093dae42af`; lokal merge/ordinarie hook
-återstår före leverans. Inget nytt bygge eller driftkvitto ingår här.
+C2h leveransförberedelse: C2g `c53b27b7` integrerades normalt i
+`a515539f` som `cd30e022`. Två rutinkonflikter förenade handoffen och
+routingens nya importdjup. 21 kärn-/adapter-/routingfiler är identiska med
+sina granskade heads; PR213:s nio produktfiler är oförändrade mot C2h-basen,
+inklusive C2h:s appägda Blob-import. Ordinarie hook gav 317 pass, 0 fail
+och ett befintligt browser-opt-in; frontendtypkontrollen passerade.
+
+Slutg `ec16b705899ec880eb3dd571361f517be4ef10c1` tas därefter in med
+normal merge och enbart dokumentdiff. Den inkluderar main
+`05cbc22de9c6637cb9ea642c6f697a093dae42af` (PR214/PR213). Inga lås,
+beroendeinstallationer, junctionmål eller produktbeteenden ändrades här.
+Inget nytt fullbygge, push, PR eller driftkvitto ingår i denna förberedelse.
