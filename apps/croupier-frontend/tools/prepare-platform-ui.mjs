@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from './player-ui-build.mjs';
-import { platformConfiguration } from '../lib/platform-routing.mjs';
+import { platformConfiguration } from '../../../packages/navigation/server/platform-routing.mjs';
 
 const app = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repo = resolve(app, '../..');

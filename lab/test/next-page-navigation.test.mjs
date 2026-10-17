@@ -519,7 +519,7 @@ test('actual Admin middleware preserves document access with Node transport befo
   const {tmpdir} = await import('node:os');
   const {join} = await import('node:path');
   const {NextRequest} = require('next/server.js');
-  const routing = await import('../../apps/croupier-frontend/lib/platform-routing.mjs');
+  const routing = await import('../../packages/navigation/server/platform-routing.mjs');
   const preview = await import('../lib/design-preview.mjs');
   const nativeRuntime = await import('../lib/studio-native-runtime.mjs');
   const {createStudioNativeAuth} = await import('../../packages/studio-access/studio-native-auth.mjs');
@@ -529,7 +529,7 @@ test('actual Admin middleware preserves document access with Node transport befo
   const platform = {publicOrigin, labUiOrigin: publicOrigin, backendOrigin:'https://engine.fixture.invalid',
     unifiedUi:true, nativeStudio:true};
   const middleware = load('../middleware.ts', {
-    '../apps/croupier-frontend/lib/platform-routing.mjs': {...routing, platformConfiguration:()=>platform},
+    '../packages/navigation/server/platform-routing.mjs': {...routing, platformConfiguration:()=>platform},
   }, {CROUPIER_VERCEL_UNIFIED_UI:'1'}).middleware;
   const runtime = {...nativeRuntime, nativeStudioAdminEnabled:()=>true, nativeStudioAdminConfiguration:()=>f.config,
     studioNativeRuntime:async()=>({authorize:createStudioNativeAuth({boDb:f.auth.boDb,scope:f.config.scope,now:f.config.now})})};
@@ -601,12 +601,12 @@ test('retired Control URLs use the central Admin destination with room and mater
 });
 
 test('actual middleware centralizes exact legacy documents without changing native routing or write requests',()=>{
-  const platform=require('../../apps/croupier-frontend/lib/platform-routing.mjs');
+  const platform=require('../../packages/navigation/server/platform-routing.mjs');
   const headers={host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'};
   for(const basePath of ['','/studio']) for(const unified of [false,true]) {
     const config={publicOrigin:'https://game.fixture.invalid',labUiOrigin:'https://game.fixture.invalid',backendOrigin:'https://engine.fixture.invalid',unifiedUi:unified,nativeStudio:unified};
     const {middleware}=load('../middleware.ts',{
-      '../apps/croupier-frontend/lib/platform-routing.mjs':{...platform,platformConfiguration:()=>config},
+      '../packages/navigation/server/platform-routing.mjs':{...platform,platformConfiguration:()=>config},
     },{CROUPIER_LAB_BASE_PATH:basePath,CROUPIER_VERCEL_UNIFIED_UI:unified?'1':'0'});
     const request=(path,options={})=>new Request('https://game.fixture.invalid'+basePath+path,{headers,...options});
     if(unified && basePath==='/studio') {
