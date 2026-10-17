@@ -481,9 +481,8 @@ spelbolagsanställd; sådana konton ska vara organisationsavgränsade på nivå 
 
 Aktuell driftversion, QA-bevis och återstående begränsningar finns i
 [driftkartan](../../docs/CLOUD-MIGRATION.md).
-Den nya [systemkartan](../../docs/system-map/index.html) visar tjänster, sidor,
-databas/lagring, spel-/talflöden, nyckelnamn och befintliga tester. Den är en
-fristående HTML-fil; kodinventering och tidigare driftbevis anges separat.
+Tjänsteansvar och datakällor beskrivs i driftkartan; tekniska format och
+uppspelning finns i [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 OpenClaw-sidan finns på `/admin/ai/models` och visar agenternas modellval.
 Sparning går genom labbets behörighetskontroll till OpenClaw på Render.
 Gatewayens separata dashboard finns kvar för avancerad konfiguration och pairing.

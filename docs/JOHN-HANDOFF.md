@@ -62,6 +62,54 @@ Den nya publiceringsprojektionen utelämnar endast inspelningar med status
 `pending` ur nya frysta spelpaket och behåller utkast, register och
 revisionskontroller. Originalfilmer och medie-ID:n bevaras även vid omdöpning.
 
+## Verktygsrensning, etapp 1 — 17 oktober 2026
+
+HUVUDAGENT2 arbetar på `codex/retire-obsolete-tools` från main
+`9f8a3afffba3e3c39268bf5665585b48a4f67361`, i separat arbetskopia
+`repo-cleanup-tools/croupier`. Huvudcheckoutens lokala ändringar bevaras.
+
+Den pensionerade genererade systemkartan, dess egna verktyg/tester och den
+oanropade branchspecifika previewbyggaren är borttagna. Gamla BO-browserprovet
+krävde ersatta uppladdnings-/iframevyer och är också avvecklat. Dess undantag
+och dokumentlänkar är rensade. Aktivt previewmaterial och Studios hashverifierade
+förberedare behålls. Endpointtestet kontrollerar fortfarande fullständig
+actiontäckning, unika adresser och behörigheter utan ett fast antalskrav.
+
+`cloud-admin-bootstrap` behålls: servern har fortfarande beteendena som testet
+skyddar. SQL-/omstarts-/HTTPS-provet, raderingsgrinden och produktregressionerna
+är kvar. Ingen rutt, databas, mediafil eller produktionsresurs ändras här.
+Lipsyncs aktuella `codex/dragan-openclaw-cloud` och dess SQL-/tal-/workerarbete
+är avstämt; enda gemensamma kodfilen är testlistan, där bara previewtestets
+token tas bort. Nedanstående daterade receipts lämnas kvar som historik.
+
+Verifiering: riktade befintliga hook-/CI-, preview-, raderings- och Adminprov:
+63 pass, 5 POSIX-skip på Windows. Två initiala previewfel berodde på att den
+nya arbetskopian saknade Next; de passerade efter verifierat identiska
+package-/låsfiler och återbruk av befintliga beroenden. Orphan-kontrollen
+läser 429 testfiler: 0 orphans, 1 kvarvarande undantag. Strikt raderingsgrind
+mot indexet: 16 borttagna filer, 0 importer och 0 registerberoenden. Dess enda
+textträff var kartans gamla hashundantag; det är därefter borttaget medan
+GitGuardian v2-konfigurationen behålls med tom undantagslista.
+
+En sista konsumentkontroll fann en oanvänd lokal testprofil med en enda läsare
+i manifesttestet. Profilen och dess profilassertioner är borttagna; manifestets
+exakta identiteter, determinism och aktiva idlepolicy behålls. Manifestproven
+passerade 8/8. Etappen tar därmed bort 17 filer; sammanlagt 71 riktade prov
+passerade med 5 POSIX-skip. Inga runtimeprofiler eller medie-ID:n ändras.
+
+Ordinarie commit-hook passerade 37/37 tester. Slutlig raderingsgrind på
+f11177e0 gav även 0 kvarvarande textreferenser. GPT-auto läste main 9f8a3aff
+via GitHub och tillstyrkte avgränsningen; det var en riktningskontroll, inte
+en granskning av lokal diff. Dess följdfynd är hanterade: CI-sammanfattningens
+gamla karttext är borta och svit-/timeoutguiden finns i lab/README.
+Det pensionerade browserprovets hela bildrute-/återanslutningsmatris påstås
+inte ersatt; endast det aktiva Admin-utkastprovets egen omfattning anges.
+
+Ingen full lokal byggning eller ny spel-/läppsynksacceptans har körts här;
+full produkt-CI följer PR:n. Säkerhetsläsningen på main 9f8a3aff visar aktiv
+övervakning men incident 38318914 och 38318915 fortfarande öppna, partiell
+platsmetadata och historikskanning too_large. Incidenterna ändras inte här.
+
 ## Systemytor och bolagsjournal — 17 oktober 2026
 
 Leverans på `codex/admin-system`, baserad på `f5f8414628e39fee4cbf703054c0ee57d2b48157`.
