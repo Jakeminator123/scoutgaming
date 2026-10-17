@@ -91,190 +91,113 @@ merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
 Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
 läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
-## Dragan: OpenClaw till gemensam spelare — 17 oktober 2026
+## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 15:05 UTC
 
-PR199 är mergad på `8b60984844075b344e6cc33147956b0f31b0d691`.
-Mergeagentens kvitto anger grön main-CI, Vercel READY och Render LIVE på
-samma SHA; Render-versionen kontrollerades även av talagenten. Migration013
-tillämpades och återlästes 12:46 UTC i `croupier_game`, branch
-`br-flat-fog-b161a6r8`, scope `production/croupier`. Tidigare versionskrav
-och originaldata ändrades inte.
+**Läget:** kod, image, bank och separat testrum är levererade. Dynamisk
+OpenClaw-text fungerar. Första molnprovet med tal nådde RunPods kö men ingen
+worker startade före tidsgränsen; tal och läppsynk i spelet är därför inte
+verifierade. Draganprofilen är avstängd och sparad efter provet. Inga egna
+GPU-resurser eller jobb är kvar. Astrid och originalfilmerna är orörda.
 
-Det separata bolaget `dragan-test` har nu publicerat paketversion 1 och rummet
-`room-8bd056a2-d5c5-a622-2766-faf75dbbcfa2` (Dragan · dynamiskt taltest).
-Spelvyn visar Dragan, Lounge-varm och Oak. Ett riktigt textmeddelande i
-bordschatten gav ett nytt OpenClaw-svar på svenska. Spelet visade samtidigt
-att Dragans röstvideo saknas: dynamisk text är verifierad, röst/läppsynk i
-molnspelet är ännu inte verifierad. Inga gamla bolag återöppnades, inga
-insatser lades av agenten och ingen användarplånbok ändrades för provet.
+PR203 är mergad på `9e533e7b525b6fa894f638d3d8ba6a382e230c47`.
+Mergeagentens separata kvitto före provet: main-CI `39042108316` SUCCESS,
+Vercel `dpl_4YFX4cQsArTum6is99Q7jjc8TZNo` READY med rätt produktions-ID och
+Render `dep-db9omlp42hec73cthoh0` LIVE med exakt version och hälsa 200.
+Det kvittot gäller provets version, inte senare driftsättningar.
+Migration013 är installerad och återläst i `croupier_game`, Neon-branch
+`br-flat-fog-b161a6r8`, scope `production/croupier`; PR201 gör den obligatorisk.
+PR199 rättade frontendens beroendegräns och PR204 den gamla auth-fixturen.
+PR195/196 är historiska leveranssteg, inte kvarvarande aktiveringsuppgifter.
 
-Testrummets paketversion 2 publicerades därefter via Admin: endast den egna
-mallens Desktop/Bord lodrätt ändrades från 35 till 31 procent. Mallen har ett
-enda kopplat rum. Vid 1280×720 överlappade tre insatsytor nederpanelen;
-efter publicering och omladdning är varningen borta. Bredd, kortankare och
-mobilvärden behölls. Det är en layoutkontroll utan spel eller läppsynksprov.
+### Vad som finns och vad som faktiskt provades
 
-Den publicerade workern är låst till image-digest
-`56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
-Fem separata RunPod-skapandeförsök stängdes och verifierades borttagna utan
-taljobb. REST-skapande med max0 gav max3; GraphQL-skapande gav däremot rätt
-max0. API:ets utelämnade tomma workerlista och förkortade templatesvar
-behöver styrkas med separata färska läsningar. Försöken är inte en fungerande
-driftkonfiguration. Kostnadsunderlaget behåller reserver för fördröjd
-fakturering. Den 17 oktober 13:18 UTC var känd kostnad 0,169812463 USD,
-reserver 3,11 USD och återstående bevakat försök högst 480 sekunder plus
-120 sekunders stoppmarginal vid konservativa 10 USD/timme. Totalen är
-4,94647913 USD; ett nytt försök kräver en ny avstämning av samma journaler.
-Ett sjätte försök verifierade 13:20 UTC endpoint `h56jnnyo5aq4om` med max0,
-noll workers och exakt image. Jakob godkände den nya begränsade runtime-
-nyckeln; den skapades och sparades i en ny gitignorerad lokal fil. Läsprov
-13:25 UTC gav 200 för endpoint, full template och health med noll workers.
-Nyckeln får endast skicka jobb till denna endpoint. De åtta nya Render-
-variablerna är sparade med **Save only** och återlästa med exakt värde;
-inga befintliga nycklar redigerades. PR201 har head
-`84050e6317004750c20b76cff1deb599f89da1ce`, mergad enligt mergeagentens
-kvitto på `67ddb82a40db3c4347dd51734227afc8af531527`. Samma agents efterföljande
-kvitto bekräftar grön main-CI, Vercel READY och Render LIVE med exakt denna SHA.
-PR202 är sedan mergad på `f16b5eac5838d424c5e9fafe804f5024a809af62` och
-konfliktfritt integrerad i rörelsefortsättningen PR203. Dess deploy och PR203:s
-egen granskning/deploy ska bli klara före det bevakade GPU-provet.
-CI:s kvarvarande bundled-schema-assertion är rättad i en separat commit;
-dess 13 fokuserade prov passerade. Efter kontobytet verifierades 13:50 UTC
-samma endpoint, template och image, max0 och noll workers. Render visar
-`CROUPIER_DEALER_SPEECH_PROFILES=1`; inga befintliga värden ändrades.
-Draganprofilen och GPU:n är fortfarande avstängda. Verkligt end-to-end-prov
-återstår inom samma 5 USD.
+Bolaget `dragan-test` saknar medlemskonton. Dess rum
+`room-8bd056a2-d5c5-a622-2766-faf75dbbcfa2` (Dragan · dynamiskt taltest)
+har publicerat paketversion 2 med Dragan, Lounge-varm och Oak. Endast den
+egna sammansättningen `dragan-separat-taltest-413cea16-014d-4625-a613-4c6eeb5f693c`
+ändrades: Desktop/Bord lodrätt 35 → 31 procent. Vid 1280×720 försvann varningen
+om insatsytor under nederpanelen; kortankare och mobilvärden bevarades.
+Inga gamla operatörer öppnades och agenten lade inga insatser.
 
-Den första fortsättnings-PR:n gör 013 obligatorisk och verifierar RunPods
-fullständiga template separat från dess förkortade embedded-svar. Saknad
-workerlista godtas endast efter ett färskt tomt pods-svar för exakt endpoint.
-Explicit konflikt eller okänt svar stoppar före jobb. 74 schema-/importprov
-och 45 RunPod-/transportprov är gröna enligt underagentens körningar; den
-privata provisionerns 45 prov är separata från produktens molnacceptans.
-Ordinarie commitkontroll passerade 84 fokuserade prov.
+Ett tidigare riktigt bordschattmeddelande gav ett nytt svenskt OpenClaw-svar.
+Talprovet den 17 oktober använde ny dynamisk text: ”Hej Dragan! Ge Jakob en
+mycket kort hälsning på svenska och kalla honom kung.” Request
+`3877f372-4582-47e5-8e1d-14f4bde5cd14` gick vidare till taladmission och
+RunPod-jobb `97d77da3-d726-4358-b838-35c2e17ac9fd-e2`. Provider visade ett
+köat jobb och noll workers. Spelaren avslutade med timeout efter 159 166 ms;
+inga ljud-/läppsynksrutor spelades upp. Neon bekräftar providerstatus
+`CANCELLED` och frisläppt GPU-session 14:58:23 UTC. En journalpost märkt
+`completed` för förberedelsen är inte ett kvitto på slutförd uppspelning.
 
-PR191 är mergad på `f5f8414628e39fee4cbf703054c0ee57d2b48157`.
-Mergeagentens separata kvitto bekräftar grön main-CI och samma commit på
-Vercel och Render. Fortsättningen på `codex/dragan-openclaw-cloud` ersätter
-[PR195](https://github.com/Jakeminator123/scoutgaming/pull/195) med en samlad
-commit utan de syntetiska testadresserna i dess historik. Ingen force-push,
-ändrad skanner eller ändrad incidentstatus används. PR194 är separat levererad på `9f8a3aff`;
-Admin-agentens kvitto anger samma SHA i grön main-CI, Vercel och Render.
+Guarden körde 14:54:42–15:02:42 UTC och stängde sina resurser. Separat
+läsning 15:05:14 UTC gav endpoint `h56jnnyo5aq4om` 404, template `uv042mlkik`
+404 och tom workerlista. Astrids endpoint `zsudl8tmzcmiv1` gav 200,
+min0/max1 och samma template `cadh7uwzv6`. Senaste testendpointens redovisade
+avgift var då 0 USD; fördröjd fakturering är möjlig och reserver behålls.
+De sparade runtime-inställningarna pekar nu på den borttagna testendpointen.
+Återaktivera inte bara profilen: nästa försök behöver en ny verifierad
+endpoint/template och motsvarande begränsade runtime-bindning.
 
-Den nya, uttryckligen avstängda talvägen binder OpenClaws exakta text till
-Dragan-profilen, publicerat media, en verifierad avatarbank och ett enda
-RunPod-jobb. Migration013 tillför bestående mediereferenser och ett totalt
-testtak. TTS får starta först efter accepterat jobb och verifierad worker.
-Privata bankfiler hämtas med kortlivade exakta behörigheter till workerns
-tillfälliga cache. Originalfilmer och Astrids endpoint ändras inte.
+### Gemensam talväg och verifieringens gräns
 
-Spelaradaptern använder vilans uttryckliga källruta mellan kortsekvenser;
-ljudklockan och verifierade ansiktsrutor följer samma plan. Kredit och
-chunk-kvittens begränsar buffertar hela vägen till workern. Den separata
-fortsättningen på `codex/dragan-deal-speech` lägger till **Svara under nästa utdelning**:
-en färsk serverbestämd öppning
-reserveras en gång, och exakt kroppsruta, ansiktsruta och kortkontakt följer
-ljudklockan. Vanlig chatt behåller vilovägen. Kodprov och verklig molnacceptans
-redovisas separat; funktionen är ännu inte verifierad med Dragan i spelet.
+OpenClaws exakta svar → registrerad röst → verifierad worker → bildrutebunden
+ansiktskomposition i den gemensamma spelaren. TTS startar först efter antaget
+GPU-jobb och workerintyg. Neon fryser källreferenser och reserverar budget;
+privat Blob levererar hashbunden avatarbank via kortlivade behörigheter.
+Originalen skrivs inte om. Förinspelade repliker behåller eget ljud/video.
 
-Underagentens fokuserade verifiering passerade 123 prov utan skips, inklusive
-riktig Chrome med fyra syntetiska källfilmer över 183 rutor, kort ljud/tyst
-avslut, avbrott, HTTP/WebSocket, filmsekvenser och Astrids befintliga spelare.
-Oberoende review hittade och verifierade rättningar för glesa spelarplatser
-(bara box 3) och avstängt ljud vid reservation. Provet med originalens
-1080p-filmer stannade först vid bildruta 13 före ljudstart: avkodarens
-ytor hölls kvar i VideoFrame-bufferten. Rättningen läser exakta AVC/MP4-
-samples med WebCodecs och kopierar avkodade ytor till en buffert på högst
-24 rutor. Underagentens 27 fokuserade prov inklusive två Chrome-fixturer
-passerar. Originalkedjans 183 samplepositioner, storlekar, tidsstämplar och
-keyframe-flaggor matchar oberoende ffprobe. Prefetch tog 386 ms; inga
-buffertunderskott uppstod. RAF visade 180 distinkta rutor, slutruta 182 och
-högst två rutors hopp. Detta verifierar avkodning och källa, inte att varje
-ruta visats eller att läppsynken är visuellt/hörbart accepterad.
+PR203 levererar **Svara under nästa utdelning**. En ny serverbestämd öppning
+reserveras en gång; kropp, ansikte och kortkontakt följer ljudklockan.
+Ändrad revision avbryter även en tyst worker. Vilobilden avkodas som exakt
+MP4-källruta. Använda komprimerade filmer förladdas inom 96 MiB och högst
+24 kroppsrutor avkodas samtidigt. Teknisk beskrivning och formatgränser finns
+i [runtimeguiden](LOCAL-PRESENTATION-RUNTIME.md).
 
-PR203:s slutreview reproducerade två fel: en ogiltigförklarad reservation
-kunde passera under en väntande kontextläsning, och nästa MP4 kunde hämtas
-för sent. Sista synkrona kontrollen efter alla läsningar samt aktivt avbrott
-vid ny spelversion stoppar även en worker som hänger mellan chunks. Alla
-använda komprimerade filmer hämtas och hashverifieras före ljudstart inom
-96 MiB; avkodningen behåller högst 24 rutor. Underagentens fördröjda
-originalprov (700 ms) gav 849 ms startbuffring, noll underskott och alla
-183 källindex avkodade; RAF visade 182 distinkta index. Det är inte ett
-tal-/läppsynksgodkännande. Spelarens verkliga startkvitto använder nu det
-befintliga diagnoskontraktet efter lyckad `audio.play`; `reviewStatus` är
-fortsatt `pending`. PR204:s testfix är integrerad från `502bea81`.
+Slutleveransens egna commitkontroller passerade 93 respektive 15 fokuserade
+prov. Mergeagentens oberoende slutkörning passerade 67 utan skips, inklusive
+riktig Chrome. Underagentens fördröjda originalprov avkodade alla 183 källindex
+utan buffertunderskott. Dessa resultat verifierar kod och avkodning, inte
+hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga rummet.
 
-OpenClaws intermittenta CI-fixtur är reproducerad: katalog-I/O kan lagligt
-förbruka hela dess 10 ms-budget före första provideranrop. Provets egen
-klocka är nu kontrollerad så att det faktiskt testar en långsam provider;
-produktionskod och tidsgräns ändras inte. Färdiga lokala prov ersätter inte
-PR203:s CI-, merge-, drift- och GPU-kvitton.
+### Återstående arbete och skydd vid fortsättning
 
-Mergeagentens oberoende Chrome-körning hittade därefter ett sporadiskt fel
-i vilobildens HTML-videoavläsning. Fördröjd callback (180 ms) kunde både
-missa vald ruta och kopiera senare pixlar trots metadata för rätt ruta.
-Viloladdaren återanvänder nu den exakta MP4/WebCodecs-avkodaren med en enda
-vald bildruta och fristående canvas. Ett särskiljande färgprov för ruta 7
-respektive 8 och båda Chrome-fixturerna passerar enligt underagentens 33 prov.
-Formatgränserna är desamma som för kroppen; ingen tidsmässig tolerans införs.
+1. Följdfixen låter produktadaptern verifiera en aktiv fallback-pod när REST
+   utelämnar `workers`: exakt endpoint, template, image och versionsnummer
+   krävs från den färska pods-läsningen. Okända/felaktiga uppgifter stoppar
+   fortfarande före jobb. Samma privata guardfel rättas separat. Det är en
+   förebyggande rättning; den förklarar inte provets observerade noll workers.
+   Följdfixen måste granskas och driftsättas före nästa GPU-fönster.
+2. Katalogen `include=AVAILABILITY&product=SERVERLESS` visade 15:12 UTC
+   A6000 `NONE`, A40 `HIGH` i bland annat `EU-SE-1`, med CUDA12.8 tillgänglig.
+   Det stöder kapacitetsförklaringen men bevisar inte tidigare schedulerförlopp
+   eller lyckad GHCR-pull. Förbered båda korten i samma 48GB-pool med oförändrad
+   modell, image och bank. Läs faktisk worker-/pullstatus vid nästa försök.
+3. Stäm av samtliga sex endpointförsök och det tidigare dedikerade GPU-provet
+   mot samma totalt godkända **5 USD**. Tidigare känt spendgolv är
+   0,169812463 USD; de fem äldre försöken har kvar 3,11 USD reserv. Senaste
+   aktiveringens verifierade max1-period reserverar ytterligare 0,27 USD,
+   inklusive disk och stoppmarginal. Läsning 15:11 UTC gav sammanlagt
+   3,549812463 USD debiterat plus reserverat. Ett nytt bevakat sexminutersprov
+   med två minuters stoppmarginal ryms då inom 4,883145796 USD. Detta är ett
+   daterat planeringskvitto; uppdatera hela underlaget inom fem minuter före
+   användning. Neon-reservationer är inte fakturor och ger ingen extra budget.
+4. Verifiera ny OpenClaw-replik i vila, sedan tal under serverbestämd utdelning.
+   Agenten får inte placera insatser på användarkontot; Jakob startar själv
+   eventuell riktig runda. Jakob valde efter det första molnprovet att köra
+   endast vila nu och ta utdelningsprovet senare. Mergagenten samordnar
+   merge/deploy och GPU-fönster.
+5. Applicera granskad namngivning/import separat. Gamla medienamn finns kvar
+   eftersom namnplanen fortfarande är skrivfri. Kevins källnamn bevaras som
+   proveniens; funktion, start-/slutpose, språk, variant och exakta UUID/hashar
+   styr kopplingen. Namnbyte kräver inte nya filmbytes eller nya identiteter.
+   Följ [Blob/Neon-guiden](storage/BLOB-NEON.md); radera inga skyddade original.
 
-Klippbibliotekets namnnormalisering är inte applicerad. Den skrivfria
-importplanen och namnförslaget bevarar tidigare UUID/hashar, original och
-visningsnamn. `docs/storage/BLOB-NEON.md` beskriver granskning och återstående
-applicering. Kevins källnamn är proveniens; runtime väljer verifierad funktion,
-pose, språk och exakta referenser. Gamla namn i Admin är därför inte bevis
-på att gamla filer ersatts eller att hela Kevin-banken importerats.
-
-Migration013 görs obligatorisk i samma fortsättning, eftersom dess
-produktionsinstallation nu är verifierad. Saknad 013 ska blockera readiness,
-serverstart och import; framtida uttryckligen valfria versioner stöds fortsatt.
-
-Fokuserade kontroller omfattar riktiga HTTP/WebSocket-förlopp och Chrome/
-WebCodecs med syntetiska medier, återkallad ägare/profil/publicering,
-engångsbiljetter, kostnadsgräns, avbrott och workerprotokoll. Dessa är inte
-visuell acceptans av Dragan. Isolerad PostgreSQL/HTTPS är verifierad lokalt
-med riktig temporär databas, omstart, autentisering, CAS och taljournaler.
-Runtime-konfiguration och ett verkligt OpenClaw/GPU/spelarprov återstår före
-talaktivering. Första tidigare GPU-provet är fakturerat till 0,169812463 USD;
-taljournalens egna tak är 4,80 USD, men ger inte ytterligare budget utöver
-Jakobs sammanlagda 5 USD inklusive tidigare prov och infrastrukturreserver.
-Jakob har valt ett separat Dragan-testrum. Bolaget `dragan-test` har skapats
-genom N1 den 17 oktober, utan medlemskonton. Dess egna sammansättning
-`dragan-separat-taltest-413cea16-014d-4625-a613-4c6eeb5f693c` är sparat genom
-Admin och återläst i Neon: endast Dragan, Lounge-varm-video och Oak-bord,
-med referenspaketets mobil-/desktopgeometri och 22 kort-/cirkelpunkter.
-Rummet är publicerat enligt kvittot ovan; pausade operatörer ska inte öppnas. Den separata avatarbanken är
-uppladdad i privat Blob och dess tre filer fullständigt hashverifierade.
-Detta är beredningsunderlag, inte ett godkänt moln- eller läppsynksprov.
-
-PR196 ersätter PR195. CI hittade testväntan, miljöregister och äldre
-versionslistor som inte accepterade uttryckligen valfria migrationer.
-Render och native-runtime använder nu samma verifierade migrationsplan;
-krav på obligatoriska versioner och kontrollsummor kvarstår. 53 fokustester
-och hela isolerade SQL/HTTPS-körningen passerade på Node24.21.0 den 17 oktober.
-Det intermittenta låstestet återgavs därefter på PostgreSQL16.15 och rättades
-att läsa exakt väntande lås i stället för transaktionens frysta aktivitetssnapshot.
-Full SQL/HTTPS passerar även med avsiktligt föråldrad aktivitetssnapshot;
-låsordning och avvisning efter väntande medieborttagning kontrolleras fortsatt.
-PR196:s fulla CI, imagekontroll och GitGuardian passerade på `df532b51`;
-PR196 mergades till `9a644e73`. Vercels produktionsbygge stoppade därefter:
-ett frontendtest importerade backendworkerns `ws`-beroende, som frontendens
-separata installation saknar. Callback-testet har flyttats oförändrat till
-rotens registrerade integrationssvit. Fyra frontendtester och hela callback-
-testet passerar. En isolerad kopia med enbart frontendens beroenden återger
-felet före flytten och passerar efter den; runtime och dependencies ändras inte.
-PR199 löste frontendens beroendegräns; drifts- och migrationskvittot står ovan.
-Workern väntar nu högst 60 sekunder på start efter verifierad bind, så att
-TTS (30 sekunder) och spelarens anslutning (15 sekunder) ryms. Övriga
-idle-/kvittensgränser på 15 sekunder och jobbets totalgräns på 180 sekunder
-är oförändrade. 49 CPU-tester passerar; den nya förseglade releasen är
-`57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8`.
-Två GitGuardian-fynd på det tidigare
-huvudet avsåg syntetiska PostgreSQL-testadresser. Fixturen skapar nu ett
-tillfälligt lösenord; ingen befintlig nyckel eller incidentstatus ändras.
-Den nya publiceringsprojektionen utelämnar endast inspelningar med status
-`pending` ur nya frysta spelpaket och behåller utkast, register och
-revisionskontroller. Originalfilmer och medie-ID:n bevaras även vid omdöpning.
+Privata körkvitton och återstartscheckpoint ligger i den befintliga
+visualiseringsmappen för denna chatt, utanför Git. De innehåller resurs-ID,
+tider och resultat, aldrig nyckelvärden. Arbetskopian är
+`C:/Users/jakem/.codex/worktrees/dragan-lipsync-registry-3518/croupier`;
+bevara det ursprungliga repots smutsiga filer. Kontrollera branch/HEAD och
+aktuell drift före fortsättning. Återanvänd inte en stängd provisioneringsjournal.
 
 ## Browserprovets täckning — dokumentationsrättning 17 oktober 2026
 
