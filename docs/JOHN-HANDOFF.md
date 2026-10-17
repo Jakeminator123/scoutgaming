@@ -8,6 +8,15 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 
 ## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
 
+PR202 är mergad på `f16b5eac5838d424c5e9fafe804f5024a809af62` med grön
+main-CI. Vercels bygge hittade därefter en gammal authtransportfixture:
+`/studio/activity` är nu en avsiktlig redirect och lämnar inte passthrough-
+headers. Felet reproduceras med produktionens `CROUPIER_LAB_BASE_PATH=/studio`.
+Fixturen sätter nu denna basväg explicit, provar transport på en aktiv Admin-
+sida och följer den gamla länken genom båda omdirigeringarna till den aktiva
+sidan med bibehållen cookie och filtrerad förtroendeheader. Produktkod och
+behörighetsskydd ändras inte. Ny CI/deploy måste verifieras före driftkvittot.
+
 De 22 spårade filerna i `pipeline/` har flyttats till `tools/media/`, med
 uppdaterade importer, standardrötter, kommandon och testupptäckt. Manuella
 macOS-/Pythonrecept, binär, ljudreferens och mätvärden bevaras; inga mediefiler
