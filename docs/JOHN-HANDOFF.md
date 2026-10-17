@@ -7,6 +7,49 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2h: register- och medieläsare — lokal ändring 17 oktober 2026
+
+`packages/studio-registry/server/` äger nu den sammanhängande registerkärnan,
+aktuella och frysta katalogläsare, media-/lagringskontrakt, manifest, layout och
+teknisk Blob-läsning/skrivning. Factoryerna får explicita roots, URL-formatterare,
+provider och lokala läsarportar. Den transitiva paketgrafen har 25 moduler utan
+appinterna importer, SDK-/låsbibliotek eller cykler. Molnläsaren kompletterar
+aldrig fångade snapshots med aktuella databasrader eller lokala register.
+
+Lab och spelappen äger sina lazy Blob-provideradaptrar, båda med befintlig
+version 2.8.0; spelappens beroende är nu uttryckligt och låst. Samma kanoniska
+cacheMaps och samma cachekatalog/nycklar används. Scope, revisioner, metadata,
+exakta hashvärden, öppna filbeskrivare, GET/HEAD/Range/ETag och providerfelens
+redigerade diagnostik bevaras. Inga publika servermodul-URL:er läggs till.
+
+Lokala upload-/classification-skrivare, lås och auktorisering stannar appägda.
+Deras läsdelar är separata; alpha-inspektionen får en explicit medialäsare och
+registret importerar inte tillbaka skrivaren. Studio-dokumentvalidering har
+obligatoriska namngivna policyportar och en appkomposition med samma regler.
+Fem ersatta källmoduler och en deklaration tas bort utan gamla reexportfiler.
+Konsumenter, typer, isolerade källkopior, QA-källistan och HEAD-arkivet följer
+de kanoniska källorna; historiska HEAD-arkiv behåller sina befintliga vägar.
+
+Verifierat med befintliga Blob-, current/captured registry-, upload-, manifest-,
+repository-, server-/fixture-, layout- och negativa medieprov. Riktade omprov
+69/69, integration 79/79, HEAD-/adapterprov 29/29 och slutliga negativa
+konsumentprov 20/20 är gröna (delvis överlappande). Lab typecheck passerar.
+Inga nya testfiler, fulla byggen, moln-/SQL-/mediedataändringar eller pushar.
+Första kärnkörningen hittade två flyttfel i gränskonstant och testurval; båda
+är rättade och relevanta befintliga prov är omkörda. Slutdiffen återställde
+även fyra oavsiktligt ändrade konsumentliteraler före de negativa omproven.
+
+Kvar för huvudagentens integration: C2e:s 16-raders repositorykomposition ska
+behållas; bara dess runtime-catalog/stored-media-types-importer flyttas här.
+Bevara PR211:s HEAD-/DirectorDocker-rättningar och C2g:s navigationsändringar
+i gemensamma käll-/QA-listor. Auth, appägd publicerings-/bindingsorkestrering,
+Director, transaktioner, schema och produktionsgodkännanden ingår inte.
+
+Säkerhetsläsning på remote main 193e80066fce8d5cd8e889dc41d5aac029deb32f:
+två tidigare öppna GitGuardian-incidenter 38318914/38318915, partiell
+platsmetadata och historisk scan too_large; aktuell GitGuardian-suite queued.
+Detta är inte ett nytt säkerhetsklartecken eller en driftverifiering.
+
 ## Etapp 3 C2c: gemensamma presentationskontrakt — lokal ändring 17 oktober 2026
 
 `packages/presentation/contracts/` äger projektmodell, video-/rouletteregler,

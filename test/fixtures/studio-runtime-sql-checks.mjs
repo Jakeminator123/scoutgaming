@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
 import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
 import {createSpeechReplyLibrary,speechReplyScopeHash} from '../../web/speech-reply-library.mjs';
-import {runtimeCatalogJson,runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
+import {runtimeCatalogJson,runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import {mediaBlobPath} from '../../lab/lib/cloud-media-store.mjs';
 import {addDealer,createEmptyProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {readRuntimeCatalogFixture} from './runtime-media-catalog.mjs';

@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {validateRuntimeMediaCatalog} from '../../web/storage/runtime-media-catalog.mjs';
+import {validateRuntimeMediaCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 
 export function readRuntimeCatalogFixture(root=fileURLToPath(new URL('../../',import.meta.url))) {
   const read=path=>JSON.parse(readFileSync(join(root,path),'utf8'));

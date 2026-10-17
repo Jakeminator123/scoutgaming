@@ -1,8 +1,8 @@
 import {createHash} from 'node:crypto';
-import {cloneStudioJson, StudioStorageError} from './studio-contract.mjs';
-import {validateMediaLayout} from '../../tools/media-layout.mjs';
-import {validateLabVideoManifest} from '../../lab/lib/lab-video-manifest.mjs';
-import {validatePrivateMedia} from '../../lab/lib/cloud-media-store.mjs';
+import {cloneStudioJson, StudioStorageError} from './storage-contract.mjs';
+import {validateMediaLayout} from './media-layout.mjs';
+import {validateLabVideoManifest} from './video-manifest.mjs';
+import {validatePrivateMedia} from './private-media-contract.mjs';
 
 const limits={maxBytes:16*1024*1024,maxNodes:200000,maxDepth:32};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -52,4 +52,17 @@ export function validateRuntimeCatalogRecord(row){
   const value=validateRuntimeMediaCatalog(row.value);
   if(runtimeCatalogRevision(value)!==row.revision)fail();
   return {revision:row.revision,value};
+}
+
+/** The repository validates the imported catalog. Detach each operation's source. */
+export function capturedRuntimeCatalog(snapshot) {
+  if (!snapshot || !/^[a-f0-9]{64}$/.test(snapshot.revision??'')
+    || snapshot.value?.schemaVersion!==1 || !snapshot.value.layout || !snapshot.value.blobIndex || !snapshot.value.presentation || !snapshot.value.legacy) {
+    throw Object.assign(Error('studio_runtime_catalog_unavailable'),{code:'studio_runtime_catalog_unavailable',statusCode:503});
+  }
+  return structuredClone(snapshot.value);
+}
+export async function readRuntimeCatalog(repository) {
+  if(typeof repository?.readRuntimeCatalog!=='function')throw Object.assign(Error('studio_runtime_catalog_unavailable'),{code:'studio_runtime_catalog_unavailable',statusCode:503});
+  return capturedRuntimeCatalog(await repository.readRuntimeCatalog());
 }

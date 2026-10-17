@@ -1,32 +1,11 @@
+import {readLocalAlphaMedia} from './video-alpha-reader.mjs';
 import { randomUUID } from 'node:crypto';
-import { lstat, readFile, writeFile, rename, unlink } from 'node:fs/promises';
+import { writeFile, rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import lockfile from 'proper-lockfile';
-import { safeDirectory, uploadDirectory } from './video-uploads.mjs';
+import {LIMIT,safeDirectory,uploadDirectory,readClassifications,validClassificationVideoId as validId} from './video-local-readers.mjs';
 import { validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { StudioError } from './project-store.mjs';
-const LIMIT = 8 * 1024 * 1024;
-const validId = id => typeof id === 'string' && /^[a-f0-9-]{36}$/.test(id);
-
-export async function readClassifications(options = {}) {
-  const dir = uploadDirectory(options);
-  try {
-    await safeDirectory(dir);
-    const file = join(dir, 'classifications.json'), info = await lstat(file);
-    if (!info.isFile() || info.isSymbolicLink() || info.size > LIMIT) throw new Error('Invalid registry');
-    const data = JSON.parse(await readFile(file, 'utf8'));
-    if (data.schemaVersion !== 1 || !Array.isArray(data.entries) || data.entries.length > 10000) throw new Error('Invalid registry');
-    const ids = new Set();
-    for (const row of data.entries) {
-      if (!validId(row.id) || ids.has(row.id) || !/^[a-f0-9]{64}$/.test(row.sha256)) throw new Error('Invalid entry');
-      validateVideoMetadata(row.metadata); ids.add(row.id);
-    }
-    return data.entries;
-  } catch (error) {
-    if (error.code === 'ENOENT') return [];
-    throw new StudioError('Kategoriseringsregistret kunde inte läsas. Filerna är bevarade.', 503);
-  }
-}
 
 // Metadata overlay only: original video bytes and source inventory never change.
 // Optimistic comparison plus a directory lock prevents lost edits across tabs.
@@ -39,8 +18,7 @@ export async function classifyVideo(body, registry, options = {}) {
   try { metadata = validateVideoMetadata(body.metadata, {forWrite:true}); }
   catch (error) { throw new StudioError(error.message); }
   if(metadata.compositing?.mode==='alpha'&&video.classification?.compositing?.mode!=='alpha'){
-    const {getVideoResponse}=await import('./video-registry.mjs');
-    const response=await getVideoResponse(video.id,new Request('http://localhost/media'),options);
+    const response=await (options.readAlphaMedia??readLocalAlphaMedia)(video.id,options);
     if(!response.ok)throw new StudioError('Alfafilen kunde inte läsas.',503);
     const {assertMediaAlpha}=await import('./media-alpha.mjs');
     await assertMediaAlpha(Buffer.from(await response.arrayBuffer()),response.headers.get('content-type')?.split(';')[0]);

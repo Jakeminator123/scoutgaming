@@ -2,7 +2,7 @@ import {validateFrozenDealerPlayback} from './frozen-dealer-playback.mjs';
 import {validateCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {validateBackgroundPlayback} from '../packages/presentation/contracts/background-playback-policy.mjs';
 import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from '../packages/presentation/contracts/dealer-identity.mjs';
-import {validateManagedStudioMedia} from './managed-media-contract.mjs';
+import {validateManagedStudioMedia} from '../packages/studio-registry/server/managed-media-contract.mjs';
 import {validateFrozenRouletteIdle} from '../packages/presentation/contracts/roulette-idle-contract.mjs';
 import {validateFrozenRouletteStart} from '../packages/presentation/contracts/roulette-start-contract.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.

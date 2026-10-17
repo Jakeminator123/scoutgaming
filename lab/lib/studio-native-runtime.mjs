@@ -1,6 +1,6 @@
 import {createStudioMediaDeletion} from './studio-media-deletion.mjs';
 import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
-import {STUDIO_MEDIA_TYPE_UNSUPPORTED,STUDIO_MEDIA_TYPE_MESSAGE} from '../../web/storage/studio-media-storage.mjs';
+import {STUDIO_MEDIA_TYPE_UNSUPPORTED,STUDIO_MEDIA_TYPE_MESSAGE} from '../../packages/studio-registry/server/stored-media-types.mjs';
 import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
 import { layerMediaInspectionMessage } from '../../web/public/layer-upload-errors.mjs';

@@ -1,4 +1,5 @@
-import { createRuntimeMetadataReader, readRuntimeCatalog } from '../../tools/runtime-media-catalog.mjs';
+import {createRuntimeMetadataReader} from '../../tools/runtime-media-catalog.mjs';
+import {readRuntimeCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import { createNeonVideoRegistry } from './neon-video-registry.mjs';
 import { createStudioProjectBindings } from './studio-project-bindings.mjs';
 import { legacyClipControls } from './legacy-clip-inventory.mjs';

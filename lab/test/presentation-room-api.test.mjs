@@ -13,7 +13,7 @@ import { buildPresentationPackage, layerAssetPath } from '../../web/presentation
 import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
 import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
 import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
-import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
+import {runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 
 import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
 import { presentationCapabilitiesForVersion } from '../../packages/presentation/capability-contract.mjs';

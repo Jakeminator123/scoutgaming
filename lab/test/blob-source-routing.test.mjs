@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, mkdir, writeFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
-import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
+import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../../packages/studio-registry/server/video-manifest.mjs';
 import { getVideoResponse, getLabVideoResponse, loadVideoRegistry } from '../lib/video-registry.mjs';
 import { mediaBlobPath } from '../lib/cloud-media-store.mjs';
 import { presentationBankRoot } from '../../tools/media-layout.mjs';

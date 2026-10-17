@@ -7,7 +7,7 @@ import { Writable } from 'node:stream';
 import { once } from 'node:events';
 import test from 'node:test';
 import { createPresentationApi } from '../web/presentation-api.mjs';
-import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lab/lib/lab-video-manifest.mjs';
+import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 
 const renderOrigin = 'https://croupier-v2.onrender.com';
 const frontendOrigin = 'https://github-work-vercel-entry.vercel.app';

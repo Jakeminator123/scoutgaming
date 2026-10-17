@@ -16,7 +16,7 @@ import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs
 import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
 import {fileURLToPath} from 'node:url';
 import {seedSavedVideoProject} from './fixtures/video-dealer-project.mjs';
-import {savedVideoDealerOwnership} from '../lib/video-dealer-registration.mjs';
+import {savedVideoDealerOwnership} from '../../packages/studio-registry/server/video-dealer-registration.mjs';
 import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
 import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
 const scope={environment:'test',workspaceId:'lifecycle'},origin='https://studio.example.invalid';

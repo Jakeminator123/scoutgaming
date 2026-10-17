@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, symlink } from 'node:fs/promises';
+import { cp, copyFile, mkdir, readdir, symlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 
@@ -10,6 +10,9 @@ export async function copyOpenClawRuntime(root) {
     await mkdir(join(root, dirname(file)), {recursive: true});
     await copyFile(new URL('../../' + file, import.meta.url), join(root, file));
   }
+  await cp(new URL('../../packages/studio-registry/', import.meta.url), join(root, 'packages/studio-registry'), {recursive:true});
+  await mkdir(join(root,'tools'),{recursive:true});
+  await copyFile(new URL('../../tools/media-blob-index-reader.mjs', import.meta.url),join(root,'tools/media-blob-index-reader.mjs'));
   const rouletteTarget = join(root, 'web/games/roulette');
   await mkdir(rouletteTarget, { recursive: true });
   for (const file of ['index.mjs', 'preview.mjs', 'room.mjs', 'storage.mjs', 'http.mjs', 'access.mjs', 'rules.mjs']) {

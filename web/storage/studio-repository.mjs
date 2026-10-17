@@ -1,6 +1,6 @@
 import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {validateRuntimeCatalogRecord} from './runtime-media-catalog.mjs';
-import {assertStudioMediaStorageType} from './studio-media-storage.mjs';
+import {validateRuntimeCatalogRecord} from '../../packages/studio-registry/server/runtime-catalog.mjs';
+import {assertStudioMediaStorageType} from '../../packages/studio-registry/server/stored-media-types.mjs';
 import {validateDealerSetRecordOwners,dealerSetsForClip} from '../../packages/presentation/contracts/dealer-sets.mjs';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash, randomUUID } from 'node:crypto';

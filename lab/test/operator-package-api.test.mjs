@@ -8,7 +8,7 @@ import { createOperatorPackageApi, fixtureLaneOperators, openWritableOperatorSto
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { operatorMemoryPool } from './fixtures/operator-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
-import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
+import {runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 
 // Test fixture selects its historical dealer explicitly; product startup has no composition.
 function createSeedProject() {

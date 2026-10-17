@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { validatePrivateMedia, getPrivateMedia, withVerifiedPrivateMediaFile } from '../lab/lib/cloud-media-store.mjs';
+import { validatePrivateMedia, getPrivateMedia, withVerifiedPrivateMediaFile } from './blob-media.mjs';
 import { validateMovingSpeechSourceSet } from './moving-speech-bank.mjs';
 
 const fail = () => { throw Error('moving_bank_artifacts_invalid'); };
