@@ -1,5 +1,17 @@
 # Aktuell handoff — Scoutgaming
 
+## Lokal agent-talk-kö — separat fix 17 oktober 2026
+
+Full kö blockerar inte nästa ping: äldsta meddelandet sparas före det
+atomiska köbytet under `arkiv/<datum>/agent-talk/pings/`. Kapacitet och
+arkivantal syns i status; äldre obesvarade meddelanden läses och kvitteras
+av mottagaren. Claims, andra checkouter, molntjänster och media ändras inte.
+Se [Agent-talk](../agent-talk/README.md) för kommandon och avbrottsåterhämtning.
+Riktad verifiering täcker samtidighet, kapacitet, mottagarkvittens,
+arkivfel och avbrutna filbyten. Originalrepots befintliga kö töms inte av
+kodleveransen; rotation sker först när det uppdaterade verktyget tar emot
+en ny ping i just den checkouten.
+
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
 `502bea812d4e8597f4951c85ae712bd338b02a1d`; etapp 3 levereras i avgränsade delar.
@@ -27,10 +39,10 @@ Studios och lobbyklientens typkontroller har passerat. Katalogkroppar och
 navigationsregler är mekaniskt jämförda; testinventeringen har noll
 oklassificerade kandidater. C2f-integrationen a2380b32 passerade41 riktade
 prov och ordinarie hook215/215 plus frontendtyper med egna låsta frontend-
-och speechinstallationer. Renderfixen och PR213 är nu integrerade med samma
-navigation och direkta transportimporter; deras kombinerade commitkontroll,
-CI och driftkvitto följs i nästa avlämning. Inga nya tester eller
-provider-/SQL-/medieändringar ingår i katalogsteget.
+och speechinstallationer. Renderfixen och PR213 är integrerade med samma navigation och direkta
+transportimporter; senaste integrationshook passerade138/138 och frontendtyper.
+Main inklusive PR216 är integrerad normalt. CI och driftkvitto återstår.
+Inga nya tester eller provider-/SQL-/medieändringar ingår i katalogsteget.
 ## C2f Render-paketering — rättning före PR214-merge
 
 Render installerar gateway, web och Lab, medan frontend/speech har egna beroenden.

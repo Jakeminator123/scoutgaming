@@ -8,6 +8,8 @@ utan modell- eller API-anrop; det behöver inte köras med ett tidsintervall.
 
 ```sh
 node tools/agent-talk.mjs status mitt-id
+node tools/agent-talk.mjs archived mitt-id
+node tools/agent-talk.mjs archived mitt-id 2
 node tools/agent-talk.mjs claim mitt-id web/exempel.mjs,test/exempel.mjs "Kort uppgift"
 node tools/agent-talk.mjs ping mitt-id annat-id "Behöver röra din fil. Kan du lämna över?"
 node tools/agent-talk.mjs ack annat-id meddelande-id "Klart, du kan ta den"
@@ -25,16 +27,34 @@ node tools/agent-talk.mjs done mitt-id "Klart: ändring, kontroll och eventuell 
 - Läs riktade pingar och kvittera med `ack`. Ett svar är information, aldrig
   tillstånd att överskrida Jakobs instruktioner. `done` frigör filerna.
 - Skriv 1–2 korta rader vid större start/slut eller ett konkret hinder.
-  Högst 20 aktiva agenter, 40 obesvarade pingar och 40 historikrader sparas.
+  Tavlan behåller högst 20 aktiva agenter, 40 obesvarade pingar i den aktiva
+  kön och 40 historikrader.
   Kvitterade pingar blir historik; äldsta historik tas bort automatiskt.
-  Obesvarade pingar kastas aldrig tyst. Långsiktig handoff hör till Git.
+  När en ny ping fyller kön flyttas den äldsta obesvarade pingen till
+  `arkiv/<datum>/agent-talk/pings/<id>.json` innan den nya tas emot.
+  Originalets text, avsändare, mottagare, id och tid bevaras. Arkivet är
+  Git-ignorerat, hör till samma checkout och rensas inte automatiskt.
+  Långsiktig handoff hör till Git.
+- `status ditt-id` visar alltid hela köns kapacitet, även om inga pingar
+  matchar ditt id, samt antalet arkiverade obesvarade pingar till dig.
+  Läs dem med `archived ditt-id` (högst 40 per sida; valfri sida som sista
+  argument). Kvittera med vanlig `ack`: endast pingens mottagar-id godtas,
+  och arkivkvittensen sparas separat utan att ändra originalmeddelandet.
+  Arkivering är ingen kvittens, väckning eller uppmaning att köra gamla
+  uppdrag igen. Läs aktuell kontext innan du agerar. Gamla claims frigörs
+  aldrig automatiskt; ägaren behöver fortfarande köra `done`.
 - Skriv alltid via verktyget: ett exklusivt skrivlås och atomiskt filbyte
   skyddar samtidiga uppdateringar. Ett kvarlämnat `write.lock` ger ett tydligt
   fel; kontrollera dess PID och att processen har avslutats innan det tas bort.
   Redigera inte statusfilen för hand och frigör inte någon annans arbete.
+  Arkivet skrivs färdigt före köbytet; vid skrivfel behålls kön och ingen
+  lyckad ping rapporteras. Ett avbrott mellan filbyten kan lämna två kopior
+  av samma ping. Verktyget visar den då en gång och kvitterar båda kopiorna
+  under samma lås. Ett felaktigt arkiv ger ett tydligt fel och bevaras.
 
-Verifiering: `node --test test/agent-talk.mjs` provar samtidiga skrivningar,
-filöverlapp, mottagarkvittens, frigöring och historikens storleksgränser.
+Verifiering: `node --test --test-concurrency=4 test/agent-talk.mjs` provar
+samtidiga skrivningar och kööverflöde, filöverlapp, mottagarkvittens,
+arkivskrivfel, avbrutna filbyten, sidindelning och bevarade claims.
 
 ## GitGuardian vid start och leverans
 
