@@ -11,7 +11,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { publicEditableBranding } from './partner-branding.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
 import { isAdministratorRole } from '../../packages/studio-access/account-role.mjs';
-import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../partner-access-policy.mjs';
+import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../../packages/studio-access/server/partner-access-policy.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson, studioStorageFailure, validateActor, validateStudioScope,
 } from './studio-contract.mjs';

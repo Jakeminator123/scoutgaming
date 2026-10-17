@@ -59,6 +59,42 @@ Säkerhetsläsningen före commit saknade skyddad anslutning och gav ingen
 ny incidenttäckning; ovanstående är det senast faktiskt lästa kvittot.
 Detta är inte ett nytt säkerhetsklartecken eller en driftverifiering.
 
+## Etapp 3 C2i: gemensam identitet — lokala ändringar 17 oktober 2026
+
+`packages/studio-access/server/` äger nu credential-resolvern, asynkron
+CRAIG-identitet, asynkron behörighetsepok och Partner-behörighetspolicy.
+Samtliga konsumenter och spelserverns två dynamiska PostgreSQL-importer
+använder de nya källorna. De fyra ersatta filerna under `web/` är borttagna;
+inga wrappers eller dubbla implementationer lämnas. Paketet importerar
+endast Node och egna roll-/scopeblad, utan app- eller providerberoenden.
+`validateStudioScope` och `StudioStorageError` är samma kanoniska funktion
+respektive klass som kontraktets befintliga reexports.
+
+`packages/studio-access/display-name.mjs` innehåller en enda importfri
+`normalizeDisplayName`. Båda Partner-API:erna och Studio använder samma regel.
+De två tidigare kropparna var identiska. SQL, hashning, kollisioner, roller,
+feltexter och namnnormalisering är mekaniskt oförändrade bortsett från
+importvägar. De äldre synkrona CRAIG-/epokimplementationerna och samtliga
+befintliga testassertions är bevarade. QA-källistor och den befintliga
+serverfixturekopieraren inkluderar de nya beroendena. Ingen publik moduladress
+läggs till. Cookies, sessioner, HTTP, pool/drivers, schema och wallet är appägda.
+
+Baslinje `a691f0ac03c738b4d92904bd3e41e39bd792674e`, branch
+`codex/stage3-shared-identity`: 170 riktade befintliga prov passerar, ett
+befintligt browserprov är opt-in och hoppas över. Alla tio prov från de sex
+serverfixturekonsumenterna och Lab:s TypeScriptkontroll passerar med Node
+24.21.0 och fyra testworkers. Ändrade källors 268 relativa importmål finns.
+Egen låst Lab-installation gjordes direkt i denna arbetskopia utan junction;
+package-/lockfiler ändrades inte. Ingen fullbuild/fullhook, commit, push,
+produktionstest, migration eller molnändring är körd här.
+
+Integrationsytor: C2g ändrar en separat slugimport i
+`lab/lib/partner-session.mjs`; C2h ändrar separata mediaimporter i
+`web/server.mjs`. Dessa ändringar ingår inte i C2i. Aktuell säkerhetsläsning
+på remote main `193e80066fce8d5cd8e889dc41d5aac029deb32f` visar aktiv
+övervakning, två kända öppna incidenter 38318914/38318915, partiell
+platstäckning och historisk skanning `too_large`; täckningen markeras inte klar.
+
 ## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
 
 `packages/presentation/server/registered-dealer-idle.mjs` äger den befintliga

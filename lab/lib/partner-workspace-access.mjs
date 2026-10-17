@@ -1,7 +1,7 @@
 import {
   PARTNER_PERMISSIONS, allowsPartnerResource, allowsPartnerInviteRole, allowsPartnerInvite,
   allowsPartnerRoleAssignment, allowsPartnerSuspension,
-} from '../../web/partner-access-policy.mjs';
+} from '../../packages/studio-access/server/partner-access-policy.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 
 const id = value => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(value);

@@ -1,9 +1,9 @@
 import { createHash, createHmac, randomBytes, scryptSync } from 'node:crypto';
-import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
-import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
+import { craigIdentity } from '../../packages/studio-access/server/craig-identity.mjs';
+import { installBoAuthEpoch } from '../../packages/studio-access/server/bo-auth-epoch.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { isStudioRole } from './studio-access-policy.mjs';
-import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
+import { createAccountCredentialResolver } from '../../packages/studio-access/server/account-credentials.mjs';
 import { effectiveAccountRole } from '../../packages/studio-access/account-role.mjs';
 import { studioLoginReturnTo } from './studio-login-client.mjs';
 

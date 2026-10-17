@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import { createAccountCredentialResolver } from '../web/account-credentials.mjs';
+import { createAccountCredentialResolver } from '../packages/studio-access/server/account-credentials.mjs';
 import { createPlayerAdministration, createPlayerPasswordCommand } from '../web/storage/player-administration.mjs';
 
 function fixture() {

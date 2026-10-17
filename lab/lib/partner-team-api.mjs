@@ -1,6 +1,6 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { randomUUID } from 'node:crypto';
-import { OPERATOR_ADMIN_PERMISSION } from '../../web/partner-access-policy.mjs';
+import { OPERATOR_ADMIN_PERMISSION } from '../../packages/studio-access/server/partner-access-policy.mjs';
 import {
   allowsWorkspaceInvite as allowsPartnerInvite, allowsWorkspaceInviteRole as allowsPartnerInviteRole,
   allowsWorkspaceResource as allowsPartnerResource, allowsWorkspaceRoleAssignment as allowsPartnerRoleAssignment,

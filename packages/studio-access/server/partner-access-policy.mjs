@@ -7,7 +7,7 @@
 // operator administrator (an active member whose role includes team.roles.assign).
 // Resource ownership must come from storage, never a request's operator slug.
 // Existing internal Studio policy and player/game authority remain separate.
-import { validateStudioScope } from './storage/studio-contract.mjs';
+import { validateStudioScope } from '../studio-scope.mjs';
 
 export const PARTNER_PERMISSIONS = Object.freeze([
   'overview.read',

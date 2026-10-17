@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from './public/player-handoff.mjs';
-import { isAdministratorRole } from './account-credentials.mjs';
+import { isAdministratorRole } from '../packages/studio-access/server/account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
@@ -143,7 +143,11 @@ const rouletteRoomAccess = studioPolicyRuntime ? (await import('./games/roulette
   readCurrentContext:(await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
 }) : null;
 
-const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
+const domain = name => {
+  if (postgres && name === 'craig-identity') return import('../packages/studio-access/server/craig-identity.mjs');
+  if (postgres && name === 'bo-auth-epoch') return import('../packages/studio-access/server/bo-auth-epoch.mjs');
+  return import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
+};
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
   { readPlayerResults }, { createPlayerChatMemory }, { createPlayerProbeStore }, { installPartnerApi }] = await Promise.all(
   ['craig-identity', 'bo-auth-epoch', 'player-auth', 'bo-game-auth', 'bo-lab-auth', 'player-results',
