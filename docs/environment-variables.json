@@ -18,6 +18,7 @@
         "web/native-ai-qa-private.mjs",
         "packages/presentation/server/generated-speech-runtime.mjs",
         "web/storage/studio-runtime.mjs",
+        "packages/presentation/server/studio-policy-runtime.mjs",
         "packages/presentation/server/saved-game-policy.mjs",
         "web/studio-game-commands.mjs",
         "web/dealer-speech-runtime.mjs",

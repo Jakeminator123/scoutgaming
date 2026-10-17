@@ -83,3 +83,8 @@ De två rena browserkontrakten `speech-package` och `astrid-voice-profile` ligge
 under `contracts/`; gamla publika URL:er och kanoniska paket-URL:er når samma källor.
 Servermodulerna ingår aldrig i den publika allowlisten. Talidentiteter, originalmedia,
 godkännanden, tidsgränser, lease-/kostnadsregler och avbrottshantering är oförändrade.
+
+`server/studio-policy-runtime.mjs` behåller bootstrapordningen installerat schema,
+Studio-migrationskontroll, repository, idle och readSaved. Explicita portar binder
+appens migrationskontroll och lazy medialäsare; serverkärnan importerar inga appfiler.
+Game behåller sin HTTP-handler och Studio sina readonly-stores och poolstädning.

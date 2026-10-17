@@ -1139,3 +1139,9 @@ Fullfile-talets miljöläsare ägs nu av
 tillför den ursprungliga repository-roten explicit. Runtime läser aktuell processmiljö
 vid status/get, behåller samma konfigurationsnyckel och kräver samma journal/artifacts
 i Neon-läget. Ingen ny miljövariabel, processdelad global eller automatisk providerstart införs.
+
+Policybootstrapens miljögrind ägs av
+`packages/presentation/server/studio-policy-runtime.mjs`. Game och Studio tillför
+samma migrationskontroll och varsin befintlig medialäsare; schema/readSaved-ordningen
+och det avstängda SQLite/offline-läget är oförändrade. Ingen ny miljövariabel eller
+automatisk provideranslutning införs.

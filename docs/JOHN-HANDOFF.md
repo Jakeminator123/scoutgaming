@@ -1,5 +1,21 @@
 # Aktuell handoff — Scoutgaming
 
+## PR227: Studio använder sin egen policymedialäsare
+
+Ett Studio-bygge med enbart appens låsta beroenden hittade en andra korskoppling:
+Studio importerade web/storage/studio-runtime, vars lazy mediaimport drog in
+spelserverns Blob-SDK. Policybootstrapen har nu neutral ägare i
+packages/presentation/server/studio-policy-runtime.mjs. Studio och game binder
+varsin befintlig medialäsare och samma migrationskontroll. Schema, scope, readSaved,
+readonly-stores och felstängning behåller ordning och beteende. Isolerade fixturelistor
+och miljöregistret inkluderar den nya kanoniska modulen. Inga nya SDK-beroenden,
+provideranrop eller datamigreringar införs. Befintliga policy-/lagringsprov passerar
+20/20 utan skips. Fullt Studio-bygge med /studio/native-admin, egna låsta Lab/client-
+beroenden, inga privata envfiler och varken root- eller web/node_modules passerar:
+kompilering, typer, 28 statiska sidor och 80 deploymenttraces. Ordinarie commit-hook
+och exakt-head-CI är leveransgrindar; bygget är ingen ny drift- eller medieacceptans.
+
+
 ## PR227: rättade verifieringskällor
 
 Slutlig CI hittade två kvarvarande gamla källreferenser efter Directorflytten.

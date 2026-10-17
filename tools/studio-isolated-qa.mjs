@@ -90,7 +90,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/studio-access/display-name.mjs',
       'packages/storage/server/postgres-store.mjs', 'packages/operators/server/operator-lifecycle.mjs', 'packages/presentation/contracts/game-lanes.mjs',
       'packages/studio-registry/server/repository.mjs',
-      'web/storage/postgres-store.mjs', 'packages/studio-registry/server/document-contract.mjs', 'packages/studio-registry/server/stored-media-types.mjs', 'packages/shared/media-file-types.mjs', 'packages/studio-registry/server/document-repository.mjs', 'packages/presentation/server/saved-game-policy.mjs', 'web/storage/studio-runtime.mjs',
+      'web/storage/postgres-store.mjs', 'packages/studio-registry/server/document-contract.mjs', 'packages/studio-registry/server/stored-media-types.mjs', 'packages/shared/media-file-types.mjs', 'packages/studio-registry/server/document-repository.mjs', 'packages/presentation/server/saved-game-policy.mjs', 'packages/presentation/server/studio-policy-runtime.mjs', 'web/storage/studio-runtime.mjs',
       'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
       'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
       'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
