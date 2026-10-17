@@ -64,9 +64,10 @@ export function createPresentationApi({ db, env = process.env, store = createPro
     const capability=presentationCapabilitiesResponse(new Request('http://local'+(req.url||pathname),{method:req.method,headers:req.headers??{}}));
     if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return true;}
     const json = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' }); res.end(JSON.stringify(value)); };
-    if (publicModules.has(pathname) && req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': pathname.endsWith('.json') ? 'application/json' : 'text/javascript', 'Cache-Control': 'no-store' });
-      res.end(await readFile(join(root, publicModules.get(pathname)))); return true;
+    if (publicModules.has(pathname) && ['GET', 'HEAD'].includes(req.method)) {
+      const content = await readFile(join(root, publicModules.get(pathname)));
+      res.writeHead(200, { 'Content-Type': pathname.endsWith('.json') ? 'application/json' : 'text/javascript', 'Content-Length': String(content.length), 'Cache-Control': 'no-store' });
+      res.end(req.method === 'HEAD' ? undefined : content); return true;
     }
     if (!pathname.startsWith('/api/presentation/')) return false;
     try {

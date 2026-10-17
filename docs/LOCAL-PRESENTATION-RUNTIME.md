@@ -116,14 +116,23 @@ Aktivering kräver verifierad image, bank, schema013, talprofil och ett valt
 testrum. En sparad flagga eller profil startar inget GPU-prov i sig; endpointens
 kapacitet och kostnadsvakt styr det betalda testfönstret.
 
-Driftprov 17 oktober 2026: PR203:s version `9e533e7b` nådde RunPods jobbkö
-från riktig bordschatt, men ingen worker startade före uppstartstidsgränsen.
-Jobbet avbröts och den tillfälliga endpointen/templaten togs bort av guarden;
-se [handoffens kvitto](JOHN-HANDOFF.md#dragan-verkligt-molnprov-och-fortsättning--17-oktober-2026-1505-utc).
+Två driftprov 17 oktober 2026, på PR203 `9e533e7b` och PR208 `a0876f71`,
+nådde RunPods jobbkö från riktig bordschatt. Inget fick en worker före
+uppstartstidsgränsen, även med A40 och A6000 tillåtna i andra provet.
+Jobben avbröts och tillfälliga endpoints/templates togs bort av guarden;
+se [handoffens kvitto](JOHN-HANDOFF.md#dragan-verkligt-molnprov-och-fortsättning--17-oktober-2026-1546-utc).
 Draganprofilen är därefter avstängd. En ny endpoint måste bindas till rätt
 runtime-behörighet, template och image före nytt prov. Den borttagna
 testendpointens miljöreferens är inte fungerande drift. Kodprov, en slutförd
 förberedelsepost och en tom fakturarad är inte kvitto på spelad läppsynk.
+
+Proven nådde inte workerintyget eller TTS och gav inget verifierat resultat
+från Python-renderaren. De styrker därför inte fel på röst eller filmunderlag.
+Imageåtkomst, plattformsstart och kallstart måste
+skiljas åt. RunPods [uppstartsbeskrivning](https://docs.runpod.io/serverless/development/optimization)
+skiljer imagehämtning från modellstart; den dokumentationen fastställer inte
+orsaken till våra timeoutar. Tjänsternas olika roller och env-profiler
+beskrivs i [miljöguiden](ENVIRONMENT-VARIABLES.md#läsande-jämförelse-17-oktober-2026).
 
 `web/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
 röst som övrig dealerchatt. Neon fryser exakta källreferenser och reserverar
