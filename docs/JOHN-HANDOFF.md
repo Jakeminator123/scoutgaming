@@ -142,6 +142,21 @@ för budget-ID `dragan-test-20261017`) innan någon providerändring; därefter
 en liten testad adapterändring för idle-undantaget och först sedan ett enda
 samordnat prov. Cloud-agentens egna secrets (fel Vercel-team/projekt och
 Blob-store, se chattens frågebatteri) hanteras separat och ingår inte här.
+## Portabel GitGuardian-konfiguration — 17 oktober 2026
+
+MCP-starten använder `git -c` med ett tillfälligt shell-alias för att köra
+Node från aktuell checkoutrot. Den gamla personliga `cwd` är borttagen.
+Den effektiva konfigurationens kommando klarade initialize/tools-list från
+worktreens rot och undermapp samt från en flyttad testcheckout med mellanslag
+och dess undermapp. Alla tre verktyg annonseras som läsande; inget permanent
+Git-alias skapas. Befintliga GitGuardian-/säkerhetsprov: 34/34 passerar.
+Användarens avaktiverade MCP-val och skyddade koppling har inte ändrats;
+startprovet anropade inte incident-API:t och är ingen säkerhetsklarering.
+Integrationsgranskning: main b356152 är intagen normalt och båda sidors separata
+leveransnoteringar bevarade. 34/34 säkerhetsprov samt faktisk MCP-start från
+rot och undermapp passerar; tre läsverktyg annonseras. Ingen incident eller
+behörighet ändrad. Färsk PR-CI och mainleverans återstår.
+
 
 ## PR227: Studio använder sin egen policymedialäsare
 
@@ -268,6 +283,15 @@ Riktad verifiering täcker samtidighet, kapacitet, mottagarkvittens,
 arkivfel och avbrutna filbyten. Originalrepots befintliga kö töms inte av
 kodleveransen; rotation sker först när det uppdaterade verktyget tar emot
 en ny ping i just den checkouten.
+
+Testuppföljning: gränsdata för historik och kö skapas direkt i den isolerade
+fixturen; riktiga CLI-anrop provar 39 → 40 och överskriden kapacitet.
+Uppmätt antal CLI-processstarter i sviten minskar från 175 till 93.
+Alla fem prov passerar med samma samtidighets-, arkivfel- och avbrottsprov.
+Ett isolerat mutationsprov bekräftar att borttagen historikgräns upptäcks.
+En hookkörning gav Windows-EPERM vid öppning av `write.lock` i det oförändrade
+samtidighetsprovet. Felet återkom inte i tre riktade prov vardera på main och
+ändringen; det är dokumenterat, inte åtgärdat genom denna testförenkling.
 
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
@@ -576,16 +600,25 @@ ny deployment. Förnyad säkerhetsläsning på main `6279960f` verifierar två
 öppna incidenter, 38318914/38318915; platstäckningen är partiell, övervakningen
 aktiv och historikskanningen `too_large`. Ingen incident markeras löst.
 
-## Avgränsad inboxrättning — 17 oktober 2026
+## Inbox och agentregler — 17 oktober 2026
 
 `tools/inbox.mjs` skapar bara saknade GitHub-etiketter; befintliga namn,
 färger och beskrivningar bevaras. `done` kontrollerar etiketten `inbox` och
 att inloggat GitHub-konto är ärendets skapare innan det får stängas.
 Delade GitHub-konton kan inte särskiljas av kontrollen.
+Inboxfixarna är mergade i [PR215](https://github.com/Jakeminator123/scoutgaming/pull/215).
+Uppföljningen inkluderar Jakobs borttagning av `.cursor/rules/reference-repos.mdc`. Chef- och
+leveransreglerna hänvisar till den kanoniska GitHub-policyn i AGENTS i stället
+för att kopiera den. Chef-textens beslutsordning följer också AGENTS.
+Inboxinstruktionen använder explicit känd ägare på en featurebranch utan
+datorregistrering; branchprefix räknas inte som ägarbevis.
 Lokal verifiering: 19 inboxprov passerar. GitHub-anropens läsformat har
 verifierats mot API/CLI; inga riktiga etiketter eller ärenden ändrades i provet.
-Detta är inte ett CI- eller driftskvitto. Huvudkopians 40 obesvarade lokala
-pingar och gamla filanspråk har inte rensats. GitGuardian på fjärr-main visar
+Detta är inte ett CI- eller driftskvitto. Köåterhämtningen levererades separat
+i mergade PR216; detta arbete rensar inga pingar eller gamla filanspråk.
+Rapportens återstående förslag om färre testprocesser och portabel GitGuardian-
+konfiguration kräver egna avgränsade ändringar. Den befintliga lokala
+konfigurationsändringen är bevarad. GitGuardian på fjärr-main visar
 två öppna incidenter med ofullständiga filpositioner; de är inte åtgärdade här.
 
 ## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
