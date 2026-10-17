@@ -448,13 +448,12 @@ visar den lokala kedjan, inte en riktig OpenClaw-dialog eller Bettalotto-deploy.
 
 Stäng med Ctrl+C: testprocesserna stoppas och deras egna temporära data tas
 bort. Bygg om efter kodändringar; verktyget använder labbets byggda version.
-Automatiserad acceptans körs med `node test/backoffice-lab-browser.mjs`.
-Den kräver Playwright och Edge; ange `CROUPIER_PLAYWRIGHT_MODULE` till
-värdmiljöns `index.mjs` om paketet inte finns i repot. BO-inloggningen för QA
-finns endast i fixture-objektets minne och skrivs inte ut av CLI:t.
-Browserprovet använder verkliga lokala spelkommandon/SSE men ett uttryckligen
-syntetiskt chattsvar. Flikdelningens manuella tillstånd och läppsynk bedöms
-separat; testresultat dokumenteras i `docs/JOHN-HANDOFF.md`.
+Sparning, återläsning, revisionskonflikter och osparade Admin-utkast provas
+med `node --test --test-concurrency=4 test/admin-project-drafts-browser.mjs`,
+som ingår i CI. Det äldre browserprovet av uppladdningssidan och BO-iframevyerna
+är pensionerat tillsammans med de ersatta flödena. Spelregler, SSE och
+taltransport har egna regressioner i `.githooks/pre-commit-full`; Admin-provet
+är inget spel- eller läppsynkskvitto.
 
 ## Video och kvarvarande integration
 
