@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { runChecks } from './precommit-checks.mjs';
 
 const navigationTests = [
-  'packages/design-preview/runtime/admin-routing.test.mjs',
-  'packages/design-preview/runtime/navigation.test.mjs',
+  'lab/client/runtime/admin-routing.test.mjs',
+  'lab/client/runtime/navigation.test.mjs',
   'lab/test/studio-history.test.mjs',
   'lab/test/admin-workspace.test.mjs',
   'lab/test/next-page-navigation.test.mjs',

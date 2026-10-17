@@ -10,7 +10,7 @@ import {createOperatorStore} from '../../web/storage/operator-store.mjs';
 import {buildPresentationPackage} from '../../web/presentation-layers.mjs';
 import {withPackagePresentation,publicPackageBranding,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle,OPERATOR_LIFECYCLE_KEY} from '../../web/storage/operator-lifecycle.mjs';
-import {lifecycleSnapshotKey} from '../../packages/design-preview/admin/lib/studio-resource-lifecycle.mjs';
+import {lifecycleSnapshotKey} from '../../lab/client/admin/lib/studio-resource-lifecycle.mjs';
 import {listPackageRooms} from '../../web/presentation-room-contract.mjs';
 import {assertLifecyclePackages} from '../lib/dealer-lifecycle.mjs';
 const scope={environment:'lifecycle-fixture',workspaceId:'isolated'};

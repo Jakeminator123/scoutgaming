@@ -37,7 +37,7 @@ test('losing the Studio discovery pattern fails coverage even if a comment names
     ? line.split(/\s+/).filter(token => !token.startsWith('lab/test/')).join(' ') : line).join('\n')
     + '\n# lab/test/studio-history.test.mjs\n';
   const files = adminNavigationPlan().commands[0].slice(3);
-  assert.ok(mandatoryTestFiles(hook).has('packages/design-preview/runtime/admin-routing.test.mjs'));
+  assert.ok(mandatoryTestFiles(hook).has('lab/client/runtime/admin-routing.test.mjs'));
   assert.throws(() => assertMandatoryCoverage(files, hook), /Missing mandatory coverage: lab\/test\/studio-history\.test\.mjs/);
 });
 

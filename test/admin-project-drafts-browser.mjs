@@ -46,9 +46,9 @@ function browserBundle() {
     external: ['/composition-runtime/compositor.js'],
     outfile: resolve(root, 'fixture.js'), nodePaths: [resolve(root, 'lab/node_modules')],
     alias: {'react': resolve(root, 'lab/node_modules/react'), 'react-dom': resolve(root, 'lab/node_modules/react-dom'),
-      'next/link': resolve(root, 'packages/design-preview/runtime/navigation.tsx'),
-      'next/navigation': resolve(root, 'packages/design-preview/runtime/navigation.tsx'),
-      'next/image': resolve(root, 'packages/design-preview/runtime/image.ts')},
+      'next/link': resolve(root, 'lab/client/runtime/navigation.tsx'),
+      'next/navigation': resolve(root, 'lab/client/runtime/navigation.tsx'),
+      'next/image': resolve(root, 'lab/client/runtime/image.ts')},
     define: {'process.env.NODE_ENV': '"production"', 'process.env.NEXT_PUBLIC_LAB_BASE_PATH': '"/studio"', 'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE': '"1"'},
     logLevel: 'silent',
   });
