@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readdirSync, rmdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DEVICES, PEOPLE, REPO, TARGETS, composeBody, labelsFor, ownerOfBranch, parseArgs, readLocalIdentity, recipients, registerDevice } from '../tools/inbox.mjs';
+import { DEVICES, PEOPLE, REPO, TARGETS, closeOwnIssue, composeBody, ensureLabels, labelsFor, ownerOfBranch, parseArgs, readLocalIdentity, recipients, registerDevice } from '../tools/inbox.mjs';
 
 function localFixture(t, host = 'test-laptop') {
   const directory = mkdtempSync(join(tmpdir(), 'scout-inbox-device-'));
@@ -125,4 +125,82 @@ test('body mentions accepted collaborators, names the rest in plain text and add
   const plain = composeBody({ to: ['john'], from: 'Jakob', body: 'Hej', collaborators: [] });
   assert.equal(plain, '**Till:** John (GitHub-inbjudan väntar)\n**Från:** Jakob\n\nHej');
   assert.doesNotMatch(plain, /Svar:/);
+});
+
+function githubFixture(...responses) {
+  const calls = [];
+  return { calls, run(args) {
+    calls.push(args);
+    assert.ok(responses.length, 'Unexpected GitHub call');
+    const response = responses.shift();
+    if (response instanceof Error) throw response;
+    return response;
+  } };
+}
+
+test('label setup reads all pages and preserves existing labels, including custom capitalization', () => {
+  const wanted = labelsFor(Object.keys(TARGETS), true);
+  const github = githubFixture(wanted.map(name => name.toUpperCase()).join('\r\n'));
+  assert.deepEqual(ensureLabels(github.run), wanted);
+  assert.deepEqual(github.calls, [['api', `repos/${REPO}/labels?per_page=100`, '--paginate', '--jq', '.[].name']]);
+});
+
+test('label setup creates only missing labels without force-updating existing labels', () => {
+  const wanted = labelsFor(Object.keys(TARGETS), true);
+  const github = githubFixture(wanted.filter(name => name !== 'inbox' && name !== 'till:john').join('\n'), '', '');
+  assert.deepEqual(ensureLabels(github.run), wanted);
+  assert.deepEqual(github.calls.slice(1), [
+    ['label', 'create', 'inbox', '--repo', REPO, '--color', '0E8A16', '--description', 'Teaminbox: meddelande till en eller flera personer'],
+    ['label', 'create', 'till:john', '--repo', REPO, '--color', '1D76DB', '--description', 'Till John'],
+  ]);
+});
+
+test('label lookup and creation failures propagate without further writes', () => {
+  const lookup = githubFixture(new Error('GitHub unavailable'));
+  assert.throws(() => ensureLabels(lookup.run), /GitHub unavailable/);
+  assert.equal(lookup.calls.length, 1);
+  const creation = githubFixture('', new Error('Creation denied'));
+  assert.throws(() => ensureLabels(creation.run), /Creation denied/);
+  assert.equal(creation.calls.length, 2);
+});
+
+const inboxIssue = (author = 'Jakeminator123', labels = [{ name: 'inbox' }]) => JSON.stringify({ author: { login: author }, labels });
+
+test('done closes an inbox issue only after verifying the authenticated author', () => {
+  const github = githubFixture(inboxIssue(), 'jakeminator123', 'Closed');
+  assert.equal(closeOwnIssue('12', github.run), 'Closed');
+  assert.deepEqual(github.calls, [
+    ['issue', 'view', '12', '--repo', REPO, '--json', 'author,labels'],
+    ['api', 'user', '--jq', '.login'],
+    ['issue', 'close', '12', '--repo', REPO],
+  ]);
+});
+
+test('done refuses another author, missing author or unknown authenticated account without closing', () => {
+  for (const [author, login] of [['Johncleochile', 'Jakeminator123'], [null, 'Jakeminator123'], ['Jakeminator123', '']]) {
+    const github = githubFixture(inboxIssue(author), login);
+    assert.throws(() => closeOwnIssue('12', github.run), /Bara ärendets skapare/);
+    assert.equal(github.calls.length, 2);
+  }
+});
+
+test('done refuses non-inbox issues and invalid issue numbers without mutation', () => {
+  for (const issue of [inboxIssue('Jakeminator123', []), '{}', 'null']) {
+    const github = githubFixture(issue);
+    assert.throws(() => closeOwnIssue('12', github.run), /etiketten inbox/);
+    assert.equal(github.calls.length, 1);
+  }
+  for (const number of ['', '0', '-1', '12abc', '--help']) {
+    const github = githubFixture();
+    assert.throws(() => closeOwnIssue(number, github.run), /positivt ärendenummer/);
+    assert.equal(github.calls.length, 0);
+  }
+});
+
+test('done propagates failed issue or account reads and never closes on incomplete verification', () => {
+  for (const responses of [[new Error('Issue unavailable')], [inboxIssue(), new Error('Account unavailable')], ['{invalid']]) {
+    const github = githubFixture(...responses);
+    assert.throws(() => closeOwnIssue('12', github.run));
+    assert.ok(github.calls.every(args => args[1] !== 'close'));
+  }
 });

@@ -7,6 +7,18 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Avgränsad inboxrättning — 17 oktober 2026
+
+`tools/inbox.mjs` skapar bara saknade GitHub-etiketter; befintliga namn,
+färger och beskrivningar bevaras. `done` kontrollerar etiketten `inbox` och
+att inloggat GitHub-konto är ärendets skapare innan det får stängas.
+Delade GitHub-konton kan inte särskiljas av kontrollen.
+Lokal verifiering: 19 inboxprov passerar. GitHub-anropens läsformat har
+verifierats mot API/CLI; inga riktiga etiketter eller ärenden ändrades i provet.
+Detta är inte ett CI- eller driftskvitto. Huvudkopians 40 obesvarade lokala
+pingar och gamla filanspråk har inte rensats. GitGuardian på fjärr-main visar
+två öppna incidenter med ofullständiga filpositioner; de är inte åtgärdade här.
+
 ## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
 
 `packages/presentation/server/registered-dealer-idle.mjs` äger den befintliga
