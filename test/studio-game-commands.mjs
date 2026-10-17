@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
-import { createPlayerPasswordCommand } from '../web/storage/player-administration.mjs';
+import { createPlayerPasswordCommand } from '../packages/storage/server/player-administration.mjs';
 import { createStudioGameCommandApi } from '../web/studio-game-commands.mjs';
 import { studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
 

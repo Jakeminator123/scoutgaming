@@ -2,7 +2,7 @@
 import React from 'react';
 import { compositionLabel } from '../../packages/navigation/control-flow.mjs';
 import { partnerLaneState } from '../lib/partner-package-view.mjs';
-import { isGameLaneId } from '../../web/public/game-lanes.mjs';
+import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
 import { resolveRoomBranding } from '../../packages/operators/contracts/branding.mjs';
 
 const h = React.createElement;

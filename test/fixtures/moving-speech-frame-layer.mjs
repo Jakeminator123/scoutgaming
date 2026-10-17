@@ -1,4 +1,4 @@
-import { createMovingSpeechFrameLayer } from '../../web/public/moving-speech-frame-layer.mjs';
+import { createMovingSpeechFrameLayer } from '../../packages/presentation/runtime/moving-speech-frame-layer.mjs';
 
 export async function run({ plan, encoded, meta, presented }) {
   const body = document.createElement('canvas'); body.width = body.videoWidth = 320; body.height = body.videoHeight = 240;

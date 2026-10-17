@@ -12,3 +12,7 @@ Web äger pg 8.16.3, poolinställningar och originalschemats läsning i
 Schemafilerna ligger kvar under `ops/`. Kärnan läser inga appfiler och skapar
 inga provideranslutningar. Studio-dokumentens repository ägs fortsatt av
 `packages/studio-registry`.
+
+`server/player-administration.mjs` äger befintlig spelaradministration mot de
+injicerade db/boDb-gränserna. Anroparen äger fortsatt HTTP, sessioner, behörighet
+och game-runtime-avbrott. Flytten ändrar inga konton, walletregler eller felkontrakt.

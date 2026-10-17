@@ -1,9 +1,9 @@
-import { GAME_LANES, isGameLane, validateGameLanes } from '../../packages/presentation/contracts/game-lanes.mjs';
-export { GAME_LANES, isGameLane, validateGameLanes, gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
-import { isGameLaneId } from '../../packages/presentation/contracts/game-lane-id.mjs';
-import {isOperatorSlug} from '../../packages/navigation/operator-slug.mjs';
-import { isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {validateComposition} from './presentation-composition.mjs';
+import { GAME_LANES, isGameLane, validateGameLanes } from '../../../packages/presentation/contracts/game-lanes.mjs';
+
+import { isGameLaneId } from '../../../packages/presentation/contracts/game-lane-id.mjs';
+import {isOperatorSlug} from '../../../packages/navigation/operator-slug.mjs';
+import { isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import {validateComposition} from '../../../packages/presentation/runtime/presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
 // card projection and playback primitives remain shared, independently of lanes.
 const LAYER_PREVIEW_LANE = Object.freeze({ schemaVersion: 1, id: 'layer-preview', label: 'Layer Preview Lane', renderer: 'layered', dealer: 'dragge', mediaCollection: 'layer-packs-preview' });
@@ -12,7 +12,7 @@ export function gamePresentationForDealer(dealerId, renderer) {
   return renderer === 'layered' ? 'layered' : 'local';
 }
 const layerPreviewDealers = ['dragge'];
-export { isGameLaneId } from '../../packages/presentation/contracts/game-lane-id.mjs';
+
 
 // Package lanes that the saved catalogue can serve, in package order.
 export function packageLaneIds(allowedLanes, lanes = GAME_LANES) {

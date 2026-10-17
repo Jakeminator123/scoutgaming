@@ -7,8 +7,8 @@ import {createHash,randomUUID} from 'node:crypto';
 import {installNativeP6GamePlayback,createNativeP6GameQueueDelivery,nativeP6GameAvailability,NATIVE_P6_GAME_ORIGIN,
   NATIVE_P6_GAME_CONTEXT_PATH,NATIVE_P6_GAME_SOURCE_PATHS} from '../web/public/native-p6-game-playback.mjs';
 import {createSpeechQueue} from '../web/public/speech-queue.mjs';
-import {createSpeechPoseGate} from '../web/public/speech-pose-gate.mjs';
-import {playGeneratedSpeech} from '../web/public/generated-speech-player.mjs';
+import {createSpeechPoseGate} from '../packages/presentation/runtime/speech-pose-gate.mjs';
+import {playGeneratedSpeech} from '../packages/presentation/runtime/generated-speech-player.mjs';
 import {DEFAULT_DEALER_COMPOSITING} from '../packages/presentation/contracts/dealer-compositing.mjs';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const paths=NATIVE_P6_GAME_SOURCE_PATHS;

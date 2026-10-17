@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
-import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
+import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
 import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
-import {gameLaneFromDocument} from '../web/public/game-lanes.mjs';
+import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
 import {dealerVersionPath} from '../web/public/dealer-version-switcher.mjs';
-import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
+import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {createPartnerBrandingApi} from '../lab/lib/partner-branding-api.mjs';
 

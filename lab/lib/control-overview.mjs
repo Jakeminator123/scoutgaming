@@ -1,5 +1,5 @@
 import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import { validatePublicOperatorRooms } from '../../web/public/operator-rooms-contract.mjs';
+import { validatePublicOperatorRooms } from '../../packages/presentation/contracts/operator-rooms-contract.mjs';
 
 // Only names and identifiers cross the server/client boundary; no media or draft bodies.
 export function controlStudioSummary(project) {

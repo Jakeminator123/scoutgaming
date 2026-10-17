@@ -27,14 +27,15 @@ import { createStudioAdminApi } from '../lab/lib/studio-admin-api.mjs';
 import { createStudioDocumentApi } from '../lab/lib/studio-document-api.mjs';
 import { createStudioGameAuthority, studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
 import { createStudioGameCommandApi } from '../web/studio-game-commands.mjs';
-import { createPlayerAdministration } from '../web/storage/player-administration.mjs';
+import { createPlayerAdministration } from '../packages/storage/server/player-administration.mjs';
 import { planStudioMigrations, loadStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
 import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
 import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from '../packages/presentation/server/generated-speech-provider.mjs';
 import { createSpeechBlobArtifacts } from '../web/speech-blob-artifacts.mjs';
-import { SHOE_RULES, newGame } from '../web/shoe-game.mjs';
+import {newGame} from '../web/shoe-game.mjs';
+import { SHOE_RULES } from '../packages/shared/blackjack-shoe-rules.mjs';
 
 const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 

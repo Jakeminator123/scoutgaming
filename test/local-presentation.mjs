@@ -71,6 +71,7 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
     const body = await response.text();
     assert.match(response.headers.get('content-type'),path.endsWith('.json')?/application\/json/:/text\/javascript/,path);
     if (presentationPublicSource(path)) {
+      assert.equal(body, await readFile(new URL('../'+presentationPublicSource(path), import.meta.url), 'utf8'), path+' canonical source bytes');
       const head = await fetch(origin+path, {method:'HEAD'});
       assert.equal(head.status,200,path);
       assert.equal(await head.text(),'',path);

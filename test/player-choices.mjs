@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {
   applyTableColor, choicesStorageKey, lobbyChoiceText, mountPlayerChoices, parseStoredChoices,
   readChoices, resolvePlayerSelection, writeChoices,
-} from '../web/public/player-choices.mjs';
+} from '../packages/presentation/runtime/player-choices.mjs';
 
 const colors = ['#112233', '#aabbcc'];
 const choices = {

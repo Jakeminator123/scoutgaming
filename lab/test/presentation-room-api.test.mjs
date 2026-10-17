@@ -15,7 +15,7 @@ import { defaultCompositionSettings } from '../../packages/presentation/contract
 import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
 import {runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 
-import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
+import { createGameEntrySelector } from '../../packages/presentation/server/game-entry-selector.mjs';
 import { presentationCapabilitiesForVersion } from '../../packages/presentation/capability-contract.mjs';
 
 const scope = { environment: 'room-fixture', workspaceId: 'isolated' };

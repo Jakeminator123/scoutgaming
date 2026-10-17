@@ -1,7 +1,8 @@
 import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
 import { isActiveDealerId as isDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {validateComposition} from './presentation-composition.mjs';
-import { assertGameChoices, isGameLaneId } from './game-lanes.mjs';
+import {validateComposition} from '../../packages/presentation/runtime/presentation-composition.mjs';
+import {assertGameChoices} from '../../packages/presentation/contracts/game-selection.mjs';
+import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
 import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;

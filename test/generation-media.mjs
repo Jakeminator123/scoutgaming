@@ -90,12 +90,8 @@ test('retired generation aliases cannot fall through to static files through Win
     for (const file of await readdir(source)) if (file.endsWith('.mjs')) await copyFile(new URL(file, source), join(web, file));
     await copyFile(new URL('public/blackjack.mjs', source), join(web, 'public/blackjack.mjs'));
     await copyFile(new URL('public/astrid-camera-audio.mjs', source), join(web, 'public/astrid-camera-audio.mjs'));
-    await copyFile(new URL('public/chat-response.mjs', source), join(web, 'public/chat-response.mjs'));
-    // Offline game documents use the same validated entry/composition contracts.
-    await mkdir(join(web,'public','card-presentation'),{recursive:true});
-    for (const name of ['game-entry-contract.mjs', 'game-lanes.mjs', 'player-handoff.mjs', 'presentation-composition.mjs', 'background-playback.mjs', 'game-overlay-layout.mjs', 'card-view.mjs', 'card-presentation/calibration.mjs']) {
-      await copyFile(new URL('public/' + name, source), join(web, 'public', name));
-    }
+    // Shared browser contracts are copied once by copyOpenClawRuntime.
+    await copyFile(new URL('public/game-entry-contract.mjs', source), join(web, 'public/game-entry-contract.mjs'));
     // An inactive catalog must import without optional Studio public modules.
     await import(pathToFileURL(join(web, 'public-operator-rooms.mjs')).href);
     await writeFile(join(web, 'public/bo/generations.json'), JSON.stringify([{ id: known }]));

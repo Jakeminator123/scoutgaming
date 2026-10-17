@@ -4,7 +4,7 @@ import { labUrl } from "../lib/lab-url.mjs";
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { requestJson } from './studio-types';
 import { createSocialPlayback, SOCIAL_SPEECH_LIMIT_MS, type SocialPlayback } from '../lib/social-playback.mjs';
-import { playGeneratedSpeech } from '../../web/public/generated-speech-player.mjs';
+import { playGeneratedSpeech } from '../../packages/presentation/runtime/generated-speech-player.mjs';
 import styles from './social-chat-panel.module.css';
 
 export interface SocialPolicy {

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {selectGreenTake,shouldUseGreenBoxCard,shouldUseGreenDealerCard,greenRestCardQuad} from '../../web/public/astrid-green-dealer.mjs';
-import {validateContactTake,uniformRegistration,contactFrame,dealingCardSample} from '../../web/public/performance-contact.mjs';
+import {validateContactTake,uniformRegistration,contactFrame,dealingCardSample} from '../../packages/presentation/contracts/performance-contact.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
 const reviewDir=path.resolve(dir,'../../media/dealers/astrid/runtime/composited/astrid-table-v2');

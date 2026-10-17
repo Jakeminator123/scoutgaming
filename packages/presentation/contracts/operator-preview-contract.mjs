@@ -1,11 +1,11 @@
-import { isGameLaneId } from './game-lanes.mjs';
-import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
-import {isDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {validateCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
-import {validateDealerFraming} from '../../packages/presentation/contracts/dealer-framing.mjs';
-import {validateRouletteForegroundPolygons} from '../../packages/presentation/contracts/roulette-idle-contract.mjs';
-import {validateRouletteStartProfile} from '../../packages/presentation/contracts/roulette-start-contract.mjs';
-import {materialById} from '../../packages/presentation/contracts/material-catalog.mjs';
+import {isGameLaneId} from '../../../packages/presentation/contracts/game-lane-id.mjs';
+import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
+import {isDealerId} from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import {validateCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {validateDealerFraming} from '../../../packages/presentation/contracts/dealer-framing.mjs';
+import {validateRouletteForegroundPolygons} from '../../../packages/presentation/contracts/roulette-idle-contract.mjs';
+import {validateRouletteStartProfile} from '../../../packages/presentation/contracts/roulette-start-contract.mjs';
+import {materialById} from '../../../packages/presentation/contracts/material-catalog.mjs';
 
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const types=new Set(['image/png','image/jpeg','image/webp','video/mp4','video/webm']);

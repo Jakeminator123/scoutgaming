@@ -6,8 +6,8 @@ import { createRequire } from 'node:module';
 import { setTimeout as pause } from 'node:timers/promises';
 import { createMovingSpeechRuntime } from '../web/moving-speech-runtime.mjs';
 import { createMovingSpeechSourceSet } from '../web/moving-speech-bank.mjs';
-import { validateMovingSpeechStream } from '../web/public/moving-speech-player.mjs';
-import {DRAGAN_KEVIN_PROFILE} from '../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
+import { validateMovingSpeechStream } from '../packages/presentation/runtime/moving-speech-player.mjs';
+import {DRAGAN_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 
 const { WebSocket } = createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');
 const digest = bytes => createHash('sha256').update(bytes).digest('hex'), h = 'a'.repeat(64), sessionId = '1'.repeat(32);

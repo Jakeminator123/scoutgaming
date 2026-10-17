@@ -472,8 +472,8 @@ import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs
 import {createStudioRepository} from '../../packages/studio-registry/server/document-repository.mjs';
 import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
-import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
-import {resolvePlayerSelection} from '../../web/public/player-choices.mjs';
+import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
+import {resolvePlayerSelection} from '../../packages/presentation/runtime/player-choices.mjs';
 
 async function nativeBrandingFixture() {
   const base=createStudioMemoryPool(),trace=[];

@@ -6,7 +6,7 @@ import {withPackagePresentation,readPackagePresentation} from '../packages/prese
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {createPublicOperatorPreview} from '../web/public-operator-preview.mjs';
-import {previewMediaPath,validatePublicOperatorPreview} from '../web/public/operator-preview-contract.mjs';
+import {previewMediaPath,validatePublicOperatorPreview} from '../packages/presentation/contracts/operator-preview-contract.mjs';
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
 import {materialSource} from '../packages/presentation/contracts/material-catalog.mjs';
 

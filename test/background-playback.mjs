@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {createBackgroundPlayback} from '../web/public/background-playback.mjs';
-import {createLayerComposition,validateComposition} from '../web/public/presentation-composition.mjs';
+import {createBackgroundPlayback} from '../packages/presentation/runtime/background-playback.mjs';
+import {createLayerComposition,validateComposition} from '../packages/presentation/runtime/presentation-composition.mjs';
 
 const baseId='10000000-0000-4000-8000-000000000001',eventId='10000000-0000-4000-8000-000000000002';
 const rule=(changes={})=>({id:'celebrate',assetId:eventId,trigger:{eventId:'speak.blackjack'},maxDurationMs:10000,

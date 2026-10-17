@@ -1,4 +1,4 @@
-import {playerHandoffDestination} from '../../../web/public/player-handoff.mjs';
+import {playerHandoffDestination} from '../../../packages/navigation/player-handoff.mjs';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {platformConfiguration,platformBackendHeaders,blackjackLobbyDestination} from '../../../packages/navigation/server/platform-routing.mjs';

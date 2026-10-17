@@ -8,7 +8,7 @@ import { postgresStatement,validateGameConnection } from '../packages/storage/se
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createStudioDocumentApi } from '../lab/lib/studio-document-api.mjs';
 import { createPostgresNativeTableCommand } from '../web/postgres-native-table.mjs';
-import { createPlayerAdministration } from '../web/storage/player-administration.mjs';
+import { createPlayerAdministration } from '../packages/storage/server/player-administration.mjs';
 import { playerAuth } from '../web/storage/async-player-auth.mjs';
 import { craigIdentity } from '../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epoch.mjs';

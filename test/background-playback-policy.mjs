@@ -6,7 +6,7 @@ import {layerAssetPath, validatePresentationPackage} from '../packages/presentat
 import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import {withPackagePresentation, readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {withoutPresentationLanes} from '../lab/lib/dealer-archive-impact.mjs';
-import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
+import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
 import {createPublishedLayerAssets} from '../web/storage/published-layer-assets.mjs';
 
 const id = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;

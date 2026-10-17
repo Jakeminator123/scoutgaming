@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSpeechReplyRepository} from '../web/storage/speech-reply-repository.mjs';
+import {createSpeechReplyRepository} from '../packages/presentation/server/speech-reply-repository.mjs';
 import {fixture,input,scope} from './fixtures/speech-replies.mjs';
 test('SQL category CAS cannot change text, media or another scope',async t=>{
   const f=await fixture(t),saved=await f.library.save(input()),value=await f.repository.read(saved.dealerId,saved.id);

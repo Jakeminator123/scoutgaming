@@ -10,7 +10,7 @@ import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { StudioStorageError } from '../packages/studio-registry/server/document-contract.mjs';
 import { createSavedGamePolicy, studioGamePolicyConfiguration, exactRegisteredDealerIdle } from '../packages/presentation/server/saved-game-policy.mjs';
 import { createPortraitRoomEntryFixture } from './fixtures/portrait-room-entry.mjs';
-import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
+import { createGameEntrySelector } from '../packages/presentation/server/game-entry-selector.mjs';
 
 const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 

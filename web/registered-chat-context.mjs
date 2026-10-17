@@ -1,5 +1,5 @@
 import {isActiveDealerId as isDealerId} from '../packages/presentation/contracts/dealer-identity.mjs';
-import { isGameLaneId } from './public/game-lanes.mjs';
+import {isGameLaneId} from '../packages/presentation/contracts/game-lane-id.mjs';
 import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 
 const keys=['operatorSlug','roomId','packageRevision','dealerId'];

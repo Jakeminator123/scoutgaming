@@ -1,5 +1,5 @@
 import type { PlayerCatalog } from '../../../packages/player-catalog/index.mjs';
-import type { PublicOperatorRooms } from '../../../web/public/operator-rooms-contract.mjs';
+import type { PublicOperatorRooms } from '../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 export type { PublicOperator, OperatorCatalogueResult } from '../../../packages/player-catalog/index.mjs';
 export type RoomCatalogueResult = import('../../../packages/player-catalog/index.mjs').RoomCatalogueResult<PublicOperatorRooms>;
 export const operatorPublicView: PlayerCatalog<PublicOperatorRooms>['operatorPublicView'];

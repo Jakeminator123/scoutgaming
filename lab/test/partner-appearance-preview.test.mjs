@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
-import {previewMediaPath} from '../../web/public/operator-preview-contract.mjs';
+import {previewMediaPath} from '../../packages/presentation/contracts/operator-preview-contract.mjs';
 import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 const fileUrl=new URL('../components/partner-appearance-preview.tsx',import.meta.url),localRequire=createRequire(fileUrl);

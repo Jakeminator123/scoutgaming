@@ -8,7 +8,7 @@ import { webcrypto } from 'node:crypto';
 import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createPartnerTrace, appendPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { acceptNativeObservation } from '../lib/native-observation.mjs';
-import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
+import { SPEECH_POSE_STAGES } from '../../packages/presentation/runtime/speech-pose-gate.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');

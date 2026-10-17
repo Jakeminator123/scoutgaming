@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {dealerClipGuide} from '../../../../web/public/dealer-clip-guide.mjs';
+import {dealerClipGuide} from '../../../../packages/presentation/contracts/dealer-clip-guide.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
 const module={exports:{}};
 runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/clip-guide.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-  {module,exports:module.exports,require:name=>name==='../../../../../web/public/dealer-clip-guide.mjs'?{dealerClipGuide}:require(name)});
+  {module,exports:module.exports,require:name=>name==='../../../../../packages/presentation/contracts/dealer-clip-guide.mjs'?{dealerClipGuide}:require(name)});
 const render=slot=>renderToStaticMarkup(React.createElement(module.exports.ClipGuide,{slot}));
 const deal={id:'deal.player.left/box0',eventId:'deal.player.left',situation:'box0',title:'Plats 1',description:'Kort till plats 1',sourceType:'deal',family:null};
 

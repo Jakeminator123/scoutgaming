@@ -6,6 +6,12 @@ import { presentationPublicModules } from '../../packages/presentation/public-mo
 // source modules only, never credentials, persisted settings or runtime data.
 export async function copyOpenClawRuntime(root) {
   for (const file of [
+    'packages/presentation/server/speech-reply-library.mjs',
+    'packages/presentation/server/speech-reply-repository.mjs',
+    'packages/presentation/server/game-entry-selector.mjs',
+    'packages/presentation/server/studio-policy-runtime.mjs',
+    'packages/shared/email-templates.mjs',
+    'packages/shared/blackjack-shoe-rules.mjs',
     'web/generated-speech-runtime.mjs',
     'packages/presentation/server/generated-speech-service.mjs',
     'packages/presentation/server/generated-speech-runtime.mjs',

@@ -8,7 +8,7 @@ import { validatePresentationPackage } from '../../packages/presentation/contrac
 import { mergeFrozenDealerPlayback } from '../../packages/presentation/contracts/frozen-dealer-playback.mjs';
 
 import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
-import { isGameLaneId } from '../../web/public/game-lanes.mjs';
+import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
 import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { readPackagePresentation, withPackagePresentation } from '../../packages/presentation/server/presentation-package.mjs';
 import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';

@@ -18,7 +18,7 @@ import {resolveWorkspaceSurfacePath} from '../../packages/navigation/workspace-s
 import {partnerRoomRequest} from '../../lab/lib/partner-room-selection.mjs';
 import {createPublicOperatorRooms} from '../../web/public-operator-rooms.mjs';
 import {createPublicOperatorDirectory} from '../../web/public-operators.mjs';
-import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
+import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
 import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
 import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
 

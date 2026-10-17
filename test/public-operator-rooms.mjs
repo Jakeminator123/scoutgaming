@@ -6,8 +6,9 @@ import {captureFrozenRegisteredDealers,captureFrozenDealerPlayback} from '../pac
 import {withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {buildPresentationPackage,layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
-import {createPublicOperatorRooms,isUnplayableOperatorRooms} from '../web/public-operator-rooms.mjs';
-import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
+import {createPublicOperatorRooms} from '../web/public-operator-rooms.mjs';
+import {isUnplayableOperatorRooms} from '../packages/operators/server/public-rooms.mjs';
+import {validatePublicOperatorRooms} from '../packages/presentation/contracts/operator-rooms-contract.mjs';
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
 import {materialSource} from '../packages/presentation/contracts/material-catalog.mjs';
 

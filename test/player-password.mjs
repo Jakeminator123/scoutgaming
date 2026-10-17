@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { createAccountCredentialResolver } from '../packages/studio-access/server/account-credentials.mjs';
-import { createPlayerAdministration, createPlayerPasswordCommand } from '../web/storage/player-administration.mjs';
+import { createPlayerAdministration, createPlayerPasswordCommand } from '../packages/storage/server/player-administration.mjs';
 
 function fixture() {
   const sqlite=new DatabaseSync(':memory:');

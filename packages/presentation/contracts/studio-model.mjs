@@ -122,7 +122,7 @@ const colorList = (value, at, fail) => {
   });
 };
 
-// Same id rule as web/public/game-lanes.mjs isGameLaneId. The server catalogue is not imported or changed.
+// Same id rule as packages/presentation/contracts/game-lane-id.mjs. The server catalogue is not imported or changed.
 export function defaultPresentationLane(dealerId) {
   if (!isActiveDealerId(dealerId)) throw new StudioValidationError(['sammansättning: välj en aktiv dealer innan du skapar den']);
   return {

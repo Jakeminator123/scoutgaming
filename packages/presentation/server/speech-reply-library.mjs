@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
-import { validateStudioScope } from '../packages/studio-registry/server/document-contract.mjs';
-import { validateReplyCategories } from './public/speech-reply-library.mjs';
-import { mediaBlobPath, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, isCloudMediaConfigured } from './blob-media.mjs';
+import { isDealerId } from '../contracts/dealer-identity.mjs';
+import { validateStudioScope } from '../../studio-registry/server/document-contract.mjs';
+import { validateReplyCategories } from '../contracts/speech-reply-library.mjs';
+import { mediaBlobPath, validatePrivateMedia, isCloudMediaConfigured } from '../../studio-registry/server/private-media-contract.mjs';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const HASH = /^[a-f0-9]{64}$/;
@@ -44,12 +44,14 @@ function item(value) {
   return structuredClone({ ...publicValue, media: Object.fromEntries(Object.entries(media).map(([kind, record]) => [kind, { available: true, sha256: record.sha256, contentType: record.contentType, size: record.size }])) });
 }
 // Neon owns metadata and category CAS; private Blob owns only immutable media.
-export function createSpeechReplyLibrary({ repository, env = process.env, blobClient, cacheDir, environment, workspaceId, now = () => new Date() } = {}) {
+export function createSpeechReplyLibrary({ repository, mediaStore, env = process.env, blobClient, cacheDir, environment, workspaceId, now = () => new Date() } = {}) {
   let scope;
   try { scope = validateStudioScope({ environment, workspaceId }); } catch { fail('reply_library_invalid_scope',400); }
   const scopeHash = speechReplyScopeHash(scope);
   if(!repository||['read','list','create','update'].some(key=>typeof repository[key]!=='function'))fail('reply_library_repository_required');
   if(repository.scope?.environment!==scope.environment||repository.scope?.workspaceId!==scope.workspaceId)fail('reply_library_invalid_scope',400);
+  if (!mediaStore || ['putPrivateMedia','getPrivateMedia','deletePrivateMedia'].some(key => typeof mediaStore[key] !== 'function')) fail();
+  const { putPrivateMedia, getPrivateMedia, deletePrivateMedia } = mediaStore;
   const options = { env: { CROUPIER_MEDIA_STORAGE: env.CROUPIER_MEDIA_STORAGE, BLOB_READ_WRITE_TOKEN: env.BLOB_READ_WRITE_TOKEN }, ...(blobClient ? { blobClient } : {}), ...(cacheDir ? { cacheDir } : {}) };
   function requireMedia() { if (!isCloudMediaConfigured(options.env)) fail(); }
   async function read(dealerId, id) {

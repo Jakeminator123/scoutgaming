@@ -66,11 +66,11 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/managed-media-contract.mjs',
   'packages/studio-registry/server/document-contract.mjs',
   'web/public/background-playback-policy.mjs',
-  'web/public/background-playback.mjs',
+  'packages/presentation/runtime/background-playback.mjs',
   'web/public/background-materials.mjs',
   'web/public/material-catalog.mjs',
-  'web/public/card-presentation/calibration.mjs',
-  'web/public/card-view.mjs',
+  'packages/presentation/contracts/calibration.mjs',
+  'packages/presentation/contracts/card-view.mjs',
   'web/public/composition-settings.mjs',
   'web/public/dealer-compositing.mjs',
   'web/public/dealer-framing.mjs',
@@ -81,10 +81,10 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/public/recorded-speech.mjs',
   'web/public/speech-slot-bindings.mjs',
   'web/public/speech-lines.mjs',
-  'web/public/game-lanes.mjs',
+  'packages/presentation/contracts/game-selection.mjs',
   'packages/presentation/contracts/game-lane-id.mjs',
-  'web/public/game-overlay-layout.mjs',
-  'web/public/presentation-composition.mjs',
+  'packages/presentation/runtime/game-overlay-layout.mjs',
+  'packages/presentation/runtime/presentation-composition.mjs',
 ]);
 const DROP_KEYS = new Set(['elapsedMs', 'cacheId', 'cacheKey', 'generatedAt', 'timestamp', 'observedAt']);
 

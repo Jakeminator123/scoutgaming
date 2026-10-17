@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { createLegacyClipInventory } from '../../packages/presentation/server/legacy-clip-inventory.mjs';
-import { validateContactTake, validateContinuation } from '../../web/public/performance-contact.mjs';
+import { validateContactTake, validateContinuation } from '../../packages/presentation/contracts/performance-contact.mjs';
 import { resolveMediaAbsolutePath, repositoryRoot } from '../../tools/media-layout.mjs';
 
 export const { loadLegacyClipInventory, legacyClipControls } = createLegacyClipInventory({

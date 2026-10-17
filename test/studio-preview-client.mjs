@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioPreviewClient, studioPreviewFromDocument, validateStudioPreviewSession, requestEmbeddedStudioPreviewClose } from '../web/public/studio-preview-client.mjs';
 import { decorateGameEntryHtml, validateStudioPreview } from '../web/public/game-entry-contract.mjs';
-import { validateComposition } from '../web/public/presentation-composition.mjs';
-import { readChoices, writeChoices, choicesStorageKey } from '../web/public/player-choices.mjs';
+import { validateComposition } from '../packages/presentation/runtime/presentation-composition.mjs';
+import { readChoices, writeChoices, choicesStorageKey } from '../packages/presentation/runtime/player-choices.mjs';
 import { dealerVersionPath } from '../web/public/dealer-version-switcher.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 const id='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-8222-222222222222', asset='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -262,7 +262,7 @@ async function returnLinkFixture({selection,preview=null,closeFails=false,embedd
 }
 
 test('player return restores the server-selected lobby room without trusting query or guessing a room from composition',async()=>{
- const {gameLaneFromDocument}=await import('../web/public/game-lanes.mjs');
+ const {gameLaneFromDocument}=await import('../packages/presentation/contracts/game-selection.mjs');
  const base={...dataset};delete base.studioPreview;
  for(const [fields,expected] of [
   [{gameOperator:'example',gamePackageRevision:'4',gameBranding:'{}',gameRoomId:'room-evening'},'/lobby?operator=example&room=room-evening'],
@@ -276,7 +276,7 @@ test('player return restores the server-selected lobby room without trusting que
 });
 
 test('preview return opens Admin with exact composition and dealer after closing only its isolated session',async()=>{
- const {gameLaneFromDocument}=await import('../web/public/game-lanes.mjs');
+ const {gameLaneFromDocument}=await import('../packages/presentation/contracts/game-selection.mjs');
  const selected={...dataset,gameComposition:JSON.stringify(composition)};
  const selection=gameLaneFromDocument(selected),preview=studioPreviewFromDocument(selected,'/studio-preview/'+id);
  for(const closeFails of [false,true]){

@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import {withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
-import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
+import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
 import {createRouletteRoomAccess,validateRoomContext} from '../web/games/roulette/access.mjs';
 import {createPublicOperatorRooms} from '../web/public-operator-rooms.mjs';
 import {isPresentationRoom, roomPlayPath} from '../packages/presentation/contracts/presentation-room.mjs';
-import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
+import {validatePublicOperatorRooms} from '../packages/presentation/contracts/operator-rooms-contract.mjs';
 import {createFrozenDealerContextReader} from '../packages/presentation/server/frozen-dealer-presentation.mjs';
 import {canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 

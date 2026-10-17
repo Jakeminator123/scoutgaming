@@ -3,8 +3,8 @@
 import {useEffect,useRef,useState} from 'react';
 import {CompositionPreview} from './composition-preview';
 import {DealerClipPreview} from './dealer-video-surface';
-import {validatePublicOperatorPreview} from '../../web/public/operator-preview-contract.mjs';
-import type {PublicOperatorPreview} from '../../web/public/operator-preview-contract.mjs';
+import {validatePublicOperatorPreview} from '../../packages/presentation/contracts/operator-preview-contract.mjs';
+import type {PublicOperatorPreview} from '../../packages/presentation/contracts/operator-preview-contract.mjs';
 import type {EditableBranding,PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 import styles from './partner-appearance.module.css';
 

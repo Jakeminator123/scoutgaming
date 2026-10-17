@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {CONTACT_CHECKS,DEAL_ACTIONS,TABLE_ACTIONS,validateContactTake,validateSharedExtraction,validateContinuation,selectSequenceTake,continuationStartFrame,selectContactTake,selectPlayerDelivery,contactFrame,contactCueClock,calibrationPayload,uniformRegistration} from '../web/public/performance-contact.mjs';
+import {CONTACT_CHECKS,DEAL_ACTIONS,TABLE_ACTIONS,validateContactTake,validateSharedExtraction,validateContinuation,selectSequenceTake,continuationStartFrame,selectContactTake,selectPlayerDelivery,contactFrame,contactCueClock,calibrationPayload,uniformRegistration} from '../packages/presentation/contracts/performance-contact.mjs';
 export function fixture() {
   const take={version:1,id:'synthetic-contract-test',dealer:'astrid',action:'deal-centre',status:'contact-approved',
     media:{src:'test.mp4',sha256:'a'.repeat(64),layout:'rgb-over-masks-r-actor-g-fingers',width:1280,height:720,fps:24,frames:12},

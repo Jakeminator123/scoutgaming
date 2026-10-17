@@ -1,6 +1,6 @@
 import { createPlayerCatalog } from '../../../packages/player-catalog/index.mjs';
 import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
-import { validatePublicOperatorRooms } from '../../../web/public/operator-rooms-contract.mjs';
+import { validatePublicOperatorRooms } from '../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 import { parseLobbyCatalog } from '../lobby/lib/catalog.mjs';
 export { lobbySelection, lobbyQuerySelection, playUrlFor } from '../lobby/lib/catalog.mjs';
 

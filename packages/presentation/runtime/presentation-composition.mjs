@@ -1,9 +1,9 @@
-import {defaultCompositionSettings,validateCompositionSettings,sceneForComposition} from '../../packages/presentation/contracts/composition-settings.mjs';
-import {drawDealerFrame,validateDealerFraming} from '../../packages/presentation/contracts/dealer-framing.mjs';
-import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
-import {validateBackgroundPlayback} from '../../packages/presentation/contracts/background-playback-policy.mjs';
-import {createBackgroundPlayback} from './background-playback.mjs';
-import {projectGamePlane,projectTableGamePlane,BLACKJACK_COMPACT_QUERY} from './game-overlay-layout.mjs';
+import {defaultCompositionSettings,validateCompositionSettings,sceneForComposition} from '../../../packages/presentation/contracts/composition-settings.mjs';
+import {drawDealerFrame,validateDealerFraming} from '../../../packages/presentation/contracts/dealer-framing.mjs';
+import {effectiveDealerCompositing} from '../../../packages/presentation/contracts/dealer-compositing.mjs';
+import {validateBackgroundPlayback} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
+import {createBackgroundPlayback} from '../../../packages/presentation/runtime/background-playback.mjs';
+import {projectGamePlane,projectTableGamePlane,BLACKJACK_COMPACT_QUERY} from '../../../packages/presentation/runtime/game-overlay-layout.mjs';
 const idPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => {throw Error('Invalid layer composition');};
 export function validateComposition(value) {

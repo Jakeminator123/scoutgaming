@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {OPERATOR_NOT_FOUND_HTML} from '../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
-import {playerHandoffDestination} from './public/player-handoff.mjs';
+import {playerHandoffDestination} from '../packages/navigation/player-handoff.mjs';
 import { isAdministratorRole } from '../packages/studio-access/server/account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
@@ -23,7 +23,7 @@ import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration 
 import { createDealerSpeechRuntime } from './dealer-speech-runtime.mjs';
 import { createDealerSpeechReferenceService } from './dealer-speech-reference.mjs';
 import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
-import { CHAT_STAGES } from './public/chat-response.mjs';
+import { CHAT_STAGES } from '../packages/presentation/contracts/chat-response.mjs';
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
 import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
@@ -75,7 +75,7 @@ if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
 const { gameEntryRedirect, canonicalGameDestination, playerLoginDestination } = await import('../packages/navigation/game-entry.mjs');
-const { gameLaneSelection } = await import('./public/game-lanes.mjs');
+const { gameLaneSelection } = await import('../packages/presentation/contracts/game-selection.mjs');
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
@@ -85,15 +85,15 @@ const { createStudioMediaRuntime } = neonStudioEnabled ? await import('./storage
 const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
 const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
-  ? (await import('./speech-reply-library.mjs')).createSpeechReplyLibrary({env:process.env,...studioPolicyRuntime.scope,
-    repository:(await import('./storage/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
+  ? (await import('../packages/presentation/server/speech-reply-library.mjs')).createSpeechReplyLibrary({mediaStore:await import('./blob-media.mjs'),env:process.env,...studioPolicyRuntime.scope,
+    repository:(await import('../packages/presentation/server/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
 const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
   readProject: () => studioPolicyRuntime.policy.projectStore().load(),
   readVideoRegistry:studioMediaRuntime.videoRegistry,
   referenceService: createDealerSpeechReferenceService({readVideoRegistry:studioMediaRuntime.videoRegistry,readVideoResponse:studioMediaRuntime.videoResponse}),
 }) : null;
 // Operator packages share the Studio pool and scope; a read failure keeps today's entry.
-const { createGameEntrySelector } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
+const { createGameEntrySelector } = studioPolicyRuntime ? await import('../packages/presentation/server/game-entry-selector.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope, ttlMs:0 }) }) : null;
 const operatorAppearanceApi = selectGameEntry ? (await import('./operator-appearance-api.mjs')).createOperatorAppearanceApi({selectGameEntry}) : null;
@@ -339,7 +339,7 @@ function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCom
 // password change. Current logins survive server restarts.
 const boDb = storage?.boDb ?? new DatabaseSync(join(dataDir, 'craig.db'));
 const playerAdministration = postgres
-  ? (await import('./storage/player-administration.mjs')).createPlayerAdministration({ db, boDb }) : null;
+  ? (await import('../packages/storage/server/player-administration.mjs')).createPlayerAdministration({ db, boDb }) : null;
 if (!postgres) boDb.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
@@ -680,7 +680,7 @@ const operatorSpeechQa = createOperatorSpeechQa({
         signal: options.signal ? AbortSignal.any([signal, options.signal]) : signal })),
   }),
 });
-const playerPasswordCommand=playerAdministration ? (await import('./storage/player-administration.mjs')).createPlayerPasswordCommand({
+const playerPasswordCommand=playerAdministration ? (await import('../packages/storage/server/player-administration.mjs')).createPlayerPasswordCommand({
   administration:playerAdministration,
   cancelRuntime:async playerId=>{
     await speechStreamService?.cancelPlayer(playerId);

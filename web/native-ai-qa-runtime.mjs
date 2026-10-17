@@ -13,7 +13,7 @@ const fields=[
   'web/generated-speech-session.mjs','web/speech-journal-runtime.mjs','packages/presentation/server/generated-speech-provider.mjs',
   'web/generated-speech-chat.mjs','web/operator-speech-qa.mjs','tools/activate-native-ai-qa.mjs',
   'web/public/app.mjs','web/public/native-p6-game-playback.mjs','web/public/speech-queue.mjs',
-  'web/public/speech-pose-gate.mjs','web/public/generated-speech-player.mjs','web/public/speech-stream-client.mjs'];
+  'packages/presentation/runtime/speech-pose-gate.mjs','packages/presentation/runtime/generated-speech-player.mjs','packages/presentation/runtime/speech-stream-client.mjs'];
 export const AI_QA_SOURCE_PATHS=Object.freeze(fields);
 export function validateAiQaManifest(m,env,now=Date.now()){
   need(m?.purpose==='bounded-native-ai-qa-activation-v1'&&m.campaignId===AI_QA_ORIGINAL.campaignId

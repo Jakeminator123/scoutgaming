@@ -1,5 +1,5 @@
 import {backofficePlayerHandoffRequired,currentBackofficeAccount,backofficePlayerSource,readBackofficePlayerSource} from './bo-player-session.mjs';
-import {playerHandoffPath} from './public/player-handoff.mjs';
+import {playerHandoffPath} from '../packages/navigation/player-handoff.mjs';
 import { createHash, randomBytes } from 'node:crypto';
 
 // A BO cookie stays on the BO host. Only a single-use, browser-bound code crosses

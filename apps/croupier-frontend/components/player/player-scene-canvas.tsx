@@ -2,9 +2,9 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {type CompositionSettings} from '../../../../packages/presentation/contracts/composition-settings.mjs';
-import type {PublicPreviewCompositing} from '../../../../web/public/operator-preview-contract.mjs';
+import type {PublicPreviewCompositing} from '../../../../packages/presentation/contracts/operator-preview-contract.mjs';
 
-import {mountPublishedScene} from '../../../../web/public/published-scene.mjs';
+import {mountPublishedScene} from '../../../../packages/presentation/runtime/published-scene.mjs';
 
 export type PlayerSceneSource = {src:string; contentType:string};
 export type PlayerSceneCompositing = PublicPreviewCompositing;

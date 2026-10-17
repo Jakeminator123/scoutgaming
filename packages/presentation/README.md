@@ -12,7 +12,7 @@ produktnivå. Gemensamma begrepp och rumsmodellen definieras i
 - `docs/` — referens för den fristående kompositorexporten och en hänvisning till den gemensamma formatlåsningen; ingen separat produktplan.
 - `preview/site/` — granskat byggmaterial för isolerad offlinefixtur; förberedaren hämtar också delade renderarmoduler.
 - `contracts/` — ren projektmodell, video-/rouletteregler, browserpolicy, schema och seeddata. Studio, Admin och spelserver importerar samma källa. Inventarie- och legacy-datatyper ägs också här; UI och lagring behåller sina egna funktioner.
-- `runtime/` — idle, filmfamiljer, legacy-klipp och skobyten. De rena modell-/mediereglerna använder paketkontrakt. `filmed-deal-sequence.mjs` har fortfarande ett separat beroende på webbens kortpolicy; det ligger utanför denna kontraktsflytt.
+- `runtime/` — gemensam scen, spelarval, bakgrund, taluppspelning, idle, filmfamiljer, legacy-klipp och skobyten. Rena modell-/medieregler, kortkalibrering och filmprofiler använder `contracts/`, utan import tillbaka till spelappen.
 - `server/` — urvalsfabrik, ren bindningsvalidering och fabrik för registrerade idle-regler. Den sistnämnda får samma `prepareDecision` från appens Director-komposition, utan att paketet importerar OpenClaw. Kärnan får projektmodell, Director och medieregler från separata appkompositioner i `lab/lib/presentation-selection.mjs` och `web/presentation-selection.mjs`; varje anrop skickar sitt eget register. Bindningskompositionen i `packages/presentation/server/default-video-bindings.mjs` behöver ingen Director.
 - `public-modules.mjs` — explicit lista över browserfiler och deras kanoniska/äldre URL:er. HTTP-server, Vercelroutning, statiska byggkopior och isolerade källfixturer delar listan. Serverfabriker, projektseed och privata appar ingår aldrig.
 - `capability-contract.mjs` — importfritt kontrakt för versionsförhandling mellan spelserver och Studio. Serverendpoint, readiness och bundlad klient använder samma representation; kontraktet ger ingen registrering eller behörighet.
@@ -24,7 +24,9 @@ Dessa läser paketet:
 - `web/layer-packs.mjs` serverar `/layer-packs/*` från `compositor/`.
 - `lab/tools/prepare-preview.mjs` bygger `lab/preview-build`. Native molndrift serverar endast `compositor.js` och `geometry.js` under `/preview/*`; äldre sida, katalog och medier svarar 410. Explicit offlinefixtur behåller sitt isolerade previewmaterial.
 - `lab/lib`, `lab/components`, `web/presentation-api.mjs`, `web/storage` och `web/studio-preview.mjs` importerar `runtime/`.
-- `web/public/local-presentation.mjs` importerar `runtime/live-idle.mjs` direkt. Servern tillåter exakt `live-idle.mjs` och `idle-policy.mjs` under `/packages/presentation/runtime/`; de äldre `/presentation-runtime/*`-adresserna fungerar fortsatt. Den statiska frontendbyggaren genererar både kanoniska och äldre outputadresser och anpassar relativa importer för varje kopia.
+- `web/public/local-presentation.mjs` importerar `runtime/live-idle.mjs` direkt. Servern tillåter bara de exakta kontrakts-/runtimeadresserna i `public-modules.mjs`; de äldre `/presentation-runtime/*`-adresserna fungerar fortsatt. Den statiska frontendbyggaren genererar både kanoniska och äldre outputadresser och anpassar relativa importer för varje kopia.
+
+Flyttade browsermoduler använder relativa importer som når samma `/packages/...`-källa både från den gamla URL:en och från paketets kanoniska URL. Röstkatalogens JSON och filmprofilernas inbäddade proveniens behåller sina bytes. Rena spelval ligger i `contracts/game-selection.mjs`; definitioner och ID-predicate importeras direkt från `game-lanes.mjs` respektive `game-lane-id.mjs`.
 
 Publika adresser är stabila: `/composition-runtime/*`, `/layer-packs/*`, `/presentation-runtime/*` och Studio `/preview/*` (publikt `/studio/preview/*`). Katalogens designnamn, mediehashar och schema-ID:n behålls. Importvägarna följer den kanoniska källan.
 
@@ -83,3 +85,13 @@ De två rena browserkontrakten `speech-package` och `astrid-voice-profile` ligge
 under `contracts/`; gamla publika URL:er och kanoniska paket-URL:er når samma källor.
 Servermodulerna ingår aldrig i den publika allowlisten. Talidentiteter, originalmedia,
 godkännanden, tidsgränser, lease-/kostnadsregler och avbrottshantering är oförändrade.
+
+`server/speech-reply-library.mjs` och `speech-reply-repository.mjs` äger svarsbankens
+validering, scope/hash, CAS och rollback. Appar tillför sina befintliga Blob-metoder
+med oförändrade options och cachekatalog. `server/game-entry-selector.mjs` binder
+samma sparade policy och frysta paket till spelarens val.
+
+`server/studio-policy-runtime.mjs` behåller bootstrapordningen installerat schema,
+Studio-migrationskontroll, repository, idle och readSaved. Explicita portar binder
+appens migrationskontroll och lazy medialäsare; serverkärnan importerar inga appfiler.
+Game behåller sin HTTP-handler och Studio sina readonly-stores och poolstädning.

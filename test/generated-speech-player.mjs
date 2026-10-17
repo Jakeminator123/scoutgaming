@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
-import { loadGeneratedSpeech, playGeneratedSpeech } from '../web/public/generated-speech-player.mjs';
+import { loadGeneratedSpeech, playGeneratedSpeech } from '../packages/presentation/runtime/generated-speech-player.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const audioBytes = Buffer.from('fixture exact WAV bytes');
