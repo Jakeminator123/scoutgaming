@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { createRoulettePreview } from '../web/games/roulette/preview.mjs';
-import { backendPlatformPath, platformRoute } from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import { backendPlatformPath, platformRoute } from '../packages/navigation/server/platform-routing.mjs';
 import { vercelIngressRequest } from '../ops/cloud/vercel-ingress.mjs';
 
 async function fixture(t, options = {}) {

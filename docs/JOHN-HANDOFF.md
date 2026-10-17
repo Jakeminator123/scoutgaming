@@ -24,15 +24,33 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 `packages/player-catalog` äger katalogläsning och resultattyper. Frontend och
 Studios lobby binder samma slug-/rumvalidatorer genom egna kompositioner;
 lobbyn importerar inte längre frontendens privata kod. Alla tre flyttade
-katalogfunktioner har oförändrade kroppar. Sessioner, login-/speladresser,
+katalogfunktioner har oförändrade kroppar. Sessioner, login-/spelstarter,
 rumval och sparade preferenser stannar i apparna.
 
 `packages/navigation` äger rena Admin-/Control-/Partner-adresser, operatorval
 samt den gemensamma slugregeln som ersätter fyra identiska implementationer.
 SQL-lagrets annorlunda lagringsvalidator bevaras. Studios HTTP-adapter är
 `lab/lib/legacy-studio-document.mjs`; förbrukade routefiler och wrappers tas
-bort. Bara operator-slug-modulens exakta URL läggs till i befintlig allowlist.
+bort. Operator-slug och den rena speladressmodulens exakta URL:er finns i befintlig allowlist.
 Alla konsumenter, isolerade kopieringslistor och QA-källor följer ändringen.
+
+C3-förkontrollen hittade två återstående privata routingkanter. Samma verkliga
+serverrouting ligger nu i `packages/navigation/server/platform-routing.mjs`;
+Studio, frontend och Render-ingress importerar neutral källkod direkt.
+Sex rena adress-/queryfunktioner ligger i `packages/navigation/game-entry.mjs`
+med kanoniska dealer-/lane-/slugregler. HTML/presentation och previewvalidering
+stannar i `web/public/game-entry-contract.mjs`. Gamla routingfilen tas bort;
+inga wrappers eller nya npm-/SDK-beroenden. Endast speladressmodulens exakta
+kanoniska URL är publik; serverrouting och felaktiga alias nekas för GET/HEAD.
+
+Routing-, query- och dekorationskropparna samt 16 appkonsumenters övriga
+runtimekroppar är mekaniskt oförändrade mot `48a75523`. Neutral closure har
+11 moduler utan app-/SDK-importer eller cykler. Berörda befintliga prov ger
+166 pass och en befintlig browser-opt-in, plus ett verkligt GET/HEAD-importgrafprov.
+En förbrukad råbyte-kopieringsassertion ersattes av befintlig importgraf-/login-
+täckning och explicit publik/privat paketering; endast dess provfil kördes om
+(2/2). Frontendens och Studios typer passerar. Utökningen är parentgranskad och
+lokal commit kör ordinarie hook; ingen fullsuite eller fullbuild gjord.
 
 Katalog-/navigationsprov, publik importgraf, klientbundling och frontendens,
 Studios och lobbyklientens typkontroller har passerat. Katalogkroppar och

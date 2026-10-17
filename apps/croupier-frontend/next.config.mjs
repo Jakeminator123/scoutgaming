@@ -1,4 +1,4 @@
-import { platformConfiguration } from './lib/platform-routing.mjs';
+import { platformConfiguration } from '../../packages/navigation/server/platform-routing.mjs';
 import { fileURLToPath } from 'node:url';
 import {adminDocumentHref} from '../../packages/navigation/admin-workspace-routes.mjs';
 const platform = platformConfiguration();

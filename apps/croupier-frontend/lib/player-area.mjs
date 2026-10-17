@@ -1,6 +1,6 @@
 import {operatorPublicView} from './player-catalog.mjs';
 import {playerHandoffDestination} from '../../../web/public/player-handoff.mjs';
-import {platformBackendHeaders, platformConfiguration} from './platform-routing.mjs';
+import {platformBackendHeaders, platformConfiguration} from '../../../packages/navigation/server/platform-routing.mjs';
 import {operatorLoginPath, operatorPlayPath, operatorSlugFromSearch} from './player-operator.mjs';
 
 // Signed-in player's own aggregate. Partner /api/v1/history stays a separate key API.

@@ -73,7 +73,8 @@ const storage = postgres ? createPostgresStore({ connectionString: process.env.C
   zonesConnectionString: process.env.CROUPIER_ZONES_DATABASE_URL }) : null;
 if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
-const { gameEntryRedirect, canonicalGameDestination, decorateGameEntryHtml, playerLoginDestination } = await import('./public/game-entry-contract.mjs');
+const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
+const { gameEntryRedirect, canonicalGameDestination, playerLoginDestination } = await import('../packages/navigation/game-entry.mjs');
 const { gameLaneSelection } = await import('./public/game-lanes.mjs');
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};

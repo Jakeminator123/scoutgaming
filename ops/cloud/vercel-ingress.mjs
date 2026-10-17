@@ -1,7 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
-import { approvedGameQuery } from '../../web/public/game-entry-contract.mjs';
+import {approvedGameQuery} from '../../packages/navigation/game-entry.mjs';
 import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
-import { exactPlatformOrigin, backendPlatformPath, canonicalPlatformPath } from '../../apps/croupier-frontend/lib/platform-routing.mjs';
+import { exactPlatformOrigin, backendPlatformPath, canonicalPlatformPath } from '../../packages/navigation/server/platform-routing.mjs';
 
 export function readVercelIngressConfig(env = process.env) {
   if (!env.CROUPIER_VERCEL_TRANSPORT_ORIGIN) return null;

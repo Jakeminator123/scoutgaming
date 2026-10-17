@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { designPreviewFile, serveDesignPreview, servePublicLobby, designPreviewAuthRedirect } from '../lib/design-preview.mjs';
 import { studioLoginReturnTo, studioLoginDestination } from '../lib/studio-login-client.mjs';
-import { platformConfiguration, platformRoute } from '../../apps/croupier-frontend/lib/platform-routing.mjs';
+import { platformConfiguration, platformRoute } from '../../packages/navigation/server/platform-routing.mjs';
 
 test('preview documents and assets have exact route boundaries', () => {
   assert.equal(designPreviewFile([]), 'admin/index.html');

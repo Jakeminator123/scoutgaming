@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { platformConfiguration, platformRoute, platformBackendHeaders } from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import { platformConfiguration, platformRoute, platformBackendHeaders } from '../packages/navigation/server/platform-routing.mjs';
 import { studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } from './lib/studio-native-request.mjs';
 import { legacyStudioDocumentHref } from './lib/legacy-studio-document.mjs';
 import { publicAbsoluteUrl } from './lib/lab-url.mjs';
