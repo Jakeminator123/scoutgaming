@@ -264,6 +264,13 @@ hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga ru
    namnet bevisar inte vilka privata images den får läsa. Befintlig lokal
    GitHub-inloggning saknar `read:packages`; dess GHCR-404 är därför inget
    bevis på saknad image eller felaktig RunPod-inloggning. Nycklarna är orörda.
+   Inloggad GitHub-vy bekräftar däremot att den privata versionen finns med
+   exakt digest `sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
+   Manifestets lager är cirka 8,1 GB komprimerade. Storleken gör lång första
+   imagehämtning möjlig, men bevisar inte att RunPod kunde hämta den eller att
+   hämtningen orsakade timeouten. Paketets nedladdningsräknare saknar källa och
+   tid och används därför inte som RunPod-kvitto. Se
+   [verifierad paketversion](https://github.com/Jakeminator123/scoutgaming/pkgs/container/moving-gpu-worker/1401501221?tag=sha-9a644e730966c248518c76a115c9bd922b0c5ef3).
 2. Skilj plattformens imagehämtning från Python-/modelluppstart. Våra prov
    nådde inte workerintyget och kan inte bedöma TTS, filmval eller läppsynk.
    Kallstart är en möjlig förklaring, inte fastställd rotorsak. Läs faktisk
@@ -273,6 +280,10 @@ hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga ru
    3,759812463 USD av samma godkända **5 USD**. Återstående utrymme var
    1,240187537 USD. Sjunde reserven 0,21 USD omfattar hela guardtiden,
    stoppmarginal och disk. Budget-/guardverktygens 72 prov passerade.
+   Jakob höjde därefter uttryckligen det sammanlagda testtaket till **10 USD**.
+   Alla tidigare kostnader och reserver följer med; höjningen är inte ett nytt
+   fristående 10 USD-utrymme. Nästa plan är ett avgränsat uppstartsprov med
+   talprofilen avstängd, utan speljobb och med automatisk resursstängning.
    Detta är ett daterat kvitto; uppdatera hela underlaget inom fem minuter
    före användning. Neon-reservationer är inte fakturor eller extra budget.
 4. Verifiera ny OpenClaw-replik i vila, sedan tal under serverbestämd utdelning.
