@@ -1,5 +1,6 @@
+import { MOVING_SPEECH_LIMITS } from './moving-speech-limits.mjs';
 import { randomBytes } from 'node:crypto';
-import { validatePrivateMedia, getPrivateMedia, withVerifiedPrivateMediaFile } from '../lab/lib/cloud-media-store.mjs';
+import { validatePrivateMedia, getPrivateMedia, withVerifiedPrivateMediaFile } from './blob-media.mjs';
 import { validateMovingSpeechSourceSet } from './moving-speech-bank.mjs';
 
 const fail = () => { throw Error('moving_bank_artifacts_invalid'); };
@@ -62,9 +63,9 @@ export function createMovingBankDownloads({origin, bank, read = getPrivateMedia,
   if (base.protocol !== 'https:' || base.origin !== origin) fail();
   const pending = new Map();
   return Object.freeze({
-    issue({signal, authorize, ttlMs = 180000} = {}) {
+    issue({signal, authorize, ttlMs = MOVING_SPEECH_LIMITS.lifetimeMs} = {}) {
       if (typeof authorize !== 'function' || !(signal instanceof AbortSignal) || signal.aborted
-        || !Number.isSafeInteger(ttlMs) || ttlMs < 1000 || ttlMs > 180000) fail();
+        || !Number.isSafeInteger(ttlMs) || ttlMs < 1000 || ttlMs > MOVING_SPEECH_LIMITS.lifetimeMs) fail();
       const token = randomBytes(32).toString('hex'), expiresAt = now() + ttlMs;
       const controller = new AbortController();
       const revoke = () => {pending.delete(token);clearTimeout(timer);signal.removeEventListener('abort', revoke);controller.abort();};

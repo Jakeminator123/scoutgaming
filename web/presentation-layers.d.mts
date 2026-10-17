@@ -2,7 +2,7 @@ import type {LayerAsset, StudioLane, StudioProject} from '../packages/presentati
 export const LAYER_ASSET_TYPES: Readonly<Record<string,string>>;
 export const MAX_LAYER_ASSET_BYTES: number;
 export const LAYER_ASSET_ROLES: readonly ['background','table'];
-import type {StudioMediaRecord} from './managed-media-contract.mjs';
+import type {StudioMediaRecord} from '../packages/studio-registry/server/managed-media-contract.mjs';
 export interface FrozenRegisteredDealer {id:string; label:string; idle:StudioMediaRecord|null;rouletteIdle?:{base:StudioMediaRecord;variants:StudioMediaRecord[];foregroundPolygons?:import('../packages/presentation/contracts/roulette-idle-contract.mjs').RouletteForegroundPolygons};rouletteStart?:import('../packages/presentation/contracts/roulette-start-contract.mjs').RouletteStartProfile&{clip:StudioMediaRecord}}
 export interface LegacyPresentationPackage {schemaVersion:1; projectRevision:string; lanes:StudioLane[]; assets:LayerAsset[]}
 export interface FrozenPresentationPackage {schemaVersion:2; projectRevision:string; lanes:StudioLane[]; assets:LayerAsset[]; registeredDealers:FrozenRegisteredDealer[]}

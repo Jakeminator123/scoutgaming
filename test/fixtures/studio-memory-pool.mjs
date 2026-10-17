@@ -1,6 +1,6 @@
 // Transaction/adapter fixture only. It is not evidence of PostgreSQL syntax,
 // isolation or constraints: the separate real-Postgres integration test is.
-import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
+import {runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 export function createStudioMemoryPool() {
   let state = { documents: new Map(), history: [], media: new Map(), catalogs: new Map(), forgeJobs: new Map(), audits: [] }, tail = Promise.resolve(), clock = 0, clientId = 0;
   const faults = new Map(), calls = [];

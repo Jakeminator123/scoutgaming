@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { addDealer, createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import { legacyStudioDocumentHref } from '../lib/admin-workspace-routes.mjs';
+import { legacyStudioDocumentHref } from '../lib/legacy-studio-document.mjs';
 import { studioLoginDestination } from '../lib/studio-login-client.mjs';
 import { fixture } from './fixtures/dealer-forge-fixture.mjs';
 

@@ -6,7 +6,8 @@ import { validateStudioScope, studioStorageFailure, canonicalStudioJson } from '
 import {PRESENTATION_PACKAGE_KEY} from './presentation-package.mjs';
 import { validateStudioGameAdministration } from './studio-game-policy.mjs';
 import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import { isGameLaneId, isOperatorSlug } from '../public/game-lanes.mjs';
+import { isGameLaneId } from '../public/game-lanes.mjs';
+import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 import { isPresentationRoom } from '../presentation-room-contract.mjs';
 import { StudioStorageError } from './studio-contract.mjs';
 import { resolveFrozenDealerIdle, validateFrozenRegisteredDealers } from './frozen-dealer-idle.mjs';

@@ -1,4 +1,5 @@
-import { createRuntimeMetadataBytesReader, readRuntimeCatalog } from '../../tools/runtime-media-catalog.mjs';
+import {createRuntimeMetadataBytesReader} from '../../tools/runtime-media-catalog.mjs';
+import {readRuntimeCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import { createHash } from 'node:crypto';
 import { repositoryRoot as defaultRoot, resolvePublicMedia } from '../../tools/media-layout.mjs';
 import { verifiedMediaBlobStorage } from './media-blob-index.mjs';

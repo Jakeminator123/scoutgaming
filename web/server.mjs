@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {OPERATOR_NOT_FOUND_HTML} from '../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from './public/player-handoff.mjs';
 import { isAdministratorRole } from '../packages/studio-access/server/account-credentials.mjs';
@@ -60,7 +61,7 @@ const publicAssetPath = (...parts) => mediaLayout
   ? mediaLayout.resolveMediaPath(`web/public/${parts.join('/').replace(/\\/g, '/').replace(/^\/+/, '')}`, { repositoryRoot: mediaRepository })
   : join(root, ...parts);
 const publicBlobMedia = localMediaEnabled && process.env.CROUPIER_MEDIA_BLOB_INDEX
-  ? (await import(pathToFileURL(join(mediaRepository, 'lab/lib/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
+  ? (await import(pathToFileURL(join(mediaRepository, 'web/media-blob-index.mjs')).href)).getPublicMediaBlobResponse : null;
 const cloudRuntime = process.env.CROUPIER_CLOUD_RUNTIME === '1';
 const nativeP6QaRouter = await initializeNativeP6QaRouter();
 const databaseBackend = process.env.CROUPIER_DATABASE || 'sqlite';
@@ -91,7 +92,7 @@ const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
   referenceService: createDealerSpeechReferenceService({readVideoRegistry:studioMediaRuntime.videoRegistry,readVideoResponse:studioMediaRuntime.videoResponse}),
 }) : null;
 // Operator packages share the Studio pool and scope; a read failure keeps today's entry.
-const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
+const { createGameEntrySelector } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope, ttlMs:0 }) }) : null;
 const operatorAppearanceApi = selectGameEntry ? (await import('./operator-appearance-api.mjs')).createOperatorAppearanceApi({selectGameEntry}) : null;
@@ -100,7 +101,7 @@ const frozenDealerContext = studioPolicyRuntime ? await (async () => {
   return createFrozenDealerPresentationContext({
     readCurrentContext: createFrozenDealerContextReader({ pool: storage.pool, scope: studioPolicyRuntime.scope }),
     readPresentation: (await import('./storage/presentation-package.mjs')).readPackagePresentation,
-    privateMedia: (record, request) => (import('../lab/lib/cloud-media-store.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
+    privateMedia: (record, request) => (import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
       trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
         new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
         ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
@@ -108,7 +109,7 @@ const frozenDealerContext = studioPolicyRuntime ? await (async () => {
 })() : null;
 const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/published-layer-assets.mjs')).createPublishedLayerAssets({
   packages:(await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({sql:storage.pool,scope:studioPolicyRuntime.scope}),
-  privateMedia:(await import('../lab/lib/cloud-media-store.mjs')).getPrivateMedia,
+  privateMedia:(await import('./blob-media.mjs')).getPrivateMedia,
 }) : null;
 
 const authorizeChatDealer = createRegisteredChatContext({
@@ -134,7 +135,7 @@ const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).create
 const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore, readRooms: publicOperatorRooms.read });
 const publicOperatorPreview = studioPolicyRuntime ? (await import('./public-operator-preview.mjs')).createPublicOperatorPreview({
   readCurrentContext: (await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
-  privateMedia: (record,request)=>(import('../lab/lib/cloud-media-store.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
+  privateMedia: (record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
     trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
       new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
       ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
@@ -723,7 +724,7 @@ const studioLabSession = studioPolicyRuntime ? createStudioLabSessionCheck({
 }) : null;
 const studioPreview = studioPolicyRuntime ? await (async () => {
   const { createStudioPreview } = await import('./studio-preview.mjs');
-  const { getPrivateMedia } = await import('../lab/lib/cloud-media-store.mjs');
+  const { getPrivateMedia } = await import('./blob-media.mjs');
   return createStudioPreview({ authorize:createStudioNativeAuth({boDb,scope:studioPolicyRuntime.scope}),
     scope:studioPolicyRuntime.scope,repository:studioPolicyRuntime.repository,
     registryLoader:studioMediaRuntime.videoRegistryCaptured,
@@ -1377,8 +1378,8 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
   if (!studioPolicyRuntime || !speechJournal || !dealerSpeechRuntime) throw Error('moving_speech_registry_required');
   const [{loadMovingBankArtifacts,movingBankStorageOptions},{createMovingSpeechRunPod},{createMovingSpeechSession},{createMovingSpeechRuntime},{getPrivateMedia,withVerifiedPrivateMediaFile},{createRequire}] = await Promise.all([
     import('./moving-speech-bank-artifacts.mjs'),import('./moving-speech-runpod.mjs'),import('./moving-speech-session.mjs'),
-    import('./moving-speech-runtime.mjs'),import('../lab/lib/cloud-media-store.mjs'),import('node:module')]);
-  const bankOptions=movingBankStorageOptions(createRequire(new URL('../lab/package.json',import.meta.url))('@vercel/blob'));
+    import('./moving-speech-runtime.mjs'),import('./blob-media.mjs'),import('node:module')]);
+  const bankOptions=movingBankStorageOptions(createRequire(new URL('./package.json',import.meta.url))('@vercel/blob'));
   const bank=await loadMovingBankArtifacts(JSON.parse(process.env.CROUPIER_MOVING_SPEECH_BANK_RECORD ?? 'null'),bankOptions);
   if (bank.sourceSet.dealerId !== 'dragan') throw Error('moving_speech_test_dealer_required');
   // Fetch and hash the immutable derived bank before accepting a paid job.

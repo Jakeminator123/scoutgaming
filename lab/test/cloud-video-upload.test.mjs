@@ -7,7 +7,8 @@ import { MEDIA_FAMILY_DEFINITIONS } from '../../packages/presentation/runtime/me
 import { mediaLineForEvent, mediaVariantPolicy } from '../../packages/presentation/runtime/media-family-policy.mjs';
 import { buildLabVideoManifest, manifestJson } from '../../tools/media/build-lab-video-manifest.mjs';
 import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import { uploadVideo, readUploads } from '../lib/video-uploads.mjs';
+import {uploadVideo} from '../lib/video-uploads.mjs';
+import {readUploads} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse, getLabVideoResponse } from '../lib/video-registry.mjs';
 import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { NextRequest } from '../node_modules/next/server.js';

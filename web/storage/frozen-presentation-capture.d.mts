@@ -1,5 +1,5 @@
 import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
-import type {VideoRegistry} from '../../lab/lib/video-registry.mjs';
+import type {VideoRegistry} from '../../packages/studio-registry/server/registry-core.mjs';
 import type {PresentationPackage} from '../presentation-layers.mjs';
 import type {FrozenMediaRow, FrozenMediaPrecondition} from './frozen-dealer-idle.mjs';
 export interface PresentationSnapshot {scope:Readonly<{environment:string; workspaceId:string}>; projectDocument:{kind:'project';revision:string;value:StudioProject;updatedAt?:string}; administrationDocument:{kind:'administration';revision:string;value:Record<string,unknown>;updatedAt?:string}; mediaRows:readonly FrozenMediaRow[];runtimeCatalog:{revision:string;value:any}}

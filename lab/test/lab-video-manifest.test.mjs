@@ -10,7 +10,7 @@ import {
   readLabVideoManifest,
   validateLabVideoManifest,
   videoIdFromSha256,
-} from '../lib/lab-video-manifest.mjs';
+} from '../../packages/studio-registry/server/video-manifest.mjs';
 import { buildLabVideoManifest, manifestJson } from '../../tools/media/build-lab-video-manifest.mjs';
 
 const repositoryManifest = fileURLToPath(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url));

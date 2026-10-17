@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogRevision} from '../web/storage/runtime-media-catalog.mjs';
+import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogRevision} from '../packages/studio-registry/server/runtime-catalog.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';

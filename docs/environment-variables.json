@@ -145,7 +145,7 @@
       "sources": [
         "apps/croupier-frontend/lib/game-url.ts",
         "apps/croupier-frontend/lib/platform-routing.mjs",
-        "apps/croupier-frontend/lib/platform-configuration.mjs"
+        "packages/server-transport/configuration.mjs"
       ],
       "project": "scoutgaming",
       "team": "scoutgaming",

@@ -7,7 +7,7 @@ import {
 import { createOperatorJournal } from './operator-journal.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { openWritableOperatorStore } from './operator-package-api.mjs';
-import { workspaceSurfacePath } from './workspace-surfaces.mjs';
+import { workspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 
 // team.roles.assign makes an operator administrator, so only partner-admin
 // carries it. partner-admin is not delegable: operator staff cannot appoint,

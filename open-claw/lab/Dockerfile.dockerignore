@@ -9,4 +9,4 @@
 !open-claw/lab/config/catalog.json
 !open-claw/lab/fixtures/scenarios.json
 !open-claw/lab/deploy/start-director.mjs
-!web/public/dealer-identity.mjs
+!packages/presentation/contracts/dealer-identity.mjs

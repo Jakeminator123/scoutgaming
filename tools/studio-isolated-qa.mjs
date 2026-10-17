@@ -27,15 +27,18 @@ async function port() {
 // databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
+      'packages/studio-registry/server/blob-reader.mjs', 'packages/studio-registry/server/managed-media-contract.mjs', 'packages/studio-registry/server/media-blob-index.mjs', 'packages/studio-registry/server/media-layout.mjs', 'packages/studio-registry/server/private-media-contract.mjs', 'packages/studio-registry/server/registry-core.mjs', 'packages/studio-registry/server/registry-reader.mjs', 'packages/studio-registry/server/storage-contract.mjs', 'packages/studio-registry/server/video-dealer-registration.mjs', 'packages/studio-registry/server/video-manifest.mjs', 'tools/media-blob-index-reader.mjs', 'lab/lib/video-local-readers.mjs', 'lab/lib/video-alpha-reader.mjs', 'web/blob-media.mjs', 'web/media-blob-index.mjs', 'web/package.json', 'web/package-lock.json',
+      'web/moving-speech-limits.mjs',
       'ops/neon-studio/013-moving-speech-admission.sql','web/moving-speech-binding.mjs','web/moving-speech-session.mjs','web/moving-speech-transport.mjs',
       'ops/neon-studio/012-runtime-media-catalog.sql', 'test/fixtures/studio-runtime-sql-checks.mjs', 'test/fixtures/runtime-media-catalog.mjs',
       'ops/neon-studio/runtime-media-import.mjs', 'tools/media-layout.mjs',
-      'web/storage/runtime-media-catalog.mjs', 'web/storage/speech-reply-repository.mjs', 'web/speech-reply-library.mjs',
+      'packages/studio-registry/server/runtime-catalog.mjs', 'web/storage/speech-reply-repository.mjs', 'web/speech-reply-library.mjs',
       'media/layout.json', 'media/blob-index.json', 'media/catalog/presentation.json', 'media/catalog/legacy.json',
       'packages/studio-access/studio-native-auth.mjs', 'packages/studio-access/studio-access-policy.mjs', 'packages/studio-access/studio-scope.mjs', 'packages/studio-access/account-role.mjs',
       'ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs', 'lab/test/fixtures/cloud-presentation.mjs',
       'lab/lib/partner-branding-api.mjs', 'lab/lib/partner-presentation-choices.mjs', 'lab/lib/partner-package-view.mjs',
       'web/storage/partner-branding.mjs', 'web/game-entry-operator.mjs', 'web/operator-appearance-api.mjs',
+      'packages/navigation/operator-entry.mjs', 'packages/navigation/operator-slug.mjs',
       'web/public/operator-appearance-boundary.mjs', 'web/storage/frozen-dealer-presentation.mjs', 'web/public/player-choices.mjs',
       'web/storage/presentation-package.mjs', 'web/storage/frozen-presentation-capture.mjs', 'web/storage/frozen-dealer-idle.mjs',
       'web/presentation-room-contract.mjs', 'web/public/game-lanes.mjs', 'packages/presentation/contracts/composition-settings.mjs',
@@ -52,7 +55,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/studio-access/server/account-credentials.mjs', 'packages/studio-access/server/craig-identity.mjs', 'packages/studio-access/server/bo-auth-epoch.mjs', 'packages/studio-access/server/partner-access-policy.mjs',
       'packages/studio-access/display-name.mjs',
       'packages/studio-registry/server/repository.mjs',
-      'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'web/storage/studio-media-storage.mjs', 'packages/shared/media-file-types.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs', 'web/storage/studio-runtime.mjs',
+      'web/storage/postgres-store.mjs', 'web/storage/studio-contract.mjs', 'packages/studio-registry/server/stored-media-types.mjs', 'packages/shared/media-file-types.mjs', 'web/storage/studio-repository.mjs', 'web/storage/studio-game-policy.mjs', 'web/storage/studio-runtime.mjs',
       'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
       'web/storage/player-administration.mjs', 'web/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
       'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',

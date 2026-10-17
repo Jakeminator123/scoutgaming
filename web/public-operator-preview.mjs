@@ -1,5 +1,6 @@
 import {previewMediaPath,validatePublicOperatorPreview} from './public/operator-preview-contract.mjs';
-import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
+import { isGameLaneId } from './public/game-lanes.mjs';
+import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 import {isActiveDealerId as isDealerId} from '../packages/presentation/contracts/dealer-identity.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {materialLabel,materialForAsset} from '../packages/presentation/contracts/material-catalog.mjs';

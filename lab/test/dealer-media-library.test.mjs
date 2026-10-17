@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createSeedProject,createEmptyProject,addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
 import {dealerMediaSlots,mediaClassification,dealerLibraryVideos,dealerSlotStatus,mediaPage,mediaUsage,mediaMatchesSlot,draftUsesMedia} from '../lib/dealer-media-library.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
-import {validateManagedStudioMedia} from '../../web/managed-media-contract.mjs';
+import {validateManagedStudioMedia} from '../../packages/studio-registry/server/managed-media-contract.mjs';
 import {mediaHeaderMatches} from '../../packages/shared/media-file-types.mjs';
 import {videoFitsLine} from '../../packages/presentation/contracts/video-intake.mjs';
 const project=addDealer(createSeedProject(),'paow','PAOW');

@@ -1,7 +1,7 @@
 import {StudioStorageError,validateMediaId,validateRevision,validateDocumentValue,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import {assertLifecyclePackages} from './dealer-lifecycle.mjs';
 import {readMediaBlobIndex} from './media-blob-index.mjs';
-import {readRuntimeCatalog} from '../../tools/runtime-media-catalog.mjs';
+import {readRuntimeCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import {isCloudMediaConfigured,purgeManagedMedia} from './cloud-media-store.mjs';
 const fail=(code,status=409)=>{throw new StudioStorageError(code,status);};
 const denied=reason=>({allowed:false,reason});

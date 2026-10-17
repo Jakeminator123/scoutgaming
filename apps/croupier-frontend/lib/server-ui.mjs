@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {platformConfiguration,platformBackendHeaders,blackjackLobbyDestination} from './platform-routing.mjs';
 import {gameEntryEnabled,gameEntryRedirect,approvedGameQuery,decorateGameEntryHtml,playerLoginDestination} from '../../../web/public/game-entry-contract.mjs';
-import {OPERATOR_NOT_FOUND_HTML} from '../../../web/game-entry-operator.mjs';
+import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-entry.mjs';
 
 const DOCUMENTS = new Map([
   ['/game', 'game.html'], ['/game/', 'game.html'], ['/blackjack', 'blackjack.html'], ['/blackjack/', 'blackjack.html'],

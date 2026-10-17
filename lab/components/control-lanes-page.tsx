@@ -6,7 +6,7 @@ import { type StudioLane, type StudioProject } from '../../packages/presentation
 import { ControlOperatorDirectory, type OperatorDirectory } from './control-operator-directory';
 import { PresentationRoomCreate } from './presentation-room-create';
 import { ControlResourceLifecycle, type LifecycleSnapshot } from './control-resource-lifecycle';
-import { compositionLabel } from '../lib/control-flow.mjs';
+import { compositionLabel } from '../../packages/navigation/control-flow.mjs';
 import { initialPartnerRoomSelection } from '../lib/partner-room-selection.mjs';
 import { studioHistory } from '../lib/studio-history.mjs';
 import { PageTemplate } from './page-template';

@@ -1,4 +1,4 @@
-import { WORKSPACE_VIEW_SLUGS } from './workspace-surfaces.mjs';
+import { WORKSPACE_VIEW_SLUGS } from '../../packages/navigation/workspace-surfaces.mjs';
 
 // These are existing internal tools, not new aliases for APIs or role grants.
 // Leave unconnected prototype features without a destination rather than

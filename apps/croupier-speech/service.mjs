@@ -1,6 +1,6 @@
 import {createServer} from 'node:http';
-import {PLATFORM_SOCKET_ENDPOINTS, MOVING_WORKER_SOCKET, movingWorkerSocketPath} from '../croupier-frontend/lib/platform-configuration.mjs';
-import {createPlatformNativeWebSocketServer} from '../croupier-frontend/lib/platform-native-websocket.mjs';
+import {PLATFORM_SOCKET_ENDPOINTS, MOVING_WORKER_SOCKET, movingWorkerSocketPath} from '@croupier/server-transport/paths';
+import {createPlatformNativeWebSocketServer} from '@croupier/server-transport/node-server';
 
 // Keep the existing bounded, authenticated transport. This service owns only
 // the explicit public socket paths; Render still owns all sessions and provider jobs.

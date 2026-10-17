@@ -1,3 +1,4 @@
+import { MOVING_SPEECH_LIMITS } from './moving-speech-limits.mjs';
 import { verifyMovingWorkerRelease } from './moving-speech-transport.mjs';
 const ID = /^[A-Za-z0-9_-]{1,128}$/;
 const fail = code => {throw Object.assign(Error(code),{code});};
@@ -60,7 +61,7 @@ export function createMovingSpeechRunPod({endpointId, apiKey, expectedImage, fet
       return receipt;
     },
     async submit({input,signal}) {
-      const value = await call(base+'/run',{signal,body:{input,policy:{executionTimeout:180000,ttl:180000}}});
+      const value = await call(base+'/run',{signal,body:{input,policy:{executionTimeout:MOVING_SPEECH_LIMITS.executionMs,ttl:MOVING_SPEECH_LIMITS.jobTtlMs}}});
       if (!ID.test(value?.id ?? '')) fail('moving_runpod_submission_uncertain');
       return {id:value.id,jobId:value.id,status:value.status};
     },

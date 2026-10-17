@@ -1,3 +1,4 @@
+import {isOperatorSlug as operatorSlug} from '../../packages/navigation/operator-slug.mjs';
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { createAccountCredentialResolver } from '../../packages/studio-access/server/account-credentials.mjs';
@@ -28,8 +29,6 @@ const messages = new Map([[400, 'Invalid request'], [401, 'Authentication requir
   [429, 'Too many attempts'], [503, 'Authentication unavailable']]);
 const accountProjection = `SELECT u.id,u.username,u.salt,u.hash,u.role,e.epoch
   FROM users u LEFT JOIN bo_auth_epochs e ON e.user_id=u.id WHERE `;
-const reservedSlugs = new Set(['api', 'auth', 'login', 'logout', 'studio', 'control', 'partner', 'play', 'set-password']);
-const slugPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 function fail(statusCode = 400) {
   throw Object.assign(new Error('partner_request_rejected'), { statusCode });
@@ -119,9 +118,6 @@ async function bodyOf(request) {
   try { body = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); } catch { fail(400); }
   if (!body || typeof body !== 'object' || Array.isArray(body)) fail(400);
   return body;
-}
-function operatorSlug(value) {
-  return typeof value === 'string' && value.length <= 63 && slugPattern.test(value) && !reservedSlugs.has(value);
 }
 
 let pendingConfig;
