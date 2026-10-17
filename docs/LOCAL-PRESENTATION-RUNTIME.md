@@ -141,6 +141,18 @@ importeras. GPU-resultat skrivs i en ny katalog. Ett äldre kvitto utan filhasha
 måste först kompletteras efter lokal kontroll; det accepteras inte automatiskt.
 Färdigt TAR-kvitto betyder fortfarande inte visuell läppsynkacceptans.
 
+Separat modellprov 17 oktober 2026 verifierade hela Dragan-banken på en RTX
+A6000: 2 479 bildrutor, 0 saknade ansikten, 744,6 sekunders beredning.
+Arkivets SHA-256 är `5dcf0f323f707ad6fa58f740a560a1aa62a73b1a6ebeaa916b6b026f6a47f14c`;
+alla sju filer verifierades igen efter nedladdning. En 89-rutors replik med
+befintligt inspelat ljud gav 45,9 rutor/s och första bit efter 496 ms i varm
+motor; kall modell-/bankladdning och uppvärmning tog 57,3 sekunder.
+Detta verifierar ett isolerat modellprov, inte hela spelets latens eller
+visuell läppsynk. Testpodden är avvecklad och produktionens filmer/profiler
+är oförändrade. Källmanifestets identitet bevisar heller inte att äldre
+filmer har rätt etiketter eller är senaste tagningarna; de valen kräver
+separat innehållsgranskning innan aktivering. Se aktuellt GPU-kvitto i handoffen.
+
 `web/moving-speech-bank.mjs` binder källmanifestet till våra befintliga
 `prepareMovingSpeechPcmInput` och `createMovingSpeechTransport`.
 Den serverinterna `createRegisteredMovingSpeech.prepare` tar den

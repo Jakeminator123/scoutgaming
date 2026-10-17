@@ -1,5 +1,10 @@
 # Aktuell handoff — Scoutgaming
 
+Uppdaterad 17 oktober 2026. Struktur- och testförenklingsfasen är avslutad.
+Teknisk migrationsstatus och kvarvarande produktarbete finns i
+[CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
+[lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
+
 ## Dragan: registerbundet bankunderlag — 17 oktober 2026
 
 Jakob valde befintliga Dragan-filmer i Blob för en egen avatarbank.
@@ -11,8 +16,9 @@ en testad adapter, **inte aktiverat rörligt tal i spelet**.
   återläsning visade oförändrade ID:n, revisioner och hashvärden.
 - 50 rörelseklipp exporterades med sina exakta medie-ID:n. Fyra inspelade
   repliker ligger kvar på sitt befintliga talflöde. Två äldre `idle`-poster
-  har samma 30-fps-fil och ingår inte i 24-fps-banken. Ingen fil konverterades,
-  ersattes, raderades, laddades upp eller fick ändrad acceptans.
+  har samma 30-fps-fil och ingår inte i 24-fps-banken. Produktionsfilmerna
+  har inte ersatts, raderats eller fått ändrad acceptans. Härledda testfiler
+  överfördes endast till den separata tillfälliga GPU:n.
 - Lokalt byggt CPU-underlag: 2 479 unika fullständiga YUV-bildrutor,
   `pool.mp4` 471 469 184 byte och explicit vila i ruta 0 av profilens
   `2f3955b0-b450-4cc2-a9f5-ac80f10abd2f` (Kevin V2 · andning).
@@ -26,11 +32,12 @@ en testad adapter, **inte aktiverat rörligt tal i spelet**.
 - Verifierat: riktade tester för export, bankbygge, metadataförändring,
   nekad åtkomst, bildruteplan, PCM, sockettransport och dealerlagrets mask.
   Python/ffmpeg-provet byggde en syntetisk bank med exakt deduplicering.
-  Det opt-in webbläsarprovet kördes inte; inga betalda eller visuella talprov gjordes.
-- Kvar: GPU-beredning i verifierat egen miljö, bank-/workerattestering,
+  PR191 på `c1fffdf4` passerade full GitHub-CI. Det opt-in webbläsarprovet
+  kördes inte; det senare betalda modellprovet redovisas separat nedan.
+- Kvar: bank-/workerattestering i en autentiserad session,
   inkoppling mot befintlig autentiserad talsession och budgetjournal samt
   serverns tidsplanering/replanering och spelarens ljudklocka.
-  Inga molninställningar eller produktionsprofiler ändrades. Slutkontroll av
+  Inga produktionsprofiler eller befintliga molntjänster ändrades. Kontroll av
   GitGuardian via ordinarie CLI gav 0 öppna och 18 ignorerade incidenter,
   aktiv övervakning, partiell platsmetadata och historisk scan `too_large`.
   Detta är inte bevis för fullständig historisk täckning.
@@ -47,184 +54,134 @@ en GPU i klassen 24 GB Pro och högst en worker. Koden i repot stöder fler deal
 via referensbild, men det är inte verifierat att denna driftsatta image innehåller
 samma senare stöd. Den separata rörliga motorn använder en bildrutebank per dealer.
 Avsikten är en gemensam talväg och delade workers, inte en permanent GPU per avatar.
-Lokal RunPod-nyckel matchar Jakobs angivna maskerade kännetecken, skiljer sig från
-Emils separata nyckel och visas som Restricted. Endpoint-hälsa fungerar medan
-resurshantering ger 401. Ingen nyckel eller endpoint har ändrats. Resursbehörighet
-och ett konkret kostnadstak för det separata GPU-provet återstår.
+Den befintliga RunPod-nyckeln lämnades orörd. Efter Jakobs uttryckliga
+godkännande skapades `croupier-dragan-prep-20261017` med GraphQL Read/Write
+och AI API None, sparad endast i huvudcheckoutens gitignorerade
+`.env.dragan-gpu.local`. Jakob godkände högst 5 USD för det separata provet.
 
-Uppdaterad 17 oktober 2026. Detta dokument beskriver pågående leverans.
-Teknisk migrationsstatus, öppna produktspår och Admin C1–C9 finns i
-[CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarguide:
-[lab/docs/README](../lab/docs/README.md). Ingen ny tracker finns.
+**Genomfört GPU-prov 17 oktober:** en separat RTX A6000, 48 GB GPU/50 GB RAM,
+med Emils granskade `rorlig.py`/`motor.py`, MuseTalk-commit
+`0a89dec45a0192b824e3cf4daf96c239440c5ed8` och samma beredningsrecept
+(`sigma=1`, `cheek=90`). Alla 2 479 bildrutor hade hittat ansikte; beredningen
+tog 744,6 sekunder. TAR-filen är 594 432 000 byte med SHA-256
+`5dcf0f323f707ad6fa58f740a560a1aa62a73b1a6ebeaa916b6b026f6a47f14c`.
+Efter nedladdning verifierades arkivet, alla sju filer och ansiktsmetadata lokalt.
 
-## Arbetsbranch, ägare och fryst leverans
+Ett verkligt modellprov använde 89 exakta bildrutor ur `Kevin V2 · andning`
+och befintligt inspelat ljud från `0f285c18-69da-43e4-8b28-f9fc8cce2d5f`.
+Ingen annan persons TTS-konto användes. Uppvärmd motor gav 45,9 bildrutor/s,
+första bit efter 496 ms; initial modell-/bankladdning och uppvärmning tog
+57,3 sekunder. Provet är en 3,709-sekunders MP4, **inte verifierat live i spelet
+och inte visuellt godkänd läppsynk**. Hashkontroll och ett granskat stillbildsprov
+ersätter inte kontroll av hela videon med ljud.
 
-- Huvudcheckout: `C:\Users\jakem\Projects\croupier`.
-- Branch: `codex/structure-cleanup`; migrationsbaseline/main:
-  `b38c56572158d6deaeb6823b3a66bf5fbca8af7e`.
-- Jakobs strukturpass levereras i
-  [PR190](https://github.com/Jakeminator123/scoutgaming/pull/190).
-  Föregående verifierade head: `f066ba4d713f5af0191b7ba09f4b299755ad55c3`;
-  [full CI 38962282358](https://github.com/Jakeminator123/scoutgaming/actions/runs/38962282358)
-  grön. Detta kvitto gäller det headet; PR190 visar senaste head och dess CI.
-- Huvudagenten `structure-pass` äger Git, integration och PR190.
-  Dokumentationsagenten har lämnat över handoff och CLOUD-MIGRATION.
-  Kodagenten har avstämt återstående källberoenden. Tavlan i `agent-talk`
-  gäller per checkout; byt inte branch medan någon skriver.
-- Jakob godkände 17 oktober merge av PR188 följt av PR190 och ordinarie
-  automatisk leverans. PR188 är mergad som
-  `620ab98198914d83c51e51d9eb28b192e18d9cf3` och integreras här i PR190.
-  PR190:s aktuella head, merge och kontroller visas i dess GitHub-länk ovan.
-  Inga nya migrationer, molnresurser eller visuella spelprov ingår.
+Testpodden `dmo7wwtvcurqw6` avvecklades efter att banken, filmen och kvittona
+hämtats hem. API-återläsning visade inga kvarvarande Pods; Astrids endpoint
+har kvar samma ID/namn och workergränser 0–1. Beräknad GPU-/diskkostnad:
+0,17 USD (tids- och prisberäkning, inte fakturakvitto). Nyckelfilen bevaras lokalt.
+Privata resultat finns i denna chatts `visualizations`-katalog under
+`dragan-gpu-result/`; de är authoring-/testunderlag och ligger inte i Git.
 
-## Levererat före detta pass
+Jakob påpekade att äldre Blob-filmer och Neon-/UX-registreringar kan vara fel
+eller inaktuella. Den verifierade banken är därför en **teknisk testbaseline**:
+exakta byte/ID:n bevisar inte rätt spelhändelse eller senaste tagning. Original,
+ostagade filmer och tidigare acceptans ska bevaras medan dessa val reds ut.
 
-[PR186](https://github.com/Jakeminator123/scoutgaming/pull/186) är mergad som
-`2ea080bc3e75cf0207e3c155f9b4018f6a8d301e` och kräver installerad migration 012.
-Neon är enda produktregistret; privat Blob innehåller mediebyte. Import och
-oberoende återläsning är genomförda. Den tekniska register-/runtimeflytten är
-avslutad i produktion på `b38c56572158d6deaeb6823b3a66bf5fbca8af7e`.
-Huvudagentens färska läsande kontroll 16 oktober verifierar Vercel
-`dpl_FuDAT4aRmniTWGbvgEPXpa874rip` READY, Render `dep-db97r50ae00c739b10d0`
-live på samma SHA, health/version 200, Neon-katalog/ledger och två nya publika
-mediestickprov mot exakta Neon-hashar. Kodavstämningen fann inget konkret
-migrationsfel och produktionsvägarna är oförändrade sedan baselinen.
-De 514 fulla Blob-återläsningarna är äldre PR186-bevis, inte en ny körning.
-Inga produktionsdata skrevs eller nya visuella bedömningar gjordes.
-Exakta tjänst-/schema-/CI-identiteter och bevisgränser finns i
-[CLOUD-MIGRATION](CLOUD-MIGRATION.md#levererat-och-verifierat).
 
-Admin-konsolidering, zoom och Astrids märkning levererades i
-[PR185](https://github.com/Jakeminator123/scoutgaming/pull/185).
-Dragan är ordinarie dealer. Astrid är märkt legacyreferens utan trelagersversion.
-Befintligt tal och exakta medier/historik bevaras på samma molnväg.
-PR181/183/184 stängdes som innehållsmässigt ersatta av PR185 efter jämförelse;
-deras sidobrancher raderades inte som del av leveransen.
+## Levererat och verifierat
 
-## Strukturpasset och återanvänd testförenkling
+- [PR188](https://github.com/Jakeminator123/scoutgaming/pull/188) är mergad
+  som `620ab98198914d83c51e51d9eb28b192e18d9cf3`. Regressionerna körs i
+  tidsatta grupper. POSIX-processstädning och bevarade exitkoder är rättade;
+  frivillig kartrapportering ersätter inte produktprovets resultat.
+- [PR190](https://github.com/Jakeminator123/scoutgaming/pull/190) är mergad
+  som `d7dd04dcbc1c3eab6358ac64b63ad7b5d97a9166` efter integration av PR188.
+  [PR189](https://github.com/Jakeminator123/scoutgaming/pull/189) är stängd
+  som innehållsmässigt ersatt. Förbrukad lokal registeruppgradering,
+  kosmetiska tester och dubblerad dokumentation är avvecklade.
+- Integrationshead `c7d23eca0211870cce39ab9de56a1e2a3d2fe41a` hade
+  [grön full CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/38982387926).
+  Lokal hook: 39 pass, 5 POSIX-skip på Windows. ChatGPT Pro läste detta
+  publicerade head via GitHub och fann ingen nytillkommen blockerare.
+- [Main-CI på d7dd04dc](https://github.com/Jakeminator123/scoutgaming/actions/runs/38982989384)
+  passerade alla regressionsgrupper, Studio/typkontroll, SQL/omstart/HTTPS
+  och schemaberedskap. Detta är inte visuell spel- eller läppsynkacceptans.
+- Produktionskvitto 17 oktober cirka 01:53 svensk tid: Vercel
+  `dpl_74WdAmdxWGjtn6xJMuUNMVx1rYut` READY och Render
+  `dep-db9bggrm8hqs73ac2n70` live på samma fullständiga d7dd04dc-SHA ovan.
+  Publik startsida, engine health och version gav HTTP 200; versionen matchade.
+  Detta daterade kvitto ska inte beskrivas som kontroll av senare kod.
 
-Redan på PR190:s pushade `f066ba4d`:
+## Nästa produktarbete
 
-- Förbrukad lokal demo-/registeruppgradering, tom idle-loop och ensam wrapper
-  borttagna efter anroparkontroll. Helper, fingeravtrycksregister och förbrukat
-  migrationstest är avvecklade. Fixturestart validerar befintliga projektbyte
-  utan revisions-/historikskrivning; historiska kompatibilitetstester använder
-  uttryckliga fixtures och behåller beteendeassertionerna.
-- Sex befintliga README rättar lokalstart, Neon/Blob, Admin/spelmotor och
-  testkataloger. `node lab/start.mjs --no-open` skriver produktens adress;
-  endast `--offline` startar ett isolerat tillfälligt serverpar.
-- Lokal kontroll: 36/36 berörda beteendeprov, syntax/diffkontroll och
-  111 lokala länkmål passerade. Oberoende statisk granskning fann inga
-  blockerande fel. 143 befintliga användarfiler var hashbevarade.
-  Inga nya browserprov eller visuella mediebedömningar gjordes.
-
-I denna sammanhållna fortsättning av PR190:
-
-- [PR189](https://github.com/Jakeminator123/scoutgaming/pull/189), head
-  `318a60b9`, hade grön full CI. Dess testpolicy och borttagning av 16
-  kosmetiska/strukturella testfall återanvänds här. Nio testfiler berörs,
-  varav tre avvecklas. PR190 ersätter PR189 innehållsmässigt;
-  ingen separat mainmerge av PR189 ingår.
-- CLOUD-MIGRATION och denna handoff kortas till aktuellt ansvar, bevis och
-  kvarvarande frågor. Äldre kvitton bevaras i exakta GitHub-versioner nedan.
-- CLAUDE är en kort ingång till AGENTS och de kanoniska guiderna. Gamla
-  branchlistor, dubblerade regler och historiska testgrindar är borttagna.
-- Ordinarie commit-hook verifierar integrationen; PR190:s checkar och
-  leveransbeskrivning redovisar resultat för dess senaste fullständiga head.
-- Läsande Vercel-/Render-/Neon-avstämning från 16 oktober gäller kvittot ovan.
-  Den säger inte att ett senare PR-head är driftsatt. Efter integrationen
-  kontrolleras CI på PR190:s nya head och sedan leveranserna på dess main-SHA.
-
-## Testpolicy och bevisgränser
-
-Jakobs senaste beslut ersätter det generella kravet på två spel/uppspelningar
-och manuell spelacceptans som godkännandegrind. Riktade prov följer ändringen
-och en konkret felrisk; återstart/städning/flera uppspelningar provas när det
-är det ändrade beteendet. Full CI och relevant täckning för auth, bolag/rum,
-revision, sparande, pengar och spelregler består.
-
-Borttagna kosmetiska fall låste färger, meny-/knappantal, exakt markup och
-historiska layouter. Det upphäver inte krav på reducerad rörelse, läsbarhet,
-behörighet eller livscykel. Tidigare 23/23 ändrade och 34/34 närliggande prov
-är PR189:s kvitto, inte en ny körning på det integrerade arbetsinnehållet.
-Ingen ny läppsynk-/visuell kvalitetsbedömning påstås från kod, hash eller tester.
+Den tekniska Neon-/Blob-/runtimeflytten är avslutad. Nästa huvuduppgift bör
+vara en avgränsad produktförbättring, exempelvis lobbyns tillåtna dealer-/
+bordval och överföring till spelstart, eller ett sammanhängande Admin-flöde.
+Det är en rekommendation; nästa agent ska utgå från Jakobs val.
 
 <a id="2-öppna-kontroller-och-kända-fel"></a>
 
-## Öppna kontroller och kända fel
-
-Klassificeringen och de unika öppna punkterna finns i
+Unika öppna frågor finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md#verkliga-migrationsfel-och-kvarvarande-utredningsspår):
+N2:s motordata/rapporter, global ändringsloggs API, lobbyns bordval,
+konto-/integrationsfunktioner, nytt tal/läppsynk, B18/B19, plattformsbeslut
+#52 och backup/QA. Äldre auth-, publicerings-, idle-/frame-/zonobservationer
+behöver reproduceras innan de klassas som aktuella fel.
 
-- **Levererat:** teknisk Neon-/Blob-/runtimeflytt avslutad i produktion,
-  schema/import och tidigare Admin-konsolidering. Historiska checkboxar
-  är inte nya migrationsfel; detta påstår ingen färdig ny produktfunktion.
-- **Möjliga fel att reproducera:** historisk 16/17-event-publicerings409,
-  automatisk korsdomänretur, authlatens, uppladdning→idle-val och
-  frame-/zon-/flimmerobservationer. Dessa är inte omverifierade här.
-  Nytt konkret auth-/rums-/publicerings-/lagringsfel får inte avföras som kosmetik.
-- **Separat produktarbete/driftansvar:** N2:s motordata/rapporter, marker,
-  global ändringsloggs API, lobbyns bordval, kontoaktivering/reset/MFA/
-  integration, OpenClaw/Adminrobotens avgränsade
-  driftprov, nytt tal/läppsynk, B18/B19, plattformsbeslut #52 och externa
-  Director-/Gatewaybackuper. Baselinekvittots noll aktiva bolag/rum/mallar
-  var avsiktligt; antalet är inte en ny kontroll i detta pass.
-- **Ersatta krav:** generell tvåspels-/fyradealers-/manuell spelacceptans.
-  Äldre accepterade resultat gäller sina versioner och bevisar ingen ny körning.
-- **Säkerhet/QA:** huvudagentens läsning 16 oktober gav GitGuardian aktiv,
-  0 öppna/18 ignorerade med ofullständig plats-/historiktäckning.
-  QA/Preview-utbyggnad är pausad; ursprunglig ingresshemlighet är inte återställd.
+Behåll riktade prov för behörighet, bolag/rum, revision, sparande, pengar och
+spelregler. Det finns inget generellt krav på två spel, upprepade manuella
+prov eller visuell acceptans för varje commit/merge. Godkända tester och
+mediahashar bevisar inte läppsynk. Aktiva Control-komponenter och `lab/lib`
+kan fortfarande vara delade beroenden; radera efter konsumentkontroll.
 
-## Skyddat material och återställning
+## Samordning och skyddat arbete
 
-Användarens smutsiga `.codex/config.toml`, `apps/croupier-speech/package.json`,
-ospårade `.agents/skills/source-command-ping`, `.cursor/settings.json` och
-`web/public/review` bevaras. Privata original, arbetsdata, medier, backups och
-import-/kostnadsjournaler rörs inte. `arkiv/` är gitignorerat och inte en ny
-aktiv dokumentationskälla. Konversationsexporter stannar utanför Git.
+Två andra chattar fortsätter parallellt:
 
-Filinventeringen av `web/public/review` omfattar 139 ospårade filer, cirka
-302 MB: 123 MP4 samt bilder, verktyg och stödfiler. Grönt i Codex anger här
-nya Git-filer, inte fel eller godkänd raderingsbarhet. En framtida sortering
-bör skilja publiceringsmaterial från privata arbetsoriginal utanför
-`web/public`; avslutade återställningskopior hör till befintliga
-`arkiv/<datum>/<ursprunglig-sökväg>`. Ingen fil har flyttats eller raderats.
+- **lipsync**, chatt `01a14685-3cb7-7020-8f18-414e8bbbd5fe`.
+  Aktivt spår: `codex/dragan-lipsync-registry`,
+  `C:\Users\jakem\.codex\worktrees\dragan-lipsync-registry-3518\croupier`,
+  [PR191](https://github.com/Jakeminator123/scoutgaming/pull/191).
+  Kontrollera aktuell status med chatten innan medie-/runtimeändringar.
+- **STÄD-CL**, chatt `01a14631-14e2-7d53-ba3f-50a5f7a4c8f4`.
+  Bevarad arbetsyta `C:\Users\jakem\.codex\worktrees\b07d\croupier`,
+  branch `codex/dealer-regression-timing`. Agenten har bekräftat att inga
+  andra worktrees eller temporära PR188-loggar behövs för dess arbete.
 
-[ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) beskriver bevarade
-backuper, QA-luckor och rollback. [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md)
-äger miljö-/providerprofiler och konfigurationsansvar. En äldre SQLite/disk
-får aldrig återaktiveras som parallell writer efter nya Neon-skrivningar.
-Lokala fullhooks kan ärva explicita `*_QA_CONFIG`-opt-ins; grön CI är inte
-bevis för central isolering av varje lokal profil. Välj profil före prov.
+Jakob har tillåtit samordning med dessa chattar. Codex kan skicka meddelanden
+mellan dem; `agent-talk` når bara agenter i samma checkout. Kontrollera
+aktuella filanspråk och utse en ägare för Git/integration. En agents svar
+är information, inte ett nytt användarmandat.
 
-## Nästa beslut
+Huvudcheckouten `C:\Users\jakem\Projects\croupier` har skyddade lokala
+ändringar i `.codex/config.toml`, `apps/croupier-speech/package.json`,
+`.agents/skills/source-command-ping/`, `.cursor/settings.json` och
+`web/public/review/`. 143 filer var hashbevarade vid PR190-leveransen.
+Privata filmer, källoriginal, exportpaket, kalibrering och återställningsdata
+ska samordnas med lipsync; de ingår inte i strukturfasens radering.
+`ai-system-map` har ocommittade ändringar och `8e3c` privata arbetsdata;
+båda lämnas för separat ägaravstämning.
 
-PR188 är mergad; PR190 slutför den godkända leveransen efter integrations-CI.
-Välj därefter ett konkret produktspår ur CLOUD-MIGRATION. Nya auth-/rums-/
-publiceringsfel prioriteras efter reproduktion. Återskapa inte raderade
-demorum eller produktionsprovdata för en gammal lista.
+## Leverans och återställning
 
-## Tidigare kvitton och separat PR
+Vercel-projekt/team `scoutgaming`: nya Preview-deployments stängdes av
+17 oktober (`previewDeploymentsDisabled=true`), medan `main` fortsatt är
+produktionsbranch. Befintliga preview-länkar har inte raderats.
+GitHub-CI gäller fortsatt för PR:er. Render `croupier-v2` följer `main`
+med `autoDeploy=yes`, `autoDeployTrigger=checksPass`.
+Merge kan alltså publicera webb/Studio och därefter spelmotor automatiskt.
+CI, deployment och faktisk live-version ska redovisas separat.
 
-- [Handoff på migrationsbaseline b38c5657](https://github.com/Jakeminator123/scoutgaming/blob/b38c56572158d6deaeb6823b3a66bf5fbca8af7e/docs/JOHN-HANDOFF.md).
-- [CLOUD på samma baseline](https://github.com/Jakeminator123/scoutgaming/blob/b38c56572158d6deaeb6823b3a66bf5fbca8af7e/docs/CLOUD-MIGRATION.md).
-- [Strukturpassets kvitto på f066ba4d](https://github.com/Jakeminator123/scoutgaming/blob/f066ba4d713f5af0191b7ba09f4b299755ad55c3/docs/JOHN-HANDOFF.md).
-- [PR188](https://github.com/Jakeminator123/scoutgaming/pull/188), granskat head
-  `70872b858074e9dc7cf87c1e2373360550a4adcd`,
-  [full CI 38976695835](https://github.com/Jakeminator123/scoutgaming/actions/runs/38976695835)
-  grön på Linux/Node 24.21. Normal POSIX-ledarexit 0/7 städar underprocesser,
-  även när de ignorerar SIGTERM, och bevarar slutstatus. Timeout 124 och
-  avbrott 130 består; frivillig kartrapportering ersätter inte produktprov.
-  Windows: 15 passerade, 5 POSIX-fall överhoppade. Kvittot gäller detta
-  PR188-head, inte PR190:s kombination, produktion eller visuell acceptans.
+GitGuardian-läsningen på d7dd04dc gav aktiv övervakning och 0 öppna/18
+ignorerade incidenter, med ofullständig plats-/historiktäckning.
+QA/Preview-utbyggnad är pausad; ursprunglig ingresshemlighet är inte återställd.
+[ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) och
+[ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md) äger återställning och miljöansvar.
 
-## Automatisk leverans efter merge
-
-Läsande provideravstämning 17 oktober: Vercels GitHub-koppling har
-`main` som produktionsbranch, deploy-skapande aktiverat och automatisk
-koppling till produktionsdomäner. Render `croupier-v2` följer samma repos
-`main` med `autoDeploy=yes` och `autoDeployTrigger=checksPass`.
-En merge kan alltså publicera webb/Studio och, efter godkända kontroller,
-spelmotor automatiskt. GitHub CI, respektive providerbygge och faktisk
-live-version är separata resultat. Dessa PR:er lägger inte till någon ny
-schemaändring eller mediegenerering. Leveransstatus läses tillbaka efter merge.
+Äldre detaljkvitton finns i
+[handoffen på d7dd04dc](https://github.com/Jakeminator123/scoutgaming/blob/d7dd04dcbc1c3eab6358ac64b63ad7b5d97a9166/docs/JOHN-HANDOFF.md)
+och PR188/190. Fasens egna körskript, utkast och temporära CI-loggar är rensade.
+17 historiska fjärrbrancher och två lokala brancher togs bort efter kontroll
+av exakta PR-huvuden och main-innehåll. PR189:s avslutade worktree
+`simplify-test-policy` togs bort med återställningsbar Codex-snapshot.
+STÄD-CL:s och lipsyncs arbetsytor bevarades.
