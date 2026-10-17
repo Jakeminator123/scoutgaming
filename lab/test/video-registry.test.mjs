@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { getVideoResponse, loadVideoRegistry } from '../lib/video-registry.mjs';
-import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
+import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../../packages/studio-registry/server/video-manifest.mjs';
 
 const bytes = Buffer.from('test-only-local-video-bytes');
 const hash = createHash('sha256').update(bytes).digest('hex');

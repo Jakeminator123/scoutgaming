@@ -20,7 +20,7 @@ nekanden passerar; API-anrop behåller backendvägen. Befintlig fem-MiB-budget,
 tvåfilslanding och nekad media/BO-kopiering passerar oförändrade.
 Ingen fullbuild, installation, deployment, miljöändring eller produkt-/medie-
 acceptans ingår. Byggfixen är parentgranskad; ordinarie hook verifierar slutversionen vid commit. PR/CI och
-driftkvitto återstår.
+driftkvitto för denna fix: PR223 mergad på 2e45a661ef844d14a9d2321f30d05f53c5e64927, mainCI39062224771 SUCCESS. Mergagent verifierade automatisk Vercel dpl_6HtrhePVENR7vynXnWQX6v8rKQKS på www och Render dep-db9sp3jm8hqs73ari380 LIVE med exakt version/health200. Alla 37 publika adresser passerade GET/HEAD även under verkligt versionsglapp.
 
 ## Lokal agent-talk-kö — separat fix 17 oktober 2026
 
@@ -36,10 +36,39 @@ en ny ping i just den checkouten.
 
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
-`1d2fe0521ee033b8a9349eb47ef6765695e59bb9` (PR212); senare delar inväntar sina separata driftkvitton.
+`05cbc22de9c6637cb9ea642c6f697a093dae42af` (PR214), med fulla CI- och driftkvitton från mergeagenten. Senare delar inväntar sina separata kvitton.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
+
+## Etapp 3: gemensamma register-, identitets- och lagringsägare — 17 oktober 2026
+
+Registerläsare, identitet och SQL-/operatörsgränser levereras tillsammans.
+`packages/studio-registry/server` äger registerkärna, aktuella/frysta kataloger,
+mediaavtal och tekniska Blob-operationer med explicita beroenden. Apparnas
+kompositioner väljer rötter, previewadresser och egna lazy SDK-klienter.
+Fångade kataloger läser samma snapshot utan nya databasfrågor; mediahash,
+samma öppna filbeskrivare, cache och Range/HEAD-beteende bevaras.
+
+`packages/studio-access` äger gemensamma credential-, Craig-, epoch- och
+partnerbehörighetsregler samt visningsnamn. Cookies, HTTP-sessioner,
+inloggningsflöden och apparnas bootstrap behåller sina ägare. De fyra
+identitetsimplementationerna är mekaniskt oförändrade.
+
+`packages/storage/server/postgres-store.mjs` äger en poolfri SQL-/ALS-kärna.
+Game äger sin pg-factory med verifierande TLS; Studio binder sina befintliga
+Neon-pooler. `packages/operators` äger store, lifecycle och branding.
+Sparad spelpolicy får explicit dokumentkontrakt. Transaktioner, CAS, snapshot,
+rum-/tenantisolering, historik, wallet, schema och startkontroller bevaras.
+Driftverktygens importörer och miljökällor följer samma kanoniska moduler.
+
+Delarna har granskats separat: C2h:s register-/mediakroppar, C2i:s fyra
+identitetsregler och C2j:s 41 mekaniska jämförelser. Ursprungliga relevanta
+kontroller passerade, inklusive SQL-/fixture-/typkontroller. Efter slutlig
+navigation/main214 fick h och i vardera317 pass/0 fail/1 befintlig browser-
+opt-in och gröna frontendtyper. C2j:s ursprungliga ordinarie hook gav452 pass,
+0 fail och4 befintliga opt-in. Samlad integrationshook, PR-CI och driftkvitto
+återstår. Inga nya testfiler, schema-/miljövärdesändringar eller provideranrop.
 
 ## Etapp 3 C2g: gemensam publik katalog och navigation — 17 oktober 2026
 
@@ -1176,4 +1205,18 @@ av exakta PR-huvuden och main-innehåll. PR189:s avslutade worktree
 `simplify-test-policy` togs bort med återställningsbar Codex-snapshot.
 STÄD-CL:s och lipsyncs arbetsytor bevarades.
 
+C2h leveransförberedelse: C2g `c53b27b7` integrerades normalt i
+`a515539f` som `cd30e022`. Två rutinkonflikter förenade handoffen och
+routingens nya importdjup. 21 kärn-/adapter-/routingfiler är identiska med
+sina granskade heads; PR213:s nio produktfiler är oförändrade mot C2h-basen,
+inklusive C2h:s appägda Blob-import. Ordinarie hook gav 317 pass, 0 fail
+och ett befintligt browser-opt-in; frontendtypkontrollen passerade.
+
+Slutg `ec16b705899ec880eb3dd571361f517be4ef10c1` tas därefter in med
+normal merge och enbart dokumentdiff. Den inkluderar main
+`05cbc22de9c6637cb9ea642c6f697a093dae42af` (PR214/PR213). Inga lås,
+beroendeinstallationer, junctionmål eller produktbeteenden ändrades här.
+Inget nytt fullbygge, push, PR eller driftkvitto ingår i denna förberedelse.
+
+Samlad data-integration: ordinarie hook 486 pass, 0 fail, 1 befintlig browser-opt-in samt gröna frontendtyper. Den isolerade QA-källistan är unik och dess befintliga prov passerar 6/6. PR218:s slutfix är integrerad; flyttad branding pekar på packages/operators/contracts/branding.mjs. Kod-PR, CI och drift för datadelen återstår. Main223/222 på 908beb4d542b62ccc1d40243bf546783b6f563a0 är nu konfliktfritt integrerad: tre byteidentiska PR223-filer och två dokument från PR222. Data-kropparna är oförändrade mot förgranskade 0668d668. Den befintliga ofiltrerade middleware-/byggkontrollen omfattar även datadelens nya publika game-lanes-modul och dess redan registrerade beroenden.
 PR218:s katalog/navigation har integrerat main217 9b79902c20b55d0e8ff21d6ee60def04f978342c normalt efter lipsync2:s CLEAN STOP/HOLD RELEASE. Main215:s inboxfix och samtliga handoffavsnitt bevaras. Produktkoden och QA-dubblettfixen är oförändrade från head4542f5f779c5febacb12128b529411be8e080cb6, som GPT läst i GitHub utan styrkt blockerare och CI39056360556 godkänt. Senaste integrationshead inväntar eget CI-/driftkvitto hos mergagenten.

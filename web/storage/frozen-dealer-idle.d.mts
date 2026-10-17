@@ -1,6 +1,6 @@
 import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import type { VideoRegistry } from '../../lab/lib/video-registry.mjs';
-import type {StudioMediaRecord} from '../managed-media-contract.mjs';
+import type { VideoRegistry } from '../../packages/studio-registry/server/registry-core.mjs';
+import type {StudioMediaRecord} from '../../packages/studio-registry/server/managed-media-contract.mjs';
 
 // Reuse the shared managed StudioMediaRecord type; retained bank provenance
 // is validated separately by the server storage contract.

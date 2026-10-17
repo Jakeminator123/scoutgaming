@@ -1112,3 +1112,7 @@ kontrollera varje automatisk deploy där. Native Node-funktionerna för
 `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns.
 Genererat tal genom Render/Cartesia/RunPod har passerat två tidigare liveprov;
 kallstart, exakt synk och fysisk mikrofon återstår enligt handoffen.
+
+Källinventariet för sparad spelpolicy pekar på `packages/presentation/server/saved-game-policy.mjs`.
+Cloud-konfigurationen använder samma miljöläsare; den explicita legacy-importen binder
+valideraren till spelserverns befintliga dokumentkontrakt. Inga miljönycklar eller fallbackregler ändras.

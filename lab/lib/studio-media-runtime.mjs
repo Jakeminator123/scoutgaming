@@ -1,4 +1,5 @@
-import { createRuntimeMetadataReader, readRuntimeCatalog } from '../../tools/runtime-media-catalog.mjs';
+import {createRuntimeMetadataReader} from '../../tools/runtime-media-catalog.mjs';
+import {readRuntimeCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import { createNeonVideoRegistry } from './neon-video-registry.mjs';
 import { createStudioProjectBindings } from './studio-project-bindings.mjs';
 import { legacyClipControls } from './legacy-clip-inventory.mjs';
@@ -6,7 +7,7 @@ import { verifiedMediaBlobStorage, getPublicMediaBlobResponse } from './media-bl
 import { resolvePublicMedia, repositoryRoot as defaultRoot } from '../../tools/media-layout.mjs';
 import { createHash } from 'node:crypto';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
-import { STUDIO_GAME_CONFIGURATION_SOURCE } from '../../web/storage/studio-game-policy.mjs';
+import { STUDIO_GAME_CONFIGURATION_SOURCE } from '../../packages/presentation/server/saved-game-policy.mjs';
 
 function metadataBytes(row, runtimeCatalog) {
   const source = runtimeCatalog.legacy?.entries?.['media/' + row.path];

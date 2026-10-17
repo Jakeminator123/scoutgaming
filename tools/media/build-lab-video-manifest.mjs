@@ -8,7 +8,7 @@ import {
   mediaDefinitionForPath,
   validateLabVideoManifest,
   videoIdFromSha256,
-} from '../../lab/lib/lab-video-manifest.mjs';
+} from '../../packages/studio-registry/server/video-manifest.mjs';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = resolve(SCRIPT_DIR, '../../media/dealers/astrid/runtime/presentation');

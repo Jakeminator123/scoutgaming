@@ -1,5 +1,5 @@
-import { registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { registeredDealerIds } from '../../presentation/contracts/dealer-identity.mjs';
+import { StudioStorageError } from '../../studio-access/studio-scope.mjs';
 
 export async function savedVideoDealerIds(repository) {
   if (typeof repository?.readDocument !== 'function') throw new StudioStorageError('studio_dealer_registry_unavailable');

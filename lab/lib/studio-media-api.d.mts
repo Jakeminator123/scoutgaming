@@ -1,6 +1,6 @@
 import type { NativeStudioSession } from './studio-native-auth.mjs';
 import type { NativeStudioConfiguration } from './studio-native-runtime.mjs';
-import type { VideoRegistry } from './video-registry.mjs';
+import type { VideoRegistry } from '../../packages/studio-registry/server/registry-core.mjs';
 import type { StudioUploads } from './studio-upload-service.mjs';
 export function createStudioMediaApi(options: {
   repository?: any; authorize(request: Request): Promise<NativeStudioSession>;

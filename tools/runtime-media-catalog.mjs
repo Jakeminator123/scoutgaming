@@ -30,16 +30,3 @@ export function createRuntimeMetadataReader(root=defaultRoot,options={}) {
     return bytes===null?null:JSON.parse(bytes.toString('utf8'));
   };
 }
-
-/** The repository validates the imported catalog. Detach each operation's source. */
-export function capturedRuntimeCatalog(snapshot) {
-  if (!snapshot || !/^[a-f0-9]{64}$/.test(snapshot.revision??'')
-    || snapshot.value?.schemaVersion!==1 || !snapshot.value.layout || !snapshot.value.blobIndex || !snapshot.value.presentation || !snapshot.value.legacy) {
-    throw Object.assign(Error('studio_runtime_catalog_unavailable'),{code:'studio_runtime_catalog_unavailable',statusCode:503});
-  }
-  return structuredClone(snapshot.value);
-}
-export async function readRuntimeCatalog(repository) {
-  if(typeof repository?.readRuntimeCatalog!=='function')throw Object.assign(Error('studio_runtime_catalog_unavailable'),{code:'studio_runtime_catalog_unavailable',statusCode:503});
-  return capturedRuntimeCatalog(await repository.readRuntimeCatalog());
-}

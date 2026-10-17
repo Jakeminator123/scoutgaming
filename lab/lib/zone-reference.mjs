@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { readMediaLayout, resolveMediaPath, validateMediaLayout } from '../../tools/media-layout.mjs';
-import { readRuntimeCatalog } from '../../tools/runtime-media-catalog.mjs';
+import {readRuntimeCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import { getIndexedMediaBlobResponse, isMediaBlobIndexConfigured } from './media-blob-index.mjs';
 import { assertLocalRequest, errorResponse } from './http-guard.mjs';
 import { StudioError } from './project-store.mjs';

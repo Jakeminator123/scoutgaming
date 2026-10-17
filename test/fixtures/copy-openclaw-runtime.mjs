@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, symlink } from 'node:fs/promises';
+import { cp, copyFile, mkdir, readdir, symlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { presentationPublicModules } from '../../packages/presentation/public-modules.mjs';
 
@@ -6,6 +6,7 @@ import { presentationPublicModules } from '../../packages/presentation/public-mo
 // source modules only, never credentials, persisted settings or runtime data.
 export async function copyOpenClawRuntime(root) {
   for (const file of ['packages/presentation/capability-contract.mjs', 'packages/studio-access/account-role.mjs', 'packages/presentation/public-modules.mjs',
+    'packages/studio-access/server/account-credentials.mjs', 'packages/studio-access/display-name.mjs',
     'packages/navigation/operator-entry.mjs', 'packages/navigation/admin-workspace-routes.mjs',
     'packages/navigation/workspace-surfaces.mjs', 'packages/navigation/server/platform-routing.mjs',
     'packages/server-transport/paths.mjs', 'packages/server-transport/configuration.mjs',
@@ -13,6 +14,11 @@ export async function copyOpenClawRuntime(root) {
     await mkdir(join(root, dirname(file)), {recursive: true});
     await copyFile(new URL('../../' + file, import.meta.url), join(root, file));
   }
+  await cp(new URL('../../packages/studio-registry/', import.meta.url), join(root, 'packages/studio-registry'), {recursive:true});
+  await cp(new URL('../../packages/storage/', import.meta.url), join(root, 'packages/storage'), {recursive:true});
+  await cp(new URL('../../packages/operators/', import.meta.url), join(root, 'packages/operators'), {recursive:true});
+  await mkdir(join(root,'tools'),{recursive:true});
+  await copyFile(new URL('../../tools/media-blob-index-reader.mjs', import.meta.url),join(root,'tools/media-blob-index-reader.mjs'));
   const rouletteTarget = join(root, 'web/games/roulette');
   await mkdir(rouletteTarget, { recursive: true });
   for (const file of ['index.mjs', 'preview.mjs', 'room.mjs', 'storage.mjs', 'http.mjs', 'access.mjs', 'rules.mjs']) {

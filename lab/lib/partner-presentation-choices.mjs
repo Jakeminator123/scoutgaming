@@ -1,4 +1,5 @@
-import {gameLaneConfiguration,gameChoicesForLane} from '../../web/public/game-lanes.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
+import { gameChoicesForLane } from '../../web/public/game-lanes.mjs';
 import {listPackageRooms} from '../../web/presentation-room-contract.mjs';
 import {isPresentationRoomLaneCompatible} from '../../web/storage/frozen-presentation-capture.mjs';
 

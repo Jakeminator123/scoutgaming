@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 import { canonicalStudioJson, validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
-import { normalizeDisplayName } from '../../web/partner-api.mjs';
+import { normalizeDisplayName } from '../../packages/studio-access/display-name.mjs';
 import { createStudioPasswordDelivery } from './studio-native-auth-actions.mjs';
 import { effectiveAccountRole } from '../../packages/studio-access/account-role.mjs';
 

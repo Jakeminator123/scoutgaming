@@ -10,11 +10,12 @@ import {materialLabel} from '../packages/presentation/contracts/material-catalog
 // lane only narrow lanes and dealers the catalogue already renders; they
 // never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
 // not read or written here.
-import { gamePresentationForDealer, gameChoicesForLane, gameLaneConfiguration, gameLaneSelection, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
+import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
+import { gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
 import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 import {readPackagePresentation, publicPackageBranding} from './storage/presentation-package.mjs';
 import { resolvePackageRoom, roomGame } from './presentation-room-contract.mjs';
-import {resolveRoomBranding} from './storage/partner-branding.mjs';
+import {resolveRoomBranding} from '../packages/operators/contracts/branding.mjs';
 
 export function createGameEntrySelector({ policy, packages = null, log = console.warn, game = 'blackjack' } = {}) {
   if (!['blackjack','roulette','any'].includes(game)) throw TypeError('Invalid game');

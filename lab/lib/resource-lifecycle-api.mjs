@@ -1,14 +1,18 @@
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
-import {readOperatorLifecycle,withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
+import * as savedGameDocumentContract from '../../web/storage/studio-contract.mjs';
+
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
+import {readOperatorLifecycle,withOperatorLifecycle} from '../../packages/operators/server/operator-lifecycle.mjs';
 import {readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {canonicalStudioJson,StudioStorageError,validateStudioScope,validateRevision} from '../../web/storage/studio-contract.mjs';
-import {validateStudioGameAdministration} from '../../web/storage/studio-game-policy.mjs';
+import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';
 import {isPresentationRoom} from '../../web/presentation-room-contract.mjs';
-import {gameLaneConfiguration} from '../../web/public/game-lanes.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
 import {isPresentationRoomLaneCompatible} from '../../web/storage/frozen-presentation-capture.mjs';
 import {operatorAuditContext} from './operator-audit-context.mjs';
 import {isStudioRole} from './studio-access-policy.mjs';
 import {materialTrashPlan} from './material-trash.mjs';
+
+const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 const fail=(code='studio_resource_lifecycle_rejected',status=409)=>{throw new StudioStorageError(code,status);};
 const exact=(body,fields)=>{if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).sort().join(',')!==[...fields].sort().join(','))fail('studio_invalid_request',400);};
 const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);

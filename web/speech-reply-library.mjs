@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
 import { validateStudioScope } from './storage/studio-contract.mjs';
 import { validateReplyCategories } from './public/speech-reply-library.mjs';
-import { mediaBlobPath, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, isCloudMediaConfigured } from '../lab/lib/cloud-media-store.mjs';
+import { mediaBlobPath, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, isCloudMediaConfigured } from './blob-media.mjs';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const HASH = /^[a-f0-9]{64}$/;

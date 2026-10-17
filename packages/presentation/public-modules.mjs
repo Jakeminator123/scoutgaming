@@ -14,6 +14,8 @@ export const presentationPublicModules = Object.freeze([
   ...browserContracts.map(name => ({source: 'packages/presentation/contracts/' + name + '.mjs',
     paths: ['/' + name + '.mjs', '/packages/presentation/contracts/' + name + '.mjs',
       ...(name === 'dealer-identity' ? ['/web/public/dealer-identity.mjs'] : [])]})),
+  {source: 'packages/presentation/contracts/game-lanes.mjs',
+    paths: ['/packages/presentation/contracts/game-lanes.mjs']},
   {source: 'packages/presentation/contracts/game-lane-id.mjs',
     paths: ['/packages/presentation/contracts/game-lane-id.mjs']},
   {source: 'packages/presentation/contracts/layer-asset-contract.mjs',

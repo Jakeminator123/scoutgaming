@@ -1,3 +1,5 @@
+import * as savedGameDocumentContract from '../../web/storage/studio-contract.mjs';
+
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
@@ -5,10 +7,11 @@ import { normalizeProject } from '../../packages/presentation/contracts/studio-m
 import { validatePresentationPackage } from '../../web/presentation-layers.mjs';
 import { mergeFrozenDealerPlayback } from '../../web/frozen-dealer-playback.mjs';
 
-import { gameLaneConfiguration, isGameLaneId } from '../../web/public/game-lanes.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
+import { isGameLaneId } from '../../web/public/game-lanes.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
-import { validateStudioGameAdministration } from '../../web/storage/studio-game-policy.mjs';
+import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { isPresentationRoom, resolvePackageRoom, roomGame, roomPlayPath } from '../../web/presentation-room-contract.mjs';
 import { resolveFrozenDealerIdle } from '../../web/storage/frozen-dealer-idle.mjs';
 import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia,
@@ -17,6 +20,8 @@ import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStora
 import { validatePresentationCapabilities } from '../../packages/presentation/capability-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
 import {assertPresentationRoomMaterials} from '../../web/presentation-material-game.mjs';
+
+const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 const operatorIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const keyPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;

@@ -1,7 +1,7 @@
 import {comparisonStudio} from './comparison-studio.mjs';
 import { basename, resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
+import { createPostgresStore, validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
 import { createRenderStudioPolicy } from '../../web/storage/studio-runtime.mjs';
 import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
 import { createNeonSocialStore } from './neon-project-store.mjs';

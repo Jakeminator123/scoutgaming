@@ -1,4 +1,4 @@
-import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { StudioProject } from '../contracts/studio-model.mjs';
 export type StudioGameScope = Readonly<{ environment: string; workspaceId: string }>;
 export type StudioDealerId = 'vera' | 'astrid' | 'amira' | 'mei';
 export interface StudioSavedDocument<T = Record<string, unknown>> { kind: string; revision: string; value: T; updatedAt?: string; }
@@ -18,9 +18,9 @@ export interface StudioGameSavedPolicy {
 }
 export const STUDIO_GAME_CONFIGURATION_SOURCE: 'neon/croupier_studio';
 export function studioGamePolicyConfiguration(env?: Record<string, string | undefined>): Readonly<{ scope: StudioGameScope; connectionString: string }> | null;
-export function validateStudioGameAdministration(input: unknown): Record<string, unknown>;
+declare function validateStudioGameAdministration(input: unknown): Record<string, unknown>;
 export function exactRegisteredDealerIdle(record: unknown, dealerId: string): boolean;
-export function createStudioGamePolicy(options: {
+declare function createStudioGamePolicy(options: {
   repository: StudioGameRepository;
   scope: StudioGameScope;
   dealerIdle: (dealerId: StudioDealerId) => unknown | Promise<unknown>;
@@ -35,3 +35,7 @@ export function createStudioGamePolicy(options: {
   canAssignDealer(dealerId: string): Promise<boolean>;
   projectStore(options?: { actor?: string }): Readonly<{ configurationSource: 'neon/croupier_studio'; load(): Promise<StudioProject>; save(value: StudioProject, expectedRevision: string): Promise<StudioProject> }>;
 }>;
+
+export function createSavedGamePolicy(options: { documentContract: {
+  validateDocumentValue(kind: string, value: unknown, revision: string, options?: { allowLegacyRead?: boolean }): unknown;
+} }): Readonly<{ validateStudioGameAdministration: typeof validateStudioGameAdministration; createStudioGamePolicy: typeof createStudioGamePolicy }>;

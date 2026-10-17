@@ -1,11 +1,11 @@
 import { createPublicOperatorRooms, isUnplayableOperatorRooms } from '../../web/public-operator-rooms.mjs';
 import { validatePublicOperatorRooms } from '../../web/public/operator-rooms-contract.mjs';
 import { roomEnvironment } from '../../web/public/room-environment.mjs';
-import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
 import { isPresentationRoom, roomGame, inspectPackageRooms } from '../../web/presentation-room-contract.mjs';
 import { readPackagePresentation } from '../../web/storage/presentation-package.mjs';
-import { readOperatorLifecycle } from '../../web/storage/operator-lifecycle.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { readOperatorLifecycle } from '../../packages/operators/server/operator-lifecycle.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { designPreviewHeaders } from './design-preview.mjs';
 
 const unavailable = () => { throw Object.assign(new Error('design_catalog_unavailable'), { statusCode: 503 }); };

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
-import {gameLaneConfiguration,gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
+import { gameLaneConfiguration, validateGameLanes } from '../packages/presentation/contracts/game-lanes.mjs';
+import { gameLaneFromDocument } from '../web/public/game-lanes.mjs';
 import {isDealerId,isActiveDealerId,validatePublicRegisteredDealers} from '../packages/presentation/contracts/dealer-identity.mjs';
 import {historicalDealerProject} from './fixtures/historical-dealer-project.mjs';
 const lane=id=>({schemaVersion:1,id:'configured',label:'Configured cloud table',renderer:'portrait-video',dealer:id,mediaCollection:id+'-presentation'});

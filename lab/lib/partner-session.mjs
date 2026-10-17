@@ -1,13 +1,13 @@
 import {isOperatorSlug as operatorSlug} from '../../packages/navigation/operator-slug.mjs';
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
-import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
+import { createAccountCredentialResolver } from '../../packages/studio-access/server/account-credentials.mjs';
 import { allowsWorkspaceResource, internalPartnerContext } from './partner-workspace-access.mjs';
-import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
-import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
-import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
+import { craigIdentity } from '../../packages/studio-access/server/craig-identity.mjs';
+import { installBoAuthEpoch } from '../../packages/studio-access/server/bo-auth-epoch.mjs';
+import { createPostgresStore } from '../../packages/storage/server/postgres-store.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
 import { createStudioNativeAuth } from '../../packages/studio-access/studio-native-auth.mjs';
@@ -351,7 +351,7 @@ async function openBrandingStore(config) {
   if (typeof pool?.connect !== 'function' || typeof pool?.query !== 'function') fail(503);
   let createOperatorStore;
   try {
-    ({ createOperatorStore } = await import('../../web/storage/operator-store.mjs'));
+    ({ createOperatorStore } = await import('../../packages/operators/server/operator-store.mjs'));
   } catch (error) {
     if (error?.code === 'ERR_MODULE_NOT_FOUND') fail(503);
     throw error;

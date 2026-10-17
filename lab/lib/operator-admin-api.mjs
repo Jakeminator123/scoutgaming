@@ -1,5 +1,5 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
-import { OPERATOR_ADMIN_PERMISSION, PARTNER_PERMISSIONS, isPartnerPermission } from '../../web/partner-access-policy.mjs';
+import { OPERATOR_ADMIN_PERMISSION, PARTNER_PERMISSIONS, isPartnerPermission } from '../../packages/studio-access/server/partner-access-policy.mjs';
 import {
   consumePartnerInvite, createOperatorAccounts, insertInvitedPartner, maskOperatorEmail, partnerInviteDelivery,
   partnerMailbox, playerOwnsEmail, sendPartnerInvite, visibleOperatorUsername,

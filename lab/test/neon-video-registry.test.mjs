@@ -34,7 +34,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createNeonVideoRegistry } from '../lib/neon-video-registry.mjs';
-import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../lib/lab-video-manifest.mjs';
+import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../../packages/studio-registry/server/video-manifest.mjs';
 import { mediaBlobPath } from '../lib/cloud-media-store.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';

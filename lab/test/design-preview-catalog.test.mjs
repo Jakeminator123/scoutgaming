@@ -4,7 +4,7 @@ import { registeredDesignCatalog, serveDesignCatalog } from '../lib/design-previ
 import { createPortraitRoomEntryFixture } from '../../test/fixtures/portrait-room-entry.mjs';
 import { addDealer } from '../../packages/presentation/contracts/studio-model.mjs';
 import { parseLobbyCatalog, lobbySelection, playUrlFor } from '../client/lobby/lib/catalog.mjs';
-import {withOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
+import {withOperatorLifecycle} from '../../packages/operators/server/operator-lifecycle.mjs';
 import {operatorLifecycleGroups} from '../../lab/client/admin/lib/studio-resource-lifecycle.mjs';
 import {readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {materialSource} from '../../packages/presentation/contracts/material-catalog.mjs';

@@ -3,7 +3,7 @@ import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {repositoryRoot,resolveMediaAbsolutePath,presentationBankRoot} from './media-layout.mjs';
 import {runtimeCatalogPaths} from './runtime-media-catalog.mjs';
-import {readLabVideoManifest} from '../lab/lib/lab-video-manifest.mjs';
+import {readLabVideoManifest} from '../packages/studio-registry/server/video-manifest.mjs';
 
 export async function buildRuntimeMediaCatalog(root=repositoryRoot,{check=false}={}) {
   const paths=runtimeCatalogPaths(root),entries={};

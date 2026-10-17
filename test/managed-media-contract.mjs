@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateManagedStudioMedia} from '../web/managed-media-contract.mjs';
+import {validateManagedStudioMedia} from '../packages/studio-registry/server/managed-media-contract.mjs';
 import {validateStudioMedia, createRetainedStudioMedia, RETAINED_BANK_VARIANTS} from '../web/storage/studio-contract.mjs';
 const id='10000000-0000-4000-8000-000000000001', sha256='a'.repeat(64);
 const record=()=>({id,sha256,size:4096,contentType:'video/mp4',pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.mp4`,

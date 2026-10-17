@@ -18,7 +18,7 @@
         "web/native-ai-qa-private.mjs",
         "web/generated-speech.mjs",
         "web/storage/studio-runtime.mjs",
-        "web/storage/studio-game-policy.mjs",
+        "packages/presentation/server/saved-game-policy.mjs",
         "web/studio-game-commands.mjs",
         "web/dealer-speech-runtime.mjs"
       ],
@@ -374,7 +374,7 @@
         "lab/lib/remote-ui.mjs",
         "lab/lib/studio-native-runtime.mjs",
         "lab/lib/studio-native-mail.mjs",
-        "web/storage/studio-game-policy.mjs",
+        "packages/presentation/server/saved-game-policy.mjs",
         "lab/lib/studio-game-authority.mjs",
         "lab/lib/neon-video-registry.mjs",
         "lab/lib/cloud-media-store.mjs",

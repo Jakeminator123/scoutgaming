@@ -8,13 +8,13 @@
 // A missing/unwritable journal rejects the mutation; server logging is not durability.
 // Branding is package data. It is not a permission boundary.
 import { createHash, randomUUID } from 'node:crypto';
-import { publicEditableBranding } from './partner-branding.mjs';
+import { publicEditableBranding } from '../contracts/branding.mjs';
 import { OPERATOR_LIFECYCLE_KEY, readOperatorLifecycle } from './operator-lifecycle.mjs';
-import { isAdministratorRole } from '../../packages/studio-access/account-role.mjs';
-import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../partner-access-policy.mjs';
+import { isAdministratorRole } from '../../studio-access/account-role.mjs';
+import { PARTNER_PERMISSIONS, isPartnerPermission, isOperatorAdmin } from '../../studio-access/server/partner-access-policy.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson, studioStorageFailure, validateActor, validateStudioScope,
-} from './studio-contract.mjs';
+} from '../../studio-registry/server/storage-contract.mjs';
 
 const idPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 const slugPattern = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;

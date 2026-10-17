@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, mediaBlobPath,
-  isCloudMediaConfigured } from '../lab/lib/cloud-media-store.mjs';
+  isCloudMediaConfigured } from './blob-media.mjs';
 import { normalizeSpeechPackage } from './public/speech-package.mjs';
 import { GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
 
