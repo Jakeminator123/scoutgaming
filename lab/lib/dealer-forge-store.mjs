@@ -1,6 +1,7 @@
 // Scoped SQL for the Dealer Forge journal (migration 008). Every statement runs
 // through the studio repository transaction so scope, locks and failure
-// sanitization match the rest of Studio. Nothing here touches media_records.
+// sanitization match the rest of Studio. Media references are read under that
+// same scope lock; this journal never writes media_records.
 import { randomUUID } from 'node:crypto';
 import { canonicalStudioJson, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 
@@ -27,8 +28,32 @@ export function createDealerForgeStore({ repository, scope, now = Date.now } = {
       fail('Dealern är inte längre registrerad.', 409, 'studio_dealer_inactive');
     }
   };
+  // The caller already holds Studio's scope lock. Reading before entering
+  // this transaction leaves a race with the durable deletion tombstone.
+  const requireMedia = async (dealerId, request, { acquiring = true } = {}) => {
+    const ids = new Set(['referenceMediaId', 'audioMediaId'].flatMap(key => [request?.[key], request?.options?.[key]]).filter(id => id !== null && id !== undefined));
+    const captured = request?.mediaReferences;
+    if (captured !== undefined && (!Array.isArray(captured) || captured.length > 2)) fail('Ogiltiga mediareferenser.', 409, 'studio_forge_reference_conflict');
+    for (const id of ids) {
+      if (typeof id !== 'string' || !uuid.test(id) || typeof repository.getMedia !== 'function') fail('Ogiltig mediareferens.', 409, 'studio_forge_reference_conflict');
+      const row = await repository.getMedia(id);
+      const expected = captured?.find(value => value?.id === id);
+      if (!row || row.deletion || acquiring && row.classification.archived || row.classification.dealerId !== dealerId
+        || captured && (!expected || ['sha256', 'pathname', ...(acquiring ? ['revision'] : [])].some(key => expected[key] !== row[key]))
+        || request.referenceMediaId === id && request.referenceSha256 && request.referenceSha256 !== row.sha256
+        || request.audioMediaId === id && request.audioSha256 && request.audioSha256 !== row.sha256) {
+        fail('Mediareferensen har ändrats eller arkiverats.', 409, 'studio_forge_reference_conflict');
+      }
+    }
+    if (captured?.some(value => !value || !ids.has(value.id)) || new Set(captured?.map(value => value.id)).size !== (captured?.length ?? 0)) {
+      fail('Ogiltiga mediareferenser.', 409, 'studio_forge_reference_conflict');
+    }
+  };
 
   return Object.freeze({
+    async assertJobReferences(job) {
+      return run(() => requireMedia(job.dealerId, job.request, { acquiring: false }));
+    },
     /** True when migration 008 is applied in this database. */
     async ready() {
       return run(async client => {
@@ -71,6 +96,7 @@ export function createDealerForgeStore({ repository, scope, now = Date.now } = {
       const at = now();
       return run(async client => {
         await requireDealer(dealerId);
+        await requireMedia(dealerId, request);
         const inserted = await query(client, `/* forge:job-insert */ INSERT INTO croupier_studio.forge_jobs
           (environment_id,workspace_id,job_id,dealer_id,slot_id,kind,status,provider,task_id,request,result,error,actor_id,created_at_ms,updated_at_ms)
           VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,'runway',$8,$9::jsonb,$10::jsonb,$11,$12,$13,$13) ON CONFLICT DO NOTHING RETURNING *`,
@@ -91,6 +117,18 @@ export function createDealerForgeStore({ repository, scope, now = Date.now } = {
     async updateJob(jobId, { expectedStatus, status, taskId, result, error }) {
       if (!JOB_STATUSES.includes(status)) fail('Ogiltig jobbstatus.', 422, 'studio_forge_invalid_status');
       return run(async client => {
+        // Reopening a terminal row must acquire its references again. Existing
+        // active jobs retain them even after a provider lease expires.
+        if (ACTIVE_STATUSES.includes(status)) {
+          const previous = (await query(client, `/* forge:job */ SELECT * FROM croupier_studio.forge_jobs
+            WHERE environment_id=$1 AND workspace_id=$2 AND job_id=$3::uuid`, [jobId])).rows[0];
+          if (!previous || expectedStatus && previous.status !== expectedStatus) fail('Jobbet ändrades samtidigt.', 409, 'studio_forge_conflict');
+          const acquiring = !ACTIVE_STATUSES.includes(previous.status);
+          if (acquiring) await requireDealer(previous.dealer_id);
+          // Recording an ambiguous provider response must remain possible even
+          // after retirement. Only submission/commit/reopening consumes media.
+          if (acquiring || ['submitting', 'committing'].includes(status)) await requireMedia(previous.dealer_id, previous.request, { acquiring });
+        }
         const updated = await query(client, `/* forge:job-update */ UPDATE croupier_studio.forge_jobs
           SET status=$4,task_id=COALESCE($5,task_id),result=COALESCE($6::jsonb,result),error=$7,updated_at_ms=$8
           WHERE environment_id=$1 AND workspace_id=$2 AND job_id=$3::uuid AND ($9::text IS NULL OR status=$9) RETURNING *`,

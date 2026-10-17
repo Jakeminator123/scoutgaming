@@ -82,6 +82,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       if (!saved?.value.dealers?.some(row => row.id === job.dealerId)) {
         throw new StudioStorageError('studio_dealer_inactive', 409);
       }
+      await store.assertJobReferences(job);
       return work();
     });
   }
@@ -91,9 +92,10 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     if (!response.ok) { await response.body?.cancel?.(); fail('Ankaret kunde inte läsas från privat lagring.', 503, 'forge_anchor_unreadable'); }
     return Buffer.from(await response.arrayBuffer());
   }
-  async function readMedia(id) {
+  async function readMedia(id, references) {
     const record = await repository.getMedia(id);
-    if (!record || record.deletion) fail('Mediafilen finns inte längre.', 404, 'forge_reference_missing');
+    if (!record || record.deletion || record.classification.archived) fail('Mediafilen finns inte längre.', 404, 'forge_reference_missing');
+    if (references) references.push(Object.fromEntries(['id', 'sha256', 'pathname', 'revision'].map(key => [key, record[key]])));
     return [await readPrivate(record), record.contentType];
   }
   /** Blob paths are immutable and content-addressed: when a retry finds the object already written with the same
@@ -181,7 +183,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     const anchorBytes = {};
     for (const pose of need) anchorBytes[pose] = await readPrivate(profile.anchors[pose]);
     const uri = async (bytes, type, name) => client.asset(bytes, type, name);
-    const summary = { prompt, seed, model: plan.model, mode: plan.mode, quality: plan.quality, duration: plan.duration, anchors: Object.fromEntries(need.map(pose => [pose, profile.anchors[pose].sha256])) };
+    const summary = { prompt, seed, model: plan.model, mode: plan.mode, quality: plan.quality, duration: plan.duration, anchors: Object.fromEntries(need.map(pose => [pose, profile.anchors[pose].sha256])), mediaReferences: [] };
     if (plan.endpoint === 'text_to_image') {
       const reference = slot.kind === 'pose' ? { bytes: anchorBytes.vila, tag: 'reference' } : slot.kind === 'table' ? { bytes: await images.tableGuide(profile), tag: 'layout' } : { bytes: await images.backgroundGuide(), tag: 'layout' };
       return { params: { model: plan.model, promptText: prompt, ratio: plan.ratio, referenceImages: [{ uri: await uri(reference.bytes, 'image/png', `${reference.tag}.png`), tag: reference.tag }], seed }, summary };
@@ -191,8 +193,9 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       const text = options.speechText?.trim() || speechTextFor(slot.line, SPEECH_LINES, profile.language);
       if (!text) fail('Repliken saknar text.', 422, 'forge_speech_text_missing');
       const audio = options.audioMediaId ? inventory.videos.find(row => row.id === options.audioMediaId && row.classification?.mediaType === 'audio') : null;
-      const speech = audio ? { type: 'audio', audio: await uri(...(await readMedia(audio.id)), 'line') }
+      const speech = audio ? { type: 'audio', audio: await uri(...(await readMedia(audio.id, summary.mediaReferences)), 'line') }
         : { type: 'text', text, voice: { type: 'preset', presetId: profile.voice.presetId } };
+      if (audio) { summary.audioMediaId = audio.id; summary.audioSha256 = summary.mediaReferences.at(-1).sha256; }
       return { params: { model: 'gwm1_avatars', avatar: { type: 'custom', avatarId: profile.avatar.id }, speech }, summary: { ...summary, speechText: text, speechSource: audio ? 'audio' : 'tts' } };
     }
     const first = slot.start === 'REDO' ? 'redo' : 'vila', last = slot.end === 'REDO' ? 'redo' : 'vila';
@@ -209,19 +212,19 @@ export function createDealerForgeService({ repository, scope, env = process.env,
     if (plan.mode === 'reference') {
       const reference = slotMedia(projectValue, inventory, dealerId, slot).find(row => row.id === options.referenceMediaId && row.classification?.mediaType !== 'audio');
       if (!reference) fail('Referensklippet finns inte i samma fack.', 422, 'forge_reference_missing');
-      const [referenceBytes, referenceType] = await readMedia(reference.id);
+      const [referenceBytes, referenceType] = await readMedia(reference.id, summary.mediaReferences);
       if (referenceBytes.byteLength > MAX_REFERENCE_VIDEO) fail('Referensklippet är för stort för Runway.', 422, 'forge_reference_too_large');
       params.promptImage = [{ uri: await uri(firstBytes, 'image/png', 'first.png') }];
       params.referenceVideos = [{ type: 'video', uri: await uri(referenceBytes, referenceType, 'reference.mp4') }];
       params.ratio = plan.ratio;
-      summary.referenceMediaId = reference.id; summary.referenceSha256 = reference.sha256;
+      summary.referenceMediaId = reference.id; summary.referenceSha256 = summary.mediaReferences.at(-1).sha256;
     } else {
       params.promptImage = [{ uri: await uri(firstBytes, 'image/png', 'first.png'), position: 'first' }, { uri: await uri(lastBytes, 'image/png', 'last.png'), position: 'last' }];
       params.ratio = plan.ratio;
       if (slot.kind === 'speech') {
         summary.speechText = options.speechText?.trim() || speechTextFor(slot.line, SPEECH_LINES, profile.language);
         const audio = options.audioMediaId ? inventory.videos.find(row => row.id === options.audioMediaId && row.classification?.mediaType === 'audio') : null;
-        if (audio) { params.referenceAudio = [{ type: 'audio', uri: await uri(...(await readMedia(audio.id)), 'line') }]; summary.audioMediaId = audio.id; }
+        if (audio) { params.referenceAudio = [{ type: 'audio', uri: await uri(...(await readMedia(audio.id, summary.mediaReferences)), 'line') }]; summary.audioMediaId = audio.id; summary.audioSha256 = summary.mediaReferences.at(-1).sha256; }
       }
     }
     return { params, summary };
@@ -438,7 +441,7 @@ export function createDealerForgeService({ repository, scope, env = process.env,
       let built = await buildRunwayParams(client, slot, plan, profile, value, inventory, dealerId, prior ? journaled(prior.request) : body);
       if (!prior) {
         // Journal first, pay second: the row exists (prepared) before any Runway POST can start.
-        const request = { plan, ...built.summary, slotLabel: slot.label, fingerprint, options: { maxCredits, referenceMediaId: body.referenceMediaId ?? null, audioMediaId: body.audioMediaId ?? null } };
+        const request = { plan, ...built.summary, slotLabel: slot.label, fingerprint, options: { maxCredits, referenceMediaId: built.summary.referenceMediaId ?? null, audioMediaId: built.summary.audioMediaId ?? null } };
         const inserted = await store.insertJob({ jobId, dealerId, slotId: slot.id, kind: slot.kind, status: 'prepared', request, actor });
         if (!inserted.created) {
           if (sameRequest(inserted.job).status !== 'prepared') return publicJob(inserted.job);

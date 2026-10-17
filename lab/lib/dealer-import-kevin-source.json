@@ -1,0 +1,1651 @@
+{
+  "schemaVersion": 1,
+  "id": "kevin-dragge-31f50618",
+  "repository": "Jakeminator123/scoutgaming",
+  "branch": "kevin",
+  "ref": "31f50618d071667476c9b7f4a85dfed951e23d53",
+  "sourceDealerId": "dragge",
+  "targetDealerId": "dragan",
+  "sourceRoot": "kevin/croupier-scoutgg/public/media/dealers/dragge/",
+  "languages": [
+    "sv",
+    "en"
+  ],
+  "evidence": [
+    {
+      "path": "kevin/croupier-scoutgg/public/dealer-card-tracks-dragge.js",
+      "gitBlobSha": "70c41fec22321ecf54164c223cc6174895531b86"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/dealer-remarks.js",
+      "gitBlobSha": "ab5182427430f734ec3ef2a550307feb53809435"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/dealers.js",
+      "gitBlobSha": "046aebea8e805d4de807ac3e6961b6b2706a65b9"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/manifest.json",
+      "gitBlobSha": "353921d8f63216c159593462d414915bfea9fbcc"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/shared-table.js",
+      "gitBlobSha": "3f727d7b7af5f05bfefc8113b378ba416d3a1142"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/server/dragge-voice.mjs",
+      "gitBlobSha": "7cfb62053a4eb716758d9b5f909d692bb7a65c0e"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/server/media-registry.mjs",
+      "gitBlobSha": "696f379724c7446510e30a8f9cf32fba5f643d6c"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/server/rorlig-lipsync.mjs",
+      "gitBlobSha": "079fac1c44ef9b4939602e8aa97913b7d1677e18"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/server/server.mjs",
+      "gitBlobSha": "74514e6baeecbd1cfb4977217f65c382e8f51d91"
+    },
+    {
+      "path": "kevin/croupier-scoutgg/server/shared-table.mjs",
+      "gitBlobSha": "05eab899808c2dd1ad10e8fae84265c16b805bda"
+    }
+  ],
+  "poseMetadata": {
+    "in": 27,
+    "ut": 27,
+    "land": {
+      "1": 25,
+      "2": 25,
+      "3": 24,
+      "4": 23,
+      "5": 23,
+      "6": 22,
+      "7": 28,
+      "dealer": 27,
+      "hole": 27,
+      "flip": 15,
+      "1v": 26,
+      "2v": 23,
+      "3v": 25,
+      "4v": 25,
+      "5v": 21,
+      "6v": 21,
+      "7v": 19,
+      "dealerv": 22
+    },
+    "centre": {
+      "1": [
+        108.6,
+        1024.5
+      ],
+      "2": [
+        252.6,
+        1074.5
+      ],
+      "3": [
+        394.6,
+        1104.5
+      ],
+      "4": [
+        538.6,
+        1114.5
+      ],
+      "5": [
+        682.6,
+        1104.5
+      ],
+      "6": [
+        826.6,
+        1074.5
+      ],
+      "7": [
+        968.5,
+        1024.5
+      ],
+      "dealer": [
+        538.6,
+        894.5
+      ],
+      "hole": [
+        538.7,
+        893.6
+      ],
+      "flip": [
+        538.6,
+        894.3
+      ]
+    },
+    "missing": [],
+    "frames": {
+      "1": {
+        "-": 39,
+        "-i": 66,
+        "-u": 66,
+        "-iu": 83,
+        "-v": 39,
+        "-iv": 66
+      },
+      "2": {
+        "-": 39,
+        "-i": 66,
+        "-u": 66,
+        "-iu": 78,
+        "-v": 39,
+        "-iv": 66
+      },
+      "3": {
+        "-": 39,
+        "-i": 66,
+        "-u": 66,
+        "-iu": 80,
+        "-v": 39,
+        "-iv": 66
+      },
+      "4": {
+        "-": 39,
+        "-i": 66,
+        "-u": 66,
+        "-iu": 77,
+        "-v": 39,
+        "-iv": 66
+      },
+      "5": {
+        "-": 39,
+        "-i": 66,
+        "-u": 66,
+        "-iu": 74,
+        "-v": 39,
+        "-iv": 66
+      },
+      "6": {
+        "-": 39,
+        "-i": 66,
+        "-u": 66,
+        "-iu": 74,
+        "-v": 39,
+        "-iv": 66
+      },
+      "7": {
+        "-": 39,
+        "-i": 66,
+        "-u": 66,
+        "-iu": 80,
+        "-v": 39,
+        "-iv": 66
+      },
+      "dealer": {
+        "-": 39,
+        "-i": 66,
+        "-u": 64,
+        "-iu": 74,
+        "-v": 39,
+        "-iv": 66
+      },
+      "hole": {
+        "-": 39,
+        "-i": 66,
+        "-u": 39,
+        "-iu": 66
+      },
+      "flip": {
+        "-": 39,
+        "-i": 39,
+        "-u": 39,
+        "-iu": 39
+      }
+    },
+    "props": [
+      [
+        79,
+        106
+      ],
+      [
+        79,
+        106
+      ],
+      [
+        78,
+        106
+      ],
+      [
+        78,
+        106
+      ],
+      [
+        78,
+        106
+      ],
+      [
+        78,
+        106
+      ],
+      [
+        78,
+        106
+      ],
+      [
+        79,
+        106
+      ]
+    ],
+    "restEnd": [
+      "hole",
+      "flip"
+    ],
+    "restStart": [
+      "flip"
+    ],
+    "card": [
+      78,
+      106
+    ]
+  },
+  "texts": {
+    "sv": {
+      "banter_1": "Fan, det går väldigt bra för dig nu. Kan du låna mig lite pengar?",
+      "blackjack_1": "Blackjack!",
+      "blackjack_2": "Blackjack, snyggt!",
+      "blackjack_3": "Där satt den. Blackjack!",
+      "blackjack_4": "Blackjack! Grattis.",
+      "blackjack_5": "Och det är blackjack!",
+      "blackjack_6": "Blackjack, direkt!",
+      "blackjack_7": "Snyggt, blackjack!",
+      "bust_1": "Tjock, tyvärr.",
+      "bust_2": "Över tjugoett. Otur.",
+      "bust_3": "Det blev för mycket.",
+      "bust_4": "Tjock. Synd.",
+      "bust_5": "Aj, där sprack den.",
+      "bust_6": "För många, tyvärr.",
+      "bust_7": "Över. Bättre lycka nästa gång.",
+      "chatter1_1": "Lugn kväll vid bordet. De är mina favoriter.",
+      "chatter1_2": "Åtta kortlekar, nyblandade varje runda. Varje hand börjar från noll.",
+      "chatter1_3": "Jag har delat ut många händer vid det här bordet. Inga två blir likadana.",
+      "chatter2_1": "Ta den tid du behöver. Korten springer ingenstans.",
+      "chatter2_2": "Ingen brådska alls. Tänk över det.",
+      "chatter2_3": "När du är redo. Beslutet är ditt.",
+      "dealerblackjack_1": "Dealern har blackjack. Jag beklagar allihop.",
+      "dealerblackjack_2": "Blackjack till huset den här gången. Det händer de bästa.",
+      "dealerblackjack_3": "Tyvärr blev det blackjack för mig. Rundan går till huset.",
+      "dealerbust_1": "Dealern blir tjock! Alla som är kvar i handen får betalt.",
+      "dealerbust_2": "För många för mig. Huset blir tjockt. Grattis, hela bordet.",
+      "dealerbust_3": "Och det blev över tjugoett för dealern. Vinnare runt hela bordet.",
+      "double_1": "Dubbling. Ett kort och bara ett kort.",
+      "double_2": "Dubbelt då. Här är ditt kort.",
+      "double_3": "Dubblat. Ett kort avgör.",
+      "farewell_1": "Tack för att du spelade. Det var ett nöje att dela ut åt dig.",
+      "farewell_2": "Klar för i kväll. Tack, det var trevligt att ha dig vid bordet.",
+      "farewell_3": "God natt, och tack för sällskapet vid mitt bord.",
+      "goodluck_1": "Inga fler insatser. Här kommer korten.",
+      "goodluck_2": "Insatserna är stängda. Lycka till, allihop.",
+      "goodluck_3": "Det var alla insatser. Nu ser vi vad skon har åt oss.",
+      "greet_axel": "Hej Axel, hur mår du i dag? Välkommen till mitt bord.",
+      "greet_emil": "Hej Emil, hur mår du i dag? Välkommen till mitt bord.",
+      "greet_fredrik": "Hej Fredrik, hur mår du i dag? Välkommen till mitt bord.",
+      "greet_guest": "Hej och välkommen! Hur mår du i dag? Sätt dig var du vill.",
+      "greet_ian": "Hej Ian! Hur mår du i dag? Välkommen till mitt bord.",
+      "greet_jakob": "Hej Jakob, hur mår du i dag? Välkommen till mitt bord.",
+      "greet_john": "Hej John, hur mår du i dag? Välkommen till mitt bord.",
+      "greet_kevin": "Hej Kevin, hur mår du i dag? Välkommen till mitt bord.",
+      "greeting_1": "God kväll och välkommen till bordet. Jag heter Dragan, sätt dig där du vill.",
+      "greeting_2": "Välkommen in. Dra fram en stol, korten är nyblandade och bordet är ditt.",
+      "greeting_3": "Ett nytt ansikte vid bordet. Välkommen, jag heter Dragan och delar ut åt dig i kväll.",
+      "insurance_1": "Ess synligt. Vill någon ha försäkring?",
+      "insurance_2": "Jag har ett ess. Försäkringen är öppen och betalar två till ett.",
+      "insurance_3": "Ess upp, så försäkring erbjuds, helt ditt beslut.",
+      "lose_1": "Dealern vinner. Den går till huset.",
+      "lose_2": "Inte den här gången, tyvärr. Huset håller.",
+      "lose_3": "Nära, men huset tar den här rundan.",
+      "peek_1": "Ett ögonblick, jag kollar efter blackjack.",
+      "peek_2": "Dealern kollar efter blackjack.",
+      "peek_3": "Jag kollar efter blackjack. Inget i ärmen.",
+      "placebets_1": "Insatserna är öppna. Lägg dina marker när du är redo.",
+      "placebets_2": "Ny runda, nya kort. Insatsrutan är din.",
+      "placebets_3": "Bordet är öppet. Ta den tid du behöver och lägg dina insatser.",
+      "push_1": "Samma summa. Det blir lika, din insats stannar hos dig.",
+      "push_2": "Vi står lika. Ingen vinner och ingen förlorar.",
+      "push_3": "Lika. Din insats kommer tillbaka.",
+      "remark_hit17_1": "Ja, det kanske inte var så smart.",
+      "remark_hit17_2": "Modigt, väldigt modigt.",
+      "remark_hit20_1": "20. Det kanske inte var bästa läget att ta kort.",
+      "remark_stand11_1": "Stanna där. Du kunde inte ens bli tjock på nästa kort.",
+      "sidebet_1": "Din sidoinsats går in. Den betalas ut direkt.",
+      "sidebet_2": "Sidoinsatsen vinner. Snygg start på handen.",
+      "sidebet_3": "Och sidoinsatsen sitter. Betald innan vi ens har börjat.",
+      "table_cash_1": "Alla tänker på sig själva och cashen i första hand.",
+      "table_trust_1": "Du kan inte lita på någon i det här spelet.",
+      "twentyone_1": "Tjugoett, snyggt!",
+      "twentyone_2": "Tjugoett!",
+      "twentyone_3": "Där fick du tjugoett.",
+      "twentyone_4": "Tjugoett, perfekt.",
+      "twentyone_5": "Snyggt, tjugoett!",
+      "twentyone_6": "Tjugoett, mitt i prick.",
+      "twentyone_7": "Tjugoett, bra spelat.",
+      "win_1": "Grattis till vinnarna!",
+      "win_2": "Grattis till er som vann!",
+      "win_3": "Grattis, vinnare!"
+    },
+    "en": {
+      "banter_1": "Damn, things are going really well for you right now. Could you lend me some money?",
+      "blackjack_1": "Blackjack!",
+      "blackjack_2": "Blackjack, nice!",
+      "blackjack_3": "There it is. Blackjack!",
+      "blackjack_4": "Blackjack! Well done.",
+      "blackjack_5": "And that's blackjack!",
+      "blackjack_6": "Blackjack, straight away!",
+      "blackjack_7": "Lovely, blackjack!",
+      "bust_1": "Bust, I'm afraid.",
+      "bust_2": "Over twenty-one. Unlucky.",
+      "bust_3": "Too many, sorry.",
+      "bust_4": "That's a bust.",
+      "bust_5": "Ouch, that's over.",
+      "bust_6": "Bust. Next time.",
+      "bust_7": "Over, I'm afraid.",
+      "chatter1_1": "Quiet night at the table. Those are my favorite.",
+      "chatter1_2": "Eight decks, shuffled fresh every round. Every hand starts from nothing.",
+      "chatter1_3": "I've dealt a lot of hands at this table. No two ever play out the same.",
+      "chatter2_1": "Take your time. The cards aren't going anywhere.",
+      "chatter2_2": "No rush at all. Think it over.",
+      "chatter2_3": "Whenever you're ready. The decision is yours.",
+      "dealerblackjack_1": "Dealer has blackjack. I'm sorry, everyone.",
+      "dealerblackjack_2": "Blackjack for the house this time. It happens to the best of us.",
+      "dealerblackjack_3": "I'm afraid it's blackjack for me. That round goes to the house.",
+      "dealerbust_1": "Dealer busts! Everyone still in the hand gets paid.",
+      "dealerbust_2": "Too many for me. The house busts. Congratulations, table.",
+      "dealerbust_3": "And that's over twenty-one for the dealer. Winners all round.",
+      "double_1": "Doubling down. One card, and one card only.",
+      "double_2": "Double it is. Here's your one card.",
+      "double_3": "Doubled. one card to settle it.",
+      "farewell_1": "Thank you for playing. It was a pleasure dealing for you.",
+      "farewell_2": "All done for tonight? Thank you, it was lovely having you at the table.",
+      "farewell_3": "Good night, and thank you for the company at my table.",
+      "goodluck_1": "No more bets. Here come the cards.",
+      "goodluck_2": "Bets are closed. Good luck, everyone.",
+      "goodluck_3": "That's all the bets. Let's see what the shoe has for us.",
+      "greet_axel": "Hi Axel, how are you today? Welcome to my table.",
+      "greet_emil": "Hi Emil, how are you today? Welcome to my table.",
+      "greet_fredrik": "Hi Fredrik, how are you today? Welcome to my table.",
+      "greet_guest": "Hi and welcome. How are you today? Take any seat you like.",
+      "greet_ian": "Hi Ian, how are you today? Welcome to my table.",
+      "greet_jakob": "Hi Jakob, how are you today? Welcome to my table.",
+      "greet_john": "Hi John, how are you today? Welcome to my table.",
+      "greet_kevin": "Hi Kevin, how are you today? Welcome to my table.",
+      "greeting_1": "Good evening, and welcome to the table. I'm Dragan, take any seat you like.",
+      "greeting_2": "Welcome in. Pull up a chair, the cards are fresh and the table is yours.",
+      "greeting_3": "A new face at the table. Welcome, I'm Dragan, and I'll be dealing for you tonight.",
+      "insurance_1": "Ace showing. Would anyone like insurance?",
+      "insurance_2": "I have an ace. Insurance is open, and it pays two to one.",
+      "insurance_3": "Ace up, so insurance is on offer. Entirely your call.",
+      "lose_1": "Dealer wins. That one goes to the house.",
+      "lose_2": "Not this time, I'm afraid. The house holds.",
+      "lose_3": "Close, but the house has it this round.",
+      "peek_1": "One moment while I check for blackjack.",
+      "peek_2": "Dealer checks for blackjack.",
+      "peek_3": "Checking for blackjack. Nothing up my sleeve.",
+      "placebets_1": "Bets are open. Place your chips whenever you're ready.",
+      "placebets_2": "New round, fresh cards. The betting circle is all yours.",
+      "placebets_3": "The table is open. Take your time, and place your bets.",
+      "push_1": "Same total. It's a push, your stake stays with you.",
+      "push_2": "We're level. A push, nobody wins and nobody loses.",
+      "push_3": "Push. Your bet comes back.",
+      "remark_hit17_1": "Uh, maybe that wasn't the smartest move.",
+      "remark_hit17_2": "Brave, very brave.",
+      "remark_hit20_1": "20. Maybe not the best time to take a card.",
+      "remark_stand11_1": "Standing there, you couldn't even bust on the next card.",
+      "sidebet_1": "Your side bet comes in. That one pays straight away.",
+      "sidebet_2": "Side bet's a winner. Nice way to start the hand.",
+      "sidebet_3": "And the side bet lands. Paid before we've even begun.",
+      "table_cash_1": "Everyone thinks about themselves and the cash first.",
+      "table_trust_1": "You can't trust anyone in this game.",
+      "twentyone_1": "Twenty-one, nice!",
+      "twentyone_2": "Twenty-one!",
+      "twentyone_3": "That's twenty-one.",
+      "twentyone_4": "Twenty-one, perfect.",
+      "twentyone_5": "Nice, twenty-one!",
+      "twentyone_6": "Twenty-one, spot on.",
+      "twentyone_7": "Twenty-one, well played.",
+      "win_1": "Congratulations to the winners!",
+      "win_2": "Congratulations, winners!",
+      "win_3": "Well done to our winners!"
+    }
+  },
+  "files": [
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green-startbild.png",
+      "gitBlobSha": "00651e53365d69258743e02678c550928141aa13",
+      "size": 1188426
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/flip.mp4",
+      "gitBlobSha": "e5559d3437f5976000bbc007e82327a6f68ec72c",
+      "size": 3386615
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/hole.mp4",
+      "gitBlobSha": "e0b6af21c02163e8cbfc39c7a5f136ed867dcce3",
+      "size": 3872315
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/pos1.mp4",
+      "gitBlobSha": "489149d3a385d271b9fd2f8eb59c3b6c9b3ddd05",
+      "size": 5466581
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/pos2.mp4",
+      "gitBlobSha": "c35e57069369c54529dbf52b3b6dbfad40dd87c9",
+      "size": 5506953
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/pos3.mp4",
+      "gitBlobSha": "80c0a498b16530b5b590677e65b353525afdcb93",
+      "size": 5105472
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/pos4.mp4",
+      "gitBlobSha": "f34b870984b770598eb08262d357c6b792abc55c",
+      "size": 4720744
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/pos5.mp4",
+      "gitBlobSha": "16af39a0659d8bcef485ee1bcf6438010cb53210",
+      "size": 4724794
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/pos6.mp4",
+      "gitBlobSha": "0dd6623cbb071244bbd26937f9a5ae282a83ead3",
+      "size": 4702066
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/pos7.mp4",
+      "gitBlobSha": "cf255e295d0d867f258b0b9a632e9bdb2144a8b6",
+      "size": 4895742
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/green/posdealer.mp4",
+      "gitBlobSha": "9ed72033855a24ce6f456dfbc8399aff48625ab9",
+      "size": 3957122
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle-v2/breath.mp4",
+      "gitBlobSha": "30a16337d8df013492169580ab5f28f7622c65ba",
+      "size": 1946190
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle-v2/glance.mp4",
+      "gitBlobSha": "93aa1d0b1e93bcbbf16f021de934f882e8454f16",
+      "size": 1885067
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle-v2/smile.mp4",
+      "gitBlobSha": "1e3c07d724022f03d8e13c3313d51dfce5ba1064",
+      "size": 1922809
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle/blink.mp4",
+      "gitBlobSha": "8e214aa00b8478b78876417d24e6b3f50991e237",
+      "size": 3580617
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle/breath.mp4",
+      "gitBlobSha": "25d373ac26fcb7b4ca780b253c986c173194643f",
+      "size": 4925602
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle/fidget.mp4",
+      "gitBlobSha": "34ea58db66ad339bad25595fe08d2915f1e7966c",
+      "size": 4286930
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle/glance.mp4",
+      "gitBlobSha": "ff0dcc5edb5d6555edbd0b6316bc2693facc68e4",
+      "size": 5101446
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle/report.json",
+      "gitBlobSha": "7f0a783ac5269bebc752d997b047586e0ad52807",
+      "size": 553
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/idle/still.mp4",
+      "gitBlobSha": "2b732438add3f570f855e8c92189357e62f5e383",
+      "size": 5306208
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/banter_1.mp4",
+      "gitBlobSha": "6abcba4cc05689ccc2231af6717626e87f36cff0",
+      "size": 1160173
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/blackjack_1.mp4",
+      "gitBlobSha": "6d2c25033110caf3e72a7016ae8a11aa6eac428d",
+      "size": 278940
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/blackjack_2.mp4",
+      "gitBlobSha": "def831d93eece3cf18e73914e6fe656720f18201",
+      "size": 279344
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/blackjack_3.mp4",
+      "gitBlobSha": "818937af13ad1248fe998d3b837132382f5f26d3",
+      "size": 293371
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/blackjack_4.mp4",
+      "gitBlobSha": "57f251b2f980840c315df43f89d1d3999025c65f",
+      "size": 286707
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/blackjack_5.mp4",
+      "gitBlobSha": "e877c88a87335f0ef592474a11ef1f64dacbd995",
+      "size": 286632
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/blackjack_6.mp4",
+      "gitBlobSha": "511f973dbe7c23d96bfcc958e46502a2fc116ae6",
+      "size": 291126
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/blackjack_7.mp4",
+      "gitBlobSha": "f2bb95a890fbefe65b2345197273bc8ebf4f3526",
+      "size": 284511
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/bust_1.mp4",
+      "gitBlobSha": "02d788e49c56c9807daaedbb40cf43dc4f0b8143",
+      "size": 285956
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/bust_2.mp4",
+      "gitBlobSha": "f9496669010edf571b9d7d6c1c7d9f9ea84699d2",
+      "size": 295290
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/bust_3.mp4",
+      "gitBlobSha": "3cf2d1dacf535620f8c18cfcef8c8eb6f0d24f81",
+      "size": 279634
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/bust_4.mp4",
+      "gitBlobSha": "5fe130aabde967ae1e232221f59a6ca83276a516",
+      "size": 279096
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/bust_5.mp4",
+      "gitBlobSha": "3593e231b08884b73a19c630c1071ad544656d02",
+      "size": 278247
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/bust_6.mp4",
+      "gitBlobSha": "e9eb61131a0401f4992586ac432b3acd3ae75cf6",
+      "size": 281587
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/bust_7.mp4",
+      "gitBlobSha": "3eb4c54e097816fe28894427d2a585502042e35c",
+      "size": 283049
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/chatter1_1.mp4",
+      "gitBlobSha": "5e982ac35de51c3e833251ba359f2ae9f0bf2231",
+      "size": 782668
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/chatter1_2.mp4",
+      "gitBlobSha": "7cf707dd8898c2a33adc3970edc6f5170dc09ec2",
+      "size": 1198881
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/chatter1_3.mp4",
+      "gitBlobSha": "3c546f84cdc547cf57ae0eaade63c9f985a0a3fd",
+      "size": 1205088
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/chatter2_1.mp4",
+      "gitBlobSha": "a45eb410797619808fb9fb3dea117101192bb257",
+      "size": 765765
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/chatter2_2.mp4",
+      "gitBlobSha": "92a7bed7afe6bccd696fccaa39d754b40825dd08",
+      "size": 737342
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/chatter2_3.mp4",
+      "gitBlobSha": "a30ebbf8f56e168ea0418e82fe375089607d2444",
+      "size": 761434
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/dealerblackjack_1.mp4",
+      "gitBlobSha": "f0c99b847100328bdc2a1c12c096aca76fcfef46",
+      "size": 759109
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/dealerblackjack_2.mp4",
+      "gitBlobSha": "a24e2a6a98abddac51d6059d63dc63a15fdb220b",
+      "size": 795975
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/dealerblackjack_3.mp4",
+      "gitBlobSha": "552c7139df4a0ea67fb804aaf174ac1012318658",
+      "size": 1150183
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/dealerbust_1.mp4",
+      "gitBlobSha": "3a31fb4f19d75b4e52683b1d2325b36a4fb87c99",
+      "size": 804414
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/dealerbust_2.mp4",
+      "gitBlobSha": "768f3c8998fe9264e7333071ada9622e31e83708",
+      "size": 807140
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/dealerbust_3.mp4",
+      "gitBlobSha": "4b4095978a81f4f4975f1e9a1a8010e7a8b4e811",
+      "size": 801450
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/double_1.mp4",
+      "gitBlobSha": "a932423f1e8c58077d08fac7f100840403850378",
+      "size": 765904
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/double_2.mp4",
+      "gitBlobSha": "dbf10fc9faf4de2f6cf12d8270bbb6b77ac38a67",
+      "size": 754217
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/double_3.mp4",
+      "gitBlobSha": "9a8ccf86cf9cf521b9487a162c078b49a793c20d",
+      "size": 726060
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/farewell_1.mp4",
+      "gitBlobSha": "dc7125237661ce6fa263e6c1fa31e64f9e2952b1",
+      "size": 799129
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/farewell_2.mp4",
+      "gitBlobSha": "208bb290462f96a764d99d84b5883f01c3f2f111",
+      "size": 1171694
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/farewell_3.mp4",
+      "gitBlobSha": "7fca77e7ce02b5e4b23245b638ecbe12233cf5a6",
+      "size": 808724
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/goodluck_1.mp4",
+      "gitBlobSha": "d559c0cf058f0d0c7d79f9988a3e3d667fc15b3f",
+      "size": 734621
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/goodluck_2.mp4",
+      "gitBlobSha": "7734d55951fad4d84a061d4ecaaea7f14549fc6e",
+      "size": 731077
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/goodluck_3.mp4",
+      "gitBlobSha": "8cf2c2758faaccc0256b8a4aff8ab43c665fe257",
+      "size": 795606
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greet_axel.mp4",
+      "gitBlobSha": "65fec5c5240fbd33064a68743283ffa8425aab42",
+      "size": 780964
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greet_emil.mp4",
+      "gitBlobSha": "0c54b3db19cfba4cce4bf2adec0eef54b33d2d10",
+      "size": 790087
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greet_fredrik.mp4",
+      "gitBlobSha": "17170f3509fd0bbacc1bd3e039636573aa9181a5",
+      "size": 801905
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greet_guest.mp4",
+      "gitBlobSha": "53ff0b026ecb11830ccdde8a3bab91ac517490f1",
+      "size": 1075629
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greet_ian.mp4",
+      "gitBlobSha": "d460bebd0db6cad8cb5bbc4e92e2f60f4220e63b",
+      "size": 774082
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greet_jakob.mp4",
+      "gitBlobSha": "ce8dbd84463b9f5b01667edc795ddc6baafcd2ad",
+      "size": 781935
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greet_john.mp4",
+      "gitBlobSha": "4870ba783733afc6e8cc77d3274dd17de5b2a06e",
+      "size": 765943
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greet_kevin.mp4",
+      "gitBlobSha": "b0262d5ce22974851cc7a84f4010637babc0d31e",
+      "size": 772733
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greeting_1.mp4",
+      "gitBlobSha": "2ee4aaf2ae344e38ee39cb5e2af103fc06a2b851",
+      "size": 335112
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greeting_2.mp4",
+      "gitBlobSha": "541ea46899750f21a1440cf17502ae0120954da4",
+      "size": 1093778
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/greeting_3.mp4",
+      "gitBlobSha": "ce037bbd4cd6cb2c0589c27ac95f34e5956e8a7f",
+      "size": 348522
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/insurance_1.mp4",
+      "gitBlobSha": "10c6dcc91006ea841bbcc74750bd23b35ac3bbd3",
+      "size": 780460
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/insurance_2.mp4",
+      "gitBlobSha": "0de2bf2b35547a7d01adda04dbbfe61a6d2f9a25",
+      "size": 975667
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/insurance_3.mp4",
+      "gitBlobSha": "34fb045ee7722b43a46941d3de9353833208407b",
+      "size": 783846
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/lose_1.mp4",
+      "gitBlobSha": "2799c88e03602a80be07b2c2fdd0993190f1f3c6",
+      "size": 775749
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/lose_2.mp4",
+      "gitBlobSha": "55c57d5f7ea1d7ec8b3c88f5c9346feefc9e13fb",
+      "size": 748749
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/lose_3.mp4",
+      "gitBlobSha": "615e42be7c79b9f8dde49bcaa099a0dd0e05edf0",
+      "size": 758685
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/peek_1.mp4",
+      "gitBlobSha": "faa07df91c282e592d7a0aca7793f6c66d959c5a",
+      "size": 737222
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/peek_2.mp4",
+      "gitBlobSha": "3c4145eac28a2af18b5966a61200071cff9a3c84",
+      "size": 644947
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/peek_3.mp4",
+      "gitBlobSha": "dd7abb675839520b8ca1dbcf77ed1359a487e5a7",
+      "size": 761445
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/placebets_1.mp4",
+      "gitBlobSha": "b35ac7698eec9df9bb865ec35ab26a6341755281",
+      "size": 803770
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/placebets_2.mp4",
+      "gitBlobSha": "4d166d2057b50255313ff41d65ab139405c16082",
+      "size": 813644
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/placebets_3.mp4",
+      "gitBlobSha": "c1981f506485b8788713d78ef8f3a6631fb65538",
+      "size": 792777
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/push_1.mp4",
+      "gitBlobSha": "452667249d2cebe1a0463fc77b6bd1700fb5350e",
+      "size": 795927
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/push_2.mp4",
+      "gitBlobSha": "4d94591aac8dcfce58b699d4fabee69d91ebec9e",
+      "size": 813480
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/push_3.mp4",
+      "gitBlobSha": "219e13a9fa2b838dcd1b0f335875cd26793f392d",
+      "size": 693873
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/remark_hit17_1.mp4",
+      "gitBlobSha": "c1bfcae336175355daefa29a6668a83bd2c16f10",
+      "size": 779401
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/remark_hit17_2.mp4",
+      "gitBlobSha": "6b540bf86e46f6bb6a39fabe16d16895fcc6eb60",
+      "size": 624170
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/remark_hit20_1.mp4",
+      "gitBlobSha": "c1fdece6c9f53ac7bca062b785ea9d2361e7be16",
+      "size": 804650
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/remark_stand11_1.mp4",
+      "gitBlobSha": "5aa875110a75a549f28a6b646639662ae6d9d15e",
+      "size": 803724
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/sidebet_1.mp4",
+      "gitBlobSha": "6ee14dff2cf649ebd379085e7b8ee41ce0c27984",
+      "size": 811288
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/sidebet_2.mp4",
+      "gitBlobSha": "44e928e04d0e8b2c6d5fb765350dfa2c1d701c2d",
+      "size": 792623
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/sidebet_3.mp4",
+      "gitBlobSha": "7f119a5644699f6288038bfbf7492a71c9bd182a",
+      "size": 809641
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/table_cash_1.mp4",
+      "gitBlobSha": "d320a163c6d25c68ef0010100e082249ad0d0827",
+      "size": 795368
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/table_trust_1.mp4",
+      "gitBlobSha": "9c408926a36f7e3edae469758dfb8c356aa160df",
+      "size": 752672
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/texter.json",
+      "gitBlobSha": "aa0628aed61b1ff23ccd11bb91a2476f9fffbd1e",
+      "size": 4846
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/twentyone_1.mp4",
+      "gitBlobSha": "4f2dc7bba704e7f806aa8b295c985bd08bde9fea",
+      "size": 280282
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/twentyone_2.mp4",
+      "gitBlobSha": "6ca6792d99056ef4c9a9eadbb99ed2c0984081e5",
+      "size": 272579
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/twentyone_3.mp4",
+      "gitBlobSha": "6582801f3b76154abdb45a985e4e3f4bfa730d86",
+      "size": 284163
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/twentyone_4.mp4",
+      "gitBlobSha": "49741294e4015b78a4e23b61f5f73a6e18129972",
+      "size": 285443
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/twentyone_5.mp4",
+      "gitBlobSha": "8ca555a7f180afbc9688476eef0afe541596c784",
+      "size": 275949
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/twentyone_6.mp4",
+      "gitBlobSha": "8172900183d78dee56a1750398421abc70ce014a",
+      "size": 287929
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/twentyone_7.mp4",
+      "gitBlobSha": "c32c3ffc7e023585103712b470443b67b5bd6578",
+      "size": 286294
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/win_1.mp4",
+      "gitBlobSha": "c8cc5de5f5968d90ac03718dfef8ee24fd85a043",
+      "size": 294060
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/win_2.mp4",
+      "gitBlobSha": "baaf913bceca188be845eed9d9e7623ca8a725a6",
+      "size": 290071
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/en/win_3.mp4",
+      "gitBlobSha": "404d22312c93d038244585b527cd8d3aae8c2f8d",
+      "size": 294034
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/banter_1.mp4",
+      "gitBlobSha": "d525d6be4fe3521ab2e03ea8afb79ab9fb364bb8",
+      "size": 1013111
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/blackjack_1.mp4",
+      "gitBlobSha": "bb1a566ef7bd9f0d3d540937d2537806f965dbd6",
+      "size": 274798
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/blackjack_2.mp4",
+      "gitBlobSha": "ebea732abc5231dd7a3cb4d880c6c087852e96ba",
+      "size": 286435
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/blackjack_3.mp4",
+      "gitBlobSha": "4c69334cd0403cddaa08283789894fc54141db4d",
+      "size": 287429
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/blackjack_4.mp4",
+      "gitBlobSha": "9f882e72a0c7f95564bb20e5fb0332041df7607e",
+      "size": 291377
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/blackjack_5.mp4",
+      "gitBlobSha": "ff47eb22b2e7b8e2f99ae5fee78f67ed354c0df4",
+      "size": 288776
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/blackjack_6.mp4",
+      "gitBlobSha": "1036146b3fa81c81e63fe0b7f977a6c9667bf3a5",
+      "size": 284949
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/blackjack_7.mp4",
+      "gitBlobSha": "0ca08b2efdb277f6c4ec52f0c272887d7682bf53",
+      "size": 287106
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/bust_1.mp4",
+      "gitBlobSha": "bbc2901c6ff03a5000ca16892197c953040eda83",
+      "size": 281415
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/bust_2.mp4",
+      "gitBlobSha": "05fd2351c0ee826db0d1f183d3f4e324653a6084",
+      "size": 287604
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/bust_3.mp4",
+      "gitBlobSha": "c2052f68e78ac6853c2c8226842c6f17d7f08807",
+      "size": 286664
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/bust_4.mp4",
+      "gitBlobSha": "d2ec650cd741827e5a2262079d9c51bb34080115",
+      "size": 276227
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/bust_5.mp4",
+      "gitBlobSha": "8b77a2c5e6b81c23f30a19de21c3a700a53e8c9b",
+      "size": 288315
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/bust_6.mp4",
+      "gitBlobSha": "be5c27f64fc1382496c8f2d0bda9beae621e10d0",
+      "size": 286072
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/bust_7.mp4",
+      "gitBlobSha": "24ce551dc3e9adf8c83e6e2b9cf7aba12d4bcf90",
+      "size": 295518
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/chatter1_1.mp4",
+      "gitBlobSha": "d789b73edaccc6299aa8652fd3ad87f8066b172e",
+      "size": 795896
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/chatter1_2.mp4",
+      "gitBlobSha": "85000b5c0ede5eaa2482278b638116dc68e23d08",
+      "size": 1221077
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/chatter1_3.mp4",
+      "gitBlobSha": "86b1f1a501029f1bc6b231261a4ef047e3e2b966",
+      "size": 1226414
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/chatter2_1.mp4",
+      "gitBlobSha": "5e7d7e39d8f42ba2dde1af98ee6b7967f6e891f4",
+      "size": 1011622
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/chatter2_2.mp4",
+      "gitBlobSha": "641f6412c992ded0354d6791dca187622ecbef3f",
+      "size": 762330
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/chatter2_3.mp4",
+      "gitBlobSha": "37e45e8b9d434cc57edbc59e130e5f3a1529a1d4",
+      "size": 771314
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/dealerblackjack_1.mp4",
+      "gitBlobSha": "ef43fc1553f9d048a9018dc6a57beb6061a1ceee",
+      "size": 777602
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/dealerblackjack_2.mp4",
+      "gitBlobSha": "83037619549e9475f0617a3fd0e22681443bc6d9",
+      "size": 815074
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/dealerblackjack_3.mp4",
+      "gitBlobSha": "4489323cf29a5754499864d79fc6a9d0763e0225",
+      "size": 1039024
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/dealerbust_1.mp4",
+      "gitBlobSha": "874562deb2bd000aa8f54a99262badd8f6e87d4c",
+      "size": 1041840
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/dealerbust_2.mp4",
+      "gitBlobSha": "61fb56c469b0479d086b29798fc1433a37777dc4",
+      "size": 1009912
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/dealerbust_3.mp4",
+      "gitBlobSha": "34d65ed5c7e7d5e2982ef9c6bac37aa3e32fcb06",
+      "size": 1200041
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/double_1.mp4",
+      "gitBlobSha": "cc492658f8ed80ba6e5555ceed7f849fa35f17a6",
+      "size": 754637
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/double_2.mp4",
+      "gitBlobSha": "55c6246a2c1e5000ad6c8e83bb8953ec1ba1463c",
+      "size": 739665
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/double_3.mp4",
+      "gitBlobSha": "5a334022ce33bba8e710675f7d0982fbd71d3e86",
+      "size": 670685
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/farewell_1.mp4",
+      "gitBlobSha": "ac8996c750527155f87df39a6a9efdff9882a90f",
+      "size": 1039859
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/farewell_2.mp4",
+      "gitBlobSha": "50af3c6dc94484641389c605bdb2494f30a7d13b",
+      "size": 1013213
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/farewell_3.mp4",
+      "gitBlobSha": "7f1a97df4805c699f04f3ae0f540441c08fc4953",
+      "size": 800634
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/goodluck_1.mp4",
+      "gitBlobSha": "2a31bdac6be92e0336cd5437777e1c387f6797fd",
+      "size": 767346
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/goodluck_2.mp4",
+      "gitBlobSha": "59e355966480eb82cf49cb6103244bb4126f9dc0",
+      "size": 797657
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/goodluck_3.mp4",
+      "gitBlobSha": "860fcf0818073c853ff71a6474c12361ffa4b683",
+      "size": 1104708
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greet_axel.mp4",
+      "gitBlobSha": "5e8d7ec587edad9eba1f6b4e992702d19fbea41f",
+      "size": 800842
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greet_emil.mp4",
+      "gitBlobSha": "ad3ecfbdd8a62387a23dcab0157d981271bda65a",
+      "size": 1013890
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greet_fredrik.mp4",
+      "gitBlobSha": "ec8c6aac4e79966b301f36866ed609d262ecf668",
+      "size": 790906
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greet_guest.mp4",
+      "gitBlobSha": "aff844f5426bdf8975e553233ae5330aabfafda8",
+      "size": 814938
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greet_ian.mp4",
+      "gitBlobSha": "2ae4f85a2048cd41d56daaa5d5ef77ca56b92acd",
+      "size": 1013666
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greet_jakob.mp4",
+      "gitBlobSha": "00f1043cdc9d2e7d6a1006a376494cd17cdc124a",
+      "size": 802288
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greet_john.mp4",
+      "gitBlobSha": "57b394e99c504a787732c877613148796d594a22",
+      "size": 803150
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greet_kevin.mp4",
+      "gitBlobSha": "078f2b1219239eef79fa106c0d6fe8ca9be980d8",
+      "size": 816672
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greeting_1.mp4",
+      "gitBlobSha": "53232efa9821a470e1b57dc1f62d54e31264727d",
+      "size": 350390
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greeting_2.mp4",
+      "gitBlobSha": "83bd6c198751c45d3d28979ddc81804e5c004c4b",
+      "size": 1193799
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/greeting_3.mp4",
+      "gitBlobSha": "4be5ba43e1ba31e8b45478915286ada323557b25",
+      "size": 361302
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/insurance_1.mp4",
+      "gitBlobSha": "4ee88c3161cb9ba65743a3db1de810c7354c679b",
+      "size": 782896
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/insurance_2.mp4",
+      "gitBlobSha": "33ddf730e5c494be008a18786e97099520e2ec67",
+      "size": 1229280
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/insurance_3.mp4",
+      "gitBlobSha": "d77f9314e5005ae3b47758c012f5f5b9de60299e",
+      "size": 810500
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/lose_1.mp4",
+      "gitBlobSha": "4341f03b82985b421bb9fbd33f8bfc981b05f855",
+      "size": 768801
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/lose_2.mp4",
+      "gitBlobSha": "7c231bf0145222cb73b950bfc7ab14afe3fcb739",
+      "size": 776141
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/lose_3.mp4",
+      "gitBlobSha": "570ae7af34f50870ff34b5fd805fdbb32bbf7dbe",
+      "size": 773260
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/peek_1.mp4",
+      "gitBlobSha": "0f44c6679f6042559b4b424ee8a4cc03279b696f",
+      "size": 811681
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/peek_2.mp4",
+      "gitBlobSha": "89a8d0ad11f3d97b949ceb49bb8cd09360638857",
+      "size": 748321
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/peek_3.mp4",
+      "gitBlobSha": "0385e5f0f964c284ccac233dc2366499ccd75680",
+      "size": 762833
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/placebets_1.mp4",
+      "gitBlobSha": "0922e1b53bda64502b06b97c77d9d8c7a7d42616",
+      "size": 972060
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/placebets_2.mp4",
+      "gitBlobSha": "c282f5b32e9dd41fdd8d5d574dd0f93cac7bc431",
+      "size": 751132
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/placebets_3.mp4",
+      "gitBlobSha": "3beda479f35c98e9714576d4ea523efb2f86adde",
+      "size": 1159710
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/push_1.mp4",
+      "gitBlobSha": "2206e4dc643a2ea5b315c3156b793759e422ea75",
+      "size": 1078131
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/push_2.mp4",
+      "gitBlobSha": "ad1cadf0520e4e09679f79c9e80eecfec5971277",
+      "size": 797361
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/push_3.mp4",
+      "gitBlobSha": "fa993c201c95cbe0604638d93732ce12c20d200b",
+      "size": 777505
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/remark_hit17_1.mp4",
+      "gitBlobSha": "a2b0422c1a5259f6243dd398d4a6bf27516cb92e",
+      "size": 748160
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/remark_hit17_2.mp4",
+      "gitBlobSha": "1bbf6633ba5bca17a5f17f1cf445ee98ade1c114",
+      "size": 603752
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/remark_hit20_1.mp4",
+      "gitBlobSha": "af1e2377f500c277309bca82b35a5e2a8ec80066",
+      "size": 1058810
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/remark_stand11_1.mp4",
+      "gitBlobSha": "661e471946b2943e27df4dc34b60f329752ec257",
+      "size": 1116021
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/sidebet_1.mp4",
+      "gitBlobSha": "5572eb279b066ea0da8f35c611238014ca815756",
+      "size": 797220
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/sidebet_2.mp4",
+      "gitBlobSha": "47e61a2b002a05e54ee11fb29226f69b2ba6a2cf",
+      "size": 787396
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/sidebet_3.mp4",
+      "gitBlobSha": "1ae0f947321617ae2986d4946950d414a4021be6",
+      "size": 1162159
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/table_cash_1.mp4",
+      "gitBlobSha": "92eb464a00df0c3817d678078eb07aeeaa4c0ac0",
+      "size": 806790
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/table_trust_1.mp4",
+      "gitBlobSha": "292e863f63960db618604e8bb42352cc23b3b980",
+      "size": 786973
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/texter.json",
+      "gitBlobSha": "d7453d87d06731b9904f099b6b342b415876f82d",
+      "size": 4946
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/twentyone_1.mp4",
+      "gitBlobSha": "7938de11dd9b4b9a271000c0dec5c8de75dd0875",
+      "size": 287131
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/twentyone_2.mp4",
+      "gitBlobSha": "ebbea01881086a6945fe5427e343a39dcb5b055a",
+      "size": 269442
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/twentyone_3.mp4",
+      "gitBlobSha": "49af1186fc8eeb715e888f1ab6b683353f3422fd",
+      "size": 285234
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/twentyone_4.mp4",
+      "gitBlobSha": "583955f0aabee5bb28dc98b3db0231baa2f6bb22",
+      "size": 287365
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/twentyone_5.mp4",
+      "gitBlobSha": "69587cd5805907cdddd9de3af6941b81a44a9506",
+      "size": 290683
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/twentyone_6.mp4",
+      "gitBlobSha": "b4135141e9fe0477eaf2348163b5a7003161a044",
+      "size": 286018
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/twentyone_7.mp4",
+      "gitBlobSha": "5f94a804a85bc63970894976c427aff1e2da7c7e",
+      "size": 288129
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/win_1.mp4",
+      "gitBlobSha": "5b52a90b7ba9fc349f0c13f7e2c713d85fc18699",
+      "size": 287921
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/win_2.mp4",
+      "gitBlobSha": "5132b0854a60b3ff5131b7644c54865a545ae3f6",
+      "size": 296387
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/repliker/sv/win_3.mp4",
+      "gitBlobSha": "0701196ad00acd680d6f106d52d4474ba2d5d5bf",
+      "size": 286665
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/room.png",
+      "gitBlobSha": "78ba6a2d826b5094595133f656f15702383255ef",
+      "size": 1630069
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/startbild.png",
+      "gitBlobSha": "a389575aeb66b3bf02e8e7f274b09c95481a6cc3",
+      "size": 1626647
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/timing.json",
+      "gitBlobSha": "0fac9b5b622aeb9f342d3e8eeb1410e6674c1830",
+      "size": 422
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/flip-i.mp4",
+      "gitBlobSha": "b52dcf15c49d08002c02d22446c63ababc69992c",
+      "size": 968346
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/flip-iu.mp4",
+      "gitBlobSha": "b52dcf15c49d08002c02d22446c63ababc69992c",
+      "size": 968346
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/flip-u.mp4",
+      "gitBlobSha": "b52dcf15c49d08002c02d22446c63ababc69992c",
+      "size": 968346
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/flip.mp4",
+      "gitBlobSha": "b52dcf15c49d08002c02d22446c63ababc69992c",
+      "size": 968346
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/hole-i.mp4",
+      "gitBlobSha": "472c31fb65288184e0c3bee2a5e6ed76e81c3c0c",
+      "size": 1726196
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/hole-iu.mp4",
+      "gitBlobSha": "472c31fb65288184e0c3bee2a5e6ed76e81c3c0c",
+      "size": 1726196
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/hole-u.mp4",
+      "gitBlobSha": "1b5e5c220fc1dc063dc3acfc032c38748a821584",
+      "size": 1125735
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/hole.mp4",
+      "gitBlobSha": "1b5e5c220fc1dc063dc3acfc032c38748a821584",
+      "size": 1125735
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/meta.json",
+      "gitBlobSha": "48b696b5205eeff27626af2b7788c3acea707b95",
+      "size": 1081
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos1-i.mp4",
+      "gitBlobSha": "bff88e1f0e72cb7cb86c1ae62dac0622ed731ee3",
+      "size": 1722893
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos1-iu.mp4",
+      "gitBlobSha": "213b2209af6e19c8a3dd80690afc7e5b49a3e601",
+      "size": 2166229
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos1-iv.mp4",
+      "gitBlobSha": "29803c30b041f7c72e3f71a4c552fa46eb37f12b",
+      "size": 1809242
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos1-u.mp4",
+      "gitBlobSha": "72b6e01323c82881ab037ef4236c9f82ba88893c",
+      "size": 1737115
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos1-v.mp4",
+      "gitBlobSha": "67de60040b39ee3c173781460afd568b154229d4",
+      "size": 1201342
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos1.mp4",
+      "gitBlobSha": "0e1b62443e7551c504d41effa23a924553e2e52b",
+      "size": 1119497
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos2-i.mp4",
+      "gitBlobSha": "d79b84de1a499ef6255abaf1619304cfbfc10856",
+      "size": 1697936
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos2-iu.mp4",
+      "gitBlobSha": "80185ceb587c4b47780384635d63aa5a82bf6ce2",
+      "size": 2008020
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos2-iv.mp4",
+      "gitBlobSha": "7db7e5a10fc898435fc73c6bd5266545d43fbe99",
+      "size": 1812094
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos2-u.mp4",
+      "gitBlobSha": "75b363f6ac70b7a95226bc3276d25f81a125aa28",
+      "size": 1716927
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos2-v.mp4",
+      "gitBlobSha": "282ac0df89a155836ca5931b1efe3b69ee63a497",
+      "size": 1207074
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos2.mp4",
+      "gitBlobSha": "83b9fa869d59bf664aaed647e5029a26127503f9",
+      "size": 1097853
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos3-i.mp4",
+      "gitBlobSha": "b2954c016c66b68a3d055492074a9956bb4c32f9",
+      "size": 1733523
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos3-iu.mp4",
+      "gitBlobSha": "faa2cf890878e849a590413c8697cb91572ea343",
+      "size": 2114470
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos3-iv.mp4",
+      "gitBlobSha": "29698566a0f371b0f93baf1ab0fa5b614552113e",
+      "size": 1815805
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos3-u.mp4",
+      "gitBlobSha": "1fc5f49ab4f64864268d9334a139c783ebc802ba",
+      "size": 1745014
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos3-v.mp4",
+      "gitBlobSha": "9e6b86844033082f82e82134dafdc6b81590a500",
+      "size": 1206337
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos3.mp4",
+      "gitBlobSha": "eedc7d9fd3d990800dda7f225a58e3ed5c5b4694",
+      "size": 1125741
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos4-i.mp4",
+      "gitBlobSha": "7bf3979b646a233345d13d301ee03350e0ceb26a",
+      "size": 1725491
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos4-iu.mp4",
+      "gitBlobSha": "e1805cbf18d2fa06960f897afd84174726ca1be6",
+      "size": 2020262
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos4-iv.mp4",
+      "gitBlobSha": "3fd7df0d7d755a83ab2a04026ba3874291793ac4",
+      "size": 1854164
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos4-u.mp4",
+      "gitBlobSha": "33dbdef5f229c36e8ec495dba4171b23168a4406",
+      "size": 1739988
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos4-v.mp4",
+      "gitBlobSha": "87c929d7ac2cc354fff65dd99d644e24e4adb23a",
+      "size": 1234052
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos4.mp4",
+      "gitBlobSha": "c9a386a1ebb69387094d451af1338f1747fbdf6e",
+      "size": 1118809
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos5-i.mp4",
+      "gitBlobSha": "6a235a96b51b1d7fad9be01691eb34457847c88b",
+      "size": 1733848
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos5-iu.mp4",
+      "gitBlobSha": "f5a4541573e9242610b4665fe4c5ce8f50451ff8",
+      "size": 1970548
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos5-iv.mp4",
+      "gitBlobSha": "3d72fa6c23149c44f4f4886dccb216c17a4bdfd3",
+      "size": 1798225
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos5-u.mp4",
+      "gitBlobSha": "6c0448324b00658af80e848ca17230c226782492",
+      "size": 1745358
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos5-v.mp4",
+      "gitBlobSha": "af297a03c306c7802fec4ea64fc021a8801dcd0f",
+      "size": 1185454
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos5.mp4",
+      "gitBlobSha": "21adecb73049c9fd56b7abf44bebd531e593b226",
+      "size": 1125449
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos6-i.mp4",
+      "gitBlobSha": "eaccd064875d29f862f715f143c05064b240853e",
+      "size": 1761149
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos6-iu.mp4",
+      "gitBlobSha": "a0001b0517b2b8c0dd44afa7eb5c2195f565b574",
+      "size": 2008562
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos6-iv.mp4",
+      "gitBlobSha": "5f3201e701028cd0d74011c4b10f9cc557a26c70",
+      "size": 1829468
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos6-u.mp4",
+      "gitBlobSha": "9a64b27ec01d25eab007228d031c7f3048a02b9f",
+      "size": 1780563
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos6-v.mp4",
+      "gitBlobSha": "70ca4ec73bde2ce3db85880484f353a3e021be5b",
+      "size": 1210389
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos6.mp4",
+      "gitBlobSha": "ee54fa081b53c112af16b7fce6e870ad25cf15bd",
+      "size": 1152221
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos7-i.mp4",
+      "gitBlobSha": "3ecf34d9b30d85148bd6dee2fe9d4cc64f0fee58",
+      "size": 1710710
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos7-iu.mp4",
+      "gitBlobSha": "db8c99f49467450a735da35a0548a0d608708621",
+      "size": 2092975
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos7-iv.mp4",
+      "gitBlobSha": "277e85adb1e114e9e8581dc479eadf65b4b04872",
+      "size": 1844547
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos7-u.mp4",
+      "gitBlobSha": "9641e7158c7ec0f5309cdd69cc3c8de2e0b31715",
+      "size": 1722174
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos7-v.mp4",
+      "gitBlobSha": "e4ac405720b198a85288bda2f8e31ca9667a6fd3",
+      "size": 1232186
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/pos7.mp4",
+      "gitBlobSha": "34bf1497445569a2a7a10393bac7c0560dad9880",
+      "size": 1103158
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/posdealer-i.mp4",
+      "gitBlobSha": "ad6bf05effcdd398058f40205872e4ca836a5736",
+      "size": 1668322
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/posdealer-iu.mp4",
+      "gitBlobSha": "c6d72f65f0a9f796283f40132cbbe9a76028d591",
+      "size": 1919848
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/posdealer-iv.mp4",
+      "gitBlobSha": "f755812e639147c76f716fca31a53175c4ee9877",
+      "size": 1762625
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/posdealer-u.mp4",
+      "gitBlobSha": "7ec2107d531ad78eddf8111a978ca814fd82133c",
+      "size": 1629828
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/posdealer-v.mp4",
+      "gitBlobSha": "c1a374d6feb8f9463b1dd4f72a2d7e106338bd3e",
+      "size": 1144521
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/posdealer.mp4",
+      "gitBlobSha": "8a3b43699683369f80a4df2f248f4e6f613da1e3",
+      "size": 1053670
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/redo.png",
+      "gitBlobSha": "12ad7d00fcb233cd9b2f47c539ab074487f57b52",
+      "size": 1392028
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/dragge/v2/vila.png",
+      "gitBlobSha": "820843223e10cdf2483aafc0028e030bd846c125",
+      "size": 876364
+    },
+    {
+      "path": "kevin/croupier-scoutgg/public/media/dealers/faces/dragge.jpg",
+      "gitBlobSha": "1e7d95df04d9779bded49fa85eff6485367eecda",
+      "size": 11876
+    }
+  ]
+}

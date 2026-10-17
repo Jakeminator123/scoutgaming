@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "files": {
+    ".gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9",
+    "Dockerfile": "5a0084f3f1929d506f6a06feb0b7a4b4759d50fbf651cc4c799667cf8d883d5f",
+    "build-contract.json": "046145f1d46f60c878a2df6eaa7506d67d8c8ba3839c6cce459644e81c6e52e0",
+    "build.py": "c1b8e72e8649b560fc2aa7e23e7fafb58b8420acaf1391ef94fcc9b6623e89a2",
+    "contracts.py": "390cdc3d4733683ed81814a33f4e3e73b87413abeb09d15a1a26410482e55555",
+    "engine.py": "307e982a266282e35167fd54d89452c3592214da228030a6ddff66d9a25ebfa8",
+    "entrypoint.py": "68cf64eef034c08d734355fc6d873b21b221fc3f4dd91452212a2cabfd79ef84",
+    "fetch_models.py": "5954d4ecc16ca94ed4259b3a6326a442f25a0a95610d58b7b789f39cf52828e6",
+    "frame_contract.py": "fd5c8d327cff2ea8f56654050f5a6a7ef8097401b5310e65553492ac29d36b98",
+    "lock_wheels.py": "de0bbe996eda4a865720d67b3d9317457600f7f7a4d4b7755f252b3f64d68881",
+    "models.lock.json": "b6d5a9b21507b894219c61098d44aceacb5b2b5343ab01bf4636241ca3053a40",
+    "requirements-serverless.lock": "94b9f6383b01a52ebf5bd592dfe6e33fa59ef1c30730552b1ea500aaf010c252",
+    "requirements.lock": "8b480ffc73df332c27e29c0725519566873c4e6ccccf1cfb365c194577ed51bb",
+    "seal_release.py": "724884591c04664393c17e96aee95559ebecdf9b8cc9a6bd3ed7ccee349b4ae2",
+    "serverless-wheels.lock": "15a6a3d826c39fa5f5e4554583e2c8c59368027871e10d9e4b7a6c41bd242c56",
+    "serverless.py": "ba21000addf74d6668176eadbf14bcac963708334e585b2a01fc0b4f09409f81",
+    "session.py": "c2fe5d3457b3f0c916707ce4b3a17e4ab1e5fdaeac3c374457912816611394b7",
+    "source.json": "7e994ef4053e9ea6f1919e3726b12356f8c5c1b2ace1d33cfe2e58721f664c7a",
+    "vendor/motor.py": "4d918fc8dad5587ce02dc2dabcd1d8d8f18d994216e0514a623dc7c9df9c3bd4",
+    "vendor/rorlig.py": "b8e3fcd808e413ebf3bfea2743e7d0137c0f65732231cb2f03f3b4fa5c2f4e66",
+    "wheels.lock": "f1de7ffbf266182d319a51a588227fd72def4e733f1c7b8efae2590625443c54"
+  },
+  "releaseSha256": "d6a799c104281b6e180c8285ba464b6420f6b4a4e3d20369ecab0a2d40988eb8"
+}

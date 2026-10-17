@@ -500,8 +500,18 @@ denna ansvarsfördelning. API-nyckeln ska inte läggas i klientkoden.
 
 ## Ändringslogg
 
+### 17 oktober 2026 — samordnad dealer-media-plan
+
+Jakob beställde tre parallella underlag: Kevin-klippens faktiska användning,
+Neon/Blob och raderingsreferenser samt reproducerbar talworker. Läsande
+underagenter levererade underlagen; inga produktionsändringar utfördes.
+[Befintlig storage-guide](../storage/BLOB-NEON.md) ersätter äldre generella råd
+med ett gemensamt målkontrakt. Admin-huvudagenten behåller UI/integrationsansvar;
+workerbyte och möjlig Astrid-avveckling är separata steg.
+
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-17 | På Jakobs begäran arbetar tre underagenter med fryst importkontrakt, atomiska Forge-referenser/raderingsinspektion och separat workerpaket. Huvudchatten äger transport, Git och dokumentation; Admin-chatten äger klippkartan. OpenClaw behåller dynamiska textbeslut. Storage-/runtimeguiderna skiljer implementerade kontrakt från återstående import, molnbygge och spelaraktivering. Ingen media eller Astrid-tjänst raderas. |
 | 2026-10-16 | Integrationsgranskningen rättade klientundantaget så beroende-/schema-/konfigurationsfiler fortfarande kräver migrationskontroll. Admins testplan kontrollerar nu faktisk globexpansion och har ett negativt prov för bortfallen Studio-täckning. Sidochattens förenkling ingår i den befintliga PR185-leveransen; aktuell slutstatus finns i JOHN-HANDOFF. |
 | 2026-10-16 | Lokala commits använder fokuskontroller; hela regressionen ligger i CI/explicit fullkörning. 135 dubblerade Studio-testval ersatta med automatisk upptäckt; samma 454 testfiler täcks. Systemkartans leveransspärrar borttagna, rapport/evidens kvar. Klient- och test-PR:er slipper live migrationsläsning; server/schema och main behåller den. Agent-talk styrs av arbetsmoment i samma checkout. 54 fokustester och 30 kart-/samordningstester passerade; inga nya föräldralösa tester. Detta är lokal verifiering, inte körd GitHub-CI eller driftsättning. |
 | 2026-10-16 | Chef-verktyg, skill och tester använder nu `agent-talk/chef.json`. Den borttagna `.croupier-inbox` läses, migreras eller återskapas inte. Status är fortsatt skrivfri; 12 riktade prov passerar. Ingen chef aktiverades. |

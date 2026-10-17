@@ -12,11 +12,14 @@ const equal = (a, b) => {
  * upgrades explicitly: this does not install a competing HTTP upgrade listener.
  * callbackUrl is a secret capability; never log it or send it to the browser.
  */
-export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, lifetimeMs = 180000 } = {}) {
+export function createMovingWorkerChannel({ origin, avatar, verifiedAvatar, idleMs = 15000, lifetimeMs = 180000, startupMs } = {}) {
   const url = new URL(origin);
   if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/'
-    || !['paow', 'dragge'].includes(avatar)
+    || (verifiedAvatar === undefined ? !['paow', 'dragge'].includes(avatar)
+      : verifiedAvatar !== avatar || typeof verifiedAvatar !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(verifiedAvatar))
     || !Number.isInteger(idleMs) || idleMs < 20 || idleMs > 15000
+    || (startupMs !== undefined && (!verifiedAvatar || !Number.isInteger(startupMs)
+      || startupMs < idleMs || startupMs > 150000 || startupMs > lifetimeMs))
     || !Number.isInteger(lifetimeMs) || lifetimeMs < idleMs || lifetimeMs > 180000) {
     throw Error('invalid_moving_worker_channel');
   }
@@ -26,7 +29,8 @@ export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, life
   url.searchParams.set('token', token); url.searchParams.set('avatar', avatar);
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE, perMessageDeflate: false });
   const controller = new AbortController();
-  let ws, claimed = false, ended = false, failure, waiter, queuedBytes = 0;
+  let ws, claimed = false, ended = false, failure, waiter, queuedBytes = 0, firstRead = true;
+  const startupDeadline = Date.now() + (startupMs ?? idleMs);
   const queue = [];
   const timer = setTimeout(() => close('moving_worker_lifetime_exceeded'), lifetimeMs);
   timer.unref?.();
@@ -59,7 +63,7 @@ export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, life
       else { queue.push(item); queuedBytes += item.data.length; }
     });
   }
-  function bounded(promise, code) {
+  function bounded(promise, code, timeoutMs = idleMs) {
     return new Promise((resolve, reject) => {
       let settled = false;
       const end = (callback, value) => {
@@ -67,7 +71,7 @@ export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, life
         settled = true; clearTimeout(timeout); controller.signal.removeEventListener('abort', abort);
         callback(value);
       };
-      const timeout = setTimeout(() => { close(code); end(reject, Error(code)); }, idleMs);
+      const timeout = setTimeout(() => { close(code); end(reject, Error(code)); }, timeoutMs);
       const abort = () => end(reject, failure || Error('moving_worker_closed'));
       controller.signal.addEventListener('abort', abort, { once: true });
       promise.then(value => end(resolve, value), error => end(reject, error));
@@ -93,10 +97,14 @@ export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, life
     },
     async next() {
       if (failure) throw failure;
+      const starting = firstRead && startupMs !== undefined;
+      firstRead = false;
       if (queue.length) { const item = queue.shift(); queuedBytes -= item.data.length; return item; }
       if (ended) throw Error('moving_worker_disconnected');
       if (waiter) throw Error('moving_worker_concurrent_read');
-      return bounded(new Promise((resolve, reject) => { waiter = { resolve, reject }; }), 'moving_worker_read_timeout');
+      return bounded(new Promise((resolve, reject) => { waiter = { resolve, reject }; }),
+        starting ? 'moving_worker_startup_timeout' : 'moving_worker_read_timeout',
+        starting ? Math.max(1, startupDeadline - Date.now()) : idleMs);
     },
     async send(data) {
       if (failure) throw failure;
@@ -106,6 +114,6 @@ export function createMovingWorkerChannel({ origin, avatar, idleMs = 15000, life
     },
     // Bounded callbacks must observe this signal too. After timeout no further
     // chunks are delivered; callers discard any late completion after abort.
-    bounded, close,
+    bounded: (promise, code) => bounded(promise, code), close,
   });
 }

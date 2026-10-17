@@ -1,0 +1,53 @@
+LOKAL LIPSYNC-CHECKPOINT — 17 oktober 2026, cirka 02:42 svensk tid
+GitHub-tagg: lipsync-local-dragan-2026-10-17
+
+Verifierat
+Dragan spelar hela utdelningsklippet som Neon klassar som box3 och säger
+”Jakob är kung.” med sin befintliga ElevenLabs-klon Dragge. Emils rorlig-9
+driver munnen över exakt rätt bildrutor. Filmen är 1080x1920, 24 fps,
+66 rutor / 2,75 sekunder, utan loop eller fryst slutruta. FFmpeg har
+kontrollerat bild och ljud. Full audiovisuell acceptans är inte registrerad.
+
+Setup på Jakobs dator
+- Windows + befintlig Ubuntu i WSL, NVIDIA RTX 3060 med 12 GB grafikminne.
+- Egen Python 3.12-miljö: /home/jakem/.local/share/croupier-dragan-local/venv
+- MuseTalk-kod i samma katalog/MuseTalk, commit
+  0a89dec45a0192b824e3cf4daf96c239440c5ed8.
+- Emils granskade motor.py/rorlig.py i samma katalog/worker. Endast lokala
+  sökvägar anpassade. Torch 2.8.0+cu128, transformers 4.39.2,
+  diffusers 0.30.3, numpy 1.26.4. installed-packages.txt anger alla versioner.
+- Modellvikterna matchar SHA-256 från det tidigare separata GPU-provet.
+- Ljudet skapades med ett enda anrop till projektets befintliga ElevenLabs-
+  konto: Dragge, röst-ID 7f95xPL4S3ySZ4OS1pw8, eleven_multilingual_v2.
+  Sparade Neon-inställningar: stability 0.5, similarity_boost 0.85,
+  style 0.15, use_speaker_boost true. Ingen ny röstklon skapades.
+- Lokal miljö läser vid ljudgenerering endast ELEVENLABS_API_KEY ur rotens
+  befintliga ignorerade .env.local. Nyckeln kopieras inte hit eller till GPU:n.
+
+Privata arbetsfiler (utanför Git)
+Bas: C:\Users\jakem\.codex\visualizations\2026\10\16\01a14685-3cb7-7020-8f18-414e8bbbd5fe
+Underkatalog: dragan-jakob-ar-bast (äldre arbetsnamn, slutrepliken är ”kung”).
+Där finns render-local.py, bank/, bank-original/, models/,
+dragge-jakob-ar-kung.wav, installed-packages.txt, model-verification.json,
+tts-request.json, tts-receipt.json och preview-receipt.json.
+Resultat: dragan-box3-jakob-ar-kung.mp4
+Video-SHA-256: 56ab4888c9677ba17fcd1495c04a5a170483f2e92f7a126ffbc4163641cc2c89
+Originalets Neon-ID: d207c889-cede-41be-98a9-4355ffc1f1c2 (Kevin pos4-iv).
+Observera numreringen: intern box3 = Plats 4 i Admin, inte tredje spelplatsen.
+Original-SHA-256: 4767e1363b12550b72662c59989eb6c415088208c2bd40e73374eb8c97d18683
+Bankens 66 bildrutor matchar originalets avkodade YUV-byte före läppsynk.
+Talplan: originalets ruta 8–57; ljudstart 553 ms efter filmstart.
+
+Köra om på denna dator (återanvänder sparat ljud, inget nytt API-anrop)
+wsl -d Ubuntu -- /home/jakem/.local/share/croupier-dragan-local/venv/bin/python /mnt/c/Users/jakem/.codex/visualizations/2026/10/16/01a14685-3cb7-7020-8f18-414e8bbbd5fe/dragan-jakob-ar-bast/render-local.py
+Detta skriver om endast provets egna utdata. Bevara den godkända versionen
+separat innan en annan replik, film eller inställning provas.
+
+Gränser
+Detta är en fungerande lokal OFFLINE-rendering, inte ett färdigt livespel.
+50 talrutor tog 4,245 s (11,8 fps). Realtidsgränsen är avsiktligt avstängd
+endast i provskriptet. Bankattestering, autentiserad spelanslutning,
+budgetjournal, omplanering och spelarens ljudklocka återstår.
+Ingen ny RunPod-resurs behövdes. Originalfilmer, Neon-data, Blob och Astrids
+tjänst ändrades inte. GitHub-taggen sparar kodläget och denna beskrivning;
+den säkerhetskopierar inte privata filmer, modeller, nycklar eller WSL-miljön.

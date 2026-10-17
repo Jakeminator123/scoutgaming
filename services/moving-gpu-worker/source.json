@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "workerVersion": "rorlig-9",
+  "origin": "Emil's reviewed moving engine; private dragan-job/worker snapshot used by the A6000 and WSL checkpoints",
+  "importedFiles": {
+    "vendor/motor.py": "02ec1ebdffc0e9fc3991a8aaaec1008aac656451240f64b064c41c8b5f33f1cb",
+    "vendor/rorlig.py": "b8e3fcd808e413ebf3bfea2743e7d0137c0f65732231cb2f03f3b4fa5c2f4e66"
+  },
+  "localCheckpoint": {
+    "python": "3.12.3",
+    "torch": "2.8.0+cu128",
+    "musetalkCommit": "0a89dec45a0192b824e3cf4daf96c239440c5ed8",
+    "localRorligSha256": "dd6e89c2129d559db5fef82cbcb8154030f7c15ebf270f42744d36d7b8b4e1c3",
+    "pathNormalizationVerified": true,
+    "installedPackagesSha256": "8b480ffc73df332c27e29c0725519566873c4e6ccccf1cfb365c194577ed51bb"
+  },
+  "changesToImportedEngine": "vendor/motor.py has bounded frame-contract patches: integer 24kHz PCM/padding duration; exact plan resolution with rest frame zero; explicit 90-frame measurement plan. Original hashes above remain the import receipt. vendor/rorlig.py is unchanged. Old vendor network/session helpers are never called.",
+  "license": {
+    "musetalk": "MIT, Tencent Music Entertainment Group; LICENSE retained in pinned checkout",
+    "movingEngine": "No standalone license supplied with this private source snapshot. Preserve project-owner provenance; do not infer an external distribution grant.",
+    "modelWeights": "Pinned public upstream snapshots; this manifest does not grant model redistribution rights."
+  },
+  "serverlessSdk": {
+    "name": "runpod",
+    "version": "1.12.0",
+    "wheelSha256": "2c52d5ad4268879bd4d8288f84a9861488abc756ffc5195d95f1cffe4c4f3454",
+    "source": "official PyPI wheel; async handler/concurrency contract inspected"
+  },
+  "localPatches": {
+    "vendor/motor.py": [
+      "Delegate Avatar.resolve to strict shared resolve_plan; no implicit extension or truncation",
+      "Count audio chunks from exact PCM samples and reject short feature output",
+      "Plan warm-up explicitly, with rest only when the source take is shorter"
+    ],
+    "frameContract": "frame_contract.py; rendering math, models, blending and encoding remain unchanged",
+    "verification": "CPU helper and vendor/MuseTalk feature-chunk tests; patched GPU/live/visual behavior still requires verification"
+  }
+}

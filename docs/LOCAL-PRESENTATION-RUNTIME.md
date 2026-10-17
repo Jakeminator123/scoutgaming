@@ -1,5 +1,10 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+Kanoniskt målkontrakt för klippens fack, pose, namn, kontrollerad Kevin-import,
+Neon/Blob och gemensam talworker: [storage-guiden](storage/BLOB-NEON.md).
+Den uppdaterades 17 oktober som en plan; den aktiverar inte funktioner.
+Befintliga implementationer och daterade prov nedan behåller sina avgränsningar.
+
 ## Runtimekontrakt efter Neon-migreringen, 16 oktober 2026
 
 Den nya runtimekoden har **Neon som enda källa för registermetadata**.
@@ -91,6 +96,86 @@ nedan använder i stället protokollets källpixlar direkt och kontrollerar att
 rektangeln ryms i originalbilden. Den aktiva talvägen använder ännu verifierad
 referensbild. Att byta endpoint räcker inte.
 
+### Registerbundet bankunderlag, 17 oktober 2026
+
+`tools/prepare-moving-speech-sources.mjs` läser det befintliga Neon-registret
+och privata Blob-filer genom samma tjänster som spelet. Kör med explicit
+molnkonfiguration och en ny lokal utdatakatalog:
+
+```sh
+node tools/prepare-moving-speech-sources.mjs --dealer dragan --output /private/dragan-input
+python tools/build-moving-speech-bank.py --sources /private/dragan-input --output /private/dragan-pool
+```
+
+Exporterade filmer behåller originalens byte. ID, SHA-256, byteantal,
+faktiska bildrutetidsstämplar, 24 fps och 1080×1920 kontrolleras. Filnamn och
+etiketter används inte för matchning. Endast aktiva rörelse-/idleklipp tas
+med; inspelade repliker behåller sitt befintliga flöde. I Dragan-läsningen
+var 50 klipp kompatibla och två äldre idle-poster 30 fps. Dessa lämnas
+oförändrade och listas uttryckligen som uteslutna. Variabel bildfrekvens,
+fel geometri eller för många rutor konverteras inte automatiskt.
+
+`sources.json` är ett hashbundet authoring-manifest. Tagningen
+`clip-<media-UUID>` avser alltid exakt det registrerade originalet.
+VILA pekar på profilens explicit valda källfilm och bildruta, aldrig en
+gissning från filsortering. Ett film-ID-byte ändrar bankidentiteten även
+när filernas byte är lika. Exportkatalogen får inte redan finnas;
+`sources.json` skrivs sist efter en ny registerkontroll.
+
+Pythonbyggaren återanvänder Emils `takes.json`-/poolformat men slår bara ihop
+exakt identiska fullständiga avkodade YUV-bildrutor. Poolen kodas förlustfritt.
+Standardkörningen använder CPU och skriver `status: pool-only`. Det är
+**inte** en GPU-färdig avatar och ger ingen visuell acceptans.
+I en separat, verifierat egen modellmiljö kan `--prepare-with` peka på den
+granskade worker-katalogen med Emils `rorlig.py`. Den befintliga
+`forbered`-funktionen skapar latenter, masker och färgkorrektion. Byggaren
+kräver alla ansiktsrutor innan TAR och hashkvitto skrivs. Modeller,
+workerinstallation, GPU-resurser och uppladdning provisioneras inte av verktyget.
+
+CPU-kvittot innehåller SHA-256 för pool, bildrutekarta och källmanifest.
+GPU-steget kan därför återanvända just dessa tre filer utan ombyggnad eller
+register-/Blob-nycklar på GPU:n. Spara kvittots SHA-256 separat på källdatorn:
+
+```sh
+python tools/build-moving-speech-bank.py --pool /private/dragan-pool --output /private/dragan-prepared --prepare-with /workspace/worker --expected-receipt-sha256 <sha256-fran-kalldatorn>
+```
+
+Överför hela poolkatalogen inklusive `bank-receipt.json`. Verktyget kontrollerar
+kvittot, samtliga filer, medie-ID:n, bildruteindex och explicit vila innan modellen
+importeras. GPU-resultat skrivs i en ny katalog. Ett äldre kvitto utan filhashar
+måste först kompletteras efter lokal kontroll; det accepteras inte automatiskt.
+Färdigt TAR-kvitto betyder fortfarande inte visuell läppsynkacceptans.
+
+Separat modellprov 17 oktober 2026 verifierade hela Dragan-banken på en RTX
+A6000: 2 479 bildrutor, 0 saknade ansikten, 744,6 sekunders beredning.
+Arkivets SHA-256 är `5dcf0f323f707ad6fa58f740a560a1aa62a73b1a6ebeaa916b6b026f6a47f14c`;
+alla sju filer verifierades igen efter nedladdning. En 89-rutors replik med
+befintligt inspelat ljud gav 45,9 rutor/s och första bit efter 496 ms i varm
+motor; kall modell-/bankladdning och uppvärmning tog 57,3 sekunder.
+Detta verifierar ett isolerat modellprov, inte hela spelets latens eller
+visuell läppsynk. Testpodden är avvecklad och produktionens filmer/profiler
+är oförändrade. Källmanifestets identitet bevisar heller inte att äldre
+filmer har rätt etiketter eller är senaste tagningarna; de valen kräver
+separat innehållsgranskning innan aktivering. Se aktuellt GPU-kvitto i handoffen.
+
+`web/moving-speech-bank.mjs` binder källmanifestet till våra befintliga
+`prepareMovingSpeechPcmInput` och `createMovingSpeechTransport`.
+Den serverinterna `createRegisteredMovingSpeech.prepare` tar den
+autentiserade sessionens frysta kontext från
+`createFrozenDealerPresentationContext.resolve` och dess auktoritativa
+`{videoId, frame}`-tidslinje. Den kontrollerar aktuellt register och
+publicerade medie-ID:n/hashar före och efter bankverifikation. Stillbildsvila
+kräver `still: true` och exakt den deklarerade vilorutan. Okända filmer,
+30-fps-klipp, arkivering, utbytta byte eller saknad publicering stoppas;
+det finns ingen närmaste-tagnings- eller längdmatchning.
+
+`verifyBank` måste verifiera både arkivbyte och vilken bank den egna workern
+faktiskt laddat. Denna betrodda koppling, sessionsadmissionen, tidsplaneringen
+och spelarens ljudklocka är ännu inte installerade i produktionsflödet.
+Det nya bankunderlaget ersätter inte dessa kontroller och aktiverar inte
+rörligt tal från chatten. Originalfilmer, frysta publiceringar och sparade
+talprofiler ändras inte av authoringverktygen.
+
 ### Avkodning i dealerlagret, 15 oktober 2026
 
 Scoutgamings befintliga Blob-resurser, Neon-register, frysta publiceringspaket
@@ -138,12 +223,13 @@ H.264-exempel två gånger. Det kräver befintlig Playwright via
 och ffmpeg på PATH. Inga personfilmer, sparade inloggningar eller externa
 providers används. Detta är codec-/kompositionsbevis, inte läppsynksacceptans.
 
-### Isolerad workertransport och serverless-versionsgrind, 15 oktober 2026
+### Isolerad workertransport och serverless-versionsgrind
 
 `web/moving-speech-transport.mjs` kopplar vår hashbundna PCM-/bildruteplan
 till `services/astrid-gpu-worker/gateway/moving-transport.mjs`. En unik
 callbackadress `/lipsync-moving/<slump-id>` med eget engångstoken tar emot
-en worker för Paow eller Dragge. Adressen är en serverhemlighet, aldrig en
+en worker för äldre Paow/Dragge eller en uttryckligen attesterad egen avatar.
+Adressen är en serverhemlighet, aldrig en
 spelarlänk eller loggfält. Den innehåller ingen RunPod-nyckel och återanvänder
 inte Emils podtoken. Fel avatar, token, återanslutning och webbläsar-Origin
 nekas. En ny plan kräver en ny transport; ingen worker återanvänds här.
@@ -189,12 +275,37 @@ bildrutorna: vid uppspelningens slut/avbrott ska den anropa `input.cancel()`
 och tallagrets `close()`. Transportens `cancel` efter slutförd transfer
 upprepar inte jobbfinalisering och ersätter inte spelarens resursstädning.
 
-Versionsgrinden kräver en full SHA i image-taggen och ett högst 60 sekunder
+Den äldre versionsgrinden kräver en full SHA i image-taggen och ett högst 60 sekunder
 gammalt internt kvitto från RunPods endpoint- och workerlistor. Alla listade
 workers måste matcha imagen, endpointversionen och vara icke-stale. Ett nytt
 kvitto krävs efter callback, före PCM; ändrad version stoppar försöket.
 Metadata verifierar inte körande image-digest eller avatarbankens filhashar.
-`pong` saknar sådan attestering; den får inte uppfinnas från ett motornamn.
+Äldre `pong` saknar sådan attestering; den får inte uppfinnas från ett motornamn.
+
+Tillägg 17 oktober: egen `ghcr.io/jakeminator123/moving-gpu-worker@sha256:<digest>`
+kräver dessutom serverägd `attestationBinding`. Den binder schemaVersion 1,
+releaseSha256, dealerId, workerAvatar, profileRevision, sourceSetSha256,
+avatarSha256, bankReceiptSha256, sessionId, attemptId och färsk nonce.
+Workerns `pong.attestation` måste vara exakt samma objekt plus det jobb-ID som
+vår färska admission bekräftat. Först därefter skickas `bind`, start och PCM.
+Releasehashen gäller filmanifestet i imagen; den ersätter inte OCI-digesten.
+Fel bindning finaliserar försöket utan att skicka ljud. Planen måste täcka
+motorns 220 ms inledande och 530 ms avslutande tystnad exakt, och `done`
+godtas bara efter alla planerade rutor. Dragan-bankens avatar heter `dragan`.
+Vid 24 kHz mono s16le och 24 fps är antalet
+`floor((pcmBytes / 2 + 18000) / 1000)`; beräkna inte via decimalsekunder.
+Upprepade vilorutor avser samma källruta 0. Ingen saknad planruta får ersättas
+med en implicit fryst sista ruta.
+
+Källor och byggrecept finns i `services/moving-gpu-worker/`.
+OpenClaw levererar fortsatt dynamisk text genom den befintliga talvägen;
+workern utför bara läppsynk på serverns exakta ljud och frameplan. Förinspelade
+repliker behåller sitt separata ljud/video. Ingen ny route, dispatcher,
+produktionsjournaladmission eller spelaraktivering ingår i detta tillägg.
+Containerbygge och CPU-prov passerade i GitHub Actions 17 oktober på kodhead
+`19103fcf6301b4f8e2ae2ef78690943919cdc97f`. Publicering, GPU-prov och
+spelaraktivering återstår; [storage-guiden](storage/BLOB-NEON.md) innehåller
+körningskvitton, införandeordning och vad som faktiskt är implementerat.
 
 Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image

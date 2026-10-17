@@ -1,232 +1,455 @@
-# Blob och Neon: mediestruktur och avstämning
+# Dealerklipp, Neon, Blob och gemensam talworker
 
-Detta är den aktuella referensen för fysisk Blobstruktur och kopplingen till
-Neons mediaregister. Produkttermer kommer från [TERMINOLOGI](../../lab/docs/TERMINOLOGI.md);
-uppspelning och format beskrivs i [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md).
-Den fullständiga filförteckningen finns i [inventeringen](BLOB-NEON-INVENTERING-2026-10-16.md).
+Kanonisk målstruktur och genomförandeplan, 17 oktober 2026. Detta dokument
+ersätter guidens äldre generella lagringsbeskrivning. Importplan och utökat
+referensskydd är implementerade på arbetsbranchen; molnworkern förbereds separat.
+Det betyder inte att produktionsimport eller rörligt tal i spelet är aktiverat.
+Produkttermer ägs av [TERMINOLOGI](../../lab/docs/TERMINOLOGI.md), tekniska
+runtimekontrakt av [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md)
+och leveransstatus av [handoffen](../JOHN-HANDOFF.md).
+Ingen ny parallell tracker skapas.
 
-## Verifierat underlag, 16 oktober 2026
+## Beslut och avgränsning
 
-- Blob: privat `croupier-media-private`, `store_AqwvebTbBHarOjvG`, team `scoutgaming`, region `arn1`.
-- Full SDK-listning med två sidor: **1710 objekt, 904081512 byte (904,08 MB)**.
-  Första listningen 2026-10-16 16:37:50; oförändrad vid omläsning 2026-10-16 16:44:26.
-  Dashboardens tidigare räknare 1 711 används inte som inventeringsantal.
-- Neon: `croupier-production` / `wandering-hill-60561912`, aktiv branch
-  `main` / `br-flat-fog-b161a6r8`. Alla sex tillgängliga databaser på denna branch lästes.
-  Varje anslutning verifierade rätt databas och `transaction_read_only=on` i en
-  `REPEATABLE READ READ ONLY`-transaktion som avslutades med `ROLLBACK`.
-- Alla inventerade databastabeller var oförändrade vid omläsning 2026-10-16 16:46:23.
-  SQL och Blob har ingen gemensam atomisk snapshot; stabilitetskontrollerna avgränsar observationen.
-- Källkod/katalog: checkout `d064dce232caa9a8c7423fb23b33ca910488f5ae`.
-  Relevanta mediefiler är oförändrade mot kontrollerad remote main
-  `4fa35ab9db90682fcad50e6de84940a28a74621f`.
-- Inga molnobjekt, databasrader, behörigheter, miljövariabler eller publiceringar ändrades.
-  Endast lokal dokumentation och privat granskningsunderlag skrevs.
+Jakob vill behålla grundsorteringen, använda Kevins faktiska blackjack-material,
+undvika gamla kopior, rätta klassificeringen i Neon och kunna köra den verifierade
+lokala läppsynken i molnet. Rekommenderad lösning:
 
-## Fysisk struktur
+1. Behåll ett gemensamt dealerregister och en gemensam spelare.
+2. Återanvänd exakt matchande mediefiler och identiteter; importera det som saknas.
+3. Byt valda bindningar genom en kontrollerad revision. Töm inte Neon eller Blob.
+4. Radera endast separat verifierade ersatta objekt efter beroende- och jobbkontroll.
+5. Paketera talmotorn reproducerbart. Behåll Astrid tills en ersättare fungerar.
 
-Följande mappar är verifierade med den fullständiga Blob-listningen:
+Det är tre samordnade leveranser: klippkontrakt/import, register/raderingsskydd
+och talworker. Admins navigation och sparstatus behöver inte vänta på
+workerbyte eller Astrid-avveckling. All produktionsmigration och fysisk
+radering följer först efter en konkret plan över objekt, referenser och återgång.
 
-```text
-croupier/
-├── media/
-│   ├── dealers/
-│   │   ├── anna-jonsson/
-│   │   ├── astrid/
-│   │   ├── dragan/
-│   │   ├── mei/
-│   │   ├── paow-kevin/
-│   │   └── vera/
-│   ├── backgrounds/
-│   ├── tables/
-│   ├── game/
-│   └── site/
-└── reply-library/
-    └── <scope-hash>/
-        ├── paow/
-        └── paow-v2/
-```
+## Bibliotekets målstruktur v1
 
-`paow`, `paow-v2` och `paow-kevin` är skilda sparade dealer-ID:n. De får inte
-slås ihop utifrån namnet. Jakob finns som dealer i produktionens projekt men
-har ingen videofil i det inventerade lagret.
+Admin visar samma grundfack per registrerad dealer. Filernas mappar och
+uppladdningsnamn är inte ett andra register.
 
-Den generella namnmodellen i koden är:
+| Fack | Innehåll och val |
+| --- | --- |
+| Vila / idle | En vald grundpose eller grundloop; blick, leende och andning kan vara valbara variationer. Generell stillbild som blackjack-idle kräver komplettering; dagens bildimport är begränsad. |
+| Till skon / redo | VILA → REDO. REDO är ett kroppstillstånd, inte en extra spelplats. |
+| Utdelning | Spelarplats 1–7, separat dealer öppet/dolt kort. Ingen spelarplats 8. |
+| Från skon | REDO → VILA efter en följd av handlingar. |
+| Vända dolt kort | Egen handling och kalibrering, inte vanlig utdelning. |
+| Reaktioner | Händelsestyrda rörelser, exempelvis blackjack eller vinst, med explicit ljudpolicy. |
+| Talade repliker | Färdiga video-/ljudtagningar med exakt text, språk och repliknyckel; flera tagningar får vara möjliga. |
+| Dynamiskt tal | Genererat ljud och läppsynk på en exakt vald film/bank. Härledda resultat är egna artefakter, inte nya original. |
+
+Plats 1–7 motsvarar interna `box0`–`box6`; `pos4` är Plats 4 / `box3`.
+Dealeruppslag, kort och utbetalningar ägs fortsatt av spelmotorn.
+
+Tre separata egenskaper måste visas och sparas:
+
+- **Funktion:** idle, övergång, utdelning, vändning, reaktion eller tal.
+- **Rörelse:** startpose, slutpose, målsituation och exakt kalibrering.
+- **Val:** standard, valfri variation, händelse-/tidsstyrning eller OpenClaw.
+
+En nödvändig poseversion får inte behandlas som slumpmässig underhållning.
+`role: alternative` på en äldre import bevisar inte hur den användes hos Kevin.
+Standardvalet hör till sparade bindningar, inte till ett permanent filnamn.
+
+### Pose och uppspelningsregler
+
+Grundutdelningen kan vara REDO → REDO; `-i` börjar i VILA, `-u` slutar i VILA
+och `-iu` gör båda. `-v/-iv` är särskilda filmade avslut till VILA.
+Behåll deras exakta filmer och kalibrering. Anta inte att suffixen har samma
+betydelse i material från en annan källa.
+
+Vår befintliga `planFilmedDealSequence` väljer redan korrekt posekedja via
+en hashbunden Kevin-profil. Fristående `transition.shoe`-klipp finns i biblioteket
+men är inte inkopplade i den ordinarie spelarsekvensen. En ny implementering måste
+välja en sammanhängande kedja; spela inte både ett fristående inträde och samma
+inträde inbakat i `-i`. Använd samma regel vid återgång.
+
+Idle kan väljas med intervall, slumpvariation, cooldown och frekvenstak.
+OpenClaw får föreslå ett tillåtet klipp för aktuell dealer utifrån chatten;
+spelaren bestämmer en säker startpunkt. Kortutdelning och pågående tal har
+företräde. Dagens idlevariant har ett användningsläge åt gången.
+Inspelat tal måste behålla sitt ljud; det ska inte stumspelas som en idlevariation.
+Händelser, upprepningsskydd och språkval ska uttryckas som policy, inte hårdkodas
+per dealer i en ny spelare.
+
+## Namn och import: enkelt för användaren, exakt i registret
+
+Vald registrerad dealer och bekräftad placering är auktoritet. Ett filnamn får
+föreslå men aldrig själv skapa dealer, publicera media eller avgöra rätt spelplats.
+`dragge` får mappas till `dragan` enbart genom importens uttryckliga källalias.
+
+Rekommenderade läsbara namn för nytt material:
+
+- `dragan__idle__breath__t01.mp4`
+- `dragan__deal__pos4__redo-vila__t01.mp4`
+- `dragan__speech__blackjack__sv__t01.mp4`
+
+Detta är målkonventionen, inte ett redan infört krav i filnamnsparsern.
+Kevin-filer behöver inte döpas om eller kodas om för att importeras.
+Originalnamn, full källsökväg och commit bevaras som proveniens.
+
+Återanvänd befintlig importassistent: välj dealer, dra in filer, granska fack,
+spara. Vid okänt, felstavat eller motsägelsefullt namn visar samma granskning
+”Välj placering” med konkret orsak. Fråga bara om de tvetydiga raderna.
+Förslag via AI använder begränsad metadata och kan inte skriva eller godkänna
+självt. Bild-/ljudanalys är en separat eventuell utökning, inte bevisad funktion.
+Dagens assistent har redan regelbaserade förslag, manuella fack och valbar AI.
+
+Varje importerad tillgång behöver validerad identitet, format/storlek/hash,
+dealer, spel, funktion, händelse/situation och källproveniens. Poseklipp behöver
+start/slutpose och kalibreringsrevision. Tal behöver dessutom språk, exakt text,
+replik/tagning och sammanhängande ljud-/videohashar. Fält som saknas i dagens
+schema införs i en versionerad migration; inga ad hoc-fält skrivs i produktions-JSON.
+
+## Neon och Blob: behåll lagringsgränsen
+
+**Neon är produktregistret; privat Blob lagrar mediebyte.**
+Aktuella `media_records`, projektbindningar, `runtime_media_catalogs`,
+`speech_reply_records` och frysta publiceringspaket har olika uppgifter.
+Repo-JSON och äldre Blob-JSON är authoring-/importkällor, inte runtime-reserver.
+
+Behåll den etablerade fysiska strukturen:
 
 ```text
 croupier/media/dealers/<dealer-id>/
-├── source/<ursprung>/<objekt-id>/<sha256>.<format>
-├── runtime/<bank-eller-format>/<objekt-id>/<sha256>.<format>
-├── review/uploads/<video-UUID>/<sha256>.mp4|webm
-└── staging/<arbetssteg>/<objekt-id>/<sha256>.<format>
-
-croupier/media/backgrounds/<lager-UUID>/<sha256>.<format>
-croupier/media/tables/<lager-UUID>/<sha256>.<format>
-
-croupier/reply-library/<scope-hash>/<dealer-id>/<replik-UUID>.json
-croupier/media/dealers/<dealer-id>/runtime/conversation-replies/
-    <scope-hash>/<replik-UUID>/<sha256>.mp4|wav
+  source/<ursprung>/<objekt-id>/<sha256>.<format>
+  review/uploads/<media-id>/<sha256>.<format>
+  runtime/<bank-eller-format>/<objekt-id>/<sha256>.<format>
+  staging/<arbetssteg>/<objekt-id>/<sha256>.<format>
+croupier/media/backgrounds/<lager-id>/<sha256>.<format>
+croupier/media/tables/<lager-id>/<sha256>.<format>
 ```
 
-Alla dealers har inte alla undermappar. Nya klipp för Anna, Dragan och PAOW
-ligger i `review/uploads`. Astrid har både uppladdningar, presentationsbank,
-`retained-bank`, äldre runtimefiler, källmaterial och staging.
-Mei och Vera har äldre runtimefiler. `review/uploads` är en lagringsplats;
-namnet är inte en granskningsstatus. Val och publicering flyttar inte filen
-till `runtime`.
+`source` bevarar original; `runtime` håller härledda spel-/talbanker.
+`review/uploads` är en lagringsväg, inte en granskningsstatus.
+Val eller publicering kräver ingen filflytt och ska inte skapa ytterligare kopior.
+Nya undermappar/format används först när befintlig sökvägsvalidering stödjer dem.
 
-## Sambandet mellan avatar, klipp och användning
+Likadan SHA-256 visar likadana byte, inte automatiskt likadan ägare, språk,
+kalibrering eller publiceringsidentitet. Bevara en befintlig fungerande identitet
+när både innehåll och avsedd användning matchar. Slå inte ihop olika ägares poster.
+Förändrad film eller ljudhash ger ny tillgång och ogiltigförklarar tidigare
+audiovisuell acceptans för den tagningen.
 
-```text
-Dealer i sparat Studio-projekt
-    └── dealerId
-        └── Klippregister
-            ├── Neon: media_records (nya och retained-bank-klipp)
-            └── Repo: presentationskatalog + blob-index (äldre gemensam bank)
-                └── video-ID + exakt Blob-sökväg + SHA256 + storlek
-                    └── händelse / situation / replik / tagning
-                        └── projektets videoGenerationId / videoId
-                            └── valda standarder, alternativ och publicerade paket
+## Fryst Kevin-underlag för importplanen
+
+Läsande GitHub-granskning 17 oktober:
+
+- `kevin`: `31f50618d071667476c9b7f4a85dfed951e23d53`.
+- `kevin-staging`: `57f3ce8b6fb69f8fb246b31020e1e422d1629e2e`.
+- Källa: `kevin/croupier-scoutgg/`, intern dealer `dragge`.
+- Befintliga Dragan-medieblobbar matchar mellan brancherna; staging tillför
+  portugisiska. En branch är inte bevis för driftsatt SHA eller aktiv miljöflagga.
+
+Importplanens utgångspunkt är `kevin`-revisionen och dess sv/en.
+Portugisiska behandlas som ett separat tillägg från den frysta stagingrevisionen.
+Blanda inte rörliga branch-heads under en körning.
+
+Granskad referensmängd: 56 poseklippssökvägar inklusive förladdning/reservvägar,
+`vila.png`, tre idleklipp och 81 replikfiler/textnycklar per tillgängligt språk.
+Identifierade server-/klientvägar når 56 replik-ID:n inklusive fallback/preload;
+GPU-förhämtning refererar dessutom `goodluck_2/3` för sv/en.
+**81 katalogfiler får därför inte bli 81 automatiskt aktiva repliker.**
+Externa avatarbanker ingår inte automatiskt i Git-inventeringen.
+
+Generera ett granskningsmanifest från kodreferenser, språkregister och Git-träd:
+källcommit, källsökväg, Git-blob-ID, storlek, kategori och användningsorsak.
+Skilj `playback`, `preload`, `fallback`, extern worker och orefererat.
+Ladda sedan ned endast urvalet och beräkna SHA-256; Git-blob-ID är inte filens
+SHA-256. Matcha mot Neon innan uppladdning. Vår spelare behöver inte importera
+Kevins fallbackvarianter om samma funktion redan är täckt, men sådana undantag
+ska stå explicit i manifestet.
+
+Källor vid frysta revisioner: `public/dealers.js`, `server/shared-table.mjs`,
+`server/server.mjs`, `server/media-registry.mjs`, `public/shared-table.js`,
+`public/dealer-remarks.js`, `server/rorlig-lipsync.mjs` och
+`server/dragge-voice.mjs`. Kataloggranskning är inte visuell acceptans.
+
+## Kontrollerad Dragan-migration
+
+Planen ska kunna köras om utan att skapa nya kopior. Varje rad beslutas som
+**återanvänd**, **importera**, **korrigera bindning**, **behåll skyddad** eller
+**raderingskandidat**. Körordning:
+
+1. Frys källmanifest, målmiljö/scope, projekt-/mediarevisioner och alla beroenden.
+   Spara ett privat återgångsunderlag med gamla bindningar och exakta objekt.
+2. Förhandsgranska differensen inklusive befintliga original, talreferenser,
+   bankmanifest, språk, aktiva jobb, alias och publiceringspaket.
+3. Återanvänd identiska godtagna tillgångar. Ladda upp saknade byte oföränderligt,
+   läs tillbaka och verifiera hash/storlek innan registrering.
+4. Registrera och klassificera genom befintliga tjänstekontrakt med revisionsskydd.
+   Byt utkastets bindningar atomiskt; import skapar ingen publicering automatiskt.
+5. Verifiera plats 1–7, dealer/hole/flip, posekedjor, språk/ljud och talbankens
+   exakta bildrutor. Publicera ett nytt granskat paket; ändra inte gamla paket.
+6. Läs om beroenden och jobb efter bytet. Presentera en exakt raderingslista med
+   media-ID, hash, sökväg, orsak och skyddade undantag. Fysisk radering sker sist.
+
+Återgång före fysisk radering återställer bindningar med revisionskontroll och
+behåller föregående fungerande publicering. Blob och SQL är inte en gemensam
+transaktion: avbrutna uppladdningar och pending deletion måste kunna återupptas.
+Återgång efter fysisk radering kräver verifierat bevarade originalbyte; ett
+Git-commit är ingen backup av molnmedia.
+
+Den tidigare inventeringen visade 56 Dragan-poster, 54 innehållshashar och två
+dublettgrupper (idle och deal_pos4). Det ger inte rätt att radera alla 56.
+Banken i den lokala checkpointen refererar till exakta befintliga ID:n/hashar;
+om dessa ändras måste banken byggas och verifieras på nytt.
+
+## Raderingskontrakt för Admin
+
+Dagens skydd ska bevaras: arkivering före permanent radering, revisions-/hash-
+kontroll, objektlås, spärr för retained-bank, publicerade paket, andra ägare,
+aktuella referenser och aktiva uppladdningstillstånd. Befintlig sekvens är
+`pending → radera Blob → deleted` med förnyad behörighetskontroll.
+
+**Implementerat referensskydd:** `inspectMediaDeletion` läser dokument, paket och
+alias samt exakta ID-/sökvägsreferenser i Forge-profiler, icke-terminala Forge-jobb
+(inklusive `submit_unknown`), sparade talsvar och talpaketens metadata. Avslutade
+Forge-input är historik, medan läsbara talpaket fortfarande äger sina outputfiler.
+Saknade tabeller, överskridna sidgränser eller okända svar stoppar radering.
+Raderingstjänsten kontrollerar dessutom det faktiska Neon-runtimeindexet via
+`readIndex`; det skyddet ska återanvändas, inte beskrivas som saknat.
+”Inte vald i utkastet” är inget raderingsbevis. `findMediaReferences` anger
+själv ofullständig täckning.
+
+Färsk läsande granskning 17 oktober hittade tio operatörspaket. Swedish-games
+v1–6 bevarar Dragan och v3–6 fryser 36 filmer; v7 är tom. Inga Forge-jobb eller
+Forge-profiler hittades. Två talleases var utgångna och 60 GPU-sessioner terminala.
+56 begäranden med `submission_uncertain` saknar paketmetadata och kan därför
+inte tillskrivas aktiva Dragan-jobb eller avfärdas genom ett antagande.
+De fyra ID:na i de två Dragan-dublettgrupperna hittades inte i granskade paket,
+aktuella dokument eller dokumenthistorik. Det är kandidatinformation;
+full jobb-/lagringskontroll krävs fortfarande före radering.
+
+Forge fångar nu media-ID, SHA-256, sökväg och revision för faktiskt använda
+referenser. `insertJob` och återöppning av jobb kontrollerar dem atomiskt mot
+pending/deleted/arkiverad media under samma Studio-scopelås. Före submission
+och commit kontrolleras referenserna igen. Ett gammalt jobb får registrera ett
+osäkert leverantörsutfall efter arkivering; det får inte återaktivera raderad media.
+Befintliga projekt-/publicerings-/register-/klassificeringsspärrar ska återanvändas.
+Riktade regressionsprov hör hemma i `lab/test/dealer-lifecycle.test.mjs`,
+`lab/test/dealer-forge.test.mjs` och `test/speech-reply-repository.mjs`.
+`deduplicate-media.mjs` hanterar äldre layout/index och får inte användas som
+om det redan täckte hela Neon-grafen.
+
+Taljournalen saknar fortfarande exakta indatareferenser för äldre strömmande
+jobb. Därför stoppar inspektionen radering konservativt när miljön har en
+icke avvecklad GPU-session, giltig tallease eller oavslutad fullfilsbegäran.
+Gamla förbrukade strömnycklar blockerar inte ensamma. Inspektionen tar talets
+befintliga miljölås efter Studio-/objektlåsen och behåller det tills transaktionen
+slutar. Detta skyddar den observerade sessionsbilden; det är inte ett påstående
+om gemensam atomisk mediaadmission för alla talvägar. Det återstår att binda
+den nya rörliga workerns exakta indata till journalen före produktaktivering.
+
+Gemensamt målkontrakt före utökad direkt radering:
+
+- En jobb-/sessionsreferens binder exakt scope, dealer, media-ID/hash,
+  bankrevision och ägande jobb. Nya jobb och publiceringar måste kontrollera
+  samma deletion-status under samma transaktions-/låsningsgräns.
+- En pending-markering får inte införas om en aktiv eller osäkert inskickad
+  referens finns. När pending väl finns nekas nya referenser och sena commits.
+- Skydda queued/submitting/running/cancelling och osäkra leverantörsutfall.
+  En utgången lokal lease är inte ensam bevis för att GPU-jobbet slutat.
+  Frigör först efter bekräftat slut/avbrott och hanterade sena callbacks.
+- Beroendeinspektionen ska rapportera om täckningen är komplett; ofullständig
+  katalog, fler sidor eller okända referenser stoppar permanent radering.
+- Behåll original och frysta paket. En enklare knapp får ändra användarflödet,
+  men får inte kringgå serverns beroende-, behörighets- och revisionskontroller.
+
+Exakta statusnamn och minsta schemaändring fastställs mot respektive existerande
+jobbmodell före implementation. Detta är ett kontraktsförslag, inte en redan
+införd gemensam lease-tabell.
+
+### Körbar importplan v1
+
+`tools/dealer-import-plan.mjs` använder befintlig registrerad dealer, slotkatalog,
+filnamnsgranskning och metadataregler. Källmanifestet är fryst till Kevin
+`31f50618d071667476c9b7f4a85dfed951e23d53` och innehåller 247 källrader från sv/en,
+posevägar, idle, bilder och källmetadata. Nåbara klipp, förhämtning/reserv,
+bytealias och orefererade filer redovisas var för sig.
+
+```powershell
+node tools/dealer-import-plan.mjs --plan --project <privat-project.json> --dealer dragan --source-alias dragge --inventory <privat-inventory.json> --source-root <befintlig-Kevin-checkout>
 ```
 
-Neons `croupier_studio.media_records` lagrar poster per
-`environment_id + workspace_id + id`. Posten innehåller Blob-sökväg,
-filhash, storlek och klassificering såsom `dealerId`, `eventId`,
-`situation`, `label` och eventuell `familyId`.
-Projektets sparade bindningar avgör klippets användning; `dealerSets`
-är bara biblioteksorganisation. Filnamn och mappar ersätter inte dessa bindningar.
+`--source-root` är valfri och läser enbart befintliga original. Varje funnen fil
+måste matcha fryst Git-blob och storlek; därefter beräknas separat SHA-256.
+Ett Git-objekt-ID är aldrig ett bevis för mediets registrerade SHA-256.
+UUID-namngivna lokala original kan i stället läsas med `--source-map`, en privat
+JSON med `schemaVersion: 1`, absolut `root` och `files` som mappar fryst källväg
+till lokal fil inom roten. Samma bytekontroll gäller; verktyget flyttar inget.
+Planen kan återanvända en entydig befintlig identitet med bevarad klassning.
+Poseåteranvändning kräver hashbunden kalibrering; inspelat tal kräver exakt
+text/ljud/video/index. Fel dealer, flera träffar eller skyddad media kräver granskning.
 
-`media/blob-index.json` innehåller 1027 logiska referenser till
-995 unika blobobjekt. Skillnaden 32 är extra referenser/alias till
-samma objekt, inte 32 fysiska filkopior. Alla indexets objekt finns i lagret.
-Indexet är inte en fullständig lista över nya Neon-uppladdningar eller kvarvarande äldre Blobobjekt.
+Planradernas `placement` innehåller pose, val, ljudpolicy, språk och repliknyckel.
+Fälten är ännu inte nya produktionsfält i videoschemat. Alla rader har
+`applyAllowed: false`; verktyget har varken `--apply`, uppladdning eller radering.
+Saknade talfack och verifierade ljud-/index-/kalibreringsuppgifter behöver lösas
+innan en import kan genomföras genom ordinarie revisionsskyddade skrivare.
+Admin-agentens befintliga importcallback och API behöver ingen ändring för denna etapp.
 
-Replikbibliotekets JSON-poster ligger själva i Blob, inte i `media_records`.
-`scope-hash` är SHA256 av JSON-arrayen `[environment, workspaceId]`.
-Varje sådan post pekar på ett exakt ljud-/videopar. Texten i replikerna ingår
-inte i denna dokumentation eller filförteckning.
+Praktiskt prov mot projekt-/mediaexport 17 oktober 01:49 UTC: 38 återanvändningar,
+8 kopplingar att granska/rätta, 129 granskningsrader, 67 exkluderade och
+5 rena referenser; ingen direkt import. Första körningen verifierade 46 av 247
+källvägar med redan lokala original (41 unika filer). Efter ett avgränsat
+innehållsstickprov är 52 av 247 källvägar byteverifierade; planens klassningar
+är oförändrade. Detta är ingen innehållsacceptans av de återstående filmerna.
 
-## Antal klipp per avatar
+Stickprovet omfattade tolv klipp med lokal Whisper-tiny-transkribering och fyra
+bildrutor per klipp. Nio original (5,93 MB) hämtades och verifierades mot frysta
+Git-blobbar och SHA-256. Svenska/engelska kommer från Kevin-revisionen ovan;
+portugisiska från den separat frysta stagingrevisionen och ingår inte i basimporten.
+`chatter`, `placebets` och `greet_jakob` verkar motsvara småprat, spelinstruktioner
+och personlig hälsning. Det är preliminära klassningar: modellen gör tydliga
+ord-/namnfel, särskilt i korta svenska och portugisiska repliker. En avvikande
+transkribering bevisar därför inte fel i inspelningen. Ingen semantisk eller
+audiovisuell acceptans utfärdades. Registrerade `sv/win_1` har andra byte än
+Kevin-filen; ursprung och talinnehåll måste klarläggas före omkoppling.
 
-| Dealer-ID | Videofiler i Blob | Klipp i Neon prod | Äldre presentationsbank | Explicit prodreferens | Neonklipp utan explicit prodreferens | Videor utan hittad referens |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| anna-jonsson | 2 | 2 | 0 | 2 | 0 | 0 |
-| astrid | 208 | 10 | 51 | 20 | 2 | 77 |
-| dragan | 56 | 56 | 0 | 39 | 17 | 0 |
-| jakob | 0 | 0 | 0 | 0 | 0 | 0 |
-| mei | 16 | 0 | 0 | 0 | 0 | 14 |
-| paow-kevin | 11 | 11 | 0 | 0 | 11 | 0 |
-| vera | 35 | 0 | 0 | 0 | 0 | 33 |
+Tekniska testnamn som `dragan-speech-probe.mp4` är inte produktkategorier.
+OpenClaw kan välja en replik vid inaktivitet; den utlösaren är separat från
+klippets funktion, språk, pose och eventuell alternativ tagning. Den gemensamma
+guiden i `web/public/dealer-clip-guide.mjs` beskriver dessa skillnader för Admin.
+Guiden visar slotmallar och granskningskrav; den intygar inte ett enskilt klipps
+faktiska start-/slutpose eller visuella kvalitet.
 
-Totalt finns **328 dealervideofiler** i Blob och **79 klipposter** i produktionens
-Neon-register. Den äldre presentationsbanken tillför **51 Astrid-klipp**;
-den ska inte räknas som saknade Neon-rader. Övriga videofiler kan exempelvis
-vara äldre indexerade filmer, kompositversioner eller pilotmaterial.
-Filantal avser MP4/WebM/MOV/MKV, inte ljud, H264-strömmar, index eller bilder.
+### Färska dublettkandidater, 17 oktober
 
-”Explicit prodreferens” betyder en exakt identifierad referens i aktuella
-projekt-/paket-/speldata. Det bevisar inte genomförd uppspelning och räknar
-inte automatiska standardval i äldre familjer som uttryckliga projektval.
-Kolumnerna överlappar och ska inte summeras till Blobantalet.
+Read-only Blob-listning av `croupier/media/dealers/dragan/` gav 56 objekt,
+79 963 657 byte. De fyra objekten i tabellen hämtades från origin och hashades
+utan att sparas lokalt; båda parens byte och SHA-256 matchade. Övriga 52 objekt
+har inte hashats om i denna etapp.
 
-## Filer som saknas
+| Innehåll | Föreslagen befintlig identitet att behålla | Nyare dublettkandidat | Identiska byte per objekt |
+| --- | --- | --- | ---: |
+| Äldre idle | `97100320-238f-4b3a-8168-6226887038be` | `c2b4235e-4c22-4cc6-a3b0-dfc6b9bbaf10` | 4 284 756 |
+| deal_pos4 | `0a72227e-d48a-4422-b575-6bcaebbc6478` | `9958ddcc-987c-40a9-bbea-d2b85a418a71` | 1 035 146 |
 
-**Inga av de 79 produktionsklippen eller de sex QA-registerposterna saknar
-sin blobfil.** QA-posterna refererar till sex befintliga Astrid-filer i
-`runtime/retained-bank`, vilka också är registrerade i produktion.
-Alla jämförda filstorlekar stämmer. Inga olösta `videoId`/`videoGenerationId`
-hittades i de genomlästa dokumenten.
+Detta är två kandidater, inte ett godkänt raderingsjobb. Ingen av de fyra
+posterna var arkiverad. Aktualitet, komplett beroendeinspektion, jobbreferenser,
+uppladdningsgräns och fysisk sökväg/hash måste kontrolleras om vid mutation.
+Lokal talbank och original skyddas även om inga publiceringsreferenser hittas.
 
-**12 äldre replikposter saknar däremot båda sina mediafiler: 12 MP4 + 12 WAV.**
-Tre poster hör till `paow`, nio till `paow-v2`. Samtliga 24 sökvägar gav
-not-found även vid separat privat GET-kontroll 2026-10-16 16:45:02.
-Själva JSON-posterna finns kvar och har `reviewStatus=pending`.
-Detta gäller de äldre ID:na, inte `paow-kevin`: dess elva klipp finns.
-Exakta sökvägar och replik-ID:n finns i inventeringens avsnitt ”Saknade filer”.
+## Gemensam talworker: återanvänd tjänsterna, byt motorn kontrollerat
 
-## Dubbletter
+Målet är en delad workerimplementation med validerad bank/profil per dealer.
+En endpoint kan betjäna flera dealers genom separata jobb/sessioner; det betyder
+inte att en GPU klarar obegränsat samtidig belastning eller att bankerna kan blandas.
+OpenClaw-roller är inte GPU-avatarer.
 
-Fem grupper omfattar tolv fysiska objekt med identiskt innehåll inom respektive grupp.
-Alla tolv lästes och SHA256-beräknades på nytt; byteantal och hash matchar.
+OpenClaw är fortsatt standardägare av den dynamiska texten. Flödet är
+OpenClaw-beslut → registrerad röst/TTS → exakt PCM → vald och verifierad
+bildrutebank → läppsynk i dealerlagret. Workern väljer varken repliker, spelkort
+eller filmer. Förinspelade repliker spelar sin egen verifierade video och sitt
+inbäddade ljud och behöver inte genereras igen. Ett filnamn eller en uppladdning
+aktiverar inte detta flöde automatiskt.
 
-| Grupp | Kopior | Extra byte jämfört med en kopia |
-| --- | ---: | ---: |
-| Astrid: kortflipp_kling_1080p.mp4 | 2 | 8 697 170 |
-| Dragan: deal_pos4 | 2 | 1 035 146 |
-| Dragan: idle | 2 | 4 284 756 |
-| Bakgrund, hash 1e03fe5e… | 2 | 3 634 186 |
-| Bakgrund, hash 934407a5… | 4 | 13 522 566 |
+Lokal checkpoint: [setup och återkörning](../AI/lipsync-lokalt-2026-10-17.txt),
+tagg `lipsync-local-dragan-2026-10-17`. Sparad replik, modeller, bank och WSL-miljö
+är fortfarande privata arbetsdata. Provet är offline; 11,8 fps lokalt är inte
+realtidsacceptans. Tidigare varm A6000-mätning är inte ett kallstarts-/spelprov.
 
-Summan är sju extra kopior, 31,17 MB.
-Detta är en innehållsjämförelse, inte en rekommendation att slå ihop deras
-identiteter. Distinkta UUID:n kan ha skilda referenser och historik.
-Övriga objekts innehåll har inte laddats ned och hashberäknats på nytt;
-dubblettsökningen utgår från de innehållshashar som ingår i objektens sökvägar.
+Första workerleveransen:
 
-## Filer utan hittad användning
+1. Versionera granskad motorkälla eller en verifierad oföränderlig källartefakt.
+   Lås basimage, Python-/CUDA-/paketversioner, MuseTalk-commit och modellhashar
+   mot det fungerande provet. Det äldre Astrid-receptet har andra Torch-versioner
+   och delvis olåsta beroenden; därför förbereds ett separat versionslåst recept.
+2. Bygg separat image och verifiera samma sparade ljud/film, full frameordning,
+   originalytor, timing och audiovisuellt resultat. GPU-byte får inte byta modell.
+3. Anslut till befintlig autentiserad talsession, journal, budgetreservation,
+   engångsbiljett, cancel och idle-avveckling. Implementera bankattestering,
+   dispatcher, omplanering och spelarens ljudklocka för den rörliga motorn.
+4. Ersätt hårdkodade avatar-/imagebegränsningar med en explicit tillåten release-
+   och bankkonfiguration. Mät kall/varm första bild/ljud, avbrott och verklig kostnad.
+5. Aktivera Dragan kontrollerat. Utvärdera Astrid på samma väg innan äldre
+   kompatibilitetsnamn, endpoint, bilder eller byggjobb kan avvecklas.
 
-Två olika resultat ska hållas isär:
+Den tidigare tillfälliga Dragan-podden avvecklades efter provet. Astrids endpoint
+är separat och ska inte raderas på grund av sitt namn. Arbetskatalog,
+container-image, GitHub-workflow och RunPod-endpoint är olika saker.
+Aktuell molnstatus måste läsas om inför nästa förändring; denna plan skapar ingen
+pod eller återkommande drift. Nästa betalda prov använder bara återstående del
+av uttryckligen godkänd testbudget efter avstämning av tidigare förbrukning.
 
-1. **30 registrerade produktionsklipp saknar explicit prodreferens:** Astrid 2,
-   Dragan 17 och PAOW 11. De finns i biblioteket och är inte föräldralösa blobfiler.
-   Inga referenser till dessa 30 hittades heller i genomläst dokumenthistorik.
-   Inventeringen listar varje klipp med namn, händelse, situation och UUID.
-2. **602 befintliga blobobjekt, 408,81 MB, saknar referens i de
-   genomlästa Neon-källorna, det aktuella blob-indexet och replikmetadata.**
-   Av dem är 124 videor. Gruppen innehåller även stöd- och originalfiler.
+Förberedelsen ligger i `services/moving-gpu-worker/`: versionslåst motor,
+MuseTalk, Pythonpaket och modellhashar, separat Dockerrecept samt bank-/sessions-
+validering. `web/moving-speech-transport.mjs` accepterar nu en separat egen image
+med SHA-256-digest. Den kräver workerintyg för release, dealer, avatar,
+profilrevision, källbank, arkiv, bankkvitto, session, försök, nonce och faktiskt
+accepterat RunPod-jobb innan `bind` och första PCM skickas. Äldre transportväg
+behåller sina begränsningar; ingen route eller endpoint aktiveras automatiskt.
+Bankens avatar heter `dragan`; den ska inte döpas om till `dragge` utan nytt
+verifierat bankunderlag. Imagen och bankintyget verifieras separat.
 
-| Prefix | Objekt | Videor | MB |
-| --- | ---: | ---: | ---: |
-| `croupier/media/dealers/astrid/runtime/assets/` | 1 | 0 | 40,38 |
-| `croupier/media/dealers/astrid/runtime/composited/` | 35 | 0 | 4,31 |
-| `croupier/media/dealers/astrid/runtime/indexed/` | 249 | 76 | 223,53 |
-| `croupier/media/dealers/astrid/source/3d/` | 23 | 0 | 24,12 |
-| `croupier/media/dealers/astrid/source/background-zones/` | 1 | 1 | 0,07 |
-| `croupier/media/dealers/mei/runtime/indexed/` | 102 | 14 | 38,72 |
-| `croupier/media/dealers/vera/runtime/indexed/` | 178 | 33 | 50,76 |
-| `croupier/media/game/runtime/assets/` | 7 | 0 | 25,58 |
-| `croupier/media/game/source/3d/` | 5 | 0 | 0,02 |
-| `croupier/media/tables/` | 1 | 0 | 1,33 |
+Den egna motorn kräver en explicit bildruteplan för 220 ms inledande och 530 ms
+avslutande tystnad: en sekund PCM ger 42 rutor vid 24 fps. Antalet räknas i
+hela ljudsamplingar: `floor((pcmBytes / 2 + 18000) / 1000)`. Det undviker
+flyttalsfel vid exakta bildrutegränser. Vila använder alltid sin källruta 0,
+även när planen upprepar den. För kort plan får
+inte lösas genom att motorn håller kvar en godtycklig sista ruta.
+Socket-/protokolltester bevisar inte visuell läppsynk eller livekapacitet.
+Egen kallstart har högst 150 sekunder till första `pong`, inom transportens
+totala 180 sekunder; normal I/O och behörighetskontroller behåller 15 sekunder.
+Separat PR-workflow `moving-gpu-build.yml` bygger serverless-target på CPU
+och kontrollerar paketerade importer utan nät/GPU. Den publicerar ingen image
+och skapar inga molnresurser.
+Verifierat 17 oktober på kodhead `19103fcf6301b4f8e2ae2ef78690943919cdc97f`:
+[serverless-containerbygget](https://github.com/Jakeminator123/scoutgaming/actions/runs/38994132683)
+passerade med sju verifierade modellhashar och 31 tester både under bygget och
+i den färdiga containern utan nät, som icke-root. Releasekvitto:
+`d6a799c104281b6e180c8285ba464b6420f6b4a4e3d20369ecab0a2d40988eb8`.
+[Full produkt-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/38994132656)
+passerade också, inklusive isolerad PostgreSQL och schemaberedskap. Imagen är
+byggd men inte publicerad; en lokal image-ID är inte ett publicerat OCI-digest.
+GPU-prov, journal-/dispatcheranslutning och faktisk spelarintegration återstår.
+Docker finns inte installerat i den kontrollerade Windows-/WSL-miljön; bygget
+kördes i GitHub Actions. Läsande RunPod-kontroll 17 oktober 01:42 UTC visade inga
+pods och endast den befintliga endpointen `croupier-astrid-gpu-test`.
 
-”Ingen hittad referens” är en avgränsad granskningsklass, inte bevis för att
-filen aldrig används eller får raderas. Källmaterial kan vara avsiktligt
-bevarat. Den arkiverade Neon-branchen `codex-zone-storage-qa`
-(`br-soft-base-b1z5814s`) återstartades inte och dess data ingår inte.
-Externa konsumenter, lokala privata arbetskopior, återställningspunkter och
-faktisk trafik är inte inventerade. Inga raderingsbeslut följer av rapporten.
+## Filansvar, ersättning och parallellt arbete
 
-## Databastäckning och metod
+| Del | Återanvänd/utöka | Ersätter eller kan senare tas bort | Verifiering |
+| --- | --- | --- | --- |
+| Import och klassning | `lab/lib/dealer-import-*`, `video-intake.mjs`, `lab/schemas/video.schema.json`, befintlig importassistent | Dubbla namnregler och poseinformation enbart i fritext; inte alla gamla medieposter | Felstavat/motstridigt namn, språk, fel dealer/box, upprepade importer |
+| Pose och spel | `packages/presentation/runtime/filmed-deal-sequence.mjs`, `web/filmed-deal-selection.mjs`, hashbunden Kevin-profil | En hårdkodad profil kan ersättas först av validerad likvärdig registerdata | Posekedja, exakt kortposition, saknat klipp, fryst paket |
+| Register/radering | `web/storage/studio-repository.mjs`, `lab/lib/studio-media-deletion.mjs`, Forge-/taljobbtjänster | Ofullständig beroendeinspektion; inga tabeller töms | Race mellan nytt jobb/publicering och radering, tvärscope, retries, sena callbacks |
+| Talworker | `services/moving-gpu-worker`, `web/moving-speech-*`, befintlig gateway, `generated-speech-stream.mjs`, journal | Byggrecept/handler stegvis; äldre fullfilsmotor/avatarberedning först utan konsumenter | Fel bank/dealer, nekad budget, avbrott, tidsgränser, ljudsynk |
+| Dokumentation | Denna guide, runtime, handoff, AI-ingång | Äldre generella beskrivningar som säger att repo-/Blob-JSON är produktregister | Länkar och tydlig gräns mellan plan, implementation och daterat kvitto |
 
-| Databas på main | Mediaposter | Dokument | Historikrader | Operatörspaket |
-| --- | ---: | ---: | ---: | ---: |
-| croupier_game | 79 | 3 | 183 | 6 |
-| croupier_game_qa | 0 | 0 | 0 | 0 |
-| croupier_game_restore_check | 0 | 0 | 0 | 0 |
-| croupier_studio_qa_abc92154cb15 | 6 | 3 | 25 | 0 |
-| neondb | 0 | 0 | 0 | 0 |
-| postgres | 0 | 0 | 0 | 0 |
+Radera inte tester för aktiva kontrakt bara för att deras filnamn innehåller
+Astrid eller Kevin. Ersätt assertions för avsiktligt avvecklad implementation
+och ta bort ett gammalt test först när aktivt beteende täcks på sin nya plats.
+Medieoriginal, kalibrering och privat checkpoint är inga genererbara byggrester.
 
-Alla rader lästes, utan LIMIT-trunkering, i förekommande mediaregister,
-aktuella dokument, dokumenthistorik, operatörspaket, brandingutkast,
-Forge-profiler/-jobb, speech_requests, operatörsauditens referensfält,
-native_presentations och sparade blackjack-/roulettillstånd samt det äldre
-zonregistret. Ägarnas personuppgifter, hemligheter, spelinnehåll och repliktext
-exporterades inte; endast relevanta medieidentiteter/referenser sammanställdes.
-Det nuvarande repo-indexet och presentationskatalogens 51 ID:n matchades också.
-Arkiverad branch och privata/externaliserade källor avgränsas ovan.
+Arbetsordning utan ny tracker:
 
-Filer matchades på exakt sökväg och video-ID, inte på ungefärligt namn eller
-längd. Metadata jämfördes mot Blob-listningens storlek. Tolv misstänkta
-dubbletter verifierades med full hash-läsning och 24 saknade filer med GET.
-Stabilitetskontrollen jämförde filernas sökväg/storlek/uppladdningstid och
-SHA256-fingeravtryck av varje genomläst tabells rader, oberoende av radordning.
+- **Kontrakt/import:** konkret manifest, metadata-/schemadiff och återkörbar plan.
+- **Referensskydd:** parallell inventering; implementering mot samma fältnamn,
+  lås och jobblivscykel. Måste vara färdig före utökad fysisk radering.
+- **Worker:** reproducerbart bygge kan göras parallellt med importplanen.
+  Produktaktivering väntar på slutliga bank-/profilidentiteter.
+- **Admin:** huvudagenten äger UI, sparstatus och integration. Biblioteksvisningen
+  ansluter till det gemensamma kontraktet; navigation behöver inte vänta på worker.
+- **Integration:** granska små PR:er med avgränsad filägare. Källmaterial från
+  Kevin importeras på exakt revision; hans branch mergas inte som en genväg.
 
-## Kodkällor
+## Historiskt underlag och kvarvarande osäkerhet
 
-- [Blob-sökvägar och oföränderliga filer](../../lab/lib/cloud-media-store.mjs)
-- [Uppladdning och videoregistrering](../../lab/lib/studio-upload-service.mjs)
-- [Neons videoregister](../../lab/lib/neon-video-registry.mjs)
-- [Databasens register, dokument och historik](../../web/storage/studio-repository.mjs)
-- [Klippens klassificering och användning](../../lab/lib/dealer-media-library.mjs)
-- [Replikmetadata och ljud-/videopar](../../web/speech-reply-library.mjs)
-- [Äldre bankens blob-index](../../media/blob-index.json)
+[Filinventeringen 16 oktober](BLOB-NEON-INVENTERING-2026-10-16.md) är ett daterat
+belägg, inte dagens raderingslista. Den observerade 1710 Blob-objekt och 79
+produktionsklipp. Den beskrev även 12 äldre PAOW-svar med saknade mediafiler
+och avgränsade referensluckor; dessa hör inte till Dragan-uppdraget.
+Dess metod och dåvarande registermodell finns länkade till den frysta
+guideversionen. Ingen historisk observationssiffra räknas om utan en ny inventering.
+
+Den genomförda kontrakts- och förberedelseetappen innebär
+ingen fullständig visuell klassning av alla Kevin-filmer, ingen verifiering av
+hans driftsatta tjänst och ingen ny fullständig Blob-hashläsning (endast de fyra
+dublettobjekten ovan hashades nu). Sådana belägg
+ska samlas för det faktiska urvalet när importplanen körs.

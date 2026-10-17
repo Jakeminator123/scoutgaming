@@ -1,0 +1,8 @@
+**/__pycache__
+**/*.pyc
+.build
+.env*
+*.tar
+*.mp4
+*.wav
+*.pcm
