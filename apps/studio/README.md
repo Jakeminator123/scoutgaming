@@ -18,7 +18,7 @@ dokumentalias hanteras av `middleware.ts` och den appägda HTTP-adaptern
 `lib/legacy-studio-document.mjs`. Deras tidigare queryregler och publika
 måladresser bevaras. Sidor som laddar data eller först kontrollerar
 behörighet ligger kvar; Admin återanvänder fortfarande flera av deras
-komponenter. Manuella medieverktyg finns i [tools/media](../tools/media/README.md).
+komponenter. Manuella medieverktyg finns i [tools/media](../../tools/media/README.md).
 
 **Teknisk roll:** `apps/studio/` är den aktiva Next.js-tjänsten `studio` i
 Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
@@ -33,7 +33,7 @@ Neon är produktens register och privat Blob innehåller mediebyte.
 `node apps/studio/start.mjs --no-open` skriver den publicerade produktens adress;
 endast `--offline` startar ett isolerat, tillfälligt serverpar.
 Äldre `lab/data` bevaras som authoring-/återställningsunderlag.
-[Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
+[Väg- och strömkartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
 
 Gemensam Director-, tal-, social- och Companion-logik finns i
@@ -57,10 +57,10 @@ Sparade klippval påverkar den angivna spelvägen; osparade utkast och manuella
 förhandsvisningar påverkar endast Studio-provet. Katalognamnet `lab` är inte
 skäl att radera tjänsten: nya `/admin` och `/lobby` använder också den.
 
-[Runtime, lagring och format](../docs/LOCAL-PRESENTATION-RUNTIME.md).
+[Runtime, lagring och format](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Praktiskt prov: [Astrids sociala svar i idle, högst sex sekunder tal](SOCIAL-CHAT.md).
 Video-intake: [lägg in standardtagningar och alternativ, välj användning och se täckning](VIDEO-LIBRARY.md).
-Öppen status finns i [docs/CLOUD-MIGRATION.md](../docs/CLOUD-MIGRATION.md).
+Öppen status finns i [docs/CLOUD-MIGRATION.md](../../docs/CLOUD-MIGRATION.md).
 
 ## Starta
 
@@ -94,7 +94,7 @@ Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
 Ordinarie lokal produktstart och lägena `--check`, `--cloud-storage` samt
 `--astrid-camera` är avvecklade. Lokala arbetsfiler används inte som
 produktens reservregister. Följ [användarguiden](docs/README.md) för
-startalternativ och [återställningsguiden](../docs/ENVIRONMENT-RESTORATION.md)
+startalternativ och [återställningsguiden](../../docs/ENVIRONMENT-RESTORATION.md)
 för bevarade data; migrera inte äldre lokala profiler för vanlig produktstart.
 En ny arbetsyta skapas av `createEmptyProject()` utan förregistrerade dealers,
 linjer eller sammansättningar. `policies/project.seed.json` innehåller även
@@ -104,8 +104,8 @@ En separat projektsnapshot behövs inte för den isolerade fixturen.
 Node 24.x enligt `package.json` och installerade beroenden krävs för lokal
 start. Molndrift är
 Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
-[docs/CLOUD-MIGRATION.md](../docs/CLOUD-MIGRATION.md).
-[ops/cloud/README.md](../ops/cloud/README.md) är en äldre Docker-pilot, inte startkommandot.
+[docs/CLOUD-MIGRATION.md](../../docs/CLOUD-MIGRATION.md).
+[ops/cloud/README.md](../../ops/cloud/README.md) är en äldre Docker-pilot, inte startkommandot.
 
 ### Ett register per ansvar
 
@@ -197,7 +197,7 @@ De är schematiska rörelseprov, inte fullständig spelkoreografi:
 alla kortsekvenser, sju exakta platser, split, övergångar och läppsynk täcks inte.
 
 API:er, nyckelroller och miljöfiler finns i
-[Jakobs miljöförklaring](../docs/ENVIRONMENT-VARIABLES.md).
+[Jakobs miljöförklaring](../../docs/ENVIRONMENT-VARIABLES.md).
 
 ## Filer och begrepp
 
@@ -236,7 +236,7 @@ Fristående ElevenLabs-prov (inte scen-/chattintegration):
 `node tools/elevenlabs-lab-preview.mjs --check` från repots rot, eller
 `--generate` för ett kort debiterbart röstprov. MP3 + text/röst/hash-metadata
 sparas lokalt i `lab/data/voice-previews/`, utanför Git. Ingen produktmedia
-eller lipsync ersätts. [Status och urvalsmodell](../docs/LOCAL-PRESENTATION-RUNTIME.md).
+eller lipsync ersätts. [Status och urvalsmodell](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 Signal → event + relevant kontext → urval → material → uppspelningskvitto.
 Signal är samlingsordet för indata, till exempel spelfakta, ett chattmeddelande
@@ -278,7 +278,7 @@ granskning/versionering; ingen import- eller publiceringsknapp finns ännu.
 
 ## OpenClaw och Render
 
-**Nuvarande blueprint:** [open-claw/lab/render.yaml](../open-claw/lab/render.yaml).
+**Nuvarande blueprint:** [open-claw/lab/render.yaml](../../open-claw/lab/render.yaml).
 Den ligger kvar på den driftsatta sökvägen; den nya Next.js-sajten ingår inte
 i blueprinten. `open-claw/` äger Gateway, adapter och Docker/Render-drift;
 den äldre mappen `open-claw/lab/` behålls tills vidare för dessa beroenden.
@@ -311,7 +311,7 @@ driftsattes Director `7f056f7`: aktivt val, shadow och operatörschatt gav
 riktiga modellsvar via lokal Next-server. Första rådanropet fick timeout;
 fallback fungerade och omprovet gav giltigt råd. Detta är ett daterat
 anslutningsprov, inte en garanti för svarstiden i spelet.
-[Officiellt OpenClaw-index](../docs/AI/openclaw/README.md).
+[Officiellt OpenClaw-index](../../docs/AI/openclaw/README.md).
 
 ## Läsande Partner-ström
 

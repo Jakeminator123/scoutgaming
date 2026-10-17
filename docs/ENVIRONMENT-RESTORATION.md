@@ -132,7 +132,11 @@ Kör endast ett produkt-/labbpar; stoppa det före miljöbyte. Från Codex anvä
 Stoppade servrar förblir stoppade tills Jakob ber om start.
 Sparade lokala projekt, historik och profiler finns i `lab/data`;
 spel-/CRAIG-databaserna ligger i `lab/data/players`. Isolerade testprofiler
-får inte ersätta dem. Lokal backup: `tools/backup-lab-state.mjs`.
+får inte ersätta dem. Lokal backup: `tools/backup-lab-state.mjs` läser fortsatt
+`lab/data`, även när `apps/studio/data` finns. Inga privata filer flyttas av verktyget.
+Anslutningsverktygens standardordning är rotens `.env`, äldre `lab/.env.*`,
+nya `apps/studio/.env.*` och sist processmiljön. Cloud storage kräver samma
+uttryckliga opt-in; ett explicit `envFiles` ersätter standardlistan.
 
 Den 2 oktober flyttades 39 privata filer (4 568 960 byte) utan överskrivning
 från den tidigare katalogen till labbet. Hela gamla katalogen, 42 filer, finns i en separat

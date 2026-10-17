@@ -123,7 +123,7 @@ tracker är märkta som historik. Aktuell merge/driftstatus följs där överst.
 Dokumentationsändring 16 oktober 2026: det nya runtimekontraktet samlar
 katalog och svarsbibliotekets metadata i scoped Neon, med mediebytes i Blob.
 Lokala katalogfiler används endast som uttryckliga authoring-/importkällor.
-Vanlig `lab/start.mjs` öppnar publicerad produkt (`--no-open` skriver URL);
+Vanlig `apps/studio/start.mjs` öppnar publicerad produkt (`--no-open` skriver URL);
 bara `--offline` startar isolerade temporära testdata. Äldre anslutna lokallägen
 avvisas. Guiderna för [runtime](../LOCAL-PRESENTATION-RUNTIME.md),
 [miljövariabler](../ENVIRONMENT-VARIABLES.md) och

@@ -1,5 +1,23 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — kompletterande Studio-callergranskning, 18 oktober 2026
+
+GitHubs inline-review och mergeagentens egen läsning bekräftade ytterligare
+fyra path-regressioner efter e6102a16. Game-ruttens defaultpreview pekar nu
+på apps/studio/preview-build. Studio-roten skiljer en checkout som heter
+studio från dess apps/studio-katalog. Backupverktyget läser fortsatt de
+oflyttade privata originalen i lab/data, även om den nya datakatalogen finns.
+Anslutningsläsaren tar äldre lab-env före nya app-env och processmiljön sist;
+explicit envFiles samt opt-in för tal/cloud kvarstår. Probe-model-evals
+explicita lista bevarar också lab/.env.local. Privata original läses eller
+flyttas inte under denna verifiering.
+
+Befintliga isolerade prov för preview/root/backup/anslutning:54/54 gröna.
+37 brutna relativa länkar i Studios tre huvudguider pekar nu på befintliga
+filer; kvarvarande aktiva launcher-/buildkommandon är uppdaterade. Ordinarie
+hook och nytt Studio-bygge följer, eftersom root-helpern har ändrats.
+
+
 ## C3 — Studio efter riktad granskning, 18 oktober 2026
 
 PR233:s main 3e87f56c910a7d1695237db286f46c48506d1f16 integreras normalt:

@@ -11,7 +11,7 @@ async function fixture(t) {
   const base = await mkdtemp(join(tmpdir(), 'croupier-lab-backup-test-'));
   t.after(() => rm(base, { recursive: true, force: true }));
   const repoRoot = join(base, 'checkout');
-  const data = join(repoRoot, 'apps', 'studio', 'data');
+  const data = join(repoRoot, 'lab', 'data');
   const players = join(data, 'players');
   const history = join(data, 'history');
   const destination = join(base, 'private', 'snapshot');
@@ -31,9 +31,12 @@ async function fixture(t) {
 
 test('offline backup copies fixed persistent state, verifies hashes, and leaves source untouched', async t => {
   const f = await fixture(t);
+  const newer = join(f.repoRoot, 'apps/studio/data');
+  await mkdir(newer, {recursive:true}); await writeFile(join(newer, 'project.json'), 'unrelated new fixture');
   const before = await readFile(join(f.players, 'croupier.db'));
   const result = await backupLabState({ repoRoot: f.repoRoot, destination: f.destination });
   assert.equal(result.files, 5);
+  assert.equal(await readFile(join(newer, 'project.json'), 'utf8'), 'unrelated new fixture');
   const manifest = await verifyLabBackup(f.destination);
   assert.deepEqual(manifest.files.map(item => item.path), [
     `history/${f.historyName}`, 'players/bo.json', 'players/craig.db', 'players/croupier.db', 'project.json',

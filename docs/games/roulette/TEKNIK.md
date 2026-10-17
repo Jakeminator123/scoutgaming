@@ -290,4 +290,4 @@ inklusive ett tappat svar efter servercommit, exakt återförsök och omladdning
 Kontrollera också mobil, desktop och den faktiska dealerscenen. Ett godkänt
 API-test är inte visuellt godkännande. Använd inte produktionskonton eller
 ändra riktiga användares demosaldon för testning. Starta lokalt enligt
-`AGENTS.md` med `node lab/start.mjs --no-open`; endast ett serverpar åt gången.
+`AGENTS.md` med `node apps/studio/start.mjs --no-open`; endast ett serverpar åt gången.

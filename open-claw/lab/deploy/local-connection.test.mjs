@@ -823,3 +823,22 @@ test('opt-in provider origins do not open unrelated network or env-file access i
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /opt-in connection guard passed/);
 });
+
+
+test('preserved private env files remain readable, current app files and process env win explicitly', async t => {
+  const repoRoot=await mkdtemp(join(tmpdir(),'croupier-private-env-roots-'));t.after(()=>rm(repoRoot,{recursive:true,force:true}));
+  await mkdir(join(repoRoot,'lab'));await mkdir(join(repoRoot,'apps/studio'),{recursive:true});
+  await writeFile(join(repoRoot,'lab/.env.local'),'OPENCLAW_TIMEOUT_MS=1234\n');
+  await writeFile(join(repoRoot,'lab/.env.generated-speech.local'),'CARTESIA_API_KEY=fixture-cartesia\nRUNPOD_API_KEY=fixture-runpod\nCROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=legacy-endpoint\n');
+  await writeFile(join(repoRoot,'lab/.env.cloud-storage.local'),'CROUPIER_MEDIA_STORAGE=blob\nBLOB_READ_WRITE_TOKEN=vercel_blob_rw_Legacy_fixture\n');
+  const legacy=loadPrivateConnection({repoRoot,env:{},generatedSpeech:true,cloudStorage:true}).configuration;
+  assert.equal(legacy.timeoutMs,1234);assert.equal(legacy.speechEndpointId,'legacy-endpoint');assert.equal(legacy.blobToken,'vercel_blob_rw_Legacy_fixture');
+  assert.equal(loadPrivateConnection({repoRoot,env:{}}).configuration.blobToken,'');
+  await writeFile(join(repoRoot,'apps/studio/.env.local'),'OPENCLAW_TIMEOUT_MS=2345\n');
+  await writeFile(join(repoRoot,'apps/studio/.env.generated-speech.local'),'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=current-endpoint\n');
+  await writeFile(join(repoRoot,'apps/studio/.env.cloud-storage.local'),'CROUPIER_MEDIA_STORAGE=blob\nBLOB_READ_WRITE_TOKEN=vercel_blob_rw_Current_fixture\n');
+  const current=loadPrivateConnection({repoRoot,env:{},generatedSpeech:true,cloudStorage:true}).configuration;
+  assert.equal(current.timeoutMs,2345);assert.equal(current.speechEndpointId,'current-endpoint');assert.equal(current.blobToken,'vercel_blob_rw_Current_fixture');
+  assert.equal(loadPrivateConnection({repoRoot,env:{OPENCLAW_TIMEOUT_MS:'3456'}}).configuration.timeoutMs,3456);
+  assert.equal(loadPrivateConnection({repoRoot,envFiles:[],env:{}}).configuration.timeoutMs,8000);
+});

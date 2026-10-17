@@ -163,7 +163,8 @@ export async function backupLabState({ repoRoot = DEFAULT_REPO, destination } = 
   const repoReal = await realpath(repo), parentReal = await realpath(parent);
   if (inside(repoReal, target) || inside(repoReal, parentReal) || inside(target, repoReal)) fail('destination_must_be_outside_checkout');
   if (!(await missing(target))) fail('destination_already_exists');
-  const dataDir = join(repo, 'apps', 'studio', 'data');
+  // Source code moved; this recovery tool still copies the preserved private originals.
+  const dataDir = join(repo, 'lab', 'data');
   // The same guard used by the coordinated launchers blocks all Croupier
   // product/lab starts for the whole copy, including starts on other ports.
   const session = await acquireLocalSession({ repoRoot: repo, labPort: 4211 });

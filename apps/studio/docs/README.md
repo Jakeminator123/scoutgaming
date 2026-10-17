@@ -13,8 +13,8 @@ för uttryckligt import-/authoringarbete. Sparade arbetsfiler bevaras men
 används inte som produktens reservregister. Registerbytet i PR186 är mergat
 och driftsatt enligt leveranskvittot 16 oktober; det intygar ingen ny visuell
 läppsynk- eller spelacceptans. Aktuell leveransstatus finns i
-[CLOUD-MIGRATION](../../docs/CLOUD-MIGRATION.md), tekniken i
-[presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+[CLOUD-MIGRATION](../../../docs/CLOUD-MIGRATION.md), tekniken i
+[presentationsruntime](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 **Dragan är ordinarie dealer. Astrid är märkt legacyreferens utan
 trelagersversion.** Hennes befintliga tal, filmer och historik ligger kvar på
@@ -141,13 +141,13 @@ De flyttbara korten visar VILA, idle, insatser, hjulstart, utfall och resultat.
 Endast befintliga videofack kan laddas upp; planerade fack är märkta och
 VILA-PNG provas lokalt utan att sparas. Under **Bakgrund och bord · bild/video**
 väljs separata bild-/videolager; bord filtreras efter speltyp.
-Se [signaler, filmer och återstående spelkoppling](../../docs/games/roulette/KLIPPKARTA.md).
+Se [signaler, filmer och återstående spelkoppling](../../../docs/games/roulette/KLIPPKARTA.md).
 
 Tre ytor delar samma repo och sajt [www.scoutgaming.tech](https://www.scoutgaming.tech/) (apex `scoutgaming.tech` är en 308 till www). Övergången pågår.
 
 - **Intern personal**: [/admin](https://www.scoutgaming.tech/admin) är ny ingång. Befintliga `/control`-länkar fungerar under övergången och många leder nu till motsvarande adminverktyg; se adresslistan nedan. Studio bygger innehållet; Bolag hanterar operatörer, team, spel, rum och publicering.
 - **Nivå 2, operatör**: [/partner](https://www.scoutgaming.tech/partner) och `/partner/{operatorSlug}`. Partnerportalen är den här ytan, inte kontrollpanelen. Bolag, roller och medlemskap skapas i **Bolag & team** på `/admin/companies` (äldre länk `/control/companies`); en ny e-postadress får en aktiveringslänk till `/partner/set-password`. Bolagets utseende (`branding`, bordsfärg) läses och skrivs inom sammansättningen av en medlem med `presentations.configure`.
-- **Spelare**: [/lobby](https://www.scoutgaming.tech/lobby) är ny ingång. `/play` och äldre speladresser fungerar under övergången. Ett öppet spel erbjuder tillåtna bakgrunder/rum, dealers och bord; spelarens val bildar scenen. Provspelning av dealer görs i den faktiska spelklienten; se [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+- **Spelare**: [/lobby](https://www.scoutgaming.tech/lobby) är ny ingång. `/play` och äldre speladresser fungerar under övergången. Ett öppet spel erbjuder tillåtna bakgrunder/rum, dealers och bord; spelarens val bildar scenen. Provspelning av dealer görs i den faktiska spelklienten; se [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 
 `apps/studio/` är aktiv källkod och `/studio` dess tekniska basePath med API och
 tillgångar. Runtimeflaggan `lissabon-stream-lane` används fortfarande för
@@ -480,9 +480,9 @@ Inbjudan gäller intern personal. Den skapar ingen kundorganisation eller
 spelbolagsanställd; sådana konton ska vara organisationsavgränsade på nivå 2.
 
 Aktuell driftversion, QA-bevis och återstående begränsningar finns i
-[driftkartan](../../docs/CLOUD-MIGRATION.md).
+[driftkartan](../../../docs/CLOUD-MIGRATION.md).
 Tjänsteansvar och datakällor beskrivs i driftkartan; tekniska format och
-uppspelning finns i [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+uppspelning finns i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 OpenClaw-sidan finns på `/admin/ai/models` och visar agenternas modellval.
 Sparning går genom labbets behörighetskontroll till OpenClaw på Render.
 Gatewayens separata dashboard finns kvar för avancerad konfiguration och pairing.
@@ -501,7 +501,7 @@ Astrids lokala deal-/replikval gäller nästa beslut; idle kräver omladdning.
 Välj aktiva klipp direkt ur dealerns registrerade filer. Tidigare granskningsspärrar gäller fortfarande.
 Äldre lokala data i `lab/data` bevaras som
 historik och är inte produktionspolicy.
-Se [vägar och strömmar](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
+Se [vägar och strömmar](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 för adresser, kompatibilitetsalias och de tekniska strömmarnas olika ansvar.
 
 **Bord och bakgrund:** välj eller ladda upp bild/video i Sammansättning.
@@ -540,13 +540,13 @@ använd dess `/admin`-adress när du sparar ett nytt bokmärke.
 Jakobs arbetsdokumentation visas i [Guide](https://www.scoutgaming.tech/admin/guide)
 (i en offline-fixtur på `/guide` under den Studio-adress startaren skriver ut).
 Innehållet finns i [guide.json](guide.json); ordlistan hämtas direkt från
-[studio-contract.json](../policies/studio-contract.json). Uppdatera dessa,
+[studio-contract.json](../../../packages/presentation/contracts/policies/studio-contract.json). Uppdatera dessa,
 inte en parallell användarguide eller ett nytt kategorinamn i en enskild vy.
 
 Utvecklarreferenser: [start och arkitektur](../README.md),
-[videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../schemas/video.schema.json).
+[videoformat och lagring](../VIDEO-LIBRARY.md), [videoschema](../../../packages/presentation/contracts/schemas/video.schema.json).
 [Schemaöversikt](../schemas/README.md).
-[Gemensam lokal presentationsruntime](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+[Gemensam lokal presentationsruntime](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Händelsekategorierna ska överensstämma med projektets seed och motorns källkontrakt.
 Händelsers översikt grupperar dem efter **idle/bakgrund, engångshandling, exakt tal och
 tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
@@ -555,7 +555,7 @@ tur/resultat** med `lib/presentation-profile.mjs`; detta är en visningsmodell
 beslut, kontrakt/schemaändring, tester och migrationsbeskrivning. Visningsnamn
 kan fortfarande ändras i projektet utan att tekniska ID:n ändras.
 
-Tekniska fördjupningar finns i [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+Tekniska fördjupningar finns i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Det pensionerade personarkivet ingår inte i dokumentationsflödet.
 
 **Provspelning & logg** på `/admin/rehearsal` skiljer källa, eventdata, kontext, beslut och
@@ -575,9 +575,9 @@ Chattsvar är ett separat val och påverkas inte av denna klippväljare.
 
 Astrids valbara kamera/mikrofon finns i samma spelflik, Av som standard.
 Aktuella kontroller och provgränser beskrivs i
-[kamera- och talguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+[kamera- och talguiden](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
 Driftens aktiverade funktioner och återstående liveprov följs i
-[molnstatusen](../../docs/CLOUD-MIGRATION.md).
+[molnstatusen](../../../docs/CLOUD-MIGRATION.md).
 Det tidigare lokala kamerastartläget `--astrid-camera` är avvecklat.
 Offline-fixturen aktiverar inga externa kamera-/taltjänster. Följ driftens
 befintliga kontroller och provgränser för sådana produktprov.
@@ -624,7 +624,7 @@ kommer från manifestet, inte från projektets gamla 2D-demovarianter.
 
 Manifest v2 grupperar deal, kortvändning, exakta repliker och idle.
 Aktuella familjer och klipp läses från det importerade manifestet i Neon-katalogen.
-Den [incheckade manifestkopian](../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json)
+Den [incheckade manifestkopian](../../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json)
 är underlag för uttrycklig authoring/import, inte produktens runtime-register.
 Deal/replik använder
 `deal/<familj>/<standard>.mp4` respektive
@@ -673,7 +673,7 @@ uttryckligen läggs till och aktiveras i den sparade policyn.
 Översikten och Klippbiblioteket visar samma fysiska familjer. Uppspelningskvittot för
 en MP4 innehåller fil-ID, filnamn och familj. Ett beslut utan spelarens kvitto
 räknas inte som uppspelat. OpenClaw-källorna finns även i Guide & hjälp och på fliken Chatt.
-Aktuell anslutning: [lokal anslutning](../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md).
+Aktuell anslutning: [lokal anslutning](../../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md).
 
 Välj **Dealers & klipp → Astrid → Grundloop** för grundloopens editor. Den har tre delar:
 grundloop, korta variationer och ett deterministiskt enminutsprov. Grundläget
@@ -767,21 +767,21 @@ visar omfattning och kan glömma historiken. Det är konversationsminne, inte
 verifierat uppspelningsminne. Tillfälliga testdatabaser raderas vid teststopp.
 
 Anslutet prov med genererat tal kräver explicit `--generated-speech` i
-[starthelpern](../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md); standardstart
+[starthelpern](../../../docs/AI/openclaw/LOCAL-CONNECTION-SV.md); standardstart
 förbrukar inga Cartesia-/RunPod-jobb. OpenAI-modellen är oförändrad. Genererade
 takepaket är hashbundna previews, **inte mänskligt godkänd läppsynk**.
 Modellvalet `recordedLine` visas tills vidare bara som text i den länkade labbchatten
 om en exakt labbtake saknas; native-eventets inspelade replik påverkas inte.
 
 **Fristående chattprov** i Händelser har egen provkontext och högst 25
-sekunder ljud. Det styr inte det anslutna bordet. Se [socialt prov](../../docs/AI/openclaw/SOCIAL-CHAT.md).
+sekunder ljud. Det styr inte det anslutna bordet. Se [socialt prov](../../../docs/AI/openclaw/SOCIAL-CHAT.md).
 
-[Signal- och begreppskartan](../../docs/LOCAL-PRESENTATION-RUNTIME.md)
+[Signal- och begreppskartan](../../../docs/LOCAL-PRESENTATION-RUNTIME.md)
 förklarar RNG kontra spelfakta, Partner kontra native-status, de 16 genvägarna,
 relevanta situationer och föreslagen gemensam bild-/taluppspelning. Kartan skiljer
 nuvarande kod från nästa steg; den aktiverar inte nya funktioner.
 
-Aktuellt arbete och kvarvarande QA finns i [handoffen](../../docs/JOHN-HANDOFF.md). Nya sprintdokument är pausade.
+Aktuellt arbete och kvarvarande QA finns i [handoffen](../../../docs/JOHN-HANDOFF.md). Nya sprintdokument är pausade.
 
 ## Material och granskningsregler
 
@@ -816,11 +816,11 @@ Dessa krav är inte ett nytt driftprov eller en visuell acceptans.
 Medie-/spelarändringar kräver testerna i `.githooks/pre-commit` och granskning
 av berörda registrerade dealers med `?dealer=<name>&rehearsal=1`, två
 uppspelningar i rad. Provspelningen använder den faktiska spelaren. Samma
-formulering står i [AGENTS.md](../../AGENTS.md).
+formulering står i [AGENTS.md](../../../AGENTS.md).
 Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepaket
 eller publika loggar. Aktuella runtimekontrakt finns i
-[presentationsguiden](../../docs/LOCAL-PRESENTATION-RUNTIME.md);
-OpenClaws versionsbundna källor nås via [dess källindex](../../docs/AI/openclaw/README.md).
+[presentationsguiden](../../../docs/LOCAL-PRESENTATION-RUNTIME.md);
+OpenClaws versionsbundna källor nås via [dess källindex](../../../docs/AI/openclaw/README.md).
 
 ## Välj dealerns röst
 

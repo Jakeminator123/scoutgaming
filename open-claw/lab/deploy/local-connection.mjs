@@ -122,8 +122,11 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
   if (typeof astridCamera !== 'boolean') throw new Error('astridCamera requires an explicit boolean opt-in.');
   if (typeof cloudStorage !== 'boolean') throw new Error('cloudStorage requires an explicit boolean opt-in.');
   repoRoot = resolve(repoRoot);
-  envFiles ??= [join(repoRoot, '.env'), join(repoRoot, 'apps', 'studio', '.env.local'), join(repoRoot, 'apps', 'studio', '.env.generated-speech.local'),
-    ...(cloudStorage ? [join(repoRoot, 'apps', 'studio', '.env.cloud-storage.local')] : [])];
+  // Existing private files stay in lab; current app files override them, then process env wins.
+  envFiles ??= [join(repoRoot, '.env'), ...['lab', 'apps/studio'].flatMap(directory => [
+    join(repoRoot, directory, '.env.local'), join(repoRoot, directory, '.env.generated-speech.local'),
+    ...(cloudStorage ? [join(repoRoot, directory, '.env.cloud-storage.local')] : []),
+  ])];
   const values = {};
   const allowedKeys = [...PRIVATE_KEYS, ...(generatedSpeech ? GENERATED_SPEECH_KEYS : []), ...(astridCamera ? TRANSLATION_KEYS : []),
     ...(cloudStorage ? CLOUD_STORAGE_KEYS : [])];
