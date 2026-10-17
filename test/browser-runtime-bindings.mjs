@@ -4,7 +4,7 @@ import {readdir,readFile} from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
 
-const babel=createRequire(new URL('../lab/package.json',import.meta.url))('next/dist/compiled/babel/core');
+const babel=createRequire(new URL('../apps/studio/package.json',import.meta.url))('next/dist/compiled/babel/core');
 // Analyze the real modules, independently of runtime fixtures: a fixture stub
 // must never hide a production reference left behind by a removed function.
 const globals=new Set([...runInNewContext('Object.getOwnPropertyNames(globalThis)'),

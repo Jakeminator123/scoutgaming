@@ -1,11 +1,11 @@
-import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
+import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation,publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';
-import {createPartnerBrandingApi as createApi} from '../lab/lib/partner-branding-api.mjs';
+import {createPartnerBrandingApi as createApi} from '../apps/studio/lib/partner-branding-api.mjs';
 import {createPublishedLayerAssets} from '../web/storage/published-layer-assets.mjs';
 import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';

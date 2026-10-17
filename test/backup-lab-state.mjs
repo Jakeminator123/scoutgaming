@@ -11,7 +11,7 @@ async function fixture(t) {
   const base = await mkdtemp(join(tmpdir(), 'croupier-lab-backup-test-'));
   t.after(() => rm(base, { recursive: true, force: true }));
   const repoRoot = join(base, 'checkout');
-  const data = join(repoRoot, 'lab', 'data');
+  const data = join(repoRoot, 'apps', 'studio', 'data');
   const players = join(data, 'players');
   const history = join(data, 'history');
   const destination = join(base, 'private', 'snapshot');

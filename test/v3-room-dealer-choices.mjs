@@ -9,7 +9,7 @@ import {gameLaneFromDocument} from '../packages/presentation/contracts/game-sele
 import {dealerVersionPath} from '../web/public/dealer-version-switcher.mjs';
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
-import {createPartnerBrandingApi} from '../lab/lib/partner-branding-api.mjs';
+import {createPartnerBrandingApi} from '../apps/studio/lib/partner-branding-api.mjs';
 
 function fixture({schemaVersion=3,includeBaselineDealer=false}={}) {
   let project=addDealer(addDealer(addDealer(createEmptyProject(),'linnea','Linnea'),'nora','Nora'),'foreign','Foreign draft');

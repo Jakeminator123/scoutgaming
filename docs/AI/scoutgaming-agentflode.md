@@ -530,6 +530,7 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-17 | Studios spårade källrot är apps/studio. Källimports, cwd-/SQL-rötter, Next-traces, CI, Docker och Vercels Studio-root följer samma flytt; /studio och publika kompatibilitetsadresser består. Gamla privata original och dependencyjunctions ligger kvar med bevarade ignoreskydd. Lokala verifieringskvitton och återstående leverans redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Speechens fem spårade källfiler finns i apps/speech. CI, Vercels speech-root och befintliga transportfixtures följer flytten; Node22, npm-lås, tjänstnamn och publika socketadresser består. Separat lokal verifiering redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Frontendens spårade källrot är apps/web. CI, lokala hooks och miljöregistret följer samma rot; testtäckning och separat Node22-speechsteg består. Gamla ignorerade data och dependencyjunctions har inte flyttats. Lokal verifiering och återstående leverans framgår av JOHN-HANDOFF. |
 | 2026-10-17 | Inboxen läser etiketter med paginering och skapar bara saknade etiketter utan att skriva över befintlig metadata. `done` kräver inboxetikett och verifierad GitHub-skapare; delade konton kan inte särskiljas. 19 lokala inboxprov passerar. Läsanrop verifierade mot GitHub; inga etiketter eller ärenden ändrade i provet. Agent-talk-rensning och övriga förslag i den externa reviewen ingår inte. |

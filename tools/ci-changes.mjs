@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url';
 // Only prose with no runtime role takes the short PR path. Unknown paths,
 // runtime prompts, machine registries and workflow changes run the full suite.
 const guides = new Set([
-  'README.md', 'AGENTS.md', 'CLAUDE.md', 'lab/README.md',
+  'README.md', 'AGENTS.md', 'CLAUDE.md', 'apps/studio/README.md',
   'web/README.md', 'web/public/README.md', 'web/storage/README.md',
-  'apps/web/README.md', 'lab/client/README.md',
+  'apps/web/README.md', 'apps/studio/client/README.md',
   'packages/presentation/README.md', 'tools/media/README.md',
   'open-claw/README.md', 'open-claw/lab/README.md',
   'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
@@ -33,7 +33,7 @@ export function documentationOnly(changes) {
   return changes.length > 0 && changes.every(({ before, after, status, path }) =>
     /^[AMD]$/.test(status) && [before, after].every(mode => ['000000', '100644'].includes(mode)) &&
     !path.includes('\\') && !path.split('/').some(part => ['', '.', '..'].includes(part)) &&
-    (guides.has(path) || /^(?:docs|lab\/docs)\/.+\.md$/.test(path))
+    (guides.has(path) || /^(?:docs|apps\/studio\/docs)\/.+\.md$/.test(path))
   );
 }
 
@@ -53,10 +53,10 @@ export function migrationReadinessRequired(changes) {
   return !changes.every(({path, before, after, status}) =>
     /^[AMD]$/.test(status) && [before, after].every(mode => ['000000', '100644'].includes(mode)) &&
     !path.includes('\\') && !path.split('/').some(part => ['', '.', '..'].includes(part)) &&
-    (/^(?:test\/|lab\/test\/)/.test(path)
+    (/^(?:test\/|apps\/studio\/test\/)/.test(path)
       || documentationOnly([{path, before, after, status}])
       || !migrationSensitivePath(path)
-        && (/^(?:lab\/components\/|apps\/web\/components\/|lab\/client\/)/.test(path)
+        && (/^(?:apps\/studio\/components\/|apps\/web\/components\/|apps\/studio\/client\/)/.test(path)
           || /\.(?:css|scss|png|jpg|jpeg|svg|webp)$/.test(path)))
   );
 }

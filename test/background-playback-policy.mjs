@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {BACKGROUND_EVENT_IDS, validateBackgroundPlayback, backgroundRuleAssetIds, defaultBackgroundRule} from '../packages/presentation/contracts/background-playback-policy.mjs';
 import {createSeedProject, defaultPresentationLane, validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath, validatePresentationPackage} from '../packages/presentation/contracts/presentation-layers.mjs';
-import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
+import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import {withPackagePresentation, readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
-import {withoutPresentationLanes} from '../lab/lib/dealer-archive-impact.mjs';
+import {withoutPresentationLanes} from '../apps/studio/lib/dealer-archive-impact.mjs';
 import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
 import {createPublishedLayerAssets} from '../web/storage/published-layer-assets.mjs';
 

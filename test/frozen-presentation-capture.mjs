@@ -1,4 +1,4 @@
-import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
+import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {gunzipSync} from 'node:zlib';

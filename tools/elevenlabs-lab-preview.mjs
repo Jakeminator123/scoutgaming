@@ -63,7 +63,7 @@ async function main() {
   console.log(JSON.stringify({ ...checked, sameAliases, ttsTested: false }));
   if (args[0] !== '--generate') return;
   const generated = await generatePreview(key);
-  const directory = join(root, 'lab', 'data', 'voice-previews');
+  const directory = join(root, 'apps', 'studio', 'data', 'voice-previews');
   await mkdir(directory, { recursive: true });
   const stem = `sarah-sv-${randomUUID()}`;
   const output = join(directory, `${stem}.mp3`);

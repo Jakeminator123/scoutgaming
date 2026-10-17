@@ -5,9 +5,9 @@ import {createServer} from 'node:http';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {createPublicationChain, company, otherCompany, compositionId} from './fixtures/admin-publication-chain.mjs';
-import {createPresentationRoomClient, createPresentationRoomController} from '../lab/lib/presentation-room-client.mjs';
+import {createPresentationRoomClient, createPresentationRoomController} from '../apps/studio/lib/presentation-room-client.mjs';
 import {readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
-import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../lab/client/runtime/public-lobby-catalog.mjs';
+import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../apps/studio/client/runtime/public-lobby-catalog.mjs';
 import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
 
@@ -15,7 +15,7 @@ import {resolvePlayerSelection} from '../packages/presentation/runtime/player-ch
 // rows, provider metadata and runtime capabilities are synthetic. This does not
 // start a game engine, prove player login, play media or certify production SQL.
 const root = fileURLToPath(new URL('..', import.meta.url));
-const require = createRequire(new URL('../lab/package.json', import.meta.url));
+const require = createRequire(new URL('../apps/studio/package.json', import.meta.url));
 const {build} = require('esbuild');
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 const roomEndpoint = '/studio/api/admin/presentation-room';
@@ -26,13 +26,13 @@ function browserBundle() {
   return bundlePromise ??= build({stdin: {contents: `
     import React from 'react';
     import {createRoot} from 'react-dom/client';
-    import {PresentationRoomCreate} from './lab/components/presentation-room-create.tsx';
-    import {PartnerOperatorWorkspace} from './lab/components/kevin-bo/partner-operator-workspace.jsx';
-    import {LobbyProvider} from './lab/client/lobby/components/lobby-provider.tsx';
-    import {OperatorsSection} from './lab/client/lobby/components/sections/operators-section.tsx';
-    import {RoomsSection} from './lab/client/lobby/components/sections/rooms-section.tsx';
-    import {DealersSection} from './lab/client/lobby/components/sections/dealers-section.tsx';
-    import {SelectionTicket} from './lab/client/lobby/components/selection-ticket.tsx';
+    import {PresentationRoomCreate} from './apps/studio/components/presentation-room-create.tsx';
+    import {PartnerOperatorWorkspace} from './apps/studio/components/kevin-bo/partner-operator-workspace.jsx';
+    import {LobbyProvider} from './apps/studio/client/lobby/components/lobby-provider.tsx';
+    import {OperatorsSection} from './apps/studio/client/lobby/components/sections/operators-section.tsx';
+    import {RoomsSection} from './apps/studio/client/lobby/components/sections/rooms-section.tsx';
+    import {DealersSection} from './apps/studio/client/lobby/components/sections/dealers-section.tsx';
+    import {SelectionTicket} from './apps/studio/client/lobby/components/selection-ticket.tsx';
     const props = JSON.parse(document.getElementById('fixture-data').textContent);
     createRoot(document.getElementById('root')).render(props.surface === 'partner'
       ? <PartnerOperatorWorkspace {...props}/> : location.pathname === '/lobby'
@@ -44,13 +44,13 @@ function browserBundle() {
   plugins: [{name: 'fixture-image-metadata', setup(plugin) {
     plugin.onLoad({filter: /\.(?:png|jpg)$/}, () => ({contents: 'export default {src:"/fixture-image"}', loader: 'js'}));
   }}],
-  nodePaths: [resolve(root, 'lab/node_modules'), resolve(root, 'lab/client/node_modules')],
-  alias: {'@/lib/catalog.mjs': resolve(root, 'lab/client/runtime/public-lobby-catalog.mjs'),
-    '@': resolve(root, 'lab/client/lobby'),
-    'react': resolve(root, 'lab/node_modules/react'), 'react-dom': resolve(root, 'lab/node_modules/react-dom'),
-    'next/link': resolve(root, 'lab/client/runtime/navigation.tsx'),
-    'next/navigation': resolve(root, 'lab/client/runtime/navigation.tsx'),
-    'next/image': resolve(root, 'lab/client/runtime/image.ts')},
+  nodePaths: [resolve(root, 'apps/studio/node_modules'), resolve(root, 'apps/studio/client/node_modules')],
+  alias: {'@/lib/catalog.mjs': resolve(root, 'apps/studio/client/runtime/public-lobby-catalog.mjs'),
+    '@': resolve(root, 'apps/studio/client/lobby'),
+    'react': resolve(root, 'apps/studio/node_modules/react'), 'react-dom': resolve(root, 'apps/studio/node_modules/react-dom'),
+    'next/link': resolve(root, 'apps/studio/client/runtime/navigation.tsx'),
+    'next/navigation': resolve(root, 'apps/studio/client/runtime/navigation.tsx'),
+    'next/image': resolve(root, 'apps/studio/client/runtime/image.ts')},
   define: {'process.env.NODE_ENV': '"production"', 'process.env.NEXT_PUBLIC_LAB_BASE_PATH': '"/studio"',
     'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE': '"1"'}, logLevel: 'silent'});
 }

@@ -117,7 +117,7 @@ test('Render config loads from source without frontend or speech dependency inst
   // Copy the real boot-config source closure and the Lab dependencies that
   // Render already installs. Frontend and speech dependencies stay absent.
   await copySource('ops/cloud/config.mjs');
-  await symlink(await realpath(join(sourceRoot, 'lab/node_modules')), join(root, 'lab/node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
+  await symlink(await realpath(join(sourceRoot, 'apps/studio/node_modules')), join(root, 'apps/studio/node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   const isolated = await import(pathToFileURL(join(root, 'ops/cloud/config.mjs')).href);
   const env = base();
   assert.deepEqual(isolated.validateCloudConfig(env, {repository:root}), validateCloudConfig(env, {repository:root}));

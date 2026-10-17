@@ -6,11 +6,11 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const documentationFiles = new Set([
   'README.md', 'AGENTS.md', 'CLAUDE.md',
-  'lab/README.md', 'lab/docs/README.md',
+  'apps/studio/README.md', 'apps/studio/docs/README.md',
   // Folder guides describe source ownership; runtime prompts, package metadata
   // and arbitrary Markdown outside docs/ are not documentation-only changes.
   'apps/web/README.md',
-  'packages/presentation/README.md', 'lab/client/README.md',
+  'packages/presentation/README.md', 'apps/studio/client/README.md',
   'packages/presentation/docs/INTEGRATION.md',
   'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
   'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
@@ -88,13 +88,13 @@ export function focusedTests(changes, root = repositoryRoot) {
     // Moved shared contracts keep their existing behavioral regression suites.
     const registryTests = {
       'runtime-catalog': ['test/runtime-media-catalog.mjs'],
-      'registry-core': ['lab/test/video-registry.test.mjs', 'lab/test/blob-source-routing.test.mjs'],
-      'registry-reader': ['lab/test/neon-video-registry.test.mjs'],
-      'blob-reader': ['lab/test/cloud-media-store.test.mjs'],
-      'private-media-contract': ['lab/test/cloud-media-store.test.mjs'],
-      'video-manifest': ['lab/test/lab-video-manifest.test.mjs'],
+      'registry-core': ['apps/studio/test/video-registry.test.mjs', 'apps/studio/test/blob-source-routing.test.mjs'],
+      'registry-reader': ['apps/studio/test/neon-video-registry.test.mjs'],
+      'blob-reader': ['apps/studio/test/cloud-media-store.test.mjs'],
+      'private-media-contract': ['apps/studio/test/cloud-media-store.test.mjs'],
+      'video-manifest': ['apps/studio/test/lab-video-manifest.test.mjs'],
       'storage-contract': ['test/studio-repository.mjs'],
-      'video-dealer-registration': ['lab/test/dealer-video-registration.test.mjs'],
+      'video-dealer-registration': ['apps/studio/test/dealer-video-registration.test.mjs'],
     };
     if (path.startsWith('packages/studio-registry/server/')) {
       for (const candidate of registryTests[basename(path, '.mjs')] ?? []) add(candidate);
@@ -105,7 +105,7 @@ export function focusedTests(changes, root = repositoryRoot) {
       `${directory}/${stem}.test.mjs`, `${directory}/${stem}.test.js`,
       `${directory}/test/${stem}.test.mjs`, `${directory}/test/${stem}.mjs`,
       `test/${stem}.mjs`,
-      ...(path.startsWith('lab/') ? [`lab/test/${stem}.test.mjs`] : []),
+      ...(path.startsWith('apps/studio/') ? [`apps/studio/test/${stem}.test.mjs`] : []),
       ...(path.startsWith('apps/') ? [`${path.split('/').slice(0, 2).join('/')}/test/${stem}.mjs`] : []),
     ]) add(candidate);
     if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|check-push-target|push-github-work)\.mjs$)/.test(path)) {

@@ -46,7 +46,7 @@ efterföljande driftacceptans väntar. Följ endast
 för aktuell leveransstatus. Daterade äldre indexkrav nedan beskriver den
 tidigare implementationen och ersätts av detta kontrakt.
 
-Vanlig `node lab/start.mjs` öppnar den publicerade `/lobby`; `--no-open`
+Vanlig `node apps/studio/start.mjs` öppnar den publicerade `/lobby`; `--no-open`
 skriver bara adressen och `--product` är ett uttryckligt alias. Endast
 `--offline` startar ett isolerat, temporärt serverpar utan externa tjänster.
 `--skip-build` hör till den fixturen. `--cloud-storage`, `--astrid-camera`
@@ -950,7 +950,7 @@ för samma person. Detta skapar ingen fryst dealerbindning. Publicerad
 blackjack-`idle.ready` exponeras inte för roulette.
 
 Fortsatt UI-utveckling sker i `/admin` och `/lobby`; `/partner` är bolagens
-arbetsyta. `lab/` är den aktiva applikationens källmapp och `/studio` dess
+arbetsyta. `apps/studio/` är den aktiva applikationens källmapp och `/studio` dess
 tekniska basePath för befintliga API:er och tillgångar. Äldre `/control`-länkar
 är kompatibilitetsadresser: många omdirigeras till `/admin` med sidkontexten
 kvar. `/play` och spelstarter behåller sina autentiserings- och paketkontrakt.
@@ -958,7 +958,7 @@ Detaljerade äldre adresser och daterade verifieringar nedan beskriver dessa
 implementationer, inte en uppmaning att bygga nya gränssnitt där.
 
 Den kanoniska adress- och slugglistan finns i
-[användarguiden](../lab/docs/README.md). Produktionskontrollen 14 oktober 2026
+[användarguiden](../apps/studio/docs/README.md). Produktionskontrollen 14 oktober 2026
 skiljer dokumentomdirigeringar från efterföljande inloggning: `/control` går
 till `/admin`, `/studio` via `/control/clips` till `/admin/dealer-studio` och
 utloggad intern åtkomst till `/studio/login?returnTo=...`. N1 når även
@@ -1081,7 +1081,7 @@ rehearsalspelaren före merge. Kontrollerna ändras inte av assistentleveransen.
 
 ## Central Studio: rum, spel och lager, 13 oktober 2026
 
-Produktmodellens enda källa är [TERMINOLOGI.md](../lab/docs/TERMINOLOGI.md).
+Produktmodellens enda källa är [TERMINOLOGI.md](../apps/studio/docs/TERMINOLOGI.md).
 Det här dokumentet beskriver teknisk lagring, format, uppspelning och
 övergångsbegränsningar. Målmodellen är inte ett kvitto på genomförd
 datamigrering eller godkänd speluppspelning. Den äldre inventeringen nedan
@@ -1262,8 +1262,8 @@ visar video som video och även registrerade men ännu oanvända filer.
 `web/layer-asset-contract.mjs` tillåter PNG, JPEG, WebP, MP4 och WebM för
 lager. Storlek: 16 byte till 128 MiB; registrerad bredd/höjd: heltal 1–16384.
 Det finns inget generellt krav på exakt 1920 × 1080 i detta kontrakt.
-`lab/components/layer-library.tsx` läser dimensioner i webbläsaren innan
-uppladdning. `lab/lib/layer-upload-service.mjs` verifierar lagrade bytes,
+`apps/studio/components/layer-library.tsx` läser dimensioner i webbläsaren innan
+uppladdning. `apps/studio/lib/layer-upload-service.mjs` verifierar lagrade bytes,
 MIME/storlek/hash och filsignatur innan registreringen skrivs med revisionsskydd.
 
 Kontrollen är inte en fullständig serververifiering av codec, bildfrekvens,
@@ -1295,7 +1295,7 @@ behåller filerna. Bortkoppling av ett enskilt klipp respektive alla klipp i
 en uppsättning är separata handlingar med förhandsvisad påverkan. Ett
 återställt bolag återpublicerar eller öppnar inga rum; ett separat återställt
 rum blir `pending` och måste öppnas uttryckligen. Källan är
-`lab/lib/resource-lifecycle-api.mjs`. Visa
+`apps/studio/lib/resource-lifecycle-api.mjs`. Visa
 objekttyp, ID, användningar och berörda publiceringar före bekräftelse.
 Beständig fysisk radering kräver att inga skyddade/delade referenser finns
 och en separat uttrycklig handling. Papperskorg/återställning återställer
@@ -1820,7 +1820,7 @@ eller generell manuell godkännandegrind gäller; se `AGENTS.md`.
 
 Det här avsnittet beskriver de bevarade `/control`-länkarna och de frysta
 paketens fältnamn. Det är inte meny- eller begreppskontraktet för `/admin`;
-se [produktmodellen](../lab/docs/TERMINOLOGI.md).
+se [produktmodellen](../apps/studio/docs/TERMINOLOGI.md).
 
 Nya `/admin/clips` återanvänder Studio-komponenterna och native-API:t.
 En gemensam sammansättningsmall kan användas av flera bolag och rum; dealer-,
@@ -1892,7 +1892,7 @@ media hoppas över och serverns kortflöde fortsätter. N2 visar endast verkliga
 
 
 Repot är `Jakeminator123/scoutgaming` på `main`. `github-work` vidarebefordrar dit.
-`node lab/start.mjs` öppnar den publicerade produkten. OpenClaw-anslutning beskrivs i
+`node apps/studio/start.mjs` öppnar den publicerade produkten. OpenClaw-anslutning beskrivs i
 [anslutningsguiden](AI/openclaw/LOCAL-CONNECTION-SV.md).
 De tidigare lokala adresserna nedan beskriver den äldre anslutna startaren,
 inte dagens standardstart. Den gamla Mobile Phone Lane använde Astrids porträttvideo i spelet:
@@ -1930,7 +1930,7 @@ reservationer bevaras. Faktisk leverantörskostnad är fortsatt okänd/null.
 
 ## Tre produktytor och äldre runtimeadresser
 
-Produktmodell och aktuella namn finns i [TERMINOLOGI.md](../lab/docs/TERMINOLOGI.md).
+Produktmodell och aktuella namn finns i [TERMINOLOGI.md](../apps/studio/docs/TERMINOLOGI.md).
 Tabellen här anger fungerande tekniska ingångar under övergången.
 
 | Nivå | Adress | Ansvar och faktisk status |
@@ -2032,7 +2032,7 @@ hör till nivå 1. `package.tables` behåller sina befintliga rum-ID:n; denna
 projektion kontrollerar faktiskt ägarskap och kompatibel spellane i administrationen.
 Rum-writern beskrivs ovan; en paketsträng ensam bevisar inget ägarskap.
 
-`lab/app/page.tsx` omdirigerar den tekniska roten `/studio` med 308 till
+`apps/studio/app/page.tsx` omdirigerar den tekniska roten `/studio` med 308 till
 `/control/clips` och behåller query. Tidigare återexporterades klippsidan direkt;
 dubbelinnehållet var samma React-vy. BasePath, API och tillgångar består.
 
@@ -2098,7 +2098,7 @@ inte anslutna. T2 är påbörjad, inte klar.
 Kontrollpanelens länkar till befintliga interna verktyg behåller deras ordinarie
 auktorisering. Det gamla backofficets rolltabell i klienten styr inte åtkomst.
 
-Privata lokala kopior (env-säkerhetskopior och bildmappar) undantas uttryckligen från byggtraces i `lab/next.config.mjs`, liksom lokal QA-data.
+Privata lokala kopior (env-säkerhetskopior och bildmappar) undantas uttryckligen från byggtraces i `apps/studio/next.config.mjs`, liksom lokal QA-data.
 Git-ignore för de mapparna står kvar. Detta ändrar inga medieregister.
 
 ### Byggutdata
@@ -2109,7 +2109,7 @@ Lab-regressionen använder byggd runtime; cache och runtime är olika saker.
 Cache hör till den checkout där bygget körs. Vercels byggcache hanteras separat.
 `lab/data/platform-private`, SDK/sourcepins, QA-receipts, kostnadsjournaler,
 konton och media är beständig arbetsdata och ingick inte i cacheborttagningen.
-Om hela Lab-runtime behöver byggas om används `npm --prefix lab run build` med
+Om hela Lab-runtime behöver byggas om används `npm --prefix apps/studio run build` med
 projektets kompatibla Node och aktuell workergräns. Detta startar ingen server.
 Kör inte dubbla tunga byggen i samma checkout och radera inte `.next` under
 pågående bygge, server eller regression. Följ sessionsvakt och agent-talk.
@@ -2148,7 +2148,7 @@ Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordni
 `packages/presentation/server/selection.mjs` väljer exakt familj och tillåten variant
 med samma triggers, regler, slump och Director-kontrakt som Händelser (`/control/events`).
 Studio och spelserver använder kärnan via den uttryckliga appkompositionen i
-`lab/lib/presentation-selection.mjs` respektive `web/presentation-selection.mjs`,
+`apps/studio/lib/presentation-selection.mjs` respektive `web/presentation-selection.mjs`,
 med explicita register för varje urvalsoperation. Gemensam relay och idle-kärna
 ligger i `packages/presentation/server/`; HTTP, settingsval och serviceinstanser
 är appägda. Current-register och frysta presentationer behåller sina skilda

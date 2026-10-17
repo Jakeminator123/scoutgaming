@@ -37,7 +37,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       "packages/presentation/server/legacy-clip-inventory.mjs",
       "packages/studio-registry/server/local-video-readers.mjs",
       "packages/studio-registry/server/media-runtime.mjs",
-      'packages/studio-registry/server/blob-reader.mjs', 'packages/studio-registry/server/managed-media-contract.mjs', 'packages/studio-registry/server/media-blob-index.mjs', 'packages/studio-registry/server/media-layout.mjs', 'packages/studio-registry/server/private-media-contract.mjs', 'packages/studio-registry/server/registry-core.mjs', 'packages/studio-registry/server/registry-reader.mjs', 'packages/studio-registry/server/storage-contract.mjs', 'packages/studio-registry/server/video-dealer-registration.mjs', 'packages/studio-registry/server/video-manifest.mjs', 'tools/media-blob-index-reader.mjs', 'lab/lib/video-local-readers.mjs', 'lab/lib/video-alpha-reader.mjs', 'web/blob-media.mjs', 'web/media-blob-index.mjs', 'web/package.json', 'web/package-lock.json',
+      'packages/studio-registry/server/blob-reader.mjs', 'packages/studio-registry/server/managed-media-contract.mjs', 'packages/studio-registry/server/media-blob-index.mjs', 'packages/studio-registry/server/media-layout.mjs', 'packages/studio-registry/server/private-media-contract.mjs', 'packages/studio-registry/server/registry-core.mjs', 'packages/studio-registry/server/registry-reader.mjs', 'packages/studio-registry/server/storage-contract.mjs', 'packages/studio-registry/server/video-dealer-registration.mjs', 'packages/studio-registry/server/video-manifest.mjs', 'tools/media-blob-index-reader.mjs', 'apps/studio/lib/video-local-readers.mjs', 'apps/studio/lib/video-alpha-reader.mjs', 'web/blob-media.mjs', 'web/media-blob-index.mjs', 'web/package.json', 'web/package-lock.json',
 
       'packages/director/admin-error.mjs',
       'packages/director/astrid-observation.mjs',
@@ -56,7 +56,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/director/studio-admin-contract.mjs',
       'packages/director/node/companion-store.mjs',
     'packages/director/node/settings-reader.mjs',
-      'lab/lib/director-settings.mjs',
+      'apps/studio/lib/director-settings.mjs',
       'web/director-settings.mjs',
       'open-claw/lab/src/settings.mjs',
 
@@ -67,8 +67,8 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/studio-registry/server/runtime-catalog.mjs', 'packages/presentation/server/speech-reply-repository.mjs', 'packages/presentation/server/speech-reply-library.mjs',
       'media/layout.json', 'media/blob-index.json', 'media/catalog/presentation.json', 'media/catalog/legacy.json',
       'packages/studio-access/studio-native-auth.mjs', 'packages/studio-access/studio-access-policy.mjs', 'packages/studio-access/studio-scope.mjs', 'packages/studio-access/account-role.mjs',
-      'ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs', 'lab/test/fixtures/cloud-presentation.mjs',
-      'lab/lib/partner-branding-api.mjs', 'lab/lib/partner-presentation-choices.mjs', 'lab/lib/partner-package-view.mjs',
+      'ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs', 'apps/studio/test/fixtures/cloud-presentation.mjs',
+      'apps/studio/lib/partner-branding-api.mjs', 'apps/studio/lib/partner-presentation-choices.mjs', 'apps/studio/lib/partner-package-view.mjs',
       'packages/operators/contracts/branding.mjs', 'packages/presentation/server/game-entry-selector.mjs', 'web/operator-appearance-api.mjs',
       'packages/navigation/operator-entry.mjs', 'packages/navigation/operator-slug.mjs',
       'web/public/operator-appearance-boundary.mjs', 'packages/presentation/server/frozen-dealer-presentation.mjs', 'packages/presentation/runtime/player-choices.mjs',
@@ -82,12 +82,12 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/navigation/admin-workspace-routes.mjs', 'packages/navigation/workspace-surfaces.mjs',
       'packages/server-transport/paths.mjs', 'packages/server-transport/configuration.mjs',
       'packages/shared/studio-error.mjs', 'packages/presentation/server/selection.mjs', 'packages/presentation/server/video-bindings.mjs',
-      'lab/lib/presentation-selection.mjs', 'packages/presentation/server/default-video-bindings.mjs',
+      'apps/studio/lib/presentation-selection.mjs', 'packages/presentation/server/default-video-bindings.mjs',
     'packages/presentation/server/director-transport.mjs', 'packages/presentation/server/idle-advice.mjs',
-    'packages/presentation/contracts/probe-fixtures.mjs', 'web/presentation-selection.mjs', 'lab/lib/studio-director.mjs',
+    'packages/presentation/contracts/probe-fixtures.mjs', 'web/presentation-selection.mjs', 'apps/studio/lib/studio-director.mjs',
       'ops/neon-game/007-roulette-tables.sql', 'test/roulette-postgres.mjs', 'web/games/roulette/room.mjs', 'web/games/roulette/storage.mjs', 'web/games/roulette/access.mjs', 'web/games/roulette/index.mjs', 'web/games/roulette/rules.mjs',
       'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
-      'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'lab/lib/partner-session.mjs', 'lab/lib/partner-team-api.mjs', 'lab/lib/operator-audit-context.mjs', 'lab/lib/operator-admin-api.mjs', 'lab/lib/operator-journal.mjs',
+      'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'apps/studio/lib/partner-session.mjs', 'apps/studio/lib/partner-team-api.mjs', 'apps/studio/lib/operator-audit-context.mjs', 'apps/studio/lib/operator-admin-api.mjs', 'apps/studio/lib/operator-journal.mjs',
       'ops/neon-studio/011-gpu-daily-budget.sql', 'ops/neon-studio/migrations.mjs', 'packages/operators/server/operator-store.mjs', 'ops/neon-studio/speech-ledger-snapshot.mjs', 'ops/neon-studio/speech-ledger-import.mjs', 'test/speech-ledger-import.mjs',
       'packages/studio-access/server/account-credentials.mjs', 'packages/studio-access/server/craig-identity.mjs', 'packages/studio-access/server/bo-auth-epoch.mjs', 'packages/studio-access/server/partner-access-policy.mjs',
       'packages/studio-access/display-name.mjs',
@@ -95,12 +95,12 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/studio-registry/server/repository.mjs',
       'web/storage/postgres-store.mjs', 'packages/studio-registry/server/document-contract.mjs', 'packages/studio-registry/server/stored-media-types.mjs', 'packages/shared/media-file-types.mjs', 'packages/studio-registry/server/document-repository.mjs', 'packages/presentation/server/saved-game-policy.mjs', 'web/storage/studio-runtime.mjs',
       'ops/neon-studio/retained-bank.mjs', 'test/studio-retained-bank.mjs',
-      'packages/storage/server/player-administration.mjs', 'web/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'lab/lib/studio-game-authority.mjs', 'lab/lib/studio-native-auth.mjs',
-      'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
-      'lab/lib/studio-admin-readouts.mjs', 'lab/lib/studio-voice-lines.mjs', 'lab/lib/studio-access-policy.mjs', 'lab/lib/studio-admin-contract.mjs',
-      'lab/lib/voice-preview.mjs', 'lab/lib/media-blob-index.mjs', 'web/shoe-game.mjs', 'packages/shared/email-templates.mjs', 'packages/presentation/contracts/speech-lines.mjs',
+      'packages/storage/server/player-administration.mjs', 'web/studio-game-commands.mjs', 'packages/shared/studio-game-command.mjs', 'apps/studio/lib/studio-game-authority.mjs', 'apps/studio/lib/studio-native-auth.mjs',
+      'apps/studio/lib/studio-native-auth-actions.mjs', 'apps/studio/lib/studio-admin-accounts.mjs', 'apps/studio/lib/studio-admin-data.mjs', 'apps/studio/lib/studio-admin-api.mjs', 'apps/studio/lib/studio-document-api.mjs',
+      'apps/studio/lib/studio-admin-readouts.mjs', 'apps/studio/lib/studio-voice-lines.mjs', 'apps/studio/lib/studio-access-policy.mjs', 'apps/studio/lib/studio-admin-contract.mjs',
+      'apps/studio/lib/voice-preview.mjs', 'apps/studio/lib/media-blob-index.mjs', 'web/shoe-game.mjs', 'packages/shared/email-templates.mjs', 'packages/presentation/contracts/speech-lines.mjs',
       'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'packages/presentation/contracts/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech-runtime.mjs',
-      'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
+      'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'apps/studio/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
 
 export async function runPartnerDatabaseQa({ adminPool, pgPort, createPool, restartCluster, runChecks } = {}) {
   if (!Number.isInteger(pgPort) || pgPort < 1 || pgPort > 65535 || typeof adminPool?.query !== 'function'

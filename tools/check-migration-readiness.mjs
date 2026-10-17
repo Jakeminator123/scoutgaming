@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applyStudioMigrations, planStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 
-const requireLab = createRequire(new URL('../lab/package.json', import.meta.url));
+const requireLab = createRequire(new URL('../apps/studio/package.json', import.meta.url));
 
 export function migrationDatabaseGuard(connectionString) {
   if (typeof connectionString !== 'string' || connectionString.length === 0 || connectionString.length > 4096) {

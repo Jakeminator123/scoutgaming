@@ -34,11 +34,11 @@ test('focus plan reuses tests covered by the mandatory suite with at most four w
 
 test('losing the Studio discovery pattern fails coverage even if a comment names the test', () => {
   const hook = fullHook().split(/\r?\n/).map(line => /^run_node_tests\s/.test(line)
-    ? line.split(/\s+/).filter(token => !token.startsWith('lab/test/')).join(' ') : line).join('\n')
+    ? line.split(/\s+/).filter(token => !token.startsWith('apps/studio/test/')).join(' ') : line).join('\n')
     + '\n# lab/test/studio-history.test.mjs\n';
   const files = adminNavigationPlan().commands[0].slice(3);
-  assert.ok(mandatoryTestFiles(hook).has('lab/client/runtime/admin-routing.test.mjs'));
-  assert.throws(() => assertMandatoryCoverage(files, hook), /Missing mandatory coverage: lab\/test\/studio-history\.test\.mjs/);
+  assert.ok(mandatoryTestFiles(hook).has('apps/studio/client/runtime/admin-routing.test.mjs'));
+  assert.throws(() => assertMandatoryCoverage(files, hook), /Missing mandatory coverage: apps\/studio\/test\/studio-history\.test\.mjs/);
 });
 
 test('plan display and invalid arguments never execute checks', () => {

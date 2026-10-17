@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
 import {createStudioPreview} from '../web/studio-preview.mjs';
-import {createStudioNativeAuth} from '../lab/lib/studio-native-auth.mjs';
+import {createStudioNativeAuth} from '../apps/studio/lib/studio-native-auth.mjs';
 import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';

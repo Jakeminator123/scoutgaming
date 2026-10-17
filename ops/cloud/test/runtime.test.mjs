@@ -558,7 +558,7 @@ test('process group starts Web then Lab and signals both before waiting, once ev
   const group = await startChildren(specs, {
     spawnProcess: (_command, _args, options) => {
       assert.equal(options.stdio, 'ignore');
-      const name = options.cwd.endsWith('lab') ? 'lab' : 'web';
+      const name = options.cwd.endsWith('studio') ? 'lab' : 'web';
       activity.push(`start:${name}`);
       const child = new FakeChild(name);
       if (name === 'lab') lab = child;

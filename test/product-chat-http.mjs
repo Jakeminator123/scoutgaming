@@ -15,7 +15,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
 import { createPlayerProbeStore } from '../web/player-probe-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
-import { createProjectStore } from '../lab/lib/project-store.mjs';
+import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
 
 const PRIVATE_TRANSPORT_ENV = [
   'LAB_REMOTE_URL', 'LAB_REMOTE_TOKEN',

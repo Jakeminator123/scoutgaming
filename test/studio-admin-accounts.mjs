@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStudioAdminAccounts } from '../lab/lib/studio-admin-accounts.mjs';
-import { createStudioAdminApi } from '../lab/lib/studio-admin-api.mjs';
+import { createStudioAdminAccounts } from '../apps/studio/lib/studio-admin-accounts.mjs';
+import { createStudioAdminApi } from '../apps/studio/lib/studio-admin-api.mjs';
 
 const scope = {environment:'fixture',workspaceId:'croupier'}, publicOrigin = 'https://studio.example.invalid';
 function fixture(overrides = {}) {

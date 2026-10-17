@@ -1,0 +1,255 @@
+import {createSeedProject,createEmptyProject,addDealer} from '../../../packages/presentation/contracts/studio-model.mjs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createStudioAdminData } from '../lib/studio-admin-data.mjs';
+// Explicit persisted test catalogue; production has no built-in dealer lanes.
+const SAVED_GAME_LANES=[{schemaVersion:1,id:'mobile-phone',label:'Saved Linnea room',renderer:'portrait-video',dealer:'linnea',mediaCollection:'linnea-presentation'}];
+
+const scope = { environment: 'fixture', workspaceId: 'croupier' };
+const voiceIdentity = { audioSha256: 'a'.repeat(64), videoSha256: 'b'.repeat(64), previewSha256: 'c'.repeat(64),
+  textSha256: 'd'.repeat(64), indexSha256: 'e'.repeat(64), audioDelayMs: 42 };
+function fixture(options = {}) {
+  const state = { document: { revision: 'studio-original', value: { gameLane:'mobile-phone',gameLanes:structuredClone(SAVED_GAME_LANES),rooms: [{ id: 'one', state: 'preview' }], tiers: { classic: 'vera' }, tournaments: [] } }, writes: [], reads: [], rows: [] };
+  state.voices = { dealers: ['linnea','astrid','nora','elin'].map(dealer => ({ dealer, name: dealer,
+    lines: [{ key: 'goodluck', text: 'Exact registered text', identity: structuredClone(voiceIdentity), reviewable: true }] })) };
+  const db = { prepare(sql) {
+    state.reads.push(sql);
+    return { all: async () => state.rows, get: async () => ({ id: 7, username: 'someone', n: 1 }),
+      run: async (...args) => { state.writes.push({ sql, args }); return { changes: 1 }; } };
+  }, transaction: work => work() };
+  const repository = { readDocument: async kind => {
+    if (kind !== 'project') return structuredClone(state.document);
+    state.projectReads = (state.projectReads ?? 0) + 1;
+    if (state.projectReadError) throw Error('private database details');
+    return state.project === null ? null : {value:state.project??addDealer(addDealer(addDealer(createSeedProject(),'linnea','Linnea'),'nora','Nora'),'elin','Elin')};
+  }, async saveDocument(kind, options) {
+    state.writes.push({ kind, options });
+    if (state.document.revision !== options.expectedRevision) throw Object.assign(Error('Conflict'), { statusCode: 409 });
+    state.document = { revision: 'studio-new', value: options.value }; return state.document;
+  } };
+  const data = createStudioAdminData({ db, boDb: db, repository, scope, voiceLines: async () => structuredClone(state.voices), now: () => '2026-10-03T00:00:00.000Z', ...options });
+  const context = body => ({ body, actor: { user: 'operator', role: 'superadmin' }, scope });
+  const call = (method, action, body) => data.handlers.get(`${method} /studio/api/admin/${action}`)(context(body));
+  return { state, data, call, context };
+}
+test('configuration reads are saved revision only; missing data never seeds', async () => {
+  const f = fixture(); assert.equal((await f.call('GET','config')).revision, 'studio-original');
+  f.state.document = null;
+  await assert.rejects(f.call('GET','config'), error => error.statusCode === 503);
+  assert.deepEqual(f.state.writes, []);
+});
+
+test('modern administration readouts and room edits never synthesize legacy sections', async () => {
+  const f = fixture();
+  delete f.state.document.value.tiers;
+  delete f.state.document.value.tournaments;
+  for (const action of ['config', 'overview']) {
+    const result = await f.call('GET', action);
+    assert.deepEqual(result.rooms, f.state.document.value.rooms);
+    for (const key of ['tiers', 'pitboss', 'tournaments']) assert.equal(result[key], undefined);
+  }
+  assert.deepEqual(f.state.writes, []);
+  await f.call('POST', 'room', { id: 'one', state: 'live', expectedRevision: 'studio-original' });
+  assert.equal(f.state.document.value.rooms[0].state, 'live');
+  for (const key of ['tiers', 'pitboss', 'tournaments']) assert.equal(Object.hasOwn(f.state.document.value, key), false);
+});
+
+test('active lane requires admin and a current revision; it preserves the other administration data',async () => {
+  const f=fixture(),body={lane:'mobile-phone',expectedRevision:'studio-original'};
+  const handler=f.data.handlers.get('POST /studio/api/admin/game-lane');
+  await assert.rejects(handler({...f.context(body),actor:{user:'player',role:'player'}}),error=>error.statusCode===403);
+  await assert.rejects(f.call('POST','game-lane',{...body,lane:'unknown'}));
+  assert.equal(f.state.writes.length,0);
+  const before=structuredClone(f.state.document.value);
+  assert.deepEqual(await f.call('POST','game-lane',body),{ok:true,revision:'studio-new'});
+  assert.deepEqual(f.state.document.value,{...before,gameLane:'mobile-phone',gameLanes:SAVED_GAME_LANES});
+  await assert.rejects(f.call('POST','game-lane',{...body,lane:'original'}),error=>error.statusCode===409);
+  assert.equal(f.state.document.value.gameLane,'mobile-phone');
+});
+
+test('lane creation and removal enforce role, CAS, replacement and preserve shared state', async () => {
+  const f = fixture(), definition = { ...SAVED_GAME_LANES[0], id: 'mobile-two', label: 'Second mobile' };
+  const body = { definition, expectedRevision: 'studio-original' };
+  for (const action of ['game-lanes/create', 'game-lanes/remove']) {
+    await assert.rejects(f.data.handlers.get(`POST /studio/api/admin/${action}`)({ ...f.context(body), actor: { user: 'viewer', role: 'reader' } }), e => e.statusCode === 403);
+  }
+  await assert.rejects(f.call('POST', 'game-lanes/create', { ...body, expectedRevision: 'stale' }), e => e.statusCode === 409);
+  await f.call('POST', 'game-lanes/create', body);
+  assert.deepEqual(f.state.document.value.gameLanes, [...SAVED_GAME_LANES, definition]);
+  assert.equal(f.state.document.value.gameLane, 'mobile-phone');
+  await assert.rejects(f.call('POST', 'game-lanes/create', { ...body, expectedRevision: 'studio-new' }));
+  await assert.rejects(f.call('POST', 'game-lanes/remove', { lane: 'mobile-phone', replacementLane: null, expectedRevision: 'studio-new' }));
+  await f.call('POST', 'game-lanes/remove', { lane: 'mobile-phone', replacementLane: 'mobile-two', expectedRevision: 'studio-new' });
+  assert.equal(f.state.document.value.gameLane, 'mobile-two');
+  assert.deepEqual(f.state.document.value.rooms, [{ id: 'one', state: 'preview' }]);
+  await f.call('POST', 'game-lanes/remove', { lane: 'mobile-two', replacementLane: null, expectedRevision: 'studio-new' });
+  assert.deepEqual(f.state.document.value.gameLanes, []);
+  assert.equal(f.state.document.value.gameLane, null);
+  await f.call('POST', 'game-lanes/create', { ...body, expectedRevision: 'studio-new' });
+  assert.equal(f.state.document.value.gameLane, 'mobile-two');
+  assert.ok(f.state.writes.every(write => write.kind === 'administration'));
+});
+
+test('voice readouts preserve four dealers but only bind human reviews to the exact complete media/text/index/calibration identity', async () => {
+  const f = fixture();
+  f.state.document.value.voiceReview = { astrid: { goodluck: 'approved' } };
+  let out = await f.call('GET','voicelines');
+  assert.equal(out.dealers.length, 4); assert.equal(out.revision, 'studio-original');
+  let line = out.dealers.find(row => row.dealer === 'astrid').lines[0];
+  assert.equal(line.review, null); assert.equal(line.reviewState, 'unbound-or-changed-media');
+  assert.equal(line.productionApproved, false);
+  f.state.document.value.voiceReview.astrid.goodluck = { verdict: 'approved', identity: structuredClone(voiceIdentity), by: 'human-reviewer', at: '2026-10-03T00:00:00.000Z' };
+  out = await f.call('GET','voicelines');
+  assert.equal(out.dealers.find(row => row.dealer === 'astrid').lines[0].review, 'approved');
+  for (const key of Object.keys(voiceIdentity)) {
+    const old = f.state.voices.dealers[1].lines[0].identity[key];
+    f.state.voices.dealers[1].lines[0].identity[key] = key === 'audioDelayMs' ? old + 1 : 'f'.repeat(64);
+    line = (await f.call('GET','voicelines')).dealers[1].lines[0];
+    assert.equal(line.review, null, `${key} invalidates prior review`);
+    assert.equal(line.productionApproved, false);
+    f.state.voices.dealers[1].lines[0].identity[key] = old;
+  }
+  assert.deepEqual(f.state.writes, []);
+});
+
+test('voice review requires admin, exact registered line/hash set and administration CAS; hash alone never approves', async () => {
+  const f = fixture(), handler = f.data.handlers.get('POST /studio/api/admin/voiceline-review');
+  const body = { dealer: 'astrid', line: 'goodluck', verdict: 'approved', expectedIdentity: structuredClone(voiceIdentity), expectedRevision: 'studio-original' };
+  const context = role => ({ ...f.context(body), actor: { user: 'reviewer', role } });
+  for (const role of ['reader','staff','player']) await assert.rejects(handler(context(role)), error => error.statusCode === 403);
+  for (const patch of [{ dealer: 'unknown' }, { line: 'does-not-exist' }, { verdict: 'auto-approved' },
+    { expectedIdentity: { ...voiceIdentity, audioSha256: 'f'.repeat(64) } }, { expectedRevision: 'stale' }, { actor: 'spoofed' }])
+    await assert.rejects(f.call('POST','voiceline-review', { ...body, ...patch }));
+  assert.deepEqual(f.state.writes, []);
+  f.state.voices.dealers[1].lines[0].reviewable = false;
+  await assert.rejects(handler(context('admin')), error => error.statusCode === 409);
+  f.state.voices.dealers[1].lines[0].reviewable = true;
+  assert.deepEqual(await handler(context('admin')), { ok: true, revision: 'studio-new' });
+  const review = f.state.document.value.voiceReview.astrid.goodluck;
+  assert.deepEqual(review, { verdict: 'approved', identity: voiceIdentity, by: 'reviewer', at: '2026-10-03T00:00:00.000Z' });
+  assert.equal(f.state.writes[0].options.actor, 'reviewer');
+  assert.equal(f.state.writes[0].kind, 'administration');
+  const stale = { ...body, expectedRevision: 'studio-original', verdict: 'rejected' };
+  await assert.rejects(f.call('POST','voiceline-review', stale), error => error.statusCode === 409);
+  f.state.voices.dealers[1].lines[0].identity = null; f.state.voices.dealers[1].lines[0].reviewable = false;
+  await f.call('POST','voiceline-review', { ...body, expectedIdentity: null, expectedRevision: 'studio-new', verdict: null });
+  assert.equal(f.state.document.value.voiceReview.astrid.goodluck, undefined);
+});
+test('room edit uses server actor and exact CAS; stale, spoofed and invalid edits do not save', async () => {
+  const f = fixture();
+  for (const body of [{ id: 'one', state: 'live', expectedRevision: 'stale' }, { id: 'one', state: 'anything', expectedRevision: 'studio-original' }, { id: 'one', state: 'live', expectedRevision: 'studio-original', actor: 'attacker' }]) {
+    await assert.rejects(f.call('POST','room',body));
+  }
+  assert.equal(f.state.writes.length, 0);
+  assert.deepEqual(await f.call('POST','room',{ id: 'one', state: 'live', expectedRevision: 'studio-original' }), { ok: true, revision: 'studio-new' });
+  assert.equal(f.state.writes[0].options.actor, 'operator');
+  assert.equal(f.state.writes[0].options.value.rooms[0].state, 'live');
+});
+test('pit and tournament do not accept arbitrary config/body fields or synthetic authority', async () => {
+  const f = fixture();
+  await assert.rejects(f.call('POST','pitboss',{ payout10x: true, streak5: true, randomWalkMin: 0, expectedRevision: 'studio-original' }));
+  await f.call('POST','pitboss',{ payout10x: true, streak5: false, randomWalkMin: 45, expectedRevision: 'studio-original' });
+  await f.call('POST','tournament',{ name: 'Test', format: '20 rounds', buyin: 0, pool: 1000, cap: 10, starts: 'Tonight', expectedRevision: 'studio-new' });
+  assert.equal(f.state.document.value.tournaments[0].state, 'draft');
+  assert.equal(f.state.document.value.tournaments[0].entries, 0);
+});
+test('partner metadata does not select credentials and incomplete runtime actions are absent', async () => {
+  const f = fixture(); f.state.rows = [{ id: 'x', scopes: '["launch"]', name: 'Partner' }];
+  assert.deepEqual((await f.call('GET','apikeys')).keys[0].scopes, ['launch']);
+  assert.ok(!/\b(?:key|secret)\b/.test(f.state.reads.at(-1)));
+  for (const action of ['players/password','players/status','apikeys/revoke','apikeys/credit','speech-qa','tier']) {
+    assert.equal(f.data.handlers.has(`POST /studio/api/admin/${action}`), false);
+  }
+});
+test('self change, invalid role and wrong server scope are denied before mutation', async () => {
+  const f = fixture();
+  await assert.rejects(f.call('POST','users/remove',{ username: 'Operator' }));
+  await assert.rejects(f.call('POST','users/role',{ username: 'someone', role: 'player' }));
+  await assert.rejects(f.data.handlers.get('GET /studio/api/admin/users')({ ...f.context(), scope: { ...scope, workspaceId: 'other' } }));
+  assert.equal(f.state.writes.length, 0);
+  await f.call('POST','users/role',{ username: 'someone', role: 'admin' });
+  assert.ok(f.state.writes.some(write => write.sql.startsWith('DELETE FROM lab_sessions')));
+});
+
+test('players expose an exact boolean password capability without changing account data',async()=>{
+  const f=fixture();f.state.rows=[{id:'local',passwordChangeAllowed:true},{id:'sqlite-fixture',passwordChangeAllowed:1},{id:'craig-only',passwordChangeAllowed:false},{id:'ambiguous',passwordChangeAllowed:'true'}];
+  const result=await f.call('GET','players');
+  assert.deepEqual(result.players.map(row=>row.passwordChangeAllowed),[true,true,false,false]);
+  assert.match(f.state.reads.at(-1),/EXISTS\(SELECT 1 FROM player_accounts WHERE player_accounts.player_id=players.id\)/);
+  assert.deepEqual(f.state.writes,[]);
+});
+
+test('Nora catalogue registration requires her saved dealer identity and staff role',async()=>{
+ const f=fixture(),body={definition:{...SAVED_GAME_LANES[0],id:'nora-room',label:'Nora',dealer:'nora',mediaCollection:'nora-presentation'},expectedRevision:'studio-original'};
+ f.state.project=createSeedProject();await assert.rejects(f.call('POST','game-lanes/create',body));assert.equal(f.state.writes.length,0);
+ f.state.project=addDealer(createSeedProject(),'nora','Nora');
+ await assert.rejects(f.data.handlers.get('POST /studio/api/admin/game-lanes/create')({...f.context(body),actor:{user:'viewer',role:'reader'}}),e=>e.statusCode===403);
+ await f.call('POST','game-lanes/create',body);assert.equal(f.state.document.value.gameLanes.at(-1).dealer,'nora');
+});
+
+
+test('removing a game lane referenced by any existing room is rejected before writes regardless of room state or operator', async () => {
+  for(const state of ['live','preview','pending']){
+    const f=fixture(),room={schemaVersion:2,id:'room-existing',name:'Existing',operatorId:'another-operator',presentationLaneId:'published-presentation',gameLaneId:'mobile-phone',state};
+    f.state.document.value.gameLanes=[...SAVED_GAME_LANES,{...SAVED_GAME_LANES[0],id:'spare'}];f.state.document.value.gameLane='spare';
+    f.state.document.value.rooms.push(room);const before=structuredClone(f.state.document);
+    await assert.rejects(f.call('POST','game-lanes/remove',{lane:'mobile-phone',replacementLane:'spare',expectedRevision:'studio-original'}),error=>error.statusCode===409);
+    assert.deepEqual(f.state.document,before);assert.deepEqual(f.state.writes,[]);
+    await f.call('POST','game-lanes/remove',{lane:'spare',replacementLane:'mobile-phone',expectedRevision:'studio-original'});
+    assert.equal(f.state.document.value.gameLane,'mobile-phone');assert.deepEqual(f.state.document.value.rooms,before.value.rooms);
+  }
+});
+
+
+test('config exposes only validated saved dealer IDs and labels after authorization without writing', async () => {
+  const f=fixture();f.state.project=addDealer(createSeedProject(),'linnea','Linnea');
+  f.state.project.dealers.find(row=>row.id==='linnea').privateNotes='private metadata';
+  const result=await f.call('GET','config');
+  assert.deepEqual(result.savedDealers,f.state.project.dealers.map(({id,label})=>({id,label})));
+  assert.doesNotMatch(JSON.stringify(result.savedDealers),/private metadata|privateNotes|lines|voice/);
+  assert.deepEqual(f.state.writes,[]);
+  const before=f.state.projectReads;
+  await assert.rejects(f.data.handlers.get('GET /studio/api/admin/config')({...f.context(),actor:{user:'player',role:'player'}}),e=>e.statusCode===403);
+  assert.equal(f.state.projectReads,before);
+});
+
+test('missing, unreadable or invalid saved dealer registry is explicit null with no seeded fallback or raw error', async () => {
+  for(const mode of ['missing','unreadable','duplicate','label','id']){
+    const f=fixture();f.state.project=createSeedProject();
+    if(mode==='missing')f.state.project=null;
+    if(mode==='unreadable')f.state.projectReadError=true;
+    if(mode==='duplicate')f.state.project.dealers.push({...f.state.project.dealers[0]});
+    if(mode==='label')f.state.project.dealers[0].label='Bad\nlabel';
+    if(mode==='id')f.state.project.dealers[0].id='constructor';
+    const result=await f.call('GET','config');
+    assert.equal(result.savedDealers,null,mode);assert.equal(result.revision,'studio-original');
+    assert.doesNotMatch(JSON.stringify(result),/private database details/);assert.deepEqual(f.state.writes,[]);
+  }
+});
+
+test('empty and custom saved registries require no built-in dealers or game lanes',async()=>{
+  for(const project of [createEmptyProject(),addDealer(createEmptyProject(),'linnea','Linnea')]){
+    const f=fixture();f.state.project=project;
+    delete f.state.document.value.gameLane;delete f.state.document.value.gameLanes;
+    const result=await f.call('GET','config');
+    assert.deepEqual(result.savedDealers,project.dealers.map(({id,label})=>({id,label})));
+    assert.deepEqual(result.gameLanes,[]);assert.equal(result.gameLane,null);assert.deepEqual(f.state.writes,[]);
+  }
+});
+
+test('registered dealers control voice inventory and permit exact review of a new dealer',async()=>{
+ const f=fixture();f.state.project={dealers:[{id:'dragan',label:'Dragan'}]};
+ f.state.voices.dealers.push({...structuredClone(f.state.voices.dealers[1]),dealer:'dragan',name:'Dragan'});
+ const out=await f.call('GET','voicelines');assert.deepEqual(out.dealers.map(row=>row.dealer),['dragan']);
+ await f.call('POST','voiceline-review',{dealer:'dragan',line:'goodluck',verdict:'approved',expectedIdentity:voiceIdentity,expectedRevision:'studio-original'});
+ assert.equal(f.state.document.value.voiceReview.dragan.goodluck.verdict,'approved');
+ await assert.rejects(f.call('POST','voiceline-review',{dealer:'astrid',line:'goodluck',verdict:'approved',expectedIdentity:voiceIdentity,expectedRevision:'studio-new'}));
+ f.state.project=null;await assert.rejects(f.call('GET','voicelines'),e=>e.statusCode===503);
+});
+test('tier and new lane assignments reject removed identities and accept a saved playable Dragan',async()=>{
+ const f=fixture({canAssignDealer:async id=>id==='dragan'});f.state.project={dealers:[{id:'dragan',label:'Dragan'}]};
+ await assert.rejects(f.call('POST','game-lanes/create',{definition:{...SAVED_GAME_LANES[0],id:'removed',dealer:'unregistered',mediaCollection:'unregistered-presentation'},expectedRevision:'studio-original'}));
+ await f.call('POST','tier',{tier:'classic',dealer:'dragan',expectedRevision:'studio-original'});assert.equal(f.state.document.value.tiers.classic,'dragan');
+ f.state.project={dealers:[]};await assert.rejects(f.call('POST','tier',{tier:'classic',dealer:'dragan',expectedRevision:'studio-new'}));
+ assert.equal(f.state.writes.length,1);
+});

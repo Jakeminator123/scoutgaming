@@ -4,7 +4,7 @@ import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {createServer} from 'node:http';
-import {createStudioDocumentApi} from '../lab/lib/studio-document-api.mjs';
+import {createStudioDocumentApi} from '../apps/studio/lib/studio-document-api.mjs';
 import {createSeedProject, validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
@@ -18,7 +18,7 @@ const eventId = 'deal.player.left';
 const scope = {environment: 'test', workspaceId: 'admin-drafts-fixture'};
 const pagePath = '/admin/events?dealer=vera&operator=fixture-company&table=fixture-room&composition=fixture-composition&game=blackjack&event=' + eventId + '&tab=event';
 const root = fileURLToPath(new URL('..', import.meta.url));
-const require = createRequire(new URL('../lab/package.json', import.meta.url));
+const require = createRequire(new URL('../apps/studio/package.json', import.meta.url));
 const {build} = require('esbuild');
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 let bundlePromise;
@@ -28,7 +28,7 @@ function browserBundle() {
     stdin: {contents: `
       import React from 'react';
       import {createRoot} from 'react-dom/client';
-      import {ControlEventsPage} from './lab/components/control-events-page.tsx';
+      import {ControlEventsPage} from './apps/studio/components/control-events-page.tsx';
       async function mount() {
         const response = await fetch('/studio/api/project');
         if (!response.ok) throw Error('Fixture project could not be read');
@@ -44,11 +44,11 @@ function browserBundle() {
     `, resolveDir: root, loader: 'tsx'},
     bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic',
     external: ['/composition-runtime/compositor.js'],
-    outfile: resolve(root, 'fixture.js'), nodePaths: [resolve(root, 'lab/node_modules')],
-    alias: {'react': resolve(root, 'lab/node_modules/react'), 'react-dom': resolve(root, 'lab/node_modules/react-dom'),
-      'next/link': resolve(root, 'lab/client/runtime/navigation.tsx'),
-      'next/navigation': resolve(root, 'lab/client/runtime/navigation.tsx'),
-      'next/image': resolve(root, 'lab/client/runtime/image.ts')},
+    outfile: resolve(root, 'fixture.js'), nodePaths: [resolve(root, 'apps/studio/node_modules')],
+    alias: {'react': resolve(root, 'apps/studio/node_modules/react'), 'react-dom': resolve(root, 'apps/studio/node_modules/react-dom'),
+      'next/link': resolve(root, 'apps/studio/client/runtime/navigation.tsx'),
+      'next/navigation': resolve(root, 'apps/studio/client/runtime/navigation.tsx'),
+      'next/image': resolve(root, 'apps/studio/client/runtime/image.ts')},
     define: {'process.env.NODE_ENV': '"production"', 'process.env.NEXT_PUBLIC_LAB_BASE_PATH': '"/studio"', 'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE': '"1"'},
     logLevel: 'silent',
   });

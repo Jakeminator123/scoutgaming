@@ -42,7 +42,8 @@ async function privateFixture(t, values) {
 async function runtimeFixture(t) {
   const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-connection-repo-test-'));
   const source = fileURLToPath(new URL('../../../', import.meta.url));
-  for (const directory of ['web', 'lab']) await symlink(join(source, directory), join(repoRoot, directory), process.platform === 'win32' ? 'junction' : 'dir');
+  await mkdir(join(repoRoot, 'apps'), {recursive: true});
+  for (const directory of ['web', 'apps/studio']) await symlink(join(source, directory), join(repoRoot, directory), process.platform === 'win32' ? 'junction' : 'dir');
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   return repoRoot;
 }
@@ -177,7 +178,7 @@ test('child environments separate credentials, empty provider settings and use d
   assert.equal(specs.product.env.CROUPIER_GENERATIONS_DIR, undefined);
   assert.equal(specs.product.env.CROUPIER_PRESENTATION_STUDIO_DIR, undefined);
   assert.equal(specs.lab.env.LAB_STUDIO_DATA_DIR, undefined);
-  assert.equal(specs.lab.cwd, join(configuration.repoRoot, 'lab'));
+  assert.equal(specs.lab.cwd, join(configuration.repoRoot, 'apps', 'studio'));
   assert.match(specs.lab.args.join(' '), /next.* start .*--port 4197/);
   assert.equal(specs.product.env.OPENCLAW_API_KEY, 'fixture-gateway-only');
   assert.equal(specs.product.env.OPENCLAWAPI_KEY, '');
@@ -431,10 +432,10 @@ test('the coordinated local pair receives one explicit absolute Astrid video arc
 test('separate private speech file supplies the scoped endpoint after the base files', async t => {
   const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-speech-config-test-'));
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
-  await mkdir(join(repoRoot, 'lab'));
+  await mkdir(join(repoRoot, 'apps', 'studio'), {recursive: true});
   await writeFile(join(repoRoot, '.env'), 'CARTESIA_API_KEY=fixture-root-cartesia\nRUNPOD_API_KEY=fixture-root-runpod\nRUNPOD_ENDPOINT_ID=legacy-root-endpoint\n');
-  await writeFile(join(repoRoot, 'lab', '.env.local'), 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=earlier-scoped-endpoint\n');
-  await writeFile(join(repoRoot, 'lab', '.env.generated-speech.local'), 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=dedicated-scoped-endpoint\n');
+  await writeFile(join(repoRoot, 'apps', 'studio', '.env.local'), 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=earlier-scoped-endpoint\n');
+  await writeFile(join(repoRoot, 'apps', 'studio', '.env.generated-speech.local'), 'CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID=dedicated-scoped-endpoint\n');
   const { configuration, report } = loadPrivateConnection({ repoRoot, env: {}, generatedSpeech: true });
   assert.equal(configuration.speechEndpointId, 'dedicated-scoped-endpoint');
   assert.equal(configuration.cartesiaKey, 'fixture-root-cartesia');
@@ -480,9 +481,9 @@ test('cloud storage needs explicit opt-in and forwards each credential only to i
 
 test('dedicated private cloud storage file is loaded last only after explicit opt-in; process environment wins', async t => {
   const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-storage-order-'));
-  t.after(() => rm(repoRoot, { recursive: true, force: true })); await mkdir(join(repoRoot, 'lab'));
+  t.after(() => rm(repoRoot, { recursive: true, force: true })); await mkdir(join(repoRoot, 'apps', 'studio'), {recursive: true});
   await writeFile(join(repoRoot, '.env'), 'CROUPIER_MEDIA_STORAGE=blob\nBLOB_READ_WRITE_TOKEN=vercel_blob_rw_OldStore_fixture\n');
-  await writeFile(join(repoRoot, 'lab', '.env.cloud-storage.local'), 'CROUPIER_MEDIA_STORAGE=blob\nBLOB_READ_WRITE_TOKEN=vercel_blob_rw_CurrentStore_fixture\n');
+  await writeFile(join(repoRoot, 'apps', 'studio', '.env.cloud-storage.local'), 'CROUPIER_MEDIA_STORAGE=blob\nBLOB_READ_WRITE_TOKEN=vercel_blob_rw_CurrentStore_fixture\n');
   assert.equal(loadPrivateConnection({ repoRoot, env: {} }).configuration.blobToken, '');
   const selected = loadPrivateConnection({ repoRoot, env: {}, cloudStorage: true });
   assert.equal(selected.configuration.blobToken, 'vercel_blob_rw_CurrentStore_fixture');

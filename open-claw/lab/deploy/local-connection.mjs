@@ -122,8 +122,8 @@ export function loadPrivateConnection({ repoRoot = REPO_ROOT, envFiles, env = pr
   if (typeof astridCamera !== 'boolean') throw new Error('astridCamera requires an explicit boolean opt-in.');
   if (typeof cloudStorage !== 'boolean') throw new Error('cloudStorage requires an explicit boolean opt-in.');
   repoRoot = resolve(repoRoot);
-  envFiles ??= [join(repoRoot, '.env'), join(repoRoot, 'lab', '.env.local'), join(repoRoot, 'lab', '.env.generated-speech.local'),
-    ...(cloudStorage ? [join(repoRoot, 'lab', '.env.cloud-storage.local')] : [])];
+  envFiles ??= [join(repoRoot, '.env'), join(repoRoot, 'apps', 'studio', '.env.local'), join(repoRoot, 'apps', 'studio', '.env.generated-speech.local'),
+    ...(cloudStorage ? [join(repoRoot, 'apps', 'studio', '.env.cloud-storage.local')] : [])];
   const values = {};
   const allowedKeys = [...PRIVATE_KEYS, ...(generatedSpeech ? GENERATED_SPEECH_KEYS : []), ...(astridCamera ? TRANSLATION_KEYS : []),
     ...(cloudStorage ? CLOUD_STORAGE_KEYS : [])];
@@ -418,8 +418,8 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
     },
     lab: {
       command: process.execPath,
-      args: [join(configuration.repoRoot, 'lab', 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)],
-      cwd: join(configuration.repoRoot, 'lab'),
+      args: [join(configuration.repoRoot, 'apps', 'studio', 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '--hostname', '127.0.0.1', '--port', String(labPort)],
+      cwd: join(configuration.repoRoot, 'apps', 'studio'),
       readyText: 'Ready in', dataDir: labData,
       env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('lab'), ...storageEnvironment, ...videoArchiveEnvironment, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(labPort),
         CROUPIER_GAME_ORIGIN: productUrl,
@@ -534,8 +534,8 @@ export async function startIsolatedConnection({ repoRoot = REPO_ROOT, envFiles, 
     }
     // Lissabon builds only after acquiring the same lease as every QA launcher.
     await prepare?.(session);
-    if (!fs.existsSync(join(repoRoot, 'lab', labDistDir, 'BUILD_ID'))) {
-      throw new Error('A verified Next production build is required; run npm --prefix lab run build before starting the isolated connection.');
+    if (!fs.existsSync(join(repoRoot, 'apps', 'studio', labDistDir, 'BUILD_ID'))) {
+      throw new Error('A verified Next production build is required; run npm --prefix apps/studio run build before starting the isolated connection.');
     }
     runDir = await fsPromises.mkdtemp(join(tmpdir(), 'croupier-openclaw-connection-'));
     const specs = childSpecifications(configuration, runDir, { productPort, labPort, studioDataDir, playerDataDir, streamLane, labDistDir, browserHostname, astridCamera });

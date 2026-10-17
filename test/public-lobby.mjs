@@ -6,9 +6,9 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, rm, symlink, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { publicLobbyFile, servePublicLobby, serveDesignPreview } from '../lab/lib/design-preview.mjs';
+import { publicLobbyFile, servePublicLobby, serveDesignPreview } from '../apps/studio/lib/design-preview.mjs';
 import { platformConfiguration, platformRoute } from '../packages/navigation/server/platform-routing.mjs';
-import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor } from '../lab/client/runtime/public-lobby-catalog.mjs';
+import { loadLobbyCatalog, lobbySelection, lobbyQuerySelection, playUrlFor } from '../apps/studio/client/runtime/public-lobby-catalog.mjs';
 
 function publication(slug, game = 'blackjack') {
   return { schemaVersion: 1, operator: { slug, name: `Bolag ${slug}` }, packageRevision: 2, rooms: [{
@@ -113,7 +113,7 @@ test('unavailable or malformed public data fails closed; empty and withdrawn roo
   await assert.rejects(loadLobbyCatalog({ fetchImpl: async path => Response.json(path === '/api/operators' ? directory : injected) }));
 });
 
-import { animateScrollTo } from '../lab/client/lobby/lib/scroll-motion.mjs';
+import { animateScrollTo } from '../apps/studio/client/lobby/lib/scroll-motion.mjs';
 
 test('cinematic scroll reaches its target and removes frames/listeners on finish, input or disposal', () => {
   for (const exit of ['complete', 'wheel', 'touchstart', 'keydown', 'pointerdown', 'unmount']) {
@@ -146,12 +146,12 @@ test('cinematic scroll reaches its target and removes frames/listeners on finish
 
 
 test('public lobby exposes one profile entry through the existing authenticated account surface', async () => {
-  const require = createRequire(new URL('../lab/client/package.json', import.meta.url));
-  const root = fileURLToPath(new URL('../lab/client/lobby/', import.meta.url));
+  const require = createRequire(new URL('../apps/studio/client/package.json', import.meta.url));
+  const root = fileURLToPath(new URL('../apps/studio/client/lobby/', import.meta.url));
   const {outputFiles} = await require('esbuild').build({stdin:{contents:
     "export {Header} from './components/header.tsx'; export {LobbyProvider} from './components/lobby-provider.tsx';",
     resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',jsx:'automatic',
-    alias:{'@':root,'next/link':fileURLToPath(new URL('../lab/client/runtime/navigation.tsx',import.meta.url))},
+    alias:{'@':root,'next/link':fileURLToPath(new URL('../apps/studio/client/runtime/navigation.tsx',import.meta.url))},
     external:['react','react-dom','/composition-runtime/compositor.js'],logLevel:'silent'});
   const module={exports:{}};
   new Function('require','module','exports',outputFiles[0].text)(require,module,module.exports);
@@ -168,8 +168,8 @@ test('public lobby exposes one profile entry through the existing authenticated 
 const browserModule = process.env.CROUPIER_BROWSER_FIXTURE_MODULE;
 test('dealer dialog returns keyboard focus to its own trigger after Escape and Swedish close button',
   {skip: browserModule ? false : 'Set CROUPIER_BROWSER_FIXTURE_MODULE for the isolated lobby browser check', timeout: 30_000}, async t => {
-    const require = createRequire(new URL('../lab/client/package.json', import.meta.url));
-    const root = fileURLToPath(new URL('../lab/client/lobby/', import.meta.url));
+    const require = createRequire(new URL('../apps/studio/client/package.json', import.meta.url));
+    const root = fileURLToPath(new URL('../apps/studio/client/lobby/', import.meta.url));
     const {outputFiles} = await require('esbuild').build({stdin: {contents: `
       import React from 'react';
       import {createRoot} from 'react-dom/client';
@@ -178,8 +178,8 @@ test('dealer dialog returns keyboard focus to its own trigger after Escape and S
       createRoot(document.getElementById('root')).render(<LobbyProvider><DealersSection/></LobbyProvider>);
     `, resolveDir: root, loader: 'tsx'}, bundle: true, write: false, format: 'esm', platform: 'browser', jsx: 'automatic',
     external: ['/composition-runtime/compositor.js'],
-    alias: {'@/lib/catalog.mjs': fileURLToPath(new URL('../lab/client/runtime/public-lobby-catalog.mjs', import.meta.url)),
-      '@': root, 'next/image': fileURLToPath(new URL('../lab/client/runtime/image.ts', import.meta.url))},
+    alias: {'@/lib/catalog.mjs': fileURLToPath(new URL('../apps/studio/client/runtime/public-lobby-catalog.mjs', import.meta.url)),
+      '@': root, 'next/image': fileURLToPath(new URL('../apps/studio/client/runtime/image.ts', import.meta.url))},
     define: {'process.env.NODE_ENV': '"production"'}, logLevel: 'silent'});
     const pack = publication('alpha');
     pack.rooms[0].dealers.push({...pack.rooms[0].dealers[0], id: 'oskar', label: 'Oskar'});

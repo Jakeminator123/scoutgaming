@@ -1,5 +1,42 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — Studios källrot apps/studio, lokalt 17 oktober 2026
+
+939 spårade filer har flyttats individuellt från lab till apps/studio på
+separat branch från speechsluthead7fa5e561. Vid flyttsteget bevarades
+ursprungliga body-/mediebytes; därefter följer exakta import-, rot-, guide-
+och ignoreanpassningar. Inga privata original, envfiler, node_modules eller
+äldre byggmappar har flyttats. /studio är samma tekniska basePath;
+/admin, /partner, /lobby och publika /lab-kompatibilitetsadresser består.
+
+Den appinterna okachade root-helpern bevarar både repo-cwd och app-cwd.
+SQL/bootstrap, Director/envordning och explicita envFiles/dataDir/
+repositoryRoot-ports består. Next-includes/excludes, Docker, CI och Vercels
+Studio-root följer tvånivåläget. Både gamla lab/data/env/probeskydd och nya
+apps/studio/data skyddas. Sessionsvakten behåller read-only kontroll även
+av gamla lab- och lissabon-guards. Produktregister/media kommer fortsatt
+från Neon/Blob; ingen migration, provider- eller molnändring ingår.
+
+Verifieringskvitto: Studio samt Admin/Lobby-typer är gröna,379 ändrade
+JavaScriptmoduler syntaxkontrollerade och befintlig inventering512/0orphans.
+Isolerat Studio-only-produktionsbygge med /studio och native-admin är grönt
+efter en verifierad intern Next-tracekeyrättning (samma filglobs, inga HTTPändringar).
+80 slutliga traces har inga saknade, privata eller gamla lab-filer: Admin81,
+Lobby27+3fonts, preview26, SQL samt worker/native/migrationer finns med.
+29 sanerade referenser gällde enbart spårad open-claw/lab/.env.example.
+Hookens återstående testloaders/mocknycklar följer nu verkliga imports utan
+borttagna assertions; den bevarade lab/project.json-proveniensen är oförändrad.
+Privatbootstrap skapar samma validerade target under nya app-roten, med
+oförändrade byte/hash/symlink-kontroller och orörda äldre privata filer.
+Director-verktygens resolver och baselinearkiv omfattar kanoniska packages/director.
+Befintligt verkligt launcherprov i samma spegel:1/1 grönt. Det särskilt godkända
+originalbygget med samma profil är också grönt:28 statiska sidor,80 slutliga
+traces med komplett closure och inga privata/saknade/gamla/externa källrötter.
+Ordinarie Git-hook kontrollerar staged diff och relevanta befintliga prov på
+dessa källor; full regression och drift samordnas separat. Ingen push. Game-serverns
+nuvarande web-källrot och dess framtida flytt är fortfarande separata.
+
+
 ## C3 — speechens källrot apps/speech, lokalt 17 oktober 2026
 
 Fem spårade filer är individuellt flyttade från apps/croupier-speech till

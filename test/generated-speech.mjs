@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
 import * as gameSpeech from '../web/generated-speech-runtime.mjs';
-import * as studioSpeech from '../lab/lib/generated-speech-server.mjs';
+import * as studioSpeech from '../apps/studio/lib/generated-speech-server.mjs';
 import { acquireGeneratedSpeechRuntime } from '../packages/presentation/server/generated-speech-runtime.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from '../packages/presentation/server/generated-speech-provider.mjs';
 import { validateSpeechPackage } from '../packages/presentation/contracts/speech-package.mjs';

@@ -24,6 +24,6 @@ export function checkTestCredentials(root) {
       }
     }
   };
-  for (const directory of ['test', 'lab/test']) walk(join(root,directory));
+  for (const directory of ['test', 'apps/studio/test']) walk(join(root,directory));
   return findings;
 }

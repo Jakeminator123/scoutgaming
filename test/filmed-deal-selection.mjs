@@ -4,7 +4,7 @@ import {createServer} from 'node:http';
 import {once} from 'node:events';
 import {DatabaseSync} from 'node:sqlite';
 import {createSeedProject,addDealer,defaultPresentationLane,normalizeProject} from '../packages/presentation/contracts/studio-model.mjs';
-import {createNeonProjectStore} from '../lab/lib/neon-project-store.mjs';
+import {createNeonProjectStore} from '../apps/studio/lib/neon-project-store.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';

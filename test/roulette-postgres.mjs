@@ -11,7 +11,7 @@ import {createOperatorStore} from '../packages/operators/server/operator-store.m
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 import {withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
-import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
+import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 
 async function publicationPoolChecks(pool) {
   const scope={environment:'roulette-pool-qa',workspaceId:randomUUID()};

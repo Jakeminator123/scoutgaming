@@ -1,7 +1,7 @@
 # Previewbyggkällor och isolerade prov
 
 `site/` är granskat, versionshanterat material som fortfarande kopieras av
-`lab/tools/prepare-preview.mjs`. Den äldre branchspecifika `/test`-byggaren
+`apps/studio/tools/prepare-preview.mjs`. Den äldre branchspecifika `/test`-byggaren
 är pensionerad. Sidans katalog och medier används endast i explicit isolerad
 offlinefixtur; de utgör inget produktregister.
 
@@ -17,8 +17,8 @@ som en tillgänglig produktionsspelare.
 Från reporoten:
 
 ```powershell
-node lab/tools/prepare-preview.mjs
-node --test --test-concurrency=4 lab/test/preview-prepare.test.mjs lab/test/preview-files.test.mjs
+node apps/studio/tools/prepare-preview.mjs
+node --test --test-concurrency=4 apps/studio/test/preview-prepare.test.mjs apps/studio/test/preview-files.test.mjs
 ```
 
 Välj och granska nytt material uttryckligen. Original, arbetsutkast och

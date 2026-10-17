@@ -4,13 +4,13 @@ import { randomUUID } from 'node:crypto';
 import { open,writeFile,mkdtemp,rm } from 'node:fs/promises';
 import { join,dirname,resolve,basename } from 'node:path';
 import { tmpdir } from 'node:os';
-import { inspectLayerMedia,inspectVerifiedLayerFile,LAYER_INSPECTION_LIMITS } from '../lab/lib/layer-media-inspection.mjs';
+import { inspectLayerMedia,inspectVerifiedLayerFile,LAYER_INSPECTION_LIMITS } from '../apps/studio/lib/layer-media-inspection.mjs';
 import { layerImage,layerAnimation,layerVideo,layerBlobFixture } from './fixtures/layer-media.mjs';
-import { createLayerUploadService } from '../lab/lib/layer-upload-service.mjs';
+import { createLayerUploadService } from '../apps/studio/lib/layer-upload-service.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';
-import { nativeStudioErrorResponse } from '../lab/lib/studio-native-runtime.mjs';
+import { nativeStudioErrorResponse } from '../apps/studio/lib/studio-native-runtime.mjs';
 
 async function media(t,bytes,contentType='image/png') {
   const fixture=await layerBlobFixture(cleanup=>t.after(cleanup),bytes,contentType);

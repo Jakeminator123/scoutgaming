@@ -103,7 +103,7 @@ revision/hash; lokal disk eller äldre Blob-JSON används inte som reserv.
 för detta läge. Lokala katalogfiler och äldre indexinställningar hör endast
 till uttryckliga authoring-/importverktyg eller isolerade tester. Ingen
 envändring eller fysisk radering av bevarade lokala data följer av denna text.
-Vanlig `node lab/start.mjs` öppnar publicerad `/lobby`; `--no-open` skriver
+Vanlig `node apps/studio/start.mjs` öppnar publicerad `/lobby`; `--no-open` skriver
 adressen utan serverstart eller profilinläsning. Bara `--offline` startar en
 temporär fixture utan externa tjänster. `--skip-build` kräver `--offline`;
 de tidigare `--cloud-storage`, `--astrid-camera` och `--check` avvisas.
@@ -127,8 +127,8 @@ Det valda arbetsflödet är grön PR → main → test på ordinarie produktions
 
 | Profil/miljö | Verifierat antal | Loader, prioritet och bygge/runtime |
 | --- | --- | --- |
-| Root `.env.local` | 52 namn | Explicit valda hjälpverktyg, bland annat providerprofil. Vanlig `lab/start.mjs` läser **inte** filen. `readProfile` ärver inte processnycklar. |
-| `lab/.env.local` | 47 namn | Den tidigare anslutna startens prioritet var root `.env` → Lab local → valfri generated-speech → opt-in cloud-storage → processmiljö. Vanlig `lab/start.mjs` använder inte längre denna profil. Next-byggen och uttryckliga verktyg har sina egna loaderkontrakt. |
+| Root `.env.local` | 52 namn | Explicit valda hjälpverktyg, bland annat providerprofil. Vanlig `apps/studio/start.mjs` läser **inte** filen. `readProfile` ärver inte processnycklar. |
+| `lab/.env.local` | 47 namn | Den tidigare anslutna startens prioritet var root `.env` → Lab local → valfri generated-speech → opt-in cloud-storage → processmiljö. Vanlig `apps/studio/start.mjs` använder inte längre denna profil. Next-byggen och uttryckliga verktyg har sina egna loaderkontrakt. |
 | `lab/.env.cloud-storage.local` | 3 namn, oförändrad vid kvittot | Bevarad privat lagringsprofil. Det tidigare `--cloud-storage`-läget är avvecklat; filen aktiverar inte produktlagring via vanlig lokal start. |
 | `.env.emil` | 5 EMIL_-namn, oförändrad | Endast explicit profilkontroll; ingen automatisk runtimekoppling. |
 | Vercel Production/Preview/Development | 65 poster, 56 unika namn; scope 56/30/5 | Metadata utan dekryptering, inga branchspecifika poster. En post kan ha flera scopes. `vercel.json` anger web, studio och speech. Plattformen tillhandahåller valt scopes processmiljö för bygge/runtime. |
@@ -141,7 +141,7 @@ Lab-bygget kan läsa sin env-fil även när isolerade barnprocesser filtrerar
 bort ett namn; filtrering är därför inte ensam grund för borttagning.
 
 `CROUPIER_LAB_BASE_PATH` och `CROUPIER_STUDIO_NATIVE_ADMIN` läses vid bygge
-i `lab/next.config.mjs`. Endast den härledda publika sökvägen
+i `apps/studio/next.config.mjs`. Endast den härledda publika sökvägen
 `NEXT_PUBLIC_LAB_BASE_PATH` skickas till klienten. Hemligheter förblir
 serverinställningar. Isolerad lokal start blockerar senare privata env-filläsningar.
 `readSettings` läser valda filer följt av processmiljö; Studio anger root
@@ -210,7 +210,7 @@ bedömda separat från aktiva runtime-läsare.
 | `BLOB_READ_WRITE_TOKEN`, `CROUPIER_MEDIA_STORAGE`, `CROUPIER_ZONES_DATABASE_URL` | cloud-media-store.mjs, zone-cloud-store.mjs | Driftens Blob-/zoninställningar; vanliga lokala starter kopplar inte in dessa tjänster. |
 | `CROUPIER_MEDIA_BLOB_INDEX` | media-blob-index.mjs, uttryckliga verktyg/tester | Äldre filindexinställning; ersatt av scoped Neon-katalog i produktens runtime. |
 | `CROUPIER_DATABASE`, `CROUPIER_GAME_DATABASE_URL`, `CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_NEON_POLICY`, `CROUPIER_STUDIO_WORKSPACE_ID` | studio-native-runtime.mjs, ops/cloud/config.mjs; game-URL även CI | Behåll exakta databas-/tjänstgränser. |
-| `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och lab/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
+| `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_REMOTE_UI`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | packages/server-transport/configuration.mjs och apps/studio/lib/remote-ui.mjs | Behåll per miljö; kopiera inte ingress till Preview. |
 | `CROUPIER_LAB_BASE_PATH`, `CROUPIER_STUDIO_NATIVE_ADMIN`, `CROUPIER_VERCEL_UI`, `CROUPIER_VERCEL_UNIFIED_UI` | Next-konfiguration, middleware och serverrouting; base path/native-admin även bygge | Behåll; ändring kan kräva nytt bygge. |
 | `BO_URL`, `CROUPIER_GAME_ORIGIN`, `CROUPIER_PUBLIC_GAME_PATH`, `CROUPIER_VERCEL_TRANSPORT_ORIGIN`, `LAB_PUBLIC_URL`, `PUBLIC_URL` | ops/cloud/config.mjs och proxy; GAME_ORIGIN även player-ui-build.mjs | Behåll aktiva kompatibilitetsnamn. |
 | `CROUPIER_LISSABON_PROFILES`, `CROUPIER_PLAYER_ACCOUNTS`, `CROUPIER_STREAM_LANE`, `DEMO_GUEST_ACCESS` | web/server.mjs, ops/cloud/config.mjs | Behåll; isolerad start sätter egna värden. |
@@ -357,7 +357,7 @@ skriver inte adressen till disk eller logg. Behåll injicerad databas även när
 testets värdnamn behöver sluta med `neon.tech` för att pröva valideringen.
 
 `test/test-credential-fixtures.mjs` körs i ordinarie full hook/CI och stoppar
-incheckade Neon-adresser med användare/lösenord i `test/` och `lab/test/`.
+incheckade Neon-adresser med användare/lösenord i `test/` och `apps/studio/test/`.
 Rapporten innehåller bara filsökväg, rad och felkod. Skyddet är avgränsat till
 återfallet från incident 38176586 och ersätter inte GitGuardian eller skyddar
 mot alla typer av falsklarm. Lägg inte till scannerundantag för att gömma en
@@ -535,7 +535,7 @@ Vid den tidigare env-granskningen rättades rotens lokala
 `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` mot Vercels publika post; labbets kopia
 matchade då redan posten. Vercel-posten togs senare bort enligt nedan.
 `LAB_PARTNER_*` används genom en dynamisk kompatibilitetsmappning i
-`lab/lib/partner-observer.mjs`; en sökning efter fullständiga namn missar detta.
+`apps/studio/lib/partner-observer.mjs`; en sökning efter fullständiga namn missar detta.
 `GEMINI_API_KEY` saknar referenser i mains källkod och ingår inte i den isolerade
 startarens allowlist. Den har tagits bort från båda aktiva lokala env-filerna,
 tillsammans med tomma äldre `RUNPOD_ENDPOINT_ID` och plattformsägda `VERCEL`.
@@ -587,7 +587,7 @@ samt sex tomma plain-rader i Production som ingen Vercel-tjänst skiljer från
 saknade värden: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `LAB_REMOTE_URL`,
 `LAB_REMOTE_TOKEN`, `CROUPIER_PRESENTATION_DIRECTOR_TOKEN` och `NODE_OPTIONS`.
 Kvar med avsikt: tomma `CARTESIA_API_KEY` och `RUNPOD_API_KEY` (blockerade för
-`vercel-lab-ui`; `lab/lib/voice-preview.mjs` skiljer tomt från saknat),
+`vercel-lab-ui`; `apps/studio/lib/voice-preview.mjs` skiljer tomt från saknat),
 `CROUPIER_MEDIA_STORE_ID` (managed, hör till Blob-kopplingen; läses inte av
 koden). Den då kvarvarande `CROUPIER_MEDIA_WEBHOOK_PUBLIC_KEY` togs bort
 13 oktober enligt nedan. Även `DEMO_GUEST_ACCESS`, `CROUPIER_GENERATED_SPEECH_PREVIEW`
@@ -610,7 +610,7 @@ har olika konsumenter och får inte slås ihop genom generell env-pull.
 inte återinföras från äldre kopior. Kompatibel inläsning finns ännu kvar i
 `partner-observer.mjs`. Vanlig produktstart läser inga privata profilfiler;
 äldre generated-speech-/cloud-storage-prioritet gäller endast verktyg som
-uttryckligen använder den loadern, inte `lab/start.mjs`.
+uttryckligen använder den loadern, inte `apps/studio/start.mjs`.
 Återställningskopior hör till rotens kanoniska `arkiv/<datum>/<ursprunglig-sökväg>`
 enligt [AGENTS.md](../AGENTS.md), och väljs aldrig automatiskt som env-källa.
 Äldre kopiors existens, innehåll eller flytt verifieras inte genom denna
@@ -775,9 +775,9 @@ finns i [Git före städningen](https://github.com/Jakeminator123/github-work/bl
 
 ### Origins och privata medier
 
-Källinventeringen omfattar de aktiva `lab/lib/cloud-media-store.mjs` och
-`lab/lib/video-registry.mjs` för både Render och Studio samt Studios
-`lab/lib/legacy-clip-inventory.mjs`. De har inte flyttats eller tagits bort.
+Källinventeringen omfattar de aktiva `apps/studio/lib/cloud-media-store.mjs` och
+`apps/studio/lib/video-registry.mjs` för både Render och Studio samt Studios
+`apps/studio/lib/legacy-clip-inventory.mjs`. De har inte flyttats eller tagits bort.
 Studio läser även `LAB_PUBLIC_URL` som betrodd proxy-origin.
 `CROUPIER_DATA_DIR` förekommer i äldre lokala verktyg men är ingen
 inventeringsreserv i gemensam Neon-drift. Detta kräver ingen
@@ -832,13 +832,13 @@ finns i [handoffen](JOHN-HANDOFF.md) och [återställningsguiden](ENVIRONMENT-RE
 | --- | --- | --- | --- | --- |
 | Render: spel och aktiva runtime-/kommandofunktioner | `NODE_ENV=production`, `CROUPIER_CLOUD_LAUNCH=pilot`, `CROUPIER_CLOUD_LAYOUT=single-origin`, `CROUPIER_LAB_BASE_PATH=/studio` (även Docker-bygget), `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `OPENCLAW_PRODUCT_SPEECH_URL`, `OPENCLAW_PRODUCT_SPEECH_TOKEN` | Bootstrap endast vid uttryckligt separat tomdatabasuppdrag; befintliga produktionskonton bevaras | Aktiv produktion kräver postgres/Neon/Blob och saknar CROOT; monterad QA använder sin exakta isolerade CROOT | Render sätter `PORT`, `RENDER_EXTERNAL_URL` och `RENDER_GIT_COMMIT`; den sista används enbart som sanerat runtime-SHA-kvitto i /__cloud/version, utan manuell Git-fallback |
 | Vercel: spel/Studio-ingång (`apps/web`) | `CROUPIER_VERCEL_UI=1`, `CROUPIER_PUBLIC_ORIGIN`, `CROUPIER_BACKEND_ORIGIN`, `CROUPIER_LAB_UI_ORIGIN`, `CROUPIER_VERCEL_INGRESS_SECRET` | – | Gemensam serverägd Neon-/scope-/lagringspolicy; `CROUPIER_GAME_URL` är äldre flagga-av-kompatibilitet | – |
-| Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–005; SSR läser Neon. `RUNWAY_API_KEY` (valfri, server-only) aktiverar **Dealers & klipp → Skapa material** på `/control/clips?view=generate` med vald dealer; utan den visas facken men inga Runway-jobb kan startas. Nyckeln läses av `lab/lib/runway-client.mjs`, skickas bara till `https://api.dev.runwayml.com` och aldrig till Blob eller nedladdningsadresser. Forge kräver dessutom den deploy-valfria Studio-migrationen 008 (`forge_dealers`, `forge_jobs`). | – |
+| Vercel: native Studio (`lab`) | `CROUPIER_LAB_REMOTE_UI=1`, samma origins/ingress, `CROUPIER_LAB_BASE_PATH=/studio`, `CROUPIER_STREAM_LANE=lissabon-stream-lane`, `BO_URL` | – | Gemensam `CROUPIER_STUDIO_NEON_POLICY`, native-adminflagga, explicit scope/game-Neon och Studio 001–005; SSR läser Neon. `RUNWAY_API_KEY` (valfri, server-only) aktiverar **Dealers & klipp → Skapa material** på `/control/clips?view=generate` med vald dealer; utan den visas facken men inga Runway-jobb kan startas. Nyckeln läses av `apps/studio/lib/runway-client.mjs`, skickas bara till `https://api.dev.runwayml.com` och aldrig till Blob eller nedladdningsadresser. Forge kräver dessutom den deploy-valfria Studio-migrationen 008 (`forge_dealers`, `forge_jobs`). | – |
 | Frontendens spelarbygge (`apps/web/tools/player-ui-build.mjs`, tjänst `vercel-entry`) | `CROUPIER_GAME_ORIGIN` = spelserverns exakta HTTPS-origin utan snedstreck på slutet | – | Krävs när bygget anropas utan explicit origin | – |
 | Render: separat GPU-relä (ännu ej driftsatt) | `WORKER_SECRET`, annat `TICKET_SECRET` (båda minst 32 tecken), `ALLOWED_ORIGINS` = exakta spel-origins | – | – | Render sätter `PORT` |
 | Render: OpenClaw Director (separat Blueprint) | `LAB_API_TOKEN` (genereras), `OPENCLAW_API_KEY` (från privata Gateway) | – | `OPENCLAW_PRODUCT_SPEECH_TOKEN` krävs för produktens talendpoint och anges privat; `OPENCLAW_SPEECH_AGENT=openclaw/croupier-speech`, `HOST`, `PORT`, `LAB_DATA_DIR`, `OPENCLAW_HOSTPORT` eller `OPENCLAW_BASE_URL`, `OPENCLAW_AGENT`, `OPENCLAW_CHAT_AGENT`, `OPENCLAW_TIMEOUT_MS`, `OPENCLAW_DASHBOARD_ENABLED` enligt Blueprint | Produkt-token ska skilja sig från `LAB_API_TOKEN`; Blueprint kopplar Director till Gateway |
 | Render: privat OpenClaw Gateway | Separata `OPENCLAW_API_KEY` och `OPENCLAW_MODEL_API_KEY` | – | `OPENCLAW_MODEL_BASE_URL`, `OPENCLAW_MODEL_ID`, `OPENCLAW_MODEL_API`, `OPENCLAW_GATEWAY_PORT`, `OPENCLAW_STATE_DIR`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_DASHBOARD_ORIGIN`, lokalt endast `OPENCLAW_DASHBOARD_ALLOW_LOOPBACK`; `CROUPIER_SPEECH_VISION` är opt-in | Blueprint anger icke-hemliga standardvärden; två nycklar anges privat |
 | RunPod: äldre separat GPU-testworker | Inga egna env-nycklar krävs av imagen | – | `AVATAR_ID` för annan avatar; `NVIDIA_DRIVER_CAPABILITIES`, `NVENC` endast om GPU-konfigurationen kräver det | Endpoint-id, API-nyckel och worker-inställningar hanteras i RunPod och av anropande tjänst |
-| Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `lab/.env.example`; nyckelnamnen speglas i JSON-listan | – |
+| Lokal Lab/OpenClaw | Inga globala krav; beror på anslutningssätt | – | Se `open-claw/lab/.env.example` och `apps/studio/.env.example`; nyckelnamnen speglas i JSON-listan | – |
 | GitHub Actions: Studio-migreringsgrind | – | – | `CROUPIER_GAME_DATABASE_URL` är repository secret och läses av readiness-kontrollen vid push till main; `CROUPIER_MIGRATION_CONFIRM` är lokal operatörsbekräftelse och sätts aldrig i CI eller Vercel | – |
 
 `tools/check-migration-readiness.mjs` läser `CROUPIER_GAME_DATABASE_URL` som
@@ -997,11 +997,11 @@ Render-spelets villkorliga grupper:
   disk och lokala filprofiler har egna livscykler.
 - Bakgrundszoner: `CROUPIER_ZONES_DATABASE_URL` kräver aktiv privat media
   och en separat TLS-skyddad Postgres-anslutning. Den skickas endast till
-  Lab. Schemat i `lab/lib/zone-cloud-schema.sql` installeras uttryckligen;
+  Lab. Schemat i `apps/studio/lib/zone-cloud-schema.sql` installeras uttryckligen;
   det är installerat i zonprojektet efter separat QA den 29 september.
   Generella `DATABASE_URL`/`POSTGRES_URL` används aldrig som reserv.
   Spelkonton och saldon använder en separat game/auth-Neon-databas.
-- Lokal provkörning: `node lab/start.mjs --offline --no-open` startar endast
+- Lokal provkörning: `node apps/studio/start.mjs --offline --no-open` startar endast
   isolerade temporära testdata, utan externa lagringstjänster. Tidigare
   `--cloud-storage` avvisas; den privata profilfilen bevaras. Render/Vercel
   använder sina egna serverinställningar och får inga automatiska lokala kopior.

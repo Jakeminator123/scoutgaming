@@ -10,16 +10,16 @@ async function fixture(t, overrides = {}) {
   const root = await mkdtemp(join(tmpdir(), 'croupier-retention-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, 'tools'));
-  await mkdir(join(root, 'lab/data/history'), { recursive: true });
-  await mkdir(join(root, 'lab/data/observations'), { recursive: true });
+  await mkdir(join(root, 'apps/studio/data/history'), { recursive: true });
+  await mkdir(join(root, 'apps/studio/data/observations'), { recursive: true });
   const policy = { maxEntries: 2, maxBytes: 10000, keepNewest: 2, ...overrides };
   await writeFile(join(root, 'tools/retention-policy.json'), JSON.stringify({ projectHistory: policy, observations: policy }));
   const snapshot = async (i, content = 'previous project') => {
-    const path = `lab/data/history/${1791900000000 + i}-${randomUUID()}.json`;
+    const path = `apps/studio/data/history/${1791900000000 + i}-${randomUUID()}.json`;
     await writeFile(join(root, path), content); return path;
   };
   const observation = async (i, complete = true) => {
-    const path = `lab/data/observations/2026-10-13T10-00-0${i}-000Z`;
+    const path = `apps/studio/data/observations/2026-10-13T10-00-0${i}-000Z`;
     await mkdir(join(root, path));
     await writeFile(join(root, path, 'partner-events.jsonl'), 'sanitized events\n');
     if (complete) await writeFile(join(root, path, 'session.json'), JSON.stringify({ startedAt: '2026-10-13T10:00:00Z', endedAt: '2026-10-13T10:01:00Z' }));
@@ -33,11 +33,11 @@ test('preview selects oldest snapshots without mutation; archive and restore pre
   await f.snapshot(2); await f.snapshot(3);
   const preview = await previewRetention(f);
   assert.deepEqual(preview.groups[0].selected.map(row => row.source), [first, second]);
-  assert.equal((await readdir(join(f.root, 'lab/data/history'))).length, 4);
+  assert.equal((await readdir(join(f.root, 'apps/studio/data/history'))).length, 4);
   await assert.rejects(readdir(join(f.root, 'arkiv')), { code: 'ENOENT' });
   const result = await archiveRetention(f);
   assert.equal(result.archivedEntries, 2);
-  assert.equal((await readdir(join(f.root, 'lab/data/history'))).length, 2);
+  assert.equal((await readdir(join(f.root, 'apps/studio/data/history'))).length, 2);
   const before = await readFile(join(f.root, result.batch, first));
   assert.equal((await restoreRetention({ ...f, batch: result.batch })).entries[0].status, 'ready');
   await assert.rejects(readFile(join(f.root, first)), { code: 'ENOENT' });
@@ -50,12 +50,12 @@ test('preview selects oldest snapshots without mutation; archive and restore pre
 test('completed log sessions rotate as a whole; active captures and unrelated files stay untouched', async t => {
   const f = await fixture(t), oldest = await f.observation(0);
   await f.observation(1); await f.observation(2); const active = await f.observation(3, false);
-  await writeFile(join(f.root, 'lab/data/history/do-not-touch.json'), 'unrelated');
+  await writeFile(join(f.root, 'apps/studio/data/history/do-not-touch.json'), 'unrelated');
   const result = await archiveRetention(f);
   assert.equal(result.archivedEntries, 1);
   assert.equal(await readFile(join(f.root, result.batch, oldest, 'partner-events.jsonl'), 'utf8'), 'sanitized events\n');
   assert.equal((await readdir(join(f.root, active))).length, 1);
-  assert.equal(await readFile(join(f.root, 'lab/data/history/do-not-touch.json'), 'utf8'), 'unrelated');
+  assert.equal(await readFile(join(f.root, 'apps/studio/data/history/do-not-touch.json'), 'utf8'), 'unrelated');
 });
 
 test('byte threshold still retains two newest entries and reports remaining excess', async t => {
@@ -104,17 +104,17 @@ test('failed or noncanonical automatic retention does not fail a project save', 
   const f = await fixture(t), warnings = [];
   assert.deepEqual(await autoArchiveLocalArtifacts('projectHistory', { ...f, dataDir: join(f.root, 'elsewhere') }), { skipped: true });
   await writeFile(join(f.root, 'tools/retention-policy.json'), '{}');
-  assert.deepEqual(await autoArchiveLocalArtifacts('projectHistory', { ...f, dataDir: join(f.root, 'lab/data'), warn: text => warnings.push(text) }), { deferred: true });
+  assert.deepEqual(await autoArchiveLocalArtifacts('projectHistory', { ...f, dataDir: join(f.root, 'apps/studio/data'), warn: text => warnings.push(text) }), { deferred: true });
   assert.equal(warnings.length, 1);
 });
 
 test('automatic retention uses same policy and preserves current project', async t => {
   const f = await fixture(t);
   for (let i = 0; i < 3; i++) await f.snapshot(i);
-  await writeFile(join(f.root, 'lab/data/project.json'), 'active configuration');
-  const result = await autoArchiveLocalArtifacts('projectHistory', { ...f, dataDir: join(f.root, 'lab/data') });
+  await writeFile(join(f.root, 'apps/studio/data/project.json'), 'active configuration');
+  const result = await autoArchiveLocalArtifacts('projectHistory', { ...f, dataDir: join(f.root, 'apps/studio/data') });
   assert.equal(result.archivedEntries, 1);
-  assert.equal(await readFile(join(f.root, 'lab/data/project.json'), 'utf8'), 'active configuration');
+  assert.equal(await readFile(join(f.root, 'apps/studio/data/project.json'), 'utf8'), 'active configuration');
 });
 
 test('planned crash manifest restores only entries that actually moved', async t => {

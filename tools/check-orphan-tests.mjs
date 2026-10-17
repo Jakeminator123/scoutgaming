@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const testExtensions = new Set(['.mjs', '.js', '.cjs', '.ts', '.mts', '.cts']);
-const discoveryRoots = ['test', 'lab/test', 'lab/components', 'lab/lib', 'lab/client', 'packages', 'tools/media', 'open-claw', 'ops', 'apps', 'services', 'lipsync-test'];
+const discoveryRoots = ['test', 'apps/studio/test', 'apps/studio/components', 'apps/studio/lib', 'apps/studio/client', 'packages', 'tools/media', 'open-claw', 'ops', 'apps', 'services', 'lipsync-test'];
 const coverageRoots = /^(?:test|lab|open-claw|ops|apps|services|packages|tools\/media|lipsync-test)\//;
 const skippedDirectories = new Set(['node_modules', '.git', '.next', '.nuxt', '.cache', '.turbo', 'coverage',
   'playwright-report', 'test-results', '__pycache__', '.venv', '.lipsync-venv', 'vendor', 'arkiv',
@@ -238,10 +238,10 @@ function loadRunnerPatterns(root) {
     const abs = join(root, rel);
     if (existsSync(abs)) add(rel, patternsFromShell(readFileSync(abs, 'utf8'), '', true, root));
   }
-  for (const prefix of ['.', 'lab']) {
+  for (const prefix of ['.', 'apps/studio']) {
     const script = readTestScript(prefix, root);
     if (!script) continue;
-    const runner = prefix === '.' ? 'package.json' : 'lab/package.json';
+    const runner = prefix === '.' ? 'package.json' : 'apps/studio/package.json';
     add(runner, patternsFromShell(script, prefix === '.' ? '' : prefix, false, root));
   }
   return found;

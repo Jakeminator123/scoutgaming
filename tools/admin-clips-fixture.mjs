@@ -24,13 +24,13 @@ const {installComparisonProcessGuard}=await import('./start-local-comparison.mjs
 installComparisonProcessGuard();
 const {acquireLocalSession}=await import('../open-claw/lab/deploy/local-session.mjs');
 const {createEmptyProject,addDealer,addVariant,validateProject}=await import('../packages/presentation/contracts/studio-model.mjs');
-const {bindClip,clipSlots,createStudioClient}=await import('../lab/client/admin/lib/connected-studio.mjs');
+const {bindClip,clipSlots,createStudioClient}=await import('../apps/studio/client/admin/lib/connected-studio.mjs');
 const {kindForEvent}=await import('../packages/presentation/contracts/video-intake.mjs');
 const {layerAssetPath}=await import('../packages/presentation/contracts/presentation-layers.mjs');
 const {createStudioNativeAuth}=await import('../packages/studio-access/studio-native-auth.mjs');
-const {serveDesignPreview}=await import('../lab/lib/design-preview.mjs');
-const {parseByteRange}=await import('../lab/lib/preview-files.mjs');
-const buildRoot=join(root,'lab/design-preview-build');
+const {serveDesignPreview}=await import('../apps/studio/lib/design-preview.mjs');
+const {parseByteRange}=await import('../apps/studio/lib/preview-files.mjs');
+const buildRoot=join(root,'apps/studio/design-preview-build');
 if(!fs.existsSync(join(buildRoot,'admin/app.js')))throw Error('Build Admin before starting the fixture');
 const session=await acquireLocalSession({repoRoot:root,labPort:port});
 let temporary,server,stopping=false;

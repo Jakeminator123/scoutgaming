@@ -72,3 +72,6 @@ vendor/
 
 # Canonical recovery archive; inspect only when needed.
 /arkiv/
+
+# Relocated Studio: retain old private/build guards for files left in place.
+apps/studio/data/

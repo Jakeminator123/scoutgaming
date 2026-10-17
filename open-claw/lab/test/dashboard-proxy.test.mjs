@@ -4,7 +4,7 @@ import { createServer, request } from 'node:http';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { createDashboardProxy } from '../src/dashboard-proxy.mjs';
-import { openClawDashboardUrl } from '../../../lab/lib/openclaw-dashboard.mjs';
+import { openClawDashboardUrl } from '../../../apps/studio/lib/openclaw-dashboard.mjs';
 
 const ORIGIN = 'https://dashboard.example.test';
 const HOST = 'dashboard.example.test';

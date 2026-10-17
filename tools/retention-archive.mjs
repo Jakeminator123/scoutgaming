@@ -7,7 +7,7 @@ import { dirname, join, resolve, relative, sep, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const locations = { projectHistory: 'lab/data/history', observations: 'lab/data/observations' };
+const locations = { projectHistory: 'apps/studio/data/history', observations: 'apps/studio/data/observations' };
 const snapshotName = /^\d{13}-[a-f0-9-]{36}\.json$/;
 const sessionName = /^\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d-\d{3}Z$/;
 const observationFiles = new Set(['verify.json', 'mapping.json', 'partner-events.jsonl', 'error.json', 'session.json', 'STOP']);
@@ -178,7 +178,7 @@ export async function restoreRetention({ root = repositoryRoot, batch, apply = f
 
 export async function autoArchiveLocalArtifacts(category, { dataDir, root = repositoryRoot, warn = console.warn } = {}) {
   // Temporary fixtures, external data locations and cloud repositories do not opt in.
-  if (dataDir && resolve(dataDir) !== join(root, 'lab/data')) return { skipped: true };
+  if (dataDir && resolve(dataDir) !== join(root, 'apps/studio/data')) return { skipped: true };
   try { return await archiveRetention({ root, categories: [category] }); }
   catch (error) { if (error.code !== 'retention_busy') warn('Lokal arkivering kunde inte slutföras. Sparade data är kvar; kör node tools/retention-archive.mjs för kontroll.'); return { deferred: true }; }
 }

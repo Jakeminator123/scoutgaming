@@ -5,8 +5,8 @@
     "render-game": {
       "sources": [
         "ops/cloud/config.mjs",
-        "lab/lib/cloud-media-store.mjs",
-        "lab/lib/video-registry.mjs",
+        "apps/studio/lib/cloud-media-store.mjs",
+        "apps/studio/lib/video-registry.mjs",
         "ops/cloud/gateway.mjs",
         "ops/cloud/start.mjs",
         "ops/cloud/container-entry.mjs",
@@ -332,7 +332,7 @@
     "local-lab-openclaw": {
       "sources": [],
       "templates": [
-        "lab/.env.example",
+        "apps/studio/.env.example",
         "open-claw/lab/.env.example"
       ],
       "required": [],
@@ -379,24 +379,24 @@
     },
     "vercel-lab-ui": {
       "sources": [
-        "lab/middleware.ts",
-        "lab/lib/remote-ui.mjs",
-        "lab/lib/studio-native-runtime.mjs",
-        "lab/lib/studio-native-mail.mjs",
+        "apps/studio/middleware.ts",
+        "apps/studio/lib/remote-ui.mjs",
+        "apps/studio/lib/studio-native-runtime.mjs",
+        "apps/studio/lib/studio-native-mail.mjs",
         "packages/presentation/server/saved-game-policy.mjs",
-        "lab/lib/studio-game-authority.mjs",
-        "lab/lib/neon-video-registry.mjs",
-        "lab/lib/cloud-media-store.mjs",
-        "lab/lib/video-registry.mjs",
-        "lab/lib/legacy-clip-inventory.mjs",
-        "lab/lib/voice-preview.mjs",
-        "lab/lib/studio-voice-lines.mjs",
-        "lab/lib/openclaw-admin.mjs",
-        "lab/lib/runway-client.mjs",
-        "lab/lib/dealer-import-model.mjs",
+        "apps/studio/lib/studio-game-authority.mjs",
+        "apps/studio/lib/neon-video-registry.mjs",
+        "apps/studio/lib/cloud-media-store.mjs",
+        "apps/studio/lib/video-registry.mjs",
+        "apps/studio/lib/legacy-clip-inventory.mjs",
+        "apps/studio/lib/voice-preview.mjs",
+        "apps/studio/lib/studio-voice-lines.mjs",
+        "apps/studio/lib/openclaw-admin.mjs",
+        "apps/studio/lib/runway-client.mjs",
+        "apps/studio/lib/dealer-import-model.mjs",
         "packages/studio-registry/server/media-runtime.mjs",
         "packages/presentation/server/legacy-clip-inventory.mjs",
-        "lab/lib/studio-media-runtime.mjs"
+        "apps/studio/lib/studio-media-runtime.mjs"
       ],
       "project": "croupier-lab-ui",
       "gitBranch": "main",

@@ -3,21 +3,21 @@ import { fileURLToPath } from 'node:url';
 import { runChecks } from './precommit-checks.mjs';
 
 const navigationTests = [
-  'lab/client/runtime/admin-routing.test.mjs',
-  'lab/client/runtime/navigation.test.mjs',
-  'lab/test/studio-history.test.mjs',
-  'lab/test/admin-workspace.test.mjs',
-  'lab/test/next-page-navigation.test.mjs',
-  'lab/test/studio-login-client.test.mjs',
-  'lab/test/studio-login-form.test.mjs',
-  'lab/test/partner-session.test.mjs',
-  'lab/test/partner-login.test.mjs',
-  'lab/test/workspace-surfaces.test.mjs',
-  'lab/test/workspace-surface-pages.test.mjs',
-  'lab/components/kevin-bo/partner-navigation-guard.test.mjs',
-  'lab/test/partner-workspace-visual.test.mjs',
-  'lab/test/studio-navigation.test.mjs',
-  'lab/test/partner-presentation-flow.test.mjs',
+  'apps/studio/client/runtime/admin-routing.test.mjs',
+  'apps/studio/client/runtime/navigation.test.mjs',
+  'apps/studio/test/studio-history.test.mjs',
+  'apps/studio/test/admin-workspace.test.mjs',
+  'apps/studio/test/next-page-navigation.test.mjs',
+  'apps/studio/test/studio-login-client.test.mjs',
+  'apps/studio/test/studio-login-form.test.mjs',
+  'apps/studio/test/partner-session.test.mjs',
+  'apps/studio/test/partner-login.test.mjs',
+  'apps/studio/test/workspace-surfaces.test.mjs',
+  'apps/studio/test/workspace-surface-pages.test.mjs',
+  'apps/studio/components/kevin-bo/partner-navigation-guard.test.mjs',
+  'apps/studio/test/partner-workspace-visual.test.mjs',
+  'apps/studio/test/studio-navigation.test.mjs',
+  'apps/studio/test/partner-presentation-flow.test.mjs',
 ];
 const notice = 'Focused Admin/partner navigation checks only; this does not replace mandatory full delivery/CI checks.';
 

@@ -9,7 +9,7 @@ import { playerAuth as syncPlayerAuth } from '../web/player-auth.mjs';
 import { playerAuth as asyncPlayerAuth } from '../web/storage/async-player-auth.mjs';
 import { backofficeGameAuth as syncBackofficeGameAuth } from '../web/bo-game-auth.mjs';
 import { backofficeGameAuth as asyncBackofficeGameAuth } from '../web/storage/async-bo-game-auth.mjs';
-import { createStudioNativeAuthActions } from '../lab/lib/studio-native-auth-actions.mjs';
+import { createStudioNativeAuthActions } from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import { createAccountCredentialResolver, effectiveAccountRole } from '../packages/studio-access/server/account-credentials.mjs';
 
 function fixture(identityFactory=syncIdentity) {

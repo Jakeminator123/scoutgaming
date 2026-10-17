@@ -59,3 +59,12 @@ __pycache__/
 # Per-checkout inbox identity; account email and local paths stay off GitHub.
 /inbox/local-device.json
 /inbox/local-device.json.*.tmp
+
+# Relocated Studio: retain old private/build guards for files left in place.
+/lab/data/
+/lab/tsconfig.probe.json
+/apps/studio/data/
+/apps/studio/preview-build/
+/apps/studio/design-preview-build/
+/apps/studio/public/public-assistant.js
+/apps/studio/public/did-chunks/

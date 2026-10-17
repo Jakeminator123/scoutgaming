@@ -1,4 +1,4 @@
-import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
+import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-presentation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -8,7 +8,7 @@ import {defaultCompositionSettings,defaultBlackjackTableGeometry,validateComposi
 import {validateComposition,createLayerComposition,clipCompositing} from '../packages/presentation/runtime/presentation-composition.mjs';
 import {compositionRuntimeResponse} from '../web/composition-runtime.mjs';
 import {stageGeometry,tableRect,backgroundRect} from '../packages/presentation/compositor/geometry.js';
-import {zoomComposition} from '../lab/lib/composition-zoom.mjs';
+import {zoomComposition} from '../apps/studio/lib/composition-zoom.mjs';
 import {Compositor} from '../packages/presentation/compositor/compositor.js';
 import {createSeedProject,addDealer,defaultPresentationLane,validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {buildPresentationPackage,layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';

@@ -72,3 +72,10 @@ open-claw/lab/test
 design-kit
 reference
 random-stuff-jakob
+
+# Relocated Studio: retain old private/build guards for files left in place.
+apps/studio/.next
+apps/studio/.next-probe
+apps/studio/tsconfig.tsbuildinfo
+apps/studio/data
+apps/studio/test

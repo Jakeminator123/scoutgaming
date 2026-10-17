@@ -1,0 +1,2 @@
+import type {VideoMetadata} from '../../../packages/presentation/contracts/video-intake.mjs';
+export function uploadMediaBatch(items:Array<{row:{id:string;file:File;state:string};classification:VideoMetadata}>,options:{upload:(file:File,classification:VideoMetadata,onProgress:(value:{percentage:number})=>void)=>Promise<unknown>;onChange:(id:string,patch:{state?:'ready'|'saving'|'saved'|'error';message?:string;progress?:number})=>void;signal?:AbortSignal}):Promise<number>;

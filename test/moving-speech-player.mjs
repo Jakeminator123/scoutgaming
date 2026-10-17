@@ -285,7 +285,7 @@ for(const moving of [false,true])test(`real browser plays hash-bound PCM over ${
           {dealerId:'dragan',take:'vila',sha256:hash(original),fps:24,frameCount:1,kind:'still'}],
         frames:sequence.frames.slice(0,36).map(({take,frame})=>({take,frame}))})));
     }
-    const require = createRequire(new URL('../lab/package.json', import.meta.url));
+    const require = createRequire(new URL('../apps/studio/package.json', import.meta.url));
     const { outputFiles } = await require('esbuild').build({ entryPoints: [new URL('./fixtures/moving-speech-player.mjs', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')], bundle: true, write: false, format: 'esm', external: ['/composition-runtime/compositor.js'] });
     server = createServer((req, res) => {
       if (req.url === m.ready.rest.url||sourceBytes.has(req.url)) {const bytes=sourceBytes.get(req.url)??original;res.writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': bytes.length }); return res.end(bytes); }

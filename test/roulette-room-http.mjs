@@ -1,5 +1,5 @@
 import test from 'node:test';
-import {zoomComposition} from '../lab/lib/composition-zoom.mjs';
+import {zoomComposition} from '../apps/studio/lib/composition-zoom.mjs';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {rouletteDocument} from '../web/games/roulette/http.mjs';
