@@ -32,8 +32,10 @@ async function eligibility(repository,row,{indexVerified=false,now=Date.now,igno
  }
  if(typeof repository.inspectMediaDeletion!=='function')return denied('studio_media_delete_coverage_incomplete');
  const dependencies=await repository.inspectMediaDeletion(row);
- if(!Array.isArray(dependencies?.documents)||!Array.isArray(dependencies.packages)||!Array.isArray(dependencies.aliases))return denied('studio_media_delete_coverage_incomplete');
+ if(!Array.isArray(dependencies?.documents)||!Array.isArray(dependencies.packages)||!Array.isArray(dependencies.aliases)
+   ||!Array.isArray(dependencies.references)||dependencies.coverage?.complete!==true)return denied('studio_media_delete_coverage_incomplete');
  if(dependencies.aliases.length)return denied('studio_media_owned_elsewhere');
+ if(dependencies.references.length)return denied('studio_media_in_use');
  for(const doc of dependencies.documents){
   let value;try{value=validateDocumentValue(doc.kind,doc.value,doc.revision,{allowLegacyRead:true});}catch{return denied('studio_media_delete_coverage_incomplete');}
   if(doc.kind==='project'&&doc.environment_id===repository.scope.environment&&doc.workspace_id===repository.scope.workspaceId){

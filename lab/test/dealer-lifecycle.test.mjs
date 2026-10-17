@@ -225,6 +225,42 @@ test('cross-scope registration cannot create another owner or resurrect a tombst
  await deletionFixture(f).remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'});
  await assert.rejects(other.registerMedia(media(oldId,true),{actor:'Admin'}),{code:'studio_media_owned_elsewhere'});
 });
+
+test('exact journal references across scopes block purge; unrelated prose and bare hashes do not',async()=>{
+ const f=await fixture(),row=await f.repository.getMedia(oldId),service=deletionFixture(f);
+ for(const source of ['forge-profile','forge-job','speech-reply','speech-package']){
+  for(const value of [{referenceMediaId:row.id},{media:{video:{pathname:row.pathname}}}]){
+   f.pool.journalOwners=[{source,environment_id:'elsewhere',workspace_id:'other',owner_id:'owner',value}];
+   assert.deepEqual(await service.check(deletionInput(row)),{allowed:false,reason:'studio_media_in_use'},source);
+  }
+ }
+ f.pool.journalOwners=[{source:'forge-job',value:{dealerId:'paow',sha256:row.sha256,notes:`old media ${row.id}`}}];
+ assert.deepEqual(await service.check(deletionInput(row)),{allowed:true});
+});
+
+test('unattributed live speech is incomplete coverage; old spent stream keys are not session ownership',async()=>{
+ const f=await fixture(),row=await f.repository.getMedia(oldId),service=deletionFixture(f);
+ for(const key of ['open_session','live_lease','unresolved_fullfile']){
+  f.pool.speechActivity={[key]:true};let deleted=0;
+  assert.deepEqual(await service.check(deletionInput(row)),{allowed:false,reason:'studio_media_delete_coverage_incomplete'});
+  await assert.rejects(deletionFixture(f,{del:async()=>deleted++}).remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'}),{code:'studio_media_delete_coverage_incomplete'});
+  assert.equal(deleted,0);assert.equal((await f.repository.getMedia(oldId)).deletion,undefined);
+ }
+ f.pool.speechActivity={};
+ f.pool.journalOwners=Array.from({length:56},()=>({source:'speech-package',value:null}));
+ assert.deepEqual(await service.check(deletionInput(row)),{allowed:true});
+ const report=await f.repository.inspectMediaDeletion(row);
+ assert.equal(report.coverage.boundary,'persisted-exact-media-references');assert.equal(report.coverage.complete,true);
+});
+
+test('truncated journal ownership or an unavailable source cannot authorize purge',async()=>{
+ const f=await fixture(),row=await f.repository.getMedia(oldId),service=deletionFixture(f);
+ f.pool.journalOwners=Array.from({length:101},()=>({source:'speech-reply',value:{id:row.id}}));
+ await assert.rejects(service.check(deletionInput(row)),{code:'studio_media_delete_coverage_incomplete'});
+ f.pool.journalOwners=[];f.pool.failNext('media-journal-owners');
+ await assert.rejects(service.remove(deletionInput(row),{stillAuthorized:async()=> 'Admin'}));
+ assert.equal((await f.repository.getMedia(oldId)).deletion,undefined);
+});
 test('unknown bank index or an upload pointer inside it cannot authorize deletion',async()=>{
  const f=await fixture(),row=await f.repository.getMedia(oldId);let calls=0;
  for(const readIndex of [()=>null,()=>{throw Error('missing index');},()=>new Map([['copy',{storage:{pathname:row.pathname}}]])]){

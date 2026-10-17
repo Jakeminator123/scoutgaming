@@ -334,14 +334,50 @@ export function createStudioRepository({ pool, scope } = {}) {
     },
     inspectMediaDeletion(record) {
       return operation(() => validateMediaId(record?.id), async () => {
+        // Lock order: Studio scope, managed object, speech environment. The
+        // speech journal never calls Studio while holding its own lock. Hold
+        // this fence until the pending tombstone transaction commits.
+        await query(`/* studio:media-speech-lock */ SELECT pg_advisory_xact_lock(hashtextextended('croupier:speech:' || $1::text,0))
+          WHERE $2::text IS NOT NULL`);
         const documents = (await query(`/* studio:media-current-owners */ SELECT environment_id,workspace_id,kind,revision,value
           FROM croupier_studio.documents WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL
           AND (jsonb_path_exists(value,'$.** ? (@ == $id)',jsonb_build_object('id',$3::text)) OR position($4::text in value::text)>0)
           LIMIT 101`, [record.id,record.pathname])).rows;
         const packages = (await query(`/* studio:media-all-packages */ SELECT operator_id,package_revision,lanes,branding
           FROM croupier_studio.operator_packages WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL LIMIT 1001`)).rows;
-        if(documents.length>100 || packages.length>1000)fail('studio_media_delete_coverage_incomplete',503);
-        return {documents,packages,aliases:await mediaAliases(record)};
+        // Match complete IDs/pathnames, not dealer names, file labels, hashes
+        // alone or prose. Terminal Forge inputs are provenance, not owners;
+        // an unknown status remains nonterminal. Saved reply/package outputs
+        // remain retrievable even after their generation request completed.
+        const references = (await query(`/* studio:media-journal-owners */
+          SELECT source,environment_id,workspace_id,owner_id FROM (
+            SELECT 'forge-profile'::text AS source,environment_id,workspace_id,dealer_id AS owner_id,profile AS value
+              FROM croupier_studio.forge_dealers
+            UNION ALL SELECT 'forge-job',environment_id,workspace_id,job_id::text,jsonb_build_array(request,result)
+              FROM croupier_studio.forge_jobs WHERE status NOT IN ('succeeded','failed','cancelled')
+            UNION ALL SELECT 'speech-reply',environment_id,workspace_id,id::text,value
+              FROM croupier_studio.speech_reply_records
+            UNION ALL SELECT 'speech-package',environment_id,NULL::text,request_key,package_metadata
+              FROM croupier_studio.speech_requests WHERE package_metadata IS NOT NULL
+          ) owners WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL
+          AND jsonb_path_exists(value,'$.** ? (@ == $id || @ == $pathname)',jsonb_build_object('id',$3::text,'pathname',$4::text))
+          LIMIT 101`, [record.id,record.pathname])).rows;
+        // Stream request keys are permanently spent, not GPU ownership. Only
+        // an unreleased session, a live lease, or unfinished fullfile request
+        // creates unattributed live coverage. Expiry alone never drains a
+        // provider session or resolves an uncertain fullfile submission.
+        const speech = (await query(`/* studio:media-speech-coverage */ SELECT
+          EXISTS(SELECT 1 FROM croupier_studio.gpu_sessions WHERE environment_id=$1 AND released_at_ms IS NULL) AS open_session,
+          EXISTS(SELECT 1 FROM croupier_studio.speech_execution_leases WHERE environment_id=$1
+            AND expires_at_ms > (extract(epoch FROM clock_timestamp()) * 1000)::bigint) AS live_lease,
+          EXISTS(SELECT 1 FROM croupier_studio.speech_requests WHERE environment_id=$1 AND capability='fullfile'
+            AND state NOT IN ('completed','failed')) AS unresolved_fullfile
+          WHERE $2::text IS NOT NULL`)).rows[0];
+        if(documents.length>100 || packages.length>1000 || references.length>100
+          || !speech || ['open_session','live_lease','unresolved_fullfile'].some(key=>typeof speech[key]!=='boolean'))fail('studio_media_delete_coverage_incomplete',503);
+        return {documents,packages,references,aliases:await mediaAliases(record),
+          coverage:{complete:!Object.values(speech).some(Boolean),boundary:'persisted-exact-media-references',
+            unresolved:Object.keys(speech).filter(key=>speech[key])}};
       },true);
     },
     setMediaDeletion(id,{expectedRevision,sha256,deletion,actor}={}) {

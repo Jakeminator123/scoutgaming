@@ -9,8 +9,79 @@ import { ForgeError } from '../lib/dealer-forge-service.mjs';
 import { fixture, sha, scope, PNG, MP4 } from './fixtures/dealer-forge-fixture.mjs';
 import { createDealerForgeStore } from '../lib/dealer-forge-store.mjs';
 import { createRunwayClient, RunwayError } from '../lib/runway-client.mjs';
+import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
+import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
+import { checkPermanentMediaDeletion } from '../lib/studio-media-deletion.mjs';
 
 const actor = { actor: 'tester' };
+
+async function referenceFixture() {
+ const pool=createStudioMemoryPool(),repository=createStudioRepository({pool,scope});
+ seedSavedVideoProject(pool,scope,addDealer(createSeedProject(),'paow','Paow'));
+ const id=randomUUID(),hash='a'.repeat(64),record={id,sha256:hash,size:32,contentType:'video/mp4',pathname:`croupier/media/dealers/paow/review/uploads/${id}/${hash}.mp4`,classification:{dealerId:'paow',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:'Input',notes:''}};
+ await repository.registerMedia(record,{actor:'tester'});
+ const row=await repository.getMedia(id),store=createDealerForgeStore({repository,scope,now:()=>1});
+ const captured=Object.fromEntries(['id','sha256','pathname','revision'].map(key=>[key,row[key]]));
+ const job={jobId:randomUUID(),dealerId:'paow',slotId:'idle.ready/',kind:'clip',status:'prepared',request:{referenceMediaId:id,referenceSha256:hash,mediaReferences:[captured],options:{referenceMediaId:id}},actor:'tester'};
+ const archive=async()=>{const current=await repository.getMedia(id);return repository.classifyMedia(id,{sha256:hash,expectedRevision:current.revision,metadata:{...current.classification,archived:true},actor:'tester'});};
+ const pending=async()=>{const current=await archive();return repository.setMediaDeletion(id,{expectedRevision:current.revision,sha256:hash,actor:'tester',deletion:{state:'pending',requestedAt:'2026-10-17T00:00:00.000Z'}});};
+ return {pool,repository,store,row,job,archive,pending};
+}
+
+test('Forge atomically rejects tombstoned input IDs including queued audio options before inserting a job',async()=>{
+ for(const reference of ['referenceMediaId','audioMediaId'])for(const state of ['pending','deleted']){
+  const f=await referenceFixture(),pending=await f.pending();
+  if(state==='deleted')await f.repository.setMediaDeletion(f.row.id,{expectedRevision:pending.revision,sha256:pending.sha256,actor:'tester',
+   deletion:{...pending.deletion,state,completedAt:'2026-10-17T00:01:00.000Z'}});
+  f.job.request={options:{[reference]:f.row.id}};
+  await assert.rejects(f.store.insertJob(f.job),{code:'studio_forge_reference_conflict'});
+  assert.equal(await f.store.getJob(f.job.jobId),null);
+  assert.equal(f.pool.calls.some(call=>call.marker==='job-insert'),false);
+ }
+});
+
+test('Forge captures exact input hash, pathname, revision and dealer before acquiring a reference',async()=>{
+ for(const field of ['sha256','pathname','revision']){
+  const f=await referenceFixture();f.job.request.mediaReferences[0][field]+='-changed';
+  await assert.rejects(f.store.insertJob(f.job),{code:'studio_forge_reference_conflict'});
+ }
+ const f=await referenceFixture();f.job.dealerId='anna-jonsson';
+ // A different registered dealer must not claim Paow media.
+ f.pool.corruptDocument(scope,'project',doc=>({...doc,value:addDealer(doc.value,'anna-jonsson','Anna')}));
+ await assert.rejects(f.store.insertJob(f.job),{code:'studio_forge_reference_conflict'});
+});
+
+test('a retained Forge reference blocks purge through ambiguous submission but terminal input history releases it',async()=>{
+ const f=await referenceFixture();await f.store.insertJob(f.job);await f.archive();
+ const inspect=async()=>{const row=await f.repository.getMedia(f.row.id);return checkPermanentMediaDeletion(f.repository,{id:row.id,sha256:row.sha256,expectedRevision:row.revision},{indexVerified:true});};
+ assert.deepEqual(await inspect(),{allowed:false,reason:'studio_media_in_use'});
+ await f.store.updateJob(f.job.jobId,{expectedStatus:'prepared',status:'submit_unknown'});
+ assert.deepEqual(await inspect(),{allowed:false,reason:'studio_media_in_use'});
+ await f.store.updateJob(f.job.jobId,{expectedStatus:'submit_unknown',status:'failed'});
+ assert.deepEqual(await inspect(),{allowed:true});
+ await f.pending();
+ await assert.rejects(f.store.updateJob(f.job.jobId,{expectedStatus:'failed',status:'prepared'}),{code:'studio_forge_reference_conflict'});
+ assert.equal((await f.store.getJob(f.job.jobId)).status,'failed');
+});
+
+test('a waiting Forge acquisition sees the deletion committed under the shared scope lock',async()=>{
+ const f=await referenceFixture();let enter,release;
+ const entered=new Promise(resolve=>{enter=resolve;}),hold=new Promise(resolve=>{release=resolve;});
+ const deletion=f.repository.transaction(async()=>{enter();await hold;await f.pending();});
+ await entered;
+ const insertion=f.store.insertJob(f.job);
+ release();await deletion;
+ await assert.rejects(insertion,{code:'studio_forge_reference_conflict'});
+ assert.equal(await f.store.getJob(f.job.jobId),null);
+});
+
+test('late Forge commits reject already pending media without losing an ambiguous provider outcome',async()=>{
+ const f=await referenceFixture();await f.store.insertJob(f.job);await f.pending();
+ await assert.rejects(f.store.assertJobReferences(f.job),{code:'studio_forge_reference_conflict'});
+ await assert.rejects(f.store.updateJob(f.job.jobId,{expectedStatus:'prepared',status:'committing'}),{code:'studio_forge_reference_conflict'});
+ assert.equal((await f.store.updateJob(f.job.jobId,{expectedStatus:'prepared',status:'submit_unknown'})).status,'submit_unknown');
+});
 
 test('roulette intake never becomes a blackjack Forge slot, provider submission or saved job',async()=>{
   const project=addDealer(createSeedProject(),'paow','Paow'),roulette=dealerMediaSlots(project,'roulette');

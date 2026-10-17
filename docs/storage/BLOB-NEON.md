@@ -1,8 +1,9 @@
 # Dealerklipp, Neon, Blob och gemensam talworker
 
 Kanonisk målstruktur och genomförandeplan, 17 oktober 2026. Detta dokument
-ersätter guidens äldre generella lagringsbeskrivning. Målkontraktet nedan är
-underlag för implementation, inte ett påstående att migreringen är genomförd.
+ersätter guidens äldre generella lagringsbeskrivning. Importplan och utökat
+referensskydd är implementerade på arbetsbranchen; molnworkern förbereds separat.
+Det betyder inte att produktionsimport eller rörligt tal i spelet är aktiverat.
 Produkttermer ägs av [TERMINOLOGI](../../lab/docs/TERMINOLOGI.md), tekniska
 runtimekontrakt av [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md)
 och leveransstatus av [handoffen](../JOHN-HANDOFF.md).
@@ -205,8 +206,11 @@ kontroll, objektlås, spärr för retained-bank, publicerade paket, andra ägare
 aktuella referenser och aktiva uppladdningstillstånd. Befintlig sekvens är
 `pending → radera Blob → deleted` med förnyad behörighetskontroll.
 
-**Identifierad lucka:** `inspectMediaDeletion` läser dokument, paket och alias,
-men täcker inte ensam Forge-jobb/-profiler, sparade talsvar eller talbegäranden/leases.
+**Implementerat referensskydd:** `inspectMediaDeletion` läser dokument, paket och
+alias samt exakta ID-/sökvägsreferenser i Forge-profiler, icke-terminala Forge-jobb
+(inklusive `submit_unknown`), sparade talsvar och talpaketens metadata. Avslutade
+Forge-input är historik, medan läsbara talpaket fortfarande äger sina outputfiler.
+Saknade tabeller, överskridna sidgränser eller okända svar stoppar radering.
 Raderingstjänsten kontrollerar dessutom det faktiska Neon-runtimeindexet via
 `readIndex`; det skyddet ska återanvändas, inte beskrivas som saknat.
 ”Inte vald i utkastet” är inget raderingsbevis. `findMediaReferences` anger
@@ -221,16 +225,27 @@ De fyra ID:na i de två Dragan-dublettgrupperna hittades inte i granskade paket,
 aktuella dokument eller dokumenthistorik. Det är kandidatinformation;
 full jobb-/lagringskontroll krävs fortfarande före radering.
 
-En konkret race behöver stängas i `lab/lib/dealer-forge-service.mjs` och
-`dealer-forge-store.mjs`: Forge använder scopelås, men `insertJob` kontrollerar
-inte `referenceMediaId`/`audioMediaId` atomiskt mot en pending/deleted-post.
+Forge fångar nu media-ID, SHA-256, sökväg och revision för faktiskt använda
+referenser. `insertJob` och återöppning av jobb kontrollerar dem atomiskt mot
+pending/deleted/arkiverad media under samma Studio-scopelås. Före submission
+och commit kontrolleras referenserna igen. Ett gammalt jobb får registrera ett
+osäkert leverantörsutfall efter arkivering; det får inte återaktivera raderad media.
 Befintliga projekt-/publicerings-/register-/klassificeringsspärrar ska återanvändas.
 Riktade regressionsprov hör hemma i `lab/test/dealer-lifecycle.test.mjs`,
 `lab/test/dealer-forge.test.mjs` och `test/speech-reply-repository.mjs`.
 `deduplicate-media.mjs` hanterar äldre layout/index och får inte användas som
 om det redan täckte hela Neon-grafen.
 
-Föreslaget gemensamt kontrakt före utökad direkt radering:
+Taljournalen saknar fortfarande exakta indatareferenser för äldre strömmande
+jobb. Därför stoppar inspektionen radering konservativt när miljön har en
+icke avvecklad GPU-session, giltig tallease eller oavslutad fullfilsbegäran.
+Gamla förbrukade strömnycklar blockerar inte ensamma. Inspektionen tar talets
+befintliga miljölås efter Studio-/objektlåsen och behåller det tills transaktionen
+slutar. Detta skyddar den observerade sessionsbilden; det är inte ett påstående
+om gemensam atomisk mediaadmission för alla talvägar. Det återstår att binda
+den nya rörliga workerns exakta indata till journalen före produktaktivering.
+
+Gemensamt målkontrakt före utökad direkt radering:
 
 - En jobb-/sessionsreferens binder exakt scope, dealer, media-ID/hash,
   bankrevision och ägande jobb. Nya jobb och publiceringar måste kontrollera
@@ -248,6 +263,41 @@ Föreslaget gemensamt kontrakt före utökad direkt radering:
 Exakta statusnamn och minsta schemaändring fastställs mot respektive existerande
 jobbmodell före implementation. Detta är ett kontraktsförslag, inte en redan
 införd gemensam lease-tabell.
+
+### Körbar importplan v1
+
+`tools/dealer-import-plan.mjs` använder befintlig registrerad dealer, slotkatalog,
+filnamnsgranskning och metadataregler. Källmanifestet är fryst till Kevin
+`31f50618d071667476c9b7f4a85dfed951e23d53` och innehåller 247 källrader från sv/en,
+posevägar, idle, bilder och källmetadata. Nåbara klipp, förhämtning/reserv,
+bytealias och orefererade filer redovisas var för sig.
+
+```powershell
+node tools/dealer-import-plan.mjs --plan --project <privat-project.json> --dealer dragan --source-alias dragge --inventory <privat-inventory.json> --source-root <befintlig-Kevin-checkout>
+```
+
+`--source-root` är valfri och läser enbart befintliga original. Varje funnen fil
+måste matcha fryst Git-blob och storlek; därefter beräknas separat SHA-256.
+Ett Git-objekt-ID är aldrig ett bevis för mediets registrerade SHA-256.
+UUID-namngivna lokala original kan i stället läsas med `--source-map`, en privat
+JSON med `schemaVersion: 1`, absolut `root` och `files` som mappar fryst källväg
+till lokal fil inom roten. Samma bytekontroll gäller; verktyget flyttar inget.
+Planen kan återanvända en entydig befintlig identitet med bevarad klassning.
+Poseåteranvändning kräver hashbunden kalibrering; inspelat tal kräver exakt
+text/ljud/video/index. Fel dealer, flera träffar eller skyddad media kräver granskning.
+
+Planradernas `placement` innehåller pose, val, ljudpolicy, språk och repliknyckel.
+Fälten är ännu inte nya produktionsfält i videoschemat. Alla rader har
+`applyAllowed: false`; verktyget har varken `--apply`, uppladdning eller radering.
+Saknade talfack och verifierade ljud-/index-/kalibreringsuppgifter behöver lösas
+innan en import kan genomföras genom ordinarie revisionsskyddade skrivare.
+Admin-agentens befintliga importcallback och API behöver ingen ändring för denna etapp.
+
+Praktiskt prov mot projekt-/mediaexport 17 oktober 01:49 UTC: 38 återanvändningar,
+8 kopplingar att granska/rätta, 129 granskningsrader, 67 exkluderade och
+5 rena referenser; ingen direkt import. 46 av 247 källvägar byteverifierades
+med redan lokala original (41 unika filer). Detta är ingen innehållsacceptans
+av de återstående filmerna eller kontroll av allt Kevin-material.
 
 ### Färska dublettkandidater, 17 oktober
 
@@ -272,6 +322,13 @@ Målet är en delad workerimplementation med validerad bank/profil per dealer.
 En endpoint kan betjäna flera dealers genom separata jobb/sessioner; det betyder
 inte att en GPU klarar obegränsat samtidig belastning eller att bankerna kan blandas.
 OpenClaw-roller är inte GPU-avatarer.
+
+OpenClaw är fortsatt standardägare av den dynamiska texten. Flödet är
+OpenClaw-beslut → registrerad röst/TTS → exakt PCM → vald och verifierad
+bildrutebank → läppsynk i dealerlagret. Workern väljer varken repliker, spelkort
+eller filmer. Förinspelade repliker spelar sin egen verifierade video och sitt
+inbäddade ljud och behöver inte genereras igen. Ett filnamn eller en uppladdning
+aktiverar inte detta flöde automatiskt.
 
 Lokal checkpoint: [setup och återkörning](../AI/lipsync-lokalt-2026-10-17.txt),
 tagg `lipsync-local-dragan-2026-10-17`. Sparad replik, modeller, bank och WSL-miljö
@@ -301,6 +358,30 @@ Aktuell molnstatus måste läsas om inför nästa förändring; denna plan skapa
 pod eller återkommande drift. Nästa betalda prov använder bara återstående del
 av uttryckligen godkänd testbudget efter avstämning av tidigare förbrukning.
 
+Förberedelsen ligger i `services/moving-gpu-worker/`: versionslåst motor,
+MuseTalk, Pythonpaket och modellhashar, separat Dockerrecept samt bank-/sessions-
+validering. `web/moving-speech-transport.mjs` accepterar nu en separat egen image
+med SHA-256-digest. Den kräver workerintyg för release, dealer, avatar,
+profilrevision, källbank, arkiv, bankkvitto, session, försök, nonce och faktiskt
+accepterat RunPod-jobb innan `bind` och första PCM skickas. Äldre transportväg
+behåller sina begränsningar; ingen route eller endpoint aktiveras automatiskt.
+Bankens avatar heter `dragan`; den ska inte döpas om till `dragge` utan nytt
+verifierat bankunderlag. Imagen och bankintyget verifieras separat.
+
+Den egna motorn kräver en explicit bildruteplan för 220 ms inledande och 530 ms
+avslutande tystnad: en sekund PCM ger 42 rutor vid 24 fps. För kort plan får
+inte lösas genom att motorn håller kvar en godtycklig sista ruta.
+Socket-/protokolltester bevisar inte visuell läppsynk eller livekapacitet.
+Egen kallstart har högst 150 sekunder till första `pong`, inom transportens
+totala 180 sekunder; normal I/O och behörighetskontroller behåller 15 sekunder.
+Separat PR-workflow `moving-gpu-build.yml` bygger serverless-target på CPU
+och kontrollerar paketerade importer utan nät/GPU. Den publicerar ingen image
+och skapar inga molnresurser.
+Docker finns inte installerat i den kontrollerade Windows-/WSL-miljön;
+containerbygge, GPU-prov, journal-/dispatcheranslutning och faktisk spelar-
+integration återstår. Läsande RunPod-kontroll 17 oktober 01:42 UTC visade inga
+pods och endast den befintliga endpointen `croupier-astrid-gpu-test`.
+
 ## Filansvar, ersättning och parallellt arbete
 
 | Del | Återanvänd/utöka | Ersätter eller kan senare tas bort | Verifiering |
@@ -308,7 +389,7 @@ av uttryckligen godkänd testbudget efter avstämning av tidigare förbrukning.
 | Import och klassning | `lab/lib/dealer-import-*`, `video-intake.mjs`, `lab/schemas/video.schema.json`, befintlig importassistent | Dubbla namnregler och poseinformation enbart i fritext; inte alla gamla medieposter | Felstavat/motstridigt namn, språk, fel dealer/box, upprepade importer |
 | Pose och spel | `packages/presentation/runtime/filmed-deal-sequence.mjs`, `web/filmed-deal-selection.mjs`, hashbunden Kevin-profil | En hårdkodad profil kan ersättas först av validerad likvärdig registerdata | Posekedja, exakt kortposition, saknat klipp, fryst paket |
 | Register/radering | `web/storage/studio-repository.mjs`, `lab/lib/studio-media-deletion.mjs`, Forge-/taljobbtjänster | Ofullständig beroendeinspektion; inga tabeller töms | Race mellan nytt jobb/publicering och radering, tvärscope, retries, sena callbacks |
-| Talworker | `services/astrid-gpu-worker`, `web/moving-speech-*`, `generated-speech-stream.mjs`, journal | Byggrecept/handler stegvis; äldre fullfilsmotor/avatarberedning först utan konsumenter | Fel bank/dealer, nekad budget, avbrott, tidsgränser, ljudsynk |
+| Talworker | `services/moving-gpu-worker`, `web/moving-speech-*`, befintlig gateway, `generated-speech-stream.mjs`, journal | Byggrecept/handler stegvis; äldre fullfilsmotor/avatarberedning först utan konsumenter | Fel bank/dealer, nekad budget, avbrott, tidsgränser, ljudsynk |
 | Dokumentation | Denna guide, runtime, handoff, AI-ingång | Äldre generella beskrivningar som säger att repo-/Blob-JSON är produktregister | Länkar och tydlig gräns mellan plan, implementation och daterat kvitto |
 
 Radera inte tester för aktiva kontrakt bara för att deras filnamn innehåller
@@ -337,7 +418,7 @@ och avgränsade referensluckor; dessa hör inte till Dragan-uppdraget.
 Dess metod och dåvarande registermodell finns länkade till den frysta
 guideversionen. Ingen historisk observationssiffra räknas om utan en ny inventering.
 
-Denna etapp granskar kod och register och dokumenterar planen. Den innebär
+Den genomförda kontrakts- och förberedelseetappen innebär
 ingen fullständig visuell klassning av alla Kevin-filmer, ingen verifiering av
 hans driftsatta tjänst och ingen ny fullständig Blob-hashläsning (endast de fyra
 dublettobjekten ovan hashades nu). Sådana belägg

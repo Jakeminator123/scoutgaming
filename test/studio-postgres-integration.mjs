@@ -35,6 +35,41 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
   });
   const runtimeRegistry=await runRuntimeRegistrySqlChecks({pool});checks.push(...runtimeRegistry.checks);
 
+  await check('media deletion finds exact journal owners and fails closed on unattributed speech activity', async () => {
+    const mediaScope={environment:`qa_media_${suffix()}`,workspaceId:'integration'};
+    const repo=createStudioRepository({pool,scope:mediaScope}),id=randomUUID(),replyId=randomUUID(),sha256='d'.repeat(64);
+    const record={id,sha256,pathname:`croupier/media/dealers/paow/review/uploads/${id}/${sha256}.mp4`};
+    const ownersScope={environment:`qa_owners_${suffix()}`,workspaceId:'another-workspace'};
+    await pool.query('INSERT INTO croupier_studio.forge_dealers (environment_id,workspace_id,dealer_id,revision,profile,actor_id) VALUES ($1,$2,$3,1,$4::jsonb,$5)',
+      [ownersScope.environment,ownersScope.workspaceId,'paow',JSON.stringify({reference:{pathname:record.pathname}}),'qa']);
+    for(const [status,request] of [['submit_unknown',{referenceMediaId:id}],['failed',{referenceMediaId:id}],['prepared',{notes:`historic ${id}`,sha256}]]){
+      await pool.query(`INSERT INTO croupier_studio.forge_jobs
+        (environment_id,workspace_id,job_id,dealer_id,slot_id,kind,status,provider,request,actor_id,created_at_ms,updated_at_ms)
+        VALUES ($1,$2,$3,'paow','idle.ready','clip',$4,'runway',$5::jsonb,'qa',0,0)`,
+      [ownersScope.environment,ownersScope.workspaceId,randomUUID(),status,JSON.stringify(request)]);
+    }
+    await pool.query('INSERT INTO croupier_studio.speech_reply_records (environment_id,workspace_id,dealer_id,id,revision,value) VALUES ($1,$2,$3,$4,1,$5::jsonb)',
+      [ownersScope.environment,ownersScope.workspaceId,'paow',replyId,JSON.stringify({schemaVersion:1,dealerId:'paow',id:replyId,revision:1,video:{pathname:record.pathname}})]);
+    await pool.query(`INSERT INTO croupier_studio.speech_execution_leases (environment_id,resource,holder_id,fence,expires_at_ms)
+      VALUES ($1,'fullfile-provider','qa',1,0)`,[mediaScope.environment]);
+    await pool.query(`INSERT INTO croupier_studio.speech_requests
+      (environment_id,request_key,owner_hash,request_id,fingerprint,capability,state,lease_resource,holder_id,lease_fence,package_id,package_metadata,created_at_ms,updated_at_ms)
+      VALUES ($1,$2,$2,'media-owner',$2,'fullfile','completed','fullfile-provider','qa',1,'saved-package',$3::jsonb,0,0)`,
+      [mediaScope.environment,'e'.repeat(64),JSON.stringify({mediaId:id})]);
+    const found=await repo.inspectMediaDeletion(record);
+    assert.deepEqual(found.references.map(row=>row.source).sort(),['forge-job','forge-profile','speech-package','speech-reply']);
+    assert.equal(found.coverage.complete,true);
+    await pool.query("UPDATE croupier_studio.speech_requests SET state='submission_uncertain',package_id=NULL,package_metadata=NULL WHERE environment_id=$1",[mediaScope.environment]);
+    assert.deepEqual((await repo.inspectMediaDeletion(record)).coverage.unresolved,['unresolved_fullfile']);
+    await pool.query("UPDATE croupier_studio.speech_requests SET state='failed' WHERE environment_id=$1",[mediaScope.environment]);
+    await pool.query('UPDATE croupier_studio.speech_execution_leases SET expires_at_ms=(extract(epoch FROM clock_timestamp())*1000)::bigint+60000 WHERE environment_id=$1',[mediaScope.environment]);
+    assert.deepEqual((await repo.inspectMediaDeletion(record)).coverage.unresolved,['live_lease']);
+    await pool.query('UPDATE croupier_studio.speech_execution_leases SET expires_at_ms=0 WHERE environment_id=$1',[mediaScope.environment]);
+    // Permanently spent stream keys do not assert an active GPU/media owner.
+    await pool.query("UPDATE croupier_studio.speech_requests SET capability='stream',state='submission_uncertain' WHERE environment_id=$1",[mediaScope.environment]);
+    assert.equal((await repo.inspectMediaDeletion(record)).coverage.complete,true);
+  });
+
   await check('actual 001-008 media constraint and repository reject PNG and audio without records or audit',async()=>{
     const mimeScope={environment:`qa_mime_${suffix()}`,workspaceId:'integration'},repo=createStudioRepository({pool,scope:mimeScope});
     const constraints=(await pool.query("SELECT conname,pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conrelid='croupier_studio.media_records'::regclass AND contype='c'")).rows;

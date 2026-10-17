@@ -2,7 +2,7 @@
 // isolation or constraints: the separate real-Postgres integration test is.
 import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
 export function createStudioMemoryPool() {
-  let state = { documents: new Map(), history: [], media: new Map(), catalogs: new Map(), audits: [] }, tail = Promise.resolve(), clock = 0, clientId = 0;
+  let state = { documents: new Map(), history: [], media: new Map(), catalogs: new Map(), forgeJobs: new Map(), audits: [] }, tail = Promise.resolve(), clock = 0, clientId = 0;
   const faults = new Map(), calls = [];
   const clone = value => structuredClone(value);
   const key = (values, kind = values[2]) => JSON.stringify([values[0], values[1], kind]);
@@ -28,7 +28,7 @@ export function createStudioMemoryPool() {
       const client = {
         async query(sql, values = []) {
           if (released) throw new Error('fixture client already released');
-          const marker = /\/\* studio:([a-z-]+) \*\//.exec(sql)?.[1] ?? sql.split(/\s/)[0];
+          const marker = /\/\* (?:studio|forge):([a-z-]+) \*\//.exec(sql)?.[1] ?? sql.split(/\s/)[0];
           calls.push({ client: id, marker, sql, values: clone(values) });
           if (faults.has(marker)) {
             const fault = faults.get(marker);
@@ -49,6 +49,21 @@ export function createStudioMemoryPool() {
           }
           if (!working) throw new Error('fixture operation outside transaction');
           switch (marker) {
+            case 'job': return result(working.forgeJobs.has(key(values)) ? [working.forgeJobs.get(key(values))] : []);
+            case 'job-insert': {
+              if (working.forgeJobs.has(key(values))) return result();
+              const row = {environment_id:values[0],workspace_id:values[1],job_id:values[2],dealer_id:values[3],slot_id:values[4],kind:values[5],status:values[6],provider:'runway',task_id:values[7],request:JSON.parse(values[8]),result:values[9]===null?null:JSON.parse(values[9]),error:values[10],actor_id:values[11],created_at_ms:values[12],updated_at_ms:values[12]};
+              working.forgeJobs.set(key(values),row);return result([row]);
+            }
+            case 'job-update': {
+              const row=working.forgeJobs.get(key(values));if(!row||values[8]!==null&&row.status!==values[8])return result();
+              Object.assign(row,{status:values[3],task_id:values[4]??row.task_id,result:values[5]===null?row.result:JSON.parse(values[5]),error:values[6],updated_at_ms:values[7]});return result([row]);
+            }
+            case 'media-journal-owners': return result([
+              ...(pool.journalOwners??[]),
+              ...[...working.forgeJobs.values()].filter(row=>!['succeeded','failed','cancelled'].includes(row.status)).map(row=>({source:'forge-job',environment_id:row.environment_id,workspace_id:row.workspace_id,owner_id:row.job_id,value:[row.request,row.result]})),
+            ].filter(row=>references(row.value,values[2])||references(row.value,values[3])).slice(0,101));
+            case 'media-speech-coverage': return result([{open_session:false,live_lease:false,unresolved_fullfile:false,...pool.speechActivity}]);
             case 'read-runtime-catalog': return result(working.catalogs.has(JSON.stringify(values.slice(0,2))) ? [working.catalogs.get(JSON.stringify(values.slice(0,2)))] : []);
             case 'media-registered-at': return result([{registered_at:working.audits.filter(row=>scoped(row,values)&&row.subject===values[2]&&row.action==='register_media').map(row=>row.at).sort()[0]??null}]);
             case 'media-aliases': return result([...working.media.values()].filter(row=>!(scoped(row,values)&&row.id===values[2])&&(row.id===values[2]||row.record.pathname===values[3])).slice(0,2));

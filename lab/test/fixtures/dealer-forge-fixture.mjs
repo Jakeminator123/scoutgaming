@@ -20,6 +20,7 @@ export function fakeImages() {
 export function fakeStore(now = () => 1_700_000_000_000) {
   const profiles = new Map(), jobs = new Map(); let ready = true, seq = 0;
   return { profiles, jobs, setReady: value => { ready = value; },
+    async assertJobReferences() {},
     async ready() { return ready; },
     async getProfile(dealerId) { return profiles.get(dealerId) ? structuredClone(profiles.get(dealerId)) : null; },
     async saveProfile(dealerId, profile, { expectedRevision = null }) {

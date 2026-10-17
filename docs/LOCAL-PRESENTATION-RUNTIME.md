@@ -223,12 +223,13 @@ H.264-exempel två gånger. Det kräver befintlig Playwright via
 och ffmpeg på PATH. Inga personfilmer, sparade inloggningar eller externa
 providers används. Detta är codec-/kompositionsbevis, inte läppsynksacceptans.
 
-### Isolerad workertransport och serverless-versionsgrind, 15 oktober 2026
+### Isolerad workertransport och serverless-versionsgrind
 
 `web/moving-speech-transport.mjs` kopplar vår hashbundna PCM-/bildruteplan
 till `services/astrid-gpu-worker/gateway/moving-transport.mjs`. En unik
 callbackadress `/lipsync-moving/<slump-id>` med eget engångstoken tar emot
-en worker för Paow eller Dragge. Adressen är en serverhemlighet, aldrig en
+en worker för äldre Paow/Dragge eller en uttryckligen attesterad egen avatar.
+Adressen är en serverhemlighet, aldrig en
 spelarlänk eller loggfält. Den innehåller ingen RunPod-nyckel och återanvänder
 inte Emils podtoken. Fel avatar, token, återanslutning och webbläsar-Origin
 nekas. En ny plan kräver en ny transport; ingen worker återanvänds här.
@@ -274,12 +275,31 @@ bildrutorna: vid uppspelningens slut/avbrott ska den anropa `input.cancel()`
 och tallagrets `close()`. Transportens `cancel` efter slutförd transfer
 upprepar inte jobbfinalisering och ersätter inte spelarens resursstädning.
 
-Versionsgrinden kräver en full SHA i image-taggen och ett högst 60 sekunder
+Den äldre versionsgrinden kräver en full SHA i image-taggen och ett högst 60 sekunder
 gammalt internt kvitto från RunPods endpoint- och workerlistor. Alla listade
 workers måste matcha imagen, endpointversionen och vara icke-stale. Ett nytt
 kvitto krävs efter callback, före PCM; ändrad version stoppar försöket.
 Metadata verifierar inte körande image-digest eller avatarbankens filhashar.
-`pong` saknar sådan attestering; den får inte uppfinnas från ett motornamn.
+Äldre `pong` saknar sådan attestering; den får inte uppfinnas från ett motornamn.
+
+Tillägg 17 oktober: egen `ghcr.io/jakeminator123/moving-gpu-worker@sha256:<digest>`
+kräver dessutom serverägd `attestationBinding`. Den binder schemaVersion 1,
+releaseSha256, dealerId, workerAvatar, profileRevision, sourceSetSha256,
+avatarSha256, bankReceiptSha256, sessionId, attemptId och färsk nonce.
+Workerns `pong.attestation` måste vara exakt samma objekt plus det jobb-ID som
+vår färska admission bekräftat. Först därefter skickas `bind`, start och PCM.
+Releasehashen gäller filmanifestet i imagen; den ersätter inte OCI-digesten.
+Fel bindning finaliserar försöket utan att skicka ljud. Planen måste täcka
+motorns 220 ms inledande och 530 ms avslutande tystnad exakt, och `done`
+godtas bara efter alla planerade rutor. Dragan-bankens avatar heter `dragan`.
+
+Källor och byggrecept finns i `services/moving-gpu-worker/`.
+OpenClaw levererar fortsatt dynamisk text genom den befintliga talvägen;
+workern utför bara läppsynk på serverns exakta ljud och frameplan. Förinspelade
+repliker behåller sitt separata ljud/video. Ingen ny route, dispatcher,
+produktionsjournaladmission eller spelaraktivering ingår i detta tillägg.
+Container/GPU-verifiering återstår; [storage-guiden](storage/BLOB-NEON.md)
+beskriver införandeordning och vad som faktiskt är implementerat.
 
 Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image

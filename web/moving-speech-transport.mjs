@@ -1,7 +1,36 @@
 import { createMovingWorkerChannel } from '../services/astrid-gpu-worker/gateway/moving-transport.mjs';
 
 const IMAGE = /^ghcr\.io\/emacodehero\/croupier-lipsync-worker:[a-f0-9]{40}$/;
+const OWN_IMAGE = /^ghcr\.io\/jakeminator123\/moving-gpu-worker@sha256:[a-f0-9]{64}$/;
+const HASH = /^[a-f0-9]{64}$/;
+const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const AVATAR = /^[a-z][a-z0-9-]{0,39}$/;
+const ATTESTATION_KEYS = ['schemaVersion', 'releaseSha256', 'dealerId', 'workerAvatar',
+  'profileRevision', 'sourceSetSha256', 'avatarSha256', 'bankReceiptSha256', 'sessionId', 'attemptId', 'nonce'];
 const fail = code => { throw Error(code); };
+
+// Supplied only by our server's admitted attempt + verified bank receipt.
+// These declarations are compared with the callback, not trusted from it.
+function verifyBinding(value, plan) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || Object.keys(value).length !== ATTESTATION_KEYS.length
+    || ATTESTATION_KEYS.some(key => !Object.hasOwn(value, key)) || value.schemaVersion !== 1
+    || ['releaseSha256', 'profileRevision', 'sourceSetSha256', 'avatarSha256', 'bankReceiptSha256', 'nonce']
+      .some(key => typeof value[key] !== 'string' || !HASH.test(value[key]))
+    || ['dealerId', 'workerAvatar'].some(key => typeof value[key] !== 'string' || !AVATAR.test(value[key]))
+    || ['sessionId', 'attemptId'].some(key => typeof value[key] !== 'string' || !ID.test(value[key]))
+    || ['dealerId', 'workerAvatar', 'profileRevision', 'avatarSha256', 'sessionId']
+      .some(key => value[key] !== plan.binding[key])) fail('moving_worker_binding_invalid');
+  return Object.freeze(Object.fromEntries(ATTESTATION_KEYS.map(key => [key, value[key]])));
+}
+
+function verifyAttestation(value, binding, jobId) {
+  if (!ID.test(jobId) || !value || typeof value !== 'object' || Array.isArray(value)
+    || Object.keys(value).length !== ATTESTATION_KEYS.length + 1
+    || ATTESTATION_KEYS.some(key => !Object.hasOwn(value, key) || value[key] !== binding[key])
+    || !Object.hasOwn(value, 'jobId') || value.jobId !== jobId) fail('moving_worker_attestation_mismatch');
+  return Object.freeze({ ...binding, jobId });
+}
 
 /** Internal control-plane receipt from GET endpoint + workers, never browser
  * input. This is a deployment gate, NOT a runtime or avatar-byte attestation.
@@ -9,7 +38,7 @@ const fail = code => { throw Error(code); };
  */
 export function verifyMovingWorkerRelease(receipt, now = Date.now()) {
   const { expectedImage, endpoint, workers, observedAtMs } = receipt || {};
-  if (!IMAGE.test(expectedImage || '') || !/^[a-z0-9]{6,64}$/.test(endpoint?.id || '')
+  if (!(IMAGE.test(expectedImage || '') || OWN_IMAGE.test(expectedImage || '')) || !/^[a-z0-9]{6,64}$/.test(endpoint?.id || '')
     || !Number.isSafeInteger(observedAtMs) || observedAtMs > now || now - observedAtMs > 60000
     || !Number.isSafeInteger(workers?.endpointVersion) || workers.endpointVersion < 1
     || !Array.isArray(workers.workers) || !workers.workers.length || workers.workers.length > 100) fail('moving_worker_release_unverified');
@@ -39,17 +68,28 @@ function json(item) {
  * must deliver only to the authenticated owner and honor the supplied signal.
  */
 export async function createMovingSpeechTransport({ input, origin, release, authorize, onChunk, finalize,
-  signal, idleMs, lifetimeMs } = {}) {
+  signal, idleMs, lifetimeMs, startupMs, attestationBinding } = {}) {
   if (!input?.plan || typeof input.messages !== 'function' || typeof authorize !== 'function'
     || typeof onChunk !== 'function' || typeof finalize !== 'function'
     || (signal !== undefined && !(signal instanceof AbortSignal))) fail('invalid_moving_speech_transport');
   const plan = input.plan;
   // Start lifetime/abort handling BEFORE the first asynchronous admission.
   // The capability remains private until prepare has actually succeeded.
-  let pin = null, channel;
+  let pin = null, channel, binding = null;
   try {
     pin = verifyMovingWorkerRelease(release);
-    channel = createMovingWorkerChannel({ origin, avatar: plan.binding.workerAvatar, idleMs, lifetimeMs });
+    if (OWN_IMAGE.test(pin.image)) {
+      binding = verifyBinding(attestationBinding, plan);
+      // The owned engine includes both leading and trailing silence. Supplying
+      // fewer source frames would silently hold its last pose in the vendor core.
+      if (!Number.isSafeInteger(input.byteLength) || input.byteLength <= 0 || input.byteLength % 2
+        || Math.floor((input.byteLength / 48000 + .22 + .53) * 24) !== plan.timeline.length)
+        fail('moving_worker_plan_padding_mismatch');
+    }
+    else if (attestationBinding !== undefined) fail('moving_worker_binding_requires_owned_release');
+    channel = createMovingWorkerChannel({ origin, avatar: plan.binding.workerAvatar,
+      verifiedAvatar: binding?.workerAvatar, idleMs, lifetimeMs,
+      startupMs: binding ? (startupMs ?? Math.min(150000, lifetimeMs ?? 180000)) : undefined });
   } catch (error) {
     input.cancel();
     await finalize({ owner: null, binding: plan.binding, release: pin, jobId: undefined, reason: 'prepare_failed' });
@@ -128,10 +168,15 @@ export async function createMovingSpeechTransport({ input, origin, release, auth
         const hello = json(await channel.next());
         if (hello.t !== 'pong' || hello.avatar !== plan.binding.workerAvatar
           || !Number.isFinite(hello.rutor_per_s) || hello.rutor_per_s < 30
-          || hello.ljud_fore_s !== plan.audioLeadMs / 1000 || hello.del_rutor !== 12) fail('moving_worker_incompatible');
+          || hello.ljud_fore_s !== plan.audioLeadMs / 1000 || hello.del_rutor !== 12
+          || (binding && (hello.pad_after_s !== .53 || hello.fps !== 24))) fail('moving_worker_incompatible');
         // A fresh admission check is required AFTER the authenticated callback,
         // before any PCM is disclosed. Worker pong does not attest its image.
         await check('send');
+        if (binding) {
+          const attestation = verifyAttestation(hello.attestation, binding, jobId);
+          await channel.send(JSON.stringify({ t: 'bind', attestation }));
+        }
         for (const message of input.messages({ signal: channel.signal })) {
           if (signal?.aborted || finished) fail('moving_speech_cancelled');
           await check('transfer');
@@ -146,6 +191,7 @@ export async function createMovingSpeechTransport({ input, origin, release, auth
           if (meta.t === 'error') fail('moving_worker_reported_error');
           if (meta.t === 'done') {
             if (!chunks) fail('moving_worker_empty_result');
+            if (binding && nextFrame !== plan.timeline.length) fail('moving_worker_incomplete_result');
             await check('complete');
             await finish('complete');
             return Object.freeze({ chunks, frames: nextFrame - plan.start.fran_ruta, planSha256: plan.planSha256 });

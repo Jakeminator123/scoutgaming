@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "baseImage": "ubuntu:24.04@sha256:a2d43bffc46670d7108bb3c0468c67c5557c4c92e83e1e34cbff1322ad1b94dc",
+  "platform": "linux/amd64",
+  "aptSnapshot": "20261016T000000Z",
+  "python": "3.12.3",
+  "musetalkCommit": "0a89dec45a0192b824e3cf4daf96c239440c5ed8",
+  "command": "python build.py --tag croupier-moving-worker:local",
+  "runtime": {
+    "entrypoint": "JSON {id: providerJobId, input: job} on stdin; one redacted JSON result on stdout",
+    "mount": "/banks read-only: <avatarSha256>.tar and <bankReceiptSha256>.json; no keys or media in image",
+    "environment": [
+      "MOVING_CALLBACK_ORIGIN=https://approved-exact-engine-origin"
+    ],
+    "protocol": "Existing pong/start/PCM/end/lapp/done plus mandatory pong.attestation and exact bind acknowledgement",
+    "rendering": "24fps, 220ms leading and 530ms trailing silence, 12-frame chunks; one utterance/job",
+    "admission": "Game server and budget journal own authorization, reservation, accepted provider job and finalization",
+    "serverless": {
+      "entrypoint": "serverless.py",
+      "sdk": "runpod==1.12.0",
+      "concurrency": 1,
+      "endpointWorkersMin": 0,
+      "endpointWorkersMax": 1,
+      "executionTimeoutSeconds": 180,
+      "idleTimeoutSeconds": 60,
+      "deploymentApplied": false
+    }
+  },
+  "gates": {
+    "containerBuildVerified": false,
+    "gpuRuntimeVerified": false,
+    "liveGameVerified": false,
+    "visualApproval": false,
+    "serverlessSdkPackaged": true
+  },
+  "notes": [
+    "build.py never pushes or creates cloud resources.",
+    "Use a full verified prepared bank, not the shortened offline preview bank.",
+    "Measured throughput below 30fps fails admission; no MIN_RUTOR=0 override."
+  ],
+  "serverlessCommand": "python build.py --target serverless --tag croupier-moving-worker:serverless"
+}

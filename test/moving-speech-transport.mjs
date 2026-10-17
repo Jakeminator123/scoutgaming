@@ -12,13 +12,25 @@ const hash = s => createHash('sha256').update(s).digest('hex');
 const image = `ghcr.io/emacodehero/croupier-lipsync-worker:${hash('synthetic worker release').slice(0, 40)}`;
 const receipt = () => ({ expectedImage: image, endpoint: { id: 'fixtureendpoint', image }, observedAtMs: Date.now(),
   workers: { endpointVersion: 13, workers: [{ image, version: 13, isStale: false }] } });
-function inputFor(dealerId = 'paow', workerAvatar = dealerId, revision = 1) {
+const ownedReceipt = () => {
+  const r = receipt(), image = `ghcr.io/jakeminator123/moving-gpu-worker@sha256:${hash('owned image')}`;
+  r.expectedImage = r.endpoint.image = r.workers.workers[0].image = image;
+  return r;
+};
+const ownedBinding = input => ({ schemaVersion: 1, releaseSha256: hash('owned source release'),
+  dealerId: input.plan.binding.dealerId, workerAvatar: input.plan.binding.workerAvatar,
+  profileRevision: input.plan.binding.profileRevision, sourceSetSha256: hash('sources'),
+  avatarSha256: input.plan.binding.avatarSha256, bankReceiptSha256: hash('bank receipt'),
+  sessionId: input.plan.binding.sessionId, attemptId: 'attempt-1', nonce: hash('private fresh fixture nonce') });
+const ownedHello = (binding, jobId = 'accepted-fixture-job') => ({ fps: 24, pad_after_s: .53,
+  attestation: { ...binding, jobId } });
+function inputFor(dealerId = 'paow', workerAvatar = dealerId, revision = 1, frameCount = 30) {
   const pcm = Buffer.alloc(48000, revision);
   return prepareMovingSpeechPcmInput({
     binding: { dealerId, workerAvatar, sessionId: 'session-1', talkId: 'talk-1', revision,
       profileRevision: hash('profile'), textSha256: hash('text'), audioSha256: hash(pcm), avatarSha256: hash('bank') },
-    clips: [{ dealerId, take: 'pos1', sha256: hash('source'), fps: 24, frameCount: 30, kind: 'video' }],
-    frames: Array.from({ length: 30 }, (_, frame) => ({ take: 'pos1', frame })),
+    clips: [{ dealerId, take: 'pos1', sha256: hash('source'), fps: 24, frameCount, kind: 'video' }],
+    frames: Array.from({ length: frameCount }, (_, frame) => ({ take: 'pos1', frame })),
     audio: { pcm, sampleRate: 24000, channels: 1, format: 's16le' },
   });
 }
@@ -27,8 +39,10 @@ const metadata = (input, fran = 0, n = 12, del = fran / 12) => ({ t: 'lapp', id:
 const done = input => JSON.stringify({ t: 'done', id: input.plan.start.id });
 async function setup(t, options = {}) {
   const input = options.input || inputFor(), finished = [], chunks = [], incoming = [];
-  const owner = { userId: 'user-1', sessionId: 'session-1', endpointId: 'fixtureendpoint', jobId: 'accepted-fixture-job', release: receipt() };
-  const transport = await createMovingSpeechTransport({ input, origin: 'https://own-game.example', release: receipt(),
+  const owner = { userId: 'user-1', sessionId: 'session-1', endpointId: 'fixtureendpoint', jobId: 'accepted-fixture-job', release: options.release || receipt() };
+  const transport = await createMovingSpeechTransport({ input, origin: 'https://own-game.example', release: options.release || receipt(),
+    attestationBinding: options.attestationBinding,
+    startupMs: options.startupMs,
     authorize: options.authorize || (async () => owner), onChunk: options.onChunk || (async (meta, bytes) => chunks.push({ meta, bytes })),
     finalize: options.finalize || (async outcome => finished.push(outcome)), signal: options.signal,
     idleMs: options.idleMs || 1000, lifetimeMs: options.lifetimeMs || 5000 });
@@ -75,6 +89,88 @@ test('release gate rejects wrong image, rolling versions, stale workers and stal
     r => r.observedAtMs -= 61000, r => r.observedAtMs += 61000, r => r.expectedImage = 'latest']) {
     const r = receipt(); change(r); assert.throws(() => verifyMovingWorkerRelease(r), /moving_worker_release/);
   }
+});
+
+test('owned Dragan bank is bound to the accepted job before start/PCM and requires complete output', async t => {
+  const input = inputFor('dragan', 'dragan', 1, 42), binding = ownedBinding(input);
+  const f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding });
+  // Caller mutation cannot change the admission captured by this transport.
+  const hello = ownedHello(binding); binding.nonce = hash('changed after preparation');
+  const ws = await f.ready(hello), run = f.transport.run(); await f.ended(ws);
+  assert.deepEqual(f.incoming[0], { t: 'bind', attestation: hello.attestation });
+  assert.equal(f.incoming[1].t, 'start');
+  assert.deepEqual(Buffer.concat(f.incoming.filter(Buffer.isBuffer)), input.playbackPcm());
+  for (const [from, n] of [[0, 12], [12, 12], [24, 12], [36, 6]]) {
+    ws.send(JSON.stringify(metadata(input, from, n))); ws.send(Buffer.from([n]));
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  ws.send(done(input));
+  assert.equal((await run).frames, 42); assert.equal(f.finished.length, 1);
+  assert.equal(f.finished[0].jobId, f.owner.jobId); assert.equal(f.finished[0].reason, 'complete');
+});
+
+test('owned worker rejects a missing, altered, foreign or extra attestation before disclosing PCM', async t => {
+  for (const field of ['missing', 'jobId', 'nonce', 'attemptId', 'dealerId', 'workerAvatar', 'sessionId',
+    'profileRevision', 'sourceSetSha256', 'avatarSha256', 'bankReceiptSha256', 'releaseSha256', 'extra']) {
+    const input = inputFor('dragan', 'dragan', 1, 42), binding = ownedBinding(input);
+    const f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding });
+    const hello = ownedHello(binding);
+    if (field === 'missing') delete hello.attestation;
+    else hello.attestation[field] = 'different';
+    await f.ready(hello); await assert.rejects(f.transport.run(), /attestation_mismatch/);
+    assert.equal(f.incoming.length, 0, field); assert.equal(f.finished.length, 1);
+    assert.throws(() => input.playbackPcm(), /cancelled/);
+  }
+});
+
+test('owned release requires exact server binding, immutable digest and padded source plan at prepare', async () => {
+  for (const scenario of ['missing-binding', 'wrong-profile', 'extra-binding', 'short-plan', 'mutable-image', 'legacy-binding']) {
+    const input = inputFor('dragan', 'dragan', 1, scenario === 'short-plan' ? 30 : 42);
+    const binding = ownedBinding(input), release = scenario === 'legacy-binding' ? receipt() : ownedReceipt(), finished = [];
+    if (scenario === 'wrong-profile') binding.profileRevision = hash('other');
+    if (scenario === 'extra-binding') binding.extra = true;
+    if (scenario === 'mutable-image') release.expectedImage = 'ghcr.io/jakeminator123/moving-gpu-worker:latest';
+    await assert.rejects(createMovingSpeechTransport({ input, origin: 'https://own-game.example', release,
+      attestationBinding: scenario === 'missing-binding' ? undefined : binding,
+      authorize: async () => assert.fail('invalid input must not authorize'), onChunk: async () => assert.fail('must not deliver'),
+      finalize: async outcome => finished.push(outcome) }), /moving_worker_(binding|plan_padding|release)/);
+    assert.equal(finished.length, 1); assert.equal(finished[0].reason, 'prepare_failed');
+  }
+});
+
+test('owned worker rejects changed padding protocol and truncated output', async t => {
+  for (const scenario of ['padding', 'fps', 'truncated']) {
+    const input = inputFor('dragan', 'dragan', 1, 42), binding = ownedBinding(input);
+    const f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding });
+    const hello = ownedHello(binding);
+    if (scenario === 'padding') hello.pad_after_s = 0;
+    if (scenario === 'fps') hello.fps = 30;
+    const ws = await f.ready(hello), run = f.transport.run();
+    const rejected = assert.rejects(run, /incompatible|incomplete_result/);
+    if (scenario === 'truncated') {
+      await f.ended(ws); ws.send(JSON.stringify(metadata(input))); ws.send(Buffer.from([12])); ws.send(done(input));
+    }
+    await rejected;
+    if (scenario !== 'truncated') assert.equal(f.incoming.length, 0);
+    assert.equal(f.finished.length, 1); assert.notEqual(f.finished[0].reason, 'complete');
+  }
+});
+
+test('owned cold start gets one bounded grace period; established I/O keeps its short timeout', async t => {
+  const input = inputFor('dragan', 'dragan', 1, 42), binding = ownedBinding(input);
+  const f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding,
+    idleMs: 40, startupMs: 500, lifetimeMs: 1000 });
+  const run = f.transport.run(), rejected = assert.rejects(run, /read_timeout/);
+  await new Promise(resolve => setTimeout(resolve, 80));
+  const ws = await f.ready(ownedHello(binding)); await f.ended(ws);
+  await rejected;
+  assert.ok(f.incoming.some(message => message.t === 'bind'));
+  assert.equal(f.finished.length, 1);
+  const missingInput = inputFor('dragan', 'dragan', 1, 42);
+  const missing = await setup(t, { input: missingInput, release: ownedReceipt(), attestationBinding: ownedBinding(missingInput),
+    idleMs: 20, startupMs: 60, lifetimeMs: 1000 });
+  await assert.rejects(missing.transport.run(), /startup_timeout/);
+  assert.equal(missing.finished.length, 1); assert.equal(missing.incoming.length, 0);
 });
 
 test('two consecutive Paow/Dragge socket transfers use our exact PCM and feed the existing dealer frame layer', async t => {

@@ -5,7 +5,43 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
-## Dealerklipp, register och talworker: samlad plan — 17 oktober 2026
+## Dealerklipp: importkontrakt, referensskydd och workerförberedelse — 17 oktober 2026
+
+På `codex/dragan-lipsync-registry` / PR191 finns nu en körbar skrivfri importplan
+för fryst Kevin-underlag och utökat raderingsskydd. Planen bevarar exakta ID:n,
+poseversioner, språk och inspelat tal. Den gör ingen upload/apply och visar
+saknade klassningar/byte-/talbevis i stället för att gissa.
+
+Forge tar referenser atomiskt mot samma pending/deleted-spärr som radering.
+Inspektionen omfattar även Forge-profiler/-jobb, sparade talsvar och paket.
+Äldre taljobb utan exakta indata skyddas konservativt vid öppna GPU-sessioner,
+giltiga leases och oavslutade fullfilsjobb. Detta är inte en komplett gemensam
+mediaadmission för den framtida rörliga talvägen. Befintliga schemaversioner
+002/008/012 och deras nödvändiga tabeller/checksummor verifierades läsande i Neon;
+ingen migration eller dataändring gjordes.
+
+Separat workerpaket återanvänder den lokalt verifierade motorn. Transporten
+kräver låst image-digest och exakt bank-/profil-/session-/jobbintyg innan PCM.
+OpenClaw förblir standardkälla till dynamisk text; färdiga repliker behåller sitt ljud.
+Admin-huvudagenten äger klippkartan och befintliga UI-/import-API-kontrakt består.
+
+Verifierat lokalt: 21 transportprov med riktiga sockets; 95 ytterligare import-,
+bildrute-, PCM-, OpenClaw-chatt- och talregisterprov passerade, ett valfritt
+webbläsarcodecprov hoppades över. Referensagentens separata körning gav
+121 pass/0 fel/1 överhoppat PostgreSQL-fixtureprov; SQL-frågorna lästes även mot
+produktion. Workeragentens 23 tester passerade på Windows och WSL/Python 3.12;
+hela Dragan-bankens 2 479 rutor/50 tagningar och sju modellhashar verifierades.
+Sviterna överlappar och summeras inte. Detta är kontraktsbevis, inte
+hörbar/visuell liveacceptans.
+
+Kvar: byggd/verifierad molnimage och GPU-prov, verklig import genom befintliga
+skrivare, taljournal/dispatcher och spelarens ljudklocka/omplanering. Docker
+saknas lokalt. Läsande RunPod-kontroll 01:42 UTC visade inga pods och bara
+Astrids befintliga endpoint. Inga filmer, nycklar eller Astrid-tjänster ändrades;
+ingen ny GPU-kostnad uppstod. Den frysta lokala taggen och originalen består.
+Detaljer/kommandon: [kanonisk storage-guide](storage/BLOB-NEON.md).
+
+## Dealerklipp, register och talworker: föregående plansteg — 17 oktober 2026
 
 Jakob beställde en samlad plan för Kevins verkliga blackjack-underlag,
 rättad klassificering/deduplicering i Neon och Blob samt en gemensam talworker.

@@ -1,0 +1,42 @@
+name: Moving GPU image build check
+
+on:
+  pull_request:
+    paths:
+      - 'services/moving-gpu-worker/**'
+      - '.github/workflows/moving-gpu-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: moving-gpu-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: services/moving-gpu-worker
+      - name: Validate the sealed source and isolated contracts
+        working-directory: services/moving-gpu-worker
+        run: |
+          python3 -c 'from contracts import verify_release; print(verify_release("."))'
+          python3 -B -m unittest discover -s tests -v
+      - name: Build the pinned serverless image on CPU
+        run: python3 services/moving-gpu-worker/build.py --target serverless --tag croupier-moving-worker:check
+      - name: Verify packaged imports and contracts without GPU or network
+        run: |
+          docker run --rm --network none --entrypoint /bin/sh croupier-moving-worker:check -ec '
+            /workspace/mt-venv/bin/python -B -c "import sys; sys.path.insert(0, \"/opt/moving-worker\"); sys.path.insert(0, \"/opt/moving-worker/vendor\"); import torch, motor, rorlig, serverless, runpod; from contracts import verify_release; print(verify_release(\"/opt/moving-worker\"))"
+            /workspace/mt-venv/bin/python -B -m unittest discover -s /opt/moving-worker/tests -v
+          '
+      - name: Record the build result without publishing or provisioning
+        run: |
+          echo "Built and import-checked serverless image from $GITHUB_SHA on CPU." >> "$GITHUB_STEP_SUMMARY"
+          echo 'No image push, RunPod resource, GPU inference or live-game approval.' >> "$GITHUB_STEP_SUMMARY"
+          docker image inspect croupier-moving-worker:check --format '{{.Id}}' >> "$GITHUB_STEP_SUMMARY"
