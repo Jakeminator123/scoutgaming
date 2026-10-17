@@ -41,10 +41,20 @@ nedskalade poster ger `moving_runpod_workers_unknown`. Ägarskap (endpoint/
 template) krävs för alla poster. Fel image/version på en aktiv post är
 fortfarande `moving_worker_release_mismatch`; på en nedskalad post
 rapporteras den som `isStale` eftersom providern själv byter ut föråldrade
-slots utan kostnad. `workerState()` räknar nu `running+ready+unhealthy` som
-upptaget och redovisar idle/initializing/throttled separat, så en cachad slot
-blockerar inte längre `reserveGpu`-kravet workers/busy/available = 0, medan
-en varm debiterad worker eller ett osäkert unhealthy-läge fortfarande gör det.
+slots utan kostnad. `workerState()` (`/health`) följer Runpods egen modell:
+en worker är antingen startad (`running`: cold start, jobb eller idle-väntan,
+debiterad) eller nedskalad och odebiterad. `busy = running`, `workers =
+running + unhealthy`, `available = running − jobs.inProgress` (startad utan
+jobb). `ready` är providerns "kan ta jobb"-mått och räknar även cachade,
+ej startade slots; efter första lyckade jobbet ligger `idle:1, ready:1` kvar
+tills slotten byts ut, så den får inte ingå i `workers`/`available`. Tidigare
+(main och första versionen av #226) summerades `ready` dit, vilket blockerade
+`reserveMovingSession` och återhämtningens `worker_not_drained` för alltid
+efter en lyckad session. Råa `workers`/`jobs`-räknare följer med oförändrade
+i `raw` som journalbevis; saknad eller ogiltig räknare (även `jobs`) är
+fortfarande `moving_runpod_worker_state_unknown`, och `running` eller
+`unhealthy` > 0 blockerar fortfarande. Samma definition använder redan
+`tools/activate-native-ai-qa.mjs` (`running=0`, `inProgress=0`, `inQueue=0`).
 `verifyMovingWorkerRelease` kräver vid `send` minst en aktiv post, inte bara
 någon post. Rader utan `state` behåller den strikta äldre tolkningen.
 

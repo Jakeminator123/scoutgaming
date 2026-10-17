@@ -24,23 +24,49 @@ test('another job cannot release the admitted job, and health failures are not z
   let data={id:'other',status:'COMPLETED'};const client=create(async()=>Response.json(data));
   await assert.rejects(client.status({jobId:'ours'}),/job_mismatch/);await assert.rejects(client.cancel({jobId:'ours'}),/job_mismatch/);
   data={id:'ours',status:'COMPLETED'};assert.equal((await client.status({jobId:'ours'})).status,'COMPLETED');
-  data={workers:{idle:0,running:0,initializing:0,ready:0,throttled:0,unhealthy:0}};
-  assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0,scaledDown:{idle:0,initializing:0,throttled:0},unhealthy:0,total:0});
+  data=health();
+  assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0,unhealthy:0,cached:{idle:0,ready:0},
+    scaledDown:{idle:0,initializing:0,throttled:0},raw:health()});
   delete data.workers.ready;await assert.rejects(client.workerState(),/state_unknown/);
+  data=health();delete data.jobs;await assert.rejects(client.workerState(),/state_unknown/);
+  data=health();delete data.jobs.inProgress;await assert.rejects(client.workerState(),/state_unknown/);
 });
 
-test('health classifies scaled-down slots as free capacity and running, ready or unhealthy as occupied',async()=>{
+const health=(workers={},jobs={})=>({workers:{idle:0,running:0,initializing:0,ready:0,throttled:0,unhealthy:0,...workers},
+  jobs:{completed:0,failed:0,inProgress:0,inQueue:0,retried:0,...jobs}});
+const drained=state=>state.workers===0&&state.busy===0&&state.available===0;
+
+test('health classifies scaled-down slots as free capacity and running or unhealthy as occupied',async()=>{
   let data;const client=create(async()=>Response.json(data));
   // Cached/pulling/throttled slots are unbilled and must not block a reservation.
-  data={workers:{idle:1,running:0,initializing:1,ready:0,throttled:1,unhealthy:0}};
-  assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0,scaledDown:{idle:1,initializing:1,throttled:1},unhealthy:0,total:3});
-  data={workers:{idle:0,running:1,initializing:0,ready:0,throttled:0,unhealthy:0}};
-  assert.deepEqual(await client.workerState(),{workers:1,busy:1,available:0,scaledDown:{idle:0,initializing:0,throttled:0},unhealthy:0,total:1});
-  data={workers:{idle:0,running:0,initializing:0,ready:1,throttled:0,unhealthy:0}};
-  assert.equal((await client.workerState()).available,1);
-  data={workers:{idle:0,running:0,initializing:0,ready:0,throttled:0,unhealthy:1}};
-  assert.equal((await client.workerState()).workers,1);
-  for(const bad of [{idle:-1},{running:'1'},{ready:1.5}]){data={workers:{idle:0,running:0,initializing:0,ready:0,throttled:0,unhealthy:0,...bad}};await assert.rejects(client.workerState(),/state_unknown/);}
+  data=health({idle:1,initializing:1,throttled:1});
+  assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0,unhealthy:0,cached:{idle:1,ready:0},
+    scaledDown:{idle:1,initializing:1,throttled:1},raw:data});
+  data=health({running:1},{inQueue:1});
+  assert.deepEqual(await client.workerState(),{workers:1,busy:1,available:1,unhealthy:0,cached:{idle:0,ready:0},
+    scaledDown:{idle:0,initializing:0,throttled:0},raw:data});
+  data=health({running:1},{inProgress:1});
+  const processing=await client.workerState();assert.equal(processing.busy,1);assert.equal(processing.available,0);assert.equal(drained(processing),false);
+  data=health({unhealthy:1});
+  const unhealthy=await client.workerState();assert.equal(unhealthy.workers,1);assert.equal(drained(unhealthy),false);
+  for(const bad of [{idle:-1},{running:'1'},{ready:1.5}]){data=health(bad);await assert.rejects(client.workerState(),/state_unknown/);}
+  for(const bad of [{inProgress:-1},{inQueue:'0'}]){data=health({},bad);await assert.rejects(client.workerState(),/state_unknown/);}
+});
+
+test('a cached ready slot left by an earlier session counts as drained so reservation and recovery proceed',async()=>{
+  let data;const client=create(async()=>Response.json(data));
+  // After a job completes and the worker scales down, the provider keeps the
+  // image cached and reports the slot as idle and ready. Nothing is started.
+  data=health({idle:1,ready:1});
+  const cached=await client.workerState();
+  assert.equal(drained(cached),true);assert.deepEqual(cached.cached,{idle:1,ready:1});assert.deepEqual(cached.raw,data);
+  // The same slot once started is running again and blocks until it drains.
+  data=health({running:1,ready:1});
+  const started=await client.workerState();assert.equal(started.busy,1);assert.equal(drained(started),false);
+  // A ready counter that exceeds the started workers never blocks on its own.
+  data=health({ready:3});assert.equal(drained(await client.workerState()),true);
+  // Unhealthy beside a cached slot is still uncertain and blocks.
+  data=health({idle:1,ready:1,unhealthy:1});assert.equal(drained(await client.workerState()),false);
 });
 
 test('worker records: RUNNING occupies the GPU, EXITED is a free cached slot, unknown status counts as occupied',async()=>{
