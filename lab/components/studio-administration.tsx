@@ -11,7 +11,7 @@ import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioR
 import { labUrl } from '../lib/lab-url.mjs';
 import { StudioNavigation } from './studio-navigation';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
-import { journalType, formatJournalAmount, readEconomyJournal } from '../../packages/design-preview/admin/lib/economy-journal.mjs';
+import { journalType, formatJournalAmount, readEconomyJournal } from '../client/admin/lib/economy-journal.mjs';
 import styles from './studio-administration.module.css';
 
 type JsonObject = Record<string, unknown>;

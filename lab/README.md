@@ -21,8 +21,8 @@ komponenter. Manuella medieverktyg finns i [tools/media](../tools/media/README.m
 **Teknisk roll:** `lab/` är den aktiva Next.js-tjänsten `studio` i
 Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
 `/partner` och deras Studio-API:er. `/studio` är tjänstens basePath i molnet.
-`packages/design-preview` äger den nya admin-/lobbydesignen; labbets bygge
-förbereder och serverar den från `design-preview-build/`. Behörighet, scoped
+`lab/client` innehåller Admin/Lobby-klienten med eget React-/TypeScript-bygge.
+Labbets bygge förbereder och serverar den från `design-preview-build/`. Behörighet, scoped
 data, mediaregister och anslutningar finns kvar i denna tjänst.
 Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
 Neon är produktens register och privat Blob innehåller mediebyte.

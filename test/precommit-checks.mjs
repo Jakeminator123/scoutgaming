@@ -22,7 +22,7 @@ test('documentation and indexing-only changes use quick checks', () => {
 test('reviewed folder guides use quick checks without exempting sibling code or arbitrary README files', () => {
   const guides = [
     'apps/croupier-frontend/README.md',
-    'packages/presentation/README.md', 'packages/design-preview/README.md',
+    'packages/presentation/README.md', 'lab/client/README.md',
     'packages/presentation/docs/INTEGRATION.md',
     'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
     'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
@@ -33,7 +33,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
     assert.equal(mode(guides.map(path => change(path, status))), 'documentation', status);
   }
   for (const path of [
-    'tools/media/encode.sh', 'packages/design-preview/build.mjs',
+    'tools/media/encode.sh', 'lab/client/build.mjs',
     'services/astrid-gpu-worker/.github/workflows/checks.yml',
     'services/astrid-gpu-worker/gateway/auth.mjs', 'web/storage/package.json',
     'tools/media/runtime-bundle/README.md', 'web/public/lab/README.md',
