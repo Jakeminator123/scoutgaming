@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { StudioStorageError, canonicalStudioJson, validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError, canonicalStudioJson, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { GPU_RESERVATION_WINDOW_MS, speechRequestKey } from '../../web/postgres-speech-journal.mjs';
 import { normalizeSpeechPackage } from '../../web/public/speech-package.mjs';
 

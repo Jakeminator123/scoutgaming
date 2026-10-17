@@ -3,12 +3,12 @@ import { allowsWorkspaceResource, internalPartnerContext } from './partner-works
 import { assertNativeStudioRequest } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { authorizePartnerWorkspace, partnerApiBase, partnerAuthConfig } from './partner-session.mjs';
-import { readPackagePresentation, publicPackageBranding } from '../../web/storage/presentation-package.mjs';
+import { readPackagePresentation, publicPackageBranding } from '../../packages/presentation/server/presentation-package.mjs';
 import { partnerPackageProfiles } from './partner-package-view.mjs';
 import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
-import { isPresentationRoomLaneCompatible } from '../../web/storage/frozen-presentation-capture.mjs';
-import { listPackageRooms } from '../../web/presentation-room-contract.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { isPresentationRoomLaneCompatible } from '../../packages/presentation/server/frozen-presentation-capture.mjs';
+import {listPackageRooms} from '../../packages/presentation/server/package-rooms.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 
 const disconnected = Object.freeze(['players', 'transactions', 'reports']);
 

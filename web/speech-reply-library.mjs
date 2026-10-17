@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
-import { validateStudioScope } from './storage/studio-contract.mjs';
+import { validateStudioScope } from '../packages/studio-registry/server/document-contract.mjs';
 import { validateReplyCategories } from './public/speech-reply-library.mjs';
 import { mediaBlobPath, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, isCloudMediaConfigured } from './blob-media.mjs';
 

@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { OPERATOR_LIFECYCLE_KEY } from '../../packages/presentation/contracts/operator-lifecycle-key.mjs';
+import { OPERATOR_LIFECYCLE_KEY } from '../contracts/operator-lifecycle-key.mjs';
 import { gzipSync, gunzipSync, brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
-import { validatePresentationPackage } from '../presentation-layers.mjs';
-import { canonicalStudioJson, StudioStorageError } from './studio-contract.mjs';
+import { validatePresentationPackage } from '../contracts/presentation-layers.mjs';
+import { canonicalStudioJson, StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
 
 // A reserved, server-authored part of the existing immutable operator package.
 // Compression keeps the existing 8 KiB branding column/schema unchanged.

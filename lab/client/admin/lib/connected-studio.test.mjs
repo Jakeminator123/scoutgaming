@@ -9,7 +9,7 @@ import { materialSource } from '../../../../packages/presentation/contracts/mate
 import { layerAssetPath } from '../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import { speechSlotStandard, speechSlotVariantId } from '../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import { recordedSpeechIdentity } from '../../../../packages/presentation/contracts/recorded-speech.mjs';
-import { gateRecordedSpeechSelection } from '../../../../web/recorded-speech-selection.mjs';
+import { gateRecordedSpeechSelection } from '../../../../packages/presentation/runtime/recorded-speech-selection.mjs';
 const id1='11111111-1111-4111-8111-111111111111', id2='22222222-2222-4222-8222-222222222222';
 test('room choices in another tab preserve drafts while same-tab navigation retains its leave guard',()=>{
   const event={button:0,metaKey:false,ctrlKey:false,shiftKey:false,altKey:false},anchor={target:'',hasAttribute:()=>false};

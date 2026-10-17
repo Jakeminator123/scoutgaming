@@ -1,7 +1,7 @@
-import * as savedGameDocumentContract from './studio-contract.mjs';
+import * as savedGameDocumentContract from '../../packages/studio-registry/server/document-contract.mjs';
 
 import { createRegisteredDealerIdle } from '../../packages/presentation/server/registered-dealer-idle.mjs';
-import { createStudioRepository } from './studio-repository.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { createSavedGamePolicy, studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
 

@@ -1,4 +1,4 @@
-import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 import { assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 

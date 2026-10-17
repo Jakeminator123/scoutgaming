@@ -1,12 +1,12 @@
-import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {isPresentationRoom} from '../presentation-room-contract.mjs';
-import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
-import { laneDealerSelection } from '../public/game-lanes.mjs';
-import {buildPresentationPackage} from '../presentation-layers.mjs';
-import {normalizeProject} from '../../packages/presentation/contracts/studio-model.mjs';
+import {isActiveDealerId} from '../contracts/dealer-identity.mjs';
+import {isPresentationRoom} from '../contracts/presentation-room.mjs';
+import { gameLaneConfiguration } from '../contracts/game-lanes.mjs';
+import {laneDealerSelection} from '../contracts/game-lanes.mjs';
+import {buildPresentationPackage} from '../contracts/presentation-layers.mjs';
+import {normalizeProject} from '../contracts/studio-model.mjs';
 import {captureFrozenRegisteredDealers, captureFrozenDealerPlayback, assertFrozenMediaPreconditions, resolveFrozenDealerIdle} from './frozen-dealer-idle.mjs';
-import {validateRevision, StudioStorageError} from './studio-contract.mjs';
-import {assertPresentationRoomMaterials} from '../presentation-material-game.mjs';
+import {validateRevision, StudioStorageError} from '../../studio-registry/server/document-contract.mjs';
+import {assertPresentationRoomMaterials} from '../contracts/presentation-material-game.mjs';
 
 const fail = () => { throw new StudioStorageError('studio_media_registry_unavailable'); };
 export function captureFrozenPresentation({snapshot, selectedLaneIds, inventory, requiredIdleDealerIds = [], requiredRouletteIdleDealerIds = []} = {}) {

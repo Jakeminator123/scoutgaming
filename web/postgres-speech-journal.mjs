@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { StudioStorageError, validateStudioEnvironmentId, validateStudioScope, canonicalStudioJson } from './storage/studio-contract.mjs';
+import { StudioStorageError, validateStudioEnvironmentId, validateStudioScope, canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 import { verifyMovingSpeechBinding } from './moving-speech-binding.mjs';
 import { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS } from './speech-journal-constants.mjs';
 

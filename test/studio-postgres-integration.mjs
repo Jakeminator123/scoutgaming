@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { createHash,randomBytes,randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { createStudioRepository } from '../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
 import { loadStudioMigrations, planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
-import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../web/storage/studio-contract.mjs';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 import {runRuntimeRegistrySqlChecks} from './fixtures/studio-runtime-sql-checks.mjs';
 
 const suffix = () => randomBytes(8).toString('hex');

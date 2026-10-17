@@ -170,10 +170,10 @@ test('the wrong revision is 409 and a key outside the lane is 422', async () => 
   assert.equal((await store.getCurrentPackage(operatorId)).revision, 1);
 });
 
-import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
 import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
-import { layerAssetPath } from '../../web/presentation-layers.mjs';
+import { layerAssetPath } from '../../packages/presentation/contracts/presentation-layers.mjs';
 
 const tableId='11111111-1111-4111-8111-111111111111', backgroundId='22222222-2222-4222-8222-222222222222';
 function makePresentation(layered=true) {

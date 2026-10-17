@@ -1,5 +1,5 @@
-import {readPackagePresentation} from './presentation-package.mjs';
-import {validateLayerAsset} from '../presentation-layers.mjs';
+import {readPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
+import {validateLayerAsset} from '../../packages/presentation/contracts/presentation-layers.mjs';
 
 export function createPublishedLayerAssets({packages,privateMedia}) {
   return async function handle(request) {

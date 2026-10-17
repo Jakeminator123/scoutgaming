@@ -1,7 +1,7 @@
 import { presentationPublicModules } from '../packages/presentation/public-modules.mjs';
 import { isActiveDealerId as isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
-import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from './recorded-speech-selection.mjs';
+import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
 import { selectRegisteredIdleRule } from '../lab/lib/registered-idle-rules.mjs';
 import { registeredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';

@@ -1,19 +1,19 @@
-import * as savedGameDocumentContract from './studio-contract.mjs';
+import * as savedGameDocumentContract from '../../studio-registry/server/document-contract.mjs';
 
-import { registeredIdlePolicy, registeredIdleInventory } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
-import { frozenPlaybackProject } from '../frozen-dealer-playback.mjs';
+import { registeredIdlePolicy, registeredIdleInventory } from '../runtime/registered-idle-policy.mjs';
+import { frozenPlaybackProject } from '../contracts/frozen-dealer-playback.mjs';
 import { isPresentationRoomLaneCompatible } from './frozen-presentation-capture.mjs';
-import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
-import { validateStudioScope, studioStorageFailure, canonicalStudioJson } from './studio-contract.mjs';
+import { createOperatorStore } from '../../operators/server/operator-store.mjs';
+import { validateStudioScope, studioStorageFailure, canonicalStudioJson } from '../../studio-registry/server/document-contract.mjs';
 import {PRESENTATION_PACKAGE_KEY} from './presentation-package.mjs';
-import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';
-import { isActiveDealerId as isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import { isGameLaneId } from '../public/game-lanes.mjs';
-import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
-import { isPresentationRoom } from '../presentation-room-contract.mjs';
-import { StudioStorageError } from './studio-contract.mjs';
+import { createSavedGamePolicy } from './saved-game-policy.mjs';
+import { isActiveDealerId as isDealerId } from '../contracts/dealer-identity.mjs';
+import {isGameLaneId} from '../contracts/game-lane-id.mjs';
+import { isOperatorSlug } from '../../navigation/operator-slug.mjs';
+import {isPresentationRoom} from '../contracts/presentation-room.mjs';
+import { StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
 import { resolveFrozenDealerIdle, validateFrozenRegisteredDealers } from './frozen-dealer-idle.mjs';
-import {recordedSpeechProjection} from '../recorded-speech-selection.mjs';
+import {recordedSpeechProjection} from '../runtime/recorded-speech-selection.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 

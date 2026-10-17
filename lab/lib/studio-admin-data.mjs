@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
-import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
 import { createPlayerAdministration } from '../../web/storage/player-administration.mjs';
 import { createRegisteredVoiceLines, studioVoiceIdentity, voiceReviewMatches } from './studio-voice-lines.mjs';
 import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../packages/presentation/contracts/game-lanes.mjs';

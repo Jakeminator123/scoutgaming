@@ -1,9 +1,10 @@
 # Studio-registret
 
 `server/repository.mjs` äger en gemensam implementation av scoped SQL,
-transaktioner, CAS, historik och presentationssnapshots. Appkompositionen i
-`web/storage/studio-repository.mjs` tillför obligatoriska namngivna kontrakts-,
-policy-, katalog- och dealer-set-adaptrar.
+transaktioner, CAS, historik och presentationssnapshots.
+`server/document-contract.mjs` binder samma projekt-, social- och lanevalidatorer;
+`server/document-repository.mjs` binder samma obligatoriska namngivna kontrakts-,
+policy-, katalog- och dealer-set-adaptrar till kärnan. Apparna tillför pool och scope.
 
 Pool och SQL-driver, auth, readiness, start och provider-SDK:er ägs fortsatt
 av apparna. Kärnan startar inga anslutningar och importerar inga appar.

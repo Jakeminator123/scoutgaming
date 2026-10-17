@@ -1,13 +1,13 @@
-import * as savedGameDocumentContract from '../../web/storage/studio-contract.mjs';
+import * as savedGameDocumentContract from '../../packages/studio-registry/server/document-contract.mjs';
 
 import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {readOperatorLifecycle,withOperatorLifecycle} from '../../packages/operators/server/operator-lifecycle.mjs';
-import {readPackagePresentation} from '../../web/storage/presentation-package.mjs';
-import {canonicalStudioJson,StudioStorageError,validateStudioScope,validateRevision} from '../../web/storage/studio-contract.mjs';
+import {readPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
+import {canonicalStudioJson,StudioStorageError,validateStudioScope,validateRevision} from '../../packages/studio-registry/server/document-contract.mjs';
 import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';
-import {isPresentationRoom} from '../../web/presentation-room-contract.mjs';
+import {isPresentationRoom} from '../../packages/presentation/contracts/presentation-room.mjs';
 import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
-import {isPresentationRoomLaneCompatible} from '../../web/storage/frozen-presentation-capture.mjs';
+import {isPresentationRoomLaneCompatible} from '../../packages/presentation/server/frozen-presentation-capture.mjs';
 import {operatorAuditContext} from './operator-audit-context.mjs';
 import {isStudioRole} from './studio-access-policy.mjs';
 import {materialTrashPlan} from './material-trash.mjs';

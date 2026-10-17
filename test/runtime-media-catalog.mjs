@@ -10,7 +10,7 @@ import {createRegisteredDealerIdle} from '../packages/presentation/server/regist
 import {createRegisteredVoiceLines} from '../lab/lib/studio-voice-lines.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
-import {createStudioRepository} from '../web/storage/studio-repository.mjs';
+import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 import {createSeedProject,addDealer} from '../packages/presentation/contracts/studio-model.mjs';
 const source=fileURLToPath(new URL('../',import.meta.url));
 test('shared deployment catalog matches original authoring metadata',async()=>{await buildRuntimeMediaCatalog(resolve(source),{check:true});});

@@ -5,7 +5,7 @@ import { createDealerSet, editDealerSet, removeDealerSet, validateDealerSetBindi
 import { createStudioProjectBindings } from '../../packages/presentation/server/studio-project-bindings.mjs';
 import { lifecycleProject } from './dealer-lifecycle.mjs';
 import { createNeonProjectStore } from './neon-project-store.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 import { createStudioMediaApi } from './studio-media-api.mjs';
 const id = '11111111-1111-4111-8111-111111111111', sha256 = 'a'.repeat(64);

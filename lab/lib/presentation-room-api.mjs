@@ -1,25 +1,26 @@
-import * as savedGameDocumentContract from '../../web/storage/studio-contract.mjs';
+import * as savedGameDocumentContract from '../../packages/studio-registry/server/document-contract.mjs';
 
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import { validatePresentationPackage } from '../../web/presentation-layers.mjs';
-import { mergeFrozenDealerPlayback } from '../../web/frozen-dealer-playback.mjs';
+import { validatePresentationPackage } from '../../packages/presentation/contracts/presentation-layers.mjs';
+import { mergeFrozenDealerPlayback } from '../../packages/presentation/contracts/frozen-dealer-playback.mjs';
 
 import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
 import { isGameLaneId } from '../../web/public/game-lanes.mjs';
 import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
-import { readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import { readPackagePresentation, withPackagePresentation } from '../../packages/presentation/server/presentation-package.mjs';
 import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';
-import { isPresentationRoom, resolvePackageRoom, roomGame, roomPlayPath } from '../../web/presentation-room-contract.mjs';
-import { resolveFrozenDealerIdle } from '../../web/storage/frozen-dealer-idle.mjs';
+import {isPresentationRoom, roomGame, roomPlayPath} from '../../packages/presentation/contracts/presentation-room.mjs';
+import {resolvePackageRoom} from '../../packages/presentation/server/package-rooms.mjs';
+import { resolveFrozenDealerIdle } from '../../packages/presentation/server/frozen-dealer-idle.mjs';
 import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia,
-  isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../web/storage/frozen-presentation-capture.mjs';
-import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
+  isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../packages/presentation/server/frozen-presentation-capture.mjs';
+import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 import { validatePresentationCapabilities } from '../../packages/presentation/capability-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
-import {assertPresentationRoomMaterials} from '../../web/presentation-material-game.mjs';
+import {assertPresentationRoomMaterials} from '../../packages/presentation/contracts/presentation-material-game.mjs';
 
 const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 

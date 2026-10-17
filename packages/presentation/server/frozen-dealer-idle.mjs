@@ -1,18 +1,18 @@
 // Server-only boundary: StudioMediaRecord is validated by the existing storage
 // contract. Do not import this module into presentation-layers/studio-model.
-import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import { validateRegisteredIdlePolicies } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
-import { validateFrozenDealerPlayback } from '../frozen-dealer-playback.mjs';
-import { videoFitsLine } from '../../packages/presentation/contracts/video-intake.mjs';
-import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
-import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../presentation-layers.mjs';
-import {validateRouletteIdleBinding, validateFrozenRouletteIdle} from '../../packages/presentation/contracts/roulette-idle-contract.mjs';
-import {validateRouletteStartBinding, validateFrozenRouletteStart} from '../../packages/presentation/contracts/roulette-start-contract.mjs';
-import {speechSlotSituation} from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../contracts/dealer-identity.mjs';
+import { validateRegisteredIdlePolicies } from '../runtime/registered-idle-policy.mjs';
+import { validateFrozenDealerPlayback } from '../contracts/frozen-dealer-playback.mjs';
+import { videoFitsLine } from '../contracts/video-intake.mjs';
+import { ownDealerIdle } from '../runtime/registered-idle.mjs';
+import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../contracts/presentation-layers.mjs';
+import {validateRouletteIdleBinding, validateFrozenRouletteIdle} from '../contracts/roulette-idle-contract.mjs';
+import {validateRouletteStartBinding, validateFrozenRouletteStart} from '../contracts/roulette-start-contract.mjs';
+import {speechSlotSituation} from '../contracts/speech-slot-bindings.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson,
   validateDocumentValue, validateRevision, validateStudioMedia,
-} from './studio-contract.mjs';
+} from '../../studio-registry/server/document-contract.mjs';
 
 const IDLE_EVENT = 'idle.ready';
 const fail = (code = 'studio_invalid_presentation', status = 422) => { throw new StudioStorageError(code, status); };

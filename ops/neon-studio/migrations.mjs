@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, isAbsolute } from 'node:path';
-import { StudioStorageError, canonicalStudioJson, studioStorageFailure } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError, canonicalStudioJson, studioStorageFailure } from '../../packages/studio-registry/server/document-contract.mjs';
 
 const schema = 'croupier_studio';
 const hash = text => createHash('sha256').update(text).digest('hex');

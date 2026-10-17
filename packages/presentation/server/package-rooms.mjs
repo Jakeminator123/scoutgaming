@@ -1,10 +1,9 @@
-import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
-import { PRESENTATION_ROOM_SCHEMA_VERSION, isPresentationRoom, isRoomOperatorId } from '../packages/presentation/contracts/presentation-room.mjs';
-import { readPackagePresentation } from './storage/presentation-package.mjs';
-import { StudioStorageError } from './storage/studio-contract.mjs';
-import { assertPresentationRoomMaterials } from './presentation-material-game.mjs';
+import { gameLaneConfiguration } from '../contracts/game-lanes.mjs';
+import { PRESENTATION_ROOM_SCHEMA_VERSION, isPresentationRoom, isRoomOperatorId } from '../contracts/presentation-room.mjs';
+import { readPackagePresentation } from './presentation-package.mjs';
+import { StudioStorageError } from '../../studio-registry/server/document-contract.mjs';
+import { assertPresentationRoomMaterials } from '../contracts/presentation-material-game.mjs';
 
-export { PRESENTATION_ROOM_SCHEMA_VERSION, PRESENTATION_ROOM_CAPABILITY, isPresentationRoom, roomGame, roomPlayPath } from '../packages/presentation/contracts/presentation-room.mjs';
 
 // Read historical publication bindings separately from game eligibility.
 // A known material mismatch does not erase a publication or unrelated rooms.

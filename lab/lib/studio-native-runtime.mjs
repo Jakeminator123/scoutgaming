@@ -1,4 +1,4 @@
-import * as savedGameDocumentContract from '../../web/storage/studio-contract.mjs';
+import * as savedGameDocumentContract from '../../packages/studio-registry/server/document-contract.mjs';
 
 import {createStudioMediaDeletion} from './studio-media-deletion.mjs';
 import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
@@ -8,9 +8,9 @@ import { createLayerUploadService } from './layer-upload-service.mjs';
 import { layerMediaInspectionMessage } from '../../web/public/layer-upload-errors.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
-import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { createStudioNativeAuth } from '../../packages/studio-access/studio-native-auth.mjs';
 import { createStudioAdminApi } from './studio-admin-api.mjs';
 import { createStudioAdminData } from './studio-admin-data.mjs';

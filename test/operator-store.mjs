@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { allowsPartnerResource } from '../packages/studio-access/server/partner-access-policy.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
-import { StudioStorageError, canonicalStudioJson } from '../web/storage/studio-contract.mjs';
+import { StudioStorageError, canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 
 const north = { environment: 'qa', workspaceId: 'workspace-north' };
 const south = { environment: 'qa', workspaceId: 'workspace-south' };

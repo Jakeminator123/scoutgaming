@@ -97,10 +97,10 @@ const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: 
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope, ttlMs:0 }) }) : null;
 const operatorAppearanceApi = selectGameEntry ? (await import('./operator-appearance-api.mjs')).createOperatorAppearanceApi({selectGameEntry}) : null;
 const frozenDealerContext = studioPolicyRuntime ? await (async () => {
-  const { createFrozenDealerPresentationContext, createFrozenDealerContextReader } = await import('./storage/frozen-dealer-presentation.mjs');
+  const { createFrozenDealerPresentationContext, createFrozenDealerContextReader } = await import('../packages/presentation/server/frozen-dealer-presentation.mjs');
   return createFrozenDealerPresentationContext({
     readCurrentContext: createFrozenDealerContextReader({ pool: storage.pool, scope: studioPolicyRuntime.scope }),
-    readPresentation: (await import('./storage/presentation-package.mjs')).readPackagePresentation,
+    readPresentation: (await import('../packages/presentation/server/presentation-package.mjs')).readPackagePresentation,
     privateMedia: (record, request) => (import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
       trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
         new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
@@ -114,8 +114,8 @@ const publishedLayerAssets = studioPolicyRuntime ? (await import('./storage/publ
 
 const authorizeChatDealer = createRegisteredChatContext({
   resolvePublishedContext:studioPolicyRuntime ? createPublishedChatResolver({
-    readCurrentContext:(await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
-    readPresentation:(await import('./storage/presentation-package.mjs')).readPackagePresentation,
+    readCurrentContext:(await import('../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+    readPresentation:(await import('../packages/presentation/server/presentation-package.mjs')).readPackagePresentation,
   }) : null,
 });
 const speechJournal = studioPolicyRuntime ? await (await import('./postgres-speech-journal.mjs')).createSpeechJournal({
@@ -134,14 +134,14 @@ const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).create
 });
 const publicOperators = createPublicOperatorDirectory({ store: publicOperatorStore, readRooms: publicOperatorRooms.read });
 const publicOperatorPreview = studioPolicyRuntime ? (await import('./public-operator-preview.mjs')).createPublicOperatorPreview({
-  readCurrentContext: (await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+  readCurrentContext: (await import('../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
   privateMedia: (record,request)=>(import('./blob-media.mjs')).then(({getPrivateMedia})=>getPrivateMedia(record,request,{repositoryRoot:mediaRepository,
     trustedProxyOrigin:process.env.CROUPIER_CLOUD_RUNTIME==='1'&&process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN&&
       new URL(request.url).origin===process.env.PUBLIC_URL&&[new URL(process.env.PUBLIC_URL).host,new URL(process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN).host].includes(request.headers.get('host'))
       ?process.env.CROUPIER_VERCEL_FRONTEND_ORIGIN:null})),
 }) : null;
 const rouletteRoomAccess = studioPolicyRuntime ? (await import('./games/roulette/access.mjs')).createRouletteRoomAccess({
-  readCurrentContext:(await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
+  readCurrentContext:(await import('../packages/presentation/server/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
 }) : null;
 
 const domain = name => {

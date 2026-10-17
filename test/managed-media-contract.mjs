@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validateManagedStudioMedia} from '../packages/studio-registry/server/managed-media-contract.mjs';
-import {validateStudioMedia, createRetainedStudioMedia, RETAINED_BANK_VARIANTS} from '../web/storage/studio-contract.mjs';
+import {validateStudioMedia, createRetainedStudioMedia, RETAINED_BANK_VARIANTS} from '../packages/studio-registry/server/document-contract.mjs';
 const id='10000000-0000-4000-8000-000000000001', sha256='a'.repeat(64);
 const record=()=>({id,sha256,size:4096,contentType:'video/mp4',pathname:`croupier/media/dealers/johanna/review/uploads/${id}/${sha256}.mp4`,
   classification:{dealerId:'johanna',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'',label:' Johanna ',notes:' Test ',
@@ -64,6 +64,6 @@ test('the complete portable package validation import graph has no Node dependen
       await visit(new URL(match[1],url));
     }
   }
-  await visit(new URL('../web/presentation-layers.mjs',import.meta.url));
+  await visit(new URL('../packages/presentation/contracts/presentation-layers.mjs',import.meta.url));
   assert.ok(visited.size>=4);
 });

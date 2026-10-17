@@ -1,7 +1,7 @@
-import { validateRegisteredIdlePolicies } from '../packages/presentation/runtime/registered-idle-policy.mjs';
-import seed from '../packages/presentation/contracts/policies/project.seed.json' with { type: 'json' };
-import { validateProject } from '../packages/presentation/contracts/studio-model.mjs';
-import { validateManagedStudioMedia } from '../packages/studio-registry/server/managed-media-contract.mjs';
+import { validateRegisteredIdlePolicies } from '../runtime/registered-idle-policy.mjs';
+import seed from './policies/project.seed.json' with { type: 'json' };
+import { validateProject } from './studio-model.mjs';
+import { validateManagedStudioMedia } from '../../studio-registry/server/managed-media-contract.mjs';
 
 // Portable frozen selection policy. No filesystem, registry or provider reads.
 const fail = () => { throw Object.assign(new Error('studio_invalid_presentation'), { code: 'studio_invalid_presentation', statusCode: 422 }); };

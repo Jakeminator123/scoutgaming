@@ -1,13 +1,13 @@
 import {validateFrozenDealerPlayback} from './frozen-dealer-playback.mjs';
-import {validateCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
-import {validateBackgroundPlayback} from '../packages/presentation/contracts/background-playback-policy.mjs';
-import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from '../packages/presentation/contracts/dealer-identity.mjs';
-import {validateManagedStudioMedia} from '../packages/studio-registry/server/managed-media-contract.mjs';
-import {validateFrozenRouletteIdle} from '../packages/presentation/contracts/roulette-idle-contract.mjs';
-import {validateFrozenRouletteStart} from '../packages/presentation/contracts/roulette-start-contract.mjs';
+import {validateCompositionSettings} from './composition-settings.mjs';
+import {validateBackgroundPlayback} from './background-playback-policy.mjs';
+import {BASE_DEALER_IDS, MAX_DEALERS, isDealerId} from './dealer-identity.mjs';
+import {validateManagedStudioMedia} from '../../studio-registry/server/managed-media-contract.mjs';
+import {validateFrozenRouletteIdle} from './roulette-idle-contract.mjs';
+import {validateFrozenRouletteStart} from './roulette-start-contract.mjs';
 // Portable presentation data. No game outcomes, provider tokens or mutable URLs.
-export {LAYER_ASSET_ROLES, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES, layerAssetPath, validateLayerAsset} from '../packages/presentation/contracts/layer-asset-contract.mjs';
-import {LAYER_ASSET_ROLES, validateLayerAsset} from '../packages/presentation/contracts/layer-asset-contract.mjs';
+export {LAYER_ASSET_ROLES, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES, layerAssetPath, validateLayerAsset} from './layer-asset-contract.mjs';
+import {LAYER_ASSET_ROLES, validateLayerAsset} from './layer-asset-contract.mjs';
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const token = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const dealers = new Set(['astrid', 'vera', 'amira', 'mei', 'nora']);

@@ -56,7 +56,7 @@ och [ENVIRONMENT-RESTORATION.md](../docs/ENVIRONMENT-RESTORATION.md).
 importera Studios HTTP-adapter `lab/lib/studio-game-authority.mjs` för att
 kontrollera en kommandosignatur. Den gamla signeringsexporten finns kvar där
 för kompatibilitet. Befintlig behörighetspolicy och lagringskontraktet i
-`web/storage/studio-contract.mjs` används fortfarande.
+`packages/studio-registry/server/document-contract.mjs` används fortfarande.
 
 OpenClaw-kopplingarna är aktiva: `openclaw-chat.mjs` använder minnes-/
 kameraformat, inställningar och produktens taltransport; `presentation-api.mjs`

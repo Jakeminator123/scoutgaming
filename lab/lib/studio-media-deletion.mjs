@@ -1,4 +1,4 @@
-import {StudioStorageError,validateMediaId,validateRevision,validateDocumentValue,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
+import {StudioStorageError,validateMediaId,validateRevision,validateDocumentValue,canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 import {assertLifecyclePackages} from './dealer-lifecycle.mjs';
 import {readMediaBlobIndex} from './media-blob-index.mjs';
 import {readRuntimeCatalog} from '../../packages/studio-registry/server/runtime-catalog.mjs';

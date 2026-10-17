@@ -1113,7 +1113,7 @@ bordslagret växlar: bolag, rum/bakgrund, dealerklipp och serverns kort-, sko-
 och plånbokstillstånd behålls. Nuvarande statiska bilder har ingen automatisk
 blinksekvens. Sekvensmodell, redigerare och uppspelning är framtida arbete.
 
-`web/presentation-material-game.mjs` kontrollerar kända källhashar, lagerroll,
+`packages/presentation/contracts/presentation-material-game.mjs` kontrollerar kända källhashar, lagerroll,
 metadata och spelets tillåtna bord på servern före rums-/paketpublicering
 och vid återpublicering. Även tillåtna valpooler kontrolleras. Historiska
 frysta paket behåller sin befintliga operator-/rum-/dealerauktoritet; nya
@@ -1261,7 +1261,7 @@ status, aldrig en tyst ersättning med mallens bild eller en annan dealers film.
 
 ### Livscykel och övergång från dagens rum
 
-I `web/presentation-room-contract.mjs` är dagens rum en operatörsägd
+I `packages/presentation/server/package-rooms.mjs` är dagens rum en operatörsägd
 spelbar ingång med ett `presentationLaneId`, ett `gameLaneId` och **ett**
 `game` (äldre poster utan fält läses som Blackjack). Det passar regeln att
 spelet erbjuder flera rum, men ett äldre rum behöver inte ännu ha en entydig

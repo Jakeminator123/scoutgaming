@@ -1,11 +1,11 @@
-import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import type { VideoRegistry } from '../../packages/studio-registry/server/registry-core.mjs';
-import type {StudioMediaRecord} from '../../packages/studio-registry/server/managed-media-contract.mjs';
+import type { StudioProject } from '../contracts/studio-model.mjs';
+import type { VideoRegistry } from '../../studio-registry/server/registry-core.mjs';
+import type {StudioMediaRecord} from '../../studio-registry/server/managed-media-contract.mjs';
 
 // Reuse the shared managed StudioMediaRecord type; retained bank provenance
 // is validated separately by the server storage contract.
 export type FrozenStudioMediaRecord = StudioMediaRecord;
-export interface FrozenRegisteredDealer { id: string; label: string; idle: FrozenStudioMediaRecord | null; rouletteIdle?:{base:FrozenStudioMediaRecord;variants:FrozenStudioMediaRecord[];foregroundPolygons?:import('../../packages/presentation/contracts/roulette-idle-contract.mjs').RouletteForegroundPolygons};rouletteStart?:import('../../packages/presentation/contracts/roulette-start-contract.mjs').RouletteStartProfile&{clip:FrozenStudioMediaRecord} }
+export interface FrozenRegisteredDealer { id: string; label: string; idle: FrozenStudioMediaRecord | null; rouletteIdle?:{base:FrozenStudioMediaRecord;variants:FrozenStudioMediaRecord[];foregroundPolygons?:import('../contracts/roulette-idle-contract.mjs').RouletteForegroundPolygons};rouletteStart?:import('../contracts/roulette-start-contract.mjs').RouletteStartProfile&{clip:FrozenStudioMediaRecord} }
 export type FrozenMediaRow = FrozenStudioMediaRecord & { revision: string; updatedAt?: string };
 export interface FrozenMediaPrecondition { id: string; revision: string; record: FrozenStudioMediaRecord }
 export function validateFrozenRegisteredDealers(entries: unknown, options: { dealerIds: readonly string[] }): readonly FrozenRegisteredDealer[];

@@ -108,7 +108,7 @@ async function main() {
   const { studioGamePolicyConfiguration } = await import('../packages/presentation/server/saved-game-policy.mjs');
   const configuration = studioGamePolicyConfiguration();
   if (!configuration) fail('moving_bank_cloud_configuration_required');
-  const { createStudioRepository } = await import('../web/storage/studio-repository.mjs');
+  const { createStudioRepository } = await import('../packages/studio-registry/server/document-repository.mjs');
   const { createNeonVideoRegistry } = await import('../lab/lib/neon-video-registry.mjs');
   const { Pool } = createRequire(new URL('../web/package.json', import.meta.url))('pg');
   const pool = new Pool({ connectionString: configuration.connectionString, max: 1,

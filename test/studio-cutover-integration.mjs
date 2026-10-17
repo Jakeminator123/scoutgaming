@@ -1,4 +1,4 @@
-import * as savedGameDocumentContract from '../web/storage/studio-contract.mjs';
+import * as savedGameDocumentContract from '../packages/studio-registry/server/document-contract.mjs';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +11,7 @@ import { createPostgresStore } from '../web/storage/postgres-store.mjs';
 import { playerAuth } from '../web/storage/async-player-auth.mjs';
 import { craigIdentity } from '../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epoch.mjs';
-import { createStudioRepository } from '../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
 import { createRenderStudioPolicy } from '../web/storage/studio-runtime.mjs';
 import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';

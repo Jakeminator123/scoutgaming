@@ -56,7 +56,7 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
     // SQLite/offline hosts have no Studio storage runtime. Keep their public
     // unavailable response independent of modules from that optional runtime.
     const [{ createGameEntrySelector }, { listPackageRooms }, { readPackagePresentation }, { resolvePlayerSelection }, { validatePublicOperatorRooms }] = await Promise.all([
-      import('./game-entry-operator.mjs'), import('./presentation-room-contract.mjs'), import('./storage/presentation-package.mjs'),
+      import('./game-entry-operator.mjs'), import('../packages/presentation/server/package-rooms.mjs'), import('../packages/presentation/server/presentation-package.mjs'),
       import('./public/player-choices.mjs'), import('./public/operator-rooms-contract.mjs'),
     ]);
     const operator = await store.getOperatorBySlug(slug);

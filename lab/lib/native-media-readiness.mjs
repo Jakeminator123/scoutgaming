@@ -1,5 +1,5 @@
-import {extendedDealerMediaFeatures} from '../../web/dealer-media-features.mjs';
-import {StudioStorageError} from '../../web/storage/studio-contract.mjs';
+import {extendedDealerMediaFeatures} from '../../packages/presentation/contracts/dealer-media-features.mjs';
+import {StudioStorageError} from '../../packages/studio-registry/server/document-contract.mjs';
 import {PRESENTATION_RUNTIME_UPDATE_REQUIRED} from './presentation-runtime-readiness.mjs';
 
 export async function assertNativeMediaReadiness(repository,metadata) {

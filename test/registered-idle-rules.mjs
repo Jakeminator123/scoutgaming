@@ -4,8 +4,8 @@ import { addDealer, createEmptyProject, defaultPresentationLane, validateProject
 import { createRegisteredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';
 import { selectRegisteredIdleRule } from '../lab/lib/registered-idle-rules.mjs';
 import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
-import { captureFrozenPresentation } from '../web/storage/frozen-presentation-capture.mjs';
-import { frozenPlaybackProject } from '../web/frozen-dealer-playback.mjs';
+import { captureFrozenPresentation } from '../packages/presentation/server/frozen-presentation-capture.mjs';
+import { frozenPlaybackProject } from '../packages/presentation/contracts/frozen-dealer-playback.mjs';
 
 const uuid = n => '20000000-0000-4000-8000-' + String(n).padStart(12, '0');
 function fixture() {

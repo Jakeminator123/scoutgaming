@@ -52,3 +52,10 @@ mediesökvägsresolver och kontaktvalidatorer. `reviewSafetyVerified`,
 `neverAgain` och den snäva möjligheten att sakna pensionerade index bevaras.
 De appägda kompositionerna finns i `lab/lib/legacy-clip-inventory.mjs` och
 `web/storage/legacy-clip-inventory.mjs`; inga nya browseradresser exponeras.
+
+Publiceringens codec, snapshotfångst, paket-/ruminspektion och frysta dealer-/
+mediakontexter ägs av `server/`. Rena layer-/material-/playbackkontrakt ligger
+i `contracts/`; talprojektionen ligger i `runtime/recorded-speech-selection.mjs`.
+Apparna binder samma pooler, auktorisering och privata medialäsare. Fångade
+snapshots, walletägda transaktioner, historiska grants och protokollets
+`owner: "web"` ändras inte. Inga nya publika moduladresser tillkommer.

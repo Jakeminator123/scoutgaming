@@ -4,7 +4,7 @@ import { CROUPIER_ADMIN_AGENTS, validateOpenClawAdminPatch, validAdminHash } fro
 import { normalizeStudioRole } from './studio-access-policy.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { nativeStudioAdminConfiguration, studioNativeRuntime, assertNativeStudioRequest } from './studio-native-runtime.mjs';
-import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { resolve, basename } from 'node:path';
 
 const DIRECTOR = 'https://croupier-lab-director.onrender.com';

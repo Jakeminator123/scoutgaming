@@ -252,7 +252,7 @@ Tre alternativ per linje och 256 variantposter finns inte i demo-/fixturseedet.
 Högst fyra alternativ plus standard kan redigeras.
 Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
 Den äldre händelseeditorns seed beskriver blackjack. Publicerade spelrum kan
-däremot vara blackjack eller roulette, enligt `web/presentation-room-contract.mjs`.
+däremot vara blackjack eller roulette, enligt `packages/presentation/server/package-rooms.mjs`.
 Ett rum har ett spel; spelet kan erbjuda flera rum/bakgrunder med tillåtna
 dealers och bord. Produktmodellens källa är [TERMINOLOGI.md](docs/TERMINOLOGI.md).
 

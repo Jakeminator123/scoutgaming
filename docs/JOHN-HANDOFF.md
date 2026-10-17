@@ -19,6 +19,41 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2m: publicering och frysta paket — lokalt 17 oktober 2026
+
+Main214 `05cbc22d` integrerades normalt som `ca552deb`: ordinarie hook
+203/203 och frontendtyper gröna. Fyra konflikter löstes med båda källistorna
+och dokumentavsnitten bevarade. Main214:s nyare Dragan-kvitto är orört.
+Speech-session/runtime är byteidentiska med main214; bankens enda import
+fortsätter använda appägd Blob. Kanoniska C2j-policy-/slug-/SQL-importer rättades.
+
+Tolv befintliga runtimefiler och tre deklarationer flyttas till sina neutrala
+ägare. Den enda bundna dokumentvalidatorn och repositorykompositionen finns i
+`packages/studio-registry/server/document-contract.mjs` respektive
+`document-repository.mjs`; projekt/social/lane, required ports och policybindning
+är samma. Pool, driver, auth och readiness förblir appägda. Publiceringscodec,
+snapshotfångst och frozen-tjänster finns i `packages/presentation/server`.
+Rena layer/material/playbackblad finns i `contracts`; inspelad talprojektion
+finns i `runtime`. Rumsform läses från befintligt presentation-room-kontrakt,
+medan package-rooms endast äger verkliga paket-/rumoperationer.
+
+Lane-/dealerurvalets exakta hjälpare och deklarationer har kanonisk ägare.
+Alla 95 dokumentkontraktsimportörer och övriga konsumenter/fixturekällor följer.
+Inga gamla wrappers eller dubbla policykroppar lämnas. Befintliga publika URL:er,
+medieidentiteter och `owner: "web"` bevaras. Samma captured-snapshot, repeatable-read,
+walletägda transaktion, CAS och separata Blob-I/O gäller. Neutral closure har
+70 moduler utan app-/SDK-importer eller cykler; 15 flyttkroppar är mekaniskt
+oförändrade. Alla 81 berörda befintliga prov-/fixturekroppar är oförändrade
+utöver imports och exakta flyttade sökvägar; inga assertions har tagits bort.
+
+Riktad verifiering: 301/301 befintliga prov inklusive sex isolerade serverfixturer,
+1/1 verklig GET/HEAD-importgraf och Lab-/frontendtyper gröna. Egen låst
+klientinstallation gav ingen lockdiff. Parentreview är godkänd. Leveransen är
+committad lokalt med ordinarie fokuserad hook: 1202 pass, 0 fail och 6 befintliga
+opt-in. Handoffkvittot tillförs med vanlig dokumentationshook utan testomkörning.
+Ingen push, fullsuite/fullbuild, schema-/provider-/molnändring är gjord.
+Gemensam L/J-integrationsbas inväntar separat samordnad J-SHA.
+
 ## Etapp 3 C2l-a: appägda medialäsare — lokalt 17 oktober 2026
 
 På baseline `b037b483848b8efbb82f2ec8185ca2decfc52552` äger

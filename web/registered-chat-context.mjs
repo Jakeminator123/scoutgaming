@@ -46,7 +46,7 @@ export function createPublishedChatResolver({readCurrentContext,readPresentation
   if(typeof readCurrentContext!=='function'||typeof readPresentation!=='function')throw TypeError('Explicit published chat readers required');
   let service;
   return async input=>{
-    service??=import('./storage/frozen-dealer-presentation.mjs').then(({createFrozenDealerPresentationContext})=>
+    service??=import('../packages/presentation/server/frozen-dealer-presentation.mjs').then(({createFrozenDealerPresentationContext})=>
       createFrozenDealerPresentationContext({
         readCurrentContext:async (slug,revision)=>{
           const saved=await readCurrentContext(slug,revision);
