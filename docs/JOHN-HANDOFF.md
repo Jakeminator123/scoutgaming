@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — Studiointegration efter överlämning, 18 oktober 2026
+
+Den överlämnade normala mergetillståndet är slutfört som32a49f99. En saknad
+lokal Next-installation löstes med egen låst npm ci i apps/studio; ordinarie
+integrationshook passerade därefter132tester,0fel och1befintligt SQL-opt-in.
+Inga assertions togs bort. App- och paketträden skiljer sig från den tidigare
+byggda Studio-revisioneneaca2e35 endast i apps/studio/client/README.md.
+Aktiva Studio-sökvägar i återställningsguiden är uppdaterade; historisk
+lab/data och privata återställningsreferenser är oförändrade.
+
+Mergagentens slutkvitto för speech-PR231: mainbe438e87baaba1db2fa7957440d85dedf9539f50,
+main-CI39074653989 success, faktisk Vercel/Render-paritet och8/8tal-ingress/
+obehörig-WebSocketkontroller22:27:55Z. Detta är tillskrivet driftkvitto.
+Budget-PR230:s slutliga main ska integreras före Studio-push; dess nya SQL014
+och migrationskod ingår inte i det äldre lokala Studio-byggkvittot.
+Rootleveransens slutliga CI, byggtraces och drift kvarstår separat.
+
 ## C3 — Studios källrot apps/studio, lokalt 17 oktober 2026
 
 939 spårade filer har flyttats individuellt från lab till apps/studio på
