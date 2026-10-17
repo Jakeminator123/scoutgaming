@@ -1,5 +1,19 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Strukturfas avslutad — 17 oktober 2026
+
+PR188 och PR190 är mergade och driftsatta; slutkvitto och parallella
+chattägare finns i [handoffen](../JOHN-HANDOFF.md). Äldre uppgifter nedan
+om pågående integration beskriver sina dåvarande versioner.
+Fasens tillfälliga kördokument och utkast avvecklas. Befintliga guider
+uppdateras i stället för att skapa en ny tracker eller slutrapport.
+
+ChatGPT Pro kan ge en avgränsad GitHub-granskning via den personliga
+`gpt-auto`-skillen. Den ser publicerat GitHub-innehåll, inte lokala eller
+stageade ändringar. Automatisk användning gällde endast den ursprungliga
+struktur-chatten; en ny chatt använder `/gpt-auto` när Jakob begär det.
+Svaret är rådgivande och ersätter inte ägarskap, CI eller användarmandat.
+
 ## Testkrav förenklade — 16 oktober 2026
 
 Jakob har tagit bort kravet på två spel/uppspelningar och generell manuell

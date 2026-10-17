@@ -12,7 +12,9 @@ och driftsatt. Huvudagentens färska läsande avstämning 16 oktober bekräftar
 produktion på `b38c56572158d6deaeb6823b3a66bf5fbca8af7e` enligt kvittot nedan.
 Kodavstämningen fann inget konkret migrationsfel; produktionsvägarna är
 oförändrade sedan denna baseline. Den tekniska flytten är därmed avslutad.
-PR190:s dokument-/testförenkling är en separat leverans; aktuell merge- och driftsstatus följs i handoffen och PR:ens kontroller.
+PR188 och PR190 är också mergade och verifierade på produktionens
+`d7dd04dcbc1c3eab6358ac64b63ad7b5d97a9166` den 17 oktober.
+Strukturfasen är avslutad; det daterade leveranskvittot finns i handoffen.
 Kvarvarande produktfunktioner, historiska felobservationer och visuella
 bedömningar redovisas nedan; de påstås inte vara färdigverifierade.
 
