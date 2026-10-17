@@ -556,7 +556,7 @@ Ansluten chatt går via originalets autentiserade produktchatt och serverbundna
 konversationsminne. Spelfliken äger uppspelningen och Lab följer dess kvitton;
 originalförvalen återanvänder produktens mediespelarmoduler. Fristående event-
 och chattprov har separat provkontext. Detta innebär inte att full P6-acceptans
-eller mänsklig take-/läppsynkgranskning är klar; se [handoffen](../docs/JOHN-HANDOFF.md).
+eller mänsklig take-/läppsynkgranskning är klar; se [handoffen](../../docs/JOHN-HANDOFF.md).
 
 ### Samstämmighet med Croupier
 
@@ -570,7 +570,7 @@ Labbets JSON-animation får inte ändra delningsriktning eller ta bort en
 kortvändning. En videoreferens kontrolleras mot registret men är fortfarande
 en **ogranskad labbpreview**, inte automatiskt rätt dealer/action/talrad.
 Nya produktionskopplingar och takes kräver separat acceptans;
-aktuella luckor finns i [handoffen](../docs/JOHN-HANDOFF.md).
+aktuella luckor finns i [handoffen](../../docs/JOHN-HANDOFF.md).
 
 ## Kontroller
 

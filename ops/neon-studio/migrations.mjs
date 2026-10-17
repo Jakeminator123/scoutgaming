@@ -34,8 +34,8 @@ const sources = Object.freeze([
   // Applied and verified in production; missing admission storage now blocks readiness.
   { version: '013', file: '013-moving-speech-admission.sql',
     tables: ['moving_speech_bindings'], indexes: [] },
-  // Tolerant rollout first; moving speech stays disabled until explicitly amended.
-  { version:'014', file:'014-moving-speech-budget-amendments.sql', deploymentOptional:true,
+  // Applied and verified in production; budget amendments now require 014 at startup.
+  { version:'014', file:'014-moving-speech-budget-amendments.sql',
     tables:['moving_speech_budget_amendments'], indexes:[], fingerprintTables:['moving_speech_bindings','moving_speech_budget_amendments'] },
 ]);
 /** Accept only a verified planner result with every required version installed.

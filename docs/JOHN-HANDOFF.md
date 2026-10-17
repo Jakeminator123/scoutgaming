@@ -1,5 +1,28 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — Studio efter riktad granskning, 18 oktober 2026
+
+PR233:s main 3e87f56c910a7d1695237db286f46c48506d1f16 integreras normalt:
+014 är obligatorisk, med importkontroller och negativa fixtures bevarade.
+GPT-granskningen av c4a780af hittade två bekräftade sökvägsregressioner.
+QA-aktivering, privatbootstrap, transportklient och Docker använder åter den befintliga
+lab/data/platform-private som runtime läser. Hash-, ägar- och länkskydd
+består; inga privata original, journaler eller providerresurser ändras.
+Retention accepterar vid återställning även de två exakta äldre schema-v1-
+prefixen lab/data/history och lab/data/observations. Den registrerade
+ursprungsplatsen bevaras; nya arkiv följer apps/studio. Hashkontroll,
+länkskydd och förbud mot att skriva över befintliga mål består.
+
+Nytt lokalt Studio-bygge på c4a780af är grönt med /studio, native-admin och
+Node24.21.0. Faktisk traceaudit:80 traces,77 SQL-traces med alla12 SQL-filer
+inklusive014,Admin81/Lobby30/preview26 och layer-assets-worker/native-closure.
+Inga saknade, privata eller externa referenser. Detta byggkvitto föregår
+required014-integrationen och rättningarna; slutlig PR-CI och drift verifieras
+separat. Riktade regressioner:104/104 gröna, inklusive äldre arkiv av båda
+kategorierna och bootstrap till runtime-läsarens privata sökväg. Ordinarie
+hook och slutlig CI följer före leverans.
+
+
 ## C3 — Studiointegration efter överlämning, 18 oktober 2026
 
 Budget-PR230:s levererade main fc7085e731e53012e058372f9afe0b28edb5ddad
@@ -45,7 +68,7 @@ Lobby27+3fonts, preview26, SQL samt worker/native/migrationer finns med.
 29 sanerade referenser gällde enbart spårad open-claw/lab/.env.example.
 Hookens återstående testloaders/mocknycklar följer nu verkliga imports utan
 borttagna assertions; den bevarade lab/project.json-proveniensen är oförändrad.
-Privatbootstrap skapar samma validerade target under nya app-roten, med
+Privatbootstrap behåller den validerade dataplatsen lab/data/platform-private, med
 oförändrade byte/hash/symlink-kontroller och orörda äldre privata filer.
 Director-verktygens resolver och baselinearkiv omfattar kanoniska packages/director.
 Befintligt verkligt launcherprov i samma spegel:1/1 grönt. Det särskilt godkända
@@ -55,6 +78,33 @@ Ordinarie Git-hook kontrollerar staged diff och relevanta befintliga prov på
 dessa källor; full regression och drift samordnas separat. Ingen push. Game-serverns
 nuvarande web-källrot och dess framtida flytt är fortfarande separata.
 
+## Dragan: budgetmigration 014 installerad — 18 oktober 2026
+
+Efter verifierad #230-driftsättning på `fc7085e731e53012e058372f9afe0b28edb5ddad`
+installerades endast 014 den 18 oktober 00:56:33 svensk tid (22:56:33Z).
+Färsk Render-avläsning bekräftade `croupier_game` på rätt Neon-host och
+moving speech `0`. Migrationen kördes som befintliga ägarrollen `croupier_game`;
+nya tabellen har därmed samma ägare och runtimeåtkomst som journalen.
+Samtliga äldre ledgerposter och de fyra budgetbindningarna bevarades exakt.
+
+Återläsning 01:00:46 svensk tid visar alla registrerade versioner till och med
+014 installerade, inga väntande migrationer och godkänd readiness även när 014
+är obligatorisk. Budget-ID `dragan-test-20261017` har fortfarande fyra
+reservationer, 4,8 USD reserverat, gammalt tak 4,8 USD och noll budgetändringar.
+Ingen kostnadsreservation eller GPU-start har alltså gjorts i detta steg.
+
+Följdändringen tar bort `deploymentOptional` för 014 och uppdaterar de två
+exakta importkontrollerna samt schemafixtures. Saknad 014 stoppar start/import,
+även om ett anrop felaktigt märker den optional; främmande versioner och
+ogiltiga bevis avvisas fortfarande. Riktad verifiering: 89/89 godkända.
+SQL-migrationsfilen och budgetoperationens kod är oförändrade från #230.
+Mergeagentens #230-kvitto anger grön PR/main-CI inklusive riktig SQL/restart/HTTPS;
+det är separat från de lokala följdtester som körts här.
+
+Kvar: required-följdstegets merge/deploy, färdiga rotflyttar och driftkvitton,
+sedan ny kostnadsavläsning, uttrycklig budgetändring 4,8 → 6,0 och exakt ett
+kontrollerat tal-/läppsynkprov inom sammanlagt 15 USD. Inga nya talvariabler,
+providerresurser eller medieändringar har skapats. Astrid är bevarad.
 
 
 ## Dragan: uttrycklig budgetändring inom 15 USD — 18 oktober 2026
