@@ -8,6 +8,48 @@ Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
 ## Läsande jämförelse, 17 oktober 2026
 
+**Uppföljning 18:33 UTC:** faktisk POST `/chat` från www verifierades i
+Renders requestlogg på `croupier-v2`. Vercel Production har
+`CROUPIER_BACKEND_ORIGIN=https://croupier-v2.onrender.com` och scope
+`production/croupier`. Talets separata Vercel-service är transport;
+Render äger sessionerna och providerjobben.
+
+Renders spelanslutning använder databas/roll `croupier_game` och zones
+använder `neondb`/`neondb_owner` på samma poolade Neon-host
+`ep-fragrant-meadow-b1qzb0qv-pooler.c-5.eu-central-1.aws.neon.tech`.
+Neons metadata binder den till `croupier-production`, main
+`br-flat-fog-b161a6r8`, inte preview-v2. Render har scope
+`production/croupier` och produktens taladress är
+`https://croupier-lab-director.onrender.com`. Inga länkade env-grupper
+visades på tjänstens env-sida. Vercels Sensitive databasvärden lämnas
+inte ut av connectorn; dessa hemligheters fullständiga likhet är därför
+inte nyverifierad. Vercels Preview-backend pekar också på produktion;
+det är inte en isolerad testmiljö.
+
+Rootens och Labs `.env.local` har 52 respektive 47 aktiva tilldelningar,
+inga dubblettnamn och samma jämförda RunPod/Astrid/OpenClaw/scope-värden.
+`lab/.env.cloud-storage.local` har tre tilldelningar och dess zones-URL
+pekar på samma main-host och `neondb`. Filen är en explicit lokal profil,
+inte en automatiskt inläst Render-konfiguration. `lab/.env.example`
+innehåller enbart kommentarer och kan inte skriva över något värde.
+
+Dockerkontexten utesluter `.env`, `.env.*` och motsvarande filer i
+undermappar. Molnstarten använder processmiljö och uttryckliga barnprocess-
+allowlists. För lokala OpenClaw-inställningar läser `readSettings` endast
+sin fasta nyckellista: senare uttrycklig fil vinner över tidigare fil,
+och processmiljön vinner över båda. Dessa lokala filer kan därför skilja
+sig från molnet utan att vara molnets aktiva inställningar.
+
+Efter avslutat uppvärmningsprov togs den avvecklade Dragan-endpointens
+Render-variabel bort och moving-enabled sparades som 0. Den lokala
+Dragan-runtimeprofilens gamla endpoint togs också bort och flaggan sattes
+till 0. Nycklar, bank och övriga profiler kopierades inte mellan miljöer.
+Felen med gammal endpoint och nyckelbehörighet var verkliga, men den här
+kontrollen visar ingen felriktad Neon-anslutning i den faktiska talkedjan.
+Se aktuellt prov-/kostnadskvitto i [handoffen](JOHN-HANDOFF.md).
+
+Nedanstående avläsning 16:09 är historisk och föregår detta prov.
+
 Kontrollen omfattade riktiga lokala profiler, Vercel-projektet/teamet
 `scoutgaming`, aktuella Render-tjänsteidentiteter och kodens konsumenter.
 Inga miljövärden ändrades. Render-MCP saknar env-GET, men befintlig
