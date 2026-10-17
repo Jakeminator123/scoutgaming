@@ -132,14 +132,32 @@ function collaborators() {
   try { return JSON.parse(gh(['api', `repos/${REPO}/collaborators`, '--jq', '[.[].login]'])); } catch { return []; }
 }
 
-function ensureLabels() {
+export function ensureLabels(run = gh) {
   const wanted = [
     [LABELS.inbox, '0E8A16', 'Teaminbox: meddelande till en eller flera personer'],
     [LABELS.decision, 'D93F0B', 'Väntar på beslut'],
     ...Object.keys(TARGETS).map(name => [LABELS.to(name), '1D76DB', `Till ${TARGETS[name].name}`]),
   ];
-  for (const [name, color, description] of wanted) gh(['label', 'create', name, '--repo', REPO, '--color', color, '--description', description, '--force']);
+  const existing = new Set(run(['api', `repos/${REPO}/labels?per_page=100`, '--paginate', '--jq', '.[].name'])
+    .split(/\r?\n/).map(name => name.toLowerCase()));
+  for (const [name, color, description] of wanted) {
+    if (!existing.has(name.toLowerCase())) run(['label', 'create', name, '--repo', REPO, '--color', color, '--description', description]);
+  }
   return wanted.map(([name]) => name);
+}
+
+export function closeOwnIssue(number, run = gh) {
+  if (!/^[1-9]\d*$/.test(String(number))) throw new Error('Ange ett positivt ärendenummer.');
+  const issue = JSON.parse(run(['issue', 'view', String(number), '--repo', REPO, '--json', 'author,labels']));
+  if (!Array.isArray(issue?.labels) || !issue.labels.some(label => label.name?.toLowerCase() === LABELS.inbox)) {
+    throw new Error('Bara ärenden med etiketten inbox får stängas via inboxverktyget.');
+  }
+  const login = run(['api', 'user', '--jq', '.login']).trim();
+  const author = issue.author?.login;
+  if (typeof author !== 'string' || !author || !login || author.toLowerCase() !== login.toLowerCase()) {
+    throw new Error('Bara ärendets skapare får stänga det. Det inloggade GitHub-kontot måste matcha skaparen.');
+  }
+  return run(['issue', 'close', String(number), '--repo', REPO]);
 }
 
 function sender(options) {
@@ -195,7 +213,7 @@ export function main(argv = process.argv.slice(2)) {
       return;
     case 'done':
       if (!number) throw new Error('Ange ärendenummer.');
-      console.log(gh(['issue', 'close', number, '--repo', REPO]));
+      console.log(closeOwnIssue(number));
       return;
     case 'labels':
       console.log(ensureLabels().join('\n'));

@@ -5,7 +5,7 @@
       "root": "apps/croupier-speech",
       "framework": "node",
       "entrypoint": "server.mjs",
-      "installCommand": "npx --yes pnpm@10.33.2 --dir ../croupier-frontend install --frozen-lockfile --ignore-scripts",
+      "installCommand": "npm ci --ignore-scripts",
       "buildCommand": "npm run build",
       "functions": { "server.mjs": { "maxDuration": 600 } }
     },
