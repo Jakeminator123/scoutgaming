@@ -14,8 +14,15 @@ flyttas inte under denna verifiering.
 
 Befintliga isolerade prov för preview/root/backup/anslutning:54/54 gröna.
 37 brutna relativa länkar i Studios tre huvudguider pekar nu på befintliga
-filer; kvarvarande aktiva launcher-/buildkommandon är uppdaterade. Ordinarie
-hook och nytt Studio-bygge följer, eftersom root-helpern har ändrats.
+filer; två OpenClaw-guidelänkar och aktiva launcher-/buildkommandon är också
+uppdaterade. Vanlig hook på069a69f0:53/53 gröna,0fel/skip. Nytt Studio-bygge
+på exakt069a69f0 är grönt med Node24.21.0,/studio,native-admin och4workers.
+Faktisk audit:80traces;77 innehåller alla12 Studio-SQL-filer inklusive014
+samt gameschemat (13 SQL-filer totalt). Admin81/Lobby30/preview26 och
+layer-assets worker/native/mediabunny-closure är kompletta. Inga saknade,
+privata eller externa referenser. Byggets ordinarie sanitizer tog bort72
+referenser enligt befintlig privat-/authoringpolicy. Slutlig CI och drift
+återstår hos mergeagenten.
 
 
 ## C3 — Studio efter riktad granskning, 18 oktober 2026
