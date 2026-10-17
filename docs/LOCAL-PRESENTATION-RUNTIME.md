@@ -107,6 +107,16 @@ kontroller; ett aktiverat uppspelningsreglage bevisar inte att GPU-tal fungerar.
 Aktivering kräver verifierad image, bank, schema013, talprofil och ett valt
 testrum. En sparad flagga eller profil startar inget GPU-prov i sig; endpointens
 kapacitet och kostnadsvakt styr det betalda testfönstret.
+
+Driftprov 17 oktober 2026: PR203:s version `9e533e7b` nådde RunPods jobbkö
+från riktig bordschatt, men ingen worker startade före uppstartstidsgränsen.
+Jobbet avbröts och den tillfälliga endpointen/templaten togs bort av guarden;
+se [handoffens kvitto](JOHN-HANDOFF.md#dragan-verkligt-molnprov-och-fortsättning--17-oktober-2026-1505-utc).
+Draganprofilen är därefter avstängd. En ny endpoint måste bindas till rätt
+runtime-behörighet, template och image före nytt prov. Den borttagna
+testendpointens miljöreferens är inte fungerande drift. Kodprov, en slutförd
+förberedelsepost och en tom fakturarad är inte kvitto på spelad läppsynk.
+
 `web/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
 röst som övrig dealerchatt. Neon fryser exakta källreferenser och reserverar
 budget före GPU-anropet; TTS följer först efter workerintyg. PCM24k, textens
@@ -378,12 +388,15 @@ med en implicit fryst sista ruta.
 Källor och byggrecept finns i `services/moving-gpu-worker/`.
 OpenClaw levererar fortsatt dynamisk text genom den befintliga talvägen;
 workern utför bara läppsynk på serverns exakta ljud och frameplan. Förinspelade
-repliker behåller sitt separata ljud/video. Ingen ny route, dispatcher,
-produktionsjournaladmission eller spelaraktivering ingår i detta tillägg.
-Containerbygge och CPU-prov passerade i GitHub Actions 17 oktober på kodhead
-`19103fcf6301b4f8e2ae2ef78690943919cdc97f`. Publicering, GPU-prov och
-spelaraktivering återstår; [storage-guiden](storage/BLOB-NEON.md) innehåller
-körningskvitton, införandeordning och vad som faktiskt är implementerat.
+repliker behåller sitt separata ljud/video. Det ursprungliga workersteget
+omfattade inte produktadmission eller spelaren; de kopplingarna är nu levererade
+genom PR199/201/203 och migration013. Containerbygge och CPU-prov passerade
+17 oktober. Den publicerade imagen har digest
+`56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34` och
+release `57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8`.
+Verklig tal-/läppsynksacceptans återstår efter det misslyckade molnprovet ovan.
+[Storage-guiden](storage/BLOB-NEON.md) skiljer importunderlag från applicerade
+registerändringar; [handoffen](JOHN-HANDOFF.md) anger aktuell fortsättning.
 
 Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image
