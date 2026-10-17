@@ -8,7 +8,7 @@ import { childSpecifications, loadPrivateConnection } from '../../open-claw/lab/
 import { createPresentationApi } from '../../web/presentation-api.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { createServer } from 'node:http';
-import {defaultPresentationLane} from '../lib/studio-model.mjs';
+import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {createRegisteredIdlePolicy} from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';

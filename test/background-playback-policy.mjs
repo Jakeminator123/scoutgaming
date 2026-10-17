@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BACKGROUND_EVENT_IDS, validateBackgroundPlayback, backgroundRuleAssetIds, defaultBackgroundRule} from '../web/public/background-playback-policy.mjs';
-import {createSeedProject, defaultPresentationLane, validateProject} from '../lab/lib/studio-model.mjs';
+import {BACKGROUND_EVENT_IDS, validateBackgroundPlayback, backgroundRuleAssetIds, defaultBackgroundRule} from '../packages/presentation/contracts/background-playback-policy.mjs';
+import {createSeedProject, defaultPresentationLane, validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath, validatePresentationPackage} from '../web/presentation-layers.mjs';
 import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.mjs';
 import {withPackagePresentation, readPackagePresentation} from '../web/storage/presentation-package.mjs';

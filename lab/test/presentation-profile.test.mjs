@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { presentationEvents } from '../../web/partner-presentation.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { describeEventFields, formatEventValue, OUTPUT_GROUPS, presentationProfile } from '../lib/presentation-profile.mjs';
 
 test('all existing groups have an output profile without defining extra source types', () => {

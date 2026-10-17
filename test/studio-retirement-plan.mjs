@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createEmptyProject, defaultPresentationLane, validateProject } from '../lab/lib/studio-model.mjs';
-import { layerAssetPath } from '../web/layer-asset-contract.mjs';
+import { addDealer, createEmptyProject, defaultPresentationLane, validateProject } from '../packages/presentation/contracts/studio-model.mjs';
+import { layerAssetPath } from '../packages/presentation/contracts/layer-asset-contract.mjs';
 import { planStudioRetirement, transformStudioRetirement, retirementSnapshotHash } from '../tools/studio-retirement-plan.mjs';
 
 const uuid = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;

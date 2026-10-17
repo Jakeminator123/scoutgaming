@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject, createEmptyProject, addDealer, defaultPresentationLane, addVariant } from '../../../../lab/lib/studio-model.mjs';
-import { kindForEvent } from '../../../../lab/lib/video-intake.mjs';
+import { createSeedProject, createEmptyProject, addDealer, defaultPresentationLane, addVariant } from '../../../../packages/presentation/contracts/studio-model.mjs';
+import { kindForEvent } from '../../../../packages/presentation/contracts/video-intake.mjs';
 import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, currentClipId, createStudioClient, navigationKeepsStudioTab, roomChoicesPath, selectCompositionLayer, uploadMetadata } from './connected-studio.mjs';
 import { selectPresentation } from '../../../../lab/lib/presentation-selection.mjs';
 import { createStudioProjectBindings } from '../../../../lab/lib/studio-project-bindings.mjs';
-import { materialSource } from '../../../../web/public/material-catalog.mjs';
-import { layerAssetPath } from '../../../../web/layer-asset-contract.mjs';
-import { speechSlotStandard, speechSlotVariantId } from '../../../../web/public/speech-slot-bindings.mjs';
-import { recordedSpeechIdentity } from '../../../../web/public/recorded-speech.mjs';
+import { materialSource } from '../../../../packages/presentation/contracts/material-catalog.mjs';
+import { layerAssetPath } from '../../../../packages/presentation/contracts/layer-asset-contract.mjs';
+import { speechSlotStandard, speechSlotVariantId } from '../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import { recordedSpeechIdentity } from '../../../../packages/presentation/contracts/recorded-speech.mjs';
 import { gateRecordedSpeechSelection } from '../../../../web/recorded-speech-selection.mjs';
 const id1='11111111-1111-4111-8111-111111111111', id2='22222222-2222-4222-8222-222222222222';
 test('room choices in another tab preserve drafts while same-tab navigation retains its leave guard',()=>{

@@ -1,4 +1,4 @@
-import seed from '../policies/probe-policy.seed.json' with { type: 'json' };
+import seed from './policies/probe-policy.seed.json' with { type: 'json' };
 
 export const PROBE_MODELS = Object.freeze([
   { id: 'gateway-default', label: 'Gatewayns nuvarande talmodell' },

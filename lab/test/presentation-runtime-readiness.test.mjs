@@ -5,8 +5,8 @@ import { nativeStudioErrorResponse } from '../lib/studio-native-runtime.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import {defaultPresentationLane} from '../lib/studio-model.mjs';
-import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
+import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
 

@@ -1,6 +1,6 @@
 import { MEDIA_FILE_TYPES } from '../packages/shared/media-file-types.mjs';
-import { validateVideoMetadata, MAX_VIDEO_BYTES } from '../lab/lib/video-intake.mjs';
-import { normalizeRecordedSpeech } from './public/recorded-speech.mjs';
+import { validateVideoMetadata, MAX_VIDEO_BYTES } from '../packages/presentation/contracts/video-intake.mjs';
+import { normalizeRecordedSpeech } from '../packages/presentation/contracts/recorded-speech.mjs';
 
 // The normal managed StudioMediaRecord contract is shared by browser package
 // decoding and server storage. Retained bank provenance stays server-only.

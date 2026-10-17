@@ -1,14 +1,14 @@
-import { videoFitsLine, validateVideoMetadata, kindForEvent, situationsForEvent, MAX_VIDEO_BYTES } from '../../../../lab/lib/video-intake.mjs';
+import { videoFitsLine, validateVideoMetadata, kindForEvent, situationsForEvent, MAX_VIDEO_BYTES } from '../../../../packages/presentation/contracts/video-intake.mjs';
 import { upsertMediaVariantPolicy, mediaVariantPolicy } from '../../../../packages/presentation/runtime/media-family-policy.mjs';
 import { createRegisteredIdlePolicy } from '../../../../packages/presentation/runtime/registered-idle-policy.mjs';
-import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES } from '../../../../lab/lib/studio-model.mjs';
+import { validateProject, allowedPathDescriptors, MAX_ALTERNATIVES } from '../../../../packages/presentation/contracts/studio-model.mjs';
 import { uploadNativeVideo } from '../../../../lab/lib/upload-native-video.mjs';
-import { materialForAsset } from '../../../../web/public/material-catalog.mjs';
-import { defaultCompositionSettings } from '../../../../web/public/composition-settings.mjs';
+import { materialForAsset } from '../../../../packages/presentation/contracts/material-catalog.mjs';
+import { defaultCompositionSettings } from '../../../../packages/presentation/contracts/composition-settings.mjs';
 import {rouletteClipSlots,rouletteClipMatches,rouletteConfiguredClipIds,bindRouletteClip} from './roulette-clip-map.mjs';
 import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
-import {layerAssetFitsGame} from '../../../../web/layer-asset-contract.mjs';
-import {bindSpeechSlotStandard,speechSlotStandard,speechSlotVariantId,speechSlotSituation,speechSlotVideoFits} from '../../../../web/public/speech-slot-bindings.mjs';
+import {layerAssetFitsGame} from '../../../../packages/presentation/contracts/layer-asset-contract.mjs';
+import {bindSpeechSlotStandard,speechSlotStandard,speechSlotVariantId,speechSlotSituation,speechSlotVideoFits} from '../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
 
 export function clipSlots(project, inventory, dealerId, game='blackjack') {
   if(game==='roulette')return rouletteClipSlots();

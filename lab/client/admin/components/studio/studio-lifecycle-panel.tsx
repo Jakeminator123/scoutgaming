@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Archive, RotateCcw, Trash2 } from 'lucide-react';
-import type { StudioProject } from '../../../../../lab/lib/studio-model.mjs';
-import { validateProject } from '../../../../../lab/lib/studio-model.mjs';
-import { createDealerSet, dealerSetsForClip, editDealerSet, removeDealerSet, validateDealerSetBindings } from '../../../../../lab/lib/dealer-sets.mjs';
+import type { StudioProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { validateProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { createDealerSet, dealerSetsForClip, editDealerSet, removeDealerSet, validateDealerSetBindings } from '../../../../../packages/presentation/contracts/dealer-sets.mjs';
 import type { DealerArchiveImpact } from '../../../../../lab/lib/dealer-archive-impact.mjs';
 import type { Catalog, VideoInventory } from '../../lib/connected-studio.mjs';
 import { clipLifecycleBlocker, createLifecycleClient, lifecycleBank, lifecycleClipReferences, lifecycleFingerprint, lifecycleMessage, type DeletionPlan } from '../../lib/studio-lifecycle.mjs';

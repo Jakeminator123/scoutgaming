@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from 'react';
-import type { StudioAsset, StudioEvent } from '../lib/studio-model.mjs';
+import type { StudioAsset, StudioEvent } from '../../packages/presentation/contracts/studio-model.mjs';
 import { getMotionClip, motionAllowedForSource, stageBaseAnimation } from '../lib/motion-library.mjs';
 import { playMotion } from '../lib/motion-player.mjs';
 import { FileVideo } from './file-video';
-import type { VideoEntry } from './studio-types';
+import type { VideoEntry } from '../../packages/presentation/contracts/media-inventory.mjs';
 import motionStyles from './stage-motion.module.css';
 
 export interface PlaybackReceipt { phase: 'started' | 'completed' | 'failed' | 'fallback'; medium: 'video' | '2d'; playId?: number; reason?: string; durationMs?: number; currentTimeMs?: number; mediaId?: string; fileName?: string; familyId?: string }

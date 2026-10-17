@@ -4,7 +4,7 @@ import { mkdir,mkdtemp,rm,writeFile } from 'node:fs/promises';
 import { basename,dirname,join,resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createStudioProjectBindings } from '../lib/studio-project-bindings.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { legacyClipControls } from '../lib/legacy-clip-inventory.mjs';
 
 const actionId = '00000000-0000-4000-8000-000000000010';

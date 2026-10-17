@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { registeredDealerIds } from '../../web/public/dealer-identity.mjs';
+import { registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
 import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
 import { createPlayerAdministration } from '../../web/storage/player-administration.mjs';

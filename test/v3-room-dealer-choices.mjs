@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
@@ -8,7 +8,7 @@ import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
 import {gameLaneFromDocument} from '../web/public/game-lanes.mjs';
 import {dealerVersionPath} from '../web/public/dealer-version-switcher.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
-import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {createPartnerBrandingApi} from '../lab/lib/partner-branding-api.mjs';
 
 function fixture({schemaVersion=3,includeBaselineDealer=false}={}) {

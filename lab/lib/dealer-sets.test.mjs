@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, buildRuntimeCatalog, createEmptyProject, normalizeProject, validateProject } from './studio-model.mjs';
-import { createDealerSet, editDealerSet, removeDealerSet, validateDealerSetBindings } from './dealer-sets.mjs';
+import { addDealer, buildRuntimeCatalog, createEmptyProject, normalizeProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { createDealerSet, editDealerSet, removeDealerSet, validateDealerSetBindings } from '../../packages/presentation/contracts/dealer-sets.mjs';
 import { createStudioProjectBindings } from './studio-project-bindings.mjs';
 import { lifecycleProject } from './dealer-lifecycle.mjs';
 import { createNeonProjectStore } from './neon-project-store.mjs';

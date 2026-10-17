@@ -1,10 +1,10 @@
 'use client';
 import {useId} from 'react';
-import {speechSlotStandard,speechSlotVideoFits} from '../../web/public/speech-slot-bindings.mjs';
-import {recordedSpeechForVideo} from '../../web/public/recorded-speech.mjs';
-import type {StudioProject} from '../lib/studio-model.mjs';
+import {speechSlotStandard,speechSlotVideoFits} from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import {recordedSpeechForVideo} from '../../packages/presentation/contracts/recorded-speech.mjs';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import type {DealerMediaSlot} from '../lib/dealer-media-library.mjs';
-import type {VideoInventory} from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import {DealerClipPreview} from './dealer-video-surface';
 import styles from './dealer-speech-slot-editor.module.css';
 

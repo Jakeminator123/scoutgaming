@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {dealerFrameRect,validateDealerFraming,drawDealerFrame,keyGreenPixels,DEFAULT_GREEN_SCREEN} from '../../web/public/dealer-framing.mjs';
-import {validateVideoMetadata} from '../lib/video-intake.mjs';
+import {dealerFrameRect,validateDealerFraming,drawDealerFrame,keyGreenPixels,DEFAULT_GREEN_SCREEN} from '../../packages/presentation/contracts/dealer-framing.mjs';
+import {validateVideoMetadata} from '../../packages/presentation/contracts/video-intake.mjs';
 import {Compositor} from '../../packages/presentation/compositor/compositor.js';
 import {stageGeometry} from '../../packages/presentation/compositor/geometry.js';
-import {sceneForComposition,defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {sceneForComposition,defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 
 test('mobile padding and desktop crop keep the source pixel scale, including an undersized dealer',()=>{
   for(const [w,h] of [[1080,1920],[1920,1080]])for(const scale of [1,3,6]){

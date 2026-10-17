@@ -1,7 +1,7 @@
 import { readFile, mkdir, writeFile, rename, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { createEmptyProject, normalizeProject, validateProject } from './studio-model.mjs';
+import { createEmptyProject, normalizeProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import lockfile from 'proper-lockfile';
 import { autoArchiveLocalArtifacts } from '../../tools/retention-archive.mjs';
 

@@ -1,9 +1,9 @@
-import { BASE_DEALER_IDS, isRegisteredDealer, isActiveDealerId } from '../dealer-identity.mjs';
+import { BASE_DEALER_IDS, isRegisteredDealer, isActiveDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { createHash } from 'node:crypto';
 import { validateGameConnection } from './postgres-store.mjs';
 import { gameLaneConfiguration } from '../public/game-lanes.mjs';
 import { isPresentationRoom } from '../presentation-room-contract.mjs';
-import { normalizeProject } from '../../lab/lib/studio-model.mjs';
+import { normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import {
   StudioStorageError, studioStorageFailure, validateStudioScope, validateRevision,
   validateActor, validateDocumentValue, canonicalStudioJson,

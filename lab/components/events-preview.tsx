@@ -10,9 +10,10 @@ import socialStyles from './social-chat-panel.module.css';
 import { SpeechSource } from './speech-source';
 import { Stage, type PlaybackReceipt } from './stage';
 import streamStyles from './game-stream.module.css';
-import type { StudioAsset, StudioEvent } from '../lib/studio-model.mjs';
+import type { StudioAsset, StudioEvent } from '../../packages/presentation/contracts/studio-model.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
-import type { DirectorMode, SimulationResult, TestContext, VideoEntry } from './studio-types';
+import type { DirectorMode, SimulationResult, TestContext } from './studio-types';
+import type { VideoEntry } from '../../packages/presentation/contracts/media-inventory.mjs';
 import styles from './control-events-page.module.css';
 
 const socialTitles: Record<string, string> = {

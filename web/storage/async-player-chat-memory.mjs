@@ -1,4 +1,4 @@
-import {isDealerId, registeredDealerIds} from '../public/dealer-identity.mjs';
+import {isDealerId, registeredDealerIds} from '../../packages/presentation/contracts/dealer-identity.mjs';
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { validateStudioScope } from '../../packages/studio-access/studio-scope.mjs';

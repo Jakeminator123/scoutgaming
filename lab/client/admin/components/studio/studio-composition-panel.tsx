@@ -1,8 +1,8 @@
 "use client"
 import { useState, useRef } from 'react';
-import type { StudioProject, StudioLane } from '../../../../../lab/lib/studio-model.mjs';
-import { validateProject } from '../../../../../lab/lib/studio-model.mjs';
-import { defaultCompositionSettings, validateCompositionSettings } from '../../../../../web/public/composition-settings.mjs';
+import type { StudioProject, StudioLane } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { validateProject } from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import { defaultCompositionSettings, validateCompositionSettings } from '../../../../../packages/presentation/contracts/composition-settings.mjs';
 import { LayerLibrary } from '../../../../../lab/components/layer-library';
 import { LayerAssetSelect } from '../../../../../lab/components/layer-selectors';
 import { LayerAssetManager } from '../../../../../lab/components/layer-asset-manager';
@@ -10,8 +10,8 @@ import { BlackjackTableGeometryEditor } from '../../../../../lab/components/blac
 import { CompositionPreview } from '../../../../../lab/components/composition-preview';
 import { CompositionZoomControls } from '../../../../../lab/components/composition-zoom-controls';
 import { BackgroundPlaybackEditor } from '../../../../../lab/components/background-playback-editor';
-import { effectiveDealerCompositing } from '../../../../../web/public/dealer-compositing.mjs';
-import { layerAssetFitsGame } from '../../../../../web/layer-asset-contract.mjs';
+import { effectiveDealerCompositing } from '../../../../../packages/presentation/contracts/dealer-compositing.mjs';
+import { layerAssetFitsGame } from '../../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import { rouletteReferencePreview } from '../../lib/roulette-clip-map.mjs';
 import type { CompositionUse, Room, VideoInventory } from '../../lib/connected-studio.mjs';
 import { setTemplateDealers } from '../../lib/dealer-directory.mjs';

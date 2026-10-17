@@ -1,4 +1,4 @@
-import type { StudioProject, StudioLine, StudioVariant } from '../../lab/lib/studio-model.mjs';
+import type { StudioProject, StudioLine, StudioVariant } from './studio-model.mjs';
 export const SPEECH_SLOT_IDS: readonly string[];
 export const OTHER_SPEECH_SLOT_IDS: readonly string[];
 export interface SpeechSlot { dealerId: string; eventId: string; situation: string }

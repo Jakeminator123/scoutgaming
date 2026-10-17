@@ -2,9 +2,9 @@
 import {useEffect,useRef,useState} from 'react';
 import {DealerVoicePicker} from './dealer-voice-picker';
 import {dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../web/public/dealer-voice-catalog.mjs';
-import type {StudioProject} from '../lib/studio-model.mjs';
-import {dealerSpeechPreparation,dealerSpeechReferenceCheck,isSpeechReferenceVideo,normalizeDealerSpeechProfile,type DealerSpeechProfile} from '../../web/public/dealer-speech-profile.mjs';
-import type {VideoInventory} from './studio-types';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
+import {dealerSpeechPreparation,dealerSpeechReferenceCheck,isSpeechReferenceVideo,normalizeDealerSpeechProfile,type DealerSpeechProfile} from '../../packages/presentation/contracts/dealer-speech-profile.mjs';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 
 export function DealerSpeechSettings({dealer,inventory,disabled=false,onEdit,expanded=false,idleReferenceId,onDraftChange}:{expanded?:boolean;idleReferenceId?:string;onDraftChange?:(dirty:boolean)=>void;dealer:StudioProject['dealers'][number];inventory?:VideoInventory;disabled?:boolean;onEdit:(edit:(current:StudioProject)=>StudioProject)=>void}) {
   const saved=dealer.speechProfile;

@@ -1,4 +1,4 @@
-import type { StudioProject } from './studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 export interface DealerRemovalStatus {
   kind: 'missing' | 'ready';
   references: { id: string; label: string }[];

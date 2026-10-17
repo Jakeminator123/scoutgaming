@@ -1,5 +1,5 @@
-import type { StudioProject, StudioLine, StudioEvent, MediaFamilyPolicy, MediaVariantPolicy } from './studio-model.mjs';
-import type { VideoInventory, VideoEntry, MediaFamily } from '../components/studio-types';
+import type { StudioProject, StudioLine, StudioEvent, MediaFamilyPolicy, MediaVariantPolicy } from '../contracts/studio-model.mjs';
+import type { VideoInventory, VideoEntry, MediaFamily } from '../contracts/media-inventory.mjs';
 export const manualMediaSelection: { rules: boolean; model: boolean; random: boolean };
 export function validateMediaPolicy(policy: unknown, triggerIds?: string[]): StudioProject['mediaPolicy'];
 export function usesMediaFamilies(inventory: VideoInventory, dealerId: string): boolean;

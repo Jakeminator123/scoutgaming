@@ -1,7 +1,7 @@
-import { validateVideoMetadata } from '../../../../lab/lib/video-intake.mjs';
-import { DEFAULT_DEALER_COMPOSITING } from '../../../../web/public/dealer-compositing.mjs';
-import { addDealer, validateProject } from '../../../../lab/lib/studio-model.mjs';
-import { MAX_DEALERS, isActiveDealerId } from '../../../../web/public/dealer-identity.mjs';
+import { validateVideoMetadata } from '../../../../packages/presentation/contracts/video-intake.mjs';
+import { DEFAULT_DEALER_COMPOSITING } from '../../../../packages/presentation/contracts/dealer-compositing.mjs';
+import { addDealer, validateProject } from '../../../../packages/presentation/contracts/studio-model.mjs';
+import { MAX_DEALERS, isActiveDealerId } from '../../../../packages/presentation/contracts/dealer-identity.mjs';
 export { labUrl } from '../../../../lab/lib/lab-url.mjs';
 
 // Format for display only; keep the original failure on its file for review.

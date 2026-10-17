@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
+import { addDealer, createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { dealerImportCatalog, dealerImportChatContext, supportedDealerImportSlots, validateDealerImportInput, filenameDealerImportRows, finishDealerImportRows, validateDealerImportAdvice, DEALER_IMPORT_STORAGE_WARNING } from '../lib/dealer-import-catalog.mjs';
 import { dealerMediaSlots } from '../lib/dealer-media-library.mjs';
 import { dealerImportModelConfiguration, dealerImportSelectedModel, askDealerImportModel } from '../lib/dealer-import-model.mjs';

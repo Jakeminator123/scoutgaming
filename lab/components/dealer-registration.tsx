@@ -1,8 +1,8 @@
 'use client';
 import {useState, type FormEvent} from 'react';
 import {DealerSpeechSettings} from './dealer-speech-settings';
-import type {VideoInventory} from './studio-types';
-import {addDealer, type StudioProject} from '../lib/studio-model.mjs';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
+import {addDealer, type StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 export function DealerRegistration({project,onEdit,disabled=false,onAdded,dealerId,inventory,expanded=false,showSpeechSettings=true}:{expanded?:boolean;showSpeechSettings?:boolean;dealerId?:string;inventory?:VideoInventory;project:StudioProject;onEdit:(edit:(current:StudioProject)=>StudioProject)=>void;disabled?:boolean;onAdded?:(id:string)=>void}) {
   const [id,setId]=useState(''),[name,setName]=useState(''),[error,setError]=useState(''),[idEdited,setIdEdited]=useState(false);
   function submit(event:FormEvent<HTMLFormElement>) {

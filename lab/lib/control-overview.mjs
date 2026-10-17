@@ -1,4 +1,4 @@
-import {isActiveDealerId} from '../../web/dealer-identity.mjs';
+import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { validatePublicOperatorRooms } from '../../web/public/operator-rooms-contract.mjs';
 
 // Only names and identifiers cross the server/client boundary; no media or draft bodies.

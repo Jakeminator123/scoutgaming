@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import {DealerVideoSurface} from './dealer-video-surface';
-import type {VideoMetadata} from '../lib/video-intake.mjs';
+import type {VideoMetadata} from '../../packages/presentation/contracts/video-intake.mjs';
 
 export interface IdleSurfaceReceipt { phase: 'started' | 'presented' | 'completed' | 'failed' | 'cancelled'; videoId: string; kind: 'base' | 'variant'; reason?: string }
 /** A variant can report its lifecycle, but never a standard-position proof. */

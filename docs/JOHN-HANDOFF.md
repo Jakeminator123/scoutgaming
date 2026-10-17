@@ -7,6 +7,58 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2c: gemensamma presentationskontrakt — lokal ändring 17 oktober 2026
+
+`packages/presentation/contracts/` äger projektmodell, video-/rouletteregler,
+rena browserpolicyer, seeddata och videoschema med tillhörande deklarationer.
+Ingen regel, medieidentitet, katalogproveniens, schema-ID eller intern schema-
+referens ändras. Äldre modell-, video-, identitets- och policykällor ersätts av
+kanoniska importer; inga permanenta källwrappers behålls. UI:s inventarietyper
+samt legacy-inventariets rena datatyper har samma gemensamma ägare. IO stannar
+hos sina appägare.
+
+`server/registered-idle-rules.mjs` får befintlig `prepareDecision` injicerad
+från `lab/lib/registered-idle-rules.mjs`; beslut och mediebindningar är samma.
+Den tillfälliga urvals-/bindningskompositionen läser nu modell, video och
+speech-slot-kontrakt från paketet. Directortransporten förblir appkomponerad.
+
+`public-modules.mjs` innehåller en explicit browser-allowlist. Äldre publika
+modul-URL:er och kanoniska paket-URL:er fungerar från samma källa, inklusive
+relativa importer. Projektseed, privata schemafiler och server/Director-filer
+exponeras inte. Vercels exakta routing, statiska frontendkopior, isolerade
+serverfixturer, QA-källista och HEAD-jämförelse följer flytten.
+PR-granskningen hittade och rättade en HEAD-regression: exakt samma publika
+allowlist hanterar nu GET och HEAD med identisk innehållsmetadata och tom
+HEAD-kropp. Det befintliga HTTP/importgrafprovet reproducerade felet före
+rättningen; därefter100 riktade prov gröna utan skips. Privat kod är fortsatt
+otillgänglig även med HEAD.
+Directorbildens exakta COPY/ignore/buildFilter använder den kanoniska
+dealer-identity-källan. Befintligt isolerat Dockerpaketprov passerar3/3
+med health/catalog/UI och utan provideranrop. Ingen extra JSON-dependency
+behövdes i den faktiska importgrafen; default-deny-kontexten är bevarad.
+
+Riktad kontrakt-/media-/byggsvit: 248 passerade i första körningen. En missad
+konsumentimport och saknad frontenddependencykoppling stoppade återstående
+prov; efter rättning passerar hela den berörda runtime-/routing-/fixturesviten
+116/116. Schema-/policyproven passerar 39/39 och laddar verkliga relativa
+JSON-referenser från kontraktets och projektschemats nya plats. Inga skips.
+Lab- och Admin-typecheck passerar. Läsande HEAD-jämförelse: 160 fall, noll
+nätanrop, HEAD-/fixturdifferenser eller omskrivna baslinjer. Diffkontroll ren.
+Av 47 flyttade filer är 37 byteidentiska i Git-innehåll, sju ändrar bara
+importrader, en endast inline-typimportvägar och två samlar typdeklarationer.
+Alla åtta JSON-dokument är innehållsidentiska; schema-ID och relativa refs
+behålls. Idle-regelns funktionskropp är oförändrad. Det avgränsade runtime-
+klustret har inga package→app-importer eller cykler. Första ordinarie hook:
+2460 godkända, noll fel och 14 befintliga opt-in/fixture-skips. Efter
+integration med Studio-klientflytten rättades 89 relativa importer i 42
+klientfiler. Gemensamt Studio-produktionsbygge med /studio passerar:
+båda klienttypkontrollerna, tre bundles, Next och 80 byggspår utan borttagna
+poster. Separat importgranskning hittar inga saknade relativa mål och
+bekräftar att lipsyncs nya rörelsefiler är oförändrade. CI, push och drift återstår.
+Detta är lokalt strukturarbete, inte en ny molnmigration, deploy eller
+läppsynksacceptans. Lagring och webbens separata kortpolicy återstår hos sina
+nuvarande ägare.
+
 ## Etapp 3 C3a: Studio äger Admin/Lobby-klienten — 17 oktober 2026
 
 De 184 källfilerna från `packages/design-preview` ligger nu i `lab/client`.

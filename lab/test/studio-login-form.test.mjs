@@ -327,7 +327,7 @@ test('actual browser expired Admin login restores the real room view through his
   const { tmpdir } = await import('node:os');
   const { createStudioNativeAuth } = await import('../lib/studio-native-auth.mjs');
   const { assertNativeStudioRequest } = await import('../lib/studio-native-runtime.mjs');
-  const { createSeedProject, defaultPresentationLane, validateProject, addDealer } = await import('../lib/studio-model.mjs');
+  const { createSeedProject, defaultPresentationLane, validateProject, addDealer } = await import('../../packages/presentation/contracts/studio-model.mjs');
   const catalog = await import('../lib/design-preview-catalog.mjs');
   const nextPage = await import('../lib/next-page-navigation.mjs');
   const preview = await import('../lib/design-preview.mjs');

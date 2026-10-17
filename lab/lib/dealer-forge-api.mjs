@@ -7,7 +7,7 @@ import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { readStudioDocumentJson } from './studio-document-api.mjs';
 import { createDealerForgeService, ForgeError } from './dealer-forge-service.mjs';
 import { RunwayError } from './runway-client.mjs';
-import { isDealerId } from '../../web/dealer-identity.mjs';
+import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 
 const headers = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };
 const json = (value, status = 200) => Response.json(value, { status, headers });

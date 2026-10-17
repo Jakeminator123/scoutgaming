@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeRecordedSpeech,recordedSpeechIdentity,recordedSpeechForVideo,selectRecordedSpeech} from '../web/public/recorded-speech.mjs';
+import {normalizeRecordedSpeech,recordedSpeechIdentity,recordedSpeechForVideo,selectRecordedSpeech} from '../packages/presentation/contracts/recorded-speech.mjs';
 
 function fixture(){
   const value={schemaVersion:1,dealerId:'fixture-dealer',lineId:'goodluck',takeId:'goodluck_1',language:'sv',exactText:'En exakt inspelad testreplik.',

@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clipLabel } from '../lib/clip-label.mjs';
 import {readIdleVideoDuration} from '../lib/idle-video-duration.mjs';
-import { createIdlePreviewPlan, idleShareEstimate, MAX_IDLE_VARIANTS, type IdlePolicy, type IdleVariantPolicy, type IdleVariantUse } from '../lib/idle-policy.mjs';
-import type { VideoEntry, VideoInventory } from './studio-types';
+import { createIdlePreviewPlan, idleShareEstimate, MAX_IDLE_VARIANTS, type IdlePolicy, type IdleVariantPolicy, type IdleVariantUse } from '../../packages/presentation/runtime/idle-policy.mjs';
+import type { VideoEntry, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { PresentationFrame } from './presentation-frame';
 import {DealerVideoSurface} from './dealer-video-surface';
 import styles from './idle-policy-editor.module.css';

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject, defaultPresentationLane } from '../lab/lib/studio-model.mjs';
+import { createSeedProject, defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';

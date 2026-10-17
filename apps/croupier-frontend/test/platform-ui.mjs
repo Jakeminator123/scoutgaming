@@ -1,3 +1,4 @@
+import { presentationPublicModules } from '../../../packages/presentation/public-modules.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp, readFile, writeFile, rm} from 'node:fs/promises';
@@ -26,7 +27,13 @@ test('published roulette browser contracts use exact backend routes without expo
     assert.equal(backendPlatformPath(encoded), false, encoded);
     assert.equal(platformRoute(new URL(encoded, config.publicOrigin), config).kind, 'reject', encoded);
   }
-  for (const path of ['/public-operator-preview.mjs', '/storage/frozen-dealer-idle.mjs', '/server.mjs']) {
+  for (const path of presentationPublicModules.flatMap(row => row.paths).filter(path => path.startsWith('/packages/presentation/'))) {
+    assert.equal(backendPlatformPath(path), true, path);
+    assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'backend', path);
+    for (const suffix of ['/', '/extra', '.map']) assert.equal(backendPlatformPath(path + suffix), false, path + suffix);
+  }
+  for (const path of ['/packages/presentation/server/selection.mjs', '/packages/presentation/contracts/studio-model.mjs',
+    '/packages/presentation/contracts/policies/project.seed.json', '/public-operator-preview.mjs', '/storage/frozen-dealer-idle.mjs', '/server.mjs']) {
     assert.equal(backendPlatformPath(path), false, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);
   }
@@ -325,7 +332,7 @@ test('prepared player uses the actual shared player and redirects retired BO doc
     const prepared = await preparePlatformUi({env, output: directory});
     assert.ok(prepared.files.includes('/app.mjs'));
       assert.ok(prepared.files.includes('/dealer-identity.mjs'));
-      assert.equal(await readFile(join(directory,'public','dealer-identity.mjs'),'utf8'),await readFile(new URL('../../../web/public/dealer-identity.mjs',import.meta.url),'utf8'));
+      assert.equal(await readFile(join(directory,'public','dealer-identity.mjs'),'utf8'),await readFile(new URL('../../../packages/presentation/contracts/dealer-identity.mjs',import.meta.url),'utf8'));
     assert.ok(prepared.files.includes('/web/public/dealer-identity.mjs'));
     assert.equal(await readFile(join(directory,'public/web/public/dealer-identity.mjs'),'utf8'), await readFile(join(directory,'public/dealer-identity.mjs'),'utf8'));
     assert.ok(prepared.files.includes('/composition-settings.mjs'));

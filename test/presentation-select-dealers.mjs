@@ -6,7 +6,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFile } from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import { createPresentationApi } from '../web/presentation-api.mjs';
-import { createSeedProject, addDealer, normalizeProject } from '../lab/lib/studio-model.mjs';
+import { createSeedProject, addDealer, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 

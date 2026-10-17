@@ -98,7 +98,7 @@ for(const [query,room] of [
 });
 
 function publicationWorkspaceHarness(search) {
-  const {createEmptyProject,addDealer,defaultPresentationLane}=require('../../../../lab/lib/studio-model.mjs');
+  const {createEmptyProject,addDealer,defaultPresentationLane}=require('../../../../packages/presentation/contracts/studio-model.mjs');
   const project=addDealer(createEmptyProject(),'nora','Nora');
   const first=defaultPresentationLane('nora');project.lanes=[first,{...structuredClone(first),id:'evening',label:'Kväll'}];
   const operator={id:'north',slug:'north',name:'North',status:'active',publishedPackage:{revision:4,lanes:project.lanes.map(row=>row.id)}};

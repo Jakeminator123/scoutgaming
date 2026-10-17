@@ -1,5 +1,5 @@
-import type { StudioProject,StudioLine,MediaVariantPolicy } from '../../../../lab/lib/studio-model.mjs';
-import type { IdlePolicy } from '../../../../lab/lib/idle-policy.mjs';
+import type { StudioProject,StudioLine,MediaVariantPolicy } from '../../../../packages/presentation/contracts/studio-model.mjs';
+import type { IdlePolicy } from '../../../../packages/presentation/runtime/idle-policy.mjs';
 import type { VideoInventory,VideoEntry,MediaFamily,ClipSlot } from './connected-studio.mjs';
 export type StudioPolicyContext={kind:'idle'|'family'|'line';family:MediaFamily|null;line:StudioLine;clips:VideoEntry[];policy:IdlePolicy|null;global:boolean;frequency:boolean};
 export function studioPolicyContext(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot):StudioPolicyContext;

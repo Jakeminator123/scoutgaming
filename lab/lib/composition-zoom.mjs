@@ -1,4 +1,4 @@
-import {validateCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {validateCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 
 // Editor operation over the existing saved placements, not a new runtime zoom.
 // Dealer/background origins are centred; table Y is its top edge.

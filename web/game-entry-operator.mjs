@@ -1,7 +1,7 @@
 import { isPresentationRoomLaneCompatible } from './storage/frozen-presentation-capture.mjs';
-import { isActiveDealerId, isRegisteredDealer } from './dealer-identity.mjs';
+import { isActiveDealerId, isRegisteredDealer } from '../packages/presentation/contracts/dealer-identity.mjs';
 import { validateFrozenRegisteredDealers } from './storage/frozen-dealer-idle.mjs';
-import {materialLabel} from './public/material-catalog.mjs';
+import {materialLabel} from '../packages/presentation/contracts/material-catalog.mjs';
 // Server-owned /blackjack selection with optional operator context. Without
 // ?operator= the lane, dealer and presentation stay on the saved catalogue
 // path. gameChoices is still attached from the active presentation lane so

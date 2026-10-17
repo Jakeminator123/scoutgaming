@@ -1,4 +1,4 @@
-import type { StudioProject } from '../../lab/lib/studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 export type StudioGameScope = Readonly<{ environment: string; workspaceId: string }>;
 export type StudioDealerId = 'vera' | 'astrid' | 'amira' | 'mei';
 export interface StudioSavedDocument<T = Record<string, unknown>> { kind: string; revision: string; value: T; updatedAt?: string; }

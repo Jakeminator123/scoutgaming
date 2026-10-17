@@ -1,11 +1,11 @@
 'use client';
 
-import type { MediaVariantPolicy, StudioEvent, StudioProject, StudioVariant } from '../lib/studio-model.mjs';
-import type { MediaFamily, VideoInventory } from './studio-types';
+import type { MediaVariantPolicy, StudioEvent, StudioProject, StudioVariant } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { MediaFamily, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { clipLabel } from '../lib/clip-label.mjs';
-import { isAstridDealFamily, mediaFamilyFolder, mediaSituationForEvent, mediaSituationLabel, mediaVariantPolicy } from '../lib/media-family-policy.mjs';
+import { isAstridDealFamily, mediaFamilyFolder, mediaSituationForEvent, mediaSituationLabel, mediaVariantPolicy } from '../../packages/presentation/runtime/media-family-policy.mjs';
 import { DealFrequencyEditor } from './deal-frequency-editor';
-import { situationsForEvent } from '../lib/video-intake.mjs';
+import { situationsForEvent } from '../../packages/presentation/contracts/video-intake.mjs';
 import { VariantSelectionEditor } from './variant-selection';
 import { eventSummary } from '../lib/activity-log.mjs';
 import styles from './media-family-editor.module.css';

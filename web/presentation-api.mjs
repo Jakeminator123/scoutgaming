@@ -1,8 +1,9 @@
-import { isActiveDealerId as isDealerId } from './dealer-identity.mjs';
+import { presentationPublicModules } from '../packages/presentation/public-modules.mjs';
+import { isActiveDealerId as isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
 import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from './recorded-speech-selection.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
-import { selectRegisteredIdleRule } from '../packages/presentation/runtime/registered-idle-rules.mjs';
+import { selectRegisteredIdleRule } from '../lab/lib/registered-idle-rules.mjs';
 import { registeredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';
 import { ownDealerIdle } from '../packages/presentation/runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
@@ -12,18 +13,13 @@ import { Readable } from 'node:stream';
 import { randomUUID, createHash } from 'node:crypto';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
-import { buildRuntimeCatalog, normalizeProject } from '../lab/lib/studio-model.mjs';
+import { buildRuntimeCatalog, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
 import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
 import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const publicModules = new Map(['live-idle', 'idle-policy'].flatMap(name => [
-  [`/presentation-runtime/${name}.mjs`, `packages/presentation/runtime/${name}.mjs`],
-  [`/packages/presentation/runtime/${name}.mjs`, `packages/presentation/runtime/${name}.mjs`],
-]));
-publicModules.set('/lab/policies/idle-policy.seed.json', 'lab/policies/idle-policy.seed.json');
-publicModules.set('/web/public/dealer-identity.mjs', 'web/public/dealer-identity.mjs');
+const publicModules = new Map(presentationPublicModules.flatMap(row => row.paths.map(url => [url, row.source])));
 const publicVideo = item => item ? {
   id: item.id, sha256: item.sha256, fileName: item.fileName,
   src: `/api/presentation/videos/${item.id}`,
@@ -68,9 +64,10 @@ export function createPresentationApi({ db, env = process.env, store = createPro
     const capability=presentationCapabilitiesResponse(new Request('http://local'+(req.url||pathname),{method:req.method,headers:req.headers??{}}));
     if(capability){res.writeHead(capability.status,Object.fromEntries(capability.headers));res.end(req.method==='HEAD'?undefined:await capability.text());return true;}
     const json = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' }); res.end(JSON.stringify(value)); };
-    if (publicModules.has(pathname) && req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': pathname.endsWith('.json') ? 'application/json' : 'text/javascript', 'Cache-Control': 'no-store' });
-      res.end(await readFile(join(root, publicModules.get(pathname)))); return true;
+    if (publicModules.has(pathname) && ['GET', 'HEAD'].includes(req.method)) {
+      const content = await readFile(join(root, publicModules.get(pathname)));
+      res.writeHead(200, { 'Content-Type': pathname.endsWith('.json') ? 'application/json' : 'text/javascript', 'Content-Length': String(content.length), 'Cache-Control': 'no-store' });
+      res.end(req.method === 'HEAD' ? undefined : content); return true;
     }
     if (!pathname.startsWith('/api/presentation/')) return false;
     try {

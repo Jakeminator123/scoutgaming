@@ -1,9 +1,9 @@
 'use client';
 
-import type { MediaVariantPolicy, StudioProject } from '../lib/studio-model.mjs';
-import type { MediaFamily, VideoInventory } from './studio-types';
+import type { MediaVariantPolicy, StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { MediaFamily, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { clipLabel } from '../lib/clip-label.mjs';
-import { dealFrequencyPolicies, mediaVariantPolicy } from '../lib/media-family-policy.mjs';
+import { dealFrequencyPolicies, mediaVariantPolicy } from '../../packages/presentation/runtime/media-family-policy.mjs';
 import styles from './media-family-editor.module.css';
 
 export function DealFrequencyEditor({ family, inventory, project, onPolicy }: {

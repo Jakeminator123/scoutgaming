@@ -6,7 +6,7 @@ import {createSpeechReplyRepository} from '../../web/storage/speech-reply-reposi
 import {createSpeechReplyLibrary,speechReplyScopeHash} from '../../web/speech-reply-library.mjs';
 import {runtimeCatalogJson,runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
 import {mediaBlobPath} from '../../lab/lib/cloud-media-store.mjs';
-import {addDealer,createEmptyProject} from '../../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {readRuntimeCatalogFixture} from './runtime-media-catalog.mjs';
 import {prepareRuntimeMediaImport,planRuntimeMediaImport,applyRuntimeMediaImport} from '../../ops/neon-studio/runtime-media-import.mjs';
 

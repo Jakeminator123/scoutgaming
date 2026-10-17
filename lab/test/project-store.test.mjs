@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createProjectStore } from '../lib/project-store.mjs';
-import { createEmptyProject, createSeedProject, validateProject } from '../lib/studio-model.mjs';
+import { createEmptyProject, createSeedProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 
 async function fixture(t) {
   const directory = await mkdtemp(join(tmpdir(), 'croupier-studio-project-'));

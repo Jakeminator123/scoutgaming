@@ -3,9 +3,9 @@
 import {useEffect,useRef,useState} from 'react'
 import {DealerVoicePicker} from '../../../../../lab/components/dealer-voice-picker'
 import {dealerVoiceDraft,dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../../../../web/public/dealer-voice-catalog.mjs'
-import type {StudioProject} from '../../../../../lab/lib/studio-model.mjs'
+import type {StudioProject} from '../../../../../packages/presentation/contracts/studio-model.mjs'
 import type {VideoInventory} from '../../lib/connected-studio.mjs'
-import {dealerSpeechReferenceCheck,isSpeechReferenceVideo,type DealerSpeechProfile} from '../../../../../web/public/dealer-speech-profile.mjs'
+import {dealerSpeechReferenceCheck,isSpeechReferenceVideo,type DealerSpeechProfile} from '../../../../../packages/presentation/contracts/dealer-speech-profile.mjs'
 import {STUDIO_SPEECH_LINES,studioSpeechLineIds,applyStudioSpeechProfile,studioSpeechLines,studioSpeechBuildCompatibility,studioSpeechMediaUrl,studioRecordedSpeech,type StudioRecordedSpeech,type SpeechBuildPlan,type SpeechBuildResult,type SpeechLanguage} from '../../../../../web/public/studio-speech.mjs'
 
 export interface StudioSpeechPanelProps {

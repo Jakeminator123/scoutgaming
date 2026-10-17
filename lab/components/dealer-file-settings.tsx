@@ -1,10 +1,11 @@
 'use client';
 import {useState} from 'react';
-import {DEFAULT_DEALER_FRAMING} from '../../web/public/dealer-framing.mjs';
-import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
+import {DEFAULT_DEALER_FRAMING} from '../../packages/presentation/contracts/dealer-framing.mjs';
+import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
 import {VideoCompositingFields,DealerFramingFields,RoulettePoseFields} from './video-metadata-fields';
 import {DealerClipPreview} from './dealer-video-surface';
-import {requestJson,type VideoEntry,type VideoInventory} from './studio-types';
+import { requestJson } from './studio-types';
+import type { VideoEntry, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import {inspectAlphaSource} from '../lib/media-alpha-browser.mjs';
 
 export function DealerFileSettings({video,disabled=false,onSaved,onBusyChange}:{video:VideoEntry;disabled?:boolean;onSaved:(inventory:VideoInventory)=>void;onBusyChange?:(busy:boolean)=>void}){

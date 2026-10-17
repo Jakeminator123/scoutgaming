@@ -171,8 +171,8 @@ test('the wrong revision is 409 and a key outside the lane is 422', async () => 
 });
 
 import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
-import { defaultPresentationLane } from '../lib/studio-model.mjs';
-import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
+import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
+import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
 import { layerAssetPath } from '../../web/presentation-layers.mjs';
 
 const tableId='11111111-1111-4111-8111-111111111111', backgroundId='22222222-2222-4222-8222-222222222222';

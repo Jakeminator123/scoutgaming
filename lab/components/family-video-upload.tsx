@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { labUrl } from '../lib/lab-url.mjs';
-import { kindForEvent, MAX_VIDEO_BYTES, type VideoCompositing, type VideoMetadata } from '../lib/video-intake.mjs';
+import { kindForEvent, MAX_VIDEO_BYTES, type VideoCompositing, type VideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { clipSituationLabel } from '../lib/clip-label.mjs';
 import { VideoCompositingFields,DealerFramingFields } from './video-metadata-fields';
-import {DEFAULT_DEALER_FRAMING,DEFAULT_GREEN_SCREEN} from '../../web/public/dealer-framing.mjs';
+import {DEFAULT_DEALER_FRAMING,DEFAULT_GREEN_SCREEN} from '../../packages/presentation/contracts/dealer-framing.mjs';
 import {DealerClipPreview} from './dealer-video-surface';
 import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
-import type { StudioProject } from '../lib/studio-model.mjs';
-import { requestJson, type VideoEntry, type VideoInventory } from './studio-types';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { requestJson } from './studio-types';
+import type { VideoEntry, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import styles from './video-intake.module.css';
 
 export function FamilyVideoUpload({ project, inventory, dealerId, initialFamilyId, onUploaded, onOpen, onBusyChange, disabled = false }: {

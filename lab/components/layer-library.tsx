@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import type {StudioProject} from '../lib/studio-model.mjs';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {uploadCompositionLayer} from '../lib/studio-composition.mjs';
 import {labUrl} from '../lib/lab-url.mjs';
 import {LAYER_ASSET_TYPES,MAX_LAYER_ASSET_BYTES} from '../../web/presentation-layers.mjs';

@@ -1,5 +1,6 @@
-import { isDealerId } from '../../../web/public/dealer-identity.mjs';
-import seedPolicy from '../../../lab/policies/idle-policy.seed.json' with { type: 'json' };
+// Both canonical and /presentation-runtime/ browser URLs resolve these package paths.
+import { isDealerId } from '../../../packages/presentation/contracts/dealer-identity.mjs';
+import seedPolicy from '../../../packages/presentation/contracts/policies/idle-policy.seed.json' with { type: 'json' };
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const USES = new Set(['manual', 'automatic', 'rules', 'openclaw']);

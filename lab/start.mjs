@@ -3,7 +3,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createEmptyProject, validateProject } from './lib/studio-model.mjs';
+import { createEmptyProject, validateProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
 import { preparePreview } from './tools/prepare-preview.mjs';
 import { prepareDesignPreview } from './tools/prepare-design-preview.mjs';

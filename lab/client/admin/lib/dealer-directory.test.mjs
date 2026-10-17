@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import {createEmptyProject,addDealer,defaultPresentationLane} from '../../../../lab/lib/studio-model.mjs';
+import {createEmptyProject,addDealer,defaultPresentationLane} from '../../../../packages/presentation/contracts/studio-model.mjs';
 import {setTemplateDealers} from './dealer-directory.mjs';
 import {lifecycleMessage} from './studio-lifecycle.mjs';
 const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild');

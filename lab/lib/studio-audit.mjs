@@ -1,6 +1,6 @@
 import { MOTION_CLIPS, SOCIAL_MOTION_CLIPS, getMotionClip } from './motion-library.mjs';
-import { isAssetCompatible } from './studio-model.mjs';
-import { videoFitsLine } from './video-intake.mjs';
+import { isAssetCompatible } from '../../packages/presentation/contracts/studio-model.mjs';
+import { videoFitsLine } from '../../packages/presentation/contracts/video-intake.mjs';
 
 export function auditStudio(project, videos = []) {
   const assets = new Map(project.assets.map(a => [a.id, a]));

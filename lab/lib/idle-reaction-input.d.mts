@@ -1,4 +1,4 @@
-import type { StudioProject } from './studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 export interface IdleReactionInput { requestId: string; project: StudioProject; dealerId: string; mode: string;
   sourceRef: { kind: 'renderer-idle'; channel: string; revision: number; messageId: string; at: string };
   observedChat: { source: 'native-observation'; before: string; messages: { role: 'user' | 'assistant'; text: string; at: string }[] } }

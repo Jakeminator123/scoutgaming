@@ -1,5 +1,5 @@
-import type { LegacyClipBinding, StudioProject } from '../../../lab/lib/studio-model.mjs';
-import type { LegacyClipEntry, LegacyClipInventory, LegacyClipRuntime } from '../../../lab/lib/legacy-clip-inventory.mjs';
+import type { LegacyClipBinding, StudioProject } from '../contracts/studio-model.mjs';
+import type { LegacyClipEntry, LegacyClipInventory, LegacyClipRuntime } from '../contracts/legacy-clip-types.mjs';
 export const LEGACY_DEALERS: readonly string[];
 export const LEGACY_ENGINE_PARTS: readonly string[];
 export const LEGACY_CLIP_PARTS: readonly string[];

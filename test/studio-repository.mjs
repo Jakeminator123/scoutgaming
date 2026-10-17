@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate as nextTurn } from 'node:timers/promises';
-import { createSeedProject, createEmptyProject } from '../lab/lib/studio-model.mjs';
+import { createSeedProject, createEmptyProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
 import { createOperatorStore } from '../web/storage/operator-store.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';

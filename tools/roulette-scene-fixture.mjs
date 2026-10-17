@@ -1,7 +1,7 @@
 // Isolated acceptance of the production capture, selection and media routes.
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
 import {withPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {layerAssetPath} from '../web/presentation-layers.mjs';

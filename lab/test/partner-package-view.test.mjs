@@ -4,8 +4,8 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles} from '../lib/partner-package-view.mjs';
 import {PartnerPackageView} from '../components/partner-package-view.mjs';
-import { defaultPresentationLane } from '../lib/studio-model.mjs';
-import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
+import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
+import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
 import { layerAssetPath, validatePresentationPackage } from '../../web/presentation-layers.mjs';
 
 const tableId='11111111-1111-4111-8111-111111111111', backgroundId='22222222-2222-4222-8222-222222222222';
