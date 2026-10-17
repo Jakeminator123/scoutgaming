@@ -46,7 +46,7 @@ export const ARCHIVE_PATHS = Object.freeze([
   'lab/policies',
   'lab/schemas',
   'open-claw/lab',
-  'pipeline',
+  'tools/media',
   'tools/media-layout.mjs',
   'tools/retention-archive.mjs',
   'tools/retention-policy.json',
