@@ -408,64 +408,108 @@ merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
 Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
 läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
-## Dragan: uppvärmningsprov och faktisk miljökedja — 17 oktober 2026
+## Dragan: stopp och samlad överlämning — 17 oktober 2026, 19:17 UTC
 
-Tal och läppsynk i spelet är fortfarande **inte verifierade**. Ett kontrollerat
-prov på main `e572caf3d20fca0e2741e4254d0e17dcad4662e2` startade en A40-worker
-på endpoint `8pfjenuipsz355`, template `1a9glcfe5u`. RunPod SDK startade
-cirka 85 sekunder efter uppvärmningen. Runtime-nyckeln saknade först åtkomst
-till den nya endpointen; Jakob godkände Read/Write för just den endpointen.
-Health gick därefter från 403 till 200. Astrids AI-behörighet utökades inte.
+**Arbetet är stoppat enligt Jakobs instruktion att lämna handoff om workern
+fortsatt inte kommer upp. Tal och läppsynk i spelet fungerar ännu inte.**
+Senaste provet fick ett riktigt RunPod-jobb och började hämta imagen, men
+stoppades av den privata kostnadsvakten innan ljud eller video levererades.
+Inga nya GPU-prov, nyckeländringar eller budgetåterställningar är planerade.
 
-Efter övergång min1 till min0 skickades ett enda chattmeddelande. Render
-loggar POST `/chat` 18:18:39.106 UTC, svarstid 7 726 ms, HTTP 200 för den
-strömmande responsen. Spelaren visade talfel; HTTP 200 är alltså inte
-uppspelningsacceptans. Inget RunPod-jobb, ingen ny Neon-reservation och
-inget ljud eller video observerades. Det exakta responsfelet kunde inte
-återhämtas ur webbläsarens utgångna nätverksbuffert.
+### Senaste provet och den konkreta stopporsaken
 
-En konkret konflikt i försöksordningen är verifierad i kod och tre
-fokuserade journaltester: `reserveMovingSession` anropar `reserveGpu`, vars
-`drained` kräver workers/busy/available = 0. Förvärmning före reservation
-kan därför inte användas som generell lösning. Detta är ett verifierat
-kontraktsproblem i försöksordningen, inte ett bevis på det förlorade
-responsfelets exakta kod. Produktionsgrinden har inte försvagats.
+Vercel och Render körde main `875dacd7ed9743b92c4449ca0a4719df7e662e38`.
+Render-versionen lästes även från `/__cloud/version` före start.
+Testendpoint `dgpazl8h3a64uj`, template `s6om9k7sje`, använde imagen
+`ghcr.io/jakeminator123/moving-gpu-worker@sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
+Jakob godkände runtime-nyckelns endpointbehörighet; health svarade 200.
+Astrids behörighet och media ändrades inte.
 
-Nästa privata provförfarande börjar med min0/max1 och låter applikationen
-reservera och posta sitt jobb först. En läsande kontroll binder aktuell
-Neon-session, lease, budget och jobb-ID till den egna endpointen; först
-ett verifierat köat jobb får utlösa min1. Min0 återställs när samma jobb
-är aktivt. Samma deadline, max en GPU och ägarbunden avveckling gäller.
-81 guardprov och tre läsarprov passerar offline; körskriptets syntax är
-kontrollerad. Förfarandet har inte körts mot GPU och kapplöpningen mellan
-återställd min0 och worker-callback återstår att verifiera. Starta inte ett
-nytt prov på den gamla budgetfilen eller den stängda journalen.
+Vakten startade 19:00:28.889 UTC med min0/max1 och deadline 19:15:28.889.
+Jakobs eget chattmeddelande 19:03:51 gav OpenClaw-text och jobb
+`84cb267e-7e48-48d0-8224-04a49ba2b63f-e2`, session
+`c508303e135893a9aa27cc319f71078b`. Ingen extra agentfråga skickades.
+En läsande Neon-kontroll verifierade session, lease, budget och reservation
+1,20 USD innan min1 tilläts 19:04:04.029. Detta bevisar att den nya ordningen
+kom förbi den tidigare reservationsspärren. 81 guardtester och tre läsartester
+hade passerat offline; övergången tillbaka till min0 vid aktivt jobb blev
+inte verifierad i molnet eftersom jobbet aldrig observerades IN_PROGRESS.
 
-Guarden stängde 18:19:49.244 UTC, före deadline 18:24:11.696. Oberoende
-återläsning 18:21:14 gav endpoint/template 404 och tom workerlista.
-Astrid `zsudl8tmzcmiv1`/`cadh7uwzv6` var oförändrad min0/max1. Draganprofilen
-sparades avstängd. Renders moving-endpoint togs bort och enabled sattes
-till 0 med Save only; samma gamla endpointreferens togs bort lokalt.
-Mergeagenten verifierade efterföljande normal deploy på main `9b79902c`
-(CI39057999317, Vercel READY, Render LIVE med exakt version). Inget extra
-testjobb eller separat cleanup-deploy startades.
+Worker `s8le9mn0gs3n8g`, A40 i CA-MTL-1, skapades 19:04:26.556.
+Systemloggen 19:06:47 visar hämtade lager och pågående uppackning av imagen.
+19:07:40.850 returnerade RunPod två workerposter: denna med desiredStatus
+RUNNING och `t5nobwvi58kdch` med EXITED. Båda saknade runtime-telemetri och
+matchade rätt image/version; endpointens max var fortfarande 1.
+Vaktens kontroll `workers.length <= workersMax` stoppade därför med
+`unexpected_active_workers`. Detta är **inte bevis för två aktiva GPU:er**.
+[RunPods officiella CLI-dokumentation](https://github.com/runpod/runpodctl#waiting-until-a-resource-is-usable)
+beskriver att FlashBoot-cachade workers kan ha EXITED och att RUNNING kan
+rapporteras innan containern finns. Det sparade underlaget räcker inte för
+att klassificera just den andra posten som cache eller ersättningsworker.
+Guardens räkning behöver därför utredas innan ett nytt prov; gränsen får
+inte bara tas bort eller okända workerposter ignoreras.
 
-Kostnadskvitto 18:33:45 UTC: rapporterad totalsumma 0,28932783 USD;
-den nya endpointens faktureringslista var ännu tom och kan släpa.
-Gamla reserver 6,07 USD och hela nya reserven 2,83333333 USD behålls.
-Försiktigt tillgängligt inom totalt 10 USD: **0,80733884 USD**. Det räcker
-inte till ett nytt prov med nuvarande reservkrav. Ingen kostnadspolicy
-eller historisk Neon-reservation har nollställts.
+Spelaren väntade cirka 342 sekunder och visade talfel. Inspelad respons
+innehåller text och video-köstatus men inget ljud/video. Det generiska
+`chat_failed` är inte en verifierad specifik providerfelkod. Full visuell
+läppsynk och faktisk hörbar röst återstår.
 
-Privata kvitton och förberett körskript finns under
+### Avvecklat och kvarvarande gränser
+
+Vakten stängde 19:08:12.872. Oberoende kontroll 19:08:51.924 gav
+endpoint/template 404 och tom workerlista. Astrid
+`zsudl8tmzcmiv1`/`cadh7uwzv6` var oförändrad min0/max1. Dragan sparades OFF
+(Neon state `preparation`); sessionen är terminal och släppt. Webbläsarens
+mätinstrumentering är återställd och spelchatten lämnas ifred.
+
+Render-cleanup är sparad och återläst: `CROUPIER_MOVING_SPEECH_ENABLED=0`,
+`CROUPIER_MOVING_SPEECH_ENDPOINT_ID` borttagen, med **Save only**. Nästa
+ordinarie deploy måste applicera detta i den körande processen; det påstås
+inte redan vara gjort. Profil OFF och borttagen endpoint stoppar fortsatt
+provtrafik under tiden. Lokal Dragan-runtimeprofil är också OFF utan gammal
+endpoint. Inga nycklar, banker eller andra profiler kopierades mellan miljöer.
+Mergeagenten har fått clean STOP och HOLD RELEASE för #223; #222 får följa
+efter detta uppdaterade dokumentkvitto. Nytt prov kräver ett nytt samordnat
+fönster efter verifierad versionsparitet, inte återanvändning av stängd journal.
+
+Jakob höjde det sammanlagda taket till **15 USD** med sitt direkta +5-besked.
+Kostnadsavläsning 19:17:26.924: rapporterat totalt **0,36202446 USD**;
+senaste endpointens debitering saknas ännu och kan släpa. Fulla försiktiga
+reserver **11,73666667 USD** behålls; kvar inom taket **2,90130887 USD**.
+Detta är tillgängligt efter reserver, inte saldot i RunPods betalningskonto.
+Neons taljournal har separat tak 4,80 USD: fyra reservationer om 1,20 USD
+är bokförda och noll sessioner är öppna. Den gränsen är alltså nådd;
+historik får inte nollställas eller byta budget-ID för att släppa igenom ett
+nytt jobb. Eventuellt framtida prov måste först lösa båda budgetgränserna.
+
+### Tidigare prov och återupptagning
+
+Föregående endpoint `8pfjenuipsz355`/template `1a9glcfe5u` är också borttagna.
+Där startade SDK efter cirka 85 sekunder, men förvärmning före reservation
+stred mot `reserveGpu`-kravet workers/busy/available = 0. Ingen ny session
+eller jobb kom igenom. Det exakta förlorade responsfelet är inte återhämtat.
+Den ordningen ska inte upprepas. Miljökontrollen har inte visat felriktad
+Neon-anslutning; verkliga gamla endpoint-/nyckelfel är redan korrigerade.
+
+Nästa agent ska först skilja cachade/avslutade workerposter från faktisk
+kapacitet med providertelemetri och testa guarden offline. Därefter behövs
+samordnad deploy, verifierad budget och ett enda avgränsat talprov med
+hörbart ljud och full läppsynk innan arbetet kan kallas klart. Inget sådant
+nytt prov ingår i denna stoppade leverans.
+
+Privata kvitton och körskript finns under
 `C:/Users/jakem/.codex/visualizations/2026/10/17/01a14afa-f423-7011-bbdf-30a7f44609d1/`:
-`final-trial-receipt.json`, `independent-stop-receipt.json`,
-`env-audit-local.json`, `queue-guard-tests.log`, `run-queued-guard.mjs`.
-Aktiv dokumentbranch är `codex/dragan-env-admission-handoff` i
+`queued-final-receipt.json`, `queued-independent-stop.json`,
+`queued-journal.json`, `queued-chat-final.json`, `queued-worker-system-log.txt`,
+`queue-guard-tests.log`, `run-queued-guard.mjs` och `env-audit-local.json`.
+Originalkonversationer, media och privata provdata ligger utanför Git.
+Dokumentbranch: `codex/dragan-env-admission-handoff`, PR222, i
 `C:/Users/jakem/.codex/worktrees/dragan-admission-diagnosis/croupier`.
 Föregående lipsync-worktree finns inte längre på sin gamla sökväg.
-Miljöernas faktiska läsordning och verifieringsgräns finns i
+Miljöläsordning och verifieringsgränser finns i
 [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
+GitGuardian på läst main: queued suite, ingen incident-API-täckning;
+ingen ny heltäckande säkerhetsacceptans påstås.
 
 ## Dragan: överlämning efter molnprov — 17 oktober 2026, 17:35 UTC
 

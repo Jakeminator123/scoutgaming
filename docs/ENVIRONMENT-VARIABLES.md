@@ -48,6 +48,14 @@ Felen med gammal endpoint och nyckelbehörighet var verkliga, men den här
 kontrollen visar ingen felriktad Neon-anslutning i den faktiska talkedjan.
 Se aktuellt prov-/kostnadskvitto i [handoffen](JOHN-HANDOFF.md).
 
+**Stoppuppföljning 19:17 UTC:** även det senare köade provets endpoint
+`dgpazl8h3a64uj` och template är borttagna och tom workerlista verifierad.
+Draganprofilen är OFF. Render har återläst enabled=0 och ingen moving-endpoint
+sparad med Save only; den körande processens cleanup väntar på nästa ordinarie
+deploy. Det är sparad konfiguration, inte ett nytt runtimekvitto.
+Senaste provet kom förbi reservationen men stoppades av den privata guardens
+worker-räkning. Aktuellt budget-/stoppkvitto och nästa steg finns i handoffen.
+
 Nedanstående avläsning 16:09 är historisk och föregår detta prov.
 
 Kontrollen omfattade riktiga lokala profiler, Vercel-projektet/teamet
@@ -125,8 +133,8 @@ lagringsklient och Astrids inställningar ändras inte.
 
 Testets stabila budget-ID är `dragan-test-20261017`: taljournalens tak är
 4,80 USD och dess reservation är 1,20 USD per försök inklusive marginal.
-Jakob höjde den 17 oktober det sammanlagda RunPod-taket från 5 till **10 USD**.
-Det ändrar inte automatiskt taljournalens befintliga 4,80 USD-konfiguration.
+Jakob höjde den 17 oktober det sammanlagda RunPod-taket först från 5 till 10 USD och därefter till **15 USD**.
+Det ändrar inte automatiskt taljournalens befintliga 4,80 USD-konfiguration. Efter det köade provet är fyra reservationer om 1,20 USD bokförda och noll sessioner öppna; gränsen är nådd och historiken ska bevaras.
 Det sammanlagda taket omfattar
 även tidigare beredning, endpointförsök och reserver för fördröjd fakturering.
 Den separata infrastrukturns kostnadsvakt måste därför använda aktuell
