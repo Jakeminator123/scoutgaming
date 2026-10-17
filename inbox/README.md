@@ -95,5 +95,10 @@ och behandlar ett svar som information, inte som godkännande att ändra repots 
 - Mottagare utan accepterad GitHub-inbjudan nämns i klartext och nås inte förrän
   inbjudan är accepterad. Pinga då med en kommentar som nämner personen.
 - Agenter får läsa och skriva via verktyget, men stänger inte andras ärenden.
+  `done` kräver etiketten `inbox` och att ärendets GitHub-skapare matchar det
+  inloggade kontot. Ett eget visningsnamn med `--from` ändrar inte kontrollen;
+  verktyget skiljer inte mellan personer som använder samma GitHub-konto.
+- `send`, `ping` och `labels` läser befintliga etiketter och skapar endast dem
+  som saknas. Befintliga namn, färger och beskrivningar skrivs inte över.
 - Inga hemligheter, lösenord eller anslutningssträngar i ärenden.
 - Personregistret är `inbox/people.json`. Lägg till GitHub-namn när en inbjudan accepterats.
