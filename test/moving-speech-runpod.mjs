@@ -121,3 +121,49 @@ test('failure or cancellation of full template read cannot produce a release rec
     await assert.rejects(client.release({signal:abort.signal}));assert.equal(calls,2);
   }
 });
+
+const fallbackPod=(changes={})=>({id:'worker123',endpointId:'owned123',templateId:'template123',image,slsVersion:0,...changes});
+function fallbackClient({pods=[fallbackPod()],change={},full=endpoint.template}={}) {
+  const data={...structuredClone(endpoint),...change};delete data.workers;
+  const calls=[];const client=create(async(url,options)=>{
+    calls.push(url);assert.equal(options.method,'GET');assert.equal(options.redirect,'error');
+    if(url==='https://rest.runpod.io/v1/endpoints/owned123?includeTemplate=true&includeWorkers=true')return Response.json(data);
+    if(url==='https://rest.runpod.io/v1/templates/template123')return Response.json(full);
+    assert.equal(url,'https://rest.runpod.io/v1/pods?endpointId=owned123&includeWorkers=true');return Response.json(pods);
+  });
+  return {client,calls,data,pods};
+}
+test('omitted workers accepts a fresh owned live pod without submitting a job',async()=>{
+  const f=fallbackClient();
+  for(let i=0;i<2;i++){
+    const receipt=await f.client.release();
+    assert.deepEqual(receipt.workers.workers,[{image,version:0,isStale:false}]);
+    assert.equal(receipt.workersCorroboration.count,1);assert.equal(f.calls.length,(i+1)*3);
+  }
+  f.pods[0].slsVersion=1;await assert.rejects(f.client.release(),/moving_worker_release_mismatch/);
+});
+test('live fallback refuses unknown foreign or malformed pod ownership',async()=>{
+  for(const pod of [null,[],{},fallbackPod({id:123456}),fallbackPod({endpointId:undefined}),fallbackPod({endpointId:'foreign123'}),
+    fallbackPod({templateId:undefined}),fallbackPod({templateId:'foreign123'})]){
+    const f=fallbackClient({pods:[pod]});await assert.rejects(f.client.release(),/moving_runpod_workers_unknown/);
+  }
+});
+test('live fallback retains exact image version and full template release gates',async()=>{
+  for(const pod of [fallbackPod({image:undefined}),fallbackPod({image:'foreign-image'}),fallbackPod({image:null,imageName:image}),
+    fallbackPod({imageName:'foreign-image'}),fallbackPod({slsVersion:null}),fallbackPod({slsVersion:'0'}),fallbackPod({slsVersion:1})]){
+    await assert.rejects(fallbackClient({pods:[pod]}).client.release(),/moving_worker_release_mismatch/);
+  }
+  for(const change of [{version:null},{version:'0'},{version:-1}])await assert.rejects(fallbackClient({change}).client.release());
+  for(const full of [null,{}, {id:'foreign123',imageName:image},{id:'template123',imageName:'foreign-image'}]){
+    await assert.rejects(fallbackClient({full}).client.release(),/moving_runpod_template_unverified/);
+  }
+  const pod=fallbackPod({imageName:image});delete pod.image;
+  assert.equal((await fallbackClient({pods:[pod]}).client.release()).workers.workers.length,1);
+});
+test('fallback cannot admit a stopped endpoint or multiple workers beyond max1',async()=>{
+  for(const pods of [[],[fallbackPod()]]){
+    const f=fallbackClient({pods,change:{workersMax:0}});await assert.rejects(f.client.release(),/moving_runpod_limits_changed/);
+    assert.equal(f.calls.length,1);
+  }
+  await assert.rejects(fallbackClient({pods:[fallbackPod(),fallbackPod({id:'worker456'})]}).client.release(),/moving_runpod_workers_unknown/);
+});
