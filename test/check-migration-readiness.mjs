@@ -56,20 +56,19 @@ test('an empty pending ledger is ready and the JSON omits the connection string'
   assertNoSecret(result);
 });
 
-test('a deployment-optional version is reported separately and never blocks readiness', async () => {
-  const pool = fakePool({ target: [{ database: 'croupier', role: 'app', address: secret, port: 5432 }] });
-  const result = await checkMigrationReadiness({
-    pool,
-    plan: async ({ pool: given }) => {
-      const client = await given.connect();
-      const row = (await client.query('/* studio-migrations:target */ SELECT current_database() AS database, current_user AS role')).rows[0];
-      client.release();
-      return { target: row, applied: ['001', '002', '003', '004', '005', '006', '007'].map(version => ({ version, checksum: secret })), pending: [], optionalPending: [{ version: '008', file: '008-dealer-forge.sql', checksum: secret }] };
-    },
-  });
-  assert.equal(result.ready, true); assert.equal(result.exitCode, 0);
-  assert.deepEqual(result.pending, []); assert.deepEqual(result.optionalPending, ['008']);
-  assertNoSecret(result);
+test('an explicit future optional 014 planner fixture never blocks readiness',async()=>{
+  // Synthetic planner output only; 014 is not registered as a product migration.
+  const required=['001','002','003','004','005','006','007','008','011','012','013'];
+  for(const installed of [false,true]){
+    const applied=[...required,...(installed?['014']:[])];
+    const result=await checkMigrationReadiness({plan:async()=>({
+      target:{database:'croupier',role:'app',address:secret},
+      applied:applied.map(version=>({version,checksum:secret})),pending:[],
+      optionalPending:installed?[]:[{version:'014',file:'014-future-optional-fixture.sql',checksum:secret}],
+    })});
+    assert.equal(result.ready,true);assert.equal(result.exitCode,0);assert.deepEqual(result.applied,applied);
+    assert.deepEqual(result.pending,[]);assert.deepEqual(result.optionalPending,installed?[]:['014']);assertNoSecret(result);
+  }
 });
 
 test('012 runtime cutover blocks readiness until the required ledger is installed', async()=>{
@@ -80,6 +79,17 @@ test('012 runtime cutover blocks readiness until the required ledger is installe
     assert.equal(result.ready,applied012);assert.equal(result.exitCode,applied012?0:1);assert.deepEqual(result.applied,versions);
     assert.deepEqual(result.pending,applied012?[]:['012']);assert.deepEqual(result.optionalPending,[]);
     if(!applied012)assert.match(result.message,/Migration 012 saknas/);
+  }
+});
+
+test('013 admission storage is required and named in a failed readiness report',async()=>{
+  for(const present of [false,true]){
+    const applied=['001','002','003','004','005','006','007','008','011','012',...(present?['013']:[])];
+    const report=await checkMigrationReadiness({plan:async()=>({target:{database:'croupier_game',role:'app'},
+      applied:applied.map(version=>({version})),pending:present?[]:[{version:'013'}],optionalPending:[]})});
+    assert.equal(report.ready,present);assert.equal(report.exitCode,present?0:1);
+    assert.deepEqual(report.pending,present?[]:['013']);assert.deepEqual(report.optionalPending,[]);
+    if(!present)assert.match(report.message,/Migration 013 saknas/);
   }
 });
 
