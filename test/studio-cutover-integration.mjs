@@ -1,4 +1,7 @@
+import { fileURLToPath as speechRootPath } from 'node:url';
 import * as savedGameDocumentContract from '../web/storage/studio-contract.mjs';
+
+const speechRepositoryRoot = speechRootPath(new URL('../', import.meta.url));
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,8 +31,8 @@ import { createPlayerAdministration } from '../web/storage/player-administration
 import { planStudioMigrations, loadStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
 import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
-import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
-import { GENERATED_SPEECH_DEFAULTS } from '../web/generated-speech-provider.mjs';
+import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
+import { GENERATED_SPEECH_DEFAULTS } from '../packages/presentation/server/generated-speech-provider.mjs';
 import { createSpeechBlobArtifacts } from '../web/speech-blob-artifacts.mjs';
 import { SHOE_RULES, newGame } from '../web/shoe-game.mjs';
 
@@ -461,7 +464,7 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
         },
         del:async pathname => { artifactValues.delete(pathname); },
       } });
-      const files = () => createGeneratedSpeechService({ directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal, journalRequired:true, artifacts, provider:{
+      const files = () => createGeneratedSpeechService({ directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal, journalRequired:true, artifacts, provider:{
         generate:async ({ text, beforeCostly }) => {
           await beforeCostly(); packageCalls++;
           const audio = Buffer.from(`fixture-audio:${text}`), video = Buffer.from(`fixture-video:${text}`);

@@ -1,6 +1,6 @@
 import { normalizeRecordedSpeech, recordedSpeechForVideo } from '../../packages/presentation/contracts/recorded-speech.mjs';
 import { SPEECH_LINES } from '../../packages/presentation/contracts/speech-lines.mjs';
-import { ASTRID_VOICE_PROFILE } from './astrid-voice-profile.mjs';
+import { ASTRID_VOICE_PROFILE } from '../../packages/presentation/contracts/astrid-voice-profile.mjs';
 import { normalizeDealerSpeechProfile, validateDealerSpeechReference } from '../../packages/presentation/contracts/dealer-speech-profile.mjs';
 
 // New generation templates. Existing recorded banks retain their own exact

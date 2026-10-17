@@ -2,7 +2,8 @@ import { randomBytes } from 'node:crypto';
 import { lstat, mkdir, open, readdir, realpath, unlink } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 import { setTimeout as pause } from 'node:timers/promises';
-import { createJournalSpeechSessionManager, requireSpeechJournal } from './speech-journal-runtime.mjs';
+import { createJournalSpeechSessionManager } from './speech-journal-runtime.mjs';
+import { requireSpeechJournal } from '../packages/presentation/server/speech-journal-lease.mjs';
 
 export const SPEECH_SESSION_POLICY = Object.freeze({
   seconds: 540, executionTimeout: 600000, ttl: 660000,

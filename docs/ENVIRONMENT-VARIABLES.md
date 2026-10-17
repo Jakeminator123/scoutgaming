@@ -1079,3 +1079,9 @@ vid ett Neonfel.
 Källinventariet för sparad spelpolicy pekar på `packages/presentation/server/saved-game-policy.mjs`.
 Cloud-konfigurationen använder samma miljöläsare; den explicita legacy-importen binder
 valideraren till spelserverns befintliga dokumentkontrakt. Inga miljönycklar eller fallbackregler ändras.
+
+Fullfile-talets miljöläsare ägs nu av
+`packages/presentation/server/generated-speech-runtime.mjs`. Appkompositionerna
+tillför den ursprungliga repository-roten explicit. Runtime läser aktuell processmiljö
+vid status/get, behåller samma konfigurationsnyckel och kräver samma journal/artifacts
+i Neon-läget. Ingen ny miljövariabel, processdelad global eller automatisk providerstart införs.

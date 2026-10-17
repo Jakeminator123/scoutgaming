@@ -5,6 +5,7 @@ const browserContracts = [
   'recorded-speech', 'composition-settings', 'background-playback-policy',
   'roulette-idle-contract', 'roulette-start-contract', 'speech-slot-bindings',
   'speech-lines', 'material-catalog', 'background-materials',
+  'speech-package', 'astrid-voice-profile',
 ];
 export const presentationPublicModules = Object.freeze([
   {source: 'packages/navigation/operator-slug.mjs',

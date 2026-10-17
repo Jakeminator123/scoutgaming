@@ -16,7 +16,7 @@
         "web/native-p6-qa-hook.mjs",
         "web/native-ai-qa-runtime.mjs",
         "web/native-ai-qa-private.mjs",
-        "web/generated-speech.mjs",
+        "packages/presentation/server/generated-speech-runtime.mjs",
         "web/storage/studio-runtime.mjs",
         "packages/presentation/server/saved-game-policy.mjs",
         "web/studio-game-commands.mjs",

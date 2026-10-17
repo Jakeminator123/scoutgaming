@@ -1,8 +1,8 @@
 import { MOVING_SPEECH_LIMITS } from './moving-speech-limits.mjs';
-import { GPU_RESERVATION_WINDOW_MS } from './speech-journal-constants.mjs';
+import { GPU_RESERVATION_WINDOW_MS } from '../packages/presentation/contracts/speech-journal-constants.mjs';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
-import { createSpeechJournalLease } from './speech-journal-runtime.mjs';
+import { createSpeechJournalLease } from '../packages/presentation/server/speech-journal-lease.mjs';
 import { createMovingSpeechConnection, verifyMovingWorkerRelease } from './moving-speech-transport.mjs';
 import { verifyMovingSpeechBinding } from './moving-speech-binding.mjs';
 

@@ -16,7 +16,7 @@ import { openClawChat } from './openclaw-chat.mjs';
 import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch, nativeP6OwnedPlaybackContext } from './native-p6-qa-hook.mjs';
 import { normalizeAstridObservation } from '../packages/director/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
-import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
+import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech-runtime.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
 import { createChatResponseStream } from './chat-response-stream.mjs';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from './generated-speech-stream.mjs';

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
-import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
-import { FULLFILE_PROVIDER_MAX_TIMEOUT_MS, FULLFILE_RUNPOD_POLICY } from './speech-journal-constants.mjs';
+import { ASTRID_VOICE_PROFILE } from '../contracts/astrid-voice-profile.mjs';
+import { FULLFILE_PROVIDER_MAX_TIMEOUT_MS, FULLFILE_RUNPOD_POLICY } from '../contracts/speech-journal-constants.mjs';
 
 // Provider-only adapter. No env, filesystem, browser, room broadcast or game state.
 // Wire-contract provenance (not vendored implementation):

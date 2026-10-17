@@ -63,3 +63,16 @@ fingerprints, cacheScope och rategränser är oförändrade.
 `contracts/probe-fixtures.mjs` och deklarationen innehåller samma fiktiva,
 opt-in-scenarier för Studio-editor, game-probe och QA. De är inte riktiga
 spelardata och läggs inte till i den publika modulallowlisten.
+
+Genererat tals befintliga fullfile-tjänst, HTTP-provider och journal-lease ägs av
+`server/generated-speech-*.mjs` och `server/speech-journal-lease.mjs`. En kanonisk
+modul äger runtime, journalreferenser, config key och WeakMap för exakta providerfunktioner.
+Game och Studio tillför samma ursprungliga repository-root via varsin appkomposition;
+återhämtning av facaden återställer inget tillstånd. Skilda processer/modulgrafer har
+eget minne; ingen global eller HMR-persistens införs. Game behåller SQL-journal,
+Blob-artifacts och sessionsbootstrap. Studio skapar ingen alternativ journal.
+
+De två rena browserkontrakten `speech-package` och `astrid-voice-profile` ligger
+under `contracts/`; gamla publika URL:er och kanoniska paket-URL:er når samma källor.
+Servermodulerna ingår aldrig i den publika allowlisten. Talidentiteter, originalmedia,
+godkännanden, tidsgränser, lease-/kostnadsregler och avbrottshantering är oförändrade.

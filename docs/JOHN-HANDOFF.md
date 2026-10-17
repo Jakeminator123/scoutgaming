@@ -1,5 +1,22 @@
 # Aktuell handoff — Scoutgaming
 
+## C2l-c — gemensam ägare för genererat tal, 17 oktober 2026
+
+Fullfile-service/provider, journalens lease-primitiver och tre rena talkontrakt har
+kanonisk ägare i `packages/presentation`. Studio och game binder samma modul-lokala
+runtime med explicit ursprunglig repository-root. Getter, config key, journal/artifacts
+och exakt providerfunktionsidentitet delas inom samma modulgraph; skilda tjänster har
+eget minne. Ingen global/HMR-registry eller ny provider-/journalimplementation införs.
+Gamla källwrappers är borttagna; publika browser-URL:er behålls med explicit allowlist.
+Privata servermoduler publiceras inte. Befintlig Studio-proveniens behåller originalpathen.
+
+Main/PR213 integrerad normalt i `950da8e9b46d49a905ec654500d5f4d3aaf49967`:
+203/203 fokuserade hookprov och frontendtyper gröna. Integrationen rättade förbrukade
+ops-/miljökällreferenser med samma policy- och dokumentvaliderare. SessionSignal,
+lease/reservation/cancellation och journalens failclosed-beteende är bevarade.
+C2l-c: 396/396 riktade befintliga prov, Studio-typer och tio mekaniska kroppsjämförelser gröna. Parentreview och ordinarie commit-hook återstår. Ingen push, fullbuild,
+miljö-/schema-/provider-/GPU-ändring eller nytt läppsynksgodkännande.
+
 ## Lokal agent-talk-kö — separat fix 17 oktober 2026
 
 Full kö blockerar inte nästa ping: äldsta meddelandet sparas före det

@@ -76,6 +76,22 @@ deploypaketet. Den inventeringen var inget bevis för att alla register redan
 fanns i Neon. Även Dragan passerade den gemensamma katalogkontrollen.
 En dealerradering slutförde inte metadataflytten.
 
+## Gemensam ägare för fullfile-tal, 17 oktober 2026
+
+`packages/presentation/server/generated-speech-runtime.mjs` äger den befintliga
+modul-lokala tjänsten, journalreferenserna, konfigurationsnyckeln och WeakMap för
+exakta providerfunktioner. Studio och game lämnar samma ursprungliga repository-root
+via sina egna kompositioner. Samma modulgraph får samma getter och tjänst; skilda
+processer/modulgrafer har eget minne. Ingen global eller ny HMR-persistens införs.
+Game behåller SQL-journal, Blob-artifacts och sessionsbootstrap; Studio aktiverar
+ingen separat journal eller betald provider. Rootgräns, lease/reservation, hashkontroller,
+request-idempotens och cancellation följer samma implementation och regler.
+
+`speech-package` och `astrid-voice-profile` är rena kontrakt i `packages/presentation/contracts`.
+Deras gamla publika URL:er och kanoniska paketadresser serverar samma källor;
+server-/journalmodulerna ingår inte i den publika allowlisten. Innehåll, ID:n,
+mediahashar, ursprunglig proveniens och godkännanden har inte ändrats.
+
 ## Dragan: första gemensamma molntalvägen, 17 oktober 2026
 
 ```mermaid

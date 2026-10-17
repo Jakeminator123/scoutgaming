@@ -150,7 +150,7 @@ test('private closure snapshot rejects extra paths and tampering before creating
 test('one bounded QA boot passes fullfile policy to Web; registered transport and Neon reservation are required before SDK/provider',async t=>{
   const {randomUUID}=await import('node:crypto');const {NATIVE_P6_QA:QA,validateCloudConfig,childSpecifications}=await import('../ops/cloud/config.mjs');
   const {AI_QA_SOURCE_PATHS,boundedAiQaAllowsFullfile}=await import('../web/native-ai-qa-runtime.mjs');
-  const {configureGeneratedSpeechJournal,getGeneratedSpeechService,generatedSpeechStatus}=await import('../web/generated-speech.mjs');
+  const {configureGeneratedSpeechJournal,getGeneratedSpeechService,generatedSpeechStatus}=await import('../web/generated-speech-runtime.mjs');
   const {createSpeechJournal}=await import('../web/postgres-speech-journal.mjs');const {speechMemoryPool}=await import('./fixtures/speech-memory-pool.mjs');
   const runId=randomUUID(),env={NODE_ENV:'production',PORT:'10000',CROUPIER_CLOUD_LAYOUT:'single-origin',
     CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',

@@ -1,3 +1,4 @@
+import { fileURLToPath as speechRootPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
@@ -5,11 +6,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
-import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
+import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
 import { createGeneratedSpeechStreamService } from '../web/generated-speech-stream.mjs';
 import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
-import { GENERATED_SPEECH_DEFAULTS } from '../web/generated-speech-provider.mjs';
+import { GENERATED_SPEECH_DEFAULTS } from '../packages/presentation/server/generated-speech-provider.mjs';
 import { speechMemoryPool } from './fixtures/speech-memory-pool.mjs';
+
+const speechRepositoryRoot = speechRootPath(new URL('../', import.meta.url));
 
 const digest = input => createHash('sha256').update(input).digest('hex');
 const dealerAvatar = (dealerId='paow') => {const bytes=Buffer.from('synthetic owned image '+dealerId);return {schemaVersion:1,dealerId,profileRevision:digest(dealerId),imageSha256:digest(bytes),imageBase64:bytes.toString('base64')};};
@@ -109,7 +112,7 @@ test('longer startup allowance does not extend retirement of a lingering old dea
 
 test('Neon opt-in without journal fails before disk, relay or provider; no policy auto bootstrap', async t => {
   const f = await fixture(t, { initialPolicy:false }); let relay = 0;
-  assert.throws(() => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journalRequired:true }), { code:'generated_speech_journal_unavailable' });
+  assert.throws(() => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journalRequired:true }), { code:'generated_speech_journal_unavailable' });
   assert.throws(() => createSpeechSessionManager(f.config, { ...f.deps, journal:null }), { code:'generated_speech_journal_unavailable' });
   await assert.rejects(createGeneratedSpeechStreamService({}, {}, { journalRequired:true, resolveOwner:() => '', attachRelay:() => { relay++; } }), { code:'generated_speech_journal_unavailable' });
   assert.equal(relay, 0); assert.equal(f.calls.length, 0); assert.deepEqual(await readdir(f.directory), []);
@@ -233,7 +236,7 @@ test('failed durable submit marker never reaches the provider and keeps reservat
 
 test('fullfile caller caches SQL identity on restart, preserves owned bytes and blocks capability replay', async t => {
   const f = await fixture(t); let paid = 0;
-  const construct = () => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:f.journal, journalRequired:true, artifacts:f.artifacts,
+  const construct = () => createGeneratedSpeechService({ reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal:f.journal, journalRequired:true, artifacts:f.artifacts,
     provider:{ generate:async ({ text, beforeCostly }) => { await beforeCostly(); paid++; return generated(text); } } });
   const service = construct(), packageValue = await service.generate(input());
   assert.equal(paid, 1); assert.equal([...f.pool.state.requests.values()][0].state, 'completed');
@@ -249,7 +252,7 @@ test('fullfile caller caches SQL identity on restart, preserves owned bytes and 
 
 test('fullfile uncertainty and lost submit-marker commit never authorize a second mutation', async t => {
   const f = await fixture(t); let paid = 0;
-  const construct = () => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:f.journal, artifacts:f.artifacts, provider:{ generate:async () => { paid++; throw Error('unknown paid result'); } } });
+  const construct = () => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal:f.journal, artifacts:f.artifacts, provider:{ generate:async () => { paid++; throw Error('unknown paid result'); } } });
   await assert.rejects(construct().generate(input()), { code:'generated_speech_failed' });
   assert.equal(paid, 1); assert.equal([...f.pool.state.requests.values()][0].state, 'submission_uncertain');
   await assert.rejects(construct().generate(input()), { code:'generated_speech_request_already_attempted' }); assert.equal(paid, 1);
@@ -259,7 +262,7 @@ test('fullfile uncertainty and lost submit-marker commit never authorize a secon
 
 test('Neon fullfile requires private artifact adapter before any reservation or provider call', async t => {
   const f = await fixture(t);
-  assert.throws(() => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:f.journal, journalRequired:true }), { code:'generated_speech_artifacts_unavailable' });
+  assert.throws(() => createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal:f.journal, journalRequired:true }), { code:'generated_speech_artifacts_unavailable' });
   assert.equal(f.pool.state.requests.size, 0); assert.deepEqual(await readdir(f.directory), []);
 });
 
@@ -267,7 +270,7 @@ test('lost fullfile submit-marker commit cannot call provider and completed owne
   const f = await fixture(t); let paid = 0;
   const wrapped = { ...f.journal,
     async markRequestSubmissionStarted(value) { f.pool.failNext('COMMIT', { afterCommit:true }); return f.journal.markRequestSubmissionStarted(value); } };
-  const service = createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { journal:wrapped, artifacts:f.artifacts, provider:{ generate:async () => { paid++; } } });
+  const service = createGeneratedSpeechService({ directory:f.directory, reserveMicroUsd:200000, dailyBudgetMicroUsd:1000000 }, { repositoryRoot: speechRepositoryRoot, journal:wrapped, artifacts:f.artifacts, provider:{ generate:async () => { paid++; } } });
   await assert.rejects(service.generate(input()), { code:'generated_speech_journal_unavailable' }); assert.equal(paid, 0);
   assert.equal([...f.pool.state.requests.values()][0].state, 'submission_uncertain');
   const foreign = await createSpeechJournal({ pool:f.pool, environmentId:'foreign-runtime', now:f.getTime });

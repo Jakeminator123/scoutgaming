@@ -1,4 +1,4 @@
-import { validateSpeechPackage } from './speech-package.mjs';
+import { validateSpeechPackage } from '../../packages/presentation/contracts/speech-package.mjs';
 import { SpeechStreamPlayer } from './speech-stream-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
 import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';

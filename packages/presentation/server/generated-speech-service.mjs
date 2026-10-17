@@ -2,43 +2,22 @@ import { createHash, randomBytes } from 'node:crypto';
 import { constants } from 'node:fs';
 import { lstat, mkdir, open, readdir, realpath, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { isIP } from 'node:net';
-import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { createGeneratedSpeechProvider, GENERATED_SPEECH_DEFAULTS, GENERATED_SPEECH_LIMITS } from './generated-speech-provider.mjs';
-import { normalizeSpeechPackage } from './public/speech-package.mjs';
-import { ASTRID_VOICE_PROFILE } from './public/astrid-voice-profile.mjs';
-import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-runtime.mjs';
-
-// Trusted server runtime registers its already validated provider function.
-// Keep the SDK runtime out of this module's shared Lab build dependency graph.
-const boundedFullfileAuthorities=new WeakMap();
-export function registerBoundedAiQaFullfileAuthority(providerFetch,validate){
-  if(typeof providerFetch!=='function'||typeof validate!=='function'||boundedFullfileAuthorities.has(providerFetch))
-    throw new Error('generated_speech_bounded_authority_invalid');
-  boundedFullfileAuthorities.set(providerFetch,validate);
-}
-export function boundedAiQaAllowsFullfile(providerFetch,env=process.env){
-  const validate=boundedFullfileAuthorities.get(providerFetch);if(!validate)return false;
-  try{return validate(env)===true;}catch{return false;}
-}
+import { normalizeSpeechPackage } from '../contracts/speech-package.mjs';
+import { ASTRID_VOICE_PROFILE } from '../contracts/astrid-voice-profile.mjs';
+import { createSpeechJournalLease, requireSpeechJournal } from './speech-journal-lease.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
 const PROFILE = ASTRID_VOICE_PROFILE.profileRevision;
-const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const AUDIO_LIMIT = 44 + 24000 * 2 * 25;
 const STORE_LIMIT = 256 * 1024 * 1024;
 const MEDIA_ID = /^[a-f0-9]{32}$/;
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(value);
 const equalPath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
-const budgetAmount = (value, maximum = 10000000) => {
-  if (typeof value !== 'string' || !/^(?:0|[1-9]\d?)(?:\.\d{1,6})?$/.test(value)) return undefined;
-  const amount = Math.round(Number(value) * 1000000);
-  return Number.isSafeInteger(amount) && amount > 0 && amount <= maximum ? amount : undefined;
-};
-const privateDirectory = directory => {
+export const isPrivateGeneratedSpeechDirectory = (directory, repositoryRoot) => {
   if (typeof directory !== 'string' || !isAbsolute(directory)) return false;
-  const path = resolve(directory), inside = relative(REPOSITORY, path);
+  const path = resolve(directory), inside = relative(repositoryRoot, path);
   return ![parse(path).root, homedir(), process.cwd()].some(value => equalPath(path, resolve(value)))
     && (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside));
 };
@@ -55,78 +34,20 @@ const safeFailure = error => error instanceof GeneratedSpeechServiceError ? erro
   /^(?:generated_speech_|invalid_generated_speech_)[a-z_]+$/.test(error?.code ?? '') ? error.code : 'generated_speech_failed',
   [400, 409, 429, 499, 502, 503, 504].includes(error?.statusCode) ? error.statusCode : 503);
 
-function configuration(env) {
-  const localPreview = env.CROUPIER_GENERATED_SPEECH_PREVIEW === '1'
-    && ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(env.HOST);
-  let cloudPreview = false;
-  const cloudHost = ['0.0.0.0', '::', '[::]'].includes(env.HOST)
-    || (env.CROUPIER_CLOUD_RUNTIME === '1' && env.HOST === '127.0.0.1');
-  if (env.CROUPIER_CLOUD_GENERATED_SPEECH === '1' && env.NODE_ENV === 'production'
-    && env.DEMO_GUEST_ACCESS !== '1' && cloudHost) {
-    try {
-      const url = new URL(env.PUBLIC_URL);
-      cloudPreview = url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash
-        && url.pathname === '/' && !url.port && !isIP(url.hostname) && url.hostname.includes('.')
-        && !url.hostname.endsWith('.local') && url.hostname !== 'localhost';
-    } catch { /* Invalid cloud origins cannot enable paid generation. */ }
-  }
-  // Managed cloud conversations must use the session cost ledger. A legacy
-  // client or Probe may not bypass it by asking for an unbudgeted file job.
-  const managedStreaming = cloudPreview && env.CROUPIER_GENERATED_SPEECH_STREAMING === '1';
-  const enabled = env.CROUPIER_GENERATED_SPEECH === '1' && (localPreview || cloudPreview)
-    && (!managedStreaming || (boundedAiQaAllowsFullfile(speechProviderFetch,env)&&speechJournal));
-  const journaled = env.CROUPIER_STUDIO_NEON_POLICY === '1';
-  const value = { directory: journaled ? undefined : env.CROUPIER_GENERATED_SPEECH_DIR,
-    cartesiaApiKey: env.CARTESIA_API_KEY,
-    runpodApiKey: env.RUNPOD_API_KEY, runpodEndpointId: env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID,
-    voiceId: GENERATED_SPEECH_DEFAULTS.voiceId, modelId: GENERATED_SPEECH_DEFAULTS.modelId,
-    reserveMicroUsd: budgetAmount(env.CROUPIER_SPEECH_FULLFILE_RESERVE_USD),
-    dailyBudgetMicroUsd: budgetAmount(env.CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD, 20000000) };
-  const token = input => typeof input === 'string' && input.length > 0 && input.length <= 2048 && !/\s/.test(input);
-  const configured = enabled && (journaled || privateDirectory(value.directory))
-    && token(value.cartesiaApiKey) && token(value.runpodApiKey) && /^[A-Za-z0-9_-]{1,100}$/.test(value.runpodEndpointId ?? '');
-  return { enabled, configured, value };
-}
-
-export function generatedSpeechStatus(env = process.env) {
-  const { enabled, configured } = configuration(env);
-  return { enabled, configured, preview: true, dealerId: 'astrid', reviewStatus: 'pending' };
-}
-
-let singleton = null;
-let singletonKey = null;
-let speechJournal = null;
-let speechArtifacts = null;
-let speechProviderFetch = null;
-function requireArtifacts(artifacts) {
+export function requireGeneratedSpeechArtifacts(artifacts) {
   if (!artifacts || typeof artifacts.save !== 'function' || typeof artifacts.get !== 'function') fail('generated_speech_artifacts_unavailable');
   return artifacts;
 }
-export function configureGeneratedSpeechJournal(journal, { artifacts = null, providerFetch = null } = {}) {
-  if (journal !== null) requireSpeechJournal(journal);
-  if (journal !== null) requireArtifacts(artifacts);
-  if (speechJournal !== journal || speechArtifacts !== artifacts || speechProviderFetch !== providerFetch) {
-    singleton = null; singletonKey = null; speechJournal = journal; speechArtifacts = artifacts; speechProviderFetch = providerFetch;
-  }
-}
-export function getGeneratedSpeechService() {
-  const { configured, value } = configuration(process.env);
-  if (!configured) return null;
-  if (process.env.CROUPIER_STUDIO_NEON_POLICY === '1') requireSpeechJournal(speechJournal);
-  const key = digest(JSON.stringify([value, process.env.CROUPIER_STUDIO_NEON_POLICY === '1']));
-  if (key !== singletonKey) { singleton = createGeneratedSpeechService(value, { journal:speechJournal, artifacts:speechArtifacts, fetchImpl:speechProviderFetch ?? fetch }); singletonKey = key; }
-  return singleton;
-}
-
 // Only an explicitly isolated, private preview store. Artifacts never enter the
 // dealer bank or inherit visual acceptance. Request reservations survive failed
 // jobs/restarts: an uncertain paid request is not automatically charged again.
-export function createGeneratedSpeechService(config, { provider = null, journal = null, artifacts = null, fetchImpl = fetch,
+export function createGeneratedSpeechService(config, { repositoryRoot, provider = null, journal = null, artifacts = null, fetchImpl = fetch,
   journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1' } = {}) {
+  if (typeof repositoryRoot !== 'string' || !isAbsolute(repositoryRoot)) throw new TypeError('Explicit repositoryRoot required');
   if (journalRequired || journal) requireSpeechJournal(journal);
   if (journal && typeof journal.assertFullfileReservation !== 'function') fail('generated_speech_journal_unavailable');
-  if (journal) requireArtifacts(artifacts);
-  if (!config || (!journal && !privateDirectory(config.directory))) fail('generated_speech_invalid_directory');
+  if (journal) requireGeneratedSpeechArtifacts(artifacts);
+  if (!config || (!journal && !isPrivateGeneratedSpeechDirectory(config.directory, repositoryRoot))) fail('generated_speech_invalid_directory');
   const directory = journal ? null : resolve(config.directory);
   const voiceId = config.voiceId ?? GENERATED_SPEECH_DEFAULTS.voiceId;
   const modelId = config.modelId ?? GENERATED_SPEECH_DEFAULTS.modelId;
