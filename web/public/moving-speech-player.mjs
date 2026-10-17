@@ -113,8 +113,7 @@ function wav(pcm, totalFrames) {
 
 /** Verify the original bytes, then observe the exact decoded source frame. No
  * approximate-duration video or independently looping body clock is used. */
-export async function loadMovingSpeechRest(rest, { signal, document = globalThis.document, fetchImpl = fetch,
-  createURL = URL.createObjectURL, revokeURL = URL.revokeObjectURL } = {}) {
+export async function loadMovingSpeechRest(rest, { signal, document = globalThis.document, fetchImpl = fetch } = {}) {
   const response = await fetchImpl(rest.url, { signal, credentials: 'same-origin', redirect: 'error', cache: 'no-store' });
   if (!response.ok || response.headers.get('content-type')?.split(';')[0] !== 'video/mp4'
     || Number(response.headers.get('content-length')) > rest.bytes) { await response.body?.cancel(); fail('moving_speech_rest_unavailable'); }
@@ -127,48 +126,24 @@ export async function loadMovingSpeechRest(rest, { signal, document = globalThis
   for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; }
   if (size !== rest.bytes || await digest(bytes) !== rest.sha256) fail('moving_speech_rest_hash_mismatch');
   if (signal?.aborted) throw abortError();
-  const video = document.createElement('video'), url = createURL(new Blob([bytes], { type: 'video/mp4' }));
-  let frameCallback;
-  video.muted = true; video.playsInline = true; video.preload = 'auto';
+  // A delayed rVFC describes a presented frame, but drawImage(video) can see
+  // newer pixels once play() advances. Reuse the exact MP4 sample decoder and
+  // retain only the declared rest frame; there is no independent video clock.
+  const cache = createMovingSourceFrames({ sources: [rest], frames: [
+    { take: 'clip-' + rest.videoId, frame: rest.sourceFrame, sourceSha256: rest.sha256 },
+  ] }, { signal, document, limit: 1,
+    // Reuse the bytes already fetched and verified above. This does not make
+    // another network request or bypass the shared decoder's hash validation.
+    fetchImpl: async () => new Response(bytes, { headers: { 'content-type': 'video/mp4' } }),
+  });
   try {
-    if (typeof video.requestVideoFrameCallback !== 'function') fail('moving_speech_frame_clock_unavailable');
-    return await new Promise((resolve, reject) => {
-      let settled = false;
-      const finish = (error, canvas) => { if (settled) return; settled = true;
-        clearTimeout(timer); signal?.removeEventListener('abort', abort); video.pause(); error ? reject(error) : resolve(canvas); };
-      const abort = () => finish(abortError());
-      const timer = setTimeout(() => finish(Error('moving_speech_rest_timeout')), 10000);
-      signal?.addEventListener('abort', abort, { once: true });
-      video.onerror = () => finish(Error('moving_speech_rest_decode_failed'));
-      video.onloadedmetadata = () => {
-        if (settled) return;
-        if (video.videoWidth !== rest.width || video.videoHeight !== rest.height) return finish(Error('moving_speech_rest_dimensions'));
-        // Seek to the exact CFR frame timestamp. The rVFC evidence below must
-        // match, including frame zero; metadata/seeked alone is insufficient.
-        video.currentTime = rest.sourceFrame / rest.fps;
-      };
-      const presented = (_now, meta) => {
-        if (settled) return;
-        if (signal?.aborted) return finish(abortError());
-        const frame = Math.round(meta.mediaTime * rest.fps);
-        if (frame !== rest.sourceFrame) {
-          if (frame > rest.sourceFrame) return finish(Error('moving_speech_rest_frame_mismatch'));
-          frameCallback = video.requestVideoFrameCallback(presented); return;
-        }
-        if (Math.abs(meta.mediaTime * rest.fps - rest.sourceFrame) > .001) return finish(Error('moving_speech_rest_frame_mismatch'));
-        const canvas = document.createElement('canvas'); canvas.width = canvas.videoWidth = rest.width; canvas.height = canvas.videoHeight = rest.height;
-        canvas.getContext('2d').drawImage(video, 0, 0); finish(null, canvas);
-      };
-      frameCallback = video.requestVideoFrameCallback(presented);
-      video.src = url; video.load();
-      // Muted decoding only; the original's recorded audio is never played.
-      Promise.resolve(video.play()).catch(error => finish(error));
-      if (signal?.aborted) abort();
-    });
-  } finally {
-    video.pause(); video.cancelVideoFrameCallback?.(frameCallback); video.onloadedmetadata = video.onerror = null;
-    video.removeAttribute('src'); video.load(); revokeURL(url);
-  }
+    await cache.prefetch(0);
+    if (signal?.aborted) throw abortError();
+    const frame = cache.get(0), canvas = document.createElement('canvas');
+    canvas.width = canvas.videoWidth = rest.width; canvas.height = canvas.videoHeight = rest.height;
+    canvas.getContext('2d').drawImage(frame, 0, 0);
+    return canvas; // Independent pixels survive cache.close().
+  } finally { cache.close(); }
 }
 
 /** One authenticated, bounded session. Caller retains the existing queue/pose

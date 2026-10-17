@@ -243,7 +243,7 @@ test('changed body plan or missing exact source frame stops before unbound audio
   assert.equal(f.audio.muted,true);assert.equal(f.audio.paused,true);assert.equal(f.sent.at(-1).t,'abort');
 });
 
-// Full browser adapter with synthetic media: real rVFC source-frame selection,
+// Full browser adapter with synthetic media: exact MP4 source-frame selection,
 // PCM audio clock, WebSocket credit, WebCodecs and compositor. No provider calls
 // or visual acceptance of a dealer's speech is implied by these colour checks.
 for(const moving of [false,true])test(`real browser plays hash-bound PCM over ${moving?'an exact moving source sequence':'the exact bank rest'} and bounded WebCodecs chunks`, {
@@ -255,7 +255,7 @@ for(const moving of [false,true])test(`real browser plays hash-bound PCM over ${
     const bodyCount=moving?183:24, sourceCount=moving?66:24;
     const originalPath = join(dir, 'rest.mp4'), patchPath = join(dir, 'mouth.h264');
     execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i',
-      "color=c=blue:s=320x240:r=24,drawbox=x=0:y=0:w=320:h=240:color=green:t=fill:enable='gte(n,7)'",
+      "color=c=blue:s=320x240:r=24,drawbox=x=0:y=0:w=320:h=240:color=green:t=fill:enable='eq(n,7)'",
       '-frames:v', String(sourceCount), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', originalPath], { stdio: 'pipe' });
     execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i',
       'color=c=red:s=256x512:r=24,drawbox=x=0:y=256:w=256:h=256:color=white:t=fill',
@@ -314,13 +314,22 @@ for(const moving of [false,true])test(`real browser plays hash-bound PCM over ${
     const { chromium } = await import(pathToFileURL(process.env.CROUPIER_BROWSER_FIXTURE_MODULE).href);
     browser = await chromium.launch({ headless: true, channel: process.env.CROUPIER_BROWSER_FIXTURE_CHANNEL || undefined,
       args: ['--autoplay-policy=no-user-gesture-required'] });
-    const page = await browser.newPage(); await page.goto(`http://127.0.0.1:${server.address().port}`); await page.waitForFunction(() => window.run);
+    const page = await browser.newPage();
+    if(moving)await page.addInitScript(()=>{
+      // A queued presentation callback can arrive after the playing video's
+      // pixels advance. Frame7 alone is green; frame8 must never pass as rest.
+      const request=HTMLVideoElement.prototype.requestVideoFrameCallback;
+      HTMLVideoElement.prototype.requestVideoFrameCallback=function(callback){
+        return request.call(this,(now,metadata)=>setTimeout(()=>callback(now,metadata),180));
+      };
+    });
+    await page.goto(`http://127.0.0.1:${server.address().port}`); await page.waitForFunction(() => window.run);
     const result = await page.evaluate(speech => window.run(speech), speech);
     assert.equal(result.first, 1); assert.equal(result.closed, true); assert.deepEqual(result.receipts.map(r => r.state), ['start', 'end']);
     const patched = result.frames.filter(f => f.patched); assert.ok(patched.length >= 2); assert.ok(patched.some(f => f.time > .3));
     for (const f of result.frames.filter(f=>!moving||f.take)) {
-      if(moving&&f.take!=='vila'&&f.sourceFrame<7)assert.ok(f.body[2]>200&&f.body[1]<30,'body must be exact blue source before frame7');
-      else assert.ok(f.body[1] > 100 && f.body[0] < 30 && f.body[2] < 30, 'body must be exact green source frame7 or later');
+      if(moving&&f.take!=='vila'&&f.sourceFrame!==7)assert.ok(f.body[2]>200&&f.body[1]<30,'every source frame except exact frame7 must be blue');
+      else assert.ok(f.body[1] > 100 && f.body[0] < 30 && f.body[2] < 30, 'body must be exact green source frame7');
     }
     if(moving){assert.equal(result.bodyFrames[0],0);assert.equal(result.bodyFrames.at(-1),bodyCount-1);assert.ok(result.bodyFrames.length>=bodyCount-4);}
     for (const f of patched) assert.ok(f.mouth[0] > 230 && f.mouth[1] < 30, 'decoded patch must be red');

@@ -187,6 +187,14 @@ klocka är nu kontrollerad så att det faktiskt testar en långsam provider;
 produktionskod och tidsgräns ändras inte. Färdiga lokala prov ersätter inte
 PR203:s CI-, merge-, drift- och GPU-kvitton.
 
+Mergeagentens oberoende Chrome-körning hittade därefter ett sporadiskt fel
+i vilobildens HTML-videoavläsning. Fördröjd callback (180 ms) kunde både
+missa vald ruta och kopiera senare pixlar trots metadata för rätt ruta.
+Viloladdaren återanvänder nu den exakta MP4/WebCodecs-avkodaren med en enda
+vald bildruta och fristående canvas. Ett särskiljande färgprov för ruta 7
+respektive 8 och båda Chrome-fixturerna passerar enligt underagentens 33 prov.
+Formatgränserna är desamma som för kroppen; ingen tidsmässig tolerans införs.
+
 Klippbibliotekets namnnormalisering är inte applicerad. Den skrivfria
 importplanen och namnförslaget bevarar tidigare UUID/hashar, original och
 visningsnamn. `docs/storage/BLOB-NEON.md` beskriver granskning och återstående

@@ -124,12 +124,15 @@ i bankens uttryckliga vila efter sekvensen. Detta är ingen fri omplanering
 mitt i en redan pågående utdelning. En inspelad replik behåller sitt eget ljud.
 Kodens teststatus och faktisk molnverifiering redovisas var för sig i handoffen.
 
-Originalens kroppsrutor läses från hashkontrollerad, progressiv AVC/MP4 med
-en CFR24-videoström. Tidsstämplar och bildindex måste stämma exakt; rotation,
+Originalens kropps- och vilorutor läses från hashkontrollerad, progressiv AVC/MP4
+med en CFR24-videoström och högst 600 källrutor per fil. Tidsstämplar och
+bildindex måste stämma exakt; rotation,
 icke-kvadratiska pixlar, klippning och andra format stoppas. WebCodecs-ytor
 kopieras och frigörs direkt för att undvika att Chrome får slut på decoder-
 ytor i 1080p. Högst 24 kroppsrutor buffras. Ingen fristående videoklocka,
 närmaste-bild-sökning eller omskrivning av originalfiler används.
+Vilan avkodas som en enda deklarerad källruta och kopieras till en fristående
+canvas; ingen spelande HTML-video används för att fånga den bilden.
 Alla använda komprimerade källfiler hämtas och verifieras före ljudstart,
 med en gemensam gräns på 96 MiB. Senare avkodning behöver därmed inte vänta
 på nästa nätverkshämtning. En ny serverversion återkallar reservationen
