@@ -29,7 +29,7 @@ helper och offline-jämförelsens startare delar sessionsspärr även för olika
 portval. Kontrollera befintlig körning före start och respektera användarens
 stoppbeslut. Codex använder `--no-open` där startaren stöder det och
 återanvänder befintliga spel-/labbflikar. Se
-[aktuell Backoffice/Lab-start](../../../lab/README.md). Projekt, historik och
+[aktuell Backoffice/Lab-start](../../../apps/studio/README.md). Projekt, historik och
 lokala profiler finns i `lab/data`; den gamla Lissabon-katalogen är borttagen.
 
 Standardadresser för den isolerade helpern efter uttrycklig start:

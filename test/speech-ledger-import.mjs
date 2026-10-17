@@ -13,7 +13,7 @@ import { createPostgresOperatorSpeechQa } from '../web/postgres-operator-speech-
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);
 const target={database:'postgres',role:'studio_qa',address:'127.0.0.1',port:55432};
-const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
+const installed={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014'].map(version=>({version,checksum:hash(version),structureChecksum:hash(`structure-${version}`)}))};
 const packet=(name,value)=>{const bytes=Buffer.from(JSON.stringify(value));return {name,bytes,sha256:hash(bytes),updatedAt:observedAt};};
 function prepared(scope={environment:'import-qa',workspaceId:'croupier'},extras=[]) {
   return prepareLegacySpeechLedgerSnapshot({scope,endpointId:'legacy-endpoint',observedAt,
@@ -134,7 +134,8 @@ test('speech import rejects required gaps unknown versions and invalid proofs',a
   for(const mutate of [
     value=>{value.applied=value.applied.filter(row=>row.version!=='012');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='013');},
-    value=>value.applied.push({...last,version:'014'}),
+    value=>{value.applied=value.applied.filter(row=>row.version!=='014');},
+    value=>value.applied.push({...last,version:'999'}),
     value=>value.applied.push({...last}),
     value=>{value.applied.at(-1).checksum='invalid';},
     value=>{value.applied.at(-1).structureChecksum='invalid';},

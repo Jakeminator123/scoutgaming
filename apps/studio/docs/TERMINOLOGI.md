@@ -2,8 +2,8 @@
 
 Denna ordlista gör gränssnittets namn begripliga. Den kräver inte att gamla
 sidor, mappnamn, register eller tester bevaras. Aktuell kod och verifierad
-drift beskrivs i [runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md);
-leveransläget finns i [handoffen](../../docs/JOHN-HANDOFF.md). Användarens
+drift beskrivs i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md);
+leveransläget finns i [handoffen](../../../docs/JOHN-HANDOFF.md). Användarens
 aktuella produktbeslut gäller framför äldre beskrivningar.
 
 ## Ägarskap och spelarens val
@@ -50,5 +50,5 @@ inte automatiskt rum eller publicerar material. Permanent radering hanterar
 beroenden och användarens beslut separat från vanlig arkivering.
 
 Filformat, medieacceptans och tekniska gränser hör hemma i
-[runtime-referensen](../../docs/LOCAL-PRESENTATION-RUNTIME.md), användarsteg i
-[guiden](README.md) och assistenternas funktion i [AI-dokumentationen](../../docs/AI/README.md).
+[runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md), användarsteg i
+[guiden](README.md) och assistenternas funktion i [AI-dokumentationen](../../../docs/AI/README.md).

@@ -120,7 +120,7 @@ test('bundled source paths load all reviewed migrations without asset URLs', asy
   const expected = await loadStudioMigrations();
   const actual = await loadStudioMigrations({ directory });
   assert.deepEqual(actual.map(row => row.checksum), expected.map(row => row.checksum));
-  assert.equal(actual.filter(row => !row.deploymentOptional).at(-1).file, '013-moving-speech-admission.sql');
+  assert.equal(actual.filter(row => !row.deploymentOptional).at(-1).file, '014-moving-speech-budget-amendments.sql');
   assert.deepEqual(actual.filter(row => row.deploymentOptional).map(row => row.version), []);
   await assert.rejects(loadStudioMigrations({ directory: '../relative' }));
 });

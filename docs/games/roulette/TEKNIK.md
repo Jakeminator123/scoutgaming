@@ -104,7 +104,7 @@ Det befintliga gränssnittet är en spelbar första version som kan omarbetas.
 | Satsningsutkast, hjul, resultat, historik och återförsök | `web/public/roulette/app.mjs` |
 | Bolagets frysta dealer, bord och bakgrund | `web/public/roulette/scene.mjs` |
 | Delad scenrenderare för lobby och roulette | `web/public/published-scene.mjs` |
-| Lobby och rummets ingång | `apps/croupier-frontend/components/player/` |
+| Lobby och rummets ingång | `apps/web/components/player/` |
 
 `app.mjs` kopplar kontroller till HTML-elementens ID:n. Ändra HTML och dessa
 kopplingar tillsammans. Scenen använder samma publicerade underlag som lobbyn:
@@ -290,4 +290,4 @@ inklusive ett tappat svar efter servercommit, exakt återförsök och omladdning
 Kontrollera också mobil, desktop och den faktiska dealerscenen. Ett godkänt
 API-test är inte visuellt godkännande. Använd inte produktionskonton eller
 ändra riktiga användares demosaldon för testning. Starta lokalt enligt
-`AGENTS.md` med `node lab/start.mjs --no-open`; endast ett serverpar åt gången.
+`AGENTS.md` med `node apps/studio/start.mjs --no-open`; endast ett serverpar åt gången.

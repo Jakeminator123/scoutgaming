@@ -27,7 +27,7 @@ export function decodeAiQaPrivateSnapshot(raw,pins){
 export async function restoreAiQaPrivateSnapshot({repository,manifest,raw}={}){
   need(sha256(raw)===manifest.privateSnapshotSha256,'ai_qa_private_snapshot_changed');
   const files=decodeAiQaPrivateSnapshot(raw,manifest.privateSources);let directory=repository,written=0,retained=0;
-  for(const part of ['apps','studio','data','platform-private']){directory=join(directory,part);await mkdir(directory,{mode:0o700}).catch(e=>{if(e.code!=='EEXIST')throw e;});
+  for(const part of ['lab','data','platform-private']){directory=join(directory,part);await mkdir(directory,{mode:0o700}).catch(e=>{if(e.code!=='EEXIST')throw e;});
     const s=await lstat(directory);need(s.isDirectory()&&!s.isSymbolicLink()&&equalPath(await realpath(directory),directory),'ai_qa_private_snapshot_target');}
   // Inspect every existing target before writing anything. Never replace a
   // different source, a symlink, state, credentials or any historical journal.

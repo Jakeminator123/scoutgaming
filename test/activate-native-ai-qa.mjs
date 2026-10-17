@@ -131,8 +131,11 @@ test('persistent private closure rehydrates a fresh image, preserves existing by
   const pins={};for(const name of AI_QA_PRIVATE_NAMES){const bytes=Buffer.from('Synthetic source '+name);pins[name]=sha256(bytes);await writeFile(join(original,name),bytes);}
   const raw=await buildAiQaPrivateSnapshot({directory:original,pins}),manifest={privateSources:pins,privateSnapshotSha256:sha256(raw)};
   const first=await restoreAiQaPrivateSnapshot({repository,manifest,raw});assert.equal(first.written,4);assert.equal(first.providerCalls,0);assert.equal(first.budgetWrites,0);
+  // The retained runtime and manifest readers consume this legacy private root.
+  for(const name of AI_QA_PRIVATE_NAMES)assert.equal(sha256(await readFile(join(repository,'lab/data/platform-private',name))),pins[name]);
+  await assert.rejects(readFile(join(repository,'apps/studio/data/platform-private',AI_QA_PRIVATE_NAMES[0])),{code:'ENOENT'});
   const second=await restoreAiQaPrivateSnapshot({repository,manifest,raw});assert.equal(second.written,0);assert.equal(second.retained,4);
-  const path=join(repository,'apps/studio/data/platform-private',AI_QA_PRIVATE_NAMES[0]);await writeFile(path,'Different existing bytes');
+  const path=join(repository,'lab/data/platform-private',AI_QA_PRIVATE_NAMES[0]);await writeFile(path,'Different existing bytes');
   await assert.rejects(()=>restoreAiQaPrivateSnapshot({repository,manifest,raw}),/ai_qa_private_snapshot_target_changed/);
   assert.equal(await readFile(path,'utf8'),'Different existing bytes');assert.equal(await initializeAiQaPrivateBootstrap({CROUPIER_P6_BOUNDED_TEST:'0'}),null);
 });
@@ -190,11 +193,11 @@ test('one bounded QA boot passes fullfile policy to Web; registered transport an
 
 test('fresh cloud image prepares only private bootstrap parents for UID1000 before activation',async()=>{
   const docker=await readFile(new URL('../ops/cloud/Dockerfile',import.meta.url),'utf8');
-  const prepare='mkdir -p /app/apps/studio/data/platform-private',own='chown node:node /app/apps/studio/data /app/apps/studio/data/platform-private',mode='chmod 700 /app/apps/studio/data /app/apps/studio/data/platform-private';
+  const prepare='mkdir -p /app/lab/data/platform-private',own='chown node:node /app/lab/data /app/lab/data/platform-private',mode='chmod 700 /app/lab/data /app/lab/data/platform-private';
   assert.ok(docker.indexOf('COPY . .')<docker.indexOf(prepare));
   assert.ok(docker.indexOf(prepare)<docker.indexOf(own));assert.ok(docker.indexOf(own)<docker.indexOf(mode));
   assert.ok(docker.indexOf(mode)<docker.indexOf('CMD ['));
-  assert.ok(!docker.includes('chown -R node:node /app/apps/studio/data'));
+  assert.ok(!docker.includes('chown -R node:node /app/lab/data'));
   const {AI_QA_SOURCE_PATHS}=await import('../web/native-ai-qa-runtime.mjs');assert.ok(AI_QA_SOURCE_PATHS.includes('ops/cloud/Dockerfile'));
   const bootstrap=await readFile(new URL('../web/native-ai-qa-private.mjs',import.meta.url),'utf8');assert.ok(bootstrap.includes("'ops/cloud/Dockerfile'"));
 });

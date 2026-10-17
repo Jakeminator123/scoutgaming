@@ -1,3 +1,4 @@
+import { runMovingBudgetSqlChecks } from './fixtures/moving-budget-sql-checks.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash,randomBytes,randomUUID } from 'node:crypto';
@@ -5,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
+import { summarizeMovingWorkerHealth } from '../web/moving-speech-runpod.mjs';
 import { loadStudioMigrations, planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 import {runRuntimeRegistrySqlChecks} from './fixtures/studio-runtime-sql-checks.mjs';
@@ -43,7 +45,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
       classification:{dealerId:'dragan',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'VILA',label:'Fixture',notes:''}};
     await pool.query("INSERT INTO croupier_studio.documents (environment_id,workspace_id,kind,revision,value) VALUES ($1,$2,'project',$3,jsonb_build_object('revision',$3::text))",[scope.environment,scope.workspaceId,projectRevision]);
     await pool.query('INSERT INTO croupier_studio.media_records(environment_id,workspace_id,id,revision,record) VALUES($1,$2,$3,$4,$5::jsonb)',[scope.environment,scope.workspaceId,id,revision,JSON.stringify(record)]);
-    await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:2000000,confirmation:'verified-new-empty-cost-journal'});
+    await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:20000000,confirmation:'verified-new-empty-cost-journal'});
     let lease=await journal.acquireLease({resource:'stream-session',holderId:'moving-qa'});
     const binding={schemaVersion:1,releaseSha256:'4'.repeat(64),dealerId:'dragan',workerAvatar:'dragan',profileRevision:'5'.repeat(64),
       sourceSetSha256:'6'.repeat(64),avatarSha256:'7'.repeat(64),bankReceiptSha256:'8'.repeat(64),sessionId:suffix()+suffix(),attemptId:'attempt-1',nonce:'9'.repeat(64)};
@@ -84,7 +86,14 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     const counts=(await pool.query('SELECT (SELECT count(*) FROM croupier_studio.gpu_sessions WHERE environment_id=$1)::int AS sessions,(SELECT count(*) FROM croupier_studio.speech_requests WHERE environment_id=$1)::int AS requests',[scope.environment])).rows[0];
     assert.deepEqual(counts,{sessions:0,requests:0});
     await pool.query("UPDATE croupier_studio.media_records SET record=record-'deletion' WHERE environment_id=$1 AND workspace_id=$2 AND id=$3",[scope.environment,scope.workspaceId,id]);
-    const saved=await journal.reserveMovingSession(input);
+    const health=(jobs={})=>summarizeMovingWorkerHealth({
+      workers:{idle:1,ready:1,running:0,initializing:0,throttled:0,unhealthy:0},
+      jobs:{completed:1,failed:0,inQueue:0,inProgress:0,retried:0,...jobs}});
+    for(const jobs of [{inQueue:1},{inProgress:1}]){
+      await assert.rejects(journal.reserveMovingSession({...input,workerState:health(jobs)}),hasCode('generated_speech_worker_not_drained'));
+      assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.gpu_sessions WHERE environment_id=$1',[scope.environment])).rows[0].count,0);
+    }
+    const saved=await journal.reserveMovingSession({...input,workerState:health()});
     const restarted=await createSpeechJournal({pool,environmentId:scope.environment});
     await assert.rejects(restarted.reserveMovingSession(input),hasCode('generated_speech_request_already_attempted'));
     const protectedMedia=await repo.inspectMediaDeletion(record);
@@ -102,7 +111,10 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     await journal.attachJob({sessionId:binding.sessionId,lease,jobId:'moving-fixture-job'});
     await journal.recordProviderStatus({sessionId:binding.sessionId,lease,jobId:'moving-fixture-job',status:'COMPLETED'});
     assert.equal((await repo.inspectMediaDeletion(record)).references.length,1,'terminal status alone is not drain');
-    await journal.confirmWorkerDrained({sessionId:binding.sessionId,lease,proof:{workerId:saved.workerId,workers:0,busy:0,available:0}});
+    for(const jobs of [{inQueue:1},{inProgress:1}]){
+      await assert.rejects(journal.confirmWorkerDrained({sessionId:binding.sessionId,lease,proof:{workerId:saved.workerId,...health(jobs)}}),hasCode('generated_speech_worker_not_drained'));
+    }
+    await journal.confirmWorkerDrained({sessionId:binding.sessionId,lease,proof:{workerId:saved.workerId,...health()}});
     await journal.completeRequest({key:saved.key,lease});await journal.releaseLease({lease});
     assert.equal((await repo.inspectMediaDeletion(record)).references.length,0);
     lease=await restarted.acquireLease({resource:'stream-session',holderId:'moving-qa-next'});
@@ -111,6 +123,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
       binding:{...binding,sessionId:nextSession},totalBudgetMicroUsd:1000000}),hasCode('generated_speech_total_budget_exhausted'));
     assert.equal((await pool.query('SELECT sum(reserved_micro_usd)::int AS used FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1',[scope.environment])).rows[0].used,250000);
     await journal.releaseLease({lease});
+    await runMovingBudgetSqlChecks({pool,input,journal});
   });
 
   await check('media deletion finds exact journal owners and fails closed on unattributed speech activity', async () => {

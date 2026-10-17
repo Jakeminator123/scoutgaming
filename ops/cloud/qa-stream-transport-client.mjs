@@ -3,7 +3,7 @@ import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {QA_PUBLIC_ORIGIN, verifyUnpaidWssTransport} from './qa-stream-transport-preload.mjs';
 
-const CREDENTIALS = new URL('../../apps/studio/data/platform-private/qa-operator.json', import.meta.url);
+const CREDENTIALS = new URL('../../lab/data/platform-private/qa-operator.json', import.meta.url);
 const PATHS = new Set(['/studio/api/auth/login', '/api/bo/speech-qa']);
 const SAFE_NETWORK_CODES = new Set(['ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EPROTO', 'ERR_TLS_CERT_ALTNAME_INVALID', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE']);
 const SAFE_TRANSPORT_GATES = new Set(['client_timeout', 'client_upgrade', 'client_socket', 'client_binary', 'client_protocol', 'client_terminal']);

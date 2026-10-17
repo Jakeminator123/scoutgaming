@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, symlink, rename } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { previewRetention, archiveRetention, restoreRetention, autoArchiveLocalArtifacts } from '../tools/retention-archive.mjs';
 
@@ -45,6 +45,36 @@ test('preview selects oldest snapshots without mutation; archive and restore pre
   assert.deepEqual(await readFile(join(f.root, first)), before);
   assert.deepEqual(await readFile(join(f.root, result.batch, first)), before);
   await assert.rejects(restoreRetention({ ...f, batch: result.batch, apply: true }), { code: 'retention_restore_target_exists' });
+});
+
+test('schema-v1 legacy archives restore their original history and observation paths safely', async t => {
+  const f = await fixture(t);
+  for (let i = 0; i < 3; i++) { await f.snapshot(i); await f.observation(i); }
+  const { batch } = await archiveRetention(f);
+  const manifestPath = join(f.root, batch, 'manifest.json'), manifest = JSON.parse(await readFile(manifestPath));
+  const expected = [];
+  for (const entry of manifest.entries) {
+    const current = entry.source, legacy = current.replace('apps/studio/', 'lab/');
+    await mkdir(dirname(join(f.root, batch, legacy)), { recursive: true });
+    await rename(join(f.root, batch, current), join(f.root, batch, legacy));
+    entry.source = legacy;
+    for (const file of entry.files) expected.push({ current: join(current, file.path), legacy: join(legacy, file.path), bytes: await readFile(join(f.root, batch, legacy, file.path)) });
+  }
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  const preview = await restoreRetention({ ...f, batch });
+  assert.deepEqual(preview.entries.map(entry => entry.status), ['ready', 'ready']);
+  for (const file of expected) await assert.rejects(readFile(join(f.root, file.legacy)), { code: 'ENOENT' });
+  const restored = await restoreRetention({ ...f, batch, apply: true });
+  assert.equal(restored.archivePreserved, true);
+  for (const file of expected) {
+    assert.deepEqual(await readFile(join(f.root, file.legacy)), file.bytes);
+    assert.deepEqual(await readFile(join(f.root, batch, file.legacy)), file.bytes);
+    await assert.rejects(readFile(join(f.root, file.current)), { code: 'ENOENT' });
+  }
+  await assert.rejects(restoreRetention({ ...f, batch, apply: true }), { code: 'retention_restore_target_exists' });
+  manifest.entries[0].source = manifest.entries[0].source.replace('/history/', '/history/../history/');
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  await assert.rejects(restoreRetention({ ...f, batch, apply: true }), { code: 'retention_manifest_invalid' });
 });
 
 test('completed log sessions rotate as a whole; active captures and unrelated files stay untouched', async t => {

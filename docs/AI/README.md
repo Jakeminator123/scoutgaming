@@ -9,8 +9,8 @@ vid implementationen; de är inte fristående handböcker.
 | Publik D-ID-chatt, separat N1-Adminrobot, behörigheter, dealerimport och arkivering | [Agentflöde och ändringslogg](scoutgaming-agentflode.md) |
 | Director, Gateway, inloggning och lokala prov | [OpenClaw-guider](openclaw/README.md) |
 | Tjänsteansvar, datakällor och kvarvarande arbete | [Migrationsöversikten](../CLOUD-MIGRATION.md) |
-| Produktens ingångar, bolagsåtkomst, äldre länkar och användarsteg | [Användarguiden](../../lab/docs/README.md) |
-| Gemensamma begrepp | [Terminologi](../../lab/docs/TERMINOLOGI.md) |
+| Produktens ingångar, bolagsåtkomst, äldre länkar och användarsteg | [Användarguiden](../../apps/studio/docs/README.md) |
+| Gemensamma begrepp | [Terminologi](../../apps/studio/docs/TERMINOLOGI.md) |
 | Medier, uppspelning och kvarvarande acceptans | [Runtime-referensen](../LOCAL-PRESENTATION-RUNTIME.md) |
 | Klippstruktur, Neon/Blob-migration och gemensam talworker | [Kanonisk struktur och genomförandeplan](../storage/BLOB-NEON.md) |
 | Miljövariabler och ansvar | [Variabelregistret](../ENVIRONMENT-VARIABLES.md) |

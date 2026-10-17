@@ -1,5 +1,13 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Portabel GitGuardian-start — 17 oktober 2026
+
+Projektets MCP-konfiguration använder nu aktuell checkout via ett tillfälligt
+Git-alias, utan personlig `cwd`. Start från rot, undermapp och en flyttad
+testcheckout med mellanslag verifierades med MCP initialize/tools-list.
+Tre läsverktyg och befintlig skyddad användarkoppling behålls; personliga
+aktiveringsval ändras inte. Se [Agent-talk](../../agent-talk/README.md).
+
 ## Gemensamt Director-bibliotek — 17 oktober 2026
 
 `packages/director/` samlar den befintliga besluts-, tal-, social- och
@@ -115,11 +123,11 @@ tracker är märkta som historik. Aktuell merge/driftstatus följs där överst.
 Dokumentationsändring 16 oktober 2026: det nya runtimekontraktet samlar
 katalog och svarsbibliotekets metadata i scoped Neon, med mediebytes i Blob.
 Lokala katalogfiler används endast som uttryckliga authoring-/importkällor.
-Vanlig `lab/start.mjs` öppnar publicerad produkt (`--no-open` skriver URL);
+Vanlig `apps/studio/start.mjs` öppnar publicerad produkt (`--no-open` skriver URL);
 bara `--offline` startar isolerade temporära testdata. Äldre anslutna lokallägen
 avvisas. Guiderna för [runtime](../LOCAL-PRESENTATION-RUNTIME.md),
 [miljövariabler](../ENVIRONMENT-VARIABLES.md) och
-[användarsteg](../../lab/docs/README.md) är uppdaterade i sina befintliga filer.
+[användarsteg](../../apps/studio/docs/README.md) är uppdaterade i sina befintliga filer.
 Huvudagentens kvitto 16 oktober 18:38 UTC bekräftar migration 012 och återläst
 katalog-/svarsimport. Runtimebytet från bridgeversion `3165ab6` är därefter
 mergat i PR186 (`2ea080bc`) efter grön SQL-/HTTPS-CI och driftsatt på både
@@ -217,7 +225,7 @@ production, preview och development. Inga `NEXT_PUBLIC_`-variabler används.
 Ingen roll eller kontobehörighet ändrades under provet.
 
 Produktens aktuella ingångar, bolagssluggar och kompatibilitetslänkar har en
-kanonisk lista i [användarguiden](../../lab/docs/README.md), verifierad
+kanonisk lista i [användarguiden](../../apps/studio/docs/README.md), verifierad
 14 oktober 2026. `/control/openclaw` leder till `/admin/ai/models`, medan
 `?tab=chat` leder till `/admin/dealer-agent`. Dessa länkar ska inte blandas
 ihop med Adminrobotens `/admin/ai/chat` eller den publika D-ID-bubblan.
@@ -534,7 +542,8 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 | 2026-10-17 | Studios spårade källrot är apps/studio. Källimports, cwd-/SQL-rötter, Next-traces, CI, Docker och Vercels Studio-root följer samma flytt; /studio och publika kompatibilitetsadresser består. Gamla privata original och dependencyjunctions ligger kvar med bevarade ignoreskydd. Lokala verifieringskvitton och återstående leverans redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Speechens fem spårade källfiler finns i apps/speech. CI, Vercels speech-root och befintliga transportfixtures följer flytten; Node22, npm-lås, tjänstnamn och publika socketadresser består. Separat lokal verifiering redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Frontendens spårade källrot är apps/web. CI, lokala hooks och miljöregistret följer samma rot; testtäckning och separat Node22-speechsteg består. Gamla ignorerade data och dependencyjunctions har inte flyttats. Lokal verifiering och återstående leverans framgår av JOHN-HANDOFF. |
-| 2026-10-17 | Inboxen läser etiketter med paginering och skapar bara saknade etiketter utan att skriva över befintlig metadata. `done` kräver inboxetikett och verifierad GitHub-skapare; delade konton kan inte särskiljas. 19 lokala inboxprov passerar. Läsanrop verifierade mot GitHub; inga etiketter eller ärenden ändrade i provet. Agent-talk-rensning och övriga förslag i den externa reviewen ingår inte. |
+| 2026-10-17 | Uppföljningen till mergade PR215 inkluderar Jakobs borttagning av `reference-repos.mdc`. Dubblerad leveranspolicy i Chef-/leveransregler ersätts med hänvisning till AGENTS; Chef-textens beslutsordning följer samma källa. Inboxinstruktionen förklarar explicit mottagare på featurebranch utan datorregistrering, med täckning i befintligt inboxprov. Köåterhämtningen är redan levererad separat i PR216. |
+| 2026-10-17 | Inboxen läser etiketter med paginering och skapar bara saknade etiketter utan att skriva över befintlig metadata. `done` kräver inboxetikett och verifierad GitHub-skapare; delade konton kan inte särskiljas. 19 lokala inboxprov passerar. Läsanrop verifierade mot GitHub; inga etiketter eller ärenden ändrade i provet. Inboxändringen rensar inga agent-talk-meddelanden. |
 | 2026-10-17 | På Jakobs begäran arbetar tre underagenter med fryst importkontrakt, atomiska Forge-referenser/raderingsinspektion och separat workerpaket. Huvudchatten äger transport, Git och dokumentation; Admin-chatten äger klippkartan. OpenClaw behåller dynamiska textbeslut. Storage-/runtimeguiderna skiljer implementerade kontrakt från återstående import, molnbygge och spelaraktivering. Ingen media eller Astrid-tjänst raderas. |
 | 2026-10-16 | Integrationsgranskningen rättade klientundantaget så beroende-/schema-/konfigurationsfiler fortfarande kräver migrationskontroll. Admins testplan kontrollerar nu faktisk globexpansion och har ett negativt prov för bortfallen Studio-täckning. Sidochattens förenkling ingår i den befintliga PR185-leveransen; aktuell slutstatus finns i JOHN-HANDOFF. |
 | 2026-10-16 | Lokala commits använder fokuskontroller; hela regressionen ligger i CI/explicit fullkörning. 135 dubblerade Studio-testval ersatta med automatisk upptäckt; samma 454 testfiler täcks. Systemkartans leveransspärrar borttagna, rapport/evidens kvar. Klient- och test-PR:er slipper live migrationsläsning; server/schema och main behåller den. Agent-talk styrs av arbetsmoment i samma checkout. 54 fokustester och 30 kart-/samordningstester passerade; inga nya föräldralösa tester. Detta är lokal verifiering, inte körd GitHub-CI eller driftsättning. |

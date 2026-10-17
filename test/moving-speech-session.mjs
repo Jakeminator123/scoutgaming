@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMovingSpeechSession } from '../web/moving-speech-session.mjs';
+import { createMovingSpeechRunPod } from '../web/moving-speech-runpod.mjs';
 
 const sha = digit => digit.repeat(64);
 const image = `ghcr.io/jakeminator123/moving-gpu-worker@sha256:${sha('a')}`;
@@ -105,8 +106,25 @@ test('aborted admission performs no provider submit and a later attempt can acqu
 });
 
 test('configuration rejects spend increases and deadlines beyond the fixed moving window',()=>{
-  for(const configuration of [{totalBudgetMicroUsd:5000001},{lifetimeMs:480001},{startupMs:450001},
+  for(const configuration of [{totalBudgetMicroUsd:15000001},{totalBudgetMicroUsd:15000000,reserveMicroUsd:5000001},{lifetimeMs:480001},{startupMs:450001},
     {startupMs:0},{startupMs:1001,lifetimeMs:1000},{idleMs:15001}])assert.throws(()=>fixture({configuration}),/configuration/);
+});
+
+test('restart recovery uses provider health: cache is drained, outstanding work retains ownership',async()=>{
+  const saved={sessionId:'1'.repeat(32),endpointId:'endpointfixture',jobId:'prior-job',workerId:'prior-worker'};
+  for(const [workers,jobs,blocked] of [[{},{},false],[{running:1},{},true],[{},{inQueue:1},true],
+    [{},{inProgress:1},true],[{running:1},{inProgress:2},true],[{unhealthy:1},{},true]]){
+    const health={workers:{idle:1,ready:1,running:0,initializing:0,throttled:0,unhealthy:0,...workers},
+      jobs:{completed:1,failed:0,inProgress:0,inQueue:0,retried:0,...jobs}};
+    const provider=createMovingSpeechRunPod({endpointId:'endpointfixture',apiKey:'fixture-credential',expectedImage:image,
+      fetchImpl:async(url,options)=>{assert.equal(options.method,'GET');assert.ok(url.endsWith('/health'));return Response.json(health);}});
+    const f=fixture({recoverable:[saved],configuration:{workerState:provider.workerState}});
+    assert.deepEqual(await f.create.reconcile(),blocked
+      ? {recovered:[],unresolved:[{sessionId:saved.sessionId,reason:'worker_not_drained'}]}
+      : {recovered:[saved.sessionId],unresolved:[]},JSON.stringify(health));
+    assert.equal(f.state.released,!blocked);assert.equal(f.events.includes('drained'),!blocked);
+    assert.equal(f.events.includes('provider-submit'),false);
+  }
 });
 
 test('restart recovery cancels only the exact known owned job and requires terminal plus empty worker',async()=>{

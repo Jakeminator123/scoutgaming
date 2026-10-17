@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { studioRoots } from '../lib/studio-roots.mjs';
 import { openPreviewFile, parseByteRange, previewAuthorizationRequest, previewContentType, previewRelativePath } from '../lib/preview-files.mjs';
 
 function previewRoute(env, root, authorize=async()=>{}) {
@@ -120,4 +121,14 @@ test('same-origin preview iframe is authorized as a page GET and a cross-site fr
   }));
   assert.equal(cross.headers.get('sec-fetch-dest'), 'iframe');
   assert.equal(cross.headers.get('sec-fetch-site'), 'cross-site');
+});
+
+
+test('Studio roots distinguish a checkout named studio from its nested app directory', () => {
+  for(const name of ['checkout','studio']) {
+    const repositoryRoot=resolve(tmpdir(),'croupier-root-fixture',name),appRoot=join(repositoryRoot,'apps','studio');
+    assert.deepEqual(studioRoots(repositoryRoot),{repositoryRoot,appRoot});
+    assert.deepEqual(studioRoots(appRoot),{repositoryRoot,appRoot});
+    assert.deepEqual(studioRoots(join(appRoot,'.')),{repositoryRoot,appRoot});
+  }
 });

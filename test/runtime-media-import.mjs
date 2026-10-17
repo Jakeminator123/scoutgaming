@@ -13,7 +13,7 @@ const scope={environment:'test',workspaceId:'runtime-import'};
 const prepared=await prepareRuntimeMediaImport({scope,sourceRoot:root});
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const target={database:'croupier_isolated_test',role:'studio_qa',address:'127.0.0.1',port:55432};
-const schema={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013']
+const schema={target,schemaPresent:true,toApply:[],applied:['001','002','003','004','005','006','007','008','011','012','013','014']
   .map(version=>({version,checksum:hash(version),structureChecksum:hash('structure-'+version)}))};
 const schemaCheck=async()=>structuredClone(schema);
 const key=value=>JSON.stringify([value.environment,value.workspaceId]);
@@ -161,7 +161,8 @@ test('runtime import rejects required gaps unknown versions and invalid proofs',
   for(const mutate of [
     value=>{value.applied=value.applied.filter(row=>row.version!=='012');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='013');},
-    value=>value.applied.push({...last,version:'014'}),
+    value=>{value.applied=value.applied.filter(row=>row.version!=='014');},
+    value=>value.applied.push({...last,version:'999'}),
     value=>value.applied.push({...last}),
     value=>{value.applied.at(-1).checksum='invalid';},
     value=>{value.applied.at(-1).structureChecksum='invalid';},

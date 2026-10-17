@@ -3,10 +3,10 @@ import {randomBytes,randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {createStudioRepository} from '../../packages/studio-registry/server/document-repository.mjs';
 import {createSpeechReplyRepository} from '../../packages/presentation/server/speech-reply-repository.mjs';
-import * as replyMediaStore from '../../web/blob-media.mjs';
 import {createSpeechReplyLibrary,speechReplyScopeHash} from '../../packages/presentation/server/speech-reply-library.mjs';
 import {runtimeCatalogJson,runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import {mediaBlobPath} from '../../apps/studio/lib/cloud-media-store.mjs';
+import * as mediaStore from '../../apps/studio/lib/cloud-media-store.mjs';
 import {addDealer,createEmptyProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {readRuntimeCatalogFixture} from './runtime-media-catalog.mjs';
 import {prepareRuntimeMediaImport,planRuntimeMediaImport,applyRuntimeMediaImport} from '../../ops/neon-studio/runtime-media-import.mjs';
@@ -24,7 +24,7 @@ function reply(scope,dealerId='astrid'){
 export async function runRuntimeRegistrySqlChecks({pool}={}){
   const scope={environment:`qa_runtime_${randomBytes(8).toString('hex')}`,workspaceId:'integration'};
   const repository=createStudioRepository({pool,scope}),replies=createSpeechReplyRepository({sql:pool,scope});
-  const library=createSpeechReplyLibrary({mediaStore:replyMediaStore,repository:replies,...scope,env:{}});
+  const library=createSpeechReplyLibrary({mediaStore,repository:replies,...scope,env:{}});
   const catalog=readRuntimeCatalogFixture(),catalogRevision=runtimeCatalogRevision(catalog);
   const checks=[];async function check(name,work){await work();checks.push(name);}
   let project,savedReply,historicalReply,catalogAudit;
