@@ -12,9 +12,10 @@ export default function ClipsPage({active=true,dealersActive=false,onImportBusyC
     return router.push(`/admin/clips${next.size?`?${next}`:''}`);
   }
   return <>
-    <nav className="dealer-import-tabs" aria-label="Klippverktyg" hidden={!active}>
-      <button aria-pressed={!importing} onClick={()=>showTool('map')}>Klippkarta</button>
-      <button aria-pressed={importing} onClick={()=>showTool('import')}>Ny dealer / flera filmer</button>
+    <nav className="dealer-import-tabs" aria-label="Klippverktyg" hidden={!active&&!dealersActive}>
+      <button aria-pressed={active&&!importing} onClick={()=>showTool('map')}>Klippkarta</button>
+      <button aria-pressed={dealersActive&&!importing} onClick={()=>{const next=new URLSearchParams(location.search);next.delete('tool');router.push('/admin/dealers'+(next.size?'?'+next:''));}}>Dealerregister</button>
+      <button aria-pressed={importing} onClick={()=>showTool('import')}>Lägg till dealer eller filmer</button>
     </nav>
     <div className="studio-workspace-mount" hidden={!active||importing}>{children}</div>
     <DealerAssistantShell pageMode={chatActive?'chat':(active||dealersActive)&&importing?'import':null} requestedDealerId={query.get('dealer')??''} onBusyChange={onImportBusyChange} registrationBlocked={registrationBlocked} onRegistered={onRegistered}

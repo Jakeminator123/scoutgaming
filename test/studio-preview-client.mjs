@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStudioPreviewClient, studioPreviewFromDocument, validateStudioPreviewSession } from '../web/public/studio-preview-client.mjs';
+import { createStudioPreviewClient, studioPreviewFromDocument, validateStudioPreviewSession, requestEmbeddedStudioPreviewClose } from '../web/public/studio-preview-client.mjs';
 import { decorateGameEntryHtml, validateStudioPreview } from '../web/public/game-entry-contract.mjs';
 import { validateComposition } from '../web/public/presentation-composition.mjs';
 import { readChoices, writeChoices, choicesStorageKey } from '../web/public/player-choices.mjs';
@@ -8,6 +8,15 @@ import { dealerVersionPath } from '../web/public/dealer-version-switcher.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 const id='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-8222-222222222222', asset='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const context={sessionId:id,presentationLaneId:'evening',projectRevision:'revision:7',expiresAt:'2030-01-01T00:00:00.000Z'};
+test('embedded preview requests only its own closure at the current origin; standalone return stays unchanged',()=>{
+ const calls=[],target={location:{origin:'https://studio.test'},parent:{postMessage:(...args)=>calls.push(args)}};
+ assert.equal(requestEmbeddedStudioPreviewClose(context,target),true);
+ assert.deepEqual(calls,[[{type:'croupier:studio-preview-close',sessionId:id},'https://studio.test']]);
+ assert.throws(()=>requestEmbeddedStudioPreviewClose({...context,sessionId:'bad'},target));
+ const standalone={location:target.location};standalone.parent=standalone;
+ assert.equal(requestEmbeddedStudioPreviewClose(context,standalone),false);
+ assert.equal(requestEmbeddedStudioPreviewClose(null,target),false);assert.equal(calls.length,1);
+});
 const metadata=value=>({authenticated:true,guest:false,preview:true,studioPreview:value,externalServices:{ai:false,speech:false},dealerAvailability:[{id:'astrid',label:'Astrid',playable:true,reason:null},{id:'linnea',label:'Linnea',playable:false,reason:'studio_preview_idle_required'}]});
 const choices={dealers:['astrid','elin'],dealerDefault:'astrid',tableColors:[],tableDefault:null,background:{enabled:true,mode:'baked',allowed:[],default:null}};
 const registry=[{id:'astrid',label:'Astrid'},{id:'elin',label:'Elin'}];
@@ -239,15 +248,16 @@ test('preview notice uses the existing HUD and hides inert chat without changing
  }
 });
 
-async function returnLinkFixture({selection,preview=null,closeFails=false}={}){
+async function returnLinkFixture({selection,preview=null,closeFails=false,embedded=false}={}){
  const {readFile}=await import('node:fs/promises');
  const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
  const block=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
- const run=new Function('studioPreview','entrySelection','document','gameApi','writeChoices','choiceStorage','previewSessionId','soundStorageKey','location',block);
+ const run=new Function('studioPreview','entrySelection','document','gameApi','writeChoices','choiceStorage','previewSessionId','soundStorageKey','location','window','requestEmbeddedStudioPreviewClose',block);
  const link={},events=[],storage={removeItem:key=>events.push(['remove',key])};
+ const target={location:{origin:'https://studio.test'}};target.parent=embedded?{postMessage:(message,origin)=>events.push(['message',message,origin])}:target;
  run(preview,selection,{querySelector:()=>link},{close:async()=>{events.push(['close']);if(closeFails)throw Error('Expired');}},
   (...args)=>events.push(['choices',...args.slice(1)]),storage,preview?.sessionId??null,'preview-sound',
-  {search:'?operator=foreign&table=foreign&returnTo=https://foreign.invalid',assign:href=>events.push(['navigate',href])});
+  {search:'?operator=foreign&table=foreign&returnTo=https://foreign.invalid',assign:href=>events.push(['navigate',href])},target,value=>requestEmbeddedStudioPreviewClose(value,target));
  return {link,events};
 }
 
@@ -278,4 +288,9 @@ test('preview return opens Admin with exact composition and dealer after closing
   let prevented=false;await link.onclick({button:0,preventDefault(){prevented=true;}});
   assert.equal(prevented,true);assert.deepEqual(events,[['close'],['choices',undefined,{},id],['remove','preview-sound'],['navigate',link.href]]);
  }
+});
+test('embedded preview return closes its session and asks the parent to stop, without loading Admin inside the frame',async()=>{
+ const {link,events}=await returnLinkFixture({selection:{dealer:'astrid'},preview:context,embedded:true});
+ assert.equal(link.textContent,'Stäng provspel');await link.onclick({button:0,preventDefault(){}});
+ assert.deepEqual(events,[['close'],['choices',undefined,{},id],['remove','preview-sound'],['message',{type:'croupier:studio-preview-close',sessionId:id},'https://studio.test']]);
 });

@@ -4,6 +4,13 @@ import { isDealerId } from './dealer-identity.mjs';
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 export const STUDIO_PREVIEW_NOTICE = 'Provspel med separat testsaldo. Chatt, minne, kamera, OpenClaw och genererat tal är avstängda. Inspelade repliker, regler och automatiska klipp använder den sparade sammansättningen.';
 const fail = (code = 'studio_preview_invalid') => { throw Object.assign(new Error(code === 'studio_preview_expired' ? 'Provspelet har gått ut. Starta ett nytt från Sammansättning.' : 'Provspelets session kunde inte verifieras.'), {code}); };
+// Embedded preview may only request closure of its own session, never a parent URL.
+export function requestEmbeddedStudioPreviewClose(context, target = globalThis.window) {
+  if (!context || !target || target.parent === target) return false;
+  const checked = validateStudioPreview(context);
+  target.parent.postMessage({type:'croupier:studio-preview-close',sessionId:checked.sessionId},target.location.origin);
+  return true;
+}
 export function studioPreviewFromDocument(dataset, pathname) {
   if (dataset?.studioPreview === undefined) {
     if (pathname.startsWith('/studio-preview')) fail();

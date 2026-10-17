@@ -1,7 +1,7 @@
 import {readCardView,saveCardView} from './card-view.mjs';
 import {createOperatorAppearanceBoundary, preserveAppearanceBets, consumeAppearanceBets} from './operator-appearance-boundary.mjs';
 import {chatPresentationContext} from './chat-presentation-context.mjs';
-import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE } from './studio-preview-client.mjs';
+import { createStudioPreviewClient, studioPreviewFromDocument, STUDIO_PREVIEW_NOTICE, requestEmbeddedStudioPreviewClose } from './studio-preview-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from './game-overlay-layout.mjs';
 import { dealerVersionPath } from './dealer-version-switcher.mjs';
@@ -69,13 +69,13 @@ if(lobbyReturn){
     : entrySelection.operator?{operator:entrySelection.operator,...(entrySelection.roomId?{room:entrySelection.roomId}:{})}:{});
   lobbyReturn.href=(studioPreview?'/admin/compositions':'/lobby')+(returnQuery.size?'?'+returnQuery:'');
   if(studioPreview){
-    lobbyReturn.textContent='Till Sammansättning';
+    lobbyReturn.textContent=window.parent===window?'Till Sammansättning':'Stäng provspel';
     lobbyReturn.onclick=async event=>{
       if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
       event.preventDefault();
       try{await gameApi.close();}catch{ /* The expired session also permits returning to Studio. */ }
       try{writeChoices(choiceStorage,entrySelection.operator,{},previewSessionId);choiceStorage.removeItem(soundStorageKey);}catch{}
-      location.assign(lobbyReturn.href);
+      if(!requestEmbeddedStudioPreviewClose(studioPreview))location.assign(lobbyReturn.href);
     };
   }
 }

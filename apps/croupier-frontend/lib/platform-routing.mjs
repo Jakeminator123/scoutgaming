@@ -90,8 +90,9 @@ export function blackjackLobbyDestination(url, config) {
 
 export function platformRoute(url, config, request) {
   if(config.nativeStudio&&(!request||['GET','HEAD'].includes(request.method)&&!request.body&&!request.headers.has('next-action'))){
-    const destination=adminDocumentHref(url.pathname+url.search);
-    if(destination!==url.pathname+url.search)return {kind:'redirect',destination:config.publicOrigin+destination};
+    const documentHref=url.pathname+url.search+url.hash;
+    const destination=adminDocumentHref(documentHref);
+    if(destination!==documentHref)return {kind:'redirect',destination:config.publicOrigin+destination};
   }
   // Next encodes the literal catch-all folder in these two generated chunks.
   // Allow only their hashed JS assets; encoded document/API paths stay rejected.

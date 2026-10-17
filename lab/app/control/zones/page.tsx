@@ -1,8 +1,7 @@
-import { redirectToPublicControl } from '../public-redirect';
+import { redirectControlPage } from '../public-redirect';
 
 export const dynamic = 'force-dynamic';
 
-// Backgrounds are now selected alongside dealer and table in the composition.
-export default async function Page() {
-  await redirectToPublicControl('/control/preview');
+export default async function Page({searchParams}: {searchParams: Promise<Record<string, string | string[] | undefined>>}) {
+  await redirectControlPage('/control/zones', searchParams);
 }

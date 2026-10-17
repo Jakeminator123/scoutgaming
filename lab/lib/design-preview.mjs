@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import { basename, extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { parseByteRange } from './preview-files.mjs';
 import { designPreviewPages, designPreviewReturnTo } from './design-preview-paths.mjs';
+import { adminDocumentHref } from './admin-workspace-routes.mjs';
 
 const labRoot = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export const designPreviewDirectory = resolve(labRoot, 'design-preview-build');
@@ -36,7 +37,9 @@ export const designPreviewHeaders = Object.freeze({
 });
 // Staff imports use the existing short-lived, path-bound private Blob grant.
 const adminDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
-  'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy'].replace("connect-src 'self'", "connect-src 'self' https://vercel.com/api/blob https://vercel.com/api/blob/") });
+  'Content-Security-Policy': designPreviewHeaders['Content-Security-Policy']
+    .replace("connect-src 'self'", "connect-src 'self' https://vercel.com/api/blob https://vercel.com/api/blob/")
+    .replace("frame-src 'none'", "frame-src 'self'") });
 // Only the public lobby document embeds the existing D-ID avatar. Assets and
 // staff documents keep their own policies; no wildcard network access is added.
 const publicLobbyDocumentHeaders = Object.freeze({ ...designPreviewHeaders,
@@ -65,6 +68,11 @@ export async function serveDesignPreview(request, segments, { authorize, root = 
   if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { ...designPreviewHeaders, Allow: 'GET, HEAD' } });
   if (typeof authorize !== 'function') throw new Error('design_preview_authorization_required');
   await authorize(new Request(request.url, { method: 'GET', headers: request.headers, signal: request.signal }));
+  if (segments.length === 1 && segments[0] === 'material-library') {
+    const url = new URL(request.url);
+    const target = adminDocumentHref('/admin/material-library' + url.search + url.hash);
+    return new Response(null, { status: 307, headers: { ...designPreviewHeaders, Location: target } });
+  }
   const path = designPreviewFile(segments);
   return servePreviewFile(request, path, root, path === 'admin/index.html' ? adminDocumentHeaders : designPreviewHeaders);
 }

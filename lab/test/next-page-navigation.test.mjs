@@ -452,7 +452,7 @@ test('retired zone entries redirect to public composition without a doubled base
     'next/navigation': navigation,
     '@/lib/lab-url.mjs': { publicAbsoluteUrl },
   });
-  for (const file of ['../app/control/zones/page.tsx', '../app/zones/page.tsx']) {
+  for (const file of ['../app/zones/page.tsx']) {
     const page = load(file, {
       '../public-redirect': publicRedirect,
       '../control/public-redirect': publicRedirect,
@@ -615,5 +615,26 @@ test('actual Admin middleware preserves document access with Node transport befo
     const login = await admin.GET(new Request(destination,{headers:anonymous}),{params:Promise.resolve({path:segments})});
     assert.equal(login.status,307,'document normalization never grants a session');
     assert.match(login.headers.get('location'),/^\/login\?returnTo=/);
+  }
+});
+
+test('retired Control pages use the central Admin destination with room and material context intact',async()=>{
+  const {publicAbsoluteUrl}=require('../lib/lab-url.mjs');
+  const redirects=load('../app/control/public-redirect.ts',{
+    'next/headers':{headers:async()=>new Headers({host:'studio.fixture.invalid','x-forwarded-host':'game.fixture.invalid'})},
+    'next/navigation':navigation,'@/lib/lab-url.mjs':{publicAbsoluteUrl},
+  });
+  for(const [section,destination] of [['library','assets'],['lanes','companies'],['preview','compositions'],['zones','compositions']]){
+    const page=load('../app/control/'+section+'/page.tsx',{'../public-redirect':redirects});
+    const query={dealer:'dragan',operator:'north',room:['one','two'],game:'roulette',lane:'portrait',role:'background',tab:section==='lanes'?'companies':'backgrounds',token:'private'};
+    await assert.rejects(page.default({searchParams:Promise.resolve(query)}),error=>{
+      assert.equal(navigation.getRedirectStatusCodeFromError(error),307);
+      const url=new URL(navigation.getURLFromRedirectError(error));
+      assert.equal(url.origin,'https://game.fixture.invalid');assert.equal(url.pathname,'/admin/'+destination);
+      for(const [key,value] of [['dealer','dragan'],['operator','north'],['game','roulette'],['composition','portrait']])assert.equal(url.searchParams.get(key),value);
+      assert.deepEqual(url.searchParams.getAll('room'),['one','two']);assert.equal(url.searchParams.has('lane'),false);assert.equal(url.searchParams.has('token'),false);
+      if(section==='library')assert.equal(url.searchParams.get('tab'),'backgrounds');
+      return true;
+    });
   }
 });
