@@ -56,7 +56,12 @@ Tio mekaniska konflikter förenade kanoniska imports och båda handoffavsnitten.
 Källjämförelse: 48/48, inklusive oförändrade funktionskroppar och verifierad likvärdig
 Lab/game-idlebindning. 107 riktade befintliga prov och Studio-typer gröna, inga skips;
 rum/urval, svarsbank/Blob/CAS, schema/offline, spelaradministration och isolerade
-fixturekopior ingår. Slutlig parentreview och ordinarie commit-hook återstår.
+fixturekopior ingår. Parentreview är klar. Ordinarie N/O-integrationshook passerade
+1269 prov utan fel, med sex befintliga opt-in; frontendtyper gröna. Senare
+importintegration passerade54/54 och frontendtyper. PR227:s tre policyproduktfiler
+är byteidentiska med denna branch; faktisk mainb356152a integreras normalt.
+Befintliga fixturelistor innehåller redan den nya modulen exakt en gång.
+CI och driftkvittens följer N/O-leveransens sluthead.
 Inga nya servermoduler publiceras över HTTP; ingen fullbuild, push, provider-, data-,
 schema-, medie- eller lipsyncändring ingår.
 
