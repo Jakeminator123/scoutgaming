@@ -499,3 +499,30 @@ test('invalid startup release or origin releases the captured reservation before
     assert.equal(finished[0].reason, 'prepare_failed'); assert.throws(() => input.playbackPcm(), /cancelled/);
   }
 });
+
+
+test('owned callback can attest after 296 seconds and the 450 second deadline never slides',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  const input=inputFor('dragan','dragan',1,42),binding=ownedBinding(input);
+  const f=await setup(t,{input,deferred:true,release:ownedReceipt(),attestationBinding:binding,
+    startupMs:450000,lifetimeMs:480000});
+  const ready=f.transport.ready();t.mock.timers.tick(296000);
+  f.owner.release=ownedReceipt();await f.ready(ownedHello(binding));
+  assert.equal((await ready).jobId,'accepted-fixture-job');await f.transport.cancel();
+  const missing=await setup(t,{input,deferred:true,release:ownedReceipt(),attestationBinding:binding,
+    startupMs:450000,lifetimeMs:480000});
+  const rejected=assert.rejects(missing.transport.ready(),/startup_timeout/);
+  t.mock.timers.tick(449999);assert.equal(missing.finished.length,0);
+  t.mock.timers.tick(1);await rejected;assert.equal(missing.finished.length,1);
+});
+
+test('legacy channel retains its three-minute lifetime and cannot request the owned cold-start grace',async t=>{
+  const {createMovingWorkerChannel}=await import('../services/astrid-gpu-worker/gateway/moving-transport.mjs');
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  const options={origin:'https://own-game.example',avatar:'paow'};
+  for(const extra of [{lifetimeMs:180001},{coldStartGraceMs:300000},{verifiedAvatar:'paow',coldStartGraceMs:300001}])
+    assert.throws(()=>createMovingWorkerChannel({...options,...extra}),/invalid_moving_worker_channel/);
+  const channel=createMovingWorkerChannel(options);t.after(()=>channel.close());
+  t.mock.timers.tick(179999);assert.equal(channel.signal.aborted,false);
+  t.mock.timers.tick(1);assert.equal(channel.signal.aborted,true);
+});

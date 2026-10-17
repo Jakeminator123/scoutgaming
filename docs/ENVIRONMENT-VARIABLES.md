@@ -10,9 +10,21 @@ Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
 Kontrollen omfattade riktiga lokala profiler, Vercel-projektet/teamet
 `scoutgaming`, aktuella Render-tjänsteidentiteter och kodens konsumenter.
-Inga miljövärden ändrades. Render-MCP saknar env-GET: Renders samtliga
-hemlighetsvärden är därför inte jämförda. Dragan-testets separata runtime-
+Inga miljövärden ändrades. Render-MCP saknar env-GET, men befintlig
+RenderCLI-inloggning gav en läsande kontroll via det dokumenterade API:t
+17 oktober 16:09 UTC: produkt 61, Director 16 och Gateway 10 direkt satta
+variabelnamn. Inga värden sparades eller skrevs ut. Länkade miljögrupper och
+samtliga hemlighetsvärden är inte jämförda i denna senare kontroll.
+Dragan-testets separata runtime-
 endpoint verifierades genom det faktiska jobbets journal och providerstatus.
+
+De tre produktrollerna är aktiva och har olika startkommandon; ingen är
+verifierat överflödig. Ingen Astrid-namngiven Render-tjänst finns bland de
+åtta tjänsterna i workspacet. Astrids RunPod-endpoint, GHCR-image och
+GitHub-workflows är separata resurser. Gamla QA:s underhållsläge och äldre
+revision räcker inte som raderingsgrund: dess 1 GiB-disk kräver separat
+ägarskaps-/återställningskontroll. `game-engine` hör till Impactwin och är
+inte en verifierad dublett av `croupier-v2`.
 
 | Tjänst | Ansvar |
 | --- | --- |
@@ -36,10 +48,13 @@ och röstpreview, och den gemensamma molnkonfigurationens genererade talväg
 validerar även Cartesia och det generiska RunPod-paret. Dessa får därför
 inte klassas som oanvända bara utifrån Dragan-profilen.
 
-Städningsförslaget är ännu inte applicerat:
+Lokal kommentarstädning är utförd 17 oktober: nio rubrikrader i rootens
+`.env.local`, `lab/.env.local` och `lab/.env.cloud-storage.local` rättades.
+Alla 52, 47 respektive 3 tilldelningar, deras ordning och innehållet från
+första tilldelningen är oförändrade. Exakta original ligger i det privata
+`arkiv/2026-10-17/` med ursprungliga sökvägar. `.env.emil` var redan korrekt.
+Inga nycklar eller tjänsteinställningar ändrades. Återstående kandidater:
 
-- Rätta lokala kommentarer om att vanlig `lab/start.mjs` läser Lab-env och
-  om att de aktiva generiska RunPod-värdena är Emils; aktuell loader beskrivs nedan.
 - `CROUPIER_MEDIA_BLOB_INDEX` behövs inte i produktens Neon-runtime. Kontrollera
   uttryckliga importverktyg innan en lokal förekomst tas bort.
 - För Vercels `DID_API_KEY`, `ELEVENLABS_VIDEO_KEY` och `GITGUARDIAN_API_TOKEN`
@@ -68,7 +83,9 @@ lagringsklient och Astrids inställningar ändras inte.
 
 Testets stabila budget-ID är `dragan-test-20261017`: taljournalens tak är
 4,80 USD och dess reservation är 1,20 USD per försök inklusive marginal.
-Det ger ingen extra budget: Jakobs sammanlagda RunPod-tak på 5 USD omfattar
+Jakob höjde den 17 oktober det sammanlagda RunPod-taket från 5 till **10 USD**.
+Det ändrar inte automatiskt taljournalens befintliga 4,80 USD-konfiguration.
+Det sammanlagda taket omfattar
 även tidigare beredning, endpointförsök och reserver för fördröjd fakturering.
 Den separata infrastrukturns kostnadsvakt måste därför använda aktuell
 sammanräkning före aktivering. Reservationer återbetalas inte automatiskt;
