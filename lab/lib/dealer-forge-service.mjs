@@ -12,7 +12,7 @@ import { validateLayerAsset, layerAssetPath } from '../../web/layer-asset-contra
 import { SPEECH_LINES } from '../../web/public/speech-lines.mjs';
 import { isDealerId } from '../../web/dealer-identity.mjs';
 import { getPrivateMedia, mediaBlobPath, putPrivateMedia, validatePrivateMedia } from './cloud-media-store.mjs';
-import { mediaHeaderMatches } from './media-file-types.mjs';
+import { mediaHeaderMatches } from '../../packages/shared/media-file-types.mjs';
 import { dealerLibraryVideos, mediaClassification, mediaMatchesSlot } from './dealer-media-library.mjs';
 import { addDealer, normalizeProject } from './studio-model.mjs';
 import { validateVideoMetadata } from './video-intake.mjs';

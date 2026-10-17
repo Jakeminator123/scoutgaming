@@ -20,7 +20,7 @@ import {createPublicOperatorRooms} from '../../web/public-operator-rooms.mjs';
 import {createPublicOperatorDirectory} from '../../web/public-operators.mjs';
 import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
 import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
-import {presentationCapabilitiesForVersion} from '../../web/presentation-capability-contract.mjs';
+import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
 
 export const fixtureOrigin = 'https://publication-chain.example.invalid';
 export const company = {id: 'chain-north', slug: 'chain-north', name: 'C6 North'};

@@ -1,5 +1,5 @@
 import {StudioStorageError} from './studio-contract.mjs';
-import {NATIVE_MEDIA_FILE_TYPES} from '../../lab/lib/media-file-types.mjs';
+import {NATIVE_MEDIA_FILE_TYPES} from '../../packages/shared/media-file-types.mjs';
 
 // The immutable 001-008 PostgreSQL schema accepts these two MIME types only.
 // Parser/intake support for PNG or audio does not extend the storage constraint.

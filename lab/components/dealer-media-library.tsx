@@ -3,7 +3,7 @@ import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {StudioProject} from '../lib/studio-model.mjs';
 import {DEALER_MEDIA_CATEGORIES,dealerMediaSlots,mediaClassification,dealerLibraryVideos,draftUsesMedia,mediaMatchesSlot,dealerSlotStatus,mediaPage,mediaUsage,type DealerMediaSlot} from '../lib/dealer-media-library.mjs';
 import {clipLabel} from '../lib/clip-label.mjs';
-import {mediaContentType} from '../lib/media-file-types.mjs';
+import {mediaContentType} from '../../packages/shared/media-file-types.mjs';
 import {NATIVE_MEDIA_ACCEPT,nativeMediaFileError,assertNativeMediaFiles} from '../lib/native-media-intake.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {uploadNativeVideo} from '../lib/upload-native-video.mjs';

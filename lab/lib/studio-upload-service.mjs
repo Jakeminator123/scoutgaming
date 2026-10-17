@@ -1,7 +1,7 @@
 import {assertMediaAlpha} from './media-alpha.mjs';
 import {assertNativeMediaReadiness} from './native-media-readiness.mjs';
 import {assertStudioMediaStorageType} from '../../web/storage/studio-media-storage.mjs';
-import { MEDIA_FILE_TYPES, mediaHeaderMatches } from './media-file-types.mjs';
+import { MEDIA_FILE_TYPES, mediaHeaderMatches } from '../../packages/shared/media-file-types.mjs';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';

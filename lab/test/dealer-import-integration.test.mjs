@@ -8,7 +8,7 @@ import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
-import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
+import { presentationCapabilitiesForVersion } from '../../packages/presentation/capability-contract.mjs';
 import { extendedDealerMediaFeatures } from '../../web/dealer-media-features.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from '../lib/presentation-runtime-readiness.mjs';
 import { createStudioUploadService } from '../lib/studio-upload-service.mjs';

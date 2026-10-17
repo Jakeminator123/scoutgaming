@@ -4,7 +4,7 @@ import {createSeedProject,createEmptyProject,addDealer} from '../lib/studio-mode
 import {dealerMediaSlots,mediaClassification,dealerLibraryVideos,dealerSlotStatus,mediaPage,mediaUsage,mediaMatchesSlot,draftUsesMedia} from '../lib/dealer-media-library.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {validateManagedStudioMedia} from '../../web/managed-media-contract.mjs';
-import {mediaHeaderMatches} from '../lib/media-file-types.mjs';
+import {mediaHeaderMatches} from '../../packages/shared/media-file-types.mjs';
 import {videoFitsLine} from '../lib/video-intake.mjs';
 const project=addDealer(createSeedProject(),'paow','PAOW');
 

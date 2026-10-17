@@ -39,7 +39,7 @@ Behåll originalet. Registrera SHA-256 och byteantal samt uppmätta dimensioner,
 | [Blackjack dealerplan och Light](blackjack/DEALERBANK.md#format-och-lager) | Skilda förslag för H.264 respektive WebM/VP9-alfa. Tal med Opus står mot ett ljudlöst klassningsunderlag. Valet är öppet. |
 | [Roulettens prototyp](roulette/README.md#mottagen-bordsspecifikation) | Äldre beställning är inte bevis på slutformat; senare PR47-mätning gäller en enda prototypfilm. |
 
-Godkänd MIME/header i [media-file-types.mjs](../../lab/lib/media-file-types.mjs) bevisar inte avkodning, alfakanal eller läppsynk. H.264/yuv420p har inte den alfakanal som ett separat lager kan behöva. WebM som container garanterar inte alfa. Kontrollera faktiskt innehåll och hela målspelaren innan en exportprofil godkänns.
+Godkänd MIME/header i [media-file-types.mjs](../../packages/shared/media-file-types.mjs) bevisar inte avkodning, alfakanal eller läppsynk. H.264/yuv420p har inte den alfakanal som ett separat lager kan behöva. WebM som container garanterar inte alfa. Kontrollera faktiskt innehåll och hela målspelaren innan en exportprofil godkänns.
 
 Blackjack har två dokumenterade desktopprofiler: Forge-beskärning och Light-höjdfit. Deras olika formler finns bara i [DEALERBANK](blackjack/DEALERBANK.md#två-olika-desktopprofiler--välj-medvetet). Ingen automatisk crop, förflyttning eller förstoring får lösa konflikten i tysthet. Kortmått, mask och kontaktpunkter måste använda samma identifierade koordinatsystem som bilden.
 

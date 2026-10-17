@@ -1,7 +1,8 @@
 # Aktuell handoff — Scoutgaming
 
-Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200, main
-`51d4fcd6343a66f3cbc3794a977b22b221eb68a8`. Etapp 2 utgår från denna main.
+Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
+PR202+204. Senaste strukturkvittot gäller main
+`502bea812d4e8597f4951c85ae712bd338b02a1d`; etapp 3 levereras i avgränsade delar.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
@@ -15,13 +16,33 @@ Inga roller, behörigheter, scopekrav eller testassertions har ändrats.
 Tillfälliga serverkopior får nu också med kontorollsmodulen explicit.
 
 Lokalt på Node 24.21.0: 61 befintliga roll-/policy-, kontoinloggnings-,
-mejl-, operatörslagrings- och QA-listtester passerade. Därefter passerade
-18 av 21 kontoadministrations-/serverfixturtester, inklusive samtliga 11
-kontoadministrationsprov. Tre bootstrap-prov saknar den redan identifierade
-kopian `public/card-presentation/calibration.mjs`; PR205 rättar denna
-separata fixturbrist. Kör om bootstrap efter integration med PR205.
-Syntax och diffkontroll är gröna. CI, merge och drift återstår; detta är
-ett lokalt C2b-kvitto från baseline `502bea812d4e8597f4951c85ae712bd338b02a1d`.
+mejl-, operatörslagrings- och QA-listtester samt 11 kontoadministrationsprov
+passerade. Ordinarie commit-kontroll: 86/86 utan skips. Efter integration
+av PR205:s fixture-rättning passerar samtliga sex serverfixturekonsumenter,
+10/10 utan skips. Inga testassertions ändrades. CI, merge och drift återstår.
+
+## Etapp 3: första gemensamma kontrakten — 17 oktober 2026
+
+`media-file-types.mjs` ligger nu i `packages/shared/` och
+`capability-contract.mjs` i `packages/presentation/`. Båda implementationerna
+är oförändrade och importfria. Studio, spelserver, bundlad klient och tester
+läser samma kanoniska filer direkt; gamla källfiler och wrappers finns inte
+kvar. Den isolerade QA-källistan och aktiva formatguider följer flytten.
+Publik capability-endpoint, versionsförhandling och mediaregler är oförändrade;
+ingen ny statisk modul-URL eller dependency behövs.
+
+Första riktade MIME/header-, medieklassnings-, capability- och readinessproven
+passerar 81/81 utan skips. Ordinarie hook, CI och driftkvittot redovisas vid
+leverans. Detta är första delen av etapp 3: auth, presentationsorkestrering,
+lagring, appägarskap och gamla källrötter återstår. Ingen ny medie- eller
+läppsynksacceptans ingår.
+
+Full CI hittade ytterligare två isolerade källträd som kopierade de gamla
+appkatalogerna men inte de nya paketfilerna. Den gemensamma serverfixturen
+kopierar nu capability-kontraktet, och baslinjearkivet tar med MIME-modulen.
+Ett befintligt bootstrap-prov saknade dessutom klientens kalibreringsmodul i
+sin källkopia; den tas nu med. Fixturerna behåller sina isolerade data och
+utvidgas inte till hela paketträd.
 
 ## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
 
@@ -32,7 +53,10 @@ headers. Felet reproduceras med produktionens `CROUPIER_LAB_BASE_PATH=/studio`.
 Fixturen sätter nu denna basväg explicit, provar transport på en aktiv Admin-
 sida och följer den gamla länken genom båda omdirigeringarna till den aktiva
 sidan med bibehållen cookie och filtrerad förtroendeheader. Produktkod och
-behörighetsskydd ändras inte. Ny CI/deploy måste verifieras före driftkvittot.
+behörighetsskydd ändras inte. Rättningen levererades i PR204. Mergeagentens
+slutkvitto på main502bea81: main-CI39040340480 SUCCESS, Vercel READY och
+Render LIVE, publik version200 med samma fullständiga SHA och health200/ok.
+Detta är tillskrivet driftkvitto, ingen ny produktionskörning i C2b.
 
 De 22 spårade filerna i `pipeline/` har flyttats till `tools/media/`, med
 uppdaterade importer, standardrötter, kommandon och testupptäckt. Manuella
