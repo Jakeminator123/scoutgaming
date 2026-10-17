@@ -7,6 +7,70 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
+
+`packages/presentation/server/registered-dealer-idle.mjs` äger den befintliga
+registeradaptern. Studio importerar den direkt utan att dra in spelserverns
+SQL-/startmodul. Spelstartens defaultkomposition, schemakontroll och läsning
+av sparad policy före lyssning är oförändrade; bred lagringsflytt återstår.
+
+`packages/studio-registry/server/repository.mjs` äger nu hela den befintliga
+SQL-/AsyncLocalStorage-kärnan för läsning, skrivning, CAS, historik och
+`readPresentationSnapshot`. De 451 implementationsraderna och modulens
+ALS/state/helpers är mekaniskt identiska med baslinjen. Kärnan importerar
+endast Node och den gemensamma StudioStorageError-klassen; inga appar,
+drivers, Blob- eller låsbibliotek importeras. Fyra namngivna adaptrar
+(contract, policy, runtimeCatalog och dealerSets) krävs före databas-I/O.
+`web/storage/studio-repository.mjs` kopplar de befintliga appreglerna till
+kärnan och behåller alla aktiva konsumenters API. Den innehåller ingen andra
+SQL-implementation. QA-källistan tar uttryckligen med den nya kärnan;
+selektionsarkivet använder inte repositoryt och behöver ingen extra fil.
+
+Rumsform, rums-ID-regel och lifecycle-nyckel ligger i tre rena blad under
+`packages/presentation/contracts/`. Paketcodec och lifecycle använder bladen
+utan den tidigare rum–paket–lifecycle-cykeln. Befintliga blandade moduler
+behåller sina levande exports med samma funktionsidentitet. Sparade ID:n,
+felkoder, komprimering, historiska grants och runtimekonfiguration ändras inte.
+Endast ID-bladet får en uttrycklig publik moduladress; rum-/nyckel-/serverkod
+och extra sökvägssegment förblir blockerade. Statisk frontend och isolerade
+QA-/baslinjekällistor följer den nya importgrafen.
+
+På baslinje `ff03a46a`: 171 fokuserade befintliga prov plus 10 prov från
+samtliga sex serverfixturekonsumenter passerar, utan skips, med Node 24.21.0
+och fyra workers. Orphan-audit: 512 JS/TS-kandidater, noll orphans. Egen låst
+Lab-/frontendinstallation gjordes direkt i arbetskopian; package-/lockfiler ändrades
+inte. Importkontroll bekräftar att idleadaptern saknar SQL-/startberoende och
+att rumbladen endast importerar den egna kontraktskatalogen.
+
+Efter repositoryflytten passerar ytterligare 169 riktade befintliga prov
+för repository/scope/CAS/snapshot, lifecycle, policy, register, native runtime,
+Render-persistens och QA-källista utan skips, med fyra workers. Ingen verklig
+SQL-server startades. Separat kontroll bekräftar obligatoriska adaptrar före
+I/O, samma felklassidentitet och oförändrat fel för ogiltig pool. Inga nya
+testfiler eller produktassertions har lagts till.
+
+C2e är lokalt committad som `be6f2ee0a96c20a618c6bdc3f60939ad513f0b47`.
+Ordinarie hook passerade frontend-typecheck och 152 prov utan skips. Därefter
+integrerades `5a1f4332d6cf68af4e94c98729dda068cf55c3f3` med vanlig
+`--no-commit --no-ff`; tio innehållskonflikter är lösta och staged.
+Mergecommiten lämnas uttryckligen åt huvudagenten. Idle-adaptern och
+repositorykompositionen använder nu C2c:s kanoniska dealer-/dealer-set-kontrakt.
+En enda `public-modules.mjs` äger browserlistan, inklusive det exakta ID-bladet;
+server/API, statisk frontend och fixturekopierare har inga egna extralistor.
+
+Efter integration passerar 274 riktade befintliga prov plus 10 prov från alla
+sex serverfixturekonsumenter utan skips, med fyra workers. Frontend-typecheck
+passerar och orphan-audit visar noll orphans av 512 kandidater. Repositorykärnan
+är byteidentisk med C2e-commiten. Inkommande GPU-, lipsync- och mediekod är
+oförändrad mot C2c-head. Full build, CI, push och drift är inte körda här;
+Blob-/registry-reader-kapseln är fortfarande appägd. Inga schema-/moln-/
+medieändringar eller nya läppsynksgodkännanden görs av C2e.
+
+Lokal säkerhetsläsning saknar GitHub-/skyddad GitGuardian-åtkomst. Huvudagenten
+uppger färskt kvitto på main `a0876f71`: incidenterna 38318914/38318915 är
+fortfarande öppna, platstäckningen partiell och historisk skanning too_large.
+Detta är ett tillskrivet kvitto; säkerhetstäckningen markeras inte som klar.
+
 ## Etapp 3 C2c: gemensamma presentationskontrakt — lokal ändring 17 oktober 2026
 
 `packages/presentation/contracts/` äger projektmodell, video-/rouletteregler,
