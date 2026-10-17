@@ -1263,7 +1263,7 @@ JS/TS-inventeringen omfattar 510 kandidater, med nio namngivna helper/opt-in-
 klassningar och inga oklassificerade kandidater. Tio Pythonprov redovisas
 separat, utan påstående om verifierad Python-täckning. Fyra små fixturprov
 skyddar inventeringens riktiga körvägar och negativa fall. Körgränser och
-testprinciper beskrivs i [lab/README](../lab/README.md#regressionssviter-och-tidskvitton).
+testprinciper beskrivs i [lab/README](../apps/studio/README.md#regressionssviter-och-tidskvitton).
 
 Riktade lokala UI-/runner-/inventeringsprov och 45 medie-/workflowkontraktsprov
 är kontrollerade; Windows-specifika skips redovisas i PR-kvittot. Full CI och
