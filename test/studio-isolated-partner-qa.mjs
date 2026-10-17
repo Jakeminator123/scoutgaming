@@ -74,7 +74,7 @@ test('isolated SQL evidence binds the actual draft suite imports and immutable m
     'ops/neon-studio/012-runtime-media-catalog.sql', 'test/fixtures/studio-runtime-sql-checks.mjs',
     'media/layout.json','media/blob-index.json','media/catalog/presentation.json','media/catalog/legacy.json',
     'packages/studio-access/studio-native-auth.mjs', 'packages/studio-access/studio-access-policy.mjs',
-    'packages/studio-access/studio-scope.mjs', 'web/account-role.mjs',
+    'packages/studio-access/studio-scope.mjs', 'packages/studio-access/account-role.mjs',
     'web/storage/partner-branding.mjs', 'lab/lib/partner-branding-api.mjs', 'lab/test/fixtures/cloud-presentation.mjs'];
   for (const entry of [suite,fixture,runtimeFixture,runtimeImporter]) {
     const source = await readFile(entry,'utf8');

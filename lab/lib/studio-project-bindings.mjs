@@ -1,7 +1,7 @@
 import { validateDealerSpeechReference } from '../../web/public/dealer-speech-profile.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import { validateProject } from './studio-model.mjs';
-import { validateVideoBindings } from '../../packages/presentation/runtime/selection.mjs';
+import { validateVideoBindings } from './presentation-video-bindings.mjs';
 import { resolveLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { validateDealerSetBindings } from './dealer-sets.mjs';
 import {validateVideoMetadata} from './video-intake.mjs';

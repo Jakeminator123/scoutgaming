@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createEmptyProject, addDealer, addVariant, validateProject } from '../lib/studio-model.mjs';
-import { selectPresentation, decisionCatalog } from '../../packages/presentation/runtime/selection.mjs';
+import { selectPresentation, decisionCatalog } from '../lib/presentation-selection.mjs';
 import { SPEECH_SLOT_IDS, speechSlotEventId, bindSpeechSlotStandard, speechSlotStandard } from '../../web/public/speech-slot-bindings.mjs';
 import { recordedSpeechIdentity } from '../../web/public/recorded-speech.mjs';
 import { gateRecordedSpeechSelection } from '../../web/recorded-speech-selection.mjs';

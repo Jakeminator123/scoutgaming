@@ -3,7 +3,7 @@
 // enforce revisions/CAS and audit/lifecycle rules, and satisfy extra gates below.
 // This module does not read cookies, identify an actor, or authorize a provider job.
 // Shared with game login; this role module is safe for the client UI.
-import { isAdministratorRole } from '../../web/account-role.mjs';
+import { isAdministratorRole } from './account-role.mjs';
 
 // Administrator is the only Studio role. Stored superadmin remains a legacy alias.
 export const STUDIO_ROLES = Object.freeze(['admin']);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createSeedProject, createEmptyProject, addDealer, defaultPresentationLane, addVariant } from '../../../../lab/lib/studio-model.mjs';
 import { kindForEvent } from '../../../../lab/lib/video-intake.mjs';
 import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, currentClipId, createStudioClient, navigationKeepsStudioTab, roomChoicesPath, selectCompositionLayer, uploadMetadata } from './connected-studio.mjs';
-import { selectPresentation } from '../../../../packages/presentation/runtime/selection.mjs';
+import { selectPresentation } from '../../../../lab/lib/presentation-selection.mjs';
 import { createStudioProjectBindings } from '../../../../lab/lib/studio-project-bindings.mjs';
 import { materialSource } from '../../../../web/public/material-catalog.mjs';
 import { layerAssetPath } from '../../../../web/layer-asset-contract.mjs';

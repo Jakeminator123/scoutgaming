@@ -14,7 +14,7 @@ import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../lab/lib/studio-model.mjs';
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
-import { selectPresentation } from '../packages/presentation/runtime/selection.mjs';
+import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
 import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -59,7 +59,7 @@ export function presentationInput(event, published) {
 export function createPresentationApi({ db, env = process.env, store = createProjectStore(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
   select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
-  recordedSpeechPreview = false } = {}) {
+  recordedSpeechPreview = false, beforeActionPresentation = () => {} } = {}) {
   const decisions = new Map();
   const configurationSource = store.configurationSource || 'lab/project.json';
   const settings = { remoteUrl: env.CROUPIER_PRESENTATION_DIRECTOR_URL || '', remoteToken: env.CROUPIER_PRESENTATION_DIRECTOR_TOKEN || '', adviceTimeoutMs: 2200 };
@@ -164,6 +164,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
         const frozen = await frozenDealerContext.resolve(body.presentationContext);
         const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
         if (['deal','reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation',409);
+        if(['deal','reveal'].includes(body.event?.type))await beforeActionPresentation({playerId,version:body.version});
         const sourceEvent = presentationInput(body.event,receipt?.version===body.version?JSON.parse(receipt.payload):[]);
         if (frozen.project) {
           const filmed=filmedDealSelection({project:frozen.project,inventory:frozen.inventory,dealerId:body.dealerId,sourceEvent,
@@ -217,6 +218,7 @@ export function createPresentationApi({ db, env = process.env, store = createPro
       if (!project.dealers.some(dealer => dealer.id === body.dealerId)) fail('Invalid presentation request');
       const receipt = await db.prepare('SELECT version, payload FROM native_presentations WHERE player_id=?').get(playerId);
       if (['deal', 'reveal'].includes(body.event?.type) && receipt?.version !== body.version) fail('Stale presentation', 409);
+      if(['deal','reveal'].includes(body.event?.type))await beforeActionPresentation({playerId,version:body.version});
       const sourceEvent = presentationInput(body.event, receipt?.version === body.version ? JSON.parse(receipt.payload) : []);
       const filmed=filmedDealSelection({project,inventory,dealerId:body.dealerId,sourceEvent,
         published:receipt?.version===body.version?JSON.parse(receipt.payload):[]});
