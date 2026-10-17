@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { platformConfiguration, platformRoute, platformBackendHeaders } from '../../packages/navigation/server/platform-routing.mjs';
+import { platformConfiguration, platformRoute, platformBackendHeaders, canonicalPlatformPath } from '../../packages/navigation/server/platform-routing.mjs';
+import { presentationPublicSource } from '../../packages/presentation/public-modules.mjs';
 
 export function middleware(request: NextRequest) {
   const config = platformConfiguration();
   if (!config) return NextResponse.next();
-  const route = platformRoute(new URL(request.url), config, request);
+  const url = new URL(request.url);
+  // These exact modules ship in this frontend's public build. Serving them here
+  // keeps browser imports independent of the engine's deployment revision.
+  if (presentationPublicSource(canonicalPlatformPath(url.pathname) ?? '')) {
+    if (!['GET', 'HEAD'].includes(request.method) || request.headers.has('next-action')) {
+      return new NextResponse(null, {status:405, headers:{Allow:'GET, HEAD'}});
+    }
+    return NextResponse.next();
+  }
+  const route = platformRoute(url, config, request);
   if (route.kind === 'reject') return new NextResponse(null, {status: 400});
   if (route.kind === 'frontend') return NextResponse.next();
   if (route.kind === 'redirect') return NextResponse.redirect(route.destination, 307);
