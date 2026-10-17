@@ -1,5 +1,25 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — speechens källrot apps/speech, lokalt 17 oktober 2026
+
+Fem spårade filer är individuellt flyttade från apps/croupier-speech till
+apps/speech på separat branch från frontendens godkända 6a37c7b1. Samtliga
+fem filbytes och låset är oförändrade. Åtta konsumentfiler har enbart exakta
+sökvägsbyten: Vercels speech-root, CI:s låscache/cwd, tre befintliga transport-
+fixturekonsumenter samt frontendens README och två driftguider.
+
+Node22.23.1/engines22, paketnamn croupier-speech-ingress, service-ID speech,
+.npmrc install-links=true och file:../../packages/server-transport består.
+Publika URL:er, OpenClaw-rollnamn, sessioner, provider- och mediebeteenden
+ändras inte. Gamla ignorerade beroenden/privata filer är inte flyttade.
+
+Egen låst installation i nya vanliga katalogen, befintligt syntaxbygge och
+alla fyra namngivna native/moving/callback/transporttestfiler på Node22.23.1
+med fyra workers: 19/19, inga skips. Inga nya tester eller frontendbyggen.
+Detta är lokal verifiering; PR/CI/drift och nästa apprötter samordnas separat.
+Ingen push, provider- eller molnändring ingår.
+
+
 ## C3 — frontendens källrot apps/web, lokalt 17 oktober 2026
 
 Alla 130 spårade frontendfiler har flyttats från apps/croupier-frontend till

@@ -12,7 +12,7 @@ Service `studio` byggs från `lab` och serverar `/admin`, `/lobby`, `/control`
 och `/partner`. `/studio` är dess tekniska basePath. Båda tjänsterna ligger
 i Frankfurt. Render äger auktoritativ spelmotor och live-transport.
 Det äldre frontendprojektet är en domänlös reserv med Git-byggen avstängda.
-Talservicen `apps/croupier-speech` och frontendens API-skal delar
+Talservicen `apps/speech` och frontendens API-skal delar
 `packages/server-transport`. Paketet äger exakta socketvägar, konfiguration,
 reläkärna och native Node-server med `ws`; konfigurationen har inga
 WebSocket-beroenden. Frontend installerar paketet genom sitt pnpm-lås.

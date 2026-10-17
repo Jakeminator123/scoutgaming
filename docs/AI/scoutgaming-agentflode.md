@@ -530,6 +530,7 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-17 | Speechens fem spårade källfiler finns i apps/speech. CI, Vercels speech-root och befintliga transportfixtures följer flytten; Node22, npm-lås, tjänstnamn och publika socketadresser består. Separat lokal verifiering redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Frontendens spårade källrot är apps/web. CI, lokala hooks och miljöregistret följer samma rot; testtäckning och separat Node22-speechsteg består. Gamla ignorerade data och dependencyjunctions har inte flyttats. Lokal verifiering och återstående leverans framgår av JOHN-HANDOFF. |
 | 2026-10-17 | Inboxen läser etiketter med paginering och skapar bara saknade etiketter utan att skriva över befintlig metadata. `done` kräver inboxetikett och verifierad GitHub-skapare; delade konton kan inte särskiljas. 19 lokala inboxprov passerar. Läsanrop verifierade mot GitHub; inga etiketter eller ärenden ändrade i provet. Agent-talk-rensning och övriga förslag i den externa reviewen ingår inte. |
 | 2026-10-17 | På Jakobs begäran arbetar tre underagenter med fryst importkontrakt, atomiska Forge-referenser/raderingsinspektion och separat workerpaket. Huvudchatten äger transport, Git och dokumentation; Admin-chatten äger klippkartan. OpenClaw behåller dynamiska textbeslut. Storage-/runtimeguiderna skiljer implementerade kontrakt från återstående import, molnbygge och spelaraktivering. Ingen media eller Astrid-tjänst raderas. |
