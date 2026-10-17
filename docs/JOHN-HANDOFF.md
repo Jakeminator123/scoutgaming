@@ -1,5 +1,19 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — speechrotens leveranskontroll, 18 oktober 2026
+
+HUVUDAGENT3 har övertagit den förberedda speechleveransen. Apps/speech och
+packages/server-transport är Git-byteidentiska med det tidigare verifierade
+speechheadet7fa5e561; de fyra relevanta testfilerna är också oförändrade.
+Tidigare Node22.23.1-kvitto19/19 och normal integrationshook141pass/0fail/
+1befintlig SQL-opt-in gäller därför fortfarande. Detta är återanvända kvitton,
+inte nya testkörningar. Två aktuella sökvägar i återställningsguiden har rättats.
+
+PR/CI/drift samordnas med mergagent som en separat speechleverans efter
+frontendens PR229. Studio/OpenClaw/game är fortsatt separata leveranser.
+Ingen ändring av talinnehåll, budget, schema, provider eller media ingår;
+inget nytt läppsynksgodkännande lämnas.
+
 ## C3 — speechens källrot apps/speech, lokalt 17 oktober 2026
 
 Fem spårade filer är individuellt flyttade från apps/croupier-speech till
