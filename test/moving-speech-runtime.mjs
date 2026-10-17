@@ -46,7 +46,7 @@ async function setup(t, options = {}) {
     readEvidence: async () => { state.reads++; const snapshot=evidence(); await options.onEvidence?.(state); return snapshot; }, readRegistry: async () => registry,
     readPresentation:async()=>{const snapshot=state.receipt;await options.onPresentation?.(state);return snapshot;},publicVideo:(_context,id)=>({id,sha256:registry.videos.find(v=>v.id===id).sha256,src:'/api/presentation/registered-video/fixture/'+id}),
     readRest: async () => new Response(original, { headers: { 'content-type': 'video/mp4', 'content-length': String(original.length), 'cache-control': 'private, no-store' } }),
-    bankRead: async () => assert.fail('runtime fixture must never download bank bytes'),
+    bankRead: options.bankRead ?? (async () => assert.fail('runtime fixture must never download bank bytes')),
     dealerRuntime: { async prepareMoving(input) {
       assert.equal(input.dealerId,'dragan'); assert.deepEqual(input.sourceSet,sourceSet);
       trace.push('voice-prepared'); return { profileRevision: h, compositing: null,
@@ -293,4 +293,31 @@ test('failed cancellation on disconnect or ticket expiry is contained and requir
     const rest=await fetch(f.base+`/api/moving-speech/${d.id}/rest`,{headers:{cookie:'owner=one'}});
     assert.equal(rest.status,403);
   }
+});
+
+
+test('296 second cold wait generates no TTS; bank transfer remains bound to the session abort',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  let attest;const attestation=new Promise(resolve=>attest=resolve);
+  const f=await setup(t,{onReady:()=>attestation,bankRead:async record=>new Response(new Uint8Array(record.size),
+    {headers:{'content-length':String(record.size)}})});
+  const prepared=f.prepare();
+  for(let i=0;i<100&&!f.trace.includes('ready');i++)await new Promise(setImmediate);
+  assert.ok(f.trace.includes('ready'));const session=new AbortController();
+  const bank=await f.admitted.bankDownload({sessionSignal:session.signal,ttlMs:480000});
+  t.mock.timers.tick(296000);f.state.now+=296000;assert.equal(f.trace.includes('tts'),false);
+  const local=path=>f.base+new URL(path).pathname;
+  const late=await fetch(local(bank.archive.url));assert.equal(late.status,200);await late.arrayBuffer();
+  session.abort();assert.equal((await fetch(local(bank.receipt.url))).status,403);
+  attest();await prepared;assert.equal(f.trace.filter(x=>x==='tts').length,1);
+});
+
+test('owner abort during cold wait prevents late attestation from starting paid voice',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  let attest;const attestation=new Promise(resolve=>attest=resolve),abort=new AbortController();
+  const f=await setup(t,{onReady:()=>attestation});const prepared=f.prepare({signal:abort.signal});
+  const rejected=assert.rejects(prepared,/abort|cancel/i);
+  for(let i=0;i<100&&!f.trace.includes('ready');i++)await new Promise(setImmediate);
+  t.mock.timers.tick(296000);abort.abort();attest();await rejected;
+  assert.equal(f.trace.includes('tts'),false);assert.ok(f.state.cancelled>0);
 });
