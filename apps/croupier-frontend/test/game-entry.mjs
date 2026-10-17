@@ -4,7 +4,7 @@ import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {platformUiDocument} from '../lib/server-ui.mjs';
-import {OPERATOR_NOT_FOUND_HTML} from '../../../web/game-entry-operator.mjs';
+import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-entry.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
 import {platformConfiguration,platformRoute} from '../lib/platform-routing.mjs';
 const env = {CROUPIER_VERCEL_UI:'1',CROUPIER_PUBLIC_ORIGIN:'https://game.example.invalid',CROUPIER_BACKEND_ORIGIN:'https://engine.onrender.com',

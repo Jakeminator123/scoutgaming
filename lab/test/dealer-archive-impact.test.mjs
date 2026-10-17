@@ -1,3 +1,5 @@
+import * as savedGameDocumentContract from '../../web/storage/studio-contract.mjs';
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
@@ -5,10 +7,12 @@ import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {dealerArchiveCompositionIds,readDealerArchiveImpact,applyDealerArchiveImpact,withoutPresentationLanes} from '../lib/dealer-archive-impact.mjs';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
-import {readOperatorLifecycle} from '../../web/storage/operator-lifecycle.mjs';
-import {validateStudioGameAdministration} from '../../web/storage/studio-game-policy.mjs';
+import {readOperatorLifecycle} from '../../packages/operators/server/operator-lifecycle.mjs';
+import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';
+
+const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 const scope={environment:'dealer-archive-impact',workspaceId:'isolated'};
 const lane=(dealerId)=>({...defaultPresentationLane(dealerId),id:dealerId+'-room',label:dealerId+' scene'});

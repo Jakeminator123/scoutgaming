@@ -29,6 +29,14 @@ Fortsatt UI-utveckling sker i `/admin` och `/lobby`. Övergången är inte klar:
 spelstarter. `/admin` kräver intern N1-inloggning; `/lobby` läser publika bolag
 och spelbara rum. Deras UI-källa finns i `lab/client`.
 
+`packages/player-catalog` äger de rena publika katalogladdarna och
+`packages/navigation` äger gemensamma dokumentadresser, bolagssluggar och
+det rena operatörsentrékontraktet. Frontend importerar dessa direkt utan
+Studios privata routekod eller spelserverns policy-/SQL-moduler. HTTP,
+sessioner och behörighetskontroller förblir appägda. Bara den exakta publika
+slugmodulen exponeras via den befintliga modulallowlisten; paketets övriga
+moduler är inte publika käll-URL:er.
+
 Native Studio/Neon och gemensam policy är aktiva i produktion. `/player-login`
 är spelarentré. I unified/native-läget startar ett uttryckligt rum/dealerval
 spelet via `/play/blackjack`; en allmän blackjackadress leder till `/play`.

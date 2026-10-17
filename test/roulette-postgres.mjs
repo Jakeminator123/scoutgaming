@@ -7,7 +7,7 @@ import {createPostgresRouletteCommand} from '../web/games/roulette/storage.mjs';
 import {ROOM} from '../web/games/roulette/room.mjs';
 import {createRouletteRoomAccess} from '../web/games/roulette/access.mjs';
 import {createFrozenDealerContextReader} from '../web/storage/frozen-dealer-presentation.mjs';
-import {createOperatorStore} from '../web/storage/operator-store.mjs';
+import {createOperatorStore} from '../packages/operators/server/operator-store.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
 import {withPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';

@@ -8,7 +8,7 @@ import {lifecycleProject} from '../lib/dealer-lifecycle.mjs';
 import {createResourceLifecycleApi} from '../lib/resource-lifecycle-api.mjs';
 import {createStudioAdminApi} from '../lib/studio-admin-api.mjs';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';

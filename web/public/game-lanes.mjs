@@ -1,9 +1,11 @@
+import { GAME_LANES, isGameLane, validateGameLanes } from '../../packages/presentation/contracts/game-lanes.mjs';
+export { GAME_LANES, isGameLane, validateGameLanes, gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
 import { isGameLaneId } from '../../packages/presentation/contracts/game-lane-id.mjs';
-import { BASE_DEALER_IDS, isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
+import {isOperatorSlug} from '../../packages/navigation/operator-slug.mjs';
+import { isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateComposition} from './presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
 // card projection and playback primitives remain shared, independently of lanes.
-export const GAME_LANES = Object.freeze([]);
 const LAYER_PREVIEW_LANE = Object.freeze({ schemaVersion: 1, id: 'layer-preview', label: 'Layer Preview Lane', renderer: 'layered', dealer: 'dragge', mediaCollection: 'layer-packs-preview' });
 export function gamePresentationForDealer(dealerId, renderer) {
   if (!isActiveDealerId(dealerId) || !['portrait-video', 'layered'].includes(renderer)) throw Error('Registered cloud presentation required');
@@ -11,37 +13,6 @@ export function gamePresentationForDealer(dealerId, renderer) {
 }
 const layerPreviewDealers = ['dragge'];
 export { isGameLaneId } from '../../packages/presentation/contracts/game-lane-id.mjs';
-export const isGameLane = (value, lanes = GAME_LANES) => lanes.some(lane => lane.id === value);
-// Same rule as the partner portal slug (lab/lib/partner-session.mjs operatorSlug).
-const reservedOperatorSlugs = new Set(['api', 'auth', 'login', 'logout', 'studio', 'control', 'partner', 'play', 'set-password']);
-export const isOperatorSlug = value => typeof value === 'string' && value.length <= 63
-  && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) && !reservedOperatorSlugs.has(value);
-
-export function validateGameLanes(value) {
-  if (!Array.isArray(value) || value.length > 32) throw Error('Invalid lane catalogue');
-  const ids = new Set();
-  return value.map(lane => {
-    if (!lane || Object.keys(lane).sort().join(',') !== 'dealer,id,label,mediaCollection,renderer,schemaVersion'
-      || lane.schemaVersion !== 1 || !isGameLaneId(lane.id) || ids.has(lane.id)
-      || typeof lane.label !== 'string' || !lane.label.trim() || lane.label.length > 80
-      || /[\u0000-\u001f\u007f-\u009f<>]/u.test(lane.label) || !isDealerId(lane.dealer)
-      || !(lane.renderer === 'portrait-video' && lane.mediaCollection === `${lane.dealer}-presentation`
-        || lane.renderer === 'indexed-video' && BASE_DEALER_IDS.includes(lane.dealer) && lane.mediaCollection === 'legacy-dealers'
-        || lane.renderer === 'layered' && lane.id === 'layer-preview' && lane.mediaCollection === 'layer-packs-preview' && ['paow', 'dragge'].includes(lane.dealer))) throw Error('Invalid lane definition');
-    ids.add(lane.id);
-    return { ...lane };
-  });
-}
-
-// Old saved documents retain their history. Their retired default resolves to
-// the current catalogue; the first lane edit persists the explicit catalogue.
-export function gameLaneConfiguration(value = {}) {
-  const explicit = Object.hasOwn(value, 'gameLanes');
-  const gameLanes = validateGameLanes(explicit ? value.gameLanes : GAME_LANES);
-  const gameLane = explicit ? value.gameLane : value.gameLane ?? null;
-  if (gameLane !== null && !isGameLane(gameLane, gameLanes)) throw Error('Invalid active lane');
-  return { gameLanes, gameLane };
-}
 
 // Package lanes that the saved catalogue can serve, in package order.
 export function packageLaneIds(allowedLanes, lanes = GAME_LANES) {

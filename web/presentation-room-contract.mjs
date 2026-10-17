@@ -1,4 +1,4 @@
-import { gameLaneConfiguration } from './public/game-lanes.mjs';
+import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
 import { PRESENTATION_ROOM_SCHEMA_VERSION, isPresentationRoom, isRoomOperatorId } from '../packages/presentation/contracts/presentation-room.mjs';
 import { readPackagePresentation } from './storage/presentation-package.mjs';
 import { StudioStorageError } from './storage/studio-contract.mjs';

@@ -1,7 +1,11 @@
+import * as savedGameDocumentContract from './studio-contract.mjs';
+
 import { createRegisteredDealerIdle } from '../../packages/presentation/server/registered-dealer-idle.mjs';
 import { createStudioRepository } from './studio-repository.mjs';
-import { createStudioGamePolicy, studioGamePolicyConfiguration } from './studio-game-policy.mjs';
+import { createSavedGamePolicy, studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { planStudioMigrations, isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
+
+const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 export async function createRenderStudioPolicy({ storage, env = process.env, dealerIdle, schemaCheck = planStudioMigrations } = {}) {
   const config = studioGamePolicyConfiguration(env);

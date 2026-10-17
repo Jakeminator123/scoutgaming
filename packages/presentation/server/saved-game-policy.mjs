@@ -1,13 +1,13 @@
-import { BASE_DEALER_IDS, isRegisteredDealer, isActiveDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
+import { BASE_DEALER_IDS, isRegisteredDealer, isActiveDealerId } from '../contracts/dealer-identity.mjs';
 import { createHash } from 'node:crypto';
-import { validateGameConnection } from './postgres-store.mjs';
-import { gameLaneConfiguration } from '../public/game-lanes.mjs';
-import { isPresentationRoom } from '../presentation-room-contract.mjs';
-import { normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { validateGameConnection } from '../../storage/server/postgres-store.mjs';
+import { gameLaneConfiguration } from '../contracts/game-lanes.mjs';
+import { isPresentationRoom } from '../contracts/presentation-room.mjs';
+import { normalizeProject } from '../contracts/studio-model.mjs';
 import {
   StudioStorageError, studioStorageFailure, validateStudioScope, validateRevision,
-  validateActor, validateDocumentValue, canonicalStudioJson,
-} from './studio-contract.mjs';
+  validateActor, canonicalStudioJson,
+} from '../../studio-registry/server/storage-contract.mjs';
 
 export const STUDIO_GAME_CONFIGURATION_SOURCE = 'neon/croupier_studio';
 const tierIds = Object.freeze(['classic', 'high', 'vip']);
@@ -64,10 +64,22 @@ function validateLegacyAdministration(value, { required }) {
   }
 }
 
+// This is presence in a dealer's exact registered engine path, not media/lip
+// sync acceptance. A nearby key, approximate duration or another dealer fails.
+export function exactRegisteredDealerIdle(record, dealerId) {
+  return isActiveDealerId(dealerId) && object(record) && record.dealerId === dealerId
+    && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(record.mediaId)
+    && /^[a-f0-9]{64}$/.test(record.sha256) && record.available === true;
+}
+
+export function createSavedGamePolicy({ documentContract } = {}) {
+  const validateDocumentValue = documentContract?.validateDocumentValue;
+  if (typeof validateDocumentValue !== 'function') throw new TypeError('Explicit document contract required');
+
 // Validate saved room/game configuration without creating default rooms or
 // legacy settings. Old clipAssignments/neverAgain require an explicit import
 // decision and are rejected by validateDocumentValue, never silently dropped.
-export function validateStudioGameAdministration(input) {
+function validateStudioGameAdministration(input) {
   const value = validateDocumentValue('administration', input, 'validation');
   const invalid = () => fail('studio_invalid_game_policy', 422);
   if (!Array.isArray(value.rooms) || value.rooms.length > 1000) invalid();
@@ -89,17 +101,9 @@ export function validateStudioGameAdministration(input) {
   return value;
 }
 
-// This is presence in a dealer's exact registered engine path, not media/lip
-// sync acceptance. A nearby key, approximate duration or another dealer fails.
-export function exactRegisteredDealerIdle(record, dealerId) {
-  return isActiveDealerId(dealerId) && object(record) && record.dealerId === dealerId
-    && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(record.mediaId)
-    && /^[a-f0-9]{64}$/.test(record.sha256) && record.available === true;
-}
-
 // Construction remains inert. The caller verifies product-v1 and Studio 001/002
 // before constructing the repository and supplies only server-owned identity.
-export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
+function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
   if (!repository?.transaction || !repository?.readDocument || !repository?.saveDocument || typeof dealerIdle !== 'function') fail('studio_invalid_configuration');
   scope = validateStudioScope(scope);
   if (canonicalStudioJson(scope) !== canonicalStudioJson(validateStudioScope(repository.scope))) fail('studio_scope_mismatch');
@@ -181,4 +185,7 @@ export function createStudioGamePolicy({ repository, scope, dealerIdle } = {}) {
     },
   };
   return Object.freeze(api);
+}
+
+  return Object.freeze({ validateStudioGameAdministration, createStudioGamePolicy });
 }

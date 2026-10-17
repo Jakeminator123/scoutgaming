@@ -470,7 +470,7 @@ for (const schemaVersion of [1,2,3]) test('partner tables require cloud registra
 import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
 import {resolvePlayerSelection} from '../../web/public/player-choices.mjs';

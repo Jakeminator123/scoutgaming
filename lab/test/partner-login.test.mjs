@@ -10,7 +10,7 @@ import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
 import { studioLoginReturnTo } from '../lib/studio-login-client.mjs';
 import { handlePartnerAuth, internalSessionPresent } from '../lib/partner-session.mjs';
 import { partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
-import { resolveWorkspaceSurfacePath, PARTNER_PREVIEW_VIEWS, workspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath, PARTNER_PREVIEW_VIEWS, workspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
@@ -210,7 +210,7 @@ test('actual browser partner login returns to the authorized operator and room w
             '../lib/studio-native-runtime.mjs':{nativeStudioAdminEnabled:()=>false,studioNativeRuntime:unused},
             '@/lib/control-workspace.mjs':{controlToolPath},'@/lib/lab-url.mjs':{publicAbsoluteUrl},
             '@/lib/partner-session.mjs':{internalSessionPresent},'@/lib/partner-login-return.mjs':{partnerLoginReturnTo},
-            '@/lib/next-page-navigation.mjs':{nextStudioLoginRedirect},'@/lib/workspace-surfaces.mjs':{resolveWorkspaceSurfacePath},
+            '@/lib/next-page-navigation.mjs':{nextStudioLoginRedirect},'../../packages/navigation/workspace-surfaces.mjs':{resolveWorkspaceSurfacePath},
           };
           const localRequire=createRequire(surfaceSource);
           vm.runInNewContext(surfaceCode,{module,exports:module.exports,Request,require:name=>Object.hasOwn(overrides,name)?overrides[name]:localRequire(name)});

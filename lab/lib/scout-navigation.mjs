@@ -1,5 +1,5 @@
 import { labBasePath } from './lab-url.mjs';
-import { canonicalControlHref } from './control-flow.mjs';
+import { canonicalControlHref } from '../../packages/navigation/control-flow.mjs';
 
 // Staff shell only. A menu href with a query wins over the same path without one.
 export const SCOUT_NAVIGATION = Object.freeze([

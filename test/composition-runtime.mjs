@@ -15,7 +15,8 @@ import {buildPresentationPackage,layerAssetPath} from '../web/presentation-layer
 import {withPackagePresentation,readPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
 import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
-import {gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
+import { validateGameLanes } from '../packages/presentation/contracts/game-lanes.mjs';
+import { gameLaneFromDocument } from '../web/public/game-lanes.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+import {OPERATOR_NOT_FOUND_HTML} from '../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from './public/player-handoff.mjs';
-import { isAdministratorRole } from './account-credentials.mjs';
+import { isAdministratorRole } from '../packages/studio-access/server/account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
 // Listens on 0.0.0.0 so phones on the LAN can open the demo.
@@ -91,7 +92,7 @@ const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
   referenceService: createDealerSpeechReferenceService({readVideoRegistry:studioMediaRuntime.videoRegistry,readVideoResponse:studioMediaRuntime.videoResponse}),
 }) : null;
 // Operator packages share the Studio pool and scope; a read failure keeps today's entry.
-const { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
+const { createGameEntrySelector } = studioPolicyRuntime ? await import('./game-entry-operator.mjs') : {};
 const selectGameEntry = studioPolicyRuntime ? createGameEntrySelector({ policy: studioPolicyRuntime.policy,
   packages: (await import('./storage/operator-package-reader.mjs')).createOperatorPackageReader({ sql: storage.pool, scope: studioPolicyRuntime.scope, ttlMs:0 }) }) : null;
 const operatorAppearanceApi = selectGameEntry ? (await import('./operator-appearance-api.mjs')).createOperatorAppearanceApi({selectGameEntry}) : null;
@@ -125,7 +126,7 @@ if (speechJournal) configureGeneratedSpeechJournal(speechJournal, {
 });
 const { handlePlayerSurface } = await import('./player-surface.mjs');
 const { createPublicOperatorDirectory } = await import('./public-operators.mjs');
-const publicOperatorStore = studioPolicyRuntime ? await (await import('./storage/operator-store.mjs')).createOperatorStore({
+const publicOperatorStore = studioPolicyRuntime ? await (await import('../packages/operators/server/operator-store.mjs')).createOperatorStore({
   sql: storage.pool, scope: studioPolicyRuntime.scope,
 }) : null;
 const publicOperatorRooms = (await import('./public-operator-rooms.mjs')).createPublicOperatorRooms({
@@ -143,7 +144,11 @@ const rouletteRoomAccess = studioPolicyRuntime ? (await import('./games/roulette
   readCurrentContext:(await import('./storage/frozen-dealer-presentation.mjs')).createFrozenDealerContextReader({pool:storage.pool,scope:studioPolicyRuntime.scope}),
 }) : null;
 
-const domain = name => import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
+const domain = name => {
+  if (postgres && name === 'craig-identity') return import('../packages/studio-access/server/craig-identity.mjs');
+  if (postgres && name === 'bo-auth-epoch') return import('../packages/studio-access/server/bo-auth-epoch.mjs');
+  return import(postgres ? `./storage/async-${name}.mjs` : `./${name}.mjs`);
+};
 const [{ craigIdentity }, { installBoAuthEpoch }, { playerAuth }, { backofficeGameAuth }, { backofficeLabAuth },
   { readPlayerResults }, { createPlayerChatMemory }, { createPlayerProbeStore }, { installPartnerApi }] = await Promise.all(
   ['craig-identity', 'bo-auth-epoch', 'player-auth', 'bo-game-auth', 'bo-lab-auth', 'player-results',

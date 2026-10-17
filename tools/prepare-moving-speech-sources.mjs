@@ -105,7 +105,7 @@ async function main() {
   if (args.length !== 4 || args[0] !== '--dealer' || args[2] !== '--output') {
     fail('Usage: node tools/prepare-moving-speech-sources.mjs --dealer <id> --output <new-directory>');
   }
-  const { studioGamePolicyConfiguration } = await import('../web/storage/studio-game-policy.mjs');
+  const { studioGamePolicyConfiguration } = await import('../packages/presentation/server/saved-game-policy.mjs');
   const configuration = studioGamePolicyConfiguration();
   if (!configuration) fail('moving_bank_cloud_configuration_required');
   const { createStudioRepository } = await import('../web/storage/studio-repository.mjs');

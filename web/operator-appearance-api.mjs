@@ -1,4 +1,5 @@
-import {isOperatorSlug, isGameLaneId} from './public/game-lanes.mjs';
+import { isGameLaneId } from './public/game-lanes.mjs';
+import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 
 // Read-only revision acknowledgement. The caller authenticates the player and
 // supplies the uncached game-entry selector; no wallet or round is changed here.

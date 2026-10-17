@@ -7,9 +7,13 @@ const browserContracts = [
   'speech-lines', 'material-catalog', 'background-materials',
 ];
 export const presentationPublicModules = Object.freeze([
+  {source: 'packages/navigation/operator-slug.mjs',
+    paths: ['/packages/navigation/operator-slug.mjs']},
   ...browserContracts.map(name => ({source: 'packages/presentation/contracts/' + name + '.mjs',
     paths: ['/' + name + '.mjs', '/packages/presentation/contracts/' + name + '.mjs',
       ...(name === 'dealer-identity' ? ['/web/public/dealer-identity.mjs'] : [])]})),
+  {source: 'packages/presentation/contracts/game-lanes.mjs',
+    paths: ['/packages/presentation/contracts/game-lanes.mjs']},
   {source: 'packages/presentation/contracts/game-lane-id.mjs',
     paths: ['/packages/presentation/contracts/game-lane-id.mjs']},
   {source: 'packages/presentation/contracts/layer-asset-contract.mjs',

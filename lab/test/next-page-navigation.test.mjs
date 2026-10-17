@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { studioLoginDestination } from '../lib/studio-login-client.mjs';
 import { normalizeNativeStudioPageRequest } from '../lib/studio-native-request.mjs';
-import { legacyStudioDocumentHref } from '../lib/admin-workspace-routes.mjs';
+import { legacyStudioDocumentHref } from '../lib/legacy-studio-document.mjs';
 
 const require = createRequire(import.meta.url);
 const navigation = require('next/dist/client/components/redirect.js');

@@ -1,6 +1,7 @@
 import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {isPresentationRoom} from '../presentation-room-contract.mjs';
-import {gameLaneConfiguration, laneDealerSelection} from '../public/game-lanes.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
+import { laneDealerSelection } from '../public/game-lanes.mjs';
 import {buildPresentationPackage} from '../presentation-layers.mjs';
 import {normalizeProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenRegisteredDealers, captureFrozenDealerPlayback, assertFrozenMediaPreconditions, resolveFrozenDealerIdle} from './frozen-dealer-idle.mjs';

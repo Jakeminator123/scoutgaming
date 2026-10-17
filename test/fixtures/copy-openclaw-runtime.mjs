@@ -30,11 +30,16 @@ export async function copyOpenClawRuntime(root) {
     'packages/director/studio-admin-contract.mjs',
     'packages/director/node/companion-store.mjs',
     'packages/director/node/settings-reader.mjs',
+
+    'packages/studio-access/server/account-credentials.mjs', 'packages/studio-access/display-name.mjs',
+    'packages/navigation/operator-entry.mjs',
     ...presentationPublicModules.map(row => row.source)]) {
     await mkdir(join(root, dirname(file)), {recursive: true});
     await copyFile(new URL('../../' + file, import.meta.url), join(root, file));
   }
   await cp(new URL('../../packages/studio-registry/', import.meta.url), join(root, 'packages/studio-registry'), {recursive:true});
+  await cp(new URL('../../packages/storage/', import.meta.url), join(root, 'packages/storage'), {recursive:true});
+  await cp(new URL('../../packages/operators/', import.meta.url), join(root, 'packages/operators'), {recursive:true});
   await mkdir(join(root,'tools'),{recursive:true});
   await copyFile(new URL('../../tools/media-blob-index-reader.mjs', import.meta.url),join(root,'tools/media-blob-index-reader.mjs'));
   const rouletteTarget = join(root, 'web/games/roulette');

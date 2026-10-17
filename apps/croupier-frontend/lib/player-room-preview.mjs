@@ -1,4 +1,5 @@
-import {isOperatorSlug,isGameLaneId} from '../../../web/public/game-lanes.mjs';
+import { isGameLaneId } from '../../../web/public/game-lanes.mjs';
+import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
 import {validatePublicOperatorPreview} from '../../../web/public/operator-preview-contract.mjs';
 // Exact IDs only. Portraits never add dealers to a room or authorize media.
 const portraits=Object.freeze(Object.fromEntries(['astrid','dragge','marten'].map(id=>[id,'/images/lobby/'+id+'-portrait.jpg'])));

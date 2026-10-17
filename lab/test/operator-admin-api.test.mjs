@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { STANDARD_OPERATOR_ROLES, createOperatorAdminApi } from '../lib/operator-admin-api.mjs';
 import { createOperatorJournal } from '../lib/operator-journal.mjs';
-import { PARTNER_PERMISSIONS } from '../../web/partner-access-policy.mjs';
+import { PARTNER_PERMISSIONS } from '../../packages/studio-access/server/partner-access-policy.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
 
 const origin = 'https://studio.example';

@@ -5,7 +5,7 @@ import {addDealer,createSeedProject,defaultPresentationLane,validateProject} fro
 import {lifecycleProject,changeDealerLifecycle,assertLifecyclePackages,checkDealerArchive} from '../lib/dealer-lifecycle.mjs';
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {createStudioDealerApi} from '../lib/studio-dealer-api.mjs';
 import {createStudioMediaApi} from '../lib/studio-media-api.mjs';

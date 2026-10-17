@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
-import {compositionLabel} from '../lib/control-flow.mjs';
+import {compositionLabel} from '../../packages/navigation/control-flow.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {clipLabel} from '../lib/clip-label.mjs';
 import {validateProject,type StudioProject,type StudioLane} from '../../packages/presentation/contracts/studio-model.mjs';

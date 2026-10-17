@@ -5,12 +5,12 @@ import {createHash,randomUUID} from 'node:crypto';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import {operatorMemoryPool} from './fixtures/operator-memory-pool.mjs';
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {createPartnerBrandingApi} from '../lib/partner-branding-api.mjs';
 import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
-import {publicEditableBranding,resolveRoomBranding} from '../../web/storage/partner-branding.mjs';
+import {publicEditableBranding,resolveRoomBranding} from '../../packages/operators/contracts/branding.mjs';
 const scope={environment:'isolated-drafts',workspaceId:'draft-unit'},operatorId='draft-unit';
 async function fixture(operatorAdjustable=['table.color','dealer'],{large=false,metadataBytes=0,roomGames={}}={}){
  const pool=operatorMemoryPool(),store=await createOperatorStore({sql:pool,scope}),actor='fixture';

@@ -1,13 +1,13 @@
 import {createHash} from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
-import {canonicalStudioJson,StudioStorageError} from './studio-contract.mjs';
-import {isPresentationRoom} from '../../packages/presentation/contracts/presentation-room.mjs';
-import {OPERATOR_LIFECYCLE_KEY} from '../../packages/presentation/contracts/operator-lifecycle-key.mjs';
-import {validateGameLanes} from '../public/game-lanes.mjs';
+import {canonicalStudioJson,StudioStorageError} from '../../studio-registry/server/storage-contract.mjs';
+import {isPresentationRoom} from '../../presentation/contracts/presentation-room.mjs';
+import {OPERATOR_LIFECYCLE_KEY} from '../../presentation/contracts/operator-lifecycle-key.mjs';
+import {validateGameLanes} from '../../presentation/contracts/game-lanes.mjs';
 
 // Server-owned lifecycle data uses the existing immutable package JSON. No new
 // database schema or room shape: old runtimes still see only current rooms.
-export {OPERATOR_LIFECYCLE_KEY} from '../../packages/presentation/contracts/operator-lifecycle-key.mjs';
+export {OPERATOR_LIFECYCLE_KEY} from '../../presentation/contracts/operator-lifecycle-key.mjs';
 const fail=(status=503)=>{throw new StudioStorageError('studio_invalid_resource_lifecycle',status);};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===[...keys].sort().join(',');

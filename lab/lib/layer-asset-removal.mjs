@@ -1,5 +1,5 @@
 import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
-import {compositionLabel} from './control-flow.mjs';
+import {compositionLabel} from '../../packages/navigation/control-flow.mjs';
 export function layerAssetReferences(project,id){
   const lanes=[...(project.lanes??[]),...(project.dealerTrash??[]).flatMap(entry=>entry.compositions??[])];
   return lanes.filter(lane=>['background','table'].some(role=>lane.layers[role].default===id||lane.layers[role].allowed.includes(id))
