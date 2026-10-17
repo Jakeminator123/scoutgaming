@@ -1,3 +1,4 @@
+import { MOVING_SPEECH_LIMITS } from './moving-speech-limits.mjs';
 import { createMovingWorkerChannel } from '../services/astrid-gpu-worker/gateway/moving-transport.mjs';
 import { verifyMovingSpeechBinding as verifyBinding, MOVING_ATTESTATION_KEYS as ATTESTATION_KEYS } from './moving-speech-binding.mjs';
 
@@ -98,8 +99,11 @@ async function movingConnection({ input, origin, release, authorize, onChunk, fi
     }
     else if (attestationBinding !== undefined) fail('moving_worker_binding_requires_owned_release');
     channel = createMovingWorkerChannel({ origin, avatar: plan.binding.workerAvatar,
-      verifiedAvatar: binding?.workerAvatar, idleMs, lifetimeMs,
-      startupMs: binding ? (startupMs ?? Math.min(150000, lifetimeMs ?? 180000)) : undefined });
+      verifiedAvatar: binding?.workerAvatar, idleMs,
+      lifetimeMs: lifetimeMs ?? (binding ? MOVING_SPEECH_LIMITS.lifetimeMs : undefined),
+      coldStartGraceMs: binding ? MOVING_SPEECH_LIMITS.coldStartGraceMs : 0,
+      startupMs: binding ? (startupMs ?? Math.min(MOVING_SPEECH_LIMITS.startupMs,
+        lifetimeMs ?? MOVING_SPEECH_LIMITS.lifetimeMs)) : undefined });
   } catch (error) {
     input?.cancel();
     await finalize({ owner: null, binding: plan.binding, release: pin, jobId: undefined, reason: 'prepare_failed' });
