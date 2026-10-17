@@ -1,9 +1,9 @@
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { randomUUID } from 'node:crypto';
-import { probePolicy } from '../../lab/lib/probe-policy.mjs';
+import { probePolicy } from '../../packages/presentation/contracts/probe-policy.mjs';
 import { requestProductProbe } from '../../open-claw/lab/src/product-probe.mjs';
 import { probeFixtures } from '../../lab/lib/probe-fixtures.mjs';
-import { PROBE_MODELS } from '../../lab/lib/probe-policy.mjs';
+import { PROBE_MODELS } from '../../packages/presentation/contracts/probe-policy.mjs';
 
 export function createProbeRuntime({ store, memory, projectStore, settingsProvider, serviceProvider,
   decide = requestProductProbe, now = Date.now, chatBusy = () => false } = {}) {

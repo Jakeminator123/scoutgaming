@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createEmptyProject, defaultPresentationLane } from '../../../../lab/lib/studio-model.mjs';
+import { addDealer, createEmptyProject, defaultPresentationLane } from '../../../../packages/presentation/contracts/studio-model.mjs';
 import { createLifecycleClient, lifecycleBank, lifecycleClipReferences, lifecycleFingerprint, clipLifecycleBlocker } from './studio-lifecycle.mjs';
 const a = '11111111-1111-4111-8111-111111111111', b = '22222222-2222-4222-8222-222222222222';
 const sha256 = 'a'.repeat(64), token = 'b'.repeat(64);

@@ -1,6 +1,6 @@
 'use client';
 import {useRef,useState} from 'react';
-import type {StudioProject} from '../lib/studio-model.mjs';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {rebaseProjectDraft} from '../lib/project-rebase.mjs';
 import {requestJson} from './studio-types';
 export function ProjectConflict({base,draft,onResolve}:{base:StudioProject;draft:StudioProject;onResolve:(remote:StudioProject,merged:StudioProject)=>void}){

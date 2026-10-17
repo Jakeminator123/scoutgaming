@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../web/storage/presentation-package.mjs';
-import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../web/presentation-layers.mjs';
 import {createPublicOperatorPreview} from '../web/public-operator-preview.mjs';
 import {previewMediaPath,validatePublicOperatorPreview} from '../web/public/operator-preview-contract.mjs';
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
-import {materialSource} from '../web/public/material-catalog.mjs';
+import {materialSource} from '../packages/presentation/contracts/material-catalog.mjs';
 
 const context={operatorSlug:'north',roomId:'room-north',packageRevision:7,dealerId:'linnea'};
 const descriptor='/api/operators/north/rooms/room-north/preview?dealer=linnea&revision=7';

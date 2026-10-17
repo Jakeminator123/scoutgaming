@@ -1,5 +1,5 @@
-import type { StudioEvent } from '../lib/studio-model.mjs';
-import { SPEECH_LINES } from '../../web/public/speech-lines.mjs';
+import type { StudioEvent } from '../../packages/presentation/contracts/studio-model.mjs';
+import { SPEECH_LINES } from '../../packages/presentation/contracts/speech-lines.mjs';
 
 // A sample selector within the existing speech group, not a project migration
 // or an inferred speech instruction on a received turn/settle event.

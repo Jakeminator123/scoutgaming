@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {createSeedProject,addDealer,defaultPresentationLane} from '../lib/studio-model.mjs';
+import {createSeedProject,addDealer,defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {dealerRemovalStatus} from '../lib/dealer-removal.mjs';
 import {lifecycleProject} from '../lib/dealer-lifecycle.mjs';
 const archiveFixture=project=>lifecycleProject(project,{dealerId:'linnea',archived:true,records:[]});

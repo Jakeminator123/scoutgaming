@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {webcrypto} from 'node:crypto';
 import vm from 'node:vm';
 import React from 'react';
-import {createSeedProject,defaultPresentationLane} from '../lib/studio-model.mjs';
+import {createSeedProject,defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 const require=createRequire(import.meta.url), componentUrl=new URL('../components/studio-session.tsx',import.meta.url);
 const localRequire=createRequire(componentUrl), {transformSync}=require('next/dist/build/swc');
 const compiled=transformSync(readFileSync(componentUrl,'utf8'),{filename:'studio-session.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});

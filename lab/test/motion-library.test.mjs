@@ -20,7 +20,7 @@ function rig({ failAt } = {}) {
 }
 
 test('registry has one motion file per canonical lab event and exactly 4 finite clips per event', async () => {
-  const seed = JSON.parse(await readFile(new URL('../policies/project.seed.json', import.meta.url), 'utf8'));
+  const seed = JSON.parse(await readFile(new URL('../../packages/presentation/contracts/policies/project.seed.json', import.meta.url), 'utf8'));
   assert.equal(MOTION_INDEX.synthetic, true);
   assert.equal(MOTION_INDEX.rig, 'astrid-2d-v1');
   assert.equal(MOTION_CLIPS.length, seed.events.length * 4);
@@ -150,7 +150,7 @@ test('Stage keeps exact videos separate and owns cleanup for selection, replay a
 
 test('social.ledsen is separate from all 64 game clips and saved project bindings', async () => {
   const social = getMotionClip('social.ledsen');
-  const seed = JSON.parse(await readFile(new URL('../policies/project.seed.json', import.meta.url), 'utf8'));
+  const seed = JSON.parse(await readFile(new URL('../../packages/presentation/contracts/policies/project.seed.json', import.meta.url), 'utf8'));
   assert.equal(validateMotionClip(social), social);
   assert.equal(social.scope, 'social-lab');
   assert.equal(social.reactionId, 'ledsen');

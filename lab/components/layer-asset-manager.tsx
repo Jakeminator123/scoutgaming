@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {validateProject,type StudioProject,type LayerAsset} from '../lib/studio-model.mjs';
+import {validateProject,type StudioProject,type LayerAsset} from '../../packages/presentation/contracts/studio-model.mjs';
 import type {MaterialTrashImpact} from '../lib/material-trash.mjs';
 import {layerAssetReferences} from '../lib/layer-asset-removal.mjs';
 import {labUrl} from '../lib/lab-url.mjs';

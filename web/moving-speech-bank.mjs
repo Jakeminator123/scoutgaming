@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { isSpeechReferenceVideo } from './public/dealer-speech-profile.mjs';
+import { isSpeechReferenceVideo } from '../packages/presentation/contracts/dealer-speech-profile.mjs';
 import { prepareMovingSpeechPcmInput } from './moving-speech-pcm.mjs';
 
 const SHA = /^[a-f0-9]{64}$/, UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;

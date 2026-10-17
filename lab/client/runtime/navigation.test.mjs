@@ -178,7 +178,7 @@ test('actual pending import files veto Back and Forward before Studio context ch
 
 async function mountClipMap(h){
   const React=require('react'),componentUrl=new URL('../admin/components/studio/connected-clip-map.tsx',import.meta.url),componentRequire=createRequire(componentUrl);
-  const {createSeedProject,defaultPresentationLane,addDealer}=componentRequire('../../../../../lab/lib/studio-model.mjs');
+  const {createSeedProject,defaultPresentationLane,addDealer}=componentRequire('../../../../../packages/presentation/contracts/studio-model.mjs');
   const project=addDealer(createSeedProject(),'nora','Nora');
   project.lanes=['a','b'].map(id=>({...defaultPresentationLane('astrid'),id:'scene-'+id}));
   const workspace={project,inventory:{videos:[]},catalog:{administration:{

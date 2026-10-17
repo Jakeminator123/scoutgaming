@@ -3,7 +3,7 @@ import { lstat, readFile, writeFile, rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import lockfile from 'proper-lockfile';
 import { safeDirectory, uploadDirectory } from './video-uploads.mjs';
-import { validateVideoMetadata } from './video-intake.mjs';
+import { validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { StudioError } from './project-store.mjs';
 const LIMIT = 8 * 1024 * 1024;
 const validId = id => typeof id === 'string' && /^[a-f0-9-]{36}$/.test(id);

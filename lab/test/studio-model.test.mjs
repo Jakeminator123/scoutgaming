@@ -1,15 +1,15 @@
 import { createLegacyProject as createSeedProject } from './fixtures/legacy-project.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import schema from '../schemas/studio.schema.json' with { type: 'json' };
-import seedDocument from '../policies/project.seed.json' with { type: 'json' };
+import schema from '../../packages/presentation/contracts/schemas/studio.schema.json' with { type: 'json' };
+import seedDocument from '../../packages/presentation/contracts/policies/project.seed.json' with { type: 'json' };
 import {
   validateProject, buildRuntimeCatalog, addVariant, removeVariant,
   removeTrigger, renameEvent, renameLine, DEALER_IDS, SOURCE_TYPES, allowedPathDescriptors,
   StudioValidationError, isAssetCompatible, createSeedProject as createStudioSeed,
   normalizeProject, defaultPresentationLane, createEmptyProject, addDealer, maxVariantsForEvent
-} from '../lib/studio-model.mjs';
-import { PROBE_MODELS } from '../lib/probe-policy.mjs';
+} from '../../packages/presentation/contracts/studio-model.mjs';
+import { PROBE_MODELS } from '../../packages/presentation/contracts/probe-policy.mjs';
 import { validateCatalog, prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
 
 test('legacy projects retain blackjack, four dealers, sixteen locked nodes and 64 editable lines', () => {

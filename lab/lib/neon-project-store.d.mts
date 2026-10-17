@@ -1,4 +1,4 @@
-import type { StudioProject } from './studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 export interface NeonDocumentRepository {
   scope: Readonly<{ environment: string; workspaceId: string }>;
   readDocument(kind: 'project' | 'social-policy'): Promise<{kind: string; revision: string; value: any} | null>;

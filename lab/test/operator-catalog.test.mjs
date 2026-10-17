@@ -5,7 +5,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
-import { } from '../lib/studio-model.mjs';
+import { } from '../../packages/presentation/contracts/studio-model.mjs';
 import { buildOperatorCatalog } from '../lib/operator-catalog.mjs';
 import { studioChat } from '../lib/studio-server.mjs';
 import { prepareDecision, validateCatalog } from '../../open-claw/lab/src/engine.mjs';

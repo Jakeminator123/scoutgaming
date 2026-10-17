@@ -1,4 +1,4 @@
-import { isActiveDealerId as isDealerId, validatePublicRegisteredDealers } from './dealer-identity.mjs';
+import { isActiveDealerId as isDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateComposition} from './presentation-composition.mjs';
 import { assertGameChoices, isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
 

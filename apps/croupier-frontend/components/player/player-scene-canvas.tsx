@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useRef, useState} from 'react';
-import {type CompositionSettings} from '../../../../web/public/composition-settings.mjs';
+import {type CompositionSettings} from '../../../../packages/presentation/contracts/composition-settings.mjs';
 import type {PublicPreviewCompositing} from '../../../../web/public/operator-preview-contract.mjs';
 
 import {mountPublishedScene} from '../../../../web/public/published-scene.mjs';

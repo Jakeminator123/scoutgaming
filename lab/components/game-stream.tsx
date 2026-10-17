@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { DealerId, StudioProject } from '../lib/studio-model.mjs';
+import type { DealerId, StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import type { PartnerTrace } from '../lib/partner-trace.mjs';
 import { buildPresentationSequence, type PresentationStep } from '../lib/presentation-sequence.mjs';
-import { mediaLineForEvent, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
-import { videoFitsEvent } from '../lib/video-intake.mjs';
+import { mediaLineForEvent, mediaVideoForEvent } from '../../packages/presentation/runtime/media-family-policy.mjs';
+import { videoFitsEvent } from '../../packages/presentation/contracts/video-intake.mjs';
 import { observationContext, observedTable } from '../lib/observation-context.mjs';
-import { requestJson, type DirectorMode, type SimulationResult, type VideoInventory } from './studio-types';
+import { requestJson, type DirectorMode, type SimulationResult } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { Stage, type PlaybackReceipt } from './stage';
 import { PresentationSequence } from './presentation-sequence';
 import { ReferenceCapture } from './reference-capture';

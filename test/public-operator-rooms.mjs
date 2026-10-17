@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
 import {captureFrozenRegisteredDealers,captureFrozenDealerPlayback} from '../web/storage/frozen-dealer-idle.mjs';
 import {withPackagePresentation} from '../web/storage/presentation-package.mjs';
-import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {buildPresentationPackage,layerAssetPath} from '../web/presentation-layers.mjs';
 import {createPublicOperatorRooms,isUnplayableOperatorRooms} from '../web/public-operator-rooms.mjs';
 import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
-import {materialSource} from '../web/public/material-catalog.mjs';
+import {materialSource} from '../packages/presentation/contracts/material-catalog.mjs';
 
 function asset(role,n) {
   const row={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:`${role} ${n}`,

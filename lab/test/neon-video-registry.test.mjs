@@ -168,7 +168,7 @@ test('captured bank response uses its original catalog after current Neon metada
 });
 
 test('trash dealer uploads remain readable in live and captured inventory without active registration',async t=>{
- const {addDealer}=await import('../lib/studio-model.mjs');
+ const {addDealer}=await import('../../packages/presentation/contracts/studio-model.mjs');
  const {changeDealerLifecycle,checkDealerArchive}=await import('../lib/dealer-lifecycle.mjs');
  const f=await fixture(t),current=await f.repository.readDocument('project');
  const project=addDealer(current.value,'paow','PAOW');

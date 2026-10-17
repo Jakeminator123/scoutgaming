@@ -8,7 +8,7 @@ import {createSqliteRouletteCommand} from '../web/games/roulette/storage.mjs';
 import {rouletteDocument} from '../web/games/roulette/http.mjs';
 import {createRoulettePreview} from '../web/games/roulette/preview.mjs';
 import {createSpinResult} from '../web/games/roulette/index.mjs';
-import {defaultCompositionSettings,validateCompositionSettings} from '../web/public/composition-settings.mjs';
+import {defaultCompositionSettings,validateCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {previewMediaPath} from '../web/public/operator-preview-contract.mjs';
 import {rouletteSceneFixture} from './roulette-scene-fixture.mjs';
 

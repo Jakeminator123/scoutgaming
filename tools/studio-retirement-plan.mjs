@@ -34,7 +34,7 @@
 import { createHash } from 'node:crypto';
 import { cloneStudioJson, validateDocumentValue, validateRevision, validateStudioScope, validateStudioMedia } from '../web/storage/studio-contract.mjs';
 
-import { layerAssetFitsGame } from '../web/layer-asset-contract.mjs';
+import { layerAssetFitsGame } from '../packages/presentation/contracts/layer-asset-contract.mjs';
 import { MEDIA_FAMILY_DEFINITIONS } from '../packages/presentation/runtime/media-families.mjs';
 
 const familyDealers = new Map(MEDIA_FAMILY_DEFINITIONS.map(row => [row.id,row.dealerId]));

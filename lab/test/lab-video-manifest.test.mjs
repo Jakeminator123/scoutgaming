@@ -103,7 +103,7 @@ test('generator preserves legacy IDs by SHA, accepts empty variant folders and i
 
 test('saved idle policy still resolves exact bank identities after take replacement', async () => {
   const manifest = await readLabVideoManifest(repositoryManifest);
-  const policy = JSON.parse(await readFile(new URL('../policies/idle-policy.seed.json', import.meta.url), 'utf8'));
+  const policy = JSON.parse(await readFile(new URL('../../packages/presentation/contracts/policies/idle-policy.seed.json', import.meta.url), 'utf8'));
   const family = manifest.families.find(row => row.id === policy.familyId);
   assert.ok(family);
   for (const item of policy.base) assert.ok(family.standardIds.includes(item.videoId), `stale idle base: ${item.videoId}`);

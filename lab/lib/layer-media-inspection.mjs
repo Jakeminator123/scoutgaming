@@ -2,7 +2,7 @@ import { Worker } from 'node:worker_threads';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
-import { MAX_LAYER_ASSET_BYTES } from '../../web/layer-asset-contract.mjs';
+import { MAX_LAYER_ASSET_BYTES } from '../../packages/presentation/contracts/layer-asset-contract.mjs';
 import { withVerifiedPrivateMediaFile } from './cloud-media-store.mjs';
 
 export const LAYER_INSPECTION_LIMITS=Object.freeze({fileBytes:MAX_LAYER_ASSET_BYTES,pixels:64_000_000,

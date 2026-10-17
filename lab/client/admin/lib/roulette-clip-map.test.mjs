@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {createSeedProject} from '../../../../lab/lib/studio-model.mjs';
+import {createSeedProject} from '../../../../packages/presentation/contracts/studio-model.mjs';
 import {clipSlots,clipsForSlot,bindClip,currentClipId,configuredClipIds,uploadMetadata,createStudioClient} from './connected-studio.mjs';
 import {groupSlots,slotCaption,slotExplanation,isRenderedOutcome} from './studio-layout.mjs';
 import {rouletteReferencePreview,unbindRouletteClip,setRouletteIdleForeground} from './roulette-clip-map.mjs';

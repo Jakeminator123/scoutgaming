@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { assertLocalRequest, assertLocalPageRequest, readLocalJson, jsonResponse, errorResponse } from '../lib/http-guard.mjs';
 import { readFile, readdir } from 'node:fs/promises';
 import { StudioError } from '../lib/project-store.mjs';
-import { StudioValidationError } from '../lib/studio-model.mjs';
+import { StudioValidationError } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createRequire, stripTypeScriptTypes } from 'node:module';
 import { pathToFileURL } from 'node:url';
 

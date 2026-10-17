@@ -1,5 +1,5 @@
-import type { StudioProject } from './studio-model.mjs';
-export type DealerSet = { id: string; name: string; dealerId: string; clipIds: string[]; archived: boolean };
+import type { StudioProject, DealerSet } from './studio-model.mjs';
+export type { DealerSet } from './studio-model.mjs';
 export function dealerSetErrors(value: unknown, dealerIds: ReadonlySet<string>): string[];
 export function createDealerSet(project: StudioProject, input: { id: string; name: string; dealerId: string; clipIds?: string[] }): StudioProject;
 export function editDealerSet(project: StudioProject, id: string, patch: Partial<Pick<DealerSet, 'name'|'clipIds'|'archived'>>): StudioProject;

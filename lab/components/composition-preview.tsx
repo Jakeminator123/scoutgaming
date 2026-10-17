@@ -2,14 +2,14 @@
 import {useEffect,useRef,useState,useMemo} from 'react';
 import {labUrl} from '../lib/lab-url.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
-import {sceneForComposition,type CompositionSettings} from '../../web/public/composition-settings.mjs';
-import {drawDealerFrame,type DealerFraming} from '../../web/public/dealer-framing.mjs';
-import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
+import {sceneForComposition,type CompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
+import {drawDealerFrame,type DealerFraming} from '../../packages/presentation/contracts/dealer-framing.mjs';
+import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
 import {createBackgroundPlayback} from '../../web/public/background-playback.mjs';
-import type {BackgroundPlaybackPolicy} from '../../web/public/background-playback-policy.mjs';
+import type {BackgroundPlaybackPolicy} from '../../packages/presentation/contracts/background-playback-policy.mjs';
 
 export type CompositionMedia={url:string;label:string;contentType:string};
-export type VideoCompositing=import('../../web/public/dealer-compositing.mjs').DealerCompositing;
+export type VideoCompositing=import('../../packages/presentation/contracts/dealer-compositing.mjs').DealerCompositing;
 type Role='dealer'|'background'|'table';
 type MediaElement=HTMLVideoElement|HTMLImageElement;
 type Asset={id:string;el:MediaElement;width:number;height:number;kind:'video'|'image'};

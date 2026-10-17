@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { appendAssistantHistory, applyImportProposals, compatibleImportSlot, importBatchError, importClassification, importErrorMessage, importFileError, importRowError, uniqueImportFiles, planImportFiles, importDealerId, registerImportDealer } from './dealer-import.mjs';
-import { createSeedProject, addDealer } from '../../../../lab/lib/studio-model.mjs';
+import { createSeedProject, addDealer } from '../../../../packages/presentation/contracts/studio-model.mjs';
 
 test('runtime readiness error is explained without rewriting the retained failure',()=>{
   const failure={message:'studio_presentation_runtime_update_required Kontrollera biblioteket innan filen läggs till igen.'};

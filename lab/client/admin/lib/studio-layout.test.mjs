@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,addDealer} from '../../../../lab/lib/studio-model.mjs';
+import {createSeedProject,addDealer} from '../../../../packages/presentation/contracts/studio-model.mjs';
 import {clipSlots} from './connected-studio.mjs';
 import {groupSlots,affectedRooms,slotCaption,slotExplanation,isRenderedOutcome,layoutClipCards} from './studio-layout.mjs';
 

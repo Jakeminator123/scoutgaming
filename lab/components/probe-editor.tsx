@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { PROBE_MODELS, PROBE_REASONS, type ProbePolicy } from '../lib/probe-policy.mjs';
+import { PROBE_MODELS, PROBE_REASONS, type ProbePolicy } from '../../packages/presentation/contracts/probe-policy.mjs';
 import { probeFixtures, type ProbeFact } from '../lib/probe-fixtures.mjs';
 import { requestJson } from './studio-types';
 import type { ActivityDraft } from './activity-log';

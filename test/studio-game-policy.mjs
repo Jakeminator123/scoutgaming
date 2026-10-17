@@ -2,7 +2,7 @@ import { createLegacyProject } from '../lab/test/fixtures/legacy-project.mjs';
 import { fixtureDatabaseUrl } from './fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createSeedProject, normalizeProject } from '../lab/lib/studio-model.mjs';
+import { addDealer, createSeedProject, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { StudioStorageError } from '../web/storage/studio-contract.mjs';

@@ -1,13 +1,14 @@
 'use client';
 import { useState, type FormEvent } from 'react';
-import { kindForEvent, situationsForEvent } from '../lib/video-intake.mjs';
-import type { VideoMetadata } from '../lib/video-intake.mjs';
-import type { StudioProject } from '../lib/studio-model.mjs';
-import { requestJson, type VideoEntry, type VideoInventory } from './studio-types';
+import { kindForEvent, situationsForEvent } from '../../packages/presentation/contracts/video-intake.mjs';
+import type { VideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { requestJson } from './studio-types';
+import type { VideoEntry, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { VideoMetadataFields } from './video-metadata-fields';
-import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
+import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
 import {inspectAlphaSource} from '../lib/media-alpha-browser.mjs';
-import {dealerMediaEvents,rouletteMediaDefaults,rouletteMediaEvent} from '../lib/roulette-media.mjs';
+import {dealerMediaEvents,rouletteMediaDefaults,rouletteMediaEvent} from '../../packages/presentation/contracts/roulette-media.mjs';
 
 export function VideoClassification({project,video,dealerId,eventId,onSaved}:{project:StudioProject;video:VideoEntry;dealerId:string;eventId:string;onSaved:(next:VideoInventory)=>void}) {
   const [value,setValue]=useState<VideoMetadata>(()=>{

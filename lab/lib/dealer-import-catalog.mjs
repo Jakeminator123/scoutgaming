@@ -1,9 +1,9 @@
 // Advisory import contract. All destinations come from the saved project; a
 // filename or model response cannot create dealers, events, bindings or media.
 import { dealerMediaSlots } from './dealer-media-library.mjs';
-import { kindForEvent, MAX_VIDEO_BYTES, validateVideoMetadata } from './video-intake.mjs';
-import { registeredDealerIds } from '../../web/dealer-identity.mjs';
-import { DEFAULT_DEALER_COMPOSITING } from '../../web/public/dealer-compositing.mjs';
+import { kindForEvent, MAX_VIDEO_BYTES, validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
+import { registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
+import { DEFAULT_DEALER_COMPOSITING } from '../../packages/presentation/contracts/dealer-compositing.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 
 export const DEALER_IMPORT_LIMITS = Object.freeze({ maxFiles: 30, maxFileBytes: MAX_VIDEO_BYTES, maxContext: 4000, maxMessage: 2000,

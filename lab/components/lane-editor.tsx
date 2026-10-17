@@ -7,7 +7,7 @@ import {
   validateProject,
   type StudioLane,
   type StudioProject,
-} from '../lib/studio-model.mjs';
+} from '../../packages/presentation/contracts/studio-model.mjs';
 import styles from './lane-editor.module.css';
 import { compositionLabel } from '../lib/control-flow.mjs';
 import { activeStudioDealers } from './studio-types';

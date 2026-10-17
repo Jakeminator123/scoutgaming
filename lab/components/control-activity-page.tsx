@@ -5,13 +5,14 @@ import { ACTIVITY_LIMIT, appendActivity, type ActivityEntry } from '../lib/activ
 import { loadActivities, saveActivities } from '../lib/activity-store.mjs';
 import { saveObservedStep } from '../lib/observed-step-store.mjs';
 import { studioNavigationHref } from '../lib/studio-navigation.mjs';
-import type { StudioProject } from '../lib/studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { ActivityLog, type ActivityDraft } from './activity-log';
 import type { LifecycleSnapshot } from './control-resource-lifecycle';
 import { PlaybackGuidance } from './playback-guidance';
 import { PageTemplate, publishShellStatus } from './page-template.mjs';
 import { StudioNavigation } from './studio-navigation';
-import { activeStudioDealers, requestJson, type ConnectionStatus, type VideoInventory } from './studio-types';
+import { activeStudioDealers, requestJson, type ConnectionStatus } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 
 export function ControlActivityPage({ initialProject: project, initialVideos: videos, initialDealerId, initialLaneId, initialOperatorSlug, initialTableId }: {
   initialProject: StudioProject;

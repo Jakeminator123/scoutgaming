@@ -1,4 +1,4 @@
-import {isActiveDealerId} from './dealer-identity.mjs';
+import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {isGameLaneId,isOperatorSlug} from './game-lanes.mjs';
 
 // The document's published selection is a request, never authorization. The

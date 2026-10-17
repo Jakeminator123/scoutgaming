@@ -1,4 +1,4 @@
-import {createSeedProject,createEmptyProject,addDealer} from '../lib/studio-model.mjs';
+import {createSeedProject,createEmptyProject,addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioAdminData } from '../lib/studio-admin-data.mjs';

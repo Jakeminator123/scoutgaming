@@ -192,13 +192,14 @@ API:er, nyckelroller och miljöfiler finns i
 ## Filer och begrepp
 
 ```text
-lab/
+packages/presentation/contracts/
   policies/project.seed.json   eventkontrakt och historiska demo-/fixturdata
-  policies/social.seed.json    startpolicy för Astrids sociala chattprov
   schemas/studio.schema.json   struktur och tillåtna värden
+  studio-model.mjs             kontrakt, referenser, validering och konvertering
+lab/
+  policies/social.seed.json    startpolicy för Astrids sociala chattprov
   schemas/social.schema.json   format för den separata sociala policyn
   animations/                 64 eventrörelser + separat social.ledsen i JSON
-  lib/studio-model.mjs         kontrakt, referenser, validering och konvertering
   lib/presentation-profile.mjs visningsgrupper och källfält för Händelser → klipp
   lib/activity-log.mjs         tillfällig händelselogg och förloppskoppling
   lib/partner-observer.mjs     läsande, signerad Partner-SSE på lokal server

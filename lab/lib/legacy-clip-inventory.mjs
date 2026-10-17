@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { LEGACY_DEALERS, LEGACY_ENGINE_PARTS, resolveLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { validateContactTake, validateContinuation } from '../../web/public/performance-contact.mjs';
 import { resolveMediaAbsolutePath } from '../../tools/media-layout.mjs';
-import { isActiveDealerId } from '../../web/public/dealer-identity.mjs';
+import { isActiveDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 
 // Keep path arithmetic outside new URL(..., import.meta.url): Next's bundler

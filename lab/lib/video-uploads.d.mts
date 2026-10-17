@@ -1,4 +1,4 @@
-import type { StudioProject } from './studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 export interface UploadOptions { uploadDir?: string; project?: StudioProject; projectStore?: {load(): Promise<StudioProject>} }
 export function uploadDirectory(options?: UploadOptions): string;
 export function safeDirectory(directory: string, create?: boolean): Promise<void>;

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
-import { createSeedProject } from '../lib/studio-model.mjs';
-import { createDefaultIdlePolicy } from '../lib/idle-policy.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { createDefaultIdlePolicy } from '../../packages/presentation/runtime/idle-policy.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');

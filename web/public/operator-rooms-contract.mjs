@@ -1,5 +1,5 @@
 import { isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
-import { isDealerId } from './dealer-identity.mjs';
+import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const fail = () => { throw Error('Invalid operator rooms'); };

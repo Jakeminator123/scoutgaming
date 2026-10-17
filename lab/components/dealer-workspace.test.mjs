@@ -6,7 +6,7 @@ import { webcrypto } from 'node:crypto';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject as createBaseProject, addDealer, validateProject } from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject, addDealer, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { studioNavigationTabs } from '../lib/studio-navigation.mjs';
 
 const require = createRequire(import.meta.url);

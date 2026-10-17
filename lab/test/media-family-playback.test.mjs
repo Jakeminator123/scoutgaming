@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
-import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
+import { createSeedProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { simulateStudio } from '../lib/studio-server.mjs';
-import { mediaLineForEvent, mediaVideoForEvent, validateMediaPolicy, mediaSituationForEvent, upsertMediaVariantPolicy } from '../lib/media-family-policy.mjs';
+import { mediaLineForEvent, mediaVideoForEvent, validateMediaPolicy, mediaSituationForEvent, upsertMediaVariantPolicy } from '../../packages/presentation/runtime/media-family-policy.mjs';
 import { createPresentationDirector } from '../lib/presentation-director.mjs';
 import { presentationDecisionResponse } from '../lib/presentation-decision-http.mjs';
 

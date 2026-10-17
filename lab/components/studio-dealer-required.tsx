@@ -1,6 +1,6 @@
 'use client';
 import { usePathname, useSearchParams } from 'next/navigation';
-import type { StudioProject } from '../lib/studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { studioNavigationContextFromQuery, studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { PageTemplate } from './page-template.mjs';
 import { activeStudioDealers } from './studio-types';

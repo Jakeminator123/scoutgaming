@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { isDealerId } from './dealer-identity.mjs';
+import { isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
 import { CAMERA_AUDIO_MAX_BYTES, CAMERA_AUDIO_SECONDS } from './public/astrid-camera-audio.mjs';
 
 const REVISION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;

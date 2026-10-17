@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
-import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
+import { createSeedProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { loadLegacyClipInventory, legacyClipControls } from '../lib/legacy-clip-inventory.mjs';
 import { createRuntimeMetadataReader } from '../../tools/runtime-media-catalog.mjs';

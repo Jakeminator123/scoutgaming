@@ -1,19 +1,19 @@
-import { normalizeDealerSpeechProfile } from '../../web/public/dealer-speech-profile.mjs';
-import { validateRegisteredIdlePolicies } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
-import { validateLayerAsset } from '../../web/layer-asset-contract.mjs';
-import { isDealerId, isActiveDealerId, MAX_DEALERS } from '../../web/dealer-identity.mjs';
-import { validateCompositionSettings } from '../../web/public/composition-settings.mjs';
-import { validateBackgroundPlayback } from '../../web/public/background-playback-policy.mjs';
-import seed from '../policies/project.seed.json' with { type: 'json' };
-import contract from '../policies/studio-contract.json' with { type: 'json' };
-import { createDefaultIdlePolicy, validateIdlePolicy } from './idle-policy.mjs';
-import { validateMediaPolicy } from './media-family-policy.mjs';
+import { normalizeDealerSpeechProfile } from './dealer-speech-profile.mjs';
+import { validateRegisteredIdlePolicies } from '../runtime/registered-idle-policy.mjs';
+import { validateLayerAsset } from './layer-asset-contract.mjs';
+import { isDealerId, isActiveDealerId, MAX_DEALERS } from './dealer-identity.mjs';
+import { validateCompositionSettings } from './composition-settings.mjs';
+import { validateBackgroundPlayback } from './background-playback-policy.mjs';
+import seed from './policies/project.seed.json' with { type: 'json' };
+import contract from './policies/studio-contract.json' with { type: 'json' };
+import { createDefaultIdlePolicy, validateIdlePolicy } from '../runtime/idle-policy.mjs';
+import { validateMediaPolicy } from '../runtime/media-family-policy.mjs';
 import { PROBE_MODELS, createDefaultProbePolicy, validateProbePolicy } from './probe-policy.mjs';
-import { validateLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
+import { validateLegacyClipPolicy } from '../runtime/legacy-clip-policy.mjs';
 import { dealerSetErrors } from './dealer-sets.mjs';
-import { validateRouletteIdleBinding } from '../../web/public/roulette-idle-contract.mjs';
-import { validateRouletteStartBinding } from '../../web/public/roulette-start-contract.mjs';
-import { OTHER_SPEECH_SLOT_IDS, speechSlotSituation, validateSpeechSlotLine } from '../../web/public/speech-slot-bindings.mjs';
+import { validateRouletteIdleBinding } from './roulette-idle-contract.mjs';
+import { validateRouletteStartBinding } from './roulette-start-contract.mjs';
+import { OTHER_SPEECH_SLOT_IDS, speechSlotSituation, validateSpeechSlotLine } from './speech-slot-bindings.mjs';
 
 
 // Pure, browser-safe policy model. This file never reads environment, network,

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { acceptNativeObservation } from '../lib/native-observation.mjs';
 import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
 import { observationContext, observedTable } from '../lib/observation-context.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createPartnerTrace, appendPartnerTrace, exportPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
 

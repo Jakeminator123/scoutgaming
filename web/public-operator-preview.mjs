@@ -1,9 +1,9 @@
 import {previewMediaPath,validatePublicOperatorPreview} from './public/operator-preview-contract.mjs';
 import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
-import {isActiveDealerId as isDealerId} from './public/dealer-identity.mjs';
-import {defaultCompositionSettings} from './public/composition-settings.mjs';
-import {materialLabel,materialForAsset} from './public/material-catalog.mjs';
-import {layerAssetFitsGame} from './layer-asset-contract.mjs';
+import {isActiveDealerId as isDealerId} from '../packages/presentation/contracts/dealer-identity.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
+import {materialLabel,materialForAsset} from '../packages/presentation/contracts/material-catalog.mjs';
+import {layerAssetFitsGame} from '../packages/presentation/contracts/layer-asset-contract.mjs';
 
 const route=/^\/api\/operators\/([^/]+)\/rooms\/([^/]+)\/preview(?:\/media\/([^/]+)\/([^/]+)\/(dealer|table|background)\/([^/]+))?$/;
 const uuid=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
@@ -32,7 +32,7 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
     if(!pack.games?.includes(room?.game ?? 'blackjack'))fail(404);
     const [{readPackagePresentation},{createGameEntrySelector},{supportsIndependentLayers},{resolveFrozenDealerIdle},{validateLayerAsset}]=await Promise.all([
       import('./storage/presentation-package.mjs'),import('./game-entry-operator.mjs'),import('./public-operator-rooms.mjs'),
-      import('./storage/frozen-dealer-idle.mjs'),import('./layer-asset-contract.mjs')]);
+      import('./storage/frozen-dealer-idle.mjs'),import('../packages/presentation/contracts/layer-asset-contract.mjs')]);
     const frozen=readPackagePresentation(pack);
     if(!frozen)fail(404);
     const select=createGameEntrySelector({

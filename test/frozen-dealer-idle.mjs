@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDealer, createSeedProject, defaultPresentationLane } from '../lab/lib/studio-model.mjs';
-import { BASE_DEALER_IDS } from '../web/dealer-identity.mjs';
+import { addDealer, createSeedProject, defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
+import { BASE_DEALER_IDS } from '../packages/presentation/contracts/dealer-identity.mjs';
 import { buildPresentationPackage } from '../web/presentation-layers.mjs';
 import { encodePresentationPackage, decodePresentationPackage } from '../web/storage/presentation-package.mjs';
 import {captureFrozenPresentation} from '../web/storage/frozen-presentation-capture.mjs';
-import {validateRouletteIdleBinding,validateRouletteForegroundPolygons} from '../web/public/roulette-idle-contract.mjs';
+import {validateRouletteIdleBinding,validateRouletteForegroundPolygons} from '../packages/presentation/contracts/roulette-idle-contract.mjs';
 import {
   captureFrozenRegisteredDealers, validateFrozenRegisteredDealers,
   resolveFrozenDealerIdle, assertFrozenMediaPreconditions,

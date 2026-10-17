@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import {defaultPresentationLane} from '../lib/studio-model.mjs';
+import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {dealerArchiveCompositionIds,readDealerArchiveImpact,applyDealerArchiveImpact,withoutPresentationLanes} from '../lib/dealer-archive-impact.mjs';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
 import {createOperatorStore} from '../../web/storage/operator-store.mjs';
