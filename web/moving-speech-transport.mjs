@@ -20,17 +20,28 @@ function verifyAttestation(value, binding, jobId) {
 /** Internal control-plane receipt from GET endpoint + workers, never browser
  * input. This is a deployment gate, NOT a runtime or avatar-byte attestation.
  * No environment fallback and no provider mutations or paid requests here.
+ * A worker row may carry `state`: only rows that occupy a GPU (`active`, or
+ * `unknown`/absent, which is treated as active) must run the exact release;
+ * `scaled-down` and `terminated` rows are provider bookkeeping, not capacity,
+ * so they never satisfy `requireWorkers` and may be outdated.
  */
+const WORKER_STATES = new Set(['active', 'unknown', 'scaled-down', 'terminated']);
+const occupiesGpu = worker => worker.state === undefined || worker.state === 'active' || worker.state === 'unknown';
 export function verifyMovingWorkerRelease(receipt, now = Date.now(), { requireWorkers = false } = {}) {
   const { expectedImage, endpoint, workers, observedAtMs } = receipt || {};
   if (!(IMAGE.test(expectedImage || '') || OWN_IMAGE.test(expectedImage || '')) || !/^[a-z0-9]{6,64}$/.test(endpoint?.id || '')
     || !Number.isSafeInteger(observedAtMs) || observedAtMs > now || now - observedAtMs > 60000
     || !Number.isSafeInteger(workers?.endpointVersion) || workers.endpointVersion < 0
-    || !Array.isArray(workers.workers) || ((!OWN_IMAGE.test(expectedImage || '') || requireWorkers) && !workers.workers.length)
-    || workers.workers.length > 100) fail('moving_worker_release_unverified');
-  if (endpoint.image !== expectedImage || workers.workers.some(worker => worker.image !== expectedImage
+    || !Array.isArray(workers.workers) || workers.workers.length > 100
+    || workers.workers.some(worker => !worker || typeof worker !== 'object' || (worker.state !== undefined && !WORKER_STATES.has(worker.state)))
+    || (workers.workersMax !== undefined && (!Number.isSafeInteger(workers.workersMax) || workers.workersMax < 0))) fail('moving_worker_release_unverified');
+  const active = workers.workers.filter(occupiesGpu);
+  if ((!OWN_IMAGE.test(expectedImage || '') || requireWorkers) && !active.length) fail('moving_worker_release_unverified');
+  if (workers.workersMax !== undefined && active.length > workers.workersMax) fail('moving_worker_release_unverified');
+  if (endpoint.image !== expectedImage || active.some(worker => worker.image !== expectedImage
     || worker.version !== workers.endpointVersion || worker.isStale !== false)) fail('moving_worker_release_mismatch');
-  return Object.freeze({ image: expectedImage, endpointId: endpoint.id, endpointVersion: workers.endpointVersion, observedAtMs });
+  return Object.freeze({ image: expectedImage, endpointId: endpoint.id, endpointVersion: workers.endpointVersion, observedAtMs,
+    activeWorkers: active.length, inactiveWorkers: workers.workers.length - active.length });
 }
 
 function json(item) {

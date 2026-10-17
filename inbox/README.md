@@ -66,8 +66,11 @@ node tools/inbox.mjs ping --to jakob-bgvp01j --message "Kontrollen är klar."
 node tools/inbox.mjs list --to me
 ```
 
-`me` betyder den lokalt registrerade datorn. Utan registrering används
-grenägaren som tidigare. `--to jakob` är fortfarande Jakobs gemensamma
+`me` betyder den lokalt registrerade datorn. Utan registrering krävs en exakt
+branchträff i `people.json`. På en featurebranch utan datorregistrering, välj
+den kända ägaren uttryckligen, till exempel `list --to jakob` för Jakobs arbete.
+Fråga vem som äger arbetet om det är okänt; `codex/*` eller `cursor/*` anger
+inte en person. `--to jakob` är fortfarande Jakobs gemensamma
 personinbox och läses separat med `list --to jakob`. Avsändaren visas med
 datorns namn och alias, om inte `--from` anges. Båda datorerna kan använda samma
 GitHub-konto: separata `till:`-etiketter avgör mottagaren. En annan agent måste
@@ -82,8 +85,8 @@ Två kanaler, olika räckvidd:
 | Agent-talk | agenter i **samma checkout** på samma dator | `node tools/agent-talk.mjs claim/ping/ack/done` |
 | Teaminbox | personer och deras agenter i **andra grenar och på andra datorer** | `node tools/inbox.mjs ping/send/list/reply` |
 
-Utan datorregistrering läser en agent i Kevins checkout Kevins ärenden med
-`node tools/inbox.mjs list --to me` via grenägaren i `people.json`.
+Utan datorregistrering fungerar `list --to me` på den registrerade branchen
+`kevin`; på en featurebranch för Kevins arbete används `list --to kevin`.
 Kort fråga till någon annan: `node tools/inbox.mjs ping --to john --message "…"`.
 I Cursor finns `/ping <namn> <text>`. Agenter svarar i tråden, stänger bara egna ärenden
 och behandlar ett svar som information, inte som godkännande att ändra repots logik.

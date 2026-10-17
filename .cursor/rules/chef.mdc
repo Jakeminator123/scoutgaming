@@ -8,6 +8,7 @@ creating the role does not activate it. Before integrating/pushing shared work,
 run `node tools/croupier-chef.mjs status`. If another chat owns the active role,
 coordinate that integration with it.
 
-Deliver from a feature branch matching `jakob/*`, `codex/*` or `cursor/*` in `Jakeminator123/scoutgaming` (repository ID `1380630440`; `github-work` redirects here) and open a pull request to `main`. `tools/repository-policy.json` lists those patterns. The pre-push hook allows new and fast-forward updates of those branches and of `main`, and rejects deletion, force-push, tags and any other repository. Direct push to `main` remains only as an explicit admin emergency path (`node tools/push-github-work.mjs --admin-main`). Ordinary delivery is `node tools/push-github-work.mjs`: it pushes the current feature branch and prints the `gh pr create` command without creating the pull request. `tools/push-work-mirrors.mjs` is the GitHub-only compatibility entry point. Never force-push. GitHub ruleset 24642403 ("main: pull requests only") requires a pull request into `main`.
+Follow **GitHub delivery** and **Merge ownership and explicit confirmation** in
+`AGENTS.md`; activating Chef grants no additional delivery or merge permission.
 
 Do not load the full skill or contact other agents on every ordinary turn.
