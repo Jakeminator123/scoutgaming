@@ -24,11 +24,14 @@ Bankens avgränsade Blob-klient begär `Accept-Encoding: identity`; detta bevara
 exakt byteantal och undviker långsam komprimerad kallhämtning. Originalens
 lagringsklient och Astrids inställningar ändras inte.
 
-Testets stabila budget-ID är `dragan-test-20261017`: högst 4,80 USD i nya
-reservationer, 1,20 USD per försök inklusive start/röst/avvecklingsmarginal.
-Tidigare faktisk RunPod-kostnad är 0,169812463 USD. Reservationer återbetalas
-inte automatiskt; osäkra providersvar blockerar återförsök. Detta ersätter
-inte kontroll av faktisk fakturering och att den separata endpointen skalat ned.
+Testets stabila budget-ID är `dragan-test-20261017`: taljournalens tak är
+4,80 USD och dess reservation är 1,20 USD per försök inklusive marginal.
+Det ger ingen extra budget: Jakobs sammanlagda RunPod-tak på 5 USD omfattar
+även tidigare beredning, endpointförsök och reserver för fördröjd fakturering.
+Den separata infrastrukturns kostnadsvakt måste därför använda aktuell
+sammanräkning före aktivering. Reservationer återbetalas inte automatiskt;
+osäkra providersvar blockerar återförsök. Faktisk fakturering och avveckling
+kontrolleras separat; aktuellt kvitto sammanfattas i JOHN-HANDOFF.
 
 Den nya runtimekoden kräver scoped Neon som enda metadataregister, inklusive
 `runtime_media_catalogs` och `speech_reply_records` från migration 012.

@@ -43,6 +43,7 @@ Dragan är ordinarie dealer; Astrid är märkt legacyreferens utan trelagersvers
 | --- | --- |
 | Admin-konsolidering, scenzoom, filmvisare, Astrids märkning | [PR185](https://github.com/Jakeminator123/scoutgaming/pull/185), main `3165ab6df94c965aa3db1f986b8532a0f9260073`; föregick registeromkopplingen. |
 | Schema 012 och import | Befintliga Neon `production/croupier`, databas `croupier_game`, projekt `wandering-hill-60561912`, branch `br-flat-fog-b161a6r8`. Separat återläsning 16 oktober 18:38 UTC. |
+| Schema 013 för rörligt tal | Additiv migration tillämpad och återläst 17 oktober 12:46 UTC i samma speldatabas och scope. Binder antagna talsessioner till exakta mediereferenser. Verifierar schemat, inte GPU-drift eller synlig läppsynk. |
 | Runtime kräver 012, läser katalog/replikmetadata från Neon och byte från Blob | [PR186](https://github.com/Jakeminator123/scoutgaming/pull/186), main `2ea080bc3e75cf0207e3c155f9b4018f6a8d301e`. [PR-CI 38953385914](https://github.com/Jakeminator123/scoutgaming/actions/runs/38953385914) och [main-CI 38954442660](https://github.com/Jakeminator123/scoutgaming/actions/runs/38954442660) gröna, inklusive isolerad riktig PostgreSQL, omstart, HTTPS och migrationsberedskap. |
 | Samlad slutredovisning | [PR187](https://github.com/Jakeminator123/scoutgaming/pull/187), migrationsbaseline `b38c56572158d6deaeb6823b3a66bf5fbca8af7e`. |
 
