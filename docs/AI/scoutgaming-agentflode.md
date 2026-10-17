@@ -1,5 +1,13 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Portabel GitGuardian-start — 17 oktober 2026
+
+Projektets MCP-konfiguration använder nu aktuell checkout via ett tillfälligt
+Git-alias, utan personlig `cwd`. Start från rot, undermapp och en flyttad
+testcheckout med mellanslag verifierades med MCP initialize/tools-list.
+Tre läsverktyg och befintlig skyddad användarkoppling behålls; personliga
+aktiveringsval ändras inte. Se [Agent-talk](../../agent-talk/README.md).
+
 ## Lokal pingkö — 17 oktober 2026
 
 `agent-talk` behåller de 40 senaste obesvarade pingarna i den aktiva kön.

@@ -1,5 +1,16 @@
 # Aktuell handoff — Scoutgaming
 
+## Portabel GitGuardian-konfiguration — 17 oktober 2026
+
+MCP-starten använder `git -c` med ett tillfälligt shell-alias för att köra
+Node från aktuell checkoutrot. Den gamla personliga `cwd` är borttagen.
+Den effektiva konfigurationens kommando klarade initialize/tools-list från
+worktreens rot och undermapp samt från en flyttad testcheckout med mellanslag
+och dess undermapp. Alla tre verktyg annonseras som läsande; inget permanent
+Git-alias skapas. Befintliga GitGuardian-/säkerhetsprov: 34/34 passerar.
+Användarens avaktiverade MCP-val och skyddade koppling har inte ändrats;
+startprovet anropade inte incident-API:t och är ingen säkerhetsklarering.
+
 ## Lokal agent-talk-kö — separat fix 17 oktober 2026
 
 Full kö blockerar inte nästa ping: äldsta meddelandet sparas före det

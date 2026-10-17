@@ -13,9 +13,10 @@ sandbox = "elevated"
 
 # Existing DPAPI-protected connection; no token in configuration or output.
 [mcp_servers.gitguardian]
-command = "node"
-args = ["tools/gitguardian-mcp.mjs"]
-cwd = "C:/Users/jakob/dev/projects/scoutgame"
+# Git runs shell aliases at the current worktree root, including from subfolders.
+# -c defines this alias for this invocation only; no machine-specific cwd.
+command = "git"
+args = ["-c", "alias.gitguardian-mcp=!node tools/gitguardian-mcp.mjs", "gitguardian-mcp"]
 enabled_tools = ["read_security_status", "read_source_binding", "read_repo_incidents"]
 default_tools_approval_mode = "writes"
 tool_timeout_sec = 120
