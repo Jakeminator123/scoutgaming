@@ -7,7 +7,7 @@ import { basename,dirname,join,resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createStudioUploadService } from '../lib/studio-upload-service.mjs';
 import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
-import {presentationCapabilitiesForVersion} from '../../web/presentation-capability-contract.mjs';
+import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
 import {extendedDealerMediaFeatures} from '../../web/dealer-media-features.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';

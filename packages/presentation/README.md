@@ -12,6 +12,7 @@ produktnivå. Gemensamma begrepp och rumsmodellen definieras i
 - `docs/` — referens för den fristående kompositorexporten och en hänvisning till den gemensamma formatlåsningen; ingen separat produktplan.
 - `preview/site/` — granskat byggmaterial för isolerad offlinefixtur; förberedaren hämtar också delade renderarmoduler.
 - `runtime/` — urval, idle, filmfamiljer, legacy-klipp och skobyten. Lab, Web och OpenClaw läser modulen. Importer tillbaka till `lab/`, `web/` och `open-claw/` finns kvar; vidare uppdelning är en öppen punkt i molnchecklistan.
+- `capability-contract.mjs` — importfritt kontrakt för versionsförhandling mellan spelserver och Studio. Serverendpoint, readiness och bundlad klient använder samma representation; kontraktet ger ingen registrering eller behörighet.
 
 Dessa läser paketet:
 

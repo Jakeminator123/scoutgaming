@@ -1,6 +1,6 @@
 import { labUrl } from './lab-url.mjs';
 import { workspaceSurfacePath } from './workspace-surfaces.mjs';
-import { validatePresentationCapabilities } from '../../web/presentation-capability-contract.mjs';
+import { validatePresentationCapabilities } from '../../packages/presentation/capability-contract.mjs';
 
 const ENDPOINT = '/api/admin/presentation-room';
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);

@@ -16,7 +16,7 @@ import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catal
 import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
 
 import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
-import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
+import { presentationCapabilitiesForVersion } from '../../packages/presentation/capability-contract.mjs';
 
 const scope = { environment: 'room-fixture', workspaceId: 'isolated' };
 // Test fixture selects its historical dealer explicitly; product startup has no composition.

@@ -1,4 +1,4 @@
-import { MEDIA_FILE_TYPES } from '../lab/lib/media-file-types.mjs';
+import { MEDIA_FILE_TYPES } from '../packages/shared/media-file-types.mjs';
 import { validateVideoMetadata, MAX_VIDEO_BYTES } from '../lab/lib/video-intake.mjs';
 import { normalizeRecordedSpeech } from './public/recorded-speech.mjs';
 

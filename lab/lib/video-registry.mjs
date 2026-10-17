@@ -5,7 +5,7 @@ import { access, lstat, open, realpath } from 'node:fs/promises';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { readUploads, uploadDirectory } from './video-uploads.mjs';
-import {MEDIA_FILE_TYPES} from './media-file-types.mjs';
+import {MEDIA_FILE_TYPES} from '../../packages/shared/media-file-types.mjs';
 import { readClassifications } from './video-classifications.mjs';
 import { mediaDefinitionForPath, readLabVideoManifest, validateLabVideoManifest } from './lab-video-manifest.mjs';
 import { StudioError } from './project-store.mjs';

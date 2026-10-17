@@ -1,4 +1,4 @@
-import { MEDIA_FILE_TYPES } from './media-file-types.mjs';
+import { MEDIA_FILE_TYPES } from '../../packages/shared/media-file-types.mjs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { cloneStudioJson, canonicalStudioJson, StudioStorageError, studioStorageFailure, validateStudioScope, validateStudioMedia, validateRevision } from '../../web/storage/studio-contract.mjs';

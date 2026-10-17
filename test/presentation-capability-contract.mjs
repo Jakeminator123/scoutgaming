@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   PRESENTATION_CAPABILITY_VERSION_HEADER, PRESENTATION_CAPABILITY_DEFAULT_VERSION,
   negotiatePresentationCapabilityVersion, presentationCapabilitiesForVersion, validatePresentationCapabilities,
-} from '../web/presentation-capability-contract.mjs';
+} from '../packages/presentation/capability-contract.mjs';
 
 const parsed = version => JSON.parse(JSON.stringify(presentationCapabilitiesForVersion(version)));
 const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
