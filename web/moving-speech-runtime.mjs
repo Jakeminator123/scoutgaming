@@ -211,7 +211,8 @@ export function createMovingSpeechRuntime({server, origin, workerOrigin = origin
             sourceSetSha256:bank.sourceSet.sourceSetSha256,avatarSha256:bank.archive.sha256,bankReceiptSha256:bank.receipt.sha256},
           mediaReferences:record.evidence.mediaReferences,projectRevision:record.evidence.projectRevision,
           beforeCostly:()=>current(record),signal,
-          bankDownload:async()=>{record.download=downloads.issue({signal,authorize:()=>current(record)});return record.download.descriptor;}});
+          bankDownload:async({sessionSignal,ttlMs})=>{record.download=downloads.issue({
+            signal:AbortSignal.any([signal,sessionSignal]),ttlMs,authorize:()=>current(record)});return record.download.descriptor;}});
         record.id=record.session.sessionId;record.binding=record.session.binding; records.set(record.id,record);
         await record.session.submit(); await record.session.ready(); await current(record);
         const chunks=[];let size=0;
