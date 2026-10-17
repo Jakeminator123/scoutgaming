@@ -27,6 +27,7 @@ async function port() {
 // databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
+  'packages/presentation/server/generated-speech-provider.mjs','packages/presentation/contracts/speech-package.mjs','packages/presentation/contracts/astrid-voice-profile.mjs','packages/presentation/server/generated-speech-service.mjs','packages/presentation/server/generated-speech-runtime.mjs','packages/presentation/server/speech-journal-lease.mjs',
       "web/storage/legacy-clip-inventory.mjs",
       "web/storage/video-registry.mjs",
       "web/storage/studio-media-runtime.mjs",
@@ -73,9 +74,11 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/presentation/contracts/presentation-layers.mjs', 'packages/presentation/contracts/studio-model.mjs',
       'packages/presentation/contracts/game-lane-id.mjs', 'packages/presentation/contracts/presentation-room.mjs',
       'packages/presentation/contracts/operator-lifecycle-key.mjs', 'packages/presentation/server/registered-dealer-idle.mjs',
-      'packages/presentation/public-modules.mjs', 'packages/presentation/server/registered-idle-rules.mjs', 'lab/lib/registered-idle-rules.mjs',
+      'packages/presentation/public-modules.mjs', 'packages/presentation/server/registered-idle-rules.mjs',
       'packages/shared/studio-error.mjs', 'packages/presentation/server/selection.mjs', 'packages/presentation/server/video-bindings.mjs',
-      'lab/lib/presentation-selection.mjs', 'packages/presentation/server/default-video-bindings.mjs', 'lab/lib/studio-director.mjs',
+      'lab/lib/presentation-selection.mjs', 'packages/presentation/server/default-video-bindings.mjs',
+    'packages/presentation/server/director-transport.mjs', 'packages/presentation/server/idle-advice.mjs',
+    'packages/presentation/contracts/probe-fixtures.mjs', 'web/presentation-selection.mjs', 'lab/lib/studio-director.mjs',
       'ops/neon-game/007-roulette-tables.sql', 'test/roulette-postgres.mjs', 'web/games/roulette/room.mjs', 'web/games/roulette/storage.mjs', 'web/games/roulette/access.mjs', 'web/games/roulette/index.mjs', 'web/games/roulette/rules.mjs',
       'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
       'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'lab/lib/partner-session.mjs', 'lab/lib/partner-team-api.mjs', 'lab/lib/operator-audit-context.mjs', 'lab/lib/operator-admin-api.mjs', 'lab/lib/operator-journal.mjs',
@@ -90,7 +93,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'lab/lib/studio-native-auth-actions.mjs', 'lab/lib/studio-admin-accounts.mjs', 'lab/lib/studio-admin-data.mjs', 'lab/lib/studio-admin-api.mjs', 'lab/lib/studio-document-api.mjs',
       'lab/lib/studio-admin-readouts.mjs', 'lab/lib/studio-voice-lines.mjs', 'lab/lib/studio-access-policy.mjs', 'lab/lib/studio-admin-contract.mjs',
       'lab/lib/voice-preview.mjs', 'lab/lib/media-blob-index.mjs', 'web/shoe-game.mjs', 'web/email-templates.mjs', 'packages/presentation/contracts/speech-lines.mjs',
-      'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'web/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech.mjs',
+      'web/postgres-speech-journal.mjs', 'web/speech-journal-runtime.mjs', 'packages/presentation/contracts/speech-journal-constants.mjs', 'web/generated-speech-session.mjs', 'web/generated-speech-stream.mjs', 'web/generated-speech-runtime.mjs',
       'web/speech-blob-artifacts.mjs', 'web/postgres-operator-speech-qa.mjs', 'lab/lib/cloud-media-store.mjs', 'test/studio-postgres-integration.mjs', 'test/studio-cutover-integration.mjs', 'tools/studio-isolated-qa.mjs']);
 
 export async function runPartnerDatabaseQa({ adminPool, pgPort, createPool, restartCluster, runChecks } = {}) {

@@ -3,7 +3,7 @@ import { isActiveDealerId as isDealerId } from '../packages/presentation/contrac
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
 import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
-import { selectRegisteredIdleRule } from '../lab/lib/registered-idle-rules.mjs';
+import { selectRegisteredIdleRule, selectPresentation, createIdleAdviceServer } from './presentation-selection.mjs';
 import { registeredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';
 import { ownDealerIdle } from '../packages/presentation/runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
@@ -15,8 +15,6 @@ import { createLocalProjectReader } from '../packages/studio-registry/server/loc
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from './storage/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { prepareDecision } from '../packages/director/engine.mjs';
-import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
-import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const publicModules = new Map(presentationPublicModules.flatMap(row => row.paths.map(url => [url, row.source])));

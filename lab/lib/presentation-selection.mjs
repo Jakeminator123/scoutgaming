@@ -4,7 +4,7 @@ import { selectionFor, videoFitsLine, videoFitsEvent } from '../../packages/pres
 import { speechSlotSituation, speechSlotStandard, speechSlotVideoFits, OTHER_SPEECH_SLOT_IDS } from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import { presentationDirector } from './studio-director.mjs';
 
-// App-owned composition shared by Studio and the game; registry stays per operation.
+// Studio-owned composition; registry stays explicit per operation.
 export const { decisionCatalog, selectPresentation } = createPresentationSelection({
   projectModel: { buildRuntimeCatalog, isDirectorSourceType, validateProject },
   director: presentationDirector,

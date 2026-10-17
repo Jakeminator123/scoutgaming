@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { readSettings } from './director-settings.mjs';
 import { decideProductProbe, validateProbeChoice } from '../../packages/director/product-probe.mjs';
 import { validateProbePolicy, PROBE_MODELS } from '../../packages/presentation/contracts/probe-policy.mjs';
-import { probeFixtures } from './probe-fixtures.mjs';
-import { remoteRequest } from './studio-server.mjs';
+import { probeFixtures } from '../../packages/presentation/contracts/probe-fixtures.mjs';
+import { remoteRequest } from '../../packages/presentation/server/director-transport.mjs';
 import { StudioError } from './project-store.mjs';
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';
 

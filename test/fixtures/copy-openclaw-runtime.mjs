@@ -5,9 +5,20 @@ import { presentationPublicModules } from '../../packages/presentation/public-mo
 // Disposable server copies keep the repository's sibling-module layout. Copy
 // source modules only, never credentials, persisted settings or runtime data.
 export async function copyOpenClawRuntime(root) {
-  for (const file of ['packages/presentation/capability-contract.mjs', 'packages/studio-access/account-role.mjs', 'packages/presentation/public-modules.mjs',
+  for (const file of [
+    'web/generated-speech-runtime.mjs',
+    'packages/presentation/server/generated-speech-service.mjs',
+    'packages/presentation/server/generated-speech-runtime.mjs',
+    'packages/presentation/server/generated-speech-provider.mjs',
+    'packages/presentation/server/speech-journal-lease.mjs',
+    'packages/presentation/contracts/speech-journal-constants.mjs',
+    'packages/presentation/capability-contract.mjs', 'packages/studio-access/account-role.mjs', 'packages/presentation/public-modules.mjs',
     'packages/presentation/server/studio-project-bindings.mjs',
     'packages/presentation/server/default-video-bindings.mjs',
+    'packages/shared/studio-error.mjs', 'packages/presentation/server/selection.mjs',
+    'packages/presentation/server/registered-idle-rules.mjs', 'packages/presentation/server/video-bindings.mjs',
+    'packages/presentation/server/director-transport.mjs', 'packages/presentation/server/idle-advice.mjs',
+    'packages/presentation/contracts/probe-fixtures.mjs', 'web/presentation-selection.mjs',
     'packages/presentation/server/legacy-clip-inventory.mjs',
     'web/storage/studio-media-runtime.mjs',
     'web/storage/video-registry.mjs',

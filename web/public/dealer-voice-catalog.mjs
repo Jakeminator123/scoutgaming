@@ -1,5 +1,5 @@
 import catalog from './dealer-voice-catalog.json' with {type:'json'};
-import {ASTRID_VOICE_PROFILE} from './astrid-voice-profile.mjs';
+import {ASTRID_VOICE_PROFILE} from '../../packages/presentation/contracts/astrid-voice-profile.mjs';
 
 // This catalog contains public identities, never account credentials or runtime
 // readiness. Defaults and selections change only the draft, never activation.

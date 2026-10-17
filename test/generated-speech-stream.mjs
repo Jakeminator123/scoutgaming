@@ -1,10 +1,13 @@
+import { fileURLToPath as speechRootPath } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, basename, join, resolve } from 'node:path';
 import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from '../web/generated-speech-stream.mjs';
-import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
+import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
+
+const speechRepositoryRoot = speechRootPath(new URL('../', import.meta.url));
 
 const secret = 'isolated-stream-secret-at-least-32-characters';
 async function fixture(t, options = {}) {
@@ -86,14 +89,14 @@ test('durable request is exclusive after restart and across fullfile capability'
   const restarted = await f.construct();
   await assert.rejects(restarted.prepare(f.input()), /already_attempted/);
   let fullfileCalls = 0;
-  const oldService = createGeneratedSpeechService({ directory: f.directory }, { provider: { generate() { fullfileCalls++; throw Error('must not call'); } } });
+  const oldService = createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot, provider: { generate() { fullfileCalls++; throw Error('must not call'); } } });
   await assert.rejects(oldService.generate({ ...f.input(), text: 'A test reply.' }), /conflict|attempted/);
   assert.equal(fullfileCalls, 0); assert.equal((await readdir(f.directory)).filter(v => v.endsWith('.request.json')).length, 1);
 });
 
 test('an earlier fullfile paid attempt blocks same request in streaming mode', async t => {
   const f = await fixture(t); let fullfileCalls = 0;
-  const oldService = createGeneratedSpeechService({ directory: f.directory }, { provider: { generate() { fullfileCalls++; throw Error('simulated provider failure'); } } });
+  const oldService = createGeneratedSpeechService({ directory: f.directory }, { repositoryRoot: speechRepositoryRoot, provider: { generate() { fullfileCalls++; throw Error('simulated provider failure'); } } });
   await assert.rejects(oldService.generate(f.input()));
   await assert.rejects(f.service.prepare(f.input()), /already_attempted/);
   assert.equal(fullfileCalls, 1); assert.equal(f.sourceCalls, 0);

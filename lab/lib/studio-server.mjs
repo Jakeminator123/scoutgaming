@@ -5,7 +5,7 @@ import { chatWithDirector } from '../../packages/director/openclaw.mjs';
 import { validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { StudioError } from './project-store.mjs';
 import { selectPresentation } from './presentation-selection.mjs';
-import { remoteRequest } from './studio-director.mjs';
+import { remoteRequest } from '../../packages/presentation/server/director-transport.mjs';
 import { buildOperatorCatalog } from './operator-catalog.mjs';
 import { studioRenderPersistence, assertRenderStudioWritable } from './studio-render-persistence.mjs';
 
@@ -37,7 +37,6 @@ export async function studioInitialData() {
   return { project, videos, status: comparisonStudio()?{configured:true,provider:'isolated-fixture',message:'Isolerad testlagring. Externa tjänster är avstängda.'}:connectionStatus() };
 }
 
-export { remoteRequest } from './studio-director.mjs';
 export { decisionCatalog } from './presentation-selection.mjs';
 export { validateVideoBindings } from '../../packages/presentation/server/default-video-bindings.mjs';
 export async function simulateStudio(body, options = {}) {

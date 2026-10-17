@@ -76,6 +76,22 @@ deploypaketet. Den inventeringen var inget bevis för att alla register redan
 fanns i Neon. Även Dragan passerade den gemensamma katalogkontrollen.
 En dealerradering slutförde inte metadataflytten.
 
+## Gemensam ägare för fullfile-tal, 17 oktober 2026
+
+`packages/presentation/server/generated-speech-runtime.mjs` äger den befintliga
+modul-lokala tjänsten, journalreferenserna, konfigurationsnyckeln och WeakMap för
+exakta providerfunktioner. Studio och game lämnar samma ursprungliga repository-root
+via sina egna kompositioner. Samma modulgraph får samma getter och tjänst; skilda
+processer/modulgrafer har eget minne. Ingen global eller ny HMR-persistens införs.
+Game behåller SQL-journal, Blob-artifacts och sessionsbootstrap; Studio aktiverar
+ingen separat journal eller betald provider. Rootgräns, lease/reservation, hashkontroller,
+request-idempotens och cancellation följer samma implementation och regler.
+
+`speech-package` och `astrid-voice-profile` är rena kontrakt i `packages/presentation/contracts`.
+Deras gamla publika URL:er och kanoniska paketadresser serverar samma källor;
+server-/journalmodulerna ingår inte i den publika allowlisten. Innehåll, ID:n,
+mediahashar, ursprunglig proveniens och godkännanden har inte ändrats.
+
 ## Dragan: första gemensamma molntalvägen, 17 oktober 2026
 
 ```mermaid
@@ -2132,7 +2148,11 @@ Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordni
 `packages/presentation/server/selection.mjs` väljer exakt familj och tillåten variant
 med samma triggers, regler, slump och Director-kontrakt som Händelser (`/control/events`).
 Studio och spelserver använder kärnan via den uttryckliga appkompositionen i
-`lab/lib/presentation-selection.mjs`, med register för varje urvalsoperation.
+`lab/lib/presentation-selection.mjs` respektive `web/presentation-selection.mjs`,
+med explicita register för varje urvalsoperation. Gemensam relay och idle-kärna
+ligger i `packages/presentation/server/`; HTTP, settingsval och serviceinstanser
+är appägda. Current-register och frysta presentationer behåller sina skilda
+läsningar, cacheScope, tidsgränser och avbrott.
 
 Web använder `PerformancePlayer.playLocalClip` för hashverifierade MP4-filer
 från `media/dealers/astrid/runtime/presentation`. En film äger ytan i taget. Den tidigare Astridmotorn,

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSpeechPackageRegistry, normalizeSpeechPackage, validateSpeechPackage } from '../web/public/speech-package.mjs';
+import { createSpeechPackageRegistry, normalizeSpeechPackage, validateSpeechPackage } from '../packages/presentation/contracts/speech-package.mjs';
 
 const sha = character => character.repeat(64);
 const recorded = () => ({
