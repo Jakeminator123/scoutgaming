@@ -30,8 +30,9 @@ chunk-kvittens begränsar buffertar hela vägen till workern. Samtidigt tal
 Fokuserade kontroller omfattar riktiga HTTP/WebSocket-förlopp och Chrome/
 WebCodecs med syntetiska medier, återkallad ägare/profil/publicering,
 engångsbiljetter, kostnadsgräns, avbrott och workerprotokoll. Dessa är inte
-visuell acceptans av Dragan. Isolerad PostgreSQL, publicerad image, migration,
-runtime-konfiguration och ett verkligt OpenClaw/GPU/spelarprov återstår före
+visuell acceptans av Dragan. Isolerad PostgreSQL/HTTPS är verifierad lokalt
+med riktig temporär databas, omstart, autentisering, CAS och taljournaler.
+Publicerad image, migration, runtime-konfiguration och ett verkligt OpenClaw/GPU/spelarprov återstår före
 aktivering. Första tidigare GPU-provet är fakturerat till 0,169812463 USD;
 nyvägen reserverar högst 4,80 USD totalt inom Jakobs mandat på 5 USD.
 Jakob har valt ett separat Dragan-testrum. Bolaget `dragan-test` har skapats
@@ -43,9 +44,13 @@ Rumsutgivning återstår; pausade operatörer ska inte öppnas. Den separata ava
 uppladdad i privat Blob och dess tre filer fullständigt hashverifierade.
 Detta är beredningsunderlag, inte ett godkänt moln- eller läppsynksprov.
 
-Första PR195-CI hittade testväntan, miljöregister och en SQL-importkontroll
-som inte accepterade uttryckligen valfria migrationer. Rättningarna är
-fokuserat testade; ny full CI återstår. Två GitGuardian-fynd på det tidigare
+PR196 ersätter PR195. CI hittade testväntan, miljöregister och äldre
+versionslistor som inte accepterade uttryckligen valfria migrationer.
+Render och native-runtime använder nu samma verifierade migrationsplan;
+krav på obligatoriska versioner och kontrollsummor kvarstår. 53 fokustester
+och hela isolerade SQL/HTTPS-körningen passerade på Node24.21.0 den 17 oktober.
+Ny full CI återstår. PR196:s imagebygge och GitGuardian är gröna på `a0bc397b`.
+Två GitGuardian-fynd på det tidigare
 huvudet avsåg syntetiska PostgreSQL-testadresser. Fixturen skapar nu ett
 tillfälligt lösenord; ingen befintlig nyckel eller incidentstatus ändras.
 Den nya publiceringsprojektionen utelämnar endast inspelningar med status

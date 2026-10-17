@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadStudioMigrations, planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
+import { loadStudioMigrations, planStudioMigrations, applyStudioMigrations, isStudioMigrationPlanReady } from '../ops/neon-studio/migrations.mjs';
 import { mkdtemp, copyFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -366,4 +366,26 @@ test('013 remains optional for feature-off deployment and adds only moving bindi
   const migration=(await loadStudioMigrations()).find(row=>row.version==='013');
   assert.deepEqual(migration.tables,['moving_speech_bindings']);assert.deepEqual(migration.indexes,[]);
   assert.match(migration.sql,/reserved_micro_usd BETWEEN 1 AND 5000000/);
+});
+
+
+test('runtime readiness follows registered optional versions and rejects missing or unverified required schema',async()=>{
+  const pool=await fixture();assert.equal(isStudioMigrationPlanReady(await planStudioMigrations({pool})),false);
+  const complete=await applyStudioMigrations({pool,expectedTarget:target,confirm:true});
+  assert.equal(isStudioMigrationPlanReady(complete),true);
+  const optionalPending=copy(complete);optionalPending.applied=optionalPending.applied.filter(row=>row.version!=='013');
+  optionalPending.optionalPending=[{version:'013'}];assert.equal(isStudioMigrationPlanReady(optionalPending),true);
+  for(const mutate of [
+    value=>{value.applied=value.applied.filter(row=>row.version!=='012');},
+    value=>value.applied.push({...value.applied.at(-1),version:'014'}),
+    value=>value.applied.push({...value.applied.at(-1)}),
+    value=>{value.applied[0].checksum='invalid';},
+    value=>{value.applied.at(-1).structureChecksum='invalid';},
+    value=>{value.toApply=[{version:'012'}];},
+    value=>{value.schemaPresent=false;},
+    value=>{value.applied.reverse();},
+  ]){
+    const invalid=copy(complete);mutate(invalid);assert.equal(isStudioMigrationPlanReady(invalid),false);
+  }
+  for(const malformed of [null,{}, {schemaPresent:true,toApply:[],applied:null}])assert.equal(isStudioMigrationPlanReady(malformed),false);
 });

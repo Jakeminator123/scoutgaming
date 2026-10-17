@@ -1,6 +1,6 @@
 import { createStudioRepository } from './studio-repository.mjs';
 import { createStudioGamePolicy, studioGamePolicyConfiguration } from './studio-game-policy.mjs';
-import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
+import { planStudioMigrations, isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
 
 export async function createRenderStudioPolicy({ storage, env = process.env, dealerIdle, schemaCheck = planStudioMigrations } = {}) {
   const config = studioGamePolicyConfiguration(env);
@@ -11,7 +11,7 @@ export async function createRenderStudioPolicy({ storage, env = process.env, dea
   await storage.db.assertInstalled();
   const plan = await schemaCheck({ pool: storage.pool });
   // The reader cutover requires the imported Neon catalogue schema.
-  if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004,005,006,007,008,011,012') {
+  if (!isStudioMigrationPlanReady(plan)) {
     throw Object.assign(new Error('studio_game_schema_unavailable'), { statusCode: 503 });
   }
   const repository = createStudioRepository({ pool: storage.pool, scope: config.scope });

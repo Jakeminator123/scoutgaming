@@ -34,6 +34,17 @@ const sources = Object.freeze([
   { version: '013', file: '013-moving-speech-admission.sql', deploymentOptional: true,
     tables: ['moving_speech_bindings'], indexes: [] },
 ]);
+/** Accept only a verified planner result with every required version installed.
+ * Deployment-optional versions may be pending; installed versions retain their proofs. */
+export function isStudioMigrationPlanReady(plan) {
+  if (plan?.schemaPresent !== true || !Array.isArray(plan.toApply) || plan.toApply.length
+    || !Array.isArray(plan.applied)) return false;
+  const versions = plan.applied.map(row => row?.version);
+  const expected = sources.filter(row => !row.deploymentOptional || versions.includes(row.version)).map(row => row.version);
+  return versions.length === expected.length && versions.every((version,index) => version === expected[index])
+    && plan.applied.every(row => /^[a-f0-9]{64}$/.test(row.checksum ?? '') && /^[a-f0-9]{64}$/.test(row.structureChecksum ?? ''));
+}
+
 const budgetConstraint = 'gpu_budget_policies_daily_budget_micro_usd_check';
 const budgetDefinition = ceiling => `CHECK (daily_budget_micro_usd >= 1 AND daily_budget_micro_usd <= ${ceiling})`;
 const budgetAlter = 'ALTER TABLE croupier_studio.gpu_budget_policies DROP CONSTRAINT gpu_budget_policies_daily_budget_micro_usd_check, ADD CONSTRAINT gpu_budget_policies_daily_budget_micro_usd_check CHECK (daily_budget_micro_usd BETWEEN 1 AND 20000000)';
