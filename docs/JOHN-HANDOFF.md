@@ -43,15 +43,21 @@ Offline: `test/moving-speech-runpod.mjs`, `-transport.mjs`, `-session.mjs`,
 `test/platform-moving-speech.mjs` kräver speechtjänstens egen installation
 och kördes inte här. Ingen förändring av budget, journal eller provider-POST.
 
-### Samma regel för den privata guarden
+### Samma regel i den privata guarden
 
-`moving-runpod-provision.mjs` (`verifyEndpoint` rad 262–264,
-`verifyFallbackWorkers` rad 270) ska räkna `desiredStatus==='RUNNING'`
-(eller saknat) mot `workersMax` och tillåta EXITED/TERMINATED utan att
-likställa dem med kapacitet; ägarskaps-, image- och versionskontroll för
-aktiva poster behålls. `unexpected_active_workers` ska bara utlösas av aktiva
-poster. Filen är privat och har inte ändrats här; `classifyMovingWorkerRecord`
-och `summarizeMovingWorkerRecords` i adaptern är den gemensamma regeln.
+Den privata `moving-runpod-provision.mjs` i Jakobs visualiseringskatalog för
+chatten `01a14afa-…` har fått samma klassning i `verifyEndpoint` och
+`verifyFallbackWorkers`: endast RUNNING eller okänd status räknas mot
+`workersMax` och utlöser `unexpected_active_workers`; EXITED/TERMINATED
+tolereras upp till max+2 utan att räknas som kapacitet, med bibehållen
+ägarskaps- och versionskontroll och oförändrad spärr mot alla poster när
+workers inte är tillåtna. `verify()` returnerar nu `workers` (upptagande),
+`workerRecords` och `scaledDownWorkers`, så uppvärmningskontrollen
+`workers===1` inte fälls av en cachad slot. Original sparades som
+`.before-worker-classification-20261017`. Ett nytt test återskapar provets
+exakta två poster; sviten ger 89/89 offline. Guardens stoppfil, deadline,
+budgeträkning och providerändringar är orörda. Adapterns
+`classifyMovingWorkerRecord`/`summarizeMovingWorkerRecords` är samma regel.
 
 ### Korrigerad cacheanalys för workern
 
@@ -97,8 +103,11 @@ nedan. Ingen av dem är implementerad.
 5. Stopp: `workersMin=0`, cancel av öppet jobb, läs `/health` tills
    running=0, verifiera tom aktiv lista; EXITED-poster får finnas kvar.
 
-Nästa agent börjar med guardpatchen ovan och ett kort offlineprov av dess 81
-tester, därefter beslut om punkt 3 innan någon providerändring.
+Nästa steg är Jakobs beslut om punkt 2–4 (fönster, idle-undantag, höjt tak
+för budget-ID `dragan-test-20261017`) innan någon providerändring; därefter
+en liten testad adapterändring för idle-undantaget och först sedan ett enda
+samordnat prov. Cloud-agentens egna secrets (fel Vercel-team/projekt och
+Blob-store, se chattens frågebatteri) hanteras separat och ingår inte här.
 
 ## Publika moduler oberoende av deployordning — 17 oktober 2026
 
