@@ -5,6 +5,13 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Browserprovets täckning — dokumentationsrättning 17 oktober 2026
+
+README skiljer nu CI:s bundle-/API-prov från de två interaktiva browserfallen.
+Browserfallen kräver CROUPIER_BROWSER_FIXTURE_MODULE och hoppas över i dagens
+CI, där variabeln saknas. Inga tester, körvillkor eller produktkontrakt ändras.
+PR197:s fulla CI på efa69d9b var grön; det bevisar inte dessa browserflöden.
+
 ## Verktygsrensning, etapp 1 — 17 oktober 2026
 
 HUVUDAGENT2 arbetar på `codex/retire-obsolete-tools` från main
