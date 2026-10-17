@@ -1,5 +1,5 @@
 import { createStudioLoginClient, StudioLoginUiError } from './studio-login-client.mjs';
-import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 
 function sessionRoute(apiBase, accessClass) {
   if (!['/studio/api/partner/snapshot', '/api/partner/snapshot'].includes(apiBase)

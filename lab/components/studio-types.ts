@@ -1,7 +1,7 @@
 import { isActiveDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import type { DealerId, StudioAsset, StudioProject, StudioVariant } from '../../packages/presentation/contracts/studio-model.mjs';
 import { labUrl, stripLabBasePath } from "../lib/lab-url.mjs";
-import { canonicalControlHref } from '../lib/control-flow.mjs';
+import { canonicalControlHref } from '../../packages/navigation/control-flow.mjs';
 
 export type StudioView = 'tree' | 'lab' | 'videos' | 'activity' | 'openclaw' | 'guide' | 'probe';
 export type DirectorMode = 'off' | 'rules' | 'random' | 'shadow' | 'active';

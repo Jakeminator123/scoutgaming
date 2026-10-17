@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {GAME_LANES,gameLaneSelection,gameLaneConfiguration,gameLaneFromDocument,validateGameLanes,isOperatorSlug,laneDealerSelection,packageLaneIds,gamePresentationForDealer} from '../web/public/game-lanes.mjs';
-import {decorateGameEntryHtml,playerLoginDestination} from '../web/public/game-entry-contract.mjs';
+import { GAME_LANES, gameLaneSelection, gameLaneConfiguration, gameLaneFromDocument, validateGameLanes, laneDealerSelection, packageLaneIds, gamePresentationForDealer } from '../web/public/game-lanes.mjs';
+import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
+import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
+import {playerLoginDestination} from '../packages/navigation/game-entry.mjs';
 const portrait={schemaVersion:1,id:'chosen-table',label:'Chosen table',renderer:'portrait-video',dealer:'elin',mediaCollection:'elin-presentation'};
 const registry=[{id:'elin',label:'Elin'},{id:'linnea',label:'Linnea'}];
 const dataset={gameLane:portrait.id,gameDealer:'elin',gamePresentation:'local',gameLocalDealer:'elin',gameRegisteredDealers:JSON.stringify(registry)};

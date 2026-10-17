@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {once, EventEmitter} from 'node:events';
 import WebSocket, {WebSocketServer} from 'ws';
-import {platformConfiguration} from '../lib/platform-routing.mjs';
+import {platformConfiguration} from '../../../packages/navigation/server/platform-routing.mjs';
 import {platformSocketRequest, bridgePlatformSocket, platformSocketDiagnostics} from '@croupier/server-transport/socket-core';
 import {createPlatformNativeWebSocketServer} from '@croupier/server-transport/node-server';
 import {issueTicket} from '../../../services/astrid-gpu-worker/gateway/auth.mjs';

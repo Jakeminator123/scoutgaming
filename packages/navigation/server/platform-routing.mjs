@@ -1,11 +1,11 @@
-import { presentationPublicSource } from '../../../packages/presentation/public-modules.mjs';
-import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-entry-contract.mjs';
-import {adminDocumentHref} from '../../../lab/lib/admin-workspace-routes.mjs';
-import { requestedOperator } from '../../../web/game-entry-operator.mjs';
-import { resolveWorkspaceSurfacePath } from '../../../lab/lib/workspace-surfaces.mjs';
-import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from '../../../packages/server-transport/paths.mjs';
-export {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../../../packages/server-transport/paths.mjs';
-export {exactPlatformOrigin, platformConfiguration} from '../../../packages/server-transport/configuration.mjs';
+import { presentationPublicSource } from '../../presentation/public-modules.mjs';
+import { gameEntryRedirect, approvedGameQuery } from '../game-entry.mjs';
+import {adminDocumentHref} from '../admin-workspace-routes.mjs';
+import { requestedOperator } from '../operator-entry.mjs';
+import { resolveWorkspaceSurfacePath } from '../workspace-surfaces.mjs';
+import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from '../../server-transport/paths.mjs';
+export {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../../server-transport/paths.mjs';
+export {exactPlatformOrigin, platformConfiguration} from '../../server-transport/configuration.mjs';
 
 // Launch payload only. The signature stays the engine's; the claim name is partner.
 export function launchHasPartnerClaim(token) {
@@ -56,7 +56,7 @@ const STUDIO_PREVIEW = new RegExp('^(?:/studio-preview/' + PREVIEW_UUID
 export function backendPlatformPath(value) {
   const path = canonicalPlatformPath(value);
   if (!path) return false;
-  return (path.startsWith('/packages/presentation/') && Boolean(presentationPublicSource(path))) || AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path) || ROULETTE_PREVIEW.has(path) || ROULETTE_ROOM.has(path)
+  return (path.startsWith('/packages/') && Boolean(presentationPublicSource(path))) || AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path) || ROULETTE_PREVIEW.has(path) || ROULETTE_ROOM.has(path)
     || path === '/api/operators'
     || path === '/api/studio-game/command'
     || /^\/api\/moving-speech\/[a-f0-9]{32}\/rest$/.test(path)

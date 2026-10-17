@@ -12,7 +12,7 @@ import { PartnerDisconnected } from './views/integration.jsx';
 import { TeamView } from './views/team.jsx';
 import { createPreviewRuntime, operatorPackageRevision, validatePreviewSnapshot } from './preview-runtime.mjs';
 import { normalizeView } from './navigation.mjs';
-import { resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../lib/workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath, workspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
 import { partnerPackageProfiles } from '../../lib/partner-package-view.mjs';
 import { partnerTeamView } from '../partner-team-loader.mjs';
 import { partnerNavigation, usePartnerPreferences } from './partner-copy.mjs';

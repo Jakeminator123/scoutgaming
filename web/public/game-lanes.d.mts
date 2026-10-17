@@ -4,7 +4,6 @@ export const GAME_LANES: readonly Readonly<GameLane>[];
 export function gamePresentationForDealer(dealerId: string, renderer: GameLane['renderer']): 'local' | 'original' | 'layered';
 export function isGameLaneId(value: unknown): value is string;
 export function isGameLane(value: unknown, lanes?: readonly GameLane[]): value is GameLaneId;
-export function isOperatorSlug(value: unknown): value is string;
 export function validateGameLanes(value: unknown): GameLane[];
 export function gameLaneConfiguration(value?: {gameLanes?: unknown; gameLane?: unknown}): {gameLanes: GameLane[]; gameLane: string | null};
 export function packageLaneIds(allowedLanes: readonly unknown[], lanes?: readonly GameLane[]): string[];

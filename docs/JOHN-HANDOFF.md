@@ -14,11 +14,54 @@ en ny ping i just den checkouten.
 
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
-`502bea812d4e8597f4951c85ae712bd338b02a1d`; etapp 3 levereras i avgränsade delar.
+`1d2fe0521ee033b8a9349eb47ef6765695e59bb9` (PR212); senare delar inväntar sina separata driftkvitton.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2g: gemensam publik katalog och navigation — 17 oktober 2026
+
+`packages/player-catalog` äger katalogläsning och resultattyper. Frontend och
+Studios lobby binder samma slug-/rumvalidatorer genom egna kompositioner;
+lobbyn importerar inte längre frontendens privata kod. Alla tre flyttade
+katalogfunktioner har oförändrade kroppar. Sessioner, login-/spelstarter,
+rumval och sparade preferenser stannar i apparna.
+
+`packages/navigation` äger rena Admin-/Control-/Partner-adresser, operatorval
+samt den gemensamma slugregeln som ersätter fyra identiska implementationer.
+SQL-lagrets annorlunda lagringsvalidator bevaras. Studios HTTP-adapter är
+`lab/lib/legacy-studio-document.mjs`; förbrukade routefiler och wrappers tas
+bort. Operator-slug och den rena speladressmodulens exakta URL:er finns i befintlig allowlist.
+Alla konsumenter, isolerade kopieringslistor och QA-källor följer ändringen.
+
+C3-förkontrollen hittade två återstående privata routingkanter. Samma verkliga
+serverrouting ligger nu i `packages/navigation/server/platform-routing.mjs`;
+Studio, frontend och Render-ingress importerar neutral källkod direkt.
+Sex rena adress-/queryfunktioner ligger i `packages/navigation/game-entry.mjs`
+med kanoniska dealer-/lane-/slugregler. HTML/presentation och previewvalidering
+stannar i `web/public/game-entry-contract.mjs`. Gamla routingfilen tas bort;
+inga wrappers eller nya npm-/SDK-beroenden. Endast speladressmodulens exakta
+kanoniska URL är publik; serverrouting och felaktiga alias nekas för GET/HEAD.
+
+Routing-, query- och dekorationskropparna samt 16 appkonsumenters övriga
+runtimekroppar är mekaniskt oförändrade mot `48a75523`. Neutral closure har
+11 moduler utan app-/SDK-importer eller cykler. Berörda befintliga prov ger
+166 pass och en befintlig browser-opt-in, plus ett verkligt GET/HEAD-importgrafprov.
+En förbrukad råbyte-kopieringsassertion ersattes av befintlig importgraf-/login-
+täckning och explicit publik/privat paketering; endast dess provfil kördes om
+(2/2). Frontendens och Studios typer passerar. Utökningen är parentgranskad och
+ordinarie hook gav312 pass/0 fail/1 befintlig browser-opt-in samt gröna frontendtyper. Ingen fullsuite eller fullbuild upprepades.
+
+Katalog-/navigationsprov, publik importgraf, klientbundling och frontendens,
+Studios och lobbyklientens typkontroller har passerat. Katalogkroppar och
+navigationsregler är mekaniskt jämförda; testinventeringen har noll
+oklassificerade kandidater. C2f-integrationen a2380b32 passerade41 riktade
+prov och ordinarie hook215/215 plus frontendtyper med egna låsta frontend-
+och speechinstallationer. Renderfixen och PR213 är integrerade med samma navigation och direkta
+transportimporter; senaste integrationshook passerade138/138 och frontendtyper.
+Main inklusive PR214/216 är integrerad normalt, utan ändrad kod i slutintegrationen. CI och driftkvitto för C2g återstår.
+PR218-CI upptäckte två dubbla källposter i QA:s hashlista. Dubbletterna är borttagna; det befintliga provet för en hash per källa passerar6/6. Hashbindning och migrationstäckning bevaras.
+Inga nya tester eller provider-/SQL-/medieändringar ingår i katalogsteget.
 ## C2f Render-paketering — rättning före PR214-merge
 
 Render installerar gateway, web och Lab, medan frontend/speech har egna beroenden.
@@ -222,8 +265,8 @@ klientoutput och oförändrade låsta beroenden: Next/TypeScript och routebygge
 gröna, 80 byggspår kontrollerade och noll privata poster borttagna. Befintliga
 CSS-composes-varningar och Nexts middleware-deprecation kvarstår.
 
-Den publika katalogadaptern använder fortfarande frontendens `player-lobby`
-och `player-operator`; detta är en namngiven ägarskapsrest för nästa kontraktdel.
+Den kvarvarande privata frontendkopplingen i den publika katalogadaptern
+är nu avgränsad och åtgärdad i C2g ovan.
 CI, integration och driftkvitto redovisas vid leverans. Ingen ny visuell
 medie- eller läppsynksacceptans ingår.
 
@@ -1007,3 +1050,5 @@ och PR188/190. Fasens egna körskript, utkast och temporära CI-loggar är rensa
 av exakta PR-huvuden och main-innehåll. PR189:s avslutade worktree
 `simplify-test-policy` togs bort med återställningsbar Codex-snapshot.
 STÄD-CL:s och lipsyncs arbetsytor bevarades.
+
+PR218:s katalog/navigation har integrerat main217 9b79902c20b55d0e8ff21d6ee60def04f978342c normalt efter lipsync2:s CLEAN STOP/HOLD RELEASE. Main215:s inboxfix och samtliga handoffavsnitt bevaras. Produktkoden och QA-dubblettfixen är oförändrade från head4542f5f779c5febacb12128b529411be8e080cb6, som GPT läst i GitHub utan styrkt blockerare och CI39056360556 godkänt. Senaste integrationshead inväntar eget CI-/driftkvitto hos mergagenten.

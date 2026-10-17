@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
-import {compositionLabel} from './control-flow.mjs';
+import {compositionLabel} from '../../packages/navigation/control-flow.mjs';
 import {canonicalStudioJson,StudioStorageError} from '../../web/storage/studio-contract.mjs';
 import {gameLaneConfiguration} from '../../web/public/game-lanes.mjs';
 import {isPresentationRoom} from '../../web/presentation-room-contract.mjs';

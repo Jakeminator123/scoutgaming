@@ -1,5 +1,5 @@
-import {approvedGameQuery} from './game-entry-contract.mjs';
-import {isOperatorSlug} from './game-lanes.mjs';
+import {approvedGameQuery} from '../../packages/navigation/game-entry.mjs';
+import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 
 // Document returns only: never an API, login loop, external URL or bearer token.
 export function playerHandoffPath(value,{origin='https://player.invalid'}={}) {

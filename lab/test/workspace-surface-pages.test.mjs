@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { nextStudioLoginRedirect } from '../lib/next-page-navigation.mjs';
 import { internalSessionPresent } from '../lib/partner-session.mjs';
-import { resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 import { controlToolPath } from '../lib/control-workspace.mjs';
 import { publicAbsoluteUrl } from '../lib/lab-url.mjs';
 import { partnerLoginReturnTo } from '../lib/partner-login-return.mjs';
@@ -45,7 +45,7 @@ function pages(initialData, requestHeaders = new Headers({ host: 'studio.fixture
     '@/lib/partner-session.mjs': { internalSessionPresent },
     '@/lib/partner-login-return.mjs': { partnerLoginReturnTo },
     '@/lib/next-page-navigation.mjs': { nextStudioLoginRedirect },
-    '@/lib/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
+    '../../packages/navigation/workspace-surfaces.mjs': { resolveWorkspaceSurfacePath },
   });
   const control = load('../app/control/[[...path]]/page.tsx', { '@/components/workspace-surface-page': shared });
   const partner = load('../app/partner/[[...path]]/page.tsx', { '@/components/workspace-surface-page': shared });

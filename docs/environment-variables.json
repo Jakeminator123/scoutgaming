@@ -144,7 +144,7 @@
     "vercel-frontend-production": {
       "sources": [
         "apps/croupier-frontend/lib/game-url.ts",
-        "apps/croupier-frontend/lib/platform-routing.mjs",
+        "packages/navigation/server/platform-routing.mjs",
         "packages/server-transport/configuration.mjs"
       ],
       "project": "scoutgaming",
