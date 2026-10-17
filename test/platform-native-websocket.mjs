@@ -2,16 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {once} from 'node:events';
-import {mkdtemp, copyFile, symlink, unlink, rm, realpath, readFile} from 'node:fs/promises';
+import {mkdtemp, copyFile, cp, mkdir, symlink, unlink, rm, realpath, readFile} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {join, dirname, basename} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import WebSocket from 'ws';
-import {createPlatformNativeWebSocketServer} from '../lib/platform-native-websocket.mjs';
-import {platformConfiguration} from '../lib/platform-routing.mjs';
-import {issueTicket, ticketAuthenticator} from '../../../services/astrid-gpu-worker/gateway/auth.mjs';
-import {vercelIngressRequest} from '../../../ops/cloud/vercel-ingress.mjs';
-import {createSpeechIngress} from '../../croupier-speech/service.mjs';
+import {createRequire} from 'node:module';
+const frontendRequire = createRequire(new URL('../apps/croupier-frontend/package.json', import.meta.url));
+const WebSocket = frontendRequire('ws');
+const {createPlatformNativeWebSocketServer} = await import(pathToFileURL(frontendRequire.resolve('@croupier/server-transport/node-server')).href);
+import {platformConfiguration} from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import {issueTicket, ticketAuthenticator} from '../services/astrid-gpu-worker/gateway/auth.mjs';
+import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';
+import {createSpeechIngress} from '../apps/croupier-speech/service.mjs';
 
 const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.test',
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab.example.test',
@@ -33,7 +36,7 @@ async function rejected(url, protocols = [], headers = {}) {
 }
 
 test('Services routes both public sockets to the native Node entrypoint before the Next catch-all', async () => {
-  const deployment = JSON.parse(await readFile(new URL('../../../vercel.json', import.meta.url), 'utf8'));
+  const deployment = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
   const speech = deployment.services.speech;
   assert.equal(speech.framework, 'node');
   assert.equal(speech.root, 'apps/croupier-speech');
@@ -45,9 +48,43 @@ test('Services routes both public sockets to the native Node entrypoint before t
   }
   assert.deepEqual(deployment.rewrites.filter(value => value.destination.service === 'speech').map(value => value.source),
     ['/speech-stream', '/lipsync-worker', '/moving-speech-stream', '/lipsync-moving/:path*']);
-  const entrypoint = await readFile(new URL('../../croupier-speech/server.mjs', import.meta.url), 'utf8');
+  const entrypoint = await readFile(new URL('../apps/croupier-speech/server.mjs', import.meta.url), 'utf8');
   assert.match(entrypoint, /createSpeechIngress\(\)/);
   assert.match(entrypoint, /server\.listen\(/);
+});
+
+test('speech installs independently and configuration imports without WebSocket dependencies', async () => {
+  const temporaryRoot = await realpath(tmpdir());
+  const fixture = await mkdtemp(join(temporaryRoot, 'speech-install-'));
+  const speech = new URL('../apps/croupier-speech/', import.meta.url);
+  const run = source => {
+    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', source], {
+      cwd: fixture, encoding: 'utf8', timeout: 10000, env: {...process.env, NODE_PATH: ''}
+    });
+    assert.equal(result.status, 0, result.stderr || result.error?.message);
+  };
+  try {
+    await mkdir(join(fixture, 'node_modules', '@croupier'), {recursive: true});
+    await cp(new URL('node_modules/@croupier/server-transport/', speech),
+      join(fixture, 'node_modules', '@croupier', 'server-transport'), {recursive: true, dereference: true});
+    run(`import assert from 'node:assert/strict';
+      import {platformConfiguration} from '@croupier/server-transport/configuration';
+      import {canonicalPlatformPath} from '@croupier/server-transport/paths';
+      assert.equal(platformConfiguration({}), null);
+      assert.equal(canonicalPlatformPath('/speech-stream'), '/speech-stream');`);
+    await cp(new URL('node_modules/ws/', speech), join(fixture, 'node_modules', 'ws'), {recursive: true, dereference: true});
+    await copyFile(new URL('service.mjs', speech), join(fixture, 'service.mjs'));
+    run(`import assert from 'node:assert/strict';
+      import {createSpeechIngress} from './service.mjs';
+      const server = createSpeechIngress({env: {}});
+      assert.equal(server.listening, false);
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      try {assert.equal((await fetch('http://127.0.0.1:' + server.address().port + '/speech-stream')).status, 404);}
+      finally {await new Promise(resolve => server.close(resolve));}`);
+  } finally {
+    if (dirname(fixture) !== temporaryRoot || !basename(fixture).startsWith('speech-install-')) throw Error('Unexpected fixture cleanup path');
+    await rm(fixture, {recursive: true, force: true});
+  }
 });
 
 test('speech service exposes only exact public paths and preserves admission before contacting Render', async () => {
@@ -72,8 +109,8 @@ test('speech service exposes only exact public paths and preserves admission bef
 });
 
 test('native API exports do not listen during imports and flag-off stays closed', async () => {
-  const client = (await import('../api/platform-speech-stream.mjs')).default;
-  const worker = (await import('../api/platform-lipsync-worker.mjs')).default;
+  const client = (await import('../apps/croupier-frontend/api/platform-speech-stream.mjs')).default;
+  const worker = (await import('../apps/croupier-frontend/api/platform-lipsync-worker.mjs')).default;
   assert.equal(client.listening, false); assert.equal(worker.listening, false);
   const disabled = createPlatformNativeWebSocketServer('/speech-stream', {env: {}});
   try {
@@ -137,9 +174,9 @@ test('native handlers carry actual relay media both ways with current owner, ing
   const authenticate = ticketAuthenticator(ticketSecret), backendRequests = [], workerReceived = [];
   try {
     // Keep the product relay's bytes unchanged, including its real auth module.
-    await copyFile(new URL('../../../services/astrid-gpu-worker/gateway/relay.mjs', import.meta.url), join(directory, 'relay.mjs'));
-    await copyFile(new URL('../../../services/astrid-gpu-worker/gateway/auth.mjs', import.meta.url), join(directory, 'auth.mjs'));
-    await symlink(fileURLToPath(new URL('../node_modules', import.meta.url)), join(directory, 'node_modules'), 'junction'); linked = true;
+    await copyFile(new URL('../services/astrid-gpu-worker/gateway/relay.mjs', import.meta.url), join(directory, 'relay.mjs'));
+    await copyFile(new URL('../services/astrid-gpu-worker/gateway/auth.mjs', import.meta.url), join(directory, 'auth.mjs'));
+    await symlink(fileURLToPath(new URL('../apps/croupier-frontend/node_modules', import.meta.url)), join(directory, 'node_modules'), 'junction'); linked = true;
     const {attachSpeechRelay} = await import(pathToFileURL(join(directory, 'relay.mjs')).href);
     backend.on('upgrade', request => {
       const verdict = vercelIngressRequest({...request, headers: {...request.headers, host: new URL(configuration.backendOrigin).host}},

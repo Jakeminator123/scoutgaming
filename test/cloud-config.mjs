@@ -1,3 +1,7 @@
+import { mkdtemp, readFile, writeFile, mkdir, rm, symlink, realpath } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join, relative, resolve, isAbsolute } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
@@ -89,4 +93,32 @@ test('moving provider identity is immutable and ticket secrets cannot reuse Astr
     const change=key==='TICKET_SECRET'&&bad.startsWith('fixture-moving-key-')?{CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY:bad}:{};
     assert.throws(()=>validateCloudConfig({...env,...change,['CROUPIER_MOVING_SPEECH_'+key]:bad}),new RegExp('CROUPIER_MOVING_SPEECH_'+key));
   }
+});
+
+test('Render config loads from source without frontend or speech dependency installations', async t => {
+  const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
+  const root = await mkdtemp(join(tmpdir(), 'croupier-render-config-'));
+  t.after(() => rm(root, {recursive:true, force:true}));
+  const copied = new Set();
+  async function copySource(path) {
+    if (copied.has(path)) return;
+    copied.add(path);
+    const source = await readFile(join(sourceRoot, path), 'utf8');
+    const target = join(root, path);
+    await mkdir(dirname(target), {recursive:true});
+    await writeFile(target, source);
+    if (!path.endsWith('.mjs')) return;
+    for (const match of source.matchAll(/(?:from\s*|import\s*)['"](\.[^'"]+)['"]/g)) {
+      const dependency = relative(sourceRoot, resolve(sourceRoot, dirname(path), match[1]));
+      assert.ok(!isAbsolute(dependency) && !dependency.startsWith('..'));
+      await copySource(dependency);
+    }
+  }
+  // Copy the real boot-config source closure and the Lab dependencies that
+  // Render already installs. Frontend and speech dependencies stay absent.
+  await copySource('ops/cloud/config.mjs');
+  await symlink(await realpath(join(sourceRoot, 'lab/node_modules')), join(root, 'lab/node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
+  const isolated = await import(pathToFileURL(join(root, 'ops/cloud/config.mjs')).href);
+  const env = base();
+  assert.deepEqual(isolated.validateCloudConfig(env, {repository:root}), validateCloudConfig(env, {repository:root}));
 });

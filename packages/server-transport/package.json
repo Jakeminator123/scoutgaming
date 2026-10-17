@@ -1,0 +1,15 @@
+{
+  "name": "@croupier/server-transport",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.16.0" },
+  "exports": {
+    "./paths": "./paths.mjs",
+    "./configuration": "./configuration.mjs",
+    "./socket-core": "./socket-core.mjs",
+    "./node-server": "./node-server.mjs"
+  },
+  "files": ["*.mjs"],
+  "dependencies": { "ws": "8.22.0" }
+}
