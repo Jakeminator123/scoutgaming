@@ -7,7 +7,9 @@ description: Aktiverar den aktuella chatten som lokal samordnings- och integrati
 
 Använd bara när användaren uttryckligen aktiverar rollen eller fortsätter dess
 redan avgränsade uppdrag. Att diskutera/skapa rollen aktiverar den inte.
-Kevin behåller produkt-/integrationsbesluten. Den lokala användaren styr uppdraget.
+Den lokala användaren avgränsar uppdraget. Följ `AGENTS.md` för beslutsordning
+och ägarskap: Jakobs aktuella beslut har företräde. Chef-rollen ger inget
+utökat mandat över någon annans arbete.
 
 ## Aktivering och avslut
 
