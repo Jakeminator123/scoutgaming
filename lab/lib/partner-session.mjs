@@ -1,9 +1,9 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
-import { createAccountCredentialResolver } from '../../web/account-credentials.mjs';
+import { createAccountCredentialResolver } from '../../packages/studio-access/server/account-credentials.mjs';
 import { allowsWorkspaceResource, internalPartnerContext } from './partner-workspace-access.mjs';
-import { craigIdentity } from '../../web/storage/async-craig-identity.mjs';
-import { installBoAuthEpoch } from '../../web/storage/async-bo-auth-epoch.mjs';
+import { craigIdentity } from '../../packages/studio-access/server/craig-identity.mjs';
+import { installBoAuthEpoch } from '../../packages/studio-access/server/bo-auth-epoch.mjs';
 import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';

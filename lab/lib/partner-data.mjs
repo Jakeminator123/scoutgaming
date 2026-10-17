@@ -1,4 +1,4 @@
-import { PARTNER_PERMISSIONS } from '../../web/partner-access-policy.mjs';
+import { PARTNER_PERMISSIONS } from '../../packages/studio-access/server/partner-access-policy.mjs';
 import { allowsWorkspaceResource, internalPartnerContext } from './partner-workspace-access.mjs';
 import { assertNativeStudioRequest } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';

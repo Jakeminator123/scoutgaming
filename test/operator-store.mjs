@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { allowsPartnerResource } from '../web/partner-access-policy.mjs';
+import { allowsPartnerResource } from '../packages/studio-access/server/partner-access-policy.mjs';
 import { createOperatorStore } from '../web/storage/operator-store.mjs';
 import { StudioStorageError, canonicalStudioJson } from '../web/storage/studio-contract.mjs';
 

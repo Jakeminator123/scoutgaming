@@ -4,7 +4,7 @@ import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { handlePartnerAuth } from '../lib/partner-session.mjs';
 import { createOperatorJournal } from '../lib/operator-journal.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
-import { PARTNER_PERMISSIONS } from '../../web/partner-access-policy.mjs';
+import { PARTNER_PERMISSIONS } from '../../packages/studio-access/server/partner-access-policy.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
 
