@@ -2119,7 +2119,11 @@ Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordni
 `packages/presentation/server/selection.mjs` väljer exakt familj och tillåten variant
 med samma triggers, regler, slump och Director-kontrakt som Händelser (`/control/events`).
 Studio och spelserver använder kärnan via den uttryckliga appkompositionen i
-`lab/lib/presentation-selection.mjs`, med register för varje urvalsoperation.
+`lab/lib/presentation-selection.mjs` respektive `web/presentation-selection.mjs`,
+med explicita register för varje urvalsoperation. Gemensam relay och idle-kärna
+ligger i `packages/presentation/server/`; HTTP, settingsval och serviceinstanser
+är appägda. Current-register och frysta presentationer behåller sina skilda
+läsningar, cacheScope, tidsgränser och avbrott.
 
 Web använder `PerformancePlayer.playLocalClip` för hashverifierade MP4-filer
 från `media/dealers/astrid/runtime/presentation`. En film äger ytan i taget. Den tidigare Astridmotorn,

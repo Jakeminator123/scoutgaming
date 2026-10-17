@@ -14,7 +14,7 @@ import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/re
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 import { loadVideoRegistry as readVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
-import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
+import { selectPresentation } from '../web/presentation-selection.mjs';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

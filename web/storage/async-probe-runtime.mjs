@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import { probePolicy } from '../../packages/presentation/contracts/probe-policy.mjs';
 import { requestProductProbe } from '../../packages/director/product-probe.mjs';
-import { probeFixtures } from '../../lab/lib/probe-fixtures.mjs';
+import { probeFixtures } from '../../packages/presentation/contracts/probe-fixtures.mjs';
 import { PROBE_MODELS } from '../../packages/presentation/contracts/probe-policy.mjs';
 
 export function createProbeRuntime({ store, memory, projectStore, settingsProvider, serviceProvider,

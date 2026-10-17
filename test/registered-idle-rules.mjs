@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addDealer, createEmptyProject, defaultPresentationLane, validateProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { createRegisteredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';
-import { selectRegisteredIdleRule } from '../lab/lib/registered-idle-rules.mjs';
+import { selectRegisteredIdleRule } from '../web/presentation-selection.mjs';
 import { createLiveIdleController } from '../packages/presentation/runtime/live-idle.mjs';
 import { captureFrozenPresentation } from '../web/storage/frozen-presentation-capture.mjs';
 import { frozenPlaybackProject } from '../web/frozen-dealer-playback.mjs';

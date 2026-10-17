@@ -6,7 +6,7 @@ import { createPlayerProbeStore } from '../web/player-probe-store.mjs';
 import { createProbeRuntime } from '../web/probe-runtime.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
 import { normalizeProbeRequest, validateProbeChoice, decideProductProbe, createProductProbeService } from '../packages/director/product-probe.mjs';
-import { probeFixtures } from '../lab/lib/probe-fixtures.mjs';
+import { probeFixtures } from '../packages/presentation/contracts/probe-fixtures.mjs';
 import { createSeedProject, validateProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { rebaseProjectDraft } from '../lab/lib/project-rebase.mjs';
 import { probePresentationQuiet } from '../web/public/probe-client.mjs';

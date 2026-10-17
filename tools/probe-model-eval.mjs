@@ -2,7 +2,7 @@
 import { resolve } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { probeFixtures } from '../lab/lib/probe-fixtures.mjs';
+import { probeFixtures } from '../packages/presentation/contracts/probe-fixtures.mjs';
 import { requestProductProbe, PROBE_MODEL_IDS } from '../packages/director/product-probe.mjs';
 import { readSettings } from '../lab/lib/director-settings.mjs';
 

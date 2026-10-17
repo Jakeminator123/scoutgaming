@@ -1091,3 +1091,29 @@ Lab-junctionen; inga manifest eller lås ändrades. C2j `15870a7d57913e715cf4a3b
 integreras därefter utan commit: fem konflikter förenar C2l:s appkompositioner,
 C2k:s sociala policy och C2j:s neutrala SQL-/operator-/saved-game-ägare.
 Kontroller och mergecommit för den senaste föreningen återstår.
+
+## Etapp 3 C2l-b: presentation och idle — lokalt 17 oktober 2026
+
+Efter C2k-merge `7dd2579` (333/333 och eget Studio-bygge) och C2j-merge
+`d329bf06` (964 pass, 0 fail, 8 befintliga opt-in, frontendtyper gröna)
+kopplar Studio och game sina egna urvalskompositioner till samma neutrala
+relay-/idle-kärna. Director/model, settingsläsare, register, clock/fetch är
+explicita; per-request frozen-register, cacheScope, fingerprint, TTL, rate-
+/concurrencygränser, signaler och post-await-kontroller bevaras.
+Studio behåller HTTP, filpolicy och Symbol.for-singleton; game behåller lazy
+API-instansen. Den ersatta Lab-modulen för game-only idle-regler är borttagen.
+
+Rena probe-fixtures och deklarationen har en gemensam contracts-ägare eftersom
+Studio-editor också använder dem. Samtliga sju konsumenter och befintliga
+fixture-/QA-listor följer flytten; inga nya publika URL:er, testfiler eller
+generated-speech/provider-/miljöändringar görs. Åtta mekaniska jämförelser
+passerar; 162 relativa imports har befintliga mål. Relay, idlevalidering,
+katalog, cache/rate/deadline-/avbrottskroppar och Studio-settings/HTTP/singleton
+är identiska bortsett från namngivna portar/indrag.
+
+Node 24.21.0, fyra workers: 241 befintliga riktade prov passerar utan skips,
+inklusive båda appkompositionerna, frozen/current, relay/idle, social/companion,
+probe och samtliga sex serverfixturekonsumenter. Studio-typecheck passerar;
+testinventering 512 kandidater, 0 orphans, 9 befintliga klassningar. C2l-b är
+lokalt färdig och parentgranskad; levereras via ordinarie commit-hook. Ingen fullbuild behövdes för denna del.
+Samlad integration, aktuell transport/PR213 och C2l-c återstår.

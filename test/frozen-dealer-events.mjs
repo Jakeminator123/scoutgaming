@@ -9,7 +9,7 @@ import { assertFrozenMediaPreconditions } from '../web/storage/frozen-dealer-idl
 import { encodePresentationPackage, decodePresentationPackage } from '../web/storage/presentation-package.mjs';
 import { validatePresentationPackage } from '../web/presentation-layers.mjs';
 import { frozenPlaybackProject, mergeFrozenDealerPlayback } from '../web/frozen-dealer-playback.mjs';
-import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
+import { selectPresentation } from '../web/presentation-selection.mjs';
 import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
 import {bindSpeechSlotStandard, OTHER_SPEECH_SLOT_IDS} from '../packages/presentation/contracts/speech-slot-bindings.mjs';
 import {createHash} from 'node:crypto';
