@@ -32,6 +32,10 @@ Ordinarie fokuserad hook: 64 godkända, ett verkligt PostgreSQL-prov väntar på
 Normal integration av main 4b54a1cc gav 268/268; taltransport 11/11 på Node22.
 Läsande produktionsplan 17 oktober 22:09Z verifierar 001–013 och enbart 014
 som optional pending. Inga schema- eller dataskrivningar gjordes.
+Första PR-CI stoppades vid orphan-grinden eftersom det nya budgettestet saknades
+i fullkörlistan; senare beroendefel var följdfel och SQL kördes inte. Testet är
+nu registrerat i befintlig fullsvit; orphan-kontroll 513 kandidater/0 orphan och
+sex budget-/katalogprov passerar. Ny full CI krävs fortfarande.
 Det utökade SQL-provet kontrollerar oförändrad historik, parallella ändringar,
 färskhets-/scopefel och att exakt ett nytt försök ryms. Dessa SQL-resultat är
 ännu inte verifierade här. Inget nytt betalt jobb eller visuellt/hörbart prov.
