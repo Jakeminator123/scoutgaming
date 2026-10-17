@@ -14,7 +14,7 @@ källmapp; Lissabon är ingen separat produkt eller image.
 
 | Innehåll som kontexten behåller | Nuvarande roll |
 | --- | --- |
-| `web/`, `lab/`, `apps/croupier-frontend/` | Spelserver, Studio och spelargränssnittets källkod. `web/public/` behåller publik kod och resurser; produktens medieauktoritet är scoped Neon och privat Blob. |
+| `web/`, `lab/`, `apps/web/` | Spelserver, Studio och spelargränssnittets källkod. `web/public/` behåller publik kod och resurser; produktens medieauktoritet är scoped Neon och privat Blob. |
 | `packages/`, `tools/`, `ops/` | Gemensamma paket, byggverktyg och produktstart. Guide- och policydata under `lab/docs/` och `lab/policies/` följer också med. |
 | `services/astrid-gpu-worker/gateway/` | Talreläet vars beroenden denna Dockerfil installerar. GPU-imagen har en egen Dockerfil och byggs inte av kommandot ovan. |
 | `media/**/runtime` | Filträdet utesluts inte generellt. Eventuella medföljande filer blir inte metadata- eller bytesreserv: produktens runtime använder Neon och Blob. |

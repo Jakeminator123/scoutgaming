@@ -103,7 +103,7 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
   }
   for(const path of ['/web/server.mjs','/web/public/app.mjs','/web/public/dealer-identity.mjs/extra',
     '/web/public/dealer-identity.mjs.bak','/packages/presentation/runtime/selection.mjs',
-    '/packages/navigation/server/platform-routing.mjs','/apps/croupier-frontend/lib/platform-routing.mjs',
+    '/packages/navigation/server/platform-routing.mjs','/apps/web/lib/platform-routing.mjs',
     '/packages/navigation/game-entry.mjs/extra','/packages/navigation/game-entry.mjs.bak','/game-entry.mjs',
     '/packages/presentation/contracts/presentation-room.mjs', '/packages/presentation/contracts/operator-lifecycle-key.mjs',
     '/packages/presentation/server/generated-speech-runtime.mjs', '/packages/presentation/server/generated-speech-service.mjs',

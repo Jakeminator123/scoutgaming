@@ -10,7 +10,7 @@
       "functions": { "server.mjs": { "maxDuration": 600 } }
     },
     "web": {
-      "root": "apps/croupier-frontend",
+      "root": "apps/web",
       "framework": "nextjs",
       "buildCommand": "npm run build",
       "functions": {

@@ -106,7 +106,7 @@ test('fresh native N1 login reaches its own profile through the actual isolated 
   const {fileURLToPath}=await import('node:url');
   const {createStudioNativeAuthActions}=await import('../lab/lib/studio-native-auth-actions.mjs');
   const {createStudioNativeAuth}=await import('../lab/lib/studio-native-auth.mjs');
-  const {playerAreaPage}=await import('../apps/croupier-frontend/lib/player-area.mjs');
+  const {playerAreaPage}=await import('../apps/web/lib/player-area.mjs');
   const directory=await mkdtemp(join(tmpdir(),'n1-session-'));
   const listener=createServer();listener.listen(0,'127.0.0.1');await once(listener,'listening');const port=listener.address().port;await new Promise(done=>listener.close(done));
   const origin='https://www.fixture.invalid',password='Isolated-N1-Player-Test-Password';let child,users,players;

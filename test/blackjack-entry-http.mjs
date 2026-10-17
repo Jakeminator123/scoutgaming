@@ -7,7 +7,7 @@ import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { build } from '../apps/croupier-frontend/tools/player-ui-build.mjs';
+import { build } from '../apps/web/tools/player-ui-build.mjs';
 
 test('real entry serves login and preserves account/table identity across a server restart with empty fixture databases', async () => {
   const directory=await mkdtemp(join(tmpdir(),'blackjack-entry-'));

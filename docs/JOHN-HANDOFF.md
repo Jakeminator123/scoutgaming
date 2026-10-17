@@ -1,5 +1,6 @@
 # Aktuell handoff — Scoutgaming
 
+
 ## Dragan: uttrycklig budgetändring inom 15 USD — 18 oktober 2026
 
 Jakob har godkänt att budgetspärren rättas och att ett nytt kontrollerat tal- och
@@ -38,6 +39,41 @@ moving speech fortsatt avstängt; därefter verifierad migration på faktisk
 ett separat leveranssteg som gör 014 obligatorisk. Slutligt talprov väntar även
 på HUVUDAGENT3:s rotflyttar och driftkvitton. Ingen produktionsmigration,
 budgetändring, envändring eller GPU-start ingår i detta kodkvitto. Astrid bevaras.
+
+## C3 — frontendens källrot apps/web, lokalt 17 oktober 2026
+
+Alla 130 spårade frontendfiler har flyttats från apps/croupier-frontend till
+apps/web. Exakta import-, fixture-, CI-, hook- och guiderötter följer flytten;
+vercel.json ändrar enbart services.web.root. Speech behåller sin nuvarande rot
+och Node22.23.1; frontend behåller Node24.21.0/pnpm10.33.2 och samma låsfil.
+Ignorerade data, gamla dependencyjunctions och byggmappar har inte flyttats.
+
+Basen dfca4db98da15e0221c820d8fe7bfdc7f8795c15 förenar O/N, J/main218 och
+PR223:s rättade e3e9f8e7. Vid själva flyttsteget bevarades ursprungliga body- och mediebytes;
+därefter fick 23 filer enbart exakta sökvägsbyten. Dokumentation och de tre
+exakta ignore-reglerna har egna redovisade anpassningar. Publika URL:er, medieidentiteter och
+protokollvärden består. Historiska npm-/importnamn är inte nya källrötter.
+
+Verifierat lokalt: samtliga 12 frontendtestfiler 117/117 med fyra workers,
+prepare och exakt ett aktiverat Next-produktionsbygge med isolerade exempelvärden.
+100/100 deklarerade URL:er från 52 källor byggs; enda källbytesanpassningen är
+befintlig importomräkning. Importgrafen är komplett, closure 2 309 672 byte under
+fem MiB. Alla fem relevanta routetraces inkluderar runtime-HTML; 21 traces har
+inga gamla frontend-, privata data- eller källmedievägar. Frontendtyper, 40
+rot-/CI-/hook-/entryprov, ett verkligt GET/HEAD-importgrafprov, miljöregistret
+och 18 transportprov på Node22.23.1 är gröna. Inga nya testfiler.
+
+Faktisk main228 1ee284725cf2e6583349c368d96bd608ef78f808 är normalt integrerad.
+N/O- och PR226-integrationen gav 141 pass, inga fel och en befintlig SQL-opt-in
+med ordinarie hook; slutlig ancestry-integration ändrade inga filer. Frontendens
+produkt- och byggträd är identiska med det lokala byggkvittot. Aktiva guider pekar
+på apps/web och neutral katalogägare. Läsande Vercel-förkontroll bekräftar rätt
+Scoutgaming-projekt, reporot och Node24 utan gammal frontend-override.
+
+Detta är lokal verifiering, inte ett nytt spel-/mediegodkännande. Extern
+konfiguration är oförändrad. PR/CI/drift samordnas med mergeagenten, och nästa
+apprötter följer separata leveranser.
+
 
 
 ## PR228: slutlig integration och byggkvitto
@@ -371,7 +407,6 @@ ops-/miljökällreferenser med samma policy- och dokumentvaliderare. SessionSign
 lease/reservation/cancellation och journalens failclosed-beteende är bevarade.
 C2l-c: 396/396 riktade befintliga prov, Studio-typer och tio mekaniska kroppsjämförelser gröna. Parentreview och ordinarie commit-hook återstår. Ingen push, fullbuild,
 miljö-/schema-/provider-/GPU-ändring eller nytt läppsynksgodkännande.
-
 ## Publika moduler oberoende av deployordning — 17 oktober 2026
 
 Frontendens middleware låter GET/HEAD till exakta kanoniskt validerade adresser i

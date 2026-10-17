@@ -19,7 +19,7 @@ produktnivå. Gemensamma begrepp och rumsmodellen definieras i
 
 Dessa läser paketet:
 
-- `apps/croupier-frontend/tools/prepare-platform-ui.mjs` kopierar `compositor.js` och `geometry.js` till `apps/croupier-frontend/public/composition-runtime/`.
+- `apps/web/tools/prepare-platform-ui.mjs` kopierar `compositor.js` och `geometry.js` till `apps/web/public/composition-runtime/`.
 - `web/composition-runtime.mjs` serverar `/composition-runtime/*`.
 - `web/layer-packs.mjs` serverar `/layer-packs/*` från `compositor/`.
 - `lab/tools/prepare-preview.mjs` bygger `lab/preview-build`. Native molndrift serverar endast `compositor.js` och `geometry.js` under `/preview/*`; äldre sida, katalog och medier svarar 410. Explicit offlinefixtur behåller sitt isolerade previewmaterial.

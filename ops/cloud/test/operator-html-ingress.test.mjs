@@ -5,7 +5,7 @@ import { once } from 'node:events';
 import { createCloudGateway } from '../gateway.mjs';
 import { readVercelIngressConfig } from '../vercel-ingress.mjs';
 import { platformBackendHeaders, platformConfiguration } from '../../../packages/navigation/server/platform-routing.mjs';
-import { platformUiDocument } from '../../../apps/croupier-frontend/lib/server-ui.mjs';
+import { platformUiDocument } from '../../../apps/web/lib/server-ui.mjs';
 
 const env = {CROUPIER_VERCEL_UI:'1',CROUPIER_VERCEL_UNIFIED_UI:'1',CROUPIER_STUDIO_NATIVE_ADMIN:'1',
   CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_PUBLIC_ORIGIN:'https://operator.example.test',
