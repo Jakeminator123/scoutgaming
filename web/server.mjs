@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { MOVING_TRIAL_BUDGET } from './moving-speech-budget.mjs';
 import {OPERATOR_NOT_FOUND_HTML} from '../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
 import {playerHandoffDestination} from '../packages/navigation/player-handoff.mjs';
@@ -1391,9 +1392,7 @@ if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
     apiKey:process.env.CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY,expectedImage:process.env.CROUPIER_MOVING_SPEECH_IMAGE});
   const sessions=createMovingSpeechSession({journal:speechJournal,scope:studioPolicyRuntime.scope,
     origin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,provider,
-    release:provider.release,workerState:provider.workerState,budgetId:'dragan-test-20261017',
-    // Includes the earlier $0.169813 pod charge plus a conservative margin.
-    totalBudgetMicroUsd:4800000,reserveMicroUsd:1200000,currentDailyBudgetMicroUsd:4800000});
+    release:provider.release,workerState:provider.workerState,...MOVING_TRIAL_BUDGET});
   const recovery=await sessions.reconcile();
   if(recovery.unresolved.length)console.warn(JSON.stringify({event:'moving_speech_recovery',unresolved:recovery.unresolved.length}));
   const repository=studioPolicyRuntime.repository;
