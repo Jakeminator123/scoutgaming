@@ -9,7 +9,7 @@ import {
   type StudioProject,
 } from '../../packages/presentation/contracts/studio-model.mjs';
 import styles from './lane-editor.module.css';
-import { compositionLabel } from '../lib/control-flow.mjs';
+import { compositionLabel } from '../../packages/navigation/control-flow.mjs';
 import { activeStudioDealers } from './studio-types';
 
 export const LANE_ID_HELP = 'Unikt id: små bokstäver, siffror och bindestreck.';

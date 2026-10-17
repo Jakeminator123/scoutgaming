@@ -4,7 +4,7 @@ import { Readable } from 'node:stream';
 import { basename, extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { parseByteRange } from './preview-files.mjs';
 import { designPreviewPages, designPreviewReturnTo } from './design-preview-paths.mjs';
-import { adminDocumentHref } from './admin-workspace-routes.mjs';
+import { adminDocumentHref } from '../../packages/navigation/admin-workspace-routes.mjs';
 
 const labRoot = basename(process.cwd()) === 'lab' ? process.cwd() : resolve(process.cwd(), 'lab');
 export const designPreviewDirectory = resolve(labRoot, 'design-preview-build');

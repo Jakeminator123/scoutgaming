@@ -1,5 +1,6 @@
 // Public operator labels. The lobby list includes only currently playable rooms.
-import { DEMO_OPERATORS as PARTNER_PREVIEW_OPERATORS, isOperatorSlug } from './demo-operators.mjs';
+import { DEMO_OPERATORS as PARTNER_PREVIEW_OPERATORS } from './demo-operators.mjs';
+import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 import { isUnplayableOperatorRooms } from './public-operator-rooms.mjs';
 
 const PATH = /^\/api\/operators\/([^/]+)$/;

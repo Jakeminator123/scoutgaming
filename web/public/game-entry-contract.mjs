@@ -1,6 +1,7 @@
 import { isActiveDealerId as isDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateComposition} from './presentation-composition.mjs';
-import { assertGameChoices, isGameLaneId, isOperatorSlug } from './game-lanes.mjs';
+import { assertGameChoices, isGameLaneId } from './game-lanes.mjs';
+import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 
 const uuid = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export function validateStudioPreview(value) {

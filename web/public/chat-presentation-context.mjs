@@ -1,5 +1,6 @@
 import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {isGameLaneId,isOperatorSlug} from './game-lanes.mjs';
+import { isGameLaneId } from './game-lanes.mjs';
+import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 
 // The document's published selection is a request, never authorization. The
 // server resolves this context against its current package on every chat call.

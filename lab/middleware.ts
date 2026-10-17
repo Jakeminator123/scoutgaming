@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { platformConfiguration, platformRoute, platformBackendHeaders } from '../apps/croupier-frontend/lib/platform-routing.mjs';
 import { studioDocumentNavigationHeaders, studioDocumentNavigationMetadata } from './lib/studio-native-request.mjs';
-import { legacyStudioDocumentHref } from './lib/admin-workspace-routes.mjs';
+import { legacyStudioDocumentHref } from './lib/legacy-studio-document.mjs';
 import { publicAbsoluteUrl } from './lib/lab-url.mjs';
 
 function legacyDocumentRedirect(request: NextRequest, publicOrigin?: string) {

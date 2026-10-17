@@ -1,4 +1,4 @@
-import {ADMIN_WORKSPACE_TOOLS} from './admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS} from '../../packages/navigation/admin-workspace-routes.mjs';
 import {STANDARD_OPERATOR_ROLES} from './operator-admin-api.mjs';
 
 // A read adapter for the existing editors, never another store or write path.

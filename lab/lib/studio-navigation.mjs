@@ -1,5 +1,5 @@
 import { labUrl } from './lab-url.mjs';
-import { canonicalControlHref } from './control-flow.mjs';
+import { canonicalControlHref } from '../../packages/navigation/control-flow.mjs';
 
 export const STUDIO_DEALER_TABS = Object.freeze([
   { id: 'idle', label: 'Grundloop', href: '/control/clips?view=idle' },

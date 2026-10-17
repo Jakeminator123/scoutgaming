@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canonicalControlHref, compositionLabel } from '../lib/control-flow.mjs';
+import { canonicalControlHref, compositionLabel } from '../../packages/navigation/control-flow.mjs';
 import { studioNavigationHref, studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 
 test('older workspace links keep company and room context', () => {

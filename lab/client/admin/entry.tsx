@@ -13,7 +13,7 @@ import { DealerDirectory } from './components/studio/dealer-directory';
 import { ResourceConnections } from './components/studio/resource-connections';
 import { ResourceDeletion } from './components/studio/resource-deletion';
 import {WorkspaceTool,WorkspaceToolsHome} from './components/studio/workspace-tools';
-import {ADMIN_WORKSPACE_TOOLS} from '../../../lab/lib/admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS} from '../../../packages/navigation/admin-workspace-routes.mjs';
 
 // Native readers and mutations keep their existing session, scopes and revisions.
 const servicePaths = new Set(['/admin/drift','/admin/ekonomi','/admin/admin/accounts','/admin/admin/players','/admin/admin/payments','/admin/admin/api','/admin/admin/log','/admin/ai/models']);

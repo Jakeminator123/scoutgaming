@@ -11,17 +11,16 @@
     "typecheck": "tsc --noEmit --incremental false"
   },
   "dependencies": {
+    "@croupier/server-transport": "file:../../packages/server-transport",
     "@radix-ui/react-slot": "1.1.1",
     "@vercel/analytics": "1.3.1",
-    "@vercel/functions": "3.9.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.454.0",
     "next": "15.5.26",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwind-merge": "^3.3.1",
-    "ws": "8.22.0"
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
@@ -32,7 +31,8 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "ws": "8.22.0"
   },
   "engines": {
     "node": "24.x"

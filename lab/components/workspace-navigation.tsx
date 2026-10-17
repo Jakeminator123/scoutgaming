@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { labUrl } from '../lib/lab-url.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, isScoutAuthPath, scoutLevel, scoutNavigationItem } from '../lib/scout-navigation.mjs';
-import { isPartnerSurfacePath, resolveWorkspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
+import { isPartnerSurfacePath, resolveWorkspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 import { subscribeShellStatus } from './page-template.mjs';
 import { ThemeToggle } from './theme-toggle';
 import styles from './workspace-navigation.module.css';

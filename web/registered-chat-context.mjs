@@ -1,5 +1,6 @@
 import {isActiveDealerId as isDealerId} from '../packages/presentation/contracts/dealer-identity.mjs';
-import {isGameLaneId,isOperatorSlug} from './public/game-lanes.mjs';
+import { isGameLaneId } from './public/game-lanes.mjs';
+import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 
 const keys=['operatorSlug','roomId','packageRevision','dealerId'];
 const fail=(code,statusCode)=>{throw Object.assign(Error(code),{code,statusCode});};

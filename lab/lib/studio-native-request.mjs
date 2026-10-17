@@ -1,6 +1,6 @@
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
-import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 import { designPreviewPages } from './design-preview-paths.mjs';
 
 // Only fixed enums and booleans are exposed in transport diagnostics. Never
