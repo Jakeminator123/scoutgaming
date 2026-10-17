@@ -1,5 +1,150 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: worker-klassning och återanvändningsanalys — 17 oktober 2026, 22:30 CEST
+
+Avgränsad kodrättning med offline-tester på `cursor/lipsync-cloud-diagnosis-36e8`.
+Inga GPU-prov, miljöändringar, providerresurser eller budgetändringar ingår.
+Tal och läppsynk i spelet fungerar fortfarande inte; detta ändrar varför nästa
+prov får stoppas, inte om det lyckas.
+
+### Verifierat ur det stoppade provet (inte hypotes)
+
+Runpods REST-poster för workers är pods med `desiredStatus` ∈ RUNNING/EXITED/
+TERMINATED (sparad OpenAPI 17 oktober). Endpointens `version` stegas bara vid
+ändrad template/env, inte vid ändrat `workersMin`. Receipt 19:05:44 visade
+`s8le9mn0gs3n8g` som EXITED medan systemloggen 19:06:47 fortfarande hämtade
+imagen; 19:07:40 var samma worker RUNNING och en ny `t5nobwvi58kdch` EXITED.
+`/health` 19:04:32 visade noll i alla worker-räknare med ett köat jobb.
+Runpods dokumentation: nedskalad worker (Initializing/Idle/Throttled) är inte
+debiterad; Running täcker kallstart, bearbetning och idle-vänt och debiteras.
+Antal poster var alltså aldrig antal aktiva GPU:er. Guardens
+`workers.length <= workersMax` stoppade ett prov som fortfarande var inom max1.
+
+Läsande Runpod-kontroll 20:20 UTC med den dedikerade lokala nyckeln: endast
+Astrids endpoint `zsudl8tmzcmiv1` (min0/max1) finns kvar, noll pods.
+Fakturerat 16–17 oktober: endpoints 0,2836 USD, varav `8pfjenuipsz355`
+0,1640 och `e9isjywhagh41l` 0,1195 (de två min1-proven som faktiskt startade
+en worker); pods 0,2155 USD (beredningspodden). De fyra min0-endpoints som
+bara köade jobb har inga fakturarader, och `dgpazl8h3a64uj` saknar ännu rad
+för sina cirka 30 sekunder RUNNING. Summa cirka 0,50 USD mot taket 15 USD;
+handoffens tidigare 0,36 USD var en delavläsning. Detta bekräftar att ett
+köat jobb på min0 aldrig fick en körande worker och därför inte kostade.
+
+### Rättning i produktadaptern
+
+`web/moving-speech-runpod.mjs` klassar varje post: RUNNING = `active`
+(upptar GPU), EXITED = `scaled-down` (cachad/hämtande slot, gratis),
+TERMINATED = `terminated`, saknat eller okänt värde = `unknown` och räknas
+som aktiv så att osäkerhet bara kan neka. Endast aktiva/okända poster räknas
+mot `workersMax` (`moving_runpod_active_workers_exceeded`); fler än max+2
+nedskalade poster ger `moving_runpod_workers_unknown`. Ägarskap (endpoint/
+template) krävs för alla poster. Fel image/version på en aktiv post är
+fortfarande `moving_worker_release_mismatch`; på en nedskalad post
+rapporteras den som `isStale` eftersom providern själv byter ut föråldrade
+slots utan kostnad. `workerState()` (`/health`) följer Runpods egen modell:
+en worker är antingen startad (`running`: cold start, jobb eller idle-väntan,
+debiterad) eller nedskalad och odebiterad. `workers = running + unhealthy`,
+`busy = max(running, jobs.inProgress) + jobs.inQueue`,
+`available = max(0, running − jobs.inProgress)`. `busy` är ett försiktigt
+arbetsmått, inte antal debiterade GPU:er. Köade eller pågående jobb blockerar
+alltid drain, även när `/health` ännu visar `running=0`; annars kunde en
+ny reservation släppas igenom och återhämtningen frigöra ägarskapet för tidigt.
+`ready` är providerns "kan ta jobb"-mått och räknar även cachade,
+ej startade slots; efter första lyckade jobbet ligger `idle:1, ready:1` kvar
+tills slotten byts ut, så den får inte ingå i `workers`/`available`. Tidigare
+(main och första versionen av #226) summerades `ready` dit, vilket blockerade
+`reserveMovingSession` och återhämtningens `worker_not_drained` för alltid
+efter en lyckad session. Råa `workers`/`jobs`-räknare följer med oförändrade
+i `raw` som journalbevis; saknad eller ogiltig räknare (även `jobs`) är
+fortfarande `moving_runpod_worker_state_unknown`, och `running` eller
+`unhealthy` > 0 blockerar fortfarande. Jobbspärren motsvarar redan
+`tools/activate-native-ai-qa.mjs` (`running=0`, `inProgress=0`, `inQueue=0`).
+`verifyMovingWorkerRelease` kräver vid `send` minst en aktiv post, inte bara
+någon post. Rader utan `state` behåller den strikta äldre tolkningen.
+
+Jakob har lämnat över PR #226 till lipsync-agenten på samma branch; den tidigare
+historien bevaras. Nya regressioner gav först tre fel på föregående head
+(adaptern, faktisk återhämtning och journalreservation/drain). Efter köfixen:
+97/97 i RunPod-, transport-, session-, platform-callback- och journaltester
+(`test/postgres-speech-journal.mjs` för den sistnämnda). SQL-provet i
+`test/studio-postgres-integration.mjs` provar även riktig
+`reserveMovingSession` med köat/pågående jobb och cache utan jobb; körningen
+kräver den isolerade PostgreSQL-fixturen och lämnas till CI.
+`test/platform-moving-speech.mjs` kräver frontendens låsta installation och
+lämnas också till CI. Ingen ändring av budgethistorik, journalens produktkod
+eller provider-POST. Render moving-flaggan förblir 0; tal/läppsynk är ännu
+inte verifierat. Nästa GPU-prov förutsätter levererad rättning, verifierad
+endpoint och beslut om journalens förbrukade budgettak. Efter main-integrationen
+fungerade den befintliga GitGuardian-kopplingen: två öppna incidenter
+(38318914 och 38318915), repoövervakning aktiv, platsmetadata delvis saknad
+och historisk scan `too_large`. Main-checken är queued. Detta är en läsning,
+inte en säkerhetsklarering; inga incidenter eller behörigheter ändrades.
+
+### Samma regel i den privata guarden
+
+Den privata `moving-runpod-provision.mjs` i Jakobs visualiseringskatalog för
+chatten `01a14afa-…` har fått samma klassning i `verifyEndpoint` och
+`verifyFallbackWorkers`: endast RUNNING eller okänd status räknas mot
+`workersMax` och utlöser `unexpected_active_workers`; EXITED/TERMINATED
+tolereras upp till max+2 utan att räknas som kapacitet, med bibehållen
+ägarskaps- och versionskontroll och oförändrad spärr mot alla poster när
+workers inte är tillåtna. `verify()` returnerar nu `workers` (upptagande),
+`workerRecords` och `scaledDownWorkers`, så uppvärmningskontrollen
+`workers===1` inte fälls av en cachad slot. Original sparades som
+`.before-worker-classification-20261017`. Ett nytt test återskapar provets
+exakta två poster; sviten ger 89/89 offline. Guardens stoppfil, deadline,
+budgeträkning och providerändringar är orörda. Adapterns
+`classifyMovingWorkerRecord`/`summarizeMovingWorkerRecords` är samma regel.
+
+### Korrigerad cacheanalys för workern
+
+`bank_download.py` har redan hashadresserad cache under
+`/tmp/croupier-moving-banks` med återverifiering per träff. Det som faktiskt
+upprepas per jobb i `entrypoint.run()` är: (1) `verify_bank` hashar arkivet
+(594 MB) igen, packar upp hela banken i en ny temporärkatalog och hashar varje
+utpackad fil; (2) `verify_models` SHA-256-hashar 3,89 GB modellfiler som är
+oföränderliga i imagen; (3) `ProcessEngine` startar en ny subprocess, laddar
+MuseTalk och banken till GPU och värmer upp (uppmätt cirka 57 s). Allt sker
+före callbackanslutningen och inom jobbets 180 s. Med idle 5 s och ett jobb
+per session överlever inget av detta till nästa replik.
+
+Förslag utan att tappa kontroll: modellverifiering en gång per workerprocess
+vid start, nyckelad på `models.lock.json`-hash, med storlekskontroll per jobb
+och fail-closed; utpackad bank per process nyckelad på
+`avatarSha256+bankReceiptSha256+sourceSetSha256+workerAvatar`, återverifierad
+mot kvittots filhashar vid återanvändning; motorprocess per
+`(releaseSha256, avatarSha256, workerAvatar)` som hålls varm efter normalt
+slutfört jobb och dödas vid avbrott/timeout som i dag. Alla tre ger effekt
+först när workern lever mellan jobb, det vill säga tillsammans med upplägget
+nedan. Ingen av dem är implementerad.
+
+### Föreslaget upplägg: återanvänd endpoint och session, ingen permanent GPU
+
+1. En permanent Dragan-endpoint/template som inte raderas mellan prov, så att
+   providern får behålla cachade slots (EXITED-poster) och imagehämtningen
+   på 4–5 minuter inte upprepas. Verifiering av image-digest, version, max1,
+   idle och execution ändras inte.
+2. Provfönster: guarden sätter `workersMin=1` först efter verifierad
+   reservation och köat jobb (som nu), väntar på `/health running=1` och
+   workerns pong, och återgår till `workersMin=0` innan chatt. Versionen
+   stegas inte av detta. Fönstret har fast deadline och ägarbunden stoppfil.
+3. Ett jobb per session i stället för per replik, med serverns befintliga
+   callback 450 s/livstid 480 s; idle höjs bara inom fönstret (högst 120 s)
+   och sätts tillbaka till 5 vid stängning. Så länge adaptern kräver
+   idle ≤ 5 är detta ett medvetet, dokumenterat undantag som kräver kodändring.
+4. Kostnadsgräns per fönster: A40 0,00034 USD/s ⇒ 10 minuter ≈ 0,20 USD plus
+   reserv; guarden räknar aktuell summa före aktivering mot taket 15 USD med
+   kvar 2,90 USD efter försiktiga reserver. Taljournalens 4,80 USD är fullt
+   reserverat; nytt prov kräver att Jakob höjer det budget-ID:ts tak, inte
+   nytt ID eller nollställd historik.
+5. Stopp: `workersMin=0`, cancel av öppet jobb, läs `/health` tills
+   running=0, verifiera tom aktiv lista; EXITED-poster får finnas kvar.
+
+Nästa steg är Jakobs beslut om punkt 2–4 (fönster, idle-undantag, höjt tak
+för budget-ID `dragan-test-20261017`) innan någon providerändring; därefter
+en liten testad adapterändring för idle-undantaget och först sedan ett enda
+samordnat prov. Cloud-agentens egna secrets (fel Vercel-team/projekt och
+Blob-store, se chattens frågebatteri) hanteras separat och ingår inte här.
 ## Portabel GitGuardian-konfiguration — 17 oktober 2026
 
 MCP-starten använder `git -c` med ett tillfälligt shell-alias för att köra

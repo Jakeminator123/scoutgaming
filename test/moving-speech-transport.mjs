@@ -90,6 +90,29 @@ test('owned cold endpoint version zero admits without inventing workers; PCM rea
   assert.equal(verifyMovingWorkerRelease(r, Date.now(), { requireWorkers: true }).endpointVersion, 0);
 });
 
+test('release gate counts only GPU-occupying worker rows; cached slots neither satisfy readiness nor fail on staleness', () => {
+  const r = ownedReceipt(); r.workers.endpointVersion = 1; r.workers.workersMax = 1;
+  r.workers.workers = [{ image: 'older', version: 0, isStale: true, state: 'scaled-down' }];
+  const cold = verifyMovingWorkerRelease(r);
+  assert.deepEqual([cold.activeWorkers, cold.inactiveWorkers], [0, 1]);
+  assert.throws(() => verifyMovingWorkerRelease(r, Date.now(), { requireWorkers: true }), /release_unverified/);
+  r.workers.workers.push({ image: r.expectedImage, version: 1, isStale: false, state: 'active' });
+  assert.equal(verifyMovingWorkerRelease(r, Date.now(), { requireWorkers: true }).activeWorkers, 1);
+  r.workers.workers.push({ image: r.expectedImage, version: 1, isStale: false, state: 'terminated' });
+  assert.equal(verifyMovingWorkerRelease(r, Date.now(), { requireWorkers: true }).inactiveWorkers, 2);
+  // Rows without a state remain the strict legacy shape: occupying and exact.
+  r.workers.workers.push({ image: r.expectedImage, version: 1, isStale: false });
+  assert.throws(() => verifyMovingWorkerRelease(r), /release_unverified/); // active 2 > workersMax 1
+  r.workers.workersMax = 2; assert.equal(verifyMovingWorkerRelease(r).activeWorkers, 2);
+  for (const change of [x => x.workers.workers[1].state = 'unknown', x => delete x.workers.workers[1].state]) {
+    const s = structuredClone(r); s.workers.workers[1] = { image: 'older', version: 1, isStale: true, state: 'scaled-down' }; change(s);
+    assert.throws(() => verifyMovingWorkerRelease(s), /moving_worker_release/);
+  }
+  for (const change of [x => x.workers.workers[0].state = 'paused', x => x.workers.workers[0] = null, x => x.workers.workersMax = -1]) {
+    const s = structuredClone(r); change(s); assert.throws(() => verifyMovingWorkerRelease(s), /release_unverified/);
+  }
+});
+
 test('two-phase connection attests the accepted job before PCM exists; later dispatch retains exact plan and owner', async t => {
   const input = inputFor('dragan','dragan',1,42), binding = ownedBinding(input);
   const f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding, deferred: true });
