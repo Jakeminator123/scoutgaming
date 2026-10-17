@@ -43,9 +43,13 @@ fortfarande `moving_worker_release_mismatch`; på en nedskalad post
 rapporteras den som `isStale` eftersom providern själv byter ut föråldrade
 slots utan kostnad. `workerState()` (`/health`) följer Runpods egen modell:
 en worker är antingen startad (`running`: cold start, jobb eller idle-väntan,
-debiterad) eller nedskalad och odebiterad. `busy = running`, `workers =
-running + unhealthy`, `available = running − jobs.inProgress` (startad utan
-jobb). `ready` är providerns "kan ta jobb"-mått och räknar även cachade,
+debiterad) eller nedskalad och odebiterad. `workers = running + unhealthy`,
+`busy = max(running, jobs.inProgress) + jobs.inQueue`,
+`available = max(0, running − jobs.inProgress)`. `busy` är ett försiktigt
+arbetsmått, inte antal debiterade GPU:er. Köade eller pågående jobb blockerar
+alltid drain, även när `/health` ännu visar `running=0`; annars kunde en
+ny reservation släppas igenom och återhämtningen frigöra ägarskapet för tidigt.
+`ready` är providerns "kan ta jobb"-mått och räknar även cachade,
 ej startade slots; efter första lyckade jobbet ligger `idle:1, ready:1` kvar
 tills slotten byts ut, så den får inte ingå i `workers`/`available`. Tidigare
 (main och första versionen av #226) summerades `ready` dit, vilket blockerade
@@ -53,15 +57,25 @@ tills slotten byts ut, så den får inte ingå i `workers`/`available`. Tidigare
 efter en lyckad session. Råa `workers`/`jobs`-räknare följer med oförändrade
 i `raw` som journalbevis; saknad eller ogiltig räknare (även `jobs`) är
 fortfarande `moving_runpod_worker_state_unknown`, och `running` eller
-`unhealthy` > 0 blockerar fortfarande. Samma definition använder redan
+`unhealthy` > 0 blockerar fortfarande. Jobbspärren motsvarar redan
 `tools/activate-native-ai-qa.mjs` (`running=0`, `inProgress=0`, `inQueue=0`).
 `verifyMovingWorkerRelease` kräver vid `send` minst en aktiv post, inte bara
 någon post. Rader utan `state` behåller den strikta äldre tolkningen.
 
-Offline: `test/moving-speech-runpod.mjs`, `-transport.mjs`, `-session.mjs`,
-`-runtime.mjs` ger 92 pass, 0 fel; ordinarie hook 56/56 vid commit.
-`test/platform-moving-speech.mjs` kräver speechtjänstens egen installation
-och kördes inte här. Ingen förändring av budget, journal eller provider-POST.
+Jakob har lämnat över PR #226 till lipsync-agenten på samma branch; den tidigare
+historien bevaras. Nya regressioner gav först tre fel på föregående head
+(adaptern, faktisk återhämtning och journalreservation/drain). Efter köfixen:
+97/97 i RunPod-, transport-, session-, platform-callback- och journaltester
+(`test/postgres-speech-journal.mjs` för den sistnämnda). SQL-provet i
+`test/studio-postgres-integration.mjs` provar även riktig
+`reserveMovingSession` med köat/pågående jobb och cache utan jobb; körningen
+kräver den isolerade PostgreSQL-fixturen och lämnas till CI.
+`test/platform-moving-speech.mjs` kräver frontendens låsta installation och
+lämnas också till CI. Ingen ändring av budgethistorik, journalens produktkod
+eller provider-POST. Render moving-flaggan förblir 0; tal/läppsynk är ännu
+inte verifierat. Nästa GPU-prov förutsätter levererad rättning, verifierad
+endpoint och beslut om journalens förbrukade budgettak. GitGuardian på aktuell
+main är queued; full incident-API-täckning är inte verifierad.
 
 ### Samma regel i den privata guarden
 

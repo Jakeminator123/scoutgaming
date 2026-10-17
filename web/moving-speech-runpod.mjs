@@ -51,13 +51,15 @@ const counter = value => Number.isSafeInteger(value) && value >= 0;
  * scaled down and unbilled. `ready` is the provider's "can accept a job"
  * figure and includes cached slots that are not started, so a slot left behind
  * by an earlier session must not block the next reservation or recovery.
- * `unhealthy` is an uncertain state and still blocks paid admission. Raw
- * counters are returned unchanged for the journal proof. */
+ * `unhealthy` is uncertain and still blocks admission. `busy` also includes
+ * queued work and in-progress jobs even when worker telemetry lags; it is a
+ * conservative workload count, not a billed GPU count. Raw counters are
+ * returned unchanged for the journal proof. */
 export function summarizeMovingWorkerHealth(health) {
   const workers = health?.workers, jobs = health?.jobs;
   if (!workers || !jobs || HEALTH_WORKER_KEYS.some(key => !counter(workers[key]))
     || HEALTH_JOB_KEYS.some(key => !counter(jobs[key]))) fail('moving_runpod_worker_state_unknown');
-  return {workers:workers.running+workers.unhealthy, busy:workers.running,
+  return {workers:workers.running+workers.unhealthy, busy:Math.max(workers.running,jobs.inProgress)+jobs.inQueue,
     available:Math.max(0, workers.running-jobs.inProgress), unhealthy:workers.unhealthy,
     cached:{idle:workers.idle,ready:workers.ready}, scaledDown:{idle:workers.idle,initializing:workers.initializing,throttled:workers.throttled},
     raw:{workers:{...Object.fromEntries(HEALTH_WORKER_KEYS.map(key => [key, workers[key]]))},

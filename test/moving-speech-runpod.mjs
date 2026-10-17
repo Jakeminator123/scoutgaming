@@ -43,7 +43,7 @@ test('health classifies scaled-down slots as free capacity and running or unheal
   assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0,unhealthy:0,cached:{idle:1,ready:0},
     scaledDown:{idle:1,initializing:1,throttled:1},raw:data});
   data=health({running:1},{inQueue:1});
-  assert.deepEqual(await client.workerState(),{workers:1,busy:1,available:1,unhealthy:0,cached:{idle:0,ready:0},
+  assert.deepEqual(await client.workerState(),{workers:1,busy:2,available:1,unhealthy:0,cached:{idle:0,ready:0},
     scaledDown:{idle:0,initializing:0,throttled:0},raw:data});
   data=health({running:1},{inProgress:1});
   const processing=await client.workerState();assert.equal(processing.busy,1);assert.equal(processing.available,0);assert.equal(drained(processing),false);
@@ -67,6 +67,15 @@ test('a cached ready slot left by an earlier session counts as drained so reserv
   data=health({ready:3});assert.equal(drained(await client.workerState()),true);
   // Unhealthy beside a cached slot is still uncertain and blocks.
   data=health({idle:1,ready:1,unhealthy:1});assert.equal(drained(await client.workerState()),false);
+});
+
+test('queued or in-progress jobs prevent drain even before a worker is reported',async()=>{
+  for(const jobs of [{inQueue:1},{inProgress:1},{inProgress:2,inQueue:1}]){
+    const data=health({idle:1,ready:1},jobs),client=create(async()=>Response.json(data));
+    const state=await client.workerState();
+    assert.equal(drained(state),false,JSON.stringify(jobs));
+    assert.ok(state.busy>0);assert.deepEqual(state.raw,data);
+  }
 });
 
 test('worker records: RUNNING occupies the GPU, EXITED is a free cached slot, unknown status counts as occupied',async()=>{
