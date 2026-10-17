@@ -41,7 +41,7 @@ webbläsarcodecprov hoppades över. Referensagentens separata körning gav
 produktion. Workeragentens 31 tester passerade på WSL/Python 3.12, inklusive
 verkliga CPU-hjälpare från motorn och MuseTalk; Windows gav 27 pass och en
 överhoppad rendererklass eftersom dess beroenden inte finns där.
-hela Dragan-bankens 2 479 rutor/50 tagningar och sju modellhashar verifierades.
+Hela Dragan-bankens 2 479 rutor/50 tagningar och sju modellhashar verifierades.
 Sviterna överlappar och summeras inte. Detta är kontraktsbevis, inte
 hörbar/visuell liveacceptans.
 
@@ -50,8 +50,13 @@ och reproducerade tre fel. Rättningarna räknar bildrutor med hela samplingar,
 behåller vilans källruta 0 och blockerar importbeslut vid oläsbart/ofullständigt
 registerunderlag. De begränsade motorpatcharna redovisas i `source.json`;
 Emils originalkvitton bevaras. CPU-proven ersätter inte ett nytt GPU-/spelprov.
-Worker-CI kontrollerar det verkliga containerbygget; produkt-CI inkluderar
-isolerad PostgreSQL. Aktuella körningar och fryst leveranshead finns i PR191.
+Omgranskningen av `19103fcf6301b4f8e2ae2ef78690943919cdc97f` stängde alla tre
+fynd utan nya konkreta kodfynd. På samma head passerade både
+[full produkt-CI med isolerad PostgreSQL](https://github.com/Jakeminator123/scoutgaming/actions/runs/38994132656)
+och [det verkliga serverless-containerbygget](https://github.com/Jakeminator123/scoutgaming/actions/runs/38994132683).
+Den färdiga containern klarade 31 CPU-tester och importer utan nät som icke-root.
+Detta kvitto gäller förberedelseleveransen, inte publicerad GPU-drift eller
+visuell läppsynk. Senare leveranshead och dess kontrollstatus visas i PR191.
 
 Kvar före aktivering: publicerad och verifierad molnimage och GPU-prov, verklig import genom befintliga
 skrivare, taljournal/dispatcher och spelarens ljudklocka/omplanering. Docker

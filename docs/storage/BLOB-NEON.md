@@ -399,9 +399,17 @@ totala 180 sekunder; normal I/O och behörighetskontroller behåller 15 sekunder
 Separat PR-workflow `moving-gpu-build.yml` bygger serverless-target på CPU
 och kontrollerar paketerade importer utan nät/GPU. Den publicerar ingen image
 och skapar inga molnresurser.
-Docker finns inte installerat i den kontrollerade Windows-/WSL-miljön;
-containerbygge, GPU-prov, journal-/dispatcheranslutning och faktisk spelar-
-integration återstår. Läsande RunPod-kontroll 17 oktober 01:42 UTC visade inga
+Verifierat 17 oktober på kodhead `19103fcf6301b4f8e2ae2ef78690943919cdc97f`:
+[serverless-containerbygget](https://github.com/Jakeminator123/scoutgaming/actions/runs/38994132683)
+passerade med sju verifierade modellhashar och 31 tester både under bygget och
+i den färdiga containern utan nät, som icke-root. Releasekvitto:
+`d6a799c104281b6e180c8285ba464b6420f6b4a4e3d20369ecab0a2d40988eb8`.
+[Full produkt-CI](https://github.com/Jakeminator123/scoutgaming/actions/runs/38994132656)
+passerade också, inklusive isolerad PostgreSQL och schemaberedskap. Imagen är
+byggd men inte publicerad; en lokal image-ID är inte ett publicerat OCI-digest.
+GPU-prov, journal-/dispatcheranslutning och faktisk spelarintegration återstår.
+Docker finns inte installerat i den kontrollerade Windows-/WSL-miljön; bygget
+kördes i GitHub Actions. Läsande RunPod-kontroll 17 oktober 01:42 UTC visade inga
 pods och endast den befintliga endpointen `croupier-astrid-gpu-test`.
 
 ## Filansvar, ersättning och parallellt arbete

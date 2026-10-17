@@ -302,8 +302,10 @@ OpenClaw levererar fortsatt dynamisk text genom den befintliga talvägen;
 workern utför bara läppsynk på serverns exakta ljud och frameplan. Förinspelade
 repliker behåller sitt separata ljud/video. Ingen ny route, dispatcher,
 produktionsjournaladmission eller spelaraktivering ingår i detta tillägg.
-Container/GPU-verifiering återstår; [storage-guiden](storage/BLOB-NEON.md)
-beskriver införandeordning och vad som faktiskt är implementerat.
+Containerbygge och CPU-prov passerade i GitHub Actions 17 oktober på kodhead
+`19103fcf6301b4f8e2ae2ef78690943919cdc97f`. Publicering, GPU-prov och
+spelaraktivering återstår; [storage-guiden](storage/BLOB-NEON.md) innehåller
+körningskvitton, införandeordning och vad som faktiskt är implementerat.
 
 Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image
