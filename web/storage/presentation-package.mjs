@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { OPERATOR_LIFECYCLE_KEY } from './operator-lifecycle.mjs';
+import { OPERATOR_LIFECYCLE_KEY } from '../../packages/presentation/contracts/operator-lifecycle-key.mjs';
 import { gzipSync, gunzipSync, brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { validatePresentationPackage } from '../presentation-layers.mjs';
 import { canonicalStudioJson, StudioStorageError } from './studio-contract.mjs';

@@ -78,6 +78,7 @@ export const ARCHIVE_PATHS = Object.freeze([
   'web/public/speech-slot-bindings.mjs',
   'web/public/speech-lines.mjs',
   'web/public/game-lanes.mjs',
+  'packages/presentation/contracts/game-lane-id.mjs',
   'web/public/game-overlay-layout.mjs',
   'web/public/presentation-composition.mjs',
 ]);
