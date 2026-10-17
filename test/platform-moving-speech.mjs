@@ -7,7 +7,7 @@ import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 const frontendRequire = createRequire(new URL('../apps/web/package.json', import.meta.url));
 const WebSocket = frontendRequire('ws'), {WebSocketServer} = WebSocket;
-import {createSpeechIngress} from '../apps/croupier-speech/service.mjs';
+import {createSpeechIngress} from '../apps/speech/service.mjs';
 import {platformConfiguration, platformRoute, backendPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../packages/navigation/server/platform-routing.mjs';
 const {platformSocketRequest} = await import(pathToFileURL(frontendRequire.resolve('@croupier/server-transport/socket-core')).href);
 import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';

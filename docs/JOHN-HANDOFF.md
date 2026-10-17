@@ -1,5 +1,39 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — speechrotens leveranskontroll, 18 oktober 2026
+
+HUVUDAGENT3 har övertagit den förberedda speechleveransen. Apps/speech och
+packages/server-transport är Git-byteidentiska med det tidigare verifierade
+speechheadet7fa5e561; de fyra relevanta testfilerna är också oförändrade.
+Tidigare Node22.23.1-kvitto19/19 och normal integrationshook141pass/0fail/
+1befintlig SQL-opt-in gäller därför fortfarande. Detta är återanvända kvitton,
+inte nya testkörningar. Två aktuella sökvägar i återställningsguiden har rättats.
+
+PR/CI/drift samordnas med mergagent som en separat speechleverans efter
+frontendens PR229. Studio/OpenClaw/game är fortsatt separata leveranser.
+Ingen ändring av talinnehåll, budget, schema, provider eller media ingår;
+inget nytt läppsynksgodkännande lämnas.
+
+## C3 — speechens källrot apps/speech, lokalt 17 oktober 2026
+
+Fem spårade filer är individuellt flyttade från apps/croupier-speech till
+apps/speech på separat branch från frontendens godkända 6a37c7b1. Samtliga
+fem filbytes och låset är oförändrade. Åtta konsumentfiler har enbart exakta
+sökvägsbyten: Vercels speech-root, CI:s låscache/cwd, tre befintliga transport-
+fixturekonsumenter samt frontendens README och två driftguider.
+
+Node22.23.1/engines22, paketnamn croupier-speech-ingress, service-ID speech,
+.npmrc install-links=true och file:../../packages/server-transport består.
+Publika URL:er, OpenClaw-rollnamn, sessioner, provider- och mediebeteenden
+ändras inte. Gamla ignorerade beroenden/privata filer är inte flyttade.
+
+Egen låst installation i nya vanliga katalogen, befintligt syntaxbygge och
+alla fyra namngivna native/moving/callback/transporttestfiler på Node22.23.1
+med fyra workers: 19/19, inga skips. Inga nya tester eller frontendbyggen.
+Detta är lokal verifiering; PR/CI/drift och nästa apprötter samordnas separat.
+Ingen push, provider- eller molnändring ingår.
+
+
 ## C3 — frontendens källrot apps/web, lokalt 17 oktober 2026
 
 Alla 130 spårade frontendfiler har flyttats från apps/croupier-frontend till

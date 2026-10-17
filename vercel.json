@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
     "speech": {
-      "root": "apps/croupier-speech",
+      "root": "apps/speech",
       "framework": "node",
       "entrypoint": "server.mjs",
       "installCommand": "npm ci --ignore-scripts",

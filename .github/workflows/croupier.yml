@@ -65,7 +65,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             lab/package-lock.json
-            apps/croupier-speech/package-lock.json
+            apps/speech/package-lock.json
             web/package-lock.json
             services/astrid-gpu-worker/gateway/package-lock.json
       - name: Install verified ffmpeg packages
@@ -95,7 +95,7 @@ jobs:
         with:
           node-version: '22.23.1'
       - name: Install the speech service's own locked transport
-        working-directory: apps/croupier-speech
+        working-directory: apps/speech
         run: npm ci --ignore-scripts && npm run build
       - name: Speech transport on its declared Node runtime
         run: node --test --test-concurrency=4 apps/web/test/platform-websocket.mjs test/platform-native-websocket.mjs test/platform-moving-speech.mjs

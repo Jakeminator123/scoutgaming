@@ -877,7 +877,7 @@ respektive `dragge`. Det behöver verifieras mot workerns exakta release och
 källklipp; en fungerande endpoint eller ett avatar-namn är inte det beviset.
 
 Scoutgaming har redan en WebSocket-ingång i
-`apps/croupier-speech/service.mjs`: `/speech-stream` för klienten och
+`apps/speech/service.mjs`: `/speech-stream` för klienten och
 `/lipsync-worker` för workeråterkoppling. Render äger session och GPU-jobb;
 den publika speech-tjänsten förmedlar anslutningen. Befintliga
 `web/generated-speech-session.mjs` skickar `op: session`, `ws_url`,

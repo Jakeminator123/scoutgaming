@@ -718,7 +718,7 @@ policy-/scope-/lagringskopplingar; inga hemligheter skickas till klientprops.
 
 Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
 webb, Studio och taltransport som Services. Talservicen i
-`apps/croupier-speech` delar befintlig origin-/ingresskonfiguration genom
+`apps/speech` delar befintlig origin-/ingresskonfiguration genom
 `packages/server-transport/configuration.mjs`; inga nya nycklar behövs.
 Gemensam serverrouting för frontend, Studio och Render-ingress ägs av
 `packages/navigation/server/platform-routing.mjs`, med relativa källimporter till

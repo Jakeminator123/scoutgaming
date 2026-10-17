@@ -14,7 +14,7 @@ const {createPlatformNativeWebSocketServer} = await import(pathToFileURL(fronten
 import {platformConfiguration} from '../packages/navigation/server/platform-routing.mjs';
 import {issueTicket, ticketAuthenticator} from '../services/astrid-gpu-worker/gateway/auth.mjs';
 import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';
-import {createSpeechIngress} from '../apps/croupier-speech/service.mjs';
+import {createSpeechIngress} from '../apps/speech/service.mjs';
 
 const env = {CROUPIER_VERCEL_UI: '1', CROUPIER_PUBLIC_ORIGIN: 'https://public.example.test',
   CROUPIER_BACKEND_ORIGIN: 'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN: 'https://lab.example.test',
@@ -39,7 +39,7 @@ test('Services routes both public sockets to the native Node entrypoint before t
   const deployment = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
   const speech = deployment.services.speech;
   assert.equal(speech.framework, 'node');
-  assert.equal(speech.root, 'apps/croupier-speech');
+  assert.equal(speech.root, 'apps/speech');
   assert.equal(speech.entrypoint, 'server.mjs');
   assert.equal(speech.functions['server.mjs'].maxDuration, 600);
   for (const path of ['/speech-stream', '/lipsync-worker']) {
@@ -48,7 +48,7 @@ test('Services routes both public sockets to the native Node entrypoint before t
   }
   assert.deepEqual(deployment.rewrites.filter(value => value.destination.service === 'speech').map(value => value.source),
     ['/speech-stream', '/lipsync-worker', '/moving-speech-stream', '/lipsync-moving/:path*']);
-  const entrypoint = await readFile(new URL('../apps/croupier-speech/server.mjs', import.meta.url), 'utf8');
+  const entrypoint = await readFile(new URL('../apps/speech/server.mjs', import.meta.url), 'utf8');
   assert.match(entrypoint, /createSpeechIngress\(\)/);
   assert.match(entrypoint, /server\.listen\(/);
 });
@@ -56,7 +56,7 @@ test('Services routes both public sockets to the native Node entrypoint before t
 test('speech installs independently and configuration imports without WebSocket dependencies', async () => {
   const temporaryRoot = await realpath(tmpdir());
   const fixture = await mkdtemp(join(temporaryRoot, 'speech-install-'));
-  const speech = new URL('../apps/croupier-speech/', import.meta.url);
+  const speech = new URL('../apps/speech/', import.meta.url);
   const run = source => {
     const result = spawnSync(process.execPath, ['--input-type=module', '--eval', source], {
       cwd: fixture, encoding: 'utf8', timeout: 10000, env: {...process.env, NODE_PATH: ''}
