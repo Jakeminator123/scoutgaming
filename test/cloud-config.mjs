@@ -1,0 +1,92 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash, randomUUID } from 'node:crypto';
+import { validateCloudConfig, childSpecifications } from '../ops/cloud/config.mjs';
+
+const hash = value => createHash('sha256').update(value).digest('hex');
+// Never use real connections: generate an inert credential once per fixture.
+const fixtureConnection=new URL('postgresql://game.neon.tech/game?sslmode=require');
+fixtureConnection.username='fixture';fixtureConnection.password=randomUUID();
+const privateManifest = { provider:'vercel-blob',sha256:hash('fixture manifest'),size:4096,contentType:'application/json',
+  pathname:`croupier/media/dealers/dragan/runtime/moving-bank/11111111-1111-4111-8111-111111111111/${hash('fixture manifest')}.json` };
+const base = () => ({NODE_ENV:'production',PORT:'10000',CROUPIER_DATABASE:'postgres',
+  CROUPIER_GAME_DATABASE_URL:fixtureConnection.href,
+  CROUPIER_STUDIO_NEON_POLICY:'1',CROUPIER_STUDIO_ENVIRONMENT_ID:'production',CROUPIER_STUDIO_WORKSPACE_ID:'croupier',
+  CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob',
+  PUBLIC_URL:'https://game.example.test',BO_URL:'https://bo.example.test',LAB_PUBLIC_URL:'https://lab.example.test',RENDER_EXTERNAL_URL:'https://fixture-game.onrender.com',
+  CROUPIER_GAME_ORIGIN:'https://game.example.test',BETTALOTTO_PARTNER_BASE_URL:'https://game.example.test',
+  CROUPIER_STREAM_LANE:'lissabon-stream-lane',OPENCLAW_PRODUCT_SPEECH_URL:'https://speech.example.test',OPENCLAW_PRODUCT_SPEECH_TOKEN:'fixture-product-speech',
+  CROUPIER_GENERATED_SPEECH:'1',CROUPIER_CLOUD_GENERATED_SPEECH:'1',CROUPIER_GENERATED_SPEECH_STREAMING:'1',
+  CROUPIER_DEALER_SPEECH_PROFILES:'1',CROUPIER_SPEECH_STREAM_WORKER_SECRET:'fixture-worker-'.repeat(4),
+  CROUPIER_SPEECH_STREAM_TICKET_SECRET:'fixture-astrid-ticket-'.repeat(4),CROUPIER_SPEECH_RUNPOD_SESSION_RESERVE_USD:'1',
+  CROUPIER_SPEECH_RUNPOD_DAILY_BUDGET_USD:'5',CARTESIA_API_KEY:'fixture-cartesia',RUNPOD_API_KEY:'fixture-legacy-runpod',
+  CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID:'legacy-endpoint'});
+const moving = () => ({CROUPIER_MOVING_SPEECH_ENABLED:'1',CROUPIER_MOVING_SPEECH_BANK_RECORD:JSON.stringify(privateManifest),
+  CROUPIER_MOVING_SPEECH_WORKER_ORIGIN:'https://fixture-game.onrender.com',
+  CROUPIER_MOVING_SPEECH_ENDPOINT_ID:'movingfixture',CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY:'fixture-owned-runpod',
+  CROUPIER_MOVING_SPEECH_IMAGE:`ghcr.io/jakeminator123/moving-gpu-worker@sha256:${hash('owned fixture image')}`,
+  CROUPIER_MOVING_SPEECH_RELEASE_SHA256:hash('owned fixture source'),CROUPIER_MOVING_SPEECH_TICKET_SECRET:'fixture-moving-ticket-'.repeat(4)});
+const children = env => childSpecifications(validateCloudConfig(env),env,{labInternalSecret:'fixture-lab-only-'.repeat(4)});
+
+test('moving configuration is explicit and passes its private values to Web only; Astrid stays unchanged',()=>{
+  const legacy=children(base()),env={...base(),...moving()},configured=children(env);
+  for(const [key,value] of Object.entries(moving())){
+    assert.equal(configured.web.env[key],value);assert.equal(configured.lab.env[key],undefined);
+  }
+  assert.deepEqual(configured.lab,legacy.lab);
+  const withoutMoving=Object.fromEntries(Object.entries(configured.web.env).filter(([key])=>!key.startsWith('CROUPIER_MOVING_')));
+  assert.deepEqual(withoutMoving,legacy.web.env);
+});
+
+test('unset and disabled moving flags forward no staged credentials and preserve legacy children',()=>{
+  const legacy=children(base());
+  for(const flag of [undefined,'','0']){
+    const env={...base(),...moving(),CROUPIER_MOVING_SPEECH_ENABLED:flag,CROUPIER_MOVING_SPEECH_BANK_RECORD:'not parsed while disabled'};
+    assert.equal(validateCloudConfig(env).movingSpeech,null);assert.deepEqual(children(env),legacy);
+  }
+  for(const flag of ['true','yes','2'])assert.throws(()=>children({...base(),...moving(),CROUPIER_MOVING_SPEECH_ENABLED:flag}),/CROUPIER_MOVING_SPEECH_ENABLED/);
+});
+
+test('moving activation requires registered profiles, Neon and private Blob without enabling them implicitly',()=>{
+  const env={...base(),...moving()};
+  for(const change of [{CROUPIER_DEALER_SPEECH_PROFILES:'0'},{CROUPIER_STUDIO_NEON_POLICY:'0'},
+    {CROUPIER_MEDIA_STORAGE:'disk'},{BLOB_READ_WRITE_TOKEN:''},{CROUPIER_DATABASE:'sqlite'},
+    {CROUPIER_GENERATED_SPEECH_STREAMING:'0'},
+    {CROUPIER_GAME_DATABASE_URL:fixtureConnection.href.replace('game.neon.tech','other.example.test')}])
+    assert.throws(()=>validateCloudConfig({...env,...change}));
+});
+
+test('worker origin is explicit, exact HTTPS and belongs to this Render deployment only',()=>{
+  const env={...base(),...moving()};
+  for(const bad of [undefined,'','http://fixture-game.onrender.com','https://fixture-game.onrender.com/',
+    'https://fixture-game.onrender.com/path','https://fixture-game.onrender.com?token=x',
+    'https://user@fixture-game.onrender.com','https://fixture-game.onrender.com:443','https://other.onrender.com',env.PUBLIC_URL])
+    assert.throws(()=>validateCloudConfig({...env,CROUPIER_MOVING_SPEECH_WORKER_ORIGIN:bad}),/CROUPIER_MOVING_SPEECH_WORKER_ORIGIN/);
+  for(const bad of [undefined,'http://fixture-game.onrender.com','https://other.onrender.com'])
+    assert.throws(()=>validateCloudConfig({...env,RENDER_EXTERNAL_URL:bad}));
+  const specs=children(env);
+  assert.equal(specs.web.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,env.RENDER_EXTERNAL_URL);
+  assert.equal(specs.web.env.PUBLIC_URL,env.PUBLIC_URL);assert.equal(specs.lab.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,undefined);
+});
+
+test('bank configuration accepts only hash-bound private JSON manifests up to128KiB',()=>{
+  const env={...base(),...moving()},key='CROUPIER_MOVING_SPEECH_BANK_RECORD';
+  for(const bad of ['null','{}','not-json',JSON.stringify({...privateManifest,size:131073}),
+    JSON.stringify({...privateManifest,sha256:hash('different')}),JSON.stringify({...privateManifest,url:'https://public.example.test/bank'}),
+    JSON.stringify({...privateManifest,contentType:'video/mp4'}),JSON.stringify({...privateManifest,pathname:privateManifest.pathname.replace('/moving-bank/','/other/')}),
+    ' '.repeat(131073)])assert.throws(()=>validateCloudConfig({...env,[key]:bad}),/CROUPIER_MOVING_SPEECH_BANK_RECORD/);
+  assert.ok(validateCloudConfig({...env,[key]:JSON.stringify({...privateManifest,size:131072})}).movingSpeech);
+});
+
+test('moving provider identity is immutable and ticket secrets cannot reuse Astrid or provider credentials',()=>{
+  const env={...base(),...moving()};
+  for(const [key,bad] of [
+    ['ENDPOINT_ID','../legacy'],['ENDPOINT_ID',''],['RUNPOD_API_KEY','contains whitespace'],
+    ['IMAGE','ghcr.io/jakeminator123/moving-gpu-worker:latest'],['IMAGE',`ghcr.io/elsewhere/moving-gpu-worker@sha256:${hash('image')}`],
+    ['RELEASE_SHA256','latest'],['TICKET_SECRET','short'],['TICKET_SECRET',env.CROUPIER_SPEECH_STREAM_WORKER_SECRET],
+    ['TICKET_SECRET',env.CROUPIER_SPEECH_STREAM_TICKET_SECRET],['TICKET_SECRET','fixture-moving-key-'.repeat(4)],
+  ]){
+    const change=key==='TICKET_SECRET'&&bad.startsWith('fixture-moving-key-')?{CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY:bad}:{};
+    assert.throws(()=>validateCloudConfig({...env,...change,['CROUPIER_MOVING_SPEECH_'+key]:bad}),new RegExp('CROUPIER_MOVING_SPEECH_'+key));
+  }
+});

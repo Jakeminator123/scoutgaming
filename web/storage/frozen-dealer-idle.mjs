@@ -8,6 +8,7 @@ import { ownDealerIdle } from '../../packages/presentation/runtime/registered-id
 import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../presentation-layers.mjs';
 import {validateRouletteIdleBinding, validateFrozenRouletteIdle} from '../public/roulette-idle-contract.mjs';
 import {validateRouletteStartBinding, validateFrozenRouletteStart} from '../public/roulette-start-contract.mjs';
+import {speechSlotSituation} from '../public/speech-slot-bindings.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson,
   validateDocumentValue, validateRevision, validateStudioMedia,
@@ -150,7 +151,7 @@ export function assertFrozenMediaPreconditions(preconditions, currentMediaRows) 
   }
 }
 
-/** Capture every explicitly saved own-dealer line from the same project/media snapshot. */
+/** Capture playable bindings from the same project/media snapshot without changing drafts. */
 export function captureFrozenDealerPlayback({ project, inventory, mediaRows, registeredDealers } = {}) {
   const source = cloneStudioJson(project);
   const saved = validateDocumentValue('project', source, source?.revision, { allowLegacyRead: true });
@@ -167,16 +168,30 @@ export function captureFrozenDealerPlayback({ project, inventory, mediaRows, reg
       || captured.record.sha256 !== video.sha256 || captured.record.size !== video.bytes
       || canonicalStudioJson(captured.record.classification) !== canonicalStudioJson(video.classification))
       fail('studio_media_binding_invalid');
-    media.set(captured.record.id, captured.record);
     preconditions.set(captured.record.id, { id: captured.record.id, revision: captured.revision, record: captured.record });
+    // Unverified recordings cannot play, even in deliberate rehearsal. Keep the
+    // exclusion bound to this exact media revision until publication commits.
+    // Verified recordings awaiting review remain available for rehearsal.
+    if (captured.record.classification.recordedSpeech?.recording.status === 'pending') return false;
+    media.set(captured.record.id, captured.record);
+    return true;
   }
-  for (const line of lines) for (const variant of line.variants) {
-    assetIds.add(variant.assetId); for (const id of variant.triggerIds) triggerIds.add(id);
+  for (const line of lines) {
     const dealer = registeredDealers.find(row => row.id === line.dealerId);
-    if (line.eventId === IDLE_EVENT && variant.id === line.baselineVariantId && dealer.idle === null) {
-      variant.videoGenerationId = null; continue;
+    line.variants = line.variants.filter(variant => {
+      if (line.eventId === IDLE_EVENT && variant.id === line.baselineVariantId && dealer.idle === null) {
+        variant.videoGenerationId = null;
+      } else if (variant.videoGenerationId !== null && !capture(variant.videoGenerationId,line.dealerId,line.eventId)) {
+        // Reserved optional slots require a bound video; the baseline and
+        // ordinary alternatives already support an explicitly empty binding.
+        if (speechSlotSituation(line,variant)) return false;
+        variant.videoGenerationId = null;
+      }
+      return true;
+    });
+    for (const variant of line.variants) {
+      assetIds.add(variant.assetId); for (const id of variant.triggerIds) triggerIds.add(id);
     }
-    if (variant.videoGenerationId !== null) capture(variant.videoGenerationId,line.dealerId,line.eventId);
   }
   for (const {dealerId,policy} of dealerIdlePolicies) {
     if (!registeredDealers.find(row => row.id === dealerId)?.idle) fail('studio_dealer_idle_required');

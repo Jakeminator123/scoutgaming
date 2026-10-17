@@ -9,8 +9,31 @@ export function readVercelIngressConfig(env = process.env) {
   const publicOrigin = exactPlatformOrigin(env.CROUPIER_PUBLIC_ORIGIN, 'CROUPIER_PUBLIC_ORIGIN');
   const secret = env.CROUPIER_VERCEL_INGRESS_SECRET;
   if (transportOrigin === publicOrigin || typeof secret !== 'string' || Buffer.byteLength(secret) < 32 || /[\r\n]/.test(secret)) throw Error('Invalid private Vercel ingress configuration.');
+  let movingWorkerOrigin;
+  if (env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
+    movingWorkerOrigin = exactPlatformOrigin(env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN, 'CROUPIER_MOVING_SPEECH_WORKER_ORIGIN');
+    const renderOrigin = exactPlatformOrigin(env.RENDER_EXTERNAL_URL, 'RENDER_EXTERNAL_URL');
+    if (movingWorkerOrigin !== transportOrigin || movingWorkerOrigin !== renderOrigin) throw Error('Moving worker origin must be this exact Render transport.');
+  }
   return { transportOrigin, publicOrigin, secret,
+    ...(movingWorkerOrigin ? {movingWorkerOrigin} : {}),
     ...(env.CROUPIER_STUDIO_NEON_POLICY === '1' ? {canonicalGame:true} : {}) };
+}
+
+const MOVING_CHANNEL = /^\/lipsync-moving\/[a-f0-9]{48}\?(?:token=[a-f0-9]{64}&avatar=[a-z][a-z0-9-]{0,39}|avatar=[a-z][a-z0-9-]{0,39}&token=[a-f0-9]{64})$/;
+export const movingCallbackPath = target => typeof target === 'string' && MOVING_CHANNEL.test(target);
+
+// This is only routing admission. The application still owns one-use capability
+// authorization before any upgrade or bank bytes. No browser/session authority
+// is accepted here, and no general unsigned API path is opened.
+function directMovingCapability(request, ingress) {
+  if (!ingress.movingWorkerOrigin || request.method !== 'GET'
+    || request.headers.host !== new URL(ingress.movingWorkerOrigin).host
+    || ['origin', 'cookie', 'authorization', 'sec-websocket-protocol', 'range'].some(name => request.headers[name] !== undefined)
+    || request.headers['sec-fetch-site'] === 'cross-site') return false;
+  return request.headers.upgrade?.toLowerCase() === 'websocket'
+    ? movingCallbackPath(request.url)
+    : !request.headers.upgrade && /^\/api\/moving-speech\/bank\/[a-f0-9]{64}\/(?:archive|receipt)$/.test(request.url);
 }
 
 export function vercelIngressRequest(request, ingress) {
@@ -24,6 +47,12 @@ export function vercelIngressRequest(request, ingress) {
       && request.url === '/api/presentation/capabilities' && !request.headers.upgrade) {
     return { accepted: true, transported: true, headers: { host: publicHost,
       ...(request.headers['x-presentation-capability-version'] === undefined ? {} : {'x-presentation-capability-version':request.headers['x-presentation-capability-version']}) } };
+  }
+  if (directMovingCapability(request, ingress)) {
+    const headers = {...request.headers, host: publicHost, 'x-forwarded-host': publicHost, 'x-forwarded-proto': 'https'};
+    for (const name of Object.keys(headers)) if (name.startsWith('x-croupier-') || name === 'forwarded'
+      || name === 'x-forwarded-for' || name === 'x-worker-id') delete headers[name];
+    return {accepted: true, transported: true, movingCapability: true, headers};
   }
   // Existing document bookmarks lead to the canonical UI. This does not
   // accept API calls, credentials, launch tickets or a second game origin.

@@ -2,7 +2,7 @@ import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-e
 import {adminDocumentHref} from '../../../lab/lib/admin-workspace-routes.mjs';
 import { requestedOperator } from '../../../web/game-entry-operator.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../lab/lib/workspace-surfaces.mjs';
-import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from './platform-configuration.mjs';
+import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from './platform-configuration.mjs';
 export {canonicalPlatformPath, exactPlatformOrigin, platformConfiguration, PLATFORM_SOCKET_ENDPOINTS} from './platform-configuration.mjs';
 
 // Launch payload only. The signature stays the engine's; the claim name is partner.
@@ -57,6 +57,8 @@ export function backendPlatformPath(value) {
   return AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path) || ROULETTE_PREVIEW.has(path) || ROULETTE_ROOM.has(path)
     || path === '/api/operators'
     || path === '/api/studio-game/command'
+    || /^\/api\/moving-speech\/[a-f0-9]{32}\/rest$/.test(path)
+    || /^\/api\/moving-speech\/bank\/[a-f0-9]{64}\/(?:archive|receipt)$/.test(path)
     || path === '/api/dealer/observation'
     || path === '/api/dealer/transcription'
     || STUDIO_PREVIEW.test(path)
@@ -70,7 +72,7 @@ export function backendPlatformPath(value) {
     || /^\/api\/presentation\/registered-video\/[a-z][a-z0-9]*(?:-[a-z0-9]+)*\/[a-z][a-z0-9-]{0,63}\/[1-9][0-9]{0,15}\/[a-z][a-z0-9-]{0,39}\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(path)
     || /^\/api\/presentation\/videos\/[a-zA-Z0-9_-]+$/.test(path)
     || /^\/bo\/(?:gen|thumbs|img)\//.test(path)
-    || ['/speech-stream', '/lipsync-worker'].includes(path)
+    || ['/speech-stream', '/lipsync-worker', '/moving-speech-stream'].includes(path) || movingWorkerSocketPath(path)
     || PUBLIC_MEDIA.test(path)
     || ['/scene.jpg', '/dealer-fallback.png', '/speech-media.json'].includes(path);
 }

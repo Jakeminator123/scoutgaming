@@ -38,7 +38,7 @@ export function normalizeDealerSpeechProfile(value) {
       || !/^[a-f0-9]{64}$/.test(ref.sha256) || !Number.isSafeInteger(ref.offsetMs) || ref.offsetMs < 0 || ref.offsetMs > 3600000) fail();
     reference = {kind:ref.kind,videoId:ref.videoId,sha256:ref.sha256,offsetMs:ref.offsetMs};
   }
-  if (value.state === 'enabled' && (!voice || reference?.kind !== 'video-frame')) fail();
+  if (value.state === 'enabled' && (!voice || !reference)) fail();
   return {schemaVersion:value.schemaVersion,state:value.state,voice,reference};
 }
 export function dealerSpeechPreparation(value) {
@@ -47,7 +47,7 @@ export function dealerSpeechPreparation(value) {
   if (!profile?.voice) missing.push('röstprofil');
   if (!profile?.reference) missing.push('referensvideo');
   return {active:false, requested:profile?.state === 'enabled', missing, message: profile?.state === 'enabled'
-    ? 'AI-tal är valt. Varje talsession måste verifiera just denna röst och referensbild innan ljud och läppsynk kan spelas. Visuell kvalitet behöver fortfarande granskas.'
+    ? 'AI-tal är valt. Varje talsession måste verifiera just denna röst och videoreferens innan ljud och läppsynk kan spelas. Visuell kvalitet behöver fortfarande granskas.'
     : missing.length
     ? 'Saknar ' + missing.join(' och ') + '. Genererad röst och läppsynk är inte aktiverade.'
     : 'Underlaget är sparat. Avatarberedning, verifierad driftkoppling och visuell kontroll återstår. Genererad röst och läppsynk är inte aktiverade.'};

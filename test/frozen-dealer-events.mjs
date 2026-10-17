@@ -11,6 +11,8 @@ import { validatePresentationPackage } from '../web/presentation-layers.mjs';
 import { frozenPlaybackProject, mergeFrozenDealerPlayback } from '../web/frozen-dealer-playback.mjs';
 import { selectPresentation } from '../packages/presentation/runtime/selection.mjs';
 import {recordedSpeechIdentity} from '../web/public/recorded-speech.mjs';
+import {bindSpeechSlotStandard, OTHER_SPEECH_SLOT_IDS} from '../web/public/speech-slot-bindings.mjs';
+import {createHash} from 'node:crypto';
 import {createPresentationApi} from '../web/presentation-api.mjs';
 import {Readable} from 'node:stream';
 import {EventEmitter} from 'node:events';
@@ -50,6 +52,66 @@ function serviceFor(presentation) {
     privateMedia:async (row,request) => {served.push(row);return new Response(request.method==='HEAD'?null:'bytes',{status:request.headers.has('range')?206:200});}})};
 }
 const context = {operatorSlug:'north',roomId:'room-linnea',packageRevision:7,dealerId:'linnea'};
+
+function pendingRecording(row, exactText = 'Lycka till.') {
+  return {schemaVersion:1,dealerId:row.classification.dealerId,lineId:row.classification.situation,
+    takeId:row.classification.situation+'_sv_1',language:'sv',exactText,
+    videoSha256:row.sha256,audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:24,frameCount:72,audioDelayMs:0,
+    entryPose:'VILA',exitPose:'VILA',calibrationRevision:'fixture-v1',recording:{status:'pending'},review:{status:'pending'}};
+}
+
+test('publication omits unverified recordings from its copy, preserving draft bindings and media preconditions', () => {
+  const input=fixture(), row=input.snapshot.mediaRows[1];
+  row.classification.recordedSpeech=pendingRecording(row);
+  input.inventory.videos[1].classification=structuredClone(row.classification);
+  const line=input.snapshot.projectDocument.value.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='speak.goodluck');
+  line.variants.push({...structuredClone(line.variants[0]),id:'linnea.speak.goodluck.variant1',label:'Alternative',priority:10});
+  const before=structuredClone(input), captured=captureFrozenPresentation(input);
+  assert.deepEqual(input,before);
+  assert.equal(captured.presentation.schemaVersion,3);
+  assert.equal(captured.presentation.playback.media.some(media=>media.id===row.id),false);
+  assert.ok(captured.presentation.playback.lines.find(row=>row.dealerId===line.dealerId&&row.eventId===line.eventId).variants.every(variant=>variant.videoGenerationId===null));
+  assert.deepEqual(captured.mediaPreconditions.find(item=>item.id===row.id).record.classification.recordedSpeech,row.classification.recordedSpeech);
+  assertFrozenMediaPreconditions(captured.mediaPreconditions,input.snapshot.mediaRows);
+  input.snapshot.mediaRows[1].revision='media-2';
+  assert.throws(()=>assertFrozenMediaPreconditions(captured.mediaPreconditions,input.snapshot.mediaRows),{code:'studio_conflict'});
+});
+
+test('pending recording projection still rejects unavailable, mismatched or malformed snapshot evidence', () => {
+  for(const mutate of [
+    input=>{input.inventory.videos[1].available=false;},
+    input=>{input.inventory.videos[1].sha256='f'.repeat(64);},
+    input=>{input.snapshot.mediaRows[1].classification.recordedSpeech.videoSha256='f'.repeat(64);},
+    input=>{input.snapshot.mediaRows[1].classification.recordedSpeech.recording={status:'pending',by:'unexpected'};},
+  ]) {
+    const input=fixture(),row=input.snapshot.mediaRows[1];
+    row.classification.recordedSpeech=pendingRecording(row);
+    input.inventory.videos[1].classification=structuredClone(row.classification);
+    mutate(input);
+    assert.throws(()=>captureFrozenPresentation(input));
+  }
+});
+
+test('pending optional speech slots add no bytes to the schema3 package and keep drafts intact', () => {
+  const input=fixture(), baseline=captureFrozenPresentation(input).presentation;
+  for(const [index,situation] of OTHER_SPEECH_SLOT_IDS.entries()) {
+    const row=record('linnea','speak.other',index+10,situation);
+    const exactText=Array.from({length:16},(_,part)=>createHash('sha256').update(`${situation}:${part}`).digest('hex')).join('').slice(0,1000);
+    row.classification.recordedSpeech=pendingRecording(row,exactText);
+    input.snapshot.mediaRows.push({...row,revision:'media-1'});
+    input.inventory.videos.push({id:row.id,sha256:row.sha256,bytes:row.size,dealer:'linnea',available:true,classification:structuredClone(row.classification)});
+    input.snapshot.projectDocument.value=bindSpeechSlotStandard(input.snapshot.projectDocument.value,
+      {dealerId:'linnea',eventId:'speak.other',situation,videoId:row.id});
+  }
+  const before=structuredClone(input),captured=captureFrozenPresentation(input),encoded=encodePresentationPackage(captured.presentation);
+  assert.deepEqual(input,before);
+  assert.equal(captured.presentation.schemaVersion,3);
+  assert.deepEqual(encoded,encodePresentationPackage(baseline));
+  assert.ok(encoded.data.length<7400);
+  assert.equal(captured.presentation.playback.lines.find(row=>row.dealerId==='linnea'&&row.eventId==='speak.other').variants.length,1);
+  assert.equal(captured.mediaPreconditions.length,input.snapshot.mediaRows.length);
+  assert.deepEqual(decodePresentationPackage(encoded),baseline);
+});
 
 test('frozen recorded speech preserves complete exact metadata and cannot select pending or rejected recordings',async()=>{
   for(const status of ['approved','pending','rejected']){

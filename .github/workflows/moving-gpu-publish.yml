@@ -1,0 +1,121 @@
+name: Publish private Moving GPU image
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved_target:
+        description: 'Exact approved GHCR path: ghcr.io/jakeminator123/moving-gpu-worker'
+        required: true
+        type: string
+      expected_head:
+        description: 'Full reviewed commit SHA; must equal the dispatched branch head'
+        required: true
+        type: string
+      expected_release:
+        description: 'Reviewed release.json SHA256'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: moving-gpu-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'Jakeminator123/scoutgaming' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/jakeminator123/moving-gpu-worker
+      APPROVED_TARGET: ${{ inputs.approved_target }}
+      EXPECTED_HEAD: ${{ inputs.expected_head }}
+      EXPECTED_RELEASE: ${{ inputs.expected_release }}
+    steps:
+      - name: Require the reviewed target and frozen dispatch head
+        run: |
+          python3 - <<'PY'
+          import os, re
+          assert os.environ['APPROVED_TARGET'] == os.environ['IMAGE'] == 'ghcr.io/jakeminator123/moving-gpu-worker'
+          assert re.fullmatch(r'[a-f0-9]{40}', os.environ['EXPECTED_HEAD'])
+          assert os.environ['EXPECTED_HEAD'] == os.environ['GITHUB_SHA']
+          assert re.fullmatch(r'[a-f0-9]{64}', os.environ['EXPECTED_RELEASE'])
+          PY
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: services/moving-gpu-worker
+      - name: Verify the sealed release and contracts
+        working-directory: services/moving-gpu-worker
+        run: |
+          python3 - <<'PY'
+          import os
+          from contracts import verify_release
+          assert verify_release('.') == os.environ['EXPECTED_RELEASE']
+          PY
+          python3 -B -m unittest discover -s tests -v
+      - name: Reject an existing non-private destination
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          request = urllib.request.Request('https://api.github.com/users/Jakeminator123/packages/container/moving-gpu-worker',
+            headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
+          try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+              package = json.load(response)
+              assert package['visibility'] == 'private', 'Destination must remain private'
+          except urllib.error.HTTPError as error:
+            if error.code != 404:
+              raise SystemExit('Package visibility check failed: HTTP ' + str(error.code))
+            # GitHub creates a first publication as private; recheck after push.
+          PY
+      - name: Build the pinned serverless image on CPU
+        run: python3 services/moving-gpu-worker/build.py --target serverless --tag croupier-moving-worker:publish
+      - name: Verify packaged imports and contracts without GPU or external network
+        run: |
+          docker run --rm --network none --entrypoint /bin/sh croupier-moving-worker:publish -ec '
+            /workspace/mt-venv/bin/python -B -c "import sys; sys.path.insert(0, \"/opt/moving-worker\"); sys.path.insert(0, \"/opt/moving-worker/vendor\"); import torch, motor, rorlig, bank_download, serverless, runpod; from contracts import verify_release; print(verify_release(\"/opt/moving-worker\"))"
+            /workspace/mt-venv/bin/python -B -m unittest discover -s /opt/moving-worker/tests -v
+          '
+      - name: Log in only after the built image passes
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - name: Publish only the verified image
+        run: |
+          docker tag croupier-moving-worker:publish "$IMAGE:sha-$GITHUB_SHA"
+          docker push "$IMAGE:sha-$GITHUB_SHA"
+      - name: Verify privacy and record the immutable pull reference
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess, urllib.request
+          request = urllib.request.Request('https://api.github.com/users/Jakeminator123/packages/container/moving-gpu-worker',
+            headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
+          with urllib.request.urlopen(request, timeout=20) as response:
+            assert json.load(response)['visibility'] == 'private', 'Private pull verification is required'
+          image = os.environ['IMAGE']
+          inspected = json.loads(subprocess.check_output(['docker', 'image', 'inspect', image + ':sha-' + os.environ['GITHUB_SHA']]))[0]
+          refs = [ref for ref in inspected['RepoDigests'] if re.fullmatch(re.escape(image) + r'@sha256:[a-f0-9]{64}', ref)]
+          assert len(refs) == 1
+          assert inspected['Config']['Labels']['org.scoutgaming.moving.release'] == os.environ['EXPECTED_RELEASE']
+          receipt = {'schemaVersion': 1, 'image': refs[0], 'commit': os.environ['GITHUB_SHA'],
+                     'releaseSha256': os.environ['EXPECTED_RELEASE'], 'visibility': 'private',
+                     'checks': 'serverless CPU build, network-isolated imports and tests', 'deployed': False}
+          result = json.dumps(receipt, sort_keys=True)
+          print(result)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+            summary.write('Verified publication receipt (no RunPod resources or GPU job):\n\n```json\n' + result + '\n```\n')
+          PY
+      - name: Remove runner registry login
+        if: always()
+        run: docker logout ghcr.io

@@ -5,6 +5,67 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Dragan: OpenClaw till gemensam spelare — 17 oktober 2026
+
+PR191 är mergad på `f5f8414628e39fee4cbf703054c0ee57d2b48157`.
+Mergeagentens separata kvitto bekräftar grön main-CI och samma commit på
+Vercel och Render. Fortsättningen på `codex/dragan-openclaw-cloud` ersätter
+[PR195](https://github.com/Jakeminator123/scoutgaming/pull/195) med en samlad
+commit utan de syntetiska testadresserna i dess historik. Ingen force-push,
+ändrad skanner eller ändrad incidentstatus används. PR194 är separat levererad på `9f8a3aff`;
+Admin-agentens kvitto anger samma SHA i grön main-CI, Vercel och Render.
+
+Den nya, uttryckligen avstängda talvägen binder OpenClaws exakta text till
+Dragan-profilen, publicerat media, en verifierad avatarbank och ett enda
+RunPod-jobb. Migration013 tillför bestående mediereferenser och ett totalt
+testtak. TTS får starta först efter accepterat jobb och verifierad worker.
+Privata bankfiler hämtas med kortlivade exakta behörigheter till workerns
+tillfälliga cache. Originalfilmer och Astrids endpoint ändras inte.
+
+Spelaradaptern använder vilans uttryckliga källruta mellan kortsekvenser;
+ljudklockan och verifierade ansiktsrutor följer samma plan. Kredit och
+chunk-kvittens begränsar buffertar hela vägen till workern. Samtidigt tal
+över en pågående utdelning är inte aktiverat i denna första integration.
+
+Fokuserade kontroller omfattar riktiga HTTP/WebSocket-förlopp och Chrome/
+WebCodecs med syntetiska medier, återkallad ägare/profil/publicering,
+engångsbiljetter, kostnadsgräns, avbrott och workerprotokoll. Dessa är inte
+visuell acceptans av Dragan. Isolerad PostgreSQL/HTTPS är verifierad lokalt
+med riktig temporär databas, omstart, autentisering, CAS och taljournaler.
+Publicerad image, migration, runtime-konfiguration och ett verkligt OpenClaw/GPU/spelarprov återstår före
+aktivering. Första tidigare GPU-provet är fakturerat till 0,169812463 USD;
+nyvägen reserverar högst 4,80 USD totalt inom Jakobs mandat på 5 USD.
+Jakob har valt ett separat Dragan-testrum. Bolaget `dragan-test` har skapats
+genom N1 den 17 oktober, utan medlemmar eller rum. Dess egna kompositionsutkast
+`dragan-separat-taltest-413cea16-014d-4625-a613-4c6eeb5f693c` är sparat genom
+Admin och återläst i Neon: endast Dragan, Lounge-varm-video och Oak-bord,
+med referenspaketets mobil-/desktopgeometri och 22 kort-/cirkelpunkter.
+Rumsutgivning återstår; pausade operatörer ska inte öppnas. Den separata avatarbanken är
+uppladdad i privat Blob och dess tre filer fullständigt hashverifierade.
+Detta är beredningsunderlag, inte ett godkänt moln- eller läppsynksprov.
+
+PR196 ersätter PR195. CI hittade testväntan, miljöregister och äldre
+versionslistor som inte accepterade uttryckligen valfria migrationer.
+Render och native-runtime använder nu samma verifierade migrationsplan;
+krav på obligatoriska versioner och kontrollsummor kvarstår. 53 fokustester
+och hela isolerade SQL/HTTPS-körningen passerade på Node24.21.0 den 17 oktober.
+Det intermittenta låstestet återgavs därefter på PostgreSQL16.15 och rättades
+att läsa exakt väntande lås i stället för transaktionens frysta aktivitetssnapshot.
+Full SQL/HTTPS passerar även med avsiktligt föråldrad aktivitetssnapshot;
+låsordning och avvisning efter väntande medieborttagning kontrolleras fortsatt.
+Ny full CI återstår. PR196:s imagebygge och GitGuardian är gröna på `a0bc397b`.
+Workern väntar nu högst 60 sekunder på start efter verifierad bind, så att
+TTS (30 sekunder) och spelarens anslutning (15 sekunder) ryms. Övriga
+idle-/kvittensgränser på 15 sekunder och jobbets totalgräns på 180 sekunder
+är oförändrade. 49 CPU-tester passerar; den nya förseglade releasen är
+`57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8`.
+Två GitGuardian-fynd på det tidigare
+huvudet avsåg syntetiska PostgreSQL-testadresser. Fixturen skapar nu ett
+tillfälligt lösenord; ingen befintlig nyckel eller incidentstatus ändras.
+Den nya publiceringsprojektionen utelämnar endast inspelningar med status
+`pending` ur nya frysta spelpaket och behåller utkast, register och
+revisionskontroller. Originalfilmer och medie-ID:n bevaras även vid omdöpning.
+
 ## Browserprovets täckning — dokumentationsrättning 17 oktober 2026
 
 README skiljer nu CI:s bundle-/API-prov från de två interaktiva browserfallen.
@@ -97,13 +158,13 @@ förval och den befintliga N1-vägen till Nordic bets bolagsjournal.
 Detta är inget nytt läppsynksgodkännande. Systemändringarna ovan är en separat PR.
 
 Lipsync äger `codex/dragan-openclaw-live` och fortsatt media-/server-/workerarbete.
-Ingen importblockering finns i Admin. Ett aktivt publicerat Dragan-testrum saknas;
-lipsync har frågat Jakob om rumskontext. Inga rum återöppnades, filer importerades,
+Ingen importblockering finns i Admin. Jakob har därefter godkänt ett separat
+Dragan-testrum, som lipsync förbereder. Inga rum återöppnades, filer importerades,
 modeller sparades eller produktionsdata ändrades i System-uppdraget.
 GPT-auto granskade GitHub-main och gav riktningsråd; lokal System-diff ingick inte.
 GitGuardian lästes: 0 öppna/18 ignorerade incidenter, aktiv övervakning;
 platsmetadata är partiell och historikskanningen `too_large`. Det är ingen total säkerhetsklarering.
-## Dealerklipp: importkontrakt, referensskydd och workerförberedelse — 17 oktober 2026
+## Dealerklipp: levererad förberedelse i PR191
 
 På `codex/dragan-lipsync-registry` / PR191 finns nu en körbar skrivfri importplan
 för fryst Kevin-underlag och utökat raderingsskydd. Planen bevarar exakta ID:n,
@@ -356,9 +417,10 @@ kan fortfarande vara delade beroenden; radera efter konsumentkontroll.
 Två andra chattar fortsätter parallellt:
 
 - **lipsync**, chatt `01a14685-3cb7-7020-8f18-414e8bbbd5fe`.
-  Aktivt spår: `codex/dragan-lipsync-registry`,
+  Aktivt spår: `codex/dragan-openclaw-cloud`,
   `C:\Users\jakem\.codex\worktrees\dragan-lipsync-registry-3518\croupier`,
-  [PR191](https://github.com/Jakeminator123/scoutgaming/pull/191).
+  ersätter [PR195](https://github.com/Jakeminator123/scoutgaming/pull/195).
+  PR191 är en mergad versionsreferens, inte ett öppet leveransspår.
   Kontrollera aktuell status med chatten innan medie-/runtimeändringar.
 - **STÄD-CL**, chatt `01a14631-14e2-7d53-ba3f-50a5f7a4c8f4`.
   Bevarad arbetsyta `C:\Users\jakem\.codex\worktrees\b07d\croupier`,

@@ -362,14 +362,35 @@ export function createStudioRepository({ pool, scope } = {}) {
           ) owners WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL
           AND jsonb_path_exists(value,'$.** ? (@ == $id || @ == $pathname)',jsonb_build_object('id',$3::text,'pathname',$4::text))
           LIMIT 101`, [record.id,record.pathname])).rows;
+        // Optional schema: the feature cannot admit before 013, so an absent
+        // table retains the legacy conservative coverage instead of breaking
+        // feature-off deployments. Bound jobs retain exact inputs until BOTH
+        // provider terminal status and callback drain have been journaled.
+        const movingPresent = (await query(`/* studio:media-moving-present */
+          SELECT to_regclass('croupier_studio.moving_speech_bindings') IS NOT NULL AS present
+          WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL`)).rows[0]?.present;
+        if (typeof movingPresent !== 'boolean') fail('studio_media_delete_coverage_incomplete',503);
+        if (movingPresent) references.push(...(await query(`/* studio:media-moving-owners */
+          SELECT 'moving-speech'::text AS source,b.environment_id,b.workspace_id,b.session_id AS owner_id
+          FROM croupier_studio.moving_speech_bindings b JOIN croupier_studio.gpu_sessions s
+            ON s.environment_id=b.environment_id AND s.session_id=b.session_id
+          WHERE $1::text IS NOT NULL AND $2::text IS NOT NULL AND s.released_at_ms IS NULL
+            AND jsonb_path_exists(b.media_references,'$.** ? (@ == $id || @ == $pathname)',jsonb_build_object('id',$3::text,'pathname',$4::text))
+          LIMIT 101`, [record.id,record.pathname])).rows);
         // Stream request keys are permanently spent, not GPU ownership. Only
         // an unreleased session, a live lease, or unfinished fullfile request
         // creates unattributed live coverage. Expiry alone never drains a
         // provider session or resolves an uncertain fullfile submission.
         const speech = (await query(`/* studio:media-speech-coverage */ SELECT
-          EXISTS(SELECT 1 FROM croupier_studio.gpu_sessions WHERE environment_id=$1 AND released_at_ms IS NULL) AS open_session,
-          EXISTS(SELECT 1 FROM croupier_studio.speech_execution_leases WHERE environment_id=$1
-            AND expires_at_ms > (extract(epoch FROM clock_timestamp()) * 1000)::bigint) AS live_lease,
+          EXISTS(SELECT 1 FROM croupier_studio.gpu_sessions s WHERE environment_id=$1 AND released_at_ms IS NULL
+            ${movingPresent ? `AND NOT EXISTS(SELECT 1 FROM croupier_studio.moving_speech_bindings b
+              WHERE b.environment_id=s.environment_id AND b.session_id=s.session_id)` : ''}) AS open_session,
+          EXISTS(SELECT 1 FROM croupier_studio.speech_execution_leases l WHERE environment_id=$1
+            AND expires_at_ms > (extract(epoch FROM clock_timestamp()) * 1000)::bigint
+            ${movingPresent ? `AND NOT EXISTS(SELECT 1 FROM croupier_studio.moving_speech_bindings b
+              JOIN croupier_studio.gpu_sessions s ON s.environment_id=b.environment_id AND s.session_id=b.session_id
+              WHERE s.environment_id=l.environment_id AND s.lease_resource=l.resource AND s.holder_id=l.holder_id
+                AND s.lease_fence=l.fence AND s.released_at_ms IS NULL)` : ''}) AS live_lease,
           EXISTS(SELECT 1 FROM croupier_studio.speech_requests WHERE environment_id=$1 AND capability='fullfile'
             AND state NOT IN ('completed','failed')) AS unresolved_fullfile
           WHERE $2::text IS NOT NULL`)).rows[0];

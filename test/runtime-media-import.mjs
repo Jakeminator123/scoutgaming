@@ -144,6 +144,41 @@ test('confirmation and prepared hash are required before opening a connection',a
   assert.equal(pool.calls.length,0);
 });
 
+test('runtime import accepts verified optional moving admission both pending and applied',async()=>{
+  const optional={version:'013',checksum:hash('013'),structureChecksum:hash('structure-013')};
+  for(const installed of [false,true]){
+    const pool=memoryPool(),state=structuredClone(schema);
+    if(installed){state.applied.push(optional);pool.ledger.push({version:'013',checksum:optional.checksum,structure_checksum:optional.structureChecksum});}
+    else state.optionalPending=[{version:'013'}];
+    const check=async()=>structuredClone(state);
+    const review=await planRuntimeMediaImport({pool,prepared,schemaCheck:check});
+    assert.equal((await apply(pool,review,{schemaCheck:check})).changed,true);
+    assert.equal(pool.snapshot().audits.length,1);
+    if(installed){
+      const again=await planRuntimeMediaImport({pool,prepared,schemaCheck:check}),before=pool.snapshot();
+      pool.ledger.at(-1).checksum='f'.repeat(64);
+      await assert.rejects(apply(pool,again,{schemaCheck:check}),{code:'studio_runtime_import_schema_unverified'});
+      assert.deepEqual(pool.snapshot(),before);
+    }
+  }
+});
+
+test('optional migrations never excuse required gaps, unknown versions or invalid proofs',async()=>{
+  const optional={version:'013',checksum:hash('013'),structureChecksum:hash('structure-013')};
+  for(const mutate of [
+    value=>{value.applied=value.applied.filter(row=>row.version!=='012');},
+    value=>value.applied.push({...optional,version:'014'}),
+    value=>value.applied.push({...optional}),
+    value=>{value.applied.at(-1).checksum='invalid';},
+    value=>{value.applied.at(-1).structureChecksum='invalid';},
+    value=>{value.toApply=[{version:'012'}];},
+  ]){
+    const pool=memoryPool(),state=structuredClone(schema);state.applied.push({...optional});mutate(state);
+    await assert.rejects(planRuntimeMediaImport({pool,prepared,schemaCheck:async()=>state}),{code:'studio_runtime_import_schema_unverified'});
+    assert.equal(pool.calls.length,0);
+  }
+});
+
 test('concurrent reviewed insert has one winner; stale replacement never overwrites a newer catalogue',async()=>{
   const pool=memoryPool(),review=await plan(pool);
   const results=await Promise.allSettled([apply(pool,review),apply(pool,review)]);

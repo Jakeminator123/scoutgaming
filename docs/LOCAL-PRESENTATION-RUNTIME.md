@@ -68,7 +68,47 @@ deploypaketet. Den inventeringen var inget bevis för att alla register redan
 fanns i Neon. Även Dragan passerade den gemensamma katalogkontrollen.
 En dealerradering slutförde inte metadataflytten.
 
-## Dragan: aktuella källor och kvarvarande talintegration, 15 oktober 2026
+## Dragan: första gemensamma molntalvägen, 17 oktober 2026
+
+```mermaid
+flowchart LR
+  A[Spelarens chatt eller spelhändelse] --> B[OpenClaw väljer text eller sparad replik]
+  B --> C[Render kontrollerar rum, dealer och budget]
+  N[Neon: profiler, medie-ID och frysta paket] --> C
+  C --> D[Registrerad röst skapar ljud]
+  D --> E[Separat RunPod-worker skapar läppsynk]
+  F[Blob: verifierad avatarbank] --> E
+  E --> G[Gemensam spelare synkar ljud och ansikte]
+  B --> H[Godkänd förinspelad replik]
+  I[Blob: originalfilm med eget ljud] --> H
+  H --> G
+```
+
+Schemat beskriver kodens avsedda flöde. Worker och budget antas och verifieras
+före röstgenerering; faktisk molnacceptans redovisas separat i handoffen.
+
+`CROUPIER_MOVING_SPEECH_ENABLED=1` väljer den nya, separata workern för Dragan.
+Flaggan är av tills image, bank, schema013 och ett valt testrum är verifierade.
+`web/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
+röst som övrig dealerchatt. Neon fryser exakta källreferenser och reserverar
+budget före GPU-anropet; TTS följer först efter workerintyg. PCM24k, textens
+hash, bankens hash och bildruteplan är en sammanhållen talhändelse.
+
+Första spelarvägen håller bankens uttryckliga vila under talet och använder
+24fps-läppbilder inne i dealerlagret före komposition. Talgrinden placerar
+det mellan kortsekvenser. Det finns ännu ingen omplanering av en pågående
+utdelning. En inspelad replik behåller sin egen film och sitt eget ljud.
+
+Bankarkiv och kvitto lagras privat i Blob under
+`croupier/media/dealers/dragan/runtime/moving-bank/`. Den låsta manifestreferensen
+är deploymentkonfiguration för en härledd workerartefakt; registrerade filmer
+och deras identiteter hämtas fortfarande från Neon. Originalen skrivs inte om.
+Banken förladdas och verifieras på Render, sedan får endast det antagna jobbet
+kortlivade URL:er för exakt arkiv/kvitto. Ingen Blob-nyckel lämnar produktservern.
+Klientens engångsbiljett och workerns capability är separata. Kvittenser per
+chunk begränsar buffertarna och avbrott når providerjournalen.
+
+## Dragan: källkvitto från 15 oktober 2026
 
 Färsk GitHub-läsning: `kevin` är
 `60e984b4380deaa28a0069d4fb3185839f75b212` (samma källträd som `315cfc5`),

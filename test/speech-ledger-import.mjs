@@ -36,7 +36,7 @@ function qaPackets({gate=false,campaign=true,attempts=2,at=stamp}={}) {
     ...Array.from({length:attempts},(_,i)=>packet(`operator-qa-${campaignId}.attempt-${i+1}.json`,{campaignId,attempt:i+1,turn:i%2+1,reservedAt:at-500000+i}))];
 }
 
-function memoryPool() {
+function memoryPool(schema=installed) {
   let state={fullfilePolicies:[],fullfileReservations:[],leases:[],policy:[],requests:[],sessions:[],reservations:[],operatorCampaigns:[],operatorAttempts:[],operatorGates:[],markers:[],history:['preserved-preexisting-document-history']},tail=Promise.resolve(),failure=null;
   const trace=[],counts={connects:0,releases:0};
   const rows=value=>({rows:structuredClone(value??[])});
@@ -49,7 +49,7 @@ function memoryPool() {
         if(tag==='migration_lock'){const previous=tail;tail=new Promise(resolve=>{unlock=resolve;});await previous;snapshot=structuredClone(state);return rows();}
         if(tag==='cost_lock')return rows();
         if(tag==='target')return rows([target]);
-        if(tag==='schema')return rows(installed.applied.map(row=>({version:row.version,checksum:row.checksum,structure_checksum:row.structureChecksum})));
+        if(tag==='schema')return rows(schema.applied.map(row=>({version:row.version,checksum:row.checksum,structure_checksum:row.structureChecksum})));
         if(tag.startsWith('read_'))return rows(state[tag.slice(5)].filter(row=>row.environment_id===p[0]));
         if(tag==='markers')return rows(state.markers.filter(row=>row.environment_id===p[0]).map(({workspace_id,event_id,revision})=>({workspace_id,event_id,revision})));
         if(tag==='insert_lease')state.leases.push({environment_id:p[0],resource:p[1],holder_id:p[2],fence:String(p[3]),expires_at_ms:String(p[4]),recovery_only:p[5]});
@@ -112,6 +112,40 @@ test('the runtime cutover rejects a bridge ledger missing 012 before any write t
     ...installed,applied:installed.applied.filter(row=>row.version!=='012'),optionalPending:[{version:'012'}],
   })}),{code:'studio_speech_import_schema_unverified'});
   assert.equal(pool.trace.length,0);assert.deepEqual(pool.state,before);
+});
+
+test('verified optional013 allows import and exact replay while its ledger remains protected',async()=>{
+  const optional={version:'013',checksum:hash('013'),structureChecksum:hash('structure-013')};
+  for(const present of [false,true]){
+    const plan=structuredClone(installed);
+    if(present)plan.applied.push(optional);else plan.optionalPending=[{version:'013'}];
+    const ledger=structuredClone(plan),pool=memoryPool(ledger),input={...args(pool),schemaCheck:async()=>structuredClone(plan)};
+    assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,false);
+    assert.equal((await applyLegacySpeechLedgerSnapshot(input)).replayed,true);
+    assert.equal(pool.state.markers.length,1);assert.equal(pool.state.reservations.length,2);
+    if(present){
+      const before=structuredClone(pool.state);ledger.applied.at(-1).checksum='f'.repeat(64);
+      await assert.rejects(applyLegacySpeechLedgerSnapshot(input),{code:'studio_speech_import_schema_unverified'});
+      assert.deepEqual(pool.state,before);
+    }
+  }
+});
+
+test('optional013 cannot bypass required schema, known-version or checksum guards',async()=>{
+  const optional={version:'013',checksum:hash('013'),structureChecksum:hash('structure-013')};
+  for(const mutate of [
+    value=>{value.applied=value.applied.filter(row=>row.version!=='012');},
+    value=>value.applied.push({...optional,version:'014'}),
+    value=>value.applied.push({...optional}),
+    value=>{value.applied.at(-1).checksum='invalid';},
+    value=>{value.applied.at(-1).structureChecksum='invalid';},
+    value=>{value.toApply=[{version:'012'}];},
+  ]){
+    const plan=structuredClone(installed);plan.applied.push({...optional});mutate(plan);
+    const pool=memoryPool(),before=structuredClone(pool.state);
+    await assert.rejects(applyLegacySpeechLedgerSnapshot({...args(pool),schemaCheck:async()=>plan}),{code:'studio_speech_import_schema_unverified'});
+    assert.equal(pool.counts.connects,0);assert.deepEqual(pool.state,before);
+  }
 });
 
 test('preexisting budget, spent cost, any lease/QA history, another workspace/snapshot or post-import consumption cannot be merged/reset',async()=>{

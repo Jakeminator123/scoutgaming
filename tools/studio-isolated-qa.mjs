@@ -27,6 +27,7 @@ async function port() {
 // databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
+      'ops/neon-studio/013-moving-speech-admission.sql','web/moving-speech-binding.mjs','web/moving-speech-session.mjs','web/moving-speech-transport.mjs',
       'ops/neon-studio/012-runtime-media-catalog.sql', 'test/fixtures/studio-runtime-sql-checks.mjs', 'test/fixtures/runtime-media-catalog.mjs',
       'ops/neon-studio/runtime-media-import.mjs', 'tools/media-layout.mjs',
       'web/storage/runtime-media-catalog.mjs', 'web/storage/speech-reply-repository.mjs', 'web/speech-reply-library.mjs',

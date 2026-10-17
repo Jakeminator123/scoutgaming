@@ -7,7 +7,7 @@ import { layerMediaInspectionMessage } from '../../web/public/layer-upload-error
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
-import { planStudioMigrations } from '../../ops/neon-studio/migrations.mjs';
+import { planStudioMigrations, isStudioMigrationPlanReady } from '../../ops/neon-studio/migrations.mjs';
 import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
 import { createStudioNativeAuth } from '../../packages/studio-access/studio-native-auth.mjs';
 import { createStudioAdminApi } from './studio-admin-api.mjs';
@@ -94,7 +94,7 @@ export async function createStudioNativeRuntime(config, { poolFactory, storeFact
   schemaCheck = async pool => {
     const plan = await planStudioMigrations({ pool, directory: resolve(schemaRoot(), 'neon-studio') });
     // The reader cutover requires the imported Neon catalogue schema.
-    if (plan.toApply.length || plan.applied.map(row => row.version).join(',') !== '001,002,003,004,005,006,007,008,011,012') unavailable();
+    if (!isStudioMigrationPlanReady(plan)) unavailable();
   },
   repositoryFactory = createStudioRepository, authFactory = createStudioNativeAuth, dataFactory = createStudioAdminData,
   policyFactory = createStudioGamePolicy, accountsFactory = createStudioAdminAccounts, authActionsFactory = createStudioNativeAuthActions,

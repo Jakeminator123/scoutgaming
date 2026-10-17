@@ -63,6 +63,7 @@ export function createStudioMemoryPool() {
               ...(pool.journalOwners??[]),
               ...[...working.forgeJobs.values()].filter(row=>!['succeeded','failed','cancelled'].includes(row.status)).map(row=>({source:'forge-job',environment_id:row.environment_id,workspace_id:row.workspace_id,owner_id:row.job_id,value:[row.request,row.result]})),
             ].filter(row=>references(row.value,values[2])||references(row.value,values[3])).slice(0,101));
+            case 'media-moving-present': return result([{present:false}]);
             case 'media-speech-coverage': return result([{open_session:false,live_lease:false,unresolved_fullfile:false,...pool.speechActivity}]);
             case 'read-runtime-catalog': return result(working.catalogs.has(JSON.stringify(values.slice(0,2))) ? [working.catalogs.get(JSON.stringify(values.slice(0,2)))] : []);
             case 'media-registered-at': return result([{registered_at:working.audits.filter(row=>scoped(row,values)&&row.subject===values[2]&&row.action==='register_media').map(row=>row.at).sort()[0]??null}]);

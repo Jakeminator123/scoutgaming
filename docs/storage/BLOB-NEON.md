@@ -242,8 +242,9 @@ icke avvecklad GPU-session, giltig tallease eller oavslutad fullfilsbegäran.
 Gamla förbrukade strömnycklar blockerar inte ensamma. Inspektionen tar talets
 befintliga miljölås efter Studio-/objektlåsen och behåller det tills transaktionen
 slutar. Detta skyddar den observerade sessionsbilden; det är inte ett påstående
-om gemensam atomisk mediaadmission för alla talvägar. Det återstår att binda
-den nya rörliga workerns exakta indata till journalen före produktaktivering.
+om gemensam atomisk mediaadmission för alla talvägar. Den nya rörliga vägen
+har separat atomisk admission i optional migration 013; den måste vara införd
+innan den vägen aktiveras. Äldre sessions osäkerheter kvarstår.
 
 Gemensamt målkontrakt före utökad direkt radering:
 
@@ -336,6 +337,20 @@ uppladdningsgräns och fysisk sökväg/hash måste kontrolleras om vid mutation.
 Lokal talbank och original skyddas även om inga publiceringsreferenser hittas.
 
 ## Gemensam talworker: återanvänd tjänsterna, byt motorn kontrollerat
+
+Integrationen efter PR191 binder nu varje rörlig talsession till samtliga exakta
+bankoriginal, profilrevision, publicerat paket och ett eget RunPod-jobb. Optional
+migration 013 sparar dessa referenser och en beständig totalbudget; vanlig
+medieradering tar hänsyn till dem. Funktionen är avstängd tills schema, privat
+workerimage, bank och separat testmiljö har verifierats. Aktuell leveransstatus
+och återstående driftprov finns i [handoff](../JOHN-HANDOFF.md).
+
+Jakob har valt ett separat Dragan-testrum utan att återöppna pausade operatörer.
+Första liveprovet använder bankens explicita vilobild mellan kortsekvenser.
+Samtidig utdelning och dynamiskt tal är ett senare steg, inte verifierat av
+denna integration. Originalfilerna behåller sina identiteter: tydligare
+visningsnamn och kategorier kräver inte radering och återuppladdning. Verifierade
+dubbletter kan prövas för arkivering först efter färsk beroendekontroll.
 
 Målet är en delad workerimplementation med validerad bank/profil per dealer.
 En endpoint kan betjäna flera dealers genom separata jobb/sessioner; det betyder
