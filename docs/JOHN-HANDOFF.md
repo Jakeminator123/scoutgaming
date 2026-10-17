@@ -1,8 +1,31 @@
 # Aktuell handoff — Scoutgaming
 
+## Studio väljer sin egen Blob-adapter — 17 oktober 2026
+
+PR224:s Vercel-bygge på main30ae1f35 misslyckades: Studios svarsbibliotek
+importerade spelappens Blob-adapter, vars SDK bara fanns i web/node_modules.
+Reply-factoryn tar nu en obligatorisk mediaStore och importerar enbart det
+rena mediaavtalet. Studio binder cloud-media-store, spelservern blob-media.
+Saknad/ofullständig port stängs med befintligt reply_library_unavailable;
+metadata, CAS, scoped rättigheter och privata mediebytes ändras inte.
+
+Reproducerat i ny arbetskopia med endast låsta Lab-beroenden: bundlern hittade
+inte @vercel/blob i web/blob-media.mjs. Samma reply-bundle passerar efter fixen
+utan speladaptern. Befintliga biblioteks-/API-prov passerar17/17, utan skips
+eller provideranrop; egna mockklienter behålls. Helt Studio-produktionsbygge passerar
+med aktiverad /studio/native-admin: kompilering, TypeScript, 28 statiska sidor
+och 80 rena deploymenttraces. web/node_modules och root/node_modules saknades
+under hela bygget; inga privata miljöfiler fanns. Ordinarie commit-hook används. Ingen ny testfil,
+paketversion, miljöändring eller databas-/medieåtgärd.
+
 ## Gemensam lokal integrationsbas — 17 oktober 2026
 
-Senaste normala integration förenar även DATA-PR224 på
+Senaste normala integration tillför också PR225:s explicita Blob-port från
+c69189529c7d0e29c4fa0077f0bab2b392e1529c och main224 på30ae1f35.
+Endast den avgränsade appbindningen och dess fixture-/typkontrakt ändras.
+Den enda konflikten var två handoffinledningar; båda bevaras.
+
+Föregående normala integration förenade DATA-PR224 på
 2554e1af7831ade9eaa6062302331d9e2161e200 med main223/222 på908beb4d.
 Koddelens ändring här är den redan levererade modulbyggfixen och inboxfixen;
 kompositions-, publicerings- och datakropparna är oförändrade. Den enda
@@ -25,7 +48,8 @@ både navigationens exakta adress och alla fyra talkontraktsalias. Inga
 assertions eller publicerings-/talkärnor ändrades utöver granskade import-
 och källisteunioner. N/O ska förgrenas från den rena gemensamma basen.
 Ingen extra fullbuild, push, deploy, provider-/GPU-/schemaändring eller
-ny medieacceptans ingår. Lipsync2:s provhåll gäller fortfarande.
+ny medieacceptans ingår. Lipsync2:s prov är avslutat med STOP enligt PR222;
+Dragan-tal/läppsynk är fortsatt separat ofärdigt produktarbete.
 
 ## C2l-c — gemensam ägare för genererat tal, 17 oktober 2026
 
