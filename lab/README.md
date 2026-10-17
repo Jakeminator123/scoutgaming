@@ -448,9 +448,12 @@ visar den lokala kedjan, inte en riktig OpenClaw-dialog eller Bettalotto-deploy.
 
 Stäng med Ctrl+C: testprocesserna stoppas och deras egna temporära data tas
 bort. Bygg om efter kodändringar; verktyget använder labbets byggda version.
-Sparning, återläsning, revisionskonflikter och osparade Admin-utkast provas
-med `node --test --test-concurrency=4 test/admin-project-drafts-browser.mjs`,
-som ingår i CI. Det äldre browserprovet av uppladdningssidan och BO-iframevyerna
+`node --test --test-concurrency=4 test/admin-project-drafts-browser.mjs` ingår
+i CI och kör bundle-/API-provet. De interaktiva browserfallen för sparning,
+återläsning, revisionskonflikter och osparade utkast kräver
+`CROUPIER_BROWSER_FIXTURE_MODULE` med sökvägen till en installerad Playwright-modul.
+CI sätter inte variabeln; browserfallen rapporteras som överhoppade där.
+Bundle-/API-provet bevisar inte dessa interaktiva flöden. Det äldre browserprovet av uppladdningssidan och BO-iframevyerna
 är pensionerat tillsammans med de ersatta flödena. Spelregler, SSE och
 taltransport har egna regressioner i `.githooks/pre-commit-full`; Admin-provet
 är inget spel- eller läppsynkskvitto.
