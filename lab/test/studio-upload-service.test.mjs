@@ -8,10 +8,10 @@ import { tmpdir } from 'node:os';
 import { createStudioUploadService } from '../lib/studio-upload-service.mjs';
 import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
 import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
-import {extendedDealerMediaFeatures} from '../../web/dealer-media-features.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import {extendedDealerMediaFeatures} from '../../packages/presentation/contracts/dealer-media-features.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
-import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 import sharp from 'sharp';
 import {inspectWebmAlpha,assertMediaAlpha} from '../lib/media-alpha.mjs';
 

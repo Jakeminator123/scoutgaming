@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {addDealer, createEmptyProject} from '../../../packages/presentation/contracts/studio-model.mjs';
-import {captureFrozenPresentation} from '../../../web/storage/frozen-presentation-capture.mjs';
+import {captureFrozenPresentation} from '../../../packages/presentation/server/frozen-presentation-capture.mjs';
 
 /** Pure, explicit cloud data for domain tests. No provider, filesystem or database I/O. */
 export function cloudPresentationFixture({project: input, lanes = input?.lanes, assets, compositingByDealer = {}} = {}) {

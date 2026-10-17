@@ -1,6 +1,6 @@
 import test from 'node:test';
 import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
-import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../web/storage/studio-contract.mjs';
+import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../packages/studio-registry/server/document-contract.mjs';
 import {loadVideoRegistry,getVideoResponse} from '../lib/video-registry.mjs';
 
 test('retained originals join exact families beside current bank bytes without replacing standards',async t=>{
@@ -36,7 +36,7 @@ import { tmpdir } from 'node:os';
 import { createNeonVideoRegistry } from '../lib/neon-video-registry.mjs';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../../packages/studio-registry/server/video-manifest.mjs';
 import { mediaBlobPath } from '../lib/cloud-media-store.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 
 const scope = Object.freeze({ environment: 'test', workspaceId: 'studio-test' });

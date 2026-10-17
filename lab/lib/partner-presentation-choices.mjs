@@ -1,7 +1,7 @@
 import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
 import { gameChoicesForLane } from '../../web/public/game-lanes.mjs';
-import {listPackageRooms} from '../../web/presentation-room-contract.mjs';
-import {isPresentationRoomLaneCompatible} from '../../web/storage/frozen-presentation-capture.mjs';
+import {listPackageRooms} from '../../packages/presentation/server/package-rooms.mjs';
+import {isPresentationRoomLaneCompatible} from '../../packages/presentation/server/frozen-presentation-capture.mjs';
 
 // A company-wide dealer choice must render in every live room for this
 // presentation. A frozen grant alone cannot add a dealer to a portrait adapter.

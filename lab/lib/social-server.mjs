@@ -1,9 +1,10 @@
 import { basename, resolve } from 'node:path';
 import { stripLabBasePath } from "./lab-url.mjs";
 import { createHash } from 'node:crypto';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
-import { normalizeSocialInput, socialChat, validateSocialReply } from '../../open-claw/lab/src/social.mjs';
-import { remoteRequest, connectionStatus } from './studio-server.mjs';
+import { readSettings } from './director-settings.mjs';
+import { normalizeSocialInput, socialChat, validateSocialReply } from '../../packages/director/social.mjs';
+import { remoteRequest } from '../../packages/presentation/server/director-transport.mjs';
+import { connectionStatus } from './studio-server.mjs';
 import { StudioError } from './project-store.mjs';
 import { generateVoicePreview, voicePreviewStatus } from './voice-preview.mjs';
 import { assertLocalRequest, readLocalJson, jsonResponse, errorResponse } from './http-guard.mjs';

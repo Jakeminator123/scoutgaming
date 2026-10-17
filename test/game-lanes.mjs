@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GAME_LANES, gameLaneConfiguration, validateGameLanes } from '../packages/presentation/contracts/game-lanes.mjs';
-import { gameLaneSelection, gameLaneFromDocument, laneDealerSelection, packageLaneIds, gamePresentationForDealer } from '../web/public/game-lanes.mjs';
+import {gameLaneSelection, gameLaneFromDocument, packageLaneIds, gamePresentationForDealer} from '../web/public/game-lanes.mjs';
+import {laneDealerSelection} from '../packages/presentation/contracts/game-lanes.mjs';
 import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
 import {playerLoginDestination} from '../packages/navigation/game-entry.mjs';

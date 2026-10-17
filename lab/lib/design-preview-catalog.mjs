@@ -2,8 +2,9 @@ import { createPublicOperatorRooms, isUnplayableOperatorRooms } from '../../web/
 import { validatePublicOperatorRooms } from '../../web/public/operator-rooms-contract.mjs';
 import { roomEnvironment } from '../../web/public/room-environment.mjs';
 import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
-import { isPresentationRoom, roomGame, inspectPackageRooms } from '../../web/presentation-room-contract.mjs';
-import { readPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import {isPresentationRoom, roomGame} from '../../packages/presentation/contracts/presentation-room.mjs';
+import {inspectPackageRooms} from '../../packages/presentation/server/package-rooms.mjs';
+import { readPackagePresentation } from '../../packages/presentation/server/presentation-package.mjs';
 import { readOperatorLifecycle } from '../../packages/operators/server/operator-lifecycle.mjs';
 import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { designPreviewHeaders } from './design-preview.mjs';

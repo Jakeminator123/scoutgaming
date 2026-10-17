@@ -1,7 +1,7 @@
 import {requestedOperator} from '../packages/navigation/operator-entry.mjs';
-import { isPresentationRoomLaneCompatible } from './storage/frozen-presentation-capture.mjs';
+import { isPresentationRoomLaneCompatible } from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import { isActiveDealerId, isRegisteredDealer } from '../packages/presentation/contracts/dealer-identity.mjs';
-import { validateFrozenRegisteredDealers } from './storage/frozen-dealer-idle.mjs';
+import { validateFrozenRegisteredDealers } from '../packages/presentation/server/frozen-dealer-idle.mjs';
 import {materialLabel} from '../packages/presentation/contracts/material-catalog.mjs';
 // Server-owned /blackjack selection with optional operator context. Without
 // ?operator= the lane, dealer and presentation stay on the saved catalogue
@@ -11,10 +11,12 @@ import {materialLabel} from '../packages/presentation/contracts/material-catalog
 // never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
 // not read or written here.
 import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
-import { gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, laneDealerSelection, packageLaneIds } from './public/game-lanes.mjs';
+import {gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, packageLaneIds} from './public/game-lanes.mjs';
+import {laneDealerSelection} from '../packages/presentation/contracts/game-lanes.mjs';
 import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
-import {readPackagePresentation, publicPackageBranding} from './storage/presentation-package.mjs';
-import { resolvePackageRoom, roomGame } from './presentation-room-contract.mjs';
+import {readPackagePresentation, publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';
+import {resolvePackageRoom} from '../packages/presentation/server/package-rooms.mjs';
+import {roomGame} from '../packages/presentation/contracts/presentation-room.mjs';
 import {resolveRoomBranding} from '../packages/operators/contracts/branding.mjs';
 
 export function createGameEntrySelector({ policy, packages = null, log = console.warn, game = 'blackjack' } = {}) {

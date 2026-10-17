@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createSeedProject,defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
-import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
 import {layerAssetReferences,removeLayerAsset,restoreLayerAsset} from '../lib/layer-asset-removal.mjs';
 function fixture(){const project=createSeedProject();const asset={schemaVersion:1,id:'11111111-1111-4111-8111-111111111111',role:'background',label:'Testbakgrund',sha256:'a'.repeat(64),size:128,contentType:'image/png',width:100,height:100};asset.pathname=layerAssetPath(asset);project.layerAssets=[asset];project.lanes=[defaultPresentationLane('astrid')];return {project,asset};}
 test('unused layer can be removed and restored without mutating source or published snapshot',()=>{

@@ -1,6 +1,6 @@
 import {SHOE_RULES} from '../../web/shoe-game.mjs';
 import {EMAIL_TEMPLATES} from '../../web/email-templates.mjs';
-import {validateStudioScope,canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
+import {validateStudioScope,canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 import {isStudioRole} from './studio-access-policy.mjs';
 
 const fail=()=>{throw Object.assign(Error('studio_admin_readout_unavailable'),{statusCode:503});};

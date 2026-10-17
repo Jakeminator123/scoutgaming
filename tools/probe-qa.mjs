@@ -5,7 +5,7 @@ import { startIsolatedConnection } from '../open-claw/lab/deploy/local-connectio
 import { prepareProject } from '../lab/start.mjs';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
-import { demoProbeMemories } from '../lab/lib/probe-fixtures.mjs';
+import { demoProbeMemories } from '../packages/presentation/contracts/probe-fixtures.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
 import { createPlayerProbeStore } from '../web/player-probe-store.mjs';

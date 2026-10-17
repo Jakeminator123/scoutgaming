@@ -1,7 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { getGeneratedSpeechService, generatedSpeechStatus } from '../../web/generated-speech.mjs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { acquireGeneratedSpeechRuntime } from '../../packages/presentation/server/generated-speech-runtime.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
 import { StudioError } from './project-store.mjs';
+
+const { getGeneratedSpeechService, generatedSpeechStatus } = acquireGeneratedSpeechRuntime({
+  repositoryRoot: resolve(dirname(fileURLToPath(import.meta.url)), '../..'),
+});
 
 export { getGeneratedSpeechService, generatedSpeechStatus };
 export function speechVisitor(request, { create = false } = {}) {

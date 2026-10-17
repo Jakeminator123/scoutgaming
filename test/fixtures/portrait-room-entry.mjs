@@ -1,8 +1,8 @@
 import {createLegacyProject} from '../../lab/test/fixtures/legacy-project.mjs';
 import {cloudPresentationFixture} from '../../lab/test/fixtures/cloud-presentation.mjs';
 import {createSeedProject,defaultPresentationLane,normalizeProject} from '../../packages/presentation/contracts/studio-model.mjs';
-import {buildPresentationPackage} from '../../web/presentation-layers.mjs';
-import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {buildPresentationPackage} from '../../packages/presentation/contracts/presentation-layers.mjs';
+import {withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
 import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
 import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
 

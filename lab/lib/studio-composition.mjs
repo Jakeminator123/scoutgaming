@@ -1,5 +1,5 @@
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
-import {LAYER_ASSET_TYPES,MAX_LAYER_ASSET_BYTES,layerAssetPath} from '../../web/presentation-layers.mjs';
+import {LAYER_ASSET_TYPES,MAX_LAYER_ASSET_BYTES,layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
 import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {rebaseProjectDraft} from './project-rebase.mjs';
 

@@ -13,7 +13,7 @@ produktnivå. Gemensamma begrepp och rumsmodellen definieras i
 - `preview/site/` — granskat byggmaterial för isolerad offlinefixtur; förberedaren hämtar också delade renderarmoduler.
 - `contracts/` — ren projektmodell, video-/rouletteregler, browserpolicy, schema och seeddata. Studio, Admin och spelserver importerar samma källa. Inventarie- och legacy-datatyper ägs också här; UI och lagring behåller sina egna funktioner.
 - `runtime/` — idle, filmfamiljer, legacy-klipp och skobyten. De rena modell-/mediereglerna använder paketkontrakt. `filmed-deal-sequence.mjs` har fortfarande ett separat beroende på webbens kortpolicy; det ligger utanför denna kontraktsflytt.
-- `server/` — urvalsfabrik, ren bindningsvalidering och fabrik för registrerade idle-regler. Den sistnämnda får samma `prepareDecision` från appens Director-komposition, utan att paketet importerar OpenClaw. Kärnan får projektmodell, Director och medieregler från appkompositionen i `lab/lib/presentation-selection.mjs`; varje anrop skickar sitt eget register. Bindningskompositionen i `lab/lib/presentation-video-bindings.mjs` behöver ingen Director.
+- `server/` — urvalsfabrik, ren bindningsvalidering och fabrik för registrerade idle-regler. Den sistnämnda får samma `prepareDecision` från appens Director-komposition, utan att paketet importerar OpenClaw. Kärnan får projektmodell, Director och medieregler från separata appkompositioner i `lab/lib/presentation-selection.mjs` och `web/presentation-selection.mjs`; varje anrop skickar sitt eget register. Bindningskompositionen i `packages/presentation/server/default-video-bindings.mjs` behöver ingen Director.
 - `public-modules.mjs` — explicit lista över browserfiler och deras kanoniska/äldre URL:er. HTTP-server, Vercelroutning, statiska byggkopior och isolerade källfixturer delar listan. Serverfabriker, projektseed och privata appar ingår aldrig.
 - `capability-contract.mjs` — importfritt kontrakt för versionsförhandling mellan spelserver och Studio. Serverendpoint, readiness och bundlad klient använder samma representation; kontraktet ger ingen registrering eller behörighet.
 
@@ -44,3 +44,47 @@ publicerade identiteter för att ett lane-namn pensioneras.
 För aktuella mediaformat och acceptans, använd [spelguiderna](../../docs/games/README.md)
 och [handoffen](../../docs/JOHN-HANDOFF.md). En lokal referensexport innebär
 ingen automatisk publicering eller verifierad läppsynk.
+
+`server/studio-project-bindings.mjs` validerar projektets befintliga bindningar
+med explicita register- och legacyläsare. `server/legacy-clip-inventory.mjs`
+äger en enda inventeringsimplementation; apparna tillför roots, filpolicy,
+mediesökvägsresolver och kontaktvalidatorer. `reviewSafetyVerified`,
+`neverAgain` och den snäva möjligheten att sakna pensionerade index bevaras.
+De appägda kompositionerna finns i `lab/lib/legacy-clip-inventory.mjs` och
+`web/storage/legacy-clip-inventory.mjs`; inga nya browseradresser exponeras.
+
+Publiceringens codec, snapshotfångst, paket-/ruminspektion och frysta dealer-/
+mediakontexter ägs av `server/`. Rena layer-/material-/playbackkontrakt ligger
+i `contracts/`; talprojektionen ligger i `runtime/recorded-speech-selection.mjs`.
+Apparna binder samma pooler, auktorisering och privata medialäsare. Fångade
+snapshots, walletägda transaktioner, historiska grants och protokollets
+`owner: "web"` ändras inte. Inga nya publika moduladresser tillkommer.
+
+`server/director-transport.mjs` äger en gemensam relay-implementation.
+`server/idle-advice.mjs` äger idle-validering, katalog och begränsad request-/
+meddelandecache; apparna tillför Director/model, settingsläsare, register, klocka
+och fetch. Studio behåller HTTP och sin process-singleton; game behåller sin
+API-instans och explicit current/frozen-register. Tidsgränser, cancellation,
+fingerprints, cacheScope och rategränser är oförändrade.
+
+`contracts/probe-fixtures.mjs` och deklarationen innehåller samma fiktiva,
+opt-in-scenarier för Studio-editor, game-probe och QA. De är inte riktiga
+spelardata och läggs inte till i den publika modulallowlisten.
+
+Genererat tals befintliga fullfile-tjänst, HTTP-provider och journal-lease ägs av
+`server/generated-speech-*.mjs` och `server/speech-journal-lease.mjs`. En kanonisk
+modul äger runtime, journalreferenser, config key och WeakMap för exakta providerfunktioner.
+Game och Studio tillför samma ursprungliga repository-root via varsin appkomposition;
+återhämtning av facaden återställer inget tillstånd. Skilda processer/modulgrafer har
+eget minne; ingen global eller HMR-persistens införs. Game behåller SQL-journal,
+Blob-artifacts och sessionsbootstrap. Studio skapar ingen alternativ journal.
+
+De två rena browserkontrakten `speech-package` och `astrid-voice-profile` ligger
+under `contracts/`; gamla publika URL:er och kanoniska paket-URL:er når samma källor.
+Servermodulerna ingår aldrig i den publika allowlisten. Talidentiteter, originalmedia,
+godkännanden, tidsgränser, lease-/kostnadsregler och avbrottshantering är oförändrade.
+
+`server/studio-policy-runtime.mjs` behåller bootstrapordningen installerat schema,
+Studio-migrationskontroll, repository, idle och readSaved. Explicita portar binder
+appens migrationskontroll och lazy medialäsare; serverkärnan importerar inga appfiler.
+Game behåller sin HTTP-handler och Studio sina readonly-stores och poolstädning.

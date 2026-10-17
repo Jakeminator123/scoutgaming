@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { presentationEvents } from '../../web/partner-presentation.mjs';
-import { prepareDecision, finalizeDecision } from '../../open-claw/lab/src/engine.mjs';
+import { prepareDecision, finalizeDecision } from '../../packages/director/engine.mjs';
 import { normalizeProject, buildRuntimeCatalog, validateProject, DEALER_IDS } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 

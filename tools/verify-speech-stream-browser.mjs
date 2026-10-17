@@ -13,13 +13,19 @@ import { createGeneratedSpeechStreamService } from '../web/generated-speech-stre
 
 const directory = await mkdtemp(join(tmpdir(), 'croupier-stream-qa-'));
 const workerSecret = randomBytes(32).toString('hex'), ticketSecret = randomBytes(32).toString('hex');
-const modules = new Set(['generated-speech-player.mjs','speech-stream-client.mjs','speech-package.mjs','astrid-voice-profile.mjs']);
+const modules = new Map([
+  ...['generated-speech-player','speech-stream-client'].map(name => [name+'.mjs','web/public/'+name+'.mjs']),
+  ...['speech-package','astrid-voice-profile'].flatMap(name => [
+    [name+'.mjs','packages/presentation/contracts/'+name+'.mjs'],
+    ['packages/presentation/contracts/'+name+'.mjs','packages/presentation/contracts/'+name+'.mjs'],
+  ]),
+]);
 const runs = [];
 let service, origin, child, stopping = false, currentInputEnd = null;
 const server = createServer(async (req,res) => {
   try {
     const name = req.url.slice(1);
-    if (modules.has(name)) { res.writeHead(200, {'content-type':'text/javascript'});res.end(await readFile(new URL('../web/public/'+name,import.meta.url)));return; }
+    if (modules.has(name)) { res.writeHead(200, {'content-type':'text/javascript'});res.end(await readFile(new URL('../'+modules.get(name),import.meta.url)));return; }
     if (req.url === '/prepare' && req.method === 'POST') {
       const requestId=randomUUID();
       const descriptor=await service.prepare({requestId,dealerId:'astrid',text:'Synthetic integration check.',owner:'fixture-owner',playerId:'fixture-player',beforeCostly:async()=>{}});

@@ -4,7 +4,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createLabServer } from '../src/server.mjs';
-import { createStudioOpenClawAdmin, validateOpenClawAdminPatch, STUDIO_OPENCLAW_ADMIN_PATH } from '../src/studio-admin.mjs';
+import { createStudioOpenClawAdmin } from '../src/studio-admin.mjs';
+import { validateOpenClawAdminPatch, STUDIO_OPENCLAW_ADMIN_PATH } from '../../../packages/director/studio-admin-contract.mjs';
 import { readSettings } from '../src/settings.mjs';
 
 const model = { primary:'lab-provider/model-one', fallbacks:['lab-provider/model-two'] };

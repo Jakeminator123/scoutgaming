@@ -10,6 +10,23 @@ COPY --chown=node:node open-claw/lab/config/catalog.json ./config/catalog.json
 COPY --chown=node:node open-claw/lab/fixtures/scenarios.json ./fixtures/scenarios.json
 COPY --chown=node:node open-claw/lab/deploy/start-director.mjs ./deploy/start-director.mjs
 COPY --chown=node:node packages/presentation/contracts/dealer-identity.mjs /app/packages/presentation/contracts/dealer-identity.mjs
+COPY --chown=node:node packages/director/admin-error.mjs /app/packages/director/admin-error.mjs
+COPY --chown=node:node packages/director/astrid-observation.mjs /app/packages/director/astrid-observation.mjs
+COPY --chown=node:node packages/director/companion-personas.mjs /app/packages/director/companion-personas.mjs
+COPY --chown=node:node packages/director/companion-search.mjs /app/packages/director/companion-search.mjs
+COPY --chown=node:node packages/director/companion.mjs /app/packages/director/companion.mjs
+COPY --chown=node:node packages/director/configuration.mjs /app/packages/director/configuration.mjs
+COPY --chown=node:node packages/director/conversation-memory.mjs /app/packages/director/conversation-memory.mjs
+COPY --chown=node:node packages/director/dashboard-handoff-contract.mjs /app/packages/director/dashboard-handoff-contract.mjs
+COPY --chown=node:node packages/director/engine.mjs /app/packages/director/engine.mjs
+COPY --chown=node:node packages/director/openclaw.mjs /app/packages/director/openclaw.mjs
+COPY --chown=node:node packages/director/product-probe.mjs /app/packages/director/product-probe.mjs
+COPY --chown=node:node packages/director/product-speech.mjs /app/packages/director/product-speech.mjs
+COPY --chown=node:node packages/director/social.mjs /app/packages/director/social.mjs
+COPY --chown=node:node packages/director/speech-routing.mjs /app/packages/director/speech-routing.mjs
+COPY --chown=node:node packages/director/studio-admin-contract.mjs /app/packages/director/studio-admin-contract.mjs
+COPY --chown=node:node packages/director/node/companion-store.mjs /app/packages/director/node/companion-store.mjs
+COPY --chown=node:node packages/director/node/settings-reader.mjs /app/packages/director/node/settings-reader.mjs
 RUN mkdir -p /data/catalog && chown -R node:node /data
 USER node
 EXPOSE 4188

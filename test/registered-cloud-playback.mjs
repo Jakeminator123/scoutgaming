@@ -32,7 +32,7 @@ test('local indexed catalog can be read for history but cannot start',async()=>{
 test('missing operator package cannot silently start a default dealer',async()=>{assert.equal((await selector('paow',{pack:false})('?operator=testco')).status,404);});
 
 test('registered Astrid does not duplicate the historical package authority',async()=>{
- const {validatePresentationPackage}=await import('../web/presentation-layers.mjs');
+ const {validatePresentationPackage}=await import('../packages/presentation/contracts/presentation-layers.mjs');
  const {defaultPresentationLane}=await import('../packages/presentation/contracts/studio-model.mjs');
  for(const id of ['astrid']){
   const pack={schemaVersion:2,projectRevision:'fixture',assets:[],lanes:[defaultPresentationLane(id)],registeredDealers:[{id,label:id,idle:null}]};
@@ -49,7 +49,7 @@ test('a published cloud lane is independent of a historical active indexed lane'
 
 test('historical box variants remain stored without automatically becoming the standard',async()=>{
  const {applyLegacyStandardVariants}=await import('../packages/presentation/runtime/legacy-standard-variants.mjs');
- const {selectPresentation}=await import('../lab/lib/presentation-selection.mjs');
+ const {selectPresentation}=await import('../web/presentation-selection.mjs');
  const project=historicalDealerProject('vera');
  project.legacyClipPolicy=[{dealerId:'vera',part:'box3',clipId:'vera:legacy/box3'}];
  applyLegacyStandardVariants(project); // Explicit historical fixture, never a runtime import.

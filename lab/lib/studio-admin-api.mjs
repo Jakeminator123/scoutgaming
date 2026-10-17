@@ -1,6 +1,6 @@
 import { STUDIO_ADMIN_ENDPOINTS, studioAdminEndpoint, isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { normalizeStudioRole, studioRoleMeetsMinimum } from './studio-access-policy.mjs';
-import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 
 const MAX_BODY = 64 * 1024;

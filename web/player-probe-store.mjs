@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { projectConversationMemory } from '../open-claw/lab/src/conversation-memory.mjs';
+import { projectConversationMemory } from '../packages/director/conversation-memory.mjs';
 
 const DAY = 86400000;
 const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);

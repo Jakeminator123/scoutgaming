@@ -6,7 +6,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {createPublicationChain, company, otherCompany, compositionId} from './fixtures/admin-publication-chain.mjs';
 import {createPresentationRoomClient, createPresentationRoomController} from '../lab/lib/presentation-room-client.mjs';
-import {readPackagePresentation} from '../web/storage/presentation-package.mjs';
+import {readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../lab/client/runtime/public-lobby-catalog.mjs';
 import {gameLaneFromDocument} from '../web/public/game-lanes.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';

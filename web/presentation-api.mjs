@@ -1,9 +1,9 @@
 import { presentationPublicModules } from '../packages/presentation/public-modules.mjs';
 import { isActiveDealerId as isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
 import { filmedDealSelection } from './filmed-deal-selection.mjs';
-import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from './recorded-speech-selection.mjs';
+import {gateRecordedSpeechSelection,recordedSpeechProjection,recordedSpeechResult} from '../packages/presentation/runtime/recorded-speech-selection.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
-import { selectRegisteredIdleRule } from '../lab/lib/registered-idle-rules.mjs';
+import { selectRegisteredIdleRule, selectPresentation, createIdleAdviceServer } from './presentation-selection.mjs';
 import { registeredIdlePolicy, registeredIdleInventory } from '../packages/presentation/runtime/registered-idle-policy.mjs';
 import { ownDealerIdle } from '../packages/presentation/runtime/registered-idle.mjs';
 import { readFile } from 'node:fs/promises';
@@ -11,12 +11,10 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID, createHash } from 'node:crypto';
-import { createProjectStore } from '../lab/lib/project-store.mjs';
-import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
+import { createLocalProjectReader } from '../packages/studio-registry/server/local-project-reader.mjs';
+import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from './storage/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
-import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
-import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
-import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
+import { prepareDecision } from '../packages/director/engine.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const publicModules = new Map(presentationPublicModules.flatMap(row => row.paths.map(url => [url, row.source])));
@@ -52,7 +50,7 @@ export function presentationInput(event, published) {
   fail('Unsupported presentation request');
 }
 
-export function createPresentationApi({ db, env = process.env, store = createProjectStore(join(root, 'lab/data')),
+export function createPresentationApi({ db, env = process.env, store = createLocalProjectReader(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
   select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   recordedSpeechPreview = false, beforeActionPresentation = () => {} } = {}) {

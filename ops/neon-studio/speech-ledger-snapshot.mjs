@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import { StudioStorageError, canonicalStudioJson, validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { StudioStorageError, canonicalStudioJson, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { GPU_RESERVATION_WINDOW_MS, speechRequestKey } from '../../web/postgres-speech-journal.mjs';
-import { normalizeSpeechPackage } from '../../web/public/speech-package.mjs';
+import { normalizeSpeechPackage } from '../../packages/presentation/contracts/speech-package.mjs';
 
 export const SPEECH_LEDGER_SNAPSHOT_FORMAT = 'croupier-speech-ledger-v1';
 const hashPattern = /^[a-f0-9]{64}$/, jobPattern = /^[A-Za-z0-9_-]{1,128}$/;

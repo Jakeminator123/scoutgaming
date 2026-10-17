@@ -14,7 +14,7 @@ import {
 } from './local-connection.mjs';
 import { acquireLocalSession } from './local-session.mjs';
 import { readSettings } from '../src/settings.mjs';
-import { speechRoutingConfiguration } from '../src/speech-routing.mjs';
+import { speechRoutingConfiguration } from '../../../packages/director/speech-routing.mjs';
 
 async function freePort() {
   const server = createNetServer();

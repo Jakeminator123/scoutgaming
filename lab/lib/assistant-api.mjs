@@ -1,6 +1,6 @@
 import {readAssistantData,assistantNavigation} from './assistant-reads.mjs';
 import {createHmac,timingSafeEqual} from 'node:crypto';
-import {canonicalStudioJson,validateStudioScope} from '../../web/storage/studio-contract.mjs';
+import {canonicalStudioJson,validateStudioScope} from '../../packages/studio-registry/server/document-contract.mjs';
 import {normalizeNativeStudioRequest} from './studio-native-request.mjs';
 import {assertNativeStudioRequest,studioNativeRuntime} from './studio-native-runtime.mjs';
 import {assistantConfiguration,ASSISTANT_MODELS,PUBLIC_KNOWLEDGE,assistantJson,askAssistant,assistantFailure as fail} from './assistant-model.mjs';

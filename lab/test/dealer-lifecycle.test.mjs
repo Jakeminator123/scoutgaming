@@ -6,12 +6,12 @@ import {lifecycleProject,changeDealerLifecycle,assertLifecyclePackages,checkDeal
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
-import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
+import {withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
 import {createStudioDealerApi} from '../lib/studio-dealer-api.mjs';
 import {createStudioMediaApi} from '../lib/studio-media-api.mjs';
 import {checkPermanentMediaDeletion,createStudioMediaDeletion} from '../lib/studio-media-deletion.mjs';
-import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
-import {validateStudioMedia} from '../../web/storage/studio-contract.mjs';
+import {createStudioRepository} from '../../packages/studio-registry/server/document-repository.mjs';
+import {validateStudioMedia} from '../../packages/studio-registry/server/document-contract.mjs';
 import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
 import {fileURLToPath} from 'node:url';

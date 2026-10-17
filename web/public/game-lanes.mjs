@@ -46,19 +46,6 @@ export function gameLaneSelection(query, activeLane = null, lanes = GAME_LANES, 
   return { lane: lane.id, dealer, presentation };
 }
 
-// A presentation lane's dealer layer (Studio project) narrows the dealers its
-// server lane can render. Frozen v3 rooms supply their additional authorized dealers. The
-// layer default comes first. null means no overlap; the caller keeps its dealer.
-export function laneDealerSelection(query, lane, dealerLayer, { portraitDealerIds = [] } = {}) {
-  if (!lane || !['portrait-video', 'indexed-video'].includes(lane.renderer) || !isDealerId(lane.dealer)) throw Error('Invalid lane definition');
-  const renderable = lane.renderer === 'portrait-video' ? [lane.dealer, ...portraitDealerIds.filter(isActiveDealerId)] : [];
-  const listed = [dealerLayer?.default, ...(Array.isArray(dealerLayer?.allowed) ? dealerLayer.allowed : [])];
-  const permitted = [...new Set(listed)].filter(id => renderable.includes(id) && isActiveDealerId(id));
-  if (!permitted.length) return null;
-  const params = query instanceof URLSearchParams ? query : new URLSearchParams(query);
-  const requested = params.getAll('dealer').length === 1 ? params.get('dealer') : null;
-  return params.has('dealer') ? (permitted.includes(requested) ? requested : null) : permitted[0];
-}
 
 const packageRevisionPattern = /^[1-9][0-9]{0,15}$/;
 const CHOICE_DEALERS = Object.freeze(['dragge']);

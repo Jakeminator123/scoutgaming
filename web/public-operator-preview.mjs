@@ -32,8 +32,8 @@ export function createPublicOperatorPreview({readCurrentContext=null,privateMedi
     const room = administration.rooms?.find(row=>row.id===context.roomId);
     if(!pack.games?.includes(room?.game ?? 'blackjack'))fail(404);
     const [{readPackagePresentation},{createGameEntrySelector},{supportsIndependentLayers},{resolveFrozenDealerIdle},{validateLayerAsset}]=await Promise.all([
-      import('./storage/presentation-package.mjs'),import('./game-entry-operator.mjs'),import('./public-operator-rooms.mjs'),
-      import('./storage/frozen-dealer-idle.mjs'),import('../packages/presentation/contracts/layer-asset-contract.mjs')]);
+      import('../packages/presentation/server/presentation-package.mjs'),import('./game-entry-operator.mjs'),import('./public-operator-rooms.mjs'),
+      import('../packages/presentation/server/frozen-dealer-idle.mjs'),import('../packages/presentation/contracts/layer-asset-contract.mjs')]);
     const frozen=readPackagePresentation(pack);
     if(!frozen)fail(404);
     const select=createGameEntrySelector({

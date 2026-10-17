@@ -56,7 +56,7 @@ och [ENVIRONMENT-RESTORATION.md](../docs/ENVIRONMENT-RESTORATION.md).
 importera Studios HTTP-adapter `lab/lib/studio-game-authority.mjs` för att
 kontrollera en kommandosignatur. Den gamla signeringsexporten finns kvar där
 för kompatibilitet. Befintlig behörighetspolicy och lagringskontraktet i
-`web/storage/studio-contract.mjs` används fortfarande.
+`packages/studio-registry/server/document-contract.mjs` används fortfarande.
 
 OpenClaw-kopplingarna är aktiva: `openclaw-chat.mjs` använder minnes-/
 kameraformat, inställningar och produktens taltransport; `presentation-api.mjs`
@@ -64,7 +64,10 @@ använder Director-beslut; `probe-runtime.mjs` och `player-probe-store.mjs`
 använder provtal respektive minnesprojektion. `server.mjs` använder också
 kameranormalisering och `native-p6-qa-hook.mjs` talets envelope-kontrakt.
 `storage/studio-contract.mjs` validerar fortfarande social policy via OpenClaw.
-Dessa importer från `open-claw/lab/src/` är kvar, liksom Astrids talväg.
+De gemensamma kontrakten kommer från `packages/director/`;
+`director-settings.mjs` äger spelserverns miljöfilläsning med samma filordning,
+alias och datarot. Director-tjänsten behåller HTTP, Gateway och signering.
+Astrids talväg och den befintliga sociala policyn är oförändrade.
 
 `lissabon-profiles.mjs` är en avgränsad lokal profilfunktion: SQLite, gästdemo,
 `HOST=127.0.0.1`, inga spelarkonton och flaggan `lissabon-stream-lane`.
@@ -85,3 +88,12 @@ Lokala SQLite-databaser ligger i Git-ignorerade `web/data/` eller den uttrycklig
 `CROUPIER_DATA_DIR`. Den mappen innehåller tillstånd, inte disponibel demokod;
 läs eller radera den inte som en del av vanlig mappstädning.
 Tekniska kontrakt finns i [LOCAL-PRESENTATION-RUNTIME.md](../docs/LOCAL-PRESENTATION-RUNTIME.md).
+
+Medieruntime och videoregister komponerar spelserverns Blob- och
+läsarportar i `storage/studio-media-runtime.mjs` respektive
+`storage/video-registry.mjs`. De delar kärnor med Studio och bevarar de
+befintliga preview-URL:erna. Lokalt projektläsande använder
+`packages/studio-registry/server/local-project-reader.mjs`, utan Studios
+skrivlås, historik eller arkiveringskod. Neonkonfigurationen får fortfarande
+inte falla tillbaka till lokala authoringfiler. Presentation/idle och
+genererat tal har separata återstående ägarsteg.

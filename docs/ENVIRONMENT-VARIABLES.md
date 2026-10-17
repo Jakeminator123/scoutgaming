@@ -197,6 +197,11 @@ serverinställningar. Isolerad lokal start blockerar senare privata env-filläsn
 `readSettings` läser valda filer följt av processmiljö; Studio anger root
 `.env` och Lab local. Kanoniska `OPENCLAW_API_KEY` vinner över alias inom
 varje källa, även om den är tom; senare källa har fortfarande högre prioritet.
+Director-tjänsten, Studio och spelservern väljer varsin filpolicy och datarot.
+`packages/director/node/settings-reader.mjs` äger den enda Node-filläsaren. Den gemensamma
+allowlisten, aliasnormaliseringen och projektionen finns i
+`packages/director/configuration.mjs`, som inte läser filer eller processmiljö.
+Tjänstens `LAB_ROOT` och samtliga befintliga datakataloger är oförändrade.
 
 ### Render: färsk läsning och driftgränser
 
@@ -1113,6 +1118,30 @@ kontrollera varje automatisk deploy där. Native Node-funktionerna för
 Genererat tal genom Render/Cartesia/RunPod har passerat två tidigare liveprov;
 kallstart, exakt synk och fysisk mikrofon återstår enligt handoffen.
 
-Källinventariet för sparad spelpolicy pekar på `packages/presentation/server/saved-game-policy.mjs`.
-Cloud-konfigurationen använder samma miljöläsare; den explicita legacy-importen binder
-valideraren till spelserverns befintliga dokumentkontrakt. Inga miljönycklar eller fallbackregler ändras.
+### Medieläsarnas appägarskap
+
+Studio och game kopplar egna Blob-adaptrar till den gemensamma medialäsaren
+i `packages/studio-registry/server/media-runtime.mjs`. Apparna behåller
+sina tidigare roots och lokala filpolicyer. `CROUPIER_DATA_DIR` har samma
+legacy-standardkatalogregel; `NEXT_PUBLIC_LAB_BASE_PATH` behåller den
+befintliga preview-URL-regeln för tom basväg respektive `/studio`.
+`CROUPIER_VERCEL_FRONTEND_ORIGIN` fortsätter styra det exakta betrodda
+proxyursprunget. Källinventariet följer de nya kompositionerna; flytten inför
+inga nya miljövariabler, ändrar inga värden och skapar ingen lokal fallback
+vid ett Neonfel.
+
+Den befintliga sparade spelpolicyns miljöläsare ägs av
+`packages/presentation/server/saved-game-policy.mjs`. Importverktyget binder samma
+dokumentkontrakt; flytten inför inga nya nycklar, värden eller fallbackregler.
+
+Fullfile-talets miljöläsare ägs nu av
+`packages/presentation/server/generated-speech-runtime.mjs`. Appkompositionerna
+tillför den ursprungliga repository-roten explicit. Runtime läser aktuell processmiljö
+vid status/get, behåller samma konfigurationsnyckel och kräver samma journal/artifacts
+i Neon-läget. Ingen ny miljövariabel, processdelad global eller automatisk providerstart införs.
+
+Policybootstrapens miljögrind ägs av
+`packages/presentation/server/studio-policy-runtime.mjs`. Game och Studio tillför
+samma migrationskontroll och varsin befintlig medialäsare; schema/readSaved-ordningen
+och det avstängda SQLite/offline-läget är oförändrade. Ingen ny miljövariabel eller
+automatisk provideranslutning införs.

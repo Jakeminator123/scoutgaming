@@ -9,7 +9,7 @@ import { PARTNER_PERMISSIONS } from '../../packages/studio-access/server/partner
 import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
-import { withPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import { withPackagePresentation } from '../../packages/presentation/server/presentation-package.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
 
 const origin = 'https://public.example.invalid';

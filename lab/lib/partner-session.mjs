@@ -6,9 +6,9 @@ import { allowsWorkspaceResource, internalPartnerContext } from './partner-works
 import { craigIdentity } from '../../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../../packages/studio-access/server/bo-auth-epoch.mjs';
 import { createPostgresStore } from '../../packages/storage/server/postgres-store.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
-import { validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope, StudioStorageError } from '../../packages/studio-registry/server/document-contract.mjs';
 import { createStudioLoginRateLimit } from './studio-native-auth-actions.mjs';
 import { createStudioNativeAuth } from '../../packages/studio-access/studio-native-auth.mjs';
 import { normalizeStudioRole } from '../../packages/studio-access/studio-access-policy.mjs';

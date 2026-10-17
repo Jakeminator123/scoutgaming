@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { createSeedProject, addDealer } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { createDealerForgeService } from '../../lib/dealer-forge-service.mjs';
-import { validateStudioMedia } from '../../../web/storage/studio-contract.mjs';
+import { validateStudioMedia } from '../../../packages/studio-registry/server/document-contract.mjs';
 
 export const scope = { environment: 'test', workspaceId: 'ws' };
 export const sha = bytes => createHash('sha256').update(bytes).digest('hex');

@@ -32,7 +32,7 @@
 // Whole historical rows containing protected dealers/material must be handled
 // separately: selecting their row ID never overrides resource protection.
 import { createHash } from 'node:crypto';
-import { cloneStudioJson, validateDocumentValue, validateRevision, validateStudioScope, validateStudioMedia } from '../web/storage/studio-contract.mjs';
+import { cloneStudioJson, validateDocumentValue, validateRevision, validateStudioScope, validateStudioMedia } from '../packages/studio-registry/server/document-contract.mjs';
 
 import { layerAssetFitsGame } from '../packages/presentation/contracts/layer-asset-contract.mjs';
 import { MEDIA_FAMILY_DEFINITIONS } from '../packages/presentation/runtime/media-families.mjs';

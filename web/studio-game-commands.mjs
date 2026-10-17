@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { studioCommandSignature } from '../packages/shared/studio-game-command.mjs';
-import { validateStudioScope, canonicalStudioJson } from './storage/studio-contract.mjs';
+import { validateStudioScope, canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 import { studioAdminActionPolicy, meetsStudioAdminActionRole } from '../packages/studio-access/studio-access-policy.mjs';
 
 const actions = new Set(['players/status', 'players/password', 'apikeys/revoke', 'apikeys/rotate', 'apikeys/launch', 'apikeys/credit']);
