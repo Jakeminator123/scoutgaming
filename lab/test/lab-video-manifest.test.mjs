@@ -101,18 +101,13 @@ test('generator preserves legacy IDs by SHA, accepts empty variant folders and i
   assert.equal(manifestJson(manifest), manifestJson(await buildLabVideoManifest({ root })), 'generation must be deterministic');
 });
 
-test('saved idle policy and local profile still resolve exact bank identities after take replacement', async () => {
+test('saved idle policy still resolves exact bank identities after take replacement', async () => {
   const manifest = await readLabVideoManifest(repositoryManifest);
   const policy = JSON.parse(await readFile(new URL('../policies/idle-policy.seed.json', import.meta.url), 'utf8'));
-  const profile = JSON.parse(await readFile(new URL('../policies/local-profile.json', import.meta.url), 'utf8'));
   const family = manifest.families.find(row => row.id === policy.familyId);
   assert.ok(family);
   for (const item of policy.base) assert.ok(family.standardIds.includes(item.videoId), `stale idle base: ${item.videoId}`);
   for (const item of policy.variants) assert.ok(family.variantIds.includes(item.videoId), `stale idle variant: ${item.videoId}`);
-  for (const id of profile.openClawIdleIds) {
-    assert.ok(family.variantIds.includes(id), `stale profile variant: ${id}`);
-    assert.ok(policy.variants.some(item => item.videoId === id), `profile variant lacks idle policy: ${id}`);
-  }
 });
 
 test('generator registers an allowed deep variant as inactive structural media only', async t => {

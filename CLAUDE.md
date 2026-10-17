@@ -11,4 +11,4 @@ verification and delivery. Jakob's current instructions take precedence.
 - AI tools and coordination: [AI guide](docs/AI/README.md).
 
 These are the canonical sources. Historical branch lists, old layouts and
-system-map entries create no preservation or additional approval requirement.
+historical inventories create no preservation or additional approval requirement.

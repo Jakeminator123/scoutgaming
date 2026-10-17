@@ -85,6 +85,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `scope=${scope}\nmigration=${migration}\n`);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     `### Verification scope: ${scope}\n\n${scope === 'documentation'
-      ? 'Prose-only PR: environment registry, delivery policy and documentation checks. System-map reporting is informational. No runtime acceptance is claimed.'
+      ? 'Prose-only PR: environment registry, delivery policy and documentation checks. No runtime acceptance is claimed.'
       : `Full product checks, Studio build, isolated SQL/HTTPS acceptance and worker checks. Live migration readiness: ${migration ? 'required' : 'not needed for client/test-only edits'}.`}\n`);
 }

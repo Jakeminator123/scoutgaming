@@ -448,13 +448,27 @@ visar den lokala kedjan, inte en riktig OpenClaw-dialog eller Bettalotto-deploy.
 
 Stäng med Ctrl+C: testprocesserna stoppas och deras egna temporära data tas
 bort. Bygg om efter kodändringar; verktyget använder labbets byggda version.
-Automatiserad acceptans körs med `node test/backoffice-lab-browser.mjs`.
-Den kräver Playwright och Edge; ange `CROUPIER_PLAYWRIGHT_MODULE` till
-värdmiljöns `index.mjs` om paketet inte finns i repot. BO-inloggningen för QA
-finns endast i fixture-objektets minne och skrivs inte ut av CLI:t.
-Browserprovet använder verkliga lokala spelkommandon/SSE men ett uttryckligen
-syntetiskt chattsvar. Flikdelningens manuella tillstånd och läppsynk bedöms
-separat; testresultat dokumenteras i `docs/JOHN-HANDOFF.md`.
+Sparning, återläsning, revisionskonflikter och osparade Admin-utkast provas
+med `node --test --test-concurrency=4 test/admin-project-drafts-browser.mjs`,
+som ingår i CI. Det äldre browserprovet av uppladdningssidan och BO-iframevyerna
+är pensionerat tillsammans med de ersatta flödena. Spelregler, SSE och
+taltransport har egna regressioner i `.githooks/pre-commit-full`; Admin-provet
+är inget spel- eller läppsynkskvitto.
+
+## Regressionssviter och tidskvitton
+
+`sh .githooks/pre-commit --full` kör produktens åtta sviter. En enskild svit
+körs med exempelvis `sh .githooks/pre-commit-full database`. Namnen är
+`studio`, `admin`, `contracts`, `database`, `presentation`, `access`,
+`speech` och `gameplay`. Testomgångarna har högst fyra workers; gruppens
+kommandorad i fullhooken anger dess filer. Normal gruppgräns är 180 sekunder,
+Studio 240 och isolerad SQL/omstart/HTTPS 360. Timeout ger felkod 124 och
+avslutar gruppens egna processer. Fel i produktproven förblir blockerande.
+
+CI:s sammanfattning och `dealer-regression-timing-<sha>` visar grupptider.
+JSONL-filen har start- och slutposter; en start utan slut visar var ett hårt
+avbrott inträffade. Den historiska systemkartans reporter behövs inte för
+produktproven eller deras tidskvitton.
 
 ## Video och kvarvarande integration
 
