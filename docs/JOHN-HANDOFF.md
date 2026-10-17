@@ -7,7 +7,10 @@ packages/shared/blackjack-shoe-rules.mjs efter browser-/serveruppdelningen.
 Spelmotorns dynamiska import och samtliga invariants är bevarade. Befintligt
 isolerat fuzzprov passerar med seed20260822 och3000 rundor; ingen databas,
 provider eller produktionsåtkomst. Produktträdet är oförändrat mot PR228:s
-ab125d0e46f0282278fa5fbd7ce08372f73d2f30. Ordinarie hook och PR-CI följer.
+ab125d0e46f0282278fa5fbd7ce08372f73d2f30. Den befintliga kontrollen av
+odefinierade browsernamn följer också med till packages/presentation/contracts,
+så de flyttade modulernas tidigare täckning behålls; fyra katalogprov passerar.
+Inga nya testfiler införs. Ordinarie hook och PR-CI följer.
 
 ## PR227: Studio använder sin egen policymedialäsare
 
