@@ -1,5 +1,105 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: worker-klassning och återanvändningsanalys — 17 oktober 2026, 22:30 CEST
+
+Avgränsad kodrättning med offline-tester på `cursor/lipsync-cloud-diagnosis-36e8`.
+Inga GPU-prov, miljöändringar, providerresurser eller budgetändringar ingår.
+Tal och läppsynk i spelet fungerar fortfarande inte; detta ändrar varför nästa
+prov får stoppas, inte om det lyckas.
+
+### Verifierat ur det stoppade provet (inte hypotes)
+
+Runpods REST-poster för workers är pods med `desiredStatus` ∈ RUNNING/EXITED/
+TERMINATED (sparad OpenAPI 17 oktober). Endpointens `version` stegas bara vid
+ändrad template/env, inte vid ändrat `workersMin`. Receipt 19:05:44 visade
+`s8le9mn0gs3n8g` som EXITED medan systemloggen 19:06:47 fortfarande hämtade
+imagen; 19:07:40 var samma worker RUNNING och en ny `t5nobwvi58kdch` EXITED.
+`/health` 19:04:32 visade noll i alla worker-räknare med ett köat jobb.
+Runpods dokumentation: nedskalad worker (Initializing/Idle/Throttled) är inte
+debiterad; Running täcker kallstart, bearbetning och idle-vänt och debiteras.
+Antal poster var alltså aldrig antal aktiva GPU:er. Guardens
+`workers.length <= workersMax` stoppade ett prov som fortfarande var inom max1.
+
+### Rättning i produktadaptern
+
+`web/moving-speech-runpod.mjs` klassar varje post: RUNNING = `active`
+(upptar GPU), EXITED = `scaled-down` (cachad/hämtande slot, gratis),
+TERMINATED = `terminated`, saknat eller okänt värde = `unknown` och räknas
+som aktiv så att osäkerhet bara kan neka. Endast aktiva/okända poster räknas
+mot `workersMax` (`moving_runpod_active_workers_exceeded`); fler än max+2
+nedskalade poster ger `moving_runpod_workers_unknown`. Ägarskap (endpoint/
+template) krävs för alla poster. Fel image/version på en aktiv post är
+fortfarande `moving_worker_release_mismatch`; på en nedskalad post
+rapporteras den som `isStale` eftersom providern själv byter ut föråldrade
+slots utan kostnad. `workerState()` räknar nu `running+ready+unhealthy` som
+upptaget och redovisar idle/initializing/throttled separat, så en cachad slot
+blockerar inte längre `reserveGpu`-kravet workers/busy/available = 0, medan
+en varm debiterad worker eller ett osäkert unhealthy-läge fortfarande gör det.
+`verifyMovingWorkerRelease` kräver vid `send` minst en aktiv post, inte bara
+någon post. Rader utan `state` behåller den strikta äldre tolkningen.
+
+Offline: `test/moving-speech-runpod.mjs`, `-transport.mjs`, `-session.mjs`,
+`-runtime.mjs` ger 92 pass, 0 fel; ordinarie hook 56/56 vid commit.
+`test/platform-moving-speech.mjs` kräver speechtjänstens egen installation
+och kördes inte här. Ingen förändring av budget, journal eller provider-POST.
+
+### Samma regel för den privata guarden
+
+`moving-runpod-provision.mjs` (`verifyEndpoint` rad 262–264,
+`verifyFallbackWorkers` rad 270) ska räkna `desiredStatus==='RUNNING'`
+(eller saknat) mot `workersMax` och tillåta EXITED/TERMINATED utan att
+likställa dem med kapacitet; ägarskaps-, image- och versionskontroll för
+aktiva poster behålls. `unexpected_active_workers` ska bara utlösas av aktiva
+poster. Filen är privat och har inte ändrats här; `classifyMovingWorkerRecord`
+och `summarizeMovingWorkerRecords` i adaptern är den gemensamma regeln.
+
+### Korrigerad cacheanalys för workern
+
+`bank_download.py` har redan hashadresserad cache under
+`/tmp/croupier-moving-banks` med återverifiering per träff. Det som faktiskt
+upprepas per jobb i `entrypoint.run()` är: (1) `verify_bank` hashar arkivet
+(594 MB) igen, packar upp hela banken i en ny temporärkatalog och hashar varje
+utpackad fil; (2) `verify_models` SHA-256-hashar 3,89 GB modellfiler som är
+oföränderliga i imagen; (3) `ProcessEngine` startar en ny subprocess, laddar
+MuseTalk och banken till GPU och värmer upp (uppmätt cirka 57 s). Allt sker
+före callbackanslutningen och inom jobbets 180 s. Med idle 5 s och ett jobb
+per session överlever inget av detta till nästa replik.
+
+Förslag utan att tappa kontroll: modellverifiering en gång per workerprocess
+vid start, nyckelad på `models.lock.json`-hash, med storlekskontroll per jobb
+och fail-closed; utpackad bank per process nyckelad på
+`avatarSha256+bankReceiptSha256+sourceSetSha256+workerAvatar`, återverifierad
+mot kvittots filhashar vid återanvändning; motorprocess per
+`(releaseSha256, avatarSha256, workerAvatar)` som hålls varm efter normalt
+slutfört jobb och dödas vid avbrott/timeout som i dag. Alla tre ger effekt
+först när workern lever mellan jobb, det vill säga tillsammans med upplägget
+nedan. Ingen av dem är implementerad.
+
+### Föreslaget upplägg: återanvänd endpoint och session, ingen permanent GPU
+
+1. En permanent Dragan-endpoint/template som inte raderas mellan prov, så att
+   providern får behålla cachade slots (EXITED-poster) och imagehämtningen
+   på 4–5 minuter inte upprepas. Verifiering av image-digest, version, max1,
+   idle och execution ändras inte.
+2. Provfönster: guarden sätter `workersMin=1` först efter verifierad
+   reservation och köat jobb (som nu), väntar på `/health running=1` och
+   workerns pong, och återgår till `workersMin=0` innan chatt. Versionen
+   stegas inte av detta. Fönstret har fast deadline och ägarbunden stoppfil.
+3. Ett jobb per session i stället för per replik, med serverns befintliga
+   callback 450 s/livstid 480 s; idle höjs bara inom fönstret (högst 120 s)
+   och sätts tillbaka till 5 vid stängning. Så länge adaptern kräver
+   idle ≤ 5 är detta ett medvetet, dokumenterat undantag som kräver kodändring.
+4. Kostnadsgräns per fönster: A40 0,00034 USD/s ⇒ 10 minuter ≈ 0,20 USD plus
+   reserv; guarden räknar aktuell summa före aktivering mot taket 15 USD med
+   kvar 2,90 USD efter försiktiga reserver. Taljournalens 4,80 USD är fullt
+   reserverat; nytt prov kräver att Jakob höjer det budget-ID:ts tak, inte
+   nytt ID eller nollställd historik.
+5. Stopp: `workersMin=0`, cancel av öppet jobb, läs `/health` tills
+   running=0, verifiera tom aktiv lista; EXITED-poster får finnas kvar.
+
+Nästa agent börjar med guardpatchen ovan och ett kort offlineprov av dess 81
+tester, därefter beslut om punkt 3 innan någon providerändring.
+
 ## Publika moduler oberoende av deployordning — 17 oktober 2026
 
 Frontendens middleware låter GET/HEAD till exakta kanoniskt validerade adresser i
