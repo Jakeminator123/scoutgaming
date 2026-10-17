@@ -8,12 +8,15 @@ export function DealerAssistantShell({pageMode,registrationBlocked,onRegistered,
   useEffect(()=>{if(pageMode==='import')setStarted(true);},[pageMode]);
   return <>
     <div hidden={pageMode!=='import'}>{started&&<DealerImportAssistant active={pageMode==='import'} mode="import" registrationBlocked={registrationBlocked} onRegistered={onRegistered} requestedDealerId={requestedDealerId} onBusyChange={onBusyChange}/>}</div>
-    {pageMode==='chat'&&<section className="dealer-import dealer-import-panel" aria-labelledby="adminrobot-title">
-      <p className="dealer-import-eyebrow">Nivå 1 · Scoutgaming</p><h1 id="adminrobot-title">Adminroboten</h1>
-      <p>Dra in filmer i chatten, välj dealer och skicka för att sortera och placera dem. Du kan också hantera material, bolag och spelrum. Borttagning visar konsekvenserna först.</p>
-      <div className="dealer-import-actions"><button type="button" data-scout-assistant="admin">Öppna Adminroboten</button>
-        <button type="button" data-scout-assistant="openclaw">OpenClaw · drift och modeller</button></div>
-      <p>Scoutguiden ger snabb hjälp på alla sidor. Klippassistenten sorterar filer i importvyn. Spelbordets dealerchatt är separat.</p>
+    {pageMode==='chat'&&<section className="admin-system-page" aria-labelledby="adminrobot-title">
+      <header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="adminrobot-title">Adminroboten</h1>
+        <p>Få hjälp med dealers, filmer, bolag och rum.</p></div></header>
+      <div className="admin-system-card">
+        <div className="admin-system-actions"><button className="studio-button" type="button" data-scout-assistant="admin">Öppna Adminroboten</button></div>
+        <details><summary>Andra assistenter</summary><p>Klippassistenten sorterar filmer i importvyn. Dealerchatten hör till spelbordet.</p>
+          <div className="admin-system-actions"><button className="studio-button" type="button" data-scout-assistant="openclaw">OpenClaw · drift och modeller</button></div>
+        </details>
+      </div>
     </section>}
   </>;
 }

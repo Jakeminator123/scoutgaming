@@ -51,12 +51,17 @@ class TestFormData {
 function harness() {
   const hooks = []; let cursor = 0, generatedKeys = 0;
   const listeners = new Map(); const pending = [];
+  let deferUpdates = false;
+  const deferredUpdates = [];
   const fakeReact = {
     ...React,
     useState(initial) {
       const index = cursor++;
       if (!(index in hooks)) hooks[index] = typeof initial === 'function' ? initial() : initial;
-      return [hooks[index], next => { hooks[index] = typeof next === 'function' ? next(hooks[index]) : next; }];
+      return [hooks[index], next => {
+        const apply = () => { hooks[index] = typeof next === 'function' ? next(hooks[index]) : next; };
+        if (deferUpdates) deferredUpdates.push(apply); else apply();
+      }];
     },
     useRef(initial) { const index = cursor++; if (!(index in hooks)) hooks[index] = { current: initial }; return hooks[index]; },
     useMemo(fn, deps) {
@@ -82,7 +87,11 @@ function harness() {
     crypto: { randomUUID: () => '10000000-0000-4000-8000-' + String(++generatedKeys).padStart(12, '0') },
     FormData: TestFormData, HTMLElement: Element, HTMLFormElement: Form, HTMLInputElement: Input,
     fetch() { throw new Error('Unexpected real fetch'); },
-    require: name => name === './dealer-video-surface' ? {DealerClipPreview} : name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
+    require: name => name === 'react-dom' ? {flushSync(action) {
+      const wasDeferred = deferUpdates; deferUpdates = false;
+      try { deferredUpdates.splice(0).forEach(apply=>apply()); return action(); }
+      finally { deferUpdates = wasDeferred; }
+    }} : name === './dealer-video-surface' ? {DealerClipPreview} : name === './studio-navigation' ? navigationModule.exports : name === 'react' ? fakeReact
       : name.endsWith('.module.css') ? { __esModule: true, default: {} }
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
@@ -94,6 +103,12 @@ function harness() {
     get generatedKeys() { return generatedKeys; },
     renderLane(props) { cursor = 0; return module.exports.TechnicalLaneCreate(props); },
     render(props) { cursor = 0; return module.exports.StudioAdministration(props); },
+    pagehideSnapshot(props,persisted) {
+      // Model batched event updates: a frozen snapshot is taken before they drain.
+      deferUpdates = true;
+      try { listeners.get('pagehide')?.({persisted}); return renderToStaticMarkup(this.render(props)); }
+      finally { deferUpdates = false; deferredUpdates.splice(0).forEach(apply=>apply()); }
+    },
     effects() { while (pending.length) pending.shift()(); },
     unmount() { for (const hook of hooks) hook?.cleanup?.(); },
   };
@@ -137,9 +152,11 @@ test('native administration preserves its standalone shell and embeds without a 
   for (const view of views.slice(0, 2)) {
     assert.equal(view.roomsHref, undefined);
     assert.equal(view.companyTeamLabel, undefined);
+    assert.equal(view.showGroupNavigation, true);
   }
   assert.equal(views[2].roomsHref, '/admin/rooms');
   assert.equal(views[2].companyTeamLabel, 'Bolag & team');
+  assert.equal(views[2].showGroupNavigation, false);
 });
 
 function buttons(tree, text) { return nodes(tree, node => node.type === 'button' && node.props.children === text); }
@@ -192,6 +209,56 @@ function resources() {
 const viewProps = (role = 'superadmin', group = 'accounts') => ({ actor: actor(role), group, resources: resources(), busy: false, available, command() { throw new Error('Unexpected render mutation'); } });
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+test('journal presents Swedish events, per-row currencies and explicit UTC without losing raw references', () => {
+  const h = harness(), props = viewProps('admin', 'finance');
+  const playerId = 'partner-player-' + 'a'.repeat(220);
+  props.resources.transactions.payload.tx = [
+    {at:'2026-10-17T00:30:00+02:00',player_id:playerId,type:'start',amount:'-12.50',currency:'SEK'},
+    {at:'2026-10-16T23:30:00Z',player_id:'second',type:'open',amount:1000,currency:'EUR'},
+    {at:'2026-10-16T23:35:00Z',player_id:'third',type:'fx',amount:850,currency:'USD'},
+    {at:'2026-10-16T23:40:00Z',player_id:'fourth',type:'new-event',amount:3,currency:'USDT'},
+  ];
+  const before = JSON.stringify(props.resources.transactions.payload);
+  const html = renderToStaticMarkup(React.createElement(h.StudioAdministrationView, props));
+  assert.match(html, /Insats · Blackjack/); assert.match(html, /Öppningssaldo/);
+  assert.match(html, /Valutabyte · nytt saldo/); assert.match(html, /Okänd händelse · new-event/);
+  assert.match(html, /16 okt\.? 2026.*22:30:00 UTC/);
+  assert.match(html, /dateTime="2026-10-16T22:30:00.000Z"/);
+  assert.match(html, /[−-]12,50\s*kr/); assert.match(html, /3,00 USDT/);
+  assert.match(html, /<details><summary>Visa detaljer<\/summary>.*Spelar-ID.*<code>partner-player-a{220}<\/code>/);
+  assert.ok(html.includes('2026-10-17T00:30:00+02:00'));
+  assert.doesNotMatch(html, /<form|<button|NaN|undefined|<details open/);
+  assert.equal(JSON.stringify(props.resources.transactions.payload),before);
+});
+
+test('empty and malformed journals give a visible result instead of a misleading amount', () => {
+  const h = harness(), props = viewProps('admin', 'finance');
+  props.resources.transactions.payload.tx = [];
+  let html = renderToStaticMarkup(React.createElement(h.StudioAdministrationView, props));
+  assert.match(html, /Inga journalposter/); assert.doesNotMatch(html, /<table/);
+  for (const field of [{amount:'wrong'}, {at:'invalid'}, {currency:''}]) {
+    props.resources.transactions.payload.tx = [{at:'2026-10-16T10:00:00Z',player_id:'fixture',type:'deposit',currency:'SEK',amount:12,...field}];
+    html = renderToStaticMarkup(React.createElement(h.StudioAdministrationView, props));
+    assert.match(html, /role="alert"/); assert.match(html, /Ladda om från servern/);
+    assert.doesNotMatch(html, /<table|NaN|Invalid Date/);
+  }
+});
+
+test('account status labels keep stored values and integration dates never reveal key material', () => {
+  const h = harness(), accounts = viewProps('admin', 'accounts');
+  const tree = h.StudioAdministrationView(accounts);
+  const states = nodes(tree,node=>node.type === 'select' && node.props.name === 'status');
+  assert.equal(states.length,1); assert.equal(states[0].props.defaultValue,'blocked');
+  assert.deepEqual(nodes(states[0],node=>node.type === 'option').map(node=>node.props.value),['blocked','closed']);
+  const html = renderToStaticMarkup(tree);
+  assert.match(html, /Aktivt/); assert.match(html, /Stängt/); assert.match(html, /<code>player-active<\/code>/);
+  const partners = viewProps('admin','partners');
+  partners.resources.apikeys.payload.keys[0].last_used='2026-10-17T00:30:00+02:00';
+  const integration = renderToStaticMarkup(React.createElement(h.StudioAdministrationView,partners));
+  assert.match(integration,/22:30:00 UTC/); assert.match(integration,/Wallet/); assert.match(integration,/Ansluten/);
+  assert.doesNotMatch(integration,/MUST-NOT-RENDER/);
+});
+
 test('administration notices use the enclosing room destination and label team compatibility without changing its editor', () => {
   for (const group of ['tables', 'accounts', 'partners']) {
     const h = harness(), props = { apiBase: '/studio/api/admin', session: async () => actor('admin'), availableActions: allActions, initialGroup: group };
@@ -208,6 +275,19 @@ test('administration notices use the enclosing room destination and label team c
       assert.equal(links.some(node => node.props.href === '/control/rooms'), false);
       assert.match(renderToStaticMarkup(embedded), /Bolagets spelbara rum och publicering hanteras via/);
     }
+    h.unmount();
+  }
+});
+
+test('embedded navigation leaves group changes to the enclosing Admin while standalone tabs remain available', async () => {
+  for (const showGroupNavigation of [undefined, true, false]) {
+    const h = harness(), data = resources();
+    const props = {apiBase:'/studio/api/admin',availableActions:allActions,initialGroup:'accounts',showGroupNavigation,
+      session:async()=>actor('admin'),fetchImpl:async url=>reply(data[url.slice('/studio/api/admin/'.length)]?.payload)};
+    h.render(props);h.effects();await flush();const tree=h.render(props);
+    assert.ok(nodes(tree,node=>node.type===h.StudioAdministrationView).length);
+    assert.equal(nodes(tree,node=>node.type==='nav'&&node.props['aria-label']==='Backoffice-grupper').length,showGroupNavigation===false?0:1);
+    assert.equal(buttons(tree,'API & integrationer').length,showGroupNavigation===false?0:1);
     h.unmount();
   }
 });
@@ -631,6 +711,59 @@ test('one-time credential display clears on explicit reload/group change and nev
   assert.match(renderToStaticMarkup(tree),new RegExp(secret));
   buttons(tree,'Konton & åtkomst')[0].props.onClick(); tree=h.render(props);
   assert.doesNotMatch(renderToStaticMarkup(tree),new RegExp(secret)); h.unmount();
+});
+
+test('pagehide removes one-time results before the frozen snapshot, but cancelled beforeunload keeps them', async () => {
+  const secret = `cs_${'s'.repeat(43)}`, key = `ck_live_${'k'.repeat(24)}`;
+  const launchUrl = 'https://game.example.test/game?dealer=astrid&launch=a.b.c';
+  for (const persisted of [false,true]) for (const [action,response,sensitive] of [
+    ['apikeys/create',{ok:true,key:{id:'partner-one',key,secret}},secret],
+    ['apikeys/launch',{ok:true,url:launchUrl,playerRef:'fixture'},'launch=a.b.c'],
+  ]) {
+    const h=harness(), data=resources(); let writes=0;
+    const props={initialGroup:'partners',apiBase:'/api/admin',availableActions:allActions,gameOrigin:'https://game.example.test',session:async()=>actor('admin'),
+      fetchImpl:async(url,init)=>init.method==='POST'?(writes++,reply(response)):reply(data[url.slice('/api/admin/'.length)]?.payload)};
+    h.render(props);h.effects();await flush();let tree=h.render(props);
+    nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.command(action,{});await flush();tree=h.render(props);
+    assert.ok(renderToStaticMarkup(tree).includes(sensitive));
+    nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.onDirty(new Form({name:'unsaved'}));
+    let blocked=false;h.listeners.get('beforeunload')({preventDefault(){blocked=true;},returnValue:undefined});
+    assert.equal(blocked,true);assert.ok(renderToStaticMarkup(h.render(props)).includes(sensitive));
+    const frozen=h.pagehideSnapshot(props,persisted);
+    assert.ok(!frozen.includes(sensitive));assert.doesNotMatch(frozen,/Engångsresultat från partneråtgärd/);
+    h.listeners.get('pageshow')?.({persisted});
+    tree=h.render(props);assert.ok(!renderToStaticMarkup(tree).includes(sensitive));assert.equal(writes,1);
+    // The restored page can display a new explicit result, never the old one.
+    nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.command(action,{});await flush();
+    assert.ok(renderToStaticMarkup(h.render(props)).includes(sensitive));assert.equal(writes,2);
+    h.unmount();assert.equal(h.listeners.has('pagehide'),false);
+  }
+});
+
+test('a POST response from before pagehide cannot restore credentials after pageshow or trigger a retry', async () => {
+  const h=harness(),data=resources(),secret=`cs_${'s'.repeat(43)}`,key=`ck_live_${'k'.repeat(24)}`;
+  let resolvePost,writes=0;const post=new Promise(resolve=>{resolvePost=resolve;});
+  const props={initialGroup:'partners',apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('admin'),
+    fetchImpl:async(url,init)=>init.method==='POST'?(writes++,post):reply(data[url.slice('/api/admin/'.length)]?.payload)};
+  h.render(props);h.effects();await flush();const tree=h.render(props);
+  nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.command('apikeys/create',{});await flush();
+  assert.equal(writes,1);assert.ok(!h.pagehideSnapshot(props,true).includes(secret));
+  h.listeners.get('pageshow')?.({persisted:true});
+  resolvePost(reply({ok:true,key:{id:'partner-one',key,secret}}));await flush();
+  const restored=renderToStaticMarkup(h.render(props));
+  assert.ok(!restored.includes(secret));assert.doesNotMatch(restored,/Engångsresultat från partneråtgärd/);
+  assert.match(restored,/Servern bekräftade åtgärden/);assert.equal(writes,1);h.unmount();
+});
+
+test('staff invitation explains company memberships in both the form and successful result', async () => {
+  const h=harness(),data=resources();
+  const props={initialGroup:'accounts',apiBase:'/api/admin',availableActions:allActions,session:async()=>actor('admin'),
+    fetchImpl:async(url,init)=>init.method==='POST'?reply({ok:true,emailSent:true}):reply(data[url.slice('/api/admin/'.length)]?.payload)};
+  h.render(props);h.effects();await flush();let tree=h.render(props);
+  let html=renderToStaticMarkup(tree);assert.match(html,/Bolagsåtkomst följer tilldelade medlemskap/);assert.doesNotMatch(html,/demonstrationer|kundval/);
+  nodes(tree,node=>node.type===h.StudioAdministrationView)[0].props.command('users/invite',{email:'other@example.test',role:'admin'});await flush();tree=h.render(props);
+  const notices=nodes(tree,node=>node.props?.role==='status').map(node=>renderToStaticMarkup(node)).join('');
+  assert.match(notices,/Inbjudan.*Bolagsåtkomst följer tilldelade medlemskap/);assert.doesNotMatch(notices,/demonstrationer|kundval/);h.unmount();
 });
 
 test('keys/invite responses are projected before state, and server errors never echo secret bodies', async () => {

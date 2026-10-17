@@ -5,6 +5,8 @@ import {adminHref,adminPathname,isInternalAdminPathname,withAdminContext,adminTo
 export function previewHref(href: string) {
   return adminHref(href);
 }
+const nativeFormPaths = new Set(['/admin/admin/accounts', '/admin/admin/api', '/admin/ai/models']);
+const needsDocumentNavigation = (pathname: string) => adminToolName(pathname) || nativeFormPaths.has(adminPathname(pathname));
 const historyOwner = () => studioHistory(window);
 const snapshotLocation = () => new URL(historyOwner().snapshotHref(), location.origin);
 const subscribe = (notify: () => void) => historyOwner().subscribe(notify);
@@ -25,9 +27,9 @@ export function navigate(href: string, replace = false) {
   if(historyOwner().isRestoring())return false;
   href=withAdminContext(previewHref(href),location.search);
   if (!historyOwner().canNavigate(href)) return false;
-  // The established editors own beforeunload guards for project/media drafts.
-  // Cross-editor navigation must go through those guards, never unmount silently.
-  if(adminToolName(location.pathname)||adminToolName(new URL(href,location.origin).pathname)){
+  // Editors and native service forms own beforeunload guards for unsaved changes.
+  // Use document entries in both directions so Back/Forward also uses those guards.
+  if(needsDocumentNavigation(location.pathname)||needsDocumentNavigation(new URL(href,location.origin).pathname)){
     if(replace)location.replace(href);else location.assign(href);return true;
   }
   return historyOwner().push(href, replace);

@@ -23,14 +23,17 @@ import {ConnectedServices} from './connected-services';
 type Workspace={project:StudioProject;videos:VideoInventory;status:ConnectionStatus;connectedLane:boolean;
   operators:LaneOperatorChoice[];directory:OperatorDirectory|null;storeAvailable:boolean};
 const groups=[
-  {title:'Bolag och rum',items:['companies','publication','compositions']},
-  {title:'Dealers och material',items:['dealer-studio','videos','replies','media-review']},
-  {title:'Provspelning och regler',items:['rehearsal','events','probe','dealer-agent','guide']},
+  {title:'Bolag och rum',description:'Team, rum och sparade mallar.',items:['companies','publication','compositions']},
+  {title:'Dealers och material',description:'Dealerinställningar, klipp och tal.',items:['dealer-studio','videos','replies','media-review']},
+  {title:'Provspelning och regler',description:'Prova sparade scener och granska spelhändelser.',items:['rehearsal','events','probe','dealer-agent','guide']},
 ];
-export function WorkspaceToolsHome(){return <section className="p-6"><h1 className="text-2xl font-semibold">Verktyg</h1>
-  <p className="mt-2 text-sg-muted">Välj vad du vill göra. Samma sparade dealers, bolag och rum används i hela Admin.</p>
-  <div className="mt-6 grid gap-6 lg:grid-cols-3">{groups.map(group=><section className="studio-detail-panel p-4" key={group.title}><h2>{group.title}</h2>
-    <ul className="mt-3 flex flex-col gap-3">{group.items.map(key=><li key={key}><a className="text-sg-lime underline" href={withAdminContext('/admin/'+key,location.search)}>{ADMIN_WORKSPACE_TOOLS[key as keyof typeof ADMIN_WORKSPACE_TOOLS]}</a></li>)}</ul>
+export function WorkspaceToolsHome(){return <section className="admin-system-page" aria-labelledby="workspace-tools-title">
+  <header className="admin-system-header"><div><p className="sg-eyebrow">System</p><h1 id="workspace-tools-title">Verktyg</h1>
+    <p>Fördjupade inställningar för samma dealers, bolag och rum.</p></div>
+    <nav className="admin-system-actions" aria-label="Klipp och import"><a className="studio-button" href={withAdminContext('/admin/clips?tool=import',location.search)}>Lägg till dealer eller filmer</a><a className="studio-button" href={withAdminContext('/admin/clips',location.search)}>Öppna klippkartan</a></nav>
+  </header>
+  <div className="grid gap-5 lg:grid-cols-3">{groups.map(group=><section className="admin-system-card" key={group.title}><h2>{group.title}</h2><p>{group.description}</p>
+    <ul className="mt-4 flex flex-col gap-3">{group.items.map(key=><li key={key}><a className="studio-button" href={withAdminContext('/admin/'+key,location.search)}>{ADMIN_WORKSPACE_TOOLS[key as keyof typeof ADMIN_WORKSPACE_TOOLS]}</a></li>)}</ul>
   </section>)}</div></section>;}
 
 export function WorkspaceTool({section}:{section:string}){
@@ -47,8 +50,8 @@ export function WorkspaceTool({section}:{section:string}){
     }catch(cause){if(!controller.signal.aborted)setError((cause as Error).message);}})();
     return()=>controller.abort();
   },[section,attempt]);
-  if(error)return <section className="p-6" role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setAttempt(value=>value+1)}>Försök igen</button></section>;
-  if(!data)return <p role="status" className="p-6">Läser sparade uppgifter…</p>;
+  if(error)return <section className="admin-system-page" role="alert"><p>{error}</p><button className="studio-button" onClick={()=>setAttempt(value=>value+1)}>Försök igen</button></section>;
+  if(!data)return <p role="status" className="admin-system-page">Läser sparade uppgifter…</p>;
   const q=new URLSearchParams(location.search),get=(key:string)=>q.get(key)||undefined;
   const common={initialProject:data.project,initialVideos:data.videos,initialStatus:data.status,initialDealerId:get('dealer'),
     initialLaneId:get('composition')??get('lane'),initialOperatorId:get('operator'),initialTableId:get('table'),
@@ -70,7 +73,7 @@ export function WorkspaceTool({section}:{section:string}){
     case 'dealer-agent':content=<ControlOpenClawChat {...common} standaloneVoicePreviewAvailable={false}/>;break;
     default:return <p role="alert">Verktyget finns inte.</p>;
   }
-  return <div className="admin-workspace-tool"><div className="flex flex-wrap gap-4 border-b border-sg-line px-6 py-3 text-sm">
-    <a href="/admin/tools" className="text-sg-lime">Alla verktyg</a><a href={withAdminContext('/admin/dealers',location.search)}>Dealers</a>
-    <a href={withAdminContext('/admin/clips',location.search)}>Klippkarta</a></div>{content}</div>;
+  return <div className="admin-workspace-tool"><nav className="admin-system-actions border-b border-sg-line px-6 py-3" aria-label="Arbetsytor">
+    <a href={withAdminContext('/admin/tools',location.search)} className="studio-button">Alla verktyg</a><a className="studio-button" href={withAdminContext('/admin/dealers',location.search)}>Dealerregister</a>
+    <a className="studio-button" href={withAdminContext('/admin/clips',location.search)}>Klippkarta</a></nav>{content}</div>;
 }

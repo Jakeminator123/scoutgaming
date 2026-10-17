@@ -90,6 +90,7 @@ test('save preserves ordered fallbacks, locks overlapping requests and confirms 
   assert.equal(h.listeners.has('beforeunload'), true);
   const save = button(h, 'Spara modell för croupier-director'); save.props.onClick(); save.props.onClick();
   assert.equal(calls.length, 2); assert.equal(select(h).props.disabled, true);
+  assert.equal(button(h, 'Ångra alla').props.disabled, true);
   const body = JSON.parse(calls[1].init.body);
   assert.deepEqual(body, { version: 1, baseHash: 'revision-a', agentId: 'croupier-director', model: { primary: 'lab-provider/new', fallbacks: ['lab-provider/backup', 'other/backup-two'] } });
   assert.doesNotMatch(html(h), /sparad och bekräftad/);
@@ -98,7 +99,27 @@ test('save preserves ordered fallbacks, locks overlapping requests and confirms 
   assert.match(html(h), /Gateway-omstart är planerad/);
   assert.equal(button(h, 'Spara modell för croupier-director').props.disabled, true);
   assert.equal(select(h, 'croupier-chat').props.value, 'lab-provider/third');
-  assert.equal(button(h, 'Spara modell för croupier-chat').props.disabled, false); h.unmount();
+  assert.equal(button(h, 'Spara modell för croupier-chat').props.disabled, false);
+  assert.equal(calls.filter(call=>call.init.method==='PATCH').length,1);
+  assert.match(html(h),/Osparade modellval: 1.*Spara varje agent på dess rad/);h.unmount();
+});
+
+test('multiple drafts offer only per-agent saves and undo all without writing', async () => {
+  const calls=[];
+  const h=await started(async (_url, init)=>{calls.push(init.method);return reply(before());});
+  try {
+    change(h);change(h,'lab-provider/third','croupier-chat');
+    assert.match(html(h),/Osparade modellval: 2.*Spara varje agent på dess rad/);
+    assert.doesNotMatch(html(h),/Spara alla/);
+    const saves=nodes(h.render(),node=>node.type==='button'&&String(node.props['aria-label']??node.props.children).startsWith('Spara'));
+    assert.deepEqual(saves.map(node=>node.props['aria-label']),['Spara modell för croupier-director','Spara modell för croupier-chat']);
+    button(h,'Ångra alla').props.onClick();view(h);
+    assert.equal(select(h).props.value,'lab-provider/old');
+    assert.equal(select(h,'croupier-chat').props.value,'lab-provider/old');
+    assert.equal(h.listeners.has('beforeunload'),false);
+    assert.equal(button(h,'Ångra alla'),undefined);
+    assert.deepEqual(calls,['GET']);
+  } finally { h.unmount(); }
 });
 
 test('revision conflict preserves draft until explicit reload; retry uses fresh revision and fallbacks', async () => {
@@ -223,6 +244,17 @@ test('clip policy remains in Studio and advanced dashboard keeps browser-approva
   assert.match(html, /utan lösenord eller terminalkommando/);
   assert.match(html, /egen webbläsarsession/);
   assert.doesNotMatch(html, /Starta om|Stoppa Gateway/);
+});
+
+test('embedded models share the Admin landmark and identify the dealer agent link', () => {
+  const standalone = render();
+  assert.match(standalone, /<main\b[^>]*id="main-content"/);
+  assert.match(standalone, />Chatt<\/a>/);
+  const embedded = render({ embedded: true, navigation: { models: '/admin/ai/models', chat: '/admin/ai/openclaw', studio: '/admin/clips' } });
+  assert.doesNotMatch(embedded, /<main\b/);
+  assert.match(embedded, /<section\b[^>]*id="main-content"/);
+  assert.match(embedded, /href="\/admin\/ai\/openclaw">Dealerns agent<\/a>/);
+  assert.match(embedded, /href="\/admin\/ai\/models" aria-current="page"/);
 });
 
 test('invalid explicit dashboard is not replaced with the default or reflected', () => {

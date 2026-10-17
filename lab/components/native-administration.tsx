@@ -26,5 +26,6 @@ export function NativeAdministration({ apiBase, availableActions, gameOrigin, in
   return <Wrapper className={embedded ? styles.embedded : styles.shell}>{error && <p role="alert" className={styles.error}>{error}</p>}
     {busy ? <p role="status">Loggar ut…</p> : <StudioAdministration key={epoch} apiBase={apiBase} session={session} availableActions={availableActions} gameOrigin={gameOrigin} initialGroup={initialGroup} initialDealerId={initialDealerId} readIdentity="response-headers-v1"
       roomsHref={embedded ? '/admin/rooms' : undefined} companyTeamLabel={embedded ? 'Bolag & team' : undefined}
+      showGroupNavigation={!embedded}
       sessionAction={<button type="button" className="sg-btn sg-btn-ghost" onClick={() => void logout()}>Logga ut</button>} />}</Wrapper>;
 }

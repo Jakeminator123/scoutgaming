@@ -30,7 +30,7 @@ const pages: Record<string, string> = {
   '/admin/assets': 'Bord & bakgrunder',
   '/admin/drift': 'Drift', '/admin/ekonomi': 'Ekonomi', '/admin/admin/accounts': 'Konton & åtkomst',
   '/admin/admin/operators': 'Spelbolag', '/admin/admin/players': 'Konton & åtkomst', '/admin/admin/payments': 'Betalningar',
-  '/admin/admin/api': 'Integrationer', '/admin/admin/log': 'Ändringslogg', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Adminroboten',
+  '/admin/admin/api': 'Integrationer', '/admin/admin/log': 'Bolagsjournal', '/admin/ai/models': 'Agentmodeller', '/admin/ai/chat': 'Adminroboten',
 };
 function App() {
   const path = usePathname();

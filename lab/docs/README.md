@@ -42,6 +42,21 @@ med dealer och rum kvar. Sparade uppgifter och behörigheter är desamma.
 `lab/` är fortfarande källkoden för Studio och dessa funktioner, och `/studio`
 är den tekniska API-monteringen. Det är ingen separat produkt att flytta data från.
 
+**System** grupperar arbetsverktyg, AI-assistenter samt åtkomst och historik.
+**Bolagsjournal** ersätter den tidigare tomma Ändringslogg-sidan: välj ett aktivt
+registrerat bolag och öppna **Team & journal**, sedan **Visa journal**.
+Historiken gäller det valda bolagets team och publiceringar. En gemensam
+ändringslogg för hela Admin är ännu inte implementerad.
+
+**Betalningar** visar serverns senaste journalposter med händelsenamn,
+postens valuta och tid i UTC. **Visa detaljer** visar fullständigt spelar-ID,
+serverns händelsetyp och tidsstämpel. Detta är ett begränsat journalurval,
+inte en fullständig ekonomisk periodrapport.
+
+**Agentmodeller** sparar ett modellval på respektive agents rad. **Ångra alla**
+återställer osparade val. Byte från konton, integrationer eller modellval går
+via sidnavigering, så befintliga varningar för osparade formulär används.
+Engångsresultat för integrationer döljs när sidan lämnas.
 **Spelbolag & rum** (`/admin/rooms`) öppnar rummets egna val direkt. Välj
 bolag och rum, ändra tillåtna alternativ och granska före publicering.
 Rumsval sparas bara för valt rum. Gemensam mall finns i en separat
