@@ -433,16 +433,25 @@ ny deployment. Förnyad säkerhetsläsning på main `6279960f` verifierar två
 öppna incidenter, 38318914/38318915; platstäckningen är partiell, övervakningen
 aktiv och historikskanningen `too_large`. Ingen incident markeras löst.
 
-## Avgränsad inboxrättning — 17 oktober 2026
+## Inbox och agentregler — 17 oktober 2026
 
 `tools/inbox.mjs` skapar bara saknade GitHub-etiketter; befintliga namn,
 färger och beskrivningar bevaras. `done` kontrollerar etiketten `inbox` och
 att inloggat GitHub-konto är ärendets skapare innan det får stängas.
 Delade GitHub-konton kan inte särskiljas av kontrollen.
+Inboxfixarna är mergade i [PR215](https://github.com/Jakeminator123/scoutgaming/pull/215).
+Uppföljningen inkluderar Jakobs borttagning av `.cursor/rules/reference-repos.mdc`. Chef- och
+leveransreglerna hänvisar till den kanoniska GitHub-policyn i AGENTS i stället
+för att kopiera den. Chef-textens beslutsordning följer också AGENTS.
+Inboxinstruktionen använder explicit känd ägare på en featurebranch utan
+datorregistrering; branchprefix räknas inte som ägarbevis.
 Lokal verifiering: 19 inboxprov passerar. GitHub-anropens läsformat har
 verifierats mot API/CLI; inga riktiga etiketter eller ärenden ändrades i provet.
-Detta är inte ett CI- eller driftskvitto. Huvudkopians 40 obesvarade lokala
-pingar och gamla filanspråk har inte rensats. GitGuardian på fjärr-main visar
+Detta är inte ett CI- eller driftskvitto. Köåterhämtningen levererades separat
+i mergade PR216; detta arbete rensar inga pingar eller gamla filanspråk.
+Rapportens återstående förslag om färre testprocesser och portabel GitGuardian-
+konfiguration kräver egna avgränsade ändringar. Den befintliga lokala
+konfigurationsändringen är bevarad. GitGuardian på fjärr-main visar
 två öppna incidenter med ofullständiga filpositioner; de är inte åtgärdade här.
 
 ## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
