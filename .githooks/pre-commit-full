@@ -26,7 +26,7 @@ run_node_tests() {
   run_check "$selected" "$name" "$seconds" node --test --test-concurrency=4 --test-reporter=spec "$@"
 }
 # Exact equivalent of the frontend package's non-incremental typecheck.
-run_check studio frontend-typecheck 180 node apps/croupier-frontend/node_modules/typescript/bin/tsc --project apps/croupier-frontend/tsconfig.json --noEmit --incremental false
+run_check studio frontend-typecheck 180 node apps/web/node_modules/typescript/bin/tsc --project apps/web/tsconfig.json --noEmit --incremental false
 # Discover Studio tests once, without a second hand-maintained registry.
 run_node_tests studio studio-tests lab/test/*.test.mjs lab/components/*.test.mjs lab/lib/background-zone-schedule.test.mjs
 run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
@@ -60,7 +60,7 @@ run_node_tests presentation moving-speech-deal test/moving-speech-deal-plan.mjs 
 run_node_tests presentation presentation-layers test/presentation-layers.mjs test/presentation-rooms.mjs test/layer-asset-store.mjs test/layer-media-inspection.mjs test/composition-runtime.mjs test/registered-idle.mjs
 run_node_tests presentation card-view test/card-view.mjs test/background-playback-policy.mjs test/background-playback.mjs test/game-overlay-layout.mjs
 run_node_tests presentation studio-preview test/studio-preview.mjs test/studio-preview-client.mjs
-run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-offline.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/croupier-frontend/test/game-entry.mjs apps/croupier-frontend/test/player-profile.mjs
+run_node_tests access game-lanes test/game-lanes.mjs test/game-entry-contract.mjs test/game-entry-offline.mjs test/game-entry-auth.mjs test/game-entry-partner.mjs test/game-entry-operator.mjs test/v3-room-dealer-choices.mjs test/player-choices.mjs test/operator-package-reader.mjs test/public-operators.mjs test/public-operator-rooms.mjs test/public-operator-preview.mjs test/player-profile-api.mjs apps/web/test/game-entry.mjs apps/web/test/player-profile.mjs
 run_node_tests access moving-speech-cloud-config test/cloud-config.mjs
 run_node_tests access admin-project-drafts-browser test/admin-project-drafts-browser.mjs
 run_node_tests access speech-reply-library test/speech-reply-library.mjs test/speech-reply-repository.mjs test/speech-reply-blob-import.mjs test/partner-metadata.mjs test/layer-packs-cloud.mjs
@@ -69,7 +69,7 @@ run_node_tests access openclaw open-claw/lab/test/*.test.mjs open-claw/lab/deplo
 run_node_tests access ops-cloud ops/cloud/test/*.test.mjs
 run_node_tests access bo-lab-auth test/bo-lab-auth.mjs
 run_node_tests access postgres-persistence test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs
-run_node_tests access platform-ui apps/croupier-frontend/test/platform-ui.mjs apps/croupier-frontend/test/platform-websocket.mjs test/platform-moving-speech.mjs test/platform-native-websocket.mjs apps/croupier-frontend/test/player-area.mjs apps/croupier-frontend/test/player-lobby.mjs apps/croupier-frontend/test/player-room-preview.mjs apps/croupier-frontend/test/player-scene-canvas.mjs apps/croupier-frontend/test/player-preview-fallback.mjs apps/croupier-frontend/test/landing-motion.mjs apps/croupier-frontend/test/intro-device.mjs
+run_node_tests access platform-ui apps/web/test/platform-ui.mjs apps/web/test/platform-websocket.mjs test/platform-moving-speech.mjs test/platform-native-websocket.mjs apps/web/test/player-area.mjs apps/web/test/player-lobby.mjs apps/web/test/player-room-preview.mjs apps/web/test/player-scene-canvas.mjs apps/web/test/player-preview-fallback.mjs apps/web/test/landing-motion.mjs apps/web/test/intro-device.mjs
 run_node_tests access media-layout test/media-layout.mjs test/media-migration.mjs test/media-blob-export.mjs test/media-deduplication.mjs test/lane-media-audit.mjs
 run_check access environment-registry 180 node tools/check-environment-variables.mjs
 run_node_tests access check-environment-variables test/check-environment-variables.mjs test/provider-profile.mjs
@@ -78,7 +78,7 @@ run_check access build-runtime-media-catalog 180 node tools/build-runtime-media-
 run_node_tests access runtime-media-catalog test/runtime-media-catalog.mjs test/runtime-media-import.mjs test/neon-runtime-catalog.mjs
 run_check access player-auth 180 node test/player-auth.mjs
 run_check access table-http 180 node test/table-http.mjs
-run_node_tests access agent-talk test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs apps/croupier-frontend/test/player-ui-build.mjs
+run_node_tests access agent-talk test/agent-talk.mjs test/backup-render-state.mjs test/account-credentials.mjs test/player-password.mjs test/player-signup.mjs test/player-history.mjs test/player-auth-limiter.mjs test/blackjack-entry-http.mjs apps/web/test/player-ui-build.mjs
 run_node_tests access runtime test/vercel-frontend-origin.mjs test/vercel-presentation-video-origin.mjs
 run_check access craig-login 180 node test/craig-login.mjs
 run_check access bo-game-auth 180 node test/bo-game-auth.mjs

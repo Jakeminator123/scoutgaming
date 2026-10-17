@@ -104,7 +104,7 @@ Det befintliga gränssnittet är en spelbar första version som kan omarbetas.
 | Satsningsutkast, hjul, resultat, historik och återförsök | `web/public/roulette/app.mjs` |
 | Bolagets frysta dealer, bord och bakgrund | `web/public/roulette/scene.mjs` |
 | Delad scenrenderare för lobby och roulette | `web/public/published-scene.mjs` |
-| Lobby och rummets ingång | `apps/croupier-frontend/components/player/` |
+| Lobby och rummets ingång | `apps/web/components/player/` |
 
 `app.mjs` kopplar kontroller till HTML-elementens ID:n. Ändra HTML och dessa
 kopplingar tillsammans. Scenen använder samma publicerade underlag som lobbyn:

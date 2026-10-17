@@ -38,3 +38,8 @@ runtime-ui/
 /public/card-presentation/
 
 /public/composition-runtime/
+
+# Generated public registry copies from prepare-platform-ui.
+/public/dealer-voice-catalog.json
+/public/packages/
+/public/web/

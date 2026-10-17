@@ -3,7 +3,7 @@
 `web/` är den aktiva Node-spelservern för blackjack och roulette, med
 spelarnas sessioner, historik, serverägda kort/saldon och dealeruppspelning.
 Entrypunkten är [server.mjs](server.mjs); molntjänsten är Render `croupier-v2`.
-Vercels frontend ligger i [apps/croupier-frontend](../apps/croupier-frontend/README.md).
+Vercels frontend ligger i [apps/web](../apps/web/README.md).
 
 | Del | Ansvar |
 | --- | --- |

@@ -21,7 +21,7 @@ test('documentation and indexing-only changes use quick checks', () => {
 
 test('reviewed folder guides use quick checks without exempting sibling code or arbitrary README files', () => {
   const guides = [
-    'apps/croupier-frontend/README.md',
+    'apps/web/README.md',
     'packages/presentation/README.md', 'lab/client/README.md',
     'packages/presentation/docs/INTEGRATION.md',
     'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',

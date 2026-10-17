@@ -70,7 +70,7 @@ test('retired dealer aliases and Blob pointers disappear while Astrid remains re
  assert.equal(index.files.some(row=>row.logicalPath.startsWith('dealers/astrid/')),true);
 });
 test('retired IDs cannot acquire the older frontend portrait fallback',async()=>{
- const {dealerPortrait}=await import('../apps/croupier-frontend/lib/player-room-preview.mjs');
+ const {dealerPortrait}=await import('../apps/web/lib/player-room-preview.mjs');
  for(const id of ['amira','paow','paow-v2','johanna'])assert.equal(dealerPortrait(id),null);
  assert.equal(dealerPortrait('astrid'),'/images/lobby/astrid-portrait.jpg');assert.equal(dealerPortrait('dragge'),'/images/lobby/dragge-portrait.jpg');
 });

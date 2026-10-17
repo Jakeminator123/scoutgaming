@@ -124,7 +124,7 @@ export async function build({ origin = process.env.CROUPIER_GAME_ORIGIN, local =
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    if (args.some(arg => !['--local', '--frontend-preview'].includes(arg))) throw Error('Använd node apps/croupier-frontend/tools/player-ui-build.mjs [--local] [--frontend-preview].');
+    if (args.some(arg => !['--local', '--frontend-preview'].includes(arg))) throw Error('Använd node apps/web/tools/player-ui-build.mjs [--local] [--frontend-preview].');
     await build({ local: args.includes('--local'), frontendPreview: args.includes('--frontend-preview') });
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

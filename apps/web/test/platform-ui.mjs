@@ -36,7 +36,7 @@ test('published roulette browser contracts use exact backend routes without expo
   }
   for (const path of ['/packages/presentation/server/selection.mjs', '/packages/presentation/contracts/studio-model.mjs',
     '/packages/navigation/operator-entry.mjs', '/packages/navigation/admin-workspace-routes.mjs', '/packages/navigation/',
-    '/packages/navigation/server/platform-routing.mjs','/apps/croupier-frontend/lib/platform-routing.mjs', '/game-entry.mjs',
+    '/packages/navigation/server/platform-routing.mjs','/apps/web/lib/platform-routing.mjs', '/game-entry.mjs',
     '/packages/presentation/contracts/policies/project.seed.json', '/public-operator-preview.mjs', '/storage/frozen-dealer-idle.mjs', '/server.mjs']) {
     assert.equal(backendPlatformPath(path), false, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);

@@ -8,7 +8,7 @@ import {tmpdir} from 'node:os';
 import {join, dirname, basename} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {createRequire} from 'node:module';
-const frontendRequire = createRequire(new URL('../apps/croupier-frontend/package.json', import.meta.url));
+const frontendRequire = createRequire(new URL('../apps/web/package.json', import.meta.url));
 const WebSocket = frontendRequire('ws');
 const {createPlatformNativeWebSocketServer} = await import(pathToFileURL(frontendRequire.resolve('@croupier/server-transport/node-server')).href);
 import {platformConfiguration} from '../packages/navigation/server/platform-routing.mjs';
@@ -109,8 +109,8 @@ test('speech service exposes only exact public paths and preserves admission bef
 });
 
 test('native API exports do not listen during imports and flag-off stays closed', async () => {
-  const client = (await import('../apps/croupier-frontend/api/platform-speech-stream.mjs')).default;
-  const worker = (await import('../apps/croupier-frontend/api/platform-lipsync-worker.mjs')).default;
+  const client = (await import('../apps/web/api/platform-speech-stream.mjs')).default;
+  const worker = (await import('../apps/web/api/platform-lipsync-worker.mjs')).default;
   assert.equal(client.listening, false); assert.equal(worker.listening, false);
   const disabled = createPlatformNativeWebSocketServer('/speech-stream', {env: {}});
   try {
@@ -176,7 +176,7 @@ test('native handlers carry actual relay media both ways with current owner, ing
     // Keep the product relay's bytes unchanged, including its real auth module.
     await copyFile(new URL('../services/astrid-gpu-worker/gateway/relay.mjs', import.meta.url), join(directory, 'relay.mjs'));
     await copyFile(new URL('../services/astrid-gpu-worker/gateway/auth.mjs', import.meta.url), join(directory, 'auth.mjs'));
-    await symlink(fileURLToPath(new URL('../apps/croupier-frontend/node_modules', import.meta.url)), join(directory, 'node_modules'), 'junction'); linked = true;
+    await symlink(fileURLToPath(new URL('../apps/web/node_modules', import.meta.url)), join(directory, 'node_modules'), 'junction'); linked = true;
     const {attachSpeechRelay} = await import(pathToFileURL(join(directory, 'relay.mjs')).href);
     backend.on('upgrade', request => {
       const verdict = vercelIngressRequest({...request, headers: {...request.headers, host: new URL(configuration.backendOrigin).host}},

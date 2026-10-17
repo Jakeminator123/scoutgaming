@@ -38,7 +38,7 @@ active entry points, operator access, compatibility redirects and working tools.
 
 | Folder | Responsibility | Guide |
 | --- | --- | --- |
-| `apps/croupier-frontend/` | Public Next frontend, player pages and ingress to the game/Studio services | [Frontend](apps/croupier-frontend/README.md) |
+| `apps/web/` | Public Next frontend, player pages and ingress to the game/Studio services | [Frontend](apps/web/README.md) |
 | `lab/` | Active Studio/Admin service, staff/operator APIs, published-product launcher and offline fixtures | [Lab](lab/README.md) |
 | `web/` | Authoritative game server, authentication, wallet, persistence and game client source | [Game server](web/README.md) |
 | `packages/presentation/` | Shared compositor, presentation selection, idle rules and reviewed layer preview | [Presentation](packages/presentation/README.md) |
@@ -54,7 +54,7 @@ active entry points, operator access, compatibility redirects and working tools.
 [AI documentation](docs/AI/README.md) collects agent flows and OpenClaw guides.
 
 These are source responsibilities, not independent products. For example,
-Vercel's `web` Service builds `apps/croupier-frontend/`; the root `web/` folder
+Vercel's `web` Service builds `apps/web/`; the root `web/` folder
 is the game server and client. Imports still cross some app/package boundaries;
 a neutral package name alone does not make that code independent.
 
