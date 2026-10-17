@@ -20,6 +20,16 @@ debiterad; Running täcker kallstart, bearbetning och idle-vänt och debiteras.
 Antal poster var alltså aldrig antal aktiva GPU:er. Guardens
 `workers.length <= workersMax` stoppade ett prov som fortfarande var inom max1.
 
+Läsande Runpod-kontroll 20:20 UTC med den dedikerade lokala nyckeln: endast
+Astrids endpoint `zsudl8tmzcmiv1` (min0/max1) finns kvar, noll pods.
+Fakturerat 16–17 oktober: endpoints 0,2836 USD, varav `8pfjenuipsz355`
+0,1640 och `e9isjywhagh41l` 0,1195 (de två min1-proven som faktiskt startade
+en worker); pods 0,2155 USD (beredningspodden). De fyra min0-endpoints som
+bara köade jobb har inga fakturarader, och `dgpazl8h3a64uj` saknar ännu rad
+för sina cirka 30 sekunder RUNNING. Summa cirka 0,50 USD mot taket 15 USD;
+handoffens tidigare 0,36 USD var en delavläsning. Detta bekräftar att ett
+köat jobb på min0 aldrig fick en körande worker och därför inte kostade.
+
 ### Rättning i produktadaptern
 
 `web/moving-speech-runpod.mjs` klassar varje post: RUNNING = `active`
