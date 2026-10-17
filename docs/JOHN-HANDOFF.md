@@ -408,7 +408,7 @@ merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
 Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
 läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
-## Dragan: uppvärmningsprov och faktisk miljökedja — 17 oktober 2026, 18:45 UTC
+## Dragan: uppvärmningsprov och faktisk miljökedja — 17 oktober 2026
 
 Tal och läppsynk i spelet är fortfarande **inte verifierade**. Ett kontrollerat
 prov på main `e572caf3d20fca0e2741e4254d0e17dcad4662e2` startade en A40-worker
