@@ -61,6 +61,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'open-claw/lab/src/settings.mjs',
 
       'web/moving-speech-limits.mjs',
+      'ops/neon-studio/014-moving-speech-budget-amendments.sql','web/moving-speech-budget.mjs','test/fixtures/moving-budget-sql-checks.mjs',
       'ops/neon-studio/013-moving-speech-admission.sql','web/moving-speech-binding.mjs','web/moving-speech-session.mjs','web/moving-speech-transport.mjs',
       'ops/neon-studio/012-runtime-media-catalog.sql', 'test/fixtures/studio-runtime-sql-checks.mjs', 'test/fixtures/runtime-media-catalog.mjs',
       'ops/neon-studio/runtime-media-import.mjs', 'tools/media-layout.mjs',

@@ -54,6 +54,71 @@ dessa källor; full regression och drift samordnas separat. Ingen push. Game-ser
 nuvarande web-källrot och dess framtida flytt är fortfarande separata.
 
 
+
+## Dragan: uttrycklig budgetändring inom 15 USD — 18 oktober 2026
+
+Jakob har godkänt att budgetspärren rättas och att ett nytt kontrollerat tal- och
+läppsynkprov körs efter färdig mappflytt och verifierad driftsättning. HUVUDAGENT2
+har överlämnat strukturarbetet till HUVUDAGENT3. Budgetfixen levereras separat
+på nuvarande `web/`-sökvägar; game-flytten måste integrera den innan leverans.
+
+Budget-ID `dragan-test-20261017` behålls. De fyra avslutade reservationerna på
+sammanlagt 4,8 USD raderas, återbetalas eller skrivs inte om. Migration 014 ger
+schemat utrymme upp till 15 USD och skapar en separat ändringsjournal; den höjer
+inte en aktiv budget. Den interna operationen `authorizeMovingBudgetAmendment`
+kräver uttrycklig bekräftelse, färskt kostnadsunderlag, exakt tidigare tak/summa/
+antal, rätt workspace och inga öppna GPU-sessioner. Ändringen sker under samma
+transaktionslås som antagningen. En upprepad identisk operation är idempotent.
+Ingen publik API-route eller automatisk höjning vid serverstart tillkommer.
+
+Applikationens mål är 6,0 USD totalt på samma ID, med oförändrad reservation
+1,2 USD per försök: efter uttrycklig ändring 4,8 → 6,0 finns exakt ett nytt
+försök. Enbart högre runtimevärde kan inte överskrida det sparade taket. Den
+separata globala 15 USD-vakten omfattar även äldre providerförsök och kallstart.
+Läsande kvitto 17 oktober 21:45:51Z: cirka 0,499028 USD fakturerat, gamla
+osäkerhetsreserver 11,736667 USD kvar, cirka 2,764306 USD tillgängligt. Alla elva
+gamla endpoints är borttagna och har noll workers; journalen har inga öppna
+sessioner. Nytt 12-minutersfönster plus 2 minuter avveckling vid konservativa
+10 USD/timme kräver 2,333334 USD. Underlaget förnyas före faktisk aktivering.
+
+Verifiering: 84 riktade budget-/migrations-/journal-/session-/RunPod-prov passerar.
+Ordinarie fokuserad hook: 64 godkända, ett verkligt PostgreSQL-prov väntar på CI.
+Normal integration av main 4b54a1cc gav 268/268; taltransport 11/11 på Node22.
+Läsande produktionsplan 17 oktober 22:09Z verifierar 001–013 och enbart 014
+som optional pending. Inga schema- eller dataskrivningar gjordes.
+Första PR-CI stoppades vid orphan-grinden eftersom det nya budgettestet saknades
+i fullkörlistan; senare beroendefel var följdfel och SQL kördes inte. Testet är
+nu registrerat i befintlig fullsvit; orphan-kontroll 513 kandidater/0 orphan och
+sex budget-/katalogprov passerar. Ny full CI krävs fortfarande.
+Andra CI-körningen hittade fyra äldre migrationsfixtures: tre använde nu
+registrerade 014 som okänd version och en förväntade en tom optional-lista.
+De använder nu okända 999 respektive optional 014; samtliga negativa kontroller
+om saknade versioner, ogiltiga bevis och noll databasanrop består. Riktad
+omkörning ger 56/56. Ingen budget- eller schemaimplementation ändras av fixen.
+Det utökade SQL-provet kontrollerar oförändrad historik, parallella ändringar,
+färskhets-/scopefel och att exakt ett nytt försök ryms. Dessa SQL-resultat är
+ännu inte verifierade här. Inget nytt betalt jobb eller visuellt/hörbart prov.
+
+Driftsättningsordning: först tolerant kod med 014 som `deploymentOptional` och
+moving speech fortsatt avstängt; därefter verifierad migration på faktisk
+`croupier_game`/`croupier_studio`, explicit budgetändring med färsk evidens och
+ett separat leveranssteg som gör 014 obligatorisk. Slutligt talprov väntar även
+på HUVUDAGENT3:s rotflyttar och driftkvitton. Ingen produktionsmigration,
+budgetändring, envändring eller GPU-start ingår i detta kodkvitto. Astrid bevaras.
+## C3 — speechrotens leveranskontroll, 18 oktober 2026
+
+HUVUDAGENT3 har övertagit den förberedda speechleveransen. Apps/speech och
+packages/server-transport är Git-byteidentiska med det tidigare verifierade
+speechheadet7fa5e561; de fyra relevanta testfilerna är också oförändrade.
+Tidigare Node22.23.1-kvitto19/19 och normal integrationshook141pass/0fail/
+1befintlig SQL-opt-in gäller därför fortfarande. Detta är återanvända kvitton,
+inte nya testkörningar. Två aktuella sökvägar i återställningsguiden har rättats.
+
+PR/CI/drift samordnas med mergagent som en separat speechleverans efter
+frontendens PR229. Studio/OpenClaw/game är fortsatt separata leveranser.
+Ingen ändring av talinnehåll, budget, schema, provider eller media ingår;
+inget nytt läppsynksgodkännande lämnas.
+
 ## C3 — speechens källrot apps/speech, lokalt 17 oktober 2026
 
 Fem spårade filer är individuellt flyttade från apps/croupier-speech till
@@ -107,6 +172,7 @@ Scoutgaming-projekt, reporot och Node24 utan gammal frontend-override.
 Detta är lokal verifiering, inte ett nytt spel-/mediegodkännande. Extern
 konfiguration är oförändrad. PR/CI/drift samordnas med mergeagenten, och nästa
 apprötter följer separata leveranser.
+
 
 
 ## PR228: slutlig integration och byggkvitto
