@@ -1,5 +1,7 @@
 import { presentationPublicModules } from '../../../packages/presentation/public-modules.mjs';
 import test from 'node:test';
+import {createServer} from 'node:http';
+import {once} from 'node:events';
 import assert from 'node:assert/strict';
 import {mkdtemp, readFile, writeFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -369,6 +371,85 @@ test('prepared player uses the actual shared player and redirects retired BO doc
   } finally {await rm(directory, {recursive: true, force: true});}
 });
 
+test('new frontend serves its built public module graph when the older backend refuses those paths', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'croupier-public-deploy-order-'));
+  const require = createRequire(new URL('../package.json', import.meta.url));
+  const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
+  const {NextRequest} = require('next/server');
+  const {serveStatic} = require('next/dist/server/serve-static.js');
+  const compiled = transpileModule(await readFile(new URL('../middleware.ts', import.meta.url), 'utf8'),
+    {compilerOptions:{module:ModuleKind.CommonJS, target:ScriptTarget.ES2022}}).outputText;
+  const module = {exports:{}};
+  new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
+  const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+  Object.assign(process.env, env);
+  let backendRequests = 0;
+  const backend = createServer((req,res) => { backendRequests++; res.writeHead(421); res.end('old backend refuses new module'); });
+  let frontend;
+  try {
+    const prepared = await preparePlatformUi({env, output:directory});
+    backend.listen(0,'127.0.0.1'); await once(backend,'listening');
+    const backendOrigin = 'http://127.0.0.1:'+backend.address().port;
+    frontend = createServer(async(req,res) => {
+      try {
+        const response = module.exports.middleware(new NextRequest(config.publicOrigin+req.url, {method:req.method,headers:req.headers}));
+        const rewrite = response.headers.get('x-middleware-rewrite');
+        if (rewrite) {
+          const upstream = await fetch(backendOrigin+new URL(rewrite).pathname, {method:req.method});
+          res.writeHead(upstream.status); res.end(await upstream.text()); return;
+        }
+        if (response.headers.get('x-middleware-next') !== '1') { res.writeHead(response.status,Object.fromEntries(response.headers)); res.end(); return; }
+        const path = new URL(req.url,config.publicOrigin).pathname;
+        await serveStatic(req,res,join(directory,'public',path.slice(1)));
+      } catch (error) { res.writeHead(error.statusCode ?? 500); res.end(); }
+    });
+    frontend.listen(0,'127.0.0.1'); await once(frontend,'listening');
+    const origin = 'http://127.0.0.1:'+frontend.address().port;
+    const pending = presentationPublicModules.flatMap(row => row.paths);
+    assert.deepEqual(pending.filter(path => !prepared.files.includes(path)), [], 'every declared public URL must be built');
+    for (const path of ['/packages/navigation/game-entry.mjs','/packages/navigation/operator-slug.mjs']) assert.ok(pending.includes(path),path);
+    const visited = new Set();
+    while (pending.length) {
+      const path = pending.shift(); if (visited.has(path)) continue; visited.add(path);
+      const response = await fetch(origin+path+'?revision=new-frontend');
+      assert.equal(response.status,200,path);
+      const body = await response.text();
+      assert.equal(body,await readFile(join(directory,'public',path.slice(1)),'utf8'),path);
+      assert.match(response.headers.get('content-type'),path.endsWith('.json')?/application\/json/:/(?:text|application)\/javascript/,path);
+      const head = await fetch(origin+path,{method:'HEAD'});
+      assert.equal(head.status,200,path); assert.equal(await head.text(),'',path);
+      for (const header of ['content-type','content-length']) assert.equal(head.headers.get(header),response.headers.get(header),path+' '+header);
+      if (path.endsWith('.json')) { JSON.parse(body); continue; }
+      const imports = [
+        ...body.matchAll(/^\s*(?:import|export)\s+(?:[\w\s{},*$]+?\s+from\s*)?['"]([^'"]+)['"]/gm),
+        ...body.matchAll(/^\s*(?:import|export)[^'"\n]*?\bfrom\s*['"]([^'"]+)['"]/gm),
+        ...body.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g),
+      ];
+      for (const match of imports) pending.push(new URL(match[1],origin+path).pathname);
+    }
+    assert.ok([...visited].some(path => path.endsWith('.json')),'the public JSON contract is exercised');
+    for (const path of ['/packages/navigation/server/platform-routing.mjs','/packages/navigation/operator-entry.mjs',
+      '/packages/presentation/server/selection.mjs','/packages/presentation/contracts/studio-model.mjs',
+      '/packages/navigation/game-entry.mjs/extra','/packages/navigation/game-entry.mjs.bak']) {
+      assert.equal((await fetch(origin+path)).status,404,path);
+    }
+    assert.equal((await fetch(origin+'/packages/navigation/%67ame-entry.mjs')).status,400);
+    for (const method of ['POST','PUT','DELETE','OPTIONS']) {
+      const response = await fetch(origin+'/packages/navigation/game-entry.mjs',{method});
+      assert.equal(response.status,405,method); assert.equal(response.headers.get('allow'),'GET, HEAD');
+    }
+    for (const method of ['GET','POST']) assert.equal((await fetch(origin+'/packages/navigation/game-entry.mjs',
+      {method,headers:{'next-action':'synthetic-action'}})).status,405,method+' action');
+    assert.equal(backendRequests,0,'public modules must not depend on the backend release');
+    assert.equal((await fetch(origin+'/api/profile')).status,421,'authenticated APIs retain the real backend route');
+    assert.ok(backendRequests > 0); // Fetch may retry an idempotent request after 421.
+  } finally {
+    frontend?.closeAllConnections(); if (frontend?.listening) await new Promise(resolve => frontend.close(resolve));
+    backend.closeAllConnections(); if (backend.listening) await new Promise(resolve => backend.close(resolve));
+    for (const [key,value] of Object.entries(previous)) value === undefined ? delete process.env[key] : process.env[key]=value;
+    await rm(directory,{recursive:true,force:true});
+  }
+});
 test('retired casino floor redirects to /play and keeps the query', async () => {
   const require = createRequire(new URL('../package.json', import.meta.url));
   const {transpileModule, ModuleKind, ScriptTarget} = require('typescript');
