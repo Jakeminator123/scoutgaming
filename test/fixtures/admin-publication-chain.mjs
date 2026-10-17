@@ -14,7 +14,7 @@ import {createPresentationRoomApi} from '../../lab/lib/presentation-room-api.mjs
 import {STANDARD_OPERATOR_ROLES} from '../../lab/lib/operator-admin-api.mjs';
 import {handlePartnerAuth, partnerSessionDigest} from '../../lab/lib/partner-session.mjs';
 import {partnerWorkspaceInitialData} from '../../lab/lib/partner-data.mjs';
-import {resolveWorkspaceSurfacePath} from '../../lab/lib/workspace-surfaces.mjs';
+import {resolveWorkspaceSurfacePath} from '../../packages/navigation/workspace-surfaces.mjs';
 import {partnerRoomRequest} from '../../lab/lib/partner-room-selection.mjs';
 import {createPublicOperatorRooms} from '../../web/public-operator-rooms.mjs';
 import {createPublicOperatorDirectory} from '../../web/public-operators.mjs';

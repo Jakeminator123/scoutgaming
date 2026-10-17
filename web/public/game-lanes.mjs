@@ -1,3 +1,4 @@
+import {isOperatorSlug} from '../../packages/navigation/operator-slug.mjs';
 import { BASE_DEALER_IDS, isDealerId, isActiveDealerId, validatePublicRegisteredDealers } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateComposition} from './presentation-composition.mjs';
 // A lane selects a presentation adapter and media collection. Game rules,
@@ -11,10 +12,6 @@ export function gamePresentationForDealer(dealerId, renderer) {
 const layerPreviewDealers = ['dragge'];
 export const isGameLaneId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(value) && !['original', 'constructor', 'prototype'].includes(value);
 export const isGameLane = (value, lanes = GAME_LANES) => lanes.some(lane => lane.id === value);
-// Same rule as the partner portal slug (lab/lib/partner-session.mjs operatorSlug).
-const reservedOperatorSlugs = new Set(['api', 'auth', 'login', 'logout', 'studio', 'control', 'partner', 'play', 'set-password']);
-export const isOperatorSlug = value => typeof value === 'string' && value.length <= 63
-  && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) && !reservedOperatorSlugs.has(value);
 
 export function validateGameLanes(value) {
   if (!Array.isArray(value) || value.length > 32) throw Error('Invalid lane catalogue');

@@ -27,12 +27,13 @@ test('published roulette browser contracts use exact backend routes without expo
     assert.equal(backendPlatformPath(encoded), false, encoded);
     assert.equal(platformRoute(new URL(encoded, config.publicOrigin), config).kind, 'reject', encoded);
   }
-  for (const path of presentationPublicModules.flatMap(row => row.paths).filter(path => path.startsWith('/packages/presentation/'))) {
+  for (const path of presentationPublicModules.flatMap(row => row.paths).filter(path => path.startsWith('/packages/'))) {
     assert.equal(backendPlatformPath(path), true, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'backend', path);
     for (const suffix of ['/', '/extra', '.map']) assert.equal(backendPlatformPath(path + suffix), false, path + suffix);
   }
   for (const path of ['/packages/presentation/server/selection.mjs', '/packages/presentation/contracts/studio-model.mjs',
+    '/packages/navigation/operator-entry.mjs', '/packages/navigation/admin-workspace-routes.mjs', '/packages/navigation/',
     '/packages/presentation/contracts/policies/project.seed.json', '/public-operator-preview.mjs', '/storage/frozen-dealer-idle.mjs', '/server.mjs']) {
     assert.equal(backendPlatformPath(path), false, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);

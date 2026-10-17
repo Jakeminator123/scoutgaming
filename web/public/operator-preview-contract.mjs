@@ -1,4 +1,5 @@
-import {isGameLaneId,isOperatorSlug} from './game-lanes.mjs';
+import { isGameLaneId } from './game-lanes.mjs';
+import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
 import {isDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {validateDealerFraming} from '../../packages/presentation/contracts/dealer-framing.mjs';

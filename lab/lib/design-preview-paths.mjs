@@ -1,4 +1,4 @@
-import {ADMIN_WORKSPACE_TOOLS,adminDocumentHref} from './admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS,adminDocumentHref} from '../../packages/navigation/admin-workspace-routes.mjs';
 export const designPreviewPages = new Set([...Object.keys(ADMIN_WORKSPACE_TOOLS),'tools', '', 'structure', 'deletion', 'rooms', 'dealers', 'clips', 'assets', 'drift', 'ekonomi',
   'admin/accounts', 'admin/operators', 'admin/players', 'admin/payments', 'admin/api', 'admin/log', 'ai/models', 'ai/chat']);
 export function designPreviewReturnTo(value) {

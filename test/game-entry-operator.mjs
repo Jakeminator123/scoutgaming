@@ -5,7 +5,8 @@ import { historicalDealerProject } from './fixtures/historical-dealer-project.mj
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
 import { createStudioGamePolicy } from '../web/storage/studio-game-policy.mjs';
 import { createOperatorPackageReader } from '../web/storage/operator-package-reader.mjs';
-import { createGameEntrySelector, OPERATOR_NOT_FOUND_HTML, requestedOperator } from '../web/game-entry-operator.mjs';
+import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
+import { OPERATOR_NOT_FOUND_HTML, requestedOperator } from '../packages/navigation/operator-entry.mjs';
 import { decorateGameEntryHtml } from '../web/public/game-entry-contract.mjs';
 import { gameLaneFromDocument } from '../web/public/game-lanes.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';

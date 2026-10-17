@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { labUrl } from '../lib/lab-url.mjs';
 import { controlToolPath, legacyControlView } from '../lib/control-workspace.mjs';
-import { workspaceSurfacePath } from '../lib/workspace-surfaces.mjs';
+import { workspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 import { createOverviewReader, overviewNextStep, selectedOverviewOperator, type OverviewOperator, type OverviewStudio, type OverviewReader } from '../lib/control-overview.mjs';
 import styles from './control-workspace.module.css';
 

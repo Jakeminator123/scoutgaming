@@ -1,6 +1,6 @@
 // A menu is presentation, never an access grant. Both surfaces currently
 // require the server's existing internal administrator session.
-import { WORKSPACE_VIEW_SLUGS } from '../../lib/workspace-surfaces.mjs';
+import { WORKSPACE_VIEW_SLUGS } from '../../../packages/navigation/workspace-surfaces.mjs';
 
 export const STUDIO_GROUP = 'Produktion';
 

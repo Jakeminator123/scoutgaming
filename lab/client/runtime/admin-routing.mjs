@@ -38,5 +38,5 @@ export function withAdminContext(href,currentSearch){
   for(const key of adminContextKeys)if(context.has(key)&&!url.searchParams.has(key))url.searchParams.set(key,context.get(key));
   return url.pathname+url.search+url.hash;
 }
-import {adminDocumentHref,adminToolName} from '../../../lab/lib/admin-workspace-routes.mjs';
+import {adminDocumentHref,adminToolName} from '../../../packages/navigation/admin-workspace-routes.mjs';
 export {adminToolName};

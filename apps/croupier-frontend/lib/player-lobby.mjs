@@ -1,5 +1,5 @@
 import {readChoices,writeChoices} from '../../../web/public/player-choices.mjs';
-import {isOperatorSlug} from '../../../web/public/game-lanes.mjs';
+import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
 
 export function roomSelection(room,preferred={}) {
   const dealer=room.dealers.find(row=>row.id===preferred.dealer)

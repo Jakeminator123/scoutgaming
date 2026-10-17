@@ -1,7 +1,7 @@
 'use client';
 import {useRef, useState, type MouseEvent} from 'react';
 import {studioNavigationHref} from '../lib/studio-navigation.mjs';
-import {compositionLabel} from '../lib/control-flow.mjs';
+import {compositionLabel} from '../../packages/navigation/control-flow.mjs';
 import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import type {DealerArchiveImpact} from '../lib/dealer-archive-impact.mjs';
 import {dealerRemovalStatus} from '../lib/dealer-removal.mjs';

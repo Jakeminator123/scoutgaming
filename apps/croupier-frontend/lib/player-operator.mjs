@@ -1,5 +1,5 @@
 import { operatorPublicView } from './player-catalog.mjs';
-import { isOperatorSlug } from '../../../web/public/game-lanes.mjs';
+import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
 
 export const OPERATOR_STORAGE_KEY = 'croupier.operator';
 
