@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {calibrationPayload,validateContactTake} from '../../web/public/performance-contact.mjs';
+import {calibrationPayload,validateContactTake} from '../../packages/presentation/contracts/performance-contact.mjs';
 import {packContactMedia} from './pack-contact-media.mjs';
 import {resolveMediaAbsolutePath} from '../media-layout.mjs';
 const [source,action,pickup,release,land,rest,publicDirectory='web/public',assetName]=process.argv.slice(2);

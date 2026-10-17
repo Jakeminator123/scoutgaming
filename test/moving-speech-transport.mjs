@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { prepareMovingSpeechPcmInput } from '../web/moving-speech-pcm.mjs';
 import { createMovingSpeechTransport, createMovingSpeechConnection, verifyMovingWorkerRelease } from '../web/moving-speech-transport.mjs';
-import { createMovingSpeechFrameLayer } from '../web/public/moving-speech-frame-layer.mjs';
+import { createMovingSpeechFrameLayer } from '../packages/presentation/runtime/moving-speech-frame-layer.mjs';
 const { WebSocket } = createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');
 const hash = s => createHash('sha256').update(s).digest('hex');
 const image = `ghcr.io/emacodehero/croupier-lipsync-worker:${hash('synthetic worker release').slice(0, 40)}`;

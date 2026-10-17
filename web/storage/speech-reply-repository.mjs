@@ -1,6 +1,6 @@
 import { canonicalStudioJson, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
-import { validateReplyCategories } from '../public/speech-reply-library.mjs';
+import { validateReplyCategories } from '../../packages/presentation/contracts/speech-reply-library.mjs';
 import { SpeechReplyLibraryError, validateSpeechReplyRecord } from '../speech-reply-library.mjs';
 
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;

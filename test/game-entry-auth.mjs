@@ -89,7 +89,7 @@ test('automatic N1 handoff requires one verified current admin on the exact shar
 });
 
 test('player handoff only retains current document returns and approved game selectors',async()=>{
-  const {playerHandoffPath:path,playerHandoffDestination:destination}=await import('../web/public/player-handoff.mjs');
+  const {playerHandoffPath:path,playerHandoffDestination:destination}=await import('../packages/navigation/player-handoff.mjs');
   for(const target of ['/play','/play/profil','/play/historik','/play?operator=swedish-games','/play/roulette?table=room-evening','/play/blackjack?table=room-evening']) {
     assert.equal(path(target),target);assert.equal(destination(target),'/api/auth/bo/start?next='+encodeURIComponent(target));
   }

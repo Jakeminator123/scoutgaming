@@ -8,8 +8,8 @@ import {withPackagePresentation,readPackagePresentation,publicPackageBranding} f
 import {createPartnerBrandingApi as createApi} from '../lab/lib/partner-branding-api.mjs';
 import {createPublishedLayerAssets} from '../web/storage/published-layer-assets.mjs';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
-import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
-import {validateComposition,createLayerComposition} from '../web/public/presentation-composition.mjs';
+import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
+import {validateComposition,createLayerComposition} from '../packages/presentation/runtime/presentation-composition.mjs';
 
 function asset(role,n) {const value={schemaVersion:1,id:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,role,label:role,sha256:'a'.repeat(64),size:128,contentType:'image/png',width:720,height:1280};return {...value,pathname:layerAssetPath(value)};}
 function fixture() {

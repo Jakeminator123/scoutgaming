@@ -15,7 +15,7 @@ import { createFrozenDealerContextReader } from '../packages/presentation/server
 import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
 import { createOperatorAppearanceApi } from '../web/operator-appearance-api.mjs';
 import { createOperatorAppearanceBoundary } from '../web/public/operator-appearance-boundary.mjs';
-import { resolvePlayerSelection } from '../web/public/player-choices.mjs';
+import { resolvePlayerSelection } from '../packages/presentation/runtime/player-choices.mjs';
 import { defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
 import { layerAssetPath } from '../packages/presentation/contracts/presentation-layers.mjs';

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import { readFile } from 'node:fs/promises';
-import { playGeneratedSpeech, validateGeneratedSpeechStream } from '../web/public/generated-speech-player.mjs';
+import { playGeneratedSpeech, validateGeneratedSpeechStream } from '../packages/presentation/runtime/generated-speech-player.mjs';
 import { createChatPlaybackDiagnostic } from '../web/public/chat-playback-diagnostic.mjs';
 
 const text = 'Good evening. Your next hand is ready.';

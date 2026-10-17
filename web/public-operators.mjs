@@ -37,7 +37,7 @@ export function createPublicOperatorDirectory({store = null, readRooms = null, n
     if (typeof store?.listOperators !== 'function' || !readRooms) throw Error('Operator list unavailable');
     const rows = await store.listOperators();
     if (!Array.isArray(rows) || rows.length > 1000 || Object.keys(rows).length !== rows.length) throw Error('Invalid operator list');
-    const { validatePublicOperatorRooms } = await import('./public/operator-rooms-contract.mjs');
+    const { validatePublicOperatorRooms } = await import('../packages/presentation/contracts/operator-rooms-contract.mjs');
     const operators = [], seen = new Set();
     for (const row of rows) {
       const value = record(row);

@@ -1,5 +1,32 @@
 # Aktuell handoff — Scoutgaming
 
+## C2n — gemensamma browserkontrakt och runtime, 17 oktober 2026
+
+29 browserkällor och nio deklarationer har flyttats till `packages/presentation`
+och `packages/navigation/player-handoff.mjs`. Gamla källfiler är borttagna;
+importörer, bygg-/QA-källistor och isolerade testkopior använder samma kanoniska
+implementation. Spelvalens definitioner och ID-predicate importeras direkt från
+befintliga kontrakt. Inga nya serverabstraktioner eller HTTP-protokoll införs.
+
+`public-modules.mjs` behåller gamla publika adresser och exakta paketadresser.
+Relativa importer fungerar från båda adresserna; inga breda prefixregler eller
+privata servermoduler exponeras. Röstkatalogens JSON, inbäddade filmprofiler och
+proveniens är byteidentiska. Dynamiska `/composition-runtime/compositor.js`,
+basePath/proxy, sessioner, behörighet och spelregler är oförändrade.
+
+Lokalt kvitto på bas `b99373544832e121b4e90716486d705b78357e56`: 38/38 mekaniskt
+oförändrade kroppar, 123 verifierade importkanter över 100 publika URL:er, inga
+appimporter från de flyttade källorna och 190 unika QA-källor med befintliga mål.
+44 befintliga testfiler gav 702 pass och tre befintliga browser-opt-in; en gammal
+require-matchning i clip-guide-fixturen rättades och dess tre prov passerade
+separat. Sammanlagt 705 godkända prov, inga kvarstående fel. Riktig lokal GET/HEAD
+verifierade hela publika importgrafen, exakta källbytes, JSON-MIME och nekade
+serveradresser. Studio-, frontend-, Admin- och Lobby-typer passerade.
+Parentgranskning är godkänd; ordinarie commit-hook körs vid leverans. Ingen fullbuild, push,
+moln-/providerändring eller ny medieacceptans ingår. Färsk egen säkerhetsläsning
+för main 9b79902c visar 20 incidenter, varav två kända öppna (38318914/15),
+partiella platser, aktiv övervakning och ofullständig historik (too_large).
+
 ## Gemensam lokal integrationsbas — 17 oktober 2026
 
 Detta kvitto ersätter äldre väntestatus i delavsnitten nedan. M:s separata

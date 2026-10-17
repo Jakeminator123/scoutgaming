@@ -5,7 +5,7 @@ import { createServer, request as httpRequest } from 'node:http';
 import { setTimeout as pause } from 'node:timers/promises';
 import { createChatResponseStream } from '../web/chat-response-stream.mjs';
 import { completeChatWithSpeech } from '../web/generated-speech-chat.mjs';
-import { readChatResponse, chatFailureMessage, chatFailureCode } from '../web/public/chat-response.mjs';
+import { readChatResponse, chatFailureMessage, chatFailureCode } from '../packages/presentation/contracts/chat-response.mjs';
 
 function stream(frames, fragment = 7) {
   const bytes = new TextEncoder().encode(frames.map(frame => JSON.stringify(frame) + '\n').join(''));

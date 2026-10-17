@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readCardView,saveCardView,CARD_VIEW_KEY} from '../web/public/card-view.mjs';
+import {readCardView,saveCardView,CARD_VIEW_KEY} from '../packages/presentation/contracts/card-view.mjs';
 test('view preferences survive storage failure without blocking the player',()=>{
   const denied={getItem(){throw Error('denied');},setItem(){throw Error('denied');}};
   assert.equal(readCardView(denied),'raised');assert.equal(saveCardView(denied,'table'),'table');

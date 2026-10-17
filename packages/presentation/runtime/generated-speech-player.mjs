@@ -1,8 +1,8 @@
-import { validateSpeechPackage } from '../../packages/presentation/contracts/speech-package.mjs';
-import { SpeechStreamPlayer } from './speech-stream-client.mjs';
-import {createLayerComposition} from './presentation-composition.mjs';
-import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
-import { playMovingSpeech } from './moving-speech-player.mjs';
+import { validateSpeechPackage } from '../../../packages/presentation/contracts/speech-package.mjs';
+import { SpeechStreamPlayer } from '../../../packages/presentation/runtime/speech-stream-client.mjs';
+import {createLayerComposition} from '../../../packages/presentation/runtime/presentation-composition.mjs';
+import {effectiveDealerCompositing} from '../../../packages/presentation/contracts/dealer-compositing.mjs';
+import { playMovingSpeech } from '../../../packages/presentation/runtime/moving-speech-player.mjs';
 
 function speechRenderer(mount, prepareRendering, renderFrame) {
   if (typeof prepareRendering === 'function' && typeof renderFrame === 'function') return {prepareRendering,renderFrame,close(){}};

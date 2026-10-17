@@ -1,4 +1,4 @@
-import {normalizeCardView} from '../card-view.mjs';
+import {normalizeCardView} from '../../../packages/presentation/contracts/card-view.mjs';
 // A measured face belongs to the dealer's source plane, never directly to a
 // movable table. Bind both planes for one take; resizing revokes that binding.
 const point = p => p && Number.isFinite(p.cx) && Number.isFinite(p.cy);

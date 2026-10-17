@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {OPERATOR_NOT_FOUND_HTML} from '../packages/navigation/operator-entry.mjs';
 import {backofficePlayerHandoffRequired,currentBackofficeAccount} from './bo-player-session.mjs';
-import {playerHandoffDestination} from './public/player-handoff.mjs';
+import {playerHandoffDestination} from '../packages/navigation/player-handoff.mjs';
 import { isAdministratorRole } from '../packages/studio-access/server/account-credentials.mjs';
 // Static server with Range-request support (the engine range-fetches clip
 // bytes in production; locally it serves whole files and ranges alike).
@@ -23,7 +23,7 @@ import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration 
 import { createDealerSpeechRuntime } from './dealer-speech-runtime.mjs';
 import { createDealerSpeechReferenceService } from './dealer-speech-reference.mjs';
 import { createOperatorSpeechQa, isRetiredBackofficePost } from './operator-speech-qa.mjs';
-import { CHAT_STAGES } from './public/chat-response.mjs';
+import { CHAT_STAGES } from '../packages/presentation/contracts/chat-response.mjs';
 import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from './registered-chat-context.mjs';
 import { createLissabonProfiles } from './lissabon-profiles.mjs';
 import { createNativeTableCommand } from './native-table.mjs';
@@ -75,7 +75,7 @@ if (storage) await storage.db.assertInstalled();
 const neonStudioEnabled = process.env.CROUPIER_STUDIO_NEON_POLICY === '1';
 const { decorateGameEntryHtml } = await import('./public/game-entry-contract.mjs');
 const { gameEntryRedirect, canonicalGameDestination, playerLoginDestination } = await import('../packages/navigation/game-entry.mjs');
-const { gameLaneSelection } = await import('./public/game-lanes.mjs');
+const { gameLaneSelection } = await import('../packages/presentation/contracts/game-selection.mjs');
 const gamePath = neonStudioEnabled ? '/blackjack' : process.env.CROUPIER_PUBLIC_GAME_PATH || '/';
 const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage/studio-runtime.mjs') : {};
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};

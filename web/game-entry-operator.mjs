@@ -11,7 +11,7 @@ import {materialLabel} from '../packages/presentation/contracts/material-catalog
 // never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
 // not read or written here.
 import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
-import {gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, packageLaneIds} from './public/game-lanes.mjs';
+import {gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, packageLaneIds} from '../packages/presentation/contracts/game-selection.mjs';
 import {laneDealerSelection} from '../packages/presentation/contracts/game-lanes.mjs';
 import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 import {readPackagePresentation, publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';

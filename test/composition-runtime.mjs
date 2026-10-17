@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {createPresentationApi} from '../web/presentation-api.mjs';
 import {presentationCapabilitiesResponse} from '../web/presentation-capabilities.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry,validateCompositionSettings,sceneForComposition} from '../packages/presentation/contracts/composition-settings.mjs';
-import {validateComposition,createLayerComposition,clipCompositing} from '../web/public/presentation-composition.mjs';
+import {validateComposition,createLayerComposition,clipCompositing} from '../packages/presentation/runtime/presentation-composition.mjs';
 import {compositionRuntimeResponse} from '../web/composition-runtime.mjs';
 import {stageGeometry,tableRect,backgroundRect} from '../packages/presentation/compositor/geometry.js';
 import {zoomComposition} from '../lab/lib/composition-zoom.mjs';
@@ -16,8 +16,8 @@ import {withPackagePresentation,readPackagePresentation} from '../packages/prese
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
 import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
 import { validateGameLanes } from '../packages/presentation/contracts/game-lanes.mjs';
-import { gameLaneFromDocument } from '../web/public/game-lanes.mjs';
-import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
+import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
+import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../packages/presentation/runtime/game-overlay-layout.mjs';
 const key={mode:'green-screen',threshold:.23,softness:.15,despill:0};
 
 test('saved scene zoom keeps all layer coordinates around the same centre at every viewport size',()=>{

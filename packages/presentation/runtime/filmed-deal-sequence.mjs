@@ -1,4 +1,4 @@
-import {filmedDealTarget,validateFilmedDealProfile} from '../../../web/public/card-presentation/filmed-profile.mjs';
+import {filmedDealTarget,validateFilmedDealProfile} from '../contracts/filmed-profile.mjs';
 
 // Native receipts list reveal first on settlement. The shared player presents
 // the player's last action first, then reveal and dealer draws. Reorder only

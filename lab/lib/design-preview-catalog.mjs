@@ -1,6 +1,6 @@
 import { createPublicOperatorRooms, isUnplayableOperatorRooms } from '../../web/public-operator-rooms.mjs';
-import { validatePublicOperatorRooms } from '../../web/public/operator-rooms-contract.mjs';
-import { roomEnvironment } from '../../web/public/room-environment.mjs';
+import { validatePublicOperatorRooms } from '../../packages/presentation/contracts/operator-rooms-contract.mjs';
+import { roomEnvironment } from '../../packages/presentation/contracts/room-environment.mjs';
 import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
 import {isPresentationRoom, roomGame} from '../../packages/presentation/contracts/presentation-room.mjs';
 import {inspectPackageRooms} from '../../packages/presentation/server/package-rooms.mjs';

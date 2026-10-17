@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { flushSync } from 'react-dom';
 import { BACKOFFICE_GROUPS, BACKOFFICE_SECTIONS, backofficeGroupId } from '../lib/backoffice-navigation.mjs';
 import { studioAdminEndpoint } from '../lib/studio-admin-contract.mjs';
-import { isGameLaneId } from '../../web/public/game-lanes.mjs';
+import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
 import { registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, normalizeStudioRole, meetsStudioAdminSectionRole, studioRoleMeetsMinimum, STUDIO_ROLES, type StudioRole } from '../lib/studio-access-policy.mjs';
 import { labUrl } from '../lib/lab-url.mjs';

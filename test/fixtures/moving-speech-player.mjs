@@ -1,4 +1,4 @@
-import { playGeneratedSpeech } from '../../web/public/generated-speech-player.mjs';
+import { playGeneratedSpeech } from '../../packages/presentation/runtime/generated-speech-player.mjs';
 
 export async function run(speech) {
   const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 240; document.body.append(canvas);

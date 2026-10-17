@@ -7,7 +7,7 @@ import {loadOperatorCatalogue,loadRoomCatalogue,type OperatorCatalogueResult} fr
 import {rememberRoomSelection,roomLaunch,roomSelection,type RoomSelection} from '@/lib/player-lobby.mjs';
 import {dealerPortrait,loadRoomPreview,type RoomPreviewResult} from '@/lib/player-room-preview.mjs';
 import {PlayerRoomPreview,PreviewImage,EnvironmentChoices,SelectedMark,StepHeading,choiceLabel} from './player-room-preview';
-import type {PublicOperatorRooms,PublicOperatorRoom} from '../../../../web/public/operator-rooms-contract.mjs';
+import type {PublicOperatorRooms,PublicOperatorRoom} from '../../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 
 type Operator={slug:string;name:string};
 type CatalogueState={status:'loading'|'unscoped'|'not-found'|'unavailable';slug:string}|{status:'ready';slug:string;catalog:PublicOperatorRooms};

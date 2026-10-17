@@ -1,5 +1,5 @@
 import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
-import { clipCompositing } from './public/presentation-composition.mjs';
+import { clipCompositing } from '../packages/presentation/runtime/presentation-composition.mjs';
 
 const PATH = /^\/api\/operators\/([^/]+)\/rooms$/;
 const unavailable = () => { throw Error('operator_rooms_unavailable'); };
@@ -57,7 +57,7 @@ export function createPublicOperatorRooms({ store = null, policy = null } = {}) 
     // unavailable response independent of modules from that optional runtime.
     const [{ createGameEntrySelector }, { listPackageRooms }, { readPackagePresentation }, { resolvePlayerSelection }, { validatePublicOperatorRooms }] = await Promise.all([
       import('./game-entry-operator.mjs'), import('../packages/presentation/server/package-rooms.mjs'), import('../packages/presentation/server/presentation-package.mjs'),
-      import('./public/player-choices.mjs'), import('./public/operator-rooms-contract.mjs'),
+      import('../packages/presentation/runtime/player-choices.mjs'), import('../packages/presentation/contracts/operator-rooms-contract.mjs'),
     ]);
     const operator = await store.getOperatorBySlug(slug);
     if (!operator || operator.status !== 'active' || operator.slug !== slug) return null;

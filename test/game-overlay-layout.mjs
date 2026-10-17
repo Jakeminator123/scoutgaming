@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {projectGamePlane,projectTableGamePlane,layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
+import {projectGamePlane,projectTableGamePlane,layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../packages/presentation/runtime/game-overlay-layout.mjs';
 import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
 import {sceneForComposition,defaultCompositionSettings,defaultBlackjackTableGeometry} from '../packages/presentation/contracts/composition-settings.mjs';
-import {calibration} from '../web/public/card-presentation/calibration.mjs';
+import {calibration} from '../packages/presentation/contracts/calibration.mjs';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const settings=defaultCompositionSettings();
 for(const [width,height]of [[390,844],[493,1438],[844,390],[1920,1080],[3440,1440]]){

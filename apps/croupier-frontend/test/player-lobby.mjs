@@ -5,7 +5,7 @@ import {readFileSync,existsSync} from 'node:fs';
 import {dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
-import {validatePublicOperatorRooms} from '../../../web/public/operator-rooms-contract.mjs';
+import {validatePublicOperatorRooms} from '../../../packages/presentation/contracts/operator-rooms-contract.mjs';
 import {loadOperatorCatalogue,loadRoomCatalogue} from '../lib/player-catalog.mjs';
 import {roomSelection,roomLaunch,rememberRoomSelection,demoLobbyPath} from '../lib/player-lobby.mjs';
 

@@ -10,7 +10,7 @@ import { createOperatorPackageReader } from '../web/storage/operator-package-rea
 import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
 import { OPERATOR_NOT_FOUND_HTML, requestedOperator } from '../packages/navigation/operator-entry.mjs';
 import { decorateGameEntryHtml } from '../web/public/game-entry-contract.mjs';
-import { gameLaneFromDocument } from '../web/public/game-lanes.mjs';
+import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { operatorPackageSql, operatorRow, packageRow } from './fixtures/operator-package-sql.mjs';
 

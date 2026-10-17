@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {DRAGAN_KEVIN_PROFILE as profile} from '../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
-import {validateFilmedDealProfile,resolveFilmedDealTake,filmedFaceAtTime,filmedDealTarget} from '../web/public/card-presentation/filmed-profile.mjs';
+import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
+import {validateFilmedDealProfile,resolveFilmedDealTake,filmedFaceAtTime,filmedDealTarget} from '../packages/presentation/contracts/filmed-profile.mjs';
 const player={type:'deal',to:'box',box:0,shoeDraw:1};
 const take=key=>profile.takes.find(t=>t.key===key);
 

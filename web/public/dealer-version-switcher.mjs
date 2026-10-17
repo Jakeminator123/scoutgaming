@@ -1,6 +1,7 @@
 import {studioPreviewFromDocument} from './studio-preview-client.mjs';
 import {isActiveDealerId,validatePublicRegisteredDealers} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {gameChoicesFromDocument,isGameLaneId} from './game-lanes.mjs';
+import {gameChoicesFromDocument} from '../../packages/presentation/contracts/game-selection.mjs';
+import {isGameLaneId} from '../../packages/presentation/contracts/game-lane-id.mjs';
 import {approvedGameQuery} from '../../packages/navigation/game-entry.mjs';
 
 // Version is retained for callers, but only the current document's player exists.

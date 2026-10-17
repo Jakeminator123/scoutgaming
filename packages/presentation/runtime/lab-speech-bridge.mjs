@@ -1,4 +1,4 @@
-import { validateSpeechPackage } from '../../packages/presentation/contracts/speech-package.mjs';
+import { validateSpeechPackage } from '../../../packages/presentation/contracts/speech-package.mjs';
 
 // Deliberately separate from the read-only native observation protocol. This
 // capability permits one chat request, never game commands or browser-owned state.

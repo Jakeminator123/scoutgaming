@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {PlayerSceneCanvas,type PlayerSceneCompositing} from './player-scene-canvas';
 import {defaultCompositionSettings} from '../../../../packages/presentation/contracts/composition-settings.mjs';
 import {dealerPortrait,type RoomPreviewResult} from '@/lib/player-room-preview.mjs';
-import type {PublicPreviewLayer} from '../../../../web/public/operator-preview-contract.mjs';
+import type {PublicPreviewLayer} from '../../../../packages/presentation/contracts/operator-preview-contract.mjs';
 
 type Media={src:string;contentType:string;compositing?:PlayerSceneCompositing};
 export function PreviewImage({media,portrait,label,className=''}:{media?:Media|null;portrait?:string|null;label:string;className?:string}){

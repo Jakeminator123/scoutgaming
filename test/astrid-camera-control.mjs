@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createAstridCameraControl } from '../web/public/astrid-camera-control.mjs';
 import { createAstridWakeWord } from '../web/public/astrid-wake-word.mjs';
-import { createSpeechPoseGate } from '../web/public/speech-pose-gate.mjs';
+import { createSpeechPoseGate } from '../packages/presentation/runtime/speech-pose-gate.mjs';
 
 class Element {
   constructor(tag) { this.tag = tag; this.children = []; this.hidden = false; this.textContent = ''; this.attributes = {}; this.listeners = new Map(); this.style = {}; }

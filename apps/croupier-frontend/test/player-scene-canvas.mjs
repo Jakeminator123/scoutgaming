@@ -9,7 +9,7 @@ import {defaultCompositionSettings} from '../../../packages/presentation/contrac
 const require = createRequire(import.meta.url), ts = require('typescript');
 const filename = fileURLToPath(new URL('../components/player/player-scene-canvas.tsx',import.meta.url));
 const code = ts.transpileModule(readFileSync(filename,'utf8'),{fileName:filename,compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
-const sharedFilename = fileURLToPath(new URL('../../../web/public/published-scene.mjs',import.meta.url));
+const sharedFilename = fileURLToPath(new URL('../../../packages/presentation/runtime/published-scene.mjs',import.meta.url));
 const sharedCode = ts.transpileModule(readFileSync(sharedFilename,'utf8'),{fileName:'published-scene.ts',compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
 const source = (name='dealer',contentType='video/mp4')=>({src:'/api/operators/fixture/preview/'+name,contentType});
 const settle = ()=>new Promise(resolve=>setImmediate(resolve));

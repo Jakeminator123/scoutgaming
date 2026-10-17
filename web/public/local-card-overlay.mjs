@@ -1,9 +1,9 @@
 import { createGameCards } from './card-presentation/game-cards.js';
 import { firstFaceTime } from './card-presentation/card-face-projection.js';
 import { DEAL_CONTACT } from './card-presentation/card-table-layout.js';
-import { calibration } from './card-presentation/calibration.mjs';
+import { calibration } from '../../packages/presentation/contracts/calibration.mjs';
 import { svgNode } from './card-presentation/renderer-support.js';
-import { resolveFilmedDealTake } from './card-presentation/filmed-profile.mjs';
+import { resolveFilmedDealTake } from '../../packages/presentation/contracts/filmed-profile.mjs';
 import { filmedTableBinding, filmedTransferTiming } from './card-presentation/filmed-table-projection.mjs';
 
 // Render only server-issued cards. Visibility is a separate presentation cursor:

@@ -5,7 +5,7 @@ import { dealerImportCatalog, filenameDealerImportRows, finishDealerImportRows, 
 import { validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { DEFAULT_DEALER_COMPOSITING } from '../../packages/presentation/contracts/dealer-compositing.mjs';
 import { recordedSpeechForVideo } from '../../packages/presentation/contracts/recorded-speech.mjs';
-import { DRAGAN_KEVIN_PROFILE } from '../../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
+import { DRAGAN_KEVIN_PROFILE } from '../../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import { canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
 
 export const DEALER_IMPORT_PLAN_VERSION = 1;

@@ -3,7 +3,7 @@
 // A baked background has no separate layer in the production film, so that
 // control stays disabled. Table colour paints DOM and SVG only: the felt mark,
 // the wallet edge and the chip row. It does not change the dealer film.
-import { isOperatorSlug } from '../../packages/navigation/operator-slug.mjs';
+import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
 
 const TABLE_COLOR = /^#[0-9a-f]{6}$/;
 const DEALER_NAMES = Object.freeze({ vera: 'Vera', astrid: 'Astrid', amira: 'Amira', mei: 'Mei', paow: 'Paow', dragge: 'Dragge', nora: 'Nora' });

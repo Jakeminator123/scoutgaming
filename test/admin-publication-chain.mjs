@@ -8,8 +8,8 @@ import {createPublicationChain, company, otherCompany, compositionId} from './fi
 import {createPresentationRoomClient, createPresentationRoomController} from '../lab/lib/presentation-room-client.mjs';
 import {readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {loadLobbyCatalog, lobbySelection, playUrlFor} from '../lab/client/runtime/public-lobby-catalog.mjs';
-import {gameLaneFromDocument} from '../web/public/game-lanes.mjs';
-import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
+import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
+import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
 
 // One package crosses actual N1/N2/public/game selectors. Only storage, account
 // rows, provider metadata and runtime capabilities are synthetic. This does not

@@ -8,9 +8,9 @@ import {BETS,BET_BY_ID} from '../web/games/roulette/rules.mjs';
 import {tableBetGeometry,chipBreakdown,TABLE_ARTWORK} from '../web/public/roulette/table-layout.mjs';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
-import {validatePublicOperatorPreview,previewMediaPath} from '../web/public/operator-preview-contract.mjs';
-import {readChoices,choicesStorageKey} from '../web/public/player-choices.mjs';
+import {validatePublicOperatorRooms} from '../packages/presentation/contracts/operator-rooms-contract.mjs';
+import {validatePublicOperatorPreview,previewMediaPath} from '../packages/presentation/contracts/operator-preview-contract.mjs';
+import {readChoices,choicesStorageKey} from '../packages/presentation/runtime/player-choices.mjs';
 import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 
 test('room document preserves login context and serves only explicit public assets',async t=>{

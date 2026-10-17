@@ -4,7 +4,7 @@ import {useEffect,useRef,useState,type MouseEvent} from 'react';
 import {studioHistory} from '../lib/studio-history.mjs';
 import {labUrl} from '../lib/lab-url.mjs';
 import {studioNavigationContextFromQuery,studioNavigationHref,type StudioNavigationContext} from '../lib/studio-navigation.mjs';
-import {REPLY_CATEGORIES} from '../../web/public/speech-reply-library.mjs';
+import {REPLY_CATEGORIES} from '../../packages/presentation/contracts/speech-reply-library.mjs';
 import type {SpeechReplyItem as ReplyItem} from '../../web/speech-reply-library.mjs';
 import {PageTemplate} from './page-template.mjs';
 import {StudioNavigation} from './studio-navigation';

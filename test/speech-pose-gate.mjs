@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSpeechPoseGate, SPEECH_POSE_STAGES } from '../web/public/speech-pose-gate.mjs';
+import { createSpeechPoseGate, SPEECH_POSE_STAGES } from '../packages/presentation/runtime/speech-pose-gate.mjs';
 
 const identity = (dealerId = 'astrid', roundRevision = 3) => ({ dealerId, sessionRevision: 2, roundRevision });
 const actionState = dealerId => ({ ...identity(dealerId), dealerPose: 'deal-action', actionOwner: 'deal', speechOwner: 'none', idlePresented: null, visible: true, muted: false });

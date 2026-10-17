@@ -4,7 +4,7 @@ import {existsSync,readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import vm from 'node:vm';
-import {layerUploadResponseError,layerUploadFailureMessage} from '../../web/public/layer-upload-errors.mjs';
+import {layerUploadResponseError,layerUploadFailureMessage} from '../../packages/presentation/contracts/layer-upload-errors.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 function loadTs(fileUrl,overrides={},globals={}){

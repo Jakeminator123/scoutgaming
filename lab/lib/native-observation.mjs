@@ -1,6 +1,6 @@
 import { sanitizeObservation } from './partner-trace.mjs';
-import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
-import { CHAT_STAGES } from '../../web/public/chat-response.mjs';
+import { SPEECH_POSE_STAGES } from '../../packages/presentation/runtime/speech-pose-gate.mjs';
+import { CHAT_STAGES } from '../../packages/presentation/contracts/chat-response.mjs';
 
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const MAX_BYTES = 256 * 1024;

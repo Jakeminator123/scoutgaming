@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createStudioSpeechBuildApi} from './studio-speech-build-service.mjs';
-import {STUDIO_ASTRID_VOICE} from '../../web/public/studio-speech.mjs';
+import {STUDIO_ASTRID_VOICE} from '../../packages/presentation/contracts/studio-speech.mjs';
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const scope={environment:'qa',workspaceId:'speech-build'},origin='https://studio.example.test';
 function fixture(){let revision='r1',role='admin',user='jakob',calls=0,paidChecks=0;const project={dealers:[{id:'astrid',label:'Astrid'},{id:'paow',label:'PAOW'}]};

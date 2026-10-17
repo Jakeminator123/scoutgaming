@@ -1,5 +1,5 @@
 import {backofficePlayerHandoffRequired,currentBackofficeAccount,backofficePlayerSource,readBackofficePlayerSource} from '../bo-player-session.mjs';
-import {playerHandoffPath} from '../public/player-handoff.mjs';
+import {playerHandoffPath} from '../../packages/navigation/player-handoff.mjs';
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { createHash, randomBytes } from 'node:crypto';
 

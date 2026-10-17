@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {dealerClipGuide} from '../web/public/dealer-clip-guide.mjs';
+import {dealerClipGuide} from '../packages/presentation/contracts/dealer-clip-guide.mjs';
 import {forgeSlots} from '../lab/lib/dealer-forge-catalog.mjs';
 import {createSeedProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {dealerMediaSlots} from '../lab/lib/dealer-media-library.mjs';

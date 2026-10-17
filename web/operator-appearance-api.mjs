@@ -1,4 +1,4 @@
-import { isGameLaneId } from './public/game-lanes.mjs';
+import {isGameLaneId} from '../packages/presentation/contracts/game-lane-id.mjs';
 import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
 
 // Read-only revision acknowledgement. The caller authenticates the player and

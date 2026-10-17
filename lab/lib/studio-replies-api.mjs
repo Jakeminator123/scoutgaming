@@ -1,6 +1,6 @@
 import {canonicalStudioJson, validateActor, validateStudioScope} from '../../packages/studio-registry/server/document-contract.mjs';
 import {isDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
-import {validateReplyCategories} from '../../web/public/speech-reply-library.mjs';
+import {validateReplyCategories} from '../../packages/presentation/contracts/speech-reply-library.mjs';
 import {assertNativeStudioRequest, nativeStudioErrorResponse, studioNativeRuntime} from './studio-native-runtime.mjs';
 import {createSpeechReplyLibrary} from '../../web/speech-reply-library.mjs';
 import {normalizeNativeStudioRequest} from './studio-native-request.mjs';
