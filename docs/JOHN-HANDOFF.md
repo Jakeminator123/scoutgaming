@@ -66,6 +66,13 @@ Den nya publiceringsprojektionen utelämnar endast inspelningar med status
 `pending` ur nya frysta spelpaket och behåller utkast, register och
 revisionskontroller. Originalfilmer och medie-ID:n bevaras även vid omdöpning.
 
+## Browserprovets täckning — dokumentationsrättning 17 oktober 2026
+
+README skiljer nu CI:s bundle-/API-prov från de två interaktiva browserfallen.
+Browserfallen kräver CROUPIER_BROWSER_FIXTURE_MODULE och hoppas över i dagens
+CI, där variabeln saknas. Inga tester, körvillkor eller produktkontrakt ändras.
+PR197:s fulla CI på efa69d9b var grön; det bevisar inte dessa browserflöden.
+
 ## Verktygsrensning, etapp 1 — 17 oktober 2026
 
 HUVUDAGENT2 arbetar på `codex/retire-obsolete-tools` från main
