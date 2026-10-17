@@ -1,7 +1,8 @@
 import {createServer} from 'node:http';
 import WebSocket, {WebSocketServer} from 'ws';
-import {canonicalPlatformPath, platformConfiguration, PLATFORM_SOCKET_ENDPOINTS, MOVING_WORKER_SOCKET, movingWorkerSocketPath} from './platform-configuration.mjs';
-import {platformSocketRequest, bridgePlatformSocket, platformSocketDiagnostics} from './platform-websocket.mjs';
+import {platformConfiguration} from './configuration.mjs';
+import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, MOVING_WORKER_SOCKET, movingWorkerSocketPath} from './paths.mjs';
+import {platformSocketRequest, bridgePlatformSocket, platformSocketDiagnostics} from './socket-core.mjs';
 
 const BACKEND_FAILURES = new Set([400, 401, 403, 409, 429, 503]);
 
