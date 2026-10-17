@@ -24,8 +24,57 @@ test('another job cannot release the admitted job, and health failures are not z
   let data={id:'other',status:'COMPLETED'};const client=create(async()=>Response.json(data));
   await assert.rejects(client.status({jobId:'ours'}),/job_mismatch/);await assert.rejects(client.cancel({jobId:'ours'}),/job_mismatch/);
   data={id:'ours',status:'COMPLETED'};assert.equal((await client.status({jobId:'ours'})).status,'COMPLETED');
-  data={workers:{idle:0,running:0,initializing:0,ready:0,throttled:0,unhealthy:0}};assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0});
+  data={workers:{idle:0,running:0,initializing:0,ready:0,throttled:0,unhealthy:0}};
+  assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0,scaledDown:{idle:0,initializing:0,throttled:0},unhealthy:0,total:0});
   delete data.workers.ready;await assert.rejects(client.workerState(),/state_unknown/);
+});
+
+test('health classifies scaled-down slots as free capacity and running, ready or unhealthy as occupied',async()=>{
+  let data;const client=create(async()=>Response.json(data));
+  // Cached/pulling/throttled slots are unbilled and must not block a reservation.
+  data={workers:{idle:1,running:0,initializing:1,ready:0,throttled:1,unhealthy:0}};
+  assert.deepEqual(await client.workerState(),{workers:0,busy:0,available:0,scaledDown:{idle:1,initializing:1,throttled:1},unhealthy:0,total:3});
+  data={workers:{idle:0,running:1,initializing:0,ready:0,throttled:0,unhealthy:0}};
+  assert.deepEqual(await client.workerState(),{workers:1,busy:1,available:0,scaledDown:{idle:0,initializing:0,throttled:0},unhealthy:0,total:1});
+  data={workers:{idle:0,running:0,initializing:0,ready:1,throttled:0,unhealthy:0}};
+  assert.equal((await client.workerState()).available,1);
+  data={workers:{idle:0,running:0,initializing:0,ready:0,throttled:0,unhealthy:1}};
+  assert.equal((await client.workerState()).workers,1);
+  for(const bad of [{idle:-1},{running:'1'},{ready:1.5}]){data={workers:{idle:0,running:0,initializing:0,ready:0,throttled:0,unhealthy:0,...bad}};await assert.rejects(client.workerState(),/state_unknown/);}
+});
+
+test('worker records: RUNNING occupies the GPU, EXITED is a free cached slot, unknown status counts as occupied',async()=>{
+  const running={id:'w1',imageName:image,slsVersion:0,desiredStatus:'RUNNING'},exited={id:'w2',imageName:image,slsVersion:0,desiredStatus:'EXITED'};
+  let data={...structuredClone(endpoint),workers:[running,exited]};
+  const client=create(async url=>Response.json(url.includes('/templates/')?endpoint.template:data));
+  // The stopped trial on 2026-10-17 saw exactly this shape with max1 and failed on record count.
+  let receipt=await client.release();
+  assert.deepEqual(receipt.workers.counts,{active:1,scaledDown:1,terminated:0,total:2});
+  assert.deepEqual(receipt.workers.workers.map(w=>w.state),['active','scaled-down']);
+  data={...structuredClone(endpoint),workers:[running,{...running,id:'w3'}]};
+  await assert.rejects(client.release(),/moving_runpod_active_workers_exceeded/);
+  data={...structuredClone(endpoint),workers:[exited,{...exited,id:'w3'},{...exited,id:'w4'}]};
+  receipt=await client.release();assert.equal(receipt.workers.counts.scaledDown,3);
+  data={...structuredClone(endpoint),workers:[exited,{...exited,id:'w3'},{...exited,id:'w4'},{...exited,id:'w5'}]};
+  await assert.rejects(client.release(),/moving_runpod_workers_unknown/);
+  data={...structuredClone(endpoint),workers:[{...exited,desiredStatus:'PAUSED'},running]};
+  await assert.rejects(client.release(),/moving_runpod_active_workers_exceeded/);
+  data={...structuredClone(endpoint),workers:[{...exited,desiredStatus:'TERMINATED'},running]};
+  receipt=await client.release();assert.deepEqual(receipt.workers.counts,{active:1,scaledDown:0,terminated:1,total:2});
+});
+
+test('outdated image or version fails only for records that occupy a GPU',async()=>{
+  let data;const client=create(async url=>Response.json(url.includes('/templates/')?endpoint.template:data));
+  data={...structuredClone(endpoint),version:3,workers:[{id:'old',imageName:image,slsVersion:2,desiredStatus:'EXITED'}]};
+  const receipt=await client.release();
+  assert.deepEqual(receipt.workers.workers,[{image,version:2,isStale:true,state:'scaled-down'}]);
+  data={...structuredClone(endpoint),version:3,workers:[{id:'old',imageName:image,slsVersion:2,desiredStatus:'RUNNING'}]};
+  await assert.rejects(client.release(),/moving_worker_release_mismatch/);
+  data={...structuredClone(endpoint),version:3,workers:[{id:'old',imageName:'foreign-image',slsVersion:3,desiredStatus:'RUNNING'}]};
+  await assert.rejects(client.release(),/moving_worker_release_mismatch/);
+  data={...structuredClone(endpoint),version:3,workers:[{id:'old',imageName:'foreign-image',slsVersion:3,desiredStatus:'EXITED'}]};
+  assert.equal((await client.release()).workers.workers[0].isStale,true);
+  for(const version of [undefined,null,-1,'0']){data={...structuredClone(endpoint),version,workers:[]};await assert.rejects(client.release(),/moving_runpod_workers_unknown/);}
 });
 
 
@@ -139,7 +188,7 @@ test('omitted workers accepts a fresh owned live pod without submitting a job',a
   const f=fallbackClient();
   for(let i=0;i<2;i++){
     const receipt=await f.client.release();
-    assert.deepEqual(receipt.workers.workers,[{image,version:0,isStale:false}]);
+    assert.deepEqual(receipt.workers.workers,[{image,version:0,isStale:false,state:'unknown'}]);
     assert.equal(receipt.workersCorroboration.count,1);assert.equal(f.calls.length,(i+1)*3);
   }
   f.pods[0].slsVersion=1;await assert.rejects(f.client.release(),/moving_worker_release_mismatch/);
@@ -167,5 +216,18 @@ test('fallback cannot admit a stopped endpoint or multiple workers beyond max1',
     const f=fallbackClient({pods,change:{workersMax:0}});await assert.rejects(f.client.release(),/moving_runpod_limits_changed/);
     assert.equal(f.calls.length,1);
   }
-  await assert.rejects(fallbackClient({pods:[fallbackPod(),fallbackPod({id:'worker456'})]}).client.release(),/moving_runpod_workers_unknown/);
+  await assert.rejects(fallbackClient({pods:[fallbackPod(),fallbackPod({id:'worker456'})]}).client.release(),/moving_runpod_active_workers_exceeded/);
+});
+test('live fallback keeps one running worker admissible beside a cached scaled-down slot',async()=>{
+  const f=fallbackClient({pods:[fallbackPod({desiredStatus:'RUNNING'}),fallbackPod({id:'worker456',desiredStatus:'EXITED'})]});
+  const receipt=await f.client.release();
+  assert.deepEqual(receipt.workers.counts,{active:1,scaledDown:1,terminated:0,total:2});assert.equal(receipt.workersCorroboration.count,2);
+  // An outdated cached slot is tolerated; an outdated running worker is not.
+  assert.equal((await fallbackClient({pods:[fallbackPod({id:'worker456',desiredStatus:'EXITED',slsVersion:0}),fallbackPod({desiredStatus:'RUNNING'})],change:{version:0}}).client.release()).workers.counts.active,1);
+  const stale=fallbackClient({pods:[fallbackPod({id:'worker456',desiredStatus:'EXITED',slsVersion:4})]});
+  assert.equal((await stale.client.release()).workers.workers[0].isStale,true);
+  await assert.rejects(fallbackClient({pods:[fallbackPod({desiredStatus:'RUNNING',slsVersion:4})]}).client.release(),/moving_worker_release_mismatch/);
+  // Ownership and a numeric version are still required for every record.
+  await assert.rejects(fallbackClient({pods:[fallbackPod({desiredStatus:'EXITED',endpointId:'foreign123'})]}).client.release(),/moving_runpod_workers_unknown/);
+  await assert.rejects(fallbackClient({pods:[fallbackPod({desiredStatus:'EXITED',slsVersion:null})]}).client.release(),/moving_worker_release_mismatch/);
 });
