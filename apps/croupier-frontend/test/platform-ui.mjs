@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp, readFile, writeFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../lib/platform-routing.mjs';
+import {platformConfiguration, platformRoute, backendPlatformPath, platformBackendHeaders, PLATFORM_SOCKET_ENDPOINTS} from '../../../packages/navigation/server/platform-routing.mjs';
 import {platformUiDocument} from '../lib/server-ui.mjs';
 import {operatorPlayPath} from '../lib/player-operator.mjs';
 import {preparePlatformUi} from '../tools/prepare-platform-ui.mjs';
@@ -34,6 +34,7 @@ test('published roulette browser contracts use exact backend routes without expo
   }
   for (const path of ['/packages/presentation/server/selection.mjs', '/packages/presentation/contracts/studio-model.mjs',
     '/packages/navigation/operator-entry.mjs', '/packages/navigation/admin-workspace-routes.mjs', '/packages/navigation/',
+    '/packages/navigation/server/platform-routing.mjs','/apps/croupier-frontend/lib/platform-routing.mjs', '/game-entry.mjs',
     '/packages/presentation/contracts/policies/project.seed.json', '/public-operator-preview.mjs', '/storage/frozen-dealer-idle.mjs', '/server.mjs']) {
     assert.equal(backendPlatformPath(path), false, path);
     assert.equal(platformRoute(new URL(path, config.publicOrigin), config).kind, 'frontend', path);

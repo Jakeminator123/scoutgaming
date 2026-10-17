@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {playerAreaPage} from '../lib/player-area.mjs';
-import {backendPlatformPath} from '../lib/platform-routing.mjs';
+import {backendPlatformPath} from '../../../packages/navigation/server/platform-routing.mjs';
 import {
   OPERATOR_STORAGE_KEY, clearedOperatorLocation, lobbyOperatorName, operatorChoice, operatorPlayPath,
 } from '../lib/player-operator.mjs';

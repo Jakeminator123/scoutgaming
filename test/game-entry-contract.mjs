@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {publicGamePath,approvedGameQuery,gameEntryRedirect,canonicalGameDestination,decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
+import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
+import {publicGamePath, approvedGameQuery, gameEntryRedirect, canonicalGameDestination} from '../packages/navigation/game-entry.mjs';
 import {dealerVersionPath} from '../web/public/dealer-version-switcher.mjs';
 const env = {CROUPIER_STUDIO_NEON_POLICY:'1'},origin = 'https://game.example.invalid';
 test('canonical game address is gated and aliases preserve only unambiguous public selectors',() => {

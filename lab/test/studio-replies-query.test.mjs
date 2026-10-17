@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseStudioRepliesRequest,isStudioRepliesReadQuery} from '../lib/studio-replies-query.mjs';
 import {normalizeNativeStudioRequest} from '../lib/studio-native-request.mjs';
-import {platformRoute} from '../../apps/croupier-frontend/lib/platform-routing.mjs';
+import {platformRoute} from '../../packages/navigation/server/platform-routing.mjs';
 
 const origin='https://public.example.invalid',labOrigin='https://studio.example.invalid';
 const config={allowedOrigins:[origin,labOrigin],publicHosts:['public.example.invalid','studio.example.invalid'],apiBase:'/studio/api/admin',authBase:'/studio/api/auth'};

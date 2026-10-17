@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { platformConfiguration, platformRoute, platformBackendHeaders } from './lib/platform-routing.mjs';
+import { platformConfiguration, platformRoute, platformBackendHeaders } from '../../packages/navigation/server/platform-routing.mjs';
 
 export function middleware(request: NextRequest) {
   const config = platformConfiguration();

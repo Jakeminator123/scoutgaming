@@ -665,6 +665,10 @@ Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
 webb, Studio och taltransport som Services. Talservicen i
 `apps/croupier-speech` delar befintlig origin-/ingresskonfiguration genom
 `packages/server-transport/configuration.mjs`; inga nya nycklar behövs.
+Gemensam serverrouting för frontend, Studio och Render-ingress ägs av
+`packages/navigation/server/platform-routing.mjs`, med relativa källimporter till
+rena navigationskontrakt och samma transportkonfiguration. Modulflytten ändrar
+inga miljönycklar, origins, ingressvalidering eller behörigheter.
 `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 `CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
 publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.

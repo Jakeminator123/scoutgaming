@@ -1,8 +1,20 @@
 # Aktuell handoff — Scoutgaming
 
+## Lokal agent-talk-kö — separat fix 17 oktober 2026
+
+Full kö blockerar inte nästa ping: äldsta meddelandet sparas före det
+atomiska köbytet under `arkiv/<datum>/agent-talk/pings/`. Kapacitet och
+arkivantal syns i status; äldre obesvarade meddelanden läses och kvitteras
+av mottagaren. Claims, andra checkouter, molntjänster och media ändras inte.
+Se [Agent-talk](../agent-talk/README.md) för kommandon och avbrottsåterhämtning.
+Riktad verifiering täcker samtidighet, kapacitet, mottagarkvittens,
+arkivfel och avbrutna filbyten. Originalrepots befintliga kö töms inte av
+kodleveransen; rotation sker först när det uppdaterade verktyget tar emot
+en ny ping i just den checkouten.
+
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
-`502bea812d4e8597f4951c85ae712bd338b02a1d`; etapp 3 levereras i avgränsade delar.
+`1d2fe0521ee033b8a9349eb47ef6765695e59bb9` (PR212); senare delar inväntar sina separata driftkvitton.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
@@ -125,73 +137,48 @@ Bankartefaktfilens enda skillnad mot PR213 är C2h:s `./blob-media.mjs`-import.
 Gatewayns egna låsta `ws`-beroende är installerat för integrationsproven;
 ingen tjänststart, junctionändring eller ändrat manifest/lås ingår.
 
-## Etapp 3 C2g: gemensam publik katalog och navigation — lokal ändring 17 oktober 2026
+## Etapp 3 C2g: gemensam publik katalog och navigation — 17 oktober 2026
 
-`packages/player-catalog` äger nu `operatorPublicView`,
-`loadOperatorCatalogue` och `loadRoomCatalogue` samt deras resultattyper.
-Frontend och Studios publika lobby kopplar in de befintliga slug- och
-rumvalidatorerna via små lokala kompositioner. Paketet importerar ingen appkod;
-Studios katalogadapter importerar inte längre privata frontendmoduler.
-Login-/speladresser, sessioner, rumsväljning och sparade preferenser stannar
-i apparna. API-adresser, tenantkontroller, ID:n, felutfall och returformat
-är oförändrade. Inga gamla katalogfunktioner återexporteras från player-lobby
-eller player-operator. Rumkontrakten ligger fortsatt i web/public och
-dealeridentiteten i det gemensamma presentationskontraktet. Bolagssluggen
-har därefter fått en gemensam ägare enligt navigationssteget nedan.
+`packages/player-catalog` äger katalogläsning och resultattyper. Frontend och
+Studios lobby binder samma slug-/rumvalidatorer genom egna kompositioner;
+lobbyn importerar inte längre frontendens privata kod. Alla tre flyttade
+katalogfunktioner har oförändrade kroppar. Sessioner, login-/spelstarter,
+rumval och sparade preferenser stannar i apparna.
 
-Lokalt på Node 24.21.0: 63 befintliga katalog-/bolagsgräns-/lobby-/profilprov
-passerar, noll fel och ett uttryckligt browser-opt-in-prov ej kört.
-Frontendens och lobbyklientens typkontroller är gröna. En publik lobbybundle
-byggd i minnet innehåller det gemensamma paketet och ingen privat frontendkod.
-Mekanisk jämförelse mot basversionen bekräftar oförändrade kroppar för alla
-tre flyttade funktioner. Inget produktbygge, ny testfil, moln-/SQL-/medieändring
-eller nytt driftkvitto ingår. Egen C2g-commit 808cce07 har grön ordinarie hook
-(25 prov). Efter lokal integration av C2c/UI-head 5a1f4332 passerar samma
-63 prov och båda typkontrollerna igen; funktionskropparna är fortfarande
-oförändrade och lobbybundlen saknar privat frontendkod. Endast handoffen
-hade Git-konflikt, och båda etappkvittona bevaras. Integrationen lämnas utan
-mergecommit för huvudagentens granskning; CI och drift återstår.
+`packages/navigation` äger rena Admin-/Control-/Partner-adresser, operatorval
+samt den gemensamma slugregeln som ersätter fyra identiska implementationer.
+SQL-lagrets annorlunda lagringsvalidator bevaras. Studios HTTP-adapter är
+`lab/lib/legacy-studio-document.mjs`; förbrukade routefiler och wrappers tas
+bort. Operator-slug och den rena speladressmodulens exakta URL:er finns i befintlig allowlist.
+Alla konsumenter, isolerade kopieringslistor och QA-källor följer ändringen.
 
-C2g:s navigationssteg ovanpå `c94a216d` flyttar rena Admin-/Control-/Partner-
-adresser till `packages/navigation`. `requestedOperator` och den oförändrade
-404-sidan bryts ur spelserverns tunga urvalsmodul. En kanonisk slugpredicate
-ersätter fyra identiska implementationer; session- och behörighetsregler
-ändras inte. SQL-lagrets separata lagringsvalidator har annan semantik och
-bevaras. Studios HTTP-redirectadapter ligger kvar som
-`lab/lib/legacy-studio-document.mjs`. Gamla routefiler och reexportwrappers
-behålls inte. Alla aktuella konsumenter, testladdare, isolerade serverkopior
-och QA-källistan följer flytten. Bara `/packages/navigation/operator-slug.mjs`
-läggs till i den befintliga exakta browserallowlisten; HTTP-handlern ändras inte.
+C3-förkontrollen hittade två återstående privata routingkanter. Samma verkliga
+serverrouting ligger nu i `packages/navigation/server/platform-routing.mjs`;
+Studio, frontend och Render-ingress importerar neutral källkod direkt.
+Sex rena adress-/queryfunktioner ligger i `packages/navigation/game-entry.mjs`
+med kanoniska dealer-/lane-/slugregler. HTML/presentation och previewvalidering
+stannar i `web/public/game-entry-contract.mjs`. Gamla routingfilen tas bort;
+inga wrappers eller nya npm-/SDK-beroenden. Endast speladressmodulens exakta
+kanoniska URL är publik; serverrouting och felaktiga alias nekas för GET/HEAD.
 
-Node 24.21.0: första riktade körningen gav 181 pass, tre integrationsfel och
-fyra browser-opt-in-skips. Två testimporter och routingens paketfilter rättades.
-Berörda prov tillsammans med server-/lobbyintegration passerar sedan 141/141,
-med ett browser-opt-in-skip; dessa körningar överlappar delvis. Det separata
-HTTP-provet för hela den publika importgrafen passerar också. Frontend, Studio,
-Admin och Lobby klarar typkontroll. Testinventeringen visar 512 kandidater,
-noll oklassificerade och nio helper/opt-in. Mekaniska jämförelser bekräftar
-oförändrade katalogfunktioner, rena Adminregler, legacy-redirectkropp,
-Controlregler, entréblock och slugpredicate; navigationspaketet importerar
-bara egna rena moduler. Befintliga installationer används läsande med samma
-manifest/lås (frontendlåset skiljer enbart radslut). Inga nya tester,
-installationer, fullbyggen, commits, molnändringar eller driftkvitton ingår.
-Integrationen ska behålla C2f:s transportimporter och C2h:s nya lagringsimporter;
-deras konsumentfiler överlappar. PR211:s separata HEAD-handlerfix ska bevaras.
+Routing-, query- och dekorationskropparna samt 16 appkonsumenters övriga
+runtimekroppar är mekaniskt oförändrade mot `48a75523`. Neutral closure har
+11 moduler utan app-/SDK-importer eller cykler. Berörda befintliga prov ger
+166 pass och en befintlig browser-opt-in, plus ett verkligt GET/HEAD-importgrafprov.
+En förbrukad råbyte-kopieringsassertion ersattes av befintlig importgraf-/login-
+täckning och explicit publik/privat paketering; endast dess provfil kördes om
+(2/2). Frontendens och Studios typer passerar. Utökningen är parentgranskad och
+ordinarie hook gav312 pass/0 fail/1 befintlig browser-opt-in samt gröna frontendtyper. Ingen fullsuite eller fullbuild upprepades.
 
-Förberedd C2g-integration av C2f `d19636c6` utan commit: routing använder
-både kanonisk navigation och transportpaket; game-lanes använder båda
-kanoniska ID-/slug-validatorerna. Båda exakta publika modulvägarna och
-C2e-/PR211-rättningarna bevaras. Tre konflikter är lösta, syntax och diffcheck
-är gröna; routingens och lane-funktionernas kroppar är mekaniskt oförändrade
-från C2g. Frontendens gamla dependencyjunction har ersatts av egen låst
-pnpm-installation; rootmålet är bevarat. Speech har egen Node22-installation.
-Manifest och lås är oförändrade. 41 befintliga routing-/katalogprov passerar;
-commitgrinden kör därutöver typkontroll och befintliga transport-/HEAD-/
-repositoryprov. Inget nytt fullbygge, CI eller driftkvitto ingår. Den senaste
-GitGuardian-incidentläsningen gav HTTP429, så dess täckning är ofullständig.
-Första hooken fann en kvarvarande slug-import i `ops/cloud/vercel-ingress.mjs`;
-den pekar nu direkt på navigationskontraktet, med oförändrad funktionskropp.
-
+Katalog-/navigationsprov, publik importgraf, klientbundling och frontendens,
+Studios och lobbyklientens typkontroller har passerat. Katalogkroppar och
+navigationsregler är mekaniskt jämförda; testinventeringen har noll
+oklassificerade kandidater. C2f-integrationen a2380b32 passerade41 riktade
+prov och ordinarie hook215/215 plus frontendtyper med egna låsta frontend-
+och speechinstallationer. Renderfixen och PR213 är integrerade med samma navigation och direkta
+transportimporter; senaste integrationshook passerade138/138 och frontendtyper.
+Main inklusive PR214/216 är integrerad normalt, utan ändrad kod i slutintegrationen. CI och driftkvitto för C2g återstår.
+Inga nya tester eller provider-/SQL-/medieändringar ingår i katalogsteget.
 ## C2f Render-paketering — rättning före PR214-merge
 
 Render installerar gateway, web och Lab, medan frontend/speech har egna beroenden.
@@ -1099,3 +1086,16 @@ och PR188/190. Fasens egna körskript, utkast och temporära CI-loggar är rensa
 av exakta PR-huvuden och main-innehåll. PR189:s avslutade worktree
 `simplify-test-policy` togs bort med återställningsbar Codex-snapshot.
 STÄD-CL:s och lipsyncs arbetsytor bevarades.
+
+C2h leveransförberedelse: C2g `c53b27b7` integrerades normalt i
+`a515539f` som `cd30e022`. Två rutinkonflikter förenade handoffen och
+routingens nya importdjup. 21 kärn-/adapter-/routingfiler är identiska med
+sina granskade heads; PR213:s nio produktfiler är oförändrade mot C2h-basen,
+inklusive C2h:s appägda Blob-import. Ordinarie hook gav 317 pass, 0 fail
+och ett befintligt browser-opt-in; frontendtypkontrollen passerade.
+
+Slutg `ec16b705899ec880eb3dd571361f517be4ef10c1` tas därefter in med
+normal merge och enbart dokumentdiff. Den inkluderar main
+`05cbc22de9c6637cb9ea642c6f697a093dae42af` (PR214/PR213). Inga lås,
+beroendeinstallationer, junctionmål eller produktbeteenden ändrades här.
+Inget nytt fullbygge, push, PR eller driftkvitto ingår i denna förberedelse.

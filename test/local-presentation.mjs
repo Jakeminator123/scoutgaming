@@ -88,7 +88,7 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
   for(const path of ['/packages/presentation/runtime/live-idle.mjs','/packages/presentation/runtime/idle-policy.mjs',
     '/packages/presentation/contracts/dealer-identity.mjs','/packages/presentation/contracts/policies/idle-policy.seed.json',
     '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json',
-    '/packages/presentation/contracts/game-lane-id.mjs'])assert.ok(visited.has(path),path);
+    '/packages/presentation/contracts/game-lane-id.mjs','/packages/navigation/game-entry.mjs'])assert.ok(visited.has(path),path);
   for (const name of ['dealer-framing','composition-settings']) {
     const alias = await fetch(origin+'/'+name+'.mjs');
     const canonical = await fetch(origin+'/packages/presentation/contracts/'+name+'.mjs');
@@ -102,6 +102,8 @@ test('local server dispatch serves GET/HEAD for the complete browser import grap
   }
   for(const path of ['/web/server.mjs','/web/public/app.mjs','/web/public/dealer-identity.mjs/extra',
     '/web/public/dealer-identity.mjs.bak','/packages/presentation/runtime/selection.mjs',
+    '/packages/navigation/server/platform-routing.mjs','/apps/croupier-frontend/lib/platform-routing.mjs',
+    '/packages/navigation/game-entry.mjs/extra','/packages/navigation/game-entry.mjs.bak','/game-entry.mjs',
     '/packages/presentation/contracts/presentation-room.mjs', '/packages/presentation/contracts/operator-lifecycle-key.mjs',
     '/packages/presentation/server/registered-dealer-idle.mjs', '/packages/studio-registry/server/repository.mjs',
     '/packages/presentation/contracts/game-lane-id.mjs/extra', '/packages/presentation/contracts/game-lane-id.mjs.bak',

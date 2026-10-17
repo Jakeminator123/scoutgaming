@@ -1,5 +1,16 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Lokal pingkö — 17 oktober 2026
+
+`agent-talk` behåller de 40 senaste obesvarade pingarna i den aktiva kön.
+Vid överflöde sparas äldre pingar återställbart i checkoutens kanoniska
+`arkiv/<datum>/agent-talk/pings/`. `status <id>` visar total kapacitet och
+arkivantal; `archived <id> [sida]` visar äldre obesvarade pingar. Mottagaren
+kvitterar dem med vanlig `ack`, utan automatisk väckning, återuppspelning
+eller frigöring av gamla claims. Skrivfel lämnar kön kvar; instruktioner
+och återhämtning finns i [Agent-talk](../../agent-talk/README.md).
+Olika checkouter har fortfarande separata tavlor.
+
 ## Strukturfas avslutad — 17 oktober 2026
 
 PR188 och PR190 är mergade och driftsatta; slutkvitto och parallella

@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {createOperatorAppearanceApi} from '../web/operator-appearance-api.mjs';
 import {createOperatorPackageReader} from '../web/storage/operator-package-reader.mjs';
 import {createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets} from '../web/public/operator-appearance-boundary.mjs';
-import {backendPlatformPath} from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import {backendPlatformPath} from '../packages/navigation/server/platform-routing.mjs';
 
 const {parse}=createRequire(new URL('../lab/package.json',import.meta.url))('next/dist/compiled/acorn');
 const [serverSource,appSource]=await Promise.all(['../web/server.mjs','../web/public/app.mjs'].map(path=>readFile(new URL(path,import.meta.url),'utf8')));

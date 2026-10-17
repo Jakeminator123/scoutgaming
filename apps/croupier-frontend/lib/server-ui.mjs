@@ -1,8 +1,9 @@
 import {playerHandoffDestination} from '../../../web/public/player-handoff.mjs';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {platformConfiguration,platformBackendHeaders,blackjackLobbyDestination} from './platform-routing.mjs';
-import {gameEntryEnabled,gameEntryRedirect,approvedGameQuery,decorateGameEntryHtml,playerLoginDestination} from '../../../web/public/game-entry-contract.mjs';
+import {platformConfiguration,platformBackendHeaders,blackjackLobbyDestination} from '../../../packages/navigation/server/platform-routing.mjs';
+import {decorateGameEntryHtml} from '../../../web/public/game-entry-contract.mjs';
+import {gameEntryEnabled, gameEntryRedirect, approvedGameQuery, playerLoginDestination} from '../../../packages/navigation/game-entry.mjs';
 import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-entry.mjs';
 
 const DOCUMENTS = new Map([

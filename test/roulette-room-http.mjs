@@ -3,7 +3,7 @@ import {zoomComposition} from '../lab/lib/composition-zoom.mjs';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {rouletteDocument} from '../web/games/roulette/http.mjs';
-import {backendPlatformPath} from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import {backendPlatformPath} from '../packages/navigation/server/platform-routing.mjs';
 import {BETS,BET_BY_ID} from '../web/games/roulette/rules.mjs';
 import {tableBetGeometry,chipBreakdown,TABLE_ARTWORK} from '../web/public/roulette/table-layout.mjs';
 import {readFileSync} from 'node:fs';
