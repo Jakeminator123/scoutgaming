@@ -82,6 +82,25 @@ har kvar samma ID/namn och workergränser 0–1. Beräknad GPU-/diskkostnad:
 Privata resultat finns i denna chatts `visualizations`-katalog under
 `dragan-gpu-result/`; de är authoring-/testunderlag och ligger inte i Git.
 
+**Lokalt rörelseprov 17 oktober:** Jakob bad om utdelning till box 3 och
+”Jakob är kung”. Neon-profilens befintliga ElevenLabs-klon `Dragge`
+(`7f95xPL4S3ySZ4OS1pw8`, `eleven_multilingual_v2`) verifierades och användes
+för ett enda TTS-anrop med profilens sparade inställningar. Klippet
+`d207c889-cede-41be-98a9-4355ffc1f1c2` är registrerat som `box3`,
+`Kevin pos4-iv`; dess aktuella Neon-hash matchade den bevarade Blob-kopian.
+Emils motor och samma verifierade modellvikter kördes i en isolerad WSL-miljö
+på Jakobs RTX 3060, 12 GB. Hela utdelningen behölls: 66 rutor/2,75 sekunder,
+utan loop eller fryst slutruta; repliken använde exakt ruta 8–57. Bildrutorna
+i testbanken matchade originalets avkodade YUV-byte före läppsynk.
+FFmpeg verifierade H.264/AAC och full avkodning av resultatet. Tre utvalda
+ansiktsbilder granskades; full audiovisuell acceptans är fortfarande öppen.
+Renderingen av 50 talrutor tog 4,245 sekunder (11,8 fps), alltså ett
+**offlineprov, inte verifierat direkttal**. Ingen ny RunPod-resurs startades.
+Privat video: `dragan-jakob-ar-bast/dragan-box3-jakob-ar-kung.mp4` i samma
+visualizations-katalog, med kvitto `preview-receipt.json`; video-SHA-256
+`56ab4888c9677ba17fcd1495c04a5a170483f2e92f7a126ffbc4163641cc2c89`.
+Original, röstprofil, produktionsregister och Astrids tjänst ändrades inte.
+
 Jakob påpekade att äldre Blob-filmer och Neon-/UX-registreringar kan vara fel
 eller inaktuella. Den verifierade banken är därför en **teknisk testbaseline**:
 exakta byte/ID:n bevisar inte rätt spelhändelse eller senaste tagning. Original,
