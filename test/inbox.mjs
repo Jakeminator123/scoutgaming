@@ -22,7 +22,8 @@ test('every person owns exactly one branch and "me" resolves through the current
   assert.throws(() => ownerOfBranch('feature-x'), /Ingen i inbox\/people.json äger grenen "feature-x"/);
   assert.deepEqual(recipients('me', 'john'), ['john']);
   assert.deepEqual(recipients('me,john', 'john'), ['john']);
-  assert.throws(() => recipients('me', 'preview'), /äger grenen "preview"/);
+  assert.throws(() => recipients('me', 'codex/example'), /Ange --to med ett namn/);
+  assert.deepEqual(recipients('jakob', 'codex/example'), ['jakob']);
 });
 
 test('inbox targets the policy repository and knows the four people', () => {
