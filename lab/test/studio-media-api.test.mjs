@@ -8,7 +8,7 @@ import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.m
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../web/storage/studio-contract.mjs';
 import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
 import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
-import { negotiatePresentationCapabilityVersion, presentationCapabilitiesForVersion, PRESENTATION_CAPABILITY_VERSION_HEADER } from '../../web/presentation-capability-contract.mjs';
+import { negotiatePresentationCapabilityVersion, presentationCapabilitiesForVersion, PRESENTATION_CAPABILITY_VERSION_HEADER } from '../../packages/presentation/capability-contract.mjs';
 
 test('native classify blocks alpha and roulette on v11 before SQL, bytes or transaction admission',async()=>{
   for(const change of [{compositing:{mode:'alpha'}},{kind:'action',eventId:'roulette.wheel-start',situation:'wheel-start',game:'roulette',action:'wheel-start',startPose:'VILA',endPose:'WHEEL'}]){

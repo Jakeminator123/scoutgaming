@@ -1,6 +1,6 @@
 import {
   PRESENTATION_CAPABILITY_VERSION_HEADER, negotiatePresentationCapabilityVersion, presentationCapabilitiesForVersion,
-} from './presentation-capability-contract.mjs';
+} from '../packages/presentation/capability-contract.mjs';
 
 export function presentationCapabilitiesResponse(request) {
   const url = new URL(request.url);

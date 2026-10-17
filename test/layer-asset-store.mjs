@@ -5,7 +5,7 @@ import {createStudioRepository} from '../web/storage/studio-repository.mjs';
 import {createSeedProject,addDealer} from '../lab/lib/studio-model.mjs';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {wrapNativePresentationRepository} from '../lab/lib/presentation-runtime-readiness.mjs';
-import {presentationCapabilitiesForVersion} from '../web/presentation-capability-contract.mjs';
+import {presentationCapabilitiesForVersion} from '../packages/presentation/capability-contract.mjs';
 import {createLayerUploadService} from '../lab/lib/layer-upload-service.mjs';
 import {createLayerAssetApi} from '../lab/lib/layer-asset-api.mjs';
 import {validateLayerAsset,layerAssetPath,layerAssetFitsGame} from '../web/layer-asset-contract.mjs';

@@ -1,4 +1,4 @@
-import { MEDIA_FILE_TYPES } from './media-file-types.mjs';
+import { MEDIA_FILE_TYPES } from '../../packages/shared/media-file-types.mjs';
 import { labUrl } from './lab-url.mjs';
 import {nativeMediaFileError} from './native-media-intake.mjs';
 import {inspectAlphaFile} from './media-alpha-browser.mjs';

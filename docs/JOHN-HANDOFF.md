@@ -6,6 +6,29 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3: första gemensamma kontrakten — 17 oktober 2026
+
+`media-file-types.mjs` ligger nu i `packages/shared/` och
+`capability-contract.mjs` i `packages/presentation/`. Båda implementationerna
+är oförändrade och importfria. Studio, spelserver, bundlad klient och tester
+läser samma kanoniska filer direkt; gamla källfiler och wrappers finns inte
+kvar. Den isolerade QA-källistan och aktiva formatguider följer flytten.
+Publik capability-endpoint, versionsförhandling och mediaregler är oförändrade;
+ingen ny statisk modul-URL eller dependency behövs.
+
+Första riktade MIME/header-, medieklassnings-, capability- och readinessproven
+passerar 81/81 utan skips. Ordinarie hook, CI och driftkvittot redovisas vid
+leverans. Detta är första delen av etapp 3: auth, presentationsorkestrering,
+lagring, appägarskap och gamla källrötter återstår. Ingen ny medie- eller
+läppsynksacceptans ingår.
+
+Full CI hittade ytterligare två isolerade källträd som kopierade de gamla
+appkatalogerna men inte de nya paketfilerna. Den gemensamma serverfixturen
+kopierar nu capability-kontraktet, och baslinjearkivet tar med MIME-modulen.
+Ett befintligt bootstrap-prov saknade dessutom klientens kalibreringsmodul i
+sin källkopia; den tas nu med. Fixturerna behåller sina isolerade data och
+utvidgas inte till hela paketträd.
+
 ## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
 
 PR202 är mergad på `f16b5eac5838d424c5e9fafe804f5024a809af62` med grön

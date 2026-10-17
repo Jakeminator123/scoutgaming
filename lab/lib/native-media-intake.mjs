@@ -1,4 +1,4 @@
-import {NATIVE_MEDIA_FILE_TYPES,mediaContentType} from './media-file-types.mjs';
+import {NATIVE_MEDIA_FILE_TYPES,mediaContentType} from '../../packages/shared/media-file-types.mjs';
 import {MAX_VIDEO_BYTES} from './video-intake.mjs';
 
 export const NATIVE_MEDIA_ACCEPT=Object.values(NATIVE_MEDIA_FILE_TYPES).map(extension=>'.'+extension).join(',');

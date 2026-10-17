@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { presentationCapabilitiesResponse } from '../web/presentation-capabilities.mjs';
-import { validatePresentationCapabilities } from '../web/presentation-capability-contract.mjs';
+import { validatePresentationCapabilities } from '../packages/presentation/capability-contract.mjs';
 const endpoint = 'https://engine.example.invalid/api/presentation/capabilities';
 
 test('v12 announces strict PNG/VP9 alpha and roulette media while preserving v11 features',async()=>{

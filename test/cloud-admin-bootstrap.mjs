@@ -41,6 +41,8 @@ async function fixture(t) {
   for (const file of await readdir(publicWeb)) {
     if (file.endsWith('.mjs')) await copyFile(new URL(file, publicWeb), join(webDir, 'public', file));
   }
+  await mkdir(join(webDir, 'public/card-presentation'), {recursive: true});
+  await copyFile(new URL('card-presentation/calibration.mjs', publicWeb), join(webDir, 'public/card-presentation/calibration.mjs'));
   const portSocket = createServer();
   portSocket.listen(0, '127.0.0.1');
   await once(portSocket, 'listening');
