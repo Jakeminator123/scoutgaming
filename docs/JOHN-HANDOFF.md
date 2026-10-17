@@ -9,8 +9,9 @@ och Node22.23.1; frontend behåller Node24.21.0/pnpm10.33.2 och samma låsfil.
 Ignorerade data, gamla dependencyjunctions och byggmappar har inte flyttats.
 
 Basen dfca4db98da15e0221c820d8fe7bfdc7f8795c15 förenar O/N, J/main218 och
-PR223:s rättade e3e9f8e7. Källflytten bevarar alla ursprungliga filbytes;
-23 filer har enbart exakta sökvägsbyten. Publika URL:er, medieidentiteter och
+PR223:s rättade e3e9f8e7. Vid själva flyttsteget bevarades ursprungliga body- och mediebytes;
+därefter fick 23 filer enbart exakta sökvägsbyten. Dokumentation och de tre
+exakta ignore-reglerna har egna redovisade anpassningar. Publika URL:er, medieidentiteter och
 protokollvärden består. Historiska npm-/importnamn är inte nya källrötter.
 
 Verifierat lokalt: samtliga 12 frontendtestfiler 117/117 med fyra workers,

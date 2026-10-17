@@ -327,8 +327,7 @@ Det visar konfiguration, inte att alla fem används eller att varje samtal anvä
 grundmodellen. Ingen roll raderas på antagandet att den är inaktiv.
 
 | Roll | Vem anropar den? | Uppgift |
-| --- | --- |
-| 2026-10-17 | Frontendens spårade källrot är apps/web. CI, lokala hooks och miljöregistret följer samma rot; testtäckning och separat Node22-speechsteg består. Gamla ignorerade data och dependencyjunctions har inte flyttats. Lokal verifiering och återstående leverans framgår av JOHN-HANDOFF. | --- |
+| --- | --- | --- |
 | croupier-director | Presentationsrådgivning i OpenClaw-/shadow-läge | Väljer bland tillåtna, kompatibla klippvarianter |
 | croupier-chat | Äldre operatörschatt via Director | Förklarar konfiguration; skriver inte |
 | croupier-operator | OpenClaws egen dashboard | Separat administrativ konversation |
@@ -531,6 +530,7 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-17 | Frontendens spårade källrot är apps/web. CI, lokala hooks och miljöregistret följer samma rot; testtäckning och separat Node22-speechsteg består. Gamla ignorerade data och dependencyjunctions har inte flyttats. Lokal verifiering och återstående leverans framgår av JOHN-HANDOFF. |
 | 2026-10-17 | Inboxen läser etiketter med paginering och skapar bara saknade etiketter utan att skriva över befintlig metadata. `done` kräver inboxetikett och verifierad GitHub-skapare; delade konton kan inte särskiljas. 19 lokala inboxprov passerar. Läsanrop verifierade mot GitHub; inga etiketter eller ärenden ändrade i provet. Agent-talk-rensning och övriga förslag i den externa reviewen ingår inte. |
 | 2026-10-17 | På Jakobs begäran arbetar tre underagenter med fryst importkontrakt, atomiska Forge-referenser/raderingsinspektion och separat workerpaket. Huvudchatten äger transport, Git och dokumentation; Admin-chatten äger klippkartan. OpenClaw behåller dynamiska textbeslut. Storage-/runtimeguiderna skiljer implementerade kontrakt från återstående import, molnbygge och spelaraktivering. Ingen media eller Astrid-tjänst raderas. |
 | 2026-10-16 | Integrationsgranskningen rättade klientundantaget så beroende-/schema-/konfigurationsfiler fortfarande kräver migrationskontroll. Admins testplan kontrollerar nu faktisk globexpansion och har ett negativt prov för bortfallen Studio-täckning. Sidochattens förenkling ingår i den befintliga PR185-leveransen; aktuell slutstatus finns i JOHN-HANDOFF. |
