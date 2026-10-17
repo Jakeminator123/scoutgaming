@@ -2,20 +2,22 @@
 
 ## C3 — Studiointegration efter överlämning, 18 oktober 2026
 
-Den överlämnade normala mergetillståndet är slutfört som32a49f99. En saknad
-lokal Next-installation löstes med egen låst npm ci i apps/studio; ordinarie
-integrationshook passerade därefter132tester,0fel och1befintligt SQL-opt-in.
-Inga assertions togs bort. App- och paketträden skiljer sig från den tidigare
-byggda Studio-revisioneneaca2e35 endast i apps/studio/client/README.md.
-Aktiva Studio-sökvägar i återställningsguiden är uppdaterade; historisk
-lab/data och privata återställningsreferenser är oförändrade.
+Budget-PR230:s levererade main fc7085e731e53012e058372f9afe0b28edb5ddad
+är normalt integrerad som 57f44508. Budget-, journal-, server- och SQL014/
+migrationsimplementationen är identisk med main. Konflikter löstes genom att
+bevara budgettestets fullhook-registrering och använda Studios nya källrot.
+Ordinarie integrationshook: 152 tester gröna, 0 fel, 1 befintligt SQL-opt-in.
 
-Mergagentens slutkvitto för speech-PR231: mainbe438e87baaba1db2fa7957440d85dedf9539f50,
-main-CI39074653989 success, faktisk Vercel/Render-paritet och8/8tal-ingress/
-obehörig-WebSocketkontroller22:27:55Z. Detta är tillskrivet driftkvitto.
-Budget-PR230:s slutliga main ska integreras före Studio-push; dess nya SQL014
-och migrationskod ingår inte i det äldre lokala Studio-byggkvittot.
-Rootleveransens slutliga CI, byggtraces och drift kvarstår separat.
+Den tidigare övertagna integrationen slutfördes som 32a49f99: 132 tester
+gröna, 0 fel, 1 SQL-opt-in efter egen låst Next-installation. Inga assertions
+togs bort. Aktiva återställningsvägar är uppdaterade; historiska lab/data och
+privata återställningsreferenser är bevarade.
+
+Det tidigare Studio-bygget på eaca2e35 verifierade 80 kompletta traces.
+Nya SQL014 ingår inte i det byggkvittot: slutlig PR-CI, byggtraces och faktisk
+Vercel/Render-paritet återstår. Ingen ny produktionsmigration eller GPU-körning
+görs här. Mergagent äger driftkvittot; lipsync2 äger senare budgetaktivering
+och talprov efter hela rotkedjan.
 
 ## C3 — Studios källrot apps/studio, lokalt 17 oktober 2026
 
