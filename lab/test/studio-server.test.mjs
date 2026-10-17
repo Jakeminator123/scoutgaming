@@ -4,6 +4,8 @@ import test from 'node:test';
 import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { } from '../lib/studio-model.mjs';
 import * as implementation from '../lib/studio-server.mjs';
+import { StudioError } from '../lib/project-store.mjs';
+import { selectPresentation } from '../lib/presentation-selection.mjs';
 
 // These are the legacy classification/2D tests. Manifest playback has its own
 // explicit fixture, so a developer's current video bank cannot change results.
@@ -239,6 +241,9 @@ test('remote failures and stale advice retain safe baseline without reflecting r
 
 test('video bindings must reference inventory IDs; known unavailable originals can remain references', async () => {
   const project = createSeedProject();
+  const missingRegistry = error => error instanceof StudioError && error.statusCode === 503;
+  await assert.rejects(server.validateVideoBindings(project), missingRegistry);
+  await assert.rejects(selectPresentation(body({ project, mode: 'off' })), missingRegistry);
   project.lines[0].variants[0].videoGenerationId = videoId;
   await server.validateVideoBindings(project, { registry });
   const result = await server.simulateStudio(body({ project, mode: 'off' }), { settings: settings(), fetchImpl: noFetch, videoRegistry: registry });

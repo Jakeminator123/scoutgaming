@@ -40,6 +40,8 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'web/storage/presentation-package.mjs', 'web/storage/frozen-presentation-capture.mjs', 'web/storage/frozen-dealer-idle.mjs',
       'web/presentation-room-contract.mjs', 'web/public/game-lanes.mjs', 'web/public/composition-settings.mjs',
       'web/presentation-layers.mjs', 'lab/lib/studio-model.mjs',
+      'packages/shared/studio-error.mjs', 'packages/presentation/server/selection.mjs', 'packages/presentation/server/video-bindings.mjs',
+      'lab/lib/presentation-selection.mjs', 'lab/lib/presentation-video-bindings.mjs', 'lab/lib/studio-director.mjs',
       'ops/neon-game/007-roulette-tables.sql', 'test/roulette-postgres.mjs', 'web/games/roulette/room.mjs', 'web/games/roulette/storage.mjs', 'web/games/roulette/access.mjs', 'web/games/roulette/index.mjs', 'web/games/roulette/rules.mjs',
       'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
       'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'lab/lib/partner-session.mjs', 'lab/lib/partner-team-api.mjs', 'lab/lib/operator-audit-context.mjs', 'lab/lib/operator-admin-api.mjs', 'lab/lib/operator-journal.mjs',

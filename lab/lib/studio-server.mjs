@@ -4,7 +4,8 @@ import { readSettings } from '../../open-claw/lab/src/settings.mjs';
 import { chatWithDirector } from '../../open-claw/lab/src/openclaw.mjs';
 import { validateProject } from './studio-model.mjs';
 import { StudioError } from './project-store.mjs';
-import { selectPresentation, remoteRequest } from '../../packages/presentation/runtime/selection.mjs';
+import { selectPresentation } from './presentation-selection.mjs';
+import { remoteRequest } from './studio-director.mjs';
 import { buildOperatorCatalog } from './operator-catalog.mjs';
 import { studioRenderPersistence, assertRenderStudioWritable } from './studio-render-persistence.mjs';
 
@@ -36,7 +37,9 @@ export async function studioInitialData() {
   return { project, videos, status: comparisonStudio()?{configured:true,provider:'isolated-fixture',message:'Isolerad testlagring. Externa tjänster är avstängda.'}:connectionStatus() };
 }
 
-export { remoteRequest, decisionCatalog, validateVideoBindings } from '../../packages/presentation/runtime/selection.mjs';
+export { remoteRequest } from './studio-director.mjs';
+export { decisionCatalog } from './presentation-selection.mjs';
+export { validateVideoBindings } from './presentation-video-bindings.mjs';
 export async function simulateStudio(body, options = {}) {
   return selectPresentation(body, { settings: settingsNow(),...options,videoRegistry: options.videoRegistry ?? await studioVideoRegistry() });
 }
