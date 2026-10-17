@@ -840,7 +840,7 @@ ny begäran om AI-tal kräver bildgranskning. Röstvalet startar ingen betald
 generering och intygar inte åtkomst till leverantörens konto eller godkänd
 läppsynk. Servern verifierar den exakta rösten och bilden före varje session.
 
-Katalogen är `web/public/dealer-voice-catalog.json`; den innehåller offentliga
+Katalogen är `packages/presentation/contracts/dealer-voice-catalog.json`; den innehåller offentliga
 röst-ID:n och modellinställningar, inga API-nycklar. Den sparade profilen
 innehåller exakta värden, så en katalogändring skriver inte om gamla profiler.
 

@@ -1,6 +1,6 @@
 import { Round, freshShoe } from './public/blackjack.mjs';
 
-export const SHOE_RULES = Object.freeze({ decks: 8, cutAfter: 312, total: 416, burn: 1 });
+import { SHOE_RULES } from '../packages/shared/blackjack-shoe-rules.mjs';
 export function newGame() { return { version: 0, shoe: null, round: null, paid: false, last: null }; }
 function shuffle(g) {
   const cards = freshShoe(SHOE_RULES.decks);

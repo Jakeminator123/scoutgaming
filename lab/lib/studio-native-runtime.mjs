@@ -1,11 +1,11 @@
 import * as savedGameDocumentContract from '../../packages/studio-registry/server/document-contract.mjs';
 
 import {createStudioMediaDeletion} from './studio-media-deletion.mjs';
-import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
+import {createSpeechReplyRepository} from '../../packages/presentation/server/speech-reply-repository.mjs';
 import {STUDIO_MEDIA_TYPE_UNSUPPORTED,STUDIO_MEDIA_TYPE_MESSAGE} from '../../packages/studio-registry/server/stored-media-types.mjs';
 import {createHmac} from 'node:crypto';
 import { createLayerUploadService } from './layer-upload-service.mjs';
-import { layerMediaInspectionMessage } from '../../web/public/layer-upload-errors.mjs';
+import { layerMediaInspectionMessage } from '../../packages/presentation/contracts/layer-upload-errors.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from './presentation-runtime-readiness.mjs';
 import { createPostgresStore, validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
 import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';

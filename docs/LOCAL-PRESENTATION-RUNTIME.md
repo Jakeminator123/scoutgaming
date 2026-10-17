@@ -2241,7 +2241,7 @@ Mobile Phone Lane är förval. Äldre `original` migreras vid läsning till Mobi
 gamla `dealer`/`presentation`-parametrar återaktiverar inte den pensionerade lanen.
 En sparad `indexed-video`-lane ger inga dealers och startar inte banken.
 Spelaren kräver `local` eller `layered`. Ingen automatisk videofallback införs.
-Källkontrakt: `web/public/game-lanes.mjs`.
+Källkontrakt: `packages/presentation/contracts/game-selection.mjs`; definitioner och ID-validering finns i samma pakets `game-lanes.mjs` och `game-lane-id.mjs`.
 
 Verifiering och kvarstående arbete dokumenteras vid leverans i
 [JOHN-HANDOFF.md](JOHN-HANDOFF.md).

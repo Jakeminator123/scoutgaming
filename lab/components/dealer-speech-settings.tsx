@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {DealerVoicePicker} from './dealer-voice-picker';
-import {dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../web/public/dealer-voice-catalog.mjs';
+import {dealerVoiceFromDraft,initialDealerVoiceDraft} from '../../packages/presentation/contracts/dealer-voice-catalog.mjs';
 import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {dealerSpeechPreparation,dealerSpeechReferenceCheck,isSpeechReferenceVideo,normalizeDealerSpeechProfile,type DealerSpeechProfile} from '../../packages/presentation/contracts/dealer-speech-profile.mjs';
 import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';

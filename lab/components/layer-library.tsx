@@ -4,7 +4,7 @@ import type {StudioProject} from '../../packages/presentation/contracts/studio-m
 import {uploadCompositionLayer} from '../lib/studio-composition.mjs';
 import {labUrl} from '../lib/lab-url.mjs';
 import {LAYER_ASSET_TYPES,MAX_LAYER_ASSET_BYTES} from '../../packages/presentation/contracts/presentation-layers.mjs';
-import {layerUploadResponseError,layerUploadFailureMessage} from '../../web/public/layer-upload-errors.mjs';
+import {layerUploadResponseError,layerUploadFailureMessage} from '../../packages/presentation/contracts/layer-upload-errors.mjs';
 
 type Role='background'|'table';
 function dimensions(file:File,signal:AbortSignal) {

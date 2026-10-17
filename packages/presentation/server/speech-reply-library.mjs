@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { isDealerId } from '../packages/presentation/contracts/dealer-identity.mjs';
-import { validateStudioScope } from '../packages/studio-registry/server/document-contract.mjs';
-import { validateReplyCategories } from './public/speech-reply-library.mjs';
-import { mediaBlobPath, validatePrivateMedia, isCloudMediaConfigured } from '../packages/studio-registry/server/private-media-contract.mjs';
+import { isDealerId } from '../contracts/dealer-identity.mjs';
+import { validateStudioScope } from '../../studio-registry/server/document-contract.mjs';
+import { validateReplyCategories } from '../contracts/speech-reply-library.mjs';
+import { mediaBlobPath, validatePrivateMedia, isCloudMediaConfigured } from '../../studio-registry/server/private-media-contract.mjs';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const HASH = /^[a-f0-9]{64}$/;

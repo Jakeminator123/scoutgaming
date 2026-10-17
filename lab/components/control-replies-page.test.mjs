@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {REPLY_CATEGORIES,validateReplyCategories} from '../../web/public/speech-reply-library.mjs';
+import {REPLY_CATEGORIES,validateReplyCategories} from '../../packages/presentation/contracts/speech-reply-library.mjs';
 import {parseStudioRepliesRequest} from '../lib/studio-replies-query.mjs';
 import {studioNavigationHref} from '../lib/studio-navigation.mjs';
 

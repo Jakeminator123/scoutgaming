@@ -1,5 +1,5 @@
-import { createLabSpeechBridge } from '../../web/public/lab-speech-bridge.mjs';
-import { createSpeechPoseGate } from '../../web/public/speech-pose-gate.mjs';
+import { createLabSpeechBridge } from '../../packages/presentation/runtime/lab-speech-bridge.mjs';
+import { createSpeechPoseGate } from '../../packages/presentation/runtime/speech-pose-gate.mjs';
 
 // One linked chat delivery, independent from game instructions. The existing
 // pose gate owns promotion; the renderer owns every presented-idle proof.

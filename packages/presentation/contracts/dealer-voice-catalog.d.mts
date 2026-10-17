@@ -1,4 +1,4 @@
-import type {DealerSpeechProfile} from '../../packages/presentation/contracts/dealer-speech-profile.mjs';
+import type {DealerSpeechProfile} from '../../../packages/presentation/contracts/dealer-speech-profile.mjs';
 export interface DealerVoiceDraft {provider:''|'cartesia'|'elevenlabs';voiceId:string;modelId:string;language:string;customSettings:boolean;stability:string;similarity:string;style:string;speakerBoost:string}
 export const DEALER_VOICE_PRESETS:readonly Readonly<{id:string;label:string;provider:string;aliases:readonly string[]}>[];
 export function dealerVoicePreset(id:string,language?:string):NonNullable<DealerSpeechProfile['voice']>;

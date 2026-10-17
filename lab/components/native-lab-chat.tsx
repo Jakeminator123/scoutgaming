@@ -2,7 +2,7 @@
 
 import { useContext, useEffect, useRef, useState, type RefObject } from 'react';
 import { createNativeLabChat, type LinkedChatSession, type LinkedMessage, type LinkedStatus } from '../lib/native-lab-chat.mjs';
-import { playGeneratedSpeech } from '../../web/public/generated-speech-player.mjs';
+import { playGeneratedSpeech } from '../../packages/presentation/runtime/generated-speech-player.mjs';
 import { NativeSpeechContext } from './native-speech-context';
 import type { ActivityDraft } from './activity-log';
 import styles from './native-lab-chat.module.css';

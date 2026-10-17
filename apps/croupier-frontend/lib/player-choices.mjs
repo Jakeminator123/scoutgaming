@@ -1,1 +1,1 @@
-export { choicesStorageKey, lobbyChoiceText, parseStoredChoices, readChoices } from '../../../web/public/player-choices.mjs';
+export { choicesStorageKey, lobbyChoiceText, parseStoredChoices, readChoices } from '../../../packages/presentation/runtime/player-choices.mjs';

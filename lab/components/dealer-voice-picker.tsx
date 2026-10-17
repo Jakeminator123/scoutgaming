@@ -1,5 +1,5 @@
 'use client';
-import {DEALER_VOICE_PRESETS,dealerVoiceDraft,dealerVoicePreset,matchingDealerVoicePreset,suggestedDealerVoicePreset,type DealerVoiceDraft} from '../../web/public/dealer-voice-catalog.mjs';
+import {DEALER_VOICE_PRESETS,dealerVoiceDraft,dealerVoicePreset,matchingDealerVoicePreset,suggestedDealerVoicePreset,type DealerVoiceDraft} from '../../packages/presentation/contracts/dealer-voice-catalog.mjs';
 
 // Pure controlled UI shared by Control and Admin. No account query, effect,
 // saved-voice reassignment or generation happens when this panel is opened.

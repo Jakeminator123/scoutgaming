@@ -10,7 +10,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { readChatResponse } from '../web/public/chat-response.mjs';
+import { readChatResponse } from '../packages/presentation/contracts/chat-response.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
 import { createPlayerProbeStore } from '../web/player-probe-store.mjs';

@@ -1,4 +1,4 @@
-import {dealerClipGuide, type DealerClipPose} from '../../../../../web/public/dealer-clip-guide.mjs';
+import {dealerClipGuide, type DealerClipPose} from '../../../../../packages/presentation/contracts/dealer-clip-guide.mjs';
 import type {ClipSlot} from '../../lib/connected-studio.mjs';
 
 const poseNames:Record<DealerClipPose,string>={VILA:'Vila',REDO:'Redo vid kortskon',WHEEL:'Vid roulettehjulet'};

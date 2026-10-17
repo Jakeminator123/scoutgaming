@@ -1,3 +1,4 @@
+import {presentationPublicSource} from '../packages/presentation/public-modules.mjs';
 // Short-lived UI acceptance only. No env files, production accounts or writes.
 // node tools/roulette-ui-fixture.mjs (prints its random loopback URL)
 import {createServer} from 'node:http';
@@ -9,7 +10,7 @@ import {rouletteDocument} from '../web/games/roulette/http.mjs';
 import {createRoulettePreview} from '../web/games/roulette/preview.mjs';
 import {createSpinResult} from '../web/games/roulette/index.mjs';
 import {defaultCompositionSettings,validateCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
-import {previewMediaPath} from '../web/public/operator-preview-contract.mjs';
+import {previewMediaPath} from '../packages/presentation/contracts/operator-preview-contract.mjs';
 import {rouletteSceneFixture} from './roulette-scene-fixture.mjs';
 
 // Explicit local file copies only; no provider import, publication or guessed IDs.
@@ -96,8 +97,11 @@ const server=createServer(async(req,res)=>{
       json(200,result);return;
     }
     // Exercise the real scene loader's unavailable-media fallback.
-    if(url.pathname==='/roulette/scene.mjs'||url.pathname==='/published-scene.mjs'||['/operator-rooms-contract.mjs','/operator-preview-contract.mjs','/player-choices.mjs','/composition-settings.mjs','/game-lanes.mjs','/dealer-identity.mjs','/dealer-framing.mjs','/presentation-composition.mjs','/dealer-compositing.mjs','/background-playback-policy.mjs','/background-playback.mjs','/game-overlay-layout.mjs','/card-presentation/calibration.mjs'].includes(url.pathname)) {
-      const file=url.pathname.slice(1);res.writeHead(200,{'Content-Type':'text/javascript'});res.end(await readFile(new URL('../web/public/'+file,import.meta.url)));return;
+    const publicSource = presentationPublicSource(url.pathname);
+    if(url.pathname==='/roulette/scene.mjs'||publicSource) {
+      const source=publicSource??'web/public/roulette/scene.mjs';
+      res.writeHead(200,{'Content-Type':source.endsWith('.json')?'application/json':'text/javascript'});
+      res.end(await readFile(new URL('../'+source,import.meta.url)));return;
     }
     if(await rouletteDocument(req,res,{authenticated:true,guestPreview:false}))return;
     if(await preview(req,res))return;

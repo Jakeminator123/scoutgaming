@@ -9,7 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import * as policy from '../lib/studio-access-policy.mjs';
 import * as contract from '../lib/studio-admin-contract.mjs';
 import * as navigation from '../lib/backoffice-navigation.mjs';
-import * as gameLanes from '../../web/public/game-lanes.mjs';
+import * as gameLanes from '../../packages/presentation/contracts/game-lane-id.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { createStudioNativeAuth } from '../lib/studio-native-auth.mjs';
 
@@ -96,7 +96,7 @@ function harness() {
         : name === '../lib/studio-access-policy.mjs' ? policy
           : name === '../lib/studio-admin-contract.mjs' ? contract
             : name === '../lib/backoffice-navigation.mjs' ? navigation
-              : name === '../../web/public/game-lanes.mjs' ? gameLanes : require(name),
+              : name === '../../packages/presentation/contracts/game-lane-id.mjs' ? gameLanes : require(name),
   });
   return {
     ...module.exports, listeners, window,

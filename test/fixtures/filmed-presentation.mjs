@@ -3,7 +3,7 @@ import {addDealer,createSeedProject,defaultPresentationLane} from '../../package
 import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
 import {captureFrozenPresentation} from '../../packages/presentation/server/frozen-presentation-capture.mjs';
-import {DRAGAN_KEVIN_PROFILE as profile} from '../../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
+import {DRAGAN_KEVIN_PROFILE as profile} from '../../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const uuid=key=>{const value=hash('isolated-compression-fixture:'+key);return `${value.slice(0,8)}-${value.slice(8,12)}-4000-8000-${value.slice(12,24)}`;};
 

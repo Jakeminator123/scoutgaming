@@ -24,7 +24,7 @@ Vercel team and project are both `scoutgaming`. The game engine stays on Render 
 
 `lab/` is the active Studio application's source directory. `/studio` is its deployed Next.js `basePath`, including APIs and assets; neither is a fourth product. Old `/lissabon`, `/lab`, `/labb`, and `/bo` names are retired product aliases. Check remaining callers before retiring compatibility redirects or runtime flags such as `lissabon-stream-lane`. Preserve Astrid's verified media, speech functions and history as a labelled legacy reference without a three-layer version; this does not require keeping old implementations, local profiles or parallel local registries. Product registry data comes from Neon and media bytes from Blob.
 
-`lab/lib` contains active shared authentication, Studio storage, media and publication services used by Admin and the game. The folder name is not evidence that these modules are disposable. Extract shared rules to neutral modules when needed: speech templates and compatibility live in `web/public/studio-speech.mjs`, used by both Admin and the server. Preserve exact media identities, captions and approvals while separating old pages from shared behavior.
+`lab/lib` contains active shared authentication, Studio storage, media and publication services used by Admin and the game. The folder name is not evidence that these modules are disposable. Extract shared rules to neutral modules when needed: speech templates and compatibility live in `packages/presentation/contracts/studio-speech.mjs`, used by both Admin and the server. Preserve exact media identities, captions and approvals while separating old pages from shared behavior.
 
 ## GitHub delivery
 

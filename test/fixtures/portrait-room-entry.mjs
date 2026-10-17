@@ -3,7 +3,7 @@ import {cloudPresentationFixture} from '../../lab/test/fixtures/cloud-presentati
 import {createSeedProject,defaultPresentationLane,normalizeProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {buildPresentationPackage} from '../../packages/presentation/contracts/presentation-layers.mjs';
 import {withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
-import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
+import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
 import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
 
 // Isolated in-memory published room. No database, credentials or media writes.

@@ -1,5 +1,5 @@
-import {SHOE_RULES} from '../../web/shoe-game.mjs';
-import {EMAIL_TEMPLATES} from '../../web/email-templates.mjs';
+import { SHOE_RULES } from '../../packages/shared/blackjack-shoe-rules.mjs';
+import {EMAIL_TEMPLATES} from '../../packages/shared/email-templates.mjs';
 import {validateStudioScope,canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 import {isStudioRole} from './studio-access-policy.mjs';
 

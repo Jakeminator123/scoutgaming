@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import {command,newGame,gameView,SHOE_RULES} from '../web/shoe-game.mjs';
+import {command,newGame,gameView} from '../web/shoe-game.mjs';
+import { SHOE_RULES } from '../packages/shared/blackjack-shoe-rules.mjs';
 let checks=0;
 const check=(v,msg)=>{assert.ok(v,msg);checks++;};
 const bets=[{main:5,pp:0,tp:0},...Array.from({length:6},()=>({main:0,pp:0,tp:0}))];

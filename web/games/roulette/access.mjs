@@ -1,4 +1,4 @@
-import { createGameEntrySelector } from '../../game-entry-operator.mjs';
+import { createGameEntrySelector } from '../../../packages/presentation/server/game-entry-selector.mjs';
 import { ROOM } from './room.mjs';
 
 const fail = (code,statusCode=404) => { throw Object.assign(Error(code),{statusCode}); };

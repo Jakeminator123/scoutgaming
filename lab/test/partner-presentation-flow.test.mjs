@@ -8,10 +8,10 @@ import {withPackagePresentation,readPackagePresentation} from '../../packages/pr
 import {createPartnerBrandingApi} from '../lib/partner-branding-api.mjs';
 import {partnerPresentationDealerChoices} from '../lib/partner-presentation-choices.mjs';
 import {partnerLaneState} from '../lib/partner-package-view.mjs';
-import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
+import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
 import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
-import {gameLaneFromDocument} from '../../web/public/game-lanes.mjs';
-import {resolvePlayerSelection} from '../../web/public/player-choices.mjs';
+import {gameLaneFromDocument} from '../../packages/presentation/contracts/game-selection.mjs';
+import {resolvePlayerSelection} from '../../packages/presentation/runtime/player-choices.mjs';
 
 function fixture({layered=false,fullFrame=false}={}) {
   const dealerIds=layered?['linnea','nora','elin']:['astrid','elin'];

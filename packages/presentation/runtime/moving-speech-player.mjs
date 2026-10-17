@@ -1,6 +1,6 @@
-import { createMovingSpeechFrameLayer } from './moving-speech-frame-layer.mjs';
-import { effectiveDealerCompositing } from '../../packages/presentation/contracts/dealer-compositing.mjs';
-import {createMovingSourceFrames} from './moving-speech-source-frames.mjs';
+import { createMovingSpeechFrameLayer } from '../../../packages/presentation/runtime/moving-speech-frame-layer.mjs';
+import { effectiveDealerCompositing } from '../../../packages/presentation/contracts/dealer-compositing.mjs';
+import {createMovingSourceFrames} from '../../../packages/presentation/runtime/moving-speech-source-frames.mjs';
 
 const HASH = /^[a-f0-9]{64}$/, ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;

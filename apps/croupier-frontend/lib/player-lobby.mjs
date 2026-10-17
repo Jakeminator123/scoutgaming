@@ -1,4 +1,4 @@
-import {readChoices,writeChoices} from '../../../web/public/player-choices.mjs';
+import {readChoices,writeChoices} from '../../../packages/presentation/runtime/player-choices.mjs';
 import { isOperatorSlug } from '../../../packages/navigation/operator-slug.mjs';
 
 export function roomSelection(room,preferred={}) {

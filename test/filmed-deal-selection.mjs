@@ -13,7 +13,7 @@ import {encodePresentationPackage,decodePresentationPackage} from '../packages/p
 import {createPresentationApi,presentationInput} from '../web/presentation-api.mjs';
 import {filmedDealSelection} from '../web/filmed-deal-selection.mjs';
 import {presentationEvents} from '../web/partner-presentation.mjs';
-import {DRAGAN_KEVIN_PROFILE as profile} from '../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
+import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 const uuid=n=>'71000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const box=(shoeDraw,seat=0)=>({type:'deal',to:'box',box:seat,shoeDraw,faceDown:false,card:{r:'6',s:'S'}});
 const hole=shoeDraw=>({type:'deal',to:'dealer',box:null,shoeDraw,faceDown:true,card:null});

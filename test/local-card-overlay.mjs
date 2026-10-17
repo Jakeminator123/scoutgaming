@@ -3,11 +3,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { calibration } from '../web/public/card-presentation/calibration.mjs';
+import { calibration } from '../packages/presentation/contracts/calibration.mjs';
 import { createCardCursor, createLocalCardOverlay } from '../web/public/local-card-overlay.mjs';
 import { firstFaceTime } from '../web/public/card-presentation/card-face-projection.js';
-import { DRAGAN_KEVIN_PROFILE } from '../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
-import { filmedFaceAtTime } from '../web/public/card-presentation/filmed-profile.mjs';
+import { DRAGAN_KEVIN_PROFILE } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
+import { filmedFaceAtTime } from '../packages/presentation/contracts/filmed-profile.mjs';
 
 test('all ten calibrations remain bound to the actual local MP4 bytes', () => {
   assert.equal(calibration.videos.length, 10);

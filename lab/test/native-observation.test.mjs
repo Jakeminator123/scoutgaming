@@ -5,7 +5,7 @@ import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
 import { observationContext, observedTable } from '../lib/observation-context.mjs';
 import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createPartnerTrace, appendPartnerTrace, exportPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
-import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
+import { SPEECH_POSE_STAGES } from '../../packages/presentation/runtime/speech-pose-gate.mjs';
 
 const source = {}, expected = { source, origin: 'https://bettalotto.se', channel: 'fixture-channel', lastSequence: 0 };
 const project = createSeedProject();

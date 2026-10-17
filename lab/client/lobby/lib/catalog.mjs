@@ -1,5 +1,5 @@
-import { validatePublicOperatorRooms } from '../../../../web/public/operator-rooms-contract.mjs';
-import { roomEnvironment } from '../../../../web/public/room-environment.mjs';
+import { validatePublicOperatorRooms } from '../../../../packages/presentation/contracts/operator-rooms-contract.mjs';
+import { roomEnvironment } from '../../../../packages/presentation/contracts/room-environment.mjs';
 
 /** Validate the published subcatalog, never use administration objects as playable data. */
 export function parseLobbyCatalog(payload) {

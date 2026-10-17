@@ -1,4 +1,4 @@
-import {uniformRegistration} from './performance-contact.mjs';
+import {uniformRegistration} from '../../packages/presentation/contracts/performance-contact.mjs';
 import {createActorCompositor} from './actor-compositor.mjs';
 import {createIdleVideoLoop} from './idle-video-loop.mjs';
 

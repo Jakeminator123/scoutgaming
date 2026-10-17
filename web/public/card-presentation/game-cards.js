@@ -1,11 +1,11 @@
-import {cardViewDepth,normalizeCardView} from '../card-view.mjs';
+import {cardViewDepth,normalizeCardView} from '../../../packages/presentation/contracts/card-view.mjs';
 import {suitColor} from './renderer-support.js';
 import { svgNode } from './renderer-support.js';
 import { total, totalLabel } from './renderer-support.js';
 import { faceAtTime, triangleMatrices } from './card-face-projection.js';
 import { DEAL_CONTACT, cardPose, feltMatrix, dealerFanOffset, splitHandAnchor } from './card-table-layout.js';
 import { dealerHandClip } from './dealer-hand-occlusion.js';
-import { filmedFaceAtTime } from './filmed-profile.mjs';
+import { filmedFaceAtTime } from '../../../packages/presentation/contracts/filmed-profile.mjs';
 import { projectFilmedFace } from './filmed-table-projection.mjs';
 
 // One stable SVG node per server-issued draw. Motion is driven by source frames.

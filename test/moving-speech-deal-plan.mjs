@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {prepareMovingDealPlan,createMovingDealReservations} from '../web/moving-speech-deal-plan.mjs';
-import {DRAGAN_KEVIN_PROFILE as profile} from '../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
+import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import {movingDealCard} from '../web/public/moving-speech-sequence.mjs';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
-import {createSpeechPoseGate} from '../web/public/speech-pose-gate.mjs';
+import {createSpeechPoseGate} from '../packages/presentation/runtime/speech-pose-gate.mjs';
 
 function fixture(){
   const clips=profile.takes.map((t,i)=>({videoId:`00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,sha256:t.sha256,

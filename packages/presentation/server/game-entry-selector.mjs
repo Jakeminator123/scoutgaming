@@ -1,8 +1,8 @@
-import {requestedOperator} from '../packages/navigation/operator-entry.mjs';
-import { isPresentationRoomLaneCompatible } from '../packages/presentation/server/frozen-presentation-capture.mjs';
-import { isActiveDealerId, isRegisteredDealer } from '../packages/presentation/contracts/dealer-identity.mjs';
-import { validateFrozenRegisteredDealers } from '../packages/presentation/server/frozen-dealer-idle.mjs';
-import {materialLabel} from '../packages/presentation/contracts/material-catalog.mjs';
+import {requestedOperator} from '../../navigation/operator-entry.mjs';
+import { isPresentationRoomLaneCompatible } from './frozen-presentation-capture.mjs';
+import { isActiveDealerId, isRegisteredDealer } from '../contracts/dealer-identity.mjs';
+import { validateFrozenRegisteredDealers } from './frozen-dealer-idle.mjs';
+import {materialLabel} from '../contracts/material-catalog.mjs';
 // Server-owned /blackjack selection with optional operator context. Without
 // ?operator= the lane, dealer and presentation stay on the saved catalogue
 // path. gameChoices is still attached from the active presentation lane so
@@ -10,14 +10,14 @@ import {materialLabel} from '../packages/presentation/contracts/material-catalog
 // lane only narrow lanes and dealers the catalogue already renders; they
 // never add a lane, dealer or renderer. Wallet, cards, shoe and payouts are
 // not read or written here.
-import { gameLaneConfiguration } from '../packages/presentation/contracts/game-lanes.mjs';
-import {gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, packageLaneIds} from './public/game-lanes.mjs';
-import {laneDealerSelection} from '../packages/presentation/contracts/game-lanes.mjs';
-import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
-import {readPackagePresentation, publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';
-import {resolvePackageRoom} from '../packages/presentation/server/package-rooms.mjs';
-import {roomGame} from '../packages/presentation/contracts/presentation-room.mjs';
-import {resolveRoomBranding} from '../packages/operators/contracts/branding.mjs';
+import { gameLaneConfiguration } from '../contracts/game-lanes.mjs';
+import {gamePresentationForDealer, gameChoicesForLane, gameLaneSelection, packageLaneIds} from '../contracts/game-selection.mjs';
+import {laneDealerSelection} from '../contracts/game-lanes.mjs';
+import { isOperatorSlug } from '../../navigation/operator-slug.mjs';
+import {readPackagePresentation, publicPackageBranding} from './presentation-package.mjs';
+import {resolvePackageRoom} from './package-rooms.mjs';
+import {roomGame} from '../contracts/presentation-room.mjs';
+import {resolveRoomBranding} from '../../operators/contracts/branding.mjs';
 
 export function createGameEntrySelector({ policy, packages = null, log = console.warn, game = 'blackjack' } = {}) {
   if (!['blackjack','roulette','any'].includes(game)) throw TypeError('Invalid game');

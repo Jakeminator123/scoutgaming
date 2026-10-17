@@ -1,5 +1,5 @@
-import {cardViewDepth,normalizeCardView} from './card-view.mjs';
-import { calibration } from './card-presentation/calibration.mjs';
+import {cardViewDepth,normalizeCardView} from '../../../packages/presentation/contracts/card-view.mjs';
+import { calibration } from '../../../packages/presentation/contracts/calibration.mjs';
 export const BLACKJACK_COMPACT_QUERY='(max-width: 860px)';
 
 // Reference coordinates are the same 1080 x 1920 plane as the card renderer.

@@ -1,7 +1,7 @@
 import { playLocalFilm } from './local-film-player.mjs';
 import { createVerifiedVideoBuffer } from './verified-video-buffer.mjs';
 import * as THREE from './vendor/three/three.module.js';
-import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,dealingCardSample} from './performance-contact.mjs';
+import {validateContactTake,contactFrame,contactCueClock,uniformRegistration,calibrationPayload,continuationStartFrame,dealingCardSample} from '../../packages/presentation/contracts/performance-contact.mjs';
 import {cardFaceArt} from './card-art.mjs';
 import {actorEdgeGLSL} from './actor-compositor.mjs';
 import {edgeBlendGLSL,edgeUniforms,createSceneSampler} from './actor-edge-blend.mjs';

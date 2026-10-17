@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {createSpeechReplyLibrary} from '../web/speech-reply-library.mjs';
-import {createSpeechReplyRepository} from '../web/storage/speech-reply-repository.mjs';
+import {createSpeechReplyLibrary} from '../packages/presentation/server/speech-reply-library.mjs';
+import {createSpeechReplyRepository} from '../packages/presentation/server/speech-reply-repository.mjs';
 import {fixture,input,env,scope} from './fixtures/speech-replies.mjs';
 test('Neon completed reply survives reconstruction; Blob contains only bytes and scope cannot leak',async t=>{
   const f=await fixture(t),saved=await f.library.save(input('paow'));

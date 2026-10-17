@@ -5,7 +5,7 @@ import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 import {sceneForComposition,type CompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {drawDealerFrame,type DealerFraming} from '../../packages/presentation/contracts/dealer-framing.mjs';
 import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
-import {createBackgroundPlayback} from '../../web/public/background-playback.mjs';
+import {createBackgroundPlayback} from '../../packages/presentation/runtime/background-playback.mjs';
 import type {BackgroundPlaybackPolicy} from '../../packages/presentation/contracts/background-playback-policy.mjs';
 
 export type CompositionMedia={url:string;label:string;contentType:string};

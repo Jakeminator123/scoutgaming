@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {createMovingSourceFrames, readMovingSourceSamples} from '../web/public/moving-speech-source-frames.mjs';
+import {createMovingSourceFrames, readMovingSourceSamples} from '../packages/presentation/runtime/moving-speech-source-frames.mjs';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const u32 = value => { const b = Buffer.alloc(4); b.writeUInt32BE(value); return b; };
 const box = (name, ...data) => { const b = Buffer.concat(data); return Buffer.concat([u32(b.length + 8), Buffer.from(name), b]); };

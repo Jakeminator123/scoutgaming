@@ -1143,5 +1143,6 @@ i Neon-läget. Ingen ny miljövariabel, processdelad global eller automatisk pro
 Policybootstrapens miljögrind ägs av
 `packages/presentation/server/studio-policy-runtime.mjs`. Game och Studio tillför
 samma migrationskontroll och varsin befintlig medialäsare; schema/readSaved-ordningen
-och det avstängda SQLite/offline-läget är oförändrade. Ingen ny miljövariabel eller
-automatisk provideranslutning införs.
+och det avstängda SQLite/offline-läget är oförändrade. Svarsbankens gemensamma kärna
+får appens befintliga Blob-metoder och samma env/blobClient/cacheDir. Ingen ny
+miljövariabel, cache eller automatisk provideranslutning införs.

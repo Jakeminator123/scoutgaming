@@ -1,7 +1,7 @@
 // Public operator labels. The lobby list includes only currently playable rooms.
-import { DEMO_OPERATORS as PARTNER_PREVIEW_OPERATORS } from './demo-operators.mjs';
+import { DEMO_OPERATORS as PARTNER_PREVIEW_OPERATORS } from '../packages/operators/contracts/demo-operators.mjs';
 import { isOperatorSlug } from '../packages/navigation/operator-slug.mjs';
-import { isUnplayableOperatorRooms } from './public-operator-rooms.mjs';
+import { isUnplayableOperatorRooms } from '../packages/operators/server/public-rooms.mjs';
 
 const PATH = /^\/api\/operators\/([^/]+)$/;
 export const OPERATOR_PUBLIC_CACHE_MS = 60_000;
@@ -37,7 +37,7 @@ export function createPublicOperatorDirectory({store = null, readRooms = null, n
     if (typeof store?.listOperators !== 'function' || !readRooms) throw Error('Operator list unavailable');
     const rows = await store.listOperators();
     if (!Array.isArray(rows) || rows.length > 1000 || Object.keys(rows).length !== rows.length) throw Error('Invalid operator list');
-    const { validatePublicOperatorRooms } = await import('./public/operator-rooms-contract.mjs');
+    const { validatePublicOperatorRooms } = await import('../packages/presentation/contracts/operator-rooms-contract.mjs');
     const operators = [], seen = new Set();
     for (const row of rows) {
       const value = record(row);

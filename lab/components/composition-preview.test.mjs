@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
-import {createBackgroundPlayback} from '../../web/public/background-playback.mjs';
+import {createBackgroundPlayback} from '../../packages/presentation/runtime/background-playback.mjs';
 import {defaultBackgroundRule} from '../../packages/presentation/contracts/background-playback-policy.mjs';
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 
@@ -59,7 +59,7 @@ function fixture(t){
   };
   const overrides={react:hooks,'../lib/lab-url.mjs':{labUrl:path=>path},
     '../../packages/presentation/contracts/dealer-framing.mjs':{drawDealerFrame(_context,source,width,height,framing){draws.push({source,width,height,framing});}},
-    '../../web/public/background-playback.mjs':{createBackgroundPlayback(policy,options){
+    '../../packages/presentation/runtime/background-playback.mjs':{createBackgroundPlayback(policy,options){
       const player=createBackgroundPlayback(policy,{...options,now:()=>time,setTimeout:schedule,clearTimeout:cancel});
       const observed={starts:0,closes:0};players.push(observed);
       return {...player,start(){observed.starts++;player.start();},close(){observed.closes++;player.close();}};

@@ -7,7 +7,7 @@ import { cloudPresentationFixture } from '../lab/test/fixtures/cloud-presentatio
 import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
 import {isPresentationRoom} from '../packages/presentation/contracts/presentation-room.mjs';
 import {listPackageRooms, resolvePackageRoom, inspectPackageRooms} from '../packages/presentation/server/package-rooms.mjs';
-import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
+import { createGameEntrySelector } from '../packages/presentation/server/game-entry-selector.mjs';
 import { layerAssetPath } from '../packages/presentation/contracts/presentation-layers.mjs';
 import { defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
 import { withPackagePresentation,readPackagePresentation } from '../packages/presentation/server/presentation-package.mjs';

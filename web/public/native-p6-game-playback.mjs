@@ -1,12 +1,12 @@
-import { validateGeneratedSpeechStream } from './generated-speech-player.mjs';
+import { validateGeneratedSpeechStream } from '../../packages/presentation/runtime/generated-speech-player.mjs';
 
 // Explicit ownQA capability; importing this module performs no IO. Source
 // readback cannot attest an already imported module or live visual acceptance.
 export const NATIVE_P6_GAME_ORIGIN='https://croupier-native-qa-abc92154cb15.vercel.app';
 export const NATIVE_P6_GAME_CONTEXT_PATH='/api/presentation/native-p6-playback-context';
 export const NATIVE_P6_GAME_SOURCE_PATHS=Object.freeze(['web/public/app.mjs','web/public/native-p6-game-playback.mjs',
-  'web/public/speech-queue.mjs','web/public/speech-pose-gate.mjs','web/public/local-presentation.mjs',
-  'web/public/generated-speech-player.mjs','web/public/speech-stream-client.mjs','packages/presentation/contracts/speech-package.mjs',
+  'web/public/speech-queue.mjs','packages/presentation/runtime/speech-pose-gate.mjs','web/public/local-presentation.mjs',
+  'packages/presentation/runtime/generated-speech-player.mjs','packages/presentation/runtime/speech-stream-client.mjs','packages/presentation/contracts/speech-package.mjs',
   'packages/presentation/contracts/astrid-voice-profile.mjs']);
 const ownerKeys=['actorSha256','ownerSessionSha256','sessionRevision','roundRevision','policySha256'];
 const clockToleranceMs=5000;

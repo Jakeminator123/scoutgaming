@@ -1,5 +1,34 @@
 # Aktuell handoff — Scoutgaming
 
+## PR228: slutlig integration och byggkvitto
+
+Main f4224613a21082645841c2b3827d4ec94916a7c5, inklusive PR219–221 och
+lipsync2:s PR226, är normalt integrerad. RunPod-kö/recovery-rättningen
+behåller sina produktkroppar och tester. N/O:s gemensamma modulägare,
+appägda SDK/pooler och publika adresser är bevarade.
+
+N/O:s produktträd ab125d0e46f0282278fa5fbd7ce08372f73d2f30 byggdes i en
+isolerad spegel: Studio med bara egna låsta beroenden gav80rena traces,
+SQL i77,11migrationer och komplett Admin/Lobby/preview/worker-innehåll.
+Frontendens117 befintliga prov och ett Next-produktionsbygge passerade;
+100URL från52källor,218importkanter och21rena traces verifierades.
+Inga privata envfiler följde med. Senare testfixar ändrar inga produktfiler;
+main-integrationens separata RunPod-ändring har sitt PR226-kvitto ovan.
+Ordinarie fokuserad integrationshook och slutlig CI gäller denna förening.
+Faktisk drift följs av mergeagenten; inga GPU- eller medieprov ingår här.
+
+## PR228: kvarvarande fuzzimport rättad
+
+Blackjack-fuzzprovet läser SHOE_RULES från dess kanoniska neutrala modul
+packages/shared/blackjack-shoe-rules.mjs efter browser-/serveruppdelningen.
+Spelmotorns dynamiska import och samtliga invariants är bevarade. Befintligt
+isolerat fuzzprov passerar med seed20260822 och3000 rundor; ingen databas,
+provider eller produktionsåtkomst. Produktträdet är oförändrat mot PR228:s
+ab125d0e46f0282278fa5fbd7ce08372f73d2f30. Den befintliga kontrollen av
+odefinierade browsernamn följer också med till packages/presentation/contracts
+och packages/navigation (player-handoff),
+så de flyttade modulernas tidigare täckning behålls; fem katalogprov passerar.
+Inga nya testfiler införs. Ordinarie hook och PR-CI följer.
 ## Dragan: worker-klassning och återanvändningsanalys — 17 oktober 2026, 22:30 CEST
 
 Avgränsad kodrättning med offline-tester på `cursor/lipsync-cloud-diagnosis-36e8`.
@@ -202,6 +231,56 @@ med aktiverad /studio/native-admin: kompilering, TypeScript, 28 statiska sidor
 och 80 rena deploymenttraces. web/node_modules och root/node_modules saknades
 under hela bygget; inga privata miljöfiler fanns. Ordinarie commit-hook används. Ingen ny testfil,
 paketversion, miljöändring eller databas-/medieåtgärd.
+
+## C2o — gemensamma serverläsare, lokalt arbete 17 oktober 2026
+
+Svarsbank/repository och spelentréurval ägs av `packages/presentation/server`;
+publik rumsläsning av `packages/operators/server` och spelaradministration av
+`packages/storage/server`. Policybootstrap får explicita migrations- och idleportar.
+Game/Studio behåller egna Blob-/media-/HTTP-kompositioner, tidigare cachedefault,
+lazy SDK och schema/readSaved-ordning. Demooperatorer, e-postmallar och enbart
+blackjacks SHOE_RULES har neutrala ägare; auktoritativ shuffle, shoe och wallet stannar i game.
+
+N-head `34f8946aa750fec243ccc09a25a6da8f1d97bbde` är normalt integrerat.
+Tio mekaniska konflikter förenade kanoniska imports och båda handoffavsnitten.
+Källjämförelse: 48/48, inklusive oförändrade funktionskroppar och verifierad likvärdig
+Lab/game-idlebindning. 107 riktade befintliga prov och Studio-typer gröna, inga skips;
+rum/urval, svarsbank/Blob/CAS, schema/offline, spelaradministration och isolerade
+fixturekopior ingår. Parentreview är klar. Ordinarie N/O-integrationshook passerade
+1269 prov utan fel, med sex befintliga opt-in; frontendtyper gröna. Senare
+importintegration passerade54/54 och frontendtyper. PR227:s tre policyproduktfiler
+är byteidentiska med denna branch; faktisk mainb356152a integreras normalt.
+Befintliga fixturelistor innehåller redan den nya modulen exakt en gång.
+CI och driftkvittens följer N/O-leveransens sluthead.
+Inga nya servermoduler publiceras över HTTP; ingen fullbuild, push, provider-, data-,
+schema-, medie- eller lipsyncändring ingår.
+
+## C2n — gemensamma browserkontrakt och runtime, 17 oktober 2026
+
+29 browserkällor och nio deklarationer har flyttats till `packages/presentation`
+och `packages/navigation/player-handoff.mjs`. Gamla källfiler är borttagna;
+importörer, bygg-/QA-källistor och isolerade testkopior använder samma kanoniska
+implementation. Spelvalens definitioner och ID-predicate importeras direkt från
+befintliga kontrakt. Inga nya serverabstraktioner eller HTTP-protokoll införs.
+
+`public-modules.mjs` behåller gamla publika adresser och exakta paketadresser.
+Relativa importer fungerar från båda adresserna; inga breda prefixregler eller
+privata servermoduler exponeras. Röstkatalogens JSON, inbäddade filmprofiler och
+proveniens är byteidentiska. Dynamiska `/composition-runtime/compositor.js`,
+basePath/proxy, sessioner, behörighet och spelregler är oförändrade.
+
+Lokalt kvitto på bas `b99373544832e121b4e90716486d705b78357e56`: 38/38 mekaniskt
+oförändrade kroppar, 123 verifierade importkanter över 100 publika URL:er, inga
+appimporter från de flyttade källorna och 190 unika QA-källor med befintliga mål.
+44 befintliga testfiler gav 702 pass och tre befintliga browser-opt-in; en gammal
+require-matchning i clip-guide-fixturen rättades och dess tre prov passerade
+separat. Sammanlagt 705 godkända prov, inga kvarstående fel. Riktig lokal GET/HEAD
+verifierade hela publika importgrafen, exakta källbytes, JSON-MIME och nekade
+serveradresser. Studio-, frontend-, Admin- och Lobby-typer passerade.
+Parentgranskning är godkänd; ordinarie commit-hook körs vid leverans. Ingen fullbuild, push,
+moln-/providerändring eller ny medieacceptans ingår. Färsk egen säkerhetsläsning
+för main 9b79902c visar 20 incidenter, varav två kända öppna (38318914/15),
+partiella platser, aktiv övervakning och ofullständig historik (too_large).
 
 ## Gemensam lokal integrationsbas — 17 oktober 2026
 

@@ -1,4 +1,4 @@
-import {validateBackgroundPlayback} from '../../packages/presentation/contracts/background-playback-policy.mjs';
+import {validateBackgroundPlayback} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 
 const WINDOW_MS=60000;
 // Silent presentation-only scheduling. Callbacks never own dealer, speech,

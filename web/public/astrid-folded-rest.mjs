@@ -1,4 +1,4 @@
-import {uniformRegistration} from './performance-contact.mjs';
+import {uniformRegistration} from '../../packages/presentation/contracts/performance-contact.mjs';
 import {createActorCompositor} from './actor-compositor.mjs';
 
 // Folded rest has a different hand pose. A filmed empty-hand bridge reaches

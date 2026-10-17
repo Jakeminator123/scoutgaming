@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SPEECH_LINES} from '../../../../packages/presentation/contracts/speech-lines.mjs';
-import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl,studioRecordedSpeech} from '../../../../web/public/studio-speech.mjs';
-import {initialDealerVoiceDraft,dealerVoiceDraft,dealerVoicePreset} from '../../../../web/public/dealer-voice-catalog.mjs';
+import {STUDIO_SPEECH_LINES,STUDIO_ASTRID_VOICE,studioSpeechLineIds,studioSpeechLines,studioSpeechBuildCompatibility,applyStudioSpeechProfile,studioSpeechMediaUrl,studioRecordedSpeech} from '../../../../packages/presentation/contracts/studio-speech.mjs';
+import {initialDealerVoiceDraft,dealerVoiceDraft,dealerVoicePreset} from '../../../../packages/presentation/contracts/dealer-voice-catalog.mjs';
 
 test('confirmed original voice defaults preserve saved choices and refuse ambiguous or approximate names',()=>{
   for(const [dealer,id] of [[{id:'paow'},'paow'],[{id:'body-7',label:' PAOW '},'paow'],[{id:'dragan'},'dragge'],[{id:'body-8',label:'Dragge'},'dragge']]) {
@@ -38,7 +38,7 @@ test('media previews reject arbitrary providers, cross-origin and credential lin
 
 async function panelHarness(){
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
-  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../web/public/studio-speech.mjs'),profile=await import('../../../../packages/presentation/contracts/dealer-speech-profile.mjs'),voices=await import('../../../../web/public/dealer-voice-catalog.mjs');
+  const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('esbuild'),helpers=await import('../../../../packages/presentation/contracts/studio-speech.mjs'),profile=await import('../../../../packages/presentation/contracts/dealer-speech-profile.mjs'),voices=await import('../../../../packages/presentation/contracts/dealer-voice-catalog.mjs');
   const pickerModule={exports:{}},pickerSource=readFileSync(new URL('../../../../lab/components/dealer-voice-picker.tsx',import.meta.url),'utf8');
   runInNewContext(transformSync(pickerSource,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module:pickerModule,exports:pickerModule.exports,require:name=>name.includes('dealer-voice-catalog.mjs')?voices:require(name)});
   const {DealerVoicePicker}=pickerModule.exports;

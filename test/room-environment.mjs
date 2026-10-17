@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { roomEnvironment } from '../web/public/room-environment.mjs';
+import { roomEnvironment } from '../packages/presentation/contracts/room-environment.mjs';
 
 const a = { id: '11111111-1111-1111-1111-111111111111', label: 'Salongen' };
 const b = { id: '22222222-2222-2222-2222-222222222222', label: 'Studion' };

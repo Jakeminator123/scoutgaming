@@ -1,4 +1,4 @@
-import type {BackgroundPlaybackPolicy,BackgroundPlaybackRule} from '../../packages/presentation/contracts/background-playback-policy.mjs';
+import type {BackgroundPlaybackPolicy,BackgroundPlaybackRule} from '../../../packages/presentation/contracts/background-playback-policy.mjs';
 export interface BackgroundPlaybackController {
   start():void; pause():void; close():void;
   event(eventId:string,eventKey?:string):boolean;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { createNativeSpeechBridge, createLabSpeechBridge, LAB_SPEECH_BRIDGE_LIMITS } from '../web/public/lab-speech-bridge.mjs';
+import { createNativeSpeechBridge, createLabSpeechBridge, LAB_SPEECH_BRIDGE_LIMITS } from '../packages/presentation/runtime/lab-speech-bridge.mjs';
 
 const channel = '7fb8a49e-8e28-41e4-a012-70ce56b72d7b';
 const labOrigin = 'http://127.0.0.1:4197', nativeOrigin = 'http://127.0.0.1:4196';

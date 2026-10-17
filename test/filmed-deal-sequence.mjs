@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DRAGAN_KEVIN_PROFILE as profile} from '../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
+import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import {planFilmedDealSequence,orderFilmedPresentationEvents} from '../packages/presentation/runtime/filmed-deal-sequence.mjs';
 import {presentationEvents} from '../web/partner-presentation.mjs';
 const inventory={videos:profile.takes.map(t=>({id:`video-${t.key}`,sha256:t.sha256,available:true,classification:{dealerId:'dragan',kind:'action'}}))};

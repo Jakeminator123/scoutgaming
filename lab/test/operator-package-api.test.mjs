@@ -364,7 +364,7 @@ test('v3 republication changes the allowed default from Astrid to Linnea without
   await f.repository.saveDocument('project',{value:changed.value,expectedRevision:changed.revision,actor:'tester'});
   const beforeAdmin=await f.repository.readDocument('administration'), result=await f.publish();
   assert.equal(result.packageRevision,3);assert.deepEqual(result.tables,[room.id]);assert.deepEqual(await f.repository.readDocument('administration'),beforeAdmin);
-  const {createGameEntrySelector}=await import('../../web/game-entry-operator.mjs');
+  const {createGameEntrySelector}=await import('../../packages/presentation/server/game-entry-selector.mjs');
   const select=createGameEntrySelector({policy:{readGameConfiguration(){},readSaved:async()=>({project:(await f.repository.readDocument('project')).value,administration:beforeAdmin.value})},
     packages:{resolve:async()=>({operator:{id:'north',status:'active'},package:await f.direct.getCurrentPackage('north')})}});
   const entry=await select('?operator=north&table='+room.id);
