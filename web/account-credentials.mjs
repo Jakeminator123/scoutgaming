@@ -1,7 +1,7 @@
 import { createHash, scryptSync, timingSafeEqual } from 'node:crypto';
 
-import { effectiveAccountRole, isAdministratorRole } from './account-role.mjs';
-export { effectiveAccountRole, isAdministratorRole } from './account-role.mjs';
+import { effectiveAccountRole, isAdministratorRole } from '../packages/studio-access/account-role.mjs';
+export { effectiveAccountRole, isAdministratorRole } from '../packages/studio-access/account-role.mjs';
 const normalize = value => typeof value === 'string' ? value.trim().toLowerCase() : '';
 const digest = value => createHash('sha256').update(value).digest('hex');
 

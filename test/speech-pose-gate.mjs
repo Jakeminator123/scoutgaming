@@ -19,6 +19,23 @@ function manualHarness(dealerId = 'astrid', options = {}) {
   return { gate, queued, output };
 }
 
+test('one committed next-deal reply shares the existing queue without requiring an idle proof',async()=>{
+  const {gate,queued,output}=manualHarness('dragan'),j=job('dragan'),accepted=gate.receive(j);
+  gate.reserveDeal(j.jobId,3);
+  gate.responseReady(j.jobId,{kind:'generatedText',exactText:'Hej under utdelningen.',speechStream:{kind:'moving-speech-stream',presentationVersion:3}});
+  assert.equal(queued.length,1);assert.equal(gate.state.actionOwner,`deal-chat-${j.jobId}`);
+  await queued[0](new AbortController().signal);assert.equal((await accepted.completion).status,'completed');assert.equal(output.length,2);
+});
+test('reserved deal speech rejects stale version, ordinary stream, dealer change and replay',async()=>{
+  for(const change of ['ordinary','version','dealer']){
+    const {gate,queued}=manualHarness('dragan'),j=job('dragan'),accepted=gate.receive(j);
+    assert.throws(()=>gate.reserveDeal(j.jobId,2));gate.reserveDeal(j.jobId,3);
+    if(change==='dealer')gate.updateRendererState({dealerId:'astrid'});
+    gate.responseReady(j.jobId,{kind:'generatedText',speechStream:{kind:change==='ordinary'?'generated-speech-stream':'moving-speech-stream',presentationVersion:change==='version'?4:3}});
+    assert.equal((await accepted.completion).status,'cancelled');assert.equal(queued.length,0);assert.throws(()=>gate.reserveDeal(j.jobId,3));
+  }
+});
+
 test('reply stays outside speech queue and emits no output until an actual standard-idle proof', async () => {
   const { gate, queued, output } = manualHarness();
   const accepted = gate.receive(job('astrid'));

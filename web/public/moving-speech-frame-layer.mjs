@@ -148,10 +148,11 @@ export async function createMovingSpeechFrameLayer({ plan: input, document, deco
   function paint(video, presented) {
     if (closed || presented?.audioPlaying !== true || !sameBinding(presented.binding, plan.binding)
       || presented.planSha256 !== plan.planSha256 || !Number.isFinite(presented.audioTimeSeconds)
-      || presented.audioTimeSeconds < 0) return video;
+      || (presented.audioTimeSeconds < 0 && !Number.isSafeInteger(presented.speechFrame))) return video;
     // Playback PCM has no leading silence; the worker prepends 220 ms. A paused
     // audio element or a stale session cannot select a mouth frame.
     const k = Math.floor((presented.audioTimeSeconds + LEAD_MS / 1000) * FPS + 1e-7);
+    if(presented.speechFrame!==undefined&&presented.speechFrame!==k)return video;
     floor = Math.max(floor, k); discard(floor);
     const expected = plan.timeline[k], item = frames.get(k);
     if (!expected || !item?.tag || presented.take !== expected.take || presented.frame !== expected.frame
@@ -176,9 +177,9 @@ export async function createMovingSpeechFrameLayer({ plan: input, document, deco
     return source;
   }
   return Object.freeze({ push, paint,
-    // Playback may start/continue only with a decoded, tagged frame. A null
-    // worker tag is missing visual evidence, not a license to keep audio going.
-    hasFrame(index) { return !closed && int(index) && Boolean(frames.get(index)?.tag); },
+    // A decoded null-tag frame is Emil's explicit silent/no-change sample
+    // (including the220ms lead). A missing packet still blocks playback.
+    hasFrame(index) { return !closed && int(index) && frames.has(index); },
     releaseBefore(index) {
       if (!int(index) || index > plan.timeline.length) fail('invalid_moving_speech_frame');
       floor = Math.max(floor, index); discard(floor);
