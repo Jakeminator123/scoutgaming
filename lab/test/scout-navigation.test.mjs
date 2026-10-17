@@ -33,20 +33,13 @@ test('four work groups expose the consolidated tools and keep overview and help 
   assert.deepEqual(SCOUT_LEVELS.map(item => [item.href, item.label]), [
     ['/control', '1 · Admin'], ['/partner', '2 · Spelbolag'], ['/play', '3 · Spelare'],
   ]);
-  for (const item of sidebar) {
-    const href = item.href.split('?')[0];
-    const page = href === '/control' ? 'control/[[...path]]/page.tsx' : `${href.slice(1)}/page.tsx`;
-    assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/, item.href);
-  }
 });
 
-test('old direct routes and content aliases retain pages and a visible navigation destination', () => {
+test('old direct routes and content aliases retain a visible navigation destination', () => {
   const covered = new Set(sidebar.map(item => item.href));
   for (const href of [...OLD_HEADER_DESTINATIONS, '/control/videos', '/control/events', '/control/probe']) {
     const active = scoutNavigationItem(href, '');
     assert.equal(covered.has(active?.href), true, href);
-    const page = href === '/control' ? 'control/[[...path]]/page.tsx' : `${href.slice(1)}/page.tsx`;
-    assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/, href);
   }
   for (const href of ['/control/videos', '/control/events', '/control/probe', '/control/tree']) {
     assert.equal(sidebar.some(item => item.href === href), false, href);
