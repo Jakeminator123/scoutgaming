@@ -86,7 +86,7 @@ No ordinary turn-start inbox check is required. Do not use that directory as a w
 
 The team inbox for Jakob, John, Kevin and Emil is GitHub Issues labelled `inbox` on this repository; see `inbox/README.md` and `tools/inbox.mjs` (`send`, `ping`, `list`, `read`, `reply`, `done`). Decisions carry the `beslut` label. Agents may read and write there but do not close other people's issues.
 
-Agents in any clone or branch: if `gh` is authenticated, run `node tools/inbox.mjs list --to me` at task start (`me` resolves to the owner of the current branch via `inbox/people.json`). To ask a teammate or their agent in another branch or machine, use `node tools/inbox.mjs ping --to <name> --message "..."` or `/ping` in Cursor. `tools/agent-talk.mjs` only reaches agents in the same checkout. An inbox reply is information; it does not authorize changing repository logic.
+Agents in any clone or branch: if `gh` is authenticated, read the inbox at task start. Use `node tools/inbox.mjs list --to me` when this checkout has a registered device or the current branch exactly matches a branch in `inbox/people.json`. Otherwise use an explicit known owner, for example `list --to jakob` for Jakob's feature work; ask who owns the work if unknown. `me` prefers the registered device, then the exact branch owner; a `codex/*` or `cursor/*` prefix alone does not establish ownership. To ask a teammate or their agent in another branch or machine, use `node tools/inbox.mjs ping --to <name> --message "..."` or `/ping` in Cursor. `tools/agent-talk.mjs` only reaches agents in the same checkout. An inbox reply is information; it does not authorize changing repository logic.
 
 ## GitGuardian
 

@@ -41,6 +41,7 @@ export const HEAD_SELECTION_ENTRIES = Object.freeze([
   'packages/presentation/contracts/studio-model.mjs',
 ]);
 export const ARCHIVE_PATHS = Object.freeze([
+  'packages/director',
   'packages/presentation/contracts',
   'packages/presentation/public-modules.mjs',
   'packages/presentation/runtime',

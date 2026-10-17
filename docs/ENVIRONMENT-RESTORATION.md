@@ -67,7 +67,7 @@ READY-deployment är inte ett färskt funktions- eller isoleringsprov.
 | --- | --- | --- |
 | `lab/` | Studio-tjänsten: Admin, Partner, Lobby, auth/API och medieåtkomst; `/studio` är teknisk basePath | 24.x, Volta 24.21.0 |
 | `lab/client/` | Admin/lobby-paket som byggs och serveras av Lab | 24.x, Volta 24.21.0 |
-| `apps/croupier-frontend/` | Publik Next-app, spelstart och transport till spelmotorn | 24.x, Volta 24.21.0 |
+| `apps/web/` | Publik Next-app, spelstart och transport till spelmotorn | 24.x, Volta 24.21.0 |
 | `apps/croupier-speech/` | Separat Vercel-tjänst för lång talström | 22.x, Volta 22.23.1 |
 | `web/` | Spelmotor, serverkort, plånbok och gemensam spelarlogik | ≥22.16; produktions-Docker använder 24 |
 | `services/astrid-gpu-worker/gateway/` | Delad transportkod och dess tester; ingen extra publik sajt | ≥22 |
@@ -78,7 +78,7 @@ exekverbar fil; en hårdkodad annan Node-binary går förbi Volta. Lokala pinnar
 styr inte automatiskt Vercel eller Docker: kontrollera respektive byggmiljö.
 
 Inför bygge/fullhook i en ny isolerad arbetskopia behövs låsta beroenden i
-`apps/croupier-frontend/` (`pnpm-lock.yaml`), `apps/croupier-speech/`, `lab/`,
+`apps/web/` (`pnpm-lock.yaml`), `apps/croupier-speech/`, `lab/`,
 `lab/client/`, `web/` och `services/astrid-gpu-worker/gateway/`
 (`package-lock.json` i de fem senare). Kör `pnpm install --frozen-lockfile`
 respektive `npm ci` från rätt paket med dess deklarerade Node-version.
@@ -231,7 +231,7 @@ ingen automatisk återgång.
 
 ## Disponibel lokal byggcache
 
-`lab/.next/cache`, `apps/croupier-frontend/.next` och deras
+`lab/.next/cache`, `apps/web/.next` och deras
 `tsconfig.tsbuildinfo` är återbyggbara. Rensa endast när sessionsvakten saknar
 aktiv session och inga berörda Next-/byggprocesser kör. `lab/tsconfig.json`
 utesluter privat `data/` från appens typkontroll. Labbets övriga `.next`

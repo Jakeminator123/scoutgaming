@@ -62,6 +62,11 @@ Läs säkerhetsstatus vid start och före commit/push enligt `AGENTS.md`.
 `node tools/security-status.mjs` ger nu en samlad rapport från GitHub och den
 befintliga skyddade GitGuardian-kopplingen. MCP `gitguardian.read_security_status`
 ger samma rapport; registreringen finns i projektets `.codex/config.toml`.
+Startkommandot använder ett tillfälligt Git-alias (`git -c`) som kör Node från
+aktuell checkoutrot även när Codex startas i en undermapp. Git och projektets
+Node måste finnas på PATH; ingen personlig checkout-sökväg eller sparad
+Git-konfiguration behövs. Den befintliga skyddade kopplingen är fortfarande
+lokal för användaren; konfigurationen skapar inga behörigheter eller nycklar.
 `--github-only` gör enbart GitHub-kontrollen med befintlig
 CLI-åtkomst. Om den saknas används GitHub-connectorns `github_fetch`: läs
 `branches/main`, frys SHA och läs `check-runs`, `check-suites` samt `status`.
