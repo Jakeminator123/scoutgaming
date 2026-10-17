@@ -1,13 +1,13 @@
-import { validateDealerSpeechReference } from '../../packages/presentation/contracts/dealer-speech-profile.mjs';
-import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
-import { validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import { validateVideoBindings } from './presentation-video-bindings.mjs';
-import { resolveLegacyClipPolicy } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
-import { validateDealerSetBindings } from '../../packages/presentation/contracts/dealer-sets.mjs';
-import {validateVideoMetadata} from '../../packages/presentation/contracts/video-intake.mjs';
-import {validateFrozenRouletteIdle} from '../../packages/presentation/contracts/roulette-idle-contract.mjs';
-import {validateFrozenRouletteStart} from '../../packages/presentation/contracts/roulette-start-contract.mjs';
-import { speechSlotSituation, speechSlotVideoFits } from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import { validateDealerSpeechReference } from '../contracts/dealer-speech-profile.mjs';
+import { StudioStorageError } from '../../studio-access/studio-scope.mjs';
+import { validateProject } from '../contracts/studio-model.mjs';
+import { validateVideoBindings } from './default-video-bindings.mjs';
+import { resolveLegacyClipPolicy } from '../runtime/legacy-clip-policy.mjs';
+import { validateDealerSetBindings } from '../contracts/dealer-sets.mjs';
+import {validateVideoMetadata} from '../contracts/video-intake.mjs';
+import {validateFrozenRouletteIdle} from '../contracts/roulette-idle-contract.mjs';
+import {validateFrozenRouletteStart} from '../contracts/roulette-start-contract.mjs';
+import { speechSlotSituation, speechSlotVideoFits } from '../contracts/speech-slot-bindings.mjs';
 
 const fail = (code, statusCode = 422) => {throw new StudioStorageError(code,statusCode);};
 function checkedVideo(videos,id,dealerId,eventId) {

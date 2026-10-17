@@ -79,7 +79,7 @@ const { createRenderStudioPolicy } = neonStudioEnabled ? await import('./storage
 const { createStudioGameCommandApi } = neonStudioEnabled ? await import('./studio-game-commands.mjs') : {};
 const { createStudioNativeAuth } = neonStudioEnabled ? await import('../packages/studio-access/studio-native-auth.mjs') : {};
 const { createStudioLabSessionCheck } = neonStudioEnabled ? await import('./studio-lab-session.mjs') : {};
-const { createStudioMediaRuntime } = neonStudioEnabled ? await import('../lab/lib/studio-media-runtime.mjs') : {};
+const { createStudioMediaRuntime } = neonStudioEnabled ? await import('./storage/studio-media-runtime.mjs') : {};
 const studioPolicyRuntime = neonStudioEnabled ? await createRenderStudioPolicy({ storage }) : null;
 const studioMediaRuntime = studioPolicyRuntime ? createStudioMediaRuntime({ ...studioPolicyRuntime, repositoryRoot: mediaRepository }) : null;
 const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STORAGE === 'blob'
@@ -163,10 +163,10 @@ const probeStore = (await createPlayerProbeStore(db, playerChatMemory));
 let activeProbeRuntime;
 async function loadProbeRuntime() {
   if(!activeProbeRuntime){
-    const [{createProbeRuntime},{createProjectStore},{readSettings}]=await Promise.all([
-      domain('probe-runtime'),import('../lab/lib/project-store.mjs'),import('../open-claw/lab/src/settings.mjs')]);
+    const [{createProbeRuntime},{createLocalProjectReader},{readSettings}]=await Promise.all([
+      domain('probe-runtime'),import('../packages/studio-registry/server/local-project-reader.mjs'),import('../open-claw/lab/src/settings.mjs')]);
     const projectStore = studioPolicyRuntime?.policy.projectStore()
-      ?? (!postgres && dataDir ? createProjectStore(join(dataDir, 'studio')) : null);
+      ?? (!postgres && dataDir ? createLocalProjectReader(join(dataDir, 'studio')) : null);
     if (!projectStore) throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 });
     activeProbeRuntime ??= await createProbeRuntime({store:probeStore,memory:playerChatMemory,
       projectStore,

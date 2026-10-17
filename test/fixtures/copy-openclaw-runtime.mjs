@@ -6,6 +6,12 @@ import { presentationPublicModules } from '../../packages/presentation/public-mo
 // source modules only, never credentials, persisted settings or runtime data.
 export async function copyOpenClawRuntime(root) {
   for (const file of ['packages/presentation/capability-contract.mjs', 'packages/studio-access/account-role.mjs', 'packages/presentation/public-modules.mjs',
+    'packages/presentation/server/studio-project-bindings.mjs',
+    'packages/presentation/server/default-video-bindings.mjs',
+    'packages/presentation/server/legacy-clip-inventory.mjs',
+    'web/storage/studio-media-runtime.mjs',
+    'web/storage/video-registry.mjs',
+    'web/storage/legacy-clip-inventory.mjs',
     ...presentationPublicModules.map(row => row.source)]) {
     await mkdir(join(root, dirname(file)), {recursive: true});
     await copyFile(new URL('../../' + file, import.meta.url), join(root, file));

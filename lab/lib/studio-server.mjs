@@ -39,7 +39,7 @@ export async function studioInitialData() {
 
 export { remoteRequest } from './studio-director.mjs';
 export { decisionCatalog } from './presentation-selection.mjs';
-export { validateVideoBindings } from './presentation-video-bindings.mjs';
+export { validateVideoBindings } from '../../packages/presentation/server/default-video-bindings.mjs';
 export async function simulateStudio(body, options = {}) {
   return selectPresentation(body, { settings: settingsNow(),...options,videoRegistry: options.videoRegistry ?? await studioVideoRegistry() });
 }

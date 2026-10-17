@@ -28,7 +28,8 @@ svarsbibliotekets metadata ligger i `speech_reply_records`. Mediebytes hämtas
 från privat Blob med oförändrade identitets- och hashkontroller. Saknad eller
 felaktig katalog får inte ersättas med filinläsning från imagen.
 
-`lab/lib/video-registry.mjs` validerar det levererade mediemanifestet och referenserna; den
+`web/storage/video-registry.mjs` komponerar den gemensamma registerkärnan som
+validerar det levererade mediemanifestet och referenserna; den
 importerar inte längre `tools/media/build-lab-video-manifest.mjs`. Den gamla
 lokala omskanningen svarar 410. De tidigare rötterna `emil/dealklipp-v1/`
 och `content/dealers/` är inte bankens kanoniska lagringsplatser.

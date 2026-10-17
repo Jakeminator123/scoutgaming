@@ -1,7 +1,8 @@
-import { readFile, mkdir, writeFile, rename, unlink } from 'node:fs/promises';
+import { createLocalProjectReader } from '../../packages/studio-registry/server/local-project-reader.mjs';
+import { mkdir, writeFile, rename, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { createEmptyProject, normalizeProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import lockfile from 'proper-lockfile';
 import { autoArchiveLocalArtifacts } from '../../tools/retention-archive.mjs';
 
@@ -10,15 +11,7 @@ export { StudioError } from '../../packages/shared/studio-error.mjs';
 
 export function createProjectStore(dataDir = resolve(process.cwd(), 'data')) {
   const file = join(dataDir, 'project.json');
-  const load = async () => {
-    // Old editors permitted incompatible motion bindings. Keep those files
-    // readable for explicit UI repair; save and simulation remain strict.
-    try { return normalizeProject(JSON.parse(await readFile(file, 'utf8')), { allowIncompatibleAnimations: true, preserveMissingLanes: true }); }
-    catch (error) {
-      if (error.code === 'ENOENT') return createEmptyProject();
-      throw new StudioError('Den sparade projektfilen är ogiltig. Originalet har inte ersatts.', 422);
-    }
-  };
+  const { load } = createLocalProjectReader(dataDir);
   return { load, async save(next, expectedRevision) {
     validateProject(next);
     await mkdir(dataDir, { recursive: true });

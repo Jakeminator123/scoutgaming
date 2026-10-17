@@ -1041,3 +1041,15 @@ kontrollera varje automatisk deploy där. Native Node-funktionerna för
 `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns.
 Genererat tal genom Render/Cartesia/RunPod har passerat två tidigare liveprov;
 kallstart, exakt synk och fysisk mikrofon återstår enligt handoffen.
+
+### Medieläsarnas appägarskap
+
+Studio och game kopplar egna Blob-adaptrar till den gemensamma medialäsaren
+i `packages/studio-registry/server/media-runtime.mjs`. Apparna behåller
+sina tidigare roots och lokala filpolicyer. `CROUPIER_DATA_DIR` har samma
+legacy-standardkatalogregel; `NEXT_PUBLIC_LAB_BASE_PATH` behåller den
+befintliga preview-URL-regeln för tom basväg respektive `/studio`.
+`CROUPIER_VERCEL_FRONTEND_ORIGIN` fortsätter styra det exakta betrodda
+proxyursprunget. Källinventariet följer de nya kompositionerna; flytten inför
+inga nya miljövariabler, ändrar inga värden och skapar ingen lokal fallback
+vid ett Neonfel.

@@ -4,7 +4,7 @@ import { createSeedProject, createEmptyProject, addDealer, defaultPresentationLa
 import { kindForEvent } from '../../../../packages/presentation/contracts/video-intake.mjs';
 import { bindClip, clipSlots, clipsForSlot, compositionUses, configuredClipIds, currentClipId, createStudioClient, navigationKeepsStudioTab, roomChoicesPath, selectCompositionLayer, uploadMetadata } from './connected-studio.mjs';
 import { selectPresentation } from '../../../../lab/lib/presentation-selection.mjs';
-import { createStudioProjectBindings } from '../../../../lab/lib/studio-project-bindings.mjs';
+import { createStudioProjectBindings } from '../../../../packages/presentation/server/studio-project-bindings.mjs';
 import { materialSource } from '../../../../packages/presentation/contracts/material-catalog.mjs';
 import { layerAssetPath } from '../../../../packages/presentation/contracts/layer-asset-contract.mjs';
 import { speechSlotStandard, speechSlotVariantId } from '../../../../packages/presentation/contracts/speech-slot-bindings.mjs';

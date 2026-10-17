@@ -7,6 +7,43 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2l-a: appägda medialäsare — lokalt 17 oktober 2026
+
+På baseline `b037b483848b8efbb82f2ec8185ca2decfc52552` äger
+`packages/studio-registry/server/` gemensam mediaorkestrering och explicita
+lokala projekt-/videoläsare. Studio och game har egna verkliga kompositioner
+med sina respektive Blob-adaptrar. Game importerar inte längre Lab för
+projektläsning, videoregister eller media-runtime. Rootval, data-/uploadmappar,
+preview-URL:er och konfigurationskälla är bevarade. Aktuella scoped läsningar
+är fortfarande skilda från fångade snapshots, utan lokal fallback i Neonläget.
+
+Bindningsregler och legacyinventering har en implementation i
+`packages/presentation/server/`. Kontaktvalidatorer och lokal filpolicy
+injiceras från apparna; inga nya browseradresser öppnas. Review-säkerhet,
+`neverAgain`, undantaget för pensionerade index, hash/bytekontroller,
+filhandtag, origin, HEAD och Range bevaras. Studio behåller mkdir, skrivning,
+lås, CAS, historik och arkivering; de gemensamma lokala läsarna skriver inte.
+
+Parentens projekt-/bindningsförberedelser bevarades. En felaktig scope-import
+rättades till befintliga `packages/studio-access/studio-scope.mjs`; den
+befintliga bindningsdeklarationen följde med implementationen. Mekanisk kontroll
+bekräftar oförändrade projekt-, bindnings-, metadata-, inventerings- och
+läsarkroppar, bortsett från namngivna portar och flyttad mappskapning.
+Inga package→app-importer har tillkommit. Befintliga fixture-/QA-listor,
+miljökällinventarier och guider följer de nya ägarna; inga miljövärden ändras.
+
+Node 24.21.0, fyra workers: 142 befintliga riktade prov passerar utan skips,
+inklusive båda appkompositionerna, video-/Range-paritet för tom och /studio
+basePath, Neon/current/captured, legacy-säkerhet, projektwriter och samtliga
+sex runtime-fixturekonsumenter. Miljöinventeringen är grön; testinventeringen
+visar 512 kandidater och noll orphans. Lab-beroenden länkas först efter
+byteidentiska manifest/lock; inga installationer genom junction. Inga nya
+testfiler, fullbyggen, provider-/GPU-anrop, commits eller push här.
+
+C2l-b (presentation/idle) och C2l-c (genererat tal) är inte genomförda.
+C2j/C2k och PR213 behöver integreras före samlad slutgranskning; deras
+SQL-/Director-/speechändringar ingår inte i detta lokala kvitto.
+
 ## Etapp 3 C2h: register- och medieläsare — lokal integration 17 oktober 2026
 
 `packages/studio-registry/server/` äger nu den sammanhängande registerkärnan,

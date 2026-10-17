@@ -573,3 +573,10 @@ npm --prefix open-claw/lab test
 
 Tester använder isolerade filer och simulerade modelltransporter, inte riktiga
 spelare eller modellnycklar. Byggnaden verifierar inte en Render-driftsättning.
+
+Gemensam medieorkestrering och lokala läsare finns i
+`packages/studio-registry/server/`; bindnings- och legacykontroller i
+`packages/presentation/server/`. Studio komponerar dem med sina egna
+Blob-adaptrar och tidigare roots. Projektets skrivning, lås, historik och
+video-/klassificeringsskrivare ligger kvar här. Spelservern har egna
+läsarkompositioner och behöver inte importera dessa Studio-skrivare.

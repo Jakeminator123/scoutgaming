@@ -85,3 +85,12 @@ Lokala SQLite-databaser ligger i Git-ignorerade `web/data/` eller den uttrycklig
 `CROUPIER_DATA_DIR`. Den mappen innehåller tillstånd, inte disponibel demokod;
 läs eller radera den inte som en del av vanlig mappstädning.
 Tekniska kontrakt finns i [LOCAL-PRESENTATION-RUNTIME.md](../docs/LOCAL-PRESENTATION-RUNTIME.md).
+
+Medieruntime och videoregister komponerar spelserverns Blob- och
+läsarportar i `storage/studio-media-runtime.mjs` respektive
+`storage/video-registry.mjs`. De delar kärnor med Studio och bevarar de
+befintliga preview-URL:erna. Lokalt projektläsande använder
+`packages/studio-registry/server/local-project-reader.mjs`, utan Studios
+skrivlås, historik eller arkiveringskod. Neonkonfigurationen får fortfarande
+inte falla tillbaka till lokala authoringfiler. Presentation/idle och
+genererat tal har separata återstående ägarsteg.

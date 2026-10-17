@@ -27,6 +27,12 @@ async function port() {
 // databases are deliberately created without IF NOT EXISTS or reuse/cleanup SQL.
 // A stale database fails CREATE DATABASE instead of becoming a test target.
 export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
+      "web/storage/legacy-clip-inventory.mjs",
+      "web/storage/video-registry.mjs",
+      "web/storage/studio-media-runtime.mjs",
+      "packages/presentation/server/legacy-clip-inventory.mjs",
+      "packages/studio-registry/server/local-video-readers.mjs",
+      "packages/studio-registry/server/media-runtime.mjs",
       'packages/studio-registry/server/blob-reader.mjs', 'packages/studio-registry/server/managed-media-contract.mjs', 'packages/studio-registry/server/media-blob-index.mjs', 'packages/studio-registry/server/media-layout.mjs', 'packages/studio-registry/server/private-media-contract.mjs', 'packages/studio-registry/server/registry-core.mjs', 'packages/studio-registry/server/registry-reader.mjs', 'packages/studio-registry/server/storage-contract.mjs', 'packages/studio-registry/server/video-dealer-registration.mjs', 'packages/studio-registry/server/video-manifest.mjs', 'tools/media-blob-index-reader.mjs', 'lab/lib/video-local-readers.mjs', 'lab/lib/video-alpha-reader.mjs', 'web/blob-media.mjs', 'web/media-blob-index.mjs', 'web/package.json', 'web/package-lock.json',
       'ops/neon-studio/013-moving-speech-admission.sql','web/moving-speech-binding.mjs','web/moving-speech-session.mjs','web/moving-speech-transport.mjs',
       'ops/neon-studio/012-runtime-media-catalog.sql', 'test/fixtures/studio-runtime-sql-checks.mjs', 'test/fixtures/runtime-media-catalog.mjs',
@@ -45,7 +51,7 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'packages/presentation/contracts/operator-lifecycle-key.mjs', 'packages/presentation/server/registered-dealer-idle.mjs',
       'packages/presentation/public-modules.mjs', 'packages/presentation/server/registered-idle-rules.mjs', 'lab/lib/registered-idle-rules.mjs',
       'packages/shared/studio-error.mjs', 'packages/presentation/server/selection.mjs', 'packages/presentation/server/video-bindings.mjs',
-      'lab/lib/presentation-selection.mjs', 'lab/lib/presentation-video-bindings.mjs', 'lab/lib/studio-director.mjs',
+      'lab/lib/presentation-selection.mjs', 'packages/presentation/server/default-video-bindings.mjs', 'lab/lib/studio-director.mjs',
       'ops/neon-game/007-roulette-tables.sql', 'test/roulette-postgres.mjs', 'web/games/roulette/room.mjs', 'web/games/roulette/storage.mjs', 'web/games/roulette/access.mjs', 'web/games/roulette/index.mjs', 'web/games/roulette/rules.mjs',
       'ops/neon-game/product-schema.sql', 'ops/neon-studio/001-studio-metadata.sql', 'ops/neon-studio/002-generation-journals.sql', 'ops/neon-studio/003-operator-speech-qa.sql', 'ops/neon-studio/004-fullfile-reservations.sql', 'ops/neon-studio/005-operators.sql', 'ops/neon-studio/006-operator-audit.sql',
       'test/partner-team-postgres.mjs', 'test/studio-isolated-partner-qa.mjs', 'lab/lib/partner-session.mjs', 'lab/lib/partner-team-api.mjs', 'lab/lib/operator-audit-context.mjs', 'lab/lib/operator-admin-api.mjs', 'lab/lib/operator-journal.mjs',

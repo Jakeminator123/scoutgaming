@@ -17,7 +17,7 @@ export async function createRenderStudioPolicy({ storage, env = process.env, dea
   }
   const repository = createStudioRepository({ pool: storage.pool, scope: config.scope });
   if (!dealerIdle) {
-    const {createStudioMediaRuntime} = await import('../../lab/lib/studio-media-runtime.mjs');
+    const {createStudioMediaRuntime} = await import('./studio-media-runtime.mjs');
     dealerIdle = createRegisteredDealerIdle({registryLoader:createStudioMediaRuntime({repository,scope:config.scope,env}).videoRegistry});
   }
   const policy = createStudioGamePolicy({ repository, scope: config.scope, dealerIdle });

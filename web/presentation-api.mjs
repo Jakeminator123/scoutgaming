@@ -11,8 +11,8 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID, createHash } from 'node:crypto';
-import { createProjectStore } from '../lab/lib/project-store.mjs';
-import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
+import { createLocalProjectReader } from '../packages/studio-registry/server/local-project-reader.mjs';
+import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from './storage/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
 import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
@@ -52,7 +52,7 @@ export function presentationInput(event, published) {
   fail('Unsupported presentation request');
 }
 
-export function createPresentationApi({ db, env = process.env, store = createProjectStore(join(root, 'lab/data')),
+export function createPresentationApi({ db, env = process.env, store = createLocalProjectReader(join(root, 'lab/data')),
   registryOptions = { env, repositoryRoot: root, uploadDir: join(root, 'lab/data', 'videos') },
   select = selectPresentation, directorFetchFactory = null, nativeP6PlaybackContext = null, frozenDealerContext = null, registryLoader = () => loadVideoRegistry(registryOptions), videoResponse,
   recordedSpeechPreview = false, beforeActionPresentation = () => {} } = {}) {
