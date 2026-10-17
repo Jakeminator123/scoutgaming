@@ -18,7 +18,10 @@ import { selectPresentation } from '../packages/presentation/runtime/selection.m
 import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const publicModules = new Map(['live-idle', 'idle-policy'].map(name => [`/presentation-runtime/${name}.mjs`, `packages/presentation/runtime/${name}.mjs`]));
+const publicModules = new Map(['live-idle', 'idle-policy'].flatMap(name => [
+  [`/presentation-runtime/${name}.mjs`, `packages/presentation/runtime/${name}.mjs`],
+  [`/packages/presentation/runtime/${name}.mjs`, `packages/presentation/runtime/${name}.mjs`],
+]));
 publicModules.set('/lab/policies/idle-policy.seed.json', 'lab/policies/idle-policy.seed.json');
 publicModules.set('/web/public/dealer-identity.mjs', 'web/public/dealer-identity.mjs');
 const publicVideo = item => item ? {

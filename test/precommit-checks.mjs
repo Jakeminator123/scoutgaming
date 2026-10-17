@@ -24,7 +24,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
     'apps/croupier-frontend/README.md',
     'packages/presentation/README.md', 'packages/design-preview/README.md',
     'packages/presentation/docs/INTEGRATION.md',
-    'pipeline/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
+    'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
     'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
     'services/astrid-gpu-worker/gateway/README.md',
     'web/README.md', 'web/public/README.md', 'web/storage/README.md',
@@ -33,11 +33,11 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
     assert.equal(mode(guides.map(path => change(path, status))), 'documentation', status);
   }
   for (const path of [
-    'pipeline/encode.sh', 'packages/design-preview/build.mjs',
+    'tools/media/encode.sh', 'packages/design-preview/build.mjs',
     'services/astrid-gpu-worker/.github/workflows/checks.yml',
     'services/astrid-gpu-worker/gateway/auth.mjs', 'web/storage/package.json',
-    'pipeline/runtime-bundle/README.md', 'web/public/lab/README.md',
-    'web/../pipeline/README.md', 'web\\README.md',
+    'tools/media/runtime-bundle/README.md', 'web/public/lab/README.md',
+    'web/../tools/media/README.md', 'web\\README.md',
   ]) {
     assert.equal(mode([...guides.map(path => change(path)), change(path)]), 'focused', path);
   }

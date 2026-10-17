@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
-import { canonicalControlHref } from '../lib/control-flow.mjs';
+import { legacyStudioDocumentHref } from '../lib/admin-workspace-routes.mjs';
 import { studioLoginDestination } from '../lib/studio-login-client.mjs';
 import { fixture } from './fixtures/dealer-forge-fixture.mjs';
 
@@ -52,19 +52,14 @@ function browser(href) {
   };
 }
 
-test('legacy material page redirects safe dealer and room context into the existing workspace',async()=>{
-  let target;
-  const Page=load('../app/control/dealer-forge/page.tsx',{
-    '@/lib/control-flow.mjs':{canonicalControlHref},'@/components/studio-types':{firstQueryValue:value=>Array.isArray(value)?value[0]:value},
-    '../public-redirect':{redirectToPublicControl:async href=>{target=href;}},
-  }).default;
-  await Page({searchParams:Promise.resolve({dealerId:['paow','astrid'],lane:'scene-a',operator:'north',table:'room-7',token:'private',view:'settings'})});
+test('legacy material URL redirects safe dealer and room context into the existing workspace',()=>{
+  const destination=query=>legacyStudioDocumentHref(new Request('https://qa.invalid/control/dealer-forge?'+query));
+  const target=destination('dealerId=paow&dealerId=astrid&lane=scene-a&operator=north&table=room-7&token=private&view=settings');
   const url=new URL(target,'https://qa.invalid');
   assert.equal(url.pathname,'/control/clips');
   assert.deepEqual(Object.fromEntries(url.searchParams),{dealer:'paow',composition:'scene-a',operator:'north',table:'room-7',view:'generate'});
   assert.equal(studioLoginDestination(target,'/studio/api/auth'),target);
-  await Page({searchParams:Promise.resolve({dealer:'https://other.invalid',operator:'bad/value',table:'room-7'})});
-  assert.equal(target,'/control/clips?table=room-7&view=generate');
+  assert.equal(destination('dealer=https://other.invalid&operator=bad/value&table=room-7'),'/control/clips?table=room-7&view=generate');
 });
 
 test('material draft stays mounted across tabs and blocks dealer, history and native account departure',()=>{

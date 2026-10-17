@@ -1,10 +1,37 @@
 # Aktuell handoff — Scoutgaming
 
-Uppdaterad 17 oktober 2026. Tidigare städpass är levererade; etapp 1 av den
-nya strukturplanen samlar testförenkling och verifierade rester i en PR.
+Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200, main
+`51d4fcd6343a66f3cbc3794a977b22b221eb68a8`. Etapp 2 utgår från denna main.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
+
+## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
+
+De 22 spårade filerna i `pipeline/` har flyttats till `tools/media/`, med
+uppdaterade importer, standardrötter, kommandon och testupptäckt. Manuella
+macOS-/Pythonrecept, binär, ljudreferens och mätvärden bevaras; inga mediefiler
+genereras och inga registrydata ändras. Gamla shellkommandon behöver den nya
+verktygssökvägen. Mediernas egna lagringsvägar ändras inte.
+
+Elva OpenClaw-dokumentstubbar är borttagna efter flytt av alla aktiva
+hänvisningar till `docs/AI/openclaw/`. Presentationens enfilsmellanlager är
+borta; Node läser paketmodulen direkt. Två exakta publika paket-URL:er tillåts,
+och gamla `/presentation-runtime/*` samt frontendbyggarens output bevaras.
+Lipsync har godkänt de tre små import-/serveröverlapparna i separat branch.
+
+Sjutton rena redirectskal är samlade i befintlig routning. Sparade URL:er,
+307, basePath och varje ingångs tidigare querypolicy bevaras. Aktiva
+Control-sidor och Admins delade komponenter står kvar; även de redirect-sidor
+som först kontrollerar behörighet bevaras. API, auth, root, preview och
+server actions omfattas inte av nya generella regler.
+
+Riktade kontroller täcker flyttade byggare/kalibreringsspärrar, manifest och
+uppladdning, testupptäckt, befintlig navigation och faktisk middleware i båda
+basvägar/lägen samt publik importgraf och frontendbygge. JS/TS-inventeringen
+är fortsatt 510 kandidater, nio helper/opt-in och noll oklassificerade.
+CI/merge/drift redovisas separat i PR-kvittot. Detta är ingen ny visuell
+medieacceptans. Etapp 3 om kodägarskap är inte startad.
 
 ## Etapp 1: testkörning och förbrukade verktyg — 17 oktober 2026
 
@@ -28,8 +55,9 @@ testprinciper beskrivs i [lab/README](../lab/README.md#regressionssviter-och-tid
 
 Riktade lokala UI-/runner-/inventeringsprov och 45 medie-/workflowkontraktsprov
 är kontrollerade; Windows-specifika skips redovisas i PR-kvittot. Full CI och
-merge följs separat. Ingen ny visuell läppsynksacceptans eller driftändring
-ingår. Etapp 2 och 3 (katalogflyttar och kodägarskap) är inte startade.
+merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
+Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
+läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
 ## Dragan: OpenClaw till gemensam spelare — 17 oktober 2026
 
@@ -47,6 +75,12 @@ bordschatten gav ett nytt OpenClaw-svar på svenska. Spelet visade samtidigt
 att Dragans röstvideo saknas: dynamisk text är verifierad, röst/läppsynk i
 molnspelet är ännu inte verifierad. Inga gamla bolag återöppnades, inga
 insatser lades av agenten och ingen användarplånbok ändrades för provet.
+
+Testrummets paketversion 2 publicerades därefter via Admin: endast den egna
+mallens Desktop/Bord lodrätt ändrades från 35 till 31 procent. Mallen har ett
+enda kopplat rum. Vid 1280×720 överlappade tre insatsytor nederpanelen;
+efter publicering och omladdning är varningen borta. Bredd, kortankare och
+mobilvärden behölls. Det är en layoutkontroll utan spel eller läppsynksprov.
 
 Den publicerade workern är låst till image-digest
 `56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
@@ -67,7 +101,11 @@ Nyckeln får endast skicka jobb till denna endpoint. De åtta nya Render-
 variablerna är sparade med **Save only** och återlästa med exakt värde;
 inga befintliga nycklar redigerades. PR201 har head
 `84050e6317004750c20b76cff1deb599f89da1ce`, mergad enligt mergeagentens
-kvitto på `67ddb82a40db3c4347dd51734227afc8af531527`; driftsättning följs separat.
+kvitto på `67ddb82a40db3c4347dd51734227afc8af531527`. Samma agents efterföljande
+kvitto bekräftar grön main-CI, Vercel READY och Render LIVE med exakt denna SHA.
+PR202 är sedan mergad på `f16b5eac5838d424c5e9fafe804f5024a809af62` och
+konfliktfritt integrerad i rörelsefortsättningen PR203. Dess deploy och PR203:s
+egen granskning/deploy ska bli klara före det bevakade GPU-provet.
 CI:s kvarvarande bundled-schema-assertion är rättad i en separat commit;
 dess 13 fokuserade prov passerade. Efter kontobytet verifierades 13:50 UTC
 samma endpoint, template och image, max0 och noll workers. Render visar

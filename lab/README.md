@@ -12,6 +12,12 @@ fortfarande för befintliga verktyg, inloggning och spelstarter. De detaljerade
 motsvarande `/admin`-verktyg. Aktiva ingångar, bolagsåtkomst och mål finns i
 den kanoniska [användarguiden](docs/README.md).
 
+Rena äldre dokumentalias hanteras gemensamt av `middleware.ts` och
+`lib/admin-workspace-routes.mjs`. Deras tidigare queryregler och publika
+måladresser bevaras. Sidor som laddar data eller först kontrollerar
+behörighet ligger kvar; Admin återanvänder fortfarande flera av deras
+komponenter. Manuella medieverktyg finns i [tools/media](../tools/media/README.md).
+
 **Teknisk roll:** `lab/` är den aktiva Next.js-tjänsten `studio` i
 Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
 `/partner` och deras Studio-API:er. `/studio` är tjänstens basePath i molnet.
@@ -97,12 +103,12 @@ Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
 | --- | --- | --- |
 | Event-ID, källtyper och begrepp | `policies/studio-contract.json` | `test/studio-contract.test.mjs` |
 | Filmfamiljer, standardfiler, variantmappar | `../packages/presentation/runtime/media-families.mjs` | Byggare och validator importerar samma register |
-| Faktiska filer, storlek och SHA-256 | `../media/dealers/astrid/runtime/presentation/lab-video-manifest.json` | `node pipeline/build-lab-video-manifest.mjs --check` från reporoten |
+| Faktiska filer, storlek och SHA-256 | `../media/dealers/astrid/runtime/presentation/lab-video-manifest.json` | `node tools/media/build-lab-video-manifest.mjs --check` från reporoten |
 | Format/validering | `schemas/`, `lib/lab-video-manifest.mjs` | Manifest- och kontraktstester |
 | Sparade operatörsval | vald datakatalogs `project.json` | Revisionslås + historik |
 | Uppmätta kortspår och filhashar | `../web/public/card-presentation/` | `test/local-card-overlay.mjs` + faktisk browsergranskning |
 
-Efter nya mediefiler: kör `node pipeline/build-lab-video-manifest.mjs`,
+Efter nya mediefiler: kör `node tools/media/build-lab-video-manifest.mjs`,
 granska diffen och kör `--check`. Lab:s **Läs in nya filer** använder samma byggare.
 En ny hash är inte ett visuellt godkännande.
 

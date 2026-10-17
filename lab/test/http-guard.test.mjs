@@ -88,9 +88,6 @@ test('loadControlStudio delegates to the guarded UI helper; API routes cannot us
     const source = await readFile(new URL(`../app/control/${file}/page.tsx`, import.meta.url), 'utf8');
     assert.match(source, /loadControlStudio/, file);
   }
-  const activity = await readFile(new URL('../app/control/activity/page.tsx', import.meta.url), 'utf8');
-  assert.match(activity, /redirectToPublicControl\('\/control\/rehearsal'/);
-  assert.doesNotMatch(activity, /loadControlStudio|studioUiInitialData/);
   const tree = await readFile(new URL('../app/control/tree/page.tsx', import.meta.url), 'utf8');
   assert.match(tree, /permanentRedirect/);
   assert.match(tree, /authorizeUiPage/);

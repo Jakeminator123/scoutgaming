@@ -1625,15 +1625,15 @@ raderna i `media/blob-index.json` för de borttagna filerna är det.
 
 Kvarvarande manuella byggare efter verktygsrensningen 17 oktober 2026:
 
-- `pipeline/build-contact-review.mjs` — mål är `dealers/astrid/performance`; nämner inte banken
-- `pipeline/encode.sh` — Annex-B, generell; nämner inte banken
+- `tools/media/build-contact-review.mjs` — mål är `dealers/astrid/performance`; nämner inte banken
+- `tools/media/encode.sh` — Annex-B, generell; nämner inte banken
 
 Tre recept vars fasta indata eller mål tillhörde den borttagna banken är
 avvecklade. Befintliga handmattor, originalmedia och kalibrering bevaras.
 
 Läppsynkskripten som bara läste banken är borta tillsammans med
 `audit-dealer-sync.mjs`, `audit-performance.mjs` och `audit-astrid-actor.mjs`.
-`pipeline/mouth-crops.json` står kvar. Krok och CI kör fortfarande
+`tools/media/mouth-crops.json` står kvar. Krok och CI kör fortfarande
 `build-lab-video-manifest.mjs`, `build-index.mjs` och `pack-contact-media.mjs`.
 
 ## Egen talprofil för registrerade dealers, 11 oktober 2026

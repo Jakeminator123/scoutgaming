@@ -925,7 +925,7 @@ const server = createServer(async (req, res) => {
     finally{res.removeListener('close',disconnected);}
     return;
   }
-  if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || pathname === '/lab/policies/idle-policy.seed.json' || pathname === '/web/public/dealer-identity.mjs') {
+  if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || ['/packages/presentation/runtime/live-idle.mjs', '/packages/presentation/runtime/idle-policy.mjs'].includes(pathname) || pathname === '/lab/policies/idle-policy.seed.json' || pathname === '/web/public/dealer-identity.mjs') {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext,
         beforeActionPresentation:({playerId,version})=>movingSpeechService?.normalPresentation(playerId,version),

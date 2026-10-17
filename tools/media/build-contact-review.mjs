@@ -2,16 +2,16 @@
 // flags or replaces existing dealer speech streams.
 // Legacy Astrid performance recipe: requires an existing target manifest and
 // writes candidate media/manifest there. Review its resolved destination before
-// use; this is not the current clip-library upload flow. See pipeline/README.md.
+// use; this is not the current clip-library upload flow. See tools/media/README.md.
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {calibrationPayload,validateContactTake} from '../web/public/performance-contact.mjs';
+import {calibrationPayload,validateContactTake} from '../../web/public/performance-contact.mjs';
 import {packContactMedia} from './pack-contact-media.mjs';
-import {resolveMediaAbsolutePath} from '../tools/media-layout.mjs';
+import {resolveMediaAbsolutePath} from '../media-layout.mjs';
 const [source,action,pickup,release,land,rest,publicDirectory='web/public',assetName]=process.argv.slice(2);
 if(!source||!/^deal-(?:centre|dealer|left|right)$/.test(action)||![pickup,release,land,rest].every(v=>/^\d+$/.test(v??'')))
-  throw new Error('Usage: node pipeline/build-contact-review.mjs staging-directory action pickup release land rest');
+  throw new Error('Usage: node tools/media/build-contact-review.mjs staging-directory action pickup release land rest');
 const root=resolveMediaAbsolutePath(path.resolve(source)),publicRoot=path.resolve(publicDirectory);
 const target=resolveMediaAbsolutePath(path.join(publicRoot,'dealers/astrid/performance')),prefix=assetName??action.slice(5);
 if(!/^[a-z0-9-]+$/.test(prefix))throw new Error('Invalid asset name');

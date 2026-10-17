@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {packContactMedia} from '../pipeline/pack-contact-media.mjs';
+import {packContactMedia} from '../tools/media/pack-contact-media.mjs';
 
 test('concatenated RGB and masks retain exactly one frame per tracking record',()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'contact-pack-'));

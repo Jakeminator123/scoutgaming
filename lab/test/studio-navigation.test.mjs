@@ -10,22 +10,13 @@ import { labUrl } from '../lib/lab-url.mjs';
 import { studioNavigationContextFromQuery } from '../lib/studio-navigation.mjs';
 import { SCOUT_FOOTER_NAVIGATION, SCOUT_LEVELS, SCOUT_NAVIGATION, scoutNavigationItem } from '../lib/scout-navigation.mjs';
 
-// Addresses copied from STUDIO_PRIMARY_NAVIGATION and STUDIO_TOOL_NAVIGATION at HEAD a2c07702.
-const OLD_HEADER_DESTINATIONS = Object.freeze([
-  '/control', '/control/clips', '/control/administration', '/control/openclaw',
-  '/control/operator-chat', '/control/tree', '/control/activity', '/control/guide',
-]);
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');
 
-test('visible staff menu names Översikt and old header routes still have pages', () => {
+test('visible staff menu names the overview consistently', () => {
   const visible = [...SCOUT_NAVIGATION.flatMap(group => group.items), ...SCOUT_FOOTER_NAVIGATION];
   assert.equal(visible.find(item => item.href === '/control').label, 'Översikt');
   assert.equal(visible.some(item => item.label === 'Kontrollpanel'), false);
-  for (const href of OLD_HEADER_DESTINATIONS) {
-    const page = href === '/control' ? 'control/[[...path]]/page.tsx' : `${href.slice(1)}/page.tsx`;
-    assert.match(readFileSync(new URL(`../app/${page}`, import.meta.url), 'utf8'), /export default/, href);
-  }
 });
 
 test('legacy dealer paths highlight the current page in the visible menu', () => {

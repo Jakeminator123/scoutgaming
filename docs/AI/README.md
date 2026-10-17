@@ -82,6 +82,6 @@ Namnet `open-claw/lab` är en driftsatt sökväg, inte bevis för att koden är 
 Uppdatera en guide samtidigt som dess kontrakt ändras. Skilj aktivt beteende,
 daterat prov och framtida förslag åt. Radera eller ersätt en gammal guide när
 dess konsumenter har flyttats; ålder ensam räcker inte som borttagningsbevis.
-De fyra små hänvisningarna i `open-claw/lab/docs/` behålls för befintliga
-runtime-/katalogreferenser, utan dubbla guidekopior. Ändringsloggen finns i
+Guider och runtimepaketets källhänvisningar använder `docs/AI/openclaw/`.
+De elva gamla dokumentstubbarna är borttagna. Ändringsloggen finns i
 [agentflödet](scoutgaming-agentflode.md#ändringslogg).

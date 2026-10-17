@@ -18,7 +18,7 @@ källmapp; Lissabon är ingen separat produkt eller image.
 | `packages/`, `tools/`, `ops/` | Gemensamma paket, byggverktyg och produktstart. Guide- och policydata under `lab/docs/` och `lab/policies/` följer också med. |
 | `services/astrid-gpu-worker/gateway/` | Talreläet vars beroenden denna Dockerfil installerar. GPU-imagen har en egen Dockerfil och byggs inte av kommandot ovan. |
 | `media/**/runtime` | Filträdet utesluts inte generellt. Eventuella medföljande filer blir inte metadata- eller bytesreserv: produktens runtime använder Neon och Blob. |
-| `pipeline/` | Bevarade verktyg och byggrecept, beskrivna i [mappguiden](../../pipeline/README.md). Mappen följer med men är ingen tjänst som containern startar. |
+| `tools/media/` | Bevarade verktyg och byggrecept, beskrivna i [mappguiden](../../tools/media/README.md). Mappen följer med men är ingen tjänst som containern startar. |
 
 `media/layout.json`, `media/blob-index.json` och hela `media/catalog/` är
 uttryckligen uteslutna ur denna byggkontext. De är lokala authoring-/importkällor,
@@ -29,7 +29,7 @@ från privat Blob med oförändrade identitets- och hashkontroller. Saknad eller
 felaktig katalog får inte ersättas med filinläsning från imagen.
 
 `lab/lib/video-registry.mjs` validerar det levererade mediemanifestet och referenserna; den
-importerar inte längre `pipeline/build-lab-video-manifest.mjs`. Den gamla
+importerar inte längre `tools/media/build-lab-video-manifest.mjs`. Den gamla
 lokala omskanningen svarar 410. De tidigare rötterna `emil/dealklipp-v1/`
 och `content/dealers/` är inte bankens kanoniska lagringsplatser.
 

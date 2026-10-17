@@ -8,10 +8,10 @@ import {
   mediaDefinitionForPath,
   validateLabVideoManifest,
   videoIdFromSha256,
-} from '../lab/lib/lab-video-manifest.mjs';
+} from '../../lab/lib/lab-video-manifest.mjs';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_ROOT = resolve(SCRIPT_DIR, '../media/dealers/astrid/runtime/presentation');
+const DEFAULT_ROOT = resolve(SCRIPT_DIR, '../../media/dealers/astrid/runtime/presentation');
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 
