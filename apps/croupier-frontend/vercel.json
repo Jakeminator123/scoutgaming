@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/platform-speech-stream.mjs": {"maxDuration": 300},
-    "api/platform-lipsync-worker.mjs": {"maxDuration": 600}
+    "api/platform-lipsync-worker.mjs": {"maxDuration": 600},
+    "api/platform-moving-speech-stream.mjs": {"maxDuration": 300}
   }
 }

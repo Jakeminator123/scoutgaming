@@ -125,7 +125,7 @@ export function generatedSpeechStreamConfiguration(env = process.env) {
  */
 export async function createGeneratedSpeechStreamService(server, configuration, {
   resolveOwner, attachRelay, pcmSource, sessionManager: suppliedSessionManager, fetchImpl = fetch, dealerRuntime, replyLibrary, onLibraryStatus = () => {}, replyCaptureBytes = 64 * 1024 * 1024,
-  freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000,
+  freshnessIntervalMs = 500, ticketLifetimeMs = 30000, streamLifetimeMs = 120000, movingSpeechRoutes = false,
   journal = null, journalRequired = process.env.CROUPIER_STUDIO_NEON_POLICY === '1',
 } = {}) {
   if (journalRequired || journal) requireSpeechJournal(journal);
@@ -228,7 +228,7 @@ export async function createGeneratedSpeechStreamService(server, configuration, 
     if (record.controller.signal.aborted || record.input.signal?.aborted || records.get(record.id) !== record) fail('generated_speech_stream_cancelled', 499);
   };
   relay = attach(server, {
-    workerSecret, allowedOrigins: [origin], maxAudioSeconds: 25, allowClientPCM: false,
+      workerSecret, allowedOrigins: [origin], maxAudioSeconds: 25, allowClientPCM: false, movingSpeechRoutes,
     ...(configuration.session ? { maxWorkers: 1, maxSessions: 1 } : {}),
     onFirstMedia(identity) {
       const record = records.get(identity.sessionId);

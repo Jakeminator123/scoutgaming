@@ -86,6 +86,7 @@ const speechReplyLibrary = studioPolicyRuntime && process.env.CROUPIER_MEDIA_STO
     repository:(await import('./storage/speech-reply-repository.mjs')).createSpeechReplyRepository({sql:storage.pool,scope:studioPolicyRuntime.scope})}) : null;
 const dealerSpeechRuntime = studioPolicyRuntime ? createDealerSpeechRuntime({
   readProject: () => studioPolicyRuntime.policy.projectStore().load(),
+  readVideoRegistry:studioMediaRuntime.videoRegistry,
   referenceService: createDealerSpeechReferenceService({readVideoRegistry:studioMediaRuntime.videoRegistry,readVideoResponse:studioMediaRuntime.videoResponse}),
 }) : null;
 // Operator packages share the Studio pool and scope; a read failure keeps today's entry.
@@ -156,6 +157,7 @@ const playerChatMemory = (await createPlayerChatMemory(db, {studioScope:studioPo
 let presentationApi;
 const activePlayerChats = new Map();
 let speechStreamService = null;
+let movingSpeechService = null;
 const probeStore = (await createPlayerProbeStore(db, playerChatMemory));
 let activeProbeRuntime;
 async function loadProbeRuntime() {
@@ -727,6 +729,7 @@ const studioPreview = studioPolicyRuntime ? await (async () => {
 const roulettePreview = createRoulettePreview({ origin: gameOrigin });
 const server = createServer(async (req, res) => {
   try {
+  if (movingSpeechService && await movingSpeechService.handleHttp(req,res)) return;
   if (nativeP6QaRouter && await nativeP6QaRouter(req, res)) return;
   const pathname=new URL(req.url,'http://local').pathname;
   if ((pathname === '/roulette-test' || pathname.startsWith('/roulette-test/') || pathname === '/api/roulette-test/spin')
@@ -1123,7 +1126,9 @@ const server = createServer(async (req, res) => {
         };
         const speechTrace = randomBytes(8).toString('hex');
         const registeredSpeech = await dealerSpeechRuntime?.requested(dealerId);
-        if (registeredSpeech && (!speechStreamService || incoming.acceptsSpeechStream !== true)) throw Object.assign(Error('generated_speech_stream_required'), {statusCode:503});
+        const selectedSpeechStream = movingSpeechService?.supports(dealerId)
+          ? movingSpeechService.forContext(chatAuthorization.presentationContext) : speechStreamService;
+        if (registeredSpeech && (typeof selectedSpeechStream?.prepare !== 'function' || incoming.acceptsSpeechStream !== true)) throw Object.assign(Error('generated_speech_stream_required'), {statusCode:503});
         const decision = await completeChatWithSpeech({ request, status, owner, playerId: authenticated,
           onTiming: (stage, ms) => {
             if (speechStreamService && incoming.acceptsSpeechStream === true && Number.isSafeInteger(ms) && ms >= 0) {
@@ -1147,7 +1152,7 @@ const server = createServer(async (req, res) => {
             })) });
           },
           service: dealerId==='astrid'?getGeneratedSpeechService():null,
-          streamService: (dealerId==='astrid'||registeredSpeech)&&incoming.acceptsSpeechStream === true ? speechStreamService : null,
+          streamService: (dealerId==='astrid'||registeredSpeech)&&incoming.acceptsSpeechStream === true ? selectedSpeechStream : null,
         });
         // completeChatWithSpeech rechecks ownership/round after all async work.
         // Persist a generated response, never claim the browser has played it.
@@ -1335,6 +1340,7 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
   const streaming = generatedSpeechStreamConfiguration(process.env);
   if (!streaming.configured) throw new Error('generated_speech_stream_not_configured');
   speechStreamService = await createGeneratedSpeechStreamService(server, streaming.configuration, {
+    movingSpeechRoutes:process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1',
     dealerRuntime:dealerSpeechRuntime, replyLibrary:speechReplyLibrary,
     onLibraryStatus:status => console.info(JSON.stringify({event:'speech_reply_library',...status})),
     ...(nativeP6QaRouter?.providerFetch ? { fetchImpl:nativeP6QaRouter.providerFetch } : {}),
@@ -1342,6 +1348,62 @@ if (process.env.CROUPIER_GENERATED_SPEECH_STREAMING === '1') {
     resolveOwner: async (req, playerId) => operatorSpeechQa.ownsIdentity(playerId)
       ? operatorSpeechQa.resolveOwner(req, playerId) : (await chatSessionOwner(req, playerId)),
   });
+}
+if (process.env.CROUPIER_MOVING_SPEECH_ENABLED === '1') {
+  if (!studioPolicyRuntime || !speechJournal || !dealerSpeechRuntime) throw Error('moving_speech_registry_required');
+  const [{loadMovingBankArtifacts},{createMovingSpeechRunPod},{createMovingSpeechSession},{createMovingSpeechRuntime},{getPrivateMedia,withVerifiedPrivateMediaFile}] = await Promise.all([
+    import('./moving-speech-bank-artifacts.mjs'),import('./moving-speech-runpod.mjs'),import('./moving-speech-session.mjs'),
+    import('./moving-speech-runtime.mjs'),import('../lab/lib/cloud-media-store.mjs')]);
+  const bank=await loadMovingBankArtifacts(JSON.parse(process.env.CROUPIER_MOVING_SPEECH_BANK_RECORD ?? 'null'));
+  if (bank.sourceSet.dealerId !== 'dragan') throw Error('moving_speech_test_dealer_required');
+  // Fetch and hash the immutable derived bank before accepting a paid job.
+  // Worker transfer then reads the existing verified cache, bypassing Vercel.
+  await withVerifiedPrivateMediaFile(bank.archive,async()=>true);
+  await withVerifiedPrivateMediaFile(bank.receipt,async()=>true);
+  const provider=createMovingSpeechRunPod({endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,
+    apiKey:process.env.CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY,expectedImage:process.env.CROUPIER_MOVING_SPEECH_IMAGE});
+  const sessions=createMovingSpeechSession({journal:speechJournal,scope:studioPolicyRuntime.scope,
+    origin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,endpointId:process.env.CROUPIER_MOVING_SPEECH_ENDPOINT_ID,provider,
+    release:provider.release,workerState:provider.workerState,budgetId:'dragan-test-20261017',
+    // Includes the earlier $0.169813 pod charge plus a conservative margin.
+    totalBudgetMicroUsd:4800000,reserveMicroUsd:1200000,currentDailyBudgetMicroUsd:4800000});
+  const recovery=await sessions.reconcile();
+  if(recovery.unresolved.length)console.warn(JSON.stringify({event:'moving_speech_recovery',unresolved:recovery.unresolved.length}));
+  const repository=studioPolicyRuntime.repository;
+  const {assertMovingSpeechSource}=await import('./moving-speech-bank.mjs');
+  movingSpeechService=createMovingSpeechRuntime({server,origin:process.env.PUBLIC_URL,workerOrigin:process.env.CROUPIER_MOVING_SPEECH_WORKER_ORIGIN,
+    ticketSecret:process.env.CROUPIER_MOVING_SPEECH_TICKET_SECRET,bank,
+    releaseSha256:process.env.CROUPIER_MOVING_SPEECH_RELEASE_SHA256,sessions,dealerRuntime:dealerSpeechRuntime,
+    resolveOwner:chatSessionOwner,readRegistry:studioMediaRuntime.videoRegistry,
+    readEvidence:async (context,mediaId)=>{
+      const [frozenContext,project,media]=await Promise.all([
+        frozenDealerContext.resolve(context),repository.readDocument('project'),
+        storage.pool.query('SELECT id,revision,record FROM croupier_studio.media_records WHERE environment_id=$1 AND workspace_id=$2 AND id=ANY($3::uuid[])',
+          [studioPolicyRuntime.scope.environment,studioPolicyRuntime.scope.workspaceId,bank.sourceSet.clips.map(clip=>clip.videoId)])]);
+      const records=bank.sourceSet.clips.map(clip=>{
+        const matches=media.rows.filter(row=>row.id===clip.videoId),saved=matches[0];
+        if(matches.length!==1||!saved?.record)throw Error('moving_speech_bank_source_missing');
+        const record={...saved.record,revision:saved.revision};
+        assertMovingSpeechSource({...record,dealer:record.classification?.dealerId,available:true,storage:'private-blob',bytes:record.size},bank.sourceSet.dealerId,clip);
+        return record;
+      });
+      const record=records.find(row=>row.id===mediaId);
+      const published=frozenContext.records.find(row=>row.id===mediaId);
+      if (!record || !project || frozenContext.schemaVersion!==3 || !published || published.sha256!==record.sha256
+        || published.pathname!==record.pathname || published.size!==record.size) throw Error('moving_speech_publication_changed');
+      return {frozenContext,projectRevision:project.revision,record,
+        mediaReferences:records.map(record=>({id:record.id,pathname:record.pathname,revision:record.revision,sha256:record.sha256}))};
+    },
+    readRest:({record},request)=>getPrivateMedia({provider:'vercel-blob',pathname:record.pathname,sha256:record.sha256,
+      size:record.size,contentType:record.contentType},request),
+  });
+  const existing=speechStreamService;
+  // Existing login/logout/profile/room cancellation continues to reach both
+  // paths; all Astrid preparation and relay methods remain unchanged.
+  speechStreamService={...existing,
+    cancelOwner:value=>Promise.all([existing?.cancelOwner(value),movingSpeechService.cancelOwner(value)]),
+    cancelPlayer:value=>Promise.all([existing?.cancelPlayer(value),movingSpeechService.cancelPlayer(value)]),
+    close:options=>Promise.all([existing?.close(options),movingSpeechService.close()])};
 }
 installGracefulShutdown({ server, closeRuntime: async ({ signal }) => {
   studioPreview?.close();

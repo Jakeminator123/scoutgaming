@@ -176,6 +176,14 @@ export async function createMovingSpeechFrameLayer({ plan: input, document, deco
     return source;
   }
   return Object.freeze({ push, paint,
+    // Playback may start/continue only with a decoded, tagged frame. A null
+    // worker tag is missing visual evidence, not a license to keep audio going.
+    hasFrame(index) { return !closed && int(index) && Boolean(frames.get(index)?.tag); },
+    releaseBefore(index) {
+      if (!int(index) || index > plan.timeline.length) fail('invalid_moving_speech_frame');
+      floor = Math.max(floor, index); discard(floor);
+    },
+    get bufferedFrames() { return frames.size + reserved; },
     close() {
       if (closed) return; closed = true; controller.abort(); discard(Infinity); seen.clear();
       for (const canvas of [source, patch, packed]) if (canvas) canvas.width = canvas.height = 0;

@@ -54,7 +54,8 @@ run_node_tests database speech-journal-runtime test/speech-journal-runtime.mjs t
 run_node_tests presentation registered-cloud-idle test/registered-cloud-idle.mjs test/registered-cloud-playback.mjs
 run_node_tests presentation managed-media-contract test/managed-media-contract.mjs test/frozen-dealer-idle.mjs test/frozen-presentation-capture.mjs test/frozen-dealer-events.mjs test/frozen-dealer-presentation.mjs test/presentation-capability-contract.mjs test/presentation-capabilities.mjs test/presentation-package-compression.mjs
 run_node_tests presentation partner-navigation-guard lab/components/kevin-bo/partner-navigation-guard.test.mjs
-run_node_tests presentation moving-speech-plan test/moving-speech-plan.mjs test/moving-speech-pcm.mjs test/moving-speech-frame-layer.mjs test/moving-speech-transport.mjs
+run_node_tests presentation moving-speech-plan test/moving-speech-plan.mjs test/moving-speech-pcm.mjs test/moving-speech-frame-layer.mjs test/moving-speech-transport.mjs test/moving-speech-session.mjs test/moving-speech-player.mjs test/moving-speech-runtime.mjs test/moving-speech-bank-artifacts.mjs test/moving-speech-runpod.mjs
+run_node_tests access moving-speech-cloud-config test/cloud-config.mjs
 run_node_tests presentation moving-speech-bank test/moving-speech-bank.mjs test/moving-speech-sources.mjs test/build-moving-speech-bank.mjs
 run_node_tests presentation presentation-layers test/presentation-layers.mjs test/presentation-rooms.mjs test/layer-asset-store.mjs test/layer-media-inspection.mjs test/composition-runtime.mjs test/registered-idle.mjs packages/presentation/preview/prepare.test.mjs
 run_node_tests presentation card-view test/card-view.mjs test/background-playback-policy.mjs test/background-playback.mjs test/game-overlay-layout.mjs
@@ -84,7 +85,7 @@ run_node_tests speech build-index test/build-index.mjs test/speech-playback.mjs
 run_node_tests speech openclaw-chat-contract test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/chat-presentation-context.mjs test/registered-chat-context.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs test/chat-response.mjs
 run_node_tests speech astrid-camera test/astrid-camera.mjs test/astrid-camera-control.mjs test/astrid-camera-audio.mjs test/astrid-wake-word.mjs test/astrid-transcription.mjs test/astrid-chat-visibility.mjs
 run_node_tests speech activate-native-ai-qa test/activate-native-ai-qa.mjs test/generated-speech-provider.mjs test/generated-speech.mjs test/generated-speech-chat.mjs test/generated-speech-player.mjs test/lab-speech-bridge.mjs test/player-chat-memory.mjs test/registered-chat-memory.mjs
-run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/native-p6-game-playback.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
+run_node_tests speech dealer-speech-reference test/dealer-speech-reference.mjs test/dealer-speech-runtime.mjs test/dealer-moving-speech-runtime.mjs test/generated-speech-session.mjs test/generated-speech-stream.mjs test/generated-speech-stream-player.mjs test/native-p6-game-playback.mjs test/generated-speech-stream-http.mjs test/operator-speech-qa.mjs test/server-shutdown.mjs
 run_node_tests speech player-probe test/player-probe.mjs
 run_node_tests gameplay performance-contact test/performance-contact.mjs test/performance-player-source.mjs test/pack-contact-media.mjs test/table-audio.mjs
 run_node_tests gameplay dealer-reach test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs

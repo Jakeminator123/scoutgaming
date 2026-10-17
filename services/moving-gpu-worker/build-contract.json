@@ -8,11 +8,11 @@
   "command": "python build.py --tag croupier-moving-worker:local",
   "runtime": {
     "entrypoint": "JSON {id: providerJobId, input: job} on stdin; one redacted JSON result on stdout",
-    "mount": "/banks read-only: <avatarSha256>.tar and <bankReceiptSha256>.json; no keys or media in image",
+    "mount": "Optional /banks read-only: <avatarSha256>.tar and <bankReceiptSha256>.json; bankDownload capabilities may instead populate a verified ephemeral /tmp cache",
     "environment": [
       "MOVING_CALLBACK_ORIGIN=https://approved-exact-engine-origin"
     ],
-    "protocol": "Existing pong/start/PCM/end/lapp/done plus mandatory pong.attestation and exact bind acknowledgement",
+    "protocol": "Existing pong/start/PCM/end/lapp/done plus mandatory pong.attestation and exact bind acknowledgement and per-chunk id/del ack (15s bound)",
     "rendering": "24fps, 220ms leading and 530ms trailing silence, 12-frame chunks; one utterance/job",
     "admission": "Game server and budget journal own authorization, reservation, accepted provider job and finalization",
     "serverless": {
@@ -24,6 +24,16 @@
       "executionTimeoutSeconds": 180,
       "idleTimeoutSeconds": 60,
       "deploymentApplied": false
+    },
+    "bankDownload": {
+      "schemaVersion": 1,
+      "origin": "HTTPS with callback hostname and effective port; no redirects/proxies",
+      "maximumArchiveBytes": 1073741824,
+      "maximumReceiptBytes": 131072,
+      "totalTimeoutSeconds": 60,
+      "ioTimeoutSeconds": 15,
+      "cache": "Hash-addressed /tmp/croupier-moving-banks, reverified on every hit; corrupt entries fail closed",
+      "credentials": "Only job-bound capability URLs; no general Blob or provider key"
     }
   },
   "notes": [

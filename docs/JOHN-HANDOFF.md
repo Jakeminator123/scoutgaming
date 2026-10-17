@@ -5,7 +5,34 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
-## Dealerklipp: importkontrakt, referensskydd och workerförberedelse — 17 oktober 2026
+## Dragan: OpenClaw till gemensam spelare — 17 oktober 2026
+
+PR191 är mergad på `f5f8414628e39fee4cbf703054c0ee57d2b48157`.
+Mergeagentens separata kvitto bekräftar grön main-CI och samma commit på
+Vercel och Render. Fortsättningen ligger på `codex/dragan-openclaw-live`.
+
+Den nya, uttryckligen avstängda talvägen binder OpenClaws exakta text till
+Dragan-profilen, publicerat media, en verifierad avatarbank och ett enda
+RunPod-jobb. Migration013 tillför bestående mediereferenser och ett totalt
+testtak. TTS får starta först efter accepterat jobb och verifierad worker.
+Privata bankfiler hämtas med kortlivade exakta behörigheter till workerns
+tillfälliga cache. Originalfilmer och Astrids endpoint ändras inte.
+
+Spelaradaptern använder vilans uttryckliga källruta mellan kortsekvenser;
+ljudklockan och verifierade ansiktsrutor följer samma plan. Kredit och
+chunk-kvittens begränsar buffertar hela vägen till workern. Samtidigt tal
+över en pågående utdelning är inte aktiverat i denna första integration.
+
+Fokuserade kontroller omfattar riktiga HTTP/WebSocket-förlopp och Chrome/
+WebCodecs med syntetiska medier, återkallad ägare/profil/publicering,
+engångsbiljetter, kostnadsgräns, avbrott och workerprotokoll. Dessa är inte
+visuell acceptans av Dragan. Isolerad PostgreSQL, publicerad image, migration,
+runtime-konfiguration och ett verkligt OpenClaw/GPU/spelarprov återstår före
+aktivering. Första tidigare GPU-provet är fakturerat till 0,169812463 USD;
+nyvägen reserverar högst 4,80 USD totalt inom Jakobs mandat på 5 USD.
+Jakob har valt ett separat Dragan-testrum. Pausade operatörer ska inte öppnas.
+
+## Dealerklipp: levererad förberedelse i PR191
 
 På `codex/dragan-lipsync-registry` / PR191 finns nu en körbar skrivfri importplan
 för fryst Kevin-underlag och utökat raderingsskydd. Planen bevarar exakta ID:n,

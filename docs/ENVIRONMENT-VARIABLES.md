@@ -10,6 +10,23 @@ Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
 ## Runtimekontrakt, 16 oktober 2026
 
+Dragan-vägen använder ett separat, explicit aktiverat block på Render.
+`CROUPIER_MOVING_SPEECH_ENABLED=1` kräver Neon/PostgreSQL, privat Blob och
+registrerade talprofiler. `BANK_RECORD` är JSON med en validerad privat
+manifestreferens (inte själva banken); `ENDPOINT_ID`, `RUNPOD_API_KEY`, `IMAGE`,
+`RELEASE_SHA256`, `TICKET_SECRET` och `WORKER_ORIGIN` använder samma prefix
+`CROUPIER_MOVING_SPEECH_`. Imagen måste vara vår GHCR-digest; worker-origin
+måste exakt motsvara `RENDER_EXTERNAL_URL`. Bara Web får dessa värden.
+Lab får inga nya GPU-nycklar. Flagga av lämnar tidigare miljö oförändrad.
+Banköverföring/callback går direkt till Render; webbläsarens auth och tal går
+via den ordinarie sajten. Ändra inte Astrids befintliga variabler vid aktivering.
+
+Testets stabila budget-ID är `dragan-test-20261017`: högst 4,80 USD i nya
+reservationer, 1,20 USD per försök inklusive start/röst/avvecklingsmarginal.
+Tidigare faktisk RunPod-kostnad är 0,169812463 USD. Reservationer återbetalas
+inte automatiskt; osäkra providersvar blockerar återförsök. Detta ersätter
+inte kontroll av faktisk fakturering och att den separata endpointen skalat ned.
+
 Den nya runtimekoden kräver scoped Neon som enda metadataregister, inklusive
 `runtime_media_catalogs` och `speech_reply_records` från migration 012.
 Privat Blob lagrar mediebytes och kräver `CROUPIER_MEDIA_STORAGE=blob` samt

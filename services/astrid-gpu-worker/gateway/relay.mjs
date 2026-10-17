@@ -7,7 +7,7 @@ import { constantEqual } from './auth.mjs';
  * One worker serves one utterance at a time; overload is rejected, never queued.
  */
 export function attachSpeechRelay(server, {
-  workerSecret, allowedOrigins, authenticateClient, authenticateWorker = () => true,
+  workerSecret, allowedOrigins, authenticateClient, authenticateWorker = () => true, movingSpeechRoutes = false,
   maxWorkers = 4, maxSessions = 4, maxAudioSeconds = 25,
   maxBufferedBytes = 8 * 1024 * 1024, sessionTimeoutMs = 120000,
   idleTimeoutMs = 15000, cancelTimeoutMs = 5000,
@@ -125,6 +125,7 @@ export function attachSpeechRelay(server, {
   const upgrade = async (req, socket, head) => {
     try {
       const path = new URL(req.url, 'http://localhost').pathname;
+      if (movingSpeechRoutes && (path === '/moving-speech-stream' || path.startsWith('/lipsync-moving/'))) return;
       if (path === '/lipsync-worker') {
         const id = req.headers['x-worker-id'];
         if (!constantEqual(req.headers.authorization || '', `Bearer ${workerSecret}`) || typeof id !== 'string' || !/^[\w-]{1,100}$/.test(id)) return reject(socket);

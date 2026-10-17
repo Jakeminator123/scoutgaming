@@ -1,0 +1,291 @@
+import { createMovingSpeechFrameLayer } from './moving-speech-frame-layer.mjs';
+import { effectiveDealerCompositing } from './dealer-compositing.mjs';
+
+const HASH = /^[a-f0-9]{64}$/, ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+const fail = code => { throw Error(code); };
+const integer = n => Number.isSafeInteger(n) && n >= 0;
+const abortError = () => new DOMException('Speech cancelled', 'AbortError');
+const digest = async bytes => [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(v => v.toString(16).padStart(2, '0')).join('');
+const abortable = (promise, signal) => new Promise((resolve, reject) => {
+  const abort = () => reject(abortError());
+  signal.addEventListener('abort', abort, { once: true });
+  Promise.resolve(promise).then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+  if (signal.aborted) abort();
+});
+const keys = (value, names) => value && typeof value === 'object' && !Array.isArray(value)
+  && Object.keys(value).sort().join(',') === [...names].sort().join(',');
+
+export function movingSpeechSocketURL(path, origin) {
+  if (path !== '/moving-speech-stream') fail('invalid_moving_speech_url');
+  const url = new URL(path, origin);
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) fail('moving_speech_requires_secure_transport');
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return url.href;
+}
+
+/** The cookie owner and ticket signature are checked at the server. This also
+ * rejects substituted descriptors before opening a socket or starting work. */
+export async function validateMovingSpeechStream(value, { exactText, dealerId, requestId, now = Date.now() } = {}) {
+  if (!keys(value, ['schemaVersion', 'kind', 'id', 'requestId', 'dealerId', 'exactText', 'textSha256',
+    'reviewStatus', 'url', 'ticket', 'expiresAt', 'profileRevision', 'avatarSha256', 'attemptId', 'nonce', 'compositing'])
+    || value.schemaVersion !== 1 || value.kind !== 'moving-speech-stream' || !/^[a-f0-9]{32}$/.test(value.id)
+    || !ID.test(value.requestId) || value.requestId !== requestId || value.dealerId !== dealerId
+    || !/^[a-z][a-z0-9-]{0,63}$/.test(value.dealerId) || !ID.test(value.attemptId) || !ID.test(value.nonce)
+    || ![value.textSha256, value.profileRevision, value.avatarSha256].every(v => typeof v === 'string' && HASH.test(v))
+    || typeof exactText !== 'string' || !exactText || exactText.length > 500 || exactText !== exactText.trim()
+    || /[\u0000-\u001f\u007f-\u009f]/.test(exactText) || value.exactText !== exactText
+    || value.reviewStatus !== 'pending' || value.url !== '/moving-speech-stream'
+    || typeof value.ticket !== 'string' || value.ticket.length > 4096 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(value.ticket)
+    || !Number.isSafeInteger(value.expiresAt) || value.expiresAt <= now || value.expiresAt > now + 60000) fail('invalid_moving_speech_descriptor');
+  const c = value.compositing;
+  if (c !== null && (!keys(c, ['mode', 'threshold', 'softness', 'despill']) || c.mode !== 'green-screen'
+    || !Number.isFinite(c.threshold) || c.threshold < 0 || c.threshold > 1 || !Number.isFinite(c.softness)
+    || c.softness <= 0 || c.softness > 1 || !Number.isFinite(c.despill) || c.despill < 0 || c.despill > 1)) fail('invalid_moving_speech_compositing');
+  let claims;
+  try { claims = JSON.parse(atob(value.ticket.split('.')[0].replace(/-/g, '+').replace(/_/g, '/'))); }
+  catch { fail('invalid_moving_speech_ticket'); }
+  if (claims.sessionId !== value.id || claims.exp !== value.expiresAt || claims.attemptId !== value.attemptId
+    || claims.nonce !== value.nonce) fail('moving_speech_ticket_mismatch');
+  if (await digest(new TextEncoder().encode(exactText)) !== value.textSha256) fail('moving_speech_text_hash_mismatch');
+  return Object.freeze({ ...value, compositing: c && Object.freeze({ ...c }) });
+}
+
+function readReady(message, speech) {
+  if (!keys(message, ['t', 'protocol', 'id', 'attemptId', 'nonce', 'plan', 'rest', 'audio']) || message.t !== 'ready'
+    || message.protocol !== 1 || message.id !== speech.id || message.attemptId !== speech.attemptId || message.nonce !== speech.nonce) fail('invalid_moving_speech_ready');
+  const { plan, rest, audio } = message, b = plan?.binding;
+  if (!b || b.sessionId !== speech.id || b.talkId !== speech.requestId || b.dealerId !== speech.dealerId
+    || b.profileRevision !== speech.profileRevision || b.textSha256 !== speech.textSha256 || b.avatarSha256 !== speech.avatarSha256
+    || b.revision !== 1 || plan.start?.fran_ruta !== 0 || !Array.isArray(plan.timeline) || !plan.timeline.length
+    || !keys(rest, ['videoId', 'sha256', 'sourceFrame', 'fps', 'frameCount', 'width', 'height', 'bytes', 'url'])
+    || !UUID.test(rest.videoId) || !HASH.test(rest.sha256) || rest.fps !== 24 || !integer(rest.sourceFrame)
+    || !integer(rest.frameCount) || rest.sourceFrame >= rest.frameCount || !integer(rest.width) || !integer(rest.height)
+    || !rest.width || !rest.height || rest.width > 4096 || rest.height > 4096 || !integer(rest.bytes) || !rest.bytes || rest.bytes > 32 * 1024 * 1024
+    || rest.url !== `/api/moving-speech/${speech.id}/rest`
+    || plan.timeline.some(row => row.take !== 'vila' || row.frame !== 0 || row.sourceSha256 !== rest.sha256)
+    || !keys(audio, ['format', 'sampleRate', 'channels', 'byteLength']) || audio.format !== 's16le' || audio.sampleRate !== 24000
+    || audio.channels !== 1 || !integer(audio.byteLength) || !audio.byteLength || audio.byteLength % 2 || audio.byteLength > 1200000
+    || plan.timeline.length !== Math.floor((audio.byteLength / 2 + 18000) / 1000)
+    || (audio.byteLength / 48000 + .22) * 24 > plan.timeline.length) fail('invalid_moving_speech_ready');
+  return { plan, rest, audio };
+}
+
+function wav(pcm) {
+  const bytes = new Uint8Array(44 + pcm.byteLength), view = new DataView(bytes.buffer);
+  const word = (offset, text) => [...text].forEach((c, i) => { bytes[offset + i] = c.charCodeAt(0); });
+  word(0, 'RIFF'); view.setUint32(4, 36 + pcm.byteLength, true); word(8, 'WAVE'); word(12, 'fmt ');
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+  view.setUint32(24, 24000, true); view.setUint32(28, 48000, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  word(36, 'data'); view.setUint32(40, pcm.byteLength, true); bytes.set(pcm, 44);
+  return new Blob([bytes], { type: 'audio/wav' });
+}
+
+/** Verify the original bytes, then observe the exact decoded source frame. No
+ * approximate-duration video or independently looping body clock is used. */
+export async function loadMovingSpeechRest(rest, { signal, document = globalThis.document, fetchImpl = fetch,
+  createURL = URL.createObjectURL, revokeURL = URL.revokeObjectURL } = {}) {
+  const response = await fetchImpl(rest.url, { signal, credentials: 'same-origin', redirect: 'error', cache: 'no-store' });
+  if (!response.ok || response.headers.get('content-type')?.split(';')[0] !== 'video/mp4'
+    || Number(response.headers.get('content-length')) > rest.bytes) { await response.body?.cancel(); fail('moving_speech_rest_unavailable'); }
+  const reader = response.body?.getReader(), parts = []; let size = 0;
+  if (!reader) fail('moving_speech_rest_unavailable');
+  try { for (;;) { const { done, value } = await reader.read(); if (done) break;
+    size += value.byteLength; if (size > rest.bytes) { await reader.cancel(); fail('moving_speech_rest_size'); } parts.push(value);
+  } } finally { reader.releaseLock(); }
+  const bytes = new Uint8Array(size); let offset = 0;
+  for (const part of parts) { bytes.set(part, offset); offset += part.byteLength; }
+  if (size !== rest.bytes || await digest(bytes) !== rest.sha256) fail('moving_speech_rest_hash_mismatch');
+  if (signal?.aborted) throw abortError();
+  const video = document.createElement('video'), url = createURL(new Blob([bytes], { type: 'video/mp4' }));
+  let frameCallback;
+  video.muted = true; video.playsInline = true; video.preload = 'auto';
+  try {
+    if (typeof video.requestVideoFrameCallback !== 'function') fail('moving_speech_frame_clock_unavailable');
+    return await new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (error, canvas) => { if (settled) return; settled = true;
+        clearTimeout(timer); signal?.removeEventListener('abort', abort); video.pause(); error ? reject(error) : resolve(canvas); };
+      const abort = () => finish(abortError());
+      const timer = setTimeout(() => finish(Error('moving_speech_rest_timeout')), 10000);
+      signal?.addEventListener('abort', abort, { once: true });
+      video.onerror = () => finish(Error('moving_speech_rest_decode_failed'));
+      video.onloadedmetadata = () => {
+        if (settled) return;
+        if (video.videoWidth !== rest.width || video.videoHeight !== rest.height) return finish(Error('moving_speech_rest_dimensions'));
+        // Seek to the exact CFR frame timestamp. The rVFC evidence below must
+        // match, including frame zero; metadata/seeked alone is insufficient.
+        video.currentTime = rest.sourceFrame / rest.fps;
+      };
+      const presented = (_now, meta) => {
+        if (settled) return;
+        if (signal?.aborted) return finish(abortError());
+        const frame = Math.round(meta.mediaTime * rest.fps);
+        if (frame !== rest.sourceFrame) {
+          if (frame > rest.sourceFrame) return finish(Error('moving_speech_rest_frame_mismatch'));
+          frameCallback = video.requestVideoFrameCallback(presented); return;
+        }
+        if (Math.abs(meta.mediaTime * rest.fps - rest.sourceFrame) > .001) return finish(Error('moving_speech_rest_frame_mismatch'));
+        const canvas = document.createElement('canvas'); canvas.width = canvas.videoWidth = rest.width; canvas.height = canvas.videoHeight = rest.height;
+        canvas.getContext('2d').drawImage(video, 0, 0); finish(null, canvas);
+      };
+      frameCallback = video.requestVideoFrameCallback(presented);
+      video.src = url; video.load();
+      // Muted decoding only; the original's recorded audio is never played.
+      Promise.resolve(video.play()).catch(error => finish(error));
+      if (signal?.aborted) abort();
+    });
+  } finally {
+    video.pause(); video.cancelVideoFrameCallback?.(frameCallback); video.onloadedmetadata = video.onerror = null;
+    video.removeAttribute('src'); video.load(); revokeURL(url);
+  }
+}
+
+/** One authenticated, bounded session. Caller retains the existing queue/pose
+ * ownership; assertCurrent is also checked on every audio-clock repaint. */
+export async function playMovingSpeech(value, { exactText, dealerId, requestId, signal, beforeStart = async () => {}, assertCurrent = () => {},
+  prepareRendering, renderFrame, setMovingSpeechLayer, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {} } = {}, dependencies = {}) {
+  const doc = dependencies.document ?? globalThis.document;
+  const connect = dependencies.connect ?? ((url, protocols) => new WebSocket(movingSpeechSocketURL(url, location.origin), protocols));
+  const makeLayer = dependencies.makeLayer ?? createMovingSpeechFrameLayer;
+  const loadRest = dependencies.loadRest ?? loadMovingSpeechRest;
+  const raf = dependencies.requestAnimationFrame ?? globalThis.requestAnimationFrame;
+  const caf = dependencies.cancelAnimationFrame ?? globalThis.cancelAnimationFrame;
+  const createURL = dependencies.createURL ?? URL.createObjectURL, revokeURL = dependencies.revokeURL ?? URL.revokeObjectURL;
+  const controller = new AbortController(), audio = doc.createElement('audio');
+  let socket, layer, restCanvas, ready, speech, pendingBinary, frameHandle, audioURL, queued = 0, queuedBytes = 0;
+  let received = 0, receivedParts = 0, credited = 0, released = 0, pcmReady = false, workerDone = false, audioEnded = false;
+  let starting = false, started = false, firstFrame = false, completed = false, terminal = false, tail = Promise.resolve();
+  let resolveDone, rejectDone;
+  const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
+  // Rejection can happen while awaiting descriptor validation or beforeStart.
+  done.catch(() => {});
+  const send = message => { if (socket?.readyState === 1) socket.send(JSON.stringify(message)); else if (!workerDone) fail('moving_speech_socket_closed'); };
+  const stop = error => {
+    if (terminal) return; terminal = true; audio.pause(); audio.muted = true; controller.abort();
+    if (frameHandle !== undefined) caf(frameHandle);
+    rejectDone(error);
+  };
+  const abort = () => stop(abortError());
+  signal?.addEventListener('abort', abort, { once: true });
+  const timeout = setTimeout(() => stop(Error('moving_speech_timeout')), 45000);
+  const check = () => { if (signal?.aborted || controller.signal.aborted) throw abortError(); assertCurrent(); };
+  const credit = count => {
+    const frames = Math.min(count, ready.plan.timeline.length - credited);
+    if (frames > 0) { send({ t: 'credit', id: ready.plan.start.id, frames }); credited += frames; }
+  };
+  const finish = () => { if (audioEnded && workerDone && !terminal) { completed = terminal = true; resolveDone(); } };
+  const tick = () => {
+    if (terminal || audioEnded) return;
+    try {
+      check();
+      if (audio.paused) fail('moving_speech_audio_paused');
+      const k = Math.floor((audio.currentTime + .22) * 24 + 1e-7);
+      if (k < released || !layer.hasFrame(k)) fail('moving_speech_frame_unavailable');
+      layer.releaseBefore(k); credit(k - released); released = k;
+      if (renderFrame(restCanvas, { binding: ready.plan.binding, planSha256: ready.plan.planSha256,
+        take: 'vila', frame: 0, sourceSha256: ready.rest.sha256, audioPlaying: true, audioTimeSeconds: audio.currentTime }) !== true) fail('moving_speech_render_failed');
+      if (!firstFrame) { firstFrame = true; onFirstFrame(); }
+      frameHandle = raf(tick);
+    } catch (error) { stop(error); }
+  };
+  const maybeStart = async () => {
+    if (starting || started || !pcmReady || received < Math.min(24, ready.plan.timeline.length)) return;
+    for (let k = 5; k < Math.min(24, ready.plan.timeline.length); k++) if (!layer.hasFrame(k)) fail('moving_speech_frame_unavailable');
+    starting = true; check(); await abortable(beforeStart(), controller.signal); check();
+    await abortable(audio.play(), controller.signal); check();
+    if (audio.paused) fail('moving_speech_audio_paused');
+    started = true; onStart(exactText); onReceipt({ state: 'start', streamId: speech.id, requestId: speech.requestId,
+      evidence: 'verified-pcm-and-decoded-frames', planSha256: ready.plan.planSha256, reviewStatus: 'pending' });
+    tick();
+  };
+  const processMessage = async data => {
+    check();
+    if (typeof data !== 'string') {
+      if (!(data instanceof ArrayBuffer) || !pendingBinary) fail('moving_speech_unpaired_binary');
+      const pending = pendingBinary; pendingBinary = null; const bytes = new Uint8Array(data);
+      if (pending.t === 'pcm') {
+        if (bytes.byteLength !== ready.audio.byteLength || await digest(bytes) !== ready.plan.binding.audioSha256) fail('moving_speech_pcm_hash_mismatch');
+        check(); audioURL = createURL(wav(bytes)); audio.src = audioURL; audio.preload = 'auto'; pcmReady = true; credit(24);
+      } else {
+        if (!await layer.push(pending, bytes)) fail('moving_speech_rejected_chunk');
+        check(); received += pending.rutor.length; receivedParts++;
+        await maybeStart();
+      }
+      return;
+    }
+    if (pendingBinary) fail('moving_speech_missing_binary');
+    let message; try { message = JSON.parse(data); } catch { fail('invalid_moving_speech_message'); }
+    if (!ready) {
+      ready = readReady(message, speech);
+      const createdLayer = await makeLayer({ plan: ready.plan, document: doc });
+      if (controller.signal.aborted) createdLayer.close();
+      check(); layer = createdLayer;
+      const loadedRest = await loadRest(ready.rest, { signal: controller.signal, document: doc });
+      if (controller.signal.aborted) loadedRest.width = loadedRest.height = 0;
+      check(); restCanvas = loadedRest;
+      setMovingSpeechLayer(layer);
+      if (renderFrame(restCanvas) !== true) fail('moving_speech_render_failed');
+    } else if (message.t === 'pcm' && !pcmReady && keys(message, ['t', 'id', 'byteLength'])
+      && message.id === speech.id && message.byteLength === ready.audio.byteLength) pendingBinary = message;
+    else if (message.t === 'lapp' && pcmReady && !workerDone) {
+      if (message.id !== ready.plan.start.id || message.fran !== received || message.del !== receivedParts
+        || !Array.isArray(message.rutor) || !message.rutor.length || message.rutor.length > 12
+        || received + message.rutor.length > credited || message.rutor.some(tag => !tag || !Array.isArray(tag.rect)
+          || tag.rect.length !== 4 || tag.rect.some(n => !Number.isFinite(n) || n < 0) || tag.rect[2] <= 0 || tag.rect[3] <= 0
+          || tag.rect[0] + tag.rect[2] > ready.rest.width || tag.rect[1] + tag.rect[3] > ready.rest.height)) fail('invalid_moving_speech_chunk');
+      pendingBinary = message;
+    } else if (message.t === 'done' && keys(message, ['t', 'id', 'frames']) && !workerDone
+      && message.id === ready.plan.start.id && message.frames === ready.plan.timeline.length && received === message.frames) {
+      workerDone = true; finish();
+    } else fail('invalid_moving_speech_message');
+  };
+  try {
+    if (typeof prepareRendering !== 'function' || typeof renderFrame !== 'function' || typeof setMovingSpeechLayer !== 'function'
+      || typeof raf !== 'function' || typeof caf !== 'function') fail('moving_speech_renderer_unavailable');
+    check(); speech = await validateMovingSpeechStream(value, { exactText, dealerId, requestId }); check();
+    if (!dependencies.makeLayer && typeof VideoDecoder !== 'function') fail('moving_speech_decoder_unavailable');
+    await abortable(beforeStart(), controller.signal); check();
+    await abortable(prepareRendering(effectiveDealerCompositing(speech.compositing ?? undefined)), controller.signal); check();
+    if (speech.expiresAt <= Date.now()) fail('moving_speech_ticket_expired');
+    audio.onended = () => {
+      if (terminal) return;
+      try {
+        check(); audioEnded = true; if (frameHandle !== undefined) caf(frameHandle);
+        // The worker has 530 ms of trailing padding. Drain those bounded frames
+        // without moving the body or replaying any audio; close on worker done.
+        credit(ready.plan.timeline.length - credited);
+        if (renderFrame(restCanvas) !== true) fail('moving_speech_render_failed'); finish();
+      } catch (error) { stop(error); }
+    };
+    audio.onerror = () => stop(Error('moving_speech_audio_failed'));
+    socket = connect(speech.url, ['moving-v1', `ticket.${speech.ticket}`]); socket.binaryType = 'arraybuffer';
+    socket.onmessage = event => {
+      if (terminal) return;
+      const size = typeof event.data === 'string' ? event.data.length * 2 : event.data?.byteLength;
+      if (!integer(size) || size > (typeof event.data === 'string' ? 256 * 1024 : 2 * 1024 * 1024)
+        || queued >= 8 || queuedBytes + size > 4 * 1024 * 1024) return stop(Error('moving_speech_queue_full'));
+      queued++; queuedBytes += size;
+      tail = tail.then(() => processMessage(event.data)).catch(stop).finally(() => { queued--; queuedBytes -= size; });
+    };
+    socket.onerror = () => stop(Error('moving_speech_socket_failed'));
+    socket.onclose = () => { tail.then(() => { if (!workerDone) stop(Error('moving_speech_socket_closed')); }); };
+    await done;
+  } finally {
+    terminal = true; clearTimeout(timeout); signal?.removeEventListener('abort', abort); controller.abort();
+    audio.pause(); audio.muted = true; audio.onended = audio.onerror = null;
+    if (frameHandle !== undefined) caf(frameHandle);
+    if (socket) {
+      socket.onmessage = socket.onerror = socket.onclose = null;
+      if (socket.readyState === 1 && !completed) socket.send(JSON.stringify({ t: 'abort', id: speech?.id }));
+      socket.close();
+    }
+    setMovingSpeechLayer?.(null); layer?.close();
+    // Clear the last mouth patch with the explicitly verified bank rest only.
+    if (restCanvas) { try { assertCurrent(); renderFrame(restCanvas); } catch { /* A new pose now owns the compositor. */ }
+      restCanvas.width = restCanvas.height = 0; }
+    audio.removeAttribute('src'); audio.load(); if (audioURL) revokeURL(audioURL);
+    onReceipt({ state: completed ? 'end' : 'interrupted', streamId: value?.id, requestId: value?.requestId,
+      evidence: 'media-lifecycle', started, reviewStatus: 'pending' });
+  }
+}

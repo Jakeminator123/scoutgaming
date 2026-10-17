@@ -5,7 +5,7 @@ import { once } from 'node:events';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { prepareMovingSpeechPcmInput } from '../web/moving-speech-pcm.mjs';
-import { createMovingSpeechTransport, verifyMovingWorkerRelease } from '../web/moving-speech-transport.mjs';
+import { createMovingSpeechTransport, createMovingSpeechConnection, verifyMovingWorkerRelease } from '../web/moving-speech-transport.mjs';
 import { createMovingSpeechFrameLayer } from '../web/public/moving-speech-frame-layer.mjs';
 const { WebSocket } = createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');
 const hash = s => createHash('sha256').update(s).digest('hex');
@@ -40,8 +40,9 @@ const done = input => JSON.stringify({ t: 'done', id: input.plan.start.id });
 async function setup(t, options = {}) {
   const input = options.input || inputFor(), finished = [], chunks = [], incoming = [];
   const owner = { userId: 'user-1', sessionId: 'session-1', endpointId: 'fixtureendpoint', jobId: 'accepted-fixture-job', release: options.release || receipt() };
-  const transport = await createMovingSpeechTransport({ input, origin: 'https://own-game.example', release: options.release || receipt(),
+  const transport = await (options.deferred ? createMovingSpeechConnection : createMovingSpeechTransport)({ input: options.deferred ? undefined : input, origin: 'https://own-game.example', release: options.release || receipt(),
     attestationBinding: options.attestationBinding,
+    chunkAcknowledgements: options.chunkAcknowledgements,
     startupMs: options.startupMs,
     authorize: options.authorize || (async () => owner), onChunk: options.onChunk || (async (meta, bytes) => chunks.push({ meta, bytes })),
     finalize: options.finalize || (async outcome => finished.push(outcome)), signal: options.signal,
@@ -80,6 +81,61 @@ async function setup(t, options = {}) {
   }
   return { input, owner, transport, finished, chunks, incoming, connect, ready, ended };
 }
+
+test('owned cold endpoint version zero admits without inventing workers; PCM readiness requires an actual worker', () => {
+  const r = ownedReceipt(); r.workers.endpointVersion = 0; r.workers.workers = [];
+  assert.equal(verifyMovingWorkerRelease(r).endpointVersion, 0);
+  assert.throws(() => verifyMovingWorkerRelease(r, Date.now(), { requireWorkers: true }), /release_unverified/);
+  r.workers.workers.push({ image: r.expectedImage, version: 0, isStale: false });
+  assert.equal(verifyMovingWorkerRelease(r, Date.now(), { requireWorkers: true }).endpointVersion, 0);
+});
+
+test('two-phase connection attests the accepted job before PCM exists; later dispatch retains exact plan and owner', async t => {
+  const input = inputFor('dragan','dragan',1,42), binding = ownedBinding(input);
+  const f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding, deferred: true });
+  const ws = await f.ready(ownedHello(binding));
+  const attested = await f.transport.ready();
+  assert.equal(attested.jobId, f.owner.jobId);
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert.deepEqual(f.incoming.map(m=>m.t), ['bind']);
+  const run = f.transport.dispatch(input, { onChunk: async (meta, bytes) => f.chunks.push({meta,bytes}) });
+  await f.ended(ws);
+  for (let from=0;from<42;from+=12) {
+    ws.send(JSON.stringify(metadata(input,from,Math.min(12,42-from)))); ws.send(Buffer.from([1]));
+    await new Promise(resolve=>setTimeout(resolve,10));
+  }
+  ws.send(done(input));
+  assert.equal((await run).frames,42); assert.equal(f.chunks.length,4);
+});
+
+test('deferred dispatch rejects a changed source/session binding and sends no PCM', async t => {
+  const input = inputFor('dragan','dragan',1,42), binding = ownedBinding(input);
+  const f = await setup(t,{input,release:ownedReceipt(),attestationBinding:binding,deferred:true});
+  await f.ready(ownedHello(binding)); await f.transport.ready();
+  const changed=inputFor('paow','paow',1,42);
+  await assert.rejects(f.transport.dispatch(changed,{onChunk:async()=>{}}),/binding_invalid/);
+  assert.equal(f.incoming.some(Buffer.isBuffer),false);assert.equal(f.finished.length,1);
+});
+
+test('owned chunk ACK follows awaited browser credit; the producer can send only one pending chunk', async t => {
+  const input=inputFor('dragan','dragan',1,42),binding=ownedBinding(input);
+  const f=await setup(t,{input,release:ownedReceipt(),attestationBinding:binding,deferred:true,chunkAcknowledgements:true});
+  const ws=await f.ready({...ownedHello(binding),chunk_ack:true});await f.transport.ready();
+  let allow;const credit=new Promise(resolve=>{allow=resolve;});
+  const run=f.transport.dispatch(input,{onChunk:async meta=>{if(meta.del===0)await credit;}});await f.ended(ws);
+  ws.send(JSON.stringify(metadata(input,0,12)));ws.send(Buffer.from([1]));
+  await new Promise(resolve=>setTimeout(resolve,20));assert.equal(f.incoming.some(m=>m.t==='ack'),false);
+  allow();
+  async function ack(del){
+    if(f.incoming.some(m=>m.t==='ack'&&m.del===del))return;
+    await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('ACK missing')),1000);
+      const read=data=>{const value=JSON.parse(data.toString());if(value.t==='ack'&&value.del===del){clearTimeout(timeout);ws.off('message',read);resolve();}};ws.on('message',read);});
+  }
+  await ack(0);
+  for(let from=12;from<42;from+=12){ws.send(JSON.stringify(metadata(input,from,Math.min(12,42-from))));ws.send(Buffer.from([1]));await ack(from/12);}
+  ws.send(done(input));assert.equal((await run).frames,42);
+  assert.deepEqual(f.incoming.filter(m=>m.t==='ack').map(m=>m.del),[0,1,2,3]);
+});
 
 test('release gate rejects wrong image, rolling versions, stale workers and stale/missing receipts', () => {
   assert.equal(verifyMovingWorkerRelease(receipt()).image, image);

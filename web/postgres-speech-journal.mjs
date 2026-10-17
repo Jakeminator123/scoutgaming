@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { StudioStorageError, validateStudioEnvironmentId } from './storage/studio-contract.mjs';
+import { StudioStorageError, validateStudioEnvironmentId, validateStudioScope, canonicalStudioJson } from './storage/studio-contract.mjs';
+import { verifyMovingSpeechBinding } from './moving-speech-binding.mjs';
 import { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS } from './speech-journal-constants.mjs';
 
 export { GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS };
@@ -85,7 +86,7 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
   const environment = validateStudioEnvironmentId(environmentId);
   if (!pool || (typeof pool.connect !== 'function' && typeof pool.query !== 'function') || (now !== undefined && typeof now !== 'function')) fail('invalid_generated_speech_journal_input', 422);
 
-  async function transaction(work) {
+  async function transaction(work, studioScope) {
     let client, previous, unlockDirect, release = false, began = false;
     try {
       if (typeof pool.connect === 'function') {
@@ -102,6 +103,12 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
       await client.query('BEGIN ISOLATION LEVEL READ COMMITTED'); began = true;
       await client.query("SET LOCAL statement_timeout = '5s'");
       await client.query("SET LOCAL lock_timeout = '3s'");
+      if (studioScope) {
+        // Exactly the Studio writer fence, acquired BEFORE the speech fence.
+        // Never call back into Studio or acquire pathname locks from speech.
+        const digest = createHash('sha256').update(`croupier-studio\0${canonicalStudioJson(studioScope)}`).digest();
+        await client.query('/* speech:studio_lock */ SELECT pg_advisory_xact_lock($1::integer,$2::integer)', [digest.readInt32BE(0), digest.readInt32BE(4)]);
+      }
       // Short transactions, one lock order for every writer in this environment.
       // No provider call, file/Blob I/O, wait or paid retry under this lock.
       await client.query('/* speech:lock */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`croupier:speech:${environment}`]);
@@ -204,6 +211,50 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
     for(const day of days)if(await dayUsed(client,day)>budget.dailyBudgetMicroUsd)fail('generated_speech_daily_budget_exhausted',429);
     return {key:saved.request_key,days,reservedMicroUsd:reserve,expiresAt:created+policy.reservationWindowMs};
   };
+
+  async function reserveGpu(client, time, { sessionId, endpointId, lease, reserveMicroUsd, currentBudgetMicroUsd, workerState }) {
+    check(sessionId, sessionIdPattern); check(endpointId, endpointPattern);
+    microUsd(reserveMicroUsd); microUsd(currentBudgetMicroUsd, MAX_DAILY_MICRO_USD); drained(workerState);
+    await getLease(client, lease, time, { paid: true });
+    if (lease.resource !== 'stream-session') fail('invalid_generated_speech_lease', 422);
+    if (await row(client, 'get_session', 'SELECT * FROM croupier_studio.gpu_sessions WHERE environment_id = $1 AND session_id = $2', [environment, sessionId])) fail('generated_speech_session_already_attempted', 409);
+    if (await getOpenSession(client)) fail('generated_speech_session_busy', 429);
+    const policy = await getPolicy(client, currentBudgetMicroUsd);
+    const days = [...new Set([time, time + GPU_RESERVATION_WINDOW_MS].map(stamp => new Date(stamp).toISOString().slice(0, 10)))];
+    for (const day of days) if (await dayUsed(client, day) + reserveMicroUsd > policy.dailyBudgetMicroUsd) fail('generated_speech_daily_budget_exhausted', 429);
+    const saved = await row(client, 'insert_session', `INSERT INTO croupier_studio.gpu_sessions (environment_id, session_id, endpoint_id, worker_id, holder_id, lease_fence, state, created_at_ms)
+      VALUES ($1, $2, $3, $4, $5, $6, 'reserved', $7) RETURNING *`, [environment, sessionId, endpointId, `croupier-${sessionId}`, lease.holderId, lease.fence, time]);
+    for (const day of days) await row(client, 'insert_reservation', 'INSERT INTO croupier_studio.gpu_reservations (environment_id, session_id, day, reserved_micro_usd) VALUES ($1, $2, $3::date, $4) RETURNING *', [environment, sessionId, day, reserveMicroUsd]);
+    return { ...sessionResult(saved), days, reservedMicroUsd: reserveMicroUsd };
+  }
+
+  function movingScope(scope) {
+    const checked = validateStudioScope(scope);
+    if (checked.environment !== environment) fail('studio_scope_mismatch', 409);
+    return checked;
+  }
+  async function assertMovingMedia(client, scope, projectRevision, binding, references) {
+    const project = await row(client, 'moving_project', 'SELECT revision FROM croupier_studio.documents WHERE environment_id=$1 AND workspace_id=$2 AND kind=\'project\'', [environment, scope.workspaceId]);
+    if (!project || project.revision !== projectRevision) fail('generated_speech_moving_project_changed', 409);
+    if (!Array.isArray(references) || !references.length || references.length > 128) fail('invalid_generated_speech_moving_references', 422);
+    const seen = new Set();
+    for (const reference of references) {
+      if (!reference || Object.keys(reference).sort().join(',') !== 'id,pathname,revision,sha256'
+        || typeof reference.id !== 'string' || !/^[a-f0-9-]{36}$/.test(reference.id) || seen.has(reference.id)
+        || typeof reference.sha256 !== 'string' || !hash.test(reference.sha256)
+        || typeof reference.pathname !== 'string' || !reference.pathname || reference.pathname.length > 1024
+        || typeof reference.revision !== 'string' || !reference.revision || reference.revision.length > 128) fail('invalid_generated_speech_moving_references', 422);
+      seen.add(reference.id);
+    }
+    const saved = (await client.query('/* speech:moving_media */ SELECT id,revision,record FROM croupier_studio.media_records WHERE environment_id=$1 AND workspace_id=$2 AND id=ANY($3::uuid[])', [environment, scope.workspaceId, references.map(reference => reference.id)])).rows;
+    if (saved.length !== references.length) fail('generated_speech_moving_media_unavailable', 409);
+    for (const reference of references) {
+      const media = saved.find(item => item.id === reference.id), record = media?.record;
+      if (!record || media.revision !== reference.revision || record.sha256 !== reference.sha256 || record.pathname !== reference.pathname
+        || record.classification?.dealerId !== binding.dealerId || record.classification?.archived === true || record.deletion
+        || !['idle', 'action'].includes(record.classification?.kind) || record.contentType !== 'video/mp4') fail('generated_speech_moving_media_unavailable', 409);
+    }
+  }
 
   return Object.freeze({
     environmentId: environment,
@@ -377,20 +428,56 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
     },
     async reserveSession({ sessionId, endpointId, lease, reserveMicroUsd, currentBudgetMicroUsd, workerState } = {}) {
       check(sessionId, sessionIdPattern); check(endpointId, endpointPattern); microUsd(reserveMicroUsd); microUsd(currentBudgetMicroUsd, MAX_DAILY_MICRO_USD); drained(workerState);
+      return transaction((client, time) => reserveGpu(client, time, { sessionId, endpointId, lease, reserveMicroUsd, currentBudgetMicroUsd, workerState }));
+    },
+    // Optional migration 013 is required only when this feature is invoked.
+    // One atomic admission: spent request, exact media, GPU/day and total budget.
+    async reserveMovingSession({ scope, ownerHash, requestId, fingerprint, binding, mediaReferences, projectRevision,
+      budgetId, totalBudgetMicroUsd, ...gpu } = {}) {
+      scope = movingScope(scope); binding = verifyMovingSpeechBinding(binding);
+      const key = speechRequestKey(ownerHash, requestId); check(fingerprint, hash); check(budgetId, identifier);
+      microUsd(totalBudgetMicroUsd, 5000000); microUsd(gpu.reserveMicroUsd, 5000000);
+      if (gpu.sessionId !== binding.sessionId) fail('invalid_generated_speech_moving_binding', 422);
       return transaction(async (client, time) => {
-        await getLease(client, lease, time, { paid: true });
-        if (lease.resource !== 'stream-session') fail('invalid_generated_speech_lease', 422);
-        if (await row(client, 'get_session', 'SELECT * FROM croupier_studio.gpu_sessions WHERE environment_id = $1 AND session_id = $2', [environment, sessionId])) fail('generated_speech_session_already_attempted', 409);
-        if (await getOpenSession(client)) fail('generated_speech_session_busy', 429);
-        const policy = await getPolicy(client, currentBudgetMicroUsd);
-        const days = [...new Set([time, time + GPU_RESERVATION_WINDOW_MS].map(stamp => new Date(stamp).toISOString().slice(0, 10)))];
-        for (const day of days) {
-            if (await dayUsed(client,day) + reserveMicroUsd > policy.dailyBudgetMicroUsd) fail('generated_speech_daily_budget_exhausted', 429);
-        }
-        const saved = await row(client, 'insert_session', `INSERT INTO croupier_studio.gpu_sessions (environment_id, session_id, endpoint_id, worker_id, holder_id, lease_fence, state, created_at_ms)
-          VALUES ($1, $2, $3, $4, $5, $6, 'reserved', $7) RETURNING *`, [environment, sessionId, endpointId, `croupier-${sessionId}`, lease.holderId, lease.fence, time]);
-        for (const day of days) await row(client, 'insert_reservation', 'INSERT INTO croupier_studio.gpu_reservations (environment_id, session_id, day, reserved_micro_usd) VALUES ($1, $2, $3::date, $4) RETURNING *', [environment, sessionId, day, reserveMicroUsd]);
-        return { ...sessionResult(saved), days, reservedMicroUsd: reserveMicroUsd };
+        const ready = await row(client, 'moving_ready', "SELECT to_regclass('croupier_studio.moving_speech_bindings') IS NOT NULL AS present");
+        if (!ready?.present) fail('generated_speech_moving_schema_required', 503);
+        if (await getRequest(client, key)) fail('generated_speech_request_already_attempted', 409);
+        await assertMovingMedia(client, scope, projectRevision, binding, mediaReferences);
+        const budget = await row(client, 'moving_budget', `SELECT coalesce(sum(reserved_micro_usd),0)::bigint AS used,
+          min(budget_limit_micro_usd)::bigint AS ceiling FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1 AND budget_id=$2`, [environment, budgetId]);
+        const ceiling = Math.min(totalBudgetMicroUsd, budget.ceiling === null ? totalBudgetMicroUsd : integer(budget.ceiling));
+        if (integer(budget.used) + gpu.reserveMicroUsd > ceiling) fail('generated_speech_total_budget_exhausted', 429);
+        const saved = await reserveGpu(client, time, gpu);
+        await row(client, 'insert_request', `INSERT INTO croupier_studio.speech_requests (environment_id, request_key, owner_hash, request_id, fingerprint, capability, state, lease_resource, holder_id, lease_fence, created_at_ms, updated_at_ms)
+          VALUES ($1,$2,$3,$4,$5,'stream','reserved',$6,$7,$8,$9,$9) RETURNING *`, [environment,key,ownerHash,requestId,fingerprint,gpu.lease.resource,gpu.lease.holderId,gpu.lease.fence,time]);
+        await row(client, 'insert_moving', `INSERT INTO croupier_studio.moving_speech_bindings
+          (environment_id,workspace_id,session_id,request_key,project_revision,binding,media_references,budget_id,budget_limit_micro_usd,reserved_micro_usd,created_at_ms)
+          VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8,$9,$10,$11) RETURNING session_id`,
+        [environment,scope.workspaceId,gpu.sessionId,key,projectRevision,JSON.stringify(binding),JSON.stringify(mediaReferences),budgetId,ceiling,gpu.reserveMicroUsd,time]);
+        return { ...saved, key, binding, totalReservedMicroUsd: integer(budget.used) + gpu.reserveMicroUsd, totalBudgetMicroUsd: ceiling };
+      }, scope);
+    },
+    async assertMovingSession({ scope, sessionId, lease, binding, jobId } = {}) {
+      scope = movingScope(scope); binding = verifyMovingSpeechBinding(binding);
+      return transaction(async (client, time) => {
+        const session = await getSession(client, sessionId, lease, time, true);
+        if (session.released_at_ms !== null || !['reserved','running'].includes(session.state)) fail('generated_speech_moving_session_inactive', 409);
+        if (jobId !== undefined) knownJob(session, jobId);
+        const saved = await row(client, 'get_moving', 'SELECT * FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1 AND session_id=$2', [environment, sessionId]);
+        if (!saved || saved.workspace_id !== scope.workspaceId || canonicalStudioJson(saved.binding) !== canonicalStudioJson(binding)) fail('generated_speech_moving_binding_changed', 409);
+        await assertMovingMedia(client, scope, saved.project_revision, binding, saved.media_references);
+        return { ...sessionResult(session), key: saved.request_key };
+      }, scope);
+    },
+    async listMovingSessions({ scope } = {}) {
+      scope = movingScope(scope);
+      return transaction(async client => {
+        const ready = await row(client, 'moving_ready', "SELECT to_regclass('croupier_studio.moving_speech_bindings') IS NOT NULL AS present");
+        if (!ready?.present) fail('generated_speech_moving_schema_required', 503);
+        return (await client.query(`/* speech:list_moving */ SELECT s.*,b.request_key FROM croupier_studio.gpu_sessions s
+          JOIN croupier_studio.moving_speech_bindings b ON b.environment_id=s.environment_id AND b.session_id=s.session_id
+          WHERE b.environment_id=$1 AND b.workspace_id=$2 AND s.released_at_ms IS NULL`,[environment,scope.workspaceId])).rows
+          .map(saved=>({ ...sessionResult(saved), key:saved.request_key }));
       });
     },
     async markSubmissionStarted({ sessionId, lease } = {}) {

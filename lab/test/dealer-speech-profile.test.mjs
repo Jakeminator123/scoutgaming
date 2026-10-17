@@ -135,17 +135,25 @@ for(const dealerId of ['astrid','elin','saga','paow'])test('speech settings uses
   assert.equal(disabled.props.disabled,true);assert.equal(disabled.props.checked,false);
 });
 
-test('enabled request needs voice and a still frame, remains unapproved and stays bound on save',async()=>{
+test('enabled request needs voice and an explicit video reference, remains unapproved and stays bound on save',async()=>{
   const enabled={...profile(),schemaVersion:2,state:'enabled'};
   assert.deepEqual(normalizeDealerSpeechProfile(enabled),enabled);
   assert.equal(dealerSpeechPreparation(enabled).active,false);
   assert.equal(dealerSpeechPreparation(enabled).requested,true);
-  for(const patch of [{schemaVersion:1},{voice:null},{reference:null},{reference:{...reference,kind:'motion-video'}}])assert.throws(()=>normalizeDealerSpeechProfile({...enabled,...patch}));
+  for(const patch of [{schemaVersion:1},{voice:null},{reference:null}])assert.throws(()=>normalizeDealerSpeechProfile({...enabled,...patch}));
+  const moving={...enabled,reference:{...reference,kind:'motion-video'}};
+  assert.deepEqual(normalizeDealerSpeechProfile(moving),moving);
+  assert.equal(dealerSpeechPreparation(moving).active,false);
+  assert.equal(dealerSpeechPreparation(moving).requested,true);
   const project=addDealer(createSeedProject(),'paow','PAOW');delete project.idlePolicy;
   project.dealers.find(row=>row.id==='paow').speechProfile=enabled;
   assert.equal(validateProject(project),project);
   const verify=createStudioProjectBindings({videoRegistry:async()=>({videos:[{...video(),dealer:'astrid'}],families:[]})});
   await assert.rejects(verify(project),error=>error.code==='studio_speech_reference_invalid');
+  project.dealers.find(row=>row.id==='paow').speechProfile=moving;
+  assert.equal(validateProject(project),project);
+  await assert.rejects(verify(project),error=>error.code==='studio_speech_reference_invalid');
+  await createStudioProjectBindings({videoRegistry:async()=>({videos:[video()],families:[]})})(project);
 });
 
 test('v2 preserves explicit ElevenLabs tuning, forbids foreign fields and leaves v1 unchanged',()=>{
