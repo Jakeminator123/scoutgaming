@@ -27,12 +27,19 @@ export function createMovingSpeechRunPod({endpointId, apiKey, expectedImage, fet
         || value.gpuCount !== 1 || Object.hasOwn(value,'workers') && !Array.isArray(value.workers)) fail('moving_runpod_limits_changed');
       let workers=value.workers,workersCorroboration;
       if (!Object.hasOwn(value,'workers')) {
-        // The provider omits an empty list. Prove absence on this exact endpoint;
-        // null, malformed lists and any live pod remain verification failures.
+        // A filter alone does not prove ownership. Bind each returned live pod
+        // to this endpoint/template, then retain the full release verification.
         const pods=await call(`https://rest.runpod.io/v1/pods?endpointId=${endpointId}&includeWorkers=true`,{signal});
-        if (!Array.isArray(pods) || pods.length !== 0) fail('moving_runpod_workers_unknown');
-        workers=[];
-        workersCorroboration={source:'owned-endpoint-pods',endpointId,observedAtMs:now(),count:0};
+        if (!Array.isArray(pods) || pods.length > value.workersMax) fail('moving_runpod_workers_unknown');
+        for (const pod of pods) {
+          if (!pod || typeof pod !== 'object' || Array.isArray(pod) || typeof pod.id !== 'string' || !ID.test(pod.id)
+            || pod.endpointId !== endpointId || pod.templateId !== value.templateId) fail('moving_runpod_workers_unknown');
+          const imageFields=['image','imageName'].filter(key=>Object.hasOwn(pod,key));
+          if (!imageFields.length || imageFields.some(key=>pod[key] !== expectedImage)
+            || !Number.isSafeInteger(pod.slsVersion) || pod.slsVersion < 0 || pod.slsVersion !== value.version) fail('moving_worker_release_mismatch');
+        }
+        workers=pods;
+        workersCorroboration={source:'owned-endpoint-pods',endpointId,observedAtMs:now(),count:pods.length};
       }
       if (!ID.test(value.templateId ?? '')) fail('moving_runpod_template_unverified');
       const template=await call(`https://rest.runpod.io/v1/templates/${value.templateId}`,{signal});
