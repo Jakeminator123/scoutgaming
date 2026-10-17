@@ -36,7 +36,7 @@ test('Director root build context admits runtime sources but excludes local keys
     assert.equal(included(path), false, path);
   }
   assert.equal(included('open-claw/lab/src/server.mjs'), true);
-  assert.equal(included('web/public/dealer-identity.mjs'), true);
+  assert.equal(included('packages/presentation/contracts/dealer-identity.mjs'), true);
 });
 
 test('Director and Gateway retain their distinct Render and Compose build contexts', async () => {
@@ -44,7 +44,7 @@ test('Director and Gateway retain their distinct Render and Compose build contex
   const compose = await readFile(new URL('./compose.yaml', import.meta.url), 'utf8');
   const [director, gateway] = render.split('  - type: pserv');
   assert.match(director, /dockerfilePath: \.\/open-claw\/lab\/Dockerfile\s+dockerContext: \.\s/);
-  assert.match(director, /- web\/public\/dealer-identity\.mjs/);
+  assert.match(director, /- packages\/presentation\/contracts\/dealer-identity\.mjs/);
   assert.match(gateway, /dockerContext: \.\/open-claw\/lab/);
   assert.match(compose, /director:\s+build:\s+context: \.\.\/\.\.\/\.\.\s+dockerfile: open-claw\/lab\/Dockerfile/);
   assert.match(compose, /gateway:\s+build:\s+context: \.\.\s+dockerfile: deploy\/Dockerfile.gateway/);
@@ -77,7 +77,7 @@ test('isolated Docker COPY inputs resolve the complete Director graph and serve 
     assert.ok(target.startsWith(fixture + '/') || target.startsWith(fixture + '\\'));
     await copy(source, target);
   }
-  assert.ok(copied.includes('web/public/dealer-identity.mjs'));
+  assert.ok(copied.includes('packages/presentation/contracts/dealer-identity.mjs'));
   const isolatedLab = join(fixture, 'app/open-claw/lab');
   const script = `
     import assert from 'node:assert/strict';

@@ -9,7 +9,7 @@ COPY --chown=node:node open-claw/lab/public/ ./public/
 COPY --chown=node:node open-claw/lab/config/catalog.json ./config/catalog.json
 COPY --chown=node:node open-claw/lab/fixtures/scenarios.json ./fixtures/scenarios.json
 COPY --chown=node:node open-claw/lab/deploy/start-director.mjs ./deploy/start-director.mjs
-COPY --chown=node:node web/public/dealer-identity.mjs /app/web/public/dealer-identity.mjs
+COPY --chown=node:node packages/presentation/contracts/dealer-identity.mjs /app/packages/presentation/contracts/dealer-identity.mjs
 RUN mkdir -p /data/catalog && chown -R node:node /data
 USER node
 EXPOSE 4188

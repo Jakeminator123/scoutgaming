@@ -32,6 +32,10 @@ allowlist hanterar nu GET och HEAD med identisk innehållsmetadata och tom
 HEAD-kropp. Det befintliga HTTP/importgrafprovet reproducerade felet före
 rättningen; därefter100 riktade prov gröna utan skips. Privat kod är fortsatt
 otillgänglig även med HEAD.
+Directorbildens exakta COPY/ignore/buildFilter använder den kanoniska
+dealer-identity-källan. Befintligt isolerat Dockerpaketprov passerar3/3
+med health/catalog/UI och utan provideranrop. Ingen extra JSON-dependency
+behövdes i den faktiska importgrafen; default-deny-kontexten är bevarad.
 
 Riktad kontrakt-/media-/byggsvit: 248 passerade i första körningen. En missad
 konsumentimport och saknad frontenddependencykoppling stoppade återstående
