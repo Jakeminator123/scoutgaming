@@ -34,16 +34,26 @@ Importplanen kördes mot färsk produktions-export: 38 återanvändningar,
 transkriberades lokalt och bildgranskades. Osäker ASR räknas inte som felaktig
 inspelning eller acceptans; portugisiska stagingfiler hålls utanför basimporten.
 
-Verifierat lokalt: 21 transportprov med riktiga sockets; 95 ytterligare import-,
+Verifierat lokalt: 31 transportprov med riktiga sockets; 95 ytterligare import-,
 bildrute-, PCM-, OpenClaw-chatt- och talregisterprov passerade, ett valfritt
 webbläsarcodecprov hoppades över. Referensagentens separata körning gav
 121 pass/0 fel/1 överhoppat PostgreSQL-fixtureprov; SQL-frågorna lästes även mot
-produktion. Workeragentens 23 tester passerade på Windows och WSL/Python 3.12;
+produktion. Workeragentens 31 tester passerade på WSL/Python 3.12, inklusive
+verkliga CPU-hjälpare från motorn och MuseTalk; Windows gav 27 pass och en
+överhoppad rendererklass eftersom dess beroenden inte finns där.
 hela Dragan-bankens 2 479 rutor/50 tagningar och sju modellhashar verifierades.
 Sviterna överlappar och summeras inte. Detta är kontraktsbevis, inte
 hörbar/visuell liveacceptans.
 
-Kvar: byggd/verifierad molnimage och GPU-prov, verklig import genom befintliga
+ChatGPT Pro granskade faktiskt GitHub-head `26d390b8cf94fe9fd6c7f30db1e325efd51cf269`
+och reproducerade tre fel. Rättningarna räknar bildrutor med hela samplingar,
+behåller vilans källruta 0 och blockerar importbeslut vid oläsbart/ofullständigt
+registerunderlag. De begränsade motorpatcharna redovisas i `source.json`;
+Emils originalkvitton bevaras. CPU-proven ersätter inte ett nytt GPU-/spelprov.
+Worker-CI kontrollerar det verkliga containerbygget; produkt-CI inkluderar
+isolerad PostgreSQL. Aktuella körningar och fryst leveranshead finns i PR191.
+
+Kvar före aktivering: publicerad och verifierad molnimage och GPU-prov, verklig import genom befintliga
 skrivare, taljournal/dispatcher och spelarens ljudklocka/omplanering. Docker
 saknas lokalt. Läsande RunPod-kontroll 01:42 UTC visade inga pods och bara
 Astrids befintliga endpoint. Inga filmer, nycklar eller Astrid-tjänster ändrades;

@@ -388,7 +388,10 @@ Bankens avatar heter `dragan`; den ska inte döpas om till `dragge` utan nytt
 verifierat bankunderlag. Imagen och bankintyget verifieras separat.
 
 Den egna motorn kräver en explicit bildruteplan för 220 ms inledande och 530 ms
-avslutande tystnad: en sekund PCM ger 42 rutor vid 24 fps. För kort plan får
+avslutande tystnad: en sekund PCM ger 42 rutor vid 24 fps. Antalet räknas i
+hela ljudsamplingar: `floor((pcmBytes / 2 + 18000) / 1000)`. Det undviker
+flyttalsfel vid exakta bildrutegränser. Vila använder alltid sin källruta 0,
+även när planen upprepar den. För kort plan får
 inte lösas genom att motorn håller kvar en godtycklig sista ruta.
 Socket-/protokolltester bevisar inte visuell läppsynk eller livekapacitet.
 Egen kallstart har högst 150 sekunder till första `pong`, inom transportens

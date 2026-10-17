@@ -132,3 +132,18 @@ class Sessions(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(ValueError,"invalid_pcm"):
             await serve(socket,engine,ATTESTATION,MAPPING)
         self.assertFalse(engine.started)
+
+    async def test_wrong_rest_frame_identity_is_rejected_before_binary_output(self):
+        class WrongRest(Engine):
+            async def next(self):
+                meta, data = await super().next()
+                if meta["t"] == "lapp":
+                    for row in meta["rutor"]:
+                        row["tagning"] = "vila"
+                return meta, data
+        start = {**START, "karta": [["vila", 0, 42]]}
+        socket, engine = Socket(messages(start)), WrongRest()
+        with self.assertRaisesRegex(ValueError, "worker_frame_identity_mismatch"):
+            await serve(socket, engine, ATTESTATION, {**MAPPING, "vila": 0})
+        self.assertTrue(engine.closed)
+        self.assertFalse(any(isinstance(item, bytes) for item in socket.sent))

@@ -12,6 +12,7 @@ tagning+ruta är den som visas.
 """
 import asyncio, json, os, queue, subprocess, sys, tempfile, threading, time, wave
 from collections import OrderedDict
+from frame_contract import pcm_frames, resolve_plan, measurement_plan, LEAD_SAMPLES, TRAIL_SAMPLES
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import parse_qs, urlparse
 
@@ -69,17 +70,8 @@ class Avatar:
         return self._bias[i]
 
     def resolve(self, karta, total):
-        """kartan → [(tagning, ruta, poolruta|None)] med exakt total rutor (för kort karta: sista rutan står kvar)"""
-        out = []
-        for take, first, count in karta:
-            ids = [self.info["vila"]] if take == "vila" else self.takes.get(take)
-            for f in range(int(first), int(first) + int(count)):
-                out.append((take, f, None if not ids else ids[min(f, len(ids) - 1)]))
-        if not out:
-            out = [("vila", 0, self.info["vila"])]
-        while len(out) < total:
-            out.append(out[-1])
-        return out[:total]
+        """Exakt karta utan implicit upprepning, klippning eller stigande viloruta."""
+        return resolve_plan(self.info, karta, total)
 
 
 def compose(A, i, face, a_scale):
@@ -167,10 +159,16 @@ def prefetch(urls):
 
 def audio_chunks(pcm16, rate):
     import librosa
+    total = pcm_frames(len(pcm16), rate)
     y = np.frombuffer(pcm16, np.int16).astype(np.float32) / 32768.0
-    y = np.concatenate([np.zeros(int(R.PAD_BEFORE_S * rate), np.float32), y, np.zeros(int(R.PAD_AFTER_S * rate), np.float32)])
+    y = np.concatenate([np.zeros(LEAD_SAMPLES, np.float32), y, np.zeros(TRAIL_SAMPLES, np.float32)])
     y16 = librosa.resample(y, orig_sr=rate, target_sr=16000) if rate != 16000 else y
-    return y, R.whisper_chunks(y16)[:int(np.floor(len(y) / rate * R.FPS))]
+    chunks = R.whisper_chunks(y16)
+    if len(chunks) < total:
+        raise ValueError("incomplete_audio_features")
+    # Resampling can produce one feature beyond the source PCM's exact duration.
+    # No output frame is fabricated, repeated or removed to fit an invalid plan.
+    return y, chunks[:total]
 
 
 class Avbruten(Exception):
@@ -259,8 +257,9 @@ class Motor:
     def measure(self, aid):
         """en replik på 3 s tystnad över dealerns längsta tagning: första bit och rutor/s just nu"""
         a = self.av[aid]
-        take = max(a.takes, key=lambda k: len(a.takes[k]))
-        res = self.utterance(aid, bytes(24000 * 2 * 3), 24000, [[take, 0, len(a.takes[take])]], lambda m, b: None)
+        pcm = bytes(24000 * 2 * 3)
+        karta = measurement_plan(a.info, pcm_frames(len(pcm)))
+        res = self.utterance(aid, pcm, 24000, karta, lambda m, b: None)
         return {"forsta_bit_ms": res["forsta_bit_ms"], "rutor_per_s": res["rutor_per_s"]}
 
     def _submit(self, A, plan, futs, k, cur, prev, nxt, total, TV, ready):

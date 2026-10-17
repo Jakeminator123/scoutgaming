@@ -1,10 +1,11 @@
-"""Strict identities around the unchanged offline-verified rendering engine.
+"""Strict identities around the pinned rendering engine and reviewed protocol patches.
 
 No registry, TTS, credential lookup, URL audio download or provider call belongs
 here. The trusted game server owns admission, the budget reservation and job
 lifecycle. A callback capability proves transport ownership, not authorization.
 """
 import hashlib
+from frame_contract import pcm_frames
 import json
 import re
 import tarfile
@@ -229,7 +230,7 @@ def validate_pcm(pcm, frames, from_frame):
         fail("invalid_pcm")
     # Motor adds 220 ms leading and 530 ms trailing silence. Never rely on its
     # implicit last-frame extension when the authoritative plan is too short.
-    generated = int((len(pcm) / 48000 + 0.22 + 0.53) * 24)
+    generated = pcm_frames(len(pcm))
     if generated > frames or generated <= from_frame:
         fail("pcm_exceeds_plan")
     return generated

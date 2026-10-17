@@ -83,7 +83,9 @@ export async function createMovingSpeechTransport({ input, origin, release, auth
       // The owned engine includes both leading and trailing silence. Supplying
       // fewer source frames would silently hold its last pose in the vendor core.
       if (!Number.isSafeInteger(input.byteLength) || input.byteLength <= 0 || input.byteLength % 2
-        || Math.floor((input.byteLength / 48000 + .22 + .53) * 24) !== plan.timeline.length)
+        // 24 kHz / 24 fps = 1000 samples/frame; padding is exactly 18000
+        // samples. Seconds-based floats lose whole frames at some boundaries.
+        || Math.floor((input.byteLength / 2 + 18000) / 1000) !== plan.timeline.length)
         fail('moving_worker_plan_padding_mismatch');
     }
     else if (attestationBinding !== undefined) fail('moving_worker_binding_requires_owned_release');

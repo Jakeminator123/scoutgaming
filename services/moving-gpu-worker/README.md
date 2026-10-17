@@ -2,8 +2,9 @@
 
 Separat förberedelse för Dragan och senare andra registrerade dealerbanker.
 Astrids service, image och endpoint berörs inte. Den importerade renderaren är
-exakt Emils granskade `rorlig-9`; `source.json` binder originalhashar till
-det lokala WSL-provet. Ingen ny TTS, textmodell eller produktdatabas ingår.
+Emils granskade `rorlig-9` med avgränsade protokollpatchar för rutantal och
+vilorutans identitet; `source.json` bevarar originalhasharna från WSL-provet
+och beskriver avvikelserna. Modell-, blandnings- och kodningsreceptet är oförändrat. Ingen ny TTS, textmodell eller produktdatabas ingår.
 
 ## Bygga och verifiera
 
@@ -33,8 +34,11 @@ Det är en kodreleaseidentitet; kontrollplanet måste dessutom verifiera den
 faktiskt driftsatta imagens digest. Koden kan inte attestera sin egen
 containerdigest enbart genom ett fält i jobbets input.
 
-Dockerbygge, verklig GPU-körning och livespel är ännu inte verifierade.
-`build-contract.json` dokumenterar denna gräns. CPU-tester startar ingen GPU.
+Aktuell verifieringsstatus ligger utanför det förseglade byggkontraktet.
+CI-kvitton måste ange exakt release och image; GPU-, livespels- och
+bild/ljudskvitton tillkommer separat enligt `verificationRequirements` i
+`build-contract.json`. Ett lyckat CPU-bygge innebär ingen publicering eller
+GPU-/läppsynkverifiering. CPU-tester startar ingen GPU.
 
 ## Bank och session
 
@@ -78,7 +82,9 @@ stoppar försöket. Därefter används befintliga start/PCM/end/lapp/done.
 Ingen URL-baserad ljudhämtning eller fristående godtycklig upload exponeras.
 
 PCM är 24 kHz mono s16le. Exakt antal planrutor måste vara
-`floor((pcmBytes / 48000 + 0.22 + 0.53) * 24)`, högst 600.
+`(pcmBytes / 2 + 18000) // 1000` för jämnt byteantal, högst 600.
+Beräkningen använder heltal: 26000 byte ger 31 rutor, 64000 ger 50.
+En vila-sekvens refererar alltid till ruta 0, även över flera chunkar.
 `pong` annonserar `fps:24`, `ljud_fore_s:0.22`, `pad_after_s:0.53`
 och `del_rutor:12`. En sekund PCM kräver 42 planrutor. Implicit looping
 eller fryst sista ruta accepteras inte. Minst 30 uppmätta rutor/s krävs;

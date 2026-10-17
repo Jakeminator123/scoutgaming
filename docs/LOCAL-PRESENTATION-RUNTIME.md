@@ -292,6 +292,10 @@ Releasehashen gäller filmanifestet i imagen; den ersätter inte OCI-digesten.
 Fel bindning finaliserar försöket utan att skicka ljud. Planen måste täcka
 motorns 220 ms inledande och 530 ms avslutande tystnad exakt, och `done`
 godtas bara efter alla planerade rutor. Dragan-bankens avatar heter `dragan`.
+Vid 24 kHz mono s16le och 24 fps är antalet
+`floor((pcmBytes / 2 + 18000) / 1000)`; beräkna inte via decimalsekunder.
+Upprepade vilorutor avser samma källruta 0. Ingen saknad planruta får ersättas
+med en implicit fryst sista ruta.
 
 Källor och byggrecept finns i `services/moving-gpu-worker/`.
 OpenClaw levererar fortsatt dynamisk text genom den befintliga talvägen;

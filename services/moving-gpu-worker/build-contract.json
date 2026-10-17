@@ -26,13 +26,6 @@
       "deploymentApplied": false
     }
   },
-  "gates": {
-    "containerBuildVerified": false,
-    "gpuRuntimeVerified": false,
-    "liveGameVerified": false,
-    "visualApproval": false,
-    "serverlessSdkPackaged": true
-  },
   "notes": [
     "build.py never pushes or creates cloud resources.",
     "Use a full verified prepared bank, not the shortened offline preview bank.",
@@ -45,5 +38,14 @@
     "version": "20240203",
     "verification": "Ubuntu archive keyring verified InRelease -> SHA256 Packages.xz -> SHA256 deb; BuildKit ADD verifies the locked package before extraction",
     "updateErrorMode": "any"
+  },
+  "verificationRequirements": {
+    "containerBuild": "External CI receipt for this exact release and serverless target, including CPU imports and tests; no image publication implied",
+    "gpuRuntime": "External GPU receipt for this exact release, image digest and verified bank; include latency and cancellation",
+    "liveGame": "External authenticated session and budget/finalization receipt for this exact release and image digest",
+    "visualApproval": "Separate acceptance tied to exact source, audio and generated video hashes; tests alone do not establish lip sync"
+  },
+  "capabilities": {
+    "serverlessSdkPackaged": true
   }
 }

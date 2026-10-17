@@ -1,6 +1,7 @@
 """One bound utterance over the existing moving-worker callback protocol."""
 import asyncio
 import json
+from frame_contract import resolve_plan
 from contracts import attest_ack, fail, validate_start, validate_pcm, MAX_PCM_BYTES
 
 MAX_CHUNK_BYTES = 2 * 1024 * 1024
@@ -46,6 +47,7 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15):
         attest_ack(control(await receive()), attestation)
         start = control(await receive())
         frames = validate_start(start, mapping)
+        plan = resolve_plan(mapping, start["karta"], frames)
         while True:
             item = await receive()
             if isinstance(item, bytes):
@@ -97,6 +99,10 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15):
                     or not isinstance(meta.get("rutor"), list)
                     or len(meta["rutor"]) != meta["till"] - next_frame):
                 fail("invalid_worker_output")
+            for index, row in enumerate(meta["rutor"], next_frame):
+                if row is not None and (not isinstance(row, dict)
+                        or (row.get("tagning"), row.get("ruta")) != plan[index][:2]):
+                    fail("worker_frame_identity_mismatch")
             next_frame = meta["till"]
             await send({**meta, "id": start["id"]})
             await asyncio.wait_for(socket.send(data), idle_seconds)

@@ -45,7 +45,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     for(const [status,request] of [['submit_unknown',{referenceMediaId:id}],['failed',{referenceMediaId:id}],['prepared',{notes:`historic ${id}`,sha256}]]){
       await pool.query(`INSERT INTO croupier_studio.forge_jobs
         (environment_id,workspace_id,job_id,dealer_id,slot_id,kind,status,provider,request,actor_id,created_at_ms,updated_at_ms)
-        VALUES ($1,$2,$3,'paow','idle.ready','clip',$4,'runway',$5::jsonb,'qa',0,0)`,
+        VALUES ($1,$2,$3,'paow','idle.ready/','clip',$4,'runway',$5::jsonb,'qa',0,0)`,
       [ownersScope.environment,ownersScope.workspaceId,randomUUID(),status,JSON.stringify(request)]);
     }
     await pool.query('INSERT INTO croupier_studio.speech_reply_records (environment_id,workspace_id,dealer_id,id,revision,value) VALUES ($1,$2,$3,$4,1,$5::jsonb)',

@@ -117,6 +117,51 @@ test('stable reruns reuse exact pose identity and retain existing standard class
   assert.deepEqual(input.inventory.videos[0], existing);
 });
 
+test('unreadable, failed and partial inventory cannot propose import or reuse from unverified identities', () => {
+  const tail = 'idle-v2/breath.mp4', verifiedFiles = proof(tail);
+  const existing = media(rowAt(plan({ verifiedFiles, inventory: { videos: [] } }), tail));
+  const failures = [
+    [{ readable: false }, 'unreadable'],
+    [{ summary: { readable: false } }, 'unreadable'],
+    [{ summary: { readable: true, snapshotReadable: false } }, 'unreadable'],
+    [{ status: 'unreadable' }, 'unreadable'],
+    [{ status: 'error' }, 'error'],
+    [{ error: 'raw-diagnostic-marker' }, 'error'],
+    [{ coverage: 'partial' }, 'partial'],
+    [{ status: 'partial' }, 'partial'],
+    [{ complete: false }, 'partial'],
+    [{ partial: true }, 'partial'],
+    [{ summary: { status: 'partial' }, status: 'ok' }, 'partial'],
+    [{ coverage: { complete: false } }, 'partial'],
+    [{ status: 'unknown' }, 'unverified'],
+  ];
+  for (const [signals, coverage] of failures) for (const videos of [[], [existing]]) {
+    const result = plan({ verifiedFiles, inventory: { videos, ...signals } });
+    const row = rowAt(result, tail);
+    assert.equal(result.targetCoverage, coverage);
+    assert.equal(row.decision, 'review');
+    assert.equal(row.mediaId, null); assert.deepEqual(row.candidateMediaIds, []);
+    assert.ok(row.reasons.includes('target-inventory-' + coverage));
+    assert.ok(result.blockers.includes('target-inventory-' + coverage));
+    assert.ok(result.rows.every(r => !['import', 'reuse', 'correct-binding'].includes(r.decision)));
+    assert.equal(JSON.stringify(result).includes('raw-diagnostic-marker'), false);
+  }
+});
+
+test('missing optional inventory stays not-read while complete supplied exports retain working import and reuse', () => {
+  const tail = 'idle-v2/breath.mp4', verifiedFiles = proof(tail);
+  const absent = plan({ verifiedFiles });
+  assert.equal(absent.targetCoverage, 'not-read');
+  assert.equal(rowAt(absent, tail).decision, 'review');
+  const supplied = plan({ verifiedFiles, inventory: { videos: [] } });
+  assert.equal(supplied.targetCoverage, 'supplied-inventory');
+  assert.equal(rowAt(supplied, tail).decision, 'import');
+  const existing = media(rowAt(supplied, tail));
+  const full = { videos: [existing], readable: true, status: 'ok', coverage: 'complete',
+    summary: { readable: true, snapshotReadable: true, complete: true, partial: false } };
+  assert.equal(rowAt(plan({ verifiedFiles, inventory: full }), tail).decision, 'reuse');
+});
+
 test('reuse never crosses dealer, unverified pose calibration, protected media or ambiguous IDs', () => {
   const tail = 'idle-v2/breath.mp4', verifiedFiles = proof(tail);
   const row = rowAt(plan({ verifiedFiles, inventory: { videos: [] } }), tail);
@@ -157,6 +202,11 @@ test('CLI is a working read-only plan entry and rejects apply or moving source o
     const result = await runDealerImportPlan(argv);
     assert.equal(result.source.ref, source.ref); assert.equal(result.mode, 'plan');
     assert.equal(result.targetCoverage, 'not-read');
+    const inventoryPath = join(dir, 'inventory.json');
+    await writeFile(inventoryPath, JSON.stringify({ videos: [], summary: { readable: false } }));
+    const unreadable = await runDealerImportPlan([...argv, '--inventory', inventoryPath]);
+    assert.equal(unreadable.targetCoverage, 'unreadable');
+    assert.ok(rowAt(unreadable, 'idle-v2/breath.mp4').reasons.includes('target-inventory-unreadable'));
     for (const extra of [['--apply'], ['--ref', 'kevin-staging'], ['--plan']])
       await assert.rejects(() => runDealerImportPlan([...argv, ...extra]));
   } finally {

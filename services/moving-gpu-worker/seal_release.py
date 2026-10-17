@@ -5,7 +5,7 @@ from pathlib import Path
 from contracts import canonical, digest
 
 ROOT = Path(__file__).resolve().parent
-FILES = ("contracts.py", "session.py", "engine.py", "entrypoint.py", "fetch_models.py",
+FILES = ("frame_contract.py", "contracts.py", "session.py", "engine.py", "entrypoint.py", "fetch_models.py",
          "vendor/motor.py", "vendor/rorlig.py", "source.json", "requirements.lock",
          "wheels.lock", "models.lock.json", "Dockerfile", "build-contract.json",
          "serverless.py", "requirements-serverless.lock", "serverless-wheels.lock",
@@ -14,5 +14,5 @@ FILES = ("contracts.py", "session.py", "engine.py", "entrypoint.py", "fetch_mode
 if __name__ == "__main__":
     payload = {"schemaVersion": 1, "files": {name: digest(ROOT / name) for name in sorted(FILES)}}
     release_sha = hashlib.sha256(canonical(payload).encode()).hexdigest()
-    (ROOT / "release.json").write_text(json.dumps({**payload, "releaseSha256": release_sha}, indent=2) + "\n")
+    (ROOT / "release.json").write_bytes((json.dumps({**payload, "releaseSha256": release_sha}, indent=2) + "\n").encode())
     print(json.dumps({"releaseSha256": release_sha, "files": len(FILES)}))

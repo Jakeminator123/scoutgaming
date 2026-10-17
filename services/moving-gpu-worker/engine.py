@@ -23,7 +23,7 @@ def worker(connection, bank_root, avatar):
                       HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
     try:
         # Never call vendor Motor.session/pcm_from_url/prefetch. Only the exact
-        # offline-verified renderer runs, after all archive bytes were verified.
+        # pinned renderer plus reviewed frame-contract patches runs after bank verification.
         sys.path.insert(0, str(ROOT / "vendor"))
         import motor
         import torch

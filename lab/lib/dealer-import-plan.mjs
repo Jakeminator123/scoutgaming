@@ -108,13 +108,46 @@ function compatible(video, row, dealerId) {
   return true;
 }
 
+function targetInventoryCoverage(inventory) {
+  if (inventory === undefined) return 'not-read';
+  if (!inventory || !Array.isArray(inventory.videos)) fail('import_invalid_inventory');
+  // Existing exports use { videos }; loadVideoRegistry puts read failures in
+  // summary. Explicit failure/partial signals must override apparently valid rows.
+  const states = new Set(), scopes = [inventory];
+  if (inventory.summary !== undefined) {
+    if (!inventory.summary || typeof inventory.summary !== 'object' || Array.isArray(inventory.summary)) fail('import_invalid_inventory');
+    scopes.push(inventory.summary);
+  }
+  if (inventory.coverage && typeof inventory.coverage === 'object' && !Array.isArray(inventory.coverage)) {
+    scopes.push(inventory.coverage);
+    if (!['readable', 'snapshotReadable', 'complete', 'partial', 'status', 'error'].some(key => Object.hasOwn(inventory.coverage, key))) states.add('unverified');
+  }
+  for (const scope of scopes) {
+    for (const [key, unsafe, state] of [['readable', false, 'unreadable'], ['snapshotReadable', false, 'unreadable'],
+      ['complete', false, 'partial'], ['partial', true, 'partial']]) {
+      if (!Object.hasOwn(scope, key)) continue;
+      if (typeof scope[key] !== 'boolean') states.add('unverified');
+      else if (scope[key] === unsafe) states.add(state);
+    }
+    if (scope.error) states.add('error');
+    for (const key of ['status', 'coverage']) {
+      if (!Object.hasOwn(scope, key) || (scope === inventory && key === 'coverage' && scopes.includes(scope.coverage))) continue;
+      const value = scope[key];
+      if (['ok', 'readable', 'complete', 'supplied-inventory'].includes(value)) continue;
+      states.add(['error', 'unreadable', 'partial', 'not-read'].includes(value) ? value : 'unverified');
+    }
+  }
+  return ['error', 'unreadable', 'partial', 'not-read', 'unverified'].find(state => states.has(state)) ?? 'supplied-inventory';
+}
+
 export function createFrozenKevinImportPlan({ project, dealerId, sourceAlias, inventory, verifiedFiles = {} } = {}) {
   const catalog = dealerImportCatalog(project);
   if (!catalog.dealers.some(d => d.id === dealerId)) fail('import_registered_dealer_required');
   if (sourceAlias !== source.sourceDealerId) fail('import_explicit_source_alias_required');
   if (dealerId !== source.targetDealerId) fail('import_source_dealer_mismatch');
-  if (inventory !== undefined && (!inventory || !Array.isArray(inventory.videos))) fail('import_invalid_inventory');
-  const files = source.files, videos = inventory?.videos ?? [];
+  const targetCoverage = targetInventoryCoverage(inventory);
+  const inventoryBlocker = targetCoverage === 'supplied-inventory' ? null : 'target-inventory-' + targetCoverage;
+  const files = source.files, videos = inventoryBlocker ? [] : inventory.videos;
   for (const [path, proof] of Object.entries(verifiedFiles)) {
     const entry = files.find(f => f.path === path);
     if (!entry || !sha256(proof?.sha256) || proof.gitBlobSha !== entry.gitBlobSha || proof.size !== entry.size) fail('import_invalid_content_proof');
@@ -134,7 +167,7 @@ export function createFrozenKevinImportPlan({ project, dealerId, sourceAlias, in
     }
     if (!placement.slotId || !classification) row.reasons.push('manual-placement-required');
     if (!contentSha256) row.reasons.push('source-sha256-not-verified');
-    if (inventory === undefined) row.reasons.push('target-inventory-not-read');
+    if (inventoryBlocker) row.reasons.push(inventoryBlocker);
     const profileClip = DRAGAN_KEVIN_PROFILE.takes.find(c => c.repositoryPath === entry.path && c.sha256 === contentSha256);
     if (placement.category === 'pose-version' && !profileClip) row.reasons.push('pose-calibration-not-bound-to-verified-bytes');
     if (placement.speech) row.reasons.push('recorded-audio-index-calibration-required');
@@ -160,13 +193,13 @@ export function createFrozenKevinImportPlan({ project, dealerId, sourceAlias, in
   });
   const plan = { schemaVersion: DEALER_IMPORT_PLAN_VERSION, mode: 'plan', dealerId,
     source: { id: source.id, repository: source.repository, ref: source.ref, branch: source.branch, sourceAlias, languages: [...source.languages] },
-    targetCoverage: inventory === undefined ? 'not-read' : 'supplied-inventory',
+    targetCoverage,
     targetProjectSha256: hash(canonicalStudioJson(project)),
     targetInventorySha256: inventory === undefined ? null : hash(canonicalStudioJson(inventory)),
     counts: { catalogSpeechPerLanguage: 81, manifestSpeechIds: 11, playbackOrFallbackSpeechIds: playedLines.size,
       additionalWorkerPreloadSpeechIds: 2, posePaths: 56 },
     dynamicSpeech: { textSource: 'openclaw', separateFromRecordedSpeech: true, bank: 'external-unverified',
       sourceAvatar: 'dragan_vila2x', applyAllowed: false },
-    applyAllowed: false, blockers: ['plan-only-no-apply', 'publication-and-audiovisual-acceptance-not-implied'], rows };
+    applyAllowed: false, blockers: ['plan-only-no-apply', 'publication-and-audiovisual-acceptance-not-implied', ...(inventoryBlocker ? [inventoryBlocker] : [])], rows };
   return { ...plan, planId: hash(canonicalStudioJson(plan)) };
 }

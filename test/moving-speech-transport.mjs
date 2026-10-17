@@ -24,8 +24,8 @@ const ownedBinding = input => ({ schemaVersion: 1, releaseSha256: hash('owned so
   sessionId: input.plan.binding.sessionId, attemptId: 'attempt-1', nonce: hash('private fresh fixture nonce') });
 const ownedHello = (binding, jobId = 'accepted-fixture-job') => ({ fps: 24, pad_after_s: .53,
   attestation: { ...binding, jobId } });
-function inputFor(dealerId = 'paow', workerAvatar = dealerId, revision = 1, frameCount = 30) {
-  const pcm = Buffer.alloc(48000, revision);
+function inputFor(dealerId = 'paow', workerAvatar = dealerId, revision = 1, frameCount = 30, pcmBytes = 48000) {
+  const pcm = Buffer.alloc(pcmBytes, revision);
   return prepareMovingSpeechPcmInput({
     binding: { dealerId, workerAvatar, sessionId: 'session-1', talkId: 'talk-1', revision,
       profileRevision: hash('profile'), textSha256: hash('text'), audioSha256: hash(pcm), avatarSha256: hash('bank') },
@@ -91,6 +91,27 @@ test('release gate rejects wrong image, rolling versions, stale workers and stal
   }
 });
 
+test('owned transport preserves every exact sample boundary in the padded frame plan', async t => {
+  for (const samples of [12999, 13000, 13001, 31999, 32000, 32001, 35000, 41000]) {
+    await t.test(`${samples} PCM samples`, async t => {
+      const frames = Math.floor((samples + 18000) / 1000);
+      const input = inputFor('dragan', 'dragan', 1, frames, samples * 2);
+      const binding = ownedBinding(input);
+      const f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding });
+      const ws = await f.ready(ownedHello(binding)), run = f.transport.run(); await f.ended(ws);
+      for (let from = 0; from < frames; from += 12) {
+        ws.send(JSON.stringify(metadata(input, from, Math.min(12, frames - from))));
+        ws.send(Buffer.from([1]));
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      ws.send(done(input));
+      assert.equal((await run).frames, frames);
+      assert.equal(f.finished[0].reason, 'complete');
+      assert.equal(Buffer.concat(f.incoming.filter(Buffer.isBuffer)).length, samples * 2);
+    });
+  }
+});
+
 test('owned Dragan bank is bound to the accepted job before start/PCM and requires complete output', async t => {
   const input = inputFor('dragan', 'dragan', 1, 42), binding = ownedBinding(input);
   const f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding });
@@ -107,6 +128,29 @@ test('owned Dragan bank is bound to the accepted job before start/PCM and requir
   ws.send(done(input));
   assert.equal((await run).frames, 42); assert.equal(f.finished.length, 1);
   assert.equal(f.finished[0].jobId, f.owner.jobId); assert.equal(f.finished[0].reason, 'complete');
+});
+
+test('a long explicit idle plan keeps source frame zero through every relay chunk', async t => {
+  const pcm = Buffer.alloc(48000);
+  const input = prepareMovingSpeechPcmInput({
+    binding: { dealerId: 'dragan', workerAvatar: 'dragan', sessionId: 'session-1', talkId: 'idle-talk', revision: 1,
+      profileRevision: hash('profile'), textSha256: hash('text'), audioSha256: hash(pcm), avatarSha256: hash('bank') },
+    clips: [{ dealerId: 'dragan', take: 'vila', sha256: hash('idle-source'), fps: 24, frameCount: 1, kind: 'still' }],
+    frames: Array.from({ length: 42 }, () => ({ take: 'vila', frame: 0 })),
+    audio: { pcm, sampleRate: 24000, channels: 1, format: 's16le' },
+  });
+  const binding = ownedBinding(input), f = await setup(t, { input, release: ownedReceipt(), attestationBinding: binding });
+  const ws = await f.ready(ownedHello(binding)), run = f.transport.run(); await f.ended(ws);
+  assert.deepEqual(f.incoming.find(message => message.t === 'start').karta, [['vila', 0, 42]]);
+  for (let from = 0; from < 42; from += 12) {
+    const header = metadata(input, from, Math.min(12, 42 - from));
+    header.rutor = header.rutor.map(frame => ({ ...frame, tagning: 'vila', ruta: 0 }));
+    ws.send(JSON.stringify(header)); ws.send(Buffer.from([1]));
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  ws.send(done(input));
+  assert.equal((await run).frames, 42);
+  assert.ok(f.chunks.flatMap(chunk => chunk.meta.rutor).every(frame => frame.tagning === 'vila' && frame.ruta === 0));
 });
 
 test('owned worker rejects a missing, altered, foreign or extra attestation before disclosing PCM', async t => {
