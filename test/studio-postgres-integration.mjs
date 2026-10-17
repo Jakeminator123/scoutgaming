@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { randomBytes,randomUUID } from 'node:crypto';
+import { createHash,randomBytes,randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createStudioRepository } from '../web/storage/studio-repository.mjs';
@@ -34,6 +34,72 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     assert.equal((await pool.query('SELECT count(*)::int AS count FROM croupier_studio.storage_migrations')).rows[0].count, migrations.length);
   });
   const runtimeRegistry=await runRuntimeRegistrySqlChecks({pool});checks.push(...runtimeRegistry.checks);
+
+  await check('013 moving admission shares deletion fence, durable exact references and a nonrefundable total cap',async()=>{
+    const scope={environment:`qa_moving_${suffix()}`,workspaceId:'integration'},repo=createStudioRepository({pool,scope});
+    const journal=await createSpeechJournal({pool,environmentId:scope.environment});
+    const id=randomUUID(),sha256='3'.repeat(64),revision=`media-${randomUUID()}`,projectRevision=`studio-${randomUUID()}`;
+    const record={id,sha256,size:32,contentType:'video/mp4',pathname:`croupier/media/dealers/dragan/review/uploads/${id}/${sha256}.mp4`,
+      classification:{dealerId:'dragan',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'VILA',label:'Fixture',notes:''}};
+    await pool.query("INSERT INTO croupier_studio.documents (environment_id,workspace_id,kind,revision,value) VALUES ($1,$2,'project',$3,jsonb_build_object('revision',$3::text))",[scope.environment,scope.workspaceId,projectRevision]);
+    await pool.query('INSERT INTO croupier_studio.media_records(environment_id,workspace_id,id,revision,record) VALUES($1,$2,$3,$4,$5::jsonb)',[scope.environment,scope.workspaceId,id,revision,JSON.stringify(record)]);
+    await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:2000000,confirmation:'verified-new-empty-cost-journal'});
+    let lease=await journal.acquireLease({resource:'stream-session',holderId:'moving-qa'});
+    const binding={schemaVersion:1,releaseSha256:'4'.repeat(64),dealerId:'dragan',workerAvatar:'dragan',profileRevision:'5'.repeat(64),
+      sourceSetSha256:'6'.repeat(64),avatarSha256:'7'.repeat(64),bankReceiptSha256:'8'.repeat(64),sessionId:suffix()+suffix(),attemptId:'attempt-1',nonce:'9'.repeat(64)};
+    const input={scope,ownerHash:'a'.repeat(64),requestId:'moving-1',fingerprint:'b'.repeat(64),binding,
+      mediaReferences:[{id,sha256,pathname:record.pathname,revision}],projectRevision,budgetId:'one-human-authorized-run',
+      totalBudgetMicroUsd:400000,sessionId:binding.sessionId,endpointId:'fixture-endpoint',lease,
+      reserveMicroUsd:250000,currentBudgetMicroUsd:2000000,workerState:{workers:0,busy:0,available:0}};
+    // Hold the real Studio writer fence until pending deletion commits. The
+    // paid admission must wait, then reject, leaving no request/cost/session.
+    const writer=await pool.connect();let admission;
+    try {
+      await writer.query('BEGIN');
+      const digest=createHash('sha256').update(`croupier-studio\0${canonicalStudioJson(scope)}`).digest();
+      await writer.query('SELECT pg_advisory_xact_lock($1::integer,$2::integer)',[digest.readInt32BE(0),digest.readInt32BE(4)]);
+      admission=journal.reserveMovingSession(input);admission.catch(()=>{});
+      let waiting=false;
+      for(let attempt=0;attempt<40&&!waiting;attempt++){
+        waiting=(await writer.query("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event='advisory' AND query LIKE '/* speech:studio_lock */%') AS waiting")).rows[0].waiting;
+        if(!waiting)await new Promise(resolve=>setTimeout(resolve,25));
+      }
+      assert.equal(waiting,true,'admission must acquire the existing Studio advisory lock before its speech lock');
+      await writer.query("UPDATE croupier_studio.media_records SET record=jsonb_set(record,'{deletion}','{\"state\":\"pending\"}'::jsonb) WHERE environment_id=$1 AND workspace_id=$2 AND id=$3",[scope.environment,scope.workspaceId,id]);
+      await writer.query('COMMIT');
+    } finally {await writer.query('ROLLBACK');writer.release();}
+    await assert.rejects(admission,hasCode('generated_speech_moving_media_unavailable'));
+    const counts=(await pool.query('SELECT (SELECT count(*) FROM croupier_studio.gpu_sessions WHERE environment_id=$1)::int AS sessions,(SELECT count(*) FROM croupier_studio.speech_requests WHERE environment_id=$1)::int AS requests',[scope.environment])).rows[0];
+    assert.deepEqual(counts,{sessions:0,requests:0});
+    await pool.query("UPDATE croupier_studio.media_records SET record=record-'deletion' WHERE environment_id=$1 AND workspace_id=$2 AND id=$3",[scope.environment,scope.workspaceId,id]);
+    const saved=await journal.reserveMovingSession(input);
+    const restarted=await createSpeechJournal({pool,environmentId:scope.environment});
+    await assert.rejects(restarted.reserveMovingSession(input),hasCode('generated_speech_request_already_attempted'));
+    const protectedMedia=await repo.inspectMediaDeletion(record);
+    assert.deepEqual(protectedMedia.references.map(row=>row.source),['moving-speech']);assert.equal(protectedMedia.coverage.complete,true);
+    const unrelated=await repo.inspectMediaDeletion({id:randomUUID(),pathname:'croupier/media/unrelated.mp4'});
+    assert.deepEqual(unrelated.references,[]);assert.equal(unrelated.coverage.complete,true);
+    await journal.markRequestSubmissionStarted({key:saved.key,lease});
+    await journal.markSubmissionStarted({sessionId:binding.sessionId,lease});
+    await journal.markSubmissionUncertain({sessionId:binding.sessionId,lease});
+    assert.equal((await repo.inspectMediaDeletion(record)).references.length,1);
+    await assert.rejects(journal.confirmWorkerDrained({sessionId:binding.sessionId,lease,proof:{workerId:saved.workerId,workers:0,busy:0,available:0}}),hasCode('generated_speech_terminal_required'));
+    // Separate known accepted attempt for terminal/drain and permanent budget.
+    // This isolated SQL fixture supplies the provider receipt; never production.
+    await pool.query("UPDATE croupier_studio.gpu_sessions SET state='submission_started' WHERE environment_id=$1 AND session_id=$2",[scope.environment,binding.sessionId]);
+    await journal.attachJob({sessionId:binding.sessionId,lease,jobId:'moving-fixture-job'});
+    await journal.recordProviderStatus({sessionId:binding.sessionId,lease,jobId:'moving-fixture-job',status:'COMPLETED'});
+    assert.equal((await repo.inspectMediaDeletion(record)).references.length,1,'terminal status alone is not drain');
+    await journal.confirmWorkerDrained({sessionId:binding.sessionId,lease,proof:{workerId:saved.workerId,workers:0,busy:0,available:0}});
+    await journal.completeRequest({key:saved.key,lease});await journal.releaseLease({lease});
+    assert.equal((await repo.inspectMediaDeletion(record)).references.length,0);
+    lease=await restarted.acquireLease({resource:'stream-session',holderId:'moving-qa-next'});
+    const nextSession=suffix()+suffix();
+    await assert.rejects(restarted.reserveMovingSession({...input,lease,requestId:'moving-2',sessionId:nextSession,
+      binding:{...binding,sessionId:nextSession},totalBudgetMicroUsd:1000000}),hasCode('generated_speech_total_budget_exhausted'));
+    assert.equal((await pool.query('SELECT sum(reserved_micro_usd)::int AS used FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1',[scope.environment])).rows[0].used,250000);
+    await journal.releaseLease({lease});
+  });
 
   await check('media deletion finds exact journal owners and fails closed on unattributed speech activity', async () => {
     const mediaScope={environment:`qa_media_${suffix()}`,workspaceId:'integration'};

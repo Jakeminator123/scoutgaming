@@ -16,6 +16,7 @@ import sys
 import tempfile
 from contracts import validate_job, verify_bank, verify_release
 from engine import ProcessEngine
+from bank_download import fetch_bank_download
 from fetch_models import verify as verify_models
 from session import serve
 
@@ -27,6 +28,9 @@ async def run(job, bank_store, allowed_origin):
     attestation = validate_job(job["input"], release_sha, allowed_origin, job["id"])
     binding = job["input"]["binding"]
     async with asyncio.timeout(job["input"]["ttlSeconds"]):
+        if "bankDownload" in job["input"]:
+            bank_store = await fetch_bank_download(job["input"]["bankDownload"],
+                                                   job["input"]["callbackUrl"], binding)
         with tempfile.TemporaryDirectory(prefix="moving-worker-") as temporary:
             destination = Path(temporary) / "avatars"
             bank_store = Path(bank_store)

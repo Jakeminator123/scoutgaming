@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import {experimental_upgradeWebSocket, waitUntil} from '@vercel/functions';
-import {platformConfiguration, canonicalPlatformPath} from './platform-configuration.mjs';
+import {platformConfiguration, canonicalPlatformPath, movingWorkerSocketPath} from './platform-configuration.mjs';
 
 const CLIENT_PATH = '/speech-stream', WORKER_PATH = '/lipsync-worker';
 const MAX_BUFFERED = 8 * 1024 * 1024;
@@ -51,21 +51,31 @@ function socketWriteState(socket) {
 // Host/Connection/Upgrade/key/extensions handshake to the configured backend.
 export function platformSocketRequest(request, configuration) {
   const url = new URL(request.url), path = canonicalPlatformPath(url.pathname);
-  if (![CLIENT_PATH, WORKER_PATH].includes(path) || url.search) return {status: 400};
+  const movingClient = path === '/moving-speech-stream', movingWorker = movingWorkerSocketPath(path);
+  const moving = movingClient || movingWorker;
+  if ((!moving && ![CLIENT_PATH, WORKER_PATH].includes(path)) || (!movingWorker && url.search) || url.hash) return {status: 400};
   if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return {status: 426};
   const origin = request.headers.get('origin');
   const headers = {'x-croupier-vercel-secret': configuration.secret, 'x-croupier-public-origin': configuration.publicOrigin,
     'x-forwarded-host': new URL(configuration.publicOrigin).host, 'x-forwarded-proto': 'https'};
   let protocols = [];
-  if (path === CLIENT_PATH) {
+  if (path === CLIENT_PATH || movingClient) {
     if (origin !== configuration.publicOrigin) return {status: 403};
     const cookie = request.headers.get('cookie');
     if (!cookie || cookie.length > 16384) return {status: 401};
     protocols = (request.headers.get('sec-websocket-protocol') ?? '').split(',').map(value => value.trim());
     // The SDK selects the first protocol. Never reflect a signed ticket in
-    // the response; existing native clients put astrid-v2 first.
-    if (protocols.length !== 2 || protocols[0] !== 'astrid-v2' || !/^ticket\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(protocols[1]) || protocols[1].length > 4103) return {status: 401};
+    // the response; the public protocol (astrid-v2 or moving-v1) comes first.
+    if (protocols.length !== 2 || protocols[0] !== (movingClient ? 'moving-v1' : 'astrid-v2') || !/^ticket\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(protocols[1]) || protocols[1].length > 4103) return {status: 401};
     headers.cookie = cookie; headers.origin = origin;
+  } else if (movingWorker) {
+    const params = url.searchParams;
+    if (request.headers.has('origin') || request.headers.has('sec-websocket-protocol')
+      || params.getAll('token').length !== 1 || !/^[a-f0-9]{64}$/.test(params.get('token') ?? '')
+      || params.getAll('avatar').length !== 1 || !/^[a-z][a-z0-9-]{0,39}$/.test(params.get('avatar') ?? '')
+      || [...params.keys()].some(key => !['token', 'avatar'].includes(key))
+      || /[%+]/.test(url.search)) return {status: 403};
+    // The live capability authorizes this channel, never browser credentials.
   } else {
     const authorization = request.headers.get('authorization'), workerId = request.headers.get('x-worker-id');
     if (!/^Bearer \S{1,2048}$/.test(authorization ?? '') || !/^[\w-]{1,100}$/.test(workerId ?? '') || request.headers.has('sec-websocket-protocol')) return {status: 403};
@@ -80,8 +90,9 @@ export function platformSocketRequest(request, configuration) {
     }
     if (origin) headers.origin = origin;
   }
-  return {url: configuration.backendOrigin.replace('https:', 'wss:') + path, headers, protocols,
-    maxPayload: path === CLIENT_PATH ? 1024 * 1024 : 4 * 1024 * 1024};
+  return {url: configuration.backendOrigin.replace('https:', 'wss:') + path + url.search, headers, protocols,
+    maxPayload: moving ? 2 * 1024 * 1024 : path === CLIENT_PATH ? 1024 * 1024 : 4 * 1024 * 1024,
+    ...(moving ? {moving: true, lifetimeMs: 180000, maxBufferedBytes: 4 * 1024 * 1024} : {})};
 }
 
 export function bridgePlatformSocket(upstream, {maxBufferedBytes = MAX_BUFFERED, maxMessages = MAX_MESSAGES, lifetimeMs = 290000, attachTimeoutMs = 10000, closeTimeoutMs = 2000, writeObservationMs = 2000, trace = () => {}} = {}) {
@@ -208,8 +219,8 @@ export async function handlePlatformWebSocket(request, {env = process.env, WebSo
   let upstream, bridge, removeAbort;
   try {
     upstream = new WebSocketImpl(input.url, input.protocols, {headers: input.headers, followRedirects: false,
-      perMessageDeflate: false, handshakeTimeout: handshakeMs, maxPayload: 4 * 1024 * 1024});
-    bridge = bridgePlatformSocket(upstream, {lifetimeMs: input.url.endsWith(WORKER_PATH) ? 590000 : 290000, ...bridgeOptions, trace});
+      perMessageDeflate: false, handshakeTimeout: handshakeMs, maxPayload: input.moving ? input.maxPayload : 4 * 1024 * 1024});
+    bridge = bridgePlatformSocket(upstream, {lifetimeMs: input.lifetimeMs ?? (input.url.endsWith(WORKER_PATH) ? 590000 : 290000), ...(input.moving ? {maxBufferedBytes: input.maxBufferedBytes} : {}), ...bridgeOptions, trace});
     const status = await new Promise(resolve => {
       upstream.once('open', () => resolve(101));
       upstream.once('error', () => resolve(502));
@@ -221,7 +232,7 @@ export async function handlePlatformWebSocket(request, {env = process.env, WebSo
     });
     if (status !== 101) {bridge.cancel(); return response(status);}
     trace('upstream_open');
-    if (input.protocols.length && upstream.protocol !== 'astrid-v2') {bridge.cancel(); return response(502);}
+    if (input.protocols.length && upstream.protocol !== input.protocols[0]) {bridge.cancel(); return response(502);}
     if (request.signal.aborted) {bridge.cancel(); return response(499);}
     const abort = () => {trace('request_abort'); bridge.cancel();};
     request.signal.addEventListener('abort', abort, {once: true});

@@ -10,6 +10,7 @@ import { createPostgresStore, validateGameConnection } from '../../web/storage/p
 import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 import { gameEntryEnabled } from '../../web/public/game-entry-contract.mjs';
 import { studioGamePolicyConfiguration } from '../../web/storage/studio-game-policy.mjs';
+import { validatePrivateMedia } from '../../lab/lib/cloud-media-store.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const WEB_PORT = 4173;
@@ -191,6 +192,35 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     try { studioPolicy = studioGamePolicyConfiguration(env); } catch { fail('CROUPIER_STUDIO_NEON_POLICY/scope'); }
     if (!studioPolicy || mediaStorage !== 'blob' || !blobToken) fail('CROUPIER_MEDIA_STORAGE/BLOB_READ_WRITE_TOKEN');
   }
+  const movingFlag = env.CROUPIER_MOVING_SPEECH_ENABLED;
+  if (movingFlag !== undefined && !['', '0', '1'].includes(movingFlag)) fail('CROUPIER_MOVING_SPEECH_ENABLED');
+  let movingSpeech = null;
+  if (movingFlag === '1') {
+    if (storageExport || database !== 'postgres' || !studioPolicy || mediaStorage !== 'blob' || !blobToken || !dealerSpeechProfiles)
+      fail('CROUPIER_MOVING_SPEECH_ENABLED requires Neon, private Blob and registered speech profiles');
+    const prefix = 'CROUPIER_MOVING_SPEECH_';
+    const workerOrigin = httpsOrigin(env[prefix + 'WORKER_ORIGIN'], prefix + 'WORKER_ORIGIN');
+    if (workerOrigin !== httpsOrigin(env.RENDER_EXTERNAL_URL, 'RENDER_EXTERNAL_URL')) fail(prefix + 'WORKER_ORIGIN');
+    const bankJson = env[prefix + 'BANK_RECORD'];
+    let bankRecord;
+    try {
+      if (typeof bankJson !== 'string' || Buffer.byteLength(bankJson) > 128 * 1024) throw Error();
+      bankRecord = validatePrivateMedia(JSON.parse(bankJson));
+      if (bankRecord.contentType !== 'application/json' || bankRecord.size > 128 * 1024
+        || !/^croupier\/media\/dealers\/[a-z][a-z0-9-]{0,39}\/runtime\/moving-bank\//.test(bankRecord.pathname)) throw Error();
+    } catch { fail(prefix + 'BANK_RECORD'); }
+    const endpointId = env[prefix + 'ENDPOINT_ID'], runpodKey = env[prefix + 'RUNPOD_API_KEY'];
+    const image = env[prefix + 'IMAGE'], releaseSha256 = env[prefix + 'RELEASE_SHA256'], movingTicket = env[prefix + 'TICKET_SECRET'];
+    const credential = (value, minimum) => typeof value === 'string' && value.length >= minimum && value.length <= 2048
+      && !/[\s\u0000-\u001f\u007f-\u009f]/u.test(value);
+    if (!/^[a-z0-9]{6,64}$/.test(endpointId ?? '')) fail(prefix + 'ENDPOINT_ID');
+    if (!credential(runpodKey, 1)) fail(prefix + 'RUNPOD_API_KEY');
+    if (!/^ghcr\.io\/jakeminator123\/moving-gpu-worker@sha256:[a-f0-9]{64}$/.test(image ?? '')) fail(prefix + 'IMAGE');
+    if (!/^[a-f0-9]{64}$/.test(releaseSha256 ?? '')) fail(prefix + 'RELEASE_SHA256');
+    if (!credential(movingTicket, 32) || [workerSecret, ticketSecret, translationKey, cartesiaKey, runpodKey,
+      env.RUNPOD_API_KEY, elevenLabsKey, blobToken, env.CROUPIER_VERCEL_INGRESS_SECRET].includes(movingTicket)) fail(prefix + 'TICKET_SECRET');
+    movingSpeech = Object.freeze({ bankRecord: JSON.stringify(bankRecord), endpointId, runpodKey, image, releaseSha256, ticketSecret: movingTicket, workerOrigin });
+  }
   const frontendOrigin = env.CROUPIER_VERCEL_FRONTEND_ORIGIN
     ? httpsOrigin(env.CROUPIER_VERCEL_FRONTEND_ORIGIN, 'CROUPIER_VERCEL_FRONTEND_ORIGIN') : '';
   if (frontendOrigin && [gameOrigin, boOrigin, labOrigin].includes(frontendOrigin)) fail('CROUPIER_VERCEL_FRONTEND_ORIGIN');
@@ -236,7 +266,7 @@ export function validateCloudConfig(env, { repository = REPOSITORY } = {}) {
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(env.BETTALOTTO_PARTNER_PLAYER_ID))) fail('BETTALOTTO_PARTNER_KEY_ID/SECRET/PLAYER_ID');
   return Object.freeze({ gameOrigin, boOrigin, labOrigin, frontendOrigin, singleOrigin, labBasePath, publicPort, dataRoot, paths, videoArchive,
     database, gameDatabaseUrl, vercelIngress, publicGamePath, storageExport, nativeP6QaRouter,
-    director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey,
+    director, productSpeech, labRemote, timeoutMs, speechTimeoutMs, camera, generatedSpeech, streaming, dealerSpeechProfiles, elevenLabsKey, movingSpeech,
     mediaStorage, studioPolicy, blobToken: mediaStorage === 'blob' ? blobToken : '', zonesDatabaseUrl,
     playerAccounts: env.CROUPIER_PLAYER_ACCOUNTS === '1',
     streamSecrets: streaming ? { workerSecret, ticketSecret, sessionReserveUsd, dailyBudgetUsd } : null,
@@ -358,6 +388,16 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
           CARTESIA_API_KEY: config.speechProvider.cartesiaKey,
           RUNPOD_API_KEY: config.speechProvider.runpodKey,
           CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: config.speechProvider.runpodEndpointId,
+        } : {}),
+        ...(config.movingSpeech ? {
+          CROUPIER_MOVING_SPEECH_ENABLED: '1',
+          CROUPIER_MOVING_SPEECH_BANK_RECORD: config.movingSpeech.bankRecord,
+          CROUPIER_MOVING_SPEECH_ENDPOINT_ID: config.movingSpeech.endpointId,
+          CROUPIER_MOVING_SPEECH_RUNPOD_API_KEY: config.movingSpeech.runpodKey,
+          CROUPIER_MOVING_SPEECH_IMAGE: config.movingSpeech.image,
+          CROUPIER_MOVING_SPEECH_RELEASE_SHA256: config.movingSpeech.releaseSha256,
+          CROUPIER_MOVING_SPEECH_TICKET_SECRET: config.movingSpeech.ticketSecret,
+          CROUPIER_MOVING_SPEECH_WORKER_ORIGIN: config.movingSpeech.workerOrigin,
         } : {}),
         CROUPIER_ASTRID_CAMERA: config.camera ? '1' : '',
         CROUPIER_ASTRID_TRANSLATION_KEY: config.translationKey,

@@ -5,7 +5,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import {isAbsolute,join} from 'node:path';
 import {StudioStorageError,canonicalStudioJson,studioStorageFailure,validateActor,validateStudioScope} from '../../web/storage/studio-contract.mjs';
 import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogJson,runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
-import {planStudioMigrations} from './migrations.mjs';
+import {planStudioMigrations,loadStudioMigrations} from './migrations.mjs';
 import {validateMediaLayout} from '../../tools/media-layout.mjs';
 import {validatePrivateMedia} from '../../lab/lib/cloud-media-store.mjs';
 
@@ -82,8 +82,13 @@ function summary(prepared) {
     blobVerification:'metadata-only'};
 }
 async function verifiedSchema({pool,schemaCheck}) {
+  const optional=new Set((await loadStudioMigrations()).filter(row=>row.deploymentOptional).map(row=>row.version));
   const plan=await schemaCheck({pool});
-  if(!plan?.schemaPresent||plan.toApply?.length!==0||plan.applied?.map(row=>row.version).join(',')!==versions
+  const applied=Array.isArray(plan?.applied)?plan.applied.map(row=>row?.version):[];
+  // Keep the importer's required schema exact; only reviewed optional versions may extend it.
+  // Every applied row, including optional rows, is still rechecked against the locked ledger.
+  if(!plan?.schemaPresent||plan.toApply?.length!==0||new Set(applied).size!==applied.length
+    ||applied.filter(version=>!optional.has(version)).join(',')!==versions
     ||plan.applied.some(row=>!sha.test(row.checksum??'')||!sha.test(row.structureChecksum??'')))fail('schema_unverified');
   return plan;
 }

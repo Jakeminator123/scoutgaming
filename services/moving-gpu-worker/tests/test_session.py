@@ -12,18 +12,22 @@ START={"t":"start","id":"talk#1#"+H,"ljud_id":"talk","rate":24000,"karta":[[TAKE
 MAPPING={"takes":{TAKE:list(range(42))}}
 
 class Socket:
-    def __init__(self, messages, block_binary=False):
+    def __init__(self, messages, block_binary=False, auto_ack=True):
         self.messages=asyncio.Queue()
         for message in messages:
             self.messages.put_nowait(json.dumps(message) if isinstance(message,dict) else message)
         self.sent=[]
         self.block_binary=block_binary
+        self.auto_ack=auto_ack
     async def recv(self):
         return await self.messages.get()
     async def send(self,value):
         if isinstance(value,bytes) and self.block_binary:
             await asyncio.Future()
         self.sent.append(json.loads(value) if isinstance(value,str) else value)
+        if isinstance(value,bytes) and self.auto_ack:
+            meta=self.sent[-2]
+            self.messages.put_nowait(json.dumps({"t":"ack","id":meta["id"],"del":meta["del"]}))
 
 class Engine:
     def __init__(self,speed=45.9,stall=False):
@@ -45,7 +49,7 @@ class Engine:
             return {"t":"done","rutor":42},None
         first=self.position
         self.position=min(42,first+12)
-        return {"t":"lapp","fran":first,"till":self.position,
+        return {"t":"lapp","del":first//12,"fran":first,"till":self.position,
                 "rutor":[{"tagning":TAKE,"ruta":i,"rect":[0,0,20,20]} for i in range(first,self.position)]},b"h264"
     async def close(self):
         self.closed=True
@@ -61,6 +65,7 @@ class Sessions(unittest.IsolatedAsyncioTestCase):
         pong=socket.sent[0]
         self.assertEqual((pong["fps"],pong["ljud_fore_s"],pong["pad_after_s"]),(24,0.22,0.53))
         self.assertEqual(pong["attestation"],ATTESTATION)
+        self.assertIs(pong["chunk_ack"],True)
         self.assertEqual(socket.sent[-1]["t"],"done")
         self.assertEqual(sum(isinstance(x,bytes) for x in socket.sent),4)
         self.assertTrue(engine.closed)
@@ -147,3 +152,55 @@ class Sessions(unittest.IsolatedAsyncioTestCase):
             await serve(socket, engine, ATTESTATION, {**MAPPING, "vila": 0})
         self.assertTrue(engine.closed)
         self.assertFalse(any(isinstance(item, bytes) for item in socket.sent))
+
+    async def test_missing_chunk_ack_stops_before_next_engine_read(self):
+        socket,engine=Socket(messages(),auto_ack=False),Engine()
+        with self.assertRaises(TimeoutError):
+            await serve(socket,engine,ATTESTATION,MAPPING,idle_seconds=.02)
+        self.assertEqual(engine.position,12)
+        self.assertTrue(engine.closed)
+        self.assertEqual(sum(isinstance(x,bytes) for x in socket.sent),1)
+        self.assertFalse(any(isinstance(x,dict) and x.get("t")=="done" for x in socket.sent))
+
+    async def test_chunk_ack_must_match_exact_current_identity_and_keys(self):
+        for invalid in [
+            {"t":"ack","id":"other","del":0},
+            {"t":"ack","id":START["id"],"del":1},
+            {"t":"ack","id":START["id"],"del":False},
+            {"t":"ack","id":START["id"],"del":0,"extra":True},
+        ]:
+            class BadAck(Socket):
+                async def send(self,value):
+                    await super().send(value)
+                    if isinstance(value,bytes): self.messages.put_nowait(json.dumps(invalid))
+            socket,engine=BadAck(messages(),auto_ack=False),Engine()
+            with self.assertRaisesRegex(ValueError,"invalid_chunk_ack"):
+                await serve(socket,engine,ATTESTATION,MAPPING,idle_seconds=.05)
+            self.assertEqual(engine.position,12)
+            self.assertTrue(engine.closed)
+
+    async def test_cancel_while_waiting_for_chunk_ack_stops_engine(self):
+        class Cancel(Socket):
+            async def send(self,value):
+                await super().send(value)
+                if isinstance(value,bytes): self.messages.put_nowait(json.dumps({"t":"avbryt","id":START["id"]}))
+        socket,engine=Cancel(messages(),auto_ack=False),Engine()
+        self.assertEqual(await serve(socket,engine,ATTESTATION,MAPPING,idle_seconds=.05),"cancelled")
+        self.assertEqual(engine.position,12)
+        self.assertTrue(engine.closed)
+        self.assertEqual(socket.sent[-1],{"t":"done","id":START["id"],"aborted":True})
+
+    async def test_delayed_ack_holds_next_chunk_and_stale_ack_is_rejected(self):
+        socket,engine=Socket(messages(),auto_ack=False),Engine()
+        task=asyncio.create_task(serve(socket,engine,ATTESTATION,MAPPING,idle_seconds=.5))
+        try:
+            for chunk in range(2):
+                while sum(isinstance(x,bytes) for x in socket.sent)<=chunk: await asyncio.sleep(.001)
+                await asyncio.sleep(.01)
+                self.assertEqual(engine.position,(chunk+1)*12)
+                socket.messages.put_nowait(json.dumps({"t":"ack","id":START["id"],"del":0}))
+            with self.assertRaisesRegex(ValueError,"invalid_chunk_ack"): await task
+            self.assertTrue(engine.closed)
+        finally:
+            task.cancel()
+            await asyncio.gather(task,return_exceptions=True)

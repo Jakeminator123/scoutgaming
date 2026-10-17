@@ -3,7 +3,7 @@ import { posix } from 'node:path';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { LAB_PORT, WEB_PORT, NATIVE_P6_QA } from './config.mjs';
 import { checkLabSession } from './lab-session-check.mjs';
-import { vercelIngressRequest } from './vercel-ingress.mjs';
+import { vercelIngressRequest, movingCallbackPath } from './vercel-ingress.mjs';
 
 const HOP_HEADERS = new Set(['connection', 'keep-alive', 'proxy-authenticate',
   'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade']);
@@ -233,14 +233,18 @@ export function createCloudGateway(config, { labInternalSecret, sessionCheck = c
     const ingress = vercelIngressRequest(incoming, vercelIngress);
     if (!ingress.accepted) { reject(421); return; }
     if (ingress.transported) incoming.headers = ingress.headers;
-    // Only Web's two authenticated speech endpoints may cross this boundary.
+    // Web owns client tickets and both worker bearer/capability protocols.
     // The relay still verifies the worker bearer token or the client's signed
     // ticket, session cookie and current owner before any paid work begins.
-    if (!config.streaming || incoming.method !== 'GET'
+    const moving = !!config.movingSpeech && (!vercelIngress || vercelIngress.movingWorkerOrigin === config.movingSpeech.workerOrigin);
+    const movingClient = moving && incoming.url === '/moving-speech-stream';
+    const movingWorker = moving && movingCallbackPath(incoming.url);
+    if (!(config.streaming && ['/speech-stream', '/lipsync-worker'].includes(incoming.url) || movingClient || movingWorker)
+      || incoming.method !== 'GET'
       || incoming.headers.host !== new URL(config.gameOrigin).host
-      || !['/speech-stream', '/lipsync-worker'].includes(incoming.url)
       || incoming.headers.upgrade?.toLowerCase() !== 'websocket'
-      || (incoming.url === '/speech-stream' && incoming.headers.origin !== config.gameOrigin)
+      || ((incoming.url === '/speech-stream' || movingClient) && incoming.headers.origin !== config.gameOrigin)
+      || (movingWorker && ['origin','cookie','authorization','sec-websocket-protocol'].some(name => incoming.headers[name] !== undefined))
       || (incoming.url === '/lipsync-worker' && incoming.headers.origin
         && incoming.headers.origin !== config.gameOrigin)) {
       reject(421); return;

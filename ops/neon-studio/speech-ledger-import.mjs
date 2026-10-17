@@ -5,7 +5,7 @@ import { GPU_RESERVATION_WINDOW_MS } from '../../web/speech-journal-constants.mj
 import { speechRequestKey } from '../../web/postgres-speech-journal.mjs';
 import { normalizeSpeechPackage } from '../../web/public/speech-package.mjs';
 import { validatePrivateMedia, mediaBlobPath } from '../../lab/lib/cloud-media-store.mjs';
-import { planStudioMigrations } from './migrations.mjs';
+import { planStudioMigrations, loadStudioMigrations } from './migrations.mjs';
 
 const fail = (code = 'studio_speech_import_invalid', status = 422) => { throw new StudioStorageError(code, status); };
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -209,8 +209,13 @@ export async function applyLegacySpeechLedgerSnapshot({ pool, prepared, expected
   const rows = await materialize(source,completedPackages,verifyCompletedPackage), wanted = desired(rows);
   const importChecksum = hash(canonicalStudioJson({sourceId:source.sourceId,sourceChecksum:source.checksum,scope:rows.scope,costRows:wanted,retainedOperatorQa:rows.retainedOperatorQa}));
   const eventId = identityUuid(canonicalStudioJson({sourceId:source.sourceId,scope:rows.scope}));
+  const optional = new Set((await loadStudioMigrations()).filter(row=>row.deploymentOptional).map(row=>row.version));
   const plan = await schemaCheck({pool});
-  if (!plan.schemaPresent || plan.toApply.length || plan.applied.map(row=>row.version).join(',')!=='001,002,003,004,005,006,007,008,011,012'
+  const applied = Array.isArray(plan?.applied) ? plan.applied.map(row=>row?.version) : [];
+  // Optional features may extend the ledger; required cost/import schema remains exact.
+  // The complete ledger, including optional rows, is checked again under the migration lock.
+  if (!plan?.schemaPresent || plan.toApply?.length!==0 || new Set(applied).size!==applied.length
+    || applied.filter(version=>!optional.has(version)).join(',')!=='001,002,003,004,005,006,007,008,011,012'
     || plan.applied.some(row=>!sha.test(row.checksum) || !sha.test(row.structureChecksum)) || !same(plan.target,target)) fail('studio_speech_import_schema_unverified',409);
   let client, began = false;
   const query = async (tag,sql,values=[]) => client.query(`/* speech-import:${tag} */ ${sql}`,values);

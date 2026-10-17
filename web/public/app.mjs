@@ -1667,21 +1667,22 @@ async function playChatDecision(decision, signal, jobId) {
         if (decision.visualMode === 'generated-lipsync-stream-preview' || decision.speechStream) {
           if (decision.visualMode !== 'generated-lipsync-stream-preview' || !decision.speechStream || decision.speechPackage
             || decision.requestId !== jobId) throw new Error('invalid_speech_stream_decision');
+          const checkStreamPose = () => {
+            const state = speechPoseGate.state, job = speechPoseGate.get(jobId), identity = poseIdentity();
+            if (signal?.aborted || !job || job.status !== 'speaking' || job.dealerId !== identity.dealerId
+              || job.sessionRevision !== identity.sessionRevision || job.roundRevision !== identity.roundRevision
+              || state.speechOwner !== `chat-${jobId}` || state.actionOwner !== 'none' || state.dealerPose !== 'speech'
+              || !state.visible || state.muted) throw new Error('stale_speech_stream_pose');
+          };
           const beforeStreamStart = async () => {
-            const check = () => {
-              const state = speechPoseGate.state, job = speechPoseGate.get(jobId), identity = poseIdentity();
-              if (signal?.aborted || !job || job.status !== 'speaking' || job.dealerId !== identity.dealerId
-                || job.sessionRevision !== identity.sessionRevision || job.roundRevision !== identity.roundRevision
-                || state.speechOwner !== `chat-${jobId}` || state.actionOwner !== 'none' || state.dealerPose !== 'speech'
-                || !state.visible || state.muted) throw new Error('stale_speech_stream_pose');
-            };
-            check(); await pendingChatReplies.get(jobId)?.beforeStart?.(); check();
+            checkStreamPose(); await pendingChatReplies.get(jobId)?.beforeStart?.(); checkStreamPose();
           };
           setChatStatus('Förbereder röst och läppsynk…');
           await playGeneratedSpeech(decision.speechStream, { exactText: decision.exactText, dealerId: DEALER.key,
-            requestId: jobId, mount: $('#scene'), signal, beforeStart: beforeStreamStart,
+            requestId: jobId, mount: $('#scene'), signal, beforeStart: beforeStreamStart, assertCurrent: checkStreamPose,
             prepareRendering: compositing => layerComposition?.prepareClip(compositing ?? undefined),
-            renderFrame: video => layerComposition?.renderFrame(video) ?? false,
+            renderFrame: (video, presented) => layerComposition?.renderFrame(video, presented) ?? false,
+            setMovingSpeechLayer: layer => layerComposition?.setMovingSpeechLayer(layer),
             streamObserver: pendingChatReplies.get(jobId)?.nativeP6Observer,
             onStart: text => {
               const pending = pendingChatReplies.get(jobId);

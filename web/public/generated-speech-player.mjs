@@ -2,6 +2,7 @@ import { validateSpeechPackage } from './speech-package.mjs';
 import { SpeechStreamPlayer } from './speech-stream-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
 import {effectiveDealerCompositing} from './dealer-compositing.mjs';
+import { playMovingSpeech } from './moving-speech-player.mjs';
 
 function speechRenderer(mount, prepareRendering, renderFrame) {
   if (typeof prepareRendering === 'function' && typeof renderFrame === 'function') return {prepareRendering,renderFrame,close(){}};
@@ -159,7 +160,13 @@ export async function loadGeneratedSpeech(value, { exactText, dealerId, signal, 
 
 /** The caller owns the pose gate and single speech queue. This owns one exact,
  * hash-checked audio/video pair, never a substitute recorded sentence. */
-export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver, prepareRendering, renderFrame } = {}) {
+export async function playGeneratedSpeech(value, { exactText, dealerId, requestId, mount, signal, media, beforeStart = async () => {}, assertCurrent,
+  onStart = () => {}, onFirstFrame = () => {}, onReceipt = () => {}, streamObserver, prepareRendering, renderFrame, setMovingSpeechLayer } = {}) {
+  if (value?.kind === 'moving-speech-stream') {
+    if (media) throw new Error('Stream playback cannot substitute transferred media');
+    return playMovingSpeech(value, { exactText, dealerId, requestId, signal, beforeStart, assertCurrent,
+      onStart, onFirstFrame, onReceipt, prepareRendering, renderFrame, setMovingSpeechLayer });
+  }
   if (value?.kind === 'generated-speech-stream') {
     if (media) throw new Error('Stream playback cannot substitute transferred media');
     return playGeneratedSpeechStream(value, { exactText, dealerId, requestId, mount, signal, beforeStart, onStart, onFirstFrame, onReceipt, streamObserver, prepareRendering, renderFrame });

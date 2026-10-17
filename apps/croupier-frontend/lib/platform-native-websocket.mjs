@@ -1,6 +1,6 @@
 import {createServer} from 'node:http';
 import WebSocket, {WebSocketServer} from 'ws';
-import {canonicalPlatformPath, platformConfiguration, PLATFORM_SOCKET_ENDPOINTS} from './platform-configuration.mjs';
+import {canonicalPlatformPath, platformConfiguration, PLATFORM_SOCKET_ENDPOINTS, MOVING_WORKER_SOCKET, movingWorkerSocketPath} from './platform-configuration.mjs';
 import {platformSocketRequest, bridgePlatformSocket, platformSocketDiagnostics} from './platform-websocket.mjs';
 
 const BACKEND_FAILURES = new Set([400, 401, 403, 409, 429, 503]);
@@ -10,6 +10,8 @@ function reject(socket, status) {
 }
 
 function matchesPath(raw, publicPath) {
+  if (publicPath === MOVING_WORKER_SOCKET) return typeof raw === 'string' && !raw.includes('#')
+    && movingWorkerSocketPath(raw.split('?')[0]);
   // A middleware rewrite can preserve the original path or deliver the fixed
   // internal function path. Neither form permits a query or another function.
   return typeof raw === 'string' && !raw.includes('?') && !raw.includes('#')
@@ -29,11 +31,13 @@ function requestHeaders(request) {
 // imports never bind a port; isolated fixtures explicitly listen and close it.
 export function createPlatformNativeWebSocketServer(publicPath, {env = process.env, WebSocketImpl = WebSocket,
   handshakeMs = 10000, bridgeOptions, diagnosticEmit} = {}) {
-  if (!Object.hasOwn(PLATFORM_SOCKET_ENDPOINTS, publicPath)) throw Error('Unknown platform socket function.');
+  if (publicPath !== MOVING_WORKER_SOCKET && !Object.hasOwn(PLATFORM_SOCKET_ENDPOINTS, publicPath)) throw Error('Unknown platform socket function.');
   const worker = publicPath === '/lipsync-worker';
+  const moving = publicPath === MOVING_WORKER_SOCKET || publicPath === '/moving-speech-stream';
+  const protocol = publicPath === '/moving-speech-stream' ? 'moving-v1' : 'astrid-v2';
   const websocketServer = new WebSocketServer({noServer: true, perMessageDeflate: false,
-    maxPayload: worker ? 4 * 1024 * 1024 : 1024 * 1024,
-    handleProtocols: protocols => protocols.has('astrid-v2') ? 'astrid-v2' : false});
+    maxPayload: moving ? 2 * 1024 * 1024 : worker ? 4 * 1024 * 1024 : 1024 * 1024,
+    handleProtocols: protocols => protocols.has(protocol) ? protocol : false});
   const bridges = new Set();
   const configure = () => {
     try {return {configuration: platformConfiguration(env)};} catch {return {status: 503};}
@@ -51,15 +55,15 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
       const {configuration, status} = configure();
       if (status || !configuration) {reject(socket, status ?? 404); return;}
       if (request.method !== 'GET' || !matchesPath(request.url, publicPath)) {reject(socket, 400); return;}
-      const input = platformSocketRequest(new Request(configuration.publicOrigin + publicPath,
+      const input = platformSocketRequest(new Request(configuration.publicOrigin + (publicPath === MOVING_WORKER_SOCKET ? request.url : publicPath),
         {headers: requestHeaders(request)}), configuration);
       if (input.status) {reject(socket, input.status); return;}
       trace = platformSocketDiagnostics(configuration, env, publicPath, {emit: diagnosticEmit});
       trace('created');
       const upstream = new WebSocketImpl(input.url, input.protocols, {headers: input.headers,
         followRedirects: false, perMessageDeflate: false, handshakeTimeout: handshakeMs,
-        maxPayload: 4 * 1024 * 1024});
-      bridge = bridgePlatformSocket(upstream, {lifetimeMs: worker ? 590000 : 290000, ...bridgeOptions, trace});
+        maxPayload: input.moving ? input.maxPayload : 4 * 1024 * 1024});
+      bridge = bridgePlatformSocket(upstream, {lifetimeMs: input.lifetimeMs ?? (worker ? 590000 : 290000), ...(input.moving ? {maxBufferedBytes: input.maxBufferedBytes} : {}), ...bridgeOptions, trace});
       bridges.add(bridge);
       bridge.done.then(() => bridges.delete(bridge));
       abort = () => {trace('request_abort'); bridge.cancel();};
@@ -77,9 +81,9 @@ export function createPlatformNativeWebSocketServer(publicPath, {env = process.e
         bridge.cancel(); reject(socket, upstreamStatus === 101 ? 502 : upstreamStatus); return;
       }
       trace('upstream_open');
-      if (input.protocols.length && upstream.protocol !== 'astrid-v2') {bridge.cancel(); reject(socket, 502); return;}
+      if (input.protocols.length && upstream.protocol !== input.protocols[0]) {bridge.cancel(); reject(socket, 502); return;}
       // Only Render can accept the current owner/session, single-use ticket or
-      // worker bearer. Its authenticated 101 must precede the public upgrade.
+      // worker bearer/capability. Its authenticated 101 precedes public upgrade.
       websocketServer.handleUpgrade(request, socket, head, frontend => {
         socket.removeListener('close', abort); socket.removeListener('error', abort);
         bridge.attach(frontend);

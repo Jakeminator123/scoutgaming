@@ -40,6 +40,23 @@ bild/ljudskvitton tillkommer separat enligt `verificationRequirements` i
 `build-contract.json`. Ett lyckat CPU-bygge innebär ingen publicering eller
 GPU-/läppsynkverifiering. CPU-tester startar ingen GPU.
 
+## Privat publicering
+
+`.github/workflows/moving-gpu-publish.yml` publicerar bara det nya paketet
+`ghcr.io/jakeminator123/moving-gpu-worker`. Manuell dispatch kräver exakt
+mål, granskat fullständigt commit-SHA och release-SHA. Dispatch är begränsad
+till `main` eller `codex/dragan-openclaw-live`; branchens frysta dispatch-SHA
+måste matcha inmatningen. GitHub kräver att workflowen finns på defaultbranchen
+innan den kan dispatchas, så den första publiceringen kan kräva en separat PR.
+
+Både lokala kontrakt och den faktiskt byggda serverless-imagen provas före
+registry-inloggning. `packages:write` finns bara på publiceringsjobbet;
+`GITHUB_TOKEN` används endast för registry/API och skickas aldrig till
+Dockerbygget eller imagen. Befintligt paket måste vara privat, och privat
+synlighet kontrolleras igen efter push. Använd kvittots `@sha256:`-referens
+vid separat RunPod-konfiguration; SHA-taggen ensam är ingen immutabilitetsgaranti.
+Publicering skapar ingen endpoint och kör ingen GPU.
+
 ## Bank och session
 
 Montera `/banks` read-only med `<avatarSha256>.tar` och
@@ -47,6 +64,30 @@ Montera `/banks` read-only med `<avatarSha256>.tar` och
 Använd den fulla verifierade banken; det lokala 66-rutorsprovet är en annan
 härledning. Alla sju filer, källmanifest, ägare, karta och ansiktsmetadata
 kontrolleras innan Torch får läsa den betrodda latentfilen.
+
+Alternativt kan servern tillföra `bankDownload` i jobbinput:
+
+```json
+{
+  "schemaVersion": 1,
+  "archive": {"url": "https://approved-origin/bank/archive?cap=<one-use>", "sha256": "<avatarSha256>", "bytes": 594432000},
+  "receipt": {"url": "https://approved-origin/bank/receipt?cap=<one-use>", "sha256": "<bankReceiptSha256>", "bytes": 1045}
+}
+```
+
+Descriptorhasharna måste matcha jobbets binding. Endast HTTPS med samma
+hostname och effektiva port som callback tillåts; inga redirects,
+komprimerade svar eller proxyupptäckt. Servern binder kortlivade capabilities
+till jobb/session och strömmar exakt `Content-Length`, avslutat svar och
+status 200. Workern hämtar kvitto först, sedan arkiv, med 15 sekunders
+I/O-gräns och totalt 60 sekunder inom jobbets vanliga TTL. Maxgränser är
+1 GiB arkiv och 128 KiB kvitto; inga allmänna Blobnycklar skickas.
+
+Bytes hashkontrolleras före atomisk lagring under `/tmp/croupier-moving-banks`
+och före ordinarie bankverifiering/extraktion. Varje cacheträff återverifieras;
+korrupta eller avvikande filer avvisas och skrivs aldrig över automatiskt.
+Timeout/avbrott tar bort just den egna ofärdiga filen. Cacheinnehåll lever
+bara i containerns temporära lagring; bankoriginal och modellfiler ändras inte.
 
 Sätt `MOVING_CALLBACK_ORIGIN` till spelmotorns exakta HTTPS-origin.
 Jobbinput har exakt:
@@ -86,7 +127,11 @@ PCM är 24 kHz mono s16le. Exakt antal planrutor måste vara
 Beräkningen använder heltal: 26000 byte ger 31 rutor, 64000 ger 50.
 En vila-sekvens refererar alltid till ruta 0, även över flera chunkar.
 `pong` annonserar `fps:24`, `ljud_fore_s:0.22`, `pad_after_s:0.53`
-och `del_rutor:12`. En sekund PCM kräver 42 planrutor. Implicit looping
+och `del_rutor:12`, samt `chunk_ack:true`. Varje metadata/binär-par kräver
+exakt `{t:"ack",id:<start.id>,del:<chunk.del>}` innan nästa bit skickas.
+Servern kvitterar efter sin begränsade konsument; fel/saknad kvittens stoppar
+försöket inom 15 sekunder och hela jobbets TTL. `avbryt` fungerar även under
+kvittensväntan. En sekund PCM kräver 42 planrutor. Implicit looping
 eller fryst sista ruta accepteras inte. Minst 30 uppmätta rutor/s krävs;
 desktopprovets `MIN_RUTOR=0` används aldrig här.
 

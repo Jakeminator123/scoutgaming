@@ -31,6 +31,8 @@ const sources = Object.freeze([
   // the additive bridge deployment. Missing 012 now blocks deployment readiness.
   { version: '012', file: '012-runtime-media-catalog.sql',
     tables: ['runtime_media_catalogs', 'speech_reply_records'], indexes: [] },
+  { version: '013', file: '013-moving-speech-admission.sql', deploymentOptional: true,
+    tables: ['moving_speech_bindings'], indexes: [] },
 ]);
 const budgetConstraint = 'gpu_budget_policies_daily_budget_micro_usd_check';
 const budgetDefinition = ceiling => `CHECK (daily_budget_micro_usd >= 1 AND daily_budget_micro_usd <= ${ceiling})`;

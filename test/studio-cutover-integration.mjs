@@ -23,7 +23,7 @@ import { createStudioDocumentApi } from '../lab/lib/studio-document-api.mjs';
 import { createStudioGameAuthority, studioCommandSignature } from '../lab/lib/studio-game-authority.mjs';
 import { createStudioGameCommandApi } from '../web/studio-game-commands.mjs';
 import { createPlayerAdministration } from '../web/storage/player-administration.mjs';
-import { planStudioMigrations } from '../ops/neon-studio/migrations.mjs';
+import { planStudioMigrations, loadStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
 import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
 import { createGeneratedSpeechService } from '../web/generated-speech.mjs';
@@ -156,9 +156,10 @@ export async function runStudioCutoverChecks({ pool, restart, tls } = {}) {
       pitboss: { payout10x: true, streak5: true, randomWalkMin: 45 }, tournaments: [] };
     await runtime.repository.initializeDocument('project', { value: createSeedProject(), revision: 'https-project-initial', actor: 'fixture-import' });
     await runtime.repository.initializeDocument('administration', { value: adminValue, revision: 'https-admin-initial', actor: 'fixture-import' });
-    await check('current product-v1 and Studio 001/002/003/004/005/006 SQL are checksum-verified', async () => {
+    await check('current product-v1 and every registered Studio migration are checksum-verified', async () => {
       await runtime.store.db.assertInstalled(); const plan = await planStudioMigrations({ pool });
-      assert.deepEqual(plan.applied.map(row => row.version), ['001', '002', '003', '004', '005', '006', '007', '008', '011', '012']); assert.equal(plan.toApply.length, 0);
+      assert.deepEqual(plan.applied.map(row => row.version), (await loadStudioMigrations()).map(row => row.version));
+      assert.equal(plan.toApply.length, 0); assert.equal(plan.optionalPending.length, 0);
     });
     await check('actual Render default schema factory accepts001004 saved Neon policy and denies missing import without seeding', async () => {
       // URL validation is inert; the supplied pool remains the owned localhost

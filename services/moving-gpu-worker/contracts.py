@@ -6,6 +6,7 @@ lifecycle. A callback capability proves transport ownership, not authorization.
 """
 import hashlib
 from frame_contract import pcm_frames
+from bank_download import validate_bank_download
 import json
 import re
 import tarfile
@@ -74,7 +75,8 @@ def verify_release(root):
 
 
 def validate_job(job, release_sha, allowed_origin, job_id):
-    if not isinstance(job, dict) or set(job) != {"schemaVersion", "callbackUrl", "binding", "ttlSeconds"}:
+    required = {"schemaVersion", "callbackUrl", "binding", "ttlSeconds"}
+    if not isinstance(job, dict) or set(job) not in (required, required | {"bankDownload"}):
         fail("invalid_job")
     binding = job["binding"]
     if job["schemaVersion"] != 1 or not isinstance(binding, dict) or set(binding) != BINDING_KEYS:
@@ -111,6 +113,8 @@ def validate_job(job, release_sha, allowed_origin, job_id):
         fail("invalid_callback")
     if len(query["token"]) != 1 or not sha(query["token"][0]):
         fail("invalid_callback")
+    if "bankDownload" in job:
+        validate_bank_download(job["bankDownload"], job["callbackUrl"], binding)
     return {**binding, "jobId": job_id}
 
 
