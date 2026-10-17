@@ -8,7 +8,7 @@ import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
 import {createStudioGamePolicy,STUDIO_GAME_CONFIGURATION_SOURCE} from '../web/storage/studio-game-policy.mjs';
 import {createStudioMediaRuntime} from '../lab/lib/studio-media-runtime.mjs';
-import {createSeedProject,isAssetCompatible} from '../lab/lib/studio-model.mjs';
+import {createSeedProject,isAssetCompatible} from '../packages/presentation/contracts/studio-model.mjs';
 import {legacyClipControls} from '../lab/lib/legacy-clip-inventory.mjs';
 import {createPresentationApi} from '../web/presentation-api.mjs';
 import {createNativeObservation} from '../web/public/native-observation.mjs';

@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject as createEmptyProject , defaultPresentationLane} from '../lib/studio-model.mjs';
+import { createSeedProject as createEmptyProject , defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
 import { createPresentationRoomController } from '../lib/presentation-room-client.mjs';
 

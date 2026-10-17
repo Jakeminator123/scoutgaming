@@ -7,9 +7,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import {createSeedProject as createEmptyProject,addDealer,defaultPresentationLane,normalizeProject} from '../lib/studio-model.mjs';
+import {createSeedProject as createEmptyProject,addDealer,defaultPresentationLane,normalizeProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
-import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {createStudioPreview} from '../lib/studio-preview-client.mjs';
 import {compositionPreviewLayers} from '../lib/studio-composition.mjs';
 
@@ -148,11 +148,11 @@ function previewHarness({dirty=true,conflict=false,saveResult=true,project:initi
     useRef:initial=>{const index=refIndex++;return refs[index]??=({current:initial});},useEffect:callback=>effects.push(callback)};
   // The SWC fixture runs UI callbacks in a VM, while model validators run in
   // the parent realm. Clone at this test boundary to match one browser realm.
-  const model=require('../lib/studio-model.mjs');
+  const model=require('../../packages/presentation/contracts/studio-model.mjs');
   const {ControlPreviewPage}=loadTs(new URL('../components/control-preview-page.tsx',import.meta.url),{
     react:hooks,'./studio-session':{useStudioProjectSession:()=>session},
     '../lib/studio-preview-client.mjs':{createStudioPreview:previewClient},
-    '../lib/studio-model.mjs':{...model,validateProject:value=>model.validateProject(structuredClone(value))},
+    '../../packages/presentation/contracts/studio-model.mjs':{...model,validateProject:value=>model.validateProject(structuredClone(value))},
   });
   function render(){stateIndex=0;refIndex=0;effects.length=0;return ControlPreviewPage({initialProject:project,initialVideos:inventory,initialStatus:{provider:'neon'},initialGame,initialLaneId});}
   function find(node,predicate){if(!node||typeof node!=='object')return null;if(predicate(node))return node;for(const child of [node.props?.children,node.props?.primary].flat(Infinity)){const found=find(child,predicate);if(found)return found;}return null;}

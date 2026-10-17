@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {projectGamePlane,projectTableGamePlane,layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../web/public/game-overlay-layout.mjs';
 import {stageGeometry,tableRect} from '../packages/presentation/compositor/geometry.js';
-import {sceneForComposition,defaultCompositionSettings,defaultBlackjackTableGeometry} from '../web/public/composition-settings.mjs';
+import {sceneForComposition,defaultCompositionSettings,defaultBlackjackTableGeometry} from '../packages/presentation/contracts/composition-settings.mjs';
 import {calibration} from '../web/public/card-presentation/calibration.mjs';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const settings=defaultCompositionSettings();

@@ -8,7 +8,7 @@ import { webcrypto } from 'node:crypto';
 import { buildPlaybackTrace } from '../lib/playback-trace.mjs';
 import { appendPartnerTrace, createPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { canonicalGameDestination } from '../../web/public/game-entry-contract.mjs';
 
 const require = createRequire(import.meta.url);

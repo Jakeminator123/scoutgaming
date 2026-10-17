@@ -1,7 +1,7 @@
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {lifecycleProject,changeDealerLifecycle,assertLifecyclePackages,checkDealerArchive} from '../lib/dealer-lifecycle.mjs';
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';

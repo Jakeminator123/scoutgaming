@@ -9,9 +9,9 @@ import { ReferenceCapture } from './reference-capture';
 import { PartnerReference } from './partner-reference';
 import { createPartnerTrace, appendPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { GameStream, type GameStreamProps } from './game-stream';
-import { PROBE_REASONS } from '../lib/probe-policy.mjs';
+import { PROBE_REASONS } from '../../packages/presentation/contracts/probe-policy.mjs';
 import { buildPlaybackTrace, playbackOutcome } from '../lib/playback-trace.mjs';
-import type { LegacyClipControls } from '../lib/legacy-clip-inventory.mjs';
+import type { LegacyClipControls } from '../../packages/presentation/contracts/legacy-clip-types.mjs';
 
 export type ActivityDraft = Omit<ActivityEntry, 'id' | 'time'>;
 export type ObservationContext = { dealerId?: string; dealerLabel?: string; operatorSlug?: string; operatorLabel?: string; tableId?: string; tableLabel?: string };

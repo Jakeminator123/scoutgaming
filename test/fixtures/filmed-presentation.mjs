@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
-import {addDealer,createSeedProject,defaultPresentationLane} from '../../lab/lib/studio-model.mjs';
-import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {captureFrozenPresentation} from '../../web/storage/frozen-presentation-capture.mjs';
 import {DRAGAN_KEVIN_PROFILE as profile} from '../../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';

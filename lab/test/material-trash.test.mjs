@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
-import {createSeedProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
+import {createSeedProject,defaultPresentationLane,validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {changeMaterialTrash} from '../lib/material-trash.mjs';
 import {lifecycleProject} from '../lib/dealer-lifecycle.mjs';
 import {createResourceLifecycleApi} from '../lib/resource-lifecycle-api.mjs';
@@ -11,7 +11,7 @@ import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
 import {createOperatorStore} from '../../web/storage/operator-store.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../../web/storage/presentation-package.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
-import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings,defaultBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 
 const scope={environment:'material-trash-test',workspaceId:'isolated'},origin='https://trash.example.invalid';
 const actor={user:'fixture-admin',role:'admin',scope},now=()=>1791753600000;

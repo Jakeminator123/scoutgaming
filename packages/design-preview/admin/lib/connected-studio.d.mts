@@ -1,5 +1,5 @@
-import type { StudioProject, StudioEvent } from '../../../../lab/lib/studio-model.mjs';
-import type { VideoMetadata } from '../../../../lab/lib/video-intake.mjs';
+import type { StudioProject, StudioEvent } from '../../../presentation/contracts/studio-model.mjs';
+import type { VideoMetadata } from '../../../presentation/contracts/video-intake.mjs';
 export type VideoEntry = {id:string;label:string;available:boolean;integrity:string;previewUrl:string;contentType?:string;classification?:VideoMetadata;familyId?:string;duration?:number;sha256?:string};
 export type MediaFamily = {id:string;dealerId:string;eventId:string;situation:string;playbackType:string;standardIds:string[];variantIds:string[]};
 export type VideoInventory = {videos:VideoEntry[];families?:MediaFamily[]};

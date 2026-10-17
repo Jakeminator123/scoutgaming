@@ -1,5 +1,5 @@
 import guide from '../docs/guide.json';
-import contract from '../policies/studio-contract.json';
+import contract from '../../packages/presentation/contracts/policies/studio-contract.json';
 import type { StudioView } from './studio-types';
 import styles from './studio-guide.module.css';
 import { OpenClawSources } from './openclaw-sources';

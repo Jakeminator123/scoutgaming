@@ -1,6 +1,6 @@
 "use client"
 import {useEffect,useState} from 'react';
-import type {StudioProject} from '../../../../../lab/lib/studio-model.mjs';
+import type {StudioProject} from '../../../../presentation/contracts/studio-model.mjs';
 import type {VideoInventory} from '../../lib/connected-studio.mjs';
 import {rouletteClipMatches,rouletteClipSlots} from '../../lib/roulette-clip-map.mjs';
 import {bindRouletteStart,removeRouletteStart,rouletteStartCompositions,rouletteStartForm,rouletteStartTables,type RouletteStartForm} from '../../lib/roulette-start-editor.mjs';

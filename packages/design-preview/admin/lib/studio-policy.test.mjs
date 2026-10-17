@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject,addVariant,validateProject,allowedPathDescriptors } from '../../../../lab/lib/studio-model.mjs';
-import { kindForEvent } from '../../../../lab/lib/video-intake.mjs';
+import { createSeedProject,addVariant,validateProject,allowedPathDescriptors } from '../../../presentation/contracts/studio-model.mjs';
+import { kindForEvent } from '../../../presentation/contracts/video-intake.mjs';
 import { clipSlots } from './connected-studio.mjs';
 import { addStudioIdleClip,applyStudioIdlePolicy,applyStudioVariantPolicy,setStudioBaseWeight,studioPolicyContext,studioClipUsage } from './studio-policy.mjs';
 
@@ -172,7 +172,7 @@ test('existing policy panel opens the selected take and never silently edits a d
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),policy=await import('./studio-policy.mjs');
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/studio-policy-panel.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-    {module,exports:module.exports,require:name=>name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){throw Error('No duration read while rendering');}}:name.includes('video-intake')?require('../../../../lab/lib/video-intake.mjs'):require(name)});
+    {module,exports:module.exports,require:name=>name==='../../lib/studio-policy.mjs'?policy:name.includes('idle-video-duration')?{readIdleVideoDuration(){throw Error('No duration read while rendering');}}:name.includes('video-intake')?require('../../../presentation/contracts/video-intake.mjs'):require(name)});
   const f=fixture();f.project=applyStudioVariantPolicy(f.project,f.inventory,f.dealerId,f.slot,ids[2],{priority:43});
   const render=(id,patch={})=>renderToStaticMarkup(React.createElement(module.exports.StudioPolicyPanel,{...f,selectedVideoId:id,blocked:false,onEdit(){assert.fail('render must not write');},...patch}));
   const selected=render(ids[2]);assert.ok(selected.includes(`value="${ids[2]}" selected=""`));assert.match(selected,/value="43"/);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject, defaultPresentationLane, validateProject } from '../lib/studio-model.mjs';
-import { PROBE_MODELS } from '../lib/probe-policy.mjs';
+import { createSeedProject, defaultPresentationLane, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { PROBE_MODELS } from '../../packages/presentation/contracts/probe-policy.mjs';
 
 const color = index => `#${index.toString(16).padStart(6, '0')}`;
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeDealerSpeechProfile,validateDealerSpeechReference,dealerSpeechPreparation,dealerSpeechReferenceCheck} from '../../web/public/dealer-speech-profile.mjs';
-import {addDealer,createSeedProject,createEmptyProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
+import {normalizeDealerSpeechProfile,validateDealerSpeechReference,dealerSpeechPreparation,dealerSpeechReferenceCheck} from '../../packages/presentation/contracts/dealer-speech-profile.mjs';
+import {addDealer,createSeedProject,createEmptyProject,defaultPresentationLane,validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {createStudioProjectBindings} from '../lib/studio-project-bindings.mjs';
 import {captureFrozenRegisteredDealers} from '../../web/storage/frozen-dealer-idle.mjs';
 import {dealerVoicePreset,dealerVoiceDraft,dealerVoiceFromDraft,matchingDealerVoicePreset,suggestedDealerVoicePreset} from '../../web/public/dealer-voice-catalog.mjs';
@@ -95,7 +95,7 @@ test('frozen dealer capture projects id/label/idle only and omits speech prepara
 for(const dealerId of ['astrid','elin','saga','paow'])test('speech settings uses own reviewed reference and explicit voice for registered '+dealerId,async()=>{
   const {createRequire}=await import('node:module'),{readFileSync}=await import('node:fs'),{runInNewContext}=await import('node:vm');
   const require=createRequire(import.meta.url),React=require('react'),{transformSync}=require('next/dist/build/swc');
-  const helpers=await import('../../web/public/dealer-speech-profile.mjs'),voices=await import('../../web/public/dealer-voice-catalog.mjs');
+  const helpers=await import('../../packages/presentation/contracts/dealer-speech-profile.mjs'),voices=await import('../../web/public/dealer-voice-catalog.mjs');
   const pickerModule={exports:{}},pickerSource=readFileSync(new URL('../components/dealer-voice-picker.tsx',import.meta.url),'utf8');
   runInNewContext(transformSync(pickerSource,{filename:'dealer-voice-picker.tsx',jsc:{parser:{syntax:'typescript',tsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}}).code,{module:pickerModule,exports:pickerModule.exports,require:name=>name.includes('dealer-voice-catalog')?voices:require(name)});
   const {DealerVoicePicker}=pickerModule.exports;

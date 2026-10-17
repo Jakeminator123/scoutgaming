@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import { buildRuntimeCatalog, validateProject } from './studio-model.mjs';
-import { dealFrequencyPolicies, mediaExampleEvent, mediaFamilyFolder, mediaLineForEvent, mediaVariantPolicy, usesMediaFamilies } from './media-family-policy.mjs';
-import { selectionFor } from './video-intake.mjs';
+import { buildRuntimeCatalog, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { dealFrequencyPolicies, mediaExampleEvent, mediaFamilyFolder, mediaLineForEvent, mediaVariantPolicy, usesMediaFamilies } from '../../packages/presentation/runtime/media-family-policy.mjs';
+import { selectionFor } from '../../packages/presentation/contracts/video-intake.mjs';
 
 const label = text => text.slice(0, 120);
 const fileLabel = (name, use) => {

@@ -46,6 +46,7 @@ import { randomUUID, scryptSync, randomBytes, timingSafeEqual, createHmac, creat
 import { createLayerPacksRoute } from './layer-packs.mjs';
 import { compositionRuntimeResponse } from './composition-runtime.mjs';
 import { presentationCapabilitiesResponse } from './presentation-capabilities.mjs';
+import { presentationPublicSource } from '../packages/presentation/public-modules.mjs';
 import { createRoulettePreview } from './games/roulette/preview.mjs';
 import { createSqliteRouletteCommand, createPostgresRouletteCommand } from './games/roulette/storage.mjs';
 import { rouletteDocument } from './games/roulette/http.mjs';
@@ -924,7 +925,7 @@ const server = createServer(async (req, res) => {
     finally{res.removeListener('close',disconnected);}
     return;
   }
-  if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || pathname.startsWith('/presentation-runtime/') || ['/packages/presentation/runtime/live-idle.mjs', '/packages/presentation/runtime/idle-policy.mjs'].includes(pathname) || pathname === '/lab/policies/idle-policy.seed.json' || pathname === '/web/public/dealer-identity.mjs') {
+  if (pathname.startsWith('/api/presentation/') && !pathname.startsWith('/api/presentation/layers/') || presentationPublicSource(pathname)) {
     try {
       presentationApi ??= (await import('./presentation-api.mjs')).createPresentationApi({ db, frozenDealerContext,
         ...(nativeP6QaRouter ? { nativeP6PlaybackContext: async({req:request,playerId,project,readProject})=>{

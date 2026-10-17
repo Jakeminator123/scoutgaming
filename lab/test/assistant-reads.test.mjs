@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readAssistantData,assistantNavigation,validateAssistantRead} from '../lib/assistant-reads.mjs';
 import {prepareAssistantAction,executeAssistantAction} from '../lib/assistant-actions.mjs';
-import {createEmptyProject} from '../lib/studio-model.mjs';
+import {createEmptyProject} from '../../packages/presentation/contracts/studio-model.mjs';
 const origin='https://studio.example.invalid',scope={environment:'test',workspaceId:'robot-test'},actor={accountId:'1',user:'admin-test',role:'admin',scope};
 const config={scope,apiBase:'/studio/api/admin',authBase:'/studio/api/auth',allowedOrigins:[origin,'https://lab.example.invalid'],publicHosts:['studio.example.invalid','lab.example.invalid']};
 const req=()=>new Request(origin+'/studio/api/assistant',{method:'POST',headers:{origin,'sec-fetch-site':'same-origin','content-type':'application/json'},body:'{}'});

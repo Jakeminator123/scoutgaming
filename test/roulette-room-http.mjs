@@ -11,7 +11,7 @@ import {runInNewContext} from 'node:vm';
 import {validatePublicOperatorRooms} from '../web/public/operator-rooms-contract.mjs';
 import {validatePublicOperatorPreview,previewMediaPath} from '../web/public/operator-preview-contract.mjs';
 import {readChoices,choicesStorageKey} from '../web/public/player-choices.mjs';
-import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 
 test('room document preserves login context and serves only explicit public assets',async t=>{
   let authenticated=false,reads=0;

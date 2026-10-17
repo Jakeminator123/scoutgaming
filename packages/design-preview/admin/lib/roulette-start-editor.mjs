@@ -1,7 +1,7 @@
-import {validateProject} from '../../../../lab/lib/studio-model.mjs';
-import {materialForAsset} from '../../../../web/public/material-catalog.mjs';
-import {validateRouletteStartBinding,validateFrozenRouletteStart} from '../../../../web/public/roulette-start-contract.mjs';
-import {assertRouletteIdleRecord} from '../../../../web/public/roulette-idle-contract.mjs';
+import {validateProject} from '../../../presentation/contracts/studio-model.mjs';
+import {materialForAsset} from '../../../presentation/contracts/material-catalog.mjs';
+import {validateRouletteStartBinding,validateFrozenRouletteStart} from '../../../presentation/contracts/roulette-start-contract.mjs';
+import {assertRouletteIdleRecord} from '../../../presentation/contracts/roulette-idle-contract.mjs';
 import {rouletteClipSlots,rouletteClipMatches} from './roulette-clip-map.mjs';
 
 const startSlot=rouletteClipSlots().find(slot=>slot.eventId==='roulette.wheel-start');

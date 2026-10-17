@@ -54,14 +54,15 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { appendActivity, type ActivityEntry } from '../lib/activity-log.mjs';
 import type { ActivityDraft } from './activity-log';
 import { loadActivities, saveActivities } from '../lib/activity-store.mjs';
-import { mediaExampleEvent, mediaLineForEvent } from '../lib/media-family-policy.mjs';
+import { mediaExampleEvent, mediaLineForEvent } from '../../packages/presentation/runtime/media-family-policy.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
-import { isAssetCompatible, type DealerId, type StudioProject } from '../lib/studio-model.mjs';
-import { videoFitsLine } from '../lib/video-intake.mjs';
+import { isAssetCompatible, type DealerId, type StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { videoFitsLine } from '../../packages/presentation/contracts/video-intake.mjs';
 import { publishShellStatus } from './page-template.mjs';
 import { stripLabBasePath } from '../lib/lab-url.mjs';
 import { activeStudioDealers, requestJson, resolveStudioDealerId, resolveStudioEventId, selectionHref, studioHref } from './studio-types';
-import type { ConnectionStatus, DirectorMode, VideoInventory } from './studio-types';
+import type { ConnectionStatus, DirectorMode } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 
 export type UnsavedSocialDraft = { draft: unknown; status: { policy: unknown } };
 export type StudioObservation = {

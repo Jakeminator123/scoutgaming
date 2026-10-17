@@ -1,4 +1,4 @@
-import type { StudioProject } from '../../../../lab/lib/studio-model.mjs';
+import type { StudioProject } from '../../../presentation/contracts/studio-model.mjs';
 import type { DealerArchiveImpact } from '../../../../lab/lib/dealer-archive-impact.mjs';
 import type { Catalog, VideoEntry, VideoInventory } from './connected-studio.mjs';
 export type LifecycleVideo = VideoEntry & { sha256?: string; revision?: string; dealer?: string; retainedBank?: boolean; bindingScope?: string; deletion?: { state: 'pending'|'deleted'; requestedAt: string } };

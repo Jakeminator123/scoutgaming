@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { addDealer, createSeedProject, normalizeProject } from '../lib/studio-model.mjs';
+import { addDealer, createSeedProject, normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
 
 const require = createRequire(import.meta.url);
 const { transformSync } = require('next/dist/build/swc');

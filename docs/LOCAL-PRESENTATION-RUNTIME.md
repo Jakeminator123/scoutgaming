@@ -1,5 +1,13 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+Rena projekt-, media- och browserkontrakt ägs av `packages/presentation/contracts/`.
+Studio och spelserver använder samma validering och typer. Den explicita listan
+`packages/presentation/public-modules.mjs` bevarar äldre publika moduladresser
+samt kanoniska paketadresser; privata projektseed/schema och serverfabriker
+serveras inte. Statiska frontendkopior skriver om relativa importer från samma
+kanoniska källa. Registrerade idle-regler får appens befintliga
+`prepareDecision` uttryckligen, utan ändrad urvalslogik.
+
 Kanoniskt målkontrakt för klippens fack, pose, namn, kontrollerad Kevin-import,
 Neon/Blob och gemensam talworker: [storage-guiden](storage/BLOB-NEON.md).
 Den uppdaterades 17 oktober som en plan; den aktiverar inte funktioner.
@@ -995,7 +1003,7 @@ paket fortsätter fungera medan `/admin` utvecklas.
 
 ### Begrepp och ägarskap
 
-Kanoniska nya material finns i `web/public/material-catalog.mjs`: design-ID
+Kanoniska nya material finns i `packages/presentation/contracts/material-catalog.mjs`: design-ID
 och exakt filhash knyter
 ihop namn i admin, partner, lobby och spel. Katalogen registrerar eller
 publicerar aldrig ett operatörsrum. Bibliotekets lager-UUID är separat från

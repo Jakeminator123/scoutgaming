@@ -5,7 +5,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {createServer} from 'node:http';
 import {createStudioDocumentApi} from '../lab/lib/studio-document-api.mjs';
-import {createSeedProject, validateProject} from '../lab/lib/studio-model.mjs';
+import {createSeedProject, validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 

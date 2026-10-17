@@ -1,14 +1,15 @@
 'use client';
 import { StudioDealerRequired } from './studio-dealer-required';
 
-import type { StudioProject } from '../lib/studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { EventTree } from './event-tree';
 import { PlaybackGuidance, ClipSelectionHelp } from './playback-guidance';
 import styles from './playback-guidance.module.css';
 import { FamilyOverview } from './family-video-library';
 import { PageTemplate } from './page-template.mjs';
 import { StudioBindingNotices, StudioContextIntro, StudioMessages, useStudioSession } from './studio-session';
-import { activeStudioDealers, resolveStudioDealerId, studioHref, type ConnectionStatus, type VideoInventory } from './studio-types';
+import { activeStudioDealers, resolveStudioDealerId, studioHref, type ConnectionStatus } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 
 function SelectedControlTreePage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId }: {
   initialProject: StudioProject;

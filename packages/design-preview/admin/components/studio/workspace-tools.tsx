@@ -12,8 +12,9 @@ import {ControlGuidePage} from '../../../../../lab/components/control-guide-page
 
 import {ControlOpenClawChat} from '../../../../../lab/components/control-openclaw-chat';
 import {LabStudio} from '../../../../../lab/components/lab-studio';
-import type {StudioProject} from '../../../../../lab/lib/studio-model.mjs';
-import type {ConnectionStatus,VideoInventory} from '../../../../../lab/components/studio-types';
+import type {StudioProject} from '../../../../presentation/contracts/studio-model.mjs';
+import type { ConnectionStatus } from '../../../../../lab/components/studio-types';
+import type { VideoInventory } from '../../../../presentation/contracts/media-inventory.mjs';
 import {studioNavigationContextFromQuery} from '../../../../../lab/lib/studio-navigation.mjs';
 import {ADMIN_WORKSPACE_TOOLS} from '../../../../../lab/lib/admin-workspace-routes.mjs';
 import {labUrl} from '../../../../../lab/lib/lab-url.mjs';

@@ -4,7 +4,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { startIsolatedConnection } from '../open-claw/lab/deploy/local-connection.mjs';
 import { prepareProject } from '../lab/start.mjs';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
-import { createDefaultProbePolicy } from '../lab/lib/probe-policy.mjs';
+import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
 import { demoProbeMemories } from '../lab/lib/probe-fixtures.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';

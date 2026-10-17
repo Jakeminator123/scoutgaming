@@ -1,4 +1,4 @@
-import { validateProject } from '../../../../lab/lib/studio-model.mjs';
+import { validateProject } from '../../../presentation/contracts/studio-model.mjs';
 
 const text = value => typeof value === 'string' && value.trim().length > 0;
 const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);

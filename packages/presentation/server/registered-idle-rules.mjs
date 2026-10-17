@@ -1,16 +1,17 @@
-import { isActiveDealerId, registeredDealerIds } from '../../../web/public/dealer-identity.mjs';
-import { prepareDecision } from '../../../open-claw/lab/src/engine.mjs';
-import { buildRuntimeCatalog } from '../../../lab/lib/studio-model.mjs';
-import { selectionFor } from '../../../lab/lib/video-intake.mjs';
-import { registeredIdleInventory, registeredIdlePolicy } from './registered-idle-policy.mjs';
+import { isActiveDealerId, registeredDealerIds } from '../contracts/dealer-identity.mjs';
+import { buildRuntimeCatalog } from '../contracts/studio-model.mjs';
+import { selectionFor } from '../contracts/video-intake.mjs';
+import { registeredIdleInventory, registeredIdlePolicy } from '../runtime/registered-idle-policy.mjs';
 
+// The application supplies its shared Director evaluator; this package never imports it.
+export function createRegisteredIdleRuleSelector({ prepareDecision }) {
 /**
  * Select a saved own-dealer idle reaction to an already verified game event.
  * The API must supply its receipt-backed sourceEvent, then bind the result to
  * that request's mode/version/presentation context. This helper never accepts
  * client examples as proof and never supplies simulated chat/history values.
  */
-export function selectRegisteredIdleRule({ project, dealerId, sourceEvent, mode } = {}, { inventory } = {}) {
+function selectRegisteredIdleRule({ project, dealerId, sourceEvent, mode } = {}, { inventory } = {}) {
   if (mode !== 'rules' || !['deal', 'reveal'].includes(sourceEvent?.type)
     || !isActiveDealerId(dealerId) || !registeredDealerIds(project).has(dealerId)) return null;
   const policy = registeredIdlePolicy(project, dealerId);
@@ -52,4 +53,7 @@ export function selectRegisteredIdleRule({ project, dealerId, sourceEvent, mode 
   const selected = aliases.get(prepareDecision(catalog, input).eligible[0]?.id);
   if (!selected || selected.id === line.baselineVariantId) return null;
   return { videoId: selected.videoGenerationId, variantId: selected.id, reason: 'deterministic_rules' };
+}
+
+return selectRegisteredIdleRule;
 }

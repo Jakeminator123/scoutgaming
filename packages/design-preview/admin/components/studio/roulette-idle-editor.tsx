@@ -1,6 +1,6 @@
 "use client"
 import {useEffect,useState} from 'react';
-import {validateProject,type StudioProject} from '../../../../../lab/lib/studio-model.mjs';
+import {validateProject,type StudioProject} from '../../../../presentation/contracts/studio-model.mjs';
 import type {VideoEntry,VideoInventory} from '../../lib/connected-studio.mjs';
 import {setRouletteIdleForeground} from '../../lib/roulette-clip-map.mjs';
 import {RouletteMediaReview} from './roulette-media-review';

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject as createEmptyProject,validateProject, defaultPresentationLane} from '../lib/studio-model.mjs';
-import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {createSeedProject as createEmptyProject,validateProject, defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
+import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 import {compositionPreviewLayers,registerCompositionLayer,uploadCompositionLayer} from '../lib/studio-composition.mjs';
 

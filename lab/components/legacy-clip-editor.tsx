@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import type { DealerId, LegacyClipBinding, StudioProject } from '../lib/studio-model.mjs';
-import type { LegacyClipControls } from '../lib/legacy-clip-inventory.mjs';
+import type { DealerId, LegacyClipBinding, StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { LegacyClipControls } from '../../packages/presentation/contracts/legacy-clip-types.mjs';
 import { LEGACY_CLIP_PARTS, LEGACY_PART_LABELS, upsertLegacyClipBinding } from '../../packages/presentation/runtime/legacy-clip-policy.mjs';
 import { clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
 import { requestJson } from './studio-types';

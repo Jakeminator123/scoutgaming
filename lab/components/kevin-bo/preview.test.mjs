@@ -147,7 +147,7 @@ test('real partner presentation destinations use assigned packages instead of lo
 });
 
 
-import {defaultPresentationLane} from '../../lib/studio-model.mjs';
+import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';
 const partnerCopyCode=babel.transformSync(await readFile(new URL('./partner-copy.mjs',import.meta.url),'utf8'),{babelrc:false,configFile:false,plugins:[require('next/dist/compiled/babel/plugin-transform-modules-commonjs')]}).code;
 test('verified own-operator saved receipt updates the real package view without replacing team or rooms',()=>{
   const output={exports:{}},slots=[];let cursor=0;

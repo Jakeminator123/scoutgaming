@@ -401,7 +401,7 @@ test('branding read follows the lane, requires configure, and refuses deprecated
 });
 
 import {withPackagePresentation} from '../../web/storage/presentation-package.mjs';
-import {defaultPresentationLane} from '../lib/studio-model.mjs';
+import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 test('scoped snapshot projects the frozen lane format and never substitutes the live project',async()=>{
   const loggedIn=await handlePartnerAuth(loginRequest('north-partner',secret),config);
   const cookie=`partner_session=${tokenOf(loggedIn)}`;
@@ -471,7 +471,7 @@ import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
 import {createOperatorStore} from '../../web/storage/operator-store.mjs';
-import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {createGameEntrySelector} from '../../web/game-entry-operator.mjs';
 import {resolvePlayerSelection} from '../../web/public/player-choices.mjs';
 

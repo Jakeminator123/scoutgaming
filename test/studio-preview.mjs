@@ -5,12 +5,12 @@ import {DatabaseSync} from 'node:sqlite';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
 import {createStudioPreview} from '../web/studio-preview.mjs';
 import {createStudioNativeAuth} from '../lab/lib/studio-native-auth.mjs';
-import {addDealer,createEmptyProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath} from '../web/presentation-layers.mjs';
-import {defaultCompositionSettings} from '../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {resolvePlayerSelection} from '../web/public/player-choices.mjs';
-import {defaultBackgroundRule} from '../web/public/background-playback-policy.mjs';
-import {recordedSpeechIdentity} from '../web/public/recorded-speech.mjs';
+import {defaultBackgroundRule} from '../packages/presentation/contracts/background-playback-policy.mjs';
+import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
 
 const origin='https://studio.example.invalid',scope={environment:'fixture',workspaceId:'croupier'};
 const videoId='10000000-0000-4000-8000-000000000001',layerId='20000000-0000-4000-8000-000000000001';

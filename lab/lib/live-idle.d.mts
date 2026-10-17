@@ -1,4 +1,4 @@
-import type { IdlePolicy } from './idle-policy.mjs';
+import type { IdlePolicy } from '../../packages/presentation/runtime/idle-policy.mjs';
 
 export interface LiveIdleInventory {
   families?: { id: string; dealerId: string; playbackType: string; standardIds: string[]; variantIds: string[] }[];

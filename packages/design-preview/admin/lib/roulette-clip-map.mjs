@@ -1,7 +1,7 @@
-import {ROULETTE_MEDIA_EVENTS} from '../../../../lab/lib/roulette-media.mjs';
-import {validateVideoMetadata} from '../../../../lab/lib/video-intake.mjs';
-import {assertRouletteIdleRecord,validateRouletteIdleBinding,validateFrozenRouletteIdle} from '../../../../web/public/roulette-idle-contract.mjs';
-import {validateRouletteStartBinding} from '../../../../web/public/roulette-start-contract.mjs';
+import {ROULETTE_MEDIA_EVENTS} from '../../../presentation/contracts/roulette-media.mjs';
+import {validateVideoMetadata} from '../../../presentation/contracts/video-intake.mjs';
+import {assertRouletteIdleRecord,validateRouletteIdleBinding,validateFrozenRouletteIdle} from '../../../presentation/contracts/roulette-idle-contract.mjs';
+import {validateRouletteStartBinding} from '../../../presentation/contracts/roulette-start-contract.mjs';
 
 // Explicit roulette authoring. These records never become blackjack lines.
 const descriptions={

@@ -1,8 +1,10 @@
 # Scheman för labbet
 
-`studio.schema.json` beskriver projektet, `video.schema.json` klassificering
-och `social.schema.json` den separata sociala policyn. Tekniska ID:n och
-tillåtna situationer samordnas med `../policies/studio-contract.json`.
+Projekt-, video-, idle- och probescheman ägs av
+`../../packages/presentation/contracts/schemas/`. `lab-video-manifest.schema.json`
+och `social.schema.json` stannar här med appens lagrings- och socialfunktioner.
+Tekniska ID:n och tillåtna situationer samordnas med
+`../../packages/presentation/contracts/policies/studio-contract.json`.
 `test/studio-contract.test.mjs` kontrollerar att dessa håller ihop.
 
 V5 kompletterar `speak.other` med befintliga grundrepliker som tidigare gick

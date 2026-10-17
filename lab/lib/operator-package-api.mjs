@@ -1,8 +1,8 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { PARTNER_PREVIEW_OPERATORS } from './partner-preview-policy.mjs';
-import { normalizeProject } from './studio-model.mjs';
+import { normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { buildPresentationPackage } from '../../web/presentation-layers.mjs';
-import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
+import { BASE_DEALER_IDS } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { canonicalStudioJson, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
 import {captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia, assertPublishedRoomBindings} from '../../web/storage/frozen-presentation-capture.mjs';

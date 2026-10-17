@@ -24,7 +24,7 @@ export async function createRenderStudioPolicy({ storage, env = process.env, dea
   return Object.freeze({ policy, repository, scope: config.scope });
 }
 
-import {isActiveDealerId} from '../dealer-identity.mjs';
+import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {ownDealerIdle} from '../../packages/presentation/runtime/registered-idle.mjs';
 export function createRegisteredDealerIdle({registryLoader} = {}) {
   if (typeof registryLoader !== 'function') throw new TypeError('Explicit cloud media registry required');

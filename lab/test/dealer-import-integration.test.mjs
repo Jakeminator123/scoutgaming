@@ -17,7 +17,7 @@ import { dealerImportCatalog, filenameDealerImportRows, finishDealerImportRows, 
 import { importClassification } from '../../packages/design-preview/admin/lib/dealer-import.mjs';
 import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../lib/media-upload-batch.mjs';
-import { DEFAULT_DEALER_COMPOSITING } from '../../web/public/dealer-compositing.mjs';
+import { DEFAULT_DEALER_COMPOSITING } from '../../packages/presentation/contracts/dealer-compositing.mjs';
 
 const scope = { environment: 'test', workspaceId: 'import-integration' }, origin = 'https://studio.example.invalid';
 const config = { scope, apiBase: '/studio/api/admin', authBase: '/studio/api/auth',

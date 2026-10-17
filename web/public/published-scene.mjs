@@ -1,5 +1,5 @@
-import {sceneForComposition} from './composition-settings.mjs';
-import {drawDealerFrame,dealerFrameRect} from './dealer-framing.mjs';
+import {sceneForComposition} from '../../packages/presentation/contracts/composition-settings.mjs';
+import {drawDealerFrame,dealerFrameRect} from '../../packages/presentation/contracts/dealer-framing.mjs';
 
 // One published, silent idle scene renderer for the lobby and game rooms.
 // Call close when replacing the scene to release media, GPU resources and listeners.

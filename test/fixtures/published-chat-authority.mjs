@@ -1,6 +1,6 @@
 import {createRegisteredChatContext as realCreateRegisteredChatContext,createPublishedChatResolver} from '../../web/registered-chat-context.mjs';
 import {readPackagePresentation,withPackagePresentation} from '../../web/storage/presentation-package.mjs';
-import {defaultPresentationLane} from '../../lab/lib/studio-model.mjs';
+import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from '../../lab/test/fixtures/cloud-presentation.mjs';
 export {createPublishedChatResolver,cancelPlayerChats} from '../../web/registered-chat-context.mjs';
 

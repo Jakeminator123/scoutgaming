@@ -1,4 +1,4 @@
-import type {StudioProject} from './studio-model.mjs';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 export type DealerArchiveImpact = {token:string;dealerId:string;mediaCount:number;speechEnabled:boolean;compositions:{id:string;label:string}[];rooms:{id:string;name:string;operatorId:string|null}[];operators:{id:string;name:string}[]};
 export function dealerArchiveCompositionIds(project:StudioProject,dealerId:string,records?:any[]):string[];
 export function withoutPresentationLanes(presentation:any,removedIds:string[]):any;

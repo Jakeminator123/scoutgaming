@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createPartnerTrace, appendPartnerTrace, exportPartnerTrace, restartPartnerTrace, TRACE_RECORD_LIMIT, TRACE_BYTE_LIMIT } from '../lib/partner-trace.mjs';
 import { createIdleLogFilter } from '../lib/activity-log.mjs';
 import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 
 test('partner trace keeps receiving past the limit and exports a visible boundary with complete events', () => {
   let trace = createPartnerTrace({ rolling: true });

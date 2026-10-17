@@ -1,8 +1,8 @@
-import { validateProject, allowedPathDescriptors } from '../../../../lab/lib/studio-model.mjs';
+import { validateProject, allowedPathDescriptors } from '../../../presentation/contracts/studio-model.mjs';
 import { validateIdlePolicy } from '../../../../packages/presentation/runtime/idle-policy.mjs';
 import { createRegisteredIdlePolicy } from '../../../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { isAstridDealFamily, dealFrequencyPolicies, mediaVariantPolicy, upsertMediaVariantPolicy } from '../../../../packages/presentation/runtime/media-family-policy.mjs';
-import { selectionFor } from '../../../../lab/lib/video-intake.mjs';
+import { selectionFor } from '../../../presentation/contracts/video-intake.mjs';
 import { clipSlots, clipsForSlot, configuredClipIds, currentClipId } from './connected-studio.mjs';
 
 const fail = message => { throw Error(message); };

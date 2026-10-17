@@ -4,9 +4,9 @@ import {IdlePolicyEditor} from './idle-policy-editor';
 import {ownDealerIdle} from '../../packages/presentation/runtime/registered-idle.mjs';
 import {createRegisteredIdlePolicy,registeredIdleInventory,registeredIdlePolicy} from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import {readIdleVideoDuration} from '../lib/idle-video-duration.mjs';
-import type {IdlePolicy} from '../lib/idle-policy.mjs';
-import type {StudioProject} from '../lib/studio-model.mjs';
-import type {VideoInventory} from './studio-types';
+import type {IdlePolicy} from '../../packages/presentation/runtime/idle-policy.mjs';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import {DealerFileSettings} from './dealer-file-settings';
 
 function availableBaseline(project:StudioProject,inventory:VideoInventory,dealerId:string,videoId:string){

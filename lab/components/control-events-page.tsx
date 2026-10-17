@@ -3,13 +3,13 @@ import { StudioDealerRequired } from './studio-dealer-required';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { decisionAttribution, eventSummary } from '../lib/activity-log.mjs';
-import { dealFrequencyPolicies, mediaVideoForEvent } from '../lib/media-family-policy.mjs';
+import { dealFrequencyPolicies, mediaVideoForEvent } from '../../packages/presentation/runtime/media-family-policy.mjs';
 import { getMotionClip } from '../lib/motion-library.mjs';
 import { takeObservedStep } from '../lib/observed-step-store.mjs';
 import type { PresentationStep } from '../lib/presentation-sequence.mjs';
-import { isAssetCompatible } from '../lib/studio-model.mjs';
-import type { DealerId, StudioAsset, StudioProject } from '../lib/studio-model.mjs';
-import { videoFitsLine, situationsForEvent } from '../lib/video-intake.mjs';
+import { isAssetCompatible } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { DealerId, StudioAsset, StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { videoFitsLine, situationsForEvent } from '../../packages/presentation/contracts/video-intake.mjs';
 import { StudioNavigation } from './studio-navigation';
 import { clipSituationLabel } from '../lib/clip-label.mjs';
 import { EventsCatalog } from './events-catalog';
@@ -21,7 +21,8 @@ import type { SocialActivity, SocialDraftCache } from './social-chat-panel';
 import type { PlaybackReceipt } from './stage';
 import { StudioMessages, useStudioSession } from './studio-session';
 import { neutralContext } from './test-context';
-import { activeStudioDealers, resolveStudioDealerId, previewVideoIdFor, requestJson, studioHref, type ConnectionStatus, type DirectorMode, type SimulationResult, type TestContext, type VideoInventory } from './studio-types';
+import { activeStudioDealers, resolveStudioDealerId, previewVideoIdFor, requestJson, studioHref, type ConnectionStatus, type DirectorMode, type SimulationResult, type TestContext } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 
 function readObservedStep(): PresentationStep | null {
   const step = takeObservedStep() as PresentationStep | null;

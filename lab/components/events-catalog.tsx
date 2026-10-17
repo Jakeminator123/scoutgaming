@@ -1,11 +1,11 @@
 'use client';
 
-import { situationsForEvent } from '../lib/video-intake.mjs';
+import { situationsForEvent } from '../../packages/presentation/contracts/video-intake.mjs';
 import { clipSituationLabel } from '../lib/clip-label.mjs';
-import type { DealerId, StudioProject } from '../lib/studio-model.mjs';
+import type { DealerId, StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { OUTPUT_GROUPS, presentationProfile } from '../lib/presentation-profile.mjs';
 import { FamilyNavigation } from './family-video-library';
-import type { VideoInventory } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import styles from './control-events-page.module.css';
 
 export function EventsCatalog({ project, videos, dealerId, eventId, situation, familyId, managed, filter, onFilter, onSelectDealer, onSelectEvent }: {

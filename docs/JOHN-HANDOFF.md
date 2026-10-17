@@ -6,6 +6,44 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2c: gemensamma presentationskontrakt — lokal ändring 17 oktober 2026
+
+`packages/presentation/contracts/` äger projektmodell, video-/rouletteregler,
+rena browserpolicyer, seeddata och videoschema med tillhörande deklarationer.
+Ingen regel, medieidentitet, katalogproveniens, schema-ID eller intern schema-
+referens ändras. Äldre modell-, video-, identitets- och policykällor ersätts av
+kanoniska importer; inga permanenta källwrappers behålls. UI:s inventarietyper
+samt legacy-inventariets rena datatyper har samma gemensamma ägare. IO stannar
+hos sina appägare.
+
+`server/registered-idle-rules.mjs` får befintlig `prepareDecision` injicerad
+från `lab/lib/registered-idle-rules.mjs`; beslut och mediebindningar är samma.
+Den tillfälliga urvals-/bindningskompositionen läser nu modell, video och
+speech-slot-kontrakt från paketet. Directortransporten förblir appkomponerad.
+
+`public-modules.mjs` innehåller en explicit browser-allowlist. Äldre publika
+modul-URL:er och kanoniska paket-URL:er fungerar från samma källa, inklusive
+relativa importer. Projektseed, privata schemafiler och server/Director-filer
+exponeras inte. Vercels exakta routing, statiska frontendkopior, isolerade
+serverfixturer, QA-källista och HEAD-jämförelse följer flytten.
+
+Riktad kontrakt-/media-/byggsvit: 248 passerade i första körningen. En missad
+konsumentimport och saknad frontenddependencykoppling stoppade återstående
+prov; efter rättning passerar hela den berörda runtime-/routing-/fixturesviten
+116/116. Schema-/policyproven passerar 39/39 och laddar verkliga relativa
+JSON-referenser från kontraktets och projektschemats nya plats. Inga skips.
+Lab- och Admin-typecheck passerar. Läsande HEAD-jämförelse: 160 fall, noll
+nätanrop, HEAD-/fixturdifferenser eller omskrivna baslinjer. Diffkontroll ren.
+Av 47 flyttade filer är 37 byteidentiska i Git-innehåll, sju ändrar bara
+importrader, en endast inline-typimportvägar och två samlar typdeklarationer.
+Alla åtta JSON-dokument är innehållsidentiska; schema-ID och relativa refs
+behålls. Idle-regelns funktionskropp är oförändrad. Det avgränsade runtime-
+klustret har inga package→app-importer eller cykler. Full build/CI, commit,
+push och drift är ännu inte utförda för denna lokala ändring.
+Detta är lokalt strukturarbete, inte en ny molnmigration, deploy eller
+läppsynksacceptans. Lagring och webbens separata kortpolicy återstår hos sina
+nuvarande ägare.
+
 ## Etapp 3 C2d: urval och Director — lokal ändring 17 oktober 2026
 
 Urvalet ligger i `packages/presentation/server/selection.mjs` som en fabrik

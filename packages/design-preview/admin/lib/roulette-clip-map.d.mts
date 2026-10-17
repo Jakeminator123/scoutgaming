@@ -1,5 +1,5 @@
 import type {ClipSlot,VideoEntry,VideoInventory} from './connected-studio.mjs';
-import type {StudioProject} from '../../../../lab/lib/studio-model.mjs';
+import type {StudioProject} from '../../../presentation/contracts/studio-model.mjs';
 export function rouletteClipSlots():ClipSlot[];
 export function rouletteClipMatches(video:VideoEntry,dealerId:string,slot:ClipSlot):boolean;
 export function rouletteReferencePreview(inventory:VideoInventory,dealerId:string):VideoEntry|null;

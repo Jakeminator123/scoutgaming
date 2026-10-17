@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {runInNewContext} from 'node:vm';
-import {createSeedProject,validateProject} from '../../../../lab/lib/studio-model.mjs';
+import {createSeedProject,validateProject} from '../../../presentation/contracts/studio-model.mjs';
 import {mediaClassification} from '../../../../lab/lib/dealer-media-library.mjs';
 import {setRouletteIdleForeground} from './roulette-clip-map.mjs';
 const require=createRequire(import.meta.url),React=require('react');

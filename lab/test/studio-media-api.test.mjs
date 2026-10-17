@@ -6,7 +6,7 @@ import { createStudioMediaApi } from '../lib/studio-media-api.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia} from '../../web/storage/studio-contract.mjs';
-import { addDealer, createSeedProject } from '../lib/studio-model.mjs';
+import { addDealer, createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
 import { negotiatePresentationCapabilityVersion, presentationCapabilitiesForVersion, PRESENTATION_CAPABILITY_VERSION_HEADER } from '../../packages/presentation/capability-contract.mjs';
 

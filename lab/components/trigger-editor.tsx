@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { PathDescriptor, PredicateOperator, Scalar, StudioTrigger, TriggerCategory } from '../lib/studio-model.mjs';
+import type { PathDescriptor, PredicateOperator, Scalar, StudioTrigger, TriggerCategory } from '../../packages/presentation/contracts/studio-model.mjs';
 import { parseTriggerValue } from './trigger-value.mjs';
 
 export const categoryLabels: Record<TriggerCategory, string> = { deterministic: 'Spel & regler', social: 'Socialt & minne', temperament: 'Temperament' };

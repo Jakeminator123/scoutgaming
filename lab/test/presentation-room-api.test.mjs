@@ -2,7 +2,7 @@ import {AsyncLocalStorage} from 'node:async_hooks';
 import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSeedProject as createHistoricalProject, defaultPresentationLane, addDealer } from '../lib/studio-model.mjs';
+import { createSeedProject as createHistoricalProject, defaultPresentationLane, addDealer } from '../../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
@@ -11,7 +11,7 @@ import { createStudioRepository } from '../../web/storage/studio-repository.mjs'
 import { createOperatorStore } from '../../web/storage/operator-store.mjs';
 import { buildPresentationPackage, layerAssetPath } from '../../web/presentation-layers.mjs';
 import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
-import { defaultCompositionSettings } from '../../web/public/composition-settings.mjs';
+import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
 import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
 import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
 

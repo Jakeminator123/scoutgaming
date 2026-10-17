@@ -1,6 +1,6 @@
 import { validateRegisteredIdlePolicies } from '../packages/presentation/runtime/registered-idle-policy.mjs';
-import seed from '../lab/policies/project.seed.json' with { type: 'json' };
-import { validateProject } from '../lab/lib/studio-model.mjs';
+import seed from '../packages/presentation/contracts/policies/project.seed.json' with { type: 'json' };
+import { validateProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { validateManagedStudioMedia } from './managed-media-contract.mjs';
 
 // Portable frozen selection policy. No filesystem, registry or provider reads.

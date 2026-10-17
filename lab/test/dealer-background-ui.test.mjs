@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
-import {addDealer,createSeedProject,defaultPresentationLane} from '../lib/studio-model.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath} from '../../web/presentation-layers.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');

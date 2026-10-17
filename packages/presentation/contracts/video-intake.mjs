@@ -1,12 +1,12 @@
 import {rouletteMediaEvent,validateRouletteMedia} from './roulette-media.mjs';
-import seed from '../policies/project.seed.json' with { type: 'json' };
-import contract from '../policies/studio-contract.json' with { type: 'json' };
-import schema from '../schemas/video.schema.json' with { type: 'json' };
-import { MEDIA_FAMILY_DEFINITIONS } from '../../packages/presentation/runtime/media-families.mjs';
-import { isDealerId } from '../../web/dealer-identity.mjs';
-import { validateDealerFraming } from '../../web/public/dealer-framing.mjs';
-import { assertDealerCompositingWrite } from '../../web/public/dealer-compositing.mjs';
-import { normalizeRecordedSpeech } from '../../web/public/recorded-speech.mjs';
+import seed from './policies/project.seed.json' with { type: 'json' };
+import contract from './policies/studio-contract.json' with { type: 'json' };
+import schema from './schemas/video.schema.json' with { type: 'json' };
+import { MEDIA_FAMILY_DEFINITIONS } from '../runtime/media-families.mjs';
+import { isDealerId } from './dealer-identity.mjs';
+import { validateDealerFraming } from './dealer-framing.mjs';
+import { assertDealerCompositingWrite } from './dealer-compositing.mjs';
+import { normalizeRecordedSpeech } from './recorded-speech.mjs';
 
 export const MAX_VIDEO_BYTES = contract.limits.videoBytes;
 export const VIDEO_KINDS = Object.freeze(contract.videoKinds);

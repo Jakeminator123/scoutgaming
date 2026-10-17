@@ -1,14 +1,14 @@
 // Server-only boundary: StudioMediaRecord is validated by the existing storage
 // contract. Do not import this module into presentation-layers/studio-model.
-import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../dealer-identity.mjs';
+import { MAX_DEALERS, isDealerId, isActiveDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { validateRegisteredIdlePolicies } from '../../packages/presentation/runtime/registered-idle-policy.mjs';
 import { validateFrozenDealerPlayback } from '../frozen-dealer-playback.mjs';
-import { videoFitsLine } from '../../lab/lib/video-intake.mjs';
+import { videoFitsLine } from '../../packages/presentation/contracts/video-intake.mjs';
 import { ownDealerIdle } from '../../packages/presentation/runtime/registered-idle.mjs';
 import {validateFrozenRegisteredDealers as validatePortableRegistry} from '../presentation-layers.mjs';
-import {validateRouletteIdleBinding, validateFrozenRouletteIdle} from '../public/roulette-idle-contract.mjs';
-import {validateRouletteStartBinding, validateFrozenRouletteStart} from '../public/roulette-start-contract.mjs';
-import {speechSlotSituation} from '../public/speech-slot-bindings.mjs';
+import {validateRouletteIdleBinding, validateFrozenRouletteIdle} from '../../packages/presentation/contracts/roulette-idle-contract.mjs';
+import {validateRouletteStartBinding, validateFrozenRouletteStart} from '../../packages/presentation/contracts/roulette-start-contract.mjs';
+import {speechSlotSituation} from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import {
   StudioStorageError, canonicalStudioJson, cloneStudioJson,
   validateDocumentValue, validateRevision, validateStudioMedia,

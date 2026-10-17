@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react';
-import type { StudioProject, MediaVariantPolicy } from '../../../../../lab/lib/studio-model.mjs';
-import type { IdlePolicy, IdleVariantPolicy, IdleVariantUse } from '../../../../../lab/lib/idle-policy.mjs';
+import type { StudioProject, MediaVariantPolicy } from '../../../../presentation/contracts/studio-model.mjs';
+import type { IdlePolicy, IdleVariantPolicy, IdleVariantUse } from '../../../../presentation/runtime/idle-policy.mjs';
 import { readIdleVideoDuration } from '../../../../../lab/lib/idle-video-duration.mjs';
-import { selectionFor } from '../../../../../lab/lib/video-intake.mjs';
+import { selectionFor } from '../../../../presentation/contracts/video-intake.mjs';
 import type { VideoInventory, ClipSlot } from '../../lib/connected-studio.mjs';
 import { addStudioIdleClip, applyStudioIdlePolicy, applyStudioVariantPolicy, setStudioBaseWeight, studioPolicyContext, type StudioPolicyContext } from '../../lib/studio-policy.mjs';
 

@@ -4,7 +4,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
-import {defaultCompositionSettings} from '../../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 
 const require = createRequire(import.meta.url), ts = require('typescript');
 const filename = fileURLToPath(new URL('../components/player/player-scene-canvas.tsx',import.meta.url));
@@ -96,8 +96,8 @@ function mount({reduced=false,defer=false,deferVariants=false,props={},sharedOpt
     if(specifier==='react')return React;
     if(specifier==='react/jsx-runtime')return {jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})};
     if(specifier==='/composition-runtime/compositor.js')return {Compositor};
-    if(specifier.includes('composition-settings.mjs'))return require('../../../web/public/composition-settings.mjs');
-    if(specifier.includes('dealer-framing.mjs'))return require('../../../web/public/dealer-framing.mjs');
+    if(specifier.includes('composition-settings.mjs'))return require('../../../packages/presentation/contracts/composition-settings.mjs');
+    if(specifier.includes('dealer-framing.mjs'))return require('../../../packages/presentation/contracts/dealer-framing.mjs');
     throw Error('Unexpected module: '+specifier);
   };
   const context={module:{exports:{}},exports:null,require:localRequire,document,window:{matchMedia:()=>motion,IntersectionObserver:Observer},Image:Picture,HTMLVideoElement:Video,IntersectionObserver:Observer,AbortController,Event,queueMicrotask,setTimeout,clearTimeout,

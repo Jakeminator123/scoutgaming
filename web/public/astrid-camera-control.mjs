@@ -1,7 +1,7 @@
 import { createAstridCameraSession } from './astrid-camera-session.mjs';
 import { createAstridAudioRecorder } from './astrid-camera-audio.mjs';
 import { createAstridWakeWord } from './astrid-wake-word.mjs';
-import { isDealerId } from './dealer-identity.mjs';
+import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 
 const MAX_IMAGE_BYTES = 64 * 1024;
 const sameIdentity = (a, b) => a?.playerId === b?.playerId && a?.dealerId === b?.dealerId

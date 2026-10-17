@@ -2,7 +2,7 @@ import {cloudPresentationFixture} from '../lab/test/fixtures/cloud-presentation.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {gunzipSync} from 'node:zlib';
-import {createSeedProject, addDealer, defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {createSeedProject, addDealer, defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {buildPresentationPackage, validatePresentationPackage} from '../web/presentation-layers.mjs';
 import {encodePresentationPackage, decodePresentationPackage, readPackagePresentation, withPackagePresentation} from '../web/storage/presentation-package.mjs';
 import {captureFrozenPresentation, assertCapturedPresentationMedia, selectedRegisteredIdleDefaults, assertPublishedRoomBindings} from '../web/storage/frozen-presentation-capture.mjs';

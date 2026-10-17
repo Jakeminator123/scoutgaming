@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { StudioError } from './project-store.mjs';
-import { isDealerId } from '../../web/dealer-identity.mjs';
+import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 
 const MAX_BYTES = 1024 * 1024 * 1024;
 const pending = new Map();

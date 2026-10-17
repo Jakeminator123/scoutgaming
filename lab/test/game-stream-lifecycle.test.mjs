@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import React from 'react';
 import { webcrypto } from 'node:crypto';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createPartnerTrace, appendPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 import { acceptNativeObservation } from '../lib/native-observation.mjs';
 import { SPEECH_POSE_STAGES } from '../../web/public/speech-pose-gate.mjs';
@@ -38,7 +38,7 @@ function setup(records = [record([{ type: 'idle' }, { type: 'speak', line: 'good
   };
   const mocks = {
     '../lib/presentation-sequence.mjs': require('../lib/presentation-sequence.mjs'),
-    '../lib/video-intake.mjs': require('../lib/video-intake.mjs'),
+    '../../packages/presentation/contracts/video-intake.mjs': require('../../packages/presentation/contracts/video-intake.mjs'),
     './test-context': { neutralContext: {} },
     './studio-types': { requestJson: (url, init) => new Promise((resolve, reject) => {
       const body = JSON.parse(init.body); const entry = { url, body, signal: init.signal, resolve, reject }; requests.push(entry);

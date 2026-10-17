@@ -1,5 +1,5 @@
 import { canonicalStudioJson, validateStudioScope } from './studio-contract.mjs';
-import { isDealerId } from '../dealer-identity.mjs';
+import { isDealerId } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { validateReplyCategories } from '../public/speech-reply-library.mjs';
 import { SpeechReplyLibraryError, validateSpeechReplyRecord } from '../speech-reply-library.mjs';
 

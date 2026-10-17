@@ -1,7 +1,7 @@
 import { validateSpeechPackage } from './speech-package.mjs';
 import { SpeechStreamPlayer } from './speech-stream-client.mjs';
 import {createLayerComposition} from './presentation-composition.mjs';
-import {effectiveDealerCompositing} from './dealer-compositing.mjs';
+import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
 import { playMovingSpeech } from './moving-speech-player.mjs';
 
 function speechRenderer(mount, prepareRendering, renderFrame) {

@@ -4,12 +4,12 @@ import {Readable} from 'node:stream';
 import {EventEmitter} from 'node:events';
 import {createNativeTableCommand} from './native-table.mjs';
 import {createPresentationApi} from './presentation-api.mjs';
-import {isActiveDealerId, registeredDealerIds} from './dealer-identity.mjs';
+import {isActiveDealerId, registeredDealerIds} from '../packages/presentation/contracts/dealer-identity.mjs';
 import {gamePresentationForDealer, isGameLaneId, gameChoicesForLane} from './public/game-lanes.mjs';
 import {decorateGameEntryHtml} from './public/game-entry-contract.mjs';
-import {defaultCompositionSettings} from './public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {validateLayerAsset} from './presentation-layers.mjs';
-import {normalizeProject} from '../lab/lib/studio-model.mjs';
+import {normalizeProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {ownDealerIdle} from '../packages/presentation/runtime/registered-idle.mjs';
 import {canonicalStudioJson, validateRevision, validateStudioScope, validateStudioMedia} from './storage/studio-contract.mjs';
 

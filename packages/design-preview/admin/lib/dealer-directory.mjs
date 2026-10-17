@@ -1,4 +1,4 @@
-import {validateProject} from '../../../../lab/lib/studio-model.mjs';
+import {validateProject} from '../../../presentation/contracts/studio-model.mjs';
 
 // Changes a shared template only; room overrides and published packages are not
 // inferred from a selected room. Publication still validates actual game/media.

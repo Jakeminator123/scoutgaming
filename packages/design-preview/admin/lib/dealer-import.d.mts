@@ -1,5 +1,5 @@
-import type { VideoMetadata } from '../../../../lab/lib/video-intake.mjs';
-import type { StudioProject } from '../../../../lab/lib/studio-model.mjs';
+import type { VideoMetadata } from '../../../presentation/contracts/video-intake.mjs';
+import type { StudioProject } from '../../../presentation/contracts/studio-model.mjs';
 export function labUrl(path:string):string;
 export function importErrorMessage(message:string):string;
 export type AssistantHistoryEntry = {role:'user'|'assistant';content:string};

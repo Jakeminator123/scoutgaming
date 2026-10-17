@@ -1,5 +1,5 @@
 // Browser-safe immutable layer assets, shared by project and package validation.
-import {MATERIALS} from './public/material-catalog.mjs';
+import {MATERIALS} from './material-catalog.mjs';
 const knownSources = new Map(MATERIALS.flatMap(material=>material.sources.map(source=>[source.sha256,{material,source}])));
 export const LAYER_ASSET_ROLES = Object.freeze(['background', 'table']);
 export const LAYER_ASSET_TYPES = Object.freeze({

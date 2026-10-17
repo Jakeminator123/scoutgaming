@@ -1,12 +1,12 @@
 import {useEffect,useRef,useState} from 'react';
 import {navigate,useSearchParams} from '../../../runtime/navigation';
-import type {StudioProject,LayerAsset} from '../../../../../lab/lib/studio-model.mjs';
-import {validateProject} from '../../../../../lab/lib/studio-model.mjs';
+import type {StudioProject,LayerAsset} from '../../../../presentation/contracts/studio-model.mjs';
+import {validateProject} from '../../../../presentation/contracts/studio-model.mjs';
 import {LayerLibrary} from '../../../../../lab/components/layer-library';
 import {LayerAssetManager} from '../../../../../lab/components/layer-asset-manager';
 import {layerAssetReferences} from '../../../../../lab/lib/layer-asset-removal.mjs';
-import {materialLabel} from '../../../../../web/public/material-catalog.mjs';
-import {layerAssetFitsGame} from '../../../../../web/layer-asset-contract.mjs';
+import {materialLabel} from '../../../../presentation/contracts/material-catalog.mjs';
+import {layerAssetFitsGame} from '../../../../presentation/contracts/layer-asset-contract.mjs';
 import {createStudioClient} from '../../lib/connected-studio.mjs';
 
 const client=createStudioClient();

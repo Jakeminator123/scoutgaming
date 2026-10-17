@@ -1,3 +1,4 @@
+import { presentationPublicModules, presentationPublicSource } from '../packages/presentation/public-modules.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -7,9 +8,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { createPresentationApi as buildPresentationApi, presentationInput } from '../web/presentation-api.mjs';
 import { createNativeP6OwnedPlaybackContextReader } from '../web/native-p6-qa-hook.mjs';
-import { addDealer, createSeedProject as historicalProject } from '../lab/lib/studio-model.mjs';
+import { addDealer, createSeedProject as historicalProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { playLocalFilm } from '../web/public/local-film-player.mjs';
-import {MAX_RECORDED_SPEECH_SECONDS} from '../web/public/recorded-speech.mjs';
+import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
 import { createLocalPresentation } from '../web/public/local-presentation.mjs';
 import { loadVideoRegistry as readVideoRegistry } from '../lab/lib/video-registry.mjs';
 import { videoIdFromSha256 } from '../lab/lib/lab-video-manifest.mjs';
@@ -43,12 +44,12 @@ test('local server dispatch serves the complete idle browser import graph withou
   const serverSource = await readFile(new URL('../web/server.mjs', import.meta.url), 'utf8');
   const guard = serverSource.match(/^  if \((pathname\.startsWith\('\/api\/presentation\/'\).*?)\) \{\r?$/m)?.[1];
   assert.ok(guard, 'production presentation dispatch must be identifiable');
-  const dispatches = new Function('pathname', 'return ' + guard);
+  const dispatches = pathname => new Function('pathname', 'presentationPublicSource', 'return Boolean(' + guard + ')')(pathname, presentationPublicSource);
   const handler = createPresentationApi({ env:{}, store:{load:async()=>assert.fail('public modules must not load private policy')} });
   const publicEntry = new Map([
     ['/local-presentation.mjs', '../web/public/local-presentation.mjs'],
-    ['/dealer-identity.mjs', '../web/public/dealer-identity.mjs'],
-    ['/recorded-speech.mjs', '../web/public/recorded-speech.mjs'],
+    ['/dealer-identity.mjs', '../packages/presentation/contracts/dealer-identity.mjs'],
+    ['/recorded-speech.mjs', '../packages/presentation/contracts/recorded-speech.mjs'],
   ]);
   const server = createServer(async(req,res) => {
     const pathname = new URL(req.url, 'http://local').pathname;
@@ -62,7 +63,7 @@ test('local server dispatch serves the complete idle browser import graph withou
   server.listen(0,'127.0.0.1');await once(server,'listening');
   t.after(()=>{server.closeAllConnections();server.close();});
   const origin = 'http://127.0.0.1:' + server.address().port;
-  const pending = ['/local-presentation.mjs'], visited = new Set();
+  const pending = ['/local-presentation.mjs', ...presentationPublicModules.flatMap(row => row.paths)], visited = new Set();
   while(pending.length) {
     const path = pending.shift();if(visited.has(path))continue;visited.add(path);
     const response = await fetch(origin+path);
@@ -76,6 +77,7 @@ test('local server dispatch serves the complete idle browser import graph withou
     }
   }
   for(const path of ['/packages/presentation/runtime/live-idle.mjs','/packages/presentation/runtime/idle-policy.mjs',
+    '/packages/presentation/contracts/dealer-identity.mjs','/packages/presentation/contracts/policies/idle-policy.seed.json',
     '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json'])assert.ok(visited.has(path),path);
   for(const name of ['live-idle','idle-policy']) {
     const legacy = await fetch(origin+'/presentation-runtime/'+name+'.mjs');
@@ -84,7 +86,12 @@ test('local server dispatch serves the complete idle browser import graph withou
   }
   for(const path of ['/web/server.mjs','/web/public/app.mjs','/web/public/dealer-identity.mjs/extra',
     '/web/public/dealer-identity.mjs.bak','/packages/presentation/runtime/selection.mjs',
-    '/packages/presentation/runtime/live-idle.mjs/extra','/packages/presentation/runtime/idle-policy.mjs.bak']) {
+    '/packages/presentation/runtime/live-idle.mjs/extra','/packages/presentation/runtime/idle-policy.mjs.bak',
+    '/packages/presentation/contracts/studio-model.mjs','/packages/presentation/contracts/video-intake.mjs',
+    '/packages/presentation/contracts/policies/project.seed.json','/packages/presentation/contracts/schemas/video.schema.json',
+    '/packages/presentation/server/registered-idle-rules.mjs','/packages/presentation/server/selection.mjs',
+    '/packages/presentation/contracts/dealer-identity.d.mts','/packages/presentation/contracts/dealer-identity.mjs/extra',
+    '/presentation-runtime/registered-idle-rules.mjs','/dealer-identity.mjs.bak']) {
     assert.equal(dispatches(path),false,path);
     assert.equal((await fetch(origin+path)).status,404,path);
   }

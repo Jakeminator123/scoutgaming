@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Readable} from 'node:stream';
 import {EventEmitter} from 'node:events';
-import {addDealer,createEmptyProject} from '../lab/lib/studio-model.mjs';
-import {recordedSpeechIdentity} from '../web/public/recorded-speech.mjs';
+import {addDealer,createEmptyProject} from '../packages/presentation/contracts/studio-model.mjs';
+import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
 import {gateRecordedSpeechSelection,recordedSpeechProjection} from '../web/recorded-speech-selection.mjs';
 import {createPresentationApi} from '../web/presentation-api.mjs';
 

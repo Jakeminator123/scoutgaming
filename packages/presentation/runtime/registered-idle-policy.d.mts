@@ -1,6 +1,6 @@
-import type {StudioProject, DealerId} from '../../../lab/lib/studio-model.mjs';
-import type {IdlePolicy} from '../../../lab/lib/idle-policy.mjs';
-import type {VideoInventory} from '../../../lab/components/studio-types';
+import type {StudioProject, DealerId} from '../contracts/studio-model.mjs';
+import type {IdlePolicy} from './idle-policy.mjs';
+import type { VideoInventory } from '../contracts/media-inventory.mjs';
 export function registeredIdleFamilyId(dealerId:string):string;
 export function createRegisteredIdlePolicy(input:{dealerId:string;baselineVideoId:string;durationMs:number}):IdlePolicy;
 export function registeredIdlePolicy(project:Pick<StudioProject,'idlePolicy'|'dealerIdlePolicies'>,dealerId:string):IdlePolicy|null;

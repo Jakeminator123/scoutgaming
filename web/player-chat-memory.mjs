@@ -1,4 +1,4 @@
-import {isDealerId} from './public/dealer-identity.mjs';
+import {isDealerId} from '../packages/presentation/contracts/dealer-identity.mjs';
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 
 const DAY = 86400000;

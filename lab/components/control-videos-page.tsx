@@ -3,17 +3,18 @@ import { StudioDealerRequired } from './studio-dealer-required';
 
 import { DealerMediaLibrary } from './dealer-media-library';
 import { useEffect, useState } from 'react';
-import { addVariant, isAssetCompatible, type StudioProject, type StudioVariant } from '../lib/studio-model.mjs';
+import { addVariant, isAssetCompatible, type StudioProject, type StudioVariant } from '../../packages/presentation/contracts/studio-model.mjs';
 import { applyClipLabel, clipLabel } from '../lib/clip-label.mjs';
 import { OUTPUT_GROUPS, presentationProfile } from '../lib/presentation-profile.mjs';
-import { videoFitsLine } from '../lib/video-intake.mjs';
+import { videoFitsLine } from '../../packages/presentation/contracts/video-intake.mjs';
 import { FamilyVideoLibrary } from './family-video-library';
 import { LegacyClipEditor } from './legacy-clip-editor';
 import { PageTemplate } from './page-template.mjs';
 import { ProjectConflict } from './project-conflict';
 import styles from './control-videos-page.module.css';
 import { StudioContextIntro, StudioMessages, useStudioSession } from './studio-session';
-import { activeStudioDealers, resolveStudioDealerId, studioHref, type ConnectionStatus, type VideoEntry, type VideoInventory } from './studio-types';
+import { activeStudioDealers, resolveStudioDealerId, studioHref, type ConnectionStatus } from './studio-types';
+import type { VideoEntry, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import type { UploadBinding } from './video-upload';
 import { ClipNameEditor, VideoLibrary } from './video-library';
 

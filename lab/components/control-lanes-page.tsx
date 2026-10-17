@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { labBasePath, labUrl } from '../lib/lab-url.mjs';
-import { type StudioLane, type StudioProject } from '../lib/studio-model.mjs';
+import { type StudioLane, type StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { ControlOperatorDirectory, type OperatorDirectory } from './control-operator-directory';
 import { PresentationRoomCreate } from './presentation-room-create';
 import { ControlResourceLifecycle, type LifecycleSnapshot } from './control-resource-lifecycle';
@@ -13,7 +13,8 @@ import { PageTemplate } from './page-template';
 import styles from './control-lanes-page.module.css';
 import { ProjectConflict } from './project-conflict';
 import { useStudioProjectSession } from './studio-session';
-import type { ConnectionStatus, VideoInventory } from './studio-types';
+import type { ConnectionStatus } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 
 export type LaneOperatorChoice = { id: string; slug: string; name: string; status?: string; archivedAt?: string | null; publishedPackage?: { revision: number; lanes: string[] } | null };
 type PackageEditor = { chosen: string[]; baseline: string[]; revision: number | null; message: string; error: string; needsRefresh: boolean };

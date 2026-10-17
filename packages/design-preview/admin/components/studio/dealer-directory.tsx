@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Plus, RefreshCw, Trash2, Upload, Users } from 'lucide-react';
-import { addDealer } from '../../../../../lab/lib/studio-model.mjs';
+import { addDealer } from '../../../../presentation/contracts/studio-model.mjs';
 import type { DealerArchiveImpact } from '../../../../../lab/lib/dealer-archive-impact.mjs';
 import { createStudioClient, type Workspace } from '../../lib/connected-studio.mjs';
 import { createLifecycleClient, lifecycleMessage } from '../../lib/studio-lifecycle.mjs';
