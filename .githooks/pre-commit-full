@@ -65,7 +65,7 @@ run_node_tests access moving-speech-cloud-config test/cloud-config.mjs
 run_node_tests access admin-project-drafts-browser test/admin-project-drafts-browser.mjs
 run_node_tests access speech-reply-library test/speech-reply-library.mjs test/speech-reply-repository.mjs test/speech-reply-blob-import.mjs test/partner-metadata.mjs test/layer-packs-cloud.mjs
 # Complete package sets, once per full run (including CI).
-run_node_tests access openclaw open-claw/lab/test/*.test.mjs open-claw/lab/deploy/*.test.mjs
+run_node_tests access openclaw services/openclaw/lab/test/*.test.mjs services/openclaw/lab/deploy/*.test.mjs
 run_node_tests access ops-cloud ops/cloud/test/*.test.mjs
 run_node_tests access bo-lab-auth test/bo-lab-auth.mjs
 run_node_tests access postgres-persistence test/postgres-persistence.mjs test/sqlite-postgres-migration.mjs test/postgres-native-table.mjs

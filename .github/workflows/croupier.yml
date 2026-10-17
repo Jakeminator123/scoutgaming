@@ -103,7 +103,7 @@ jobs:
         with:
           node-version: '24'
       # OpenClaw launcher acceptance runs in the access suite and needs the build above.
-      - run: npm --prefix open-claw/lab run check
+      - run: npm --prefix services/openclaw/lab run check
       # Same registry as local --full. Each suite has its own visible step;
       # later suites still diagnose failures, and any failed suite fails this job.
       - name: Regression - Studio tests and frontend typecheck

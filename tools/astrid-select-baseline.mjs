@@ -56,7 +56,7 @@ export const ARCHIVE_PATHS = Object.freeze([
   // Historical HEADs retain these sources; ls-tree filters absent paths.
   'apps/studio/policies',
   'apps/studio/schemas',
-  'open-claw/lab',
+  'services/openclaw/lab',
   'tools/media',
   'tools/media-layout.mjs',
   'tools/media-blob-index-reader.mjs',

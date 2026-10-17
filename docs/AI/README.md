@@ -18,7 +18,7 @@ vid implementationen; de är inte fristående handböcker.
 
 Admin, partnerportal och lobby hör till Vercels webb-/Studio-tjänster;
 Render-tjänsten `croupier-v2` kör spelmotorn. Neon är enda produktregistret
-och privat Blob innehåller mediebyte. `lab/` och `open-claw/lab/` är aktiva
+och privat Blob innehåller mediebyte. `lab/` och `services/openclaw/lab/` är aktiva
 kodsökvägar, inte lokala kopior av produkten. Isolerade fixtures och äldre
 authoringfiler är inte alternativa produktregister.
 
@@ -41,7 +41,7 @@ Alla fyra nedan var ej suspenderade och hade en `live`-deploy.
 | croupier-lab-openclaw | 1 | Privat Gateway, standard | `e57f28ef` |
 | croupier-vercel-preview-qa | 1 | Separat QA, 1c-2g | `ee060804`, 5 oktober |
 
-Blueprinten [render.yaml](../../open-claw/lab/render.yaml) omfattar endast
+Blueprinten [render.yaml](../../services/openclaw/lab/render.yaml) omfattar endast
 Director och Gateway, vilket stämmer med deras nuvarande tjänsteuppdelning.
 Fem agentroller i Gateway är fem rollkonfigurationer, inte fem servrar.
 Vercel, Neon, Cartesia och RunPod ingår inte i antalet Render-instanser.
@@ -75,7 +75,7 @@ instanser, nycklar eller modellkonfigurationer ändrades vid denna kontroll.
 
 Den gemensamma media-/spelarvägen omfattar registrerade dealers. Att några
 gamla provguider är Astrid-specifika gör inte hela systemet Astrid-specifikt.
-Namnet `open-claw/lab` är en driftsatt sökväg, inte bevis för att koden är död.
+Namnet `services/openclaw/lab` är en driftsatt sökväg, inte bevis för att koden är död.
 
 ## Underhåll
 

@@ -100,8 +100,8 @@ export async function copyOpenClawRuntime(root) {
   for (const file of ['index.mjs', 'preview.mjs', 'room.mjs', 'storage.mjs', 'http.mjs', 'access.mjs', 'rules.mjs']) {
     await copyFile(new URL(`../../web/games/roulette/${file}`, import.meta.url), join(rouletteTarget, file));
   }
-  const source = new URL('../../open-claw/lab/src/', import.meta.url);
-  const target = join(root, 'open-claw/lab/src');
+  const source = new URL('../../services/openclaw/lab/src/', import.meta.url);
+  const target = join(root, 'services/openclaw/lab/src');
   await mkdir(target, { recursive: true });
   for (const file of await readdir(source)) if (file.endsWith('.mjs')) {
     await copyFile(new URL(file, source), join(target, file));

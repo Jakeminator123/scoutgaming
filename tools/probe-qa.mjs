@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
-import { startIsolatedConnection } from '../open-claw/lab/deploy/local-connection.mjs';
+import { startIsolatedConnection } from '../services/openclaw/lab/deploy/local-connection.mjs';
 import { prepareProject } from '../apps/studio/start.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';

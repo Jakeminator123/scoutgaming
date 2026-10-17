@@ -1,7 +1,7 @@
 # Social Astrid – separat labbchatt
 
 > Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `open-claw/lab/`. Daterade prov nedan
+> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
 Tillägg 2026-09-21: [labbprofil och companion-adapter](COMPANION.md) ger
@@ -97,7 +97,7 @@ blir en uttrycklig konflikt, inte en tyst överskrivning.
 Runtimepaket `2026-09-20.2` injicerar rollens lilla kontrakt via managed AGENTS
 och kompletterar operatörens begreppsindex. Inga nya operatorverktyg ges.
 
-Tester: `node --test open-claw/lab/test/social.test.mjs` och deployment-testerna.
+Tester: `node --test services/openclaw/lab/test/social.test.mjs` och deployment-testerna.
 Mockade tester verifierar kontrakt, transport, fel och rollisolering – inte en
 levande modells svenska, semantiska träffsäkerhet eller motstånd mot varje
 prompt-injektion. Efter deploy behövs ett verkligt, litet positivt/negativt prov.

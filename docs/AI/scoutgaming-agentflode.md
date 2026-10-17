@@ -359,7 +359,7 @@ Det är en möjlig kodväg, inte ett verifierat påstående om aktuell driftsins
 Källor i kod: lab/lib/assistant-model.mjs, assistant-context.mjs,
 assistant-actions.mjs, assistant-reads.mjs, dealer-import-model.mjs;
 tools/retention-archive.mjs och tools/retention-policy.json;
-open-claw/lab/src/settings.mjs,
+services/openclaw/lab/src/settings.mjs,
 openclaw.mjs, product-speech.mjs, speech-routing.mjs, social.mjs;
 web/generated-speech-stream.mjs och services/astrid-gpu-worker/README.md.
 
@@ -459,7 +459,7 @@ fortfarande av [CLOUD-MIGRATION](../CLOUD-MIGRATION.md) och
 [handoffen](../JOHN-HANDOFF.md); detta är ingen separat migrationslista.
 [Miljövariabler](../ENVIRONMENT-VARIABLES.md),
 [OpenClaws guider](openclaw/README.md) och
-[kunskapspaketet](../../open-claw/lab/deploy/runtime-bundle/README.md)
+[kunskapspaketet](../../services/openclaw/lab/deploy/runtime-bundle/README.md)
 behåller sina tekniska kontrakt.
 
 En flytt eller redigering av den här filen ger inte agenten nya kunskaper eller
@@ -530,6 +530,7 @@ workerbyte och möjlig Astrid-avveckling är separata steg.
 
 | Datum | Ändring och skäl |
 | --- | --- |
+| 2026-10-17 | OpenClaws spårade källrot är services/openclaw med interna lab-nivån kvar. Director/Gateway behåller separata Dockercontext, samma volymer och runtimekontrakt. Lokala envfiler och data stannar vid gamla open-claw/lab; källroot och state/env är uttryckligen åtskilda. Kvitto och extern leverans anges i JOHN-HANDOFF. |
 | 2026-10-17 | Studios spårade källrot är apps/studio. Källimports, cwd-/SQL-rötter, Next-traces, CI, Docker och Vercels Studio-root följer samma flytt; /studio och publika kompatibilitetsadresser består. Gamla privata original och dependencyjunctions ligger kvar med bevarade ignoreskydd. Lokala verifieringskvitton och återstående leverans redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Speechens fem spårade källfiler finns i apps/speech. CI, Vercels speech-root och befintliga transportfixtures följer flytten; Node22, npm-lås, tjänstnamn och publika socketadresser består. Separat lokal verifiering redovisas i JOHN-HANDOFF. |
 | 2026-10-17 | Frontendens spårade källrot är apps/web. CI, lokala hooks och miljöregistret följer samma rot; testtäckning och separat Node22-speechsteg består. Gamla ignorerade data och dependencyjunctions har inte flyttats. Lokal verifiering och återstående leverans framgår av JOHN-HANDOFF. |

@@ -3,7 +3,7 @@ import { syntheticJpeg } from './fixtures/synthetic-jpeg.mjs';
 import assert from 'node:assert/strict';
 import { createAstridCameraSession } from '../web/public/astrid-camera-session.mjs';
 import { normalizeAstridObservation } from '../packages/director/astrid-observation.mjs';
-import { childSpecifications, loadPrivateConnection } from '../open-claw/lab/deploy/local-connection.mjs';
+import { childSpecifications, loadPrivateConnection } from '../services/openclaw/lab/deploy/local-connection.mjs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 

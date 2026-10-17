@@ -1,7 +1,7 @@
 # Lokal OpenClaw-anslutning
 
 > Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `open-claw/lab/`. Daterade prov nedan
+> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
 Guiden gäller `Jakeminator123/scoutgaming`, branch
@@ -44,7 +44,7 @@ sådana anrop.
 
 ## Version och officiellt kontrakt
 
-[`Dockerfile.gateway`](../../../open-claw/lab/deploy/Dockerfile.gateway) låser
+[`Dockerfile.gateway`](../../../services/openclaw/lab/deploy/Dockerfile.gateway) låser
 `ghcr.io/openclaw/openclaw:2026.9.5` med digest
 `sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218`.
 Den nåbara Control UI-sidan annonserade själv `2026.9.5` i sina versionsmärkta
@@ -70,14 +70,14 @@ uppgradering ingår här.
 Först en läsande kontroll, utan modellkörning:
 
 ```powershell
-node open-claw/lab/deploy/local-connection.mjs --check
+node services/openclaw/lab/deploy/local-connection.mjs --check
 ```
 
 När den tidigare körningen är stoppad, starta produkt och labb på sina
 separata loopbackportar:
 
 ```powershell
-node open-claw/lab/deploy/local-connection.mjs --start --product-port 4200 --lab-port 4201
+node services/openclaw/lab/deploy/local-connection.mjs --start --product-port 4200 --lab-port 4201
 ```
 
 Helpern läser de befintliga privata värdena server-side från rotens `.env` och
@@ -119,8 +119,8 @@ kvalitet. Standardstarten ovan aktiverar inte Cartesia eller RunPod, även om
 nycklar finns i privata filer eller i den anropande processens miljö.
 
 ```powershell
-node open-claw/lab/deploy/local-connection.mjs --check --generated-speech
-node open-claw/lab/deploy/local-connection.mjs --start --generated-speech --product-port 4200 --lab-port 4201
+node services/openclaw/lab/deploy/local-connection.mjs --check --generated-speech
+node services/openclaw/lab/deploy/local-connection.mjs --start --generated-speech --product-port 4200 --lab-port 4201
 ```
 
 För opt-in behövs befintlig `CARTESIA_API_KEY`, `RUNPOD_API_KEY` och en separat
@@ -189,8 +189,8 @@ och den pågående jämförelsen har lämnats orörda.
 ## Tester
 
 ```powershell
-node --test open-claw/lab/deploy/local-connection.test.mjs
-node --test open-claw/lab/test/product-speech.test.mjs
+node --test services/openclaw/lab/deploy/local-connection.test.mjs
+node --test services/openclaw/lab/test/product-speech.test.mjs
 ```
 
 Testerna använder endast fixture-hemligheter, lokala HTTP-stubbar, lediga

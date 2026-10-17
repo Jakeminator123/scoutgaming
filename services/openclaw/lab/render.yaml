@@ -1,0 +1,97 @@
+# In Croupier, select Blueprint path services/openclaw/lab/render.yaml.
+# Director preserves repository-relative shared imports with a restricted root
+# context. Gateway remains self-contained under services/openclaw/lab.
+services:
+  - type: web
+    name: croupier-lab-director
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./services/openclaw/lab/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: "off"
+    healthCheckPath: /healthz
+    disk:
+      name: lab-catalog
+      mountPath: /data/catalog
+      sizeGB: 1
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "4188"
+      - key: LAB_DATA_DIR
+        value: /data/catalog
+      - key: LAB_API_TOKEN
+        generateValue: true
+      - key: OPENCLAW_API_KEY
+        fromService:
+          name: croupier-lab-openclaw
+          type: pserv
+          envVarKey: OPENCLAW_API_KEY
+      - key: OPENCLAW_HOSTPORT
+        fromService:
+          name: croupier-lab-openclaw
+          type: pserv
+          property: hostport
+      - key: OPENCLAW_AGENT
+        value: openclaw/croupier-director
+      - key: OPENCLAW_CHAT_AGENT
+        value: openclaw/croupier-chat
+      - key: OPENCLAW_SPEECH_AGENT
+        value: openclaw/croupier-speech
+      # Separate from LAB_API_TOKEN and the Gateway credential. The trusted
+      # product server must use the same value for its speech relay.
+      - key: OPENCLAW_PRODUCT_SPEECH_TOKEN
+        sync: false
+      - key: OPENCLAW_TIMEOUT_MS
+        value: "8000"
+      - key: OPENCLAW_SPEECH_ROUTING
+        value: fixed
+      - key: OPENCLAW_SPEECH_DEEP_MODEL
+        value: gpt-6-sol
+      # Uses this web service's Render-provided HTTPS origin. Native Gateway
+      # login stays disabled until the matching origin is set on the pserv.
+      - key: OPENCLAW_DASHBOARD_ENABLED
+        value: "true"
+    buildFilter:
+      paths:
+        - services/openclaw/lab/**
+        - packages/presentation/contracts/dealer-identity.mjs
+        - packages/director/**
+  - type: pserv
+    name: croupier-lab-openclaw
+    runtime: docker
+    region: frankfurt
+    plan: standard
+    dockerfilePath: ./services/openclaw/lab/deploy/Dockerfile.gateway
+    dockerContext: ./services/openclaw/lab
+    autoDeployTrigger: "off"
+    disk:
+      name: openclaw-state
+      mountPath: /data/openclaw
+      sizeGB: 1
+    envVars:
+      - key: OPENCLAW_API_KEY
+        sync: false
+      - key: OPENCLAW_MODEL_API_KEY
+        sync: false
+      - key: OPENCLAW_MODEL_BASE_URL
+        value: https://api.openai.com/v1
+      - key: OPENCLAW_MODEL_ID
+        value: gpt-5.6-terra
+      - key: OPENCLAW_MODEL_API
+        value: openai-responses
+      - key: OPENCLAW_GATEWAY_PORT
+        value: "18789"
+      - key: OPENCLAW_STATE_DIR
+        value: /data/openclaw
+      - key: OPENCLAW_CONFIG_PATH
+        value: /data/openclaw/openclaw.json
+      # After creation, add OPENCLAW_DASHBOARD_ORIGIN in this private service's
+      # Environment: the Director's exact HTTPS origin, WITHOUT /openclaw.
+      # Omitted deliberately: the generated public address does not exist yet.
+    buildFilter:
+      paths:
+        - services/openclaw/lab/deploy/**
+        - services/openclaw/lab/render.yaml

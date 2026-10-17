@@ -1,5 +1,28 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — OpenClaws källrot services/openclaw, lokalt 17 oktober 2026
+
+65 spårade filer har flyttats individuellt från open-claw till services/openclaw;
+interna lab-nivån består. Ursprungliga filbytes/modes verifierades vid flyttsteget,
+före exakta source-import-, Docker-, CI-, fixture- och guideanpassningar.
+Studio- och speechbrancharna är bevarade. Spelservern ligger fortfarande i web.
+
+Director använder nya källroten för config/public men samma befintliga lokala
+open-claw/lab/data och envordning repo/.env → gamla open-claw/lab/.env.
+Studio-/game-bindningarna är oförändrade. Explicita env/envFiles/dataDir och
+Docker-volymerna /data/catalog respektive /data/openclaw består. Inga lokala
+privatfiler, runtime-state, envfiler, node_modules eller originalmedia flyttades.
+Gamla och nya privata rötter har explicit ignoreskydd. Inga tjänster installerades,
+startades eller ändrades i molnet; isolerade befintliga fixturetester kördes.
+
+Node24.21.0,45 ändrade JS-modulers syntax och197 relativa import/URL-kanter
+granskade utan saknad målsökväg. Fokuserat befintligt OpenClaw-/settings-/Docker-/
+CI-/fixtureurval336fall:334pass,1fel,1plattformsskip vid första körningen.
+Enda felet var flyttad sökvägs alfabetiska plats i inventeringsfixturen; endast
+den listordningen rättades och dess4/4prov passerar. Övriga gröna prov återanvänds.
+512testkandidater/0orphan,9befintliga helper-/opt-in-klasser. Inga nya testfiler,
+fullbyggen eller borttagna assertions. Kärndiffen är parentgranskad. Leverans görs med ordinarie focused hook utan nytt fullbygge.
+
 ## C3 — Studios källrot apps/studio, lokalt 17 oktober 2026
 
 939 spårade filer har flyttats individuellt från lab till apps/studio på

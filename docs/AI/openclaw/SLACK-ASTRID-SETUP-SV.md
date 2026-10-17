@@ -1,7 +1,7 @@
 # Astrid i Slack — inkopplingsguide
 
 > Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `open-claw/lab/`. Daterade prov nedan
+> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
 Status 2026-09-29: möjligt, men ännu inte installerat eller aktiverat här.

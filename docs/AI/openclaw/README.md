@@ -1,14 +1,14 @@
 # Dokumentation – bara vid behov
 
 > Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `open-claw/lab/`. Daterade prov nedan
+> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
 Det gemensamma biblioteket [packages/director](../../../packages/director/) äger
 beslutsmotor, tal-/provkontrakt, social policy, Companion och rena inställningar.
 Studio och spelservern importerar biblioteket direkt. Tjänstens `src/` äger
 fortfarande HTTP, Gateway-RPC, signering, katalog-I/O och sin miljöfilläsare.
-`lab/lib/director-settings.mjs` och `web/director-settings.mjs` äger respektive
+`apps/studio/lib/director-settings.mjs` och `web/director-settings.mjs` äger respektive
 apps filval och datarot, med en gemensam Node-läsare i
 `packages/director/node/settings-reader.mjs`. Filordning, alias och den
 befintliga Director-dataroten är oförändrade. Companion-SQLite ligger också
@@ -22,7 +22,7 @@ behöver en källa som inte redan finns här**. Sedan läser agenten relevanta s
 Ingen automatisk crawl, bakgrundssynk eller vektordatabas är installerad.
 Extern dokumentation hämtas inte vid spel-events, dashboard-inloggning eller
 varje chattmeddelande. Ett litet versionsmärkt, lokalt
-[kunskapspaket](../../../open-claw/lab/deploy/runtime-bundle/README.md) läggs däremot avsiktligt i
+[kunskapspaket](../../../services/openclaw/lab/deploy/runtime-bundle/README.md) läggs däremot avsiktligt i
 rollernas AGENTS-kontext efter redeploy: kort kontrakt för Director, även
 begreppsmodell/källindex för chat och operator. Det är ingen full docs-kopia,
 ingen hämtning av länkarnas innehåll och ingen ny verktygsbehörighet.
@@ -42,4 +42,4 @@ versionen eller sakfrågan kräver det.
 - [Teknisk drift, nycklar och kedjan efter det pensionerade 29-septemberkvittot](DEPLOYMENT.md)
 - [Separat social labbchatt för Astrid](SOCIAL-CHAT.md)
 - [Namn, sparat labbminne, budgetbegränsad webbsökning och skämtläge](COMPANION.md)
-- [Runtimekunskap: roller, versionshash, bevarade agentfiler](../../../open-claw/lab/deploy/runtime-bundle/README.md)
+- [Runtimekunskap: roller, versionshash, bevarade agentfiler](../../../services/openclaw/lab/deploy/runtime-bundle/README.md)

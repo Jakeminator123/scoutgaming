@@ -40,7 +40,7 @@ Gemensam Director-, tal-, social- och Companion-logik finns i
 `packages/director/`. `lib/director-settings.mjs` äger Studios miljöfilläsning
 och återanvänder paketets rena projektion. Samma filer, prioritet, alias och
 Director-datarot gäller; Studio väljer fortfarande sin Companion-underkatalog.
-Director-tjänstens HTTP, Gateway och signering ligger kvar i `open-claw/lab/`.
+Director-tjänstens HTTP, Gateway och signering ligger kvar i `services/openclaw/lab/`.
 
 Eventeditor och sekvensspelare går genom `POST /api/presentation/decision`.
 Den gamla `/api/simulate` är ett alias. Servern delar samma pågående/sparade
@@ -88,7 +88,7 @@ Offlineparet finns på `http://localhost:4194` (spel) och
 `http://127.0.0.1:4192` (Lab). Bygger Next före start; `--skip-build` får endast
 användas tillsammans med `--offline`. Det kontrollerar byggfilernas närvaro,
 inte att de motsvarar aktuell källversion. Ctrl+C stoppar paret och tar bort dess testdata.
-Sessionslåset `acquireLocalSession` i `open-claw/lab/deploy/local-session.mjs` hindrar ett andra produkt/labbpar.
+Sessionslåset `acquireLocalSession` i `services/openclaw/lab/deploy/local-session.mjs` hindrar ett andra produkt/labbpar.
 Det är en lokal utvecklingsförhandsvisning av ett produktionsbyggt Lab.
 
 Ordinarie lokal produktstart och lägena `--check`, `--cloud-storage` samt
@@ -278,10 +278,10 @@ granskning/versionering; ingen import- eller publiceringsknapp finns ännu.
 
 ## OpenClaw och Render
 
-**Nuvarande blueprint:** [open-claw/lab/render.yaml](../open-claw/lab/render.yaml).
+**Nuvarande blueprint:** [services/openclaw/lab/render.yaml](../services/openclaw/lab/render.yaml).
 Den ligger kvar på den driftsatta sökvägen; den nya Next.js-sajten ingår inte
-i blueprinten. `open-claw/` äger Gateway, adapter och Docker/Render-drift;
-den äldre mappen `open-claw/lab/` behålls tills vidare för dessa beroenden.
+i blueprinten. `services/openclaw/` äger Gateway, adapter och Docker/Render-drift;
+den äldre mappen `services/openclaw/lab/` behålls tills vidare för dessa beroenden.
 Det är inte en andra ny OpenClaw-installation.
 
 ```text
@@ -441,7 +441,7 @@ tjänsten saknar kvittot spelar labbet standard med den synliga orsaken
 `remote_context_not_supported_baseline`. Den befintliga fjärrtjänstens prov
 gav denna reserv; den nya chattkontexten kräver därför Director-redeploy och
 nytt kompatibilitetsprov. Ingen sådan deploy påstås här. Schemat finns i
-`open-claw/lab/schemas/observed-chat.schema.json`; detta aktiverar inte
+`services/openclaw/lab/schemas/observed-chat.schema.json`; detta aktiverar inte
 produktens ännu återstående gemensamma OpenClaw-talägarskap.
 `/api/inputs/reference` är lokal status (GET) och explicit verify/launch/mapping
 (POST); alla destinationer och credentials bestäms på servern.
@@ -491,7 +491,7 @@ avbrott inträffade. Den historiska systemkartans reporter behövs inte för
 produktproven eller deras tidskvitton.
 
 `node tools/check-orphan-tests.mjs` inventerar JS/TS-prov i `test`, `lab`,
-`packages`, `pipeline`, `apps`, `services`, `open-claw/lab` och `ops/cloud`.
+`packages`, `pipeline`, `apps`, `services`, `services/openclaw/lab` och `ops/cloud`.
 Rapporten skiljer full regression, andra CI-kommandon och paket-/lokala
 körlistor. `tools/orphan-tests-exceptions.json` namnger manuella prov och
 hjälpfiler med skäl. Pythonprov redovisas separat; noll JS-orfaner bevisar
@@ -578,7 +578,7 @@ aktuella luckor finns i [handoffen](../docs/JOHN-HANDOFF.md).
 npm --prefix apps/studio test
 npm --prefix apps/studio run typecheck
 npm --prefix apps/studio run build
-npm --prefix open-claw/lab test
+npm --prefix services/openclaw/lab test
 ```
 
 Tester använder isolerade filer och simulerade modelltransporter, inte riktiga

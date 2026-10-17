@@ -6,7 +6,7 @@ import { constants } from 'node:fs';
 import { lstat, realpath, readdir, mkdir, open, readFile, rename, rm } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { acquireLocalSession } from '../open-claw/lab/deploy/local-session.mjs';
+import { acquireLocalSession } from '../services/openclaw/lab/deploy/local-session.mjs';
 
 const DEFAULT_REPO = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REQUIRED = ['players/croupier.db', 'players/craig.db', 'project.json'];

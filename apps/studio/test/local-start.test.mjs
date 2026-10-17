@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, readdir, writeFile, rm } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve, basename } from 'node:path';
 import { prepareProject, main, publishedProductUrl, requireLocalBuild, localBuildFiles } from '../start.mjs';
-import { childSpecifications, loadPrivateConnection } from '../../../open-claw/lab/deploy/local-connection.mjs';
+import { childSpecifications, loadPrivateConnection } from '../../../services/openclaw/lab/deploy/local-connection.mjs';
 import { createPresentationApi } from '../../../web/presentation-api.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { createServer } from 'node:http';

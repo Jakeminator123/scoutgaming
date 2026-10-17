@@ -1,13 +1,13 @@
 # Förvalta befintliga OpenClaw-tjänster på Render
 
 > Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `open-claw/lab/`. Daterade prov nedan
+> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
 Använd `Jakeminator123/scoutgaming`, branch `main`.
 Director och privat Gateway är redan skapade och kopplade till denna källa.
 Den gamla GitLab-Blueprinten är frånkopplad. Återskapa inte resurserna för
-en env-ändring. Blueprinten i `open-claw/lab/render.yaml` beskriver kontraktet;
+en env-ändring. Blueprinten i `services/openclaw/lab/render.yaml` beskriver kontraktet;
 de befintliga tjänsternas Environment-vyer visar deras faktiska värden.
 
 1. Öppna rätt tjänst i Render Dashboard → **Environment**.

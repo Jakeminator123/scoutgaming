@@ -11,7 +11,7 @@ const change = (path, extra = {}) => ({ path, before: '100644', after: '100644',
 test('only ordinary prose qualifies; runtime, config, mixed changes and file types run full CI', () => {
   assert.equal(documentationOnly([change('docs/JOHN-HANDOFF.md'), change('apps/studio/docs/TERMINOLOGI.md')]), true);
   for (const path of ['.github/workflows/croupier.yml', 'docs/environment-variables.json',
-    'open-claw/lab/deploy/runtime-bundle/knowledge/croupier-model.md', 'web/public/docs/partner-api.md',
+    'services/openclaw/lab/deploy/runtime-bundle/knowledge/croupier-model.md', 'web/public/docs/partner-api.md',
     'docs/../web/app.md', 'docs\\guide.md', '.githooks/pre-commit-full', 'apps/studio/app/page.tsx']) {
     assert.equal(documentationOnly([change('README.md'), change(path)]), false, path);
   }

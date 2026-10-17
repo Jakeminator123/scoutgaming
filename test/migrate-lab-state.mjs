@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { migrateLabState, verifyLabMigrationBackup } from '../tools/migrate-lab-state.mjs';
-import { acquireLocalSession } from '../open-claw/lab/deploy/local-session.mjs';
+import { acquireLocalSession } from '../services/openclaw/lab/deploy/local-session.mjs';
 async function fixture(t) {
   const base = await mkdtemp(join(tmpdir(), 'croupier-lab-migration-'));
   t.after(() => rm(base, { recursive: true, force: true }));

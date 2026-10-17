@@ -101,4 +101,4 @@ dupliceringsskydd är lokala serverprocesskontroller, inget produktionslås.
 
 `LAB_REMOTE_URL`/`LAB_REMOTE_TOKEN` används lokalt, `LAB_API_TOKEN` på
 Director och befintlig modellnyckel på Gateway. ElevenLabs-nyckeln läses på
-den lokala servern. Befintlig blueprint är `open-claw/lab/render.yaml`.
+den lokala servern. Befintlig blueprint är `services/openclaw/lab/render.yaml`.

@@ -47,7 +47,7 @@ active entry points, operator access, compatibility redirects and working tools.
 | `services/astrid-gpu-worker/` | GPU lip sync plus shared speech transport; the historical name does not restrict sessions to Astrid | [Speech service](services/astrid-gpu-worker/README.md) |
 | `tools/media/` | Media utilities with separate inputs, banks and export formats | [Media tools](tools/media/README.md) |
 | `media/` | Source/review/staging material and import manifests; deployed registry data comes from Neon and media bytes from Blob | [Media and restoration](docs/ENVIRONMENT-RESTORATION.md#media-och-regression) |
-| `open-claw/` | OpenClaw/Gateway integration and its deployment tools | [OpenClaw](open-claw/README.md) |
+| `services/openclaw/` | OpenClaw/Gateway integration and its deployment tools | [OpenClaw](services/openclaw/README.md) |
 | `ops/`, `tools/` | Deployment, migration, import and repository utilities | [Cloud](docs/CLOUD-MIGRATION.md), [container context](ops/cloud/CONTAINER-CONTEXT.md) |
 | `test/`, `apps/studio/test/` | Game/shared-service regression and Studio/API tests; component tests also live beside their source | [Verification](AGENTS.md#verification-during-editing) |
 
