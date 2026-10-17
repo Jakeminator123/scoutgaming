@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { probePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
-import { requestProductProbe } from '../open-claw/lab/src/product-probe.mjs';
+import { requestProductProbe } from '../packages/director/product-probe.mjs';
 import { probeFixtures } from '../lab/lib/probe-fixtures.mjs';
 import { PROBE_MODELS } from '../packages/presentation/contracts/probe-policy.mjs';
 

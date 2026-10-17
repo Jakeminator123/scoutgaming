@@ -13,7 +13,7 @@ import { command as shoeCommand, newGame } from './shoe-game.mjs';
 import { createPlayerHistoryHandler } from './player-history.mjs';
 import { openClawChat } from './openclaw-chat.mjs';
 import { initializeNativeP6QaRouter, nativeP6OwnedSpeechFetch, nativeP6OwnedDirectorFetch, nativeP6OwnedPlaybackContext } from './native-p6-qa-hook.mjs';
-import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
+import { normalizeAstridObservation } from '../packages/director/astrid-observation.mjs';
 import { createAstridTranscriptionApi } from './astrid-transcription.mjs';
 import { getGeneratedSpeechService, configureGeneratedSpeechJournal } from './generated-speech.mjs';
 import { completeChatWithSpeech } from './generated-speech-chat.mjs';
@@ -164,7 +164,7 @@ let activeProbeRuntime;
 async function loadProbeRuntime() {
   if(!activeProbeRuntime){
     const [{createProbeRuntime},{createProjectStore},{readSettings}]=await Promise.all([
-      domain('probe-runtime'),import('../lab/lib/project-store.mjs'),import('../open-claw/lab/src/settings.mjs')]);
+      domain('probe-runtime'),import('../lab/lib/project-store.mjs'),import('./director-settings.mjs')]);
     const projectStore = studioPolicyRuntime?.policy.projectStore()
       ?? (!postgres && dataDir ? createProjectStore(join(dataDir, 'studio')) : null);
     if (!projectStore) throw Object.assign(new Error('studio_read_storage_unavailable'), { statusCode: 503 });

@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { probeFixtures } from '../lab/lib/probe-fixtures.mjs';
-import { requestProductProbe, PROBE_MODEL_IDS } from '../open-claw/lab/src/product-probe.mjs';
-import { readSettings } from '../open-claw/lab/src/settings.mjs';
+import { requestProductProbe, PROBE_MODEL_IDS } from '../packages/director/product-probe.mjs';
+import { readSettings } from '../lab/lib/director-settings.mjs';
 
 const output=process.argv[process.argv.indexOf('--output')+1];
 if(!process.argv.includes('--output')||!output)throw new Error('Use --output <synthetic-results.json>.');

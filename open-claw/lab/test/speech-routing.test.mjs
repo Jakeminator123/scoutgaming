@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createProductSpeechService, relayProductSpeech } from '../src/product-speech.mjs';
-import { SPEECH_PASS_TOKENS, SPEECH_DEEP_PASS_TOKENS, speechRoutingConfiguration } from '../src/speech-routing.mjs';
+import { createProductSpeechService, relayProductSpeech } from '../../../packages/director/product-speech.mjs';
+import { SPEECH_PASS_TOKENS, SPEECH_DEEP_PASS_TOKENS, speechRoutingConfiguration } from '../../../packages/director/speech-routing.mjs';
 import { syntheticJpeg } from '../../../test/fixtures/synthetic-jpeg.mjs';
 
 const settings = patch => ({ baseUrl: 'https://gateway.example.test', gatewayKey: 'fixture',

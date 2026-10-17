@@ -1,4 +1,4 @@
-import { gatewayEndpoint } from './settings.mjs';
+import { gatewayEndpoint } from './configuration.mjs';
 import { companionPersonaContext, comedyDirection, comedyFallback, isComedyPoem, roastFor } from './companion-personas.mjs';
 
 export class GatewayError extends Error {

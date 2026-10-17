@@ -12,8 +12,8 @@ import { validateProject, addVariant, buildRuntimeCatalog } from '../../packages
 import { auditStudio } from '../lib/studio-audit.mjs';
 import { simulateStudio as simulate, decisionCatalog, validateVideoBindings } from '../lib/studio-server.mjs';
 const simulateStudio = (body, options = {}) => simulate(body, { videoRegistry: { videos: [], families: [] }, ...options });
-import { prepareDecision } from '../../open-claw/lab/src/engine.mjs';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
+import { prepareDecision } from '../../packages/director/engine.mjs';
+import { readSettings } from '../lib/director-settings.mjs';
 
 // Container-signature fixture, not a decodable video or a visual approval.
 const bytes = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom00000000test-media')]);

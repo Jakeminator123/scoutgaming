@@ -84,7 +84,7 @@ godtyckligt nya ord utan fungerande läppsynk.
 ## Filer och lagring
 
 - `policies/social.seed.json` och `schemas/social.schema.json`: startpolicy
-  och format; servervalidering finns i `open-claw/lab/src/social.mjs`.
+  och format; servervalidering finns i `packages/director/social.mjs`.
 - `data/social-policy.json` och `data/social-history/`: lokala inställningar
   och revisioner, utanför Git.
 - `lib/social-playback.mjs`: en talägare, 25-sekunderskontroll och stopp.

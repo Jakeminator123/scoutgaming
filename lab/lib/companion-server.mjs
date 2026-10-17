@@ -1,6 +1,6 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
-import { createCompanionService } from '../../open-claw/lab/src/companion.mjs';
+import { createCompanionService } from '../../packages/director/companion.mjs';
 import { remoteRequest } from './studio-server.mjs';
 import { StudioError } from './project-store.mjs';
 import { labUrl } from './lab-url.mjs';

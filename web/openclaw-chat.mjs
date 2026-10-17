@@ -1,6 +1,6 @@
-import { normalizeConversationMemory } from '../open-claw/lab/src/conversation-memory.mjs';
+import { normalizeConversationMemory } from '../packages/director/conversation-memory.mjs';
 
-import { normalizeAstridObservation } from '../open-claw/lab/src/astrid-observation.mjs';
+import { normalizeAstridObservation } from '../packages/director/astrid-observation.mjs';
 
 class GatewayError extends Error {
   constructor(code, statusCode = 503) { super(code); this.code = code; this.statusCode = statusCode; }
@@ -217,13 +217,13 @@ export async function openClawChat(requestValue, authoritativeStatus, {
   const status = projectOpenClawGameStatus(authoritativeStatus);
   const request = normalizeRequest(requestValue, status.dealerId);
   if (!settingsProvider) {
-    const { readSettings } = await import('../open-claw/lab/src/settings.mjs');
+    const { readSettings } = await import('./director-settings.mjs');
     settingsProvider ??= readSettings;
   }
   const settings = settingsProvider();
   // Keep the ordinary game server module portable for isolated fixtures that
   // never enable product chat; load the OpenClaw transport only on a chat call.
-  const { decideProductSpeech, normalizeProductSpeechEnvelope, relayProductSpeech } = await import('../open-claw/lab/src/product-speech.mjs');
+  const { decideProductSpeech, normalizeProductSpeechEnvelope, relayProductSpeech } = await import('../packages/director/product-speech.mjs');
   const envelope = normalizeProductSpeechEnvelope({ request, status, ...(model==='gateway-default'?{}:{model}) });
   const choice = settings.speechUrl || settings.speechToken
     ? await relayProductSpeech(envelope, settings, fetchImpl)

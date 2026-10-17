@@ -7,6 +7,39 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2k: gemensamt Director-bibliotek — lokalt 17 oktober 2026
+
+På baseline `e60289673933d49a73d0e34c81cc0071739df9ef` har 13 hela moduler
+flyttats från `open-claw/lab/src/` till `packages/director/`, inklusive
+Companions Node-SQLite-adapter. Importvägar har ändrats; implementationskropparna
+är identiska. Rena inställningsregler och Adminvalidering/felklass har delats ut.
+Gateway-RPC, signering, Adminmutation/snapshot, HTTP, katalog-I/O och tjänstens
+`LAB_ROOT` behåller sina ägare och beteenden. Paketet saknar appimporter;
+den enda källimporten utanför paketet är presentationens dealeridentitet.
+
+En kanonisk Node-adapter, `packages/director/node/settings-reader.mjs`,
+äger miljöfilparsning och prioritet. Tjänsten, Studio och spelservern komponerar
+den med sina oförändrade roots och filval. Ingen env-/dataflytt sker; alias,
+tomma värden, nullish-regler, defaults, timeout och Companion-kataloger bevaras.
+Exakta Docker COPY/ignore, Directors buildFilter, runtime-fixtures, QA-källista,
+konsumenter och befintliga guider är uppdaterade; PR211:s Dockerfix bevaras.
+
+Node 24.21.0, högst fyra workers: 30 inledande enhetsprov passerar. Den bredare
+riktade sviten gav 236 pass och två miljöfel: saknat Gateway-ws åtgärdades med
+egen låst installation, varefter RPC-proven gav 11/11; det verkliga Next-
+startprovet kräver ett verifierat Studio-bygge och lämnas till integrationen.
+Efter den slutliga settings-sammanslagningen passerar 51 befintliga prov för
+settings, service/Studio, isolerade Docker-källor och samtliga sex runtime-
+fixturekonsumenter utan skips. Dessa omprov överlappar tidigare resultat.
+Importkontroll: 69 ändrade kodfiler utan olösta relativa imports; 17 biblioteksfiler
+med 26 slutna paketlänkar. Testinventering: 512 kandidater, noll orphans.
+
+Lab använder en dependencyjunction först efter identiska manifest/lock; inga
+installationer gjordes genom den. Gateway har egen låst installation. Inga nya
+testfiler, fullbyggen, live-provideranrop, miljöändringar, commits eller push här.
+C2h:s kommande registryflytt behöver förena importändringar i Lab-adaptrar,
+`web/storage/studio-contract.mjs` och de gemensamma fixture-/QA-listorna.
+
 ## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
 
 `packages/presentation/server/registered-dealer-idle.mjs` äger den befintliga

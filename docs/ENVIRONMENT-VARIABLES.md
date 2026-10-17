@@ -130,6 +130,11 @@ serverinställningar. Isolerad lokal start blockerar senare privata env-filläsn
 `readSettings` läser valda filer följt av processmiljö; Studio anger root
 `.env` och Lab local. Kanoniska `OPENCLAW_API_KEY` vinner över alias inom
 varje källa, även om den är tom; senare källa har fortfarande högre prioritet.
+Director-tjänsten, Studio och spelservern väljer varsin filpolicy och datarot.
+`packages/director/node/settings-reader.mjs` äger den enda Node-filläsaren. Den gemensamma
+allowlisten, aliasnormaliseringen och projektionen finns i
+`packages/director/configuration.mjs`, som inte läser filer eller processmiljö.
+Tjänstens `LAB_ROOT` och samtliga befintliga datakataloger är oförändrade.
 
 ### Render: färsk läsning och driftgränser
 

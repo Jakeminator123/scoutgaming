@@ -2,7 +2,7 @@ import { StudioStorageError, validateStudioScope } from '../../packages/studio-a
 export { StudioStorageError, validateStudioEnvironmentId, validateStudioScope } from '../../packages/studio-access/studio-scope.mjs';
 import { createHash } from 'node:crypto';
 import { validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
-import { validateSocialPolicy } from '../../open-claw/lab/src/social.mjs';
+import { validateSocialPolicy } from '../../packages/director/social.mjs';
 import { validateManagedStudioMedia } from '../managed-media-contract.mjs';
 import { gameLaneConfiguration } from '../public/game-lanes.mjs';
 

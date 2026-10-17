@@ -1,7 +1,7 @@
 import { createLegacyProject as createSeedProject } from './fixtures/legacy-project.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
+import { readSettings } from '../lib/director-settings.mjs';
 import { } from '../../packages/presentation/contracts/studio-model.mjs';
 import * as implementation from '../lib/studio-server.mjs';
 import { StudioError } from '../lib/project-store.mjs';

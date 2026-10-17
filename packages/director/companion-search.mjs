@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { boundedJson } from './openclaw.mjs';
-import { gatewayEndpoint } from './settings.mjs';
+import { gatewayEndpoint } from './configuration.mjs';
 
 // The private helper owns the provider credential and durable money budget.
 export async function searchPublicWeb(query, { store, settings, fetchImpl = fetch } = {}) {

@@ -2,8 +2,8 @@ import { timingSafeEqual } from 'node:crypto';
 import { stripLabBasePath } from './lab-url.mjs';
 import { StudioError } from './project-store.mjs';
 import { StudioValidationError } from '../../packages/presentation/contracts/studio-model.mjs';
-import { LabInputError } from '../../open-claw/lab/src/engine.mjs';
-import { GatewayError } from '../../open-claw/lab/src/openclaw.mjs';
+import { LabInputError } from '../../packages/director/engine.mjs';
+import { GatewayError } from '../../packages/director/openclaw.mjs';
 
 function localHost(request) {
   const url = new URL(request.url);

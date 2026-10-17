@@ -14,7 +14,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { createProjectStore } from '../lab/lib/project-store.mjs';
 import { loadVideoRegistry, getVideoResponse, exactHttpsOrigin } from '../lab/lib/video-registry.mjs';
 import { buildRuntimeCatalog, normalizeProject } from '../packages/presentation/contracts/studio-model.mjs';
-import { prepareDecision } from '../open-claw/lab/src/engine.mjs';
+import { prepareDecision } from '../packages/director/engine.mjs';
 import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
 import { createIdleAdviceServer } from '../lab/lib/idle-advice-server.mjs';
 

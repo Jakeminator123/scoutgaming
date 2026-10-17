@@ -1,7 +1,7 @@
 import {comparisonStudio} from './comparison-studio.mjs';
 import { resolve, basename } from 'node:path';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
-import { chatWithDirector } from '../../open-claw/lab/src/openclaw.mjs';
+import { readSettings } from './director-settings.mjs';
+import { chatWithDirector } from '../../packages/director/openclaw.mjs';
 import { validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { StudioError } from './project-store.mjs';
 import { selectPresentation } from './presentation-selection.mjs';

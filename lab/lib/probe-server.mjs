@@ -1,7 +1,7 @@
 import { resolve, basename } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
-import { decideProductProbe, validateProbeChoice } from '../../open-claw/lab/src/product-probe.mjs';
+import { readSettings } from './director-settings.mjs';
+import { decideProductProbe, validateProbeChoice } from '../../packages/director/product-probe.mjs';
 import { validateProbePolicy, PROBE_MODELS } from '../../packages/presentation/contracts/probe-policy.mjs';
 import { probeFixtures } from './probe-fixtures.mjs';
 import { remoteRequest } from './studio-server.mjs';

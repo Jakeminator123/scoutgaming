@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { normalizeSocialInput, validateSocialPolicy, validateSocialReply, socialChat } from '../src/social.mjs';
+import { normalizeSocialInput, validateSocialPolicy, validateSocialReply, socialChat } from '../../../packages/director/social.mjs';
 import { createLabServer } from '../src/server.mjs';
 import { readSettings } from '../src/settings.mjs';
 

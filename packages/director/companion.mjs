@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { GatewayError } from './openclaw.mjs';
 import { normalizeSocialInput, socialChat } from './social.mjs';
-import { createCompanionStore, COMPANION_RETENTION_DAYS } from './companion-store.mjs';
+import { createCompanionStore, COMPANION_RETENTION_DAYS } from './node/companion-store.mjs';
 import { searchPublicWeb } from './companion-search.mjs';
 import { COMPANION_NAMES, companionName, roastFor } from './companion-personas.mjs';
 export { COMPANION_NAMES, companionName, roastFor } from './companion-personas.mjs';

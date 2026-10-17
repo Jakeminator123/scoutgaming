@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { boundedJson, complete, GatewayError } from './openclaw.mjs';
-import { isLoopback } from './settings.mjs';
+import { isLoopback } from './configuration.mjs';
 import { normalizeAstridObservation } from './astrid-observation.mjs';
 import { normalizeConversationMemory, CONVERSATION_MEMORY_SYSTEM } from './conversation-memory.mjs';
 import { speechRoutingConfiguration, speechRoutingBudget, validateSpeechEscalation, SPEECH_ROUTING_SYSTEM, SPEECH_PASS_TOKENS, SPEECH_DEEP_PASS_TOKENS } from './speech-routing.mjs';
