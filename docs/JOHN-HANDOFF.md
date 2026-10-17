@@ -1,134 +1,150 @@
 # Aktuell handoff — Scoutgaming
 
+## Lokal agent-talk-kö — separat fix 17 oktober 2026
+
+Full kö blockerar inte nästa ping: äldsta meddelandet sparas före det
+atomiska köbytet under `arkiv/<datum>/agent-talk/pings/`. Kapacitet och
+arkivantal syns i status; äldre obesvarade meddelanden läses och kvitteras
+av mottagaren. Claims, andra checkouter, molntjänster och media ändras inte.
+Se [Agent-talk](../agent-talk/README.md) för kommandon och avbrottsåterhämtning.
+Riktad verifiering täcker samtidighet, kapacitet, mottagarkvittens,
+arkivfel och avbrutna filbyten. Originalrepots befintliga kö töms inte av
+kodleveransen; rotation sker först när det uppdaterade verktyget tar emot
+en ny ping i just den checkouten.
+
 Uppdaterad 17 oktober 2026. Etapp 1 är levererad i PR200 och etapp 2 i
 PR202+204. Senaste strukturkvittot gäller main
-`502bea812d4e8597f4951c85ae712bd338b02a1d`; etapp 3 levereras i avgränsade delar.
+`05cbc22de9c6637cb9ea642c6f697a093dae42af` (PR214), med fulla CI- och driftkvitton från mergeagenten. Senare delar inväntar sina separata kvitton.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
-## Etapp 3 C2j: lagringsägare — lokala ändringar 17 oktober 2026
+## Etapp 3: gemensamma register-, identitets- och lagringsägare — 17 oktober 2026
 
-C2i är normalt integrerad som `cc033b0d` (160 pass, 0 fail, 1 SQL-opt-in).
-C2g är normalt integrerad som `97a7381e93f9e79dee630c477acdf687cb4ca00b`
-(frontendtypecheck, 515 pass, 0 fail, 5 opt-in). Handoffsektioner, aktiva
-fixturekällor, C2g:s kanoniska slug och C2e:s lane-ID är bevarade.
+Registerläsare, identitet och SQL-/operatörsgränser levereras tillsammans.
+`packages/studio-registry/server` äger registerkärna, aktuella/frysta kataloger,
+mediaavtal och tekniska Blob-operationer med explicita beroenden. Apparnas
+kompositioner väljer rötter, previewadresser och egna lazy SDK-klienter.
+Fångade kataloger läser samma snapshot utan nya databasfrågor; mediahash,
+samma öppna filbeskrivare, cache och Range/HEAD-beteende bevaras.
 
-`packages/storage/server/postgres-store.mjs` äger EN poolfri SQL-/ALS-kärna
-för game/auth. Web:s befintliga modul äger faktisk pg-factory och schemaläsning;
-Studio använder sina befintliga Neon-pooler direkt mot samma kärna. SQL-schema,
-ledger, checksumma, TLS-inställningar, låsordning och startup-readiness bevaras.
-`packages/operators` äger operator-store, lifecycle-codec och rena brandingregler.
-Studio-repository stannar i `packages/studio-registry`.
+`packages/studio-access` äger gemensamma credential-, Craig-, epoch- och
+partnerbehörighetsregler samt visningsnamn. Cookies, HTTP-sessioner,
+inloggningsflöden och apparnas bootstrap behåller sina ägare. De fyra
+identitetsimplementationerna är mekaniskt oförändrade.
 
-`packages/presentation/server/saved-game-policy.mjs` får det befintliga bundna
-dokumentkontraktet explicit från appkompositionerna. Samma policy-/CAS-/
-valideringskroppar används utan dubbla socialregler eller package→app-importer.
-Det rena lane-katalog-/validerings-/konfigurationsbladet ligger under
-`presentation/contracts`; den aktiva renderer-/datasetmodulen ligger kvar i web.
-Den enda nya publika adressen är det exakta rena kontraktsbladet i den befintliga
-centrala allowlisten. Gamla ersatta källor och policydeklarationen tas bort;
-inga nya wrappers läggs till. Konsumenter, QA-/fixture-/HEAD-källistor är uppdaterade.
+`packages/storage/server/postgres-store.mjs` äger en poolfri SQL-/ALS-kärna.
+Game äger sin pg-factory med verifierande TLS; Studio binder sina befintliga
+Neon-pooler. `packages/operators` äger store, lifecycle och branding.
+Sparad spelpolicy får explicit dokumentkontrakt. Transaktioner, CAS, snapshot,
+rum-/tenantisolering, historik, wallet, schema och startkontroller bevaras.
+Driftverktygens importörer och miljökällor följer samma kanoniska moduler.
 
-Mekanisk kontroll mot `97a7381e`: 41 jämförelser passerar, inklusive bevarade
-assertions i 30 testfiler. Kärnornas transitiva graf har 40 moduler utan app-/SDK-
-importer, saknade mål eller cykler; 708 relativa mål i ändrade källor finns.
-Alla sex nya runtimefiler passerar syntaxkontroll. I det samordnade fönstret
-passerar 341 befintliga riktade prov; ett verkligt Neon-prov är fortsatt opt-in.
-Ytterligare tio prov från alla sex serverfixturekonsumenterna och Lab-typecheck
-passerar, utan skips i fixtureproven. Node 24.21.0 och fyra testworkers användes.
-Egen låst Lab-/frontend-/klientinstallation gjordes direkt i arbetskopian utan
-externa junctions eller package-/lockändringar. C2j är inte committad; inga nya
-testfiler/assertions eller fullbuild/fullhook, schema-/moln-/wallet-/kort-/
-HTTP-beteendeändringar görs av C2j.
+Delarna har granskats separat: C2h:s register-/mediakroppar, C2i:s fyra
+identitetsregler och C2j:s 41 mekaniska jämförelser. Ursprungliga relevanta
+kontroller passerade, inklusive SQL-/fixture-/typkontroller. Efter slutlig
+navigation/main214 fick h och i vardera317 pass/0 fail/1 befintlig browser-
+opt-in och gröna frontendtyper. C2j:s ursprungliga ordinarie hook gav452 pass,
+0 fail och4 befintliga opt-in. Samlad integrationshook, PR-CI och driftkvitto
+återstår. Inga nya testfiler, schema-/miljövärdesändringar eller provideranrop.
 
-## Etapp 3 C2h: register- och medieläsare — lokal integration 17 oktober 2026
+## Etapp 3 C2g: gemensam publik katalog och navigation — 17 oktober 2026
 
-`packages/studio-registry/server/` äger nu den sammanhängande registerkärnan,
-aktuella och frysta katalogläsare, media-/lagringskontrakt, manifest, layout och
-teknisk Blob-läsning/skrivning. Factoryerna får explicita roots, URL-formatterare,
-provider och lokala läsarportar. Den transitiva paketgrafen har 25 moduler utan
-appinterna importer, SDK-/låsbibliotek eller cykler. Molnläsaren kompletterar
-aldrig fångade snapshots med aktuella databasrader eller lokala register.
+`packages/player-catalog` äger katalogläsning och resultattyper. Frontend och
+Studios lobby binder samma slug-/rumvalidatorer genom egna kompositioner;
+lobbyn importerar inte längre frontendens privata kod. Alla tre flyttade
+katalogfunktioner har oförändrade kroppar. Sessioner, login-/spelstarter,
+rumval och sparade preferenser stannar i apparna.
 
-Lab och spelappen äger sina lazy Blob-provideradaptrar, båda med befintlig
-version 2.8.0; spelappens beroende är nu uttryckligt och låst. Samma kanoniska
-cacheMaps och samma cachekatalog/nycklar används. Scope, revisioner, metadata,
-exakta hashvärden, öppna filbeskrivare, GET/HEAD/Range/ETag och providerfelens
-redigerade diagnostik bevaras. Inga publika servermodul-URL:er läggs till.
+`packages/navigation` äger rena Admin-/Control-/Partner-adresser, operatorval
+samt den gemensamma slugregeln som ersätter fyra identiska implementationer.
+SQL-lagrets annorlunda lagringsvalidator bevaras. Studios HTTP-adapter är
+`lab/lib/legacy-studio-document.mjs`; förbrukade routefiler och wrappers tas
+bort. Operator-slug och den rena speladressmodulens exakta URL:er finns i befintlig allowlist.
+Alla konsumenter, isolerade kopieringslistor och QA-källor följer ändringen.
 
-Lokala upload-/classification-skrivare, lås och auktorisering stannar appägda.
-Deras läsdelar är separata; alpha-inspektionen får en explicit medialäsare och
-registret importerar inte tillbaka skrivaren. Studio-dokumentvalidering har
-obligatoriska namngivna policyportar och en appkomposition med samma regler.
-Fem ersatta källmoduler och en deklaration tas bort utan gamla reexportfiler.
-Konsumenter, typer, isolerade källkopior, QA-källistan och HEAD-arkivet följer
-de kanoniska källorna; historiska HEAD-arkiv behåller sina befintliga vägar.
+C3-förkontrollen hittade två återstående privata routingkanter. Samma verkliga
+serverrouting ligger nu i `packages/navigation/server/platform-routing.mjs`;
+Studio, frontend och Render-ingress importerar neutral källkod direkt.
+Sex rena adress-/queryfunktioner ligger i `packages/navigation/game-entry.mjs`
+med kanoniska dealer-/lane-/slugregler. HTML/presentation och previewvalidering
+stannar i `web/public/game-entry-contract.mjs`. Gamla routingfilen tas bort;
+inga wrappers eller nya npm-/SDK-beroenden. Endast speladressmodulens exakta
+kanoniska URL är publik; serverrouting och felaktiga alias nekas för GET/HEAD.
 
-Verifierat med befintliga Blob-, current/captured registry-, upload-, manifest-,
-repository-, server-/fixture-, layout- och negativa medieprov. Riktade omprov
-69/69, integration 79/79, HEAD-/adapterprov 29/29 och slutliga negativa
-konsumentprov 20/20 är gröna (delvis överlappande). Lab typecheck passerar.
-Inga nya testfiler, fulla byggen, moln-/SQL-/mediedataändringar eller pushar.
-Första kärnkörningen hittade två flyttfel i gränskonstant och testurval; båda
-är rättade och relevanta befintliga prov är omkörda. Slutdiffen återställde
-även fyra oavsiktligt ändrade konsumentliteraler före de negativa omproven.
+Routing-, query- och dekorationskropparna samt 16 appkonsumenters övriga
+runtimekroppar är mekaniskt oförändrade mot `48a75523`. Neutral closure har
+11 moduler utan app-/SDK-importer eller cykler. Berörda befintliga prov ger
+166 pass och en befintlig browser-opt-in, plus ett verkligt GET/HEAD-importgrafprov.
+En förbrukad råbyte-kopieringsassertion ersattes av befintlig importgraf-/login-
+täckning och explicit publik/privat paketering; endast dess provfil kördes om
+(2/2). Frontendens och Studios typer passerar. Utökningen är parentgranskad och
+ordinarie hook gav312 pass/0 fail/1 befintlig browser-opt-in samt gröna frontendtyper. Ingen fullsuite eller fullbuild upprepades.
 
-Egen commit c2bef19ca85ec43468f9ececdf13d65a43378b77 har passerat ordinarie
-hook 511/511. Integration med c51eba14e2bd6b4cc7b7bb0a7d98e29958d69e31
-är staged och ännu inte committad: konflikterna i detta avsnitt, QA-källistan
-och repositorykompositionen är lösta. Inkommande repositorykärna och
-PR211:s HEAD-/DirectorDocker-fixar är bevarade. Riktade integrationsprov
-128/128 passerar. Paketets README beskriver nu läsar-/providerägarskapet.
+Katalog-/navigationsprov, publik importgraf, klientbundling och frontendens,
+Studios och lobbyklientens typkontroller har passerat. Katalogkroppar och
+navigationsregler är mekaniskt jämförda; testinventeringen har noll
+oklassificerade kandidater. C2f-integrationen a2380b32 passerade41 riktade
+prov och ordinarie hook215/215 plus frontendtyper med egna låsta frontend-
+och speechinstallationer. Renderfixen och PR213 är integrerade med samma navigation och direkta
+transportimporter; senaste integrationshook passerade138/138 och frontendtyper.
+Main inklusive PR214/216 är integrerad normalt, utan ändrad kod i slutintegrationen. CI och driftkvitto för C2g återstår.
+Inga nya tester eller provider-/SQL-/medieändringar ingår i katalogsteget.
+## C2f Render-paketering — rättning före PR214-merge
 
-Vid huvudagentens slutgranskning: C2e:s 16-raders repositorykomposition ska
-behållas; bara dess runtime-catalog/stored-media-types-importer flyttas här.
-Bevara PR211:s HEAD-/DirectorDocker-rättningar och C2g:s navigationsändringar
-i gemensamma käll-/QA-listor. Auth, appägd publicerings-/bindingsorkestrering,
-Director, transaktioner, schema och produktionsgodkännanden ingår inte.
+Render installerar gateway, web och Lab, medan frontend/speech har egna beroenden.
+Routingens rena paths/configuration importeras därför direkt från paketkällan.
+En isolerad kopia av verkliga cloud-config-grafen reproducerade tidigare
+ERR_MODULE_NOT_FOUND och laddas nu med enbart Renders befintliga Lab-beroenden.
+Befintliga konfigurations-/ingressprov18/18 och fixhook7/7 samt frontendtyper
+passerar; ingen extra frontendinstallation eller ändrad auktorisering krävs.
+Lipsyncs PR213-merge e02629f1ffa69f85e1e0667dbb6ebd7b730de7bb integreras
+normalt utan konflikter. Dess kallstarts-/callback-/chattändringar bevaras.
 
-Säkerhetsläsning på remote main 193e80066fce8d5cd8e889dc41d5aac029deb32f:
-två tidigare öppna GitGuardian-incidenter 38318914/38318915, partiell
-platsmetadata och historisk scan too_large; aktuell GitGuardian-suite queued.
-Säkerhetsläsningen före commit saknade skyddad anslutning och gav ingen
-ny incidenttäckning; ovanstående är det senast faktiskt lästa kvittot.
-Detta är inte ett nytt säkerhetsklartecken eller en driftverifiering.
+## C2f: servertransportens ägarskap — lokal verifiering 17 oktober 2026
 
-## Etapp 3 C2i: gemensam identitet — lokala ändringar 17 oktober 2026
+`packages/server-transport` äger nu exakta socketvägar, origin-/ingress-
+konfiguration, reläkärna och native Node-server. Speech och frontendens tre
+API-skal importerar paketet; inga gamla sökvägswrappers finns kvar.
+Konfigurationen importerar inte `ws`. Speech behåller Node 22.23.1 och har
+egen npm-lock samt `.npmrc` med `install-links=true`; Vercels speechinstall
+är `npm ci --ignore-scripts`. Frontend behåller Node 24.21.0 och pnpm-lås.
+`ws` ägs av transportpaketet; frontend har det endast för tester.
 
-`packages/studio-access/server/` äger nu credential-resolvern, asynkron
-CRAIG-identitet, asynkron behörighetsepok och Partner-behörighetspolicy.
-Samtliga konsumenter och spelserverns två dynamiska PostgreSQL-importer
-använder de nya källorna. De fyra ersatta filerna under `web/` är borttagna;
-inga wrappers eller dubbla implementationer lämnas. Paketet importerar
-endast Node och egna roll-/scopeblad, utan app- eller providerberoenden.
-`validateStudioScope` och `StudioStorageError` är samma kanoniska funktion
-respektive klass som kontraktets befintliga reexports.
+Flytten är mekanisk för aktiv transport: origins, tickets, workerbindning,
+moving-speech, timeouts, bytegränser, kö och backpressure är oförändrade.
+Den konsumentlösa SDK-adaptern `handlePlatformWebSocket` och dess
+`@vercel/functions`-beroende är borttagna. SDK-specifika livstidsassertions
+har pensionerats; relevanta skriv-/felprov använder den aktiva native-vägen,
+och befintliga integrationer bevarar owner-/replay-/mediabyte-kontroller.
 
-`packages/studio-access/display-name.mjs` innehåller en enda importfri
-`normalizeDisplayName`. Båda Partner-API:erna och Studio använder samma regel.
-De två tidigare kropparna var identiska. SQL, hashning, kollisioner, roller,
-feltexter och namnnormalisering är mekaniskt oförändrade bortsett från
-importvägar. De äldre synkrona CRAIG-/epokimplementationerna och samtliga
-befintliga testassertions är bevarade. QA-källistor och den befintliga
-serverfixturekopieraren inkluderar de nya beroendena. Ingen publik moduladress
-läggs till. Cookies, sessioner, HTTP, pool/drivers, schema och wallet är appägda.
+De två befintliga cross-service-proven är flyttade från frontend till
+`test/platform-native-websocket.mjs` och `test/platform-moving-speech.mjs`.
+Fullhook och CI behåller dem; CI installerar båda tjänsterna och kör även
+transporten på Node 22. Frontendens core-/routingprov ligger kvar appnära.
 
-Baslinje `a691f0ac03c738b4d92904bd3e41e39bd792674e`, branch
-`codex/stage3-shared-identity`: 170 riktade befintliga prov passerar, ett
-befintligt browserprov är opt-in och hoppas över. Alla tio prov från de sex
-serverfixturekonsumenterna och Lab:s TypeScriptkontroll passerar med Node
-24.21.0 och fyra testworkers. Ändrade källors 268 relativa importmål finns.
-Egen låst Lab-installation gjordes direkt i denna arbetskopia utan junction;
-package-/lockfiler ändrades inte. Ingen fullbuild/fullhook, commit, push,
-produktionstest, migration eller molnändring är körd här.
+Lokalt: egen speechinstallation och start utan frontendinstallation,
+beroendefri configimport och speechsyntaxbygge godkända. Frontendens
+typkontroll, 127 prov och Next-produktionsbygge var gröna före testflytten.
+Efter flytten klarade frontendens 116 appprov sig med speechs `node_modules`
+tillfälligt otillgänglig; den återställdes direkt. Node 22 körde 18 transport-
+och integrationsprov, samtliga gröna. Miljöregistret samt 22 metadata-/
+workflow-/inventeringsprov är gröna; 512 JS/TS-kandidater, nio helper/opt-in,
+noll oklassificerade. Bygget använde inga privata miljökopior.
 
-Integrationsytor: C2g ändrar en separat slugimport i
-`lab/lib/partner-session.mjs`; C2h ändrar separata mediaimporter i
-`web/server.mjs`. Dessa ändringar ingår inte i C2i. Aktuell säkerhetsläsning
-på remote main `193e80066fce8d5cd8e889dc41d5aac029deb32f` visar aktiv
-övervakning, två kända öppna incidenter 38318914/38318915, partiell
-platstäckning och historisk skanning `too_large`; täckningen markeras inte klar.
+Detta är lokal C2f-verifiering från baseline `9e533e7b`; ingen commit, push,
+CI eller deployment har utförts här. C2c:s explicita publika kontraktsallowlist
+måste bevaras vid integration; denna ändring rör bara routingmodulens
+import-/exportrader. Publik lobbykatalog och media/GPU ingår inte.
+
+Integrationskontroll mot `e60289673933d49a73d0e34c81cc0071739df9ef`:
+normal merge utan commit, endast dokumentkonflikt. Båda handoffavsnitten,
+C2e-repository och PR211:s HEAD-/Docker-rättningar bevaras. 35 befintliga
+routing-/filkopieringsprov, 11 transportprov på Node 22.23.1 samt det faktiska
+HTTP GET/HEAD-importgrafprovet passerar utan skips. Inget fullbygge eller
+ny deployment. Förnyad säkerhetsläsning på main `6279960f` verifierar två
+öppna incidenter, 38318914/38318915; platstäckningen är partiell, övervakningen
+aktiv och historikskanningen `too_large`. Ingen incident markeras löst.
 
 ## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
 
@@ -193,59 +209,6 @@ Lokal säkerhetsläsning saknar GitHub-/skyddad GitGuardian-åtkomst. Huvudagent
 uppger färskt kvitto på main `a0876f71`: incidenterna 38318914/38318915 är
 fortfarande öppna, platstäckningen partiell och historisk skanning too_large.
 Detta är ett tillskrivet kvitto; säkerhetstäckningen markeras inte som klar.
-
-## Etapp 3 C2g: gemensam publik katalog och navigation — lokal ändring 17 oktober 2026
-
-`packages/player-catalog` äger nu `operatorPublicView`,
-`loadOperatorCatalogue` och `loadRoomCatalogue` samt deras resultattyper.
-Frontend och Studios publika lobby kopplar in de befintliga slug- och
-rumvalidatorerna via små lokala kompositioner. Paketet importerar ingen appkod;
-Studios katalogadapter importerar inte längre privata frontendmoduler.
-Login-/speladresser, sessioner, rumsväljning och sparade preferenser stannar
-i apparna. API-adresser, tenantkontroller, ID:n, felutfall och returformat
-är oförändrade. Inga gamla katalogfunktioner återexporteras från player-lobby
-eller player-operator. Rumkontrakten ligger fortsatt i web/public och
-dealeridentiteten i det gemensamma presentationskontraktet. Bolagssluggen
-har därefter fått en gemensam ägare enligt navigationssteget nedan.
-
-Lokalt på Node 24.21.0: 63 befintliga katalog-/bolagsgräns-/lobby-/profilprov
-passerar, noll fel och ett uttryckligt browser-opt-in-prov ej kört.
-Frontendens och lobbyklientens typkontroller är gröna. En publik lobbybundle
-byggd i minnet innehåller det gemensamma paketet och ingen privat frontendkod.
-Mekanisk jämförelse mot basversionen bekräftar oförändrade kroppar för alla
-tre flyttade funktioner. Inget produktbygge, ny testfil, moln-/SQL-/medieändring
-eller nytt driftkvitto ingår. Egen C2g-commit 808cce07 har grön ordinarie hook
-(25 prov). Efter lokal integration av C2c/UI-head 5a1f4332 passerar samma
-63 prov och båda typkontrollerna igen; funktionskropparna är fortfarande
-oförändrade och lobbybundlen saknar privat frontendkod. Endast handoffen
-hade Git-konflikt, och båda etappkvittona bevaras. Integrationen lämnas utan
-mergecommit för huvudagentens granskning; CI och drift återstår.
-
-C2g:s navigationssteg ovanpå `c94a216d` flyttar rena Admin-/Control-/Partner-
-adresser till `packages/navigation`. `requestedOperator` och den oförändrade
-404-sidan bryts ur spelserverns tunga urvalsmodul. En kanonisk slugpredicate
-ersätter fyra identiska implementationer; session- och behörighetsregler
-ändras inte. SQL-lagrets separata lagringsvalidator har annan semantik och
-bevaras. Studios HTTP-redirectadapter ligger kvar som
-`lab/lib/legacy-studio-document.mjs`. Gamla routefiler och reexportwrappers
-behålls inte. Alla aktuella konsumenter, testladdare, isolerade serverkopior
-och QA-källistan följer flytten. Bara `/packages/navigation/operator-slug.mjs`
-läggs till i den befintliga exakta browserallowlisten; HTTP-handlern ändras inte.
-
-Node 24.21.0: första riktade körningen gav 181 pass, tre integrationsfel och
-fyra browser-opt-in-skips. Två testimporter och routingens paketfilter rättades.
-Berörda prov tillsammans med server-/lobbyintegration passerar sedan 141/141,
-med ett browser-opt-in-skip; dessa körningar överlappar delvis. Det separata
-HTTP-provet för hela den publika importgrafen passerar också. Frontend, Studio,
-Admin och Lobby klarar typkontroll. Testinventeringen visar 512 kandidater,
-noll oklassificerade och nio helper/opt-in. Mekaniska jämförelser bekräftar
-oförändrade katalogfunktioner, rena Adminregler, legacy-redirectkropp,
-Controlregler, entréblock och slugpredicate; navigationspaketet importerar
-bara egna rena moduler. Befintliga installationer används läsande med samma
-manifest/lås (frontendlåset skiljer enbart radslut). Inga nya tester,
-installationer, fullbyggen, commits, molnändringar eller driftkvitton ingår.
-Integrationen ska behålla C2f:s transportimporter och C2h:s nya lagringsimporter;
-deras konsumentfiler överlappar. PR211:s separata HEAD-handlerfix ska bevaras.
 
 ## Etapp 3 C2c: gemensamma presentationskontrakt — lokal ändring 17 oktober 2026
 
@@ -461,13 +424,15 @@ merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
 Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
 läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
-## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 15:46 UTC
+## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 16:31 UTC
 
 **Läget:** kod, image, bank och separat testrum är levererade. Dynamisk
 OpenClaw-text fungerar. Två molnprov med tal nådde RunPods kö men ingen
-worker startade före tidsgränsen; tal och läppsynk i spelet är därför inte
-verifierade. Draganprofilen är avstängd och sparad efter provet. Inga egna
-GPU-resurser eller jobb är kvar. Astrid och originalfilmerna är orörda.
+worker startade före tidsgränsen. Ett separat uppstartsprov har nu verifierat
+imagehämtning och Python/RunPod SDK-start efter cirka 296 sekunder.
+Tal och läppsynk i spelet är fortfarande inte verifierade. Draganprofilen
+är avstängd och sparad. Testresurserna är avvecklade enligt kvittot nedan.
+Astrid och originalfilmerna är orörda.
 
 PR203 är mergad på `9e533e7b525b6fa894f638d3d8ba6a382e230c47`.
 Mergeagentens separata kvitto före provet: main-CI `39042108316` SUCCESS,
@@ -527,6 +492,42 @@ De sparade Dragan-inställningarna pekar nu på den senast borttagna testendpoin
 Återaktivera inte bara profilen: nästa försök behöver en ny verifierad
 endpoint/template och motsvarande begränsade runtime-bindning.
 
+### Verifierad kallstart och avveckling
+
+Ett separat uppstartsprov kördes 16:13:23–16:28:27 UTC, med talprofilen av,
+min1/max1, inga inskickade jobb och oförändrade Render-inställningar.
+Worker `n8jhmcbdsbycye`, A40 i EU-SE-1, skapades 16:13:26.
+Systemloggen visar hämtning/extrahering av exakt
+`ghcr.io/jakeminator123/moving-gpu-worker@sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`
+färdig 16:17:59. Containerloggen visar RunPod SDK 1.12.0:s startbanner
+16:18:19. Registry-behörigheten och containerstarten fungerar alltså för
+denna image. Modell-/bankladdning, workerintyg, TTS och uppspelning ingick
+inte. Detta är ett separat startupkvitto, inte ett lyckat talprov.
+
+Guarden stängde automatiskt. Oberoende GET 16:30:58 UTC gav endpoint
+`e9isjywhagh41l` och template `kkrc6vr46g` 404 samt tom workerlista.
+Windows Ctrl+C används inte som enda stoppmekanism; guarden har beständig
+deadline och en ägarbunden stoppfil med endpoint-ID och planhash.
+
+### Avgränsad rättning efter uppstartsprovet
+
+Moving-vägen har nu serverstyrd callbackfrist 450 s, absolut sessionstid
+480 s och RunPod-jobb-TTL 540 s. Själva workerexekveringen och dess input-TTL
+är fortsatt 180 s. Bankens tillfälliga läsbehörighet följer återstående
+sessionstid och återkallas direkt vid avbrott. En sen submit nekas före POST
+så att även osäkert utfall ryms i journalens befintliga 720 s-budgetfönster.
+Tom workerpool, exakt image/release, reservationer och inga automatiska
+omförsök gäller fortsatt. Ingen ny image eller schemaändring behövs.
+
+Chattens väntande lås gäller 600 s i båda lagringsimplementationerna, så att
+ett lyckat sent svar kan sparas. Avbrott frigör låset direkt; efter en
+processkrasch kan ett gammalt lås däremot ligga kvar fyra minuter längre.
+Astrids GPU-/callbackstandarder ändras inte. Underagentens 222 fokuserade
+prov passerade, inklusive simulerad 296 s kallstart, callback, sen bankhämtning,
+avbrott, bibehållen kostnad vid osäkerhet och chattcommit efter 420 s.
+Detta är lokal kodverifiering; merge, driftversion och nytt riktigt talprov
+måste kvitteras separat före funktionsacceptans.
+
 ### Gemensam talväg och verifieringens gräns
 
 OpenClaws exakta svar → registrerad röst → verifierad worker → bildrutebunden
@@ -550,34 +551,25 @@ hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga ru
 
 ### Återstående arbete och skydd vid fortsättning
 
-1. Utred imagehämtning, containerstart och scheduler innan fler betalda prov.
-   PR208 och privata schema4-guarden är levererade; de förklarar inte noll
-   workers. RunPods sparade registry-credential heter `ghcr-astrid-read`, men
-   namnet bevisar inte vilka privata images den får läsa. Befintlig lokal
-   GitHub-inloggning saknar `read:packages`; dess GHCR-404 är därför inget
-   bevis på saknad image eller felaktig RunPod-inloggning. Nycklarna är orörda.
-   Inloggad GitHub-vy bekräftar däremot att den privata versionen finns med
-   exakt digest `sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
-   Manifestets lager är cirka 8,1 GB komprimerade. Storleken gör lång första
-   imagehämtning möjlig, men bevisar inte att RunPod kunde hämta den eller att
-   hämtningen orsakade timeouten. Paketets nedladdningsräknare saknar källa och
-   tid och används därför inte som RunPod-kvitto. Se
-   [verifierad paketversion](https://github.com/Jakeminator123/scoutgaming/pkgs/container/moving-gpu-worker/1401501221?tag=sha-9a644e730966c248518c76a115c9bd922b0c5ef3).
-2. Skilj plattformens imagehämtning från Python-/modelluppstart. Våra prov
-   nådde inte workerintyget och kan inte bedöma TTS, filmval eller läppsynk.
-   Kallstart är en möjlig förklaring, inte fastställd rotorsak. Läs faktisk
-   system-/pullstatus och verifiera åtkomst till exakt image före nytt fönster.
-3. Läsning 15:50 UTC av samtliga sju stängda endpoints och tidigare GPU-pod
-   gav 0,169812463 USD bokfört och 3,59 USD behållna reserver: totalt
-   3,759812463 USD av samma godkända **5 USD**. Återstående utrymme var
-   1,240187537 USD. Sjunde reserven 0,21 USD omfattar hela guardtiden,
-   stoppmarginal och disk. Budget-/guardverktygens 72 prov passerade.
-   Jakob höjde därefter uttryckligen det sammanlagda testtaket till **10 USD**.
-   Alla tidigare kostnader och reserver följer med; höjningen är inte ett nytt
-   fristående 10 USD-utrymme. Nästa plan är ett avgränsat uppstartsprov med
-   talprofilen avstängd, utan speljobb och med automatisk resursstängning.
-   Detta är ett daterat kvitto; uppdatera hela underlaget inom fem minuter
-   före användning. Neon-reservationer är inte fakturor eller extra budget.
+1. Leverera och driftverifiera den begränsade kallstartsrättningen ovan. Tidigare
+   callbackfrist 150 s, session/job-TTL 180 s och banktoken 180 s räcker inte
+   för den observerade starten på 296 s. En längre kö-/startfrist får inte
+   automatiskt förlänga själva workerexekveringen eller kringgå tom workerpool,
+   releasekontroll, kostnadsreservation och avbrott.
+2. Behåll samma verifierade image och modell vid nästa prov. Det äldre
+   credentialnamnet `ghcr-astrid-read` är inte ett fel i sig: RunPod hämtade
+   imagen med den befintliga kopplingen. Bildstorleken är cirka 8,1 GB
+   komprimerad; [paketversionen](https://github.com/Jakeminator123/scoutgaming/pkgs/container/moving-gpu-worker/1401501221?tag=sha-9a644e730966c248518c76a115c9bd922b0c5ef3)
+   är verifierad. Uppstartsprovet förklarar varför den tidigare tidsgränsen
+   inte räcker vid denna kallstart, men fastställer inte all historisk kötid.
+3. Läsning 16:30–16:31 UTC av alla åtta stängda endpoints och tidigare GPU-pod
+   gav 0,169812463 USD bokfört och 4,03 USD behållna reserver: totalt
+   4,199812463 USD av Jakobs godkända **10 USD**, med 5,800187537 USD kvar.
+   Åttonde reserven 0,44 USD täcker hela guardperioden, 120 s stoppmarginal
+   och disk. Fördröjd fakturering kan tillkomma; inga gamla reserver har
+   tagits bort. Budget-/guardverktygens 82 prov passerade enligt underagentens
+   kvitto. Uppdatera hela underlaget inom fem minuter före nästa aktivering.
+   Neon-reservationer är inte fakturor eller extra budget.
 4. Verifiera ny OpenClaw-replik i vila, sedan tal under serverbestämd utdelning.
    Agenten får inte placera insatser på användarkontot; Jakob startar själv
    eventuell riktig runda. Jakob valde efter det första molnprovet att köra
@@ -1005,3 +997,16 @@ och PR188/190. Fasens egna körskript, utkast och temporära CI-loggar är rensa
 av exakta PR-huvuden och main-innehåll. PR189:s avslutade worktree
 `simplify-test-policy` togs bort med återställningsbar Codex-snapshot.
 STÄD-CL:s och lipsyncs arbetsytor bevarades.
+
+C2h leveransförberedelse: C2g `c53b27b7` integrerades normalt i
+`a515539f` som `cd30e022`. Två rutinkonflikter förenade handoffen och
+routingens nya importdjup. 21 kärn-/adapter-/routingfiler är identiska med
+sina granskade heads; PR213:s nio produktfiler är oförändrade mot C2h-basen,
+inklusive C2h:s appägda Blob-import. Ordinarie hook gav 317 pass, 0 fail
+och ett befintligt browser-opt-in; frontendtypkontrollen passerade.
+
+Slutg `ec16b705899ec880eb3dd571361f517be4ef10c1` tas därefter in med
+normal merge och enbart dokumentdiff. Den inkluderar main
+`05cbc22de9c6637cb9ea642c6f697a093dae42af` (PR214/PR213). Inga lås,
+beroendeinstallationer, junctionmål eller produktbeteenden ändrades här.
+Inget nytt fullbygge, push, PR eller driftkvitto ingår i denna förberedelse.

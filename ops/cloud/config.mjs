@@ -6,10 +6,11 @@ import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:p
 import { fileURLToPath } from 'node:url';
 import { readVercelIngressConfig } from './vercel-ingress.mjs';
 import { readStorageExportConfig } from './storage-export.mjs';
-import { createPostgresStore, validateGameConnection } from '../../web/storage/postgres-store.mjs';
+import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
+import { validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
 import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
-import { gameEntryEnabled } from '../../web/public/game-entry-contract.mjs';
-import { studioGamePolicyConfiguration } from '../../web/storage/studio-game-policy.mjs';
+import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
+import { studioGamePolicyConfiguration } from '../../packages/presentation/server/saved-game-policy.mjs';
 import { validatePrivateMedia } from '../../lab/lib/cloud-media-store.mjs';
 
 export const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../..');

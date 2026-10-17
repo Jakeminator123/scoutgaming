@@ -1,10 +1,11 @@
-import { presentationPublicSource } from '../../../packages/presentation/public-modules.mjs';
-import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-entry-contract.mjs';
-import {adminDocumentHref} from '../../../packages/navigation/admin-workspace-routes.mjs';
-import { requestedOperator } from '../../../packages/navigation/operator-entry.mjs';
-import { resolveWorkspaceSurfacePath } from '../../../packages/navigation/workspace-surfaces.mjs';
-import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from './platform-configuration.mjs';
-export {canonicalPlatformPath, exactPlatformOrigin, platformConfiguration, PLATFORM_SOCKET_ENDPOINTS} from './platform-configuration.mjs';
+import { presentationPublicSource } from '../../presentation/public-modules.mjs';
+import { gameEntryRedirect, approvedGameQuery } from '../game-entry.mjs';
+import {adminDocumentHref} from '../admin-workspace-routes.mjs';
+import { requestedOperator } from '../operator-entry.mjs';
+import { resolveWorkspaceSurfacePath } from '../workspace-surfaces.mjs';
+import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from '../../server-transport/paths.mjs';
+export {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../../server-transport/paths.mjs';
+export {exactPlatformOrigin, platformConfiguration} from '../../server-transport/configuration.mjs';
 
 // Launch payload only. The signature stays the engine's; the claim name is partner.
 export function launchHasPartnerClaim(token) {

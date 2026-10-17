@@ -120,7 +120,7 @@ Två driftprov 17 oktober 2026, på PR203 `9e533e7b` och PR208 `a0876f71`,
 nådde RunPods jobbkö från riktig bordschatt. Inget fick en worker före
 uppstartstidsgränsen, även med A40 och A6000 tillåtna i andra provet.
 Jobben avbröts och tillfälliga endpoints/templates togs bort av guarden;
-se [handoffens kvitto](JOHN-HANDOFF.md#dragan-verkligt-molnprov-och-fortsättning--17-oktober-2026-1546-utc).
+se [handoffens kvitto](JOHN-HANDOFF.md#dragan-verkligt-molnprov-och-fortsättning--17-oktober-2026-1631-utc).
 Draganprofilen är därefter avstängd. En ny endpoint måste bindas till rätt
 runtime-behörighet, template och image före nytt prov. Den borttagna
 testendpointens miljöreferens är inte fungerande drift. Kodprov, en slutförd
@@ -128,10 +128,23 @@ förberedelsepost och en tom fakturarad är inte kvitto på spelad läppsynk.
 
 Proven nådde inte workerintyget eller TTS och gav inget verifierat resultat
 från Python-renderaren. De styrker därför inte fel på röst eller filmunderlag.
-Imageåtkomst, plattformsstart och kallstart måste
-skiljas åt. RunPods [uppstartsbeskrivning](https://docs.runpod.io/serverless/development/optimization)
-skiljer imagehämtning från modellstart; den dokumentationen fastställer inte
-orsaken till våra timeoutar. Tjänsternas olika roller och env-profiler
+Ett separat startup-only-prov 16:13–16:28 UTC verifierade därefter exakt
+imagehämtning och RunPod SDK 1.12.0:s startbanner på A40 i EU-SE-1.
+Första starten tog cirka 296 s från guardstart. Inga jobb skickades och
+talprofilen var av; modell-/bankladdning och läppsynk är fortsatt oprövade
+i molnet. Endpoint och template gav 404 och workerlistan var tom vid
+oberoende kontroll 16:30:58 UTC. En 150 s startfrist räcker inte för den
+observerade kallstarten. `web/moving-speech-limits.mjs` ger därför den
+separat verifierade moving-vägen 450 s callbackfrist, 480 s absolut session
+och 540 s provider-TTL. Själva workerexekveringen är fortsatt högst 180 s.
+Banktoken följer återstående sessionstid och återkallas vid avbrott; sen
+submit nekas före POST så job-TTL ryms inom befintlig budgetreservation.
+Båda chattlagren behåller pending-lås 600 s och släpper direkt vid avbrott;
+en krasch kan därför lämna låset kvar fyra minuter längre. Astrids
+exekverings-/callbackstandarder är oförändrade. Dessa kodgränser är lokalt
+provade men utgör inte ett nytt verifierat molntalprov.
+RunPods [uppstartsbeskrivning](https://docs.runpod.io/serverless/development/optimization)
+skiljer imagehämtning från modellstart. Tjänsternas olika roller och env-profiler
 beskrivs i [miljöguiden](ENVIRONMENT-VARIABLES.md#läsande-jämförelse-17-oktober-2026).
 
 `web/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade

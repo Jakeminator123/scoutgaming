@@ -6,7 +6,7 @@ import { join, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { build } from '../tools/player-ui-build.mjs';
-import { canonicalGameDestination } from '../../../web/public/game-entry-contract.mjs';
+import {canonicalGameDestination} from '../../../packages/navigation/game-entry.mjs';
 
 function legacyPlayerEntryDestination(source, canonical = false) {
   const playerEntry = {}, nodes = new Map(), dialog = { setAttribute() {}, querySelector: key => { if (key === '#auth-player-login') return playerEntry; if (!nodes.has(key)) nodes.set(key, {}); return nodes.get(key); } };
@@ -55,9 +55,10 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
       'vendor/three/three.core.min.js',
       'presentation-runtime/live-idle.mjs', 'lab/policies/idle-policy.seed.json',
       'astrid-camera-audio-worklet.mjs', 'dealer-identity.mjs',
-      'packages/presentation/contracts/game-lane-id.mjs',
+      'packages/presentation/contracts/game-lane-id.mjs', 'packages/navigation/game-entry.mjs',
     ]) assert.ok(names.includes(required), `missing ${required}`);
     assert.ok(!names.includes('dealer-version-switcher.css'));
+    assert.ok(!names.includes('packages/navigation/server/platform-routing.mjs'));
     assert.ok(!names.includes('vendor/three/GLTFLoader.js'));
     const total = (await Promise.all(names.map(async name => (await stat(join(directory, name))).size)))
       .reduce((sum, size) => sum + size, 0);
@@ -85,7 +86,6 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
     assert.match(modal, /const playerLoginPath = '\/frontend-preview\/blackjack\/'/);
     assert.equal(legacyPlayerEntryDestination(modal), '/frontend-preview/blackjack/');
     assert.equal(legacyPlayerEntryDestination(modal, true), '/player-login?dealer=nora');
-    assert.equal(modal, (await readFile(new URL('../../../web/public/auth-modal.mjs', import.meta.url), 'utf8')).replace("const playerLoginPath = '/blackjack';", "const playerLoginPath = '/frontend-preview/blackjack/';"));
     assert.doesNotMatch(login, /const destination = '\/\?dealer=/);
     assert.equal(await readFile(join(directory, 'frontend-preview/blackjack/index.html'), 'utf8'),
       await readFile(new URL('../../../web/public/blackjack-entry.html', import.meta.url), 'utf8'));

@@ -4,11 +4,13 @@ import {createServer} from 'node:http';
 import {once} from 'node:events';
 import {readFile} from 'node:fs/promises';
 import {createRequire} from 'node:module';
-import WebSocket, {WebSocketServer} from 'ws';
-import {createSpeechIngress} from '../../croupier-speech/service.mjs';
-import {platformConfiguration, platformRoute, backendPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../lib/platform-routing.mjs';
-import {platformSocketRequest} from '../lib/platform-websocket.mjs';
-import {vercelIngressRequest} from '../../../ops/cloud/vercel-ingress.mjs';
+import {pathToFileURL} from 'node:url';
+const frontendRequire = createRequire(new URL('../apps/croupier-frontend/package.json', import.meta.url));
+const WebSocket = frontendRequire('ws'), {WebSocketServer} = WebSocket;
+import {createSpeechIngress} from '../apps/croupier-speech/service.mjs';
+import {platformConfiguration, platformRoute, backendPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../packages/navigation/server/platform-routing.mjs';
+const {platformSocketRequest} = await import(pathToFileURL(frontendRequire.resolve('@croupier/server-transport/socket-core')).href);
+import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';
 
 const env = {CROUPIER_VERCEL_UI:'1', CROUPIER_PUBLIC_ORIGIN:'https://public.example.test',
   CROUPIER_BACKEND_ORIGIN:'https://isolated.onrender.com', CROUPIER_LAB_UI_ORIGIN:'https://lab.example.test',
@@ -32,9 +34,9 @@ function transported(request) {
 
 test('moving routes remain exact and carry bank/rest requests through actual signed Next middleware',async()=>{
   const paths = ['/api/moving-speech/'+'a'.repeat(32)+'/rest', ...['archive','receipt'].map(kind=>'/api/moving-speech/bank/'+'b'.repeat(64)+'/'+kind)];
-  const require = createRequire(new URL('../package.json',import.meta.url));
+  const require = createRequire(new URL('../apps/croupier-frontend/package.json',import.meta.url));
   const {transpileModule,ModuleKind,ScriptTarget}=require('typescript'), {NextRequest}=require('next/server');
-  const compiled=transpileModule(await readFile(new URL('../middleware.ts',import.meta.url),'utf8'),{compilerOptions:{module:ModuleKind.CommonJS,target:ScriptTarget.ES2022}}).outputText;
+  const compiled=transpileModule(await readFile(new URL('../apps/croupier-frontend/middleware.ts',import.meta.url),'utf8'),{compilerOptions:{module:ModuleKind.CommonJS,target:ScriptTarget.ES2022}}).outputText;
   const module={exports:{}};new Function('require','module','exports',compiled)(require,module,module.exports);
   const previous=Object.fromEntries(Object.keys(env).map(key=>[key,process.env[key]]));
   try {
@@ -52,7 +54,7 @@ test('moving routes remain exact and carry bank/rest requests through actual sig
     const path='/moving-speech-stream';
     assert.deepEqual(platformRoute(new URL(config.publicOrigin+path),config),{kind:'socket',destination:config.publicOrigin+PLATFORM_SOCKET_ENDPOINTS[path]});
     assert.equal(module.exports.middleware(new NextRequest(config.publicOrigin+PLATFORM_SOCKET_ENDPOINTS[path])).status,400);
-    const deployment=JSON.parse(await readFile(new URL('../../../vercel.json',import.meta.url),'utf8'));
+    const deployment=JSON.parse(await readFile(new URL('../vercel.json',import.meta.url),'utf8'));
     for (const source of [path,'/lipsync-moving/:path*']) assert.deepEqual(deployment.rewrites.find(rule=>rule.source===source||rule.source==='/(.*)'),{source,destination:{service:'speech'}});
   } finally {for (const [key,value] of Object.entries(previous)) {if(value===undefined)delete process.env[key];else process.env[key]=value;}}
 });
