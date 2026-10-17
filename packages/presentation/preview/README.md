@@ -1,14 +1,18 @@
-# Studios förhandsvisningsmaterial
+# Previewbyggkällor och isolerade prov
 
-`site/` innehåller granskat, versionshanterat material för Studios skyddade
-förhandsvisning på `/control/preview`. Byggkällan används fortfarande av
-`lab/tools/prepare-preview.mjs`; den äldre branchspecifika `/test`-byggaren
-är pensionerad.
+`site/` är granskat, versionshanterat material som fortfarande kopieras av
+`lab/tools/prepare-preview.mjs`. Den äldre branchspecifika `/test`-byggaren
+är pensionerad. Sidans katalog och medier används endast i explicit isolerad
+offlinefixtur; de utgör inget produktregister.
 
 Förberedaren verifierar filnamn och SHA-256 mot `site/media-hashes.json`,
-kopierar materialet till ignorerade `lab/preview-build/` och hämtar spelare,
-kompositor, brygga och geometri från `../compositor/`. Studio serverar resultatet
-under `/studio/preview/*` med sin befintliga behörighetskontroll.
+kopierar materialet till ignorerade `lab/preview-build/` och hämtar delade
+renderarmoduler från `../compositor/`.
+
+I native molndrift serverar `/studio/preview/*` endast `compositor.js` och
+`geometry.js`, efter befintlig behörighetskontroll. Äldre sida, katalog och
+medier svarar 410 med hänvisning till `/admin/rehearsal`. De ska inte beskrivas
+som en tillgänglig produktionsspelare.
 
 Från reporoten:
 
