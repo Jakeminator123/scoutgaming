@@ -2,12 +2,13 @@
 import {useRef, useState, type MouseEvent} from 'react';
 import {studioNavigationHref} from '../lib/studio-navigation.mjs';
 import {compositionLabel} from '../lib/control-flow.mjs';
-import type {StudioProject} from '../lib/studio-model.mjs';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import type {DealerArchiveImpact} from '../lib/dealer-archive-impact.mjs';
 import {dealerRemovalStatus} from '../lib/dealer-removal.mjs';
 import {DealerMediaLibrary} from './dealer-media-library';
 import {mediaRemovalMessage} from './media-removal-feedback';
-import {requestJson, type VideoInventory} from './studio-types';
+import { requestJson } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import styles from './dealer-trash.module.css';
 
 export type DealerRemovalProps = {

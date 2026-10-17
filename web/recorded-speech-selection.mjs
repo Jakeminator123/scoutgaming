@@ -1,4 +1,4 @@
-import {normalizeRecordedSpeech,recordedSpeechIdentity,selectRecordedSpeech} from './public/recorded-speech.mjs';
+import {normalizeRecordedSpeech,recordedSpeechIdentity,selectRecordedSpeech} from '../packages/presentation/contracts/recorded-speech.mjs';
 
 const owns=(value,key)=>value!=null&&Object.hasOwn(value,key);
 export const hasRecordedSpeech=video=>owns(video,'recordedSpeech')||owns(video?.classification,'recordedSpeech');

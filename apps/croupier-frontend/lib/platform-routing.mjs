@@ -1,3 +1,4 @@
+import { presentationPublicSource } from '../../../packages/presentation/public-modules.mjs';
 import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-entry-contract.mjs';
 import {adminDocumentHref} from '../../../lab/lib/admin-workspace-routes.mjs';
 import { requestedOperator } from '../../../web/game-entry-operator.mjs';
@@ -55,7 +56,7 @@ const STUDIO_PREVIEW = new RegExp('^(?:/studio-preview/' + PREVIEW_UUID
 export function backendPlatformPath(value) {
   const path = canonicalPlatformPath(value);
   if (!path) return false;
-  return AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path) || ROULETTE_PREVIEW.has(path) || ROULETTE_ROOM.has(path)
+  return (path.startsWith('/packages/presentation/') && Boolean(presentationPublicSource(path))) || AUTH.has(path) || PLAYER.has(path) || PRESENTATION.has(path) || LAB_API.test(path) || ROULETTE_PREVIEW.has(path) || ROULETTE_ROOM.has(path)
     || path === '/api/operators'
     || path === '/api/studio-game/command'
     || /^\/api\/moving-speech\/[a-f0-9]{32}\/rest$/.test(path)

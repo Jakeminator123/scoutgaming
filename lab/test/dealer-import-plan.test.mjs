@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
-import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createFrozenKevinImportPlan, frozenKevinImportSource, reviewDealerImportFilenames, verifyImportSourceBytes } from '../lib/dealer-import-plan.mjs';
 import { DRAGAN_KEVIN_PROFILE } from '../../web/public/card-presentation/profiles/kevin-dragan-f15b2af1.mjs';
 import { runDealerImportPlan } from '../../tools/dealer-import-plan.mjs';

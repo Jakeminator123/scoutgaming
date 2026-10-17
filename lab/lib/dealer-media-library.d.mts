@@ -1,6 +1,6 @@
-import type {StudioProject} from './studio-model.mjs';
-import type {VideoMetadata} from './video-intake.mjs';
-import type {VideoInventory,VideoEntry} from '../components/studio-types';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
+import type {VideoMetadata} from '../../packages/presentation/contracts/video-intake.mjs';
+import type { VideoInventory, VideoEntry } from '../../packages/presentation/contracts/media-inventory.mjs';
 export const DEALER_MEDIA_CATEGORIES: ReadonlyArray<{id:string;label:string}>;
 export interface DealerMediaSlot {id:string;eventId:string;situation:string;category:string;label:string}
 export function dealerMediaSlots(project:StudioProject,category?:string):DealerMediaSlot[];

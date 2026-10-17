@@ -1,15 +1,16 @@
 'use client';
 import { StudioDealerRequired } from './studio-dealer-required';
 
-import { createDefaultProbePolicy } from '../lib/probe-policy.mjs';
-import type { StudioProject } from '../lib/studio-model.mjs';
+import { createDefaultProbePolicy } from '../../packages/presentation/contracts/probe-policy.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { PageTemplate } from './page-template.mjs';
 import { StudioNavigation } from './studio-navigation';
 import { studioNavigationHref } from '../lib/studio-navigation.mjs';
 import { ProbeEditor } from './probe-editor';
 import { ProjectConflict } from './project-conflict';
 import { StudioMessages, useStudioSession } from './studio-session';
-import { resolveStudioDealerId, type ConnectionStatus, type VideoInventory } from './studio-types';
+import { resolveStudioDealerId, type ConnectionStatus } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 
 function SelectedControlProbePage({ initialProject, initialVideos, initialStatus, initialDealerId, initialEventId }: {
   initialProject: StudioProject;

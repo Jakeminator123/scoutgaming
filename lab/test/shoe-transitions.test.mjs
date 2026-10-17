@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
-import { addDealer, buildRuntimeCatalog, createSeedProject, normalizeProject, validateProject } from '../lib/studio-model.mjs';
+import { addDealer, buildRuntimeCatalog, createSeedProject, normalizeProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { clipSituationLabel } from '../lib/clip-label.mjs';
-import { validateVideoMetadata, videoFitsEvent } from '../lib/video-intake.mjs';
+import { validateVideoMetadata, videoFitsEvent } from '../../packages/presentation/contracts/video-intake.mjs';
 import { transitionClipsForDealer } from '../../packages/presentation/runtime/shoe-transitions.mjs';
-import { selectPresentation } from '../../packages/presentation/runtime/selection.mjs';
+import { selectPresentation } from '../lib/presentation-selection.mjs';
 import { prepareDecision, validateCatalog } from '../../open-claw/lab/src/engine.mjs';
 
 const registry = { videos: [], families: [] };

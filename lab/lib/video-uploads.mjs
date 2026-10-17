@@ -3,10 +3,10 @@ import { mkdir, readFile, writeFile, open, rename, unlink, lstat, realpath } fro
 import { basename, join, resolve } from 'node:path';
 import lockfile from 'proper-lockfile';
 import { StudioError } from './project-store.mjs';
-import { MAX_VIDEO_BYTES, validateVideoMetadata } from './video-intake.mjs';
+import { MAX_VIDEO_BYTES, validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { assertLocalRequest } from './http-guard.mjs';
 import { isCloudMediaConfigured, putPrivateMedia, getPrivateMedia, deletePrivateMedia, validatePrivateMedia, mediaBlobPath } from './cloud-media-store.mjs';
-import { BASE_DEALER_IDS, registeredDealerIds } from '../../web/dealer-identity.mjs';
+import { BASE_DEALER_IDS, registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {assertMediaAlpha} from './media-alpha.mjs';
 const MAX_INDEX_BYTES = 8 * 1024 * 1024;
 async function localDealerIds(options) {

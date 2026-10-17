@@ -1,9 +1,9 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
-import { PRESENTATION_CAPABILITY_VERSION_HEADER, validatePresentationCapabilities } from '../../web/presentation-capability-contract.mjs';
-import { BASE_DEALER_IDS } from '../../web/dealer-identity.mjs';
+import { PRESENTATION_CAPABILITY_VERSION_HEADER, validatePresentationCapabilities } from '../../packages/presentation/capability-contract.mjs';
+import { BASE_DEALER_IDS } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {extendedDealerMediaFeatures} from '../../web/dealer-media-features.mjs';
-import {maxVariantsForEvent} from './studio-model.mjs';
+import {maxVariantsForEvent} from '../../packages/presentation/contracts/studio-model.mjs';
 import {encodePresentationPackage} from '../../web/storage/presentation-package.mjs';
 
 export const PRESENTATION_RUNTIME_UPDATE_REQUIRED = 'studio_presentation_runtime_update_required';

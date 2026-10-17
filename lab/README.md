@@ -21,8 +21,8 @@ komponenter. Manuella medieverktyg finns i [tools/media](../tools/media/README.m
 **Teknisk roll:** `lab/` är den aktiva Next.js-tjänsten `studio` i
 Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
 `/partner` och deras Studio-API:er. `/studio` är tjänstens basePath i molnet.
-`packages/design-preview` äger den nya admin-/lobbydesignen; labbets bygge
-förbereder och serverar den från `design-preview-build/`. Behörighet, scoped
+`lab/client` innehåller Admin/Lobby-klienten med eget React-/TypeScript-bygge.
+Labbets bygge förbereder och serverar den från `design-preview-build/`. Behörighet, scoped
 data, mediaregister och anslutningar finns kvar i denna tjänst.
 Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
 Neon är produktens register och privat Blob innehåller mediebyte.
@@ -192,13 +192,14 @@ API:er, nyckelroller och miljöfiler finns i
 ## Filer och begrepp
 
 ```text
-lab/
+packages/presentation/contracts/
   policies/project.seed.json   eventkontrakt och historiska demo-/fixturdata
-  policies/social.seed.json    startpolicy för Astrids sociala chattprov
   schemas/studio.schema.json   struktur och tillåtna värden
+  studio-model.mjs             kontrakt, referenser, validering och konvertering
+lab/
+  policies/social.seed.json    startpolicy för Astrids sociala chattprov
   schemas/social.schema.json   format för den separata sociala policyn
   animations/                 64 eventrörelser + separat social.ledsen i JSON
-  lib/studio-model.mjs         kontrakt, referenser, validering och konvertering
   lib/presentation-profile.mjs visningsgrupper och källfält för Händelser → klipp
   lib/activity-log.mjs         tillfällig händelselogg och förloppskoppling
   lib/partner-observer.mjs     läsande, signerad Partner-SSE på lokal server

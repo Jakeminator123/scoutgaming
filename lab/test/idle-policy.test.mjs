@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import schema from '../schemas/idle-policy.schema.json' with { type: 'json' };
-import { createDefaultIdlePolicy, validateIdlePolicy, idleShareEstimate, createIdlePreviewPlan, MAX_IDLE_VARIANTS } from '../lib/idle-policy.mjs';
+import schema from '../../packages/presentation/contracts/schemas/idle-policy.schema.json' with { type: 'json' };
+import { createDefaultIdlePolicy, validateIdlePolicy, idleShareEstimate, createIdlePreviewPlan, MAX_IDLE_VARIANTS } from '../../packages/presentation/runtime/idle-policy.mjs';
 
 test('the simple idle policy has two base loops and thirteen one-shot variants', () => {
   const policy = createDefaultIdlePolicy();

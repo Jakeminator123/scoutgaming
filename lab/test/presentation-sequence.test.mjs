@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildPresentationSequence, SEQUENCE_STEP_LIMIT } from '../lib/presentation-sequence.mjs';
-import { normalizeProject, buildRuntimeCatalog, DEALER_IDS, isDirectorSourceType } from '../lib/studio-model.mjs';
+import { normalizeProject, buildRuntimeCatalog, DEALER_IDS, isDirectorSourceType } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 
 import { prepareDecision } from '../../open-claw/lab/src/engine.mjs';

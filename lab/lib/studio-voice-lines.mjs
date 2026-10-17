@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { repositoryRoot as defaultRoot, resolvePublicMedia } from '../../tools/media-layout.mjs';
 import { verifiedMediaBlobStorage } from './media-blob-index.mjs';
 import { canonicalStudioJson, StudioStorageError } from '../../web/storage/studio-contract.mjs';
-import { SPEECH_LINES } from '../../web/public/speech-lines.mjs';
+import { SPEECH_LINES } from '../../packages/presentation/contracts/speech-lines.mjs';
 
 const roster = Object.freeze({ astrid: 'Astrid' });
 const sha = value => createHash('sha256').update(value).digest('hex');

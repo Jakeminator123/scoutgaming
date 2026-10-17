@@ -5,7 +5,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {createServer} from 'node:http';
 import {createStudioDocumentApi} from '../lab/lib/studio-document-api.mjs';
-import {createSeedProject, validateProject} from '../lab/lib/studio-model.mjs';
+import {createSeedProject, validateProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 
@@ -46,9 +46,9 @@ function browserBundle() {
     external: ['/composition-runtime/compositor.js'],
     outfile: resolve(root, 'fixture.js'), nodePaths: [resolve(root, 'lab/node_modules')],
     alias: {'react': resolve(root, 'lab/node_modules/react'), 'react-dom': resolve(root, 'lab/node_modules/react-dom'),
-      'next/link': resolve(root, 'packages/design-preview/runtime/navigation.tsx'),
-      'next/navigation': resolve(root, 'packages/design-preview/runtime/navigation.tsx'),
-      'next/image': resolve(root, 'packages/design-preview/runtime/image.ts')},
+      'next/link': resolve(root, 'lab/client/runtime/navigation.tsx'),
+      'next/navigation': resolve(root, 'lab/client/runtime/navigation.tsx'),
+      'next/image': resolve(root, 'lab/client/runtime/image.ts')},
     define: {'process.env.NODE_ENV': '"production"', 'process.env.NEXT_PUBLIC_LAB_BASE_PATH': '"/studio"', 'process.env.NEXT_PUBLIC_ADMIN_WORKSPACE': '"1"'},
     logLevel: 'silent',
   });

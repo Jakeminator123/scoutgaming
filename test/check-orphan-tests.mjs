@@ -24,6 +24,7 @@ test('discovers uncovered domains without mistaking a direct glob or printed com
     'lab/components/view.test.mjs': '',
     'lab/components/nested/access.test.mjs': '',
     'lab/lib/scheduler.test.mjs': '',
+    'lab/client/admin/view.test.mjs': '',
     'tools/media/test-filter.mjs': '',
     'apps/frontend/test/login.mjs': '',
     'services/worker/gateway/test/relay.test.mjs': '',
@@ -37,11 +38,11 @@ test('discovers uncovered domains without mistaking a direct glob or printed com
     'test/fixtures/helper.mjs': '',
   });
   const result = audit();
-  assert.equal(result.files.length, 9);
+  assert.equal(result.files.length, 10);
   assert.deepEqual(result.covered.map(item => item.file), ['lab/components/view.test.mjs']);
   assert.equal(result.covered[0].kind, 'full-regression');
   assert.deepEqual(result.orphans, [
-    'apps/frontend/test/login.mjs', 'lab/components/nested/access.test.mjs', 'lab/lib/scheduler.test.mjs',
+    'apps/frontend/test/login.mjs', 'lab/client/admin/view.test.mjs', 'lab/components/nested/access.test.mjs', 'lab/lib/scheduler.test.mjs',
     'open-claw/lab/deploy/config.test.mjs', 'ops/cloud/test/entry.test.mjs', 'packages/ui/view.test.mjs',
     'services/worker/gateway/test/relay.test.mjs', 'tools/media/test-filter.mjs',
   ]);

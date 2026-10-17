@@ -1,6 +1,6 @@
-import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {LAYER_ASSET_TYPES,MAX_LAYER_ASSET_BYTES,layerAssetPath} from '../../web/presentation-layers.mjs';
-import {validateProject} from './studio-model.mjs';
+import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {rebaseProjectDraft} from './project-rebase.mjs';
 
 export function compositionPreviewLayers(show,compositing,hasDealer=true) {

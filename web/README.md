@@ -23,8 +23,9 @@ Studio-autentisering, gemensam roll-/åtgärdspolicy och validering av miljö/wo
 finns i [packages/studio-access](../packages/studio-access/), med kompatibla
 återexporter från de äldre sökvägarna. Inloggningskontrollen kan användas av både
 spelservern och Studio utan att importera `lab/` eller OpenClaw.
-Rollpolicyn använder fortfarande den gemensamma rollnormaliseringen i
-`web/account-role.mjs`.
+Den gemensamma rollnormaliseringen finns i samma paket:
+`packages/studio-access/account-role.mjs`. Spelservern och Studios
+kontotjänster använder samma regler.
 
 Spelservern använder fortfarande `lab/lib/` för registrerad media,
 projekt-/publiceringskontrakt, signerade Studio-kommandon och provspelning.

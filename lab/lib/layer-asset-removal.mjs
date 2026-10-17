@@ -1,4 +1,4 @@
-import {validateProject} from './studio-model.mjs';
+import {validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {compositionLabel} from './control-flow.mjs';
 export function layerAssetReferences(project,id){
   const lanes=[...(project.lanes??[]),...(project.dealerTrash??[]).flatMap(entry=>entry.compositions??[])];

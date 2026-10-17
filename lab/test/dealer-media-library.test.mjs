@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,createEmptyProject,addDealer} from '../lib/studio-model.mjs';
+import {createSeedProject,createEmptyProject,addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
 import {dealerMediaSlots,mediaClassification,dealerLibraryVideos,dealerSlotStatus,mediaPage,mediaUsage,mediaMatchesSlot,draftUsesMedia} from '../lib/dealer-media-library.mjs';
 import {uploadMediaBatch} from '../lib/media-upload-batch.mjs';
 import {validateManagedStudioMedia} from '../../web/managed-media-contract.mjs';
-import {mediaHeaderMatches} from '../lib/media-file-types.mjs';
-import {videoFitsLine} from '../lib/video-intake.mjs';
+import {mediaHeaderMatches} from '../../packages/shared/media-file-types.mjs';
+import {videoFitsLine} from '../../packages/presentation/contracts/video-intake.mjs';
 const project=addDealer(createSeedProject(),'paow','PAOW');
 
 test('roulette reference and action slots stay separate from blackjack, audio and runtime bindings',()=>{
@@ -178,7 +178,7 @@ test('shoe transitions are exact recommended slots and accept an upload classifi
 });
 
 test('every speech slot reports its explicit standard without treating an upload as a choice',async()=>{
-  const {bindSpeechSlotStandard}=await import('../../web/public/speech-slot-bindings.mjs');
+  const {bindSpeechSlotStandard}=await import('../../packages/presentation/contracts/speech-slot-bindings.mjs');
   let draft=addDealer(createEmptyProject(),'dragan','Dragan');
   const slots=dealerMediaSlots(draft,'speech');assert.equal(slots.length,17);
   const videos=slots.map((slot,i)=>({id:'11111111-1111-4111-8111-'+String(i).padStart(12,'0'),dealer:'dragan',available:true,label:slot.label,sha256:'a'.repeat(64),classification:{dealerId:'dragan',eventId:slot.eventId,situation:slot.situation,kind:'speech',recordedSpeech:{schemaVersion:1,dealerId:'dragan',lineId:slot.situation,takeId:slot.situation+'_1',language:'sv',exactText:'Test.',videoSha256:'a'.repeat(64),audioSha256:'b'.repeat(64),indexSha256:'c'.repeat(64),fps:25,frameCount:50,audioDelayMs:0,entryPose:'VILA',exitPose:'VILA',calibrationRevision:'test-1',recording:{status:'pending'},review:{status:'pending'}}}}));

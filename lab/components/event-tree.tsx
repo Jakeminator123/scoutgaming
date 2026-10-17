@@ -1,8 +1,9 @@
 'use client';
 
 import { Fragment, useState } from 'react';
-import type { DealerId, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant } from '../lib/studio-model.mjs';
-import type { DirectorMode, VideoInventory } from './studio-types';
+import type { DealerId, StudioEvent, StudioLine, StudioProject, StudioTrigger, StudioVariant } from '../../packages/presentation/contracts/studio-model.mjs';
+import type { DirectorMode } from './studio-types';
+import type { VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { modeExplanations, modeLabels } from './gateway-panel';
 import { describeEventFields, formatEventValue, OUTPUT_GROUPS, presentationProfile } from '../lib/presentation-profile.mjs';
 import type { OutputKind } from '../lib/presentation-profile.mjs';

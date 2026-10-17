@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {dealerPortrait,loadRoomPreview} from '../lib/player-room-preview.mjs';
 import {previewMediaPath} from '../../../web/public/operator-preview-contract.mjs';
-import {defaultCompositionSettings} from '../../../web/public/composition-settings.mjs';
+import {defaultCompositionSettings} from '../../../packages/presentation/contracts/composition-settings.mjs';
 const id='11111111-1111-4111-8111-111111111111';
 const context={operatorSlug:'sample',roomId:'room-one',packageRevision:3,dealerId:'paow'};
 const room={id:context.roomId,dealers:[{id:'paow',independentLayers:false,table:{allowed:[]},background:{allowed:[]}}]};

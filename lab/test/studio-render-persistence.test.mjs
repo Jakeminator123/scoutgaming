@@ -2,7 +2,7 @@ import { fixtureDatabaseUrl } from '../../test/fixtures/database-url.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStudioRenderPersistence,assertRenderStudioWritable} from '../lib/studio-render-persistence.mjs';
-import {createSeedProject} from '../lib/studio-model.mjs';
+import {createSeedProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {createSocialPolicy} from '../lib/social-store.mjs';
 import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
 import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs';

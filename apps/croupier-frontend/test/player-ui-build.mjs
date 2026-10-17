@@ -75,7 +75,7 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
         assert.ok(names.includes(path), `${name} imports missing ${path}`);
       }
     }
-    assert.equal(await readFile(join(directory, 'dealer-identity.mjs'), 'utf8'), await readFile(new URL('../../../web/public/dealer-identity.mjs', import.meta.url), 'utf8'));
+    assert.equal(await readFile(join(directory, 'dealer-identity.mjs'), 'utf8'), await readFile(new URL('../../../packages/presentation/contracts/dealer-identity.mjs', import.meta.url), 'utf8'));
     const login = await readFile(join(directory, 'blackjack-entry.mjs'), 'utf8');
     const modal = await readFile(join(directory, 'auth-modal.mjs'), 'utf8');
     assert.match(login, /const destination = '\/frontend-preview\/game\/\?dealer=astrid&presentation=local'/);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGameEntrySelector} from '../web/game-entry-operator.mjs';
 import {gameLaneConfiguration,gameLaneFromDocument,validateGameLanes} from '../web/public/game-lanes.mjs';
-import {isDealerId,isActiveDealerId,validatePublicRegisteredDealers} from '../web/public/dealer-identity.mjs';
+import {isDealerId,isActiveDealerId,validatePublicRegisteredDealers} from '../packages/presentation/contracts/dealer-identity.mjs';
 import {historicalDealerProject} from './fixtures/historical-dealer-project.mjs';
 const lane=id=>({schemaVersion:1,id:'configured',label:'Configured cloud table',renderer:'portrait-video',dealer:id,mediaCollection:id+'-presentation'});
 function selector(id,{configured=true,pack=true}={}){
@@ -32,7 +32,7 @@ test('missing operator package cannot silently start a default dealer',async()=>
 
 test('registered Astrid does not duplicate the historical package authority',async()=>{
  const {validatePresentationPackage}=await import('../web/presentation-layers.mjs');
- const {defaultPresentationLane}=await import('../lab/lib/studio-model.mjs');
+ const {defaultPresentationLane}=await import('../packages/presentation/contracts/studio-model.mjs');
  for(const id of ['astrid']){
   const pack={schemaVersion:2,projectRevision:'fixture',assets:[],lanes:[defaultPresentationLane(id)],registeredDealers:[{id,label:id,idle:null}]};
   assert.equal(validatePresentationPackage(pack).registeredDealers[0].id,id);
@@ -48,7 +48,7 @@ test('a published cloud lane is independent of a historical active indexed lane'
 
 test('historical box variants remain stored without automatically becoming the standard',async()=>{
  const {applyLegacyStandardVariants}=await import('../packages/presentation/runtime/legacy-standard-variants.mjs');
- const {selectPresentation}=await import('../packages/presentation/runtime/selection.mjs');
+ const {selectPresentation}=await import('../lab/lib/presentation-selection.mjs');
  const project=historicalDealerProject('vera');
  project.legacyClipPolicy=[{dealerId:'vera',part:'box3',clipId:'vera:legacy/box3'}];
  applyLegacyStandardVariants(project); // Explicit historical fixture, never a runtime import.
@@ -61,7 +61,7 @@ test('historical box variants remain stored without automatically becoming the s
 });
 
 test('reading historical clip metadata never creates new active bindings',async()=>{
- const {createSeedProject,normalizeProject}=await import('../lab/lib/studio-model.mjs');
+ const {createSeedProject,normalizeProject}=await import('../packages/presentation/contracts/studio-model.mjs');
  const project=createSeedProject();
  project.legacyClipPolicy=[{dealerId:'vera',part:'idle',clipId:'vera:legacy/idle'}];
  const before=structuredClone(project);
@@ -72,7 +72,7 @@ test('reading historical clip metadata never creates new active bindings',async(
  assert.deepEqual(project,before);
 });
 test('retired dealers cannot be registered again while other named cloud dealers can',async()=>{
- const {createEmptyProject,addDealer}=await import('../lab/lib/studio-model.mjs');
+ const {createEmptyProject,addDealer}=await import('../packages/presentation/contracts/studio-model.mjs');
  for(const id of ['vera','mei','amira','johanna'])assert.throws(()=>addDealer(createEmptyProject(),id,id));
  for(const id of ['astrid','paow','dragge','dragan','marten','nora','unrelated-dealer']){
   const project=addDealer(createEmptyProject(),id,id);

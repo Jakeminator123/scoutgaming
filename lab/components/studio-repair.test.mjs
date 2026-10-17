@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject as createBaseProject , addDealer} from '../lib/studio-model.mjs';
+import { createSeedProject as createBaseProject , addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
 import { modeLabels, modeExplanations } from '../lib/director-modes.mjs';
 import manifest from '../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json' with { type: 'json' };
 

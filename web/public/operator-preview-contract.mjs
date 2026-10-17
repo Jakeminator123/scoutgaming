@@ -1,10 +1,10 @@
 import {isGameLaneId,isOperatorSlug} from './game-lanes.mjs';
-import {isDealerId} from './dealer-identity.mjs';
-import {validateCompositionSettings} from './composition-settings.mjs';
-import {validateDealerFraming} from './dealer-framing.mjs';
-import {validateRouletteForegroundPolygons} from './roulette-idle-contract.mjs';
-import {validateRouletteStartProfile} from './roulette-start-contract.mjs';
-import {materialById} from './material-catalog.mjs';
+import {isDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
+import {validateCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
+import {validateDealerFraming} from '../../packages/presentation/contracts/dealer-framing.mjs';
+import {validateRouletteForegroundPolygons} from '../../packages/presentation/contracts/roulette-idle-contract.mjs';
+import {validateRouletteStartProfile} from '../../packages/presentation/contracts/roulette-start-contract.mjs';
+import {materialById} from '../../packages/presentation/contracts/material-catalog.mjs';
 
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const types=new Set(['image/png','image/jpeg','image/webp','video/mp4','video/webm']);

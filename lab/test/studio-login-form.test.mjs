@@ -84,7 +84,7 @@ function browserBootstrap(props) {
 
 async function buildAdminBrowserFixture(root) {
   const { build } = await import('esbuild'), { writeFile } = await import('node:fs/promises');
-  const source = fileURLToPath(new URL('../../packages/design-preview/', import.meta.url));
+  const source = fileURLToPath(new URL('../../lab/client/', import.meta.url));
   // An isolated worktree may read already-installed, identically locked modules.
   // Compile its own real Admin source; never reuse a possibly stale app bundle.
   const modules = process.env.CROUPIER_DESIGN_FIXTURE_MODULES || join(source,'node_modules');
@@ -327,7 +327,7 @@ test('actual browser expired Admin login restores the real room view through his
   const { tmpdir } = await import('node:os');
   const { createStudioNativeAuth } = await import('../lib/studio-native-auth.mjs');
   const { assertNativeStudioRequest } = await import('../lib/studio-native-runtime.mjs');
-  const { createSeedProject, defaultPresentationLane, validateProject, addDealer } = await import('../lib/studio-model.mjs');
+  const { createSeedProject, defaultPresentationLane, validateProject, addDealer } = await import('../../packages/presentation/contracts/studio-model.mjs');
   const catalog = await import('../lib/design-preview-catalog.mjs');
   const nextPage = await import('../lib/next-page-navigation.mjs');
   const preview = await import('../lib/design-preview.mjs');

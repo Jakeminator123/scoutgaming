@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { applyClipLabel, assignClipLabel, clipLabel } from '../lib/clip-label.mjs';
-import { createSeedProject, validateProject } from '../lib/studio-model.mjs';
+import { createSeedProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 
 const manifest = JSON.parse(readFileSync(new URL('../../media/dealers/astrid/runtime/presentation/lab-video-manifest.json', import.meta.url), 'utf8'));
 

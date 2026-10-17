@@ -1,7 +1,7 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
 import { createHash } from 'node:crypto';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
-import { normalizeProject } from './studio-model.mjs';
+import { normalizeProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { validatePresentationPackage } from '../../web/presentation-layers.mjs';
 import { mergeFrozenDealerPlayback } from '../../web/frozen-dealer-playback.mjs';
 
@@ -14,7 +14,7 @@ import { resolveFrozenDealerIdle } from '../../web/storage/frozen-dealer-idle.mj
 import { captureFrozenPresentation, selectedRegisteredIdleDefaults, assertCapturedPresentationMedia,
   isPresentationRoomLaneCompatible, assertPublishedRoomBindings } from '../../web/storage/frozen-presentation-capture.mjs';
 import { canonicalStudioJson, validateRevision, validateStudioScope, StudioStorageError } from '../../web/storage/studio-contract.mjs';
-import { validatePresentationCapabilities } from '../../web/presentation-capability-contract.mjs';
+import { validatePresentationCapabilities } from '../../packages/presentation/capability-contract.mjs';
 import { PRESENTATION_RUNTIME_UPDATE_REQUIRED } from './presentation-runtime-readiness.mjs';
 import {assertPresentationRoomMaterials} from '../../web/presentation-material-game.mjs';
 

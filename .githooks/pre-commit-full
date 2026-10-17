@@ -30,19 +30,19 @@ run_check studio frontend-typecheck 180 node apps/croupier-frontend/node_modules
 # Discover Studio tests once, without a second hand-maintained registry.
 run_node_tests studio studio-tests lab/test/*.test.mjs lab/components/*.test.mjs lab/lib/background-zone-schedule.test.mjs
 run_node_tests admin dealer-clip-guide test/dealer-clip-guide.mjs
-run_node_tests admin clip-guide packages/design-preview/admin/lib/clip-guide.test.mjs
-run_node_tests admin saved-scene-preview packages/design-preview/admin/lib/saved-scene-preview.test.mjs
+run_node_tests admin clip-guide lab/client/admin/lib/clip-guide.test.mjs
+run_node_tests admin saved-scene-preview lab/client/admin/lib/saved-scene-preview.test.mjs
 run_node_tests admin editor lipsync-test/editor.test.mjs
-run_node_tests admin catalog packages/design-preview/lobby/lib/catalog.test.mjs packages/design-preview/lobby/components/lobby-provider.test.mjs packages/design-preview/admin/lib/dealer-artwork.test.mjs packages/design-preview/admin/lib/dealer-playback.test.mjs packages/design-preview/admin/lib/connected-studio.test.mjs packages/design-preview/admin/lib/studio-composition-panel.test.mjs packages/design-preview/admin/lib/studio-layout.test.mjs packages/design-preview/admin/lib/roulette-clip-map.test.mjs packages/design-preview/admin/lib/studio-policy.test.mjs packages/design-preview/admin/lib/studio-lifecycle.test.mjs packages/design-preview/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
-run_node_tests admin dealer-import packages/design-preview/admin/lib/dealer-import.test.mjs
+run_node_tests admin catalog lab/client/lobby/lib/catalog.test.mjs lab/client/lobby/components/lobby-provider.test.mjs lab/client/admin/lib/dealer-artwork.test.mjs lab/client/admin/lib/dealer-playback.test.mjs lab/client/admin/lib/connected-studio.test.mjs lab/client/admin/lib/studio-composition-panel.test.mjs lab/client/admin/lib/studio-layout.test.mjs lab/client/admin/lib/roulette-clip-map.test.mjs lab/client/admin/lib/studio-policy.test.mjs lab/client/admin/lib/studio-lifecycle.test.mjs lab/client/admin/lib/studio-speech.test.mjs lab/lib/dealer-sets.test.mjs lab/lib/studio-speech-build-service.test.mjs test/public-lobby.mjs
+run_node_tests admin dealer-import lab/client/admin/lib/dealer-import.test.mjs
 run_node_tests admin room-environment test/room-environment.mjs
-run_node_tests admin economy-journal packages/design-preview/admin/lib/economy-journal.test.mjs
-run_node_tests admin roulette-start-editor packages/design-preview/admin/lib/roulette-start-editor.test.mjs packages/design-preview/admin/lib/roulette-media-review.test.mjs packages/design-preview/admin/lib/roulette-idle-editor.test.mjs packages/design-preview/admin/lib/registered-material-library.test.mjs
-run_node_tests admin admin-routing packages/design-preview/runtime/admin-routing.test.mjs packages/design-preview/runtime/navigation.test.mjs
-run_node_tests admin workspace-tools packages/design-preview/admin/lib/workspace-tools.test.mjs packages/design-preview/admin/lib/resource-deletion.test.mjs
-run_node_tests admin dealer-directory packages/design-preview/admin/lib/dealer-directory.test.mjs packages/design-preview/admin/lib/dealer-chat-import.test.mjs
+run_node_tests admin economy-journal lab/client/admin/lib/economy-journal.test.mjs
+run_node_tests admin roulette-start-editor lab/client/admin/lib/roulette-start-editor.test.mjs lab/client/admin/lib/roulette-media-review.test.mjs lab/client/admin/lib/roulette-idle-editor.test.mjs lab/client/admin/lib/registered-material-library.test.mjs
+run_node_tests admin admin-routing lab/client/runtime/admin-routing.test.mjs lab/client/runtime/navigation.test.mjs
+run_node_tests admin workspace-tools lab/client/admin/lib/workspace-tools.test.mjs lab/client/admin/lib/resource-deletion.test.mjs
+run_node_tests admin dealer-directory lab/client/admin/lib/dealer-directory.test.mjs lab/client/admin/lib/dealer-chat-import.test.mjs
 run_node_tests contracts precommit-checks test/precommit-checks.mjs test/regression-group.mjs test/check-orphan-tests.mjs test/check-admin-navigation.mjs test/security-status.mjs test/gitguardian-read.mjs test/test-credential-fixtures.mjs
-run_node_tests contracts raderingsgrind test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs packages/design-preview/admin/lib/studio-context.test.mjs
+run_node_tests contracts raderingsgrind test/raderingsgrind.mjs test/partner-docs.mjs test/material-catalog.mjs test/presentation-material-game.mjs lab/client/admin/lib/studio-context.test.mjs
 run_node_tests contracts browser-runtime-bindings test/browser-runtime-bindings.mjs
 run_node_tests contracts backup-lab-state test/backup-lab-state.mjs test/migrate-lab-state.mjs test/retention-archive.mjs test/studio-retirement-plan.mjs
 run_node_tests contracts partner-access-policy test/partner-access-policy.mjs test/operator-store.mjs test/admin-publication-chain.mjs

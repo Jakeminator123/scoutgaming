@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { partnerCopy, partnerNavigation } from '../components/kevin-bo/partner-copy.mjs';
-import { defaultPresentationLane } from '../lib/studio-model.mjs';
+import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { PartnerPackageView } from '../components/partner-package-view.mjs';
 
 const require = createRequire(import.meta.url);

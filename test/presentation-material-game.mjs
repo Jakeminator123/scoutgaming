@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assertPresentationRoomMaterials} from '../web/presentation-material-game.mjs';
-import {materialSource} from '../web/public/material-catalog.mjs';
+import {materialSource} from '../packages/presentation/contracts/material-catalog.mjs';
 const source=materialSource('blackjack-green-felt');
 const asset={id:'uploaded-layer',role:'table',...source};
 const fixture=()=>({assets:[structuredClone(asset)],lanes:[{id:'scene',layers:{background:{allowed:[],default:null},table:{allowed:[asset.id],default:asset.id}}}]});

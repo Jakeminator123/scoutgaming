@@ -11,7 +11,7 @@ import {createRegisteredVoiceLines} from '../lab/lib/studio-voice-lines.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioRepository} from '../web/storage/studio-repository.mjs';
-import {createSeedProject,addDealer} from '../lab/lib/studio-model.mjs';
+import {createSeedProject,addDealer} from '../packages/presentation/contracts/studio-model.mjs';
 const source=fileURLToPath(new URL('../',import.meta.url));
 test('shared deployment catalog matches original authoring metadata',async()=>{await buildRuntimeMediaCatalog(resolve(source),{check:true});});
 test('historical catalog remains readable while only an explicitly saved cloud idle can play without dealer directories',async t=>{

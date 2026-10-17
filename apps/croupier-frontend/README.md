@@ -34,7 +34,7 @@ Den aktiva Button-komponenten och landningssidans kortsymboler är kvar.
 Fortsatt UI-utveckling sker i `/admin` och `/lobby`. Övergången är inte klar:
 `/control`, `/partner` och `/play` behåller fungerande inloggning, verktyg och
 spelstarter. `/admin` kräver intern N1-inloggning; `/lobby` läser publika bolag
-och spelbara rum. Deras UI-källa finns i `packages/design-preview`.
+och spelbara rum. Deras UI-källa finns i `lab/client`.
 
 Native Studio/Neon och gemensam policy är aktiva i produktion. `/player-login`
 är spelarentré. I unified/native-läget startar ett uttryckligt rum/dealerval

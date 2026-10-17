@@ -8,16 +8,16 @@ import { seedSavedVideoProject } from './fixtures/video-dealer-project.mjs';
 import { createStudioMemoryPool } from '../../test/fixtures/studio-memory-pool.mjs';
 import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
 import { canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
-import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
+import { presentationCapabilitiesForVersion } from '../../packages/presentation/capability-contract.mjs';
 import { extendedDealerMediaFeatures } from '../../web/dealer-media-features.mjs';
 import { wrapNativePresentationRepository, PRESENTATION_RUNTIME_UPDATE_REQUIRED, PRESENTATION_RUNTIME_UPDATE_MESSAGE } from '../lib/presentation-runtime-readiness.mjs';
 import { createStudioUploadService } from '../lib/studio-upload-service.mjs';
 import { createStudioMediaApi } from '../lib/studio-media-api.mjs';
 import { dealerImportCatalog, filenameDealerImportRows, finishDealerImportRows, validateDealerImportInput } from '../lib/dealer-import-catalog.mjs';
-import { importClassification } from '../../packages/design-preview/admin/lib/dealer-import.mjs';
+import { importClassification } from '../../lab/client/admin/lib/dealer-import.mjs';
 import { uploadNativeVideo } from '../lib/upload-native-video.mjs';
 import { uploadMediaBatch } from '../lib/media-upload-batch.mjs';
-import { DEFAULT_DEALER_COMPOSITING } from '../../web/public/dealer-compositing.mjs';
+import { DEFAULT_DEALER_COMPOSITING } from '../../packages/presentation/contracts/dealer-compositing.mjs';
 
 const scope = { environment: 'test', workspaceId: 'import-integration' }, origin = 'https://studio.example.invalid';
 const config = { scope, apiBase: '/studio/api/admin', authBase: '/studio/api/auth',

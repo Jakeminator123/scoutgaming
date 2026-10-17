@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { createSeedProject, addDealer } from '../lib/studio-model.mjs';
+import { createSeedProject, addDealer } from '../../packages/presentation/contracts/studio-model.mjs';
 import { forgeSlots, slotById, slotPlan, slotPrompt, anchorsFor, validateProfile, validatePositions, DEFAULT_POSITIONS } from '../lib/dealer-forge-catalog.mjs';
 import {dealerMediaSlots} from '../lib/dealer-media-library.mjs';
-import {ROULETTE_MEDIA_EVENTS} from '../lib/roulette-media.mjs';
+import {ROULETTE_MEDIA_EVENTS} from '../../packages/presentation/contracts/roulette-media.mjs';
 import { ForgeError } from '../lib/dealer-forge-service.mjs';
 import { fixture, sha, scope, PNG, MP4 } from './fixtures/dealer-forge-fixture.mjs';
 import { createDealerForgeStore } from '../lib/dealer-forge-store.mjs';

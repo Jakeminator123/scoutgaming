@@ -1,4 +1,4 @@
-import {isDealerId} from '../../web/public/dealer-identity.mjs';
+import {isDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {validateReplyCategories} from '../../web/public/speech-reply-library.mjs';
 
 const idPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;

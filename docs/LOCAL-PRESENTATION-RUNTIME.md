@@ -1,5 +1,13 @@
 # Scoutgaming: nivåer, begrepp och presentationsruntime
 
+Rena projekt-, media- och browserkontrakt ägs av `packages/presentation/contracts/`.
+Studio och spelserver använder samma validering och typer. Den explicita listan
+`packages/presentation/public-modules.mjs` bevarar äldre publika moduladresser
+samt kanoniska paketadresser; privata projektseed/schema och serverfabriker
+serveras inte. Statiska frontendkopior skriver om relativa importer från samma
+kanoniska källa. Registrerade idle-regler får appens befintliga
+`prepareDecision` uttryckligen, utan ändrad urvalslogik.
+
 Kanoniskt målkontrakt för klippens fack, pose, namn, kontrollerad Kevin-import,
 Neon/Blob och gemensam talworker: [storage-guiden](storage/BLOB-NEON.md).
 Den uppdaterades 17 oktober som en plan; den aktiverar inte funktioner.
@@ -107,6 +115,16 @@ kontroller; ett aktiverat uppspelningsreglage bevisar inte att GPU-tal fungerar.
 Aktivering kräver verifierad image, bank, schema013, talprofil och ett valt
 testrum. En sparad flagga eller profil startar inget GPU-prov i sig; endpointens
 kapacitet och kostnadsvakt styr det betalda testfönstret.
+
+Driftprov 17 oktober 2026: PR203:s version `9e533e7b` nådde RunPods jobbkö
+från riktig bordschatt, men ingen worker startade före uppstartstidsgränsen.
+Jobbet avbröts och den tillfälliga endpointen/templaten togs bort av guarden;
+se [handoffens kvitto](JOHN-HANDOFF.md#dragan-verkligt-molnprov-och-fortsättning--17-oktober-2026-1505-utc).
+Draganprofilen är därefter avstängd. En ny endpoint måste bindas till rätt
+runtime-behörighet, template och image före nytt prov. Den borttagna
+testendpointens miljöreferens är inte fungerande drift. Kodprov, en slutförd
+förberedelsepost och en tom fakturarad är inte kvitto på spelad läppsynk.
+
 `web/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
 röst som övrig dealerchatt. Neon fryser exakta källreferenser och reserverar
 budget före GPU-anropet; TTS följer först efter workerintyg. PCM24k, textens
@@ -378,12 +396,15 @@ med en implicit fryst sista ruta.
 Källor och byggrecept finns i `services/moving-gpu-worker/`.
 OpenClaw levererar fortsatt dynamisk text genom den befintliga talvägen;
 workern utför bara läppsynk på serverns exakta ljud och frameplan. Förinspelade
-repliker behåller sitt separata ljud/video. Ingen ny route, dispatcher,
-produktionsjournaladmission eller spelaraktivering ingår i detta tillägg.
-Containerbygge och CPU-prov passerade i GitHub Actions 17 oktober på kodhead
-`19103fcf6301b4f8e2ae2ef78690943919cdc97f`. Publicering, GPU-prov och
-spelaraktivering återstår; [storage-guiden](storage/BLOB-NEON.md) innehåller
-körningskvitton, införandeordning och vad som faktiskt är implementerat.
+repliker behåller sitt separata ljud/video. Det ursprungliga workersteget
+omfattade inte produktadmission eller spelaren; de kopplingarna är nu levererade
+genom PR199/201/203 och migration013. Containerbygge och CPU-prov passerade
+17 oktober. Den publicerade imagen har digest
+`56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34` och
+release `57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8`.
+Verklig tal-/läppsynksacceptans återstår efter det misslyckade molnprovet ovan.
+[Storage-guiden](storage/BLOB-NEON.md) skiljer importunderlag från applicerade
+registerändringar; [handoffen](JOHN-HANDOFF.md) anger aktuell fortsättning.
 
 Read-only-kontroll 15 oktober: endpoint `mq7eiwanda72fg` och samtliga fem
 listade idle-workers angav image
@@ -1032,7 +1053,7 @@ paket fortsätter fungera medan `/admin` utvecklas.
 
 ### Begrepp och ägarskap
 
-Kanoniska nya material finns i `web/public/material-catalog.mjs`: design-ID
+Kanoniska nya material finns i `packages/presentation/contracts/material-catalog.mjs`: design-ID
 och exakt filhash knyter
 ihop namn i admin, partner, lobby och spel. Katalogen registrerar eller
 publicerar aldrig ett operatörsrum. Bibliotekets lager-UUID är separat från
@@ -1909,7 +1930,7 @@ flowchart LR
 
 Diagrammets namn beskriver ansvar. Det inför inga nya tjänster eller påstår
 att ett nytt generellt planformat redan är installerat. I koden ligger mycket
-av urvalet i `packages/presentation/runtime/selection.mjs`, befintliga adaptrar och
+av urvalet i `packages/presentation/server/selection.mjs`, befintliga adaptrar och
 Webs spelare. Spelmotorn bestämmer utfallet; presentationen visar det.
 Valfri OpenClaw-rådgivning får bara föreslå redan tillåtna klipp. Rådet måste
 valideras och skuggläge spelar inte förslaget. Studio-assistentens hjälp med
@@ -2086,9 +2107,10 @@ Ingen kontoflytt, plånboksjustering eller schemaändring ingår.
 ## Ägarskap och ordning
 
 Spelmotorn och Web behåller kort, shoe, wallet, resultat och presentationsordning.
-`packages/presentation/runtime/selection.mjs` väljer exakt familj och tillåten variant
+`packages/presentation/server/selection.mjs` väljer exakt familj och tillåten variant
 med samma triggers, regler, slump och Director-kontrakt som Händelser (`/control/events`).
-Labbets tidigare moduler återexporterar den gemensamma implementationen.
+Studio och spelserver använder kärnan via den uttryckliga appkompositionen i
+`lab/lib/presentation-selection.mjs`, med register för varje urvalsoperation.
 
 Web använder `PerformancePlayer.playLocalClip` för hashverifierade MP4-filer
 från `media/dealers/astrid/runtime/presentation`. En film äger ytan i taget. Den tidigare Astridmotorn,

@@ -4,7 +4,7 @@ import {
   PARTNER_PERMISSIONS, OPERATOR_ADMIN_PERMISSION, isOperatorAdmin, isPartnerPermission,
   allowsPartnerResource, allowsPartnerRoleAssignment, allowsPartnerInvite, allowsPartnerInviteRole, allowsPartnerSuspension,
 } from '../web/partner-access-policy.mjs';
-import { effectiveAccountRole } from '../web/account-role.mjs';
+import { effectiveAccountRole } from '../packages/studio-access/account-role.mjs';
 import { meetsStudioAdminActionRole } from '../lab/lib/studio-access-policy.mjs';
 
 const scope = () => ({ environment: 'qa', workspaceId: 'scoutgaming' });

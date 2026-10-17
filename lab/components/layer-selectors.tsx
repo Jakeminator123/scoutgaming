@@ -1,7 +1,7 @@
 'use client';
-import type {StudioLane, LayerAsset} from '../lib/studio-model.mjs';
-import {layerAssetFitsGame} from '../../web/layer-asset-contract.mjs';
-import {retainBlackjackTableGeometry} from '../../web/public/composition-settings.mjs';
+import type {StudioLane, LayerAsset} from '../../packages/presentation/contracts/studio-model.mjs';
+import {layerAssetFitsGame} from '../../packages/presentation/contracts/layer-asset-contract.mjs';
+import {retainBlackjackTableGeometry} from '../../packages/presentation/contracts/composition-settings.mjs';
 
 export function LayerAssetSelect({role,lane,assets,onChange,permissions=true,game='blackjack'}:{role:'background'|'table';lane:StudioLane;assets:LayerAsset[];onChange:(lane:StudioLane)=>void;permissions?:boolean;game?:'blackjack'|'roulette'}) {
   const rows = assets.filter(asset=>asset.role===role&&layerAssetFitsGame(asset,game)), layer=lane.layers[role];

@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,createEmptyProject,addDealer,validateProject,buildRuntimeCatalog,addVariant,defaultPresentationLane} from '../lib/studio-model.mjs';
-import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {createSeedProject,createEmptyProject,addDealer,validateProject,buildRuntimeCatalog,addVariant,defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
+import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {lifecycleProject} from '../lib/dealer-lifecycle.mjs';
-import {registeredDealerIds} from '../../web/public/dealer-identity.mjs';
+import {registeredDealerIds} from '../../packages/presentation/contracts/dealer-identity.mjs';
 
 test('retired dealer history and trash remain readable without permitting restoration',()=>{
  for(const id of ['vera','mei','amira','johanna']){

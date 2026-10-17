@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { normalizeDealerSpeechProfile, validateDealerSpeechReference } from './public/dealer-speech-profile.mjs';
-import { effectiveDealerCompositing } from './public/dealer-compositing.mjs';
+import { normalizeDealerSpeechProfile, validateDealerSpeechReference } from '../packages/presentation/contracts/dealer-speech-profile.mjs';
+import { effectiveDealerCompositing } from '../packages/presentation/contracts/dealer-compositing.mjs';
 import { dealerSpeechProfileRevision } from './dealer-speech-reference.mjs';
 import { assertMovingSpeechSource, validateMovingSpeechSourceSet } from './moving-speech-bank.mjs';
 import { createCartesiaSource } from '../services/astrid-gpu-worker/gateway/cartesia-source.mjs';

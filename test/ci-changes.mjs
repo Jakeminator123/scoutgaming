@@ -30,7 +30,7 @@ test('NUL parser preserves unusual names and fails on truncated/rename records',
 
 test('client-only PRs avoid production reads; server, migration and uncertain changes retain readiness', () => {
   for (const path of ['lab/components/editor.tsx', 'apps/croupier-frontend/components/button.tsx',
-    'packages/design-preview/admin/lib/navigation.mjs', 'lab/test/editor.test.mjs', 'test/rooms.mjs']) {
+    'lab/client/admin/lib/navigation.mjs', 'lab/test/editor.test.mjs', 'test/rooms.mjs']) {
     assert.equal(migrationReadinessRequired([change(path), change('docs/guide.md')]), false, path);
   }
   for (const path of ['ops/neon-studio/012-example.sql', 'lab/lib/studio-repository.mjs',
@@ -47,22 +47,22 @@ test('client-only PRs avoid production reads; server, migration and uncertain ch
 
 test('client-directory dependencies, schemas and configuration cannot bypass migration readiness', () => {
   const sensitive = [
-    'packages/design-preview/package.json', 'packages/design-preview/package-lock.json',
-    'packages/design-preview/pnpm-lock.yaml', 'packages/design-preview/yarn.lock',
-    'packages/design-preview/bun.lockb', 'packages/design-preview/.npmrc',
-    'packages/design-preview/tsconfig.json', 'packages/design-preview/next.config.mjs',
-    'packages/design-preview/build.mjs', 'packages/design-preview/.env.production',
-    'packages/design-preview/migrations/020-studio.sql', 'packages/design-preview/admin/lib/studio.schema.json',
-    'packages/design-preview/admin/lib/schema.ts', 'packages/design-preview/config/runtime.mjs',
+    'lab/client/package.json', 'lab/client/package-lock.json',
+    'lab/client/pnpm-lock.yaml', 'lab/client/yarn.lock',
+    'lab/client/bun.lockb', 'lab/client/.npmrc',
+    'lab/client/tsconfig.json', 'lab/client/next.config.mjs',
+    'lab/client/build.mjs', 'lab/client/.env.production',
+    'lab/client/migrations/020-studio.sql', 'lab/client/admin/lib/studio.schema.json',
+    'lab/client/admin/lib/schema.ts', 'lab/client/config/runtime.mjs',
     'lab/components/configuration.mjs', 'apps/croupier-frontend/components/schema.prisma',
   ];
   for (const path of sensitive) for (const extra of [
     {}, {status:'A', before:'000000'}, {status:'D', after:'000000'},
   ]) {
-    assert.equal(migrationReadinessRequired([change('packages/design-preview/admin/lib/navigation.mjs'), change(path, extra)]), true, path);
+    assert.equal(migrationReadinessRequired([change('lab/client/admin/lib/navigation.mjs'), change(path, extra)]), true, path);
   }
-  for (const path of ['packages/design-preview/admin/components/editor.tsx',
-    'packages/design-preview/runtime/preview.css', 'packages/design-preview/admin/lib/navigation.test.mjs',
+  for (const path of ['lab/client/admin/components/editor.tsx',
+    'lab/client/runtime/preview.css', 'lab/client/admin/lib/navigation.test.mjs',
     'lab/components/editor.tsx', 'apps/croupier-frontend/components/button.tsx',
     'test/fixtures/package.json', 'lab/test/fixtures/schema.sql']) {
     assert.equal(migrationReadinessRequired([change(path)]), false, path);

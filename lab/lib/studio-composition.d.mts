@@ -1,4 +1,4 @@
-import type {StudioProject} from './studio-model.mjs';
+import type {StudioProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import type {VideoCompositing} from '../components/composition-preview';
 import type {put} from '@vercel/blob/client';
 import type {PutBlobResult} from '@vercel/blob';

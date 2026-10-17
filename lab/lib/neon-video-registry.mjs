@@ -1,4 +1,4 @@
-import { MEDIA_FILE_TYPES } from './media-file-types.mjs';
+import { MEDIA_FILE_TYPES } from '../../packages/shared/media-file-types.mjs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { cloneStudioJson, canonicalStudioJson, StudioStorageError, studioStorageFailure, validateStudioScope, validateStudioMedia, validateRevision } from '../../web/storage/studio-contract.mjs';
@@ -6,7 +6,7 @@ import { getVideoResponse, loadVideoRegistry } from './video-registry.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, validatePrivateMedia } from './cloud-media-store.mjs';
 import { readRuntimeCatalog, capturedRuntimeCatalog } from '../../tools/runtime-media-catalog.mjs';
 import { savedVideoDealerOwnership } from './video-dealer-registration.mjs';
-import {registeredDealerIds} from '../../web/dealer-identity.mjs';
+import {registeredDealerIds} from '../../packages/presentation/contracts/dealer-identity.mjs';
 
 // The preserved immutable bank lives in the scoped Neon catalog. Review records/classification
 // come from Neon exclusively; an unavailable database never means an empty bank.

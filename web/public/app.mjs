@@ -6,7 +6,7 @@ import {createLayerComposition} from './presentation-composition.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from './game-overlay-layout.mjs';
 import { dealerVersionPath } from './dealer-version-switcher.mjs';
 import { createNativeObservation } from './native-observation.mjs';
-import { SPEECH_LINES } from './speech-lines.mjs';
+import { SPEECH_LINES } from '../../packages/presentation/contracts/speech-lines.mjs';
 import { createSpeechQueue } from './speech-queue.mjs';
 import { createProbeClient, probePresentationQuiet } from './probe-client.mjs';
 import { createAstridCameraControl } from './astrid-camera-control.mjs';

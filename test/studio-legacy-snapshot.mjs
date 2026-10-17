@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {prepareLegacyStudioSnapshot} from '../ops/neon-studio/legacy-snapshot.mjs';
-import {createSeedProject} from '../lab/lib/studio-model.mjs';
+import {createSeedProject} from '../packages/presentation/contracts/studio-model.mjs';
 import {createSocialPolicy} from '../lab/lib/social-store.mjs';
 const packet=value=>{const bytes=Buffer.from(JSON.stringify(value));return {bytes,sha256:createHash('sha256').update(bytes).digest('hex'),updatedAt:'2026-10-03T00:00:00.000Z'};};
 const administration={tiers:{classic:'vera',high:'astrid',vip:'mei'},rooms:[],pitboss:{payout10x:true,streak5:false,randomWalkMin:10},tournaments:[],neverAgain:{'astrid:idle-1/idle/idle-breathe-head-tilt':{reason:'rejected',by:'operator',at:'2026-10-03T00:00:00.000Z'}}};

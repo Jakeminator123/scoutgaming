@@ -1,5 +1,5 @@
 import {createStudioMediaApi} from './studio-media-api.mjs';
-import {addDealer} from './studio-model.mjs';
+import {addDealer} from '../../packages/presentation/contracts/studio-model.mjs';
 import {createHash} from 'node:crypto';
 import {canonicalStudioJson} from '../../web/storage/studio-contract.mjs';
 import {createStudioDealerApi} from './studio-dealer-api.mjs';

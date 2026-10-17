@@ -1,5 +1,5 @@
 'use client';
-import type {CompositionSettings} from '../../web/public/composition-settings.mjs';
+import type {CompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {zoomComposition} from '../lib/composition-zoom.mjs';
 
 export function CompositionZoomControls({settings,disabled,onChange}:{settings:CompositionSettings;disabled:boolean;onChange:(settings:CompositionSettings)=>void}) {

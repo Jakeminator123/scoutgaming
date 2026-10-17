@@ -1,7 +1,7 @@
 import type { NeonDocumentRepository } from './neon-project-store.mjs';
 import type { NativeStudioSession } from './studio-native-auth.mjs';
 import type { NativeStudioConfiguration } from './studio-native-runtime.mjs';
-import type { StudioProject } from './studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 export function createStudioDocumentApi(options: {
   repository: NeonDocumentRepository;
   authorize(request: Request): Promise<NativeStudioSession>;

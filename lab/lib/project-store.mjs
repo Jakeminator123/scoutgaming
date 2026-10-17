@@ -1,13 +1,12 @@
 import { readFile, mkdir, writeFile, rename, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { createEmptyProject, normalizeProject, validateProject } from './studio-model.mjs';
+import { createEmptyProject, normalizeProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import lockfile from 'proper-lockfile';
 import { autoArchiveLocalArtifacts } from '../../tools/retention-archive.mjs';
 
-export class StudioError extends Error {
-  constructor(message, statusCode = 400) { super(message); this.statusCode = statusCode; }
-}
+import { StudioError } from '../../packages/shared/studio-error.mjs';
+export { StudioError } from '../../packages/shared/studio-error.mjs';
 
 export function createProjectStore(dataDir = resolve(process.cwd(), 'data')) {
   const file = join(dataDir, 'project.json');

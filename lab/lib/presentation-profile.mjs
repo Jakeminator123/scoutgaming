@@ -1,4 +1,4 @@
-import contract from '../policies/studio-contract.json' with { type: 'json' };
+import contract from '../../packages/presentation/contracts/policies/studio-contract.json' with { type: 'json' };
 
 // A display model over the existing contract, never a new event or playback schema.
 export const OUTPUT_GROUPS = Object.freeze([

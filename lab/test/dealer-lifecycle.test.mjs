@@ -1,7 +1,7 @@
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../lib/studio-model.mjs';
+import {addDealer,createSeedProject,defaultPresentationLane,validateProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {lifecycleProject,changeDealerLifecycle,assertLifecyclePackages,checkDealerArchive} from '../lib/dealer-lifecycle.mjs';
 import {combinedPool} from './fixtures/lifecycle-pool.mjs';
 import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
@@ -18,7 +18,7 @@ import {fileURLToPath} from 'node:url';
 import {seedSavedVideoProject} from './fixtures/video-dealer-project.mjs';
 import {savedVideoDealerOwnership} from '../lib/video-dealer-registration.mjs';
 import {wrapNativePresentationRepository} from '../lib/presentation-runtime-readiness.mjs';
-import {presentationCapabilitiesForVersion} from '../../web/presentation-capability-contract.mjs';
+import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
 const scope={environment:'test',workspaceId:'lifecycle'},origin='https://studio.example.invalid';
 const config={scope,apiBase:'/api/admin',allowedOrigins:['https://public.example.invalid',origin],publicHosts:['public.example.invalid',new URL(origin).host]};
 const id='00000000-0000-4000-8000-000000000001',oldId='00000000-0000-4000-8000-000000000002',sha='a'.repeat(64);

@@ -1,13 +1,13 @@
 import {assertMediaAlpha} from './media-alpha.mjs';
 import {assertNativeMediaReadiness} from './native-media-readiness.mjs';
 import {assertStudioMediaStorageType} from '../../web/storage/studio-media-storage.mjs';
-import { MEDIA_FILE_TYPES, mediaHeaderMatches } from './media-file-types.mjs';
+import { MEDIA_FILE_TYPES, mediaHeaderMatches } from '../../packages/shared/media-file-types.mjs';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope, validateStudioMedia } from '../../web/storage/studio-contract.mjs';
 import { getPrivateMedia, isCloudMediaConfigured, mediaBlobPath, validatePrivateMedia } from './cloud-media-store.mjs';
-import { MAX_VIDEO_BYTES, validateVideoMetadata } from './video-intake.mjs';
+import { MAX_VIDEO_BYTES, validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { requireSavedVideoDealer } from './video-dealer-registration.mjs';
 
 const fail = (code, statusCode = 503) => {throw new StudioStorageError(code,statusCode);};

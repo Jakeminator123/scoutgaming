@@ -6,8 +6,8 @@ import { dirname, join } from 'node:path';
 import { MEDIA_FAMILY_DEFINITIONS } from '../../packages/presentation/runtime/media-families.mjs';
 import { mediaLineForEvent, mediaVariantPolicy } from '../../packages/presentation/runtime/media-family-policy.mjs';
 import { buildLabVideoManifest, manifestJson } from '../../tools/media/build-lab-video-manifest.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
-import { validateVideoMetadata } from '../lib/video-intake.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
+import { validateVideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { uploadVideo } from '../lib/video-uploads.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
 

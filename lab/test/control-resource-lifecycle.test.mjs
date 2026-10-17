@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { fixtureLaneOperators } from '../lib/operator-package-api.mjs';
 
 const require = createRequire(import.meta.url);
@@ -87,7 +87,7 @@ test('shared lifecycle navigation defaults remain compatible while Admin can kee
 });
 
 test('Admin lifecycle wrapper adds game only from the same registered room and composition',()=>{
-  const wrapper=new URL('../../packages/design-preview/admin/components/studio/registered-resource-lifecycle.tsx',import.meta.url);
+  const wrapper=new URL('../../lab/client/admin/components/studio/registered-resource-lifecycle.tsx',import.meta.url);
   const Lifecycle=props=>props.kind==='rooms'?React.createElement('a',{href:props.navigation.compositionHref(company(),room())},props.navigation.rehearsalLabel):null;
   const {RegisteredResourceLifecycle}=loadTs(wrapper,{react:React,'../../../../../lab/components/control-resource-lifecycle':{ControlResourceLifecycle:Lifecycle}});
   const html=rooms=>renderToStaticMarkup(React.createElement(RegisteredResourceLifecycle,{operatorId:'north',disabled:false,onChanged(){},rooms}));

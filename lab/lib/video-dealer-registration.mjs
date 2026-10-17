@@ -1,4 +1,4 @@
-import { registeredDealerIds } from '../../web/dealer-identity.mjs';
+import { registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { StudioStorageError } from '../../web/storage/studio-contract.mjs';
 
 export async function savedVideoDealerIds(repository) {

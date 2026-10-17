@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {gzipSync,brotliCompressSync} from 'node:zlib';
-import {createSeedProject,defaultPresentationLane} from '../lab/lib/studio-model.mjs';
+import {createSeedProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {buildPresentationPackage} from '../web/presentation-layers.mjs';
 import {canonicalStudioJson} from '../web/storage/studio-contract.mjs';
 import {encodePresentationPackage,decodePresentationPackage,withPackagePresentation} from '../web/storage/presentation-package.mjs';

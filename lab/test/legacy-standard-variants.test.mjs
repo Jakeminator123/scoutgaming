@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createEmptyProject, addDealer, normalizeProject, validateProject } from '../lib/studio-model.mjs';
+import { createEmptyProject, addDealer, normalizeProject, validateProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 
 import { createProjectStore } from '../lib/project-store.mjs';

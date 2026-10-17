@@ -3,8 +3,8 @@ import {spawn} from 'node:child_process';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,dirname,basename,resolve} from 'node:path';
-import {effectiveDealerCompositing} from './public/dealer-compositing.mjs';
-import {normalizeDealerSpeechProfile,validateDealerSpeechReference} from './public/dealer-speech-profile.mjs';
+import {effectiveDealerCompositing} from '../packages/presentation/contracts/dealer-compositing.mjs';
+import {normalizeDealerSpeechProfile,validateDealerSpeechReference} from '../packages/presentation/contracts/dealer-speech-profile.mjs';
 
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const fail=code=>{throw Object.assign(new Error(code),{code});};

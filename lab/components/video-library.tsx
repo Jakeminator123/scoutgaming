@@ -1,14 +1,14 @@
 'use client';
 
 import { useDeferredValue, useState } from 'react';
-import type { StudioLine, StudioVariant, StudioProject } from '../lib/studio-model.mjs';
+import type { StudioLine, StudioVariant, StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { VideoUpload, type UploadBinding } from './video-upload';
 import { VideoClassification } from './video-classification';
 import { VideoCoverage } from './video-coverage';
 import {DealerClipPreview} from './dealer-video-surface';
-import { videoFitsLine, VIDEO_KINDS } from '../lib/video-intake.mjs';
+import { videoFitsLine, VIDEO_KINDS } from '../../packages/presentation/contracts/video-intake.mjs';
 import styles from './video-intake.module.css';
-import type { VideoEntry, VideoInventory } from './studio-types';
+import type { VideoEntry, VideoInventory } from '../../packages/presentation/contracts/media-inventory.mjs';
 import { clipLabel, clipSituationLabel } from '../lib/clip-label.mjs';
 
 const verdictLabels = { want: 'Want · utvald', no: 'No · bortvald', unrated: 'Ej bedömd' };

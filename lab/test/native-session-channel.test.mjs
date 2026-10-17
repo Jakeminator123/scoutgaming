@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { scopeNativeSession } from '../lib/native-session-channel.mjs';
 import { buildPresentationSequence } from '../lib/presentation-sequence.mjs';
-import { createSeedProject } from '../lib/studio-model.mjs';
+import { createSeedProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import { appendPartnerTrace, createPartnerTrace, restartPartnerTrace } from '../lib/partner-trace.mjs';
 
 test('native session separates observations after Web reload and local profile version reset', () => {

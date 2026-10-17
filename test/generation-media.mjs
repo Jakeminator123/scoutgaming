@@ -95,7 +95,7 @@ test('retired generation aliases cannot fall through to static files through Win
     await copyFile(new URL('public/chat-response.mjs', source), join(web, 'public/chat-response.mjs'));
     // Offline game documents use the same validated entry/composition contracts.
     await mkdir(join(web,'public','card-presentation'),{recursive:true});
-    for (const name of ['dealer-identity.mjs', 'dealer-speech-profile.mjs', 'game-entry-contract.mjs', 'game-lanes.mjs', 'player-handoff.mjs', 'presentation-composition.mjs', 'composition-settings.mjs', 'dealer-framing.mjs', 'dealer-compositing.mjs', 'background-playback-policy.mjs', 'background-playback.mjs', 'game-overlay-layout.mjs', 'card-view.mjs', 'card-presentation/calibration.mjs']) {
+    for (const name of ['game-entry-contract.mjs', 'game-lanes.mjs', 'player-handoff.mjs', 'presentation-composition.mjs', 'background-playback.mjs', 'game-overlay-layout.mjs', 'card-view.mjs', 'card-presentation/calibration.mjs']) {
       await copyFile(new URL('public/' + name, source), join(web, 'public', name));
     }
     // An inactive catalog must import without optional Studio public modules.

@@ -7,7 +7,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { labBasePath } from '../lib/lab-url.mjs';
 import { createPresentationRoomClient, createPresentationRoomController, presentationRoomContextKey, presentationRoomPlayUrl } from '../lib/presentation-room-client.mjs';
-import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
+import { presentationCapabilitiesForVersion } from '../../packages/presentation/capability-contract.mjs';
 
 const owner = { id: 'sg-test', slug: 'sg-test', name: 'SG test' };
 const context = { operator: owner, presentation: { id: 'portrait-live', label: 'Nora vid bordet' }, projectRevision: 'project-1', projectSaved: true, storeAvailable: true };

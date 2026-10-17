@@ -1,4 +1,4 @@
-import { materialLabel } from '../../web/public/material-catalog.mjs';
+import { materialLabel } from '../../packages/presentation/contracts/material-catalog.mjs';
 
 // Matches game-entry-operator: composition settings enable separate layers;
 // older lanes retain their approved full-frame dealer playback.

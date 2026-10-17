@@ -4,7 +4,7 @@ import { labUrl } from "../lib/lab-url.mjs";
 import { useContext, useEffect, useRef } from 'react';
 import { NativeSpeechContext } from './native-speech-context';
 import { idleReactionInput } from '../lib/idle-reaction-input.mjs';
-import type { StudioProject } from '../lib/studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import type { ActivityDraft } from './activity-log';
 
 interface Props { records: Record<string, unknown>[]; project: StudioProject; dealerId: string; mode: string;

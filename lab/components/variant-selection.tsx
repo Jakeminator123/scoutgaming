@@ -1,6 +1,6 @@
 'use client';
-import type { StudioVariant, VariantSelection } from '../lib/studio-model.mjs';
-import { selectionFor } from '../lib/video-intake.mjs';
+import type { StudioVariant, VariantSelection } from '../../packages/presentation/contracts/studio-model.mjs';
+import { selectionFor } from '../../packages/presentation/contracts/video-intake.mjs';
 
 export function VariantSelectionFields({ value, onChange }: {value: VariantSelection; onChange: (value: VariantSelection) => void}) {
   return <fieldset className="trigger-assignment"><legend>Variantval</legend>

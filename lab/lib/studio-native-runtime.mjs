@@ -26,7 +26,7 @@ import { createStudioUploadService } from './studio-upload-service.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { createPresentationRoomApi, PRESENTATION_ROOM_MUTATION } from './presentation-room-api.mjs';
-import { presentationCapabilitiesForVersion } from '../../web/presentation-capability-contract.mjs';
+import { presentationCapabilitiesForVersion } from '../../packages/presentation/capability-contract.mjs';
 import { isStudioRepliesReadQuery } from './studio-replies-query.mjs';
 import { isPresentationRoomReadQuery } from './studio-admin-contract.mjs';
 import { createOperatorPackageApi } from './operator-package-api.mjs';

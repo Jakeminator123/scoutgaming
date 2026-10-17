@@ -1,8 +1,8 @@
-import {isActiveDealerId} from '../dealer-identity.mjs';
+import {isActiveDealerId} from '../../packages/presentation/contracts/dealer-identity.mjs';
 import {isPresentationRoom} from '../presentation-room-contract.mjs';
 import {gameLaneConfiguration, laneDealerSelection} from '../public/game-lanes.mjs';
 import {buildPresentationPackage} from '../presentation-layers.mjs';
-import {normalizeProject} from '../../lab/lib/studio-model.mjs';
+import {normalizeProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {captureFrozenRegisteredDealers, captureFrozenDealerPlayback, assertFrozenMediaPreconditions, resolveFrozenDealerIdle} from './frozen-dealer-idle.mjs';
 import {validateRevision, StudioStorageError} from './studio-contract.mjs';
 import {assertPresentationRoomMaterials} from '../presentation-material-game.mjs';

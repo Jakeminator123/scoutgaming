@@ -1,12 +1,12 @@
 'use client';
-import { kindForEvent, situationsForEvent } from '../lib/video-intake.mjs';
-import type { VideoCompositing, VideoMetadata } from '../lib/video-intake.mjs';
+import { kindForEvent, situationsForEvent } from '../../packages/presentation/contracts/video-intake.mjs';
+import type { VideoCompositing, VideoMetadata } from '../../packages/presentation/contracts/video-intake.mjs';
 import { clipSituationLabel } from '../lib/clip-label.mjs';
-import type { StudioProject } from '../lib/studio-model.mjs';
+import type { StudioProject } from '../../packages/presentation/contracts/studio-model.mjs';
 import styles from './video-intake.module.css';
-import {DEFAULT_DEALER_FRAMING,type DealerFraming} from '../../web/public/dealer-framing.mjs';
-import {effectiveDealerCompositing} from '../../web/public/dealer-compositing.mjs';
-import {dealerMediaEvents,rouletteMediaEvent,rouletteMediaDefaults} from '../lib/roulette-media.mjs';
+import {DEFAULT_DEALER_FRAMING,type DealerFraming} from '../../packages/presentation/contracts/dealer-framing.mjs';
+import {effectiveDealerCompositing} from '../../packages/presentation/contracts/dealer-compositing.mjs';
+import {dealerMediaEvents,rouletteMediaEvent,rouletteMediaDefaults} from '../../packages/presentation/contracts/roulette-media.mjs';
 
 export function VideoCompositingFields({ value, onChange }: { value?: VideoCompositing; onChange: (value: VideoCompositing) => void }) {
   const effective=effectiveDealerCompositing(value);

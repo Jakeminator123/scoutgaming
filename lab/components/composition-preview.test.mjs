@@ -6,8 +6,8 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import React from 'react';
 import {createBackgroundPlayback} from '../../web/public/background-playback.mjs';
-import {defaultBackgroundRule} from '../../web/public/background-playback-policy.mjs';
-import {defaultCompositionSettings} from '../../web/public/composition-settings.mjs';
+import {defaultBackgroundRule} from '../../packages/presentation/contracts/background-playback-policy.mjs';
+import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 
 const require=createRequire(import.meta.url),{transformSync}=require('next/dist/build/swc');
 const source=new URL('./composition-preview.tsx',import.meta.url);
@@ -58,7 +58,7 @@ function fixture(t){
     useEffect(fn,deps){const n=cursor++;if(!slots[n]||changed(slots[n].deps,deps))pending.set(n,{fn,deps});},
   };
   const overrides={react:hooks,'../lib/lab-url.mjs':{labUrl:path=>path},
-    '../../web/public/dealer-framing.mjs':{drawDealerFrame(_context,source,width,height,framing){draws.push({source,width,height,framing});}},
+    '../../packages/presentation/contracts/dealer-framing.mjs':{drawDealerFrame(_context,source,width,height,framing){draws.push({source,width,height,framing});}},
     '../../web/public/background-playback.mjs':{createBackgroundPlayback(policy,options){
       const player=createBackgroundPlayback(policy,{...options,now:()=>time,setTimeout:schedule,clearTimeout:cancel});
       const observed={starts:0,closes:0};players.push(observed);

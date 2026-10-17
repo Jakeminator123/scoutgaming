@@ -24,8 +24,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { createSeedProject, isDirectorSourceType, OPENCLAW_MODES } from '../lab/lib/studio-model.mjs';
-import { selectPresentation } from '../packages/presentation/runtime/selection.mjs';
+import { createSeedProject, isDirectorSourceType, OPENCLAW_MODES } from '../packages/presentation/contracts/studio-model.mjs';
+import { selectPresentation } from '../lab/lib/presentation-selection.mjs';
 import { loadVideoRegistry } from '../lab/lib/video-registry.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -33,16 +33,23 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const FIXTURE_DIR = join(repoRoot, 'test', 'fixtures', 'astrid-select-baseline');
 export const RANDOM_SEED = 20261008;
 const MODE_ORDER = ['off', 'rules', 'random', 'shadow', 'active'];
+// The composed selection entry must resolve its model and Director from the same HEAD.
 // The HEAD archive must contain every module these entries import, statically or
 // through a literal import(); bare packages still resolve against the worktree.
 export const HEAD_SELECTION_ENTRIES = Object.freeze([
-  'packages/presentation/runtime/selection.mjs',
-  'lab/lib/studio-model.mjs',
+  'lab/lib/presentation-selection.mjs',
+  'packages/presentation/contracts/studio-model.mjs',
 ]);
 export const ARCHIVE_PATHS = Object.freeze([
+  'packages/presentation/contracts',
+  'packages/presentation/public-modules.mjs',
   'packages/presentation/runtime',
+  'packages/presentation/server',
+  'packages/shared/studio-error.mjs',
+  'packages/shared/media-file-types.mjs',
   'packages/studio-access/studio-scope.mjs',
   'lab/lib',
+  // Historical HEADs retain these sources; ls-tree filters absent paths.
   'lab/policies',
   'lab/schemas',
   'open-claw/lab',
@@ -324,12 +331,17 @@ register(${JSON.stringify(pathToFileURL(hooksPath).href)}, import.meta.url);
 `);
   const toolUrl = pathToFileURL(join(repoRoot, 'tools/astrid-select-baseline.mjs')).href;
   await writeFile(runnerPath, `import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { executeJobs, loadRegistry } from ${JSON.stringify(toolUrl)};
 const root = process.env.ASTRID_HEAD_ROOT;
-const selection = await import(pathToFileURL(join(root, ${JSON.stringify(HEAD_SELECTION_ENTRIES[0])})).href);
-const model = await import(pathToFileURL(join(root, ${JSON.stringify(HEAD_SELECTION_ENTRIES[1])})).href);
+const selectionEntry = join(root, ${JSON.stringify(HEAD_SELECTION_ENTRIES[0])});
+// During the extraction, an older HEAD still owns the previous source path.
+// Resolve within the frozen archive, never through the current app composition.
+const selection = await import(pathToFileURL(existsSync(selectionEntry) ? selectionEntry : join(root, 'packages/presentation/runtime/selection.mjs')).href);
+const modelEntry = join(root, ${JSON.stringify(HEAD_SELECTION_ENTRIES[1])});
+const model = await import(pathToFileURL(existsSync(modelEntry) ? modelEntry : join(root, 'lab/lib/studio-model.mjs')).href);
 const jobs = JSON.parse(await readFile(process.env.ASTRID_JOBS, 'utf8'));
 const outcome = await executeJobs(selection.selectPresentation, model.createSeedProject(), await loadRegistry(), jobs);
 await writeFile(process.env.ASTRID_OUT, JSON.stringify(outcome));
