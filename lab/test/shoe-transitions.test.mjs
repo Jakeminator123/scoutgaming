@@ -5,7 +5,7 @@ import { addDealer, buildRuntimeCatalog, createSeedProject, normalizeProject, va
 import { clipSituationLabel } from '../lib/clip-label.mjs';
 import { validateVideoMetadata, videoFitsEvent } from '../lib/video-intake.mjs';
 import { transitionClipsForDealer } from '../../packages/presentation/runtime/shoe-transitions.mjs';
-import { selectPresentation } from '../../packages/presentation/runtime/selection.mjs';
+import { selectPresentation } from '../lib/presentation-selection.mjs';
 import { prepareDecision, validateCatalog } from '../../open-claw/lab/src/engine.mjs';
 
 const registry = { videos: [], families: [] };

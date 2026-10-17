@@ -7,6 +7,42 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2d: urval och Director — lokal ändring 17 oktober 2026
+
+Urvalet ligger i `packages/presentation/server/selection.mjs` som en fabrik
+med uttryckliga projektmodell-, Director-, video- och talregler. Varje
+urval får sitt eget register; kärnan läser inte Studiofiler eller register.
+`video-bindings.mjs` validerar samma bindningar utan lagring eller Director,
+med bibehållet Promise-kontrakt. `packages/shared/studio-error.mjs` äger den
+befintliga felklassen; project-store återexporterar samma klassidentitet.
+Den gamla `runtime/selection.mjs` är borttagen utan ersättningswrapper.
+
+`lab/lib/presentation-selection.mjs` kopplar ihop de aktiva appreglerna.
+`presentation-video-bindings.mjs` ger persistensen en separat, liten ingång.
+`studio-director.mjs` samlar befintlig beslutskärna, modellråd och relay;
+Studiochat, companion, probe, social och idle-advice behåller sina transport-
+kontrakt. Spel-API:t har endast bytt urvalsimport; anrop, kontext, medie-ID:n,
+kataloghashar, fallback och serverägda spelregler ändras inte.
+Baslinjearkivets ingång och källista följer den nya appkompositionen.
+
+Riktad befintlig svit: **256/256**, noll skips, Node 24.21.0 och fyra workers.
+Det inkluderar urval, Director, bindningar, talfack, frysta händelser,
+registrerad playback, Admin-koppling och Astrids befintliga baslinje/importgraf.
+Saknat explicit register och bevarad StudioError-identitet provas i det
+befintliga bindningsprovet. Den läsande HEAD-jämförelsen passerar dessutom
+160 fall utan nätanrop, HEAD-/fixturavvikelser eller omskrivna baslinjefiler.
+QA-kvittots källhashlista tar med de sex nya runtimefilerna; dess riktade
+test passerar 6/6 utan skips efter liständringen.
+Runnern väljer den äldre ingången endast när det frysta HEAD-arkivet ännu
+saknar den nya appkompositionen. Ordinarie commit-hook passerar 180/180 utan
+skips. Full build, CI och drift återstår; inget nytt läppsynksgodkännande ingår.
+
+Kvarvarande gränser: appkompositionen importerar alltjämt Studio-modellen,
+video-intake, publika talregler och OpenClaws implementation. Andra moduler
+under `packages/presentation/runtime/` har fortfarande äldre appberoenden;
+denna ändring gör bara urvals- och bindningskärnans beroenden uttryckliga.
+Gemensam lagring, övriga runtime-/typkontrakt och appägarskap återstår.
+
 ## Etapp 3 C2b: gemensamma kontoroller — 17 oktober 2026
 
 `web/account-role.mjs` har flyttats byteidentiskt till
