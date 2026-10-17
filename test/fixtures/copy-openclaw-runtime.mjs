@@ -4,6 +4,9 @@ import { join } from 'node:path';
 // Disposable server copies keep the repository's sibling-module layout. Copy
 // source modules only, never credentials, persisted settings or runtime data.
 export async function copyOpenClawRuntime(root) {
+  const accessTarget = join(root, 'packages/studio-access');
+  await mkdir(accessTarget, { recursive: true });
+  await copyFile(new URL('../../packages/studio-access/account-role.mjs', import.meta.url), join(accessTarget, 'account-role.mjs'));
   const rouletteTarget = join(root, 'web/games/roulette');
   await mkdir(rouletteTarget, { recursive: true });
   for (const file of ['index.mjs', 'preview.mjs', 'room.mjs', 'storage.mjs', 'http.mjs', 'access.mjs', 'rules.mjs']) {

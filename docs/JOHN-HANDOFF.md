@@ -6,6 +6,23 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
+## Etapp 3 C2b: gemensamma kontoroller — 17 oktober 2026
+
+`web/account-role.mjs` har flyttats byteidentiskt till
+`packages/studio-access/account-role.mjs`. Studio, spelserverns inloggning,
+operatörslagring och isolerade QA-källistor använder den nya sökvägen.
+Inga roller, behörigheter, scopekrav eller testassertions har ändrats.
+Tillfälliga serverkopior får nu också med kontorollsmodulen explicit.
+
+Lokalt på Node 24.21.0: 61 befintliga roll-/policy-, kontoinloggnings-,
+mejl-, operatörslagrings- och QA-listtester passerade. Därefter passerade
+18 av 21 kontoadministrations-/serverfixturtester, inklusive samtliga 11
+kontoadministrationsprov. Tre bootstrap-prov saknar den redan identifierade
+kopian `public/card-presentation/calibration.mjs`; PR205 rättar denna
+separata fixturbrist. Kör om bootstrap efter integration med PR205.
+Syntax och diffkontroll är gröna. CI, merge och drift återstår; detta är
+ett lokalt C2b-kvitto från baseline `502bea812d4e8597f4951c85ae712bd338b02a1d`.
+
 ## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
 
 PR202 är mergad på `f16b5eac5838d424c5e9fafe804f5024a809af62` med grön

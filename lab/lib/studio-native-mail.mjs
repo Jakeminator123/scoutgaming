@@ -1,4 +1,4 @@
-import { effectiveAccountRole } from '../../web/account-role.mjs';
+import { effectiveAccountRole } from '../../packages/studio-access/account-role.mjs';
 
 const mailbox = value => typeof value === 'string' && value.length <= 254
   && /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,63}$/.test(value);
