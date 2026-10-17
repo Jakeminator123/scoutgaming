@@ -38,7 +38,7 @@ function createPresentationApi(options={}){
 }
 
 
-test('local server dispatch serves the complete idle browser import graph without broadening web paths', async(t) => {
+test('local server dispatch serves GET/HEAD for the complete browser import graph without broadening web paths', async(t) => {
   // Exercise the production dispatch condition as well as the module handler:
   // calling the handler alone missed the dealer-identity alias regression.
   const serverSource = await readFile(new URL('../web/server.mjs', import.meta.url), 'utf8');
@@ -54,7 +54,7 @@ test('local server dispatch serves the complete idle browser import graph withou
   const server = createServer(async(req,res) => {
     const pathname = new URL(req.url, 'http://local').pathname;
     if (dispatches(pathname) && await handler(req,res,pathname,null)) return;
-    if (publicEntry.has(pathname)) {
+    if (publicEntry.has(pathname) && req.method === 'GET') {
       res.writeHead(200, {'Content-Type':'text/javascript'});
       res.end(await readFile(new URL(publicEntry.get(pathname), import.meta.url))); return;
     }
@@ -70,6 +70,15 @@ test('local server dispatch serves the complete idle browser import graph withou
     assert.equal(response.status,200,path);
     const body = await response.text();
     assert.match(response.headers.get('content-type'),path.endsWith('.json')?/application\/json/:/text\/javascript/,path);
+    if (presentationPublicSource(path)) {
+      const head = await fetch(origin+path, {method:'HEAD'});
+      assert.equal(head.status,200,path);
+      assert.equal(await head.text(),'',path);
+      for (const header of ['content-type','cache-control','content-length']) {
+        assert.equal(head.headers.get(header),response.headers.get(header),`${path} ${header}`);
+      }
+      assert.equal(head.headers.get('content-length'),String(Buffer.byteLength(body)),path);
+    }
     if(path.endsWith('.json')){assert.equal(JSON.parse(body).schemaVersion,1);continue;}
     for(const imported of body.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)) {
       assert.match(imported[1],/^\.{1,2}\//,'browser imports must stay relative');
@@ -78,7 +87,14 @@ test('local server dispatch serves the complete idle browser import graph withou
   }
   for(const path of ['/packages/presentation/runtime/live-idle.mjs','/packages/presentation/runtime/idle-policy.mjs',
     '/packages/presentation/contracts/dealer-identity.mjs','/packages/presentation/contracts/policies/idle-policy.seed.json',
-    '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json'])assert.ok(visited.has(path),path);
+    '/web/public/dealer-identity.mjs','/lab/policies/idle-policy.seed.json',
+    '/packages/presentation/contracts/game-lane-id.mjs'])assert.ok(visited.has(path),path);
+  for (const name of ['dealer-framing','composition-settings']) {
+    const alias = await fetch(origin+'/'+name+'.mjs');
+    const canonical = await fetch(origin+'/packages/presentation/contracts/'+name+'.mjs');
+    assert.equal(alias.status,200);assert.equal(canonical.status,200);
+    assert.equal(await alias.text(),await canonical.text(),name);
+  }
   for(const name of ['live-idle','idle-policy']) {
     const legacy = await fetch(origin+'/presentation-runtime/'+name+'.mjs');
     assert.equal(legacy.status,200);
@@ -86,6 +102,9 @@ test('local server dispatch serves the complete idle browser import graph withou
   }
   for(const path of ['/web/server.mjs','/web/public/app.mjs','/web/public/dealer-identity.mjs/extra',
     '/web/public/dealer-identity.mjs.bak','/packages/presentation/runtime/selection.mjs',
+    '/packages/presentation/contracts/presentation-room.mjs', '/packages/presentation/contracts/operator-lifecycle-key.mjs',
+    '/packages/presentation/server/registered-dealer-idle.mjs', '/packages/studio-registry/server/repository.mjs',
+    '/packages/presentation/contracts/game-lane-id.mjs/extra', '/packages/presentation/contracts/game-lane-id.mjs.bak',
     '/packages/presentation/runtime/live-idle.mjs/extra','/packages/presentation/runtime/idle-policy.mjs.bak',
     '/packages/presentation/contracts/studio-model.mjs','/packages/presentation/contracts/video-intake.mjs',
     '/packages/presentation/contracts/policies/project.seed.json','/packages/presentation/contracts/schemas/video.schema.json',
@@ -94,6 +113,9 @@ test('local server dispatch serves the complete idle browser import graph withou
     '/presentation-runtime/registered-idle-rules.mjs','/dealer-identity.mjs.bak']) {
     assert.equal(dispatches(path),false,path);
     assert.equal((await fetch(origin+path)).status,404,path);
+    const head = await fetch(origin+path, {method:'HEAD'});
+    assert.equal(head.status,404,path);
+    assert.equal(await head.text(),'',path);
   }
 });
 

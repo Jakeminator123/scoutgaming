@@ -7,7 +7,7 @@ Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
 [lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
 
-## Etapp 3 C2h: register- och medieläsare — lokal ändring 17 oktober 2026
+## Etapp 3 C2h: register- och medieläsare — lokal integration 17 oktober 2026
 
 `packages/studio-registry/server/` äger nu den sammanhängande registerkärnan,
 aktuella och frysta katalogläsare, media-/lagringskontrakt, manifest, layout och
@@ -39,7 +39,14 @@ Första kärnkörningen hittade två flyttfel i gränskonstant och testurval; b�
 är rättade och relevanta befintliga prov är omkörda. Slutdiffen återställde
 även fyra oavsiktligt ändrade konsumentliteraler före de negativa omproven.
 
-Kvar för huvudagentens integration: C2e:s 16-raders repositorykomposition ska
+Egen commit c2bef19ca85ec43468f9ececdf13d65a43378b77 har passerat ordinarie
+hook 511/511. Integration med c51eba14e2bd6b4cc7b7bb0a7d98e29958d69e31
+är staged och ännu inte committad: konflikterna i detta avsnitt, QA-källistan
+och repositorykompositionen är lösta. Inkommande repositorykärna och
+PR211:s HEAD-/DirectorDocker-fixar är bevarade. Riktade integrationsprov
+128/128 passerar. Paketets README beskriver nu läsar-/providerägarskapet.
+
+Vid huvudagentens slutgranskning: C2e:s 16-raders repositorykomposition ska
 behållas; bara dess runtime-catalog/stored-media-types-importer flyttas här.
 Bevara PR211:s HEAD-/DirectorDocker-rättningar och C2g:s navigationsändringar
 i gemensamma käll-/QA-listor. Auth, appägd publicerings-/bindingsorkestrering,
@@ -48,7 +55,73 @@ Director, transaktioner, schema och produktionsgodkännanden ingår inte.
 Säkerhetsläsning på remote main 193e80066fce8d5cd8e889dc41d5aac029deb32f:
 två tidigare öppna GitGuardian-incidenter 38318914/38318915, partiell
 platsmetadata och historisk scan too_large; aktuell GitGuardian-suite queued.
+Säkerhetsläsningen före commit saknade skyddad anslutning och gav ingen
+ny incidenttäckning; ovanstående är det senast faktiskt lästa kvittot.
 Detta är inte ett nytt säkerhetsklartecken eller en driftverifiering.
+
+## Etapp 3 C2e: runtimegränser och repository — lokala ändringar 17 oktober 2026
+
+`packages/presentation/server/registered-dealer-idle.mjs` äger den befintliga
+registeradaptern. Studio importerar den direkt utan att dra in spelserverns
+SQL-/startmodul. Spelstartens defaultkomposition, schemakontroll och läsning
+av sparad policy före lyssning är oförändrade; bred lagringsflytt återstår.
+
+`packages/studio-registry/server/repository.mjs` äger nu hela den befintliga
+SQL-/AsyncLocalStorage-kärnan för läsning, skrivning, CAS, historik och
+`readPresentationSnapshot`. De 451 implementationsraderna och modulens
+ALS/state/helpers är mekaniskt identiska med baslinjen. Kärnan importerar
+endast Node och den gemensamma StudioStorageError-klassen; inga appar,
+drivers, Blob- eller låsbibliotek importeras. Fyra namngivna adaptrar
+(contract, policy, runtimeCatalog och dealerSets) krävs före databas-I/O.
+`web/storage/studio-repository.mjs` kopplar de befintliga appreglerna till
+kärnan och behåller alla aktiva konsumenters API. Den innehåller ingen andra
+SQL-implementation. QA-källistan tar uttryckligen med den nya kärnan;
+selektionsarkivet använder inte repositoryt och behöver ingen extra fil.
+
+Rumsform, rums-ID-regel och lifecycle-nyckel ligger i tre rena blad under
+`packages/presentation/contracts/`. Paketcodec och lifecycle använder bladen
+utan den tidigare rum–paket–lifecycle-cykeln. Befintliga blandade moduler
+behåller sina levande exports med samma funktionsidentitet. Sparade ID:n,
+felkoder, komprimering, historiska grants och runtimekonfiguration ändras inte.
+Endast ID-bladet får en uttrycklig publik moduladress; rum-/nyckel-/serverkod
+och extra sökvägssegment förblir blockerade. Statisk frontend och isolerade
+QA-/baslinjekällistor följer den nya importgrafen.
+
+På baslinje `ff03a46a`: 171 fokuserade befintliga prov plus 10 prov från
+samtliga sex serverfixturekonsumenter passerar, utan skips, med Node 24.21.0
+och fyra workers. Orphan-audit: 512 JS/TS-kandidater, noll orphans. Egen låst
+Lab-/frontendinstallation gjordes direkt i arbetskopian; package-/lockfiler ändrades
+inte. Importkontroll bekräftar att idleadaptern saknar SQL-/startberoende och
+att rumbladen endast importerar den egna kontraktskatalogen.
+
+Efter repositoryflytten passerar ytterligare 169 riktade befintliga prov
+för repository/scope/CAS/snapshot, lifecycle, policy, register, native runtime,
+Render-persistens och QA-källista utan skips, med fyra workers. Ingen verklig
+SQL-server startades. Separat kontroll bekräftar obligatoriska adaptrar före
+I/O, samma felklassidentitet och oförändrat fel för ogiltig pool. Inga nya
+testfiler eller produktassertions har lagts till.
+
+C2e är lokalt committad som `be6f2ee0a96c20a618c6bdc3f60939ad513f0b47`.
+Ordinarie hook passerade frontend-typecheck och 152 prov utan skips. Därefter
+integrerades `5a1f4332d6cf68af4e94c98729dda068cf55c3f3` med vanlig
+`--no-commit --no-ff`; tio innehållskonflikter är lösta och staged.
+Mergecommiten lämnas uttryckligen åt huvudagenten. Idle-adaptern och
+repositorykompositionen använder nu C2c:s kanoniska dealer-/dealer-set-kontrakt.
+En enda `public-modules.mjs` äger browserlistan, inklusive det exakta ID-bladet;
+server/API, statisk frontend och fixturekopierare har inga egna extralistor.
+
+Efter integration passerar 274 riktade befintliga prov plus 10 prov från alla
+sex serverfixturekonsumenter utan skips, med fyra workers. Frontend-typecheck
+passerar och orphan-audit visar noll orphans av 512 kandidater. Repositorykärnan
+är byteidentisk med C2e-commiten. Inkommande GPU-, lipsync- och mediekod är
+oförändrad mot C2c-head. Full build, CI, push och drift är inte körda här;
+Blob-/registry-reader-kapseln är fortfarande appägd. Inga schema-/moln-/
+medieändringar eller nya läppsynksgodkännanden görs av C2e.
+
+Lokal säkerhetsläsning saknar GitHub-/skyddad GitGuardian-åtkomst. Huvudagenten
+uppger färskt kvitto på main `a0876f71`: incidenterna 38318914/38318915 är
+fortfarande öppna, platstäckningen partiell och historisk skanning too_large.
+Detta är ett tillskrivet kvitto; säkerhetstäckningen markeras inte som klar.
 
 ## Etapp 3 C2c: gemensamma presentationskontrakt — lokal ändring 17 oktober 2026
 
@@ -70,6 +143,15 @@ modul-URL:er och kanoniska paket-URL:er fungerar från samma källa, inklusive
 relativa importer. Projektseed, privata schemafiler och server/Director-filer
 exponeras inte. Vercels exakta routing, statiska frontendkopior, isolerade
 serverfixturer, QA-källista och HEAD-jämförelse följer flytten.
+PR-granskningen hittade och rättade en HEAD-regression: exakt samma publika
+allowlist hanterar nu GET och HEAD med identisk innehållsmetadata och tom
+HEAD-kropp. Det befintliga HTTP/importgrafprovet reproducerade felet före
+rättningen; därefter100 riktade prov gröna utan skips. Privat kod är fortsatt
+otillgänglig även med HEAD.
+Directorbildens exakta COPY/ignore/buildFilter använder den kanoniska
+dealer-identity-källan. Befintligt isolerat Dockerpaketprov passerar3/3
+med health/catalog/UI och utan provideranrop. Ingen extra JSON-dependency
+behövdes i den faktiska importgrafen; default-deny-kontexten är bevarad.
 
 Riktad kontrakt-/media-/byggsvit: 248 passerade i första körningen. En missad
 konsumentimport och saknad frontenddependencykoppling stoppade återstående
@@ -255,10 +337,10 @@ merge är nu slutförda för PR200; mergeagentens kvitto omfattar grön main-CI,
 Vercel READY och Render LIVE på ovanstående SHA. Ingen ny visuell
 läppsynksacceptans ingår. Etapp 2 beskrivs ovan.
 
-## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 15:05 UTC
+## Dragan: verkligt molnprov och fortsättning — 17 oktober 2026, 15:46 UTC
 
 **Läget:** kod, image, bank och separat testrum är levererade. Dynamisk
-OpenClaw-text fungerar. Första molnprovet med tal nådde RunPods kö men ingen
+OpenClaw-text fungerar. Två molnprov med tal nådde RunPods kö men ingen
 worker startade före tidsgränsen; tal och läppsynk i spelet är därför inte
 verifierade. Draganprofilen är avstängd och sparad efter provet. Inga egna
 GPU-resurser eller jobb är kvar. Astrid och originalfilmerna är orörda.
@@ -298,7 +380,26 @@ läsning 15:05:14 UTC gav endpoint `h56jnnyo5aq4om` 404, template `uv042mlkik`
 404 och tom workerlista. Astrids endpoint `zsudl8tmzcmiv1` gav 200,
 min0/max1 och samma template `cadh7uwzv6`. Senaste testendpointens redovisade
 avgift var då 0 USD; fördröjd fakturering är möjlig och reserver behålls.
-De sparade runtime-inställningarna pekar nu på den borttagna testendpointen.
+Andra provet kördes på PR208, main `a0876f7152434ec281228a69fe1ce6f1fcfb3a84`.
+Mergeagenten verifierade main-CI `39045298173` SUCCESS, Vercel
+`dpl_3kwzqkUQFfuJP39wX8sSHk1KiMss` READY och Render
+`dep-db9pb9u1egvs73d10ctg` LIVE med exakt version och hälsa 200 före start.
+PR208:s fallback-rättning hade 49 oberoende passerade prov. Den separata
+endpointen tillät både A40 och A6000 med samma image, modell och bank.
+Request `3aef6682-1a52-4d01-bd04-61d632c82783` fick timeout efter 158 771 ms,
+utan ljud-/videorutor. Jobb `ce27a960-4826-43f6-8655-41687e5b8117-e1`
+bekräftades `CANCELLED` och frisläppt 15:42:45 UTC i Neon. Provider och UI
+visade noll workers; ingen containerlogg fanns. Katalogen visade samtidigt
+A40 HIGH och A6000 LOW, vilket inte räcker för att förklara utebliven start.
+
+Guarden stängde vid sin fasta deadline: 15:39:07–15:45:12 UTC. Färsk
+oberoende läsning 15:46:25 gav endpoint `d7hv6j0ztof5ao` och template
+`zzn6zc9d0p` 404 samt exakt tom workerlista. Astrids samma endpoint/template
+var kvar med min0/max1. Draganprofilen sparades avstängd. Ctrl+C i Windows-
+TTY gav ingen observerad förtida stängning; den bestående deadlinen fungerade.
+Mergagenten fick STOP-kvittot innan nästa deploy släpptes.
+
+De sparade Dragan-inställningarna pekar nu på den senast borttagna testendpointen.
 Återaktivera inte bara profilen: nästa försök behöver en ny verifierad
 endpoint/template och motsvarande begränsade runtime-bindning.
 
@@ -325,26 +426,34 @@ hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga ru
 
 ### Återstående arbete och skydd vid fortsättning
 
-1. Följdfixen låter produktadaptern verifiera en aktiv fallback-pod när REST
-   utelämnar `workers`: exakt endpoint, template, image och versionsnummer
-   krävs från den färska pods-läsningen. Okända/felaktiga uppgifter stoppar
-   fortfarande före jobb. Samma privata guardfel rättas separat. Det är en
-   förebyggande rättning; den förklarar inte provets observerade noll workers.
-   Följdfixen måste granskas och driftsättas före nästa GPU-fönster.
-2. Katalogen `include=AVAILABILITY&product=SERVERLESS` visade 15:12 UTC
-   A6000 `NONE`, A40 `HIGH` i bland annat `EU-SE-1`, med CUDA12.8 tillgänglig.
-   Det stöder kapacitetsförklaringen men bevisar inte tidigare schedulerförlopp
-   eller lyckad GHCR-pull. Förbered båda korten i samma 48GB-pool med oförändrad
-   modell, image och bank. Läs faktisk worker-/pullstatus vid nästa försök.
-3. Stäm av samtliga sex endpointförsök och det tidigare dedikerade GPU-provet
-   mot samma totalt godkända **5 USD**. Tidigare känt spendgolv är
-   0,169812463 USD; de fem äldre försöken har kvar 3,11 USD reserv. Senaste
-   aktiveringens verifierade max1-period reserverar ytterligare 0,27 USD,
-   inklusive disk och stoppmarginal. Läsning 15:11 UTC gav sammanlagt
-   3,549812463 USD debiterat plus reserverat. Ett nytt bevakat sexminutersprov
-   med två minuters stoppmarginal ryms då inom 4,883145796 USD. Detta är ett
-   daterat planeringskvitto; uppdatera hela underlaget inom fem minuter före
-   användning. Neon-reservationer är inte fakturor och ger ingen extra budget.
+1. Utred imagehämtning, containerstart och scheduler innan fler betalda prov.
+   PR208 och privata schema4-guarden är levererade; de förklarar inte noll
+   workers. RunPods sparade registry-credential heter `ghcr-astrid-read`, men
+   namnet bevisar inte vilka privata images den får läsa. Befintlig lokal
+   GitHub-inloggning saknar `read:packages`; dess GHCR-404 är därför inget
+   bevis på saknad image eller felaktig RunPod-inloggning. Nycklarna är orörda.
+   Inloggad GitHub-vy bekräftar däremot att den privata versionen finns med
+   exakt digest `sha256:56b779142cad6d3c0152f53942f6703a0b6f6e74a6b7110c1ea34f69facc3b34`.
+   Manifestets lager är cirka 8,1 GB komprimerade. Storleken gör lång första
+   imagehämtning möjlig, men bevisar inte att RunPod kunde hämta den eller att
+   hämtningen orsakade timeouten. Paketets nedladdningsräknare saknar källa och
+   tid och används därför inte som RunPod-kvitto. Se
+   [verifierad paketversion](https://github.com/Jakeminator123/scoutgaming/pkgs/container/moving-gpu-worker/1401501221?tag=sha-9a644e730966c248518c76a115c9bd922b0c5ef3).
+2. Skilj plattformens imagehämtning från Python-/modelluppstart. Våra prov
+   nådde inte workerintyget och kan inte bedöma TTS, filmval eller läppsynk.
+   Kallstart är en möjlig förklaring, inte fastställd rotorsak. Läs faktisk
+   system-/pullstatus och verifiera åtkomst till exakt image före nytt fönster.
+3. Läsning 15:50 UTC av samtliga sju stängda endpoints och tidigare GPU-pod
+   gav 0,169812463 USD bokfört och 3,59 USD behållna reserver: totalt
+   3,759812463 USD av samma godkända **5 USD**. Återstående utrymme var
+   1,240187537 USD. Sjunde reserven 0,21 USD omfattar hela guardtiden,
+   stoppmarginal och disk. Budget-/guardverktygens 72 prov passerade.
+   Jakob höjde därefter uttryckligen det sammanlagda testtaket till **10 USD**.
+   Alla tidigare kostnader och reserver följer med; höjningen är inte ett nytt
+   fristående 10 USD-utrymme. Nästa plan är ett avgränsat uppstartsprov med
+   talprofilen avstängd, utan speljobb och med automatisk resursstängning.
+   Detta är ett daterat kvitto; uppdatera hela underlaget inom fem minuter
+   före användning. Neon-reservationer är inte fakturor eller extra budget.
 4. Verifiera ny OpenClaw-replik i vila, sedan tal under serverbestämd utdelning.
    Agenten får inte placera insatser på användarkontot; Jakob startar själv
    eventuell riktig runda. Jakob valde efter det första molnprovet att köra
@@ -355,6 +464,17 @@ hörbar/synlig läppsynk. Tal under utdelning återstår att se i det riktiga ru
    proveniens; funktion, start-/slutpose, språk, variant och exakta UUID/hashar
    styr kopplingen. Namnbyte kräver inte nya filmbytes eller nya identiteter.
    Följ [Blob/Neon-guiden](storage/BLOB-NEON.md); radera inga skyddade original.
+
+Läsande jämförelse av lokala profiler, Vercel och Render-tjänsteidentiteter
+är klar; [miljöguiden](ENVIRONMENT-VARIABLES.md#läsande-jämförelse-17-oktober-2026)
+beskriver ansvar, styrkta skillnader och städningsförslag. Ingen env-rensning
+är genomförd och full jämförelse av Renders hemlighetsvärden är inte gjord.
+
+Jakobs röda `presentation/config`-rader följdes upp i befintligt testrum
+15:56 UTC utan GPU-start eller insats. Ett anrop fick HTTP200 och därefter
+`net::ERR_ABORTED` med `canceled:true`; efterföljande config-anrop fick 200.
+Det reproducerar ett klientavbrott, inte ett styrkt serverfel eller saknad
+grundbild. Det fastställer inte orsaken till varje rad i hans tidigare bild.
 
 Privata körkvitton och återstartscheckpoint ligger i den befintliga
 visualiseringsmappen för denna chatt, utanför Git. De innehåller resurs-ID,

@@ -1,29 +1,16 @@
-import { gameLaneConfiguration, isGameLaneId } from './public/game-lanes.mjs';
+import { gameLaneConfiguration } from './public/game-lanes.mjs';
+import { PRESENTATION_ROOM_SCHEMA_VERSION, isPresentationRoom, isRoomOperatorId } from '../packages/presentation/contracts/presentation-room.mjs';
 import { readPackagePresentation } from './storage/presentation-package.mjs';
 import { StudioStorageError } from './storage/studio-contract.mjs';
 import { assertPresentationRoomMaterials } from './presentation-material-game.mjs';
 
-export const PRESENTATION_ROOM_SCHEMA_VERSION = 2;
-export const PRESENTATION_ROOM_CAPABILITY = 'operator-owned-v2';
-const fields = ['schemaVersion', 'id', 'name', 'operatorId', 'presentationLaneId', 'gameLaneId', 'state'];
-export const roomGame = room => room && Object.hasOwn(room,'game') ? room.game : 'blackjack';
-export const roomPlayPath = (room, slug) => `/play/${roomGame(room)}?` + new URLSearchParams({operator:slug,table:room.id});
-const operatorId = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
-const name = value => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= 100
-  && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
-export function isPresentationRoom(room) {
-  return Boolean(room && typeof room === 'object' && !Array.isArray(room) && Object.keys(room).length === fields.length + (Object.hasOwn(room,'game') ? 1 : 0)
-    && ['blackjack','roulette'].includes(roomGame(room))
-    && fields.every(key => Object.hasOwn(room, key)) && room.schemaVersion === PRESENTATION_ROOM_SCHEMA_VERSION
-    && isGameLaneId(room.id) && name(room.name) && operatorId(room.operatorId)
-    && isGameLaneId(room.presentationLaneId) && isGameLaneId(room.gameLaneId)
-    && ['live', 'preview', 'pending'].includes(room.state));
-}
+export { PRESENTATION_ROOM_SCHEMA_VERSION, PRESENTATION_ROOM_CAPABILITY, isPresentationRoom, roomGame, roomPlayPath } from '../packages/presentation/contracts/presentation-room.mjs';
+
 // Read historical publication bindings separately from game eligibility.
 // A known material mismatch does not erase a publication or unrelated rooms.
 export function inspectPackageRooms({ administration, package: pack, operatorId: owner } = {}) {
   if (!Array.isArray(administration?.rooms)) throw new StudioStorageError('studio_corrupt_game_policy');
-  if (!operatorId(owner) || pack?.operatorId !== owner || !Array.isArray(pack?.tables) || !Array.isArray(pack?.lanes)) return [];
+  if (!isRoomOperatorId(owner) || pack?.operatorId !== owner || !Array.isArray(pack?.tables) || !Array.isArray(pack?.lanes)) return [];
   const presentation = readPackagePresentation(pack);
   if (!presentation) return [];
   let gameLanes;
