@@ -29,6 +29,25 @@ class Socket:
             meta=self.sent[-2]
             self.messages.put_nowait(json.dumps({"t":"ack","id":meta["id"],"del":meta["del"]}))
 
+
+class WaitingStartSocket(Socket):
+    def __init__(self):
+        super().__init__([{"t":"bind","attestation":ATTESTATION}])
+        self.receives=0
+        self.waiting=asyncio.Event()
+        self.finished=asyncio.Event()
+    async def recv(self):
+        self.receives+=1
+        start_wait=self.receives==2
+        if start_wait: self.waiting.set()
+        try:
+            value=await super().recv()
+            if isinstance(value,Exception): raise value
+            return value
+        finally:
+            if start_wait: self.finished.set()
+
+
 class Engine:
     def __init__(self,speed=45.9,stall=False):
         self.speed=speed
@@ -69,6 +88,86 @@ class Sessions(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(socket.sent[-1]["t"],"done")
         self.assertEqual(sum(isinstance(x,bytes) for x in socket.sent),4)
         self.assertTrue(engine.closed)
+
+    async def test_start_after_old_idle_deadline_within_start_budget_completes(self):
+        socket,engine=WaitingStartSocket(),Engine()
+        task=asyncio.create_task(serve(socket,engine,ATTESTATION,MAPPING,
+                                       idle_seconds=.05,start_seconds=.5))
+        try:
+            await asyncio.wait_for(socket.waiting.wait(),1)
+            await asyncio.sleep(.1)
+            self.assertFalse(task.done())
+            self.assertFalse(engine.started)
+            for item in messages()[1:]:
+                socket.messages.put_nowait(json.dumps(item) if isinstance(item,dict) else item)
+            self.assertEqual(await asyncio.wait_for(task,1),"complete")
+            self.assertTrue(engine.closed)
+        finally:
+            task.cancel()
+            await asyncio.gather(task,return_exceptions=True)
+
+    async def test_missing_start_uses_separate_bounded_wait_and_closes_engine(self):
+        socket,engine=WaitingStartSocket(),Engine()
+        loop=asyncio.get_running_loop()
+        began=loop.time()
+        async with asyncio.timeout(1):
+            with self.assertRaises(TimeoutError):
+                await serve(socket,engine,ATTESTATION,MAPPING,
+                            idle_seconds=.02,start_seconds=.08)
+        self.assertGreaterEqual(loop.time()-began,.08)
+        self.assertTrue(socket.finished.is_set())
+        self.assertFalse(engine.started)
+        self.assertTrue(engine.closed)
+        self.assertEqual([item["t"] for item in socket.sent],["pong"])
+
+    async def test_disconnect_during_start_wait_closes_engine_without_success(self):
+        socket,engine=WaitingStartSocket(),Engine()
+        task=asyncio.create_task(serve(socket,engine,ATTESTATION,MAPPING,start_seconds=.5))
+        try:
+            await asyncio.wait_for(socket.waiting.wait(),1)
+            socket.messages.put_nowait(ConnectionError("closed"))
+            with self.assertRaises(ConnectionError): await task
+            self.assertTrue(socket.finished.is_set())
+            self.assertFalse(engine.started)
+            self.assertTrue(engine.closed)
+            self.assertEqual([item["t"] for item in socket.sent],["pong"])
+        finally:
+            task.cancel()
+            await asyncio.gather(task,return_exceptions=True)
+
+    async def test_abort_during_start_wait_cancels_receive_and_closes_engine(self):
+        socket,engine=WaitingStartSocket(),Engine()
+        task=asyncio.create_task(serve(socket,engine,ATTESTATION,MAPPING,start_seconds=.5))
+        try:
+            await asyncio.wait_for(socket.waiting.wait(),1)
+            task.cancel()
+            with self.assertRaises(asyncio.CancelledError): await task
+            self.assertTrue(socket.finished.is_set())
+            self.assertFalse(engine.started)
+            self.assertTrue(engine.closed)
+            self.assertEqual([item["t"] for item in socket.sent],["pong"])
+        finally:
+            task.cancel()
+            await asyncio.gather(task,return_exceptions=True)
+
+    async def test_enclosing_job_deadline_still_caps_start_wait(self):
+        socket,engine=WaitingStartSocket(),Engine()
+        with self.assertRaises(TimeoutError):
+            async with asyncio.timeout(.02):
+                await serve(socket,engine,ATTESTATION,MAPPING,start_seconds=.5)
+        self.assertTrue(socket.finished.is_set())
+        self.assertFalse(engine.started)
+        self.assertTrue(engine.closed)
+
+    async def test_start_budget_does_not_extend_bind_or_pcm_idle_wait(self):
+        for pending in [[],messages()[:2]]:
+            socket,engine=Socket(pending),Engine()
+            async with asyncio.timeout(.5):
+                with self.assertRaises(TimeoutError):
+                    await serve(socket,engine,ATTESTATION,MAPPING,
+                                idle_seconds=.02,start_seconds=1)
+            self.assertFalse(engine.started)
+            self.assertTrue(engine.closed)
 
     async def test_pcm_or_start_before_bind_cannot_start_engine_render(self):
         for first in [START,bytes(20),{"t":"bind","attestation":{**ATTESTATION,"jobId":"other"}}]:

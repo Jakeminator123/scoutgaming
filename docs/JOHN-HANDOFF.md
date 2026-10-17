@@ -50,6 +50,11 @@ Render och native-runtime använder nu samma verifierade migrationsplan;
 krav på obligatoriska versioner och kontrollsummor kvarstår. 53 fokustester
 och hela isolerade SQL/HTTPS-körningen passerade på Node24.21.0 den 17 oktober.
 Ny full CI återstår. PR196:s imagebygge och GitGuardian är gröna på `a0bc397b`.
+Workern väntar nu högst 60 sekunder på start efter verifierad bind, så att
+TTS (30 sekunder) och spelarens anslutning (15 sekunder) ryms. Övriga
+idle-/kvittensgränser på 15 sekunder och jobbets totalgräns på 180 sekunder
+är oförändrade. 49 CPU-tester passerar; den nya förseglade releasen är
+`57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8`.
 Två GitGuardian-fynd på det tidigare
 huvudet avsåg syntetiska PostgreSQL-testadresser. Fixturen skapar nu ett
 tillfälligt lösenord; ingen befintlig nyckel eller incidentstatus ändras.

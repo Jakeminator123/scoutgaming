@@ -70,6 +70,23 @@ En dealerradering slutförde inte metadataflytten.
 
 ## Dragan: första gemensamma molntalvägen, 17 oktober 2026
 
+```mermaid
+flowchart LR
+  A[Spelarens chatt eller spelhändelse] --> B[OpenClaw väljer text eller sparad replik]
+  B --> C[Render kontrollerar rum, dealer och budget]
+  N[Neon: profiler, medie-ID och frysta paket] --> C
+  C --> D[Registrerad röst skapar ljud]
+  D --> E[Separat RunPod-worker skapar läppsynk]
+  F[Blob: verifierad avatarbank] --> E
+  E --> G[Gemensam spelare synkar ljud och ansikte]
+  B --> H[Godkänd förinspelad replik]
+  I[Blob: originalfilm med eget ljud] --> H
+  H --> G
+```
+
+Schemat beskriver kodens avsedda flöde. Worker och budget antas och verifieras
+före röstgenerering; faktisk molnacceptans redovisas separat i handoffen.
+
 `CROUPIER_MOVING_SPEECH_ENABLED=1` väljer den nya, separata workern för Dragan.
 Flaggan är av tills image, bank, schema013 och ett valt testrum är verifierade.
 `web/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade

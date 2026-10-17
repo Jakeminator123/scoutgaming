@@ -18,11 +18,11 @@
     "seal_release.py": "90f0efd6f2d33866fdc84c853b564f51e46e128b7dba0fb44e86c43234f74000",
     "serverless-wheels.lock": "15a6a3d826c39fa5f5e4554583e2c8c59368027871e10d9e4b7a6c41bd242c56",
     "serverless.py": "ba21000addf74d6668176eadbf14bcac963708334e585b2a01fc0b4f09409f81",
-    "session.py": "36e986ddc41d429e34b84f78b5912a8f961471aff78bffe78306d60a05ffe9e0",
+    "session.py": "f9a3919bbb567eee93f3e7a04edc9ebb2adf0f7bae5704716576bcb0f863b60a",
     "source.json": "7e994ef4053e9ea6f1919e3726b12356f8c5c1b2ace1d33cfe2e58721f664c7a",
     "vendor/motor.py": "4d918fc8dad5587ce02dc2dabcd1d8d8f18d994216e0514a623dc7c9df9c3bd4",
     "vendor/rorlig.py": "b8e3fcd808e413ebf3bfea2743e7d0137c0f65732231cb2f03f3b4fa5c2f4e66",
     "wheels.lock": "f1de7ffbf266182d319a51a588227fd72def4e733f1c7b8efae2590625443c54"
   },
-  "releaseSha256": "4343ca53ea26f8891aa72a0f83db96fce8b3e49830bcb567cb9557cce6dab971"
+  "releaseSha256": "57376d50620f75ad0c546742787f5885117ec3801e2d2ebcc7a19874da1966e8"
 }
