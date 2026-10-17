@@ -23,9 +23,16 @@ inga gamla frontend-, privata data- eller källmedievägar. Frontendtyper, 40
 rot-/CI-/hook-/entryprov, ett verkligt GET/HEAD-importgrafprov, miljöregistret
 och 18 transportprov på Node22.23.1 är gröna. Inga nya testfiler.
 
-Detta är lokal verifiering, inte ett nytt spel-/mediegodkännande. Ingen extern
-konfiguration, push eller deploy har gjorts; PR/CI/drift och provhåll samordnas
-av huvudagenten. Nästa apprötter följer separata leveranser.
+Faktisk main228 1ee284725cf2e6583349c368d96bd608ef78f808 är normalt integrerad.
+N/O- och PR226-integrationen gav 141 pass, inga fel och en befintlig SQL-opt-in
+med ordinarie hook; slutlig ancestry-integration ändrade inga filer. Frontendens
+produkt- och byggträd är identiska med det lokala byggkvittot. Aktiva guider pekar
+på apps/web och neutral katalogägare. Läsande Vercel-förkontroll bekräftar rätt
+Scoutgaming-projekt, reporot och Node24 utan gammal frontend-override.
+
+Detta är lokal verifiering, inte ett nytt spel-/mediegodkännande. Extern
+konfiguration är oförändrad. PR/CI/drift samordnas med mergeagenten, och nästa
+apprötter följer separata leveranser.
 
 
 ## PR228: slutlig integration och byggkvitto
