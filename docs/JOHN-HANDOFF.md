@@ -60,6 +60,7 @@ prov och ordinarie hook215/215 plus frontendtyper med egna låsta frontend-
 och speechinstallationer. Renderfixen och PR213 är integrerade med samma navigation och direkta
 transportimporter; senaste integrationshook passerade138/138 och frontendtyper.
 Main inklusive PR214/216 är integrerad normalt, utan ändrad kod i slutintegrationen. CI och driftkvitto för C2g återstår.
+PR218-CI upptäckte två dubbla källposter i QA:s hashlista. Dubbletterna är borttagna; det befintliga provet för en hash per källa passerar6/6. Hashbindning och migrationstäckning bevaras.
 Inga nya tester eller provider-/SQL-/medieändringar ingår i katalogsteget.
 ## C2f Render-paketering — rättning före PR214-merge
 

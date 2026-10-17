@@ -37,7 +37,6 @@ export const STUDIO_ISOLATED_QA_SOURCES = Object.freeze([
       'ops/neon-studio/007-partner-branding-drafts.sql', 'test/partner-branding-postgres.mjs', 'lab/test/fixtures/cloud-presentation.mjs',
       'lab/lib/partner-branding-api.mjs', 'lab/lib/partner-presentation-choices.mjs', 'lab/lib/partner-package-view.mjs',
       'web/storage/partner-branding.mjs', 'web/game-entry-operator.mjs', 'web/operator-appearance-api.mjs',
-      'packages/navigation/operator-entry.mjs', 'packages/navigation/operator-slug.mjs',
       'web/public/operator-appearance-boundary.mjs', 'web/storage/frozen-dealer-presentation.mjs', 'web/public/player-choices.mjs',
       'web/storage/presentation-package.mjs', 'web/storage/frozen-presentation-capture.mjs', 'web/storage/frozen-dealer-idle.mjs',
       'web/presentation-room-contract.mjs', 'web/public/game-lanes.mjs', 'packages/presentation/contracts/composition-settings.mjs',
