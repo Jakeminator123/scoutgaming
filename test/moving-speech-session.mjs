@@ -20,7 +20,7 @@ function fixture(overrides={}) {
       state.input=input;return{key:sha('1'),workerId:`croupier-${input.sessionId}`,...input};},
     async assertMovingSession(){if(state.state!=='reserved'&&state.state!=='running')throw Error('inactive');return{};},
     async markRequestSubmissionStarted(){events.push('request-start');state.request='submission_started';},
-    async markSubmissionStarted(){events.push('submit-start');state.state='submission_started';},
+    async markSubmissionStarted(){events.push('submit-start');state.state='submission_started';await overrides.onMarkSubmission?.();},
     async attachJob({jobId}){events.push('attach');if(overrides.attachFailure)throw Error('generated_speech_journal_unavailable');state.state='running';state.jobId=jobId;},
     async markSubmissionUncertain(){events.push('unknown');state.state='submission_uncertain';},
     async failRequest(){state.request='submission_uncertain';},
@@ -35,7 +35,7 @@ function fixture(overrides={}) {
     origin:'https://fixture.example',endpointId:'endpointfixture',release:async()=>receipt(),budgetId:'same-authorized-run',
     totalBudgetMicroUsd:5000000,reserveMicroUsd:250000,currentDailyBudgetMicroUsd:5000000,
     workerState:async()=>({workers:0,busy:0,available:0}),cleanupMs:30,pollMs:1,
-    connectionFactory:async options=>{
+    ...overrides.configuration, connectionFactory:async options=>{
       callbacks.options=options;await options.authorize({phase:'prepare',signal:options.signal});
       let finish;const closed=new Promise(resolve=>{finish=resolve;});let finalization;
       const finalize=reason=>finalization??=(async()=>{const result=await options.finalize({reason});finish(result);return result;})();
@@ -104,9 +104,9 @@ test('aborted admission performs no provider submit and a later attempt can acqu
   const next=await f.admit();await next.cancel();assert.equal(f.state.released,false);
 });
 
-test('configuration cannot exceed five dollars or a three-minute worker lifetime',()=>{
-  assert.throws(()=>createMovingSpeechSession({totalBudgetMicroUsd:5000001}),/configuration/);
-  assert.throws(()=>createMovingSpeechSession({lifetimeMs:180001}),/configuration/);
+test('configuration rejects spend increases and deadlines beyond the fixed moving window',()=>{
+  for(const configuration of [{totalBudgetMicroUsd:5000001},{lifetimeMs:480001},{startupMs:450001},
+    {startupMs:0},{startupMs:1001,lifetimeMs:1000},{idleMs:15001}])assert.throws(()=>fixture({configuration}),/configuration/);
 });
 
 test('restart recovery cancels only the exact known owned job and requires terminal plus empty worker',async()=>{
@@ -120,4 +120,57 @@ test('restart recovery cancels only the exact known owned job and requires termi
   const running=fixture({recoverable:[saved],status:'IN_PROGRESS'});
   assert.deepEqual(await running.create.reconcile(),{recovered:[],unresolved:[{sessionId:saved.sessionId,reason:'provider_not_terminal'}]});
   assert.equal(running.events.includes('provider-cancel'),true);assert.equal(running.state.released,false);
+});
+
+
+test('296 second cold start retains admitted ownership and keeps worker execution at 180 seconds',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  const f=fixture(),attempt=await f.admit();await attempt.submit();
+  t.mock.timers.tick(296000);
+  assert.equal(f.callbacks.options.signal.aborted,false);
+  assert.equal(f.callbacks.options.startupMs,450000);assert.equal(f.callbacks.options.lifetimeMs,480000);
+  assert.equal(f.state.post.input.ttlSeconds,180);assert.equal(f.state.cost,250000);
+  await attempt.ready();await attempt.cancel();
+  assert.equal(f.events.filter(x=>x==='provider-submit').length,1);
+});
+
+test('absolute session deadline aborts the bank capability signal even without a callback',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  let download;
+  const f=fixture(),attempt=await f.admit({bankDownload:async args=>{download=args;return{schemaVersion:1};}});
+  await attempt.submit();assert.equal(download.ttlMs,480000);
+  t.mock.timers.tick(479999);assert.equal(download.sessionSignal.aborted,false);
+  t.mock.timers.tick(1);assert.equal(download.sessionSignal.aborted,true);
+  await attempt.cancel();assert.equal(f.events.filter(x=>x==='provider-cancel').length,1);
+});
+
+
+test('cancellation during cold start immediately revokes bank access and retains uncertain cost/ownership',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  const abort=new AbortController();let download;
+  const f=fixture({status:'UNKNOWN'}),attempt=await f.admit({signal:abort.signal,bankDownload:async args=>{download=args;return{};}});
+  await attempt.submit();t.mock.timers.tick(296000);abort.abort();
+  assert.equal(download.sessionSignal.aborted,true);await attempt.cancel();
+  await assert.rejects(attempt.ready(),/cancelled/);
+  assert.equal(f.state.released,false);assert.equal(f.state.cost,250000);
+  assert.equal(f.events.filter(x=>x==='provider-cancel').length,1);
+  assert.equal(f.events.filter(x=>x==='provider-submit').length,1);
+});
+
+
+test('a delayed submit cannot move provider TTL outside the original twelve-minute budget coverage',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  const f=fixture(),attempt=await f.admit();t.mock.timers.tick(165001);
+  await assert.rejects(attempt.submit(),/submission_expired/);
+  assert.equal(f.events.includes('provider-submit'),false);assert.equal(f.events.includes('submit-start'),false);
+  assert.equal(f.state.cost,250000);assert.equal(f.state.released,false);
+});
+
+
+test('a slow submission journal write cannot bypass the final budget-window check before POST',async t=>{
+  t.mock.timers.enable({apis:['setTimeout','Date'],now:1000000});
+  const f=fixture({onMarkSubmission:()=>t.mock.timers.tick(165001)}),attempt=await f.admit();
+  await assert.rejects(attempt.submit(),/submission_unknown/);
+  assert.equal(f.events.includes('provider-submit'),false);assert.equal(f.state.state,'submission_uncertain');
+  assert.equal(f.state.cost,250000);assert.equal(f.state.released,false);
 });
