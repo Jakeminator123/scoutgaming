@@ -130,10 +130,27 @@ test('roulette cards allow explicit idle binding while reference and planned car
   const source=readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8');
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-    {module,exports:module.exports,require:name=>name==='../../lib/studio-layout.mjs'?{slotCaption,slotExplanation,isRenderedOutcome}:require(name)});
-  const render=slot=>{const clips=slot.planned?[]:[video(slot,'a')];return renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{
+    {module,exports:module.exports,require:name=>{
+      if(name==='../../lib/studio-layout.mjs')return {slotCaption,slotExplanation,isRenderedOutcome};
+      // Guide behavior has its own coverage in clip-guide.test.mjs.
+      if(name==='./clip-guide')return {ClipGuide:()=>null};
+      return require(name);
+    }});
+  const render=(slot,component=module.exports.ConnectedClipDetails)=>{const clips=slot.planned?[]:[video(slot,'a')];return renderToStaticMarkup(React.createElement(component,{data:{
     group:groupSlots([slot])[0],slot,clips,selectedId:'a',boundId:'',boundIds:[],variants:[],variantId:'',busy:false,
-    onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){}}}));};
+    onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){},onOpen(){}}}));};
+  const renderCompact=slot=>render(slot,module.exports.ConnectedClipCard);
+  const compactImage=renderCompact(slots.find(slot=>slot.situation==='VILA'));
+  assert.match(compactImage,/Registrerat · ej spelkopplat/);assert.match(compactImage,/Förhandsvisa och redigera/);
+  assert.doesNotMatch(compactImage,/<img|<video|<select|type="file"|Koppla till utkast/);
+  const compactFuture=renderCompact(slots.find(slot=>slot.planned));
+  assert.match(compactFuture,/Planerat fack/);assert.doesNotMatch(compactFuture,/Kopplat i sparat utkast|Koppla till utkast/);
+  const compactIdle=renderCompact(slots.find(slot=>slot.situation==='breathing'));
+  assert.match(compactIdle,/Valt för prov · ej kopplat/);assert.match(compactIdle,/Förhandsvisa och redigera/);
+  assert.doesNotMatch(compactIdle,/Registrerat · ej spelkopplat|Kopplat i sparat utkast/);
+  const compactOutcome=renderCompact(slots.find(slot=>slot.eventId==='roulette.plan.outcome'));
+  assert.match(compactOutcome,/Serverstyrt utfall/);assert.match(compactOutcome,/Visa funktion/);
+  assert.doesNotMatch(compactOutcome,/Planerat fack|Koppla till utkast|Förhandsvisa och redigera/);
   const image=render(slots.find(slot=>slot.situation==='VILA'));
   assert.match(image,/<img/);assert.match(image,/Registrerat · ej spelkopplat/);assert.doesNotMatch(image,/Koppla till utkast/);
   const future=render(slots.find(slot=>slot.planned));assert.match(future,/Planerat fack/);assert.doesNotMatch(future,/type="file"|Koppla till utkast/);

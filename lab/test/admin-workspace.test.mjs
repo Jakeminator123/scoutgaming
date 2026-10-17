@@ -87,3 +87,25 @@ test('workspace reads saved data and lists company memberships only for company 
   assert.equal((await serveAdminWorkspaceData(request('companies?extra=1'),options)).status,400);
   assert.equal((await serveAdminWorkspaceData(new Request(request('companies'),{method:'POST'}),options)).status,400);
 });
+
+test('material library bookmarks share one destination and preserve their selection and context',()=>{
+  for(const prefix of ['/control/library','/studio/control/library','/admin/material-library','/studio/admin/material-library']){
+    const source=prefix+'?role=background&game=roulette&dealer=dragan&operator=north&room=one&room=two&lane=portrait#selected';
+    const target=adminDocumentHref(source),url=new URL(target,'https://site.invalid');
+    assert.equal(url.pathname,'/admin/assets');assert.equal(url.hash,'#selected');
+    assert.equal(url.searchParams.get('tab'),'backgrounds');assert.equal(url.searchParams.get('game'),'roulette');
+    assert.equal(url.searchParams.get('dealer'),'dragan');assert.equal(url.searchParams.get('operator'),'north');
+    assert.deepEqual(url.searchParams.getAll('room'),['one','two']);assert.equal(url.searchParams.get('composition'),'portrait');
+    assert.equal(url.searchParams.has('lane'),false);
+    const explicit=new URL(adminDocumentHref(prefix+'?role=background&tab=tables&game=roulette'),'https://site.invalid');
+    assert.equal(explicit.searchParams.get('tab'),'tables');
+    assert.deepEqual(platformRoute(new URL(source,'https://site.invalid'),{nativeStudio:true,publicOrigin:'https://site.invalid'}),{kind:'redirect',destination:'https://site.invalid'+target});
+  }
+  assert.equal(adminToolName('/admin/material-library'),null);
+});
+
+test('duplicate selectors survive compatibility mapping for downstream validation',()=>{
+  const target=adminDocumentHref('/control/clips?dealer=dragan&dealer=astrid');
+  assert.deepEqual(new URL(target,'https://site.invalid').searchParams.getAll('dealer'),['dragan','astrid']);
+  assert.equal(studioLoginReturnTo(target),'/admin');
+});

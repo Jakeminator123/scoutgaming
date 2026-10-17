@@ -143,11 +143,21 @@ test('refresh failure removes the old tree and incomplete lifecycle stays visibl
   h.setFailure(true);nodes(h.render(),row=>row.type==='button')[0].props.onClick();await h.settle();
   assert.match(text(h.render()),/Läsningen misslyckades/);assert.doesNotMatch(text(h.render()),/Gemensam mall/);
 });
-test('red navigation entry is a real allowlisted Admin route and anchors cannot collide',()=>{
+test('dependency overview has an accessible active Admin link and unique resource anchors',()=>{
   assert.ok(designPreviewPages.has('deletion'));assert.equal(designPreviewReturnTo('/admin/deletion'),'/admin/deletion');
-  const sidebar=readFileSync(new URL('../components/studio/studio-sidebar.tsx',import.meta.url),'utf8');
-  assert.match(sidebar,/label:'Radering',href:'\/admin\/deletion'/);
-  assert.match(sidebar,/href==='\/admin\/deletion'\?\{color:'#f87171'\}/);
+  const componentUrl=new URL('../components/studio/studio-sidebar.tsx',import.meta.url),componentRequire=createRequire(componentUrl),module={exports:{}};
+  let pathname='/admin/deletion';
+  runInNewContext(transformSync(readFileSync(componentUrl,'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,
+    require:name=>name==='next/link'?{__esModule:true,default:'a'}:name==='next/navigation'?{usePathname:()=>pathname}:componentRequire(name)});
+  const dependencyLink=()=>{
+    const navigation=nodes(expand(module.exports.StudioSidebar()),node=>node.type==='nav'&&node.props['aria-label']==='Huvudmeny');
+    assert.equal(navigation.length,1);
+    const links=nodes(navigation[0],node=>node.type==='a'&&node.props.href==='/admin/deletion');
+    assert.equal(links.length,1);assert.ok(text(links[0]).trim(),'the dependency overview needs an accessible link name');
+    return links[0];
+  };
+  assert.equal(dependencyLink().props['aria-current'],'page');
+  pathname='/admin';assert.equal(dependencyLink().props['aria-current'],undefined);
   const entry=readFileSync(new URL('../entry.tsx',import.meta.url),'utf8');
   assert.match(entry,/path==='\/admin\/deletion'&&<ResourceDeletion/);
   assert.notEqual(resourceAnchor('media','a:b'),resourceAnchor('media','a_3Ab'));

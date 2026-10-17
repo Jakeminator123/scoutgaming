@@ -34,9 +34,9 @@ Granska vilka rum som delar mallen, spara utkastet och publicera via det
 befintliga rumsflödet för att ändringen ska nå spelaren. Ett zoomsteg stoppas
 helt om ett lager når sin placeringsgräns.
 
-**Admin är den samlade interna arbetsytan på huvuddomänen.** Menyn **Verktyg**
+**Admin är den samlade interna arbetsytan på huvuddomänen.** **System → Verktyg**
 samlar Bolag & team, Rum & publicering, Sammansättningar, Dealerinställningar,
-Klippbibliotek, Svarsbibliotek, Materialinställningar, Provspelning, regler,
+Klippbibliotek, Svarsbibliotek, Provspelning, regler,
 dealerns agent och Guide. Gamla `/control`-länkar leder till motsvarande Admin-vy
 med dealer och rum kvar. Sparade uppgifter och behörigheter är desamma.
 `lab/` är fortfarande källkoden för Studio och dessa funktioner, och `/studio`
@@ -48,27 +48,50 @@ Rumsval sparas bara för valt rum. Gemensam mall finns i en separat
 detaljsektion; dess redigerare visar vilka andra rum som kan påverkas.
 Gamla länkar med `view=registered` fungerar men behövs inte längre.
 
-**Hitta rätt i Admin:** Startsidan ger genvägar till Dealers och klipp,
-Bolag & team, Spelrum & publicering samt Provspelning. Klippkarta öppnar
-klippens arbetsyta. Bolag & team och Rum & publicering finns också under
-Verktyg; bolagsverktyget har inte ytterligare en ingång under System.
-System samlar bland annat Konton & åtkomst och
-Integrationer. Portalraden går till Admin (`/admin`), Spelbolag (`/partner`)
-och Spelarlobby (`/lobby`). Spelstarten `/play/{game}` behåller sitt kontrakt.
-Status och acceptanskrav följs i [Admin-checklistan C1–C9](../../docs/CLOUD-MIGRATION.md#admin-checkpoints-c1c9).
+**Hitta rätt i Admin:** **Dealers & klipp** öppnar klippkartan. Flikarna
+**Klippkarta**, **Dealerregister** och **Lägg till dealer eller filmer** håller
+relaterat arbete tillsammans. **Bord & bakgrunder** har ett gemensamt bibliotek;
+bord filtreras efter spel och bakgrunder kan återanvändas. **System** samlar
+Verktyg, Kopplingar, Användning & beroenden, Konton & åtkomst och Integrationer.
+Portalraden går till Admin (`/admin`), Spelbolag (`/partner`) och Spelarlobby
+(`/lobby`). Spelstarten `/play/{game}` behåller sitt kontrakt.
 
-I klippkartan får öppna klippbibliotek plats genom att nästa kortrad flyttas
-ned. Kort som du själv har dragit behåller sina positioner. **Återställ
-kortlayout** ordnar dem igen; det ändrar inte klippkopplingar eller utkast.
-På smal skärm döljs minikartan så att den inte täcker klippkorten. Zoomknapparna
-och knappen som visar hela kartan finns kvar.
+Välj dealer och spel i klippkartan. Klippbanken fungerar även utan spelbolag
+eller rum. Öppna **Rum och publicering** när du vill välja dessa uttryckligen. Ett
+rumsval begränsar inte den gemensamma klippbankens skrivning till det rummet;
+rummets egna alternativ hanteras fortsatt under **Spelbolag & rum**.
 
-I `/admin` finns **Dealers** som egen menyrad. Välj **Skapa dealer**, ange namn
-och **Skapa och spara**. **Ladda upp klipp** öppnar importassistenten med rätt
-dealer vald, även när personen ännu inte är kopplad till något rum. Välj eller
-dra in upp till 30 filmer, välj bakgrund för hela omgången och **Sortera klippen**.
-Granska facken och välj **OK – placera klippen**. Fel visas med filnamn.
-En tidigare lokal import behålls tills du uttryckligen väljer att byta dealer.
+Kartan kan zoomas, panoreras och ordnas genom att dra kort. **Visa alla kort**
+visar översikten och procentknappen återgår till 100 %. **Återställ placering**
+ordnar korten utan att ändra klippkopplingar. **Förhandsvisa och redigera**
+öppnar ett större klipp med dess situation, verkliga varianter, tilldelning och
+körregel bredvid kartan. Kortens position beskriver ingen spelordning.
+Förhandsvisning startar på ditt kommando och stannar när ytan döljs eller
+klippet byts. Den ändrar inte projektet.
+
+**Klippguide** i detaljpanelen förklarar handlingen, kända start-/slutposer och
+skillnaden mellan nödvändiga poseversioner och frivilliga tagningar. Okända poser
+är uttryckligen okända. Guiden är stöd för arbetet, inte medieacceptans.
+
+**Provspelning** öppnar en panel på samma arbetsyta. Välj uttryckligen en sparad
+Blackjack-sammansättning och starta provet. Provet använder dess sparade förval,
+inte det markerade klippet, osparade ändringar eller rummets publicerade val.
+Spara eller hantera lokala ändringar först. **Stäng provspel** avslutar sessionen;
+den stängs också när du lämnar ytan eller byter kontext. Roulette har ännu inte
+denna inbäddade provstart.
+
+**Spara utkast** sparar projektets ändringar med en ny serverrevision; det
+publicerar inget rum. Synliga resultatmeddelanden visar vad som hände. Vid
+revisionskonflikt ligger lokala ändringar kvar för jämförelse. Materialets
+papperskorg visar konsekvenser innan borttagning; att en fil inte är vald i
+ett utkast bevisar inte att den är oanvänd.
+
+Under **Dealerregister** väljer du **Skapa dealer**, anger namn och väljer
+**Skapa och spara**. **Ladda upp klipp** öppnar importassistenten med rätt
+dealer vald, även utan rum. Välj eller dra in upp till 30 filmer, välj bakgrund
+för omgången och **Sortera klippen**. Granska facken och välj
+**OK – placera klippen**. Fel visas med filnamn. En tidigare lokal import
+behålls tills du uttryckligen väljer att byta dealer.
 
 I **Adminroboten** kan du dra in samma filmer direkt i chatten, välja dealer och
 bakgrund och **Sortera och placera**. Det är själva importuppdraget; inga extra
@@ -84,7 +107,7 @@ på stöd i importassistenten. Befintliga alpha-klipp bevaras.
 med dealern. Källfiler och publiceringshistorik bevaras. Användning av samma
 media hos en annan dealer visas som ett hinder som behöver lösas först.
 
-Den röda raden **Radering** öppnar ett beroendeträd. Där syns bolag → spel
+**System → Användning & beroenden** öppnar ett beroendeträd. Där syns bolag → spel
 → rum samt dealers och deras registrerade filer och materialets användningar.
 Delade objekt visas en gång med länkar från de platser där de används.
 Vyn redovisar vilka register och historiska kopplingar som har kunnat läsas;
@@ -97,7 +120,8 @@ förvald dealer, bord och bakgrunder, och granska **Spara utkast**. Publicering
 är ett separat steg. **Ändra bara rummets val** använder befintlig rumsbunden
 redigering för publicerade rum. Bolaget äger rummet; biblioteksfilerna kan delas.
 
-Roulette: öppna `/admin/clips`, välj spelbolag, Roulette, rum och dealer.
+Roulette: öppna `/admin/clips`, välj dealer och Roulette. Välj bolag och rum
+under Rum och publicering när du behöver rumskontext.
 De flyttbara korten visar VILA, idle, insatser, hjulstart, utfall och resultat.
 Endast befintliga videofack kan laddas upp; planerade fack är märkta och
 VILA-PNG provas lokalt utan att sparas. Under **Bakgrund och bord · bild/video**

@@ -28,6 +28,12 @@ Den gemensamma visuella guiden skiljer slotmall, obligatorisk poseversion,
 frivillig rörelsevariation och talutlösare. Admin-agenten har verifierat
 utfällningen i sin isolerade browserfixture; det är ett separat UI-kvitto.
 
+PR193 integrerades från `main` på `f55417e671162edad7ed394f5802ff853ae56573`.
+De tre gemensamma guidefilerna är byteidentiska. Admin- och workeravsnitten
+bevaras; den gemensamma guidens regression körs en gång i fullhooken.
+Tidigare kod-/byggkvitton nedan gäller sina angivna head; integrerad sluthead
+och dess nya kontroller framgår av PR191.
+
 Importplanen kördes mot färsk produktions-export: 38 återanvändningar,
 8 kopplingar att granska, 129 granskningsrader och ingen direkt import.
 52 av 247 frysta källvägar är byteverifierade. Tolv talstickprov på sv/en/pt
@@ -194,11 +200,42 @@ ostagade filmer och tidigare acceptans ska bevaras medan dessa val reds ut.
   Publik startsida, engine health och version gav HTTP 200; versionen matchade.
   Detta daterade kvitto ska inte beskrivas som kontroll av senare kod.
 
+## Admin: sammanhängande klippyta
+
+Jakob valde att förbättra den befintliga zoombara klippkartan. Leveransen på
+`codex/admin-klippkarta` samlar Dealers & klipp med större detaljförhandsvisning,
+exakta varianter, klippguide och provning av en uttryckligt vald sparad
+Blackjack-scen. Biblioteket fungerar utan bolag eller rum. Navigeringen har
+förenklats; Kopplingar och Användning & beroenden finns under System.
+
+Materialbibliotekets gamla wrapper, CSS och utkastadapter är ersatta; gamla
+`/admin/material-library`- och Control-länkar behåller autentisering och kontext
+via motsvarande Admin-vy. Gemensamma tjänster och aktiva editorer är kvar.
+
+Verifierat lokalt: full Studio/Next-build och Admin/Lobby-typkontroll, riktade
+kontraktstester samt verkligt Admin-bygge mot minnesfixtur. Browserproven omfattar
+variantbyte, sparning/omladdning, bevarat utkast vid revisionskonflikt,
+zoomkontroller, klippguide och stoppad klippuppspelning vid navigation.
+Desktop 1366×768 och mobil390×844 har kontrollerats; mobilpanelen behåller
+full höjd och 279px videoförhandsvisning utan horisontellt sidöverflöde.
+Scenstartens session/auth/CSP har komponent- och servertester; ingen ny visuell
+acceptans av verklig spelvideo eller läppsynk påstås. PR/CI redovisas i
+leveranskvittot. Ingen merge, deployment eller produktionsskrivning ingår.
+
+Neutralguidens tre filer kommer från lipsyncs frysta `2b01ece7`; import, Forge,
+GPU och spelarens ljudklocka levereras separat i PR191. Slutgranskning av dess
+head och CI tillhör respektive PR. Huvudagenten äger integrationen av Admin.
+
+GitGuardian vid leverans: main `8f2d301b`, källbindning verifierad, aktiv
+övervakning och komplett incidentlista med 0 öppna/18 ignorerade. Platsdata
+är delvis lästa och historisk scan är ofullständig (`too_large`). Den köade
+GitGuardian-suiten på main är separat från dessa API-resultat.
+
 ## Nästa produktarbete
 
 Den tekniska Neon-/Blob-/runtimeflytten är avslutad. Nästa huvuduppgift bör
-vara en avgränsad produktförbättring, exempelvis lobbyns tillåtna dealer-/
-bordval och överföring till spelstart, eller ett sammanhängande Admin-flöde.
+vara lobbyns tillåtna dealer-/bordval och överföring till spelstart efter
+genomförd Admin-leverans.
 Det är en rekommendation; nästa agent ska utgå från Jakobs val.
 
 <a id="2-öppna-kontroller-och-kända-fel"></a>

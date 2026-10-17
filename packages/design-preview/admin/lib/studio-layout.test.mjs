@@ -74,19 +74,41 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
   const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
   const module={exports:{}};
   runInNewContext(require('esbuild').transformSync(readFileSync(new URL('../components/studio/connected-clip-card.tsx',import.meta.url),'utf8'),{loader:'tsx',format:'cjs',jsx:'automatic'}).code,
-    {module,exports:module.exports,require:name=>name==='../../lib/studio-layout.mjs'?{slotCaption,slotExplanation,isRenderedOutcome}:require(name)});
+    {module,exports:module.exports,require:name=>{
+      if(name==='../../lib/studio-layout.mjs')return {slotCaption,slotExplanation,isRenderedOutcome};
+      // Guide behavior has its own coverage in clip-guide.test.mjs.
+      if(name==='./clip-guide')return {ClipGuide:()=>null};
+      return require(name);
+    }});
   const slot=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.eventId==='idle.ready');
   const clips=[{id:'bound',label:'Sparad film'},{id:'selected',label:'En annan exakt tagning',contentType:'video/mp4',sha256:'a'.repeat(64)}];
   const data={group:groupSlots([slot])[0],slot,clips,selectedId:'selected',boundId:'bound',boundIds:['bound'],variants:[],variantId:'',busy:false,
     onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){}};
-  const render=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{...data,...patch}}));
-  const unbound=render({});assert.match(unbound,/Situation/);assert.match(unbound,/Klipp \/ tagning/);assert.match(unbound,/Körregel · projektutkast/);
+  const render=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipDetails,{data:{...data,...patch}}));
+  const unbound=render({});assert.match(unbound,/Fack/);assert.match(unbound,/Klipp \/ tagning/);assert.match(unbound,/Körregel · projektutkast/);
   assert.match(unbound,/En annan exakt tagning/);assert.match(unbound,/Valt för prov · ej kopplat/);assert.match(unbound,/Koppla till utkast/);assert.doesNotMatch(unbound,/Kopplat i sparat utkast/);
   assert.match(unbound,/video\/mp4/);assert.ok(unbound.includes('a'.repeat(64)));
   const usage={configured:true,when:'Teknisk källa: event.type=idle',rules:['Automatiskt var 27 s.']};
   const saved=render({usage});assert.match(saved,/Kopplat i sparat utkast/);assert.match(saved,/Automatiskt var 27 s/);assert.doesNotMatch(saved,/Koppla till utkast/);
   assert.match(saved,/Teknisk källa: event.type=idle/);assert.doesNotMatch(saved.replace(/<details[\s\S]*?<\/details>/g,''),/event.type/);
-  assert.match(saved,/Dealern väntar mellan spelhändelserna/);assert.match(saved,/<summary>Detaljer<\/summary>/);
+  assert.match(saved,/Dealern väntar mellan spelhändelserna/);assert.match(saved,/<summary>Tekniska detaljer<\/summary>/);
   assert.match(saved,/Redigera körregel/);assert.doesNotMatch(saved,/Publicerad/);
+  const compact=renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{...data,onOpen(){}}}));
+  assert.match(compact,/Förhandsvisa och redigera/);assert.match(compact,/En annan exakt tagning/);assert.doesNotMatch(compact,/<select/);
+  const variants=[{id:'pose-i',label:'Pose I'},{id:'pose-iv',label:'Pose IV'},{id:'take-2',label:'Tagning 2'}];
+  const detail=render({variants,variantId:'pose-iv'});
+  for(const variant of variants)assert.ok(detail.includes(variant.id)&&detail.includes(variant.label));
+  assert.match(detail,/Klippförhandsvisning/);assert.match(detail,/inte ett prov i spelmotorn/);assert.match(detail,/value="pose-iv" selected=""/);
+  const explicitSlot=clipSlots(createSeedProject(),{videos:[]},'astrid').find(row=>row.id==='deal.player.left/box0');
+  const explicit={slot:explicitSlot,group:groupSlots([explicitSlot])[0],variants,variantId:'pose-iv',boundIds:['bound','selected'],usage};
+  const otherVariant=render(explicit);
+  assert.match(otherVariant,/Valt för prov · ej kopplat till vald variant/);
+  assert.match(otherVariant,/Koppla till utkast/);assert.doesNotMatch(otherVariant,/Kopplat i sparat utkast/);
+  const exactVariant=render({...explicit,selectedId:'bound'});
+  assert.match(exactVariant,/Kopplat i sparat utkast/);assert.doesNotMatch(exactVariant,/Koppla till utkast/);
+  const renderCompact=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipCard,{data:{...data,...explicit,...patch,onOpen(){}}}));
+  assert.match(renderCompact({}),/Valt för prov · ej kopplat till vald variant/);
+  assert.doesNotMatch(renderCompact({}),/Kopplat i sparat utkast/);
+  assert.match(renderCompact({selectedId:'bound'}),/Kopplat i sparat utkast/);
   const dirty=render({usage,usageChanged:true});assert.match(dirty,/Ändrat lokalt · ej sparat/);assert.doesNotMatch(dirty,/Kopplat i sparat utkast/);
 });

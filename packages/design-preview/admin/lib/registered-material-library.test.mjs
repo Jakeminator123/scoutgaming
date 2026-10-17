@@ -22,10 +22,12 @@ async function harness(search='?game=roulette') {
   const hooks={...React,useState(initial){const store=current,index=store.cursor++;if(!(index in store.states))store.states[index]=typeof initial==='function'?initial():initial;return [store.states[index],value=>store.states[index]=typeof value==='function'?value(store.states[index]):value];},
     useRef(value){const index=current.cursor++;return current.states[index]??={current:value};},
     useEffect(callback,deps){const store=current,index=store.cursor++;if(!store.effects[index]||deps.some((value,i)=>value!==store.effects[index].deps[i])){store.queue.push(()=>{store.effects[index]?.cleanup?.();store.effects[index]={deps,cleanup:callback()};});}}};
+  const visibility=new Set(),doc={hidden:false,addEventListener:(name,fn)=>visibility.add(fn),removeEventListener:(name,fn)=>visibility.delete(fn)};
   const LayerLibrary=()=>null,LayerAssetManager=()=>null,module={exports:{}};
   const source=readFileSync(new URL('../components/studio/registered-material-library.tsx',import.meta.url),'utf8');
-  runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,URLSearchParams,AbortController,location:{search},window:{addEventListener(){},removeEventListener(){}},require:name=>{
+  runInNewContext(require('esbuild').transformSync(source,{loader:'tsx',format:'cjs',jsx:'automatic'}).code,{module,exports:module.exports,URLSearchParams,AbortController,document:doc,location:{search},window:{addEventListener(){},removeEventListener(){}},require:name=>{
     if(name==='react')return hooks;
+    if(name.endsWith('/runtime/navigation'))return {useSearchParams:()=>new URLSearchParams(search),navigate:href=>{search=new URL(href,'https://fixture.invalid').search;}};
     if(name.includes('studio-model.mjs'))return {validateProject};
     if(name.includes('layer-asset-removal.mjs'))return {layerAssetReferences};
     if(name.includes('material-catalog.mjs'))return {materialLabel};
@@ -35,7 +37,7 @@ async function harness(search='?game=roulette') {
     if(name.includes('connected-studio.mjs'))return {createStudioClient:()=>({load:async()=>({project})})};
     return require(name);
   }});
-  const props={disabled:false,refreshKey:'1',onChanged:()=>changed++};
+  const props={visible:true,disabled:false,refreshKey:'1',onChanged:()=>changed++};
   const renderWith=(store,Component,props)=>{current=store;store.cursor=0;const tree=Component(props);while(store.queue.length)store.queue.shift()();return tree;};
   const render=()=>renderWith(parent,module.exports.RegisteredMaterialLibrary,props);
   const manager=tree=>nodes(tree,node=>node.type===LayerAssetManager)[0];
@@ -46,7 +48,7 @@ async function harness(search='?game=roulette') {
     return renderWith(cards.get(asset.id),element.type,element.props);
   };
   render();await setImmediate();
-  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
+  return {project,props,render,visible,card,LayerLibrary,LayerAssetManager,hide:value=>{doc.hidden=value;visibility.forEach(fn=>fn());},query:()=>search,navigate:value=>{search=value;},changed:()=>changed,close:()=>[parent,...cards.values()].forEach(store=>store.effects.forEach(effect=>effect?.cleanup?.()))};
 }
 
 test('real assets page scopes table upload and visible library to explicit game, with shared backgrounds',async()=>{
@@ -123,5 +125,28 @@ test('material card delegates trash to the guarded lifecycle action and respects
     assert.equal(button.props.disabled,true);assert.equal(requested,0);
     actions.disabled=false;tree=h.card(asset,actions);button=nodes(tree,node=>node.type==='button'&&node.props['aria-label']?.startsWith('Flytta '))[0];
     button.props.onClick();assert.equal(requested,1);
+  }finally{h.close();}
+});
+
+test('mounted material library follows alias context and keeps dealer and room while changing filters',async()=>{
+  const h=await harness('?game=blackjack&dealer=dragan&room=one');try{
+    nodes(h.render(),node=>node.props.role==='tab'&&text(node)==='Bakgrunder')[0].props.onClick();
+    assert.equal(new URLSearchParams(h.query()).get('dealer'),'dragan');
+    assert.equal(new URLSearchParams(h.query()).get('room'),'one');
+    assert.equal(nodes(h.render(),node=>node.type===h.LayerLibrary)[0].props.role,'background');
+    h.navigate('?tab=tables&game=roulette&dealer=astrid');
+    assert.deepEqual(h.visible(h.render()).map(asset=>asset.label),['Roulette board']);
+  }finally{h.close();}
+});
+
+test('material previews are exclusive and pause on hidden workspace or document without restarting',async()=>{
+  const h=await harness();let first=0,second=0;const a={pause:()=>first++},b={pause:()=>second++};
+  try{
+    h.render().props.onPlayCapture({target:a});h.render().props.onPlayCapture({target:b});
+    assert.equal(first,1);assert.equal(second,0);
+    h.props.visible=false;h.render();assert.ok(second>0);
+    const count=second;h.props.visible=true;h.render();assert.ok(second>=count);
+    h.render().props.onPlayCapture({target:a});h.hide(true);assert.ok(first>1);
+    h.hide(false);assert.equal(a.play,undefined,'returning never requests playback');
   }finally{h.close();}
 });

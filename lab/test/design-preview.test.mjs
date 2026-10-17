@@ -100,6 +100,7 @@ test('staff permits Blob; public lobby permits D-ID; assets retain same-origin p
       const csp = response.headers.get('content-security-policy');
       const connect = csp.split(';').find(directive => directive.trim().startsWith('connect-src')).trim();
       assert.equal(connect, documents.includes(segments) ? "connect-src 'self' https://vercel.com/api/blob https://vercel.com/api/blob/" : "connect-src 'self'");
+      assert.match(csp, documents.includes(segments) ? /frame-src 'self';/ : /frame-src 'none';/);
       assert.match(csp, /script-src 'self';/);
       assert.match(csp, /img-src 'self' blob: data:;/);
       assert.match(csp, /media-src 'self' blob:;/);
@@ -114,7 +115,35 @@ test('staff permits Blob; public lobby permits D-ID; assets retain same-origin p
       assert.match(csp, segments.length ? /media-src 'self' blob:;/ : /media-src 'self' blob: https:\/\/agents-results\.d-id\.com;/);
       assert.match(csp, /script-src 'self';/);
       assert.doesNotMatch(response.headers.get('content-security-policy'), /vercel.com/);
+      assert.match(csp,/frame-src 'none';/);
       await response.text();
     }
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('retired Admin library authorizes before redirecting to the registered assets surface',async()=>{
+  for(const prefix of ['/admin','/studio/admin'])for(const method of ['GET','HEAD']){
+    const url='https://studio.test'+prefix+'/material-library?role=background&game=roulette&operator=north&room=vip';
+    let authorized=0;
+    const authorize=async request=>{authorized++;assert.equal(request.url,url);};
+    const denied=new Error('denied');
+    await assert.rejects(serveDesignPreview(new Request(url,{method}),['material-library'],{authorize:async()=>{throw denied;}}),error=>error===denied);
+    const response=await serveDesignPreview(new Request(url,{method}),['material-library'],{authorize});
+    assert.equal(authorized,1);assert.equal(response.status,307);assert.equal(await response.text(),'');
+    const target=new URL(response.headers.get('location'),'https://studio.test');
+    assert.equal(target.pathname,'/admin/assets');assert.equal(target.searchParams.get('tab'),'backgrounds');
+    for(const [key,value] of [['game','roulette'],['operator','north'],['room','vip']])assert.equal(target.searchParams.get(key),value);
+    assert.equal(response.headers.get('cache-control'),'private, no-store');
+    assert.equal((await serveDesignPreview(new Request(url,{method:'POST'}),['material-library'],{authorize})).status,405);
+    assert.equal(authorized,1);
+  }
+});
+
+test('retired library login returns to canonical assets without accepting invalid context',()=>{
+  for(const prefix of ['/admin','/studio/admin']){
+    const target=studioLoginReturnTo(prefix+'/material-library?role=background&game=roulette&room=vip');
+    assert.equal(target,'/admin/assets?role=background&game=roulette&room=vip&tab=backgrounds');
+    assert.equal(studioLoginReturnTo(prefix+'/material-library?role=table&role=background'),'/admin');
+    assert.equal(studioLoginReturnTo(prefix+'/material-library?returnTo=https://outside.invalid'),'/admin');
+  }
 });

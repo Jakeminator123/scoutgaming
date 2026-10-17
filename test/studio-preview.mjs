@@ -155,6 +155,25 @@ test('HTML and session metadata preserve own identity and expose incomplete deal
   assert.equal((await f.api.handle(f.request(session.entryUrl+'?operator=sg-test'))).status,400);
 });
 
+test('saved preview entry permits a same-origin frame while keeping private auth and external services disabled',async t=>{
+  const f=fixture(t,{readHtml:()=>readFile(new URL('../web/public/index.html',import.meta.url),'utf8')}),session=await start(f);
+  const navigation={'sec-fetch-site':'same-origin','sec-fetch-mode':'navigate','sec-fetch-dest':'iframe'};
+  for(const method of ['GET','HEAD']){
+    const response=await f.api.handle(f.request(session.entryUrl,method,undefined,navigation));
+    assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'private, no-store');
+    assert.match(response.headers.get('content-type'),/^text\/html/);
+    const frameOption=response.headers.get('x-frame-options')?.toUpperCase();
+    assert.ok(!frameOption||frameOption==='SAMEORIGIN','entry must permit its same-origin Admin parent');
+    const ancestors=(response.headers.get('content-security-policy')??'').split(';').map(value=>value.trim()).find(value=>value.startsWith('frame-ancestors '));
+    if(ancestors)assert.ok(ancestors.split(/\s+/).includes("'self'"),'frame-ancestors must include self');
+    const html=await response.text();if(method==='HEAD')assert.equal(html,'');else assert.match(html,/<body\b[^>]*data-scout-assistant="disabled"/);
+  }
+  assert.equal((await f.api.handle(f.request(session.entryUrl,'GET',undefined,{...navigation,'sec-fetch-site':'cross-site'}))).status,403);
+  const info=await (await f.api.handle(f.request('/api/studio-preview/'+session.sessionId+'/session'))).json();
+  assert.deepEqual(info.externalServices,{ai:false,speech:false});
+  for(const route of ['chat','memory','probe','camera','speech'])assert.equal((await f.api.handle(f.request('/api/studio-preview/'+session.sessionId+'/'+route,'POST',{}))).status,404);
+});
+
 test('stale revisions, unplayable defaults, mismatched media and unknown lanes allocate no session',async t=>{
   const f=fixture(t);assert.equal((await f.create({expectedProjectRevision:'old'})).response.status,409);
   assert.equal((await f.create({presentationLaneId:'unknown'})).response.status,404);
