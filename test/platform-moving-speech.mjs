@@ -5,7 +5,7 @@ import {once} from 'node:events';
 import {readFile} from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
-const frontendRequire = createRequire(new URL('../apps/croupier-frontend/package.json', import.meta.url));
+const frontendRequire = createRequire(new URL('../apps/web/package.json', import.meta.url));
 const WebSocket = frontendRequire('ws'), {WebSocketServer} = WebSocket;
 import {createSpeechIngress} from '../apps/croupier-speech/service.mjs';
 import {platformConfiguration, platformRoute, backendPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../packages/navigation/server/platform-routing.mjs';
@@ -34,9 +34,9 @@ function transported(request) {
 
 test('moving routes remain exact and carry bank/rest requests through actual signed Next middleware',async()=>{
   const paths = ['/api/moving-speech/'+'a'.repeat(32)+'/rest', ...['archive','receipt'].map(kind=>'/api/moving-speech/bank/'+'b'.repeat(64)+'/'+kind)];
-  const require = createRequire(new URL('../apps/croupier-frontend/package.json',import.meta.url));
+  const require = createRequire(new URL('../apps/web/package.json',import.meta.url));
   const {transpileModule,ModuleKind,ScriptTarget}=require('typescript'), {NextRequest}=require('next/server');
-  const compiled=transpileModule(await readFile(new URL('../apps/croupier-frontend/middleware.ts',import.meta.url),'utf8'),{compilerOptions:{module:ModuleKind.CommonJS,target:ScriptTarget.ES2022}}).outputText;
+  const compiled=transpileModule(await readFile(new URL('../apps/web/middleware.ts',import.meta.url),'utf8'),{compilerOptions:{module:ModuleKind.CommonJS,target:ScriptTarget.ES2022}}).outputText;
   const module={exports:{}};new Function('require','module','exports',compiled)(require,module,module.exports);
   const previous=Object.fromEntries(Object.keys(env).map(key=>[key,process.env[key]]));
   try {

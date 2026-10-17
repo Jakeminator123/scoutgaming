@@ -327,7 +327,8 @@ Det visar konfiguration, inte att alla fem används eller att varje samtal anvä
 grundmodellen. Ingen roll raderas på antagandet att den är inaktiv.
 
 | Roll | Vem anropar den? | Uppgift |
-| --- | --- | --- |
+| --- | --- |
+| 2026-10-17 | Frontendens spårade källrot är apps/web. CI, lokala hooks och miljöregistret följer samma rot; testtäckning och separat Node22-speechsteg består. Gamla ignorerade data och dependencyjunctions har inte flyttats. Lokal verifiering och återstående leverans framgår av JOHN-HANDOFF. | --- |
 | croupier-director | Presentationsrådgivning i OpenClaw-/shadow-läge | Väljer bland tillåtna, kompatibla klippvarianter |
 | croupier-chat | Äldre operatörschatt via Director | Förklarar konfiguration; skriver inte |
 | croupier-operator | OpenClaws egen dashboard | Separat administrativ konversation |

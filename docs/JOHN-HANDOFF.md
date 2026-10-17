@@ -1,5 +1,32 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — frontendens källrot apps/web, lokalt 17 oktober 2026
+
+Alla 130 spårade frontendfiler har flyttats från apps/croupier-frontend till
+apps/web. Exakta import-, fixture-, CI-, hook- och guiderötter följer flytten;
+vercel.json ändrar enbart services.web.root. Speech behåller sin nuvarande rot
+och Node22.23.1; frontend behåller Node24.21.0/pnpm10.33.2 och samma låsfil.
+Ignorerade data, gamla dependencyjunctions och byggmappar har inte flyttats.
+
+Basen dfca4db98da15e0221c820d8fe7bfdc7f8795c15 förenar O/N, J/main218 och
+PR223:s rättade e3e9f8e7. Källflytten bevarar alla ursprungliga filbytes;
+23 filer har enbart exakta sökvägsbyten. Publika URL:er, medieidentiteter och
+protokollvärden består. Historiska npm-/importnamn är inte nya källrötter.
+
+Verifierat lokalt: samtliga 12 frontendtestfiler 117/117 med fyra workers,
+prepare och exakt ett aktiverat Next-produktionsbygge med isolerade exempelvärden.
+100/100 deklarerade URL:er från 52 källor byggs; enda källbytesanpassningen är
+befintlig importomräkning. Importgrafen är komplett, closure 2 309 672 byte under
+fem MiB. Alla fem relevanta routetraces inkluderar runtime-HTML; 21 traces har
+inga gamla frontend-, privata data- eller källmedievägar. Frontendtyper, 40
+rot-/CI-/hook-/entryprov, ett verkligt GET/HEAD-importgrafprov, miljöregistret
+och 18 transportprov på Node22.23.1 är gröna. Inga nya testfiler.
+
+Detta är lokal verifiering, inte ett nytt spel-/mediegodkännande. Ingen extern
+konfiguration, push eller deploy har gjorts; PR/CI/drift och provhåll samordnas
+av huvudagenten. Nästa apprötter följer separata leveranser.
+
+
 ## Publika moduler oberoende av deployordning — 17 oktober 2026
 
 Frontendens middleware låter GET/HEAD till exakta kanoniskt validerade adresser i

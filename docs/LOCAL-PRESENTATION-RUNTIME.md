@@ -1674,7 +1674,7 @@ eftersom `media/catalog/legacy.json` refererar dem. `media/game/staging`,
 Amiras staging och tre avslutade Astrid-experiment är borta. Astrids
 kalibrering, godkännandeanteckningar och osäkra mappar står kvar.
 
-Spelar-UI-bygget är `apps/croupier-frontend/tools/player-ui-build.mjs`.
+Spelar-UI-bygget är `apps/web/tools/player-ui-build.mjs`.
 `ops/vercel-entry` och `ops/caddy/bettalotto-game-auth.Caddyfile` är borta.
 Vercel-projektet `github-work-vercel-entry` finns inte. A18: bettalotto.se
 svarar 301 till `https://croupier.scoutgg.dev/` och använder inte den
@@ -1904,7 +1904,7 @@ operatör på [/partner](https://www.scoutgaming.tech/partner) och spel på
 [/play/blackjack](https://www.scoutgaming.tech/play/blackjack), samma origin
 www.scoutgaming.tech. Apex `scoutgaming.tech` är en 308 till www.
 Vercelprojektet `scoutgaming` visar gränssnitten med två Services från samma
-repo/main: `web` bygger `apps/croupier-frontend`, `studio` bygger `lab`.
+repo/main: `web` bygger `apps/web`, `studio` bygger `lab`.
 Båda kör i Frankfurt. `/control` och `/partner` skrivs om till labb-servicen;
 `/studio` är den servicens basePath, inte en fjärde produkt och inte namnet i
 gränssnittet. Övriga webbdokument går till web. Render-tjänsten `croupier-v2`

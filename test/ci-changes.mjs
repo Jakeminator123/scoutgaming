@@ -29,7 +29,7 @@ test('NUL parser preserves unusual names and fails on truncated/rename records',
 });
 
 test('client-only PRs avoid production reads; server, migration and uncertain changes retain readiness', () => {
-  for (const path of ['lab/components/editor.tsx', 'apps/croupier-frontend/components/button.tsx',
+  for (const path of ['lab/components/editor.tsx', 'apps/web/components/button.tsx',
     'lab/client/admin/lib/navigation.mjs', 'lab/test/editor.test.mjs', 'test/rooms.mjs']) {
     assert.equal(migrationReadinessRequired([change(path), change('docs/guide.md')]), false, path);
   }
@@ -54,7 +54,7 @@ test('client-directory dependencies, schemas and configuration cannot bypass mig
     'lab/client/build.mjs', 'lab/client/.env.production',
     'lab/client/migrations/020-studio.sql', 'lab/client/admin/lib/studio.schema.json',
     'lab/client/admin/lib/schema.ts', 'lab/client/config/runtime.mjs',
-    'lab/components/configuration.mjs', 'apps/croupier-frontend/components/schema.prisma',
+    'lab/components/configuration.mjs', 'apps/web/components/schema.prisma',
   ];
   for (const path of sensitive) for (const extra of [
     {}, {status:'A', before:'000000'}, {status:'D', after:'000000'},
@@ -63,7 +63,7 @@ test('client-directory dependencies, schemas and configuration cannot bypass mig
   }
   for (const path of ['lab/client/admin/components/editor.tsx',
     'lab/client/runtime/preview.css', 'lab/client/admin/lib/navigation.test.mjs',
-    'lab/components/editor.tsx', 'apps/croupier-frontend/components/button.tsx',
+    'lab/components/editor.tsx', 'apps/web/components/button.tsx',
     'test/fixtures/package.json', 'lab/test/fixtures/schema.sql']) {
     assert.equal(migrationReadinessRequired([change(path)]), false, path);
   }

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const guides = new Set([
   'README.md', 'AGENTS.md', 'CLAUDE.md', 'lab/README.md',
   'web/README.md', 'web/public/README.md', 'web/storage/README.md',
-  'apps/croupier-frontend/README.md', 'lab/client/README.md',
+  'apps/web/README.md', 'lab/client/README.md',
   'packages/presentation/README.md', 'tools/media/README.md',
   'open-claw/README.md', 'open-claw/lab/README.md',
   'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
@@ -56,7 +56,7 @@ export function migrationReadinessRequired(changes) {
     (/^(?:test\/|lab\/test\/)/.test(path)
       || documentationOnly([{path, before, after, status}])
       || !migrationSensitivePath(path)
-        && (/^(?:lab\/components\/|apps\/croupier-frontend\/components\/|lab\/client\/)/.test(path)
+        && (/^(?:lab\/components\/|apps\/web\/components\/|lab\/client\/)/.test(path)
           || /\.(?:css|scss|png|jpg|jpeg|svg|webp)$/.test(path)))
   );
 }

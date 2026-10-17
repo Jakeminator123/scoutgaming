@@ -9,7 +9,7 @@ const documentationFiles = new Set([
   'lab/README.md', 'lab/docs/README.md',
   // Folder guides describe source ownership; runtime prompts, package metadata
   // and arbitrary Markdown outside docs/ are not documentation-only changes.
-  'apps/croupier-frontend/README.md',
+  'apps/web/README.md',
   'packages/presentation/README.md', 'lab/client/README.md',
   'packages/presentation/docs/INTEGRATION.md',
   'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
@@ -129,9 +129,9 @@ export function checkPlan(mode, { changes = [], root = repositoryRoot } = {}) {
   if (changes.some(({path}) => /^(?:docs\/environment-variables\.json|tools\/check-environment-variables\.mjs)$/.test(path))) {
     commands.push([process.execPath, 'tools/check-environment-variables.mjs']);
   }
-  if (changes.some(({path}) => /^apps\/croupier-frontend\/.+\.[cm]?[jt]sx?$/.test(path))) {
-    commands.push([process.execPath, 'apps/croupier-frontend/node_modules/typescript/bin/tsc',
-      '--project', 'apps/croupier-frontend/tsconfig.json', '--noEmit', '--incremental', 'false']);
+  if (changes.some(({path}) => /^apps\/web\/.+\.[cm]?[jt]sx?$/.test(path))) {
+    commands.push([process.execPath, 'apps/web/node_modules/typescript/bin/tsc',
+      '--project', 'apps/web/tsconfig.json', '--noEmit', '--incremental', 'false']);
   }
   if (tests.length) commands.push([process.execPath, '--test', '--test-concurrency=4', ...tests]);
   return commands;

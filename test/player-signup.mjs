@@ -6,7 +6,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { playerAuth } from '../web/player-auth.mjs';
-import { blackjackUrl } from '../apps/croupier-frontend/tools/player-ui-build.mjs';
+import { blackjackUrl } from '../apps/web/tools/player-ui-build.mjs';
 
 test('player account survives restart, remains separate from Scout, rejects impersonation and revokes sessions', async () => {
   const directory=mkdtempSync(join(tmpdir(),'player-signup-'));
