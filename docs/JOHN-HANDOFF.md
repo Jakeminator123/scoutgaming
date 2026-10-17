@@ -1,5 +1,33 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: budgetmigration 014 installerad — 18 oktober 2026
+
+Efter verifierad #230-driftsättning på `fc7085e731e53012e058372f9afe0b28edb5ddad`
+installerades endast 014 den 18 oktober 00:56:33 svensk tid (22:56:33Z).
+Färsk Render-avläsning bekräftade `croupier_game` på rätt Neon-host och
+moving speech `0`. Migrationen kördes som befintliga ägarrollen `croupier_game`;
+nya tabellen har därmed samma ägare och runtimeåtkomst som journalen.
+Samtliga äldre ledgerposter och de fyra budgetbindningarna bevarades exakt.
+
+Återläsning 01:00:46 svensk tid visar alla registrerade versioner till och med
+014 installerade, inga väntande migrationer och godkänd readiness även när 014
+är obligatorisk. Budget-ID `dragan-test-20261017` har fortfarande fyra
+reservationer, 4,8 USD reserverat, gammalt tak 4,8 USD och noll budgetändringar.
+Ingen kostnadsreservation eller GPU-start har alltså gjorts i detta steg.
+
+Följdändringen tar bort `deploymentOptional` för 014 och uppdaterar de två
+exakta importkontrollerna samt schemafixtures. Saknad 014 stoppar start/import,
+även om ett anrop felaktigt märker den optional; främmande versioner och
+ogiltiga bevis avvisas fortfarande. Riktad verifiering: 89/89 godkända.
+SQL-migrationsfilen och budgetoperationens kod är oförändrade från #230.
+Mergeagentens #230-kvitto anger grön PR/main-CI inklusive riktig SQL/restart/HTTPS;
+det är separat från de lokala följdtester som körts här.
+
+Kvar: required-följdstegets merge/deploy, färdiga rotflyttar och driftkvitton,
+sedan ny kostnadsavläsning, uttrycklig budgetändring 4,8 → 6,0 och exakt ett
+kontrollerat tal-/läppsynkprov inom sammanlagt 15 USD. Inga nya talvariabler,
+providerresurser eller medieändringar har skapats. Astrid är bevarad.
+
 
 ## Dragan: uttrycklig budgetändring inom 15 USD — 18 oktober 2026
 
