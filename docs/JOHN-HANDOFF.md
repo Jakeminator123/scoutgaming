@@ -22,6 +22,13 @@ leverans. Detta är första delen av etapp 3: auth, presentationsorkestrering,
 lagring, appägarskap och gamla källrötter återstår. Ingen ny medie- eller
 läppsynksacceptans ingår.
 
+Full CI hittade ytterligare två isolerade källträd som kopierade de gamla
+appkatalogerna men inte de nya paketfilerna. Den gemensamma serverfixturen
+kopierar nu capability-kontraktet, och baslinjearkivet tar med MIME-modulen.
+Ett befintligt bootstrap-prov saknade dessutom klientens kalibreringsmodul i
+sin källkopia; den tas nu med. Fixturerna behåller sina isolerade data och
+utvidgas inte till hela paketträd.
+
 ## Etapp 2: kataloger och dokumentingångar — 17 oktober 2026
 
 PR202 är mergad på `f16b5eac5838d424c5e9fafe804f5024a809af62` med grön
