@@ -1,3 +1,4 @@
+import { MOVING_BUDGET_MAX_MICRO_USD } from './moving-speech-budget.mjs';
 import { MOVING_SPEECH_LIMITS } from './moving-speech-limits.mjs';
 import { GPU_RESERVATION_WINDOW_MS } from '../packages/presentation/contracts/speech-journal-constants.mjs';
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -38,7 +39,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
   if (!journal || ['reserveMovingSession', 'assertMovingSession', 'listMovingSessions'].some(name => typeof journal[name] !== 'function')
     || !provider || ['submit', 'cancel', 'status'].some(name => typeof provider[name] !== 'function')
     || typeof release !== 'function' || typeof workerState !== 'function'
-    || !positive(totalBudgetMicroUsd, 5000000) || !positive(reserveMicroUsd, totalBudgetMicroUsd)
+    || !positive(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD) || !positive(reserveMicroUsd, Math.min(totalBudgetMicroUsd,5000000))
     || !positive(currentDailyBudgetMicroUsd, 20000000) || !positive(lifetimeMs, MOVING_SPEECH_LIMITS.lifetimeMs)
     || !positive(startupMs, Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs))
     || !positive(idleMs, 15000) || !positive(cleanupMs, 30000) || !positive(pollMs, 1000)) fail('invalid_generated_speech_moving_configuration', 422);

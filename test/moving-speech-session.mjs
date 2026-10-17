@@ -106,7 +106,7 @@ test('aborted admission performs no provider submit and a later attempt can acqu
 });
 
 test('configuration rejects spend increases and deadlines beyond the fixed moving window',()=>{
-  for(const configuration of [{totalBudgetMicroUsd:5000001},{lifetimeMs:480001},{startupMs:450001},
+  for(const configuration of [{totalBudgetMicroUsd:15000001},{totalBudgetMicroUsd:15000000,reserveMicroUsd:5000001},{lifetimeMs:480001},{startupMs:450001},
     {startupMs:0},{startupMs:1001,lifetimeMs:1000},{idleMs:15001}])assert.throws(()=>fixture({configuration}),/configuration/);
 });
 

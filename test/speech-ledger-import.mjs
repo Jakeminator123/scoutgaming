@@ -134,7 +134,7 @@ test('speech import rejects required gaps unknown versions and invalid proofs',a
   for(const mutate of [
     value=>{value.applied=value.applied.filter(row=>row.version!=='012');},
     value=>{value.applied=value.applied.filter(row=>row.version!=='013');},
-    value=>value.applied.push({...last,version:'014'}),
+    value=>value.applied.push({...last,version:'999'}),
     value=>value.applied.push({...last}),
     value=>{value.applied.at(-1).checksum='invalid';},
     value=>{value.applied.at(-1).structureChecksum='invalid';},

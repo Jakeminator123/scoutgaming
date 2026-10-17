@@ -1,3 +1,4 @@
+import { runMovingBudgetSqlChecks } from './fixtures/moving-budget-sql-checks.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash,randomBytes,randomUUID } from 'node:crypto';
@@ -44,7 +45,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
       classification:{dealerId:'dragan',eventId:'idle.ready',kind:'idle',role:'alternative',situation:'VILA',label:'Fixture',notes:''}};
     await pool.query("INSERT INTO croupier_studio.documents (environment_id,workspace_id,kind,revision,value) VALUES ($1,$2,'project',$3,jsonb_build_object('revision',$3::text))",[scope.environment,scope.workspaceId,projectRevision]);
     await pool.query('INSERT INTO croupier_studio.media_records(environment_id,workspace_id,id,revision,record) VALUES($1,$2,$3,$4,$5::jsonb)',[scope.environment,scope.workspaceId,id,revision,JSON.stringify(record)]);
-    await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:2000000,confirmation:'verified-new-empty-cost-journal'});
+    await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:20000000,confirmation:'verified-new-empty-cost-journal'});
     let lease=await journal.acquireLease({resource:'stream-session',holderId:'moving-qa'});
     const binding={schemaVersion:1,releaseSha256:'4'.repeat(64),dealerId:'dragan',workerAvatar:'dragan',profileRevision:'5'.repeat(64),
       sourceSetSha256:'6'.repeat(64),avatarSha256:'7'.repeat(64),bankReceiptSha256:'8'.repeat(64),sessionId:suffix()+suffix(),attemptId:'attempt-1',nonce:'9'.repeat(64)};
@@ -122,6 +123,7 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
       binding:{...binding,sessionId:nextSession},totalBudgetMicroUsd:1000000}),hasCode('generated_speech_total_budget_exhausted'));
     assert.equal((await pool.query('SELECT sum(reserved_micro_usd)::int AS used FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1',[scope.environment])).rows[0].used,250000);
     await journal.releaseLease({lease});
+    await runMovingBudgetSqlChecks({pool,input,journal});
   });
 
   await check('media deletion finds exact journal owners and fails closed on unattributed speech activity', async () => {

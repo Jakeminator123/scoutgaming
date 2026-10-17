@@ -1,3 +1,4 @@
+import { MOVING_BUDGET_MAX_MICRO_USD, validMovingBudgetAmendment, freshMovingBudgetAmendment } from './moving-speech-budget.mjs';
 import { createHash } from 'node:crypto';
 import { StudioStorageError, validateStudioEnvironmentId, validateStudioScope, canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 import { verifyMovingSpeechBinding } from './moving-speech-binding.mjs';
@@ -228,6 +229,25 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
     return { ...sessionResult(saved), days, reservedMicroUsd: reserveMicroUsd };
   }
 
+  // A durable amendment may raise the ceiling; changing runtime config cannot.
+  // The cumulative sum never excludes cancelled, terminal or released sessions.
+  const movingBudget = async (client, scope, budgetId) => {
+    const budget = await row(client, 'moving_budget', `SELECT coalesce(sum(reserved_micro_usd),0)::bigint AS used,
+      min(budget_limit_micro_usd)::bigint AS ceiling, count(*)::bigint AS count,
+      bool_and(workspace_id=$3) AS same_workspace FROM croupier_studio.moving_speech_bindings
+      WHERE environment_id=$1 AND budget_id=$2`, [environment,budgetId,scope.workspaceId]);
+    if (integer(budget.count) && budget.same_workspace !== true) fail('generated_speech_moving_budget_scope_mismatch',409);
+    const ready = await row(client, 'moving_amendments_ready', "SELECT to_regclass('croupier_studio.moving_speech_budget_amendments') IS NOT NULL AS present");
+    const amendment = ready?.present ? await row(client, 'moving_latest_amendment', `SELECT * FROM croupier_studio.moving_speech_budget_amendments
+      WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd DESC LIMIT 1`, [environment,budgetId]) : null;
+    if (amendment && (amendment.workspace_id !== scope.workspaceId || !validMovingBudgetAmendment(amendment.amendment)
+      || integer(amendment.budget_limit_micro_usd) !== amendment.amendment.newLimitMicroUsd
+      || integer(budget.count) < amendment.amendment.expectedReservationCount
+      || integer(budget.used) < amendment.amendment.expectedReservedMicroUsd)) fail('generated_speech_journal_invalid',409);
+    return { used:integer(budget.used), count:integer(budget.count), amendmentsReady:ready?.present === true,
+      ceiling:amendment ? integer(amendment.budget_limit_micro_usd) : budget.ceiling === null ? null : integer(budget.ceiling) };
+  };
+
   function movingScope(scope) {
     const checked = validateStudioScope(scope);
     if (checked.environment !== environment) fail('studio_scope_mismatch', 409);
@@ -430,21 +450,50 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
       check(sessionId, sessionIdPattern); check(endpointId, endpointPattern); microUsd(reserveMicroUsd); microUsd(currentBudgetMicroUsd, MAX_DAILY_MICRO_USD); drained(workerState);
       return transaction((client, time) => reserveGpu(client, time, { sessionId, endpointId, lease, reserveMicroUsd, currentBudgetMicroUsd, workerState }));
     },
-    // Optional migration 013 is required only when this feature is invoked.
+    // Internal operator operation only: no HTTP route and no startup auto-grant.
+    // Evidence comes from the trusted cost/worker audit, never a player's body.
+    async authorizeMovingBudgetAmendment({ scope, amendment, workerState, confirmation } = {}) {
+      scope = movingScope(scope);
+      if (confirmation !== 'apply-explicit-moving-budget-amendment' || !validMovingBudgetAmendment(amendment))
+        fail('invalid_generated_speech_budget_amendment',422);
+      amendment = JSON.parse(JSON.stringify(amendment));
+      return transaction(async (client,time) => {
+        const budget = await movingBudget(client,scope,amendment.budgetId);
+        if (!budget.amendmentsReady) fail('generated_speech_moving_budget_schema_required',503);
+        const existing = await row(client,'moving_amendment',`SELECT * FROM croupier_studio.moving_speech_budget_amendments
+          WHERE environment_id=$1 AND budget_id=$2 AND amendment_id=$3`,[environment,amendment.budgetId,amendment.amendmentId]);
+        if (existing) {
+          if (existing.workspace_id !== scope.workspaceId || canonicalStudioJson(existing.amendment) !== canonicalStudioJson(amendment))
+            fail('generated_speech_budget_amendment_conflict',409);
+          return { amendmentId:amendment.amendmentId, budgetId:amendment.budgetId, totalBudgetMicroUsd:integer(existing.budget_limit_micro_usd), alreadyApplied:true };
+        }
+        if (!freshMovingBudgetAmendment(amendment,time)) fail('generated_speech_budget_evidence_stale',409);
+        drained(workerState);
+        if (await getOpenSession(client)) fail('generated_speech_session_busy',429);
+        if (budget.ceiling !== amendment.expectedLimitMicroUsd || budget.used !== amendment.expectedReservedMicroUsd
+          || budget.count !== amendment.expectedReservationCount) fail('generated_speech_budget_amendment_conflict',409);
+        await row(client,'insert_moving_amendment',`INSERT INTO croupier_studio.moving_speech_budget_amendments
+          (environment_id,workspace_id,budget_id,amendment_id,previous_limit_micro_usd,budget_limit_micro_usd,reserved_before_micro_usd,amendment,created_at_ms)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9) RETURNING amendment_id`,
+        [environment,scope.workspaceId,amendment.budgetId,amendment.amendmentId,amendment.expectedLimitMicroUsd,
+          amendment.newLimitMicroUsd,amendment.expectedReservedMicroUsd,JSON.stringify(amendment),time]);
+        return { amendmentId:amendment.amendmentId, budgetId:amendment.budgetId, totalBudgetMicroUsd:amendment.newLimitMicroUsd, alreadyApplied:false };
+      },scope);
+    },
+    // Moving admission requires migration 013; amendments require 014.
     // One atomic admission: spent request, exact media, GPU/day and total budget.
     async reserveMovingSession({ scope, ownerHash, requestId, fingerprint, binding, mediaReferences, projectRevision,
       budgetId, totalBudgetMicroUsd, ...gpu } = {}) {
       scope = movingScope(scope); binding = verifyMovingSpeechBinding(binding);
       const key = speechRequestKey(ownerHash, requestId); check(fingerprint, hash); check(budgetId, identifier);
-      microUsd(totalBudgetMicroUsd, 5000000); microUsd(gpu.reserveMicroUsd, 5000000);
+      microUsd(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD); microUsd(gpu.reserveMicroUsd, 5000000);
       if (gpu.sessionId !== binding.sessionId) fail('invalid_generated_speech_moving_binding', 422);
       return transaction(async (client, time) => {
         const ready = await row(client, 'moving_ready', "SELECT to_regclass('croupier_studio.moving_speech_bindings') IS NOT NULL AS present");
         if (!ready?.present) fail('generated_speech_moving_schema_required', 503);
         if (await getRequest(client, key)) fail('generated_speech_request_already_attempted', 409);
         await assertMovingMedia(client, scope, projectRevision, binding, mediaReferences);
-        const budget = await row(client, 'moving_budget', `SELECT coalesce(sum(reserved_micro_usd),0)::bigint AS used,
-          min(budget_limit_micro_usd)::bigint AS ceiling FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1 AND budget_id=$2`, [environment, budgetId]);
+        const budget = await movingBudget(client, scope, budgetId);
         const ceiling = Math.min(totalBudgetMicroUsd, budget.ceiling === null ? totalBudgetMicroUsd : integer(budget.ceiling));
         if (integer(budget.used) + gpu.reserveMicroUsd > ceiling) fail('generated_speech_total_budget_exhausted', 429);
         const saved = await reserveGpu(client, time, gpu);
