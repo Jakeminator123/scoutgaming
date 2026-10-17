@@ -87,17 +87,57 @@ flowchart LR
 Schemat beskriver kodens avsedda flöde. Worker och budget antas och verifieras
 före röstgenerering; faktisk molnacceptans redovisas separat i handoffen.
 
+Jakob godkände den 17 oktober Emils bildrutebundna ansiktskomposition efter
+jämförelse med levererade `lappsynk-export-fe1b55e.zip` (SHA-256
+`949443c1084ab3f515792fe66c5e2d381e985f9bdc743e792e5fbca36a9240a3`).
+Zipens `LAPPSYNK-RUNPOD.md` beskriver MuseTalk-genererade ansiktsrutor med
+färg/alfamask i H.264 256×512 och exakt `tagning`, `ruta`, `rect` samt 220 ms
+ljudförskjutning. De centrala motorfunktionerna är AST-identiska med vår
+importerade motor; `rorlig.py` är byteidentisk. Browserkompositionen följer
+samma maskprincip men har inte visats vara pixelidentisk med Emils WebGL.
+Detta är ett uttryckligt undantag från äldre förbud mot påklistrade munlager:
+fristående, felmatchade eller oberoende tidsatta munanimationer är fortfarande
+otillåtna. Källjämförelsen är inte ett godkännande av läppsynkens synliga kvalitet.
+
+Spelvyns `Voice off` gäller mikrofonlyssningen. Textchatt kräver ingen mikrofon.
+Dealerns uppspelning, sparade talprofil och serverns driftkoppling är separata
+kontroller; ett aktiverat uppspelningsreglage bevisar inte att GPU-tal fungerar.
+
 `CROUPIER_MOVING_SPEECH_ENABLED=1` väljer den nya, separata workern för Dragan.
-Flaggan är av tills image, bank, schema013 och ett valt testrum är verifierade.
+Aktivering kräver verifierad image, bank, schema013, talprofil och ett valt
+testrum. En sparad flagga eller profil startar inget GPU-prov i sig; endpointens
+kapacitet och kostnadsvakt styr det betalda testfönstret.
 `web/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
 röst som övrig dealerchatt. Neon fryser exakta källreferenser och reserverar
 budget före GPU-anropet; TTS följer först efter workerintyg. PCM24k, textens
 hash, bankens hash och bildruteplan är en sammanhållen talhändelse.
 
-Första spelarvägen håller bankens uttryckliga vila under talet och använder
+Vanlig chatt håller bankens uttryckliga vila under talet och använder
 24fps-läppbilder inne i dealerlagret före komposition. Talgrinden placerar
-det mellan kortsekvenser. Det finns ännu ingen omplanering av en pågående
-utdelning. En inspelad replik behåller sin egen film och sitt eget ljud.
+det mellan kortsekvenser. Valet **Svara under nästa utdelning** reserverar
+i stället en ny, serverbestämd öppningssekvens. Spelaren skickar dess version;
+servern läser kortföljden från sitt eget kvitto och väljer exakta publicerade
+filmer. Redan spelade sekvenser återanvänds inte. Ljud, kropp, ansikte och
+kortkontakt följer samma klocka; ändrad ägare eller revision avbryter.
+Kort tal låter den återstående kroppsrörelsen avslutas; långt tal fortsätter
+i bankens uttryckliga vila efter sekvensen. Detta är ingen fri omplanering
+mitt i en redan pågående utdelning. En inspelad replik behåller sitt eget ljud.
+Kodens teststatus och faktisk molnverifiering redovisas var för sig i handoffen.
+
+Originalens kropps- och vilorutor läses från hashkontrollerad, progressiv AVC/MP4
+med en CFR24-videoström och högst 600 källrutor per fil. Tidsstämplar och
+bildindex måste stämma exakt; rotation,
+icke-kvadratiska pixlar, klippning och andra format stoppas. WebCodecs-ytor
+kopieras och frigörs direkt för att undvika att Chrome får slut på decoder-
+ytor i 1080p. Högst 24 kroppsrutor buffras. Ingen fristående videoklocka,
+närmaste-bild-sökning eller omskrivning av originalfiler används.
+Vilan avkodas som en enda deklarerad källruta och kopieras till en fristående
+canvas; ingen spelande HTML-video används för att fånga den bilden.
+Alla använda komprimerade källfiler hämtas och verifieras före ljudstart,
+med en gemensam gräns på 96 MiB. Senare avkodning behöver därmed inte vänta
+på nästa nätverkshämtning. En ny serverversion återkallar reservationen
+och avbryter aktivt även en worker som inte skickar fler chunks. Efter
+varje asynkron kontextkontroll återkontrolleras reservationen synkront.
 
 Bankarkiv och kvitto lagras privat i Blob under
 `croupier/media/dealers/dragan/runtime/moving-bank/`. Den låsta manifestreferensen
@@ -246,14 +286,12 @@ komposition, borttagning av tallagret och stängning frigör bildrutorna;
 borttagning återställer också en eventuell kvarhållen kropp utan munbild.
 Inkommande byte, kö, antal lagrade rutor och avkodningstid är begränsade.
 
-Detta är en testad, opt-in konsument, inte ett färdigt produktionsflöde:
-ingen spel-/chattkod installerar den automatiskt, ingen relay eller endpoint
-byts och inget GPU-jobb startas. Workertransporten beskrivs nedan. Kvar är
-inkoppling mot autentiserad spelarsession och vår budgetjournal,
-serverns tidsplanering/replanering, verifierat avatarpaket mot publicerade
-klipp och ljudklockan i den faktiska spelaren. Den vägen ska behålla befintliga
-åtkomst-, budget-, text-, röst- och profilkontroller. Först därefter görs två
-sammanhängande riktiga talprov, inklusive hit/planbyte och avbrott.
+Konsumenten är nu kopplad till den uttryckligen aktiverade Dragan-talvägen
+ovan, med autentiserad spelarsession, budgetjournal, publicerade källor och
+ljudklocka. Modulen startar inget GPU-jobb själv. Generell omplanering mitt
+i en pågående utdelning ingår inte; ny version avbryter det bundna talet.
+Verklig molnuppspelning och läppsynkskvalitet återstår att verifiera enligt
+handoffen; lokala codec- och kontraktsprov innebär ingen visuell acceptans.
 
 Riktade tester verifierar identiteter, revisioner, alfamask, pixelplacering,
 avbrott, buffertgränser och oförändrad kortgeometri. Opt-in Chrome-provet i
@@ -708,7 +746,11 @@ kortkontakt, masker och lager visuellt/hörbart. Tidigare Paow-godkännande
 följer inte automatiskt med nya film-/ljudhashar. Rörligt tal är öppet tills
 dessa kontroller passerar; källpaketets checksumma ersätter dem inte.
 
-### Förberedd bildruteadapter, 14 oktober 2026
+### Bildruteavtal och historiskt källunderlag
+
+Providerobservationerna nedan är från 14 oktober och beskriver Emils
+dåvarande miljö. Den egna Dragan-workerns aktuella koppling beskrivs högst
+upp i dokumentet och dess verifieringsstatus i handoffen.
 
 RunPods läs-API bekräftar endpointen `mq7eiwanda72fg`, namnet
 `croupier-lipsync-staging` och template `61hsh8i4r0`. Imagen är
@@ -725,7 +767,7 @@ GitHub-inloggning. Ingen GPU beställdes. Template har min 0/max 4 workers,
 180 s idle timeout och ingen kopplad nätverksvolym. Det bevisar inte var
 avatarbanken ligger eller att workern levererar rätt rutor.
 
-`web/moving-speech-plan.mjs` förbereder en ren, inaktiv adaptergräns:
+`web/moving-speech-plan.mjs` definierar bildruteavtalet:
 
 - Den tar en redan auktoriserad serverbindning (dealer, worker-avatar,
   session, tal, revision, röstprofil och text-/ljud-/avatarhashar), exakta
@@ -741,22 +783,18 @@ avatarbanken ligger eller att workern levererar rätt rutor.
   Resultatet pekar endast på dealerbilden före beskärning och keying;
   bakgrund, bord och auktoritativa kort förblir separata.
 
-Modulen verifierar formen på tillförda hashar, inte mediebytes eller
-provideråtkomst. Den är ännu inte inkopplad i server/player och startar inga
-jobb. Den ersätter inte befintlig stillbildsväg. Nästa integration måste
-verifiera paket/PCM/worker-avatar mot dessa hashar, använda befintlig
-admission och GPU-acceptans före TTS, auktorisera worker-relay och para ihop
-metadata med rätt avkodad bild. Vid omplanering ska gammal plan avbrytas
-både lokalt (`cancel()`) och hos workern; lokalt cancel avslutar inte ett
-RunPod-jobb. Befintlig budget, 60 s idle-gräns och avbrott gäller fortsatt.
-Spelarens faktiskt presenterade `mediaTime` och ljudklocka måste ge de två
-bildruteindexen. En renderingsbeskrivning är inte visuell synkacceptans.
+Modulen verifierar formen på tillförda hashar, inte ensam mediebytes eller
+provideråtkomst. `moving-speech-runtime.mjs`, bankkontrollen och transporten
+binder den till server och spelare med admission före TTS och verifierade
+källbytes. Metadata paras med rätt avkodad bild. Avbrott måste nå både lokal
+plan och ägt RunPod-jobb. Den nya vägens egna tids-/budgetgränser får inte
+ersättas med historiska Astrid- eller stagingvärden. En renderingsbeskrivning
+är inte visuell synkacceptans.
 
 `test/moving-speech-plan.mjs` körs i full pre-commit och provar Paow,
 Dragan/dragge, vilobild, hållna rutor, fel media/röst/session, omplanering,
-avbrott och maskgränser. Ingen shader, liveavkodare, ny provider eller
-ny meny har aktiverats. Två riktiga talprov per dealer återstår efter
-worker-/avatarverifiering och inkoppling.
+avbrott och maskgränser. Dessa är kontraktsprov, inte bevis för den
+driftsatta workerns eller det synliga talets kvalitet.
 
 ### Färsk worker- och källkontroll, 14 oktober 2026
 
@@ -803,8 +841,8 @@ inte att GPU-arbetet stoppats. Verifiera workerns stöd för avbrott, `bye` och
 ägarens RunPod-jobbcancel innan livekoppling. Den rapporterade en-lane-driften
 får inte antas ha samma avbrottskontrakt som flerlane-koden.
 
-`web/moving-speech-pcm.mjs` förbereder nu överföringen utan nätverk eller
-inkoppling i spelaren. Den kräver slutligt normaliserad mono s16le PCM vid
+`web/moving-speech-pcm.mjs` förbereder överföringen åt runtime-adaptern.
+Den kräver slutligt normaliserad mono s16le PCM vid
 24 kHz, kopierar och verifierar dess SHA-256 mot talplanen och kräver att
 kartan täcker hela ljudet plus 220 ms förtid. Samma ägda bytes kan lämnas
 till uppspelning och worker. Överföringen är engångsbruk: `start`, jämna
@@ -815,16 +853,15 @@ omklippning av ljudet sker.
 Avbrott under överföringen eller tidig iteratorstängning ogiltigförklarar
 planen och rensar dess privata ljudbuffert. Efter överföringen äger anroparen
 fortfarande planens livscykel och måste anropa `cancel()` vid byte/stängning.
-Den framtida transporten måste vänta på begränsade socket-skrivningar och
+Transporten måste vänta på begränsade socket-skrivningar och
 avsluta sitt faktiska RunPod-jobb vid behov. Modulen normaliserar inte ljud,
 auktoriserar inte sessioner och avkodar eller spelar inte bildrutor. Använd
 den först efter befintlig admission, GPU-acceptans och färsk profilkontroll.
 
-Plan-/PCM-testerna passerar 13 fall, inklusive fel ljudhash/format/längd,
-ägarisolering, omplanering, inputslut och avbruten överföring. Detta är
-kontraktsprov, inte hörbar eller visuell läppsynksacceptans. Återstående
-integration är worker-/avatarverifiering, autentiserad relay, avkodning,
-buffring före gemensam ljud-/bildstart och två riktiga prov per dealer.
+Plan-/PCM-testerna skyddar fel ljudhash/format/längd, ägarisolering,
+omplanering, inputslut och avbruten överföring. Detta är kontraktsprov,
+inte hörbar eller visuell läppsynksacceptans. Inget fast antal talprov
+ersätter verifieringen av den faktiskt ändrade kedjan.
 
 Separat obetald leverantörskontroll läste uttryckligen den Git-ignorerade
 `.env.emil`: rörliga endpointens health och båda ElevenLabs-rösternas GET

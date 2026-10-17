@@ -84,6 +84,8 @@ test('reject stale jobs, mutable metadata, overlaps, out-of-source rectangles an
   const m = packet(p); m.rutor[5] = null; m.rutor[6].rect = [300, 0, 40, 60];
   const pending = layer.push(m, bytes); m.rutor[7].rect[0] = 9999;
   await pending;
+  assert.equal(layer.hasFrame(5),true,'explicit null patch is a decoded no-change sample');
+  assert.equal(layer.hasFrame(20),false,'absent packet is never treated as silence');
   assert.equal(layer.paint(f.video, shown(p)), f.video);
   assert.equal(layer.paint(f.video, shown(p, 6)), f.video);
   assert.notEqual(layer.paint(f.video, shown(p, 7)), f.video, 'metadata was copied before async decode');
