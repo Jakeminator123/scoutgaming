@@ -6,7 +6,7 @@ import {effectivePartnerAdjustments,partnerLaneState,partnerPackageProfiles} fro
 import {PartnerPackageView} from '../components/partner-package-view.mjs';
 import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
-import { layerAssetPath, validatePresentationPackage } from '../../web/presentation-layers.mjs';
+import { layerAssetPath, validatePresentationPackage } from '../../packages/presentation/contracts/presentation-layers.mjs';
 
 const tableId='11111111-1111-4111-8111-111111111111', backgroundId='22222222-2222-4222-8222-222222222222';
 function makePresentation(layered=true,schemaVersion=2) {

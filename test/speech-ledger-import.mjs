@@ -6,7 +6,7 @@ import { prepareLegacySpeechLedgerSnapshot } from '../ops/neon-studio/speech-led
 import { applyLegacySpeechLedgerSnapshot } from '../ops/neon-studio/speech-ledger-import.mjs';
 import { createSpeechJournal, speechRequestKey } from '../web/postgres-speech-journal.mjs';
 import { planStudioMigrations } from '../ops/neon-studio/migrations.mjs';
-import { ASTRID_VOICE_PROFILE } from '../web/public/astrid-voice-profile.mjs';
+import { ASTRID_VOICE_PROFILE } from '../packages/presentation/contracts/astrid-voice-profile.mjs';
 import { mediaBlobPath } from '../lab/lib/cloud-media-store.mjs';
 import { createPostgresOperatorSpeechQa } from '../web/postgres-operator-speech-qa.mjs';
 

@@ -6,7 +6,7 @@ import { clipSituationLabel } from '../lib/clip-label.mjs';
 import { validateVideoMetadata, videoFitsEvent } from '../../packages/presentation/contracts/video-intake.mjs';
 import { transitionClipsForDealer } from '../../packages/presentation/runtime/shoe-transitions.mjs';
 import { selectPresentation } from '../lib/presentation-selection.mjs';
-import { prepareDecision, validateCatalog } from '../../open-claw/lab/src/engine.mjs';
+import { prepareDecision, validateCatalog } from '../../packages/director/engine.mjs';
 
 const registry = { videos: [], families: [] };
 const metadata = (situation, role = 'standard') => ({

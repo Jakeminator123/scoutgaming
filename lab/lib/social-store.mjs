@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import lockfile from 'proper-lockfile';
 import seed from '../policies/social.seed.json' with { type: 'json' };
-import { validateSocialPolicy } from '../../open-claw/lab/src/social.mjs';
+import { validateSocialPolicy } from '../../packages/director/social.mjs';
 import { StudioError } from './project-store.mjs';
 
 export function createSocialPolicy() { return structuredClone(seed); }

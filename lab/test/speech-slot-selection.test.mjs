@@ -4,8 +4,8 @@ import { createEmptyProject, addDealer, addVariant, validateProject } from '../.
 import { selectPresentation, decisionCatalog } from '../lib/presentation-selection.mjs';
 import { SPEECH_SLOT_IDS, speechSlotEventId, bindSpeechSlotStandard, speechSlotStandard } from '../../packages/presentation/contracts/speech-slot-bindings.mjs';
 import { recordedSpeechIdentity } from '../../packages/presentation/contracts/recorded-speech.mjs';
-import { gateRecordedSpeechSelection } from '../../web/recorded-speech-selection.mjs';
-import { frozenPlaybackProject } from '../../web/frozen-dealer-playback.mjs';
+import { gateRecordedSpeechSelection } from '../../packages/presentation/runtime/recorded-speech-selection.mjs';
+import { frozenPlaybackProject } from '../../packages/presentation/contracts/frozen-dealer-playback.mjs';
 
 const id = n => `20000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const noFetch = () => { throw Error('Unexpected network request'); };

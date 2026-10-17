@@ -4,7 +4,7 @@ import {createServer} from 'node:http';
 import {once} from 'node:events';
 import {createRequire} from 'node:module';
 import {createSpeechIngress} from '../apps/croupier-speech/service.mjs';
-import {platformConfiguration} from '../apps/croupier-frontend/lib/platform-routing.mjs';
+import {platformConfiguration} from '../packages/navigation/server/platform-routing.mjs';
 import {vercelIngressRequest} from '../ops/cloud/vercel-ingress.mjs';
 import {createMovingWorkerChannel} from '../services/astrid-gpu-worker/gateway/moving-transport.mjs';
 const {WebSocket}=createRequire(new URL('../services/astrid-gpu-worker/gateway/package.json',import.meta.url))('ws');

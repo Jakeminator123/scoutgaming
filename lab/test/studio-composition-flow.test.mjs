@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSeedProject as createEmptyProject,validateProject, defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
-import {layerAssetPath} from '../../web/presentation-layers.mjs';
+import {layerAssetPath} from '../../packages/presentation/contracts/presentation-layers.mjs';
 import {compositionPreviewLayers,registerCompositionLayer,uploadCompositionLayer} from '../lib/studio-composition.mjs';
 
 const id='11111111-2222-4333-8444-555555555555';

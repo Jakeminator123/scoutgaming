@@ -1,10 +1,10 @@
-import { validDashboardHandoff, validDashboardRequest, dashboardBrowserUrl } from '../../open-claw/lab/src/dashboard-handoff-contract.mjs';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
-import { CROUPIER_ADMIN_AGENTS, validateOpenClawAdminPatch, validAdminHash } from '../../open-claw/lab/src/studio-admin.mjs';
+import { validDashboardHandoff, validDashboardRequest, dashboardBrowserUrl } from '../../packages/director/dashboard-handoff-contract.mjs';
+import { readSettings } from './director-settings.mjs';
+import { CROUPIER_ADMIN_AGENTS, validateOpenClawAdminPatch, validAdminHash } from '../../packages/director/studio-admin-contract.mjs';
 import { normalizeStudioRole } from './studio-access-policy.mjs';
 import { normalizeNativeStudioRequest } from './studio-native-request.mjs';
 import { nativeStudioAdminConfiguration, studioNativeRuntime, assertNativeStudioRequest } from './studio-native-runtime.mjs';
-import { validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { resolve, basename } from 'node:path';
 
 const DIRECTOR = 'https://croupier-lab-director.onrender.com';

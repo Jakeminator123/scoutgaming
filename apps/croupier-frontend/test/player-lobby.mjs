@@ -6,7 +6,8 @@ import {dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 import {validatePublicOperatorRooms} from '../../../web/public/operator-rooms-contract.mjs';
-import {loadOperatorCatalogue,loadRoomCatalogue,roomSelection,roomLaunch,rememberRoomSelection,demoLobbyPath} from '../lib/player-lobby.mjs';
+import {loadOperatorCatalogue,loadRoomCatalogue} from '../lib/player-catalog.mjs';
+import {roomSelection,roomLaunch,rememberRoomSelection,demoLobbyPath} from '../lib/player-lobby.mjs';
 
 const table1='11111111-1111-4111-8111-111111111111',table2='22222222-2222-4222-8222-222222222222';
 const background1='33333333-3333-4333-8333-333333333333',background2='44444444-4444-4444-8444-444444444444';

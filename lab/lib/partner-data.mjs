@@ -1,14 +1,14 @@
-import { PARTNER_PERMISSIONS } from '../../web/partner-access-policy.mjs';
+import { PARTNER_PERMISSIONS } from '../../packages/studio-access/server/partner-access-policy.mjs';
 import { allowsWorkspaceResource, internalPartnerContext } from './partner-workspace-access.mjs';
 import { assertNativeStudioRequest } from './studio-native-runtime.mjs';
 import { normalizeNativeStudioPageRequest } from './studio-native-request.mjs';
 import { authorizePartnerWorkspace, partnerApiBase, partnerAuthConfig } from './partner-session.mjs';
-import { readPackagePresentation, publicPackageBranding } from '../../web/storage/presentation-package.mjs';
+import { readPackagePresentation, publicPackageBranding } from '../../packages/presentation/server/presentation-package.mjs';
 import { partnerPackageProfiles } from './partner-package-view.mjs';
-import { gameLaneConfiguration } from '../../web/public/game-lanes.mjs';
-import { isPresentationRoomLaneCompatible } from '../../web/storage/frozen-presentation-capture.mjs';
-import { listPackageRooms } from '../../web/presentation-room-contract.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
+import { gameLaneConfiguration } from '../../packages/presentation/contracts/game-lanes.mjs';
+import { isPresentationRoomLaneCompatible } from '../../packages/presentation/server/frozen-presentation-capture.mjs';
+import {listPackageRooms} from '../../packages/presentation/server/package-rooms.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
 
 const disconnected = Object.freeze(['players', 'transactions', 'reports']);
 
@@ -53,7 +53,7 @@ async function openOperatorStore(config) {
   if (config?.store) return config.store;
   let createOperatorStore;
   try {
-    ({ createOperatorStore } = await import('../../web/storage/operator-store.mjs'));
+    ({ createOperatorStore } = await import('../../packages/operators/server/operator-store.mjs'));
   } catch (error) {
     if (error?.code === 'ERR_MODULE_NOT_FOUND') fail(503);
     throw error;

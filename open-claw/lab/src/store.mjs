@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { validateCatalog } from './engine.mjs';
+import { validateCatalog } from '../../../packages/director/engine.mjs';
 
 export class StoreError extends Error {
   constructor(code, statusCode, errors = []) { super(code); this.code = code; this.statusCode = statusCode; this.errors = errors; }

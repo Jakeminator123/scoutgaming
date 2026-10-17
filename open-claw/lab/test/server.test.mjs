@@ -5,9 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { request, createServer } from 'node:http';
 import { createLabServer } from '../src/server.mjs';
-import { LAB_ROOT, readSettings, gatewayEndpoint } from '../src/settings.mjs';
-import { askDirector } from '../src/openclaw.mjs';
-import { prepareDecision, normalizeInput } from '../src/engine.mjs';
+import { LAB_ROOT, readSettings } from '../src/settings.mjs';
+import { gatewayEndpoint } from '../../../packages/director/configuration.mjs';
+import { askDirector } from '../../../packages/director/openclaw.mjs';
+import { prepareDecision, normalizeInput } from '../../../packages/director/engine.mjs';
 
 const catalog = JSON.parse(await readFile(join(LAB_ROOT, 'config/catalog.json'), 'utf8'));
 const settings = dataDir => ({ host: '127.0.0.1', port: 0, apiToken: '', dataDir,

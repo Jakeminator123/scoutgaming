@@ -59,8 +59,11 @@ function browserSources() {
     'react-dom/client': readCjs('react-dom', 'react-dom-client.production.js'),
     scheduler: readCjs('scheduler', 'scheduler.production.js'),
     '../lib/studio-login-client.mjs': compile(readFileSync(new URL('../lib/studio-login-client.mjs', import.meta.url), 'utf8'), 'studio-login-client.mjs'),
-    ...Object.fromEntries(['workspace-surfaces', 'control-flow', 'design-preview-paths', 'admin-workspace-routes', 'partner-login-return'].map(name =>
+    ...Object.fromEntries(['design-preview-paths', 'partner-login-return'].map(name =>
       ['./' + name + '.mjs', compile(readFileSync(new URL('../lib/' + name + '.mjs', import.meta.url), 'utf8'), name + '.mjs')])),
+    ...Object.fromEntries(['workspace-surfaces', 'control-flow', 'admin-workspace-routes'].map(name =>
+      ['../../packages/navigation/' + name + '.mjs', compile(readFileSync(new URL('../../packages/navigation/' + name + '.mjs', import.meta.url), 'utf8'), name + '.mjs')])),
+    './operator-slug.mjs': compile(readFileSync(new URL('../../packages/navigation/operator-slug.mjs', import.meta.url), 'utf8'), 'operator-slug.mjs'),
     './studio-login.module.css': 'module.exports={__esModule:true,default:{}};',
     component: compiled,
   };

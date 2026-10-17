@@ -13,7 +13,7 @@ import { partnerWorkspaceInitialData } from '@/lib/partner-data.mjs';
 import { internalSessionPresent } from '@/lib/partner-session.mjs';
 import { partnerLoginReturnTo } from '@/lib/partner-login-return.mjs';
 import { nextStudioLoginRedirect } from '@/lib/next-page-navigation.mjs';
-import { resolveWorkspaceSurfacePath } from '@/lib/workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 
 function partnerLoginAbsoluteUrl(headerList: { get(name: string): string | null }, returnTo: string) {
   const read = (name: string) => {

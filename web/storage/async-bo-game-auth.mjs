@@ -19,7 +19,7 @@ export function backofficeGameAuth({db,auth,identity,boSession,validLaunch,publi
     const url=new URL(value,game);
     if(url.origin!==game.origin||!entry(url.pathname))return publicGamePath === '/blackjack' ? '/blackjack' : '/';
     if(publicGamePath === '/blackjack') {
-      const {canonicalGameDestination}=await import('../public/game-entry-contract.mjs');
+      const { canonicalGameDestination } = await import('../../packages/navigation/game-entry.mjs');
       return canonicalGameDestination(url,{includeLaunch:false});
     }
     // Launch credentials must not persist across a separate BO login.

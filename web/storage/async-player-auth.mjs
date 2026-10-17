@@ -1,6 +1,6 @@
 // PostgreSQL implementation; explicit schema is installed before service initialization.
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
-import { createAccountCredentialResolver } from '../account-credentials.mjs';
+import { createAccountCredentialResolver } from '../../packages/studio-access/server/account-credentials.mjs';
 import { backofficePlayerSource,readBackofficePlayerSource } from '../bo-player-session.mjs';
 
 // Vercel's preview proxy is trusted only when the cloud launcher has supplied

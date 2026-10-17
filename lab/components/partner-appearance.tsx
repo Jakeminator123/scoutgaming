@@ -4,7 +4,7 @@ import {useEffect, useRef, useState} from 'react';
 import styles from './partner-appearance.module.css';
 import {PartnerAppearancePreview} from './partner-appearance-preview';
 import {effectivePartnerAdjustments} from '../lib/partner-package-view.mjs';
-import {compositionLabel} from '../lib/control-flow.mjs';
+import {compositionLabel} from '../../packages/navigation/control-flow.mjs';
 import {appearanceBranding, appearanceDraftBranding, appearanceDraftRevision, appearanceReceipt, appearanceReview, changeAppearance, resetAppearanceRoom, sameAppearance} from './partner-appearance-state.mjs';
 import type {AppearanceReview, EditableBranding, PartnerAppearanceInitial} from './partner-appearance-state.mjs';
 export type {PartnerAppearanceInitial} from './partner-appearance-state.mjs';

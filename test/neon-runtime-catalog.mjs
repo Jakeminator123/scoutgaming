@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogRevision} from '../web/storage/runtime-media-catalog.mjs';
+import {validateRuntimeMediaCatalog,validateRuntimeCatalogRecord,runtimeCatalogRevision} from '../packages/studio-registry/server/runtime-catalog.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
-import {createStudioRepository} from '../web/storage/studio-repository.mjs';
+import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 const scope={environment:'fixture',workspaceId:'catalog-owner'};
 test('Neon catalogue retains all exact bank identities and UTF8 metadata and detaches inputs',()=>{
  const source=readRuntimeCatalogFixture(),value=validateRuntimeMediaCatalog(source);

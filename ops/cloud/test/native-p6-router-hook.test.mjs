@@ -9,7 +9,7 @@ import {NATIVE_P6_QA,nativeP6QaRouterConfig,childSpecifications,validateCloudCon
 import {nativeP6QaRouterRequest,createCloudGateway} from '../gateway.mjs';
 import {initializeNativeP6QaRouter,nativeP6OwnedSpeechFetch,nativeP6OwnedDirectorFetch} from '../../../web/native-p6-qa-hook.mjs';
 import {projectOpenClawGameStatus} from '../../../web/openclaw-chat.mjs';
-import {normalizeProductSpeechEnvelope} from '../../../open-claw/lab/src/product-speech.mjs';
+import {normalizeProductSpeechEnvelope} from '../../../packages/director/product-speech.mjs';
 
 const fixture=()=>({NODE_ENV:'production',PORT:'10000',CROUPIER_CLOUD_LAYOUT:'single-origin',
   CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',

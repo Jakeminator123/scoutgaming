@@ -5,15 +5,17 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { uploadDirectory, uploadVideo, readUploads } from '../lib/video-uploads.mjs';
+import {uploadVideo} from '../lib/video-uploads.mjs';
+import {uploadDirectory, readUploads} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
+import { loadVideoRegistry as loadGameVideoRegistry, getVideoResponse as getGameVideoResponse } from '../../web/storage/video-registry.mjs';
 import { validateVideoMetadata, videoFitsEvent, MAX_VIDEO_BYTES } from '../../packages/presentation/contracts/video-intake.mjs';
 import { validateProject, addVariant, buildRuntimeCatalog } from '../../packages/presentation/contracts/studio-model.mjs';
 import { auditStudio } from '../lib/studio-audit.mjs';
 import { simulateStudio as simulate, decisionCatalog, validateVideoBindings } from '../lib/studio-server.mjs';
 const simulateStudio = (body, options = {}) => simulate(body, { videoRegistry: { videos: [], families: [] }, ...options });
-import { prepareDecision } from '../../open-claw/lab/src/engine.mjs';
-import { readSettings } from '../../open-claw/lab/src/settings.mjs';
+import { prepareDecision } from '../../packages/director/engine.mjs';
+import { readSettings } from '../lib/director-settings.mjs';
 
 // Container-signature fixture, not a decodable video or a visual approval.
 const bytes = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom00000000test-media')]);
@@ -45,6 +47,18 @@ test('upload persists exact bytes and classification, deduplicates retry, surviv
   assert.equal(registry.videos.length, 1); assert.equal(registry.videos[0].source, 'upload');
   assert.equal(registry.videos[0].available, true);
   assert.ok(!JSON.stringify(registry).includes(options.uploadDir));
+  const oldBasePath = process.env.NEXT_PUBLIC_LAB_BASE_PATH;
+  try {
+    for (const basePath of ['', '/studio']) {
+      process.env.NEXT_PUBLIC_LAB_BASE_PATH = basePath;
+      assert.deepEqual(await loadGameVideoRegistry(options), await loadVideoRegistry(options), 'game and Studio retain identical read/preview contracts');
+    }
+  } finally {
+    if (oldBasePath === undefined) delete process.env.NEXT_PUBLIC_LAB_BASE_PATH;
+    else process.env.NEXT_PUBLIC_LAB_BASE_PATH = oldBasePath;
+  }
+  const gameResponse = await getGameVideoResponse(result.id, new Request(`http://localhost:4188/api/videos/${result.id}`, { headers: { range: 'bytes=0-7' } }), options);
+  assert.equal(gameResponse.status, 206); assert.deepEqual(Buffer.from(await gameResponse.arrayBuffer()), bytes.subarray(0, 8));
   const response = await getVideoResponse(result.id, new Request(`http://localhost:4188/api/videos/${result.id}`, { headers: { range: 'bytes=0-7' } }), options);
   assert.equal(response.status, 206); assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes.subarray(0, 8));
   assert.deepEqual((await readdir(options.uploadDir)).sort(), ['index.json', `${result.id}.mp4`].sort());

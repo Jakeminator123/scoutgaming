@@ -7,13 +7,13 @@ import {cloudPresentationFixture} from './fixtures/cloud-presentation.mjs';
 import { createPresentationRoomApi } from '../lib/presentation-room-api.mjs';
 import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { wrapNativePresentationRepository } from '../lib/presentation-runtime-readiness.mjs';
-import { createStudioRepository } from '../../web/storage/studio-repository.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
-import { buildPresentationPackage, layerAssetPath } from '../../web/presentation-layers.mjs';
-import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import { createStudioRepository } from '../../packages/studio-registry/server/document-repository.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
+import { buildPresentationPackage, layerAssetPath } from '../../packages/presentation/contracts/presentation-layers.mjs';
+import { encodePresentationPackage, readPackagePresentation, withPackagePresentation } from '../../packages/presentation/server/presentation-package.mjs';
 import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
 import {readRuntimeCatalogFixture} from '../../test/fixtures/runtime-media-catalog.mjs';
-import {runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
+import {runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 
 import { createGameEntrySelector } from '../../web/game-entry-operator.mjs';
 import { presentationCapabilitiesForVersion } from '../../packages/presentation/capability-contract.mjs';

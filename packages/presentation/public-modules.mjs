@@ -5,11 +5,18 @@ const browserContracts = [
   'recorded-speech', 'composition-settings', 'background-playback-policy',
   'roulette-idle-contract', 'roulette-start-contract', 'speech-slot-bindings',
   'speech-lines', 'material-catalog', 'background-materials',
+  'speech-package', 'astrid-voice-profile',
 ];
 export const presentationPublicModules = Object.freeze([
+  {source: 'packages/navigation/game-entry.mjs',
+    paths: ['/packages/navigation/game-entry.mjs']},
+  {source: 'packages/navigation/operator-slug.mjs',
+    paths: ['/packages/navigation/operator-slug.mjs']},
   ...browserContracts.map(name => ({source: 'packages/presentation/contracts/' + name + '.mjs',
     paths: ['/' + name + '.mjs', '/packages/presentation/contracts/' + name + '.mjs',
       ...(name === 'dealer-identity' ? ['/web/public/dealer-identity.mjs'] : [])]})),
+  {source: 'packages/presentation/contracts/game-lanes.mjs',
+    paths: ['/packages/presentation/contracts/game-lanes.mjs']},
   {source: 'packages/presentation/contracts/game-lane-id.mjs',
     paths: ['/packages/presentation/contracts/game-lane-id.mjs']},
   {source: 'packages/presentation/contracts/layer-asset-contract.mjs',

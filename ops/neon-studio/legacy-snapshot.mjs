@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { STUDIO_JSON_LIMIT, STUDIO_SNAPSHOT_FORMAT, StudioStorageError, validateDocumentValue,
-  validateSnapshot, validateStudioScope, studioContentHash, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
-import { validateStudioGameAdministration } from '../../web/storage/studio-game-policy.mjs';
+  validateSnapshot, validateStudioScope, studioContentHash, canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
+import { createSavedGamePolicy } from '../../packages/presentation/server/saved-game-policy.mjs';
+
+const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: { validateDocumentValue } });
 
 const fail = () => { throw new StudioStorageError('studio_import_source_invalid',422); };
 const stamp=value=>{

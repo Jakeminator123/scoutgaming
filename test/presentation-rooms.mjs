@@ -1,15 +1,20 @@
+import * as savedGameDocumentContract from '../packages/studio-registry/server/document-contract.mjs';
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { cloudPresentationFixture } from '../lab/test/fixtures/cloud-presentation.mjs';
-import { validateStudioGameAdministration } from '../web/storage/studio-game-policy.mjs';
-import { isPresentationRoom, listPackageRooms, resolvePackageRoom,inspectPackageRooms } from '../web/presentation-room-contract.mjs';
+import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
+import {isPresentationRoom} from '../packages/presentation/contracts/presentation-room.mjs';
+import {listPackageRooms, resolvePackageRoom, inspectPackageRooms} from '../packages/presentation/server/package-rooms.mjs';
 import { createGameEntrySelector } from '../web/game-entry-operator.mjs';
-import { layerAssetPath } from '../web/presentation-layers.mjs';
+import { layerAssetPath } from '../packages/presentation/contracts/presentation-layers.mjs';
 import { defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
-import { withPackagePresentation,readPackagePresentation } from '../web/storage/presentation-package.mjs';
+import { withPackagePresentation,readPackagePresentation } from '../packages/presentation/server/presentation-package.mjs';
 import {materialSource} from '../packages/presentation/contracts/material-catalog.mjs';
-import {assertPresentationRoomMaterials} from '../web/presentation-material-game.mjs';
+import {assertPresentationRoomMaterials} from '../packages/presentation/contracts/presentation-material-game.mjs';
+
+const { validateStudioGameAdministration } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 const legacy = { id: 'old-room', name: 'Old', scene: 'Dark', felt: 'Green', dealer: 'vera', state: 'live' };
 const room = { schemaVersion: 2, id: 'room-one', name: 'North table', operatorId: 'north', presentationLaneId: 'mobile-phone', gameLaneId: 'mobile-phone', state: 'live' };

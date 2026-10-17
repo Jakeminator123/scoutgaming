@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { registeredDealerIds } from '../../packages/presentation/contracts/dealer-identity.mjs';
 import { isStudioRole, meetsStudioAdminActionRole } from './studio-access-policy.mjs';
-import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../web/storage/studio-contract.mjs';
+import { validateStudioScope, validateRevision, canonicalStudioJson } from '../../packages/studio-registry/server/document-contract.mjs';
 import { createPlayerAdministration } from '../../web/storage/player-administration.mjs';
 import { createRegisteredVoiceLines, studioVoiceIdentity, voiceReviewMatches } from './studio-voice-lines.mjs';
-import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../web/public/game-lanes.mjs';
+import { isGameLane, gameLaneConfiguration, validateGameLanes } from '../../packages/presentation/contracts/game-lanes.mjs';
 
 const fail = (statusCode = 400) => { throw Object.assign(new Error('studio_admin_request_rejected'), { statusCode }); };
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);

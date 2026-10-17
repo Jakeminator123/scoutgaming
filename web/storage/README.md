@@ -6,10 +6,10 @@ ligger huvudsakligen direkt under `web/`. Mappen är inte ett äldre BO-demo.
 
 | Modulgrupp | Ansvar |
 | --- | --- |
-| `postgres-store.mjs` | Asynkron `pg`-pool, transaktioner, schemaval och kontroll av installerad speldatabas. |
+| `postgres-store.mjs` | Appägd `pg`-pool och schemaläsning; SQL-/transaktionskärnan finns i `packages/storage/server`. |
 | `async-*` | PostgreSQL-versioner av spelar-/BO-autentisering, partner-API, historik, chattminne och probe. |
-| `studio-contract.mjs`, `studio-repository.mjs`, `studio-runtime.mjs`, `studio-game-policy.mjs` | Scope, revisioner, Studio-dokument/media och spelpolicyn som servern läser. |
-| `operator-*`, `partner-branding.mjs`, `player-administration.mjs` | Operatörer, livscykel, varumärkesdata och spelaradministration. |
+| `studio-contract.mjs`, `studio-repository.mjs`, `studio-runtime.mjs` | Appkomposition för dokument/registret och Render-start; sparad spelpolicy finns i `packages/presentation/server/saved-game-policy.mjs`. |
+| `operator-package-reader.mjs`, `player-administration.mjs` | Appägda läsare och spelaradministration; operatörsstore, lifecycle och branding finns i `packages/operators`. |
 | `presentation-package.mjs`, `frozen-*`, `published-layer-assets.mjs` | Publicerade paket, låsta dealer-/presentationsreferenser och åtkomst till publicerade lager. |
 
 `postgres-store.mjs` använder `croupier_game` och `croupier_auth` och kräver

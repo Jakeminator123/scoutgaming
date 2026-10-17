@@ -12,8 +12,10 @@ fortfarande för befintliga verktyg, inloggning och spelstarter. De detaljerade
 motsvarande `/admin`-verktyg. Aktiva ingångar, bolagsåtkomst och mål finns i
 den kanoniska [användarguiden](docs/README.md).
 
-Rena äldre dokumentalias hanteras gemensamt av `middleware.ts` och
-`lib/admin-workspace-routes.mjs`. Deras tidigare queryregler och publika
+Rena dokumentadresser och bolagssluggar ägs av `packages/navigation` i
+reporoten, som delas med frontend och spelet utan appimporter. Äldre
+dokumentalias hanteras av `middleware.ts` och den appägda HTTP-adaptern
+`lib/legacy-studio-document.mjs`. Deras tidigare queryregler och publika
 måladresser bevaras. Sidor som laddar data eller först kontrollerar
 behörighet ligger kvar; Admin återanvänder fortfarande flera av deras
 komponenter. Manuella medieverktyg finns i [tools/media](../tools/media/README.md).
@@ -24,6 +26,8 @@ Vercel-projektet `scoutgaming`. Den serverar `/admin`, `/lobby`, `/control`,
 `lab/client` innehåller Admin/Lobby-klienten med eget React-/TypeScript-bygge.
 Labbets bygge förbereder och serverar den från `design-preview-build/`. Behörighet, scoped
 data, mediaregister och anslutningar finns kvar i denna tjänst.
+Lobbykatalogens rena laddare finns i `packages/player-catalog`; appen äger
+fortfarande inloggning, rumsväljning och spelstarter.
 Render-tjänsten `croupier-v2` äger spelmotorn och live-transporten.
 Neon är produktens register och privat Blob innehåller mediebyte.
 `node lab/start.mjs --no-open` skriver den publicerade produktens adress;
@@ -31,6 +35,12 @@ endast `--offline` startar ett isolerat, tillfälligt serverpar.
 Äldre `lab/data` bevaras som authoring-/återställningsunderlag.
 [Väg- och strömkartan](../docs/LOCAL-PRESENTATION-RUNTIME.md)
 skiljer adresser, spelobservation, Partner-SSE, talvideo och BO-administration.
+
+Gemensam Director-, tal-, social- och Companion-logik finns i
+`packages/director/`. `lib/director-settings.mjs` äger Studios miljöfilläsning
+och återanvänder paketets rena projektion. Samma filer, prioritet, alias och
+Director-datarot gäller; Studio väljer fortfarande sin Companion-underkatalog.
+Director-tjänstens HTTP, Gateway och signering ligger kvar i `open-claw/lab/`.
 
 Eventeditor och sekvensspelare går genom `POST /api/presentation/decision`.
 Den gamla `/api/simulate` är ett alias. Servern delar samma pågående/sparade
@@ -242,7 +252,7 @@ Tre alternativ per linje och 256 variantposter finns inte i demo-/fixturseedet.
 Högst fyra alternativ plus standard kan redigeras.
 Sparade äldre projekt fylls inte på automatiskt eller skrivs över.
 Den äldre händelseeditorns seed beskriver blackjack. Publicerade spelrum kan
-däremot vara blackjack eller roulette, enligt `web/presentation-room-contract.mjs`.
+däremot vara blackjack eller roulette, enligt `packages/presentation/server/package-rooms.mjs`.
 Ett rum har ett spel; spelet kan erbjuda flera rum/bakgrunder med tillåtna
 dealers och bord. Produktmodellens källa är [TERMINOLOGI.md](docs/TERMINOLOGI.md).
 
@@ -573,3 +583,10 @@ npm --prefix open-claw/lab test
 
 Tester använder isolerade filer och simulerade modelltransporter, inte riktiga
 spelare eller modellnycklar. Byggnaden verifierar inte en Render-driftsättning.
+
+Gemensam medieorkestrering och lokala läsare finns i
+`packages/studio-registry/server/`; bindnings- och legacykontroller i
+`packages/presentation/server/`. Studio komponerar dem med sina egna
+Blob-adaptrar och tidigare roots. Projektets skrivning, lås, historik och
+video-/klassificeringsskrivare ligger kvar här. Spelservern har egna
+läsarkompositioner och behöver inte importera dessa Studio-skrivare.

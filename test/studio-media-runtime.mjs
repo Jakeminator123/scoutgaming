@@ -1,3 +1,5 @@
+import * as savedGameDocumentContract from '../packages/studio-registry/server/document-contract.mjs';
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -5,11 +7,11 @@ import {once} from 'node:events';
 import {fileURLToPath} from 'node:url';
 import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
-import {createStudioRepository} from '../web/storage/studio-repository.mjs';
-import {createStudioGamePolicy,STUDIO_GAME_CONFIGURATION_SOURCE} from '../web/storage/studio-game-policy.mjs';
-import {createStudioMediaRuntime} from '../lab/lib/studio-media-runtime.mjs';
+import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
+import { createSavedGamePolicy, STUDIO_GAME_CONFIGURATION_SOURCE } from '../packages/presentation/server/saved-game-policy.mjs';
+import {createStudioMediaRuntime} from '../web/storage/studio-media-runtime.mjs';
 import {createSeedProject,isAssetCompatible} from '../packages/presentation/contracts/studio-model.mjs';
-import {legacyClipControls} from '../lab/lib/legacy-clip-inventory.mjs';
+import {legacyClipControls} from '../web/storage/legacy-clip-inventory.mjs';
 import {createPresentationApi} from '../web/presentation-api.mjs';
 import {createNativeObservation} from '../web/public/native-observation.mjs';
 import {createHash} from 'node:crypto';
@@ -17,6 +19,8 @@ import {mkdtemp,mkdir,writeFile,rm,readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
+
+const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });
 
 const repositoryRoot=fileURLToPath(new URL('../',import.meta.url));
 const scope={environment:'media_source_qa',workspaceId:'croupier'};

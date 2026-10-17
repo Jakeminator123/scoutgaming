@@ -5,8 +5,8 @@ import {operatorMemoryPool, usersDb} from '../../lab/test/fixtures/operator-memo
 import {cloudPresentationFixture} from '../../lab/test/fixtures/cloud-presentation.mjs';
 import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
-import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
-import {createOperatorStore} from '../../web/storage/operator-store.mjs';
+import {createStudioRepository} from '../../packages/studio-registry/server/document-repository.mjs';
+import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
 import {createOperatorPackageReader} from '../../web/storage/operator-package-reader.mjs';
 import {createStudioNativeAuth} from '../../packages/studio-access/studio-native-auth.mjs';
 import {createStudioAdminApi} from '../../lab/lib/studio-admin-api.mjs';
@@ -14,7 +14,7 @@ import {createPresentationRoomApi} from '../../lab/lib/presentation-room-api.mjs
 import {STANDARD_OPERATOR_ROLES} from '../../lab/lib/operator-admin-api.mjs';
 import {handlePartnerAuth, partnerSessionDigest} from '../../lab/lib/partner-session.mjs';
 import {partnerWorkspaceInitialData} from '../../lab/lib/partner-data.mjs';
-import {resolveWorkspaceSurfacePath} from '../../lab/lib/workspace-surfaces.mjs';
+import {resolveWorkspaceSurfacePath} from '../../packages/navigation/workspace-surfaces.mjs';
 import {partnerRoomRequest} from '../../lab/lib/partner-room-selection.mjs';
 import {createPublicOperatorRooms} from '../../web/public-operator-rooms.mjs';
 import {createPublicOperatorDirectory} from '../../web/public-operators.mjs';

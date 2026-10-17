@@ -1,13 +1,8 @@
-export type GameLaneId = string;
-export type GameLane = { schemaVersion: 1; id: string; label: string; renderer: 'portrait-video' | 'indexed-video' | 'layered'; dealer: string; mediaCollection: `${string}-presentation` | 'legacy-dealers' | 'layer-packs-preview' };
-export const GAME_LANES: readonly Readonly<GameLane>[];
+import type {GameLane, GameLaneId} from '../../packages/presentation/contracts/game-lanes.mjs';
+export type {GameLane, GameLaneId} from '../../packages/presentation/contracts/game-lanes.mjs';
+export {GAME_LANES, isGameLane, validateGameLanes, gameLaneConfiguration} from '../../packages/presentation/contracts/game-lanes.mjs';
 export function gamePresentationForDealer(dealerId: string, renderer: GameLane['renderer']): 'local' | 'original' | 'layered';
 export function isGameLaneId(value: unknown): value is string;
-export function isGameLane(value: unknown, lanes?: readonly GameLane[]): value is GameLaneId;
-export function isOperatorSlug(value: unknown): value is string;
-export function validateGameLanes(value: unknown): GameLane[];
-export function gameLaneConfiguration(value?: {gameLanes?: unknown; gameLane?: unknown}): {gameLanes: GameLane[]; gameLane: string | null};
 export function packageLaneIds(allowedLanes: readonly unknown[], lanes?: readonly GameLane[]): string[];
 export function gameLaneSelection(query: URLSearchParams | string, activeLane?: string | null, lanes?: readonly GameLane[], allowedLanes?: readonly unknown[]): { lane: string; dealer: string; presentation: 'local' | 'original' | 'layered' };
-export function laneDealerSelection(query: URLSearchParams | string, lane: Readonly<GameLane>, dealerLayer?: { default?: unknown; allowed?: readonly unknown[] } | null, options?: {portraitDealerIds?: readonly string[]}): string | null;
 export function gameLaneFromDocument(dataset: DOMStringMap, lanes?: readonly GameLane[]): { lane: string; dealer: string; presentation: 'local' | 'original' | 'layered'; localDealer?: string; registeredDealers?: {id: string; label: string}[]; roomId?: string; operator?: string; packageRevision?: number; branding?: Record<string, unknown>; choices?: { dealers: string[]; dealerDefault: string | null; tableColors: string[]; tableDefault: string | null; background: { enabled: boolean; mode: 'baked' | 'image' | 'video'; allowed: string[]; default: string | null } } };

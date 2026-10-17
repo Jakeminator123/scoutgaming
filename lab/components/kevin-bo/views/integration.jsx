@@ -1,6 +1,6 @@
 // Live integration and the other still-disconnected partner sections. No fixture figures.
 import React from 'react';
-import { workspaceSurfacePath } from '../../../lib/workspace-surfaces.mjs';
+import { workspaceSurfacePath } from '../../../../packages/navigation/workspace-surfaces.mjs';
 
 const h = React.createElement;
 

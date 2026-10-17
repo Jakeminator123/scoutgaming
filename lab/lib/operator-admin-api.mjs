@@ -1,5 +1,5 @@
 import { operatorAuditContext } from './operator-audit-context.mjs';
-import { OPERATOR_ADMIN_PERMISSION, PARTNER_PERMISSIONS, isPartnerPermission } from '../../web/partner-access-policy.mjs';
+import { OPERATOR_ADMIN_PERMISSION, PARTNER_PERMISSIONS, isPartnerPermission } from '../../packages/studio-access/server/partner-access-policy.mjs';
 import {
   consumePartnerInvite, createOperatorAccounts, insertInvitedPartner, maskOperatorEmail, partnerInviteDelivery,
   partnerMailbox, playerOwnsEmail, sendPartnerInvite, visibleOperatorUsername,
@@ -7,7 +7,7 @@ import {
 import { createOperatorJournal } from './operator-journal.mjs';
 import { createNativeStudioMail } from './studio-native-mail.mjs';
 import { openWritableOperatorStore } from './operator-package-api.mjs';
-import { workspaceSurfacePath } from './workspace-surfaces.mjs';
+import { workspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 
 // team.roles.assign makes an operator administrator, so only partner-admin
 // carries it. partner-admin is not delegable: operator staff cannot appoint,

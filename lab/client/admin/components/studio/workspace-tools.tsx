@@ -16,7 +16,7 @@ import type {StudioProject} from '../../../../../packages/presentation/contracts
 import type { ConnectionStatus } from '../../../../../lab/components/studio-types';
 import type { VideoInventory } from '../../../../../packages/presentation/contracts/media-inventory.mjs';
 import {studioNavigationContextFromQuery} from '../../../../../lab/lib/studio-navigation.mjs';
-import {ADMIN_WORKSPACE_TOOLS} from '../../../../../lab/lib/admin-workspace-routes.mjs';
+import {ADMIN_WORKSPACE_TOOLS} from '../../../../../packages/navigation/admin-workspace-routes.mjs';
 import {labUrl} from '../../../../../lab/lib/lab-url.mjs';
 import {withAdminContext} from '../../../runtime/admin-routing.mjs';
 import {ConnectedServices} from './connected-services';

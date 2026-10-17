@@ -1,6 +1,6 @@
-import { resolveWorkspaceSurfacePath } from './workspace-surfaces.mjs';
+import { resolveWorkspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 import { partnerLoginReturnTo } from './partner-login-return.mjs';
-import { canonicalControlHref } from './control-flow.mjs';
+import { canonicalControlHref } from '../../packages/navigation/control-flow.mjs';
 import { designPreviewReturnTo } from './design-preview-paths.mjs';
 
 // Exact current document routes only; query values are narrowly allowlisted below.

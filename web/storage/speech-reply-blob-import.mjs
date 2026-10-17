@@ -1,8 +1,8 @@
 // One-time operator adapter. Never used as a runtime read/write fallback.
 import { createHash } from 'node:crypto';
-import { canonicalStudioJson, validateStudioScope } from './studio-contract.mjs';
+import { canonicalStudioJson, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { SpeechReplyLibraryError, speechReplyScopeHash, validateSpeechReplyRecord } from '../speech-reply-library.mjs';
-import { privateContentTypeMatches } from '../../lab/lib/cloud-media-store.mjs';
+import { privateContentTypeMatches } from '../blob-media.mjs';
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const fail=(code='reply_library_import_unavailable',status=503)=>{throw new SpeechReplyLibraryError(code,status);};
 const LIMIT=65536;

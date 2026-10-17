@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {createStudioRenderPersistence,assertRenderStudioWritable} from '../lib/studio-render-persistence.mjs';
 import {createSeedProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {createSocialPolicy} from '../lib/social-store.mjs';
-import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
+import {createStudioRepository} from '../../packages/studio-registry/server/document-repository.mjs';
 import {createStudioMemoryPool} from '../../test/fixtures/studio-memory-pool.mjs';
 import {createNeonProjectStore} from '../lib/neon-project-store.mjs';
 

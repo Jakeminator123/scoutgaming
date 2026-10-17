@@ -1,7 +1,7 @@
 // Live operator overview. Package, compositions and rooms only; no fixture metrics.
 import React from 'react';
-import { compositionLabel } from '../../../lib/control-flow.mjs';
-import { workspaceSurfacePath } from '../../../lib/workspace-surfaces.mjs';
+import { compositionLabel } from '../../../../packages/navigation/control-flow.mjs';
+import { workspaceSurfacePath } from '../../../../packages/navigation/workspace-surfaces.mjs';
 import { operatorPackageRevision } from '../preview-runtime.mjs';
 
 const h = React.createElement;

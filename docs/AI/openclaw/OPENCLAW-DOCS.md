@@ -130,8 +130,9 @@ garanti för framtida svarstid. Se [systemkartans daterade driftgränser](../../
 | OpenClaw-image och versionslås | [Dockerfile.gateway](../../../open-claw/lab/deploy/Dockerfile.gateway) |
 | Agenter, verktygsgränser, HTTP-endpoint och modellkonfiguration | [gateway-config.mjs](../../../open-claw/lab/deploy/gateway-config.mjs) |
 | Generering, validering och start av Gateway | [start-gateway.mjs](../../../open-claw/lab/deploy/start-gateway.mjs) |
-| Director-inställningar och läsning av lokala miljövariabler | [settings.mjs](../../../open-claw/lab/src/settings.mjs) |
-| HTTP-adapter för råd och separat operatörssamtal | [openclaw.mjs](../../../open-claw/lab/src/openclaw.mjs) |
+| Tjänstens Director-inställningar och läsning av lokala miljövariabler | [settings.mjs](../../../open-claw/lab/src/settings.mjs) |
+| Gemensam ren konfigurationsprojektion, alias och loopback-regler | [configuration.mjs](../../../packages/director/configuration.mjs) |
+| HTTP-klient för råd och separat operatörssamtal | [openclaw.mjs](../../../packages/director/openclaw.mjs) |
 | Redigerbara linjer, varianter och triggers | [catalog.json](../../../open-claw/lab/config/catalog.json) |
 
 IDE-inboxen ska aldrig kopplas in som spelarchatt. Produktspelarens HTTP-adapter och serverbundna chattminne finns; se

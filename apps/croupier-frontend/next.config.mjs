@@ -1,6 +1,6 @@
-import { platformConfiguration } from './lib/platform-routing.mjs';
+import { platformConfiguration } from '../../packages/navigation/server/platform-routing.mjs';
 import { fileURLToPath } from 'node:url';
-import {adminDocumentHref} from '../../lab/lib/admin-workspace-routes.mjs';
+import {adminDocumentHref} from '../../packages/navigation/admin-workspace-routes.mjs';
 const platform = platformConfiguration();
 /** @type {import('next').NextConfig} */
 const nextConfig = {

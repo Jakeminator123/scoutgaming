@@ -1,7 +1,7 @@
 import { createStudioMediaApi } from './studio-media-api.mjs';
 import { studioNativeRuntime, nativeStudioErrorResponse } from './studio-native-runtime.mjs';
 import { getPrivateMedia } from './cloud-media-store.mjs';
-import { validateLayerAsset } from '../../web/presentation-layers.mjs';
+import { validateLayerAsset } from '../../packages/presentation/contracts/presentation-layers.mjs';
 
 // Reuse the native media endpoint's session, scope, origin, bounded body and
 // re-authorization checks. No unauthenticated path can expose the private library.

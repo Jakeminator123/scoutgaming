@@ -8,6 +8,9 @@ test('active media sources belong to their deployed service inventories', () => 
   for (const service of ['render-game', 'vercel-lab-ui']) {
     for (const file of ['lab/lib/cloud-media-store.mjs', 'lab/lib/video-registry.mjs']) assert.ok(registry.services[service].sources.includes(file), service + ': ' + file);
   }
+  const game = registry.services['render-game'];
+  for (const file of ['web/blob-media.mjs', 'web/storage/video-registry.mjs', 'web/storage/legacy-clip-inventory.mjs', 'web/storage/studio-media-runtime.mjs']) assert.ok(game.sources.includes(file), file);
+  assert.ok(game.conditional.includes('NEXT_PUBLIC_LAB_BASE_PATH'));
   const studio = registry.services['vercel-lab-ui'];
   assert.ok(studio.sources.includes('lab/lib/legacy-clip-inventory.mjs'));
   for (const name of ['LAB_PUBLIC_URL', 'CROUPIER_DATA_DIR']) assert.ok(studio.conditional.includes(name), name);

@@ -5,7 +5,7 @@ export interface PartnerDraft {
 }
 export interface PartnerBrandingView {
   operatorId:string;packageRevision:number;lanes:string[];branding:Record<string,unknown>;adjustable:string[];
-  presentation?:import('../../web/presentation-layers.mjs').PresentationPackage;
+  presentation?:import('../../packages/presentation/contracts/presentation-layers.mjs').PresentationPackage;
   dealerChoices?:Record<string,string[]>;roomDealerChoices?:Record<string,string[]>;
   draft?:PartnerDraft|null;draftRevision?:number;
   rooms?:{id:string;label:string;presentationLaneId:string;game:'blackjack'|'roulette'}[];

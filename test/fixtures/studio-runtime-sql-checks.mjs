@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {createStudioRepository} from '../../web/storage/studio-repository.mjs';
+import {createStudioRepository} from '../../packages/studio-registry/server/document-repository.mjs';
 import {createSpeechReplyRepository} from '../../web/storage/speech-reply-repository.mjs';
 import {createSpeechReplyLibrary,speechReplyScopeHash} from '../../web/speech-reply-library.mjs';
-import {runtimeCatalogJson,runtimeCatalogRevision} from '../../web/storage/runtime-media-catalog.mjs';
+import {runtimeCatalogJson,runtimeCatalogRevision} from '../../packages/studio-registry/server/runtime-catalog.mjs';
 import {mediaBlobPath} from '../../lab/lib/cloud-media-store.mjs';
+import * as mediaStore from '../../lab/lib/cloud-media-store.mjs';
 import {addDealer,createEmptyProject} from '../../packages/presentation/contracts/studio-model.mjs';
 import {readRuntimeCatalogFixture} from './runtime-media-catalog.mjs';
 import {prepareRuntimeMediaImport,planRuntimeMediaImport,applyRuntimeMediaImport} from '../../ops/neon-studio/runtime-media-import.mjs';
@@ -23,7 +24,7 @@ function reply(scope,dealerId='astrid'){
 export async function runRuntimeRegistrySqlChecks({pool}={}){
   const scope={environment:`qa_runtime_${randomBytes(8).toString('hex')}`,workspaceId:'integration'};
   const repository=createStudioRepository({pool,scope}),replies=createSpeechReplyRepository({sql:pool,scope});
-  const library=createSpeechReplyLibrary({repository:replies,...scope,env:{}});
+  const library=createSpeechReplyLibrary({mediaStore,repository:replies,...scope,env:{}});
   const catalog=readRuntimeCatalogFixture(),catalogRevision=runtimeCatalogRevision(catalog);
   const checks=[];async function check(name,work){await work();checks.push(name);}
   let project,savedReply,historicalReply,catalogAudit;

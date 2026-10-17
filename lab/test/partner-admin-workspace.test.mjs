@@ -5,11 +5,11 @@ import { authorizePartnerWorkspace, handlePartnerAuth, partnerSessionDigest } fr
 import { partnerWorkspaceData, partnerWorkspaceInitialData } from '../lib/partner-data.mjs';
 import { createOperatorJournal } from '../lib/operator-journal.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../lib/operator-admin-api.mjs';
-import { PARTNER_PERMISSIONS } from '../../web/partner-access-policy.mjs';
-import { createOperatorStore } from '../../web/storage/operator-store.mjs';
+import { PARTNER_PERMISSIONS } from '../../packages/studio-access/server/partner-access-policy.mjs';
+import { createOperatorStore } from '../../packages/operators/server/operator-store.mjs';
 import { defaultPresentationLane } from '../../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../../packages/presentation/contracts/composition-settings.mjs';
-import { withPackagePresentation } from '../../web/storage/presentation-package.mjs';
+import { withPackagePresentation } from '../../packages/presentation/server/presentation-package.mjs';
 import { operatorMemoryPool, usersDb } from './fixtures/operator-memory-pool.mjs';
 
 const origin = 'https://public.example.invalid';

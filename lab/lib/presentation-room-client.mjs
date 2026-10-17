@@ -1,5 +1,5 @@
 import { labUrl } from './lab-url.mjs';
-import { workspaceSurfacePath } from './workspace-surfaces.mjs';
+import { workspaceSurfacePath } from '../../packages/navigation/workspace-surfaces.mjs';
 import { validatePresentationCapabilities } from '../../packages/presentation/capability-contract.mjs';
 
 const ENDPOINT = '/api/admin/presentation-room';

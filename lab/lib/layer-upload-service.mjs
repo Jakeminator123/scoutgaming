@@ -1,10 +1,10 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../web/storage/studio-contract.mjs';
+import { canonicalStudioJson, StudioStorageError, validateActor, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
 import { isCloudMediaConfigured, validatePrivateMedia } from './cloud-media-store.mjs';
 import { inspectLayerMedia } from './layer-media-inspection.mjs';
-import { validateLayerAsset, layerAssetPath, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES } from '../../web/presentation-layers.mjs';
+import { validateLayerAsset, layerAssetPath, LAYER_ASSET_TYPES, MAX_LAYER_ASSET_BYTES } from '../../packages/presentation/contracts/presentation-layers.mjs';
 
 const fail = (code, statusCode = 503) => {throw new StudioStorageError(code,statusCode);};
 const exact = (value,keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');

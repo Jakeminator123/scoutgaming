@@ -8,6 +8,56 @@ Inventeringens daterade antal nedan är inte en ny liveavläsning.
 
 ## Läsande jämförelse, 17 oktober 2026
 
+**Uppföljning 18:33 UTC:** faktisk POST `/chat` från www verifierades i
+Renders requestlogg på `croupier-v2`. Vercel Production har
+`CROUPIER_BACKEND_ORIGIN=https://croupier-v2.onrender.com` och scope
+`production/croupier`. Talets separata Vercel-service är transport;
+Render äger sessionerna och providerjobben.
+
+Renders spelanslutning använder databas/roll `croupier_game` och zones
+använder `neondb`/`neondb_owner` på samma poolade Neon-host
+`ep-fragrant-meadow-b1qzb0qv-pooler.c-5.eu-central-1.aws.neon.tech`.
+Neons metadata binder den till `croupier-production`, main
+`br-flat-fog-b161a6r8`, inte preview-v2. Render har scope
+`production/croupier` och produktens taladress är
+`https://croupier-lab-director.onrender.com`. Inga länkade env-grupper
+visades på tjänstens env-sida. Vercels Sensitive databasvärden lämnas
+inte ut av connectorn; dessa hemligheters fullständiga likhet är därför
+inte nyverifierad. Vercels Preview-backend pekar också på produktion;
+det är inte en isolerad testmiljö.
+
+Rootens och Labs `.env.local` har 52 respektive 47 aktiva tilldelningar,
+inga dubblettnamn och samma jämförda RunPod/Astrid/OpenClaw/scope-värden.
+`lab/.env.cloud-storage.local` har tre tilldelningar och dess zones-URL
+pekar på samma main-host och `neondb`. Filen är en explicit lokal profil,
+inte en automatiskt inläst Render-konfiguration. `lab/.env.example`
+innehåller enbart kommentarer och kan inte skriva över något värde.
+
+Dockerkontexten utesluter `.env`, `.env.*` och motsvarande filer i
+undermappar. Molnstarten använder processmiljö och uttryckliga barnprocess-
+allowlists. För lokala OpenClaw-inställningar läser `readSettings` endast
+sin fasta nyckellista: senare uttrycklig fil vinner över tidigare fil,
+och processmiljön vinner över båda. Dessa lokala filer kan därför skilja
+sig från molnet utan att vara molnets aktiva inställningar.
+
+Efter avslutat uppvärmningsprov togs den avvecklade Dragan-endpointens
+Render-variabel bort och moving-enabled sparades som 0. Den lokala
+Dragan-runtimeprofilens gamla endpoint togs också bort och flaggan sattes
+till 0. Nycklar, bank och övriga profiler kopierades inte mellan miljöer.
+Felen med gammal endpoint och nyckelbehörighet var verkliga, men den här
+kontrollen visar ingen felriktad Neon-anslutning i den faktiska talkedjan.
+Se aktuellt prov-/kostnadskvitto i [handoffen](JOHN-HANDOFF.md).
+
+**Stoppuppföljning 19:17 UTC:** även det senare köade provets endpoint
+`dgpazl8h3a64uj` och template är borttagna och tom workerlista verifierad.
+Draganprofilen är OFF. Render har återläst enabled=0 och ingen moving-endpoint
+sparad med Save only; den körande processens cleanup väntar på nästa ordinarie
+deploy. Det är sparad konfiguration, inte ett nytt runtimekvitto.
+Senaste provet kom förbi reservationen men stoppades av den privata guardens
+worker-räkning. Aktuellt budget-/stoppkvitto och nästa steg finns i handoffen.
+
+Nedanstående avläsning 16:09 är historisk och föregår detta prov.
+
 Kontrollen omfattade riktiga lokala profiler, Vercel-projektet/teamet
 `scoutgaming`, aktuella Render-tjänsteidentiteter och kodens konsumenter.
 Inga miljövärden ändrades. Render-MCP saknar env-GET, men befintlig
@@ -83,8 +133,8 @@ lagringsklient och Astrids inställningar ändras inte.
 
 Testets stabila budget-ID är `dragan-test-20261017`: taljournalens tak är
 4,80 USD och dess reservation är 1,20 USD per försök inklusive marginal.
-Jakob höjde den 17 oktober det sammanlagda RunPod-taket från 5 till **10 USD**.
-Det ändrar inte automatiskt taljournalens befintliga 4,80 USD-konfiguration.
+Jakob höjde den 17 oktober det sammanlagda RunPod-taket först från 5 till 10 USD och därefter till **15 USD**.
+Det ändrar inte automatiskt taljournalens befintliga 4,80 USD-konfiguration. Efter det köade provet är fyra reservationer om 1,20 USD bokförda och noll sessioner öppna; gränsen är nådd och historiken ska bevaras.
 Det sammanlagda taket omfattar
 även tidigare beredning, endpointförsök och reserver för fördröjd fakturering.
 Den separata infrastrukturns kostnadsvakt måste därför använda aktuell
@@ -147,6 +197,11 @@ serverinställningar. Isolerad lokal start blockerar senare privata env-filläsn
 `readSettings` läser valda filer följt av processmiljö; Studio anger root
 `.env` och Lab local. Kanoniska `OPENCLAW_API_KEY` vinner över alias inom
 varje källa, även om den är tom; senare källa har fortfarande högre prioritet.
+Director-tjänsten, Studio och spelservern väljer varsin filpolicy och datarot.
+`packages/director/node/settings-reader.mjs` äger den enda Node-filläsaren. Den gemensamma
+allowlisten, aliasnormaliseringen och projektionen finns i
+`packages/director/configuration.mjs`, som inte läser filer eller processmiljö.
+Tjänstens `LAB_ROOT` och samtliga befintliga datakataloger är oförändrade.
 
 ### Render: färsk läsning och driftgränser
 
@@ -665,6 +720,10 @@ Aktivt gemensamt Scoutgaming-projekt: rotens `vercel.json` bygger
 webb, Studio och taltransport som Services. Talservicen i
 `apps/croupier-speech` delar befintlig origin-/ingresskonfiguration genom
 `packages/server-transport/configuration.mjs`; inga nya nycklar behövs.
+Gemensam serverrouting för frontend, Studio och Render-ingress ägs av
+`packages/navigation/server/platform-routing.mjs`, med relativa källimporter till
+rena navigationskontrakt och samma transportkonfiguration. Modulflytten ändrar
+inga miljönycklar, origins, ingressvalidering eller behörigheter.
 `CROUPIER_VERCEL_UNIFIED_UI=1` tillsammans med
 `CROUPIER_VERCEL_UI=1` och `CROUPIER_STUDIO_NATIVE_ADMIN=1` använder samma
 publika origin för båda; `CROUPIER_LAB_UI_ORIGIN` behövs då inte för routingen.
@@ -1058,3 +1117,31 @@ kontrollera varje automatisk deploy där. Native Node-funktionerna för
 `/speech-stream` och `/lipsync-worker` har 300 respektive 600 sekunders gräns.
 Genererat tal genom Render/Cartesia/RunPod har passerat två tidigare liveprov;
 kallstart, exakt synk och fysisk mikrofon återstår enligt handoffen.
+
+### Medieläsarnas appägarskap
+
+Studio och game kopplar egna Blob-adaptrar till den gemensamma medialäsaren
+i `packages/studio-registry/server/media-runtime.mjs`. Apparna behåller
+sina tidigare roots och lokala filpolicyer. `CROUPIER_DATA_DIR` har samma
+legacy-standardkatalogregel; `NEXT_PUBLIC_LAB_BASE_PATH` behåller den
+befintliga preview-URL-regeln för tom basväg respektive `/studio`.
+`CROUPIER_VERCEL_FRONTEND_ORIGIN` fortsätter styra det exakta betrodda
+proxyursprunget. Källinventariet följer de nya kompositionerna; flytten inför
+inga nya miljövariabler, ändrar inga värden och skapar ingen lokal fallback
+vid ett Neonfel.
+
+Den befintliga sparade spelpolicyns miljöläsare ägs av
+`packages/presentation/server/saved-game-policy.mjs`. Importverktyget binder samma
+dokumentkontrakt; flytten inför inga nya nycklar, värden eller fallbackregler.
+
+Fullfile-talets miljöläsare ägs nu av
+`packages/presentation/server/generated-speech-runtime.mjs`. Appkompositionerna
+tillför den ursprungliga repository-roten explicit. Runtime läser aktuell processmiljö
+vid status/get, behåller samma konfigurationsnyckel och kräver samma journal/artifacts
+i Neon-läget. Ingen ny miljövariabel, processdelad global eller automatisk providerstart införs.
+
+Policybootstrapens miljögrind ägs av
+`packages/presentation/server/studio-policy-runtime.mjs`. Game och Studio tillför
+samma migrationskontroll och varsin befintlig medialäsare; schema/readSaved-ordningen
+och det avstängda SQLite/offline-läget är oförändrade. Ingen ny miljövariabel eller
+automatisk provideranslutning införs.
