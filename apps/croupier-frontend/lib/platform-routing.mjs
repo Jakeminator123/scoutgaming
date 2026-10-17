@@ -3,9 +3,9 @@ import { gameEntryRedirect, approvedGameQuery } from '../../../web/public/game-e
 import {adminDocumentHref} from '../../../lab/lib/admin-workspace-routes.mjs';
 import { requestedOperator } from '../../../web/game-entry-operator.mjs';
 import { resolveWorkspaceSurfacePath } from '../../../lab/lib/workspace-surfaces.mjs';
-import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from '@croupier/server-transport/paths';
-export {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '@croupier/server-transport/paths';
-export {exactPlatformOrigin, platformConfiguration} from '@croupier/server-transport/configuration';
+import {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS, movingWorkerSocketPath} from '../../../packages/server-transport/paths.mjs';
+export {canonicalPlatformPath, PLATFORM_SOCKET_ENDPOINTS} from '../../../packages/server-transport/paths.mjs';
+export {exactPlatformOrigin, platformConfiguration} from '../../../packages/server-transport/configuration.mjs';
 
 // Launch payload only. The signature stays the engine's; the claim name is partner.
 export function launchHasPartnerClaim(token) {
