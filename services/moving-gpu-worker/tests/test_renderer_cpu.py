@@ -7,6 +7,8 @@ import importlib.util
 import os
 from pathlib import Path
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from types import SimpleNamespace, ModuleType
 import unittest
 from unittest.mock import patch
@@ -45,6 +47,43 @@ class RendererCPU(unittest.TestCase):
         avatar.info = {"vila": 7, "takes": {"deal": list(range(take_count))}}
         avatar.takes = avatar.info["takes"]
         return avatar
+
+    def test_real_utterance_drains_hidden_lookbehind_and_propagates_its_failure(self):
+        import numpy as np
+        for fail_hidden in (False,True):
+            with self.subTest(fail_hidden=fail_hidden):
+                started,released,emitted=threading.Event(),threading.Event(),threading.Event()
+                avatar=self.avatar(5)
+                avatar.lat=self.torch.zeros(5,1)
+                motor=self.motor.Motor.__new__(self.motor.Motor)
+                motor.av={"dealer":avatar}
+                def compose(_avatar,pool_index,*args):
+                    if pool_index==1:  # fran=2 submits this neighbour but never emits it.
+                        started.set()
+                        if not released.wait(3): raise TimeoutError("test release missing")
+                        if fail_hidden: raise ValueError("hidden_composition_failed")
+                    return b"raw-yuv",[0,0,2,2]
+                with ThreadPoolExecutor(max_workers=4) as pool, ThreadPoolExecutor(max_workers=1) as caller:
+                    motor.pool=pool
+                    with patch.object(self.motor,"audio_chunks",return_value=(np.zeros(5),self.torch.zeros(5,1))), \
+                         patch.object(self.motor.R,"talvikt",return_value=np.ones(5),create=True), \
+                         patch.object(self.motor.R,"ramp",return_value=1,create=True), \
+                         patch.object(self.motor.R,"generate",side_effect=lambda lat,chunks:iter([np.zeros((2,2,3)) for _ in chunks]),create=True), \
+                         patch.object(self.motor,"compose",side_effect=compose), \
+                         patch.object(self.motor,"encode",return_value=b"h264"):
+                        pending=caller.submit(motor.utterance,"dealer",b"pcm",24000,[["deal",0,5]],lambda *_:emitted.set(),2)
+                        try:
+                            self.assertTrue(started.wait(2))
+                            self.assertTrue(emitted.wait(2))
+                            with self.assertRaises(FutureTimeout): pending.result(timeout=.05)
+                        finally:
+                            released.set()
+                        if fail_hidden:
+                            with self.assertRaisesRegex(ValueError,"hidden_composition_failed"):
+                                pending.result(timeout=2)
+                        else:
+                            self.assertEqual(pending.result(timeout=2)["rutor"],5)
+                self.assertFalse(self.torch.cuda.is_initialized())
 
     def test_real_vendor_resolver_keeps_long_rest_and_exact_mixed_sources(self):
         avatar = self.avatar()

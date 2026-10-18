@@ -26,7 +26,8 @@ class Serverless(unittest.IsolatedAsyncioTestCase):
     async def test_async_sdk_handler_preserves_actual_provider_id_and_rejects_overlap(self):
         entered,release=asyncio.Event(),asyncio.Event()
         seen=[]
-        async def run(job,store,origin):
+        async def run(job,store,origin,cache):
+            self.assertIs(cache,serverless._CACHE)
             seen.append(job)
             entered.set()
             await release.wait()

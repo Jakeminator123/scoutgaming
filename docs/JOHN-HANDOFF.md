@@ -27,6 +27,17 @@ Separat cachearbete sker i den rena, återanvända arbetskopian
 `C:/Users/jakem/.codex/worktrees/lipsync3-bank-http/croupier`, branch
 `codex/lipsync3-warm-engine`. Beroenden och befintliga junctions ändras inte.
 
+Cachekoden är lokalt färdig och oberoende granskad: **89 CPU-tester passerade**
+utan skips eller GPU. Release
+`f7c371c1b6f7837621c71610cb977c5f7a56ba92d852a5d12a99b39ee5af0121`
+förseglar 24 filer, inklusive nya `engine_cache.py` och vendorpatchen som
+inväntar samtliga kompositionsfutures före återanvändning. Ursprungliga
+importhashar bevaras i `source.json`. Exklusiv lease, generationsbundet IPC,
+färsk bank-/modellverifiering och 30-fps-mätning består. Avbrott/fel/byte av
+identitet stoppar processen. Denna release är ännu inte publicerad, GPU-provad
+eller verifierad i produktion; det tidigare visuella godkännandet gäller
+oförändrat den äldre provfilen, inte nya synteser.
+
 Primärcheckouten `C:/Users/jakem/Projects/croupier` låg vid kontrollen på
 äldre main `12f5e6a7`, med andras ändrade `.codex/config.toml`,
 `.cursorignore`, samt oregistrerade agent-/Cursor-filer, `a.zip` och `web/`.
@@ -146,9 +157,13 @@ eller skips. Oberoende review fann inga kvarvarande blockerare efter att
 diagnostics.py lagts i releaseförseglingen. CPU-/kodresultat innebär inte
 att den nya diagnostikimagen redan är byggd eller GPU-provade.
 
-Nästa arbete: säker återanvändning av modell mellan fullständigt avslutade
-jobb, med avveckling vid fel/avbrott/identitetsbyte; mät kall/varm verklig
-prestanda och cancellation. Därefter kontrollerat produktionsprov med
+Nästa arbete: publicera den granskade cacheimagen och mät kall/varm verklig
+prestanda samt avbrott. Privat A/B/C/D-prov under `motion-readiness/warm-cache-probe/`
+är granskat med sju Python- och sex Nodeprov; det ersätter endast callbacktransporten,
+inte handler/cache/renderaren. Serverns gamla krav på noll aktiva workers
+mellan jobb hindrar varm användning och rättas separat i
+`codex/lipsync3-warm-admission`; inga produktionsinställningar har ändrats.
+Därefter kontrollerat produktionsprov med
 auktoritativ spelkontext, förbättrad permanent resultatbevaring och exakt
 drift-/kostnadskvitto. Behåll den uppmätta flaskhalsen åtskild från GPU-val:
 RTX4090 klarade denna replik, medan modellstarten dominerade väntan.

@@ -250,6 +250,12 @@ class Motor:
                 first_ms = int((time.time() - t0) * 1000)
             n += 1
         gt.join()
+        # A resumed utterance also submits the lookbehind frame (fran - 1).
+        # It is not emitted above, but its composition must finish successfully
+        # before a cached Motor can accept another utterance.
+        for future in futs:
+            if future is not None:
+                future.result()
         ms = int((time.time() - t0) * 1000)
         return {"rutor": total, "fran": fran, "delar": n, "forsta_bit_ms": first_ms, "ms": ms, "ljud_fore_s": LJUD_FORE, "steg": T,
                 "rutor_per_s": round((total - fran) / max(ms / 1000, 1e-3), 1)}

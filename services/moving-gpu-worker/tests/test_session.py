@@ -79,6 +79,46 @@ def messages(start=None):
             bytes(24000),bytes(24000),{"t":"end","id":START["id"]}]
 
 class Sessions(unittest.IsolatedAsyncioTestCase):
+    async def test_reusable_completion_does_not_close_but_cleans_pending_socket_read(self):
+        socket,engine=Socket(messages()),Engine()
+        self.assertEqual(await serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True),"complete")
+        self.assertFalse(engine.closed)
+        self.assertEqual(socket.sent[-1]["t"],"done")
+        self.assertEqual(len(socket.messages._getters),0)
+
+    async def test_reusable_final_send_failure_hard_stops_model(self):
+        class FailedDone(Socket):
+            async def send(self,value):
+                if isinstance(value,str) and json.loads(value).get("t")=="done":
+                    raise OSError("failed final delivery")
+                await super().send(value)
+        socket,engine=FailedDone(messages()),Engine()
+        with self.assertRaises(OSError):
+            await serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True)
+        self.assertTrue(engine.closed)
+        self.assertEqual(len(socket.messages._getters),0)
+
+    async def test_reusable_missing_ack_and_low_current_readiness_hard_stop(self):
+        socket,engine=Socket(messages(),auto_ack=False),Engine()
+        with self.assertRaises(TimeoutError):
+            await serve(socket,engine,ATTESTATION,MAPPING,idle_seconds=.02,keep_alive_on_complete=True)
+        self.assertTrue(engine.closed)
+        engine=Engine(speed=29)
+        with self.assertRaisesRegex(ValueError,"worker_below_realtime_limit"):
+            await serve(Socket(messages()),engine,ATTESTATION,MAPPING,keep_alive_on_complete=True)
+        self.assertTrue(engine.closed)
+        self.assertFalse(engine.started)
+
+    async def test_reusable_cancel_kills_before_abort_ack(self):
+        socket,engine=Socket(messages()),Engine(stall=True)
+        task=asyncio.create_task(serve(socket,engine,ATTESTATION,MAPPING,keep_alive_on_complete=True))
+        while not engine.started:
+            await asyncio.sleep(0)
+        await socket.messages.put(json.dumps({"t":"avbryt","id":START["id"]}))
+        self.assertEqual(await asyncio.wait_for(task,1),"cancelled")
+        self.assertTrue(engine.closed)
+        self.assertTrue(socket.sent[-1]["aborted"])
+
     async def test_diagnostics_count_actual_delivery_and_ack_without_protocol_extensions(self):
         socket,engine=Socket(messages()),Engine()
         with diag.collect() as collector:

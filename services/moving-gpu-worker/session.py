@@ -22,7 +22,7 @@ def control(value):
 
 
 async def serve(socket, engine, attestation, mapping, idle_seconds=15,
-                start_seconds=START_WAIT_SECONDS):
+                start_seconds=START_WAIT_SECONDS, keep_alive_on_complete=False):
     """Engine is owned by this attempt and is killed before abort acknowledgement."""
     async def send(message):
         await asyncio.wait_for(socket.send(json.dumps(message, separators=(",", ":"))), idle_seconds)
@@ -45,6 +45,7 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
     output = incoming = None
     render_started = None
     first_chunk = True
+    completed = False
     try:
         measurement = await engine.prepare()
         diag.record(warmupFps=measurement.get("rutor_per_s") if isinstance(measurement, dict) else None,
@@ -108,8 +109,10 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
                 if data is not None or next_frame != frames:
                     fail("incomplete_worker_output")
                 diag.render_measurement(meta)
-                await stop()
+                if not keep_alive_on_complete:
+                    await stop()
                 await send({**meta, "id": start["id"]})
+                completed = True
                 return "complete"
             if (meta.get("t") != "lapp" or not isinstance(data, bytes)
                     or type(meta.get("del")) is not int or meta["del"] != next_chunk
@@ -152,7 +155,8 @@ async def serve(socket, engine, attestation, mapping, idle_seconds=15,
             diag.record(renderWallMs=diag.elapsed(render_started))
             render_started = None
         pcm[:] = b"\0" * len(pcm)
-        await stop()
+        if not (completed and keep_alive_on_complete):
+            await stop()
         for task in (incoming, output):
             if task is not None:
                 task.cancel()
