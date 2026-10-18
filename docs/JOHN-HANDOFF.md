@@ -2,149 +2,37 @@
 
 ## UX/UI: arbetslogg och kommande körordning — 18 oktober 2026
 
-[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är förkortad och uppdaterad
-enligt Jakobs nya riktning. Dubblerad målmodell och menyföreskrifter är borttagna
-ur AGENTS och runtime-referensen. Användarguiden skiljer befintliga funktioner
-från förslaget; dess två arbetssteg länkar nu direkt till Admin. Det tekniska
-klippkontraktets beskrivning utger sig inte längre för att styra produktbegreppen;
-dess maskinläsbara regler och ID:n är oförändrade.
+[PR260](https://github.com/Jakeminator123/scoutgaming/pull/260) är ett dokumentationsutkast.
+[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är den enda produktmodellen;
+äldre dubblerade föreskrifter har tagits bort. Klipp ordnas nu som kategori →
+situation → standardklipp + varianter. Poseversioner hålls separat.
 
-Dokumentändringarna är pushade i [PR260](https://github.com/Jakeminator123/scoutgaming/pull/260),
-öppen som utkast. UI/UX-chatten visar klippkartans andra skiss: kategorier,
-situationer, standardklipp/beteendevarianter och oberoende placeringsval.
-De tre öppningsbara HTML-demoerna är sparade på Jakobs begäran i
-`C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/demoer/`; senaste är `klippkarta-v2.html`.
-Ingen ny sceneditor, behörighetspolicy, datamigrering eller speländring har
-implementerats. Källinventeringen och livebilderna finns kvar privat i
-`random/admin-ux-20261018/`; uppgifterna där är historiska granskningsbelägg.
+Klippkartans v2 visar en Vila-bas med beteendeklipp, Redos två riktningar,
+boxvisa varianter, bakgrundsval och separata dealer-/bordstransformer.
+Bordet är förvalt ankare och kan skalas. Fria kort-/markerankare,
+intervall och OpenClaw är lokala demoexempel; ingen produktkod har ändrats.
 
-Kontroller: JSON och skissens JavaScript parsas; kontraktets innehåll förutom
-beskrivningen är jämfört mot basrevisionen. Försöket att köra
-`studio-contract.test.mjs` stoppades vid import eftersom `proper-lockfile`
-saknas i checkouten, före något testfall. Leveransens övriga kontroller anges
-i PR-kvittot. GitGuardian incident-/platstäckning kunde inte läsas;
-remote mains GitHub Actions var gröna men GitGuardian-suiten väntande.
+HUVUDAGENT5 bekräftar befintligt stöd för idle-video/intervall/jitter och
+standard plus fyra varianter. PNG-bas, fria ankare, generell chattregeleditor
+och exakt var åttonde utdelning per box kräver komplettering. Räknarens
+livslängd återstår att besluta. Filmad handkontakt måste fortfarande kalibreras.
+Teknisk namn-/importreferens: [BLOB-NEON](storage/BLOB-NEON.md).
 
-### Fortsättning: klippkarta och två arbetslägen
+Verifierat i skissen: procentfält/piltangenter, separata ankare utan hopp,
+idle-loop, variantgräns, standard vid utdelning 1–7 och variant vid 8 med
+separat boxräknare, samt smal vy utan överrinning. Pekardragning är ännu
+inte verifierad. Inga verkliga medie-, spel-, publicerings- eller OpenClaw-prov.
+Dokumentkontroller passerar; GitGuardian incident-/platstäckning är oläst.
 
-Jakob vill behålla klippkartan och harmonisera sidorna med små förändringar.
-UI/UX och HUVUDAGENT5 samordnar detta: UI/UX äger produkttext, navigation,
-klippkartans förslag och denna arbetslogg. HUVUDAGENT5 äger teknisk kontroll,
-namnkopplingar och lagringsbeskrivning i [BLOB-NEON](storage/BLOB-NEON.md).
-Agenternas arbete ger inte tillstånd att ändra varandras filer eller media.
+Demoerna finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/demoer/`.
+Detaljerad arbetslogg och teknisk återkoppling ligger i samma mapps
+`PROVISORISKT/UX-KLIPPKARTA.md`, enligt Jakobs önskan om korta huvudguider.
+Äldre inventering/bilder finns i `random/admin-ux-20261018/`.
 
-- **Skapande:** dealer, spel, klippkarta, scen, tal och publicering.
-  **Verksamhet:** bolag, kunder/team, drift och ekonomi. Förslaget använder
-  samma typsnitt och komponenter: grön accent i Skapande, blågrå i Verksamhet,
-  alltid med synligt lägesnamn.
-  Roller avgör åtkomst; arbetsläget organiserar bara tillgängliga uppgifter.
-- **Klippkartan:** behåll kort, panorering/zoom, spelval och klippförhandsvisning.
-  Fördjupning öppnas bredvid kartan. Scen, kort och marker får en samlad panel;
-  den visar vilket bord och vilken mall ändringen gäller, samt berörda rum.
-  Klippbiblioteket fungerar också utan valt bolag eller rum.
-- **Överenskommen biblioteksvy:** Blackjack → dealer → kategori → situation
-  → standardklipp + varianter, enligt Jakobs senaste precisering i TERMINOLOGI.
-  Plats, pose, språk och urvalspolicy är separata dimensioner. Bakgrunder och
-  bord är egna lager. Kevins originalnamn visas i klippdetaljen och bevaras med
-  källsökväg/commit; begripliga etiketter läggs ovanpå befintliga ID/hashar.
-  Exakta alias och källspecifika posesuffix hör till BLOB-NEON.
-- **Fysiska mappar:** behåll `apps/studio/` för editorerna,
-  `packages/presentation/{contracts,runtime}/` för delade kontrakt/projektioner
-  och `services/game/` för spelmotorn. Blob har separata dealer-, bakgrunds-
-  och bordsobjekt enligt lagringsguiden; Neon håller metadata. Biblioteksvyn
-  och exporten kan följa människans träd utan fysisk medieflytt.
-- **Placering:** färdiglagda kort följer sparad bordsprofil; filmade kortspår
-  följer dealerbildens projektion. Insatscirklar har redan **Följ korten** och
-  **Placera cirklar själv**, separat för mobil/desktop. När Följ korten är valt
-  ska cirklarnas koordinater vara låsta; kortpunkter ändras i särskilt placeringsläge.
-- **Nytt förslag:** dealer och bord flyttas separat som förval.
-  **Flytta scenen tillsammans** är ett frivilligt val vid flytt/zoom.
-  Kort och marker kan var för sig följa bord/dealer, ligga kvar eller redigeras
-  manuellt; marker kan även följa korten. Ankarbyte ska bevara scenpositionen.
-  Återställning i produkt ska utgå från sparad profil; demon återställer exempelvärden.
-  Fria ankare är inte en redan verifierad Blackjack-funktion. Att låta
-  slutpositioner följa enbart dealern kan lossa dem från bordet. Handkontakt,
-  beskärning och överlämning till slutposition måste kontrolleras separat.
-  Separata positioner för varje sidospelsmarkör är ännu inte bekräftat stöd.
+Nästa steg: besluta återstående urvals-/sparpolicy och verifiera en avgränsad
+Admin-implementation före återanvändning i Partner/spelare. UI/UX äger skiss
+och produkttext; HUVUDAGENT5 äger teknisk namn-/importkontroll.
 
-HUVUDAGENT5:s granskning i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/`
-redovisar 99 passerade tester och formatmetadata för 1 485 unika filer.
-Det är tillskrivet kod-/filunderlag, inte ett nytt prov i ett publicerat rum.
-UI/UX har själv läst [placeringseditorn](../apps/studio/components/blackjack-table-geometry-editor.tsx)
-och [projektionen](../packages/presentation/runtime/game-overlay-layout.mjs)
-för ovanstående placeringsgränser. HUVUDAGENT5 bekräftade ansvarsfördelningen,
-hierarkin och dessa gränser direkt i samordningen den 18 oktober.
-
-### Preciserad klipplogik och genomförbarhet
-
-Jakob vill ha en Vila-bas och cirka 10–20 beteendeklipp, med valbar automatik:
-intervall ± slumpmarginal, manuell start eller OpenClaw/chattvillkor. Bakgrund
-får motsvarande standard/variationslogik. Redo har två motsatta situationer,
-inte två tagningar. Varje spelarbox har standard plus högst fyra valfria
-varianter, exempelvis var åttonde utdelning till just den boxen.
-
-HUVUDAGENT5 bekräftade rimlighet och följande kodgränser i direkt svar:
-
-- Idle-policyn stöder basvideo, upp till 30 varianter, intervall/jitter,
-  cooldown/frekvenstak samt lägena manual/automatic/rules/openclaw.
-  En enda bas är Jakobs val. Generell PNG-bas och fri chattregeleditor
-  kräver komplettering; spellogik och tal behöver fortsatt prioritet.
-- Standard plus fyra varianter stöds som mediefamilj. Exakt var åttonde
-  utdelning per box kräver ny deterministisk policy/räknare; befintligt
-  Astrid-specifikt slumpval motsvarar inte detta. Räknarens livslängd och
-  återanslutning återstår att besluta; använd stabil boxidentitet.
-- Separata lagertransformer och manuella bordsbundna punkter finns.
-  Fria ankare för kort/marker behöver nya sparfält och projektion.
-  Filmens handspår måste följa exakt kalibrering fram till överlämningen.
-
-Den verifierade namnkopplingen skiljer **dra öppet till dealer**
-(`deal.dealer/dealer-up`), **lägga dolt** (`deal.dealer/dealer-hole`) och
-**vända dolt** (`reveal.dealer/dealer-hole`). Poseversioner är tekniska kedjor,
-inte de fyra beteendevarianterna. Skissens påhittade kategori Visa resultat
-är borttagen. `settle.*` är händelsereaktioner; talade resultat hör till
-Talade repliker → situation → språk/klipp. Resultat och utbetalning är motorns UI.
-Avsked föreslås som talvideo; inget befintligt avskedsklipp antas här.
-
-Teknisk källa för huvudagentens återkoppling: importplanen i
-`apps/studio/lib/dealer-import-plan.mjs`, presentationskontraktets policyer,
-runtime-modulerna `idle-policy`, `live-idle`, `media-family-policy` och
-`contracts/composition-settings.mjs`. Detta är tillskriven kodgranskning,
-inte ett nytt liveprov. Bakgrundsvariationernas runtime-stöd är inte verifierat.
-
-### Föreslagen körordning
-
-1. Använd den överenskomna hierarkin och HUVUDAGENT5:s namn-/importreferens;
-   källspecifika alias får inte bli generella regler. Gör den exakta
-   etikett-/fackmappningen innan implementation. Den delen återstår.
-2. **Förslag visat:** klippkort, situationer och beteendevarianter bredvid scenen, kartzoom/panorering,
-   separata mobil-/desktopplaceringar, slutpositioner för kort, insatscirklar med
-   Följ korten/egen placering samt Flytta scenen tillsammans för dealer och bord.
-   Delad mall och bordsprofil är synligt sparmål; ingen verklig publicering görs.
-   Senaste skissen finns i UI/UX-chatten som `scout-klippkarta-v2.html` och
-   som öppningsbar export i demo-mappen ovan. Regler/OpenClaw är bara simulering.
-3. För varje befintlig sida: fastställ uppgift, sparmål, rättighet och nästa steg;
-   samla överlappande vyer och rätta länkar med bolag/rum/dealer bevarade.
-4. Implementera avgränsat i Admin med befintliga kontrakt och verifiera sparning,
-   revisionskonflikter och publicering; återanvänd därefter editorn i Partner
-   och förenkla spelarens tillåtna val. Detta är kommande arbete.
-
-Skisskontroll v2: JavaScript parsas. Webbvyn verifierade frikopplad dealer,
-kort som följer dealern medan marker ligger kvar, ankarbyte utan hopp,
-återställning samt procentfält/piltangenter. Idle-loopen fortsatte spela;
-PNG-valet gav stillbildsläge. Intervall/slump, OpenClaws talvideo-förval,
-Redos riktningar, bakgrundsval och gränsen fyra boxvarianter kontrollerades.
-Simulerade utdelningar 1–7 gav standard och 8 gav varianten; annan box hade
-egen räknare. V2 kontrollerades även vid cirka 305 CSS-pixlar utan horisontell
-överrinning; alla bibliotekskort ryms i grundzoomen. V1 hade dessutom
-kontrollerad separat mobil/desktop och återläsning. Pekardragning är implementerad
-men inte verifierad: webbvyns dragautomation misslyckades. Scenfiguren och
-kortets rörelse är schematiska; inga verkliga klipp, handkontakter eller
-spel-/sparcallbacks har accepterats genom detta prov. Ingen extra produktsvit
-kördes för den fristående skissen.
-
-Denna logg samlar status och körordning. Produktregler finns bara i TERMINOLOGI;
-teknik och namnkopplingar länkas till sina befintliga referenser. Inga konstaterade
-registerfel eller fungerande skrivcallbacks följer av den här UX-granskningen.
 
 <a id="dragan-talstatus"></a>
 
