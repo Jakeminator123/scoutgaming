@@ -56,8 +56,8 @@ Sparade lokala arbetsfiler bevaras som källor eller återhämtningsdata.
 
 Rörligt tal betyder att ansiktet genereras för **samma källfilm och bildruta som
 kroppen visar**. Dragan-bankens karta binder varje klipp-ID och SHA-256 till
-dess exakta poolrutor, ansiktsrektangel, latentdata och mask. Talplanen binder
-dessutom text, PCM, profil, bank och workerrelease. Bakgrund och bord läggs på
+dess exakta poolrutor, ansiktsrektangel, latentdata och mask. Talplanen och
+workerattesteringen binder tillsammans text, PCM, profil, bank och workerrelease. Bakgrund och bord läggs på
 efter dealerlagrets komposition; scenens skalning och grönbakgrundsnyckling får
 inte ändra dessa källidentiteter. Ändrade originalbytes kräver ny verifierad
 bankbindning. Ändrad scenplacering behöver inte i sig en ny bank.
