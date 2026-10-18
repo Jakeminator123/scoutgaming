@@ -2,7 +2,34 @@
 
 <a id="dragan-talstatus"></a>
 
-## Lipsync 3: miljöidentitet och avstängt utdelningstal — 18 oktober 2026
+## Lipsync 3: miljöidentitet, avveckling och nästa avgränsade prov — 18 oktober 2026
+
+Jakob har uttryckligen begärt ett nytt prov: ”nu testar vi!”. Koden tillåter
+en enda ytterligare journalreservation på 1,2 USD: totalgränsen för samma
+`dragan-test-20261017` höjs från 8,4 till 9,6 USD. Dygnstaket 6 USD,
+reservationsbeloppet 1,2 USD och globaltaket 40 USD är oförändrade.
+De sju tidigare reservationerna bevaras. Kodändringen ändrar inte den varaktiga
+databasgränsen: separat explicit budgetamendment med färskt kostnadsunderlag
+måste tillämpas före antagning. Detta är inte tillstånd till upprepade prov.
+Ingen databas, miljöinställning eller providerresurs ändrades i kodleveransen.
+41 lokala budget-, sessions- och minnesjournaltester passerade. SQL-fixturen
+har utökats för nästa amendment, bevarad historik och stopp efter en ny
+reservation; den har syntaxkontrollerats men inte körts mot PostgreSQL lokalt.
+
+Efter Jakobs uttryckliga val dokumenterar ansvarig agents driftkvitto
+avvecklingen av Render `game-engine` (`srv-db97dhg473hc73b1vni0`): DELETE
+och efterföljande GET 404 verifierades 14:01:17 UTC. Endast Neon-grenen
+`preview-v2` (`br-rapid-wave-b1b6978c`) och dess endpoint
+`ep-lucky-bird-b1fyapdh` raderades, verifierat 14:02:22 UTC. Produktionens
+main/ep-fragrant-meadow och croupier-v2 är kvar och friska. Gamla arkiverade
+croupier-preview-neon och codex-zone-storage-qa är kvar. Vercel-teamet
+scoutgaming har endast projektet scoutgaming; ingen Impactwin-frontend finns kvar.
+
+RunPod-inventeringen 14:00:48–14:01:37 UTC verifierade API-åtkomst till samma
+konto för båda befintliga profilerna. Kvar finns den äldre Astrid-endpointen
+`zsudl8tmzcmiv1`, worker `rb54ctiwk4kq48` i EXITED med runtime null och
+mall `cadh7uwzv6`. Min/max workers är 0/1; inga pågående eller köade jobb
+och ingen aktiv Dragan-endpoint observerades. Inga resurser ändrades där.
 
 Skrivskyddad kontroll 15:11–15:19 svensk tid: Render croupier-v2 använder
 croupier-production/main, värd ep-fragrant-meadow-b1qzb0qv, databaserna
@@ -22,11 +49,13 @@ PR225 och senaste produktionsbygget passerade. Preview och Production har
 fortfarande samma Render-backend; Preview är inte isolerat. Vercels skyddade
 databasadresser kunde inte återläsas. Ingen global bygginställning ändrades.
 
-RunPods API rapporterade 0,5051714402 USD för 15–18 oktober, varav
-0,4990273255 den 17:e och 0,0061441148 den 18:e. Båda använda API-profilerna
-hör till samma konto, saldo 27,4508002293 USD. Senaste debiteringsperiod var
-10:00 UTC; provet 12:35–12:40 saknar fortfarande kostnadsrader. Dess faktiska
-slutkostnad är okänd; reserverna är inte debitering. Inga nya jobb startades.
+RunPods API rapporterade vid avläsning 13:49:36 UTC totalt 0,5258254219 USD
+för 15–18 oktober. Kostnadsrader för timmen 12:00 hade då tillkommit:
+provet 12:35–12:40 rapporterades till 0,0032440647 USD för endpointen och
+0,0174099170 USD för workern, totalt 0,0206539817 USD. Båda API-profilerna
+hör till samma konto, rapporterat saldo 27,4508002293 USD. Slutfaktura är
+inte verifierad och inga reserver har frisläppts. Inga nya jobb startades
+under avläsningen; reserverna är inte debitering.
 
 En öppen flik kan behålla planerat utdelningstal efter att tjänsten stängts av.
 Servern skiljer nu avstängd tjänst från ogiltig kontext och avvisar starten före
