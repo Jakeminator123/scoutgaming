@@ -1,6 +1,6 @@
 # Scoutgaming: målbild, migrationsstatus och kvarvarande arbete
 
-Uppdaterad 17 oktober 2026. Detta är den enda migrationsöversikten.
+Uppdaterad 18 oktober 2026. Detta är den enda migrationsöversikten.
 Aktuell arbetsbranch och nästa leverans finns i [handoffen](JOHN-HANDOFF.md).
 Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska format av
 [runtime-referensen](LOCAL-PRESENTATION-RUNTIME.md).
@@ -8,15 +8,23 @@ Begrepp ägs av [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md), tekniska form
 ## Teknisk register-/runtimeflytt: avslutad i produktion
 
 Neon som produktregister och Blob som mediekälla är implementerat, mergat
-och driftsatt. Huvudagentens färska läsande avstämning 16 oktober bekräftar
-produktion på `b38c56572158d6deaeb6823b3a66bf5fbca8af7e` enligt kvittot nedan.
-Kodavstämningen fann inget konkret migrationsfel; produktionsvägarna är
-oförändrade sedan denna baseline. Den tekniska flytten är därmed avslutad.
-PR188 och PR190 är också mergade och verifierade på produktionens
-`d7dd04dcbc1c3eab6358ac64b63ad7b5d97a9166` den 17 oktober.
-Strukturfasen är avslutad; det daterade leveranskvittot finns i handoffen.
-Kvarvarande produktfunktioner, historiska felobservationer och visuella
-bedömningar redovisas nedan; de påstås inte vara färdigverifierade.
+och driftsatt. Migrationsbaseline från 16 oktober bevaras som historiskt
+kvitto nedan. Den beslutade strukturflytten är också slutverifierad,
+inklusive den reproducerade lokala klippmappningsregressionen i PR237.
+Accepterad strukturrevision är `2ba5bf03437b8f7da8a60d06335831abaf50f162`:
+main-CI 39112728886 SUCCESS, Vercel READY och Render LIVE med rätt SHA den
+18 oktober. Inga ytterligare rotflyttar återstår i strukturplanen.
+
+[Handoffens slutkvitto](JOHN-HANDOFF.md#strukturens-slutkvitto) skiljer CI,
+frontend, game och Gateway/Director åt. Senare PR238:s workerdiagnostik och
+PR240:s budgetkontroll är levererade på apprevision
+`209d62f436786f9dae69c7ee6f1b256253ab6805`, med grön main-CI, verifierad
+produktion och publicerad privat workerimage. De är separata från strukturens
+acceptans. Det senaste Dragan-provet slutade med `bank_length_mismatch`,
+utan ljud/video. Testresurserna är avvecklade och talet avstängt; exakt
+HTTP-/framingorsak är ännu obevisad. [Aktuellt stopp- och budgetkvitto](JOHN-HANDOFF.md#dragan-talstatus)
+anger sex bevarade reservationer om 7,20 USD och villkoren före ett senare prov.
+Tal/läppsynk och produktluckorna nedan är fortfarande öppna.
 
 ## Ytor och datalagring — produktion och nya QA
 
@@ -33,7 +41,8 @@ bedömningar redovisas nedan; de påstås inte vara färdigverifierade.
 Normal start `node apps/studio/start.mjs --no-open` skriver den publicerade lobbyns
 adress. Endast explicit `--offline` skapar en isolerad, tillfällig fixture.
 Lokala arbetsfiler, katalogexporter och SQLite-backuper är authoring/historik,
-inte produktens runtimefallback. `apps/studio/lib` innehåller aktiva delade tjänster.
+inte produktens runtimefallback. `apps/studio/lib` innehåller aktiva appkopplingar; gemensamma tjänster finns
+också i `packages/`. Se README:s aktuella ansvarskarta.
 Äldre Control-komponenter och sparade ID:n behålls där konsumenter finns.
 Dragan är ordinarie dealer; Astrid är märkt legacyreferens utan trelagersversion.
 
@@ -45,7 +54,8 @@ Dragan är ordinarie dealer; Astrid är märkt legacyreferens utan trelagersvers
 | Schema 012 och import | Befintliga Neon `production/croupier`, databas `croupier_game`, projekt `wandering-hill-60561912`, branch `br-flat-fog-b161a6r8`. Separat återläsning 16 oktober 18:38 UTC. |
 | Schema 013 för rörligt tal | Additiv migration tillämpad och återläst 17 oktober 12:46 UTC i samma speldatabas och scope. Binder antagna talsessioner till exakta mediereferenser. Verifierar schemat, inte GPU-drift eller synlig läppsynk. |
 | Runtime kräver 012, läser katalog/replikmetadata från Neon och byte från Blob | [PR186](https://github.com/Jakeminator123/scoutgaming/pull/186), main `2ea080bc3e75cf0207e3c155f9b4018f6a8d301e`. [PR-CI 38953385914](https://github.com/Jakeminator123/scoutgaming/actions/runs/38953385914) och [main-CI 38954442660](https://github.com/Jakeminator123/scoutgaming/actions/runs/38954442660) gröna, inklusive isolerad riktig PostgreSQL, omstart, HTTPS och migrationsberedskap. |
-| Samlad slutredovisning | [PR187](https://github.com/Jakeminator123/scoutgaming/pull/187), migrationsbaseline `b38c56572158d6deaeb6823b3a66bf5fbca8af7e`. |
+| Schema 014 och strukturens slutrevision | Required budget-/journalmigration installerad; readiness ready med pending=[] 18 oktober 08:53:56 UTC. [PR237](https://github.com/Jakeminator123/scoutgaming/pull/237), main `2ba5bf03437b8f7da8a60d06335831abaf50f162`, [main-CI 39112728886](https://github.com/Jakeminator123/scoutgaming/actions/runs/39112728886) SUCCESS. Fullt driftkvitto i handoffen. |
+| Historisk samlad slutredovisning | [PR187](https://github.com/Jakeminator123/scoutgaming/pull/187), migrationsbaseline `b38c56572158d6deaeb6823b3a66bf5fbca8af7e`. |
 
 012:s SQL-kontrollsumma:
 `5618ae06bcae43c77778f2d7bc777e86d2fabafa2f26c5f139d90d06dc72d291`.
@@ -58,9 +68,9 @@ katalogobjekt strömlästes mot SHA-256, storlek och medietyp. De 79 befintliga
 medieposterna samt project/administration/social-policy var hashoförändrade.
 Inga filmer regenererades eller mediebyte flyttades.
 
-### Färskt läsande produktionskvitto — 16 oktober 2026
+### Historiskt läsande produktionskvitto — 16 oktober 2026
 
-Huvudagentens nya kontroll: Vercel `dpl_FuDAT4aRmniTWGbvgEPXpa874rip` READY
+Huvudagentens kontroll vid denna historiska baseline: Vercel `dpl_FuDAT4aRmniTWGbvgEPXpa874rip` READY
 och Render `dep-db97r50ae00c739b10d0` live på samma fullständiga `b38c5657`-SHA
 ovan. Render health/version gav 200. Neon-identiteterna i tabellen stämmer;
 ledgern är 001–008, 011, 012 och 012:s kontrollsumma matchar LF-normaliserad
@@ -89,8 +99,9 @@ driftverifiering utan nya produktionsdata, inte läppsynk- eller spelprov.
 
 ## Verkliga migrationsfel och kvarvarande utredningsspår
 
-Inget konkret aktuellt migrationsfel identifierades i den färska kod-/
-driftavstämningen. Ingen äldre öppen checkbox är ensam bevis på ett sådant fel.
+Inget register-/lagringsfel identifierades i baselineavstämningen.
+Den senare lokala klippmappningsregressionen från rotflytten är rättad
+och verifierad i PR237. Ingen äldre öppen checkbox är ensam bevis på ett sådant fel.
 Nytt reproducerat fel i auth, bolags-/rumsgränser, publicering, schema eller
 beständig lagring ska behandlas som fel i den berörda kedjan, inte döljas
 som kosmetik. De äldre observationerna här har inte omverifierats i detta pass:
@@ -118,7 +129,8 @@ som kosmetik. De äldre observationerna här har inte omverifierats i detta pass
 | Konto och integration | Partnerreset, riktig 2FA, scoped API-nycklar/rotation, wallet-/webhookprov och säker onboarding/brandimport. Livebord, dealer-/limitbyten, schemaläggning, spelaransvar och rapport/statistik/revshare hör till senare produktleveranser. Marker/chips (L4) är inte klara. |
 | Riktig invite/reset | Resendtransport till sandbox är verifierad; verklig mottagaraktivering, inkorg och resetkedja saknar komplett kvitto. John-adressen studsade och var spärrad hos provider; bekräfta adress och providerstatus före nytt utskick. Jakob äger de tidigare verkliga utskicken. |
 | OpenClaw/Adminrobot | N1-engångslänk, ny profil, negativa roller, session efter sajtutloggning och driftsatt modellkonfiguration kräver avgränsade funktionsprov. Fem roller bevisar inte fem servrar eller inaktiv trafik. Mät före pensionering. |
-| Nytt tal/läppsynk | Rörligt kroppsunderlag, providertransport, återgång/städning och faktisk synk är produktarbete. `lipsync-test` visar 139 incheckade filmer och är inte en färdig Neon/Blob-/talproduktkedja. Betalda jobb kräver eget mandat. |
+| Nytt tal/läppsynk | Senaste provet den 18 oktober använde PR238:s publicerade diagnostikimage och slutade med `bank_length_mismatch`, utan ljud/video. Exakt HTTP-/framingorsak och faktiskt tal-/synkprov återstår. Testresurserna är avvecklade och talet avstängt. Godkänt totaltak är 40 USD; journalens 7,20 USD är fullt reserverat. [Aktuell handoff](JOHN-HANDOFF.md#dragan-talstatus) beskriver stoppkvittot och kraven före nästa prov. `lipsync-test` är referensfilmer, inte en verifierad produktkedja. |
+| Riktad test- och instruktionstädning | Skrivskyddad granskning på 209d62f4 bekräftade kvarvarande generellt tvåspelningskrav i Studio-guiden, CI-urval som missar katalogflyttar, fristående worker-CPU-/imagekontroller, källtextberoende product-chat-assertion och begränsad browser-importupptäckt. Äldre timeout-, lagrings- och sökvägsinstruktioner behöver också avstämmas. Inget av detta är åtgärdat i denna dokumentationsleverans eller belagt som orsak till workerfelet. Behåll skydden för auth, ägare, session, revision, mediahashar, avbrott och serverägda spelregler. |
 | Radering och äldre mediereferenser | B18: permanent klippradering med beroendespärr/journal; B19: nya talklipp från grundbild. De planerade 009/010-numren är historiska förslag, inte tillstånd att ändra dagens ledger. Gamla bankindexreferenser, saknade `speech-media`-filer och äldre `runtime/hands`-byggare behöver separat konsument-/källbedömning. |
 | Plattform | A22b/`packages/platform` väntar på Jakobs beslut i [ärende #52](https://github.com/Jakeminator123/scoutgaming/issues/52). Ingen katalogflytt eller full frikoppling är beställd genom detta statuspass. |
 | Backup och QA | Extern fullbackup/återläsning av Director/Gateway återstår. QA:s tidigare probeparitetsluckor (17→15, 19→18) och EACCES-åtkomstgräns är historiska, inte förklarade av antagen TTL. Ursprunglig Preview-ingresshemlighet är inte återställd. Se återställningsguiden. |
@@ -158,8 +170,8 @@ Obligatoriskt nytt schema ska finnas före merge. Undantaget
 migration och därefter en PR som gör versionen obligatorisk. Ändra aldrig
 checksumfrysta scheman/ledger för att få grön CI.
 
-GitGuardian: huvudagentens läsning 16 oktober gav aktiv övervakning,
-0 öppna/18 ignorerade; platsmetadata och historisk skanning är ofullständiga.
+GitGuardian: läsningen 18 oktober gav 2 öppna och 18 ignorerade incidenter.
+Platsmetadata är delvis ofullständig och historisk skanning har status too_large.
 Grön produkt-CI bevisar inte full säkerhetstäckning. Inga incidenter ändras här.
 
 [ENVIRONMENT-RESTORATION](ENVIRONMENT-RESTORATION.md) är proceduren för
@@ -173,4 +185,4 @@ eller en andra writer. Privata original, env och importkvitton stannar utanför 
 - [Migrationsbaseline: CLOUD på b38c5657](https://github.com/Jakeminator123/scoutgaming/blob/b38c56572158d6deaeb6823b3a66bf5fbca8af7e/docs/CLOUD-MIGRATION.md).
 - [Migrationsbaseline: handoff på b38c5657](https://github.com/Jakeminator123/scoutgaming/blob/b38c56572158d6deaeb6823b3a66bf5fbca8af7e/docs/JOHN-HANDOFF.md).
 - [Levererat strukturpass på f066ba4d](https://github.com/Jakeminator123/scoutgaming/blob/f066ba4d713f5af0191b7ba09f4b299755ad55c3/docs/JOHN-HANDOFF.md), [PR190](https://github.com/Jakeminator123/scoutgaming/pull/190).
-- Separat [PR188](https://github.com/Jakeminator123/scoutgaming/pull/188), head `1eb42c3e`: frivillig kartrapportering hålls skild från produktprov; [full CI 38961755164](https://github.com/Jakeminator123/scoutgaming/actions/runs/38961755164) grön. Ingen merge ingår här.
+- Separat [PR188](https://github.com/Jakeminator123/scoutgaming/pull/188), head `1eb42c3e`: frivillig kartrapportering hålls skild från produktprov; [full CI 38961755164](https://github.com/Jakeminator123/scoutgaming/actions/runs/38961755164) grön. PR188 och PR190 verifierades på produktionens `d7dd04dcbc1c3eab6358ac64b63ad7b5d97a9166` den 17 oktober; detta är ett historiskt kvitto.
