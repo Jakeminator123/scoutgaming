@@ -1,42 +1,37 @@
 # Aktuell handoff — Scoutgaming
 
-## UX/UI: arbetslogg och kommande körordning — 18 oktober 2026
+## UX/UI: första Admin-klippkartan — 19 oktober 2026
 
-[PR260](https://github.com/Jakeminator123/scoutgaming/pull/260) är ett dokumentationsutkast.
-Main `4cee9bc2` är integrerad; senare Lipsync-handoff och teknikavsnitt är bevarade.
-Ordinarie commit-kontroll: 544 tester passerade, 3 hoppades över, inga fel.
-[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är den enda produktmodellen;
-äldre dubblerade föreskrifter har tagits bort. Klipp ordnas nu som kategori →
-situation → standardklipp + varianter. Poseversioner hålls separat.
+Dokumentationsförslaget [PR260](https://github.com/Jakeminator123/scoutgaming/pull/260)
+är mergat. [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är fortsatt den
+enda produktmodellen. UI-leveransen ligger på `codex/admin-clip-map`, från
+main `14d47c24`; Lipsyncs senare handoff är bevarad.
 
-Klippkartans v2 visar en Vila-bas med beteendeklipp, Redos två riktningar,
-boxvisa varianter, bakgrundsval och separata dealer-/bordstransformer.
-Bordet är förvalt ankare och kan skalas. Fria kort-/markerankare,
-intervall och OpenClaw är lokala demoexempel; ingen produktkod har ändrats.
+`/admin/clips` visar kategori → situation → standardklipp och varianter.
+Sju spelarplatser hålls isär från dealerns öppna, dolda och vända kort.
+En plats visar inte längre grannplatsernas sparade standarder som varianter.
+Vila skiljer basloop från beteendeklipp; inspelat tal visar originalljud,
+exakt text och språk. Klipp, scenförhandsvisning och befintlig scenredigering
+har gemensam navigation. Osparat tal har en synlig väg tillbaka till formuläret.
+Befintliga exakta klipp-ID:n, skrivare och revisions-/publiceringsgränser används.
 
-HUVUDAGENT5 bekräftar befintligt stöd för idle-video/intervall/jitter och
-standard plus fyra varianter. PNG-bas, fria ankare, generell chattregeleditor
-och exakt var åttonde utdelning per box kräver komplettering. Räknarens
-livslängd återstår att besluta. Filmad handkontakt måste fortfarande kalibreras.
-Teknisk namn-/importreferens: [BLOB-NEON](storage/BLOB-NEON.md).
+Verifierat: 48 fokuserade tester, frontendens typkontroller och byggning;
+isolerat webbprov av platsval, klippkoppling, sparbekräftelse, återläsning,
+bas/beteende, inspelat tal och bevarat talutkast vid panelbyte. Scenpanelen
+öppnas; inga verkliga spel-, media-, publicerings- eller OpenClaw-prov ingår.
+Den befintliga byggningen varnar fortfarande om CSS `composes` i äldre teman.
+Oanvända UI-konstanter, kategorifilter och ersatt knapp-CSS har tagits bort.
 
-Verifierat i skissen: procentfält/piltangenter, separata ankare utan hopp,
-idle-loop, variantgräns, standard vid utdelning 1–7 och variant vid 8 med
-separat boxräknare, samt smal vy utan överrinning. Pekardragning är ännu
-inte verifierad. Inga verkliga medie-, spel-, publicerings- eller OpenClaw-prov.
-Dokumentkontroller passerar. Leveranskontrollen kunde läsa GitGuardian:
-två öppna incidenter (38318914, 38318915), ofullständig platstäckning;
-historisk skanning är `too_large`. Dessa har inte ändrats av UX-arbetet.
+Fria kort-/markerankare, PNG-idle, generell chattregeleditor och exakt var
+åttonde utdelning per box finns fortsatt bara i förslag/demo och kräver egna
+spar-/runtimekontrakt. HUVUDAGENT5 äger namn/importmappning; Lipsync 3 äger
+medie-/taluppspelning. Denna PR ändrar inte dessa kontrakt eller någon databas.
+Teknisk referens: [BLOB-NEON](storage/BLOB-NEON.md).
 
-Demoerna finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/demoer/`.
-Detaljerad arbetslogg och teknisk återkoppling ligger i samma mapps
-`PROVISORISKT/UX-KLIPPKARTA.md`, enligt Jakobs önskan om korta huvudguider.
-Äldre inventering/bilder finns i `random/admin-ux-20261018/`.
-
-Nästa steg: besluta återstående urvals-/sparpolicy och verifiera en avgränsad
-Admin-implementation före återanvändning i Partner/spelare. UI/UX äger skiss
-och produkttext; HUVUDAGENT5 äger teknisk namn-/importkontroll.
-
+Demoer finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/demoer/`;
+arbetslogg och kvarstående körordning i `PROVISORISKT/UX-KLIPPKARTA.md`.
+GitGuardian på aktuell main: två öppna incidenter (38318914, 38318915),
+partiell platstäckning och historisk skanning `too_large`; inte åtgärdade här.
 
 <a id="dragan-talstatus"></a>
 

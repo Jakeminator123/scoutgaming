@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSeedProject,addDealer} from '../../../../../packages/presentation/contracts/studio-model.mjs';
 import {clipSlots} from './connected-studio.mjs';
-import {groupSlots,affectedRooms,slotCaption,slotExplanation,isRenderedOutcome,layoutClipCards} from './studio-layout.mjs';
+import {groupSlots,affectedRooms,slotCaption,slotExplanation,isRenderedOutcome,layoutClipCards,clipLibraryGroups,clipVariantChoices} from './studio-layout.mjs';
 
 test('expanded clip libraries reserve the tallest measured height before the next row',()=>{
   const cards=[{id:'wait',height:294},{id:'ready',height:359},{id:'players',height:310},{id:'dealer',height:320},{id:'reveal',height:294}];
@@ -43,10 +43,41 @@ test('unmeasured cards retain game spacing and invalid measurements cannot corru
 
 test('visual cards preserve every exact server slot and discover all 17 speech variants',()=>{
   const slots=clipSlots(createSeedProject(),{videos:[]},'astrid'),groups=groupSlots(slots);
-  assert.equal(groups.length,8);assert.equal(groups.filter(row=>row.title==='Tal').flatMap(row=>row.slots).length,17);
+  assert.deepEqual(groups.find(row=>row.id==='speech').slots.map(row=>row.id).sort(),slots.filter(row=>row.sourceType==='speak').map(row=>row.id).sort());
   assert.equal(groups.find(row=>row.id==='players').slots.length,7);
   assert.deepEqual(groups.flatMap(row=>row.slots).map(row=>row.id).sort(),slots.map(row=>row.id).sort());
   assert.equal(slotCaption(groups.find(row=>row.id==='players').slots[6]),'Plats 7');
+  const dealer=groups.find(row=>row.id==='dealer');
+  assert.ok(dealer.slots.some(row=>row.eventId==='reveal.dealer'));
+  assert.ok(dealer.slots.every(row=>!/^box/.test(row.situation)));
+  assert.equal(slotCaption(dealer.slots.find(row=>row.eventId==='reveal.dealer')),'Vänd dolt kort');
+  assert.match(slotExplanation(dealer.slots.find(row=>row.situation==='dealer-up')),/tredje och senare/);
+});
+
+test('library roles come from exact IDs, preserving unassigned clips and separating idle behaviors',()=>{
+  const clips=[{id:'one',label:'Basloop'},{id:'two',label:'Standardfil'},{id:'three',label:'Beteendeklipp'}];
+  const before=structuredClone(clips);
+  assert.deepEqual(clipLibraryGroups(clips,['two'],['three'],true).map(group=>[group.label,group.clips.map(clip=>clip.id)]),[
+    ['Basloop',['two']],['Beteendeklipp',['three']],['Övriga klipp i situationen',['one']],
+  ]);
+  assert.deepEqual(clipLibraryGroups(clips,['one'],['one','two']).flatMap(group=>group.clips),clips);
+  assert.deepEqual(clipLibraryGroups([],['missing']),[]);
+  assert.deepEqual(clips,before);
+});
+
+test('a player situation lists its own saved variants, not neighbouring slot standards',()=>{
+  const project=createSeedProject(),slot=clipSlots(project,{videos:[]},'astrid').find(row=>row.situation==='box2');
+  const line=project.lines.find(row=>row.dealerId==='astrid'&&row.eventId===slot.eventId);
+  const base=line.variants.find(row=>row.id===line.baselineVariantId);
+  const videos=['box2','box3','box4','box2'].map((situation,index)=>({id:`clip-${index}`,available:true,classification:{label:`Klipp ${index}`,dealerId:'astrid',eventId:slot.eventId,situation,kind:'action',role:'alternative',notes:''}}));
+  line.variants=[base,...videos.map((video,index)=>({...base,id:index===3?'nod':`astrid.${slot.eventId}.slot.${video.classification.situation}`,label:index===3?'Nickning':video.classification.situation,videoGenerationId:video.id}))];
+  const before=structuredClone(project);
+  assert.deepEqual(clipVariantChoices(project,{videos},'astrid',slot).map(row=>[row.id,row.baseline]),[[base.id,true],['nod',false]]);
+  assert.deepEqual(project,before);
+  line.variants.push({...base,id:'empty-alternative',label:'Ny variant',videoGenerationId:null});
+  assert.ok(clipVariantChoices(project,{videos},'astrid',slot).some(row=>row.id==='empty-alternative'));
+  const idle=clipSlots(project,{videos:[]},'astrid').find(row=>row.eventId==='idle.ready');
+  assert.deepEqual(clipVariantChoices(project,{videos},'astrid',idle),[]);
 });
 test('save impact covers shared banks, earlier contexts and only changed compositions',()=>{
   const before=addDealer(addDealer(createSeedProject(),'nora','Nora'),'elin','Elin'),after=structuredClone(before);
@@ -85,7 +116,7 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
   const data={group:groupSlots([slot])[0],slot,clips,selectedId:'selected',boundId:'bound',boundIds:['bound'],variants:[],variantId:'',busy:false,
     onSelect(){},onSlot(){},onVariant(){},onBind(){},onFile(){},onSettings(){}};
   const render=patch=>renderToStaticMarkup(React.createElement(module.exports.ConnectedClipDetails,{data:{...data,...patch}}));
-  const unbound=render({});assert.match(unbound,/Fack/);assert.match(unbound,/Klipp \/ tagning/);assert.match(unbound,/Körregel · projektutkast/);
+  const unbound=render({});assert.match(unbound,/Situation/);assert.match(unbound,/Valt klipp/);assert.match(unbound,/Körregel · projektutkast/);
   assert.match(unbound,/En annan exakt tagning/);assert.match(unbound,/Valt för prov · ej kopplat/);assert.match(unbound,/Koppla till utkast/);assert.doesNotMatch(unbound,/Kopplat i sparat utkast/);
   assert.match(unbound,/video\/mp4/);assert.ok(unbound.includes('a'.repeat(64)));
   const usage={configured:true,when:'Teknisk källa: event.type=idle',rules:['Automatiskt var 27 s.']};
@@ -111,4 +142,9 @@ test('clip cards distinguish situation, selected unbound take, saved rule and lo
   assert.doesNotMatch(renderCompact({}),/Kopplat i sparat utkast/);
   assert.match(renderCompact({selectedId:'bound'}),/Kopplat i sparat utkast/);
   const dirty=render({usage,usageChanged:true});assert.match(dirty,/Ändrat lokalt · ej sparat/);assert.doesNotMatch(dirty,/Kopplat i sparat utkast/);
+  const recorded={...clips[1],classification:{recordedSpeech:{exactText:'Tack för spelet.',language:'sv'}}};
+  const speech=render({clips:[recorded],library:clipLibraryGroups([recorded],['selected'])});
+  assert.match(speech,/Inspelat tal · originalets ljud/);assert.match(speech,/Tack för spelet\./);assert.match(speech,/Språk: sv/);
+  assert.doesNotMatch(unbound,/Inspelat tal · originalets ljud/);
+  assert.match(speech,/Standardklipp/);assert.match(speech,/aria-pressed="true"/);
 });
