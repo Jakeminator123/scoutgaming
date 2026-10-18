@@ -87,6 +87,10 @@ läsning (högst 15 s): exakt image-digest/template/version, ingen kö eller
 pågående uppgift, inga okända/ohälsosamma workers och högst en aktiv GPU.
 Kontrollen upprepas under journalens SQL-lås och precis före provider-POST.
 Generiska taljobb och återhämtning behåller sitt krav på verklig drain.
+RunPods `ready` räknar separat Flashboot-/cachekapacitet; en körande worker
+kan ha `running=1, ready=0`. Värdet får därför varken krävas för en verifierad
+aktiv worker eller användas som bevis för en varm modell. Se
+[RunPods egen CLI-referens](https://github.com/runpod/runpodctl#waiting-until-a-resource-is-usable).
 
 Endpointen ska vara exklusiv för denna journal: en extern API-användare kan
 annars starta arbete mellan GET och POST. `workersMin=0`, `workersMax=1` och
