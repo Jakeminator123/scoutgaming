@@ -1,0 +1,5 @@
+-- Technical capacity only. Existing grants, reservations and history are unchanged.
+-- A separately authorized, funded amendment still controls each existing budget ID.
+ALTER TABLE croupier_studio.moving_speech_bindings DROP CONSTRAINT moving_speech_bindings_budget_limit_micro_usd_check, ADD CONSTRAINT moving_speech_bindings_budget_limit_micro_usd_check CHECK (budget_limit_micro_usd BETWEEN 1 AND 40000000);
+ALTER TABLE croupier_studio.moving_speech_budget_amendments DROP CONSTRAINT moving_speech_budget_amendments_previous_limit_micro_usd_check, ADD CONSTRAINT moving_speech_budget_amendments_previous_limit_micro_usd_check CHECK (previous_limit_micro_usd BETWEEN 1 AND 40000000);
+ALTER TABLE croupier_studio.moving_speech_budget_amendments DROP CONSTRAINT moving_speech_budget_amendments_budget_limit_micro_usd_check, ADD CONSTRAINT moving_speech_budget_amendments_budget_limit_micro_usd_check CHECK (budget_limit_micro_usd BETWEEN 1 AND 40000000);

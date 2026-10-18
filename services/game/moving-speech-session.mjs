@@ -33,7 +33,7 @@ function bounded(work, signal, ms, code) {
  * No policy bootstrap, provider call, timer or acquisition at construction.
  */
 export function createMovingSpeechSession({ journal, scope, origin, endpointId, release, provider,
-  budgetId, totalBudgetMicroUsd, reserveMicroUsd, currentDailyBudgetMicroUsd, holderId,
+  budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd = totalBudgetMicroUsd, reserveMicroUsd, currentDailyBudgetMicroUsd, holderId,
   workerState, lifetimeMs = MOVING_SPEECH_LIMITS.lifetimeMs,
   startupMs = Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs), idleMs = 15000,
   cleanupMs = 15000, pollMs = 500, connectionFactory = createMovingSpeechConnection } = {}) {
@@ -41,6 +41,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
     || !provider || ['submit', 'cancel', 'status'].some(name => typeof provider[name] !== 'function')
     || typeof release !== 'function' || typeof workerState !== 'function'
     || !positive(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD) || !positive(reserveMicroUsd, Math.min(totalBudgetMicroUsd,5000000))
+    || !positive(initialBudgetMicroUsd, totalBudgetMicroUsd)
     || !positive(currentDailyBudgetMicroUsd, 20000000) || !positive(lifetimeMs, MOVING_SPEECH_LIMITS.lifetimeMs)
     || !positive(startupMs, Math.min(MOVING_SPEECH_LIMITS.startupMs, lifetimeMs))
     || !positive(idleMs, 15000) || !positive(cleanupMs, 30000) || !positive(pollMs, 1000)) fail('invalid_generated_speech_moving_configuration', 422);
@@ -168,7 +169,7 @@ export function createMovingSpeechSession({ journal, scope, origin, endpointId, 
         const capacity = await bounded(s => observeCapacity(receipt,s), requestSignal, idleMs, 'generated_speech_moving_drain_unknown');
         admittedCapacity=capacity.verified;
         session = await journal.reserveMovingSession({ scope, ownerHash, requestId, fingerprint, binding, mediaReferences,
-          projectRevision, budgetId, totalBudgetMicroUsd, sessionId: binding.sessionId, endpointId,
+          projectRevision, budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd, sessionId: binding.sessionId, endpointId,
           lease, reserveMicroUsd, currentBudgetMicroUsd: currentDailyBudgetMicroUsd, workerState: capacity.state,
           ...(capacity.proof ? {movingCapacity:capacity.proof}:{}) });
         connection = await connectionFactory({ origin, release: receipt, attestationBinding: binding,

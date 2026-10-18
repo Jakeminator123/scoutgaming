@@ -484,10 +484,11 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
     // Moving admission requires migration 013; amendments require 014.
     // One atomic admission: spent request, exact media, GPU/day and total budget.
     async reserveMovingSession({ scope, ownerHash, requestId, fingerprint, binding, mediaReferences, projectRevision,
-      budgetId, totalBudgetMicroUsd, movingCapacity, ...gpu } = {}) {
+      budgetId, totalBudgetMicroUsd, initialBudgetMicroUsd = totalBudgetMicroUsd, movingCapacity, ...gpu } = {}) {
       scope = movingScope(scope); binding = verifyMovingSpeechBinding(binding);
       const key = speechRequestKey(ownerHash, requestId); check(fingerprint, hash); check(budgetId, identifier);
       microUsd(totalBudgetMicroUsd, MOVING_BUDGET_MAX_MICRO_USD); microUsd(gpu.reserveMicroUsd, 5000000);
+      microUsd(initialBudgetMicroUsd, totalBudgetMicroUsd);
       if (gpu.sessionId !== binding.sessionId) fail('invalid_generated_speech_moving_binding', 422);
       return transaction(async (client, time) => {
         const ready = await row(client, 'moving_ready', "SELECT to_regclass('croupier_studio.moving_speech_bindings') IS NOT NULL AS present");
@@ -495,7 +496,9 @@ export async function createSpeechJournal({ pool, environmentId, now } = {}) {
         if (await getRequest(client, key)) fail('generated_speech_request_already_attempted', 409);
         await assertMovingMedia(client, scope, projectRevision, binding, mediaReferences);
         const budget = await movingBudget(client, scope, budgetId);
-        const ceiling = Math.min(totalBudgetMicroUsd, budget.ceiling === null ? totalBudgetMicroUsd : integer(budget.ceiling));
+        // Initial authorization is separate from capacity and only seeds an empty ID.
+        // Existing grants can grow only through the explicit amendment operation.
+        const ceiling = Math.min(totalBudgetMicroUsd, budget.ceiling === null ? initialBudgetMicroUsd : integer(budget.ceiling));
         if (integer(budget.used) + gpu.reserveMicroUsd > ceiling) fail('generated_speech_total_budget_exhausted', 429);
         // Only this moving-specific entrypoint may admit a verified idle GPU.
         // Generic sessions, retirement and recovery still require real drain.

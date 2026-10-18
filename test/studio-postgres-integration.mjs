@@ -1,4 +1,4 @@
-import { runMovingBudgetSqlChecks } from './fixtures/moving-budget-sql-checks.mjs';
+import { runMovingBudgetSqlChecks,runMovingBudgetMigrationSqlChecks } from './fixtures/moving-budget-sql-checks.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash,randomBytes,randomUUID } from 'node:crypto';
@@ -28,6 +28,8 @@ export async function runStudioPostgresChecks({ pool, restart } = {}) {
     const initial = await planStudioMigrations({ pool });
     assert.equal(initial.toApply.length, migrations.filter(row=>!row.deploymentOptional).length, 'fixture must start without an existing Studio schema');
     assert.deepEqual(initial.optionalPending.map(row=>row.version), migrations.filter(row=>row.deploymentOptional).map(row=>row.version));
+    await runMovingBudgetMigrationSqlChecks({pool});
+    assert.deepEqual(await planStudioMigrations({pool}),initial,'old014 to015 SQL probe rolls back its entire fixture');
     await assert.rejects(applyStudioMigrations({ pool, expectedTarget: 'wrong-target', confirm: true }));
     await applyStudioMigrations({ pool, expectedTarget: initial.target, confirm: true });
     const applied = await planStudioMigrations({ pool });
