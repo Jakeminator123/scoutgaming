@@ -2,6 +2,47 @@
 
 <a id="dragan-talstatus"></a>
 
+## Lipsync 3: miljöidentitet och avstängt utdelningstal — 18 oktober 2026
+
+Skrivskyddad kontroll 15:11–15:19 svensk tid: Render croupier-v2 använder
+croupier-production/main, värd ep-fragrant-meadow-b1qzb0qv, databaserna
+croupier_game för spelet och neondb för zonregistret. Main innehåller aktiva
+Dragan test och Nordic bet, med Dragan-rumspaket 4. Preview-v2 är en äldre
+kopia med Scoutgaming Demo, Swedish Games och bland annat paow-kevin.
+Innehållsnamnet bevisar inte Kevin-ägarskap. Båda kopiorna har datavärdet
+environment_id=production; värd och Neon-gren avgör faktisk anslutning.
+Ingen databas eller anslutning ändrades. Äldre croupier-preview-neon ligger
+i personliga Vercel-organisationen och dess main är arkiverad.
+
+Vercels www.scoutgaming.tech och croupier-lab-ui.vercel.app pekade på samma
+READY-produktion, main 5778cf8f (PR244), klar 15:10:51 svensk tid.
+Kevins kevin-staging var en misslyckad Preview i samma projekt: MISSING_SERVICES
+för branchens äldre vercel.json. PR224:s äldre Blob-byggfel rättades redan i
+PR225 och senaste produktionsbygget passerade. Preview och Production har
+fortfarande samma Render-backend; Preview är inte isolerat. Vercels skyddade
+databasadresser kunde inte återläsas. Ingen global bygginställning ändrades.
+
+RunPods API rapporterade 0,5051714402 USD för 15–18 oktober, varav
+0,4990273255 den 17:e och 0,0061441148 den 18:e. Båda använda API-profilerna
+hör till samma konto, saldo 27,4508002293 USD. Senaste debiteringsperiod var
+10:00 UTC; provet 12:35–12:40 saknar fortfarande kostnadsrader. Dess faktiska
+slutkostnad är okänd; reserverna är inte debitering. Inga nya jobb startades.
+
+En öppen flik kan behålla planerat utdelningstal efter att tjänsten stängts av.
+Servern skiljer nu avstängd tjänst från ogiltig kontext och avvisar starten före
+spelmutationen. Klienten återkallar talvalet, behåller text och insatsutkast och
+låter spelaren uttryckligen starta igen utan tal. Ingen automatisk start skickas.
+Efter ett tvetydigt nätverksfel behålls låsningen och auktoritativ återhämtning;
+det går då inte att lova att föregående start aldrig genomfördes.
+
+Isolerat HTTP-prov verifierade oförändrat bord, saldo och transaktionsantal vid
+avvisningen samt en enda debitering vid separat vanlig start. Tio klient-/
+utdelningstester och befintliga runtimeprov passerade; oberoende granskning
+hittade inga kvarvarande blockerare efter nätverksfallet rättats. Detta löser
+återhämtning från avstängt tal, inte det tidigare ofullständiga ljudprovet.
+Talflaggan är fortsatt 0. Driftsättning av denna återhämtningsändring ska
+verifieras separat mot faktisk Render-version.
+
 ## Lipsync 3: produktionsprovet avbröts; återställningen klar — 18 oktober 2026
 
 PR242 (bankens HTTP-hämtning) och PR245 (en ytterligare journalreservation)
@@ -50,8 +91,9 @@ diagnostiserar nästa avbrott men löser inte en ännu okänd produktionsorsak.
 Kvittot ersätts fortfarande vid nästa fråga eller sidladdning och måste fångas
 direkt efter ett kommande prov. Serverns interna stream-fel är fortsatt generiskt.
 
-Nästa steg: leverera denna diagnostik, fånga den exakta orsaken och avstäm kostnad
-före nästa betalda prov. Kontrollera därefter hela meningen och först sedan
+Diagnostiken är levererad i PR244; aktuella drift- och miljökvitton finns överst.
+Nästa steg är att fånga den exakta orsaken och avstämma kostnad före nästa
+betalda prov. Kontrollera därefter hela meningen och först sedan
 tal under auktoritativ utdelning. Lipsync-spåret äger även uppföljningen av
 256MiB servergräns mot32MiB klientgräns; viloklippet i detta prov var1,95MB,
 så den skillnaden förklarar inte just detta avbrott. Alla kvarvarande problem
@@ -87,15 +129,8 @@ läppsynkens kvalitet eller verifiering av serverkort/pengar följer av detta.
 30 fokuserade tester för komposition och frame-layer passerade; det valfria
 externa webbläsar-codecprovet i testsuiten kördes inte. Inga nya TTS-anrop gjordes.
 
-Underagentens skrivskyddade miljögranskning 18 oktober hittade inget konkret
-kopplingsfel: Render game/zones pekar på croupier-production/main och
-croupier_game/neondb, OpenClaw-tokenparen matchar och rätt privata Blob-store
-är ansluten. Vercels faktiska GAME-URL förblir dold även i den godkända
-ENV-OCH-DB-exporten; destinationen är alltså inte färskbevisad. Preview och
-Production använder båda croupier-v2 och utgör inte isolerade provmiljöer.
-Ingen konfiguration ändrades. Underagenten läste live-deploy av `efdad149`
-på både Vercel och Render. Detta var före produktionsprovet ovan. Ett nytt
-driftprov kräver färsk kumulativ budget/journal,
+Aktuell miljö- och debiteringskontroll finns överst. Ett nytt driftprov kräver
+färsk kumulativ budget/journal,
 en avgränsad endpoint med stoppguard och kontroll av bankhämtning, minst 30 fps,
 ljud/rutbindning samt fel/avbrott innan tal öppnas i det särskilda testrummet.
 
