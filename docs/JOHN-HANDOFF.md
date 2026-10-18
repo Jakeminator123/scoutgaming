@@ -29,11 +29,54 @@ med oförändrade ägar-/käll-/filhashar godkända. Originalen lästes enbart;
 testservern och den temporära kopian/extraktionen är avvecklade.
 Privat kvitto: `C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/local-bank-http-receipt.json`.
 
+PR242 är mergad som `efdad149d741dbe7b50a7725b39b58ead35e1b05` efter grön
+dealer-regression, worker-, container- och GitGuardian-kontroll.
 Förseglad workerrelease: `c8ba8f3c81315d172e292fa5316fca66d289f219ab7c3672b97201a3a5ed653f`.
-Ingen image är byggd/publicerad för ändringen och inga moln-/profil-/budget-
-inställningar eller medier har ändrats. PR/container-CI, eventuellt senare
-ny pinnad image och kontrollerat molnprov återstår. Synlig/hörbar läppsynk
-och aktuell profil-/videomatch är fortfarande separata kvarvarande kontroller.
+GitHub Actions `39120838837` har byggt och publicerat den privata imagen
+`ghcr.io/jakeminator123/moving-gpu-worker@sha256:178c3459460980e979f679837d6a0c52cc34202fb64fb3da86fcc6403bffc127`.
+Publiceringskvittot bekräftar samma commit/release, CPU-bygge och isolerade
+importer/tester. Imagen har ännu inte aktiverats i RunPod. Ingen ny endpoint,
+moln-GPU, talaktivering eller budgetändring ingick i detta steg.
+
+Nytt lokalt offlineprov med aktuell motor/frame-contract på RTX3060 gav
+”Jakob är kung.” över 66 exakta källrutor. 50 talrutor tog 4,560s (11,0fps),
+första bilddelen 1353ms, uppvärmningsmätning 12,7fps. Produktionskravet
+30fps är oförändrat och uppnåddes inte. En färdigrenderad film är därmed
+verifierad; realtidsdrift och visuell läppsynksacceptans är inte verifierade.
+Tre containersökvägar anpassades endast i en privat kopia av `rorlig.py`.
+Modell- och bankhashar verifierades före laddning. Härledningen har 66 klipp-
+rutor plus den verkliga vilobilden: källklippets ruta0 är fullbankens poolruta421,
+inte poolruta0. Den äldre extraktionsmappen saknade `pool.mp4`; fullarkivet
+var intakt och användes utan ändring. Avbrutna prov är sparade i körjournalerna.
+
+Privata filmer, original/jämförelse/närbild, granskningsvy och tidsstämplade
+kvitton finns under
+`C:/Users/jakem/.codex/visualizations/2026/10/18/01a14e80-4e7f-7ff0-a83b-0ec7a9984900/local-review-03/`.
+Se den uppdaterade lokalguiden i `docs/AI/lipsync-lokalt-2026-10-17.txt`.
+
+Jakob begärde därefter ”Ulf Lundell är bra.” under självutdelning. Ett nytt
+ElevenLabs-anrop med verifierad Dragge-röst gav PCM24k mono1,393208s. Neon
+lästes skrivskyddat 11:03:04UTC: samma röst/modell/inställningar, profilen i
+`preparation`, klipp `d9c7fefb-141c-4809-aecf-3904392f22f5` = Kevin posdealer-iv,
+`deal.dealer`/`dealer-up`, originalhash
+`061e82f2d4be69d3a73a2e6842692eb2d23c7b7e11fcd9d246fbb0c85e9f72c0`.
+Källvideons hash och dess66 avkodade rutor matchade bankens poolrutor2126–2191.
+51 talrutor, plan8–58, tog5,804s (8,8fps), första bilddelen1542ms.
+Ny video-SHA `2b9a07591fa2f39657d8d7b320e52dd242f62702480b50725747f062aa0ffa10`.
+Separat privat prov finns i `ulf-lundell-dealer/render/` under samma bas;
+granskningskopian ligger i `local-review-03/ulf-lundell/`.
+Båda provens MP4-filer avkodades utan fel. Webbläsaren spelade hela2,75s;
+bildrutestegning verifierades efter att den egna lokala granskningsservern
+fick HTTP Range-stöd. Inget av proven är visuellt godkänt eller realtidsklart.
+
+RunPod lästes åter 10:55:39UTC: rapporterat 0,502929440146545USD inklusive
+kontots podkostnader konservativt. Senaste jobbets endpoint redovisar ännu0USD;
+providerlagg är möjlig. Tidigare reserver plus senaste provets reserv behålls:
+16,403334USD. Alla13 tidigare moving-endpoints är raderade med noll workers;
+senaste template är raderad, Astrids endpoint kvar på min0/max1. Neon-journalen
+och ElevenLabs-faktureringen ingick inte i denna kostnadsavläsning. Nytt molnprov
+kräver därför fortfarande färsk journal-/profil-/bank-/budgetkontroll under
+befintligt totalt40USD-tak och en egen avvecklingsguard; gamla startbesked gäller inte.
 
 ## Dragan: avslutat diagnosprov, bank_length_mismatch — 18 oktober 2026 10:10 UTC
 

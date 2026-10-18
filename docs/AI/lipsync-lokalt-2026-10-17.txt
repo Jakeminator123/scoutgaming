@@ -1,4 +1,64 @@
-LOKAL LIPSYNC-CHECKPOINT — 17 oktober 2026, cirka 02:42 svensk tid
+LOKAL LIPSYNC — uppdaterad 18 oktober 2026 av Lipsync 3
+
+Aktuella granskningsprov
+Bas: C:\Users\jakem\.codex\visualizations\2026\10\18\01a14e80-4e7f-7ff0-a83b-0ec7a9984900
+
+1. local-review-03/: ”Jakob är kung.” över Kevin pos4-iv (Admin Plats4).
+   66 källrutor, 2,75s, 24fps, talplan8–57, ljudstart553ms.
+   Ny rendering: 50 talrutor på4,560s =11,0fps; första delen1353ms.
+   Video-SHA fa5cbac98365bf4c3518081874de11de08510fb3bbae7c026dde05752fc36623.
+   Det gamla ljudet återanvändes utan nytt TTS-anrop.
+
+2. ulf-lundell-dealer/render/: ”Ulf Lundell är bra.” när Dragan delar till sig själv.
+   Källklipp Kevin posdealer-iv, d9c7fefb-141c-4809-aecf-3904392f22f5.
+   Original-SHA 061e82f2d4be69d3a73a2e6842692eb2d23c7b7e11fcd9d246fbb0c85e9f72c0.
+   66 källrutor, 2,75s, 24fps, talplan8–58, ljudstart553ms.
+   Ett nytt ElevenLabs-anrop: samma Dragge-röst/modell/inställningar som nedan.
+   Aktuell Neon-profil och klippets identitet lästes skrivskyddat före anropet;
+   profilen stod i preparation och ändrades inte.
+   Ljud-SHA a5088d83b593fd0c80ce6531898d49f3710e4861f4cbf9ffd3ecd7fc1878bf84.
+   Ny rendering: 51 talrutor på5,804s =8,8fps; första delen1542ms.
+   Video-SHA 2b9a07591fa2f39657d8d7b320e52dd242f62702480b50725747f062aa0ffa10.
+   Granskningskopian finns även i local-review-03/ulf-lundell/.
+
+Varje prov innehåller original.mp4, dragan-local-2026-10-18.mp4,
+comparison.mp4, face-comparison.mp4, comparison-frame.jpg, index.html,
+korjournal.md, run.jsonl, render-receipt.json och media-verification.json.
+Körjournalerna innehåller faktiska tider. MP4-filerna avkodades utan fel;
+webbläsaren spelade hela klippet och bildrutestegningen kontrollerades.
+Ingen visuell läppsynksacceptans är registrerad.
+
+Aktuell teknik och gräns
+Nu används aktuell motor.py och frame_contract.py från den förseglade releasen
+c8ba8f3c81315d172e292fa5316fca66d289f219ab7c3672b97201a3a5ed653f.
+Endast tre containersökvägar i privat rorlig.py-kopia anpassas till WSL.
+MIN_RUTOR är30 även lokalt; fristående offline-rendering anropar inte
+produktionsantagningen. Mätningarna klarar inte realtidsgränsen30fps.
+Detta är provfilmer, inte bevis på fungerande liveanslutning eller ljudklocka.
+
+Fullbankens sju filer och modellernas sju filer hashkontrolleras före laddning.
+Varje lokal delbank innehåller66 klipprutor plus korrekt vilobild.
+Viloklippets ruta0 är fullbankens poolruta421. Blanda inte ihop klippruta0,
+fullbankens poolruta0 och delbankens lokala vila-index0.
+Gamla bank-original/ saknar pool.mp4; den intakta dragan.tar används som källa.
+Första två avbrutna prov sparades i local-review-01/ och local-review-02/.
+Original, produktionsbank, Neon/Blob och tidigare filmer lästes utan ändring.
+
+Återkörning
+Basens record-local-render.py och record-ulf-render.py skriver till egna
+utdatamappar och vägrar återanvända en befintlig mapp. Välj en ny provmapp
+vid omkörning. generate-ulf-speech.mjs skapar en exklusiv anropsavsikt och
+får inte köras igen för att kringgå skyddet mot dubbel TTS-debitering.
+make-review.py sammanställer enbart provets egna granskningsfiler.
+serve-review.py visar dessa på127.0.0.1:8766 med HTTP Range för bildrutestegning;
+den är en privat statisk granskare och ingen lokal produktdatabas.
+
+Nästa produktionssteg
+Bankfix PR242 är mergad; privat image är publicerad genom Actions39120838837.
+Se docs/JOHN-HANDOFF.md för pinnad image, budgetläge och återstående molnprov.
+Ingen ny RunPod-resurs eller talaktivering gjordes under dessa lokalprov.
+
+HISTORISKT PROV — 17 oktober 2026, cirka 02:42 svensk tid
 GitHub-tagg: lipsync-local-dragan-2026-10-17
 
 Verifierat
@@ -40,8 +100,9 @@ Talplan: originalets ruta 8–57; ljudstart 553 ms efter filmstart.
 
 Köra om på denna dator (återanvänder sparat ljud, inget nytt API-anrop)
 wsl -d Ubuntu -- /home/jakem/.local/share/croupier-dragan-local/venv/bin/python /mnt/c/Users/jakem/.codex/visualizations/2026/10/16/01a14685-3cb7-7020-8f18-414e8bbbd5fe/dragan-jakob-ar-bast/render-local.py
-Detta skriver om endast provets egna utdata. Bevara den godkända versionen
-separat innan en annan replik, film eller inställning provas.
+Det äldre kommandot skriver om provets utdata. Använd i första hand de nya
+separata provskripten ovan; tidigare filmer ska bevaras. Ingen av dessa filmer
+har en registrerad fullständig visuell acceptans.
 
 Gränser
 Detta är en fungerande lokal OFFLINE-rendering, inte ett färdigt livespel.
