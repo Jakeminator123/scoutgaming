@@ -1,5 +1,43 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — OpenClaw integrerad med levererad Studio, 18 oktober 2026
+
+Studio-PR232:s main bcb0dbf1d34a1b77a5a83f94a736721d594e4f21 integreras
+normalt i den bevarade OpenClaw-flytten 848f567f. Required014, budgetlogik
+och Studios nya caller-/återställningsrättningar behålls. Dokumentkonflikter
+kombinerar apps/studio med services/openclaw; gamla open-claw/README är
+ersatt av den verifierade nya guiden. Nio kvarvarande guidelänkar har
+uppdaterade befintliga mål. Inga privata env-, data- eller mediefiler flyttas.
+
+OpenClaws interna lab-nivå och befintliga privata data-/envrötter består.
+Den lokala isolerade startadaptern återanvänder fortfarande game-API:t för
+multi-service-bootstrap; ingen ny generell bibliotekskonstruktion tillkommer.
+Normal integrationscommit 218887f2 passerade ordinarie hook: 417 tester, 416 godkända, 0 fel och 1 isolerad PostgreSQL-skip utan konfigurerad testdatabas. Föregående flytthook gav 345 godkända, 0 fel och 1 plattformsskip. CI och faktisk drift återstår hos mergagent; Director/Gateway har autoDeploy av och deras nya Docker-/blueprintvägar måste verifieras på befintliga tjänster.
+
+
+## C3 — OpenClaws källrot services/openclaw, lokalt 17 oktober 2026
+
+65 spårade filer har flyttats individuellt från open-claw till services/openclaw;
+interna lab-nivån består. Ursprungliga filbytes/modes verifierades vid flyttsteget,
+före exakta source-import-, Docker-, CI-, fixture- och guideanpassningar.
+Studio- och speechbrancharna är bevarade. Spelservern ligger fortfarande i web.
+
+Director använder nya källroten för config/public men samma befintliga lokala
+open-claw/lab/data och envordning repo/.env → gamla open-claw/lab/.env.
+Studio-/game-bindningarna är oförändrade. Explicita env/envFiles/dataDir och
+Docker-volymerna /data/catalog respektive /data/openclaw består. Inga lokala
+privatfiler, runtime-state, envfiler, node_modules eller originalmedia flyttades.
+Gamla och nya privata rötter har explicit ignoreskydd. Inga tjänster installerades,
+startades eller ändrades i molnet; isolerade befintliga fixturetester kördes.
+
+Node24.21.0,45 ändrade JS-modulers syntax och197 relativa import/URL-kanter
+granskade utan saknad målsökväg. Fokuserat befintligt OpenClaw-/settings-/Docker-/
+CI-/fixtureurval336fall:334pass,1fel,1plattformsskip vid första körningen.
+Enda felet var flyttad sökvägs alfabetiska plats i inventeringsfixturen; endast
+den listordningen rättades och dess4/4prov passerar. Övriga gröna prov återanvänds.
+512testkandidater/0orphan,9befintliga helper-/opt-in-klasser. Inga nya testfiler,
+fullbyggen eller borttagna assertions. Kärndiffen är parentgranskad. Leverans görs med ordinarie focused hook utan nytt fullbygge.
+
 ## C3 — kompletterande Studio-callergranskning, 18 oktober 2026
 
 GitHubs inline-review och mergeagentens egen läsning bekräftade ytterligare
@@ -632,7 +670,7 @@ PR202+204. Senaste strukturkvittot gäller main
 `05cbc22de9c6637cb9ea642c6f697a093dae42af` (PR214), med fulla CI- och driftkvitton från mergeagenten. Senare delar inväntar sina separata kvitton.
 Teknisk migrationsstatus och kvarvarande produktarbete finns i
 [CLOUD-MIGRATION](CLOUD-MIGRATION.md). Användarsteg finns i
-[lab/docs/README](../lab/docs/README.md); ingen ny tracker skapas.
+[lab/docs/README](../apps/studio/docs/README.md); ingen ny tracker skapas.
 
 ## Etapp 3 C2m: publicering och frysta paket — lokalt 17 oktober 2026
 
@@ -1225,7 +1263,7 @@ JS/TS-inventeringen omfattar 510 kandidater, med nio namngivna helper/opt-in-
 klassningar och inga oklassificerade kandidater. Tio Pythonprov redovisas
 separat, utan påstående om verifierad Python-täckning. Fyra små fixturprov
 skyddar inventeringens riktiga körvägar och negativa fall. Körgränser och
-testprinciper beskrivs i [lab/README](../lab/README.md#regressionssviter-och-tidskvitton).
+testprinciper beskrivs i [lab/README](../apps/studio/README.md#regressionssviter-och-tidskvitton).
 
 Riktade lokala UI-/runner-/inventeringsprov och 45 medie-/workflowkontraktsprov
 är kontrollerade; Windows-specifika skips redovisas i PR-kvittot. Full CI och

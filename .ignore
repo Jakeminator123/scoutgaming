@@ -78,3 +78,10 @@ vendor/
 
 # Relocated Studio: retain old private/build guards for files left in place.
 /apps/studio/data/
+
+# OpenClaw source move: local state/media remain at the old protected root.
+/open-claw/lab/data/
+/open-claw/lab/runtime/
+/open-claw/lab/media/*
+/services/openclaw/lab/data/
+/services/openclaw/lab/runtime/

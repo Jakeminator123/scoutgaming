@@ -47,7 +47,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
 test('local code and deletions use focused checks; only CI or explicit full runs the complete product', () => {
   for (const path of [
     'web/public/app.mjs', 'test/player-auth.mjs', 'docs/dealer-sync-baseline.json',
-    'open-claw/lab/deploy/runtime-bundle/knowledge/croupier-model.md',
+    'services/openclaw/lab/deploy/runtime-bundle/knowledge/croupier-model.md',
     'content/staging/REVIEW.md', '.dockerignore', '.gitignore',
     'apps/studio/.env.example', '.githooks/pre-commit', 'tools/precommit-checks.mjs',
     '.agents/skills/ping-croupier/SKILL.md', 'package.json',

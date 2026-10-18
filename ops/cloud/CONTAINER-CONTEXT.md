@@ -41,7 +41,7 @@ står kvar bland undantagen för att filtrera en återställd äldre kopia.
 Reglerna filtrerar byggkontexten och raderar inga lokala filer.
 
 OpenClaw-imagerna använder egna Dockerfiler och ignore-filer
-(`open-claw/lab/.dockerignore` eller `Dockerfile.dockerignore` beroende på
+(`services/openclaw/lab/.dockerignore` eller `Dockerfile.dockerignore` beroende på
 byggkontext). Kommandot ovan publicerar inte dessa imager.
 
 Konfiguration och beständiga data kommer från driftsmiljön, inte från en

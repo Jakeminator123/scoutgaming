@@ -34,7 +34,7 @@ test('legacy imports retain the shared auth, scope and error identities', async 
 test('shared auth loads and fails closed without Studio, OpenClaw or storage implementations', () => {
   const entry = new URL('../../../packages/studio-access/studio-native-auth.mjs', import.meta.url).href;
   const root = new URL('../../../', import.meta.url);
-  const blocked = ['apps/studio/', 'open-claw/', 'web/storage/'].map(path => new URL(path, root).href);
+  const blocked = ['apps/studio/', 'services/openclaw/', 'web/storage/'].map(path => new URL(path, root).href);
   execFileSync(process.execPath, ['--input-type=module', '-e', `
     import { registerHooks } from 'node:module';
     import assert from 'node:assert/strict';

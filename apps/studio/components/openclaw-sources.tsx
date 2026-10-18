@@ -1,7 +1,7 @@
 export function OpenClawSources() {
   return <details className="gateway-diagnostics"><summary>OpenClaw: dokumentation och konfiguration</summary>
     <p>Projektets ingång för människor och agenter är <code>docs/AI/openclaw/README.md</code>. Källindexet <code>OPENCLAW-DOCS.md</code> pekar på officiella sidor och rätt lokala konfigurationsfiler.</p>
-    <p>Repots Gateway-image är låst till <strong>2026.9.5</strong> i <code>open-claw/lab/deploy/Dockerfile.gateway</code>. Kontrollera den faktiskt körda versionen och dess schema innan du ändrar inställningar. Dokumentationswebben kan beskriva en senare version.</p>
+    <p>Repots Gateway-image är låst till <strong>2026.9.5</strong> i <code>services/openclaw/lab/deploy/Dockerfile.gateway</code>. Kontrollera den faktiskt körda versionen och dess schema innan du ändrar inställningar. Dokumentationswebben kan beskriva en senare version.</p>
     <ul>
       <li><a href="https://docs.openclaw.ai/gateway/external-apps" target="_blank" rel="noreferrer">Integration för externa appar</a></li>
       <li><a href="https://docs.openclaw.ai/gateway/protocol" target="_blank" rel="noreferrer">WebSocket och Gateway-protokoll</a></li>

@@ -87,7 +87,7 @@ export async function initializeBoundedAiQa(qa,env){
       return fetch(url,{...options,redirect:'error'});
     }});
   const [speechRole,directorRole]=await Promise.all(['croupier-speech','croupier-director'].map(name=>
-    readFile(join(repo,'open-claw/lab/deploy/runtime-bundle/roles/'+name+'.md'),'utf8')));
+    readFile(join(repo,'services/openclaw/lab/deploy/runtime-bundle/roles/'+name+'.md'),'utf8')));
   return createBoundedAiQaRouter({manifest:m,budget,client,worker,speechRole,directorRole,
     readbackToken:qa.tokens.readback,endpointId:env.CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID});
 }

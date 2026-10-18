@@ -1,7 +1,7 @@
 # Produktchatten: separat OpenClaw-roll och privat transport
 
 > Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `open-claw/lab/`. Daterade prov nedan
+> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
 Kodkontraktet nedan är det som gäller. Driftkvittot från 29 september är
@@ -117,8 +117,8 @@ finns i de privata miljöerna:
 
 ```powershell
 Test-Path apps/studio/.next/BUILD_ID
-node open-claw/lab/deploy/local-connection.mjs --check
-node open-claw/lab/deploy/local-connection.mjs --start --product-port 4196 --lab-port 4197
+node services/openclaw/lab/deploy/local-connection.mjs --check
+node services/openclaw/lab/deploy/local-connection.mjs --start --product-port 4196 --lab-port 4197
 ```
 
 Första kommandot ska ge `True`. Helpern bygger inte om Next och rör därför inte
@@ -147,7 +147,7 @@ loopbackportar samt respektive explicit konfigurerat HTTPS-origin. En halv
 speech-relaykonfiguration vägras i stället för att falla tillbaka med blandade
 credentials.
 
-En ändring i Git under `open-claw/` ändrar inte automatiskt den körande
+En ändring i Git under `services/openclaw/` ändrar inte automatiskt den körande
 Gatewayen: dess `openclaw.json`, agentarbetsytor och sessioner ligger på Renders
 beständiga disk, och rollreconciliation/runtimepaket körs vid nästa explicit
 Gatewaystart. På samma sätt läser redan körande Next- och nativeprocesser sina
@@ -215,7 +215,7 @@ tolka inte checklistan eller en grön Render-status som färdig end-to-end-QA.
 
 ```powershell
 node --test test/openclaw-chat-contract.mjs test/product-chat-client-contract.mjs test/product-chat-http.mjs test/speech-package-contract.mjs test/speech-pose-gate.mjs
-node --test open-claw/lab/test/product-speech.test.mjs open-claw/lab/deploy/gateway-config.test.mjs open-claw/lab/deploy/runtime-bundle.test.mjs open-claw/lab/deploy/start-gateway.test.mjs open-claw/lab/deploy/local-connection.test.mjs
+node --test services/openclaw/lab/test/product-speech.test.mjs services/openclaw/lab/deploy/gateway-config.test.mjs services/openclaw/lab/deploy/runtime-bundle.test.mjs services/openclaw/lab/deploy/start-gateway.test.mjs services/openclaw/lab/deploy/local-connection.test.mjs
 ```
 
 Testerna använder fixturehemligheter, HTTP-stubbar, loopback och tempdata. De

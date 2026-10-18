@@ -22,7 +22,7 @@ for(const key of Object.keys(process.env))if(!keep.has(key.toUpperCase()))delete
 process.env.CROUPIER_QA_ALLOWED_PORTS=String(port);
 const {installComparisonProcessGuard}=await import('./start-local-comparison.mjs');
 installComparisonProcessGuard();
-const {acquireLocalSession}=await import('../open-claw/lab/deploy/local-session.mjs');
+const {acquireLocalSession}=await import('../services/openclaw/lab/deploy/local-session.mjs');
 const {createEmptyProject,addDealer,addVariant,validateProject}=await import('../packages/presentation/contracts/studio-model.mjs');
 const {bindClip,clipSlots,createStudioClient}=await import('../apps/studio/client/admin/lib/connected-studio.mjs');
 const {kindForEvent}=await import('../packages/presentation/contracts/video-intake.mjs');

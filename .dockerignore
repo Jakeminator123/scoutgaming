@@ -1,5 +1,5 @@
 # Applies only when the repository root is the Docker build context.
-# The existing OpenClaw images use open-claw/lab/.dockerignore instead.
+# The existing OpenClaw images use services/openclaw/lab/.dockerignore instead.
 
 # Git, local agent state, and CI/development metadata.
 .git
@@ -38,6 +38,7 @@ web/data
 lab/data
 lissabon/data
 open-claw/lab/data
+services/openclaw/lab/data
 
 # Published runtime media use media/**/runtime; public code stays in web/public.
 # Source, staging and review material is preserved outside runtime images.
@@ -69,6 +70,7 @@ docs
 test
 lab/test
 open-claw/lab/test
+services/openclaw/lab/test
 design-kit
 reference
 random-stuff-jakob

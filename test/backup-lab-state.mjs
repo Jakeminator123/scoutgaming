@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { backupLabState, verifyLabBackup } from '../tools/backup-lab-state.mjs';
-import { acquireLocalSession } from '../open-claw/lab/deploy/local-session.mjs';
+import { acquireLocalSession } from '../services/openclaw/lab/deploy/local-session.mjs';
 
 async function fixture(t) {
   const base = await mkdtemp(join(tmpdir(), 'croupier-lab-backup-test-'));

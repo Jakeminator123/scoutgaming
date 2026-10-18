@@ -1,7 +1,7 @@
 # OpenClaw: officiella källor och konfigurationsindex
 
 > Guide flyttad 2026-10-13. Relativa kodsökvägar som `src/`, `deploy/` och
-> `config/` i exemplen utgår från `open-claw/lab/`. Daterade prov nedan
+> `config/` i exemplen utgår från `services/openclaw/lab/`. Daterade prov nedan
 > är historiska; [aktuell dokumentingång](../README.md) skiljer drift från förslag.
 
 Startpunkt för projektets IDE-agenter och människor. Länkarna och
@@ -46,7 +46,7 @@ installera, driftsätta, ändra behörigheter eller lämna ut hemligheter.
 För en agent: använd först en relevant länk här. Läs `llms.txt` **vid behov**
 när en efterfrågad källa saknas; välj relevanta länkar och hämta just de sidorna.
 Ingen automatisk indexering eller periodisk hämtning är installerad.
-Ett litet, kontrollerat [runtimepaket](../../../open-claw/lab/deploy/runtime-bundle/README.md)
+Ett litet, kontrollerat [runtimepaket](../../../services/openclaw/lab/deploy/runtime-bundle/README.md)
 injicerar en lokal rollsammanfattning och ett källindex, inte de länkade
 sidornas innehåll. Verktygslösa roller kan förklara detta index men inte hämta
 sidorna. Se [den korta läsregeln](README.md).
@@ -95,7 +95,7 @@ ersätta denna konfiguration. Se [dashboard-guiden](DASHBOARD-SV.md).
 
 ## Kontrollera alltid den driftsatta versionen
 
-Aktuell version och digest ägs av [Dockerfile.gateway](../../../open-claw/lab/deploy/Dockerfile.gateway),
+Aktuell version och digest ägs av [Dockerfile.gateway](../../../services/openclaw/lab/deploy/Dockerfile.gateway),
 inte av denna text. Vid kontrollen var den låst till **2026.9.5**.
 Dokumentationswebben och GitHubs `main` kan beskriva senare beteende.
 Jämför därför relevanta exempel med
@@ -126,14 +126,14 @@ garanti för framtida svarstid. Se [systemkartans daterade driftgränser](../../
 | Drift av befintliga GitHub-kopplade Render-tjänster | [RENDER-START-SV.md](RENDER-START-SV.md) |
 | Native dashboard, inloggning och pairing | [DASHBOARD-SV.md](DASHBOARD-SV.md) |
 | Nätväg och nycklarnas separata roller | [DEPLOYMENT.md](DEPLOYMENT.md) |
-| Render-tjänster, diskar och miljöreferenser | [render.yaml](../../../open-claw/lab/render.yaml) |
-| OpenClaw-image och versionslås | [Dockerfile.gateway](../../../open-claw/lab/deploy/Dockerfile.gateway) |
-| Agenter, verktygsgränser, HTTP-endpoint och modellkonfiguration | [gateway-config.mjs](../../../open-claw/lab/deploy/gateway-config.mjs) |
-| Generering, validering och start av Gateway | [start-gateway.mjs](../../../open-claw/lab/deploy/start-gateway.mjs) |
-| Tjänstens Director-inställningar och läsning av lokala miljövariabler | [settings.mjs](../../../open-claw/lab/src/settings.mjs) |
+| Render-tjänster, diskar och miljöreferenser | [render.yaml](../../../services/openclaw/lab/render.yaml) |
+| OpenClaw-image och versionslås | [Dockerfile.gateway](../../../services/openclaw/lab/deploy/Dockerfile.gateway) |
+| Agenter, verktygsgränser, HTTP-endpoint och modellkonfiguration | [gateway-config.mjs](../../../services/openclaw/lab/deploy/gateway-config.mjs) |
+| Generering, validering och start av Gateway | [start-gateway.mjs](../../../services/openclaw/lab/deploy/start-gateway.mjs) |
+| Tjänstens Director-inställningar och läsning av lokala miljövariabler | [settings.mjs](../../../services/openclaw/lab/src/settings.mjs) |
 | Gemensam ren konfigurationsprojektion, alias och loopback-regler | [configuration.mjs](../../../packages/director/configuration.mjs) |
 | HTTP-klient för råd och separat operatörssamtal | [openclaw.mjs](../../../packages/director/openclaw.mjs) |
-| Redigerbara linjer, varianter och triggers | [catalog.json](../../../open-claw/lab/config/catalog.json) |
+| Redigerbara linjer, varianter och triggers | [catalog.json](../../../services/openclaw/lab/config/catalog.json) |
 
 IDE-inboxen ska aldrig kopplas in som spelarchatt. Produktspelarens HTTP-adapter och serverbundna chattminne finns; se
 [speech-integrationen](PRODUCT-SPEECH-DEPLOYMENT-SV.md) och [driften](DEPLOYMENT.md).

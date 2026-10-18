@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { acquireLocalSession } from '../open-claw/lab/deploy/local-session.mjs';
+import { acquireLocalSession } from '../services/openclaw/lab/deploy/local-session.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

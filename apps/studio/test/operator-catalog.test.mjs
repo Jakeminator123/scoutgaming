@@ -9,7 +9,7 @@ import { } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { buildOperatorCatalog } from '../lib/operator-catalog.mjs';
 import { studioChat } from '../lib/studio-server.mjs';
 import { prepareDecision, validateCatalog } from '../../../packages/director/engine.mjs';
-import { createLabServer } from '../../../open-claw/lab/src/server.mjs';
+import { createLabServer } from '../../../services/openclaw/lab/src/server.mjs';
 import { readSettings } from '../lib/director-settings.mjs';
 
 const inventory = () => ({ families: structuredClone(manifest.families), videos: manifest.items.map(item => ({ ...item, fileName: item.relativePath.split('/').at(-1), available: true, previewUrl: `/api/videos/${item.id}` })) });

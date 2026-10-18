@@ -19,7 +19,7 @@ läser den exakta dikten. Även `Vem är Jakob?` och följdfrågor får rätt fi
 beskrivning, också i operatörschatten. **Tillåt webbsökning** använder OpenAI:
 0,50 kr reserveras per försök, högst tio försök och cirka 5 kr per rullande timme.
 Vanlig chatt och valfritt ljud har separata kostnader. Inga reservleverantörer.
-[Teknik, begränsningar och exakt återställning](../docs/AI/openclaw/COMPANION.md).
+[Teknik, begränsningar och exakt återställning](../../docs/AI/openclaw/COMPANION.md).
 
 Ett meddelande ger ett fritt textsvar. **Ljud** är förvalt och låter
 ElevenLabs läsa exakt samma text; avmarkera det för enbart text. Scenen visar `idle.ready.standard`. Modellen kan fortfarande föreslå
@@ -101,4 +101,4 @@ dupliceringsskydd är lokala serverprocesskontroller, inget produktionslås.
 
 `LAB_REMOTE_URL`/`LAB_REMOTE_TOKEN` används lokalt, `LAB_API_TOKEN` på
 Director och befintlig modellnyckel på Gateway. ElevenLabs-nyckeln läses på
-den lokala servern. Befintlig blueprint är `open-claw/lab/render.yaml`.
+den lokala servern. Befintlig blueprint är `services/openclaw/lab/render.yaml`.

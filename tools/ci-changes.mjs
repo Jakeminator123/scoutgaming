@@ -10,7 +10,7 @@ const guides = new Set([
   'web/README.md', 'web/public/README.md', 'web/storage/README.md',
   'apps/web/README.md', 'apps/studio/client/README.md',
   'packages/presentation/README.md', 'tools/media/README.md',
-  'open-claw/README.md', 'open-claw/lab/README.md',
+  'services/openclaw/README.md', 'services/openclaw/lab/README.md',
   'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
   'services/astrid-gpu-worker/gateway/README.md',
 ]);

@@ -126,7 +126,7 @@ Ignorerade `.env`-filer och leverantörernas hemlighetslager har en annan roll;
 
 ## Lokal miljö
 
-Starta med `node apps/studio/start.mjs` enligt [Studioguiden](../apps/studio/docs/README.md). Sessionsvakten i `open-claw/lab/deploy/local-session.mjs` finns kvar. Cmd-filerna i roten är borttagna.
+Starta med `node apps/studio/start.mjs` enligt [Studioguiden](../apps/studio/docs/README.md). Sessionsvakten i `services/openclaw/lab/deploy/local-session.mjs` finns kvar. Cmd-filerna i roten är borttagna.
 Kör endast ett produkt-/labbpar; stoppa det före miljöbyte. Från Codex används
 `--no-open`. Återanvänd spel- och labbflik, bevara utkast och spel.
 Stoppade servrar förblir stoppade tills Jakob ber om start.

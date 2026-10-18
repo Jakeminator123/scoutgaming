@@ -68,3 +68,10 @@ __pycache__/
 /apps/studio/design-preview-build/
 /apps/studio/public/public-assistant.js
 /apps/studio/public/did-chunks/
+
+# OpenClaw source move: local state/media remain at the old protected root.
+/open-claw/lab/data/
+/open-claw/lab/runtime/
+/open-claw/lab/media/*
+/services/openclaw/lab/data/
+/services/openclaw/lab/runtime/

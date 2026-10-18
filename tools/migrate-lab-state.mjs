@@ -6,7 +6,7 @@ import { constants, createReadStream } from 'node:fs';
 import { copyFile, lstat, mkdir, readdir, readFile, realpath, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { acquireLocalSession } from '../open-claw/lab/deploy/local-session.mjs';
+import { acquireLocalSession } from '../services/openclaw/lab/deploy/local-session.mjs';
 
 const fail = code => { throw Object.assign(new Error(code), { code }); };
 const inside = (parent, target) => {
