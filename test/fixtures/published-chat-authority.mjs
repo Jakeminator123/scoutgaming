@@ -1,8 +1,8 @@
-import {createRegisteredChatContext as realCreateRegisteredChatContext,createPublishedChatResolver} from '../../web/registered-chat-context.mjs';
+import {createRegisteredChatContext as realCreateRegisteredChatContext,createPublishedChatResolver} from '../../services/game/registered-chat-context.mjs';
 import {readPackagePresentation,withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
 import {defaultPresentationLane} from '../../packages/presentation/contracts/studio-model.mjs';
 import {cloudPresentationFixture} from '../../apps/studio/test/fixtures/cloud-presentation.mjs';
-export {createPublishedChatResolver,cancelPlayerChats} from '../../web/registered-chat-context.mjs';
+export {createPublishedChatResolver,cancelPlayerChats} from '../../services/game/registered-chat-context.mjs';
 
 // Explicit data for child-process HTTP tests. The real frozen resolver still
 // checks operator, room, publication revision, dealer and playback ownership.

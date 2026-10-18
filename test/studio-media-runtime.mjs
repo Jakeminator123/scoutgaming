@@ -9,11 +9,11 @@ import {createStudioMemoryPool} from './fixtures/studio-memory-pool.mjs';
 import {readRuntimeCatalogFixture} from './fixtures/runtime-media-catalog.mjs';
 import {createStudioRepository} from '../packages/studio-registry/server/document-repository.mjs';
 import { createSavedGamePolicy, STUDIO_GAME_CONFIGURATION_SOURCE } from '../packages/presentation/server/saved-game-policy.mjs';
-import {createStudioMediaRuntime} from '../web/storage/studio-media-runtime.mjs';
+import {createStudioMediaRuntime} from '../services/game/storage/studio-media-runtime.mjs';
 import {createSeedProject,isAssetCompatible} from '../packages/presentation/contracts/studio-model.mjs';
-import {legacyClipControls} from '../web/storage/legacy-clip-inventory.mjs';
-import {createPresentationApi} from '../web/presentation-api.mjs';
-import {createNativeObservation} from '../web/public/native-observation.mjs';
+import {legacyClipControls} from '../services/game/storage/legacy-clip-inventory.mjs';
+import {createPresentationApi} from '../services/game/presentation-api.mjs';
+import {createNativeObservation} from '../services/game/public/native-observation.mjs';
 import {createHash} from 'node:crypto';
 import {mkdtemp,mkdir,writeFile,rm,readFile} from 'node:fs/promises';
 import vm from 'node:vm';
@@ -138,7 +138,7 @@ test('Neon public JSON preserves exact UTF8, HEAD, ETag and Range without local 
 test('Neon-only and cloud calibration routes reject before reading a body or touching local files',async()=>{
   // Exercise the production route in isolation: no database or listening server
   // is needed to prove the early write boundary for each deployment flag.
-  const source=await readFile(new URL('../web/server.mjs',import.meta.url),'utf8');
+  const source=await readFile(new URL('../services/game/server.mjs',import.meta.url),'utf8');
   const policy=source.match(/^const localMediaEnabled = .+;$/m)?.[0];
   const begin=source.indexOf("  if (req.method === 'POST' && req.url === '/calibration') {");
   const end=source.indexOf("\n  if (req.method === 'POST' && pathname.startsWith('/api/bo/')",begin);

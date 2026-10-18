@@ -232,7 +232,7 @@ async function bootAssistantWidget(html,pathname){
 
 test('actual blackjack and roulette documents never install a floating assistant or request access',async()=>{
  for(const [file,paths] of [['index.html',['/play/blackjack','/game','/studio-preview/fixture']],['roulette/index.html',['/play/roulette','/roulette/']]]){
-  const html=await readFile(new URL('../../../web/public/'+file,import.meta.url),'utf8');
+  const html=await readFile(new URL('../../../services/game/public/'+file,import.meta.url),'utf8');
   assert.match(html,/<body\b[^>]*data-scout-assistant="disabled"/);
   for(const path of paths){
    const {calls,body,window}=await bootAssistantWidget(html,path);
@@ -244,7 +244,7 @@ test('actual blackjack and roulette documents never install a floating assistant
 });
 
 test('Admin Partner Lobby and the game entry keep their role-authorized assistant',async()=>{
- const entry=await readFile(new URL('../../../web/public/blackjack-entry.html',import.meta.url),'utf8');
+ const entry=await readFile(new URL('../../../services/game/public/blackjack-entry.html',import.meta.url),'utf8');
  for(const path of ['/admin','/partner/swedish-games','/lobby','/play','/blackjack']){
   const {calls,body,window}=await bootAssistantWidget(entry,path);
   assert.equal(window.__scoutAssistant,true,path);assert.equal(body.children.length,1,path);

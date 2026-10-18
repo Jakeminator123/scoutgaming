@@ -43,7 +43,8 @@ async function runtimeFixture(t) {
   const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-connection-repo-test-'));
   const source = fileURLToPath(new URL('../../../../', import.meta.url));
   await mkdir(join(repoRoot, 'apps'), {recursive: true});
-  for (const directory of ['web', 'apps/studio']) await symlink(join(source, directory), join(repoRoot, directory), process.platform === 'win32' ? 'junction' : 'dir');
+  await mkdir(join(repoRoot, 'services'), {recursive: true});
+  for (const directory of ['services/game', 'apps/studio']) await symlink(join(source, directory), join(repoRoot, directory), process.platform === 'win32' ? 'junction' : 'dir');
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   return repoRoot;
 }

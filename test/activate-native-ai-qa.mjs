@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaNextWindowCounts,sha256,inspectAiQaRecords,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
-import {createBoundedAiQaRouter} from '../web/native-ai-qa-runtime.mjs';
+import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaNextWindowCounts,sha256,inspectAiQaRecords,createAiQaBudget} from '../services/game/native-ai-qa-budget.mjs';
+import {createBoundedAiQaRouter} from '../services/game/native-ai-qa-runtime.mjs';
 
 const productSchema=await readFile(new URL('../ops/neon-game/product-schema.sql',import.meta.url),'utf8');
 const canonicalPlayerLink=/CREATE TABLE croupier_game\.([a-z_]+) \(craig_user_id TEXT PRIMARY KEY, player_id TEXT UNIQUE NOT NULL REFERENCES croupier_game\.players\(id\)\)/.exec(productSchema)?.[1];
@@ -37,7 +37,7 @@ async function fixture(t){
   const anchorPath=join(directory,'..',directory.split(/[\\/]/).at(-1)+'-anchor');
   await writeFile(anchorPath,anchor);t.after(()=>rm(anchorPath,{force:true}));
   let time=100;
-  const manifest={campaignId:original.campaignId,runId:'11111111-1111-4111-8111-111111111111',expectedSha:'a'.repeat(40),createdAtMs:100,expiresAtMs:10000,limits:AI_QA_LIMITS,ownLinkedPlayerSha256:sha256('player'),sources:{'web/native-ai-qa-budget.mjs':authoritySourceSha256}};
+  const manifest={campaignId:original.campaignId,runId:'11111111-1111-4111-8111-111111111111',expectedSha:'a'.repeat(40),createdAtMs:100,expiresAtMs:10000,limits:AI_QA_LIMITS,ownLinkedPlayerSha256:sha256('player'),sources:{'services/game/native-ai-qa-budget.mjs':authoritySourceSha256}};
   const options={directory,anchorPath,manifest,manifestRawSha256:'2'.repeat(64),authoritySourceSha256,original,now:()=>time};
   const budget=await createAiQaBudget(options);await budget.activate();
   return{budget,options,legacy,manifest,setTime:n=>{time=n;}};
@@ -125,7 +125,7 @@ test('policy installation preserves original campaign and requires existing acco
 });
 
 test('persistent private closure rehydrates a fresh image, preserves existing bytes, and rejects a changed source',async t=>{
-  const {AI_QA_PRIVATE_NAMES,buildAiQaPrivateSnapshot,restoreAiQaPrivateSnapshot,initializeAiQaPrivateBootstrap}=await import('../web/native-ai-qa-private.mjs');
+  const {AI_QA_PRIVATE_NAMES,buildAiQaPrivateSnapshot,restoreAiQaPrivateSnapshot,initializeAiQaPrivateBootstrap}=await import('../services/game/native-ai-qa-private.mjs');
   const base=await mkdtemp(join(tmpdir(),'bounded-private-bootstrap-'));t.after(()=>rm(base,{recursive:true,force:true}));
   const original=join(base,'original'),repository=join(base,'image');const {mkdir}=await import('node:fs/promises');await mkdir(original);await mkdir(repository);
   const pins={};for(const name of AI_QA_PRIVATE_NAMES){const bytes=Buffer.from('Synthetic source '+name);pins[name]=sha256(bytes);await writeFile(join(original,name),bytes);}
@@ -141,7 +141,7 @@ test('persistent private closure rehydrates a fresh image, preserves existing by
 });
 
 test('private closure snapshot rejects extra paths and tampering before creating a target',async t=>{
-  const {AI_QA_PRIVATE_NAMES,decodeAiQaPrivateSnapshot,restoreAiQaPrivateSnapshot}=await import('../web/native-ai-qa-private.mjs');
+  const {AI_QA_PRIVATE_NAMES,decodeAiQaPrivateSnapshot,restoreAiQaPrivateSnapshot}=await import('../services/game/native-ai-qa-private.mjs');
   const files=Object.fromEntries(AI_QA_PRIVATE_NAMES.map(name=>{const bytes=Buffer.from('Fixture '+name);return[name,{sha256:sha256(bytes),bytesBase64:bytes.toString('base64')}];}));
   const pins=Object.fromEntries(Object.entries(files).map(([n,f])=>[n,f.sha256]));files['../credentials.json']={sha256:'0'.repeat(64),bytesBase64:'YQ=='};
   const raw=Buffer.from(JSON.stringify({purpose:'bounded-native-ai-qa-private-snapshot-v1',files}));assert.throws(()=>decodeAiQaPrivateSnapshot(raw,pins),/ai_qa_private_snapshot_paths/);
@@ -152,9 +152,9 @@ test('private closure snapshot rejects extra paths and tampering before creating
 
 test('one bounded QA boot passes fullfile policy to Web; registered transport and Neon reservation are required before SDK/provider',async t=>{
   const {randomUUID}=await import('node:crypto');const {NATIVE_P6_QA:QA,validateCloudConfig,childSpecifications}=await import('../ops/cloud/config.mjs');
-  const {AI_QA_SOURCE_PATHS,boundedAiQaAllowsFullfile}=await import('../web/native-ai-qa-runtime.mjs');
-  const {configureGeneratedSpeechJournal,getGeneratedSpeechService,generatedSpeechStatus}=await import('../web/generated-speech-runtime.mjs');
-  const {createSpeechJournal}=await import('../web/postgres-speech-journal.mjs');const {speechMemoryPool}=await import('./fixtures/speech-memory-pool.mjs');
+  const {AI_QA_SOURCE_PATHS,boundedAiQaAllowsFullfile}=await import('../services/game/native-ai-qa-runtime.mjs');
+  const {configureGeneratedSpeechJournal,getGeneratedSpeechService,generatedSpeechStatus}=await import('../services/game/generated-speech-runtime.mjs');
+  const {createSpeechJournal}=await import('../services/game/postgres-speech-journal.mjs');const {speechMemoryPool}=await import('./fixtures/speech-memory-pool.mjs');
   const runId=randomUUID(),env={NODE_ENV:'production',PORT:'10000',CROUPIER_CLOUD_LAYOUT:'single-origin',
     CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-blob-token',
     CROUPIER_CLOUD_DATA_ROOT:QA.dataRoot,RENDER_SERVICE_ID:QA.serviceId,RENDER_EXTERNAL_URL:QA.origin,RENDER_GIT_COMMIT:'a'.repeat(40),
@@ -198,8 +198,8 @@ test('fresh cloud image prepares only private bootstrap parents for UID1000 befo
   assert.ok(docker.indexOf(prepare)<docker.indexOf(own));assert.ok(docker.indexOf(own)<docker.indexOf(mode));
   assert.ok(docker.indexOf(mode)<docker.indexOf('CMD ['));
   assert.ok(!docker.includes('chown -R node:node /app/lab/data'));
-  const {AI_QA_SOURCE_PATHS}=await import('../web/native-ai-qa-runtime.mjs');assert.ok(AI_QA_SOURCE_PATHS.includes('ops/cloud/Dockerfile'));
-  const bootstrap=await readFile(new URL('../web/native-ai-qa-private.mjs',import.meta.url),'utf8');assert.ok(bootstrap.includes("'ops/cloud/Dockerfile'"));
+  const {AI_QA_SOURCE_PATHS}=await import('../services/game/native-ai-qa-runtime.mjs');assert.ok(AI_QA_SOURCE_PATHS.includes('ops/cloud/Dockerfile'));
+  const bootstrap=await readFile(new URL('../services/game/native-ai-qa-private.mjs',import.meta.url),'utf8');assert.ok(bootstrap.includes("'ops/cloud/Dockerfile'"));
 });
 
 async function continuationFixture(t,{install=true,oldTtsId='tts-old'}={}){
@@ -290,7 +290,7 @@ test('continuation rejects Director, default/false stream and wrong request befo
   await assert.rejects(()=>router.fetchForOwnedDirectorRequest({})(''),/ai_qa_continuation_director_denied/);
   await assert.rejects(()=>router.providerFetch('https://api.runpod.ai/v2/endpoint/run',{method:'POST',body:JSON.stringify({input:{op:'lipsync'}})}),/ai_qa_gpu_op_denied/);
   assert.equal(paid,0);assert.equal((await f.continuationBudget.inspect()).previousSha256,before.previousSha256);
-  const {nativeP6OwnedSpeechFetch}=await import('../web/native-p6-qa-hook.mjs');let captured;
+  const {nativeP6OwnedSpeechFetch}=await import('../services/game/native-p6-qa-hook.mjs');let captured;
   const capture={fetchForOwnedRequest:args=>{captured=args;return 'trusted-transport';}};
   const hookArgs={readStatus:()=>{},readOwner:()=>{}};
   nativeP6OwnedSpeechFetch(capture,hookArgs);assert.equal(captured.streamRequested,false);
@@ -385,8 +385,8 @@ test('reviewed continuation intent binds exact predecessor, current release, one
 });
 
 test('normal stream factory reserves one Neon session with continuation transport and no operator-gate extension or fullfile job',async t=>{
-  const f=await continuationFixture(t),{createSpeechJournal}=await import('../web/postgres-speech-journal.mjs'),{speechMemoryPool}=await import('./fixtures/speech-memory-pool.mjs'),
-    {createGeneratedSpeechStreamService}=await import('../web/generated-speech-stream.mjs');
+  const f=await continuationFixture(t),{createSpeechJournal}=await import('../services/game/postgres-speech-journal.mjs'),{speechMemoryPool}=await import('./fixtures/speech-memory-pool.mjs'),
+    {createGeneratedSpeechStreamService}=await import('../services/game/generated-speech-stream.mjs');
   const directory=await mkdtemp(join(tmpdir(),'continuation-stream-factory-'));t.after(()=>rm(directory,{recursive:true,force:true}));
   const pool=speechMemoryPool(),journal=await createSpeechJournal({pool,environmentId:'qa_native_abc92154cb15'});
   await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:4748848,confirmation:'verified-new-empty-cost-journal'});

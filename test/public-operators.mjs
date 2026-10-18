@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createPublicOperatorDirectory} from '../web/public-operators.mjs';
-import {createPublicOperatorRooms} from '../web/public-operator-rooms.mjs';
+import {createPublicOperatorDirectory} from '../services/game/public-operators.mjs';
+import {createPublicOperatorRooms} from '../services/game/public-operator-rooms.mjs';
 import {createPortraitRoomEntryFixture} from './fixtures/portrait-room-entry.mjs';
 
 function response() {

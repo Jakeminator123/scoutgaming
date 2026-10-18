@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
 
-const source = await readFile(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
+const source = await readFile(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
 
 test('product chat is wired to one existing speech queue through the pose gate', () => {
   assert.equal((source.match(/createSpeechQueue\s*\(/g) ?? []).length, 1);

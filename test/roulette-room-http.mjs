@@ -2,10 +2,10 @@ import test from 'node:test';
 import {zoomComposition} from '../apps/studio/lib/composition-zoom.mjs';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {rouletteDocument} from '../web/games/roulette/http.mjs';
+import {rouletteDocument} from '../services/game/games/roulette/http.mjs';
 import {backendPlatformPath} from '../packages/navigation/server/platform-routing.mjs';
-import {BETS,BET_BY_ID} from '../web/games/roulette/rules.mjs';
-import {tableBetGeometry,chipBreakdown,TABLE_ARTWORK} from '../web/public/roulette/table-layout.mjs';
+import {BETS,BET_BY_ID} from '../services/game/games/roulette/rules.mjs';
+import {tableBetGeometry,chipBreakdown,TABLE_ARTWORK} from '../services/game/public/roulette/table-layout.mjs';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {validatePublicOperatorRooms} from '../packages/presentation/contracts/operator-rooms-contract.mjs';
@@ -100,7 +100,7 @@ function sceneFixture({deferReady=false,playWheelStart}={}){
   const element=()=>({hidden:false,attributes:{},listeners:{},classList:{toggle(){}},setAttribute(name,value){this.attributes[name]=value;},
     addEventListener(name,listener){this.listeners[name]=listener;},append(){}});
   const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element};
-  const sceneSource=readFileSync(new URL('../web/public/roulette/scene.mjs',import.meta.url),'utf8').replace(/^import .*;\r?$/gm,'').replace('export async function mountRoomScene','async function mountRoomScene');
+  const sceneSource=readFileSync(new URL('../services/game/public/roulette/scene.mjs',import.meta.url),'utf8').replace(/^import .*;\r?$/gm,'').replace('export async function mountRoomScene','async function mountRoomScene');
   let closed=0;
   const mount=runInNewContext(sceneSource+'\nmountRoomScene;',{document,URLSearchParams,AbortController,AbortSignal,setTimeout,clearTimeout,performance,
     window:{addEventListener(name,listener){windowListeners[name]=listener;}},localStorage:{getItem:key=>stored[key]??null},

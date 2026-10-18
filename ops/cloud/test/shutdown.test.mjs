@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { createCloudGateway } from '../gateway.mjs';
 import { terminateChild, closeGateway } from '../process-group.mjs';
 import { stopCloudRuntime } from '../start.mjs';
-import { SHUTDOWN_BUDGET, trackServerConnections } from '../../../web/graceful-shutdown.mjs';
+import { SHUTDOWN_BUDGET, trackServerConnections } from '../../../services/game/graceful-shutdown.mjs';
 
 const { WebSocket } = createRequire(new URL('../../../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');
 const script = fileURLToPath(new URL('../../../test/fixtures/shutdown-process.mjs', import.meta.url));

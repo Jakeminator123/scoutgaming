@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {createIdleScheduler,idleSegmentErrors,interruptFrame,mulberry32} from '../../web/public/astrid-idle-scheduler.mjs';
+import {createIdleScheduler,idleSegmentErrors,interruptFrame,mulberry32} from '../../services/game/public/astrid-idle-scheduler.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
-const root=path.resolve(dir,'../../web/public');
+const root=path.resolve(dir,'../../services/game/public');
 const idlePath=path.join(root,'review/astrid-green-waiting/idle.json');
 const idle=fs.existsSync(idlePath)?JSON.parse(fs.readFileSync(idlePath)):null;
 const glanceSegments=idle?.segments??{glanceLeft:{start:0,end:41},glanceRight:{start:41,end:90},full:{start:0,end:120}};

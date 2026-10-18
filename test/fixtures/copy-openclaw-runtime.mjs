@@ -12,7 +12,7 @@ export async function copyOpenClawRuntime(root) {
     'packages/presentation/server/studio-policy-runtime.mjs',
     'packages/shared/email-templates.mjs',
     'packages/shared/blackjack-shoe-rules.mjs',
-    'web/generated-speech-runtime.mjs',
+    'services/game/generated-speech-runtime.mjs',
     'packages/presentation/server/generated-speech-service.mjs',
     'packages/presentation/server/generated-speech-runtime.mjs',
     'packages/presentation/server/generated-speech-provider.mjs',
@@ -24,11 +24,11 @@ export async function copyOpenClawRuntime(root) {
     'packages/shared/studio-error.mjs', 'packages/presentation/server/selection.mjs',
     'packages/presentation/server/registered-idle-rules.mjs', 'packages/presentation/server/video-bindings.mjs',
     'packages/presentation/server/director-transport.mjs', 'packages/presentation/server/idle-advice.mjs',
-    'packages/presentation/contracts/probe-fixtures.mjs', 'web/presentation-selection.mjs',
+    'packages/presentation/contracts/probe-fixtures.mjs', 'services/game/presentation-selection.mjs',
     'packages/presentation/server/legacy-clip-inventory.mjs',
-    'web/storage/studio-media-runtime.mjs',
-    'web/storage/video-registry.mjs',
-    'web/storage/legacy-clip-inventory.mjs',
+    'services/game/storage/studio-media-runtime.mjs',
+    'services/game/storage/video-registry.mjs',
+    'services/game/storage/legacy-clip-inventory.mjs',
 
     'packages/director/admin-error.mjs',
     'packages/director/astrid-observation.mjs',
@@ -95,10 +95,10 @@ export async function copyOpenClawRuntime(root) {
   await cp(new URL('../../packages/operators/', import.meta.url), join(root, 'packages/operators'), {recursive:true});
   await mkdir(join(root,'tools'),{recursive:true});
   await copyFile(new URL('../../tools/media-blob-index-reader.mjs', import.meta.url),join(root,'tools/media-blob-index-reader.mjs'));
-  const rouletteTarget = join(root, 'web/games/roulette');
+  const rouletteTarget = join(root, 'services/game/games/roulette');
   await mkdir(rouletteTarget, { recursive: true });
   for (const file of ['index.mjs', 'preview.mjs', 'room.mjs', 'storage.mjs', 'http.mjs', 'access.mjs', 'rules.mjs']) {
-    await copyFile(new URL(`../../web/games/roulette/${file}`, import.meta.url), join(rouletteTarget, file));
+    await copyFile(new URL(`../../services/game/games/roulette/${file}`, import.meta.url), join(rouletteTarget, file));
   }
   const source = new URL('../../services/openclaw/lab/src/', import.meta.url);
   const target = join(root, 'services/openclaw/lab/src');

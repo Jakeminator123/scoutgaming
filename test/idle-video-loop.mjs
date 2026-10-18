@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createIdleVideoLoop} from '../web/public/idle-video-loop.mjs';
+import {createIdleVideoLoop} from '../services/game/public/idle-video-loop.mjs';
 
 function fixture(){
   let stamp=0,id=0,native,display;

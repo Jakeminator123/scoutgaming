@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {createPlayerChatMemory as createSyncMemory} from '../web/player-chat-memory.mjs';
-import {createPlayerChatMemory as createAsyncMemory} from '../web/storage/async-player-chat-memory.mjs';
+import {createPlayerChatMemory as createSyncMemory} from '../services/game/player-chat-memory.mjs';
+import {createPlayerChatMemory as createAsyncMemory} from '../services/game/storage/async-player-chat-memory.mjs';
 
 const scope={playerId:'server-owned-player',dealerId:'paow'};
 const reply={kind:'generatedText',exactText:'Hej från PAOW.'};

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { validateCloudConfig, childSpecifications } from '../config.mjs';
 import { upstreamForRequest } from '../gateway.mjs';
-import { backofficeLabAuth } from '../../../web/bo-lab-auth.mjs';
+import { backofficeLabAuth } from '../../../services/game/bo-lab-auth.mjs';
 
 const origin = 'https://croupier-fixture.onrender.com';
 const env = {

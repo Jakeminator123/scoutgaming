@@ -5,8 +5,8 @@ import { createHash,randomBytes,randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
-import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
-import { summarizeMovingWorkerHealth } from '../web/moving-speech-runpod.mjs';
+import { createSpeechJournal } from '../services/game/postgres-speech-journal.mjs';
+import { summarizeMovingWorkerHealth } from '../services/game/moving-speech-runpod.mjs';
 import { loadStudioMigrations, planStudioMigrations, applyStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import {RETAINED_BANK_VARIANTS,createRetainedStudioMedia,canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 import {runRuntimeRegistrySqlChecks} from './fixtures/studio-runtime-sql-checks.mjs';
@@ -342,7 +342,7 @@ test('real isolated PostgreSQL verifies Studio CAS, migrations and speech journa
   const url = new URL(config.databaseUrl);
   assert.equal(url.hostname, '127.0.0.1'); assert.equal(url.username, 'studio_qa');
   assert.equal(url.password, ''); assert.equal(url.pathname, '/postgres');
-  const { Pool } = createRequire(new URL('../web/package.json', import.meta.url))('pg');
+  const { Pool } = createRequire(new URL('../services/game/package.json', import.meta.url))('pg');
   const pool = new Pool({ connectionString: config.databaseUrl, connectionTimeoutMillis: 5000, query_timeout: 10000 });
   try { await runStudioPostgresChecks({ pool }); } finally { await pool.end(); }
 });

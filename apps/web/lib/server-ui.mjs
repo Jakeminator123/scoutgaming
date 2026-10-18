@@ -2,7 +2,7 @@ import {playerHandoffDestination} from '../../../packages/navigation/player-hand
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {platformConfiguration,platformBackendHeaders,blackjackLobbyDestination} from '../../../packages/navigation/server/platform-routing.mjs';
-import {decorateGameEntryHtml} from '../../../web/public/game-entry-contract.mjs';
+import {decorateGameEntryHtml} from '../../../services/game/public/game-entry-contract.mjs';
 import {gameEntryEnabled, gameEntryRedirect, approvedGameQuery, playerLoginDestination} from '../../../packages/navigation/game-entry.mjs';
 import { OPERATOR_NOT_FOUND_HTML } from '../../../packages/navigation/operator-entry.mjs';
 

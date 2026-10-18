@@ -7,8 +7,8 @@ import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
 import { demoProbeMemories } from '../packages/presentation/contracts/probe-fixtures.mjs';
 import { DatabaseSync } from 'node:sqlite';
-import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
-import { createPlayerProbeStore } from '../web/player-probe-store.mjs';
+import { createPlayerChatMemory } from '../services/game/player-chat-memory.mjs';
+import { createPlayerProbeStore } from '../services/game/player-probe-store.mjs';
 
 if(process.argv.slice(2).some(arg=>!['--speech','--demo-memories'].includes(arg)))throw new Error('Use --speech and optionally --demo-memories.');
 

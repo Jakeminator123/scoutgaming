@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createMovingSpeechSourceSet} from '../web/moving-speech-bank.mjs';
-import {createMovingBankDownloads,validateMovingBankArtifacts,movingBankStorageOptions} from '../web/moving-speech-bank-artifacts.mjs';
+import {createMovingSpeechSourceSet} from '../services/game/moving-speech-bank.mjs';
+import {createMovingBankDownloads,validateMovingBankArtifacts,movingBankStorageOptions} from '../services/game/moving-speech-bank-artifacts.mjs';
 const id='11111111-1111-1111-1111-111111111111',hash='a'.repeat(64);
 const sourceSet=createMovingSpeechSourceSet({dealerId:'dragan',clips:[{videoId:id,sha256:hash,bytes:20,fps:24,frameCount:24,width:1080,height:1920}],rest:{videoId:id,frame:0}});
 const record=(extension,contentType)=>({provider:'vercel-blob',pathname:`croupier/media/dealers/dragan/runtime/moving-bank/${id}/${hash}.${extension}`,sha256:hash,size:20,contentType});

@@ -5,7 +5,7 @@ import {readFile,writeFile,mkdtemp,rm} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {join,dirname,basename,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
-import {createDealerSpeechReferenceService,dealerSpeechProfileRevision} from '../web/dealer-speech-reference.mjs';
+import {createDealerSpeechReferenceService,dealerSpeechProfileRevision} from '../services/game/dealer-speech-reference.mjs';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const media=Buffer.from('bounded private video');
 const profile=()=>({schemaVersion:2,state:'enabled',voice:{provider:'elevenlabs',voiceId:'own-voice',modelId:'eleven_multilingual_v2'},reference:{kind:'video-frame',videoId:'own-video',sha256:hash(media),offsetMs:200}});

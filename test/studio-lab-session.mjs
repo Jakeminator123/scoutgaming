@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createStudioLabSessionCheck} from '../web/studio-lab-session.mjs';
+import {createStudioLabSessionCheck} from '../services/game/studio-lab-session.mjs';
 const publicOrigin='https://public.example.invalid',labOrigin=publicOrigin;
 const req=changes=>({method:'GET',url:'/api/auth/lab/check',headers:{host:'public.example.invalid',cookie:'bo_jwt=existing'},socket:{remoteAddress:'127.0.0.1'},...changes});
 test('protected engine bridge validates native identity every call and restricts the Studio role floor',async()=>{

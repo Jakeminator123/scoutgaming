@@ -1,5 +1,13 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## App- och tjänströtter — 18 oktober 2026
+
+Game-koden ligger i services/game. AGENTS beskriver Studios appadaptrar och
+de redan utbrutna gemensamma paketen. Lokala datarötter, medieidentiteter och
+avsiktlig OpenClaw/game-bootstrap består. Ingen ny agentroll, behörighet eller
+automatisk process införs. Leveransstatus finns i [handoffen](../JOHN-HANDOFF.md).
+
+
 ## Portabel GitGuardian-start — 17 oktober 2026
 
 Projektets MCP-konfiguration använder nu aktuell checkout via ett tillfälligt

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomBytes,randomUUID } from 'node:crypto';
-import { createSpeechJournal } from '../../web/postgres-speech-journal.mjs';
+import { createSpeechJournal } from '../../services/game/postgres-speech-journal.mjs';
 
 // Called only by the localhost PostgreSQL fixture after its target assertion.
 export async function runMovingBudgetSqlChecks({pool,input,journal}) {

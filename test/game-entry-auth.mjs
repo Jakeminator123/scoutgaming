@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {backofficeGameAuth as syncFactory} from '../web/bo-game-auth.mjs';
-import {backofficeGameAuth as asyncFactory} from '../web/storage/async-bo-game-auth.mjs';
+import {backofficeGameAuth as syncFactory} from '../services/game/bo-game-auth.mjs';
+import {backofficeGameAuth as asyncFactory} from '../services/game/storage/async-bo-game-auth.mjs';
 const game='https://game.example.invalid',bo='https://bo.example.invalid';
 const stampA='a'.repeat(64),stampB='b'.repeat(64);
 for (const [name,factory,asynchronous] of [['SQLite',syncFactory,false],['PostgreSQL contract',asyncFactory,true]]) test(`${name} BO handoff canonicalizes next/callback without passing launch or foreign redirect data`,async t => {
@@ -26,7 +26,7 @@ for (const [name,factory,asynchronous] of [['SQLite',syncFactory,false],['Postgr
 });
 
 
-for(const [name,factory,authModule] of [['SQLite',syncFactory,'../web/player-auth.mjs'],['PostgreSQL contract',asyncFactory,'../web/storage/async-player-auth.mjs']]) test(name+' N1 handoff replaces a foreign player, reuses its own wallet and consumes its browser-bound code once',async t=>{
+for(const [name,factory,authModule] of [['SQLite',syncFactory,'../services/game/player-auth.mjs'],['PostgreSQL contract',asyncFactory,'../services/game/storage/async-player-auth.mjs']]) test(name+' N1 handoff replaces a foreign player, reuses its own wallet and consumes its browser-bound code once',async t=>{
   const sqlite=new DatabaseSync(':memory:');t.after(()=>sqlite.close());
   sqlite.exec(`CREATE TABLE players(id TEXT PRIMARY KEY,status TEXT,balance INTEGER);
     CREATE TABLE player_sessions(digest TEXT PRIMARY KEY,player_id TEXT,expires INTEGER,source_stamp TEXT,display_name TEXT);
@@ -70,7 +70,7 @@ for(const [name,factory,authModule] of [['SQLite',syncFactory,'../web/player-aut
 
 
 test('automatic N1 handoff requires one verified current admin on the exact shared origin',async()=>{
-  const {backofficePlayerHandoffRequired:required}=await import('../web/bo-player-session.mjs');
+  const {backofficePlayerHandoffRequired:required}=await import('../services/game/bo-player-session.mjs');
   const origin='https://www.fixture.invalid',account={id:'A',name:'Admin',stamp:stampA};
   const claims={sub:'Admin',role:'admin',aud:'backoffice',source_stamp:stampA,auth_epoch:0,exp:Date.now()/1000+3600};
   const request={headers:{host:'www.fixture.invalid',cookie:'bo_jwt=verified'}};
@@ -121,8 +121,8 @@ test('fresh native N1 login reaches its own profile through the actual isolated 
     Object.assign(env,{HOST:'127.0.0.1',PORT:String(port),NODE_ENV:'production',CROUPIER_DATA_DIR:directory,CROUPIER_CLOUD_RUNTIME:'1',CROUPIER_PLAYER_ACCOUNTS:'1',
       CROUPIER_CLOUD_BOOTSTRAP_ADMIN_USER:'fixtureadmin',CROUPIER_CLOUD_BOOTSTRAP_ADMIN_PASSWORD:password,
       DEMO_GUEST_ACCESS:'1',CROUPIER_GENERATED_SPEECH:'',CROUPIER_GENERATED_SPEECH_STREAMING:'',CROUPIER_ASTRID_CAMERA:'',PUBLIC_URL:origin,BO_URL:origin});
-    child=spawn(process.execPath,['--import',new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href,fileURLToPath(new URL('../web/server.mjs',import.meta.url))],
-      {cwd:fileURLToPath(new URL('../web/',import.meta.url)),env,windowsHide:true,stdio:['ignore','pipe','pipe']});
+    child=spawn(process.execPath,['--import',new URL('./fixtures/generated-speech-stream-fetch.mjs',import.meta.url).href,fileURLToPath(new URL('../services/game/server.mjs',import.meta.url))],
+      {cwd:fileURLToPath(new URL('../services/game/',import.meta.url)),env,windowsHide:true,stdio:['ignore','pipe','pipe']});
     child.stderr.on('data',()=>{});
     await new Promise((done,reject)=>{const timer=setTimeout(()=>reject(Error('Isolated N1 fixture timeout')),10000);child.once('error',()=>{clearTimeout(timer);reject(Error('Isolated N1 fixture failed'));});child.once('exit',()=>{clearTimeout(timer);reject(Error('Isolated N1 fixture exited'));});child.stdout.on('data',chunk=>{if(String(chunk).includes('croupier demo on')){clearTimeout(timer);done();}});});
     users=new DatabaseSync(join(directory,'craig.db'));players=new DatabaseSync(join(directory,'croupier.db'));

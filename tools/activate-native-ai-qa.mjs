@@ -4,9 +4,9 @@ import {readFile,lstat,mkdir,open,readdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {createRequire} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_CONTINUATION_COUNTS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaWindowClosed,aiQaNextWindowCounts,sha256,aiQaNeed as need,createAiQaBudget} from '../web/native-ai-qa-budget.mjs';
-import {buildAiQaPrivateSnapshot} from '../web/native-ai-qa-private.mjs';
-import {AI_QA_SOURCE_PATHS} from '../web/native-ai-qa-runtime.mjs';
+import {AI_QA_ORIGINAL,AI_QA_LIMITS,AI_QA_CONTINUATION_COUNTS,AI_QA_SIX_LIMITS,AI_QA_SIX_AUTHORIZATION,aiQaWindowClosed,aiQaNextWindowCounts,sha256,aiQaNeed as need,createAiQaBudget} from '../services/game/native-ai-qa-budget.mjs';
+import {buildAiQaPrivateSnapshot} from '../services/game/native-ai-qa-private.mjs';
+import {AI_QA_SOURCE_PATHS} from '../services/game/native-ai-qa-runtime.mjs';
 import {NATIVE_P6_QA} from '../ops/cloud/config.mjs';
 const repo=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const sdkRoot=NATIVE_P6_QA.dataRoot+'/p6-sdk/cb9b6b53-e7b0-4fa9-bc53-c5152ddbb1f2/node_modules/openai';
@@ -96,9 +96,9 @@ export async function installBoundedAiQa(input){
   const stagedDirectory=await open(stateRoot,'r');try{await stagedDirectory.sync();}finally{await stagedDirectory.close();}
   const budget=await createAiQaBudget({directory:NATIVE_P6_QA.dataRoot+'/p6-budget-ledger/'+AI_QA_ORIGINAL.authorizationId,
     anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json',manifest,manifestRawSha256:pin,
-    authoritySourceSha256:manifest.sources['web/native-ai-qa-budget.mjs']});
+    authoritySourceSha256:manifest.sources['services/game/native-ai-qa-budget.mjs']});
   const before=await budget.inspect();need(before.records.length===2,'ai_qa_install_previous_campaign_consumed');
-  const {Pool}=createRequire('/app/web/package.json')('pg'),pool=new Pool({connectionString:process.env.CROUPIER_GAME_DATABASE_URL,max:1,connectionTimeoutMillis:8000});
+  const {Pool}=createRequire('/app/services/game/package.json')('pg'),pool=new Pool({connectionString:process.env.CROUPIER_GAME_DATABASE_URL,max:1,connectionTimeoutMillis:8000});
   try{
     // Append the explicit exception before installing SQL policy. A failed install
     // retains this reservation and is never silently started again.
@@ -170,7 +170,7 @@ export function validateAiQaContinuationIntent({raw,approvedIntentSha256,previou
   let i;try{i=JSON.parse(raw);}catch{need(false,'ai_qa_continuation_intent_invalid');}
   need(i.purpose==='bounded-native-ai-qa-continuation-intent-v1'&&i.campaignId===AI_QA_ORIGINAL.campaignId
     &&i.expectedSha===expectedSha&&i.deploymentId===deploymentId&&i.runId===runId
-    &&i.previousManifestSha256===previousManifestRawSha256&&i.previousAuthoritySourceSha256===previousManifest.sources['web/native-ai-qa-budget.mjs']
+    &&i.previousManifestSha256===previousManifestRawSha256&&i.previousAuthoritySourceSha256===previousManifest.sources['services/game/native-ai-qa-budget.mjs']
     &&i.previousRunId===previousManifest.runId&&i.previousExpectedSha===previousManifest.expectedSha
     &&i.predecessorRecordCount===13&&state.records.length===13&&i.predecessorJournalSha256===state.previousSha256
     &&JSON.stringify(state.counts)===JSON.stringify(AI_QA_CONTINUATION_COUNTS)&&!state.closed&&!state.continuation
@@ -200,7 +200,7 @@ export async function installBoundedAiQaContinuation(input){
     &&Date.now()>=previousManifest.expiresAtMs,'ai_qa_continuation_previous_manifest_required');
   const oldBudget=await createAiQaBudget({directory:NATIVE_P6_QA.dataRoot+'/p6-budget-ledger/'+AI_QA_ORIGINAL.authorizationId,
     anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json',manifest:previousManifest,manifestRawSha256:previousPin,
-    authoritySourceSha256:previousManifest.sources['web/native-ai-qa-budget.mjs']});
+    authoritySourceSha256:previousManifest.sources['services/game/native-ai-qa-budget.mjs']});
   const before=await oldBudget.inspect(),intent=validateAiQaContinuationIntent({raw:input.intentRaw,approvedIntentSha256:input.approvedIntentSha256,
     ...input,previousManifest,previousManifestRawSha256:previousPin,state:before});
   const endpoint=intent.endpointEvidence;
@@ -208,7 +208,7 @@ export async function installBoundedAiQaContinuation(input){
     &&Number.isSafeInteger(endpoint.observedAtMs)&&Date.now()-endpoint.observedAtMs>=0&&Date.now()-endpoint.observedAtMs<300000,
     'ai_qa_continuation_fresh_one_worker_evidence');
   need(typeof input.providerReadApiKey==='string'&&input.providerReadApiKey.length>0&&!/\s/.test(input.providerReadApiKey),'ai_qa_continuation_existing_provider_read_key');
-  const {Pool}=createRequire('/app/web/package.json')('pg'),pool=new Pool({connectionString:process.env.CROUPIER_GAME_DATABASE_URL,max:1,connectionTimeoutMillis:8000});
+  const {Pool}=createRequire('/app/services/game/package.json')('pg'),pool=new Pool({connectionString:process.env.CROUPIER_GAME_DATABASE_URL,max:1,connectionTimeoutMillis:8000});
   try{
     const policy=await readAiQaContinuationPolicy({pool,previousManifest,previousManifestRawSha256:previousPin,fullfile:intent.fullfile,
       operatorId:input.operatorId,username:input.username,playerId:input.playerId});
@@ -224,7 +224,7 @@ export async function installBoundedAiQaContinuation(input){
       previousManifestSha256:previousPin,installedSdkPackageSha256:manifest.sdkPackageSha256,installedSdkClientSha256:manifest.sdkClientSha256};
     const preflightSha256=sha256(JSON.stringify(preflight));
     manifest.continuation={predecessorRecordCount:13,predecessorJournalSha256:before.previousSha256,previousManifestSha256:previousPin,
-      previousAuthoritySourceSha256:previousManifest.sources['web/native-ai-qa-budget.mjs'],previousRunId:previousManifest.runId,
+      previousAuthoritySourceSha256:previousManifest.sources['services/game/native-ai-qa-budget.mjs'],previousRunId:previousManifest.runId,
       previousExpectedSha:previousManifest.expectedSha,rootReviewedIntentSha256:input.approvedIntentSha256,preflightSha256,
       streamRequestIdSha256:sha256(intent.streamRequestId)};
     const pin=sha256(JSON.stringify(manifest)),stateRoot=NATIVE_P6_QA.dataRoot+'/p6-sdk/'+manifest.runId;
@@ -241,7 +241,7 @@ export async function installBoundedAiQaContinuation(input){
       predecessorManifestSha256:previousPin,rootReviewedIntentSha256:input.approvedIntentSha256,actualCostUsd:null});
     const d=await open(stateRoot,'r');try{await d.sync();}finally{await d.close();}
     const budget=await createAiQaBudget({directory:NATIVE_P6_QA.dataRoot+'/p6-budget-ledger/'+AI_QA_ORIGINAL.authorizationId,
-      anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json',manifest,manifestRawSha256:pin,authoritySourceSha256:manifest.sources['web/native-ai-qa-budget.mjs']});
+      anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json',manifest,manifestRawSha256:pin,authoritySourceSha256:manifest.sources['services/game/native-ai-qa-budget.mjs']});
     const after=await budget.continueOnce({approvedIntentSha256:input.approvedIntentSha256,preflightSha256});
     const receipt={purpose:'bounded-native-ai-qa-continuation-installed-v1',expectedSha:manifest.expectedSha,deploymentId:manifest.deploymentId,
       runId:manifest.runId,campaignId:manifest.campaignId,manifestRawSha256:pin,manifest,previousManifestSha256:previousPin,
@@ -350,13 +350,13 @@ export async function installBoundedAiQaAdditionalWindow(input){
   const previousRaw=await small(NATIVE_P6_QA.dataRoot+'/p6-sdk/'+input.previousRunId+'/bounded-manifest.json'),previous=JSON.parse(previousRaw);
   const options={directory:NATIVE_P6_QA.dataRoot+'/p6-budget-ledger/'+AI_QA_ORIGINAL.authorizationId,
     anchorPath:NATIVE_P6_QA.dataRoot+'/native-p6-user-budget-20261003.json'};
-  const oldBudget=await createAiQaBudget({...options,manifest:previous,manifestRawSha256:sha256(previousRaw),authoritySourceSha256:previous.sources['web/native-ai-qa-budget.mjs']});
+  const oldBudget=await createAiQaBudget({...options,manifest:previous,manifestRawSha256:sha256(previousRaw),authoritySourceSha256:previous.sources['services/game/native-ai-qa-budget.mjs']});
   const before=await oldBudget.inspect(),intent=validateAiQaAdditionalIntent(input.intentRaw,input.approvedIntentSha256,before);
   need(intent.expectedSha===input.expectedSha&&intent.runId===input.runId&&intent.deploymentId===input.deploymentId,'ai_qa_additional_live_binding');
   const e=intent.endpointEvidence;need(e?.endpointId==='zsudl8tmzcmiv1'&&e.workersMax===1&&e.activeWorkersSetting===0&&e.gpuCount===1
     &&Date.now()>=e.observedAtMs&&Date.now()-e.observedAtMs<300000,'ai_qa_additional_fresh_one_worker');
   const db=new URL(process.env.CROUPIER_GAME_DATABASE_URL);need(db.pathname==='/'+NATIVE_P6_QA.database&&decodeURIComponent(db.username)===NATIVE_P6_QA.database&&db.searchParams.get('sslmode')==='require','ai_qa_additional_db_binding');
-  const{Pool}=createRequire(join(repo,'web/package.json'))('pg'),pool=new Pool({connectionString:process.env.CROUPIER_GAME_DATABASE_URL,max:1,connectionTimeoutMillis:8000});
+  const{Pool}=createRequire(join(repo,'services/game/package.json'))('pg'),pool=new Pool({connectionString:process.env.CROUPIER_GAME_DATABASE_URL,max:1,connectionTimeoutMillis:8000});
   try{
     const policy=await readAiQaAdditionalPolicy({...input,pool,fullfile:intent.fullfile});
     need(JSON.stringify(policy.fingerprints)===JSON.stringify(intent.policyFingerprints),'ai_qa_additional_policy_cas_changed');
@@ -370,7 +370,7 @@ export async function installBoundedAiQaAdditionalWindow(input){
     const preflight={purpose:'bounded-native-ai-qa-additional-preflight-v1',budget:before,policy,knownJobs,health,
       retainedOriginalGpu:retained,providerJobPosts:0,sqlMutations:0};
     manifest.additionalWindow={predecessorRecordCount:before.records.length,predecessorJournalSha256:before.previousSha256,
-      previousManifestSha256:sha256(previousRaw),previousAuthoritySourceSha256:previous.sources['web/native-ai-qa-budget.mjs'],previousRunId:previous.runId,previousExpectedSha:previous.expectedSha,
+      previousManifestSha256:sha256(previousRaw),previousAuthoritySourceSha256:previous.sources['services/game/native-ai-qa-budget.mjs'],previousRunId:previous.runId,previousExpectedSha:previous.expectedSha,
       rootReviewedIntentSha256:input.approvedIntentSha256,preflightSha256:sha256(JSON.stringify(preflight)),streamRequestIdSha256:sha256(intent.streamRequestId),
       humanAuthorization:AI_QA_SIX_AUTHORIZATION,previousCounts:before.counts,limitCounts:aiQaNextWindowCounts(before),globalRemainingGenerations:6-before.counts.generation,windowGenerations:1,streamOnly:true};
     const pin=sha256(JSON.stringify(manifest)),stateRoot=NATIVE_P6_QA.dataRoot+'/p6-sdk/'+manifest.runId;await mkdir(stateRoot,{mode:0o700});
@@ -379,7 +379,7 @@ export async function installBoundedAiQaAdditionalWindow(input){
     await newFile(stateRoot+'/additional-intent.json',intent);await newFile(stateRoot+'/additional-preflight.json',preflight);await newFile(stateRoot+'/bounded-manifest.json',manifest);
     for(const name of ['entry','router','worker','authority'])await newFile(stateRoot+'/'+name+'-context.json',{purpose:'bounded-native-ai-qa-'+name+'-context-v1',expectedSha:manifest.expectedSha,manifestRawSha256:pin,sources:manifest.sources,privateSources:manifest.privateSources,sdkPackageSha256:manifest.sdkPackageSha256,sdkClientSha256:manifest.sdkClientSha256,originalAnchorSha256:manifest.originalAnchorSha256,campaignId:manifest.campaignId,expiresAtMs:manifest.expiresAtMs,actualCostUsd:null});
     const directory=await open(stateRoot,'r');try{await directory.sync();}finally{await directory.close();}
-    const budget=await createAiQaBudget({...options,manifest,manifestRawSha256:pin,authoritySourceSha256:manifest.sources['web/native-ai-qa-budget.mjs']});
+    const budget=await createAiQaBudget({...options,manifest,manifestRawSha256:pin,authoritySourceSha256:manifest.sources['services/game/native-ai-qa-budget.mjs']});
     const after=await budget.openAdditionalWindow({approvedIntentSha256:input.approvedIntentSha256,preflightSha256:manifest.additionalWindow.preflightSha256});
     const receipt={purpose:'bounded-native-ai-qa-additional-installed-v1',expectedSha:manifest.expectedSha,deploymentId:manifest.deploymentId,runId:manifest.runId,campaignId:manifest.campaignId,
       manifestRawSha256:pin,manifest,budgetBefore:before,budgetAfter:after,preflight,providerJobPosts:0,sqlMutations:0,extraReserveMicroUsd:0,refundMicroUsd:0,actualCostUsd:null,installedSdkReused:true,originalJournalPreserved:true};

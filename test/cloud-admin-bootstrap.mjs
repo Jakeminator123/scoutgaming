@@ -14,14 +14,14 @@ import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
 const game = 'https://game.example.test';
 const bo = 'https://bo.example.test';
 const lab = 'https://lab.example.test';
-const web = new URL('../web/', import.meta.url);
-const publicWeb = new URL('../web/public/', import.meta.url);
+const web = new URL('../services/game/', import.meta.url);
+const publicWeb = new URL('../services/game/public/', import.meta.url);
 const username = 'pilot-admin';
 const password = randomBytes(32).toString('base64url');
 
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'croupier-cloud-bootstrap-'));
-  const webDir = join(root, 'web');
+  const webDir = join(root,'services','game');
   const dataDir = join(root, 'data');
   const calibration = join(webDir, 'public', 'calibration.css');
   const children = [];

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSpeechSessionManager, sessionReserveMicroUsd, dailyBudgetMicroUsd, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
+import { createSpeechSessionManager, sessionReserveMicroUsd, dailyBudgetMicroUsd, SPEECH_SESSION_POLICY } from '../services/game/generated-speech-session.mjs';
 
 const response = value => new Response(JSON.stringify(value), { headers: { 'content-type': 'application/json' } });
 async function fixture(t, options = {}) {

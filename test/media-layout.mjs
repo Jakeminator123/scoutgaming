@@ -27,6 +27,17 @@ test('partial media roots preserve renderer and admin code in the existing appli
   for(const file of ['web/public/kevin-cards/calibration.mjs','web/public/bo/speech-qa.html'])assert.equal(resolveMediaPath(file,{repositoryRoot:root}),join(root,file));
   assert.equal(resolveMediaPath('web/public/kevin-cards/back.png',{repositoryRoot:root}),join(root,'media/game/runtime/cards/back.png'));
   assert.ok(!Object.hasOwn(readMediaLayout(root).roots,'web/public/bo'));
+  for(const file of ['kevin-cards/calibration.mjs','bo/speech-qa.html']) {
+    const sourcePath='services/game/public/'+file;await mkdir(join(root,sourcePath,'..'),{recursive:true});
+    await rename(join(root,'web/public',file),join(root,sourcePath));
+    assert.equal(resolveMediaPath('web/public/'+file,{repositoryRoot:root,sourcePath}),join(root,sourcePath));
+    assert.ok(readFileSync(resolveMediaPath('web/public/'+file,{repositoryRoot:root,sourcePath})).length);
+  }
+  const sourcePath='services/game/public/kevin-cards/back.png';await writeFile(join(root,sourcePath),'shadow bytes');
+  assert.equal(resolveMediaPath('web/public/kevin-cards/back.png',{repositoryRoot:root,sourcePath}),join(root,'media/game/runtime/cards/back.png'));
+  assert.throws(()=>resolveMediaPath('web/public/entry.mjs',{repositoryRoot:root,sourcePath:'../outside.mjs'}),/Unsafe media path/);
+  const noLayout=join(root,'without-layout'),code='services/game/public/entry.mjs';await mkdir(join(noLayout,code,'..'),{recursive:true});await writeFile(join(noLayout,code),'export const code=true;');
+  assert.equal(readFileSync(resolveMediaPath('web/public/entry.mjs',{repositoryRoot:noLayout,sourcePath:code}),'utf8'),'export const code=true;');
 });
 
 test('explicit catalog resolves public and canonical aliases without a layout file', async t => {
@@ -40,4 +51,7 @@ test('explicit catalog resolves public and canonical aliases without a layout fi
   assert.equal(resolvePublicMedia('/media/'+original.path,options),null,'a public alias does not expose its source path');
   assert.equal(resolvePublicMedia('/%2e%2e/astrid.mp4',options),null);
   assert.throws(()=>resolvePublicMedia('/astrid.mp4',{...options,runtimeCatalog:{layout:null}}),/Invalid media layout/);
+  const sourcePath='services/game/public/unregistered.mjs';await mkdir(join(root,sourcePath,'..'),{recursive:true});await writeFile(join(root,sourcePath),'local code');
+  assert.equal(resolveMediaPath('web/public/unregistered.mjs',{...options,sourcePath}),join(root,'web/public/unregistered.mjs'),'captured runtime catalog cannot use local source fallback');
+  assert.equal(resolveMediaPath('web/public/astrid.mp4',{...options,sourcePath}),join(root,'media',original.path));
 });

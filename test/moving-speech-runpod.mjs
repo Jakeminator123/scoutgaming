@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createMovingSpeechRunPod} from '../web/moving-speech-runpod.mjs';
+import {createMovingSpeechRunPod} from '../services/game/moving-speech-runpod.mjs';
 const image='ghcr.io/jakeminator123/moving-gpu-worker@sha256:'+'a'.repeat(64);
 const endpoint={id:'owned123',workersMin:0,workersMax:1,idleTimeout:5,executionTimeoutMs:180000,gpuCount:1,version:0,workers:[],templateId:'template123',template:{id:'template123',imageName:image}};
 const create=(fetchImpl)=>createMovingSpeechRunPod({endpointId:'owned123',apiKey:'test-credential',expectedImage:image,fetchImpl});

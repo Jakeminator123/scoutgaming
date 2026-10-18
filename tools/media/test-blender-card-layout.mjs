@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cardLandingCorners} from '../../web/public/performance-player.mjs';
+import {cardLandingCorners} from '../../services/game/public/performance-player.mjs';
 
 // The Blender felt projector is gone with the review pages. This assertion
 // stays because it is the only check of the live player's felt-corner landing.

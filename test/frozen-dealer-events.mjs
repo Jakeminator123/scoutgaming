@@ -9,11 +9,11 @@ import { assertFrozenMediaPreconditions } from '../packages/presentation/server/
 import { encodePresentationPackage, decodePresentationPackage } from '../packages/presentation/server/presentation-package.mjs';
 import { validatePresentationPackage } from '../packages/presentation/contracts/presentation-layers.mjs';
 import { frozenPlaybackProject, mergeFrozenDealerPlayback } from '../packages/presentation/contracts/frozen-dealer-playback.mjs';
-import { selectPresentation } from '../web/presentation-selection.mjs';
+import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import {recordedSpeechIdentity} from '../packages/presentation/contracts/recorded-speech.mjs';
 import {bindSpeechSlotStandard, OTHER_SPEECH_SLOT_IDS} from '../packages/presentation/contracts/speech-slot-bindings.mjs';
 import {createHash} from 'node:crypto';
-import {createPresentationApi} from '../web/presentation-api.mjs';
+import {createPresentationApi} from '../services/game/presentation-api.mjs';
 import {Readable} from 'node:stream';
 import {EventEmitter} from 'node:events';
 

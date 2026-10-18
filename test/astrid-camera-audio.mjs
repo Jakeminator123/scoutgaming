@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
-import { CAMERA_AUDIO_PREROLL_MAX_MS, createCameraAudioActivity, encodeCameraWav, createAstridAudioRecorder } from '../web/public/astrid-camera-audio.mjs';
-import { validateCameraWav } from '../web/astrid-transcription.mjs';
+import { CAMERA_AUDIO_PREROLL_MAX_MS, createCameraAudioActivity, encodeCameraWav, createAstridAudioRecorder } from '../services/game/public/astrid-camera-audio.mjs';
+import { validateCameraWav } from '../services/game/astrid-transcription.mjs';
 
 test('local activity rejects quiet room and single clicks but follows a voice-length burst', () => {
   const activity = createCameraAudioActivity();
@@ -29,7 +29,7 @@ test('audio worklet is silent, clamps PCM and stops producing bytes at 30 second
   const context = vm.createContext({ sampleRate: 8000, Int16Array,
     AudioWorkletProcessor: class { port = { postMessage: data => messages.push(new Int16Array(data)) }; },
     registerProcessor: (name, value) => { assert.equal(name, 'astrid-camera-audio'); Processor = value; } });
-  vm.runInContext(await readFile(new URL('../web/public/astrid-camera-audio-worklet.mjs', import.meta.url), 'utf8'), context);
+  vm.runInContext(await readFile(new URL('../services/game/public/astrid-camera-audio-worklet.mjs', import.meta.url), 'utf8'), context);
   const processor = new Processor();
   const output = new Float32Array(128);
   processor.process([[Float32Array.of(-2, -0.5, 0.5, 2)]], [[output]]);
@@ -44,7 +44,7 @@ async function preRollWorklet(preRollMs = CAMERA_AUDIO_PREROLL_MAX_MS) {
   const context = vm.createContext({ sampleRate: 8000, Int16Array,
     AudioWorkletProcessor: class { port = { postMessage: data => messages.push(data) }; },
     registerProcessor: (_name, value) => { Processor = value; } });
-  vm.runInContext(await readFile(new URL('../web/public/astrid-camera-audio-worklet.mjs', import.meta.url), 'utf8'), context);
+  vm.runInContext(await readFile(new URL('../services/game/public/astrid-camera-audio-worklet.mjs', import.meta.url), 'utf8'), context);
   const processor = new Processor({ processorOptions: { armed: true, preRollMs } });
   return { processor, messages, command: type => processor.port.onmessage({ data: { type } }) };
 }

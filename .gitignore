@@ -75,3 +75,7 @@ __pycache__/
 /open-claw/lab/media/*
 /services/openclaw/lab/data/
 /services/openclaw/lab/runtime/
+
+# Game source moved; retain the old private state and protect the new source root.
+/web/data/
+/services/game/data/

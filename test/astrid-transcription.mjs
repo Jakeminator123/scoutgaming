@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
-import { createAstridTranscriptionApi, validateCameraWav } from '../web/astrid-transcription.mjs';
-import { encodeCameraWav, CAMERA_AUDIO_MAX_BYTES } from '../web/public/astrid-camera-audio.mjs';
+import { createAstridTranscriptionApi, validateCameraWav } from '../services/game/astrid-transcription.mjs';
+import { encodeCameraWav, CAMERA_AUDIO_MAX_BYTES } from '../services/game/public/astrid-camera-audio.mjs';
 
 const profileRevision = 'a'.repeat(64);
 const audio = () => Buffer.from(encodeCameraWav([new Int16Array(16000).fill(100)], 16000));

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
-import { createOperatorSpeechQa, isRetiredBackofficePost } from '../web/operator-speech-qa.mjs';
+import { createOperatorSpeechQa, isRetiredBackofficePost } from '../services/game/operator-speech-qa.mjs';
 
 const ORIGIN = 'https://game.example.test';
 const PATH = '/api/bo/speech-qa';

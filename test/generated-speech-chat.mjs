@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { completeChatWithSpeech } from '../web/generated-speech-chat.mjs';
+import { completeChatWithSpeech } from '../services/game/generated-speech-chat.mjs';
 
 function fixture(change = () => {}) {
   let owner = 'session-one', stale = false, jobs = 0;

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createTableAudio} from '../web/public/table-audio.mjs';
+import {createTableAudio} from '../services/game/public/table-audio.mjs';
 
 function fixture(){
   let enabled=true,contexts=[];

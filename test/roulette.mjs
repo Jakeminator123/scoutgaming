@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { ROULETTE_RULES, describePocket, createSpinResult } from '../web/games/roulette/index.mjs';
+import { ROULETTE_RULES, describePocket, createSpinResult } from '../services/game/games/roulette/index.mjs';
 
 const scope = { operatorId: 'sg-test', roomId: 'roulette-1', roundId: 'round-123' };
 // Indexed by number, independently of the generator's red-number set.

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
+import {decorateGameEntryHtml} from '../services/game/public/game-entry-contract.mjs';
 import {publicGamePath, approvedGameQuery, gameEntryRedirect, canonicalGameDestination} from '../packages/navigation/game-entry.mjs';
-import {dealerVersionPath} from '../web/public/dealer-version-switcher.mjs';
+import {dealerVersionPath} from '../services/game/public/dealer-version-switcher.mjs';
 const env = {CROUPIER_STUDIO_NEON_POLICY:'1'},origin = 'https://game.example.invalid';
 test('canonical game address is gated and aliases preserve only unambiguous public selectors',() => {
   assert.equal(publicGamePath({}),'/');assert.equal(publicGamePath({CROUPIER_PUBLIC_GAME_PATH:'/game'}),'/game');
@@ -89,7 +89,7 @@ test('all retired V2 aliases choose the one canonical entry and drop experiment 
 
 test('the initial document selects the presentation before client JavaScript runs',async () => {
   const {readFile}=await import('node:fs/promises');
-  const source=await readFile(new URL('../web/public/index.html',import.meta.url),'utf8');
+  const source=await readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8');
   for (const [dealer,presentation] of [['astrid','local'],['elin','local'],['linnea','local'],['paow','layered']]) {
     const html=decorateGameEntryHtml(source,env,{lane:presentation==='layered'?'layer-preview':'mobile-phone',dealer,presentation,...(presentation==='local'?{localDealer:dealer,registeredDealers:[{id:dealer,label:dealer}]}:{})});
     assert.match(html,/data-presentation-startup="pending"/);
@@ -100,7 +100,7 @@ test('the initial document selects the presentation before client JavaScript run
 });
 
 test('only the selected first frame can reveal the scene and a redirect prevents startup',async()=>{
-  const {createPresentationStartup}=await import('../web/public/presentation-startup.mjs');
+  const {createPresentationStartup}=await import('../services/game/public/presentation-startup.mjs');
   const make=()=>{
     const status={hidden:false,textContent:'loading',setAttribute(){}};
     const document={documentElement:{dataset:{}},querySelector:()=>status};

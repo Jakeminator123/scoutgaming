@@ -40,7 +40,7 @@ for (let i = 0; i < 16; i++) drvU32();
 const rand = () => drvU32() / 4294967296;
 const randi = (n) => Math.floor(rand() * n);
 
-const { Round, handValue } = await import('../web/public/blackjack.mjs');
+const { Round, handValue } = await import('../services/game/public/blackjack.mjs');
 
 // ------------------------------------------------------------------ harness ---
 let pass = 0, fail = 0;

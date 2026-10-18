@@ -7,7 +7,7 @@ import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-prese
 import {withPackagePresentation, readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {withoutPresentationLanes} from '../apps/studio/lib/dealer-archive-impact.mjs';
 import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
-import {createPublishedLayerAssets} from '../web/storage/published-layer-assets.mjs';
+import {createPublishedLayerAssets} from '../services/game/storage/published-layer-assets.mjs';
 
 const id = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const rule = () => defaultBackgroundRule(id(2), 'celebration');

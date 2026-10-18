@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import { mkdtemp, mkdir, readFile, writeFile, rm, cp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { createMovingSpeechSourceSet, movingSpeechHash } from '../web/moving-speech-bank.mjs';
+import { createMovingSpeechSourceSet, movingSpeechHash } from '../services/game/moving-speech-bank.mjs';
 import { probeMovingSpeechSource } from '../tools/prepare-moving-speech-sources.mjs';
 const exec=promisify(execFile);
 test('bank builder preserves exact frames, duplicate media IDs and explicit rest; refuses overwrites and changed sources',async t=>{

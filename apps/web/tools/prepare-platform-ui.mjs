@@ -21,7 +21,7 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
       if (entry.isDirectory()) { if (entry.name !== 'frontend-preview') await publish(join(directory, entry.name), name + '/'); continue; }
       if (!/\.(?:mjs|js|css|json)$/.test(name)) continue;
       let text = await readFile(join(directory, entry.name), 'utf8');
-      if (name === 'blackjack-entry.mjs') text = await readFile(join(repo, 'web/public/blackjack-entry.mjs'), 'utf8');
+      if (name === 'blackjack-entry.mjs') text = await readFile(join(repo, 'services/game/public/blackjack-entry.mjs'), 'utf8');
       if (name === 'auth-modal.mjs') text = text.replace('/frontend-preview/blackjack/', '/blackjack');
       const target = join(output, 'public', name);
       await mkdir(dirname(target), {recursive: true}); await writeFile(target, text);
@@ -37,13 +37,13 @@ export async function preparePlatformUi({ env = process.env, output = app } = {}
     files.push('/composition-runtime/'+name);
   }
   // Optional player styles are selected dynamically by the existing player.
-  for (const entry of await readdir(join(repo, 'web/public'), {withFileTypes: true})) {
+  for (const entry of await readdir(join(repo, 'services/game/public'), {withFileTypes: true})) {
     if (!entry.isFile() || !entry.name.endsWith('.css')) continue;
-    await writeFile(join(output, 'public', entry.name), await readFile(join(repo, 'web/public', entry.name)));
+    await writeFile(join(output, 'public', entry.name), await readFile(join(repo, 'services/game/public', entry.name)));
     if (!files.includes('/' + entry.name)) files.push('/' + entry.name);
   }
   for (const [target, source] of [['game.html', 'index.html'], ['blackjack.html', 'blackjack-entry.html']]) {
-    await writeFile(join(runtime, target), await readFile(join(repo, 'web/public', source)));
+    await writeFile(join(runtime, target), await readFile(join(repo, 'services/game/public', source)));
   }
   await writeFile(join(runtime, 'manifest.json'), JSON.stringify({files: [...new Set(files)].sort(), mediaCopied: false, actualPlayback: false}, null, 2));
   return {enabled: true, files};

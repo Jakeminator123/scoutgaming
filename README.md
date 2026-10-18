@@ -19,14 +19,14 @@ engine and live transport. See [cloud and storage](docs/CLOUD-MIGRATION.md).
 | Operator portal | `/partner`, `/partner/login`, `/partner/{operatorSlug}` | Real registered operators and scoped memberships; ordinary routes do not use demo fallback data. |
 | Player lobby | `/lobby` | New lobby. Existing `/play`, `/play/profil`, `/play/historik` and `/play/blackjack` remain during the transition. |
 
-`/admin` and `/lobby` are served by the Lab service from
+`/admin` and `/lobby` are served by the Studio service from
 `apps/studio/client/`. Their names do not imply that every old workflow
 has moved. The lobby launches the existing game engine; it does not replace it.
 Partner team access and branding drafts exist. Operator game data/reports,
 chips and partner password reset still have open work; consult the cloud
 checklist before calling a surface complete.
 
-`/studio` is the Lab service's Next.js basePath. It is not another product.
+`/studio` is the Studio service's Next.js basePath. It is not another product.
 `/lissabon`, `/lab`, `/labb` and `/bo` are retired product aliases. Some stored
 IDs, filenames and the `lissabon-stream-lane` flag remain compatibility details.
 Keep a compatibility path while active callers or saved data need it; the name
@@ -39,10 +39,19 @@ active entry points, operator access, compatibility redirects and working tools.
 | Folder | Responsibility | Guide |
 | --- | --- | --- |
 | `apps/web/` | Public Next frontend, player pages and ingress to the game/Studio services | [Frontend](apps/web/README.md) |
-| `apps/studio/` | Active Studio/Admin service, staff/operator APIs, published-product launcher and offline fixtures | [Lab](apps/studio/README.md) |
-| `web/` | Authoritative game server, authentication, wallet, persistence and game client source | [Game server](web/README.md) |
-| `packages/presentation/` | Shared compositor, presentation selection, idle rules and reviewed layer preview | [Presentation](packages/presentation/README.md) |
-| `packages/shared/` | Portable media type/header rules and the shared Studio game-command contract; no app imports in these modules | [Media formats](docs/games/KLIPP-OCH-FORMAT.md) |
+| `apps/speech/` | Long-running speech/WebSocket ingress with its own Node 22 runtime | [Deployment](docs/CLOUD-MIGRATION.md) |
+| `apps/studio/` | Active Studio/Admin service, staff/operator APIs, published-product launcher and offline fixtures | [Studio](apps/studio/README.md) |
+| `services/game/` | Authoritative game server, authentication, wallet, persistence and game client source | [Game server](services/game/README.md) |
+| `packages/presentation/` | Shared playback, presentation selection, browser contracts and generated-speech server cores | [Presentation](packages/presentation/README.md) |
+| `packages/shared/` | Portable media rules, Studio game-command signing and the pure shoe rule; game owns shuffle, wallet and payouts | [Media formats](docs/games/KLIPP-OCH-FORMAT.md) |
+| `packages/director/` | Shared Director, speech and social contracts; callers own transport, environment and state | [director](packages/director/) |
+| `packages/navigation/` | Shared public entry, redirect and player handoff contracts | [navigation](packages/navigation/) |
+| `packages/operators/` | Shared operator identity, access and lifecycle rules | [operators](packages/operators/README.md) |
+| `packages/player-catalog/` | Shared player-facing catalogue projection | [player-catalog](packages/player-catalog/) |
+| `packages/server-transport/` | Shared HTTP and request parsing primitives | [server-transport](packages/server-transport/) |
+| `packages/storage/` | Shared PostgreSQL transaction and SQL core; apps own pools and schema inputs | [storage](packages/storage/README.md) |
+| `packages/studio-access/` | Shared identity, scope and permission rules; apps own sessions and HTTP | [studio-access](packages/studio-access/README.md) |
+| `packages/studio-registry/` | Shared registry, media and publication contracts and repositories | [studio-registry](packages/studio-registry/README.md) |
 | `apps/studio/client/` | Active admin/lobby UI source and browser bundle builder | [Admin/lobby](apps/studio/client/README.md) |
 | `services/astrid-gpu-worker/` | GPU lip sync plus shared speech transport; the historical name does not restrict sessions to Astrid | [Speech service](services/astrid-gpu-worker/README.md) |
 | `tools/media/` | Media utilities with separate inputs, banks and export formats | [Media tools](tools/media/README.md) |
@@ -54,7 +63,7 @@ active entry points, operator access, compatibility redirects and working tools.
 [AI documentation](docs/AI/README.md) collects agent flows and OpenClaw guides.
 
 These are source responsibilities, not independent products. For example,
-Vercel's `web` Service builds `apps/web/`; the root `web/` folder
+Vercel's `web` Service builds `apps/web/`; the `services/game/` folder
 is the game server and client. Imports still cross some app/package boundaries;
 a neutral package name alone does not make that code independent.
 
@@ -78,7 +87,7 @@ working speech flows remain useful reference material on the same cloud path.
 Shared composition drafts are not room-specific writes; allowed room appearance
 is saved through the existing scoped partner room editor.
 
-`web/server.mjs` owns cards, shoe, wallet and payouts. Native commands expose
+`services/game/server.mjs` owns cards, shoe, wallet and payouts. Native commands expose
 public state through `/api/table`; partner commands use `/api/v1/table` and
 `presentation[]` (also delivered as `round.events` over SSE). The game client
 uses the shared local/layered presentation path. Studio observation follows
@@ -112,8 +121,8 @@ for fixture options and the [Lab guide](apps/studio/README.md) for development s
 `node_modules/` contains installed dependencies; `.next/` contains Next build
 output and cache. Both are normal local generated folders and excluded from
 Git/indexing. Reinstall/rebuild if removed with the relevant process stopped.
-`lab/preview-build/` and `lab/design-preview-build/` are also generated;
-`packages/presentation/preview/site/` and the tracked `web/public/` sources are
+`apps/studio/preview-build/` and `apps/studio/design-preview-build/` are also generated;
+`packages/presentation/preview/site/` and the tracked `services/game/public/` sources are
 build inputs. Keep manifests, lockfiles, calibration and source media.
 
 ## Documentation and delivery

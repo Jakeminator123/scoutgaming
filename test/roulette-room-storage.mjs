@@ -5,8 +5,8 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {createSqliteRouletteCommand} from '../web/games/roulette/storage.mjs';
-import {ROOM} from '../web/games/roulette/room.mjs';
+import {createSqliteRouletteCommand} from '../services/game/games/roulette/storage.mjs';
+import {ROOM} from '../services/game/games/roulette/room.mjs';
 
 test('wallet, ledger and scoped room persist together; replay, restart and rollback preserve money',async t=>{
   const root=await mkdtemp(join(tmpdir(),'roulette-storage-')),path=join(root,'isolated.sqlite');let db=new DatabaseSync(path),calls=0;

@@ -12,8 +12,8 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { readChatResponse } from '../packages/presentation/contracts/chat-response.mjs';
 import { DatabaseSync } from 'node:sqlite';
-import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
-import { createPlayerProbeStore } from '../web/player-probe-store.mjs';
+import { createPlayerChatMemory } from '../services/game/player-chat-memory.mjs';
+import { createPlayerProbeStore } from '../services/game/player-probe-store.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
 
@@ -87,7 +87,7 @@ for (const lissabon of [false, true]) test(`product /chat sends only the server-
   });
   gateway.listen(0, '127.0.0.1'); await once(gateway, 'listening');
   const gatewayPort = gateway.address().port;
-  const web = fileURLToPath(new URL('../web/', import.meta.url));
+  const web = fileURLToPath(new URL('../services/game/', import.meta.url));
   const server = spawn(process.execPath, ['--import',new URL('./fixtures/published-chat-authority-register.mjs',import.meta.url).href,join(web, 'server.mjs')], {
     cwd: web,
     env: isolatedTransportEnvironment({ ...process.env,

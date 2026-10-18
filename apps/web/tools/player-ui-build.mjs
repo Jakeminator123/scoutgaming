@@ -6,7 +6,7 @@ import { resolveMediaPath } from '../../../tools/media-layout.mjs';
 import { presentationPublicModules, presentationPublicSource } from '../../../packages/presentation/public-modules.mjs';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
-const publicRoot = join(repo, 'web', 'public');
+const publicRoot = join(repo, 'services', 'game', 'public');
 const previewRoot = 'frontend-preview';
 const textExtensions = new Set(['.mjs', '.js', '.css', '.json']);
 const styles = [
@@ -25,7 +25,7 @@ function canonicalSource(candidate) {
 function outputName(source) {
   if (source === resolveMediaPath('web/public/speech-media.json', {repositoryRoot: repo})) return 'speech-media.json';
   const path = relative(repo, source).split(sep).join('/');
-  if (path.startsWith('web/public/')) return path.slice('web/public/'.length);
+  if (path.startsWith('services/game/public/')) return path.slice('services/game/public/'.length);
   if (presentationPublicModules.some(row => row.source === path)) return path;
   throw Error(`Frontend import utanför tillåten textyta: ${path}`);
 }
@@ -117,7 +117,7 @@ export async function build({ origin = process.env.CROUPIER_GAME_ORIGIN, local =
   const source = await readFile(new URL('./player-ui-landing.html', import.meta.url), 'utf8');
   await mkdir(output, { recursive: true });
   await writeFile(new URL('index.html', output), source.replace('{{BLACKJACK_URL}}', href));
-  await copyFile(new URL('../../../web/public/blackjack-entry.css', import.meta.url), new URL('style.css', output));
+  await copyFile(new URL('../../../services/game/public/blackjack-entry.css', import.meta.url), new URL('style.css', output));
   if (frontendPreview) await writePreview(output);
   console.log('Statisk ingång byggd. Ingen deployment utförd.');
 }

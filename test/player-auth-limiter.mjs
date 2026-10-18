@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { createServer } from 'node:http';
 import { scryptSync } from 'node:crypto';
-import { craigIdentity } from '../web/craig-identity.mjs';
-import { playerAuth } from '../web/player-auth.mjs';
+import { craigIdentity } from '../services/game/craig-identity.mjs';
+import { playerAuth } from '../services/game/player-auth.mjs';
 
 async function serve(auth) {
   const server=createServer(async(req,res)=>{

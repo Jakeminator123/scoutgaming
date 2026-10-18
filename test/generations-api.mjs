@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
-import { installGenerationsApi } from '../web/generations-api.mjs';
+import { installGenerationsApi } from '../services/game/generations-api.mjs';
 
 const token = 'read-me';
 const mapping = Object.freeze({ revision: 'fixture-revision', dealers: { astrid: { greenTakes: [] } } });

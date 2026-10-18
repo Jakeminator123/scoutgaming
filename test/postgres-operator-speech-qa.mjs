@@ -5,8 +5,8 @@ import { Readable } from 'node:stream';
 import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
-import { createOperatorSpeechQa } from '../web/operator-speech-qa.mjs';
-import { createPostgresOperatorSpeechQa } from '../web/postgres-operator-speech-qa.mjs';
+import { createOperatorSpeechQa } from '../services/game/operator-speech-qa.mjs';
+import { createPostgresOperatorSpeechQa } from '../services/game/postgres-operator-speech-qa.mjs';
 
 const SCOPE = { environment: 'qa', workspaceId: 'fixture' };
 const ID = '8b59aa63-a431-4e7c-977d-cd514349cd1b';

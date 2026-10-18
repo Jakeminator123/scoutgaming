@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets} from '../web/public/operator-appearance-boundary.mjs';
+import {createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets} from '../services/game/public/operator-appearance-boundary.mjs';
 const entry={operator:'north',roomId:'one',lane:'portrait',packageRevision:4};
 const response=(revision=4,extra={})=>new Response(JSON.stringify({operator:'north',roomId:'one',packageRevision:revision,...extra}));
 function fixture(overrides={}){let reads=0,refreshes=[];const boundary=createOperatorAppearanceBoundary({entry,request:async(url,options)=>{reads++;assert.equal(url,'/api/operator/appearance?operator=north&table=one');assert.equal(options.cache,'no-store');return response();},refresh:revision=>refreshes.push(revision),...overrides});return {boundary,get reads(){return reads;},refreshes};}

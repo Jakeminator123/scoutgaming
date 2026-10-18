@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {WHEEL,pocketColor} from '../web/games/roulette/rules.mjs';
-import {createSpin,presentationForRound,SPIN_MS,TAU} from '../web/public/roulette/wheel-motion.mjs';
+import {WHEEL,pocketColor} from '../services/game/games/roulette/rules.mjs';
+import {createSpin,presentationForRound,SPIN_MS,TAU} from '../services/game/public/roulette/wheel-motion.mjs';
 const circularDistance=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 
 test('every authoritative European outcome lands in its own moving pocket, including zero',()=>{
@@ -54,7 +54,7 @@ function fixture({reduced=false,fail=false}={}){
   let time=0,id=0,draws=0;const frames=new Map(),timers=new Map(),labels=[];
   const canvas={style:{},dataset:{},setAttribute(){},remove(){this.removed=true;},getContext(){return ctx;}};
   const ctx=new Proxy({fillText(value){labels.push(value);},clearRect(){draws++;if(fail&&draws>1)throw Error('context lost');},createRadialGradient(){return {addColorStop(){}};}},{get:(obj,key)=>obj[key]??(()=>{})});
-  const source=readFileSync(new URL('../web/public/roulette/wheel.mjs',import.meta.url),'utf8').replace(/^import .*;$/gm,'').replace('export function mountRouletteWheel','function mountRouletteWheel');
+  const source=readFileSync(new URL('../services/game/public/roulette/wheel.mjs',import.meta.url),'utf8').replace(/^import .*;$/gm,'').replace('export function mountRouletteWheel','function mountRouletteWheel');
   const mount=runInNewContext(source+'\nmountRouletteWheel;',{
     WHEEL,pocketColor,createSpin,presentationForRound,SPIN_MS,TAU,document:{createElement:()=>canvas},
     setTimeout(fn){const key=++id;timers.set(key,fn);return key;},clearTimeout:key=>timers.delete(key),
@@ -111,7 +111,7 @@ test('reduced motion, hidden-tab timer and context loss cannot strand a confirme
 });
 
 test('real submit holds the displayed receipt until landing and never retries a confirmed round after visual failure',async()=>{
-  const app=readFileSync(new URL('../web/public/roulette/app.mjs',import.meta.url),'utf8');
+  const app=readFileSync(new URL('../services/game/public/roulette/app.mjs',import.meta.url),'utf8');
   const submit=app.slice(app.indexOf('async function submit()'),app.indexOf('async function init()'));
   for(const fails of [false,true]){
     let release,calls=0;const rendered=[],messages=[],elements=new Map();

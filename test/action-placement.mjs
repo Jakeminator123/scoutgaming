@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {placeActions,placeDealControl} from '../web/public/action-placement.mjs';
+import {placeActions,placeDealControl} from '../services/game/public/action-placement.mjs';
 const box=(left,top,width,height)=>({left,top,right:left+width,bottom:top+height});
 const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
 test('controls stay clear of a seven-seat fan, totals and wallet at each active seat',()=>{
@@ -58,7 +58,7 @@ test('a deal button moved above the bets still clears the remove-stake control',
 });
 
 test('the actual deal control warns only for an enabled button and recovers after a no-fit layout',()=>{
-  const source=readFileSync(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+  const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
   const fragment=source.slice(source.indexOf('function layoutDealControl()'),source.indexOf('// ---------- demo cashier'));
   const control={disabled:true,offsetWidth:171,offsetHeight:47,style:{}};
   const target={getClientRects:()=>[{}],getBoundingClientRect:()=>box(603,449,73,57)};

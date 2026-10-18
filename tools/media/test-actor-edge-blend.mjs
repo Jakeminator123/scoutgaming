@@ -3,10 +3,10 @@ import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {parseEdgeParams,setEdgeParams,edgeParams,EDGE_DEFAULTS,EDGE_LIMITS,edgeBlendGLSL} from '../../web/public/actor-edge-blend.mjs';
+import {parseEdgeParams,setEdgeParams,edgeParams,EDGE_DEFAULTS,EDGE_LIMITS,edgeBlendGLSL} from '../../services/game/public/actor-edge-blend.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
-const read=file=>fs.readFileSync(path.resolve(dir,'../../web/public',file),'utf8');
+const read=file=>fs.readFileSync(path.resolve(dir,'../../services/game/public',file),'utf8');
 
 test('edge parameters parse from ?edge=erode,feather,wrap with defaults and clamps',()=>{
   assert.deepEqual(parseEdgeParams(''),EDGE_DEFAULTS);

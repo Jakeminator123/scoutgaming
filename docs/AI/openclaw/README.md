@@ -8,7 +8,7 @@ Det gemensamma biblioteket [packages/director](../../../packages/director/) äge
 beslutsmotor, tal-/provkontrakt, social policy, Companion och rena inställningar.
 Studio och spelservern importerar biblioteket direkt. Tjänstens `src/` äger
 fortfarande HTTP, Gateway-RPC, signering, katalog-I/O och sin miljöfilläsare.
-`apps/studio/lib/director-settings.mjs` och `web/director-settings.mjs` äger respektive
+`apps/studio/lib/director-settings.mjs` och `services/game/director-settings.mjs` äger respektive
 apps filval och datarot, med en gemensam Node-läsare i
 `packages/director/node/settings-reader.mjs`. Filordning, alias och den
 befintliga Director-dataroten är oförändrade. Companion-SQLite ligger också

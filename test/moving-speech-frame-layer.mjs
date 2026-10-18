@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { prepareMovingSpeechPlan } from '../web/moving-speech-plan.mjs';
+import { prepareMovingSpeechPlan } from '../services/game/moving-speech-plan.mjs';
 import { createMovingSpeechFrameLayer, splitMovingSpeechAccessUnits, decodeMovingSpeechChunk } from '../packages/presentation/runtime/moving-speech-frame-layer.mjs';
 import { createRequire } from 'node:module';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';

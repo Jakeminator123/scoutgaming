@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openClawChat, projectOpenClawGameStatus } from '../web/openclaw-chat.mjs';
+import { openClawChat, projectOpenClawGameStatus } from '../services/game/openclaw-chat.mjs';
 
 const policy = () => ({
   recordedLines: [{ lineId: 'goodluck', exactText: 'Good luck.', familyId: 'speak.goodluck', variantIds: ['goodluck.warm'] }],

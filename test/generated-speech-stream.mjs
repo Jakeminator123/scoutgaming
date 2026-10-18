@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, basename, join, resolve } from 'node:path';
-import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from '../web/generated-speech-stream.mjs';
+import { createGeneratedSpeechStreamService, generatedSpeechStreamConfiguration } from '../services/game/generated-speech-stream.mjs';
 import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
 
 const speechRepositoryRoot = speechRootPath(new URL('../', import.meta.url));

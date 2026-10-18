@@ -3,7 +3,7 @@
 De 16 noderna är **labbets grupperingar över sex befintliga presentationstyper**:
 `speak`, `deal`, `reveal`, `settle`, `turn`, `idle`. De är inte nya motor-events.
 `sourceStatus: verified` betyder att källtyp och publicerade fält finns i
-[presentationEvents](../web/partner-presentation.mjs), inte att en variant,
+[presentationEvents](../../services/game/partner-presentation.mjs), inte att en variant,
 video eller produktintegration är godkänd. RNG, regler och utfall ändras inte.
 
 Kontroll 2026-09-20: lokal `partner-presentation.mjs`, `shoe-game.mjs` och
@@ -49,4 +49,4 @@ fallback. Den vanliga spelklientens anslutningspunkt återstår att fastställa;
 Partner-API:ets `presentation[]` är inte redan inkopplat i den klienten.
 
 Se [V3:s historiska kontrakt och beslutsgräns](https://github.com/Jakeminator123/github-work/blob/Jakobs-v1/docs/animation-events/v3-9-days-mvp/s03-eventtradet.md)
-och [videoregistrets nivåer](../docs/LOCAL-PRESENTATION-RUNTIME.md).
+och [videoregistrets nivåer](../../docs/LOCAL-PRESENTATION-RUNTIME.md).

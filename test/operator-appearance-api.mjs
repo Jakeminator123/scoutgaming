@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createOperatorAppearanceApi} from '../web/operator-appearance-api.mjs';
+import {createOperatorAppearanceApi} from '../services/game/operator-appearance-api.mjs';
 const entry = {status:200,selection:{operator:'north',roomId:'table-one',packageRevision:4,branding:{private:'never exposed'}}};
 const req = (query='operator=north&table=table-one',method='GET') => new Request('https://game.test/api/operator/appearance?'+query,{method});
 test('appearance revision is fresh, read-only and exposes no package/media payload', async()=>{

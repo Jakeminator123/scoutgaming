@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { createRoulettePreview } from '../web/games/roulette/preview.mjs';
+import { createRoulettePreview } from '../services/game/games/roulette/preview.mjs';
 import { backendPlatformPath, platformRoute } from '../packages/navigation/server/platform-routing.mjs';
 import { vercelIngressRequest } from '../ops/cloud/vercel-ingress.mjs';
 
@@ -109,7 +109,7 @@ test('Vercel and Render admit only the exact diagnostic routes through authentic
 });
 
 test('product mounts diagnostics before player and guest handlers', async () => {
-  const source = await readFile(new URL('../web/server.mjs', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../services/game/server.mjs', import.meta.url), 'utf8');
   const start = source.indexOf('const server = createServer('), route = source.indexOf('&& await roulettePreview(req, res)) return;', start);
   assert.ok(route > start && route < source.indexOf('await auth.handle(req,res)', start));
   assert.ok(route < source.indexOf('await previewPlayer(req,res)', start));

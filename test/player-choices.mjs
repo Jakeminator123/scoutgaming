@@ -150,7 +150,7 @@ test('table colour paints the felt mark, wallet and chip row and leaves the film
 });
 
 test('both dealer pickers offer only the active lane dealers even without an operator', async () => {
-  const source = await (await import('node:fs/promises')).readFile(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
+  const source = await (await import('node:fs/promises')).readFile(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
   const row = source.slice(source.indexOf('const allowedDealerKeys ='), source.indexOf('buildChips();', source.indexOf('const allowedDealerKeys =')));
   const rehearsal = source.slice(source.indexOf('  for (const d of Object.values(DEALERS))'), source.indexOf('  dealerSelect.value = DEALER.key;'));
   assert.ok(row && rehearsal);
@@ -189,10 +189,10 @@ test('legacy full-frame dealer scenes retain their authorized table and backgrou
 });
 test('dealer footer labels its real action and returns to the same operator lobby',async()=>{
   const {readFile}=await import('node:fs/promises');
-  const html=await readFile(new URL('../web/public/index.html',import.meta.url),'utf8');
+  const html=await readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8');
   assert.match(html,/aria-label="Välj dealer"/);assert.match(html,/>Välj dealer<\/span>/);
   assert.match(html,/class="casino-return" href="\/play">Till lobbyn/);
-  const app=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+  const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
   const code=app.slice(app.indexOf('const lobbyReturn ='),app.indexOf('for (const {id,label}'));
   for(const [entrySelection,expected] of [
     [{},'/lobby'],
@@ -214,7 +214,7 @@ test('preview keeps an incomplete registered dealer visible and disabled',()=>{
 });
 test('preview footer returns to its saved composition without an operator link',async()=>{
  const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+ const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
  const code=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
  const window={};window.parent=window;
  const link={};vm.runInNewContext(code,{window,studioPreview:{presentationLaneId:'evening'},entrySelection:{lane:'evening',dealer:'astrid',presentation:'local'},document:{querySelector:()=>link},URLSearchParams});

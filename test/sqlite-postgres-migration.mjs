@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve, basename } from 'node:path';
 import { inspectSqliteMigration, migrateSqliteToPostgres } from '../tools/migrate-sqlite-postgres.mjs';
-import { createPostgresStore } from '../web/storage/postgres-store.mjs';
+import { createPostgresStore } from '../services/game/storage/postgres-store.mjs';
 import { exportPostgresBackup, restorePostgresBackup } from '../tools/postgres-backup-restore.mjs';
 
 export async function migrationFixture() {

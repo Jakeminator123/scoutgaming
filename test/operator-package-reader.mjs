@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createOperatorPackageReader, OPERATOR_PACKAGE_CACHE_MAX_MS } from '../web/storage/operator-package-reader.mjs';
+import { createOperatorPackageReader, OPERATOR_PACKAGE_CACHE_MAX_MS } from '../services/game/storage/operator-package-reader.mjs';
 import { operatorPackageSql as memorySql, operatorRow, packageRow } from './fixtures/operator-package-sql.mjs';
 
 const scope = { environment: 'qa', workspaceId: 'workspace-north' };

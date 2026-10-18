@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { playSpeech, abortableDelay } from '../web/public/speech-playback.mjs';
-import { createSpeechQueue } from '../web/public/speech-queue.mjs';
+import { playSpeech, abortableDelay } from '../services/game/public/speech-playback.mjs';
+import { createSpeechQueue } from '../services/game/public/speech-queue.mjs';
 class Audio extends EventTarget {
   plays = 0; pauses = 0;
   play() { this.plays++; return Promise.resolve(); }

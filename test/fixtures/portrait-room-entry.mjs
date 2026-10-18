@@ -4,7 +4,7 @@ import {createSeedProject,defaultPresentationLane,normalizeProject} from '../../
 import {buildPresentationPackage} from '../../packages/presentation/contracts/presentation-layers.mjs';
 import {withPackagePresentation} from '../../packages/presentation/server/presentation-package.mjs';
 import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
-import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
+import {decorateGameEntryHtml} from '../../services/game/public/game-entry-contract.mjs';
 
 // Isolated in-memory published room. No database, credentials or media writes.
 // Browser QA can decorate the ordinary served HTML and then run real app/media.

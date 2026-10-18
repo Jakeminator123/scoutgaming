@@ -10,8 +10,8 @@ import {once} from 'node:events';
 import {DatabaseSync} from 'node:sqlite';
 import {scryptSync,createHmac,createHash,randomUUID} from 'node:crypto';
 import {copyOpenClawRuntime} from './fixtures/copy-openclaw-runtime.mjs';
-const dir=await mkdtemp(join(tmpdir(),'bo-game-auth-')),web=new URL('../web/',import.meta.url);
-const webDir=join(dir,'web');
+const dir=await mkdtemp(join(tmpdir(),'bo-game-auth-')),web=new URL('../services/game/',import.meta.url);
+const webDir=join(dir,'services','game');
 const socket=createServer();socket.listen(0,'127.0.0.1');await once(socket,'listening');const port=socket.address().port;await new Promise(r=>socket.close(r));
 const game=`http://game.localhost:${port}`,bo=`http://bo.localhost:${port}`,password='Isolated-Auth-QA-Only';
 let server,db,craig;
@@ -47,7 +47,7 @@ const administratorCookie=()=>{
   return 'bo_jwt='+sign({sub:account.username,role:account.role,aud:'backoffice',source_stamp,auth_epoch:epoch,exp:Date.now()/1000+3600});
 };
 try {
-  await mkdir(webDir);await copyOpenClawRuntime(dir);
+  await mkdir(webDir,{recursive:true});await copyOpenClawRuntime(dir);
   for(const file of await readdir(web))if(file.endsWith('.mjs'))await copyFile(new URL(file,web),join(webDir,file));
   await symlink(new URL('public',web),join(webDir,'public'),process.platform==='win32'?'junction':'dir');await mkdir(join(dir,'data'));
   craig=new DatabaseSync(join(dir,'data/craig.db'));

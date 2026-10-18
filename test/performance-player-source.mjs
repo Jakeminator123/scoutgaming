@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { createHash } from 'node:crypto';
 globalThis.window ??= { addEventListener() {}, removeEventListener() {}, matchMedia: () => ({ matches: false, addEventListener() {} }), devicePixelRatio: 1 };
 globalThis.document ??= { hidden: false, addEventListener() {}, removeEventListener() {}, createElement: () => ({ style: {}, classList: { add() {}, remove() {} }, setAttribute() {}, appendChild() {}, remove() {} }) };
-const { PerformancePlayer } = await import('../web/public/performance-player.mjs');
+const { PerformancePlayer } = await import('../services/game/public/performance-player.mjs');
 
 const bytes = new TextEncoder().encode('same-bytes-for-centre-and-dealer');
 const sha = createHash('sha256').update(bytes).digest('hex');

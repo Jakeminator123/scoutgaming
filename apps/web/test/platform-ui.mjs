@@ -351,7 +351,7 @@ test('prepared player uses the actual shared player and redirects retired BO doc
     assert.equal(prepared.files.includes('/casino-navigation.mjs'), false);
     await assert.rejects(readFile(join(directory, 'runtime-ui/casino.html'), 'utf8'));
     assert.ok(prepared.files.every(path => !/\.(mp4|webm|png|jpg|wav|mp3)$/.test(path)));
-    assert.equal(await readFile(join(directory, 'public/blackjack-entry.mjs'), 'utf8'),await readFile(new URL('../../../web/public/blackjack-entry.mjs',import.meta.url),'utf8'));
+    assert.equal(await readFile(join(directory, 'public/blackjack-entry.mjs'), 'utf8'),await readFile(new URL('../../../services/game/public/blackjack-entry.mjs',import.meta.url),'utf8'));
     const game = await platformUiDocument(new Request(config.publicOrigin + '/game'), {env, directory: join(directory, 'runtime-ui')});
     assert.equal(game.status, 200); assert.match(await game.text(), /src="app.mjs"/);
     assert.match(game.headers.get('cache-control'), /no-store/);

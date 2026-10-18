@@ -7,7 +7,7 @@ import { verifyCloudAccess, probeStatus } from '../access-check.mjs';
 import { createCloudGateway } from '../gateway.mjs';
 import { openCheckedGateway } from '../start.mjs';
 import { closeGateway } from '../process-group.mjs';
-import { createOperatorSpeechQa } from '../../../web/operator-speech-qa.mjs';
+import { createOperatorSpeechQa } from '../../../services/game/operator-speech-qa.mjs';
 
 const config = { gameOrigin: 'https://game.example.test', boOrigin: 'https://bo.example.test',
   labOrigin: 'https://lab.example.test', publicPort: 0, streaming: false };

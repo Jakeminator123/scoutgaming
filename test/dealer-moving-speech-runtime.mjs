@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDealerSpeechRuntime } from '../web/dealer-speech-runtime.mjs';
-import { dealerSpeechProfileRevision } from '../web/dealer-speech-reference.mjs';
-import { createMovingSpeechSourceSet } from '../web/moving-speech-bank.mjs';
+import { createDealerSpeechRuntime } from '../services/game/dealer-speech-runtime.mjs';
+import { dealerSpeechProfileRevision } from '../services/game/dealer-speech-reference.mjs';
+import { createMovingSpeechSourceSet } from '../services/game/moving-speech-bank.mjs';
 
 const videoId = '11111111-1111-4111-8111-111111111111', sha256 = 'a'.repeat(64);
 const compositing = {mode:'green-screen',threshold:.21,softness:.13,despill:.1};

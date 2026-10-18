@@ -116,7 +116,7 @@ Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
 | Faktiska filer, storlek och SHA-256 | `../media/dealers/astrid/runtime/presentation/lab-video-manifest.json` | `node tools/media/build-lab-video-manifest.mjs --check` från reporoten |
 | Format/validering | `schemas/`, `lib/lab-video-manifest.mjs` | Manifest- och kontraktstester |
 | Sparade operatörsval | vald datakatalogs `project.json` | Revisionslås + historik |
-| Uppmätta kortspår och filhashar | `../web/public/card-presentation/` | `test/local-card-overlay.mjs` + faktisk browsergranskning |
+| Uppmätta kortspår och filhashar | `../../services/game/public/card-presentation/` | `test/local-card-overlay.mjs` + faktisk browsergranskning |
 
 Efter nya mediefiler: kör `node tools/media/build-lab-video-manifest.mjs`,
 granska diffen och kör `--check`. Lab:s **Läs in nya filer** använder samma byggare.

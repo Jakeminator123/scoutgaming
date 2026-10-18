@@ -69,7 +69,7 @@ READY-deployment är inte ett färskt funktions- eller isoleringsprov.
 | `apps/studio/client/` | Admin/lobby-paket som byggs och serveras av Lab | 24.x, Volta 24.21.0 |
 | `apps/web/` | Publik Next-app, spelstart och transport till spelmotorn | 24.x, Volta 24.21.0 |
 | `apps/speech/` | Separat Vercel-tjänst för lång talström | 22.x, Volta 22.23.1 |
-| `web/` | Spelmotor, serverkort, plånbok och gemensam spelarlogik | ≥22.16; produktions-Docker använder 24 |
+| `services/game/` | Spelmotor, serverkort, plånbok och gemensam spelarlogik | ≥22.16; produktions-Docker använder 24 |
 | `services/astrid-gpu-worker/gateway/` | Delad transportkod och dess tester; ingen extra publik sajt | ≥22 |
 
 Volta väljer version efter arbetskatalog. Kontrollera `node -p process.version`
@@ -79,7 +79,7 @@ styr inte automatiskt Vercel eller Docker: kontrollera respektive byggmiljö.
 
 Inför bygge/fullhook i en ny isolerad arbetskopia behövs låsta beroenden i
 `apps/web/` (`pnpm-lock.yaml`), `apps/speech/`, `apps/studio/`,
-`apps/studio/client/`, `web/` och `services/astrid-gpu-worker/gateway/`
+`apps/studio/client/`, `services/game/` och `services/astrid-gpu-worker/gateway/`
 (`package-lock.json` i de fem senare). Kör `pnpm install --frozen-lockfile`
 respektive `npm ci` från rätt paket med dess deklarerade Node-version.
 Befintliga lokala installationer får återanvändas via en egen junction först

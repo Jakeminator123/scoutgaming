@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLayeredPresentationWithRuntime, layeredUnavailableText } from '../web/public/layered-presentation.mjs';
+import { createLayeredPresentationWithRuntime, layeredUnavailableText } from '../services/game/public/layered-presentation.mjs';
 
 function fakeDom() {
   const host = {

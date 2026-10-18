@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { presentationCapabilitiesResponse } from '../web/presentation-capabilities.mjs';
+import { presentationCapabilitiesResponse } from '../services/game/presentation-capabilities.mjs';
 import { validatePresentationCapabilities } from '../packages/presentation/capability-contract.mjs';
 const endpoint = 'https://engine.example.invalid/api/presentation/capabilities';
 

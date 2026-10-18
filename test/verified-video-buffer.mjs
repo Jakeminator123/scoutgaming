@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { createVerifiedVideoBuffer } from '../web/public/verified-video-buffer.mjs';
+import { createVerifiedVideoBuffer } from '../services/game/public/verified-video-buffer.mjs';
 const media = text => ({ src: `/${text}`, sha256: createHash('sha256').update(text).digest('hex') });
 function fixture(options = {}) {
   const revoked = [], fetched = [];

@@ -3,7 +3,7 @@ import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {selectGreenTake,shouldUseGreenBoxCard,shouldUseGreenDealerCard,greenRestCardQuad} from '../../web/public/astrid-green-dealer.mjs';
+import {selectGreenTake,shouldUseGreenBoxCard,shouldUseGreenDealerCard,greenRestCardQuad} from '../../services/game/public/astrid-green-dealer.mjs';
 import {validateContactTake,uniformRegistration,contactFrame,dealingCardSample} from '../../packages/presentation/contracts/performance-contact.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));

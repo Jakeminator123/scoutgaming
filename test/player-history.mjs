@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPlayerHistoryHandler } from '../web/player-history.mjs';
-import { readPlayerResults } from '../web/player-results.mjs';
+import { createPlayerHistoryHandler } from '../services/game/player-history.mjs';
+import { readPlayerResults } from '../services/game/player-results.mjs';
 
 function memoryDb(rows) {
   return {

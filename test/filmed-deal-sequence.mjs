@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import {planFilmedDealSequence,orderFilmedPresentationEvents} from '../packages/presentation/runtime/filmed-deal-sequence.mjs';
-import {presentationEvents} from '../web/partner-presentation.mjs';
+import {presentationEvents} from '../services/game/partner-presentation.mjs';
 const inventory={videos:profile.takes.map(t=>({id:`video-${t.key}`,sha256:t.sha256,available:true,classification:{dealerId:'dragan',kind:'action'}}))};
 const box=(box,shoeDraw)=>({type:'deal',to:'box',box,shoeDraw});
 const dealer=(shoeDraw,faceDown=false)=>({type:'deal',to:'dealer',box:null,shoeDraw,faceDown});

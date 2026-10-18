@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspect } from 'node:util';
-import { installPartnerApi } from '../web/partner-api.mjs';
+import { installPartnerApi } from '../services/game/partner-api.mjs';
 import { acquireLocalSession } from '../services/openclaw/lab/deploy/local-session.mjs';
 
 const DEFAULT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -193,7 +193,7 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
       const salt = randomBytes(16).toString('hex');
       seed.prepare('INSERT INTO users VALUES (?,?,?,?,?,?,?)').run(1, username, email, salt, scryptSync(password, salt, 64).toString('hex'), 'superadmin', new Date().toISOString());
     } finally { seed.close(); }
-    gameChild = await startChild([join(repoRoot, 'web/server.mjs')], {
+    gameChild = await startChild([join(repoRoot, 'services/game/server.mjs')], {
       cwd: runDir, env: { ...env, NODE_ENV: 'development', CROUPIER_DATA_DIR: dataDir, HOST: 'localhost', PORT: String(gamePort),
         PUBLIC_URL: gameUrl, BO_URL: gameUrl, DEMO_GUEST_ACCESS: '1', GENERATIONS_READ_TOKENS: createHash('sha256').update(readToken).digest('hex') },
     }, 'croupier demo on', child => { gameChild = child; session.trackChild(child); });
@@ -204,7 +204,7 @@ export async function startLocalComparison({ startLab = true, gamePort = 4194, l
         const text = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url') + '.' + Buffer.from(JSON.stringify(payload)).toString('base64url');
         return text + '.' + createHmac('sha256', secret).update(text).digest('base64url');
       };
-      const partner = installPartnerApi({ db, boDb, jwtSign, publicUrl: gameUrl, root: join(repoRoot, 'web/public'),
+      const partner = installPartnerApi({ db, boDb, jwtSign, publicUrl: gameUrl, root: join(repoRoot, 'services/game/public'),
         getPlayer: id => db.prepare('SELECT * FROM players WHERE id=?').get(id),
         logTx: (playerId, type, amount, currency, meta) => db.prepare('INSERT INTO transactions(player_id,type,amount,currency,meta,at) VALUES(?,?,?,?,?,?)').run(playerId, type, amount, currency, meta, new Date().toISOString()),
       });

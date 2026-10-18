@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSpeechReplyBlobImport} from '../web/storage/speech-reply-blob-import.mjs';
+import {createSpeechReplyBlobImport} from '../services/game/storage/speech-reply-blob-import.mjs';
 import {speechReplyScopeHash} from '../packages/presentation/server/speech-reply-library.mjs';
 import {fixture,input,scope,env} from './fixtures/speech-replies.mjs';
 async function legacy(t){

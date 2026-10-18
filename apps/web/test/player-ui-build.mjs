@@ -41,7 +41,7 @@ test('default build keeps the exact two-file landing and game link', async () =>
     const actual = await readFile(join(directory, 'index.html'), 'utf8');
     assert.equal(actual, source.replace('{{BLACKJACK_URL}}', `${origin}/blackjack`));
     assert.deepEqual(await readFile(join(directory, 'style.css')),
-      await readFile(new URL('../../../web/public/blackjack-entry.css', import.meta.url)));
+      await readFile(new URL('../../../services/game/public/blackjack-entry.css', import.meta.url)));
   });
 });
 
@@ -88,6 +88,6 @@ test('opt-in preview includes game/login text dependencies, internal navigation,
     assert.equal(legacyPlayerEntryDestination(modal, true), '/player-login?dealer=nora');
     assert.doesNotMatch(login, /const destination = '\/\?dealer=/);
     assert.equal(await readFile(join(directory, 'frontend-preview/blackjack/index.html'), 'utf8'),
-      await readFile(new URL('../../../web/public/blackjack-entry.html', import.meta.url), 'utf8'));
+      await readFile(new URL('../../../services/game/public/blackjack-entry.html', import.meta.url), 'utf8'));
   });
 });

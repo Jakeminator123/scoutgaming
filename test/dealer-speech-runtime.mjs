@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { createDealerSpeechRuntime } from '../web/dealer-speech-runtime.mjs';
+import { createDealerSpeechRuntime } from '../services/game/dealer-speech-runtime.mjs';
 import { avatarBinding, acceptsWorkerBinding } from '../services/astrid-gpu-worker/gateway/worker-binding.mjs';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const profile = () => ({schemaVersion:2,state:'enabled',voice:{provider:'elevenlabs',voiceId:'own-paow-voice',modelId:'eleven_multilingual_v2'},

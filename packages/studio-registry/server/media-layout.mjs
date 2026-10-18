@@ -42,15 +42,15 @@ export function createMediaLayout({repositoryRoot,readMediaLayout=()=>{throw new
     return safe(path)?resolveMediaPath(path,{repositoryRoot:root,layout,runtimeCatalog}):file;
   }
   /** Only explicit former roots are mapped; unknown repository paths stay put. */
-  function resolveMediaPath(legacyPath, { repositoryRoot: root = repositoryRoot, layout, runtimeCatalog } = {}) {
-    if (!safe(legacyPath)) throw new Error('Unsafe media path.');
+  function resolveMediaPath(legacyPath, { repositoryRoot: root = repositoryRoot, layout, runtimeCatalog, sourcePath = legacyPath } = {}) {
+    if (!safe(legacyPath) || !safe(sourcePath)) throw new Error('Unsafe media path.');
     if(runtimeCatalog!==undefined)layout=validateMediaLayout(runtimeCatalog?.layout);
-    if(!layout)try{layout=readMediaLayout(root);}catch(error){if(error.code!=='ENOENT')throw error;return join(root,legacyPath);}
+    if(!layout)try{layout=readMediaLayout(root);}catch(error){if(error.code!=='ENOENT')throw error;return join(root,sourcePath);}
     const direct = index(layout).files.get(legacyPath);
     if (direct) { validateMediaAliases(layout); return join(root, 'media', direct.canonicalPath ?? direct.path); }
     // A partially moved directory can still own renderer/admin code. Never
     // reinterpret an existing unregistered regular code file as a media asset.
-    if(runtimeCatalog===undefined)try{const current=lstatSync(join(root,legacyPath));if(current.isFile()&&!current.isSymbolicLink())return join(root,legacyPath);}catch(error){if(error.code!=='ENOENT'&&error.code!=='ENOTDIR')throw error;}
+    if(runtimeCatalog===undefined)try{const current=lstatSync(join(root,sourcePath));if(current.isFile()&&!current.isSymbolicLink())return join(root,sourcePath);}catch(error){if(error.code!=='ENOENT'&&error.code!=='ENOTDIR')throw error;}
     const prefix = index(layout).roots.find(old => legacyPath === old || legacyPath.startsWith(old + '/'));
     if (!prefix) return join(root, legacyPath);
     const mapped = layout.roots[prefix];

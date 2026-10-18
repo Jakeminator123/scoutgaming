@@ -11,5 +11,5 @@ och Studio. Rollregeln finns i `account-role.mjs`. Servermodulerna läggs inte
 till i presentationens publika modulista.
 
 Apparna äger fortsatt sessioner, cookies, HTTP, signerare, readiness och
-wallet. De äldre synkrona CRAIG-/epokimplementationerna i `web/` används av
+wallet. De äldre synkrona CRAIG-/epokimplementationerna i `services/game/` används av
 isolerade SQLite-fixtures och behåller sin implementation.

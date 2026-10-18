@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {createServer} from 'node:http';
 import {createHash} from 'node:crypto';
-import {playerAuth} from '../web/player-auth.mjs';
+import {playerAuth} from '../services/game/player-auth.mjs';
 const db=new DatabaseSync(':memory:');let created=0;
 const auth=playerAuth(db,()=>({id:`player-${++created}`}));
 const server=createServer(async(req,res)=>{if(await auth.handle(req,res))return;const id=auth.user(req);res.writeHead(id?200:401);res.end(id??'unauthorized');});

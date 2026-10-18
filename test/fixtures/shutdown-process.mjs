@@ -3,10 +3,10 @@ import { once } from 'node:events';
 import { createRequire } from 'node:module';
 import { setTimeout as pause } from 'node:timers/promises';
 import { attachSpeechRelay } from '../../services/astrid-gpu-worker/gateway/relay.mjs';
-import { installGracefulShutdown } from '../../web/graceful-shutdown.mjs';
-import { createSpeechJournal } from '../../web/postgres-speech-journal.mjs';
-import { createJournalSpeechSessionManager } from '../../web/speech-journal-runtime.mjs';
-import { SPEECH_SESSION_POLICY } from '../../web/generated-speech-session.mjs';
+import { installGracefulShutdown } from '../../services/game/graceful-shutdown.mjs';
+import { createSpeechJournal } from '../../services/game/postgres-speech-journal.mjs';
+import { createJournalSpeechSessionManager } from '../../services/game/speech-journal-runtime.mjs';
+import { SPEECH_SESSION_POLICY } from '../../services/game/generated-speech-session.mjs';
 import { speechMemoryPool } from './speech-memory-pool.mjs';
 
 const { WebSocket } = createRequire(new URL('../../services/astrid-gpu-worker/gateway/package.json', import.meta.url))('ws');

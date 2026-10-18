@@ -9,12 +9,12 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { setTimeout as pause } from 'node:timers/promises';
-import { createGeneratedSpeechStreamService } from '../web/generated-speech-stream.mjs';
+import { createGeneratedSpeechStreamService } from '../services/game/generated-speech-stream.mjs';
 
 const directory = await mkdtemp(join(tmpdir(), 'croupier-stream-qa-'));
 const workerSecret = randomBytes(32).toString('hex'), ticketSecret = randomBytes(32).toString('hex');
 const modules = new Map([
-  ...['generated-speech-player','speech-stream-client'].map(name => [name+'.mjs','web/public/'+name+'.mjs']),
+  ...['generated-speech-player','speech-stream-client'].map(name => [name+'.mjs','services/game/public/'+name+'.mjs']),
   ...['speech-package','astrid-voice-profile'].flatMap(name => [
     [name+'.mjs','packages/presentation/contracts/'+name+'.mjs'],
     ['packages/presentation/contracts/'+name+'.mjs','packages/presentation/contracts/'+name+'.mjs'],

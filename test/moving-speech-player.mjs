@@ -9,9 +9,9 @@ import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
 import { execFileSync } from 'node:child_process';
-import { prepareMovingSpeechPlan } from '../web/moving-speech-plan.mjs';
+import { prepareMovingSpeechPlan } from '../services/game/moving-speech-plan.mjs';
 import { createMovingSpeechFrameLayer } from '../packages/presentation/runtime/moving-speech-frame-layer.mjs';
-import { createChatPlaybackDiagnostic } from '../web/public/chat-playback-diagnostic.mjs';
+import { createChatPlaybackDiagnostic } from '../services/game/public/chat-playback-diagnostic.mjs';
 import { validateMovingSpeechStream, playMovingSpeech, loadMovingSpeechRest, movingSpeechSocketURL } from '../packages/presentation/runtime/moving-speech-player.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex'), h = 'a'.repeat(64);

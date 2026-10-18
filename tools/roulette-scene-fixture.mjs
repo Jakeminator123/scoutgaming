@@ -5,8 +5,8 @@ import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/
 import {captureFrozenPresentation} from '../packages/presentation/server/frozen-presentation-capture.mjs';
 import {withPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
-import {createPublicOperatorPreview} from '../web/public-operator-preview.mjs';
-import {createPublicOperatorRooms} from '../web/public-operator-rooms.mjs';
+import {createPublicOperatorPreview} from '../services/game/public-operator-preview.mjs';
+import {createPublicOperatorRooms} from '../services/game/public-operator-rooms.mjs';
 
 export async function rouletteSceneFixture(manifestPath) {
   const manifest=JSON.parse(await readFile(manifestPath,'utf8'));

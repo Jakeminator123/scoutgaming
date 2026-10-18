@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {completeChatWithSpeech} from '../web/generated-speech-chat.mjs';
-import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from '../web/registered-chat-context.mjs';
+import {completeChatWithSpeech} from '../services/game/generated-speech-chat.mjs';
+import {createRegisteredChatContext,createPublishedChatResolver,cancelPlayerChats} from '../services/game/registered-chat-context.mjs';
 
 const context={operatorSlug:'north',roomId:'paow-room',packageRevision:7,dealerId:'paow'};
 const clone=structuredClone;

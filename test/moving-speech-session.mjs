@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMovingSpeechSession } from '../web/moving-speech-session.mjs';
-import { createMovingSpeechRunPod } from '../web/moving-speech-runpod.mjs';
+import { createMovingSpeechSession } from '../services/game/moving-speech-session.mjs';
+import { createMovingSpeechRunPod } from '../services/game/moving-speech-runpod.mjs';
 
 const sha = digit => digit.repeat(64);
 const image = `ghcr.io/jakeminator123/moving-gpu-worker@sha256:${sha('a')}`;

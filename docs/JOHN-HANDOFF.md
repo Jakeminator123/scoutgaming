@@ -1,5 +1,34 @@
 # Aktuell handoff — Scoutgaming
 
+## C3 — game integrerad med Studio och budget, 18 oktober 2026
+
+Den bevarade game-flytten 5cd4c744 är återlagd på levererade OpenClaw-headet cb11b0c4 i egen branch codex/stage3-game-root-final. Samtliga 199 spårade web-filer, inklusive den nya moving-speech-budget-modulen, har källrot services/game. Required014, budgetjournalen, Studios korrigerade previewrot och den privata QA-platsen lab/data/platform-private är bevarade. Historiska web/data, media-ID:n och envrötter flyttas inte.
+
+De två konkreta chatstart-/previewfixturevägarna är rättade. Riktade chat-, preview- och budgettester: 45/45. AST-kontroll av 376 ändrade moduler och 1476 relativa kanter gav inga saknade mål eller parsefel; byggverktygets dist är ett uttryckligt genererat mål. 18 ändrade guider har fungerande lokala länkmål. Testinventeringen omfattar 513 JS/TS-kandidater, 0 föräldralösa och 9 explicita hjälp-/opt-in-klasser; 10 Pythonfiler redovisas separat. README beskriver de faktiska app-/tjänste-/paketägarna.
+
+Första sluthooken gav 1829 pass, 4 fel och 14 skip: en kvarvarande import i den nya budget-SQL-fixturen samt tre starttimeouter. Importen och tre gamla cwd-val är rättade; riktad omkörning gav 11 pass, 0 fel och 1 isolerad PostgreSQL-skip. BO-testerna passerade utan timeoutändring. Ordinarie sluthook körs om; produktbygge, verifierad main-integration och PR/CI/drift återstår. Mergagent äger föregångarnas och denna leverans drift. H3 ger lipsync2 startkommandot först efter hela verifierade kedjan; talets kvalitet är ännu inte verifierad.
+
+
+## C3 — spelmotorns källrot services/game, lokalt 18 oktober 2026
+
+198spårade filer, varav96publika, är flyttade; dynamiska fixture-/startvägar,
+testladdare och aktiva guider följer nya roten. Egen låst npm ci med Node24.21.0
+i services/game; gamla dependencyjunctions och mål är orörda. Publika URL:er,
+owner:web, medie-ID:n och web/data-default består. Den granskade sourcePath-
+porten behåller registrerad medias prioritet och inget runtimeCatalog-diskfallback.
+OpenClaws lokala bootstrap behåller game-ägda installPartnerApi.
+
+Lokalt grönt:69path/CI/hook/browser-binding/guide/entryprov (testladdarens åtta
+importfel rättade, dess14prov omkörda),79isolerade auth/media/bootstrapprov,
+51playback/Directorprov och107browser/HTTP-prov.190produktmoduler/504relativa
+importer utan parsefel eller saknat mål.512testkandidater/0orphans/9befintliga
+helper/opt-in-klasser;10Pythonfiler inventeras separat. Inga nya testfiler,
+borttagna assertions eller GPU-/läppsynkprov ingår.
+
+Kvar före leverans: normal integration av levererade föregångare och budget-
+PR230:s verkliga slut-main inklusive ny modul/SQL014/tester, ordinarie sluthook,
+PR-CI och faktisk drift. Budget/schema/GPU-operationer ligger hos lipsync2.
+
 ## C3 — OpenClaw integrerad med levererad Studio, 18 oktober 2026
 
 Studio-PR232:s main bcb0dbf1d34a1b77a5a83f94a736721d594e4f21 integreras

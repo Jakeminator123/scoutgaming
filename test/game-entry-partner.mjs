@@ -4,8 +4,8 @@ import {DatabaseSync} from 'node:sqlite';
 import {AsyncLocalStorage} from 'node:async_hooks';
 import {createHmac} from 'node:crypto';
 import {Readable} from 'node:stream';
-import {installPartnerApi as syncFactory} from '../web/partner-api.mjs';
-import {installPartnerApi as asyncFactory} from '../web/storage/async-partner-api.mjs';
+import {installPartnerApi as syncFactory} from '../services/game/partner-api.mjs';
+import {installPartnerApi as asyncFactory} from '../services/game/storage/async-partner-api.mjs';
 
 for (const [name,factory,asynchronous] of [['SQLite',syncFactory,false],['async storage contract',asyncFactory,true]]) {
   test(`${name} partner launch returns canonical game address with preserved identity and wallet`,async t => {

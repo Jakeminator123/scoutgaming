@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
 import { boundedJson } from '../../../../packages/director/openclaw.mjs';
 import { gatewayEndpoint, isLoopback } from '../../../../packages/director/configuration.mjs';
-import { installPartnerApi } from '../../../../web/partner-api.mjs';
+import { installPartnerApi } from '../../../game/partner-api.mjs';
 import { acquireLocalSession } from './local-session.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -400,7 +400,7 @@ export function childSpecifications(configuration, runDir, { productPort = DEFAU
   } : {};
   return {
     product: {
-      command: process.execPath, args: [join(configuration.repoRoot, 'web', 'server.mjs')], cwd: runDir,
+      command: process.execPath, args: [join(configuration.repoRoot, 'services', 'game', 'server.mjs')], cwd: runDir,
       readyText: 'croupier demo on', dataDir: productData,
       env: guardedEnvironment({ ...commonEmpty, ...generatedSpeechEnvironment('product'), ...storageEnvironment, ...videoArchiveEnvironment, NODE_ENV: 'development', HOST: '127.0.0.1', PORT: String(productPort),
         CROUPIER_DATA_DIR: productData, DEMO_GUEST_ACCESS: '1',
@@ -486,7 +486,7 @@ function configureSyntheticPartner(specs, repoRoot) {
       return text + '.' + createHmac('sha256', jwtSecret).update(text).digest('base64url');
     };
     const partner = installPartnerApi({
-      db, boDb, jwtSign, publicUrl: specs.urls.product, root: join(repoRoot, 'web', 'public'),
+      db, boDb, jwtSign, publicUrl: specs.urls.product, root: join(repoRoot, 'services', 'game', 'public'),
       getPlayer: id => db.prepare('SELECT * FROM players WHERE id=?').get(id),
       logTx: (playerId, type, amount, currency, meta) => db.prepare('INSERT INTO transactions(player_id,type,amount,currency,meta,at) VALUES(?,?,?,?,?,?)')
         .run(playerId, type, amount, currency, meta, new Date().toISOString()),

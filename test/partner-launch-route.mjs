@@ -3,7 +3,7 @@ import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { Readable } from 'node:stream';
 import { createHmac } from 'node:crypto';
-import { installPartnerApi } from '../web/partner-api.mjs';
+import { installPartnerApi } from '../services/game/partner-api.mjs';
 import { normalizeDisplayName } from '../packages/studio-access/display-name.mjs';
 
 test('Partner display names normalize as bounded untrusted presentation data', () => {

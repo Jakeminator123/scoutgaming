@@ -13,7 +13,7 @@ const env = {RENDER_SERVICE_ID: QA_SERVICE_ID, PUBLIC_URL: QA_PUBLIC_ORIGIN, CRO
 test('unpaid QA refuses other services, origins, real provider credentials and preload inheritance', () => {
   assertUnpaidQaEnvironment(env);
   for (const patch of [{RENDER_SERVICE_ID: 'production'}, {PUBLIC_URL: 'https://scoutgaming.tech'}, {RUNPOD_API_KEY: 'actual-provider-key'}, {CARTESIA_API_KEY: 'actual-provider-key'}, {CROUPIER_MEDIA_STORAGE: 'blob'}]) assert.throws(() => assertUnpaidQaEnvironment({...env, ...patch}));
-  const specifications = {web: {args: ['web/server.mjs'], env: {...env}}, lab: {env: {unchanged: true}}};
+  const specifications = {web: {args: ['services/game/server.mjs'], env: {...env}}, lab: {env: {unchanged: true}}};
   const transformed = unpaidQaSpecifications(specifications, env);
   assert.match(transformed.web.env.NODE_OPTIONS, /^--import=.*qa-stream-transport-preload\.mjs$/);
   assert.equal(transformed.lab, specifications.lab); assert.equal(specifications.web.env.NODE_OPTIONS, undefined);

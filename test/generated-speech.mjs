@@ -6,12 +6,12 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
-import * as gameSpeech from '../web/generated-speech-runtime.mjs';
+import * as gameSpeech from '../services/game/generated-speech-runtime.mjs';
 import * as studioSpeech from '../apps/studio/lib/generated-speech-server.mjs';
 import { acquireGeneratedSpeechRuntime } from '../packages/presentation/server/generated-speech-runtime.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from '../packages/presentation/server/generated-speech-provider.mjs';
 import { validateSpeechPackage } from '../packages/presentation/contracts/speech-package.mjs';
-import { createSpeechJournal, FULLFILE_ADMISSION_REMAINING_MS } from '../web/postgres-speech-journal.mjs';
+import { createSpeechJournal, FULLFILE_ADMISSION_REMAINING_MS } from '../services/game/postgres-speech-journal.mjs';
 import { speechMemoryPool } from './fixtures/speech-memory-pool.mjs';
 
 const { generatedSpeechStatus } = gameSpeech;
@@ -61,7 +61,7 @@ test('env gate requires both opt-ins, loopback, private directory and dedicated 
     CROUPIER_GENERATED_SPEECH_DIR: join(tmpdir(), 'croupier-preview-fixture'), CARTESIA_API_KEY: 'fixture-cartesia-secret', RUNPOD_API_KEY: 'fixture-runpod-secret', CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: 'fixture-speech-endpoint' };
   assert.deepEqual(generatedSpeechStatus(env), { enabled: true, configured: true, preview: true, dealerId: 'astrid', reviewStatus: 'pending' });
   for (const patch of [{ HOST: '0.0.0.0' }, { HOST: undefined }, { CROUPIER_GENERATED_SPEECH: '0' }, { CROUPIER_GENERATED_SPEECH_PREVIEW: '0' },
-    { CROUPIER_GENERATED_SPEECH_DIR: undefined }, { CROUPIER_GENERATED_SPEECH_DIR: resolve('web/public/generated') }, { CARTESIA_API_KEY: '' },
+    { CROUPIER_GENERATED_SPEECH_DIR: undefined }, { CROUPIER_GENERATED_SPEECH_DIR: resolve('web/public/generated') }, { CROUPIER_GENERATED_SPEECH_DIR: resolve('services/game/public/generated') }, { CARTESIA_API_KEY: '' },
     { CROUPIER_SPEECH_RUNPOD_ENDPOINT_ID: undefined, RUNPOD_ENDPOINT_ID: 'old-shared-endpoint' }]) {
     assert.equal(generatedSpeechStatus({ ...env, ...patch }).configured, false);
   }
