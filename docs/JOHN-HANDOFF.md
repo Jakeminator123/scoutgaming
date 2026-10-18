@@ -2,6 +2,23 @@
 
 <a id="dragan-talstatus"></a>
 
+## Lipsync 3: ett ytterligare avgränsat produktionsprov — 18 oktober 2026
+
+Jakob har uttryckligen bett om nästa RunPod-prov på scoutgaming.tech.
+Runtimegränsen för samma budget-ID `dragan-test-20261017` blir 8,4 USD,
+vilket ger plats för exakt en ytterligare reservation på 1,2 USD efter sex
+historiska reservationer. Befintligt globalt providertak är fortsatt 40 USD;
+den separata journalgränsen höjs bara genom ordinarie append-only-amendment
+efter färsk kostnads-, sessions- och workeravläsning. Ingen historik återställs
+eller reservation återbetalas genom denna kodändring. Talflaggan är ännu av.
+
+Denna leverans förbereder provet med den redan publicerade bankfix-imagen
+från PR242. Bankens källvideo-ID/hash, frysta rumspaket och aktuell profil ska
+stämma före antagning. Ett prov får högst en GPU, en ny reservation och en
+tidsbegränsad extern stoppguard. Minimikravet 30 fps ändras inte. Molnresultat
+och avstängningskvitto återstår. SQL-fixturen verifierar att tidigare poster
+bevaras och att ett andra jobb efter den nya reservationen nekas.
+
 ## Lipsync 3: lokal bankhämtning verifierad — 18 oktober 2026
 
 Komplettering 18 oktober: ”Ulf Lundell är bra.” har också spelats in genom

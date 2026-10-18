@@ -26,8 +26,8 @@ test('insufficient coverage, journal capacity above 15 USD, global cap above 40 
 // existing journal receives only one additional fixed reservation.
 test('40 USD accounting permits the next 1.20 USD reservation without widening journal capacity',()=>{
  const next={...input,authorizationId:'fixture-total-40',
-  expectedLimitMicroUsd:6000000,expectedReservedMicroUsd:6000000,expectedReservationCount:5,
-  newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,globalLimitMicroUsd:40000000,otherReservedMicroUsd:14070001};
+  expectedLimitMicroUsd:7200000,expectedReservedMicroUsd:7200000,expectedReservationCount:6,
+  newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,globalLimitMicroUsd:40000000,otherReservedMicroUsd:16403334};
  assert.equal(validMovingBudgetAmendment(next),true);
  assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
  assert.equal(validMovingBudgetAmendment({...next,otherReservedMicroUsd:16000000}),true);
