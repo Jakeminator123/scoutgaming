@@ -1,5 +1,31 @@
 # Aktuell handoff — Scoutgaming
 
+## Produkttext och visuellt UX-förslag — 18 oktober 2026
+
+[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är förkortad och uppdaterad
+enligt Jakobs nya riktning. Dubblerad målmodell och menyföreskrifter är borttagna
+ur AGENTS och runtime-referensen. Användarguiden skiljer befintliga funktioner
+från förslaget; dess två arbetssteg länkar nu direkt till Admin. Det tekniska
+klippkontraktets beskrivning utger sig inte längre för att styra produktbegreppen;
+dess maskinläsbara regler och ID:n är oförändrade.
+
+Ett interaktivt förslag visas i denna Codex-chat med schematiska exempeldata.
+Ingen ny sceneditor, behörighetspolicy, datamigrering eller speländring har
+implementerats. Källinventeringen och livebilderna finns kvar privat i
+`random/admin-ux-20261018/`; uppgifterna där är historiska granskningsbelägg.
+
+Kontroller: JSON och skissens JavaScript parsas; kontraktets innehåll förutom
+beskrivningen är jämfört mot basrevisionen. Försöket att köra
+`studio-contract.test.mjs` stoppades vid import eftersom `proper-lockfile`
+saknas i checkouten, före något testfall. Leveransens övriga kontroller anges
+i PR-kvittot. GitGuardian incident-/platstäckning kunde inte läsas;
+remote mains GitHub Actions var gröna men GitGuardian-suiten väntande.
+
+Nästa produktsteg är att bygga den valda editorn i Admin och ansluta dess
+rumsvisa sparning, därefter återanvända den i Partner och förenkla spelarvalen.
+Kontrollera äldre länkar mot verkligt bolag/rum/ID innan de ersätts; den här
+leveransen bekräftar inget konkret fel i Kevins register eller några skrivcallbacks.
+
 <a id="dragan-talstatus"></a>
 
 ## Lipsync 3: produktionsprovet avbröts; återställningen klar — 18 oktober 2026
