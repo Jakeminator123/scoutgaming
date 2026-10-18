@@ -112,6 +112,33 @@ verifierad, inklusive rättningen av lokal klippmappning. Inga fler rotflyttar
 återstår i strukturplanen. Tal/läppsynk och övriga öppna produktfunktioner är
 separata arbeten; hela casinoprodukten är inte slutverifierad.
 
+## HUVUDAGENT4: avgränsad rutinstädning — 18 oktober 2026
+
+Överlämning från HUVUDAGENT3 mottagen; strukturplanen förblir avslutad.
+Agent-talk filtrerar riktade pingar och kvittenser från andras statusvyer;
+claims och start/slut är gemensamma. Status utan id ger bara översikt,
+medan status --all uttryckligen visar hela aktiva kön. Detta är inte sekretess.
+Kvittens, köarkivering och egen done behålls; gamla claims frigörs aldrig automatiskt.
+
+Lokal kontroll och CI använder ett gemensamt dokumenturval så granskade
+guider inte får olika kontrollnivå av misstag. Okänd kod, runtime-Markdown,
+konfiguration, filtypsbyten och main/manual behåller sina kontroller.
+Studio-guidens generella tvåspelningskrav och gamla flyttstatus är rättade.
+Sidindelningstestet förbereder arkivposter direkt i stället för 41 CLI-starter;
+överflöde, samtidighet, fel och återhämtning provas fortfarande via verklig CLI.
+Handoffrutinen ersätter inaktuell status inom eget scope och länkar befintliga kvitton.
+
+**Lokalt verifierat:** 38/38 riktade prov i agent-talk, CI-urval, precommit
+och leveranspolicy; 515 JavaScript-/TypeScript-kandidater, 0 föräldralösa tester.
+Det separata Python-inventariet är inte en verifiering av Python-täckningen.
+CI-/driftstatus följer den nya PR:n; inget produktionsprov gjordes i detta pass.
+GitGuardian på bas-main 6e781b9d: två öppna incidenter, partiell platsmetadata,
+historisk skanning too_large; inga incidenter ändrade.
+
+Övrig testskuld står kvar i CLOUD-MIGRATION. Lipsync 3 äger worker/tal och
+sin separata PR242; dess kod, handoff och verifieringspåståenden ändras inte här.
+Primärcheckoutens privata/ospårade filer och andra arbetskopior är bevarade.
+
 ## Strukturens slutkvitto
 
 Accepterad strukturrevision är **`2ba5bf03437b8f7da8a60d06335831abaf50f162`**,

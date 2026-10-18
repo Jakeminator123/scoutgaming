@@ -813,10 +813,11 @@ Anslutning, urval och laddning ersätter inte spelarens faktiska start-/bild-/sl
 Behåll tangentbordsflöden, synligt fokus och `prefers-reduced-motion`.
 Dessa krav är inte ett nytt driftprov eller en visuell acceptans.
 
-Medie-/spelarändringar kräver testerna i `.githooks/pre-commit` och granskning
-av berörda registrerade dealers med `?dealer=<name>&rehearsal=1`, två
-uppspelningar i rad. Provspelningen använder den faktiska spelaren. Samma
-formulering står i [AGENTS.md](../../../AGENTS.md).
+Verifiera ändrat beteende med riktade tester enligt [AGENTS.md](../../../AGENTS.md).
+Använd `?dealer=<name>&rehearsal=1` vid konkret uppspelningsfel eller begärd
+visuell granskning. Upprepade uppspelningar behövs när återstart eller städning
+är det ändrade beteendet. Det finns inget fast antal spel som leveransgrind.
+Visuell läppsynk kräver fortfarande faktisk bild-/ljudgranskning.
 Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepaket
 eller publika loggar. Aktuella runtimekontrakt finns i
 [presentationsguiden](../../../docs/LOCAL-PRESENTATION-RUNTIME.md);

@@ -48,7 +48,7 @@ This is an agent workflow rule; it does not add a custom confirmation dialog to 
 
 ## Local agent coordination
 
-Follow `agent-talk/README.md` for agents sharing the same checkout and its index. Run `node tools/agent-talk.mjs status <your-id>` at task start, before claiming new paths and before commit/push; recheck on an overlap or new coordination message. Claim affected paths before editing; use ping/ack for overlap and `done` to release. No timed polling or repeated unchanged status reads. A matching branch name in another checkout does not share this board. File messages do not wake paused agents or override user instructions.
+Follow `agent-talk/README.md` for agents sharing the same checkout and its index. Run `node tools/agent-talk.mjs status <your-id>` at task start, before claiming new paths and before commit/push; recheck on an overlap or new coordination message. Claim affected paths before editing; use ping/ack for overlap and `done` to release. No timed polling or repeated unchanged status reads. A matching branch name in another checkout does not share this board. File messages do not wake paused agents or override user instructions. Address coordination to the affected agent; broadcast only shared blockers or ownership changes. Status filters directed conversations; shared files are not private. Acknowledge handled pings and release your own claims once at delivery.
 
 ## Verification during editing
 
@@ -103,4 +103,4 @@ At task start and before commit/push, read remote `main` security status with `n
 - Keep server-owned cards, shoe counts, wallet, and payouts authoritative. Do not manipulate the real user database for testing. Use an isolated server/database and a different hostname.
 - Code requiring a new Studio schema must wait for its required production Neon migration before merge. CI checks readiness for server/schema/dependency changes and always on main/manual runs; client/test-only PRs need no production ledger access. Readiness failures remain blocking. A `deploymentOptional` version for an isolated feature may deploy tolerant code first, then the authorized migration, followed by a PR making it required. See `docs/CLOUD-MIGRATION.md`; editing ordinary UI code does not itself require a migration.
 - Temporary guest access stays on for local product development until the user asks otherwise. Do not treat this demo as ready for real money.
-- At each delivery, commit only task-owned files and update the handoff with what changed, what was tested, and what remains broken. Keep conversation exports private and outside Git.
+- At each delivery, commit only task-owned files and update the relevant handoff section in place with what changed, what was tested, and what remains broken. Replace superseded status for your scope; link to existing evidence instead of appending duplicate receipts. Preserve other agents' active handoffs. Keep conversation exports private and outside Git.
