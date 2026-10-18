@@ -2,10 +2,10 @@
 
 The relay, ticket authentication, worker binding and Cartesia/ElevenLabs PCM
 adapters are imported by Croupier's game server. The integration lives in
-[`web/generated-speech-stream.mjs`](../../../web/generated-speech-stream.mjs),
-[`web/dealer-speech-runtime.mjs`](../../../web/dealer-speech-runtime.mjs) and
-[`web/speech-journal-runtime.mjs`](../../../web/speech-journal-runtime.mjs).
-The shared game player in `web/public` owns actual playback.
+[`services/game/generated-speech-stream.mjs`](../../game/generated-speech-stream.mjs),
+[`services/game/dealer-speech-runtime.mjs`](../../game/dealer-speech-runtime.mjs) and
+[`services/game/speech-journal-runtime.mjs`](../../game/speech-journal-runtime.mjs).
+The shared game player in `services/game/public` owns actual playback.
 `browser-player.mjs` and `server.mjs` here are protocol references. The
 standalone server below does not create a Render service or launch a paid GPU
 worker. See the
@@ -158,6 +158,6 @@ to the existing server voice profile. This removes full-audio buffering but
 does not itself stream incomplete LLM text.
 
 `elevenlabs-source.mjs` provides the equivalent bounded PCM iterator for
-ElevenLabs. `web/dealer-speech-runtime.mjs` selects the adapter from the current
+ElevenLabs. `services/game/dealer-speech-runtime.mjs` selects the adapter from the current
 dealer's private speech profile and verifies its voice; neither adapter
 silently changes provider or chooses another dealer's voice.

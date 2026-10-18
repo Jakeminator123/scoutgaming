@@ -1,5 +1,11 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Källänkar i aktiva guider — 18 oktober 2026
+
+Game-flyttens kvarvarande dokumentlänkar pekar nu på services/game eller
+faktiskt delat paket. Frysta media-ID:n, privata rötter och publika URL:er
+behålls. Kontrollen följer riktiga länkmål, inte ett antagande om mappnamn.
+
 ## Förbrukad statisk export — 18 oktober 2026
 
 Det oanropade äldre v2-exportverktyget har pensionerats efter verifierat

@@ -13,8 +13,8 @@ finns i [SOURCE.md](SOURCE.md); den äldre importens testkvitton finns i
 | --- | --- |
 | `handler.py`, `workers/`, `assets/`, `Dockerfile` | RunPod-worker, MuseTalk och bildförberedelse. De två medföljande Astrid-avatarerna behövs av den bevarade fullfilsvägen. |
 | `gateway/` | WebSocket-relä, biljetter, workerbindning och PCM-adaptrar för Cartesia/ElevenLabs. Modulerna importeras av spelservern; `server.mjs` och referensspelaren är separata protokollfixturer. |
-| [`web/generated-speech-stream.mjs`](../../web/generated-speech-stream.mjs), [`web/dealer-speech-runtime.mjs`](../../web/dealer-speech-runtime.mjs) | Spelserverns integration: aktuella dealerprofiler, sessionens ägare, åtkomst, röst och exakt referensbild. |
-| [`web/speech-journal-runtime.mjs`](../../web/speech-journal-runtime.mjs) | Molnsessionens budget, RunPod-jobb och workerberedskap. |
+| [`services/game/generated-speech-stream.mjs`](../game/generated-speech-stream.mjs), [`services/game/dealer-speech-runtime.mjs`](../game/dealer-speech-runtime.mjs) | Spelserverns integration: aktuella dealerprofiler, sessionens ägare, åtkomst, röst och exakt referensbild. |
+| [`services/game/speech-journal-runtime.mjs`](../game/speech-journal-runtime.mjs) | Molnsessionens budget, RunPod-jobb och workerberedskap. |
 
 Workern väljer inte svarstext, spelregler, bolag eller rum. OpenClaw och
 Lab/admin använder andra moduler för rådgivning och administration; detta är
@@ -64,7 +64,7 @@ stöder löpande PCM-in och synkron H264/AAC i fragmenterad MP4. Reläets exakta
 kontrollmeddelanden, ägarbindning, engångsbiljetter, avbrott och gränser finns i
 [gatewayguiden](gateway/README.md).
 
-Croupier använder sin gemensamma spelare i `web/public`, med samma talkö,
+Croupier använder sin gemensamma spelare i `services/game/public`, med samma talkö,
 idlegrindar och kvitton för registrerade dealers. Referensspelaren i `gateway`
 är för isolerad protokollverifiering. Ett streamingkvitto är inte en godkänd,
 hashverifierad fullfilstake.

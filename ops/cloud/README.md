@@ -8,7 +8,7 @@ Production accounts, game state and Studio data/revisions use Neon; media and
 finished speech packages use private Blob. See the current
 [deployment map and acceptance](../../docs/CLOUD-MIGRATION.md#ytor-och-datalagring--produktion-och-nya-qa).
 
-`web/server.mjs` selects PostgreSQL only with `CROUPIER_DATABASE=postgres`.
+`services/game/server.mjs` selects PostgreSQL only with `CROUPIER_DATABASE=postgres`.
 The retained SQLite adapter/default is for compatible local/isolated operation;
 its presence does not establish which backend production uses.
 `config.mjs` and `container-entry.mjs` support a mountless container with

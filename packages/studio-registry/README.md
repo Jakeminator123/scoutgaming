@@ -14,14 +14,14 @@ URL-formatterare och läsarportar. Fångade snapshots kompletteras aldrig med
 aktuella Neon-rader eller lokal registerfallback.
 
 `server/blob-reader.mjs` äger den gemensamma tekniska Blob-implementationen
-och dess cache. `apps/studio/lib/cloud-media-store.mjs` och `web/blob-media.mjs`
+och dess cache. `apps/studio/lib/cloud-media-store.mjs` och `services/game/blob-media.mjs`
 injicerar appägda lazy SDK-provideradaptrar. Lokala uppladdnings- och
 klassificeringsskrivare, deras lås och auktoriserade purgeflöden stannar appägda.
 
 `server/media-runtime.mjs` äger medieorkestreringen med explicita portar för
 register, metadata, layout, Blob och legacykontroller. Studio komponerar den i
 `apps/studio/lib/studio-media-runtime.mjs`; spelservern i
-`web/storage/studio-media-runtime.mjs`. Aktuella scoped läsningar hålls skilda
+`services/game/storage/studio-media-runtime.mjs`. Aktuella scoped läsningar hålls skilda
 från fångade snapshots. Samma hash-/storlekskontroller, origin, HEAD och Range
 gäller. Apparna behåller sina respektive Blob-provideradaptrar.
 

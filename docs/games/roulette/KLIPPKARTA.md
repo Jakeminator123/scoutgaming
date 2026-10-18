@@ -17,7 +17,7 @@ Bakgrundsfiler kan återanvändas. Rum behåller bolagets ägarskap, behörighet
 och speltyp; samma bakgrund gör inte två sparade rum till samma rum. Bord
 registreras med ett beständigt spelval. Äldre otaggade bord behålls för
 blackjackkompatibilitet men räknas inte som roulettebord. Kända designhashar
-kan inte märkas om. Se [gemensamma ordlistan](../../../lab/docs/TERMINOLOGI.md).
+kan inte märkas om. Se [gemensamma ordlistan](../../../apps/studio/docs/TERMINOLOGI.md).
 
 ## Faktiska signaler och föreslagen reaktion
 

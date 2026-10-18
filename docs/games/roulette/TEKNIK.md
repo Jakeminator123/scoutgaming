@@ -7,7 +7,7 @@ nolla, 37 lika sannolika fack (0–36). Varje snurr är oberoende och samma numm
 kan komma flera gånger i följd. Nollan är grön och tillhör inga röd/svart-,
 udda/jämn- eller låg/hög-satsningar.
 
-[`index.mjs`](../../../web/games/roulette/index.mjs) körs bara i Node på spelservern. Den använder
+[`index.mjs`](../../../services/game/games/roulette/index.mjs) körs bara i Node på spelservern. Den använder
 [`node:crypto.randomInt(0, 37)`](https://nodejs.org/docs/latest-v24.x/api/crypto.html#cryptorandomintmin-max-callback)
 utan modulo-bias. Inga paket behöver installeras. Ingen kortsko, brännkort,
 förblandad nummerlista, egen seed, viktning eller blackjackkod används.
@@ -15,7 +15,7 @@ förblandad nummerlista, egen seed, viktning eller blackjackkod används.
 ## Gränssnitt
 
 ```js
-import { createSpinResult } from './web/games/roulette/index.mjs';
+import { createSpinResult } from './services/game/games/roulette/index.mjs';
 
 // Endast på servern, efter stängda satsningar för en ny runda.
 const event = createSpinResult({
@@ -39,13 +39,13 @@ misslyckas. Modulens frysning skyddar objekten i processen, inte datatransporten
 
 ## Koppling till rum och Render
 
-`ops/cloud/Dockerfile` kopierar redan `web/` till samma Node 24-image som
+`ops/cloud/Dockerfile` kopierar redan `services/game/` till samma Node 24-image som
 blackjack. Ingen ny Render-tjänst, port eller miljövariabel behövs.
 
 Testytan finns på `/roulette-test`, via samma signerade Vercel → Render-väg
 som blackjack. Render-bokmärket omdirigerar till den kanoniska sajten.
 `preview.mjs` kopplar `POST /api/roulette-test/spin` till generatorn; HTML,
-CSS och klientkod finns under `web/public/roulette-test/`. Ytan är publik,
+CSS och klientkod finns under `services/game/public/roulette-test/`. Ytan är publik,
 olänkad från produktmenyerna och märkt `noindex`. Den läser/skriver inga
 konton, satsningar, saldon eller databaser. Historiken lever bara i fliken.
 
@@ -99,11 +99,11 @@ Det befintliga gränssnittet är en spelbar första version som kan omarbetas.
 
 | Ansvar | Källa |
 | --- | --- |
-| Sidstruktur, kontroller och dialoger | `web/public/roulette/index.html` |
-| Layout, färg, responsivitet och rörelse | `web/public/roulette/style.css` |
-| Satsningsutkast, hjul, resultat, historik och återförsök | `web/public/roulette/app.mjs` |
-| Bolagets frysta dealer, bord och bakgrund | `web/public/roulette/scene.mjs` |
-| Delad scenrenderare för lobby och roulette | `web/public/published-scene.mjs` |
+| Sidstruktur, kontroller och dialoger | `services/game/public/roulette/index.html` |
+| Layout, färg, responsivitet och rörelse | `services/game/public/roulette/style.css` |
+| Satsningsutkast, hjul, resultat, historik och återförsök | `services/game/public/roulette/app.mjs` |
+| Bolagets frysta dealer, bord och bakgrund | `services/game/public/roulette/scene.mjs` |
+| Delad scenrenderare för lobby och roulette | `packages/presentation/runtime/published-scene.mjs` |
 | Lobby och rummets ingång | `apps/web/components/player/` |
 
 `app.mjs` kopplar kontroller till HTML-elementens ID:n. Ändra HTML och dessa
@@ -145,7 +145,7 @@ Anna-kvitton nedan innebär inte att materialet fortfarande är registrerat.
 | Röst | Befintlig ElevenLabs-nyckel kunde läsa Paow/Dragges exakta röst-ID:n. | Välj och verifiera Annas egen röst, modell och språk. Ingen röst har valts åt Anna här. |
 | Rörlig GPU | RunPod-läsning identifierade staging-endpoint, template och image-tagg. | Verifiera svarskontrakt och exakt avatarbank med verkliga talprov. API-hälsa bevisar inte detta. |
 | Planering | #116 införde `web/moving-speech-plan.mjs` med exakta rutor och versionsbindning. | Koppla in server, worker-relay, avkodning och spelare; adaptern är fortfarande inaktiv. |
-| Roulette | `web/public/roulette/scene.mjs` använder `mountPublishedScene` för frysta lager, idle och startgest. | Roulette har ingen inkopplad dealerchatt eller genererad talspelare i granskad kod. |
+| Roulette | `services/game/public/roulette/scene.mjs` använder `mountPublishedScene` för frysta lager, idle och startgest. | Roulette har ingen inkopplad dealerchatt eller genererad talspelare i granskad kod. |
 | Anna i workern | Kevins standardlista för rörligt tal innehåller Paow, Dragge och Astrid2. | Anna finns inte i den listan; hennes worker-avatar och underlag måste förberedas/verifieras. Att lägga till ett namn räcker inte. |
 
 Cartesia och ElevenLabs skapar ljud; RunPod kör GPU-arbetet som skapar

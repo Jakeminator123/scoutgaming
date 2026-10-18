@@ -14,7 +14,7 @@ Samlad ingång för implementerat spel och dealerproduktion. Kodbas: main `426fa
 
 Native blackjack är personliga serverstyrda rundor med upp till sju spelarplatser. Åtta kortlekar ger 416 kort; ett brännkort tas bort och cut-gränsen är 312 dragna kort. Ny blandning sker inför nästa runda när gränsen nåtts, aldrig mitt i en runda. Servern behåller kortordning, brännkort och privat hålkort.
 
-Regler i [blackjack.mjs](../../../web/public/blackjack.mjs): S17 (dealern stannar även på mjuk 17), amerikanskt hålkort med peek, blackjack 3:2, försäkring 2:1, dubblering på två kort och efter split, högst fyra händer per plats. Delade ess får ett kort vardera. Ingen surrender. 21 efter split är vanlig 21, inte blackjack 3:2.
+Regler i [blackjack.mjs](../../../services/game/public/blackjack.mjs): S17 (dealern stannar även på mjuk 17), amerikanskt hålkort med peek, blackjack 3:2, försäkring 2:1, dubblering på två kort och efter split, högst fyra händer per plats. Delade ess får ett kort vardera. Ingen surrender. 21 efter split är vanlig 21, inte blackjack 3:2.
 
 Sidoinsatser: Perfect Pairs ger 25:1 perfekt, 12:1 samma färg, 6:1 blandad färg. 21+3 ger 100:1 suited trips, 40:1 straight flush, 30:1 trips, 10:1 straight och 5:1 flush. Dessa är nettovinster; kodens retur inkluderar insatsen vid vinst. Servervägen kräver sju betsposter, huvudinsats minst 5 om platsen används, högst 2 000 per insatsfält och sidoinsats bara tillsammans med huvudinsats.
 
@@ -22,16 +22,16 @@ Sidoinsatser: Perfect Pairs ger 25:1 perfekt, 12:1 samma färg, 6:1 blandad fär
 
 | Ansvar | Aktuell källa |
 | --- | --- |
-| Spelregler, händer, split och sidoinsatser | [web/public/blackjack.mjs](../../../web/public/blackjack.mjs) |
-| Beständig sko, versionskontroll, senaste request-kvitto | [web/shoe-game.mjs](../../../web/shoe-game.mjs) |
-| SQLite-transaktion: sko, saldo och presentationskvitto | [web/native-table.mjs](../../../web/native-table.mjs) |
-| PostgreSQL: samma ansvar med låst spelarrad | [web/postgres-native-table.mjs](../../../web/postgres-native-table.mjs) |
-| Autentisering och POST /api/table | [web/server.mjs](../../../web/server.mjs) |
-| Spelhändelser till presentation | [web/partner-presentation.mjs](../../../web/partner-presentation.mjs) |
-| Fryst rum, speltyp och operatör | [web/presentation-room-contract.mjs](../../../web/presentation-room-contract.mjs) |
+| Spelregler, händer, split och sidoinsatser | [services/game/public/blackjack.mjs](../../../services/game/public/blackjack.mjs) |
+| Beständig sko, versionskontroll, senaste request-kvitto | [services/game/shoe-game.mjs](../../../services/game/shoe-game.mjs) |
+| SQLite-transaktion: sko, saldo och presentationskvitto | [services/game/native-table.mjs](../../../services/game/native-table.mjs) |
+| PostgreSQL: samma ansvar med låst spelarrad | [services/game/postgres-native-table.mjs](../../../services/game/postgres-native-table.mjs) |
+| Autentisering och POST /api/table | [services/game/server.mjs](../../../services/game/server.mjs) |
+| Spelhändelser till presentation | [services/game/partner-presentation.mjs](../../../services/game/partner-presentation.mjs) |
+| Fryst rum, speltyp och operatör | [packages/presentation/contracts/presentation-room.mjs](../../../packages/presentation/contracts/presentation-room.mjs) |
 | Klippurval, idle och skobyten | [packages/presentation/runtime](../../../packages/presentation/runtime/) |
-| Kortlagrets layout | [web/public/card-presentation](../../../web/public/card-presentation/README.md) |
-| Forge-mål och geometriprofil | [dealer-forge-catalog.mjs](../../../lab/lib/dealer-forge-catalog.mjs) |
+| Kortlagrets layout | [web/public/card-presentation](../../../services/game/public/card-presentation/README.md) |
+| Forge-mål och geometriprofil | [dealer-forge-catalog.mjs](../../../apps/studio/lib/dealer-forge-catalog.mjs) |
 
 Spelingången är /play/blackjack med operator, table och vid behov dealer i länken; Render äger spelservern. Native-kommandona är state, start, act, insurance och collect. Skrivkommandon behöver aktuell version och requestId. Exakt återförsök av senaste kommando ger sparat svar; samma requestId med annan indata avvisas. Detta ska inte beskrivas som en obegränsad historisk idempotensgaranti. Sko, saldo och bokföring skrivs atomärt; observations-/presentationshändelser får inte skapa nya drag efter commit.
 

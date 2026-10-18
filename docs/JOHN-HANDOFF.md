@@ -1,5 +1,15 @@
 # Aktuell handoff — Scoutgaming
 
+## Aktiva källhänvisningar efter rotflytten — 18 oktober 2026
+
+PR-granskningens P2 om kvarvarande web-länkar är rättad i aktiva spel-,
+frontend-, cloud-, tal-, paket- och runtimeguider. De relativa källmålen är
+kontrollerade; rumskontrakt, delad scen, framing och videoschema pekar på
+sina faktiska neutrala paket. Ändra-källan-instruktioner följer services/game.
+Mediaidentiteter, privata datarötter, publika URL:er och frysta SHA-kvitton
+behålls. Detta är en dokumenträttning; aktiv kod, byggkedja och tester är
+oförändrade från det kodgranskade headet.
+
 ## Avvecklad historisk jämförelseexport — 18 oktober 2026
 
 Granskningen hittade `tools/media/build-dealer-v2-release.mjs`, som endast

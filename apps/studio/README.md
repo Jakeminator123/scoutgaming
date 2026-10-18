@@ -367,7 +367,7 @@ eller använder rätt playerId; det kan bara verifieras mot Bettalotto.
 Strömmen avser samma API-nyckel och partner-playerId som den nya launch-knappen.
 Kevin anger att launch-spelet ska kunna observeras i SSE. Den hämtade
 serverkoden publicerade tidigare endast från Partner-table. Den lokala
-`web/native-table.mjs` publicerar nu native-kommandon efter commit, till den
+`services/game/native-table.mjs` publicerar nu native-kommandon efter commit, till den
 verifierade launch-sessionens nyckel/spelare och endast vid versionsökning.
 Bryggan måste driftsättas på spelservern innan detta gäller live. **Launch → rund-event är ännu oprövat live.**
 En accepterad anslutning bevisar inte denna koppling. BO-inloggning ansluter inte labbet.

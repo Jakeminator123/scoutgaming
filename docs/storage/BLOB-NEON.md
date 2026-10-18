@@ -4,7 +4,7 @@ Kanonisk målstruktur och genomförandeplan, 17 oktober 2026. Detta dokument
 ersätter guidens äldre generella lagringsbeskrivning. Importplan och utökat
 referensskydd är implementerade på arbetsbranchen; molnworkern förbereds separat.
 Det betyder inte att produktionsimport eller rörligt tal i spelet är aktiverat.
-Produkttermer ägs av [TERMINOLOGI](../../lab/docs/TERMINOLOGI.md), tekniska
+Produkttermer ägs av [TERMINOLOGI](../../apps/studio/docs/TERMINOLOGI.md), tekniska
 runtimekontrakt av [LOCAL-PRESENTATION-RUNTIME](../LOCAL-PRESENTATION-RUNTIME.md)
 och leveransstatus av [handoffen](../JOHN-HANDOFF.md).
 Ingen ny parallell tracker skapas.

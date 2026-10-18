@@ -217,9 +217,9 @@ Samlad ingång för implementerat spel och mottaget medieunderlag. Ursprunglig k
 
 För klippbegrepp och format, börja i [gemensamma referensen](../KLIPP-OCH-FORMAT.md). [37 kompakta utfall](UTFALLSFILMER.md) beskriver det nya produktionsmålet, kopplingen till sparade serverkvitton och acceptanskraven. Utfallsstödet är ännu inte implementerat på granskad main. Webbplatsens AI-funktion ingår inte i dokumentationsuppdraget.
 
-Europeisk roulette med enkel nolla, 37 fack och oberoende serverdrag via crypto.randomInt(0,37). [Generatorn](../../../web/games/roulette/index.mjs) accepterar operatörs-, rums- och rund-ID, inte seed eller önskat nummer. Nollan ingår inte i röd/svart, jämn/udda eller låg/hög. [Satsningskatalogen](../../../web/games/roulette/rules.mjs) har straight, split, street/trio, corner, six-line, dozen, column och outside. Nettovinster: 35:1, 17:1, 11:1, 8:1, 5:1, 2:1 respektive 1:1. Ingen La Partage eller En Prison. Gränser: 1–2 000 per fält och 10 000 per runda.
+Europeisk roulette med enkel nolla, 37 fack och oberoende serverdrag via crypto.randomInt(0,37). [Generatorn](../../../services/game/games/roulette/index.mjs) accepterar operatörs-, rums- och rund-ID, inte seed eller önskat nummer. Nollan ingår inte i röd/svart, jämn/udda eller låg/hög. [Satsningskatalogen](../../../services/game/games/roulette/rules.mjs) har straight, split, street/trio, corner, six-line, dozen, column och outside. Nettovinster: 35:1, 17:1, 11:1, 8:1, 5:1, 2:1 respektive 1:1. Ingen La Partage eller En Prison. Gränser: 1–2 000 per fält och 10 000 per runda.
 
-POST /api/roulette/table hanterar state och spin. Servern kontrollerar session, spelare/valuta och publicerat rum. Spin tar requestId, aktuell version, bets och context. [room.mjs](../../../web/games/roulette/room.mjs) validerar/avräknar; [storage.mjs](../../../web/games/roulette/storage.mjs) skriver saldo, transaktioner och kvitto atomärt i SQLite eller PostgreSQL. Exakt återförsök använder samma sparade kommando, aldrig ett nytt slumpanrop för att ersätta ett borttappat svar. De senaste 20 kvittona bevaras per spelar-/operatörs-/rumsscope; gamla versioner avvisas.
+POST /api/roulette/table hanterar state och spin. Servern kontrollerar session, spelare/valuta och publicerat rum. Spin tar requestId, aktuell version, bets och context. [room.mjs](../../../services/game/games/roulette/room.mjs) validerar/avräknar; [storage.mjs](../../../services/game/games/roulette/storage.mjs) skriver saldo, transaktioner och kvitto atomärt i SQLite eller PostgreSQL. Exakt återförsök använder samma sparade kommando, aldrig ett nytt slumpanrop för att ersätta ett borttappat svar. De senaste 20 kvittona bevaras per spelar-/operatörs-/rumsscope; gamla versioner avvisas.
 
 Spelingång: /play/roulette?operator=<slug>&table=<room-id>&dealer=<dealer-id>. Native demo/inloggning delas med blackjack, men roulette har egna regler och ingen sko. Detta är personliga rundor, inte ett gemensamt tidsstyrt multiplayerhjul. Partner-launch-konton är spärrade tills roulette stöds i deras plånbokskontrakt.
 
@@ -229,12 +229,12 @@ Den separata /roulette-test är en publik noindex-testyta utan spelkonton, insat
 
 | Ansvar | Källa |
 | --- | --- |
-| Rumstillgång och publiceringskontroll | [access.mjs](../../../web/games/roulette/access.mjs) |
-| Sida och resurser | [http.mjs](../../../web/games/roulette/http.mjs) |
-| HTML, CSS och interaktion | [web/public/roulette](../../../web/public/roulette/) |
-| Dealer/bord/bakgrund från fryst paket | [scene.mjs](../../../web/public/roulette/scene.mjs) |
-| Gemensam publicerad scen | [published-scene.mjs](../../../web/public/published-scene.mjs) |
-| Bolag, game och rum | [presentation-room-contract.mjs](../../../web/presentation-room-contract.mjs) |
+| Rumstillgång och publiceringskontroll | [access.mjs](../../../services/game/games/roulette/access.mjs) |
+| Sida och resurser | [http.mjs](../../../services/game/games/roulette/http.mjs) |
+| HTML, CSS och interaktion | [services/game/public/roulette](../../../services/game/public/roulette) |
+| Dealer/bord/bakgrund från fryst paket | [scene.mjs](../../../services/game/public/roulette/scene.mjs) |
+| Gemensam publicerad scen | [published-scene.mjs](../../../packages/presentation/runtime/published-scene.mjs) |
+| Bolag, game och rum | [presentation-room.mjs](../../../packages/presentation/contracts/presentation-room.mjs) |
 
 Scenen läser /api/operators/<slug>/rooms/<room-id>/preview med revision och dealer. Ett rum har en speltyp; återanvända bakgrunder gör inte blackjackens rörelsebank till en roulettebank. Den frysta blackjackkopplingen `idle.ready` lämnas inte ut för roulette. En egen publicerad roulettekoppling för dealer återstår. Serverns kvitto bestämmer resultat och saldo; bildens eller en AI-films sista nummer gör det aldrig.
 
@@ -250,7 +250,7 @@ Svart videobakgrund är inte alfa. Global borttagning av svart skulle även skad
 
 ## Levererad roulettevy i PR47
 
-[PR47](https://github.com/Jakeminator123/scoutgaming/pull/47), sluthead `c2623d9bde84904df85c53927ca30e8a40e314f9`, är mergad till main som `161957f1ca56bf35bdb09a2926b6a48c384b3e9a`. Senare källmetadata finns i [media-specification.json](../../../web/games/roulette/media-specification.json). Egna leveranskontroller 13 oktober: samtliga faktiska PR-/main-CI-steg gröna, Vercel Production READY med www på exakt merge-SHA och Render LIVE med exakt `/__cloud/version` och HTTP200 health. De sex publika UI-filerna gav HTTP200 och hashmatch mot mergekoden. Ägarens separata browserkontroll omfattade huvudvyn, Mer och fokusåtergång utan satsningar.
+[PR47](https://github.com/Jakeminator123/scoutgaming/pull/47), sluthead `c2623d9bde84904df85c53927ca30e8a40e314f9`, är mergad till main som `161957f1ca56bf35bdb09a2926b6a48c384b3e9a`. Senare källmetadata finns i [media-specification.json](../../../services/game/games/roulette/media-specification.json). Egna leveranskontroller 13 oktober: samtliga faktiska PR-/main-CI-steg gröna, Vercel Production READY med www på exakt merge-SHA och Render LIVE med exakt `/__cloud/version` och HTTP200 health. De sex publika UI-filerna gav HTTP200 och hashmatch mot mergekoden. Ägarens separata browserkontroll omfattade huvudvyn, Mer och fokusåtergång utan satsningar.
 
 Ägarens kvitto där beskriver MP4/H.264/yuv420p, 1916×1080, 361 rutor, 24 fps, 15,041667 sekunder, 10 317 238 byte, inget ljud/alfa; hash 7702cec6f0ec5ec2e1767608781588e8f6b182a0fbc652a952706f8288314195. Rutor 0/180/360 uppges granskade. Full rörelse, skarv, maskregistrering och utfallsmappning är inte godkända. Detta är senare dokumenterat ägarbevis, inte en egen ny mätning i denna uppgift.
 

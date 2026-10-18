@@ -1461,7 +1461,7 @@ filmen; filmen är inte aktiverad i spelrummet. Den sammanförda JSON-filen är 
 beställning att generera fler animationer.
 
 Den bifogade `roulette_specifikation.json` är sammanförd som källunderlag i
-[media-specification.json](../web/games/roulette/media-specification.json).
+[media-specification.json](../services/game/games/roulette/media-specification.json).
 Originalets beställningsstatus och önskemål är bevarade under
 `receivedSpecification`; aktuella filfakta finns under `verification` och
 Jakobs nuvarande riktning under `currentDecision`. Dokumentets äldre förslag
