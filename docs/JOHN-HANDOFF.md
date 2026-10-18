@@ -22,7 +22,9 @@ Verifierat i skissen: procentfält/piltangenter, separata ankare utan hopp,
 idle-loop, variantgräns, standard vid utdelning 1–7 och variant vid 8 med
 separat boxräknare, samt smal vy utan överrinning. Pekardragning är ännu
 inte verifierad. Inga verkliga medie-, spel-, publicerings- eller OpenClaw-prov.
-Dokumentkontroller passerar; GitGuardian incident-/platstäckning är oläst.
+Dokumentkontroller passerar. Leveranskontrollen kunde läsa GitGuardian:
+två öppna incidenter (38318914, 38318915), ofullständig platstäckning;
+historisk skanning är `too_large`. Dessa har inte ändrats av UX-arbetet.
 
 Demoerna finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/demoer/`.
 Detaljerad arbetslogg och teknisk återkoppling ligger i samma mapps
