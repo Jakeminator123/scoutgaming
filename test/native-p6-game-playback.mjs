@@ -90,7 +90,7 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
       const r=new Response(JSON.stringify(value),{status:deny?404:200,headers:{'content-type':'application/json'}});
       Object.defineProperty(r,'url',{value:NATIVE_P6_GAME_ORIGIN+path});return r;}
     const i=paths.findIndex(p=>'/'+p.replace('services/game/public/','')===path);assert.notEqual(i,-1,'no generation or unknown URL');
-    const r=new Response(changedSource?'changed':sources[i],{headers:{'content-type':'text/javascript'}});
+    const r=new Response(changedSource===true||changedSource===paths[i]?'changed':sources[i],{headers:{'content-type':'text/javascript'}});
     Object.defineProperty(r,'url',{value:NATIVE_P6_GAME_ORIGIN+path});return r;};
   const availabilityState={busy:!quiet,hasRound:false,chatBusy:false,speaking:false,muted:false};
   const readAvailability=()=>({...availabilityState,hidden:document.hidden,queuePending:queue.pending,posePending:gate.pendingCount,
@@ -283,4 +283,18 @@ test('context diagnostic timestamp is never accepted as a sixth expected owner k
   const f=fixture(t),api=await f.start(),input=f.input();input.expectedOwnedState.observedAtMs=Date.now();
   await assert.rejects(api.run(input),/exact_request_required/);
   assert.equal(f.counts().reads,1);assert.equal(f.counts().acquired,0);assert.equal(f.sockets.length,0);
+});
+
+test('changed chat decision bytes and a missing chat source pin stop before enqueue or stream IO',async t=>{
+  const path='services/game/public/chat-decision-player.mjs',f=fixture(t,{changedSource:path}),api=await f.start();
+  t.after(()=>api.close());
+  const input=f.input();
+  input.sourceHashes={...input.sourceHashes,[path]:hash(await readFile(new URL('../'+path,import.meta.url)))};
+  await assert.rejects(api.run(input),/native_p6_game_source_changed/);
+  assert.ok(f.fetches.includes('/chat-decision-player.mjs'));
+  assert.equal(f.counts().acquired,0);assert.equal(f.gate.trace.length,0);assert.equal(f.sockets.length,0);
+  const fetchCount=f.fetches.length,missing={...input,sourceHashes:{...input.sourceHashes}};
+  delete missing.sourceHashes[path];
+  await assert.rejects(api.run(missing),/native_p6_game_exact_request_required/);
+  assert.equal(f.fetches.length,fetchCount);assert.equal(f.pending.size,0);
 });

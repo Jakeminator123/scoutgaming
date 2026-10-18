@@ -4,7 +4,7 @@ import { validateGeneratedSpeechStream } from '../../../packages/presentation/ru
 // readback cannot attest an already imported module or live visual acceptance.
 export const NATIVE_P6_GAME_ORIGIN='https://croupier-native-qa-abc92154cb15.vercel.app';
 export const NATIVE_P6_GAME_CONTEXT_PATH='/api/presentation/native-p6-playback-context';
-export const NATIVE_P6_GAME_SOURCE_PATHS=Object.freeze(['services/game/public/app.mjs','services/game/public/native-p6-game-playback.mjs',
+export const NATIVE_P6_GAME_SOURCE_PATHS=Object.freeze(['services/game/public/app.mjs','services/game/public/chat-decision-player.mjs','services/game/public/native-p6-game-playback.mjs',
   'services/game/public/speech-queue.mjs','packages/presentation/runtime/speech-pose-gate.mjs','services/game/public/local-presentation.mjs',
   'packages/presentation/runtime/generated-speech-player.mjs','packages/presentation/runtime/speech-stream-client.mjs','packages/presentation/contracts/speech-package.mjs',
   'packages/presentation/contracts/astrid-voice-profile.mjs']);
