@@ -4,8 +4,8 @@
 
 Dokumentationsförslaget [PR260](https://github.com/Jakeminator123/scoutgaming/pull/260)
 är mergat. [TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är fortsatt den
-enda produktmodellen. UI-leveransen ligger på `codex/admin-clip-map`, från
-main `14d47c24`; Lipsyncs senare handoff är bevarad.
+enda produktmodellen. UI-leveransen [PR264](https://github.com/Jakeminator123/scoutgaming/pull/264)
+är mergad som `19b4cc9b`; senare handoffavsnitt är bevarade.
 
 `/admin/clips` visar kategori → situation → standardklipp och varianter.
 Sju spelarplatser hålls isär från dealerns öppna, dolda och vända kort.
@@ -28,10 +28,20 @@ reservvalet är fortfarande en variant. Riktade prov täcker även idle/familjer
 tal och exakta spelar-/dealerplatser. Skrivare och runtime är oförändrade.
 Oanvända UI-konstanter, kategorifilter och ersatt knapp-CSS har tagits bort.
 
+Separat rättning på `codex/admin-motion-reference`: ändrad referenstid,
+källvideo eller hash behåller talreferensens typ. En `motion-video` blir inte
+tyst `video-frame` och redigeringen låser inte upp aktiveringsrutan.
+Ny förhandsgranskning krävs fortfarande; ändrad rörelsereferens kräver att
+Begär AI-tal stängs av före sparning. Enbart röstbyte behåller oförändrad referens.
+36 UI-/taltester och 14 profiltester passerar, inklusive elva nya fall för exakt
+sparpayload, förhandsgranskningsspärr och avstängning. Klientbygget och båda
+typkontrollerna passerar med befintliga CSS-varningar. Inga provider-/GPU-anrop ingår.
+
 Fria kort-/markerankare, PNG-idle, generell chattregeleditor och exakt var
 åttonde utdelning per box finns fortsatt bara i förslag/demo och kräver egna
-spar-/runtimekontrakt. HUVUDAGENT5 äger namn/importmappning; Lipsync 3 äger
-medie-/taluppspelning. Denna PR ändrar inte dessa kontrakt eller någon databas.
+spar-/runtimekontrakt. HUVUDAGENT5 äger namn/importmappning och driftkontrakt;
+POST-PISYNK4 tar vidare tal under utdelning och OpenClaw från Lipsync 3.
+UI-rättningarna ändrar inte dessa kontrakt eller någon databas.
 Teknisk referens: [BLOB-NEON](storage/BLOB-NEON.md).
 
 Demoer finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/demoer/`;
