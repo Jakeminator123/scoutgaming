@@ -39,9 +39,9 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   const video = element('video'); video.autoplay = true; video.muted = true; video.playsInline = true; video.hidden = true;
   const consent = element('dialog', '', 'astrid-voice-dialog'); consent.hidden = true; consent.setAttribute('aria-label', 'Enable voice and optional camera');
   const consentHeading = element('h2', 'Enable voice and optional camera?');
-  const consentText = element('p', 'In wake-word mode, this browser listens locally for the selected dealer name and keeps a short audio buffer in memory. Nothing is uploaded before the wake word. After detection, that buffer, including the moments just before the word, and the following speech (up to 30 seconds total) are automatically sent to OpenAI for speech translation into English. The English text is automatically sent to OpenClaw and its model provider after you pause. Camera is off by default. Only when you switch the camera button on, up to two snapshots are included if the model supports images. There is no preview or Send step.');
+  const consentText = element('p', 'In wake-word mode, this browser listens locally for the selected dealer name and keeps a short audio buffer in memory. Nothing is uploaded before the wake word. After detection, that buffer, including the moments just before the word, and the following speech (up to 30 seconds total) are automatically sent to OpenAI for transcription in the spoken language. The transcribed text is automatically sent to OpenClaw and its model provider after you pause. Camera is off by default. Only when you switch the camera button on, up to two snapshots are included if the model supports images. There is no preview or Send step.');
   const consentPrivacy = element('p', 'Enabling voice also turns on dealer playback so you can hear her replies. Muting playback stops voice listening. Providers process the audio, text and images. Text and images may be retained in conversation history. Croupier does not save your raw microphone audio. Generated dealer replies may be stored in the private reply library. Press Record again to stop. Voice is always off when this page loads.');
-  const manualText = element('p', 'Record one message starts the microphone immediately after your click, without a wake word. After you pause, up to 30 seconds of audio are sent to OpenAI for English translation; that text and up to two optional camera snapshots are sent to the selected dealer. Recording then switches off. Press Record again during capture to cancel without sending.');
+  const manualText = element('p', 'Record one message starts the microphone immediately after your click, without a wake word. After you pause, up to 30 seconds of audio are sent to OpenAI for transcription in the spoken language; that text and up to two optional camera snapshots are sent to the selected dealer. Recording then switches off. Press Record again during capture to cancel without sending.');
   const accept = element('button', 'Enable voice'); accept.type = 'button';
   const manual = element('button', 'Record one message'); manual.type = 'button';
   const decline = element('button', 'Keep off'); decline.type = 'button';
@@ -88,17 +88,17 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
   }
   function report(message, error = false) { lastStatus = message; statusIsError = error; appendLog(message); render(); }
   function applyConfig(config) {
-    const translationReady = config.transcription?.outputLanguage === 'en' && config.transcription?.acceptsAutoLanguage === true;
-    enabled = config.enabled === true && config.transcription?.enabled === true && translationReady;
+    const transcriptionReady = config.transcription?.outputLanguage === 'original' && config.transcription?.acceptsAutoLanguage === true;
+    enabled = config.enabled === true && config.transcription?.enabled === true && transcriptionReady;
     visionEnabled = config.enabled === true && (config.vision === undefined ? true : config.vision?.enabled === true);
     profileRevision = config.profileRevision ?? null;
     const reasons = {
       feature_disabled: 'Voice and camera are disabled on this server.',
-      transcription_unavailable: 'OpenAI speech translation is unavailable. Check the OpenAI configuration.',
-      translation_unavailable: 'English speech translation is not configured on this server.',
+      transcription_unavailable: 'OpenAI speech transcription is unavailable. Check the OpenAI configuration.',
+      transcription_contract_unavailable: 'Transcription in the spoken language is not configured on this server.',
       model_not_verified: 'Images are enabled only for GPT-5.6 Terra and GPT-6 Luna in this setup.',
     };
-    blockedReason = enabled ? '' : (config.enabled && config.transcription?.enabled && !translationReady ? reasons.translation_unavailable : '')
+    blockedReason = enabled ? '' : (config.enabled && config.transcription?.enabled && !transcriptionReady ? reasons.transcription_contract_unavailable : '')
       || (Object.hasOwn(reasons, config.reason) ? reasons[config.reason] : '')
       || (config.enabled ? reasons.transcription_unavailable : reasons.feature_disabled);
     visionReason = !visionEnabled && config.enabled ? 'Camera is off. Select GPT-5.6 Terra or GPT-6 Luna for images; voice can use the selected model.' : '';
@@ -344,7 +344,7 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
       if (!checked || checked.error) throw checked?.error || new Error('configuration_failed');
       applyConfig(checked.config);
       if (!enabled) { stop(); return; }
-      report('Translating speech into English.');
+      report('Transcribing speech in the spoken language.');
       const response = await fetchImpl('/api/dealer/transcription', { method: 'POST', signal: controller.signal,
         headers: { 'Content-Type': 'audio/wav', 'X-Astrid-Dealer': modeOwner.dealerId, 'X-Astrid-Language': 'auto',
           'X-Astrid-Request-Id': crypto.randomUUID(),
@@ -370,8 +370,8 @@ export function createAstridCameraControl({ container, identity, send, fetchImpl
         stop(error?.message === 'voice_send_failed'
           ? 'The voice turn could not be completed. Voice off; no automatic retry.'
           : error?.message === 'transcription_authentication_failed'
-            ? 'OpenAI authentication failed. Check the server translation key. Voice off; no automatic retry.'
-            : 'Speech translation failed. Nothing sent. Voice off; no automatic retry.', true);
+            ? 'OpenAI authentication failed. Check the server transcription key. Voice off; no automatic retry.'
+            : 'Speech transcription failed. Nothing sent. Voice off; no automatic retry.', true);
       }
     } finally {
       clearTimeout(deadline); bytes.fill(0); images.length = 0;

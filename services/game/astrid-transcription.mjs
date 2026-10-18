@@ -90,9 +90,9 @@ async function readTranscript(response, signal) {
 }
 
 /** No filesystem, conversation storage, audio cache or retries. Whisper's
- * translations endpoint detects input language and always returns English.
- * https://developers.openai.com/api/reference/resources/audio/subresources/translations/methods/create
- * Checked 2026-09-28. A legacy sv/en header is accepted but never forwarded.
+ * transcriptions endpoint detects and preserves the input language.
+ * https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create
+ * Checked 2026-10-18. A legacy sv/en header is accepted but never forwarded.
  */
 export function createAstridTranscriptionApi({ apiKey, fetchImpl = fetch, clock = Date.now } = {}) {
   const configured = typeof apiKey === 'string' && apiKey.length > 0 && apiKey.length <= 2048 && !/[\s\x00-\x1f]/.test(apiKey);
@@ -126,13 +126,13 @@ export function createAstridTranscriptionApi({ apiKey, fetchImpl = fetch, clock 
       const form = new FormData();
       form.append('file', new Blob([audio], { type: 'audio/wav' }), 'utterance.wav');
       form.append('model', 'whisper-1'); form.append('response_format', 'json');
-      const response = await fetchImpl('https://api.openai.com/v1/audio/translations', {
+      const response = await fetchImpl('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST', headers: { authorization: `Bearer ${apiKey}` },
         body: form, signal: controller.signal, redirect: 'error',
       });
       const text = await readTranscript(response, controller.signal);
       await checkCurrent(context); controller.signal.throwIfAborted();
-      json(200, { text, durationMs, provider: 'openai', model: 'whisper-1', language: 'en', inputLanguage: 'auto' });
+      json(200, { text, durationMs, provider: 'openai', model: 'whisper-1', outputLanguage: 'original', inputLanguage: 'auto' });
     } catch (error) {
       // Never echo upstream bodies, credentials, URLs or raw error messages.
       const safe = typeof error.code === 'string' && /^(?:transcription_|invalid_(?:camera_audio|transcription_)|camera_audio_|stale_transcription_|method_not_allowed)/.test(error.code);

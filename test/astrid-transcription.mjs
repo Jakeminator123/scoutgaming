@@ -24,10 +24,10 @@ function request(api, { body = audio(), replaceHeaders = {}, enabled = true, met
   return { done, req, res };
 }
 
-test('batch translation uses bounded memory WAV, automatic input and fixed English provider URL/model; no retry', async () => {
+test('batch transcription uses bounded memory WAV and automatic original-language input; no retry', async () => {
   let calls = 0, checked = 0, receivedAudio;
   const api = createAstridTranscriptionApi({ apiKey: 'synthetic-key', fetchImpl: async (url, init) => {
-    calls++; assert.equal(url, 'https://api.openai.com/v1/audio/translations'); assert.equal(init.redirect, 'error');
+    calls++; assert.equal(url, 'https://api.openai.com/v1/audio/transcriptions'); assert.equal(init.redirect, 'error');
     assert.deepEqual(init.headers, { authorization: 'Bearer synthetic-key' });
     assert.equal(init.body.get('model'), 'whisper-1'); assert.equal(init.body.get('response_format'), 'json');
     assert.equal(init.body.has('language'), false); assert.equal(init.body.has('prompt'), false);
@@ -37,22 +37,24 @@ test('batch translation uses bounded memory WAV, automatic input and fixed Engli
   const result = request(api, { checkCurrent: async context => { checked++; assert.equal(context.dealerId, 'astrid'); } });
   await result.done;
   assert.equal(result.res.status, 200);
-  assert.deepEqual(result.res.body, { text: 'Hello Astrid', durationMs: 1000, provider: 'openai', model: 'whisper-1', language: 'en', inputLanguage: 'auto' });
+  assert.deepEqual(result.res.body, { text: 'Hello Astrid', durationMs: 1000, provider: 'openai', model: 'whisper-1', outputLanguage: 'original', inputLanguage: 'auto' });
   assert.equal(result.res.headers['Cache-Control'], 'private, no-store');
   assert.equal(calls, 1); assert.equal(checked, 3);
   const duplicate = request(api); await duplicate.done;
   assert.equal(duplicate.res.status, 409); assert.equal(calls, 1);
 });
 
-test('legacy Swedish and English client hints never restrict automatic input or change the English output contract', async () => {
-  for (const language of ['sv', 'en']) {
+test('Swedish and English transcripts keep their words without forcing a provider language', async () => {
+  for (const [language, text] of [['sv', 'Ulf Lundell är bra.'], ['en', 'Ulf Lundell is good.']]) {
     let calls = 0;
     const api = createAstridTranscriptionApi({ apiKey: 'synthetic-key', fetchImpl: async (url, init) => {
-      calls++; assert.equal(init.body.has('language'), false); return transcript('Hello Astrid');
+      calls++; assert.equal(url, 'https://api.openai.com/v1/audio/transcriptions');
+      assert.equal(init.body.has('language'), false); return transcript(text);
     } });
     const result = request(api, { replaceHeaders: { 'x-astrid-language': language } }); await result.done;
     assert.equal(result.res.status, 200); assert.equal(calls, 1);
-    assert.equal(result.res.body.language, 'en'); assert.equal(result.res.body.inputLanguage, 'auto');
+    assert.equal(result.res.body.text, text); assert.equal(result.res.body.outputLanguage, 'original');
+    assert.equal(Object.hasOwn(result.res.body, 'language'), false); assert.equal(result.res.body.inputLanguage, 'auto');
   }
 });
 

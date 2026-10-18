@@ -111,8 +111,9 @@ test('Astrid gets an English default with explicit language requests preserved a
   }
 });
 
-for (const model of ['gpt-6-luna', 'gpt-5.6-terra']) test(`Director sends reviewed Astrid image parts through ${model} to the private tool-less Gateway turn`, async () => {
-  const input = envelope({ model });
+for (const dealerId of ['astrid', 'dragan', 'vera', 'amira', 'mei', 'paow', 'dragge'])
+for (const model of ['gpt-6-luna', 'gpt-5.6-terra']) test(`Director sends reviewed ${dealerId} image parts through ${model} to the private tool-less Gateway turn`, async () => {
+  const input = envelope({ model }); input.status.dealerId = dealerId;
   input.request.observation = syntheticObservation();
   let calls = 0;
   const service = createProductSpeechService({ settingsProvider: () => settings(), fetchImpl: async (_url, options) => {
@@ -126,7 +127,21 @@ for (const model of ['gpt-6-luna', 'gpt-5.6-terra']) test(`Director sends review
     assert.equal(Array.isArray(current), true);
     assert.equal(current[0].type, 'text');
     assert.deepEqual(current.slice(1), [{ type: 'image_url', image_url: { url: input.request.observation.images[0] } }]);
-    assert.equal(JSON.stringify(body.messages[1]).includes(input.request.observation.images[0]), false);
+    const textParts = body.messages.flatMap(message => Array.isArray(message.content)
+      ? message.content.filter(part => part.type === 'text').map(part => part.text) : [message.content]);
+    assert.equal(textParts.some(text => text.includes('data:image/jpeg;base64,')), false);
+    const currentData = JSON.parse(current[0].text.split('\n')[0]);
+    assert.equal(currentData.request.message, input.request.message);
+    if (dealerId === 'astrid') {
+      assert.equal(currentData.replyLanguagePolicy.default, 'English');
+      assert.deepEqual(JSON.parse(body.messages[1].content).history, input.request.history);
+    } else {
+      assert.deepEqual(currentData.status, input.status);
+      assert.deepEqual(currentData.request.history, input.request.history);
+      assert.equal(currentData.request.observation.consentTurnId, input.request.requestId);
+      assert.equal(Object.hasOwn(currentData.request.observation, 'images'), false);
+      assert.equal(Object.hasOwn(currentData, 'replyLanguagePolicy'), false);
+    }
     return completion(silence(input));
   } });
   assert.deepEqual(await service.handle(input), silence(input));

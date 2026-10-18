@@ -2,10 +2,62 @@
 
 <a id="dragan-talstatus"></a>
 
+## Lipsync 3: tredje provets tekniska uppspelning slutfördes — 18 oktober 2026
+
+PR250 är mergad som `51389bbe906c2ef1df5504ec8f9e8fc8a6b61f62`; obligatorisk
+PR- och main-CI passerade. Vercel och croupier-v2 verifierades live på samma
+revision före provet. Den 18 oktober 15:13 UTC skickades den uttryckliga
+instruktionen ”Svara på svenska. Säg exakt: Ulf Lundell är bra. Lägg inte till
+något.” vid Dragan test, publicerat paket 4. Chattens faktiska svar var
+”Ulf Lundell är bra.”. Mikrofon och kamera var avstängda, och agenten gjorde
+ingen insats eller spelstart.
+
+Spelaren kvitterade `completed: true`, `state: ended`, med 54 mottagna av
+54 planerade bildrutor och 42 frisläppta under ljudklockan. Uppspelningen
+startade efter 225 739 ms och avslutades efter 227 363 ms. WebSocket-handshake
+var 101; strömmen avslutades med `done`. Mottaget PCM var 73 560 byte,
+24 kHz mono, med verifierad hash. RunPod-jobbet
+`13432367-f41f-4a28-b127-36734f485272-e2` rapporterade både `COMPLETED` och
+`output.status=complete`, utan workerfel. Leverantörens kötid var 118,9 s
+och körtid 96,7 s. Jakob gav först ett positivt ljudomdöme men var senare
+osäker vid granskningen. Ljud, visuell läppsynk och tal under utdelning ska
+därför inte markeras slutgodkända. Den senare rapporten om dålig bild gällde
+uttryckligen det tysta videoutdraget, inte ett bekräftat fel i spelbordets bild. Väntan på cirka 3 minuter 46 sekunder behöver
+minskas innan funktionen är användbar som vanlig samtalsfunktion.
+
+Privat skärminspelning, separat mottaget WAV-ljud och körjournal är sparade
+under `production-trial-03` i agentens lokala artefaktkatalog. Filmen har
+samplings-/tidsluckor, är nedskalad till 634×900 och saknar inspelat systemljud; WAV-filen är det
+mottagna ljudet. Den ska inte beskrivas som en komplett ljud/video-inspelning
+av datorns faktiska utmatning.
+
+Profilen återställdes till preparation, talflaggan till 0 och den tillfälliga
+endpointkopplingen togs bort. Den egna endpointen `wim5211q6r5el9` och mallen
+`5x5dbswwl5` raderades. Stop-kvittot 15:20:33 UTC verifierade noll workers,
+stängd guard och frisläppt session `f7721202ce70a06e5a01ac5d9fbe2260`.
+Återställningsdeploy `dep-dbae7e3bc2fs73b2at2g` startades endast för
+croupier-v2 och blev live 15:21:49 UTC på samma SHA. Läsprovet 15:22:28 UTC bekräftade hälsa/version 200, talflagga 0 och publicerad DEAL-återhämtning. Inga OpenClaw-tjänster ändrades
+under provet. Rapportens första endpointkostnad var 0 USD och kan släpa;
+reserven 2,3333333333 USD behålls utöver tidigare 21,0700006667 USD.
+Reserver är inte fakturerad kostnad. Detta prov förbrukade dagens sista
+journalutrymme; inga fler betalda prov är automatiskt godkända.
+
+## Förberedd rättning: mikrofon och bildkontext — 18 oktober 2026
+
+En separat, ännu inte driftsatt rättning byter mikrofonens fasta översättning
+via `/audio/translations` mot originalspråkets `/audio/transcriptions`, med
+samma OpenAI `whisper-1`, gränser och behörighetskontroller. UI och API anger
+originalspråk utan att hitta på en detekterad språkkod. Validerade bilder från
+Dragan och övriga dealers skickas som riktiga multimodala delar i stället för
+base64 i text. Astrids svarspolicy är oförändrad. 128 lokala tester passerade: 90 språk-, samtyckes- och bildtransporttester
+samt 38 HTTP-prov för historik, behörighet och serverkontext. Inga tester
+hoppades över. Provideranrop var stubbar; ingen riktig mikrofon eller kamera
+aktiverades och ingen tjänst ändrades. PR251 är separat från buffertfixen. Det tredje provet är nu stängt; rättningen är ännu inte verifierad i produktion.
+
 ## Lipsync 3: prov två, återställning och ett avgränsat nästa prov — 18 oktober 2026
 
 Det andra produktionsprovet kördes 14:29–14:37 UTC på www.scoutgaming.tech
-med ”Ulf Lundell är bra.” och Dragan test, publicerat paket 4. Samma bank med
+med användartexten ”Ulf Lundell är bra.” och Dragan test, publicerat paket 4. Den återlästa chattloggen visar dock svaret ”Ulf Lundell is good.”; detta var inte ett verifierat svenskt ljudprov. Samma bank med
 50 exakta källklipp användes. Ingen insats eller utdelning gjordes. RunPod-kön
 tog 340 759 ms; mottaget PCM var 78 020 byte (1,6254 sekunder) med matchande
 hash. Två paket med 12 bildrutor anlände med 1,796211 sekunders mellanrum.
