@@ -21,7 +21,21 @@ Bas: C:\Users\jakem\.codex\visualizations\2026\10\18\01a14e80-4e7f-7ff0-a83b-0ec
    Video-SHA 2b9a07591fa2f39657d8d7b320e52dd242f62702480b50725747f062aa0ffa10.
    Granskningskopian finns även i local-review-03/ulf-lundell/.
 
-Varje prov innehåller original.mp4, dragan-local-2026-10-18.mp4,
+3. local-review-03/layers/: samma Ulf-talfilm med testrummets sparade lager.
+   Aktuell kompositor och 10 beroendemoduler kopierades oförändrade med SHA.
+   Lounge · varm och Blackjack · Oak lästes från Blob och hashkontrollerades.
+   Dator- och mobilformat använder en explicit viewportadapter, utan spelkort.
+   Webbläsarinspelning med ljud: 80 %, 100 % och 120 % dealerstorlek.
+   composition-desktop.mp4: 1280×720, 24fps, 8,459s.
+   SHA c213e979a4e732fa577a4b5244348157b43e2560420b517f62f973cb9dc36a0c.
+   composition-mobile.mp4: 720×1280, 24fps, 8,402s.
+   SHA 9f4c2af9cb483a27b5cce74071cf3804961b5793e4be70a5df2ffe0794497c60.
+   Båda exporter avkodades utan fel. Original-WebM och körjournaler behålls.
+   Browserns inspelningsklocka är inte bevis på produktens realtidsrendering.
+   Ingen ny TTS, profiländring eller visuell läppsynksacceptans.
+   Interaktiv granskning: http://127.0.0.1:8766/layers/
+
+De två första proven innehåller original.mp4, dragan-local-2026-10-18.mp4,
 comparison.mp4, face-comparison.mp4, comparison-frame.jpg, index.html,
 korjournal.md, run.jsonl, render-receipt.json och media-verification.json.
 Körjournalerna innehåller faktiska tider. MP4-filerna avkodades utan fel;
@@ -51,7 +65,9 @@ vid omkörning. generate-ulf-speech.mjs skapar en exklusiv anropsavsikt och
 får inte köras igen för att kringgå skyddet mot dubbel TTS-debitering.
 make-review.py sammanställer enbart provets egna granskningsfiler.
 serve-review.py visar dessa på127.0.0.1:8766 med HTTP Range för bildrutestegning;
-den är en privat statisk granskare och ingen lokal produktdatabas.
+den är en privat granskare och ingen lokal produktdatabas. Den tar också emot
+egna webbläsarinspelningar från samma loopback-origin till fasta nya filnamn;
+befintliga inspelningar skrivs inte över av servern.
 
 Nästa produktionssteg
 Bankfix PR242 är mergad; privat image är publicerad genom Actions39120838837.

@@ -4,6 +4,41 @@
 
 ## Lipsync 3: lokal bankhämtning verifierad — 18 oktober 2026
 
+Komplettering 18 oktober: ”Ulf Lundell är bra.” har också spelats in genom
+den oförändrade produktkompositorn med testrummets sparade lager Lounge · varm
+(`87bca397-cf29-4371-bf95-0fb0653472c7`) och Blackjack · Oak
+(`f00be01d-fe7c-4a43-85b9-952e378f7331`). Båda Blob-filerna hämtades
+skrivskyddat och verifierades mot Neon-posternas storlek/SHA. Projektets
+revision var `studio-e1bf984e-2f75-42f7-b7c8-07859ef9f968`.
+
+Webbläsarinspelningar med ljud finns i den privata basens
+`local-review-03/layers/composition-desktop.mp4` och `composition-mobile.mp4`:
+80 %, 100 % och 120 % av sparad dealerstorlek, cirka 8,5 sekunder per film.
+Exporterna är 24 fps, 1280×720 respektive 720×1280, avkodade utan fel.
+`context.json`, `module-hashes.json`, `browser-receipt.json`,
+`mobile-browser-journal.txt` och `composition-verification.json` anger
+lager, kodhashar, händelsetider och exporthashar. Granskning på
+`http://127.0.0.1:8766/layers/`; port 8765 är avslutad.
+
+Detta använder den redan renderade talfilmen och en simulerad viewportadapter,
+inte en ny live-session. Källrutans mun målas först; gemensam inramning,
+nyckling och scenplacering kommer efteråt. Ingen ny visuell acceptans av
+läppsynkens kvalitet eller verifiering av serverkort/pengar följer av detta.
+30 fokuserade tester för komposition och frame-layer passerade; det valfria
+externa webbläsar-codecprovet i testsuiten kördes inte. Inga nya TTS-anrop gjordes.
+
+Underagentens skrivskyddade miljögranskning 18 oktober hittade inget konkret
+kopplingsfel: Render game/zones pekar på croupier-production/main och
+croupier_game/neondb, OpenClaw-tokenparen matchar och rätt privata Blob-store
+är ansluten. Vercels faktiska GAME-URL förblir dold även i den godkända
+ENV-OCH-DB-exporten; destinationen är alltså inte färskbevisad. Preview och
+Production använder båda croupier-v2 och utgör inte isolerade provmiljöer.
+Ingen konfiguration ändrades. Underagenten läste live-deploy av `efdad149`
+på både Vercel och Render. Den nya workerimagen nedan är fortfarande inte
+aktiverad i RunPod. Nästa driftprov kräver färsk kumulativ budget/journal,
+en avgränsad endpoint med stoppguard och kontroll av bankhämtning, minst 30 fps,
+ljud/rutbindning samt fel/avbrott innan tal öppnas i det särskilda testrummet.
+
 Ett nytt lokalt HTTPS-prov reproducerade `bank_length_mismatch` i workern
 med ett korrekt chunked-svar redan vid bankkvittot. De tidigare testerna
 avvisade bara det felaktiga fallet med både Transfer-Encoding och
