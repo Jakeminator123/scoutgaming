@@ -1,54 +1,43 @@
-# Scoutgaming: ord i produkten
+# Scoutgaming: produkt och val
 
-Denna ordlista gör gränssnittets namn begripliga. Den kräver inte att gamla
-sidor, mappnamn, register eller tester bevaras. Aktuell kod och verifierad
-drift beskrivs i [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md);
-leveransläget finns i [handoffen](../../../docs/JOHN-HANDOFF.md). Användarens
-aktuella produktbeslut gäller framför äldre beskrivningar.
+Enda styrande produkttexten, 18 oktober 2026. Detta är målbilden;
+genomfört stöd redovisas i [handoffen](../../../docs/JOHN-HANDOFF.md)
+och [runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md).
+
+## Tre nivåer
+
+- **Admin** `/admin`: personalen förvaltar material, bolag och tilldelningar.
+- **Operatör** `/partner`: spelbolaget förvaltar sina rum inom tilldelat utbud.
+- **Spelare** `/lobby` → spel: väljer rummets publicerade alternativ.
+
+**Studio** är personalytornas visuella editor. `/studio` är teknisk basePath,
+inte en fjärde nivå eller ett extra register.
 
 ## Ägarskap och spelarens val
 
-| Ord | Betydelse |
-| --- | --- |
-| Bolag / operatör | Organisationen som äger sitt spelutbud och sina rum. Scoutgaming driver tjänsten. |
-| Spel | Exempelvis Blackjack eller Roulette, med tillåtna och kompatibla rum, dealers och bord. |
-| Rum | Ett bolagsägt val med eget ID och en bakgrund. Samma bakgrundsfil kan användas i flera rum utan att identiteter eller behörigheter slås ihop. |
-| Bakgrund | Scenens bakersta bild- eller videolager. |
-| Dealer | Registrerad person med egna klipp. En annan bakgrund eller klippkategori skapar ingen ny dealer. |
-| Bord | Scenens separata förgrundslager med spelets geometri. |
-| Sammansättning | Teknisk konfiguration för scenens lager, placering och kompatibilitet. Visa den när inställningarna behövs; den är ingen extra produktnivå. |
+Ett **rum** är en bolagsägd ingång till ett spel med eget ID.
+Scenen byggs av **bakgrund → dealer → bord → spelets kort och kontroller**.
+Ny bakgrund skapar varken ny dealer eller nytt rum. Delade filer ger inte delad behörighet.
 
-Normal scen är **bakgrund → dealer → bord → spelets kort och kontroller**.
-Spelaren väljer bland rummets tillåtna dealers och bord; giltiga förval
-behövs också. En gemensam mall kan påverka flera rums utkast. Ett valt rum
-i gränssnittet gör inte en malländring rumsspecifik. Rumsval måste sparas
-med serverkontrollerat ägarskap, behörighet och revisionsskydd.
+Alla tre lager ska kunna väljas i alla nivåer. Admin avgränsar operatörens
+utbud; operatören avgränsar rummets spelarval. Varje val kan låsas till ett
+giltigt förval. Avstängt val tar inte bort lagret. Bara kompatibla kombinationer
+erbjuds; inbakade lager i dealerfilm kan inte bytas separat. Saknas giltig
+kombination blockeras publicering/spelstart. Spelarbyten sker vid säker övergång
+och påverkar bara den spelarens presentation, aldrig kort, spelregler eller saldo.
 
-**Astrid är legacyreferens utan trelagersversion.** Hennes fungerande tal-
-och OpenClaw-flöden kan användas som referens. Fullbildsmaterial med inbakat
-bord eller bakgrund får inte beskrivas som frilagda lager. Dragan är den
-ordinarie dealern. Referensrollen kräver inga parallella lokala register.
+**UX-förslag:** en gemensam sceneditor med Bakgrund, Dealer, Bord och Tillåtna val.
+Rumsändringar sparas som utkast och granskas före publicering. Delade **mallar**
+redigeras separat med berörda rum synliga. Meny, rubrik och länk använder samma namn.
+Tekniska ID:n finns under Detaljer; namnbyte är ingen datamigrering.
+Admin får arbetslägena **Skapande** (dealers, klipp, scener) och **Verksamhet**
+(bolag, kunder, drift, ekonomi), med gemensamt designspråk och tydliga lägesnamn.
+Behåll klippkartan med spelval. Öppna rumseditorn från rummet; klipp och tal
+hör till dealerns bibliotek. Arbetsläge ändrar inte behörighet eller lagringsägare.
 
-## Ytor och lagring
-
-`/admin` är intern administration, `/partner` bolagets portal och `/lobby`
-spelarens ingång. Nya funktioner och instruktioner utgår från dessa ytor.
-Kvarvarande äldre adresser är kompatibilitet, inte krav på dubblerade menyer.
-`apps/studio/` är källkod och `/studio` teknisk basePath, inte ytterligare produkter.
-
-Neon är produktens register; Blob innehåller mediefilerna. Lokal authoring
-och isolerade testfixtures uppdaterar inte produkten automatiskt. Exakt
-import- och leveransstatus ska verifieras i den aktuella handoffen.
-
-Äldre fält som `lane`, `gameLaneId`, `presentationLaneId` och `dealerSets`
-är tekniska lagringsnamn. De skapar inga nya personer, rum eller produktnivåer.
-Nya texter använder ordet för vad kontrollen faktiskt ändrar. ID-byten kräver
-att referenser och sparade data hanteras; de görs inte som kosmetiska namnbyten.
-
-Arkivering visar påverkan och lossar aktiva kopplingar. Återställning öppnar
-inte automatiskt rum eller publicerar material. Permanent radering hanterar
-beroenden och användarens beslut separat från vanlig arkivering.
-
-Filformat, medieacceptans och tekniska gränser hör hemma i
-[runtime-referensen](../../../docs/LOCAL-PRESENTATION-RUNTIME.md), användarsteg i
-[guiden](README.md) och assistenternas funktion i [AI-dokumentationen](../../../docs/AI/README.md).
+Klipp ordnas som **kategori → situation → standardklipp + varianter**.
+**Vila (idle)** har en basloop och separata beteendeklipp. **Redo** skiljer
+till/från skon; **Dela till spelare** skiljer box 1–7. Varje situation har
+eget standardklipp. Tekniska poseversioner är inte beteendevarianter.
+Talade repliker behåller situation, språk och exakt text/ljud/bild tillsammans.
+[Användarguiden](README.md) beskriver arbetssteg, ingen separat produktmodell.

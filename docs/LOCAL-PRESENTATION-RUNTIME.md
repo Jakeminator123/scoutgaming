@@ -1154,17 +1154,17 @@ Den har tydliga kontroller för ljud, mikrofon, kamera och röstlogg med samma
 samtycke, men kräver två följande uppspelningar i den faktiska gemensamma
 rehearsalspelaren före merge. Kontrollerna ändras inte av assistentleveransen.
 
-## Central Studio: rum, spel och lager, 13 oktober 2026
+## Central Studio: teknisk inventering, 13 oktober 2026
 
 Produktmodellens enda källa är [TERMINOLOGI.md](../apps/studio/docs/TERMINOLOGI.md).
 Det här dokumentet beskriver teknisk lagring, format, uppspelning och
-övergångsbegränsningar. Målmodellen är inte ett kvitto på genomförd
-datamigrering eller godkänd speluppspelning. Den äldre inventeringen nedan
+övergångsbegränsningar. Det föreskriver ingen meny eller produktmodell.
+Den äldre inventeringen nedan
 lästes i produktion utan skrivningar på `main`
 `a5441feb1fd1761ca95d12b4f51beed2f689c57b`; `/control` och frysta
 paket fortsätter fungera medan `/admin` utvecklas.
 
-### Begrepp och ägarskap
+### Materialidentiteter
 
 Kanoniska nya material finns i `packages/presentation/contracts/material-catalog.mjs`: design-ID
 och exakt filhash knyter
@@ -1200,7 +1200,7 @@ en ordnad följd bildrutor med angiven längd i frames samt fast bildfrekvens.
 Upprepningar och återgång till grundbilden ska vara uttryckliga. Variationerna
 måste dela godkänd geometri, dimensioner, placering och speltyp med grundbordet;
 visuell likhet eller ett närliggande namn är inte tillräckligt. Endast
-bordslagret växlar: bolag, rum/bakgrund, dealerklipp och serverns kort-, sko-
+bordslagret växlar: bolag, rum, bakgrund, dealerklipp och serverns kort-, sko-
 och plånbokstillstånd behålls. Nuvarande statiska bilder har ingen automatisk
 blinksekvens. Sekvensmodell, redigerare och uppspelning är framtida arbete.
 
@@ -1213,46 +1213,12 @@ Namnbyte eller felaktigt deklarerade dimensioner kan inte göra de nya
 blackjackborden till roulettebord. Äldre okatalogiserade tillgångar behåller
 sitt befintliga kontrakt och behöver separat granskad klassificering.
 
-```mermaid
-flowchart LR
-  Scoutgaming --> Operator[Bolag / operatör]
-  Operator --> Game[Publicerat spel]
-  Game --> Room[Rum = valbar bakgrund]
-  Game --> Dealer[Tillåtna dealers och klipp]
-  Game --> Table[Tillåtna bord för spelet]
-  Room --> Asset[Versionerad bakgrundsfil]
-  Dealer --> Scene[Spelarens valda scen]
-  Table --> Scene
-  Room --> Scene
-```
-
-Rums-ID:t är bolagets spelbara bakgrundsval i ett spel; det är inte samma ID
-som den underliggande delbara filen. Ett spel får erbjuda flera rum, dealers
-och bord. Spelaren väljer en tillåten kombination och får en scen med ett
-giltigt dealer- och bordsförval om inga egna val görs. En ny kombination
-skapar ingen ny dealer, inget nytt biblioteksobjekt och inget nytt permanent
-rum. Äldre publicerade rum, sammansättningar och tekniska ID:n bevaras tills
-de kan överföras med rätt ägarskap och kompatibilitet.
-
 En dealer får bara väljas om den uttryckligen är tillåten och har nödvändigt
 material för spelet. Ett blackjackpaket blir inte ett roulettepaket genom
 namnbyte eller genom att återanvända samma sammansättning. Saknas godkänd
 roulettedealer visas detta som saknat material, aldrig som en färdig reservdealer.
 
-### Meny och översta kontexten
-
-Struktur ligger utanför Studio och visar Scoutgaming → Studio, Drift,
-Ekonomi, AI och Admin samt verkliga relationer och antal. Simulerade data
-och saknade anslutningar ska märkas i själva förhandsvisningen.
-
-Studio har en central klippkarta. Kontexten följer **spelbolag → spel →
-rum/bakgrund → dealer**. Blackjack/Roulette är spelval; rummets bakgrund
-väljs inom det valda spelet. Bakgrundens filer/varianter redigeras i
-rummets panel; en andra fristående bakgrundsväljare får inte skapa en
-motsägande rumskoppling. Bord och grundloop är kontextuella val vid kartan.
-Nivå 1/2/3 leder till intern administration, spelbolagsportal och spelarvy
-med befintliga behörighetskontroller. Inga gula omvägar till Control behövs
-för att slutföra Studio-arbetet.
+### Klippkartans tekniska gränser
 
 Varje klippkort visar valt händelsefack, variant och befintliga filer samt
 uppladdning/släppyta. Byte av variant får inte skriva över grannfack eller
@@ -1269,17 +1235,15 @@ Roulette, med spelens egna geometrier. Grundloopen tillhör dealern;
 bakgrundsvideon är ett separat, ljudlöst lager. Den får inte ersätta,
 blockera eller synka om dealerns tal, kortlogik eller resultat.
 
-Bakgrundsbyte, tidsintervall, slumpvariation och eventuell OpenClaw-styrning
-konfigureras på rummets bakgrundspolicy. De får endast välja tillåtna
-bakgrunds-ID inom miljön, inte byta bolag, rum eller bord. En annan miljö
-är ett uttryckligt rumsval. Om bordsautomation införs måste den vara separat,
+Automation får bara välja tillåtna bakgrunds-ID och får inte byta
+bolag, rum eller bord. Om bordsautomation införs måste den vara separat,
 välja enbart tillåtna bords-ID för spelet och bevara spelgeometrin; ett byte
 får inte ske mitt i en pågående giv/omgång. Det är inte en redan verifierad
 funktion. En kontroll på ett bordskort får aldrig styra bakgrundspoolen.
 
 Den befintliga `backgroundPlayback`-policyn ligger i sammansättningen och
-följer det frysta paketet. UI bör redigera den via rummet utan att skapa en
-konkurrerande timer. Dagens runtime stöder validerade händelser/intervall
+följer det frysta paketet; vald rumskontext gör ingen sådan skrivning rumsbunden.
+Dagens runtime stöder validerade händelser/intervall
 och budgetar (se nästa avsnitt); designexemplets Slump/Ordning/OpenClaw är
 inte bevis för att varje sådant läge redan finns i produktionsruntime.
 
@@ -1354,15 +1318,13 @@ status, aldrig en tyst ersättning med mallens bild eller en annan dealers film.
 
 I `packages/presentation/server/package-rooms.mjs` är dagens rum en operatörsägd
 spelbar ingång med ett `presentationLaneId`, ett `gameLaneId` och **ett**
-`game` (äldre poster utan fält läses som Blackjack). Det passar regeln att
-spelet erbjuder flera rum, men ett äldre rum behöver inte ännu ha en entydig
-bakgrund: dess sammansättning kan innehålla flera tillåtna filer och en separat
-standard. `gameLaneId` och URL-parametern `table` är tekniska spel-/rums-ID:n,
-inte bordsbilder. Övergången ska knyta varje aktivt rumsval till rätt
-bakgrund och spel utan att förlora gamla rums-ID/länkar, delade filmfiler,
-behörigheter eller publiceringsrevisioner. Gruppera aldrig på enbart namn
-eller filhash. Det behövs ingen ny resurstyp för en spelares tillåtna
-dealer-/bordskombination; den är ett val i spelet.
+`game` (äldre poster utan fält läses som Blackjack). Dess sammansättning kan
+innehålla flera tillåtna bakgrunder och ett separat förval. Publikkontraktet
+`packages/presentation/contracts/operator-rooms-contract.mjs` beskriver
+tillåtna bakgrunds- och bordsval per dealer. Det bevisar inte enhetliga
+låskontroller i alla tre gränssnitt. `gameLaneId` och URL-parametern `table`
+är tekniska spel-/rums-ID:n, inte bordsbilder. Bevara rums-ID/länkar,
+ägarskap och publiceringsrevisioner; gruppera aldrig på enbart namn eller filhash.
 
 Rumsarkivering påverkar den spelbara ingången; den får inte radera dealer,
 sammansättning eller delade filer. Arkivering av en uppsättningskategori
@@ -1377,11 +1339,9 @@ och en separat uttrycklig handling. Papperskorg/återställning återställer
 utkast, inte tyst återpublicering eller betald talgenerering. Genererings-
 och lipsynclogiken ska finnas kvar även när en kategori tas bort.
 
-Första UI-preview ska granskas innan ytterligare menyombyggnad. Därefter
-behövs verklig inläsning av ovanstående lager, isolerad verifiering av
-släpp/uppladdning och återläsning, säkra livscykelflöden, migrationsbeslut
-för tydlig rum/bakgrund-koppling och visuell acceptans i respektive spel. Testdata,
-registrerade rum eller gröna enhetstester är inte detta acceptanskvitto.
+Vid ändrad lagerhantering verifieras inläsning, sparning/återläsning,
+ägarskap och spelets kompatibilitet mot det ändrade beteendet. Registrering
+eller gröna enhetstester är inte i sig visuell medieacceptans.
 
 ## Medieformat för roulette och blackjack
 
@@ -1625,13 +1585,12 @@ bordsgeometri eller kontaktankare till blackjack.
 ### Kort överlämningsprompt till N1-/backoffice-agenten
 
 > Fortsätt utveckla Scoutgamings interna kontrollrum på nivå 1. Läs AGENTS.md
-> och följ målkontraktet Central Studio ovan för nya `/admin`. Befintliga
+> och produktinriktningen i apps/studio/docs/TERMINOLOGI.md. Befintliga
 > `/control` och dess publicerade paket fungerar under övergången. Roulette
 > har nu en gemensam 16:9-scen med PNG-bord,
 > spelneutrala publicerade bild-/MP4-bakgrunder och förberedd statisk alfamask
 > för framtida bordsvideo. Läs medieformaten i docs/LOCAL-PRESENTATION-RUNTIME.md
 > och den uppmätta leveransen i web/games/roulette/media-specification.json.
-> Följ TERMINOLOGI.md: spelbolag → spel → rum/bakgrund, med tillåtna dealers och bord.
 > Håll spelneutral bakgrund, spelspecifikt bord och frilagd dealer
 > separata. Visa mediaformat, beskärning/ankare, mask, hash och acceptansstatus
 > före förhandsvisning/publicering. Mottagen MP4 är en ogranskad prototyp;

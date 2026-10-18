@@ -1,5 +1,43 @@
 # Aktuell handoff — Scoutgaming
 
+## UX/UI: arbetslogg och kommande körordning — 18 oktober 2026
+
+[PR260](https://github.com/Jakeminator123/scoutgaming/pull/260) är ett dokumentationsutkast.
+Main `4cee9bc2` är integrerad; senare Lipsync-handoff och teknikavsnitt är bevarade.
+Ordinarie commit-kontroll: 544 tester passerade, 3 hoppades över, inga fel.
+[TERMINOLOGI](../apps/studio/docs/TERMINOLOGI.md) är den enda produktmodellen;
+äldre dubblerade föreskrifter har tagits bort. Klipp ordnas nu som kategori →
+situation → standardklipp + varianter. Poseversioner hålls separat.
+
+Klippkartans v2 visar en Vila-bas med beteendeklipp, Redos två riktningar,
+boxvisa varianter, bakgrundsval och separata dealer-/bordstransformer.
+Bordet är förvalt ankare och kan skalas. Fria kort-/markerankare,
+intervall och OpenClaw är lokala demoexempel; ingen produktkod har ändrats.
+
+HUVUDAGENT5 bekräftar befintligt stöd för idle-video/intervall/jitter och
+standard plus fyra varianter. PNG-bas, fria ankare, generell chattregeleditor
+och exakt var åttonde utdelning per box kräver komplettering. Räknarens
+livslängd återstår att besluta. Filmad handkontakt måste fortfarande kalibreras.
+Teknisk namn-/importreferens: [BLOB-NEON](storage/BLOB-NEON.md).
+
+Verifierat i skissen: procentfält/piltangenter, separata ankare utan hopp,
+idle-loop, variantgräns, standard vid utdelning 1–7 och variant vid 8 med
+separat boxräknare, samt smal vy utan överrinning. Pekardragning är ännu
+inte verifierad. Inga verkliga medie-, spel-, publicerings- eller OpenClaw-prov.
+Dokumentkontroller passerar. Leveranskontrollen kunde läsa GitGuardian:
+två öppna incidenter (38318914, 38318915), ofullständig platstäckning;
+historisk skanning är `too_large`. Dessa har inte ändrats av UX-arbetet.
+
+Demoerna finns privat i `C:/Users/jakem/Desktop/STUDIO JÄMFÖRELSE/demoer/`.
+Detaljerad arbetslogg och teknisk återkoppling ligger i samma mapps
+`PROVISORISKT/UX-KLIPPKARTA.md`, enligt Jakobs önskan om korta huvudguider.
+Äldre inventering/bilder finns i `random/admin-ux-20261018/`.
+
+Nästa steg: besluta återstående urvals-/sparpolicy och verifiera en avgränsad
+Admin-implementation före återanvändning i Partner/spelare. UI/UX äger skiss
+och produkttext; HUVUDAGENT5 äger teknisk namn-/importkontroll.
+
+
 <a id="dragan-talstatus"></a>
 
 ## Lipsync 3: rörligt tal godkänt i isolerat prov — 18 oktober 2026
