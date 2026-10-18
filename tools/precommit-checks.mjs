@@ -2,23 +2,10 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDocumentationPath } from './documentation-paths.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const documentationFiles = new Set([
-  'README.md', 'AGENTS.md', 'CLAUDE.md',
-  'apps/studio/README.md', 'apps/studio/docs/README.md',
-  // Folder guides describe source ownership; runtime prompts, package metadata
-  // and arbitrary Markdown outside docs/ are not documentation-only changes.
-  'apps/web/README.md',
-  'packages/presentation/README.md', 'apps/studio/client/README.md',
-  'packages/presentation/docs/INTEGRATION.md',
-  'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
-  'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
-  'services/astrid-gpu-worker/gateway/README.md',
-  'services/game/README.md', 'services/game/public/README.md', 'services/game/storage/README.md',
-  'services/openclaw/README.md', 'services/openclaw/lab/README.md',
-  '.ignore', '.cursorignore', '.cursorindexingignore',
-]);
+const indexingFiles = new Set(['.ignore', '.cursorignore', '.cursorindexingignore']);
 
 // Git exports repository-local variables to hooks. Child commands must discover
 // the repository from their explicit cwd, including temporary Git fixtures.
@@ -65,7 +52,7 @@ export function verificationMode(changes, { forceFull = false, env = process.env
     /^[AMD]$/.test(change.status) &&
     !change.path.split('/').some(part => part === '.' || part === '..') &&
     !change.path.includes('\\') &&
-    (documentationFiles.has(change.path) || /^docs\/.+\.md$/.test(change.path))
+    (indexingFiles.has(change.path) || isDocumentationPath(change.path))
   ) ? 'documentation' : 'focused';
 }
 
@@ -108,7 +95,7 @@ export function focusedTests(changes, root = repositoryRoot) {
       ...(path.startsWith('apps/studio/') ? [`apps/studio/test/${stem}.test.mjs`] : []),
       ...(path.startsWith('apps/') ? [`${path.split('/').slice(0, 2).join('/')}/test/${stem}.mjs`] : []),
     ]) add(candidate);
-    if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|check-push-target|push-github-work)\.mjs$)/.test(path)) {
+    if (/^(?:\.githooks\/|\.github\/workflows\/|tools\/(?:precommit-checks|ci-changes|documentation-paths|check-push-target|push-github-work)\.mjs$)/.test(path)) {
       for (const file of ['test/precommit-checks.mjs', 'test/ci-changes.mjs', 'test/github-workflow.mjs']) add(file);
     }
   }

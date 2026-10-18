@@ -220,7 +220,7 @@ I dealerbiblioteket betyder **rött** att grundloopen saknas eller ännu inte ä
 
 **AI-tal och uppföljning:** AI-småprat vid inaktivitet skapar ny text och har för närvarande stöd för Astrid. Röst och läppsynk är separata steg och kräver aktiverad talintegration. **Provspelning & logg** visar separata förlopp för inspelade klipp och AI-tal. Ett urvalsbeslut bevisar inte att en bild visats eller att läppsynken är godkänd.
 
-**Standardfilm per talfack:** för en nyregistrerad dealer, öppna **Klipp → Tal-klipp & ljud**, välj exempelvis **Välkomsthälsning** eller **Blackjack** och välj dess **Standardklipp**. Endast den dealerns tillgängliga filmer för exakt replik visas. Spara inställningarna; övriga talfack behåller sina val. **Inget standardklipp** lossar valet utan att radera filen. Finns en äldre exakt standard visas den uttryckligen som reserv när det egna valet lossas. Bibliotekets status visar vad som valts i utkastet, inte att filmen är publicerad eller har godkänd läppsynk. Filmen ska ha munrörelser som följer dess eget tal. Granska ljud och bild tillsammans, provspela två gånger i följd och publicera därefter till rummet.
+**Standardfilm per talfack:** för en nyregistrerad dealer, öppna **Klipp → Tal-klipp & ljud**, välj exempelvis **Välkomsthälsning** eller **Blackjack** och välj dess **Standardklipp**. Endast den dealerns tillgängliga filmer för exakt replik visas. Spara inställningarna; övriga talfack behåller sina val. **Inget standardklipp** lossar valet utan att radera filen. Finns en äldre exakt standard visas den uttryckligen som reserv när det egna valet lossas. Bibliotekets status visar vad som valts i utkastet, inte att filmen är publicerad eller har godkänd läppsynk. Filmen ska ha munrörelser som följer dess eget tal. Granska ljud och bild tillsammans före publicering till rummet. Upprepa uppspelningen när återstart eller städning är det som ska verifieras; det finns inget fast antal uppspelningar som publiceringskrav.
 
 **Talgranskning:** Under **Klipp → Tal-klipp & ljud** finns granskning för vald dealer. Den gäller exakta inspelade ljud-/videopar och är skild från att generera nya AI-repliker. Saknas granskningsbara par visas det; andra dealers filer används inte som reserv. AI-småprat vid inaktivitet (Probe) nås från **Tal & automatik** och är fortfarande begränsat till Astrid.
 
@@ -813,10 +813,11 @@ Anslutning, urval och laddning ersätter inte spelarens faktiska start-/bild-/sl
 Behåll tangentbordsflöden, synligt fokus och `prefers-reduced-motion`.
 Dessa krav är inte ett nytt driftprov eller en visuell acceptans.
 
-Medie-/spelarändringar kräver testerna i `.githooks/pre-commit` och granskning
-av berörda registrerade dealers med `?dealer=<name>&rehearsal=1`, två
-uppspelningar i rad. Provspelningen använder den faktiska spelaren. Samma
-formulering står i [AGENTS.md](../../../AGENTS.md).
+Verifiera ändrat beteende med riktade tester enligt [AGENTS.md](../../../AGENTS.md).
+Använd `?dealer=<name>&rehearsal=1` vid konkret uppspelningsfel eller begärd
+visuell granskning. Upprepade uppspelningar behövs när återstart eller städning
+är det ändrade beteendet. Det finns inget fast antal spel som leveransgrind.
+Visuell läppsynk kräver fortfarande faktisk bild-/ljudgranskning.
 Privata chattar, hemligheter och signerade medielänkar ska inte ingå i takepaket
 eller publika loggar. Aktuella runtimekontrakt finns i
 [presentationsguiden](../../../docs/LOCAL-PRESENTATION-RUNTIME.md);

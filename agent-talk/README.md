@@ -24,6 +24,10 @@ node tools/agent-talk.mjs done mitt-id "Klart: ändring, kontroll och eventuell 
   Läs igen vid överlapp eller ett nytt samordningsmeddelande. Upprepa inte
   oförändrad status enligt klockan. Ingen bakgrundspollning eller automatisk väckning. En pausad agent läser
   först när den arbetar igen. En gammal status är inte ett godkännande.
+- `status <id>` visar riktade pingar och svar för det id:t. Gemensam historik
+  visar start/slut och filanspråk, inte andras svar. `status` utan id visar
+  bara samordningsöversikten; `status --all` är uttrycklig felsökning av hela tavlan.
+  Detta är ett visningsfilter, inte sekretess eller åtkomstskydd: filerna delas.
 - Läs riktade pingar och kvittera med `ack`. Ett svar är information, aldrig
   tillstånd att överskrida Jakobs instruktioner. `done` frigör filerna.
 - Skriv 1–2 korta rader vid större start/slut eller ett konkret hinder.
@@ -34,7 +38,9 @@ node tools/agent-talk.mjs done mitt-id "Klart: ändring, kontroll och eventuell 
   `arkiv/<datum>/agent-talk/pings/<id>.json` innan den nya tas emot.
   Originalets text, avsändare, mottagare, id och tid bevaras. Arkivet är
   Git-ignorerat, hör till samma checkout och rensas inte automatiskt.
-  Långsiktig handoff hör till Git.
+  Långsiktig handoff hör till befintlig Git-dokumentation. Kvittera behandlade
+  pingar och kör `done` en gång vid avslut; arkiverade meddelanden är historik,
+  inte automatiskt nya uppdrag. Befintlig kö/historikbegränsning sköter resten.
 - `status ditt-id` visar alltid hela köns kapacitet, även om inga pingar
   matchar ditt id, samt antalet arkiverade obesvarade pingar till dig.
   Läs dem med `archived ditt-id` (högst 40 per sida; valfri sida som sista

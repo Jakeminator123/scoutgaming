@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -127,9 +127,43 @@ test('interruption after archive write is deduplicated and ack never makes the m
   assert.equal(replies.length, 1); assert.match(replies[0].text, /Recovered$/);
 });
 
+test('status keeps directed conversations out of unrelated and anonymous views', async t => {
+  const { run, save, read } = fixture(t);
+  const state = fullQueue();
+  state.history = [{ at: '2026-10-02', kind: 'start', agent: 'owner', text: 'Shared claim' },
+    ...Array.from({ length: 12 }, (_, index) => ({ at: new Date(Date.UTC(2026, 9, 2, 0, 0, index)).toISOString(), kind: 'ack', agent: 'receiver', to: 'sender', text: 'Directed answer' }))];
+  save(state);
+  const before = read();
+  for (const args of [[], ['unrelated']]) {
+    const status = JSON.parse((await run('status', ...args)).output);
+    assert.deepEqual(status.pings, []);
+    assert.deepEqual(status.replies, []);
+    assert.deepEqual(status.agents, state.agents);
+    assert.deepEqual(status.history.map(entry => entry.text), ['Shared claim']);
+    assert.equal(status.queue.pending, 40);
+  }
+  const sender = JSON.parse((await run('status', 'sender')).output);
+  assert.equal(sender.pings.length, 40);
+  assert.equal(sender.replies.length, 8);
+  assert.ok(sender.replies.every(entry => entry.text === 'Directed answer'));
+  assert.equal(JSON.parse((await run('status', 'receiver')).output).pings.length, 40);
+  const all = JSON.parse((await run('status', '--all')).output);
+  assert.equal(all.pings.length, 40);
+  assert.equal(all.history.length, 8);
+  assert.equal((await run('status', '../')).code, 1);
+  assert.deepEqual(read(), before, 'status never consumes messages or releases claims');
+});
+
 test('archived inbox is bounded and paginated without replaying requests', async t => {
-  const { run, read, save } = fixture(t); save(fullQueue());
-  for (let i = 0; i < 41; i++) assert.equal((await run('ping', 'sender', 'receiver', `Newest ${i}`)).code, 0);
+  const { directory, run, read, save } = fixture(t); save(fullQueue());
+  // Pagination needs saved records; overflow writes are exercised above.
+  const folder = join(directory, 'arkiv', '2026-10-02', 'agent-talk', 'pings');
+  mkdirSync(folder, { recursive: true });
+  const originalPing = fullQueue().pings[0];
+  for (let i = 0; i < 41; i++) {
+    const ping = { ...originalPing, id: (i + 100).toString(16).padStart(8, '0') + '-abc', text: 'Archived ' + i };
+    writeFileSync(join(folder, ping.id + '.json'), JSON.stringify({ version: 1, archivedAt: ping.at, ping }));
+  }
   const before = read(), first = JSON.parse((await run('archived', 'receiver')).output);
   const second = JSON.parse((await run('archived', 'receiver', '2')).output);
   assert.equal(first.total, 41); assert.equal(first.pings.length, 40); assert.equal(first.nextPage, 2);

@@ -125,15 +125,18 @@ async function update(change) {
 }
 try {
   if (command === 'status') {
-    if (id) agentId(id);
+    const all = id === '--all';
+    if (id && !all) agentId(id);
+    const recipient = all ? undefined : id;
     const state = read(), saved = archivedPings();
     console.log(JSON.stringify({
       queue: { pending: state.pings.length, capacity, available: Math.max(0, capacity - state.pings.length),
-        archivedPending: pendingArchive(state, id, saved).length, archiveCommand: `node tools/agent-talk.mjs archived ${id || '<mottagar-id>'}` },
+        archivedPending: pendingArchive(state, recipient, saved).length, archiveCommand: `node tools/agent-talk.mjs archived ${recipient || '<mottagar-id>'}` },
       agents: state.agents,
-      pings: state.pings.filter(ping => !id || ping.to === id || ping.from === id),
-      replies: repliesTo(state, id, saved),
-      history: state.history.slice(-8),
+      pings: state.pings.filter(ping => all || recipient && (ping.to === recipient || ping.from === recipient)),
+      replies: repliesTo(state, recipient, saved),
+      // Claims are shared coordination; directed receipts belong in replies only.
+      history: state.history.filter(entry => all || !entry.to && entry.kind !== 'ack' && entry.kind !== 'archive').slice(-8),
     }, null, 2));
   } else if (command === 'archived') {
     agentId(id);
