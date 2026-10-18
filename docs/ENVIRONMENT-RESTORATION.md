@@ -139,10 +139,12 @@ Bygg Studio först; `--offline --skip-build --no-open` får sedan använda
 just det nybyggda resultatet. Sessionslås och temporära processer/data ska
 kontrolleras efter stopp. Guards och byggspår ersätter inte en OS-sandbox.
 
-En `--single-branch`-klon hämtar normalt endast main. Före första
-featureleveransen: `git remote set-branches --add origin <featurebranch>`
-och `git fetch origin <featurebranch>`, så leveransverktyget kan sätta
-upstream. En redan verifierad push ska inte göras om med force.
+En `--single-branch`-klon hämtar normalt endast main. Lägg till den egna
+branchen med `git remote set-branches --add origin <featurebranch>` före
+ordinarie leveranskommando, så pushen kan skapa dess remote-tracking-ref.
+Om pushen redan lyckats men upstreamsteget stannat: kör därefter
+`git fetch origin <featurebranch>` och leveranskommandot igen. Fetch kräver
+att branchen redan finns på GitHub; ingen force-push behövs.
 
 | Separat behov | Orsak och minsta åtgärd |
 | --- | --- |
