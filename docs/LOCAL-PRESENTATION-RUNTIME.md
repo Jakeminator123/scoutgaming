@@ -136,7 +136,7 @@ Två driftprov 17 oktober 2026, på PR203 `9e533e7b` och PR208 `a0876f71`,
 nådde RunPods jobbkö från riktig bordschatt. Inget fick en worker före
 uppstartstidsgränsen, även med A40 och A6000 tillåtna i andra provet.
 Jobben avbröts och tillfälliga endpoints/templates togs bort av guarden;
-se [handoffens kvitto](JOHN-HANDOFF.md#dragan-verkligt-molnprov-och-fortsättning--17-oktober-2026-1631-utc).
+se [handoffens kvitto](JOHN-HANDOFF.md#dragan-talstatus).
 Draganprofilen är därefter avstängd. En ny endpoint måste bindas till rätt
 runtime-behörighet, template och image före nytt prov. Den borttagna
 testendpointens miljöreferens är inte fungerande drift. Kodprov, en slutförd
@@ -150,7 +150,7 @@ Första starten tog cirka 296 s från guardstart. Inga jobb skickades och
 talprofilen var av; modell-/bankladdning och läppsynk är fortsatt oprövade
 i molnet. Endpoint och template gav 404 och workerlistan var tom vid
 oberoende kontroll 16:30:58 UTC. En 150 s startfrist räcker inte för den
-observerade kallstarten. `web/moving-speech-limits.mjs` ger därför den
+observerade kallstarten. `services/game/moving-speech-limits.mjs` ger därför den
 separat verifierade moving-vägen 450 s callbackfrist, 480 s absolut session
 och 540 s provider-TTL. Själva workerexekveringen är fortsatt högst 180 s.
 Banktoken följer återstående sessionstid och återkallas vid avbrott; sen
@@ -163,7 +163,7 @@ RunPods [uppstartsbeskrivning](https://docs.runpod.io/serverless/development/opt
 skiljer imagehämtning från modellstart. Tjänsternas olika roller och env-profiler
 beskrivs i [miljöguiden](ENVIRONMENT-VARIABLES.md#läsande-jämförelse-17-oktober-2026).
 
-`web/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
+`services/game/moving-speech-runtime.mjs` använder samma OpenClaw-beslut och registrerade
 röst som övrig dealerchatt. Neon fryser exakta källreferenser och reserverar
 budget före GPU-anropet; TTS följer först efter workerintyg. PCM24k, textens
 hash, bankens hash och bildruteplan är en sammanhållen talhändelse.
