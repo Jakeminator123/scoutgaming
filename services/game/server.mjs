@@ -330,7 +330,7 @@ API['/api/roulette/table'] = async ({id,playerId,context,...request}) => {
 let partnerApi = null;
 const generationsApi = installGenerationsApi({
   tokenDigests: () => (process.env.GENERATIONS_READ_TOKENS ?? secretFromFiles('GENERATIONS_READ_TOKENS')).split(',').filter(Boolean),
-  mapping: () => localMediaEnabled ? clipMapping({ root, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
+  mapping: () => localMediaEnabled ? clipMapping({ root, resolveFile: publicAssetPath, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', revision: (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 2000 }).trim(); } catch { return null; } })() }) : null });
 function partner() { return partnerApi ??= installPartnerApi({ db, boDb, shoeCommand, newGame, getPlayer, logTx, jwtSign, publicUrl: process.env.PUBLIC_URL ?? 'https://bettalotto.se', publicGamePath: gamePath, root,
   nativeMode:!localMediaEnabled,
   ...(studioMediaRuntime?{readMetadata:studioMediaRuntime.readMetadata,hasPublicMedia:studioMediaRuntime.hasPublicMedia}: {}) }); }
