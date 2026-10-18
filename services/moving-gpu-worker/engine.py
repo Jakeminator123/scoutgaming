@@ -5,6 +5,7 @@ import os
 import signal
 from pathlib import Path
 import sys
+import diagnostics as diag
 
 ROOT = Path(__file__).resolve().parent
 
@@ -21,28 +22,36 @@ def worker(connection, bank_root, avatar):
                       OPENBLAS_NUM_THREADS="4", MKL_NUM_THREADS="4",
                       TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD="1",
                       HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
-    try:
-        # Never call vendor Motor.session/pcm_from_url/prefetch. Only the exact
-        # pinned renderer plus reviewed frame-contract patches runs after bank verification.
-        sys.path.insert(0, str(ROOT / "vendor"))
-        import motor
-        import torch
-        torch.set_num_threads(4)
-        engine = motor.Motor([avatar])
-        connection.send(("ready", engine.matt))
-        start, pcm = connection.recv()
-        def emit(metadata, data):
-            connection.send((metadata, data))
-        measurement = engine.utterance(avatar, pcm, 24000, start["karta"], emit, start["fran_ruta"])
-        connection.send(({"t": "done", **measurement}, None))
-    except BaseException:
-        # No traceback, path, PCM or credential-bearing provider payloads.
+    with diag.collect() as diagnostics:
         try:
-            connection.send(({"t": "error", "reason": "engine_failed"}, None))
-        except (OSError, EOFError):
-            pass
-    finally:
-        connection.close()
+            # Never call vendor Motor.session/pcm_from_url/prefetch. Only the exact
+            # pinned renderer plus reviewed frame-contract patches runs after bank verification.
+            with diag.phase("pythonImportsMs"):
+                sys.path.insert(0, str(ROOT / "vendor"))
+                import motor
+                import torch
+                torch.set_num_threads(4)
+            # Combined by design: Motor owns model, avatar and two warmup runs.
+            with diag.phase("modelAvatarWarmupMs"):
+                engine = motor.Motor([avatar])
+            diag.record(warmupFps=engine.matt.get("rutor_per_s"), warmupFirstChunkMs=engine.matt.get("forsta_bit_ms"))
+            diag.resources(torch, engine=True)
+            connection.send(("ready", {**engine.matt, "_diagnostics": diagnostics.snapshot()}))
+            start, pcm = connection.recv()
+            def emit(metadata, data):
+                connection.send((metadata, data))
+            measurement = engine.utterance(avatar, pcm, 24000, start["karta"], emit, start["fran_ruta"])
+            diag.render_measurement(measurement)
+            diag.resources(torch, engine=True)
+            connection.send(({"t": "done", **measurement, "_diagnostics": diagnostics.snapshot()}, None))
+        except BaseException:
+            # No traceback, path, PCM or credential-bearing provider payloads.
+            try:
+                connection.send(({"t": "error", "reason": "engine_failed", "_diagnostics": diagnostics.snapshot()}, None))
+            except (OSError, EOFError):
+                pass
+        finally:
+            connection.close()
 
 
 class ProcessEngine:
@@ -59,16 +68,23 @@ class ProcessEngine:
         if self.measurement is not None:
             return self.measurement
         kind, measurement = await asyncio.to_thread(self.connection.recv)
+        if isinstance(kind, dict):
+            diag.merge_engine(kind.get("_diagnostics"))
         if kind != "ready":
             raise ValueError("engine_start_failed")
-        self.measurement = measurement
-        return measurement
+        diag.merge_engine(measurement.get("_diagnostics"))
+        self.measurement = {key: value for key, value in measurement.items() if key != "_diagnostics"}
+        return self.measurement
 
     async def begin(self, start, pcm):
         await asyncio.to_thread(self.connection.send, (start, pcm))
 
     async def next(self):
-        return await asyncio.to_thread(self.connection.recv)
+        metadata, data = await asyncio.to_thread(self.connection.recv)
+        if isinstance(metadata, dict):
+            diag.merge_engine(metadata.get("_diagnostics"))
+            metadata = {key: value for key, value in metadata.items() if key != "_diagnostics"}
+        return metadata, data
 
     async def close(self):
         if self.closed:

@@ -160,6 +160,29 @@ frånkoppling, långsam mottagare och timeout stoppar jobbets egen motorprocess
 innan avbrott kvitteras. Journalen måste alltid slutföra just sin reservation
 och kontrollera providerjobbet även om workern försvinner.
 
+## Diagnostik och verklig varm/kall körning
+
+`diagnostics.py` samlar ett fast, sanerat schema per jobb. Samma snapshot finns
+i providerresultatets `diagnostics` och en stderr-rad med event
+`moving_worker_diagnostics`. Det ingår i den förseglade releasen. Diagnostiken
+är inte auktorisering och innehåller inga URL:er, capabilitytokens, taltexter,
+PCM eller godtyckliga undantag. Saknade mätvärden är `null`.
+
+Faserna skiljer bankcache/hämtning, extraktion+verifiering, modellhashning,
+process/importer, modell/avatar/uppvärmning, callback/bindning, PCM, rendering,
+överföring, kvittensväntan och cleanup. Modell/avatar/uppvärmning är en samlad
+fas eftersom vendor-motorn äger dessa steg. GPU-namn/kapacitet, host-RSS och
+Torchs högsta VRAM-användning läses utan en ny CUDA-kontext. Renderwall kan
+inkludera IPC/backpressure; fasvärden överlappar och får inte summeras till en
+påhittad total. Providerkön och webbläsarens ljud/bild mäts utanför workern.
+
+Bankarkivet kan överleva i samma containers temporära cache. Däremot skapas
+en ny extraktion och motorprocess för varje jobb; modellen återanvänds inte
+mellan repliker. `workersMin=1` ensamt gör alltså inte modellen varm. En framtida
+modellcache kräver exklusiv lease och full identitet, samt processavveckling
+vid avbrott/fel/bankbyte. Den här diagnostikändringen inför ingen sådan cache
+och ändrar inte rendering eller callbackprotokoll.
+
 ## Återstående aktivering
 
 Bygg och prova den nya imagen i isolerad miljö före publicering/omkoppling.
@@ -167,7 +190,8 @@ Mät kall/varm första ljud- och bildruta, faktisk cancellationkostnad och
 visuell läppsynk. Förena med autentiserad talsession, dynamisk OpenClaw-text,
 befintlig röst-/TTS-adapter, serverns omplanering och spelarens ljudklocka.
 En image per gemensam motor kan användas för olika hashbundna dealerbanker;
-denna version kör ett jobb/uttalande åt gången och gör ingen dold bankcache.
+denna version kör ett jobb/uttalande åt gången, med den uttryckliga arkivcachen
+ovan men utan delad extraktions- eller modellcache.
 
 MuseTalks MIT-licens följer med dess pinnade checkout. Emils privata snapshot
 saknar separat licensfil; se källkvitto före eventuell extern distribution.

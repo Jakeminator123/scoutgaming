@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, Mock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import bank_download as download
 import entrypoint
+import diagnostics as diag
 from contracts import validate_job
 from test_contracts import binding, job, H
 
@@ -294,3 +295,17 @@ class BankTLS(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(verifier.call_args.args[0], self.cache / (H + ".tar"))
         models.assert_not_called()
         engine.assert_not_called()
+
+    async def test_cache_hit_and_fetch_timings_describe_actual_io_without_urls(self):
+        with diag.collect() as cold:
+            await self.fetch()
+        with diag.collect() as warm:
+            await self.fetch()
+        for label in ("bankReceipt", "bankArchive"):
+            self.assertEqual(cold.snapshot()[label+"Cache"], "miss")
+            self.assertGreaterEqual(cold.snapshot()[label+"FetchMs"], 0)
+            self.assertEqual(warm.snapshot()[label+"Cache"], "hit")
+            self.assertIsNone(warm.snapshot()[label+"FetchMs"])
+            self.assertGreaterEqual(warm.snapshot()[label+"CacheVerifyMs"], 0)
+        self.assertEqual(self.calls, ["/receipt", "/archive"])
+        self.assertNotIn("private", str(cold.snapshot())+str(warm.snapshot()))

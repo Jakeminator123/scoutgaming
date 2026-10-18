@@ -211,6 +211,25 @@ inte i Git-backupen och lämnades orörda vid denna rensning.
 
 ## Beständig molndata
 
+För läppsynk är den fulla Dragan-banken, bankkvittot och källmanifestet
+beständiga privata Blob-objekt under `dealers/dragan/runtime/moving-bank`.
+De 50 originalklippens ID/hashar hör till Neon-registret. Ett provresultat
+eller en mindre lokalt extraherad bank får inte ersätta fullbanken.
+Emils `lappsynk-export-fe1b55e.zip` är ett separat källunderlag (SHA-256
+`949443c1084ab3f515792fe66c5e2d381e985f9bdc743e792e5fbca36a9240a3`), inte
+den aktiva banken och inte huvudcheckoutens `a.zip` med agentinställningar.
+Ingen av dessa ZIP-filer ska läggas i Git eller registreras som videoklipp.
+
+Egna renderingar och granskningar ska bevaras med hash, roll, ursprungligt
+klipp/bank, exakt ljud/text och granskningsstatus. Bevara källor tills en extern
+kopia är återläst och hashverifierad; en lyckad upload eller HEAD är inte samma
+sak. Molnmanifest och aktuell bevaringsstatus anges i
+[talhandoffen](JOHN-HANDOFF.md#dragan-talstatus). Råa requestfiler, tokens,
+konversationer och miljöfiler ingår inte i generella medieuppladdningar.
+Repoverktygets retention omfattar inte automatiskt Codex privata
+visualizations-mappar. Flytta inte eller radera dessa som disponibel cache
+innan den uttryckliga bevaringen är verifierad.
+
 Produktionen använder nu Neon för Studio-policy, metadata och kostnads-/
 jobbjournaler samt privat Blob för beständiga paket. Konton och spel är bevarade
 i sina befintliga Neon-databaser. Isolerad native-QA har separat scope;
