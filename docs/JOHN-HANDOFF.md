@@ -21,7 +21,7 @@ inte sparade medieidentiteter, publika URL:er eller privata datarötter.
 | Databas | Isolerad PostgreSQL/omstart/HTTPS i CI; produktionsledger ready med pending=[] kl. 08:53:56 UTC. Required schema 014 är installerat. |
 | Frontend | Vercel `dpl_JBah2ng3jCQtKDpk25P4f7MVpqrW` READY på accepterad SHA; 17/17 produktionskontroller. |
 | Spelserver | Render `dep-dba8id8ae00c739g70fg` LIVE 08:56:42 UTC på accepterad SHA. Version, health/lobby 200, privata gränser 401, Admin-retur 307 och oautentiserad klippmappning 401 med Bearer/no-store verifierades 08:57:42–43 UTC. |
-| Gateway/Director | Gateway på `d55ce412714e9e0c85103358f381098ce3d35077`, normal deploy `dep-dba28hnavr4c73fsf3fg` LIVE 01:45:00 UTC. SIGTERM/ny start utan EPERM eller kvarvarande lease; signerad config.get 200 och connected/applied 01:45:22 UTC. Director på `67bac46d`, med verifierat identisk buildclosure. Modellval, disk och autoDeploy oförändrade. |
+| Gateway/Director | Gateway på `d55ce412714e9e0c85103358f381098ce3d35077`, normal deploy `dep-dba28hnavr4c73fsf3fg` LIVE 01:45:00 UTC. SIGTERM/ny start utan EPERM eller kvarvarande lease; signerad config.get 200 och connected/applied 01:45:22 UTC. Director på `9f7f415d9896ca05b8c240f210ea64a1c30f2b04`, deploy `dep-dba30r2jnfac73e5err0` LIVE 02:36:29 UTC; health/autentiserat API och signerad Gateway config.get 200/connected/applied verifierade 02:37:34 UTC. PR237/238 ändrar inte Directors byggda kod. Modellval, disk och autoDeploy oförändrade. |
 
 Driftkvittot ovan kommer från mergagentens kontroller, inte en ny körning i
 dokumentationspasset. Det autentiserade cloudRuntime-provet gjordes i CI,
@@ -54,8 +54,10 @@ Den ger workern säkra, tillåtna interna felkoder samt generiska timeout-/I/O-
 kategorier. Okända meddelanden, URL:er och credentials exponeras inte;
 cancellation och exklusiv admission bevaras. Mergagentens kod- och
 CPU-containerkontroll gav 52/52 godkända tester, inklusive renderaren.
-Appens main-CI och fullständiga driftkvitto var ännu under arbete vid denna
-avstämning. Detta är diagnostik, inte en bevisad läppsynkrättning.
+[Main-CI 39114081418](https://github.com/Jakeminator123/scoutgaming/actions/runs/39114081418) är SUCCESS och frontend på samma SHA är READY med
+17/17 kontroller. Render inväntar imagepubliceringens check 39114263475
+enligt tjänstens befintliga all-checks-regel; fullständigt appdriftkvitto
+återstår vid denna avstämning. Detta är diagnostik, inte en bevisad läppsynkrättning.
 
 Förseglad kodrelease:
 `3bec5b4be9954d929fcc60d281b89981a7be3d7a9027008466c240b90c1e44ad`.
