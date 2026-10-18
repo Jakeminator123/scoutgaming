@@ -432,11 +432,15 @@ Efterfixen flyttar chattens visning, avbrott och beslutade uppspelning till
 en importerbar klientmodul. Beteendeprov ersätter regex/VM-utskärning och
 källtextassertioner; liveägarskap, dealer/session/revision, exakt media,
 textfallback och avbrott behålls. Testnamnet är `test/chat-decision-player.mjs`.
+Den extraherade modulen ingår också i serverns och browserns QA-källhashregister;
+avvikande bytes eller saknad pin stoppar innan kö eller strömning öppnas.
 Studios guide skiljer direkt Next-env från anslutningshjälparens avsiktliga
 bakåtkompatibilitet. Inga privata env-/data-/mediefiler flyttas.
 
 **Lokalt verifierat:** 71 passerade beteende-/regressionsprov; två valfria
 Playwright-prov överhoppades eftersom browsermodulen saknas i arbetskopian.
+Två nya QA-regressionsprov reproducerade hashregisterluckan före rättning;
+efteråt passerade 158/158 prov i QA-/chattpaketet, helt utan betalda anrop.
 515 JavaScript-/TypeScript-kandidater har inga föräldralösa tester, och
 miljövariabelregistret stämmer. Obligatorisk CI följs på efterfixens PR.
 Detta är inget nytt produktions- eller läppsynkprov. Lipsync 3:s handoff ovan består.
