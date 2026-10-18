@@ -10,7 +10,8 @@ klippkontraktets beskrivning utger sig inte längre för att styra produktbegrep
 dess maskinläsbara regler och ID:n är oförändrade.
 
 Dokumentändringarna är pushade i [PR260](https://github.com/Jakeminator123/scoutgaming/pull/260),
-öppen som utkast. Ett interaktivt förslag visas i UI/UX-chatten med schematiska exempeldata.
+öppen som utkast. UI/UX-chatten visar nu en komplett klickbar klippkarteskiss
+med sex exempelfunktioner, valbara tagningar, kort/marker och scenförhandsvisning.
 Ingen ny sceneditor, behörighetspolicy, datamigrering eller speländring har
 implementerats. Källinventeringen och livebilderna finns kvar privat i
 `random/admin-ux-20261018/`; uppgifterna där är historiska granskningsbelägg.
@@ -72,13 +73,26 @@ hierarkin och dessa gränser direkt i samordningen den 18 oktober.
 1. Använd den överenskomna hierarkin och HUVUDAGENT5:s namn-/importreferens;
    källspecifika alias får inte bli generella regler. Gör den exakta
    etikett-/fackmappningen innan implementation. Den delen återstår.
-2. Visa ett mer komplett klippkarta-förslag med verkliga arbetsmoment och
-   panel för scen, kort och marker. Den första lagerdemon anger bara principen.
+2. **Förslag visat:** klippkort och tagningar bredvid scenen, kartzoom/panorering,
+   separata mobil-/desktopplaceringar, slutpositioner för kort, insatscirklar med
+   Följ korten/egen placering samt Flytta scenen tillsammans för dealer och bord.
+   Delad mall och bordsprofil är synligt sparmål; ingen verklig publicering görs.
+   Skissen finns privat i UI/UX-chattens `scout-klippkarta.html`.
 3. För varje befintlig sida: fastställ uppgift, sparmål, rättighet och nästa steg;
    samla överlappande vyer och rätta länkar med bolag/rum/dealer bevarade.
 4. Implementera avgränsat i Admin med befintliga kontrakt och verifiera sparning,
    revisionskonflikter och publicering; återanvänd därefter editorn i Partner
    och förenkla spelarens tillåtna val. Detta är kommande arbete.
+
+Skisskontroll: JavaScript parsas. Webbvyn verifierade klipp-/tagningsbyte,
+kortens procentfält och piltangenter, följande respektive manuella marker,
+gruppflytt jämfört med frikopplad dealer, bevarade separata mobil-/desktopvärden,
+tidsreglage samt lokal sparning/återläsning. Smal vy kontrollerades vid cirka
+305 CSS-pixlar utan horisontell överrinning. Pekardragning är implementerad
+men inte verifierad: webbvyns dragautomation misslyckades. Scenfiguren och
+kortets rörelse är schematiska; inga verkliga klipp, handkontakter eller
+spel-/sparcallbacks har accepterats genom detta prov. Ingen extra produktsvit
+kördes för den fristående skissen.
 
 Denna logg samlar status och körordning. Produktregler finns bara i TERMINOLOGI;
 teknik och namnkopplingar länkas till sina befintliga referenser. Inga konstaterade
