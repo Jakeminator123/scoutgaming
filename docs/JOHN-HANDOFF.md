@@ -13,6 +13,27 @@ gäller granskningsfilen med SHA-256
 full produktionsantagning/spelrunda. Det tidigare tysta, nedskalade utdraget
 är inte detta prov och ska inte användas för kvalitetsbedömningen.
 
+### Naturligt ljudslut i spelaren
+
+Det nya isolerade B-provet med ”Jakob är kung.” tog emot 50 ansiktsrutor
+och nådde sista ruta 65 i 66-rutorsplanen, men avslutades med
+`moving_speech_audio_paused`. En deterministisk regression återskapade
+felet: webbläsarens `ended=true` och `paused=true` kan bli synliga för
+bildklockan innan den köade `ended`-händelsen körs. Spelaren låter nu båda
+vägarna använda samma avslutskontroller. Manuell paus utan naturligt slut,
+ofullständig kroppssekvens, saknad slutruta och förlorad ägare avbryter
+fortfarande. En senare `ended`-händelse avslutar inte samma replik igen.
+[PR258](https://github.com/Jakeminator123/scoutgaming/pull/258) innehåller rättningen.
+42 fokuserade spelare-/rutelagertester passerade; tre browserprov hoppades
+över utan angiven browserfixture. Huvudagentens verkliga replay av samma
+B-resultat med exakt spelarhash gav därefter `completed=true`, `state=end`,
+50 mottagna ansiktsrutor och observerad sista kroppsruta 65 i 66-rutorsplanen.
+Callbackloggen innehåller 63 unika kroppsrutor; det är inte bevis för att
+samtliga 66 visades. Kvitto: 64 067 byte, SHA-256
+`40138ffa770e713dcde0e0c64f804bab8e3c8579f746fabfb3a101882f85419f`.
+Detta är inget nytt kvalitetsgodkännande och ändrar inte den äldre godkända
+filmen, workerreleasen eller providerinställningar.
+
 ### Arbetsplats och leverans
 
 Egen arbetskopia: `C:/Users/jakem/.codex/worktrees/lipsync3-server-diagnostics/croupier`,
@@ -27,7 +48,8 @@ Separat cachearbete sker i den rena, återanvända arbetskopian
 `C:/Users/jakem/.codex/worktrees/lipsync3-bank-http/croupier`, branch
 `codex/lipsync3-warm-engine`. Beroenden och befintliga junctions ändras inte.
 
-Cachekoden ligger i PR255. Efter mergegranskningens avbrottsfynd rättades
+Cachekoden är mergad i [PR255](https://github.com/Jakeminator123/scoutgaming/pull/255)
+som `967693a42a7524a25018aaa9adbb44a0c844c2e1`. Efter mergegranskningens avbrottsfynd rättades
 slutgrinden: ett mottaget avbrott eller recv-fel under sista `done`-sändningen
 får aldrig ge återanvändbar modell. 54 fokuserade CPU-tester passerade utan
 skips; hela källsviten körde 90 tester med en överhoppad renderklass eftersom
@@ -38,8 +60,8 @@ förseglar 24 filer, inklusive nya `engine_cache.py` och vendorpatchen som
 inväntar samtliga kompositionsfutures före återanvändning. Ursprungliga
 importhashar bevaras i `source.json`. Exklusiv lease, generationsbundet IPC,
 färsk bank-/modellverifiering och 30-fps-mätning består. Avbrott/fel/byte av
-identitet stoppar processen. Denna release är ännu inte publicerad, GPU-provad
-eller verifierad i produktion; det tidigare visuella godkännandet gäller
+identitet stoppar processen. Releasen är nu publicerad och GPU-provad isolerat;
+produktionsprovet återstår. Det tidigare visuella godkännandet gäller
 oförändrat den äldre provfilen, inte nya synteser.
 
 Primärcheckouten `C:/Users/jakem/Projects/croupier` låg vid kontrollen på
@@ -52,9 +74,9 @@ separata klon-/synkspåret; merge-agenten hanterar granskad integration.
 
 ### Serverantagning för varm worker
 
-Efter PR253 återanvänds `lipsync3-server-diagnostics/croupier` på branch
-`codex/lipsync3-warm-admission` för serverändringen. Den är ännu inte mergad
-eller driftsatt. Den nya moving-kontrollen tillåter högst en bevisat egen,
+Serverändringen från `codex/lipsync3-warm-admission` är mergad i
+[PR256](https://github.com/Jakeminator123/scoutgaming/pull/256) som
+`dd96b5d58f1411e10b5c88ed090771a8c00bd9c1`. Den nya moving-kontrollen tillåter högst en bevisat egen,
 ledig worker med färska release-/hälsodata och samma journal-lease; den
 ändrar inte generiska jobb, återhämtning, insats, saldo eller spelförlopp.
 Endpointens min/max är 0/1, tomgång högst 60 s inom samma 720 s reservation.
@@ -71,15 +93,23 @@ miljöberoende testwrappern rapporterar ett skip; samma SQL-funktion kördes
 uttryckligen av fixturen. Ingen produktionsdatabas användes. Underlag:
 `motion-readiness/warm-capacity-ready-tests.log` och `warm-admission-sql.log`
 i den privata provbasen nedan. Oberoende kodgranskning fann inga blockerare;
-verkligt serverless-/varmcacheprov återstår.
+produktionsprov med serverless och varm återanvändning återstår.
 
-För nästa två planerade produktionsrepliker finns en separat kodändring på
-`codex/lipsync3-two-reply-trial`: tekniskt totalutrymme 10,8 → 13,2 USD och
+För nästa två planerade produktionsrepliker är den separata kodändringen
+mergad i [PR257](https://github.com/Jakeminator123/scoutgaming/pull/257) som
+`b6544ec38f129ba61a203e952f00b04e76d74503`: tekniskt totalutrymme 10,8 → 13,2 USD och
 runtime-dygnsgräns 6 → 8,4 USD. Detta är reservationer, inte fakturerad kostnad
 eller ett nytt mänskligt kostnadstak. Budget-ID, 1,2 USD per reservation och
 den redan sparade dygnspolicyn 20 USD behålls. Kodändringen ensam höjer inte
 journalen: en separat färsk, uttrycklig amendment krävs före aktivering.
 Ingen sådan molnändring ingår i denna kodleverans.
+
+Huvudagenten återläste driften separat: Render `croupier-v2` var LIVE på
+PR257:s SHA ovan vid 18:26:46 UTC, deployment `dep-dbagqdnlk1mc73crs4og`
+(färdig 18:19:35.152748 UTC). Vid 18:29 UTC pekade `www.scoutgaming.tech`
+i rätt Scoutgaming-team/projekt på Vercel deployment
+`dpl_41GTSTT2Ht5YfCsH44f4Jrt8t9Rw`, READY/production med samma SHA.
+Detta verifierar appkoden från PR255–257; PR258 väntar fortfarande på merge.
 
 30 fokuserade budget-/journaltester och ny isolerad PostgreSQL-körning
 (4 retained, 26 SQL, 59 integration; samma fristående wrapper-skip som ovan)
