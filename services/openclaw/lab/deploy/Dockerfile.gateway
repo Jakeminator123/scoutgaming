@@ -13,5 +13,8 @@ ENV OPENCLAW_STATE_DIR=/data/openclaw \
 # then drops to node before loading configuration, helper or Gateway code.
 USER root
 EXPOSE 18789 18790
-# Retain the official image's tini entrypoint.
+# Run bootstrap as PID 1 so its existing handlers receive container stop signals.
+# A root tini parent cannot signal the child after its irreversible uid drop
+# on runtimes without CAP_KILL. Ownership repair and privilege drop stay intact.
+ENTRYPOINT []
 CMD ["node", "/opt/croupier-gateway/gateway-bootstrap.mjs"]

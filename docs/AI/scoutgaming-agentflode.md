@@ -1,5 +1,14 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Gateway-stoppsignal — 18 oktober 2026
+
+Gateway-bootstrap blir container-PID 1 för att ta emot stoppsignal även efter
+irreversibel uid/gid-sänkning. Den ärvda root-tini-föräldern tas bort;
+mountkontroll, state, modellval och behörigheter behålls. Det isolerade
+containerprovet använder faktisk image/bootstrap/starter och syntetisk CLI
+utan nät. [Handoff](../JOHN-HANDOFF.md) skiljer lokala tester, CI och drift;
+[Render-guiden](openclaw/RENDER-START-SV.md) beskriver första övergången.
+
 ## Portabel GitGuardian-start — 17 oktober 2026
 
 Projektets MCP-konfiguration använder nu aktuell checkout via ett tillfälligt

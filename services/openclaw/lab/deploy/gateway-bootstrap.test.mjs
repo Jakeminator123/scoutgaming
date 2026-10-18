@@ -102,6 +102,7 @@ test('Docker runs a root-owned bootstrap and imports the existing starter only a
   assert.match(docker,/RUN mkdir -p \/data\/openclaw \/opt\/croupier-gateway && chown node:node \/data\/openclaw\r?\n/);
   assert.match(docker,/RUN chown root:root \/opt\/croupier-gateway && chmod 0755 \/opt\/croupier-gateway/);
   assert.doesNotMatch(docker,/chown -R|chown node:node \/opt/);
+  assert.deepEqual(JSON.parse(docker.match(/^ENTRYPOINT (.+)$/m)[1]),[]);
   assert.deepEqual(JSON.parse(docker.match(/^CMD (.+)$/m)[1]),['node','/opt/croupier-gateway/gateway-bootstrap.mjs']);
   assert.ok(source.indexOf('owner();')<source.indexOf('await loadStarter();'));
   assert.doesNotMatch(source,/chmod|recursive|readFile|process\.env\./);

@@ -1,5 +1,31 @@
 # Aktuell handoff — Scoutgaming
 
+## Gateway-signalrättning — 18 oktober 2026
+
+OpenClaw-flytten PR234 är mergad som 67bac46d; CI samt web/spel/Director
+är verifierade av mergagent. Gateway-deploy dep-dba10h7btjjs73dcd2u0
+misslyckades: ärvd root-tini kunde inte skicka stoppsignal till Node efter
+irreversibel uid-sänkning (EPERM). Gateway återhämtade sig efter sin befintliga
+femminuterslease och kör den äldre revisionen 538e5f1f. Flyttens Gateway-drift
+är därför ännu inte klar och lipsynk2 har inte fått startsignal.
+
+Dockerfilen nollställer nu ärvd ENTRYPOINT så oförändrad bootstrap är PID 1.
+Befintlig mountrotkontroll, icke-rekursiv chown och irreversibel uid/gid/drop
+behålls. Starterns befintliga signalhandler når därmed sitt Gateway-barn.
+Image/version/digest, state, auth och modellval ändras inte.
+
+Lokalt: 8 bootstrap-tester godkända, 0 fel; Linux-containerprovet är explicit
+skippat på Windows. CI måste köra den riktiga pinnade imagen, faktisk
+bootstrap/starter och en syntetisk CLI på egen volym utan nätverk: uid/gid
+1000, PID 1, SIGTERM, borttagen syntetisk lease och exit 0. Provet täcker
+vanlig CMD samt sh/sleep/exec-vägen för engångsövergången. Det verifierar
+inte riktiga OpenClaws lease-release eller produktion; dessa kräver driftkvitto.
+
+Första driftsättningen samordnas av mergagent enligt
+[Render-guiden](AI/openclaw/RENDER-START-SV.md). Spelrotens färdiga flytt är
+separat sparad på codex/stage3-game-root-final (dccb86c8); dess leverans
+fortsätter efter denna rättning och verifierad Gateway-drift.
+
 ## C3 — OpenClaw integrerad med levererad Studio, 18 oktober 2026
 
 Studio-PR232:s main bcb0dbf1d34a1b77a5a83f94a736721d594e4f21 integreras
