@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validMovingBudgetAmendment,freshMovingBudgetAmendment,MOVING_TRIAL_BUDGET} from '../services/game/moving-speech-budget.mjs';
+import {validMovingBudgetAmendment,freshMovingBudgetAmendment,MOVING_TRIAL_BUDGET,MOVING_PROVIDER_BUDGET_MAX_MICRO_USD} from '../services/game/moving-speech-budget.mjs';
 const input={amendmentId:'11111111-1111-4111-8111-111111111111',budgetId:'dragan-test-20261017',actor:'Jakob',
   authorizationId:'jakob-dragan-runpod-total-15-20261017',evidenceSha256:'a'.repeat(64),observedAtMs:1000000,
   expectedLimitMicroUsd:4800000,expectedReservedMicroUsd:4800000,expectedReservationCount:4,newLimitMicroUsd:6000000,
@@ -24,14 +24,18 @@ test('insufficient coverage, journal capacity above 15 USD, global cap above 40 
 
 // Explicit global authorization includes historical provider windows, while the
 // existing journal receives only one additional fixed reservation.
-test('40 USD accounting permits the next 1.20 USD reservation without widening journal capacity',()=>{
- const next={...input,authorizationId:'fixture-total-40',
-  expectedLimitMicroUsd:7200000,expectedReservedMicroUsd:7200000,expectedReservationCount:6,
-  newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,globalLimitMicroUsd:40000000,otherReservedMicroUsd:16403334};
+test('second production trial permits exactly one more 1.20 USD reservation within unchanged daily and global caps',()=>{
+ const next={...input,authorizationId:'fixture-trial-two',
+  expectedLimitMicroUsd:8400000,expectedReservedMicroUsd:8400000,expectedReservationCount:7,
+  newLimitMicroUsd:MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,globalLimitMicroUsd:40000000,
+  providerSpentMicroUsd:525826,otherReservedMicroUsd:18736668};
  assert.equal(validMovingBudgetAmendment(next),true);
  assert.equal(next.newLimitMicroUsd-next.expectedReservedMicroUsd,MOVING_TRIAL_BUDGET.reserveMicroUsd);
+ assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
+ assert.equal(MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd,6000000);
+ assert.equal(MOVING_PROVIDER_BUDGET_MAX_MICRO_USD,40000000);
  assert.equal(validMovingBudgetAmendment({...next,otherReservedMicroUsd:16000000}),true);
- for(const patch of [{newLimitMicroUsd:15000001},{globalLimitMicroUsd:40000001},
+ for(const patch of [{newLimitMicroUsd:10800000},{newLimitMicroUsd:15000001},{globalLimitMicroUsd:40000001},
   {providerSpentMicroUsd:40000001},{otherReservedMicroUsd:40000001},{otherReservedMicroUsd:38000000},
   {windowReserveMicroUsd:1199999},{globalLimitMicroUsd:'40000000'}])
   assert.equal(validMovingBudgetAmendment({...next,...patch}),false,JSON.stringify(patch));
