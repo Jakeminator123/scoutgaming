@@ -21,6 +21,7 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
       ORDER BY c.relname,co.conname`).then(result=>result.rows);
     const oldChecks=await checks();assert.equal(oldChecks.length,3);
     assert.ok(oldChecks.every(row=>row.validated&&row.definition.endsWith('<= 15000000)')));
+    await runInitialBudgetSqlChecks(client,'014');
     await client.query(`INSERT INTO croupier_studio.moving_speech_budget_amendments
       (environment_id,workspace_id,budget_id,amendment_id,previous_limit_micro_usd,budget_limit_micro_usd,reserved_before_micro_usd,amendment,created_at_ms)
       VALUES('isolated-capacity','qa','existing-grant',$1,10800000,13200000,10800000,'{}',1)`,[randomUUID()]);
@@ -36,6 +37,7 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
     await client.query(migrations.find(row=>row.version==='015').sql);
     assert.deepEqual(await snapshot(),before,'015 changes no grant, reservation, policy, data or ledger row');
     assert.deepEqual(await checks(),oldChecks.map(row=>({...row,definition:row.definition.replace('15000000','40000000')})));
+    await runInitialBudgetSqlChecks(client,'015');
     const insert=async(previous,limit)=>client.query(`INSERT INTO croupier_studio.moving_speech_budget_amendments
       (environment_id,workspace_id,budget_id,amendment_id,previous_limit_micro_usd,budget_limit_micro_usd,reserved_before_micro_usd,amendment,created_at_ms)
       VALUES('isolated-capacity','qa',$1,$2,$3,$4,$3,'{}',1)`,[randomUUID(),randomUUID(),previous,limit]);
@@ -46,6 +48,54 @@ export async function runMovingBudgetMigrationSqlChecks({pool}) {
       await client.query('ROLLBACK TO SAVEPOINT invalid_capacity');
     }
   } finally {try{await client.query('ROLLBACK');}finally{client.release();}}
+}
+
+async function runInitialBudgetSqlChecks(client,version) {
+  // Real journal SQL inside the surrounding rollback-only DDL fixture. Replace
+  // only transaction boundaries with savepoints; no query or constraint is mocked.
+  const pool={async query(sql,values){
+    if(sql==='BEGIN ISOLATION LEVEL READ COMMITTED')return client.query('SAVEPOINT initial_budget_call');
+    if(sql==='COMMIT')return client.query('RELEASE SAVEPOINT initial_budget_call');
+    if(sql==='ROLLBACK'){
+      await client.query('ROLLBACK TO SAVEPOINT initial_budget_call');
+      return client.query('RELEASE SAVEPOINT initial_budget_call');
+    }
+    return client.query(sql,values);
+  }};
+  const scope={environment:`qa_initial_${version}`,workspaceId:'initial-budget-fixture'};
+  const journal=await createSpeechJournal({pool,environmentId:scope.environment});
+  const id=randomUUID(),sha256='3'.repeat(64),revision='media-fixture',projectRevision='project-fixture';
+  const record={id,sha256,contentType:'video/mp4',pathname:`croupier/media/${id}.mp4`,classification:{dealerId:'dragan',kind:'idle'}};
+  await client.query("INSERT INTO croupier_studio.documents (environment_id,workspace_id,kind,revision,value) VALUES ($1,$2,'project',$3,jsonb_build_object('revision',$3::text))",[scope.environment,scope.workspaceId,projectRevision]);
+  await client.query('INSERT INTO croupier_studio.media_records(environment_id,workspace_id,id,revision,record) VALUES($1,$2,$3,$4,$5::jsonb)',[scope.environment,scope.workspaceId,id,revision,JSON.stringify(record)]);
+  await journal.initializeBudgetPolicy({dailyBudgetMicroUsd:20000000,confirmation:'verified-new-empty-cost-journal'});
+  const lease=await journal.acquireLease({resource:'stream-session',holderId:'initial-budget-qa'});
+  const request=()=>{
+    const sessionId=randomBytes(16).toString('hex');
+    return {...MOVING_TRIAL_BUDGET,scope,ownerHash:'a'.repeat(64),requestId:randomUUID(),fingerprint:'b'.repeat(64),
+      binding:{schemaVersion:1,releaseSha256:'4'.repeat(64),dealerId:'dragan',workerAvatar:'dragan',profileRevision:'5'.repeat(64),
+        sourceSetSha256:'6'.repeat(64),avatarSha256:'7'.repeat(64),bankReceiptSha256:'8'.repeat(64),sessionId,attemptId:'attempt-1',nonce:'9'.repeat(64)},
+      mediaReferences:[{id,sha256,pathname:record.pathname,revision}],projectRevision,sessionId,endpointId:'initial-fixture',lease,
+      currentBudgetMicroUsd:MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd,workerState:{workers:0,busy:0,available:0}};
+  };
+  for(let attempt=1;attempt<=11;attempt++){
+    const saved=await journal.reserveMovingSession(request());
+    assert.equal(saved.totalBudgetMicroUsd,13200000,`${version}: initial and durable grant must not inherit technical40`);
+    assert.equal(saved.totalReservedMicroUsd,attempt*1200000);
+    const jobId=`initial-${saved.sessionId}`;
+    await journal.markRequestSubmissionStarted({key:saved.key,lease});
+    await journal.markSubmissionStarted({sessionId:saved.sessionId,lease});
+    await journal.attachJob({sessionId:saved.sessionId,lease,jobId});
+    await journal.recordProviderStatus({sessionId:saved.sessionId,lease,jobId,status:'COMPLETED'});
+    await journal.confirmWorkerDrained({sessionId:saved.sessionId,lease,proof:{workerId:saved.workerId,workers:0,busy:0,available:0}});
+    await journal.completeRequest({key:saved.key,lease});
+  }
+  const history=()=>client.query('SELECT * FROM croupier_studio.moving_speech_bindings WHERE environment_id=$1 ORDER BY session_id',[scope.environment]).then(r=>r.rows);
+  const before=await history();assert.equal(before.length,11);
+  await assert.rejects(journal.reserveMovingSession(request()),error=>error.code==='generated_speech_total_budget_exhausted');
+  await assert.rejects(journal.reserveMovingSession({...request(),initialBudgetMicroUsd:40000000}),error=>error.code==='generated_speech_total_budget_exhausted');
+  assert.deepEqual(await history(),before,`${version}: neither runtime nor changed bootstrap can raise an existing13.2 grant`);
+  await journal.releaseLease({lease});
 }
 
 // Called only by the localhost PostgreSQL fixture after its target assertion.

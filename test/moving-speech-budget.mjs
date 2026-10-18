@@ -55,6 +55,7 @@ test('historical two-reply amendment required coverage for both unchanged reserv
 test('technical capacity permits funded amendments beyond 15 USD without granting them',()=>{
  assert.equal(MOVING_BUDGET_MAX_MICRO_USD,40000000);
  assert.equal(MOVING_TRIAL_BUDGET.totalBudgetMicroUsd,MOVING_BUDGET_MAX_MICRO_USD);
+  assert.equal(MOVING_TRIAL_BUDGET.initialBudgetMicroUsd,13200000);
  assert.equal(MOVING_TRIAL_BUDGET.currentDailyBudgetMicroUsd,20000000);
  assert.equal(MOVING_TRIAL_BUDGET.reserveMicroUsd,1200000);
  const funded={...input,authorizationId:'fixture-funded-capacity',globalLimitMicroUsd:40000000,

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createMovingSpeechSession } from '../services/game/moving-speech-session.mjs';
 import { createMovingSpeechRunPod, summarizeMovingWorkerHealth } from '../services/game/moving-speech-runpod.mjs';
 import { movingCapacityFixture } from './fixtures/moving-capacity.mjs';
+import { MOVING_TRIAL_BUDGET } from '../services/game/moving-speech-budget.mjs';
 
 const sha = digit => digit.repeat(64);
 const image = `ghcr.io/jakeminator123/moving-gpu-worker@sha256:${sha('a')}`;
@@ -106,9 +107,19 @@ test('aborted admission performs no provider submit and a later attempt can acqu
   const next=await f.admit();await next.cancel();assert.equal(f.state.released,false);
 });
 
+test('Dragan admission forwards its bounded initial grant independently of technical capacity',async()=>{
+  const f=fixture({configuration:MOVING_TRIAL_BUDGET}),attempt=await f.admit();
+  assert.equal(f.state.input.budgetId,MOVING_TRIAL_BUDGET.budgetId);
+  assert.equal(f.state.input.initialBudgetMicroUsd,13200000);
+  assert.equal(f.state.input.totalBudgetMicroUsd,40000000);
+  assert.equal(f.state.input.reserveMicroUsd,1200000);
+  await attempt.cancel();
+});
+
 test('configuration bounds technical capacity and retains per-job, daily and moving-window limits',()=>{
   assert.doesNotThrow(()=>fixture({configuration:{totalBudgetMicroUsd:40000000,currentDailyBudgetMicroUsd:20000000}}));
   for(const configuration of [{totalBudgetMicroUsd:40000001},{totalBudgetMicroUsd:40000000,reserveMicroUsd:5000001},
+    {initialBudgetMicroUsd:0},{initialBudgetMicroUsd:5000001},{initialBudgetMicroUsd:'13200000'},
     {currentDailyBudgetMicroUsd:20000001},{lifetimeMs:480001},{startupMs:450001},
     {startupMs:0},{startupMs:1001,lifetimeMs:1000},{idleMs:15001}])assert.throws(()=>fixture({configuration}),/configuration/);
 });

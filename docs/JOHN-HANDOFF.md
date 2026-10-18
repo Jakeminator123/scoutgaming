@@ -117,7 +117,15 @@ Den nya separata budgetändringen skiljer teknisk kapacitet från beviljad journ
 kodens totalmax är 40 USD och runtime-dygnsgränsen 20 USD, samma som den befintliga
 dygnspolicyn. Budget-ID och reservationen 1,2 USD behålls. Ett befintligt ID får
 fortfarande bara använda sin lägre, varaktigt beviljade budget. Migration 015
-höjer enbart tre CHECK-gränser 15 → 40 USD, bevarar 013/014:s historiska bevis och
+är inte ett startbidrag: Dragan-konfigurationen anger separat `initialBudgetMicroUsd`
+13,2 USD för ett tomt budget-ID. Sessionen vidarebefordrar det till journalen;
+ett befintligt ID behåller sin durable gräns även om startvärdet ändras.
+48 fokuserade budget-, sessions- och journaltester passerade. En ny isolerad
+SQL-körning passerade med faktisk 40/13,2-konfiguration på både 014 och 015:
+11 reservationer följdes av avslag utan historikändring, även med ändrat startvärde.
+Kvitto: `motion-readiness/budget-policy-bootstrap-sql.log` i provbasen; wrappern
+gav 15 pass/1 redundant fristående SQL-skip, SQL-funktionen kördes uttryckligen.
+Migration 015 höjer enbart tre CHECK-gränser 15 → 40 USD, bevarar 013/014:s historiska bevis och
 ändrar inga budgetbeslut, reservationer eller avgifter. Första leveransen markerar
 015 som `deploymentOptional`: först måste alla berörda appar driftsättas med stöd
 för versionen, därefter appliceras och återläses 015. En följdleverans gör 015

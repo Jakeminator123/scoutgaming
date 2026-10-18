@@ -5,6 +5,7 @@ export const MOVING_BUDGET_MAX_MICRO_USD = 40000000;
 export const MOVING_PROVIDER_BUDGET_MAX_MICRO_USD = 40000000;
 export const MOVING_TRIAL_BUDGET = Object.freeze({
   budgetId: 'dragan-test-20261017', totalBudgetMicroUsd: MOVING_BUDGET_MAX_MICRO_USD,
+  initialBudgetMicroUsd: 13200000,
   reserveMicroUsd: 1200000, currentDailyBudgetMicroUsd: 20000000,
 });
 const id = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
