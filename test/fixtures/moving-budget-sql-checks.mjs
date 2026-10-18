@@ -145,6 +145,12 @@ async function runMovingCapacitySqlChecks({pool,input,journal}) {
   const lease=await journal.acquireLease({resource:'stream-session',holderId:'capacity-qa',ttlMs:GPU_RESERVATION_WINDOW_MS});
   const second=await createSpeechJournal({pool,environmentId:scope.environment});
   const proof=(isWarm=true,now=Date.now())=>movingCapacityFixture({warm:isWarm,endpointId,now});
+  const initializingProof=()=>{
+    const value=proof(false);value.health.workers.initializing=1;
+    value.release.workers.workers=[{state:'scaled-down',image:value.release.expectedImage,
+      version:value.release.workers.endpointVersion,isStale:false}];
+    return value;
+  };
   const request=(movingCapacity=proof(),extra={})=>{
     const sessionId=randomBytes(16).toString('hex');
     return {...input,endpointId,lease,sessionId,requestId:`capacity-${randomUUID()}`,budgetId,
@@ -183,11 +189,22 @@ async function runMovingCapacitySqlChecks({pool,input,journal}) {
     assert.deepEqual(await leaseRow(),priorLease,'capacity checks cannot renew or replace the execution fence');
   }
   await assert.rejects(second.reserveMovingSession(request(proof(),{lease:{...lease,fence:lease.fence+1}})),fail('generated_speech_stale_fence'));
+  for(const mutate of [
+    value=>{value.release.workers.workers=[];},
+    value=>{value.release.workers.workers[0].isStale=true;},
+    value=>{value.health.workers.initializing=2;},
+    value=>{value.health.jobs.inQueue=1;},
+  ]) {
+    const capacity=initializingProof();mutate(capacity);const before=await counts();
+    await assert.rejects(journal.reserveMovingSession(request(capacity)),fail('generated_speech_moving_capacity_unverified'));
+    assert.deepEqual(await counts(),before,'unverified initialization leaves no request, binding or charge');
+    assert.deepEqual(await leaseRow(),priorLease);
+  }
   await assert.rejects(journal.reserveSession({...request(),workerState:warm}),fail('generated_speech_worker_not_drained'));
   assert.deepEqual(await history(),priorHistory);
-  for(const isWarm of [false,true]) {
-    const saved=await journal.reserveMovingSession(request(proof(isWarm)));
-    assert.equal(saved.totalReservedMicroUsd,isWarm?200000:100000);
+  for(const [index,makeProof] of [()=>proof(false),()=>proof(true),initializingProof].entries()) {
+    const saved=await journal.reserveMovingSession(request(makeProof()));
+    assert.equal(saved.totalReservedMicroUsd,(index+1)*100000);
     assert.equal(saved.totalBudgetMicroUsd,1000000);
     assert.equal(saved.fence,lease.fence);
     await finish(saved);
@@ -199,11 +216,11 @@ async function runMovingCapacitySqlChecks({pool,input,journal}) {
   assert.equal(attempts.find(value=>value.status==='rejected').reason.code,'generated_speech_session_busy');
   const saved=attempts.find(value=>value.status==='fulfilled').value;
   assert.equal((await journal.listRecoverableSessions()).length,1);
-  assert.equal(saved.totalReservedMicroUsd,300000);
+  assert.equal(saved.totalReservedMicroUsd,400000);
   assert.deepEqual(await leaseRow(),priorLease);
   const spentHistory=await history();
   assert.deepEqual(spentHistory.filter(row=>row.budget_id!==budgetId),priorHistory,'other budget histories remain byte-for-byte unchanged');
-  assert.equal(spentHistory.filter(row=>row.budget_id===budgetId).length,3);
+  assert.equal(spentHistory.filter(row=>row.budget_id===budgetId).length,4);
   const jobId=`job-${saved.sessionId}`;
   await journal.markRequestSubmissionStarted({key:saved.key,lease});
   await journal.markSubmissionStarted({sessionId:saved.sessionId,lease});
