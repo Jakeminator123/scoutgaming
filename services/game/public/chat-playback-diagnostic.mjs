@@ -1,3 +1,5 @@
+import { chatFailureCode } from '../../../packages/presentation/contracts/chat-response.mjs';
+
 const timingKeys = ['socket_open_ms', 'first_media_ms', 'socket_to_media_ms', 'first_playing_ms', 'first_visible_frame_ms'];
 const terminalStates = new Set(['ended', 'interrupted', 'failed', 'cancelled', 'text-only', 'silent', 'unverified']);
 
@@ -27,6 +29,13 @@ export function createChatPlaybackDiagnostic(element, now = () => performance.no
       } else if (receipt.state === 'interrupted' && receipt.evidence === 'media-lifecycle') current.state = 'interrupted';
       else return;
       current.source = 'generated-lipsync-stream'; current.streamId = receipt.streamId; current.reviewStatus = 'pending';
+      if (typeof receipt.started === 'boolean') current.started = receipt.started;
+      if (typeof receipt.firstFrame === 'boolean') current.firstFrame = receipt.firstFrame;
+      if (receipt.failureCode !== undefined) current.failureCode = chatFailureCode(receipt.failureCode);
+      if (receipt.frameCounts && ['received', 'released', 'total'].every(key => Number.isSafeInteger(receipt.frameCounts[key])
+        && receipt.frameCounts[key] >= 0 && receipt.frameCounts[key] <= 1000)) {
+        current.frameCounts = Object.fromEntries(['received', 'released', 'total'].map(key => [key, receipt.frameCounts[key]]));
+      }
       current.elapsedMs = Math.max(0, Math.round(now() - requestedAt));
       current.timings = {};
       for (const key of timingKeys) {
@@ -35,11 +44,17 @@ export function createChatPlaybackDiagnostic(element, now = () => performance.no
       }
       publish();
     },
-    finish(requestId, state) {
+    finish(requestId, state, reason) {
       if (!matches(requestId) || !terminalStates.has(state) || state === 'ended') return;
       // A normal gate completion cannot manufacture an audible stream receipt.
       if (state === 'unverified' && terminalStates.has(current.state)) return;
-      current = { requestId, state, completed: false, elapsedMs: Math.max(0, Math.round(now() - requestedAt)) };
+      // Keep the bounded stream evidence when the outer pose gate reports the
+      // same failure. It must not erase whether audio/frames actually started.
+      current = { ...current, state, completed: false, elapsedMs: Math.max(0, Math.round(now() - requestedAt)) };
+      if (reason !== undefined) {
+        const code = chatFailureCode(reason);
+        if (code !== 'chat_failed' || !current.failureCode) current.failureCode = code;
+      }
       publish();
     },
   };

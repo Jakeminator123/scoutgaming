@@ -1941,7 +1941,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     const receipt = await received.completion;
     if (receipt.status === 'failed') throw new Error(receipt.reason || 'Speech failed');
     if (receipt.status === 'cancelled') {
-      chatPlaybackDiagnostic.finish(requestId, 'cancelled');
+      chatPlaybackDiagnostic.finish(requestId, 'cancelled', receipt.reason);
       if (chatStatus) chatStatus.dataset.failureCode = chatFailureCode(receipt.reason);
       setChatStatus(chatFailureMessage(receipt.reason));
     }
@@ -1957,7 +1957,7 @@ async function sendChat({ message: reviewedMessage, images = [], profileRevision
     const reason = speechPoseGate.get(requestId)?.reason || error.message || 'chat-failed';
     if (chatStatus) chatStatus.dataset.failureCode = chatFailureCode(reason);
     speechPoseGate.cancel(requestId, reason);
-    chatPlaybackDiagnostic.finish(requestId, 'failed');
+    chatPlaybackDiagnostic.finish(requestId, 'failed', reason);
     setChatStatus(reason === 'speech_autoplay_blocked'
       ? 'Webbläsaren blockerade ljudet. Tillåt ljud för sidan och skicka frågan igen.' : chatFailureMessage(reason));
     nativeObservation.emit('status', { state: 'chat-failed', requestId, reason }, chatCorrelation);

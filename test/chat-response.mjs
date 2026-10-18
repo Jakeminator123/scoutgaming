@@ -48,11 +48,12 @@ test('legacy JSON clients work and failures get distinct explanations', async ()
 
 test('DOM failure diagnostics keep application codes and redact arbitrary upstream data', () => {
   for (const code of ['generated_speech_session_untracked_worker', 'generated_speech_session_provider_job_mismatch',
-    'generated_speech_session_provider_forbidden', 'generated_speech_session_stop_timeout', 'stale_chat_memory']) {
+    'generated_speech_session_provider_forbidden', 'generated_speech_session_stop_timeout', 'stale_chat_memory',
+    'moving_speech_frame_unavailable', 'moving_speech_socket_closed', 'moving_speech_timeout', 'invalid_moving_speech_chunk']) {
     assert.equal(chatFailureCode(code), code);
   }
   for (const error of [undefined, 'https://provider.test/?key=private', 'generated_speech_private_token_value',
-    'Authorization: Bearer private', 'The spoken private reply']) assert.equal(chatFailureCode(error), 'chat_failed');
+    'moving_speech_private_token_value', 'Authorization: Bearer private', 'The spoken private reply']) assert.equal(chatFailureCode(error), 'chat_failed');
 });
 
 function responseFixture() {

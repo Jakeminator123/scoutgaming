@@ -150,6 +150,9 @@ test('pose changes and missing exact next frames silence the audio and close the
     await assert.rejects(f.promise, reason === 'pose' ? /stale_pose/ : /frame_unavailable/);
     assert.equal(f.audio.paused, true); assert.equal(f.audio.muted, true); assert.equal(f.socket.readyState, 3);
     assert.equal(f.receipts.at(-1).state, 'interrupted'); assert.equal(f.sent.at(-1).t, 'abort');
+    assert.equal(f.receipts.at(-1).failureCode, reason === 'pose' ? 'chat_failed' : 'moving_speech_frame_unavailable');
+    assert.equal(f.receipts.at(-1).started, true); assert.equal(f.receipts.at(-1).firstFrame, true);
+    assert.deepEqual(f.receipts.at(-1).frameCounts, { received: 24, released: 5, total: 48 });
   }
 });
 test('lost ownership socket after worker done silences the remaining long body immediately',async()=>{
@@ -158,6 +161,19 @@ test('lost ownership socket after worker done silences the remaining long body i
   f.send({t:'done',id:f.m.plan.start.id,frames:36});await turn();await turn();f.socket.onclose();
   await assert.rejects(f.promise,/socket_closed/);assert.equal(f.audio.muted,true);assert.equal(f.audio.paused,true);
   assert.equal(f.sent.some(x=>x.t==='played'),false);
+  assert.equal(f.receipts.at(-1).failureCode,'moving_speech_socket_closed');
+});
+
+test('server failure is distinct from a malformed message and arbitrary errors never enter the receipt', async () => {
+  const f = fixture(); await f.ready(); f.send({ t: 'error', code: 'moving_speech_unavailable' });
+  await assert.rejects(f.promise, /moving_speech_unavailable/);
+  assert.equal(f.receipts.at(-1).failureCode, 'moving_speech_unavailable');
+  assert.equal(f.receipts.at(-1).started, false);
+  const secret = 'https://provider.example/?key=fixture-private';
+  const bad = fixture({ overrides: { beforeStart: () => { throw Error(secret); } } });
+  await assert.rejects(bad.promise, /fixture-private/);
+  assert.equal(bad.receipts.at(-1).failureCode, 'chat_failed');
+  assert.doesNotMatch(JSON.stringify(bad.receipts), /fixture-private|provider.example/);
 });
 
 test('wrong nonce, plan binding, original rest, PCM hash and unmatched chunk never start audio', async () => {
