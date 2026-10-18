@@ -1,5 +1,79 @@
 # Aktuell handoff — Scoutgaming
 
+<a id="dragan-talstatus"></a>
+
+## Dragan: avslutat diagnosprov, bank_length_mismatch — 18 oktober 2026 10:10 UTC
+
+Detta är aktuellt slutläge och ersätter äldre väntande steg nedan. Ingen GPU
+eller fortsättningsbevakning lämnas igång. Jakob önskade en bra överlämningspunkt.
+Ingen rättning av HTTP-hämtningen har gjorts; denna leverans ändrar bara handoffen.
+
+**Verifierat:** PR240 är mergad och appen körde
+`209d62f436786f9dae69c7ee6f1b256253ab6805`. Diagnostikimagen från PR238
+är publicerad och använd i provet: image
+`sha256:3ede7d24fd7885f2a8ffcd1ad4798d2d1caa8799f926c610b576d196cc92db6c`,
+release `3bec5b4be9954d929fcc60d281b89981a7be3d7a9027008466c240b90c1e44ad`.
+OpenClaw svarade exakt "Hej Jakob, nu testar vi ljudet.". Budget/admission,
+nyckelåtkomst och workerstart passerades. Ingen spelinsats gjordes.
+
+**Bekräftat fel:** RunPod-jobbet
+`878f6561-7d54-4203-a091-cf4935386642-e1` väntade 214835 ms och exekverade
+1328 ms. Providern rapporterade COMPLETED men output var
+`status:failed, code:bank_length_mismatch`. Render loggade kvitto-GET200
+10:06:14.906Z; inget efterföljande arkiv-GET. Browsern tog emot noll ljud-/
+bildbytes och ingen worker-WebSocket. Detta är inte ett lyckat talprov.
+`services/moving-gpu-worker/bank_download.py` använder samma felkod för
+otillåten transfer/content encoding, fel Content-Length och för stor kropp.
+Exakta svarshuvuden fångades inte. Chunked är en hypotes, inte fastställd orsak.
+Det nya utfallet stärker underagenternas statiska kvitto-/framinganalys;
+deras procenttal är bedömningar, inte ytterligare runtimeprov.
+
+**Avvecklat:** guarden stängde 10:06:20.952Z. Oberoende återläsning
+10:10:08.646Z verifierade endpoint `4aissnsig9exnz` och template `vcd0ebcbmw`
+404, tom workerlista samt terminal/frisläppt session
+`a409d4882815adb907e93c6b26846091`. Journalens COMPLETED återger providern,
+inte lyckad workeroutput. Renderflaggan0 blev LIVE 10:07:37.980Z via
+`dep-dba9k9uq1p3s73armh90` på samma209d. Dragan-profilen är sparad avstängd.
+Förbrukad endpointvariabel är borttagen med Save only och återläst;
+den körande avstängda deploymenten har fortfarande sitt gamla env-snapshot.
+Astrids endpointinställningar min0/max1 och originalmedia är oförändrade.
+
+**Budget:** Jakobs uttryckliga totaltak är40USD. Append-only amendment
+`4a6363d5-5e26-4da5-874b-20e4b977dd48` är genomförd: samma budget-ID
+`dragan-test-20261017`, journaltak6→7,2USD. Sex reservationer om sammanlagt
+7,2USD och två amendments är bevarade; inga öppna sessioner på testendpointen.
+Detta är reservationer, inte leverantörsfaktura. Även provets försiktiga
+providerreserv2,333334USD ska behållas tills färsk kostnad avstämts.
+40USD-godkännandet är klart. Runtime och journal har nu båda7,2USD som
+fullt reserverat tak. Ett senare prov kräver avstämd kostnad, motsvarande
+ändring av runtimegränsen och append-only journaländring inom40USD;
+återställ inte historiken och skapa inte ett nytt budget-ID för att kringgå den.
+
+**Nästa agent:** börja med kvittoöverföringen, inte nya nycklar eller samma
+GPU-omtag. Läs bara säkra status-/framing-/storleksfält; exponera inte
+capability-URL:er, credentials eller råa undantag. Reproducera relevant
+HTTP-beteende offline och rätta det med bibehållen TLS/origin, storleksgräns,
+SHA-256, tidsgräns och avveckling. Först därefter granskning, förseglad release,
+containerprov och pinnad image före ett nytt kontrollerat talprov.
+Faktiskt hörbar röst och visuellt synkron mun återstår att verifiera.
+
+Jakob påpekade dessutom olika videoversioner och idle efter handdragning,
+samt en möjlig SHA-/bildrutebindning i Kevins staging. Jämför exakt branch,
+video/hash, avatarpaket och frame-index före playbackacceptans; byt inte
+media på namn eller ungefärlig längd. Metoden på staging är inte verifierad
+i denna omgång. Studio visade referensvalet "Kevin V2 · andning", vilket
+ensamt inte bevisar att bankpaket och visad film matchar. Det nu bekräftade
+hämtfelet inträffar före användning av videopaketet.
+
+Privat operativ källa (ingen ny publik tracker):
+`C:/Users/jakem/.codex/visualizations/2026/10/17/01a14afa-f423-7011-bbdf-30a7f44609d1/budget-resume-checkpoint.json`.
+Den länkar terminaloutput, browserresultat, budgetamendment och oberoende
+stoppkvitto. Privata helperfiler ska läsas innan återanvändning; den avslutade
+guarden eller förbrukade endpointen får inte startas igen. Aktuell worktree:
+`C:/Users/jakem/.codex/worktrees/dragan-admission-diagnosis/croupier`, branch
+`codex/dragan-bank-failure-handoff`. Merge-agenten och HUVUDAGENT3 har fått
+stoppkvitto och deployhållet för övrigt arbete är släppt.
+
 Uppdaterad 18 oktober 2026. Den beslutade strukturflytten är levererad och
 verifierad, inklusive rättningen av lokal klippmappning. Inga fler rotflyttar
 återstår i strukturplanen. Tal/läppsynk och övriga öppna produktfunktioner är
@@ -33,52 +107,42 @@ medan katalogen behåller `web/public`-alias. PR237 ansluter alla berörda
 läsningar till den befintliga filresolvern `publicAssetPath`. Det tidigare
 GO:t för PR236 var därför för brett; regressionen är nu rättad och täckt.
 
-## Tal/läppsynk — separat pågående produktarbete
+## Senaste app- och workerleverans
 
-<a id="dragan-talstatus"></a>
+[PR238](https://github.com/Jakeminator123/scoutgaming/pull/238) levererade säkra
+workerfelkoder och den privata diagnostikimagen som användes i provet ovan.
+CPU-containerprovet passerade 52/52 tester, inklusive renderaren;
+[imagepublicering 39114263475](https://github.com/Jakeminator123/scoutgaming/actions/runs/39114263475)
+är SUCCESS. Detta verifierar bygget och publiceringen, inte hörbar röst eller
+synlig läppsynk. Den tidigare apprevisionen 4c782b3b var driftsverifierad.
 
-Det kontrollerade Dragan-provet den 18 oktober nådde OpenClaw, korrekt
-runtime-nyckel och en A40-worker i EU-SE-1. Ingen spelinsats gjordes.
-Jobbet väntade 258231 ms och exekverade 1372 ms. Providerns COMPLETED
-innehöll `status:failed, code:moving_worker_failed`; **ingen ljud- eller
-bilddata levererades**. Tal/läppsynk är alltså ännu inte verifierad.
+[PR240](https://github.com/Jakeminator123/scoutgaming/pull/240) är mergad som
+`209d62f436786f9dae69c7ee6f1b256253ab6805` och skiljer providerredovisningens
+godkända totaltak 40 USD från journalens oförändrade schemagräns 15 USD.
+Runtime 7,20 USD kan inte ensamt höja den sparade journalgränsen. Samma
+budget-ID och historiska reservationer bevaras; aktuell förbrukning och
+kraven före nästa prov finns i inledningens stoppkvitto.
 
-Bankkvitto-GET gav 200 kl. 08:39:06 UTC. Inget efterföljande arkivanrop
-observerades i provets slutintervall. Direkt privat Blob-återläsning
-08:54 UTC gav 1045 byte och rätt SHA-256. Exakt felorsak är okänd;
-proxyframing/överföring är en hypotes, inte ett konstaterat fel.
+[PR-CI 39115861445](https://github.com/Jakeminator123/scoutgaming/actions/runs/39115861445)
+och [main-CI 39116605256](https://github.com/Jakeminator123/scoutgaming/actions/runs/39116605256)
+är SUCCESS. Main körde verklig isolerad PostgreSQL, omstart och HTTPS på
+13,946 sekunder, inklusive blockering utan amendment och exakt en ny
+reservation med bevarad historik. Produktionsledger 001–008 och 011–014
+var ready med pending=[] och optionalPending=[] 09:53:32 UTC.
 
-[PR238](https://github.com/Jakeminator123/scoutgaming/pull/238) är mergad som
-`4c782b3be4f49dc5743f27e3af3dfcb52e407939`, efter strukturens slutrevision.
-Den ger workern säkra, tillåtna interna felkoder samt generiska timeout-/I/O-
-kategorier. Okända meddelanden, URL:er och credentials exponeras inte;
-cancellation och exklusiv admission bevaras. Mergagentens kod- och
-CPU-containerkontroll gav 52/52 godkända tester, inklusive renderaren.
-[Main-CI 39114081418](https://github.com/Jakeminator123/scoutgaming/actions/runs/39114081418) är SUCCESS och frontend på samma SHA är READY med
-17/17 kontroller. Render inväntar imagepubliceringens check 39114263475
-enligt tjänstens befintliga all-checks-regel; fullständigt appdriftkvitto
-återstår vid denna avstämning. Detta är diagnostik, inte en bevisad läppsynkrättning.
+Mergagentens egen produktionskontroll 09:56:49 UTC verifierade exakt
+209d62f4 på spelservern och Vercel `dpl_8PC4t8tYzTN6WvLZCfrsR7C5fJNu`:
+health, startsida och lobby 200, privata Studio-API:er 401 och Admin-retur
+307 till inloggning. Studio kontrollerades separat 17/17. Render
+`dep-dba9eajm8hqs73b5hj3g` blev LIVE 09:56:12 UTC. Provets senare
+avstängningsdeploy på samma kodrevision dokumenteras i stoppkvittot ovan.
+Director och Gateway ändrades inte av PR238/240.
 
-Förseglad kodrelease:
-`3bec5b4be9954d929fcc60d281b89981a7be3d7a9027008466c240b90c1e44ad`.
-Lipsync2 äger publicering av en matchande pinnad workerimage och fortsatt
-felsökning; mergagent äger appdriftkvittot. Ingen imagepublicering eller
-nytt GPU-prov är verifierat av denna dokumentationsleverans.
-
-### Senaste avvecklings- och budgetkvitto
-
-Renderflaggan `CROUPIER_MOVING_SPEECH_ENABLED=0` blev LIVE 08:41:40 UTC;
-Dragan-profilens eget tal är av. Den förbrukade endpointvariabeln togs bort
-med Save only. Oberoende återläsning 08:44:28 UTC visade endpoint/template
-404, tom workerlista och avslutad/frisläppt journalpost. Astrids min0/max1
-är oförändrat. Inga GPU-resurser lämnades igång av provet.
-
-Samma budget-ID behåller fem reservationer. Journaltaket höjdes append-only
-från 4,8 till 6 USD inom Jakobs **15 USD totalt**, med tidigare leverantörs-
-reserver bevarade. Reservationer är inte uppmätt kostnad eller bevis på
-återstående utrymme. Före nästa redan auktoriserade prov krävs färsk kostnad,
-matchande image/release, endpoint/nyckel, utrymme för högst ett nytt försök
-och automatisk avveckling. Återanvänd inte borttagna endpoint-ID:n.
+Det aktuella diagnos-, budget- och stoppkvittot i inledningen är lipsync2:s
+verifiering, bevarad från [PR241](https://github.com/Jakeminator123/scoutgaming/pull/241).
+Struktur- och appkvittot är mergagentens tidigare egna kontroller.
+Denna samlade dokumentationsleverans kör inga nya GPU- eller spelprov och
+ändrar varken HTTP-hämtning, budgetjournal, miljövariabler eller media.
 
 ## Avslutsstädning och skyddat lokalt arbete
 
@@ -112,7 +176,7 @@ revisioner, sparande och serverägda pengar/spelregler behåller täckning.
 Hash, waveform och testpass bevisar aldrig synlig läppsynk; exakta
 ljud-/videoidentiteter och befintliga godkännanden ska bevaras.
 
-GitGuardian-läsningen den 18 oktober visade 2 öppna och 18 ignorerade
+GitGuardian-läsningen inför detta avslut visade 2 öppna och 19 ignorerade
 incidenter. Platsmetadata är delvis ofullständig och helhistorikskanningen
 har status too_large. Grön produkt-CI betyder inte full säkerhetstäckning;
 inga incidenter har ändrats av strukturavslutet.

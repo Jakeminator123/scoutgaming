@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomBytes,randomUUID } from 'node:crypto';
 import { createSpeechJournal } from '../../services/game/postgres-speech-journal.mjs';
+import { MOVING_TRIAL_BUDGET } from '../../services/game/moving-speech-budget.mjs';
 
 // Called only by the localhost PostgreSQL fixture after its target assertion.
 export async function runMovingBudgetSqlChecks({pool,input,journal}) {
@@ -61,5 +62,19 @@ export async function runMovingBudgetSqlChecks({pool,input,journal}) {
   const rows=(await pool.query('SELECT * FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2',[scope.environment,budgetId])).rows;
   assert.equal(rows.length,1);assert.deepEqual(rows[0].amendment,amendment);
   assert.equal((await second.authorizeMovingBudgetAmendment(args)).alreadyApplied,true);
+  // The new runtime ceiling alone cannot raise the durable six-dollar limit.
+  const historical=await history();
+  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  const next={...amendment,amendmentId:randomUUID(),authorizationId:'fixture-total-40',observedAtMs:Date.now(),
+    expectedLimitMicroUsd:6000000,expectedReservedMicroUsd:6000000,expectedReservationCount:2,
+    newLimitMicroUsd:7200000,globalLimitMicroUsd:40000000,otherReservedMicroUsd:14070001};
+  await second.authorizeMovingBudgetAmendment({...args,amendment:next});
+  assert.deepEqual(await history(),historical,'raising global authorization does not refund or rewrite reservations');
+  const nextAttempt=await second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd));
+  assert.equal(nextAttempt.totalBudgetMicroUsd,7200000);assert.equal(nextAttempt.totalReservedMicroUsd,7200000);
+  await finish(nextAttempt);
+  await assert.rejects(second.reserveMovingSession(request(1200000,MOVING_TRIAL_BUDGET.totalBudgetMicroUsd)),fail('generated_speech_total_budget_exhausted'));
+  const allAmendments=(await pool.query('SELECT amendment FROM croupier_studio.moving_speech_budget_amendments WHERE environment_id=$1 AND budget_id=$2 ORDER BY budget_limit_micro_usd',[scope.environment,budgetId])).rows;
+  assert.deepEqual(allAmendments.map(row=>row.amendment),[amendment,next]);
   await journal.releaseLease({lease});
 }
