@@ -1,5 +1,51 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: GPU startade; säkra workerfelkoder — 18 oktober 2026
+
+Ett kontrollerat prov kördes på verifierad game-main
+`9f7f415d9896ca05b8c240f210ea64a1c30f2b04`. Befintlig runtime-nyckel
+matchade Render och gav health200 efter Jakobs behörighetsändring.
+OpenClaw svarade "Hej Jakob, kul att se dig!". Ingen spelinsats gjordes.
+RunPod tilldelade en A40 i EU-SE-1; den pinnade serverless-imagen startade.
+Jobbet väntade 258231 ms och exekverade 1372 ms. Providerns COMPLETED
+innehöll dock `status:failed, code:moving_worker_failed`: ingen ljud- eller
+bilddata levererades. Detta är inte ett lyckat tal-/läppsynkprov.
+
+Render registrerade bankkvitto-GET200 kl.08:39:06Z, men inget efterföljande
+arkivanrop i provets slutintervall. Direkt återläsning av samma privata
+Blob-kvitto kl.08:54Z verifierade1045 byte och rätt SHA-256. Felet är avgränsat
+till workersteget efter kvittoanropet och före arkivhämtningen; exakt orsak
+är ännu okänd. Proxyframing/överföring är en hypotes, inte ett konstaterat fel.
+Browserns senare startup-timeout och RunPods COMPLETED får inte tolkas som
+modell-, TTS- eller läppsynkacceptans.
+
+Serverless-adaptern dolde även egna säkra ValueError-koder bakom ett allmänt
+fel. Den returnerar nu endast en fast tillåten uppsättning interna koder samt
+generiska timeout-/I/O-kategorier. Okända fel, meddelanden, URL:er och
+credentials skrivs inte ut; cancellation och exklusiv admission bevaras.
+Lokal verifiering:6/6 adaptertester; workersviten rapporterar48 tester, OK.
+Den separata renderarklassen hoppas över på denna värd eftersom den låsta
+MuseTalk-installationen saknas; container- och rendererprov återstår i CI.
+Förseglad kodrelease: `3bec5b4be9954d929fcc60d281b89981a7be3d7a9027008466c240b90c1e44ad`.
+Ingen image för denna rättning är ännu publicerad eller driftsatt.
+
+Provet är avvecklat: Renderflaggan0 blev LIVE08:41:40Z, Dragan-profilen är
+sparad med eget tal av, och den förbrukade endpointvariabeln togs bort med
+Save only. Oberoende återläsning08:44:28Z visar testendpoint/template404,
+tom workerlista och avslutad/frisläppt journalpost. Astrids resursinställningar
+min0/max1 är oförändrade. Samma budget-ID behåller fem reservationer;
+en append-only ändring ökade journaltaket4,8→6USD inom befintligt totaltak.
+Alla äldre leverantörsreserver behålls. Privat checkpoint och testkvitton
+finns utanför Git. Ingen GPU-process lämnas igång.
+
+Nästa steg är granskning och containerverifiering av felrapporteringen,
+därefter en pinnad image med matchande kodrelease före ett nytt kontrollerat
+prov. Utred den nu synliga felkoden innan ytterligare omtag; återanvänd inte
+borttagna endpoint-ID:n och behandla inte detta diagnostiksteg som en
+färdig läppsynkrättning. `VOICE_MODE` finns inte i de kontrollerade aktiva
+källorna eller i de lästa Render-/Vercel-konfigurationernas variabelnamn.
+`CROUPIER_MOVING_SPEECH_ENABLED` var1 under provet och är avsiktligt0 efteråt.
+
 ## Lokal klippmappning efter rotflytten — 18 oktober 2026
 
 GPT:s återtagna GO för PR236 är reproducerat på main9f7f415d: servern gav

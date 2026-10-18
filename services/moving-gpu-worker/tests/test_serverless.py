@@ -43,3 +43,44 @@ class Serverless(unittest.IsolatedAsyncioTestCase):
         with patch.object(serverless,"run",failed):
             result=await serverless.handler({"id":"job","input":{}})
             self.assertEqual(result,{"status":"failed","code":"moving_worker_failed"})
+
+    async def test_known_download_failure_is_observable_and_releases_admission(self):
+        for code in ("bank_http_rejected", "bank_length_mismatch", "bank_bytes_changed",
+                     "bank_cache_conflict", "invalid_bank_origin", "release_mismatch"):
+            with self.subTest(code=code):
+                async def failed(*args):
+                    raise ValueError(code)
+                with patch.object(serverless, "run", failed):
+                    self.assertEqual(await serverless.handler({"id":"job", "input":{}}),
+                                     {"status":"failed", "code":code})
+        async def complete(*args):
+            return "complete"
+        with patch.object(serverless, "run", complete):
+            self.assertEqual(await serverless.handler({"id":"next", "input":{}}),
+                             {"status":"complete"})
+
+    async def test_unknown_messages_and_lookalike_codes_remain_redacted(self):
+        class Lookalike(ValueError):
+            def __str__(self):
+                raise AssertionError("exception must not be formatted")
+        for error in (ValueError("bank_http_rejected?token=private"),
+                      ValueError("bank_length_mismatch", "private callback"),
+                      ValueError({"token":"private"}),
+                      RuntimeError("bank_bytes_changed"),
+                      Lookalike("bank_length_mismatch")):
+            with self.subTest(kind=type(error).__name__):
+                async def failed(*args):
+                    raise error
+                with patch.object(serverless, "run", failed):
+                    self.assertEqual(await serverless.handler({"id":"job", "input":{}}),
+                                     {"status":"failed", "code":"moving_worker_failed"})
+
+    async def test_io_and_timeout_categories_do_not_expose_messages(self):
+        for error, code in ((TimeoutError("private callback"), "moving_worker_timeout"),
+                            (FileNotFoundError("private path"), "moving_worker_io_failed")):
+            with self.subTest(code=code):
+                async def failed(*args):
+                    raise error
+                with patch.object(serverless, "run", failed):
+                    self.assertEqual(await serverless.handler({"id":"job", "input":{}}),
+                                     {"status":"failed", "code":code})
