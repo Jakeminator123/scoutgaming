@@ -40,7 +40,7 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
     abort() { this.aborted = true; }
   }
   const permissionResolvers = []; let profile = 'one', configReads = 0, configFetch = initialConfigFetch, activity = 0, playbackEnabled = false, playbackToggles = 0, playbackEnables = 0;
-  const base = { enabled: true, profileRevision: 'a'.repeat(64), transcription: { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }, vision: { enabled: true } };
+  const base = { enabled: true, profileRevision: 'a'.repeat(64), transcription: { enabled: true, outputLanguage: 'original', acceptsAutoLanguage: true }, vision: { enabled: true } };
   let config = { ...base, ...initialConfig };
   const mediaDevices = { getUserMedia: constraints => {
     requests.push(constraints);
@@ -99,7 +99,7 @@ function harness({ config: initialConfig = {}, configFetch: initialConfigFetch, 
   };
 }
 
-test('page loads off with separate playback, microphone and camera controls; first Record requires explicit English consent', async () => {
+test('page loads off with separate playback, microphone and camera controls; first Record requires explicit transcription consent', async () => {
   const h = harness();
   try {
     await tick(); assert.equal(h.control.active, false); assert.equal(h.control.busy, false);
@@ -108,8 +108,8 @@ test('page loads off with separate playback, microphone and camera controls; fir
     h.click(h.record); assert.equal(h.dialog.hidden, false); assert.equal(h.wakes.length, 0);
     assert.ok(all(h.dialog).some(node => node.textContent?.includes('Nothing is uploaded before the wake word')));
     const consentText = all(h.dialog).map(node => node.textContent).join(' ');
-    assert.match(consentText, /sent to OpenAI for speech translation into English/);
-    assert.match(consentText, /English text is automatically sent to OpenClaw and its model provider/);
+    assert.match(consentText, /sent to OpenAI for transcription in the spoken language/);
+    assert.match(consentText, /transcribed text is automatically sent to OpenClaw and its model provider/);
     assert.equal(consentText.includes('Cartesia'), false);
     h.click(h.find('Keep off')); assert.equal(h.control.active, false); assert.equal(h.requests.length, 0);
     h.click(h.record); h.click(h.find('Enable voice')); await tick();
@@ -156,7 +156,7 @@ test('explicit wake and manual voice activation clear saved mute before autosend
   }
 });
 
-test('muting after voice activation stops capture or translation and never autosends late audio', async () => {
+test('muting after voice activation stops capture or transcription and never autosends late audio', async () => {
   for (const stage of ['idle', 'capture', 'transcription']) {
     let translated;
     const h = harness({ transcribe: () => new Promise(resolve => { translated = resolve; }) });
@@ -210,6 +210,19 @@ test('1150 ms speech pause auto-transcribes and auto-sends once, then rearms loc
     assert.equal(h.wakes.length, 2); assert.equal(h.control.busy, false); assert.equal(h.control.active, true);
     assert.equal(h.debug.hidden, true); assert.equal(h.log(), '');
   } finally { h.restore(); }
+});
+
+test('Swedish and English microphone transcripts reach Dragan unchanged with original-language configuration', async () => {
+  for (const text of ['Ulf Lundell är bra.', 'Ulf Lundell is good.']) {
+    const h = harness({ dealerId: 'dragan', dealerName: 'Dragan', cameraOptIn: false,
+      transcribe: async () => ({ ok: true, json: async () => ({ text, outputLanguage: 'original', inputLanguage: 'auto' }) }) });
+    try {
+      await h.startManual(); h.pause(); await tick(); await tick();
+      assert.equal(h.uploads.length, 1); assert.equal(h.sent.length, 1);
+      assert.equal(h.sent[0].message, text); assert.deepEqual(h.sent[0].images, []);
+      assert.equal(h.control.active, false);
+    } finally { h.restore(); }
+  }
 });
 
 test('a short question entirely in pre-roll sends after fresh silence without replaying old pauses', async () => {
@@ -276,7 +289,7 @@ test('STT failure and invalid results send nothing and never automatically retry
     try {
       await h.start(); await h.wake(); h.pause(); await tick();
       assert.equal(h.sent.length, 0); assert.equal(h.wakes.length, 1); assert.equal(h.control.active, false);
-      assert.match(h.status(), /Speech translation failed/); assert.equal(h.status().includes('secret'), false);
+      assert.match(h.status(), /Speech transcription failed/); assert.equal(h.status().includes('secret'), false);
     } finally { h.restore(); }
   }
 });
@@ -292,7 +305,7 @@ test('OpenAI authentication failure shows a server-key action without exposing p
     json: async () => ({ error: 'transcription_authentication_failed', message: 'private provider secret' }) }) });
   try {
     await h.start(); await h.wake(); h.pause(); await tick();
-    assert.match(h.status(), /OpenAI authentication failed.*server translation key/);
+    assert.match(h.status(), /OpenAI authentication failed.*server transcription key/);
     assert.equal(h.status().includes('secret'), false);
     assert.equal(h.uploads.length, 1); assert.equal(h.sent.length, 0);
     assert.equal(h.control.active, false); assert.equal(h.wakes.length, 1);
@@ -351,7 +364,7 @@ test('an early explicit manual recording continues after configuration arrives; 
       assert.equal(h.requests.length, 0); assert.equal(h.control.active, true);
       h.setConfigFetch(null);
       resolve({ ok: true, json: async () => ({ enabled: true, profileRevision: 'a'.repeat(64),
-        transcription: { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }, vision: { enabled: true } }) });
+        transcription: { enabled: true, outputLanguage: 'original', acceptsAutoLanguage: true }, vision: { enabled: true } }) });
       await tick(); await tick();
       if (manual) {
         assert.equal(h.control.active, true); assert.equal(h.control.busy, true);
@@ -380,7 +393,7 @@ test('early manual consent cannot outlive cancellation, visibility, identity, tu
       if (reason === 'occupied') available = false;
       h.setConfigFetch(null);
       resolve({ ok: true, json: async () => ({ enabled: reason !== 'disabled', profileRevision: 'a'.repeat(64),
-        transcription: { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }, vision: { enabled: true } }) });
+        transcription: { enabled: true, outputLanguage: 'original', acceptsAutoLanguage: true }, vision: { enabled: true } }) });
       await tick(); await tick();
       assert.equal(h.control.active, false, reason); assert.equal(h.requests.length, 0, reason);
       assert.equal(h.wakes.length, 0); assert.equal(h.uploads.length, 0); assert.equal(h.sent.length, 0);
@@ -405,7 +418,7 @@ test('manual silence, cancellation and late permission never upload or start wak
   }
 });
 
-test('manual recording respects unavailable translation and an occupied speech turn', async () => {
+test('manual recording respects unavailable transcription and an occupied speech turn', async () => {
   for (const options of [{ config: { enabled: false, reason: 'feature_disabled' } }, { canStart: () => false }]) {
     const h = harness(options);
     try {
@@ -556,7 +569,7 @@ test('English RAM log is bounded, hidden normally, and contains no raw audio or 
 
 test('precise config reasons survive stop and can recover from a later server change', async () => {
   for (const [config, expected] of [[{ enabled: false, reason: 'feature_disabled' }, /disabled on this server/],
-    [{ transcription: { enabled: false }, reason: 'transcription_unavailable' }, /OpenAI speech translation is unavailable/]]) {
+    [{ transcription: { enabled: false }, reason: 'transcription_unavailable' }, /OpenAI speech transcription is unavailable/]]) {
     const h = harness({ config });
     try {
       await tick(); assert.match(h.status(), expected); h.control.stop('Fliken dold'); assert.match(h.status(), expected);
@@ -566,13 +579,13 @@ test('precise config reasons survive stop and can recover from a later server ch
   }
 });
 
-test('legacy Cartesia settings cannot enable auto-send without English translation and auto-language capabilities', async () => {
-  for (const transcription of [{ enabled: true }, { enabled: true, outputLanguage: 'en' },
-    { enabled: true, acceptsAutoLanguage: true }, { enabled: true, outputLanguage: 'sv', acceptsAutoLanguage: true }]) {
+test('old translation settings cannot enable auto-send without original-language transcription capabilities', async () => {
+  for (const transcription of [{ enabled: true }, { enabled: true, outputLanguage: 'original' },
+    { enabled: true, acceptsAutoLanguage: true }, { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }]) {
     const h = harness({ config: { transcription } });
     try {
       await h.start();
-      assert.equal(h.status(), 'English speech translation is not configured on this server.');
+      assert.equal(h.status(), 'Transcription in the spoken language is not configured on this server.');
       assert.equal(h.control.active, false); assert.equal(h.wakes.length, 0); assert.equal(h.requests.length, 0);
       assert.equal(h.uploads.length, 0); assert.equal(h.sent.length, 0);
     } finally { h.restore(); }
@@ -614,7 +627,7 @@ test('a finished buffered phrase waits for fresh configuration before any upload
       assert.ok(h.streams[0].getTracks().every(track => track.stopped));
       if (outcome === 'stop') { h.click(h.record); assert.equal(request.signal.aborted, true); }
       resolve({ ok: true, json: async () => ({ enabled: outcome !== 'disabled', reason: outcome === 'disabled' ? 'feature_disabled' : null,
-        profileRevision: 'a'.repeat(64), transcription: { enabled: true, outputLanguage: 'en', acceptsAutoLanguage: true }, vision: { enabled: true } }) });
+        profileRevision: 'a'.repeat(64), transcription: { enabled: true, outputLanguage: 'original', acceptsAutoLanguage: true }, vision: { enabled: true } }) });
       await tick();
       assert.equal(h.uploads.length, outcome === 'enabled' ? 1 : 0);
       assert.equal(h.sent.length, outcome === 'enabled' ? 1 : 0);

@@ -1,5 +1,22 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Mikrofonens originalspråk och delad bildkontext — 18 oktober 2026
+
+Spelbordets mikrofon använder OpenAI `whisper-1` via `/audio/transcriptions`
+med automatisk språkidentifiering. Den transkriberade texten behåller talets
+språk och skickas till Director; `outputLanguage=original` beskriver detta
+kontrakt, inte ett påstått detekterat språk. Den äldre språkheadern accepteras
+fortfarande men tvingar inte leverantören till svenska eller engelska.
+Samtycke och status beskriver transkribering; ingen mikrofon aktiveras av kodändringen.
+
+Validerade kamerabilder går som `image_url`-delar för alla registrerade dealers.
+Bildbyte ligger aldrig i textdelen av Director-anropet. Astrids befintliga
+engelska svarspolicy och separata historik bevaras; talets språk och dealerns
+svarsspråk är olika kontrakt. Detta ändrar inte serverkort, ekonomi, samtycke,
+profil-/rundkontroller eller lagring. Lokala stubtester provar språktext och
+bildtransport utan leverantörsanrop. Driftstatus och kvarstående prov finns i
+[handoffen](../JOHN-HANDOFF.md).
+
 ## Riktad kommunikation och löpande städning — 18 oktober 2026
 
 Agent-talk visar riktade samtal för deltagarna, gemensamma claims för alla.

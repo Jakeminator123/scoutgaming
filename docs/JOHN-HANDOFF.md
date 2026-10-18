@@ -2,6 +2,18 @@
 
 <a id="dragan-talstatus"></a>
 
+## Förberedd rättning: mikrofon och bildkontext — 18 oktober 2026
+
+En separat, ännu inte driftsatt rättning byter mikrofonens fasta översättning
+via `/audio/translations` mot originalspråkets `/audio/transcriptions`, med
+samma OpenAI `whisper-1`, gränser och behörighetskontroller. UI och API anger
+originalspråk utan att hitta på en detekterad språkkod. Validerade bilder från
+Dragan och övriga dealers skickas som riktiga multimodala delar i stället för
+base64 i text. Astrids svarspolicy är oförändrad. 128 lokala tester passerade: 90 språk-, samtyckes- och bildtransporttester
+samt 38 HTTP-prov för historik, behörighet och serverkontext. Inga tester
+hoppades över. Provideranrop var stubbar; ingen riktig mikrofon eller kamera
+aktiverades och ingen tjänst ändrades. PR:n ska lämnas omergad tills det pågående tredje provet har stängts.
+
 ## Lipsync 3: prov två, återställning och ett avgränsat nästa prov — 18 oktober 2026
 
 Det andra produktionsprovet kördes 14:29–14:37 UTC på www.scoutgaming.tech

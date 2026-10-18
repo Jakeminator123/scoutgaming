@@ -881,7 +881,7 @@ const server = createServer(async (req, res) => {
         vision: { enabled: enabled && astridVisionModels.has(config.policy.model),
           reason: !enabled ? 'feature_disabled' : !astridVisionModels.has(config.policy.model) ? 'model_not_verified' : null },
         transcription: { enabled: enabled && astridTranscription.configured, provider: 'openai', model: 'whisper-1',
-          outputLanguage: 'en', acceptsAutoLanguage: true } }));
+          outputLanguage: 'original', acceptsAutoLanguage: true } }));
     } catch { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"enabled":false}'); }
     return;
   }
