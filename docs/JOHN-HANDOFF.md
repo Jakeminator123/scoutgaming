@@ -272,10 +272,70 @@ efteråt passerade 158/158 prov i QA-/chattpaketet, helt utan betalda anrop.
 miljövariabelregistret stämmer. Obligatorisk CI följs på efterfixens PR.
 Detta är inget nytt produktions- eller läppsynkprov. Lipsync 3:s handoff ovan består.
 
-**Kvar:** renklonagenten genomför ett separat bygge/startprov efter färsk
-bevarandelista från Lipsync 3. Exakt SHA, körda/överhoppade prov och privata
-QA-verktygs särskilda förutsättningar ska redovisas. Primärcheckoutens
-inställningar, råmedia, data och andra arbetskopior bevaras tills dess.
+**Avslutat:** efterfixen levererades i [PR252](https://github.com/Jakeminator123/scoutgaming/pull/252),
+merge `2e9b53388636effa42bea27f451845280375b9ef`. MERGE3 verifierade grön
+PR-CI och [main-CI 39145319537](https://github.com/Jakeminator123/scoutgaming/actions/runs/39145319537).
+Det efterföljande renklonprovet redovisas nedan. Lipsync 3:s arbete och
+primärcheckoutens inställningar, råmedia och data lämnades orörda.
+
+## HUVUDAGENT5: renklon och organisationsavslut — 18 oktober 2026
+
+Direktklon av GitHubs main i `C:/Users/jakem/Projects/scoutgaming-clean-20261018`,
+fryst på **`2e9b53388636effa42bea27f451845280375b9ef`** efter PR252.
+Klonen har egen fysisk `.git`, en revisions historik och inga Git-alternates.
+Arbetskatalogen var ren både före provet och efter alla körningar, innan detta
+dokumentkvitto lades till. Inga moduler, byggfiler, miljöfiler eller privata
+data kopierades från äldre arbetskopior. Lipsync 3 lämnade aktuell
+bevarandelista; dess worktrees, moduljunction, råmedia/banker och processer
+bevarades. MERGE3 bekräftade att inga blockerande H4-fynd kvarstod.
+
+| Egen körning i klonen | Resultat |
+| --- | --- |
+| Installation och bygge | Låsta npm-installationer för Studio, designklient, spelmotor, Speech och transport-Gateway; webb med pnpm 10.33.2 och frozen lockfile. Node 24.21.0 respektive Speech 22.23.1 enligt paketen. Studio/design och webb byggdes från början, inklusive Next-typkontroll; designens separata typkontroll och Speechs syntaxbygge passerade. |
+| Fokuserade Windows-prov | 52 struktur-/chattprov, 3 Director-paket/startprov, 2 jämförelsefixtureprov, 33 anslutningsprov, 11 sessionsprov och webbbyggets 117 tester passerade. Ett Linux-specifikt sessionsprov hoppades över på Windows. |
+| Verklig lokal start | Nybyggt Studio och spelserver via `--offline --skip-build --no-open`: lokal hälsa och Studio-sida 200, opublicerat spel avvisat med 503, syntetiskt projekt i temporär datarot. Stopp tog bort dataroten och frisläppte sessionen. Vanlig publicerad Studio-start räknades inte som prov. |
+| SQL, omstart och HTTPS | Befintliga `tools/studio-isolated-qa.mjs` kördes som icke-root i WSL mot samma klon/SHA och ett nytt PostgreSQL 16-kluster: 4 retained-kontraktsprov, 26 SQL-kontroller och 59 integrationskontroller. 196 källhashar var oförändrade; klustret stoppades och togs bort. Den importerade testmodulens fristående SQL-test var överhoppat; verktyget körde den verkliga SQL-kedjan uttryckligen. |
+| Isolering | Ny allowlist-miljö redan vid installation/bygge, tomma användar-/npm-profiler och egen paketcache. Inga ärvda apphemligheter, NODE_PATH eller NODE_OPTIONS. 122 interna länkar och 101 byggspår med 19 329 referenser gav noll mål utanför klonen; inga privata envfiler. Båda befintliga guards blockerade läsning av i förväg skapade syntetiska envfiler samt extern fetch/TCP. |
+
+SQL-pakethämtningen gav först `Hash Sum mismatch` från Ubuntu via HTTP,
+före databasstart. Samma prov passerade med en uppgiftsspecifik `APT_CONFIG`
+för Ubuntus HTTPS-källor, med bibehållen signatur-/hashkontroll. Inga
+systempaket, systemkällor eller externa databaser ändrades.
+Leveransverktygets push verifierades på GitHub men upstreamsteget behövde
+klonens main-begränsade fetchspec utökad med den egna featurebranchen.
+`git remote set-branches --add origin <featurebranch>` följt av fetch och
+ordinarie leveranskommando räckte; ingen gammal arbetskopia behövdes.
+
+**Kvarvarande särskilda förutsättningar:** inga gamla lokala projektfiler
+behövdes för de prövade flödena. Director-adaptrarnas äldre relativa
+`open-claw/lab` är en bevarad konfigurations-/datarot; välj uttrycklig
+temporär datarot och `envFiles: []` för isolerad körning. Privat native-AI-QA
+kräver fyra filer i `lab/data/platform-private` och sitt exakt pinnade
+OpenAI-SDK 7.12.1-träd. Minsta åtgärd för just det verktyget är att separat
+bevara/verifiera dess egna underlag, inte återföra dem som ordinarie
+byggberoenden. Browserprov kräver separat Playwright/Chrome. SQL-provet
+kräver Linux/WSL, OpenSSL och verifierade PostgreSQL-binärer. Se
+[återställningsguidens avgränsning](ENVIRONMENT-RESTORATION.md#renklonprov-och-separata-qa-förutsättningar).
+
+**Inte provat:** full lokal regression, browser-/visuell produktacceptans,
+GPU-/taljobb, produktionsskrivningar eller molnändringar. Processmiljö,
+Node-guards och sökvägs-/byggspårskontroller är ingen OS-sandbox eller
+bevis för alla historiska privata verktyg. Produktdrift kräver fortsatt
+uttrycklig Neon/Blob/auth/provider-konfiguration enligt miljöguiden. För native
+Admin omfattar det `CROUPIER_GAME_DATABASE_URL`,
+`CROUPIER_STUDIO_ENVIRONMENT_ID`, `CROUPIER_STUDIO_WORKSPACE_ID`,
+`CROUPIER_STUDIO_NATIVE_ADMIN=1`, `CROUPIER_STUDIO_NEON_POLICY=1`,
+`CROUPIER_PUBLIC_ORIGIN` och
+`CROUPIER_LAB_UI_ORIGIN`; Blob-läget använder `CROUPIER_MEDIA_STORAGE`
+och `BLOB_READ_WRITE_TOKEN`. Inget av dessa skarpa värden behövdes för byggena
+eller den syntetiska fixturen.
+
+Privata körloggar, plan och maskinläsbara kvitton finns under
+`C:/Users/jakem/.codex/visualizations/2026/10/18/01a14fb1-2374-7ce1-8105-d61ce1796718/`
+(`clone-baseline.json`, `results.jsonl`, `offline-smoke-result.json`,
+`isolation-audit-result.json`, `sql-result.json` och `sql-run.log`).
+Detta stänger det avgränsade organisations-/efterstädningsprovet. Admin-UX,
+Lipsync 3:s pågående integration och övrigt produktarbete har egna kvitton.
 
 ## Strukturens slutkvitto
 
@@ -367,7 +427,7 @@ enligt det daterade kvittot i [miljöguiden](ENVIRONMENT-VARIABLES.md#aktuellt-m
 Det andra Blob-lagret hör till Impactwin. Preview är ännu ingen verifierad
 skrivtestmiljö; ingen ny molnavläsning eller full Admin-UX-acceptans påstås här.
 Lipsync 3 äger tal-/workerarbetet och dess aktuella verifieringsstatus ovan.
-Moving-kontrollen är levererad i PR246; renklonprovet återstår enligt H4-avsnittet.
+Moving-kontrollen är levererad i PR246; renklonprovet är avslutat enligt HUVUDAGENT5-avsnittet.
 
 <a id="2-öppna-kontroller-och-kända-fel"></a>
 
