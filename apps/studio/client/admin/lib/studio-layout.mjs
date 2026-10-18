@@ -1,6 +1,7 @@
 import { SPEECH_LINES } from '../../../../../packages/presentation/contracts/speech-lines.mjs';
 import { speechSlotStandard, speechSlotSituation } from '../../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
-import { currentClipId } from './connected-studio.mjs';
+import { clipsForSlot, currentClipId } from './connected-studio.mjs';
+import { studioPolicyContext } from './studio-policy.mjs';
 const captions = { greeting:'Välkommen', placebets:'Lägg insatser', goodluck:'Lycka till', insurance:'Försäkring', double:'Dubbling', peek:'Kontrollera kort', blackjack:'Blackjack', dealerblackjack:'Dealerns blackjack', bust:'Spelaren över 21', dealerbust:'Dealern över 21', win:'Vinst', push:'Lika', lose:'Förlust', sidebet:'Sidospel', chatter1:'Småprat 1', chatter2:'Småprat 2', farewell:'Tack för spelet', 'to-shoe':'Till skon', 'from-shoe':'Från skon', 'dealer-up':'Öppet kort', 'dealer-hole':'Dolt kort' };
 export function slotCaption(slot) {
   if(slot.game!=='roulette') {
@@ -57,6 +58,27 @@ export function clipLibraryGroups(clips, standardIds = [], variantIds = [], idle
     {id:'variants',label:idle?'Beteendeklipp':'Varianter',clips:clips.filter(clip=>!standard.has(clip.id)&&variants.has(clip.id))},
     {id:'library',label:'Övriga klipp i situationen',clips:clips.filter(clip=>!standard.has(clip.id)&&!variants.has(clip.id))},
   ].filter(group=>group.clips.length);
+}
+export function clipLibraryForSlot(project, inventory, dealerId, slot) {
+  const clips=clipsForSlot(inventory,dealerId,slot);
+  if(slot.game==='roulette')return clipLibraryGroups(clips);
+  try {
+    const {kind,family,line,policy}=studioPolicyContext(project,inventory,dealerId,slot);
+    const baseline=line.variants.find(row=>row.id===line.baselineVariantId);
+    if(kind==='idle')return clipLibraryGroups(clips,
+      policy?.base.map(row=>row.videoId)??family?.standardIds??[baseline?.videoGenerationId??''],
+      policy?.variants.map(row=>row.videoId)??[],true);
+    if(family)return clipLibraryGroups(clips,family.standardIds,family.variantIds);
+    // Read the saved standard itself. currentClipId's default selection may
+    // intentionally fall back to a rules variant when this binding is absent.
+    const standard=(slot.sourceType==='speak'?speechSlotStandard(project,dealerId,slot.eventId,slot.situation)
+      :line.variants.find(row=>row.id===`${dealerId}.${slot.eventId}.slot.${slot.situation}`))??baseline;
+    const variantIds=line.variants.filter(row=>row.id!==line.baselineVariantId&&row.id!==standard?.id)
+        .map(row=>currentClipId(project,dealerId,slot,row.id,inventory));
+    return clipLibraryGroups(clips,[standard?.videoGenerationId??''],variantIds);
+  }catch{ // Keep unclassified choices visible; the usage panel explains invalid rules.
+    return clipLibraryGroups(clips);
+  }
 }
 export function groupSlots(slots) {
   if(slots.some(slot=>slot.game==='roulette'))return [

@@ -1,8 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createSeedProject,addDealer} from '../../../../../packages/presentation/contracts/studio-model.mjs';
-import {clipSlots} from './connected-studio.mjs';
-import {groupSlots,affectedRooms,slotCaption,slotExplanation,isRenderedOutcome,layoutClipCards,clipLibraryGroups,clipVariantChoices} from './studio-layout.mjs';
+import {createSeedProject,addDealer,addVariant,allowedPathDescriptors} from '../../../../../packages/presentation/contracts/studio-model.mjs';
+import {kindForEvent} from '../../../../../packages/presentation/contracts/video-intake.mjs';
+import {bindSpeechSlotStandard} from '../../../../../packages/presentation/contracts/speech-slot-bindings.mjs';
+import {clipSlots,bindClip,currentClipId} from './connected-studio.mjs';
+import {addStudioIdleClip} from './studio-policy.mjs';
+import {groupSlots,affectedRooms,slotCaption,slotExplanation,isRenderedOutcome,layoutClipCards,clipLibraryGroups,clipLibraryForSlot,clipVariantChoices} from './studio-layout.mjs';
+
+function libraryFixture(eventId,situation,managed=false) {
+  const project=createSeedProject(),dealerId='astrid',event=project.events.find(row=>row.id===eventId);
+  const ids=[1,2,3].map(n=>`${String(n).repeat(8)}-${String(n).repeat(4)}-4${String(n).repeat(3)}-8${String(n).repeat(3)}-${String(n).repeat(12)}`);
+  const family={id:`${dealerId}/${eventId}/${situation||'ready'}`,dealerId,eventId,situation:situation||'ready',playbackType:eventId==='idle.ready'?'idle-pool':'once',standardIds:[ids[0]],variantIds:[ids[1]]};
+  const inventory={families:managed?[family]:[],videos:ids.map((id,index)=>({id,label:`Klipp ${index}`,available:true,sha256:'a'.repeat(64),contentType:'video/mp4',
+    ...(managed?{familyId:family.id}:{}),classification:{label:`Klipp ${index}`,dealerId,eventId,situation,kind:kindForEvent(event),role:index?'alternative':'standard',notes:''}}))};
+  const slot=clipSlots(project,inventory,dealerId).find(row=>managed?row.family?.id===family.id:row.eventId===eventId&&row.situation===situation);
+  return {project,inventory,dealerId,slot,ids};
+}
+const libraryRoles=f=>Object.fromEntries(clipLibraryForSlot(f.project,f.inventory,f.dealerId,f.slot).map(group=>[group.id,group.clips.map(clip=>clip.id)]));
 
 test('expanded clip libraries reserve the tallest measured height before the next row',()=>{
   const cards=[{id:'wait',height:294},{id:'ready',height:359},{id:'players',height:310},{id:'dealer',height:320},{id:'reveal',height:294}];
@@ -63,6 +77,63 @@ test('library roles come from exact IDs, preserving unassigned clips and separat
   assert.deepEqual(clipLibraryGroups(clips,['one'],['one','two']).flatMap(group=>group.clips),clips);
   assert.deepEqual(clipLibraryGroups([],['missing']),[]);
   assert.deepEqual(clips,before);
+});
+
+test('the library never promotes a transition preview fallback to a saved standard',()=>{
+  const f=libraryFixture('transition.shoe','to-shoe');
+  f.project=addVariant(f.project,f.dealerId,f.slot.eventId,'Egen tagning');
+  const line=f.project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId===f.slot.eventId),variant=line.variants.at(-1);
+  variant.videoGenerationId=f.ids[1];variant.selection={rules:true,model:true,random:false};variant.priority=38;
+  const descriptor=allowedPathDescriptors.find(row=>row.values?.length&&row.operators.includes('eq'));
+  f.project.triggers.push({id:'library.test.trigger',label:'Testvillkor',category:descriptor.category,path:descriptor.path,op:'eq',value:descriptor.values[0]});
+  variant.triggerIds=['library.test.trigger'];
+  const before=structuredClone(f);
+  assert.equal(currentClipId(f.project,f.dealerId,f.slot,line.baselineVariantId,f.inventory),f.ids[1]);
+  assert.deepEqual(libraryRoles(f),{variants:[f.ids[1]],library:[f.ids[0],f.ids[2]]});
+  assert.deepEqual(f,before);
+  variant.selection.rules=false;
+  assert.equal(currentClipId(f.project,f.dealerId,f.slot,line.baselineVariantId,f.inventory),f.ids[1]);
+  assert.equal(libraryRoles(f).standard,undefined);
+  line.variants.find(row=>row.id===line.baselineVariantId).videoGenerationId=f.ids[0];
+  assert.deepEqual(libraryRoles(f),{standard:[f.ids[0]],variants:[f.ids[1]],library:[f.ids[2]]});
+});
+
+test('library standards follow actual saved player/dealer bindings and do not adopt an alternative if the standard disappears',()=>{
+  for(const [eventId,situation] of [['deal.player.left','box0'],['deal.player.centre','box2'],['deal.player.right','box6'],['deal.dealer','dealer-up'],['deal.dealer','dealer-hole'],['reveal.dealer','dealer-hole']]) {
+    const f=libraryFixture(eventId,situation);
+    f.project=bindClip(f.project,f.inventory,f.dealerId,f.slot,f.ids[0]);
+    f.project=addVariant(f.project,f.dealerId,eventId,'Alternativ');
+    const line=f.project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId===eventId),variant=line.variants.at(-1);
+    variant.videoGenerationId=f.ids[1];variant.selection={rules:true,model:false,random:false};
+    assert.deepEqual(libraryRoles(f),{standard:[f.ids[0]],variants:[f.ids[1]],library:[f.ids[2]]},situation);
+    f.inventory.videos[0].available=false;
+    assert.deepEqual(libraryRoles(f),{variants:[f.ids[1]],library:[f.ids[2]]},situation);
+  }
+});
+
+test('library idle roles use the saved base and behavior policy',()=>{
+  const f=libraryFixture('idle.ready','');
+  f.project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,f.ids[0],2000,true);
+  f.project=addStudioIdleClip(f.project,f.inventory,f.dealerId,f.slot,f.ids[1],3000,false);
+  assert.deepEqual(libraryRoles(f),{standard:[f.ids[0]],variants:[f.ids[1]],library:[f.ids[2]]});
+  assert.deepEqual(clipLibraryForSlot(f.project,f.inventory,f.dealerId,f.slot).map(group=>group.label),['Basloop','Beteendeklipp','Övriga klipp i situationen']);
+});
+
+test('library family roles retain manifest standards when preview selection prefers an active variant',()=>{
+  const f=libraryFixture('deal.player.left','box0',true);
+  f.project.mediaPolicy=[{familyId:f.slot.family.id,variants:[{videoId:f.ids[1],frequencyPercent:25,selection:{rules:false,model:false,random:false},priority:10,triggerIds:[]}]}];
+  assert.equal(currentClipId(f.project,f.dealerId,f.slot,undefined,f.inventory),f.ids[1]);
+  assert.deepEqual(libraryRoles(f),{standard:[f.ids[0]],variants:[f.ids[1]]});
+});
+
+test('library speech roles retain dedicated and shared exact slot standards',()=>{
+  for(const [eventId,situation] of [['speak.goodluck','goodluck'],['speak.other','greeting']]) {
+    const f=libraryFixture(eventId,situation);
+    f.project=bindSpeechSlotStandard(f.project,{dealerId:f.dealerId,eventId,situation,videoId:f.ids[0]});
+    f.project=addVariant(f.project,f.dealerId,eventId,'Talalternativ');
+    f.project.lines.find(row=>row.dealerId===f.dealerId&&row.eventId===eventId).variants.at(-1).videoGenerationId=f.ids[1];
+    assert.deepEqual(libraryRoles(f),{standard:[f.ids[0]],variants:[f.ids[1]],library:[f.ids[2]]});
+  }
 });
 
 test('a player situation lists its own saved variants, not neighbouring slot standards',()=>{

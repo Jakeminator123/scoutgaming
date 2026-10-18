@@ -11,10 +11,10 @@ import { readIdleVideoDuration } from '../../../../lib/idle-video-duration.mjs';
 import type { StudioProject } from '../../../../../../packages/presentation/contracts/studio-model.mjs';
 import { replaceContext, usePathname, useSearchParams } from '../../../runtime/navigation';
 import {isInternalAdminPathname,isStudioAdminRoute} from '../../../runtime/admin-routing.mjs';
-import { groupSlots, affectedRooms, slotCaption, layoutClipCards, clipLibraryGroups, clipVariantChoices } from '../../lib/studio-layout.mjs';
+import { groupSlots, affectedRooms, slotCaption, layoutClipCards, clipLibraryForSlot, clipVariantChoices } from '../../lib/studio-layout.mjs';
 import { StudioSpeechPanel } from './studio-speech-panel';
 import { StudioLifecyclePanel } from './studio-lifecycle-panel';
-import { studioClipUsage, studioPolicyContext } from '../../lib/studio-policy.mjs';
+import { studioClipUsage } from '../../lib/studio-policy.mjs';
 import { StudioPolicyPanel } from './studio-policy-panel';
 import { StudioCompositionPanel } from './studio-composition-panel';
 import { RouletteStartEditor } from './roulette-start-editor';
@@ -271,15 +271,7 @@ function WorkspaceMap({active=true,onDirtyChange,onRevisionChange,refreshKey=0}:
     const boundId = currentClipId(data!.project,dealer!.id,slot,variantId,data!.inventory);
     const selectedId = selected[slot.id] ?? (clips.some(row => row.id === boundId) ? boundId : slot.intakeOnly?clips[0]?.id??'':'');
     const usage=studioClipUsage(data!.project,data!.inventory,dealer!.id,slot,selectedId,variantId);
-    let library=clipLibraryGroups(clips);
-    if(game==='blackjack')try {
-      const scope=studioPolicyContext(data!.project,data!.inventory,dealer!.id,slot);
-      const standardIds=scope.kind==='idle'&&scope.policy?scope.policy.base.map(row=>row.videoId)
-        :scope.family?.standardIds??[currentClipId(data!.project,dealer!.id,slot,line?.baselineVariantId,data!.inventory)];
-      const variantIds=scope.kind==='idle'?scope.policy?.variants.map(row=>row.videoId)??[]
-        :scope.family?.variantIds??line?.variants.filter(row=>row.id!==line.baselineVariantId).map(row=>currentClipId(data!.project,dealer!.id,slot,row.id,data!.inventory))??[];
-      library=clipLibraryGroups(clips,standardIds,variantIds,scope.kind==='idle');
-    }catch{ /* Keep unclassified library choices visible; usage explains unavailable rules. */ }
+    const library=clipLibraryForSlot(data!.project,data!.inventory,dealer!.id,slot);
     const usageChanged=Boolean(base&&(boundId!==currentClipId(base,dealer!.id,slot,variantId,data!.inventory)||JSON.stringify(usage)!==JSON.stringify(studioClipUsage(base,data!.inventory,dealer!.id,slot,selectedId,variantId))));
     return {id:group.id,type:'registeredClip',position:cardPositions[group.id],
       data:{group,slot,clips,library,boundId,usage,usageChanged,active:clipPanel&&activeGroupId===group.id,onOpen:()=>{if(openPanel('clip')){setActiveGroupId(group.id);setSettingsSlot(null);}},boundIds:configuredClipIds(data!.project,dealer!.id,slot,variantId,data!.inventory),selectedId,localPreviewUrl:slot.localOnly&&localReference?.dealerId===dealer?.id?referenceUrl:undefined,busy:locked||loading||!authorized,variantId,variants:clipVariantChoices(data!.project,data!.inventory,dealer!.id,slot),

@@ -4,6 +4,7 @@ export type ClipGroup = {id:string;title:string;subtitle:string;color:string;slo
 export type ClipLibraryGroup = {id:string;label:string;clips:VideoEntry[]};
 export function clipVariantChoices(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot):{id:string;label:string;baseline:boolean}[];
 export function clipLibraryGroups(clips:VideoEntry[],standardIds?:string[],variantIds?:string[],idle?:boolean):ClipLibraryGroup[];
+export function clipLibraryForSlot(project:StudioProject,inventory:VideoInventory,dealerId:string,slot:ClipSlot):ClipLibraryGroup[];
 export function isRenderedOutcome(slot:ClipSlot):boolean;
 export function slotExplanation(slot:ClipSlot):string;
 export function slotCaption(slot:ClipSlot):string;

@@ -15,13 +15,17 @@ exakt text och språk. Klipp, scenförhandsvisning och befintlig scenredigering
 har gemensam navigation. Osparat tal har en synlig väg tillbaka till formuläret.
 Befintliga exakta klipp-ID:n, skrivare och revisions-/publiceringsgränser används.
 
-Verifierat: 48 fokuserade tester, frontendens typkontroller och byggning;
+Verifierat: 81 fokuserade klipp-/policy-/navigationstester, frontendens typkontroller och byggning;
 isolerat webbprov av platsval, klippkoppling, sparbekräftelse, återläsning,
 bas/beteende, inspelat tal och bevarat talutkast vid panelbyte. Scenpanelen
 öppnas; inga verkliga spel-, media-, publicerings- eller OpenClaw-prov ingår.
 Den befintliga byggningen varnar fortfarande om CSS `composes` i äldre teman.
 Full CI hittade navigationstestets gamla knappnamn. Testet använder nu
 Scen & lager och behåller kontrollen av utkast, kontext, Back/Forward och omladdning.
+Granskningen hittade också att en preview-reserv kunde märkas Standardklipp.
+Bibliotekets rollberäkning läser nu den faktiska sparade standardkopplingen;
+reservvalet är fortfarande en variant. Riktade prov täcker även idle/familjer,
+tal och exakta spelar-/dealerplatser. Skrivare och runtime är oförändrade.
 Oanvända UI-konstanter, kategorifilter och ersatt knapp-CSS har tagits bort.
 
 Fria kort-/markerankare, PNG-idle, generell chattregeleditor och exakt var
