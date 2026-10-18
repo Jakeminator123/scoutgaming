@@ -1,5 +1,28 @@
 # Aktuell handoff — Scoutgaming
 
+## Lokal klippmappning efter rotflytten — 18 oktober 2026
+
+GPT:s återtagna GO för PR236 är reproducerat på main9f7f415d: servern gav
+clipMapping den fysiska roten services/game/public medan katalogen behåller
+web/public-alias. Det gamla enhetstestet använde aliasroten och missade
+serverkopplingen. Ett nytt HTTP-prov av själva spelservern föll med0 i
+stället för17 talposter; även2 native-talposter och2 filmade tagningar saknades.
+Det tidigare beskedet om100% verifierad struktur var därför för brett.
+
+Klippmappningen använder nu serverns befintliga publicAssetPath för både
+metadata och tillgänglighet. Media-ID:n, text, hash, ljudkoppling och publika
+URL:er är oförändrade. Före rättning: nytt isolerat HTTP-prov1pass/1fail.
+Efter rättning:12/12 riktade tester för mapping/runtime/generations/media-layout;
+verklig lokal server200 med fulla poster, utan token401 och cloudRuntime404.
+Provdatabaser/processer är isolerade och avvecklade. Ingen GPU eller mediaändring.
+PR/CI/merge och efterkontroll återstår vid detta kodkvitto. Befintlig produktions-
+verifiering är fortfarande historiskt giltig men täckte inte den lokala läsvägen.
+Separat tal-/läppsynkacceptans ägs av lipsync2; samordnat deployhåll under provet.
+CI39111598116 på första PR237-headet stoppade på ett okopplat nytt test.
+Runtimeprovet är nu registrerat i befintlig gameplay/generations-api-grupp,
+utan undantag eller skip. De efterföljande saknade testberoendena i samma
+CI-körning följde av att installationsstegen hoppades över efter auditfelet.
+Runtimekoden är oförändrad av denna registreringsrättning.
 ## Aktiva källhänvisningar efter rotflytten — 18 oktober 2026
 
 PR-granskningens P2 om kvarvarande web-länkar är rättad i aktiva spel-,

@@ -94,7 +94,7 @@ run_node_tests gameplay performance-contact test/performance-contact.mjs test/pe
 run_node_tests gameplay dealer-reach test/dealer-reach.mjs test/scene-join.mjs test/ready-motion.mjs
 run_node_tests gameplay idle-video-loop test/idle-video-loop.mjs
 run_node_tests gameplay action-placement test/action-placement.mjs test/bugshot-report.mjs
-run_node_tests gameplay generations-api test/generations-api.mjs
+run_node_tests gameplay generations-api test/generations-api.mjs test/clip-mapping-runtime.mjs
 run_node_tests gameplay native-partner-events test/native-partner-events.mjs
 run_node_tests gameplay native-observation test/native-observation.mjs test/clip-mapping.mjs test/shoe-game.mjs test/partner-launch-route.mjs test/dealer-version-switcher.mjs
 run_node_tests gameplay roulette test/roulette.mjs test/roulette-preview.mjs test/roulette-room.mjs test/roulette-room-storage.mjs test/roulette-room-http.mjs test/roulette-wheel.mjs test/roulette-start-contract.mjs test/roulette-publication.mjs test/roulette-postgres.mjs

@@ -10,15 +10,18 @@ import { resolveMediaAbsolutePath } from '../../tools/media-layout.mjs';
 const DEALERS = { astrid: 'dealers/astrid' };
 const PART_EVENT = { box0: 'show.deal.box0', box1: 'show.deal.box1', box2: 'show.deal.box2', box3: 'show.deal.box3', box4: 'show.deal.box4', box5: 'show.deal.box5', box6: 'show.deal.box6', 'dealer-up': 'show.deal.dealer', 'dealer-hole': 'show.deal.hole', return: 'show.return', idle: 'show.idle' };
 const ACTION_EVENT = { 'deal-left': 'show.deal.left', 'deal-centre': 'show.deal.centre', 'deal-right': 'show.deal.right', 'deal-dealer': 'show.deal.dealer' };
-const readJson = p => { try { return JSON.parse(readFileSync(resolveMediaAbsolutePath(p), 'utf8')); } catch { return null; } };
 
-export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) {
+export function clipMapping({ root, bo = {}, publicUrl = '', revision = null,
+  resolveFile = file => resolveMediaAbsolutePath(join(root, file)) }) {
+  // Runtime callers share their public asset resolver: catalog aliases are
+  // stable identities even when the application's physical source root moves.
+  const readJson = file => { try { return JSON.parse(readFileSync(resolveFile(file), 'utf8')); } catch { return null; } };
   const dealers = {};
-  const available = file => typeof file === 'string' && existsSync(resolveMediaAbsolutePath(join(root, file)));
-  const native = readJson(join(root, 'speech-media.json')) ?? {};
+  const available = file => typeof file === 'string' && existsSync(resolveFile(file));
+  const native = readJson('speech-media.json') ?? {};
   for (const [dealer, base] of Object.entries(DEALERS)) {
-    const idx = readJson(join(root, base, 'streams/index.json'));
-    const bank = readJson(join(root, base, 'audio/en/bank.json')) ?? {};
+    const idx = readJson(`${base}/streams/index.json`);
+    const bank = readJson(`${base}/audio/en/bank.json`) ?? {};
     const entries = [];
     if (!idx?.clips) {
       const nativeSpeech = Object.entries(native[dealer] ?? {}).map(([line, take]) => ({
@@ -37,8 +40,8 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
       const event = kind === 'speech' ? `show.line.${short}` : kind === 'idle' ? 'show.idle' : key.includes('action-deal') ? 'show.deal.*' : key.includes('think') ? 'show.hand.think' : `show.gesture.${short}`;
       entries.push({ event, kind, line: kind === 'speech' ? short : null, text: bank[short]?.text ?? null, plays: kind === 'idle' ? 'loop' : 'once',
         file: `${base}/streams/${c.file}`, format: 'h264 annex-b elementary stream, WebCodecs, spliced on canonical pose', frames: c.frameCount, fps: c.fps, width: idx.width, height: idx.height,
-        audio: kind === 'speech' && existsSync(resolveMediaAbsolutePath(join(root, base, 'audio/en', short + '.mp3'))) ? `${base}/audio/en/${short}.mp3` : null, audioDelayMs: c.audioDelayMs ?? null,
-        preview: existsSync(resolveMediaAbsolutePath(join(root, base, 'preview', short + '.mp4'))) ? `${base}/preview/${short}.mp4` : null,
+        audio: kind === 'speech' && available(`${base}/audio/en/${short}.mp3`) ? `${base}/audio/en/${short}.mp3` : null, audioDelayMs: c.audioDelayMs ?? null,
+        preview: available(`${base}/preview/${short}.mp4`) ? `${base}/preview/${short}.mp4` : null,
         route: originalRoute, candidate: true, actualPlayback: false, fileAvailable: available(`${base}/streams/${c.file}`),
         selector: 'CLIP map in app.mjs; catalogue entry, not proof the current route selects it. Exact line id, never nearest duration.' });
     }
@@ -53,7 +56,7 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
   // V2 speech is a distinct text/audio/video set, never relabel the original bank.
   for (const dealer of ['astrid']) {
     const manifest = `review/${dealer}-green-speak/speak.json`;
-    const speech = readJson(join(root, manifest));
+    const speech = readJson(manifest);
     const greenSpeech = Object.entries(speech?.lines ?? {}).map(([line, take]) => ({
       event: `show.line.${line}`, kind: 'speech', line, text: take.text ?? null,
       file: take.media?.src, sha256: take.media?.sha256 ?? null, layout: take.media?.layout,
@@ -71,14 +74,14 @@ export function clipMapping({ root, bo = {}, publicUrl = '', revision = null }) 
   }
   // The current V2 keeps idle/speech, but filmed Astrid dealing is paused in app.mjs.
   const green = [];
-  const dir = 'review/astrid-table-v2'; const list = readJson(join(root, dir, 'takes.json'));
-  for (const f of list?.takes ?? []) { const t = readJson(join(root, dir, f)); if (!t) continue;
+  const dir = 'review/astrid-table-v2'; const list = readJson(`${dir}/takes.json`);
+  for (const f of list?.takes ?? []) { const t = readJson(`${dir}/${f}`); if (!t) continue;
     green.push({ event: t.box != null ? `show.deal.box${t.box}` : ACTION_EVENT[t.action] ?? t.action, action: t.action, box: t.box ?? null, status: t.status, plays: 'once',
       file: t.media?.src, sha256: t.media?.sha256, layout: t.media?.layout, width: t.media?.width, height: t.media?.height, fps: t.media?.fps, frames: t.media?.frames,
       format: 'mp4, RGB over masks (R actor alpha, G fingers), composited by PerformancePlayer',
       selector: 'astrid-green-dealer.mjs selectGreenTake(action, box), currently bypassed by astridDealingPaused; shoe-to-felt card animation remains.',
       route: '/v2/?dealer=astrid', active: false, paused: true, actualPlayback: false, fileAvailable: available(t.media?.src) }); }
-  const staged = []; const man = readJson(join(root, 'dealers/astrid/performance/manifest.json'));
+  const staged = []; const man = readJson('dealers/astrid/performance/manifest.json');
   for (const t of [...(man?.takes ?? []), ...(man?.continuations ?? [])]) staged.push({ event: ACTION_EVENT[t.action] ?? t.action, action: t.action, id: t.id, status: t.status, continuation: t.continuation?.baseId ?? null, plays: 'once',
     file: t.media?.src, sha256: t.media?.sha256, layout: t.media?.layout, frames: t.media?.frames, fps: t.media?.fps, format: 'mp4 packed atlas',
     selector: 'performance-contact.mjs selectContactTake/selectPlayerDelivery by card x position; motion=rhythm or smooth60 loads a different manifest.',
