@@ -124,6 +124,29 @@ Ignorerade `.env`-filer och leverantörernas hemlighetslager har en annan roll;
 [ENVIRONMENT-VARIABLES](ENVIRONMENT-VARIABLES.md).
 Äldre checkpoints finns i [Git före städningen](https://github.com/Jakeminator123/github-work/blob/6b9dad55ced03ee0573e24b472b4dcbba2b97776/docs/ENVIRONMENT-RESTORATION.md).
 
+## Renklonprov och separata QA-förutsättningar
+
+Ett oberoende prov kräver direkt GitHub-klon med egen `.git` och egna
+låsfilinstallationer; återanvänd då inga äldre moduler, byggfiler, envfiler,
+privata data eller junctions till andra checkouter. Börja med en ren
+processmiljö även för installation och bygge, inklusive PATH, NODE_OPTIONS,
+NODE_PATH och paketverktygens konfigurationsfiler. Privata data som saknas
+i Git ska inte återställas för att få detta prov grönt.
+
+[Renklonkvittot 18 oktober](JOHN-HANDOFF.md#huvudagent5-renklon-och-organisationsavslut--18-oktober-2026)
+verifierar de aktuella bygg- och offline-startflödena utan gamla projektfiler.
+Bygg Studio först; `--offline --skip-build --no-open` får sedan använda
+just det nybyggda resultatet. Sessionslås och temporära processer/data ska
+kontrolleras efter stopp. Guards och byggspår ersätter inte en OS-sandbox.
+
+| Separat behov | Orsak och minsta åtgärd |
+| --- | --- |
+| Director-konfiguration/historik | Appadaptrarna bevarar relativ `open-claw/lab` för privata inställningar och data. Isolerade prov väljer egen datarot och `envFiles: []`; verklig historik bevaras separat. Director-paketets startprov behöver inte äldre filer. |
+| PostgreSQL-prov | `node tools/studio-isolated-qa.mjs --download-postgres` kräver icke-root Linux/WSL, APT/dpkg och OpenSSL; alternativt `--postgres-bin /absolut/bin`. Verktyget skapar och tar bort sitt eget kluster. Vid HTTP-spegelns checksummefel: använd betrodd HTTPS-källa via separat `APT_CONFIG`, behåll signatur-/hashkontrollerna. |
+| Valfria browserprov | Installera Playwright/Chrome separat och ange den dokumenterade fixturemodulen ovan. Dessa behövs inte för ordinarie bygge eller HTTP-fixtur. |
+| Privat native-AI-QA | `tools/activate-native-ai-qa.mjs` kräver `native-cloud-browser-qa.mjs`, `native-p6-sdk-worker.mjs`, `native-p6-sdk-admission.mjs` och `native-p6-upstream-bounds-final.json` i `lab/data/platform-private`, plus sitt hashbundna OpenAI-SDK 7.12.1-träd. Bevara/verifiera dessa för just den uttryckliga QA-kampanjen; de är inga normala bygg-/startberoenden. |
+| Publicerad produkt och tal/mediaarbete | Neon, Blob, auth/provider-inställningar samt relevanta råmedia/banker behövs för sina respektive funktioner enligt miljö-/runtimeguiderna. Offline-fixturen ersätter dem med syntetisk konfiguration och verifierar inte skarp tjänst eller medieacceptans. |
+
 ## Lokal miljö
 
 Starta med `node apps/studio/start.mjs` enligt [Studioguiden](../apps/studio/docs/README.md). Sessionsvakten i `services/openclaw/lab/deploy/local-session.mjs` finns kvar. Cmd-filerna i roten är borttagna.
