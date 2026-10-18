@@ -45,7 +45,7 @@ GPU-/läppsynkverifiering. CPU-tester startar ingen GPU.
 `.github/workflows/moving-gpu-publish.yml` publicerar bara det nya paketet
 `ghcr.io/jakeminator123/moving-gpu-worker`. Manuell dispatch kräver exakt
 mål, granskat fullständigt commit-SHA och release-SHA. Dispatch är begränsad
-till `main` eller `codex/dragan-openclaw-live`; branchens frysta dispatch-SHA
+till `main`; branchens frysta dispatch-SHA
 måste matcha inmatningen. GitHub kräver att workflowen finns på defaultbranchen
 innan den kan dispatchas, så den första publiceringen kan kräva en separat PR.
 
@@ -176,12 +176,24 @@ Torchs högsta VRAM-användning läses utan en ny CUDA-kontext. Renderwall kan
 inkludera IPC/backpressure; fasvärden överlappar och får inte summeras till en
 påhittad total. Providerkön och webbläsarens ljud/bild mäts utanför workern.
 
-Bankarkivet kan överleva i samma containers temporära cache. Däremot skapas
-en ny extraktion och motorprocess för varje jobb; modellen återanvänds inte
-mellan repliker. `workersMin=1` ensamt gör alltså inte modellen varm. En framtida
-modellcache kräver exklusiv lease och full identitet, samt processavveckling
-vid avbrott/fel/bankbyte. Den här diagnostikändringen inför ingen sådan cache
-och ändrar inte rendering eller callbackprotokoll.
+Serverless-adaptern äger en `EngineCache` med en exklusiv lease och högst en
+motorprocess. Nyckeln binder release, dealer/avatar, profilrevision, bankarkiv,
+bankkvitto och source-set. Varje jobb verifierar fortfarande release, bank och
+modellhashar; cacheträffen ersätter endast modellrekonstruktionen. En färsk
+tresekunders syntetisk mätplan kontrollerar samma 30-fps-grind vid varje träff.
+
+Återanvändning kräver normal `done`, alla paketkvittensar, avslutade sessiontasks,
+stängd callback och motorprocessens generationsbundna `idle`-svar. Alla
+kompositionsfutures, även outmatad lookbehind, måste lyckas först. PCM, plan,
+callback och sessionsidentitet delas aldrig mellan jobb. Avbrott, fel, timeout,
+felaktig IPC-generation eller ändrad identitet stoppar processen innan en ny
+lease kan få den. SDK-avslut stänger motorn och dess temporära bankkatalog.
+
+Modellen och den första verifierade bankextraktionen behåller RAM/VRAM mellan
+jobb i samma levande worker. En annan eller nedskalad container är fortfarande
+kall. Denna workerändring ändrar inga endpointinställningar; serverns separata
+admission måste tillåta en verifierat ledig worker för att produktionen ska
+utnyttja cachen. GPU-resultat för kall/varm/avbruten körning redovisas separat.
 
 ## Återstående aktivering
 
@@ -190,8 +202,8 @@ Mät kall/varm första ljud- och bildruta, faktisk cancellationkostnad och
 visuell läppsynk. Förena med autentiserad talsession, dynamisk OpenClaw-text,
 befintlig röst-/TTS-adapter, serverns omplanering och spelarens ljudklocka.
 En image per gemensam motor kan användas för olika hashbundna dealerbanker;
-denna version kör ett jobb/uttalande åt gången, med den uttryckliga arkivcachen
-ovan men utan delad extraktions- eller modellcache.
+denna version kör ett jobb/uttalande åt gången med den exklusiva modellcachen
+ovan. Fristående `entrypoint.handler` utan SDK-cache är fortsatt ett kallt jobb.
 
 MuseTalks MIT-licens följer med dess pinnade checkout. Emils privata snapshot
 saknar separat licensfil; se källkvitto före eventuell extern distribution.
