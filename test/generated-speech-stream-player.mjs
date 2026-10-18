@@ -141,7 +141,7 @@ test('optional observer follows the same player/frame and cannot mutate accepted
   assert.deepEqual(observed, ['player', 'bytes', 'frame']); assert.equal(env.sockets.length, 1); assert.equal(env.media.length, 1);
 });
 
-test('aborting audible playback removes completion evidence and ignores a late video end', async t => {
+test('aborting audible playback retains start evidence but never claims completion from a late end', async t => {
   const env = browser(t), controller = new AbortController(), status = { dataset: {} };
   const diagnostic = createChatPlaybackDiagnostic(() => status);
   diagnostic.begin('request-a');
@@ -154,7 +154,7 @@ test('aborting audible playback removes completion evidence and ignores a late v
   controller.abort(); diagnostic.finish('request-a', 'cancelled'); await rejected;
   env.media[0].ended = true; env.media[0].dispatchEvent(new Event('ended'));
   assert.equal(read().state, 'cancelled'); assert.equal(read().completed, false);
-  assert.equal(read().streamId, undefined); assert.equal(read().timings, undefined);
+  assert.equal(read().streamId, 'a'.repeat(32)); assert.equal(read().reviewStatus, 'pending');
   assert.equal(env.mount.children.length, 0);
 });
 
@@ -220,6 +220,29 @@ test('diagnostic rejects unpaired/stale endings and retains only bounded, nonsec
   }
 });
 
+test('outer failure retains the sanitized interruption evidence without copying upstream fields', () => {
+  const status = { dataset: {} }, diagnostic = createChatPlaybackDiagnostic(() => status);
+  const read = () => JSON.parse(status.dataset.playbackReceipt);
+  const base = { requestId: 'request-a', streamId: 'a'.repeat(32), reviewStatus: 'pending' };
+  diagnostic.begin(base.requestId);
+  diagnostic.stream(base.requestId, { ...base, state: 'start', evidence: 'media-playing' });
+  diagnostic.stream(base.requestId, { ...base, state: 'interrupted', evidence: 'media-lifecycle', started: true,
+    firstFrame: true, failureCode: 'moving_speech_frame_unavailable', ticket: 'fixture-private',
+    frameCounts: { received: 24, released: 5, total: 48, upstream: 'fixture-private' } });
+  diagnostic.finish(base.requestId, 'failed', 'upstream fixture-private');
+  assert.equal(read().state, 'failed'); assert.equal(read().completed, false);
+  assert.equal(read().failureCode, 'moving_speech_frame_unavailable'); assert.equal(read().streamId, base.streamId);
+  assert.equal(read().started, true); assert.equal(read().firstFrame, true);
+  assert.deepEqual(read().frameCounts, { received: 24, released: 5, total: 48 });
+  assert.doesNotMatch(status.dataset.playbackReceipt, /fixture-private|upstream|ticket/);
+  diagnostic.begin('request-b');
+  diagnostic.stream('request-b', { ...base, requestId: 'request-b', state: 'interrupted', evidence: 'media-lifecycle',
+    failureCode: 'moving_speech_fixture-private', frameCounts: { received: Infinity, released: -1, total: 1001 } });
+  diagnostic.finish('request-b', 'failed');
+  assert.equal(read().failureCode, 'chat_failed'); assert.equal(read().frameCounts, undefined);
+  assert.equal(read().started, undefined); assert.doesNotMatch(status.dataset.playbackReceipt, /fixture-private/);
+});
+
 test('abort during append or pending play prevents late start and frame reveal', async t => {
   for (const mode of ['decode', 'play']) {
     await t.test(mode, async t => {
@@ -245,8 +268,6 @@ test('normal chat advertises stream support while native lab bridge keeps finali
   assert.match(normal, /acceptsSpeechStream: true/); assert.doesNotMatch(bridge, /acceptsSpeechStream: true/);
   assert.match(source, /generated-lipsync-stream-preview/); assert.match(source, /beforeStart: beforeStreamStart/);
   assert.match(normal, /chatPlaybackDiagnostic\.begin\(requestId\)/);
-  assert.match(normal, /chatPlaybackDiagnostic\.finish\(requestId, 'cancelled'\)/);
-  assert.match(normal, /chatPlaybackDiagnostic\.finish\(requestId, 'failed'\)/);
   assert.match(source, /chatPlaybackDiagnostic\.stream\(jobId, receipt\)/);
 });
 

@@ -2,18 +2,10 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDocumentationPath } from './documentation-paths.mjs';
 
 // Only prose with no runtime role takes the short PR path. Unknown paths,
 // runtime prompts, machine registries and workflow changes run the full suite.
-const guides = new Set([
-  'README.md', 'AGENTS.md', 'CLAUDE.md', 'apps/studio/README.md',
-  'services/game/README.md', 'services/game/public/README.md', 'services/game/storage/README.md',
-  'apps/web/README.md', 'apps/studio/client/README.md',
-  'packages/presentation/README.md', 'tools/media/README.md',
-  'services/openclaw/README.md', 'services/openclaw/lab/README.md',
-  'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
-  'services/astrid-gpu-worker/gateway/README.md',
-]);
 
 export function parseDiff(raw) {
   if (raw === '') return [];
@@ -33,7 +25,7 @@ export function documentationOnly(changes) {
   return changes.length > 0 && changes.every(({ before, after, status, path }) =>
     /^[AMD]$/.test(status) && [before, after].every(mode => ['000000', '100644'].includes(mode)) &&
     !path.includes('\\') && !path.split('/').some(part => ['', '.', '..'].includes(part)) &&
-    (guides.has(path) || /^(?:docs|apps\/studio\/docs)\/.+\.md$/.test(path))
+    isDocumentationPath(path)
   );
 }
 

@@ -1,6 +1,7 @@
 import { createMovingSpeechFrameLayer } from '../../../packages/presentation/runtime/moving-speech-frame-layer.mjs';
 import { effectiveDealerCompositing } from '../../../packages/presentation/contracts/dealer-compositing.mjs';
 import {createMovingSourceFrames} from '../../../packages/presentation/runtime/moving-speech-source-frames.mjs';
+import { chatFailureCode } from '../../../packages/presentation/contracts/chat-response.mjs';
 
 const HASH = /^[a-f0-9]{64}$/, ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
@@ -162,13 +163,14 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
   let socket, layer, restCanvas, bodyFrames, ready, speech, pendingBinary, frameHandle, audioURL, queued = 0, queuedBytes = 0;
   let received = 0, receivedParts = 0, credited = 0, released = 0, pcmReady = false, workerDone = false, audioEnded = false;
   let starting = false, started = false, firstFrame = false, completed = false, terminal = false, tail = Promise.resolve();
-  let resolveDone, rejectDone;
+  let resolveDone, rejectDone, failureCode;
+  const noteFailure = error => { failureCode ??= chatFailureCode(error?.name === 'AbortError' ? 'chat_cancelled' : error?.message); };
   const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
   // Rejection can happen while awaiting descriptor validation or beforeStart.
   done.catch(() => {});
   const send = message => { if (socket?.readyState === 1) socket.send(JSON.stringify(message)); else if (!workerDone) fail('moving_speech_socket_closed'); };
   const stop = error => {
-    if (terminal) return; terminal = true; audio.pause(); audio.muted = true; controller.abort();
+    if (terminal) return; noteFailure(error); terminal = true; audio.pause(); audio.muted = true; controller.abort();
     if (frameHandle !== undefined) caf(frameHandle);
     rejectDone(error);
   };
@@ -230,6 +232,7 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     }
     if (pendingBinary) fail('moving_speech_missing_binary');
     let message; try { message = JSON.parse(data); } catch { fail('invalid_moving_speech_message'); }
+    if (keys(message, ['t', 'code']) && message.t === 'error' && message.code === 'moving_speech_unavailable') fail(message.code);
     if (!ready) {
       ready = await readReady(message, speech);
       const createdLayer = await makeLayer({ plan: ready.plan, document: doc });
@@ -303,6 +306,8 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
     socket.onerror = () => stop(Error('moving_speech_socket_failed'));
     socket.onclose = () => { tail.then(() => { if (!workerDone||(ready?.sequence&&!audioEnded)) stop(Error('moving_speech_socket_closed')); }); };
     await done;
+  } catch (error) {
+    noteFailure(error); throw error;
   } finally {
     terminal = true; clearTimeout(timeout); signal?.removeEventListener('abort', abort); controller.abort();
     audio.pause(); audio.muted = true; audio.onended = audio.onerror = null;
@@ -318,6 +323,8 @@ export async function playMovingSpeech(value, { exactText, dealerId, requestId, 
       restCanvas.width = restCanvas.height = 0; }
     audio.removeAttribute('src'); audio.load(); if (audioURL) revokeURL(audioURL);
     onReceipt({ state: completed ? 'end' : 'interrupted', streamId: value?.id, requestId: value?.requestId,
-      evidence: 'media-lifecycle', started, reviewStatus: 'pending' });
+      evidence: 'media-lifecycle', started, firstFrame, reviewStatus: 'pending',
+      ...(failureCode ? { failureCode } : {}),
+      frameCounts: { received, released, total: ready?.plan.timeline.length ?? 0 } });
   }
 }

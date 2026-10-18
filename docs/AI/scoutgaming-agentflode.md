@@ -1,5 +1,17 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Riktad kommunikation och löpande städning — 18 oktober 2026
+
+Agent-talk visar riktade samtal för deltagarna, gemensamma claims för alla.
+`status --all` är uttrycklig felsökning, inte normal start. Delade filer ger
+inte sekretess. Kvittera behandlade pingar och avsluta egna claims en gång;
+köarkivering och historikgräns behålls utan automatisk återstart av gamla uppdrag.
+Uppdatera relevant handoffavsnitt i stället för att lägga till samma kvitto igen.
+Lokal kontroll och CI delar nu dokumenturval; runtimefiler och okända sökvägar
+behåller ordinarie kontroll. Studio-guidens gamla tvåspelningskrav är borttaget.
+Sidindelningsprovet använder förberedda arkivposter; riktiga CLI-prov av
+överflöde, samtidighet och återhämtning finns kvar.
+
 ## Källänkar i aktiva guider — 18 oktober 2026
 
 Game-flyttens kvarvarande dokumentlänkar pekar nu på services/game eller
