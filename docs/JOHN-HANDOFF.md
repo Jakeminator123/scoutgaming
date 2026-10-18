@@ -1,5 +1,77 @@
 # Aktuell handoff — Scoutgaming
 
+## Dragan: avslutat diagnosprov, bank_length_mismatch — 18 oktober 2026 10:10 UTC
+
+Detta är aktuellt slutläge och ersätter äldre väntande steg nedan. Ingen GPU
+eller fortsättningsbevakning lämnas igång. Jakob önskade en bra överlämningspunkt.
+Ingen rättning av HTTP-hämtningen har gjorts; denna leverans ändrar bara handoffen.
+
+**Verifierat:** PR240 är mergad och appen körde
+`209d62f436786f9dae69c7ee6f1b256253ab6805`. Diagnostikimagen från PR238
+är publicerad och använd i provet: image
+`sha256:3ede7d24fd7885f2a8ffcd1ad4798d2d1caa8799f926c610b576d196cc92db6c`,
+release `3bec5b4be9954d929fcc60d281b89981a7be3d7a9027008466c240b90c1e44ad`.
+OpenClaw svarade exakt "Hej Jakob, nu testar vi ljudet.". Budget/admission,
+nyckelåtkomst och workerstart passerades. Ingen spelinsats gjordes.
+
+**Bekräftat fel:** RunPod-jobbet
+`878f6561-7d54-4203-a091-cf4935386642-e1` väntade 214835 ms och exekverade
+1328 ms. Providern rapporterade COMPLETED men output var
+`status:failed, code:bank_length_mismatch`. Render loggade kvitto-GET200
+10:06:14.906Z; inget efterföljande arkiv-GET. Browsern tog emot noll ljud-/
+bildbytes och ingen worker-WebSocket. Detta är inte ett lyckat talprov.
+`services/moving-gpu-worker/bank_download.py` använder samma felkod för
+otillåten transfer/content encoding, fel Content-Length och för stor kropp.
+Exakta svarshuvuden fångades inte. Chunked är en hypotes, inte fastställd orsak.
+Det nya utfallet stärker underagenternas statiska kvitto-/framinganalys;
+deras procenttal är bedömningar, inte ytterligare runtimeprov.
+
+**Avvecklat:** guarden stängde 10:06:20.952Z. Oberoende återläsning
+10:10:08.646Z verifierade endpoint `4aissnsig9exnz` och template `vcd0ebcbmw`
+404, tom workerlista samt terminal/frisläppt session
+`a409d4882815adb907e93c6b26846091`. Journalens COMPLETED återger providern,
+inte lyckad workeroutput. Renderflaggan0 blev LIVE 10:07:37.980Z via
+`dep-dba9k9uq1p3s73armh90` på samma209d. Dragan-profilen är sparad avstängd.
+Förbrukad endpointvariabel är borttagen med Save only och återläst;
+den körande avstängda deploymenten har fortfarande sitt gamla env-snapshot.
+Astrids endpointinställningar min0/max1 och originalmedia är oförändrade.
+
+**Budget:** Jakobs uttryckliga totaltak är40USD. Append-only amendment
+`4a6363d5-5e26-4da5-874b-20e4b977dd48` är genomförd: samma budget-ID
+`dragan-test-20261017`, journaltak6→7,2USD. Sex reservationer om sammanlagt
+7,2USD och två amendments är bevarade; inga öppna sessioner på testendpointen.
+Detta är reservationer, inte leverantörsfaktura. Även provets försiktiga
+providerreserv2,333334USD ska behållas tills färsk kostnad avstämts.
+40USD-godkännandet är klart. Runtime och journal har nu båda7,2USD som
+fullt reserverat tak. Ett senare prov kräver avstämd kostnad, motsvarande
+ändring av runtimegränsen och append-only journaländring inom40USD;
+återställ inte historiken och skapa inte ett nytt budget-ID för att kringgå den.
+
+**Nästa agent:** börja med kvittoöverföringen, inte nya nycklar eller samma
+GPU-omtag. Läs bara säkra status-/framing-/storleksfält; exponera inte
+capability-URL:er, credentials eller råa undantag. Reproducera relevant
+HTTP-beteende offline och rätta det med bibehållen TLS/origin, storleksgräns,
+SHA-256, tidsgräns och avveckling. Först därefter granskning, förseglad release,
+containerprov och pinnad image före ett nytt kontrollerat talprov.
+Faktiskt hörbar röst och visuellt synkron mun återstår att verifiera.
+
+Jakob påpekade dessutom olika videoversioner och idle efter handdragning,
+samt en möjlig SHA-/bildrutebindning i Kevins staging. Jämför exakt branch,
+video/hash, avatarpaket och frame-index före playbackacceptans; byt inte
+media på namn eller ungefärlig längd. Metoden på staging är inte verifierad
+i denna omgång. Studio visade referensvalet "Kevin V2 · andning", vilket
+ensamt inte bevisar att bankpaket och visad film matchar. Det nu bekräftade
+hämtfelet inträffar före användning av videopaketet.
+
+Privat operativ källa (ingen ny publik tracker):
+`C:/Users/jakem/.codex/visualizations/2026/10/17/01a14afa-f423-7011-bbdf-30a7f44609d1/budget-resume-checkpoint.json`.
+Den länkar terminaloutput, browserresultat, budgetamendment och oberoende
+stoppkvitto. Privata helperfiler ska läsas innan återanvändning; den avslutade
+guarden eller förbrukade endpointen får inte startas igen. Aktuell worktree:
+`C:/Users/jakem/.codex/worktrees/dragan-admission-diagnosis/croupier`, branch
+`codex/dragan-bank-failure-handoff`. Merge-agenten och HUVUDAGENT3 har fått
+stoppkvitto och deployhållet för övrigt arbete är släppt.
+
 ## Dragan: uttryckligt totaltak40 och en ny reservation — 18 oktober 2026
 
 Jakob har uttryckligen höjt det samlade testtaket till40USD. Den första
