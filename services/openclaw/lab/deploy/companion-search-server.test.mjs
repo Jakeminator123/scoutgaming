@@ -73,3 +73,14 @@ test('OpenClaw queries are restricted to the actual official docs and reject loo
   const result = await service.search({ id: id(15), query: 'OpenClaw documentation' });
   assert.equal(result.status, 'searched'); assert.deepEqual(result.results.map(r => r.url), ['https://docs.openclaw.ai/']);
 });
+
+test('repeated server shutdown closes its SQLite service only once', { timeout: 3000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'companion-search-shutdown-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const server = createSearchServer({ directory, token: 'fixture-gateway', enabled: false });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  assert.equal(await new Promise(resolve => server.close(resolve)), undefined);
+  // SIGTERM closes the helper first; the Gateway child's exit closes it again.
+  const second = await new Promise(resolve => server.close(resolve));
+  assert.equal(second?.code, 'ERR_SERVER_NOT_RUNNING');
+});
