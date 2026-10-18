@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {newRoom,roomCommand,validateBets} from '../web/games/roulette/room.mjs';
-import {describePocket} from '../web/games/roulette/index.mjs';
-import {BETS,WHEEL,pocketColor} from '../web/games/roulette/rules.mjs';
+import {newRoom,roomCommand,validateBets} from '../services/game/games/roulette/room.mjs';
+import {describePocket} from '../services/game/games/roulette/index.mjs';
+import {BETS,WHEEL,pocketColor} from '../services/game/games/roulette/rules.mjs';
 
 const command=(bets=[{id:'red',amount:5}],version=0)=>({op:'spin',requestId:randomUUID(),version,bets});
 const draw=number=>context=>({...context,eventId:randomUUID(),type:'roulette.spin.resolved',occurredAt:new Date().toISOString(),outcome:describePocket(number)});

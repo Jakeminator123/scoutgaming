@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import { readFile } from 'node:fs/promises';
 import { playGeneratedSpeech, validateGeneratedSpeechStream } from '../packages/presentation/runtime/generated-speech-player.mjs';
-import { createChatPlaybackDiagnostic } from '../web/public/chat-playback-diagnostic.mjs';
+import { createChatPlaybackDiagnostic } from '../services/game/public/chat-playback-diagnostic.mjs';
 
 const text = 'Good evening. Your next hand is ready.';
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -239,7 +239,7 @@ test('abort during append or pending play prevents late start and frame reveal',
 });
 
 test('normal chat advertises stream support while native lab bridge keeps finalized-byte contract', async () => {
-  const source = await readFile(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
   const normal = source.slice(source.indexOf('async function sendChat('), source.indexOf('const labSpeechBridge'));
   const bridge = source.slice(source.indexOf('const labSpeechBridge'), source.indexOf('if (localPresentationEnabled', source.indexOf('const labSpeechBridge')));
   assert.match(normal, /acceptsSpeechStream: true/); assert.doesNotMatch(bridge, /acceptsSpeechStream: true/);

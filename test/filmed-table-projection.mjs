@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DRAGAN_KEVIN_PROFILE as profile } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import { filmedFaceAtTime } from '../packages/presentation/contracts/filmed-profile.mjs';
-import { filmedTableBinding, filmedTransferTiming, projectFilmedFace } from '../web/public/card-presentation/filmed-table-projection.mjs';
+import { filmedTableBinding, filmedTransferTiming, projectFilmedFace } from '../services/game/public/card-presentation/filmed-table-projection.mjs';
 
 function projection(boxes = [0,1,2,3,4,5,6]) {
   return {x:40,y:320,scale:.4,adjusted:true,boxes,

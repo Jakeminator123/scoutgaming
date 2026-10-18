@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, scryptSync, createHash } from 'node:crypto';
 import { createServer } from 'node:http';
-import { craigIdentity as syncIdentity } from '../web/craig-identity.mjs';
+import { craigIdentity as syncIdentity } from '../services/game/craig-identity.mjs';
 import { craigIdentity as asyncIdentity } from '../packages/studio-access/server/craig-identity.mjs';
-import { playerAuth as syncPlayerAuth } from '../web/player-auth.mjs';
-import { playerAuth as asyncPlayerAuth } from '../web/storage/async-player-auth.mjs';
-import { backofficeGameAuth as syncBackofficeGameAuth } from '../web/bo-game-auth.mjs';
-import { backofficeGameAuth as asyncBackofficeGameAuth } from '../web/storage/async-bo-game-auth.mjs';
+import { playerAuth as syncPlayerAuth } from '../services/game/player-auth.mjs';
+import { playerAuth as asyncPlayerAuth } from '../services/game/storage/async-player-auth.mjs';
+import { backofficeGameAuth as syncBackofficeGameAuth } from '../services/game/bo-game-auth.mjs';
+import { backofficeGameAuth as asyncBackofficeGameAuth } from '../services/game/storage/async-bo-game-auth.mjs';
 import { createStudioNativeAuthActions } from '../apps/studio/lib/studio-native-auth-actions.mjs';
 import { createAccountCredentialResolver, effectiveAccountRole } from '../packages/studio-access/server/account-credentials.mjs';
 

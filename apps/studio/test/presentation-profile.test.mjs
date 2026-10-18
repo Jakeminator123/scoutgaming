@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { presentationEvents } from '../../../web/partner-presentation.mjs';
+import { presentationEvents } from '../../../services/game/partner-presentation.mjs';
 import { createSeedProject } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { describeEventFields, formatEventValue, OUTPUT_GROUPS, presentationProfile } from '../lib/presentation-profile.mjs';
 

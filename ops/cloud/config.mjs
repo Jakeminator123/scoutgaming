@@ -6,7 +6,7 @@ import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:p
 import { fileURLToPath } from 'node:url';
 import { readVercelIngressConfig } from './vercel-ingress.mjs';
 import { readStorageExportConfig } from './storage-export.mjs';
-import { createPostgresStore } from '../../web/storage/postgres-store.mjs';
+import { createPostgresStore } from '../../services/game/storage/postgres-store.mjs';
 import { validateGameConnection } from '../../packages/storage/server/postgres-store.mjs';
 import { normalizePresentationArchive } from '../../tools/media-layout.mjs';
 import {gameEntryEnabled} from '../../packages/navigation/game-entry.mjs';
@@ -354,7 +354,7 @@ export function childSpecifications(config, env = process.env, { labInternalSecr
       CROUPIER_P6_SDK_OPENAI_API_KEY:env.CROUPIER_P6_SDK_OPENAI_API_KEY } : {}),
   } : {};
   return {
-    web: { command: process.execPath, args: [join(REPOSITORY, 'web/server.mjs')], cwd: REPOSITORY,
+    web: { command: process.execPath, args: [join(REPOSITORY, 'services/game/server.mjs')], cwd: REPOSITORY,
       env: { ...shared, ...nativeP6Web, HOST: '127.0.0.1', PORT: String(WEB_PORT), PUBLIC_URL: config.gameOrigin,
         CROUPIER_DATABASE: config.database,
         ...(config.gameDatabaseUrl ? { CROUPIER_GAME_DATABASE_URL: config.gameDatabaseUrl } : {}),

@@ -1,5 +1,101 @@
 # Aktuell handoff — Scoutgaming
 
+## Aktiva källhänvisningar efter rotflytten — 18 oktober 2026
+
+PR-granskningens P2 om kvarvarande web-länkar är rättad i aktiva spel-,
+frontend-, cloud-, tal-, paket- och runtimeguider. De relativa källmålen är
+kontrollerade; rumskontrakt, delad scen, framing och videoschema pekar på
+sina faktiska neutrala paket. Ändra-källan-instruktioner följer services/game.
+Mediaidentiteter, privata datarötter, publika URL:er och frysta SHA-kvitton
+behålls. Detta är en dokumenträttning; aktiv kod, byggkedja och tester är
+oförändrade från det kodgranskade headet.
+
+## Avvecklad historisk jämförelseexport — 18 oktober 2026
+
+Granskningen hittade `tools/media/build-dealer-v2-release.mjs`, som endast
+refererades av verktygs-README och inte anropades från CI eller aktiva verktyg.
+Dess separata statiska spelare krävde CSS och installDealerVersionSwitcher
+som redan saknas i bas d55ce412. CLI:t är därför borttaget; gamla manuella
+exportkommandon pensioneras. Aktiva dealerVersionPath, mediafiler och
+produktkod är oförändrade. Verktygsguiden beskriver även rätt Studio-källrot.
+
+## Gateway verifierad; sista game-leveransen — 18 oktober 2026
+
+Mergagentens fullständiga kvitto gäller main d55ce412714e9e0c85103358f381098ce3d35077:
+main-CI39085777226 SUCCESS, faktiskt containerprov99.765s, SQL16tester och
+produktionsledger001–014 ready01:23:14Z. Vercel dpl_34PApGPPsSH4vGbCbgjgt4CeCy7T
+READY med17/17 kontroller; game dep-dba1v4jm8hqs73b04q1g LIVE med version,
+health, lobby och privata gränser verifierade01:26:54Z.
+
+Gateway-övergången utan omslutande quotes gav dep-dba23t6q1p3s73a16skg LIVE
+01:41:27Z trots en tidigare portscan-varning. Docker Command återställdes
+till tomt och lästes tillbaka. Normal deploy av samma SHA,
+dep-dba28hnavr4c73fsf3fg, blev LIVE01:45:00Z: SIGTERM/shutdown01:44:05Z,
+ny Gateway ready01:44:52Z utan EPERM, lease- eller closefel. Mergagentens
+signerade config.get200 och Director-kontroll01:45:22Z visar connected/applied,
+2026.9.5 och alla fem modellval/fallbacks oförändrade. Disk och autoDeploy
+är oförändrade. Director kvarstår på67bac46d med verifierat identisk buildclosure.
+Ingen modell- eller GPU-körning ingick.
+
+Game-flytten är normalt integrerad med denna accepterade main och levereras
+nu separat. Dess verifierade app/service/package-kod är oförändrad sedan
+slutbygget; därefter har endast Gateway-kvitton och runbook rättats. PR-CI,
+main-CI och faktisk game-drift återstår. H3 skickar lipsynk2 ett enda
+startbesked direkt efter den kedjan, för färsk kostnads-/runtimekontroll och
+ett kontrollerat prov inom15USD totalt med automatisk avveckling.
+
+## Gateway-övergångens kommando, 18 oktober 2026
+
+Main-CI39085777226 på d55ce412 är grönt. Första Render-övergången
+dep-dba1vveq1p3s73a0phe0 misslyckades med exit127 eftersom de omslutande
+enkla citattecknen bevarades i Docker Command. Runbook följer nu Renders
+faktiska officiella kodexempel utan dessa citattecken. Docker-fixturen
+verifierar shellprogrammets argv, inte Renders strängtolkning. Mergagent
+återställde fältet och äger återhämtning samt en källstödd korrigerad retry
+på samma granskade revision. Inga state-/lease-/authdata ändras; slutligt
+Gateway-driftkvitto krävs fortfarande före game-leverans och GPU-start.
+
+## C3 — slutlig lokal integration, 18 oktober 2026
+
+Game-flyttens byggverifierade kod08e24133 och kvitto dccb86c8 är normalt
+integrerade med Gateway-PR235:s head25939126. De två dokumentkonflikterna
+bevarar båda leveransernas kvitton. Game/Studio-koden ändras inte av denna
+integration; det tidigare slutbyggets80 rena traces och SQL014-kvitto gäller
+fortfarande dessa oförändrade källor. PR235:s CI39084698347 är grönt enligt
+mergagent, inklusive verkligt containerprov90.428s och produktionsledger
+ready01:03:55Z. GPT Pro slutgranskning är GO på exakt25939126 och PR235
+är mergad som d55ce412714e9e0c85103358f381098ce3d35077. Main är normalt
+integrerad här utan ändrat kodträd; game-PR väntar endast på mergagentens
+fullständiga Gateway-driftkvitto. Ingen GPU-start har skickats.
+
+## C3 — game integrerad med Studio och budget, 18 oktober 2026
+
+Den bevarade game-flytten 5cd4c744 är återlagd på levererade OpenClaw-headet cb11b0c4 i egen branch codex/stage3-game-root-final. Samtliga 199 spårade web-filer, inklusive den nya moving-speech-budget-modulen, har källrot services/game. Required014, budgetjournalen, Studios korrigerade previewrot och den privata QA-platsen lab/data/platform-private är bevarade. Historiska web/data, media-ID:n och envrötter flyttas inte.
+
+De två konkreta chatstart-/previewfixturevägarna är rättade. Riktade chat-, preview- och budgettester: 45/45. AST-kontroll av 376 ändrade moduler och 1476 relativa kanter gav inga saknade mål eller parsefel; byggverktygets dist är ett uttryckligt genererat mål. 18 ändrade guider har fungerande lokala länkmål. Testinventeringen omfattar 513 JS/TS-kandidater, 0 föräldralösa och 9 explicita hjälp-/opt-in-klasser; 10 Pythonfiler redovisas separat. README beskriver de faktiska app-/tjänste-/paketägarna.
+
+Första sluthooken gav 1829 pass, 4 fel och 14 skip: en kvarvarande import i den nya budget-SQL-fixturen samt tre starttimeouter. Importen och tre gamla cwd-val är rättade; riktad omkörning gav 11 pass, 0 fel och 1 isolerad PostgreSQL-skip. BO-testerna passerade utan timeoutändring. Sluthooken passerade därefter: 1847 tester, 1832 pass, 0 fel och 15 miljöskips (7 browser, 3 Linux-signaler, 5 isolerade databaser). Normal integration av OpenClaw-main 67bac46d gav oförändrat kodträd b1ae480f. Slutkod 08e24133 kompletterar byggskyddet för services/game/data och passerar 5/5 befintliga trace-regressioner. Färskt Studio-bygge på exakt 08e24133 är grönt: 80 rena traces, 77 SQL-traces med alla 13 schemafiler inklusive014, full Admin/Lobby/preview-closure och worker/native/mediabunny. PR/CI/drift är parkerade tills Gateway-signalfel och säker engångsövergång är levererade separat; ingen GPU-start. Mergagent äger föregångarnas och denna leverans drift. H3 ger lipsync2 startkommandot först efter hela verifierade kedjan; talets kvalitet är ännu inte verifierad.
+
+
+## C3 — spelmotorns källrot services/game, lokalt 18 oktober 2026
+
+198spårade filer, varav96publika, är flyttade; dynamiska fixture-/startvägar,
+testladdare och aktiva guider följer nya roten. Egen låst npm ci med Node24.21.0
+i services/game; gamla dependencyjunctions och mål är orörda. Publika URL:er,
+owner:web, medie-ID:n och web/data-default består. Den granskade sourcePath-
+porten behåller registrerad medias prioritet och inget runtimeCatalog-diskfallback.
+OpenClaws lokala bootstrap behåller game-ägda installPartnerApi.
+
+Lokalt grönt:69path/CI/hook/browser-binding/guide/entryprov (testladdarens åtta
+importfel rättade, dess14prov omkörda),79isolerade auth/media/bootstrapprov,
+51playback/Directorprov och107browser/HTTP-prov.190produktmoduler/504relativa
+importer utan parsefel eller saknat mål.512testkandidater/0orphans/9befintliga
+helper/opt-in-klasser;10Pythonfiler inventeras separat. Inga nya testfiler,
+borttagna assertions eller GPU-/läppsynkprov ingår.
+
+Kvar före leverans: normal integration av levererade föregångare och budget-
+PR230:s verkliga slut-main inklusive ny modul/SQL014/tester, ordinarie sluthook,
+PR-CI och faktisk drift. Budget/schema/GPU-operationer ligger hos lipsync2.
 ## Gateway-signalrättning — 18 oktober 2026
 
 OpenClaw-flytten PR234 är mergad som 67bac46d; CI samt web/spel/Director

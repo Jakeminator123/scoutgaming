@@ -136,7 +136,7 @@ test('background errors, page visibility and stale decode callbacks restore base
 });
 
 test('game background notifications precede speech mute admission and never await a decorative clip',async()=>{
-  const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+  const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
   const say=source.slice(source.indexOf('say(t, { force'),source.indexOf('speechPoseGate = createSpeechPoseGate'));
   assert.ok(say.indexOf("backgroundEvent('speak.'+t")<say.indexOf('if (this.muted'));
   assert.doesNotMatch(say,/await\s+layerComposition/);assert.match(say,/clientSessionRevision.*roomId.*DEALER.key.*tableVersion/);

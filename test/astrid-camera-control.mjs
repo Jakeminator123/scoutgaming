@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAstridCameraControl } from '../web/public/astrid-camera-control.mjs';
-import { createAstridWakeWord } from '../web/public/astrid-wake-word.mjs';
+import { createAstridCameraControl } from '../services/game/public/astrid-camera-control.mjs';
+import { createAstridWakeWord } from '../services/game/public/astrid-wake-word.mjs';
 import { createSpeechPoseGate } from '../packages/presentation/runtime/speech-pose-gate.mjs';
 
 class Element {

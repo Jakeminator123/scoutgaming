@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {installNativeP6GamePlayback,createNativeP6GameQueueDelivery,nativeP6GameAvailability,NATIVE_P6_GAME_ORIGIN,
-  NATIVE_P6_GAME_CONTEXT_PATH,NATIVE_P6_GAME_SOURCE_PATHS} from '../web/public/native-p6-game-playback.mjs';
-import {createSpeechQueue} from '../web/public/speech-queue.mjs';
+  NATIVE_P6_GAME_CONTEXT_PATH,NATIVE_P6_GAME_SOURCE_PATHS} from '../services/game/public/native-p6-game-playback.mjs';
+import {createSpeechQueue} from '../services/game/public/speech-queue.mjs';
 import {createSpeechPoseGate} from '../packages/presentation/runtime/speech-pose-gate.mjs';
 import {playGeneratedSpeech} from '../packages/presentation/runtime/generated-speech-player.mjs';
 import {DEFAULT_DEALER_COMPOSITING} from '../packages/presentation/contracts/dealer-compositing.mjs';
@@ -89,7 +89,7 @@ function fixture(t,{ownerChangeAt=0,ownerKey='policySha256',stale=false,deny=fal
       if(reads===ownerChangeAt)value[ownerKey]='6'.repeat(64);if(reads===poseChangeAt)gate.updateRendererState({actionOwner:'dealing'});
       const r=new Response(JSON.stringify(value),{status:deny?404:200,headers:{'content-type':'application/json'}});
       Object.defineProperty(r,'url',{value:NATIVE_P6_GAME_ORIGIN+path});return r;}
-    const i=paths.findIndex(p=>'/'+p.replace('web/public/','')===path);assert.notEqual(i,-1,'no generation or unknown URL');
+    const i=paths.findIndex(p=>'/'+p.replace('services/game/public/','')===path);assert.notEqual(i,-1,'no generation or unknown URL');
     const r=new Response(changedSource?'changed':sources[i],{headers:{'content-type':'text/javascript'}});
     Object.defineProperty(r,'url',{value:NATIVE_P6_GAME_ORIGIN+path});return r;};
   const availabilityState={busy:!quiet,hasRound:false,chatBusy:false,speaking:false,muted:false};

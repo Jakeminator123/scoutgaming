@@ -58,6 +58,7 @@ export const ARCHIVE_PATHS = Object.freeze([
   'apps/studio/policies',
   'apps/studio/schemas',
   'services/openclaw/lab',
+  'services/game',
   'tools/media',
   'tools/media-layout.mjs',
   'tools/media-blob-index-reader.mjs',

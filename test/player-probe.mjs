@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
-import { createPlayerProbeStore } from '../web/player-probe-store.mjs';
-import { createProbeRuntime } from '../web/probe-runtime.mjs';
+import { createPlayerChatMemory } from '../services/game/player-chat-memory.mjs';
+import { createPlayerProbeStore } from '../services/game/player-probe-store.mjs';
+import { createProbeRuntime } from '../services/game/probe-runtime.mjs';
 import { createDefaultProbePolicy } from '../packages/presentation/contracts/probe-policy.mjs';
 import { normalizeProbeRequest, validateProbeChoice, decideProductProbe, createProductProbeService } from '../packages/director/product-probe.mjs';
 import { probeFixtures } from '../packages/presentation/contracts/probe-fixtures.mjs';
 import { createSeedProject, validateProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { rebaseProjectDraft } from '../apps/studio/lib/project-rebase.mjs';
-import { probePresentationQuiet } from '../web/public/probe-client.mjs';
+import { probePresentationQuiet } from '../services/game/public/probe-client.mjs';
 import { projectConversationMemory, normalizeConversationMemory, CONVERSATION_MEMORY_LIMITS } from '../packages/director/conversation-memory.mjs';
 
 test('new Astrid policies explicitly select Terra without enabling proactive speech',()=>{

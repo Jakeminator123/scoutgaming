@@ -5,10 +5,10 @@ import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
+import { createSpeechJournal } from '../services/game/postgres-speech-journal.mjs';
 import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
-import { createGeneratedSpeechStreamService } from '../web/generated-speech-stream.mjs';
-import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
+import { createGeneratedSpeechStreamService } from '../services/game/generated-speech-stream.mjs';
+import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../services/game/generated-speech-session.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from '../packages/presentation/server/generated-speech-provider.mjs';
 import { speechMemoryPool } from './fixtures/speech-memory-pool.mjs';
 

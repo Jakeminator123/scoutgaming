@@ -2,11 +2,11 @@ import {cloudPresentationFixture} from '../apps/studio/test/fixtures/cloud-prese
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {createPresentationApi} from '../web/presentation-api.mjs';
-import {presentationCapabilitiesResponse} from '../web/presentation-capabilities.mjs';
+import {createPresentationApi} from '../services/game/presentation-api.mjs';
+import {presentationCapabilitiesResponse} from '../services/game/presentation-capabilities.mjs';
 import {defaultCompositionSettings,defaultBlackjackTableGeometry,validateCompositionSettings,sceneForComposition} from '../packages/presentation/contracts/composition-settings.mjs';
 import {validateComposition,createLayerComposition,clipCompositing} from '../packages/presentation/runtime/presentation-composition.mjs';
-import {compositionRuntimeResponse} from '../web/composition-runtime.mjs';
+import {compositionRuntimeResponse} from '../services/game/composition-runtime.mjs';
 import {stageGeometry,tableRect,backgroundRect} from '../packages/presentation/compositor/geometry.js';
 import {zoomComposition} from '../apps/studio/lib/composition-zoom.mjs';
 import {Compositor} from '../packages/presentation/compositor/compositor.js';
@@ -14,7 +14,7 @@ import {createSeedProject,addDealer,defaultPresentationLane,validateProject} fro
 import {buildPresentationPackage,layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation} from '../packages/presentation/server/presentation-package.mjs';
 import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
-import {decorateGameEntryHtml} from '../web/public/game-entry-contract.mjs';
+import {decorateGameEntryHtml} from '../services/game/public/game-entry-contract.mjs';
 import { validateGameLanes } from '../packages/presentation/contracts/game-lanes.mjs';
 import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
 import {layoutGameOverlay,BLACKJACK_COMPACT_QUERY} from '../packages/presentation/runtime/game-overlay-layout.mjs';

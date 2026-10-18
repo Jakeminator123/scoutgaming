@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile, mkdir, open, lstat, realpath } from 'node:fs/promises';
 import { resolve, dirname, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createPostgresStore } from '../web/storage/postgres-store.mjs';
+import { createPostgresStore } from '../services/game/storage/postgres-store.mjs';
 
 const repo=fileURLToPath(new URL('../',import.meta.url)),schemaPath=new URL('../ops/neon-game/product-schema.sql',import.meta.url);
 const hash=value=>createHash('sha256').update(value).digest('hex');

@@ -4,7 +4,7 @@ import { promisify } from 'node:util';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
-import { assertMovingSpeechSource, createMovingSpeechSourceSet, movingSpeechHash } from '../web/moving-speech-bank.mjs';
+import { assertMovingSpeechSource, createMovingSpeechSourceSet, movingSpeechHash } from '../services/game/moving-speech-bank.mjs';
 
 const exec = promisify(execFile);
 const fail = code => { throw Error(code); };
@@ -110,7 +110,7 @@ async function main() {
   if (!configuration) fail('moving_bank_cloud_configuration_required');
   const { createStudioRepository } = await import('../packages/studio-registry/server/document-repository.mjs');
   const { createNeonVideoRegistry } = await import('../apps/studio/lib/neon-video-registry.mjs');
-  const { Pool } = createRequire(new URL('../web/package.json', import.meta.url))('pg');
+  const { Pool } = createRequire(new URL('../services/game/package.json', import.meta.url))('pg');
   const pool = new Pool({ connectionString: configuration.connectionString, max: 1,
     options: '-c default_transaction_read_only=on' });
   try {

@@ -9,7 +9,7 @@ import {createPartnerBrandingApi} from '../lib/partner-branding-api.mjs';
 import {partnerPresentationDealerChoices} from '../lib/partner-presentation-choices.mjs';
 import {partnerLaneState} from '../lib/partner-package-view.mjs';
 import {createGameEntrySelector} from '../../../packages/presentation/server/game-entry-selector.mjs';
-import {decorateGameEntryHtml} from '../../../web/public/game-entry-contract.mjs';
+import {decorateGameEntryHtml} from '../../../services/game/public/game-entry-contract.mjs';
 import {gameLaneFromDocument} from '../../../packages/presentation/contracts/game-selection.mjs';
 import {resolvePlayerSelection} from '../../../packages/presentation/runtime/player-choices.mjs';
 

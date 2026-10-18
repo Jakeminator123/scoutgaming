@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {canonicalStudioJson} from '../../packages/studio-registry/server/document-contract.mjs';
 import {createSpeechReplyRepository} from '../../packages/presentation/server/speech-reply-repository.mjs';
-import * as replyMediaStore from '../../web/blob-media.mjs';
+import * as replyMediaStore from '../../services/game/blob-media.mjs';
 import {createSpeechReplyLibrary} from '../../packages/presentation/server/speech-reply-library.mjs';
 export const scope={environment:'qa',workspaceId:'jakob'};
 export const env={CROUPIER_MEDIA_STORAGE:'blob',BLOB_READ_WRITE_TOKEN:'fixture-private-token'};

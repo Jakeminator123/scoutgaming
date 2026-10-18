@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { readPlayerResults } from '../web/player-results.mjs';
+import { readPlayerResults } from '../services/game/player-results.mjs';
 import { normalizeProductSpeechEnvelope } from '../packages/director/product-speech.mjs';
-import { projectOpenClawGameStatus } from '../web/openclaw-chat.mjs';
+import { projectOpenClawGameStatus } from '../services/game/openclaw-chat.mjs';
 
 test('profile results separate profits, losses, returned stakes, currencies and uncollected play', t => {
   const db = new DatabaseSync(':memory:'); t.after(() => db.close());

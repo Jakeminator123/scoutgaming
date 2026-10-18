@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { playerAuth } from '../web/player-auth.mjs';
+import { playerAuth } from '../services/game/player-auth.mjs';
 import { blackjackUrl } from '../apps/web/tools/player-ui-build.mjs';
 
 test('player account survives restart, remains separate from Scout, rejects impersonation and revokes sessions', async () => {

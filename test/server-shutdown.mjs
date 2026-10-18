@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import { createServer } from 'node:http';
 import { connect } from 'node:net';
 import { once } from 'node:events';
-import { installGracefulShutdown } from '../web/graceful-shutdown.mjs';
+import { installGracefulShutdown } from '../services/game/graceful-shutdown.mjs';
 
 class FakeServer extends EventEmitter {
   closeCalls = 0;

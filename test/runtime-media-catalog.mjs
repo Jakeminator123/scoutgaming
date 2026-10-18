@@ -76,7 +76,7 @@ test('retired IDs cannot acquire the older frontend portrait fallback',async()=>
 });
 
 test('old Paow preview cannot return through a registry entry without preview choices',async t=>{
- const {dealerVersionPath}=await import('../web/public/dealer-version-switcher.mjs');
+ const {dealerVersionPath}=await import('../services/game/public/dealer-version-switcher.mjs');
  const previous=globalThis.document;t.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
  globalThis.document={documentElement:{dataset:{gamePresentation:'layered',gameLane:'layer-preview',gameRegisteredDealers:JSON.stringify([{id:'paow',label:'PAOW'}])}}};
  assert.throws(()=>dealerVersionPath('paow',1),/not registered/);

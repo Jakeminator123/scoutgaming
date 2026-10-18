@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 // Run the actual orchestration with manually presented video frames. This
 // catches races hidden by media hash tests without pretending to test visuals.
-const source=(await fs.readFile(new URL('../../web/public/astrid-folded-rest.mjs',import.meta.url),'utf8'))
+const source=(await fs.readFile(new URL('../../services/game/public/astrid-folded-rest.mjs',import.meta.url),'utf8'))
   .replace(/^import .*;\n/gm,'').replace('export async function installFoldedRest','async function installFoldedRest');
 const tick=async()=>{for(let i=0;i<16;i++)await Promise.resolve();};
 async function setup(){

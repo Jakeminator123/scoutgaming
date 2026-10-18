@@ -40,7 +40,7 @@ och spelbara rum. Deras UI-källa finns i `apps/studio/client`.
 `packages/navigation` äger gemensamma dokumentadresser, bolagssluggar och
 det rena operatörsentrékontraktet. Navigationens `server/platform-routing.mjs`
 ägs gemensamt av frontend, Studio och Render-ingress; `game-entry.mjs` äger rena
-speladresser/queryregler. HTML/presentation ligger kvar i `web/public/game-entry-contract.mjs`.
+speladresser/queryregler. HTML/presentation ligger kvar i `services/game/public/game-entry-contract.mjs`.
 Frontend importerar dessa direkt utan
 Studios privata routekod eller spelserverns policy-/SQL-moduler. HTTP,
 sessioner och behörighetskontroller förblir appägda. Bara slugmodulens och
@@ -89,7 +89,7 @@ Interaktiva produkt-/labbprov använder den gemensamma sessionsvakten.
 `node_modules/`, `.next/`, `runtime-ui/` och de spelresurser som
 `tools/prepare-platform-ui.mjs` skriver i `public/` genereras vid installation
 eller bygge och är Git-ignorerade. De är inga egna produkter eller källarkiv.
-Ändra spelkällan i `web/public` och den delade presentationen i
+Ändra spelkällan i `services/game/public` och den delade presentationen i
 `packages/presentation`; förberedelsen kopierar dem till frontendbygget.
 
 Preview är inte automatiskt isolerad från produktion. Använd bara rätt QA-

@@ -6,15 +6,15 @@ import { once, EventEmitter, getEventListeners } from 'node:events';
 import { Readable } from 'node:stream';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
-import { createPresentationApi as buildPresentationApi, presentationInput } from '../web/presentation-api.mjs';
-import { createNativeP6OwnedPlaybackContextReader } from '../web/native-p6-qa-hook.mjs';
+import { createPresentationApi as buildPresentationApi, presentationInput } from '../services/game/presentation-api.mjs';
+import { createNativeP6OwnedPlaybackContextReader } from '../services/game/native-p6-qa-hook.mjs';
 import { addDealer, createSeedProject as historicalProject } from '../packages/presentation/contracts/studio-model.mjs';
-import { playLocalFilm } from '../web/public/local-film-player.mjs';
+import { playLocalFilm } from '../services/game/public/local-film-player.mjs';
 import {MAX_RECORDED_SPEECH_SECONDS} from '../packages/presentation/contracts/recorded-speech.mjs';
-import { createLocalPresentation } from '../web/public/local-presentation.mjs';
+import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
 import { loadVideoRegistry as readVideoRegistry } from '../apps/studio/lib/video-registry.mjs';
 import { videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
-import { selectPresentation } from '../web/presentation-selection.mjs';
+import { selectPresentation } from '../services/game/presentation-selection.mjs';
 import { createProjectStore } from '../apps/studio/lib/project-store.mjs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -41,13 +41,13 @@ function createPresentationApi(options={}){
 test('local server dispatch serves GET/HEAD for the complete browser import graph without broadening web paths', async(t) => {
   // Exercise the production dispatch condition as well as the module handler:
   // calling the handler alone missed the dealer-identity alias regression.
-  const serverSource = await readFile(new URL('../web/server.mjs', import.meta.url), 'utf8');
+  const serverSource = await readFile(new URL('../services/game/server.mjs', import.meta.url), 'utf8');
   const guard = serverSource.match(/^  if \((pathname\.startsWith\('\/api\/presentation\/'\).*?)\) \{\r?$/m)?.[1];
   assert.ok(guard, 'production presentation dispatch must be identifiable');
   const dispatches = pathname => new Function('pathname', 'presentationPublicSource', 'return Boolean(' + guard + ')')(pathname, presentationPublicSource);
   const handler = createPresentationApi({ env:{}, store:{load:async()=>assert.fail('public modules must not load private policy')} });
   const publicEntry = new Map([
-    ['/local-presentation.mjs', '../web/public/local-presentation.mjs'],
+    ['/local-presentation.mjs', '../services/game/public/local-presentation.mjs'],
     ['/dealer-identity.mjs', '../packages/presentation/contracts/dealer-identity.mjs'],
     ['/recorded-speech.mjs', '../packages/presentation/contracts/recorded-speech.mjs'],
   ]);
@@ -825,7 +825,7 @@ test('a speech playback failure keeps its error and correlation without claiming
 });
 
 test('a shared media download cancelled by the old owner does not poison the new owner', async t => {
-  const { PerformancePlayer } = await import('../web/public/performance-player.mjs');
+  const { PerformancePlayer } = await import('../services/game/public/performance-player.mjs');
   const previousFetch = globalThis.fetch;
   const bytes = new TextEncoder().encode('shared local MP4 fixture');
   const sha256 = Buffer.from(await crypto.subtle.digest('SHA-256', bytes)).toString('hex');

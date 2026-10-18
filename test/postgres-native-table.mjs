@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createPostgresNativeTableCommand } from '../web/postgres-native-table.mjs';
+import { createPostgresNativeTableCommand } from '../services/game/postgres-native-table.mjs';
 
 const bets = [{ main: 5, pp: 0, tp: 0 }, ...Array.from({ length: 6 }, () => ({ main: 0, pp: 0, tp: 0 }))];
 

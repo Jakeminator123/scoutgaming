@@ -14,7 +14,7 @@ const incident=(id,status='TRIGGERED')=>({id,status,date:'2026-10-03T16:30:00Z',
   detector:{name:marker},matches:{value:marker},secret_hash:marker,secret_id:555,severity:marker,assignee_email:marker,
   incident_name:marker,occurrences:[{content:marker}],extraUnknown:marker});
 const location=(iid,lid=10)=>({id:lid,incident_id:iid,source:{id:30689542,type:'github',full_name:repo,extra:marker},
-  filepath:'web/server.mjs',last_updated_at:'2026-10-03T16:31:00Z',matches:[{name:marker,line_start:12,line_end:13,index_start:4,index_end:5,value:marker}],
+  filepath:'services/game/server.mjs',last_updated_at:'2026-10-03T16:31:00Z',matches:[{name:marker,line_start:12,line_end:13,index_start:4,index_end:5,value:marker}],
   content:marker,remediation_prs:[{description:marker}],external_url:marker});
 const json=(data,link)=>new Response(JSON.stringify(data),{headers:{'content-type':'application/json',...(link?{link}:{})}});
 function fixture(routes){const calls=[];return{calls,reader:createGitGuardianReader({tokenProvider:async()=>token,now:()=>1791046000000,
@@ -114,7 +114,7 @@ test('zero locations are attributed to each numeric incident ID without downgrad
   assert.deepEqual(report.coverageGaps,[{safeCode:'gg_read_location_metadata_unavailable',incidentId:37828691},
     {safeCode:'gg_read_location_metadata_unavailable',incidentId:37830671}]);
   assert.equal(report.incidents.length,3);assert.equal(report.incidents[0].file,null);assert.equal(report.incidents[1].line,null);
-  assert.equal(report.incidents[2].file,'web/server.mjs');assert.equal(report.incidents[2].line,12);
+  assert.equal(report.incidents[2].file,'services/game/server.mjs');assert.equal(report.incidents[2].line,12);
   assert.deepEqual(report.pagesRead,{incidents:1,locations:3});assert.equal(JSON.stringify(report).includes(marker),false);
 });
 test('location HTTP error and duplicate metadata pages stay fail-closed, attributed and secret-free',async()=>{

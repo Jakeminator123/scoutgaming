@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const app = readFileSync(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
 const visibility = app.slice(app.indexOf('function setChatOpen(open)'), app.indexOf('\n}', app.indexOf('function setChatOpen(open)')) + 2);
 
 function harness(dealer, localPresentationEnabled = true, studioPreview = null) {

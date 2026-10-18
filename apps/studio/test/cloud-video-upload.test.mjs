@@ -10,7 +10,7 @@ import { createSeedProject } from '../../../packages/presentation/contracts/stud
 import {uploadVideo} from '../lib/video-uploads.mjs';
 import {readUploads} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse, getLabVideoResponse } from '../lib/video-registry.mjs';
-import { createPresentationApi } from '../../../web/presentation-api.mjs';
+import { createPresentationApi } from '../../../services/game/presentation-api.mjs';
 import { NextRequest } from '../node_modules/next/server.js';
 
 const bytes = Buffer.from('0000ftypisom00000private-video-fixture-exact-bytes');

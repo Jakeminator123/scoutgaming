@@ -174,10 +174,10 @@ test('actual browser canonical login keeps host-only BO cookies with signed game
   const { chromium } = await import(pathToFileURL(browserModule).href);
   const { DatabaseSync } = await import('node:sqlite');
   const { scryptSync } = await import('node:crypto');
-  const { craigIdentity } = await import('../../../web/craig-identity.mjs');
-  const { playerAuth } = await import('../../../web/player-auth.mjs');
-  const { backofficeGameAuth } = await import('../../../web/bo-game-auth.mjs');
-  const { backofficeLabAuth } = await import('../../../web/bo-lab-auth.mjs');
+  const { craigIdentity } = await import('../../../services/game/craig-identity.mjs');
+  const { playerAuth } = await import('../../../services/game/player-auth.mjs');
+  const { backofficeGameAuth } = await import('../../../services/game/bo-game-auth.mjs');
+  const { backofficeLabAuth } = await import('../../../services/game/bo-lab-auth.mjs');
   const { createStudioNativeAuth } = await import('../lib/studio-native-auth.mjs');
   const { nextStudioAuthEntryRedirect } = await import('../lib/next-page-navigation.mjs');
   const navigation = require('next/dist/client/components/redirect.js');

@@ -10,13 +10,13 @@ import { createHash, createHmac, randomBytes, randomUUID, scryptSync } from 'nod
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createPostgresStore } from '../web/storage/postgres-store.mjs';
-import { playerAuth } from '../web/storage/async-player-auth.mjs';
+import { createPostgresStore } from '../services/game/storage/postgres-store.mjs';
+import { playerAuth } from '../services/game/storage/async-player-auth.mjs';
 import { craigIdentity } from '../packages/studio-access/server/craig-identity.mjs';
 import { installBoAuthEpoch } from '../packages/studio-access/server/bo-auth-epoch.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
-import { createRenderStudioPolicy } from '../web/storage/studio-runtime.mjs';
+import { createRenderStudioPolicy } from '../services/game/storage/studio-runtime.mjs';
 import { createSeedProject } from '../packages/presentation/contracts/studio-model.mjs';
 import { createStudioNativeAuth } from '../apps/studio/lib/studio-native-auth.mjs';
 import { createStudioNativeAuthActions, createStudioLoginRateLimit } from '../apps/studio/lib/studio-native-auth-actions.mjs';
@@ -26,15 +26,15 @@ import { createStudioAdminAccounts } from '../apps/studio/lib/studio-admin-accou
 import { createStudioAdminApi } from '../apps/studio/lib/studio-admin-api.mjs';
 import { createStudioDocumentApi } from '../apps/studio/lib/studio-document-api.mjs';
 import { createStudioGameAuthority, studioCommandSignature } from '../apps/studio/lib/studio-game-authority.mjs';
-import { createStudioGameCommandApi } from '../web/studio-game-commands.mjs';
+import { createStudioGameCommandApi } from '../services/game/studio-game-commands.mjs';
 import { createPlayerAdministration } from '../packages/storage/server/player-administration.mjs';
 import { planStudioMigrations, loadStudioMigrations } from '../ops/neon-studio/migrations.mjs';
-import { createSpeechJournal } from '../web/postgres-speech-journal.mjs';
-import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../web/generated-speech-session.mjs';
+import { createSpeechJournal } from '../services/game/postgres-speech-journal.mjs';
+import { createSpeechSessionManager, SPEECH_SESSION_POLICY } from '../services/game/generated-speech-session.mjs';
 import { createGeneratedSpeechService } from '../packages/presentation/server/generated-speech-service.mjs';
 import { GENERATED_SPEECH_DEFAULTS } from '../packages/presentation/server/generated-speech-provider.mjs';
-import { createSpeechBlobArtifacts } from '../web/speech-blob-artifacts.mjs';
-import {newGame} from '../web/shoe-game.mjs';
+import { createSpeechBlobArtifacts } from '../services/game/speech-blob-artifacts.mjs';
+import {newGame} from '../services/game/shoe-game.mjs';
 import { SHOE_RULES } from '../packages/shared/blackjack-shoe-rules.mjs';
 
 const { createStudioGamePolicy } = createSavedGamePolicy({ documentContract: savedGameDocumentContract });

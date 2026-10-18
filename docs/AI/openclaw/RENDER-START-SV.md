@@ -41,8 +41,9 @@ efter senaste förnyelse. Ingen lease får raderas eller kringgås.
    tjänstens ursprungliga Docker Command (nu tomt), autoDeploy och diskbindning.
 2. Merger samordnar ensam drift på befintlig Gateway med beständig disk.
    Sätt tillfälligt Docker Command till
-   `/bin/sh -c 'sleep 330; exec node /opt/croupier-gateway/gateway-bootstrap.mjs'`
-   och driftsätt den exakta fixrevisionen. Kontrollera att gamla instansen
+   `/bin/sh -c sleep 330; exec node /opt/croupier-gateway/gateway-bootstrap.mjs`
+   utan omslutande citattecken runt shellprogrammet i Render-fältet.
+   Driftsätt den exakta fixrevisionen. Kontrollera att gamla instansen
    verkligen stoppas före den nya starten. Vid oklar tidsordning: avbryt
    vidare steg och granska bounded status/loggar; rör inte state eller lås.
 3. Väntan gör inget med disk/auth. Därefter ersätter exec skalet med samma
@@ -54,8 +55,20 @@ efter senaste förnyelse. Ingen lease får raderas eller kringgås.
    är rättningen och övergången färdiga. Behåll autoDeploy av.
 
 [Render beskriver Docker Command och sh -c](https://render.com/docs/docker)
-och [15 minuters starttimeout](https://render.com/docs/deploys). CI provar
-sh/sleep/exec med en sekunds väntan på den faktiska pinnade imagen, inklusive
-/bin/sh och sleep, men ersätter inte driftkontrollen av 330-sekunderssteget.
+och [15 minuters starttimeout](https://render.com/docs/deploys). Renders
+kodexempel använder `/bin/sh -c python ... && gunicorn ...` utan omslutande
+citattecken. Första övergångsförsöket med enkla quotes gav exit127 och
+`not found` för hela shellprogrammet: Render behöll citattecknen. Det är
+en skillnad mellan Render-fältets sträng och Dockers uttryckliga argv.
+CI skickar `["/bin/sh", "-c", "sleep 1; exec node ..."]` och provar samma
+shellprogram på den faktiska pinnade imagen, inklusive /bin/sh och sleep;
+det provar inte Renders strängtolkning. Krävd faktisk driftkontroll omfattar
+fortfarande 330-sekunderssteget och efterföljande normal omstart.
 Nya fel ska utredas innan en ny deploy; återställ kommandoinställningen och
 använd befintlig återställningsprocess utan att radera eller ändra leasens data.
+
+Verifierat övergångskvitto18oktober: den korrigerade strängen nådde LIVE
+trots en portscan-varning under väntan. Den följande normala omstarten på
+samma d55ce412 gav ordnad SIGTERM, ny Gateway och autentiserat config.get200.
+Bedöm faktisk slutstatus och anslutning; en tidigare varning ensam visar
+varken misslyckad eller lyckad drift. Se exakt tids-/deploykvitto i handoffen.

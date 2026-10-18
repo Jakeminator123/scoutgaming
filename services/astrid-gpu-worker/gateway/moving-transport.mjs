@@ -1,4 +1,4 @@
-import { MOVING_SPEECH_LIMITS } from '../../../web/moving-speech-limits.mjs';
+import { MOVING_SPEECH_LIMITS } from '../../game/moving-speech-limits.mjs';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { WebSocket, WebSocketServer } from 'ws';
 

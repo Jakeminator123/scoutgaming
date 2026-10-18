@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { prepareMovingSpeechSources } from '../tools/prepare-moving-speech-sources.mjs';
-import { movingSpeechHash } from '../web/moving-speech-bank.mjs';
+import { movingSpeechHash } from '../services/game/moving-speech-bank.mjs';
 const id='11111111-1111-1111-1111-111111111111',other='22222222-2222-2222-2222-222222222222';
 const bytes=Buffer.from('original source bytes');
 const video=(key=id)=>({id:key,dealer:'dragan',sha256:movingSpeechHash(bytes),bytes:bytes.length,available:true,storage:'private-blob',contentType:'video/mp4',classification:{dealerId:'dragan',kind:'action'}});

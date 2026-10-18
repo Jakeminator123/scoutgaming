@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {handValue} from '../web/public/blackjack.mjs';
-import { sideBetWin, roundWin } from '../web/public/blackjack-feedback.mjs';
+import {handValue} from '../services/game/public/blackjack.mjs';
+import { sideBetWin, roundWin } from '../services/game/public/blackjack-feedback.mjs';
 
 const hand = overrides => ({ stake: 10, result: 20, pp: 0, tp: 0, sideReturn: 0,
   insured: 0, splitFrom: null, cards: [{ r: '10' }, { r: '9' }], ...overrides });
 
 // Execute the application's actual settlement announcement boundary; a correct
 // profit helper alone must not leave audio and dealer speech using anyWin.
-const app = readFileSync(new URL('../web/public/app.mjs', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../services/game/public/app.mjs', import.meta.url), 'utf8');
 const announcementStart = app.indexOf('  const dealerTotal = handValue(round.dealer).total;', app.indexOf("  syncBalance('settle');"));
 const announcementEnd = app.indexOf('  await Promise.all([sleep(1800), speechQueue.idle]);', announcementStart);
 assert.ok(announcementStart >= 0 && announcementEnd > announcementStart, 'settlement announcement boundary exists');

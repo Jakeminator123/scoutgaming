@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createRequire} from 'node:module';
-import {createOperatorAppearanceApi} from '../web/operator-appearance-api.mjs';
-import {createOperatorPackageReader} from '../web/storage/operator-package-reader.mjs';
-import {createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets} from '../web/public/operator-appearance-boundary.mjs';
+import {createOperatorAppearanceApi} from '../services/game/operator-appearance-api.mjs';
+import {createOperatorPackageReader} from '../services/game/storage/operator-package-reader.mjs';
+import {createOperatorAppearanceBoundary,preserveAppearanceBets,consumeAppearanceBets} from '../services/game/public/operator-appearance-boundary.mjs';
 import {backendPlatformPath} from '../packages/navigation/server/platform-routing.mjs';
 
 const {parse}=createRequire(new URL('../apps/studio/package.json',import.meta.url))('next/dist/compiled/acorn');
-const [serverSource,appSource]=await Promise.all(['../web/server.mjs','../web/public/app.mjs'].map(path=>readFile(new URL(path,import.meta.url),'utf8')));
+const [serverSource,appSource]=await Promise.all(['../services/game/server.mjs','../services/game/public/app.mjs'].map(path=>readFile(new URL(path,import.meta.url),'utf8')));
 const serverTree=parse(serverSource,{ecmaVersion:'latest',sourceType:'module'}),appTree=parse(appSource,{ecmaVersion:'latest',sourceType:'module'});
 function walk(node,visit){if(!node||typeof node!=='object')return;visit(node);for(const value of Object.values(node))if(Array.isArray(value))value.forEach(child=>walk(child,visit));else if(value&&typeof value==='object')walk(value,visit);}
 function declaration(tree,name){const found=tree.body.find(node=>node.type==='VariableDeclaration'&&node.declarations.some(row=>row.id.type==='Identifier'&&row.id.name===name));assert.ok(found,`actual runtime declaration ${name} must exist`);return found;}

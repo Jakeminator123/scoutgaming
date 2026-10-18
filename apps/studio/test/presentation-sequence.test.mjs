@@ -5,7 +5,7 @@ import { normalizeProject, buildRuntimeCatalog, DEALER_IDS, isDirectorSourceType
 import { createLegacyProject } from './fixtures/legacy-project.mjs';
 
 import { prepareDecision } from '../../../packages/director/engine.mjs';
-import { presentationEvents } from '../../../web/partner-presentation.mjs';
+import { presentationEvents } from '../../../services/game/partner-presentation.mjs';
 
 // Explicit historical document: current seeds intentionally register only active dealers.
 const historicalProject = () => normalizeProject(createLegacyProject());

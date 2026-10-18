@@ -1,5 +1,24 @@
 # Så samarbetar chattar, agenter och modeller i Scoutgaming
 
+## Källänkar i aktiva guider — 18 oktober 2026
+
+Game-flyttens kvarvarande dokumentlänkar pekar nu på services/game eller
+faktiskt delat paket. Frysta media-ID:n, privata rötter och publika URL:er
+behålls. Kontrollen följer riktiga länkmål, inte ett antagande om mappnamn.
+
+## Förbrukad statisk export — 18 oktober 2026
+
+Det oanropade äldre v2-exportverktyget har pensionerats efter verifierat
+saknade förutsättningar redan på basrevisionen. Media och aktiv spelarkod
+behålls; gamla manuella kommandon redovisas i verktygsguiden och handoffen.
+
+## App- och tjänströtter — 18 oktober 2026
+
+Game-koden ligger i services/game. AGENTS beskriver Studios appadaptrar och
+de redan utbrutna gemensamma paketen. Lokala datarötter, medieidentiteter och
+avsiktlig OpenClaw/game-bootstrap består. Ingen ny agentroll, behörighet eller
+automatisk process införs. Leveransstatus finns i [handoffen](../JOHN-HANDOFF.md).
+
 ## Gateway-stoppsignal — 18 oktober 2026
 
 Gateway-bootstrap börjar som container-PID 1 och execar befintlig tini efter
@@ -8,6 +27,10 @@ mountkontroll, state, modellval och behörigheter behålls. Det isolerade
 containerprovet använder faktisk image/bootstrap/starter och syntetisk CLI
 utan nät. [Handoff](../JOHN-HANDOFF.md) skiljer lokala tester, CI och drift;
 [Render-guiden](openclaw/RENDER-START-SV.md) beskriver första övergången.
+Efter konkret exit127 i Render skiljer guiden dess kommandosträng utan
+omslutande citattecken från Docker-provets argv; faktisk driftverifiering
+är kvitterad av mergagent: korrigerad övergång samt normal omstart
+på samma d55ce412, med ordnad SIGTERM och autentiserat config.get200.
 
 ## Portabel GitGuardian-start — 17 oktober 2026
 

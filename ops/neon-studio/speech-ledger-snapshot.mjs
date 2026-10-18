@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { StudioStorageError, canonicalStudioJson, validateStudioScope } from '../../packages/studio-registry/server/document-contract.mjs';
-import { GPU_RESERVATION_WINDOW_MS, speechRequestKey } from '../../web/postgres-speech-journal.mjs';
+import { GPU_RESERVATION_WINDOW_MS, speechRequestKey } from '../../services/game/postgres-speech-journal.mjs';
 import { normalizeSpeechPackage } from '../../packages/presentation/contracts/speech-package.mjs';
 
 export const SPEECH_LEDGER_SNAPSHOT_FORMAT = 'croupier-speech-ledger-v1';

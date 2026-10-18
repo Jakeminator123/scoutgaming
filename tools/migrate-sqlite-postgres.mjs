@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFile, lstat, realpath } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createPostgresStore } from '../web/storage/postgres-store.mjs';
+import { createPostgresStore } from '../services/game/storage/postgres-store.mjs';
 
 const SCHEMA_PATH = new URL('../ops/neon-game/product-schema.sql', import.meta.url);
 const ident = value => { if (!/^[a-z_][a-z0-9_]*$/.test(value)) throw Error('Unsupported SQL identifier'); return `"${value}"`; };

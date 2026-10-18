@@ -2,8 +2,8 @@ import test,{beforeEach,afterEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
-import {dealerVersionPath} from '../web/public/dealer-version-switcher.mjs';
-const appSource=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+import {dealerVersionPath} from '../services/game/public/dealer-version-switcher.mjs';
+const appSource=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
 const rehearsalSource=appSource.slice(appSource.indexOf('// Optional rehearsal'));
 let oldDocument,oldLocation;
 beforeEach(()=>{

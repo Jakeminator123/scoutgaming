@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname, resolve, basename } from 'node:path';
 import { prepareProject, main, publishedProductUrl, requireLocalBuild, localBuildFiles } from '../start.mjs';
 import { childSpecifications, loadPrivateConnection } from '../../../services/openclaw/lab/deploy/local-connection.mjs';
-import { createPresentationApi } from '../../../web/presentation-api.mjs';
+import { createPresentationApi } from '../../../services/game/presentation-api.mjs';
 import { createProjectStore } from '../lib/project-store.mjs';
 import { createServer } from 'node:http';
 import {defaultPresentationLane} from '../../../packages/presentation/contracts/studio-model.mjs';

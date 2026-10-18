@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import {uploadVideo} from '../lib/video-uploads.mjs';
 import {uploadDirectory, readUploads} from '../lib/video-local-readers.mjs';
 import { loadVideoRegistry, getVideoResponse } from '../lib/video-registry.mjs';
-import { loadVideoRegistry as loadGameVideoRegistry, getVideoResponse as getGameVideoResponse } from '../../../web/storage/video-registry.mjs';
+import { loadVideoRegistry as loadGameVideoRegistry, getVideoResponse as getGameVideoResponse } from '../../../services/game/storage/video-registry.mjs';
 import { validateVideoMetadata, videoFitsEvent, MAX_VIDEO_BYTES } from '../../../packages/presentation/contracts/video-intake.mjs';
 import { validateProject, addVariant, buildRuntimeCatalog } from '../../../packages/presentation/contracts/studio-model.mjs';
 import { auditStudio } from '../lib/studio-audit.mjs';

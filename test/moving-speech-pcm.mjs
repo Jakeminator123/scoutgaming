@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { prepareMovingSpeechPcmInput } from '../web/moving-speech-pcm.mjs';
+import { prepareMovingSpeechPcmInput } from '../services/game/moving-speech-pcm.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 function fixture(dealerId = 'paow', workerAvatar = dealerId) {

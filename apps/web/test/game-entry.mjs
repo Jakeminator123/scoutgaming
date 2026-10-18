@@ -88,8 +88,8 @@ test('prepared player login and modal distinguish canonical game from account en
 test('actual login module sends fresh and existing player sessions to the game without an entry loop',async t => {
   const original = new Map(['document','location','fetch'].map(key => [key,globalThis[key]]));
   t.after(() => {for (const [key,value] of original) {if (value === undefined) delete globalThis[key];else globalThis[key] = value;}});
-  const sourceUrl = new URL('../../../web/public/blackjack-entry.mjs',import.meta.url);
-  const source = (await readFile(sourceUrl,'utf8')).replace("'../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../../packages/navigation/game-entry.mjs',sourceUrl).href));
+  const sourceUrl = new URL('../../../services/game/public/blackjack-entry.mjs',import.meta.url);
+  const source = (await readFile(sourceUrl,'utf8')).replace("'../../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../../../packages/navigation/game-entry.mjs',sourceUrl).href));
   for (const [canonical,authenticated,query='?dealer=nora&motion=smooth60&launch=a.b.c&returnTo=https://evil.invalid'] of [[true,false],[true,true],[false,true],[true,false,''],[true,true,'']]) {
     const form = {hidden:true};
     const nodes = {form,'#status':{},'#submit':{},'#password':{value:'isolated-password'},'#username':{value:'isolated-player'},'#login-help':{},'#legacy-admin':{}};
@@ -117,8 +117,8 @@ test('actual login module sends fresh and existing player sessions to the game w
 test('shared login clears credentials before pending dispatch, prevents duplicates and sanitizes failures',async t=>{
   const original=new Map(['document','location','fetch'].map(key=>[key,globalThis[key]]));
   t.after(()=>{for(const [key,value]of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}});
-  const sourceUrl=new URL('../../../web/public/blackjack-entry.mjs',import.meta.url);
-  const source=(await readFile(sourceUrl,'utf8')).replace("'../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../../packages/navigation/game-entry.mjs',sourceUrl).href));
+  const sourceUrl=new URL('../../../services/game/public/blackjack-entry.mjs',import.meta.url);
+  const source=(await readFile(sourceUrl,'utf8')).replace("'../../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../../../packages/navigation/game-entry.mjs',sourceUrl).href));
   const form={hidden:true},nodes={form,'#status':{},'#submit':{},'#password':{value:'fixture-login-password'},'#username':{value:' Administrator '},'#login-help':{},'#legacy-admin':{}};
   globalThis.document={documentElement:{dataset:{gamePath:'/blackjack'}},querySelector:key=>nodes[key]};
   const navigations=[];globalThis.location={href:env.CROUPIER_PUBLIC_ORIGIN+'/player-login',origin:env.CROUPIER_PUBLIC_ORIGIN,search:'',assign:x=>navigations.push(x),replace:x=>navigations.push(x)};
@@ -142,7 +142,7 @@ test('actual game modal accepts shared credentials, clears passwords and ignores
   globalThis.document={documentElement:{dataset:{}},createElement:()=>dialog,body:{appendChild(){}}};
   let writes=0,release;const waiting=new Promise(resolve=>{release=resolve;});const requests=[];
   globalThis.fetch=async(url,init)=>{if(url==='/api/auth/session')return Response.json({authenticated:false,sharedCredentials:true});requests.push([url,init]);++writes;if(writes===1){await waiting;return Response.json({ok:true});}return Response.json({error:'PRIVATE SERVER TEXT'},{status:401});};
-  const source=(await readFile(new URL('../../../web/public/auth-modal.mjs',import.meta.url),'utf8')).replace("'../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../../../packages/navigation/game-entry.mjs',import.meta.url).href));
+  const source=(await readFile(new URL('../../../services/game/public/auth-modal.mjs',import.meta.url),'utf8')).replace("'../../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../../../packages/navigation/game-entry.mjs',import.meta.url).href));
   const modal=await import('data:text/javascript;base64,'+Buffer.from(source+'\n// shared modal lifecycle').toString('base64'));
   const firstResult=modal.requestLogin('Sign in to play');await new Promise(resolve=>setImmediate(resolve));nodes['#auth-password'].value='fixture-modal-password';
   const first=nodes.form.onsubmit({preventDefault(){}});
@@ -167,8 +167,8 @@ async function capabilityFixture(kind,{canonical=true,session={authenticated:fal
   globalThis.location={href:current.href,origin:current.origin,search:current.search,assign:x=>navigations.push(x),replace:x=>navigations.push(x)};
   globalThis.fetch=async(url,init)=>{requests.push([url,init]);return url==='/api/auth/session' ? capability?capability():Response.json(session) : post?post(url,init):Response.json({ok:true});};
   try{
-    const url=new URL('../../../web/public/'+(kind==='entry'?'blackjack-entry.mjs':'auth-modal.mjs'),import.meta.url);
-    const source=(await readFile(url,'utf8')).replace("'../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../../packages/navigation/game-entry.mjs',url).href));
+    const url=new URL('../../../services/game/public/'+(kind==='entry'?'blackjack-entry.mjs':'auth-modal.mjs'),import.meta.url);
+    const source=(await readFile(url,'utf8')).replace("'../../../packages/navigation/game-entry.mjs'",JSON.stringify(new URL('../../../packages/navigation/game-entry.mjs',url).href));
     const module=await import('data:text/javascript;base64,'+Buffer.from(source+'\n// capability case '+(++importCase)).toString('base64'));
     await run({nodes,dialog,module,requests,navigations,writes:()=>requests.filter(([,init])=>init?.method==='POST')});
   }finally{for(const[key,value]of original){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}

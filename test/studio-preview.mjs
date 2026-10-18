@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
-import {createStudioPreview} from '../web/studio-preview.mjs';
+import {createStudioPreview} from '../services/game/studio-preview.mjs';
 import {createStudioNativeAuth} from '../apps/studio/lib/studio-native-auth.mjs';
 import {addDealer,createEmptyProject,defaultPresentationLane} from '../packages/presentation/contracts/studio-model.mjs';
 import {layerAssetPath} from '../packages/presentation/contracts/presentation-layers.mjs';
@@ -143,7 +143,7 @@ test('captured immutable bank UUID must retain its expected SHA and never borrow
 });
 
 test('HTML and session metadata preserve own identity and expose incomplete dealers without fallback',async t=>{
-  const f=fixture(t,{readHtml:()=>readFile(new URL('../web/public/index.html',import.meta.url),'utf8')}),session=await start(f),base='/api/studio-preview/'+session.sessionId;
+  const f=fixture(t,{readHtml:()=>readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8')}),session=await start(f),base='/api/studio-preview/'+session.sessionId;
   const info=await (await f.api.handle(f.request(base+'/session'))).json();assert.equal(info.preview,true);assert.equal(info.authenticated,true);assert.equal(info.guest,false);
   assert.equal(info.dealerAvailability.find(row=>row.id==='unfinished').reason,'studio_preview_idle_required');assert.deepEqual(info.externalServices,{ai:false,speech:false});
   const htmlResponse=await f.api.handle(f.request(session.entryUrl));assert.equal(htmlResponse.status,200);const html=await htmlResponse.text();
@@ -156,7 +156,7 @@ test('HTML and session metadata preserve own identity and expose incomplete deal
 });
 
 test('saved preview entry permits a same-origin frame while keeping private auth and external services disabled',async t=>{
-  const f=fixture(t,{readHtml:()=>readFile(new URL('../web/public/index.html',import.meta.url),'utf8')}),session=await start(f);
+  const f=fixture(t,{readHtml:()=>readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8')}),session=await start(f);
   const navigation={'sec-fetch-site':'same-origin','sec-fetch-mode':'navigate','sec-fetch-dest':'iframe'};
   for(const method of ['GET','HEAD']){
     const response=await f.api.handle(f.request(session.entryUrl,method,undefined,navigation));

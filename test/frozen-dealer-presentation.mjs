@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createFrozenDealerContextReader, createFrozenDealerPresentationContext } from '../packages/presentation/server/frozen-dealer-presentation.mjs';
 
-import { createPresentationApi } from '../web/presentation-api.mjs';
+import { createPresentationApi } from '../services/game/presentation-api.mjs';
 import { Writable } from 'node:stream';
 import {canonicalStudioJson} from '../packages/studio-registry/server/document-contract.mjs';
 import { operatorRow, packageRow } from './fixtures/operator-package-sql.mjs';

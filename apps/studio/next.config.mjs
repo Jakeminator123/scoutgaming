@@ -24,7 +24,7 @@ export default {
   outputFileTracingRoot: resolve(root, '../..'),
   // Production obtains credentials/state from scoped env and Neon. Private
   // local config, QA evidence and old writable state must never be bundled.
-  outputFileTracingExcludes: { '/*': ['../../.env*', './.env*', './data/**', '../../lab/data/**', '../../lab/.env*', '../../lab/tsconfig.probe.json', '../../web/data/**',
+  outputFileTracingExcludes: { '/*': ['../../.env*', './.env*', './data/**', '../../lab/data/**', '../../lab/.env*', '../../lab/tsconfig.probe.json', '../../web/data/**', '../../services/game/data/**',
     '../../open-claw/lab/data/**', '../../open-claw/lab/runtime/**', '../../services/openclaw/lab/data/**', '../../services/openclaw/lab/runtime/**', '../../agent-talk/**', '../../.croupier-inbox/**', '../../random/**', '../../media/dealers/**',
     '../../media/layout.json', '../../media/blob-index.json', '../../media/catalog/**'] },
   outputFileTracingIncludes: appTraceRoutes({

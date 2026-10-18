@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 // runtime prompts, machine registries and workflow changes run the full suite.
 const guides = new Set([
   'README.md', 'AGENTS.md', 'CLAUDE.md', 'apps/studio/README.md',
-  'web/README.md', 'web/public/README.md', 'web/storage/README.md',
+  'services/game/README.md', 'services/game/public/README.md', 'services/game/storage/README.md',
   'apps/web/README.md', 'apps/studio/client/README.md',
   'packages/presentation/README.md', 'tools/media/README.md',
   'services/openclaw/README.md', 'services/openclaw/lab/README.md',

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createHash, randomBytes, scryptSync } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { createPostgresStore } from '../web/storage/postgres-store.mjs';
+import { createPostgresStore } from '../services/game/storage/postgres-store.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
 import { canonicalStudioJson } from '../packages/studio-registry/server/document-contract.mjs';
 import { publicEditableBranding } from '../packages/operators/contracts/branding.mjs';
@@ -13,8 +13,8 @@ import { STANDARD_OPERATOR_ROLES } from '../apps/studio/lib/operator-admin-api.m
 import { createOperatorJournal } from '../apps/studio/lib/operator-journal.mjs';
 import { createFrozenDealerContextReader } from '../packages/presentation/server/frozen-dealer-presentation.mjs';
 import { createGameEntrySelector } from '../packages/presentation/server/game-entry-selector.mjs';
-import { createOperatorAppearanceApi } from '../web/operator-appearance-api.mjs';
-import { createOperatorAppearanceBoundary } from '../web/public/operator-appearance-boundary.mjs';
+import { createOperatorAppearanceApi } from '../services/game/operator-appearance-api.mjs';
+import { createOperatorAppearanceBoundary } from '../services/game/public/operator-appearance-boundary.mjs';
 import { resolvePlayerSelection } from '../packages/presentation/runtime/player-choices.mjs';
 import { defaultPresentationLane } from '../packages/presentation/contracts/studio-model.mjs';
 import { defaultCompositionSettings } from '../packages/presentation/contracts/composition-settings.mjs';
@@ -392,7 +392,7 @@ const configuration = process.env.CROUPIER_PARTNER_BRANDING_POSTGRES_QA_CONFIG;
 if (process.env.NODE_TEST_CONTEXT || configuration) test('real isolated PostgreSQL verifies N2 appearance drafts, reviewed publication and restore',
   { skip: configuration ? false : 'isolated PostgreSQL branding fixture is not configured' }, async () => {
     const config = JSON.parse(await readFile(configuration, 'utf8'));
-    const { Pool } = createRequire(new URL('../web/package.json', import.meta.url))('pg');
+    const { Pool } = createRequire(new URL('../services/game/package.json', import.meta.url))('pg');
     const pools = ['operators', 'auth'].map(kind => {
       const url = new URL(config[`${kind}DatabaseUrl`]);
       assert.ok(['postgres:', 'postgresql:'].includes(url.protocol)); assert.equal(url.search, ''); assert.equal(url.hash, '');

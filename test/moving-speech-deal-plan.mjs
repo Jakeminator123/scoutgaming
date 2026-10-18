@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {prepareMovingDealPlan,createMovingDealReservations} from '../web/moving-speech-deal-plan.mjs';
+import {prepareMovingDealPlan,createMovingDealReservations} from '../services/game/moving-speech-deal-plan.mjs';
 import {DRAGAN_KEVIN_PROFILE as profile} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
-import {movingDealCard} from '../web/public/moving-speech-sequence.mjs';
+import {movingDealCard} from '../services/game/public/moving-speech-sequence.mjs';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
 import {createSpeechPoseGate} from '../packages/presentation/runtime/speech-pose-gate.mjs';
@@ -37,7 +37,7 @@ test('sparse absolute box3 maps to live hand zero and never borrows another hand
   assert.throws(()=>movingDealCard(round,{to:'box',box:3,shoeDraw:2}),/card_unavailable/);
 });
 test('app sequence cursor advances exact source frames and commits each authoritative sparse-box draw once',async()=>{
-  const app=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+  const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
   const source=app.slice(app.indexOf('function finishMovingDealStep('),app.indexOf('async function playChatDecision('));
   const sequence=prepareMovingDealPlan(fixture()),owned={version:7,lastFrame:-1,stepIndex:-1,completed:false,sequence};
   const moves=[],finished=[],placed=[],cards=[{shoeDraw:1,rank:'A'},{shoeDraw:3,rank:'K'}];
@@ -52,7 +52,7 @@ test('app sequence cursor advances exact source frames and commits each authorit
   assert.throws(()=>context.frame(owned,sequence,0),/stale/);
 });
 test('muted or refused next-deal chat returns fallback and releases busy state without calling provider',async()=>{
-  const app=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+  const app=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
   const source=app.slice(app.indexOf('async function sendChat('),app.indexOf("$('#gate-enter').onclick"));
   for(const muted of [true,false]){
     const identity={dealerId:'dragan',sessionRevision:2,roundRevision:7},input={value:'Hej'},send={disabled:false};let timers=0;

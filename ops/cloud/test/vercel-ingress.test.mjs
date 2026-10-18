@@ -5,7 +5,7 @@ import {proxyHeaders} from '../gateway.mjs';
 import {createCloudGateway} from '../gateway.mjs';
 import {createServer, request as httpRequest} from 'node:http';
 import {once} from 'node:events';
-import {presentationCapabilitiesResponse} from '../../../web/presentation-capabilities.mjs';
+import {presentationCapabilitiesResponse} from '../../../services/game/presentation-capabilities.mjs';
 
 const env = {CROUPIER_VERCEL_TRANSPORT_ORIGIN: 'https://isolated.onrender.com', CROUPIER_PUBLIC_ORIGIN: 'https://preview.example.test', CROUPIER_VERCEL_INGRESS_SECRET: 'isolated-ingress-fixture-'.repeat(3)};
 const ingress = readVercelIngressConfig(env);

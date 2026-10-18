@@ -7,14 +7,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { openGenerationMedia, closeGenerationMedia } from '../web/generation-media.mjs';
+import { openGenerationMedia, closeGenerationMedia } from '../services/game/generation-media.mjs';
 import { startLocalComparison } from '../tools/start-local-comparison.mjs';
 
 async function freePort(host) {
   const server = createServer(); await new Promise(resolve => server.listen(0, host, resolve));
   const port = server.address().port; await new Promise(resolve => server.close(resolve)); return port;
 }
-const catalog = JSON.parse(readFileSync(new URL('../web/public/bo/generations.json', import.meta.url)));
+const catalog = JSON.parse(readFileSync(new URL('../services/game/public/bo/generations.json', import.meta.url)));
 const [first, second] = catalog;
 
 test('media resolver allows only catalogue names and refuses symlink escapes', async () => {
@@ -46,7 +46,8 @@ test('explicit media directory cannot re-enable retired BO or token package rout
   await symlink(join(tmp, 'outside.mp4'), join(directory, `${second.id}.mp4`), 'file');
   let fixture;
   try {
-    await symlink(fileURLToPath(new URL('../web/', import.meta.url)), join(tmp, 'web'), process.platform === 'win32' ? 'junction' : 'dir');
+    await mkdir(join(tmp, 'services'), {recursive:true});
+    await symlink(fileURLToPath(new URL('../services/game/', import.meta.url)), join(tmp, 'services', 'game'), process.platform === 'win32' ? 'junction' : 'dir');
     fixture = await startLocalComparison({ repoRoot: tmp, startLab: false, gamePort: await freePort('localhost'), labPort: await freePort('127.0.0.1'), generationDirectory: directory });
     const boPath = `/bo/gen/${first.id}.mp4`, apiPath = `/api/v1/generations/${first.id}/video`;
     const get = (path, headers = {}, method = 'GET') => fetch(fixture.gameUrl + path, { method, headers, redirect: 'manual' });
@@ -71,7 +72,7 @@ test('explicit media directory cannot re-enable retired BO or token package rout
 
 test('retired generation aliases cannot fall through to static files through Windows route aliases', async () => {
   const tmp = await mkdtemp(join(tmpdir(), 'croupier-media-case-'));
-  const web = join(tmp, 'web'), mediaRoot=join(tmp,'media'),directory=join(mediaRoot,'site/runtime/backoffice/gen');
+  const web = join(tmp, 'services', 'game'), mediaRoot=join(tmp,'media'),directory=join(mediaRoot,'site/runtime/backoffice/gen');
   const known = '11111111-2222-3333-4444-555555555555';
   const unknown = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
   let fixture;
@@ -86,7 +87,7 @@ test('retired generation aliases cannot fall through to static files through Win
     assert.equal((await lstat(mediaRoot)).isSymbolicLink(),false);
     await writeFile(join(mediaRoot,'layout.json'),JSON.stringify({schemaVersion:1,roots:{'web/public/bo/gen':'media/site/runtime/backoffice/gen'},files:[]}));
     await mkdir(join(web,'public/bo'),{recursive:true});
-    const source = new URL('../web/', import.meta.url);
+    const source = new URL('../services/game/', import.meta.url);
     for (const file of await readdir(source)) if (file.endsWith('.mjs')) await copyFile(new URL(file, source), join(web, file));
     await copyFile(new URL('public/blackjack.mjs', source), join(web, 'public/blackjack.mjs'));
     await copyFile(new URL('public/astrid-camera-audio.mjs', source), join(web, 'public/astrid-camera-audio.mjs'));

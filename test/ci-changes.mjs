@@ -11,7 +11,7 @@ const change = (path, extra = {}) => ({ path, before: '100644', after: '100644',
 test('only ordinary prose qualifies; runtime, config, mixed changes and file types run full CI', () => {
   assert.equal(documentationOnly([change('docs/JOHN-HANDOFF.md'), change('apps/studio/docs/TERMINOLOGI.md')]), true);
   for (const path of ['.github/workflows/croupier.yml', 'docs/environment-variables.json',
-    'services/openclaw/lab/deploy/runtime-bundle/knowledge/croupier-model.md', 'web/public/docs/partner-api.md',
+    'services/openclaw/lab/deploy/runtime-bundle/knowledge/croupier-model.md', 'services/game/public/docs/partner-api.md',
     'docs/../web/app.md', 'docs\\guide.md', '.githooks/pre-commit-full', 'apps/studio/app/page.tsx']) {
     assert.equal(documentationOnly([change('README.md'), change(path)]), false, path);
   }
@@ -34,7 +34,7 @@ test('client-only PRs avoid production reads; server, migration and uncertain ch
     assert.equal(migrationReadinessRequired([change(path), change('docs/guide.md')]), false, path);
   }
   for (const path of ['ops/neon-studio/012-example.sql', 'apps/studio/lib/studio-repository.mjs',
-    'web/studio-repository.mjs', 'apps/studio/app/api/rooms/route.ts', 'apps/studio/package-lock.json',
+    'services/game/studio-repository.mjs', 'apps/studio/app/api/rooms/route.ts', 'apps/studio/package-lock.json',
     '.github/workflows/croupier.yml', 'unknown.mjs', 'apps/studio/components/../lib/store.mjs']) {
     assert.equal(migrationReadinessRequired([change('apps/studio/components/editor.tsx'), change(path)]), true, path);
   }

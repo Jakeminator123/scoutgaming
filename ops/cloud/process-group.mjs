@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { LAB_PORT, WEB_PORT } from './config.mjs';
-import { SHUTDOWN_BUDGET, trackServerConnections } from '../../web/graceful-shutdown.mjs';
+import { SHUTDOWN_BUDGET, trackServerConnections } from '../../services/game/graceful-shutdown.mjs';
 
 // An explicit diagnostic subscriber receives bounded complete lines. Ordinary
 // children keep their discarded output; no stderr is exposed by this option.

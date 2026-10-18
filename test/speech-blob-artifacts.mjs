@@ -4,7 +4,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { access, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSpeechBlobArtifacts } from '../web/speech-blob-artifacts.mjs';
+import { createSpeechBlobArtifacts } from '../services/game/speech-blob-artifacts.mjs';
 import { validatePrivateMedia } from '../apps/studio/lib/cloud-media-store.mjs';
 import { ASTRID_VOICE_PROFILE } from '../packages/presentation/contracts/astrid-voice-profile.mjs';
 

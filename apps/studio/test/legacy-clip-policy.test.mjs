@@ -10,7 +10,7 @@ import { createProjectStore } from '../lib/project-store.mjs';
 import { loadLegacyClipInventory, legacyClipControls } from '../lib/legacy-clip-inventory.mjs';
 import { createRuntimeMetadataReader } from '../../../tools/runtime-media-catalog.mjs';
 import { resolveLegacyClipPolicy, upsertLegacyClipBinding, validateLegacyClipPolicy } from '../../../packages/presentation/runtime/legacy-clip-policy.mjs';
-import { createPresentationApi } from '../../../web/presentation-api.mjs';
+import { createPresentationApi } from '../../../services/game/presentation-api.mjs';
 import { assertLocalRequest } from '../lib/http-guard.mjs';
 
 async function fixture(t) {

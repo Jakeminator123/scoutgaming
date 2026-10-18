@@ -17,16 +17,16 @@ const password='Synthetic-Proxy-Test-Password';
 
 async function fixture(t) {
   const root=await mkdtemp(join(tmpdir(),'croupier-vercel-origin-'));
-  const webDir=join(root,'web'),dataDir=join(root,'data');
+  const webDir=join(root,'services','game'),dataDir=join(root,'data');
   let child;
   t.after(async()=>{
     if(child && child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}
     await rm(root,{recursive:true,force:true});
   });
-  await mkdir(webDir);
+  await mkdir(webDir,{recursive:true});
   await mkdir(dataDir);
   await copyOpenClawRuntime(root);
-  const source=new URL('../web/',import.meta.url);
+  const source=new URL('../services/game/',import.meta.url);
   for(const file of await readdir(source))if(file.endsWith('.mjs'))await copyFile(new URL(file,source),join(webDir,file));
   await symlink(new URL('public',source),join(webDir,'public'),process.platform==='win32'?'junction':'dir');
   const craig=new DatabaseSync(join(dataDir,'craig.db'));

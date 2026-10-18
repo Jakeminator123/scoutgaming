@@ -6,7 +6,7 @@ import {defaultCompositionSettings} from '../packages/presentation/contracts/com
 import {layerAssetPath,buildPresentationPackage,validateLayerAsset} from '../packages/presentation/contracts/presentation-layers.mjs';
 import {withPackagePresentation,readPackagePresentation,publicPackageBranding} from '../packages/presentation/server/presentation-package.mjs';
 import {createPartnerBrandingApi as createApi} from '../apps/studio/lib/partner-branding-api.mjs';
-import {createPublishedLayerAssets} from '../web/storage/published-layer-assets.mjs';
+import {createPublishedLayerAssets} from '../services/game/storage/published-layer-assets.mjs';
 import {createGameEntrySelector} from '../packages/presentation/server/game-entry-selector.mjs';
 import {resolvePlayerSelection} from '../packages/presentation/runtime/player-choices.mjs';
 import {validateComposition,createLayerComposition} from '../packages/presentation/runtime/presentation-composition.mjs';

@@ -4,10 +4,10 @@ import { DatabaseSync } from 'node:sqlite';
 import { EventEmitter } from 'node:events';
 import { Readable } from 'node:stream';
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
-import { command, newGame } from '../web/shoe-game.mjs';
-import { createNativeTableCommand } from '../web/native-table.mjs';
-import { installPartnerApi } from '../web/partner-api.mjs';
-import { playerAuth } from '../web/player-auth.mjs';
+import { command, newGame } from '../services/game/shoe-game.mjs';
+import { createNativeTableCommand } from '../services/game/native-table.mjs';
+import { installPartnerApi } from '../services/game/partner-api.mjs';
+import { playerAuth } from '../services/game/player-auth.mjs';
 
 const bets = [{ main: 5, pp: 0, tp: 0 }, ...Array.from({ length: 6 }, () => ({ main: 0, pp: 0, tp: 0 }))];
 

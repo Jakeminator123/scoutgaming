@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {createLocalPresentation} from '../web/public/local-presentation.mjs';
+import {createLocalPresentation} from '../services/game/public/local-presentation.mjs';
 
-const source=readFileSync(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
 const body=(start,end)=>{
   const from=source.indexOf(start),to=source.indexOf(end,from);
   assert.ok(from>=0&&to>from);return source.slice(from,to);

@@ -7,8 +7,8 @@ produktfacaden, inte en generell databasplattform.
 
 Kärnan får en pool. `assertInstalled` får schematext explicit eller en
 `readProductSchema`-port; checksumma och migrationskontroll har en implementation.
-Web äger pg 8.16.3, poolinställningar och originalschemats läsning i
-`web/storage/postgres-store.mjs`. Studio äger sina Neon-pooler och schemaläsning.
+Game äger pg 8.16.3, poolinställningar och originalschemats läsning i
+`services/game/storage/postgres-store.mjs`. Studio äger sina Neon-pooler och schemaläsning.
 Schemafilerna ligger kvar under `ops/`. Kärnan läser inga appfiler och skapar
 inga provideranslutningar. Studio-dokumentens repository ägs fortsatt av
 `packages/studio-registry`.

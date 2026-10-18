@@ -6,10 +6,10 @@ import { createSeedProject, defaultPresentationLane } from '../packages/presenta
 import { historicalDealerProject } from './fixtures/historical-dealer-project.mjs';
 import { createStudioRepository } from '../packages/studio-registry/server/document-repository.mjs';
 import { createSavedGamePolicy } from '../packages/presentation/server/saved-game-policy.mjs';
-import { createOperatorPackageReader } from '../web/storage/operator-package-reader.mjs';
+import { createOperatorPackageReader } from '../services/game/storage/operator-package-reader.mjs';
 import { createGameEntrySelector } from '../packages/presentation/server/game-entry-selector.mjs';
 import { OPERATOR_NOT_FOUND_HTML, requestedOperator } from '../packages/navigation/operator-entry.mjs';
-import { decorateGameEntryHtml } from '../web/public/game-entry-contract.mjs';
+import { decorateGameEntryHtml } from '../services/game/public/game-entry-contract.mjs';
 import {gameLaneFromDocument} from '../packages/presentation/contracts/game-selection.mjs';
 import { createStudioMemoryPool } from './fixtures/studio-memory-pool.mjs';
 import { operatorPackageSql, operatorRow, packageRow } from './fixtures/operator-package-sql.mjs';

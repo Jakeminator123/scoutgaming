@@ -32,7 +32,7 @@ test('Director root build context admits runtime sources but excludes local keys
   for (const path of ['.env', '.env.local', '.git/config', 'lab/data/private.json',
     'services/openclaw/lab/.env', 'services/openclaw/lab/data/catalog.json', 'services/openclaw/lab/src/.env',
     'services/openclaw/lab/public/take.mp4', 'services/openclaw/lab/src/node_modules/unrelated/index.mjs',
-    'services/openclaw/lab/deploy/runtime-bundle/roles/croupier-chat.md', 'web/public/unrelated.mjs']) {
+    'services/openclaw/lab/deploy/runtime-bundle/roles/croupier-chat.md', 'services/game/public/unrelated.mjs']) {
     assert.equal(included(path), false, path);
   }
   assert.equal(included('services/openclaw/lab/src/server.mjs'), true);

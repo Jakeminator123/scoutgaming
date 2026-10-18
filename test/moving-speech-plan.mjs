@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { prepareMovingSpeechPlan } from '../web/moving-speech-plan.mjs';
+import { prepareMovingSpeechPlan } from '../services/game/moving-speech-plan.mjs';
 
 const sha = char => char.repeat(64);
 function fixture(dealerId = 'paow', workerAvatar = dealerId) {

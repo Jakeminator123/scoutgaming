@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomBytes, scryptSync } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { createPostgresStore } from '../web/storage/postgres-store.mjs';
+import { createPostgresStore } from '../services/game/storage/postgres-store.mjs';
 import { createOperatorStore } from '../packages/operators/server/operator-store.mjs';
 import { handlePartnerAuth } from '../apps/studio/lib/partner-session.mjs';
 import { STANDARD_OPERATOR_ROLES } from '../apps/studio/lib/operator-admin-api.mjs';
@@ -235,7 +235,7 @@ export async function runPartnerTeamPostgresChecks({ operatorPool, authPool, res
 const configuration = process.env.CROUPIER_PARTNER_POSTGRES_QA_CONFIG;
 if (process.env.NODE_TEST_CONTEXT || configuration) test('real isolated PostgreSQL verifies N2 team, permissions and durable audit', { skip: configuration ? false : 'isolated PostgreSQL fixture is not configured' }, async () => {
   const config = JSON.parse(await readFile(configuration, 'utf8'));
-  const { Pool } = createRequire(new URL('../web/package.json', import.meta.url))('pg');
+  const { Pool } = createRequire(new URL('../services/game/package.json', import.meta.url))('pg');
   const pools = ['operators', 'auth'].map(kind => {
     const url = new URL(config[`${kind}DatabaseUrl`]);
     assert.equal(url.hostname, '127.0.0.1'); assert.equal(url.username, 'studio_qa');

@@ -162,7 +162,7 @@ vid Ctrl+C, så dess spelarminne överlever inte en ny helperkörning.
 
 ## Talrollen och transportgränsen
 
-Produktens [`openclaw-chat.mjs`](../../../web/openclaw-chat.mjs) begär fortsatt
+Produktens [`openclaw-chat.mjs`](../../../services/game/openclaw-chat.mjs) begär fortsatt
 exakt samma JSON-val mellan `recordedLine`, `generatedText` och `silence`, med
 ekade request-, dealer-, session- och rundrevisioner. Den använder nu det
 separata `OPENCLAW_SPEECH_AGENT`, vars säkra default är

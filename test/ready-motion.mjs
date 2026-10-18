@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readyMotionErrors} from '../web/public/ready-motion.mjs';
-import {PerformancePlayer} from '../web/public/performance-player.mjs';
+import {readyMotionErrors} from '../services/game/public/ready-motion.mjs';
+import {PerformancePlayer} from '../services/game/public/performance-player.mjs';
 const hash='a'.repeat(64);
 const idle={sha256:hash,matteSha256:hash};
 const take={id:'take-1',camera:{width:1920,height:1080},media:{sha256:hash},calibrationSha256:hash};

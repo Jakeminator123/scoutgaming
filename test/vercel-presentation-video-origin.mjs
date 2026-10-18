@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { Writable } from 'node:stream';
 import { once } from 'node:events';
 import test from 'node:test';
-import { createPresentationApi } from '../web/presentation-api.mjs';
+import { createPresentationApi } from '../services/game/presentation-api.mjs';
 import { MEDIA_FAMILY_DEFINITIONS, videoIdFromSha256 } from '../packages/studio-registry/server/video-manifest.mjs';
 
 const renderOrigin = 'https://croupier-v2.onrender.com';

@@ -8,7 +8,7 @@ import { createCloudGateway } from './gateway.mjs';
 import { closeGateway, startChildren } from './process-group.mjs';
 import { verifyCloudAccess } from './access-check.mjs';
 import { createStorageExportServer } from './storage-export.mjs';
-import { SHUTDOWN_BUDGET, trackServerConnections } from '../../web/graceful-shutdown.mjs';
+import { SHUTDOWN_BUDGET, trackServerConnections } from '../../services/game/graceful-shutdown.mjs';
 
 // Deliberate pilot opt-in is not a claim of production acceptance.
 export function assertCloudAccessReady(env = process.env) {

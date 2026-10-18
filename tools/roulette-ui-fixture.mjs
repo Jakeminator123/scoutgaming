@@ -5,10 +5,10 @@ import {createServer} from 'node:http';
 import {DatabaseSync} from 'node:sqlite';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {createSqliteRouletteCommand} from '../web/games/roulette/storage.mjs';
-import {rouletteDocument} from '../web/games/roulette/http.mjs';
-import {createRoulettePreview} from '../web/games/roulette/preview.mjs';
-import {createSpinResult} from '../web/games/roulette/index.mjs';
+import {createSqliteRouletteCommand} from '../services/game/games/roulette/storage.mjs';
+import {rouletteDocument} from '../services/game/games/roulette/http.mjs';
+import {createRoulettePreview} from '../services/game/games/roulette/preview.mjs';
+import {createSpinResult} from '../services/game/games/roulette/index.mjs';
 import {defaultCompositionSettings,validateCompositionSettings} from '../packages/presentation/contracts/composition-settings.mjs';
 import {previewMediaPath} from '../packages/presentation/contracts/operator-preview-contract.mjs';
 import {rouletteSceneFixture} from './roulette-scene-fixture.mjs';
@@ -69,7 +69,7 @@ const server=createServer(async(req,res)=>{
       }
     }
     if(['/roulette-idle-contract.mjs','/roulette-start-contract.mjs','/material-catalog.mjs','/background-materials.mjs'].includes(url.pathname)){
-      res.writeHead(200,{'Content-Type':'text/javascript'});res.end(await readFile(new URL('../web/public'+url.pathname,import.meta.url)));return;
+      res.writeHead(200,{'Content-Type':'text/javascript'});res.end(await readFile(new URL('../services/game/public'+url.pathname,import.meta.url)));return;
     }
     if(['/composition-runtime/compositor.js','/composition-runtime/geometry.js'].includes(url.pathname)){
       res.writeHead(200,{'Content-Type':'text/javascript'});res.end(await readFile(new URL('../packages/presentation/compositor/'+url.pathname.split('/').at(-1),import.meta.url)));return;
@@ -99,7 +99,7 @@ const server=createServer(async(req,res)=>{
     // Exercise the real scene loader's unavailable-media fallback.
     const publicSource = presentationPublicSource(url.pathname);
     if(url.pathname==='/roulette/scene.mjs'||publicSource) {
-      const source=publicSource??'web/public/roulette/scene.mjs';
+      const source=publicSource??'services/game/public/roulette/scene.mjs';
       res.writeHead(200,{'Content-Type':source.endsWith('.json')?'application/json':'text/javascript'});
       res.end(await readFile(new URL('../'+source,import.meta.url)));return;
     }

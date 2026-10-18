@@ -81,3 +81,7 @@ apps/studio/.next-probe
 apps/studio/tsconfig.tsbuildinfo
 apps/studio/data
 apps/studio/test
+
+# Game source moved; old private state remains excluded.
+web/data
+services/game/data

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { EventEmitter, getEventListeners, once } from 'node:events';
 import { createServer, request as httpRequest } from 'node:http';
 import { setTimeout as pause } from 'node:timers/promises';
-import { createChatResponseStream } from '../web/chat-response-stream.mjs';
-import { completeChatWithSpeech } from '../web/generated-speech-chat.mjs';
+import { createChatResponseStream } from '../services/game/chat-response-stream.mjs';
+import { completeChatWithSpeech } from '../services/game/generated-speech-chat.mjs';
 import { readChatResponse, chatFailureMessage, chatFailureCode } from '../packages/presentation/contracts/chat-response.mjs';
 
 function stream(frames, fragment = 7) {

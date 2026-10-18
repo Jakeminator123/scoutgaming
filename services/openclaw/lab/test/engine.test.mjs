@@ -5,7 +5,7 @@ import { SOURCE_TYPES, CONDITION_OPERATORS, CONDITION_PATHS, normalizeInput, val
 
 const catalog = JSON.parse(readFileSync(new URL('../config/catalog.json', import.meta.url), 'utf8'));
 const scenarios = JSON.parse(readFileSync(new URL('../fixtures/scenarios.json', import.meta.url), 'utf8'));
-const producerUrl = new URL('../../../../web/partner-presentation.mjs', import.meta.url);
+const producerUrl = new URL('../../../game/partner-presentation.mjs', import.meta.url);
 const producerAvailable = existsSync(producerUrl);
 const presentationEvents = producerAvailable ? (await import(producerUrl.href)).presentationEvents : null;
 const copy = value => structuredClone(value);
@@ -40,7 +40,7 @@ test('synthetic fixtures normalize and map without pretending context is engine 
 });
 
 test('actual presentationEvents start, insurance, double, settle and collect output passes the adapter', {
-  skip: producerAvailable ? false : 'Croupier producer ../../../web/partner-presentation.mjs is absent; standalone lab still runs all engine assertions.'
+  skip: producerAvailable ? false : 'Croupier producer ../../../../services/game/partner-presentation.mjs is absent; standalone lab still runs all engine assertions.'
 }, () => {
   const card = (r, s, shoeDraw) => ({ r, s, shoeDraw });
   const opening = { round: { phase: 'decisions', holeDraw: 8, active: 0, legalActions: ['hit', 'stand', 'double'], dealer: [card('6', '♠', 4)], hands: [

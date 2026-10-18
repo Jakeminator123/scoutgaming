@@ -11,9 +11,9 @@ import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
 import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
 
-const web = fileURLToPath(new URL('../web/', import.meta.url));
+const web = fileURLToPath(new URL('../services/game/', import.meta.url));
 const dir = await mkdtemp(join(tmpdir(), 'croupier-http-qa-'));
-const webDir = join(dir, 'web');
+const webDir = join(dir,'services','game');
 const checks = [];
 let server, db, cookie = '', player, state;
 const socket = createServer();
@@ -78,7 +78,7 @@ async function finish() {
   await send('collect'); assert.equal(state.round, null);
 }
 try {
-  await mkdir(webDir); await copyOpenClawRuntime(dir);
+  await mkdir(webDir,{recursive:true}); await copyOpenClawRuntime(dir);
   for (const file of await readdir(web)) if (file.endsWith('.mjs')) await copyFile(join(web,file),join(webDir,file));
   await symlink(join(web,'public'), join(webDir,'public'), process.platform === 'win32' ? 'junction' : 'dir');
   await start();
@@ -161,7 +161,7 @@ try {
   await send('start',{bets}); assert.notEqual(state.shoe.id,oldShoe); assert.equal(state.shuffled,true);
   assert.equal(state.shoe.dealt + state.shoe.remaining,416); await finish();
   checks.push('Natural shoe depletion: cut finishes current round; replacement occurs at next start');
-  const report={checks, passed:checks.length, cutRounds:rounds, server:'web/server.mjs over HTTP', isolated:true,
+  const report={checks, passed:checks.length, cutRounds:rounds, server:'services/game/server.mjs over HTTP', isolated:true,
     finalBalance:state.balance, limitations:['No rendered motion or audio acceptance; browser evidence is separate.']};
   if(process.argv[2])await writeFile(process.argv[2],JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));

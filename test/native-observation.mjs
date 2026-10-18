@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createNativeObservation } from '../web/public/native-observation.mjs';
+import { createNativeObservation } from '../services/game/public/native-observation.mjs';
 
 const channel='cc1c94e5-4d2d-455b-a321-262fa4ea48be';
 const href=origin=>`https://game.example/?labObserverOrigin=${encodeURIComponent(origin)}&labObserverChannel=${channel}&launch=private-launch`;

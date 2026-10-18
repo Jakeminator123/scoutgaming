@@ -4,8 +4,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createHash, createHmac } from 'node:crypto';
 import { Readable } from 'node:stream';
-import { playerAuth } from '../web/storage/async-player-auth.mjs';
-import { installPartnerApi } from '../web/storage/async-partner-api.mjs';
+import { playerAuth } from '../services/game/storage/async-player-auth.mjs';
+import { installPartnerApi } from '../services/game/storage/async-partner-api.mjs';
 
 const stamp = secret => createHash('sha256').update(secret).digest('hex');
 function fixture(t, { legacy = false } = {}) {

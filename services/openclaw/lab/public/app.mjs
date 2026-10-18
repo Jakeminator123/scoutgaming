@@ -174,7 +174,7 @@ function renderEditor() {
   editor.replaceChildren();
   if (!node) { editor.append(element('p', 'empty-state', 'Välj en händelse.')); return; }
   const source = element('div', 'event-source');
-  source.append(element('span', 'tiny-label', 'FRYST KÄLLKONTRAKT'), element('code', '', `presentation[].type = ${node.sourceType}`), element('span', 'field-help', typeof node.sourceRef === 'string' ? node.sourceRef : 'web/partner-presentation.mjs'));
+  source.append(element('span', 'tiny-label', 'FRYST KÄLLKONTRAKT'), element('code', '', `presentation[].type = ${node.sourceType}`), element('span', 'field-help', typeof node.sourceRef === 'string' ? node.sourceRef : 'services/game/partner-presentation.mjs'));
   editor.append(source);
   editor.append(field('Namn i labbet', node.label, (value) => { node.label = value; renderTree(); }));
   editor.append(field('Förklaring', node.description, (value) => { node.description = value; }, { tag: 'textarea' }));

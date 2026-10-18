@@ -4,11 +4,11 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { prepareLegacySpeechLedgerSnapshot } from '../ops/neon-studio/speech-ledger-snapshot.mjs';
 import { applyLegacySpeechLedgerSnapshot } from '../ops/neon-studio/speech-ledger-import.mjs';
-import { createSpeechJournal, speechRequestKey } from '../web/postgres-speech-journal.mjs';
+import { createSpeechJournal, speechRequestKey } from '../services/game/postgres-speech-journal.mjs';
 import { planStudioMigrations } from '../ops/neon-studio/migrations.mjs';
 import { ASTRID_VOICE_PROFILE } from '../packages/presentation/contracts/astrid-voice-profile.mjs';
 import { mediaBlobPath } from '../apps/studio/lib/cloud-media-store.mjs';
-import { createPostgresOperatorSpeechQa } from '../web/postgres-operator-speech-qa.mjs';
+import { createPostgresOperatorSpeechQa } from '../services/game/postgres-operator-speech-qa.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex'), observedAt='2026-10-04T01:00:00.000Z', stamp=Date.parse(observedAt);
 const ownerHash=hash('legacy-owner'), fingerprint=hash('opaque-legacy-fingerprint'), originalRequest='legacy-original', key=speechRequestKey(ownerHash,originalRequest), sessionId='a'.repeat(32);

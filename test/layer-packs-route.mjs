@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile, rm, copyFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createLayerPacksRoute } from '../web/layer-packs.mjs';
+import { createLayerPacksRoute } from '../services/game/layer-packs.mjs';
 
 function responseRecorder() {
   return {
@@ -71,10 +71,10 @@ test('current preview retires Paow while preserving Dragge and shared assets',as
 
 test('default layer manifest reads the Studio build in a fresh isolated checkout', async t => {
   const root=await mkdtemp(join(tmpdir(),'layer-packs-default-'));t.after(()=>rm(root,{recursive:true,force:true}));
-  await mkdir(join(root,'web'));await mkdir(join(root,'apps/studio/preview-build'),{recursive:true});
-  await copyFile(new URL('../web/layer-packs.mjs',import.meta.url),join(root,'web/layer-packs.mjs'));
+  await mkdir(join(root,'services/game'),{recursive:true});await mkdir(join(root,'apps/studio/preview-build'),{recursive:true});
+  await copyFile(new URL('../services/game/layer-packs.mjs',import.meta.url),join(root,'services/game/layer-packs.mjs'));
   await copyFile(new URL('../packages/presentation/preview/site/catalog.json',import.meta.url),join(root,'apps/studio/preview-build/catalog.json'));
-  const {createLayerPacksRoute: createRoute}=await import(pathToFileURL(join(root,'web/layer-packs.mjs')).href);
+  const {createLayerPacksRoute: createRoute}=await import(pathToFileURL(join(root,'services/game/layer-packs.mjs')).href);
   const route=createRoute({env:{}}),res=responseRecorder();
   assert.equal(await route({method:'GET',headers:{cookie:'croupier_layer_preview=1'}},res,'/layer-packs/dragge/manifest.json'),true);
   assert.equal(res.statusCode,200);assert.match(JSON.parse(res.body).dealer.id,/^dragge-/);

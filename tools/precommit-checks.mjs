@@ -15,7 +15,7 @@ const documentationFiles = new Set([
   'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
   'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
   'services/astrid-gpu-worker/gateway/README.md',
-  'web/README.md', 'web/public/README.md', 'web/storage/README.md',
+  'services/game/README.md', 'services/game/public/README.md', 'services/game/storage/README.md',
   'services/openclaw/README.md', 'services/openclaw/lab/README.md',
   '.ignore', '.cursorignore', '.cursorindexingignore',
 ]);

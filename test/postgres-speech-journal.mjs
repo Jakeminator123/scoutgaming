@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { summarizeMovingWorkerHealth } from '../web/moving-speech-runpod.mjs';
+import { summarizeMovingWorkerHealth } from '../services/game/moving-speech-runpod.mjs';
 import { speechMemoryPool as memoryPool } from './fixtures/speech-memory-pool.mjs';
-import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS, speechRequestKey } from '../web/postgres-speech-journal.mjs';
+import { createSpeechJournal, GPU_RESERVATION_WINDOW_MS, FULLFILE_ADMISSION_REMAINING_MS, speechRequestKey } from '../services/game/postgres-speech-journal.mjs';
 
 // Deterministic transaction fixture, not a substitute for real PostgreSQL DDL,
 // lock/constraint tests. No server, provider, env credential or Blob access.
@@ -276,7 +276,7 @@ test('a failed/uncertain durable submission mark never gives permission to call 
 
 test('SQL remains additive five tables/three indexes, bounded scopes and narrow PUBLIC revoke; no reset/refund/provider code', async () => {
   const sql = await readFile(new URL('../ops/neon-studio/002-generation-journals.sql', import.meta.url), 'utf8');
-  const source = await readFile(new URL('../web/postgres-speech-journal.mjs', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../services/game/postgres-speech-journal.mjs', import.meta.url), 'utf8');
   assert.equal((sql.match(/^CREATE TABLE /gm) ?? []).length, 5); assert.equal((sql.match(/^CREATE (?:UNIQUE )?INDEX /gm) ?? []).length, 3);
   assert.doesNotMatch(sql, /\b(?:BEGIN|COMMIT|IF NOT EXISTS|DROP|TRUNCATE)\b/);
   assert.match(sql, /PRIMARY KEY \(environment_id, request_key\)/); assert.match(sql, /WHERE released_at_ms IS NULL/); assert.match(sql, /REVOKE ALL ON croupier_studio\.speech_execution_leases/);

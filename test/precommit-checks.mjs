@@ -27,7 +27,7 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
     'tools/media/README.md', 'ops/cloud/CONTAINER-CONTEXT.md',
     'services/astrid-gpu-worker/README.md', 'services/astrid-gpu-worker/SOURCE.md',
     'services/astrid-gpu-worker/gateway/README.md',
-    'web/README.md', 'web/public/README.md', 'web/storage/README.md',
+    'services/game/README.md', 'services/game/public/README.md', 'services/game/storage/README.md',
   ];
   for (const status of ['A', 'M', 'D']) {
     assert.equal(mode(guides.map(path => change(path, status))), 'documentation', status);
@@ -35,18 +35,18 @@ test('reviewed folder guides use quick checks without exempting sibling code or 
   for (const path of [
     'tools/media/encode.sh', 'apps/studio/client/build.mjs',
     'services/astrid-gpu-worker/.github/workflows/checks.yml',
-    'services/astrid-gpu-worker/gateway/auth.mjs', 'web/storage/package.json',
-    'tools/media/runtime-bundle/README.md', 'web/public/lab/README.md',
+    'services/astrid-gpu-worker/gateway/auth.mjs', 'services/game/storage/package.json',
+    'tools/media/runtime-bundle/README.md', 'services/game/public/lab/README.md',
     'web/../tools/media/README.md', 'web\\README.md',
   ]) {
     assert.equal(mode([...guides.map(path => change(path)), change(path)]), 'focused', path);
   }
-  assert.equal(mode([change('web/README.md', 'T')]), 'focused', 'guide symlink/type changes');
+  assert.equal(mode([change('services/game/README.md', 'T')]), 'focused', 'guide symlink/type changes');
 });
 
 test('local code and deletions use focused checks; only CI or explicit full runs the complete product', () => {
   for (const path of [
-    'web/public/app.mjs', 'test/player-auth.mjs', 'docs/dealer-sync-baseline.json',
+    'services/game/public/app.mjs', 'test/player-auth.mjs', 'docs/dealer-sync-baseline.json',
     'services/openclaw/lab/deploy/runtime-bundle/knowledge/croupier-model.md',
     'content/staging/REVIEW.md', '.dockerignore', '.gitignore',
     'apps/studio/.env.example', '.githooks/pre-commit', 'tools/precommit-checks.mjs',
@@ -107,14 +107,14 @@ test('real Git index chooses docs, then focused when a test is staged', async ()
 
 test('real Git rename from code to documentation still selects code checks', async () => {
   await fixture(async root => {
-    await mkdir(join(root, 'web'));
+    await mkdir(join(root, 'services', 'game'), {recursive:true});
     await mkdir(join(root, 'docs'));
-    await writeFile(join(root, 'web', 'player.mjs'), 'export {};\n');
-    git(root, ['add', '--', 'web/player.mjs']);
+    await writeFile(join(root, 'services', 'game', 'player.mjs'), 'export {};\n');
+    git(root, ['add', '--', 'services/game/player.mjs']);
     git(root, ['-c', 'user.name=Hook Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture']);
-    git(root, ['mv', '--', 'web/player.mjs', 'docs/player.md']);
+    git(root, ['mv', '--', 'services/game/player.mjs', 'docs/player.md']);
     const changes = readStagedChanges(root);
-    assert.ok(changes.some(entry => entry.path === 'web/player.mjs' && entry.status === 'D'));
+    assert.ok(changes.some(entry => entry.path === 'services/game/player.mjs' && entry.status === 'D'));
     assert.equal(mode(changes), 'focused');
   });
 });

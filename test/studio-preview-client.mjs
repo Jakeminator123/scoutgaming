@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStudioPreviewClient, studioPreviewFromDocument, validateStudioPreviewSession, requestEmbeddedStudioPreviewClose } from '../web/public/studio-preview-client.mjs';
-import { decorateGameEntryHtml, validateStudioPreview } from '../web/public/game-entry-contract.mjs';
+import { createStudioPreviewClient, studioPreviewFromDocument, validateStudioPreviewSession, requestEmbeddedStudioPreviewClose } from '../services/game/public/studio-preview-client.mjs';
+import { decorateGameEntryHtml, validateStudioPreview } from '../services/game/public/game-entry-contract.mjs';
 import { validateComposition } from '../packages/presentation/runtime/presentation-composition.mjs';
 import { readChoices, writeChoices, choicesStorageKey } from '../packages/presentation/runtime/player-choices.mjs';
-import { dealerVersionPath } from '../web/public/dealer-version-switcher.mjs';
-import { createLocalPresentation } from '../web/public/local-presentation.mjs';
+import { dealerVersionPath } from '../services/game/public/dealer-version-switcher.mjs';
+import { createLocalPresentation } from '../services/game/public/local-presentation.mjs';
 const id='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-8222-222222222222', asset='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const context={sessionId:id,presentationLaneId:'evening',projectRevision:'revision:7',expiresAt:'2030-01-01T00:00:00.000Z'};
 test('embedded preview requests only its own closure at the current origin; standalone return stays unchanged',()=>{
@@ -115,7 +115,7 @@ test('own dealer starts its exact preview idle and cannot select paid OpenClaw m
 
 async function tierFixture(studioPreview=null) {
  const {readFile}=await import('node:fs/promises'),vm=await import('node:vm');
- const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+ const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
  const nodes=new Map(),hints=[],link={search:''};
  const node=key=>{if(!nodes.has(key))nodes.set(key,{});return nodes.get(key);};
  const sandbox=vm.createContext({studioPreview,round:null,busy:false,SEATS:7,selected:5,
@@ -139,7 +139,7 @@ async function tierFixture(studioPreview=null) {
 
 test('only Classic can be selected in ordinary play and preview; stale unsupported presets fall back without navigation',async()=>{
  const {readFile}=await import('node:fs/promises');
- const html=await readFile(new URL('../web/public/index.html',import.meta.url),'utf8');
+ const html=await readFile(new URL('../services/game/public/index.html',import.meta.url),'utf8');
  for(const id of ['high','vip'])assert.match(html,new RegExp('<button[^>]*data-id="'+id+'"[^>]*disabled[^>]*>[^<]+<small>UNAVAILABLE</small>'));
  for(const preview of [null,context]){
   const f=await tierFixture(preview);
@@ -196,7 +196,7 @@ test('closing one preview addresses only its owner-bound session',async()=>{
 
 test('preview never loads local profile UI or its ordinary session API; normal local play still does',async t=>{
  const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+ const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
  const at=source.indexOf("await import('./lissabon-profile.mjs')");
  assert.ok(at>0);
  const start=source.lastIndexOf('\nif ',at)+1,end=source.indexOf("document.querySelector('#sign-out')",at);
@@ -207,7 +207,7 @@ test('preview never loads local profile UI or its ordinary session API; normal l
  t.after(()=>{globalThis.fetch=originalFetch;});
  globalThis.fetch=async(url,options)=>{calls.push({url,options});return Response.json({localDemoProfiles:false});};
  let imports=0;
- const loadProfile=async()=>{imports++;return import('../web/public/lissabon-profile.mjs');};
+ const loadProfile=async()=>{imports++;return import('../services/game/public/lissabon-profile.mjs');};
  const quietConsole={warn(...args){assert.fail(args.join(' '));}};
  for(const local of [true,false]){
   await run(context,local,Promise.resolve(),loadProfile,null,false,false,null,quietConsole);
@@ -225,7 +225,7 @@ test('preview never loads local profile UI or its ordinary session API; normal l
 
 test('preview notice uses the existing HUD and hides inert chat without changing ordinary initialization',async()=>{
  const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+ const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
  const block=source.slice(source.indexOf('if (studioPreview) {'),source.indexOf('const choiceStorage='));
  const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
  const run=new AsyncFunction('studioPreview','document','$','gameApi','STUDIO_PREVIEW_NOTICE','previewSession',block);
@@ -250,7 +250,7 @@ test('preview notice uses the existing HUD and hides inert chat without changing
 
 async function returnLinkFixture({selection,preview=null,closeFails=false,embedded=false}={}){
  const {readFile}=await import('node:fs/promises');
- const source=await readFile(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+ const source=await readFile(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
  const block=source.slice(source.indexOf('const lobbyReturn ='),source.indexOf('for (const {id,label}'));
  const run=new Function('studioPreview','entrySelection','document','gameApi','writeChoices','choiceStorage','previewSessionId','soundStorageKey','location','window','requestEmbeddedStudioPreviewClose',block);
  const link={},events=[],storage={removeItem:key=>events.push(['remove',key])};

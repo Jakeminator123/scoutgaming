@@ -116,7 +116,7 @@ Vercel-projektet `scoutgaming` och Render `croupier-v2`, se
 | Faktiska filer, storlek och SHA-256 | `../media/dealers/astrid/runtime/presentation/lab-video-manifest.json` | `node tools/media/build-lab-video-manifest.mjs --check` från reporoten |
 | Format/validering | `schemas/`, `lib/lab-video-manifest.mjs` | Manifest- och kontraktstester |
 | Sparade operatörsval | vald datakatalogs `project.json` | Revisionslås + historik |
-| Uppmätta kortspår och filhashar | `../web/public/card-presentation/` | `test/local-card-overlay.mjs` + faktisk browsergranskning |
+| Uppmätta kortspår och filhashar | `../../services/game/public/card-presentation/` | `test/local-card-overlay.mjs` + faktisk browsergranskning |
 
 Efter nya mediefiler: kör `node tools/media/build-lab-video-manifest.mjs`,
 granska diffen och kör `--check`. Lab:s **Läs in nya filer** använder samma byggare.
@@ -367,7 +367,7 @@ eller använder rätt playerId; det kan bara verifieras mot Bettalotto.
 Strömmen avser samma API-nyckel och partner-playerId som den nya launch-knappen.
 Kevin anger att launch-spelet ska kunna observeras i SSE. Den hämtade
 serverkoden publicerade tidigare endast från Partner-table. Den lokala
-`web/native-table.mjs` publicerar nu native-kommandon efter commit, till den
+`services/game/native-table.mjs` publicerar nu native-kommandon efter commit, till den
 verifierade launch-sessionens nyckel/spelare och endast vid versionsökning.
 Bryggan måste driftsättas på spelservern innan detta gäller live. **Launch → rund-event är ännu oprövat live.**
 En accepterad anslutning bevisar inte denna koppling. BO-inloggning ansluter inte labbet.

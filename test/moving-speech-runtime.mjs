@@ -4,8 +4,8 @@ import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { setTimeout as pause } from 'node:timers/promises';
-import { createMovingSpeechRuntime } from '../web/moving-speech-runtime.mjs';
-import { createMovingSpeechSourceSet } from '../web/moving-speech-bank.mjs';
+import { createMovingSpeechRuntime } from '../services/game/moving-speech-runtime.mjs';
+import { createMovingSpeechSourceSet } from '../services/game/moving-speech-bank.mjs';
 import { validateMovingSpeechStream } from '../packages/presentation/runtime/moving-speech-player.mjs';
 import {DRAGAN_KEVIN_PROFILE} from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 

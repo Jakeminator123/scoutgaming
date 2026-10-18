@@ -7,8 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname, basename } from 'node:path';
-import { createLissabonProfiles } from '../web/lissabon-profiles.mjs';
-import { createPlayerChatMemory } from '../web/player-chat-memory.mjs';
+import { createLissabonProfiles } from '../services/game/lissabon-profiles.mjs';
+import { createPlayerChatMemory } from '../services/game/player-chat-memory.mjs';
 
 test('local profiles retain independent server-owned memory after restart and revoke the previous session on switch', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'lissabon-profiles-'));

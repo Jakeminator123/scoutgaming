@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {handlePlayerProfile, readPlayerProfile} from '../web/player-profile.mjs';
+import {handlePlayerProfile, readPlayerProfile} from '../services/game/player-profile.mjs';
 
 function database(columns) {
   const db = new DatabaseSync(':memory:');

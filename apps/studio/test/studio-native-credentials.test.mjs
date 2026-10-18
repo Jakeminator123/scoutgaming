@@ -8,7 +8,7 @@ import { createStudioAdminApi } from '../lib/studio-admin-api.mjs';
 import { createStudioGameAuthority } from '../lib/studio-game-authority.mjs';
 import { createStudioAdminData } from '../lib/studio-admin-data.mjs';
 import { craigIdentity } from '../../../packages/studio-access/server/craig-identity.mjs';
-import { playerAuth } from '../../../web/storage/async-player-auth.mjs';
+import { playerAuth } from '../../../services/game/storage/async-player-auth.mjs';
 import { createAccountCredentialResolver } from '../../../packages/studio-access/server/account-credentials.mjs';
 
 const scope = { environment:'fixture',workspaceId:'croupier' };

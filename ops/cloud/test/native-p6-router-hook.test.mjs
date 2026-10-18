@@ -7,8 +7,8 @@ import {createServer,request as httpRequest} from 'node:http';
 import {randomUUID} from 'node:crypto';
 import {NATIVE_P6_QA,nativeP6QaRouterConfig,childSpecifications,validateCloudConfig} from '../config.mjs';
 import {nativeP6QaRouterRequest,createCloudGateway} from '../gateway.mjs';
-import {initializeNativeP6QaRouter,nativeP6OwnedSpeechFetch,nativeP6OwnedDirectorFetch} from '../../../web/native-p6-qa-hook.mjs';
-import {projectOpenClawGameStatus} from '../../../web/openclaw-chat.mjs';
+import {initializeNativeP6QaRouter,nativeP6OwnedSpeechFetch,nativeP6OwnedDirectorFetch} from '../../../services/game/native-p6-qa-hook.mjs';
+import {projectOpenClawGameStatus} from '../../../services/game/openclaw-chat.mjs';
 import {normalizeProductSpeechEnvelope} from '../../../packages/director/product-speech.mjs';
 
 const fixture=()=>({NODE_ENV:'production',PORT:'10000',CROUPIER_CLOUD_LAYOUT:'single-origin',

@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildAssetsManifest} from '../web/partner-presentation.mjs';
+import {buildAssetsManifest} from '../services/game/partner-presentation.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {createHmac} from 'node:crypto';
 import {Readable} from 'node:stream';
-import {installPartnerApi as sqliteApi} from '../web/partner-api.mjs';
-import {installPartnerApi as asyncApi} from '../web/storage/async-partner-api.mjs';
+import {installPartnerApi as sqliteApi} from '../services/game/partner-api.mjs';
+import {installPartnerApi as asyncApi} from '../services/game/storage/async-partner-api.mjs';
 test('partner assets use injected exact metadata and preview existence without a local tree',async()=>{
   const calls=[],key='idle-1/speak/goodluck',documents={
     'dealers/astrid/streams/index.json':{codec:'avc1',width:1920,height:1080,clips:{[key]:{file:'speech.h264',fps:30,frameCount:60}}},

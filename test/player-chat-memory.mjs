@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { createPlayerChatMemory, PLAYER_CHAT_MEMORY_LIMITS } from '../web/player-chat-memory.mjs';
+import { createPlayerChatMemory, PLAYER_CHAT_MEMORY_LIMITS } from '../services/game/player-chat-memory.mjs';
 
 const subject = { playerId: 'server-player-alice', dealerId: 'astrid' };
 const request = (requestId = 'request-1', extras = {}) => ({ ...subject, requestId, message: 'Hello Astrid.', ...extras });

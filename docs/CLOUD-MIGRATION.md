@@ -24,7 +24,7 @@ bedömningar redovisas nedan; de påstås inte vara färdigverifierade.
 | --- | --- |
 | Intern personal, bolag, spelare | `/admin`, `/partner`, `/lobby` på www.scoutgaming.tech. Ett Vercel-projekt/team: `scoutgaming`. |
 | Webb och Studio | `apps/web/` och `apps/studio/`; Vercels webb-/Studio-tjänster. `/studio` är teknisk basePath. |
-| Spelmotor och live-transport | Render `croupier-v2`, källkod i `web/`; kort, shoe, saldo och avräkning är serverägda. |
+| Spelmotor och live-transport | Render `croupier-v2`, källkod i `services/game/`; kort, shoe, saldo och avräkning är serverägda. |
 | Produktregister | Neon: konton/spel, Studio-projekt, administration, scoped rum/publicering, mediekatalog och svarsbibliotekets metadata. |
 | Mediebyte | Privat Blob; exakta identiteter, hashbindningar och behörigheter följer registret. |
 | Director/Gateway | Aktiva OpenClaw-tjänster med egen konfiguration/sessioner på `/data/catalog` respektive `/data/openclaw`; inga alternativa produktregister. |

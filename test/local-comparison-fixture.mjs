@@ -4,7 +4,7 @@ import { createServer } from 'node:net';
 import { createHmac } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdtemp, symlink, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, symlink, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +21,8 @@ async function freePort(host) {
 test('comparison keeps isolated BO/Partner data and refuses a game without a published presentation', async t => {
   const gamePort = await freePort('localhost'), labPort = await freePort('127.0.0.1');
   const repoRoot = await mkdtemp(join(tmpdir(), 'croupier-comparison-repo-test-'));
-  await symlink(fileURLToPath(new URL('../web/', import.meta.url)), join(repoRoot, 'web'), process.platform === 'win32' ? 'junction' : 'dir');
+  await mkdir(join(repoRoot, 'services'), {recursive:true});
+  await symlink(fileURLToPath(new URL('../services/game/', import.meta.url)), join(repoRoot, 'services', 'game'), process.platform === 'win32' ? 'junction' : 'dir');
   t.after(() => rm(repoRoot, { recursive: true, force: true }));
   const fixture = await startLocalComparison({ repoRoot, startLab: false, gamePort, labPort });
   const post = (path, body, headers = {}) => fetch(fixture.gameUrl + path, {

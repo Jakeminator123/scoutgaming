@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath,pathToFileURL } from 'node:url';
-import { clipMapping } from '../web/clip-mapping.mjs';
-import { buildAssetsManifest } from '../web/partner-presentation.mjs';
+import { clipMapping } from '../services/game/clip-mapping.mjs';
+import { buildAssetsManifest } from '../services/game/partner-presentation.mjs';
 
 const root = fileURLToPath(mediaUrl('../web/public/', import.meta.url));
 const read = file => JSON.parse(readFileSync(mediaUrl(`../web/public/${file}`, import.meta.url)));

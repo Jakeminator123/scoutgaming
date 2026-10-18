@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { calibration } from '../packages/presentation/contracts/calibration.mjs';
-import { createCardCursor, createLocalCardOverlay } from '../web/public/local-card-overlay.mjs';
-import { firstFaceTime } from '../web/public/card-presentation/card-face-projection.js';
+import { createCardCursor, createLocalCardOverlay } from '../services/game/public/local-card-overlay.mjs';
+import { firstFaceTime } from '../services/game/public/card-presentation/card-face-projection.js';
 import { DRAGAN_KEVIN_PROFILE } from '../packages/presentation/contracts/filmed-profiles/kevin-dragan-f15b2af1.mjs';
 import { filmedFaceAtTime } from '../packages/presentation/contracts/filmed-profile.mjs';
 
@@ -70,10 +70,10 @@ test('a retried film hides its half-presented incoming face and ignores the old 
   cursor.frame(retry, 2); assert.ok(draw(svg, 1));
   assert.equal(cursor.finish(first, 1, true), false); assert.equal(cursor.finish(retry, 1, true), true);
 });
-import { createGameCards } from '../web/public/card-presentation/game-cards.js';
-import { DEAL_CONTACT } from '../web/public/card-presentation/card-table-layout.js';
-import { dealerHandClip } from '../web/public/card-presentation/dealer-hand-occlusion.js';
-import { totalLabel } from '../web/public/card-presentation/renderer-support.js';
+import { createGameCards } from '../services/game/public/card-presentation/game-cards.js';
+import { DEAL_CONTACT } from '../services/game/public/card-presentation/card-table-layout.js';
+import { dealerHandClip } from '../services/game/public/card-presentation/dealer-hand-occlusion.js';
+import { totalLabel } from '../services/game/public/card-presentation/renderer-support.js';
 
 test('soft totals display both values until 21, with no extra ace value on hard or busted hands', () => {
   const cards = (...ranks) => ranks.map(r => ({ r }));

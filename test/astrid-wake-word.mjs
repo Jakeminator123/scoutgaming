@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAstridWakeWord } from '../web/public/astrid-wake-word.mjs';
+import { createAstridWakeWord } from '../services/game/public/astrid-wake-word.mjs';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve; const promise = new Promise(yes => { resolve = yes; }); return { promise, resolve }; };

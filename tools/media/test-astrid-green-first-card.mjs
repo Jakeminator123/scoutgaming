@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { shouldUseGreenDealerCard, greenShoeOutlet } from '../../web/public/astrid-green-dealer.mjs';
+import { shouldUseGreenDealerCard, greenShoeOutlet } from '../../services/game/public/astrid-green-dealer.mjs';
 import {uniformRegistration} from '../../packages/presentation/contracts/performance-contact.mjs';
 
 const firstUpcard = {

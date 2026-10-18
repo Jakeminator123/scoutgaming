@@ -7,7 +7,7 @@ import {defaultPresentationLane} from '../../packages/presentation/contracts/stu
 import {defaultCompositionSettings} from '../../packages/presentation/contracts/composition-settings.mjs';
 import {createStudioRepository} from '../../packages/studio-registry/server/document-repository.mjs';
 import {createOperatorStore} from '../../packages/operators/server/operator-store.mjs';
-import {createOperatorPackageReader} from '../../web/storage/operator-package-reader.mjs';
+import {createOperatorPackageReader} from '../../services/game/storage/operator-package-reader.mjs';
 import {createStudioNativeAuth} from '../../packages/studio-access/studio-native-auth.mjs';
 import {createStudioAdminApi} from '../../apps/studio/lib/studio-admin-api.mjs';
 import {createPresentationRoomApi} from '../../apps/studio/lib/presentation-room-api.mjs';
@@ -16,10 +16,10 @@ import {handlePartnerAuth, partnerSessionDigest} from '../../apps/studio/lib/par
 import {partnerWorkspaceInitialData} from '../../apps/studio/lib/partner-data.mjs';
 import {resolveWorkspaceSurfacePath} from '../../packages/navigation/workspace-surfaces.mjs';
 import {partnerRoomRequest} from '../../apps/studio/lib/partner-room-selection.mjs';
-import {createPublicOperatorRooms} from '../../web/public-operator-rooms.mjs';
-import {createPublicOperatorDirectory} from '../../web/public-operators.mjs';
+import {createPublicOperatorRooms} from '../../services/game/public-operator-rooms.mjs';
+import {createPublicOperatorDirectory} from '../../services/game/public-operators.mjs';
 import {createGameEntrySelector} from '../../packages/presentation/server/game-entry-selector.mjs';
-import {decorateGameEntryHtml} from '../../web/public/game-entry-contract.mjs';
+import {decorateGameEntryHtml} from '../../services/game/public/game-entry-contract.mjs';
 import {presentationCapabilitiesForVersion} from '../../packages/presentation/capability-contract.mjs';
 
 export const fixtureOrigin = 'https://publication-chain.example.invalid';

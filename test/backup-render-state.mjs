@@ -9,9 +9,9 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { DatabaseSync } from 'node:sqlite';
 import { backupRenderState, restoreRenderState, verifyRenderBackup } from '../tools/backup-render-state.mjs';
-import { craigIdentity } from '../web/craig-identity.mjs';
-import { playerAuth } from '../web/player-auth.mjs';
-import { newGame, command, gameView } from '../web/shoe-game.mjs';
+import { craigIdentity } from '../services/game/craig-identity.mjs';
+import { playerAuth } from '../services/game/player-auth.mjs';
+import { newGame, command, gameView } from '../services/game/shoe-game.mjs';
 
 const runFile = promisify(execFile);
 const cliPath = fileURLToPath(new URL('../tools/backup-render-state.mjs', import.meta.url));

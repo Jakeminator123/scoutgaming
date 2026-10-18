@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readSettings, LAB_ROOT } from '../src/settings.mjs';
 import { speechRoutingConfiguration } from '../../../../packages/director/speech-routing.mjs';
 import { readSettings as readStudioSettings } from '../../../../apps/studio/lib/director-settings.mjs';
-import { readSettings as readGameSettings } from '../../../../web/director-settings.mjs';
+import { readSettings as readGameSettings } from '../../../game/director-settings.mjs';
 import { mkdtemp, writeFile, rm, mkdir, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -68,7 +68,7 @@ test('app-owned settings keep ordered file/env precedence, empty aliases and the
   // Default reads use the unchanged ordered local files, not the new source root.
   const defaultsRoot = join(directory, 'default-inputs');
   for (const file of ['services/openclaw/lab/src/settings.mjs', 'apps/studio/lib/director-settings.mjs',
-    'web/director-settings.mjs', 'packages/director/node/settings-reader.mjs', 'packages/director/configuration.mjs']) {
+    'services/game/director-settings.mjs', 'packages/director/node/settings-reader.mjs', 'packages/director/configuration.mjs']) {
     await mkdir(resolve(defaultsRoot, file, '..'), {recursive:true});
     await copyFile(new URL('../../../../' + file, import.meta.url), join(defaultsRoot, file));
   }
@@ -76,7 +76,7 @@ test('app-owned settings keep ordered file/env precedence, empty aliases and the
   await writeFile(join(defaultsRoot, '.env'), 'OPENCLAW_API_KEY=synthetic-root\nOPENCLAW_TIMEOUT_MS=8000\n');
   await writeFile(join(defaultsRoot, 'open-claw/lab/.env'), 'OPENCLAWAPI_KEY=synthetic-existing\n');
   await writeFile(join(defaultsRoot, 'services/openclaw/lab/.env'), 'OPENCLAW_API_KEY=synthetic-wrong-source\n');
-  for (const file of ['services/openclaw/lab/src/settings.mjs', 'apps/studio/lib/director-settings.mjs', 'web/director-settings.mjs']) {
+  for (const file of ['services/openclaw/lab/src/settings.mjs', 'apps/studio/lib/director-settings.mjs', 'services/game/director-settings.mjs']) {
     const {pathToFileURL} = await import('node:url');
     const {readSettings: readDefault} = await import(pathToFileURL(join(defaultsRoot, file)));
     const settings = readDefault({env:{}});

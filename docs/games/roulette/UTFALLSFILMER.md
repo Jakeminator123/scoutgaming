@@ -111,7 +111,7 @@ i handoff. Dessa tekniska prov ersätter inte gestens visuella godkännande.
 
 ## Vad banken ska innehålla
 
-Ett godkänt visuellt utfall för vart och ett av heltalen **0–36**, utan luckor eller dubletter. Rekommendationen är ett gemensamt bord/hjul och **en separat, deterministiskt styrd kula med 37 kalibrerade mål**. Alternativet är ett gemensamt startklipp plus 37 korta hjulregioner för avslutet och 37 slutbilder. Banken behöver alltså inte innehålla 37 stora filmer. Alla utfall visar samma europeiska hjul, låsta kamera, bord, skala, belysning och maskregistrering. Bara den avsedda rundans rörelse och slututfall får skilja. Kulan ska synligt stanna i exakt det märkta facket. Hjulets nummerföljd och färger måste stämma med [rules.mjs](../../../web/games/roulette/rules.mjs); nollan är grön. En film med förvrängda, upprepade eller felordnade nummer är inte godkänd även om slutnumret ser rätt ut.
+Ett godkänt visuellt utfall för vart och ett av heltalen **0–36**, utan luckor eller dubletter. Rekommendationen är ett gemensamt bord/hjul och **en separat, deterministiskt styrd kula med 37 kalibrerade mål**. Alternativet är ett gemensamt startklipp plus 37 korta hjulregioner för avslutet och 37 slutbilder. Banken behöver alltså inte innehålla 37 stora filmer. Alla utfall visar samma europeiska hjul, låsta kamera, bord, skala, belysning och maskregistrering. Bara den avsedda rundans rörelse och slututfall får skilja. Kulan ska synligt stanna i exakt det märkta facket. Hjulets nummerföljd och färger måste stämma med [rules.mjs](../../../services/game/games/roulette/rules.mjs); nollan är grön. En film med förvrängda, upprepade eller felordnade nummer är inte godkänd även om slutnumret ser rätt ut.
 
 Hjul/kula är ett separat lager från dealern. Scenen använder **en vald dealer-idle**, återanvänd på mobil och desktop genom uttryckliga visningsprofiler. Inget behov av 37 dealerfilmer eller olika dealerklipp per skärm. Ingen inbakad dealer i utfallsfilmen om samma dealer också visas som separat lager.
 
@@ -121,7 +121,7 @@ Välj och lås en gemensam leveransprofil innan hela banken produceras: canvas/m
 
 ## Koppling till serverresultatet
 
-Idag skapar [roomCommand](../../../web/games/roulette/room.mjs) ett resultat och ett kvitto inom plånbokstransaktionen. [storage](../../../web/games/roulette/storage.mjs) sparar spelarrunda, saldo och bokföring atomärt. Klienten får bland annat `round.id`, `round.event.outcome.number`, färg och avräkning. **Filmen följer ett bekräftat och sparat resultat; filmen bestämmer aldrig utfallet eller pengarna.**
+Idag skapar [roomCommand](../../../services/game/games/roulette/room.mjs) ett resultat och ett kvitto inom plånbokstransaktionen. [storage](../../../services/game/games/roulette/storage.mjs) sparar spelarrunda, saldo och bokföring atomärt. Klienten får bland annat `round.id`, `round.event.outcome.number`, färg och avräkning. **Filmen följer ett bekräftat och sparat resultat; filmen bestämmer aldrig utfallet eller pengarna.**
 
 Framtida filmintegration ska:
 
@@ -172,7 +172,7 @@ Runway passar för matchande dealerhandlingar och vilovarianter. Exakt nummerfö
 
 ## Resultatsekretess: serverns gräns
 
-Dagens kvitto innehåller redan nummer/färg, utbetalning, netto och saldo. [Rouletteklienten](../../../web/public/roulette/app.mjs) visar detta och läser historik. **Resultatet är alltså tillgängligt för klienten före en framtida film.** Även `/api/player`, `/api/profile` och roulettehistoriken måste omfattas av en ny gräns, annars kan saldo eller vinst avslöja resultatet. Generiska `/api/history` filtrerar idag blackjack och är inte roulettehistorik.
+Dagens kvitto innehåller redan nummer/färg, utbetalning, netto och saldo. [Rouletteklienten](../../../services/game/public/roulette/app.mjs) visar detta och läser historik. **Resultatet är alltså tillgängligt för klienten före en framtida film.** Även `/api/player`, `/api/profile` och roulettehistoriken måste omfattas av en ny gräns, annars kan saldo eller vinst avslöja resultatet. Generiska `/api/history` filtrerar idag blackjack och är inte roulettehistorik.
 
 Oskärpa, dolda DOM-element, obskyra filnamn eller ett tidigt nedladdat nummerklipp ger inte sekretess. Klienten kan granska svar och filmbytes; se även [OWASP:s råd om känsliga data i klientlagring](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html).
 
@@ -235,7 +235,7 @@ rotor i samma scen. [Three.js VideoTexture](https://threejs.org/docs/pages/Video
 kan använda ett befintligt videoelement och
 [WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html) ger en
 3D-renderingsväg. Repot använder redan en lokal Three.js-distribution i
-`web/public/actor-compositor.mjs`; roulettekompositorn använder egen WebGL.
+`services/game/public/actor-compositor.mjs`; roulettekompositorn använder egen WebGL.
 Återanvänd befintlig version efter kompatibilitetskontroll. Installera inte en
 ny motor eller byt hela scenuppspelningen enbart för kulans skull.
 
@@ -393,7 +393,7 @@ som enda referens. Exakt prompt:
 
 ## Exakt rotor och en kula i den riktiga spelaren
 
-`web/public/roulette/wheel.mjs` ritar en separat canvas endast för verifierat
+`services/game/public/roulette/wheel.mjs` ritar en separat canvas endast för verifierat
 design-ID `roulette-anna-v1`; samma publicerade bordstransform gäller även i
 förstoringen. `WHEEL` och `pocketColor` importeras från spelmotorns regler:
 inga bildgenererade siffror eller slumpval av utfall. Rotorn har 37 fack,

@@ -10,12 +10,12 @@ import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, createHmac, scryptSync } from 'node:crypto';
 import { copyOpenClawRuntime } from './fixtures/copy-openclaw-runtime.mjs';
-import { backofficeLabAuth } from '../web/bo-lab-auth.mjs';
-import { installBoAuthEpoch } from '../web/bo-auth-epoch.mjs';
-import { craigIdentity } from '../web/craig-identity.mjs';
+import { backofficeLabAuth } from '../services/game/bo-lab-auth.mjs';
+import { installBoAuthEpoch } from '../services/game/bo-auth-epoch.mjs';
+import { craigIdentity } from '../services/game/craig-identity.mjs';
 
 const dir = await mkdtemp(join(tmpdir(), 'bo-lab-auth-'));
-const web = new URL('../web/', import.meta.url), webDir = join(dir, 'web');
+const web = new URL('../services/game/', import.meta.url), webDir = join(dir,'services','game');
 const socket = createServer(); socket.listen(0, '127.0.0.1'); await once(socket, 'listening');
 const port = socket.address().port; await new Promise(resolve => socket.close(resolve));
 const game = 'https://game.example.test', bo = 'https://bo.example.test', lab = 'https://lab.example.test';
@@ -71,7 +71,7 @@ const administratorCookie = () => {
 };
 
 try {
-  await mkdir(webDir); await copyOpenClawRuntime(dir);
+  await mkdir(webDir,{recursive:true}); await copyOpenClawRuntime(dir);
   for (const file of await readdir(web)) if (file.endsWith('.mjs')) await copyFile(new URL(file, web), join(webDir, file));
   await symlink(new URL('public', web), join(webDir, 'public'), process.platform === 'win32' ? 'junction' : 'dir');
   await mkdir(join(dir, 'data'));

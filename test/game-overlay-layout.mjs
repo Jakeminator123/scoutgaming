@@ -102,7 +102,7 @@ test('static geometry reports clipped or overlapping controls instead of silentl
 });
 
 test('actual seat layout handles compositor resize before the query change event and retains a resumed outer hand',()=>{
-  const source=readFileSync(new URL('../web/public/app.mjs',import.meta.url),'utf8');
+  const source=readFileSync(new URL('../services/game/public/app.mjs',import.meta.url),'utf8');
   const fragment=source.slice(source.indexOf('const COMPACT_BOXES ='),source.indexOf('layerComposition?.onGeometryChange(layoutSeats)'));
   const query={matches:false},geometry=defaultBlackjackTableGeometry('00000000-0000-4000-8000-000000000002');
   let width=1920,height=1080,projection;
