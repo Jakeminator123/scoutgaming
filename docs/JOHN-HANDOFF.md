@@ -2,7 +2,7 @@
 
 <a id="dragan-talstatus"></a>
 
-## Lipsync 3: tredje produktionsprovet lyckades — 18 oktober 2026
+## Lipsync 3: tredje provets tekniska uppspelning slutfördes — 18 oktober 2026
 
 PR250 är mergad som `51389bbe906c2ef1df5504ec8f9e8fc8a6b61f62`; obligatorisk
 PR- och main-CI passerade. Vercel och croupier-v2 verifierades live på samma
@@ -19,14 +19,15 @@ var 101; strömmen avslutades med `done`. Mottaget PCM var 73 560 byte,
 24 kHz mono, med verifierad hash. RunPod-jobbet
 `13432367-f41f-4a28-b127-36734f485272-e2` rapporterade både `COMPLETED` och
 `output.status=complete`, utan workerfel. Leverantörens kötid var 118,9 s
-och körtid 96,7 s. Jakob bekräftade: ”Yes nu kördes det och lät bra!”.
-Det är ett godkänt ljudprov; visuell läppsynk och tal under utdelning är
-fortfarande inte godkända. Väntan på cirka 3 minuter 46 sekunder behöver
+och körtid 96,7 s. Jakob gav först ett positivt ljudomdöme men var senare
+osäker vid granskningen. Ljud, visuell läppsynk och tal under utdelning ska
+därför inte markeras slutgodkända. Den senare rapporten om dålig bild gällde
+uttryckligen det tysta videoutdraget, inte ett bekräftat fel i spelbordets bild. Väntan på cirka 3 minuter 46 sekunder behöver
 minskas innan funktionen är användbar som vanlig samtalsfunktion.
 
 Privat skärminspelning, separat mottaget WAV-ljud och körjournal är sparade
 under `production-trial-03` i agentens lokala artefaktkatalog. Filmen har
-samplings-/tidsluckor och saknar inspelat systemljud; WAV-filen är det
+samplings-/tidsluckor, är nedskalad till 634×900 och saknar inspelat systemljud; WAV-filen är det
 mottagna ljudet. Den ska inte beskrivas som en komplett ljud/video-inspelning
 av datorns faktiska utmatning.
 
