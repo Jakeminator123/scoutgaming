@@ -31,8 +31,9 @@ Oanvända UI-konstanter, kategorifilter och ersatt knapp-CSS har tagits bort.
 Separat rättning på `codex/admin-motion-reference`: ändrad referenstid,
 källvideo eller hash behåller talreferensens typ. En `motion-video` blir inte
 tyst `video-frame` och redigeringen låser inte upp aktiveringsrutan.
-Ny förhandsgranskning krävs fortfarande; en redan begärd profil kan stängas av.
-32 UI-/taltester och 14 profiltester passerar, inklusive sju nya fall för exakt
+Ny förhandsgranskning krävs fortfarande; ändrad rörelsereferens kräver att
+Begär AI-tal stängs av före sparning. Enbart röstbyte behåller oförändrad referens.
+36 UI-/taltester och 14 profiltester passerar, inklusive elva nya fall för exakt
 sparpayload, förhandsgranskningsspärr och avstängning. Klientbygget och båda
 typkontrollerna passerar med befintliga CSS-varningar. Inga provider-/GPU-anrop ingår.
 
